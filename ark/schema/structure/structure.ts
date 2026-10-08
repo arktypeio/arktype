@@ -222,6 +222,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.includesTransform ||= this.structuralMorph !== undefined
 	}
 
+	// deleting undeclared keys picks them by each signature's Allows
+	protected override get transformSelectsByContext(): boolean {
+		return (
+			(this.undeclared === "delete" &&
+				!!this.index?.some(
+					node => node.signature.includesContextualPredicate
+				)) ||
+			super.transformSelectsByContext
+		)
+	}
+
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	impliedSiblings = this.children.flatMap(
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []
@@ -499,7 +510,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				if (this.index) {
 					for (const node of this.index) {
-						if (node.signature.traverseAllows(k, ctx)) {
+						if (node.allowsKey(k, ctx)) {
 							if (traversalKind === "Allows") {
 								const result = traverseKey(
 									k,
@@ -823,7 +834,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const parts: string[] = []
 		if (this.index) {
 			for (const index of this.index)
-				parts.push(js.invoke(index.signature, { kind: "Allows", arg: "k" }))
+				parts.push(js.allows(index.signature, "k"))
 		}
 
 		if (this.sequence) {
@@ -1183,13 +1194,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	): NodeCompiler {
 		if (this.index) {
 			for (const node of this.index) {
-				js.if(
-					`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
-					() => {
-						js.traverseKey("k", "data[k]", node.value)
-						return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
-					}
-				)
+				js.if(js.allows(node.signature, "k"), () => {
+					js.traverseKey("k", "data[k]", node.value)
+					return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
+				})
 			}
 		}
 

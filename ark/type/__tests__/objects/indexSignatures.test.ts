@@ -200,6 +200,29 @@ other must be a string (was a bigint)`)
 		}
 	})
 
+	it("keeps no error from a signature rejecting a key", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const K = $.type("string").narrow(
+				(s, ctx) => s.startsWith("a") || ctx.mustBe("prefixed with a")
+			)
+			const T = $.type.Record(K, "number")
+			const data = { ab: 1, x: 2 }
+			attest(T(data)).equals(data)
+			attest(T.allows(data)).equals(true)
+			attest(T({ ab: "1", x: 2 }).toString()).snap(
+				"ab must be a number (was a string)"
+			)
+			attest(T.onUndeclaredKey("reject")(data).toString()).snap(
+				"x must be removed"
+			)
+			attest(T.onUndeclaredKey("delete")(data)).equals({ ab: 1 })
+			attest(
+				$.type.Record(K, "string.numeric.parse")({ ab: "1", x: 2 })
+			).equals({ ab: 1, x: 2 })
+		}
+	})
+
 	it("intersction with right required", () => {
 		const T = type({ "a?": "true" }).and({ a: "boolean" })
 		attest<{ a: true }>(T.infer)

@@ -164,6 +164,19 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 ### Reserve `meta.keyword`
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
+### Fix index signatures whose key narrow reads `ctx`
+
+A key an index signature rejects is undeclared, but an error its narrow added through `ctx` was kept, so valid data failed. It's no longer kept, and `"delete"` no longer throws on such a signature:
+
+```ts
+const K = type("string").narrow(
+	(s, ctx) => s.startsWith("a") || ctx.mustBe("prefixed with a")
+)
+
+// previously failed with "must be prefixed with a", now { ab: 1, x: 2 }
+type.Record(K, "number")({ ab: 1, x: 2 })
+```
+
 ### Check data first when a narrow reads `ctx`
 
 A Type without morphs that has a narrow taking `ctx` checks data before collecting errors, as other Types do, so valid data is accepted faster. Errors are collected by a second pass, so on invalid data its narrows can run twice, as they can in other Types:

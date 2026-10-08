@@ -23,6 +23,7 @@ import { $ark } from "../shared/registry.ts"
 import {
 	applyValue,
 	traverseKey,
+	type InternalTraversal,
 	type TraverseAllows,
 	type TraverseApply
 } from "../shared/traversal.ts"
@@ -112,9 +113,15 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 		this._flatMorphs = []
 	}
 
+	// a key the signature rejects is undeclared, so an error its predicate adds isn't kept
+	allowsKey: TraverseAllows<PropertyKey> = (k, ctx) =>
+		this.signature.allowsRequiresTraversal ?
+			(ctx as InternalTraversal).allows(this.signature, k)
+		:	this.signature.traverseAllows(k, ctx)
+
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
 		stringAndSymbolicEntriesOf(data).every(entry => {
-			if (this.signature.traverseAllows(entry[0], ctx)) {
+			if (this.allowsKey(entry[0], ctx)) {
 				return traverseKey(
 					entry[0],
 					() => this.value.traverseAllows(entry[1], ctx),
@@ -126,7 +133,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 
 	traverseApply: TraverseApply<object> = (data, ctx) => {
 		for (const entry of stringAndSymbolicEntriesOf(data)) {
-			if (this.signature.traverseAllows(entry[0], ctx))
+			if (this.allowsKey(entry[0], ctx))
 				traverseKey(entry[0], () => applyValue(this.value, entry[1], ctx), ctx)
 		}
 	}
