@@ -78,11 +78,11 @@ export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
 > extends CastableBase<ArkErrorContextInput<code>> {
 	readonly [arkKind] = "error"
-	path: ReadonlyPath
 	data: getAssociatedDataForError<code>
-	private nodeConfig: ResolvedConfig[code]
 	protected input!: ArkErrorContextInput<code>
 	protected ctx: Traversal
+	// the stack's keys until path is first read
+	private _path: array<PropertyKey>
 
 	constructor(
 		input: ArkErrorContextInput<code>,
@@ -144,12 +144,17 @@ export class ArkError<
 				defineValue(this, k, input[k as never])
 		}
 		const data = ctx.data
-		this.nodeConfig = ctx.config[this.code] as never
-		const basePath = [...(input.path ?? ctx.path)]
-		if (relativePath) basePath.push(...relativePath)
-		if (prefixPath) basePath.unshift(...prefixPath)
-		this.path = new ReadonlyPath(...basePath)
+		const path = [...(input.path ?? ctx.path)]
+		if (relativePath) path.push(...relativePath)
+		if (prefixPath) path.unshift(...prefixPath)
+		this._path = path
 		this.data = ("data" in input ? input.data : data) as never
+	}
+
+	get path(): ReadonlyPath {
+		return this._path instanceof ReadonlyPath ?
+				this._path
+			:	(this._path = new ReadonlyPath(...this._path))
 	}
 
 	transform(
@@ -173,6 +178,11 @@ export class ArkError<
 
 	get propString(): string {
 		return this.path.stringify()
+	}
+
+	private _nodeConfig: ResolvedConfig[code] | undefined
+	private get nodeConfig(): ResolvedConfig[code] {
+		return (this._nodeConfig ??= this.ctx.config[this.code] as never)
 	}
 
 	get expected(): string {

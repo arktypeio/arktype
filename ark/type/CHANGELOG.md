@@ -343,6 +343,20 @@ if (out instanceof type.errors) {
 
 `issues` already returned the errors, so `out.issues.map(...)` works before and after this change. `Array.isArray(out)` is now false, and `arr.concat(out)` nests the errors, so pass `out.issues`. A Standard Schema failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` or `flatProblemsByPath` from the result.
 
+### Build an `ArkError`'s `path` when it is first read
+
+`path` is now a getter, so a failed call that never reads its errors doesn't build it. Like `message`, `problem`, `expected` and `actual`, it is no longer an own property, so `Object.keys` and spreading an error skip it, and it can't be assigned. `toJSON` still includes it:
+
+```ts
+const error = type({ a: "string" })({ a: 1 }).issues[0]
+
+// previously ["a"], now undefined
+;({ ...error }).path
+// unchanged
+error.path
+error.toJSON().path
+```
+
 ### Throw from `.assert` when a root morph fails
 
 When a type's root was a morph (or a union of morphs) that returned `ArkErrors`, `.assert` returned the errors instead of throwing, and a configured `onFail` was not called. A root morph's errors are now handled like any others, as they already were for a morph at a key:
