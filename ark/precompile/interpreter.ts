@@ -22,7 +22,7 @@ import {
 	pureBuiltins,
 	type MethodReceiverKind
 } from "./builtins.ts"
-import { DynamicValue } from "./dynamic.ts"
+import { DynamicValue, type DynamicCode } from "./dynamic.ts"
 import { findEscape } from "./escapes.ts"
 import {
 	bindingOfFunction,
@@ -348,11 +348,7 @@ export class Interpreter {
 		if (isDynamic(value)) return value
 		return Array.isArray(value) || typeof value === "string" ?
 				[...value]
-			:	new DynamicValue(
-					ctx.module,
-					spread,
-					`\`${ctx.module.snippetOf(spread)}\` spreads a value other than an array or string`
-				)
+			:	this.reject(spread, ctx, "spreads a value other than an array or string")
 	}
 
 	private evaluateTemplate(node: TemplateLiteral, ctx: Context): unknown {
@@ -363,10 +359,10 @@ export class Interpreter {
 			if (hasDomain(value, "object"))
 				return this.coercion(node.expressions[i], ctx)
 			if (typeof value === "symbol") {
-				return new DynamicValue(
-					ctx.module,
+				return this.reject(
 					node.expressions[i],
-					`\`${ctx.module.snippetOf(node.expressions[i])}\` converts a symbol to a string, which throws`
+					ctx,
+					"converts a symbol to a string, which throws"
 				)
 			}
 			result += String(value) + node.quasis[i + 1].value.cooked
@@ -387,10 +383,10 @@ export class Interpreter {
 					!isPlainContainer(spread) &&
 					!hasArkKind(spread, "module")
 				) {
-					return new DynamicValue(
-						ctx.module,
+					return this.reject(
 						property,
-						`\`${ctx.module.snippetOf(property)}\` spreads a value other than an object literal or Module`
+						ctx,
+						"spreads a value other than an object literal or Module"
 					)
 				}
 				const copy: object = { ...(spread as object) }
@@ -399,10 +395,10 @@ export class Interpreter {
 				continue
 			}
 			if (property.kind !== "init") {
-				return new DynamicValue(
-					ctx.module,
+				return this.reject(
 					property,
-					`\`${ctx.module.snippetOf(property)}\` is an accessor, which runs code when arktype reads the definition`
+					ctx,
+					"is an accessor, which runs code when arktype reads the definition"
 				)
 			}
 			const key =
@@ -425,10 +421,10 @@ export class Interpreter {
 			}
 			const overwritten = result[key as PropertyKey]
 			if (isDynamic(overwritten)) {
-				return new DynamicValue(
-					ctx.module,
+				return this.reject(
 					property,
-					`\`${ctx.module.snippetOf(property)}\` overwrites a value the build does not know`,
+					ctx,
+					"overwrites a value the build does not know",
 					overwritten.asOperand()
 				)
 			}
@@ -488,10 +484,10 @@ export class Interpreter {
 			case "===":
 			case "!==":
 				if (isArkValue(left) && isArkValue(right)) {
-					return new DynamicValue(
-						ctx.module,
+					return this.reject(
 						node,
-						`\`${ctx.module.snippetOf(node)}\` compares arktype values by identity, which is unspecified`
+						ctx,
+						"compares arktype values by identity, which is unspecified"
 					)
 				}
 				return node.operator === "===" ? left === right : left !== right
@@ -503,10 +499,10 @@ export class Interpreter {
 				)
 			case "in":
 				if (!isPlainContainer(right)) {
-					return new DynamicValue(
-						ctx.module,
+					return this.reject(
 						node,
-						`\`${ctx.module.snippetOf(node)}\` checks a key of a value other than an object literal`
+						ctx,
+						"checks a key of a value other than an object literal"
 					)
 				}
 				if (hasDomain(left, "object")) return this.coercion(node.left, ctx)
@@ -532,19 +528,35 @@ export class Interpreter {
 			:	result
 	}
 
-	private coercion(node: Node, ctx: Context): DynamicValue {
+	private reject(
+		node: Node,
+		ctx: Context,
+		problem: string,
+		cause?: DynamicValue,
+		code?: DynamicCode
+	): DynamicValue {
 		return new DynamicValue(
 			ctx.module,
 			node,
-			`\`${ctx.module.snippetOf(node)}\` converts an object to a primitive, which runs its methods`
+			`\`${ctx.module.snippetOf(node)}\` ${problem}`,
+			cause,
+			code
+		)
+	}
+
+	private coercion(node: Node, ctx: Context): DynamicValue {
+		return this.reject(
+			node,
+			ctx,
+			"converts an object to a primitive, which runs its methods"
 		)
 	}
 
 	private approximation(node: Node, ctx: Context): DynamicValue {
-		return new DynamicValue(
-			ctx.module,
+		return this.reject(
 			node,
-			`\`${ctx.module.snippetOf(node)}\` is approximated by each engine unless its operands are integers with a safe integer result`
+			ctx,
+			"is approximated by each engine unless its operands are integers with a safe integer result"
 		)
 	}
 
@@ -1044,10 +1056,10 @@ export class Interpreter {
 				const items =
 					Array.isArray(value) || typeof value === "string" ? [...value]
 					: isDynamic(value) ? value
-					: new DynamicValue(
-							ctx.module,
+					: this.reject(
 							pattern,
-							`\`${ctx.module.snippetOf(pattern)}\` destructures a value other than an array or string by position`
+							ctx,
+							"destructures a value other than an array or string by position"
 						)
 				for (let i = 0; i < pattern.elements.length; i++) {
 					const element = pattern.elements[i]
@@ -1074,10 +1086,10 @@ export class Interpreter {
 		if (object instanceof ModuleNamespace)
 			return this.readNamespaceMember(object, String(key), node, ctx)
 		if (object === null || object === undefined) {
-			throw new DynamicValue(
-				ctx.module,
+			return this.reject(
 				node,
-				`\`${ctx.module.snippetOf(node)}\` reads a property of ${object}, which throws`
+				ctx,
+				`reads a property of ${object}, which throws`
 			)
 		}
 		if (typeof object === "string") {
@@ -1089,10 +1101,10 @@ export class Interpreter {
 		}
 		if (!hasDomain(object, "object")) return this.notOwnData(node, ctx)
 		if (this.standIns.has(object)) {
-			return new DynamicValue(
-				ctx.module,
+			return this.reject(
 				node,
-				`\`${ctx.module.snippetOf(node)}\` reads a property of a function the build does not interpret`
+				ctx,
+				"reads a property of a function the build does not interpret"
 			)
 		}
 		if (intrinsics.has(object)) {
@@ -1104,11 +1116,7 @@ export class Interpreter {
 						pureBuiltins.has(descriptor?.value)
 				) ?
 					descriptor!.value
-				:	new DynamicValue(
-						ctx.module,
-						node,
-						`\`${ctx.module.snippetOf(node)}\` is not one of the build's pure built-ins`
-					)
+				:	this.reject(node, ctx, "is not one of the build's pure built-ins")
 		}
 		if (isPlainContainer(object)) {
 			const descriptor = Reflect.getOwnPropertyDescriptor(object, key)
@@ -1126,10 +1134,10 @@ export class Interpreter {
 			key in unstableArkMembers &&
 			!hasArkKind(object, "module")
 		) {
-			return new DynamicValue(
-				ctx.module,
+			return this.reject(
 				node,
-				`\`${ctx.module.snippetOf(node)}\` is derived from registry names or node ids, which are not stable`
+				ctx,
+				"is derived from registry names or node ids, which are not stable"
 			)
 		}
 		const value = Reflect.get(object, key)
@@ -1183,19 +1191,11 @@ export class Interpreter {
 				return result.value
 			}
 		}
-		return new DynamicValue(
-			ctx.module,
-			node,
-			`\`${ctx.module.snippetOf(node)}\` reads a nested namespace import`
-		)
+		return this.reject(node, ctx, "reads a nested namespace import")
 	}
 
 	private notOwnData(node: Node, ctx: Context): DynamicValue {
-		return new DynamicValue(
-			ctx.module,
-			node,
-			`\`${ctx.module.snippetOf(node)}\` does not read an own data property`
-		)
+		return this.reject(node, ctx, "does not read an own data property")
 	}
 
 	private evaluateCall(node: CallExpression, ctx: Context): unknown {
@@ -1262,10 +1262,10 @@ export class Interpreter {
 		if (standIn) {
 			if (standIn.closure && staticBodyOf(standIn.closure.node))
 				return this.interpretCall(standIn.closure, args, node, ctx)
-			return new DynamicValue(
-				ctx.module,
+			return this.reject(
 				node,
-				`\`${ctx.module.snippetOf(node)}\` calls a function the build does not interpret`,
+				ctx,
+				"calls a function the build does not interpret",
 				standIn.closure && this.notStaticHelper(standIn),
 				"opaque"
 			)
@@ -1273,17 +1273,17 @@ export class Interpreter {
 		if (pureBuiltins.has(fn as Function) || receiverKindOf(receiver))
 			return this.callBuiltin(fn as Function, args, receiver, node, ctx)
 		if (typeof fn !== "function" || intrinsics.has(fn)) {
-			return new DynamicValue(
-				ctx.module,
+			return this.reject(
 				node,
-				`\`${ctx.module.snippetOf(node)}\` does not call a static helper or pure built-in`
+				ctx,
+				"does not call a static helper or pure built-in"
 			)
 		}
 		if (isValidator(fn) || this.validators.has(fn)) {
-			return new DynamicValue(
-				ctx.module,
+			return this.reject(
 				node,
-				`\`${ctx.module.snippetOf(node)}\` validates data, which happens at runtime`,
+				ctx,
+				"validates data, which happens at runtime",
 				undefined,
 				"validation"
 			)
@@ -1314,13 +1314,8 @@ export class Interpreter {
 			) ?
 				"writes to an object other than a new object or array literal"
 			:	builtin?.check?.(args, receiver)
-		if (problem) {
-			return new DynamicValue(
-				ctx.module,
-				node,
-				`\`${ctx.module.snippetOf(node)}\` ${problem}`
-			)
-		}
+		if (problem) return this.reject(node, ctx, problem)
+
 		let result: unknown
 		const previous = this.active
 		this.active = { ctx, isArktype: false }
@@ -1350,11 +1345,7 @@ export class Interpreter {
 	): DynamicValue | ParseError {
 		return e instanceof DynamicValue || e instanceof ParseError ?
 				e
-			:	new DynamicValue(
-					ctx.module,
-					node,
-					`\`${ctx.module.snippetOf(node)}\` throws ${String(e)} at build`
-				)
+			:	this.reject(node, ctx, `throws ${String(e)} at build`)
 	}
 
 	private callArktype(
@@ -1424,13 +1415,9 @@ export class Interpreter {
 		node: Node,
 		ctx: Context
 	): unknown {
-		if (ctx.depth > maxDepth) {
-			return new DynamicValue(
-				ctx.module,
-				node,
-				`\`${ctx.module.snippetOf(node)}\` nests static helper calls too deeply`
-			)
-		}
+		if (ctx.depth > maxDepth)
+			return this.reject(node, ctx, "nests static helper calls too deeply")
+
 		const callCtx: Context = {
 			...ctx,
 			module: closure.module,
@@ -1485,10 +1472,10 @@ export class Interpreter {
 		)
 			return new Date(arg)
 		if (callee === Date) {
-			return new DynamicValue(
-				ctx.module,
+			return this.reject(
 				node,
-				`\`${ctx.module.snippetOf(node)}\` ${
+				ctx,
+				`${
 					!args.length ? "reads the clock"
 					: typeof arg === "string" ?
 						"reads the time zone, or a format each engine parses its own way"
@@ -1496,10 +1483,10 @@ export class Interpreter {
 				}`
 			)
 		}
-		return new DynamicValue(
-			ctx.module,
+		return this.reject(
 			node,
-			`\`${ctx.module.snippetOf(node)}\` constructs a value other than a Date or RegExp`,
+			ctx,
+			"constructs a value other than a Date or RegExp",
 			undefined,
 			"opaque"
 		)
@@ -1634,11 +1621,7 @@ export class Interpreter {
 				if (effect) {
 					throw this.calledAtDefinition(
 						standIn,
-						new DynamicValue(
-							ctx.module,
-							effect,
-							`\`${ctx.module.snippetOf(effect)}\` runs when the class is constructed`
-						)
+						this.reject(effect, ctx, "runs when the class is constructed")
 					)
 				}
 				return Reflect.construct(target, args, newTarget)

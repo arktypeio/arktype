@@ -258,19 +258,19 @@ export class Precompiler {
 			}))
 		}
 		const dynamic = rejectionOf(state)
-		if (dynamic) return reject(site, dynamic)
+		if (dynamic) return rejectSite(site, dynamic)
 		if (state.error instanceof ParseError) site.parseError = state.error
 		else site.value = state.value
 		for (const read of state.trace.reads) {
 			const input = this.inputOf(read, candidate, module)
-			if (input instanceof DynamicValue) return reject(site, input)
+			if (input instanceof DynamicValue) return rejectSite(site, input)
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
 				site.inputs.push(input)
 		}
 		for (const value of state.holes) {
 			if (!isHeld(value, this.interpreter)) continue
 			const hole = this.holeOf(value, candidate, module)
-			if (hole instanceof DynamicValue) return reject(site, hole)
+			if (hole instanceof DynamicValue) return rejectSite(site, hole)
 			site.holes.push(hole)
 		}
 		site.holes.sort((l, r) => l.start - r.start)
@@ -565,7 +565,7 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 
 const cacheHint = "Cache mode leaves this to arktype at runtime."
 
-const reject = (site: Site, dynamic: DynamicValue): Site => {
+const rejectSite = (site: Site, dynamic: DynamicValue): Site => {
 	site.status = "rejected"
 	site.reasons = chainOf(dynamic)
 	site.value = undefined
