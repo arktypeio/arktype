@@ -52,13 +52,13 @@
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*",
 		"arkregex": "workspace:*",
-		"arktype": "workspace:*",
 		"magic-string": "0.30.19",
 		"oxc-parser": "0.153.0",
 		"oxc-resolver": "11.24.2",
 		"unplugin": "3.4.0"
 	},
 	"peerDependencies": {
+		"arktype": "workspace:*",
 		"eslint": ">=9"
 	},
 	"peerDependenciesMeta": {
@@ -71,6 +71,7 @@
 	},
 	"devDependencies": {
 		"@typescript-eslint/scope-manager": "8.46.1",
+		"arktype": "workspace:*",
 		"esbuild": "0.25.10",
 		"fast-check": "3.23.2",
 		"vite": "8.3.4",
