@@ -137,7 +137,7 @@ contextualize(() => {
 				"a Date and 2023 or later"
 			)
 			attest(type("Date >= d'2023/1/1'").description).snap(
-				"a Date and 2023 or later"
+				"a Date and January 1, 2023, 5:00 AM UTC or later"
 			)
 			attest(type("Date >= d'2023-01-01T14:30Z'").description).snap(
 				"a Date and January 1, 2023, 2:30 PM UTC or later"

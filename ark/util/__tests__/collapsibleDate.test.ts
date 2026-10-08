@@ -54,10 +54,9 @@ contextualize(() => {
 		attest(resultPM).snap("January 15, 2023, 9:00 PM UTC")
 	})
 
-	it("collapses local midnight", () => {
-		attest(describeCollapsibleDate(new Date(2023, 0, 1))).snap("2023")
-		attest(describeCollapsibleDate(new Date(2023, 0, 15))).snap(
-			"January 15, 2023"
+	it("doesn't collapse local midnight", () => {
+		attest(describeCollapsibleDate(new Date(2023, 0, 1))).snap(
+			"January 1, 2023, 5:00 AM UTC"
 		)
 	})
 

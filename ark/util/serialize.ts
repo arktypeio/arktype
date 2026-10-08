@@ -200,20 +200,10 @@ export const describeCollapsibleDate = (date: Date): string => {
 	const seconds = date.getUTCSeconds()
 	const milliseconds = date.getUTCMilliseconds()
 
-	if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0)
-		return describeCalendarDate(year, month, dayOfMonth)
-
-	if (
-		date.getHours() === 0 &&
-		date.getMinutes() === 0 &&
-		date.getSeconds() === 0 &&
-		date.getMilliseconds() === 0
-	) {
-		return describeCalendarDate(
-			date.getFullYear(),
-			date.getMonth(),
-			date.getDate()
-		)
+	if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0) {
+		return month === 0 && dayOfMonth === 1 ?
+				`${year}`
+			:	`${months[month]} ${dayOfMonth}, ${year}`
 	}
 
 	const h = hours % 12 || 12
@@ -228,15 +218,6 @@ export const describeCollapsibleDate = (date: Date): string => {
 
 	return `${months[month]} ${dayOfMonth}, ${year}, ${timePortion + suffix} UTC`
 }
-
-const describeCalendarDate = (
-	year: number,
-	month: number,
-	dayOfMonth: number
-) =>
-	month === 0 && dayOfMonth === 1 ?
-		`${year}`
-	:	`${months[month]} ${dayOfMonth}, ${year}`
 
 const months = [
 	"January",

@@ -74,7 +74,10 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 		this.serializedValue,
 		"negated"
 	)
-	expression: string = printable(this.unit)
+	expression: string =
+		this.unit instanceof Date ?
+			`d'${this.compiledValue}'`
+		:	printable(this.unit)
 	domain: Domain = domainOf(this.unit)
 
 	get defaultShortDescription(): string {

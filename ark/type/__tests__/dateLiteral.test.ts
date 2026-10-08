@@ -34,6 +34,22 @@ contextualize(() => {
 		attest(() => type("d'tuesday'")).throws(writeInvalidDateMessage("tuesday"))
 	})
 
+	it("prints ISO instants", () => {
+		const T = type("d'2000-01-01' <= Date <= d'2000-01-01T12:00-05:00'")
+		attest(T.expression).snap(
+			"Date <= d'2000-01-01T17:00:00.000Z' & >= d'2000-01-01T00:00:00.000Z'"
+		)
+		attest(T.description).snap(
+			"a Date and January 1, 2000, 5:00 PM UTC or earlier and 2000 or later"
+		)
+		attest(T(new Date("2000-01-01T18:00Z")).toString()).snap(
+			"must be January 1, 2000, 5:00 PM UTC or earlier (was January 1, 2000, 6:00 PM UTC)"
+		)
+		attest(() => type("d'2001-01-01' <= Date <= d'2000-01-01'")).throws(
+			"Intersection of <= d'2000-01-01T00:00:00.000Z' and >= d'2001-01-01T00:00:00.000Z' results in an unsatisfiable type"
+		)
+	})
+
 	it("morphable", () => {
 		const T = type(["Date", "=>", d => d.toISOString()])
 		attest(T.from(new Date(2000, 1))).snap("2000-02-01T05:00:00.000Z")

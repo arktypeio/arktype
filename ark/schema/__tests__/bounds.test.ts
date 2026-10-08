@@ -111,6 +111,9 @@ contextualize(() => {
 
 	it("stringLimit", () => {
 		attest(node("min", { rule: 5 }).stringLimit).equals("5")
+		attest(
+			node("after", { rule: new Date(Date.UTC(2025, 0, 1)) }).stringLimit
+		).equals("2025-01-01T00:00:00.000Z")
 	})
 
 	it("minLength 0 reduces to unconstrained", () => {

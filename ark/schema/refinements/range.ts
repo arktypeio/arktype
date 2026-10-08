@@ -39,7 +39,9 @@ export abstract class BaseRange<
 		this.exclusive
 	)
 	readonly numericLimit: number = this.rule.valueOf()
-	readonly expression: string = `${this.comparator} ${this.rule}`
+	readonly expression: string = `${this.comparator} ${
+		this.boundOperandKind === "date" ? `d'${this.stringLimit}'` : this.rule
+	}`
 	readonly compiledCondition: string = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
 	readonly compiledNegation: string = `${this.compiledActual} ${
 		negatedComparators[this.comparator]
@@ -232,7 +234,7 @@ export type LengthBoundableData = string | array
 export type DateRangeKind = "before" | "after"
 
 export const dateLimitToString = (limit: LimitSchemaValue): string =>
-	typeof limit === "string" ? limit : new Date(limit).toLocaleString()
+	typeof limit === "string" ? limit : new Date(limit).toISOString()
 
 export const writeUnboundableMessage = <root extends string>(
 	root: root

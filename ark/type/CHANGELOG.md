@@ -237,7 +237,7 @@ scope({ a: "a" }).export()
 
 ### Describe dates in UTC
 
-Dates in descriptions and error messages are written in UTC instead of local time, except that a date at UTC or local midnight is written as its calendar date, collapsing to its year on January 1:
+Dates in descriptions and error messages are written in UTC instead of local time, except that a date at UTC midnight is written as its calendar date, collapsing to its year on January 1:
 
 ```ts
 const T = type("Date < d'2000-01-01T12:30:00Z'")
@@ -246,6 +246,16 @@ const T = type("Date < d'2000-01-01T12:30:00Z'")
 // now "must be January 1, 2000, 12:29:59.999 PM UTC or earlier"
 T(new Date("2001-06-01"))
 ```
+
+A Date's `.expression`, the ParseErrors that include it and a date bound's `stringLimit` are written as ISO instants instead of with `Date.prototype.toString` or `toLocaleString`:
+
+```ts
+// previously "Date >= Sat Jan 01 2000 00:00:00 GMT+0000 (Coordinated Universal Time)" in UTC
+// now "Date >= d'2000-01-01T00:00:00.000Z'"
+type("Date >= d'2000-01-01'").expression
+```
+
+So the same type describes itself the same way under any time zone or locale.
 
 ### Hold `ArkErrors`' errors in `issues` instead of extending `Array`
 
