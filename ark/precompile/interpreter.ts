@@ -196,7 +196,12 @@ export class Interpreter {
 
 	evaluate(node: Node, ctx: Context): unknown {
 		const site = ctx.env ? undefined : this.sitesByNode.get(node)
-		if (site && site !== ctx.site) {
+		// a definition nested in the site is part of it, so its holes and inputs are the site's
+		if (
+			site &&
+			site !== ctx.site &&
+			!(ctx.site?.module === site.module && contains(ctx.site.node, node))
+		) {
 			this.evaluateSite(site)
 			if (site.error !== undefined) throw site.error
 			return site.value

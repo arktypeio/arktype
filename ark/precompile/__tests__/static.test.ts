@@ -228,6 +228,23 @@ const A = type("===", unit)`)
 			])
 		})
 
+		it("nested definitions", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { max } from "./limits.ts"
+const trim = (s: string) => s.trim()
+const A = type({ name: type("string").atMostLength(max).pipe(trim) })`,
+				{ "/limits.ts": `export const max = 5` }
+			)
+			attest(
+				result.sites.map(site => [
+					site.status,
+					...site.holes.map(hole => `${hole.kind} ${hole.start}:${hole.end}`),
+					...site.inputs.map(input => `${input.kind} ${input.name}`)
+				])
+			).snap([["accepted", "function 163:167", "import max"]])
+		})
+
 		it("dates", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
