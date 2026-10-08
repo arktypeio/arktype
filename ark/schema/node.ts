@@ -260,6 +260,8 @@ export abstract class BaseNode<
 		resolvesIntersections = false
 	): boolean {
 		if (this[flag] || !this.includesAlias) return this[flag]
+		const cached =
+			flag === "includesTransform" ? "_transforms" : "_allowsRequiresTraversal"
 		let reachesOperands = false
 		// a Map visits the ids added while it's iterated
 		const reached = new Map<string, BaseNode>([[this.id, this]])
@@ -287,9 +289,12 @@ export abstract class BaseNode<
 					: flag !== "includesTransform" ?
 						(reference.operands![0] as AliasNode).resolution
 					:	undefined
-				if (resolution) reached.set(resolution.id, resolution)
+				if (resolution && resolution[cached] !== false)
+					reached.set(resolution.id, resolution)
 			}
 		}
+		// a node this reaches reaches nothing this doesn't
+		if (isIoFinal()) for (const node of reached.values()) node[cached] = false
 		return false
 	}
 
