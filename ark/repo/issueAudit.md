@@ -367,15 +367,15 @@ Fix ready on `fix/regex` (1954a2038), not landed. **Decision:** `regex()` accept
 
 ### <a id="fix-1445"></a>[#1445](https://github.com/arktypeio/arktype/issues/1445) ParseError when `match`ing against a [string, {[string]: unknown}]
 
-Fix in review on `fix/match-order`. Six commits: this issue plus five ordered-discrimination bugs a fuzz found (98 of 3000 matchers misrouted on featherduster). It also fixes a featherduster regression in tuple-union `.allows` listed under side findings.
+Fix in review on `fix/match-order`. Six commits: this issue plus five discrimination bugs a fuzz found (172 misrouted matchers and 2122 throws per 10000 seeds on featherduster, 0 after). They also fix a featherduster regression in tuple-union `.allows` listed under side findings. A second review found a refinement case of one fix still throwing (also on 2.2.8), and a construction cost added to every tuple-discriminated union. Both are being fixed.
 
 ### <a id="fix-1023"></a>[#1023](https://github.com/arktypeio/arktype/issues/1023) Infer any as morph return
 
-Fix in review on `fix/infer`. [#1023](https://github.com/arktypeio/arktype/issues/1023) is fixed at the top level only; the nested case is still in progress.
+Fix in review on `fix/infer`. [#1023](https://github.com/arktypeio/arktype/issues/1023) is fixed where the whole output is `any`. A nested `any` is still inferred as the morph when every morph and default in the type returns `any`, which awaits a decision. [#1160](https://github.com/arktypeio/arktype/issues/1160) is fixed. Both are in independent review.
 
 ### <a id="fix-1160"></a>[#1160](https://github.com/arktypeio/arktype/issues/1160) Strip optional/default type-level attributes on `.required()`
 
-Fix in review on `fix/infer`. [#1023](https://github.com/arktypeio/arktype/issues/1023) is fixed at the top level only; the nested case is still in progress.
+Fix in review on `fix/infer`. [#1023](https://github.com/arktypeio/arktype/issues/1023) is fixed where the whole output is `any`. A nested `any` is still inferred as the morph when every morph and default in the type returns `any`, which awaits a decision. [#1160](https://github.com/arktypeio/arktype/issues/1160) is fixed. Both are in independent review.
 
 ## Easy-win bugs
 
@@ -1589,6 +1589,10 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 - **arkregex inference gaps (2.2.7 and featherduster).** These turned up while fixing [#1530](https://github.com/arktypeio/arktype/issues/1530). Capture indices from a literal pattern are unsound for optional groups. The base `Regex` types `exec` groups as `undefined`. A template source with a dynamic part infers its captures as `[]`. `finalizeBranches` drops branch errors. A later alternation branch can't see named groups from earlier branches.
 - **Putting a 2.2.8 `Type` in a featherduster definition throws `node.referencedBesidesChildren is not iterable`.** A duplicate copy of the same version works. Found while checking [#1088](https://github.com/arktypeio/arktype/issues/1088).
 - **Date bounds print the local `Date.toString()` in expressions (2.2.8 and featherduster).** That drops milliseconds, so `type("Date > 0")` and `type("Date >= 0")` both print `Date >= Wed Dec 31 1969 19:00:00 GMT-0500 (Eastern Standard Time)`, and the expression depends on the machine's time zone. On featherduster, `description` is in UTC with milliseconds.
+- **Intersecting tuples with an element after a variadic one is wrong in three ways (2.2.8 and featherduster).** These are in `_intersectSequences` (`ark/sets/structure/sequence.ts`). The fixed-length variants share the root's Disjoint, so `type(["...", "unknown[]", "'y'"]).and(["1", "...", "unknown[]"])` throws "unsatisfiable". The variadic-disjoint branch maps `lTail` where it means `r`, so `[...string[], "y"] & [...number[], 2]` gives `["y"]` instead of `never`. A variant ignores leftover elements, so `[3, "x" | object] & [...number[], unknown, boolean]` gives `[3, object | "x"]`. With such tuples added, the match fuzz on `fix/match-order` misroutes 114 of 3938 matchers, and 0 without them. Found while fixing [#1445](https://github.com/arktypeio/arktype/issues/1445).
+- **A union discriminated on a tuple element skips non-array objects with that index (2.2.8 and featherduster).** `type(["string"]).or(["number"]).or(type.instanceOf(Uint8Array)).allows(new Uint8Array([1]))` is false. The same goes for String objects and class instances. The case node at an index requires an Array proto, and "object but not Array" can't be expressed. A construction-time fix would add every non-Array proto the union references to the node at a numeric key, at no validation cost. Found while fixing [#1445](https://github.com/arktypeio/arktype/issues/1445).
+- **Inference around `unknown.any` and `object` (2.2.8 and featherduster).** `type({ a: ["unknown.any", "=>", s => 5] }).inferIn` is `{ a?: any }`, because `unwrapInput` tests the morph for `any` rather than its input. `["unknown.any", "=", 5]` infers a union, because `withDefault` distributes over `any`. An `object` input distills to `{}`. Found while fixing [#1023](https://github.com/arktypeio/arktype/issues/1023).
+- **`attest trace` crashes when stdout isn't a TTY (2.2.8 and featherduster).** Piped or in CI, it throws `process.stdout.clearLine is not a function` from `ark/attest/cli/trace.ts`. Found while checking [#1306](https://github.com/arktypeio/arktype/issues/1306).
 - **`ark/repo/__tests__/benchScenarios.test.ts` "accepts alike" is intermittent on featherduster.** It failed in two full runs and passed in a third, and it passes alone.
 
 ### Fixed in featherduster without an issue
