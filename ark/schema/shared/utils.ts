@@ -188,3 +188,34 @@ export const isAbsent = (path: array<PropertyKey>, data: unknown): boolean => {
 		!(path[path.length - 1] in Object(parent))
 	)
 }
+
+export type DescribeBranchesOptions = {
+	delimiter?: string
+	finalDelimiter?: string
+}
+
+export const describeBranches = (
+	descriptions: readonly string[],
+	opts?: DescribeBranchesOptions
+): string => {
+	const delimiter = opts?.delimiter ?? ", "
+	const finalDelimiter = opts?.finalDelimiter ?? " or "
+
+	if (descriptions.length === 0) return "never"
+
+	if (descriptions.length === 1) return descriptions[0]
+	if (
+		(descriptions.length === 2 &&
+			descriptions[0] === "false" &&
+			descriptions[1] === "true") ||
+		(descriptions[0] === "true" && descriptions[1] === "false")
+	)
+		return "boolean"
+
+	// keep track of seen descriptions to avoid duplication
+	const seen: Record<string, true | undefined> = Object.create(null)
+	const unique = descriptions.filter(s => (seen[s] ? false : (seen[s] = true)))
+	const last = unique.pop()!
+
+	return `${unique.join(delimiter)}${unique.length ? finalDelimiter : ""}${last}`
+}

@@ -10,7 +10,6 @@ import {
 } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import { writeProtoActual } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -65,8 +64,7 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 				return builtinName ?
 						objectKindDescriptions[builtinName]
 					:	`an instance of ${functionNameOf(node.proto)}`
-			},
-			actual: writeProtoActual
+			}
 		}
 	})
 

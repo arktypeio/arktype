@@ -1,32 +1,7 @@
-import {
-	describeCollapsibleDate,
-	envHasCsp,
-	flatMorph,
-	throwError
-} from "@ark/util"
-import type { ErrorConfig, ResolvedConfig } from "./config.ts"
-import {
-	writeActual,
-	writeDiscriminantActual,
-	writeDomainActual,
-	writeIntersectionExpected,
-	writeIntersectionProblem,
-	writeLengthActual,
-	writeMessage,
-	writeMinLengthActual,
-	writePredicateActual,
-	writePredicateExpected,
-	writePredicateProblem,
-	writeProblem,
-	writeProtoActual,
-	writeRequiredActual,
-	writeRequiredExpected,
-	writeUnionExpected,
-	writeUnionMessage,
-	writeUnionProblem,
-	writeUnitProblem
-} from "./shared/errorWriters.ts"
-import type { ArkErrorCode, ExpectedWriter } from "./shared/errors.ts"
+import { envHasCsp, flatMorph, throwError } from "@ark/util"
+import type { ResolvedConfig } from "./config.ts"
+import { errorWriters, errorWritersByCode } from "./shared/errorWriters.ts"
+import type { ExpectedWriter } from "./shared/errors.ts"
 import type { Locale } from "./shared/locale.ts"
 import { configureLocale, defaultLocale } from "./shared/render.ts"
 
@@ -47,64 +22,20 @@ export const assertAbiVersion = (version: number): void => {
 // node error contexts carry their descriptions, so expected reads them rather than describing a node
 const writeExpected: ExpectedWriter = ctx => ctx.description!
 
-// the writers each code has besides its description
-const errorWritersByCode: {
-	[code in ArkErrorCode]: ErrorConfig<code>
-} = {
-	after: { actual: describeCollapsibleDate },
-	before: { actual: describeCollapsibleDate },
-	divisor: {},
-	domain: { actual: writeDomainActual },
-	exactLength: { actual: writeLengthActual },
-	intersection: {
-		expected: writeIntersectionExpected,
-		problem: writeIntersectionProblem
-	},
-	max: {},
-	maxLength: { actual: writeLengthActual },
-	min: {},
-	minLength: { actual: writeMinLengthActual },
-	pattern: {},
-	predicate: {
-		expected: writePredicateExpected,
-		actual: writePredicateActual,
-		problem: writePredicateProblem
-	},
-	proto: { actual: writeProtoActual },
-	required: { expected: writeRequiredExpected, actual: writeRequiredActual },
-	union: {
-		expected: writeUnionExpected,
-		problem: writeUnionProblem,
-		message: writeUnionMessage
-	},
-	unit: { problem: writeUnitProblem },
-	undeclared: { expected: "removed", actual: "" },
-	discriminant: { actual: writeDiscriminantActual }
-}
-
 // en, as far as the runtime's writers read it
 export const runtimeLocale = {
 	keywordPhrases: {} as Record<string, Locale.KeywordPhrase>,
-	actual: writeActual,
-	problem: writeProblem,
-	message: writeMessage
+	...errorWriters
 }
 
 // unless arktype has resolved its config, which sets the locale itself
 if (defaultLocale === undefined)
 	configureLocale(undefined, runtimeLocale as never)
 
-// what traversal reads from a config: each error code's writers, and whether ArkError may compile
-export const resolvedConfig: ResolvedConfig = {
+export const runtimeConfig: ResolvedConfig = {
 	...flatMorph(errorWritersByCode, (code, writers) => [
 		code,
-		{
-			expected: writeExpected,
-			actual: writeActual,
-			problem: writeProblem,
-			message: writeMessage,
-			...writers
-		}
+		{ expected: writeExpected, ...errorWriters, ...writers }
 	]),
 	jitless: envHasCsp(),
 	onFail: null

@@ -5,7 +5,6 @@ import type {
 	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
-import { writeLengthActual } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -48,8 +47,7 @@ const implementation: nodeImplementationOf<ExactLength.Declaration> =
 		},
 		hasAssociatedError: true,
 		defaults: {
-			description: node => `exactly length ${node.rule}`,
-			actual: writeLengthActual
+			description: node => `exactly length ${node.rule}`
 		}
 	})
 

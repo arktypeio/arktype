@@ -7,12 +7,7 @@ import type {
 	BaseNodeInput,
 	declareNode
 } from "./shared/declare.ts"
-import {
-	describePredicate,
-	writePredicateActual,
-	writePredicateExpected,
-	writePredicateProblem
-} from "./shared/errorWriters.ts"
+import { describePredicate } from "./shared/errorWriters.ts"
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
 import type {
 	Traversal,
@@ -61,10 +56,7 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 			predicate: {}
 		},
 		defaults: {
-			description: describePredicate,
-			expected: writePredicateExpected,
-			actual: writePredicateActual,
-			problem: writePredicateProblem
+			description: describePredicate
 		},
 		intersectionIsOpen: true
 	})

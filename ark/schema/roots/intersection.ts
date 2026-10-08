@@ -3,10 +3,6 @@ import type { nodeOfKind } from "../kinds.ts"
 import type { PredicateNode } from "../predicate.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import {
-	writeIntersectionExpected,
-	writeIntersectionProblem
-} from "../shared/errorWriters.ts"
 import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
@@ -161,9 +157,7 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				}
 
 				return childDescriptions.join(" and ")
-			},
-			expected: writeIntersectionExpected,
-			problem: writeIntersectionProblem
+			}
 		}
 	})
 

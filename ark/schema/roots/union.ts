@@ -24,13 +24,6 @@ import type {
 	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
-import {
-	describeBranches,
-	writeUnionExpected,
-	writeUnionMessage,
-	writeUnionProblem,
-	type DescribeBranchesOptions
-} from "../shared/errorWriters.ts"
 import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
@@ -51,7 +44,12 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "../shared/traversal.ts"
-import { isAbsent, valueAtPath } from "../shared/utils.ts"
+import {
+	describeBranches,
+	isAbsent,
+	valueAtPath,
+	type DescribeBranchesOptions
+} from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
 import { BaseRoot } from "./root.ts"
@@ -118,10 +116,7 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 		},
 		defaults: {
 			description: node =>
-				node.distribute(branch => branch.description, describeBranches),
-			expected: writeUnionExpected,
-			problem: writeUnionProblem,
-			message: writeUnionMessage
+				node.distribute(branch => branch.description, describeBranches)
 		}
 	})
 
@@ -485,8 +480,6 @@ const describeExpressionOptions: DescribeBranchesOptions = {
 
 const expressBranches = (expressions: string[]) =>
 	describeBranches(expressions, describeExpressionOptions)
-
-export { describeBranches }
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"

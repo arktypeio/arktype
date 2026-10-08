@@ -49,8 +49,7 @@ const implementation: nodeImplementationOf<After.Declaration> =
 			}
 		},
 		defaults: {
-			description: node => `${describeCollapsibleDate(node.rule)} or later`,
-			actual: describeCollapsibleDate
+			description: node => `${describeCollapsibleDate(node.rule)} or later`
 		}
 	})
 

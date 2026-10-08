@@ -78,7 +78,7 @@ export const precompileStandalone = (
 	const imports = new Set([
 		"assertAbiVersion",
 		"claimEntry",
-		"resolvedConfig",
+		"runtimeConfig",
 		"Validator"
 	])
 	const declarations: string[] = []
@@ -115,8 +115,8 @@ export const precompileStandalone = (
 	traverseAllows: ${traversals}[0],
 	traverseApply: ${traversals}[1],
 	traverseTransform: ${traversals}[2],
-	allows: ${node.allowsRequiresContext ? `data => allowsUntracked(${name}, data) ?? allowsInContext(${name}, data, resolvedConfig)` : `${traversals}[0]`},
-	$: { resolvedConfig }${discriminantDescription}
+	allows: ${node.allowsRequiresContext ? `data => allowsUntracked(${name}, data) ?? allowsInContext(${name}, data, runtimeConfig)` : `${traversals}[0]`},
+	$: { resolvedConfig: runtimeConfig }${discriminantDescription}
 })`)
 		return name
 	}
@@ -196,7 +196,7 @@ export const precompileStandalone = (
 		return `const validator${i} = new Validator(
 	(function (${rootApplyParams.join(", ")}) {
 		${writeRootApply(root, unit.names[root.id])}
-	})(${shape}, ${shape}.allows, ${shape}.traverseAllows, ${shape}.traverseApply, ${shape}.traverseTransform, Traversal, TransformErrors, applyCyclic, allowsAcyclic, allowsInContext, resolvedConfig, ${JSON.stringify(unset)}),
+	})(${shape}, ${shape}.allows, ${shape}.traverseAllows, ${shape}.traverseApply, ${shape}.traverseTransform, Traversal, TransformErrors, applyCyclic, allowsAcyclic, allowsInContext, runtimeConfig, ${JSON.stringify(unset)}),
 	${shape},
 	{ expression: ${JSON.stringify(root.expression)}, description: ${JSON.stringify(root.description)}, meta: ${emit(root.meta)} }
 )

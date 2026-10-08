@@ -1,6 +1,5 @@
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import { writeMinLengthActual } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -49,8 +48,7 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 		},
 		defaults: {
 			description: node =>
-				node.rule === 1 ? "non-empty" : `at least length ${node.rule}`,
-			actual: writeMinLengthActual
+				node.rule === 1 ? "non-empty" : `at least length ${node.rule}`
 		}
 	})
 

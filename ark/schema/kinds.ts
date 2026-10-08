@@ -26,18 +26,12 @@ import { Domain } from "./roots/domain.ts"
 import { Intersection } from "./roots/intersection.ts"
 import { Morph } from "./roots/morph.ts"
 import { Proto } from "./roots/proto.ts"
-import { describeBranches, Union } from "./roots/union.ts"
+import { Union } from "./roots/union.ts"
 import { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { BaseNodeInput } from "./shared/declare.ts"
-import { writeDiscriminantActual } from "./shared/errorWriters.ts"
-import type {
-	ActualWriter,
-	ArkErrorCode,
-	ErrorContextsByCode,
-	MessageWriter,
-	ProblemWriter
-} from "./shared/errors.ts"
+import { errorWriters, errorWritersByCode } from "./shared/errorWriters.ts"
+import type { ArkErrorCode, ErrorContextsByCode } from "./shared/errors.ts"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -48,7 +42,10 @@ import type {
 import { describeMissing, type Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
-import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.ts"
+import {
+	describeBranches,
+	type makeRootAndArrayPropertiesMutable
+} from "./shared/utils.ts"
 import { Index } from "./structure/index.ts"
 import { Optional } from "./structure/optional.ts"
 import { Required } from "./structure/required.ts"
@@ -95,14 +92,6 @@ export const nodeImplementationsByKind: Record<
 	structure: Structure.implementation
 } satisfies Record<NodeKind, unknown> as never
 
-// divisor writes only expected, so its other writers are those implementNode
-// gives every kind that doesn't write its own
-const shared = nodeImplementationsByKind.divisor.defaults as {
-	actual: ActualWriter
-	problem: ProblemWriter
-	message: MessageWriter
-}
-
 const describeRequired: Locale.ExpectedWriter<"required"> = (e, locale) =>
 	describeMissing(e.missing, locale)
 
@@ -121,15 +110,9 @@ const enWritersOf = (
 		problem: defaults.problem
 	}
 	for (const slot of ["actual", "message"] as const)
-		if (defaults[slot] !== shared[slot]) writers[slot] = defaults[slot]
+		if (defaults[slot] !== errorWriters[slot]) writers[slot] = defaults[slot]
 	return writers as never
 }
-
-const undeclared = {
-	expected: "removed",
-	problem: shared.problem,
-	actual: ""
-} as const
 
 const listCases: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
 	describeBranches(
@@ -153,10 +136,13 @@ export const en: Locale.Complete = {
 		(kind, { hasAssociatedError, defaults }) =>
 			hasAssociatedError ? [kind, enWritersOf(kind, defaults)] : []
 	) as Pick<Locale.Complete, ArkErrorCode & NodeKind>),
-	undeclared,
+	undeclared: {
+		...errorWritersByCode.undeclared,
+		problem: errorWriters.problem
+	},
 	discriminant: {
 		expected: listCases,
-		problem: shared.problem,
+		problem: errorWriters.problem,
 		actual: describeDiscriminant
 	},
 	tag: "en",
@@ -183,9 +169,9 @@ export const en: Locale.Complete = {
 		never: "never"
 	},
 	keywordPhrases: {},
-	actual: shared.actual,
-	problem: shared.problem,
-	message: shared.message
+	actual: errorWriters.actual,
+	problem: errorWriters.problem,
+	message: errorWriters.message
 }
 
 $ark.defaultConfig = withAlphabetizedKeys(
@@ -195,14 +181,8 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			implementation.defaults
 		]),
 		{
-			undeclared: { ...undeclared, message: shared.message },
-			// a union's context describes its cases in English
-			discriminant: {
-				expected: e => e.description ?? listCases(e, en),
-				actual: writeDiscriminantActual,
-				problem: shared.problem,
-				message: shared.message
-			},
+			undeclared: { ...errorWriters, ...errorWritersByCode.undeclared },
+			discriminant: { ...errorWriters, ...errorWritersByCode.discriminant },
 			jitless: $ark.config.jitless ?? envHasCsp(),
 			onUndeclaredKey: "ignore",
 			rejectAllowsSymbolKeys: false,

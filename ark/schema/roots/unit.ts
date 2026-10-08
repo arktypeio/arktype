@@ -9,7 +9,6 @@ import {
 } from "@ark/util"
 import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import { writeUnitProblem } from "../shared/errorWriters.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
@@ -55,8 +54,7 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 			}
 		},
 		defaults: {
-			description: node => printable(node.unit, { ownDataOnly: true }),
-			problem: writeUnitProblem
+			description: node => printable(node.unit, { ownDataOnly: true })
 		}
 	})
 

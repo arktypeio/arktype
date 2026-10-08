@@ -16,7 +16,7 @@ import {
 	type show
 } from "@ark/util"
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
-import type { Declaration, Inner, nodeOfKind } from "../kinds.ts"
+import type { Declaration, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import type {
@@ -27,9 +27,9 @@ import type {
 import type { BaseScope, ResolvedScopeConfig } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
-import type { BaseErrorContext, BaseNodeDeclaration } from "./declare.ts"
+import type { BaseNodeDeclaration } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
-import { writeActual, writeMessage, writeProblem } from "./errorWriters.ts"
+import { errorWriters, errorWritersByCode } from "./errorWriters.ts"
 import { namedReference } from "./registry.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
 
@@ -320,24 +320,8 @@ export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
-		defaults: nodeSchemaaultsImplementationInputFor<d["kind"]>
+		defaults: { description: DescriptionWriter<d["kind"]> }
 	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true } : {})
-
-type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
-	NodeConfig<kind>,
-	| "description"
-	// if the node's error context is distinct from its inner definition, ensure it is implemented.
-	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
-	// but rather a single failed condition for each branch.
-	| (Inner<kind> extends (
-			Omit<
-				Declaration<kind>["errorContext"],
-				keyof BaseErrorContext | "description"
-			>
-	  ) ?
-			never
-	  :	"expected" & keyof NodeConfig<kind>)
->
 
 export type DescriptionWriter<kind extends NodeKind = NodeKind> = (
 	node: nodeOfKind<kind>
@@ -369,13 +353,15 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 ): nodeImplementationOf<d> => {
 	const implementation: UnknownNodeImplementation = _ as never
 	if (implementation.hasAssociatedError) {
+		Object.assign(
+			implementation.defaults,
+			errorWriters,
+			errorWritersByCode[implementation.kind as never]
+		)
 		implementation.defaults.expected ??= ctx =>
 			"description" in ctx ?
 				(ctx.description as string)
 			:	implementation.defaults.description(ctx as never)
-		implementation.defaults.actual ??= writeActual
-		implementation.defaults.problem ??= writeProblem
-		implementation.defaults.message ??= writeMessage
 	}
 	return implementation as never
 }

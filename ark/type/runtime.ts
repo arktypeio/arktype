@@ -2,7 +2,7 @@ import type { BaseRoot, RootApply, StandardSchemaV1 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	ArkErrors,
-	resolvedConfig,
+	runtimeConfig,
 	runtimeLocale,
 	type Traversal
 } from "@ark/schema/runtime"
@@ -36,7 +36,7 @@ export {
 	maxAliasDepth,
 	maxAliasVisits,
 	mergeTransformed,
-	resolvedConfig,
+	runtimeConfig,
 	runtimeLocale,
 	TransformErrors,
 	Traversal,
@@ -98,7 +98,7 @@ export class Validator extends Callable<
 		this.expression = attributes.expression
 		this.description = attributes.description
 		this.meta = attributes.meta
-		this.onFail = this.meta.onFail ?? resolvedConfig.onFail
+		this.onFail = this.meta.onFail ?? runtimeConfig.onFail
 		this.allows = node.allows
 	}
 
