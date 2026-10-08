@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import type { BaseNode } from "@ark/schema"
 import { scope, type } from "arktype"
+import { cyclic10 } from "./generated/cyclic.ts"
 
 const referencedBesidesChildren = (node: BaseNode): BaseNode[] =>
 	node.hasKind("union") ? node.caseNodes
@@ -48,8 +49,10 @@ contextualize(() => {
 			type(["string", "number = 5", "...", "boolean[]"]).internal,
 			type("string.json.parse").to({ a: "string" }).internal,
 			types.holder.internal,
-			type({ a: types.shared, b: types.shared }).internal
-		]).filter(node => !node.includesAlias)
+			type({ a: types.shared, b: types.shared }).internal,
+			scope({ a: { b: "b" }, b: { "a?": "a", n: "number" } }).export().a
+				.internal
+		])
 
 		// a scope binds a copy of a foreign node, with its id, per reference
 		const nodesById: Record<string, BaseNode> = {}
@@ -80,5 +83,35 @@ contextualize(() => {
 		attest(morph.includesAlias).equals(true)
 		attest(T.internal.isCyclic).equals(false)
 		attest(T.internal.includesAlias).equals(true)
+	})
+
+	it("references stop at an alias", () => {
+		const A = scope({ a: { b: "b" }, b: { "a?": "a", n: "number" } }).export().a
+		const alias = A.internal.references.find(node => node.hasKind("alias"))!
+
+		attest(alias.expression).snap("$b")
+		attest(A.internal.references.includes(alias.resolution)).equals(false)
+		attest(
+			A.internal.select({ boundary: "references" }).includes(alias.resolution)
+		).equals(true)
+	})
+
+	it("selects what a type reaches through aliases", () => {
+		const types = scope(cyclic10).export()
+		for (const name of Object.keys(cyclic10) as (keyof typeof cyclic10)[]) {
+			const root = types[name].internal
+			const expected = new Set<BaseNode["id"]>()
+			const reach = (node: BaseNode) => {
+				if (expected.has(node.id)) return
+				expected.add(node.id)
+				for (const child of node.children) reach(child)
+				for (const referenced of referencedBesidesChildren(node))
+					reach(referenced)
+				if (node.hasKind("alias")) reach(node.resolution)
+			}
+			reach(root)
+			const selected = root.select({ boundary: "references" })
+			attest(selected.map(node => node.id).sort()).equals([...expected].sort())
+		}
 	})
 })
