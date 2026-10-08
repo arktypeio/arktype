@@ -8,6 +8,7 @@ import type {
 	ImportSpecifier,
 	Node
 } from "oxc-parser"
+import { relative } from "node:path"
 import type { PrecompileHost } from "./host.ts"
 import { SourceModule } from "./module.ts"
 import {
@@ -93,17 +94,23 @@ export type ImportTarget =
 
 export class ModuleGraph {
 	host: PrecompileHost
+	cwd: string | undefined
 	private modulesById: Record<string, SourceModule | ImportTarget> =
 		Object.create(null)
 	private arkBindings = new Map<Binding, boolean>()
 	private importsById: Record<string, string[]> = Object.create(null)
 
-	constructor(host: PrecompileHost) {
+	constructor(host: PrecompileHost, cwd?: string) {
 		this.host = host
+		this.cwd = cwd
+	}
+
+	pathOf(id: string): string {
+		return this.cwd === undefined ? id : relative(this.cwd, id)
 	}
 
 	add(id: string, source: string): SourceModule {
-		const module = new SourceModule(id, source)
+		const module = new SourceModule(id, source, this.pathOf(id))
 		this.modulesById[id] = module
 		return module
 	}
@@ -123,7 +130,7 @@ export class ModuleGraph {
 		if (!id) {
 			return {
 				kind: "unresolved",
-				message: `\`${specifier}\` cannot be resolved from ${importer.id}`
+				message: `\`${specifier}\` cannot be resolved from ${importer.path}`
 			}
 		}
 		if (id.includes("/node_modules/")) {
@@ -140,13 +147,20 @@ export class ModuleGraph {
 
 	private load(id: string, specifier: string): SourceModule | ImportTarget {
 		const source = this.host.readFile(id)
-		if (source === undefined)
-			return { kind: "unresolved", message: `${id} cannot be read` }
+		if (source === undefined) {
+			return {
+				kind: "unresolved",
+				message: `${this.pathOf(id)} cannot be read`
+			}
+		}
 		if (id.endsWith(".json")) {
 			try {
 				return { kind: "json", id, value: JSON.parse(source) }
 			} catch {
-				return { kind: "unresolved", message: `${id} is not valid JSON` }
+				return {
+					kind: "unresolved",
+					message: `${this.pathOf(id)} is not valid JSON`
+				}
 			}
 		}
 		if (!/\.[cm]?[jt]sx?$/.test(id)) {
@@ -155,7 +169,7 @@ export class ModuleGraph {
 				message: `\`${specifier}\` is not a JavaScript or TypeScript module`
 			}
 		}
-		return new SourceModule(id, source)
+		return new SourceModule(id, source, this.pathOf(id))
 	}
 
 	dependenciesOf(id: string): string[] {
@@ -258,7 +272,7 @@ export class ModuleGraph {
 		}
 		return {
 			kind: "unresolved",
-			message: `${module.id} has no export \`${name}\``
+			message: `${module.path} has no export \`${name}\``
 		}
 	}
 

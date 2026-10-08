@@ -1,5 +1,5 @@
 import type { ESLint, Linter, Rule } from "eslint"
-import { resolve, sep } from "node:path"
+import { resolve } from "node:path"
 import { createNodeHost, type NodeHostOptions } from "./host.ts"
 import { precompileModule, type PrecompileOptions } from "./precompile.ts"
 
@@ -35,7 +35,11 @@ const precompilable: Rule.RuleModule = {
 				context.sourceCode.text,
 				context.filename,
 				createNodeHost(opts),
-				{ ...opts, config: opts?.config && resolve(context.cwd, opts.config) }
+				{
+					...opts,
+					cwd: context.cwd,
+					config: opts?.config && resolve(context.cwd, opts.config)
+				}
 			)
 			for (const diagnostic of result.diagnostics) {
 				if (diagnostic.file !== context.filename) continue
@@ -48,10 +52,7 @@ const precompilable: Rule.RuleModule = {
 						diagnostic.message,
 						...diagnostic.reasons,
 						...(diagnostic.hint ? [diagnostic.hint] : [])
-					]
-						.join("\n")
-						.split(`${context.cwd}${sep}`)
-						.join("")
+					].join("\n")
 				})
 			}
 		}

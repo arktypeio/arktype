@@ -27,6 +27,8 @@ import { findSites, isFoldedHelper, type SiteCandidate } from "./sites.ts"
 export type PrecompileMode = "standalone" | "cache"
 
 export interface PrecompileOptions extends InterpreterOptions {
+	// the directory paths in messages are relative to
+	cwd?: string | undefined
 	// standalone builds ship a runtime instead of arktype, so every arktype expression must be folded
 	mode?: PrecompileMode | undefined
 	// the module whose `configure()` call sets the configuration
@@ -117,12 +119,15 @@ export class Precompiler {
 	interpreter: Interpreter
 	mode: PrecompileMode
 	config: string | undefined
+	// a site the mode cannot build fails a standalone build, while cache mode leaves it to runtime
+	private rejectionSeverity: Diagnostic["severity"]
 
 	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
-		this.graph = new ModuleGraph(host)
+		this.graph = new ModuleGraph(host, opts?.cwd)
 		this.interpreter = new Interpreter(this.graph, opts)
 		this.mode = opts?.mode ?? "standalone"
 		this.config = opts?.config
+		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
 
 	precompileModule(source: string, id: string): PrecompileResult {
@@ -135,7 +140,8 @@ export class Precompiler {
 						module,
 						module.program,
 						"syntax",
-						`${id} cannot be parsed: ${message}`,
+						"error",
+						`${module.path} cannot be parsed: ${message}`,
 						[]
 					)
 				),
@@ -166,7 +172,7 @@ export class Precompiler {
 		}
 		diagnostics.push(...this.checkConfiguration(module))
 		if (this.mode === "standalone")
-			diagnostics.push(...this.checkStandalone(module, candidates, sites))
+			diagnostics.push(...this.checkStandalone(module, candidates))
 		return {
 			sites,
 			diagnostics: diagnostics.sort((l, r) => l.start - r.start),
@@ -354,19 +360,16 @@ export class Precompiler {
 		module: SourceModule
 	): Diagnostic[] {
 		const node = candidate.state.node
-		const severity = this.mode === "standalone" ? "error" : "warning"
 		if (site.status === "rejected") {
 			return [
-				{
-					...this.diagnostic(
-						module,
-						node,
-						isCallback(rejectionOf(candidate.state)) ? "R2" : "R1",
-						`${module.snippetOf(node)} cannot be precompiled`,
-						site.reasons
-					),
-					severity
-				}
+				this.diagnostic(
+					module,
+					node,
+					isCallback(rejectionOf(candidate.state)) ? "R2" : "R1",
+					this.rejectionSeverity,
+					`${module.snippetOf(node)} cannot be precompiled`,
+					site.reasons
+				)
 			]
 		}
 		const result: Diagnostic[] = []
@@ -376,6 +379,7 @@ export class Precompiler {
 					module,
 					node,
 					"parse",
+					"warning",
 					`${module.snippetOf(node)} throws a ParseError`,
 					[site.parseError.message]
 				)
@@ -391,23 +395,22 @@ export class Precompiler {
 			const source = candidate.state.sourcesByValue.get(standIn.dynamic)
 			const [node, origin] =
 				source ? [source, module] : [standIn.node, standIn.module]
-			result.push({
-				...this.diagnostic(
+			result.push(
+				this.diagnostic(
 					origin,
 					node,
 					"R4",
+					"warning",
 					`\`${origin.snippetOf(node)}\` is not static, so the site accepts it only as a Standard Schema that is not a Type`,
 					chainOf(standIn.dynamic)
-				),
-				severity: "warning"
-			})
+				)
+			)
 		}
 		return result
 	}
 
 	private checkConfiguration(module: SourceModule): Diagnostic[] {
 		const result: Diagnostic[] = []
-		const severity = this.mode === "standalone" ? "error" : "warning"
 		let calls = 0
 		for (const reference of module.scopes.references) {
 			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
@@ -423,21 +426,21 @@ export class Precompiler {
 				this.config === undefined ?
 					"configure() is called, but the build has no `config` module"
 				: this.config !== module.id ?
-					`configure() is called outside the config module ${this.config}`
+					`configure() is called outside the config module ${this.graph.pathOf(this.config)}`
 				: calls > 1 ? "configure() is called more than once"
 				: undefined
 			const reasons = problem ? [] : this.configurationProblemsOf(call, module)
 			if (problem || reasons.length) {
-				result.push({
-					...this.diagnostic(
+				result.push(
+					this.diagnostic(
 						module,
 						call,
 						"R3",
+						this.rejectionSeverity,
 						problem ?? `${module.snippetOf(call)} is not static`,
 						reasons
-					),
-					severity
-				})
+					)
+				)
 			}
 		}
 		return result
@@ -477,8 +480,7 @@ export class Precompiler {
 
 	private checkStandalone(
 		module: SourceModule,
-		candidates: SiteCandidate[],
-		sites: Site[]
+		candidates: SiteCandidate[]
 	): Diagnostic[] {
 		const result: Diagnostic[] = []
 		for (const reference of module.scopes.references) {
@@ -501,10 +503,7 @@ export class Precompiler {
 					parent.property.name === "errors")
 			)
 				continue
-			if (
-				sites.some(site => site.start <= id.start && id.end <= site.end) ||
-				candidates.some(candidate => contains(candidate.state.node, id))
-			)
+			if (candidates.some(candidate => contains(candidate.state.node, id)))
 				continue
 			const fn = enclosingFunctionOf(id)
 			if (fn && isFoldedHelper(fn, module)) continue
@@ -513,6 +512,7 @@ export class Precompiler {
 					module,
 					id,
 					"R4",
+					"error",
 					`\`${binding.name}\` is used outside a precompiled site`,
 					[]
 				)
@@ -525,12 +525,13 @@ export class Precompiler {
 		module: SourceModule,
 		node: Node,
 		rule: Rule,
+		severity: Diagnostic["severity"],
 		message: string,
 		reasons: string[]
 	): Diagnostic {
 		const [line, column] = module.lineAndColumnOf(node.start)
 		return {
-			severity: rule === "parse" ? "warning" : "error",
+			severity,
 			rule,
 			file: module.id,
 			start: node.start,

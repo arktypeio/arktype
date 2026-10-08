@@ -831,7 +831,7 @@ export class Interpreter {
 				value: new DynamicValue(
 					ctx.module,
 					node,
-					`\`${binding.name}\` is imported from ${target.module.id}`,
+					`\`${binding.name}\` is imported from ${target.module.path}`,
 					result.value
 				)
 			}

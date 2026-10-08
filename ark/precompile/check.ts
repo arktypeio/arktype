@@ -1,5 +1,5 @@
 import { globSync, readFileSync } from "node:fs"
-import { relative, resolve, sep } from "node:path"
+import { relative, resolve } from "node:path"
 import { createNodeHost, type NodeHostOptions } from "./host.ts"
 import {
 	Precompiler,
@@ -7,9 +7,7 @@ import {
 	type PrecompileOptions
 } from "./precompile.ts"
 
-export interface CheckOptions extends PrecompileOptions, NodeHostOptions {
-	cwd?: string | undefined
-}
+export interface CheckOptions extends PrecompileOptions, NodeHostOptions {}
 
 export interface CheckReport {
 	lines: string[]
@@ -32,6 +30,7 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 		.sort()
 	const precompiler = new Precompiler(createNodeHost(opts), {
 		...opts,
+		cwd,
 		config: opts?.config && resolve(cwd, opts.config)
 	})
 	const report: CheckReport = {
@@ -46,12 +45,9 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 			file
 		)
 		const path = relative(cwd, file)
-		// positions in reasons are absolute, so relativize the whole text
 		const entries: [number, string][] = result.diagnostics.map(diagnostic => [
 			diagnostic.start,
 			renderDiagnostic({ ...diagnostic, file: relative(cwd, diagnostic.file) })
-				.split(`${cwd}${sep}`)
-				.join("")
 		])
 		for (const site of result.sites) {
 			report.sites++

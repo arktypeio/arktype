@@ -3,14 +3,17 @@ import { ModuleScopes } from "./scope.ts"
 
 export class SourceModule {
 	id: string
+	// the id as messages print it
+	path: string
 	source: string
 	program: Program
 	scopes: ModuleScopes
 	parseErrors: string[]
 	private lineStarts: number[] | undefined
 
-	constructor(id: string, source: string) {
+	constructor(id: string, source: string, path: string) {
 		this.id = id
+		this.path = path
 		this.source = source
 		const result = parseSync(id, source, {
 			lang: langOf(id),
@@ -36,7 +39,7 @@ export class SourceModule {
 
 	positionOf(node: Node): string {
 		const [line, column] = this.lineAndColumnOf(node.start)
-		return `${this.id}:${line}:${column}`
+		return `${this.path}:${line}:${column}`
 	}
 
 	textOf(node: Node): string {
