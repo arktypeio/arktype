@@ -1,9 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	ArkError,
 	ArkErrors,
-	type ArkError,
 	rootSchema,
 	schemaScope,
+	TraversalError,
 	type Traversal
 } from "@ark/schema"
 
@@ -276,6 +277,30 @@ contextualize(() => {
 				}
 			]
 		})
+	})
+
+	it("instanceof recognizes errors from a duplicate installation", () => {
+		// a copied prototype fails native instanceof like a duplicate's would
+		const duplicate = <t extends object>(o: t): t =>
+			Object.setPrototypeOf(
+				o,
+				Object.create(
+					null,
+					Object.getOwnPropertyDescriptors(Object.getPrototypeOf(o))
+				)
+			)
+		const duplicateErrors = duplicate(nEvenAtLeast2({ n: 1 }) as ArkErrors)
+		const duplicateError = duplicate(duplicateErrors.issues[0])
+		const thrown = Object.assign(new Error(), { arkErrors: duplicateErrors })
+
+		attest(duplicateErrors instanceof ArkErrors).equals(true)
+		attest(duplicateErrors instanceof ArkError).equals(false)
+		attest(duplicateError instanceof ArkError).equals(true)
+		attest(duplicateError instanceof ArkErrors).equals(false)
+		attest(thrown instanceof TraversalError).equals(true)
+		attest(new Error() instanceof TraversalError).equals(false)
+		attest(nEvenAtLeast2({ n: 2 }) instanceof ArkErrors).equals(false)
+		attest({ " arkKind": "errors" } instanceof ArkErrors).equals(false)
 	})
 
 	it("message", () => {

@@ -41,7 +41,7 @@ import {
 } from "./render.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { Traversal } from "./traversal.ts"
-import { arkKind } from "./utils.ts"
+import { arkKind, hasArkKind } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 
@@ -635,6 +635,26 @@ export class TraversalError extends Error {
 		})
 	}
 }
+
+// recognize errors from another copy of arktype by their brand,
+// non-writable so instanceof can be inlined
+Object.defineProperty(ArkError, Symbol.hasInstance, {
+	value: (data: unknown) => hasErrorBrand(data, "error")
+})
+
+Object.defineProperty(ArkErrors, Symbol.hasInstance, {
+	value: (data: unknown) => hasErrorBrand(data, "errors")
+})
+
+Object.defineProperty(TraversalError, Symbol.hasInstance, {
+	value: (data: unknown) =>
+		data instanceof Error &&
+		(data as TraversalError).arkErrors instanceof ArkErrors
+})
+
+// parsed JSON can carry the brand but not a method
+const hasErrorBrand = (data: unknown, kind: "error" | "errors"): boolean =>
+	hasArkKind(data, kind) && typeof data.toJSON === "function"
 
 const writeTraversalMessage = (errors: ArkErrors): string =>
 	selectsLocale() ? readIn(selectLocale(), errors, writeTraversalMessage)
