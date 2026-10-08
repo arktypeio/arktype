@@ -2,18 +2,18 @@
 
 This audit covers the 223 issues open on arktypeio/arktype on 2026-10-07. Every bug-like report was reproduced on arktype 2.2.8 (`main` at 1ca8ceaf4, the current npm release) and on the featherduster branch (1e4c240c3). An independent verifier then re-ran and challenged each bug verdict, close recommendation and note. It revised 69 of the 223 verdicts. Nothing was posted to GitHub. Findings worth sharing with a reporter are in [Notes by issue](#notes-by-issue).
 
-| Category                                                                               | Issues                                      | Suggested action                        |
-| -------------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------- |
-| [Fix tracker](#fix-tracker)                                                            | 8 fixed, 5 awaiting a decision, 3 in review | post the comments on fixed issues       |
-| [Easy-win bugs](#easy-win-bugs)                                                        | 16                                          | fix on featherduster                              |
-| [Clear bugs](#clear-bugs)                                                              | 28                                          | schedule; 16 need a decision first      |
-| [Fixed on featherduster](#fixed-on-featherduster)                                                           | 22                                          | close when featherduster ships                    |
-| [Probably close: out of date](#probably-close-out-of-date)                             | 22                                          | close now                               |
-| [Probably close: out of scope or incorrect](#probably-close-out-of-scope-or-incorrect) | 21                                          | close, with the note where there is one |
-| [Needs info](#needs-info)                                                              | 2                                           | ask the reporter                        |
-| [Relevant features](#relevant-features)                                                | 77                                          | keep; 62 need a design decision         |
-| [Docs](#docs)                                                                          | 14                                          | keep                                    |
-| [Internal](#internal)                                                                  | 21                                          | keep or close at your discretion        |
+| Category                                                                               | Issues                                       | Suggested action                        |
+| -------------------------------------------------------------------------------------- | -------------------------------------------- | --------------------------------------- |
+| [Fix tracker](#fix-tracker)                                                            | 10 fixed, 3 awaiting a decision, 3 in review | post the comments on fixed issues       |
+| [Easy-win bugs](#easy-win-bugs)                                                        | 16                                           | fix on featherduster                              |
+| [Clear bugs](#clear-bugs)                                                              | 28                                           | schedule; 16 need a decision first      |
+| [Fixed on featherduster](#fixed-on-featherduster)                                                           | 22                                           | close when featherduster ships                    |
+| [Probably close: out of date](#probably-close-out-of-date)                             | 22                                           | close now                               |
+| [Probably close: out of scope or incorrect](#probably-close-out-of-scope-or-incorrect) | 21                                           | close, with the note where there is one |
+| [Needs info](#needs-info)                                                              | 2                                            | ask the reporter                        |
+| [Relevant features](#relevant-features)                                                | 77                                           | keep; 62 need a design decision         |
+| [Docs](#docs)                                                                          | 14                                           | keep                                    |
+| [Internal](#internal)                                                                  | 21                                           | keep or close at your discretion        |
 
 Two cross-cutting lists follow the categories: [featherduster breaking-change candidates](#featherduster-breaking-change-candidates) and [side findings](#side-findings), which are problems the audit found that no open issue tracks, including two featherduster behavior changes the CHANGELOG doesn't mention.
 
@@ -33,8 +33,8 @@ This section is updated as fixes from this audit land. A fix that only corrects 
 | [#1555](#fix-1555) | fixed in featherduster            | 0332e7a9d            |
 | [#1548](#fix-1548) | fixed in featherduster            | 09fb6f7f9            |
 | [#1530](#fix-1530) | fixed in featherduster            | 196ced06c            |
-| [#1577](#fix-1577) | fix awaiting a decision | b4aa2c78d            |
-| [#1430](#fix-1430) | fix awaiting a decision | a8f407e5b            |
+| [#1577](#fix-1577) | fixed in featherduster            | 46acabbf1            |
+| [#1430](#fix-1430) | fixed in featherduster            | 8c66cc7c1            |
 | [#1600](#fix-1600) | fix awaiting a decision | 90d9162af            |
 | [#1676](#fix-1676) | fix awaiting a decision | 32b915ba6            |
 | [#1088](#fix-1088) | fix awaiting a decision | dfb854c11            |
@@ -238,15 +238,13 @@ m?.[4] // "d" (previously typed at index 2)
 
 Numbered backreferences to a group in another branch now resolve to that group. A named backreference to a group declared in an earlier branch still widens to `string`.
 
-### Ready, awaiting a decision
-
 ### <a id="fix-1577"></a>[#1577](https://github.com/arktypeio/arktype/issues/1577) The inferred type of X cannot be named without a reference to ark/util when using Brand-Type
 
-Fix ready on `issue-audit` (b4aa2c78d), not landed. **Decision:** Adds five types to `arktype`'s root exports: `Brand`, `Json`, `GenericAst`, `ArkErrorCode` and `Regex`. It is additive, but each one becomes public API to keep.
+Fixed in featherduster by 46acabbf1.
 
-Comment to post once it lands (`<sha>` is its commit):
+Comment to post:
 
-Fixed on the `featherduster` branch (#1685) in <sha>.
+Fixed on the `featherduster` branch (#1685) in 46acabb.
 
 Under pnpm, `@ark/util` and `@ark/schema` usually aren't resolvable from your package, and `arktype` didn't re-export the types its inferred types reference, so TypeScript could only name them through the `.pnpm/` store path and rejected it as non-portable. `arktype` now re-exports `Brand`, `Json`, `GenericAst`, `ArkErrorCode` and `Regex` as types, so your example emits:
 
@@ -261,11 +259,11 @@ On 2.2.8, @mattidupre's workaround above works: add `@ark/util` (and `@ark/schem
 
 ### <a id="fix-1430"></a>[#1430](https://github.com/arktypeio/arktype/issues/1430) Improve sequence min/max length expressions/descriptions
 
-Fix ready on `issue-audit` (a8f407e5b), not landed. **Decision:** Picks a format for expressions that used to drop length bounds and protos: `number[] >= 2`, `{ foo: string } & Date` and `(string >= 2)[]`. Error messages and `.expression` output for these types change.
+Fixed in featherduster by 8c66cc7c1.
 
-Comment to post once it lands (`<sha>` is its commit):
+Comment to post:
 
-Fixed on the `featherduster` branch (#1685) in <sha>.
+Fixed on the `featherduster` branch (#1685) in 8c66cc7.
 
 When a type had a structure, its expression and description were written from the structure alone, so array length bounds were dropped and distinct types printed identically. Bounds the sequence doesn't already imply are now written after it:
 
@@ -281,6 +279,8 @@ type(["number"]).expression // "[number]"
 The same bug dropped a proto alongside props, so `type("Date").and({ foo: "string" })` now prints `{ foo: string } & Date` rather than `{ foo: string }`. Joined intersections are also parenthesized when nested: `type("(string > 1)[]").expression` is `"(string >= 2)[]"` (was `"string >= 2[]"`).
 
 One difference from the snapshots above: a range is written `number[] <= 5 & >= 1`, not `1 < number[] <= 5`. `[number, ...number[]]` prints as `number[] >= 1`, since it's the same type as `number[] > 0`.
+
+### Ready, awaiting a decision
 
 ### <a id="fix-1600"></a>[#1600](https://github.com/arktypeio/arktype/issues/1600) Using `.to` after a `.pipe` throws a `ParseError: instanceOf operand must be a function (was undefined)`
 
@@ -386,11 +386,11 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 | [#1473](https://github.com/arktypeio/arktype/issues/1473) | `schema`  | trivial | [fixed in featherduster](#fix-1473)            | The `new Function` CSP probe runs on import even when `jitless: true` is configured, which logs a CSP violation in strict-CSP browsers.                                                                                                                                 |
 | [#1529](https://github.com/arktypeio/arktype/issues/1529) | `docs`    | trivial | [fixed in featherduster](#fix-1529)            | In the docs playground, `regex()` from arkregex is typed `any` because the bundled arkregex declarations it loads are missing the internal `s` namespace.                                                                                                               |
 | [#1548](https://github.com/arktypeio/arktype/issues/1548) | `util`    | trivial | [fixed in featherduster](#fix-1548)            | With @cloudflare/workers-types and no DOM lib, the File, Blob, URL and Headers keywords infer as `never`.                                                                                                                                                               |
-| [#1577](https://github.com/arktypeio/arktype/issues/1577) | `arktype` | trivial | [fix awaiting a decision](#fix-1577) | Under pnpm, exporting a branded (or `Json`-typed) Type fails declaration emit (TS2883) because `Brand` and `Json` live in `@ark/util` and aren't re-exported from `arktype`.                                                                                            |
+| [#1577](https://github.com/arktypeio/arktype/issues/1577) | `arktype` | trivial | [fixed in featherduster](#fix-1577)            | Under pnpm, exporting a branded (or `Json`-typed) Type fails declaration emit (TS2883) because `Brand` and `Json` live in `@ark/util` and aren't re-exported from `arktype`.                                                                                            |
 | [#1600](https://github.com/arktypeio/arktype/issues/1600) | `schema`  | trivial | [fix awaiting a decision](#fix-1600) | Any definition-taking method (`.to`, `.or`, `.and`, ...) on a type produced by `type.Record(...)` parses string definitions as @ark/schema schemas, so `"string[]"` crashes with `instanceOf operand must be a function`.                                               |
 | [#1121](https://github.com/arktypeio/arktype/issues/1121) | `schema`  | small   | [fixed in featherduster](#fix-1121)            | Plain {} objects used as name maps inherit Object.prototype members. The original register case is fixed, but alias names like toString/constructor/valueOf still cause false ParseErrors and internal TypeErrors.                                                      |
 | [#1160](https://github.com/arktypeio/arktype/issues/1160) | `arktype` | small   | [fix in review](#fix-1160)           | .required() on a key with a default keeps Default&lt;...> in the type, so inferIn still says the key is optional even though runtime requires it.                                                                                                                       |
-| [#1430](https://github.com/arktypeio/arktype/issues/1430) | `schema`  | small   | [fix awaiting a decision](#fix-1430) | Array/tuple types with minLength/maxLength constraints drop them from `.expression` and `.description`.                                                                                                                                                                 |
+| [#1430](https://github.com/arktypeio/arktype/issues/1430) | `schema`  | small   | [fixed in featherduster](#fix-1430)            | Array/tuple types with minLength/maxLength constraints drop them from `.expression` and `.description`.                                                                                                                                                                 |
 | [#1530](https://github.com/arktypeio/arktype/issues/1530) | `regex`   | small   | [fixed in featherduster](#fix-1530)            | With capture groups in several alternation branches, the inferred captures tuples are too short: earlier branches lack trailing `undefined`s, and later branches are padded only for the first branch's groups, which also shifts the inferred index of later captures. |
 | [#1555](https://github.com/arktypeio/arktype/issues/1555) | `util`    | small   | [fixed in featherduster](#fix-1555)            | Importing arktype throws `ReferenceError: Blob is not defined` (or URL/FormData/...) in runtimes lacking web platform globals (WeChat mini programs, AudioWorklet, bare V8/QuickJS).                                                                                    |
 | [#1676](https://github.com/arktypeio/arktype/issues/1676) | `schema`  | small   | [fix awaiting a decision](#fix-1676) | Types built from fresh functions (narrow/pipe/match/defaults) are never garbage collected because each function is register()ed into the global $ark registry. On 2.2.8 this also pins the nodes built from them; on featherduster only the function and its closure stay pinned. |
@@ -477,7 +477,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1577](https://github.com/arktypeio/arktype/issues/1577) The inferred type of X cannot be named without a reference to ark/util when using Brand-Type
 
-`arktype` · effort trivial · 2 reactions · [fix awaiting a decision](#fix-1577) · [note](#note-1577) · 2.2.8: reproduces, featherduster: reproduces
+`arktype` · effort trivial · 2 reactions · [fixed in featherduster](#fix-1577) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** Under pnpm, exporting a branded (or `Json`-typed) Type fails declaration emit (TS2883) because `Brand` and `Json` live in `@ark/util` and aren't re-exported from `arktype`.
 
@@ -517,7 +517,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1430](https://github.com/arktypeio/arktype/issues/1430) Improve sequence min/max length expressions/descriptions
 
-`schema` · effort small · [fix awaiting a decision](#fix-1430) · [note](#note-1430) · 2.2.8: reproduces, featherduster: reproduces
+`schema` · effort small · [fixed in featherduster](#fix-1430) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** Array/tuple types with minLength/maxLength constraints drop them from `.expression` and `.description`.
 
@@ -1592,7 +1592,7 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 
 ## Notes by issue
 
-These 136 notes were drafted as issue comments and then kept here for review instead. Each states what was verified on 2.2.8 and the featherduster branch, a root cause, a workaround, or a related issue, and every code sample in them was run. They refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
+These 134 notes were drafted as issue comments and then kept here for review instead. Each states what was verified on 2.2.8 and the featherduster branch, a root cause, a workaround, or a related issue, and every code sample in them was run. They refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
 
 ### <a id="note-462"></a>[#462](https://github.com/arktypeio/arktype/issues/462) arktype dedicated Promise handling
 
@@ -2532,17 +2532,6 @@ A per-key `.configure({ message: ctx => `Date of Birth ${ctx.problem}` })` also 
 
 Pointers for anyone picking this up: the light theme is now `arkthemes/arklight.json` (ark/themes/arklight.json). Dark mode is forced in two places: ark/docs/app/layout.tsx hard-codes the `dark` class on `<html>` and passes `theme: { enabled: false }` to `RootProvider`, and `shikiConfig` in ark/docs/lib/shiki.ts maps both `dark` and `light` to `arkDarkTheme`.
 
-### <a id="note-1430"></a>[#1430](https://github.com/arktypeio/arktype/issues/1430) Improve sequence min/max length expressions/descriptions
-
-Still reproduces on arktype 2.2.8, and distinct types end up with the same expression:
-
-```ts
-type("number[] > 1").expression // "number[]"
-type("number[] > 1 | string[] < 1").expression // "number[] | string[]"
-```
-
-In ark/schema/roots/intersection.ts, both the `description` default and `writeIntersectionExpression` return the structure's string early whenever a structure is present, so `minLength`/`maxLength`/`exactLength` in `prestructurals` are never written. They only need to stay omitted when the sequence already implies them (`sequence.impliedSiblings`, e.g. `[number] == 1`).
-
 ### <a id="note-1431"></a>[#1431](https://github.com/arktypeio/arktype/issues/1431) Error-specific property aliases
 
 Duplicate of #1418. A partial workaround on arktype 2.2.8 is to configure `message` on the value. It doesn't cover missing keys, because the parent object reports those:
@@ -3183,19 +3172,6 @@ regex(p) // TS2345: Argument of type 'string' is not assignable to parameter of 
 regex.as(p) // compiles, Regex<string, {}>
 regex.as<`${string}@${string}`>(p) // if you know the shape of its matches
 ```
-
-### <a id="note-1577"></a>[#1577](https://github.com/arktypeio/arktype/issues/1577) The inferred type of X cannot be named without a reference to ark/util when using Brand-Type
-
-Still reproduces on arktype 2.2.8 in a pnpm layout (TypeScript 6.0 and 7.1). `Json` from `@ark/util` leaks the same way as `Brand`:
-
-```ts
-export const B = type("string").brand("X")
-// TS2883: The inferred type of 'B' cannot be named without a reference to 'Brand' from '.pnpm/@ark+util@0.56.7/node_modules/@ark/util'.
-export const N = type("string.json.parse")
-// TS2883: The inferred type of 'N' cannot be named without a reference to 'Json' from '.pnpm/@ark+util@0.56.7/node_modules/@ark/util'.
-```
-
-Root cause: `arktype`'s entry (`ark/type/index.ts`) re-exports only `Hkt`, `inferred` and `ParseError` from `@ark/util`. Adding `type Brand, type Json` to that re-export makes both emit as `import("arktype").Brand<string, "X">` / `import("arktype").Json`.
 
 ### <a id="note-1580"></a>[#1580](https://github.com/arktypeio/arktype/issues/1580) Optional object index signatures do not work.
 
