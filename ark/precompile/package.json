@@ -33,6 +33,9 @@
 	"files": [
 		"out"
 	],
+	"bin": {
+		"arktype-precompile": "out/cli.js"
+	},
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts"

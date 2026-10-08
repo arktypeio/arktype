@@ -8,9 +8,9 @@ export interface PrecompileHost {
 
 export interface NodeHostOptions {
 	// export conditions to resolve with, in priority order
-	conditions?: string[]
+	conditions?: string[] | undefined
 	// a tsconfig whose `paths` the resolver follows, found from each importer when omitted
-	tsconfig?: string
+	tsconfig?: string | undefined
 }
 
 export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
