@@ -4,12 +4,12 @@ This audit covers the 223 issues open on arktypeio/arktype on 2026-10-07. Every 
 
 | Category                                                                               | Issues                                      | Suggested action                        |
 | -------------------------------------------------------------------------------------- | ------------------------------------------- | --------------------------------------- |
-| [Fix tracker](#fix-tracker)                                                            | 8 fixed, 6 awaiting a decision, 3 in review | post the comments on fixed issues       |
-| [Easy-win bugs](#easy-win-bugs)                                                        | 17                                          | fix on featherduster                              |
+| [Fix tracker](#fix-tracker)                                                            | 8 fixed, 5 awaiting a decision, 3 in review | post the comments on fixed issues       |
+| [Easy-win bugs](#easy-win-bugs)                                                        | 16                                          | fix on featherduster                              |
 | [Clear bugs](#clear-bugs)                                                              | 28                                          | schedule; 16 need a decision first      |
 | [Fixed on featherduster](#fixed-on-featherduster)                                                           | 22                                          | close when featherduster ships                    |
 | [Probably close: out of date](#probably-close-out-of-date)                             | 22                                          | close now                               |
-| [Probably close: out of scope or incorrect](#probably-close-out-of-scope-or-incorrect) | 20                                          | close, with the note where there is one |
+| [Probably close: out of scope or incorrect](#probably-close-out-of-scope-or-incorrect) | 21                                          | close, with the note where there is one |
 | [Needs info](#needs-info)                                                              | 2                                           | ask the reporter                        |
 | [Relevant features](#relevant-features)                                                | 77                                          | keep; 62 need a design decision         |
 | [Docs](#docs)                                                                          | 14                                          | keep                                    |
@@ -38,7 +38,6 @@ This section is updated as fixes from this audit land. A fix that only corrects 
 | [#1600](#fix-1600) | fix awaiting a decision | 90d9162af            |
 | [#1676](#fix-1676) | fix awaiting a decision | 32b915ba6            |
 | [#1088](#fix-1088) | fix awaiting a decision | dfb854c11            |
-| [#1576](#fix-1576) | fix awaiting a decision | 1954a2038            |
 | [#1445](#fix-1445) | fix in review           | `fix/match-order`    |
 | [#1023](#fix-1023) | fix in review           | `fix/infer`          |
 | [#1160](#fix-1160) | fix in review           | `fix/infer`          |
@@ -359,10 +358,6 @@ Not changed: `instanceof type.errors` in your own code still only matches its ow
 
 Workaround on 2.2.8: convert in the morph, e.g. `out instanceof otherType.errors ? ctx.error({ message: out.summary }) : out`.
 
-### <a id="fix-1576"></a>[#1576](https://github.com/arktypeio/arktype/issues/1576) is ArkRegex a drop-in replacement for `new RegExp` even with dynamic patterns?
-
-Fix ready on `fix/regex` (1954a2038), not landed. **Decision:** `regex()` accepts a pattern typed as plain `string`, as `new RegExp` does. Its captures are `string | undefined` and its `groups` may be `undefined`. Today it is a type error, which contradicts the docs' "drop-in replacement" claim. Reviewed clean.
-
 ### In review
 
 ### <a id="fix-1445"></a>[#1445](https://github.com/arktypeio/arktype/issues/1445) ParseError when `match`ing against a [string, {[string]: unknown}]
@@ -391,7 +386,6 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 | [#1473](https://github.com/arktypeio/arktype/issues/1473) | `schema`  | trivial | [fixed in featherduster](#fix-1473)            | The `new Function` CSP probe runs on import even when `jitless: true` is configured, which logs a CSP violation in strict-CSP browsers.                                                                                                                                 |
 | [#1529](https://github.com/arktypeio/arktype/issues/1529) | `docs`    | trivial | [fixed in featherduster](#fix-1529)            | In the docs playground, `regex()` from arkregex is typed `any` because the bundled arkregex declarations it loads are missing the internal `s` namespace.                                                                                                               |
 | [#1548](https://github.com/arktypeio/arktype/issues/1548) | `util`    | trivial | [fixed in featherduster](#fix-1548)            | With @cloudflare/workers-types and no DOM lib, the File, Blob, URL and Headers keywords infer as `never`.                                                                                                                                                               |
-| [#1576](https://github.com/arktypeio/arktype/issues/1576) | `regex`   | trivial | [fix awaiting a decision](#fix-1576) | `regex(p)` with a non-literal `string` pattern fails to compile (parameter inferred as `never`), contradicting the documented 'drop-in replacement for new RegExp()'.                                                                                                   |
 | [#1577](https://github.com/arktypeio/arktype/issues/1577) | `arktype` | trivial | [fix awaiting a decision](#fix-1577) | Under pnpm, exporting a branded (or `Json`-typed) Type fails declaration emit (TS2883) because `Brand` and `Json` live in `@ark/util` and aren't re-exported from `arktype`.                                                                                            |
 | [#1600](https://github.com/arktypeio/arktype/issues/1600) | `schema`  | trivial | [fix awaiting a decision](#fix-1600) | Any definition-taking method (`.to`, `.or`, `.and`, ...) on a type produced by `type.Record(...)` parses string definitions as @ark/schema schemas, so `"string[]"` crashes with `instanceOf operand must be a function`.                                               |
 | [#1121](https://github.com/arktypeio/arktype/issues/1121) | `schema`  | small   | [fixed in featherduster](#fix-1121)            | Plain {} objects used as name maps inherit Object.prototype members. The original register case is fixed, but alias names like toString/constructor/valueOf still cause false ParseErrors and internal TypeErrors.                                                      |
@@ -480,16 +474,6 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 **Evidence:** Reproduced on both worktrees (TS 7 and TS 6) with the real workers-types `index.d.ts` and `lib: ["ESNext"]`, matching the reporter's tsconfig: file/blob/url/headers infer `never`; FormData, Request, Response, ArrayBuffer and string are fine. Root cause: `instantiateConstructors` (`ark/util/objectKinds.ts:125-131` on featherduster) only reads instance types from `typeof globalThis`, which includes `declare var` globals but not `declare class` ones; workers-types declares Blob, File, Headers, URL as classes. A one-branch fallback to the explicitly typed `builtinConstructors[k]`, guarded against `any` for [#1246](https://github.com/arktypeio/arktype/issues/1246), typechecks correctly under the same config.
 
 **Fix:** `ark/util/objectKinds.ts:125-131` (`instantiateConstructors`): add a final branch before `never`: `: 0 extends 1 & builtinConstructors[k] ? never : InstanceType<builtinConstructors[k]>`, so class-declared globals resolve via the explicit `platformConstructors` type (`Blob: typeof Blob` etc.) while unresolved (`any`) globals still map to never per [#1246](https://github.com/arktypeio/arktype/issues/1246). Verified in scratch against the real workers-types `d.ts` on TS 7 and TS 6.
-
-### [#1576](https://github.com/arktypeio/arktype/issues/1576) is ArkRegex a drop-in replacement for `new RegExp` even with dynamic patterns?
-
-`regex` · effort trivial · 1 reaction · [fix awaiting a decision](#fix-1576) · [note](#note-1576) · 2.2.8: reproduces, featherduster: reproduces
-
-**Summary:** `regex(p)` with a non-literal `string` pattern fails to compile (parameter inferred as `never`), contradicting the documented 'drop-in replacement for new RegExp()'.
-
-**Evidence:** Reproduced identically on both worktrees under tsgo 7.1 and TS 6.0 (`ark/regex/regex.ts` is unchanged): `regex.parse<string>` evaluates to `never`, so `regex.validate` is `never` and `regex(p)` / `regex(p, "g")` error with TS2345, while template patterns with a dynamic part widen to `Regex<string, {}>` and `regex.as(p)` compiles. `ark/regex/README.md` and the blog advertise 'A drop-in replacement for new RegExp()', so rejecting plain `string` is wrong; a `string extends src` guard fixes it (verified in scratch, literal parsing and error cases unaffected).
-
-**Fix:** `ark/regex/regex.ts:72-74`: `export type parse<src extends string, flags extends Flags = ""> = string extends src ? Regex<string, { flags: flags; captures: IndexedCaptures; names: NamedCaptures }> : parseState<State.initialize<src, flags>>` (validate then returns `src`); add a test in ark/regex/**tests**.
 
 ### [#1577](https://github.com/arktypeio/arktype/issues/1577) The inferred type of X cannot be named without a reference to ark/util when using Brand-Type
 
@@ -1131,6 +1115,10 @@ In each of these, the behavior is documented or intended, or the report is mista
 
   Meta keys outside TypeMeta are rejected unless declared through the documented `ArkEnv.meta()` interface extension (configuration#metadata). With that declaration the call type-checks and the keys pass through to JSON Schema. Verified with tsc and at runtime on both worktrees. Such meta is not validated at runtime (`"ABC"` passes `pattern: "^[a-z]+$"`), so a regex literal is the right tool for `pattern`. A typed `jsonSchema` meta property for arbitrary JSON Schema is the maintainer's own [#1571](https://github.com/arktypeio/arktype/issues/1571).
 
+- **[#1576](https://github.com/arktypeio/arktype/issues/1576) is ArkRegex a drop-in replacement for `new RegExp` even with dynamic patterns?** (`regex` · 1 reaction · [note](#note-1576)). `regex(p)` with a non-literal `string` pattern is a type error. That is by design: `regex()` validates its pattern at the type level, and a pattern that can't be proven valid is rejected. "Drop-in replacement" refers to runtime parity with `new RegExp()`.
+
+  Reproduced on 2.2.8 and featherduster: `regex.parse<string>` is `never`, so `regex(p)` reports TS2345, while `regex.as(p)` and a template with a dynamic part (`regex(`^${p}$`)`, `Regex<string, {}>`) compile. The maintainer confirmed the rejection is intended. The error doesn't say why the pattern was rejected, since the parameter is just `never`.
+
 ### Answered questions
 
 Each answer was run on both lines and is in the issue's note.
@@ -1580,7 +1568,7 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 
 ### Unfiled bugs
 
-- **Unanchored digit patterns infer an unsound type (2.2.8 and featherduster).** `type("/\\d+/")` infers `` `${number}` `` but accepts `"x1y"`. The cause is in `appendNonRedundant`/`prependNonRedundant` (`ark/regex/state.ts:743-768`): they merge `` `${number}` `` into an adjacent `string` because `` `${number}` `` extends `string`. Merging only when the neighbor is exactly `` `${number}` `` fixes it, and that type-checks in scratch. It is related to [#1663](https://github.com/arktypeio/arktype/issues/1663) but distinct from it. Found on [#839](https://github.com/arktypeio/arktype/issues/839). The one-line fix proposed here turned out to be unsound, since TypeScript matches a placeholder followed by another placeholder against a single character. The fix on `fix/regex` widens such types (`\d+` infers `string`). Review is still finding new false rejections in quantified groups, so it awaits a decision.
+- **Unanchored digit patterns infer an unsound type (2.2.8 and featherduster).** `type("/\\d+/")` infers `` `${number}` `` but accepts `"x1y"`. The cause is in `appendNonRedundant`/`prependNonRedundant` (`ark/regex/state.ts:743-768`): they merge `` `${number}` `` into an adjacent `string` because `` `${number}` `` extends `string`. Merging only when the neighbor is exactly `` `${number}` `` fixes it, and that type-checks in scratch. It is related to [#1663](https://github.com/arktypeio/arktype/issues/1663) but distinct from it. Found on [#839](https://github.com/arktypeio/arktype/issues/839). The one-line fix proposed here turned out to be unsound, since TypeScript matches a placeholder followed by another placeholder against a single character. The fix on `fix/regex` widens such types (`\d+` infers `string`). A further round, applying the fix the last review proposed for quantified groups, is in review, and landing waits for approval of the widened types.
 - **`string[] & number[]` is `unknown[]` on 2.2.8 and accepts `["x"]`.** On featherduster it is `[]`, which is correct. No issue tracks it, so nothing needs closing. Found on [#1088](https://github.com/arktypeio/arktype/issues/1088).
 - **Flat tuple expressions silently drop operands at runtime.** They are a type error, but at runtime the extra operands are dropped (`string | false | true`). Separately, `type("string&number")` throws "unsatisfiable" at runtime but isn't a type error. Found on [#585](https://github.com/arktypeio/arktype/issues/585).
 - **A numeric finite index is a type error but works at runtime.** With `index: "1 | 3 | 5 | 7"`, `{ "[index]": "index" }` reports "Indexed key definition must be a string or symbol", but at runtime it expands fine. Found on [#584](https://github.com/arktypeio/arktype/issues/584).
@@ -3185,17 +3173,16 @@ T.toJsonSchema({ target: "draft-07", fallback: { morph: ctx => ctx.base } })
 
 ### <a id="note-1576"></a>[#1576](https://github.com/arktypeio/arktype/issues/1576) is ArkRegex a drop-in replacement for `new RegExp` even with dynamic patterns?
 
-Reproduces on arkregex 0.0.13 (TypeScript 6.0 and 7.1). `regex.parse<string>` evaluates to `never` (`ark/regex/regex.ts`), so `regex.validate` does too and a non-literal pattern is rejected:
+This is by design: `regex()` validates its pattern at the type level, so a pattern typed as plain `string` can't be proven valid and is rejected. "Drop-in replacement" refers to runtime parity: `regex(src, flags)` is `new RegExp(src, flags)` and accepts every pattern `new RegExp` does.
+
+For a pattern only known at runtime, use `regex.as`:
 
 ```ts
 declare const p: string
-regex(p)
-// TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
-regex(`^${p}$`) // compiles, Regex<string, {}>
-regex.as(p) // compiles
+regex(p) // TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
+regex.as(p) // compiles, Regex<string, {}>
+regex.as<`${string}@${string}`>(p) // if you know the shape of its matches
 ```
-
-`regex.as(p)` (optionally with explicit type arguments) accepts any `string`, so it works for dynamic patterns.
 
 ### <a id="note-1577"></a>[#1577](https://github.com/arktypeio/arktype/issues/1577) The inferred type of X cannot be named without a reference to ark/util when using Brand-Type
 
