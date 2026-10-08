@@ -2,6 +2,15 @@ import { throwError } from "@ark/util"
 
 export type ArktypeEntry = "arktype" | "arktype/runtime"
 
+// a test pins this to package.json's version
+export const arktypeVersion = "2.2.8"
+
+// arktype pins its dependencies, so its version identifies everything compiled code calls
+export const assertRuntimeVersion = (version: string): void => {
+	if (version !== arktypeVersion)
+		throwError(writeRuntimeVersionMismatchMessage(version, arktypeVersion))
+}
+
 const loadedEntryKey = Symbol.for("arktype.entry")
 
 // in standalone mode every import of arktype resolves to arktype/runtime, so loading both means one didn't
@@ -26,3 +35,17 @@ export type writeEntryConflictMessage<
 	entry extends ArktypeEntry,
 	loaded extends ArktypeEntry
 > = `${entry} can't load beside ${loaded}. In standalone mode, every import of arktype must resolve to arktype/runtime.`
+
+export const writeRuntimeVersionMismatchMessage = <
+	artifactVersion extends string,
+	runtimeVersion extends string
+>(
+	artifactVersion: artifactVersion,
+	runtimeVersion: runtimeVersion
+): writeRuntimeVersionMismatchMessage<artifactVersion, runtimeVersion> =>
+	`This artifact was built with arktype ${artifactVersion}, but ${runtimeVersion} is installed. Rebuild it with the installed arktype.`
+
+export type writeRuntimeVersionMismatchMessage<
+	artifactVersion extends string,
+	runtimeVersion extends string
+> = `This artifact was built with arktype ${artifactVersion}, but ${runtimeVersion} is installed. Rebuild it with the installed arktype.`

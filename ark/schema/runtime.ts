@@ -1,4 +1,4 @@
-import { flatMorph, throwError } from "@ark/util"
+import { flatMorph } from "@ark/util"
 import type { ResolvedConfig } from "./config.ts"
 import { errorWriters, errorWritersByCode } from "./shared/errorWriters.ts"
 import type { ExpectedWriter } from "./shared/errors.ts"
@@ -10,14 +10,6 @@ export * from "./shared/transform.ts"
 export * from "./shared/traversal.ts"
 export { isAbsent } from "./shared/utils.ts"
 export { arrayIndexMatcher } from "./structure/shared.ts"
-
-// compiled code and the runtime it calls change together, so an artifact runs only on the version it was built for
-export const abiVersion = 1
-
-export const assertAbiVersion = (version: number): void => {
-	if (version !== abiVersion)
-		throwError(writeAbiVersionMismatchMessage(version, abiVersion))
-}
 
 // node error contexts carry their descriptions, so expected reads them rather than describing a node
 const writeExpected: ExpectedWriter = ctx => ctx.description!
@@ -41,17 +33,3 @@ export const runtimeConfig: ResolvedConfig = {
 	jitless: true,
 	onFail: null
 } as never
-
-export const writeAbiVersionMismatchMessage = <
-	artifactVersion extends number,
-	runtimeVersion extends number
->(
-	artifactVersion: artifactVersion,
-	runtimeVersion: runtimeVersion
-): writeAbiVersionMismatchMessage<artifactVersion, runtimeVersion> =>
-	`This artifact was built for version ${artifactVersion} of arktype's runtime, but version ${runtimeVersion} is installed. Rebuild it with the installed arktype.`
-
-export type writeAbiVersionMismatchMessage<
-	artifactVersion extends number,
-	runtimeVersion extends number
-> = `This artifact was built for version ${artifactVersion} of arktype's runtime, but version ${runtimeVersion} is installed. Rebuild it with the installed arktype.`

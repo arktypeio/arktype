@@ -20,6 +20,7 @@ import {
 	serializePrimitive,
 	throwError
 } from "@ark/util"
+import { arktypeVersion } from "./entry.ts"
 import type { type } from "./keywords/keywords.ts"
 import * as runtime from "./runtime.ts"
 
@@ -194,7 +195,7 @@ export { validator${i} as ${JSON.stringify(name)} }`
 	})
 	return `import * as runtime from "arktype/runtime"
 
-runtime.assertAbiVersion(${runtime.abiVersion})
+runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})
 runtime.claimEntry("arktype/runtime")
 
 ${declarations.join("\n")}

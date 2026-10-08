@@ -2,14 +2,14 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { $ark, hasArkKind } from "@ark/schema"
 import { scope, type } from "arktype"
+import { arktypeVersion } from "arktype/internal/entry.ts"
 import { de } from "arktype/locales/de"
 import {
 	precompileStandalone,
 	writeUnprecompilableMessage
 } from "arktype/internal/standalone.ts"
 import {
-	abiVersion,
-	writeAbiVersionMismatchMessage,
+	writeRuntimeVersionMismatchMessage,
 	writeEntryConflictMessage,
 	writeUnavailableMemberMessage
 } from "arktype/runtime"
@@ -230,15 +230,15 @@ contextualize(() => {
 	it("checks the runtime's version before reading its exports", async () => {
 		const mismatched = precompileStandalone({ T: type("string") })
 			.replace(
-				`assertAbiVersion(${abiVersion})`,
-				`assertAbiVersion(${abiVersion + 1})`
+				`assertRuntimeVersion("${arktypeVersion}")`,
+				`assertRuntimeVersion("0.0.0")`
 			)
 			.replace("runtime.Validator", "runtime.NextValidator")
 		const error = await importBesideArktype(bundle(mismatched).js).catch(
 			(e: Error) => e
 		)
 		attest(error.message).equals(
-			writeAbiVersionMismatchMessage(abiVersion + 1, abiVersion)
+			writeRuntimeVersionMismatchMessage("0.0.0", arktypeVersion)
 		)
 	})
 

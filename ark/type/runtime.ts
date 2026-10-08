@@ -17,7 +17,6 @@ import type { StringType } from "./variants/string.ts"
 // a bundle with code splitting drops a star export from another package
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 export {
-	abiVersion,
 	aliasVisits,
 	allowsAcyclic,
 	allowsInContext,
@@ -29,7 +28,6 @@ export {
 	ArkError,
 	ArkErrors,
 	arrayIndexMatcher,
-	assertAbiVersion,
 	copyOf,
 	isAbsent,
 	isArkErrorResult,
@@ -41,8 +39,7 @@ export {
 	TransformErrors,
 	Traversal,
 	TraversalError,
-	traverseKey,
-	writeAbiVersionMismatchMessage
+	traverseKey
 } from "@ark/schema/runtime"
 export {
 	isValidDate,
@@ -51,7 +48,12 @@ export {
 	ParseError,
 	printable
 } from "@ark/util"
-export { claimEntry, writeEntryConflictMessage } from "./entry.ts"
+export {
+	assertRuntimeVersion,
+	claimEntry,
+	writeEntryConflictMessage,
+	writeRuntimeVersionMismatchMessage
+} from "./entry.ts"
 export * from "./keywords/functions.ts"
 
 // the predicate writers read a keyword's phrase for an error it raised
