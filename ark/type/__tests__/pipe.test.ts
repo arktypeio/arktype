@@ -170,6 +170,14 @@ contextualize(() => {
 			attest(throwing(Object.create(null)).issues[0].actual).snap(
 				"aborted due to error:\n    {}\n"
 			)
+			const cyclic: any = new Error("cyclic")
+			cyclic.self = cyclic
+			attest(JSON.parse(JSON.stringify(throwing(cyclic)))[0].actual).snap(
+				"aborted due to error:\n    Error: cyclic\n"
+			)
+			attest(JSON.parse(JSON.stringify(throwing(5n)))[0].actual).snap(
+				"aborted due to error:\n    5\n"
+			)
 		})
 
 		it("configured text reaches try errors", () => {

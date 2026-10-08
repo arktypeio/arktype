@@ -736,7 +736,6 @@ contextualize(() => {
 					path: ["k"],
 					code: "discriminant",
 					discriminantKind: "unit",
-					cases: [1.5, 2.5],
 					onKey: true,
 					absent: false,
 					description: "1.5 or 2.5",
@@ -850,6 +849,31 @@ contextualize(() => {
 					.or({ v: { toString: "'c'" } })
 				const error = (Proto({}) as type.errors).issues[0]
 				attest(error.hasCode("discriminant") && error.absent).equals(true)
+			}
+		})
+
+		it("keep their path when merged", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const Disc = $.type({ k: "'a'", x: "string" }).or({
+					k: "'b'",
+					y: "number"
+				})
+				const T = $.type({ v: $.type("object").pipe(o => Disc(o)) })
+				const error = (T({ v: { k: "c" } }) as type.errors).issues[0]
+				attest(error.toString()).snap('v.k must be "a" or "b" (was "c")')
+				attest(error.transform(input => input).propString).equals("v.k")
+			}
+		})
+
+		it("serialize with bigint cases", () => {
+			for (const jitless of [false, true]) {
+				const T = scope({}, { jitless })
+					.type({ k: "1n", a: "string" })
+					.or({ k: "2n", b: "number" })
+				attest(JSON.parse(JSON.stringify(T({ k: "x" })))[0].message).snap(
+					'k must be 1n or 2n (was "x")'
+				)
 			}
 		})
 

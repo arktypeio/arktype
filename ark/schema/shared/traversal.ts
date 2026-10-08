@@ -165,10 +165,12 @@ export class Traversal {
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	>
 	error(input: ArkErrorInput): ArkError {
+		// an error reads its text from its input when read, so a caller's
+		// later change to an object it passed must not reach it
 		const errCtx: ArkErrorContextInput =
 			typeof input === "object" ?
 				input.code ?
-					input
+					{ ...input }
 				:	{ ...input, code: "predicate" }
 			:	{ code: "predicate", expected: input }
 		return this.errorFromContext(errCtx)

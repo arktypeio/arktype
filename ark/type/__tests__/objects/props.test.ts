@@ -259,5 +259,22 @@ contextualize(() => {
 				]
 			})
 		})
+
+		it("serializes without its tree", () => {
+			const T = type({ amount: "0n | 1n" })
+			attest(JSON.parse(JSON.stringify(T({})))).snap([
+				{
+					data: {},
+					path: ["amount"],
+					code: "required",
+					missingValueDescription: "0n or 1n",
+					meta: {},
+					expected: "0n or 1n",
+					actual: "missing",
+					problem: "must be 0n or 1n (was missing)",
+					message: "amount must be 0n or 1n (was missing)"
+				}
+			])
+		})
 	})
 })

@@ -50,10 +50,9 @@ export class ArkError<
 		super()
 		let prefixPath: array<PropertyKey> | undefined
 		let relativePath: array<PropertyKey> | undefined
-		if ("prefixPath" in input || "relativePath" in input)
-			({ prefixPath, relativePath, ...input } = input)
-		else input = { ...input }
 		if (input.code === "union") {
+			prefixPath = input.prefixPath
+			relativePath = input.relativePath
 			// flatten union errors to avoid repeating context like "foo must be foo must be"...
 			let flat: ArkError[] = []
 			for (const innerError of input.errors) {
@@ -61,24 +60,29 @@ export class ArkError<
 					innerError.hasCode("union") ? innerError.errors : [innerError]
 				flat = flat.length ? appendUnique(flat, innerFlat) : [...innerFlat]
 			}
-			input.errors =
-				!prefixPath && !relativePath ?
-					flat
-				:	flat.map(e =>
-						e.transform(
-							e =>
-								({
-									...e,
-									path: conflatenateAll(prefixPath, e.path, relativePath)
-								}) as never
+			input = {
+				...input,
+				errors:
+					!prefixPath && !relativePath ?
+						flat
+					:	flat.map(e =>
+							e.transform(
+								e =>
+									({
+										...e,
+										path: conflatenateAll(prefixPath, e.path, relativePath)
+									}) as never
+							)
 						)
-					)
+			}
 		}
 		this.input = input as never
 		this.ctx = ctx
 		// assigning defines the same property unless this has or inherits k, e.g. propString
 		for (const k in input) {
-			if (!(k in this)) (this as any)[k] = input[k as never]
+			if (k === "relativePath") relativePath = input.relativePath
+			else if (k === "prefixPath") prefixPath = input.prefixPath
+			else if (!(k in this)) (this as any)[k] = input[k as never]
 			// path and data are assigned below, and text supplied for a slot
 			// stays in input, where its getter reads it
 			else if (k !== "path" && k !== "data" && !isSlot(k))
@@ -92,20 +96,20 @@ export class ArkError<
 		if (relativePath) basePath.push(...relativePath)
 		if (prefixPath) basePath.unshift(...prefixPath)
 		this.path = new ReadonlyPath(...basePath)
-		// transform and toJSON spread input.path over this.path
-		if (input.path && (prefixPath || relativePath)) input.path = this.path
 		this.data = ("data" in input ? input.data : data) as never
 	}
 
 	transform(
 		f: (input: ArkErrorContextInput<code>) => ArkErrorContextInput
 	): ArkError {
+		// input's paths are already in this.path
+		const { path, relativePath, prefixPath, ...input } = this.input
 		return new ArkError(
 			f({
 				data: this.data,
 				path: this.path,
-				...this.input
-			}),
+				...input
+			} as never),
 			this.ctx
 		) as never
 	}
@@ -163,15 +167,14 @@ export class ArkError<
 	}
 
 	toJSON(): JsonObject {
-		return {
-			data: this.data,
-			path: this.path,
-			...this.input,
-			expected: this.expected,
-			actual: this.actual,
-			problem: this.problem,
-			message: this.message
-		} as never
+		const json: Record<string, unknown> = { data: this.data, path: this.path }
+		for (const k in this.input)
+			if (!(k in excludedFromJson)) json[k] = this.input[k as never]
+		json.expected = this.expected
+		json.actual = this.actual
+		json.problem = this.problem
+		json.message = this.message
+		return json as never
 	}
 
 	toString(): string {
@@ -181,6 +184,20 @@ export class ArkError<
 	throw(): never {
 		throw this
 	}
+}
+
+// this.path includes the input's paths, and the rest reference values,
+// which may not serialize
+const excludedFromJson = {
+	path: 1,
+	relativePath: 1,
+	prefixPath: 1,
+	predicate: 1,
+	morph: 1,
+	cause: 1,
+	missing: 1,
+	valueMeta: 1,
+	cases: 1
 }
 
 const isSlot = (k: string) =>

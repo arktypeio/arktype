@@ -280,6 +280,16 @@ contextualize(() => {
 		)
 	})
 
+	it("reject keeps the text it was given", () => {
+		const input = { code: "predicate" as const, expected: "odd" }
+		const Odd = type("number").narrow(
+			(n, ctx) => n % 2 === 1 || ctx.reject(input)
+		)
+		const out = Odd(2)
+		input.expected = "even"
+		attest(out.toString()).snap("must be odd (was 2)")
+	})
+
 	it("unknown is narrowable", () => {
 		const unknownPredicate854 = () => true
 		const T = type("unknown").narrow(unknownPredicate854)
