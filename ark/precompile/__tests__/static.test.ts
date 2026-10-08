@@ -460,6 +460,54 @@ const B = type((o?.a).b === undefined ? "string" : "number")`)
 			])
 		})
 
+		it("opaque values arktype reads", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+export function make(v: unknown, n: number, p: (s: string) => boolean) {
+	const A = type("string").and(type.unit(v))
+	const B = type.string.atMostLength(n)
+	const C = type("string").narrow(p)
+	const D = type({ a: "string" }).configure({ examples: [v] })
+	const E = type({ a: v })
+	return [A, B, C, D, E]
+}`)
+			).snap([
+				"3:12 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
+				"4:12 rejected (Key predicate is not valid on maxLength schema)\n  arktype holds `n` as a value rather than a definition, so it must be static\n  `n` is a parameter of make (/main.ts:2:34); its value is known only at runtime",
+				"5:12 rejected\n  arktype reads `p` while defining the type, so it must be static\n  `p` is a parameter of make (/main.ts:2:45); its value is known only at runtime",
+				"6:12 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
+				"7:12 accepted { a: (In: unknown) => Out<unknown> }"
+			])
+		})
+
+		it("reflection on arktype values", () => {
+			attest(
+				statusesOf(`import { type, scope } from "arktype"
+const A = type({ a: "string" })
+const B = type({ [Object.entries(A).find(([k]) => k === "id")![1] as string]: "string" })
+const C = type({ [Object.keys(A)[0]]: "string" })
+const $ = scope({ a: "string" }).export()
+const D = type.enumerated(...Object.keys($))`)
+			).snap([
+				"2:11 accepted { a: string }",
+				"3:11 rejected\n  `Object.entries(A)` reflects on a value other than an object literal or Module",
+				"4:11 rejected\n  `Object.keys(A)` reflects on a value other than an object literal or Module",
+				"5:11 accepted",
+				'6:11 accepted "a"'
+			])
+		})
+
+		it("identity of arktype values", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type(type("string") === type("string") ? "number" : "boolean")
+const B = type([type("string")].includes(type("string")) ? "number" : "boolean")`)
+			).snap([
+				'2:11 rejected\n  `type("string") === type("string")` compares arktype values by identity, which is unspecified',
+				'3:11 rejected\n  `[type("string")].includes(type("string"))` compares an arktype value by identity, which is unspecified'
+			])
+		})
+
 		it("environment", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

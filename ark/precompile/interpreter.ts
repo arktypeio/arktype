@@ -1,4 +1,4 @@
-import { hasArkKind } from "@ark/schema"
+import { arkKind, hasArkKind } from "@ark/schema"
 import { ParseError } from "@ark/util"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
@@ -16,6 +16,8 @@ import type {
 import {
 	globalsByName,
 	intrinsics,
+	isArkValue,
+	isPlainContainer,
 	methodsByReceiverKind,
 	pureBuiltins,
 	type MethodReceiverKind
@@ -496,9 +498,15 @@ export class Interpreter {
 		if (dynamic) return dynamic.asOperand()
 		switch (node.operator) {
 			case "===":
-				return left === right
 			case "!==":
-				return left !== right
+				if (isArkValue(left) && isArkValue(right)) {
+					return new DynamicValue(
+						ctx.module,
+						node,
+						`\`${ctx.module.snippetOf(node)}\` compares arktype values by identity, which is unspecified`
+					)
+				}
+				return node.operator === "===" ? left === right : left !== right
 			case "instanceof":
 				return new DynamicValue(
 					ctx.module,
@@ -743,8 +751,7 @@ export class Interpreter {
 				)
 			}
 		}
-		if (!isArkValue(result.value, this.standIns))
-			mergeTrace(ctx.trace, result.trace)
+		if (!isArkValue(result.value)) mergeTrace(ctx.trace, result.trace)
 		return isTracked(result.value) && this.escapeOf(binding, module) ?
 				{
 					value: result.value,
@@ -1638,18 +1645,25 @@ export class Interpreter {
 			isCalled: false,
 			isDefinition: false
 		}
-		// an opaque value is a Standard Schema in a definition and a function elsewhere
+		const read = (): never => {
+			throw new DynamicValue(
+				dynamic.module,
+				dynamic.node,
+				`arktype reads \`${dynamic.module.snippetOf(dynamic.node)}\` while defining the type, so it must be static`,
+				dynamic
+			)
+		}
+		// arktype may only ask whether an opaque value is a Standard Schema, since anything else it reads decides the type
 		const proxy = new Proxy(class {}, {
 			getPrototypeOf: () => Object.prototype,
-			has: (target, key) => {
-				if (key !== "~standard") return Reflect.has(target, key)
+			has: (_, key) => {
+				if (key !== "~standard") read()
 				standIn.isDefinition = true
 				return true
 			},
-			get: (target, key) =>
-				key === "length" ? 1
-				: key === "name" ? ""
-				: Reflect.get(target, key),
+			get: (_, key) => (key === arkKind ? undefined : read()),
+			ownKeys: read,
+			getOwnPropertyDescriptor: read,
 			apply: () => {
 				standIn.isCalled = true
 				throw this.calledAtDefinition(standIn, undefined)
@@ -1669,32 +1683,9 @@ export const isDynamic = (value: unknown): value is DynamicValue =>
 export const isObjectLike = (value: unknown): value is object =>
 	(typeof value === "object" && value !== null) || typeof value === "function"
 
-export type PlainContainer = Record<PropertyKey, unknown> | unknown[]
-
-export const isPlainContainer = (value: unknown): value is PlainContainer => {
-	if (Array.isArray(value)) return true
-	if (typeof value !== "object" || value === null || intrinsics.has(value))
-		return false
-	const prototype = Object.getPrototypeOf(value)
-	return prototype === Object.prototype || prototype === null
-}
-
 // Types, matchers and typed functions run their arguments through validation
 export const isValidator = (value: unknown): boolean =>
 	hasArkKind(value, "root") || value instanceof InternalTypedFn
-
-const isArkValue = (
-	value: unknown,
-	standIns: WeakMap<object, StandIn>
-): boolean =>
-	isObjectLike(value) &&
-	!isPlainContainer(value) &&
-	!standIns.has(value) &&
-	!intrinsics.has(value) &&
-	!isDynamic(value) &&
-	!(value instanceof ModuleNamespace) &&
-	!(value instanceof Date) &&
-	!(value instanceof RegExp)
 
 // objects whose contents the program can change after the build reads them
 const isTracked = (value: unknown): value is object =>

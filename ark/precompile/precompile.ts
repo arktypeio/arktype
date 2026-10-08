@@ -1,5 +1,6 @@
 import { ParseError, registeredNameOf } from "@ark/util"
 import type { CallExpression, Node } from "oxc-parser"
+import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
 	contains,
@@ -14,7 +15,6 @@ import {
 	findDynamic,
 	Interpreter,
 	isObjectLike,
-	isPlainContainer,
 	type InterpreterOptions,
 	type Read,
 	type SiteState
@@ -329,6 +329,14 @@ export class Precompiler {
 			source ? [source, module]
 			: standIn ? [standIn.node, standIn.module]
 			: this.interpreter.symbolSources.get(value as symbol)!
+		if (standIn?.kind === "opaque" && !standIn.isDefinition) {
+			return new DynamicValue(
+				origin,
+				node,
+				`arktype holds \`${origin.snippetOf(node)}\` as a value rather than a definition, so it must be static`,
+				standIn.dynamic
+			)
+		}
 		return {
 			file: origin.id,
 			start: node.start,

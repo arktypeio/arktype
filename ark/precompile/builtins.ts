@@ -1,4 +1,5 @@
-import { builtinConstructors } from "@ark/util"
+import { arkKind, hasArkKind } from "@ark/schema"
+import { builtinConstructors, hasDomain } from "@ark/util"
 
 export interface PureBuiltin {
 	name: string
@@ -67,6 +68,25 @@ const plainDataOnly = (args: unknown[]): string | undefined => {
 	}
 }
 
+// an arktype value's own properties are its implementation, which holds registry names and node ids
+const withoutArkInternals = (args: unknown[]) =>
+	(
+		args.some(
+			arg =>
+				hasDomain(arg, "object") &&
+				!isPlainContainer(arg) &&
+				!hasArkKind(arg, "module")
+		)
+	) ?
+		"reflects on a value other than an object literal or Module"
+	:	undefined
+
+// arktype leaves identity between equal definitions unspecified
+const withoutArkIdentity = (args: unknown[]) =>
+	args.some(isArkValue) ?
+		"compares an arktype value by identity, which is unspecified"
+	:	undefined
+
 export const pureBuiltins = new Map<Function, PureBuiltin>()
 
 const definePure = (
@@ -110,12 +130,13 @@ definePure(
 	Object,
 	"Object",
 	["keys", "values", "entries", "isFrozen", "getOwnPropertyNames"],
-	{ readsOnly: true }
+	{ check: withoutArkInternals, readsOnly: true }
 )
-definePure(Object, "Object", ["fromEntries", "hasOwn"])
+definePure(Object, "Object", ["hasOwn"], { check: withoutArkInternals })
+definePure(Object, "Object", ["fromEntries"])
 definePure(Object, "Object", ["freeze"], { readsOnly: true, writes: true })
 definePure(Object, "Object", ["assign"], {
-	check: withoutProtoKeys,
+	check: args => withoutArkInternals(args) ?? withoutProtoKeys(args),
 	readsOnly: true,
 	writes: true
 })
@@ -189,95 +210,123 @@ export type MethodReceiverKind =
 	| "array"
 	| "date"
 
-const methodsOf = (
-	prototype: object,
-	names: readonly string[]
-): Record<string, Function> =>
-	Object.setPrototypeOf(
-		Object.fromEntries(names.map(name => [name, Reflect.get(prototype, name)])),
-		null
-	)
-
 export const methodsByReceiverKind: Record<
 	MethodReceiverKind,
 	Record<string, Function>
 > = {
-	string: methodsOf(String.prototype, [
-		"at",
-		"charAt",
-		"charCodeAt",
-		"codePointAt",
-		"concat",
-		"endsWith",
-		"includes",
-		"indexOf",
-		"lastIndexOf",
-		"normalize",
-		"padEnd",
-		"padStart",
-		"repeat",
-		"replace",
-		"replaceAll",
-		"slice",
-		"split",
-		"startsWith",
-		"substring",
-		"toLowerCase",
-		"toUpperCase",
-		"toString",
-		"trim",
-		"trimEnd",
-		"trimStart",
-		"valueOf"
-	]),
-	number: methodsOf(Number.prototype, [
-		"toExponential",
-		"toFixed",
-		"toPrecision",
-		"toString",
-		"valueOf"
-	]),
-	boolean: methodsOf(Boolean.prototype, ["toString", "valueOf"]),
-	bigint: methodsOf(BigInt.prototype, ["toString", "valueOf"]),
-	array: methodsOf(Array.prototype, [
-		"at",
-		"concat",
-		"every",
-		"filter",
-		"find",
-		"findIndex",
-		"findLast",
-		"findLastIndex",
-		"flat",
-		"flatMap",
-		"includes",
-		"indexOf",
-		"join",
-		"lastIndexOf",
-		"map",
-		"reduce",
-		"reduceRight",
-		"slice",
-		"some",
-		"toReversed",
-		"toSorted",
-		"toSpliced",
-		"with"
-	]),
-	date: methodsOf(Date.prototype, [
-		"getTime",
-		"toISOString",
-		"toJSON",
-		"valueOf",
-		"getUTCDate",
-		"getUTCDay",
-		"getUTCFullYear",
-		"getUTCHours",
-		"getUTCMilliseconds",
-		"getUTCMinutes",
-		"getUTCMonth",
-		"getUTCSeconds"
-	])
+	string: Object.create(null),
+	number: Object.create(null),
+	boolean: Object.create(null),
+	bigint: Object.create(null),
+	array: Object.create(null),
+	date: Object.create(null)
+}
+
+const defineMethods = (
+	kind: MethodReceiverKind,
+	owner: Function,
+	names: readonly string[],
+	opts?: Omit<PureBuiltin, "name">
+) => {
+	for (const name of names) {
+		const method = Reflect.get(owner.prototype, name)
+		methodsByReceiverKind[kind][name] = method
+		pureBuiltins.set(method, {
+			name: `${owner.name}.prototype.${name}`,
+			...opts
+		})
+	}
+}
+
+defineMethods("string", String, [
+	"at",
+	"charAt",
+	"charCodeAt",
+	"codePointAt",
+	"concat",
+	"endsWith",
+	"includes",
+	"indexOf",
+	"lastIndexOf",
+	"normalize",
+	"padEnd",
+	"padStart",
+	"repeat",
+	"replace",
+	"replaceAll",
+	"slice",
+	"split",
+	"startsWith",
+	"substring",
+	"toLowerCase",
+	"toUpperCase",
+	"toString",
+	"trim",
+	"trimEnd",
+	"trimStart",
+	"valueOf"
+])
+defineMethods("number", Number, [
+	"toExponential",
+	"toFixed",
+	"toPrecision",
+	"toString",
+	"valueOf"
+])
+defineMethods("boolean", Boolean, ["toString", "valueOf"])
+defineMethods("bigint", BigInt, ["toString", "valueOf"])
+defineMethods("array", Array, [
+	"at",
+	"concat",
+	"every",
+	"filter",
+	"find",
+	"findIndex",
+	"findLast",
+	"findLastIndex",
+	"flat",
+	"flatMap",
+	"join",
+	"map",
+	"reduce",
+	"reduceRight",
+	"slice",
+	"some",
+	"toReversed",
+	"toSorted",
+	"toSpliced",
+	"with"
+])
+defineMethods("array", Array, ["includes", "indexOf", "lastIndexOf"], {
+	check: withoutArkIdentity
+})
+defineMethods("date", Date, [
+	"getTime",
+	"toISOString",
+	"toJSON",
+	"valueOf",
+	"getUTCDate",
+	"getUTCDay",
+	"getUTCFullYear",
+	"getUTCHours",
+	"getUTCMilliseconds",
+	"getUTCMinutes",
+	"getUTCMonth",
+	"getUTCSeconds"
+])
+
+export const isArkValue = (value: unknown): boolean =>
+	hasDomain(value, "object") &&
+	(value as { [arkKind]?: unknown })[arkKind] !== undefined
+
+export type PlainContainer = Record<PropertyKey, unknown> | unknown[]
+
+export const isPlainContainer = (value: unknown): value is PlainContainer => {
+	if (Array.isArray(value)) return true
+	if (typeof value !== "object" || value === null || intrinsics.has(value))
+		return false
+	const prototype = Object.getPrototypeOf(value)
+	return prototype === Object.prototype || prototype === null
 }
 
 export const intrinsics = new Set<unknown>([globalThis])
