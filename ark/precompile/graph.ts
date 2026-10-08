@@ -387,6 +387,20 @@ const readsArguments = (fn: FunctionNode): boolean => {
 	return result
 }
 
+// the binding a function or class is declared as, or a `const` holding it
+export const bindingOfFunction = (
+	node: Node,
+	module: SourceModule
+): Binding | undefined => {
+	const id =
+		node.type === "FunctionDeclaration" || node.type === "ClassDeclaration" ?
+			node.id
+		: node.parent?.type === "VariableDeclarator" && node.parent.init === node ?
+			node.parent.id
+		:	undefined
+	return id ? module.scopes.bindingsById.get(id) : undefined
+}
+
 export const contains = (outer: Node, inner: Node): boolean =>
 	outer.start <= inner.start && inner.end <= outer.end
 

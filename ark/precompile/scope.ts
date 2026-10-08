@@ -505,6 +505,13 @@ export class ModuleScopes {
 		declaration: Node,
 		scope = this.scope
 	): void {
+		// a name declared again, like a merged enum or a second function declaration, is not static
+		const existing = scope.bindings[name]
+		if (existing) {
+			existing.writes.push(id)
+			this.bindingsById.set(id, existing)
+			return
+		}
 		const binding: Binding = {
 			name,
 			kind,
@@ -516,8 +523,8 @@ export class ModuleScopes {
 			exportNames: [],
 			isAmbient: false
 		}
-		scope.bindings[name] ??= binding
-		this.bindingsById.set(id, scope.bindings[name])
+		scope.bindings[name] = binding
+		this.bindingsById.set(id, binding)
 	}
 
 	private reference(

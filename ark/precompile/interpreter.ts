@@ -28,6 +28,7 @@ import {
 } from "./dynamic.ts"
 import { findEscape } from "./escapes.ts"
 import {
+	bindingOfFunction,
 	contains,
 	isFunctionNode,
 	runtimeMembers,
@@ -121,8 +122,8 @@ export interface Context {
 	env: Environment | undefined
 	trace: Trace
 	site: SiteState | undefined
-	// the top-level statement being evaluated, before which its module's lexical bindings are uninitialized
-	origin: { module: SourceModule; start: number } | undefined
+	// the site or declaration being evaluated, which runs before bindings declared after it are initialized
+	origin: { module: SourceModule; node: Node } | undefined
 	depth: number
 }
 
@@ -180,10 +181,7 @@ export class Interpreter {
 			env: undefined,
 			trace: site.trace,
 			site,
-			origin:
-				isTopLevel(site.node) ?
-					{ module: site.module, start: site.node.start }
-				:	undefined,
+			origin: { module: site.module, node: site.node },
 			depth: 0
 		}
 		try {
@@ -692,32 +690,27 @@ export class Interpreter {
 				"is declared in a TypeScript namespace or enum"
 			: binding.isAmbient ? "is declared without a value"
 			: binding.writes.length ?
-				`is assigned at ${module.positionOf(binding.writes[0])}, so its value at the site is not known`
+				`is ${module.scopes.bindingsById.has(binding.writes[0]) ? "declared again" : "assigned"} at ${module.positionOf(binding.writes[0])}, so its value at the site is not known`
 			: module.scopes.hasDirectEval ? "is in a module that calls `eval`"
 			: isLoopVariable(binding) ? "is a loop variable"
 			: undefined
 		if (problem) {
 			return {
-				value: new DynamicValue(
-					module,
-					node,
-					`\`${binding.name}\` ${problem}`,
-					undefined,
-					"opaque"
-				)
+				value: new DynamicValue(module, node, `\`${binding.name}\` ${problem}`)
 			}
 		}
 		if (
 			ctx.origin?.module === module &&
-			binding.scope === module.scopes.root &&
 			binding.kind !== "function" &&
-			binding.declaration.start > ctx.origin.start
+			contains(binding.scope.node, ctx.origin.node) &&
+			runPointOf(ctx.origin.node, binding.scope.node, module) <
+				binding.declaration.start
 		) {
 			return {
 				value: new DynamicValue(
 					module,
 					node,
-					`\`${binding.name}\` is read before its declaration (${module.positionOf(binding.id)})`
+					`\`${binding.name}\` can be read before its declaration (${module.positionOf(binding.id)})`
 				)
 			}
 		}
@@ -1789,7 +1782,7 @@ const rootContext = (
 	env: undefined,
 	trace: emptyTrace(),
 	site: undefined,
-	origin: node && isTopLevel(node) ? { module, start: node.start } : undefined,
+	origin: node && { module, node },
 	depth: 0
 })
 
@@ -1807,10 +1800,31 @@ const pushUnique = (
 	if (!helpers.some(([n]) => n === node)) helpers.push([node, module])
 }
 
-const isTopLevel = (node: Node): boolean => {
-	for (let parent = node.parent; parent; parent = parent.parent)
-		if (isFunctionNode(parent) || parent.type === "ClassBody") return false
-	return true
+// the earliest offset in `scope` at which code at `node` can run: its own, or the first that can call the function holding it
+const runPointOf = (
+	node: Node,
+	scope: Node,
+	module: SourceModule,
+	seen = new Set<Node>()
+): number => {
+	for (
+		let parent = node.parent;
+		parent && parent !== scope;
+		parent = parent.parent
+	) {
+		if (parent.type === "ClassBody")
+			return runPointOf(parent.parent!, scope, module, seen)
+		if (!isFunctionNode(parent)) continue
+		if (seen.has(parent)) return Infinity
+		seen.add(parent)
+		const binding = bindingOfFunction(parent, module)
+		if (!binding) return runPointOf(parent, scope, module, seen)
+		let result = Infinity
+		for (const reference of binding.references)
+			result = Math.min(result, runPointOf(reference.id, scope, module, seen))
+		return result
+	}
+	return node.start
 }
 
 const isBoundFunction = (node: FunctionNode): boolean =>

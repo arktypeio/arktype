@@ -44,6 +44,19 @@ const A = type(\`\${min} < number < \${max}\`)`)
 			).snap(["4:11 accepted number < 5 & > 1"])
 		})
 
+		it("reads after a declaration", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const later = () => type(x)
+var x = "string"
+export const A = later()
+export function make() {
+	return type(y)
+}
+const y = "number"`)
+			).snap(["4:18 accepted string"])
+		})
+
 		it("imports, re-exports and namespaces", () => {
 			const result = precompile(
 				`import { type } from "arktype"
@@ -381,6 +394,48 @@ max++
 const A = type(\`number < \${max}\`)`)
 			).snap([
 				"4:11 rejected\n  `max` is assigned at /main.ts:3:1, so its value at the site is not known"
+			])
+		})
+
+		it("names declared more than once", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+export const make = () => {
+	function def() { return "string" }
+	function def() { return "number" }
+	return type(def())
+}
+enum E { A = "string" }
+enum E { B = "number" }
+namespace N { export const a = "string" }
+namespace N { export const b = "number" }
+export const A = type((E as any).B ?? "boolean")
+export const B = type((N as any).b ?? "boolean")`)
+			).snap([
+				"11:18 rejected\n  `E` is declared again at /main.ts:8:6, so its value at the site is not known",
+				"12:18 rejected\n  `N` is declared in a TypeScript namespace or enum",
+				"5:9 rejected\n  `def` is declared again at /main.ts:4:11, so its value at the site is not known"
+			])
+		})
+
+		it("reads before a declaration", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+function make() { const T = type(x ?? "number"); return T }
+export const A = make()
+class C { static T = type(x ?? "number") }
+export const B = (() => type(x ?? "number"))()
+export const D = () => {
+	const T = type(y ?? "number")
+	var y = "string"
+	return T
+}
+var x = "string"`)
+			).snap([
+				"4:22 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
+				"2:29 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
+				"5:25 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
+				"7:12 rejected\n  `y` can be read before its declaration (/main.ts:8:6)"
 			])
 		})
 

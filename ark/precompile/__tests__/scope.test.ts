@@ -84,10 +84,19 @@ const differencesOf = (file: string, source: string): string[] => {
 	const isAssignedByStart: Record<number, boolean> = {}
 	for (const scope of expected.scopes) {
 		for (const variable of scope.variables) {
+			// a value declared more than once counts as assigned
+			const declarations = variable.defs.filter(
+				def =>
+					def.type !== "Type" &&
+					def.node.type !== "TSDeclareFunction" &&
+					!("declare" in def.node && def.node.declare)
+			)
 			for (const identifier of variable.identifiers) {
-				isAssignedByStart[identifier.range[0]] = variable.references.some(
-					reference => reference.isWrite() && !reference.init
-				)
+				isAssignedByStart[identifier.range[0]] =
+					declarations.length > 1 ||
+					variable.references.some(
+						reference => reference.isWrite() && !reference.init
+					)
 			}
 		}
 	}
