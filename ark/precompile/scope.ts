@@ -9,6 +9,7 @@ import {
 	type MethodDefinition,
 	type Node,
 	type ObjectProperty,
+	type ParamPattern,
 	type Program,
 	type PropertyDefinition
 } from "oxc-parser"
@@ -259,7 +260,7 @@ export class ModuleScopes {
 			this.bind(node.id, "function", node, node)
 		const visitScope = () =>
 			this.inScope(node, () => {
-				for (const param of node.params)
+				for (const param of runtimeParamsOf(node))
 					this.bindPattern(param, "param", node, node)
 				if (node.body!.type === "BlockStatement") {
 					node.body!.parent = node
@@ -608,6 +609,14 @@ export const unwrapExpression = (node: Node): Node => {
 	while (isTransparent(node)) node = node.expression
 	return node
 }
+
+// a TypeScript `this` parameter types the receiver and takes no argument
+export const runtimeParamsOf = (fn: {
+	params: ParamPattern[]
+}): ParamPattern[] =>
+	fn.params[0]?.type === "Identifier" && fn.params[0].name === "this" ?
+		fn.params.slice(1)
+	:	fn.params
 
 export const walk = (node: Node, visit: (node: Node) => boolean): void => {
 	if (!visit(node)) return

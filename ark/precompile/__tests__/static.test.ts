@@ -202,6 +202,15 @@ const B = optional(type(helpers.label("a")))`,
 			).snap(["8:11 accepted number < 4", '9:11 accepted "a" | undefined'])
 		})
 
+		it("helpers with a TypeScript `this` parameter", () => {
+			attest(
+				statusesOf(`import { type, scope } from "arktype"
+function h(this: void, def: string) { return def }
+const A = type(h("string"))
+const $ = scope({ a: function (this: void) { return "string" } as any }).export()`)
+			).snap(["3:11 accepted string", "4:11 accepted"])
+		})
+
 		it("sites in static helpers", () => {
 			const source = `import { type } from "arktype"
 import { parseNames } from "./names.ts"

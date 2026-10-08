@@ -17,7 +17,12 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
-import { isTransparent, unwrapExpression, type Binding } from "./scope.ts"
+import {
+	isTransparent,
+	runtimeParamsOf,
+	unwrapExpression,
+	type Binding
+} from "./scope.ts"
 
 export interface Escape {
 	node: Node
@@ -70,10 +75,29 @@ const escapeOfBinding = (
 	if (binding.exportNames.length)
 		return { node: binding.id, message: "is exported" }
 	for (const reference of binding.references) {
-		if (reference.isWrite) continue
-		const escape = escapeOfValue(reference.id, s)
+		const escape =
+			reference.isWrite ?
+				escapeOfWrite(reference.id, s)
+			:	escapeOfValue(reference.id, s)
 		if (escape) return escape
 	}
+}
+
+// a logical assignment yields the old value unless it assigns, and a compound one converts it
+const escapeOfWrite = (id: Node, s: EscapeState): Escape | undefined => {
+	let target = id
+	while (isTransparent(target.parent!)) target = target.parent!
+	const parent = target.parent!
+	if (parent.type === "UpdateExpression") return escapeOfConversion(parent, s)
+	if (
+		parent.type !== "AssignmentExpression" ||
+		parent.left !== target ||
+		parent.operator === "="
+	)
+		return
+	return ["||=", "&&=", "??="].includes(parent.operator) ?
+			escapeOfValue(parent, s)
+		:	escapeOfConversion(parent, s)
 }
 
 const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
@@ -275,22 +299,30 @@ const escapeOfArgument = (
 		return escapeOfPureCall(call, builtin, call.arguments.length - 1, s)
 	const helper = s.graph.helperOf(call.callee, s.module)
 	if (helper && helper[1] === s.module) {
-		const index = call.arguments.indexOf(argument as never)
-		const params = helper[0].params
-		const param =
-			params[index] ?? params.find(param => param.type === "RestElement")
-		if (param && argument.type !== "SpreadElement") {
-			return (
-				escapeOfPattern(
-					param.type === "RestElement" ? param.argument : param,
-					s
-				) ?? escapeOfReturn(helper[0], s)
-			)
-		}
+		const param = paramOf(helper[0], call, argument)
+		if (param) return escapeOfPattern(param, s) ?? escapeOfReturn(helper[0], s)
 	}
 	return {
 		node: call,
 		message: `is passed to \`${s.module.snippetOf(call.callee)}\``
+	}
+}
+
+// the parameter an argument binds, unless a spread before it hides its position
+const paramOf = (
+	fn: FunctionNode,
+	call: CallExpression,
+	argument: Node
+): Node | undefined => {
+	const params = runtimeParamsOf(fn)
+	for (let i = 0; i < call.arguments.length; i++) {
+		const arg = call.arguments[i]
+		if (arg.type === "SpreadElement") return
+		if (arg === argument) {
+			const param =
+				params[i] ?? params.find(param => param.type === "RestElement")
+			return param?.type === "RestElement" ? param.argument : param
+		}
 	}
 }
 

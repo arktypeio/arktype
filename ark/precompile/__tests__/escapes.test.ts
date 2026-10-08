@@ -69,6 +69,31 @@ export const T = type(o.a)`)
 		).snap([["8:18 accepted"]])
 	})
 
+	it("arguments of a helper", () => {
+		attest(
+			[
+				`function h(this: void, p: any) { return (p.a = "number") }
+h(o)`,
+				`function h(p: any, q: any) { return (p.a = "number"), q }
+h(...[], o)`,
+				`const h = (p: any) => ((p ||= {}).a = "number")
+h(o)`,
+				`const h = (p: any) => ((p ??= {}).a = "number")
+h(o)`
+			].map(use =>
+				inputsOf(`import { type } from "arktype"
+const o = { a: "string" }
+${use}
+export const T = type(o.a)`).pop()
+			)
+		).snap([
+			["5:18 accepted", "local o.a"],
+			["5:18 accepted", "local o.a"],
+			["5:18 accepted", "local o.a"],
+			["5:18 accepted", "local o.a"]
+		])
+	})
+
 	it("arguments of a function", () => {
 		attest(
 			inputsOf(`import { type } from "arktype"

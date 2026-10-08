@@ -36,7 +36,12 @@ import {
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
-import { isTransparent, unwrapExpression, type Binding } from "./scope.ts"
+import {
+	isTransparent,
+	runtimeParamsOf,
+	unwrapExpression,
+	type Binding
+} from "./scope.ts"
 
 export interface InterpreterOptions {
 	// values of bundler `define` constants, keyed by the expression they replace
@@ -1529,7 +1534,7 @@ export class Interpreter {
 			env: createEnvironment(closure.env),
 			depth: ctx.depth + 1
 		}
-		const params = closure.node.params
+		const params = runtimeParamsOf(closure.node)
 		for (let i = 0; i < params.length; i++) {
 			const param = params[i]
 			if (param.type === "RestElement")
@@ -1963,7 +1968,7 @@ const isLoopVariable = (binding: Binding) => {
 
 const parameterCount = (fn: FunctionNode): number => {
 	let count = 0
-	for (const param of fn.params) {
+	for (const param of runtimeParamsOf(fn)) {
 		if (param.type === "AssignmentPattern" || param.type === "RestElement")
 			break
 		count++
