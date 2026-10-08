@@ -1775,7 +1775,8 @@ const isTracked = (value: unknown): value is object =>
 	isPlainContainer(value) ||
 	value instanceof Date ||
 	value instanceof RegExp ||
-	hasArkKind(value, "module")
+	hasArkKind(value, "module") ||
+	hasArkKind(value, "scope")
 
 export const findDynamic = (
 	value: unknown,

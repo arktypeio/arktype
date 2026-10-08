@@ -1,5 +1,5 @@
 import { hasArkKind } from "@ark/schema"
-import { hasDomain } from "@ark/util"
+import { Callable, hasDomain } from "@ark/util"
 import type { CallExpression, MemberExpression, Node } from "oxc-parser"
 import {
 	globalsByName,
@@ -229,9 +229,10 @@ const escapeOfMember = (
 		:	{ node: parent, message: `is passed to \`${s.module.snippetOf(end)}\`` }
 }
 
-// e.g. `$.user.array()` on a Module `$`: a method its members reach is arktype's, unless a write the analysis finds replaced it
+// e.g. `$.user.array()` on a Module `$` or `$.type.Record()` on a Scope: a method its members and parsers reach is arktype's, unless a write the analysis finds replaced it
 const isArkMethodCall = (end: MemberExpression, s: EscapeState): boolean => {
-	if (!hasArkKind(s.value, "module")) return false
+	if (!hasArkKind(s.value, "module") && !hasArkKind(s.value, "scope"))
+		return false
 	const keys: string[] = []
 	let node: Node = end
 	while (node.type === "MemberExpression") {
@@ -246,7 +247,7 @@ const isArkMethodCall = (end: MemberExpression, s: EscapeState): boolean => {
 		return false
 	let value = s.value
 	for (const key of keys) {
-		if (!isArkValue(value)) return false
+		if (!isArkValue(value) && !(value instanceof Callable)) return false
 		value = Reflect.get(value as object, key)
 	}
 	return typeof value === "function" && !intrinsics.has(value)

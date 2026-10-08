@@ -217,6 +217,22 @@ export const T = type({ x: $.a })`)
 		])
 	})
 
+	it("scopes", () => {
+		attest(
+			inputsOf(`import { type, scope } from "arktype"
+const s = scope({ a: "string" })
+s.export()
+;(s as any).resolutions.a = type("number").internal
+export const T = s.type("a")`).pop()
+		).snap(["5:18 accepted", "local s"])
+		attest(
+			inputsOf(`import { scope } from "arktype"
+const s = scope({ a: "string" })
+export const R = s.type.Record("string", "a")
+export const T = s.type("a")`)
+		).snap([["2:11 accepted"], ["3:18 accepted"], ["4:18 accepted"]])
+	})
+
 	it("dates and regexes", () => {
 		attest(
 			inputsOf(`import { type } from "arktype"
