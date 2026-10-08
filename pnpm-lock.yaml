@@ -321,6 +321,12 @@ importers:
       '@ark/fs':
         specifier: workspace:*
         version: link:../fs
+      '@ark/schema':
+        specifier: workspace:*
+        version: link:../schema
+      '@ark/util':
+        specifier: workspace:*
+        version: link:../util
       arkenv:
         specifier: 0.7.3
         version: 0.7.3(arktype@ark+type)

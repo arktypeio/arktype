@@ -6,6 +6,8 @@
 	"dependencies": {
 		"@ark/attest": "link:../attest",
 		"@ark/fs": "workspace:*",
+		"@ark/schema": "workspace:*",
+		"@ark/util": "workspace:*",
 		"arkenv": "0.7.3",
 		"arktype": "workspace:*",
 		"arkregex": "workspace:*",

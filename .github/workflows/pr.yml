@@ -55,6 +55,22 @@ jobs:
       - name: Test
         run: pnpm testRepo
 
+  # not yet required by prChecks: it fails until the changes that establish
+  # history independence land
+  history:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Test history independence
+        run: pnpm testHistory --jobs 4
+
   tsVersionTasks:
     needs: core
     runs-on: ubuntu-latest
