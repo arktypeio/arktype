@@ -17,10 +17,10 @@ import { buildSync } from "esbuild"
 import { spawnSync } from "node:child_process"
 
 // a bundle holds only what an artifact imports, so validating with it proves no node is needed
-const bundle = (types: Record<string, type.Any>) => {
+const bundle = (source: string) => {
 	const result = buildSync({
 		stdin: {
-			contents: precompileStandalone(types),
+			contents: source,
 			resolveDir: fromHere(),
 			loader: "js"
 		},
@@ -57,7 +57,7 @@ const importBesideArktype = async (js: string): Promise<any> => {
 }
 
 const load = (types: Record<string, type.Any>): Promise<Record<string, any>> =>
-	importBesideArktype(bundle(types).js)
+	importBesideArktype(bundle(precompileStandalone(types)).js)
 
 const observe = (result: unknown, input: unknown) =>
 	hasArkKind(result, "errors") ?
@@ -178,7 +178,7 @@ contextualize(() => {
 	})
 
 	it("validates without generating code", async () => {
-		const { js } = bundle({ T: type({ a: "string" }) })
+		const { js } = bundle(precompileStandalone({ T: type({ a: "string" }) }))
 		const { Function } = globalThis
 		const bodies: string[] = []
 		globalThis.Function = new Proxy(Function, {
@@ -227,20 +227,23 @@ contextualize(() => {
 		}
 	})
 
-	it("checks the runtime's version", async () => {
-		const { js } = bundle({ T: type("string") })
-		const mismatched = js.replace(
-			`assertAbiVersion(${abiVersion})`,
-			`assertAbiVersion(${abiVersion + 1})`
+	it("checks the runtime's version before reading its exports", async () => {
+		const mismatched = precompileStandalone({ T: type("string") })
+			.replace(
+				`assertAbiVersion(${abiVersion})`,
+				`assertAbiVersion(${abiVersion + 1})`
+			)
+			.replace("runtime.Validator", "runtime.NextValidator")
+		const error = await importBesideArktype(bundle(mismatched).js).catch(
+			(e: Error) => e
 		)
-		const error = await importBesideArktype(mismatched).catch((e: Error) => e)
 		attest(error.message).equals(
 			writeAbiVersionMismatchMessage(abiVersion + 1, abiVersion)
 		)
 	})
 
 	it("refuses to load beside arktype", async () => {
-		const { js } = bundle({ T: type("boolean") })
+		const { js } = bundle(precompileStandalone({ T: type("boolean") }))
 		const error = await import(urlOf(js)).catch((e: Error) => e)
 		attest(error.message).equals(
 			writeEntryConflictMessage("arktype/runtime", "arktype")
@@ -248,7 +251,7 @@ contextualize(() => {
 	})
 
 	it("keeps arktype from loading beside it", () => {
-		const { js } = bundle({ T: type("string") })
+		const { js } = bundle(precompileStandalone({ T: type("string") }))
 		const { stderr } = spawnSync(
 			process.execPath,
 			["--conditions=ark-ts", "--input-type=module"],
@@ -264,11 +267,13 @@ contextualize(() => {
 	})
 
 	it("bundles without node, scope or parse code", () => {
-		const { modules } = bundle({
-			T: type({ a: "string.numeric.parse", b: "(number | Date)[]" }).or(
-				"string.json.parse"
-			)
-		})
+		const { modules } = bundle(
+			precompileStandalone({
+				T: type({ a: "string.numeric.parse", b: "(number | Date)[]" }).or(
+					"string.json.parse"
+				)
+			})
+		)
 		const runtimeModules = new Set([
 			"<stdin>",
 			"schema/runtime.ts",

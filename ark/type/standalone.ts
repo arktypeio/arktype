@@ -62,23 +62,18 @@ export const precompileStandalone = (
 		)
 			objectUnits.add(node.unit)
 	}
-	const runtimeNamesByValue = new Map<unknown, string>()
+	const runtimePathsByValue = new Map<unknown, string>()
 	const indexRuntime = (value: unknown, path: string): void => {
-		if (typeof value === "function") runtimeNamesByValue.set(value, path)
+		if (typeof value === "function") runtimePathsByValue.set(value, path)
 		else if (hasDomain(value, "object")) {
-			runtimeNamesByValue.set(value, path)
+			runtimePathsByValue.set(value, path)
 			if (Object.getPrototypeOf(value) === Object.prototype)
 				for (const k in value) indexRuntime(value[k as never], `${path}.${k}`)
 		}
 	}
-	for (const name in runtime) indexRuntime(runtime[name as never], name)
+	for (const name in runtime)
+		indexRuntime(runtime[name as never], `runtime.${name}`)
 
-	const imports = new Set([
-		"assertAbiVersion",
-		"claimEntry",
-		"runtimeConfig",
-		"Validator"
-	])
 	const declarations: string[] = []
 	const links: string[] = []
 	const constNamesByValue = new Map<unknown, string>()
@@ -113,8 +108,8 @@ export const precompileStandalone = (
 	traverseAllows: ${traversals}[0],
 	traverseApply: ${traversals}[1],
 	traverseTransform: ${traversals}[2],
-	allows: ${node.allowsRequiresContext ? `data => allowsUntracked(${name}, data) ?? allowsInContext(${name}, data, runtimeConfig)` : `${traversals}[0]`},
-	$: { resolvedConfig: runtimeConfig }${discriminantDescription}
+	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${name}, data) ?? runtime.allowsInContext(${name}, data, runtime.runtimeConfig)` : `${traversals}[0]`},
+	$: { resolvedConfig: runtime.runtimeConfig }${discriminantDescription}
 })`)
 		return name
 	}
@@ -124,11 +119,8 @@ export const precompileStandalone = (
 			return throwError(writeUnprecompilableMessage(printable(value)))
 		if (!hasDomain(value, "object"))
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
-		const runtimeName = runtimeNamesByValue.get(value)
-		if (runtimeName) {
-			imports.add(runtimeName.split(".")[0])
-			return runtimeName
-		}
+		const runtimePath = runtimePathsByValue.get(value)
+		if (runtimePath) return runtimePath
 		const declared = constNamesByValue.get(value)
 		if (declared) return declared
 		if (isNode(value)) {
@@ -191,20 +183,19 @@ export const precompileStandalone = (
 	const exports = Object.entries(types).map(([name, t], i) => {
 		const root: BaseRoot = t.internal
 		const shape = shapeOf(root)
-		return `const validator${i} = new Validator(
+		return `const validator${i} = new runtime.Validator(
 	(function (${rootApplyParams.join(", ")}) {
 		${writeRootApply(root, unit.names[root.id])}
-	})(${shape}, runtimeConfig, ${Object.values(rootApplyRuntime).map(emit).join(", ")}),
+	})(${shape}, runtime.runtimeConfig, ${Object.values(rootApplyRuntime).map(emit).join(", ")}),
 	${shape},
 	{ expression: ${JSON.stringify(root.expression)}, description: ${JSON.stringify(root.description)}, meta: ${emit(root.meta)} }
 )
 export { validator${i} as ${JSON.stringify(name)} }`
 	})
-	for (const name of ["allowsInContext", "allowsUntracked"]) imports.add(name)
-	return `import { ${[...imports].sort().join(", ")} } from "arktype/runtime"
+	return `import * as runtime from "arktype/runtime"
 
-assertAbiVersion(${runtime.abiVersion})
-claimEntry("arktype/runtime")
+runtime.assertAbiVersion(${runtime.abiVersion})
+runtime.claimEntry("arktype/runtime")
 
 ${declarations.join("\n")}
 
