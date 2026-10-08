@@ -87,6 +87,12 @@ configure({ number: { description: describe } })`,
 		})
 	})
 
+	it("syntax errors", () => {
+		attest(diagnosticsOf("export const = 5")).snap([
+			"/main.ts:1:1  /main.ts cannot be parsed: Unexpected token"
+		])
+	})
+
 	describe("standalone", () => {
 		it("arktype used outside a site", () => {
 			attest(

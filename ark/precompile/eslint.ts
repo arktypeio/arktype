@@ -20,6 +20,7 @@ const precompilable: Rule.RuleModule = {
 				properties: {
 					mode: { enum: ["standalone", "cache"] },
 					config: { type: "string" },
+					define: { type: "object" },
 					conditions: { type: "array", items: { type: "string" } },
 					tsconfig: { type: "string" }
 				},
@@ -43,7 +44,11 @@ const precompilable: Rule.RuleModule = {
 						start: context.sourceCode.getLocFromIndex(diagnostic.start),
 						end: context.sourceCode.getLocFromIndex(diagnostic.end)
 					},
-					message: [diagnostic.message, ...diagnostic.reasons, diagnostic.hint]
+					message: [
+						diagnostic.message,
+						...diagnostic.reasons,
+						...(diagnostic.hint ? [diagnostic.hint] : [])
+					]
 						.join("\n")
 						.split(`${context.cwd}${sep}`)
 						.join("")

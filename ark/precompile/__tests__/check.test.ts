@@ -32,4 +32,23 @@ forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
 2 sites in 1 file: 1 accepted (50.0%)
 `)
 	})
+
+	it("rejects invalid arguments", () => {
+		attest(
+			[
+				["--mode", "strict"],
+				["--fail-under", "most"],
+				["--define", "MAX"],
+				["--define", "MAX=five"]
+			].map(args => {
+				const result = cli("--check", ...args)
+				return `${result.status} ${result.stderr.split("\n")[0]}`
+			})
+		).snap([
+			"2 --mode must be standalone or cache (was strict)",
+			"2 --fail-under must be a percentage (was most)",
+			"2 --define must be <name>=<json> (was MAX)",
+			"2 --define must be <name>=<json> (was MAX=five)"
+		])
+	})
 })

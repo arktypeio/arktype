@@ -91,7 +91,7 @@ export interface Helper {
 	end: number
 }
 
-export type Rule = "R1" | "R2" | "R3" | "R4" | "parse"
+export type Rule = "R1" | "R2" | "R3" | "R4" | "parse" | "syntax"
 
 export interface Diagnostic {
 	severity: "error" | "warning"
@@ -103,7 +103,7 @@ export interface Diagnostic {
 	column: number
 	message: string
 	reasons: string[]
-	hint: string
+	hint: string | undefined
 }
 
 export const precompileModule = (
@@ -135,7 +135,7 @@ export class Precompiler {
 					this.diagnostic(
 						module,
 						module.program,
-						"R1",
+						"syntax",
 						`${id} cannot be parsed: ${message}`,
 						[]
 					)
@@ -537,7 +537,10 @@ export class Precompiler {
 			column,
 			message,
 			reasons,
-			hint: this.mode === "cache" ? cacheHint : hintsByRule[rule]
+			hint:
+				rule === "syntax" ? undefined
+				: this.mode === "cache" ? cacheHint
+				: hintsByRule[rule]
 		}
 	}
 }
@@ -546,10 +549,10 @@ export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 	[
 		`${diagnostic.file}:${diagnostic.line}:${diagnostic.column}  ${diagnostic.message}`,
 		...diagnostic.reasons.map(reason => `  ${reason}`),
-		`  ${diagnostic.hint}`
+		...(diagnostic.hint ? [`  ${diagnostic.hint}`] : [])
 	].join("\n")
 
-const hintsByRule: Record<Rule, string> = {
+const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	R1: `Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`,
 	R2: "arktype runs this callback while defining the type, so the build computes its result. Make it a static helper: one expression or one `return` in the static subset.",
 	R3: "The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
