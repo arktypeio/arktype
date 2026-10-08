@@ -185,7 +185,9 @@ export class Interpreter {
 			depth: 0
 		}
 		try {
-			site.value = this.evaluateNode(site.node, ctx)
+			const value = this.evaluateNode(site.node, ctx)
+			// a site inside an optional chain ends where the chain does
+			site.value = value === shortCircuit ? undefined : value
 		} catch (e) {
 			site.error = this.thrown(e, site.node, ctx)
 		}
@@ -1201,6 +1203,10 @@ export class Interpreter {
 			const key = this.keyOf(callee, ctx)
 			if (isDynamic(key)) return key
 			const kind = receiverKindOf(receiver)
+			if (node.optional && (kind || isPlainContainer(receiver))) {
+				const method: unknown = Reflect.get(Object(receiver), key)
+				if (method === null || method === undefined) return shortCircuit
+			}
 			if (kind) {
 				fn = methodsByReceiverKind[kind][key as string]
 				if (!fn) {

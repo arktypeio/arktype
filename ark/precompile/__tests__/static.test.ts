@@ -119,6 +119,15 @@ const B = type(\`'\${limits.names[1]}'\`)`)
 			).snap(["3:11 accepted number < 10", '4:11 accepted "b"'])
 		})
 
+		it("optional chains", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const o: { a?: { b: string }; f?: () => string } = {}
+const A = type(o?.a?.b ?? "string")
+const B = type(o.f?.() ?? "number")`)
+			).snap(["3:11 accepted string", "4:11 accepted number"])
+		})
+
 		it("pure built-ins", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -436,6 +445,18 @@ var x = "string"`)
 				"2:29 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
 				"5:25 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
 				"7:12 rejected\n  `y` can be read before its declaration (/main.ts:8:6)"
+			])
+		})
+
+		it("optional chain ended by parentheses", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const o: any = undefined
+const A = type((o?.f)() === undefined ? "string" : "number")
+const B = type((o?.a).b === undefined ? "string" : "number")`)
+			).snap([
+				"3:11 rejected\n  `(o?.f)()` does not call a static helper or pure built-in",
+				"4:11 rejected\n  `(o?.a).b` reads a property of undefined, which throws"
 			])
 		})
 

@@ -264,7 +264,15 @@ export class ModuleGraph {
 
 	isArkExpression(node: Node, module: SourceModule): boolean {
 		node = unwrapExpression(node)
-		while (node.type === "MemberExpression" || node.type === "CallExpression") {
+		while (
+			node.type === "MemberExpression" ||
+			node.type === "CallExpression" ||
+			node.type === "ChainExpression"
+		) {
+			if (node.type === "ChainExpression") {
+				node = unwrapExpression(node.expression)
+				continue
+			}
 			if (node.type === "CallExpression") {
 				const helper = this.helperOf(node.callee, module)
 				if (helper && this.isArkHelper(helper[0], helper[1])) return true
@@ -411,8 +419,7 @@ export const unwrapExpression = (node: Node): Node => {
 		node.type === "TSTypeAssertion" ||
 		node.type === "TSNonNullExpression" ||
 		node.type === "TSInstantiationExpression" ||
-		node.type === "ParenthesizedExpression" ||
-		node.type === "ChainExpression"
+		node.type === "ParenthesizedExpression"
 	)
 		node = node.expression
 	return node
