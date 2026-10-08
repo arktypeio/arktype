@@ -333,7 +333,29 @@ contextualize(() => {
 		attest(T({ values: [1, -1, 2], other: 5 }).toString()).snap(
 			"values[1] must be valid according to an anonymous predicate (was -1)"
 		)
-		attest(callCount).equals(3)
+		// Allows stops at -1, then Apply checks each value once
+		attest(callCount).equals(5)
+	})
+
+	it("checks data before applying a predicate reading ctx", () => {
+		for (const jitless of [false, true]) {
+			const calls: string[] = []
+			const $ = scope({}, { jitless })
+			const T = $.type({
+				a: "string",
+				b: $.type("string").narrow((s, ctx) => {
+					calls.push(ctx.path.join("."))
+					return s.length < 3 || ctx.mustBe("short")
+				})
+			})
+			const data = { a: "a", b: "b" }
+			attest(T(data) === data).equals(true)
+			attest(calls.splice(0)).equals(["b"])
+			attest(T({ a: "a", b: "long" }).toString()).snap(
+				'b must be short (was "long")'
+			)
+			attest(calls).equals(["b", "b"])
+		}
 	})
 
 	it("union after failed branch predicate", () => {

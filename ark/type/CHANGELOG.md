@@ -164,6 +164,20 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 ### Reserve `meta.keyword`
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
+### Check data first when a narrow reads `ctx`
+
+A Type without morphs that has a narrow taking `ctx` checks data before collecting errors, as other Types do, so valid data is accepted faster. Errors are collected by a second pass, so on invalid data its narrows can run twice, as they can in other Types:
+
+```ts
+const T = type({
+	a: "string",
+	b: type("string").narrow((s, ctx) => s.length < 3 || ctx.mustBe("short"))
+})
+
+// previously the narrow ran once, now twice
+T({ a: "a", b: "long" })
+```
+
 ### Run morphs where they're reached on failed calls
 
 When validation fails, each morph whose input is valid runs as it's reached rather than after everything else is checked, so its errors are listed in traversal order and a morph reading `ctx.errors` sees only the errors before it:

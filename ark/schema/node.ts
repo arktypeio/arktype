@@ -443,7 +443,11 @@ export abstract class BaseNode<
 				}
 
 			case "contextual":
-				return (data, onFail) => this.applyRoot(data).finalize(onFail)
+				return (data, onFail) => {
+					if (allowsInContext(this, data, this.$.resolvedConfig)) return data
+
+					return this.applyRoot(data).finalize(onFail)
+				}
 
 			case "transform":
 			case "contextualTransform":
@@ -1486,12 +1490,13 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 // createRootApply's statements, compiled per root so V8 can inline its calls
 const compileRootApply = (node: BaseRoot): RootApply => {
 	const js = new CompiledFunction("data", "onFail").indent()
-	const fallback = () =>
+	const applyFailed = new CompiledFunction("data", "onFail").indent()
+	const fallback = (body: typeof js) =>
 		node.includesAlias ?
-			js.return(
+			body.return(
 				"applyCyclic(node, data, new Traversal(data, config)).finalize(onFail)"
 			)
-		:	js
+		:	body
 				.const("ctx", "new Traversal(data, config)")
 				.line("apply(data, ctx)")
 				.return("ctx.finalize(onFail)")
@@ -1508,8 +1513,15 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 				.return("result")
 		:	js.return("result")
 	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
-	if (node.rootApplyStrategy === "contextual") fallback()
-	else if (node.rootApplyStrategy === "allows")
+	if (node.rootApplyStrategy === "contextual") {
+		// failing in its own function lets V8 inline Allows and remove the ctx it allocates
+		fallback(applyFailed)
+		js.const("ctx", "new Traversal(data, config)")
+			.if("!traverseAllows(data, ctx) || ctx.hasError()", () =>
+				js.return("applyFailed(data, onFail)")
+			)
+			.return("data")
+	} else if (node.rootApplyStrategy === "allows")
 		js.if("!allows(data)", fallback).return("data")
 	else if (node.rootApplyStrategy === "contextualTransform") {
 		if (node.includesAlias) {
@@ -1534,9 +1546,14 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 		js.if("!allows(data)", fallback).const("result", "transform(data)")
 		returnResult()
 	} else js.if("!allows(data)", fallback).return("transform(data)")
+	const failurePath =
+		applyFailed.body ?
+			`const applyFailed = function ${applyFailed.write(`${node.id}ApplyFailed`)}\n`
+		:	""
 	return new DynamicFunction<(...args: unknown[]) => RootApply>(
 		"node",
 		"allows",
+		"traverseAllows",
 		"apply",
 		"transform",
 		"Traversal",
@@ -1546,10 +1563,11 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 		"allowsInContext",
 		"config",
 		"unset",
-		`"use strict"\nreturn (function ${js.write(`${node.id}RootApply`)})`
+		`"use strict"\n${failurePath}return (function ${js.write(`${node.id}RootApply`)})`
 	)(
 		node,
 		node.allows,
+		node.traverseAllows,
 		node.traverseApply,
 		node.traverseTransform,
 		Traversal,
