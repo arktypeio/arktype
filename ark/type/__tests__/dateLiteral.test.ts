@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
+import { writeInvalidDateMessage } from "@ark/util"
 import { type } from "arktype"
-import { writeInvalidDateMessage } from "arktype/internal/parser/shift/operand/date.ts"
 
 contextualize(() => {
 	it("base", () => {

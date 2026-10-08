@@ -6,7 +6,10 @@ import {
 	writeInvalidOperandMessage,
 	writeUnboundableMessage
 } from "@ark/schema"
-import { writeMalformedNumericLiteralMessage } from "@ark/util"
+import {
+	writeInvalidDateMessage,
+	writeMalformedNumericLiteralMessage
+} from "@ark/util"
 import { scope, type } from "arktype"
 import { writeDoubleRightBoundMessage } from "arktype/internal/parser/ast/bounds.ts"
 import {
@@ -440,6 +443,29 @@ contextualize(() => {
 			const Expected = type(`Date>d'${"2022-01-01" as string}'`)
 			attest<typeof Expected>(T)
 			attest(T.json).equals(Expected.json)
+		})
+
+		it("string Date limits", () => {
+			const T = type("Date")
+				.atOrAfter("2022-01-01")
+				.earlierThan("2023-01-01T00:00+01:00")
+			attest(T.json).snap({
+				proto: "Date",
+				after: "2022-01-01T00:00:00.000Z",
+				before: "2022-12-31T22:59:59.999Z"
+			})
+			const U = type("Date").laterThan("0").atOrBefore("1000000")
+			attest(U.json).snap({
+				proto: "Date",
+				after: "1970-01-01T00:00:00.001Z",
+				before: "1970-01-01T00:16:40.000Z"
+			})
+			attest(() => type("Date").atOrBefore("01/02/2022")).throws(
+				writeInvalidDateMessage("01/02/2022")
+			)
+			attest(() => type("Date").laterThan("2022-01-01T00:00")).throws(
+				writeInvalidDateMessage("2022-01-01T00:00")
+			)
 		})
 
 		it("invalid after operand", () => {

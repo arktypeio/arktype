@@ -4,6 +4,8 @@ import {
 	cached,
 	isKeyOf,
 	throwParseError,
+	tryParseDate,
+	writeInvalidDateMessage,
 	type ErrorMessage,
 	type Scanner
 } from "@ark/util"
@@ -12,7 +14,6 @@ import type { Out } from "../../../attributes.ts"
 import type { InferredAst } from "../../ast/infer.ts"
 import type { RuntimeState } from "../../reduce/dynamic.ts"
 import type { StaticState, s } from "../../reduce/static.ts"
-import { tryParseDate, writeInvalidDateMessage } from "./date.ts"
 
 export type StringLiteral<contents extends string = string> =
 	| DoubleQuotedStringLiteral<contents>

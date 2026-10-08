@@ -20,11 +20,7 @@ import {
 	type OpenLeftBound
 } from "../../reduce/shared.ts"
 import type { s, StaticState } from "../../reduce/static.ts"
-import {
-	extractDateLiteralSource,
-	isDateLiteral,
-	tryParseDate
-} from "../operand/date.ts"
+import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
 import type { parseOperand } from "../operand/operand.ts"
 
 export const parseBound = (
@@ -152,7 +148,7 @@ const openLeftBoundToRoot = (
 ): Constraint.Schema<BoundKind> => ({
 	rule:
 		isDateLiteral(leftBound.limit) ?
-			tryParseDate(extractDateLiteralSource(leftBound.limit), true)
+			extractDateLiteralSource(leftBound.limit)
 		:	leftBound.limit,
 	exclusive: leftBound.comparator.length === 1
 })

@@ -7,7 +7,7 @@ import {
 	writeInvalidLengthBoundMessage,
 	type ArkErrors
 } from "@ark/schema"
-import { entriesOf, flatMorph } from "@ark/util"
+import { entriesOf, flatMorph, writeInvalidDateMessage } from "@ark/util"
 
 const numericCases = {
 	lessThanMin: 4,
@@ -114,6 +114,28 @@ contextualize(() => {
 		attest(
 			node("after", { rule: new Date(Date.UTC(2025, 0, 1)) }).stringLimit
 		).equals("2025-01-01T00:00:00.000Z")
+	})
+
+	it("string date limits", () => {
+		const T = rootSchema({
+			proto: Date,
+			after: "2025-01-01",
+			before: { rule: "2026-01-01T00:00-05:00", exclusive: true }
+		})
+		attest(T.json).snap({
+			proto: "Date",
+			after: "2025-01-01T00:00:00.000Z",
+			before: "2026-01-01T04:59:59.999Z"
+		})
+		attest(() => rootSchema({ proto: Date, after: "01/02/2025" })).throws(
+			writeInvalidDateMessage("01/02/2025")
+		)
+		attest(() =>
+			rootSchema({
+				proto: Date,
+				before: { rule: "2025-01-01T00:00", exclusive: true }
+			})
+		).throws(writeInvalidDateMessage("2025-01-01T00:00"))
 	})
 
 	it("minLength 0 reduces to unconstrained", () => {

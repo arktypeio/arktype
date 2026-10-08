@@ -1,6 +1,7 @@
 import {
 	capitalize,
 	throwParseError,
+	tryParseDate,
 	type array,
 	type describe,
 	type dict
@@ -139,7 +140,10 @@ export const constraintInputOf = <kind extends Constraint.PrimitiveKind>(
 			schema
 		:	{ rule: schema }) as dict & { rule: any }
 	if (kind === "after" || kind === "before") {
-		const limit = new Date(input.rule)
+		const limit =
+			typeof input.rule === "string" ?
+				tryParseDate(input.rule, true)
+			:	new Date(input.rule)
 		// an exclusive date limit is the closest inclusive one
 		if (exclusive) limit.setTime(limit.valueOf() + (kind === "after" ? 1 : -1))
 		return { ...input, rule: limit } as never
