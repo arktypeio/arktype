@@ -112,6 +112,16 @@ contextualize(() => {
 			).equals({ a: "ok", nested: { a: "ok" } })
 		})
 
+		it("can apply deeply through a tuple default", () => {
+			const T = type({
+				d: [{ a: "string" }, "number = 2"]
+			}).onDeepUndeclaredKey("delete")
+
+			attest(T({ ...getExtraneousB(), d: [getExtraneousB()] })).equals({
+				d: [{ a: "ok" }, 2]
+			})
+		})
+
 		it("delete union key", () => {
 			const O = type([
 				{ a: "string" },

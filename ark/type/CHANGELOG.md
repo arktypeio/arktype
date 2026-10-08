@@ -165,6 +165,17 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
 
+### Fix deep transforms through a tuple default
+
+`onDeepUndeclaredKey` and `configure` with `"references"` threw on a tuple with a default:
+
+```ts
+// previously threw "n._transform is not a function", now { d: [{ a: "ok" }, 2] }
+type({ d: [{ a: "string" }, "number = 2"] }).onDeepUndeclaredKey("delete")({
+	d: [{ a: "ok", b: "extra" }]
+})
+```
+
 ### Describe an `Hkt` generic by its class
 
 A generic defined with an `Hkt` class and no `description` was described by the class's constructor, `Function`, rather than by the class:

@@ -928,6 +928,14 @@ export abstract class BaseNode<
 				// (e.g. branches for `never`), ensure it is not pruned
 				if (children.length === 0) return [k, v]
 				const transformed = children.flatMap(n => {
+					// a defaultable is a [node, defaultValue] pair
+					if (isArray(n)) {
+						const [node, defaultValue]: Sequence.DefaultableElement = n as never
+						const transformedNode = node._transform(mapper, ctx)
+						return transformedNode ?
+								[[transformedNode, defaultValue] as never]
+							:	[]
+					}
 					const transformedChild = n._transform(mapper, ctx)
 					return transformedChild ?? []
 				})
