@@ -300,6 +300,84 @@ T("x")
 
 https://github.com/arktypeio/arktype/issues/1088
 
+### Define a matcher whose cases a reordering would separate
+
+A matcher whose cases get grouped out of order, like tuples discriminated by an element, threw at definition even though no input could reach two of the cases:
+
+```ts
+const Dir = type({ "[string]": "unknown" })
+
+// previously ParseError: The intersection of distinct morphs at a single path is indeterminate
+match
+	.case(["string", Dir], () => -1)
+	.case([Dir, "string"], () => 1)
+	.case(["string", "string"], ([a, b]) => a.localeCompare(b))
+	.default(() => 0)
+```
+
+https://github.com/arktypeio/arktype/issues/1445
+
+### Check every case that accepts a discriminated tuple element
+
+A case discriminated at a tuple element required every element to match it, so a later case that accepted the input was skipped, and a string, whose characters are read at an index, skipped a branch that accepts strings:
+
+```ts
+const m = match
+	.case(["unknown", "null"], () => 0)
+	.case(["string", "unknown"], () => 1)
+	.case(["true", "string | number"], () => 2)
+	.default(() => null)
+
+// previously 1, now 0
+m(["x", null])
+
+// previously 3, now 2
+match
+	.case(["'a'"], () => 0)
+	.case(["'b'"], () => 1)
+	.case("string | null", () => 2)
+	.default(() => 3)("a")
+```
+
+### Accept `NaN` at a discriminated key where a branch allows it
+
+```ts
+// previously false, now true
+type({ a: "number.NaN | 'x'" })
+	.or({ a: "object" })
+	.or({ a: "3" })
+	.allows({ a: NaN })
+```
+
+### Parse a union whose case relates a literal to a refined or nested check
+
+```ts
+// previously TypeError: Cannot use 'in' operator to search for 'c' in 1
+type({ a: "string" })
+	.or({ a: "1 | object", b: "1" })
+	.or({ a: { c: "number" }, b: "2" })
+
+// previously TypeError: Cannot read properties of null (reading 'length'), now 2
+match
+	.case("string > 1", () => 0)
+	.case("number", () => 1)
+	.case("null | 'x'", () => 2)
+	.default(() => 3)(null)
+```
+
+### Infer required keys from `.required()` on defaulted properties
+
+`.required()` and the `Required` generic made a defaulted key required at runtime, but its inferred type kept the default, so `inferIn` still treated the key as optional. This also applied to defaulted morphs and tuple elements:
+
+```ts
+const T = type({ foo: "string = 'bar'" }).required()
+
+// previously { foo?: string }, now { foo: string }
+type In = typeof T.inferIn
+```
+
+https://github.com/arktypeio/arktype/issues/1160
+
 ## 2.2.8
 
 ### Add `string.base58`
