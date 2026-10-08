@@ -164,6 +164,23 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 ### Reserve `meta.keyword`
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
+### Fix `ctx.data` after a morph that reads `ctx`
+
+After a morph taking `ctx` ran, `ctx.data` kept reading from that morph's input, so a narrow picking a later union branch saw the wrong value and valid data could be left untransformed:
+
+```ts
+const Long = type(["string > 5", ":", (s, ctx) => ctx.data === s]).pipe(
+	s => s.length
+)
+const T = type({
+	k: type("string").pipe((s, ctx) => s.trim()),
+	v: Long.or("string < 3")
+})
+
+// previously { k: "k", v: "abcdefg" }, now { k: "k", v: 7 }
+T({ k: " k ", v: "abcdefg" })
+```
+
 ### Fix index signatures whose key narrow reads `ctx`
 
 A key an index signature rejects is undeclared, but an error its narrow added through `ctx` was kept, so valid data failed. It's no longer kept, and `"delete"` no longer throws on such a signature:

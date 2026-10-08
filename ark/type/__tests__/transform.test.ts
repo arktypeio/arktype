@@ -569,6 +569,21 @@ b must be A (was "y")`)
 		}
 	})
 
+	it("branch predicate reading data after a contextual morph", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Long = $.type(["string > 5", ":", (s, ctx) => ctx.data === s]).pipe(
+				s => s.length
+			)
+			const T = $.type({
+				k: $.type("string").pipe((s, ctx) => s.trim()),
+				v: Long.or("string < 3")
+			})
+
+			attest(T({ k: " k ", v: "abcdefg" })).equals({ k: "k", v: 7 })
+		}
+	})
+
 	it("predicate error returning true", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })

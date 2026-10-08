@@ -7,6 +7,7 @@ import {
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import type { BaseNode } from "../node.ts"
+import type { Morph } from "../roots/morph.ts"
 import {
 	ArkError,
 	ArkErrors,
@@ -188,6 +189,16 @@ export class Traversal {
 		this.receivedDepth = this.path.length
 	}
 
+	// a morph reads data from its input until it returns
+	callMorph(morph: Morph, data: unknown): unknown {
+		const { received, receivedDepth } = this
+		this.receive(data)
+		const result = morph(data as never, this as never)
+		this.received = received
+		this.receivedDepth = receivedDepth
+		return result
+	}
+
 	transform(node: BaseNode, data: unknown): unknown {
 		if (node.isTransformedById)
 			return this.transformResolution(node.id, data, node.traverseTransform)
@@ -246,11 +257,9 @@ export class Traversal {
 		return this.branches.length === 0 && !this.checksOnly
 	}
 
-	// a transform Apply runs returns or adds its errors, and can leave data read from a morph's input
+	// a transform Apply runs returns or adds its errors
 	transformedInApply(result: unknown): void {
 		if (result instanceof TransformErrors) this.addTransformErrors(result)
-		this.received = this.root
-		this.receivedDepth = 0
 	}
 
 	// whether data was transformed in place of being applied, which requires node to allow it
@@ -284,7 +293,7 @@ export class Traversal {
 	}
 
 	addTransformErrors(errors: TransformErrors, key?: PropertyKey): void {
-		const path = this.path
+		const { path, received, receivedDepth } = this
 		for (const { reversedPath, result, data } of errors.entries) {
 			this.path = [...path]
 			if (key !== undefined) this.path.push(key)
@@ -294,6 +303,8 @@ export class Traversal {
 			this.addMorphErrors(result)
 		}
 		this.path = path
+		this.received = received
+		this.receivedDepth = receivedDepth
 	}
 
 	transformResolution(
