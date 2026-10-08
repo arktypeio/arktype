@@ -80,7 +80,6 @@ const B = Stateful("string")`)
 			"2:13 accepted",
 			"8:11 accepted { box: string }",
 			"9:18 rejected\n  arktype calls a class (/main.ts:11:2) while defining the type, so it must be a static helper\n  `count = 0` runs when the class is constructed",
-			"15:11 rejected\n  arktype calls a class (/main.ts:11:2) while defining the type, so it must be a static helper\n  `count = 0` runs when the class is constructed",
 			"10:10 accepted { box: (In: unknown) => Out<unknown> }"
 		])
 	})

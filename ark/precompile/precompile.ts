@@ -1,7 +1,13 @@
 import { ParseError, registeredNameOf } from "@ark/util"
 import type { CallExpression, Node } from "oxc-parser"
 import { DynamicValue } from "./dynamic.ts"
-import { contains, ModuleGraph, runtimeExports, staticBodyOf } from "./graph.ts"
+import {
+	contains,
+	ModuleGraph,
+	runtimeExports,
+	staticBodyOf,
+	unwrapExpression
+} from "./graph.ts"
 import type { PrecompileHost } from "./host.ts"
 import {
 	createSiteState,
@@ -25,9 +31,9 @@ export type PrecompileMode = "standalone" | "cache"
 
 export interface PrecompileOptions extends InterpreterOptions {
 	// standalone builds ship a runtime instead of arktype, so every arktype expression must be folded
-	mode?: PrecompileMode
+	mode?: PrecompileMode | undefined
 	// the module whose `configure()` call sets the configuration
-	config?: string
+	config?: string | undefined
 }
 
 export interface PrecompileResult {
@@ -169,27 +175,59 @@ export class Precompiler {
 		}
 	}
 
-	// a rejected validation, or a call to a static helper that makes no request of its own, leaves its callee or argument as the site
 	private settle(candidate: SiteCandidate): boolean {
 		for (;;) {
 			const state = this.interpreter.evaluateSite(candidate.state)
-			const fallback = candidate.fallbacks.pop()
+			// reading a member of a Type, Scope or Module makes no request, so it is not a site of its own
+			if (
+				candidate.kind === "reference" &&
+				!state.requests.length &&
+				isMemberRead(state.node, candidate.root)
+			)
+				return false
 			const rejection = rejectionOf(state)
-			const call = state.node
-			if (!fallback || !rejection || call.type !== "CallExpression") return true
-			const isShrinkable =
-				contains(call.callee, fallback) ?
-					rejection.code === "validation" && rejection.node === call
-				:	state.requests.every(
-						([node, module]) =>
-							module === state.module &&
-							call.arguments.some(arg => contains(arg, node))
-					)
-			if (!isShrinkable) return true
+			const fallback = rejection && this.fallbackOf(candidate, rejection)
+			if (!fallback) return true
 			if (fallback === candidate.root) return false
 			candidate.state = createSiteState(fallback, state.module)
 			this.interpreter.sitesByNode.set(fallback, candidate.state)
 		}
+	}
+
+	// a rejected validation, or a call to a static helper that makes no request of its own, leaves its callee or argument as the site
+	private fallbackOf(
+		candidate: SiteCandidate,
+		rejection: DynamicValue
+	): Node | undefined {
+		const { fallbacks, state } = candidate
+		if (rejection.code === "validation") {
+			const validation = rejection.node
+			if (
+				validation.type === "CallExpression" &&
+				rejection.module === state.module
+			) {
+				for (let i = fallbacks.length - 1; i >= 0; i--) {
+					if (contains(validation.callee, fallbacks[i]))
+						return fallbacks.splice(i)[0]
+				}
+			}
+			// e.g. a static helper that only validates its argument
+			return state.requests.length ? undefined : candidate.root
+		}
+		const call = state.node
+		const fallback = fallbacks[fallbacks.length - 1]
+		return (
+				call.type === "CallExpression" &&
+					fallback &&
+					!contains(call.callee, fallback) &&
+					state.requests.every(
+						([node, module]) =>
+							module === state.module &&
+							call.arguments.some(arg => contains(arg, node))
+					)
+			) ?
+				fallbacks.pop()
+			:	undefined
 	}
 
 	private finalize(candidate: SiteCandidate, module: SourceModule): Site {
@@ -538,6 +576,14 @@ const chainOf = (dynamic: DynamicValue): string[] => {
 	for (let link: DynamicValue | undefined = dynamic; link; link = link.cause)
 		result.push(link.message)
 	return result
+}
+
+const isMemberRead = (node: Node, root: Node): boolean => {
+	for (node = unwrapExpression(node); node !== root; ) {
+		if (node.type !== "MemberExpression") return false
+		node = unwrapExpression(node.object)
+	}
+	return true
 }
 
 const isCoveredBy = (input: Input, existing: Input) =>

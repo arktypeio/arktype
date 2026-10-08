@@ -36,6 +36,37 @@ export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
+// members of a Type that validate, which run at runtime in every mode
+export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
+	{
+		assert: 1,
+		allows: 1,
+		from: 1,
+		traverse: 1,
+		"~standard": 1
+	},
+	null
+)
+
+// members derived from registry names or node ids, which differ between the build and runtime
+export const unstableArkMembers: Record<string, 1> = Object.setPrototypeOf(
+	{
+		id: 1,
+		hash: 1,
+		innerHash: 1,
+		json: 1,
+		typeJson: 1,
+		innerJson: 1,
+		metaJson: 1,
+		collapsibleJson: 1,
+		toJSON: 1,
+		references: 1,
+		shallowReferences: 1,
+		precompilation: 1
+	},
+	null
+)
+
 export type ImportTarget =
 	| { kind: "arktype"; name: string; value: unknown }
 	| { kind: "binding"; module: SourceModule; binding: Binding; name: string }

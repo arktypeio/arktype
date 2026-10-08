@@ -1,5 +1,6 @@
 import { hasArkKind } from "@ark/schema"
 import { ParseError } from "@ark/util"
+import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import type {
 	CallExpression,
@@ -29,6 +30,8 @@ import { findEscape } from "./escapes.ts"
 import {
 	contains,
 	isFunctionNode,
+	runtimeMembers,
+	unstableArkMembers,
 	staticBodyOf,
 	unwrapExpression,
 	type FunctionNode,
@@ -39,7 +42,7 @@ import type { Binding } from "./scope.ts"
 
 export interface InterpreterOptions {
 	// values of bundler `define` constants, keyed by the expression they replace
-	define?: Record<string, unknown>
+	define?: Record<string, unknown> | undefined
 }
 
 export type InputRoot =
@@ -157,6 +160,10 @@ export class Interpreter {
 	private valuesByNode = new Map<Node, Evaluated>()
 	private escapesByBinding = new Map<Binding, DynamicValue | null>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
+	// validating functions read from arktype values, like `T.assert`
+	private validators = new WeakSet<object>()
+	// plain objects arktype returned, like `declare<t>()`, whose methods are arktype's
+	private arkObjects = new WeakSet<object>()
 	// the call into arktype or a built-in that a stand-in may be called from
 	private active: { ctx: Context; isArktype: boolean } | undefined
 
@@ -382,12 +389,13 @@ export class Interpreter {
 					spread !== null &&
 					spread !== undefined &&
 					typeof spread !== "string" &&
-					!isPlainContainer(spread)
+					!isPlainContainer(spread) &&
+					!hasArkKind(spread, "module")
 				) {
 					return new DynamicValue(
 						ctx.module,
 						property,
-						`\`${ctx.module.snippetOf(property)}\` spreads a value other than an object literal`
+						`\`${ctx.module.snippetOf(property)}\` spreads a value other than an object literal or Module`
 					)
 				}
 				const copy: object = { ...(spread as object) }
@@ -655,7 +663,7 @@ export class Interpreter {
 					node,
 					writeParameterMessage(
 						binding.name,
-						ownerName ?? "a function",
+						ownerName || "a function",
 						module.positionOf(binding.id)
 					),
 					undefined,
@@ -1108,7 +1116,11 @@ export class Interpreter {
 		}
 		if (object instanceof Date || object instanceof RegExp)
 			return this.notOwnData(node, ctx)
-		if (typeof key === "string" && key in unstableArkMembers) {
+		if (
+			typeof key === "string" &&
+			key in unstableArkMembers &&
+			!hasArkKind(object, "module")
+		) {
 			return new DynamicValue(
 				ctx.module,
 				node,
@@ -1116,6 +1128,8 @@ export class Interpreter {
 			)
 		}
 		const value = Reflect.get(object, key)
+		if (typeof key === "string" && key in runtimeMembers && isObjectLike(value))
+			this.validators.add(value)
 		return intrinsics.has(value) ? this.notOwnData(node, ctx) : value
 	}
 
@@ -1193,7 +1207,7 @@ export class Interpreter {
 						`\`${ctx.module.snippetOf(callee)}\` is not one of the build's pure built-ins`
 					)
 				}
-			} else if (isPlainContainer(receiver)) {
+			} else if (isPlainContainer(receiver) && !this.arkObjects.has(receiver)) {
 				return new DynamicValue(
 					ctx.module,
 					node,
@@ -1249,7 +1263,7 @@ export class Interpreter {
 				`\`${ctx.module.snippetOf(node)}\` does not call a static helper or pure built-in`
 			)
 		}
-		if (hasArkKind(fn, "root")) {
+		if (isValidator(fn) || this.validators.has(fn)) {
 			return new DynamicValue(
 				ctx.module,
 				node,
@@ -1333,7 +1347,9 @@ export class Interpreter {
 		const previous = this.active
 		this.active = { ctx, isArktype: true }
 		try {
-			return Reflect.apply(fn, receiver, converted)
+			const result = Reflect.apply(fn, receiver, converted)
+			if (isPlainContainer(result)) this.arkObjects.add(result)
+			return result
 		} catch (e) {
 			throw this.thrown(e, node, ctx)
 		} finally {
@@ -1654,6 +1670,10 @@ export const isPlainContainer = (value: unknown): value is PlainContainer => {
 	return prototype === Object.prototype || prototype === null
 }
 
+// Types, matchers and typed functions run their arguments through validation
+export const isValidator = (value: unknown): boolean =>
+	hasArkKind(value, "root") || value instanceof InternalTypedFn
+
 export const isArkValue = (
 	value: unknown,
 	standIns: WeakMap<object, StandIn>
@@ -1857,21 +1877,3 @@ const unsupportedDescriptions: Record<string, string> = {
 	JSXElement: "JSX",
 	JSXFragment: "JSX"
 }
-
-const unstableArkMembers: Record<string, 1> = Object.setPrototypeOf(
-	{
-		id: 1,
-		hash: 1,
-		innerHash: 1,
-		json: 1,
-		typeJson: 1,
-		innerJson: 1,
-		metaJson: 1,
-		collapsibleJson: 1,
-		toJSON: 1,
-		references: 1,
-		shallowReferences: 1,
-		precompilation: 1
-	},
-	null
-)

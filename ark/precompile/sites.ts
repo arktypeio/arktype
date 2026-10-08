@@ -1,14 +1,17 @@
-import { hasArkKind } from "@ark/schema"
 import type { IdentifierReference, Node } from "oxc-parser"
 import {
 	isFunctionNode,
 	runtimeExports,
+	runtimeMembers,
+	unstableArkMembers,
 	staticBodyOf,
 	type FunctionNode,
 	type ModuleGraph
 } from "./graph.ts"
 import {
 	createSiteState,
+	isDynamic,
+	isValidator,
 	type Interpreter,
 	type SiteState
 } from "./interpreter.ts"
@@ -38,18 +41,15 @@ export const findSites = (
 		const fn = enclosingFunctionOf(reference.id)
 		if (fn && isFoldedHelper(fn, module)) continue
 		const root = kind === "helper" ? helperCallOf(reference.id)! : reference.id
+		const value =
+			kind === "reference" ?
+				interpreter.valueOfBinding(reference.binding!, module)
+			:	undefined
+		// a binding the build could not compute is reported where it is defined, or holds validated data
+		if (kind === "reference" && (value === undefined || isDynamic(value)))
+			continue
 		const fallbacks: Node[] = []
-		const top = climb(
-			root,
-			kind === "reference" &&
-				hasArkKind(
-					interpreter.valueOfBinding(reference.binding!, module),
-					"root"
-				),
-			fallbacks,
-			module,
-			graph
-		)
+		const top = climb(root, isValidator(value), fallbacks, module, graph)
 		if (top === reference.id) continue
 		candidates.push({
 			kind,
@@ -159,22 +159,12 @@ const isRuntimeMember = (
 	return (
 		typeof name === "string" &&
 		(name in runtimeMembers ||
+			name in unstableArkMembers ||
 			(name === "errors" &&
 				member.object === root &&
 				(root as IdentifierReference).name === "type"))
 	)
 }
-
-const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
-	{
-		assert: 1,
-		allows: 1,
-		from: 1,
-		traverse: 1,
-		"~standard": 1
-	},
-	null
-)
 
 // a static helper that is only ever called is folded at each call, so its body holds no sites of its own
 export const isFoldedHelper = (

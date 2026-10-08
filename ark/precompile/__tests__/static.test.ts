@@ -180,6 +180,37 @@ const B = type("string")("data")`)
 			])
 		})
 
+		it("validations are not sites", () => {
+			attest(
+				statusesOf(`import { type, scope, fn } from "arktype"
+const User = type({ name: "string" })
+const types = scope({ id: "string" }).export()
+const len = fn("string", ":", "number")(s => s.length)
+const out = User({ name: "Alan" })
+const text = out.toString()
+const id = types.id("x").toString()
+const name = User.assert({ name: "Ada" }).name
+const assert = User.assert
+const checked = assert({ name: "Grace" })
+const length = len("abc")
+const named = (data: unknown) => User.assert(data)
+const ada = named({ name: "Ada" })`)
+			).snap([
+				"2:14 accepted { name: string }",
+				"3:15 accepted",
+				"4:13 accepted"
+			])
+		})
+
+		it("objects and modules arktype returns", () => {
+			attest(
+				statusesOf(`import { type, scope, declare } from "arktype"
+const A = declare<{ a: string }>().type({ a: "string" })
+const $ = scope({ id: "string" })
+const B = scope({ ...$.export(), user: { id: "id" } }).export()`)
+			).snap(["2:11 accepted { a: string }", "3:11 accepted", "4:11 accepted"])
+		})
+
 		it("escaped objects are inputs", () => {
 			const result = precompile(`import { type } from "arktype"
 const unit = { a: 1 }
@@ -407,6 +438,17 @@ const A = type({ inner: Inner })`)
 				"2:13 accepted string",
 				"3:9 accepted number",
 				"4:11 rejected\n  `Inner` is a Type assigned at /main.ts:3:1, so it is not static"
+			])
+		})
+
+		it("sites over a rejected binding", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const T = type(\`string <= \${Date.now()}\`)
+const U = T.or("number")
+const V = T("data")`)
+			).snap([
+				"2:11 rejected\n  `Date.now` is not one of the build's pure built-ins"
 			])
 		})
 
