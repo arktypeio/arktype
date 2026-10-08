@@ -81,6 +81,14 @@ const withoutArkInternals = (args: unknown[]) =>
 		"reflects on a value other than an object literal or Module"
 	:	undefined
 
+// case mapping, normalization and whitespace follow each engine's Unicode version outside ASCII
+const asciiOnly = (_: unknown[], self: unknown) => {
+	for (const c of self as string) {
+		if (c.charCodeAt(0) > 127)
+			return "maps characters by the engine's Unicode version, which varies outside ASCII"
+	}
+}
+
 // arktype leaves identity between equal definitions unspecified
 const withoutArkIdentity = (args: unknown[]) =>
 	args.some(isArkValue) ?
@@ -248,7 +256,6 @@ defineMethods("string", String, [
 	"includes",
 	"indexOf",
 	"lastIndexOf",
-	"normalize",
 	"padEnd",
 	"padStart",
 	"repeat",
@@ -258,14 +265,15 @@ defineMethods("string", String, [
 	"split",
 	"startsWith",
 	"substring",
-	"toLowerCase",
-	"toUpperCase",
 	"toString",
-	"trim",
-	"trimEnd",
-	"trimStart",
 	"valueOf"
 ])
+defineMethods(
+	"string",
+	String,
+	["normalize", "toLowerCase", "toUpperCase", "trim", "trimEnd", "trimStart"],
+	{ check: asciiOnly }
+)
 defineMethods("number", Number, [
 	"toExponential",
 	"toFixed",
@@ -293,10 +301,16 @@ defineMethods("array", Array, [
 	"slice",
 	"some",
 	"toReversed",
-	"toSorted",
 	"toSpliced",
 	"with"
 ])
+// engines sort differently by a comparator that is not consistent
+defineMethods("array", Array, ["toSorted"], {
+	check: args =>
+		args[0] === undefined ?
+			undefined
+		:	"sorts by a comparator, whose order the spec leaves to each engine unless it is consistent"
+})
 defineMethods("array", Array, ["includes", "indexOf", "lastIndexOf"], {
 	check: withoutArkIdentity
 })

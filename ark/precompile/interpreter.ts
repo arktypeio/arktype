@@ -1301,7 +1301,19 @@ export class Interpreter {
 		const dynamic = findDynamic([receiver, ...args])
 		if (dynamic) return dynamic
 		const builtin = pureBuiltins.get(fn)
-		const problem = builtin?.check?.(args, receiver)
+		const problem =
+			(
+				builtin?.writes &&
+				!(
+					node.type === "CallExpression" &&
+					node.arguments[0] &&
+					/^(Object|Array)Expression$/.test(
+						unwrapExpression(node.arguments[0]).type
+					)
+				)
+			) ?
+				"writes to an object other than a new object or array literal"
+			:	builtin?.check?.(args, receiver)
 		if (problem) {
 			return new DynamicValue(
 				ctx.module,
@@ -1466,14 +1478,19 @@ export class Interpreter {
 			callee === Date &&
 			args.length === 1 &&
 			(typeof arg === "number" ||
-				(typeof arg === "string" && isTimeZoneFreeDate(arg)))
+				(typeof arg === "string" && isIsoInstant(arg)))
 		)
 			return new Date(arg)
 		if (callee === Date) {
 			return new DynamicValue(
 				ctx.module,
 				node,
-				`\`${ctx.module.snippetOf(node)}\` reads the ${args.length ? "time zone" : "clock"}`
+				`\`${ctx.module.snippetOf(node)}\` ${
+					!args.length ? "reads the clock"
+					: typeof arg === "string" ?
+						"reads the time zone, or a format each engine parses its own way"
+					:	"reads the time zone"
+				}`
 			)
 		}
 		return new DynamicValue(
@@ -1862,12 +1879,18 @@ const inferredNameOf = (node: Node): string => {
 	)
 }
 
-// date-only forms, and date-times with `Z` or an offset, are the forms that do not read the time zone
-const isTimeZoneFreeDate = (s: string) =>
-	/^(\d{4}|[+-]\d{6})(-\d{2}(-\d{2})?)?$/.test(s) ||
-	/^(\d{4}|[+-]\d{6})-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2}(\.\d{3})?)?(Z|[+-]\d{2}:\d{2})$/.test(
-		s
-	)
+// the spec fixes the instant of an ISO date, or date-time with Z or an offset, for every engine and time zone, as long as each field is in range
+const isoInstant =
+	/^((?!-0{6})[+-]\d{6}|\d{4})(?:-(0[1-9]|1[0-2])(?:-(0[1-9]|[12]\d|3[01]))?)?(?:T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{3})?)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d))?$/
+
+const isIsoInstant = (s: string): boolean => {
+	const parts = isoInstant.exec(s)
+	if (!parts) return false
+	const [, year, month = "01", day = "01"] = parts
+	const date = new Date(0)
+	date.setUTCFullYear(+year, +month - 1, +day)
+	return date.getUTCDate() === +day
+}
 
 const unaryOperators: Record<string, (value: any) => unknown> = {
 	"-": value => -value,

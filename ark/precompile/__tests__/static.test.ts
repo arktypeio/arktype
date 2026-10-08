@@ -508,6 +508,53 @@ const B = type([type("string")].includes(type("string")) ? "number" : "boolean")
 			])
 		})
 
+		it("dates each engine parses its own way", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type("Date").atOrAfter(new Date("2019-02-31"))
+const B = type("Date").atOrAfter(new Date("2020-01-01T24:00Z"))
+const C = type("Date").atOrAfter(new Date("-000000-01-01"))`)
+			).snap([
+				'2:11 rejected\n  `new Date("2019-02-31")` reads the time zone, or a format each engine parses its own way',
+				'3:11 rejected\n  `new Date("2020-01-01T24:00Z")` reads the time zone, or a format each engine parses its own way',
+				'4:11 rejected\n  `new Date("-000000-01-01")` reads the time zone, or a format each engine parses its own way'
+			])
+		})
+
+		it("built-ins that write", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const o = { a: "string" }
+const set = (x: any) => Object.assign(x, { a: "number" })
+export const A = type(o)
+export const B = type(set(o).a)
+export const C = type(Object.freeze(o).a)
+export const D = type(Object.assign({}, o, { b: "number" }))
+export const E = type(Object.freeze({ a: "string" }))`)
+			).snap([
+				"4:18 accepted { a: string }",
+				'5:18 rejected\n  `Object.assign(x, { a: "number" })` writes to an object other than a new object or array literal',
+				"6:18 rejected\n  `Object.freeze(o)` writes to an object other than a new object or array literal",
+				"7:18 accepted { a: string, b: number }",
+				"8:18 accepted { a: string }"
+			])
+		})
+
+		it("results each engine computes its own way", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type({ [["b", "a"].toSorted((l, r) => (l < r ? -1 : 1))[0]]: "string" })
+const B = type({ [["b", "a"].toSorted()[0]]: "string" })
+const C = type({ ["ß".toUpperCase()]: "string" })
+const D = type({ ["abc".toUpperCase()]: "string" })`)
+			).snap([
+				'2:11 rejected\n  `["b", "a"].toSorted((l, r) => (l < r ? -1 : 1))` sorts by a comparator, whose order the spec leaves to each engine unless it is consistent',
+				"3:11 accepted { a: string }",
+				'4:11 rejected\n  `"ß".toUpperCase()` maps characters by the engine\'s Unicode version, which varies outside ASCII',
+				"5:11 accepted { ABC: string }"
+			])
+		})
+
 		it("environment", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -521,7 +568,7 @@ const E = type("Date").atOrAfter(new Date("2020-01-01T00:00:00"))`)
 				"3:11 rejected\n  `process` is a global the build does not read",
 				"4:11 rejected\n  `Math.random` is not one of the build's pure built-ins",
 				"5:11 rejected\n  `(1000).toLocaleString` is not one of the build's pure built-ins",
-				'6:11 rejected\n  `new Date("2020-01-01T00:00:00")` reads the time zone'
+				'6:11 rejected\n  `new Date("2020-01-01T00:00:00")` reads the time zone, or a format each engine parses its own way'
 			])
 		})
 
