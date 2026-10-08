@@ -12,7 +12,7 @@ export abstract class InternalBasis<
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx))
-			ctx.errorFromNodeContext(this.errorContext as never)
+			ctx.errorFromNodeContext(this.errorContext as never, data)
 	}
 
 	private _errorContext: d["errorContext"] | undefined
@@ -34,7 +34,7 @@ export abstract class InternalBasis<
 		else {
 			js.if(this.compiledNegation, () =>
 				js.line(
-					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)})`
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)}, data)`
 				)
 			)
 		}

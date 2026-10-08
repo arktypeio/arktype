@@ -116,7 +116,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 			!this.predicate(data, ctx.external) &&
 			ctx.currentErrorCount === errorCount
 		)
-			ctx.errorFromNodeContext(this.errorContext)
+			ctx.errorFromNodeContext(this.errorContext, data)
 	}
 
 	compile(js: NodeCompiler): void {
@@ -132,7 +132,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 			`!${condition} && ctx.currentErrorCount === errorCount`,
 			() =>
 				js.line(
-					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)})`
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)}, data)`
 				)
 		)
 	}

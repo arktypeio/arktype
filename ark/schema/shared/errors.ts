@@ -78,7 +78,7 @@ export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
 > extends CastableBase<ArkErrorContextInput<code>> {
 	readonly [arkKind] = "error"
-	data: getAssociatedDataForError<code>
+	data!: getAssociatedDataForError<code>
 	protected input!: ArkErrorContextInput<code>
 	protected ctx: Traversal
 	// the stack's keys until path is first read
@@ -143,12 +143,13 @@ export class ArkError<
 			for (const k of Object.getOwnPropertySymbols(input))
 				defineValue(this, k, input[k as never])
 		}
-		const data = ctx.data
 		const path = [...(input.path ?? ctx.path)]
 		if (relativePath) path.push(...relativePath)
 		if (prefixPath) path.unshift(...prefixPath)
 		this._path = path
-		this.data = ("data" in input ? input.data : data) as never
+		// traversal passes the data that failed a node's check
+		if (!isNodeContext)
+			this.data = ("data" in input ? input.data : ctx.data) as never
 	}
 
 	get path(): ReadonlyPath {

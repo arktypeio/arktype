@@ -290,7 +290,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 			errors.push(ctx.popBranch()!.error!)
 		}
-		ctx.errorFromContext({ code: "union", errors, meta: this.meta })
+		ctx.errorFromContext({ code: "union", errors, meta: this.meta, data })
 	}
 
 	traverseTransform: TraverseTransform = (data, ctx) => {
@@ -403,7 +403,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 
 			js.line(
-				`ctx.errorFromContext({ code: "union", errors, meta: ${js.ref(this.meta)} })`
+				`ctx.errorFromContext({ code: "union", errors, meta: ${js.ref(this.meta)}, data })`
 			)
 		} else if (js.traversalKind === "Allows") {
 			for (const branch of this.branches) {

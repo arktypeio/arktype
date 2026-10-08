@@ -73,7 +73,8 @@ export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 		:	this.instance.test.bind(this.instance)
 
 	traverseApply: TraverseApply<string> = (data, ctx) => {
-		if (!this.traverseAllows(data)) ctx.errorFromNodeContext(this.errorContext)
+		if (!this.traverseAllows(data))
+			ctx.errorFromNodeContext(this.errorContext, data)
 	}
 
 	private _errorContext: Pattern.ErrorContext | undefined
@@ -97,7 +98,7 @@ export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 		else {
 			js.if(`!${condition}`, () =>
 				js.line(
-					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)})`
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)}, data)`
 				)
 			)
 		}

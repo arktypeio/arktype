@@ -549,10 +549,13 @@ export class Traversal {
 	 * @internal
 	 */
 	errorFromNodeContext<input extends NodeErrorContextInput>(
-		input: input
+		input: input,
+		data: unknown
 	): ArkError<input["code"]>
-	errorFromNodeContext(input: NodeErrorContextInput): ArkError {
-		return this.addError(new ArkError(input, this, true))
+	errorFromNodeContext(input: NodeErrorContextInput, data: unknown): ArkError {
+		const error = new ArkError(input, this, true)
+		error.data = data
+		return this.addError(error)
 	}
 
 	/**

@@ -94,7 +94,7 @@ export abstract class InternalPrimitiveConstraint<
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx))
-			ctx.errorFromNodeContext(this.errorContext as never)
+			ctx.errorFromNodeContext(this.errorContext as never, data)
 	}
 
 	compile(js: NodeCompiler): void {
@@ -102,7 +102,7 @@ export abstract class InternalPrimitiveConstraint<
 		else {
 			js.if(this.compiledNegation, () =>
 				js.line(
-					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)})`
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)}, data)`
 				)
 			)
 		}

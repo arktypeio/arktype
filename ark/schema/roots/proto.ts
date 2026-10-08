@@ -119,7 +119,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 		else {
 			js.if(`!(${condition})`, () =>
 				js.line(
-					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)})`
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)}, data)`
 				)
 			)
 		}
