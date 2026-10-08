@@ -1579,18 +1579,18 @@ export class Interpreter {
 		}
 		const target =
 			closure.node.type === "ArrowFunctionExpression" ? () => {} : class {}
-		const proxy = new Proxy(target, {
-			get: (target, key) =>
-				key === "length" ? arity
-				: key === "name" ? closure.name
-				: Reflect.get(target, key),
+		return this.standInProxy(target, standIn, {
+			get: (target, k) =>
+				k === "length" ? arity
+				: k === "name" ? ""
+				: answersFact(k) ? Reflect.get(target, k)
+				: this.refuse(standIn),
+			getPrototypeOf: target => Reflect.getPrototypeOf(target),
 			apply: (_, __, args: unknown[]) => this.callStandIn(standIn, args),
 			construct: () => {
 				throw this.calledAtDefinition(standIn, undefined)
 			}
 		})
-		this.standIns.set(proxy, standIn)
-		return proxy
 	}
 
 	private callStandIn(standIn: StandIn, args: unknown[]): unknown {
@@ -1664,10 +1664,7 @@ export class Interpreter {
 			element =>
 				element.type === "MethodDefinition" && element.kind === "constructor"
 		) as MethodDefinition | undefined
-		Object.defineProperty(target, "name", { value: node.id?.name ?? "" })
-		Object.defineProperty(target, "length", {
-			value: constructor ? parameterCount(constructor.value) : 0
-		})
+		const length = constructor ? parameterCount(constructor.value) : 0
 		const standIn: StandIn = {
 			kind: "class",
 			module: ctx.module,
@@ -1678,13 +1675,19 @@ export class Interpreter {
 			isCalled: false,
 			isDefinition: false
 		}
-		const proxy = new Proxy(target, {
+		return this.standInProxy(target, standIn, {
+			get: (target, k) =>
+				k === "length" ? length
+				: k === "name" ? ""
+				: answersFact(k) ? Reflect.get(target, k)
+				: this.refuse(standIn),
+			getPrototypeOf: target => Reflect.getPrototypeOf(target),
 			apply: () => {
 				standIn.isCalled = true
 				throw new DynamicValue(
 					ctx.module,
 					node,
-					`arktype calls the class \`${target.name}\` (${ctx.module.positionOf(node)}) as a function, which throws a TypeError`,
+					`arktype calls the class${node.id ? ` \`${node.id.name}\`` : ""} (${ctx.module.positionOf(node)}) as a function, which throws a TypeError`,
 					undefined,
 					"callback"
 				)
@@ -1700,8 +1703,6 @@ export class Interpreter {
 				return Reflect.construct(target, args, newTarget)
 			}
 		})
-		this.standIns.set(proxy, standIn)
-		return proxy
 	}
 
 	private opaqueStandIn(dynamic: DynamicValue): object {
@@ -1715,25 +1716,15 @@ export class Interpreter {
 			isCalled: false,
 			isDefinition: false
 		}
-		const read = (): never => {
-			throw new DynamicValue(
-				dynamic.module,
-				dynamic.node,
-				`arktype reads \`${dynamic.module.snippetOf(dynamic.node)}\` while defining the type, so it must be static`,
-				dynamic
-			)
-		}
 		// arktype may only ask whether an opaque value is a Standard Schema, since anything else it reads decides the type
-		const proxy = new Proxy(class {}, {
-			getPrototypeOf: () => Object.prototype,
-			has: (_, key) => {
-				if (key !== "~standard") read()
+		return this.standInProxy(class {}, standIn, {
+			get: (_, k) => (k === arkKind ? undefined : this.refuse(standIn)),
+			has: (_, k) => {
+				if (k !== "~standard") this.refuse(standIn)
 				standIn.isDefinition = true
 				return true
 			},
-			get: (_, key) => (key === arkKind ? undefined : read()),
-			ownKeys: read,
-			getOwnPropertyDescriptor: read,
+			getPrototypeOf: () => Object.prototype,
 			apply: () => {
 				standIn.isCalled = true
 				throw this.calledAtDefinition(standIn, undefined)
@@ -1742,10 +1733,48 @@ export class Interpreter {
 				throw this.calledAtDefinition(standIn, undefined)
 			}
 		})
+	}
+
+	// a stand-in answers only what arktype's facts module reads, so a read arktype makes anywhere else is refused
+	private standInProxy(
+		target: Function,
+		standIn: StandIn,
+		handler: ProxyHandler<Function>
+	): object {
+		const refuse = (): never => this.refuse(standIn)
+		const proxy = new Proxy(target, {
+			apply: refuse,
+			construct: refuse,
+			defineProperty: refuse,
+			deleteProperty: refuse,
+			get: refuse,
+			getOwnPropertyDescriptor: refuse,
+			getPrototypeOf: refuse,
+			has: refuse,
+			isExtensible: refuse,
+			ownKeys: refuse,
+			preventExtensions: refuse,
+			set: refuse,
+			setPrototypeOf: refuse,
+			...handler
+		})
 		this.standIns.set(proxy, standIn)
 		return proxy
 	}
+
+	private refuse(standIn: StandIn): never {
+		throw new DynamicValue(
+			standIn.module,
+			standIn.node,
+			`arktype reads \`${standIn.module.snippetOf(standIn.node)}\` while defining the type, so it must be static`,
+			standIn.dynamic
+		)
+	}
 }
+
+// the facts arktype reads from a function or class by key, besides its name and length
+const answersFact = (k: PropertyKey) =>
+	k === arkKind || k === "constructor" || k === "prototype" || k === "toJSON"
 
 export const isDynamic = (value: unknown): value is DynamicValue =>
 	value instanceof DynamicValue

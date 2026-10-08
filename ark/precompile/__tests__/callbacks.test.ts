@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import type { Type } from "arktype"
 import { precompile, statusesOf } from "./utils.ts"
 
 const nonStatic = `{
@@ -134,6 +135,18 @@ const A = type("string").pipe(format).narrow((s, ctx) => s.length > 0 || ctx.rej
 				hole => `${hole.kind} ${hole.start}:${hole.end} arity ${hole.arity}`
 			)
 		).snap(["function 137:143 arity 1", "function 152:203 arity 2"])
+	})
+
+	it("holes have no names at build", () => {
+		const result = precompile(`import { type } from "arktype"
+const isPositive = (n: number) => n > 0
+class User {}
+const A = type("number").narrow(isPositive)
+const B = type.instanceOf(User)`)
+		attest(result.sites.map(site => (site.value as Type).description)).snap([
+			"a number and valid according to an anonymous predicate",
+			"an instance of "
+		])
 	})
 
 	it("defaults", () => {
