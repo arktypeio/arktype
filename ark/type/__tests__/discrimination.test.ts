@@ -970,7 +970,7 @@ contextualize(() => {
 			const $ = scope({}, { jitless })
 			const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })
 			attest(T({ k: "c" }).toString()).snap(
-				'k must be {"tag":"u"} or "b" (was "c")'
+				'k must be {"toJSON":"Function(toJSON)"} or "b" (was "c")'
 			)
 			const callsOnFirstMiss = calls
 			T({ k: "c" })
