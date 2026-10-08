@@ -137,7 +137,7 @@ interface Evaluated {
 	error?: unknown
 }
 
-export class ModuleNamespace {
+class ModuleNamespace {
 	module: SourceModule
 
 	constructor(module: SourceModule) {
@@ -1674,7 +1674,7 @@ export const isPlainContainer = (value: unknown): value is PlainContainer => {
 export const isValidator = (value: unknown): boolean =>
 	hasArkKind(value, "root") || value instanceof InternalTypedFn
 
-export const isArkValue = (
+const isArkValue = (
 	value: unknown,
 	standIns: WeakMap<object, StandIn>
 ): boolean =>
@@ -1785,13 +1785,13 @@ const pushUnique = (
 	if (!helpers.some(([n]) => n === node)) helpers.push([node, module])
 }
 
-export const isTopLevel = (node: Node): boolean => {
+const isTopLevel = (node: Node): boolean => {
 	for (let parent = node.parent; parent; parent = parent.parent)
 		if (isFunctionNode(parent) || parent.type === "ClassBody") return false
 	return true
 }
 
-export const isBoundFunction = (node: FunctionNode): boolean =>
+const isBoundFunction = (node: FunctionNode): boolean =>
 	node.type === "FunctionDeclaration" ||
 	(node.parent?.type === "VariableDeclarator" && node.parent.init === node)
 

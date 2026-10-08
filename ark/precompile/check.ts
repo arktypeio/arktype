@@ -18,7 +18,7 @@ export interface CheckReport {
 	files: number
 }
 
-export const defaultSources = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"]
+const defaultSources = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"]
 
 const ignoredDirs = /(^|\/)(node_modules|out|dist|build)\//
 

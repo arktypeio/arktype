@@ -91,7 +91,6 @@ const rootKindOf = (
 		:	undefined
 }
 
-// the call of a helper reached through `id` or a namespace member of it
 const helperCallOf = (id: Node): Node | undefined => {
 	const parent = id.parent
 	const callee =

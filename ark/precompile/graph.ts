@@ -12,7 +12,7 @@ import { exportNameOf, type Binding } from "./scope.ts"
 
 export type FunctionNode = Function | ArrowFunctionExpression
 
-export const arktypeNamespacesBySpecifier: Record<string, object> =
+const arktypeNamespacesBySpecifier: Record<string, object> =
 	Object.setPrototypeOf(
 		{
 			arktype,
@@ -142,7 +142,6 @@ export class ModuleGraph {
 		return new SourceModule(id, source)
 	}
 
-	// every module the build may read to compute values of `id`'s bindings
 	dependenciesOf(id: string): string[] {
 		const result = [id]
 		for (let i = 0; i < result.length; i++) {
@@ -281,7 +280,6 @@ export class ModuleGraph {
 		return !!binding && this.isArkBinding(binding, module)
 	}
 
-	// a static helper reached through a binding, with the module that declares it
 	helperOf(
 		callee: Node,
 		module: SourceModule
