@@ -1946,6 +1946,7 @@ const staticProblemOf = (
 	: binding.writes.length ?
 		`is ${module.scopes.bindingsById.has(binding.writes[0]) ? "declared again" : "assigned"} at ${module.positionOf(binding.writes[0])}, so its value at the site is not known`
 	: module.scopes.hasDirectEval ? "is in a module that calls `eval`"
+	: module.scopes.hasWith ? "is in a module that uses `with`"
 	: isLoopVariable(binding) ? "is a loop variable"
 	: undefined
 

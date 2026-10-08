@@ -66,6 +66,8 @@ export class ModuleScopes {
 	exportsByName: Record<string, ExportEntry> = Object.create(null)
 	starExports: string[] = []
 	hasDirectEval = false
+	// a `with` block, legal in a sloppy CommonJS module, resolves a name in its object before the binding
+	hasWith = false
 	private scope: Scope
 	private pendingExports: [string, Reference][] = []
 
@@ -184,11 +186,16 @@ export class ModuleScopes {
 				return this.visit(node.right, node)
 			case "UpdateExpression":
 				return this.visitTarget(node.argument, node)
-			case "CallExpression":
-				if (node.callee.type === "Identifier" && node.callee.name === "eval")
+			case "CallExpression": {
+				const callee = unwrapExpression(node.callee)
+				if (callee.type === "Identifier" && callee.name === "eval")
 					this.hasDirectEval = true
 				this.visit(node.callee, node)
 				return this.visitAll(node.arguments, node)
+			}
+			case "WithStatement":
+				this.hasWith = true
+				return this.visitChildren(node)
 			case "TSEnumDeclaration":
 				this.bind(node.id, "enum", node, node)
 				if (node.declare) this.scope.bindings[node.id.name].isAmbient = true

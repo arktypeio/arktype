@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { diagnosticsOf, precompile, statusesOf } from "./utils.ts"
+import { precompileModule } from "@ark/precompile"
+import { diagnosticsOf, memoryHost, precompile, statusesOf } from "./utils.ts"
 
 contextualize(() => {
 	describe("allowed", () => {
@@ -858,6 +859,36 @@ const C = type(\`'\${JSON.stringify(User)}'\`)`)
 				"4:11 rejected\n  `User.json` is derived from registry names or node ids, which are not stable",
 				"5:11 rejected\n  `JSON.stringify(User)` stringifies a function or arktype value"
 			])
+		})
+
+		it("eval and with", () => {
+			attest(
+				[
+					`eval("o.a = 'number'")`,
+					`;(eval as any)("o.a = 'number'")`,
+					`eval!("o.a = 'number'")`
+				].map(
+					use =>
+						statusesOf(`import { type } from "arktype"
+const o = { a: "string" }
+${use}
+export const T = type(o.a)`)[0]
+				)
+			).snap([
+				"4:18 rejected\n  `o` is in a module that calls `eval`",
+				"4:18 rejected\n  `o` is in a module that calls `eval`",
+				"4:18 rejected\n  `o` is in a module that calls `eval`"
+			])
+			const source = `import { type } from "arktype"
+const o = { a: "string" }
+with ({ o: { a: "number" } }) { exports.T = type(o.a) }`
+			attest(
+				precompileModule(
+					source,
+					"/main.cts",
+					memoryHost({ "/main.cts": source })
+				).sites.map(site => [site.status, ...site.reasons])
+			).snap([["rejected", "`o` is in a module that uses `with`"]])
 		})
 
 		it("match parser extended by separate cases", () => {
