@@ -1,4 +1,4 @@
-import { throwError } from "@ark/util"
+import { noSuggest, throwError } from "@ark/util"
 
 export type ArktypeEntry = "arktype" | "arktype/runtime"
 
@@ -11,15 +11,15 @@ export const assertRuntimeVersion = (version: string): void => {
 		throwError(writeRuntimeVersionMismatchMessage(version, arktypeVersion))
 }
 
-const loadedEntryKey = Symbol.for("arktype.entry")
+const loadedEntryKey = noSuggest("loadedArktypeEntry")
 
 // in standalone mode every import of arktype resolves to arktype/runtime, so loading both means one didn't
 export const claimEntry = (entry: ArktypeEntry): void => {
-	const global = globalThis as Record<symbol, ArktypeEntry | undefined>
-	const loaded = global[loadedEntryKey]
+	const entries = globalThis as { [loadedEntryKey]?: ArktypeEntry }
+	const loaded = entries[loadedEntryKey]
 	if (loaded !== undefined && loaded !== entry)
 		throwError(writeEntryConflictMessage(entry, loaded))
-	global[loadedEntryKey] = entry
+	entries[loadedEntryKey] = entry
 }
 
 export const writeEntryConflictMessage = <

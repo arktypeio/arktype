@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { $ark, hasArkKind } from "@ark/schema"
+import { noSuggest } from "@ark/util"
 import { scope, type } from "arktype"
 import {
 	arktypeVersion,
@@ -16,7 +17,6 @@ import { writeUnavailableMemberMessage } from "arktype/runtime"
 import { buildSync } from "esbuild"
 import { spawnSync } from "node:child_process"
 
-// a bundle holds only what an artifact imports, so validating with it proves no node is needed
 const bundle = (source: string) => {
 	const result = buildSync({
 		stdin: {
@@ -42,17 +42,16 @@ const bundle = (source: string) => {
 const urlOf = (js: string) =>
 	`data:text/javascript;base64,${Buffer.from(js).toString("base64")}`
 
-const entryKey = Symbol.for("arktype.entry")
+const entryKey = noSuggest("loadedArktypeEntry")
 
-// an artifact refuses to load beside arktype, which comparing it with the JIT requires
 const importBesideArktype = async (js: string): Promise<any> => {
-	const global = globalThis as Record<symbol, unknown>
-	const entry = global[entryKey]
-	delete global[entryKey]
+	const entries = globalThis as Record<string, unknown>
+	const entry = entries[entryKey]
+	delete entries[entryKey]
 	try {
 		return await import(urlOf(js))
 	} finally {
-		global[entryKey] = entry
+		entries[entryKey] = entry
 	}
 }
 
@@ -96,7 +95,6 @@ contextualize(() => {
 			a1: { p0: "string = 'd'", "p1?": "string" },
 			a2: { kind: "'a2'", "p0?": "a0", p1: "a2 | null" }
 		}).export()
-		// content-equal cycles the JIT tracks apart
 		const { x }: Record<string, type.Any> = scope({
 			a0: [["Record<string, null>", "...", "a0[]"], "[]"],
 			c0: [["Record<string, null>", "...", "c0[]"], "[]"],

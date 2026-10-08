@@ -147,10 +147,7 @@ export const errorWritersByCode: {
 		},
 		problem: ctx => ctx.expected,
 		message: ({ problem }) => {
-			if (problem[0] === "[") {
-				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-				return `value at ${problem}`
-			}
+			if (problem[0] === "[") return `value at ${problem}`
 
 			return problem
 		}

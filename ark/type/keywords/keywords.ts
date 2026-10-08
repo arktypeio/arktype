@@ -76,6 +76,7 @@ export declare namespace Ark {
 		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
 }
 
+// refuses to load beside a standalone artifact, which claims arktype/runtime
 claimEntry("arktype")
 
 export const ark: Scope<Ark> = scope(

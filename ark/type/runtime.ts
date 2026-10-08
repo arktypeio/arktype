@@ -1,11 +1,6 @@
 import type { BaseRoot, RootApply, StandardSchemaV1 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import {
-	ArkErrors,
-	runtimeConfig,
-	runtimeLocale,
-	type Traversal
-} from "@ark/schema/runtime"
+import { ArkErrors, runtimeLocale, type Traversal } from "@ark/schema/runtime"
 import { Callable, throwError, type inferred } from "@ark/util"
 import { raisedErrorPhrases } from "./keywords/functions.ts"
 import type { ArrayType } from "./variants/array.ts"
@@ -56,7 +51,7 @@ export interface ValidatorAttributes {
 const throwOnFail: ArkErrors.Handler = errors => errors.throw()
 
 /**
- * A precompiled Type that validates without arktype.
+ * #### a Type precompiled to validate without arktype
  */
 export class Validator extends Callable<
 	(
@@ -68,7 +63,6 @@ export class Validator extends Callable<
 	expression: string
 	description: string
 	meta: ArkEnv.meta
-	onFail: ArkErrors.Handler | null
 	allows: (data: unknown) => boolean
 
 	constructor(
@@ -80,7 +74,7 @@ export class Validator extends Callable<
 			(
 				data: unknown,
 				pipedFromCtx?: Traversal,
-				onFail: ArkErrors.Handler | null = this.onFail
+				onFail: ArkErrors.Handler | null = null
 			) =>
 				pipedFromCtx ? pipedFromCtx.pipe(node, data) : rootApply(data, onFail),
 			{ bind: null }
@@ -88,7 +82,6 @@ export class Validator extends Callable<
 		this.expression = attributes.expression
 		this.description = attributes.description
 		this.meta = attributes.meta
-		this.onFail = this.meta.onFail ?? runtimeConfig.onFail
 		this.allows = node.allows
 	}
 
@@ -125,7 +118,6 @@ export class Validator extends Callable<
 	}
 }
 
-// a Type's members that exist only in its type
 type typeOnlyMember =
 	| typeof inferred
 	| "t"

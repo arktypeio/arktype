@@ -14,7 +14,12 @@ import {
 	rootApplyRuntime,
 	writeRootApply
 } from "@ark/schema/internal"
-import { hasDomain, printable, serializePrimitive, throwError } from "@ark/util"
+import {
+	hasDomain,
+	printable,
+	serializePrimitive,
+	throwParseError
+} from "@ark/util"
 import { arktypeVersion } from "./entry.ts"
 import type { type } from "./keywords/keywords.ts"
 import * as runtime from "./runtime.ts"
@@ -31,9 +36,9 @@ export const precompileStandalone = (
 	// the runtime writes only en
 	const locale = $ark.config.locale
 	if (locale !== undefined && locale !== $ark.defaultConfig.locale)
-		throwError(writeUnprecompilableMessage("a configured locale"))
+		throwParseError(writeUnprecompilableMessage("a configured locale"))
 	for (const root of roots)
-		if (root.onFail) throwError(writeUnprecompilableMessage("onFail"))
+		if (root.onFail) throwParseError(writeUnprecompilableMessage("onFail"))
 	const unit = precompileByContent(roots)
 	// traversal raises these itself, and a predicate or morph can raise any code
 	const raisableCodes: { [code in ArkErrorCode]?: true } = {
@@ -92,7 +97,7 @@ export const precompileStandalone = (
 		const traversals = `traversals[${traversalIndexByName[unit.names[node.id]]}]`
 		const trackedName =
 			unit.names[node.trackedId as NodeId] ??
-			throwError(writeUnprecompilableMessage(`${node.expression}'s cycle`))
+			throwParseError(writeUnprecompilableMessage(`${node.expression}'s cycle`))
 		// a discriminant's miss reads its union's description of the cases
 		const discriminantDescription =
 			node.hasKind("union") && node.compiledDiscriminant ?
@@ -117,7 +122,7 @@ export const precompileStandalone = (
 
 	const emit = (value: unknown): string => {
 		if (typeof value === "symbol")
-			return throwError(writeUnprecompilableMessage(printable(value)))
+			return throwParseError(writeUnprecompilableMessage(printable(value)))
 		if (!hasDomain(value, "object"))
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
 		const runtimePath = runtimePathsByValue.get(value)
@@ -127,30 +132,33 @@ export const precompileStandalone = (
 		if (isNode(value)) {
 			return value.isRoot() ?
 					shapeOf(value)
-				:	throwError(
+				:	throwParseError(
 						writeUnprecompilableMessage(`${value.kind} ${value.expression}`)
 					)
 		}
 		if (typeof value === "function") {
 			return globalThis[value.name as never] === value ?
 					`globalThis[${JSON.stringify(value.name)}]`
-				:	throwError(writeUnprecompilableMessage(printable(value)))
+				:	throwParseError(writeUnprecompilableMessage(printable(value)))
 		}
 		// a unit is compared by reference, so a copy wouldn't equal it
-		if (objectUnits.has(value))
-			throwError(writeUnprecompilableMessage(`the unit ${printable(value)}`))
+		if (objectUnits.has(value)) {
+			throwParseError(
+				writeUnprecompilableMessage(`the unit ${printable(value)}`)
+			)
+		}
 		// a structure's keys are read only with `in`, so they're emitted without their props
-		if (propsByKeys.has(value as object)) {
-			const keys = Reflect.ownKeys(value as object)
+		if (propsByKeys.has(value)) {
+			const keys = Reflect.ownKeys(value)
 			if (keys.some(k => typeof k === "symbol"))
-				throwError(writeUnprecompilableMessage("a symbol key"))
+				throwParseError(writeUnprecompilableMessage("a symbol key"))
 			return declareConst(
-				value as object,
+				value,
 				`{ __proto__: null, ${keys.map(k => `[${JSON.stringify(k)}]: 1`).join(", ")} }`
 			)
 		}
 		if (emitting.has(value))
-			return throwError(writeUnprecompilableMessage("a cyclic object"))
+			return throwParseError(writeUnprecompilableMessage("a cyclic object"))
 		const prototype = Object.getPrototypeOf(value)
 		const keys = Reflect.ownKeys(value)
 		if (prototype === Date.prototype && keys.length === 0)
@@ -185,7 +193,7 @@ export const precompileStandalone = (
 				)
 			})
 		if (!isReproducible) {
-			throwError(
+			throwParseError(
 				writeUnprecompilableMessage(`${printable(value)}'s properties`)
 			)
 		}
@@ -213,8 +221,11 @@ export const precompileStandalone = (
 				if (writer === $ark.defaultConfig[code][k]) continue
 				if (typeof writer === "string")
 					writers.push(`${k}: ${JSON.stringify(writer)}`)
-				else if (runsFunctions || raisableCodes[code])
-					throwError(writeUnprecompilableMessage(`a configured ${code} ${k}`))
+				else if (runsFunctions || raisableCodes[code]) {
+					throwParseError(
+						writeUnprecompilableMessage(`a configured ${code} ${k}`)
+					)
+				}
 			}
 			if (writers.length) {
 				configuredCodes.push(
