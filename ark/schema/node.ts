@@ -9,6 +9,7 @@ import {
 	isEmptyObject,
 	isKeyOf,
 	liftArray,
+	nameOf,
 	printable,
 	stringifyPath,
 	throwError,
@@ -1417,6 +1418,8 @@ const attachedInnerOf = (attachments: UnknownAttachments): dict | undefined => {
 
 export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
 	stringifyPath(path, {
+		// symbols that print alike are still different keys
+		stringifySymbol: nameOf,
 		stringifyNonKey: node => node.expression
 	})
 

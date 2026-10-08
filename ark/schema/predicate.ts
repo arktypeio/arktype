@@ -1,4 +1,4 @@
-import { printable } from "@ark/util"
+import { baseNameOf, printable } from "@ark/util"
 import { BaseConstraint } from "./constraint.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -9,7 +9,6 @@ import type {
 } from "./shared/declare.ts"
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
 import { describeCause, keywordWriterOf, type Locale } from "./shared/locale.ts"
-import { namedReference, type RegisteredReference } from "./shared/registry.ts"
 import type {
 	Traversal,
 	TraverseAllows,
@@ -99,11 +98,9 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 	})
 
 export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
-	serializedPredicate: RegisteredReference = namedReference(this.predicate)
-
 	impliedBasis = null
 
-	expression: string = this.serializedPredicate
+	expression: string = baseNameOf(this.predicate)
 	traverseAllows: TraverseAllows = this.predicate as never
 
 	errorContext: Predicate.ErrorContext = {

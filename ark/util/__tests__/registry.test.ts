@@ -21,9 +21,14 @@ contextualize(() => {
 	})
 
 	it("counted names never collide", () => {
-		const names = ["counted", "counted", "counted1", "counted11"].map(name =>
+		const names = ["counted", "counted", "counted$1", "counted$1$1"].map(name =>
 			nameOf({ [name]: () => {} }[name])
 		)
-		attest(names).equals(["counted", "counted1", "counted11", "counted111"])
+		attest(names).equals([
+			"counted",
+			"counted$1",
+			"counted$1$1",
+			"counted$1$1$1"
+		])
 	})
 })

@@ -68,12 +68,13 @@ const unregisteredNameOf = (value: object | symbol) =>
 		namesByUnregisteredSymbol.get(value)
 	:	namesByUnregisteredObject.get(value)
 
+// "$" sorts before other identifier characters, so hashes order names by base name first
 const nextName = (value: object | symbol) => {
-	const baseName = baseNameFor(value)
+	const baseName = baseNameOf(value)
 	let name = baseName
 	let count = nameCounts[baseName] ?? 0
-	// a name may be taken by a registry key like sets or a function named fn1
-	while (isNameTaken(name) || name in registry) name = `${baseName}${++count}`
+	// a name may be taken by a registry key like sets or a function named fn$1
+	while (isNameTaken(name) || name in registry) name = `${baseName}$${++count}`
 	nameCounts[baseName] = count
 	return name
 }
@@ -81,17 +82,14 @@ const nextName = (value: object | symbol) => {
 // every name counted to from a base name is taken, so only its count is stored
 const isNameTaken = (name: string) => {
 	if (name in nameCounts) return true
-	for (let i = name.search(/\d*$/); i < name.length; i++) {
-		const count = nameCounts[name.slice(0, i)]
-		if (count && name[i] !== "0" && Number(name.slice(i)) <= count) return true
-	}
-	return false
+	const counted = /^(.+)\$([1-9]\d*)$/.exec(name)
+	return !!counted && Number(counted[2]) <= (nameCounts[counted[1]] ?? 0)
 }
 
 export const isDotAccessible = (keyName: string): boolean =>
 	/^[$A-Z_a-z][\w$]*$/.test(keyName)
 
-const baseNameFor = (value: object | symbol) => {
+export const baseNameOf = (value: object | symbol): string => {
 	switch (typeof value) {
 		case "object": {
 			if (value === null) break

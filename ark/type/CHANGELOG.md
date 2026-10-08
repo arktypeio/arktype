@@ -180,6 +180,23 @@ type.number.allows(Number.NaN)
 configure({ onUndeclaredKey: "delete" })
 ```
 
+### Print functions and symbols by their own names
+
+Messages, `expression` and ParseErrors print a function or symbol by its name alone, without the `$ark.` prefix or a count of earlier values with the same name, and union branches are ordered by those names:
+
+```ts
+const tag = Symbol("tag")
+
+// previously "must be Symbol(tag2) (was 5)" if other symbols described as tag were named first
+// now "must be Symbol(tag) (was 5)"
+type.unit(tag)(5).toString()
+
+// previously { $ark.tag: string }, now { Symbol(tag): string }
+type({ [tag]: "string" }).expression
+```
+
+`json` still names each value uniquely, now counting repeated names as `tag$1` rather than `tag1`.
+
 ### Reject `Infinity` from `number`
 
 `number` rejects `Infinity` and `-Infinity` by default, as it already rejects `NaN`:
@@ -611,7 +628,7 @@ When a narrow rejected every branch of a union it was intersected with, the erro
 const isC = (s: string) => s === "c"
 
 // previously ParseError: Intersection of "a" | "b" and unknown results in an unsatisfiable type
-// now ParseError: Intersection of "a" | "b" and $ark.isC results in an unsatisfiable type
+// now ParseError: Intersection of "a" | "b" and isC results in an unsatisfiable type
 type("'a' | 'b'").narrow(isC)
 ```
 

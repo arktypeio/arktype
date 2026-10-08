@@ -1,4 +1,4 @@
-import { append, type Key } from "@ark/util"
+import { append, printable, type Key } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
 import type { nodeOfKind } from "../kinds.ts"
 import {
@@ -48,7 +48,7 @@ export abstract class BaseProp<
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	serializedKey: string = compileSerializedValue(this.key)
 	compiledKey: string =
-		typeof this.key === "string" ? this.key : this.serializedKey
+		typeof this.key === "string" ? this.key : printable(this.key)
 
 	protected override initializeFlatRefs(): void {
 		this._flatRefs = append(

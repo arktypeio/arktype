@@ -8,7 +8,6 @@ import {
 import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import { compileSerializedValue } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
@@ -216,6 +215,6 @@ export const writeNonPrimitiveNonFunctionDefaultValueMessage = (
 	const keyDescription =
 		key === null ? ""
 		: typeof key === "number" ? `for value at [${key}] `
-		: `for ${compileSerializedValue(key)} `
+		: `for ${printable(key)} `
 	return `Non-primitive default ${keyDescription}must be specified as a function like () => ({my: 'object'})`
 }

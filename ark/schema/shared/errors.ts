@@ -3,6 +3,7 @@ import {
 	ReadonlyPath,
 	append,
 	appendUnique,
+	arrayEquals,
 	conflatenateAll,
 	defineValue,
 	flatMorph,
@@ -543,10 +544,14 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		return (
 			// this would occur if there is an existing error at a prefix of path
 			// e.g. the path is ["foo", "bar"] and there is an error at ["foo"]
-			path.stringifyAncestors().some(s => s in this.byPath) ||
-			// this would occur if there is an existing error at a suffix of path
-			// e.g. the path is ["foo"] and there is an error at ["foo", "bar"]
-			path.stringify() in this.byAncestorPath
+			(path.stringifyAncestors().some(s => s in this.byPath) ||
+				// this would occur if there is an existing error at a suffix of path
+				// e.g. the path is ["foo"] and there is an error at ["foo", "bar"]
+				path.stringify() in this.byAncestorPath) &&
+			// distinct symbols can print alike
+			this.issues.some(
+				e => startsWithPath(path, e.path) || startsWithPath(e.path, path)
+			)
 		)
 	}
 
@@ -605,11 +610,19 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		const issues = this.issues
 		if (issues.length === 0) return undefined
 		const propString = error.propString
-		if (this._byPath || issues.length >= maxScannedLength)
-			return this.byPath[propString]
+		if (this._byPath || issues.length >= maxScannedLength) {
+			const indexed = this.byPath[propString]
+			// distinct symbols can print alike, so an indexed error may be elsewhere
+			if (!indexed || arrayEquals(indexed.path, error.path)) return indexed
+		}
 		// an error at an existing path usually follows the last one added
-		for (let i = issues.length - 1; i >= 0; i--)
-			if (issues[i].propString === propString) return issues[i]
+		for (let i = issues.length - 1; i >= 0; i--) {
+			if (
+				issues[i].propString === propString &&
+				arrayEquals(issues[i].path, error.path)
+			)
+				return issues[i]
+		}
 	}
 
 	private addAncestorPaths(error: ArkError): void {
@@ -621,6 +634,9 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		}
 	}
 }
+
+const startsWithPath = (path: ReadonlyPath, prefix: ReadonlyPath) =>
+	prefix.length <= path.length && prefix.every((k, i) => k === path[i])
 
 export class TraversalError extends Error {
 	readonly name = "TraversalError"

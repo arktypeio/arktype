@@ -771,7 +771,11 @@ contextualize(() => {
 				type: "object",
 				properties: { name: { type: "string" } },
 				"x-arktype-symbolKeys": [
-					{ key: "$ark.zildjian1", value: { type: "number" }, optional: false },
+					{
+						key: "$ark.zildjian$1",
+						value: { type: "number" },
+						optional: false
+					},
 					{ key: null, value: { type: "number" }, optional: false }
 				],
 				required: ["name"]

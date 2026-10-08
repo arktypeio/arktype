@@ -4,7 +4,7 @@ import {
 	writeLiteralUnionEntriesMessage,
 	writeNonStructuralOperandMessage
 } from "@ark/schema"
-import { Hkt, register, type array } from "@ark/util"
+import { Hkt, type array } from "@ark/util"
 import { generic, scope, type } from "arktype"
 import type { BaseTypeProp } from "arktype/internal/variants/object.ts"
 
@@ -42,10 +42,7 @@ contextualize(() => {
 
 	it("mixed keys", () => {
 		const s = Symbol()
-
-		const sReference = register(s)
 		const s2 = Symbol()
-		const s2Reference = register(s2)
 		const T = type({
 			[s]: "1",
 			[s2]: ["2", "?"],
@@ -62,9 +59,9 @@ contextualize(() => {
 
 		attest(snapshottableProps(T.props)).snap([
 			{ kind: "required", key: "foo", value: "3" },
-			{ kind: "required", key: `Symbol(${sReference})`, value: "1" },
+			{ kind: "required", key: "Symbol(symbol)", value: "1" },
 			{ kind: "optional", key: "foo2", value: "4" },
-			{ kind: "optional", key: `Symbol(${s2Reference})`, value: "2" }
+			{ kind: "optional", key: "Symbol(symbol)", value: "2" }
 		])
 	})
 

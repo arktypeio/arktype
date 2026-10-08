@@ -1174,9 +1174,9 @@ const constructStructuralMorphCacheKey = (
 	if (node.undeclared === "delete") {
 		cacheKey += "delete !("
 		if (node.required)
-			for (const n of node.required) cacheKey += n.compiledKey + " | "
+			for (const n of node.required) cacheKey += n.serializedKey + " | "
 		if (node.optional)
-			for (const n of node.optional) cacheKey += n.compiledKey + " | "
+			for (const n of node.optional) cacheKey += n.serializedKey + " | "
 		if (node.index)
 			for (const index of node.index) cacheKey += index.signature.id + " | "
 		if (node.sequence) {
@@ -1347,8 +1347,7 @@ export const writeInvalidKeysMessage = <
 
 export const writeDuplicateKeyMessage = <key extends Key>(
 	key: key
-): writeDuplicateKeyMessage<key> =>
-	`Duplicate key ${compileSerializedValue(key) as never}`
+): writeDuplicateKeyMessage<key> => `Duplicate key ${printable(key) as never}`
 
 export type writeDuplicateKeyMessage<key extends Key> =
 	`Duplicate key '${describe<key>}'`

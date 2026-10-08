@@ -360,20 +360,18 @@ contextualize(() => {
 		const _isNarrowedC = (s: string) => s === "c"
 		attest(() => type("'a' | 'b'").narrow(_isNarrowedC)).throws(
 			writeUnsatisfiableExpressionError(
-				'Intersection of "a" | "b" and $ark._isNarrowedC'
+				'Intersection of "a" | "b" and _isNarrowedC'
 			)
 		)
 		attest(() =>
 			type("'a' | 'b'").and(type("string").narrow(_isNarrowedC))
 		).throws(
 			writeUnsatisfiableExpressionError(
-				'Intersection of "a" | "b" and string & $ark._isNarrowedC'
+				'Intersection of "a" | "b" and string & _isNarrowedC'
 			)
 		)
 		attest(() => type("'b'").narrow(_isNarrowedC)).throws(
-			writeUnsatisfiableExpressionError(
-				'Intersection of "b" and $ark._isNarrowedC'
-			)
+			writeUnsatisfiableExpressionError('Intersection of "b" and _isNarrowedC')
 		)
 	})
 })
