@@ -321,10 +321,9 @@ const B = scope({ ...$.export(), user: { id: "id" } }).export()`)
 			).snap(["2:11 accepted { a: string }", "3:11 accepted", "4:11 accepted"])
 		})
 
-		it("escaped objects are inputs", () => {
+		it("objects are inputs", () => {
 			const result = precompile(`import { type } from "arktype"
 const unit = { a: 1 }
-register(unit)
 const A = type("===", unit)`)
 			attest(result.sites.map(site => site.status)).snap(["accepted"])
 			attest(result.sites[0].inputs).snap([
@@ -840,18 +839,18 @@ const V = T("data")`)
 			])
 		})
 
-		it("object that escapes a module that does not export it", () => {
+		it("object another module does not export", () => {
 			attest(
 				statusesOf(
 					`import { type } from "arktype"
 import { max } from "./limits.ts"
 const A = type(\`number < \${max()}\`)`,
 					{
-						"/limits.ts": `const limits = { max: 5 }\nregister(limits)\nexport const max = () => limits.max`
+						"/limits.ts": `const limits = { max: 5 }\nexport const max = () => limits.max`
 					}
 				)
 			).snap([
-				"3:11 rejected\n  the site reads an object that escapes a module that does not export it\n  `limits` is passed to `register` (/limits.ts:2:1)"
+				"3:11 rejected\n  the site reads `limits` (/limits.ts:1:7), which its module cannot import, so the site cannot compare it at creation"
 			])
 		})
 

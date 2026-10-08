@@ -9,10 +9,6 @@ export interface PureBuiltin {
 	isApproximate?: true
 	// writes its first argument
 	writes?: true
-	// calls the functions among its arguments
-	calls?: true
-	// its result holds no object passed to it
-	freshResult?: true
 }
 
 export const globalsByName: Record<string, unknown> = Object.assign(
@@ -117,7 +113,7 @@ definePure(
 	globalThis,
 	"",
 	["String", "Number", "Boolean", "BigInt", "Symbol"],
-	{ check: primitivesOnly, freshResult: true }
+	{ check: primitivesOnly }
 )
 definePure(
 	globalThis,
@@ -132,7 +128,7 @@ definePure(
 		"encodeURI",
 		"decodeURI"
 	],
-	{ check: primitivesOnly, freshResult: true }
+	{ check: primitivesOnly }
 )
 definePure(Object, "Object", ["values", "entries"], {
 	check: withoutArkInternals
@@ -141,7 +137,7 @@ definePure(
 	Object,
 	"Object",
 	["keys", "isFrozen", "getOwnPropertyNames", "hasOwn"],
-	{ check: withoutArkInternals, freshResult: true }
+	{ check: withoutArkInternals }
 )
 definePure(Object, "Object", ["fromEntries"])
 definePure(Object, "Object", ["freeze"], { writes: true })
@@ -150,44 +146,35 @@ definePure(Object, "Object", ["assign"], {
 	writes: true
 })
 definePure(Array, "Array", ["of"])
-definePure(Array, "Array", ["isArray"], { freshResult: true })
-definePure(Array, "Array", ["from"], { calls: true })
-definePure(
-	Number,
-	"Number",
-	["isInteger", "isSafeInteger", "isFinite", "isNaN"],
-	{ freshResult: true }
-)
-definePure(String, "String", ["fromCharCode", "fromCodePoint", "raw"], {
-	freshResult: true
-})
-definePure(JSON, "JSON", ["parse"], { freshResult: true })
+definePure(Array, "Array", ["isArray"])
+definePure(Array, "Array", ["from"])
+definePure(Number, "Number", [
+	"isInteger",
+	"isSafeInteger",
+	"isFinite",
+	"isNaN"
+])
+definePure(String, "String", ["fromCharCode", "fromCodePoint", "raw"])
+definePure(JSON, "JSON", ["parse"])
 definePure(JSON, "JSON", ["stringify"], {
-	check: args => plainDataOnly(args.slice(0, 1)),
-	calls: true,
-	freshResult: true
+	check: args => plainDataOnly(args.slice(0, 1))
 })
-definePure(Date, "Date", ["UTC"], { freshResult: true })
-definePure(Symbol, "Symbol", ["for"], { freshResult: true })
-definePure(
-	Math,
-	"Math",
-	[
-		"abs",
-		"ceil",
-		"floor",
-		"round",
-		"trunc",
-		"sign",
-		"max",
-		"min",
-		"fround",
-		"clz32",
-		"imul",
-		"sqrt"
-	],
-	{ freshResult: true }
-)
+definePure(Date, "Date", ["UTC"])
+definePure(Symbol, "Symbol", ["for"])
+definePure(Math, "Math", [
+	"abs",
+	"ceil",
+	"floor",
+	"round",
+	"trunc",
+	"sign",
+	"max",
+	"min",
+	"fround",
+	"clz32",
+	"imul",
+	"sqrt"
+])
 definePure(
 	Math,
 	"Math",
@@ -215,7 +202,7 @@ definePure(
 		"tan",
 		"tanh"
 	],
-	{ isApproximate: true, freshResult: true }
+	{ isApproximate: true }
 )
 
 export type MethodReceiverKind =
@@ -254,49 +241,43 @@ const defineMethods = (
 	}
 }
 
-defineMethods(
-	"string",
-	String,
-	[
-		"at",
-		"charAt",
-		"charCodeAt",
-		"codePointAt",
-		"concat",
-		"endsWith",
-		"includes",
-		"indexOf",
-		"lastIndexOf",
-		"padEnd",
-		"padStart",
-		"repeat",
-		"replace",
-		"replaceAll",
-		"slice",
-		"split",
-		"startsWith",
-		"substring",
-		"toString",
-		"valueOf"
-	],
-	{ freshResult: true }
-)
+defineMethods("string", String, [
+	"at",
+	"charAt",
+	"charCodeAt",
+	"codePointAt",
+	"concat",
+	"endsWith",
+	"includes",
+	"indexOf",
+	"lastIndexOf",
+	"padEnd",
+	"padStart",
+	"repeat",
+	"replace",
+	"replaceAll",
+	"slice",
+	"split",
+	"startsWith",
+	"substring",
+	"toString",
+	"valueOf"
+])
 defineMethods(
 	"string",
 	String,
 	["normalize", "toLowerCase", "toUpperCase", "trim", "trimEnd", "trimStart"],
-	{ check: asciiOnly, freshResult: true }
+	{ check: asciiOnly }
 )
-defineMethods(
-	"number",
-	Number,
-	["toExponential", "toFixed", "toPrecision", "toString", "valueOf"],
-	{ freshResult: true }
-)
-defineMethods("boolean", Boolean, ["toString", "valueOf"], {
-	freshResult: true
-})
-defineMethods("bigint", BigInt, ["toString", "valueOf"], { freshResult: true })
+defineMethods("number", Number, [
+	"toExponential",
+	"toFixed",
+	"toPrecision",
+	"toString",
+	"valueOf"
+])
+defineMethods("boolean", Boolean, ["toString", "valueOf"])
+defineMethods("bigint", BigInt, ["toString", "valueOf"])
 defineMethods("array", Array, [
 	"at",
 	"concat",
@@ -306,56 +287,44 @@ defineMethods("array", Array, [
 	"toSpliced",
 	"with"
 ])
-defineMethods("array", Array, ["join"], { freshResult: true })
-defineMethods(
-	"array",
-	Array,
-	[
-		"every",
-		"filter",
-		"find",
-		"findIndex",
-		"findLast",
-		"findLastIndex",
-		"flatMap",
-		"map",
-		"reduce",
-		"reduceRight",
-		"some"
-	],
-	{ calls: true }
-)
+defineMethods("array", Array, ["join"])
+defineMethods("array", Array, [
+	"every",
+	"filter",
+	"find",
+	"findIndex",
+	"findLast",
+	"findLastIndex",
+	"flatMap",
+	"map",
+	"reduce",
+	"reduceRight",
+	"some"
+])
 // engines sort differently by a comparator that is not consistent
 defineMethods("array", Array, ["toSorted"], {
-	calls: true,
 	check: args =>
 		args[0] === undefined ?
 			undefined
 		:	"sorts by a comparator, whose order the spec leaves to each engine unless it is consistent"
 })
 defineMethods("array", Array, ["includes", "indexOf", "lastIndexOf"], {
-	check: withoutArkIdentity,
-	freshResult: true
+	check: withoutArkIdentity
 })
-defineMethods(
-	"date",
-	Date,
-	[
-		"getTime",
-		"toISOString",
-		"toJSON",
-		"valueOf",
-		"getUTCDate",
-		"getUTCDay",
-		"getUTCFullYear",
-		"getUTCHours",
-		"getUTCMilliseconds",
-		"getUTCMinutes",
-		"getUTCMonth",
-		"getUTCSeconds"
-	],
-	{ freshResult: true }
-)
+defineMethods("date", Date, [
+	"getTime",
+	"toISOString",
+	"toJSON",
+	"valueOf",
+	"getUTCDate",
+	"getUTCDay",
+	"getUTCFullYear",
+	"getUTCHours",
+	"getUTCMilliseconds",
+	"getUTCMinutes",
+	"getUTCMonth",
+	"getUTCSeconds"
+])
 
 export const isArkValue = (value: unknown): boolean =>
 	hasDomain(value, "object") &&

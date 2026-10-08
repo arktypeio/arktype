@@ -1,9 +1,7 @@
 import { arkKind, hasArkKind } from "@ark/schema"
 import { hasDomain, ParseError } from "@ark/util"
-import { scope } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
-import { InternalTypeParser } from "arktype/internal/type.ts"
 import type {
 	CallExpression,
 	Class,
@@ -25,14 +23,11 @@ import {
 	type MethodReceiverKind
 } from "./builtins.ts"
 import { DynamicValue, type DynamicCode } from "./dynamic.ts"
-import { findEscape, type ArkCall } from "./escapes.ts"
 import {
 	bindingOfFunction,
 	contains,
 	isFunctionNode,
-	parserDefinitionMethods,
 	runtimeMembers,
-	typeDefinitionMethods,
 	unstableArkMembers,
 	staticBodyOf,
 	type FunctionNode,
@@ -163,7 +158,6 @@ export class Interpreter {
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
 	private valuesByBinding = new Map<Binding, Evaluated | "evaluating">()
 	private valuesByNode = new Map<Node, Evaluated>()
-	private escapesByBinding = new Map<Binding, DynamicValue | null>()
 	// unknown values a declaration computes, which it computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
@@ -762,14 +756,14 @@ export class Interpreter {
 				)
 			}
 		}
-		// a Type is compared by content, but a Generic parses its body at each instantiation, and a Module or Scope can change after it was read
-		if (
-			!isArkValue(result.value) ||
-			isTracked(result.value) ||
-			hasArkKind(result.value, "generic")
-		)
+		if (!isArkValue(result.value) || readsAgain(result.value))
 			mergeTrace(ctx.trace, result.trace)
-		return isTracked(result.value) && this.escapeOf(binding, module) ?
+		else {
+			// arktype values cannot change, so one read where the binding was declared, like an import behind an alias, holds at the site
+			for (const read of result.trace.reads)
+				if (isArkValue(read.value)) ctx.trace.reads.push(read)
+		}
+		return isChangeable(result.value) ?
 				{
 					value: result.value,
 					read: {
@@ -809,38 +803,6 @@ export class Interpreter {
 				)
 			})
 		)
-	}
-
-	escapeOf(binding: Binding, module: SourceModule): DynamicValue | null {
-		let result = this.escapesByBinding.get(binding)
-		if (result === undefined) {
-			// a read while the uses are followed, e.g. by the callee of a call the object is passed to, cannot assume they are safe
-			this.escapesByBinding.set(
-				binding,
-				new DynamicValue(
-					module,
-					binding.id,
-					`\`${binding.name}\` is read while its uses are checked`
-				)
-			)
-			const escape = findEscape(
-				binding,
-				module,
-				this.graph,
-				this.bindingValue(binding, module).value,
-				call => this.arkCallOf(call, module)
-			)
-			result =
-				escape ?
-					new DynamicValue(
-						module,
-						escape.node,
-						`\`${binding.name}\` ${escape.message} (${module.positionOf(escape.node)})`
-					)
-				:	null
-			this.escapesByBinding.set(binding, result)
-		}
-		return result
 	}
 
 	private readImport(binding: Binding, node: Node, ctx: Context): Lookup {
@@ -894,6 +856,7 @@ export class Interpreter {
 				)
 			}
 		}
+		if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
 		return {
 			value: result.value,
 			read: {
@@ -1234,6 +1197,7 @@ export class Interpreter {
 			case "expression": {
 				const result = this.exportValue(target)
 				if (result.error !== undefined) throw result.error
+				if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
 				if (
 					!isDynamic(result.value) &&
 					!(
@@ -1317,45 +1281,6 @@ export class Interpreter {
 			}
 		} else fn = this.evaluate(callee, ctx)
 		return { fn, receiver }
-	}
-
-	// what an arktype call does with its arguments, from an allow-list, since any other call may run user code on them or keep them
-	arkCallOf(node: CallExpression, module: SourceModule): ArkCall | undefined {
-		let callee: ReturnType<Interpreter["calleeOf"]>
-		try {
-			callee = this.calleeOf(node, rootContext(module, node))
-		} catch {
-			return
-		}
-		if (!("fn" in callee)) return
-		const { fn, receiver } = callee
-		const kind = this.calleeKindOf(fn, receiver)
-		if (kind === "validator") return "validate"
-		if (kind !== "arktype") return
-		if (fn instanceof InternalTypeParser) return "parseTuple"
-		if (hasArkKind(fn, "generic")) return "parse"
-		const member = unwrapExpression(node.callee)
-		if (member.type !== "MemberExpression" || member.computed) return
-		const name = member.property.name
-		if (name === "define" || name === "defineSchema") {
-			return (
-					receiver instanceof InternalTypeParser ||
-						receiver === scope ||
-						hasArkKind(receiver, "scope")
-				) ?
-					"identity"
-				:	undefined
-		}
-		return (
-				(
-					receiver instanceof InternalTypeParser ||
-					hasArkKind(receiver, "scope")
-				) ?
-					name in parserDefinitionMethods
-				:	hasArkKind(receiver, "root") && name in typeDefinitionMethods
-			) ?
-				"parse"
-			:	undefined
 	}
 
 	private calleeKindOf(
@@ -1829,13 +1754,18 @@ export const isDynamic = (value: unknown): value is DynamicValue =>
 export const isValidator = (value: unknown): boolean =>
 	hasArkKind(value, "root") || value instanceof InternalTypedFn
 
-// objects whose contents the program can change after the build reads them
-const isTracked = (value: unknown): value is object =>
-	isPlainContainer(value) ||
-	value instanceof Date ||
-	value instanceof RegExp ||
-	hasArkKind(value, "module") ||
-	hasArkKind(value, "scope")
+// objects other than arktype's, which the program can change after the build reads them, so a site compares what it read from them
+const isChangeable = (value: unknown): value is object =>
+	isPlainContainer(value) || value instanceof Date || value instanceof RegExp
+
+// a node holds nothing it was made from, but a Generic parses its body at each instantiation and a Scope its aliases when first resolved
+const readsAgain = (value: unknown): boolean =>
+	hasArkKind(value, "generic") ||
+	hasArkKind(value, "scope") ||
+	(hasArkKind(value, "module") &&
+		Object.values(Object.getOwnPropertyDescriptors(value)).some(
+			descriptor => "value" in descriptor && readsAgain(descriptor.value)
+		))
 
 export const findDynamic = (
 	value: unknown,

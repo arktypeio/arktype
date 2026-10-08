@@ -342,8 +342,7 @@ export class Precompiler {
 		return new DynamicValue(
 			module,
 			candidate.state.node,
-			"the site reads an object that escapes a module that does not export it",
-			this.interpreter.escapeOf(binding, root.module) ?? undefined
+			`the site reads \`${binding.name}\` (${root.module.positionOf(binding.id)}), which its module cannot import, so the site cannot compare it at creation`
 		)
 	}
 
