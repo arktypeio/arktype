@@ -208,7 +208,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return discriminant
 	}
 
-	protected override get referencedBesidesChildren(): readonly BaseNode[] {
+	override get referencedBesidesChildren(): readonly BaseNode[] {
 		return this.caseNodes
 	}
 
@@ -446,7 +446,7 @@ const valueAtPath = (
 	return value
 }
 
-const isAbsent = (path: array<PropertyKey>, data: unknown): boolean => {
+export const isAbsent = (path: array<PropertyKey>, data: unknown): boolean => {
 	if (path.length === 0) return false
 	const parent = valueAtPath(path, data, path.length - 1)
 	return (

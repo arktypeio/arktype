@@ -335,7 +335,7 @@ export abstract class BaseNode<
 		return (this._referencesById ??= this.collectReferences())
 	}
 
-	protected get referencedBesidesChildren(): readonly BaseNode[] {
+	get referencedBesidesChildren(): readonly BaseNode[] {
 		return noReferences
 	}
 
@@ -428,7 +428,7 @@ export abstract class BaseNode<
 
 	private initRootApply(): RootApply {
 		return (this.cache.rootApply =
-			this.compiledUnit && this.isRoot() ?
+			this.compiledUnit && this.isRoot() && !this.$.resolvedConfig.jitless ?
 				compileRootApply(this)
 			:	this.createRootApply())
 	}

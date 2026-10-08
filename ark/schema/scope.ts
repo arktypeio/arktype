@@ -5,6 +5,9 @@ import {
 	includes,
 	isArray,
 	isThunk,
+	isValidDate,
+	jsTypeOfDescriptions,
+	nameOf,
 	ParseError,
 	printable,
 	serializePrimitive,
@@ -66,17 +69,23 @@ import {
 	resolveShallowAliases
 } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import type { Union } from "./roots/union.ts"
+import { isAbsent, type Union } from "./roots/union.ts"
 import type { Unit } from "./roots/unit.ts"
 import {
 	CompiledFunction,
 	NodeCompiler,
 	type InvokeOptions
 } from "./shared/compile.ts"
+import { isArkErrorResult } from "./shared/errors.ts"
 import type { NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import { missingSetEngineMessage } from "./shared/sets.ts"
+import {
+	copyOf,
+	mergeTransformed,
+	TransformErrors
+} from "./shared/transform.ts"
 import {
 	Traversal,
 	type TraversalKind,
@@ -93,6 +102,7 @@ import {
 	isNode,
 	resolving
 } from "./shared/utils.ts"
+import { arrayIndexMatcher } from "./structure/shared.ts"
 
 export type InternalResolutions = Record<string, InternalResolution | undefined>
 
@@ -233,12 +243,27 @@ const precompile = (
 		else declared.push(node)
 	}
 	const compiledUnit = precompileReferences(declared, linkage).compile()
-	const compiledTraversals = compiledUnit(
-		[...linkage.dependencies.keys()],
-		[...linkage.refs.keys()],
-		linkage.errorContexts
+	bindUnit(
+		declared,
+		compiledUnit,
+		compiledUnit(
+			[...linkage.dependencies.keys()],
+			[...linkage.refs.keys()],
+			linkage.errorContexts
+		),
+		linkage.referencesById,
+		owningScope
 	)
+	return compiledUnit
+}
 
+const bindUnit = (
+	declared: readonly BaseNode[],
+	compiledUnit: CompiledUnit,
+	compiledTraversals: PrecompiledTraversals[],
+	referencesById: Record<string, BaseNode>,
+	owningScope?: BaseScope
+): void => {
 	for (let i = 0; i < declared.length; i++) {
 		const node = declared[i]
 		if (node.compiledUnit && (!owningScope || node.$ !== owningScope)) {
@@ -257,10 +282,8 @@ const precompile = (
 		if (traverseTransform) node.traverseTransform = traverseTransform
 		node.compiledUnit = compiledUnit
 		delete node.cache.rootApply
-		node.isReusableLeaf = isLeafIn(node, linkage.referencesById)
+		node.isReusableLeaf = isLeafIn(node, referencesById)
 	}
-
-	return compiledUnit
 }
 
 type PrecompiledTraversals = [
@@ -268,6 +291,79 @@ type PrecompiledTraversals = [
 	apply: TraverseApply,
 	transform?: TraverseTransform
 ]
+
+type CompiledUnit = (
+	dependencies: Fn[],
+	refs: unknown[],
+	errorContexts: NodeCompiler.ErrorContexts
+) => PrecompiledTraversals[]
+
+const unitConstants = {
+	arrayIndexMatcher,
+	copyOf,
+	isAbsent,
+	isArkErrorResult,
+	isValidDate,
+	jsTypeOfDescriptions,
+	mergeTransformed,
+	printable,
+	TransformErrors
+}
+
+export type PrecompiledUnit = [
+	bind: (
+		root: BaseRoot,
+		constants: typeof unitConstants
+	) => [
+		declared: BaseNode[],
+		refs: unknown[],
+		errorContexts: NodeCompiler.ErrorContexts
+	],
+	compiledUnit: CompiledUnit
+]
+
+const precompiledUnits: Record<string, PrecompiledUnit> = Object.create(null)
+
+// assigned on registration, so a bundle that registers no units leaves binding them out
+let bindPrecompiledUnit: ((root: BaseRoot) => boolean) | undefined
+
+export const registerPrecompiledUnits = (
+	units: Record<string, PrecompiledUnit>
+): void => {
+	Object.assign(precompiledUnits, units)
+	bindPrecompiledUnit = bindRegisteredUnit
+}
+
+const bindRegisteredUnit = (root: BaseRoot): boolean => {
+	// a cyclic unit keys its resolutions by node id
+	const precompiled =
+		root.includesAlias ? undefined : precompiledUnits[precompiledKeyOf(root)]
+	if (!precompiled) return false
+	const [bind, compiledUnit] = precompiled
+	const [declared, refs, errorContexts] = bind(root, unitConstants)
+	bindUnit(
+		declared,
+		compiledUnit,
+		compiledUnit([], refs, errorContexts),
+		root.referencesById
+	)
+	return true
+}
+
+// compiling reads each function's arity and whether the set engine is installed, neither in the hash
+const precompiledKeyOf = (root: BaseRoot): string => {
+	const aritiesByName: Record<string, number> = {}
+	for (const id in root.referencesById) {
+		forEachValue(root.referencesById[id].inner, value => {
+			if (typeof value === "function" && !isNode(value))
+				aritiesByName[nameOf(value)] = value.length
+		})
+	}
+	const arities = Object.keys(aritiesByName)
+		.sort()
+		.map(name => `${name}:${aritiesByName[name]}`)
+	return hashOf(`${root.hash}\n${arities}\n${$ark.sets !== undefined}`)
+}
 
 const precompileReferences = (
 	references: readonly BaseNode[],
@@ -278,11 +374,7 @@ const precompileReferences = (
 		declareTraversals(linkage, linkage.reached[i])
 	// passed as arrays, as V8 can't call a function with tens of thousands of arguments
 	const unit = new CompiledFunction<
-		(
-			dependencies: Fn[],
-			refs: unknown[],
-			errorContexts: NodeCompiler.ErrorContexts
-		) => PrecompiledTraversals[],
+		CompiledUnit,
 		["dependencies", "refs", "errorContexts"]
 	>("dependencies", "refs", "errorContexts")
 	// strict as a module is, so writing to a frozen input copyOf left uncopied throws
@@ -586,6 +678,126 @@ const hashOf = (input: string): string => {
 	h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507)
 	h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909)
 	return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36)
+}
+
+export const writePrecompiledUnits = (roots: readonly BaseRoot[]): string => {
+	const unitsByKey: Record<string, string> = {}
+	for (const root of roots) {
+		const unit = root.includesAlias ? undefined : writePrecompiledUnit(root)
+		if (unit) unitsByKey[precompiledKeyOf(root)] = unit
+	}
+	return `{\n${Object.keys(unitsByKey)
+		.sort()
+		.map(key => `${JSON.stringify(key)}: ${unitsByKey[key]}`)
+		.join(",\n")}\n}`
+}
+
+const writePrecompiledUnit = (root: BaseRoot): string | undefined => {
+	const unit = precompileByContent(root.references)
+	const nodes: BaseNode[] = [root]
+	const variablesByNode = new Map<BaseNode, string>([[root, "n0"]])
+	const variablesById: Record<string, string> = { [root.id]: "n0" }
+	const statements: string[] = []
+	// each node is read through the edges referencesById is collected from
+	for (let i = 0; i < nodes.length; i++) {
+		for (const key of ["children", "referencedBesidesChildren"] as const) {
+			const referenced = nodes[i][key]
+			for (let j = 0; j < referenced.length; j++) {
+				if (variablesByNode.has(referenced[j])) continue
+				const variable = `n${nodes.push(referenced[j]) - 1}`
+				variablesByNode.set(referenced[j], variable)
+				variablesById[referenced[j].id] ??= variable
+				statements.push(
+					`const ${variable} = ${variablesByNode.get(nodes[i])}.${key}[${j}]`
+				)
+			}
+		}
+	}
+	const declared: string[] = []
+	const declaredNames: Record<string, true> = {}
+	for (const [id, name] of Object.entries(unit.names)) {
+		if (declaredNames[name]) continue
+		declaredNames[name] = true
+		// a node outside the closure, e.g. a Type piped to, isn't keyed by its root
+		if (!variablesById[id]) return
+		declared.push(variablesById[id])
+	}
+	const accessorsByValue = new Map<unknown, string | undefined>(variablesByNode)
+	for (const k in unitConstants) {
+		accessorsByValue.set(
+			unitConstants[k as keyof typeof unitConstants],
+			`$.${k}`
+		)
+	}
+	// an inner value is hashed by its name, so a root with the same key holds it wherever it's found
+	for (const node of nodes) {
+		forEachValue(node.inner, (value, path) => {
+			if (!accessorsByValue.has(value))
+				accessorsByValue.set(value, `${variablesByNode.get(node)}.inner${path}`)
+		})
+	}
+	// any other field holds a value derived for its own node, so one two nodes hold can't be bound
+	const holdersByValue = new Map<unknown, BaseNode>()
+	for (const node of nodes) {
+		forEachValue(node, (value, path) => {
+			const holder = holdersByValue.get(value)
+			if (holder === undefined && !accessorsByValue.has(value)) {
+				holdersByValue.set(value, node)
+				accessorsByValue.set(value, `${variablesByNode.get(node)}${path}`)
+			} else if (holder !== undefined && holder !== node)
+				accessorsByValue.set(value, undefined)
+		})
+	}
+	for (const node of nodes) {
+		if ("errorContext" in node) {
+			accessorsByValue.set(
+				node.errorContext,
+				`${variablesByNode.get(node)}.errorContext`
+			)
+		}
+		// a discriminant miss reads what the union's getters derive
+		if (node.hasKind("union") && node.compiledDiscriminant) {
+			const variable = variablesByNode.get(node)
+			accessorsByValue.set(
+				node.discriminantCases.cases,
+				`${variable}.discriminantCases.cases`
+			)
+			accessorsByValue.set(
+				node.discriminantMeta,
+				`${variable}.discriminantMeta`
+			)
+			accessorsByValue.set(
+				node.compiledDiscriminant.path,
+				`${variable}.discriminant.path`
+			)
+		}
+	}
+	const refs = unit.refs.map(value => accessorsByValue.get(value))
+	const errorContexts = unit.errorContexts.map(errorContext =>
+		accessorsByValue.get(errorContext)
+	)
+	if (refs.includes(undefined) || errorContexts.includes(undefined)) return
+	return `[(n0, $) => {
+${statements.map(statement => `\t${statement}\n`).join("")}\treturn [[${declared.join(", ")}], [${refs.join(", ")}], [${errorContexts.join(", ")}]]
+}, ${unit.source}]`
+}
+
+const forEachValue = (
+	o: object,
+	f: (value: object | symbol, path: string) => void
+): void => {
+	for (const k in o) {
+		if (k[0] === "_") continue
+		const v = (o as Dict)[k]
+		if (hasDomain(v, "object") || typeof v === "symbol") f(v, `.${k}`)
+		if (isArray(v)) {
+			for (let i = 0; i < v.length; i++) {
+				const element = v[i]
+				if (hasDomain(element, "object") || typeof element === "symbol")
+					f(element, `.${k}[${i}]`)
+			}
+		}
+	}
 }
 
 const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
@@ -1172,7 +1384,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 			node.includesAlias ?
 				referencesThroughAliases(node.references)
 			:	node.references
-		if (!this.resolvedConfig.jitless && !node.compiledUnit && jit)
+		if (
+			!node.compiledUnit &&
+			jit &&
+			!bindPrecompiledUnit?.(node) &&
+			!this.resolvedConfig.jitless
+		)
 			precompile(references)
 		return node
 	}

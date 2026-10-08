@@ -93,7 +93,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		return node
 	}
 
-	protected override get referencedBesidesChildren(): readonly BaseNode[] {
+	override get referencedBesidesChildren(): readonly BaseNode[] {
 		return this.lastMorphIfNode ? [this.lastMorphIfNode] : []
 	}
 

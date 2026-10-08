@@ -10,6 +10,12 @@ import { liftArray } from "@ark/util"
 import { keywords, scope, type } from "arktype"
 import * as keywordFunctions from "arktype/internal/keywords/functions.ts"
 import { isEpochString } from "arktype/internal/keywords/string.ts"
+import {
+	corpus,
+	isPrecompiled,
+	observe,
+	precompile as precompileUnits
+} from "./integration/precompiled.ts"
 
 contextualize(() => {
 	const isEven = (n: number) => n % 2 === 0
@@ -106,5 +112,58 @@ contextualize(() => {
 		}
 		collect("keywords", keywords)
 		attest(unexported).equals([])
+	})
+
+	it("binds a precompiled unit with the JIT's results", async () => {
+		const jit = corpus.map(([def]) => scope({}).type(def as never))
+		const units = await precompileUnits(jit)
+		for (let i = 0; i < corpus.length; i++) {
+			const T = scope({}).type(corpus[i][0] as never)
+			attest(isPrecompiled(units, T.internal)).equals(true)
+			const jitInputs = corpus[i][1]()
+			for (const [j, data] of corpus[i][1]().entries())
+				attest(observe(T, data)).equals(observe(jit[i], jitInputs[j]))
+		}
+	})
+
+	it("reads descriptions from the nodes it binds", async () => {
+		const def = { precompiledDescribed: "string" } as const
+		const config = { domain: { description: () => "a custom domain" } }
+		const Jit = scope({}, config).type(def)
+		const units = await precompileUnits([scope({}).type(def)])
+		const T = scope({}, config).type(def)
+		attest(isPrecompiled(units, T.internal)).equals(true)
+		attest(T({ precompiledDescribed: 5 }).toString()).snap(
+			"precompiledDescribed must be a custom domain (was a number)"
+		)
+		attest(observe(T, 5)).equals(observe(Jit, 5))
+	})
+
+	it("misses a changed definition", async () => {
+		const units = await precompileUnits([
+			scope({}).type({ "precompiledOptional?": "string" })
+		])
+		const Changed = scope({}).type({ "precompiledOptional?": "number" })
+		const Undefinable = scope({}, { exactOptionalPropertyTypes: false }).type({
+			"precompiledOptional?": "string"
+		})
+		attest(isPrecompiled(units, Changed.internal)).equals(false)
+		attest(Changed({ precompiledOptional: "x" }).toString()).snap(
+			"precompiledOptional must be a number (was a string)"
+		)
+		attest(isPrecompiled(units, Undefinable.internal)).equals(false)
+		attest<unknown>(Undefinable({ precompiledOptional: undefined })).equals({
+			precompiledOptional: undefined
+		})
+	})
+
+	it("misses a cyclic type", async () => {
+		const def = { precompiledValue: "string", "next?": "this" } as const
+		const units = await precompileUnits([scope({}).type(def)])
+		attest(units).equals({})
+		const T = scope({}).type(def)
+		attest(
+			T({ precompiledValue: "a", next: { precompiledValue: 1 } }).toString()
+		).snap("next.precompiledValue must be a string (was a number)")
 	})
 })
