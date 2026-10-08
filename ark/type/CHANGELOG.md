@@ -846,17 +846,6 @@ const { user } = scope({
 user.toJsonSchema()
 ```
 
-### Recognize errors from another copy of arktype with `instanceof`
-
-`instanceof` with `type.errors` (`ArkErrors`), `ArkError` or `TraversalError` checks arktype's `" arkKind"` brand instead of the prototype chain, so it holds for errors created by a duplicate installation of `arktype`:
-
-```ts
-const out = UserFromOtherCopy(data)
-
-// previously false, now true when out is the other copy's ArkErrors
-out instanceof type.errors
-```
-
 ### Write a nested arktype Standard Schema's errors without repeating their key
 
 When a definition embeds a validator only through its `~standard` property, an error from an arktype validator inside it repeated the key its message already started with:
