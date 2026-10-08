@@ -165,6 +165,17 @@ type({ "+": "reject", a: "string.trim" }).or({
 
 `"+": "delete"` removes undeclared symbol keys, which it previously kept.
 
+### Return deleting types' keys in the order of their expression
+
+`"+": "delete"` builds its output with required keys, then optional keys, each sorted, followed by keys matching an index signature in input order. It previously deleted from a copy of the input, which kept the input's order:
+
+```ts
+const T = type({ "+": "delete", b: "string", a: "string", "c?": "number" })
+
+// previously { a: "1", c: 1, b: "2" }, now { a: "1", b: "2", c: 1 }
+T({ a: "1", z: 0, c: 1, b: "2" })
+```
+
 ### Import internals from `arktype/internal`
 
 `arktype/internal` exports the names of every arktype module, and `@ark/schema`, `@ark/util`, `arkregex` and `arksets` each have an `./internal` entry like it. A deep import like `arktype/internal/parser/string.ts` keeps its module's types and loads that entry at runtime.
