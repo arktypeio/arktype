@@ -957,13 +957,19 @@ export abstract class BaseNode<
 			typeof meta === "string" ?
 				(kind, inner) => ({
 					...inner,
-					meta: { ...inner.meta, description: meta }
+					meta: withoutReplacedKeyword(inner.meta, {
+						...inner.meta,
+						description: meta
+					})
 				})
 			: typeof meta === "function" ?
-				(kind, inner) => ({ ...inner, meta: meta(inner.meta) })
+				(kind, inner) => ({
+					...inner,
+					meta: withoutReplacedKeyword(inner.meta, meta(inner.meta))
+				})
 			:	(kind, inner) => ({
 					...inner,
-					meta: { ...inner.meta, ...meta }
+					meta: withoutReplacedKeyword(inner.meta, { ...inner.meta, ...meta })
 				})) satisfies DeepNodeTransformation
 
 		if (normalized.boundary === "self") {
@@ -1219,6 +1225,22 @@ const _isMutuallySimulated = (
 		}
 	}
 	return true
+}
+
+// a description written over a keyword's phrase is authored text, so the
+// node no longer has the keyword's identity
+const withoutReplacedKeyword = (
+	existing: ArkEnv.meta | undefined,
+	meta: ArkEnv.meta
+): ArkEnv.meta => {
+	if (
+		meta.keyword === undefined ||
+		meta.keyword !== existing?.keyword ||
+		meta.description === existing.description
+	)
+		return meta
+	const { keyword: _, ...rest } = meta
+	return rest
 }
 
 // a traversal reads whether an alias resolves to it, so every alias a node reaches resolves before it's compiled

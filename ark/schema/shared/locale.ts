@@ -123,6 +123,50 @@ type localeExpectedContext<code extends ArkErrorCode> =
 // keyword writers are told apart from nouns by a noun key
 type validateNoun<noun> = noun extends { readonly noun: unknown } ? never : noun
 
+/** the phrase a locale has for an error's keyword */
+export const keywordPhraseOf = <noun>(
+	error: { readonly meta?: ArkEnv.meta },
+	locale: Locale<noun>
+): Locale.KeywordPhrase<noun> | undefined => {
+	const keyword = error.meta?.keyword
+	// meta.keyword is any string, so it may name an Object.prototype key
+	return (
+			keyword === undefined ||
+				!Object.prototype.hasOwnProperty.call(locale.keywordPhrases, keyword)
+		) ?
+			undefined
+		:	locale.keywordPhrases[keyword]
+}
+
+const hasWriters = <noun>(
+	phrase: Locale.KeywordPhrase<noun> | undefined
+): phrase is Locale.KeywordWriters<noun> =>
+	typeof phrase === "object" && phrase !== null && "noun" in phrase
+
+/** the writer a locale has for an error's keyword in a slot other than expected */
+export const keywordWriterOf = <
+	slot extends "actual" | "problem" | "message",
+	noun
+>(
+	error: { readonly meta?: ArkEnv.meta },
+	locale: Locale<noun>,
+	slot: slot
+): Locale.KeywordWriters<noun>[slot] | undefined => {
+	const phrase = keywordPhraseOf(error, locale)
+	return hasWriters(phrase) ? phrase[slot] : undefined
+}
+
+/** renders a keyword phrase where expected text goes */
+export const writeKeywordExpected = <noun>(
+	phrase: Locale.KeywordPhrase<noun>,
+	error: Locale.ExpectedContext,
+	locale: Locale<noun>
+): string =>
+	!hasWriters(phrase) ? locale.expectedNoun(phrase)
+	: phrase.expected === undefined ? locale.expectedNoun(phrase.noun)
+	: typeof phrase.expected === "string" ? phrase.expected
+	: phrase.expected(error, locale)
+
 /** renders a missing value where expected text goes */
 export const describeMissing = <noun>(
 	missing: MissingValue,
