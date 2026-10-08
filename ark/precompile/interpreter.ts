@@ -155,6 +155,8 @@ export class Interpreter {
 	private valuesByBinding = new Map<Binding, Evaluated | "evaluating">()
 	private valuesByNode = new Map<Node, Evaluated>()
 	private escapesByBinding = new Map<Binding, DynamicValue | null>()
+	// unknown values a declaration computes, which it computes at runtime however a site uses them
+	private declaredDynamics = new WeakSet<DynamicValue>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	private validators = new WeakSet<object>()
 	private arkObjects = new WeakSet<object>()
@@ -387,8 +389,8 @@ export class Interpreter {
 				}
 				const copy: object = { ...(spread as object) }
 				for (const k of Reflect.ownKeys(copy)) {
-					const overwritten = this.overwrite(result, k, property, ctx)
-					if (overwritten) return overwritten
+					const problem = this.overwriteProblem(result, k, property, ctx)
+					if (problem) return problem
 					defineData(result, k, Reflect.get(copy, k))
 				}
 				continue
@@ -418,13 +420,13 @@ export class Interpreter {
 					"a `__proto__` key changes the object's prototype"
 				)
 			}
-			const overwritten = this.overwrite(
+			const problem = this.overwriteProblem(
 				result,
 				key as PropertyKey,
 				property,
 				ctx
 			)
-			if (overwritten) return overwritten
+			if (problem) return problem
 			const value = this.evaluate(property.value, ctx)
 			if (isDynamic(value) && !value.isOpaque) return value
 			defineData(result, key as PropertyKey, value)
@@ -432,14 +434,18 @@ export class Interpreter {
 		return result
 	}
 
-	// a dropped value the build does not know would still have been computed, perhaps by a call that throws
-	private overwrite(
+	// a site that drops an unknown value it computed would leave out the computation, perhaps a call that throws
+	private overwriteProblem(
 		result: Record<PropertyKey, unknown>,
 		key: PropertyKey,
 		node: Node,
 		ctx: Context
 	): DynamicValue | undefined {
-		const dynamic = findDynamic(result[key])
+		if (!ctx.site) return
+		const dynamic = findDynamic(
+			result[key],
+			dynamic => !this.declaredDynamics.has(dynamic)
+		)
 		return (
 			dynamic &&
 			this.reject(
@@ -945,8 +951,16 @@ export class Interpreter {
 		} catch (e) {
 			result = { value: undefined, trace: ctx.trace, error: e }
 		}
+		this.markDeclared(result.value)
 		this.valuesByBinding.set(binding, result)
 		return result
+	}
+
+	private markDeclared(value: unknown): void {
+		findDynamic(value, dynamic => {
+			this.declaredDynamics.add(dynamic)
+			return false
+		})
 	}
 
 	private nodeValue(node: Node, module: SourceModule): Evaluated {
@@ -958,6 +972,7 @@ export class Interpreter {
 		} catch (e) {
 			result = { value: undefined, trace: ctx.trace, error: e }
 		}
+		this.markDeclared(result.value)
 		this.valuesByNode.set(node, result)
 		return result
 	}
@@ -1779,13 +1794,14 @@ const isTracked = (value: unknown): value is object =>
 
 export const findDynamic = (
 	value: unknown,
+	isWanted: (dynamic: DynamicValue) => boolean = () => true,
 	seen = new Set<unknown>()
 ): DynamicValue | undefined => {
-	if (isDynamic(value)) return value
+	if (isDynamic(value)) return isWanted(value) ? value : undefined
 	if (!isPlainContainer(value) || seen.has(value)) return
 	seen.add(value)
 	for (const k of Reflect.ownKeys(value)) {
-		const dynamic = findDynamic(Reflect.get(value, k), seen)
+		const dynamic = findDynamic(Reflect.get(value, k), isWanted, seen)
 		if (dynamic) return dynamic
 	}
 }

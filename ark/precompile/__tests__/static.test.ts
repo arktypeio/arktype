@@ -473,6 +473,19 @@ const A = type({ name: z.string() })`)
 			])
 		})
 
+		it("keys that override an opaque value", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+import { z } from "zod"
+const base = { a: z.string(), b: "string" }
+const A = type({ ...base, a: "number" })
+const B = type({ ...{ a: z.string() }, a: "number" })`)
+			).snap([
+				"4:11 accepted { a: number, b: string }",
+				'5:11 rejected\n  `a: "number"` overwrites a value the build does not know\n  `zod` is a package the build does not read'
+			])
+		})
+
 		it("structure of an opaque value", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
