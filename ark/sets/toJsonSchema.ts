@@ -117,9 +117,14 @@ const innerToJsonSchemaByKind: {
 		if (
 			jsonSchemaBranches.every(
 				(branch): branch is JsonSchema.Const =>
-					// iff all branches are pure unit values with no metadata,
-					// we can simplify the representation to an enum
-					Object.keys(branch).length === 1 && hasKey(branch, "const")
+					// iff all branches are pure unit values with no metadata other than
+					// the union's own, we can simplify the representation to an enum
+					Object.entries(branch).every(
+						([k, v]) =>
+							k === "const" ||
+							v === (node.meta as dict)[k] ||
+							v === (node.metaJson as dict)[k]
+					) && hasKey(branch, "const")
 			)
 		) {
 			return {

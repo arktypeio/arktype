@@ -154,4 +154,39 @@ contextualize(() => {
 
 		attest(referencedDefs(out)).equals(Object.keys(out.$defs!).sort())
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1470
+	it("configured union of literals as enum", () => {
+		const Provider = type("'sqlite' | 'postgresql'").configure({
+			title: "Provider"
+		})
+		attest(Provider.toJsonSchema({ dialect: null })).snap({
+			enum: ["postgresql", "sqlite"],
+			title: "Provider"
+		})
+
+		const Letter = type("'a' | 'b'").describe("a letter")
+		attest(Letter.toJsonSchema({ dialect: null })).snap({
+			enum: ["a", "b"],
+			description: "a letter"
+		})
+
+		const letterMessage = () => "a letter"
+		const Messaged = type("'a' | 'b'").configure({ message: letterMessage })
+		attest<object>(Messaged.toJsonSchema({ dialect: null })).snap({
+			enum: ["a", "b"],
+			message: "$ark.letterMessage"
+		})
+
+		const Described = type("'a'").describe("first").or("'b'").configure({
+			title: "Letter"
+		})
+		attest(Described.toJsonSchema({ dialect: null })).snap({
+			anyOf: [
+				{ const: "a", description: "first", title: "Letter" },
+				{ const: "b", title: "Letter" }
+			],
+			title: "Letter"
+		})
+	})
 })
