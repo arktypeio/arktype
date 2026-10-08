@@ -4,7 +4,7 @@ import {
 	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
 	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
 } from "@ark/json-schema"
-import { writeDuplicateKeyMessage } from "@ark/schema"
+import { registeredReference, writeDuplicateKeyMessage } from "@ark/schema"
 
 contextualize(() => {
 	it("type object", () => {
@@ -18,9 +18,14 @@ contextualize(() => {
 			type: "object",
 			maxProperties: 1
 		})
+		const { predicate } = tMaxProperties.select({
+			kind: "predicate",
+			method: "assertFind"
+		})
+		attest(predicate.name).equals("jsonSchemaObjectMaxPropertiesValidator")
 		attest(tMaxProperties.json).snap({
 			domain: "object",
-			predicate: ["$ark.jsonSchemaObjectMaxPropertiesValidator"]
+			predicate: [registeredReference(predicate)]
 		})
 		attest(tMaxProperties.allows({})).equals(true)
 		attest(tMaxProperties.allows({ foo: 1 })).equals(true)
@@ -33,9 +38,14 @@ contextualize(() => {
 			type: "object",
 			minProperties: 2
 		})
+		const { predicate } = tMinProperties.select({
+			kind: "predicate",
+			method: "assertFind"
+		})
+		attest(predicate.name).equals("jsonSchemaObjectMinPropertiesValidator")
 		attest(tMinProperties.json).snap({
 			domain: "object",
-			predicate: ["$ark.jsonSchemaObjectMinPropertiesValidator"]
+			predicate: [registeredReference(predicate)]
 		})
 		attest(tMinProperties.allows({})).equals(false)
 		attest(tMinProperties.allows({ foo: 1 })).equals(false)
@@ -83,10 +93,17 @@ contextualize(() => {
 			additionalProperties: { type: "number" },
 			properties: { bar: { type: "string" } }
 		})
+		const { predicate } = tAdditionalProperties.select({
+			kind: "predicate",
+			method: "assertFind"
+		})
+		attest(predicate.name).equals(
+			"jsonSchemaObjectAdditionalPropertiesValidator"
+		)
 		attest(tAdditionalProperties.json).snap({
 			domain: "object",
 			optional: [{ key: "bar", value: "string" }],
-			predicate: ["$ark.jsonSchemaObjectAdditionalPropertiesValidator"]
+			predicate: [registeredReference(predicate)]
 		})
 		attest(tAdditionalProperties.allows({})).equals(true)
 		attest(tAdditionalProperties.allows({ foo: 1 })).equals(true)

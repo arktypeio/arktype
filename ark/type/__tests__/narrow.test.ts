@@ -127,19 +127,17 @@ contextualize(() => {
 	})
 
 	it("narrows the output type of a morph", () => {
+		const _narrowMorphOutputMorph = (s: string) => s.length
+		const _narrowMorphOutputNarrow = (n: number): n is 5 => n === 5
 		const T = type("string")
-			.pipe(function _narrowMorphOutputMorph(s) {
-				return s.length
-			})
-			.narrow(function _narrowMorphOutputNarrow(n): n is 5 {
-				return n === 5
-			})
+			.pipe(_narrowMorphOutputMorph)
+			.narrow(_narrowMorphOutputNarrow)
 
 		attest(T.json).snap({
 			in: "string",
 			morphs: [
-				"$ark._narrowMorphOutputMorph",
-				{ predicate: ["$ark._narrowMorphOutputNarrow"] }
+				registeredReference(_narrowMorphOutputMorph),
+				{ predicate: [registeredReference(_narrowMorphOutputNarrow)] }
 			]
 		})
 
@@ -294,7 +292,9 @@ contextualize(() => {
 		const unknownPredicate854 = () => true
 		const T = type("unknown").narrow(unknownPredicate854)
 		attest(T.t).type.toString.snap("unknown")
-		attest(T.json).snap({ predicate: ["$ark.unknownPredicate854"] })
+		attest(T.json).snap({
+			predicate: [registeredReference(unknownPredicate854)]
+		})
 	})
 
 	it("preserves piped union branch narrows through an intersection", () => {

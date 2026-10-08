@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
+	registeredReference,
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
@@ -565,7 +566,7 @@ contextualize(() => {
 						}
 					}
 				],
-				proto: "$ark.MyExternalClass"
+				proto: registeredReference(MyExternalClass)
 			})
 
 			// @ts-expect-error

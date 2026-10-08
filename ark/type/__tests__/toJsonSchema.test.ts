@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { registeredReference } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -201,7 +202,7 @@ contextualize(() => {
 		const Messaged = type("'a' | 'b'").configure({ message: letterMessage })
 		attest<object>(Messaged.toJsonSchema({ dialect: null })).snap({
 			enum: ["a", "b"],
-			message: "$ark.letterMessage"
+			message: registeredReference(letterMessage)
 		})
 
 		const Described = type("'a'").describe("first").or("'b'").configure({

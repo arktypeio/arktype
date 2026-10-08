@@ -4,6 +4,7 @@ import {
 	writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage,
 	writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage
 } from "@ark/json-schema"
+import { registeredReference } from "@ark/schema"
 
 contextualize(() => {
 	it("type array", () => {
@@ -103,9 +104,14 @@ contextualize(() => {
 			type: "array",
 			contains: { type: "number" }
 		})
+		const { predicate } = tContains.select({
+			kind: "predicate",
+			method: "assertFind"
+		})
+		attest(predicate.name).equals("jsonSchemaArrayContainsValidator")
 		attest(tContains.json).snap({
 			proto: "Array",
-			predicate: ["$ark.jsonSchemaArrayContainsValidator"]
+			predicate: [registeredReference(predicate)]
 		})
 		attest(tContains.allows([])).equals(false)
 		attest(tContains.allows([1, 2, 3])).equals(true)

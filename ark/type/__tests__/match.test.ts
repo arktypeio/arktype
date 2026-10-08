@@ -2,7 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	registeredReference,
 	writeUnboundableMessage,
-	type ArkErrors
+	type ArkErrors,
+	type BaseRoot
 } from "@ark/schema"
 import { match, scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
@@ -14,6 +15,16 @@ import {
 import { discriminantJsonOf } from "arksets"
 
 const throwDefaultRef = registeredReference(throwOnDefault)
+
+// a case's morph is inline, so its reference is read from the matcher by name
+const caseReference = (m: { internal: BaseRoot }, name: string) =>
+	registeredReference(
+		m.internal.select({
+			kind: "morph",
+			where: morph => morph.morphs[0].name === name,
+			method: "assertFind"
+		}).morphs[0]
+	)
 
 contextualize(() => {
 	it("single object", () => {
@@ -256,14 +267,14 @@ contextualize(() => {
 						max: { exclusive: true, rule: 10 },
 						min: { exclusive: true, rule: 0 }
 					},
-					morphs: ["$ark._matchOverlapping1"]
+					morphs: [caseReference(m, "_matchOverlapping1")]
 				},
 				{
 					in: { domain: "number", min: { exclusive: true, rule: 0 } },
-					morphs: ["$ark._matchOverlapping2"]
+					morphs: [caseReference(m, "_matchOverlapping2")]
 				},
-				{ in: "number", morphs: ["$ark._matchOverlapping3"] },
-				{ in: {}, morphs: ["$ark._matchOverlapping4"] }
+				{ in: "number", morphs: [caseReference(m, "_matchOverlapping3")] },
+				{ in: {}, morphs: [caseReference(m, "_matchOverlapping4")] }
 			],
 			ordered: true
 		})
@@ -299,10 +310,10 @@ contextualize(() => {
 						max: { exclusive: true, rule: 10 },
 						min: { exclusive: true, rule: 0 }
 					},
-					morphs: ["$ark._matchPreservedOne"]
+					morphs: [caseReference(m, "_matchPreservedOne")]
 				},
-				{ in: "number", morphs: ["$ark._matchPreservedTwo"] },
-				{ in: {}, morphs: ["$ark._matchPreservedDefault"] }
+				{ in: "number", morphs: [caseReference(m, "_matchPreservedTwo")] },
+				{ in: {}, morphs: [caseReference(m, "_matchPreservedDefault")] }
 			],
 			ordered: true
 		})
@@ -386,14 +397,14 @@ contextualize(() => {
 							required: [{ key: "foo", value: "string" }],
 							domain: "object"
 						},
-						morphs: ["$ark._atCasesParam1"]
+						morphs: [caseReference(m, "_atCasesParam1")]
 					},
 					{
 						in: {
 							required: [{ key: "foo", value: "number" }],
 							domain: "object"
 						},
-						morphs: ["$ark._atCasesParam2"]
+						morphs: [caseReference(m, "_atCasesParam2")]
 					}
 				],
 				ordered: true,
@@ -430,14 +441,14 @@ contextualize(() => {
 							required: [{ key: "id", value: { unit: 0 } }],
 							domain: "object"
 						},
-						morphs: ["$ark._atAfterIn1"]
+						morphs: [caseReference(m, "_atAfterIn1")]
 					},
 					{
 						in: {
 							required: [{ key: "id", value: "number" }],
 							domain: "object"
 						},
-						morphs: ["$ark._atAfterIn2"]
+						morphs: [caseReference(m, "_atAfterIn2")]
 					}
 				],
 				ordered: true,
@@ -579,22 +590,25 @@ contextualize(() => {
 			kind: "domain",
 			path: ["id"],
 			cases: {
-				'"string"': { in: {}, morphs: ["$ark._matchOrderedDiscrimination1"] },
+				'"string"': {
+					in: {},
+					morphs: [caseReference(m, "_matchOrderedDiscrimination1")]
+				},
 				'"number"': {
 					kind: "unit",
 					path: ["kind"],
 					cases: {
 						'"string"': {
 							in: {},
-							morphs: ["$ark._matchOrderedDiscrimination2"]
+							morphs: [caseReference(m, "_matchOrderedDiscrimination2")]
 						},
 						'"number"': {
 							in: {},
-							morphs: ["$ark._matchOrderedDiscrimination3"]
+							morphs: [caseReference(m, "_matchOrderedDiscrimination3")]
 						},
 						default: {
 							in: { required: [{ key: "id", value: "number" }] },
-							morphs: ["$ark._matchOrderedDiscrimination4"]
+							morphs: [caseReference(m, "_matchOrderedDiscrimination4")]
 						}
 					}
 				},
@@ -604,11 +618,11 @@ contextualize(() => {
 					cases: {
 						'"string"': {
 							in: {},
-							morphs: ["$ark._matchOrderedDiscrimination2"]
+							morphs: [caseReference(m, "_matchOrderedDiscrimination2")]
 						},
 						'"number"': {
 							in: {},
-							morphs: ["$ark._matchOrderedDiscrimination3"]
+							morphs: [caseReference(m, "_matchOrderedDiscrimination3")]
 						}
 					}
 				}
@@ -712,11 +726,14 @@ contextualize(() => {
 >`)
 		attest(numeric.json).snap({
 			branches: [
-				{ in: { unit: 0 }, morphs: ["$ark.numericZeroCase"] },
-				{ in: { unit: 1 }, morphs: ["$ark.numericOneCase"] }
+				{
+					in: { unit: 0 },
+					morphs: [caseReference(numeric, "numericZeroCase")]
+				},
+				{ in: { unit: 1 }, morphs: [caseReference(numeric, "numericOneCase")] }
 			],
 			ordered: true,
-			meta: { onFail: "$ark.throwOnDefault" }
+			meta: { onFail: throwDefaultRef }
 		})
 	})
 

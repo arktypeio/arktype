@@ -66,14 +66,17 @@ contextualize(() => {
 				{ key: "providerUserId", value: "string" },
 				{
 					key: "user",
-					value: [`$ark.${types.user.internal.id}`, "$ark.TimeStub"]
+					value: [
+						`$ark.${types.user.internal.id}`,
+						registeredReference(MockTimeStub)
+					]
 				}
 			],
 			optional: [
 				{ key: "coll", value: "string" },
 				{ key: "id", value: "string" },
-				{ key: "ts", value: "$ark.TimeStub" },
-				{ key: "ttl", value: "$ark.TimeStub" }
+				{ key: "ts", value: registeredReference(MockTimeStub) },
+				{ key: "ttl", value: registeredReference(MockTimeStub) }
 			],
 			domain: "object"
 		})
@@ -561,10 +564,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	})
 
 	it("narrowed quoted description", () => {
+		const _narrowedQuoteDescription = () => true
 		const T = type("string")
-			.narrow(function _narrowedQuoteDescription() {
-				return true
-			})
+			.narrow(_narrowedQuoteDescription)
 			.describe('This will "fail"')
 
 		attest<string>(T.t)
@@ -573,7 +575,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			domain: { domain: "string", meta: 'This will "fail"' },
 			predicate: [
 				{
-					predicate: "$ark._narrowedQuoteDescription",
+					predicate: registeredReference(_narrowedQuoteDescription),
 					meta: 'This will "fail"'
 				}
 			],

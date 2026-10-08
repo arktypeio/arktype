@@ -3,6 +3,7 @@ import {
 	$ark,
 	annotatingFallback,
 	intrinsic,
+	registeredReference,
 	rootSchema,
 	rootSchemaScope,
 	schemaScope,
@@ -772,7 +773,7 @@ contextualize(() => {
 				properties: { name: { type: "string" } },
 				"x-arktype-symbolKeys": [
 					{
-						key: "$ark.zildjian$1",
+						key: registeredReference(zildjian),
 						value: { type: "number" },
 						optional: false
 					},

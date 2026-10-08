@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	registeredReference,
 	writeShallowCycleErrorMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
@@ -204,6 +205,10 @@ contextualize(() => {
 		>($)
 
 		const types = $.export()
+		const [morph] = types.expandUserGroup.select({
+			kind: "morph",
+			method: "assertFind"
+		}).morphs
 
 		attest($.json).snap({
 			id: { domain: "string" },
@@ -219,7 +224,7 @@ contextualize(() => {
 							domain: "object"
 						}
 					],
-					morphs: ["$ark._docsExampleThunkMorph"]
+					morphs: [registeredReference(morph)]
 				},
 				proto: "Array",
 				minLength: 2

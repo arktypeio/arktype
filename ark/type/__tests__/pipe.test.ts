@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
 	intrinsic,
+	registeredReference,
 	writeInvalidOperandMessage,
 	type ArkErrors
 } from "@ark/schema"
@@ -120,7 +121,7 @@ contextualize(() => {
 						],
 						domain: "object"
 					},
-					morphs: ["$ark.restringifyUser"]
+					morphs: [registeredReference(restringifyUser)]
 				}
 			]
 		})
@@ -225,18 +226,13 @@ contextualize(() => {
 	})
 
 	it("within type", () => {
-		const T = type([
-			"boolean",
-			"=>",
-			function notMorph(data) {
-				return !data
-			}
-		])
+		const notMorph = (data: boolean) => !data
+		const T = type(["boolean", "=>", notMorph])
 		attest<Type<(In: boolean) => Out<boolean>>>(T)
 
 		attest(T.json).snap({
 			in: [{ unit: false }, { unit: true }],
-			morphs: ["$ark.notMorph"]
+			morphs: [registeredReference(notMorph)]
 		})
 
 		const out = T(true)
@@ -537,13 +533,10 @@ contextualize(() => {
 	})
 
 	it("doesn't pipe on error", () => {
-		const A = type({ a: "number" }).pipe(function addOne(o) {
-			return o.a + 1
-		})
-
-		const B = type({ a: "string" }, "=>", function appendExclamation(o) {
-			return o.a + "!"
-		})
+		const addOne = (o: { a: number }) => o.a + 1
+		const appendExclamation = (o: { a: string }) => o.a + "!"
+		const A = type({ a: "number" }).pipe(addOne)
+		const B = type({ a: "string" }, "=>", appendExclamation)
 
 		const T = B.or(A)
 
@@ -554,11 +547,11 @@ contextualize(() => {
 		attest(T.json).snap([
 			{
 				in: { required: [{ key: "a", value: "number" }], domain: "object" },
-				morphs: ["$ark.addOne"]
+				morphs: [registeredReference(addOne)]
 			},
 			{
 				in: { required: [{ key: "a", value: "string" }], domain: "object" },
-				morphs: ["$ark.appendExclamation"]
+				morphs: [registeredReference(appendExclamation)]
 			}
 		])
 
@@ -594,15 +587,10 @@ contextualize(() => {
 	})
 
 	it("intersection", () => {
+		const stringifyNumberMorph = (data: number) => `${data}`
 		const $ = scope({
 			b: "3.14",
-			a: [
-				"number",
-				"=>",
-				function stringifyNumberMorph(data) {
-					return `${data}`
-				}
-			],
+			a: ["number", "=>", stringifyNumberMorph],
 			aAndB: () => $.type("a&b"),
 			bAndA: () => $.type("b&a")
 		})
@@ -611,23 +599,16 @@ contextualize(() => {
 		attest<(In: 3.14) => Out<string>>(types.aAndB.t)
 		attest(types.aAndB.json).snap({
 			in: { unit: 3.14 },
-			morphs: ["$ark.stringifyNumberMorph"]
+			morphs: [registeredReference(stringifyNumberMorph)]
 		})
 		attest<typeof types.aAndB>(types.bAndA)
 		attest(types.bAndA).equals(types.aAndB)
 	})
 
 	it("object intersection", () => {
+		const _pipeScopedObjectIntersection = (data: { a: 1 }) => `${data}`
 		const $ = scope({
-			a: [
-				{ a: "1" },
-				"=>",
-				// as of TS 5.8, removing data's explicit annotation leads to
-				// the output being inferred as `never`
-				function _pipeScopedObjectIntersection(data: { a: 1 }) {
-					return `${data}`
-				}
-			],
+			a: [{ a: "1" }, "=>", _pipeScopedObjectIntersection],
 			b: { b: "2" },
 			c: "a&b"
 		})
@@ -642,19 +623,14 @@ contextualize(() => {
 				],
 				domain: "object"
 			},
-			morphs: ["$ark._pipeScopedObjectIntersection"]
+			morphs: [registeredReference(_pipeScopedObjectIntersection)]
 		})
 	})
 
 	it("union", () => {
+		const _stringifyNumberUnionPipe = (data: number) => `${data}`
 		const types = scope({
-			a: [
-				"number",
-				"=>",
-				function _stringifyNumberUnionPipe(data) {
-					return `${data}`
-				}
-			],
+			a: ["number", "=>", _stringifyNumberUnionPipe],
 			b: "boolean",
 			aOrB: "a|b",
 			bOrA: "b|a"
@@ -662,7 +638,10 @@ contextualize(() => {
 		attest<boolean | ((In: number) => Out<string>)>(types.aOrB.t)
 
 		attest(types.aOrB.json).snap([
-			{ in: "number", morphs: ["$ark._stringifyNumberUnionPipe"] },
+			{
+				in: "number",
+				morphs: [registeredReference(_stringifyNumberUnionPipe)]
+			},
 			{ unit: false },
 			{ unit: true }
 		])
@@ -677,16 +656,9 @@ contextualize(() => {
 	})
 
 	it("deep union", () => {
+		const _stringifyNumberUnionPipeDeep = (data: number) => `${data}`
 		const types = scope({
-			a: {
-				a: [
-					"number>0",
-					"=>",
-					function _stringifyNumberUnionPipeDeep(data) {
-						return `${data}`
-					}
-				]
-			},
+			a: { a: ["number>0", "=>", _stringifyNumberUnionPipeDeep] },
 			b: { a: "Function" },
 			c: "a|b"
 		}).export()
@@ -707,7 +679,7 @@ contextualize(() => {
 						key: "a",
 						value: {
 							in: { domain: "number", min: { exclusive: true, rule: 0 } },
-							morphs: ["$ark._stringifyNumberUnionPipeDeep"]
+							morphs: [registeredReference(_stringifyNumberUnionPipeDeep)]
 						}
 					}
 				],
@@ -717,33 +689,30 @@ contextualize(() => {
 	})
 
 	it("chained reference", () => {
+		const stringToLength = (s: string) => s.length
+		const isZeroLength = (n: number) => n === 0
 		const $ = scope({
-			a: type("string").pipe(function stringToLength(s) {
-				return s.length
-			}),
-			b: () =>
-				$.type("a").pipe(function isZeroLength(n) {
-					return n === 0
-				})
+			a: type("string").pipe(stringToLength),
+			b: () => $.type("a").pipe(isZeroLength)
 		})
 		const types = $.export()
 		attest<(In: string) => Out<boolean>>(types.b.t)
 
 		attest(types.b.json).snap({
 			in: "string",
-			morphs: ["$ark.stringToLength", "$ark.isZeroLength"]
+			morphs: [
+				registeredReference(stringToLength),
+				registeredReference(isZeroLength)
+			]
 		})
 	})
 
 	it("chained nested", () => {
+		const chainedNestedToLength = (s: string) => s.length
+		const chainedNestedGetA = ({ a }: { a: number }) => a === 0
 		const $ = scope({
-			a: type("string").pipe(function chainedNestedToLength(s) {
-				return s.length
-			}),
-			b: () =>
-				$.type({ a: "a" }).pipe(function chainedNestedGetA({ a }) {
-					return a === 0
-				})
+			a: type("string").pipe(chainedNestedToLength),
+			b: () => $.type({ a: "a" }).pipe(chainedNestedGetA)
 		})
 
 		const types = $.export()
@@ -753,28 +722,29 @@ contextualize(() => {
 				required: [
 					{
 						key: "a",
-						value: { in: "string", morphs: ["$ark.chainedNestedToLength"] }
+						value: {
+							in: "string",
+							morphs: [registeredReference(chainedNestedToLength)]
+						}
 					}
 				],
 				domain: "object"
 			},
-			morphs: ["$ark.chainedNestedGetA"]
+			morphs: [registeredReference(chainedNestedGetA)]
 		})
 	})
 
 	it("directly nested", () => {
-		const A = type("string", "=>", function _directlyNestedStringToLength(s) {
-			return s.length
-		})
+		const _directlyNestedStringToLength = (s: string) => s.length
+		const _directlyNestedRoot = ({ A }: { A: number }) => A === 0
+		const A = type("string", "=>", _directlyNestedStringToLength)
 		const T = type(
 			{
 				// doesn't work with a nested tuple expression here due to a TS limitation
 				A
 			},
 			"=>",
-			function _directlyNestedRoot({ A }) {
-				return A === 0
-			}
+			_directlyNestedRoot
 		)
 		attest<(In: { A: string }) => Out<boolean>>(T.t)
 		assertNodeKind(T.internal, "morph")
@@ -785,22 +755,20 @@ contextualize(() => {
 						key: "A",
 						value: {
 							in: "string",
-							morphs: ["$ark._directlyNestedStringToLength"]
+							morphs: [registeredReference(_directlyNestedStringToLength)]
 						}
 					}
 				],
 				domain: "object"
 			},
-			morphs: ["$ark._directlyNestedRoot"]
+			morphs: [registeredReference(_directlyNestedRoot)]
 		})
 	})
 
 	it("discriminable tuple union", () => {
+		const _discriminableTupleUnionPipe = (s: [string]) => [...s, "!"]
 		const $ = scope({
-			a: () =>
-				$.type(["string"]).pipe(function _discriminableTupleUnionPipe(s) {
-					return [...s, "!"]
-				}),
+			a: () => $.type(["string"]).pipe(_discriminableTupleUnionPipe),
 			b: ["number"],
 			c: () => $.type("a|b")
 		})
@@ -823,7 +791,7 @@ contextualize(() => {
 						proto: "Array",
 						exactLength: 1
 					},
-					morphs: ["$ark._discriminableTupleUnionPipe"]
+					morphs: [registeredReference(_discriminableTupleUnionPipe)]
 				}
 			}
 		})
@@ -874,16 +842,9 @@ contextualize(() => {
 	})
 
 	it("deep intersection", () => {
+		const _deepIntersectionPipePlusOne = (data: number) => data + 1
 		const types = scope({
-			a: {
-				a: [
-					"number>0",
-					"=>",
-					function _deepIntersectionPipePlusOne(data) {
-						return data + 1
-					}
-				]
-			},
+			a: { a: ["number>0", "=>", _deepIntersectionPipePlusOne] },
 			b: { a: "1" },
 			c: "a&b"
 		}).export()
@@ -895,7 +856,7 @@ contextualize(() => {
 					key: "a",
 					value: {
 						in: { unit: 1 },
-						morphs: ["$ark._deepIntersectionPipePlusOne"]
+						morphs: [registeredReference(_deepIntersectionPipePlusOne)]
 					}
 				}
 			],
@@ -1025,11 +986,8 @@ contextualize(() => {
 	})
 
 	it("allows undiscriminated union if morphs are equal", () => {
-		const T = type({ foo: "1" })
-			.or({ bar: "1" })
-			.pipe(function getObjectValues(o) {
-				return Object.values(o)
-			})
+		const getObjectValues = (o: { foo: 1 } | { bar: 1 }) => Object.values(o)
+		const T = type({ foo: "1" }).or({ bar: "1" }).pipe(getObjectValues)
 
 		attest<
 			(
@@ -1048,7 +1006,7 @@ contextualize(() => {
 				{ required: [{ key: "bar", value: { unit: 1 } }], domain: "object" },
 				{ required: [{ key: "foo", value: { unit: 1 } }], domain: "object" }
 			],
-			morphs: ["$ark.getObjectValues"]
+			morphs: [registeredReference(getObjectValues)]
 		})
 		attest(T({ foo: 1 })).snap([1])
 		attest(T({ bar: 1 })).snap([1])
@@ -1160,16 +1118,16 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
 				{
 					in: "string",
 					morphs: [
-						"$ark.appendLengthMorph",
-						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+						registeredReference(appendLengthMorph),
+						{ in: "string", morphs: [registeredReference(appendLengthMorph)] }
 					]
 				},
-				"$ark.appendSeparatorMorph",
+				registeredReference(appendSeparatorMorph),
 				{
 					in: "string",
 					morphs: [
-						"$ark.appendLengthMorph",
-						{ in: "string", morphs: ["$ark.appendLengthMorph"] }
+						registeredReference(appendLengthMorph),
+						{ in: "string", morphs: [registeredReference(appendLengthMorph)] }
 					]
 				}
 			]
