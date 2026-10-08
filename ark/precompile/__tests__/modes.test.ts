@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { diagnosticsOf, precompile } from "./utils.ts"
+import { diagnosticsOf, precompile, statusesOf } from "./utils.ts"
 
 contextualize(() => {
 	describe("configuration", () => {
@@ -16,6 +16,13 @@ configure({
 					{},
 					{ config: "/main.ts" }
 				)
+			).snap([])
+		})
+
+		it("arktype/config exports only configure", () => {
+			attest(
+				statusesOf(`import { type } from "arktype/config"
+export const T = type("string")`)
 			).snap([])
 		})
 

@@ -158,7 +158,6 @@ definePure(
 		readsOnly: true
 	}
 )
-definePure(Number, "Number", ["parseFloat", "parseInt"])
 definePure(String, "String", ["fromCharCode", "fromCodePoint", "raw"])
 definePure(JSON, "JSON", ["parse"])
 definePure(JSON, "JSON", ["stringify"], {

@@ -1,5 +1,7 @@
 import * as arkregex from "arkregex"
 import * as arktype from "arktype"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import * as arktypeConfig from "arktype/config"
 import type {
 	ArrowFunctionExpression,
 	Function,
@@ -16,7 +18,7 @@ const arktypeNamespacesBySpecifier: Record<string, object> =
 	Object.setPrototypeOf(
 		{
 			arktype,
-			"arktype/config": arktype,
+			"arktype/config": arktypeConfig,
 			"@ark/type": arktype,
 			arkregex,
 			"@ark/regex": arkregex
@@ -174,12 +176,7 @@ export class ModuleGraph {
 		if (!(target instanceof SourceModule)) {
 			if (target.kind !== "arktype" || declaration.type !== "ImportSpecifier")
 				return target
-			const name = exportNameOf(declaration.imported)
-			return {
-				kind: "arktype",
-				name,
-				value: Reflect.get(target.value as object, name)
-			}
+			return arktypeExportOf(target, exportNameOf(declaration.imported))
 		}
 		return (
 			declaration.type === "ImportNamespaceSpecifier" ?
@@ -212,11 +209,7 @@ export class ModuleGraph {
 					const target = this.resolve(entry.specifier, module)
 					if (!(target instanceof SourceModule)) {
 						return target.kind === "arktype" && entry.kind === "reexport" ?
-								{
-									kind: "arktype",
-									name: entry.name,
-									value: Reflect.get(target.value as object, entry.name)
-								}
+								arktypeExportOf(target, entry.name)
 							:	target
 					}
 					return entry.kind === "namespace" ?
@@ -227,13 +220,19 @@ export class ModuleGraph {
 		}
 		if (name !== "default" && !seen.has(module)) {
 			seen.add(module)
+			// a name a package may export is known only if no other module exports it
+			let packageExport: ImportTarget | undefined
 			for (const specifier of module.scopes.starExports) {
 				const target = this.resolve(specifier, module)
-				if (!(target instanceof SourceModule)) continue
-				const result = this.exportOf(target, name, seen)
-				if (result.kind !== "unresolved" && result.kind !== "package")
-					return result
+				const result =
+					target instanceof SourceModule ? this.exportOf(target, name, seen)
+					: target.kind === "arktype" ? arktypeExportOf(target, name)
+					: target.kind === "package" ? target
+					: undefined
+				if (result?.kind === "package") packageExport ??= result
+				else if (result && result.kind !== "unresolved") return result
 			}
+			if (packageExport) return packageExport
 		}
 		return {
 			kind: "unresolved",
@@ -364,6 +363,21 @@ export class ModuleGraph {
 		return result
 	}
 }
+
+const arktypeExportOf = (
+	namespace: Extract<ImportTarget, { kind: "arktype" }>,
+	name: string
+): ImportTarget =>
+	name in (namespace.value as object) ?
+		{
+			kind: "arktype",
+			name,
+			value: Reflect.get(namespace.value as object, name)
+		}
+	:	{
+			kind: "unresolved",
+			message: `\`${namespace.name}\` has no export \`${name}\``
+		}
 
 export const isFunctionNode = (node: Node): node is FunctionNode =>
 	node.type === "ArrowFunctionExpression" ||

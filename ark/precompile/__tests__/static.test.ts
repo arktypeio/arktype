@@ -83,6 +83,20 @@ const A = type(\`\${low} < number < \${max + limits.max}\`)`,
 			])
 		})
 
+		it("star exports of arktype and packages", () => {
+			attest(
+				statusesOf(
+					`import { type, z } from "./lib.ts"
+const A = type({ a: "string" })
+const B = type({ b: z.string() })`,
+					{ "/lib.ts": `export * from "arktype"\nexport * from "zod"` }
+				)
+			).snap([
+				"2:11 accepted { a: string }",
+				"3:11 accepted { b: (In: unknown) => Out<unknown> }"
+			])
+		})
+
 		it("enums", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -580,6 +594,20 @@ export const E = type(Object.freeze({ a: "string" }))`)
 				"6:18 rejected\n  `Object.freeze(o)` writes to an object other than a new object or array literal",
 				"7:18 accepted { a: string, b: number }",
 				"8:18 accepted { a: string }"
+			])
+		})
+
+		it("conversions of objects", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const o = { toString: () => "12" }
+const A = type({ [parseInt(o as never)]: "string" })
+const B = type({ [Number.parseFloat(o as never)]: "string" })
+const C = type({ [Number.parseInt("12")]: "string" })`)
+			).snap([
+				"3:11 rejected\n  `parseInt(o as never)` converts an object to a primitive, which runs its methods",
+				"4:11 rejected\n  `Number.parseFloat(o as never)` converts an object to a primitive, which runs its methods",
+				"5:11 accepted { 12: string }"
 			])
 		})
 
