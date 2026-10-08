@@ -1916,9 +1916,16 @@ const inferredNameOf = (fn: FunctionNode): string => {
 	)
 }
 
-// the spec fixes the instant of an ISO date, or date-time with Z or an offset, for every engine and time zone, as long as each field is in range
-const isoInstant =
-	/^((?!-0{6})[+-]\d{6}|\d{4})(?:-(0[1-9]|1[0-2])(?:-(0[1-9]|[12]\d|3[01]))?)?(?:T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{3})?)?(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d))?$/
+// every engine reads an ISO date, or a date-time with Z or an offset, as one instant if its fields are in range
+const isoYear = String.raw`((?!-0{6})[+-]\d{6}|\d{4})`
+const isoMonth = String.raw`(0[1-9]|1[0-2])`
+const isoDay = String.raw`(0[1-9]|[12]\d|3[01])`
+const isoTime = String.raw`T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{3})?)?`
+const isoOffset = String.raw`(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)`
+
+const isoInstant = new RegExp(
+	`^${isoYear}(?:-${isoMonth}(?:-${isoDay})?)?(?:${isoTime}${isoOffset})?$`
+)
 
 const isIsoInstant = (s: string): boolean => {
 	const parts = isoInstant.exec(s)

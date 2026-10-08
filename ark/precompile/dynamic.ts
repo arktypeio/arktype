@@ -1,7 +1,6 @@
 import type { Node } from "oxc-parser"
 import type { SourceModule } from "./module.ts"
 
-// "parameter" and "opaque" values are unknown at build, so in a definition position they may be Standard Schemas
 export type DynamicCode = "parameter" | "opaque" | "validation" | "callback"
 
 export class DynamicValue {
@@ -9,7 +8,7 @@ export class DynamicValue {
 	node: Node
 	message: string
 	cause: DynamicValue | undefined
-	// whether nothing is known of the value, so arktype may hold it as a hole
+	// nothing is known of a parameter or opaque value, so in a definition it may be a Standard Schema held as a hole
 	isOpaque: boolean
 	code: DynamicCode | undefined
 
