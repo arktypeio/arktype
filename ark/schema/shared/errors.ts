@@ -1,5 +1,6 @@
 import {
 	CastableBase,
+	DynamicFunction,
 	ReadonlyPath,
 	append,
 	appendUnique,
@@ -80,55 +81,68 @@ export class ArkError<
 	path: ReadonlyPath
 	data: getAssociatedDataForError<code>
 	private nodeConfig: ResolvedConfig[code]
-	protected input: ArkErrorContextInput<code>
+	protected input!: ArkErrorContextInput<code>
 	protected ctx: Traversal
 
-	constructor(input: ArkErrorContextInput<code>, ctx: Traversal)
+	constructor(
+		input: ArkErrorContextInput<code>,
+		ctx: Traversal,
+		isNodeContext?: boolean
+	)
 	// TS gets confused by <code>, so internally we just use the base type for input
-	constructor(input: ArkErrorContextInput, ctx: Traversal) {
+	constructor(
+		input: ArkErrorContextInput,
+		ctx: Traversal,
+		isNodeContext?: boolean
+	) {
 		super()
 		let prefixPath: array<PropertyKey> | undefined
 		let relativePath: array<PropertyKey> | undefined
-		if (input.code === "union") {
-			prefixPath = input.prefixPath
-			relativePath = input.relativePath
-			// flatten union errors to avoid repeating context like "foo must be foo must be"...
-			let flat: ArkError[] = []
-			for (const innerError of input.errors) {
-				const innerFlat =
-					innerError.hasCode("union") ? innerError.errors : [innerError]
-				flat = flat.length ? appendUnique(flat, innerFlat) : [...innerFlat]
-			}
-			input = {
-				...input,
-				errors:
-					!prefixPath && !relativePath ?
-						flat
-					:	flat.map(e =>
-							e.transform(
-								e =>
-									({
-										...e,
-										path: conflatenateAll(prefixPath, e.path, relativePath)
-									}) as never
-							)
-						)
-			}
-		}
-		this.input = input as never
 		this.ctx = ctx
-		// assigning defines the same property unless this has or inherits k, e.g. propString
-		for (const k in input) {
-			if (k === "relativePath") relativePath = input.relativePath
-			else if (k === "prefixPath") prefixPath = input.prefixPath
-			else if (!(k in this)) (this as any)[k] = input[k as never]
-			// path and data are assigned below, and text supplied for a slot
-			// stays in input, where its getter reads it
-			else if (k !== "path" && k !== "data" && !isSlot(k))
+		if (isNodeContext && !ctx.config.jitless) {
+			relativePath = input.relativePath
+			copyNodeContext(this as never, input)
+		} else {
+			if (input.code === "union") {
+				prefixPath = input.prefixPath
+				relativePath = input.relativePath
+				// flatten union errors to avoid repeating context like "foo must be foo must be"...
+				let flat: ArkError[] = []
+				for (const innerError of input.errors) {
+					const innerFlat =
+						innerError.hasCode("union") ? innerError.errors : [innerError]
+					flat = flat.length ? appendUnique(flat, innerFlat) : [...innerFlat]
+				}
+				input = {
+					...input,
+					errors:
+						!prefixPath && !relativePath ?
+							flat
+						:	flat.map(e =>
+								e.transform(
+									e =>
+										({
+											...e,
+											path: conflatenateAll(prefixPath, e.path, relativePath)
+										}) as never
+								)
+							)
+				}
+			}
+			this.input = input as never
+			// assigning defines the same property unless this has or inherits k, e.g. propString
+			for (const k in input) {
+				if (k === "relativePath") relativePath = input.relativePath
+				else if (k === "prefixPath") prefixPath = input.prefixPath
+				else if (!(k in this)) (this as any)[k] = input[k as never]
+				// path and data are assigned below, and text supplied for a slot
+				// stays in input, where its getter reads it
+				else if (k !== "path" && k !== "data" && !isSlot(k))
+					defineValue(this, k, input[k as never])
+			}
+			for (const k of Object.getOwnPropertySymbols(input))
 				defineValue(this, k, input[k as never])
 		}
-		for (const k of Object.getOwnPropertySymbols(input))
-			defineValue(this, k, input[k as never])
 		const data = ctx.data
 		this.nodeConfig = ctx.config[this.code] as never
 		const basePath = [...(input.path ?? ctx.path)]
@@ -381,6 +395,31 @@ const excludedFromJson = {
 const isSlot = (k: string) =>
 	k === "expected" || k === "actual" || k === "problem" || k === "message"
 
+// a node's errors share its context, so a function compiled once copies its keys
+const copiesByContext = new WeakMap<object, (error: ArkError) => void>()
+
+const copyNodeContext = (
+	error: ArkError,
+	context: ArkErrorContextInput
+): void => {
+	let copy = copiesByContext.get(context)
+	if (!copy) {
+		let body = "e.input = input\n"
+		for (const k in context) {
+			// relativePath is read into the error's path
+			if (k === "relativePath") continue
+			const key = JSON.stringify(k)
+			body += `e[${key}] = input[${key}]\n`
+		}
+		copy = new DynamicFunction<(input: object) => (error: ArkError) => void>(
+			"input",
+			`return e => {\n${body}}`
+		)(context)
+		copiesByContext.set(context, copy)
+	}
+	copy(error)
+}
+
 export declare namespace ArkErrors {
 	export type Handler<returns = unknown> = (errors: ArkErrors) => returns
 }
@@ -408,9 +447,10 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	 * Errors by a pathString representing their location.
 	 */
 	get byPath(): Record<string, ArkError> {
+		const issues = this.issues
 		if (this._byPath) return this._byPath
 		const byPath: Record<string, ArkError> = Object.create(null)
-		for (const error of this.issues) byPath[error.propString] = error
+		for (const error of issues) byPath[error.propString] = error
 		return (this._byPath = byPath)
 	}
 
@@ -438,9 +478,10 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	 * at that path or any nested path within it.
 	 */
 	get byAncestorPath(): Record<string, ArkError[]> {
+		const issues = this.issues
 		if (this._byAncestorPath) return this._byAncestorPath
 		this._byAncestorPath = Object.create(null)
-		for (const error of this.issues) this.addAncestorPaths(error)
+		for (const error of issues) this.addAncestorPaths(error)
 		return this._byAncestorPath!
 	}
 
@@ -466,50 +507,19 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	 */
 	add(error: ArkError): void {
 		const existing = this.errorAtPath(error)
-		if (existing) {
-			// only add if it's not already in the errors collection
-			if (
-				error === existing ||
-				(existing.hasCode("intersection") && existing.errors.includes(error))
-			)
-				return
-			// If the existing error is an error for a value constrained to "never",
-			// then we don't want to intersect the error messages.
-			if (existing.hasCode("union") && existing.errors.length === 0) {
-				// the error is still a failure, so traversal of the value it checked stops
-				this.count++
-				return
-			}
+		if (
+			error === existing ||
+			(existing?.hasCode("intersection") && existing.errors.includes(error))
+		)
+			return
+		this.addNew(error)
+	}
 
-			// If the new error is an error for a value constrained to "never",
-			// then we want to override any existing errors.
-			const errorIntersection =
-				error.hasCode("union") && error.errors.length === 0 ?
-					error
-				:	new ArkError(
-						{
-							code: "intersection",
-							errors:
-								existing.hasCode("intersection") ?
-									[...existing.errors, error]
-								:	[existing, error],
-							// an error added with its own path isn't at ctx.path
-							path: existing.path,
-							data: existing.data
-						},
-						this.ctx
-					)
-
-			const issues = this.issues as ArkError[]
-			issues[issues.indexOf(existing)] = errorIntersection
-			if (this._byPath) this._byPath[error.propString] = errorIntersection
-			// ancestors list errors in issue order, which appending here would break
-			this._byAncestorPath = undefined
-		} else {
-			;(this.issues as ArkError[]).push(error)
-			if (this._byPath) this._byPath[error.propString] = error
-			if (this._byAncestorPath) this.addAncestorPaths(error)
-		}
+	/**
+	 * @internal
+	 */
+	addNew(error: ArkError): void {
+		this.ungrouped.push(error)
 		this.count++
 	}
 
@@ -527,7 +537,7 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		// a morph that returns ctx.errors has already added them
 		if (errors === this) return
 		for (const e of errors.issues) {
-			this.add(
+			this.addNew(
 				e.transform(
 					input => ({ ...input, prefixPath: [...this.ctx.path] }) as never
 				)
@@ -578,10 +588,20 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 			:	this.summary
 	}
 
+	private _issues: ArkError[] = []
+	private ungrouped: ArkError[] = []
+
 	/**
 	 * One ArkError per path with errors, in the order each path first failed.
 	 */
-	readonly issues: readonly ArkError[] = []
+	get issues(): readonly ArkError[] {
+		const ungrouped = this.ungrouped
+		if (ungrouped.length === 0) return this._issues
+		// reset first, since grouping reads issues
+		this.ungrouped = []
+		for (const error of ungrouped) this.group(error)
+		return this._issues
+	}
 
 	get length(): number {
 		return this.issues.length
@@ -604,6 +624,44 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		for (let i = 1; i < issues.length; i++)
 			result += `\n${issues[i].toString()}`
 		return result
+	}
+
+	private group(error: ArkError): void {
+		const existing = this.errorAtPath(error)
+		if (!existing) {
+			this._issues.push(error)
+			if (this._byPath) this._byPath[error.propString] = error
+			if (this._byAncestorPath) this.addAncestorPaths(error)
+			return
+		}
+		// If the existing error is an error for a value constrained to "never",
+		// then we don't want to intersect the error messages.
+		if (existing.hasCode("union") && existing.errors.length === 0) return
+
+		// If the new error is an error for a value constrained to "never",
+		// then we want to override any existing errors.
+		const errorIntersection =
+			error.hasCode("union") && error.errors.length === 0 ?
+				error
+			:	new ArkError(
+					{
+						code: "intersection",
+						errors:
+							existing.hasCode("intersection") ?
+								[...existing.errors, error]
+							:	[existing, error],
+						// an error added with its own path isn't at ctx.path
+						path: existing.path,
+						data: existing.data
+					},
+					this.ctx
+				)
+
+		const issues = this._issues
+		issues[issues.indexOf(existing)] = errorIntersection
+		if (this._byPath) this._byPath[error.propString] = errorIntersection
+		// ancestors list errors in issue order, which appending here would break
+		this._byAncestorPath = undefined
 	}
 
 	private errorAtPath(error: ArkError): ArkError | undefined {

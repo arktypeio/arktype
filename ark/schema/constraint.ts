@@ -108,13 +108,14 @@ export abstract class InternalPrimitiveConstraint<
 		}
 	}
 
+	private _errorContext: d["errorContext"] | undefined
 	get errorContext(): d["errorContext"] {
-		return {
+		return (this._errorContext ??= {
 			code: this.kind,
 			description: this.description,
 			meta: this.meta,
 			...this.inner
-		}
+		})
 	}
 
 	get compiledErrorContext(): string {

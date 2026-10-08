@@ -262,7 +262,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const caseNode = discriminant.cases[k]
 			if (caseNode === true) return
 			if (caseNode === undefined) {
-				ctx.errorFromNodeContext({
+				ctx.errorFromContext({
 					code: "discriminant",
 					...this.discriminantCases,
 					onKey: discriminant.path.length !== 0,
@@ -290,7 +290,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 			errors.push(ctx.popBranch()!.error!)
 		}
-		ctx.errorFromNodeContext({ code: "union", errors, meta: this.meta })
+		ctx.errorFromContext({ code: "union", errors, meta: this.meta })
 	}
 
 	traverseTransform: TraverseTransform = (data, ctx) => {
@@ -375,7 +375,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				`${discriminant.optionallyChainedPropString} === undefined && ${js.ref(isAbsent)}(${js.ref(discriminant.path)}, data)`
 			:	"false"
 
-		js.line(`ctx.errorFromNodeContext({
+		js.line(`ctx.errorFromContext({
 	code: "discriminant",
 	discriminantKind: "${discriminant.kind}",
 	cases: ${js.ref(this.discriminantCases.cases)},
@@ -403,7 +403,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 
 			js.line(
-				`ctx.errorFromNodeContext({ code: "union", errors, meta: ${js.ref(this.meta)} })`
+				`ctx.errorFromContext({ code: "union", errors, meta: ${js.ref(this.meta)} })`
 			)
 		} else if (js.traversalKind === "Allows") {
 			for (const branch of this.branches) {

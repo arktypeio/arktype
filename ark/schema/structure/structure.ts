@@ -518,7 +518,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				) {
 					if (traversalKind === "Allows") return false
 
-					ctx.errorFromNodeContext({
+					ctx.errorFromContext({
 						code: "undeclared",
 						relativePath: [k],
 						data: data[k as never],
@@ -1142,7 +1142,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					js.return(false)
 				:	js
 						.line(
-							`ctx.errorFromNodeContext({ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`
+							`ctx.errorFromContext({ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`
 						)
 						.if("ctx.failFast", () => js.return())
 			const declaresKey = this._compileDeclaresKey(js)

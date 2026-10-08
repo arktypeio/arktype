@@ -552,15 +552,20 @@ export class Traversal {
 		input: input
 	): ArkError<input["code"]>
 	errorFromNodeContext(input: NodeErrorContextInput): ArkError {
-		return this.errorFromContext(input)
+		return this.addError(new ArkError(input, this, true))
 	}
 
-	private errorFromContext(errCtx: ArkErrorContextInput): ArkError {
-		const error = new ArkError(errCtx, this)
-		if (this.currentBranch) this.failBranch(error)
-		else this.errors.add(error)
+	/**
+	 * @internal
+	 */
+	errorFromContext(errCtx: ArkErrorContextInput): ArkError {
+		return this.addError(new ArkError(errCtx, this))
+	}
 
-		return error as never
+	private addError(error: ArkError): ArkError {
+		if (this.currentBranch) this.failBranch(error)
+		else this.errors.addNew(error)
+		return error
 	}
 
 	private failBranch(error: ArkError): void {

@@ -15,13 +15,14 @@ export abstract class InternalBasis<
 			ctx.errorFromNodeContext(this.errorContext as never)
 	}
 
+	private _errorContext: d["errorContext"] | undefined
 	get errorContext(): d["errorContext"] {
-		return {
+		return (this._errorContext ??= {
 			code: this.kind,
 			description: this.description,
 			meta: this.meta,
 			...this.inner
-		}
+		})
 	}
 
 	get compiledErrorContext(): string {

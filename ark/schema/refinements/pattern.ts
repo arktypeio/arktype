@@ -76,13 +76,14 @@ export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 		if (!this.traverseAllows(data)) ctx.errorFromNodeContext(this.errorContext)
 	}
 
+	private _errorContext: Pattern.ErrorContext | undefined
 	get errorContext(): Pattern.ErrorContext {
-		return {
+		return (this._errorContext ??= {
 			code: "pattern",
 			description: this.description,
 			meta: this.meta,
 			...this.inner
-		}
+		})
 	}
 
 	// a ref rather than a literal, so a pattern the engine rejects fails its own definition
