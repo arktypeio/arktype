@@ -655,6 +655,19 @@ contextualize(() => {
 		attest(m([true, 5])).equals(2)
 	})
 
+	it("discriminated tuple element case includes a string", () => {
+		const m = match
+			.case(["'a'"], () => 0)
+			.case(["'b'"], () => 1)
+			.case("string | null", () => 2)
+			.default(() => 3)
+
+		attest(m(["a"])).equals(0)
+		attest(m("a")).equals(2)
+		attest(m("b")).equals(2)
+		attest(m(["c"])).equals(3)
+	})
+
 	it("keeps a union at the discriminant path of an overlapping case", () => {
 		const m = match
 			.case({ a: "unknown", b: "1" }, () => 0)

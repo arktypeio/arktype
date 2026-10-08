@@ -318,8 +318,10 @@ const resolveCase = (
 	const discriminantNode = discriminantCaseToNode(
 		caseCtx.condition,
 		ctx.location.path,
-		ctx.node.$
+		ctx.node.$,
+		false
 	)
+	let primitiveDiscriminantNode: BaseRoot | undefined
 
 	let resolvedEntries: BranchEntry[] | null = []
 	const nextDefaults: BranchEntry[] = []
@@ -343,7 +345,27 @@ const resolveCase = (
 				})
 			}
 		} else {
-			if (entry.branch.rawIn.overlaps(discriminantNode)) {
+			const intersection = intersectNodesRoot(
+				entry.branch.rawIn,
+				discriminantNode,
+				ctx.node.$
+			)
+			if (
+				!(intersection instanceof Disjoint) ||
+				// a branch disjoint above the case may reach it through
+				// a primitive's keys, e.g. a string's characters
+				(intersection.some(
+					disjointEntry => disjointEntry.path.length < ctx.location.path.length
+				) &&
+					entry.branch.rawIn.overlaps(
+						(primitiveDiscriminantNode ??= discriminantCaseToNode(
+							caseCtx.condition,
+							ctx.location.path,
+							ctx.node.$,
+							true
+						))
+					))
+			) {
 				// include cases where an object not including the
 				// discriminant path might have that value present as an undeclared key
 				const overlapping = pruneDiscriminant(entry.branch, ctx.location)!
@@ -404,7 +426,8 @@ const viableOrderedCandidates = (
 const discriminantCaseToNode = (
 	caseDiscriminant: CaseDiscriminant,
 	path: PropertyKey[],
-	$: BaseScope
+	$: BaseScope,
+	includesPrimitives: boolean
 ): BaseRoot => {
 	let node: BaseRoot =
 		caseDiscriminant === "undefined" ? $.node("unit", { unit: undefined })
@@ -413,12 +436,7 @@ const discriminantCaseToNode = (
 		: (
 			caseDiscriminant.hasKind("domain") && caseDiscriminant.domain === "number"
 		) ?
-			// a typeof check doesn't exclude NaN or Infinity
-			$.node("domain", {
-				domain: "number",
-				numberAllowsNaN: true,
-				numberAllowsInfinity: true
-			})
+			$.node("domain", typeofNumberSchema)
 		:	caseDiscriminant
 	for (let i = path.length - 1; i >= 0; i--) {
 		const key = path[i]
@@ -438,9 +456,27 @@ const discriminantCaseToNode = (
 					required: [{ key, value: node }]
 				}
 		)
+		if (includesPrimitives && isReadableOnPrimitive(key))
+			node = $.node("union", [node, ...primitiveSchemas])
 	}
 	return node
 }
+
+// a typeof check doesn't exclude NaN or Infinity
+const typeofNumberSchema: Domain.Schema = {
+	domain: "number",
+	numberAllowsNaN: true,
+	numberAllowsInfinity: true
+}
+
+const primitiveSchemas: Union.ChildSchema[] = [
+	"string",
+	typeofNumberSchema,
+	"bigint",
+	"symbol",
+	{ unit: true },
+	{ unit: false }
+]
 
 const optionallyChainPropString = (path: PropertyKey[]): string =>
 	path.reduce<string>(

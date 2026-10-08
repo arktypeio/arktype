@@ -630,6 +630,23 @@ contextualize(() => {
 		}
 	})
 
+	it("tuple element case includes a string at a key", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ a: ["'a'"] })
+				.or({ a: ["'b'"] })
+				.or({ a: "string | null" })
+			const U = $.type({ a: ["'a'"] })
+				.or({ a: ["'b'"] })
+				.or({ "a?": "string" })
+
+			attest(T.allows({ a: "a" })).equals(true)
+			attest(T.allows({ a: ["c"] })).equals(false)
+			attest(U.allows({ a: "a" })).equals(true)
+			attest(U.allows({ a: ["c"] })).equals(false)
+		}
+	})
+
 	it("doesn't discriminate undefined at a path", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })
