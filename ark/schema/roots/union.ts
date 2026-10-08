@@ -34,7 +34,6 @@ import {
 import {
 	$ark,
 	reference,
-	registeredReference,
 	registryName,
 	type RegisteredReference
 } from "../shared/registry.ts"
@@ -329,7 +328,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		if (!discriminant) return this.compileIndiscriminable(js)
 
 		// we need to access the path as optional so we don't throw if it isn't present
-		let condition = discriminant.optionallyChainedPropString
+		const value = `data${discriminant.path.map(k => js.prop(k, true)).join("")}`
+		let condition = value
 
 		if (discriminant.kind === "domain")
 			condition = `typeof ${condition} === "object" ? ${condition} === null ? "null" : "object" : typeof ${condition} === "function" ? "object" : typeof ${condition}`
@@ -339,7 +339,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
 				const v = cases[k]
-				const caseCondition = k === "default" ? k : `case ${k}`
+				const caseCondition =
+					k === "default" ? k
+					: k.startsWith(registeredPrefix) ?
+						`case ${js.ref($ark[k.slice(registeredPrefix.length)] as never)}`
+					:	`case ${k}`
 				const member = discriminant.members?.[k]
 				if (member && v !== true && js.traversalKind === "Apply") {
 					js.line(`${caseCondition}:`).invokeMember(v, member).return()
@@ -366,13 +370,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			return
 		}
 
-		const serializedPathSegments = discriminant.path.map(k =>
-			typeof k === "symbol" ? registeredReference(k) : JSON.stringify(k)
-		)
+		const serializedPathSegments = discriminant.path.map(k => js.serialize(k))
 
 		const absent =
 			discriminant.path.length ?
-				`${discriminant.optionallyChainedPropString} === undefined && ${js.ref(isAbsent)}(${js.ref(discriminant.path)}, data)`
+				`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(discriminant.path)}, data)`
 			:	"false"
 
 		js.line(`ctx.errorFromContext({
@@ -383,7 +385,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	absent: ${absent},
 	description: ${js.ref(this)}.discriminantDescription,
 	relativePath: [${serializedPathSegments}],
-	data: ${discriminant.optionallyChainedPropString},
+	data: ${value},
 	meta: ${js.ref(this.discriminantMeta)}
 })`)
 	}

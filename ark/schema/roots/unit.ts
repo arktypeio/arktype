@@ -6,7 +6,7 @@ import {
 	type Domain,
 	type JsonPrimitive
 } from "@ark/util"
-import { compileSerializedValue } from "../shared/compile.ts"
+import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	defaultValueSerializer,
@@ -75,6 +75,24 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 		this.serializedValue,
 		"negated"
 	)
+
+	compile(js: NodeCompiler): void {
+		if (
+			this.unit instanceof Date ||
+			(!hasDomain(this.unit, "object") && typeof this.unit !== "symbol")
+		)
+			return super.compile(js)
+		const unit = js.ref(this.unit)
+		if (js.traversalKind === "Allows") js.return(`data === ${unit}`)
+		else {
+			js.if(`data !== ${unit}`, () =>
+				js.line(
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)}, data)`
+				)
+			)
+		}
+	}
+
 	expression: string =
 		this.unit instanceof Date ?
 			`d'${this.compiledValue}'`

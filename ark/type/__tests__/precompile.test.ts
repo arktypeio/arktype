@@ -49,4 +49,26 @@ contextualize(() => {
 		)
 		attest(String(apply(types.even, 3))).equals(String(types.even(3)))
 	})
+
+	it("passes symbols and object units to compiled code", () => {
+		const key = Symbol("precompiledKey")
+		const Inner = type({ a: "string" })
+		const T = type({
+			[key]: "'a'",
+			unit: type.enumerated(key, Inner),
+			defaulted: ["symbol", "=", key]
+		}).or({ [key]: "'b'", n: "number" })
+		attest(T.precompilation!.includes("$ark")).equals(false)
+		attest(T({ [key]: "a", unit: Inner })).equals({
+			[key]: "a",
+			unit: Inner,
+			defaulted: key
+		})
+		attest(T({ [key]: "c" }).toString()).snap(
+			'value at [Symbol(precompiledKey)] must be "b" or "a" (was "c")'
+		)
+		attest(T({ [key]: "b", n: "x" }).toString()).snap(
+			"n must be a number (was a string)"
+		)
+	})
 })

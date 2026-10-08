@@ -98,8 +98,9 @@ export abstract class BaseProp<
 	}
 
 	compile(js: NodeCompiler): void {
-		js.if(`${this.serializedKey} in data`, () =>
-			js.traverseKey(this.serializedKey, `data${js.prop(this.key)}`, this.value)
+		const key = js.serialize(this.key)
+		js.if(`${key} in data`, () =>
+			js.traverseKey(key, `data${js.prop(this.key)}`, this.value)
 		)
 
 		if (this.hasKind("required")) {

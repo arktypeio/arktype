@@ -19,7 +19,6 @@ import {
 	type ArkErrorResult,
 	type NodeErrorContextInput
 } from "./errors.ts"
-import { $ark } from "./registry.ts"
 import { copyOf, TransformErrors } from "./transform.ts"
 import { inProgress, isNode } from "./utils.ts"
 
@@ -671,6 +670,7 @@ export const maxAliasDepth = 64
 export const maxAliasVisits = 1000
 
 let continuation: Traversal | undefined
+let continuationConfig: ResolvedConfig
 
 // shared by every root's Allows, which passes an alias depth in place of ctx
 export const aliasVisits = {
@@ -685,8 +685,7 @@ export const aliasVisits = {
 			return false
 		}
 		aliasVisits.tracked = true
-		// a root traversed untracked has no contextual predicate, so its Allows reads no config
-		return (continuation ??= new Traversal(data, $ark.resolvedConfig!))
+		return (continuation ??= new Traversal(data, continuationConfig))
 	}
 }
 
@@ -764,8 +763,10 @@ export const allowsUntracked = (
 		return
 	const outerVisits = aliasVisits.count
 	const outerContinuation = continuation
+	const outerConfig = continuationConfig
 	aliasVisits.count = 0
 	continuation = undefined
+	continuationConfig = node.$.resolvedConfig
 	let allowed: boolean
 	// restored in a catch, since a finally slows short cyclic allows
 	try {
@@ -773,11 +774,13 @@ export const allowsUntracked = (
 	} catch (e) {
 		aliasVisits.count = outerVisits
 		continuation = outerContinuation
+		continuationConfig = outerConfig
 		throw e
 	}
 	const exceeded = aliasVisits.count > maxAliasVisits
 	aliasVisits.count = outerVisits
 	continuation = outerContinuation
+	continuationConfig = outerConfig
 	return exceeded ? undefined : allowed
 }
 

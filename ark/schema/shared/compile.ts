@@ -260,6 +260,18 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return id
 	}
 
+	override prop(key: PropertyKey, optional = false): string {
+		return typeof key === "symbol" ?
+				indexPropAccess(this.ref(key), optional)
+			:	super.prop(key, optional)
+	}
+
+	serialize(value: unknown): string {
+		return hasDomain(value, "object") || typeof value === "symbol" ?
+				this.ref(value)
+			:	serializePrimitive(value as never)
+	}
+
 	ref(value: object | symbol): string {
 		if (!this.refs) return registeredReference(value)
 		let name = this.refs.get(value)

@@ -19,11 +19,7 @@ import type { BaseNode, GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
-import {
-	compileSerializedValue,
-	type NodeCompiler,
-	type TransformStep
-} from "../shared/compile.ts"
+import type { NodeCompiler, TransformStep } from "../shared/compile.ts"
 import type {
 	attachmentsOf,
 	BaseErrorContext,
@@ -832,7 +828,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		js.initializeTransform(transformedChildren)
 		js.let("out", "data")
 		for (let i = 0; i < transformedProps.length; i++) {
-			const { key, serializedKey, optional } = transformedProps[i]
+			const { key, optional } = transformedProps[i]
+			const keyExpression = js.serialize(key)
 			const onChange = () =>
 				this.compileCopy(js).line(`out${js.prop(key)} = transformed${i}`)
 			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
@@ -840,8 +837,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				`value${i}`,
 				this.transformsOf(transformedProps[i]),
 				{
-					keyExpression: serializedKey,
-					...(optional ? { condition: `${serializedKey} in data` } : {}),
+					keyExpression,
+					...(optional ? { condition: `${keyExpression} in data` } : {}),
 					...(deletes ? {} : { onChange })
 				}
 			)
@@ -898,7 +895,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		for (const node of this.defaultable) {
-			js.if(`!(${node.serializedKey} in data)`, () =>
+			js.if(`!(${js.serialize(node.key)} in data)`, () =>
 				compileDefault(this.compileCopy(js), node, "out")
 			)
 		}
@@ -926,17 +923,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.sequence) return js
 		return js.if("out !== data", () => {
 			for (const prop of this.props) {
-				const missing = `!(${prop.serializedKey} in out)`
+				const missing = `!(${js.serialize(prop.key)} in out)`
 				js.if(
 					prop.required ? missing : (
-						`${missing} && ${prop.serializedKey} in data`
+						`${missing} && ${js.serialize(prop.key)} in data`
 					),
 					() => js.line(`out${js.prop(prop.key)} = data${js.prop(prop.key)}`)
 				)
 			}
 			for (const prop of this.inheritableProps) {
 				js.if(
-					`!Object.prototype.hasOwnProperty.call(out, ${prop.serializedKey}) && Object.prototype.hasOwnProperty.call(data, ${prop.serializedKey})`,
+					`!Object.prototype.hasOwnProperty.call(out, ${js.serialize(prop.key)}) && Object.prototype.hasOwnProperty.call(data, ${js.serialize(prop.key)})`,
 					() => js.line(`out${js.prop(prop.key)} = data${js.prop(prop.key)}`)
 				)
 			}
@@ -953,7 +950,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (const prop of this.props) {
 			const store = `${to}${js.prop(prop.key)} = ${from}${js.prop(prop.key)}`
 			if (prop.required) js.line(store)
-			else js.if(`${prop.serializedKey} in data`, () => js.line(store))
+			else js.if(`${js.serialize(prop.key)} in data`, () => js.line(store))
 		}
 		return js
 	}
@@ -1017,7 +1014,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 			for (const node of this.defaultable)
-				unchanged.push(`${node.serializedKey} in data`)
+				unchanged.push(`${js.serialize(node.key)} in data`)
 			if (this.sequence.defaultables) {
 				unchanged.push(
 					`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
@@ -1067,7 +1064,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		js.if(copies, deleteFromCopy)
 		if (this.optional) {
 			for (const prop of this.optional) {
-				js.if(`${prop.serializedKey} in data`, () =>
+				js.if(`${js.serialize(prop.key)} in data`, () =>
 					js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
 				)
 				if (prop.hasDefault()) js.else(() => compileDefault(js, prop, "result"))
@@ -1076,7 +1073,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (const prop of this.inheritableProps) {
 			if (transformedProps.includes(prop)) continue
 			js.if(
-				`!Object.prototype.hasOwnProperty.call(data, ${prop.serializedKey})`,
+				`!Object.prototype.hasOwnProperty.call(data, ${js.serialize(prop.key)})`,
 				() => js.line(`delete result${js.prop(prop.key)}`)
 			)
 		}
@@ -1216,7 +1213,7 @@ const compileDefault = (
 	if (typeof node.default !== "function" && !node.value.transforms) {
 		// -0 would serialize as 0
 		const serializedDefault =
-			Object.is(node.default, -0) ? "-0" : compileSerializedValue(node.default)
+			Object.is(node.default, -0) ? "-0" : js.serialize(node.default)
 		return js.line(`${out}${js.prop(node.key)} = ${serializedDefault}`)
 	}
 	return compileDefaultMorph(
@@ -1246,7 +1243,7 @@ const compileDeclaredKeySwitch = (
 ): NodeCompiler =>
 	js.block("switch (k)", () =>
 		js.line(
-			`${props.map(prop => `case ${prop.serializedKey}:`).join(" ")} continue`
+			`${props.map(prop => `case ${js.serialize(prop.key)}:`).join(" ")} continue`
 		)
 	)
 
