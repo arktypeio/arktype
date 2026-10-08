@@ -180,6 +180,23 @@ type.number.allows(Number.NaN)
 configure({ onUndeclaredKey: "delete" })
 ```
 
+### Print object units without calling their code
+
+An object unit's `expression`, description and errors list its own enumerable data properties, without calling its `toJSON`, getters or other methods, so defining a type or failing to match it no longer runs them:
+
+```ts
+const o = {
+	a: 1,
+	get b() {
+		return 2
+	},
+	toJSON: () => "custom"
+}
+
+// previously "custom", now {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"}
+type.unit(o).expression
+```
+
 ### Print functions and symbols by their own names
 
 Messages, `expression` and ParseErrors print a function or symbol by its name alone, without the `$ark.` prefix or a count of earlier values with the same name, and union branches are ordered by those names:

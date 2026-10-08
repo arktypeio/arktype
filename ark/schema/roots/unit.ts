@@ -52,7 +52,7 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 			}
 		},
 		defaults: {
-			description: node => printable(node.unit),
+			description: node => printable(node.unit, { ownDataOnly: true }),
 			problem: ({ expected, actual }) =>
 				`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
 		}
@@ -77,7 +77,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	expression: string =
 		this.unit instanceof Date ?
 			`d'${this.compiledValue}'`
-		:	printable(this.unit)
+		:	printable(this.unit, { ownDataOnly: true })
 	domain: Domain = domainOf(this.unit)
 
 	get defaultShortDescription(): string {

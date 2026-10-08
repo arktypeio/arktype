@@ -1,7 +1,8 @@
 import type { array } from "./arrays.ts"
 import { domainOf, type Primitive } from "./domain.ts"
+import type { Key } from "./keys.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
-import { stringAndSymbolicEntriesOf, type dict } from "./records.ts"
+import type { Entry, dict } from "./records.ts"
 import { baseNameOf, isDotAccessible } from "./registry.ts"
 
 export type SerializationOptions = {
@@ -10,6 +11,8 @@ export type SerializationOptions = {
 	onFunction?: (value: Function) => string
 	onUndefined?: string
 	onBigInt?: (value: bigint) => string
+	// describes an accessor instead of calling it, and then only a Date's toJSON is called
+	onAccessor?: (descriptor: PropertyDescriptor) => string
 }
 
 export type JsonStructure = JsonObject | JsonArray
@@ -55,6 +58,8 @@ type snapshotPrimitive<t> = t extends symbol ? `Symbol(${string})` : t
 export type PrintableOptions = {
 	indent?: number
 	quoteKeys?: boolean
+	// print own data properties without running accessors or toJSON
+	ownDataOnly?: boolean
 }
 
 export const print = (data: unknown, opts?: PrintableOptions): void =>
@@ -65,16 +70,18 @@ export const printable = (data: unknown, opts?: PrintableOptions): string => {
 		case "object":
 			const o = data as dict
 			const ctorName = o.constructor?.name ?? "Object"
+			const serializationOpts =
+				opts?.ownDataOnly ? ownDataPrintableOpts : printableOpts
 			return (
 				ctorName === "Object" || ctorName === "Array" ?
 					opts?.quoteKeys === false ?
-						stringifyUnquoted(o, opts?.indent ?? 0, "")
+						stringifyUnquoted(o, opts?.indent ?? 0, "", serializationOpts)
 					:	JSON.stringify(
-							_serialize(o, printableOpts, []),
+							_serialize(o, serializationOpts, []),
 							null,
 							opts?.indent
 						).replace(quotedBigIntMarker, "$1")
-				:	stringifyUnquoted(o, opts?.indent ?? 0, "")
+				:	stringifyUnquoted(o, opts?.indent ?? 0, "", serializationOpts)
 			)
 		case "symbol":
 			return printableOpts.onSymbol(data as symbol)
@@ -86,7 +93,8 @@ export const printable = (data: unknown, opts?: PrintableOptions): string => {
 const stringifyUnquoted = (
 	value: unknown,
 	indent: number,
-	currentIndent: string
+	currentIndent: string,
+	opts: SerializationOptions
 ): string => {
 	if (typeof value === "function") return printableOpts.onFunction(value)
 	if (typeof value !== "object" || value === null)
@@ -97,7 +105,7 @@ const stringifyUnquoted = (
 	if (Array.isArray(value)) {
 		if (value.length === 0) return "[]"
 		const items = value
-			.map(item => stringifyUnquoted(item, indent, nextIndent))
+			.map(item => stringifyUnquoted(item, indent, nextIndent, opts))
 			.join(",\n" + nextIndent)
 		return indent ? `[\n${nextIndent}${items}\n${currentIndent}]` : `[${items}]`
 	}
@@ -105,12 +113,12 @@ const stringifyUnquoted = (
 	const ctorName = value.constructor?.name ?? "Object"
 
 	if (ctorName === "Object") {
-		const keyValues = stringAndSymbolicEntriesOf(value).map(([key, val]) => {
+		const keyValues = ownEntriesOf(value, opts).map(([key, val]) => {
 			const stringifiedKey =
 				typeof key === "symbol" ? printableOpts.onSymbol(key)
 				: isDotAccessible(key) ? key
 				: JSON.stringify(key)
-			const stringifiedValue = stringifyUnquoted(val, indent, nextIndent)
+			const stringifiedValue = stringifyUnquoted(val, indent, nextIndent, opts)
 			return `${nextIndent}${stringifiedKey}: ${stringifiedValue}`
 		})
 
@@ -138,6 +146,11 @@ const printableOpts = {
 	onBigInt: n => `${bigIntMarker}${n}n`
 } satisfies SerializationOptions
 
+const ownDataPrintableOpts = {
+	...printableOpts,
+	onAccessor: descriptor => (descriptor.get ? "(getter)" : "(setter)")
+} satisfies SerializationOptions
+
 // private use character that JSON.stringify leaves unescaped
 const bigIntMarker = "\uE000"
 
@@ -151,7 +164,12 @@ const _serialize = (
 	switch (domainOf(data)) {
 		case "object": {
 			const o = data as object
-			if ("toJSON" in o && typeof o.toJSON === "function") return o.toJSON()
+			if (
+				(!opts.onAccessor || o instanceof Date) &&
+				"toJSON" in o &&
+				typeof o.toJSON === "function"
+			)
+				return o.toJSON()
 			if (typeof o === "function") return printableOpts.onFunction(o)
 
 			if (seen.includes(o)) return "(cycle)"
@@ -163,14 +181,10 @@ const _serialize = (
 			if (o instanceof Date) return o.toDateString()
 
 			const result: Record<string, unknown> = {}
-			for (const k in o) result[k] = _serialize((o as any)[k], opts, nextSeen)
-
-			for (const s of Object.getOwnPropertySymbols(o)) {
-				result[opts.onSymbol?.(s as symbol) ?? s.toString()] = _serialize(
-					(o as any)[s],
-					opts,
-					nextSeen
-				)
+			for (const [k, v] of ownEntriesOf(o, opts)) {
+				result[
+					typeof k === "symbol" ? (opts.onSymbol?.(k) ?? k.toString()) : k
+				] = _serialize(v, opts, nextSeen)
 			}
 
 			return result
@@ -186,6 +200,21 @@ const _serialize = (
 		default:
 			return data
 	}
+}
+
+const ownEntriesOf = (o: object, opts: SerializationOptions) => {
+	const result: Entry<Key>[] = []
+	for (const k of Reflect.ownKeys(o)) {
+		const descriptor = Object.getOwnPropertyDescriptor(o, k)!
+		if (!descriptor.enumerable) continue
+		result.push([
+			k,
+			"value" in descriptor ? descriptor.value
+			: opts.onAccessor ? opts.onAccessor(descriptor)
+			: (o as any)[k]
+		])
+	}
+	return result
 }
 
 /**

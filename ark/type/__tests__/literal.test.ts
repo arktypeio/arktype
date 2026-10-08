@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference } from "@ark/schema"
 import { printable } from "@ark/util"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 
 contextualize(() => {
 	describe("tuple expression", () => {
@@ -57,6 +57,32 @@ contextualize(() => {
 				{ unit: true }
 			])
 		})
+	})
+
+	it("prints an object unit without calling its code", () => {
+		let calls = 0
+		const o = {
+			a: 1,
+			get b() {
+				return ++calls
+			},
+			toJSON: () => ++calls
+		}
+		const T = type.unit(o)
+		attest(T.expression).snap(
+			'{"a":1,"b":"(getter)","toJSON":"Function(toJSON)"}'
+		)
+		attest(T({}).toString()).snap(
+			'must be {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"} (was {})'
+		)
+		const { U } = scope(
+			{ U: [{ k: ["===", o] }, "|", { k: "'b'", v: "number" }] },
+			{ jitless: true }
+		).export()
+		attest(U({ k: "c" }).toString()).snap(
+			'k must be {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"} or "b" (was "c")'
+		)
+		attest(calls).equals(0)
 	})
 
 	describe("root expression", () => {

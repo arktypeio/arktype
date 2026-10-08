@@ -507,7 +507,7 @@ const describeCases = ({ discriminantKind, cases }: DiscriminantCases) =>
 	describeBranches(
 		discriminantKind === "domain" ?
 			cases.map(domain => domainDescriptions[domain])
-		:	cases.map(unit => printable(unit))
+		:	cases.map(unit => printable(unit, { ownDataOnly: true }))
 	)
 
 // the inverse of unitKeyOf

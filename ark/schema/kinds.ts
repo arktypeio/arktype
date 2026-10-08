@@ -134,7 +134,7 @@ const listCases: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
 	describeBranches(
 		e.discriminantKind === "domain" ?
 			e.cases.map(domain => locale.nouns[domain])
-		:	e.cases.map(unit => printable(unit))
+		:	e.cases.map(unit => printable(unit, { ownDataOnly: true }))
 	)
 
 const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
