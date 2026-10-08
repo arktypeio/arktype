@@ -729,6 +729,22 @@ lang = "de"
 T({ a: 5 }).toString()
 ```
 
+### Print a discriminated union's unit cases once with `jitless`
+
+With `jitless` or in a CSP environment, a union discriminated by object units printed those units on every failed validation, calling their `toJSON` each time. Like a compiled type, it now describes its cases once, the first time a value matches none of them:
+
+```ts
+let calls = 0
+const unit = { toJSON: () => (calls++, { tag: "u" }) }
+const $ = scope({}, { jitless: true })
+const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })
+
+// k must be {"tag":"u"} or "b" (was "c")
+T({ k: "c" })
+// previously incremented calls, now leaves it unchanged
+T({ k: "c" })
+```
+
 ## 2.2.8
 
 ### Add `string.base58`

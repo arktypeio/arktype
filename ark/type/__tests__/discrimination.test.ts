@@ -931,4 +931,50 @@ contextualize(() => {
 			}
 		})
 	})
+
+	it("jitless describes cases as compiled", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const StringOrFile = $.type("string | File")
+			attest(StringOrFile(5).toString()).snap(
+				"must be a string or an object (was a number)"
+			)
+			attest(StringOrFile({}).toString()).snap(
+				"must be a File instance (was object)"
+			)
+			attest($.type("'b' | 1 | 'a'")(2).toString()).snap(
+				'must be 1, "a" or "b" (was 2)'
+			)
+			const Tagged = $.type({ kind: "'a'", a: "string" }).or({
+				kind: "'b'",
+				b: "number"
+			})
+			attest(Tagged({ kind: "a", a: 5 }).toString()).snap(
+				"a must be a string (was a number)"
+			)
+			attest(Tagged(5).toString()).snap(
+				'kind must be "a" or "b" (was undefined)'
+			)
+		}
+	})
+
+	it("describes a unit case once", () => {
+		for (const jitless of [false, true]) {
+			let calls = 0
+			const unit = {
+				toJSON: () => {
+					calls++
+					return { tag: "u" }
+				}
+			}
+			const $ = scope({}, { jitless })
+			const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })
+			attest(T({ k: "c" }).toString()).snap(
+				'k must be {"tag":"u"} or "b" (was "c")'
+			)
+			const callsOnFirstMiss = calls
+			T({ k: "c" })
+			attest(calls).equals(callsOnFirstMiss)
+		}
+	})
 })
