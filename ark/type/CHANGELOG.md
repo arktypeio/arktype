@@ -226,6 +226,35 @@ https://github.com/arktypeio/arktype/issues/1548
 
 After an alias failed to parse, later references to it returned a type that crashed when validating, or reported a false cycle. Each reference now throws the original error.
 
+### Export the types that inferred types reference
+
+`arktype` exports `Brand`, `Json`, `GenericAst`, `ArkErrorCode` and `Regex` as types. Under pnpm, exporting a type that references one of them (a brand, `string.json.parse`, a scope with a generic, a `regex()` value or `ArkErrors.byPath`) failed declaration emit with TS2883, since the packages they lived in usually can't be resolved from your project:
+
+```ts
+// previously TS2883: The inferred type of 'Gid' cannot be named without a reference to '.pnpm/@ark+util@.../node_modules/@ark/util'
+// now emits import("arktype").Brand<string, "GID">
+export const Gid = type("string#GID")
+```
+
+https://github.com/arktypeio/arktype/issues/1577
+
+### Write length bounds and protos alongside a structure
+
+An expression or description with props or an array element dropped the length bounds and the proto beside it, so distinct types printed the same:
+
+```ts
+// previously number[], now number[] >= 2
+type("number[] > 1").expression
+
+// previously { foo: string }, now { foo: string } & Date
+type("Date").and({ foo: "string" }).expression
+
+// previously string >= 2[], now (string >= 2)[]
+type("(string > 1)[]").expression
+```
+
+https://github.com/arktypeio/arktype/issues/1430
+
 ## 2.2.8
 
 ### Add `string.base58`
