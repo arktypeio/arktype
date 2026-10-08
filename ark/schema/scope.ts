@@ -1,4 +1,6 @@
 import {
+	arityOf,
+	arkKind,
 	defineLazily,
 	flatMorph,
 	hashOf,
@@ -94,7 +96,6 @@ import {
 	type TraverseTransform
 } from "./shared/traversal.ts"
 import {
-	arkKind,
 	assertUnchecked,
 	composing,
 	defining,
@@ -358,7 +359,7 @@ const precompiledKeyOf = (root: BaseRoot): string => {
 	for (const id in root.referencesById) {
 		forEachValue(root.referencesById[id].inner, value => {
 			if (typeof value === "function" && !isNode(value))
-				aritiesByName[nameOf(value)] = value.length
+				aritiesByName[nameOf(value)] = arityOf(value)
 		})
 	}
 	const arities = Object.keys(aritiesByName)
@@ -910,7 +911,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return (def: unknown, possibleHkt?: Hkt.constructor) =>
 			new GenericRoot(
 				params,
-				possibleHkt ? new LazyGenericBody(def as Fn) : def,
+				possibleHkt ?
+					// wrapped rather than bound, since binding reads the body's name and length
+					new LazyGenericBody(args => (def as Fn)(args))
+				:	def,
 				$,
 				$,
 				possibleHkt ?? null

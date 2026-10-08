@@ -1,5 +1,6 @@
 import {
 	domainOf,
+	functionNameOf,
 	getBuiltinNameOfConstructor,
 	isValidDate,
 	objectKindDescriptions,
@@ -63,7 +64,7 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 				const builtinName = getBuiltinNameOfConstructor(node.proto)
 				return builtinName ?
 						objectKindDescriptions[builtinName]
-					:	`an instance of ${node.proto.name}`
+					:	`an instance of ${functionNameOf(node.proto)}`
 			},
 			actual: data =>
 				data instanceof Date && !isValidDate(data) ?
@@ -126,7 +127,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	}
 
 	expression: string =
-		this.dateAllowsInvalid ? "Date | InvalidDate" : this.proto.name
+		this.dateAllowsInvalid ? "Date | InvalidDate" : functionNameOf(this.proto)
 
 	get nestableExpression(): string {
 		return this.dateAllowsInvalid ? `(${this.expression})` : this.expression
@@ -143,7 +144,7 @@ export const Proto = {
 	implementation,
 	Node: ProtoNode,
 	writeBadInvalidDateMessage: (actual: Constructor): string =>
-		`dateAllowsInvalid may only be specified with constructor Date (was ${actual.name})`,
+		`dateAllowsInvalid may only be specified with constructor Date (was ${functionNameOf(actual)})`,
 	writeInvalidSchemaMessage: (actual: unknown): string =>
 		`instanceOf operand must be a function (was ${domainOf(actual)})`
 }

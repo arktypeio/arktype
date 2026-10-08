@@ -3,11 +3,13 @@ import {
 	flatMorph,
 	includes,
 	isArray,
+	isDate,
 	isEmptyObject,
 	nameOf,
 	printable,
 	throwInternalError,
 	throwParseError,
+	type arkKind,
 	type array,
 	type Brand,
 	type dict,
@@ -33,7 +35,7 @@ import {
 	type UnknownAttachments
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
-import { composing, hasArkKind, isNode, type arkKind } from "./shared/utils.ts"
+import { composing, hasArkKind, isNode } from "./shared/utils.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
 
@@ -279,7 +281,7 @@ const literalKeyOf = (v: unknown): string =>
 			"-0"
 		:	`${v}`
 	: typeof v === "bigint" ? `${v}n`
-	: v instanceof Date ? `d'${v.toISOString()}'`
+	: isDate(v) ? `d'${v.toISOString()}'`
 	: (
 		(typeof v === "object" && v !== null) ||
 		typeof v === "function" ||

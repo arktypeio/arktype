@@ -1,6 +1,7 @@
 import type { BaseRoot, IntersectionNode } from "@ark/schema"
 import {
 	Callable,
+	functionNameOf,
 	throwParseError,
 	type applyElementLabels,
 	type conform,
@@ -133,7 +134,7 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 	expression: string
 
 	constructor(raw: Fn, params: IntersectionNode, returns: BaseRoot) {
-		const typedName = `typed ${raw.name}`
+		const typedName = `typed ${functionNameOf(raw)}`
 		const typed = {
 			// assign to a key with the expected name to force it to be created that way
 			[typedName]: (...args: unknown[]) => {

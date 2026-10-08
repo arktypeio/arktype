@@ -1,4 +1,5 @@
 import {
+	arkKind,
 	arrayEquals,
 	includes,
 	inferred,
@@ -53,7 +54,7 @@ import type {
 	StandardSchemaV1
 } from "../shared/standardSchema.ts"
 import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import { arkKind, hasArkKind } from "../shared/utils.ts"
+import { hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
 import type {

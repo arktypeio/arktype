@@ -1,4 +1,5 @@
 import {
+	arkKind,
 	capitalize,
 	throwParseError,
 	tryParseDate,
@@ -31,7 +32,6 @@ import {
 } from "./shared/implement.ts"
 import { sets } from "./shared/sets.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
-import { arkKind } from "./shared/utils.ts"
 
 export declare namespace Constraint {
 	export interface Declaration extends BaseNodeDeclaration {

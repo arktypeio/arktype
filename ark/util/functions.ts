@@ -1,4 +1,5 @@
 import { throwInternalError } from "./errors.ts"
+import { arityOf } from "./facts.ts"
 import { unset } from "./records.ts"
 
 export type Fn<
@@ -14,7 +15,7 @@ export const cached = <t>(thunk: () => t): (() => t) => {
 export const isThunk = <value>(
 	value: value
 ): value is Extract<value, Thunk> extends never ? value & Thunk
-:	Extract<value, Thunk> => typeof value === "function" && value.length === 0
+:	Extract<value, Thunk> => typeof value === "function" && arityOf(value) === 0
 
 export type Thunk<ret = unknown> = () => ret
 

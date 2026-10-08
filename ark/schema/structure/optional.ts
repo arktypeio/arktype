@@ -95,7 +95,7 @@ export class OptionalNode extends BaseProp<"optional"> {
 
 	expression: string =
 		this.hasDefault() ?
-			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default)}`
+			`${this.compiledKey}: ${this.value.expression} = ${printable(this.inner.default, { ownDataOnly: true })}`
 		:	`${this.compiledKey}?: ${this.value.expression}`
 
 	defaultValueMorph: Morph | undefined =

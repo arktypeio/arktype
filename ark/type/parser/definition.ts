@@ -12,6 +12,7 @@ import {
 	domainOf,
 	hasDomain,
 	isArray,
+	isStandardSchema,
 	isThunk,
 	objectKindOf,
 	printable,
@@ -90,7 +91,7 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 	switch (objectKind) {
 		case undefined:
 			if (hasArkKind(def, "root")) return def
-			if ("~standard" in def) return parseStandardSchema(def as never, ctx)
+			if (isStandardSchema(def)) return parseStandardSchema(def as never, ctx)
 			return parseObjectLiteral(def as Dict, ctx)
 		case "Array":
 			return parseTuple(def as array, ctx)

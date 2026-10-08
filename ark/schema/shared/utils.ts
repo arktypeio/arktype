@@ -1,7 +1,7 @@
 import {
+	arkKindOf,
 	flatMorph,
 	isArray,
-	noSuggest,
 	type array,
 	type mutable,
 	type show,
@@ -41,10 +41,6 @@ export type internalImplementationOf<
 	:	unknown
 }
 
-export type arkKind = typeof arkKind
-
-export const arkKind = noSuggest("arkKind")
-
 export interface ArkKinds {
 	constraint: BaseConstraint
 	root: BaseRoot
@@ -61,7 +57,7 @@ export type ArkKind = show<keyof ArkKinds>
 export const hasArkKind = <kind extends ArkKind>(
 	value: unknown,
 	kind: kind
-): value is ArkKinds[kind] => (value as any)?.[arkKind] === kind
+): value is ArkKinds[kind] => arkKindOf(value) === kind
 
 export const isNode = (value: unknown): value is BaseNode =>
 	hasArkKind(value, "root") || hasArkKind(value, "constraint")

@@ -1,4 +1,4 @@
-import { arrayEquals, type array } from "@ark/util"
+import { arityOf, arrayEquals, type array } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
@@ -167,7 +167,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				)
 			} else {
 				const call =
-					morph.length === 1 ?
+					arityOf(morph) === 1 ?
 						`${js.ref(morph)}(${result})`
 					:	`ctx.callMorph(${js.ref(morph)}, ${result})`
 				js.const(morphed, call).if(

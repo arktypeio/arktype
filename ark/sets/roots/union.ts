@@ -28,6 +28,7 @@ import {
 	arrayEquals,
 	flatMorph,
 	integerLikeMatcher,
+	isDate,
 	range,
 	throwParseError,
 	type JsonStructure
@@ -107,7 +108,7 @@ export const union: setImplementationOf<Union.Declaration> = {
 
 // a switch compares by ===, which never matches NaN and compares a Date by reference
 const isCaseUnit = (node: Unit.Node): boolean =>
-	!(node.unit instanceof Date) && !Number.isNaN(node.unit)
+	!isDate(node.unit) && !Number.isNaN(node.unit)
 
 const isUndefinedCase = (k: string) => k === "undefined" || k === '"undefined"'
 

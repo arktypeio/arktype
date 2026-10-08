@@ -1,4 +1,4 @@
-import { baseNameOf, printable } from "@ark/util"
+import { baseNameOf, functionNameOf, printable } from "@ark/util"
 import { BaseConstraint } from "./constraint.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -48,8 +48,10 @@ export declare namespace Predicate {
 }
 
 // reads predicate, or for pipe.try the morph that threw
-const describePredicate = (ctx: { predicate?: Predicate; morph?: Morph }) =>
-	`valid according to ${(ctx.predicate ?? ctx.morph)?.name || "an anonymous predicate"}`
+const describePredicate = (ctx: { predicate?: Predicate; morph?: Morph }) => {
+	const fn = ctx.predicate ?? ctx.morph
+	return `valid according to ${(fn && functionNameOf(fn)) || "an anonymous predicate"}`
+}
 
 const implementation: nodeImplementationOf<Predicate.Declaration> =
 	implementNode<Predicate.Declaration>({

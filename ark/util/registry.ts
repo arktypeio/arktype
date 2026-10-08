@@ -1,5 +1,6 @@
 import { domainOf } from "./domain.ts"
 import { throwInternalError } from "./errors.ts"
+import { functionNameOf } from "./facts.ts"
 import { isomorphic } from "./isomorphic.ts"
 import { FileConstructor, objectKindOf } from "./objectKinds.ts"
 
@@ -99,7 +100,9 @@ export const baseNameOf = (value: object | symbol): string => {
 			return prefix[0].toLowerCase() + prefix.slice(1)
 		}
 		case "function":
-			return isDotAccessible(value.name) ? value.name : "fn"
+			return isDotAccessible(functionNameOf(value)) ?
+					functionNameOf(value)
+				:	"fn"
 		case "symbol":
 			return value.description && isDotAccessible(value.description) ?
 					value.description

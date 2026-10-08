@@ -2,6 +2,7 @@ import {
 	domainDescriptions,
 	domainOf,
 	hasDomain,
+	isDate,
 	printable,
 	type Domain,
 	type JsonPrimitive
@@ -37,7 +38,7 @@ export declare namespace Unit {
 }
 
 const serializeUnit = (unit: unknown): JsonPrimitive =>
-	unit instanceof Date ? unit.toISOString()
+	isDate(unit) ? unit.toISOString()
 	: hasDomain(unit, "object") || typeof unit === "symbol" ?
 		registeredReference(unit)
 	:	(defaultValueSerializer(unit) as JsonPrimitive)
@@ -62,7 +63,7 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 export class UnitNode extends InternalBasis<Unit.Declaration> {
 	compiledValue: JsonPrimitive = serializeUnit(this.unit)
 	serializedValue: string =
-		this.unit instanceof Date ?
+		isDate(this.unit) ?
 			JSON.stringify(this.compiledValue)
 		:	compileSerializedValue(this.unit)
 
@@ -78,7 +79,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 
 	compile(js: NodeCompiler): void {
 		if (
-			this.unit instanceof Date ||
+			isDate(this.unit) ||
 			(!hasDomain(this.unit, "object") && typeof this.unit !== "symbol")
 		)
 			return super.compile(js)
@@ -94,7 +95,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	}
 
 	expression: string =
-		this.unit instanceof Date ?
+		isDate(this.unit) ?
 			`d'${this.compiledValue}'`
 		:	printable(this.unit, { ownDataOnly: true })
 	domain: Domain = domainOf(this.unit)
@@ -106,7 +107,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 	}
 
 	traverseAllows: TraverseAllows =
-		this.unit instanceof Date ?
+		isDate(this.unit) ?
 			data => data instanceof Date && data.toISOString() === this.compiledValue
 		: Number.isNaN(this.unit) ? data => Number.isNaN(data)
 		: data => data === this.unit
@@ -122,7 +123,7 @@ const compileEqualityCheck = (
 	serializedValue: JsonPrimitive,
 	negated?: "negated"
 ) => {
-	if (unit instanceof Date) {
+	if (isDate(unit)) {
 		const condition = `data instanceof Date && data.toISOString() === ${serializedValue}`
 		return negated ? `!(${condition})` : condition
 	}

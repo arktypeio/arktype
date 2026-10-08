@@ -2,6 +2,7 @@ import {
 	Callable,
 	DynamicFunction,
 	appendUnique,
+	arityOf,
 	flatMorph,
 	hasDomain,
 	hashOf,
@@ -180,11 +181,11 @@ export abstract class BaseNode<
 		// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
 		// that would break here, but it feels like a pathological case and is better to let people optimize
 		this.includesContextualPredicate =
-			this.hasKind("predicate") && this.inner.predicate.length !== 1
+			this.hasKind("predicate") && arityOf(this.inner.predicate) !== 1
 
 		this.includesContextualMorph =
 			this.hasKind("morph") &&
-			this.inner.morphs.some(morph => isNode(morph) || morph.length !== 1)
+			this.inner.morphs.some(morph => isNode(morph) || arityOf(morph) !== 1)
 
 		this.isCyclic = this.kind === "alias"
 		this.includesAlias = this.isCyclic

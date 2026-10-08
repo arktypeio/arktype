@@ -4,6 +4,7 @@ import {
 	ReadonlyPath,
 	append,
 	appendUnique,
+	arkKind,
 	arrayEquals,
 	conflatenateAll,
 	defineValue,
@@ -44,7 +45,6 @@ import {
 } from "./render.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { Traversal } from "./traversal.ts"
-import { arkKind } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 

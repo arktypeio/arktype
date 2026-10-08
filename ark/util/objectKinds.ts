@@ -1,6 +1,7 @@
 import type { DescribeOptions } from "./describe.ts"
 import { type domainDescriptions, domainOf } from "./domain.ts"
 import { throwParseError } from "./errors.ts"
+import { functionNameOf, prototypeOf } from "./facts.ts"
 import type { Fn } from "./functions.ts"
 import type { anyOrNever, satisfy } from "./generics.ts"
 import { tryParseNumber } from "./numbers.ts"
@@ -169,7 +170,7 @@ export const objectKindOf = <data extends object>(
 	// Array.isArray (https://github.com/arktypeio/arktype/issues/1597).
 	if (Array.isArray(data)) return "Array" as never
 
-	let prototype: Partial<Object> | null = Object.getPrototypeOf(data)
+	let prototype: Partial<Object> | null = prototypeOf(data)
 	while (
 		prototype?.constructor &&
 		(!isKeyOf(prototype.constructor.name, builtinConstructors) ||
@@ -321,7 +322,7 @@ export type objectKindDescriptions = typeof objectKindDescriptions
 export const getBuiltinNameOfConstructor = (
 	ctor: Function
 ): BuiltinObjectKind | null => {
-	const constructorName: string | null = Object(ctor).name ?? null
+	const constructorName: string | null = functionNameOf(Object(ctor)) ?? null
 	return (
 			constructorName &&
 				isKeyOf(constructorName, builtinConstructors) &&
@@ -357,17 +358,3 @@ export type normalizedKeyOf<t> =
 			`${k}`
 		:	k
 	:	never
-
-export const constructorExtends = (
-	ctor: Constructor,
-	base: Constructor
-): boolean => {
-	let current = ctor.prototype
-
-	while (current !== null) {
-		if (current === base.prototype) return true
-
-		current = Object.getPrototypeOf(current)
-	}
-	return false
-}

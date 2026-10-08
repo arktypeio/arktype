@@ -1,8 +1,14 @@
 import type { array } from "./arrays.ts"
 import { domainOf, type Primitive } from "./domain.ts"
-import type { Key } from "./keys.ts"
+import {
+	constructorNameOf,
+	expressionOf,
+	isDate,
+	ownEntriesOf,
+	toJsonMethodOf
+} from "./facts.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
-import type { Entry, dict } from "./records.ts"
+import type { dict } from "./records.ts"
 import { baseNameOf, isDotAccessible } from "./registry.ts"
 
 export type SerializationOptions = {
@@ -69,7 +75,7 @@ export const printable = (data: unknown, opts?: PrintableOptions): string => {
 	switch (domainOf(data)) {
 		case "object":
 			const o = data as dict
-			const ctorName = o.constructor?.name ?? "Object"
+			const ctorName = constructorNameOf(o) ?? "Object"
 			const serializationOpts =
 				opts?.ownDataOnly ? ownDataPrintableOpts : printableOpts
 			return (
@@ -110,7 +116,7 @@ const stringifyUnquoted = (
 		return indent ? `[\n${nextIndent}${items}\n${currentIndent}]` : `[${items}]`
 	}
 
-	const ctorName = value.constructor?.name ?? "Object"
+	const ctorName = constructorNameOf(value) ?? "Object"
 
 	if (ctorName === "Object") {
 		const keyValues = ownEntriesOf(value, opts).map(([key, val]) => {
@@ -129,12 +135,9 @@ const stringifyUnquoted = (
 			:	`{${keyValues.join(", ")}}`
 	}
 
-	if (value instanceof Date) return describeCollapsibleDate(value)
+	if (isDate(value)) return describeCollapsibleDate(value)
 
-	if ("expression" in value && typeof value.expression === "string")
-		return value.expression
-
-	return ctorName
+	return expressionOf(value) ?? ctorName
 }
 
 const printableOpts = {
@@ -164,12 +167,9 @@ const _serialize = (
 	switch (domainOf(data)) {
 		case "object": {
 			const o = data as object
-			if (
-				(!opts.onAccessor || o instanceof Date) &&
-				"toJSON" in o &&
-				typeof o.toJSON === "function"
-			)
-				return o.toJSON()
+			const toJson =
+				!opts.onAccessor || isDate(o) ? toJsonMethodOf(o) : undefined
+			if (toJson) return Reflect.apply(toJson, o, [])
 			if (typeof o === "function") return printableOpts.onFunction(o)
 
 			if (seen.includes(o)) return "(cycle)"
@@ -178,7 +178,7 @@ const _serialize = (
 			if (Array.isArray(o))
 				return o.map(item => _serialize(item, opts, nextSeen))
 
-			if (o instanceof Date) return o.toDateString()
+			if (isDate(o)) return o.toDateString()
 
 			const result: Record<string, unknown> = {}
 			for (const [k, v] of ownEntriesOf(o, opts)) {
@@ -200,21 +200,6 @@ const _serialize = (
 		default:
 			return data
 	}
-}
-
-const ownEntriesOf = (o: object, opts: SerializationOptions) => {
-	const result: Entry<Key>[] = []
-	for (const k of Reflect.ownKeys(o)) {
-		const descriptor = Object.getOwnPropertyDescriptor(o, k)!
-		if (!descriptor.enumerable) continue
-		result.push([
-			k,
-			"value" in descriptor ? descriptor.value
-			: opts.onAccessor ? opts.onAccessor(descriptor)
-			: (o as any)[k]
-		])
-	}
-	return result
 }
 
 /**

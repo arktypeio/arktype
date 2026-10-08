@@ -123,7 +123,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				const innerDescription = node.tuple
 					.map(element =>
 						element.kind === "defaultables" ?
-							`${element.node.nestableExpression} = ${printable(element.default)}`
+							`${element.node.nestableExpression} = ${printable(element.default, { ownDataOnly: true })}`
 						: element.kind === "optionals" ?
 							`${element.node.nestableExpression}?`
 						: element.kind === "variadic" ?

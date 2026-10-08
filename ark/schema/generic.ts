@@ -1,6 +1,8 @@
 import {
+	arkKind,
 	Callable,
 	flatMorph,
+	functionNameOf,
 	snapshot,
 	throwParseError,
 	type array,
@@ -20,7 +22,6 @@ import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
-	arkKind,
 	inProgress,
 	isResolutionFinal,
 	queueUnchecked
@@ -136,7 +137,7 @@ export class GenericRoot<
 		this.hkt = hkt
 		this.description =
 			hkt ?
-				(new hkt().description ?? `a generic type for ${hkt.name}`)
+				(new hkt().description ?? `a generic type for ${functionNameOf(hkt)}`)
 			:	"a generic type"
 		this.alias = alias
 		if ($.resolved || !alias) void this.baseInstantiation
