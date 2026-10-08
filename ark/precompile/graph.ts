@@ -1,3 +1,4 @@
+import { Callable } from "@ark/util"
 import * as arkregex from "arkregex"
 import * as arktype from "arktype"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -10,6 +11,7 @@ import type {
 	Node
 } from "oxc-parser"
 import { relative } from "node:path"
+import { isArkValue } from "./builtins.ts"
 import type { PrecompileHost } from "./host.ts"
 import { SourceModule } from "./module.ts"
 import {
@@ -50,6 +52,18 @@ export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 	},
 	null
 )
+
+const arkExports = new Set(
+	Object.values(arktypeNamespacesBySpecifier).flatMap(namespace =>
+		Object.entries(namespace).flatMap(([name, value]) =>
+			name in runtimeExports ? [] : [value]
+		)
+	)
+)
+
+// what the standalone runtime freezes: arktype's exports and parsers, and its Types, Scopes, Modules and Generics
+export const isArkObject = (value: unknown): boolean =>
+	isArkValue(value) || value instanceof Callable || arkExports.has(value)
 
 export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
 	{

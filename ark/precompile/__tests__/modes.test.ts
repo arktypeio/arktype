@@ -163,6 +163,45 @@ export const T = type("string")`
 			])
 		})
 
+		it("writes to arktype values", () => {
+			const source = `import { type, scope } from "arktype"
+const T = type({ a: "string" })
+const $ = scope({ sub: type.module({ a: "string" }) })
+;(type as any).or = () => T
+;(T as any).meta.note = "x"
+delete (T as any).description
+Object.defineProperty(T, "x", { value: 1 })
+Reflect.set($.export().sub, "a", T)
+;($.export().sub as any).a = T
+export const U = Object.assign(type("string"), { create: () => "" })
+const box: any = { T }
+box.T.x = 1
+box.T = 1
+export const parse = (data: unknown) => {
+	const out: any = T(data)
+	out.a = "checked"
+	return out
+}`
+			const diagnostics = precompile(source).diagnostics.filter(d =>
+				d.message.includes("writes to")
+			)
+			attest(diagnostics.map(d => `${d.line}:${d.column} ${d.message}`)).snap([
+				"4:2 (type as any).or = () => T writes to an arktype value, which throws at runtime",
+				'5:2 (T as any).meta.note = "x" writes to what an arktype value holds, which throws at runtime',
+				"6:1 delete (T as any).description writes to an arktype value, which throws at runtime",
+				'7:1 Object.defineProperty(T, "x", { value: 1 }) writes to an arktype value, which throws at runtime',
+				'8:1 Reflect.set($.export().sub, "a", T) writes to an arktype value, which throws at runtime',
+				"9:2 ($.export().sub as any).a = T writes to an arktype value, which throws at runtime",
+				'10:18 Object.assign(type("string"), { create: () => "" }) writes to an arktype value, which throws at runtime',
+				"12:1 box.T.x = 1 writes to an arktype value, which throws at runtime"
+			])
+			attest(renderDiagnostic(diagnostics[0]))
+				.snap(`/main.ts:4:2  (type as any).or = () => T writes to an arktype value, which throws at runtime
+  \`type\` is an arktype value, which the standalone runtime freezes with what it holds
+  Keep what you attach in an object of your own, or build with runtime: "arktype".`)
+			attest(diagnosticsOf(source, {}, { mode: "cache" })).snap([])
+		})
+
 		it("cache mode holds no value the build cannot read", () => {
 			attest(
 				diagnosticsOf(

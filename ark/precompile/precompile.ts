@@ -6,6 +6,7 @@ import {
 	bindingOfFunction,
 	contains,
 	enclosingFunctionOf,
+	isArkObject,
 	ModuleGraph,
 	runtimeExports,
 	staticBodyOf,
@@ -22,7 +23,7 @@ import {
 	type SiteState
 } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
-import { unwrapExpression } from "./scope.ts"
+import { isTransparent, isWriteTarget, unwrapExpression } from "./scope.ts"
 import {
 	findSites,
 	isFoldedHelper,
@@ -534,12 +535,38 @@ export class Precompiler {
 				)
 			)
 		}
+		const written = new Set<Node>()
+		for (const reference of module.scopes.references) {
+			if (!reference.binding || reference.isWrite) continue
+			const [write, value, isDirect] =
+				this.arkWriteOf(reference.id, module) ?? []
+			if (!write) continue
+			written.add(reference.id)
+			result.push(
+				this.diagnostic(
+					module,
+					write,
+					"R4",
+					"error",
+					`${module.snippetOf(write)} writes to ${isDirect ? "an arktype value" : "what an arktype value holds"}, which throws at runtime`,
+					[
+						`\`${module.snippetOf(value!)}\` is an arktype value, which the standalone runtime freezes with what it holds`
+					],
+					writeHint
+				)
+			)
+		}
 		const candidateRanges = new Set(
 			candidates.map(candidate => rangeOf(candidate.state.node))
 		)
 		for (const reference of module.scopes.references) {
 			const binding = reference.binding
-			if (binding?.kind !== "import" || reference.isWrite) continue
+			if (
+				binding?.kind !== "import" ||
+				reference.isWrite ||
+				written.has(reference.id)
+			)
+				continue
 			const target = this.graph.importOf(binding, module)
 			if (target.kind !== "arktype" && target.kind !== "arktypeNamespace")
 				continue
@@ -572,6 +599,42 @@ export class Precompiler {
 			)
 		}
 		return result
+	}
+
+	// a write a reference starts, and the arktype value it writes to or through, e.g. to its `meta`
+	private arkWriteOf(
+		id: Node,
+		module: SourceModule
+	): [write: Node, value: Node, isDirect: boolean] | undefined {
+		// the reads since the last call, each of which may be an arktype value
+		const objects: Node[] = [id]
+		let node = id
+		for (let parent = node.parent!; ; node = parent, parent = node.parent!) {
+			if (isTransparent(parent)) continue
+			let write: Node | undefined
+			if (parent.type === "MemberExpression" && parent.object === node) {
+				if (isWriteTarget(parent)) write = writeOf(parent)
+			} else if (parent.type === "CallExpression" && parent.callee === node)
+				objects.length = 0
+			else if (
+				parent.type === "CallExpression" &&
+				parent.arguments[0] === node &&
+				isObjectWrite(parent.callee, module)
+			)
+				write = parent
+			else return
+			if (write) {
+				for (let i = objects.length - 1; i >= 0; i--) {
+					const state = this.interpreter.evaluateSite(
+						createSiteState(objects[i], module)
+					)
+					if (isArkObject(state.value))
+						return [write, objects[i], i === objects.length - 1]
+				}
+				return
+			}
+			objects.push(parent)
+		}
 	}
 
 	private diagnostic(
@@ -618,6 +681,40 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 }
 
 const cacheHint = "Cache mode leaves this to arktype at runtime."
+
+const writeHint = `Keep what you attach in an object of your own, or build with runtime: "arktype".`
+
+const writersByGlobal: Record<string, string[]> = {
+	Object: ["assign", "defineProperty", "defineProperties", "setPrototypeOf"],
+	Reflect: ["set", "defineProperty", "deleteProperty", "setPrototypeOf"]
+}
+
+// e.g. `Object.assign`, when `Object` is the global
+const isObjectWrite = (callee: Node, module: SourceModule): boolean => {
+	callee = unwrapExpression(callee)
+	return (
+		callee.type === "MemberExpression" &&
+		!callee.computed &&
+		callee.object.type === "Identifier" &&
+		!module.scopes.referencesById.get(callee.object)?.binding &&
+		!!writersByGlobal[callee.object.name]?.includes(callee.property.name)
+	)
+}
+
+// the assignment, update or `delete` a write target is part of, or the target itself in a loop's head
+const writeOf = (target: Node): Node => {
+	const parent = target.parent!
+	switch (parent.type) {
+		case "AssignmentExpression":
+		case "UpdateExpression":
+		case "UnaryExpression":
+			return parent
+		case "ForInStatement":
+		case "ForOfStatement":
+			return target
+	}
+	return writeOf(parent)
+}
 
 const strictHint = `Add "use strict" at the top of the module, or make it an ES module.`
 

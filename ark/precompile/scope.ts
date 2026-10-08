@@ -610,6 +610,32 @@ export const unwrapExpression = (node: Node): Node => {
 	return node
 }
 
+// e.g. `o.a` in `o.a = 1`, `delete o.a` or `({ x: o.a } = p)`
+export const isWriteTarget = (node: Node): boolean => {
+	const parent = node.parent!
+	if (isTransparent(parent)) return isWriteTarget(parent)
+	switch (parent.type) {
+		case "AssignmentExpression":
+			return parent.left === node
+		case "UpdateExpression":
+			return true
+		case "UnaryExpression":
+			return parent.operator === "delete"
+		case "ForInStatement":
+		case "ForOfStatement":
+			return parent.left === node
+		case "ArrayPattern":
+		case "ObjectPattern":
+		case "RestElement":
+			return isWriteTarget(parent)
+		case "Property":
+			return parent.value === node && isWriteTarget(parent)
+		case "AssignmentPattern":
+			return parent.left === node && isWriteTarget(parent)
+	}
+	return false
+}
+
 // a TypeScript `this` parameter types the receiver and takes no argument
 export const runtimeParamsOf = (fn: {
 	params: ParamPattern[]
