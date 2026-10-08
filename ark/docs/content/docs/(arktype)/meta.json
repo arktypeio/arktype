@@ -5,6 +5,7 @@
 	"pages": [
 		"intro",
 		"cheat-sheet",
+		"agents",
 		"primitives",
 		"objects",
 		"keywords",

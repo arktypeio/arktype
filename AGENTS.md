@@ -4,7 +4,8 @@ ArkType is TypeScript's 1:1 validator, optimized from editor to runtime. It pars
 
 ## Using ArkType
 
-- [arktype.io/llms.txt](https://arktype.io/llms.txt) is the full documentation, concatenated from `ark/docs/content/docs/(arktype)`. Attest's is at [arktype.io/docs/attest/llms.txt](https://arktype.io/docs/attest/llms.txt).
+- [arktype.io/llms.txt](https://arktype.io/llms.txt) is the full documentation as Markdown, generated from `ark/docs/content/docs/(arktype)` by `ark/docs/lib/writeMarkdown.ts`. Attest's is at [arktype.io/docs/attest/llms.txt](https://arktype.io/docs/attest/llms.txt). Any single page is at its URL plus `.md`.
+- [`ark/type/skills/arktype/SKILL.md`](ark/type/skills/arktype/SKILL.md) is the Agent Skill users install with `npx skills add arktypeio/arktype`. Keep its examples type-checking against the current API.
 - The [cheat sheet](https://arktype.io/docs/cheat-sheet) (`ark/docs/content/docs/(arktype)/cheat-sheet.mdx`) is an abbreviated version of it covering the most common syntax and gotchas.
 
 ## Commands
