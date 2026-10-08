@@ -169,6 +169,52 @@ type({ "+": "reject", a: "string.trim" }).or({
 
 `arktype/internal` exports the names of every arktype module, and `@ark/schema`, `@ark/util`, `arkregex` and `arksets` each have an `./internal` entry like it. A deep import like `arktype/internal/parser/string.ts` keeps its module's types and loads that entry at runtime.
 
+### Resolve names that match `Object.prototype` members
+
+Aliases, generic parameters, keyword lookups and `FormData` fields named like an `Object.prototype` member (e.g. `toString`, `constructor`, `valueOf`) no longer resolve to the inherited member:
+
+```ts
+// previously threw: #toString duplicates public alias toString
+scope({ toString: "string" }).export()
+
+// previously threw an internal TypeError, now 'toString' is unresolvable
+type("toString")
+```
+
+https://github.com/arktypeio/arktype/issues/1121
+
+### Skip the CSP probe when `jitless` is configured
+
+Configuring `jitless` through `arktype/config` before importing arktype no longer runs the `new Function` check for JIT support, so a page with a strict Content-Security-Policy no longer logs an eval violation.
+
+https://github.com/arktypeio/arktype/issues/1473
+
+### Emit `enum` for a configured union of literals
+
+```ts
+// previously { anyOf: [{ const: "a", title: "Letter" }, { const: "b", title: "Letter" }], title: "Letter" }
+// now { enum: ["a", "b"], title: "Letter" }
+type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()
+```
+
+https://github.com/arktypeio/arktype/issues/1470
+
+### Import in runtimes without web platform globals
+
+Importing arktype no longer throws in runtimes that lack `Blob`, `URL`, `FormData`, `Headers`, `Request` or `Response`, such as WeChat mini programs, AudioWorklets or an embedded V8 or QuickJS. A keyword whose global is missing throws when used, e.g. `'Blob' is unresolvable`.
+
+https://github.com/arktypeio/arktype/issues/1555
+
+### Infer platform keywords whose globals are declared as classes
+
+With declarations like `@cloudflare/workers-types`, which declare `Blob`, `File`, `Headers` and `URL` as classes, those keywords infer their instance types instead of `never`.
+
+https://github.com/arktypeio/arktype/issues/1548
+
+### Throw a scope alias's parse error on every reference
+
+After an alias failed to parse, later references to it returned a type that crashed when validating, or reported a false cycle. Each reference now throws the original error.
+
 ## 2.2.8
 
 ### Add `string.base58`
