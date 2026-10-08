@@ -17,26 +17,6 @@ export default () => (
 	<div className="flex-1 pt-40 container relative pb-20">
 		<Hero />
 
-		<section className="mt-20 mb-8">
-			<h2 className="text-3xl md:text-4xl font-semibold mb-3">
-				If you can write the type, you can validate it
-			</h2>
-			<p className="text-fd-muted-foreground text-xl mb-6">
-				The definition on the right is the type on the left, checked at runtime.
-				Hover either <code>User</code> to compare.
-			</p>
-			<div className="grid md:grid-cols-2 gap-4">
-				<div>
-					<p className="text-lg mb-2">TypeScript</p>
-					<CodeBlock fromFile="typescriptUser" />
-				</div>
-				<div>
-					<p className="text-lg mb-2">ArkType</p>
-					<CodeBlock fromFile="arktypeUser" />
-				</div>
-			</div>
-		</section>
-
 		<ArkCards>
 			<ArkCard title="Types You Already Know" icon={<TsIcon height={20} />}>
 				TypeScript's syntax, with autocomplete inside every string

@@ -46,8 +46,6 @@ const snippetIds = [
 	"intrinsicOptimization",
 	"unparalleledDx",
 	"nestedTypeInScopeError",
-	"typescriptUser",
-	"arktypeUser",
 	"readableErrors",
 	"assignability",
 	"reduction"
