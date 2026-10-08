@@ -18,10 +18,10 @@ import type {
 	declareNode
 } from "../shared/declare.ts"
 import {
-	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
+import { registeredReference } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { isNode } from "../shared/utils.ts"
 import { InternalBasis } from "./basis.ts"
@@ -71,7 +71,7 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 		keys: {
 			proto: {
 				serialize: ctor =>
-					getBuiltinNameOfConstructor(ctor) ?? defaultValueSerializer(ctor)
+					getBuiltinNameOfConstructor(ctor) ?? registeredReference(ctor)
 			},
 			dateAllowsInvalid: {}
 		},

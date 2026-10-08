@@ -63,7 +63,7 @@ import {
 	type StructuralKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
-import { $ark, registryName } from "./shared/registry.ts"
+import { $ark } from "./shared/registry.ts"
 import { TransformErrors } from "./shared/transform.ts"
 import {
 	allowsAcyclic,
@@ -540,10 +540,6 @@ export abstract class BaseNode<
 	declare traverseTransform: TraverseTransform<d["prerequisite"]>
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
-
-	get compiledMeta(): string {
-		return compileMeta(this.metaJson)
-	}
 
 	private _description: string | undefined
 	get description(): string {
@@ -1344,11 +1340,6 @@ export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
 	stringifyPath(path, {
 		stringifyNonKey: node => node.expression
 	})
-
-const referenceMatcher = new RegExp(`"(\\${registryName}\\.[^"]+)"`, "g")
-
-const compileMeta = (metaJson: unknown) =>
-	JSON.stringify(metaJson).replace(referenceMatcher, "$1")
 
 export const flatRef = <node extends BaseRoot>(
 	path: array<KeyOrKeyNode>,

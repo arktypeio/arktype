@@ -73,10 +73,19 @@ const nextName = (value: object | symbol) => {
 	let name = baseName
 	let count = nameCounts[baseName] ?? 0
 	// a name may be taken by a registry key like sets or a function named fn1
-	while (name in nameCounts || name in registry) name = `${baseName}${++count}`
+	while (isNameTaken(name) || name in registry) name = `${baseName}${++count}`
 	nameCounts[baseName] = count
-	nameCounts[name] ??= 0
 	return name
+}
+
+// every name counted to from a base name is taken, so only its count is stored
+const isNameTaken = (name: string) => {
+	if (name in nameCounts) return true
+	for (let i = name.search(/\d*$/); i < name.length; i++) {
+		const count = nameCounts[name.slice(0, i)]
+		if (count && name[i] !== "0" && Number(name.slice(i)) <= count) return true
+	}
+	return false
 }
 
 export const isDotAccessible = (keyName: string): boolean =>

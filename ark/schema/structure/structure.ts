@@ -1130,7 +1130,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					js.return(false)
 				:	js
 						.line(
-							`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
+							`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${js.ref(this.meta)} })`
 						)
 						.if("ctx.failFast", () => js.return())
 			const declaresKey = this._compileDeclaresKey(js)

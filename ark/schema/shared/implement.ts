@@ -1,6 +1,8 @@
 import {
 	flatMorph,
+	hasDomain,
 	printable,
+	serializePrimitive,
 	throwParseError,
 	type Entry,
 	type Json,
@@ -31,6 +33,7 @@ import type {
 	BaseNormalizedSchema
 } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
+import { namedReference } from "./registry.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -255,7 +258,10 @@ export const defaultValueSerializer = (v: unknown): Json => {
 		return v
 	}
 
-	return compileSerializedValue(v)
+	// registering would keep the value alive, so only values compiled code reads are registered
+	return hasDomain(v, "object") || typeof v === "symbol" ?
+			namedReference(v)
+		:	serializePrimitive(v as never)
 }
 
 export type NodeKeyImplementation<

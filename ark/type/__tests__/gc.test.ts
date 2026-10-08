@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { rootSchema } from "@ark/schema"
-import { scope, type } from "arktype"
+import { match, scope, type } from "arktype"
 import { setFlagsFromString } from "node:v8"
 import { runInNewContext } from "node:vm"
 
@@ -42,6 +42,41 @@ contextualize(() => {
 		)
 		await collectTarget(ref)
 		attest(ref.deref()).equals(undefined)
+	})
+
+	it("unexported scope", async () => {
+		const ref = new WeakRef(scope({ a: { collected: "string" } }))
+		await collectTarget(ref)
+		attest(ref.deref() === undefined).equals(true)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1676
+	it("values captured by functions", async () => {
+		const capture = (create: (captured: object) => unknown) => {
+			const captured = {}
+			create(captured)
+			return new WeakRef(captured)
+		}
+		const refs: Record<string, WeakRef<object>> = {
+			narrow: capture(captured => type("number").narrow(() => !!captured)(1)),
+			pipe: capture(captured => type("number").pipe(n => captured && n)(1)),
+			default: capture(captured =>
+				type({ a: ["object", "=", () => captured] })({})
+			),
+			tupleDefault: capture(captured =>
+				type(["string", ["object", "=", () => captured]])(["a"])
+			),
+			match: capture(captured =>
+				match({ number: () => captured, default: "assert" })(1)
+			),
+			message: capture(captured =>
+				type("string | number").configure({ message: () => `${captured}` })(
+					true
+				)
+			)
+		}
+		for (const ref of Object.values(refs)) await collectTarget(ref)
+		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
 	})
 
 	it("unreferenced schema", async () => {

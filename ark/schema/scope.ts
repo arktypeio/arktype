@@ -148,7 +148,7 @@ export type toInternalScope<$> = BaseScope<{
 	:	BaseRoot
 }>
 
-type CachedResolution = NodeId | BaseRoot | GenericRoot
+type CachedResolution = BaseParseContext | BaseRoot | GenericRoot
 
 const schemaBranchesOf = (schema: object) =>
 	isArray(schema) ? schema
@@ -517,7 +517,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				this.resolutions[name] =
 					hasArkKind(preparsed, "root") ?
 						this.bindReference(preparsed)
-					:	registerParseContext(this.createParseContext(preparsed)).id
+					:	this.createParseContext(preparsed)
 			}
 		}
 	}
@@ -756,69 +756,65 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 	}
 
-	maybeResolve(name: string): Exclude<CachedResolution, string> | undefined {
+	maybeResolve(
+		name: string
+	): Exclude<CachedResolution, BaseParseContext> | undefined {
 		const cached = this.resolutions[name]
 		if (cached) {
-			if (typeof cached !== "string") {
+			if (!hasArkKind(cached, "context")) {
 				if (hasArkKind(cached, "root") && cached.includesShallowAlias)
 					return this.resolvePending(name, cached)
 				return this.bindReference(cached)
 			}
 
-			const v = nodesByRegisteredId[cached]
-			if (hasArkKind(v, "root")) return (this.resolutions[name] = v)
-			if (hasArkKind(v, "context")) {
-				if (v.phase === "resolving" || v.phase === "member") {
-					reach(v)
-					if (v.phase === "resolving") v.closesCycle = true
-					return this.aliasOf(v)
-				}
-				if (v.phase === "resolved") {
-					return throwInternalError(
-						`Unexpected resolved context for was uncached by its scope: ${printable(v)}`
-					)
-				}
-				v.phase = "resolving"
-				v.index = v.lowlink = openDefinitions.push(v) - 1
-				const membersStart = openMembers.length
-				let node: BaseRoot
-				try {
-					node = this.parseOpenDefinition(v.def, v)
-				} catch (e) {
-					// reset so the next reference reparses it and throws the same error
-					v.phase = "unresolved"
-					throw e
-				} finally {
-					openDefinitions.pop()
-				}
+			const v = cached
+			if (v.phase === "resolving" || v.phase === "member") {
 				reach(v)
-				if (v.lowlink < v.index && !node.includesShallowAlias) {
-					v.phase = "member"
-					v.resolution = node
-					openMembers.push(v)
-					return this.aliasOf(v)
-				}
-				v.phase = "resolved"
-				return resolving(() => {
-					// it reaches no definition still open, so its component closes with it
-					if (v.lowlink === v.index) {
-						for (const member of openMembers.splice(membersStart)) {
-							member.phase = "resolved"
-							member.$.resolveContext(member.alias!, member, member.resolution!)
-							delete member.resolution
-						}
-					}
-					return node.includesShallowAlias ?
-							this.resolvePending(
-								name,
-								(this.resolutions[name] = withId(node, v.id))
-							)
-						:	this.resolveContext(name, v, node)
-				})
+				if (v.phase === "resolving") v.closesCycle = true
+				return this.aliasOf(v)
 			}
-			return throwInternalError(
-				`Unexpected nodesById entry for ${cached}: ${printable(v)}`
-			)
+			if (v.phase === "resolved") {
+				return throwInternalError(
+					`Unexpected resolved context for was uncached by its scope: ${printable(v)}`
+				)
+			}
+			registerParseContext(v).phase = "resolving"
+			v.index = v.lowlink = openDefinitions.push(v) - 1
+			const membersStart = openMembers.length
+			let node: BaseRoot
+			try {
+				node = this.parseOpenDefinition(v.def, v)
+			} catch (e) {
+				// reset so the next reference reparses it and throws the same error
+				v.phase = "unresolved"
+				throw e
+			} finally {
+				openDefinitions.pop()
+			}
+			reach(v)
+			if (v.lowlink < v.index && !node.includesShallowAlias) {
+				v.phase = "member"
+				v.resolution = node
+				openMembers.push(v)
+				return this.aliasOf(v)
+			}
+			v.phase = "resolved"
+			return resolving(() => {
+				// it reaches no definition still open, so its component closes with it
+				if (v.lowlink === v.index) {
+					for (const member of openMembers.splice(membersStart)) {
+						member.phase = "resolved"
+						member.$.resolveContext(member.alias!, member, member.resolution!)
+						delete member.resolution
+					}
+				}
+				return node.includesShallowAlias ?
+						this.resolvePending(
+							name,
+							(this.resolutions[name] = withId(node, v.id))
+						)
+					:	this.resolveContext(name, v, node)
+			})
 		}
 		const isScopeAlias = Object.prototype.hasOwnProperty.call(
 			this.aliases,
@@ -838,7 +834,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			const ctx = registerParseContext(
 				this.createParseContext(preparsed as BaseParseContextInput)
 			)
-			this.resolutions[name] = ctx.id
+			this.resolutions[name] = ctx
 			ctx.phase = "resolving"
 			try {
 				def = defining(() => this.normalizeRootScopeValue(ctx.def))
@@ -849,7 +845,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (!hasArkKind(def, "generic") && !hasArkKind(def, "module")) {
 				ctx.def = def
 				ctx.phase = "unresolved"
-				this.resolutions[name] = ctx.id
+				this.resolutions[name] = ctx
 				// parsing its definition discards checks still open, so they're made first
 				assertUnchecked()
 				return this.maybeResolve(name)

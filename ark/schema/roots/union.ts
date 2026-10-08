@@ -421,7 +421,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	expected: ${serializedExpected},
 	actual: ${serializedActual},
 	relativePath: [${serializedPathSegments}],
-	meta: ${this.compiledMeta}
+	meta: ${js.ref(this.meta)}
 })`)
 	}
 
@@ -440,7 +440,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			}
 
 			js.line(
-				`ctx.errorFromNodeContext({ code: "union", errors, meta: ${this.compiledMeta} })`
+				`ctx.errorFromNodeContext({ code: "union", errors, meta: ${js.ref(this.meta)} })`
 			)
 		} else if (js.traversalKind === "Allows") {
 			for (const branch of this.branches) {

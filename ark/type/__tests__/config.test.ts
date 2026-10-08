@@ -119,6 +119,41 @@ contextualize(() => {
 		)
 	})
 
+	it("node writer config on union", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Discriminated = $.type([{ k: "'a'" }, "|", { k: "'b'" }], "@", {
+				message: ctx => `custom message ${ctx.problem}`
+			})
+			attest(Discriminated({ k: "c" }).toString()).snap(
+				'custom message must be "a" or "b" (was "c")'
+			)
+			const Indiscriminable = $.type(
+				[{ a: "string" }, "|", { b: "number" }],
+				"@",
+				{ message: ctx => `custom message ${ctx.problem}` }
+			)
+			attest<{ a: string } | { b: number }>(Indiscriminable.infer)
+			attest(Indiscriminable({}).toString()).snap(
+				"custom message a must be a string (was missing) or b must be a number (was missing)"
+			)
+		}
+	})
+
+	it("node writer config on undeclared key", () => {
+		for (const jitless of [false, true]) {
+			const T = scope({}, { jitless })
+				.type({ "+": "reject", a: "string" })
+				.configure(
+					{ message: ctx => `custom message ${ctx.problem}` },
+					"structure"
+				)
+			attest(T({ a: "", b: 1 }).toString()).snap(
+				"custom message must be removed"
+			)
+		}
+	})
+
 	it("applies config to shallow descendants", () => {
 		const User = type({
 			name: "string",

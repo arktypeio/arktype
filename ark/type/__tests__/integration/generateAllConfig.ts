@@ -9,7 +9,7 @@ ark.export()
 
 const config: ArkConfig = {
 	keywords: flatMorph(ark.internal.resolutions, (qualifiedName, resolution) => {
-		if (!resolution || typeof resolution === "string") return []
+		if (!resolution || hasArkKind(resolution, "context")) return []
 		if (hasArkKind(resolution, "generic")) return []
 		if (qualifiedName.endsWith(".root")) return []
 		return [qualifiedName, { description: "configured" }]

@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { readPackageJson } from "@ark/fs"
-import { arkUtilVersion, register, registry } from "@ark/util"
+import { arkUtilVersion, nameOf, register, registry } from "@ark/util"
 
 contextualize(() => {
 	it("version matches package.json", () => {
@@ -18,5 +18,12 @@ contextualize(() => {
 		attest(registry[name]).equals(anonymous)
 		attest(registry[register(version)]).equals(version)
 		attest(registry.version).equals(arkUtilVersion)
+	})
+
+	it("counted names never collide", () => {
+		const names = ["counted", "counted", "counted1", "counted11"].map(name =>
+			nameOf({ [name]: () => {} }[name])
+		)
+		attest(names).equals(["counted", "counted1", "counted11", "counted111"])
 	})
 })

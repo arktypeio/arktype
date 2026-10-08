@@ -1,6 +1,7 @@
 import {
 	domainDescriptions,
 	domainOf,
+	hasDomain,
 	printable,
 	type Domain,
 	type JsonPrimitive
@@ -15,6 +16,7 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
+import { registeredReference } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { InternalBasis } from "./basis.ts"
 
@@ -51,8 +53,9 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 			unit: {
 				preserveUndefined: true,
 				serialize: schema =>
-					schema instanceof Date ?
-						schema.toISOString()
+					schema instanceof Date ? schema.toISOString()
+					: hasDomain(schema, "object") || typeof schema === "symbol" ?
+						registeredReference(schema)
 					:	defaultValueSerializer(schema)
 			}
 		},

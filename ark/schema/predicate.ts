@@ -6,10 +6,7 @@ import type {
 	declareNode
 } from "./shared/declare.ts"
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
-import {
-	type RegisteredReference,
-	registeredReference
-} from "./shared/registry.ts"
+import { namedReference, type RegisteredReference } from "./shared/registry.ts"
 import type {
 	Traversal,
 	TraverseAllows,
@@ -69,7 +66,7 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 	})
 
 export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
-	serializedPredicate: RegisteredReference = registeredReference(this.predicate)
+	serializedPredicate: RegisteredReference = namedReference(this.predicate)
 
 	impliedBasis = null
 

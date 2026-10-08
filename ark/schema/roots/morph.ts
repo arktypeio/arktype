@@ -9,7 +9,7 @@ import {
 	type nodeImplementationOf,
 	type RootKind
 } from "../shared/implement.ts"
-import { $ark, registeredReference } from "../shared/registry.ts"
+import { $ark, namedReference } from "../shared/registry.ts"
 import { TransformErrors } from "../shared/transform.ts"
 import {
 	applyMember,
@@ -69,9 +69,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 			morphs: {
 				parse: liftArray,
 				serialize: morphs =>
-					morphs.map(m =>
-						hasArkKind(m, "root") ? m.json : registeredReference(m)
-					)
+					morphs.map(m => (hasArkKind(m, "root") ? m.json : namedReference(m)))
 			},
 			declaredIn: {
 				child: false,
@@ -91,7 +89,7 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 
 export class MorphNode extends BaseRoot<Morph.Declaration> {
 	get serializedMorphs(): string[] {
-		return this.morphs.map(registeredReference)
+		return this.morphs.map(namedReference)
 	}
 
 	lastMorph: Morph | BaseRoot | undefined =

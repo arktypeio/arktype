@@ -195,8 +195,8 @@ Resolution: ${printable(resolution)}`)
 		if (this.reference[0] !== "$") return this.reference as NodeId
 		const alias = this.reference.slice(1)
 		const resolution = this.$.resolutions[alias]
-		if (typeof resolution === "string") return resolution
-		if (hasArkKind(resolution, "root")) return resolution.id
+		if (hasArkKind(resolution, "context") || hasArkKind(resolution, "root"))
+			return resolution.id
 
 		return throwInternalError(
 			`Unexpected resolution for reference ${this.reference}: ${printable(resolution)}`

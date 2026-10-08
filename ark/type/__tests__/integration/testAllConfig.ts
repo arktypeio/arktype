@@ -14,7 +14,7 @@ cases({
 		const mismatches = flatMorph(
 			ark.internal.resolutions,
 			(qualifiedName, resolution, i: number) => {
-				if (!resolution || typeof resolution === "string") return []
+				if (!resolution || hasArkKind(resolution, "context")) return []
 				if (hasArkKind(resolution, "generic")) return []
 				if (qualifiedName.endsWith(".root")) return []
 				if (resolution.description !== "configured") return [i, qualifiedName]
