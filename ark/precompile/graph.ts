@@ -422,7 +422,7 @@ export class ModuleGraph {
 				:	undefined
 		}
 		const fn = functionOfBinding(binding)
-		return fn && staticBodyOf(fn) && !readsImplicitParams(fn) ?
+		return fn && staticBodyOf(fn) && !readsArguments(fn) ?
 				[fn, module]
 			:	undefined
 	}
@@ -492,9 +492,7 @@ export const staticBodyOf = (fn: FunctionNode): Node | undefined => {
 		:	undefined
 }
 
-export const functionOfBinding = (
-	binding: Binding
-): FunctionNode | undefined => {
+const functionOfBinding = (binding: Binding): FunctionNode | undefined => {
 	if (binding.writes.length) return
 	const fn =
 		binding.kind === "function" ? binding.declaration
@@ -507,24 +505,23 @@ export const functionOfBinding = (
 	return fn && isFunctionNode(fn) ? fn : undefined
 }
 
-// `arguments` aliases each argument and `this` the receiver, so a parameter does not show where every argument goes
-export const readsImplicitParams = (fn: FunctionNode): boolean => {
+// `arguments` aliases each argument, in parameter defaults too, so a parameter does not show where its argument goes
+const readsArguments = (fn: FunctionNode): boolean => {
 	if (fn.type === "ArrowFunctionExpression") return false
 	let result = false
-	walk(fn.body!, node => {
-		if (
-			node.type === "ThisExpression" ||
-			(node.type === "Identifier" && node.name === "arguments")
-		)
-			result = true
-		return (
-			!result &&
-			!(
-				node.type === "FunctionExpression" ||
-				node.type === "FunctionDeclaration"
+	for (const node of [...fn.params, fn.body!]) {
+		walk(node, child => {
+			if (child.type === "Identifier" && child.name === "arguments")
+				result = true
+			return (
+				!result &&
+				!(
+					child.type === "FunctionExpression" ||
+					child.type === "FunctionDeclaration"
+				)
 			)
-		)
-	})
+		})
+	}
 	return result
 }
 

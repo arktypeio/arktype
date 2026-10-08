@@ -794,11 +794,21 @@ export class Interpreter {
 	escapeOf(binding: Binding, module: SourceModule): DynamicValue | null {
 		let result = this.escapesByBinding.get(binding)
 		if (result === undefined) {
+			// a read while the uses are followed, e.g. by the callee of a call the object is passed to, cannot assume they are safe
+			this.escapesByBinding.set(
+				binding,
+				new DynamicValue(
+					module,
+					binding.id,
+					`\`${binding.name}\` is read while its uses are checked`
+				)
+			)
 			const escape = findEscape(
 				binding,
 				module,
 				this.graph,
-				this.bindingValue(binding, module).value
+				this.bindingValue(binding, module).value,
+				call => this.isDefinitionCall(call, module)
 			)
 			result =
 				escape ?
@@ -1218,12 +1228,34 @@ export class Interpreter {
 	}
 
 	private evaluateCall(node: CallExpression, ctx: Context): unknown {
+		const callee = this.calleeOf(node, ctx)
+		if (!("fn" in callee)) return callee
+		const { fn, receiver } = callee
+		if (fn === shortCircuit) return fn
+		if (node.optional && (fn === null || fn === undefined)) return shortCircuit
+		const args: unknown[] = []
+		for (const arg of node.arguments) {
+			if (arg.type !== "SpreadElement") args.push(this.evaluate(arg, ctx))
+			else {
+				const items = this.spreadItemsOf(arg, ctx)
+				if (isDynamic(items)) return items
+				args.push(...items)
+			}
+		}
+		return this.call(fn, receiver, args, node, ctx)
+	}
+
+	private calleeOf(
+		node: CallExpression,
+		ctx: Context
+	): { fn: unknown; receiver: unknown } | DynamicValue | typeof shortCircuit {
 		const callee = unwrapExpression(node.callee)
 		let receiver: unknown
 		let fn: unknown
 		if (callee.type === "MemberExpression") {
 			receiver = this.consume(this.evaluateReference(callee.object, ctx), ctx)
-			if (receiver === shortCircuit || isDynamic(receiver)) return receiver
+			if (receiver === shortCircuit) return shortCircuit
+			if (isDynamic(receiver)) return receiver
 			if (callee.optional && (receiver === null || receiver === undefined))
 				return shortCircuit
 			const key = this.keyOf(callee, ctx)
@@ -1255,18 +1287,27 @@ export class Interpreter {
 				if (receiver instanceof ModuleNamespace) receiver = undefined
 			}
 		} else fn = this.evaluate(callee, ctx)
-		if (fn === shortCircuit) return fn
-		if (node.optional && (fn === null || fn === undefined)) return shortCircuit
-		const args: unknown[] = []
-		for (const arg of node.arguments) {
-			if (arg.type !== "SpreadElement") args.push(this.evaluate(arg, ctx))
-			else {
-				const items = this.spreadItemsOf(arg, ctx)
-				if (isDynamic(items)) return items
-				args.push(...items)
-			}
-		}
-		return this.call(fn, receiver, args, node, ctx)
+		return { fn, receiver }
+	}
+
+	// a call into arktype's API, which reads its arguments as definitions rather than validating them as data
+	isDefinitionCall(node: CallExpression, module: SourceModule): boolean {
+		const callee = this.calleeOf(node, rootContext(module, node))
+		return (
+			"fn" in callee &&
+			this.calleeKindOf(callee.fn, callee.receiver) === "arktype"
+		)
+	}
+
+	private calleeKindOf(
+		fn: unknown,
+		receiver: unknown
+	): "standIn" | "builtin" | "validator" | "arktype" | undefined {
+		if (hasDomain(fn, "object") && this.standIns.has(fn)) return "standIn"
+		if (pureBuiltins.has(fn as Function) || receiverKindOf(receiver))
+			return "builtin"
+		if (typeof fn !== "function" || intrinsics.has(fn)) return
+		return isValidator(fn) || this.validators.has(fn) ? "validator" : "arktype"
 	}
 
 	call(
@@ -1277,37 +1318,37 @@ export class Interpreter {
 		ctx: Context
 	): unknown {
 		if (isDynamic(fn)) return fn
-		const standIn = hasDomain(fn, "object") ? this.standIns.get(fn) : undefined
-		if (standIn) {
-			if (standIn.closure && staticBodyOf(standIn.closure.node))
-				return this.interpretCall(standIn.closure, args, node, ctx)
-			return this.reject(
-				node,
-				ctx,
-				"calls a function the build does not interpret",
-				standIn.closure && this.notStaticHelper(standIn),
-				"opaque"
-			)
+		switch (this.calleeKindOf(fn, receiver)) {
+			case "standIn": {
+				const standIn = this.standIns.get(fn as object)!
+				if (standIn.closure && staticBodyOf(standIn.closure.node))
+					return this.interpretCall(standIn.closure, args, node, ctx)
+				return this.reject(
+					node,
+					ctx,
+					"calls a function the build does not interpret",
+					standIn.closure && this.notStaticHelper(standIn),
+					"opaque"
+				)
+			}
+			case "builtin":
+				return this.callBuiltin(fn as Function, args, receiver, node, ctx)
+			case "validator":
+				return this.reject(
+					node,
+					ctx,
+					"validates data, which happens at runtime",
+					undefined,
+					"validation"
+				)
+			case "arktype":
+				return this.callArktype(fn as Function, args, receiver, node, ctx)
 		}
-		if (pureBuiltins.has(fn as Function) || receiverKindOf(receiver))
-			return this.callBuiltin(fn as Function, args, receiver, node, ctx)
-		if (typeof fn !== "function" || intrinsics.has(fn)) {
-			return this.reject(
-				node,
-				ctx,
-				"does not call a static helper or pure built-in"
-			)
-		}
-		if (isValidator(fn) || this.validators.has(fn)) {
-			return this.reject(
-				node,
-				ctx,
-				"validates data, which happens at runtime",
-				undefined,
-				"validation"
-			)
-		}
-		return this.callArktype(fn, args, receiver, node, ctx)
+		return this.reject(
+			node,
+			ctx,
+			"does not call a static helper or pure built-in"
+		)
 	}
 
 	private callBuiltin(
