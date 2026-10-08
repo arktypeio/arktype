@@ -356,6 +356,24 @@ contextualize(() => {
 		}
 	})
 
+	it("failed branch predicate leaves its key off ctx.path", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Positive = $.type("number").narrow(
+				(n, ctx) => n > 0 || ctx.mustBe("positive")
+			)
+			const T = $.type({ a: Positive, z: "string > 3" }).or({
+				b: $.type("string").pipe((s, ctx) =>
+					s === "bad" ? ctx.error("good") : s
+				),
+				z: "string < 2"
+			})
+			attest(T({ a: -1, b: "bad", z: "q" }).toString()).snap(
+				'b must be good (was "bad")'
+			)
+		}
+	})
+
 	it("names a narrow that rejects every literal", () => {
 		const _isNarrowedC = (s: string) => s === "c"
 		attest(() => type("'a' | 'b'").narrow(_isNarrowedC)).throws(

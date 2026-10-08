@@ -273,8 +273,11 @@ export class Traversal {
 	// a predicate reading ctx sees this path, and an error it adds fails the branch
 	allows(node: BaseNode, data: unknown): boolean {
 		if (!node.allowsRequiresTraversal) return node.allows(data)
+		const pathLength = this.path.length
 		this.pushBranch()
 		const allowed = node.traverseAllows(data, this)
+		// compiled Allows returns false without popping the keys it pushed
+		this.path.length = pathLength
 		return this.popBranch()!.errorCount === 0 && allowed
 	}
 
