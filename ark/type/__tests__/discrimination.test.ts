@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference } from "@ark/schema"
-import { scope, type } from "arktype"
+import { scope, type, type ArkConfig } from "arktype"
 import { discriminantJsonOf } from "arksets"
 
 contextualize(() => {
@@ -719,5 +719,192 @@ contextualize(() => {
 		attest(T({ kind: "b", a: "y" }).toString()).snap(
 			'kind must be "a" (was "b") or a must be "x" (was "y")'
 		)
+	})
+
+	describe("misses", () => {
+		it("have their own code and the discriminant's value", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const T = $.type({ k: "1.5", a: "string" }).or({
+					k: "2.5",
+					b: "number"
+				})
+				const errors = T({ k: 3.5 }) as type.errors
+				attest(errors.summary).snap("k must be 1.5 or 2.5 (was 3.5)")
+				attest(errors.issues[0].toJSON()).snap({
+					data: 3.5,
+					path: ["k"],
+					code: "discriminant",
+					discriminantKind: "unit",
+					cases: [1.5, 2.5],
+					onKey: true,
+					absent: false,
+					description: "1.5 or 2.5",
+					meta: {},
+					expected: "1.5 or 2.5",
+					actual: "3.5",
+					problem: "must be 1.5 or 2.5 (was 3.5)",
+					message: "k must be 1.5 or 2.5 (was 3.5)"
+				})
+			}
+		})
+
+		it("domain cases", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const T = $.type("string | number | bigint").or({ a: "1" })
+				const errors = T(Symbol("domainCase")) as type.errors
+				attest(errors.summary).snap(
+					"must be a bigint, a number, a string or an object (was a symbol)"
+				)
+				const error = errors.issues[0]
+				if (!error.hasCode("discriminant")) throw new Error()
+				attest(error.discriminantKind).equals("domain")
+				attest(error.cases).equals(["bigint", "number", "string", "object"])
+				attest((T(true) as type.errors).summary).snap(
+					"must be a bigint, a number, a string or an object (was boolean)"
+				)
+			}
+		})
+
+		it("unit cases are the units themselves", () => {
+			const o = {}
+			const sym = Symbol("unitCase")
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const T = $.type.enumerated(
+					o,
+					sym,
+					"a",
+					1,
+					2n,
+					-Infinity,
+					true,
+					null,
+					undefined
+				)
+				const errors = T("z") as type.errors
+				attest(errors.summary).snap(
+					'must be 1, {}, Symbol(unitCase), -Infinity, 2n, "a", undefined, null or true (was "z")'
+				)
+				const error = errors.issues[0]
+				if (!error.hasCode("discriminant")) throw new Error()
+				attest(error.cases).equals([
+					1,
+					o,
+					sym,
+					-Infinity,
+					2n,
+					"a",
+					undefined,
+					null,
+					true
+				])
+				attest(error.cases[1]).is(o)
+			}
+		})
+
+		it("share frozen cases", () => {
+			for (const jitless of [false, true]) {
+				const T = scope({}, { jitless }).type("'a' | 'b' | 'c'")
+				const first = (T("d") as type.errors).issues[0]
+				const second = (T("e") as type.errors).issues[0]
+				if (!first.hasCode("discriminant") || !second.hasCode("discriminant"))
+					throw new Error()
+				attest(first.cases).is(second.cases)
+				attest(Object.isFrozen(first.cases)).equals(true)
+			}
+		})
+
+		it("an absent key", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const T = $.type({ k: "'a'", x: "string" }).or({
+					k: "'b'",
+					y: "number"
+				})
+				const absent = (data: unknown) => {
+					const error = (T(data) as type.errors).issues[0]
+					if (!error.hasCode("discriminant")) throw new Error()
+					return [error.absent, error.toString()]
+				}
+				attest(absent({})).snap([true, 'k must be "a" or "b" (was undefined)'])
+				attest(absent({ k: undefined })).snap([
+					false,
+					'k must be "a" or "b" (was undefined)'
+				])
+				const Nested = $.type({ v: { k: "'a'", x: "string" } })
+					.or({ v: { k: "'b'", y: "number" } })
+					.or({ v: { k: "'c'" } })
+				const nestedAbsent = (data: unknown) => {
+					const error = (Nested(data) as type.errors).issues[0]
+					return error.hasCode("discriminant") && error.absent
+				}
+				attest(nestedAbsent({})).equals(true)
+				attest(nestedAbsent({ v: 5 })).equals(true)
+				attest(nestedAbsent({ v: "abc" })).equals(true)
+				attest(nestedAbsent({ v: { k: "d" } })).equals(false)
+				// a key on Object.prototype is still absent below a missing parent
+				const Proto = $.type({ v: { toString: "'a'", x: "string" } })
+					.or({ v: { toString: "'b'", y: "number" } })
+					.or({ v: { toString: "'c'" } })
+				const error = (Proto({}) as type.errors).issues[0]
+				attest(error.hasCode("discriminant") && error.absent).equals(true)
+			}
+		})
+
+		it("in an outer union, print the value at their path", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const Disc = $.type({ k: "'a'", x: "string" }).or({
+					k: "'b'",
+					y: "number"
+				})
+				const T = $.type({ v: Disc }).or({ v: { k: "string >= 5" } })
+				attest(T({ v: { k: "c" } }).toString()).snap(
+					'v.k must be "a" or "b" or at least length 5 (was "c")'
+				)
+			}
+		})
+
+		it("configured text", () => {
+			const define = (config: ArkConfig) =>
+				scope({}, config)
+					.type({ kind: "'a'", x: "string" })
+					.or({ kind: "'b'", y: "number" })
+			for (const jitless of [false, true]) {
+				const Configured = define({
+					jitless,
+					discriminant: {
+						problem: ctx => `isn't one of ${ctx.cases.length}`
+					}
+				})
+				attest(Configured({ kind: "c" }).toString()).snap("kind isn't one of 2")
+				// the union's expected and actual describe the object, not its key
+				const Described = define({ jitless }).configure({
+					expected: "a known kind"
+				})
+				attest(Described({ kind: "c" }).toString()).snap(
+					'kind must be "a" or "b" (was "c")'
+				)
+				const Actual = define({ jitless }).configure({
+					actual: data => `<${Object.keys(data as object).length} keys>`
+				})
+				attest(Actual({ kind: "c" }).toString()).snap(
+					'kind must be "a" or "b" (was "c")'
+				)
+				const Letter = scope({}, { jitless })
+					.type("'a' | 'b' | 'c'")
+					.configure({ expected: "a letter" })
+				attest(Letter("d").toString()).snap('must be a letter (was "d")')
+				const Predicate = define({
+					jitless,
+					predicate: { problem: "isn't valid" }
+				})
+				attest(Predicate({ kind: "c" }).toString()).snap(
+					'kind must be "a" or "b" (was "c")'
+				)
+			}
+		})
 	})
 })

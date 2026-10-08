@@ -26,6 +26,7 @@ import {
 } from "../shared/compile.ts"
 import type {
 	attachmentsOf,
+	BaseErrorContext,
 	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
@@ -66,6 +67,11 @@ import { arrayIndexMatcher } from "./shared.ts"
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
 export type UndeclaredKeyHandling = "reject" | "delete"
+
+export interface UndeclaredErrorContext extends BaseErrorContext<"undeclared"> {
+	/** the undeclared key's value */
+	readonly data: unknown
+}
 
 export declare namespace Structure {
 	export interface Inner {
@@ -508,13 +514,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				) {
 					if (traversalKind === "Allows") return false
 
-					// this should have its own error code:
-					// https://github.com/arktypeio/arktype/issues/1403
 					ctx.errorFromNodeContext({
-						code: "predicate",
-						expected: "removed",
-						actual: "",
+						code: "undeclared",
 						relativePath: [k],
+						data: data[k as never],
 						meta: this.meta
 					})
 
@@ -1111,7 +1114,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					js.return(false)
 				:	js
 						.line(
-							`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${js.ref(this.meta)} })`
+							`ctx.errorFromNodeContext({ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`
 						)
 						.if("ctx.failFast", () => js.return())
 			const declaresKey = this._compileDeclaresKey(js)

@@ -145,6 +145,74 @@ Right: { b: boolean, + (undeclared): delete }`)
 			attest(T(getExtraneousB()).toString()).snap("b must be removed")
 		})
 
+		it("rejected keys have their own code and their values", () => {
+			const sym = Symbol("rejected")
+			for (const jitless of [false, true]) {
+				const T = scope({}, { jitless }).type({ "+": "reject", a: "string" })
+				const errors = T({ a: "ok", b: 1, [sym]: 2 }) as type.errors
+				attest(errors.summary).snap(`b must be removed
+value at [Symbol(rejected)] must be removed`)
+				attest(errors.issues.map(e => e.data)).equals([1, 2])
+				attest(errors.issues[0].toJSON()).snap({
+					data: 1,
+					path: ["b"],
+					code: "undeclared",
+					meta: {},
+					expected: "removed",
+					actual: "",
+					problem: "must be removed",
+					message: "b must be removed"
+				})
+			}
+		})
+
+		it("rejected key beside another failure at its path", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const T = $.type.schema({
+					branches: [
+						$.type({ "+": "reject", a: "string" }).internal,
+						$.type({ a: "string", b: "number" }).internal
+					],
+					ordered: true
+				} as never)
+				attest((T({ a: "x", b: "y" }) as type.errors).summary).snap(
+					'b must be removed or a number (was "y")'
+				)
+			}
+		})
+
+		it("configured text reaches a rejected key", () => {
+			for (const jitless of [false, true]) {
+				const Configured = scope(
+					{},
+					{ jitless, undeclared: { problem: "isn't allowed" } }
+				).type({ "+": "reject", a: "string" })
+				attest(Configured({ a: "ok", b: 1 }).toString()).snap("b isn't allowed")
+				const Predicate = scope(
+					{},
+					{ jitless, predicate: { problem: "isn't valid" } }
+				).type({ "+": "reject", a: "string" })
+				attest(Predicate({ a: "ok", b: 1 }).toString()).snap(
+					"b must be removed"
+				)
+			}
+		})
+
+		it("structure meta reaches a rejected key", () => {
+			for (const jitless of [false, true]) {
+				const T = scope({}, { jitless })
+					.type({ "+": "reject", a: "string" })
+					.configure(
+						{ expected: "declared", actual: data => `<${data}>` },
+						{ kind: "structure" }
+					)
+				attest(T({ a: "ok", b: 1 }).toString()).snap(
+					"b must be declared (was <1>)"
+				)
+			}
+		})
+
 		it("reject symbol key", () => {
 			const undeclared = Symbol("undeclared")
 			for (const jitless of [false, true]) {

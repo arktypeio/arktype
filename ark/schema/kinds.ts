@@ -1,10 +1,12 @@
 import {
 	describeCollapsibleDate,
 	domainDescriptions,
+	domainOf,
 	envHasCsp,
 	flatMorph,
 	listPattern,
 	objectKindDescriptions,
+	printable,
 	withAlphabetizedKeys,
 	type array
 } from "@ark/util"
@@ -28,10 +30,17 @@ import { Domain } from "./roots/domain.ts"
 import { Intersection } from "./roots/intersection.ts"
 import { Morph } from "./roots/morph.ts"
 import { Proto } from "./roots/proto.ts"
-import { Union } from "./roots/union.ts"
+import { describeBranches, Union } from "./roots/union.ts"
 import { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { BaseNodeInput } from "./shared/declare.ts"
+import type {
+	ActualWriter,
+	ArkErrorCode,
+	ErrorContextsByCode,
+	MessageWriter,
+	ProblemWriter
+} from "./shared/errors.ts"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -91,10 +100,11 @@ export const nodeImplementationsByKind: Record<
 
 // divisor writes only expected, so its other writers are those implementNode
 // gives every kind that doesn't write its own
-const shared = nodeImplementationsByKind.divisor.defaults as Pick<
-	Locale,
-	"actual" | "problem" | "message"
->
+const shared = nodeImplementationsByKind.divisor.defaults as {
+	actual: ActualWriter
+	problem: ProblemWriter
+	message: MessageWriter
+}
 
 // a leaf error carries its node's inner fields, so the node's description
 // writer describes it, while union, intersection and required have their own
@@ -113,12 +123,32 @@ const enWritersOf = (
 	return writers as never
 }
 
+const undeclared = { expected: "removed", actual: "" } as const
+
+const listCases: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
+	describeBranches(
+		e.discriminantKind === "domain" ?
+			e.cases.map(domain => locale.expectedNoun(locale.nouns[domain]))
+		:	e.cases.map(unit => printable(unit))
+	)
+
+const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
+	data,
+	e,
+	locale
+) =>
+	e.discriminantKind === "domain" ?
+		locale.nouns[domainOf(data)]
+	:	printable(data)
+
 export const en: Locale = {
 	...(flatMorph(
 		nodeImplementationsByKind,
 		(kind, { hasAssociatedError, defaults }) =>
 			hasAssociatedError ? [kind, enWritersOf(kind, defaults)] : []
-	) as Locale.Writers),
+	) as Pick<Locale.Writers, ArkErrorCode & NodeKind>),
+	undeclared,
+	discriminant: { expected: listCases, actual: describeDiscriminant },
 	tag: "en",
 	list: listPattern(
 		{ two: " or ", middle: ", ", end: " or " },
@@ -149,6 +179,18 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			implementation.defaults
 		]),
 		{
+			undeclared: {
+				...undeclared,
+				problem: shared.problem,
+				message: shared.message
+			},
+			// a union's context describes its cases in English
+			discriminant: {
+				expected: e => e.description ?? listCases(e, en),
+				actual: (data, e) => describeDiscriminant(data, e, en),
+				problem: shared.problem,
+				message: shared.message
+			},
 			jitless: $ark.config.jitless ?? envHasCsp(),
 			onUndeclaredKey: "ignore",
 			rejectAllowsSymbolKeys: false,
@@ -235,5 +277,9 @@ export type innerAttachedAs<kind extends ConstraintKind> =
 export type mutableInnerOfKind<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<Inner<kind>>
 
-export type errorContext<kind extends NodeKind> =
-	Declaration<kind>["errorContext"]
+export type errorContext<code extends ArkErrorCode> = ErrorContextsByCode[code]
+
+export type NodeErrorContextsByKind = {
+	[kind in NodeKind as Declaration<kind>["errorContext"] extends null ? never
+	:	kind]: Declaration<kind>["errorContext"]
+}

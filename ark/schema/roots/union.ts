@@ -3,12 +3,10 @@ import {
 	domainDescriptions,
 	domainOf,
 	hasDomain,
-	jsTypeOfDescriptions,
 	printable,
 	registeredNameOf,
 	serializePrimitive,
 	unset,
-	type JsTypeOf,
 	type SerializablePrimitive,
 	type SerializedPrimitive,
 	type array,
@@ -84,6 +82,22 @@ export declare namespace Union {
 	export type Node = UnionNode
 }
 
+export type DiscriminantErrorContext = {
+	[kind in DiscriminantKind]: DiscriminantErrorContextOf<kind>
+}[DiscriminantKind]
+
+interface DiscriminantErrorContextOf<kind extends DiscriminantKind>
+	extends BaseErrorContext<"discriminant"> {
+	readonly discriminantKind: kind
+	/** the domains or unit values the discriminant expected */
+	readonly cases: readonly (kind extends "domain" ? Domain : unknown)[]
+	/** the discriminant is at a key, so meta describes the value around it */
+	readonly onKey: boolean
+	/** the discriminant key is not in its parent; false unless onKey */
+	readonly absent: boolean
+	readonly data: unknown
+}
+
 const implementation: nodeImplementationOf<Union.Declaration> =
 	implementNode<Union.Declaration>({
 		kind: "union",
@@ -155,6 +169,27 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// discriminated on construction, since relating branches can throw a ParseError,
 	// e.g. for an index signature and a prop with disjoint values
 	discriminant = this.discriminate()
+
+	private _discriminantCases: DiscriminantCases | undefined
+	get discriminantCases(): DiscriminantCases {
+		return (this._discriminantCases ??= casesOf(this.discriminant!))
+	}
+
+	private _discriminantDescription: string | undefined
+	get discriminantDescription(): string {
+		return (this._discriminantDescription ??= describeCases(
+			this.discriminantCases
+		))
+	}
+
+	private _discriminantMeta: ArkEnv.meta | undefined
+	// at a key, the union's expected and actual describe the object around it
+	get discriminantMeta(): ArkEnv.meta {
+		return (this._discriminantMeta ??= metaAtDiscriminant(
+			this.meta,
+			this.discriminant!
+		))
+	}
 
 	expression: string = this.distribute(
 		// an intersection binds more tightly than a union, so it never needs parens
@@ -228,14 +263,14 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			if (caseNode === true) return
 			if (caseNode === undefined) {
 				ctx.errorFromNodeContext({
-					code: "predicate",
-					expected: describeCases(discriminant),
-					actual:
-						discriminant.kind === "domain" ?
-							domainDescriptions[domainOf(value)]
-						:	printable(value),
+					code: "discriminant",
+					...this.discriminantCases,
+					onKey: discriminant.path.length !== 0,
+					absent: value === undefined && isAbsent(discriminant.path, data),
+					description: this.discriminantDescription,
 					relativePath: discriminant.path,
-					meta: this.meta
+					data: value,
+					meta: this.discriminantMeta
 				})
 				return
 			}
@@ -335,18 +370,21 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			typeof k === "symbol" ? registeredReference(k) : JSON.stringify(k)
 		)
 
-		const serializedExpected = JSON.stringify(describeCases(discriminant))
-		const serializedActual =
-			discriminant.kind === "domain" ?
-				`${js.ref(jsTypeOfDescriptions)}[${condition}]`
-			:	`${js.ref(printable)}(${condition})`
+		const absent =
+			discriminant.path.length ?
+				`${discriminant.optionallyChainedPropString} === undefined && ${js.ref(isAbsent)}(${js.ref(discriminant.path)}, data)`
+			:	"false"
 
 		js.line(`ctx.errorFromNodeContext({
-	code: "predicate",
-	expected: ${serializedExpected},
-	actual: ${serializedActual},
+	code: "discriminant",
+	discriminantKind: "${discriminant.kind}",
+	cases: ${js.ref(this.discriminantCases.cases)},
+	onKey: ${discriminant.path.length !== 0},
+	absent: ${absent},
+	description: ${js.ref(this)}.discriminantDescription,
 	relativePath: [${serializedPathSegments}],
-	meta: ${js.ref(this.meta)}
+	data: ${discriminant.optionallyChainedPropString},
+	meta: ${js.ref(this.discriminantMeta)}
 })`)
 	}
 
@@ -403,10 +441,24 @@ export const Union = {
 	Node: UnionNode
 }
 
-const valueAtPath = (path: array<PropertyKey>, data: unknown): unknown => {
+const valueAtPath = (
+	path: array<PropertyKey>,
+	data: unknown,
+	end = path.length
+): unknown => {
 	let value: any = data
-	for (let i = 0; i < path.length; i++) value = value?.[path[i]]
+	for (let i = 0; i < end; i++) value = value?.[path[i]]
 	return value
+}
+
+const isAbsent = (path: array<PropertyKey>, data: unknown): boolean => {
+	if (path.length === 0) return false
+	const parent = valueAtPath(path, data, path.length - 1)
+	return (
+		parent === undefined ||
+		parent === null ||
+		!(path[path.length - 1] in Object(parent))
+	)
 }
 
 const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {
@@ -425,20 +477,46 @@ const unitKeyOf = (value: unknown): string | undefined => {
 
 const registeredPrefix = `${registryName}.`
 
-const describeCases = (discriminant: Discriminant): string =>
-	describeBranches(
-		Object.keys(discriminant.cases).map(k => {
-			if (discriminant.kind === "domain") {
-				const jsTypeOf = k.slice(1, -1) as JsTypeOf
-				return jsTypeOf === "function" ?
-						domainDescriptions.object
-					:	domainDescriptions[jsTypeOf]
+type DiscriminantCases = {
+	[kind in DiscriminantKind]: Pick<
+		DiscriminantErrorContextOf<kind>,
+		"discriminantKind" | "cases"
+	>
+}[DiscriminantKind]
+
+const casesOf = (discriminant: Discriminant): DiscriminantCases => {
+	const keys = Object.keys(discriminant.cases).filter(k => k !== "default")
+	return discriminant.kind === "domain" ?
+			{
+				discriminantKind: "domain",
+				cases: Object.freeze(keys.map(k => k.slice(1, -1) as Domain))
 			}
-			return k.startsWith(registeredPrefix) ?
-					printable($ark[k.slice(registeredPrefix.length)])
-				:	k
-		})
+		:	{ discriminantKind: "unit", cases: Object.freeze(keys.map(unitOf)) }
+}
+
+const metaAtDiscriminant = (
+	meta: ArkEnv.meta,
+	discriminant: Discriminant
+): ArkEnv.meta => {
+	if (discriminant.path.length === 0) return meta
+	const { expected, actual, ...rest } = meta
+	return rest
+}
+
+const describeCases = ({ discriminantKind, cases }: DiscriminantCases) =>
+	describeBranches(
+		discriminantKind === "domain" ?
+			cases.map(domain => domainDescriptions[domain])
+		:	cases.map(unit => printable(unit))
 	)
+
+// the inverse of unitKeyOf
+const unitOf = (k: string): unknown =>
+	k.startsWith(registeredPrefix) ? $ark[k.slice(registeredPrefix.length)]
+	: k.endsWith("n") ? BigInt(k.slice(0, -1))
+	: k === "undefined" ? undefined
+	: k.endsWith("Infinity") ? Number(k)
+	: JSON.parse(k)
 
 // a branch whose transform doesn't require ctx returns its errors rather than adding them
 const invokeTransform = (

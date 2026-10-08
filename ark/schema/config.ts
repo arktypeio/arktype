@@ -34,16 +34,16 @@ type nodeConfigForKind<kind extends NodeKind> = Readonly<
 	show<
 		{
 			description?: DescriptionWriter<kind>
-		} & (kind extends ArkErrorCode ?
-			{
-				expected?: ExpectedConfig<kind>
-				actual?: ActualConfig<kind>
-				problem?: ProblemConfig<kind>
-				message?: MessageConfig<kind>
-			}
-		:	{})
+		} & (kind extends ArkErrorCode ? ErrorConfig<kind> : {})
 	>
 >
+
+export type ErrorConfig<code extends ArkErrorCode = ArkErrorCode> = {
+	expected?: ExpectedConfig<code>
+	actual?: ActualConfig<code>
+	problem?: ProblemConfig<code>
+	message?: MessageConfig<code>
+}
 
 type NodeConfigsByKind = {
 	[kind in NodeKind]: nodeConfigForKind<kind>
@@ -102,7 +102,7 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 				base.toJsonSchema,
 				merged.toJsonSchema
 			)
-		} else if (isNodeKind(k)) {
+		} else if (isNodeKind(k) || k === "undeclared" || k === "discriminant") {
 			result[k] =
 				// not casting this makes TS compute a very inefficient
 				// type that is not needed
@@ -194,6 +194,8 @@ const normalizeFallback = (
 	typeof fallback === "function" ? { default: fallback } : (fallback ?? {})
 
 export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
+	readonly undeclared?: Readonly<ErrorConfig<"undeclared">>
+	readonly discriminant?: Readonly<ErrorConfig<"discriminant">>
 	readonly jitless?: boolean
 	readonly onUndeclaredKey?: UndeclaredKeyBehavior
 	readonly rejectAllowsSymbolKeys?: boolean
@@ -208,7 +210,8 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 
 export type resolveConfig<config extends ArkSchemaConfig> = show<
 	{
-		[k in keyof ArkSchemaConfig]-?: k extends NodeKind ? Required<config[k]>
+		[k in keyof ArkSchemaConfig]-?: k extends NodeKind | ArkErrorCode ?
+			Required<config[k]>
 		: k extends "keywords" ? Record<string, TypeMeta | undefined>
 		: k extends "toJsonSchema" ? ToJsonSchema.Context
 		: config[k]

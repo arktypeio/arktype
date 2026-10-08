@@ -15,7 +15,13 @@ import {
 	type show
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
-import type { Prerequisite, errorContext } from "../kinds.ts"
+import type {
+	NodeErrorContextsByKind,
+	Prerequisite,
+	errorContext
+} from "../kinds.ts"
+import type { DiscriminantErrorContext } from "../roots/union.ts"
+import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
 import type { Locale } from "./locale.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
@@ -33,7 +39,7 @@ export class ArkError<
 > extends CastableBase<ArkErrorContextInput<code>> {
 	readonly [arkKind] = "error"
 	path: ReadonlyPath
-	data: Prerequisite<code>
+	data: getAssociatedDataForError<code>
 	private nodeConfig: ResolvedConfig[code]
 	protected input: ArkErrorContextInput<code>
 	protected ctx: Traversal
@@ -72,10 +78,11 @@ export class ArkError<
 		this.ctx = ctx
 		// assigning defines the same property unless this has or inherits k, e.g. propString
 		for (const k in input) {
-			if (k in this) {
-				// text supplied for a slot stays in input, where its getter reads it
-				if (!isSlot(k)) defineValue(this, k, input[k as never])
-			} else (this as any)[k] = input[k as never]
+			if (!(k in this)) (this as any)[k] = input[k as never]
+			// path and data are assigned below, and text supplied for a slot
+			// stays in input, where its getter reads it
+			else if (k !== "path" && k !== "data" && !isSlot(k))
+				defineValue(this, k, input[k as never])
 		}
 		for (const k of Object.getOwnPropertySymbols(input))
 			defineValue(this, k, input[k as never])
@@ -87,7 +94,7 @@ export class ArkError<
 		this.path = new ReadonlyPath(...basePath)
 		// transform and toJSON spread input.path over this.path
 		if (input.path && (prefixPath || relativePath)) input.path = this.path
-		this.data = "data" in input ? input.data : data
+		this.data = ("data" in input ? input.data : data) as never
 	}
 
 	transform(
@@ -434,7 +441,7 @@ export interface DerivableErrorContext<
 	actual: string
 	problem: string
 	message: string
-	data: Prerequisite<code>
+	data: getAssociatedDataForError<code>
 	path: array<PropertyKey>
 	propString: string
 }
@@ -447,9 +454,12 @@ export type DerivableErrorContextInput<
 		{ relativePath?: array<PropertyKey>; prefixPath?: array<PropertyKey> }
 	>
 
-export type ArkErrorCode = {
-	[kind in NodeKind]: errorContext<kind> extends null ? never : kind
-}[NodeKind]
+export interface ErrorContextsByCode extends NodeErrorContextsByKind {
+	undeclared: UndeclaredErrorContext
+	discriminant: DiscriminantErrorContext
+}
+
+export type ArkErrorCode = keyof ErrorContextsByCode
 
 type ArkErrorContextInputsByCode = {
 	[code in ArkErrorCode]: errorContext<code> & DerivableErrorContextInput<code>

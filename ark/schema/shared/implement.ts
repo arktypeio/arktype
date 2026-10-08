@@ -16,7 +16,7 @@ import {
 	type show
 } from "@ark/util"
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
-import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.ts"
+import type { Declaration, Inner, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import type {
@@ -323,7 +323,10 @@ type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
 	// but rather a single failed condition for each branch.
 	| (Inner<kind> extends (
-			Omit<errorContext<kind>, keyof BaseErrorContext | "description">
+			Omit<
+				Declaration<kind>["errorContext"],
+				keyof BaseErrorContext | "description"
+			>
 	  ) ?
 			never
 	  :	"expected" & keyof NodeConfig<kind>)

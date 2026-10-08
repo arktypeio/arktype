@@ -10,6 +10,7 @@ import {
 	type MessageContext,
 	type ProblemContext
 } from "@ark/schema"
+import type { Domain } from "@ark/util"
 import { scope, type } from "arktype"
 
 // errors described by their own nodes, which union and intersection errors list
@@ -21,6 +22,13 @@ const leavesOf = (error: ArkError): ArkError[] =>
 const enExpected = (error: ArkError) => {
 	const expected = en[error.code].expected
 	return typeof expected === "string" ? expected : expected(error as never, en)
+}
+
+const enActual = (error: ArkError) => {
+	const actual = en[error.code].actual ?? en.actual
+	return typeof actual === "string" ? actual : (
+			actual(error.data as never, error as never, en)
+		)
 }
 
 class Foo {}
@@ -55,7 +63,9 @@ contextualize(() => {
 				divisor: ["expected"],
 				pattern: ["expected"],
 				predicate: ["expected"],
-				required: ["expected", "actual"]
+				required: ["expected", "actual"],
+				undeclared: ["expected", "actual"],
+				discriminant: ["expected", "actual"]
 			})
 		})
 
@@ -81,8 +91,10 @@ contextualize(() => {
 			attest(en.cite("a username")).equals("a username")
 		})
 
-		it("expected text from each leaf error's fields is its description", () => {
+		it("a leaf error's expected and actual text come from its fields", () => {
 			const codes = new Set<string>()
+			const o = {}
+			const sym = Symbol("parity")
 			for (const jitless of [false, true]) {
 				const $ = scope({}, { jitless })
 				const corpus: [type.Any, unknown][] = [
@@ -129,19 +141,55 @@ contextualize(() => {
 					[$.type("string | number[]"), [true]],
 					[$.type({ a: "string", b: "number > 0" }), { a: 1, b: 0 }],
 					[$.type("(number % 2) & (number > 3)"), 1],
-					[$.type("(string >= 2) | (string <= 0)"), "a"]
+					[$.type("(string >= 2) | (string <= 0)"), "a"],
+					[$.type({ "+": "reject", a: "string" }), { a: "", b: 1 }],
+					[
+						$.type({ kind: "'a'", x: "string" }).or({
+							kind: "'b'",
+							y: "number"
+						}),
+						{ kind: "c" }
+					],
+					[
+						$.type({ kind: "'a'", x: "string" }).or({
+							kind: "'b'",
+							y: "number"
+						}),
+						{}
+					],
+					[
+						$.type({ k: "1n", a: "string" }).or({ k: "2n", b: "number" }),
+						{ k: 3n }
+					],
+					[
+						$.type({ k: "1.5", a: "string" }).or({ k: "2.5", b: "number" }),
+						{ k: 3.5 }
+					],
+					[$.type("'a' | 'b' | 'c'"), "d"],
+					[
+						$.type({ k: "true", a: "string" })
+							.or({ k: "false", b: "string" })
+							.or({ k: "'x'", c: "string" }),
+						{ k: 5 }
+					],
+					[$.type.enumerated(o, sym, 1, Infinity, -Infinity), 2],
+					[$.type("string | number | bigint").or({ a: "1" }), true],
+					[$.type("string | number | bigint").or({ a: "1" }), sym]
 				]
 				for (const [T, data] of corpus) {
 					for (const error of (T(data) as ArkErrors).issues.flatMap(leavesOf)) {
-						if (error.description === undefined) continue
 						codes.add(error.code)
-						attest(enExpected(error)).equals(error.description)
+						attest(enExpected(error)).equals(error.expected)
+						attest(enActual(error)).equals(error.actual)
+						if (error.description !== undefined)
+							attest(error.expected).equals(error.description)
 					}
 				}
 			}
 			attest([...codes].sort()).snap([
 				"after",
 				"before",
+				"discriminant",
 				"divisor",
 				"domain",
 				"exactLength",
@@ -152,6 +200,7 @@ contextualize(() => {
 				"pattern",
 				"predicate",
 				"proto",
+				"undeclared",
 				"unit"
 			])
 		})
@@ -212,6 +261,61 @@ contextualize(() => {
 					:	ctx.problem
 			})
 			attest(T("a").toString()).snap("value >= 2")
+		})
+
+		it("configure codes that aren't node kinds", () => {
+			const $ = scope(
+				{},
+				{
+					undeclared: {
+						message: ctx => `${ctx.propString} isn't allowed (was ${ctx.data})`
+					},
+					discriminant: {
+						expected: (ctx, locale) =>
+							ctx.discriminantKind === "domain" ?
+								locale.list(ctx.cases, "and")
+							:	locale.list(
+									ctx.cases.map(unit => `<${String(unit)}>`),
+									"or"
+								)
+					}
+				}
+			)
+			attest($.type({ "+": "reject" })({ b: 1 }).toString()).snap(
+				"b isn't allowed (was 1)"
+			)
+			attest($.type("'a' | 'b' | 'c'")("d").toString()).snap(
+				'must be <a>, <b> or <c> (was "d")'
+			)
+			attest(
+				$.type("string | number | bigint").or({ a: "1" })(true).toString()
+			).snap("must be bigint, number, string and object (was boolean)")
+		})
+
+		it("a locale writer narrows discriminant cases", () => {
+			const expected: Locale.ExpectedWriter<"discriminant"> = (e, locale) => {
+				if (e.discriminantKind === "domain") {
+					attest<readonly Domain[]>(e.cases)
+					return locale.list(
+						e.cases.map(domain => locale.nouns[domain]),
+						"or"
+					)
+				}
+				attest<readonly unknown[]>(e.cases)
+				return locale.list(
+					e.cases.map(unit => String(unit)),
+					"or"
+				)
+			}
+			const errorOf = (T: type.Any, data: unknown) =>
+				(T(data) as ArkErrors).issues[0] as never
+			attest(
+				expected(
+					errorOf(type("string | number | bigint").or({ a: "1" }), true),
+					en
+				)
+			).snap("a bigint, a number, a string or an object")
+			attest(expected(errorOf(type("1 | 2 | 3"), 4), en)).snap("1, 2 or 3")
 		})
 
 		it("meta may be absent", () => {
