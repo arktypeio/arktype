@@ -1,4 +1,6 @@
+import { printable } from "@ark/util"
 import { BaseConstraint } from "./constraint.ts"
+import type { Morph } from "./roots/morph.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseErrorContext,
@@ -29,6 +31,9 @@ export declare namespace Predicate {
 
 	export interface ErrorContext extends BaseErrorContext<"predicate"> {
 		readonly predicate?: Predicate
+		/** the morph that threw, for pipe.try */
+		readonly morph?: Morph
+		readonly cause?: unknown
 	}
 
 	export interface Declaration
@@ -42,8 +47,18 @@ export declare namespace Predicate {
 	export type Node = PredicateNode
 }
 
-const describePredicate = (predicate: Predicate | undefined) =>
-	`valid according to ${predicate?.name || "an anonymous predicate"}`
+// reads predicate, or for pipe.try the morph that threw
+const describePredicate = (ctx: { predicate?: Predicate; morph?: Morph }) =>
+	`valid according to ${(ctx.predicate ?? ctx.morph)?.name || "an anonymous predicate"}`
+
+// a thrown value may be a symbol or have no toString
+const describeCause = (cause: unknown): string => {
+	try {
+		return String(cause)
+	} catch {
+		return printable(cause)
+	}
+}
 
 const implementation: nodeImplementationOf<Predicate.Declaration> =
 	implementNode<Predicate.Declaration>({
@@ -54,9 +69,13 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 			predicate: {}
 		},
 		defaults: {
-			description: node => describePredicate(node.predicate),
+			description: describePredicate,
 			// error contexts from ctx.reject have neither a description nor a predicate
-			expected: ctx => ctx.description ?? describePredicate(ctx.predicate)
+			expected: ctx => ctx.description ?? describePredicate(ctx),
+			actual: (data, ctx) =>
+				ctx.morph ?
+					`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
+				:	printable(data)
 		},
 		intersectionIsOpen: true
 	})
@@ -72,6 +91,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	errorContext: Predicate.ErrorContext = {
 		code: "predicate",
 		description: this.description,
+		predicate: this.predicate,
 		meta: this.meta
 	}
 

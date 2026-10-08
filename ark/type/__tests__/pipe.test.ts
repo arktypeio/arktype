@@ -142,6 +142,53 @@ contextualize(() => {
 			)
 		})
 
+		it("errors carry the morph and what it threw", () => {
+			const parseJson = (s: string): unknown => JSON.parse(s)
+			for (const jitless of [false, true]) {
+				const ParseJson = scope({}, { jitless })
+					.type("string")
+					.pipe.try(parseJson)
+				const error = (ParseJson("{") as type.errors).issues[0]
+				if (!error.hasCode("predicate")) throw new Error()
+				attest(error.morph).is(parseJson)
+				attest(error.cause instanceof SyntaxError).equals(true)
+				attest(error.predicate).equals(undefined)
+				attest(error.toString()).equals(
+					`must be valid according to parseJson (was aborted due to error:\n    ${error.cause}\n)`
+				)
+			}
+		})
+
+		it("try errors print any thrown value", () => {
+			const throwing = (thrown: unknown) =>
+				type("string").pipe.try(() => {
+					throw thrown
+				})("x") as type.errors
+			attest(throwing(Symbol("thrown")).issues[0].actual).snap(
+				"aborted due to error:\n    Symbol(thrown)\n"
+			)
+			attest(throwing(Object.create(null)).issues[0].actual).snap(
+				"aborted due to error:\n    {}\n"
+			)
+		})
+
+		it("configured text reaches try errors", () => {
+			const ParseJson = scope(
+				{},
+				{
+					predicate: {
+						actual: (data, ctx) =>
+							`${data}, which threw ${(ctx.cause as Error).name}`
+					}
+				}
+			)
+				.type("string")
+				.pipe.try(s => JSON.parse(s))
+			attest(ParseJson("{").toString()).snap(
+				"must be valid according to an anonymous predicate (was {, which threw SyntaxError)"
+			)
+		})
+
 		it("preserves validated out", () => {
 			const T = type("string").pipe.try(
 				s => JSON.parse(s),

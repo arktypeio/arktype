@@ -431,11 +431,7 @@ export abstract class BaseRoot<
 							try {
 								return morph(In, ctx)
 							} catch (e) {
-								return ctx.error({
-									code: "predicate",
-									predicate: morph as never,
-									actual: `aborted due to error:\n    ${e}\n`
-								})
+								return ctx.error({ code: "predicate", morph, cause: e })
 							}
 						}
 					)

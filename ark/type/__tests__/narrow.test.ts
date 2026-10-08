@@ -19,6 +19,17 @@ contextualize(() => {
 		attest(Odd(2).toString()).snap("must be valid according to isOdd (was 2)")
 	})
 
+	it("error references its predicate", () => {
+		const isOdd = (n: number) => n % 2 === 1
+		for (const jitless of [false, true]) {
+			const Odd = scope({}, { jitless }).type("number").narrow(isOdd)
+			const error = (Odd(2) as type.errors).issues[0]
+			if (!error.hasCode("predicate")) throw new Error()
+			attest(error.predicate).is(isOdd)
+			attest(error.toString()).snap("must be valid according to isOdd (was 2)")
+		}
+	})
+
 	it("implicit problem anonymous", () => {
 		const Even = type("number", ":", n => n % 2 === 0)
 		attest(Even(1).toString()).snap(

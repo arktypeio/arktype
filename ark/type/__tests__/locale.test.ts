@@ -35,6 +35,8 @@ const enActual = (error: ArkError) => {
 
 class Foo {}
 
+const isEven = (n: number) => n % 2 === 0
+
 contextualize(() => {
 	describe("en", () => {
 		it("is the resolved locale", () => {
@@ -64,7 +66,7 @@ contextualize(() => {
 				intersection: ["expected", "problem"],
 				divisor: ["expected"],
 				pattern: ["expected"],
-				predicate: ["expected"],
+				predicate: ["expected", "actual"],
 				required: ["expected", "actual"],
 				undeclared: ["expected", "actual"],
 				discriminant: ["expected", "actual"]
@@ -144,6 +146,14 @@ contextualize(() => {
 					[$.type("Date < d'2000-01-01'"), new Date("2001-01-01")],
 					[$.type("Date > d'2000-01-01T12:30:00Z'"), new Date("1999-01-01")],
 					[$.type("number").narrow(() => false), 1],
+					[$.type("number").narrow(isEven), 1],
+					[$.type("string").pipe.try(s => JSON.parse(s)), "{"],
+					[
+						$.type("string").pipe.try(function parse(s: string) {
+							return JSON.parse(s)
+						}),
+						"{"
+					],
 					[$.type("string | number[]"), [true]],
 					[$.type({ a: "string", b: "number > 0" }), { a: 1, b: 0 }],
 					[$.type("(number % 2) & (number > 3)"), 1],
