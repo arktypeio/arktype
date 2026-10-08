@@ -745,6 +745,17 @@ T({ k: "c" })
 T({ k: "c" })
 ```
 
+### Check defaults without calling `onFail`
+
+A default was checked by calling its type, which applied a configured `onFail`. If `onFail` threw, an invalid default threw its TraversalError instead of a ParseError, and if it returned, the invalid default was accepted:
+
+```ts
+const $ = scope({}, { onFail: () => 0 })
+
+// previously accepted the default, now ParseError: Default for a must be a number (was a string)
+$.type({ a: ["number", "=", "5"] })
+```
+
 ## 2.2.8
 
 ### Add `string.base58`

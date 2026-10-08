@@ -217,6 +217,17 @@ contextualize(() => {
 				.type.errors("Default value true must be assignable to number")
 		})
 
+		it("unassignable default ignores onFail", () => {
+			for (const onFail of [(errors: type.errors) => errors.throw(), () => 5]) {
+				attest(() =>
+					// @ts-expect-error
+					scope({}, { onFail }).type({ a: ["number", "=", "5"] })
+				).throws.snap(
+					"ParseError: Default for a must be a number (was a string)"
+				)
+			}
+		})
+
 		it("morphed", () => {
 			// https://discord.com/channels/957797212103016458/1280932672029593811/1283368602355109920
 			const ProcessForm = type({
