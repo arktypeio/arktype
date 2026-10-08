@@ -48,25 +48,20 @@ export const precompileStandalone = (
 		if (root.onFail) throwError(writeUnprecompilableMessage("onFail"))
 	}
 	const unit = precompileByContent(roots)
-	const memberNames = [...new Set(Object.values(unit.names))]
+	const traversalIndexByName: Record<string, number> = {}
 	const propsByKeys = new Set<object>()
 	const objectUnits = new Set<unknown>()
-	const reached = new Set<BaseNode>()
-	const collect = (node: BaseNode): void => {
-		for (const reference of node.references) {
-			if (reached.has(reference)) continue
-			reached.add(reference)
-			if (reference.hasKind("structure")) propsByKeys.add(reference.propsByKey)
-			else if (
-				reference.hasKind("unit") &&
-				hasDomain(reference.unit, "object") &&
-				!(reference.unit instanceof Date)
-			)
-				objectUnits.add(reference.unit)
-			else if (reference.hasKind("alias")) collect(reference.resolution)
-		}
+	for (let i = 0; i < unit.declared.length; i++) {
+		const node = unit.declared[i]
+		traversalIndexByName[unit.names[node.id]] = i
+		if (node.hasKind("structure")) propsByKeys.add(node.propsByKey)
+		else if (
+			node.hasKind("unit") &&
+			hasDomain(node.unit, "object") &&
+			!(node.unit instanceof Date)
+		)
+			objectUnits.add(node.unit)
 	}
-	for (const root of roots) collect(root)
 	const runtimeNamesByValue = new Map<unknown, string>()
 	const indexRuntime = (value: unknown, path: string): void => {
 		if (typeof value === "function") runtimeNamesByValue.set(value, path)
@@ -98,7 +93,7 @@ export const precompileStandalone = (
 		const declared = constNamesByValue.get(node)
 		if (declared) return declared
 		const name = declareConst(node, "{}")
-		const traversals = `traversals[${memberNames.indexOf(unit.names[node.id])}]`
+		const traversals = `traversals[${traversalIndexByName[unit.names[node.id]]}]`
 		const trackedName =
 			unit.names[node.trackedId as NodeId] ??
 			throwError(writeUnprecompilableMessage(`${node.expression}'s cycle`))

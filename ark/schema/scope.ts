@@ -494,6 +494,8 @@ const declareTraversal = (
 
 export interface ContentUnit {
 	names: Record<NodeId, string>
+	// one node per name, in the order the unit returns their traversals
+	declared: BaseNode[]
 	source: string
 	refs: unknown[]
 	errorContexts: NodeCompiler.ErrorContexts
@@ -516,9 +518,11 @@ export const precompileByContent = (
 		declaredByName[names[node.id]] ??= node
 		linkage.referencesById[node.id] = node
 	}
-	const unit = precompileReferences(Object.values(declaredByName), linkage)
+	const declared = Object.values(declaredByName)
+	const unit = precompileReferences(declared, linkage)
 	return {
 		names,
+		declared,
 		source: unit.write("function"),
 		refs: [...linkage.refs.keys()],
 		errorContexts: linkage.errorContexts
@@ -557,10 +561,10 @@ const nameReferences = (
 const occurrencesOfResolutions = (
 	s: ContentNamingState
 ): Record<NodeId, number> | undefined => {
-	const resolutionIds = new Set<NodeId>()
+	const resolutionIds: Record<NodeId, true> = {}
 	const reachedByName: Record<string, BaseNode[]> = {}
 	for (const node of s.reached) {
-		if (node.hasKind("alias")) resolutionIds.add(node.resolution.id)
+		if (node.hasKind("alias")) resolutionIds[node.resolution.id] = true
 		;(reachedByName[s.names[node.id]] ??= []).push(node)
 	}
 	let occurrencesById: Record<NodeId, number> | undefined
@@ -568,7 +572,7 @@ const occurrencesOfResolutions = (
 		const nodes = reachedByName[name]
 		if (
 			nodes.length === 1 ||
-			!nodes.some(node => node.includesAlias || resolutionIds.has(node.id))
+			!nodes.some(node => node.includesAlias || resolutionIds[node.id])
 		)
 			continue
 		for (let i = 1; i < nodes.length; i++)
@@ -740,13 +744,10 @@ const writePrecompiledUnit = (root: BaseRoot): string | undefined => {
 		}
 	}
 	const declared: string[] = []
-	const declaredNames: Record<string, true> = {}
-	for (const [id, name] of Object.entries(unit.names)) {
-		if (declaredNames[name]) continue
-		declaredNames[name] = true
+	for (const node of unit.declared) {
 		// a node outside the closure, e.g. a Type piped to, isn't keyed by its root
-		if (!variablesById[id]) return
-		declared.push(variablesById[id])
+		if (!variablesById[node.id]) return
+		declared.push(variablesById[node.id])
 	}
 	const accessorsByValue = new Map<unknown, string | undefined>(variablesByNode)
 	for (const k in unitConstants) {
