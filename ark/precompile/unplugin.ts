@@ -2,17 +2,15 @@ import { throwError } from "@ark/util"
 import { dirname, resolve } from "node:path"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
 import { createNodeHost, type NodeHostOptions } from "./host.ts"
-import type { InterpreterOptions } from "./interpreter.ts"
-import { Precompiler, renderDiagnostic } from "./precompile.ts"
+import {
+	Precompiler,
+	renderDiagnostic,
+	type PrecompileOptions
+} from "./precompile.ts"
 
 export interface PrecompilePluginOptions
-	extends NodeHostOptions,
-		InterpreterOptions {
-	// ship arktype and bind each Type to its precompiled code, rather than shipping standalone validators
-	runtime?: "arktype" | undefined
-	// the module whose `configure()` call sets the configuration
-	config?: string | undefined
-}
+	extends PrecompileOptions,
+		NodeHostOptions {}
 
 export const precompile: UnpluginInstance<
 	PrecompilePluginOptions | undefined,
@@ -22,7 +20,6 @@ export const precompile: UnpluginInstance<
 	if (mode === "standalone" && opts?.config)
 		throwError(standaloneConfigurationMessage)
 	const host = createNodeHost(opts)
-	const cwd = process.cwd()
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
 	let precompiler: Precompiler | undefined
@@ -48,11 +45,11 @@ export const precompile: UnpluginInstance<
 				code: /["']arktype(?:\/config)?["']/
 			},
 			handler(code, id) {
+				const cwd = opts?.cwd ?? process.cwd()
 				precompiler ??= new Precompiler(host, {
-					mode,
+					...opts,
 					cwd,
-					config: opts?.config && resolve(opts.config),
-					define: opts?.define
+					config: opts?.config && resolve(cwd, opts.config)
 				})
 				const result = precompiler.precompile(code, id)
 				for (const dependency of result.dependencies)

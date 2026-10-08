@@ -52,8 +52,8 @@ export type PrecompileMode = "standalone" | "cache"
 export interface PrecompileOptions extends InterpreterOptions {
 	// the directory paths in messages are relative to
 	cwd?: string | undefined
-	// standalone builds ship a runtime instead of arktype, so every arktype expression must be folded
-	mode?: PrecompileMode | undefined
+	// ship arktype and precompile only the code it compiles, rather than folding every arktype expression into a validator
+	runtime?: "arktype" | undefined
 	// the module whose `configure()` call sets the configuration
 	config?: string | undefined
 }
@@ -167,7 +167,7 @@ export class Precompiler {
 	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
 		this.graph = new ModuleGraph(host, opts?.cwd)
 		this.interpreter = new Interpreter(this.graph, opts)
-		this.mode = opts?.mode ?? "standalone"
+		this.mode = opts?.runtime === "arktype" ? "cache" : "standalone"
 		this.config = opts?.config
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
@@ -852,7 +852,7 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	parse: "The precompiled site throws the same ParseError when it is created."
 }
 
-const cacheHint = "Cache mode leaves this to arktype at runtime."
+const cacheHint = 'With runtime: "arktype", arktype defines this at runtime.'
 
 const writeHint = `Keep what you attach in an object of your own, or build with runtime: "arktype".`
 

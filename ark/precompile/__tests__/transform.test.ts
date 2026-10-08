@@ -86,7 +86,7 @@ import { other } from "./other.ts"`
 			const result = precompile(
 				source,
 				{ "/other.ts": "export const other = 1" },
-				{ mode: "cache" }
+				{ runtime: "arktype" }
 			)
 			const [specifier] = Object.keys(result.modules)
 			attest(result.code).equals(`${source}\nimport "${specifier}"`)
@@ -103,7 +103,7 @@ import { other } from "./other.ts"`
 				`import { type } from "arktype"
 export const isError = (data: unknown) => data instanceof type.errors`,
 				{},
-				{ mode: "cache" }
+				{ runtime: "arktype" }
 			)
 			attest([result.map, result.modules]).equals([undefined, {}])
 		})

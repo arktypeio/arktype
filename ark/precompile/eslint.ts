@@ -18,7 +18,7 @@ const precompilable: Rule.RuleModule = {
 			{
 				type: "object",
 				properties: {
-					mode: { enum: ["standalone", "cache"] },
+					runtime: { enum: ["arktype"] },
 					config: { type: "string" },
 					define: { type: "object" },
 					conditions: { type: "array", items: { type: "string" } },

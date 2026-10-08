@@ -3,7 +3,7 @@ import { parseArgs } from "node:util"
 import { check } from "./check.ts"
 
 const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--mode standalone|cache] [--config <file>] [--conditions <a,b>] [--tsconfig <file>] [--define <name>=<json>]"
+	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file>] [--conditions <a,b>] [--tsconfig <file>] [--define <name>=<json>]"
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -15,7 +15,7 @@ const { values, positionals } = parseArgs({
 	options: {
 		check: { type: "boolean" },
 		"fail-under": { type: "string" },
-		mode: { type: "string" },
+		runtime: { type: "string" },
 		config: { type: "string" },
 		conditions: { type: "string" },
 		tsconfig: { type: "string" },
@@ -25,9 +25,9 @@ const { values, positionals } = parseArgs({
 
 if (!values.check) fail("--check is required")
 
-const mode = values.mode ?? "standalone"
-if (mode !== "standalone" && mode !== "cache")
-	fail(`--mode must be standalone or cache (was ${mode})`)
+const runtime = values.runtime
+if (runtime !== undefined && runtime !== "arktype")
+	fail(`--runtime must be arktype (was ${runtime})`)
 
 const failUnder = Number(values["fail-under"] ?? 0)
 if (Number.isNaN(failUnder))
@@ -45,7 +45,7 @@ for (const entry of values.define ?? []) {
 }
 
 const report = check(positionals, {
-	mode: mode as "standalone" | "cache",
+	runtime: runtime as "arktype" | undefined,
 	config: values.config,
 	conditions: values.conditions?.split(","),
 	tsconfig: values.tsconfig,

@@ -136,20 +136,16 @@ export const make = (def: string) => {
 		})
 
 		it("modules that are not strict mode", () => {
-			const diagnosticsAt = (
-				id: string,
-				source: string,
-				mode?: "standalone" | "cache"
-			) =>
+			const diagnosticsAt = (id: string, source: string, runtime?: "arktype") =>
 				precompileModule(source, id, memoryHost({ [id]: source }), {
-					mode
+					runtime
 				}).diagnostics.map(renderDiagnostic)
 			const body = `import { type } from "arktype"
 export const T = type("string")`
 			attest([
 				diagnosticsAt("/main.cts", body),
 				diagnosticsAt("/main.cts", `"use strict"\n${body}`),
-				diagnosticsAt("/main.cts", body, "cache"),
+				diagnosticsAt("/main.cts", body, "arktype"),
 				diagnosticsAt("/main.ts", body),
 				diagnosticsAt("/main.cjs", `module.exports = {}`)
 			]).snap([
@@ -199,7 +195,7 @@ export const parse = (data: unknown) => {
 				.snap(`/main.ts:4:2  (type as any).or = () => T writes to an arktype value, which throws at runtime
   \`type\` is an arktype value, which the standalone runtime freezes with what it holds
   Keep what you attach in an object of your own, or build with runtime: "arktype".`)
-			attest(diagnosticsOf(source, {}, { mode: "cache" })).snap([])
+			attest(diagnosticsOf(source, {}, { runtime: "arktype" })).snap([])
 		})
 
 		it("cache mode holds no value the build cannot read", () => {
@@ -210,10 +206,10 @@ let def = "string"
 def = "number"
 export const T = type(def)`,
 					{},
-					{ mode: "cache" }
+					{ runtime: "arktype" }
 				)
 			).snap([
-				"/main.ts:4:18  type(def) cannot be precompiled\n  `def` is assigned at /main.ts:3:1, so its value at the site is not known\n  Cache mode leaves this to arktype at runtime."
+				'/main.ts:4:18  type(def) cannot be precompiled\n  `def` is assigned at /main.ts:3:1, so its value at the site is not known\n  With runtime: "arktype", arktype defines this at runtime.'
 			])
 		})
 
@@ -227,8 +223,8 @@ export const field = (limit: number) => {
 			attest(
 				analyze(source).diagnostics.map(d => `${d.rule} ${d.severity}`)
 			).snap(["R4 error", "R1 error"])
-			attest(diagnosticsOf(source, {}, { mode: "cache" })).snap([
-				"/main.ts:4:16  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of field (/main.ts:3:23); its value is known only at runtime\n  Cache mode leaves this to arktype at runtime."
+			attest(diagnosticsOf(source, {}, { runtime: "arktype" })).snap([
+				'/main.ts:4:16  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of field (/main.ts:3:23); its value is known only at runtime\n  With runtime: "arktype", arktype defines this at runtime.'
 			])
 		})
 	})

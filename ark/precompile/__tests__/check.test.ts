@@ -31,11 +31,11 @@ contextualize(() => {
 	it("fails under a rate", () => {
 		attest(cli("--check", "--fail-under", "50").status).equals(0)
 		attest(cli("--check", "--fail-under", "60").status).equals(1)
-		attest(cli("--check", "--mode", "cache", "forms.ts").stdout)
+		attest(cli("--check", "--runtime", "arktype", "forms.ts").stdout)
 			.snap(`forms.ts:4:21  accepted
 forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
   \`limit\` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime
-  Cache mode leaves this to arktype at runtime.
+  With runtime: "arktype", arktype defines this at runtime.
 2 sites in 1 file: 1 accepted (50.0%)
 `)
 	})
@@ -43,7 +43,7 @@ forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
 	it("rejects invalid arguments", () => {
 		attest(
 			[
-				["--mode", "strict"],
+				["--runtime", "strict"],
 				["--fail-under", "most"],
 				["--define", "MAX"],
 				["--define", "MAX=five"]
@@ -52,7 +52,7 @@ forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
 				return `${result.status} ${result.stderr.split("\n")[0]}`
 			})
 		).snap([
-			"2 --mode must be standalone or cache (was strict)",
+			"2 --runtime must be arktype (was strict)",
 			"2 --fail-under must be a percentage (was most)",
 			"2 --define must be <name>=<json> (was MAX)",
 			"2 --define must be <name>=<json> (was MAX=five)"
