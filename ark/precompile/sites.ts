@@ -1,6 +1,7 @@
 import type { IdentifierReference, Node } from "oxc-parser"
 import {
-	isFunctionNode,
+	bindingOfFunction,
+	enclosingFunctionOf,
 	runtimeExports,
 	runtimeMembers,
 	unstableArkMembers,
@@ -16,7 +17,7 @@ import {
 	type SiteState
 } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
-import type { Reference } from "./scope.ts"
+import { isTransparent, type Reference } from "./scope.ts"
 
 export interface SiteCandidate {
 	// the arktype export at the root, or "reference" for a Type, Scope or Generic of the program, or "helper" for a static helper
@@ -114,7 +115,10 @@ const climb = (
 	for (;;) {
 		let probe = top
 		let parent = probe.parent
-		while (parent && isTransparent(parent)) {
+		while (
+			parent &&
+			(isTransparent(parent) || parent.type === "ChainExpression")
+		) {
 			probe = parent
 			parent = parent.parent
 		}
@@ -135,15 +139,6 @@ const climb = (
 		} else return top
 	}
 }
-
-const isTransparent = (node: Node) =>
-	node.type === "TSAsExpression" ||
-	node.type === "TSSatisfiesExpression" ||
-	node.type === "TSTypeAssertion" ||
-	node.type === "TSNonNullExpression" ||
-	node.type === "TSInstantiationExpression" ||
-	node.type === "ParenthesizedExpression" ||
-	node.type === "ChainExpression"
 
 const isRuntimeMember = (
 	member: Extract<Node, { type: "MemberExpression" }>,
@@ -170,12 +165,7 @@ export const isFoldedHelper = (
 	fn: FunctionNode,
 	module: SourceModule
 ): boolean => {
-	const id =
-		fn.type === "FunctionDeclaration" ? fn.id
-		: fn.parent?.type === "VariableDeclarator" && fn.parent.init === fn ?
-			fn.parent.id
-		:	undefined
-	const binding = id && module.scopes.bindingsById.get(id)
+	const binding = bindingOfFunction(fn, module)
 	return (
 		!!binding &&
 		!binding.writes.length &&
@@ -186,11 +176,6 @@ export const isFoldedHelper = (
 				reference.id.parent.callee === reference.id
 		)
 	)
-}
-
-export const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
-	for (let parent = node.parent; parent; parent = parent.parent)
-		if (isFunctionNode(parent)) return parent
 }
 
 const depthOf = (fn: FunctionNode | undefined) => {

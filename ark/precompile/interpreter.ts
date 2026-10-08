@@ -36,13 +36,12 @@ import {
 	runtimeMembers,
 	unstableArkMembers,
 	staticBodyOf,
-	unwrapExpression,
 	type FunctionNode,
 	type ImportTarget,
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
-import type { Binding } from "./scope.ts"
+import { isTransparent, unwrapExpression, type Binding } from "./scope.ts"
 
 export interface InterpreterOptions {
 	// values of bundler `define` constants, keyed by the expression they replace
@@ -229,6 +228,7 @@ export class Interpreter {
 	}
 
 	private evaluateNode(node: Node, ctx: Context): unknown {
+		if (isTransparent(node)) return this.evaluate(node.expression, ctx)
 		switch (node.type) {
 			case "Literal":
 				return (
@@ -272,13 +272,6 @@ export class Interpreter {
 				const value = this.evaluate(node.expression, ctx)
 				return value === shortCircuit ? undefined : value
 			}
-			case "ParenthesizedExpression":
-			case "TSAsExpression":
-			case "TSSatisfiesExpression":
-			case "TSTypeAssertion":
-			case "TSNonNullExpression":
-			case "TSInstantiationExpression":
-				return this.evaluate(node.expression, ctx)
 			case "ArrayExpression": {
 				const result: unknown[] = []
 				for (const element of node.elements) {
@@ -338,7 +331,7 @@ export class Interpreter {
 						node,
 						module: ctx.module,
 						env: ctx.env,
-						name: node.id?.name ?? inferredNameOf(node)
+						name: inferredNameOf(node)
 					},
 					node
 				)
@@ -665,8 +658,7 @@ export class Interpreter {
 	private readBinding(binding: Binding, node: Node, ctx: Context): Reference {
 		const module = ctx.module
 		if (binding.kind === "param") {
-			const owner = binding.declaration as FunctionNode
-			const ownerName = owner.id?.name ?? inferredNameOf(owner)
+			const ownerName = inferredNameOf(binding.declaration as FunctionNode)
 			return {
 				value: new DynamicValue(
 					module,
@@ -1451,7 +1443,10 @@ export class Interpreter {
 				this.destructure(param.argument, args.slice(i), callCtx)
 			else this.destructure(param, args[i], callCtx)
 		}
-		if (isBoundFunction(closure.node))
+		if (
+			closure.node.type === "FunctionDeclaration" ||
+			bindingOfFunction(closure.node, closure.module)
+		)
 			pushUnique(ctx.trace.helpers, closure.node, closure.module)
 		if (ctx.site && closure.module === ctx.site.module)
 			ctx.site.interpreted.add(closure.node)
@@ -1848,10 +1843,6 @@ const runPointOf = (
 	return node.start
 }
 
-const isBoundFunction = (node: FunctionNode): boolean =>
-	node.type === "FunctionDeclaration" ||
-	(node.parent?.type === "VariableDeclarator" && node.parent.init === node)
-
 const staticProblemOf = (
 	binding: Binding,
 	module: SourceModule
@@ -1885,10 +1876,11 @@ const parameterCount = (fn: FunctionNode): number => {
 	return count
 }
 
-const inferredNameOf = (node: Node): string => {
-	const parent = node.parent
+const inferredNameOf = (fn: FunctionNode): string => {
+	const parent = fn.parent
 	return (
-		parent?.type === "VariableDeclarator" && parent.id.type === "Identifier" ?
+		fn.id ? fn.id.name
+		: parent?.type === "VariableDeclarator" && parent.id.type === "Identifier" ?
 			parent.id.name
 		: (
 			parent?.type === "Property" &&

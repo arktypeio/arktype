@@ -10,7 +10,7 @@ import type {
 } from "oxc-parser"
 import type { PrecompileHost } from "./host.ts"
 import { SourceModule } from "./module.ts"
-import { exportNameOf, type Binding } from "./scope.ts"
+import { exportNameOf, unwrapExpression, walk, type Binding } from "./scope.ts"
 
 export type FunctionNode = Function | ArrowFunctionExpression
 
@@ -347,7 +347,7 @@ export class ModuleGraph {
 	isArkHelper(fn: FunctionNode, module: SourceModule): boolean {
 		const body = staticBodyOf(fn)!
 		let result = false
-		walkExpressions(body, node => {
+		walk(body, node => {
 			if (result || isFunctionNode(node)) return false
 			if (node.type === "Identifier") {
 				const binding = module.scopes.referencesById.get(node)?.binding
@@ -399,7 +399,7 @@ export const staticBodyOf = (fn: FunctionNode): Node | undefined => {
 const readsArguments = (fn: FunctionNode): boolean => {
 	if (fn.type === "ArrowFunctionExpression") return false
 	let result = false
-	walkExpressions(fn.body!, node => {
+	walk(fn.body!, node => {
 		if (node.type === "Identifier" && node.name === "arguments") result = true
 		return (
 			!result &&
@@ -426,33 +426,10 @@ export const bindingOfFunction = (
 	return id ? module.scopes.bindingsById.get(id) : undefined
 }
 
+export const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
+	for (let parent = node.parent; parent; parent = parent.parent)
+		if (isFunctionNode(parent)) return parent
+}
+
 export const contains = (outer: Node, inner: Node): boolean =>
 	outer.start <= inner.start && inner.end <= outer.end
-
-export const unwrapExpression = (node: Node): Node => {
-	while (
-		node.type === "TSAsExpression" ||
-		node.type === "TSSatisfiesExpression" ||
-		node.type === "TSTypeAssertion" ||
-		node.type === "TSNonNullExpression" ||
-		node.type === "TSInstantiationExpression" ||
-		node.type === "ParenthesizedExpression"
-	)
-		node = node.expression
-	return node
-}
-
-const walkExpressions = (node: Node, visit: (node: Node) => boolean): void => {
-	if (!visit(node)) return
-	for (const k in node) {
-		if (k === "parent") continue
-		const child = (node as never)[k] as unknown
-		if (Array.isArray(child)) {
-			for (const item of child) {
-				if (item && typeof item === "object" && "type" in item)
-					walkExpressions(item, visit)
-			}
-		} else if (child && typeof child === "object" && "type" in child)
-			walkExpressions(child as Node, visit)
-	}
-}

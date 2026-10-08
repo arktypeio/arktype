@@ -5,9 +5,15 @@ import {
 	pureBuiltins,
 	type PureBuiltin
 } from "./builtins.ts"
-import { isFunctionNode, type FunctionNode, type ModuleGraph } from "./graph.ts"
+import {
+	bindingOfFunction,
+	enclosingFunctionOf,
+	isFunctionNode,
+	type FunctionNode,
+	type ModuleGraph
+} from "./graph.ts"
 import type { SourceModule } from "./module.ts"
-import type { Binding } from "./scope.ts"
+import { isTransparent, type Binding } from "./scope.ts"
 
 export interface Escape {
 	node: Node
@@ -48,13 +54,8 @@ const escapeOfBinding = (
 
 const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
 	const parent = node.parent!
+	if (isTransparent(parent)) return escapeOfValue(parent, s)
 	switch (parent.type) {
-		case "TSAsExpression":
-		case "TSSatisfiesExpression":
-		case "TSTypeAssertion":
-		case "TSNonNullExpression":
-		case "TSInstantiationExpression":
-		case "ParenthesizedExpression":
 		case "ChainExpression":
 		case "LogicalExpression":
 		case "ArrayExpression":
@@ -271,12 +272,7 @@ const escapeOfReturn = (
 ): Escape | undefined => {
 	if (!fn || s.seen.has(fn) || s.seen.has(fn.parent!)) return
 	s.seen.add(fn)
-	const binding =
-		fn.type === "FunctionDeclaration" && fn.id ?
-			s.module.scopes.bindingsById.get(fn.id)
-		: fn.parent?.type === "VariableDeclarator" && fn.parent.init === fn ?
-			s.module.scopes.bindingsById.get(fn.parent.id)
-		:	undefined
+	const binding = bindingOfFunction(fn, s.module)
 	if (!binding || binding.exportNames.length || binding.writes.length)
 		return { node: fn, message: "is returned from a function" }
 	for (const reference of binding.references) {
@@ -328,6 +324,7 @@ const escapeOfPattern = (pattern: Node, s: EscapeState): Escape | undefined => {
 
 const isWriteTarget = (node: Node): boolean => {
 	const parent = node.parent!
+	if (isTransparent(parent)) return isWriteTarget(parent)
 	switch (parent.type) {
 		case "AssignmentExpression":
 			return parent.left === node
@@ -341,10 +338,6 @@ const isWriteTarget = (node: Node): boolean => {
 		case "ArrayPattern":
 		case "ObjectPattern":
 		case "RestElement":
-		case "TSAsExpression":
-		case "TSSatisfiesExpression":
-		case "TSNonNullExpression":
-		case "TSTypeAssertion":
 			return isWriteTarget(parent)
 		case "Property":
 		case "AssignmentPattern":
@@ -355,11 +348,6 @@ const isWriteTarget = (node: Node): boolean => {
 			)
 	}
 	return false
-}
-
-const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
-	for (let parent = node.parent; parent; parent = parent.parent)
-		if (isFunctionNode(parent)) return parent
 }
 
 // e.g. `Object.keys` when `Object` is not shadowed

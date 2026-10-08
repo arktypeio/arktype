@@ -1,3 +1,4 @@
+import type { KeySet } from "@ark/util"
 import {
 	visitorKeys,
 	type AccessorProperty,
@@ -231,11 +232,6 @@ export class ModuleScopes {
 				return this.visit(node.moduleReference, node)
 			case "TSQualifiedName":
 				return this.visit(node.left, node)
-			case "TSAsExpression":
-			case "TSSatisfiesExpression":
-			case "TSTypeAssertion":
-			case "TSNonNullExpression":
-			case "TSInstantiationExpression":
 			case "TSExternalModuleReference":
 				return this.visit(node.expression, node)
 			case "JSXOpeningElement":
@@ -247,6 +243,7 @@ export class ModuleScopes {
 			case "JSXAttribute":
 				return this.visit(node.value, node)
 		}
+		if (isTransparent(node)) return this.visit(node.expression, node)
 		if (node.type.startsWith("TS")) return
 		this.visitChildren(node)
 	}
@@ -402,13 +399,9 @@ export class ModuleScopes {
 				return this.visit(target.right, target)
 			case "RestElement":
 				return this.visitTarget(target.argument, target)
-			case "TSAsExpression":
-			case "TSSatisfiesExpression":
-			case "TSTypeAssertion":
-			case "TSNonNullExpression":
-				return this.visitTarget(target.expression, target)
 		}
-		this.visit(target, parent)
+		if (isTransparent(target)) this.visitTarget(target.expression, target)
+		else this.visit(target, parent)
 	}
 
 	private visitJsxName(name: Node, parent: Node): void {
@@ -600,6 +593,38 @@ const typeKeys = {
 	returnType: 1,
 	superTypeArguments: 1,
 	implements: 1
+}
+
+const transparentKinds = {
+	TSAsExpression: 1,
+	TSSatisfiesExpression: 1,
+	TSTypeAssertion: 1,
+	TSNonNullExpression: 1,
+	TSInstantiationExpression: 1
+} as const satisfies KeySet
+
+export type TransparentNode = Extract<
+	Node,
+	{ type: keyof typeof transparentKinds }
+>
+
+export const isTransparent = (node: Node): node is TransparentNode =>
+	node.type in transparentKinds
+
+export const unwrapExpression = (node: Node): Node => {
+	while (isTransparent(node)) node = node.expression
+	return node
+}
+
+export const walk = (node: Node, visit: (node: Node) => boolean): void => {
+	if (!visit(node)) return
+	for (const k of visitorKeys[node.type]) {
+		if (k in typeKeys) continue
+		const child = (node as never)[k] as Node | (Node | null)[] | null
+		if (Array.isArray(child)) {
+			for (const item of child) if (item) walk(item, visit)
+		} else if (child) walk(child, visit)
+	}
 }
 
 export const exportNameOf = (node: Node): string =>

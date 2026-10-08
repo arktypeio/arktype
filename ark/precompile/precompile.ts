@@ -3,11 +3,12 @@ import type { CallExpression, Node } from "oxc-parser"
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
+	bindingOfFunction,
 	contains,
+	enclosingFunctionOf,
 	ModuleGraph,
 	runtimeExports,
-	staticBodyOf,
-	unwrapExpression
+	staticBodyOf
 } from "./graph.ts"
 import type { PrecompileHost } from "./host.ts"
 import {
@@ -20,12 +21,8 @@ import {
 	type SiteState
 } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
-import {
-	enclosingFunctionOf,
-	findSites,
-	isFoldedHelper,
-	type SiteCandidate
-} from "./sites.ts"
+import { unwrapExpression } from "./scope.ts"
+import { findSites, isFoldedHelper, type SiteCandidate } from "./sites.ts"
 
 export type PrecompileMode = "standalone" | "cache"
 
@@ -247,7 +244,7 @@ export class Precompiler {
 			inputs: [],
 			helpers: state.trace.helpers.map(([node, helperModule]) => ({
 				file: helperModule.id,
-				name: helperNameOf(node),
+				name: bindingOfFunction(node, helperModule)?.name ?? "default",
 				start: node.start,
 				end: node.end
 			}))
@@ -629,9 +626,3 @@ const isHeld = (hole: unknown, interpreter: Interpreter) =>
 	!isObjectLike(hole) ||
 	!interpreter.standIns.get(hole)!.isCalled ||
 	registeredNameOf(hole) !== undefined
-
-const helperNameOf = (node: Node): string =>
-	node.type === "FunctionDeclaration" ? (node.id?.name ?? "default")
-	: node.parent?.type === "VariableDeclarator" ?
-		(node.parent.id as { name: string }).name
-	:	""
