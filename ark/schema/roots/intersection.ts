@@ -10,11 +10,7 @@ import {
 	type mutable,
 	type show
 } from "@ark/util"
-import {
-	constraintKeyParser,
-	flattenConstraints,
-	intersectConstraints
-} from "../constraint.ts"
+import { constraintKeyParser } from "../constraint.ts"
 import type {
 	nodeOfKind,
 	NodeSchema,
@@ -28,24 +24,23 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
 	prestructuralKinds,
 	structureKeys,
 	type ConstraintKind,
-	type IntersectionContext,
 	type nodeImplementationOf,
 	type OpenNodeKind,
 	type PrestructuralKind,
 	type RefinementKind,
 	type StructuralKind
 } from "../shared/implement.ts"
-import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
+import type {
+	TraverseAllows,
+	TraverseApply,
+	TraverseTransform
+} from "../shared/traversal.ts"
 import {
 	hasArkKind,
 	isNode,
@@ -60,7 +55,6 @@ import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
 import type { Proto } from "./proto.ts"
 import { BaseRoot } from "./root.ts"
-import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Intersection {
 	export type BasisKind = "domain" | "proto"
@@ -93,7 +87,7 @@ export declare namespace Intersection {
 
 	export type NormalizedSchema = Omit<
 		ConstraintsSchema,
-		StructuralKind | "undeclared"
+		StructuralKind | ConditionalTerminalIntersectionKey
 	>
 
 	export type Schema<inferredBasis = any> = ConstraintsSchema<inferredBasis>
@@ -217,16 +211,6 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 				parse: constraintKeyParser("predicate")
 			}
 		},
-		// leverage reduction logic from intersection and identity to ensure initial
-		// parse result is reduced
-		reduce: (inner, $) =>
-			// we cast union out of the result here since that only occurs when intersecting two sequences
-			// that cannot occur when reducing a single intersection schema using unknown
-			intersectIntersections({}, inner, {
-				$,
-				invert: false,
-				pipe: false
-			}) as nodeOfKind<"intersection" | Intersection.BasisKind>,
 		defaults: {
 			description: node => {
 				if (node.children.length === 0) return "unknown"
@@ -260,34 +244,6 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 			expected: source =>
 				`  ◦ ${source.errors.map(e => e.expected).join("\n  ◦ ")}`,
 			problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
-		},
-		intersections: {
-			intersection: (l, r, ctx) =>
-				intersectIntersections(l.inner, r.inner, ctx),
-			...defineRightwardIntersections("intersection", (l, r, ctx) => {
-				// if l is unknown, return r
-				if (l.children.length === 0) return r
-
-				const { domain, proto, ...lInnerConstraints } = l.inner
-
-				const lBasis = proto ?? domain
-
-				const basis = lBasis ? intersectOrPipeNodes(lBasis, r, ctx) : r
-
-				return (
-					basis instanceof Disjoint ? basis
-					: l?.basis?.equals(basis) ?
-						// if the basis doesn't change, return the original intesection
-						l
-						// given we've already precluded l being unknown, the result must
-						// be an intersection with the new basis result integrated
-					:	l.$.node(
-							"intersection",
-							{ ...lInnerConstraints, [basis.kind]: basis },
-							{ prereduced: true }
-						)
-				)
-			})
 		}
 	})
 
@@ -319,17 +275,6 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	get defaultShortDescription(): string {
 		return this.basis?.defaultShortDescription ?? "present"
-	}
-
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		return this.children.reduce<JsonSchema>(
-			// cast is required since TS doesn't know children have compatible schema prerequisites
-			(schema, child) =>
-				child.isBasis() ?
-					child.toJsonSchemaRecurse(ctx)
-				:	child.reduceJsonSchema(schema as never, ctx),
-			{}
-		)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
@@ -368,10 +313,18 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		}
 	}
 
+	traverseTransform: TraverseTransform = (data, ctx) =>
+		ctx.transform(this.structure!, data)
+
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
 			for (const child of this.children) js.check(child)
 			js.return(true)
+			return
+		}
+		// only a structure can transform an intersection's data
+		if (js.traversalKind === "Transform") {
+			js.return(js.invoke(this.structure!))
 			return
 		}
 
@@ -433,41 +386,9 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 	return fullExpression || "unknown"
 }
 
-const intersectIntersections = (
-	l: Intersection.Inner,
-	r: Intersection.Inner,
-	ctx: IntersectionContext
-): BaseRoot | Disjoint => {
-	const baseInner: Intersection.Inner.mutable = {}
-
-	const lBasis = l.proto ?? l.domain
-	const rBasis = r.proto ?? r.domain
-	const basisResult =
-		lBasis ?
-			rBasis ?
-				(intersectOrPipeNodes(
-					lBasis,
-					rBasis,
-					ctx
-				) as nodeOfKind<Intersection.BasisKind>)
-			:	lBasis
-		:	rBasis
-	if (basisResult instanceof Disjoint) return basisResult
-
-	if (basisResult) baseInner[basisResult.kind] = basisResult as never
-
-	return intersectConstraints({
-		kind: "intersection",
-		baseInner,
-		l: flattenConstraints(l),
-		r: flattenConstraints(r),
-		roots: [],
-		ctx
-	})
-}
-
 export type ConditionalTerminalIntersectionRoot = {
 	undeclared?: UndeclaredKeyBehavior
+	rejectAllowsSymbolKeys?: boolean
 }
 
 type ConditionalTerminalIntersectionKey =
@@ -483,7 +404,7 @@ export type constraintKindOf<t> = {
 
 type conditionalIntersectionKeyOf<t> =
 	| constraintKindOf<t>
-	| (t extends object ? "undeclared" : never)
+	| (t extends object ? ConditionalTerminalIntersectionKey : never)
 
 type intersectionChildSchemaValueOf<k extends Intersection.FlattenedChildKind> =
 	k extends OpenNodeKind ? listable<NodeSchema<k>> : NodeSchema<k>

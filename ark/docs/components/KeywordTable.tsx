@@ -1,6 +1,11 @@
-import { append, entriesOf, flatMorph } from "@ark/util"
+import {
+	append,
+	ecmascriptConstructors,
+	entriesOf,
+	flatMorph,
+	platformConstructors
+} from "@ark/util"
 import { ark, Generic } from "arktype"
-import { arkPrototypes } from "arktype/internal/keywords/constructors.ts"
 import type { JSX } from "react"
 
 const tableNames = [
@@ -19,6 +24,9 @@ const tableRowsByName = flatMorph(tableNames, (i, name) => [
 	name,
 	[] as JSX.Element[]
 ])
+
+// keywords resolve on first reference, so resolve them all
+ark.export()
 
 const formatDescription = (description: string): JSX.Element => {
 	if (!description.includes("`")) return <>{description}</>
@@ -54,8 +62,9 @@ for (const [alias, v] of entriesOf(ark.internal.resolutions)
 		: alias.startsWith("object") ? "object"
 		: alias.startsWith("TypedArray") ? "TypedArray"
 		: v instanceof Generic ? "generic"
-		: alias in arkPrototypes ? "instanceof"
-		: "other"
+		: alias in ecmascriptConstructors || alias in platformConstructors ?
+			"instanceof"
+		:	"other"
 
 	tableRowsByName[name] = append(
 		tableRowsByName[name],

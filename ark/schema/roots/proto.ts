@@ -1,34 +1,30 @@
 import {
 	builtinConstructors,
-	constructorExtends,
 	domainOf,
 	getBuiltinNameOfConstructor,
 	hasKey,
 	isArray,
+	isValidDate,
 	objectKindDescriptions,
 	objectKindOrDomainOf,
 	throwParseError,
 	type BuiltinObjectKind,
 	type Constructor
 } from "@ark/util"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
-import { $ark } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { isNode } from "../shared/utils.ts"
 import { InternalBasis } from "./basis.ts"
-import type { Domain } from "./domain.ts"
 
 export declare namespace Proto {
 	export type Reference = Constructor | BuiltinObjectKind
@@ -110,29 +106,9 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 					objectKindDescriptions[node.builtinName]
 				:	`an instance of ${node.proto.name}`,
 			actual: data =>
-				data instanceof Date && data.toString() === "Invalid Date" ?
+				data instanceof Date && !isValidDate(data) ?
 					"an invalid Date"
 				:	objectKindOrDomainOf(data)
-		},
-		intersections: {
-			proto: (l, r) =>
-				l.proto === Date && r.proto === Date ?
-					// since l === r is handled by default,
-					// exactly one of l or r must have allow invalid dates
-					l.dateAllowsInvalid ?
-						r
-					:	l
-				: constructorExtends(l.proto, r.proto) ? l
-				: constructorExtends(r.proto, l.proto) ? r
-				: Disjoint.init("proto", l, r),
-			domain: (proto, domain) =>
-				domain.domain === "object" ?
-					proto
-				:	Disjoint.init(
-						"domain",
-						$ark.intrinsic.object.internal as Domain.Node,
-						domain
-					)
 		}
 	})
 
@@ -151,7 +127,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 
 	traverseAllows: TraverseAllows =
 		this.requiresInvalidDateCheck ?
-			data => data instanceof Date && data.toString() !== "Invalid Date"
+			data => data instanceof Date && isValidDate(data)
 		: this.isArrayProto ? data => isArray(data)
 		: data => data instanceof this.proto
 
@@ -161,23 +137,19 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 		)
 	compiledNegation = `!(${this.compiledCondition})`
 
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		switch (this.builtinName) {
-			case "Array":
-				return {
-					type: "array"
-				}
-			case "Date":
-				return (
-					ctx.fallback.date?.({ code: "date", base: {} }) ??
-					ctx.fallback.proto({ code: "proto", base: {}, proto: this.proto })
+	compile(js: NodeCompiler): void {
+		const condition =
+			this.requiresInvalidDateCheck ?
+				`data instanceof Date && ${js.ref(isValidDate)}(data)`
+			: this.builtinName ? this.compiledCondition
+			: `data instanceof ${js.ref(this.proto)}`
+		if (js.traversalKind === "Allows") js.return(condition)
+		else {
+			js.if(`!(${condition})`, () =>
+				js.line(
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)})`
 				)
-			default:
-				return ctx.fallback.proto({
-					code: "proto",
-					base: {},
-					proto: this.proto
-				})
+			)
 		}
 	}
 

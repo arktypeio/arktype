@@ -1,13 +1,10 @@
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
-import { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
@@ -60,21 +57,10 @@ const implementation: nodeImplementationOf<MaxLength.Declaration> =
 				parse: createLengthRuleParser("maxLength")
 			}
 		},
-		reduce: (inner, $) =>
-			inner.rule === 0 ? $.node("exactLength", inner) : undefined,
 		normalize: createLengthSchemaNormalizer("maxLength"),
 		defaults: {
 			description: node => `at most length ${node.rule}`,
 			actual: data => `${data.length}`
-		},
-		intersections: {
-			maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
-			minLength: (max, min, ctx) =>
-				max.overlapsRange(min) ?
-					max.overlapIsUnit(min) ?
-						ctx.$.node("exactLength", { rule: max.rule })
-					:	null
-				:	Disjoint.init("range", max, min)
 		}
 	})
 
@@ -83,21 +69,6 @@ export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
 
 	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
 		data.length <= this.rule
-
-	reduceJsonSchema(
-		schema: JsonSchema.LengthBoundable
-	): JsonSchema.LengthBoundable {
-		switch (schema.type) {
-			case "string":
-				schema.maxLength = this.rule
-				return schema
-			case "array":
-				schema.maxItems = this.rule
-				return schema
-			default:
-				return ToJsonSchema.throwInternalOperandError("maxLength", schema)
-		}
-	}
 }
 
 export const MaxLength = {

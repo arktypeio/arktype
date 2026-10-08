@@ -3,12 +3,14 @@ import {
 	$ark,
 	rootSchema,
 	schemaScope,
+	writeBadRejectAllowsSymbolKeysMessage,
 	type ArkSchemaConfig
 } from "@ark/schema"
 import { configure, scope, type } from "arktype"
 
 const withConfig = (config: ArkSchemaConfig, fn: () => void) => {
-	const originalConfig = $ark.config
+	// configure assigns to $ark.config in place, so restore from a copy
+	const originalConfig = { ...$ark.config }
 	const originalResolvedConfig = $ark.resolvedConfig
 	configure(config)
 	fn()
@@ -146,6 +148,12 @@ contextualize(() => {
 		attest(types.fast.precompilation).equals(undefined)
 	})
 
+	it("prereducedAliases", () => {
+		const $ = scope({ a: "string" }, { prereducedAliases: true })
+		attest($.config.prereducedAliases).equals(true)
+		attest(type.$.config.prereducedAliases).equals(true)
+	})
+
 	it("jit by default", () => {
 		const T = type("/^foo.*$/")
 		attest(T.precompilation).satisfies("string")
@@ -183,6 +191,23 @@ contextualize(() => {
 		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 
+	it("leaf with scope description writer", () => {
+		const A = type({ a: "number > 1234" })
+		attest(A({ a: "x" }).toString()).snap("a must be a number (was a string)")
+		for (const jitless of [false, true]) {
+			const types = scope(
+				{ b: "number", o: { a: A, b: "b" } },
+				{ jitless, domain: { description: () => "a custom number" } }
+			).export()
+			// ideally JIT would keep the description A was parsed with
+			attest(types.o({ a: { a: "x" }, b: 1 }).toString()).equals(
+				jitless ?
+					"a.a must be a number (was a string)"
+				:	"a.a must be a custom number (was a string)"
+			)
+		}
+	})
+
 	it("numberAllowsNaN", () => {
 		withConfig({ numberAllowsNaN: true }, () => {
 			const { nanable } = schemaScope({
@@ -196,6 +221,24 @@ contextualize(() => {
 			})
 
 			attest(nonNanable.allows(Number.NaN)).equals(false)
+		})
+	})
+
+	it("numberAllowsInfinity", () => {
+		withConfig({ numberAllowsInfinity: true }, () => {
+			const { infinitable } = schemaScope({
+				infinitable: "number"
+			}).export()
+
+			attest(infinitable.allows(Number.POSITIVE_INFINITY)).equals(true)
+			attest(infinitable.allows(Number.NEGATIVE_INFINITY)).equals(true)
+			attest(infinitable.allows(Number.NaN)).equals(false)
+
+			const { nonInfinitable } = type.module({
+				nonInfinitable: "number"
+			})
+
+			attest(nonInfinitable.allows(Number.POSITIVE_INFINITY)).equals(false)
 		})
 	})
 
@@ -215,24 +258,35 @@ contextualize(() => {
 		})
 	})
 
-	it("clone", () => {
-		withConfig({ clone: false }, () => {
-			const { userForm } = type.module({
-				userForm: {
-					age: "string.numeric.parse"
-				}
-			})
-
-			const formData = {
-				age: "42"
+	it("rejectAllowsSymbolKeys", () => {
+		withConfig({ rejectAllowsSymbolKeys: true }, () => {
+			const undeclared = Symbol("undeclared")
+			const data = { a: "ok", x: 1, [undeclared]: 1 }
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const T = $.type({ "+": "reject", a: "string", x: "number" })
+				attest(T(data)).equals(data)
+				const Indexed = $.type({
+					"+": "reject",
+					a: "string",
+					"[/^x/]": "number"
+				})
+				attest(Indexed(data)).equals(data)
+				attest(Indexed({ ...data, b: 1 }).toString()).snap("b must be removed")
 			}
-
-			const out = userForm(formData)
-
-			// the original object's age key is now a number
-			attest(formData.age).unknown.equals(42)
-			attest(formData).unknown.equals(out)
+			const L = scope({}).type({ "+": "reject", a: "string" })
+			attest(L.and({ "[symbol]": "number" }).expression).snap(
+				"{ [symbol]: number, a: string, + (undeclared): reject }"
+			)
 		})
+		attest(() =>
+			rootSchema({
+				domain: "object",
+				required: [{ key: "a", value: "string" }],
+				undeclared: "delete",
+				rejectAllowsSymbolKeys: true
+			})
+		).throws(writeBadRejectAllowsSymbolKeysMessage("delete"))
 	})
 
 	it("docs actual example", () => {

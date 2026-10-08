@@ -1,5 +1,6 @@
 import {
 	hasArkKind,
+	inProgress,
 	type BaseParseContext,
 	type BaseRoot,
 	type BaseScope,
@@ -8,6 +9,7 @@ import {
 import {
 	domainOf,
 	hasDomain,
+	isArray,
 	isThunk,
 	objectKindOf,
 	printable,
@@ -70,7 +72,11 @@ export const parseInnerDefinition = (
 			scopeCache = {}
 			parseCache.set(ctx.$, scopeCache)
 		}
-		return (scopeCache[def] ??= parseString(def, ctx))
+		if (scopeCache[def]) return scopeCache[def]
+		const result = parseString(def, ctx)
+		const node = isArray(result) ? result[0] : result
+		if (!inProgress.definitions || !node.includesAlias) scopeCache[def] = result
+		return result
 	}
 	return hasDomain(def, "object") ?
 			parseObject(def, ctx)

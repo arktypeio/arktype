@@ -1109,6 +1109,16 @@ const Bounded = type({
 
 </SyntaxTabs>
 
+Dates in descriptions and error messages are written in UTC. A date at UTC or local midnight is written as its calendar date, or just its year on January 1:
+
+```ts
+// a Date and 2023 or later
+type("Date >= d'2023-01-01'").description
+
+// a Date and January 1, 2023, 2:30 PM UTC or later
+type("Date >= d'2023-01-01T14:30Z'").description
+```
+
 ## instanceof
 
 Most built-in instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.

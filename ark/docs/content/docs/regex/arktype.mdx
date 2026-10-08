@@ -1,0 +1,39 @@
+---
+title: ArkType
+---
+
+ArkType parses its regex literals with ArkRegex, so they're inferred without any extra setup:
+
+```ts
+const Semver = type("/^(\\d+)\\.(\\d+)\\.(\\d+)$/")
+//    ^?
+```
+
+A `Regex` instance can also be used directly as a definition:
+
+```ts
+const Package = type({
+	name: "string",
+	version: regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
+})
+
+type Package = typeof Package.infer
+//   ^?
+```
+
+## e(x)ec mode
+
+Prefix a regex literal with `x` to parse its captures as part of validation:
+
+```ts
+const User = type({
+	birthday: "x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/"
+})
+
+const data = User.assert({ birthday: "05-21-1993" })
+
+data.birthday.groups.month // "05"
+//                   ^?
+```
+
+See [string patterns](/docs/primitives#string-patterns) for more on regex literals in ArkType.

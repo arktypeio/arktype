@@ -8,6 +8,7 @@ import {
 import { scope, type, type Module, type Scope } from "arktype"
 import type { distill } from "arktype/internal/attributes.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
+import { keywordModule } from "arktype/internal/scope.ts"
 
 contextualize(() => {
 	it("base definition", () => {
@@ -249,6 +250,26 @@ contextualize(() => {
 		attest(out).snap({ pear: { tasty: true } })
 	})
 
+	it("cross-scope intersection", () => {
+		const configured = scope({}, { required: { message: () => "configured" } })
+		configured.type({ x: "string" }).and({ y: "number" })
+		const T = scope({}).type({ x: "string" }).and({ y: "number" })
+		attest(T({}).toString()).snap(
+			"x must be a string (was missing)\ny must be a number (was missing)"
+		)
+	})
+
+	it("cross-scope shared operands", () => {
+		const L = type({ x: "string" })
+		const R = type({ y: "number" })
+		const configured = scope({}, { required: { message: () => "configured" } })
+		configured.type([L, "&", R])
+		const T = L.and(R)
+		attest(T({}).toString()).snap(
+			"x must be a string (was missing)\ny must be a number (was missing)"
+		)
+	})
+
 	describe("cyclic", () => {
 		it("base", () => {
 			const types = scope({ a: { b: "b" }, b: { a: "a" } }).export()
@@ -343,11 +364,10 @@ contextualize(() => {
 			const types = getCyclicScope().export()
 			const data = getCyclicData()
 			data.contributors[0].email = "ssalbdivad"
-			// ideally would only include one error, see:
 			// https://github.com/arktypeio/arktype/issues/924
-			attest(types.package(data).toString())
-				.snap(`contributors[0].email must be an email address (was "ssalbdivad")
-dependencies[1].contributors[0].email must be an email address (was "ssalbdivad")`)
+			attest(types.package(data).toString()).snap(
+				'contributors[0].email must be an email address (was "ssalbdivad")'
+			)
 		})
 
 		it("can include cyclic data in message", () => {
@@ -378,27 +398,9 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 				"{ c: { b: cyclic; c: cyclic } }"
 			)
 
-			const expectedCyclicJson = types.arf.internal.select({
-				kind: "alias",
-				method: "assertFind"
-			}).json
-
-			attest(types.arf.json).snap({
+			attest(types.arf.json).equals({
 				domain: "object",
-				required: [
-					{
-						key: "b",
-						value: {
-							domain: "object",
-							required: [
-								{
-									key: "c",
-									value: expectedCyclicJson
-								}
-							]
-						}
-					}
-				]
+				required: [{ key: "b", value: `$ark.${types.bork.internal.id}` }]
 			})
 			const a = {} as typeof types.arf.infer
 			const b = { c: {} } as typeof types.bork.infer
@@ -406,7 +408,7 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 			b.c.b = b
 			b.c.c = b.c
 
-			attest(types.arf.expression).snap("{ b: { c: $arf&$bork } }")
+			attest(types.arf.expression).snap("{ b: $bork }")
 			attest(types.bork.expression).snap("{ c: $arf&$bork }")
 
 			attest(types.arf(a)).equals(a)
@@ -414,12 +416,12 @@ dependencies[1].contributors[0].email must be an email address (was "ssalbdivad"
 				.snap(`b.c.b must be an object (was missing)
 b.c.c must be an object (was missing)`)
 
-			attest(types.bork.json).snap({
+			attest(types.bork.json).equals({
 				domain: "object",
 				required: [
 					{
 						key: "c",
-						value: expectedCyclicJson
+						value: `$ark.${types.arf.internal.id}&${types.bork.internal.id}`
 					}
 				]
 			})
@@ -436,17 +438,9 @@ b.c.c must be an object (was missing)`)
 			}).export()
 			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | cyclic } }")
 
-			attest(types.a.json).snap({
+			attest(types.a.json).equals({
 				domain: "object",
-				required: [
-					{
-						key: "b",
-						value: {
-							domain: "object",
-							required: [{ key: "a", value: ["$a", { unit: 3 }] }]
-						}
-					}
-				]
+				required: [{ key: "b", value: `$ark.${types.b.internal.id}` }]
 			})
 
 			const valid: typeof types.a.infer = { b: { a: 3 } }
@@ -459,14 +453,30 @@ b.c.c must be an object (was missing)`)
 			attest(types.a(valid)).equals(valid)
 
 			attest(types.a({ b: { a: { b: { a: 4 } } } }).toString()).snap(
-				'b.a.b.a must be an object or 3 (was 4) or b.a must be 3 (was {"b":{"a":4}})'
+				"b.a.b.a must be 3 (was 4)"
 			)
 
 			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
-			attest(types.b.json).snap({
+			attest(types.b.json).equals({
 				domain: "object",
-				required: [{ key: "a", value: ["$a", { unit: 3 }] }]
+				required: [
+					{ key: "a", value: [`$ark.${types.a.internal.id}`, { unit: 3 }] }
+				]
 			})
+		})
+
+		it("disjoint intersection with a cyclic reference", () => {
+			const types = scope({
+				a: {
+					b: "string.trim & a | number"
+				}
+			}).export()
+
+			attest(types.a({ b: 5 })).equals({ b: 5 })
+			attest(types.a.allows({ b: 5 })).equals(true)
+			attest(types.a({ b: "x" }).toString()).snap(
+				"b must be a number (was a string)"
+			)
 		})
 
 		// https://github.com/arktypeio/arktype/issues/1138
@@ -485,7 +495,7 @@ b.c.c must be an object (was missing)`)
 			// TS type display blows up but it's equivalent to Value
 			const out = types.value(5)
 			// casting to Value also works
-			const castOut = types.value(5)
+			const castOut = types.castValue(5)
 
 			attest<Value | ArkErrors>(out).equals(5)
 			attest<Value | ArkErrors>(castOut).equals(5)
@@ -539,5 +549,29 @@ b.c.c must be an object (was missing)`)
 		const t2 = s2.type("a")
 		attest(t1.expression).equals("string")
 		attest(t2.expression).equals("number")
+	})
+
+	it("scope frozen before its first parse", () => {
+		const $ = Object.freeze(scope({}))
+		attest($.type("string")(5).toString()).snap(
+			"must be a string (was a number)"
+		)
+		attest($.type.and({ a: "string" }, { b: "number" }).expression).snap(
+			"{ a: string, b: number }"
+		)
+		attest($.type.pipe((s: string) => s.length)("abc")).equals(3)
+	})
+
+	it("frozen modules and parsers", () => {
+		const Frozen: Module<{ root: string }> = Object.freeze(
+			keywordModule({ root: () => ["string", "@", "a frozen root"] }, {})
+		) as never
+		attest(Frozen.root(5).toString()).snap(
+			"must be a frozen root (was a number)"
+		)
+		const parser = Object.freeze(scope({}).type)
+		attest(parser.number("x").toString()).snap(
+			"must be a number (was a string)"
+		)
 	})
 })

@@ -1,5 +1,174 @@
 # arktype
 
+## Unreleased
+
+### Reject `Infinity` from `number`
+
+`number` rejects `Infinity` and `-Infinity` by default, as it already rejects `NaN`:
+
+```ts
+// previously Infinity, now ArkErrors: must be a number (was Infinity)
+type.number(Infinity)
+```
+
+Allow them everywhere with `configure({ numberAllowsInfinity: true })`, or in one type with the `number.Infinity` and `number.NegativeInfinity` keywords:
+
+```ts
+const T = type("number | number.Infinity | number.NegativeInfinity")
+```
+
+A type whose range already excluded an infinite value, like `number.safe`, now reports `must be a number (was Infinity)` instead of its range error.
+
+### Remove the `clone` option
+
+Transforming no longer clones the input first, and never writes to it, except to a builtin arktype doesn't copy (e.g. a function, Promise, WeakMap, FormData, Blob or boxed primitive), which is transformed in place as before. A transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
+
+```ts
+const T = type({ a: "string.trim", b: { c: "string" } })
+const input = { a: " x ", b: { c: "y" } }
+
+// previously false, now true
+T(input).b === input.b
+```
+
+A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config.
+
+### Reject shallow cycles
+
+An alias that resolved to itself without passing through an object, array or morph accepted every value. It now throws a ParseError:
+
+```ts
+// previously accepted every value, now throws: Alias 'a' has a shallow resolution cycle: a->a
+scope({ a: "a" }).export()
+```
+
+### Describe dates in UTC
+
+Dates in descriptions and error messages are written in UTC instead of local time, except that a date at UTC or local midnight is written as its calendar date, collapsing to its year on January 1:
+
+```ts
+const T = type("Date < d'2000-01-01T12:30:00Z'")
+
+// previously "must be 7:29:59.999 AM, January 1, 2000 or earlier" in New York
+// now "must be January 1, 2000, 12:29:59.999 PM UTC or earlier"
+T(new Date("2001-06-01"))
+```
+
+### Hold `ArkErrors`' errors in `issues` instead of extending `Array`
+
+`ArkErrors` was an `Array` subclass. It is now a plain class whose `issues` is a plain array with one `ArkError` per path, in the order each path first failed. Iterating, `length` and every other `ArkErrors` member work as before. Indexing and array methods move to `issues`:
+
+```ts
+const out = T(data)
+
+if (out instanceof type.errors) {
+	// previously out.map(e => e.message), now
+	out.issues.map(e => e.message)
+	// previously out[0], now
+	out.issues[0]
+	// unchanged
+	for (const error of out) console.log(error.message)
+}
+```
+
+`issues` already returned the errors, so `out.issues.map(...)` works before and after this change. `Array.isArray(out)` is now false, and `arr.concat(out)` nests the errors, so pass `out.issues`. A Standard Schema failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` or `flatProblemsByPath` from the result.
+
+### Throw from `.assert` when a root morph fails
+
+When a type's root was a morph (or a union of morphs) that returned `ArkErrors`, `.assert` returned the errors instead of throwing, and a configured `onFail` was not called. A root morph's errors are now handled like any others, as they already were for a morph at a key:
+
+```ts
+const N = type("number")
+const T = type("string").pipe(s => N(s))
+
+// previously returned ArkErrors, now throws TraversalError: must be a number (was a string)
+T.assert("x")
+```
+
+### Return a type's output when it is called with `ctx` in a morph
+
+Calling a type with the morph's `ctx` returned the morph's own input rather than the type's output, and threw if the type transformed its input:
+
+```ts
+const T = type("string").pipe((s, ctx) =>
+	type({ a: "string.trim" })(JSON.parse(s), ctx)
+)
+
+// previously threw a TypeError, now { a: "x" }
+T('{"a":" x "}')
+```
+
+### Fix errors repeated or added at another path
+
+Errors added more than once at a path other than the current one, as by `ctx.reject({ relativePath })`, were merged into an error without that path, and a morph that returned an error it had already added listed it twice:
+
+```ts
+const T = type({ a: "string" }).pipe((o, ctx) => {
+	ctx.error({ expected: "p", relativePath: ["a"] })
+	return ctx.error({ expected: "q", relativePath: ["a"] })
+})
+
+// previously ({"a":"s"}) must be... ◦ p ◦ q ◦ q
+// now a ({"a":"s"}) must be... ◦ p ◦ q
+T({ a: "s" }).toString()
+```
+
+A morph that returned `ctx.errors` listed each of its errors twice, or added errors until it ran out of memory when the morph was at a key:
+
+```ts
+const T = type({
+	a: type("string").pipe((s, ctx) => (ctx.error("not ok"), ctx.errors))
+})
+
+// previously ran out of memory, now a must be not ok (was "x")
+T({ a: "x" }).toString()
+```
+
+### Configure before importing anything else
+
+`arktype` and `@ark/schema` now each load as a single module, so `configure()` must run before any import of either package, including `./internal/*` deep imports. Only `./config` and `./internal/config.*` load without the rest of the package.
+
+### Add `rejectAllowsSymbolKeys`
+
+Finding undeclared symbol keys for `"+": "reject"` takes a symbol read per object. If you don't need them rejected, you can allow them, which makes validating a small object that rejects undeclared keys about 2.5x faster and one with 40 keys about 1.15x faster:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({ rejectAllowsSymbolKeys: true })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+
+const T = type({ "+": "reject", a: "string" })
+
+// valid, instead of ArkErrors: value at [Symbol(s)] must be removed
+T({ a: "x", [Symbol("s")]: 1 })
+```
+
+With it, reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate:
+
+```ts
+const s = Symbol("s")
+
+// throws with rejectAllowsSymbolKeys: An unordered union ... is indeterminate
+type({ "+": "reject", a: "string.trim" }).or({
+	"+": "reject",
+	a: "string",
+	[s]: "1"
+})
+```
+
+### Delete undeclared symbol keys
+
+`"+": "delete"` removes undeclared symbol keys, which it previously kept.
+
+### Import internals from `arktype/internal`
+
+`arktype/internal` exports the names of every arktype module, and `@ark/schema`, `@ark/util`, `arkregex` and `arksets` each have an `./internal` entry like it. A deep import like `arktype/internal/parser/string.ts` keeps its module's types and loads that entry at runtime.
+
 ## 2.2.8
 
 ### Add `string.base58`

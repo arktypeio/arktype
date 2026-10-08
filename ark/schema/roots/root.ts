@@ -1,20 +1,18 @@
 import {
 	arrayEquals,
-	flatMorph,
 	includes,
 	inferred,
 	omit,
 	throwInternalError,
 	throwParseError,
 	type Fn,
-	type array,
-	type dict
+	type array
 } from "@ark/util"
-import { mergeToJsonSchemaConfigs } from "../config.ts"
 import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
 import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
 	BaseNode,
+	flatMorphsAreEqual,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode,
 	type NodeSelector
@@ -31,7 +29,6 @@ import type {
 	LimitSchemaValue,
 	UnknownRangeSchema
 } from "../refinements/range.ts"
-import type { BaseScope } from "../scope.ts"
 import type { BaseNodeDeclaration, TypeMeta } from "../shared/declare.ts"
 import {
 	Disjoint,
@@ -42,12 +39,11 @@ import {
 	structuralKinds,
 	type NodeKind,
 	type RootKind,
-	type UnknownAttachments,
 	type kindRightOf
 } from "../shared/implement.ts"
-import { intersectNodesRoot, pipeNodesRoot } from "../shared/intersections.ts"
 import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
+import { sets } from "../shared/sets.ts"
 import type {
 	StandardJSONSchemaV1,
 	StandardSchemaV1
@@ -75,13 +71,11 @@ export abstract class BaseRoot<
 	extends BaseNode<d>
 	implements StandardSchemaV1, StandardJSONSchemaV1
 {
-	declare readonly [arkKind]: "root"
 	declare readonly [inferred]: unknown
 
-	constructor(attachments: UnknownAttachments, $: BaseScope) {
-		super(attachments, $)
-		// define as a getter to avoid it being enumerable/spreadable
-		Object.defineProperty(this, arkKind, { value: "root", enumerable: false })
+	// define as a getter to avoid it being enumerable/spreadable
+	get [arkKind](): "root" {
+		return "root"
 	}
 
 	// doesn't seem possible to override this at a type-level (e.g. via declare)
@@ -98,8 +92,9 @@ export abstract class BaseRoot<
 		return this
 	}
 
+	private _standard?: StandardSchemaV1.ArkTypeProps
 	get "~standard"(): StandardSchemaV1.ArkTypeProps {
-		return {
+		return (this._standard ??= {
 			vendor: "arktype",
 			version: 1,
 			validate: input => {
@@ -119,7 +114,7 @@ export abstract class BaseRoot<
 						...opts.libraryOptions
 					}) as never
 			}
-		}
+		})
 	}
 
 	as(): this {
@@ -157,42 +152,11 @@ export abstract class BaseRoot<
 	}
 
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
-		const ctx: ToJsonSchema.Context = mergeToJsonSchemaConfigs(
-			this.$.resolvedConfig.toJsonSchema,
-			opts
-		)
-
-		ctx.useRefs ||= this.isCyclic
-
-		// ensure $schema is the first key if present
-		const schema: JsonSchema =
-			typeof ctx.dialect === "string" ? { $schema: ctx.dialect } : {}
-
-		Object.assign(schema, this.toJsonSchemaRecurse(ctx))
-
-		if (ctx.useRefs) {
-			const defs = flatMorph(this.references, (i, ref) =>
-				ref.isRoot() && !ref.alwaysExpandJsonSchema ?
-					[ref.id, ref.toResolvedJsonSchema(ctx)]
-				:	[]
-			)
-			// draft-2020-12 uses $defs, draft-07 uses definitions
-			if (ctx.target === "draft-07")
-				Object.assign(schema, { definitions: defs })
-			else schema.$defs = defs
-		}
-
-		return schema
+		return sets().toJsonSchema(this, opts)
 	}
 
 	toJsonSchemaRecurse(ctx: ToJsonSchema.Context): JsonSchema {
-		if (ctx.useRefs && !this.alwaysExpandJsonSchema) {
-			// draft-2020-12 uses $defs, draft-07 uses definitions
-			const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
-			return { $ref: `#/${defsKey}/${this.id}` } as JsonSchema.Ref
-		}
-
-		return this.toResolvedJsonSchema(ctx)
+		return sets().toJsonSchemaRecurse(this, ctx)
 	}
 
 	get alwaysExpandJsonSchema(): boolean {
@@ -203,39 +167,15 @@ export abstract class BaseRoot<
 		)
 	}
 
-	protected toResolvedJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		const result = this.innerToJsonSchema(ctx) as JsonSchema & dict
-
-		for (const k in this.meta) {
-			const v = (this.meta as dict)[k]
-			// metaJson serializes non-primitives like [5] to references like
-			// "$ark.array1", so prefer the original value when it is valid JSON
-			// (jsonData's object domain also allows functions, so exclude them)
-			result[k] =
-				typeof v !== "function" && $ark.intrinsic.jsonData.allows(v) ? v
-				: k === "default" ?
-					ctx.fallback.defaultValue({
-						code: "defaultValue",
-						base: result,
-						value: v as never
-					})
-				:	(this.metaJson as dict)[k]
-		}
-
-		return result
-	}
-
-	protected abstract innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema
-
-	intersect(r: unknown): BaseRoot | Disjoint {
+	intersect(r: unknown, jit = true): BaseRoot | Disjoint {
 		const rNode = this.$.parseDefinition(r)
 		const result = this.rawIntersect(rNode)
 		if (result instanceof Disjoint) return result
-		return this.$.finalize(result as BaseRoot)
+		return this.$.finalize(result as BaseRoot, jit)
 	}
 
 	rawIntersect(r: BaseRoot): BaseRoot {
-		return intersectNodesRoot(this, r, this.$) as never
+		return sets().intersect(this, r, this.$) as never
 	}
 
 	toNeverIfDisjoint(): BaseRoot {
@@ -410,14 +350,14 @@ export abstract class BaseRoot<
 	}
 
 	overlaps(r: unknown): boolean {
-		const intersection = this.intersect(r)
+		const intersection = this.intersect(r, false)
 		return !(intersection instanceof Disjoint)
 	}
 
 	extends(r: unknown): boolean {
 		if (this.isNever()) return true
 
-		const intersection = this.intersect(r)
+		const intersection = this.intersect(r, false)
 		return (
 			!(intersection instanceof Disjoint) && this.equals(intersection as never)
 		)
@@ -503,7 +443,7 @@ export abstract class BaseRoot<
 	}
 
 	private toNode(root: BaseRoot): BaseRoot {
-		const result = pipeNodesRoot(this, root, this.$)
+		const result = sets().pipe(this, root, this.$)
 		if (result instanceof Disjoint) return result.throw()
 		return result as BaseRoot
 	}
@@ -534,21 +474,28 @@ export abstract class BaseRoot<
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
-		return this._constrain("root", kind, schema)
+		return this.$.finalize(this._constrain("root", kind, schema))
 	}
 
 	constrainIn<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
-		return this._constrain("in", kind, schema)
+		return this.$.finalize(this._constrain("in", kind, schema))
 	}
 
 	constrainOut<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
 		schema: NodeSchema<kind>
 	): BaseRoot {
-		return this._constrain("out", kind, schema)
+		return this.$.finalize(this._constrain("out", kind, schema))
+	}
+
+	rawConstrain<kind extends Constraint.PrimitiveKind>(
+		kind: kind,
+		schema: NodeSchema<kind>
+	): BaseRoot {
+		return this._constrain("root", kind, schema)
 	}
 
 	private _constrain(
@@ -588,12 +535,12 @@ export abstract class BaseRoot<
 
 		const result =
 			io === "out" ?
-				pipeNodesRoot(this, partialIntersection, this.$)
-			:	intersectNodesRoot(this, partialIntersection, this.$)
+				sets().pipe(this, partialIntersection, this.$)
+			:	sets().intersect(this, partialIntersection, this.$)
 
 		if (result instanceof Disjoint) result.throw()
 
-		return this.$.finalize(result as never)
+		return result as never
 	}
 
 	onUndeclaredKey(cfg: UndeclaredKeyBehavior | UndeclaredKeyConfig): BaseRoot {
@@ -604,8 +551,11 @@ export abstract class BaseRoot<
 				(kind, inner) =>
 					kind === "structure" ?
 						rule === "ignore" ?
-							omit(inner as Structure.Inner, { undeclared: 1 })
-						:	{ ...inner, undeclared: rule }
+							omit(inner as Structure.Inner, {
+								undeclared: 1,
+								rejectAllowsSymbolKeys: 1
+							})
+						:	{ ...inner, undeclared: rule, rejectAllowsSymbolKeys: undefined }
 					:	inner,
 				deep ? undefined : (
 					{ shouldTransform: node => !includes(structuralKinds, node.kind) }
@@ -622,14 +572,7 @@ export abstract class BaseRoot<
 
 		if (
 			!arrayEquals(this.flatMorphs, r.flatMorphs, {
-				isEqual: (l, r) =>
-					l.propString === r.propString &&
-					(l.node.hasKind("morph") && r.node.hasKind("morph") ?
-						l.node.hasEqualMorphs(r.node)
-					: l.node.hasKind("intersection") && r.node.hasKind("intersection") ?
-						l.node.structure?.structuralMorphRef ===
-						r.node.structure?.structuralMorphRef
-					:	false)
+				isEqual: flatMorphsAreEqual
 			})
 		)
 			return false

@@ -2,11 +2,13 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
 	intrinsic,
-	writeIndiscriminableMorphMessage,
 	writeInvalidOperandMessage,
-	writeMorphIntersectionMessage,
 	type ArkErrors
 } from "@ark/schema"
+import {
+	writeIndiscriminableMorphMessage,
+	writeMorphIntersectionMessage
+} from "arksets"
 import { keywords, scope, type, type Type } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
@@ -341,6 +343,40 @@ contextualize(() => {
 		const out = T(input)
 
 		attest<{ a: number } | type.errors>(out).equals({ a: 4 })
+	})
+
+	it("morph union error paths", () => {
+		const Either = type({ a: "string" }).or({ b: "string" })
+		const T = type({ v: ["string", "=>", () => Either({})] })
+
+		attest(T({ v: "x" }).toString()).snap(
+			"v.a must be a string (was missing) or v.b must be a string (was missing)"
+		)
+	})
+
+	it("unary morph arity", () => {
+		for (const jitless of [false, true]) {
+			const T = scope({}, { jitless }).type({
+				a: ["string", "=>", (s: string, ...rest: unknown[]) => rest.length]
+			})
+			attest(T.assert({ a: "x" }).a).equals(0)
+		}
+	})
+
+	it("array props before elements", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const calls: string[] = []
+			const Trimmed = $.type("string").pipe(s => {
+				calls.push(s)
+				return s.trim()
+			})
+			const T = $.type(Trimmed.array()).and({ foo: Trimmed })
+			const out = T.assert(Object.assign([" a"], { foo: " f" }))
+			attest(calls).equals([" f", " a"])
+			attest(out.foo).equals("f")
+			attest([...out]).equals(["a"])
+		}
 	})
 
 	it("doesn't pipe on error", () => {
@@ -896,7 +932,7 @@ contextualize(() => {
 		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string) => Out<Date> | false | true }
-Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | false | null | true }> | false | true }`)
+Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
 	})
 
 	it("multiple chained pipes", () => {
@@ -1123,6 +1159,18 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 
 		const out = Thing.assert(typeA)
 		attest(out).instanceOf(TypeB)
+	})
+
+	it("assert with root morph errors", () => {
+		const N = type("number")
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type("string").pipe(s => N(s))
+			attest(() => T.assert("x")).throws("must be a number (was a string)")
+			attest(() => T.or("boolean").assert("x")).throws(
+				"must be a number (was a string)"
+			)
+		}
 	})
 
 	// https://github.com/arktypeio/arktype/pull/1464

@@ -1,5 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema, schemaScope } from "@ark/schema"
+import {
+	$ark,
+	intrinsic,
+	rootSchema,
+	schemaScope,
+	type ArkErrors,
+	type NodeId
+} from "@ark/schema"
+import { arrayIndexMatcher } from "@ark/schema/internal/structure/shared.ts"
+import { jsTypeOfDescriptions, printable } from "@ark/util"
 
 contextualize(() => {
 	it("has jit in scope", () => {
@@ -18,6 +27,39 @@ contextualize(() => {
 		})
 
 		attest(node.precompilation).satisfies("string")
+	})
+
+	it("enumerates the intrinsics", () => {
+		attest(Object.keys(intrinsic)).snap([
+			"bigint",
+			"boolean",
+			"false",
+			"never",
+			"null",
+			"number",
+			"object",
+			"string",
+			"symbol",
+			"true",
+			"unknown",
+			"undefined",
+			"Array",
+			"Date",
+			"integer",
+			"lengthBoundable",
+			"key",
+			"nonNegativeIntegerString",
+			"jsonPrimitive",
+			"jsonObject",
+			"jsonData",
+			"emptyStructure"
+		])
+		attest("string" in intrinsic).equals(true)
+		attest(
+			Object.entries(intrinsic).every(
+				([k, v]) => v === $ark.intrinsic[k as keyof typeof intrinsic]
+			)
+		).equals(true)
 	})
 
 	it("reference", () => {
@@ -57,19 +99,14 @@ contextualize(() => {
 			}
 		}).export()
 
-		attest(types.a.json).snap({
+		attest(types.a.json).equals({
 			domain: "object",
-			required: [
-				{
-					key: "b",
-					value: { domain: "object", required: [{ key: "a", value: "$a" }] }
-				}
-			]
+			required: [{ key: "b", value: `$ark.${types.b.id}` }]
 		})
 
-		attest(types.b.json).snap({
+		attest(types.b.json).equals({
 			domain: "object",
-			required: [{ key: "a", value: "$a" }]
+			required: [{ key: "a", value: `$ark.${types.a.id}` }]
 		})
 
 		const a = {} as { b: typeof b }
@@ -93,5 +130,136 @@ contextualize(() => {
 		const s2 = schemaScope({ b: { domain: "number" } }, { name: "Array" })
 		attest(s1.name).equals("Array")
 		attest(s2.name).equals("Array")
+	})
+
+	it("reserved or shadowing ids", () => {
+		for (const id of [
+			"allows",
+			"apply",
+			"transform",
+			"TransformErrors",
+			"Traversal",
+			"config",
+			"in"
+		] as NodeId[]) {
+			const Obj = schemaScope({}).parse(
+				{ domain: "object", required: [{ key: "a", value: "string" }] },
+				{ id }
+			)
+			attest(Obj({ a: "s" })).equals({ a: "s" })
+			attest(String(Obj({ a: 1 }))).equals("a must be a string (was a number)")
+
+			const Morph = schemaScope({}).parse(
+				{ in: "string", morphs: [(s: string) => s.length] },
+				{ id }
+			)
+			attest(Morph("s")).equals(1)
+			attest(String(Morph(1))).equals("must be a string (was a number)")
+		}
+	})
+
+	it("compiles a root with 36,000 predicates", () => {
+		const predicate = Array.from(
+			{ length: 36_000 },
+			(_, i) => (n: number) => n !== i
+		)
+		const T = rootSchema({ domain: "number", predicate }, { prereduced: true })
+		attest(T.precompilation).satisfies("string")
+		attest(T.allows(0.5)).equals(true)
+		attest(T.allows(35_999)).equals(false)
+	})
+
+	it("compiling registers nothing", () => {
+		const length = (s: string) => s.length
+		const epoch = new Date(0)
+		const make = (seed: number) => {
+			const key = `own${seed}`
+			return rootSchema({
+				domain: "object",
+				required: [
+					{ key, value: { domain: "number", max: seed * 10 } },
+					{ key: "u", value: [{ unit: seed }, { unit: "a" }, { unit: "b" }] },
+					{ key: "d", value: { proto: Date, after: epoch } },
+					{ key: "v", value: ["string", "number"] },
+					{
+						key: "k",
+						value: [
+							{ domain: "object", required: [{ key, value: { unit: "x" } }] },
+							{ domain: "object", required: [{ key, value: { unit: "y" } }] }
+						]
+					},
+					{
+						key: "m",
+						value: {
+							in: "string",
+							morphs: [length, rootSchema({ domain: "number", max: seed * 10 })]
+						}
+					},
+					{
+						key: "w",
+						value: {
+							domain: "object",
+							required: [{ key, value: "number" }],
+							undeclared: "delete"
+						}
+					},
+					{
+						key: "t",
+						value: {
+							proto: Array,
+							sequence: {
+								prefix: ["string"],
+								defaultables: [["number", seed]]
+							},
+							undeclared: "delete"
+						}
+					}
+				],
+				optional: [{ key: "o", value: "number", default: seed }],
+				undeclared: "reject"
+			})
+		}
+		const valid = (seed: number) => ({
+			[`own${seed}`]: seed,
+			u: "a",
+			d: new Date(1),
+			v: 1,
+			k: { [`own${seed}`]: "x" },
+			m: "abc",
+			w: { [`own${seed}`]: 1, extra: 1 },
+			t: ["s"]
+		})
+		const invalid = (seed: number) => ({
+			[`own${seed}`]: seed * 10 + 1,
+			u: 3,
+			d: new Date(-1),
+			v: true,
+			k: { [`own${seed}`]: "z" },
+			m: 1,
+			w: {},
+			t: [1, "x"],
+			x: 1
+		})
+		const Warm = make(1)
+		Warm(valid(1))
+		Warm(invalid(1))
+		const registeredCount = Object.keys($ark).length
+		const T = make(2)
+		attest(T(valid(2))).equals({
+			own2: 2,
+			u: "a",
+			d: new Date(1),
+			v: 1,
+			k: { own2: "x" },
+			m: 3,
+			w: { own2: 1 },
+			t: ["s", 2],
+			o: 2
+		})
+		attest((T(invalid(2)) as ArkErrors).count).equals(10)
+		attest(Object.keys($ark).length).equals(registeredCount)
+		const values = Object.values($ark)
+		for (const value of [printable, jsTypeOfDescriptions, arrayIndexMatcher])
+			attest(values.includes(value)).equals(false)
 	})
 })

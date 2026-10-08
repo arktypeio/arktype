@@ -16,6 +16,7 @@ import {
 	type NodeKind
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
+import type { SetEngine } from "./shared/sets.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
@@ -25,6 +26,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	defaultConfig: ResolvedConfig
 	resolvedConfig: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
+	sets?: SetEngine
 }
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<
@@ -190,15 +192,12 @@ const normalizeFallback = (
 ): ToJsonSchema.FallbackObject =>
 	typeof fallback === "function" ? { default: fallback } : (fallback ?? {})
 
-export type CloneImplementation = <original extends object>(
-	original: original
-) => original
-
 export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly jitless?: boolean
-	readonly clone?: boolean | CloneImplementation
 	readonly onUndeclaredKey?: UndeclaredKeyBehavior
+	readonly rejectAllowsSymbolKeys?: boolean
 	readonly numberAllowsNaN?: boolean
+	readonly numberAllowsInfinity?: boolean
 	readonly dateAllowsInvalid?: boolean
 	readonly exactOptionalPropertyTypes?: boolean
 	readonly onFail?: ArkErrors.Handler | null
@@ -209,7 +208,6 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 export type resolveConfig<config extends ArkSchemaConfig> = show<
 	{
 		[k in keyof ArkSchemaConfig]-?: k extends NodeKind ? Required<config[k]>
-		: k extends "clone" ? CloneImplementation | false
 		: k extends "keywords" ? Record<string, TypeMeta | undefined>
 		: k extends "toJsonSchema" ? ToJsonSchema.Context
 		: config[k]

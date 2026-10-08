@@ -142,11 +142,18 @@ bench("bench type", () => {
 bench("bench runtime and type", () => {
 	return {} as makeComplexType<"antidisestablishmentarianism">
 })
-	// Average time it takes the function execute
-	.mean([2, "ms"])
+	// Median time it takes the function to execute
+	.median([2, "ms"])
 	// Seems like our type is O(n) with respect to the length of the input- not bad!
 	.types([337, "instantiations"])
 ```
+
+A runtime bench should return the result it computes and assert its `.median`:
+
+- Each bench runs in a loop compiled for it alone, so V8 can inline it and drop any work whose result is unused. attest warns if a bench returns `undefined`.
+- V8 can also fold work on constant inputs, so read inputs from an export rather than from a literal or a local `const`. This matters most for small functions like a primitive check.
+- `.median` is robust to the GC pauses and preemption that skew `.mean`.
+- Benches in a process share the code of the library they call, so a bench can read faster or slower depending on which benches ran before it. Only compare runtime results between runs of the same file in the same order.
 
 ## Baseline expressions
 
@@ -180,10 +187,10 @@ bench("keyword", () => {
 
 ## Thresholds
 
-If you'd like to fail in CI above a threshold, you can add flags like the following (default value is 20%, but it will not throw unless `--benchErrorOnThresholdExceeded` is set):
+A bench fails if it exceeds its baseline by more than `benchPercentThreshold` (20% by default). Runtime timings vary between runs, so to fail only type benches, set `benchErrorOnThresholdExceeded` to `"types"`:
 
 ```bash
-tsx ./p99/within-limit/p99-tall-simple.bench.ts --benchErrorOnThresholdExceeded --benchPercentThreshold 10
+tsx ./p99/within-limit/p99-tall-simple.bench.ts --benchErrorOnThresholdExceeded types --benchPercentThreshold 10
 ```
 
 

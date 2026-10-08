@@ -1,0 +1,124 @@
+---
+title: Inference
+---
+
+Each `Regex` carries the type of string it matches along with any captures and flags.
+
+Inferred types are at worst imprecise and never incorrect: anything ArkRegex can't represent as a literal widens to `string` or `${number}`.
+
+## Anchors
+
+An expression without `^` or `$` can match anywhere in a string, so its type is padded with `${string}`:
+
+```ts
+const unanchored = regex("abc")
+//    ^?
+
+const anchored = regex("^abc$")
+//    ^?
+```
+
+## Unions
+
+```ts
+const color = regex("^(red|green|blue)$")
+//    ^?
+```
+
+## Quantifiers
+
+Bounded quantifiers are expanded when the result is small:
+
+```ts
+const range = regex("^a{2,3}$")
+//    ^?
+
+const optional = regex("^colou?r$")
+//    ^?
+```
+
+Unbounded repetition of a digit becomes `${number}`:
+
+```ts
+const version = regex("^(\\d+)\\.(\\d+)$")
+//    ^?
+```
+
+## Character sets
+
+Small sets become unions of literals. Ranges like `[a-z]` would quickly produce enormous unions, so they widen to `string`:
+
+```ts
+const abc = regex("^[abc]$")
+//    ^?
+
+const hex = regex("^[0-9a-f]+$")
+//    ^?
+```
+
+## Captures
+
+Positional captures are inferred as a tuple, and correlate with each branch of a union:
+
+```ts
+const color = regex("^(red|green|blue)$")
+
+type Captures = typeof color.inferCaptures
+//   ^?
+```
+
+A group that may not participate in a match captures `undefined`:
+
+```ts
+const optional = regex("^a(b)?$")
+//    ^?
+```
+
+## Named captures
+
+```ts
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})$")
+
+type Names = typeof date.inferNamedCaptures
+//   ^?
+```
+
+## Flags
+
+Flags are inferred, and `i` expands case-insensitive literals:
+
+```ts
+const ok = regex("^ok$", "i")
+//    ^?
+```
+
+## `.test()`
+
+`.test()` narrows its input to the expression's type:
+
+```ts
+const color = regex("^(red|green|blue)$")
+
+const parse = (s: string) => {
+	if (color.test(s)) return s
+	//                        ^?
+	return null
+}
+```
+
+## `.exec()`
+
+`.exec()` returns a fully typed result, including `groups` and, with the `d` flag, `indices`:
+
+```ts
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})$", "d")
+
+const result = date.exec("2026-10-07")
+
+if (result) {
+	result.groups.year
+	//            ^?
+	result.indices.groups.year
+	//                    ^?
+}
+```

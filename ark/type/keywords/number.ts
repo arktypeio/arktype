@@ -1,6 +1,7 @@
 import { intrinsic, rootSchema } from "@ark/schema"
+import { cached } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
-import { Scope } from "../scope.ts"
+import { keywordModule } from "../scope.ts"
 
 /**
  * As per the ECMA-262 specification:
@@ -9,44 +10,49 @@ import { Scope } from "../scope.ts"
  * @see https://262.ecma-international.org/15.0/index.html#sec-time-values-and-time-range
  */
 
-export const epoch = rootSchema({
-	domain: {
+export const epoch = cached(() =>
+	rootSchema({
+		domain: {
+			domain: "number",
+			meta: "a number representing a Unix timestamp"
+		},
+		divisor: {
+			rule: 1,
+			meta: `an integer representing a Unix timestamp`
+		},
+		min: {
+			rule: -8640000000000000,
+			meta: `a Unix timestamp after -8640000000000000`
+		},
+		max: {
+			rule: 8640000000000000,
+			meta: "a Unix timestamp before 8640000000000000"
+		},
+		meta: "an integer representing a safe Unix timestamp"
+	})
+)
+
+export const integer = cached(() =>
+	rootSchema({
 		domain: "number",
-		meta: "a number representing a Unix timestamp"
-	},
-	divisor: {
-		rule: 1,
-		meta: `an integer representing a Unix timestamp`
-	},
-	min: {
-		rule: -8640000000000000,
-		meta: `a Unix timestamp after -8640000000000000`
-	},
-	max: {
-		rule: 8640000000000000,
-		meta: "a Unix timestamp before 8640000000000000"
-	},
-	meta: "an integer representing a safe Unix timestamp"
-})
+		divisor: 1
+	})
+)
 
-export const integer = rootSchema({
-	domain: "number",
-	divisor: 1
-})
-
-export const number: number.module = Scope.module(
+export const number: number.module = keywordModule(
 	{
-		root: intrinsic.number,
+		root: () => intrinsic.number,
 		integer,
 		epoch,
-		safe: rootSchema({
-			domain: {
-				domain: "number",
-				numberAllowsNaN: false
-			},
-			min: Number.MIN_SAFE_INTEGER,
-			max: Number.MAX_SAFE_INTEGER
-		}),
+		safe: () =>
+			rootSchema({
+				domain: {
+					domain: "number",
+					numberAllowsNaN: false
+				},
+				min: Number.MIN_SAFE_INTEGER,
+				max: Number.MAX_SAFE_INTEGER
+			}),
 		NaN: ["===", Number.NaN],
 		Infinity: ["===", Number.POSITIVE_INFINITY],
 		NegativeInfinity: ["===", Number.NEGATIVE_INFINITY]

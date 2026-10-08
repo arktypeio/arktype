@@ -1,7 +1,5 @@
 import {
 	Disjoint,
-	intersectNodesRoot,
-	pipeNodesRoot,
 	type BaseParseContext,
 	type BaseRoot,
 	type Morph,
@@ -19,6 +17,7 @@ import {
 	type Domain,
 	type show
 } from "@ark/util"
+import { intersectNodesRoot, pipeNodesRoot } from "arksets"
 import type {
 	defaultFor,
 	distill,
@@ -192,7 +191,7 @@ export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
 			writeMalformedFunctionalExpressionMessage(":", def[2])
 		)
 	}
-	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).constrain(
+	return ctx.$.parseOwnDefinitionFormat(def[0], ctx).rawConstrain(
 		"predicate",
 		def[2] as Predicate
 	)

@@ -35,18 +35,47 @@ declare global {
 }
 
 const namesByResolution = new Map<object | symbol, string>()
+const namesByUnregisteredObject = new WeakMap<object, string>()
+// symbols can't be WeakMap keys before ES2023
+const namesByUnregisteredSymbol = new Map<symbol, string>()
 const nameCounts: Record<string, number | undefined> = Object.create(null)
 
 export const register = (value: object | symbol): string => {
 	const existingName = namesByResolution.get(value)
 	if (existingName) return existingName
 
-	let name = baseNameFor(value)
-	if (nameCounts[name]) name = `${name}${nameCounts[name]!++}`
-	else nameCounts[name] = 1
-
+	const name = unregisteredNameOf(value) ?? nextName(value)
 	registry[name] = value
 	namesByResolution.set(value, name)
+	return name
+}
+
+export const registeredNameOf = (value: object | symbol): string | undefined =>
+	namesByResolution.get(value)
+
+export const nameOf = (value: object | symbol): string => {
+	const existingName = namesByResolution.get(value) ?? unregisteredNameOf(value)
+	if (existingName) return existingName
+
+	const name = nextName(value)
+	if (typeof value === "symbol") namesByUnregisteredSymbol.set(value, name)
+	else namesByUnregisteredObject.set(value, name)
+	return name
+}
+
+const unregisteredNameOf = (value: object | symbol) =>
+	typeof value === "symbol" ?
+		namesByUnregisteredSymbol.get(value)
+	:	namesByUnregisteredObject.get(value)
+
+const nextName = (value: object | symbol) => {
+	const baseName = baseNameFor(value)
+	let name = baseName
+	let count = nameCounts[baseName] ?? 0
+	// a name may be taken by a registry key like sets or a function named fn1
+	while (name in nameCounts || name in registry) name = `${baseName}${++count}`
+	nameCounts[baseName] = count
+	nameCounts[name] ??= 0
 	return name
 }
 

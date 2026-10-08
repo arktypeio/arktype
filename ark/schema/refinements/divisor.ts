@@ -13,7 +13,6 @@ import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 
@@ -64,14 +63,6 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 				: node.rule === 2 ? "even"
 				: `a multiple of ${node.rule}`
 		},
-		intersections: {
-			divisor: (l, r, ctx) =>
-				ctx.$.node("divisor", {
-					rule: Math.abs(
-						(l.rule * r.rule) / greatestCommonDivisor(l.rule, r.rule)
-					)
-				})
-		},
 		obviatesBasisDescription: true
 	})
 
@@ -82,16 +73,6 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 	readonly compiledNegation: string = `data % ${this.rule} !== 0`
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 	readonly expression: string = `% ${this.rule}`
-
-	reduceJsonSchema(schema: JsonSchema.Numeric): JsonSchema.Numeric {
-		schema.type = "integer"
-
-		if (this.rule === 1) return schema
-
-		schema.multipleOf = this.rule
-
-		return schema
-	}
 }
 
 export const Divisor = {
@@ -114,16 +95,3 @@ export const writeNonIntegerDivisorMessage = <divisor extends number>(
 
 export type writeNonIntegerDivisorMessage<divisor extends number> =
 	`divisor must be an integer (was ${divisor})`
-
-// https://en.wikipedia.org/wiki/Euclidean_algorithm
-const greatestCommonDivisor = (l: number, r: number) => {
-	let previous: number
-	let greatestCommonDivisor = l
-	let current = r
-	while (current !== 0) {
-		previous = current
-		current = greatestCommonDivisor % current
-		greatestCommonDivisor = previous
-	}
-	return greatestCommonDivisor
-}

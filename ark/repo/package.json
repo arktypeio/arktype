@@ -9,6 +9,8 @@
 		"arkenv": "0.7.3",
 		"arktype": "workspace:*",
 		"arkregex": "workspace:*",
+		"arksets": "workspace:*",
+		"esbuild": "0.25.10",
 		"ts-morph": "27.0.2",
 		"ts-pattern": "5.8.0",
 		"type-fest": "5.1.0",

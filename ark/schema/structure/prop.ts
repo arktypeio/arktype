@@ -1,21 +1,19 @@
-import { append, printable, throwParseError, unset, type Key } from "@ark/util"
+import { append, type Key } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
 import type { nodeOfKind, RootSchema } from "../kinds.ts"
 import {
 	flatRef,
 	type BaseNode,
 	type DeepNodeTransformation,
-	type DeepNodeTransformContext,
-	type FlatRef
+	type DeepNodeTransformContext
 } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
-import type { IntersectionContext, RootKind } from "../shared/implement.ts"
-import { intersectOrPipeNodes } from "../shared/intersections.ts"
+import type { RootKind } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
+	applyValue,
 	traverseKey,
 	type TraverseAllows,
 	type TraverseApply
@@ -46,52 +44,6 @@ export declare namespace Prop {
 	}
 }
 
-export const intersectProps = (
-	l: nodeOfKind<Prop.Kind>,
-	r: nodeOfKind<Prop.Kind>,
-	ctx: IntersectionContext
-): nodeOfKind<Prop.Kind> | Disjoint | null => {
-	if (l.key !== r.key) return null
-
-	const key = l.key
-	let value = intersectOrPipeNodes(l.value, r.value, ctx)
-	const kind: Prop.Kind = l.required || r.required ? "required" : "optional"
-	if (value instanceof Disjoint) {
-		if (kind === "optional") value = $ark.intrinsic.never.internal
-		else {
-			// if either operand was optional, the Disjoint has to be treated as optional
-			return value.withPrefixKey(
-				l.key,
-				l.required && r.required ? "required" : "optional"
-			)
-		}
-	}
-
-	if (kind === "required") {
-		return ctx.$.node("required", {
-			key,
-			value
-		})
-	}
-
-	const defaultIntersection =
-		l.hasDefault() ?
-			r.hasDefault() ?
-				l.default === r.default ?
-					l.default
-				:	throwParseError(writeDefaultIntersectionMessage(l.default, r.default))
-			:	l.default
-		: r.hasDefault() ? r.default
-		: unset
-
-	return ctx.$.node("optional", {
-		key,
-		value,
-		// unset is stripped during parsing
-		default: defaultIntersection
-	})
-}
-
 export abstract class BaseProp<
 	kind extends Prop.Kind = Prop.Kind
 > extends BaseConstraint<
@@ -104,10 +56,15 @@ export abstract class BaseProp<
 	compiledKey: string =
 		typeof this.key === "string" ? this.key : this.serializedKey
 
-	flatRefs: FlatRef[] = append(
-		this.value.flatRefs.map(ref => flatRef([this.key, ...ref.path], ref.node)),
-		flatRef([this.key], this.value)
-	)
+	protected override initializeFlatRefs(): void {
+		this._flatRefs = append(
+			this.value.flatRefs.map(ref =>
+				flatRef([this.key, ...ref.path], ref.node)
+			),
+			flatRef([this.key], this.value)
+		)
+		this._flatMorphs = []
+	}
 
 	protected override _transform(
 		mapper: DeepNodeTransformation,
@@ -139,7 +96,7 @@ export abstract class BaseProp<
 		if (this.key in data) {
 			traverseKey(
 				this.key,
-				() => this.value.traverseApply((data as any)[this.key], ctx),
+				() => applyValue(this.value, (data as any)[this.key], ctx),
 				ctx
 			)
 		} else if (this.hasKind("required"))
@@ -154,7 +111,9 @@ export abstract class BaseProp<
 		if (this.hasKind("required")) {
 			js.else(() =>
 				js.traversalKind === "Apply" ?
-					js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+					js.line(
+						`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)})`
+					)
 				:	js.return(false)
 			)
 		}
@@ -162,9 +121,3 @@ export abstract class BaseProp<
 		if (js.traversalKind === "Allows") js.return(true)
 	}
 }
-
-export const writeDefaultIntersectionMessage = (
-	lValue: unknown,
-	rValue: unknown
-): string =>
-	`Invalid intersection of default values ${printable(lValue)} & ${printable(rValue)}`

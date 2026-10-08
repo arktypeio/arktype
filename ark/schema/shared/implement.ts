@@ -108,7 +108,7 @@ export const constraintKeys: KeySet<ConstraintKind> = flatMorph(
 )
 
 export const structureKeys: keySetOf<Structure.Inner> = flatMorph(
-	[...structuralKinds, "undeclared"],
+	[...structuralKinds, "undeclared", "rejectAllowsSymbolKeys"],
 	(i, k) => [k, 1] as const
 )
 
@@ -299,10 +299,6 @@ interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 		[k in keyof d["inner"]]: Json
 	}) => JsonStructure
 	collapsibleKey?: keyof d["inner"]
-	reduce?: (
-		inner: d["inner"],
-		$: BaseScope
-	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
 	obviatesBasisDescription?: d["kind"] extends RefinementKind ? true : never
 	obviatesBasisExpression?: d["kind"] extends RefinementKind ? true : never
 }
@@ -311,7 +307,6 @@ export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ResolvedUnknownNodeConfig
 	intersectionIsOpen: boolean
-	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
@@ -324,20 +319,14 @@ export const compileObjectLiteral = (ctx: object): string => {
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
-		intersections: IntersectionMap<d["kind"]>
 		intersectionIsOpen: d["intersectionIsOpen"]
 		defaults: Required<NodeConfig<d["kind"]>>
 	}
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
-		intersections: IntersectionMap<d["kind"]>
 		defaults: nodeSchemaaultsImplementationInputFor<d["kind"]>
-	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true }
-		:	{}) &
-		// if the node is declared as reducible to a kind other than its own,
-		// there must be a reduce implementation
-		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} })
+	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true } : {})
 
 type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,
@@ -395,8 +384,8 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 				(ctx.description as string)
 			:	implementation.defaults.description(ctx as never)
 		implementation.defaults.actual ??= data => printable(data)
-		implementation.defaults.problem ??= ctx =>
-			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
+		implementation.defaults.problem ??= ({ expected, actual }) =>
+			`must be ${expected}${actual ? ` (was ${actual})` : ""}`
 		implementation.defaults.message ??= ctx => {
 			if (ctx.path.length === 0) return ctx.problem
 			const problemWithLocation = `${ctx.propString} ${ctx.problem}`

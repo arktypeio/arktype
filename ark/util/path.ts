@@ -70,15 +70,14 @@ export const stringifyPath: StringifyPathFn = (path, ...opts) =>
 export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 	// alternate strategy for caching since the base object is frozen
 	private cache: {
-		stringify?: string
 		stringifyAncestors?: readonly string[]
 		json?: JsonArray
 	} = {}
 
 	constructor(...items: array<PropertyKey>) {
 		super()
-		// avoid case where a single number will create empty slots
-		;(this as any).push(...items)
+		// a single number would create empty slots, and push is slow on a subclass
+		for (let i = 0; i < items.length; i++) (this as any)[i] = items[i]
 	}
 
 	toJSON(): JsonArray {
@@ -94,16 +93,15 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 	}
 
 	stringify(): string {
-		if (this.cache.stringify) return this.cache.stringify
-		return (this.cache.stringify = stringifyPath(this))
+		return this.stringifyAncestors()[this.length]
 	}
 
 	stringifyAncestors(): readonly string[] {
 		if (this.cache.stringifyAncestors) return this.cache.stringifyAncestors
 		let propString = ""
 		const result: string[] = [propString]
-		for (const path of this) {
-			propString = appendStringifiedKey(propString, path)
+		for (let i = 0; i < this.length; i++) {
+			propString = appendStringifiedKey(propString, this[i])
 			result.push(propString)
 		}
 		return (this.cache.stringifyAncestors = result)

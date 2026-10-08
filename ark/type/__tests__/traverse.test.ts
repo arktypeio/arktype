@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { ArkErrors, TraversalError } from "@ark/schema"
-import { scope, type } from "arktype"
+import { flatMorph, throwError } from "@ark/util"
+import { scope, type, type Type } from "arktype"
 
 contextualize(() => {
 	it("divisible", () => {
@@ -97,6 +98,13 @@ contextualize(() => {
 		attest(T({ key: { b: true } })).snap({ key: { b: true } })
 		attest(T({ key: {} }).toString()).snap(
 			"key.a must be a string (was missing) or key.b must be boolean (was missing)"
+		)
+	})
+
+	it("branches at a key named like an Object.prototype member", () => {
+		const T = type({ constructor: "string.email | string.uuid" })
+		attest(T({ constructor: "x" }).toString()).snap(
+			'constructor must be an email address or a UUID (was "x")'
 		)
 	})
 
@@ -227,6 +235,121 @@ isAdmin must be false, null or true (was 1)`)
 		).snap("user.repeatPassword must be identical to password")
 	})
 
+	it("errors intersected at a relative path keep it", () => {
+		const T = type({ a: "number" }).narrow((o, ctx) => {
+			ctx.reject({ expected: "x", relativePath: ["a"] })
+			return ctx.reject({ expected: "y", relativePath: ["a"] })
+		})
+
+		const out = T({ a: 1 }) as ArkErrors
+
+		attest(out.toString()).snap(`a ({"a":1}) must be...
+  ◦ x
+  ◦ y`)
+		attest(out.issues[0].propString).equals("a")
+	})
+
+	it("an error a morph adds and returns is listed once", () => {
+		const T = type({ a: "string" }).pipe((o, ctx) => {
+			ctx.error({ expected: "p", relativePath: ["a"] })
+			return ctx.error({ expected: "q", relativePath: ["a"] })
+		})
+
+		const out = T({ a: "s" }) as ArkErrors
+
+		attest(out.toString()).snap(`a ({"a":"s"}) must be...
+  ◦ p
+  ◦ q`)
+		attest(out.count).equals(2)
+	})
+
+	it("a morph returning ctx.errors adds them once", () => {
+		const Checked = type("string").pipe((s, ctx) => {
+			ctx.error("not ok")
+			return ctx.errors
+		})
+
+		attest(Checked("x").toString()).snap('must be not ok (was "x")')
+
+		const out = type({ a: Checked, b: "number" })({ a: "x", b: "y" })
+
+		attest(out.toString()).snap(`b must be a number (was a string)
+a must be not ok (was "x")`)
+		attest((out as ArkErrors).count).equals(2)
+	})
+
+	it("byAncestorPath is the same whenever it's read", () => {
+		const expectedByAncestorPath = (errors: ArkErrors) =>
+			flatMorph(errors.byAncestorPath, (k, v) => [k, v.map(e => e.expected)])
+
+		let readBetween: Record<string, string[]> | undefined
+		const T = (readsBetween: boolean) =>
+			type("unknown").narrow((d, ctx) => {
+				ctx.reject({ expected: "a", path: ["x", "z"] })
+				ctx.reject({ expected: "b", path: ["y"] })
+				if (readsBetween) readBetween = expectedByAncestorPath(ctx.errors)
+				ctx.reject({ expected: "c", path: ["x", "z"] })
+				return false
+			})
+
+		const out = T(true)(1) as ArkErrors
+
+		attest(readBetween).snap({
+			"": ["a", "b"],
+			x: ["a"],
+			"x.z": ["a"],
+			y: ["b"]
+		})
+		attest(expectedByAncestorPath(out)).snap({
+			"": ["a", "c", "b"],
+			x: ["a", "c"],
+			"x.z": ["a", "c"],
+			y: ["b"]
+		})
+		attest(expectedByAncestorPath(out)).equals(
+			expectedByAncestorPath(T(false)(1) as ArkErrors)
+		)
+	})
+
+	it("a never error replaces the errors at its path", () => {
+		const out = type("unknown").narrow((d, ctx) => {
+			ctx.reject({ expected: "a", path: ["x"] })
+			attest(ctx.errors.byAncestorPath.x.length).equals(1)
+			ctx.error({ code: "union", errors: [], path: ["x"] })
+			ctx.reject({ expected: "b", path: ["x"] })
+			return false
+		})(1) as ArkErrors
+
+		attest(out.count).equals(3)
+		attest(out.flatByPath.x.map(e => e.code)).equals(["union"])
+		attest(out.byAncestorPath.x.map(e => e.code)).equals(["union"])
+	})
+
+	it("errors at more paths than are scanned", () => {
+		const out = type("unknown").narrow((d, ctx) => {
+			for (let i = 0; i < 10; i++)
+				ctx.reject({ expected: `p${i}`, path: [`k${i}`] })
+			ctx.reject({ expected: "q", path: ["k3"] })
+			ctx.reject({ expected: "r", path: ["k9"] })
+			return false
+		})(1) as ArkErrors
+
+		attest(out.issues.map(e => e.propString)).equals(Object.keys(out.byPath))
+		attest(out.flatProblemsByPath).snap({
+			k0: ["must be p0 (was 1)"],
+			k1: ["must be p1 (was 1)"],
+			k2: ["must be p2 (was 1)"],
+			k3: ["must be p3 (was 1)", "must be q (was 1)"],
+			k4: ["must be p4 (was 1)"],
+			k5: ["must be p5 (was 1)"],
+			k6: ["must be p6 (was 1)"],
+			k7: ["must be p7 (was 1)"],
+			k8: ["must be p8 (was 1)"],
+			k9: ["must be p9 (was 1)", "must be r (was 1)"]
+		})
+		attest(out.count).equals(12)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1149
 	it("morphs apply when not at an error path, even on failed validation", () => {
 		const AgeType = type("string.numeric.parse").to("number>18")
@@ -260,6 +383,75 @@ age must be more than 18 (was 2)`)
 
 		attest(out.toString()).snap('must be valid (was {"foo":1})')
 		attest(callCount).equals(0)
+	})
+
+	it("ctx after nested call", () => {
+		const calling = (t: Type, data: unknown) =>
+			type("unknown").narrow((_, ctx) => {
+				t.internal(data, ctx)
+				return true
+			})
+		const Unbanged = type("string").pipe((s, ctx) =>
+			s.startsWith("!") ? ctx.error("a string without !") : s
+		)
+		const T = type({
+			a: Unbanged,
+			b: calling(type("string"), 42),
+			c: calling(
+				type("object").pipe((o, ctx) => o),
+				{}
+			),
+			d: "number"
+		})
+
+		attest(T({ a: "!a", b: 1, c: 1, d: "x" }).toString())
+			.snap(`b must be a string (was a number)
+d must be a number (was a string)
+a must be a string without ! (was "!a")`)
+	})
+
+	it("cyclic data after a nested call threw", () => {
+		let nesting = false
+		for (const jitless of [false, true]) {
+			const types = scope(
+				{
+					link: {
+						value: [
+							"number",
+							":",
+							(n: number) => n > 0 || (nesting && throwError("nonpositive"))
+						],
+						"next?": "link",
+						"label?": ["string", "=>", s => s.trim()]
+					},
+					nested: [
+						"object",
+						":",
+						(o: object) => {
+							nesting = true
+							try {
+								types.link(o)
+							} catch {
+								nesting = false
+							}
+							return true
+						}
+					],
+					nestedFirst: { first: "nested", second: "link" },
+					nestedLast: { first: "link", second: "nested" }
+				},
+				{ jitless }
+			).export()
+			let deep: typeof types.link.inferIn = { value: 0 }
+			for (let i = 1; i < 100; i++) deep = { value: i, next: deep }
+			attest(types.nestedFirst.allows({ first: deep, second: deep })).equals(
+				false
+			)
+			const ring: typeof types.link.inferIn = { value: 1, label: " a " }
+			ring.next = ring
+			const out = types.nestedLast.assert({ first: ring, second: { value: 0 } })
+			attest(out.first.next?.label).equals("a")
+		}
 	})
 
 	it("ctx.path docs example", () => {

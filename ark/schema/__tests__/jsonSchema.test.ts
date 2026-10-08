@@ -6,6 +6,7 @@ import {
 	rootSchemaScope,
 	schemaScope,
 	type BaseRoot,
+	type JsonSchema,
 	type ToJsonSchema
 } from "@ark/schema"
 import type { omit } from "@ark/util"
@@ -142,6 +143,16 @@ contextualize(() => {
 		})
 	})
 
+	it("string or symbol index", () => {
+		const node = rootSchema({
+			domain: "object",
+			index: { signature: ["string", "symbol"], value: "number" }
+		})
+		attest(
+			toJsonSchema(node, { fallback: { symbolKey: ctx => ctx.base } })
+		).snap({ type: "object", additionalProperties: { type: "number" } })
+	})
+
 	it("variadic array", () => {
 		const node = rootSchema({
 			proto: Array,
@@ -236,26 +247,79 @@ contextualize(() => {
 		const schema = toJsonSchema($ark.intrinsic.jsonObject)
 
 		attest(schema).snap({
-			$ref: "#/$defs/intersection11",
+			$ref: "#/$defs/jsonObject1",
 			$defs: {
-				intersection11: {
+				jsonObject1: {
 					type: "object",
 					additionalProperties: { $ref: "#/$defs/jsonData1" }
 				},
 				jsonData1: {
 					anyOf: [
-						{ $ref: "#/$defs/intersection11" },
 						{ type: "number" },
 						{ type: "string" },
+						{ $ref: "#/$defs/jsonObject1" },
 						{ type: "boolean" },
 						{ type: "null" }
 					]
-				},
-				union7: {
-					anyOf: [{ $ref: "#/$defs/intersection11" }, { type: "boolean" }]
 				}
 			}
 		})
+	})
+
+	it("toJsonSchemaRecurse", () => {
+		const node = rootSchema({
+			domain: "object",
+			required: [{ key: "a", value: "string" }]
+		})
+		const ctx = node.$.resolvedConfig.toJsonSchema
+		attest(node.toJsonSchemaRecurse(ctx)).snap({
+			type: "object",
+			properties: { a: { type: "string" } },
+			required: ["a"]
+		})
+		attest(node.toJsonSchemaRecurse({ ...ctx, useRefs: true })).equals({
+			$ref: `#/$defs/${node.id}`
+		})
+		attest(
+			rootSchema("string").toJsonSchemaRecurse({ ...ctx, useRefs: true })
+		).equals({ type: "string" })
+	})
+
+	it("$defs in reference order", () => {
+		const node = rootSchema([
+			{
+				domain: "object",
+				required: [
+					{ key: "k", value: { unit: "a" } },
+					{
+						key: "a",
+						value: {
+							domain: "object",
+							required: [{ key: "x", value: "string" }]
+						}
+					}
+				]
+			},
+			{
+				domain: "object",
+				required: [
+					{ key: "k", value: { unit: "b" } },
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							required: [{ key: "y", value: "number" }]
+						}
+					}
+				]
+			}
+		])
+		const defs = toJsonSchema(node, { useRefs: true }).$defs!
+		attest(
+			Object.values(defs).map(def =>
+				Object.keys((def as JsonSchema.Object).properties ?? def)
+			)
+		).snap([["anyOf"], ["a", "k"], ["x"], ["b", "k"], ["y"]])
 	})
 
 	it("unions of literal values as enums", () => {
@@ -663,6 +727,45 @@ contextualize(() => {
 				type: "number",
 				_testIn: { type: "string" }
 			})
+		})
+
+		it("morph index key", () => {
+			const T = rootSchema({
+				domain: "object",
+				index: [
+					{
+						signature: {
+							in: { domain: "string", pattern: "^\\d+$" },
+							morphs: [(s: string) => Number.parseInt(s)]
+						},
+						value: "string"
+					},
+					{
+						signature: {
+							in: { domain: "string", meta: "a key" },
+							morphs: [(s: string) => s.trim()]
+						},
+						value: "number"
+					}
+				]
+			})
+
+			const expected: JsonSchema = {
+				type: "object",
+				additionalProperties: { type: "number" },
+				patternProperties: { "^\\d+$": { type: "string" } }
+			}
+
+			attest(toJsonSchema(T, { fallback: { morph: ctx => ctx.base } })).equals(
+				expected
+			)
+			attest(
+				toJsonSchema(T, { fallback: { morph: ctx => ctx.out ?? ctx.base } })
+			).equals(expected)
+			attest(
+				toJsonSchema(T, { useRefs: true, fallback: { morph: ctx => ctx.base } })
+					.$defs![T.id]
+			).equals(expected)
 		})
 
 		it("date supercedes proto", () => {

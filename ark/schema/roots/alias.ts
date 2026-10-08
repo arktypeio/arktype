@@ -1,26 +1,37 @@
 import {
-	append,
 	domainDescriptions,
 	printable,
 	throwInternalError,
-	throwParseError
+	throwParseError,
+	type array,
+	type join
 } from "@ark/util"
+import type { BaseNode } from "../node.ts"
 import { nodesByRegisteredId, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
+import {
+	aliasVisits,
+	applyResolution,
+	maxAliasDepth,
+	maxAliasVisits,
+	type TraverseAllows,
+	type TraverseApply,
+	type TraverseTransform
+} from "../shared/traversal.ts"
 import { $ark } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import type { TraverseAllows, TraverseApply } from "../shared/traversal.ts"
-import { hasArkKind } from "../shared/utils.ts"
+import {
+	assertUnchecked,
+	hasArkKind,
+	inProgress,
+	isIoFinal,
+	isResolutionFinal
+} from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
-import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Alias {
 	export type Schema<alias extends string = string> =
@@ -31,11 +42,15 @@ export declare namespace Alias {
 		extends BaseNormalizedSchema {
 		readonly reference: alias
 		readonly resolve?: () => BaseRoot
+		readonly operator?: string
+		readonly operands?: readonly BaseRoot[]
 	}
 
 	export interface Inner<alias extends string = string> {
 		readonly reference: alias
 		readonly resolve?: () => BaseRoot
+		readonly operator?: string
+		readonly operands?: readonly BaseRoot[]
 	}
 
 	export interface Declaration
@@ -52,9 +67,6 @@ export declare namespace Alias {
 export const normalizeAliasSchema = (schema: Alias.Schema): Alias.Inner =>
 	typeof schema === "string" ? { reference: schema } : schema
 
-const neverIfDisjoint = (result: BaseRoot | Disjoint): BaseRoot =>
-	result instanceof Disjoint ? $ark.intrinsic.never.internal : result
-
 const implementation: nodeImplementationOf<Alias.Declaration> =
 	implementNode<Alias.Declaration>({
 		kind: "alias",
@@ -62,50 +74,72 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 		collapsibleKey: "reference",
 		keys: {
 			reference: {
-				serialize: s => (s.startsWith("$") ? s : `$ark.${s}`)
+				parse: reference => {
+					const referenced = nodesByRegisteredId[reference as NodeId]
+					if (hasArkKind(referenced, "context"))
+						referenced.isReferencedById = true
+					return reference
+				},
+				serialize: s => {
+					const referenced = nodesByRegisteredId[s as NodeId]
+					if (hasArkKind(referenced, "root")) return referenced.json
+					return s.startsWith("$") ? s : `$ark.${s}`
+				}
 			},
-			resolve: {}
+			resolve: {
+				serialize: () => null
+			},
+			operator: {},
+			operands: {
+				child: false,
+				serialize: () => null
+			}
 		},
 		normalize: normalizeAliasSchema,
+		finalizeInnerJson: json => ({ reference: json.reference }),
 		defaults: {
-			description: node => node.reference
-		},
-		intersections: {
-			alias: (l, r, ctx) =>
-				ctx.$.lazilyResolve(
-					() =>
-						neverIfDisjoint(
-							intersectOrPipeNodes(l.resolution, r.resolution, ctx)
-						),
-					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.reference}`
-				),
-			...defineRightwardIntersections("alias", (l, r, ctx) => {
-				if (r.isUnknown()) return l
-				if (r.isNever()) return r
-				if (r.isBasis() && !r.overlaps($ark.intrinsic.object)) {
-					// can be more robust as part of https://github.com/arktypeio/arktype/issues/1026
-					return Disjoint.init(
-						"assignability",
-						$ark.intrinsic.object as never,
-						r
-					)
-				}
-
-				return ctx.$.lazilyResolve(
-					() => neverIfDisjoint(intersectOrPipeNodes(l.resolution, r, ctx)),
-					`${l.reference}${ctx.pipe ? "=>" : "&"}${r.id}`
-				)
-			})
+			description: node => node.expression
 		}
 	})
 
 export class AliasNode extends BaseRoot<Alias.Declaration> {
-	readonly expression: string = this.reference
+	readonly expression: string = expressionOf(this)
 	readonly structure = undefined
+	// a cycle passes an alias referencing its definition while it's parsed, so Allows bounds only those
+	closesCycle = true
+	private _resolution: BaseRoot | undefined
 
 	get resolution(): BaseRoot {
-		const result = this._resolve()
-		return (nodesByRegisteredId[this.id] = result)
+		if (this._resolution) return this._resolution
+		if (resolvingAliases.includes(this)) {
+			const names = resolvingAliases.map(aliasNameOf)
+			const cycle = names.slice(names.lastIndexOf(aliasNameOf(this)))
+			const start = cycle.indexOf([...cycle].sort()[0])
+			const path = [...cycle.slice(start), ...cycle.slice(0, start)]
+			return throwParseError(writeShallowCycleErrorMessage(path[0], path))
+		}
+		const isFinal = isResolutionFinal()
+		const readsIo =
+			isIoFinal() &&
+			(this.isIo ||
+				hasArkKind(nodesByRegisteredId[this.reference as NodeId], "root"))
+		resolvingAliases.push(this)
+		inProgress.resolutions++
+		if (readsIo) inProgress.ioReads++
+		let resolution: BaseRoot
+		try {
+			resolution = this._resolve()
+			if (resolution.hasKind("alias")) resolution = resolution.resolution
+			if (this.resolve) resolution.isAliasResolution = true
+			if (this.resolve ? isFinal : this.$.resolved)
+				this._resolution = resolution
+		} finally {
+			resolvingAliases.pop()
+			inProgress.resolutions--
+			if (readsIo) inProgress.ioReads--
+		}
+		assertUnchecked()
+		return resolution
 	}
 
 	protected _resolve(): BaseRoot {
@@ -116,6 +150,11 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		const id = this.reference as NodeId
 
 		let resolution = nodesByRegisteredId[id]
+		if (hasArkKind(resolution, "context") && resolution.alias) {
+			return resolution.phase === "member" ?
+					resolution.resolution!
+				:	resolution.$.resolveRoot(resolution.alias)
+		}
 		const seen: NodeId[] = []
 		while (hasArkKind(resolution, "context")) {
 			if (seen.includes(resolution.id)) {
@@ -132,12 +171,27 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 Seen: [${seen.join("->")}] 
 Resolution: ${printable(resolution)}`)
 		}
-		return resolution
+		return resolveShallowAliases(resolution)
+	}
+
+	get isIo(): boolean {
+		return this.operator === "In" || this.operator === "Out"
+	}
+
+	get hasResolvableOperands(): boolean {
+		return this.operands!.every(isResolvable)
+	}
+
+	operandsBesides(node: BaseNode): BaseRoot[] | undefined {
+		if (this.operator !== "&") return
+		const others = this.operands!.filter(
+			operand => identityOf(operand) !== identityOf(node)
+		)
+		return others.length < this.operands!.length ? others : undefined
 	}
 
 	get resolutionId(): NodeId {
-		if (this.reference.includes("&") || this.reference.includes("=>"))
-			return this.resolution.id
+		if (this.resolve) return this.resolution.id
 		if (this.reference[0] !== "$") return this.reference as NodeId
 		const alias = this.reference.slice(1)
 		const resolution = this.$.resolutions[alias]
@@ -150,43 +204,204 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	get defaultShortDescription(): string {
-		return domainDescriptions.object
+		return isResolutionFinal() ?
+				this.resolution.defaultShortDescription
+			:	domainDescriptions.object
 	}
 
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		return this.resolution.toJsonSchemaRecurse(ctx)
+	override getIo(ioKind: "in" | "out"): BaseRoot {
+		if (!isIoFinal() || !this.transforms) return this
+		const operator = ioKind === "in" ? "In" : "Out"
+		return this.$.lazilyResolve(
+			() => {
+				const ioOf = (alias: AliasNode) =>
+					ioKind === "in" ? alias.resolution.rawIn : alias.resolution.rawOut
+				const aliases: AliasNode[] = [this]
+				let io = ioOf(this)
+				while (io.hasKind("alias") && io.operator === operator) {
+					const aliased = io.operands![0] as AliasNode
+					if (aliases.includes(aliased)) return $ark.intrinsic.never.internal
+					aliases.push(aliased)
+					io = ioOf(aliased)
+				}
+				return io
+			},
+			`${operator}<${identityOf(this)}>`,
+			operator,
+			[this]
+		)
+	}
+
+	get nestableExpression(): string {
+		if (this.operator === "&" || this.operator === "=>")
+			return `(${this.expression})`
+		const referenced = nodesByRegisteredId[this.reference as NodeId]
+		return (
+				hasArkKind(referenced, "root") &&
+					referenced.expression === this.expression
+			) ?
+				referenced.nestableExpression
+			:	this.expression
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) => {
-		const seen = ctx.seen[this.reference]
-		if (seen?.includes(data)) return true
-		ctx.seen[this.reference] = append(seen, data)
-		return this.resolution.traverseAllows(data, ctx)
+		if (!this.closesCycle) return this.resolution.traverseAllows(data, ctx)
+		if (typeof ctx === "number") {
+			if (ctx < maxAliasDepth && ++aliasVisits.count <= maxAliasVisits)
+				return this.resolution.traverseAllows(data, ctx + 1)
+			const tracked = aliasVisits.exceed(data)
+			if (!tracked) return false
+			ctx = tracked
+		}
+		return (
+			ctx.enterResolution(this.resolution.id, data) ??
+			ctx.exitResolution(this.resolution.traverseAllows(data, ctx))
+		)
 	}
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		const seen = ctx.seen[this.reference]
-		if (seen?.includes(data)) return
-		ctx.seen[this.reference] = append(seen, data)
-		this.resolution.traverseApply(data, ctx)
+		const resolution = this.resolution
+		applyResolution(resolution.id, resolution.traverseApply, data, ctx)
 	}
 
-	compile(js: NodeCompiler): void {
-		const id = this.resolutionId
-		js.if(`ctx.seen.${id} && ctx.seen.${id}.includes(data)`, () =>
-			js.return(true)
+	traverseTransform: TraverseTransform = (data, ctx) =>
+		ctx.transformResolution(
+			this.resolution.id,
+			data,
+			this.resolution.traverseTransform
 		)
-		js.if(`!ctx.seen.${id}`, () => js.line(`ctx.seen.${id} = []`))
-		js.line(`ctx.seen.${id}.push(data)`)
-		js.return(js.invoke(id))
+
+	compile(js: NodeCompiler): void {
+		const resolution = this.resolution
+		const id = resolution.id
+		if (js.traversalKind === "Transform") {
+			js.return(
+				`ctx.transformResolution("${id}", data, ${js.referenceToId(id, { kind: "Transform" })})`
+			)
+			return
+		}
+		if (js.traversalKind === "Apply") {
+			js.invokeResolution(resolution, id)
+			return
+		}
+		const traverse = js.invoke(resolution)
+		if (!this.closesCycle) {
+			js.return(traverse)
+			return
+		}
+		const allows = js.referenceToId(id, { kind: "Allows" })
+		const visits = js.ref(aliasVisits)
+		js.if(`typeof ctx === "number"`, () =>
+			js
+				.if(
+					`ctx < ${maxAliasDepth} && ++${visits}.count <= ${maxAliasVisits}`,
+					() => js.return(`${allows}(data, ctx + 1)`)
+				)
+				.set("ctx", `${visits}.exceed(data)`)
+				.if("!ctx", () => js.return("false"))
+		)
+		js.const("reached", `ctx.enterResolution("${id}", data)`)
+		js.if("reached !== undefined", () => js.return("reached"))
+		js.return(`ctx.exitResolution(${traverse})`)
 	}
 }
 
-export const writeShallowCycleErrorMessage = (
-	name: string,
-	seen: string[]
-): string =>
-	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join("->")}`
+const expressionOf = (node: AliasNode): string => {
+	if (node.operands) {
+		const joinsOperands = node.operator === "&" || node.operator === "=>"
+		const operands = node.operands.map(operand =>
+			joinsOperands ? operand.nestableExpression
+			: nestsOperations(operand) ? "..."
+			: operand.expression
+		)
+		return joinsOperands ?
+				operands.join(node.operator)
+			:	`${node.operator}<${operands.join(", ")}>`
+	}
+	const referenced = nodesByRegisteredId[node.reference as NodeId]
+	if (hasArkKind(referenced, "root")) return referenced.expression
+	return hasArkKind(referenced, "context") && referenced.alias ?
+			`$${referenced.alias}`
+		:	node.reference
+}
+
+const operationsOf = (node: BaseRoot, seen: BaseRoot[] = []): AliasNode[] => {
+	if (!node.includesAlias || seen.includes(node)) return []
+	seen.push(node)
+	const operations: AliasNode[] = []
+	for (const reference of node.references) {
+		if (!reference.hasKind("alias")) continue
+		if (reference.operands) operations.push(reference)
+		else {
+			const referenced = nodesByRegisteredId[reference.reference as NodeId]
+			if (hasArkKind(referenced, "root"))
+				operations.push(...operationsOf(referenced, seen))
+		}
+	}
+	return operations
+}
+
+const nestsOperations = (arg: BaseRoot): boolean =>
+	operationsOf(arg).some(operation =>
+		operation.operands!.some(operand => operationsOf(operand).length !== 0)
+	)
+
+const aliasNameOf = (node: AliasNode): string =>
+	node.expression[0] === "$" ? node.expression.slice(1) : node.expression
+
+const resolvingAliases: AliasNode[] = []
+
+export const resolveShallowAliases = (node: BaseRoot): BaseRoot => {
+	if (!node.includesShallowAlias) return node
+	if (node.hasKind("alias")) return node.resolution
+	if (node.hasKind("union")) {
+		return node.$.node("union", {
+			...node.inner,
+			branches: node.branches.map(resolveShallowAliases),
+			meta: node.meta
+		} as never)
+	}
+	if (node.hasKind("morph")) {
+		return node.$.node("morph", {
+			...node.inner,
+			in: node.inner.in && resolveShallowAliases(node.inner.in),
+			meta: node.meta
+		} as never)
+	}
+	return throwInternalError(
+		`Unexpected shallow alias in ${node.kind} node ${node.expression}`
+	)
+}
+
+export const identityOf = (node: BaseNode): string =>
+	node.hasKind("alias") ? node.reference : node.id
+
+export const isResolvable = (node: BaseRoot): boolean => {
+	if (!node.includesShallowAlias) return true
+	if (node.hasKind("union")) return node.branches.every(isResolvable)
+	if (node.hasKind("morph"))
+		return !node.inner.in || isResolvable(node.inner.in)
+	if (!node.hasKind("alias") || resolvingAliases.includes(node)) return false
+	if (node.isIo) return isResolvable(node.operands![0])
+	// a transform's alias resolves to what it transformed once the transform returns
+	if (node.resolve && !node.operator) return isResolutionFinal()
+	const referenced = nodesByRegisteredId[node.reference as NodeId]
+	return hasArkKind(referenced, "root") && isResolvable(referenced)
+}
+
+export const writeShallowCycleErrorMessage = <
+	name extends string,
+	seen extends array<string>
+>(
+	name: name,
+	seen: seen
+): writeShallowCycleErrorMessage<name, seen> =>
+	`Alias '${name}' has a shallow resolution cycle: ${[...seen, name].join("->")}` as never
+
+export type writeShallowCycleErrorMessage<
+	name extends string,
+	seen extends array<string>
+> = `Alias '${name}' has a shallow resolution cycle: ${join<[...seen, name], "->">}`
 
 export const Alias = {
 	implementation,

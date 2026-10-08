@@ -1,5 +1,16 @@
-import type { ArkErrors, arkKind, flatResolutionsOf } from "@ark/schema"
-import type { Brand, inferred } from "@ark/util"
+import {
+	fixGlobalConfig,
+	RootModule,
+	type ArkErrors,
+	type arkKind,
+	type flatResolutionsOf
+} from "@ark/schema"
+import {
+	defineLazily,
+	defineProperties,
+	type Brand,
+	type inferred
+} from "@ark/util"
 import type { distill, InferredMorph, Out, To } from "../attributes.ts"
 import type { DeclarationParser } from "../declare.ts"
 import type { FnParser } from "../fn.ts"
@@ -19,11 +30,18 @@ import type {
 } from "../type.ts"
 import type { BaseType } from "../variants/base.ts"
 import type { instantiateType } from "../variants/instantiate.ts"
-import { arkBuiltins } from "./builtins.ts"
-import { arkPrototypes } from "./constructors.ts"
+import { builtinDefinitions, type arkBuiltins } from "./builtins.ts"
+import { prototypeDefinitions, type arkPrototypes } from "./constructors.ts"
 import { number } from "./number.ts"
 import { string } from "./string.ts"
-import { arkTsGenerics, arkTsKeywords, object, unknown } from "./ts.ts"
+import {
+	object,
+	tsGenericDefinitions,
+	tsKeywordDefinitions,
+	unknown,
+	type arkTsGenerics,
+	type arkTsKeywords
+} from "./ts.ts"
 
 export interface Ark
 	extends Omit<Ark.keywords, keyof Ark.wrapped>,
@@ -58,12 +76,15 @@ export declare namespace Ark {
 		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
 }
 
+// keywords are built on first reference, from the config as it is now
+fixGlobalConfig()
+
 export const ark: Scope<Ark> = scope(
 	{
-		...arkTsKeywords,
-		...arkTsGenerics,
-		...arkPrototypes,
-		...arkBuiltins,
+		...tsKeywordDefinitions,
+		...tsGenericDefinitions,
+		...prototypeDefinitions,
+		...builtinDefinitions,
 		string,
 		number,
 		object,
@@ -72,36 +93,45 @@ export const ark: Scope<Ark> = scope(
 	{ prereducedAliases: true, name: "ark" }
 ) as never
 
-export const keywords: Module<Ark> = ark.export()
+const arkExports: Module<Ark> = ark.internal.exportLazily() as never
 
-Object.assign($arkTypeRegistry.ambient, keywords)
+export const keywords: Module<Ark> = defineProperties(
+	new RootModule({}),
+	arkExports
+) as never
 
-$arkTypeRegistry.typeAttachments = {
-	string: keywords.string.root,
-	number: keywords.number.root,
-	bigint: keywords.bigint,
-	boolean: keywords.boolean,
-	symbol: keywords.symbol,
-	undefined: keywords.undefined,
-	null: keywords.null,
-	object: keywords.object.root,
-	unknown: keywords.unknown.root,
-	false: keywords.false,
-	true: keywords.true,
-	never: keywords.never,
-	arrayIndex: keywords.Array.index,
-	Key: keywords.Key,
-	Record: keywords.Record,
-	Array: keywords.Array.root,
-	Date: keywords.Date
-}
+defineProperties($arkTypeRegistry.ambient, arkExports)
 
-export const type: TypeParser<{}> = Object.assign(
+const typeAttachments = {} as Ark.boundTypeAttachments<any>
+
+for (const [k, resolve] of Object.entries({
+	string: () => arkExports.string.root,
+	number: () => arkExports.number.root,
+	bigint: () => arkExports.bigint,
+	boolean: () => arkExports.boolean,
+	symbol: () => arkExports.symbol,
+	undefined: () => arkExports.undefined,
+	null: () => arkExports.null,
+	object: () => arkExports.object.root,
+	unknown: () => arkExports.unknown.root,
+	false: () => arkExports.false,
+	true: () => arkExports.true,
+	never: () => arkExports.never,
+	arrayIndex: () => arkExports.Array.index,
+	Key: () => arkExports.Key,
+	Record: () => arkExports.Record,
+	Array: () => arkExports.Array.root,
+	Date: () => arkExports.Date
+}))
+	defineLazily(typeAttachments, k, resolve)
+
+$arkTypeRegistry.typeAttachments = typeAttachments
+
+export const type: TypeParser<{}> = defineProperties(
 	ark.type,
-	// assign attachments newly parsed in keywords
 	// future scopes add these directly from the
 	// registry when their TypeParsers are instantiated
-	$arkTypeRegistry.typeAttachments
+	typeAttachments
 ) as never
 
 export declare namespace type {

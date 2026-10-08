@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import type { Json } from "@ark/util"
-import { keywords, type } from "arktype"
+import { keywords, scope, type } from "arktype"
 import type { To } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
@@ -12,6 +12,31 @@ contextualize(() => {
 	it("Date", () => {
 		// should not expand built-in classes
 		attest(type("Date").infer).type.toString.snap("Date")
+	})
+
+	it("invalid Date", () => {
+		class NaNTime extends Date {
+			override getTime() {
+				return Number.NaN
+			}
+		}
+		class InvalidString extends Date {
+			override toString() {
+				return "Invalid Date"
+			}
+		}
+		for (const jitless of [false, true]) {
+			const { D } = scope({ D: "Date" }, { jitless }).export()
+			attest(D.allows(new Date(0))).equals(true)
+			attest(D(new Date(Number.NaN)).toString()).equals(
+				"must be a Date (was an invalid Date)"
+			)
+			attest(D.allows(new NaNTime(0))).equals(true)
+			attest(D.allows(new InvalidString(0))).equals(false)
+			attest(D(Object.create(Date.prototype)).toString()).equals(
+				"must be a Date (was an invalid Date)"
+			)
+		}
 	})
 
 	describe("json", () => {
@@ -26,7 +51,7 @@ contextualize(() => {
 			attest(Json([])).equals([])
 			attest(Json(5)?.toString()).snap("must be an object (was a number)")
 			attest(Json({ foo: [5n] })?.toString()).snap(
-				'foo["0"] must be an object (was a bigint)'
+				'foo["0"] must be a number, a string, an object, boolean or null (was a bigint)'
 			)
 		})
 
@@ -39,7 +64,7 @@ contextualize(() => {
 
 			// this error kind of sucks, should have more discriminant context
 			attest(stringify({ foo: undefined }).toString()).snap(
-				"foo must be an object (was undefined)"
+				"foo must be a number, a string, an object, boolean or null (was undefined)"
 			)
 
 			// has declared out

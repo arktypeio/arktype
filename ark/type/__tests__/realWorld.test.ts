@@ -60,25 +60,13 @@ contextualize(() => {
 	provider: "GitHub" | "Google"
 	providerUserId: string
 }`)
-		attest(types.account.json).snap({
+		attest(types.account.json).equals({
 			required: [
 				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
 				{ key: "providerUserId", value: "string" },
 				{
 					key: "user",
-					value: [
-						{
-							required: [{ key: "name", value: "string" }],
-							optional: [
-								{
-									key: "accounts",
-									value: { sequence: "$account", proto: "Array" }
-								}
-							],
-							domain: "object"
-						},
-						"$ark.TimeStub"
-					]
+					value: [`$ark.${types.user.internal.id}`, "$ark.TimeStub"]
 				}
 			],
 			optional: [
@@ -482,9 +470,9 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const standalone = types.JsonSchemaArray.describe("standalone")
 
-		attest(standalone.json).snap({
+		attest(standalone.json).equals({
 			required: [
-				{ key: "items", value: "$JsonSchema" },
+				{ key: "items", value: `$ark.${types.JsonSchema.internal.id}` },
 				{ key: "type", value: { unit: "array" } }
 			],
 			meta: "standalone",
@@ -636,22 +624,20 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			}
 		})
 
-		$.export()
+		const arraySchema = {
+			optional: [
+				{
+					key: "additionalItems",
+					value: `$ark.${$.export().Schema.internal.id}`
+				}
+			],
+			domain: "object"
+		}
 
-		attest($.json).snap({
-			TypeWithKeywords: {
-				optional: [
-					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
-				],
-				domain: "object"
-			},
-			Schema: ["$ArraySchema", "number"],
-			ArraySchema: {
-				optional: [
-					{ key: "additionalItems", value: ["$ArraySchema", "number"] }
-				],
-				domain: "object"
-			}
+		attest($.json).equals({
+			TypeWithKeywords: arraySchema,
+			Schema: ["number", arraySchema],
+			ArraySchema: arraySchema
 		})
 	})
 
@@ -1449,46 +1435,51 @@ date3 must be a parsable date (was "")`)
 
 	// https://github.com/arktypeio/arktype/issues/1367
 	it("cyclic discriminated union issue 2", () => {
-		const componentModule = type.module({
-			container: {
-				type: "'container'",
-				content: "component"
-			},
-
-			flexbox: {
-				type: "'flexbox'",
-				items: "component"
-			},
-
-			tabsItem: {
-				id: "string",
-				title: "component",
-				content: "component"
-			},
-			tabs: {
-				type: "'tabs'",
-				items: "tabsItem[]"
-			},
-
-			singleComponent: "string | flexbox | tabs",
-			component: "singleComponent | singleComponent[]"
-		})
-		const componentSchema = componentModule.component
-
-		const component: typeof componentSchema.infer = {
-			type: "tabs",
-			items: [
+		for (const jitless of [false, true]) {
+			const componentModule = type.module(
 				{
-					id: "tab-id",
-					title: "tab-title",
-					content: []
-				}
-			]
+					container: {
+						type: "'container'",
+						content: "component"
+					},
+
+					flexbox: {
+						type: "'flexbox'",
+						items: "component"
+					},
+
+					tabsItem: {
+						id: "string",
+						title: "component",
+						content: "component"
+					},
+					tabs: {
+						type: "'tabs'",
+						items: "tabsItem[]"
+					},
+
+					singleComponent: "string | flexbox | tabs",
+					component: "singleComponent | singleComponent[]"
+				},
+				{ jitless }
+			)
+			const componentSchema = componentModule.component
+
+			const component: typeof componentSchema.infer = {
+				type: "tabs",
+				items: [
+					{
+						id: "tab-id",
+						title: "tab-title",
+						content: []
+					}
+				]
+			}
+
+			const result = componentSchema(component)
+
+			attest(result).equals(component)
 		}
-
-		const result = componentSchema(component)
-
-		attest(result).equals(component)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1362
@@ -1533,17 +1524,25 @@ date3 must be a parsable date (was "")`)
 
 	// https://github.com/arktypeio/arktype/issues/1640
 	it("cyclic discriminated union with record reference", () => {
-		const Node = scope({
-			Number: { type: "'number'" },
-			Array: { type: "'array'", item: "Node" },
-			Unit: { type: "'unit'" },
-			Container: { things: "Record<string, Node>" },
-			Node: "Number | Array | Unit"
-		}).export().Node
+		for (const jitless of [false, true]) {
+			const Node = scope(
+				{
+					Number: { type: "'number'" },
+					Array: { type: "'array'", item: "Node" },
+					Unit: { type: "'unit'" },
+					Container: { things: "Record<string, Node>" },
+					Node: "Number | Array | Unit"
+				},
+				{ jitless }
+			).export().Node
 
-		const data = { type: "array", item: { type: "number" } } as const
+			const data = { type: "array", item: { type: "number" } } as const
 
-		attest(Node(data)).equals(data)
+			attest(Node(data)).equals(data)
+			attest(Node({ type: "array", item: { type: "nope" } }).toString()).snap(
+				'item.type must be "array", "number" or "unit" (was "nope")'
+			)
+		}
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1284

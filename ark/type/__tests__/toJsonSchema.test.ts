@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 
 contextualize(() => {
 	describe("target option", () => {
@@ -115,5 +115,43 @@ contextualize(() => {
 			attest("$defs" in schema).equals(false)
 			attest(Object.keys(schema.definitions as object).length > 0).equals(true)
 		})
+	})
+
+	const referencedDefs = (schema: object) =>
+		[...new Set(JSON.stringify(schema).match(/(?<="#\/\$defs\/)[^"]+/g))].sort()
+
+	// https://github.com/arktypeio/arktype/issues/1546
+	it("discriminated union in a recursive scope", () => {
+		const s = scope({
+			TypeA: { kind: "'a'", value: "number" },
+			TypeB: { kind: "'b'", value: "number" },
+			Union: "TypeA | TypeB",
+			Node: { source: "SearchNode", data: "Union" },
+			SearchNode: "Node"
+		})
+		const out = s.type("SearchNode").toJsonSchema()
+
+		attest(referencedDefs(out)).equals(Object.keys(out.$defs!).sort())
+
+		const recursive = scope({
+			Node: { value: "string", "children?": "Node[]" }
+		}).export().Node
+		const union2 = type.or(
+			type({ kind: "'a'", value: "string" }),
+			type({ kind: "'b'", value: "number" })
+		)
+		const withUnion = type({ recursive, union: union2 }).toJsonSchema()
+
+		attest(referencedDefs(withUnion)).equals(
+			Object.keys(withUnion.$defs!).sort()
+		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1612
+	it("refs to a structure in a union", () => {
+		const Thing = type({ a: "string" }).or("null")
+		const out = Thing.toJsonSchema({ useRefs: true })
+
+		attest(referencedDefs(out)).equals(Object.keys(out.$defs!).sort())
 	})
 })

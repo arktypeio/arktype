@@ -1002,7 +1002,7 @@ const User = type({
 const out = User({ name: "Alan", age: "not a number" })
 
 if (out instanceof type.errors) {
-	// ArkErrors — array-like with .summary
+	// ArkErrors — iterable, with .summary and an .issues array
 	console.error(out.summary)
 } else {
 	// out is typed as { name: string; age?: number }
@@ -1128,9 +1128,10 @@ Some options only apply at specific levels, as reflected in the corresponding in
 	title='Use the `"arktype/config"` entrypoint in a separate file for global config!'
 >
 	If you need your config to apply to built-in keywords (important for options
-	like `jitless`, `numberAllowsNaN`, `dateAllowsInvalid`), you should import and
-	`configure` from `"arktype/config"` before importing anything from
-	`"arktype"`.
+	like `jitless`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`),
+	you should import and `configure` from `"arktype/config"` before importing
+	anything else from `"arktype"` or `"@ark/schema"`, including deep imports
+	like `"arktype/internal/*"`.
 
 Otherwise, keywords will have already been parsed by the time your config applies!
 
@@ -1272,7 +1273,7 @@ mod.isEven(3)
 
 #### ArkErrors
 
-For use cases like i18n that fall outside the scope of this composable message config, the `ArkErrors` array returned on validation failure contains `ArkError` instances that can be discriminated via calls like `.hasCode("divisor")` and contain contextual data specific to that error type as well as getters for each composable error part.
+For use cases like i18n that fall outside the scope of this composable message config, the `ArkErrors` returned on validation failure contains `ArkError` instances that can be discriminated via calls like `.hasCode("divisor")` and contain contextual data specific to that error type as well as getters for each composable error part.
 
 These `ArkError` instances can be arbitrarily transformed and composed with an internationalization library. This is still a topic we're working on investigating and documenting, so please reach out with any questions or feedback!
 
@@ -1339,56 +1340,6 @@ const out = User({
 
 The options you can provide here are identical to those used to [configure a Type directly](/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](/docs/configuration#metadata).
 
-### Clone
-
-By default, before a [morph](/docs/intro/morphs-and-more) is applied, ArkType will deeply clone the original input value with a built-in `deepClone` function that tries to make reasonable assumptions about preserving prototypes etc. The implementation of `deepClone` can be found [here](https://github.com/arktypeio/arktype/blob/main/ark/util/clone.ts).
-
-You can provide an alternate clone implementation to the `clone` config option.
-
-```ts title="config.ts"
-import { configure } from "arktype/config"
-
-configure({ clone: structuredClone })
-```
-
-```ts title="app.ts"
-import "./config.ts"
-// import your config file before arktype
-import { type } from "arktype"
-
-// will now create a new object using structuredClone
-const UserForm = type({
-	age: "string.numeric.parse"
-})
-```
-
-To mutate the input object directly, you can set the `clone` config option to `false`.
-
-```ts title="config.ts"
-import { configure } from "arktype/config"
-
-configure({ clone: false })
-```
-
-```ts title="app.ts"
-import "./config.ts"
-// import your config file before arktype
-import { type } from "arktype"
-
-const UserForm = type({
-	age: "string.numeric.parse"
-})
-
-const formData = {
-	age: "42"
-}
-
-const out = UserForm(formData)
-
-// the original object's age key is now a number
-console.log(formData.age)
-```
-
 ### onUndeclaredKey
 
 Like TypeScript, ArkType defaults to ignoring undeclared keys during validation. However, it also supports two additional behaviors:
@@ -1420,6 +1371,33 @@ const out = UserForm({
 	age: "42"
 })
 ```
+
+`"reject"` checks symbol keys too, which costs an extra read per object. If you don't need undeclared symbol keys rejected, you can allow them for faster validation:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({ rejectAllowsSymbolKeys: true })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const User = type({
+	"+": "reject",
+	name: "string"
+})
+
+// valid, since undeclared symbol keys are now allowed
+const out = User({
+	name: "Alice",
+	[Symbol("id")]: 1
+})
+```
+
+With it, reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate.
 
 ### exactOptionalPropertyTypes
 
@@ -2270,6 +2248,18 @@ const trimStringStart = type("string", "=>", str => str.trimStart())
     </SyntaxTab>
 
 </SyntaxTabs>
+
+A morph receives the validated value itself rather than a copy, so a morph that mutates its argument mutates the caller's data. ArkType never writes to its input: a transformed object is a new object that shares every untransformed value with the input, and input that nothing transforms is returned as is.
+
+```ts
+const T = type({ a: "string.trim", b: { c: "string" } })
+const input = { a: " x ", b: { c: "y" } }
+
+const out = T.assert(input)
+
+out === input // false
+out.b === input.b // true
+```
 
 #### To
 
@@ -5324,6 +5314,16 @@ const Bounded = type({
 
 </SyntaxTabs>
 
+Dates in descriptions and error messages are written in UTC. A date at UTC or local midnight is written as its calendar date, or just its year on January 1:
+
+```ts
+// a Date and 2023 or later
+type("Date >= d'2023-01-01'").description
+
+// a Date and January 1, 2023, 2:30 PM UTC or later
+type("Date >= d'2023-01-01T14:30Z'").description
+```
+
 ## instanceof
 
 Most built-in instance types like `Array` and `Date` are available directly as keywords, but `instanceof` can be useful for constraining a type to one of your own classes.
@@ -5421,7 +5421,7 @@ const Literals = type({
 })
 ```
 
-Regex literals now carry full type inference via [arkregex](/docs/blog/arkregex):
+Regex literals now carry full type inference via [ArkRegex](/docs/regex):
 
 ```ts
 const Hex = type("/^[0-9a-fA-F]+$/")
@@ -5448,7 +5448,7 @@ data.birthday.groups.day // "21"
 data.birthday.groups.year // "1993"
 ```
 
-For the standalone package (no ArkType required), see the full [arkregex announcement](/docs/blog/arkregex).
+For the standalone package (no ArkType required), see the [ArkRegex docs](/docs/regex).
 
 ### lengths [#string-lengths]
 
@@ -5513,6 +5513,14 @@ const Range = type({
 </SyntaxTabs>
 
 ## number
+
+`number` rejects `NaN`, `Infinity` and `-Infinity`. Allow them in a single type with the `number.NaN`, `number.Infinity` and `number.NegativeInfinity` keywords:
+
+```ts
+const T = type("number | number.Infinity | number.NegativeInfinity")
+```
+
+To allow them everywhere, set `numberAllowsNaN` or `numberAllowsInfinity` in your [global config](/docs/configuration#levels).
 
 ### keywords [#number-keywords]
 
@@ -6013,6 +6021,8 @@ export const types = scope({
 
 Cyclic types are inferred to arbitrary depth. At runtime, they can safely validate cyclic data.
 
+A cycle must pass through an object, array or morph. An alias that resolves to itself without one, like `a` in `scope({ a: "a | string" })`, is a type error and throws a `ParseError`.
+
 ```ts
 export const types = scope({
 	Package: {
@@ -6299,7 +6309,7 @@ if (out instanceof type.errors) {
 
 ### ArkErrors
 
-The `ArkErrors` array returned on validation failure contains `ArkError` instances with structured data:
+The `ArkErrors` returned on validation failure holds `ArkError` instances with structured data. It is iterable and has a `length`, but it isn't an array. Index it or call array methods through `issues`:
 
 ```ts
 const T = type({ n: "number % 2", m: "number >= 2" })
@@ -6313,6 +6323,9 @@ if (out instanceof type.errors) {
 			console.log(error.rule) // 2
 		}
 	}
+
+	// an array with one ArkError per path
+	out.issues.map(error => error.message) // ["m must be at least 2 (was 0)", "n must be even (was 1)"]
 
 	// structured access by path
 	out.flatByPath // { m: [ArkError], n: [ArkError] }

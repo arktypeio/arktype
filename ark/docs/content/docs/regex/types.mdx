@@ -1,0 +1,66 @@
+---
+title: Types
+---
+
+## `Regex`
+
+`Regex<pattern, ctx>` extends `RegExp`, so it can be passed anywhere a `RegExp` is expected.
+
+Its type parameters can be extracted from an instance:
+
+```ts
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})$")
+
+type Pattern = typeof date.infer
+//   ^?
+
+type Captures = typeof date.inferCaptures
+//   ^?
+
+type Names = typeof date.inferNamedCaptures
+//   ^?
+```
+
+Or used to constrain one:
+
+```ts
+import type { Regex } from "arkregex"
+
+const parseVersion = (r: Regex<`${number}.${number}`>) => {}
+
+parseVersion(regex("^(\\d+)\\.(\\d+)$"))
+```
+
+## `regex.infer`
+
+Infers the pattern of an expression without creating an instance:
+
+```ts
+import { regex } from "arkregex"
+
+type Version = regex.infer<"^(\\d+)\\.(\\d+)$">
+//   ^?
+```
+
+`regex.parse` gives you the full `Regex` type, and `regex.validate` the parameter type `regex` uses to report errors, so you can write your own wrappers:
+
+```ts
+import { regex } from "arkregex"
+
+const anchored = <src extends string>(
+	src: regex.validate<src>
+): regex.parse<`^${src}$`> => regex.as(`^${src}$`) as never
+
+const ab = anchored("a(b)")
+//    ^?
+```
+
+## `regex.as`
+
+If an expression is too long or complex for TypeScript to infer (e.g. you see `Type instantiation is excessively deep`), you can type it manually with `regex.as`. It skips parsing and validation entirely:
+
+```ts
+const complexPattern = regex.as<`pattern-${string}`, { captures: [string] }>(
+	"very-long-complex-expression-here"
+)
+```

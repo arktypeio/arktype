@@ -1,11 +1,10 @@
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import type { NodeErrorContextInput } from "../shared/errors.ts"
 import {
-	compileObjectLiteral,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import { BaseProp, intersectProps, type Prop } from "./prop.ts"
+import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Required {
 	export interface ErrorContext extends BaseErrorContext<"required"> {
@@ -37,7 +36,7 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.parseSchema(schema)
+				parse: (schema, ctx) => ctx.$.parseStructuralValue(schema)
 			}
 		},
 		normalize: schema => schema,
@@ -45,24 +44,21 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			description: node => `${node.compiledKey}: ${node.value.description}`,
 			expected: ctx => ctx.missingValueDescription,
 			actual: () => "missing"
-		},
-		intersections: {
-			required: intersectProps,
-			optional: intersectProps
 		}
 	})
 
 export class RequiredNode extends BaseProp<"required"> {
 	expression = `${this.compiledKey}: ${this.value.expression}`
 
-	errorContext: NodeErrorContextInput<"required"> = Object.freeze({
-		code: "required",
-		missingValueDescription: this.value.defaultShortDescription,
-		relativePath: [this.key],
-		meta: this.meta
-	})
-
-	compiledErrorContext: string = compileObjectLiteral(this.errorContext)
+	private _errorContext: NodeErrorContextInput<"required"> | undefined
+	get errorContext(): NodeErrorContextInput<"required"> {
+		return (this._errorContext ??= Object.freeze({
+			code: "required",
+			missingValueDescription: this.value.defaultShortDescription,
+			relativePath: [this.key],
+			meta: this.meta
+		}))
+	}
 }
 
 export const Required = {

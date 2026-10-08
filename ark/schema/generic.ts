@@ -7,12 +7,24 @@ import {
 	type Hkt,
 	type JsonStructure
 } from "@ark/util"
+import { intrinsic } from "./intrinsic.ts"
 import type { RootSchema } from "./kinds.ts"
-import type { BaseNode } from "./node.ts"
+import { isMutuallySimulated, type BaseNode } from "./node.ts"
+import { registerNodeId, type NodeId } from "./parse.ts"
+import {
+	identityOf,
+	isResolvable,
+	resolveShallowAliases
+} from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
-import { $ark } from "./shared/registry.ts"
-import { arkKind } from "./shared/utils.ts"
+import { Disjoint } from "./shared/disjoint.ts"
+import {
+	arkKind,
+	inProgress,
+	isResolutionFinal,
+	queueUnchecked
+} from "./shared/utils.ts"
 
 export type GenericParamAst<
 	name extends string = string,
@@ -26,8 +38,9 @@ export type GenericParamDef<name extends string = string> =
 export const parseGeneric = (
 	paramDefs: array<GenericParamDef>,
 	bodyDef: unknown,
-	$: BaseScope
-): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $, null)
+	$: BaseScope,
+	alias?: string
+): GenericRoot => new GenericRoot(paramDefs, bodyDef, $, $, null, alias)
 
 export type genericParamNames<params extends array<GenericParamAst>> = {
 	[i in keyof params]: params[i][0]
@@ -47,6 +60,8 @@ export class LazyGenericBody<
 	argResolutions = {},
 	returns = unknown
 > extends Callable<(args: argResolutions) => returns> {}
+
+export class LazyGenericRoot extends Callable<() => GenericRoot> {}
 
 export interface GenericAst<
 	params extends array<GenericParamAst> = array<GenericParamAst>,
@@ -75,39 +90,43 @@ export class GenericRoot<
 	bodyDef: bodyDef
 	$: BaseScope
 	arg$: BaseScope
-	baseInstantiation: BaseRoot
 	hkt: Hkt.constructor | null
 	description: string
+	alias: string | undefined
+	private instantiations: Record<string, BaseRoot | NodeId> = {}
+	private openInstantiations = 0
 
 	constructor(
 		paramDefs: array<GenericParamDef>,
 		bodyDef: bodyDef,
 		$: BaseScope,
 		arg$: BaseScope,
-		hkt: Hkt.constructor | null
+		hkt: Hkt.constructor | null,
+		alias?: string
 	) {
 		super((...args: any[]) => {
-			const argNodes = flatMorph(this.names, (i, name) => {
-				const arg = this.arg$.parse(args[i])
-				if (!arg.extends(this.constraints[i])) {
-					throwParseError(
-						writeUnsatisfiedParameterConstraintMessage(
-							name,
-							this.constraints[i].expression,
-							arg.expression
-						)
-					)
-				}
-				return [name, arg]
-			}) as GenericArgResolutions<any>
-
-			if (this.defIsLazy()) {
-				const def = this.bodyDef(argNodes)
-
-				return this.$.parse(def)
+			const argNodes = flatMorph(this.names, (i, name) => [
+				name,
+				this.arg$.parse(args[i])
+			]) as GenericArgResolutions<any>
+			const argList = this.names.map(name => argNodes[name])
+			const key = argList.map(identityOf).join(",")
+			if (
+				argList.some(
+					(arg, i) =>
+						!this.constraints[i].isUnknown() &&
+						!(isResolvable(arg) && isResolvable(this.constraints[i]))
+				)
+			) {
+				const depth = this.openInstantiations
+				return this.arg$.lazilyResolve(
+					() => this.instantiate(key, argNodes, depth),
+					`${this.id}<${key}>`,
+					this.alias ?? "generic",
+					argList
+				)
 			}
-
-			return this.$.parse(bodyDef, { args: argNodes })
+			return this.instantiate(key, argNodes)
 		})
 
 		this.paramDefs = paramDefs
@@ -119,7 +138,92 @@ export class GenericRoot<
 			hkt ?
 				(new hkt().description ?? `a generic type for ${hkt.constructor.name}`)
 			:	"a generic type"
-		this.baseInstantiation = this(...(this.constraints as any)) as never
+		this.alias = alias
+		if ($.resolved || !alias) void this.baseInstantiation
+	}
+
+	get id(): NodeId {
+		return this.cacheGetter("id", registerNodeId(this.alias ?? "generic"))
+	}
+
+	get baseInstantiation(): BaseRoot {
+		return this.cacheGetter(
+			"baseInstantiation",
+			this(...(this.constraints as any)) as never
+		)
+	}
+
+	private instantiate(
+		key: string,
+		argNodes: GenericArgResolutions<any>,
+		depth = this.openInstantiations
+	): BaseRoot {
+		const instantiation = this.instantiations[key]
+		if (typeof instantiation === "string") {
+			return this.$.node(
+				"alias",
+				{
+					reference: instantiation,
+					operator: this.alias ?? "generic",
+					operands: this.names.map(name => argNodes[name])
+				},
+				{ prereduced: true }
+			)
+		}
+		if (instantiation) return instantiation
+		for (let i = 0; i < this.names.length; i++) {
+			const constraint = this.constraints[i]
+			if (constraint.isUnknown()) continue
+			const name = this.names[i]
+			const arg = argNodes[name]
+			const resolvedArg = (argNodes[name] = resolveShallowAliases(arg))
+			const resolvedConstraint = resolveShallowAliases(constraint)
+			if (resolvedArg.extends(resolvedConstraint)) continue
+			const unsatisfied = () =>
+				throwParseError(
+					writeUnsatisfiedParameterConstraintMessage(
+						name,
+						constraint.expression,
+						arg.expression
+					)
+				)
+			if (isResolutionFinal() || !mayExtend(resolvedArg, resolvedConstraint))
+				unsatisfied()
+			queueUnchecked(
+				() => resolvedArg.extends(resolvedConstraint) || unsatisfied()
+			)
+		}
+		const open = this.openInstantiations
+		if (
+			Math.max(open, depth) === maxOpenInstantiations ||
+			((open || depth) &&
+				this.names.reduce(
+					(length, name) => length + argNodes[name].hash.length,
+					0
+				) > maxOpenArgumentsLength)
+		) {
+			throwParseError(
+				writeUnclosedGenericCycleMessage(this.alias ?? this.description)
+			)
+		}
+		const id = registerNodeId(this.alias ?? "generic")
+		this.instantiations[key] = id
+		this.openInstantiations = Math.max(open, depth) + 1
+		try {
+			const node =
+				this.defIsLazy() ?
+					this.$.parse(this.bodyDef(argNodes))
+				:	this.$.parse(this.bodyDef, { args: argNodes, id })
+			if (inProgress.definitions && node.includesShallowAlias)
+				delete this.instantiations[key]
+			else this.instantiations[key] = node
+			return node
+		} catch (e) {
+			delete this.instantiations[key]
+			throw e
+		} finally {
+			this.openInstantiations = open
+		}
 	}
 
 	defIsLazy(): this is GenericRoot<params, LazyGenericBody> {
@@ -148,8 +252,8 @@ export class GenericRoot<
 			"params",
 			this.paramDefs.map(param =>
 				typeof param === "string" ?
-					[param, $ark.intrinsic.unknown]
-				:	[param[0], this.$.parse(param[1])]
+					[param, intrinsic.unknown]
+				:	[param[0], this.$.parseDefinition(param[1])]
 			) as never
 		)
 	}
@@ -205,6 +309,22 @@ export type GenericRootBodyParser<params extends array<GenericParamAst>> = {
 		InstanceType<hkt>
 	>
 }
+
+const maxOpenInstantiations = 100
+
+const maxOpenArgumentsLength = 1_000_000
+
+const mayExtend = (l: BaseRoot, r: BaseRoot): boolean => {
+	if (!l.includesAlias && !r.includesAlias) return false
+	const intersection = l.intersect(r, false)
+	return (
+		!(intersection instanceof Disjoint) &&
+		isMutuallySimulated(l, intersection, false)
+	)
+}
+
+export const writeUnclosedGenericCycleMessage = (name: string): string =>
+	`Instantiating ${name} recursed with new arguments more than ${maxOpenInstantiations} times`
 
 export const writeUnsatisfiedParameterConstraintMessage = <
 	name extends string,

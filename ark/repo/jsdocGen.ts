@@ -149,7 +149,9 @@ const assertBuildDirExists = (path: string) => {
 const extractNameAndGroup = (
 	doc: JSDoc
 ): { name: string; group: ApiGroup } | undefined => {
-	const name = doc.getNextSiblingIfKind(SyntaxKind.Identifier)?.getText()
+	const name =
+		doc.getNextSiblingIfKind(SyntaxKind.Identifier)?.getText() ??
+		doc.getParentIfKind(SyntaxKind.GetAccessor)?.getName()
 	if (!name) return undefined
 
 	const filePath = doc.getSourceFile().getFilePath()

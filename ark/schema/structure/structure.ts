@@ -1,59 +1,54 @@
 import {
 	append,
 	conflatenate,
+	conflatenateAll,
 	flatMorph,
+	nameOf,
 	printable,
 	spliterate,
-	throwInternalError,
 	throwParseError,
+	WeakCache,
 	type array,
 	type describe,
-	type dict,
 	type Key,
 	type listable
 } from "@ark/util"
-import {
-	BaseConstraint,
-	constraintKeyParser,
-	flattenConstraints,
-	intersectConstraints
-} from "../constraint.ts"
+import { BaseConstraint, constraintKeyParser } from "../constraint.ts"
 import { intrinsic } from "../intrinsic.ts"
-import type { nodeOfKind } from "../kinds.ts"
-import type { GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
+import type { BaseNode, GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
-import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
+import {
+	compileSerializedValue,
+	type NodeCompiler,
+	type TransformStep
+} from "../shared/compile.ts"
 import type {
 	attachmentsOf,
 	BaseNormalizedSchema,
 	declareNode
 } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
 import {
 	implementNode,
 	type nodeImplementationOf,
 	type StructuralKind
 } from "../shared/implement.ts"
-import { intersectNodesRoot } from "../shared/intersections.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
+import { $ark } from "../shared/registry.ts"
+import { copyOf, mergeTransformed } from "../shared/transform.ts"
 import {
-	$ark,
-	registeredReference,
-	type RegisteredReference
-} from "../shared/registry.ts"
-import { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import {
+	applyValue,
 	traverseKey,
 	type InternalTraversal,
 	type TraversalKind,
 	type TraverseAllows,
-	type TraverseApply
+	type TraverseApply,
+	type TraverseTransform
 } from "../shared/traversal.ts"
 import {
 	hasArkKind,
 	isNode,
+	isResolutionFinal,
 	makeRootAndArrayPropertiesMutable
 } from "../shared/utils.ts"
 import type { Index } from "./index.ts"
@@ -61,11 +56,12 @@ import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required, RequiredNode } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
+import { arrayIndexMatcher } from "./shared.ts"
 
 /**
  * - `"ignore"` (default) - allow and preserve extra properties
  * - `"reject"` - disallow extra properties
- * - `"delete"` - clone and remove extra properties from output
+ * - `"delete"` - remove extra properties from output
  */
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
@@ -78,6 +74,7 @@ export declare namespace Structure {
 		readonly index?: readonly Index.Schema[]
 		readonly sequence?: Sequence.Schema
 		readonly undeclared?: UndeclaredKeyBehavior
+		readonly rejectAllowsSymbolKeys?: boolean
 	}
 
 	export interface Inner {
@@ -86,6 +83,7 @@ export declare namespace Structure {
 		readonly index?: readonly Index.Node[]
 		readonly sequence?: Sequence.Node
 		readonly undeclared?: UndeclaredKeyHandling
+		readonly rejectAllowsSymbolKeys?: boolean
 	}
 
 	export namespace Inner {
@@ -124,36 +122,37 @@ const createStructuralWriter =
 const structuralDescription = createStructuralWriter("description")
 const structuralExpression = createStructuralWriter("expression")
 
-const intersectPropsAndIndex = <
-	l extends nodeOfKind<"required"> | nodeOfKind<"optional">
->(
-	l: l,
-	r: nodeOfKind<"index">,
-	$: BaseScope
-): l | Disjoint | null => {
-	const kind = l.required ? "required" : "optional"
-
-	if (!r.signature.allows(l.key)) return null
-
-	const value = intersectNodesRoot(l.value, r.value, $)
-	if (value instanceof Disjoint) {
-		return kind === "optional" ?
-				($.node("optional", {
-					key: l.key,
-					value: $ark.intrinsic.never.internal
-				}) as l)
-			:	value.withPrefixKey(l.key, l.kind)
-	}
-
-	return null
-}
-
 const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		hasAssociatedError: false,
-		normalize: schema => schema,
+		normalize: schema => {
+			if (
+				schema.rejectAllowsSymbolKeys !== undefined &&
+				schema.undeclared !== "reject"
+			) {
+				throwParseError(
+					writeBadRejectAllowsSymbolKeysMessage(schema.undeclared ?? "ignore")
+				)
+			}
+			// a set engine rejects duplicate keys in order with its other reduce errors
+			if ($ark.sets) return schema
+			const seen: Record<Key, true | undefined> = Object.create(null)
+			for (const prop of conflatenateAll(schema.required, schema.optional)) {
+				if (prop.key in seen)
+					throwParseError(writeDuplicateKeyMessage(prop.key))
+				seen[prop.key] = true
+			}
+			return schema
+		},
 		applyConfig: (schema, config) => {
+			const undeclared = schema.undeclared ?? config.onUndeclaredKey
+			if (
+				schema.rejectAllowsSymbolKeys === undefined &&
+				undeclared === "reject" &&
+				config.rejectAllowsSymbolKeys
+			)
+				return { ...schema, undeclared, rejectAllowsSymbolKeys: true }
 			if (!schema.undeclared && config.onUndeclaredKey !== "ignore") {
 				return {
 					...schema,
@@ -201,7 +200,8 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			},
 			sequence: {
 				child: true,
-				parse: constraintKeyParser("sequence")
+				// e.g. ["number", "string"] is (number | string)[], not two sequences
+				parse: (schema, ctx) => ctx.$.node("sequence", schema)
 			},
 			undeclared: {
 				parse: behavior => (behavior === "ignore" ? undefined : behavior),
@@ -217,171 +217,20 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					if (ioKind === "in") delete inner.undeclared
 					else inner.undeclared = "reject"
 				}
-			}
+			},
+			rejectAllowsSymbolKeys: {}
 		},
 		defaults: {
 			description: structuralDescription
-		},
-		intersections: {
-			structure: (l, r, ctx) => {
-				const lInner = { ...l.inner }
-				const rInner = { ...r.inner }
-				const disjointResult = new Disjoint()
-				// props an index signature narrows to once the other side's keys
-				// are known. they can't be added to the side they came from, where
-				// a prop with the same key would never be merged with them
-				const derived: nodeOfKind<Prop.Kind>[] = []
-				if (l.undeclared) {
-					const lKey = l.keyof()
-					for (const k of r.requiredKeys) {
-						if (!lKey.allows(k)) {
-							disjointResult.add(
-								"presence",
-								$ark.intrinsic.never.internal,
-								r.propsByKey[k]!.value,
-								{
-									path: [k]
-								}
-							)
-						}
-					}
-
-					if (rInner.optional)
-						rInner.optional = rInner.optional.filter(n => lKey.allows(n.key))
-					if (rInner.index) {
-						rInner.index = rInner.index.flatMap(n => {
-							if (n.signature.extends(lKey)) return n
-							const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
-							if (indexOverlap instanceof Disjoint) return []
-							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-							derived.push(...(normalized.required ?? []))
-							derived.push(...(normalized.optional ?? []))
-							return normalized.index ?? []
-						})
-					}
-				}
-				if (r.undeclared) {
-					const rKey = r.keyof()
-					for (const k of l.requiredKeys) {
-						if (!rKey.allows(k)) {
-							disjointResult.add(
-								"presence",
-								l.propsByKey[k]!.value,
-								$ark.intrinsic.never.internal,
-								{
-									path: [k]
-								}
-							)
-						}
-					}
-
-					if (lInner.optional)
-						lInner.optional = lInner.optional.filter(n => rKey.allows(n.key))
-					if (lInner.index) {
-						lInner.index = lInner.index.flatMap(n => {
-							if (n.signature.extends(rKey)) return n
-							const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
-							if (indexOverlap instanceof Disjoint) return []
-							const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-							derived.push(...(normalized.required ?? []))
-							derived.push(...(normalized.optional ?? []))
-
-							return normalized.index ?? []
-						})
-					}
-				}
-
-				const baseInner: Structure.Inner.mutable = {}
-
-				if (l.undeclared || r.undeclared) {
-					baseInner.undeclared =
-						l.undeclared === "reject" || r.undeclared === "reject" ?
-							"reject"
-						:	"delete"
-				}
-
-				const childIntersectionResult = intersectConstraints({
-					kind: "structure",
-					baseInner,
-					l: flattenConstraints(lInner),
-					r: [...flattenConstraints(rInner), ...derived],
-					roots: [],
-					ctx
-				})
-
-				if (childIntersectionResult instanceof Disjoint)
-					disjointResult.push(...childIntersectionResult)
-
-				if (disjointResult.length) return disjointResult
-
-				return childIntersectionResult
-			}
-		},
-		reduce: (inner, $) => {
-			if (!inner.required && !inner.optional) return
-
-			const seen: Record<Key, true | undefined> = Object.create(null)
-			let updated = false
-			const newOptionalProps: OptionalNode[] =
-				inner.optional ? [...inner.optional] : []
-
-			// check required keys for duplicates and handle index intersections
-			if (inner.required) {
-				for (let i = 0; i < inner.required.length; i++) {
-					const requiredProp = inner.required[i]
-					if (requiredProp.key in seen)
-						throwParseError(writeDuplicateKeyMessage(requiredProp.key))
-					seen[requiredProp.key] = true
-
-					if (inner.index) {
-						for (const index of inner.index) {
-							const intersection = intersectPropsAndIndex(
-								requiredProp,
-								index,
-								$
-							)
-							if (intersection instanceof Disjoint) return intersection
-						}
-					}
-				}
-			}
-
-			// check optional keys for duplicates and handle index intersections
-			if (inner.optional) {
-				for (let i = 0; i < inner.optional.length; i++) {
-					const optionalProp = inner.optional[i]
-					if (optionalProp.key in seen)
-						throwParseError(writeDuplicateKeyMessage(optionalProp.key))
-					seen[optionalProp.key] = true
-
-					if (inner.index) {
-						for (const index of inner.index) {
-							const intersection = intersectPropsAndIndex(
-								optionalProp,
-								index,
-								$
-							)
-							if (intersection instanceof Disjoint) return intersection
-							if (intersection !== null) {
-								newOptionalProps[i] = intersection
-								updated = true
-							}
-						}
-					}
-				}
-			}
-
-			if (updated) {
-				return $.node(
-					"structure",
-					{ ...inner, optional: newOptionalProps },
-					{ prereduced: true }
-				)
-			}
 		}
 	})
 
 export class StructureNode extends BaseConstraint<Structure.Declaration> {
+	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
+		super(...args)
+		this.includesTransform ||= this.structuralMorph !== undefined
+	}
+
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	impliedSiblings = this.children.flatMap(
 		n => (n.impliedSiblings as BaseConstraint[]) ?? []
@@ -392,13 +241,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.optional
 	)
 
-	propsByKey: Record<Key, Prop.Node | undefined> = flatMorph(
-		this.props,
-		(i, node) => [node.key, node] as const
-	)
-
-	propsByKeyReference: RegisteredReference = registeredReference(
-		this.propsByKey
+	// on a null prototype, "__proto__" is a key and "toString" isn't
+	propsByKey: Record<Key, Prop.Node | undefined> = Object.assign(
+		Object.create(null),
+		Object.fromEntries(this.props.map(node => [node.key, node]))
 	)
 
 	expression: string = structuralExpression(this)
@@ -583,6 +429,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (r.sequence) inner.sequence = r.sequence
 		if (r.undeclared) inner.undeclared = r.undeclared
 		else delete inner.undeclared
+		if (r.rejectAllowsSymbolKeys !== undefined)
+			inner.rejectAllowsSymbolKeys = r.rejectAllowsSymbolKeys
+		else delete inner.rejectAllowsSymbolKeys
 		return this.$.node("structure", inner)
 	}
 
@@ -610,7 +459,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>
-		this._traverse("Allows", data, ctx)
+		this._traverse("Allows", data, ctx as never)
 
 	traverseApply: TraverseApply<object> = (data, ctx) =>
 		this._traverse("Apply", data, ctx)
@@ -640,8 +489,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.index || this.undeclared === "reject") {
-			const keys: Key[] = Object.keys(data)
-			keys.push(...Object.getOwnPropertySymbols(data))
+			const keys =
+				!this.index && this.rejectAllowsSymbolKeys ?
+					Object.keys(data)
+				:	ownKeysOf(data)
 
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
@@ -659,7 +510,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 							} else {
 								traverseKey(
 									k,
-									() => node.value.traverseApply(data[k as never], ctx),
+									() => applyValue(node.value, data[k as never], ctx),
 									ctx
 								)
 								if (ctx.failFast && ctx.currentErrorCount > errorCount)
@@ -669,7 +520,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					}
 				}
 
-				if (this.undeclared === "reject" && !this.declaresKey(k)) {
+				if (
+					this.undeclared === "reject" &&
+					(typeof k === "string" || !this.rejectAllowsSymbolKeys) &&
+					!this.declaresKey(k)
+				) {
 					if (traversalKind === "Allows") return false
 
 					// this should have its own error code:
@@ -689,50 +544,234 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		// added additional ctx check here to address
 		// https://github.com/arktypeio/arktype/issues/1346
-		if (this.structuralMorph && ctx && !ctx.hasError())
-			ctx.queueMorphs([this.structuralMorph])
+		if (this.structuralMorph && traversalKind === "Apply" && !ctx.hasError()) {
+			ctx.queueMorphs([
+				(data, ctx) => this.applyStructuralMorph(data, data, ctx)
+			])
+		}
 
 		return true
 	}
 
-	get defaultable(): Optional.Node.withDefault[] {
-		return this.cacheGetter(
-			"defaultable",
-			this.optional?.filter(o => o.hasDefault()) ?? []
-		)
+	traverseTransform: TraverseTransform<object> = (data, ctx) => {
+		const errorCount = ctx.currentErrorCount
+		let out: any = data
+		const transformKey = (
+			k: Key,
+			value: unknown,
+			node: BaseNode,
+			input = value
+		) => {
+			let transformed = traverseKey(k, () => ctx.transform(node, input), ctx)
+			if (input !== value)
+				transformed = mergeTransformed(input, value, transformed)
+			if (Object.is(transformed, value)) return value
+			if (out === data) out = this.copy(data)
+			return (out[k] = transformed)
+		}
+		const hasIndexedProp = this.hasIndexedProp
+		for (let i = 0; i < this.props.length; i++) {
+			const prop = this.props[i]
+			if (!hasIndexedProp) {
+				if (prop.value.transforms && prop.key in data)
+					transformKey(prop.key, data[prop.key as never], prop.value)
+				continue
+			}
+			if (!(prop.key in data)) continue
+			const keyErrorCount = ctx.currentErrorCount
+			const input: unknown = data[prop.key as never]
+			let value = input
+			for (const step of this.transformsOf(prop)) {
+				if (ctx.currentErrorCount > keyErrorCount) break
+				if (step.signature && !ctx.allows(step.signature, prop.key)) continue
+				value = transformKey(
+					prop.key,
+					value,
+					step.node,
+					value === input || (step.node as BaseRoot).allows(value) ?
+						value
+					:	input
+				)
+			}
+		}
+		if (this.sequence?.transforms) {
+			const transformedSequence = ctx.transform(this.sequence, data)
+			if (transformedSequence !== data)
+				out = this.copy(out, transformedSequence as object)
+		}
+		if (this.index) {
+			const keys = ownKeysOf(data)
+			for (let i = 0; i < keys.length; i++) {
+				const k = keys[i]
+				if (hasIndexedProp && k in this.propsByKey) continue
+				let input: unknown
+				let value: unknown
+				let keyErrorCount: number | undefined
+				for (const node of this.index) {
+					if (!node.value.transforms || !ctx.allows(node.signature, k)) continue
+					if (keyErrorCount === undefined) {
+						keyErrorCount = ctx.currentErrorCount
+						value = input = data[k as never]
+					} else if (ctx.currentErrorCount > keyErrorCount) break
+					value = transformKey(
+						k,
+						value,
+						node.value,
+						value === input || node.value.allows(value) ? value : input
+					)
+				}
+			}
+		}
+		if (ctx.currentErrorCount > errorCount) return data
+		return this.applyStructuralMorph(data, out, ctx)
 	}
+
+	applyStructuralMorph(
+		data: object,
+		out: object,
+		ctx: InternalTraversal
+	): object {
+		for (let i = 0; i < this.defaultable.length; i++) {
+			if (!(this.defaultable[i].key in data)) {
+				if (out === data) out = this.copy(data)
+				this.defaultable[i].defaultValueMorph(out as never, ctx as never)
+			}
+		}
+		const sequence = this.sequence
+		if (
+			sequence?.defaultables &&
+			(data as array).length <
+				sequence.prefixLength + sequence.defaultablesLength
+		) {
+			if (out === data) out = this.copy(data)
+			for (
+				let i = (data as array).length - sequence.prefixLength;
+				i < sequence.defaultables.length;
+				i++
+			)
+				sequence.defaultValueMorphs[i](out as never, ctx as never)
+		}
+		// an object's copy drops a declared key data holds as a non-enumerable own prop
+		if (out !== data && !sequence) {
+			for (const prop of this.props) {
+				if (!(prop.key in out) && prop.key in data)
+					out[prop.key as never] = data[prop.key as never]
+			}
+			for (const prop of this.inheritableProps) {
+				if (
+					!Object.prototype.hasOwnProperty.call(out, prop.key) &&
+					Object.prototype.hasOwnProperty.call(data, prop.key)
+				)
+					out[prop.key as never] = data[prop.key as never]
+			}
+		}
+		if (this.undeclared !== "delete") return out
+		// assigning "__proto__" to a built result would set its prototype
+		if (
+			Object.getPrototypeOf(out) !== Object.prototype ||
+			Object.prototype.hasOwnProperty.call(out, "__proto__")
+		) {
+			const undeclaredKeys = ownKeysOf(data).filter(k => !this.declaresKey(k))
+			if (!undeclaredKeys.length) return out
+			if (out === data) out = this.copy(data)
+			for (const k of undeclaredKeys) delete out[k as never]
+			return out
+		}
+		const result: Record<Key, unknown> = {}
+		for (const prop of this.props)
+			if (prop.key in out) result[prop.key] = out[prop.key as never]
+		for (const prop of this.inheritableProps) {
+			if (
+				!this.transformsOf(prop).length &&
+				!Object.prototype.hasOwnProperty.call(data, prop.key)
+			)
+				delete result[prop.key]
+		}
+		if (this.index) {
+			for (const k of ownKeysOf(out)) {
+				if (!(k in this.propsByKey) && this.declaresKey(k))
+					result[k] = out[k as never]
+			}
+		}
+		return result
+	}
+
+	private copy(data: object, copy = copyOf(data)): object {
+		if (this.sequence) {
+			for (const prop of this.props)
+				if (prop.key in data) copy[prop.key as never] = data[prop.key as never]
+		}
+		return copy
+	}
+
+	readonly inheritableProps: Prop.Node[] = this.props.filter(
+		prop => prop.key in Object.prototype
+	)
+
+	private _hasIndexedProp: boolean | undefined
+	get hasIndexedProp(): boolean {
+		return (this._hasIndexedProp ??=
+			this.index !== undefined &&
+			this.props.some(prop =>
+				this.index!.some(
+					index =>
+						index.signature.allowsRequiresContext ||
+						index.signature.allows(prop.key)
+				)
+			))
+	}
+
+	private _transformsByKey: Record<Key, TransformStep[]> | undefined
+	private transformsOf(prop: Prop.Node): TransformStep[] {
+		const cached = this._transformsByKey?.[prop.key]
+		if (cached) return cached
+		const transforms: TransformStep[] =
+			prop.value.transforms ? [{ node: prop.value }] : []
+		if (!this.index) return transforms
+		for (const index of this.index) {
+			if (!index.value.transforms || index.value === prop.value) continue
+			if (index.signature.allowsRequiresContext)
+				transforms.push({ node: index.value, signature: index.signature })
+			else if (index.signature.allows(prop.key))
+				transforms.push({ node: index.value })
+		}
+		if (!isResolutionFinal()) return transforms
+		return ((this._transformsByKey ??= Object.create(null))[prop.key] =
+			transforms)
+	}
+
+	readonly defaultable: Optional.Node.withDefault[] =
+		this.optional?.filter(o => o.hasDefault()) ?? []
 
 	declaresKey = (k: Key): boolean =>
 		k in this.propsByKey ||
 		this.index?.some(n => n.signature.allows(k)) ||
 		(this.sequence !== undefined &&
-			$ark.intrinsic.nonNegativeIntegerString.allows(k))
+			typeof k === "string" &&
+			arrayIndexMatcher.test(k))
 
 	_compileDeclaresKey(js: NodeCompiler): string {
 		const parts: string[] = []
-		if (this.props.length) parts.push(`k in ${this.propsByKeyReference}`)
-
 		if (this.index) {
 			for (const index of this.index)
 				parts.push(js.invoke(index.signature, { kind: "Allows", arg: "k" }))
 		}
 
-		if (this.sequence)
-			parts.push("$ark.intrinsic.nonNegativeIntegerString.allows(k)")
+		if (this.sequence) {
+			parts.push(
+				`typeof k === "string" && ${js.ref(arrayIndexMatcher)}.test(k)`
+			)
+		}
 
 		// if parts is empty, this is a structure like { "+": "reject" }
-		// that declares no keys, so return false
+		// that declares no keys other than its props, so return false
 		return parts.join(" || ") || "false"
 	}
 
-	get structuralMorph(): Morph | undefined {
-		return this.cacheGetter("structuralMorph", getPossibleMorph(this))
-	}
-
-	structuralMorphRef: RegisteredReference | undefined =
-		this.structuralMorph && registeredReference(this.structuralMorph)
+	readonly structuralMorph: Morph | undefined = getPossibleMorph(this)
 
 	compile(js: NodeCompiler): unknown {
+		if (js.traversalKind === "Transform") return this.compileTransform(js)
 		if (js.traversalKind === "Apply") js.initializeErrorCount()
 
 		for (const prop of this.props) {
@@ -746,185 +785,364 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.index || this.undeclared === "reject") {
-			js.const("keys", "Object.keys(data)")
-			js.line("keys.push(...Object.getOwnPropertySymbols(data))")
-			js.for("i < keys.length", () => this.compileExhaustiveEntry(js))
+			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
+				this.compileExhaustiveEntry(js.const("k", "keys[i]"), "string")
+			)
+			if (
+				(this.undeclared === "reject" && !this.rejectAllowsSymbolKeys) ||
+				this.indexMatchesSymbols
+			) {
+				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
+					this.compileExhaustiveEntry(js, "symbol")
+				)
+			}
 		}
 
 		if (js.traversalKind === "Allows") return js.return(true)
 
-		// always queue deleteUndeclared on valid traversal for "delete"
-		if (this.structuralMorphRef) {
+		if (this.structuralMorph) {
 			// added additional ctx check here to address
 			// https://github.com/arktypeio/arktype/issues/1346
-			js.if("ctx && !ctx.hasError()", () => {
-				js.line(`ctx.queueMorphs([`)
-				precompileMorphs(js, this)
-				return js.line("])")
-			})
+			js.if("ctx && !ctx.hasError()", () =>
+				js.line(
+					`ctx.queueMorphs([(data, ctx) => ${js.ref(this)}.applyStructuralMorph(data, data, ctx)])`
+				)
+			)
 		}
 	}
 
-	protected compileExhaustiveEntry(js: NodeCompiler): NodeCompiler {
-		js.const("k", "keys[i]")
+	private compileTransform(js: NodeCompiler): void {
+		const transformedProps = this.props.filter(
+			prop => this.transformsOf(prop).length
+		)
+		const transformedIndex =
+			this.index?.filter(index => index.value.transforms) ?? []
+		const deletes = this.undeclared === "delete"
+		const transformedChildren = transformedProps.flatMap(prop =>
+			this.transformsOf(prop).map(step => step.node)
+		)
+		for (const index of transformedIndex) transformedChildren.push(index.value)
+		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
+		js.initializeTransform(transformedChildren)
+		js.let("out", "data")
+		for (let i = 0; i < transformedProps.length; i++) {
+			const { key, serializedKey, optional } = transformedProps[i]
+			const onChange = () =>
+				this.compileCopy(js).line(`out${js.prop(key)} = transformed${i}`)
+			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
+				`transformed${i}`,
+				`value${i}`,
+				this.transformsOf(transformedProps[i]),
+				{
+					keyExpression: serializedKey,
+					...(optional ? { condition: `${serializedKey} in data` } : {}),
+					...(deletes ? {} : { onChange })
+				}
+			)
+		}
+		if (this.sequence?.transforms) {
+			js.transformKey(
+				"transformedSequence",
+				"data",
+				[{ node: this.sequence }],
+				{
+					onChange: () =>
+						this.compileCopyProps(js, "out", "transformedSequence").set(
+							"out",
+							"transformedSequence"
+						)
+				}
+			)
+		}
+		if (transformedIndex.length) {
+			this.compileOwnKeys(js, "data").for("i < keys.length", () => {
+				js.const("k", "keys[i]")
+				if (this.hasIndexedProp)
+					js.if(`k in ${js.ref(this.propsByKey)}`, () => js.line("continue"))
+				const transformKey = (steps: TransformStep[]) =>
+					js
+						.const("value", "data[k]")
+						.transformKey("transformed", "value", steps, {
+							keyExpression: "k",
+							onChange: () => this.compileCopy(js).line("out[k] = transformed")
+						})
+				if (transformedIndex.length === 1) {
+					return js.if(
+						js.invoke(transformedIndex[0].signature, {
+							arg: "k",
+							kind: "Allows"
+						}),
+						() => transformKey([{ node: transformedIndex[0].value }])
+					)
+				}
+				return transformKey(
+					transformedIndex.map(index => ({
+						node: index.value,
+						signature: index.signature
+					}))
+				)
+			})
+		}
+		js.returnIfTransformFailed()
+		if (deletes) {
+			return this.compileDeleteTransform(
+				js,
+				transformedProps,
+				this.sequence?.transforms || transformedIndex.length !== 0
+			)
+		}
+		for (const node of this.defaultable) {
+			js.if(`!(${node.serializedKey} in data)`, () =>
+				this.compileCopy(js).line(compileDefault(js, node, "out"))
+			)
+		}
+		this.compileSequenceDefaults(js)
+		this.compileCopiedDeclaredKeys(js).return("out")
+	}
 
+	private compileCopy(js: NodeCompiler): NodeCompiler {
+		return js.if("out === data", () =>
+			this.sequence ?
+				this.compileCopyProps(
+					js.set("out", `${js.ref(copyOf)}(data)`),
+					"data",
+					"out"
+				)
+			:	js.set(
+					"out",
+					`Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
+				)
+		)
+	}
+
+	private compileCopiedDeclaredKeys(js: NodeCompiler): NodeCompiler {
+		if (this.sequence) return js
+		return js.if("out !== data", () => {
+			for (const prop of this.props) {
+				const missing = `!(${prop.serializedKey} in out)`
+				js.if(
+					prop.required ? missing : (
+						`${missing} && ${prop.serializedKey} in data`
+					),
+					() => js.line(`out${js.prop(prop.key)} = data${js.prop(prop.key)}`)
+				)
+			}
+			for (const prop of this.inheritableProps) {
+				js.if(
+					`!Object.prototype.hasOwnProperty.call(out, ${prop.serializedKey}) && Object.prototype.hasOwnProperty.call(data, ${prop.serializedKey})`,
+					() => js.line(`out${js.prop(prop.key)} = data${js.prop(prop.key)}`)
+				)
+			}
+			return js
+		})
+	}
+
+	// an array's copy has only the enumerable props of data
+	private compileCopyProps(
+		js: NodeCompiler,
+		from: string,
+		to: string
+	): NodeCompiler {
+		for (const prop of this.props) {
+			const store = `${to}${js.prop(prop.key)} = ${from}${js.prop(prop.key)}`
+			if (prop.required) js.line(store)
+			else js.if(`${prop.serializedKey} in data`, () => js.line(store))
+		}
+		return js
+	}
+
+	private compileSequenceDefaults(js: NodeCompiler): void {
+		const sequence = this.sequence
+		if (!sequence?.defaultables) return
+		const args =
+			sequence.defaultValueMorphs.some(morph => morph.length === 2) ?
+				"out, ctx"
+			:	"out"
+		js.if(
+			`data.length < ${sequence.prefixLength + sequence.defaultablesLength}`,
+			() =>
+				this.compileCopy(js).for(
+					`i < ${sequence.defaultables!.length}`,
+					() => js.line(`${js.ref(sequence.defaultValueMorphs)}[i](${args})`),
+					`data.length - ${sequence.prefixLength}`
+				)
+		)
+	}
+
+	private compileDeleteTransform(
+		js: NodeCompiler,
+		transformedProps: Prop.Node[],
+		outMayBeCopied: boolean
+	): void {
+		const deleteFromCopy = () => {
+			for (let i = 0; i < transformedProps.length; i++) {
+				const prop = transformedProps[i]
+				const changed = js.compareTransformed(
+					this.transformsOf(prop),
+					`transformed${i}`,
+					"!==",
+					`value${i}`
+				)
+				js.if(changed, () =>
+					this.compileCopy(js).line(`out${js.prop(prop.key)} = transformed${i}`)
+				)
+			}
+			return js.return(`${js.ref(this)}.applyStructuralMorph(data, out, ctx)`)
+		}
+		if (this.sequence) {
+			// an array is scanned either way, so it's returned as is if nothing is undeclared
+			const unchanged: string[] = []
+			if (outMayBeCopied) unchanged.push("out === data")
+			for (let i = 0; i < transformedProps.length; i++) {
+				unchanged.push(
+					js.compareTransformed(
+						this.transformsOf(transformedProps[i]),
+						`transformed${i}`,
+						"===",
+						`value${i}`
+					)
+				)
+			}
+			for (const node of this.defaultable)
+				unchanged.push(`${node.serializedKey} in data`)
+			if (this.sequence.defaultables) {
+				unchanged.push(
+					`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
+				)
+			}
+			const breakIfUndeclared = (props: Prop.Node[]) => {
+				if (props.length) compileDeclaredKeySwitch(js, props)
+				return js.if(`!(${this._compileDeclaresKey(js)})`, () =>
+					js.line("break undeclared")
+				)
+			}
+			const label =
+				unchanged.length ?
+					`undeclared: if (${unchanged.join(" && ")})`
+				:	"undeclared:"
+			js.block(label, () => {
+				js.forIn("data", () =>
+					breakIfUndeclared(
+						this.props.filter(prop => typeof prop.key === "string")
+					)
+				)
+				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
+					breakIfUndeclared(
+						this.props.filter(prop => typeof prop.key === "symbol")
+					)
+				)
+				return js.return("data")
+			})
+			deleteFromCopy()
+			return
+		}
+		const outputOf = (prop: Prop.Node) => {
+			const i = transformedProps.indexOf(prop)
+			return i === -1 ? `out${js.prop(prop.key)}` : `transformed${i}`
+		}
+		const requiredEntries =
+			this.required?.map(
+				prop =>
+					`${typeof prop.key === "symbol" ? `[${js.ref(prop.key)}]` : prop.serializedKey}: ${outputOf(prop)}`
+			) ?? []
+		js.const("result", `{ ${requiredEntries.join(", ")} }`)
+		const copies =
+			this.declaresKey("__proto__") ?
+				`Object.getPrototypeOf(data) !== Object.prototype || Object.prototype.hasOwnProperty.call(data, "__proto__")`
+			:	"Object.getPrototypeOf(data) !== Object.prototype"
+		// checked after the literal's reads, from which V8 can infer data's prototype
+		js.if(copies, deleteFromCopy)
+		if (this.optional) {
+			for (const prop of this.optional) {
+				js.if(`${prop.serializedKey} in data`, () =>
+					js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
+				)
+				if (prop.hasDefault())
+					js.else(() => js.line(compileDefault(js, prop, "result")))
+			}
+		}
+		for (const prop of this.inheritableProps) {
+			if (transformedProps.includes(prop)) continue
+			js.if(
+				`!Object.prototype.hasOwnProperty.call(data, ${prop.serializedKey})`,
+				() => js.line(`delete result${js.prop(prop.key)}`)
+			)
+		}
+		if (this.index) {
+			this.compileOwnKeys(js, "out", "outKeys", "outSymbols").for(
+				"i < outKeys.length",
+				() =>
+					js
+						.const("k", "outKeys[i]")
+						.if(
+							`!(k in ${js.ref(this.propsByKey)}) && (${this._compileDeclaresKey(js)})`,
+							() => js.line("result[k] = out[k]")
+						)
+			)
+		}
+		js.return("result")
+	}
+
+	// without a set engine, any signature may match a symbol key
+	private get indexMatchesSymbols(): boolean {
+		return !!this.index?.some(
+			node => !$ark.sets || !node.signature.extends($ark.intrinsic.string)
+		)
+	}
+
+	private compileOwnKeys(
+		js: NodeCompiler,
+		object: string,
+		keys = "keys",
+		symbols = "symbols"
+	): NodeCompiler {
+		js.const(keys, `Object.keys(${object})`)
+		if (!this.indexMatchesSymbols) return js
+		return js
+			.const(symbols, `Object.getOwnPropertySymbols(${object})`)
+			.if(`${symbols}.length`, () => js.line(`${keys}.push(...${symbols})`))
+	}
+
+	protected compileExhaustiveEntry(
+		js: NodeCompiler,
+		keyDomain: "string" | "symbol"
+	): NodeCompiler {
 		if (this.index) {
 			for (const node of this.index) {
 				js.if(
 					`${js.invoke(node.signature, { arg: "k", kind: "Allows" })}`,
-					() => js.traverseKey("k", "data[k]", node.value)
+					() => {
+						js.traverseKey("k", "data[k]", node.value)
+						return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
+					}
 				)
 			}
 		}
 
-		if (this.undeclared === "reject") {
-			js.if(`!(${this._compileDeclaresKey(js)})`, () => {
-				if (js.traversalKind === "Allows") return js.return(false)
-				return js
-					.line(
-						`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
-					)
-					.if("ctx.failFast", () => js.return())
-			})
+		if (
+			this.undeclared === "reject" &&
+			(keyDomain === "string" || !this.rejectAllowsSymbolKeys)
+		) {
+			const props = this.props.filter(prop => typeof prop.key === keyDomain)
+			if (props.length) compileDeclaredKeySwitch(js, props)
+			const reject = () =>
+				js.traversalKind === "Allows" ?
+					js.return(false)
+				:	js
+						.line(
+							`ctx.errorFromNodeContext({ code: "predicate", expected: "removed", actual: "", relativePath: [k], meta: ${this.compiledMeta} })`
+						)
+						.if("ctx.failFast", () => js.return())
+			const declaresKey = this._compileDeclaresKey(js)
+			if (declaresKey === "false") reject()
+			else js.if(`!(${declaresKey})`, reject)
 		}
 
 		return js
 	}
-
-	reduceJsonSchema(
-		schema: JsonSchema.Structure,
-		ctx: ToJsonSchema.Context
-	): JsonSchema.Structure {
-		switch (schema.type) {
-			case "object":
-				return this.reduceObjectJsonSchema(schema, ctx)
-			case "array":
-				const arraySchema =
-					this.sequence?.reduceJsonSchema(schema, ctx) ?? schema
-				if (this.props.length || this.index) {
-					return ctx.fallback.arrayObject({
-						code: "arrayObject",
-						base: arraySchema,
-						object: this.reduceObjectJsonSchema({ type: "object" }, ctx)
-					})
-				}
-
-				return arraySchema
-
-			default:
-				return ToJsonSchema.throwInternalOperandError("structure", schema)
-		}
-	}
-
-	reduceObjectJsonSchema(
-		schema: JsonSchema.Object,
-		ctx: ToJsonSchema.Context
-	): JsonSchema.Object {
-		if (this.props.length) {
-			schema.properties = {}
-			for (const prop of this.props) {
-				const valueSchema = prop.value.toJsonSchemaRecurse(ctx)
-
-				if (typeof prop.key === "symbol") {
-					ctx.fallback.symbolKey({
-						code: "symbolKey",
-						base: schema,
-						key: prop.key,
-						value: valueSchema,
-						optional: prop.optional
-					})
-					continue
-				}
-
-				if (prop.hasDefault()) {
-					const value =
-						typeof prop.default === "function" ? prop.default() : prop.default
-					valueSchema.default =
-						$ark.intrinsic.jsonData.allows(value) ?
-							value
-						:	ctx.fallback.defaultValue({
-								code: "defaultValue",
-								base: valueSchema,
-								value
-							})
-				}
-
-				schema.properties![prop.key] = valueSchema
-			}
-			if (this.requiredKeys.length && schema.properties) {
-				schema.required = this.requiredKeys.filter(
-					(k): k is string => typeof k === "string" && k in schema.properties!
-				)
-			}
-		}
-
-		if (this.index) {
-			for (const index of this.index) {
-				const valueJsonSchema = index.value.toJsonSchemaRecurse(ctx)
-
-				if (index.signature.equals($ark.intrinsic.string)) {
-					schema.additionalProperties = valueJsonSchema
-					continue
-				}
-
-				for (const keyBranch of index.signature.branches) {
-					if (!keyBranch.extends($ark.intrinsic.string)) {
-						schema = ctx.fallback.symbolKey({
-							code: "symbolKey",
-							base: schema,
-							key: null,
-							value: valueJsonSchema,
-							optional: false
-						})
-
-						continue
-					}
-
-					let keySchema: JsonSchema.String = { type: "string" }
-					if (keyBranch.hasKind("morph")) {
-						keySchema = ctx.fallback.morph({
-							code: "morph",
-							base: keyBranch.rawIn.toJsonSchemaRecurse(ctx),
-							out: keyBranch.rawOut.toJsonSchemaRecurse(ctx)
-						}) as never
-					}
-					if (!keyBranch.hasKind("intersection")) {
-						return throwInternalError(
-							`Unexpected index branch kind ${keyBranch.kind}.`
-						)
-					}
-
-					const { pattern } = keyBranch.inner
-
-					if (pattern) {
-						const keySchemaWithPattern = Object.assign(keySchema, {
-							pattern: pattern[0].rule
-						})
-
-						for (let i = 1; i < pattern.length; i++) {
-							keySchema = ctx.fallback.patternIntersection({
-								code: "patternIntersection",
-								base: keySchemaWithPattern,
-								pattern: pattern[i].rule
-							})
-						}
-
-						schema.patternProperties ??= {}
-						schema.patternProperties[keySchemaWithPattern.pattern] =
-							valueJsonSchema
-					}
-				}
-			}
-		}
-
-		if (this.undeclared && !schema.additionalProperties)
-			schema.additionalProperties = false
-
-		return schema
-	}
 }
 
-const defaultableMorphsCache: Record<string, Morph | undefined> = {}
+const defaultableMorphsCache = new WeakCache<Morph>()
 
 type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
 	Pick<Structure.Node, "defaultable" | "declaresKey">
@@ -934,11 +1152,12 @@ const constructStructuralMorphCacheKey = (
 ): string => {
 	let cacheKey = ""
 
+	// nameOf names each morph uniquely without registering, which would keep it alive
 	for (let i = 0; i < node.defaultable.length; i++)
-		cacheKey += node.defaultable[i].defaultValueMorphRef
+		cacheKey += `${nameOf(node.defaultable[i].defaultValueMorph)} `
 
-	if (node.sequence?.defaultValueMorphsReference)
-		cacheKey += node.sequence?.defaultValueMorphsReference
+	if (node.sequence?.defaultValueMorphs.length)
+		cacheKey += `${nameOf(node.sequence.defaultValueMorphs)} `
 
 	if (node.undeclared === "delete") {
 		cacheKey += "delete !("
@@ -968,66 +1187,43 @@ const getPossibleMorph = (
 	const cacheKey = constructStructuralMorphCacheKey(node)
 	if (!cacheKey) return undefined
 
-	if (defaultableMorphsCache[cacheKey]) return defaultableMorphsCache[cacheKey]
+	const cached = defaultableMorphsCache.get(cacheKey)
+	if (cached) return cached
 
-	const $arkStructuralMorph: Morph<any> = (data, ctx) => {
-		for (let i = 0; i < node.defaultable.length; i++) {
-			if (!(node.defaultable[i].key in data))
-				node.defaultable[i].defaultValueMorph(data as never, ctx)
-		}
+	const $arkStructuralMorph: Morph<any> = (data, ctx) =>
+		(node as Structure.Node).applyStructuralMorph(data, data, ctx)
 
-		if (node.sequence?.defaultables) {
-			for (
-				let i = data.length - node.sequence.prefixLength;
-				i < node.sequence.defaultables.length;
-				i++
-			)
-				node.sequence.defaultValueMorphs[i](data as never, ctx)
-		}
-
-		if (node.undeclared === "delete")
-			for (const k in data) if (!node.declaresKey(k)) delete (data as dict)[k]
-
-		return data
-	}
-
-	return (defaultableMorphsCache[cacheKey] = $arkStructuralMorph)
+	return defaultableMorphsCache.set(cacheKey, $arkStructuralMorph)
 }
 
-const precompileMorphs = (js: NodeCompiler, node: Structure.Node) => {
-	const requiresContext =
-		node.defaultable.some(node => node.defaultValueMorph.length === 2) ||
-		node.sequence?.defaultValueMorphs.some(morph => morph.length === 2)
+const compileDefault = (
+	js: NodeCompiler,
+	node: Optional.Node.withDefault,
+	out: string
+): string =>
+	node.value.transforms ?
+		`${js.ref(node.defaultValueMorph)}(${out}${node.defaultValueMorph.length === 2 ? ", ctx" : ""})`
+	: typeof node.default === "function" ?
+		`${out}${js.prop(node.key)} = ${js.ref(node.default)}()`
+		// -0 would serialize as 0
+	: Object.is(node.default, -0) ? `${out}${js.prop(node.key)} = -0`
+	: `${out}${js.prop(node.key)} = ${compileSerializedValue(node.default)}`
 
-	const args = `(data${requiresContext ? ", ctx" : ""})`
+const compileDeclaredKeySwitch = (
+	js: NodeCompiler,
+	props: Prop.Node[]
+): NodeCompiler =>
+	js.block("switch (k)", () =>
+		js.line(
+			`${props.map(prop => `case ${prop.serializedKey}:`).join(" ")} continue`
+		)
+	)
 
-	return js.block(`${args} => `, js => {
-		for (let i = 0; i < node.defaultable.length; i++) {
-			const { serializedKey, defaultValueMorphRef } = node.defaultable[i]
-			js.if(`!(${serializedKey} in data)`, js =>
-				js.line(`${defaultValueMorphRef}${args}`)
-			)
-		}
-
-		if (node.sequence?.defaultables) {
-			js.for(
-				`i < ${node.sequence.defaultables.length}`,
-				js =>
-					js.line(`${node.sequence!.defaultValueMorphsReference}[i]${args}`),
-				`data.length - ${node.sequence.prefixLength}`
-			)
-		}
-
-		if (node.undeclared === "delete") {
-			js.forIn("data", js =>
-				js.if(`!(${node._compileDeclaresKey(js)})`, js =>
-					js.line(`delete data[k]`)
-				)
-			)
-		}
-
-		return js.return("data")
-	})
+const ownKeysOf = (data: object): Key[] => {
+	const keys: Key[] = Object.keys(data)
+	const symbols = Object.getOwnPropertySymbols(data)
+	if (symbols.length) keys.push(...symbols)
+	return keys
 }
 
 export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>
@@ -1120,3 +1316,8 @@ export const writeDuplicateKeyMessage = <key extends Key>(
 
 export type writeDuplicateKeyMessage<key extends Key> =
 	`Duplicate key '${describe<key>}'`
+
+export const writeBadRejectAllowsSymbolKeysMessage = (
+	actual: Exclude<UndeclaredKeyBehavior, "reject">
+): string =>
+	`rejectAllowsSymbolKeys may only be specified with undeclared "reject" (was ${actual})`

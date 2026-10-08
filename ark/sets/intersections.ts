@@ -1,27 +1,33 @@
-import type { PartialRecord, TypeGuard } from "@ark/util"
-import type { mutableNormalizedRootOfKind, nodeOfKind } from "../kinds.ts"
-import type { BaseNode } from "../node.ts"
-import type { Morph } from "../roots/morph.ts"
-import type { BaseRoot } from "../roots/root.ts"
-import type { Union } from "../roots/union.ts"
-import type { BaseScope } from "../scope.ts"
-import { Disjoint } from "./disjoint.ts"
 import {
+	Disjoint,
+	isNode,
+	isResolutionFinal,
 	rootKinds,
+	type BaseNode,
+	type BaseScope,
+	type InternalNodeIntersection,
 	type IntersectionContext,
+	type Morph,
 	type RootKind,
-	type UnknownIntersectionResult
-} from "./implement.ts"
-import { isNode } from "./utils.ts"
+	type Union,
+	type UnknownIntersectionResult,
+	type mutableNormalizedRootOfKind,
+	type nodeOfKind
+} from "@ark/schema"
+import type { TypeGuard } from "@ark/util"
+import { setImplementationsByKind } from "./kinds.ts"
 
-const intersectionCache: PartialRecord<string, UnknownIntersectionResult> = {}
+type IntersectionCache = WeakMap<
+	BaseScope,
+	Record<
+		"&" | "|>",
+		WeakMap<BaseNode, WeakMap<BaseNode, UnknownIntersectionResult>>
+	>
+>
 
-type InternalNodeIntersection<ctx> = <l extends BaseNode, r extends BaseNode>(
-	l: l,
-	r: r,
-	ctx: ctx
-) => l["kind"] | r["kind"] extends RootKind ? BaseRoot | Disjoint
-:	BaseNode | Disjoint | null
+// a result belongs to the scope that parsed it
+const intersectionCache: IntersectionCache = new WeakMap()
+let pendingIntersectionCache: IntersectionCache | undefined
 
 export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
@@ -47,25 +53,23 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		r: BaseNode,
 		ctx: IntersectionContext
 	): BaseNode | Disjoint | null => {
-		const operator = ctx.pipe ? "|>" : "&"
-		const lrCacheKey = `${l.hash}${operator}${r.hash}`
-		if (intersectionCache[lrCacheKey] !== undefined)
-			return intersectionCache[lrCacheKey]! as never
-
-		if (!ctx.pipe) {
-			// we can only use this for the commutative & operator
-			const rlCacheKey = `${r.hash}${operator}${l.hash}`
-			if (intersectionCache[rlCacheKey] !== undefined) {
-				// if the cached result was a Disjoint and the operands originally
-				// appeared in the opposite order, we need to invert it to match
-				const rlResult = intersectionCache[rlCacheKey]!
-				const lrResult =
-					rlResult instanceof Disjoint ? rlResult.invert() : rlResult
-				// add the lr result to the cache directly to bypass this check in the future
-				intersectionCache[lrCacheKey] = lrResult
-				return lrResult
-			}
+		let cache = intersectionCache
+		if (l.includesAlias || r.includesAlias) {
+			// a result involving an alias can change until resolution is final
+			if (isResolutionFinal()) pendingIntersectionCache = undefined
+			else cache = pendingIntersectionCache ??= new WeakMap()
 		}
+		let cacheByOperator = cache.get(ctx.$)
+		if (!cacheByOperator) {
+			cache.set(
+				ctx.$,
+				(cacheByOperator = { "&": new WeakMap(), "|>": new WeakMap() })
+			)
+		}
+		const cacheByL = cacheByOperator[ctx.pipe ? "|>" : "&"]
+		let cacheByR = cacheByL.get(l)
+		const cached = cacheByR?.get(r)
+		if (cached !== undefined) return cached as never
 
 		const isPureIntersection =
 			!ctx.pipe || (!l.includesTransform && !r.includesTransform)
@@ -86,7 +90,8 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 			else if (r.equals(result)) result = r
 		}
 
-		intersectionCache[lrCacheKey] = result
+		if (!cacheByR) cacheByL.set(l, (cacheByR = new WeakMap()))
+		cacheByR.set(r, result)
 		return result as never
 	}) as never
 
@@ -97,7 +102,8 @@ const _intersectNodes = (
 ) => {
 	const leftmostKind = l.precedence < r.precedence ? l.kind : r.kind
 	const implementation =
-		l.impl.intersections[r.kind] ?? r.impl.intersections[l.kind]
+		setImplementationsByKind[l.kind].intersections[r.kind] ??
+		setImplementationsByKind[r.kind].intersections[l.kind]
 	if (implementation === undefined) {
 		// should be two ConstraintNodes that have no relation
 		// this could also happen if a user directly intersects a Type and a ConstraintNode,

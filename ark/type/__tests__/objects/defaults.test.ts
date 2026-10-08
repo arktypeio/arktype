@@ -74,6 +74,15 @@ contextualize(() => {
 			attest(types.foo({ test: "provided" })).equals({ test: "provided" })
 		})
 
+		it("-0", () => {
+			for (const jitless of [false, true]) {
+				const T = scope({}, { jitless }).type({
+					negativeZero: ["number", "=", -0]
+				})
+				attest(Object.is(T.assert({}).negativeZero, -0)).equals(true)
+			}
+		})
+
 		it("unions are defaultable", () => {
 			const O = type({
 				boo: "boolean = false"
@@ -514,6 +523,15 @@ contextualize(() => {
 			attest<{ foo?: number }>(T.inferIn)
 
 			attest(T.in.expression).snap("{ foo?: number }")
+		})
+
+		it("shared defaultable input optional", () => {
+			const A = type({ foo: "number = 0" })
+			const B = type({ foo: "number = 0", bar: "string" })
+
+			attest(A.in.expression).snap("{ foo?: number }")
+			attest(B.in.expression).snap("{ bar: string, foo?: number }")
+			attest(B.in({ bar: "" })).equals({ bar: "" })
 		})
 
 		it("defaultable output extracted as required", () => {

@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { chainableNoOpProxy } from "@ark/attest/internal/utils.ts"
 import {
 	intrinsic,
 	writeIndivisibleMessage,
@@ -385,6 +384,23 @@ contextualize(() => {
 				attest(b.internal.json).equals(Expected.json)
 			})
 
+			it("external generic cyclic argument depth", () => {
+				const lib = scope({ "box<t>": { value: "t" } }).export()
+				const types = scope({
+					box: lib.box,
+					node: { n: "number", "kids?": "box<node>" }
+				}).export()
+				type Node = { n: number; kids?: { value: Node } }
+
+				const data: typeof types.node.infer = {
+					n: 1,
+					kids: { value: { n: 2, kids: { value: { n: 3 } } } }
+				}
+
+				attest<Node>(types.node.infer)
+				attest(types.node(data)).equals(data)
+			})
+
 			it("empty string in declaration", () => {
 				attest(() =>
 					scope({
@@ -395,6 +411,20 @@ contextualize(() => {
 			})
 		}
 	)
+
+	// https://github.com/arktypeio/arktype/issues/1437
+	it("private alias exported twice", () => {
+		const $scope1 = scope({
+			"#private": "string",
+			"generic<t>": "private"
+		})
+		const $scope2 = scope({ ...$scope1.export() })
+		const $scope3 = scope({ ...$scope2.export() })
+		const Thing3 = $scope3.type("generic<string>")
+
+		attest(Thing3.t).type.toString.snap("string")
+		attest(Thing3("hello")).equals("hello")
+	})
 
 	it("args completions from type", () => {
 		const g = type("<t>", { box: "t" })
@@ -595,28 +625,24 @@ contextualize(() => {
 		})
 	})
 
-	// currently types only, runtime pending: https://github.com/arktypeio/arktype/issues/1082
+	// https://github.com/arktypeio/arktype/issues/1082
 	describe("cyclic", () => {
-		const enable = false
 		it("self-reference", () => {
-			const getTypes = () =>
-				scope({
-					"alternate<a, b>": {
-						// ensures old generic params aren't intersected with
-						// updated values (would be never)
-						swap: "alternate<b, a>",
-						order: ["a", "b"]
-					},
-					reference: "alternate<0, 1>"
-				}).export()
-			const types = enable ? getTypes() : (chainableNoOpProxy as never)
-			attest<[0, 1]>(types.reference.infer.swap.swap.order)
-			attest<[1, 0]>(types.reference.infer.swap.swap.swap.order)
-			const getFromCall = () => types.alternate("'off'", "'on'")
-			const fromCall = enable ? getFromCall() : (chainableNoOpProxy as never)
+			const types = scope({
+				"alternate<a, b>": {
+					// ensures old generic params aren't intersected with
+					// updated values (would be never)
+					swap: "alternate<b, a>",
+					order: ["a", "b"]
+				},
+				reference: "alternate<0, 1>"
+			}).export()
+			attest<[0, 1], typeof types.reference.infer.swap.swap.order>()
+			attest<[1, 0], typeof types.reference.infer.swap.swap.swap.order>()
+			const fromCall = types.alternate("'off'", "'on'")
 
-			attest<["off", "on"]>(fromCall.infer.swap.swap.order)
-			attest<["on", "off"]>(fromCall.infer.swap.swap.swap.order)
+			attest<["off", "on"], typeof fromCall.infer.swap.swap.order>()
+			attest<["on", "off"], typeof fromCall.infer.swap.swap.swap.order>()
 		})
 		it("self-reference no params", () => {
 			attest(() =>

@@ -584,20 +584,17 @@ contextualize(() => {
 					path: ["kind"],
 					cases: {
 						'"string"': {
-							branches: [
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination2"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
-							],
-							ordered: true
+							in: {},
+							morphs: ["$ark._matchOrderedDiscrimination2"]
 						},
 						'"number"': {
-							branches: [
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination3"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
-							],
-							ordered: true
+							in: {},
+							morphs: ["$ark._matchOrderedDiscrimination3"]
 						},
-						default: { in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
+						default: {
+							in: { required: [{ key: "id", value: "number" }] },
+							morphs: ["$ark._matchOrderedDiscrimination4"]
+						}
 					}
 				},
 				default: {
@@ -790,14 +787,11 @@ contextualize(() => {
 			c: o => o.kind,
 			default: "assert"
 		})
-		attest(discriminate).type.toString.snap(`Match<
-	unknown,
-	[
-		(In: { kind: "a" }) => "a",
-		(In: { kind: "b" }) => "b",
-		(In: { kind: "c" }) => "c"
-	]
->`)
+		attest<
+			(
+				In: { kind: "a" } | { kind: "b" } | { kind: "c" }
+			) => Out<"a" | "b" | "c">
+		>(discriminate.t)
 
 		const a = discriminate({ kind: "a", value: "a" })
 		const b = discriminate({ kind: "b", value: "b" })

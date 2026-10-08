@@ -55,7 +55,12 @@ export interface AttachedParseContext {
 	[arkKind]: "context"
 	$: BaseScope
 	id: NodeId
-	phase: "unresolved" | "resolving" | "resolved"
+	phase: "unresolved" | "resolving" | "member" | "resolved"
+	isReferencedById?: true
+	index?: number
+	lowlink?: number
+	closesCycle?: true
+	resolution?: BaseRoot
 }
 
 export interface BaseParseContext
@@ -144,6 +149,7 @@ export const nodesByRegisteredId: Record<
 $ark.nodesByRegisteredId = nodesByRegisteredId
 
 export const registerNodeId = (prefix: string): NodeId => {
+	if (/\d$/.test(prefix)) prefix += "_"
 	nodeCountsByPrefix[prefix] ??= 0
 	return `${prefix}${++nodeCountsByPrefix[prefix]!}` as NodeId
 }
@@ -195,8 +201,8 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 			inner[k] = v
 	}
 
-	if (impl.reduce && !ctx.prereduced) {
-		const reduced = impl.reduce(inner, ctx.$)
+	if (!ctx.prereduced && $ark.sets) {
+		const reduced = $ark.sets.reduce(ctx.kind, inner, ctx.$)
 		if (reduced) {
 			if (reduced instanceof Disjoint) return reduced.throw()
 
@@ -258,7 +264,12 @@ export const createNode = ({
 	if (impl.finalizeInnerJson)
 		innerJson = impl.finalizeInnerJson(innerJson) as never
 
-	let json = { ...innerJson }
+	const uncollapsedInnerJson = innerJson
+	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
+	const innerHash = JSON.stringify({ kind, ...innerJson })
+
+	let json = innerJson
+	let hash = innerHash
 	let metaJson: ArkEnv.meta & dict = {}
 
 	if (!isEmptyObject(meta)) {
@@ -266,21 +277,27 @@ export const createNode = ({
 			k,
 			k === "examples" ? v : defaultValueSerializer(v)
 		]) as never
-		json.meta = possiblyCollapse(metaJson, "description", true)
+		json = possiblyCollapse(
+			{
+				...uncollapsedInnerJson,
+				meta: possiblyCollapse(metaJson, "description", true)
+			},
+			impl.collapsibleKey,
+			false
+		)
+		hash = JSON.stringify({ kind, ...json })
 	}
 
-	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
-	const innerHash = JSON.stringify({ kind, ...innerJson })
-
-	json = possiblyCollapse(json, impl.collapsibleKey, false)
 	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
-	const hash = JSON.stringify({ kind, ...json })
 
 	// we have to wait until after reduction to return a cached entry,
 	// since reduction can add impliedSiblings
-	if ($.nodesByHash[hash] && !ignoreCache) return $.nodesByHash[hash]
+	if (!ignoreCache) {
+		const cached = $.nodesByHash.get(hash)
+		if (cached) return cached
+	}
 
-	const attachments: UnknownAttachments & dict = {
+	const attachments: UnknownAttachments = {
 		id,
 		kind,
 		impl,
@@ -296,14 +313,9 @@ export const createNode = ({
 		children
 	}
 
-	if (kind !== "intersection") {
-		for (const k in inner)
-			if (k !== "in" && k !== "out") attachments[k] = inner[k]
-	}
-
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 
-	return ($.nodesByHash[hash] = node)
+	return ignoreCache || !$ark.sets ? node : $.nodesByHash.set(hash, node)
 }
 
 export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {

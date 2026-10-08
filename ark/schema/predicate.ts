@@ -5,17 +5,11 @@ import type {
 	BaseNormalizedSchema,
 	declareNode
 } from "./shared/declare.ts"
-import {
-	compileObjectLiteral,
-	implementNode,
-	type nodeImplementationOf
-} from "./shared/implement.ts"
-import type { JsonSchema } from "./shared/jsonSchema.ts"
+import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
 import {
 	type RegisteredReference,
 	registeredReference
 } from "./shared/registry.ts"
-import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type {
 	Traversal,
 	TraverseAllows,
@@ -71,19 +65,11 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 			// error contexts from ctx.reject have neither a description nor a predicate
 			expected: ctx => ctx.description ?? describePredicate(ctx.predicate)
 		},
-		intersectionIsOpen: true,
-		intersections: {
-			// as long as the narrows in l and r are individually safe to check
-			// in the order they're specified, checking them in the order
-			// resulting from this intersection should also be safe.
-			predicate: () => null
-		}
+		intersectionIsOpen: true
 	})
 
 export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	serializedPredicate: RegisteredReference = registeredReference(this.predicate)
-	compiledCondition = `${this.serializedPredicate}(data, ctx)`
-	compiledNegation = `!${this.compiledCondition}`
 
 	impliedBasis = null
 
@@ -96,8 +82,6 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		meta: this.meta
 	}
 
-	compiledErrorContext = compileObjectLiteral(this.errorContext)
-
 	traverseApply: TraverseApply = (data, ctx) => {
 		const errorCount = ctx.currentErrorCount
 		if (
@@ -108,28 +92,21 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	}
 
 	compile(js: NodeCompiler): void {
+		const condition = `${js.ref(this.predicate)}(data, ctx)`
 		if (js.traversalKind === "Allows") {
-			js.return(this.compiledCondition)
+			js.return(condition)
 			return
 		}
 
 		js.initializeErrorCount()
 		js.if(
 			// only add the default error if the predicate didn't add one itself
-			`${this.compiledNegation} && ctx.currentErrorCount === errorCount`,
-			() => js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+			`!${condition} && ctx.currentErrorCount === errorCount`,
+			() =>
+				js.line(
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)})`
+				)
 		)
-	}
-
-	reduceJsonSchema(
-		base: JsonSchema.Constrainable,
-		ctx: ToJsonSchema.Context
-	): JsonSchema {
-		return ctx.fallback.predicate({
-			code: "predicate",
-			base,
-			predicate: this.predicate
-		})
 	}
 }
 

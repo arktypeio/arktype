@@ -122,6 +122,18 @@ contextualize(() => {
 		).throws(writeDuplicateKeyMessage("a"))
 	})
 
+	it("optional key with disjoint index", () => {
+		attest(() =>
+			type({
+				"a?": "string",
+				a: "string",
+				"[string]": "number"
+			})
+		).throws(
+			"Intersection at a of string and number results in an unsatisfiable type"
+		)
+	})
+
 	it("allows prototype method names as keys", () => {
 		// constructor, hasOwnProperty, toString, etc. are valid object keys
 		// and should not be incorrectly flagged as duplicates

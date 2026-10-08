@@ -277,7 +277,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "- `\"delete\"` - clone and remove extra properties from output"
+                        "value": "- `\"delete\"` - remove extra properties from output"
                     }
                 ]
             ]
@@ -308,7 +308,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "- `\"delete\"` - clone and remove extra properties from output"
+                        "value": "- `\"delete\"` - remove extra properties from output"
                     }
                 ]
             ]
@@ -332,6 +332,58 @@ export const apiDocsByGroup: ApiDocsByGroup = {
             ],
             "notes": [],
             "example": "const T = type({ foo: \"string\" });\n// TypeScript: foo must be a string (was 5)\nconst data = T.from({ foo: 5 });"
+        },
+        {
+            "group": "Type",
+            "name": "in",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "deeply extract inputs"
+                }
+            ],
+            "notes": [
+                [],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "✅ will never include morphs"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "✅ good for generating JSON Schema or other non-transforming formats"
+                    }
+                ]
+            ],
+            "example": "const User = type({\n   age: \"string.numeric.parse\"\n})\n// { age: 25 } (age parsed to a number)\nconst out = User({ age: \"25\" })\n// { age: \"25\" } (age is still a string)\nconst inOut = User.in({ age: \"25\" })"
+        },
+        {
+            "group": "Type",
+            "name": "out",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "deeply extract outputs"
+                }
+            ],
+            "notes": [
+                [],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "✅ will never include morphs"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "⚠️ if your type includes morphs, their output will likely be unknown unless they\nwere defined with an explicit output validator via `.to(outputDef)` or `.pipe(morph, outputType)`"
+                    }
+                ]
+            ],
+            "example": "const join = type(\"string[]\").pipe(a => a.join(\",\"))\n\nconst T = type({\n   // all keywords have introspectable output\n   keyword: \"string.numeric.parse\",\n   // TypeScript knows this returns a string, but we can't introspect that at runtime\n   unvalidated: join,\n   // if needed, it can be made introspectable with an output validator\n   validated: join.to(\"string\")\n})\n\n// Type<{ keyword: number; unvalidated: unknown; validated: string }>\nconst baseOut = base.out"
         },
         {
             "group": "Type",
@@ -919,7 +971,7 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "✅ will always be an empty array for a valid traversal"
+                        "value": "✅ will always be empty for a valid traversal"
                     }
                 ]
             ]
@@ -965,6 +1017,65 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ]
+        },
+        {
+            "group": "Traversal",
+            "name": "data",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "the data being validated or morphed"
+                }
+            ],
+            "notes": [
+                [],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "✅ the value at"
+                    },
+                    {
+                        "kind": "reference",
+                        "value": "path"
+                    },
+                    {
+                        "kind": "text",
+                        "value": ", as transformed by any morphs that have already run"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "propString",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "a string representing"
+                },
+                {
+                    "kind": "reference",
+                    "value": "path"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "✅ uses `.access`"
+                    },
+                    {
+                        "kind": "link",
+                        "url": "https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Property_accessors#dot_notation",
+                        "value": "where allowed by JS"
+                    },
+                    {
+                        "kind": "text",
+                        "value": ", falling back to `[indexAccess]`"
+                    }
+                ]
+            ],
+            "example": "const path = [\"key1\", Symbol(\"key2\"), \"key3\", 4, \"~key5\"]\nconst propString = 'key1[Symbol(key2)].key3[4][\"~key5\"]'"
         },
         {
             "group": "Traversal",

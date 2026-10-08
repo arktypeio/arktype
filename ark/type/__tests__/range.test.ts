@@ -132,6 +132,18 @@ contextualize(() => {
 			attest(T.allows(new Date("2005/10/10"))).equals(false)
 		})
 
+		it("Date bound descriptions", () => {
+			attest(type("Date >= d'2023-01-01'").description).snap(
+				"a Date and 2023 or later"
+			)
+			attest(type("Date >= d'2023/1/1'").description).snap(
+				"a Date and 2023 or later"
+			)
+			attest(type("Date >= d'2023-01-01T14:30Z'").description).snap(
+				"a Date and January 1, 2023, 2:30 PM UTC or later"
+			)
+		})
+
 		it("dynamic Date", () => {
 			const now = new Date()
 			const T = type(`d'2000'< Date <=d'${now.toISOString()}'`)

@@ -2,7 +2,7 @@ import type { DescribeOptions } from "./describe.ts"
 import { type domainDescriptions, domainOf } from "./domain.ts"
 import type { Fn } from "./functions.ts"
 import type { satisfy } from "./generics.ts"
-import { isKeyOf } from "./records.ts"
+import { defineProperties, isKeyOf } from "./records.ts"
 
 // ECMAScript Objects
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -66,10 +66,19 @@ export const platformConstructors: platformConstructors = {
 	ArrayBuffer,
 	Blob,
 	File: FileConstructor,
-	FormData,
-	Headers,
-	Request,
-	Response,
+	// Node loads undici on the first read of any of these
+	get FormData() {
+		return FormData
+	},
+	get Headers() {
+		return Headers
+	},
+	get Request() {
+		return Request
+	},
+	get Response() {
+		return Response
+	},
 	URL
 }
 
@@ -97,18 +106,16 @@ export type TypedArrayObjects = instantiateConstructors<
 	keyof typedArrayConstructors
 >
 
+export type builtinConstructors = ecmascriptConstructors &
+	platformConstructors &
+	typedArrayConstructors
+
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const builtinConstructors = {
-	...ecmascriptConstructors,
-	...platformConstructors,
-	...typedArrayConstructors,
-	String,
-	Number,
-	Boolean
-}
-
-export type builtinConstructors = typeof builtinConstructors
+export const builtinConstructors: builtinConstructors = defineProperties(
+	defineProperties({ ...ecmascriptConstructors }, platformConstructors),
+	typedArrayConstructors
+)
 
 export type BuiltinObjectKind = keyof builtinConstructors
 
@@ -163,7 +170,7 @@ export const objectKindOf = <data extends object>(
 	while (
 		prototype?.constructor &&
 		(!isKeyOf(prototype.constructor.name, builtinConstructors) ||
-			!(data instanceof builtinConstructors[prototype.constructor.name]))
+			builtinConstructors[prototype.constructor.name].prototype !== prototype)
 	)
 		prototype = Object.getPrototypeOf(prototype)
 
@@ -195,6 +202,18 @@ export const hasObjectKind = <kind extends keyof builtinConstructors>(
 
 export const isArray: (data: unknown) => data is readonly unknown[] =
 	Array.isArray
+
+const dateToString = Date.prototype.toString
+const dateGetTime = Date.prototype.getTime
+
+export const isValidDate = (date: Date): boolean => {
+	if (date.toString !== dateToString) return date.toString() !== "Invalid Date"
+	try {
+		return !Number.isNaN(dateGetTime.call(date))
+	} catch {
+		return false
+	}
+}
 
 export const ecmascriptDescriptions = {
 	Array: "an array",

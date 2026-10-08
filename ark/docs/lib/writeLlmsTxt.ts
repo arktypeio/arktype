@@ -8,7 +8,8 @@ const publicDir = join(repoDirs.docs, "public")
 /** each docs section and the public path its llms.txt is served from */
 const sections = {
 	"(arktype)": "",
-	attest: join("docs", "attest")
+	attest: join("docs", "attest"),
+	regex: join("docs", "regex")
 }
 
 export const writeLlmsTxt = () => {

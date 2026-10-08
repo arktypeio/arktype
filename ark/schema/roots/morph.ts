@@ -1,32 +1,25 @@
-import {
-	arrayEquals,
-	liftArray,
-	throwParseError,
-	type array,
-	type listable,
-	type mutable
-} from "@ark/util"
+import { arrayEquals, liftArray, type array, type listable } from "@ark/util"
 import type { RootSchema } from "../kinds.ts"
+import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
+import { isArkErrorResult } from "../shared/errors.ts"
 import {
 	implementNode,
 	type nodeImplementationOf,
 	type RootKind
 } from "../shared/implement.ts"
-import { intersectOrPipeNodes } from "../shared/intersections.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
 import { $ark, registeredReference } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import type {
-	Traversal,
-	TraverseAllows,
-	TraverseApply
+import { TransformErrors } from "../shared/transform.ts"
+import {
+	applyMember,
+	type Traversal,
+	type TraverseAllows,
+	type TraverseApply,
+	type TraverseTransform
 } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
-import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Morph {
 	export interface Inner {
@@ -93,64 +86,13 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 		defaults: {
 			description: node =>
 				`a morph from ${node.rawIn.description} to ${node.rawOut?.description ?? "unknown"}`
-		},
-		intersections: {
-			morph: (l, r, ctx) => {
-				if (!l.hasEqualMorphs(r)) {
-					return throwParseError(
-						writeMorphIntersectionMessage(l.expression, r.expression)
-					)
-				}
-				const inTersection = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)
-				if (inTersection instanceof Disjoint) return inTersection
-
-				const baseInner: Omit<mutable<Morph.Inner>, "in"> = {
-					morphs: l.morphs
-				}
-
-				if (l.declaredIn || r.declaredIn) {
-					const declaredIn = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)
-					// we can't treat this as a normal Disjoint since it's just declared
-					// it should only happen if someone's essentially trying to create a broken type
-					if (declaredIn instanceof Disjoint) return declaredIn.throw()
-					else baseInner.declaredIn = declaredIn as never
-				}
-
-				if (l.declaredOut || r.declaredOut) {
-					const declaredOut = intersectOrPipeNodes(l.rawOut, r.rawOut, ctx)
-					if (declaredOut instanceof Disjoint) return declaredOut.throw()
-					else baseInner.declaredOut = declaredOut
-				}
-
-				// in case from is a union, we need to distribute the branches
-				// to can be a union as any schema is allowed
-				return inTersection.distribute(
-					inBranch =>
-						ctx.$.node("morph", {
-							...baseInner,
-							in: inBranch
-						}),
-					ctx.$.parseSchema
-				)
-			},
-			...defineRightwardIntersections("morph", (l, r, ctx) => {
-				const inTersection =
-					l.inner.in ? intersectOrPipeNodes(l.inner.in, r, ctx) : r
-				return (
-					inTersection instanceof Disjoint ? inTersection
-					: inTersection.equals(l.inner.in) ? l
-					: ctx.$.node("morph", {
-							...l.inner,
-							in: inTersection
-						})
-				)
-			})
 		}
 	})
 
 export class MorphNode extends BaseRoot<Morph.Declaration> {
-	serializedMorphs: string[] = this.morphs.map(registeredReference)
-	compiledMorphs = `[${this.serializedMorphs}]`
+	get serializedMorphs(): string[] {
+		return this.morphs.map(registeredReference)
+	}
 
 	lastMorph: Morph | BaseRoot | undefined =
 		this.inner.morphs[this.inner.morphs.length - 1]
@@ -158,10 +100,21 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		hasArkKind(this.lastMorph, "root") ? this.lastMorph : undefined
 	introspectableIn: BaseRoot | undefined = this.inner.in
 	introspectableOut: BaseRoot | undefined =
-		this.lastMorphIfNode ?
-			Object.assign(this.referencesById, this.lastMorphIfNode.referencesById) &&
-			this.lastMorphIfNode.rawOut
-		:	undefined
+		this.lastMorphIfNode && this.addPipedReferences(this.lastMorphIfNode).rawOut
+
+	private addPipedReferences(node: BaseRoot): BaseRoot {
+		if (!this._referencesById && node.includesAlias) {
+			this.includesAlias = true
+			this.copyReferences()
+		}
+		if (this._referencesById)
+			Object.assign(this._referencesById, node.referencesById)
+		return node
+	}
+
+	protected override get referencedBesidesChildren(): readonly BaseNode[] {
+		return this.lastMorphIfNode ? [this.lastMorphIfNode] : []
+	}
 
 	get shallowMorphs(): array<Morph> {
 		// if the morph input is a union, it should not contain any other shallow morphs
@@ -179,7 +132,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	override get rawOut(): BaseRoot {
 		return (
 			this.declaredOut ??
-			this.introspectableOut ??
+			this.lastMorphIfNode?.rawOut ??
 			$ark.intrinsic.unknown.internal
 		)
 	}
@@ -204,30 +157,86 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		return this.rawIn.meta.description ?? this.rawIn.defaultShortDescription
 	}
 
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		return ctx.fallback.morph({
-			code: "morph",
-			base: this.rawIn.toJsonSchemaRecurse(ctx),
-			out: this.introspectableOut?.toJsonSchemaRecurse(ctx) ?? null
-		})
-	}
-
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
-			if (!this.introspectableIn) return
-			js.return(js.invoke(this.introspectableIn))
+			js.return(this.introspectableIn ? js.invoke(this.introspectableIn) : true)
 			return
 		}
-		if (this.introspectableIn) js.line(js.invoke(this.introspectableIn))
-		js.line(`ctx.queueMorphs(${this.compiledMorphs})`)
+		if (js.traversalKind === "Transform") return this.compileTransform(js)
+		if (this.introspectableIn) js.invokeMember(this.introspectableIn)
+		js.line(`ctx.queueMorphs([${this.morphs.map(morph => js.ref(morph))}])`)
+	}
+
+	private compileTransform(js: NodeCompiler): void {
+		let result = "data"
+		if (this.introspectableIn?.transforms) {
+			js.initializeTransform([this.introspectableIn])
+				.transformKey("transformedIn", "data", [
+					{ node: this.introspectableIn }
+				])
+				.returnIfTransformFailed()
+			result = "transformedIn"
+		}
+		for (let i = 0; i < this.morphs.length; i++) {
+			const morph = this.morphs[i]
+			const morphed = `morphed${i}`
+			if (hasArkKind(morph, "root")) {
+				js.const(morphed, `ctx.pipe(${js.ref(morph)}, ${result})`).if(
+					`ctx._errors !== undefined && ${morphed} === ctx._errors`,
+					() => js.return("data")
+				)
+			} else {
+				const args = morph.length === 1 ? result : `${result}, ctx`
+				if (morph.length !== 1) js.line(`ctx.receive(${result})`)
+				js.const(morphed, `${js.ref(morph)}(${args})`).if(
+					`${js.ref(isArkErrorResult)}(${morphed})`,
+					() =>
+						js.requiresContext ?
+							js
+								.line(`ctx.receive(${result})`)
+								.line(`ctx.addMorphErrors(${morphed})`)
+								.return("data")
+						:	js.return(`new ${js.ref(TransformErrors)}(${morphed}, ${result})`)
+				)
+			}
+			result = morphed
+		}
+		js.return(result)
 	}
 
 	traverseAllows: TraverseAllows = (data, ctx) =>
 		!this.introspectableIn || this.introspectableIn.traverseAllows(data, ctx)
 
 	traverseApply: TraverseApply = (data, ctx) => {
-		if (this.introspectableIn) this.introspectableIn.traverseApply(data, ctx)
+		if (this.introspectableIn) applyMember(this.introspectableIn, data, ctx)
 		ctx.queueMorphs(this.morphs)
+	}
+
+	traverseTransform: TraverseTransform = (data, ctx) => {
+		const errorCount = ctx.currentErrorCount
+		let result =
+			this.introspectableIn?.transforms ?
+				ctx.transform(this.introspectableIn, data)
+			:	data
+		if (ctx.currentErrorCount > errorCount) return data
+		for (const morph of this.morphs) {
+			if (hasArkKind(morph, "root")) {
+				result = ctx.pipe(morph, result)
+				if (ctx._errors !== undefined && result === ctx._errors) return data
+				continue
+			}
+			ctx.receive(result)
+			const morphed =
+				morph.length === 1 ?
+					(morph as Morph.ContextFree)(result as never)
+				:	morph(result as never, ctx as never)
+			if (isArkErrorResult(morphed)) {
+				ctx.addMorphErrors(morphed)
+				return data
+			}
+			result = morphed
+		}
+		return result
 	}
 
 	/** Check if the morphs of r are equal to those of this node */
@@ -246,11 +255,3 @@ export const Morph = {
 	implementation,
 	Node: MorphNode
 }
-
-export const writeMorphIntersectionMessage = (
-	lDescription: string,
-	rDescription: string
-): string =>
-	`The intersection of distinct morphs at a single path is indeterminate:
-Left: ${lDescription}
-Right: ${rDescription}`

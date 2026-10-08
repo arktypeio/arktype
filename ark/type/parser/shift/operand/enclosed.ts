@@ -1,6 +1,7 @@
 import { rootSchema } from "@ark/schema"
 import {
 	Backslash,
+	cached,
 	isKeyOf,
 	throwParseError,
 	type ErrorMessage,
@@ -23,14 +24,16 @@ export type DoubleQuotedStringLiteral<contents extends string = string> =
 export type SingleQuotedStringLiteral<contents extends string = string> =
 	`'${contents}'`
 
-const regexExecArray = rootSchema({
-	proto: "Array",
-	sequence: "string",
-	required: {
-		key: "groups",
-		value: ["object", { unit: undefined }]
-	}
-})
+const regexExecArray = cached(() =>
+	rootSchema({
+		proto: "Array",
+		sequence: "string",
+		required: {
+			key: "groups",
+			value: ["object", { unit: undefined }]
+		}
+	})
+)
 
 export const parseEnclosed = (
 	s: RuntimeState,
@@ -70,7 +73,7 @@ export const parseEnclosed = (
 			s.root = s.ctx.$.node("morph", {
 				in: s.root,
 				morphs: (s: string) => regex.exec(s),
-				declaredOut: regexExecArray
+				declaredOut: regexExecArray()
 			})
 		}
 	} else if (isKeyOf(enclosing, enclosingQuote))

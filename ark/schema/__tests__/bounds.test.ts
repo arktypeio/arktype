@@ -2,8 +2,10 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	Disjoint,
 	boundKindPairsByLower,
+	node,
 	rootSchema,
-	writeInvalidLengthBoundMessage
+	writeInvalidLengthBoundMessage,
+	type ArkErrors
 } from "@ark/schema"
 import { entriesOf, flatMorph } from "@ark/util"
 
@@ -72,17 +74,17 @@ contextualize(() => {
 		})
 
 		attest(T.traverse(dateCases.lessThanMin)?.toString()).snap(
-			"must be 7:00:00.006 PM, December 31, 1969 or later (was 7:00:00.004 PM, December 31, 1969)"
+			"must be January 1, 1970, 12:00:00.006 AM UTC or later (was January 1, 1970, 12:00:00.004 AM UTC)"
 		)
 		attest(T.traverse(dateCases.equalToExclusiveMin)?.toString()).snap(
-			"must be 7:00:00.006 PM, December 31, 1969 or later (was 7:00:00.005 PM, December 31, 1969)"
+			"must be January 1, 1970, 12:00:00.006 AM UTC or later (was January 1, 1970, 12:00:00.005 AM UTC)"
 		)
 		attest(T.traverse(dateCases.between)).equals(dateCases.between)
 		attest(T.traverse(dateCases.equalToInclusiveMax)).equals(
 			dateCases.equalToInclusiveMax
 		)
 		attest(T.traverse(dateCases.greaterThanMax)?.toString()).snap(
-			"must be 7:00:00.010 PM, December 31, 1969 or earlier (was 7:00:00.011 PM, December 31, 1969)"
+			"must be January 1, 1970, 12:00:00.010 AM UTC or earlier (was January 1, 1970, 12:00:00.011 AM UTC)"
 		)
 	})
 
@@ -96,6 +98,19 @@ contextualize(() => {
 		attest(() => rootSchema({ domain: "string", exactLength: 1.5 })).throws(
 			writeInvalidLengthBoundMessage("exactLength", 1.5)
 		)
+	})
+
+	it("-0 rule", () => {
+		const T = rootSchema({
+			domain: "number",
+			min: { rule: -0, exclusive: true }
+		})
+		const error = (T.traverse(-1) as ArkErrors).issues[0]
+		attest(error.hasCode("min") && Object.is(error.rule, -0)).equals(true)
+	})
+
+	it("stringLimit", () => {
+		attest(node("min", 5).stringLimit).equals("5")
 	})
 
 	it("minLength 0 reduces to unconstrained", () => {

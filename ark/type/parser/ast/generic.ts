@@ -33,7 +33,7 @@ export type inferGenericInstantiation<
 				// intersect `${number}` to ensure that only array indices are mapped
 				[i in keyof g["names"] & `${number}` as g["names"][i]]: inferExpression<
 					argAsts[i & keyof argAsts],
-					resolveScope<g["arg$"], $>,
+					$,
 					args
 				>
 			}

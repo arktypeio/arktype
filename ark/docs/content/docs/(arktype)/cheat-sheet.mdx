@@ -147,7 +147,7 @@ const User = type({
 const out = User({ name: "Alan", age: "not a number" })
 
 if (out instanceof type.errors) {
-	// ArkErrors — array-like with .summary
+	// ArkErrors — iterable, with .summary and an .issues array
 	console.error(out.summary)
 } else {
 	// out is typed as { name: string; age?: number }

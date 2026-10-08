@@ -1,7 +1,10 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeUnresolvableMessage } from "@ark/schema"
+import {
+	writeShallowCycleErrorMessage,
+	writeUnresolvableMessage
+} from "@ark/schema"
 import type { Brand } from "@ark/util"
-import { scope, type, type Scope } from "arktype"
+import { scope, type, type Scope, type Type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 import { writeBadDefinitionTypeMessage } from "arktype/internal/parser/definition.ts"
 
@@ -97,6 +100,74 @@ contextualize(() => {
 			a: () => $.type("bad")
 		})
 		attest(() => $.export()).throws(writeUnresolvableMessage("bad"))
+	})
+
+	it("self-referencing thunk in scope", () => {
+		const { a } = scope({ a: () => ({ "a?": "a" }) }).export()
+
+		attest(a.expression).snap("{ a?: $a }")
+		attest(a.allows({ a: { a: {} } })).equals(true)
+		attest(a.allows({ a: 1 })).equals(false)
+
+		const $: Scope = scope({ a: () => $.type({ "a?": "a" } as never) } as never)
+		const types: Record<string, Type> = $.export() as never
+		attest(types.a.expression).snap("{ a?: $a }")
+
+		const shallow: Scope = scope({
+			a: () => shallow.type("a | string" as never)
+		} as never)
+		attest(() => shallow.export()).throws(
+			writeShallowCycleErrorMessage("a", ["a"])
+		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/813
+	it("cyclic thunks in scope", () => {
+		const $: Scope = scope({
+			a: () => $.type({ b: "b" } as never),
+			b: () => $.type({ a: "a" } as never)
+		} as never)
+		const types: Record<string, Type> = $.export() as never
+		const data: Record<string, unknown> = {}
+		data.b = { a: data }
+
+		attest(types.a.expression).snap("{ b: { a: $a } }")
+		attest(types.b.expression).snap("{ a: $a }")
+		attest(types.a(data)).equals(data)
+		attest(String(types.a({ b: { a: 5 } }))).snap(
+			"b.a must be an object (was a number)"
+		)
+	})
+
+	it("thunk referenced while parsing", () => {
+		const $: Scope = scope({
+			w: () => $.type("a | string" as never),
+			a: { v: "string", "w?": "w" }
+		} as never)
+		const { w }: Record<string, Type> = $.export() as never
+		attest(w.expression).snap("string | { v: string, w?: $w }")
+		attest(String(w({ v: "x", w: { v: 1 } }))).snap(
+			"w.v must be a string (was a number)"
+		)
+
+		const withDefault: Scope = scope({
+			w: () => withDefault.type({ x: ["a", "=", () => ({ n: 5 })] } as never),
+			a: { "n?": "a", "w?": "w" }
+		} as never)
+		attest(() => withDefault.export()).throws(
+			"Default for x.n must be an object (was a number)"
+		)
+
+		const throwing: Scope = scope({
+			w: () => throwing.type({ a: "a", b: "bad" } as never),
+			a: { "w?": "w" }
+		} as never)
+		attest(() => throwing.type("w" as never)).throws(
+			writeUnresolvableMessage("bad")
+		)
+		attest(() => throwing.type("a" as never)).throws(
+			writeUnresolvableMessage("bad")
+		)
 	})
 
 	it("docs example", () => {
