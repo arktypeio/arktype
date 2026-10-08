@@ -287,19 +287,6 @@ The `$ark.x` names that functions get in a type's `json` or `expression` are uni
 
 https://github.com/arktypeio/arktype/issues/1676
 
-### Fail when a morph returns errors from another copy of arktype
-
-A morph that returned `ArkErrors` or an `ArkError` from a duplicate installation of `arktype` was treated as a successful output, so later morphs ran on the errors object. A morph's result now counts as errors when it has arktype's `" arkKind"` brand and a `toJSON` method, which copies have had since 2.1.17:
-
-```ts
-const T = type("string").pipe(s => NumberFromOtherCopy(s))
-
-// previously the other copy's ArkErrors as output, now must be a number (was a string)
-T("x")
-```
-
-https://github.com/arktypeio/arktype/issues/1088
-
 ### Define a matcher whose cases a reordering would separate
 
 A matcher whose cases get grouped out of order, like tuples discriminated by an element, threw at definition even though no input could reach two of the cases:

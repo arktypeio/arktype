@@ -367,44 +367,6 @@ contextualize(() => {
 		}
 	})
 
-	// https://github.com/arktypeio/arktype/issues/1088
-	it("morph returning errors from a duplicate installation", () => {
-		// a copied prototype fails instanceof like a duplicate's would
-		const duplicate = <t extends object>(o: t): t =>
-			Object.setPrototypeOf(
-				o,
-				Object.create(
-					null,
-					Object.getOwnPropertyDescriptors(Object.getPrototypeOf(o))
-				)
-			)
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const Num = $.type("number")
-			const toErrors = (s: string) => duplicate(Num(s) as type.errors)
-			const toError = (s: string) =>
-				duplicate((Num(s) as type.errors).issues[0])
-
-			const Root = $.type("string")
-				.pipe(toErrors)
-				.pipe(() => "next")
-			attest(String(Root("x"))).snap("must be a number (was a string)")
-
-			const Obj = $.type({
-				a: $.type("string").pipe(toErrors),
-				b: $.type("string").pipe((s, ctx) => toErrors(s)),
-				c: $.type("string").pipe(toError),
-				d: "number"
-			})
-			attest(String(Obj({ a: "x", b: "y", c: "z", d: 0 }))).snap(
-				"a must be a number (was a string)\nb must be a number (was a string)\nmust be a number (was a string)"
-			)
-			attest(String(Obj({ a: "x", b: "y", c: "z", d: "" }))).snap(
-				"d must be a number (was a string)\na must be a number (was a string)\nb must be a number (was a string)\nmust be a number (was a string)"
-			)
-		}
-	})
-
 	it("unary morph arity", () => {
 		for (const jitless of [false, true]) {
 			const T = scope({}, { jitless }).type({

@@ -22,16 +22,9 @@ import { arkKind } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 
-export const isArkErrorResult = (result: unknown): result is ArkErrorResult => {
-	if (typeof result !== "object" || result === null) return false
-	const kind = (result as ArkErrorResult)[arkKind]
-	// instanceof misses errors from another copy of arktype,
-	// and parsed JSON can carry the brand but not a method
-	return (
-		(kind === "error" || kind === "errors") &&
-		typeof (result as ArkErrorResult).toJSON === "function"
-	)
-}
+export const isArkErrorResult = (result: unknown): result is ArkErrorResult =>
+	typeof result === "object" &&
+	(result instanceof ArkError || result instanceof ArkErrors)
 
 export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode

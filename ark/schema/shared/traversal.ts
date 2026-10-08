@@ -13,7 +13,6 @@ import type { Morph } from "../roots/morph.ts"
 import {
 	ArkError,
 	ArkErrors,
-	isArkErrorResult,
 	type ArkErrorCode,
 	type ArkErrorContextInput,
 	type ArkErrorInput,
@@ -22,7 +21,7 @@ import {
 } from "./errors.ts"
 import { $ark } from "./registry.ts"
 import { copyOf, TransformErrors } from "./transform.ts"
-import { hasArkKind, inProgress, isNode } from "./utils.ts"
+import { inProgress, isNode } from "./utils.ts"
 
 export type MorphsAtPath = {
 	path: ReadonlyPath
@@ -278,7 +277,7 @@ export class Traversal {
 	}
 
 	addMorphErrors(result: ArkErrorResult): void {
-		if (hasArkKind(result, "error")) this.errors.add(result)
+		if (result instanceof ArkError) this.errors.add(result)
 		else this.errors.merge(result)
 	}
 
@@ -606,14 +605,14 @@ export class Traversal {
 
 			const result = morph(data as never, this)
 
-			if (isArkErrorResult(result)) {
-				if (hasArkKind(result, "error")) {
-					// if an ArkError was returned, ensure it has been added to errors
-					this.errors.add(result)
+			if (result instanceof ArkError) {
+				// if an ArkError was returned, ensure it has been added to errors
+				this.errors.add(result)
 
-					// skip any remaining morphs at the current path
-					break
-				}
+				// skip any remaining morphs at the current path
+				break
+			}
+			if (result instanceof ArkErrors) {
 				// if the morph was a direct reference to another node,
 				// errors will have been added directly via this piped context
 				if (!morphIsNode) {
