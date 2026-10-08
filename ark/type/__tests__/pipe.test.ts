@@ -354,6 +354,19 @@ contextualize(() => {
 		)
 	})
 
+	it("nested morph error paths", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Inner = $.type({ c: "number" })
+			const Middle = $.type({ b: ["object", "=>", o => Inner(o)] })
+			const Outer = $.type({ a: ["object", "=>", o => Middle(o)] })
+			const out = Outer({ a: { b: { c: "x" } } }) as ArkErrors
+
+			attest(out.toString()).snap("a.b.c must be a number (was a string)")
+			attest(out.issues[0].toJSON().path).snap(["a", "b", "c"])
+		}
+	})
+
 	it("unary morph arity", () => {
 		for (const jitless of [false, true]) {
 			const T = scope({}, { jitless }).type({

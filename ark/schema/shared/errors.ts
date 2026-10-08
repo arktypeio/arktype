@@ -81,6 +81,8 @@ export class ArkError<
 		if (relativePath) basePath.push(...relativePath)
 		if (prefixPath) basePath.unshift(...prefixPath)
 		this.path = new ReadonlyPath(...basePath)
+		// transform and toJSON spread input.path over this.path
+		if (input.path && (prefixPath || relativePath)) input.path = this.path
 		this.data = "data" in input ? input.data : data
 	}
 
