@@ -88,12 +88,17 @@ import { other } from "./other.ts"`
 				{ "/other.ts": "export const other = 1" },
 				{ runtime: "arktype" }
 			)
-			const [specifier] = Object.keys(result.modules)
-			attest(result.code).equals(`${source}\nimport "${specifier}"`)
+			attest(result.code).snap(`import { type } from "arktype"
+let def = "string"
+def = "number"
+export const Trimmed = type("string").pipe(s => s.trim())
+export const T = type(def)
+import { other } from "./other.ts"
+import "~arktype/units/1japii3t7y8"`)
 			attest(result.diagnostics.map(d => `${d.rule} ${d.severity}`)).snap([
 				"R1 warning"
 			])
-			attest(result.modules[specifier].split("\n")[0]).snap(
+			attest(result.modules["~arktype/units/1japii3t7y8"].split("\n")[0]).snap(
 				'import { registerPrecompiledUnits } from "arktype/internal"'
 			)
 		})

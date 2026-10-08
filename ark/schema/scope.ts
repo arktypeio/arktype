@@ -356,17 +356,25 @@ const bindRegisteredUnit = (root: BaseRoot): boolean => {
 
 // compiling reads each function's arity and whether the set engine is installed, neither in the hash
 const precompiledKeyOf = (root: BaseRoot): string => {
-	const aritiesByName: Record<string, number> = {}
+	// a registered name's count depends on what was registered before, so each is keyed by its base name and first occurrence
+	const keysByName: Record<string, string> = {}
+	const content = root.hash.replace(
+		/(?<!\\)"\$ark\.([\w$]+)"/g,
+		(_, name: string) =>
+			`"${(keysByName[name] ??= `${name.replace(/\$[1-9]\d*$/, "")}#${Object.keys(keysByName).length}`)}"`
+	)
+	const arities = new Set<string>()
 	for (const id in root.referencesById) {
 		forEachValue(root.referencesById[id].inner, value => {
-			if (typeof value === "function" && !isNode(value))
-				aritiesByName[nameOf(value)] = arityOf(value)
+			if (typeof value !== "function" || isNode(value)) return
+			const key = keysByName[nameOf(value)]
+			// a builtin constructor is hashed by its global name, which fixes its arity
+			if (key) arities.add(`${key}:${arityOf(value)}`)
 		})
 	}
-	const arities = Object.keys(aritiesByName)
-		.sort()
-		.map(name => `${name}:${aritiesByName[name]}`)
-	return hashOf(`${root.hash}\n${arities}\n${$ark.sets !== undefined}`)
+	return hashOf(
+		`${content}\n${[...arities].sort()}\n${$ark.sets !== undefined}`
+	)
 }
 
 const precompileReferences = (

@@ -155,6 +155,37 @@ contextualize(() => {
 		})
 	})
 
+	const named = <f extends Function>(name: string, f: f): f =>
+		Object.defineProperty(f, "name", { value: name })
+
+	it("binds a unit for a function registered under a counted name", async () => {
+		const units = await precompileUnits([
+			type("number").narrow(named("isSignedPrecompiled", n => n > 0))
+		])
+		const T = type("number").narrow(named("isSignedPrecompiled", n => n < 0))
+		attest(T.internal.hash).snap(
+			'{"kind":"intersection","domain":"number","predicate":["$ark.isSignedPrecompiled$1"]}'
+		)
+		attest(isPrecompiled(units, T.internal)).equals(true)
+		attest(T(-1)).equals(-1)
+		attest(T(1).toString()).snap(
+			"must be valid according to isSignedPrecompiled (was 1)"
+		)
+	})
+
+	it("misses a unit whose functions are shared differently", async () => {
+		const isShared = named("isSharedPrecompiled", (n: number) => n > 0)
+		const units = await precompileUnits([
+			type({ a: ["number", ":", isShared], b: ["number", ":", isShared] })
+		])
+		const T = type({
+			a: ["number", ":", named("isSharedPrecompiled", (n: number) => n > 0)],
+			b: ["number", ":", named("isSharedPrecompiled", (n: number) => n < 0)]
+		})
+		attest(isPrecompiled(units, T.internal)).equals(false)
+		attest(T({ a: 1, b: -1 })).equals({ a: 1, b: -1 })
+	})
+
 	it("misses a cyclic type", async () => {
 		const def = { precompiledValue: "string", "next?": "this" } as const
 		const units = await precompileUnits([scope({}).type(def)])
