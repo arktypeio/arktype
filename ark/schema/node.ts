@@ -193,8 +193,6 @@ export abstract class BaseNode<
 				this.includesShallowAlias ||= this.children[i].includesShallowAlias
 		}
 
-		if (this.includesAlias) this.copyReferences()
-
 		this.allowsRequiresContext =
 			this.includesContextualPredicate || this.isCyclic
 		this.allows =
@@ -333,13 +331,6 @@ export abstract class BaseNode<
 
 	protected get referencedBesidesChildren(): readonly BaseNode[] {
 		return noReferences
-	}
-
-	protected copyReferences(): void {
-		const referencesById: Record<string, BaseNode> = { [this.id]: this }
-		for (let i = 0; i < this.children.length; i++)
-			Object.assign(referencesById, this.children[i].referencesById)
-		this._referencesById = referencesById
 	}
 
 	private collectReferences(): Record<string, BaseNode> {

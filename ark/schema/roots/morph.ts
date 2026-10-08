@@ -98,15 +98,11 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		hasArkKind(this.lastMorph, "root") ? this.lastMorph : undefined
 	introspectableIn: BaseRoot | undefined = this.inner.in
 	introspectableOut: BaseRoot | undefined =
-		this.lastMorphIfNode && this.addPipedReferences(this.lastMorphIfNode).rawOut
+		this.lastMorphIfNode && this.includePiped(this.lastMorphIfNode).rawOut
 
-	private addPipedReferences(node: BaseRoot): BaseRoot {
-		if (!this._referencesById && node.includesAlias) {
-			this.includesAlias = true
-			this.copyReferences()
-		}
-		if (this._referencesById)
-			Object.assign(this._referencesById, node.referencesById)
+	// the node a morph pipes to isn't a child, so its aliases are included here
+	private includePiped(node: BaseRoot): BaseRoot {
+		this.includesAlias ||= node.includesAlias
 		return node
 	}
 
