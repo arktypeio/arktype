@@ -45,7 +45,7 @@ export type EcmascriptObjects = satisfy<
 >
 
 /** Node18 */
-export const FileConstructor = globalThis.File ?? Blob
+export const FileConstructor = globalThis.File ?? globalThis.Blob
 
 // need to type these explicitly due to a resolution issue
 export type platformConstructors = {
@@ -64,22 +64,22 @@ export type platformConstructors = {
 // Must be implemented in Node etc. as well as the browser to include here
 export const platformConstructors: platformConstructors = {
 	ArrayBuffer,
-	Blob,
+	Blob: globalThis.Blob,
 	File: FileConstructor,
 	// Node loads undici on the first read of any of these
 	get FormData() {
-		return FormData
+		return globalThis.FormData
 	},
 	get Headers() {
-		return Headers
+		return globalThis.Headers
 	},
 	get Request() {
-		return Request
+		return globalThis.Request
 	},
 	get Response() {
-		return Response
+		return globalThis.Response
 	},
-	URL
+	URL: globalThis.URL
 }
 
 export type PlatformObjects = instantiateConstructors<
@@ -170,7 +170,7 @@ export const objectKindOf = <data extends object>(
 	while (
 		prototype?.constructor &&
 		(!isKeyOf(prototype.constructor.name, builtinConstructors) ||
-			builtinConstructors[prototype.constructor.name].prototype !== prototype)
+			builtinConstructors[prototype.constructor.name]?.prototype !== prototype)
 	)
 		prototype = Object.getPrototypeOf(prototype)
 

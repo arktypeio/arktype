@@ -1,6 +1,8 @@
+import { writeUnresolvableMessage } from "@ark/schema"
 import {
 	ecmascriptConstructors,
 	platformConstructors,
+	throwParseError,
 	type EcmascriptObjects,
 	type KeySet,
 	type PlatformObjects
@@ -24,7 +26,8 @@ for (const constructors of [ecmascriptConstructors, platformConstructors]) {
 		if (k in omittedPrototypes) continue
 		instanceOfDefinitions[k] = () => [
 			"instanceof",
-			constructors[k as keyof typeof constructors]
+			constructors[k as keyof typeof constructors] ??
+				throwParseError(writeUnresolvableMessage(k))
 		]
 	}
 }
