@@ -1,6 +1,7 @@
 import type { CallExpression, Node } from "oxc-parser"
 import {
 	bindingOfFunction,
+	contains,
 	enclosingFunctionOf,
 	runtimeExports,
 	staticBodyOf,
@@ -16,13 +17,15 @@ import {
 } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
 import type { SiteKind } from "./precompile.ts"
-import { isTransparent, type Reference } from "./scope.ts"
+import { isTransparent, walk, type Reference } from "./scope.ts"
 
 export interface SiteCandidate {
 	kind: SiteKind
 	root: Node
 	// the nearest enclosing function, which runs the site each time it is called
 	fn: FunctionNode | undefined
+	// a static helper the site is written in, which folds the site into each call that reaches it
+	helper: FunctionNode | undefined
 	state: SiteState
 	// the calls the site climbed through, innermost first, as the callee or argument the site can shrink back to
 	fallbacks: Node[]
@@ -39,7 +42,6 @@ export const findSites = (
 		if (!found) continue
 		const [kind, root] = found
 		const fn = enclosingFunctionOf(reference.id)
-		if (fn && isFoldedHelper(fn, module)) continue
 		const value =
 			kind === "reference" ?
 				interpreter.valueOfBinding(reference.binding!, module)
@@ -57,12 +59,15 @@ export const findSites = (
 			kind,
 			root: kind === "helper" ? reference.id : root,
 			fn,
+			helper: fn && isFoldedHelper(fn, module) ? fn : undefined,
 			state: createSiteState(top, module),
 			fallbacks
 		})
 	}
+	// a call to a static helper is a site only if the helper's own sites do not cover it, so those settle first
 	return candidates.sort(
 		(l, r) =>
+			settleOrderOf(l) - settleOrderOf(r) ||
 			depthOf(l.fn) - depthOf(r.fn) ||
 			l.state.node.start - r.state.node.start ||
 			r.state.node.end - l.state.node.end
@@ -138,7 +143,7 @@ const climb = (
 	}
 }
 
-// a static helper that is only ever called is folded at each call, so its body holds no sites of its own
+// a static helper that is only ever called, so a site in it is its own only if it reads none of the helper's bindings
 export const isFoldedHelper = (
 	fn: FunctionNode,
 	module: SourceModule
@@ -155,6 +160,29 @@ export const isFoldedHelper = (
 		)
 	)
 }
+
+// e.g. `id` in `(id: string) => type({ id: "string" }).pipe(o => o.id === id)`
+export const readsBindingOf = (
+	fn: FunctionNode,
+	node: Node,
+	module: SourceModule
+): boolean => {
+	let result = false
+	walk(node, child => {
+		const scope =
+			child.type === "Identifier" ?
+				module.scopes.referencesById.get(child)?.binding?.scope.node
+			:	undefined
+		if (scope && contains(fn, scope) && !contains(node, scope)) result = true
+		return !result
+	})
+	return result
+}
+
+const settleOrderOf = (candidate: SiteCandidate) =>
+	!candidate.helper ? 2
+	: candidate.kind === "helper" ? 1
+	: 0
 
 const depthOf = (fn: FunctionNode | undefined) => {
 	let depth = 0

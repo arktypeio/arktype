@@ -22,7 +22,12 @@ import {
 } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
 import { unwrapExpression } from "./scope.ts"
-import { findSites, isFoldedHelper, type SiteCandidate } from "./sites.ts"
+import {
+	findSites,
+	isFoldedHelper,
+	readsBindingOf,
+	type SiteCandidate
+} from "./sites.ts"
 
 export type PrecompileMode = "standalone" | "cache"
 
@@ -120,6 +125,7 @@ export class Precompiler {
 	config: string | undefined
 	// a site the mode cannot build fails a standalone build, while cache mode leaves it to runtime
 	private rejectionSeverity: Diagnostic["severity"]
+	private helperSitesByModule = new Map<SourceModule, Node[]>()
 
 	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
 		this.graph = new ModuleGraph(host, opts?.cwd)
@@ -153,6 +159,8 @@ export class Precompiler {
 		const settled: SiteCandidate[] = []
 		const sites: Site[] = []
 		const diagnostics: Diagnostic[] = []
+		const helperSites: Node[] = []
+		this.helperSitesByModule.set(module, helperSites)
 		for (const candidate of candidates) {
 			if (
 				settled.some(
@@ -165,6 +173,11 @@ export class Precompiler {
 				continue
 			settled.push(candidate)
 			if (isFolded(candidate, settled, this.interpreter)) continue
+			if (candidate.helper) {
+				if (readsBindingOf(candidate.helper, candidate.state.node, module))
+					continue
+				helperSites.push(candidate.state.node)
+			}
 			const site = this.finalize(candidate, module)
 			sites.push(site)
 			diagnostics.push(...this.diagnosticsOf(site, candidate, module))
@@ -173,7 +186,7 @@ export class Precompiler {
 		if (this.mode === "standalone")
 			diagnostics.push(...this.checkStandalone(module, candidates))
 		return {
-			sites,
+			sites: sites.sort((l, r) => l.start - r.start),
 			diagnostics: diagnostics.sort((l, r) => l.start - r.start),
 			dependencies: this.graph.dependenciesOf(id)
 		}
@@ -182,6 +195,14 @@ export class Precompiler {
 	private settle(candidate: SiteCandidate): boolean {
 		for (;;) {
 			const state = this.interpreter.evaluateSite(candidate.state)
+			// a call whose every request is in a static helper's own sites reaches them at runtime, and defines nothing itself
+			if (
+				state.requests.length &&
+				state.requests.every(([node, module]) =>
+					this.helperSitesOf(module).some(site => contains(site, node))
+				)
+			)
+				return false
 			// reading a member of a Type, Scope or Module makes no request, so it is not a site of its own
 			if (
 				candidate.kind === "reference" &&
@@ -196,6 +217,21 @@ export class Precompiler {
 			candidate.state = createSiteState(fallback, state.module)
 			this.interpreter.sitesByNode.set(fallback, candidate.state)
 		}
+	}
+
+	private helperSitesOf(module: SourceModule): Node[] {
+		let result = this.helperSitesByModule.get(module)
+		if (result) return result
+		this.helperSitesByModule.set(module, (result = []))
+		for (const candidate of findSites(module, this.graph, this.interpreter)) {
+			if (
+				candidate.helper &&
+				this.settle(candidate) &&
+				!readsBindingOf(candidate.helper, candidate.state.node, module)
+			)
+				result.push(candidate.state.node)
+		}
+		return result
 	}
 
 	// a rejected validation, or a call to a static helper that makes no request of its own, leaves its callee or argument as the site

@@ -54,7 +54,7 @@ export function make() {
 	return type(y)
 }
 const y = "number"`)
-			).snap(["4:18 accepted string"])
+			).snap(["2:21 accepted string", "6:9 accepted number"])
 		})
 
 		it("imports, re-exports and namespaces", () => {
@@ -199,6 +199,34 @@ const B = optional(type(helpers.label("a")))`,
 					}
 				)
 			).snap(["8:11 accepted number < 4", '9:11 accepted "a" | undefined'])
+		})
+
+		it("sites in static helpers", () => {
+			const source = `import { type } from "arktype"
+import { parseNames } from "./names.ts"
+const Row = type({ id: "string" })
+const createQuery = (options: { type: unknown; run: () => unknown }) => {
+	const run = async () => options.run()
+	return { run, type: options.type }
+}
+const rowsQuery = (id: string) => createQuery({ type: Row.array(), run: () => id })
+export const load = async (id: string) => rowsQuery(id).run()
+export const viaHelper = rowsQuery("x")
+export const parseRows = (data: unknown) => Row.array()(data)
+const sized = (n: number) => Row.array().atMostLength(n)
+export const Pair = sized(2)
+export const handle = (input: unknown) => parseNames(input)`
+			const files = {
+				"/names.ts": `import { type } from "arktype"
+export const parseNames = (data: unknown) => type("string[]")(data)`
+			}
+			attest(statusesOf(source, files)).snap([
+				"3:13 accepted { id: string }",
+				"8:55 accepted { id: string }[]",
+				"11:45 accepted { id: string }[]",
+				"13:21 accepted { id: string }[] <= 2"
+			])
+			attest(diagnosticsOf(source, files)).snap([])
 		})
 
 		it("helpers over types", () => {
@@ -540,9 +568,9 @@ namespace N { export const b = "number" }
 export const A = type((E as any).B ?? "boolean")
 export const B = type((N as any).b ?? "boolean")`)
 			).snap([
+				"5:9 rejected\n  `def` is declared again at /main.ts:4:11, so its value at the site is not known",
 				"11:18 rejected\n  `E` is declared again at /main.ts:8:6, so its value at the site is not known",
-				"12:18 rejected\n  `N` is declared in a TypeScript namespace or enum",
-				"5:9 rejected\n  `def` is declared again at /main.ts:4:11, so its value at the site is not known"
+				"12:18 rejected\n  `N` is declared in a TypeScript namespace or enum"
 			])
 		})
 
@@ -560,8 +588,8 @@ export const D = () => {
 }
 var x = "string"`)
 			).snap([
-				"4:22 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
 				"2:29 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
+				"4:22 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
 				"5:25 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
 				"7:12 rejected\n  `y` can be read before its declaration (/main.ts:8:6)"
 			])
