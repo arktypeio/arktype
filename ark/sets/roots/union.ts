@@ -380,8 +380,8 @@ const viableOrderedCandidates = (
 					for (const nextIndex of nextGroup) {
 						if (currentIndex > nextIndex) {
 							if (
-								originalBranches[currentIndex].overlaps(
-									originalBranches[nextIndex]
+								originalBranches[currentIndex].rawIn.overlaps(
+									originalBranches[nextIndex].rawIn
 								)
 							) {
 								// if the order was not preserved and the branches overlap,

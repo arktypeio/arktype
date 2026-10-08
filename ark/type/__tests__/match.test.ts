@@ -624,6 +624,24 @@ contextualize(() => {
 >`)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1445
+	it("discriminates reordered cases with disjoint inputs", () => {
+		const Dir = type({ "[string]": "unknown" })
+
+		const m = match
+			.case(["string", Dir], () => -1)
+			.case([Dir, "string"], () => 1)
+			.case(["string", "string"], () => 2)
+			.case([Dir, Dir], () => 0)
+			.default(() => null)
+
+		attest(m(["a", {}])).equals(-1)
+		attest(m([{}, "a"])).equals(1)
+		attest(m(["b", "a"])).equals(2)
+		attest(m([{}, {}])).equals(0)
+		attest(m([0, 0])).equals(null)
+	})
+
 	it("allows number keys", () => {
 		const numeric = match({
 			0: function numericZeroCase(n) {
