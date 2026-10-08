@@ -101,6 +101,8 @@ const toResolvedJsonSchema = (
 		// keyword identifies arktype's own phrase, which JSON Schema has no key for
 		if (k === "keyword") continue
 		const v = (node.meta as dict)[k]
+		// JSON can't represent a function like a message writer
+		if (typeof v === "function" && k !== "default") continue
 		// metaJson serializes non-primitives like [5] to references like
 		// "$ark.array1", so prefer the original value when it is valid JSON
 		// (jsonData's object domain also allows functions, so exclude them)

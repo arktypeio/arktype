@@ -164,6 +164,17 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 ### Reserve `meta.keyword`
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
+### Omit function meta from JSON Schema
+
+JSON Schema can't represent a function, so a meta value like a custom `message` writer was copied as an internal reference whose name depended on what else was registered. It's now omitted:
+
+```ts
+// previously { type: "string", message: "$ark.message" }, now { type: "string" }
+type("string")
+	.configure({ message: () => "a letter" })
+	.toJsonSchema({ dialect: null })
+```
+
 ### Precompile keywords
 
 `arktype/internal/precompiled.js` registers the code compiled for arktype's keywords when it's built. Imported before `arktype`, it lets a keyword bind that code instead of generating it, so keywords resolve faster and validate with compiled code even when `jitless` or under a Content-Security-Policy that blocks `eval`. `object.json` and `object.json.stringify` are cyclic, so they aren't precompiled:

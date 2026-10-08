@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
@@ -182,6 +181,11 @@ contextualize(() => {
 		})
 	})
 
+	it("omits function meta", () => {
+		const T = type("string").configure({ message: () => "a letter" })
+		attest(T.toJsonSchema({ dialect: null })).snap({ type: "string" })
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1470
 	it("configured union of literals as enum", () => {
 		const Provider = type("'sqlite' | 'postgresql'").configure({
@@ -200,10 +204,7 @@ contextualize(() => {
 
 		const letterMessage = () => "a letter"
 		const Messaged = type("'a' | 'b'").configure({ message: letterMessage })
-		attest<object>(Messaged.toJsonSchema({ dialect: null })).snap({
-			enum: ["a", "b"],
-			message: registeredReference(letterMessage)
-		})
+		attest(Messaged.toJsonSchema({ dialect: null })).snap({ enum: ["a", "b"] })
 
 		const Described = type("'a'").describe("first").or("'b'").configure({
 			title: "Letter"
