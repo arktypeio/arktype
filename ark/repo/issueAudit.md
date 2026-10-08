@@ -4,7 +4,7 @@ This audit covers the 223 issues open on arktypeio/arktype on 2026-10-07. Every 
 
 | Category                                                                               | Issues                                       | Suggested action                        |
 | -------------------------------------------------------------------------------------- | -------------------------------------------- | --------------------------------------- |
-| [Fix tracker](#fix-tracker)                                                            | 13 fixed, 0 awaiting a decision, 3 in review | post the comments on fixed issues       |
+| [Fix tracker](#fix-tracker)                                                            | 15 fixed, 0 awaiting a decision, 1 in review | post the comments on fixed issues       |
 | [Easy-win bugs](#easy-win-bugs)                                                        | 16                                           | fix on featherduster                              |
 | [Clear bugs](#clear-bugs)                                                              | 28                                           | schedule; 16 need a decision first      |
 | [Fixed on featherduster](#fixed-on-featherduster)                                                           | 22                                           | close when featherduster ships                    |
@@ -23,24 +23,24 @@ Each entry lists the package the work lands in, the effort, whether the change i
 
 This section is updated as fixes from this audit land. A fix that only corrects behavior lands on the featherduster branch directly. One that makes an API or behavior decision waits here for approval first. Each landed fix comes with a comment to post on its issue. Every snippet in a comment was run against the fixed tree. The comments refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
 
-| Issue              | Status        | Commits              |
-| ------------------ | ------------- | -------------------- |
-| [#1121](#fix-1121) | fixed in featherduster  | 23f54d05b            |
-| [#1473](#fix-1473) | fixed in featherduster  | 312718029            |
-| [#1306](#fix-1306) | fixed in featherduster  | 99934ba9f            |
-| [#1470](#fix-1470) | fixed in featherduster  | f923ffeb1            |
-| [#1529](#fix-1529) | fixed in featherduster  | f7c43123b, 49fea0d79 |
-| [#1555](#fix-1555) | fixed in featherduster  | 0332e7a9d            |
-| [#1548](#fix-1548) | fixed in featherduster  | 09fb6f7f9            |
-| [#1530](#fix-1530) | fixed in featherduster  | 196ced06c            |
-| [#1577](#fix-1577) | fixed in featherduster  | 46acabbf1            |
-| [#1430](#fix-1430) | fixed in featherduster  | 8c66cc7c1            |
-| [#1600](#fix-1600) | fixed in featherduster  | f1fc4e798            |
-| [#1676](#fix-1676) | fixed in featherduster  | 84ff9fbb6            |
-| [#1088](#fix-1088) | fixed in featherduster  | 8d6dceecd            |
-| [#1445](#fix-1445) | fix in review | `fix/match-order`    |
-| [#1023](#fix-1023) | fix in review | `fix/infer`          |
-| [#1160](#fix-1160) | fix in review | `fix/infer`          |
+| Issue              | Status        | Commits                                                          |
+| ------------------ | ------------- | ---------------------------------------------------------------- |
+| [#1121](#fix-1121) | fixed in featherduster  | 23f54d05b                                                        |
+| [#1473](#fix-1473) | fixed in featherduster  | 312718029                                                        |
+| [#1306](#fix-1306) | fixed in featherduster  | 99934ba9f                                                        |
+| [#1470](#fix-1470) | fixed in featherduster  | f923ffeb1                                                        |
+| [#1529](#fix-1529) | fixed in featherduster  | f7c43123b, 49fea0d79                                             |
+| [#1555](#fix-1555) | fixed in featherduster  | 0332e7a9d                                                        |
+| [#1548](#fix-1548) | fixed in featherduster  | 09fb6f7f9                                                        |
+| [#1530](#fix-1530) | fixed in featherduster  | 196ced06c                                                        |
+| [#1577](#fix-1577) | fixed in featherduster  | 46acabbf1                                                        |
+| [#1430](#fix-1430) | fixed in featherduster  | 8c66cc7c1                                                        |
+| [#1600](#fix-1600) | fixed in featherduster  | f1fc4e798                                                        |
+| [#1676](#fix-1676) | fixed in featherduster  | 84ff9fbb6                                                        |
+| [#1088](#fix-1088) | fixed in featherduster  | 8d6dceecd                                                        |
+| [#1445](#fix-1445) | fixed in featherduster  | 9987af9cb, 551d873e1, d5b4fc498, 35cbdb031, 6060504dc, 309c867ee |
+| [#1160](#fix-1160) | fixed in featherduster  | a55e764a7                                                        |
+| [#1023](#fix-1023) | fix in review | `fix/infer`                                                      |
 
 ### Fixed in featherduster
 
@@ -356,21 +356,82 @@ Not changed: `instanceof type.errors` in your own code still only matches its ow
 
 Workaround on 2.2.8: convert in the morph, e.g. `out instanceof otherType.errors ? ctx.error({ message: out.summary }) : out`.
 
+### <a id="fix-1445"></a>[#1445](https://github.com/arktypeio/arktype/issues/1445) ParseError when `match`ing against a [string, {[string]: unknown}]
+
+Fixed in featherduster by 9987af9cb and 551d873e1 and d5b4fc498 and 35cbdb031 and 6060504dc and 309c867ee.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in 9987af9.
+
+To discriminate a matcher, ArkType groups its cases by the value at an index, which can reorder them. It then checks whether any reordered cases overlap, but it compared the whole cases, including their handlers, and two different handlers can't be intersected, so it threw at definition even though no input can reach two of your cases. It now compares only the cases' inputs:
+
+```ts
+const Dir = type({ "[string]": "unknown" })
+
+const compare = match
+	.case(["string", Dir], () => -1)
+	.case([Dir, "string"], () => 1)
+	.case(["string", "string"], ([a, b]) => a.localeCompare(b))
+	.case([Dir, Dir], ([a, b]) =>
+		Object.keys(a)[0].localeCompare(Object.keys(b)[0])
+	)
+	.default(() => 0)
+
+const entries = [
+	{ Cropped: ["Allacma fusca_1.JPEG"] },
+	"analysis.json",
+	"a.txt",
+	{ B: [] }
+]
+entries.sort((a, b) => compare([a, b]))
+// ["a.txt", "analysis.json", { B: [] }, { Cropped: ["Allacma fusca_1.JPEG"] }]
+```
+
+Cases whose inputs overlap still run in the order you wrote them.
+
+On 2.2.8, every ordering of these four cases throws. Matching each entry on its own works:
+
+```ts
+const sortKey = match
+	.case(Dir, dir => [1, Object.keys(dir)[0]] as const)
+	.case("string", file => [0, file] as const)
+	.default(() => [2, ""] as const)
+
+entries.sort((a, b) => {
+	const [aRank, aName] = sortKey(a)
+	const [bRank, bName] = sortKey(b)
+	return aRank - bRank || aName.localeCompare(bName)
+})
+// same result
+```
+
+### <a id="fix-1160"></a>[#1160](https://github.com/arktypeio/arktype/issues/1160) Strip optional/default type-level attributes on `.required()`
+
+Fixed in featherduster by a55e764a7.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in a55e764.
+
+`.required()` made a defaulted key required at runtime, but its inferred type kept the default, so `inferIn` still treated the key as optional. The same applied to defaulted morphs, defaulted tuple elements and the `Required<T>` generic.
+
+```ts
+const T = type({ foo: "string = 'bar'" }).required()
+
+type In = typeof T.inferIn // { foo: string } (was { foo?: string })
+T({}).toString() // "foo must be a string (was missing)"
+```
+
+Workaround on 2.2.8: cast the result, e.g. `type({ foo: "string = 'bar'" }).required().as<{ foo: string }>()`.
+
 ### Ready, awaiting a decision
 
 ### In review
 
-### <a id="fix-1445"></a>[#1445](https://github.com/arktypeio/arktype/issues/1445) ParseError when `match`ing against a [string, {[string]: unknown}]
-
-Fix in review on `fix/match-order`. Six commits: this issue plus five discrimination bugs a fuzz found (172 misrouted matchers and 2122 throws per 10000 seeds on featherduster, 0 after). They also fix a featherduster regression in tuple-union `.allows` listed under side findings. A second review found a refinement case of one fix still throwing (also on 2.2.8), and a construction cost added to every tuple-discriminated union. Both are being fixed.
-
 ### <a id="fix-1023"></a>[#1023](https://github.com/arktypeio/arktype/issues/1023) Infer any as morph return
 
-Fix in review on `fix/infer`. [#1023](https://github.com/arktypeio/arktype/issues/1023) is fixed where the whole output is `any`. A nested `any` is still inferred as the morph when every morph and default in the type returns `any`, which awaits a decision. [#1160](https://github.com/arktypeio/arktype/issues/1160) is fixed. Both are in independent review.
-
-### <a id="fix-1160"></a>[#1160](https://github.com/arktypeio/arktype/issues/1160) Strip optional/default type-level attributes on `.required()`
-
-Fix in review on `fix/infer`. [#1023](https://github.com/arktypeio/arktype/issues/1023) is fixed where the whole output is `any`. A nested `any` is still inferred as the morph when every morph and default in the type returns `any`, which awaits a decision. [#1160](https://github.com/arktypeio/arktype/issues/1160) is fixed. Both are in independent review.
+Fix in review on `fix/infer`. The fix on `fix/infer` (f641e654e) infers `any` when the whole output is `any`. A nested `any` is still inferred as the morph when every morph and default in the type returns `any`. The maintainer asked for every option to be implemented and measured: see the note on this issue.
 
 ## Easy-win bugs
 
@@ -381,7 +442,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 | [#1023](https://github.com/arktypeio/arktype/issues/1023) | `arktype` | trivial | [fix in review](#fix-1023) | A morph returning `any` infers its output as the morph function `(In: string) => Out<any>` instead of `any`, at the top level and nested.                                                                                                                               |
 | [#1088](https://github.com/arktypeio/arktype/issues/1088) | `schema`  | trivial | [fixed in featherduster](#fix-1088)  | A morph returning another installed copy's `ArkErrors` is treated as a successful output because morph results are checked with `instanceof`; switch those checks to `hasArkKind`.                                                                                      |
 | [#1306](https://github.com/arktypeio/arktype/issues/1306) | `attest`  | trivial | [fixed in featherduster](#fix-1306)  | attest trace/stats run tsc with --incremental false, which errors (TS6379) on composite projects, so tsc skips type checking and the trace/stats are empty.                                                                                                             |
-| [#1445](https://github.com/arktypeio/arktype/issues/1445) | `schema`  | trivial | [fix in review](#fix-1445) | match throws "The intersection of distinct morphs at a single path is indeterminate" when discrimination reorders tuple cases, even though the reordered cases' inputs are disjoint.                                                                                    |
+| [#1445](https://github.com/arktypeio/arktype/issues/1445) | `schema`  | trivial | [fixed in featherduster](#fix-1445)  | match throws "The intersection of distinct morphs at a single path is indeterminate" when discrimination reorders tuple cases, even though the reordered cases' inputs are disjoint.                                                                                    |
 | [#1470](https://github.com/arktypeio/arktype/issues/1470) | `schema`  | trivial | [fixed in featherduster](#fix-1470)  | `.configure({ title })` (or `.describe()`) on a union of string literals makes toJsonSchema emit `anyOf: [{const, title}, ...]` instead of `enum` plus `title`.                                                                                                         |
 | [#1473](https://github.com/arktypeio/arktype/issues/1473) | `schema`  | trivial | [fixed in featherduster](#fix-1473)  | The `new Function` CSP probe runs on import even when `jitless: true` is configured, which logs a CSP violation in strict-CSP browsers.                                                                                                                                 |
 | [#1529](https://github.com/arktypeio/arktype/issues/1529) | `docs`    | trivial | [fixed in featherduster](#fix-1529)  | In the docs playground, `regex()` from arkregex is typed `any` because the bundled arkregex declarations it loads are missing the internal `s` namespace.                                                                                                               |
@@ -389,7 +450,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 | [#1577](https://github.com/arktypeio/arktype/issues/1577) | `arktype` | trivial | [fixed in featherduster](#fix-1577)  | Under pnpm, exporting a branded (or `Json`-typed) Type fails declaration emit (TS2883) because `Brand` and `Json` live in `@ark/util` and aren't re-exported from `arktype`.                                                                                            |
 | [#1600](https://github.com/arktypeio/arktype/issues/1600) | `schema`  | trivial | [fixed in featherduster](#fix-1600)  | Any definition-taking method (`.to`, `.or`, `.and`, ...) on a type produced by `type.Record(...)` parses string definitions as @ark/schema schemas, so `"string[]"` crashes with `instanceOf operand must be a function`.                                               |
 | [#1121](https://github.com/arktypeio/arktype/issues/1121) | `schema`  | small   | [fixed in featherduster](#fix-1121)  | Plain {} objects used as name maps inherit Object.prototype members. The original register case is fixed, but alias names like toString/constructor/valueOf still cause false ParseErrors and internal TypeErrors.                                                      |
-| [#1160](https://github.com/arktypeio/arktype/issues/1160) | `arktype` | small   | [fix in review](#fix-1160) | .required() on a key with a default keeps Default&lt;...> in the type, so inferIn still says the key is optional even though runtime requires it.                                                                                                                       |
+| [#1160](https://github.com/arktypeio/arktype/issues/1160) | `arktype` | small   | [fixed in featherduster](#fix-1160)  | .required() on a key with a default keeps Default&lt;...> in the type, so inferIn still says the key is optional even though runtime requires it.                                                                                                                       |
 | [#1430](https://github.com/arktypeio/arktype/issues/1430) | `schema`  | small   | [fixed in featherduster](#fix-1430)  | Array/tuple types with minLength/maxLength constraints drop them from `.expression` and `.description`.                                                                                                                                                                 |
 | [#1530](https://github.com/arktypeio/arktype/issues/1530) | `regex`   | small   | [fixed in featherduster](#fix-1530)  | With capture groups in several alternation branches, the inferred captures tuples are too short: earlier branches lack trailing `undefined`s, and later branches are padded only for the first branch's groups, which also shifts the inferred index of later captures. |
 | [#1555](https://github.com/arktypeio/arktype/issues/1555) | `util`    | small   | [fixed in featherduster](#fix-1555)  | Importing arktype throws `ReferenceError: Blob is not defined` (or URL/FormData/...) in runtimes lacking web platform globals (WeChat mini programs, AudioWorklet, bare V8/QuickJS).                                                                                    |
@@ -427,7 +488,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1445](https://github.com/arktypeio/arktype/issues/1445) ParseError when `match`ing against a [string, {[string]: unknown}]
 
-`schema` · effort trivial · [fix in review](#fix-1445) · [note](#note-1445) · 2.2.8: reproduces, featherduster: reproduces
+`schema` · effort trivial · [fixed in featherduster](#fix-1445) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** match throws "The intersection of distinct morphs at a single path is indeterminate" when discrimination reorders tuple cases, even though the reordered cases' inputs are disjoint.
 
@@ -507,7 +568,7 @@ These are unambiguous bugs, each verified to reproduce on the featherduster bran
 
 ### [#1160](https://github.com/arktypeio/arktype/issues/1160) Strip optional/default type-level attributes on `.required()`
 
-`arktype` · effort small · [fix in review](#fix-1160) · [note](#note-1160) · 2.2.8: reproduces, featherduster: reproduces
+`arktype` · effort small · [fixed in featherduster](#fix-1160) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** .required() on a key with a default keeps Default&lt;...> in the type, so inferIn still says the key is optional even though runtime requires it.
 
@@ -1562,7 +1623,7 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 ### featherduster behavior changes the CHANGELOG doesn't mention
 
 - **`"+": "delete"` reorders keys.** On featherduster, deleting undeclared keys (shallow or deep) returns the declared keys in the node's sorted order. 2.2.8 keeps input order. `type({ "+": "delete", b: "string", a: "string", "c?": "number" })({ a: "1", z: 0, c: 1, b: "2" })` gives `{a, c, b}` on 2.2.8 and `{a, b, c}` on featherduster. Transforms that don't delete keys, like `string.trim`, keep input order on both. Found while checking [#1380](https://github.com/arktypeio/arktype/issues/1380). The order was set deliberately (713b65cdc, and d16b90039 for perf). It is kept, and the CHANGELOG now documents it.
-- **A tuple union's `.allows` rejects a value it accepts on 2.2.8.** `type(["'x'", "string"]).or(["unknown", "undefined"]).or(["1", "object"]).allows(["x", undefined])` is false on featherduster and true on 2.2.8. The fix for [#1445](https://github.com/arktypeio/arktype/issues/1445) on `fix/match-order` fixes it too (in review).
+- **A tuple union's `.allows` rejects a value it accepts on 2.2.8.** `type(["'x'", "string"]).or(["unknown", "undefined"]).or(["1", "object"]).allows(["x", undefined])` is false on featherduster and true on 2.2.8. Fixed in featherduster by the fixes for [#1445](https://github.com/arktypeio/arktype/issues/1445).
 - **The call site drops out of the indeterminate-union ParseError's stack.** The extra `ark/sets/engine.ts` frame pushes the user's `.or(...)` frame past Node's default 10-frame stack limit, so the error no longer shows where it came from. Found on [#1613](https://github.com/arktypeio/arktype/issues/1613).
 - **Equivalent cyclic aliases are no longer the same node.** On featherduster, `types.user !== types.admin` for structurally equal aliases, and `admin`'s expression unrolls one level. `equals` is true, so this is not a correctness issue, but it changes reference identity. Found on [#928](https://github.com/arktypeio/arktype/issues/928). The loss of identity for a shared input transformed at two keys is already listed under known regressions in [#1685](https://github.com/arktypeio/arktype/pull/1685).
 
@@ -1579,6 +1640,9 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 - **Date bounds print the local `Date.toString()` in expressions (2.2.8 and featherduster).** That drops milliseconds, so `type("Date > 0")` and `type("Date >= 0")` both print `Date >= Wed Dec 31 1969 19:00:00 GMT-0500 (Eastern Standard Time)`, and the expression depends on the machine's time zone. On featherduster, `description` is in UTC with milliseconds.
 - **Intersecting tuples with an element after a variadic one is wrong in three ways (2.2.8 and featherduster).** These are in `_intersectSequences` (`ark/sets/structure/sequence.ts`). The fixed-length variants share the root's Disjoint, so `type(["...", "unknown[]", "'y'"]).and(["1", "...", "unknown[]"])` throws "unsatisfiable". The variadic-disjoint branch maps `lTail` where it means `r`, so `[...string[], "y"] & [...number[], 2]` gives `["y"]` instead of `never`. A variant ignores leftover elements, so `[3, "x" | object] & [...number[], unknown, boolean]` gives `[3, object | "x"]`. With such tuples added, the match fuzz on `fix/match-order` misroutes 114 of 3938 matchers, and 0 without them. Found while fixing [#1445](https://github.com/arktypeio/arktype/issues/1445).
 - **A union discriminated on a tuple element skips non-array objects with that index (2.2.8 and featherduster).** `type(["string"]).or(["number"]).or(type.instanceOf(Uint8Array)).allows(new Uint8Array([1]))` is false. The same goes for String objects and class instances. The case node at an index requires an Array proto, and "object but not Array" can't be expressed. A construction-time fix would add every non-Array proto the union references to the node at a numeric key, at no validation cost. Found while fixing [#1445](https://github.com/arktypeio/arktype/issues/1445).
+- **Discrimination compares paths as strings (2.2.8 and featherduster).** `pruneDiscriminant` treats a node as on the discriminant path when its prop string starts with the path's, so key `a` counts as on path `ab` and loses its object check: `type({ ab: "'1'", a: { x: "string" } }).or({ ab: "'2'" }).allows({ ab: "1", a: 5 })` throws `Cannot use 'in' operator to search for 'x' in 5`. Comparing the path arrays fixes it. Found while reviewing the fix for [#1445](https://github.com/arktypeio/arktype/issues/1445).
+- **A pruned branch can be `null` in `resolveCase` (2.2.8 and featherduster).** `type("number").or({ "length?": "3" }).or(["number", "number", "number"]).or([[], "|", "string"])` throws `null is not a valid type schema`, because an optional key whose only constraint is the discriminated unit prunes to nothing. Found by the [#1445](https://github.com/arktypeio/arktype/issues/1445) fuzz in 8 of 20010 seeds.
+- **A predicate is called on a pruned primitive (2.2.8 and featherduster).** `match.case(type("string").narrow(s => s.length > 1), ...).case("number", ...).case("null | 'x'", ...)` throws `Cannot read properties of null` at definition, since a predicate implies no basis and pruning drops the `string` check beside it. The same case with `"string > 1"` is fixed in featherduster (6060504dc).
 - **Inference around `unknown.any` and `object` (2.2.8 and featherduster).** `type({ a: ["unknown.any", "=>", s => 5] }).inferIn` is `{ a?: any }`, because `unwrapInput` tests the morph for `any` rather than its input. `["unknown.any", "=", 5]` infers a union, because `withDefault` distributes over `any`. An `object` input distills to `{}`. Found while fixing [#1023](https://github.com/arktypeio/arktype/issues/1023).
 - **`attest trace` crashes when stdout isn't a TTY (2.2.8 and featherduster).** Piped or in CI, it throws `process.stdout.clearLine is not a function` from `ark/attest/cli/trace.ts`. Found while checking [#1306](https://github.com/arktypeio/arktype/issues/1306).
 - **`ark/repo/__tests__/benchScenarios.test.ts` "accepts alike" is intermittent on featherduster.** It failed in two full runs and passed in a third, and it passes alone.
@@ -1592,7 +1656,7 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 
 ## Notes by issue
 
-These 131 notes were drafted as issue comments and then kept here for review instead. Each states what was verified on 2.2.8 and the featherduster branch, a root cause, a workaround, or a related issue, and every code sample in them was run. They refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
+These 129 notes were drafted as issue comments and then kept here for review instead. Each states what was verified on 2.2.8 and the featherduster branch, a root cause, a workaround, or a related issue, and every code sample in them was run. They refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
 
 ### <a id="note-462"></a>[#462](https://github.com/arktypeio/arktype/issues/462) arktype dedicated Promise handling
 
@@ -2178,18 +2242,6 @@ teardown()
 // TypeError: undefined is not an object (evaluating 'stdout._handle.fd')
 ```
 
-### <a id="note-1160"></a>[#1160](https://github.com/arktypeio/arktype/issues/1160) Strip optional/default type-level attributes on `.required()`
-
-Still reproduces on arktype 2.2.8. Runtime makes `foo` required, but the inferred input keeps it optional and `.t` keeps `Default<string, "bar">`, because `required()` (`ark/type/variants/object.ts`) maps `-?` over `t` without unwrapping `Default`.
-
-```ts
-const T = type({ foo: "string = 'bar'" }).required()
-T.expression // { foo: string }
-T({}).toString() // foo must be a string (was missing)
-const inn: { foo: string } = {} as typeof T.inferIn
-// TS2322: Type '{ foo?: string; }' is not assignable to type '{ foo: string; }'
-```
-
 ### <a id="note-1166"></a>[#1166](https://github.com/arktypeio/arktype/issues/1166) Size constraint on File
 
 Open PR #1637 implements `File` size bounds. On arktype 2.2.8 `type("File < 5")` throws `ParseError: Bounded expression File must be exactly one of number, string, Array, or Date`. A narrow works in the meantime:
@@ -2550,23 +2602,6 @@ In `discriminate` (ark/schema/roots/union.ts), only disjoints of kind `"domain"`
 ### <a id="note-1437"></a>[#1437](https://github.com/arktypeio/arktype/issues/1437) Deeply nested scopes breaks type inference of generics mixed with private alias
 
 Still reproduces on arktype 2.2.8 (runtime is correct; only the inferred type of `Thing3` is `never`). Cause: `instantiateExport` in `ark/type/module.ts` matches `GenericAst<infer params, infer body, infer body$>`, and since `GenericAst`'s `arg$` parameter defaults to `$`, `body$` is inferred from both positions; after the second export the inferred scope no longer includes the private alias. Doesn't reproduce on the `featherduster` branch (#1685), which infers it from `$` only (`GenericAst<infer params, infer body, infer body$, any>`).
-
-### <a id="note-1445"></a>[#1445](https://github.com/arktypeio/arktype/issues/1445) ParseError when `match`ing against a [string, {[string]: unknown}]
-
-Still reproduces on arktype 2.2.8, and doesn't need `Dir` or an index signature:
-
-```ts
-match
-	.case(["string", "number"], () => 1)
-	.case(["number", "string"], () => 1)
-	.case(["string", "string"], () => 2)
-	.default(() => 0)
-// ParseError: The intersection of distinct morphs at a single path is indeterminate:
-// Left: (In: [string, string]) => Out<unknown>
-// Right: (In: [number, string]) => Out<unknown>
-```
-
-Cause: when discriminating on `[0]` reorders the cases, `viableOrderedCandidates` in `ark/schema/roots/union.ts` checks whether the reordered cases overlap with `branch.overlaps(other)` on the whole morph nodes, and intersecting two distinct morphs throws before input disjointness is checked. Comparing `branch.rawIn` instead, as the discriminant check just above it already does, fixes it.
 
 ### <a id="note-1446"></a>[#1446](https://github.com/arktypeio/arktype/issues/1446) How to properly set up a discriminated union?
 
