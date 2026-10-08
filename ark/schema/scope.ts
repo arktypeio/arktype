@@ -47,6 +47,7 @@ import {
 	nodesByRegisteredId,
 	parseNode,
 	registerNodeId,
+	resolveDescription,
 	withId,
 	type AttachedParseContext,
 	type BaseParseContext,
@@ -553,7 +554,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (isNode(reference)) {
 			return reference.hasKind("alias") ? reference : (
-					new (reference.constructor as any)(reference, this)
+					resolveDescription(
+						new (reference.constructor as any)(reference, this)
+					)
 				)
 		}
 

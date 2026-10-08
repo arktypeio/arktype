@@ -238,6 +238,20 @@ contextualize(() => {
 		}
 	})
 
+	it("description writer runs on definition", () => {
+		for (const jitless of [false, true]) {
+			let lang = "en"
+			const T = scope(
+				{},
+				{ jitless, domain: { description: node => `${lang}:${node.domain}` } }
+			).type({ a: "string" })
+			lang = "de"
+			attest(T({ a: 5 }).toString()).equals(
+				"a must be en:string (was a number)"
+			)
+		}
+	})
+
 	it("rejectAllowsSymbolKeys requires reject", () => {
 		attest(() =>
 			rootSchema({

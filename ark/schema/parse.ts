@@ -1,6 +1,7 @@
 import {
 	entriesOf,
 	flatMorph,
+	includes,
 	isArray,
 	isEmptyObject,
 	nameOf,
@@ -26,6 +27,7 @@ import {
 	defaultValueSerializer,
 	isNodeKind,
 	precedenceOfKind,
+	prestructuralKinds,
 	type NodeKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
@@ -231,7 +233,9 @@ export const createNode = ({
 		children
 	}
 
-	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
+	const node = resolveDescription(
+		new nodeClassesByKind[kind](attachments as never, $)
+	)
 
 	return key ? $.nodesByKey.set(key, node) : node
 }
@@ -277,6 +281,14 @@ const literalKeyOf = (v: unknown): string =>
 	) ?
 		`$${nameOf(v)}`
 	:	`${v}`
+
+// a basis or primitive constraint's error context includes its description,
+// so its writer runs on construction whether or not the node is compiled
+export const resolveDescription = <node extends BaseNode>(node: node): node => {
+	if (node.isBasis() || includes(prestructuralKinds, node.kind))
+		void node.description
+	return node
+}
 
 export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	if (node.id === id) return node

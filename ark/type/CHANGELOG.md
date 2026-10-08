@@ -713,6 +713,22 @@ globalThis.URL = class extends URL {}
 T(url)
 ```
 
+### Run description writers when a type is defined with `jitless`
+
+A configured `description` writer for a domain, unit, proto or constraint ran when a compiled type was defined, but with `jitless` or in a CSP environment only on the first error that read it. It now runs when the node is created, in both modes:
+
+```ts
+let lang = "en"
+const T = scope(
+	{},
+	{ jitless: true, domain: { description: node => `${lang}:${node.domain}` } }
+).type({ a: "string" })
+lang = "de"
+
+// previously "a must be de:string (was a number)", now "a must be en:string (was a number)"
+T({ a: 5 }).toString()
+```
+
 ## 2.2.8
 
 ### Add `string.base58`
