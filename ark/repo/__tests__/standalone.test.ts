@@ -227,6 +227,29 @@ contextualize(() => {
 		attest(validator({ a: 1 }).summary).snap("configured")
 	})
 
+	it("keeps the descriptions of a type another scope describes", async () => {
+		const lib = scope(
+			{ y: { v: "number" } },
+			{ domain: { description: () => "a custom number" } }
+		).export()
+		const types = {
+			ownFirst: type({ a: { v: "number" } }),
+			keptAfter: type({ a: lib.y }),
+			keptFirst: type({ b: lib.y }),
+			ownAfter: type({ b: { v: "number" } })
+		}
+		const validators = await load(types)
+		const input = { a: { v: "s" }, b: { v: "s" } }
+		for (const [name, t] of Object.entries(types))
+			attest(validators[name](input).summary).equals(t(input).toString())
+		attest(validators.ownFirst(input).summary).snap(
+			"a.v must be a number (was a string)"
+		)
+		attest(validators.keptAfter(input).summary).snap(
+			"a.v must be a custom number (was a string)"
+		)
+	})
+
 	it("rejects what it can't precompile", () => {
 		const isEven = (n: number) => n % 2 === 0
 		attest(() =>
