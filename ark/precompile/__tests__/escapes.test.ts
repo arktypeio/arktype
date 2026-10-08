@@ -94,6 +94,23 @@ export const T = type(o.a)`)[0]
 		])
 	})
 
+	it("the value of an assignment", () => {
+		attest(
+			["=", "??="].map(
+				operator =>
+					inputsOf(`import { type } from "arktype"
+const o = { a: "string" }
+let p: any
+const q: any = (p ${operator} o)
+q.a = "number"
+export const T = type(o.a)`)[0]
+			)
+		).snap([
+			["6:18 accepted", "local o.a"],
+			["6:18 accepted", "local o.a"]
+		])
+	})
+
 	it("dates and regexes", () => {
 		attest(
 			inputsOf(`import { type } from "arktype"

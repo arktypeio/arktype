@@ -98,7 +98,7 @@ const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
 			if (parent.left.type === "Identifier") {
 				const binding = s.module.scopes.referencesById.get(parent.left)?.binding
 				return binding ?
-						escapeOfBinding(binding, s)
+						(escapeOfBinding(binding, s) ?? escapeOfValue(parent, s))
 					:	{ node: parent, message: "is stored in a global" }
 			}
 			return {
