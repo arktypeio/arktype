@@ -161,7 +161,13 @@ D(o)`,
 			`const D = type("unknown").narrow((x: any) => ((x.a = "number"), true))
 D.assert(o)`,
 			`const A = type("string")
-;(A as any).constructor.constructor("o", "o.a = 'number'")(o)`
+;(A as any).constructor.constructor("o", "o.a = 'number'")(o)`,
+			`const D = type("unknown").narrow((x: any) => ((x.a = "number"), true))
+;(D as any).traverseAllows(o)`,
+			`const D = type("unknown").narrow((x: any) => ((x.a = "number"), true))
+D.internal.traverseAllows(o, undefined as never)`,
+			`const D = type("unknown").pipe((x: any) => ((x.a = "number"), x))
+;(D as any).traverseApply(o, { queueMorphs() {}, hasError: () => false })`
 		]
 		attest(
 			uses.map(use =>
@@ -173,8 +179,108 @@ export const T = type(o.a)`).pop()
 		).snap([
 			["5:18 accepted", "local o.a"],
 			["5:18 accepted", "local o.a"],
+			["5:18 accepted", "local o.a"],
+			["5:18 accepted", "local o.a"],
+			["5:18 accepted", "local o.a"],
 			["5:18 accepted", "local o.a"]
 		])
+	})
+
+	it("calls into arktype that keep or return their argument", () => {
+		const uses = [
+			`const d: any = type.define(o)
+d.a = "number"`,
+			`;(scope.define(o) as any).a = "number"`,
+			`;((scope({ b: "string" }) as any).defineSchema(o) as any).a = "number"`,
+			`const s = scope({ x: o })
+;(s as any).aliases.x.a = "number"`,
+			`const $ = type.module({ x: o, b: "string" })
+;($.b as any).$.aliases.x.a = "number"`,
+			`const U = type.unit(o)
+;(U as any).unit.a = "number"`,
+			`const U = type("===", o)
+;(U as any).unit.a = "number"`,
+			`const U = type({ x: ["===", o] })
+;(U as any).get("x").unit.a = "number"`,
+			`const M = type(["string", "@", { o }])
+;(M as any).meta.o.a = "number"`,
+			`const M = type("string").configure({ o } as any)
+;(M as any).meta.o.a = "number"`,
+			`const G = type("<t>", { x: "t", o })
+;(G as any).bodyDef.o.a = "number"`
+		]
+		attest(
+			uses.map(
+				use =>
+					inputsOf(`import { type, scope } from "arktype"
+const o = { a: "string" }
+${use}
+export const T = type(o.a)`).pop()![1]
+			)
+		).snap([
+			"local o.a",
+			"local o.a",
+			"local o.a",
+			"local o.a",
+			"local o.a",
+			"local o.a",
+			"local o.a",
+			"local o.a",
+			"local o.a",
+			"local o.a",
+			"local o.a"
+		])
+		attest(
+			inputsOf(`import { type } from "arktype"
+const o = { a: "string", b: ["===", { c: 1 }] }
+const A = type({ b: o.b })
+;(A as any).get("b").unit.c = 2
+export const T = type(o.a)`).pop()
+		).snap(["5:18 accepted", "local o.a"])
+	})
+
+	it("calls into arktype that parse and keep nothing", () => {
+		attest(
+			inputsOf(`import { type, scope } from "arktype"
+const o = { a: "string", b: "number" }
+const A = type({ x: o, y: [o, "[]"], z: ["string", "@", "a string"] })
+const B = type(o).and(o).or({ ...o }).merge(o).pick("a")
+const C = type.or(o, o.a).extends(o)
+const D = scope({ x: "string" }).type("<t>", "t").internal
+const E = type.Record("string", o)
+export const T = type(o.a)`).pop()
+		).snap(["8:18 accepted"])
+	})
+
+	it("results of arktype methods", () => {
+		attest(
+			[
+				`;(s.export().sub as any).a = type("number")`,
+				`;((s.export() as any).sub.$.export().sub as any).a = type("number")`
+			].map(use =>
+				inputsOf(`import { type, scope } from "arktype"
+const s = scope({ sub: type.module({ a: "string" }) })
+${use}
+export const T = type({ x: s.export().sub.a })`).pop()
+			)
+		).snap([
+			["4:18 accepted", "local s"],
+			["4:18 accepted", "local s"]
+		])
+		attest(
+			inputsOf(`import { type, scope } from "arktype"
+const $ = scope({ sub: type.module({ a: "string" }), b: "string" }).export()
+;(($.b as any).$.export().sub as any).a = type("number")
+export const T = type({ x: $.sub.a })`).pop()
+		).snap(["4:18 accepted", "local $.sub.a"])
+		attest(
+			inputsOf(`import { type, scope } from "arktype"
+const $ = scope({ a: "string" }).export()
+const A = $.a.array()
+const ok = $.a.allows("x")
+const out = $.a("x")
+export const T = type({ x: $.a })`).pop()
+		).snap(["6:18 accepted"])
 	})
 
 	it("the value of an assignment", () => {

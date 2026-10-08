@@ -57,7 +57,54 @@ export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
 		allows: 1,
 		from: 1,
 		traverse: 1,
+		traverseAllows: 1,
+		traverseApply: 1,
 		"~standard": 1
+	},
+	null
+)
+
+// a parser's or Scope's methods that parse each argument as a definition and keep none of them
+export const parserDefinitionMethods: Record<string, 1> = Object.setPrototypeOf(
+	{ raw: 1, or: 1, and: 1, merge: 1 },
+	null
+)
+
+// a parser's or Scope's methods that return a new Type
+export const typeFactoryMethods: Record<string, 1> = Object.setPrototypeOf(
+	{
+		unit: 1,
+		enumerated: 1,
+		instanceOf: 1,
+		valueOf: 1,
+		pipe: 1,
+		schema: 1,
+		units: 1,
+		parseSchema: 1
+	},
+	null
+)
+
+// a Type's methods that parse each argument as a definition and keep none of them
+export const typeDefinitionMethods: Record<string, 1> = Object.setPrototypeOf(
+	{
+		and: 1,
+		or: 1,
+		merge: 1,
+		intersect: 1,
+		extends: 1,
+		overlaps: 1,
+		ifExtends: 1,
+		subsumes: 1,
+		equals: 1,
+		ifEquals: 1,
+		extract: 1,
+		exclude: 1,
+		to: 1,
+		pick: 1,
+		omit: 1,
+		get: 1,
+		matching: 1
 	},
 	null
 )

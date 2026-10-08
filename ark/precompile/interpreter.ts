@@ -1,7 +1,9 @@
 import { arkKind, hasArkKind } from "@ark/schema"
 import { hasDomain, ParseError } from "@ark/util"
+import { scope } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
+import { InternalTypeParser } from "arktype/internal/type.ts"
 import type {
 	CallExpression,
 	Class,
@@ -23,12 +25,14 @@ import {
 	type MethodReceiverKind
 } from "./builtins.ts"
 import { DynamicValue, type DynamicCode } from "./dynamic.ts"
-import { findEscape } from "./escapes.ts"
+import { findEscape, type ArkCall } from "./escapes.ts"
 import {
 	bindingOfFunction,
 	contains,
 	isFunctionNode,
+	parserDefinitionMethods,
 	runtimeMembers,
+	typeDefinitionMethods,
 	unstableArkMembers,
 	staticBodyOf,
 	type FunctionNode,
@@ -820,7 +824,7 @@ export class Interpreter {
 				module,
 				this.graph,
 				this.bindingValue(binding, module).value,
-				call => this.isDefinitionCall(call, module)
+				call => this.arkCallOf(call, module)
 			)
 			result =
 				escape ?
@@ -1311,13 +1315,43 @@ export class Interpreter {
 		return { fn, receiver }
 	}
 
-	// a call into arktype's API, which reads its arguments as definitions rather than validating them as data
-	isDefinitionCall(node: CallExpression, module: SourceModule): boolean {
-		const callee = this.calleeOf(node, rootContext(module, node))
+	// what an arktype call does with its arguments, from an allow-list, since any other call may run user code on them or keep them
+	arkCallOf(node: CallExpression, module: SourceModule): ArkCall | undefined {
+		let callee: ReturnType<Interpreter["calleeOf"]>
+		try {
+			callee = this.calleeOf(node, rootContext(module, node))
+		} catch {
+			return
+		}
+		if (!("fn" in callee)) return
+		const { fn, receiver } = callee
+		const kind = this.calleeKindOf(fn, receiver)
+		if (kind === "validator") return "validate"
+		if (kind !== "arktype") return
+		if (fn instanceof InternalTypeParser) return "parseTuple"
+		if (hasArkKind(fn, "generic")) return "parse"
+		const member = unwrapExpression(node.callee)
+		if (member.type !== "MemberExpression" || member.computed) return
+		const name = member.property.name
+		if (name === "define" || name === "defineSchema") {
+			return (
+					receiver instanceof InternalTypeParser ||
+						receiver === scope ||
+						hasArkKind(receiver, "scope")
+				) ?
+					"identity"
+				:	undefined
+		}
 		return (
-			"fn" in callee &&
-			this.calleeKindOf(callee.fn, callee.receiver) === "arktype"
-		)
+				(
+					receiver instanceof InternalTypeParser ||
+					hasArkKind(receiver, "scope")
+				) ?
+					name in parserDefinitionMethods
+				:	hasArkKind(receiver, "root") && name in typeDefinitionMethods
+			) ?
+				"parse"
+			:	undefined
 	}
 
 	private calleeKindOf(

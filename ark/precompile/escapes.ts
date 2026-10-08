@@ -1,5 +1,6 @@
 import { hasArkKind } from "@ark/schema"
-import { Callable, hasDomain } from "@ark/util"
+import { Callable, hasDomain, type KeySet } from "@ark/util"
+import { InternalTypeParser } from "arktype/internal/type.ts"
 import type { CallExpression, MemberExpression, Node } from "oxc-parser"
 import {
 	globalsByName,
@@ -13,6 +14,7 @@ import {
 import {
 	bindingOfFunction,
 	enclosingFunctionOf,
+	typeFactoryMethods,
 	type FunctionNode,
 	type ModuleGraph
 } from "./graph.ts"
@@ -29,33 +31,39 @@ export interface Escape {
 	message: string
 }
 
+// what arktype does with a call's arguments: parses each, parses them as one tuple expression, returns one, or validates them
+export type ArkCall = "parse" | "parseTuple" | "identity" | "validate"
+
 interface EscapeState {
 	module: SourceModule
 	graph: ModuleGraph
 	binding: Binding
 	value: unknown
-	isDefinitionCall: (call: CallExpression) => boolean
+	arkCallOf: (call: CallExpression) => ArkCall | undefined
 	seen: Set<Node | Binding>
 	// the object holds only primitives, arrays and plain objects, so converting or reading it runs no code of its own
 	isData: boolean
+	// arktype keeps part of the object wherever it parses it
+	holdsKept: boolean
 }
 
-// R1: an object stays proven only through property reads, static helpers, arktype definitions and definition positions
+// an object stays proven only through property reads, static helpers, arktype definitions and the literals passed to them
 export const findEscape = (
 	binding: Binding,
 	module: SourceModule,
 	graph: ModuleGraph,
 	value: unknown,
-	isDefinitionCall: (call: CallExpression) => boolean
+	arkCallOf: (call: CallExpression) => ArkCall | undefined
 ): Escape | undefined =>
 	escapeOfBinding(binding, {
 		module,
 		graph,
 		binding,
 		value,
-		isDefinitionCall,
+		arkCallOf,
 		seen: new Set(),
-		isData: isData(value)
+		isData: isData(value),
+		holdsKept: holdsKeptDefinition(value)
 	})
 
 const isData = (value: unknown, seen = new Set<unknown>()): boolean => {
@@ -64,6 +72,24 @@ const isData = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (seen.has(value)) return true
 	seen.add(value)
 	return Reflect.ownKeys(value).every(k => isData(Reflect.get(value, k), seen))
+}
+
+// e.g. `["===", {}]`, whose unit arktype keeps, or a Standard Schema, which it wraps
+const holdsKeptDefinition = (
+	value: unknown,
+	seen = new Set<unknown>()
+): boolean => {
+	if (!isPlainContainer(value) || seen.has(value)) return false
+	seen.add(value)
+	if (
+		Array.isArray(value) ?
+			value.includes("===") || value.includes("@")
+		:	"~standard" in value
+	)
+		return true
+	return Reflect.ownKeys(value).some(k =>
+		holdsKeptDefinition(Reflect.get(value, k), seen)
+	)
 }
 
 const escapeOfBinding = (
@@ -119,16 +145,13 @@ const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
 				:	escapeOfConversion(parent, s)
 		case "Property":
 			if (parent.value !== node) return escapeOfConversion(parent, s)
-			return isDefinitionPosition(parent, s) ? undefined : stored(parent, s)
+			return escapeOfLiteral(parent, s)
 		case "ArrayExpression":
-			return isDefinitionPosition(parent, s) ? undefined : stored(parent, s)
+			return escapeOfLiteral(node, s)
 		case "SpreadElement":
-			return (
-				parent.parent?.type === "CallExpression" ?
+			return parent.parent?.type === "CallExpression" ?
 					escapeOfArgument(parent.parent, parent, s)
-				: isDefinitionPosition(parent, s) ? undefined
-				: stored(parent, s)
-			)
+				:	escapeOfLiteral(parent, s)
 		case "CallExpression":
 			return parent.callee === node ?
 					undefined
@@ -139,10 +162,10 @@ const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
 			return parent.body === node ? escapeOfReturn(parent, s) : undefined
 		case "VariableDeclarator":
 		case "ForOfStatement":
-			return stored(parent, s)
+			return escapeOfStore(parent, s)
 		case "AssignmentExpression":
 			return ["=", "||=", "&&=", "??="].includes(parent.operator) ?
-					stored(parent, s)
+					escapeOfStore(parent, s)
 				:	escapeOfConversion(parent, s)
 		case "ExportSpecifier":
 		case "ExportDefaultDeclaration":
@@ -191,29 +214,141 @@ const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
 	}
 }
 
-const stored = (node: Node, s: EscapeState): Escape => ({
+const escapeOfStore = (node: Node, s: EscapeState): Escape => ({
 	node,
 	message: `is stored by \`${s.module.snippetOf(node)}\``
 })
 
-// e.g. `{ a: o }` in `type({ a: o })`, which arktype reads as definition data
-const isDefinitionPosition = (container: Node, s: EscapeState): boolean => {
-	let node = container
-	for (let parent = node.parent; parent; parent = node.parent) {
-		if (parent.type === "CallExpression")
-			return parent.callee !== node && s.isDefinitionCall(parent)
-		if (
+// e.g. `{ a: o }` in `type({ a: o })`, which is an argument of the call, unless arktype keeps the part of it holding the object
+const escapeOfLiteral = (start: Node, s: EscapeState): Escape | undefined => {
+	let isKept = false
+	let child = start
+	for (let parent = child.parent!; ; parent = child.parent!) {
+		if (parent.type === "CallExpression" && parent.callee !== child) {
+			const arkCall = s.arkCallOf(parent)
+			return arkCall ?
+					escapeOfArkArgument(parent, child, arkCall, isKept, s)
+				:	escapeOfStore(start, s)
+		}
+		if (parent.type === "ArrayExpression")
+			isKept ||= keepsElement(parent.elements, child, s)
+		else if (
 			!isTransparent(parent) &&
 			parent.type !== "ObjectExpression" &&
-			parent.type !== "ArrayExpression" &&
 			parent.type !== "SpreadElement" &&
-			!(parent.type === "Property" && parent.value === node)
+			!(parent.type === "Property" && parent.value === child)
 		)
-			return false
-		node = parent
+			return escapeOfStore(start, s)
+		child = parent
 	}
-	return false
 }
+
+const escapeOfArkArgument = (
+	call: CallExpression,
+	argument: Node,
+	arkCall: ArkCall,
+	isKept: boolean,
+	s: EscapeState
+): Escape | undefined => {
+	if (arkCall === "identity") return escapeOfValue(call, s)
+	if (arkCall === "validate") return escapeOfPassing(call, call.callee, s)
+	if (
+		isKept ||
+		s.holdsKept ||
+		(arkCall === "parseTuple" && keepsArgument(call.arguments, argument, s))
+	) {
+		return {
+			node: call,
+			message: `is kept by \`${s.module.snippetOf(call.callee)}\``
+		}
+	}
+}
+
+// in a tuple expression, `===` keeps the elements after it and `@` keeps the meta object after it
+const keepsElement = (
+	elements: readonly (Node | null)[],
+	child: Node,
+	s: EscapeState
+): boolean => {
+	const i = elements.indexOf(child)
+	return (
+		elements.slice(0, i).some(element => element?.type === "SpreadElement") ||
+		(i >= 1 && mayBe(elements[0], operator => operator === "===", s)) ||
+		(i >= 2 && mayBe(elements[1], operator => operator === "@", s))
+	)
+}
+
+// `type("<t>", def)` keeps `def` as a generic's body
+const keepsArgument = (
+	args: readonly Node[],
+	argument: Node,
+	s: EscapeState
+): boolean =>
+	keepsElement(args, argument, s) ||
+	(args.length === 2 &&
+		args[1] === argument &&
+		mayBe(args[0], params => params.startsWith("<") && params.endsWith(">"), s))
+
+// whether an element of a tuple can evaluate to a string the predicate accepts
+const mayBe = (
+	node: Node | null,
+	accepts: (value: string) => boolean,
+	s: EscapeState
+): boolean => {
+	if (!node || node.type in nonStringKinds) return false
+	const known =
+		node.type === "Literal" ? { value: node.value } : valueAlong(node, s)
+	return !known || (typeof known.value === "string" && accepts(known.value))
+}
+
+// the value at a chain of reads from the object, e.g. `o.a.b`, which the build knows without evaluating anything
+const valueAlong = (
+	node: Node,
+	s: EscapeState
+): { value: unknown } | undefined => {
+	const keys = keysFromObject(node, s)
+	if (!keys) return
+	let value = s.value
+	for (const key of keys) {
+		if (!isPlainContainer(value)) return
+		value = Reflect.get(value, key)
+	}
+	return { value }
+}
+
+// e.g. `["a", "b"]` for `o.a.b`
+const keysFromObject = (node: Node, s: EscapeState): string[] | undefined => {
+	const keys: string[] = []
+	let object = unwrapExpression(node)
+	while (object.type === "MemberExpression") {
+		if (object.computed) return
+		keys.unshift(object.property.name)
+		object = unwrapExpression(object.object)
+	}
+	return (
+			object.type === "Identifier" &&
+				s.module.scopes.referencesById.get(object)?.binding === s.binding
+		) ?
+			keys
+		:	undefined
+}
+
+const nonStringKinds = {
+	ObjectExpression: 1,
+	ArrayExpression: 1,
+	ArrowFunctionExpression: 1,
+	FunctionExpression: 1,
+	ClassExpression: 1
+} as const satisfies KeySet
+
+const escapeOfPassing = (
+	call: CallExpression,
+	callee: Node,
+	s: EscapeState
+): Escape => ({
+	node: call,
+	message: `is passed to \`${s.module.snippetOf(callee)}\``
+})
 
 // converting an object to a primitive calls its methods, unless it holds only data
 const escapeOfConversion = (node: Node, s: EscapeState): Escape | undefined =>
@@ -247,40 +382,66 @@ const escapeOfMember = (
 	const parent = outer.parent!
 	if (parent.type !== "CallExpression" || parent.callee !== outer)
 		return escapeOfValue(outer, s)
-	if (isArkMethodCall(end, s)) return
+	const receiver = arkReceiverOf(end, s)
+	if (receiver) return escapeOfArkResult(parent, end, receiver, s)
+	return s.isData ?
+			escapeOfDataMethod(end, parent, s)
+		:	escapeOfPassing(parent, end, s)
+}
+
+// in an object of data, a method by one of these names is a pure built-in or throws
+const escapeOfDataMethod = (
+	end: MemberExpression,
+	call: CallExpression,
+	s: EscapeState
+): Escape | undefined => {
 	const method = end.computed ? undefined : end.property.name
-	// in an object of data, a method by one of these names is a pure built-in or throws
 	const builtin =
-		s.isData && method && method in pureMethods ?
+		method && method in pureMethods ?
 			pureBuiltins.get(pureMethods[method])
 		:	undefined
 	return builtin ?
-			escapeOfPureCall(parent, builtin, parent.arguments.length, s)
-		:	{ node: parent, message: `is passed to \`${s.module.snippetOf(end)}\`` }
+			escapeOfPureCall(call, builtin, call.arguments.length, s)
+		:	escapeOfPassing(call, end, s)
 }
 
-// e.g. `$.user.array()` on a Module `$` or `$.type.Record()` on a Scope: a method its members and parsers reach is arktype's, unless a write the analysis finds replaced it
-const isArkMethodCall = (end: MemberExpression, s: EscapeState): boolean => {
-	if (!hasArkKind(s.value, "module") && !hasArkKind(s.value, "scope"))
-		return false
-	const keys: string[] = []
-	let node: Node = end
-	while (node.type === "MemberExpression") {
-		if (node.computed || node.property.name === "constructor") return false
-		keys.unshift(node.property.name)
-		node = unwrapExpression(node.object)
-	}
-	if (
-		node.type !== "Identifier" ||
-		s.module.scopes.referencesById.get(node)?.binding !== s.binding
-	)
-		return false
+// a parse returns a Type, a validation the data's result and `define` its argument, but another method may return the receiver's parts, like `$.export()` its submodules
+const escapeOfArkResult = (
+	call: CallExpression,
+	end: MemberExpression,
+	receiver: unknown,
+	s: EscapeState
+): Escape | undefined =>
+	(
+		s.arkCallOf(call) ||
+		// a Type's methods return new values
+		hasArkKind(receiver, "root") ||
+		((receiver instanceof InternalTypeParser ||
+			hasArkKind(receiver, "scope")) &&
+			!end.computed &&
+			end.property.name in typeFactoryMethods)
+	) ?
+		undefined
+	:	escapeOfValue(call, s)
+
+// e.g. `$.user` for `$.user.array()` on a Module `$` or `$.type` for `$.type.Record()` on a Scope, unless a write the analysis finds replaced the method
+const arkReceiverOf = (
+	end: MemberExpression,
+	s: EscapeState
+): object | undefined => {
+	if (!hasArkKind(s.value, "module") && !hasArkKind(s.value, "scope")) return
+	const keys = keysFromObject(end, s)
+	if (!keys || keys.includes("constructor")) return
+	let receiver: unknown
 	let value = s.value
 	for (const key of keys) {
-		if (!isArkValue(value) && !(value instanceof Callable)) return false
+		if (!isArkValue(value) && !(value instanceof Callable)) return
+		receiver = value
 		value = Reflect.get(value as object, key)
 	}
-	return typeof value === "function" && !intrinsics.has(value)
+	return typeof value === "function" && !intrinsics.has(value) ?
+			(receiver as object)
+		:	undefined
 }
 
 const escapeOfArgument = (
@@ -288,12 +449,13 @@ const escapeOfArgument = (
 	argument: Node,
 	s: EscapeState
 ): Escape | undefined => {
-	if (s.isDefinitionCall(call)) return
+	const arkCall = s.arkCallOf(call)
+	if (arkCall) return escapeOfArkArgument(call, argument, arkCall, false, s)
 	const builtin = builtinOf(call.callee, s.module)
 	if (builtin?.writes) {
 		return call.arguments[0] === argument ?
 				{ node: call, message: `is written by \`${s.module.snippetOf(call)}\`` }
-			:	stored(call, s)
+			:	escapeOfStore(call, s)
 	}
 	if (builtin && s.isData)
 		return escapeOfPureCall(call, builtin, call.arguments.length - 1, s)
@@ -302,10 +464,7 @@ const escapeOfArgument = (
 		const param = paramOf(helper[0], call, argument)
 		if (param) return escapeOfPattern(param, s) ?? escapeOfReturn(helper[0], s)
 	}
-	return {
-		node: call,
-		message: `is passed to \`${s.module.snippetOf(call.callee)}\``
-	}
+	return escapeOfPassing(call, call.callee, s)
 }
 
 // the parameter an argument binds, unless a spread before it hides its position
@@ -333,11 +492,7 @@ const escapeOfPureCall = (
 	otherArguments: number,
 	s: EscapeState
 ): Escape | undefined =>
-	builtin.calls && otherArguments ?
-		{
-			node: call,
-			message: `is passed to \`${s.module.snippetOf(call.callee)}\``
-		}
+	builtin.calls && otherArguments ? escapeOfPassing(call, call.callee, s)
 	: builtin.freshResult ? undefined
 	: escapeOfValue(call, s)
 
@@ -396,7 +551,7 @@ const escapeOfPattern = (pattern: Node, s: EscapeState): Escape | undefined => {
 			}
 			return
 	}
-	return stored(pattern, s)
+	return escapeOfStore(pattern, s)
 }
 
 const isWriteTarget = (node: Node): boolean => {
