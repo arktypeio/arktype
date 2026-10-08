@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { intrinsic, writeInvalidOperandMessage } from "@ark/schema"
-import { regex, type Regex, type Type, type } from "arktype"
+import { regex, scope, type Regex, type Type, type } from "arktype"
 
 contextualize(() => {
 	describe("intersection", () => {
@@ -63,6 +63,27 @@ contextualize(() => {
 			const A = type(/a/gi)
 			const B = type(new RegExp("a", "ig"))
 			attest(A.json).equals(B.json)
+		})
+
+		it("g and y flags keep no state between checks", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const G = $.type(/a/g)
+				attest([G.allows("a"), G.allows("a"), G.allows("ba")]).equals([
+					true,
+					true,
+					true
+				])
+				attest(G("a")).equals("a")
+				attest(G("a")).equals("a")
+
+				const Y = $.type(/a/y)
+				attest([Y.allows("a"), Y.allows("a"), Y.allows("ba")]).equals([
+					true,
+					true,
+					false
+				])
+			}
 		})
 	})
 

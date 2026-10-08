@@ -58,9 +58,14 @@ const implementation: nodeImplementationOf<Pattern.Declaration> =
 export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration> {
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
 	readonly expression: string = `${this.instance}`
-	traverseAllows: (string: string) => boolean = this.instance.test.bind(
-		this.instance
-	)
+	traverseAllows: (string: string) => boolean =
+		// g and y make test start from lastIndex, which it also advances
+		this.instance.global || this.instance.sticky ?
+			string => {
+				this.instance.lastIndex = 0
+				return this.instance.test(string)
+			}
+		:	this.instance.test.bind(this.instance)
 
 	readonly compiledCondition: string = `${this.expression}.test(data)`
 	readonly compiledNegation: string = `!${this.compiledCondition}`

@@ -689,6 +689,17 @@ const T = type({ user: { "~standard": User["~standard"] } })
 T({ user: { age: 1.5 } })
 ```
 
+### Check `g` and `y` patterns from the start of the string every time
+
+With `jitless` or in a CSP environment, a pattern with the `g` or `y` flag kept its `lastIndex` between checks, so the same input alternated between valid and invalid. Every check now starts from the beginning of the string, as compiled types already did:
+
+```ts
+const T = scope({}, { jitless: true }).type(/a/g)
+
+// previously [true, false], now [true, true]
+;[T.allows("a"), T.allows("a")]
+```
+
 ## 2.2.8
 
 ### Add `string.base58`
