@@ -96,6 +96,25 @@ contextualize(() => {
 		])
 	})
 
+	it("ignores nodes cached with an engine", () => {
+		const def = [
+			{
+				domain: "object",
+				required: [{ key: "cachedKind", value: { unit: "a" } }]
+			},
+			{
+				domain: "object",
+				required: [{ key: "cachedKind", value: { unit: "b" } }]
+			}
+		] as const
+		attest(rootSchema(def).assertHasKind("union").discriminant?.path).equals([
+			"cachedKind"
+		])
+		withoutEngine(() =>
+			attest(rootSchema(def).assertHasKind("union").discriminant).equals(null)
+		)
+	})
+
 	it("throws on schemas that need reduction without an engine", () => {
 		withoutEngine(() => {
 			attest(() =>
