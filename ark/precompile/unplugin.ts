@@ -1,4 +1,4 @@
-import { throwError } from "@ark/util"
+import { hashOf, throwError } from "@ark/util"
 import { dirname, resolve } from "node:path"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
 import { createNodeHost, type NodeHostOptions } from "./host.ts"
@@ -27,13 +27,24 @@ export const precompile: UnpluginInstance<
 		name: "arktype",
 		enforce: "pre",
 		resolveId: {
-			filter: {
-				id: mode === "standalone" ? /^arktype$|^~arktype\// : /^~arktype\//
-			},
-			handler: (id, importer) =>
-				id !== "arktype" ? `\0${id}`
-				: importer ? host.resolve("arktype/runtime", importer)
-				: undefined
+			filter: { id: /^arktype$|^~arktype\// },
+			handler: (id, importer) => {
+				if (id !== "arktype") return `\0${id}`
+				if (!importer) return
+				if (mode === "standalone")
+					return host.resolve("arktype/runtime", importer)
+				// arktype's keyword table registers before its keywords are created, if its build includes one
+				const keywords = host.resolve(
+					"arktype/internal/precompiled.js",
+					importer
+				)
+				const entry = keywords && host.resolve("arktype", importer)
+				if (!entry) return
+				const entryId = `\0~arktype/entry/${hashOf(entry)}`
+				modules[entryId] ??=
+					`import ${JSON.stringify(keywords)}\nexport * from ${JSON.stringify(entry)}\n`
+				return entryId
+			}
 		},
 		load: {
 			filter: { id: /^\0~arktype\// },
@@ -74,17 +85,25 @@ export const precompile: UnpluginInstance<
 		},
 		esbuild: {
 			// esbuild loads anything a plugin resolves in the plugin's namespace, so arktype's files are resolved natively
-			onResolveFilter: /^~arktype\//,
-			setup: build =>
+			onResolveFilter:
+				mode === "standalone" ? /^~arktype\// : /^arktype$|^~arktype\//,
+			setup: build => {
+				// the entry arktype resolves to in cache mode imports arktype's files by path
+				build.onResolve({ filter: /^(?:\/|[A-Za-z]:[/\\])/ }, args =>
+					args.namespace === "file" ? undefined : { path: args.path }
+				)
 				build.onResolve(
-					{ filter: /^arktype(?:\/runtime|\/internal)?$/ },
+					{
+						filter:
+							mode === "standalone" ?
+								/^arktype(?:\/runtime|\/internal)?$/
+							:	/^arktype\/(?:runtime|internal)$/
+					},
 					args =>
 						args.pluginData === esbuildResolution ?
 							undefined
 						:	build.resolve(
-								mode === "standalone" && args.path === "arktype" ?
-									"arktype/runtime"
-								:	args.path,
+								args.path === "arktype" ? "arktype/runtime" : args.path,
 								{
 									kind: args.kind,
 									importer: args.importer,
@@ -97,6 +116,7 @@ export const precompile: UnpluginInstance<
 								}
 							)
 				)
+			}
 		}
 	}
 })

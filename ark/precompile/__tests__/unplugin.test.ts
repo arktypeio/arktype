@@ -122,6 +122,31 @@ contextualize(() => {
 		})
 	}
 
+	it("registers arktype's keyword table before arktype loads", async () => {
+		// arktype and its keyword table resolve to files that print when they load
+		const root = fromHere("keywordTable")
+		const plugin = { runtime: "arktype" } as const
+		const { outputFiles } = await esbuild({
+			entryPoints: [fromHere("keywordTable", "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			logLevel: "silent",
+			plugins: [precompile.esbuild(plugin)]
+		})
+		const [{ output }] = (await vite({
+			root,
+			configFile: false,
+			logLevel: "silent",
+			plugins: [precompile.vite(plugin)],
+			build: { write: false, lib: { entry: "main.ts", formats: ["es"] } }
+		})) as Rolldown.RolldownOutput[]
+		attest([run(outputFiles[0].text), run(output[0].code)]).snap([
+			"config\nkeywords\narktype\nstring\n",
+			"config\nkeywords\narktype\nstring\n"
+		])
+	})
+
 	it("configure in standalone mode", () => {
 		attest(() => precompile.vite({ config: "config.ts" })).throws(
 			standaloneConfigurationMessage
