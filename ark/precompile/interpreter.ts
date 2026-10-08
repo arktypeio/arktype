@@ -750,7 +750,7 @@ export class Interpreter {
 		}
 		if (!isArkValue(result.value, this.standIns))
 			mergeTrace(ctx.trace, result.trace)
-		return isPlainContainer(result.value) && this.escapeOf(binding, module) ?
+		return isTracked(result.value) && this.escapeOf(binding, module) ?
 				{
 					value: result.value,
 					read: {
@@ -795,7 +795,12 @@ export class Interpreter {
 	escapeOf(binding: Binding, module: SourceModule): DynamicValue | null {
 		let result = this.escapesByBinding.get(binding)
 		if (result === undefined) {
-			const escape = findEscape(binding, module, this.graph)
+			const escape = findEscape(
+				binding,
+				module,
+				this.graph,
+				isData(this.bindingValue(binding, module).value)
+			)
 			result =
 				escape ?
 					new DynamicValue(
@@ -1691,6 +1696,18 @@ const isArkValue = (
 	!(value instanceof ModuleNamespace) &&
 	!(value instanceof Date) &&
 	!(value instanceof RegExp)
+
+// objects whose contents the program can change after the build reads them
+const isTracked = (value: unknown): value is object =>
+	isPlainContainer(value) || value instanceof Date || value instanceof RegExp
+
+const isData = (value: unknown, seen = new Set<unknown>()): boolean => {
+	if (!isObjectLike(value)) return true
+	if (!isPlainContainer(value)) return false
+	if (seen.has(value)) return true
+	seen.add(value)
+	return Reflect.ownKeys(value).every(k => isData(Reflect.get(value, k), seen))
+}
 
 export const findDynamic = (
 	value: unknown,

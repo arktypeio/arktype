@@ -1,4 +1,10 @@
 import type { CallExpression, MemberExpression, Node } from "oxc-parser"
+import {
+	globalsByName,
+	methodsByReceiverKind,
+	pureBuiltins,
+	type PureBuiltin
+} from "./builtins.ts"
 import { isFunctionNode, type FunctionNode, type ModuleGraph } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
 import type { Binding } from "./scope.ts"
@@ -12,15 +18,18 @@ interface EscapeState {
 	module: SourceModule
 	graph: ModuleGraph
 	seen: Set<Node | Binding>
+	// the object holds only primitives, arrays and plain objects, so converting or iterating it runs no code of its own
+	isData: boolean
 }
 
 // an object is proven if its module never writes to it and it reaches only property reads, static helpers, arktype calls and definitions
 export const findEscape = (
 	binding: Binding,
 	module: SourceModule,
-	graph: ModuleGraph
+	graph: ModuleGraph,
+	isData: boolean
 ): Escape | undefined =>
-	escapeOfBinding(binding, { module, graph, seen: new Set() })
+	escapeOfBinding(binding, { module, graph, seen: new Set(), isData })
 
 const escapeOfBinding = (
 	binding: Binding,
@@ -57,18 +66,22 @@ const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
 					escapeOfValue(parent, s)
 				:	undefined
 		case "MemberExpression":
-			return parent.object === node ? escapeOfMember(parent, s) : undefined
+			return parent.object === node ?
+					escapeOfMember(parent, s)
+				:	escapeOfConversion(parent, s)
 		case "Property":
-			return (
-					parent.value === node && parent.parent?.type === "ObjectExpression"
-				) ?
-					escapeOfValue(parent.parent, s)
-				:	undefined
+			return parent.value === node ?
+					escapeOfValue(parent.parent!, s)
+				:	escapeOfConversion(parent, s)
 		case "SpreadElement": {
 			const container = parent.parent!
-			return container.type === "CallExpression" ?
+			return (
+				container.type === "CallExpression" ?
 					escapeOfArgument(container, parent, s)
+				: container.type === "ArrayExpression" ?
+					(escapeOfConversion(parent, s) ?? escapeOfValue(container, s))
 				:	escapeOfValue(container, s)
+			)
 		}
 		case "CallExpression":
 			return parent.callee === node ?
@@ -78,12 +91,18 @@ const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
 			return parent.init === node ? escapeOfPattern(parent.id, s) : undefined
 		case "AssignmentExpression":
 			if (parent.left === node) return
-			return parent.left.type === "Identifier" ?
-					escapeOfPattern(parent.left, s)
-				:	{
-						node: parent,
-						message: `is stored by \`${s.module.snippetOf(parent)}\``
-					}
+			if (!["=", "||=", "&&=", "??="].includes(parent.operator))
+				return escapeOfConversion(parent, s)
+			if (parent.left.type === "Identifier") {
+				const binding = s.module.scopes.referencesById.get(parent.left)?.binding
+				return binding ?
+						escapeOfBinding(binding, s)
+					:	{ node: parent, message: "is stored in a global" }
+			}
+			return {
+				node: parent,
+				message: `is stored by \`${s.module.snippetOf(parent)}\``
+			}
 		case "ReturnStatement":
 			return escapeOfReturn(enclosingFunctionOf(parent), s)
 		case "ArrowFunctionExpression":
@@ -92,8 +111,43 @@ const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
 		case "ExportDefaultDeclaration":
 			return { node: parent, message: "is exported" }
 		case "TemplateLiteral":
+			return parent.parent?.type === "TaggedTemplateExpression" ?
+					{
+						node: parent.parent,
+						message: `is passed to \`${s.module.snippetOf(parent.parent.tag)}\``
+					}
+				:	escapeOfConversion(parent, s)
 		case "BinaryExpression":
+			if (
+				parent.operator === "===" ||
+				parent.operator === "!==" ||
+				(parent.operator === "in" && parent.right === node)
+			)
+				return
+			return parent.operator === "instanceof" && parent.left === node ?
+					{
+						node: parent,
+						message: `is passed to \`${s.module.snippetOf(parent.right)}\``
+					}
+				:	escapeOfConversion(parent, s)
 		case "UnaryExpression":
+			return (
+					parent.operator === "typeof" ||
+						parent.operator === "void" ||
+						parent.operator === "!"
+				) ?
+					undefined
+				:	escapeOfConversion(parent, s)
+		case "ForOfStatement":
+			return (
+				escapeOfConversion(parent, s) ??
+				(parent.left.type === "VariableDeclaration" ?
+					escapeOfPattern(parent.left.declarations[0].id, s)
+				:	{
+						node: parent.left,
+						message: `is stored by \`${s.module.snippetOf(parent.left)}\``
+					})
+			)
 		case "ExpressionStatement":
 		case "IfStatement":
 		case "WhileStatement":
@@ -102,7 +156,6 @@ const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
 		case "ForInStatement":
 		case "SwitchStatement":
 		case "SwitchCase":
-		case "TaggedTemplateExpression":
 			return
 	}
 	return {
@@ -110,6 +163,15 @@ const escapeOfValue = (node: Node, s: EscapeState): Escape | undefined => {
 		message: `is used by \`${s.module.snippetOf(parent)}\``
 	}
 }
+
+// converting an object to a primitive or iterating it calls its methods, unless it holds only data
+const escapeOfConversion = (node: Node, s: EscapeState): Escape | undefined =>
+	s.isData ? undefined : (
+		{
+			node,
+			message: `is passed to its own methods by \`${s.module.snippetOf(node)}\``
+		}
+	)
 
 const escapeOfMember = (
 	member: MemberExpression,
@@ -126,21 +188,14 @@ const escapeOfMember = (
 		}
 	}
 	const parent = end.parent!
-	if (
-		parent.type !== "CallExpression" ||
-		parent.callee !== end ||
-		end.type !== "MemberExpression"
-	)
+	if (parent.type !== "CallExpression" || parent.callee !== end)
 		return escapeOfValue(end, s)
 	const method =
-		end.computed ? undefined : (end.property as { name: string }).name
-	if (method && method in mutatingMethods) {
-		return {
-			node: parent,
-			message: `is written by \`${s.module.snippetOf(parent)}\``
-		}
-	}
-	if (!method || !(method in pureMethods)) {
+		(end as MemberExpression).computed ?
+			undefined
+		:	((end as MemberExpression).property as { name: string }).name
+	// in an object of data, a method by one of these names is a pure built-in or throws
+	if (!s.isData || !method || !(method in pureMethods)) {
 		return {
 			node: parent,
 			message: `is passed to \`${s.module.snippetOf(end)}\``
@@ -155,16 +210,21 @@ const escapeOfArgument = (
 	s: EscapeState
 ): Escape | undefined => {
 	if (s.graph.isArkExpression(call.callee, s.module)) return
-	const builtin = globalPathOf(call.callee, s.module)
-	if (builtin !== undefined) {
-		if (builtin in writingFunctions && call.arguments[0] === argument) {
+	const builtin = builtinOf(call.callee, s.module)
+	if (builtin) {
+		if (builtin.writes && call.arguments[0] === argument) {
 			return {
 				node: call,
 				message: `is written by \`${s.module.snippetOf(call)}\``
 			}
 		}
-		if (builtin in pureFunctions)
-			return escapeOfCallbacks(call, s) ?? escapeOfValue(call, s)
+		if (!builtin.readsOnly && !s.isData) {
+			return {
+				node: call,
+				message: `is passed to its own methods by \`${s.module.snippetOf(call)}\``
+			}
+		}
+		return escapeOfCallbacks(call, s) ?? escapeOfValue(call, s)
 	}
 	const helper = s.graph.helperOf(call.callee, s.module)
 	if (helper && helper[1] === s.module) {
@@ -187,11 +247,12 @@ const escapeOfArgument = (
 	}
 }
 
-// functions passed alongside an object to a pure built-in receive its parts
+// functions passed alongside an object to a pure built-in receive its parts, and what they return is the call's result
 const escapeOfCallbacks = (
 	call: CallExpression,
 	s: EscapeState
 ): Escape | undefined => {
+	s.seen.add(call)
 	for (const arg of call.arguments) {
 		if (!isFunctionNode(arg)) continue
 		for (const param of arg.params) {
@@ -208,7 +269,7 @@ const escapeOfReturn = (
 	fn: FunctionNode | undefined,
 	s: EscapeState
 ): Escape | undefined => {
-	if (!fn || s.seen.has(fn)) return
+	if (!fn || s.seen.has(fn) || s.seen.has(fn.parent!)) return
 	s.seen.add(fn)
 	const binding =
 		fn.type === "FunctionDeclaration" && fn.id ?
@@ -302,101 +363,32 @@ const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
 }
 
 // e.g. `Object.keys` when `Object` is not shadowed
-const globalPathOf = (
+const builtinOf = (
 	callee: Node,
 	module: SourceModule
-): string | undefined => {
-	let root = callee
-	while (root.type === "MemberExpression" && !root.computed) root = root.object
-	return (
-			root.type === "Identifier" &&
-				!module.scopes.referencesById.get(root)?.binding
-		) ?
-			module.textOf(callee)
-		:	undefined
+): PureBuiltin | undefined => {
+	if (callee.type === "Identifier") {
+		return module.scopes.referencesById.get(callee)?.binding ?
+				undefined
+			:	pureBuiltins.get(globalsByName[callee.name] as Function)
+	}
+	if (
+		callee.type !== "MemberExpression" ||
+		callee.computed ||
+		callee.object.type !== "Identifier" ||
+		module.scopes.referencesById.get(callee.object)?.binding
+	)
+		return
+	const owner = globalsByName[callee.object.name]
+	return owner === undefined ? undefined : (
+			pureBuiltins.get(
+				Object.getOwnPropertyDescriptor(owner, callee.property.name)
+					?.value as Function
+			)
+		)
 }
 
-const pureFunctions: Record<string, 1> = Object.setPrototypeOf(
-	{
-		"Object.keys": 1,
-		"Object.values": 1,
-		"Object.entries": 1,
-		"Object.fromEntries": 1,
-		"Object.freeze": 1,
-		"Object.isFrozen": 1,
-		"Object.getOwnPropertyNames": 1,
-		"Object.hasOwn": 1,
-		"Object.assign": 1,
-		"Array.isArray": 1,
-		"Array.from": 1,
-		"Array.of": 1,
-		"JSON.stringify": 1,
-		String: 1,
-		Number: 1,
-		Boolean: 1
-	},
-	null
-)
-
-const writingFunctions: Record<string, 1> = Object.setPrototypeOf(
-	{
-		"Object.assign": 1,
-		"Object.defineProperty": 1,
-		"Object.defineProperties": 1,
-		"Object.setPrototypeOf": 1,
-		"Reflect.set": 1,
-		"Reflect.defineProperty": 1,
-		"Reflect.deleteProperty": 1,
-		"Reflect.setPrototypeOf": 1
-	},
-	null
-)
-
-const mutatingMethods: Record<string, 1> = Object.setPrototypeOf(
-	{
-		push: 1,
-		pop: 1,
-		shift: 1,
-		unshift: 1,
-		splice: 1,
-		sort: 1,
-		reverse: 1,
-		fill: 1,
-		copyWithin: 1
-	},
-	null
-)
-
-const pureMethods: Record<string, 1> = Object.setPrototypeOf(
-	{
-		at: 1,
-		concat: 1,
-		every: 1,
-		filter: 1,
-		find: 1,
-		findIndex: 1,
-		findLast: 1,
-		findLastIndex: 1,
-		flat: 1,
-		flatMap: 1,
-		forEach: 1,
-		includes: 1,
-		indexOf: 1,
-		join: 1,
-		lastIndexOf: 1,
-		map: 1,
-		reduce: 1,
-		reduceRight: 1,
-		slice: 1,
-		some: 1,
-		toReversed: 1,
-		toSorted: 1,
-		toSpliced: 1,
-		with: 1,
-		toString: 1,
-		valueOf: 1,
-		hasOwnProperty: 1,
-		propertyIsEnumerable: 1
-	},
-	null
+const pureMethods: Record<string, Function> = Object.assign(
+	Object.create(null),
+	...Object.values(methodsByReceiverKind)
 )

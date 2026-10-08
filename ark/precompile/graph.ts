@@ -329,7 +329,7 @@ export class ModuleGraph {
 			) ?
 				binding.declaration.init && unwrapExpression(binding.declaration.init)
 			:	undefined
-		return fn && isFunctionNode(fn) && staticBodyOf(fn) ?
+		return fn && isFunctionNode(fn) && staticBodyOf(fn) && !readsArguments(fn) ?
 				[fn, module]
 			:	undefined
 	}
@@ -368,6 +368,23 @@ export const staticBodyOf = (fn: FunctionNode): Node | undefined => {
 	return statements.length === 1 && statements[0].type === "ReturnStatement" ?
 			(statements[0].argument ?? undefined)
 		:	undefined
+}
+
+// `arguments` aliases each argument, so a parameter does not show where its argument goes
+const readsArguments = (fn: FunctionNode): boolean => {
+	if (fn.type === "ArrowFunctionExpression") return false
+	let result = false
+	walkExpressions(fn.body!, node => {
+		if (node.type === "Identifier" && node.name === "arguments") result = true
+		return (
+			!result &&
+			!(
+				node.type === "FunctionExpression" ||
+				node.type === "FunctionDeclaration"
+			)
+		)
+	})
+	return result
 }
 
 export const contains = (outer: Node, inner: Node): boolean =>

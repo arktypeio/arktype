@@ -6,6 +6,10 @@ export interface PureBuiltin {
 	check?: (args: unknown[], self: unknown) => string | undefined
 	// the spec leaves the result implementation-approximated unless every operand is an integer
 	isApproximate?: true
+	// reads only own properties of object arguments, so it runs none of their code
+	readsOnly?: true
+	// writes its first argument
+	writes?: true
 }
 
 export const globalsByName: Record<string, unknown> = Object.assign(
@@ -102,26 +106,30 @@ definePure(
 	],
 	{ check: primitivesOnly }
 )
-definePure(Object, "Object", [
-	"keys",
-	"values",
-	"entries",
-	"fromEntries",
-	"freeze",
-	"isFrozen",
-	"getOwnPropertyNames",
-	"hasOwn"
-])
-definePure(Object, "Object", ["assign"], { check: withoutProtoKeys })
-definePure(Array, "Array", ["isArray", "of", "from"])
-definePure(Number, "Number", [
-	"isInteger",
-	"isSafeInteger",
-	"isFinite",
-	"isNaN",
-	"parseFloat",
-	"parseInt"
-])
+definePure(
+	Object,
+	"Object",
+	["keys", "values", "entries", "isFrozen", "getOwnPropertyNames"],
+	{ readsOnly: true }
+)
+definePure(Object, "Object", ["fromEntries", "hasOwn"])
+definePure(Object, "Object", ["freeze"], { readsOnly: true, writes: true })
+definePure(Object, "Object", ["assign"], {
+	check: withoutProtoKeys,
+	readsOnly: true,
+	writes: true
+})
+definePure(Array, "Array", ["isArray", "of"], { readsOnly: true })
+definePure(Array, "Array", ["from"])
+definePure(
+	Number,
+	"Number",
+	["isInteger", "isSafeInteger", "isFinite", "isNaN"],
+	{
+		readsOnly: true
+	}
+)
+definePure(Number, "Number", ["parseFloat", "parseInt"])
 definePure(String, "String", ["fromCharCode", "fromCodePoint", "raw"])
 definePure(JSON, "JSON", ["parse"])
 definePure(JSON, "JSON", ["stringify"], {

@@ -50,3 +50,17 @@ export const diagnosticsOf = (
 	files?: Record<string, string>,
 	opts?: PrecompileOptions
 ): string[] => precompile(source, files, opts).diagnostics.map(renderDiagnostic)
+
+// each site's status, with the inputs a factory compares at creation or the reasons it is rejected
+export const inputsOf = (
+	source: string,
+	files?: Record<string, string>
+): string[][] =>
+	precompile(source, files).sites.map(site => [
+		`${site.line}:${site.column} ${site.status}`,
+		...(site.status === "rejected" ?
+			site.reasons
+		:	site.inputs.map(
+				input => `${input.kind} ${[input.name, ...input.path].join(".")}`
+			))
+	])
