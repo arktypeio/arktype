@@ -410,7 +410,16 @@ const discriminantCaseToNode = (
 		caseDiscriminant === "undefined" ? $.node("unit", { unit: undefined })
 		: caseDiscriminant === "null" ? $.node("unit", { unit: null })
 		: caseDiscriminant === "boolean" ? $.units([true, false])
-		: caseDiscriminant
+		: (
+			caseDiscriminant.hasKind("domain") && caseDiscriminant.domain === "number"
+		) ?
+			// a typeof check doesn't exclude NaN or Infinity
+			$.node("domain", {
+				domain: "number",
+				numberAllowsNaN: true,
+				numberAllowsInfinity: true
+			})
+		:	caseDiscriminant
 	for (let i = path.length - 1; i >= 0; i--) {
 		const key = path[i]
 		node = $.node(
