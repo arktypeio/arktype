@@ -604,6 +604,19 @@ contextualize(() => {
 		}
 	})
 
+	it("case relates a unit to an object whose basis was pruned", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ a: "string" })
+				.or({ a: "1 | object", b: "1" })
+				.or({ a: { c: "number" }, b: "2" })
+
+			attest(T.allows({ a: 1, b: 1 })).equals(true)
+			attest(T.allows({ a: { c: 0 }, b: 2 })).equals(true)
+			attest(T.allows({ a: { c: 0 }, b: 3 })).equals(false)
+		}
+	})
+
 	it("number case includes NaN and Infinity", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })

@@ -668,6 +668,19 @@ contextualize(() => {
 		attest(m({ a: 1, b: 5 })).equals(2)
 	})
 
+	it("case relates a unit to a refinement whose basis was pruned", () => {
+		const m = match
+			.case("string > 1", () => 0)
+			.case("number", () => 1)
+			.case("null | 'x'", () => 2)
+			.default(() => 3)
+
+		attest(m("xy")).equals(0)
+		attest(m("x")).equals(2)
+		attest(m(null)).equals(2)
+		attest(m("y")).equals(3)
+	})
+
 	it("allows number keys", () => {
 		const numeric = match({
 			0: function numericZeroCase(n) {
