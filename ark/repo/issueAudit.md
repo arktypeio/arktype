@@ -400,7 +400,7 @@ Workaround on 2.2.8: cast the result, e.g. `type({ foo: "string = 'bar'" }).requ
 
 ### <a id="fix-1023"></a>[#1023](https://github.com/arktypeio/arktype/issues/1023) Infer any as morph return
 
-Four fixes are implemented and measured, none landed: A on `fix/infer` (f641e654e), B on `infer-1023/b` (12d552c0a), C on `infer-1023/c` (0361af515) and D on `infer-1023/d` (8cba24727). **Decision:** which one lands. Only D is sound in every probe and it is the cheapest, but it expands named types in hovers and adds declaration-emit errors for recursive interfaces and `AbortController`. C keeps names and is sound except for a morph returning a function that returns any, at +3.6% to +13.6% instantiations per object with a morph or default. A is top-level only, and B fails the bench gate. The [note](#note-1023) has the benchmarks and trade-offs.
+Four fixes are implemented and measured, none landed: A on `fix/infer` (f641e654e), B on `infer-1023/b` (12d552c0a), C on `infer-1023/c` (0361af515) and D on `infer-1023/d` (8cba24727). **Decision:** the maintainer wants names preserved, soundness everywhere and minimal cost, which none of the four gives: D expands named types and breaks declaration emit, C is unsound for a nested morph returning a function that returns any and costs +3.6% to +13.6% per object with a morph or default, A is top-level only, and B fails the bench gate. A fifth option, E on `infer-1023/e`, is being built and measured: it keeps the name-preserving shortcut but takes it only when the type contains no morph, default or (on the input side) brand. The [note](#note-1023) has the benchmarks and trade-offs for A to D.
 
 ## Easy-win bugs
 
@@ -1591,7 +1591,7 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 
 ### Unfiled bugs
 
-- **Unanchored digit patterns infer an unsound type (2.2.8 and featherduster).** `type("/\\d+/")` infers `` `${number}` `` but accepts `"x1y"`. It is one case of a broader arkregex soundness gap, and its fix was held after review. See the issue draft below. Found on [#839](https://github.com/arktypeio/arktype/issues/839).
+- **Unanchored digit patterns infer an unsound type (2.2.8 and featherduster).** `type("/\\d+/")` infers `` `${number}` `` but accepts `"x1y"`. It is one case of a broader arkregex soundness gap, and a precise redesign of the inference is in progress. See the issue draft below. Found on [#839](https://github.com/arktypeio/arktype/issues/839).
 - **`string[] & number[]` is `unknown[]` on 2.2.8 and accepts `["x"]`.** On featherduster it is `[]`, which is correct. No issue tracks it, so nothing needs closing. Found on [#1088](https://github.com/arktypeio/arktype/issues/1088).
 - **Flat tuple expressions silently drop operands at runtime.** They are a type error, but at runtime the extra operands are dropped (`string | false | true`). Separately, `type("string&number")` throws "unsatisfiable" at runtime but isn't a type error. Found on [#585](https://github.com/arktypeio/arktype/issues/585).
 - **A numeric finite index is a type error but works at runtime.** With `index: "1 | 3 | 5 | 7"`, `{ "[index]": "index" }` reports "Indexed key definition must be a string or symbol", but at runtime it expands fine. Found on [#584](https://github.com/arktypeio/arktype/issues/584).
@@ -1627,7 +1627,9 @@ Two TypeScript rules cause most of it. When TS matches a string against a templa
 
 arkregex uses `` `${string}` `` for `.`, `.*`, `.+`, `x+` and the text a missing anchor allows, and `` `${number}` `` for `\d`, so both rules come up whenever one sits next to another or next to a literal it can also match.
 
-**The attempted fix isn't landed.** `fix/regex` (56d4f948a) stops merging `\d` into `` `${number}` ``, merges adjacent `` `${string}` ``s and absorbs repetitions. It cuts the rejected matches from 310,500 to 25,662, but three review rounds each found new ones. In the last round:
+**Status: a precise redesign is in progress on `fix/regex-redesign`.** It tracks, while parsing, what each placeholder can match, and decides merging and widening from that, so featherduster's sound types stay as they are. The first attempt below is superseded.
+
+**The first attempt wasn't landed.** `fix/regex` (56d4f948a) stops merging `\d` into `` `${number}` ``, merges adjacent `` `${string}` ``s and absorbs repetitions. It cuts the rejected matches from 310,500 to 25,662, but three review rounds each found new ones. In the last round:
 
 - 1,604 matches in 62 patterns are rejected that featherduster accepted. Merging a `` `${string}` `` shifts which characters TS gives every later placeholder, so `^..\d$` rejects `"ab1"`, `^a..\d$` rejects `"abc1"` and `^(?:\d.*)+\d$` rejects `"11"`.
 - Some types widen with no soundness need. `^a..c$` becomes `` `a${string}c` `` and `^\d..` loses two required characters, because two raw `.` atoms are merged although the parser can tell them from `.*`.
