@@ -164,6 +164,22 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 ### Reserve `meta.keyword`
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
+### Run morphs where they're reached on failed calls
+
+When validation fails, each morph whose input is valid runs as it's reached rather than after everything else is checked, so its errors are listed in traversal order and a morph reading `ctx.errors` sees only the errors before it:
+
+```ts
+const T = type({
+	a: ["string", "=>", (s, ctx) => ctx.error("short")],
+	b: "number"
+})
+
+// previously 'b must be a number (was a string)\na must be short (was "x")'
+// now 'a must be short (was "x")\nb must be a number (was a string)'
+T({ a: "x", b: "1" }).toString()
+```
+
+A valid nested object's defaults are applied even after an earlier error, a valid object shared under a cyclic type is transformed at each path reaching it, as when validation succeeds, and a predicate checked beside morphs can run once more. Valid calls are unchanged.
 
 ### Keep a referenced type's descriptions when it is compiled
 

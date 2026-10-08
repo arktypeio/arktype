@@ -145,7 +145,6 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		}
 		if (js.traversalKind === "Transform") return this.compileTransform(js)
 		if (this.introspectableIn) js.invokeMember(this.introspectableIn)
-		js.line(`ctx.queueMorphs([${this.morphs.map(morph => js.ref(morph))}])`)
 	}
 
 	private compileTransform(js: NodeCompiler): void {
@@ -190,7 +189,6 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		if (this.introspectableIn) applyMember(this.introspectableIn, data, ctx)
-		ctx.queueMorphs(this.morphs)
 	}
 
 	traverseTransform: TraverseTransform = (data, ctx) => {

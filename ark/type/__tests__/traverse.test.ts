@@ -273,8 +273,8 @@ isAdmin must be false, null or true (was 1)`)
 
 		const out = type({ a: Checked, b: "number" })({ a: "x", b: "y" })
 
-		attest(out.toString()).snap(`b must be a number (was a string)
-a must be not ok (was "x")`)
+		attest(out.toString()).snap(`a must be not ok (was "x")
+b must be a number (was a string)`)
 		attest((out as ArkErrors).count).equals(2)
 	})
 
@@ -405,9 +405,9 @@ age must be more than 18 (was 2)`)
 		})
 
 		attest(T({ a: "!a", b: 1, c: 1, d: "x" }).toString())
-			.snap(`b must be a string (was a number)
-d must be a number (was a string)
-a must be a string without ! (was "!a")`)
+			.snap(`a must be a string without ! (was "!a")
+b must be a string (was a number)
+d must be a number (was a string)`)
 	})
 
 	it("cyclic data after a nested call threw", () => {

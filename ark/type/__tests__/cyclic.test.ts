@@ -272,6 +272,44 @@ contextualize(() => {
 					)
 				})
 
+				it("transforming root applies each object once", config => {
+					const calls: string[] = []
+					const node = scope(
+						{
+							node: {
+								v: [
+									"string",
+									"=>",
+									s => {
+										calls.push(s)
+										return s
+									}
+								],
+								"n?": "number",
+								"e?": "node[]"
+							}
+						},
+						config
+					).export().node
+					const valid = { v: "valid" }
+					const invalid = { v: "invalid", e: [{ v: "bad", n: "x" as never }] }
+
+					attest(
+						node({
+							v: "root",
+							e: [{ v: "a", e: [valid, invalid] }, valid, invalid]
+						}).toString()
+					).snap("e[2].e[0].n must be a number (was a string)")
+					attest(calls).equals([
+						"root",
+						"valid",
+						"a",
+						"valid",
+						"invalid",
+						"bad"
+					])
+				})
+
 				it("depth and width bounds", config => {
 					const types = scope(
 						{

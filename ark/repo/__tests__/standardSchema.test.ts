@@ -48,10 +48,11 @@ contextualize(() => {
 		})
 
 		attest(invalid).instanceOf(type.errors)
-		attest(invalid.toString()).snap(`age must be a number (was a string)
-name must be a string (was a number)
-address.streetNumber invalid input: expected number, received string
-address.streetName invalid input: expected string, received undefined`)
+		attest(invalid.toString())
+			.snap(`address.streetNumber invalid input: expected number, received string
+address.streetName invalid input: expected string, received undefined
+age must be a number (was a string)
+name must be a string (was a number)`)
 	})
 
 	it("accepts zod schema passed directly to type", () => {

@@ -562,26 +562,6 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	}
 
 	/**
-	 * @internal
-	 */
-	affectsPath(path: ReadonlyPath): boolean {
-		if (this.length === 0) return false
-
-		return (
-			// this would occur if there is an existing error at a prefix of path
-			// e.g. the path is ["foo", "bar"] and there is an error at ["foo"]
-			(path.stringifyAncestors().some(s => s in this.byPath) ||
-				// this would occur if there is an existing error at a suffix of path
-				// e.g. the path is ["foo"] and there is an error at ["foo", "bar"]
-				path.stringify() in this.byAncestorPath) &&
-			// distinct symbols can print alike
-			this.issues.some(
-				e => startsWithPath(path, e.path) || startsWithPath(e.path, path)
-			)
-		)
-	}
-
-	/**
 	 * A human-readable summary of all errors.
 	 */
 	get summary(): string {
@@ -708,9 +688,6 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		}
 	}
 }
-
-const startsWithPath = (path: ReadonlyPath, prefix: ReadonlyPath) =>
-	prefix.length <= path.length && prefix.every((k, i) => k === path[i])
 
 export class TraversalError extends Error {
 	readonly name = "TraversalError"

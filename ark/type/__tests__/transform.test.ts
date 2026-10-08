@@ -603,7 +603,7 @@ b must be A (was "y")`)
 
 		attest(T({ a: "x", b: 1 }).toString()).snap('a must be short (was "x")')
 		attest(T({ a: "x", b: "1" }).toString()).snap(
-			'b must be a number (was a string)\na must be short (was "x")'
+			'a must be short (was "x")\nb must be a number (was a string)'
 		)
 	})
 
@@ -622,7 +622,7 @@ b must be A (was "y")`)
 		attest(
 			$.node({ v: "a", next: { v: "b", next: null }, z: "1" }).toString()
 		).snap(
-			'z must be a number (was a string)\nv must be short (was "a")\nnext.v must be short (was "b")'
+			'v must be short (was "a")\nnext.v must be short (was "b")\nz must be a number (was a string)'
 		)
 	})
 
@@ -788,6 +788,122 @@ b must be A (was "y")`)
 		T({ value: "a", next: { value: "b" } })
 
 		attest(calls).equals(["a", "b", "a", "b"])
+	})
+
+	describe("failed calls", () => {
+		it("transform valid keys in traversal order", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const counts: number[] = []
+				const T = $.type({
+					a: "number",
+					b: $.type("string").pipe((s, ctx) => {
+						counts.push(ctx.errors.count)
+						return ctx.error("short")
+					}),
+					c: "number"
+				})
+
+				attest(T({ a: "x", b: "b", c: "y" }).toString())
+					.snap(`a must be a number (was a string)
+b must be short (was "b")
+c must be a number (was a string)`)
+				attest(counts).equals([1])
+			}
+		})
+
+		it("transform nothing a branch or pipe only checks", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const calls: string[] = []
+				const Logged = $.type("string").pipe(s => {
+					calls.push(s)
+					return s
+				})
+				const T = $.type({
+					u: $.type({ a: Logged, n: "number > 0" }).or({
+						b: Logged,
+						n: "number < 0"
+					}),
+					p: $.type("string").pipe(
+						s => JSON.parse(s),
+						$.type({ c: Logged, n: "number" })
+					),
+					k: "number"
+				})
+
+				attest(
+					T({
+						u: { a: "a", b: "b", n: 0 },
+						p: '{"c":"c","n":"x"}',
+						k: "x"
+					}).toString()
+				).snap(`k must be a number (was a string)
+p.n must be a number (was a string)
+u.n must be positive or negative (was 0)`)
+				attest(calls).equals([])
+			}
+		})
+
+		it("transform a structure after its predicates pass", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const calls: string[] = []
+				const T = $.type({
+					o: $.type({
+						a: $.type("string").pipe(s => {
+							calls.push(s)
+							return s
+						}),
+						n: "number"
+					}).and($.type("object").narrow(o => (o as { n: number }).n > 0)),
+					k: "number"
+				})
+
+				attest(T({ o: { a: "a", n: 0 }, k: "x" }).toString())
+					.snap(`k must be a number (was a string)
+o must be valid according to an anonymous predicate (was {"a":"a","n":0})`)
+				attest(calls).equals([])
+				attest(T({ o: { a: "a", n: "x" }, k: "x" }).toString())
+					.snap(`k must be a number (was a string)
+o.n must be a number (was a string)`)
+				attest(calls).equals(["a"])
+			}
+		})
+
+		it("transform a key once each constraint allows it", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const calls: string[] = []
+				const T = $.type({
+					"[string]": $.type("string").pipe(s => {
+						calls.push(s)
+						return s
+					}),
+					"[/^x/]": "string < 3"
+				})
+
+				attest(T({ xa: "long", b: "b" }).toString()).snap(
+					"xa must be at most length 2 (was 4)"
+				)
+				attest(calls).equals(["b"])
+			}
+		})
+
+		it("apply a valid nested object's defaults", () => {
+			for (const jitless of [false, true]) {
+				let calls = 0
+				const T = scope({}, { jitless }).type({
+					a: "number",
+					o: { d: ["string", "=", () => `${++calls}`] }
+				})
+
+				attest(T({ a: "x", o: {} }).toString()).snap(
+					"a must be a number (was a string)"
+				)
+				attest(calls).equals(1)
+			}
+		})
 	})
 
 	describe("undeclared keys", () => {

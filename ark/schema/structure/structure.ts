@@ -449,19 +449,32 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this._traverse("Allows", data, ctx as never)
 
 	traverseApply: TraverseApply<object> = (data, ctx) =>
-		this._traverse("Apply", data, ctx)
+		this.sharesTransformedKeys && ctx.transformsValid ?
+			this.applySharedKeys(data, ctx)
+		:	this._traverse("Apply", data, ctx)
 
 	protected _traverse = (
 		traversalKind: TraversalKind,
 		data: object,
-		ctx: InternalTraversal
+		ctx: InternalTraversal,
+		transformsKeys = true
 	): boolean => {
 		const errorCount = ctx?.currentErrorCount ?? 0
 		for (let i = 0; i < this.props.length; i++) {
+			const prop = this.props[i]
 			if (traversalKind === "Allows") {
-				if (!this.props[i].traverseAllows(data, ctx)) return false
+				if (!prop.traverseAllows(data, ctx)) return false
 			} else {
-				this.props[i].traverseApply(data as never, ctx)
+				// a prop's Apply would transform its value before an index signature checks it
+				if (transformsKeys) prop.traverseApply(data as never, ctx)
+				else if (prop.key in data) {
+					traverseKey(
+						prop.key,
+						() => applyValue(prop.value, data[prop.key as never], ctx, false),
+						ctx
+					)
+				} else if (prop.hasKind("required"))
+					ctx.errorFromNodeContext(prop.errorContext, data)
 				if (ctx.failFast && ctx.currentErrorCount > errorCount) return false
 			}
 		}
@@ -497,7 +510,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 							} else {
 								traverseKey(
 									k,
-									() => applyValue(node.value, data[k as never], ctx),
+									() =>
+										applyValue(
+											node.value,
+											data[k as never],
+											ctx,
+											transformsKeys
+										),
 									ctx
 								)
 								if (ctx.failFast && ctx.currentErrorCount > errorCount)
@@ -524,14 +543,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					if (ctx.failFast) return false
 				}
 			}
-		}
-
-		// added additional ctx check here to address
-		// https://github.com/arktypeio/arktype/issues/1346
-		if (this.structuralMorph && traversalKind === "Apply" && !ctx.hasError()) {
-			ctx.queueMorphs([
-				(data, ctx) => this.applyStructuralMorph(data, data, ctx)
-			])
 		}
 
 		return true
@@ -608,6 +619,63 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		if (ctx.currentErrorCount > errorCount) return data
 		return this.applyStructuralMorph(data, out, ctx)
+	}
+
+	// a key several constraints check is transformed once each of them allows it
+	get sharesTransformedKeys(): boolean {
+		return (
+			this.index !== undefined &&
+			this.transforms &&
+			(this.hasIndexedProp || this.index.length > 1)
+		)
+	}
+
+	applySharedKeys(data: object, ctx: InternalTraversal): void {
+		this._traverse("Apply", data, ctx, false)
+		for (const prop of this.props)
+			if (prop.key in data) this.transformSharedKey(data, prop.key, ctx)
+		for (const k of ownKeysOf(data))
+			if (!(k in this.propsByKey)) this.transformSharedKey(data, k, ctx)
+	}
+
+	private transformSharedKey(
+		data: object,
+		k: Key,
+		ctx: InternalTraversal
+	): void {
+		const prop = this.propsByKey[k]
+		if (prop && !this.transformsOf(prop).length) return
+		const constraints: BaseNode[] = prop ? [prop.value] : []
+		for (const index of this.index!)
+			if (ctx.allows(index.signature, k)) constraints.push(index.value)
+		const steps: TransformStep[] =
+			prop ?
+				this.transformsOf(prop)
+			:	constraints.filter(n => n.transforms).map(node => ({ node }))
+		const input: unknown = data[k as never]
+		if (
+			!steps.length ||
+			!traverseKey(k, () => constraints.every(n => ctx.allows(n, input)), ctx)
+		)
+			return
+		const errorCount = ctx.currentErrorCount
+		let value = input
+		for (const step of steps) {
+			if (ctx.currentErrorCount > errorCount) break
+			if (step.signature && !ctx.allows(step.signature, k)) continue
+			const stepInput =
+				value === input || step.node.allows(value) ? value : input
+			const transformed = traverseKey(
+				k,
+				() => ctx.transform(step.node, stepInput),
+				ctx
+			)
+			value =
+				stepInput === value ? transformed : (
+					mergeTransformed(stepInput, value, transformed)
+				)
+		}
+		ctx.transformedInApply(value)
 	}
 
 	applyStructuralMorph(
@@ -773,7 +841,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	compile(js: NodeCompiler): unknown {
 		if (js.traversalKind === "Transform") return this.compileTransform(js)
-		if (js.traversalKind === "Apply") js.initializeErrorCount()
+		if (js.traversalKind === "Apply") {
+			if (this.sharesTransformedKeys) {
+				js.if("ctx.transformsValid", () =>
+					js.return(`${js.ref(this)}.applySharedKeys(data, ctx)`)
+				)
+			}
+			js.initializeErrorCount()
+		}
 
 		for (const prop of this.props) {
 			js.check(prop)
@@ -800,16 +875,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (js.traversalKind === "Allows") return js.return(true)
-
-		if (this.structuralMorph) {
-			// added additional ctx check here to address
-			// https://github.com/arktypeio/arktype/issues/1346
-			js.if("ctx && !ctx.hasError()", () =>
-				js.line(
-					`ctx.queueMorphs([(data, ctx) => ${js.ref(this)}.applyStructuralMorph(data, data, ctx)])`
-				)
-			)
-		}
 	}
 
 	private compileTransform(js: NodeCompiler): void {

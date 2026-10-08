@@ -1,15 +1,12 @@
 import {
-	ReadonlyPath,
 	hasDomain,
 	isArray,
 	noSuggest,
 	objectKindOf,
-	stringifyPath,
-	type array
+	stringifyPath
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import type { BaseNode } from "../node.ts"
-import type { Morph } from "../roots/morph.ts"
 import {
 	ArkError,
 	ArkErrors,
@@ -19,18 +16,12 @@ import {
 	type ArkErrorResult,
 	type NodeErrorContextInput
 } from "./errors.ts"
-import { copyOf, TransformErrors } from "./transform.ts"
-import { inProgress, isNode } from "./utils.ts"
-
-export type MorphsAtPath = {
-	path: ReadonlyPath
-	morphs: array<Morph>
-}
+import { TransformErrors } from "./transform.ts"
+import { inProgress } from "./utils.ts"
 
 export type BranchTraversal = {
 	error: ArkError | undefined
 	errorCount: number
-	queuedMorphs: MorphsAtPath[]
 }
 
 // avoid sugar methods internally
@@ -71,7 +62,6 @@ export class Traversal {
 	 */
 	config: ResolvedConfig
 
-	queuedMorphs: MorphsAtPath[] = []
 	branches: BranchTraversal[] = []
 	seen: { [id in string]?: Map<unknown, ResolutionState> } = {}
 	// a cyclic root's Apply leaves resolutions untracked until its data is deep or broad enough to be cyclic
@@ -100,9 +90,8 @@ export class Traversal {
 	// data is read from what a morph received, since root is the input
 	private received: unknown
 	private receivedDepth = 0
-	// each object is copied before its first write, so input is never mutated
-	private morphedRoot: unknown
-	private copied: Map<object, object> | undefined
+	// a piped node is transformed once Apply finds it valid
+	private checksOnly = false
 
 	constructor(root: unknown, config: ResolvedConfig) {
 		this.root = root
@@ -188,25 +177,10 @@ export class Traversal {
 			:	this.branches[this.branches.length - 1]
 	}
 
-	queueMorphs(morphs: array<Morph>): void {
-		const input: MorphsAtPath = {
-			path: new ReadonlyPath(...this.path),
-			morphs
-		}
-		if (this.currentBranch) this.currentBranch.queuedMorphs.push(input)
-		else this.queuedMorphs.push(input)
-	}
-
 	finalize(onFail?: ArkErrors.Handler | null): unknown {
-		this.morphedRoot = this.root
-		// a deferred object queues its morphs after an ancestor's, which must apply to its output
-		if (this.deferredByLength)
-			this.queuedMorphs.sort((l, r) => r.path.length - l.path.length)
-		if (this.queuedMorphs.length) this.applyQueuedMorphs()
-
 		if (this.hasError()) return onFail ? onFail(this.errors) : this.errors
 
-		return this.morphedRoot
+		return this.root
 	}
 
 	receive(data: unknown): void {
@@ -252,21 +226,45 @@ export class Traversal {
 
 	private applyPiped(node: BaseNode, data: unknown): boolean {
 		const errorCount = this.currentErrorCount
-		const { received, receivedDepth } = this
-		const queuedMorphs = (this.currentBranch ?? this).queuedMorphs
-		const queuedCount = queuedMorphs.length
+		const { received, receivedDepth, checksOnly } = this
 		this.receive(data)
+		this.checksOnly = true
 		// a morph's output is new data, so a cyclic node tracks it from its own root
 		if (node.includesAlias) {
-			this.errors.merge(
-				applyCyclic(node.trackedId, node.traverseApply, data, this.config)
-					.errors
-			)
+			const ctx = new Traversal(data, this.config)
+			ctx.checksOnly = true
+			this.errors.merge(applyCyclic(node, data, ctx).errors)
 		} else node.traverseApply(data, this)
-		queuedMorphs.length = queuedCount
+		this.checksOnly = checksOnly
 		this.received = received
 		this.receivedDepth = receivedDepth
 		return this.currentErrorCount === errorCount
+	}
+
+	// Apply transforms each value it finds valid, unless it's checking a union's branch or a piped node
+	get transformsValid(): boolean {
+		return this.branches.length === 0 && !this.checksOnly
+	}
+
+	// a transform Apply runs returns or adds its errors, and can leave data read from a morph's input
+	transformedInApply(result: unknown): void {
+		if (result instanceof TransformErrors) this.addTransformErrors(result)
+		this.received = this.root
+		this.receivedDepth = 0
+	}
+
+	// whether data was transformed in place of being applied, which requires node to allow it
+	transformIfAllowed(node: BaseNode, data: unknown): boolean {
+		if (!this.transformsValid) return false
+		if (node.includesAlias) {
+			const untracked = allowsAcyclic(node, data)
+			if (!(untracked ?? allowsInContext(node, data, this.config))) return false
+			// as at a root, data allowed within the bounds is a tree, so each path is transformed
+			this.tracksTransforms = untracked === undefined
+			this.transformedByResolutionId = undefined
+		} else if (!this.allows(node, data)) return false
+		this.transformedInApply(this.transform(node, data))
+		return true
 	}
 
 	// a predicate reading ctx sees this path, and an error it adds fails the branch
@@ -517,21 +515,12 @@ export class Traversal {
 	pushBranch(): void {
 		this.branches.push({
 			error: undefined,
-			errorCount: 0,
-			queuedMorphs: []
+			errorCount: 0
 		})
 	}
 
 	popBranch(): BranchTraversal | undefined {
 		return this.branches.pop()
-	}
-
-	// a taken branch's morphs apply only if each branch enclosing it is taken
-	popTakenBranch(): void {
-		const { queuedMorphs } = this.branches.pop()!
-		if (this.currentBranch)
-			this.currentBranch.queuedMorphs.push(...queuedMorphs)
-		else this.queuedMorphs.push(...queuedMorphs)
 	}
 
 	/**
@@ -574,93 +563,6 @@ export class Traversal {
 		this.currentBranch!.error = error
 		this.currentBranch!.errorCount++
 	}
-
-	private applyQueuedMorphs() {
-		// invoking morphs that are Nodes will reuse this context, potentially
-		// adding additional morphs, so we have to continue looping until
-		// queuedMorphs is empty rather than iterating over the list once
-		while (this.queuedMorphs.length) {
-			const queuedMorphs = this.queuedMorphs
-			this.queuedMorphs = []
-			for (const { path, morphs } of queuedMorphs) {
-				// even if we already have an error, apply morphs that are not at a path
-				// with errors to capture potential validation errors
-				if (this.errors.affectsPath(path)) continue
-				this.applyMorphsAtPath(path, morphs)
-			}
-		}
-	}
-
-	private applyMorphsAtPath(path: ReadonlyPath, morphs: array<Morph>): void {
-		const key = path[path.length - 1]
-
-		let parent: any
-
-		if (key !== undefined) {
-			// find the object on which the key to be morphed exists
-			this.copied ??= new Map()
-			parent = this.morphedRoot = this.copyOnce(this.morphedRoot)
-			for (let pathIndex = 0; pathIndex < path.length - 1; pathIndex++) {
-				const segment = path[pathIndex]
-				parent = parent[segment] = this.copyOnce(this.readCopy(parent, segment))
-			}
-		}
-
-		for (const morph of morphs) {
-			// ensure morphs are applied relative to the correct path
-			// in case previous operations modified this.path
-			this.path = [...path]
-			const morphIsNode = isNode(morph)
-			const data =
-				key === undefined ? this.morphedRoot : this.readCopy(parent, key)
-			this.receive(data)
-
-			const result = morph(data as never, this)
-
-			if (result instanceof ArkError) {
-				// if an ArkError was returned, ensure it has been added to errors
-				this.errors.add(result)
-
-				// skip any remaining morphs at the current path
-				break
-			}
-			if (result instanceof ArkErrors) {
-				// if the morph was a direct reference to another node,
-				// errors will have been added directly via this piped context
-				if (!morphIsNode) {
-					// otherwise, we have to ensure each error has been added
-					this.errors.merge(result)
-				}
-				// skip any remaining morphs at the current path
-				this.queuedMorphs = []
-				break
-			}
-
-			// if the morph was successful, assign the result to the
-			// corresponding property, or to root if path is empty
-			if (parent === undefined) this.morphedRoot = result
-			else parent[key!] = result
-
-			// if the current morph queued additional morphs,
-			// applying them before subsequent morphs
-			this.applyQueuedMorphs()
-		}
-	}
-
-	private copyOnce(data: unknown): unknown {
-		if (typeof data !== "object" || data === null || this.copied!.has(data))
-			return data
-		const copy = copyOf(data)
-		this.copied!.set(copy, data)
-		return copy
-	}
-
-	// a copy lacks the non-enumerable props of the object it was copied from
-	private readCopy(copy: any, key: PropertyKey): unknown {
-		return typeof copy !== "object" || copy === null || key in copy ?
-				copy?.[key]
-			:	this.copied!.get(copy)?.[key as never]
-	}
 }
 
 const transforming = noSuggest("transforming")
@@ -695,28 +597,31 @@ const reachedByShorterPath = noSuggest("reachedByShorterPath")
 
 // once tracked, a cyclic root is entered as its own resolution, so data reaching it again isn't traversed twice
 export const applyCyclic = (
-	id: string,
-	apply: TraverseApply,
+	node: BaseNode,
 	data: unknown,
-	config: ResolvedConfig
+	ctx: Traversal
 ): Traversal => {
-	let ctx = new Traversal(data, config)
+	// a rerun would transform each value Apply found valid again
+	if (node.transforms) {
+		ctx.applyByPathLength(node.trackedId, node.traverseApply, data)
+		return ctx
+	}
 	ctx.tracksResolutions = false
 	try {
 		try {
 			// data reaching its root again is cyclic, so untracked it exceeds the bounds
-			apply(data, ctx)
+			node.traverseApply(data, ctx)
 		} catch (e) {
 			if (e !== untrackedBound) throw e
-			ctx = new Traversal(data, config)
-			applyResolution(id, apply, data, ctx)
+			ctx = new Traversal(data, ctx.config)
+			applyResolution(node.trackedId, node.traverseApply, data, ctx)
 		}
 		return ctx
 	} catch (e) {
 		if (e !== reachedByShorterPath) throw e
 	}
-	ctx = new Traversal(data, config)
-	ctx.applyByPathLength(id, apply, data)
+	ctx = new Traversal(data, ctx.config)
+	ctx.applyByPathLength(node.trackedId, node.traverseApply, data)
 	return ctx
 }
 
@@ -741,14 +646,22 @@ export const applyMember = (
 		applyResolution(member.id, node.traverseApply, data, ctx)
 	:	node.traverseApply(data, ctx)
 
+// a value Allows accepts is transformed, or left for its structure to transform
 export const applyValue = (
 	node: BaseNode,
 	data: unknown,
-	ctx: InternalTraversal
-): void =>
-	node.entersResolution ?
+	ctx: InternalTraversal,
+	transforms = true
+): void => {
+	if (
+		node.transforms &&
+		(transforms ? ctx.transformIfAllowed(node, data) : ctx.allows(node, data))
+	)
+		return
+	if (node.entersResolution)
 		applyResolution(node.id, node.traverseApply, data, ctx)
-	:	node.traverseApply(data, ctx)
+	else node.traverseApply(data, ctx)
+}
 
 // within the bounds, data is traversed as a tree; past the visit bound it may be cyclic, so only a tracked traversal can tell
 export const allowsUntracked = (

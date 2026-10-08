@@ -213,22 +213,27 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		if (typeof node === "string")
 			return `${this.referenceToId(node, opts)}(${arg}, ${this.ctx})`
 		const kind = opts?.kind ?? this.traversalKind
-		// Allows adds no errors to ctx, so a predicate reading it runs in a branch
 		if (
 			this.traversalKind === "Transform" &&
 			kind === "Allows" &&
 			node.allowsRequiresContext
-		) {
-			return node.allowsRequiresTraversal ?
-					`${this.ctx}.allows(${this.ref(node)}, ${arg})`
-				:	`${this.ref(node)}.allows(${arg})`
-		}
+		)
+			return this.allows(node, arg)
 		const reference = this.referenceToId(node.id, opts)
 		if (kind === "Transform" && node.isTransformedById)
 			return `${this.ctx}.transformResolution("${this.nameOf(node.id)}", ${arg}, ${reference})`
 		return this.requiresContextFor(node, kind) ?
 				`${reference}(${arg}, ${this.ctx})`
 			:	`${reference}(${arg})`
+	}
+
+	// Allows adds no errors to ctx, so a predicate reading it runs in a branch
+	allows(node: BaseNode, arg: string = this.data): string {
+		if (!node.allowsRequiresContext)
+			return this.invoke(node, { arg, kind: "Allows" })
+		return node.allowsRequiresTraversal ?
+				`${this.ctx}.allows(${this.ref(node)}, ${arg})`
+			:	`${this.ref(node)}.allows(${arg})`
 	}
 
 	invokeMember(
@@ -333,9 +338,27 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			:	this.requiresContextFor(node)
 		if (pushesPath) this.line(`${this.ctx}.path.push(${keyExpression})`)
 
-		if (this.traversalKind === "Apply" && node.entersResolution)
-			this.invokeMember(node, node, accessExpression)
-		else this.check(node, { arg: accessExpression })
+		const apply = () =>
+			node.entersResolution ?
+				this.invokeMember(node, node, accessExpression)
+			:	this.check(node, { arg: accessExpression })
+		if (this.traversalKind !== "Apply")
+			this.check(node, { arg: accessExpression })
+		else if (!node.transforms) apply()
+		else if (node.includesAlias) {
+			this.if(
+				`!ctx.transformIfAllowed(${this.ref(node)}, ${accessExpression})`,
+				apply
+			)
+		} else {
+			this.if(
+				`ctx.transformsValid && ${this.allows(node, accessExpression)}`,
+				() =>
+					this.line(
+						`ctx.transformedInApply(${this.invoke(node, { arg: accessExpression, kind: "Transform" })})`
+					)
+			).else(apply)
+		}
 		if (pushesPath) this.line(`${this.ctx}.path.pop()`)
 
 		return this

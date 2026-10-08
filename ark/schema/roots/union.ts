@@ -283,10 +283,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const branch = this.branches[i]
 			ctx.pushBranch()
 			applyMember(branch, data, ctx)
-			if (!ctx.hasError()) {
-				if (branch.transforms) return ctx.popTakenBranch()
-				return ctx.popBranch()
-			}
+			if (!ctx.hasError()) return ctx.popBranch()
 			errors.push(ctx.popBranch()!.error!)
 		}
 		ctx.errorFromContext({ code: "union", errors, meta: this.meta, data })
@@ -396,11 +393,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			for (const branch of this.branches) {
 				js.line("ctx.pushBranch()")
 					.invokeMember(branch)
-					.if("!ctx.hasError()", () =>
-						js.return(
-							branch.transforms ? "ctx.popTakenBranch()" : "ctx.popBranch()"
-						)
-					)
+					.if("!ctx.hasError()", () => js.return("ctx.popBranch()"))
 					.line("errors.push(ctx.popBranch().error)")
 			}
 

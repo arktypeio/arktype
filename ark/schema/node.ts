@@ -524,15 +524,8 @@ export abstract class BaseNode<
 	}
 
 	private applyRoot(data: unknown): Traversal {
-		if (this.includesAlias) {
-			return applyCyclic(
-				this.trackedId,
-				this.traverseApply,
-				data,
-				this.$.resolvedConfig
-			)
-		}
 		const ctx = new Traversal(data, this.$.resolvedConfig)
+		if (this.includesAlias) return applyCyclic(this, data, ctx)
 		this.traverseApply(data, ctx)
 		return ctx
 	}
@@ -1496,7 +1489,7 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 	const fallback = () =>
 		node.includesAlias ?
 			js.return(
-				`applyCyclic("${node.trackedId}", apply, data, config).finalize(onFail)`
+				"applyCyclic(node, data, new Traversal(data, config)).finalize(onFail)"
 			)
 		:	js
 				.const("ctx", "new Traversal(data, config)")

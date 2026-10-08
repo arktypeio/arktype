@@ -228,8 +228,16 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			if (ctx.currentErrorCount > errorCount) return
 		}
 		if (this.structure) {
-			this.structure.traverseApply(data as never, ctx)
-			if (ctx.currentErrorCount > errorCount) return
+			// Apply transforms what it finds valid, which a predicate could still reject
+			if (this.inner.predicate && this.structure.transforms) {
+				if (!ctx.allows(this.structure, data)) {
+					this.structure.traverseApply(data as never, ctx)
+					return
+				}
+			} else {
+				this.structure.traverseApply(data as never, ctx)
+				if (ctx.currentErrorCount > errorCount) return
+			}
 		}
 		if (this.inner.predicate) {
 			for (let i = 0; i < this.inner.predicate.length - 1; i++) {
@@ -274,8 +282,14 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			if (this.structure || this.inner.predicate) js.returnIfFail()
 		}
 		if (this.structure) {
-			js.check(this.structure)
-			if (this.inner.predicate) js.returnIfFail()
+			const structure = this.structure
+			// Apply transforms what it finds valid, which a predicate could still reject
+			if (this.inner.predicate && structure.transforms)
+				js.if(`!${js.allows(structure)}`, () => js.check(structure).return())
+			else {
+				js.check(structure)
+				if (this.inner.predicate) js.returnIfFail()
+			}
 		}
 		if (this.inner.predicate) {
 			for (let i = 0; i < this.inner.predicate.length - 1; i++) {
