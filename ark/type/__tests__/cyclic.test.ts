@@ -1470,7 +1470,8 @@ p1[0].p0 must be x (was a number)`)
 				"g0<p0>": "(p0 | g0<a0>)[]",
 				a0: ["g0<string[]>", "...", "a1[]"],
 				a1: { p1: ["string", "=", "d"] }
-				// inferring this scope leaves TS 7's checker inferring later spreads as any
+				// printing this scope's type leaves TS 7.1 inferring later spreads as any
+				// https://github.com/microsoft/TypeScript/issues/64683
 			} as never).export()
 		).throws(writeIndiscriminableMorphMessage("string[]", "($a0 | g0<$a0>)[]"))
 	})
