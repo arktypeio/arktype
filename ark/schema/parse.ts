@@ -8,6 +8,7 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
+	type array,
 	type Brand,
 	type dict,
 	type Entry,
@@ -208,7 +209,9 @@ export const createNode = ({
 			{}
 		:	flatMorph(meta, (k, v) => [
 				k,
-				k === "examples" ? v : defaultValueSerializer(v)
+				k === "examples" ?
+					(v as array).map(defaultValueSerializer)
+				:	defaultValueSerializer(v)
 			])
 
 	// nodes are only cached with a set engine, which reduces them first

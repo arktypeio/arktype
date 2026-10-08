@@ -240,13 +240,20 @@ export type keyImplementationsOf<d extends BaseNodeDeclaration> = {
 	[k in keyof d["inner"]]-?: NodeKeyImplementation<d, k>
 }
 
+// a string that reads like another value's serialization is quoted
+const ambiguousStringPattern =
+	/^(?:"|\$ark\d*\.|(?:NaN|-?Infinity|-0|-?\d+n|undefined|[+-]?\d{4,6}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z)$)/
+
 export const defaultValueSerializer = (v: unknown): Json => {
-	if (typeof v === "string" || typeof v === "boolean" || v === null) return v
+	if (typeof v === "string")
+		return ambiguousStringPattern.test(v) ? JSON.stringify(v) : v
+	if (typeof v === "boolean" || v === null) return v
 
 	if (typeof v === "number") {
 		if (Number.isNaN(v)) return "NaN"
 		if (v === Number.POSITIVE_INFINITY) return "Infinity"
 		if (v === Number.NEGATIVE_INFINITY) return "-Infinity"
+		if (Object.is(v, -0)) return "-0"
 		return v
 	}
 

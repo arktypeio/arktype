@@ -180,6 +180,19 @@ type.number.allows(Number.NaN)
 configure({ onUndeclaredKey: "delete" })
 ```
 
+### Tell apart values that serialized alike
+
+A type returned another type defined earlier whose value serialized the same way, such as `NaN` and `"NaN"`, `5n` and `"5n"`, `undefined` and `"undefined"`, a Date and its ISO string, a symbol and its registry name, or default values `-0` and `0`. `meta.examples` and cached defaults confused `NaN` with `null` and `5` with `"5"`:
+
+```ts
+type.unit(NaN)
+
+// previously false, now true
+type("'NaN'").allows("NaN")
+```
+
+In `json`, such a string is now quoted, e.g. `{ unit: "\"NaN\"" }`. A unit of `-0` is now a unit of `0`, which it equals, and `examples: [5n]` no longer throws.
+
 ### Print object units without calling their code
 
 An object unit's `expression`, description and errors list its own enumerable data properties, without calling its `toJSON`, getters or other methods, so defining a type or failing to match it no longer runs them:

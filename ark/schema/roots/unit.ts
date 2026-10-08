@@ -6,6 +6,7 @@ import {
 	type Domain,
 	type JsonPrimitive
 } from "@ark/util"
+import { compileSerializedValue } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	defaultValueSerializer,
@@ -61,9 +62,9 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 export class UnitNode extends InternalBasis<Unit.Declaration> {
 	compiledValue: JsonPrimitive = serializeUnit(this.unit)
 	serializedValue: string =
-		typeof this.unit === "string" || this.unit instanceof Date ?
+		this.unit instanceof Date ?
 			JSON.stringify(this.compiledValue)
-		:	`${this.compiledValue}`
+		:	compileSerializedValue(this.unit)
 
 	compiledCondition: string = compileEqualityCheck(
 		this.unit,

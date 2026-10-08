@@ -62,6 +62,7 @@ import {
 } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Union } from "./roots/union.ts"
+import type { Unit } from "./roots/unit.ts"
 import {
 	CompiledFunction,
 	NodeCompiler,
@@ -893,6 +894,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 				throwParseError(missingSetEngineMessage)
 			input = { ...input, branches } as never
 		}
+
+		// -0 === 0, so a unit of either is the same type
+		if (kind === "unit" && Object.is((input as Unit.Inner).unit, -0))
+			input = { ...input, unit: 0 } as never
 
 		const ctx = this.createParseContext({
 			...opts,
