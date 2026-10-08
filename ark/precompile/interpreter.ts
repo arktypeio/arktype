@@ -158,6 +158,7 @@ export class Interpreter {
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	private validators = new WeakSet<object>()
 	private arkObjects = new WeakSet<object>()
+	private opaqueStandInsByValue = new WeakMap<object, StandIn>()
 	private activeCall: { ctx: Context; isArktype: boolean } | undefined
 
 	constructor(graph: ModuleGraph, opts: InterpreterOptions = {}) {
@@ -1142,6 +1143,9 @@ export class Interpreter {
 			hasDomain(value, "object")
 		)
 			this.validators.add(value)
+		const opaque = this.opaqueStandInsByValue.get(object)
+		if (opaque && isArkValue(value))
+			this.opaqueStandInsByValue.set(value, opaque)
 		return intrinsics.has(value) ? this.notOwnData(node, ctx) : value
 	}
 
@@ -1358,16 +1362,45 @@ export class Interpreter {
 			converted.push(value)
 		}
 		if (ctx.site) collectHoles(converted, ctx.site.holes, this.standIns)
+		const opaque = this.opaqueStandInOf([receiver, converted])
 		const previous = this.activeCall
 		this.activeCall = { ctx, isArktype: true }
 		try {
 			const result = Reflect.apply(fn, receiver, converted)
 			if (isPlainContainer(result)) this.arkObjects.add(result)
+			if (opaque && hasDomain(result, "object"))
+				this.opaqueStandInsByValue.set(result, opaque)
 			return result
 		} catch (e) {
+			// what arktype throws over a stand-in says nothing of the value it stands in for
+			if (opaque && !isDynamic(e)) {
+				throw this.reject(
+					node,
+					ctx,
+					`reads the structure of \`${opaque.module.snippetOf(opaque.node)}\`, which is not static`,
+					opaque.dynamic
+				)
+			}
 			throw this.thrown(e, node, ctx)
 		} finally {
 			this.activeCall = previous
+		}
+	}
+
+	// the opaque value an argument holds, or that arktype built a value from
+	private opaqueStandInOf(
+		value: unknown,
+		seen = new Set<unknown>()
+	): StandIn | undefined {
+		if (!hasDomain(value, "object") || seen.has(value)) return
+		seen.add(value)
+		const standIn = this.standIns.get(value)
+		if (standIn) return standIn.kind === "opaque" ? standIn : undefined
+		const opaque = this.opaqueStandInsByValue.get(value)
+		if (opaque || !isPlainContainer(value)) return opaque
+		for (const k of Reflect.ownKeys(value)) {
+			const result = this.opaqueStandInOf(Reflect.get(value, k), seen)
+			if (result) return result
 		}
 	}
 

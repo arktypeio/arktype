@@ -443,6 +443,20 @@ const A = type({ name: z.string() })`)
 			])
 		})
 
+		it("structure of an opaque value", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+import { dbEnv } from "db"
+const env = type({ API_URL: "string", PORT: "string" }).and(dbEnv)
+const devEnv = type.and(env.omit("PORT"), env.pick("PORT").partial())
+const input = env.in.omit("PORT")`)
+			).snap([
+				"3:13 accepted (In: { API_URL: string, PORT: string }) => Out<unknown>",
+				'4:16 rejected\n  `env.omit("PORT")` reads the structure of `dbEnv`, which is not static\n  `db` is a package the build does not read',
+				"5:15 accepted { API_URL: string }"
+			])
+		})
+
 		it("values the build cannot read", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -494,6 +508,20 @@ max++
 const A = type(\`number < \${max}\`)`)
 			).snap([
 				"4:11 rejected\n  `max` is assigned at /main.ts:3:1, so its value at the site is not known"
+			])
+		})
+
+		it("binding assigned in a branch", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+export const lengthOf = (c: { n?: number }) => {
+	let max: number | undefined
+	if (c.n) max = c.n
+	return max ? type.string.atMostLength(max) : type.string
+}`)
+			).snap([
+				"5:15 rejected\n  `max` is assigned at /main.ts:4:11, so its value at the site is not known",
+				"5:47 accepted string"
 			])
 		})
 
@@ -564,7 +592,7 @@ export function make(v: unknown, n: number, p: (s: string) => boolean) {
 }`)
 			).snap([
 				"3:12 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
-				"4:12 rejected (Key predicate is not valid on maxLength schema)\n  arktype holds `n` as a value rather than a definition, so it must be static\n  `n` is a parameter of make (/main.ts:2:34); its value is known only at runtime",
+				"4:12 rejected\n  `type.string.atMostLength(n)` reads the structure of `n`, which is not static\n  `n` is a parameter of make (/main.ts:2:34); its value is known only at runtime",
 				"5:12 rejected\n  arktype reads `p` while defining the type, so it must be static\n  `p` is a parameter of make (/main.ts:2:45); its value is known only at runtime",
 				"6:12 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
 				"7:12 accepted { a: (In: unknown) => Out<unknown> }"
