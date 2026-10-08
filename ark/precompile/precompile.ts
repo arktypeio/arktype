@@ -9,7 +9,8 @@ import {
 	ModuleGraph,
 	runtimeExports,
 	staticBodyOf,
-	type ArkExportName
+	type ArkExportName,
+	type FunctionNode
 } from "./graph.ts"
 import type { PrecompileHost } from "./host.ts"
 import {
@@ -157,21 +158,22 @@ export class Precompiler {
 		for (const candidate of candidates)
 			this.interpreter.sitesByNode.set(candidate.state.node, candidate.state)
 		const settled: SiteCandidate[] = []
+		const settledRangesByFn = new Map<FunctionNode | undefined, Set<string>>()
 		const sites: Site[] = []
 		const diagnostics: Diagnostic[] = []
 		const helperSites: Node[] = []
 		this.helperSitesByModule.set(module, helperSites)
 		for (const candidate of candidates) {
+			let settledRanges = settledRangesByFn.get(candidate.fn)
+			if (!settledRanges)
+				settledRangesByFn.set(candidate.fn, (settledRanges = new Set()))
 			if (
-				settled.some(
-					outer =>
-						outer.fn === candidate.fn &&
-						contains(outer.state.node, candidate.state.node)
-				) ||
+				isWithin(candidate.state.node, settledRanges) ||
 				!this.settle(candidate)
 			)
 				continue
 			settled.push(candidate)
+			settledRanges.add(rangeOf(candidate.state.node))
 			if (isFolded(candidate, settled, this.interpreter)) continue
 			if (candidate.helper) {
 				if (readsBindingOf(candidate.helper, candidate.state.node, module))
@@ -518,6 +520,9 @@ export class Precompiler {
 		candidates: SiteCandidate[]
 	): Diagnostic[] {
 		const result: Diagnostic[] = []
+		const candidateRanges = new Set(
+			candidates.map(candidate => rangeOf(candidate.state.node))
+		)
 		for (const reference of module.scopes.references) {
 			const binding = reference.binding
 			if (binding?.kind !== "import" || reference.isWrite) continue
@@ -538,8 +543,7 @@ export class Precompiler {
 				this.graph.isRuntimeUse(id, module)
 			)
 				continue
-			if (candidates.some(candidate => contains(candidate.state.node, id)))
-				continue
+			if (isWithin(id, candidateRanges)) continue
 			const fn = enclosingFunctionOf(id)
 			if (fn && isFoldedHelper(fn, module)) continue
 			result.push(
@@ -633,6 +637,15 @@ const isMemberRead = (node: Node, root: Node): boolean => {
 		node = unwrapExpression(node.object)
 	}
 	return true
+}
+
+const rangeOf = (node: Node) => `${node.start}:${node.end}`
+
+// AST nodes nest, so a node is within a range exactly when it or an ancestor spans it
+const isWithin = (node: Node, ranges: Set<string>): boolean => {
+	for (let n: Node | null | undefined = node; n; n = n.parent)
+		if (ranges.has(rangeOf(n))) return true
+	return false
 }
 
 const isCoveredBy = (input: Input, existing: Input) =>
