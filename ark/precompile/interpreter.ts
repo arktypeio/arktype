@@ -753,7 +753,9 @@ export class Interpreter {
 				)
 			}
 		}
-		if (!isArkValue(result.value)) mergeTrace(ctx.trace, result.trace)
+		// a Type is compared by content, but a Module or Scope can change after the initializer read it
+		if (!isArkValue(result.value) || isTracked(result.value))
+			mergeTrace(ctx.trace, result.trace)
 		return isTracked(result.value) && this.escapeOf(binding, module) ?
 				{
 					value: result.value,

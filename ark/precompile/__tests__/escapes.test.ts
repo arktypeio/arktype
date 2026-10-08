@@ -229,6 +229,29 @@ export const T = type({ x: $.a })`)
 		])
 	})
 
+	it("modules read through another binding", () => {
+		attest(
+			inputsOf(`import { type } from "arktype"
+const $ = type.module({ sub: type.module({ a: "string" }) })
+const m = $.sub
+;($.sub as any).a = type("number")
+export const T = type({ x: m.a })`).pop()
+		).snap(["5:18 accepted", "local $.sub"])
+		attest(
+			inputsOf(
+				`import { type } from "arktype"
+import { $ } from "./b.ts"
+const m = $
+export const T = type({ x: m.a })`,
+				{
+					"/b.ts": `import { type } from "arktype"
+export const $ = type.module({ a: "string" })
+;($ as any).a = type("number")`
+				}
+			).pop()
+		).snap(["4:18 accepted", "import $"])
+	})
+
 	it("scopes", () => {
 		attest(
 			inputsOf(`import { type, scope } from "arktype"
