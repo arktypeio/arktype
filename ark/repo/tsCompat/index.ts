@@ -60,6 +60,11 @@ assertEquals<
 	{ kind: "a"; a: number } | { kind: "b"; b: string }
 >()
 
+assertEquals<
+	type.infer<{ blob: "Blob"; file: "File"; headers: "Headers"; url: "URL" }>,
+	{ blob: Blob; file: File; headers: Headers; url: URL }
+>()
+
 const boxOf = type("<t>", { box: "t" })
 export const StringBox = boxOf("string")
 

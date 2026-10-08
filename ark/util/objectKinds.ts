@@ -1,7 +1,7 @@
 import type { DescribeOptions } from "./describe.ts"
 import { type domainDescriptions, domainOf } from "./domain.ts"
 import type { Fn } from "./functions.ts"
-import type { satisfy } from "./generics.ts"
+import type { anyOrNever, satisfy } from "./generics.ts"
 import { defineProperties, isKeyOf } from "./records.ts"
 
 // ECMAScript Objects
@@ -129,7 +129,8 @@ type instantiateConstructors<kind extends BuiltinObjectKind> = {
 	[k in kind]: k extends GlobalName ? InstanceType<(typeof globalThis)[k]>
 	: `${k}Constructor` extends GlobalName ?
 		InstanceType<(typeof globalThis)[`${k}Constructor`]>
-	:	never
+	: [builtinConstructors[k]] extends [anyOrNever] ? never
+	: InstanceType<builtinConstructors[k]>
 }
 
 export type BuiltinObjects = instantiateConstructors<BuiltinObjectKind>

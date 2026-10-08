@@ -27,5 +27,12 @@
 		// disabling until compatible with tsgo
 		// "erasableSyntaxOnly": true
 	},
-	"exclude": ["**/out", "**/node_modules", "./ark/docs", "**/*.scratch.ts"]
+	"exclude": [
+		"**/out",
+		"**/node_modules",
+		"./ark/docs",
+		"**/*.scratch.ts",
+		// its global classes would conflict with those of @types/node
+		"./ark/repo/tsCompat/workers.d.ts"
+	]
 }
