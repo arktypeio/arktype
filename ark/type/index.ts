@@ -3,12 +3,14 @@ export {
 	ArkErrors,
 	Traversal,
 	TraversalError,
+	type ArkErrorCode,
 	type ArkSchemaConfig,
 	type ArkSchemaScopeConfig,
+	type GenericAst,
 	type JsonSchema
 } from "@ark/schema"
-export { Hkt, inferred, ParseError } from "@ark/util"
-export { regex } from "arkregex"
+export { Hkt, inferred, ParseError, type Brand, type Json } from "@ark/util"
+export { regex, type Regex } from "arkregex"
 export type { distill, Out } from "./attributes.ts"
 export * from "./config.ts"
 export { Generic } from "./generic.ts"

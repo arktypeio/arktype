@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { ArkErrors, TraversalError } from "@ark/schema"
 import { flatMorph, throwError } from "@ark/util"
-import { scope, type, type Type } from "arktype"
+import { scope, type, type ArkErrorCode, type Type } from "arktype"
 
 contextualize(() => {
 	it("divisible", () => {
@@ -321,7 +321,7 @@ a must be not ok (was "x")`)
 		})(1) as ArkErrors
 
 		attest(out.count).equals(3)
-		attest(out.flatByPath.x.map(e => e.code)).equals(["union"])
+		attest<ArkErrorCode[]>(out.flatByPath.x.map(e => e.code)).equals(["union"])
 		attest(out.byAncestorPath.x.map(e => e.code)).equals(["union"])
 	})
 

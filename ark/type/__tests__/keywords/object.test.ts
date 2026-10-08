@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import type { Json } from "@ark/util"
-import { keywords, scope, type } from "arktype"
+import { keywords, scope, type, type Json } from "arktype"
 import type { To } from "arktype/internal/attributes.ts"
 
 contextualize(() => {

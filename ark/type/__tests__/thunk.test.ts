@@ -3,8 +3,7 @@ import {
 	writeShallowCycleErrorMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
-import type { Brand } from "@ark/util"
-import { scope, type, type Scope, type Type } from "arktype"
+import { scope, type, type Brand, type Scope, type Type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 import { writeBadDefinitionTypeMessage } from "arktype/internal/parser/definition.ts"
 

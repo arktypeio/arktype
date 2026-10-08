@@ -7,7 +7,7 @@ import {
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
 import { Hkt, writeUnclosedGroupMessage } from "@ark/util"
-import { generic, scope, type, type Generic } from "arktype"
+import { generic, scope, type, type Generic, type GenericAst } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/shift/operator/divisor.ts"
@@ -161,6 +161,8 @@ contextualize(() => {
 				"entry<k extends Key, v>": ["k", "v"],
 				foobar: "entry<'foo', 'bar'>"
 			})
+
+			attest<true, (typeof $)["t"]["entry"] extends GenericAst ? true : false>()
 
 			const types = $.export()
 
