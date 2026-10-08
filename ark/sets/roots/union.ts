@@ -614,6 +614,9 @@ export const pruneDiscriminant = (
 				if (!discriminantCtx.optionallyChainedPropString.startsWith(propString))
 					return false
 
+				// pruning a union's branches narrows it, e.g. string | number to number
+				if (node.hasKind("union")) return false
+
 				if (node.hasKind("domain") && node.domain === "object")
 					// if we've already checked a path at least as long as the current one,
 					// we don't need to revalidate that we're in an object

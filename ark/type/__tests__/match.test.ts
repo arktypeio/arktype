@@ -655,6 +655,19 @@ contextualize(() => {
 		attest(m([true, 5])).equals(2)
 	})
 
+	it("keeps a union at the discriminant path of an overlapping case", () => {
+		const m = match
+			.case({ a: "unknown", b: "1" }, () => 0)
+			.case({ a: "unknown", b: "true" }, () => 1)
+			.case({ a: "'x' | 1", b: "string | number" }, () => 2)
+			.case({ a: "unknown", b: "string" }, () => 3)
+			.default(() => null)
+
+		attest(m({ a: "x", b: "x" })).equals(2)
+		attest(m({ a: "y", b: "x" })).equals(3)
+		attest(m({ a: 1, b: 5 })).equals(2)
+	})
+
 	it("allows number keys", () => {
 		const numeric = match({
 			0: function numericZeroCase(n) {

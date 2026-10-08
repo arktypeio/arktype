@@ -502,6 +502,18 @@ contextualize(() => {
 		}
 	})
 
+	it("keeps a union at the discriminant path of an overlapping branch", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ a: "string | number", b: "1 | 2" })
+				.or({ a: "1", b: "string" })
+				.or({ a: "string", b: "string" })
+
+			attest(T.allows({ a: "x", b: 1 })).equals(true)
+			attest(T({ a: "x", b: 1 })).equals({ a: "x", b: 1 })
+		}
+	})
+
 	it("dimscrinate literal undefined value", () => {
 		const T = type(["number[]", "|", ["undefined"]])
 
