@@ -130,8 +130,8 @@ export class ModuleGraph {
 		return module
 	}
 
-	moduleOf(id: string): SourceModule {
-		return this.modulesById[id] as SourceModule
+	moduleOf(id: string): SourceModule | ImportTarget {
+		return (this.modulesById[id] ??= this.load(id, this.pathOf(id)))
 	}
 
 	resolve(

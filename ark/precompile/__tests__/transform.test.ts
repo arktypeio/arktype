@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
-import { renderDiagnostic } from "@ark/precompile"
-import { precompile } from "./utils.ts"
+import { Precompiler, renderDiagnostic } from "@ark/precompile"
+import { memoryHost, precompile } from "./utils.ts"
 
 contextualize(() => {
 	describe("standalone", () => {
@@ -112,5 +112,35 @@ export const isError = (data: unknown) => data instanceof type.errors`,
 			)
 			attest([result.map, result.modules]).equals([undefined, {}])
 		})
+	})
+
+	it("reads which modules may define a Type from their imports", () => {
+		const files = {
+			"/ark.ts": 'export { type } from "arktype"',
+			"/schemas.ts":
+				'import { type } from "./ark.ts"\nexport const User = type({ name: "string" })',
+			"/helpers.ts":
+				'import { type } from "arktype"\nexport const field = (n: number) => type(`string <= ${n}`)',
+			"/all.ts": 'export * from "./schemas.ts"',
+			"/errors.ts": 'export { ArkErrors } from "arktype"',
+			"/check.ts":
+				'import { User } from "./schemas.ts"\nexport const isUser = (data: unknown) => User.allows(data)',
+			"/math.ts": "export const add = (a: number, b: number) => a + b"
+		}
+		const precompiler = new Precompiler(memoryHost(files))
+		attest(
+			Object.keys(files).map(
+				file =>
+					`${file} ${precompiler.importsArk(`import { x } from ".${file}"`, "/main.ts")}`
+			)
+		).snap([
+			"/ark.ts true",
+			"/schemas.ts true",
+			"/helpers.ts true",
+			"/all.ts true",
+			"/errors.ts false",
+			"/check.ts false",
+			"/math.ts false"
+		])
 	})
 })

@@ -27,7 +27,8 @@ import {
 	runtimeExports,
 	staticBodyOf,
 	type ArkExportName,
-	type FunctionNode
+	type FunctionNode,
+	type ImportTarget
 } from "./graph.ts"
 import type { PrecompileHost } from "./host.ts"
 import {
@@ -38,7 +39,7 @@ import {
 	type Read,
 	type SiteState
 } from "./interpreter.ts"
-import type { SourceModule } from "./module.ts"
+import { SourceModule } from "./module.ts"
 import { isTransparent, isWriteTarget, unwrapExpression } from "./scope.ts"
 import {
 	findSites,
@@ -163,6 +164,8 @@ export class Precompiler {
 	// a site the mode cannot build fails a standalone build, while cache mode leaves it to runtime
 	private rejectionSeverity: Diagnostic["severity"]
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
+	private namesArkById: Record<string, boolean> = Object.create(null)
+	private exportsArkByModule = new Map<SourceModule, boolean>()
 
 	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
 		this.graph = new ModuleGraph(host, opts?.cwd)
@@ -174,6 +177,86 @@ export class Precompiler {
 
 	analyze(source: string, id: string): ModuleAnalysis {
 		return this._analyze(this.graph.add(id, source))
+	}
+
+	// whether a module may define a Type, read from its imports so most modules that can't are never parsed
+	importsArk(source: string, id: string): boolean {
+		if (arktypeSpecifier.test(source)) return true
+		for (const targetId of this.localImportsOf(source, id)) {
+			if (!this.namesArk(targetId)) continue
+			const target = this.graph.moduleOf(targetId)
+			if (target instanceof SourceModule && this.exportsArk(target)) return true
+		}
+		return false
+	}
+
+	// the modules outside node_modules a module's text imports from
+	localImportsOf(source: string, id: string): string[] {
+		const result: string[] = []
+		for (const [, specifier] of source.matchAll(importSpecifier)) {
+			const targetId = this.graph.host.resolve(specifier, id)
+			if (targetId && !targetId.includes("/node_modules/"))
+				result.push(targetId)
+		}
+		return result
+	}
+
+	// whether a module's text imports arktype or a module that does, so a module that can't reach it is never parsed
+	private namesArk(id: string): boolean {
+		if (id in this.namesArkById) return this.namesArkById[id]
+		const reached = [id]
+		for (let i = 0; i < reached.length; i++) {
+			const source = this.graph.host.readFile(reached[i])
+			if (source === undefined) continue
+			if (arktypeSpecifier.test(source)) return (this.namesArkById[id] = true)
+			for (const targetId of this.localImportsOf(source, reached[i])) {
+				if (this.namesArkById[targetId]) return (this.namesArkById[id] = true)
+				if (!(targetId in this.namesArkById) && !reached.includes(targetId))
+					reached.push(targetId)
+			}
+		}
+		// every module a module reaches reaches no more than it does
+		for (const reachedId of reached) this.namesArkById[reachedId] = false
+		return false
+	}
+
+	// whether a module exports arktype's API, a Type or a helper that defines one, assumed while it is being read
+	private exportsArk(module: SourceModule): boolean {
+		const cached = this.exportsArkByModule.get(module)
+		if (cached !== undefined) return cached
+		this.exportsArkByModule.set(module, true)
+		const result =
+			Object.keys(module.scopes.exportsByName).some(name =>
+				this.isArkExport(this.graph.exportOf(module, name))
+			) ||
+			module.scopes.starExports.some(specifier => {
+				const target = this.graph.resolve(specifier, module)
+				return target instanceof SourceModule ?
+						this.exportsArk(target)
+					:	target.kind === "arktypeNamespace"
+			})
+		this.exportsArkByModule.set(module, result)
+		return result
+	}
+
+	private isArkExport(target: ImportTarget): boolean {
+		switch (target.kind) {
+			case "arktype":
+				return !(target.name in runtimeExports)
+			case "arktypeNamespace":
+				return true
+			case "namespace":
+				return this.exportsArk(target.module)
+			case "expression":
+				return this.graph.isArkExpression(target.node, target.module)
+			case "binding": {
+				if (this.graph.isArkBinding(target.binding, target.module)) return true
+				const helper = this.graph.boundHelperOf(target.binding, target.module)
+				return !!helper && this.graph.isArkHelper(...helper)
+			}
+			default:
+				return false
+		}
 	}
 
 	precompile(source: string, id: string): PrecompiledModule {
@@ -282,7 +365,7 @@ export class Precompiler {
 				[]
 			:	["its value is not a Type"]
 		for (const hole of site.holes) {
-			const holeModule = this.graph.moduleOf(hole.file)
+			const holeModule = this.graph.moduleOf(hole.file) as SourceModule
 			result.push(
 				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})`
 			)
@@ -299,7 +382,7 @@ export class Precompiler {
 		}
 		for (const helper of site.helpers) {
 			result.push(
-				`it calls the static helper \`${helper.name}\` (${this.graph.moduleOf(helper.file).positionOf(helper)})`
+				`it calls the static helper \`${helper.name}\` (${(this.graph.moduleOf(helper.file) as SourceModule).positionOf(helper)})`
 			)
 		}
 		return result
@@ -851,6 +934,11 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	unsupported: `Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`,
 	parse: "The precompiled site throws the same ParseError when it is created."
 }
+
+const arktypeSpecifier =
+	/\b(?:from|import)\s*["'](?:arktype(?:\/config)?|arkregex|@ark\/(?:type|regex))["']/
+
+const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
 
 const cacheHint = 'With runtime: "arktype", arktype defines this at runtime.'
 

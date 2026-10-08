@@ -52,8 +52,7 @@ export const precompile: UnpluginInstance<
 		},
 		transform: {
 			filter: {
-				id: { include: /\.(?:[jt]sx?|m[jt]s)$/, exclude: /\/node_modules\// },
-				code: /["']arktype(?:\/config)?["']/
+				id: { include: /\.(?:[jt]sx?|m[jt]s)$/, exclude: /\/node_modules\// }
 			},
 			handler(code, id) {
 				const cwd = opts?.cwd ?? process.cwd()
@@ -62,6 +61,12 @@ export const precompile: UnpluginInstance<
 					cwd,
 					config: opts?.config && resolve(cwd, opts.config)
 				})
+				if (!precompiler.importsArk(code, id)) {
+					// a module it imports may come to export a Type
+					for (const dependency of precompiler.localImportsOf(code, id))
+						this.addWatchFile(dependency)
+					return
+				}
 				const result = precompiler.precompile(code, id)
 				for (const dependency of result.dependencies)
 					if (dependency !== id) this.addWatchFile(dependency)

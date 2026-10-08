@@ -1,4 +1,4 @@
-import { type } from "arktype"
+import { type } from "./ark.ts"
 
 export const Email = type("string.email")
 

@@ -122,6 +122,23 @@ contextualize(() => {
 		})
 	}
 
+	it("reads a module that defines a Type from an imported one", async () => {
+		const message = await esbuild({
+			entryPoints: [fromHere("app", "admin.ts")],
+			bundle: true,
+			write: false,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ cwd: app, conditions })]
+		}).then(
+			() => "",
+			(e: Error) => e.message
+		)
+		attest(message.slice(message.indexOf("User.and")))
+			.snap(`User.and({ role: "'admin'" }) can't be precompiled to a standalone validator yet
+  \`User\` is imported from schemas.ts
+  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
+	})
+
 	it("registers arktype's keyword table before arktype loads", async () => {
 		// arktype and its keyword table resolve to files that print when they load
 		const root = fromHere("keywordTable")
