@@ -8,6 +8,7 @@ import {
 	conflatenateAll,
 	defineValue,
 	flatMorph,
+	stringifyPath,
 	type JsonArray,
 	type JsonObject,
 	type array,
@@ -177,8 +178,9 @@ export class ArkError<
 		return this.code === code
 	}
 
+	private _propString: string | undefined
 	get propString(): string {
-		return this.path.stringify()
+		return (this._propString ??= stringifyPath(this._path))
 	}
 
 	private _nodeConfig: ResolvedConfig[code] | undefined

@@ -372,13 +372,12 @@ const writeProblem: ProblemWriter = ({ expected, actual }) =>
 	`must be ${expected}${actual ? ` (was ${actual})` : ""}`
 
 const writeMessage: MessageWriter = ctx => {
-	if (ctx.path.length === 0) return ctx.problem
-	const problemWithLocation = `${ctx.propString} ${ctx.problem}`
-	if (problemWithLocation[0] === "[") {
-		// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-		return `value at ${problemWithLocation}`
-	}
-	return problemWithLocation
+	const propString = ctx.propString
+	if (propString === "") return ctx.problem
+	// clarify paths like [1], [0][1], and ["key!"] that could be confusing
+	return propString[0] === "[" ?
+			`value at ${propString} ${ctx.problem}`
+		:	`${propString} ${ctx.problem}`
 }
 
 export const implementNode = <d extends BaseNodeDeclaration = never>(
