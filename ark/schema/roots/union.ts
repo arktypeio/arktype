@@ -525,7 +525,7 @@ const invokeTransform = (
 	member?: BaseRoot
 ): string =>
 	member ?
-		`ctx.transformResolution("${member.id}", data, ${js.referenceToId(branch.id, { kind: "Transform" })})`
+		`ctx.transformResolution("${js.nameOf(member.id)}", data, ${js.referenceToId(branch.id, { kind: "Transform" })})`
 	: js.requiresContext && returnsTransformErrors(branch) ?
 		`ctx.transform(${js.ref(branch)}, data)`
 	:	js.invoke(branch)

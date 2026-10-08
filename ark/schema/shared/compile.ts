@@ -225,7 +225,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		}
 		const reference = this.referenceToId(node.id, opts)
 		if (kind === "Transform" && node.isTransformedById)
-			return `${this.ctx}.transformResolution("${node.id}", ${arg}, ${reference})`
+			return `${this.ctx}.transformResolution("${this.nameOf(node.id)}", ${arg}, ${reference})`
 		return this.requiresContextFor(node, kind) ?
 				`${reference}(${arg}, ${this.ctx})`
 			:	`${reference}(${arg})`
@@ -241,18 +241,23 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return this.invokeResolution(node, member.id, arg)
 	}
 
-	invokeResolution(node: BaseNode, id: string, arg: string = this.data): this {
+	invokeResolution(node: BaseNode, id: NodeId, arg: string = this.data): this {
 		const apply = this.referenceToId(node.id, { kind: "Apply" })
 		return this.if(
-			`ctx.enterResolution("${id}", ${arg}, ${apply}) === undefined`,
+			`ctx.enterResolution("${this.nameOf(id)}", ${arg}, ${apply}) === undefined`,
 			() => this.line(this.invoke(node, { arg })).line("ctx.exitResolution()")
 		)
 	}
 
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
-		const base = `${id}${invokedKind}`
+		const base = `${this.nameOf(id)}${invokedKind}`
 		return opts?.bind ? `${base}.bind(${opts?.bind})` : base
+	}
+
+	// overriding it renames each node everywhere emitted code names it
+	nameOf(id: NodeId): string {
+		return id
 	}
 
 	ref(value: object | symbol): string {

@@ -261,7 +261,7 @@ Resolution: ${printable(resolution)}`)
 		const id = resolution.id
 		if (js.traversalKind === "Transform") {
 			js.return(
-				`ctx.transformResolution("${id}", data, ${js.referenceToId(id, { kind: "Transform" })})`
+				`ctx.transformResolution("${js.nameOf(id)}", data, ${js.referenceToId(id, { kind: "Transform" })})`
 			)
 			return
 		}
@@ -285,7 +285,7 @@ Resolution: ${printable(resolution)}`)
 				.set("ctx", `${visits}.exceed(data)`)
 				.if("!ctx", () => js.return("false"))
 		)
-		js.const("reached", `ctx.enterResolution("${id}", data)`)
+		js.const("reached", `ctx.enterResolution("${js.nameOf(id)}", data)`)
 		js.if("reached !== undefined", () => js.return("reached"))
 		js.return(`ctx.exitResolution(${traverse})`)
 	}

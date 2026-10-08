@@ -1,10 +1,13 @@
 import {
 	defineLazily,
 	flatMorph,
+	hasDomain,
 	includes,
+	isArray,
 	isThunk,
 	ParseError,
 	printable,
+	serializePrimitive,
 	throwInternalError,
 	throwParseError,
 	WeakCache,
@@ -52,7 +55,8 @@ import {
 	type AttachedParseContext,
 	type BaseParseContext,
 	type BaseParseContextInput,
-	type BaseParseOptions
+	type BaseParseOptions,
+	type NodeId
 } from "./parse.ts"
 import { parseSchema, type RootSchema } from "./parseSchema.ts"
 import {
@@ -212,16 +216,7 @@ const precompile = (
 	references: readonly BaseNode[],
 	owningScope?: BaseScope
 ): Fn => {
-	const linkage: UnitLinkage = {
-		referencesById: {},
-		reused: new Set(),
-		unreached: new Set(),
-		reached: [],
-		dependencies: new Map(),
-		refs: new Map(),
-		errorContexts: [],
-		members: []
-	}
+	const linkage = createLinkage()
 	for (const node of references) linkage.referencesById[node.id] = node
 	const declared: BaseNode[] = []
 	for (const node of references) {
@@ -322,7 +317,20 @@ interface UnitLinkage {
 	refs: NodeCompiler.Refs
 	errorContexts: NodeCompiler.ErrorContexts
 	members: UnitMember[]
+	nameOf: ((id: NodeId) => string) | undefined
 }
+
+const createLinkage = (nameOf?: (id: NodeId) => string): UnitLinkage => ({
+	referencesById: {},
+	reused: new Set(),
+	unreached: new Set(),
+	reached: [],
+	dependencies: new Map(),
+	refs: new Map(),
+	errorContexts: [],
+	members: [],
+	nameOf
+})
 
 class TraversalCompiler extends NodeCompiler {
 	readonly linkage: UnitLinkage
@@ -356,6 +364,10 @@ class TraversalCompiler extends NodeCompiler {
 			this.linkage.reached.push(reference)
 		return super.invoke(node, opts)
 	}
+
+	override nameOf(id: NodeId): string {
+		return this.linkage.nameOf?.(id) ?? super.nameOf(id)
+	}
 }
 
 const transformedKinds = [
@@ -381,6 +393,198 @@ const declareTraversal = (
 	const name = js.referenceToId(node.id, { kind })
 	linkage.members.push([name, js.write("function")])
 	return name
+}
+
+export interface ContentUnit {
+	names: Record<NodeId, string>
+	source: string
+	refs: unknown[]
+	errorContexts: NodeCompiler.ErrorContexts
+}
+
+export const precompileByContent = (
+	roots: readonly BaseNode[]
+): ContentUnit => {
+	const s: ContentNamingState = {
+		referencesById: {},
+		reached: [],
+		stack: [],
+		valueIndices: new Map(),
+		names: {},
+		inputsByHash: {}
+	}
+	for (const root of roots)
+		if (!s.referencesById[root.id]) nameReference(s, root)
+	const names: Record<NodeId, string> = {}
+	const linkage = createLinkage(
+		id => names[id] ?? throwInternalError(`Unexpected unnamed node ${id}`)
+	)
+	// nodes with the same content share their traversals
+	const declaredByName: Record<string, BaseNode> = {}
+	for (const node of s.reached) {
+		names[node.id] = s.names[node.id]
+		declaredByName[names[node.id]] ??= node
+		linkage.referencesById[node.id] = node
+	}
+	const unit = precompileReferences(Object.values(declaredByName), linkage)
+	return {
+		names,
+		source: unit.write("function"),
+		refs: [...linkage.refs.keys()],
+		errorContexts: linkage.errorContexts
+	}
+}
+
+interface ContentNamingState {
+	referencesById: Record<NodeId, ContentReference>
+	reached: BaseNode[]
+	stack: ContentReference[]
+	valueIndices: Map<unknown, number>
+	names: Record<NodeId, string>
+	inputsByHash: Record<string, string>
+}
+
+interface ContentReference {
+	node: BaseNode
+	content: string
+	callees: BaseNode[]
+	index: number
+	lowLink: number
+}
+
+// Tarjan's algorithm, which completes a component only after every component it calls
+const nameReference = (
+	s: ContentNamingState,
+	node: BaseNode
+): ContentReference => {
+	const reference = compileContent(s, node)
+	s.referencesById[node.id] = reference
+	s.reached.push(node)
+	s.stack.push(reference)
+	for (const callee of reference.callees) {
+		const calleeReference = s.referencesById[callee.id]
+		if (!calleeReference) {
+			reference.lowLink = Math.min(
+				reference.lowLink,
+				nameReference(s, callee).lowLink
+			)
+		} else if (s.names[callee.id] === undefined) {
+			// a reached node is unnamed only while its component is on the stack
+			reference.lowLink = Math.min(reference.lowLink, calleeReference.index)
+		}
+	}
+	if (reference.lowLink === reference.index)
+		nameComponent(s, s.stack.splice(s.stack.lastIndexOf(reference)))
+	return reference
+}
+
+const compileContent = (
+	s: ContentNamingState,
+	node: BaseNode
+): ContentReference => {
+	const calleeIds: NodeId[] = []
+	const positionsById: Record<NodeId, number> = {}
+	const positionOf = (id: NodeId) =>
+		id === node.id ? "$" : `$${(positionsById[id] ??= calleeIds.push(id) - 1)}`
+	const linkage = createLinkage(positionOf)
+	declareTraversals(linkage, node)
+	const serialize = (value: unknown): string => {
+		if (isNode(value)) {
+			linkage.referencesById[value.id] ??= value
+			return positionOf(value.id)
+		}
+		if (isArray(value)) return `[${value.map(serialize)}]`
+		if (hasDomain(value, "object") || typeof value === "symbol") {
+			const prototype =
+				typeof value === "object" && Object.getPrototypeOf(value)
+			if (prototype !== Object.prototype && prototype !== null) {
+				let i = s.valueIndices.get(value)
+				if (i === undefined)
+					s.valueIndices.set(value, (i = s.valueIndices.size))
+				return `v${i}`
+			}
+			return `{${Object.entries(value).map(([k, v]) => `${JSON.stringify(k)}: ${serialize(v)}`)}}`
+		}
+		return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
+	}
+	const content = [
+		node.kind,
+		...linkage.members.map(([name, source]) => `${name} = ${source}`),
+		[...linkage.refs.keys()].map(serialize).join(),
+		linkage.errorContexts.map(serialize).join()
+	].join("\n")
+	return {
+		node,
+		content,
+		callees: calleeIds.map(
+			id =>
+				linkage.referencesById[id] ??
+				node.referencesById[id] ??
+				throwInternalError(`Unexpected unresolvable reference ${id}`)
+		),
+		index: s.reached.length,
+		lowLink: s.reached.length
+	}
+}
+
+// a cycle's members are ordered by content, so their names don't depend on which was reached first
+const nameComponent = (
+	s: ContentNamingState,
+	members: ContentReference[]
+): void => {
+	const positionsById: Record<NodeId, number> = {}
+	for (let i = 0; i < members.length; i++) positionsById[members[i].node.id] = i
+	const inputOf = (
+		member: ContentReference,
+		labelOf: (position: number) => string
+	) =>
+		`${member.content}\n${member.callees.map(callee => s.names[callee.id] ?? labelOf(positionsById[callee.id]))}`
+	let labels = members.map(member => hashOf(inputOf(member, () => "#")))
+	for (let round = 1; round < members.length; round++) {
+		const refined = members.map(member =>
+			hashOf(inputOf(member, i => labels[i]))
+		)
+		if (new Set(refined).size === new Set(labels).size) break
+		labels = refined
+	}
+	const order = members
+		.map((_, i) => i)
+		.sort((l, r) =>
+			labels[l] < labels[r] ? -1
+			: labels[l] > labels[r] ? 1
+			: l - r
+		)
+	const canonicalPositions: number[] = []
+	for (let i = 0; i < order.length; i++) canonicalPositions[order[i]] = i
+	const input = order
+		.map(i => inputOf(members[i], j => `#${canonicalPositions[j]}`))
+		.join("\n\n")
+	const hash = hashOf(input)
+	if ((s.inputsByHash[hash] ??= input) !== input)
+		throwInternalError(`Unexpected hash collision for ${hash}`)
+	for (let i = 0; i < members.length; i++) {
+		const node = members[i].node
+		s.names[node.id] =
+			members.length === 1 ?
+				`${node.kind}${hash}`
+			:	`${node.kind}${hash}_${canonicalPositions[i]}`
+	}
+}
+
+// cyrb53, a 53-bit string hash
+const hashOf = (input: string): string => {
+	let h1 = 0xdeadbeef
+	let h2 = 0x41c6ce57
+	for (let i = 0; i < input.length; i++) {
+		const code = input.charCodeAt(i)
+		h1 = Math.imul(h1 ^ code, 2654435761)
+		h2 = Math.imul(h2 ^ code, 1597334677)
+	}
+	h1 = Math.imul(h1 ^ (h1 >>> 16), 2246822507)
+	h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909)
+	h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507)
+	h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909)
+	return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36)
 }
 
 const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
