@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { $ark, hasArkKind } from "@ark/schema"
 import { noSuggest } from "@ark/util"
-import { scope, type } from "arktype"
+import { scope, type, type Module } from "arktype"
 import {
 	arktypeVersion,
 	writeEntryConflictMessage,
@@ -55,8 +55,10 @@ const importBesideArktype = async (js: string): Promise<any> => {
 	}
 }
 
-const load = (types: Record<string, type.Any>): Promise<Record<string, any>> =>
-	importBesideArktype(bundle(precompileStandalone(types)).js)
+const load = (
+	exports: Record<string, type.Any | Module>
+): Promise<Record<string, any>> =>
+	importBesideArktype(bundle(precompileStandalone(exports)).js)
 
 const observe = (result: unknown, input: unknown) =>
 	hasArkKind(result, "errors") ?
@@ -250,6 +252,21 @@ contextualize(() => {
 		)
 	})
 
+	it("exports a module as an object of its validators", async () => {
+		const M = scope({
+			a: "string",
+			b: { a: "a" },
+			sub: scope({ c: "number" }).export()
+		}).export()
+		const validators = await load({ M, a: M.a })
+		attest(Object.keys(validators.M)).equals(Object.keys(M))
+		attest(validators.M.a).equals(validators.a)
+		attest(validators.M.b({ a: 1 }).summary).equals(M.b({ a: 1 }).toString())
+		attest(validators.M.sub.c("x").summary).snap(
+			"must be a number (was a string)"
+		)
+	})
+
 	it("rejects what it can't precompile", () => {
 		const isEven = (n: number) => n % 2 === 0
 		attest(() =>
@@ -258,6 +275,9 @@ contextualize(() => {
 		attest(() => precompileStandalone({ T: type("===", { a: 1 }) })).throws(
 			writeUnprecompilableMessage('the unit {"a":1}')
 		)
+		attest(() =>
+			precompileStandalone({ M: scope({ "box<t>": { box: "t" } }).export() })
+		).throws(writeUnprecompilableMessage("a Generic"))
 		const T = scope({}, { domain: { message: () => "configured" } }).type(
 			"string"
 		)

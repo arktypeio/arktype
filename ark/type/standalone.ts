@@ -1,5 +1,6 @@
 import {
 	$ark,
+	hasArkKind,
 	isNode,
 	precompileByContent,
 	type ArkErrorCode,
@@ -22,17 +23,28 @@ import {
 } from "@ark/util"
 import { arktypeVersion } from "./entry.ts"
 import type { type } from "./keywords/keywords.ts"
+import type { Module } from "./module.ts"
 import * as runtime from "./runtime.ts"
 
 const writerKeys = ["expected", "actual", "problem", "message"] as const
 
 /**
- * #### an ES module that exports each Type as a validator running on arktype/runtime alone
+ * #### an ES module that exports each Type as a validator running on arktype/runtime alone, and each Module as an object of them
  */
 export const precompileStandalone = (
-	types: Record<string, type.Any>
+	exports: Record<string, type.Any | Module>
 ): string => {
-	const roots = Object.values(types).map(t => t.internal)
+	const types = new Map<type.Any, string>()
+	const collectTypes = (value: unknown): void => {
+		if (hasArkKind(value, "module"))
+			for (const entry of Object.values(value)) collectTypes(entry)
+		else if (hasArkKind(value, "generic"))
+			throwParseError(writeUnprecompilableMessage("a Generic"))
+		else if (!types.has(value as type.Any))
+			types.set(value as type.Any, `validator${types.size}`)
+	}
+	for (const value of Object.values(exports)) collectTypes(value)
+	const roots = [...types.keys()].map(t => t.internal)
 	// the runtime writes only en
 	const locale = $ark.config.locale
 	if (locale !== undefined && locale !== $ark.defaultConfig.locale)
@@ -243,18 +255,36 @@ export const precompileStandalone = (
 
 	const refs = unit.refs.map(emit)
 	const errorContexts = unit.errorContexts.map(emit)
-	const exports = Object.entries(types).map(([name, t], i) => {
+	const validators = [...types].map(([t, name]) => {
 		const root: BaseRoot = t.internal
 		const shape = shapeOf(root)
-		return `const validator${i} = new runtime.Validator(
+		return `const ${name} = new runtime.Validator(
 	(function (${rootApplyParams.join(", ")}) {
 		${writeRootApply(root, unit.names[root.id])}
 	})(${shape}, ${configOf(root)}, ${Object.values(rootApplyRuntime).map(emit).join(", ")}),
 	${shape},
 	{ expression: ${JSON.stringify(root.expression)}, description: ${JSON.stringify(root.description)}, meta: ${emit(root.meta)} }
-)
-export { validator${i} as ${JSON.stringify(name)} }`
+)`
 	})
+	const moduleNames = new Map<object, string>()
+	const modules: string[] = []
+	// a module is a plain object of validators
+	const exportOf = (value: unknown): string => {
+		if (!hasArkKind(value, "module")) return types.get(value as type.Any)!
+		const declared = moduleNames.get(value)
+		if (declared) return declared
+		const entries = Object.entries(value).map(
+			([k, entry]) => `[${JSON.stringify(k)}]: ${exportOf(entry)}`
+		)
+		const name = `module${moduleNames.size}`
+		moduleNames.set(value, name)
+		modules.push(`const ${name} = { ${entries.join(", ")} }`)
+		return name
+	}
+	const exported = Object.entries(exports).map(
+		([name, value]) =>
+			`export { ${exportOf(value)} as ${JSON.stringify(name)} }`
+	)
 	return `import * as runtime from "arktype/runtime"
 
 runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})
@@ -266,7 +296,11 @@ const traversals = (${unit.source})([], [${refs.join(", ")}], [${errorContexts.j
 
 ${links.join("\n")}
 
-${exports.join("\n\n")}
+${validators.join("\n\n")}
+
+${modules.join("\n")}
+
+${exported.join("\n")}
 `
 }
 
