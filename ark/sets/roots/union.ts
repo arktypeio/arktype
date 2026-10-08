@@ -418,8 +418,11 @@ const discriminantCaseToNode = (
 			typeof key === "number" ?
 				{
 					proto: "Array",
-					// create unknown for preceding elements (could be optimized with safe imports)
-					sequence: [...range(key).map(_ => ({})), node]
+					sequence: {
+						// create unknown for preceding elements (could be optimized with safe imports)
+						prefix: [...range(key).map(_ => ({})), node],
+						variadic: {}
+					}
 				}
 			:	{
 					domain: "object",

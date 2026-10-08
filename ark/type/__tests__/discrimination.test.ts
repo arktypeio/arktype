@@ -490,6 +490,18 @@ contextualize(() => {
 		})
 	})
 
+	it("tuple element case includes overlapping tuples", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type(["'x'", "string"])
+				.or(["unknown", "undefined"])
+				.or(["1", "object"])
+
+			attest(T.allows(["x", undefined])).equals(true)
+			attest(T(["x", undefined])).equals(["x", undefined])
+		}
+	})
+
 	it("dimscrinate literal undefined value", () => {
 		const T = type(["number[]", "|", ["undefined"]])
 

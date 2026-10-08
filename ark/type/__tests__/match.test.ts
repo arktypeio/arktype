@@ -642,6 +642,19 @@ contextualize(() => {
 		attest(m([0, 0])).equals(null)
 	})
 
+	it("discriminated tuple element case includes overlapping tuples", () => {
+		const m = match
+			.case(["unknown", "null"], () => 0)
+			.case(["string", "unknown"], () => 1)
+			.case(["true", "string | number"], () => 2)
+			.default(() => null)
+
+		attest(m(["x", null])).equals(0)
+		attest(m(["x", 5])).equals(1)
+		attest(m([true, null])).equals(0)
+		attest(m([true, 5])).equals(2)
+	})
+
 	it("allows number keys", () => {
 		const numeric = match({
 			0: function numericZeroCase(n) {
