@@ -5,6 +5,7 @@ import {
 	type Domain as _Domain
 } from "@ark/util"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import { writeDomainActual } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -60,10 +61,7 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 		},
 		defaults: {
 			description: node => domainDescriptions[node.domain],
-			actual: data =>
-				typeof data === "number" && !Number.isFinite(data) ?
-					String(data)
-				:	domainDescriptions[domainOf(data)]
+			actual: writeDomainActual
 		}
 	})
 

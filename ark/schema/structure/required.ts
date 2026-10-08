@@ -1,6 +1,10 @@
 import type { errorContext, nodeOfKind } from "../kinds.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import {
+	writeRequiredActual,
+	writeRequiredExpected
+} from "../shared/errorWriters.ts"
 import type { NodeErrorContextInput } from "../shared/errors.ts"
 import {
 	implementNode,
@@ -59,8 +63,8 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 		},
 		defaults: {
 			description: node => `${node.compiledKey}: ${node.value.description}`,
-			expected: ctx => ctx.missingValueDescription,
-			actual: () => "missing"
+			expected: writeRequiredExpected,
+			actual: writeRequiredActual
 		}
 	})
 

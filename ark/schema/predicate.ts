@@ -1,4 +1,4 @@
-import { baseNameOf, functionNameOf, printable } from "@ark/util"
+import { baseNameOf } from "@ark/util"
 import { BaseConstraint } from "./constraint.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -7,8 +7,13 @@ import type {
 	BaseNodeInput,
 	declareNode
 } from "./shared/declare.ts"
+import {
+	describePredicate,
+	writePredicateActual,
+	writePredicateExpected,
+	writePredicateProblem
+} from "./shared/errorWriters.ts"
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
-import { describeCause, keywordWriterOf, type Locale } from "./shared/locale.ts"
 import type {
 	Traversal,
 	TraverseAllows,
@@ -47,12 +52,6 @@ export declare namespace Predicate {
 	export type Node = PredicateNode
 }
 
-// reads predicate, or for pipe.try the morph that threw
-const describePredicate = (ctx: { predicate?: Predicate; morph?: Morph }) => {
-	const fn = ctx.predicate ?? ctx.morph
-	return `valid according to ${(fn && functionNameOf(fn)) || "an anonymous predicate"}`
-}
-
 const implementation: nodeImplementationOf<Predicate.Declaration> =
 	implementNode<Predicate.Declaration>({
 		kind: "predicate",
@@ -63,38 +62,9 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 		},
 		defaults: {
 			description: describePredicate,
-			// error contexts from ctx.reject have neither a description nor a predicate
-			expected: ctx => ctx.description ?? describePredicate(ctx),
-			// a keyword's nodes describe their errors through meta, so its phrase
-			// writes only errors it raises through ctx: their actual, and the
-			// problem of one that carries what the keyword caught
-			actual: (data, ctx, info) => {
-				const locale = info as Locale
-				const actual =
-					ctx.predicate === undefined ?
-						keywordWriterOf(ctx, locale, "actual")
-					:	undefined
-				return (
-					actual === undefined ?
-						ctx.morph ?
-							`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
-						:	printable(data)
-					: typeof actual === "string" ? actual
-					: actual(data, ctx, locale)
-				)
-			},
-			problem: (ctx, info) => {
-				const locale = info as Locale
-				const problem =
-					ctx.cause === undefined ?
-						undefined
-					:	keywordWriterOf(ctx, locale, "problem")
-				return (
-					problem === undefined ? locale.problem(ctx, locale)
-					: typeof problem === "string" ? problem
-					: problem(ctx, locale)
-				)
-			}
+			expected: writePredicateExpected,
+			actual: writePredicateActual,
+			problem: writePredicateProblem
 		},
 		intersectionIsOpen: true
 	})

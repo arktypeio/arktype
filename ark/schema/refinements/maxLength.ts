@@ -1,5 +1,6 @@
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import { writeLengthActual } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -48,7 +49,7 @@ const implementation: nodeImplementationOf<MaxLength.Declaration> =
 		},
 		defaults: {
 			description: node => `at most length ${node.rule}`,
-			actual: data => `${data.length}`
+			actual: writeLengthActual
 		}
 	})
 

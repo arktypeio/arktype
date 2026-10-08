@@ -4,13 +4,13 @@ import {
 	getBuiltinNameOfConstructor,
 	isValidDate,
 	objectKindDescriptions,
-	objectKindOrDomainOf,
 	throwParseError,
 	type BuiltinObjectKind,
 	type Constructor
 } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
+import { writeProtoActual } from "../shared/errorWriters.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -66,10 +66,7 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 						objectKindDescriptions[builtinName]
 					:	`an instance of ${functionNameOf(node.proto)}`
 			},
-			actual: data =>
-				data instanceof Date && !isValidDate(data) ?
-					"an invalid Date"
-				:	objectKindOrDomainOf(data)
+			actual: writeProtoActual
 		}
 	})
 

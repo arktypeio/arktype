@@ -1,28 +1,33 @@
 import {
-	appendUnique,
 	describeCollapsibleDate,
-	domainDescriptions,
-	domainOf,
 	envHasCsp,
 	flatMorph,
-	functionNameOf,
-	isValidDate,
-	objectKindOrDomainOf,
-	printable,
 	throwError
 } from "@ark/util"
 import type { ErrorConfig, ResolvedConfig } from "./config.ts"
-import type { Predicate } from "./predicate.ts"
-import type { Morph } from "./roots/morph.ts"
-import type {
-	ActualWriter,
-	ArkError,
-	ArkErrorCode,
-	ExpectedWriter,
-	MessageWriter,
-	ProblemWriter
-} from "./shared/errors.ts"
-import { describeCause, keywordWriterOf, type Locale } from "./shared/locale.ts"
+import {
+	writeActual,
+	writeDiscriminantActual,
+	writeDomainActual,
+	writeIntersectionExpected,
+	writeIntersectionProblem,
+	writeLengthActual,
+	writeMessage,
+	writeMinLengthActual,
+	writePredicateActual,
+	writePredicateExpected,
+	writePredicateProblem,
+	writeProblem,
+	writeProtoActual,
+	writeRequiredActual,
+	writeRequiredExpected,
+	writeUnionExpected,
+	writeUnionMessage,
+	writeUnionProblem,
+	writeUnitProblem
+} from "./shared/errorWriters.ts"
+import type { ArkErrorCode, ExpectedWriter } from "./shared/errors.ts"
+import type { Locale } from "./shared/locale.ts"
 import { configureLocale, defaultLocale } from "./shared/render.ts"
 
 export * from "./shared/errors.ts"
@@ -42,167 +47,39 @@ export const assertAbiVersion = (version: number): void => {
 // node error contexts carry their descriptions, so expected reads them rather than describing a node
 const writeExpected: ExpectedWriter = ctx => ctx.description!
 
-const writeActual: ActualWriter = data => printable(data)
-
-const writeProblem: ProblemWriter = ({ expected, actual }) =>
-	`must be ${expected}${actual ? ` (was ${actual})` : ""}`
-
-const writeMessage: MessageWriter = ctx => {
-	const propString = ctx.propString
-	if (propString === "") return ctx.problem
-	// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-	return propString[0] === "[" ?
-			`value at ${propString} ${ctx.problem}`
-		:	`${propString} ${ctx.problem}`
-}
-
-const describeBranches = (descriptions: string[]): string => {
-	if (descriptions.length === 0) return "never"
-
-	if (descriptions.length === 1) return descriptions[0]
-	if (
-		(descriptions.length === 2 &&
-			descriptions[0] === "false" &&
-			descriptions[1] === "true") ||
-		(descriptions[0] === "true" && descriptions[1] === "false")
-	)
-		return "boolean"
-
-	// keep track of seen descriptions to avoid duplication
-	const seen: Record<string, true | undefined> = Object.create(null)
-	const unique = descriptions.filter(s => (seen[s] ? false : (seen[s] = true)))
-	const last = unique.pop()!
-
-	return `${unique.join(", ")}${unique.length ? " or " : ""}${last}`
-}
-
-const describePredicate = (ctx: { predicate?: Predicate; morph?: Morph }) => {
-	const fn = ctx.predicate ?? ctx.morph
-	return `valid according to ${(fn && functionNameOf(fn)) || "an anonymous predicate"}`
-}
-
-// each code's writers that read data or other errors, as arktype writes them
+// the writers each code has besides its description
 const errorWritersByCode: {
 	[code in ArkErrorCode]: ErrorConfig<code>
 } = {
 	after: { actual: describeCollapsibleDate },
 	before: { actual: describeCollapsibleDate },
 	divisor: {},
-	domain: {
-		actual: data =>
-			typeof data === "number" && !Number.isFinite(data) ?
-				String(data)
-			:	domainDescriptions[domainOf(data)]
-	},
-	exactLength: { actual: data => `${data.length}` },
+	domain: { actual: writeDomainActual },
+	exactLength: { actual: writeLengthActual },
 	intersection: {
-		expected: source =>
-			`  ◦ ${source.errors.map(e => e.expected).join("\n  ◦ ")}`,
-		problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
+		expected: writeIntersectionExpected,
+		problem: writeIntersectionProblem
 	},
 	max: {},
-	maxLength: { actual: data => `${data.length}` },
+	maxLength: { actual: writeLengthActual },
 	min: {},
-	minLength: {
-		// avoid default message like "must be non-empty (was 0)"
-		actual: data => (data.length === 0 ? "" : `${data.length}`)
-	},
+	minLength: { actual: writeMinLengthActual },
 	pattern: {},
 	predicate: {
-		// error contexts from ctx.reject have neither a description nor a predicate
-		expected: ctx => ctx.description ?? describePredicate(ctx),
-		// a keyword's nodes describe their errors through meta, so its phrase
-		// writes only errors it raises through ctx: their actual, and the
-		// problem of one that carries what the keyword caught
-		actual: (data, ctx, info) => {
-			const locale = info as Locale
-			const actual =
-				ctx.predicate === undefined ?
-					keywordWriterOf(ctx, locale, "actual")
-				:	undefined
-			return (
-				actual === undefined ?
-					ctx.morph ?
-						`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
-					:	printable(data)
-				: typeof actual === "string" ? actual
-				: actual(data, ctx, locale)
-			)
-		},
-		problem: (ctx, info) => {
-			const locale = info as Locale
-			const problem =
-				ctx.cause === undefined ?
-					undefined
-				:	keywordWriterOf(ctx, locale, "problem")
-			return (
-				problem === undefined ? locale.problem(ctx, locale)
-				: typeof problem === "string" ? problem
-				: problem(ctx, locale)
-			)
-		}
+		expected: writePredicateExpected,
+		actual: writePredicateActual,
+		problem: writePredicateProblem
 	},
-	proto: {
-		actual: data =>
-			data instanceof Date && !isValidDate(data) ?
-				"an invalid Date"
-			:	objectKindOrDomainOf(data)
-	},
-	required: {
-		expected: ctx => ctx.missingValueDescription,
-		actual: () => "missing"
-	},
+	proto: { actual: writeProtoActual },
+	required: { expected: writeRequiredExpected, actual: writeRequiredActual },
 	union: {
-		expected: ctx => {
-			const errorsAtPaths: ArkError[][] = []
-			for (const error of ctx.errors) {
-				const errorsAtPath = errorsAtPaths.find(
-					errors => errors[0].propString === error.propString
-				)
-				if (errorsAtPath) errorsAtPath.push(error)
-				else errorsAtPaths.push([error])
-			}
-			const pathDescriptions = errorsAtPaths.map(errors => {
-				const path = errors[0].propString
-				const branchesAtPath: string[] = []
-				for (const errorAtPath of errors)
-					appendUnique(branchesAtPath, errorAtPath.expected)
-
-				const expected = describeBranches(branchesAtPath)
-				// if there are multiple actual descriptions that differ,
-				// just fall back to printable, which is the most specific
-				const firstActual = errors[0].actual
-				const actual =
-					errors.every(e => e.actual === firstActual) ? firstActual : (
-						printable(errors[0].data)
-					)
-				return `${path && `${path} `}must be ${expected}${
-					actual && ` (was ${actual})`
-				}`
-			})
-			return describeBranches(pathDescriptions)
-		},
-		problem: ctx => ctx.expected,
-		message: ({ problem }) => {
-			if (problem[0] === "[") {
-				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-				return `value at ${problem}`
-			}
-
-			return problem
-		}
+		expected: writeUnionExpected,
+		problem: writeUnionProblem,
+		message: writeUnionMessage
 	},
-	unit: {
-		problem: ({ expected, actual }) =>
-			`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
-	},
+	unit: { problem: writeUnitProblem },
 	undeclared: { expected: "removed", actual: "" },
-	discriminant: {
-		actual: (data, e) =>
-			e.discriminantKind === "domain" ?
-				domainDescriptions[domainOf(data)]
-			:	printable(data)
-	}
+	discriminant: { actual: writeDiscriminantActual }
 }
 
 // en, as far as the runtime's writers read it

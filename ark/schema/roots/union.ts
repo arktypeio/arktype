@@ -24,6 +24,13 @@ import type {
 	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
+import {
+	describeBranches,
+	writeUnionExpected,
+	writeUnionMessage,
+	writeUnionProblem,
+	type DescribeBranchesOptions
+} from "../shared/errorWriters.ts"
 import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
@@ -112,44 +119,9 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 		defaults: {
 			description: node =>
 				node.distribute(branch => branch.description, describeBranches),
-			expected: ctx => {
-				const errorsAtPaths: ArkError[][] = []
-				for (const error of ctx.errors) {
-					const errorsAtPath = errorsAtPaths.find(
-						errors => errors[0].propString === error.propString
-					)
-					if (errorsAtPath) errorsAtPath.push(error)
-					else errorsAtPaths.push([error])
-				}
-				const pathDescriptions = errorsAtPaths.map(errors => {
-					const path = errors[0].propString
-					const branchesAtPath: string[] = []
-					for (const errorAtPath of errors)
-						appendUnique(branchesAtPath, errorAtPath.expected)
-
-					const expected = describeBranches(branchesAtPath)
-					// if there are multiple actual descriptions that differ,
-					// just fall back to printable, which is the most specific
-					const firstActual = errors[0].actual
-					const actual =
-						errors.every(e => e.actual === firstActual) ? firstActual : (
-							printable(errors[0].data)
-						)
-					return `${path && `${path} `}must be ${expected}${
-						actual && ` (was ${actual})`
-					}`
-				})
-				return describeBranches(pathDescriptions)
-			},
-			problem: ctx => ctx.expected,
-			message: ({ problem }) => {
-				if (problem[0] === "[") {
-					// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-					return `value at ${problem}`
-				}
-
-				return problem
-			}
+			expected: writeUnionExpected,
+			problem: writeUnionProblem,
+			message: writeUnionMessage
 		}
 	})
 
@@ -506,11 +478,6 @@ const invokeTransform = (
 		`ctx.transform(${js.ref(branch)}, data)`
 	:	js.invoke(branch)
 
-type DescribeBranchesOptions = {
-	delimiter?: string
-	finalDelimiter?: string
-}
-
 const describeExpressionOptions: DescribeBranchesOptions = {
 	delimiter: " | ",
 	finalDelimiter: " | "
@@ -519,31 +486,7 @@ const describeExpressionOptions: DescribeBranchesOptions = {
 const expressBranches = (expressions: string[]) =>
 	describeBranches(expressions, describeExpressionOptions)
 
-export const describeBranches = (
-	descriptions: readonly string[],
-	opts?: DescribeBranchesOptions
-): string => {
-	const delimiter = opts?.delimiter ?? ", "
-	const finalDelimiter = opts?.finalDelimiter ?? " or "
-
-	if (descriptions.length === 0) return "never"
-
-	if (descriptions.length === 1) return descriptions[0]
-	if (
-		(descriptions.length === 2 &&
-			descriptions[0] === "false" &&
-			descriptions[1] === "true") ||
-		(descriptions[0] === "true" && descriptions[1] === "false")
-	)
-		return "boolean"
-
-	// keep track of seen descriptions to avoid duplication
-	const seen: Record<string, true | undefined> = Object.create(null)
-	const unique = descriptions.filter(s => (seen[s] ? false : (seen[s] = true)))
-	const last = unique.pop()!
-
-	return `${unique.join(delimiter)}${unique.length ? finalDelimiter : ""}${last}`
-}
+export { describeBranches }
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"

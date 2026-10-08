@@ -30,6 +30,7 @@ import { describeBranches, Union } from "./roots/union.ts"
 import { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { BaseNodeInput } from "./shared/declare.ts"
+import { writeDiscriminantActual } from "./shared/errorWriters.ts"
 import type {
 	ActualWriter,
 	ArkErrorCode,
@@ -198,7 +199,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			// a union's context describes its cases in English
 			discriminant: {
 				expected: e => e.description ?? listCases(e, en),
-				actual: (data, e) => describeDiscriminant(data, e, en),
+				actual: writeDiscriminantActual,
 				problem: shared.problem,
 				message: shared.message
 			},

@@ -29,7 +29,7 @@ import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type { BaseErrorContext, BaseNodeDeclaration } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
-import type { ActualWriter, MessageWriter, ProblemWriter } from "./errors.ts"
+import { writeActual, writeMessage, writeProblem } from "./errorWriters.ts"
 import { namedReference } from "./registry.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
 
@@ -362,22 +362,6 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	kind: d["kind"]
 	inner: d["inner"]
 	children: nodeOfKind<d["childKind"]>[]
-}
-
-// one writer per slot for each kind that doesn't write its own, so en can tell
-// which are its kind's
-const writeActual: ActualWriter = data => printable(data)
-
-const writeProblem: ProblemWriter = ({ expected, actual }) =>
-	`must be ${expected}${actual ? ` (was ${actual})` : ""}`
-
-const writeMessage: MessageWriter = ctx => {
-	const propString = ctx.propString
-	if (propString === "") return ctx.problem
-	// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-	return propString[0] === "[" ?
-			`value at ${propString} ${ctx.problem}`
-		:	`${propString} ${ctx.problem}`
 }
 
 export const implementNode = <d extends BaseNodeDeclaration = never>(

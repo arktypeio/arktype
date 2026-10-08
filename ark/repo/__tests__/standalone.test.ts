@@ -253,6 +253,7 @@ contextualize(() => {
 		const runtimeModules = new Set([
 			"<stdin>",
 			"schema/runtime.ts",
+			"schema/shared/errorWriters.ts",
 			"schema/shared/errors.ts",
 			"schema/shared/locale.ts",
 			"schema/shared/registry.ts",
