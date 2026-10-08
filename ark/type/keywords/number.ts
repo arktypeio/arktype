@@ -2,21 +2,15 @@ import { intrinsic, node } from "@ark/schema"
 import { cached } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
+import { epochDescriptions, maxEpoch } from "./functions.ts"
 import { keywordMeta } from "./phrases.ts"
-
-/**
- * As per the ECMA-262 specification:
- * A time value supports a slightly smaller range of -8,640,000,000,000,000 to 8,640,000,000,000,000 milliseconds.
- *
- * @see https://262.ecma-international.org/15.0/index.html#sec-time-values-and-time-range
- */
 
 export const epoch = cached(() =>
 	node("intersection", {
 		domain: node("domain", {
 			domain: "number",
 			meta: {
-				description: "a number representing a Unix timestamp",
+				description: epochDescriptions.domain,
 				keyword: "number.epoch"
 			}
 		}),
@@ -28,18 +22,12 @@ export const epoch = cached(() =>
 			}
 		}),
 		min: node("min", {
-			rule: -8640000000000000,
-			meta: {
-				description: `a Unix timestamp after -8640000000000000`,
-				keyword: "number.epoch"
-			}
+			rule: -maxEpoch,
+			meta: { description: epochDescriptions.min, keyword: "number.epoch" }
 		}),
 		max: node("max", {
-			rule: 8640000000000000,
-			meta: {
-				description: "a Unix timestamp before 8640000000000000",
-				keyword: "number.epoch"
-			}
+			rule: maxEpoch,
+			meta: { description: epochDescriptions.max, keyword: "number.epoch" }
 		}),
 		meta: keywordMeta("number.epoch")
 	})

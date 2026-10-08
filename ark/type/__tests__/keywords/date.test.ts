@@ -42,5 +42,10 @@ contextualize(() => {
 		attest(parseEpoch("1.5").toString()).snap(
 			'must be a well-formed integer string (was "1.5")'
 		)
+		attest(
+			type({ at: parseEpoch })({ at: "99999999999999999999" }).toString()
+		).snap(
+			"at must be a Unix timestamp before 8640000000000000 (was 100000000000000000000)"
+		)
 	})
 })

@@ -165,6 +165,18 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
 
+### Fix duplicate errors from `string.date.epoch.parse`
+
+An out-of-range timestamp in an object was reported twice, as an intersection of the same error:
+
+```ts
+const T = type({ at: "string.date.epoch.parse" })
+
+// previously "at (100000000000000000000) must be...\n  ◦ a Unix timestamp before 8640000000000000\n  ◦ a Unix timestamp before 8640000000000000"
+// now "at must be a Unix timestamp before 8640000000000000 (was 100000000000000000000)"
+T({ at: "99999999999999999999" }).toString()
+```
+
 ### Fix deep transforms through a tuple default
 
 `onDeepUndeclaredKey` and `configure` with `"references"` threw on a tuple with a default:

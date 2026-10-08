@@ -74,6 +74,56 @@ export const parseIsoDate = (s: string): Date => new Date(s)
 // parsed as a number so the string is treated as milliseconds rather than passed to the Date string parser
 export const parseEpoch = (s: string): Date => new Date(Number.parseInt(s))
 
+/**
+ * As per the ECMA-262 specification:
+ * A time value supports a slightly smaller range of -8,640,000,000,000,000 to 8,640,000,000,000,000 milliseconds.
+ *
+ * @see https://262.ecma-international.org/15.0/index.html#sec-time-values-and-time-range
+ */
+export const maxEpoch = 8640000000000000
+
+export const epochDescriptions = {
+	domain: "a number representing a Unix timestamp",
+	min: `a Unix timestamp after ${-maxEpoch}`,
+	max: `a Unix timestamp before ${maxEpoch}`
+}
+
+// number.epoch's phrase describes its errors
+const epochMeta = { keyword: "number.epoch" } as const
+
+export const isEpochString = (s: string, ctx: Traversal): boolean => {
+	// this is safe since it has already
+	// been validated as an integer string
+	const n = Number.parseInt(s)
+	return (
+		!Number.isFinite(n) ?
+			ctx.reject({
+				code: "domain",
+				data: n,
+				description: epochDescriptions.domain,
+				meta: epochMeta,
+				domain: "number"
+			})
+		: n < -maxEpoch ?
+			ctx.reject({
+				code: "min",
+				data: n,
+				description: epochDescriptions.min,
+				meta: epochMeta,
+				rule: -maxEpoch
+			})
+		: n > maxEpoch ?
+			ctx.reject({
+				code: "max",
+				data: n,
+				description: epochDescriptions.max,
+				meta: epochMeta,
+				rule: maxEpoch
+			})
+		:	true
+	)
+}
+
 const jsonString = "a JSON string"
 
 // what String writes for the SyntaxError JSON.parse or RegExp throws

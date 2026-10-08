@@ -9,7 +9,6 @@ import {
 import { liftArray } from "@ark/util"
 import { keywords, scope, type } from "arktype"
 import * as keywordFunctions from "arktype/internal/keywords/functions.ts"
-import { isEpochString } from "arktype/internal/keywords/string.ts"
 import {
 	corpus,
 	isPrecompiled,
@@ -89,7 +88,6 @@ contextualize(() => {
 
 	it("exports every keyword's predicates and morphs", () => {
 		const exported = new Set<unknown>([
-			isEpochString,
 			liftArray,
 			...Object.values(keywordFunctions),
 			...Object.values(keywordFunctions.normalizationsByForm).flatMap(

@@ -1,12 +1,10 @@
 import {
-	ArkErrors,
 	constraintInputOf,
 	intrinsic,
 	node,
 	type Intersection,
 	type JsonSchema,
-	type NodeInput,
-	type Traversal
+	type NodeInput
 } from "@ark/schema"
 import {
 	cached,
@@ -21,6 +19,7 @@ import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
 import {
 	capitalizeString,
+	isEpochString,
 	isJsonString,
 	isLuhnValid,
 	isParsableDate,
@@ -38,7 +37,6 @@ import {
 	trimString,
 	uppercaseString
 } from "./functions.ts"
-import { number } from "./number.ts"
 import { keywordMeta, type KeywordPhraseAlias } from "./phrases.ts"
 
 export { isLuhnValid } from "./functions.ts"
@@ -285,18 +283,6 @@ const parsableDate = cached(() =>
 		]
 	}).assertHasKind("intersection")
 )
-
-export const isEpochString = (s: string, ctx: Traversal): boolean => {
-	// this is safe since it has already
-	// been validated as an integer string
-	const n = Number.parseInt(s)
-	const out = number.epoch(n)
-	if (out instanceof ArkErrors) {
-		ctx.errors.merge(out)
-		return false
-	}
-	return true
-}
 
 const epochRoot = cached(() =>
 	stringInteger.root.internal
