@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
-import { writeJsonSyntaxErrorProblem } from "arktype/internal/keywords/phrases.ts"
+import { writeJsonSyntaxErrorProblem } from "arktype/internal/keywords/functions.ts"
 
 contextualize(() => {
 	let syntaxError: unknown

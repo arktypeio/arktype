@@ -168,3 +168,23 @@ export const printSelfAsThis = <node extends BaseRoot>(
 
 export type unwrapDefault<thunkableValue> =
 	thunkableValue extends Thunk<infer returnValue> ? returnValue : thunkableValue
+
+export const valueAtPath = (
+	path: array<PropertyKey>,
+	data: unknown,
+	end = path.length
+): unknown => {
+	let value: any = data
+	for (let i = 0; i < end; i++) value = value?.[path[i]]
+	return value
+}
+
+export const isAbsent = (path: array<PropertyKey>, data: unknown): boolean => {
+	if (path.length === 0) return false
+	const parent = valueAtPath(path, data, path.length - 1)
+	return (
+		parent === undefined ||
+		parent === null ||
+		!(path[path.length - 1] in Object(parent))
+	)
+}

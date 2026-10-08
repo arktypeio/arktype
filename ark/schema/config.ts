@@ -91,7 +91,10 @@ export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 export const resolveGlobalConfig = (base: ResolvedConfig): ResolvedConfig => {
 	const resolved = mergeConfigs(base, $ark.config)
 	// a locale function selects a locale per read, which is en if it returns none
-	;(resolved as { locale: Locale }).locale = configureLocale($ark.config.locale)
+	;(resolved as { locale: Locale }).locale = configureLocale(
+		$ark.config.locale,
+		base.locale as Locale.Complete
+	)
 	return resolved
 }
 

@@ -1534,7 +1534,42 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 ) => (Inner<kind> & BaseNodeInput) | null
 
 // createRootApply's statements, compiled per root so V8 can inline its calls
-const compileRootApply = (node: BaseRoot): RootApply => {
+const compileRootApply = (node: BaseRoot): RootApply =>
+	new DynamicFunction<(...args: unknown[]) => RootApply>(
+		...rootApplyParams,
+		writeRootApply(node, node.id)
+	)(
+		node,
+		node.allows,
+		node.traverseAllows,
+		node.traverseApply,
+		node.traverseTransform,
+		Traversal,
+		TransformErrors,
+		applyCyclic,
+		allowsAcyclic,
+		allowsInContext,
+		node.$.resolvedConfig,
+		unset
+	)
+
+export const rootApplyParams = [
+	"node",
+	"allows",
+	"traverseAllows",
+	"apply",
+	"transform",
+	"Traversal",
+	"TransformErrors",
+	"applyCyclic",
+	"allowsAcyclic",
+	"allowsInContext",
+	"config",
+	"unset"
+] as const
+
+// name keys the root's resolution, so it must be what its unit names it
+export const writeRootApply = (node: BaseRoot, name: string): string => {
 	const js = new CompiledFunction("data", "onFail").indent()
 	const applyFailed = new CompiledFunction("data", "onFail").indent()
 	const fallback = (body: typeof js) =>
@@ -1575,10 +1610,7 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 				.if("!(untracked ?? allowsInContext(node, data, config))", fallback)
 				.const("ctx", "new Traversal(data, config)")
 				.set("ctx.tracksTransforms", "untracked === undefined")
-				.const(
-					"result",
-					`ctx.transformResolution("${node.id}", data, transform)`
-				)
+				.const("result", `ctx.transformResolution("${name}", data, transform)`)
 		} else {
 			js.if("!allows(data)", fallback)
 				.const("ctx", "new Traversal(data, config)")
@@ -1594,36 +1626,9 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 	} else js.if("!allows(data)", fallback).return("transform(data)")
 	const failurePath =
 		applyFailed.body ?
-			`const applyFailed = function ${applyFailed.write(`${node.id}ApplyFailed`)}\n`
+			`const applyFailed = function ${applyFailed.write(`${name}ApplyFailed`)}\n`
 		:	""
-	return new DynamicFunction<(...args: unknown[]) => RootApply>(
-		"node",
-		"allows",
-		"traverseAllows",
-		"apply",
-		"transform",
-		"Traversal",
-		"TransformErrors",
-		"applyCyclic",
-		"allowsAcyclic",
-		"allowsInContext",
-		"config",
-		"unset",
-		`"use strict"\n${failurePath}return (function ${js.write(`${node.id}RootApply`)})`
-	)(
-		node,
-		node.allows,
-		node.traverseAllows,
-		node.traverseApply,
-		node.traverseTransform,
-		Traversal,
-		TransformErrors,
-		applyCyclic,
-		allowsAcyclic,
-		allowsInContext,
-		node.$.resolvedConfig,
-		unset
-	)
+	return `"use strict"\n${failurePath}return (function ${js.write(`${name}RootApply`)})`
 }
 
 export const writeInnerJson = (node: BaseNode): JsonObject => {

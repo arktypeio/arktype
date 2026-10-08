@@ -1,21 +1,6 @@
 import { en, type Locale } from "@ark/schema"
-import { printable } from "@ark/util"
 import type { KeywordConfig } from "../config.ts"
-
-const jsonString = "a JSON string"
-
-// what String writes for the SyntaxError JSON.parse or RegExp throws
-const describeSyntaxError = ({ name, message }: SyntaxError): string =>
-	`${name}: ${message}`
-
-export const writeJsonSyntaxErrorProblem = (error: unknown): string =>
-	`must be ${jsonString} (${describeSyntaxError(error as SyntaxError)})`
-
-// a JSON keyword's error carries the SyntaxError JSON.parse threw as its cause
-const jsonProblem: Locale.ProblemWriter = (e, locale) =>
-	e.code === "predicate" && e.cause !== undefined ?
-		writeJsonSyntaxErrorProblem(e.cause)
-	:	locale.problem(e, locale)
+import { raisedErrorPhrases } from "./functions.ts"
 
 const epoch = "an integer representing a safe Unix timestamp"
 
@@ -51,25 +36,15 @@ export const keywordPhrases = {
 	"string.ip": "an IP address",
 	"string.ip.v4": "an IPv4 address",
 	"string.ip.v6": "an IPv6 address",
-	"string.json": { noun: jsonString, problem: jsonProblem },
-	"string.json.parse": {
-		noun: jsonString,
-		actual: data => (data === "" ? "empty" : printable(data)),
-		problem: jsonProblem
-	},
+	"string.json": raisedErrorPhrases["string.json"],
+	"string.json.parse": raisedErrorPhrases["string.json.parse"],
 	"string.lower.preformatted": "only lowercase letters",
 	"string.normalize.NFC.preformatted": "NFC-normalized unicode",
 	"string.normalize.NFD.preformatted": "NFD-normalized unicode",
 	"string.normalize.NFKC.preformatted": "NFKC-normalized unicode",
 	"string.normalize.NFKD.preformatted": "NFKD-normalized unicode",
 	"string.numeric": "a well-formed numeric string",
-	"string.regex": {
-		noun: "a regex pattern",
-		problem: (e, locale) =>
-			e.code === "predicate" && e.cause !== undefined ?
-				describeSyntaxError(e.cause as SyntaxError)
-			:	locale.problem(e, locale)
-	},
+	"string.regex": raisedErrorPhrases["string.regex"],
 	"string.semver": "a semantic version (see https://semver.org/)",
 	"string.trim.preformatted": "trimmed",
 	"string.upper.preformatted": "only uppercase letters",

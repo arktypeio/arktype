@@ -28,6 +28,10 @@
 			"ark-ts": "./i18n.ts",
 			"default": "./out/i18n.js"
 		},
+		"./runtime": {
+			"ark-ts": "./runtime.ts",
+			"default": "./out/runtime.js"
+		},
 		"./internal": {
 			"ark-ts": "./internal.ts",
 			"default": "./out/internal.js"

@@ -16,13 +16,14 @@ export abstract class InternalBasis<
 	}
 
 	private _errorContext: d["errorContext"] | undefined
+	// frozen when created, as a missing value shares it
 	get errorContext(): d["errorContext"] {
-		return (this._errorContext ??= {
+		return (this._errorContext ??= Object.freeze({
 			code: this.kind,
 			description: this.description,
 			meta: this.meta,
 			...this.inner
-		})
+		}))
 	}
 
 	get compiledErrorContext(): string {

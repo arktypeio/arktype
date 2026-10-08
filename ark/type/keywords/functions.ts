@@ -1,5 +1,5 @@
-import type { ArkError, Traversal } from "@ark/schema"
-import { FileConstructor, type Json } from "@ark/util"
+import type { ArkError, Locale, Traversal } from "@ark/schema"
+import { FileConstructor, printable, type Json } from "@ark/util"
 import type { FormDataValue, ParsedFormData } from "./FormData.ts"
 import type { KeywordPhraseAlias } from "./phrases.ts"
 
@@ -74,7 +74,22 @@ export const parseIsoDate = (s: string): Date => new Date(s)
 // parsed as a number so the string is treated as milliseconds rather than passed to the Date string parser
 export const parseEpoch = (s: string): Date => new Date(Number.parseInt(s))
 
-const jsonError = /* @__PURE__ */ keywordError("string.json", "a JSON string")
+const jsonString = "a JSON string"
+
+// what String writes for the SyntaxError JSON.parse or RegExp throws
+const describeSyntaxError = ({ name, message }: SyntaxError): string =>
+	`${name}: ${message}`
+
+export const writeJsonSyntaxErrorProblem = (error: unknown): string =>
+	`must be ${jsonString} (${describeSyntaxError(error as SyntaxError)})`
+
+// a JSON keyword's error carries the SyntaxError JSON.parse threw as its cause
+const jsonProblem: Locale.ProblemWriter = (e, locale) =>
+	e.code === "predicate" && e.cause !== undefined ?
+		writeJsonSyntaxErrorProblem(e.cause)
+	:	locale.problem(e, locale)
+
+const jsonError = /* @__PURE__ */ keywordError("string.json", jsonString)
 
 export const isJsonString = (s: string, ctx: Traversal): boolean => {
 	try {
@@ -88,7 +103,7 @@ export const isJsonString = (s: string, ctx: Traversal): boolean => {
 
 const jsonParseError = /* @__PURE__ */ keywordError(
 	"string.json.parse",
-	"a JSON string"
+	jsonString
 )
 
 export const parseJson = (s: string, ctx: Traversal): Json | ArkError => {
@@ -136,6 +151,23 @@ export const isRegexPattern = (s: string, ctx: Traversal): boolean => {
 		return ctx.reject({ ...regexError, cause: e })
 	}
 }
+
+/** en's phrases of the keywords that write the errors they raise through ctx */
+export const raisedErrorPhrases = {
+	"string.json": { noun: jsonString, problem: jsonProblem },
+	"string.json.parse": {
+		noun: jsonString,
+		actual: data => (data === "" ? "empty" : printable(data)),
+		problem: jsonProblem
+	},
+	"string.regex": {
+		noun: "a regex pattern",
+		problem: (e, locale) =>
+			e.code === "predicate" && e.cause !== undefined ?
+				describeSyntaxError(e.cause as SyntaxError)
+			:	locale.problem(e, locale)
+	}
+} as const satisfies Record<string, Locale.KeywordWriters>
 
 export const isParsableUrl = (s: string): boolean => URL.canParse(s)
 

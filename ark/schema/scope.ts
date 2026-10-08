@@ -71,7 +71,7 @@ import {
 	resolveShallowAliases
 } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import { isAbsent, type Union } from "./roots/union.ts"
+import type { Union } from "./roots/union.ts"
 import type { Unit } from "./roots/unit.ts"
 import {
 	CompiledFunction,
@@ -101,6 +101,7 @@ import {
 	defining,
 	hasArkKind,
 	inProgress,
+	isAbsent,
 	isNode,
 	printSelfAsThis,
 	resolving

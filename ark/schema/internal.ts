@@ -2,4 +2,5 @@
 export * from "./index.ts"
 export * from "./roots/basis.ts"
 export * from "./shared/render.ts"
+export * from "./runtime.ts"
 export * from "./structure/shared.ts"

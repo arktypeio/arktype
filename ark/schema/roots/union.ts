@@ -44,6 +44,7 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "../shared/traversal.ts"
+import { isAbsent, valueAtPath } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
 import { BaseRoot } from "./root.ts"
@@ -434,26 +435,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 export const Union = {
 	implementation,
 	Node: UnionNode
-}
-
-const valueAtPath = (
-	path: array<PropertyKey>,
-	data: unknown,
-	end = path.length
-): unknown => {
-	let value: any = data
-	for (let i = 0; i < end; i++) value = value?.[path[i]]
-	return value
-}
-
-export const isAbsent = (path: array<PropertyKey>, data: unknown): boolean => {
-	if (path.length === 0) return false
-	const parent = valueAtPath(path, data, path.length - 1)
-	return (
-		parent === undefined ||
-		parent === null ||
-		!(path[path.length - 1] in Object(parent))
-	)
 }
 
 const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {
