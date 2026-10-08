@@ -196,6 +196,17 @@ contextualize(() => {
 		attest(bodies).equals([])
 	})
 
+	it("loads without a global one of its validators reads", async () => {
+		const Global = class {}
+		Object.assign(globalThis, { Global })
+		const { js } = bundle(
+			precompileStandalone({ S: type("string"), G: type.instanceOf(Global) })
+		)
+		delete (globalThis as { Global?: unknown }).Global
+		const { S } = await importBesideArktype(js)
+		attest(S("s")).equals("s")
+	})
+
 	it("throws on members that need arktype", async () => {
 		const { T } = await load({ T: type("string") })
 		attest(() => T.and("number")).throws(writeUnavailableMemberMessage("and"))

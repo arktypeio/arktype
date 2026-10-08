@@ -133,7 +133,7 @@ export const precompileStandalone = (
 		}
 		if (typeof value === "function") {
 			return globalThis[value.name as never] === value ?
-					value.name
+					`globalThis[${JSON.stringify(value.name)}]`
 				:	throwError(writeUnprecompilableMessage(printable(value)))
 		}
 		// a unit is compared by reference, so a copy wouldn't equal it
