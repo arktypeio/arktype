@@ -710,8 +710,7 @@ export class Interpreter {
 			ctx.origin?.module === module &&
 			binding.kind !== "function" &&
 			contains(binding.scope.node, ctx.origin.node) &&
-			runPointOf(ctx.origin.node, binding.scope.node, module) <
-				unsetBefore(binding.declaration)
+			runPointOf(ctx.origin.node, binding.scope.node, module) < setAt(binding)
 		) {
 			return {
 				value: new DynamicValue(
@@ -1903,11 +1902,22 @@ const runPointOf = (
 	return node.start
 }
 
-// a declarator's pattern runs before its bindings are set, and a read in its initializer depends on itself
-const unsetBefore = (declaration: Node): number =>
-	declaration.type === "VariableDeclarator" && declaration.init ?
-		declaration.init.start
-	:	declaration.end
+// a declarator sets each binding once its element of the pattern, default included, has run; a read in the initializer, which runs first, depends on itself
+const setAt = (binding: Binding): number => {
+	if (binding.declaration.type !== "VariableDeclarator")
+		return binding.declaration.end
+	let element: Node = binding.id
+	for (let parent = element.parent; parent; parent = element.parent) {
+		if (
+			(parent.type === "AssignmentPattern" && parent.left === element) ||
+			parent.type === "RestElement" ||
+			(parent.type === "Property" && parent.parent?.type === "ObjectPattern")
+		)
+			element = parent
+		else break
+	}
+	return element.end
+}
 
 const staticProblemOf = (
 	binding: Binding,

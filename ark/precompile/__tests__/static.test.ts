@@ -604,6 +604,11 @@ export const T = result`)
 			).snap([
 				"3:28 rejected\n  `x` can be read before its declaration (/main.ts:4:18)"
 			])
+			attest(
+				statusesOf(`import { type } from "arktype"
+const [a, b = type(a)] = ["string"]
+const { c, d = type(c) } = { c: "number" } as { c: string; d?: unknown }`)
+			).snap(["2:15 accepted string", "3:16 accepted number"])
 		})
 
 		it("optional chain ended by parentheses", () => {
