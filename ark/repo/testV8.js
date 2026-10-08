@@ -1,5 +1,5 @@
 import { fromHere } from "@ark/fs"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 
 console.log(
 	"⏱️  Checking for V8 fast properties (https://v8.dev/blog/fast-properties) on Type...\n"
@@ -143,3 +143,20 @@ for (const errors of errorResults) {
 }
 
 console.log("🏎️  ArkErrors have one map!")
+
+console.log(
+	"\n⏱️  Checking that resolved scope configs have fast properties...\n"
+)
+
+const configs = {
+	"the default scope": type("string").internal.$.resolvedConfig,
+	"a configured scope": scope({}, { numberAllowsNaN: true }).type("string")
+		.internal.$.resolvedConfig
+}
+
+for (const [name, config] of Object.entries(configs)) {
+	if (!eval("%HasFastProperties(config)"))
+		throw new Error(`⚠️  The resolved config of ${name} has slow properties.`)
+}
+
+console.log("🏎️  Resolved scope configs have fast properties!")

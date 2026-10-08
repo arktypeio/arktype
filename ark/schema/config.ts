@@ -15,6 +15,7 @@ import {
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
+import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import type { SetEngine } from "./shared/sets.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
@@ -85,7 +86,7 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 	merged: ArkSchemaConfig | undefined
 ): base => {
 	if (!merged) return base
-	const result: any = { ...base }
+	const result: any = { ...base, ...merged }
 	let k: keyof ArkSchemaConfig
 	for (k in merged) {
 		const keywords = { ...base.keywords }
@@ -109,7 +110,7 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 					...base[k],
 					...merged[k]
 				} as never
-		} else result[k] = merged[k]
+		}
 	}
 	return result
 }
@@ -211,7 +212,7 @@ export type resolveConfig<config extends ArkSchemaConfig> = show<
 		: k extends "keywords" ? Record<string, TypeMeta | undefined>
 		: k extends "toJsonSchema" ? ToJsonSchema.Context
 		: config[k]
-	} & Omit<config, keyof ArkSchemaConfig>
+	} & { readonly locale: Locale } & Omit<config, keyof ArkSchemaConfig>
 >
 
 export type ResolvedConfig = resolveConfig<ArkSchemaConfig>

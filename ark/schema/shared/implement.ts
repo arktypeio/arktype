@@ -29,6 +29,7 @@ import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
 import type { BaseErrorContext, BaseNodeDeclaration } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
+import type { ActualWriter, MessageWriter, ProblemWriter } from "./errors.ts"
 import { namedReference } from "./registry.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
 
@@ -353,6 +354,23 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	children: nodeOfKind<d["childKind"]>[]
 }
 
+// one writer per slot for each kind that doesn't write its own, so en can tell
+// which are its kind's
+const writeActual: ActualWriter = data => printable(data)
+
+const writeProblem: ProblemWriter = ({ expected, actual }) =>
+	`must be ${expected}${actual ? ` (was ${actual})` : ""}`
+
+const writeMessage: MessageWriter = ctx => {
+	if (ctx.path.length === 0) return ctx.problem
+	const problemWithLocation = `${ctx.propString} ${ctx.problem}`
+	if (problemWithLocation[0] === "[") {
+		// clarify paths like [1], [0][1], and ["key!"] that could be confusing
+		return `value at ${problemWithLocation}`
+	}
+	return problemWithLocation
+}
+
 export const implementNode = <d extends BaseNodeDeclaration = never>(
 	_: nodeImplementationInputOf<d>
 ): nodeImplementationOf<d> => {
@@ -362,18 +380,9 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 			"description" in ctx ?
 				(ctx.description as string)
 			:	implementation.defaults.description(ctx as never)
-		implementation.defaults.actual ??= data => printable(data)
-		implementation.defaults.problem ??= ({ expected, actual }) =>
-			`must be ${expected}${actual ? ` (was ${actual})` : ""}`
-		implementation.defaults.message ??= ctx => {
-			if (ctx.path.length === 0) return ctx.problem
-			const problemWithLocation = `${ctx.propString} ${ctx.problem}`
-			if (problemWithLocation[0] === "[") {
-				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-				return `value at ${problemWithLocation}`
-			}
-			return problemWithLocation
-		}
+		implementation.defaults.actual ??= writeActual
+		implementation.defaults.problem ??= writeProblem
+		implementation.defaults.message ??= writeMessage
 	}
 	return implementation as never
 }

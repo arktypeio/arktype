@@ -10,12 +10,14 @@ import {
 	type JsonObject,
 	type array,
 	type merge,
+	type omit,
 	type propwiseXor,
 	type show
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import type { Prerequisite, errorContext } from "../kinds.ts"
 import type { NodeKind } from "./implement.ts"
+import type { Locale } from "./locale.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { Traversal } from "./traversal.ts"
 import { arkKind } from "./utils.ts"
@@ -114,7 +116,9 @@ export class ArkError<
 
 		const config = this.meta?.expected ?? this.nodeConfig.expected
 
-		return typeof config === "function" ? config(this.input as never) : config
+		return typeof config === "function" ?
+				config(this as never, this.ctx.config.locale)
+			:	config
 	}
 
 	get actual(): string {
@@ -122,7 +126,9 @@ export class ArkError<
 
 		const config = this.meta?.actual ?? this.nodeConfig.actual
 
-		return typeof config === "function" ? config(this.data as never) : config
+		return typeof config === "function" ?
+				config(this.data as never, this as never, this.ctx.config.locale)
+			:	config
 	}
 
 	get problem(): string {
@@ -130,7 +136,9 @@ export class ArkError<
 
 		const config = this.meta?.problem ?? this.nodeConfig.problem
 
-		return typeof config === "function" ? config(this as never) : config
+		return typeof config === "function" ?
+				config(this as never, this.ctx.config.locale)
+			:	config
 	}
 
 	get message(): string {
@@ -138,7 +146,9 @@ export class ArkError<
 
 		const config = this.meta?.message ?? this.nodeConfig.message
 
-		return typeof config === "function" ? config(this as never) : config
+		return typeof config === "function" ?
+				config(this as never, this.ctx.config.locale)
+			:	config
 	}
 
 	get flat(): ArkError[] {
@@ -451,15 +461,19 @@ export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
 export type NodeErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorContextInputsByCode[code] & { meta: ArkEnv.meta }
 
-export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
-	ArkError<code>,
-	"message"
->
+// meta comes from the error, since an error a narrow adds has none.
+// no context reaches the slot its writer computes or one that could read it
+export type MessageContext<code extends ArkErrorCode = ArkErrorCode> =
+	code extends unknown ?
+		omit<errorContext<code>, "meta"> &
+			omit<ArkError<code>, "message" | "toString" | "toJSON">
+	:	never
 
-export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
-	MessageContext<code>,
-	"problem"
->
+export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> =
+	code extends unknown ?
+		omit<errorContext<code>, "meta"> &
+			omit<ArkError<code>, "problem" | "message" | "toString" | "toJSON">
+	:	never
 
 export type CustomErrorInput = show<
 	// ensure a custom error can be discriminated on the lack of a code
@@ -475,7 +489,8 @@ export type ProblemConfig<code extends ArkErrorCode = ArkErrorCode> =
 	| ProblemWriter<code>
 
 export type ProblemWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	context: ProblemContext<code>
+	error: ProblemContext<code>,
+	locale: Locale.Info
 ) => string
 
 export type MessageConfig<code extends ArkErrorCode = ArkErrorCode> =
@@ -483,7 +498,8 @@ export type MessageConfig<code extends ArkErrorCode = ArkErrorCode> =
 	| MessageWriter<code>
 
 export type MessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	context: MessageContext<code>
+	error: MessageContext<code>,
+	locale: Locale.Info
 ) => string
 
 export type getAssociatedDataForError<code extends ArkErrorCode> =
@@ -493,14 +509,41 @@ export type ExpectedConfig<code extends ArkErrorCode = ArkErrorCode> =
 	| string
 	| ExpectedWriter<code>
 
+export type ExpectedContext<code extends ArkErrorCode = ArkErrorCode> =
+	code extends unknown ?
+		omit<errorContext<code>, "meta"> &
+			omit<
+				ArkError<code>,
+				"expected" | "actual" | "problem" | "message" | "toString" | "toJSON"
+			>
+	:	never
+
 export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	source: errorContext<code>
+	error: ExpectedContext<code>,
+	locale: Locale.Info
 ) => string
 
 export type ActualConfig<code extends ArkErrorCode = ArkErrorCode> =
 	| string
 	| ActualWriter<code>
 
+export type ActualContext<code extends ArkErrorCode = ArkErrorCode> =
+	code extends unknown ?
+		omit<errorContext<code>, "description" | "meta"> &
+			omit<
+				ArkError<code>,
+				| "expected"
+				| "description"
+				| "actual"
+				| "problem"
+				| "message"
+				| "toString"
+				| "toJSON"
+			>
+	:	never
+
 export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	data: getAssociatedDataForError<code>
+	data: getAssociatedDataForError<code>,
+	error: ActualContext<code>,
+	locale: Locale.Info
 ) => string

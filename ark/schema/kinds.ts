@@ -1,10 +1,18 @@
 import {
+	describeCollapsibleDate,
+	domainDescriptions,
 	envHasCsp,
 	flatMorph,
+	listPattern,
+	objectKindDescriptions,
 	withAlphabetizedKeys,
 	type array
 } from "@ark/util"
-import { mergeConfigs, type ResolvedConfig } from "./config.ts"
+import {
+	mergeConfigs,
+	type ResolvedConfig,
+	type ResolvedUnknownNodeConfig
+} from "./config.ts"
 import type { BaseNode } from "./node.ts"
 import { Predicate } from "./predicate.ts"
 import { Divisor } from "./refinements/divisor.ts"
@@ -31,6 +39,7 @@ import type {
 	UnknownAttachments,
 	UnknownNodeImplementation
 } from "./shared/implement.ts"
+import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.ts"
@@ -80,6 +89,59 @@ export const nodeImplementationsByKind: Record<
 	structure: Structure.implementation
 } satisfies Record<NodeKind, unknown> as never
 
+// divisor writes only expected, so its other writers are those implementNode
+// gives every kind that doesn't write its own
+const shared = nodeImplementationsByKind.divisor.defaults as Pick<
+	Locale,
+	"actual" | "problem" | "message"
+>
+
+// a leaf error carries its node's inner fields, so the node's description
+// writer describes it, while union, intersection and required have their own
+const enWritersOf = (
+	kind: NodeKind,
+	defaults: ResolvedUnknownNodeConfig
+): Locale.CodeWriters => {
+	const writers: Record<string, unknown> = {
+		expected:
+			kind === "union" || kind === "intersection" || kind === "required" ?
+				defaults.expected
+			:	defaults.description
+	}
+	for (const slot of ["actual", "problem", "message"] as const)
+		if (defaults[slot] !== shared[slot]) writers[slot] = defaults[slot]
+	return writers as never
+}
+
+export const en: Locale = {
+	...(flatMorph(
+		nodeImplementationsByKind,
+		(kind, { hasAssociatedError, defaults }) =>
+			hasAssociatedError ? [kind, enWritersOf(kind, defaults)] : []
+	) as Locale.Writers),
+	tag: "en",
+	list: listPattern(
+		{ two: " or ", middle: ", ", end: " or " },
+		{ two: " and ", middle: ", ", end: " and " }
+	),
+	plural: n => (n === 1 ? "one" : "other"),
+	number: String,
+	date: describeCollapsibleDate,
+	verbatim: text => text,
+	cite: text => text,
+	expectedNoun: noun => noun,
+	nouns: {
+		...domainDescriptions,
+		...objectKindDescriptions,
+		unknown: "present",
+		never: "never"
+	},
+	keywordPhrases: {},
+	actual: shared.actual,
+	problem: shared.problem,
+	message: shared.message
+}
+
 $ark.defaultConfig = withAlphabetizedKeys(
 	Object.assign(
 		flatMorph(nodeImplementationsByKind, (kind, implementation) => [
@@ -96,7 +158,8 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			dateAllowsInvalid: false,
 			onFail: null,
 			keywords: {},
-			toJsonSchema: ToJsonSchema.defaultConfig
+			toJsonSchema: ToJsonSchema.defaultConfig,
+			locale: en
 		} satisfies Omit<ResolvedConfig, NodeKind>
 	) as never
 )

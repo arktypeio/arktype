@@ -466,7 +466,7 @@ const expressBranches = (expressions: string[]) =>
 	describeBranches(expressions, describeExpressionOptions)
 
 export const describeBranches = (
-	descriptions: string[],
+	descriptions: readonly string[],
 	opts?: DescribeBranchesOptions
 ): string => {
 	const delimiter = opts?.delimiter ?? ", "

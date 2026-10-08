@@ -60,10 +60,12 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 				{ ...inner, dateAllowsInvalid: true }
 			:	inner,
 		defaults: {
-			description: node =>
-				node.builtinName ?
-					objectKindDescriptions[node.builtinName]
-				:	`an instance of ${node.proto.name}`,
+			description: node => {
+				const builtinName = getBuiltinNameOfConstructor(node.proto)
+				return builtinName ?
+						objectKindDescriptions[builtinName]
+					:	`an instance of ${node.proto.name}`
+			},
 			actual: data =>
 				data instanceof Date && !isValidDate(data) ?
 					"an invalid Date"

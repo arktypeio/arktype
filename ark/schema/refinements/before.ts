@@ -49,7 +49,7 @@ const implementation: nodeImplementationOf<Before.Declaration> =
 			}
 		},
 		defaults: {
-			description: node => `${node.collapsibleLimitString} or earlier`,
+			description: node => `${describeCollapsibleDate(node.rule)} or earlier`,
 			actual: describeCollapsibleDate
 		}
 	})
