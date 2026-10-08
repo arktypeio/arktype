@@ -278,6 +278,16 @@ export type withDefault<t, v, undistributed = t> =
 	t extends InferredMorph ? addDefaultToMorph<t, v>
 	:	Default<Exclude<undistributed, InferredMorph>, v>
 
+export type required<t> = { [k in keyof t]-?: withoutDefault<t[k]> }
+
+type withoutDefault<t> =
+	t extends Default<infer constraint> ? constraint
+	: t extends InferredMorph<infer i, infer o> ?
+		[i] extends [anyOrNever] ? t
+		: [i] extends [Default<infer constraint>] ? (In: constraint) => o
+		: t
+	:	t
+
 type addDefaultToMorph<t extends InferredMorph, v> =
 	[normalizeMorphDistribution<t>] extends [InferredMorph<infer i, infer o>] ?
 		(In: Default<i, v>) => o

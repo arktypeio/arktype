@@ -17,7 +17,7 @@ import {
 	type show,
 	type Thunk
 } from "@ark/util"
-import type { To } from "../attributes.ts"
+import type { required, To } from "../attributes.ts"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
 
@@ -186,7 +186,7 @@ const Partial = cached(() =>
 )
 
 class RequiredHkt extends Hkt<[object]> {
-	declare body: show<Required<this[0]>>
+	declare body: show<required<this[0]>>
 
 	description =
 		"make all named properties of an object required like `Required(User)`"

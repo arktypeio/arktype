@@ -19,7 +19,7 @@ import type {
 	show,
 	toArkKey
 } from "@ark/util"
-import type { Default, withDefault } from "../attributes.ts"
+import type { Default, required, withDefault } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { ArrayType } from "./array.ts"
 import type { BaseType } from "./base.ts"
@@ -128,9 +128,9 @@ interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
 	 * 🔗 like TS's `Required`, an array or tuple base is preserved and
 	 * applied to its elements, e.g. `type(["string", "number"]).required()`
 	 *
-	 * @example const T = type({ "foo?"": "string" }).required() // Type<{ foo: string }>
+	 * @example const T = type({ "foo?": "string" }).required() // Type<{ foo: string }>
 	 */
-	required(): Type<{ [k in keyof t]-?: t[k] }, $>
+	required(): Type<show<required<t>>, $>
 
 	/**
 	 * Create a copy of this `Type` with all properties optional.
