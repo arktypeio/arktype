@@ -386,8 +386,11 @@ export class Interpreter {
 					)
 				}
 				const copy: object = { ...(spread as object) }
-				for (const k of Reflect.ownKeys(copy))
+				for (const k of Reflect.ownKeys(copy)) {
+					const overwritten = this.overwrite(result, k, property, ctx)
+					if (overwritten) return overwritten
 					defineData(result, k, Reflect.get(copy, k))
+				}
 				continue
 			}
 			if (property.kind !== "init") {
@@ -415,20 +418,37 @@ export class Interpreter {
 					"a `__proto__` key changes the object's prototype"
 				)
 			}
-			const overwritten = result[key as PropertyKey]
-			if (isDynamic(overwritten)) {
-				return this.reject(
-					property,
-					ctx,
-					"overwrites a value the build does not know",
-					overwritten.asOperand()
-				)
-			}
+			const overwritten = this.overwrite(
+				result,
+				key as PropertyKey,
+				property,
+				ctx
+			)
+			if (overwritten) return overwritten
 			const value = this.evaluate(property.value, ctx)
 			if (isDynamic(value) && !value.isOpaque) return value
 			defineData(result, key as PropertyKey, value)
 		}
 		return result
+	}
+
+	// a dropped value the build does not know would still have been computed, perhaps by a call that throws
+	private overwrite(
+		result: Record<PropertyKey, unknown>,
+		key: PropertyKey,
+		node: Node,
+		ctx: Context
+	): DynamicValue | undefined {
+		const dynamic = findDynamic(result[key])
+		return (
+			dynamic &&
+			this.reject(
+				node,
+				ctx,
+				"overwrites a value the build does not know",
+				dynamic.asOperand()
+			)
+		)
 	}
 
 	private evaluateUnary(

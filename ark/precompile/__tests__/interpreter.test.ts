@@ -193,6 +193,14 @@ contextualize(() => {
 		attest(interpret("Math.sin(0) + 2 ** 10")).equals({ value: 1024 })
 	})
 
+	it("rejects overwriting what the build does not know", () => {
+		attest(interpret("({ a: ({}).f(), a: 1 })")).equals(undefined)
+		attest(interpret("({ a: [({}).f()], a: 1 })")).equals(undefined)
+		attest(interpret("({ ...[({}).f()], ...[1] })")).equals(undefined)
+		attest(interpret("({ a: [({}).f()], ...{ a: 1 } })")).equals(undefined)
+		attest(interpret("({ ...[0], ...[1] })")).equals({ value: { 0: 1 } })
+	})
+
 	it("rejects what reads the environment", () => {
 		attest(interpret("Date.now()")).equals(undefined)
 		attest(interpret("new Date()")).equals(undefined)
