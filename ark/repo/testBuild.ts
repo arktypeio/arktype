@@ -17,7 +17,7 @@ registerHooks({
 
 // imported first as documented, making any second registry install as $ark2
 await import("arktype/config")
-const { scope, type } = await import("arktype")
+const { keywords, scope, type } = await import("arktype")
 
 console.log(
 	"📦 Checking that each built package's entries share one set of modules...\n"
@@ -153,6 +153,33 @@ if (
 	scope({}).constructor.name !== "InternalScope"
 )
 	throw new Error("⚠️  Bundling renamed a class.")
+
+const hasArkKind = arkSchema.hasArkKind as (
+	value: unknown,
+	kind: string
+) => boolean
+
+// a unit the build precompiled is bound, not compiled to a function named anonymous
+const compiledKeywordsOf = (module: object, path: string): string[] =>
+	Object.entries(module).flatMap(([k, resolution]) =>
+		hasArkKind(resolution, "module") ?
+			compiledKeywordsOf(resolution, `${path}${k}.`)
+		: (
+			hasArkKind(resolution, "root") &&
+			!resolution.includesAlias &&
+			resolution.precompilation.startsWith("function anonymous")
+		) ?
+			[`${path}${k}`]
+		:	[]
+	)
+
+const compiledKeywords = compiledKeywordsOf(keywords, "")
+
+if (compiledKeywords.length) {
+	throw new Error(
+		`⚠️  Resolving ${compiledKeywords.join(", ")} compiled a unit arktype/internal/precompiled.js lacks.`
+	)
+}
 
 const algebraMarkers = [
 	"The intersection of two ordered unions is indeterminate",

@@ -57,6 +57,9 @@
 			"ark-ts": "./keywords/ts.ts",
 			"default": "./out/keywords/ts.js"
 		},
+		"./internal/precompiled.js": {
+			"default": "./out/precompiled.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"types": "./out/*.d.ts",
