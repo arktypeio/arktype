@@ -389,21 +389,34 @@ const escapeOfMember = (
 		:	escapeOfPassing(parent, end, s)
 }
 
-// in an object of data, a method by one of these names is a pure built-in or throws
+// a method on plain data is an array's pure built-in or a primitive's, but `valueOf` and the rest of Object.prototype's can return the object
 const escapeOfDataMethod = (
 	end: MemberExpression,
 	call: CallExpression,
 	s: EscapeState
 ): Escape | undefined => {
-	const method = end.computed ? undefined : end.property.name
-	const builtin =
-		method && method in pureMethods ?
-			pureBuiltins.get(pureMethods[method])
-		:	undefined
-	return builtin ?
-			escapeOfPureCall(call, builtin, call.arguments.length, s)
-		:	escapeOfPassing(call, end, s)
+	const name = end.computed ? undefined : end.property.name
+	if (name && !(name in Object.prototype)) {
+		const method = methodsByReceiverKind.array[name]
+		if (method) {
+			return escapeOfPureCall(
+				call,
+				pureBuiltins.get(method)!,
+				call.arguments.length,
+				s
+			)
+		}
+		// a primitive's method sees only the primitive, and an object of data has none
+		if (!(name in Array.prototype) && isPrimitiveMethod(name)) return
+	}
+	return escapeOfPassing(call, end, s)
 }
+
+const isPrimitiveMethod = (name: string) =>
+	name in String.prototype ||
+	name in Number.prototype ||
+	name in Boolean.prototype ||
+	name in BigInt.prototype
 
 // a parse returns a Type, a validation the data's result and `define` its argument, but another method may return the receiver's parts, like `$.export()` its submodules
 const escapeOfArkResult = (
@@ -607,8 +620,3 @@ const builtinOf = (
 			)
 		)
 }
-
-const pureMethods: Record<string, Function> = Object.assign(
-	Object.create(null),
-	...Object.values(methodsByReceiverKind)
-)

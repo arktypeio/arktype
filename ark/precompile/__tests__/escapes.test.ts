@@ -56,6 +56,26 @@ export const T = type(o.a)`)[0][1]
 		).snap(["local o.a", "local o.a", "local o.a"])
 	})
 
+	it("methods Object.prototype defines", () => {
+		attest(
+			[
+				`const p: any = o.valueOf()
+p.a = "number"`,
+				`;(o.n.valueOf() as any).a = "number"`,
+				`;(o.l.valueOf() as any)[0] = "number"`
+			].map(use =>
+				inputsOf(`import { type } from "arktype"
+const o = { a: "string", n: { a: "string" }, l: ["string"] }
+${use}
+export const T = type(o.a + o.n.a + o.l[0])`).pop()
+			)
+		).snap([
+			["5:18 accepted", "local o.a", "local o.n.a", "local o.l.0"],
+			["4:18 accepted", "local o.a", "local o.n.a", "local o.l.0"],
+			["4:18 accepted", "local o.a", "local o.n.a", "local o.l.0"]
+		])
+	})
+
 	it("data has no methods of its own", () => {
 		attest(
 			inputsOf(`import { type } from "arktype"
