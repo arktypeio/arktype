@@ -153,9 +153,8 @@ contextualize(() => {
 			w: () => withDefault.type({ x: ["a", "=", () => ({ n: 5 })] } as never),
 			a: { "n?": "a", "w?": "w" }
 		} as never)
-		attest(() => withDefault.export()).throws(
-			"Default for x.n must be an object (was a number)"
-		)
+		const { w: defaulted }: Record<string, Type> = withDefault.export() as never
+		attest(String(defaulted({}))).snap("x.n must be an object (was a number)")
 
 		const throwing: Scope = scope({
 			w: () => throwing.type({ a: "a", b: "bad" } as never),

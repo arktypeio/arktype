@@ -32,7 +32,7 @@ cases({
 	},
 	defaultValueParseErrorsAreEnglish: () => {
 		throws(
-			() => type({ k: ["number", "=", () => "x"] } as never),
+			() => type({ k: ["number", "=", "x"] } as never),
 			/^ParseError: Default for k must be a number \(was a string\)$/
 		)
 	}

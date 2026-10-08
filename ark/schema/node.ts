@@ -1499,10 +1499,11 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 				.const("ctx", "new Traversal(data, config)")
 				.line("apply(data, ctx)")
 				.return("ctx.finalize(onFail)")
+	// a valid result is often data itself, which is cheaper to compare than instanceof
 	const returnResult = () =>
 		node.includesMorph ?
 			js
-				.if("result instanceof TransformErrors", () =>
+				.if("result !== data && result instanceof TransformErrors", () =>
 					js
 						.const("ctx", "new Traversal(data, config)")
 						.line("ctx.addTransformErrors(result)")

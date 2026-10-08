@@ -392,16 +392,20 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		if (!checksErrors && !opts?.onChange) return this
 		return this.if(this.compareTransformed(steps, name, "!==", input), () => {
 			if (!checksErrors) return onChange()
-			const key = keyExpression === undefined ? "" : `, ${keyExpression}`
 			this.if(isTransformErrors(), () =>
-				this.line(
-					this.requiresContext ?
-						`${this.ctx}.addTransformErrors(${name}${key})`
-					:	`failed = ${name}.addTo(failed${key})`
-				)
+				this.addTransformErrors(name, keyExpression)
 			)
 			return opts?.onChange ? this.else(onChange) : this
 		})
+	}
+
+	addTransformErrors(errors: string, keyExpression?: string): this {
+		const key = keyExpression === undefined ? "" : `, ${keyExpression}`
+		return this.line(
+			this.requiresContext ?
+				`${this.ctx}.addTransformErrors(${errors}${key})`
+			:	`failed = ${errors}.addTo(failed${key})`
+		)
 	}
 
 	compareTransformed(

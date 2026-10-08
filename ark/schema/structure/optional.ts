@@ -19,6 +19,7 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import { missingSetEngineMessage } from "../shared/sets.ts"
+import { TransformErrors } from "../shared/transform.ts"
 import { traverseKey } from "../shared/traversal.ts"
 import { isResolutionFinal, queueUnchecked } from "../shared/utils.ts"
 import { BaseProp, type Prop } from "./prop.ts"
@@ -71,6 +72,8 @@ export class OptionalNode extends BaseProp<"optional"> {
 			throwParseError(missingSetEngineMessage)
 		if ("default" in this.inner)
 			assertDefaultValueAssignability(this.value, this.inner.default, this.key)
+		// a function default can fail as it's applied, like a morph
+		this.includesMorph ||= typeof this.inner.default === "function"
 		this.includesContextualMorph ||= this.defaultValueMorph?.length === 2
 	}
 
@@ -128,9 +131,13 @@ export const computeDefaultValueMorph = (
 	defaultInput: unknown
 ): Morph<any> => {
 	if (typeof defaultInput === "function") {
-		if (!value.includesTransform && !value.includesAlias) {
+		if (!value.allowsRequiresContext && !value.includesContextualMorph) {
 			return data => {
-				data[key] = defaultInput()
+				const input = defaultInput()
+				const output = value.traverse(input)
+				if (output instanceof ArkErrors)
+					return new TransformErrors(output, input).addTo(undefined, key)
+				data[key] = output
 				return data
 			}
 		}
@@ -138,10 +145,6 @@ export const computeDefaultValueMorph = (
 		return (data, ctx) => {
 			// transforming a default through a cyclic value can reach this morph again
 			if (transformingDefault) return data
-			if (!value.transforms) {
-				data[key] = defaultInput()
-				return data
-			}
 			transformingDefault = true
 			try {
 				data[key] = traverseKey(key, () => value(defaultInput(), ctx), ctx)
@@ -174,20 +177,30 @@ export const assertDefaultValueAssignability = (
 	value: unknown,
 	key: PropertyKey | null
 ): unknown => {
-	const wrapped = isThunk(value)
+	// a function default is checked each time it's applied
+	if (isThunk(value)) return value
 
-	if (hasDomain(value, "object") && !wrapped)
+	if (hasDomain(value, "object"))
 		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
 
+	return assertDefaultAssignability(node, value, key)
+}
+
+// a function default's result can be an object, so it skips the non-primitive check
+export const assertDefaultAssignability = (
+	node: BaseRoot,
+	value: unknown,
+	key: PropertyKey | null
+): unknown => {
 	if (!isResolutionFinal() && node.includesAlias) {
-		queueUnchecked(() => assertDefaultValueAssignability(node, value, key))
+		queueUnchecked(() => assertDefaultAssignability(node, value, key))
 		return value
 	}
 
 	// if the node has a default value, finalize it and apply JIT optimizations
 	// if applicable to ensure behavior + error logging is externally consistent
 	// (using .in here insead of .rawIn triggers finalization)
-	const out = (node.in as BaseRoot).traverse(wrapped ? value() : value)
+	const out = (node.in as BaseRoot).traverse(value)
 
 	if (out instanceof ArkErrors) {
 		// a ParseError is for the developer, so it renders in English

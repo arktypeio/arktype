@@ -163,6 +163,10 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			for (const [node, value] of this.inner.defaultables)
 				assertDefaultValueAssignability(node, value, null)
 		}
+		// a function default can fail as it's applied, like a morph
+		this.includesMorph ||= !!this.defaultables?.some(
+			([, defaultValue]) => typeof defaultValue === "function"
+		)
 		this.includesContextualMorph ||= this.defaultValueMorphs.some(
 			morph => morph.length === 2
 		)

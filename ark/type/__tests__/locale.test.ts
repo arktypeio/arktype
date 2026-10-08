@@ -1049,7 +1049,7 @@ m must be a bigint (was 5)`)
 		})
 
 		it("renders default-value ParseErrors in English", () => {
-			const def = { k: ["number", "=", () => "x"] } as never
+			const def = { k: ["number", "=", "x"] } as never
 			withConfig({ locale: xx }, () =>
 				attest(() => scope({}).type(def)).throws.snap(
 					"ParseError: Default for k must be a number (was a string)"

@@ -1,5 +1,6 @@
 import {
 	$ark,
+	assertDefaultAssignability,
 	makeRootAndArrayPropertiesMutable,
 	postfixAfterOptionalOrDefaultableMessage,
 	type BaseParseContext,
@@ -42,6 +43,13 @@ export const parseTupleLiteral = (
 
 		const [valueNode, operator, possibleDefaultValue] =
 			!isArray(parsedProperty) ? [parsedProperty] : parsedProperty
+
+		// string syntax creates its own default functions, which run no user code
+		if (
+			typeof def[i] === "string" &&
+			typeof possibleDefaultValue === "function"
+		)
+			assertDefaultAssignability(valueNode, possibleDefaultValue(), null)
 
 		i++
 		if (spread) {

@@ -36,7 +36,11 @@ import {
 	type StructuralKind
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import { copyOf, mergeTransformed } from "../shared/transform.ts"
+import {
+	copyOf,
+	mergeTransformed,
+	TransformErrors
+} from "../shared/transform.ts"
 import {
 	applyValue,
 	traverseKey,
@@ -613,12 +617,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	applyStructuralMorph(
 		data: object,
 		out: object,
-		ctx: InternalTraversal
-	): object {
+		ctx: InternalTraversal | undefined
+	): object | TransformErrors {
+		let failed: TransformErrors | undefined
 		for (let i = 0; i < this.defaultable.length; i++) {
 			if (!(this.defaultable[i].key in data)) {
 				if (out === data) out = this.copy(data)
-				this.defaultable[i].defaultValueMorph(out as never, ctx as never)
+				const defaulted = this.defaultable[i].defaultValueMorph(
+					out as never,
+					ctx as never
+				)
+				if (defaulted instanceof TransformErrors)
+					failed = defaulted.addTo(failed)
 			}
 		}
 		const sequence = this.sequence
@@ -632,8 +642,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				let i = (data as array).length - sequence.prefixLength;
 				i < sequence.defaultables.length;
 				i++
-			)
-				sequence.defaultValueMorphs[i](out as never, ctx as never)
+			) {
+				const defaulted = sequence.defaultValueMorphs[i](
+					out as never,
+					ctx as never
+				)
+				if (defaulted instanceof TransformErrors)
+					failed = defaulted.addTo(failed)
+			}
+		}
+		if (failed) {
+			if (!ctx) return failed
+			ctx.addTransformErrors(failed)
 		}
 		// an object's copy drops a declared key data holds as a non-enumerable own prop
 		if (out !== data && !sequence) {
@@ -807,6 +827,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 		for (const index of transformedIndex) transformedChildren.push(index.value)
 		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
+		transformedChildren.push(...this.defaultable)
 		js.initializeTransform(transformedChildren)
 		js.let("out", "data")
 		for (let i = 0; i < transformedProps.length; i++) {
@@ -877,10 +898,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 		for (const node of this.defaultable) {
 			js.if(`!(${node.serializedKey} in data)`, () =>
-				this.compileCopy(js).line(compileDefault(js, node, "out"))
+				compileDefault(this.compileCopy(js), node, "out")
 			)
 		}
 		this.compileSequenceDefaults(js)
+		js.returnIfTransformFailed()
 		this.compileCopiedDeclaredKeys(js).return("out")
 	}
 
@@ -947,7 +969,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			() =>
 				this.compileCopy(js).for(
 					`i < ${sequence.defaultables!.length}`,
-					() => js.line(`${js.ref(sequence.defaultValueMorphs)}[i](${args})`),
+					() => {
+						const applyDefault = `${js.ref(sequence.defaultValueMorphs)}[i](${args})`
+						if (!sequence.includesMorph) return js.line(applyDefault)
+						return js
+							.const("defaulted", applyDefault)
+							.if("defaulted !== out", () => js.addTransformErrors("defaulted"))
+					},
 					`data.length - ${sequence.prefixLength}`
 				)
 		)
@@ -1041,8 +1069,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				js.if(`${prop.serializedKey} in data`, () =>
 					js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
 				)
-				if (prop.hasDefault())
-					js.else(() => js.line(compileDefault(js, prop, "result")))
+				if (prop.hasDefault()) js.else(() => compileDefault(js, prop, "result"))
 			}
 		}
 		for (const prop of this.inheritableProps) {
@@ -1064,7 +1091,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						)
 			)
 		}
-		js.return("result")
+		js.returnIfTransformFailed().return("result")
 	}
 
 	// without a set engine, any signature may match a symbol key
@@ -1184,14 +1211,20 @@ const compileDefault = (
 	js: NodeCompiler,
 	node: Optional.Node.withDefault,
 	out: string
-): string =>
-	node.value.transforms ?
-		`${js.ref(node.defaultValueMorph)}(${out}${node.defaultValueMorph.length === 2 ? ", ctx" : ""})`
-	: typeof node.default === "function" ?
-		`${out}${js.prop(node.key)} = ${js.ref(node.default)}()`
+): NodeCompiler => {
+	if (typeof node.default !== "function" && !node.value.transforms) {
 		// -0 would serialize as 0
-	: Object.is(node.default, -0) ? `${out}${js.prop(node.key)} = -0`
-	: `${out}${js.prop(node.key)} = ${compileSerializedValue(node.default)}`
+		const serializedDefault =
+			Object.is(node.default, -0) ? "-0" : compileSerializedValue(node.default)
+		return js.line(`${out}${js.prop(node.key)} = ${serializedDefault}`)
+	}
+	const morph = js.ref(node.defaultValueMorph)
+	if (node.defaultValueMorph.length === 2)
+		return js.line(`${morph}(${out}, ctx)`)
+	return js
+		.const("defaulted", `${morph}(${out})`)
+		.if(`defaulted !== ${out}`, () => js.addTransformErrors("defaulted"))
+}
 
 const compileDeclaredKeySwitch = (
 	js: NodeCompiler,

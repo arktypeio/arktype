@@ -756,6 +756,18 @@ const $ = scope({}, { onFail: () => 0 })
 $.type({ a: ["number", "=", "5"] })
 ```
 
+### Call a default function only when the default is applied
+
+A function default was called once while its type was defined, to check its result, and later results were not checked unless the value transformed. It is now called each time the default is applied, and its result is validated like input at that key:
+
+```ts
+const T = type({ count: ["number", "=", () => readCount()] })
+
+// previously called readCount once when T was defined, now only when T({}) applies the default
+// previously { count: "3" } if readCount() returned "3", now ArkErrors: count must be a number (was a string)
+T({})
+```
+
 ## 2.2.8
 
 ### Add `string.base58`
