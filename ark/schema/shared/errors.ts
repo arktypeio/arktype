@@ -97,58 +97,61 @@ export class ArkError<
 		isNodeContext?: boolean
 	) {
 		super()
-		let prefixPath: array<PropertyKey> | undefined
-		let relativePath: array<PropertyKey> | undefined
 		this.ctx = ctx
 		if (isNodeContext && !ctx.config.jitless) {
-			relativePath = input.relativePath
 			copyNodeContext(this as never, input)
-		} else {
-			if (input.code === "union") {
-				prefixPath = input.prefixPath
-				relativePath = input.relativePath
-				// flatten union errors to avoid repeating context like "foo must be foo must be"...
-				let flat: ArkError[] = []
-				for (const innerError of input.errors) {
-					const innerFlat =
-						innerError.hasCode("union") ? innerError.errors : [innerError]
-					flat = flat.length ? appendUnique(flat, innerFlat) : [...innerFlat]
-				}
-				input = {
-					...input,
-					errors:
-						!prefixPath && !relativePath ?
-							flat
-						:	flat.map(e =>
-								e.transform(
-									e =>
-										({
-											...e,
-											path: conflatenateAll(prefixPath, e.path, relativePath)
-										}) as never
-								)
+			this._path =
+				input.relativePath ?
+					ctx.path.concat(input.relativePath)
+				:	ctx.path.slice()
+			// traversal assigns the data that failed the node's check
+			return
+		}
+		let prefixPath: array<PropertyKey> | undefined
+		let relativePath: array<PropertyKey> | undefined
+		if (input.code === "union") {
+			prefixPath = input.prefixPath
+			relativePath = input.relativePath
+			// flatten union errors to avoid repeating context like "foo must be foo must be"...
+			let flat: ArkError[] = []
+			for (const innerError of input.errors) {
+				const innerFlat =
+					innerError.hasCode("union") ? innerError.errors : [innerError]
+				flat = flat.length ? appendUnique(flat, innerFlat) : [...innerFlat]
+			}
+			input = {
+				...input,
+				errors:
+					!prefixPath && !relativePath ?
+						flat
+					:	flat.map(e =>
+							e.transform(
+								e =>
+									({
+										...e,
+										path: conflatenateAll(prefixPath, e.path, relativePath)
+									}) as never
 							)
-				}
+						)
 			}
-			this.input = input as never
-			// assigning defines the same property unless this has or inherits k, e.g. propString
-			for (const k in input) {
-				if (k === "relativePath") relativePath = input.relativePath
-				else if (k === "prefixPath") prefixPath = input.prefixPath
-				else if (!(k in this)) (this as any)[k] = input[k as never]
-				// path and data are assigned below, and text supplied for a slot
-				// stays in input, where its getter reads it
-				else if (k !== "path" && k !== "data" && !isSlot(k))
-					defineValue(this, k, input[k as never])
-			}
-			for (const k of Object.getOwnPropertySymbols(input))
+		}
+		this.input = input as never
+		// assigning defines the same property unless this has or inherits k, e.g. propString
+		for (const k in input) {
+			if (k === "relativePath") relativePath = input.relativePath
+			else if (k === "prefixPath") prefixPath = input.prefixPath
+			else if (!(k in this)) (this as any)[k] = input[k as never]
+			// path and data are assigned below, and text supplied for a slot
+			// stays in input, where its getter reads it
+			else if (k !== "path" && k !== "data" && !isSlot(k))
 				defineValue(this, k, input[k as never])
 		}
+		for (const k of Object.getOwnPropertySymbols(input))
+			defineValue(this, k, input[k as never])
 		const path = [...(input.path ?? ctx.path)]
 		if (relativePath) path.push(...relativePath)
 		if (prefixPath) path.unshift(...prefixPath)
 		this._path = path
-		// traversal passes the data that failed a node's check
 		if (!isNodeContext)
 			this.data = ("data" in input ? input.data : ctx.data) as never
 	}
