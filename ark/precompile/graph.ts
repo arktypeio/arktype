@@ -421,16 +421,8 @@ export class ModuleGraph {
 					this.boundHelperOf(target.binding, target.module)
 				:	undefined
 		}
-		if (binding.writes.length) return
-		const fn =
-			binding.kind === "function" ? binding.declaration
-			: (
-				binding.kind === "const" &&
-				binding.declaration.type === "VariableDeclarator"
-			) ?
-				binding.declaration.init && unwrapExpression(binding.declaration.init)
-			:	undefined
-		return fn && isFunctionNode(fn) && staticBodyOf(fn) && !readsArguments(fn) ?
+		const fn = functionOfBinding(binding)
+		return fn && staticBodyOf(fn) && !readsImplicitParams(fn) ?
 				[fn, module]
 			:	undefined
 	}
@@ -500,12 +492,31 @@ export const staticBodyOf = (fn: FunctionNode): Node | undefined => {
 		:	undefined
 }
 
-// `arguments` aliases each argument, so a parameter does not show where its argument goes
-const readsArguments = (fn: FunctionNode): boolean => {
+export const functionOfBinding = (
+	binding: Binding
+): FunctionNode | undefined => {
+	if (binding.writes.length) return
+	const fn =
+		binding.kind === "function" ? binding.declaration
+		: (
+			binding.kind === "const" &&
+			binding.declaration.type === "VariableDeclarator"
+		) ?
+			binding.declaration.init && unwrapExpression(binding.declaration.init)
+		:	undefined
+	return fn && isFunctionNode(fn) ? fn : undefined
+}
+
+// `arguments` aliases each argument and `this` the receiver, so a parameter does not show where every argument goes
+export const readsImplicitParams = (fn: FunctionNode): boolean => {
 	if (fn.type === "ArrowFunctionExpression") return false
 	let result = false
 	walk(fn.body!, node => {
-		if (node.type === "Identifier" && node.name === "arguments") result = true
+		if (
+			node.type === "ThisExpression" ||
+			(node.type === "Identifier" && node.name === "arguments")
+		)
+			result = true
 		return (
 			!result &&
 			!(

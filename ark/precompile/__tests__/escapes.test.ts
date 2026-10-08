@@ -66,6 +66,34 @@ export const T = type(o.a)`)
 		).snap([["5:18 accepted", "local o.a"]])
 	})
 
+	it("callbacks passed by name", () => {
+		const uses = [
+			`const f = (x: any) => (x.a = "number")
+;[o].map(f)`,
+			`function f(x: any) { x.a = "number" }
+Array.from([o], f)`,
+			`const g = (acc: any, x: any) => ((x.a = "number"), acc)
+;[o].reduce(g, 0)`,
+			`;[o].map(function () { arguments[0].a = "number" })`,
+			`Array.from([0], function (this: any) { this.a = "number" }, o)`
+		]
+		attest(
+			uses.map(
+				use =>
+					inputsOf(`import { type } from "arktype"
+const o = { a: "string" }
+${use}
+export const T = type(o.a)`)[0]
+			)
+		).snap([
+			["5:18 accepted", "local o.a"],
+			["5:18 accepted", "local o.a"],
+			["5:18 accepted", "local o.a"],
+			["4:18 accepted", "local o.a"],
+			["4:18 accepted", "local o.a"]
+		])
+	})
+
 	it("dates and regexes", () => {
 		attest(
 			inputsOf(`import { type } from "arktype"

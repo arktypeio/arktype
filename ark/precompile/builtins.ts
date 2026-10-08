@@ -11,6 +11,8 @@ export interface PureBuiltin {
 	readsOnly?: true
 	// writes its first argument
 	writes?: true
+	// calls the functions among its arguments
+	calls?: true
 }
 
 export const globalsByName: Record<string, unknown> = Object.assign(
@@ -149,7 +151,7 @@ definePure(Object, "Object", ["assign"], {
 	writes: true
 })
 definePure(Array, "Array", ["isArray", "of"], { readsOnly: true })
-definePure(Array, "Array", ["from"])
+definePure(Array, "Array", ["from"], { calls: true })
 definePure(
 	Number,
 	"Number",
@@ -161,7 +163,8 @@ definePure(
 definePure(String, "String", ["fromCharCode", "fromCodePoint", "raw"])
 definePure(JSON, "JSON", ["parse"])
 definePure(JSON, "JSON", ["stringify"], {
-	check: args => plainDataOnly(args.slice(0, 1))
+	check: args => plainDataOnly(args.slice(0, 1)),
+	calls: true
 })
 definePure(Date, "Date", ["UTC"])
 definePure(Symbol, "Symbol", ["for"])
@@ -285,26 +288,34 @@ defineMethods("bigint", BigInt, ["toString", "valueOf"])
 defineMethods("array", Array, [
 	"at",
 	"concat",
-	"every",
-	"filter",
-	"find",
-	"findIndex",
-	"findLast",
-	"findLastIndex",
 	"flat",
-	"flatMap",
 	"join",
-	"map",
-	"reduce",
-	"reduceRight",
 	"slice",
-	"some",
 	"toReversed",
 	"toSpliced",
 	"with"
 ])
+defineMethods(
+	"array",
+	Array,
+	[
+		"every",
+		"filter",
+		"find",
+		"findIndex",
+		"findLast",
+		"findLastIndex",
+		"flatMap",
+		"map",
+		"reduce",
+		"reduceRight",
+		"some"
+	],
+	{ calls: true }
+)
 // engines sort differently by a comparator that is not consistent
 defineMethods("array", Array, ["toSorted"], {
+	calls: true,
 	check: args =>
 		args[0] === undefined ?
 			undefined

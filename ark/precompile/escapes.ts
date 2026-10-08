@@ -8,12 +8,14 @@ import {
 import {
 	bindingOfFunction,
 	enclosingFunctionOf,
+	functionOfBinding,
 	isFunctionNode,
+	readsImplicitParams,
 	type FunctionNode,
 	type ModuleGraph
 } from "./graph.ts"
 import type { SourceModule } from "./module.ts"
-import { isTransparent, type Binding } from "./scope.ts"
+import { isTransparent, unwrapExpression, type Binding } from "./scope.ts"
 
 export interface Escape {
 	node: Node
@@ -201,7 +203,10 @@ const escapeOfMember = (
 			message: `is passed to \`${s.module.snippetOf(end)}\``
 		}
 	}
-	return escapeOfCallbacks(parent, s) ?? escapeOfValue(parent, s)
+	return (
+		escapeOfCallbacks(parent, pureBuiltins.get(pureMethods[method])!, s) ??
+		escapeOfValue(parent, s)
+	)
 }
 
 const escapeOfArgument = (
@@ -224,7 +229,9 @@ const escapeOfArgument = (
 				message: `is passed to its own methods by \`${s.module.snippetOf(call)}\``
 			}
 		}
-		return escapeOfCallbacks(call, s) ?? escapeOfValue(call, s)
+		return (
+			escapeOfCallbacks(call, builtin, s, argument) ?? escapeOfValue(call, s)
+		)
 	}
 	const helper = s.graph.helperOf(call.callee, s.module)
 	if (helper && helper[1] === s.module) {
@@ -250,12 +257,22 @@ const escapeOfArgument = (
 // functions passed alongside an object to a pure built-in receive its parts, and what they return is the call's result
 const escapeOfCallbacks = (
 	call: CallExpression,
-	s: EscapeState
+	builtin: PureBuiltin,
+	s: EscapeState,
+	object?: Node
 ): Escape | undefined => {
+	if (!builtin.calls) return
 	s.seen.add(call)
 	for (const arg of call.arguments) {
-		if (!isFunctionNode(arg)) continue
-		for (const param of arg.params) {
+		if (arg === object || isUncallable(arg, s.module)) continue
+		const callback = callbackOf(arg, s.module)
+		if (!callback || readsImplicitParams(callback)) {
+			return {
+				node: call,
+				message: `is passed to \`${s.module.snippetOf(arg)}\``
+			}
+		}
+		for (const param of callback.params) {
 			const escape = escapeOfPattern(
 				param.type === "RestElement" ? param.argument : param,
 				s
@@ -264,6 +281,37 @@ const escapeOfCallbacks = (
 		}
 	}
 }
+
+const callbackOf = (
+	node: Node,
+	module: SourceModule
+): FunctionNode | undefined => {
+	node = unwrapExpression(node)
+	if (isFunctionNode(node)) return node
+	const binding =
+		node.type === "Identifier" ?
+			module.scopes.referencesById.get(node)?.binding
+		:	undefined
+	return binding && functionOfBinding(binding)
+}
+
+// a primitive or a literal object, which a built-in does not call
+const isUncallable = (node: Node, module: SourceModule): boolean => {
+	node = unwrapExpression(node)
+	return node.type === "Identifier" ?
+			node.name === "undefined" &&
+				!module.scopes.referencesById.get(node)?.binding
+		:	uncallableTypes.has(node.type)
+}
+
+const uncallableTypes = new Set<string>([
+	"Literal",
+	"TemplateLiteral",
+	"UnaryExpression",
+	"BinaryExpression",
+	"ArrayExpression",
+	"ObjectExpression"
+])
 
 const escapeOfReturn = (
 	fn: FunctionNode | undefined,
