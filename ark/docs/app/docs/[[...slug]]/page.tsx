@@ -10,6 +10,7 @@ import {
 } from "fumadocs-ui/page"
 import { notFound, redirect } from "next/navigation"
 import { AnchorAliases } from "../../../components/AnchorAliases.tsx"
+import { PageActions } from "../../../components/PageActions.tsx"
 import { SyntaxTab, SyntaxTabs } from "../../../components/SyntaxTabs.tsx"
 import { source } from "../../../lib/source.tsx"
 
@@ -42,6 +43,7 @@ export default async (props: { params: Promise<{ slug?: string[] }> }) => {
 				{page.data.title}
 				<DocsDescription>{page.data.description}</DocsDescription>
 			</DocsTitle>
+			<PageActions markdownUrl={`${page.url}.md`} />
 
 			<DocsBody className="docs-body">
 				<MDX

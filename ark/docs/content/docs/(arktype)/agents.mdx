@@ -1,0 +1,28 @@
+---
+title: Agents
+description: Help Claude Code, Codex, Cursor and other coding agents write ArkType
+---
+
+## Skill
+
+The ArkType skill tells agents when to reach for ArkType, how its syntax maps to TypeScript, and which mistakes to avoid. Add it to your project with:
+
+```bash
+npx skills add arktypeio/arktype
+```
+
+Releases after 2.2.8 also include the skill in the `arktype` package at `skills/arktype/SKILL.md`, so tools like [skills-npm](https://github.com/antfu/skills-npm) can link the copy that matches your installed version.
+
+## Docs as Markdown
+
+Every page of these docs is available as Markdown by adding `.md` to its URL, e.g. [/docs/intro/setup.md](https://arktype.io/docs/intro/setup.md). The buttons under each page's title copy it or open it in Claude, ChatGPT or Cursor.
+
+[/llms.txt](https://arktype.io/llms.txt) has every ArkType page in one file, in the order of the sidebar. Attest's docs are at [/docs/attest/llms.txt](https://arktype.io/docs/attest/llms.txt).
+
+## AGENTS.md
+
+If your project has an `AGENTS.md` or `CLAUDE.md`, a line like this keeps agents on ArkType when they add validation:
+
+```
+Validate untrusted input with ArkType. Docs: https://arktype.io/llms.txt
+```
