@@ -1,0 +1,21 @@
+---
+title: FAQ
+---
+
+### Why aren't some patterns like `[a-Z]` inferred more precisely?
+
+Constructing string literal types for these sorts of expressions is combinatorial and will explode very quickly if we infer character ranges like this as literal characters.
+
+We've tried to strike a balance between performance and precision while guaranteeing that the inferred types are at worst imprecise and never incorrect.
+
+### Why doesn't it work with my massive RegExp?
+
+If your expression is especially long or complex, TypeScript won't be able to infer it.
+
+If your types start to slow down or you see the dreaded `Type instantiation is excessively deep...`, you can manually type your expression using [`regex.as`](/docs/regex/types#regexas).
+
+### Is it robust?
+
+`arkregex` types are [extensively tested](https://github.com/arktypeio/arktype/tree/main/ark/regex/__tests__/regex.test.ts) and [benchmarked](https://github.com/arktypeio/arktype/tree/main/ark/regex/__tests__/regex.bench.ts) using [Attest](/docs/attest).
+
+If anything isn't behaving how you'd expect, please don't hesitate to [create an issue](https://github.com/arktypeio/arktype/issues/new).

@@ -41,7 +41,7 @@ const Literals = type({
 })
 ```
 
-Regex literals now carry full type inference via [arkregex](/docs/blog/arkregex):
+Regex literals now carry full type inference via [ArkRegex](/docs/regex):
 
 ```ts
 const Hex = type("/^[0-9a-fA-F]+$/")
@@ -68,7 +68,7 @@ data.birthday.groups.day // "21"
 data.birthday.groups.year // "1993"
 ```
 
-For the standalone package (no ArkType required), see the full [arkregex announcement](/docs/blog/arkregex).
+For the standalone package (no ArkType required), see the [ArkRegex docs](/docs/regex).
 
 ### lengths [#string-lengths]
 

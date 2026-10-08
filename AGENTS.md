@@ -4,7 +4,7 @@ ArkType is TypeScript's 1:1 validator, optimized from editor to runtime. It pars
 
 ## Using ArkType
 
-- [arktype.io/llms.txt](https://arktype.io/llms.txt) is the full documentation, concatenated from `ark/docs/content/docs/(arktype)`. Attest's is at [arktype.io/docs/attest/llms.txt](https://arktype.io/docs/attest/llms.txt).
+- [arktype.io/llms.txt](https://arktype.io/llms.txt) is the full documentation, concatenated from `ark/docs/content/docs/(arktype)`. Attest's is at [arktype.io/docs/attest/llms.txt](https://arktype.io/docs/attest/llms.txt) and ArkRegex's at [arktype.io/docs/regex/llms.txt](https://arktype.io/docs/regex/llms.txt).
 - The [cheat sheet](https://arktype.io/docs/cheat-sheet) (`ark/docs/content/docs/(arktype)/cheat-sheet.mdx`) is an abbreviated version of it covering the most common syntax and gotchas.
 
 ## Commands

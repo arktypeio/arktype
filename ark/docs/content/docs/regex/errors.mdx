@@ -1,0 +1,31 @@
+---
+title: Errors
+---
+
+Anything `new RegExp()` would throw on is a type error, as are some patterns that are valid but almost certainly mistakes.
+
+```ts
+// @errors: 2345
+regex("^(a)\\2$")
+
+regex("^(?<a>x)\\k<b>$")
+
+regex("a(b")
+
+regex("+a")
+```
+
+## Escapes
+
+Escaping a character with no special meaning is an error, as is double-escaping a character JS strings can already represent:
+
+```ts
+// @errors: 2345
+regex("\\q")
+
+regex("\\n")
+```
+
+## Escape hatch
+
+If you need to bypass validation, use [`regex.as`](/docs/regex/types#regexas).

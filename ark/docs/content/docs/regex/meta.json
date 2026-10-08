@@ -1,0 +1,6 @@
+{
+	"title": "ArkRegex",
+	"description": "A drop-in replacement for new RegExp() with types",
+	"root": true,
+	"pages": ["index", "inference", "errors", "types", "arktype", "faq"]
+}

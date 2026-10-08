@@ -1,0 +1,334 @@
+---
+title: ArkType
+---
+
+ArkType parses its regex literals with ArkRegex, so they're inferred without any extra setup:
+
+```ts
+const Semver = type("/^(\\d+)\\.(\\d+)\\.(\\d+)$/")
+//    ^?
+```
+
+A `Regex` instance can also be used directly as a definition:
+
+```ts
+const Package = type({
+	name: "string",
+	version: regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
+})
+
+type Package = typeof Package.infer
+//   ^?
+```
+
+## e(x)ec mode
+
+Prefix a regex literal with `x` to parse its captures as part of validation:
+
+```ts
+const User = type({
+	birthday: "x/^(?<month>\\d{2})-(?<day>\\d{2})-(?<year>\\d{4})$/"
+})
+
+const data = User.assert({ birthday: "05-21-1993" })
+
+data.birthday.groups.month // "05"
+//                   ^?
+```
+
+See [string patterns](/docs/primitives#string-patterns) for more on regex literals in ArkType.
+
+
+---
+title: Errors
+---
+
+Anything `new RegExp()` would throw on is a type error, as are some patterns that are valid but almost certainly mistakes.
+
+```ts
+// @errors: 2345
+regex("^(a)\\2$")
+
+regex("^(?<a>x)\\k<b>$")
+
+regex("a(b")
+
+regex("+a")
+```
+
+## Escapes
+
+Escaping a character with no special meaning is an error, as is double-escaping a character JS strings can already represent:
+
+```ts
+// @errors: 2345
+regex("\\q")
+
+regex("\\n")
+```
+
+## Escape hatch
+
+If you need to bypass validation, use [`regex.as`](/docs/regex/types#regexas).
+
+
+---
+title: FAQ
+---
+
+### Why aren't some patterns like `[a-Z]` inferred more precisely?
+
+Constructing string literal types for these sorts of expressions is combinatorial and will explode very quickly if we infer character ranges like this as literal characters.
+
+We've tried to strike a balance between performance and precision while guaranteeing that the inferred types are at worst imprecise and never incorrect.
+
+### Why doesn't it work with my massive RegExp?
+
+If your expression is especially long or complex, TypeScript won't be able to infer it.
+
+If your types start to slow down or you see the dreaded `Type instantiation is excessively deep...`, you can manually type your expression using [`regex.as`](/docs/regex/types#regexas).
+
+### Is it robust?
+
+`arkregex` types are [extensively tested](https://github.com/arktypeio/arktype/tree/main/ark/regex/__tests__/regex.test.ts) and [benchmarked](https://github.com/arktypeio/arktype/tree/main/ark/regex/__tests__/regex.bench.ts) using [Attest](/docs/attest).
+
+If anything isn't behaving how you'd expect, please don't hesitate to [create an issue](https://github.com/arktypeio/arktype/issues/new).
+
+
+---
+title: Setup
+---
+
+ArkRegex is a drop-in replacement for `new RegExp()` with types.
+
+The `regex` function creates a `Regex` instance with types for `.test()`, `.exec()` and more, statically parsed from native JS syntax:
+
+```ts
+import { regex } from "arkregex"
+
+const ok = regex("^ok$", "i")
+//    ^?
+
+const semver = regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
+//    ^?
+
+const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
+//    ^?
+```
+
+At runtime, `regex(src, flags)` is just `new RegExp(src, flags)`, so it adds nothing to your bundle beyond a single function.
+
+## Installation
+
+<InstallationTabs pkg="arkregex" />
+
+Performs best with TypeScript 5.9+.
+
+## Features
+
+- **Types**: Infers string types for your existing regular expressions, including positional and named captures
+- **Parity**: Supports 100% of [features](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions) allowed by `new RegExp()`
+- **Safety**: Syntax errors like referencing a group that doesn't exist are now [type errors](/docs/regex/errors)
+- **Zero Runtime**: Improves your type safety without impacting your bundle size
+
+## Syntax highlighting
+
+The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) adds syntax highlighting to `regex` calls.
+
+## ArkType
+
+ArkType uses ArkRegex to infer its own regex literals, so `type("/^\\d+$/")` is already typed. See [ArkType integration](/docs/regex/arktype).
+
+
+---
+title: Inference
+---
+
+Each `Regex` carries the type of string it matches along with any captures and flags.
+
+Inferred types are at worst imprecise and never incorrect: anything ArkRegex can't represent as a literal widens to `string` or `${number}`.
+
+## Anchors
+
+An expression without `^` or `$` can match anywhere in a string, so its type is padded with `${string}`:
+
+```ts
+const unanchored = regex("abc")
+//    ^?
+
+const anchored = regex("^abc$")
+//    ^?
+```
+
+## Unions
+
+```ts
+const color = regex("^(red|green|blue)$")
+//    ^?
+```
+
+## Quantifiers
+
+Bounded quantifiers are expanded when the result is small:
+
+```ts
+const range = regex("^a{2,3}$")
+//    ^?
+
+const optional = regex("^colou?r$")
+//    ^?
+```
+
+Unbounded repetition of a digit becomes `${number}`:
+
+```ts
+const version = regex("^(\\d+)\\.(\\d+)$")
+//    ^?
+```
+
+## Character sets
+
+Small sets become unions of literals. Ranges like `[a-z]` would quickly produce enormous unions, so they widen to `string`:
+
+```ts
+const abc = regex("^[abc]$")
+//    ^?
+
+const hex = regex("^[0-9a-f]+$")
+//    ^?
+```
+
+## Captures
+
+Positional captures are inferred as a tuple, and correlate with each branch of a union:
+
+```ts
+const color = regex("^(red|green|blue)$")
+
+type Captures = typeof color.inferCaptures
+//   ^?
+```
+
+A group that may not participate in a match captures `undefined`:
+
+```ts
+const optional = regex("^a(b)?$")
+//    ^?
+```
+
+## Named captures
+
+```ts
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})$")
+
+type Names = typeof date.inferNamedCaptures
+//   ^?
+```
+
+## Flags
+
+Flags are inferred, and `i` expands case-insensitive literals:
+
+```ts
+const ok = regex("^ok$", "i")
+//    ^?
+```
+
+## `.test()`
+
+`.test()` narrows its input to the expression's type:
+
+```ts
+const color = regex("^(red|green|blue)$")
+
+const parse = (s: string) => {
+	if (color.test(s)) return s
+	//                        ^?
+	return null
+}
+```
+
+## `.exec()`
+
+`.exec()` returns a fully typed result, including `groups` and, with the `d` flag, `indices`:
+
+```ts
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})-(?<day>\\d{2})$", "d")
+
+const result = date.exec("2026-10-07")
+
+if (result) {
+	result.groups.year
+	//            ^?
+	result.indices.groups.year
+	//                    ^?
+}
+```
+
+
+---
+title: Types
+---
+
+## `Regex`
+
+`Regex<pattern, ctx>` extends `RegExp`, so it can be passed anywhere a `RegExp` is expected.
+
+Its type parameters can be extracted from an instance:
+
+```ts
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})$")
+
+type Pattern = typeof date.infer
+//   ^?
+
+type Captures = typeof date.inferCaptures
+//   ^?
+
+type Names = typeof date.inferNamedCaptures
+//   ^?
+```
+
+Or used to constrain one:
+
+```ts
+import type { Regex } from "arkregex"
+
+const parseVersion = (r: Regex<`${number}.${number}`>) => {}
+
+parseVersion(regex("^(\\d+)\\.(\\d+)$"))
+```
+
+## `regex.infer`
+
+Infers the pattern of an expression without creating an instance:
+
+```ts
+import { regex } from "arkregex"
+
+type Version = regex.infer<"^(\\d+)\\.(\\d+)$">
+//   ^?
+```
+
+`regex.parse` gives you the full `Regex` type, and `regex.validate` the parameter type `regex` uses to report errors, so you can write your own wrappers:
+
+```ts
+import { regex } from "arkregex"
+
+const anchored = <src extends string>(
+	src: regex.validate<src>
+): regex.parse<`^${src}$`> => regex.as(`^${src}$`) as never
+
+const ab = anchored("a(b)")
+//    ^?
+```
+
+## `regex.as`
+
+If an expression is too long or complex for TypeScript to infer (e.g. you see `Type instantiation is excessively deep`), you can type it manually with `regex.as`. It skips parsing and validation entirely:
+
+```ts
+const complexPattern = regex.as<`pattern-${string}`, { captures: [string] }>(
+	"very-long-complex-expression-here"
+)
+```

@@ -1,0 +1,43 @@
+---
+title: Setup
+---
+
+ArkRegex is a drop-in replacement for `new RegExp()` with types.
+
+The `regex` function creates a `Regex` instance with types for `.test()`, `.exec()` and more, statically parsed from native JS syntax:
+
+```ts
+import { regex } from "arkregex"
+
+const ok = regex("^ok$", "i")
+//    ^?
+
+const semver = regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
+//    ^?
+
+const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
+//    ^?
+```
+
+At runtime, `regex(src, flags)` is just `new RegExp(src, flags)`, so it adds nothing to your bundle beyond a single function.
+
+## Installation
+
+<InstallationTabs pkg="arkregex" />
+
+Performs best with TypeScript 5.9+.
+
+## Features
+
+- **Types**: Infers string types for your existing regular expressions, including positional and named captures
+- **Parity**: Supports 100% of [features](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions) allowed by `new RegExp()`
+- **Safety**: Syntax errors like referencing a group that doesn't exist are now [type errors](/docs/regex/errors)
+- **Zero Runtime**: Improves your type safety without impacting your bundle size
+
+## Syntax highlighting
+
+The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) adds syntax highlighting to `regex` calls.
+
+## ArkType
+
+ArkType uses ArkRegex to infer its own regex literals, so `type("/^\\d+$/")` is already typed. See [ArkType integration](/docs/regex/arktype).
