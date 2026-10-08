@@ -1,5 +1,5 @@
 import { hasDomain, ParseError, registeredNameOf } from "@ark/util"
-import type { CallExpression, Node } from "oxc-parser"
+import type { CallExpression, Node, Program } from "oxc-parser"
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
@@ -519,6 +519,21 @@ export class Precompiler {
 		candidates: SiteCandidate[]
 	): Diagnostic[] {
 		const result: Diagnostic[] = []
+		if (candidates.length && !isStrict(module.program)) {
+			result.push(
+				this.diagnostic(
+					module,
+					module.program.body[0] ?? module.program,
+					"R4",
+					"error",
+					`${module.path} is not strict mode code`,
+					[
+						"the standalone runtime freezes arktype values, and outside strict mode a write to a frozen value is ignored rather than throwing"
+					],
+					strictHint
+				)
+			)
+		}
 		const candidateRanges = new Set(
 			candidates.map(candidate => rangeOf(candidate.state.node))
 		)
@@ -565,7 +580,8 @@ export class Precompiler {
 		rule: Rule,
 		severity: Diagnostic["severity"],
 		message: string,
-		reasons: string[]
+		reasons: string[],
+		hint?: string
 	): Diagnostic {
 		const [line, column] = module.lineAndColumnOf(node.start)
 		return {
@@ -581,7 +597,7 @@ export class Precompiler {
 			hint:
 				rule === "syntax" ? undefined
 				: this.mode === "cache" ? cacheHint
-				: hintsByRule[rule]
+				: (hint ?? hintsByRule[rule])
 		}
 	}
 }
@@ -602,6 +618,17 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 }
 
 const cacheHint = "Cache mode leaves this to arktype at runtime."
+
+const strictHint = `Add "use strict" at the top of the module, or make it an ES module.`
+
+// an ES module is strict, and a script or CommonJS module only with a "use strict" directive
+const isStrict = (program: Program): boolean =>
+	program.sourceType === "module" ||
+	program.body.some(
+		statement =>
+			statement.type === "ExpressionStatement" &&
+			statement.directive === "use strict"
+	)
 
 const rejectSite = (site: Site, dynamic: DynamicValue): Site => {
 	site.status = "rejected"

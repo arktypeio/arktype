@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { precompileModule } from "@ark/precompile"
+import { precompileModule, renderDiagnostic } from "@ark/precompile"
 import { diagnosticsOf, memoryHost, precompile, statusesOf } from "./utils.ts"
 
 contextualize(() => {
@@ -132,6 +132,34 @@ export const make = (def: string) => {
 			attest(precompile(source).sites.map(site => site.kind)).snap(["type"])
 			attest(diagnosticsOf(source)).snap([
 				'/main.ts:5:12  `ark` is used outside a precompiled site\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("modules that are not strict mode", () => {
+			const diagnosticsAt = (
+				id: string,
+				source: string,
+				mode?: "standalone" | "cache"
+			) =>
+				precompileModule(source, id, memoryHost({ [id]: source }), {
+					mode
+				}).diagnostics.map(renderDiagnostic)
+			const body = `import { type } from "arktype"
+export const T = type("string")`
+			attest([
+				diagnosticsAt("/main.cts", body),
+				diagnosticsAt("/main.cts", `"use strict"\n${body}`),
+				diagnosticsAt("/main.cts", body, "cache"),
+				diagnosticsAt("/main.ts", body),
+				diagnosticsAt("/main.cjs", `module.exports = {}`)
+			]).snap([
+				[
+					'/main.cts:1:1  /main.cts is not strict mode code\n  the standalone runtime freezes arktype values, and outside strict mode a write to a frozen value is ignored rather than throwing\n  Add "use strict" at the top of the module, or make it an ES module.'
+				],
+				[],
+				[],
+				[],
+				[]
 			])
 		})
 
