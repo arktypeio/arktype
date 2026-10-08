@@ -378,6 +378,18 @@ type In = typeof T.inferIn
 
 https://github.com/arktypeio/arktype/issues/1160
 
+### Name the narrow in an unsatisfiable intersection error
+
+When a narrow rejected every branch of a union it was intersected with, the error described the narrow by its expression, which omits predicates:
+
+```ts
+const isC = (s: string) => s === "c"
+
+// previously ParseError: Intersection of "a" | "b" and unknown results in an unsatisfiable type
+// now ParseError: Intersection of "a" | "b" and $ark.isC results in an unsatisfiable type
+type("'a' | 'b'").narrow(isC)
+```
+
 ## 2.2.8
 
 ### Add `string.base58`

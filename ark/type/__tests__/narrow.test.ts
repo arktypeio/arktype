@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference, type Traversal } from "@ark/schema"
+import {
+	registeredReference,
+	writeUnsatisfiableExpressionError,
+	type Traversal
+} from "@ark/schema"
 import type { equals } from "@ark/util"
 import { scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
@@ -329,5 +333,26 @@ contextualize(() => {
 			).export()
 			attest(types.u.allows(data)).equals(true)
 		}
+	})
+
+	it("names a narrow that rejects every literal", () => {
+		const _isNarrowedC = (s: string) => s === "c"
+		attest(() => type("'a' | 'b'").narrow(_isNarrowedC)).throws(
+			writeUnsatisfiableExpressionError(
+				'Intersection of "a" | "b" and $ark._isNarrowedC'
+			)
+		)
+		attest(() =>
+			type("'a' | 'b'").and(type("string").narrow(_isNarrowedC))
+		).throws(
+			writeUnsatisfiableExpressionError(
+				'Intersection of "a" | "b" and string & $ark._isNarrowedC'
+			)
+		)
+		attest(() => type("'b'").narrow(_isNarrowedC)).throws(
+			writeUnsatisfiableExpressionError(
+				'Intersection of "b" and $ark._isNarrowedC'
+			)
+		)
 	})
 })
