@@ -165,6 +165,19 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
 
+### Standalone validators on `arktype/runtime`
+
+`precompileStandalone` writes an ES module exporting each Type as a validator that runs on the new `arktype/runtime` entry, without arktype's parser or nodes and without generating code, so it validates under a Content-Security-Policy that blocks `eval`:
+
+```ts
+import { precompileStandalone } from "arktype/internal/standalone.ts"
+
+// a module whose User validates, asserts and implements Standard Schema as the Type does
+const source = precompileStandalone({ User: type({ name: "string > 0" }) })
+```
+
+A validator bakes `expression`, `description` and `meta`, and throws on members that compose or introspect a Type. The build refuses what the runtime can't reproduce, like a narrow or morph that isn't one of arktype's keywords, naming it. An artifact refuses to load beside `arktype` or on another version of `arktype/runtime`.
+
 ### Fix duplicate errors from `string.date.epoch.parse`
 
 An out-of-range timestamp in an object was reported twice, as an intersection of the same error:
