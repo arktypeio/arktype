@@ -138,14 +138,16 @@ contextualize(() => {
 	})
 
 	it("jitless", () => {
-		const types = scope(
+		const $ = scope(
 			{
 				fast: "false"
 			},
 			{ jitless: true }
-		).export()
+		)
+		const types = $.export()
 
 		attest(types.fast.precompilation).equals(undefined)
+		attest($.type.Record("string", "boolean").precompilation).equals(undefined)
 	})
 
 	it("prereducedAliases", () => {
@@ -165,6 +167,11 @@ contextualize(() => {
 
 		const Sub = type("string.normalize.NFC.preformatted")
 		attest(Sub.precompilation).satisfies("string")
+	})
+
+	it("invoked generics jit by default", () => {
+		const T = type.Record("string", "boolean")
+		attest(T.precompilation).satisfies("string")
 	})
 
 	it("jit by default in scope", () => {

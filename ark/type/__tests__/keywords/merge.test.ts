@@ -49,6 +49,13 @@ contextualize(() => {
 		attest(T.expression).equals(Expected.expression)
 	})
 
+	it("invoked then unioned", () => {
+		const T = keywords.Merge({ a: "string" }, { b: "number" }).or("string[]")
+
+		attest<{ a: string; b: number } | string[]>(T.t)
+		attest(T.expression).snap("{ a: string, b: number } | string[]")
+	})
+
 	it("chained", () => {
 		const T = type({
 			"[string]": "number",

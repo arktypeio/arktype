@@ -212,7 +212,7 @@ export class GenericRoot<
 		try {
 			const node =
 				this.defIsLazy() ?
-					this.$.parse(this.bodyDef(argNodes))
+					this.arg$.parse(this.$.parseDefinition(this.bodyDef(argNodes)))
 				:	this.$.parse(this.bodyDef, { args: argNodes, id })
 			if (inProgress.definitions && node.includesShallowAlias)
 				delete this.instantiations[key]
