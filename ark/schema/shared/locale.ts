@@ -3,11 +3,13 @@ import {
 	type BuiltinObjectKind,
 	type Domain,
 	type ListType,
-	type omit
+	type omit,
+	printable
 } from "@ark/util"
 import type { MissingBasis, MissingValue } from "../structure/required.ts"
 import type {
 	ActualContext,
+	ArkError,
 	ArkErrorCode,
 	ExpectedContext,
 	getAssociatedDataForError,
@@ -240,12 +242,90 @@ const describeBasis = <noun>(
 		locale.cite(basis.description!)
 	:	locale.basis(basis, locale)
 
-// undescribed false and true, which a locale names as one
-const isBooleanPair = (branches: readonly MissingValue[]) =>
-	branches.length === 2 &&
-	branches.every(
-		branch =>
-			branch.code === "unit" &&
-			typeof branch.unit === "boolean" &&
-			branch.meta.description === undefined
+// a missing value or an error, read for whether it is a unit
+type UnitCandidate = {
+	readonly code: string
+	readonly unit?: unknown
+	readonly meta?: ArkEnv.meta
+}
+
+// undescribed false and true, missing or failed, which a locale names as one
+const isBooleanPair = (values: readonly UnitCandidate[]) =>
+	values.length === 2 &&
+	values.every(
+		value =>
+			value.code === "unit" &&
+			typeof value.unit === "boolean" &&
+			value.meta?.description === undefined
 	)
+
+export interface PathGroup {
+	readonly propString: string
+	/** the title of the value at the path */
+	readonly label: string | undefined
+	/** each error's expected text, once */
+	readonly expected: readonly string[]
+	/** the errors' actual text, unless they differ */
+	readonly actual: string | undefined
+	/** the value at the path */
+	readonly data: unknown
+}
+
+/** a union's errors by path, in the order each path first failed */
+export const groupByPath = <noun>(
+	union: Locale.ExpectedContext<"union">,
+	locale: Locale<noun>
+): PathGroup[] => {
+	const groups: ArkError[][] = []
+	for (const error of union.errors) {
+		const group = groups.find(g => g[0].propString === error.propString)
+		if (group) group.push(error)
+		else groups.push([error])
+	}
+	return groups.map(group => {
+		const expected: string[] = []
+		if (isBooleanPair(group))
+			expected.push(locale.expectedNoun(locale.nouns.boolean))
+		else for (const error of group) appendUnique(expected, error.expected)
+		const actual = group[0].actual
+		const propString = group[0].propString
+		return {
+			propString,
+			// the union's title is its own value's, whatever its branches'
+			label:
+				(propString === union.propString ? labelOf(union) : undefined) ??
+				sharedLabelOf(group),
+			expected,
+			actual:
+				group.every(error => error.actual === actual) ? actual : undefined,
+			data: group[0].data
+		}
+	})
+}
+
+/** a thrown value as text, though it may be a symbol or have no toString */
+export const describeCause = (cause: unknown): string => {
+	try {
+		return String(cause)
+	} catch {
+		return printable(cause)
+	}
+}
+
+/** the title of the value an error is about */
+export const labelOf = (error: Locale.ExpectedContext): string | undefined =>
+	error.code === "required" ? error.valueMeta.title
+	: error.code === "intersection" ? sharedLabelOf(error.errors)
+	: (
+		error.code === "undeclared" ||
+		(error.code === "discriminant" && error.onKey)
+	) ?
+		// their meta is the object's around the key
+		undefined
+	:	error.meta?.title
+
+// the label errors at one path agree on, since an intersection has no meta
+const sharedLabelOf = (errors: readonly ArkError[]): string | undefined => {
+	const labels = errors.map(error => labelOf(error as never))
+	return labels.every(label => label === labels[0]) ? labels[0] : undefined
+}

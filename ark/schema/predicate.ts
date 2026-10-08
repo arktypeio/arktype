@@ -8,6 +8,7 @@ import type {
 	declareNode
 } from "./shared/declare.ts"
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
+import { describeCause } from "./shared/locale.ts"
 import { namedReference, type RegisteredReference } from "./shared/registry.ts"
 import type {
 	Traversal,
@@ -50,15 +51,6 @@ export declare namespace Predicate {
 // reads predicate, or for pipe.try the morph that threw
 const describePredicate = (ctx: { predicate?: Predicate; morph?: Morph }) =>
 	`valid according to ${(ctx.predicate ?? ctx.morph)?.name || "an anonymous predicate"}`
-
-// a thrown value may be a symbol or have no toString
-const describeCause = (cause: unknown): string => {
-	try {
-		return String(cause)
-	} catch {
-		return printable(cause)
-	}
-}
 
 const implementation: nodeImplementationOf<Predicate.Declaration> =
 	implementNode<Predicate.Declaration>({
