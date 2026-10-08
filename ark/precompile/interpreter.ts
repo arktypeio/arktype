@@ -691,7 +691,7 @@ export class Interpreter {
 			binding.kind !== "function" &&
 			contains(binding.scope.node, ctx.origin.node) &&
 			runPointOf(ctx.origin.node, binding.scope.node, module) <
-				binding.declaration.start
+				unsetBefore(binding.declaration)
 		) {
 			return {
 				value: new DynamicValue(
@@ -1845,6 +1845,12 @@ const runPointOf = (
 	}
 	return node.start
 }
+
+// a declarator's pattern runs before its bindings are set, and a read in its initializer depends on itself
+const unsetBefore = (declaration: Node): number =>
+	declaration.type === "VariableDeclarator" && declaration.init ?
+		declaration.init.start
+	:	declaration.end
 
 const staticProblemOf = (
 	binding: Binding,

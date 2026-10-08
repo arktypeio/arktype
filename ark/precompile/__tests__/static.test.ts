@@ -595,6 +595,15 @@ var x = "string"`)
 				"5:25 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
 				"7:12 rejected\n  `y` can be read before its declaration (/main.ts:8:6)"
 			])
+			attest(
+				statusesOf(`import { type } from "arktype"
+let result: any
+function make() { result = type(x ?? "number"); return 1 }
+var [y = make(), x] = [undefined, "string"]
+export const T = result`)
+			).snap([
+				"3:28 rejected\n  `x` can be read before its declaration (/main.ts:4:18)"
+			])
 		})
 
 		it("optional chain ended by parentheses", () => {
