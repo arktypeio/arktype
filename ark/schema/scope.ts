@@ -502,16 +502,9 @@ export interface ContentUnit {
 export const precompileByContent = (
 	roots: readonly BaseNode[]
 ): ContentUnit => {
-	const s: ContentNamingState = {
-		referencesById: {},
-		reached: [],
-		stack: [],
-		valueIndices: new Map(),
-		names: {},
-		inputsByHash: {}
-	}
-	for (const root of roots)
-		if (!s.referencesById[root.id]) nameReference(s, root)
+	let s = nameReferences(roots, {})
+	const occurrencesById = occurrencesOfResolutions(s)
+	if (occurrencesById) s = nameReferences(roots, occurrencesById)
 	const names: Record<NodeId, string> = {}
 	const linkage = createLinkage(
 		id => names[id] ?? throwInternalError(`Unexpected unnamed node ${id}`)
@@ -539,6 +532,49 @@ interface ContentNamingState {
 	valueIndices: Map<unknown, number>
 	names: Record<NodeId, string>
 	inputsByHash: Record<string, string>
+	occurrencesById: Record<NodeId, number>
+}
+
+const nameReferences = (
+	roots: readonly BaseNode[],
+	occurrencesById: Record<NodeId, number>
+): ContentNamingState => {
+	const s: ContentNamingState = {
+		referencesById: {},
+		reached: [],
+		stack: [],
+		valueIndices: new Map(),
+		names: {},
+		inputsByHash: {},
+		occurrencesById
+	}
+	for (const root of roots)
+		if (!s.referencesById[root.id]) nameReference(s, root)
+	return s
+}
+
+// the JIT keys a resolution by its node's id, so content-equal nodes a cycle can key are numbered apart in reach order
+const occurrencesOfResolutions = (
+	s: ContentNamingState
+): Record<NodeId, number> | undefined => {
+	const resolutionIds = new Set<NodeId>()
+	const reachedByName: Record<string, BaseNode[]> = {}
+	for (const node of s.reached) {
+		if (node.hasKind("alias")) resolutionIds.add(node.resolution.id)
+		;(reachedByName[s.names[node.id]] ??= []).push(node)
+	}
+	let occurrencesById: Record<NodeId, number> | undefined
+	for (const name in reachedByName) {
+		const nodes = reachedByName[name]
+		if (
+			nodes.length === 1 ||
+			!nodes.some(node => node.includesAlias || resolutionIds.has(node.id))
+		)
+			continue
+		for (let i = 1; i < nodes.length; i++)
+			(occurrencesById ??= {})[nodes[i].id] = i
+	}
+	return occurrencesById
 }
 
 interface ContentReference {
@@ -604,11 +640,13 @@ const compileContent = (
 		}
 		return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
 	}
+	const occurrence = s.occurrencesById[node.id]
 	const content = [
 		node.kind,
 		...linkage.members.map(([name, source]) => `${name} = ${source}`),
 		[...linkage.refs.keys()].map(serialize).join(),
-		linkage.errorContexts.map(serialize).join()
+		linkage.errorContexts.map(serialize).join(),
+		...(occurrence === undefined ? [] : [`#${occurrence}`])
 	].join("\n")
 	return {
 		node,

@@ -85,8 +85,16 @@ contextualize(() => {
 			a1: { p0: "string = 'd'", "p1?": "string" },
 			a2: { kind: "'a2'", "p0?": "a0", p1: "a2 | null" }
 		}).export()
+		// content-equal cycles the JIT tracks apart
+		const { x }: Record<string, type.Any> = scope({
+			a0: [["Record<string, null>", "...", "a0[]"], "[]"],
+			c0: [["Record<string, null>", "...", "c0[]"], "[]"],
+			c1: ["c0", "...", "c1[]"],
+			x: "a0 & c1"
+		} as never).export() as never
 		const types = {
 			user: $.user,
+			cycles: x,
 			tree: $.tree,
 			deep: a0.onDeepUndeclaredKey("delete"),
 			parsed: type({ count: "string.numeric.parse", "+": "delete" }),
@@ -104,11 +112,14 @@ contextualize(() => {
 		const validators = await load(types)
 		const cyclic: any = { value: 1, children: [] }
 		cyclic.children.push(cyclic)
+		const cyclicArray: unknown[] = []
+		cyclicArray.push(cyclicArray, cyclicArray)
 		const inputs = [
 			{ name: "a", age: 1, tags: [] },
 			{ name: "", age: -1.5, email: "x", tags: ["a", "b", "c", "d"] },
 			{ value: 1, children: [{ value: 2 }, { value: "3" }] },
 			cyclic,
+			cyclicArray,
 			{ count: "5", extra: true },
 			new Point(),
 			'{"a": [1]}',
