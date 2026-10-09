@@ -66,7 +66,7 @@ export type exactEquals<l, r> =
 	(<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true
 	:	false
 
-export const brand = noSuggest("brand")
+export const brand = /* @__PURE__ */ noSuggest("brand")
 
 export type Brand<t = unknown, id = unknown> = t & {
 	readonly [brand]: [t, id]
@@ -105,7 +105,7 @@ export type narrow<t> =
 export const narrow = <t>(t: narrow<t>): t => t as t
 
 /** primitive key used to represent an inferred type at compile-time */
-export const inferred = noSuggest("arkInferred")
+export const inferred = /* @__PURE__ */ noSuggest("arkInferred")
 
 /** primitive key used to represent an inferred type at compile-time */
 export type inferred = typeof inferred

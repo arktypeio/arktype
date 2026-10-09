@@ -11,7 +11,7 @@ export const arkUtilVersion = "0.56.7"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
-	filename: isomorphic.fileName(),
+	filename: /* @__PURE__ */ isomorphic.fileName(),
 	FileConstructor
 }
 
