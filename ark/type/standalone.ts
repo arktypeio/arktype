@@ -468,8 +468,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 	writeValidator(root: BaseRoot, name: string): string {
 		const shape = this.shapeOf(root)
 		const nodeName = this.unit.names[root.id]
-		// only a factory's Types hold holes
-		const [id, holes] = this.params ? keyOf(root) : [addressOf(root), []]
+		const [id, holes] = keyOf(root)
 		const key = `,\n\t${JSON.stringify(id)}${holes.length ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
 		return `const ${name} = new runtime.Validator(
 	(function (${rootApplyParams.join(", ")}) {
@@ -804,9 +803,6 @@ const isHole = (value: unknown): boolean =>
 		!runtimePathsByValue.has(value) &&
 		Reflect.get(globalThis, functionNameOf(value)) !== value)
 
-// a node's name in a unit keys a function or instance by where the unit first reaches it, so a root is addressed by its hash, which names a hole by the placeholder its build gives it
-const addressOf = (root: BaseRoot) => hashOf(root.hash)
-
 const keysByRoot = new WeakMap<BaseRoot, [id: string, holes: unknown[]]>()
 
 // what any artifact keys a root's validator by: its content address, and the holes it holds in the order its code reads them
@@ -815,24 +811,32 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 	if (cached) return cached
 	const unit = precompileByContent([root])
 	const holes: unknown[] = []
+	// a unit names a node by its content, keying a function or object only by where the unit first reaches it, so the address adds what each is
+	const values: string[] = [unit.names[root.id]]
 	const seen = new Set<unknown>()
 	const collect = (value: unknown): void => {
 		if (seen.has(value)) return
 		seen.add(value)
-		if (isHole(value)) holes.push(value)
-		else if (
-			hasDomain(value, "object") &&
-			!isNode(value) &&
-			isPlainLiteral(value)
-		) {
+		if (isHole(value)) {
+			holes.push(value)
+			values.push("hole")
+		} else if (typeof value === "function" && !isNode(value))
+			values.push(runtimePathsByValue.get(value) ?? functionNameOf(value))
+		// a meta isn't part of a node's content, though what it holds is printed
+		else if (!hasDomain(value, "object"))
+			values.push(typeof value === "symbol" ? "symbol" : printable(value))
+		else if (isNode(value)) return
+		else if (isDateObject(value)) values.push(`Date ${getTime.call(value)}`)
+		else if (isRegExpObject(value)) values.push(String(value))
+		else if (isPlainLiteral(value)) {
 			for (const k of Reflect.ownKeys(value)) {
 				collect(k)
 				collect(Reflect.get(value, k))
 			}
-		}
+		} else values.push(printable(value))
 	}
 	collect([unit.refs, unit.errorContexts, root.meta])
-	const key: [string, unknown[]] = [addressOf(root), holes]
+	const key: [string, unknown[]] = [hashOf(values.join("\n")), holes]
 	keysByRoot.set(root, key)
 	return key
 }

@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { renderDiagnostic } from "@ark/precompile"
 import { diagnosticsOf, precompile, statusesOf } from "./utils.ts"
 
 contextualize(() => {
@@ -33,8 +34,29 @@ export const C = process.argv.length > 2 ?
 :	$arkv1bp5ims0ip5
 // @ark-runtime
 export const parsers = { type: $ark$island.type }
-import { vek65jf4484 as $arkvek65jf4484 } from "~arktype/3o82vg1xj"
-import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/3o82vg1xj"`)
+import { vek65jf4484 as $arkvek65jf4484 } from "~arktype/231ga3i7t1h"
+import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/231ga3i7t1h"`)
+	})
+
+	it("reports a factory site reading an island's Type", () => {
+		attest(
+			precompile(
+				`import { type } from "arktype"
+import { Imported } from "./b.ts"
+// @ark-runtime
+export const Trimmed = type("string").pipe(s => s.trim())
+export const A = type({ a: Trimmed })
+export const B = type({ b: Imported })`,
+				{
+					"/b.ts": `import { type } from "arktype"
+// @ark-runtime
+export const Imported = type("string")`
+				}
+			).diagnostics.map(renderDiagnostic)
+		).snap([
+			"/main.ts:5:18  type({ a: Trimmed }) can't be precompiled to a standalone validator yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+			"/main.ts:6:18  type({ b: Imported }) can't be precompiled to a standalone validator yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+		])
 	})
 
 	it("means nothing in cache mode", () => {

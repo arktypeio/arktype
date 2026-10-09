@@ -635,6 +635,13 @@ export class Precompiler {
 				continue
 			}
 			const holes = hole ? [hole.value] : keyOf(reference.value as BaseRoot)[1]
+			// a Type without holes is written into the site's own code rather than received
+			if (holes.length && this.isIslandValue(reference.value, site)) {
+				if (!passed.has(reference.value)) reasons.push(islandValueMessage(text))
+				passed.add(reference.value)
+				for (const value of holes) addSource(value, text, false)
+				continue
+			}
 			for (const value of holes) {
 				addSource(
 					value,
@@ -701,6 +708,15 @@ export class Precompiler {
 		const inputs: string[] = []
 		const imports: SiteFactory["imports"] = []
 		for (const reads of readsByRoot.values()) {
+			const island = reads.find(input => this.isIslandValue(input.value, site))
+			if (island) {
+				reasons.push(
+					islandValueMessage(
+						[island.name, ...island.path.map(String)].join(".")
+					)
+				)
+				continue
+			}
 			const unsupported = reads.find(
 				input =>
 					hasArkKind(input.value, "module") ||
@@ -732,6 +748,28 @@ export class Precompiler {
 			})
 		}
 		return { params, spans, inputs, imports }
+	}
+
+	// a runtime island's Type is arktype's, which a factory can't take holes from or compare
+	private isIslandValue(value: unknown, site: Site): boolean {
+		if (!hasArkKind(value, "root")) return false
+		for (const state of this.interpreter.sitesByNode.values()) {
+			if (state.value === value && isInIsland(state.node, state.module))
+				return true
+		}
+		// another module's sites are evaluated without being found, so its export is read where it's declared
+		return site.inputs.some(input => {
+			if (input.kind !== "import" || input.value !== value) return false
+			const target = this.graph.exportOf(
+				this.graph.moduleOf(input.file!) as SourceModule,
+				input.name
+			)
+			return (
+				(target.kind === "binding" &&
+					isInIsland(target.binding.declaration, target.module)) ||
+				(target.kind === "expression" && isInIsland(target.node, target.module))
+			)
+		})
 	}
 
 	// the expression a factory call receives an input root through and how a mismatch names it, or why it can't
@@ -1760,6 +1798,9 @@ const firstStatementOf = (program: Program) =>
 		statement =>
 			statement.type !== "ExpressionStatement" || !statement.directive
 	)!
+
+const islandValueMessage = (text: string) =>
+	`\`${text}\` is a runtime island's Type, which a precompiled site can't receive`
 
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))
