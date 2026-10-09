@@ -106,8 +106,14 @@ export declare namespace Locale {
 		"expected"
 	> & {
 		readonly noun: noun
-		readonly expected?: string | ExpectedWriter<ArkErrorCode, noun>
+		readonly expected?: string | KeywordExpectedWriter<noun>
 	}
+
+	/** describes an error, or a missing value by its basis */
+	export type KeywordExpectedWriter<noun = string> = (
+		error: ExpectedContext | MissingBasis,
+		locale: Locale<noun>
+	) => string
 
 	export type Complete<
 		noun = string,
@@ -165,8 +171,7 @@ const completeFrom = (en: Locale, locale: Locale<any>): Locale => {
 	return (completed as Locale | undefined) ?? locale
 }
 
-/** the phrase a locale has for an error's keyword */
-export const keywordPhraseOf = <noun>(
+const keywordPhraseOf = <noun>(
 	error: { readonly meta?: ArkEnv.meta },
 	locale: Locale<noun>
 ): Locale.KeywordPhrase<noun> | undefined => {
@@ -198,16 +203,20 @@ export const keywordWriterOf = <
 	return hasWriters(phrase) ? phrase[slot] : undefined
 }
 
-/** renders a keyword phrase where expected text goes */
+/** a locale's phrase for a keyword, if it has one, as expected text */
 export const writeKeywordExpected = <noun>(
-	phrase: Locale.KeywordPhrase<noun>,
-	error: Locale.ExpectedContext,
+	error: Locale.ExpectedContext | MissingBasis,
 	locale: Locale<noun>
-): string =>
-	!hasWriters(phrase) ? locale.expectedNoun(phrase)
-	: phrase.expected === undefined ? locale.expectedNoun(phrase.noun)
-	: typeof phrase.expected === "string" ? phrase.expected
-	: phrase.expected(error, locale)
+): string | undefined => {
+	const phrase = keywordPhraseOf(error, locale)
+	return (
+		phrase === undefined ? undefined
+		: !hasWriters(phrase) ? locale.expectedNoun(phrase)
+		: phrase.expected === undefined ? locale.expectedNoun(phrase.noun)
+		: typeof phrase.expected === "string" ? phrase.expected
+		: phrase.expected(error, locale)
+	)
+}
 
 /** renders a missing value where expected text goes */
 export const describeMissing = <noun>(

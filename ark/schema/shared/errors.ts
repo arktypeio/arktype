@@ -24,7 +24,6 @@ import type { DiscriminantErrorContext } from "../roots/union.ts"
 import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
 import {
-	keywordPhraseOf,
 	keywordWriterOf,
 	normalizeLocale,
 	writeKeywordExpected,
@@ -334,10 +333,7 @@ const localeExpected = (
 ): string => {
 	if (cited === undefined)
 		return writeExpected(error, locale[error.code].expected, locale)
-	const phrase = keywordPhraseOf(error, locale)
-	return phrase === undefined ?
-			locale.cite(cited)
-		:	writeKeywordExpected(phrase, error as never, locale)
+	return writeKeywordExpected(error as never, locale) ?? locale.cite(cited)
 }
 
 const writeExpected = (

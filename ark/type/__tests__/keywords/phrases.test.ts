@@ -35,9 +35,6 @@ const nodesOf = (T: type.Any): BaseNode[] => [
 	...new Set([T.internal, ...T.internal.references])
 ]
 
-const phraseOf = (node: { meta?: ArkEnv.meta }) =>
-	en.keywordPhrases[node.meta!.keyword as KeywordPhraseAlias]
-
 const nounOf = (alias: KeywordPhraseAlias) => {
 	const phrase = keywordPhrases[alias]
 	return typeof phrase === "string" ? phrase : phrase.noun
@@ -101,10 +98,9 @@ contextualize(() => {
 				const keyword = node.meta.keyword
 				if (keyword === undefined) continue
 				tagged.add(keyword)
-				const phrase = phraseOf(node)
 				const description =
 					"errorContext" in node && node.errorContext ?
-						writeKeywordExpected(phrase, node.errorContext as never, en)
+						writeKeywordExpected(node.errorContext as never, en)
 					:	nounOf(keyword as KeywordPhraseAlias)
 				// en renders each node's phrase as its description
 				attest(description).equals(node.description)
@@ -138,11 +134,7 @@ contextualize(() => {
 					if (!(out instanceof type.errors)) continue
 					for (const error of (out as ArkErrors).issues.flatMap(leavesOf)) {
 						if (error.meta?.keyword === undefined) continue
-						const expected = writeKeywordExpected(
-							phraseOf(error),
-							error as never,
-							en
-						)
+						const expected = writeKeywordExpected(error as never, en)
 						attest(expected).equals(error.description ?? error.expected)
 					}
 				}

@@ -3,7 +3,6 @@ export {
 	describeCause,
 	describeMissing,
 	groupByPath,
-	keywordPhraseOf,
 	labelOf,
 	writeKeywordExpected,
 	type PathGroup

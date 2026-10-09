@@ -43,6 +43,9 @@ export declare namespace Locale {
 
 	export type KeywordWriters<noun = string> = BaseLocale.KeywordWriters<noun>
 
+	export type KeywordExpectedWriter<noun = string> =
+		BaseLocale.KeywordExpectedWriter<noun>
+
 	export type Complete<noun = string> = BaseLocale.Complete<
 		noun,
 		KeywordPhraseAlias
