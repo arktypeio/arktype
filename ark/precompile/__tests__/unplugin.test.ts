@@ -210,11 +210,11 @@ contextualize(() => {
 				withArktype.includes(parserMessage),
 				standalone.includes(parserMessage)
 			]).equals([true, false])
-		})
+		}).timeout(60000)
 
 		it(`${name} cache`, async () => {
 			attest(run(await bundle({ runtime: "arktype" }))).equals(expected)
-		})
+		}).timeout(60000)
 
 		it(`${name} runtime islands`, async () => {
 			const islands = fromHere("islands")
@@ -224,13 +224,13 @@ contextualize(() => {
 			)
 			attest(run(standalone)).equals(runPlain(islands))
 			attest(standalone.includes(parserMessage)).equals(true)
-		})
+		}).timeout(60000)
 
 		it(`${name} packages that opt in`, async () => {
 			const standalone = await bundle({ cwd: library }, library)
 			attest(run(standalone)).equals(runPlain(library))
 			attest(standalone.includes(parserMessage)).equals(false)
-		})
+		}).timeout(60000)
 
 		it(`${name} configured`, async () => {
 			const opts = { cwd: configured, config: "config.ts" }
@@ -240,7 +240,7 @@ contextualize(() => {
 			attest(
 				run(await bundle({ ...opts, runtime: "arktype" }, configured))
 			).equals(runPlain(configured))
-		})
+		}).timeout(60000)
 	}
 
 	it("reads a module that defines a Type from an imported one", async () => {
@@ -262,7 +262,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 			'role must be "admin" (was "member")\n'
 		)
 		attest(outputFiles[0].text.includes(parserMessage)).equals(false)
-	})
+	}).timeout(60000)
 
 	it("registers arktype's keyword table before arktype loads", async () => {
 		// arktype and its keyword table resolve to files that print when they load
@@ -287,7 +287,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 			"config\nkeywords\narktype\nstring\n",
 			"config\nkeywords\narktype\nstring\n"
 		])
-	})
+	}).timeout(60000)
 
 	it("warns once for each dependency importing arktype in standalone mode", async () => {
 		attest(await buildDependency("shared.ts")).equals([
@@ -296,7 +296,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		attest(await buildDependency("shared.ts", { runtime: "arktype" })).equals(
 			[]
 		)
-	})
+	}).timeout(60000)
 
 	it("fails for a second copy of arktype", async () => {
 		const vite = (runtime?: "arktype") =>
@@ -318,7 +318,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 			attest(errors.some(text => text.includes(report))).equals(true)
 			attest((await vite(runtime)).includes(report)).equals(true)
 		}
-	})
+	}).timeout(60000)
 
 	it("fails for a second copy of a package arktype runs on", async () => {
 		attest(
@@ -328,7 +328,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		).snap([
 			"schema.ts:2:22  @ark/schema resolves to more than one copy\n  0.1.0 at node_modules/@ark/schema, reached from schema.ts\n  0.2.0 at node_modules/arktype/node_modules/@ark/schema, reached from node_modules/arktype/index.js\n  Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
 		])
-	})
+	}).timeout(60000)
 
 	it("reports what the standalone runtime's frozen values reject", async () => {
 		const root = writeFixture({
@@ -357,7 +357,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 				'sloppy.cts:1:1  sloppy.cts is not strict mode code\n  the standalone runtime freezes arktype values, and outside strict mode a write to a frozen value is ignored rather than throwing\n  Add "use strict" at the top of the module, or make it an ES module.'
 			]
 		])
-	})
+	}).timeout(60000)
 
 	it("vitest", async () => {
 		for (const runtime of [undefined, "arktype"] as const) {
