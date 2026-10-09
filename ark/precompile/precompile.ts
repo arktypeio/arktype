@@ -263,6 +263,12 @@ export class Precompiler {
 		return this._analyze(this.graph.add(id, source))
 	}
 
+	// as precompile() analyzes a module, under the configuration it applies to arktype in this thread
+	analyzeConfigured(source: string, id: string): ModuleAnalysis {
+		this.configuration ??= this.applyConfiguration()
+		return this.analyze(source, id)
+	}
+
 	// whether a module may define a Type, read from its imports so most modules that can't are never parsed
 	importsArk(source: string, id: string): boolean {
 		if (arktypeSpecifier.test(source)) return true

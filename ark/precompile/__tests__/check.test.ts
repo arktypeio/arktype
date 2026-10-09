@@ -29,6 +29,15 @@ contextualize(() => {
 		])
 	})
 
+	it("applies the configuration", () => {
+		attest(
+			check([], { cwd: fromHere("writers"), config: "config.ts" }).lines
+		).snap([
+			'main.ts:6:21  type("string").narrow(isLong) can\'t be precompiled to a standalone validator yet\n  `node.expression` (config.ts:5:38) prints the name of `isLong` (main.ts:4:16), which the build knows only by a placeholder\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+			"1 site in 2 files: 0 accepted (0.0%)"
+		])
+	})
+
 	it("fails under a rate", () => {
 		attest(cli("--check", "--fail-under", "50").status).equals(0)
 		attest(cli("--check", "--fail-under", "60").status).equals(1)

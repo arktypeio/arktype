@@ -7,7 +7,8 @@ import {
 	Precompiler,
 	renderDiagnostic,
 	type Diagnostic,
-	type PrecompileOptions
+	type PrecompileOptions,
+	type Site
 } from "./precompile.ts"
 import { isPrecompilerWorker } from "./worker.ts"
 
@@ -49,6 +50,7 @@ export interface PrecompilerWorkerData {
 
 export type PrecompileRequest =
 	| [kind: "transform", source: string, id: string]
+	| [kind: "analyze", source: string, id: string]
 	| [kind: "readDependency", importer: string]
 	| [kind: "reset"]
 	| [kind: "close"]
@@ -68,6 +70,12 @@ export interface TransformedModule extends InlineModule {
 
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
 
+// the part of a module's analysis a worker can send back
+export interface AnalyzedModule {
+	sites: Pick<Site, "start" | "line" | "column" | "status">[]
+	diagnostics: Diagnostic[]
+}
+
 export const answerRequests = (
 	port: MessagePort,
 	data: PrecompilerWorkerData
@@ -80,9 +88,23 @@ export const answerRequests = (
 		}
 		if (request[0] === "close") return
 		precompiler ??= createPrecompiler(data.precompilerOptions)
-		return request[0] === "readDependency" ?
-				precompiler.readDependency(request[1])
-			:	transformedModuleOf(precompiler, request[1], request[2])
+		if (request[0] === "readDependency")
+			return precompiler.readDependency(request[1])
+		if (request[0] === "transform")
+			return transformedModuleOf(precompiler, request[1], request[2])
+		const { sites, diagnostics } = precompiler.analyzeConfigured(
+			request[1],
+			request[2]
+		)
+		return {
+			sites: sites.map(({ start, line, column, status }) => ({
+				start,
+				line,
+				column,
+				status
+			})),
+			diagnostics
+		} satisfies AnalyzedModule
 	}
 	port.on("message", (request: PrecompileRequest) => {
 		try {

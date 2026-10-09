@@ -1,11 +1,37 @@
 import type { ESLint, Linter, Rule } from "eslint"
-import { resolve } from "node:path"
-import { createNodeHost, type NodeHostOptions } from "./host.ts"
-import { Precompiler, type PrecompileOptions } from "./precompile.ts"
+import type { AnalyzedModule } from "./driver.ts"
+import type { NodeHostOptions } from "./host.ts"
+import type { PrecompileOptions } from "./precompile.ts"
+import { createSyncPrecompiler } from "./worker.ts"
 
 export interface PrecompileRuleOptions
 	extends PrecompileOptions,
 		NodeHostOptions {}
+
+// arktype in ESLint's thread can't take a configuration, and each configuration needs a thread of its own
+const precompilersByOptions = new Map<
+	string,
+	ReturnType<typeof createSyncPrecompiler>
+>()
+
+const analyze = (
+	opts: PrecompileRuleOptions,
+	source: string,
+	id: string
+): AnalyzedModule => {
+	const key = JSON.stringify(opts)
+	let request = precompilersByOptions.get(key)
+	// a file may have changed since the last was linted, and the worker keeps the configuration it applied first
+	if (request?.("reset")) {
+		request("close")
+		request = undefined
+	}
+	if (!request) {
+		request = createSyncPrecompiler({ precompilerOptions: opts })
+		precompilersByOptions.set(key, request)
+	}
+	return request("analyze", source, id) as AnalyzedModule
+}
 
 const precompilable: Rule.RuleModule = {
 	meta: {
@@ -30,12 +56,11 @@ const precompilable: Rule.RuleModule = {
 	},
 	create: context => ({
 		"Program:exit": () => {
-			const opts: PrecompileRuleOptions | undefined = context.options[0]
-			const result = new Precompiler(createNodeHost(opts), {
-				...opts,
-				cwd: context.cwd,
-				config: opts?.config && resolve(context.cwd, opts.config)
-			}).analyze(context.sourceCode.text, context.filename)
+			const result = analyze(
+				{ ...context.options[0], cwd: context.cwd },
+				context.sourceCode.text,
+				context.filename
+			)
 			for (const diagnostic of result.diagnostics) {
 				if (diagnostic.file !== context.filename) continue
 				context.report({

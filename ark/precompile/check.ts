@@ -1,11 +1,9 @@
 import { globSync, readFileSync } from "node:fs"
 import { relative, resolve } from "node:path"
-import { createNodeHost, type NodeHostOptions } from "./host.ts"
-import {
-	Precompiler,
-	renderDiagnostic,
-	type PrecompileOptions
-} from "./precompile.ts"
+import type { AnalyzedModule } from "./driver.ts"
+import type { NodeHostOptions } from "./host.ts"
+import { renderDiagnostic, type PrecompileOptions } from "./precompile.ts"
+import { createSyncPrecompiler } from "./worker.ts"
 
 export interface CheckOptions extends PrecompileOptions, NodeHostOptions {}
 
@@ -31,10 +29,9 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 	})
 		.map(file => resolve(cwd, file))
 		.sort()
-	const precompiler = new Precompiler(createNodeHost(opts), {
-		...opts,
-		cwd,
-		config: opts?.config && resolve(cwd, opts.config)
+	// a worker applies the configuration to arktype as the build does, which the caller's thread can't
+	const request = createSyncPrecompiler({
+		precompilerOptions: { ...opts, cwd }
 	})
 	const report: CheckReport = {
 		lines: [],
@@ -45,7 +42,11 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 		files: files.length
 	}
 	for (const file of files) {
-		const result = precompiler.analyze(readFileSync(file, "utf8"), file)
+		const result = request(
+			"analyze",
+			readFileSync(file, "utf8"),
+			file
+		) as AnalyzedModule
 		const path = relative(cwd, file)
 		const entries: [number, string][] = result.diagnostics.map(diagnostic => [
 			diagnostic.start,
@@ -64,6 +65,7 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 		entries.sort((l, r) => l[0] - r[0])
 		for (const [, line] of entries) report.lines.push(line)
 	}
+	request("close")
 	const precompiled = report.sites - report.islands
 	if (precompiled) report.rate = (100 * report.accepted) / precompiled
 	report.lines.push(
