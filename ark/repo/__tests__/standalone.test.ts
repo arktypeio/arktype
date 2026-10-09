@@ -484,8 +484,8 @@ contextualize(() => {
 		).equals(true)
 	})
 
-	it("bundles without node, scope or parse code", () => {
-		const { modules } = bundle(
+	it("bundles without node, scope, parse or code-generating code", () => {
+		const { js, modules } = bundle(
 			precompileStandalone({
 				T: type({ a: "string.numeric.parse", b: "(number | Date)[]" }).or(
 					"string.json.parse"
@@ -513,5 +513,6 @@ contextualize(() => {
 				path => !path.startsWith("util/") && !runtimeModules.has(path)
 			)
 		).equals([])
+		attest(/new Function|extends Function/.test(js)).equals(false)
 	})
 })

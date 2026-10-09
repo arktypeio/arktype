@@ -96,6 +96,9 @@ export type TypeGuard<input = unknown, narrowed extends input = input> = (
 	In: input
 ) => In is narrowed
 
+// not cached(), whose call when this module loads keeps it in bundles that never check
+let hasCsp: boolean | undefined
+
 /**
  * Checks if the environment has Content Security Policy (CSP) enabled,
  * preventing JIT-optimized code from being compiled via new Function().
@@ -105,10 +108,11 @@ export type TypeGuard<input = unknown, narrowed extends input = input> = (
  *
  * The result is cached for subsequent invocations.
  */
-export const envHasCsp = cached((): boolean => {
+export const envHasCsp = (): boolean => {
+	if (hasCsp !== undefined) return hasCsp
 	try {
-		return new Function("return false")()
+		return (hasCsp = new Function("return false")())
 	} catch {
-		return true
+		return (hasCsp = true)
 	}
-})
+}

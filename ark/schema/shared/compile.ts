@@ -8,9 +8,36 @@ import {
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
+import {
+	registerNodeContextCopier,
+	type ArkError,
+	type ArkErrorContextInput
+} from "./errors.ts"
 import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
 import type { TraversalKind } from "./traversal.ts"
+
+// a node's errors share its context, so a function compiled once copies its keys
+const copiesByContext = new WeakMap<object, (error: ArkError) => void>()
+
+registerNodeContextCopier((error, context: ArkErrorContextInput) => {
+	let copy = copiesByContext.get(context)
+	if (!copy) {
+		let body = "e.input = input\n"
+		for (const k in context) {
+			// relativePath is read into the error's path
+			if (k === "relativePath") continue
+			const key = JSON.stringify(k)
+			body += `e[${key}] = input[${key}]\n`
+		}
+		copy = new DynamicFunction<(input: object) => (error: ArkError) => void>(
+			"input",
+			`return e => {\n${body}}`
+		)(context)
+		copiesByContext.set(context, copy)
+	}
+	copy(error)
+})
 
 export type CoercibleValue = string | number | boolean | null | undefined
 

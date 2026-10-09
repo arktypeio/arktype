@@ -1,6 +1,5 @@
 import {
 	CastableBase,
-	DynamicFunction,
 	ReadonlyPath,
 	append,
 	appendUnique,
@@ -98,8 +97,8 @@ export class ArkError<
 	) {
 		super()
 		this.ctx = ctx
-		if (isNodeContext && !ctx.config.jitless) {
-			copyNodeContext(this as never, input)
+		if (isNodeContext && nodeContextCopier && !ctx.config.jitless) {
+			nodeContextCopier(this as never, input)
 			this._path =
 				input.relativePath ?
 					ctx.path.concat(input.relativePath)
@@ -411,29 +410,16 @@ const excludedFromJson = {
 const isSlot = (k: string) =>
 	k === "expected" || k === "actual" || k === "problem" || k === "message"
 
-// a node's errors share its context, so a function compiled once copies its keys
-const copiesByContext = new WeakMap<object, (error: ArkError) => void>()
-
-const copyNodeContext = (
+export type NodeContextCopier = (
 	error: ArkError,
 	context: ArkErrorContextInput
-): void => {
-	let copy = copiesByContext.get(context)
-	if (!copy) {
-		let body = "e.input = input\n"
-		for (const k in context) {
-			// relativePath is read into the error's path
-			if (k === "relativePath") continue
-			const key = JSON.stringify(k)
-			body += `e[${key}] = input[${key}]\n`
-		}
-		copy = new DynamicFunction<(input: object) => (error: ArkError) => void>(
-			"input",
-			`return e => {\n${body}}`
-		)(context)
-		copiesByContext.set(context, copy)
-	}
-	copy(error)
+) => void
+
+let nodeContextCopier: NodeContextCopier | undefined
+
+// registered beside arktype's compiler, so the runtime, which never generates code, ships without it
+export const registerNodeContextCopier = (copier: NodeContextCopier): void => {
+	nodeContextCopier = copier
 }
 
 export declare namespace ArkErrors {
