@@ -183,16 +183,21 @@ export default defineConfig({
 export const User = type({ name: "string > 0" })
 ```
 
-Modules and cyclic Types are precompiled too, and a Module becomes a plain object of its validators:
+Scopes, Modules, Generics and cyclic Types are precompiled too. A Module becomes a plain object of its validators, and a Scope or Generic a value whose members throw, naming where it was defined, since resolving an alias or instantiating a Generic needs arktype:
 
 ```ts
-// bundled as an object of validators, which validate cyclic data as the Types do
-export const types = scope({
-	tree: { value: "number", "children?": "tree[]" }
-}).export()
+const $ = scope({
+	tree: { value: "number", "children?": "tree[]" },
+	"box<t>": { box: "t" }
+})
+
+// bundled as an object of validators, whose box throws when called
+export const types = $.export()
+// bundled as a validator, which validates cyclic data as the Type does
+export const BoxedTree = types.box("tree")
 ```
 
-A validator bakes `expression`, `description` and `meta`, and throws on members that compose or introspect a Type. An artifact freezes what it creates, so a write to one throws in strict mode: its validators and their shared prototype, its Modules, configs and node shapes, and every literal it emits, such as `meta`. A RegExp is only made non-extensible, since its methods write `lastIndex`, and neither a Date's time nor a RegExp's pattern can be frozen. `arktype/runtime`'s `type` is frozen too. The build refuses what the runtime can't reproduce, like a Generic, or a narrow or morph that isn't one of arktype's keywords, naming it. An artifact refuses to load beside `arktype` or on another version of `arktype/runtime`.
+A validator bakes `expression`, `description` and `meta`, and throws on members that compose or introspect a Type. An artifact freezes what it creates, so a write to one throws in strict mode: its validators and their shared prototype, its Modules, Scopes, Generics, configs and node shapes, and every literal it emits, such as `meta`. A RegExp is only made non-extensible, since its methods write `lastIndex`, and neither a Date's time nor a RegExp's pattern can be frozen. `arktype/runtime`'s `type` is frozen too. The build refuses what the runtime can't reproduce, like a narrow or morph that isn't one of arktype's keywords, naming it. An artifact refuses to load beside `arktype` or on another version of `arktype/runtime`.
 
 A program's `configure()` call stays in place and configures `arktype/runtime`, which fixes its configuration at the first validator it creates, as arktype does at the first Type. It throws if `configure()` comes after that, or under a configuration other than the one the validators were built under.
 

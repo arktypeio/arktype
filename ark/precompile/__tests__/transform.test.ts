@@ -47,7 +47,7 @@ import { v2e1m8qabj8c as $arkv2e1m8qabj8c } from "~arktype/18scx4hvmp"`)
 
 		it("unsupported sites", () => {
 			const result = precompile(
-				`import { scope, type } from "arktype"
+				`import { type } from "arktype"
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
 const field = (n: number) => type(\`string <= \${n}\`)
@@ -57,29 +57,29 @@ export const C = field(5)
 export const D = type("strin")
 export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
 export const F = type("number")
-export const G = scope({ a: "string" })`,
+export const G = type("string").description`,
 				{ "/limits.ts": "export const max = 5" }
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/main.ts:8:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
 				'/main.ts:9:18  type({ "+": "delete", "[string]": "string", a: "\'a\'" }) can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: "a", + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:11:18  scope({ a: "string" }) can\'t be precompiled to a standalone validator yet\n  its value is not a Type or Module\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/main.ts:11:18  type("string").description can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope or Generic\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
-			attest(result.code).snap(`import { scope, type } from "arktype"
+			attest(result.code).snap(`import { type } from "arktype"
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
 const field = (n: number) => type(\`string <= \${n}\`)
-export const A = $arkfytsovucmcv(trim)
-export const B = $arkf2bfm9voib1j(max)
-export const C = $arkv2cw04mqw80s
+export const A = $arkf11rmdvxwrkb(trim)
+export const B = $arkf20bdtc14r0x(max)
+export const C = $arkv18f1a6ngbuy
 export const D = $ark11nyj35o0sh()
 export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
-export const F = $arkvpatjbfbx3k
-export const G = scope({ a: "string" })
-import { fytsovucmcv as $arkfytsovucmcv } from "~arktype/3k9u25xc99"
-import { f2bfm9voib1j as $arkf2bfm9voib1j } from "~arktype/3k9u25xc99"
-import { v2cw04mqw80s as $arkv2cw04mqw80s } from "~arktype/3k9u25xc99"
-import { vpatjbfbx3k as $arkvpatjbfbx3k } from "~arktype/3k9u25xc99"
+export const F = $arkv1pbxisbfbpm
+export const G = type("string").description
+import { f11rmdvxwrkb as $arkf11rmdvxwrkb } from "~arktype/mvv020nu3"
+import { f20bdtc14r0x as $arkf20bdtc14r0x } from "~arktype/mvv020nu3"
+import { v18f1a6ngbuy as $arkv18f1a6ngbuy } from "~arktype/mvv020nu3"
+import { v1pbxisbfbpm as $arkv1pbxisbfbpm } from "~arktype/mvv020nu3"
 import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"`)
 		})
 
@@ -101,6 +101,55 @@ import { v209i2jspcoq as $arkv209i2jspcoq } from "~arktype/lyrf7rme87"`)
 				'const module0 = runtime.freeze({ ["tree"]: validator0 })',
 				'const module1 = runtime.freeze({ ["a"]: validator1, ["b"]: validator2 })'
 			])
+		})
+
+		it("folds Scopes and Generics to values whose members throw", () => {
+			const result = precompile(`import { scope, type } from "arktype"
+const $ = scope({ tree: { value: "number", "children?": "tree[]" }, "box<t>": { box: "t" } })
+export const types = $.export()
+export const Tree = $.type("tree")
+export const Box = type("<t>", { box: "t" })
+export const BoxedTree = Box(types.tree)`)
+			attest(result.diagnostics).equals([])
+			attest(result.code).snap(`import "arktype"
+const $ = $arkv207w5kbsr5e
+export const types = $arkvehauhbipgw
+export const Tree = $arkv148ig5g1uwr
+export const Box = $arkv1s13ylwl1x9
+export const BoxedTree = $arkv19p2bcm49l4
+import { v207w5kbsr5e as $arkv207w5kbsr5e } from "~arktype/1fk1eauq3qz"
+import { vehauhbipgw as $arkvehauhbipgw } from "~arktype/1fk1eauq3qz"
+import { v148ig5g1uwr as $arkv148ig5g1uwr } from "~arktype/1fk1eauq3qz"
+import { v1s13ylwl1x9 as $arkv1s13ylwl1x9 } from "~arktype/1fk1eauq3qz"
+import { v19p2bcm49l4 as $arkv19p2bcm49l4 } from "~arktype/1fk1eauq3qz"`)
+			attest(
+				Object.values(result.modules)[0]
+					.split("\n")
+					.filter(line => /^const (unavailable|module)\d/.test(line))
+			).snap([
+				'const unavailable0 = runtime.unavailableScope("the Scope at /main.ts:2:11")',
+				'const unavailable1 = runtime.unavailableGeneric("the Generic box at /main.ts:3:22")',
+				'const unavailable2 = runtime.unavailableGeneric("the Generic at /main.ts:5:20")',
+				'const module0 = runtime.freeze({ ["tree"]: validator0, ["box"]: unavailable1 })'
+			])
+		})
+
+		it("drops a site written inside a Scope it folds", () => {
+			const result = precompile(`import { scope } from "arktype"
+const create = () => {
+	const $ = scope({ a: () => $.type("string") })
+	const types = $.export()
+	return types
+}`)
+			attest(result.diagnostics).equals([])
+			attest(result.code).snap(`import "arktype"
+const create = () => {
+	const $ = $arkv2z182cdbhc
+	const types = $arkv11a751fkv8g
+	return types
+}
+import { v2z182cdbhc as $arkv2z182cdbhc } from "~arktype/1yirv7nk3td"
+import { v11a751fkv8g as $arkv11a751fkv8g } from "~arktype/1yirv7nk3td"`)
 		})
 	})
 

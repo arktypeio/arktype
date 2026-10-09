@@ -14,9 +14,12 @@ import {
 	printable,
 	prototypeOf,
 	throwError,
+	type arkKind,
 	type inferred
 } from "@ark/util"
+import type { Generic } from "./generic.ts"
 import { raisedErrorPhrases } from "./keywords/functions.ts"
+import type { Scope } from "./scope.ts"
 import type { ArrayType } from "./variants/array.ts"
 import type { DateType } from "./variants/date.ts"
 import type { NumberType } from "./variants/number.ts"
@@ -288,18 +291,74 @@ const unavailableStatics = {
 	valueOf: 1
 } satisfies Record<Exclude<keyof TypeParser, "errors">, 1>
 
-const typeFacade = assign(
-	() => throwError(writeUnavailableMemberMessage("type")),
-	{ errors: ArkErrors }
-)
-
-for (const name in unavailableStatics) {
-	Object.defineProperty(typeFacade, name, {
-		get: () => throwError(writeUnavailableMemberMessage(`type.${name}`))
-	})
+const freezeUnavailable = <o extends object>(
+	o: o,
+	members: object,
+	nameOf: (member: string) => string
+): o => {
+	for (const member in members) {
+		Object.defineProperty(o, member, {
+			get: () => throwError(writeUnavailableMemberMessage(nameOf(member)))
+		})
+	}
+	return freeze(o)
 }
 
-export const type: { (): never; errors: typeof ArkErrors } = freeze(typeFacade)
+export const type: { (): never; errors: typeof ArkErrors } = freezeUnavailable(
+	assign(() => throwError(writeUnavailableMemberMessage("type")), {
+		errors: ArkErrors
+	}),
+	unavailableStatics,
+	name => `type.${name}`
+)
+
+// each defines or introspects a Type, which the runtime can't
+const unavailableScopeMembers = {
+	aliases: 1,
+	config: 1,
+	declare: 1,
+	define: 1,
+	defineSchema: 1,
+	enumerated: 1,
+	export: 1,
+	exportedNames: 1,
+	fn: 1,
+	generic: 1,
+	import: 1,
+	instanceOf: 1,
+	internal: 1,
+	json: 1,
+	match: 1,
+	node: 1,
+	references: 1,
+	resolve: 1,
+	schema: 1,
+	type: 1,
+	unit: 1,
+	valueOf: 1
+} satisfies Record<Exclude<keyof Scope, arkKind | "t">, 1>
+
+const unavailableGenericMembers = {
+	$: 1,
+	arg$: 1,
+	bodyDef: 1,
+	constraints: 1,
+	internal: 1,
+	json: 1,
+	names: 1,
+	params: 1
+} satisfies Record<Exclude<keyof Generic, keyof Function | arkKind | "t">, 1>
+
+// a label names where the build folded it, e.g. "the Scope at src/user.ts:3:7"
+export const unavailableScope = (label: string): object =>
+	freezeUnavailable({}, unavailableScopeMembers, name => `${name} of ${label}`)
+
+export const unavailableGeneric = (label: string): (() => never) =>
+	freezeUnavailable(
+		() => throwError(writeUnavailableMemberMessage(`calling ${label}`)),
+		unavailableGenericMembers,
+		name => `${name} of ${label}`
+	)
 
 export type HoleKind = "function" | "class" | "symbol"
 

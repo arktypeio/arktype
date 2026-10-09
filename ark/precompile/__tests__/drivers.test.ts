@@ -80,7 +80,7 @@ contextualize(() => {
 					.replace(`${app}/`, "")
 			)
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: "'admin'" … can't be precompiled to a standalone validator yet
-  its value is not a Type or Module
+  \`User\` is imported from schemas.ts, which only a Type's factory can compare yet
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		}).timeout(60000)
 
@@ -285,7 +285,7 @@ console.log(first === ${transform}, /fixConfig\\("\\w+"\\)/.test(first))`
 					.replace(`${app}/`, "")
 			)
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: "'admin'" … can't be precompiled to a standalone validator yet
-  its value is not a Type or Module
+  \`User\` is imported from schemas.ts, which only a Type's factory can compare yet
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		}).timeout(60000)
 	})

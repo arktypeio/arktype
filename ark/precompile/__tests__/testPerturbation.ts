@@ -100,7 +100,7 @@ for (const path of corpus) {
 			`$arkSite(${id}, () => [${[...names].map(name => `() => ${name}`).join(", ")}], () => (`
 		])
 	}
-	// the last of each marker, since a factory's labels quote the source of what it receives
+	// the last of each marker, since a factory's labels quote the source of what it receives, and none for a site dropped with one it was written in
 	const wrap = (code: string) => {
 		for (const [start, end, replacement] of wrappers) {
 			for (const [marker, text] of [
@@ -108,6 +108,7 @@ for (const path of corpus) {
 				[end, "))"]
 			]) {
 				const i = code.lastIndexOf(marker)
+				if (i === -1) continue
 				code = code.slice(0, i) + text + code.slice(i + marker.length)
 			}
 		}

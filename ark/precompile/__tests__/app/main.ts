@@ -10,8 +10,11 @@ const Chain = type({
 })
 
 const shapes = scope({
-	tree: { value: "number", "children?": "tree[]" }
+	tree: { value: "number", "children?": "tree[]" },
+	"box<t>": { box: "t" }
 }).export()
+
+const BoxedTree = shapes.box("tree")
 
 const ada = { name: "Ada", email: "ada@example.com", age: 36, tags: ["math"] }
 
@@ -36,7 +39,8 @@ const samples: [(data: unknown) => unknown, unknown][] = [
 	[Node, { value: 1, next: { value: 2, next: { value: "3" } } }],
 	[Chain, { value: 1, next: { value: -1 } }],
 	[shapes.tree, { value: 1, children: [{ value: 2 }, { value: "3" }] }],
-	[data => shapes.tree(data) === data, loop]
+	[data => shapes.tree(data) === data, loop],
+	[BoxedTree, { box: { value: 1, children: [{}] } }]
 ]
 
 console.log(

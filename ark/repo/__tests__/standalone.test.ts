@@ -402,7 +402,9 @@ contextualize(() => {
 			a: { "b?": "b", "self?": "a" },
 			b: { "a?": "a", c: "string" },
 			Node: type({ value: "number", "next?": "this" }),
-			tree: { value: "number", "children?": "tree[]" }
+			tree: { value: "number", "children?": "tree[]" },
+			"Tree<t>": { value: "t", "children?": "Tree<t>[]" },
+			Trees: "Tree<number>"
 		})
 		const { M: validators } = await load({ M })
 		const a: any = { b: { c: "x" } }
@@ -416,7 +418,7 @@ contextualize(() => {
 		const tree: any = { value: 1, children: [] }
 		tree.children.push(tree, { value: "2" })
 		const inputs = [a, bad, node, { value: 1, next: { value: "2" } }, tree]
-		for (const name of ["a", "b", "Node", "tree"] as const) {
+		for (const name of ["a", "b", "Node", "tree", "Trees"] as const) {
 			const t: type.Any = M[name]
 			for (const input of inputs) {
 				attest(observe(validators[name](input), input)).equals(
@@ -424,6 +426,36 @@ contextualize(() => {
 				)
 			}
 		}
+	})
+
+	it("exports a Scope or Generic as a value whose members throw", async () => {
+		const $ = scope({ "box<t>": { box: "t" }, a: "string" })
+		const Box = type("<t>", { box: "t" })
+		const { $: standIn, Box: box, M } = await load({ $, Box, M: $.export() })
+		attest(() => standIn.type).throws(
+			writeUnavailableMemberMessage("type of the Scope $")
+		)
+		attest(() => box("string")).throws(
+			writeUnavailableMemberMessage("calling the Generic Box")
+		)
+		attest(() => box.names).throws(
+			writeUnavailableMemberMessage("names of the Generic Box")
+		)
+		attest(() => M.box("string")).throws(
+			writeUnavailableMemberMessage("calling the Generic M.box")
+		)
+		attest(M.a("x")).equals("x")
+		// an artifact without validators still declares its stand-ins and the Modules holding them
+		const { Boxes } = await load({
+			Boxes: scope({ "box<t>": { box: "t" } }).export()
+		})
+		attest(() => Boxes.box("string")).throws(
+			writeUnavailableMemberMessage("calling the Generic Boxes.box")
+		)
+		const sited = precompileStandalone({ $ }, undefined, {
+			$: "src/schemas.ts:1:11"
+		})
+		attest(sited.includes('"the Scope at src/schemas.ts:1:11"')).equals(true)
 	})
 
 	it("emits a Type in meta as its validator", async () => {
@@ -451,7 +483,8 @@ contextualize(() => {
 		const { n: Cyclic } = scope({ n: { "next?": "n", v: "number" } }).export()
 		const Even = scope({}, { divisor: { message: "odd" } }).type("number % 2")
 		const Long = type("string").atLeastLength(3)
-		const artifact = await load({ T, M, Cyclic, Even, Long })
+		const Box = type("<t>", { box: "t" })
+		const artifact = await load({ T, M, Cyclic, Even, Long, $: scope({}), Box })
 		const { T: validator, M: module } = artifact
 		const prototype = Object.getPrototypeOf(validator)
 		const shape = artifact.Cyclic("x", { pipe: (node: unknown) => node })
@@ -470,6 +503,8 @@ contextualize(() => {
 			prototype: () => Object.setPrototypeOf(validator, {}),
 			type: () => ((runtimeType as any).x = 1),
 			module: () => (module.a = validator),
+			scope: () => (artifact.$.x = 1),
+			generic: () => (artifact.Box.x = 1),
 			shape: () => (shape.traverseApply = () => {}),
 			config: () => (config.jitless = false),
 			configuredWriters: () => (config.divisor.message = "even"),
@@ -527,11 +562,6 @@ contextualize(() => {
 		attest(() => precompileStandalone({ "\uD800": type("string") })).throws(
 			writeUnprecompilableMessage('the export name "\\ud800"')
 		)
-		attest(() =>
-			precompileStandalone({
-				M: scope({ "box<t>": { box: "t" }, "sub.a": "string" }).export()
-			})
-		).throws(writeUnprecompilableMessage("the Generic M.box"))
 		const T = scope({}, { domain: { message: () => "configured" } }).type(
 			"string"
 		)

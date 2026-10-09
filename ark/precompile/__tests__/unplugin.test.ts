@@ -196,7 +196,8 @@ contextualize(() => {
 			"next.next.value must be a number (was a string)",
 			"next.value must be positive (was -1)",
 			"children[1].value must be a number (was a string)",
-			true
+			true,
+			"box.children[0].value must be a number (was missing)"
 		])
 	})
 

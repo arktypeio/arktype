@@ -608,8 +608,17 @@ export class Precompiler {
 		const factoriesBySite = new Map<Site, SiteFactory>()
 		const throwersBySite = new Map<Site, SiteThrower>()
 		const exportsByName: Record<string, StandaloneExport> = {}
+		const sitesByName: Record<string, string> = {}
+		// a site replaced by its value drops what it was written with, so a site inside it, like one in a thunk defining a Scope's alias, is dropped too
+		const replaced: Site[] = []
 		for (const site of sites) {
-			if (site.status !== "accepted") continue
+			if (
+				site.status !== "accepted" ||
+				replaced.some(
+					outer => outer.start <= site.start && site.end <= outer.end
+				)
+			)
+				continue
 			const reasons = this.unsupportedReasonsOf(site)
 			const thrower =
 				site.parseError && !reasons.length ?
@@ -640,12 +649,19 @@ export class Precompiler {
 				const name = `v${nameOf(site)}`
 				namesBySite.set(site, name)
 				exportsByName[name] = site.value as never
+				sitesByName[name] = module.positionOf(site)
+				replaced.push(site)
 			}
 		}
 		const refusalsByName: Record<string, string> = {}
 		const validators =
 			Object.keys(exportsByName).length ?
-				writeValidators(exportsByName, refusalsByName, this.fingerprint)
+				writeValidators(
+					exportsByName,
+					sitesByName,
+					refusalsByName,
+					this.fingerprint
+				)
 			:	""
 		const specifier = `~arktype/${hashOf(validators)}`
 		const imported = new Set<string>()
@@ -1032,24 +1048,25 @@ export class Precompiler {
 	}
 
 	private unsupportedReasonsOf(site: Site): string[] {
-		const isModule = hasArkKind(site.value, "module")
+		const receivesNothing =
+			!hasArkKind(site.value, "root") && isFoldable(site.value)
 		const result =
-			site.parseError || isModule || hasArkKind(site.value, "root") ?
+			site.parseError || isFoldable(site.value) ?
 				[]
-			:	["its value is not a Type or Module"]
-		// only a Type's factory receives what its site reads, so a Module's site can't read what could change at runtime
+			:	["its value is not a Type, Module, Scope or Generic"]
+		// only a Type's site folds to a factory receiving what it reads, so a Module's, Scope's or Generic's can't read what could change at runtime
 		const unreceived = (verb: string) =>
-			isModule ? `, which only a Type's factory can ${verb} yet` : ""
+			receivesNothing ? `, which only a Type's factory can ${verb} yet` : ""
 		for (const hole of site.holes) {
 			const isReceived = !hole.isCalledAtDefinition && hole.kind !== "opaque"
-			if (isReceived && !isModule) continue
+			if (isReceived && !receivesNothing) continue
 			const holeModule = this.graph.moduleOf(hole.file) as SourceModule
 			result.push(
 				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})${isReceived ? unreceived("receive") : ""}`
 			)
 		}
 		// a factory throws a ParseError without reading its inputs or checking its helpers, so the error can't depend on them
-		for (const input of site.parseError || isModule ? site.inputs : []) {
+		for (const input of site.parseError || receivesNothing ? site.inputs : []) {
 			result.push(
 				`\`${[input.name, ...input.path.map(String)].join(".")}\` is ${
 					input.kind === "import" ?
@@ -1059,7 +1076,9 @@ export class Precompiler {
 				}${unreceived("compare")}`
 			)
 		}
-		for (const helper of (site.parseError || isModule) && this.checkHelpers ?
+		for (const helper of (
+			(site.parseError || receivesNothing) && this.checkHelpers
+		) ?
 			site.helpers
 		:	[]) {
 			result.push(
@@ -1948,6 +1967,12 @@ const specifierOf = (importer: string, file: string) => {
 const listTexts = (texts: Iterable<string>) =>
 	[...texts].map(text => `\`${text}\``).join(" and ")
 
+const isFoldable = (value: unknown) =>
+	hasArkKind(value, "root") ||
+	hasArkKind(value, "module") ||
+	hasArkKind(value, "scope") ||
+	hasArkKind(value, "generic")
+
 // a ParseError is named by its message, so equal sites share a thrower, and anything else by its site, since a cyclic Type's hash holds registry counters
 const nameOf = (site: Site) =>
 	hashOf(site.parseError?.message ?? `${site.start}`)
@@ -1955,11 +1980,12 @@ const nameOf = (site: Site) =>
 // precompileStandalone refuses a whole artifact for one export it can't emit, so on a refusal each is emitted alone to find it
 const writeValidators = (
 	exportsByName: Record<string, StandaloneExport>,
+	sitesByName: Record<string, string>,
 	refusalsByName: Record<string, string>,
 	fingerprint: string | undefined
 ): string => {
 	try {
-		return precompileStandalone(exportsByName, fingerprint)
+		return precompileStandalone(exportsByName, fingerprint, sitesByName)
 	} catch {
 		const emitted = { ...exportsByName }
 		for (const name in exportsByName) {
@@ -1972,7 +1998,7 @@ const writeValidators = (
 		}
 		// every export is refused when the whole artifact is, as under a configured locale
 		return Object.keys(emitted).length ?
-				precompileStandalone(emitted, fingerprint)
+				precompileStandalone(emitted, fingerprint, sitesByName)
 			:	""
 	}
 }

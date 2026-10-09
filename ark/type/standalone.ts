@@ -38,14 +38,16 @@ import {
 	throwParseError
 } from "@ark/util"
 import { arktypeVersion } from "./entry.ts"
+import type { Generic } from "./generic.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { Module } from "./module.ts"
 import type { HoleKind } from "./runtime.ts"
 import * as runtime from "./runtimeExports.ts"
+import type { Scope } from "./scope.ts"
 
 const writerKeys = ["expected", "actual", "problem", "message"] as const
 
-type DeclarationRole = "shape" | "keys" | "literal" | "config"
+type DeclarationRole = "shape" | "keys" | "literal" | "config" | "unavailable"
 
 // constraints a node keeps sorted by hash, which holds the names of the functions they hold
 const sortedConstraintKeys = [
@@ -72,7 +74,10 @@ const indexRuntime = (value: unknown, path: string): void => {
 for (const [name, value] of Object.entries(runtime))
 	indexRuntime(value, `runtime.${name}`)
 
-export type StandaloneExport = type.Any | Module | StandaloneFactory
+// what an artifact exports as it is, rather than creating it in a factory
+type ExportedValue = type.Any | Module | Scope<any> | Generic
+
+export type StandaloneExport = ExportedValue | StandaloneFactory
 
 export interface StandaloneFactory {
 	// built with each parameter's build value in its place
@@ -105,14 +110,16 @@ export interface HelperParam {
 }
 
 /**
- * #### an ES module that exports each Type as a validator running on arktype/runtime alone, each Module as an object of them, and each factory as a function creating one from what it receives
+ * #### an ES module that exports each Type as a validator running on arktype/runtime alone, each Module as an object of them, each Scope or Generic as a value whose members throw, and each factory as a function creating a validator from what it receives
  */
 export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	// of the configuration the build applied, which the program must configure the runtime with
-	fingerprint?: string
+	fingerprint?: string,
+	// where each export was defined, which a Scope or Generic it holds names when used
+	sitesByName?: Record<string, string>
 ): string => {
-	const types: Record<string, type.Any | Module> = {}
+	const types: Record<string, ExportedValue> = {}
 	const factories: StandaloneArtifact[] = []
 	for (const [name, value] of Object.entries(exports)) {
 		if (arkKindOf(value) !== undefined) types[name] = value as never
@@ -123,12 +130,13 @@ export const precompileStandalone = (
 	}
 	return new StandaloneArtifact(types).write(
 		factories,
-		`runtime.fixConfig(${fingerprint === undefined ? "" : JSON.stringify(fingerprint)})`
+		`runtime.fixConfig(${fingerprint === undefined ? "" : JSON.stringify(fingerprint)})`,
+		sitesByName
 	)
 }
 
 export class StandaloneArtifact {
-	exports: Record<string, type.Any | Module>
+	exports: Record<string, ExportedValue>
 	params: FactoryParam[] | undefined
 	// what a factory's code reads each hole through: a parameter, or the holes of a validator it receives
 	holeExpressions = new Map<unknown, string>()
@@ -160,7 +168,8 @@ export class StandaloneArtifact {
 		shape: 0,
 		keys: 0,
 		literal: 0,
-		config: 0
+		config: 0,
+		unavailable: 0
 	}
 	emitting = new Set<object>()
 	moduleNamesByModule = new Map<object, string>()
@@ -173,10 +182,7 @@ export class StandaloneArtifact {
 	defaults: string[] = []
 	lateNames = new Set<string>()
 
-	constructor(
-		exports: Record<string, type.Any | Module>,
-		params?: FactoryParam[]
-	) {
+	constructor(exports: Record<string, ExportedValue>, params?: FactoryParam[]) {
 		this.exports = exports
 		for (const name in exports) {
 			// an ES module can't export a name holding an unpaired surrogate
@@ -395,15 +401,9 @@ export class StandaloneArtifact {
 
 	collectExport(value: unknown, path: string): void {
 		if (hasArkKind(value, "root")) return this.collectType(value)
-		if (!hasArkKind(value, "module")) {
-			return throwParseError(
-				writeUnprecompilableMessage(
-					hasArkKind(value, "generic") ?
-						`the Generic ${path}`
-					:	`the export ${path}`
-				)
-			)
-		}
+		if (hasArkKind(value, "scope") || hasArkKind(value, "generic")) return
+		if (!hasArkKind(value, "module"))
+			return throwParseError(writeUnprecompilableMessage(`the export ${path}`))
 		for (const [k, entry] of Object.entries(value))
 			this.collectExport(entry, appendStringifiedKey(path, k))
 	}
@@ -432,17 +432,22 @@ export class StandaloneArtifact {
 	}
 
 	// the configuration is fixed when the first validator is created, which happens where the artifact loads or a factory is called
-	write(factories: StandaloneArtifact[], fixConfig: string): string {
-		const exported = Object.entries(this.exports).map(
-			([name, value]) =>
-				`export { ${this.exportOf(value)} as ${JSON.stringify(name)} }`
-		)
+	write(
+		factories: StandaloneArtifact[],
+		fixConfig: string,
+		sitesByName?: Record<string, string>
+	): string {
+		const exported = Object.entries(this.exports).map(([name, value]) => {
+			const site = sitesByName?.[name]
+			return `export { ${this.exportOf(value, site ? "" : appendStringifiedKey("", name), site)} as ${JSON.stringify(name)} }`
+		})
 		const sections = [
 			`import * as runtime from "arktype/runtime"`,
 			`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
+			// without validators, what is left is the Scopes and Generics exported and the Modules holding them
 			...(this.roots.length ?
 				[fixConfig, ...this.writeBody(`(${this.unit.source})`)]
-			:	[]),
+			:	[this.declarations.join("\n"), this.modules.join("\n")]),
 			...factories.map((factory, i) => factory.writeFactory(i, fixConfig)),
 			exported.join("\n")
 		]
@@ -522,14 +527,27 @@ export { factory${index} as ${JSON.stringify(name)} }`
 	}
 
 	// a module is a plain object of validators, frozen like them
-	exportOf(value: unknown): string {
+	exportOf(value: unknown, path = "", site?: string): string {
 		if (hasArkKind(value, "root")) return this.validatorNamesByRoot.get(value)!
+		if (hasArkKind(value, "scope") || hasArkKind(value, "generic")) {
+			const kind = hasArkKind(value, "scope") ? "Scope" : "Generic"
+			const label = `the ${kind}${path && ` ${path}`}${site ? ` at ${site}` : ""}`
+			return (
+				this.constNamesByValue.get(value) ??
+				this.declareConst(
+					value,
+					"unavailable",
+					`runtime.unavailable${kind}(${JSON.stringify(label)})`
+				)
+			)
+		}
 		if (!hasArkKind(value, "module"))
 			return throwInternalError(`Unexpected export ${printable(value)}`)
 		const declared = this.moduleNamesByModule.get(value)
 		if (declared) return declared
 		const entries = Object.entries(value).map(
-			([k, entry]) => `[${JSON.stringify(k)}]: ${this.exportOf(entry)}`
+			([k, entry]) =>
+				`[${JSON.stringify(k)}]: ${this.exportOf(entry, appendStringifiedKey(path, k), site)}`
 		)
 		const name = `module${this.moduleNamesByModule.size}`
 		this.moduleNamesByModule.set(value, name)
