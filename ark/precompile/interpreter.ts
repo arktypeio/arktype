@@ -1726,7 +1726,7 @@ export class Interpreter {
 		return new DynamicValue(
 			standIn.module,
 			standIn.node,
-			`${standIn.closure?.name ? `\`${standIn.closure.name}\`` : "the function"} (${standIn.module.positionOf(standIn.node)}) is not a static helper: its body is not one expression or one \`return\``
+			`${this.labelOf(standIn)} is not a static helper: its body is not one expression or one \`return\``
 		)
 	}
 
@@ -1734,14 +1734,10 @@ export class Interpreter {
 		standIn: StandIn,
 		cause: DynamicValue | undefined
 	): DynamicValue {
-		const name =
-			standIn.closure?.name ? `\`${standIn.closure.name}\``
-			: standIn.kind === "class" ? "a class"
-			: "a function"
 		return new DynamicValue(
 			standIn.module,
 			standIn.node,
-			`arktype calls ${name} (${standIn.module.positionOf(standIn.node)}) while defining the type, so it must be a static helper`,
+			`arktype calls ${this.labelOf(standIn)} while defining the type, so it must be a static helper`,
 			cause ??
 				standIn.dynamic ??
 				(standIn.closure ? this.notStaticHelper(standIn) : undefined),
@@ -1906,10 +1902,15 @@ export class Interpreter {
 		)
 	}
 
-	private labelOf(standIn: StandIn): string {
-		const name =
+	declaredNameOf(standIn: StandIn): string | undefined {
+		return (
 			standIn.closure?.name ||
 			bindingOfFunction(standIn.node, standIn.module)?.name
+		)
+	}
+
+	labelOf(standIn: StandIn): string {
+		const name = this.declaredNameOf(standIn)
 		return `${
 			name ? `\`${name}\``
 			: standIn.kind === "class" ? "a class"

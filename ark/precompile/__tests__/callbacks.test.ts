@@ -59,7 +59,7 @@ const E = scope({ a: "number" }, { domain: { description: () => ${nonStatic} } }
 const F = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ${nonStatic} })`
 		attest(statusesOf(source)[0]).snap(`2:11 rejected
   arktype calls a function (/main.ts:2:16) while defining the type, so it must be a static helper
-  the function (/main.ts:2:16) is not a static helper: its body is not one expression or one \`return\``)
+  a function (/main.ts:2:16) is not a static helper: its body is not one expression or one \`return\``)
 		attest(
 			analyze(source).sites.map(site => `${site.line} ${site.status}`)
 		).snap([
@@ -136,7 +136,7 @@ const B = type("'a' | 'b'").narrow(s => ${nonStatic})
 const C = type("string").narrow(s => ${nonStatic})`)
 		).snap([
 			'2:11 accepted "a"',
-			"3:11 rejected\n  arktype calls a function (/main.ts:3:36) while defining the type, so it must be a static helper\n  the function (/main.ts:3:36) is not a static helper: its body is not one expression or one `return`",
+			"3:11 rejected\n  arktype calls a function (/main.ts:3:36) while defining the type, so it must be a static helper\n  a function (/main.ts:3:36) is not a static helper: its body is not one expression or one `return`",
 			"7:11 accepted string"
 		])
 	})
@@ -191,7 +191,7 @@ const C = type({ a: [["string", ":", s => ${nonStatic}], "=", "a"] })`
 		attest(statusesOf(source)).snap([
 			"2:11 accepted { a: string[] = Function($hole_2cnk9nyqft4) }",
 			'6:11 accepted { a: (In: string) => Out<unknown> = "a" }',
-			"10:11 rejected\n  arktype calls a function (/main.ts:10:38) while defining the type, so it must be a static helper\n  the function (/main.ts:10:38) is not a static helper: its body is not one expression or one `return`"
+			"10:11 rejected\n  arktype calls a function (/main.ts:10:38) while defining the type, so it must be a static helper\n  a function (/main.ts:10:38) is not a static helper: its body is not one expression or one `return`"
 		])
 		attest(
 			analyze(source).sites.map(site =>

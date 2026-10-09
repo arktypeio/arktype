@@ -316,9 +316,9 @@ export const Morphs = M1.and(M2)`
 				'/thrower.ts:8:26  type("1").narrow(n => n === 0) can\'t be precompiled to a standalone validator yet\n  arktype calls `n => n === 0` (/thrower.ts:8:43)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				"/thrower.ts:9:21  type.instanceOf(Dog).and(type.instanceOf(Cat)) can't be precompiled to a standalone validator yet\n  arktype holds `Dog` (/thrower.ts:9:37)\n  arktype holds `Cat` (/thrower.ts:9:62)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				'/thrower.ts:10:26  type("1").and("2") throws a ParseError\n  Intersection of 1 and 2 results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.',
-				'/thrower.ts:18:27  type("1").and(Negative) can\'t be precompiled to a standalone validator yet\n  `Negative` holds `(n: number) => n < 0` (/thrower.ts:11:20)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				"/thrower.ts:19:31  DogT.and(CatT) can't be precompiled to a standalone validator yet\n  `DogT` holds `class Dog {}` (/thrower.ts:5:1)\n  `CatT` holds `class Cat {}` (/thrower.ts:4:1)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-				"/thrower.ts:20:23  M1.and(M2) can't be precompiled to a standalone validator yet\n  `M1` holds `(s: string) => s.length` (/thrower.ts:15:18)\n  `M2` holds `(s: string) => s.trim()` (/thrower.ts:15:46)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+				'/thrower.ts:18:27  type("1").and(Negative) can\'t be precompiled to a standalone validator yet\n  `Negative` holds `isNegative` (/thrower.ts:11:20)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				"/thrower.ts:19:31  DogT.and(CatT) can't be precompiled to a standalone validator yet\n  `DogT` holds `Dog` (/thrower.ts:5:1)\n  `CatT` holds `Cat` (/thrower.ts:4:1)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+				"/thrower.ts:20:23  M1.and(M2) can't be precompiled to a standalone validator yet\n  `M1` holds `f` (/thrower.ts:15:18)\n  `M2` holds `g` (/thrower.ts:15:46)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import { type } from "arktype"
 import { extend } from "./extend.ts"

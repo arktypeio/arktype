@@ -34,7 +34,6 @@ import type {
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
-	bindingOfFunction,
 	contains,
 	enclosingFunctionOf,
 	isArkObject,
@@ -960,7 +959,7 @@ export class Precompiler {
 		return result
 	}
 
-	// each placeholder in a message replaced by where the site reads its function, or else by its declaration
+	// a function only a Type the site references holds has no text in the site, so it's named by its declaration
 	private sourceNamed(
 		message: string,
 		site: Site,
@@ -985,7 +984,7 @@ export class Precompiler {
 				.join(
 					reference ?
 						module.snippetOf(reference)
-					:	(bindingOfFunction(standIn.node, standIn.module)?.name ??
+					:	(this.interpreter.declaredNameOf(standIn) ??
 							standIn.module.snippetOf(standIn.node))
 				)
 		}
@@ -1098,9 +1097,16 @@ export class Precompiler {
 				if (!referencesByHole.has(hole)) referencesByHole.set(hole, reference)
 		}
 		for (const [hole, reference] of referencesByHole) {
+			const standIn =
+				hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
 			const source = this.interpreter.sourceOf(hole)
 			result.push(
-				`\`${module.snippetOf(reference)}\` holds ${source ? `\`${source[1].snippetOf(source[0])}\` (${source[1].positionOf(source[0])})` : "a function"}`
+				`\`${module.snippetOf(reference)}\` holds ${
+					standIn ? this.interpreter.labelOf(standIn)
+					: source ?
+						`\`${source[1].snippetOf(source[0])}\` (${source[1].positionOf(source[0])})`
+					:	"a value the build doesn't stand in for"
+				}`
 			)
 		}
 		for (const input of site.parseError || receivesNothing ? site.inputs : []) {
