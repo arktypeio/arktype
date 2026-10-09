@@ -7,6 +7,7 @@ import type { ArrayType } from "./variants/array.ts"
 import type { DateType } from "./variants/date.ts"
 import type { NumberType } from "./variants/number.ts"
 import type { ObjectType } from "./variants/object.ts"
+import type { TypeParser } from "./type.ts"
 import type { StringType } from "./variants/string.ts"
 
 // a bundle with code splitting drops a star export from another package
@@ -215,11 +216,59 @@ for (const k of Reflect.ownKeys(Validator.prototype)) {
 }
 freeze(Validator.prototype)
 
-export const type: { (): never; errors: typeof ArkErrors } = freeze(
-	assign(() => throwError(writeUnavailableMemberMessage("type")), {
-		errors: ArkErrors
-	})
+// each parses or composes a Type, which the runtime can't
+const unavailableStatics = {
+	$: 1,
+	and: 1,
+	Array: 1,
+	arrayIndex: 1,
+	bigint: 1,
+	boolean: 1,
+	Date: 1,
+	declare: 1,
+	define: 1,
+	enumerated: 1,
+	false: 1,
+	fn: 1,
+	generic: 1,
+	hkt: 1,
+	instanceOf: 1,
+	Key: 1,
+	keywords: 1,
+	match: 1,
+	merge: 1,
+	module: 1,
+	never: 1,
+	null: 1,
+	number: 1,
+	object: 1,
+	or: 1,
+	pipe: 1,
+	raw: 1,
+	Record: 1,
+	schema: 1,
+	scope: 1,
+	string: 1,
+	symbol: 1,
+	true: 1,
+	undefined: 1,
+	unit: 1,
+	unknown: 1,
+	valueOf: 1
+} satisfies Record<Exclude<keyof TypeParser, "errors">, 1>
+
+const typeFacade = assign(
+	() => throwError(writeUnavailableMemberMessage("type")),
+	{ errors: ArkErrors }
 )
+
+for (const name in unavailableStatics) {
+	Object.defineProperty(typeFacade, name, {
+		get: () => throwError(writeUnavailableMemberMessage(`type.${name}`))
+	})
+}
+
+export const type: { (): never; errors: typeof ArkErrors } = freeze(typeFacade)
 
 export const writeUnavailableMemberMessage = <name extends string>(
 	name: name

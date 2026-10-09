@@ -216,6 +216,22 @@ contextualize(() => {
 		attest(() => T.in).throws(writeUnavailableMemberMessage("in"))
 		attest("toJsonSchema" in T).equals(false)
 		attest(JSON.stringify({ T })).equals("{}")
+		attest(() => (runtimeType as any).string.allows("s")).throws(
+			writeUnavailableMemberMessage("type.string")
+		)
+		const unanswered = Reflect.ownKeys(type).filter(k => {
+			if (k === "length" || k === "name" || k === "errors") return false
+			try {
+				Reflect.get(runtimeType, k)
+				return true
+			} catch (e) {
+				return (
+					(e as Error).message !==
+					writeUnavailableMemberMessage(`type.${String(k)}`)
+				)
+			}
+		})
+		attest(unanswered).equals([])
 	})
 
 	it("writes errors with configured strings", async () => {
