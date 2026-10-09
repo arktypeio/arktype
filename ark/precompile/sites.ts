@@ -2,7 +2,6 @@ import type { CallExpression, Node } from "oxc-parser"
 import {
 	bindingOfFunction,
 	enclosingFunctionOf,
-	isComposing,
 	runtimeExports,
 	staticBodyOf,
 	type FunctionNode,
@@ -92,14 +91,19 @@ const rootOf = (
 	const helper = call && graph.helperOf(call.callee, module)
 	if (!helper) return
 	const [fn, origin] = helper
-	// e.g. \`first().and(second())\` with \`first = () => M1\`, whose body only returns what the call composes
+	// a call returning a Type is a site where a member composes it, as `first().and(second())` does, but not where it only validates
 	return (
 			graph.isArkHelper(fn, origin) ||
-				(isComposing(call) && graph.isArkExpression(staticBodyOf(fn)!, origin))
+				(isMemberObject(call) &&
+					!graph.isRuntimeUse(call, module) &&
+					graph.returnsArk(fn, origin))
 		) ?
 			["helper", call]
 		:	undefined
 }
+
+const isMemberObject = (node: Node): boolean =>
+	node.parent?.type === "MemberExpression" && node.parent.object === node
 
 const helperCallOf = (id: Node): CallExpression | undefined => {
 	const parent = id.parent

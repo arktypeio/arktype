@@ -567,16 +567,23 @@ const first = () => A
 const second = () => B
 const trimmed = () => Trimmed
 export const Both = first().and(second())
-export const Held = trimmed().and(second())`
+export const Held = trimmed().and(second())
+const X = first().and(second())
+export const Composed = X.or("string")
+export const Asserted = trimmed().assert({ a: " x " })
+export const Called = trimmed()({ a: " y " })
+const loop = (): never => loop().and(B)`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/main.ts:10:21  trimmed().and(second()) can't be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.trim()` (/main.ts:2:14), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1g9f9ot010qp7t"
-import { v1oigsr31najz55 as $arkv1oigsr31najz55 } from "~arktype/1g9f9ot010qp7t"
-import { fd9jxkn0kakf0g as $arkfd9jxkn0kakf0g } from "~arktype/1g9f9ot010qp7t"
-import { v112lir714tv8ze as $arkv112lir714tv8ze } from "~arktype/1g9f9ot010qp7t"
+import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/nmpa090h69907"
+import { v1oigsr31najz55 as $arkv1oigsr31najz55 } from "~arktype/nmpa090h69907"
+import { fd9jxkn0kakf0g as $arkfd9jxkn0kakf0g } from "~arktype/nmpa090h69907"
+import { v112lir714tv8ze as $arkv112lir714tv8ze } from "~arktype/nmpa090h69907"
+import { vrg81gy0tev40w as $arkvrg81gy0tev40w } from "~arktype/nmpa090h69907"
+import { vp99ye0097h426 as $arkvp99ye0097h426 } from "~arktype/nmpa090h69907"
 const trim = (s: string) => s.trim()
 const A = $arkvq10hui17onwk2()
 const B = $arkv1oigsr31najz55()
@@ -585,7 +592,12 @@ const first = () => A
 const second = () => B
 const trimmed = () => Trimmed
 export const Both = $arkv112lir714tv8ze()
-export const Held = trimmed().and(second())`)
+export const Held = trimmed().and(second())
+const X = $arkvrg81gy0tev40w()
+export const Composed = $arkvp99ye0097h426()
+export const Asserted = trimmed().assert({ a: " x " })
+export const Called = trimmed()({ a: " y " })
+const loop = (): never => loop().and(B)`)
 		})
 
 		it("reports a Module whose site reads what only a factory receives", () => {

@@ -274,6 +274,7 @@ export class ModuleGraph {
 	private modulesById: Record<string, SourceModule | ImportTarget> =
 		Object.create(null)
 	private arkBindings = new Map<Binding, boolean>()
+	private arkReturns = new Map<FunctionNode, boolean>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
 
@@ -561,7 +562,12 @@ export class ModuleGraph {
 			}
 			if (node.type === "CallExpression") {
 				const helper = this.helperOf(node.callee, module)
-				if (helper && this.isArkHelper(helper[0], helper[1])) return true
+				if (
+					helper &&
+					(this.isArkHelper(helper[0], helper[1]) ||
+						this.returnsArk(helper[0], helper[1]))
+				)
+					return true
 			} else if (this.isRuntimeMember(node, module)) return false
 			node = unwrapExpression(
 				node.type === "MemberExpression" ? node.object : node.callee
@@ -620,6 +626,17 @@ export class ModuleGraph {
 			:	undefined
 	}
 
+	// e.g. `first = () => M1`, whose body composes nothing but whose call is a Type
+	returnsArk(fn: FunctionNode, module: SourceModule): boolean {
+		const cached = this.arkReturns.get(fn)
+		if (cached !== undefined) return cached
+		// e.g. `f = () => f().and(x)`, which reads itself as returning no Type while it's decided
+		this.arkReturns.set(fn, false)
+		const result = this.isArkExpression(staticBodyOf(fn)!, module)
+		this.arkReturns.set(fn, result)
+		return result
+	}
+
 	isArkHelper(fn: FunctionNode, module: SourceModule): boolean {
 		const body = staticBodyOf(fn)!
 		let result = false
@@ -658,7 +675,7 @@ const arktypeExportOf = (
 		}
 
 // arktype runs through a reference called or read as `type(def)` or `T.array()`, but not one passed along as `{ type: T }`
-export const isComposing = (id: Node): boolean => {
+const isComposing = (id: Node): boolean => {
 	let node = id
 	while (node.parent && isTransparent(node.parent)) node = node.parent
 	const parent = node.parent
