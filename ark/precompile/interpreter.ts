@@ -35,6 +35,7 @@ import {
 	bindingOfFunction,
 	contains,
 	isFunctionNode,
+	readsBindingOf,
 	runtimeMembers,
 	unstableArkMembers,
 	staticBodyOf,
@@ -313,23 +314,21 @@ export class Interpreter {
 
 	// a factory receives a read as its text at the site, so the text must evaluate there to what the read did
 	private isPassable(node: Node, site: SiteState): boolean {
-		if (site.unavailableReads.some(read => contains(node, read))) return false
-		let isPassable = true
+		if (
+			site.unavailableReads.some(read => contains(node, read)) ||
+			readsBindingOf(site.node, node, site.module)
+		)
+			return false
+		let readsOuterThis = false
 		walk(node, child => {
 			if (child.type === "ThisExpression") {
 				let owner: Node = child
 				while (owner !== node && !bindsThis(owner)) owner = owner.parent!
-				isPassable = owner !== node
-			} else {
-				const binding = site.module.scopes.referencesById.get(child)?.binding
-				isPassable =
-					!binding ||
-					!contains(site.node, binding.id) ||
-					contains(node, binding.id)
+				if (!bindsThis(owner)) readsOuterThis = true
 			}
-			return isPassable
+			return !readsOuterThis
 		})
-		return isPassable
+		return !readsOuterThis
 	}
 
 	private evaluateNode(node: Node, ctx: Context): unknown {

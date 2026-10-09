@@ -1,7 +1,6 @@
 import type { CallExpression, Node } from "oxc-parser"
 import {
 	bindingOfFunction,
-	contains,
 	enclosingFunctionOf,
 	runtimeExports,
 	staticBodyOf,
@@ -17,7 +16,7 @@ import {
 } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
 import type { SiteKind } from "./precompile.ts"
-import { isTransparent, walk, type Reference } from "./scope.ts"
+import { isTransparent, type Reference } from "./scope.ts"
 
 export interface SiteCandidate {
 	kind: SiteKind
@@ -159,24 +158,6 @@ export const isFoldedHelper = (
 				reference.id.parent.callee === reference.id
 		)
 	)
-}
-
-// e.g. `id` in `(id: string) => type({ id: "string" }).pipe(o => o.id === id)`
-export const readsBindingOf = (
-	fn: FunctionNode,
-	node: Node,
-	module: SourceModule
-): boolean => {
-	let result = false
-	walk(node, child => {
-		const scope =
-			child.type === "Identifier" ?
-				module.scopes.referencesById.get(child)?.binding?.scope.node
-			:	undefined
-		if (scope && contains(fn, scope) && !contains(node, scope)) result = true
-		return !result
-	})
-	return result
 }
 
 const settleOrderOf = (candidate: SiteCandidate) =>

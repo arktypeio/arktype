@@ -593,3 +593,21 @@ export const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
 
 export const contains = (outer: Node, inner: Node): boolean =>
 	outer.start <= inner.start && inner.end <= outer.end
+
+// e.g. `id` in `(id: string) => type({ id: "string" }).pipe(o => o.id === id)`
+export const readsBindingOf = (
+	outer: Node,
+	node: Node,
+	module: SourceModule
+): boolean => {
+	let result = false
+	walk(node, child => {
+		const scope =
+			child.type === "Identifier" ?
+				module.scopes.referencesById.get(child)?.binding?.scope.node
+			:	undefined
+		if (scope && contains(outer, scope) && !contains(node, scope)) result = true
+		return !result
+	})
+	return result
+}

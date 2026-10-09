@@ -510,17 +510,23 @@ const longs = () => [Long]
 export const Mapped = type([isLong].map(h => type("string").narrow(h)) as never)
 export const Shadowed = type([type("string").narrow(h), ...shorts().map(h => type("string").narrow(h))] as never)
 export const Renamed = type(Object.values(fns).map(h => type("string").narrow(h)) as never)
-export const Through = type(longs().map(N => type({ n: N })) as never)`
+export const Through = type(longs().map(N => type({ n: N })) as never)
+export const Either = type(shorts().map(h => type("string").narrow(h || isLong)) as never)
+export const Own = type("string").narrow(function (this: unknown, s) { return s.length > 1 && !this })
+export const OwnFirst = type("string").narrow(function (this: unknown, s) { return this === undefined && s.length > 1 })`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				'/main.ts:11:25  type([type("string").narrow(h), ...shorts().map(h => type("… can\'t be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.length < 3` (/main.ts:3:17), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				'/main.ts:12:24  type(Object.values(fns).map(h => type("string").narrow(h)) … can\'t be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.length > 1` (/main.ts:2:16), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				"/main.ts:13:24  type(longs().map(N => type({ n: N })) as never) can't be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.length > 1` (/main.ts:2:16), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+				"/main.ts:13:24  type(longs().map(N => type({ n: N })) as never) can't be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.length > 1` (/main.ts:2:16), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+				'/main.ts:14:23  type(shorts().map(h => type("string").narrow(h || isLong)) … can\'t be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.length < 3` (/main.ts:3:17), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { fnwuv001o8a as $arkfnwuv001o8a } from "~arktype/6krszfhaza"
-import { fyn4lizp57k as $arkfyn4lizp57k } from "~arktype/6krszfhaza"
-import { f1k2jbc8zx4u as $arkf1k2jbc8zx4u } from "~arktype/6krszfhaza"
+import { fnwuv001o8a as $arkfnwuv001o8a } from "~arktype/aa328wkiof"
+import { fyn4lizp57k as $arkfyn4lizp57k } from "~arktype/aa328wkiof"
+import { f1k2jbc8zx4u as $arkf1k2jbc8zx4u } from "~arktype/aa328wkiof"
+import { f223z3o8tm04 as $arkf223z3o8tm04 } from "~arktype/aa328wkiof"
+import { f27ogog5z6o5 as $arkf27ogog5z6o5 } from "~arktype/aa328wkiof"
 const isLong = (s: string) => s.length > 1
 const isShort = (s: string) => s.length < 3
 const h = isLong
@@ -532,7 +538,10 @@ const longs = () => [Long]
 export const Mapped = $arkf1k2jbc8zx4u(isLong)
 export const Shadowed = type([type("string").narrow(h), ...shorts().map(h => type("string").narrow(h))] as never)
 export const Renamed = type(Object.values(fns).map(h => type("string").narrow(h)) as never)
-export const Through = type(longs().map(N => type({ n: N })) as never)`)
+export const Through = type(longs().map(N => type({ n: N })) as never)
+export const Either = type(shorts().map(h => type("string").narrow(h || isLong)) as never)
+export const Own = $arkf223z3o8tm04(function (this: unknown, s) { return s.length > 1 && !this })
+export const OwnFirst = $arkf27ogog5z6o5(function (this: unknown, s) { return this === undefined && s.length > 1 })`)
 		})
 
 		it("reports a Module whose site reads what only a factory receives", () => {

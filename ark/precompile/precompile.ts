@@ -40,6 +40,7 @@ import {
 	enclosingFunctionOf,
 	isArkObject,
 	ModuleGraph,
+	readsBindingOf,
 	runtimeExports,
 	staticBodyOf,
 	type ArkExportName,
@@ -69,12 +70,7 @@ import {
 	type Binding,
 	type BindingKind
 } from "./scope.ts"
-import {
-	findSites,
-	isFoldedHelper,
-	readsBindingOf,
-	type SiteCandidate
-} from "./sites.ts"
+import { findSites, isFoldedHelper, type SiteCandidate } from "./sites.ts"
 
 export type PrecompileMode = "standalone" | "cache"
 
