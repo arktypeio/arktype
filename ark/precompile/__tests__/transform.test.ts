@@ -151,6 +151,20 @@ const create = () => {
 import { v2z182cdbhc as $arkv2z182cdbhc } from "~arktype/1yirv7nk3td"
 import { v11a751fkv8g as $arkv11a751fkv8g } from "~arktype/1yirv7nk3td"`)
 		})
+
+		it("leaves a define call's argument in its place", () => {
+			const result = precompile(`import { define, scope, type } from "arktype"
+const trim = (s: string) => s.trim()
+export const A = define({ a: "string" })
+export const B = scope({ a: "string" }).define(["a[]", "=>", trim])
+export const C = type.define({ c: type("string") })`)
+			attest(result.code).snap(`import { type } from "arktype"
+const trim = (s: string) => s.trim()
+export const A = ({ a: "string" })
+export const B = (["a[]", "=>", trim])
+export const C = type.define({ c: type("string") })`)
+			attest(result.diagnostics.map(d => d.line)).equals([5])
+		})
 	})
 
 	describe("factories", () => {

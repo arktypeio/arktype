@@ -126,6 +126,8 @@ export interface Site {
 	helpers: Helper[]
 	// each expression evaluating to a hole or a Type, which its factory receives in its place
 	references: Reference[]
+	// the argument of a call to arktype's `define`, which returns it, so a standalone build evaluates it in place of the call
+	definition: Node | undefined
 }
 
 export interface Hole {
@@ -611,6 +613,7 @@ export class Precompiler {
 		const sitesByName: Record<string, string> = {}
 		// a site replaced by its value drops what it was written with, so a site inside it, like one in a thunk defining a Scope's alias, is dropped too
 		const replaced: Site[] = []
+		const folded: Site[] = []
 		for (const site of sites) {
 			if (
 				site.status !== "accepted" ||
@@ -619,6 +622,13 @@ export class Precompiler {
 				)
 			)
 				continue
+			if (site.definition) {
+				const call = site.definition.parent!
+				s.overwrite(call.start, site.definition.start, "(")
+				s.overwrite(site.definition.end, call.end, ")")
+				folded.push(site)
+				continue
+			}
 			const reasons = this.unsupportedReasonsOf(site)
 			const thrower =
 				site.parseError && !reasons.length ?
@@ -665,7 +675,6 @@ export class Precompiler {
 			:	""
 		const specifier = `~arktype/${hashOf(validators)}`
 		const imported = new Set<string>()
-		const folded: Site[] = []
 		for (const [site, name] of namesBySite) {
 			if (refusalsByName[name]) {
 				diagnostics.push(this.unsupported(module, site, [refusalsByName[name]]))
@@ -1244,7 +1253,8 @@ export class Precompiler {
 			holes: [],
 			inputs: [],
 			helpers: [],
-			references: []
+			references: [],
+			definition: undefined
 		}
 		if (this.mode === "standalone" && isInIsland(state.node, module)) {
 			site.status = "island"
@@ -1256,6 +1266,9 @@ export class Precompiler {
 		else {
 			site.value = state.value
 			site.roots = state.roots
+			// e.g. a Generic aliased `define`, whose instantiation is a Type
+			if (!isFoldable(state.value))
+				site.definition = this.definitionOf(state.node, module)
 		}
 		for (const read of state.trace.reads) {
 			const input = this.inputOf(read, candidate, module)
@@ -1327,6 +1340,40 @@ export class Precompiler {
 		while (node.type === "MemberExpression")
 			node = unwrapExpression(node.object)
 		return module.scopes.referencesById.get(node)?.binding?.kind === "import"
+	}
+
+	// e.g. `$.define({ a: "string" })`, whose argument can stay in its place only if it reads nothing arktype must define
+	private definitionOf(node: Node, module: SourceModule): Node | undefined {
+		const call = unwrapExpression(node)
+		if (call.type !== "CallExpression" || call.arguments.length !== 1) return
+		const [definition] = call.arguments
+		const callee = unwrapExpression(call.callee)
+		const reference =
+			callee.type === "Identifier" ?
+				module.scopes.referencesById.get(callee)
+			:	undefined
+		const isDefine =
+			callee.type === "MemberExpression" ?
+				!callee.computed &&
+				callee.property.name === "define" &&
+				this.graph.isArkExpression(callee.object, module)
+			:	!!reference &&
+				this.graph.arkExportOf(reference, module)?.[0] === "define"
+		if (!isDefine || definition.type === "SpreadElement") return
+		let readsArk = false
+		walk(definition, child => {
+			const binding =
+				child.type === "Identifier" ?
+					module.scopes.referencesById.get(child)?.binding
+				:	undefined
+			const helper = binding && this.graph.boundHelperOf(binding, module)
+			readsArk ||=
+				!!binding &&
+				(this.graph.isArkBinding(binding, module) ||
+					(!!helper && this.graph.isArkHelper(...helper)))
+			return !readsArk
+		})
+		return readsArk ? undefined : definition
 	}
 
 	private inputOf(
