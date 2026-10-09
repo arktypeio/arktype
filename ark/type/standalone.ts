@@ -16,8 +16,11 @@ import {
 	writeRootApply
 } from "@ark/schema/internal"
 import {
+	functionNameOf,
 	hasDomain,
+	isDate,
 	printable,
+	prototypeOf,
 	serializePrimitive,
 	throwParseError
 } from "@ark/util"
@@ -75,7 +78,7 @@ export const precompileStandalone = (
 		else if (
 			node.hasKind("unit") &&
 			hasDomain(node.unit, "object") &&
-			!(node.unit instanceof Date)
+			!isDate(node.unit)
 		)
 			objectUnits.add(node.unit)
 	}
@@ -149,8 +152,9 @@ export const precompileStandalone = (
 					)
 		}
 		if (typeof value === "function") {
-			return globalThis[value.name as never] === value ?
-					`globalThis[${JSON.stringify(value.name)}]`
+			const name = functionNameOf(value)
+			return globalThis[name as never] === value ?
+					`globalThis[${JSON.stringify(name)}]`
 				:	throwParseError(writeUnprecompilableMessage(printable(value)))
 		}
 		// a unit is compared by reference, so a copy wouldn't equal it
@@ -171,7 +175,7 @@ export const precompileStandalone = (
 		}
 		if (emitting.has(value))
 			return throwParseError(writeUnprecompilableMessage("a cyclic object"))
-		const prototype = Object.getPrototypeOf(value)
+		const prototype = prototypeOf(value)
 		const keys = Reflect.ownKeys(value)
 		if (prototype === Date.prototype && keys.length === 0)
 			return declareConst(value, `new Date(${(value as Date).getTime()})`)
