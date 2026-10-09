@@ -1,9 +1,16 @@
 import { arkKind, hasArkKind } from "@ark/schema"
 import { builtinConstructors, hasDomain } from "@ark/util"
 
+// what an argument may be other than a primitive: an object the builtin doesn't convert, a function the build interprets, or a RegExp
+export type ObjectArg = "object" | "callback" | "RegExp"
+
 export interface PureBuiltin {
 	name: string
-	// returns a problem with the arguments, e.g. that they are not all primitives
+	// each argument's ObjectArg, the last also covering those after it, since a builtin converts an object anywhere else, running its methods
+	objects?: readonly (ObjectArg | undefined)[]
+	// the receiver's elements may be objects, as the method doesn't convert them
+	objectElements?: true
+	// returns a problem with the arguments
 	check?: (args: unknown[], self: unknown) => string | undefined
 	// the spec leaves the result implementation-approximated unless every operand is an integer
 	isApproximate?: true
@@ -34,14 +41,39 @@ export const globalsByName: Record<string, unknown> = Object.assign(
 	builtinConstructors
 )
 
-const primitivesOnly = (args: unknown[]) =>
+export const isObject = (value: unknown): value is object =>
+	typeof value === "object" ? value !== null : typeof value === "function"
+
+const conversionProblem =
+	"converts an object to a primitive, which runs its methods"
+
+// an array-like's length is converted to a number
+const withPrimitiveLength = (args: unknown[]) =>
 	(
-		args.some(arg =>
-			typeof arg === "object" ? arg !== null : typeof arg === "function"
-		)
+		!Array.isArray(args[0]) &&
+		isPlainContainer(args[0]) &&
+		isObject(args[0].length)
 	) ?
-		"converts an object to a primitive, which runs its methods"
+		conversionProblem
 	:	undefined
+
+// each entry's key is converted to a property key
+const withPrimitiveKeys = (args: unknown[]) =>
+	(
+		Array.isArray(args[0]) &&
+		args[0].some(entry => isPlainContainer(entry) && isObject(entry[0]))
+	) ?
+		conversionProblem
+	:	undefined
+
+// each string of a template is converted to a string
+const withPrimitiveStrings = (args: unknown[]) => {
+	const raw =
+		isPlainContainer(args[0]) ? Reflect.get(args[0], "raw") : undefined
+	return Array.isArray(raw) && raw.some(isObject) ?
+			conversionProblem
+		:	undefined
+}
 
 const withoutProtoKeys = (args: unknown[]) =>
 	args.some(arg => Object.getOwnPropertyDescriptor(Object(arg), "__proto__")) ?
@@ -109,54 +141,56 @@ const definePure = (
 	}
 }
 
-definePure(
-	globalThis,
-	"",
-	["String", "Number", "Boolean", "BigInt", "Symbol"],
-	{ check: primitivesOnly }
-)
-definePure(
-	globalThis,
-	"",
-	[
-		"parseInt",
-		"parseFloat",
-		"isNaN",
-		"isFinite",
-		"encodeURIComponent",
-		"decodeURIComponent",
-		"encodeURI",
-		"decodeURI"
-	],
-	{ check: primitivesOnly }
-)
-definePure(Object, "Object", ["values", "entries"], {
-	check: withoutArkInternals
-})
+definePure(globalThis, "", ["String", "Number", "Boolean", "BigInt", "Symbol"])
+definePure(globalThis, "", [
+	"parseInt",
+	"parseFloat",
+	"isNaN",
+	"isFinite",
+	"encodeURIComponent",
+	"decodeURIComponent",
+	"encodeURI",
+	"decodeURI"
+])
 definePure(
 	Object,
 	"Object",
-	["keys", "isFrozen", "getOwnPropertyNames", "hasOwn"],
-	{ check: withoutArkInternals }
+	["values", "entries", "keys", "isFrozen", "getOwnPropertyNames"],
+	{ objects: ["object"], check: withoutArkInternals }
 )
-definePure(Object, "Object", ["fromEntries"])
-definePure(Object, "Object", ["freeze"], { writes: true })
+definePure(Object, "Object", ["hasOwn"], {
+	objects: ["object", undefined],
+	check: withoutArkInternals
+})
+definePure(Object, "Object", ["fromEntries"], {
+	objects: ["object"],
+	check: withPrimitiveKeys
+})
+definePure(Object, "Object", ["freeze"], { objects: ["object"], writes: true })
 definePure(Object, "Object", ["assign"], {
+	objects: ["object"],
 	check: args => withoutArkInternals(args) ?? withoutProtoKeys(args),
 	writes: true
 })
-definePure(Array, "Array", ["of"])
-definePure(Array, "Array", ["isArray"])
-definePure(Array, "Array", ["from"])
-definePure(Number, "Number", [
-	"isInteger",
-	"isSafeInteger",
-	"isFinite",
-	"isNaN"
-])
-definePure(String, "String", ["fromCharCode", "fromCodePoint", "raw"])
-definePure(JSON, "JSON", ["parse"])
+definePure(Array, "Array", ["of", "isArray"], { objects: ["object"] })
+definePure(Array, "Array", ["from"], {
+	objects: ["object", "callback", "object"],
+	check: withPrimitiveLength
+})
+definePure(
+	Number,
+	"Number",
+	["isInteger", "isSafeInteger", "isFinite", "isNaN"],
+	{ objects: ["object"] }
+)
+definePure(String, "String", ["fromCharCode", "fromCodePoint"])
+definePure(String, "String", ["raw"], {
+	objects: ["object", undefined],
+	check: withPrimitiveStrings
+})
+definePure(JSON, "JSON", ["parse"], { objects: [undefined, "callback"] })
 definePure(JSON, "JSON", ["stringify"], {
+	objects: ["object", "callback", undefined],
 	check: args => plainDataOnly(args.slice(0, 1))
 })
 definePure(Date, "Date", ["UTC"])
@@ -254,15 +288,16 @@ defineMethods("string", String, [
 	"padEnd",
 	"padStart",
 	"repeat",
-	"replace",
-	"replaceAll",
 	"slice",
-	"split",
 	"startsWith",
 	"substring",
 	"toString",
 	"valueOf"
 ])
+defineMethods("string", String, ["replace", "replaceAll"], {
+	objects: ["RegExp", "callback"]
+})
+defineMethods("string", String, ["split"], { objects: ["RegExp", undefined] })
 defineMethods(
 	"string",
 	String,
@@ -278,37 +313,51 @@ defineMethods("number", Number, [
 ])
 defineMethods("boolean", Boolean, ["toString", "valueOf"])
 defineMethods("bigint", BigInt, ["toString", "valueOf"])
-defineMethods("array", Array, [
-	"at",
-	"concat",
-	"flat",
-	"slice",
-	"toReversed",
-	"toSpliced",
-	"with"
-])
+defineMethods("array", Array, ["at", "flat", "slice", "toReversed"], {
+	objectElements: true
+})
+defineMethods("array", Array, ["concat"], {
+	objects: ["object"],
+	objectElements: true
+})
+defineMethods("array", Array, ["toSpliced"], {
+	objects: [undefined, undefined, "object"],
+	objectElements: true
+})
+defineMethods("array", Array, ["with"], {
+	objects: [undefined, "object"],
+	objectElements: true
+})
 defineMethods("array", Array, ["join"])
-defineMethods("array", Array, [
-	"every",
-	"filter",
-	"find",
-	"findIndex",
-	"findLast",
-	"findLastIndex",
-	"flatMap",
-	"map",
-	"reduce",
-	"reduceRight",
-	"some"
-])
+defineMethods(
+	"array",
+	Array,
+	[
+		"every",
+		"filter",
+		"find",
+		"findIndex",
+		"findLast",
+		"findLastIndex",
+		"flatMap",
+		"map",
+		"reduce",
+		"reduceRight",
+		"some"
+	],
+	{ objects: ["callback", "object"], objectElements: true }
+)
 // engines sort differently by a comparator that is not consistent
 defineMethods("array", Array, ["toSorted"], {
+	objects: ["callback"],
 	check: args =>
 		args[0] === undefined ?
 			undefined
 		:	"sorts by a comparator, whose order the spec leaves to each engine unless it is consistent"
 })
 defineMethods("array", Array, ["includes", "indexOf", "lastIndexOf"], {
+	objects: ["object", undefined],
+	objectElements: true,
 	check: withoutArkIdentity
 })
 defineMethods("date", Date, [

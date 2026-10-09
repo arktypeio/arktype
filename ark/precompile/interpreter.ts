@@ -18,10 +18,12 @@ import {
 	globalsByName,
 	intrinsics,
 	isArkValue,
+	isObject,
 	isPlainContainer,
 	methodsByReceiverKind,
 	pureBuiltins,
-	type MethodReceiverKind
+	type MethodReceiverKind,
+	type PureBuiltin
 } from "./builtins.ts"
 import { DynamicValue, type DynamicCode } from "./dynamic.ts"
 import {
@@ -1100,10 +1102,12 @@ export class Interpreter {
 						)
 						continue
 					}
-					const key =
+					let key =
 						property.computed ? this.evaluate(property.key, ctx)
 						: property.key.type === "Identifier" ? property.key.name
 						: String((property.key as { value: unknown }).value)
+					if (!isDynamic(key) && isObject(key))
+						key = this.coercion(property.key, ctx)
 					used.push(key as PropertyKey)
 					this.destructure(
 						property.value,
@@ -1411,7 +1415,10 @@ export class Interpreter {
 				)
 			) ?
 				"writes to an object other than a new object or array literal"
-			:	builtin?.check?.(args, receiver)
+			:	(builtin?.check?.(args, receiver) ??
+				(this.convertsObject(builtin, args, receiver) ?
+					"converts an object to a primitive, which runs its methods"
+				:	undefined))
 		if (problem) return this.reject(node, ctx, problem)
 
 		let result: unknown
@@ -1425,6 +1432,8 @@ export class Interpreter {
 		} finally {
 			this.activeCall = previous
 		}
+		const named = this.placeholderIn(result)
+		if (named) return this.printsName(node, ctx, named)
 		const isApproximate =
 			builtin?.isApproximate ?
 				!args.every(arg => Number.isInteger(arg)) ||
@@ -1434,6 +1443,30 @@ export class Interpreter {
 				args[0] !== 10 &&
 				!Number.isInteger(receiver)
 		return isApproximate ? this.approximation(node, ctx) : result
+	}
+
+	private convertsObject(
+		builtin: PureBuiltin | undefined,
+		args: unknown[],
+		receiver: unknown
+	): boolean {
+		const objects = builtin?.objects ?? []
+		for (let i = 0; i < args.length; i++) {
+			if (!isObject(args[i])) continue
+			const kind = objects[Math.min(i, objects.length - 1)]
+			if (
+				kind === "object" ||
+				(kind === "RegExp" && args[i] instanceof RegExp) ||
+				(kind === "callback" && this.standIns.get(args[i] as object)?.closure)
+			)
+				continue
+			return true
+		}
+		return (
+			Array.isArray(receiver) &&
+			!builtin?.objectElements &&
+			receiver.some(isObject)
+		)
 	}
 
 	private thrown(

@@ -740,6 +740,44 @@ const C = type({ [Number.parseInt("12")]: "string" })`)
 			])
 		})
 
+		it("conversions of objects inside built-ins", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const isLong = (s: string) => s.length > 3
+class Apple {}
+class Zebra {}
+const Ap = type.instanceOf(Apple)
+const Z = type.instanceOf(Zebra)
+const first = (a: object, b: object) => [a, b].toSorted()[0]
+const pick = ({ [Ap as never]: v }: Record<string, string>) => v
+const A = type({ a: type("string").narrow(isLong) }).configure({ description: "selected" }, { where: n => [n].join("").includes("isLong") })
+const B = type([Ap, Z].join("") === "Type<Apple>Type<Zebra>" ? "string" : "number")
+const C = type("".concat(Ap as never) === "Type<Apple>" ? "string" : "number")
+const D = type(Object.keys(Object.fromEntries([[Ap, 1]]))[0] === "Type<Apple>" ? "string" : "number")
+const E = type(first(Z, Ap) as never)
+const F = type(Symbol.for(Ap as never) === Symbol.for("Type<Apple>") ? "string" : "number")
+const G = type(String.raw({ raw: ["", ""] }, Ap) === "Type<Apple>" ? "string" : "number")
+const H = type(pick({ "Type<Apple>": "string" }) ?? "number")
+const I = type("Type<Apple>".replace(Ap as never, "") === "" ? "string" : "number")
+const J = type({ [["a", "b"].join("")]: "string", ["abc".replace(/b/, "").split(/c/)[0]]: "string", ["x".replace("x", s => s + "y")]: "string" })
+const K = type(Array.of(Ap, Z).map(t => t).toReversed()[1])`)
+			).snap([
+				"5:12 accepted $hole_190zz3k7ugl",
+				"6:11 accepted $hole_1qnyuvq9gsm",
+				'9:11 rejected\n  arktype calls `where` (/main.ts:9:102) while defining the type, so it must be a static helper\n  `[n].join("")` converts an object to a primitive, which runs its methods',
+				'10:11 rejected\n  `[Ap, Z].join("")` converts an object to a primitive, which runs its methods',
+				'11:11 rejected\n  `"".concat(Ap as never)` converts an object to a primitive, which runs its methods',
+				"12:11 rejected\n  `Object.fromEntries([[Ap, 1]])` converts an object to a primitive, which runs its methods",
+				"13:11 rejected\n  `[a, b].toSorted()` converts an object to a primitive, which runs its methods",
+				"14:11 rejected\n  `Symbol.for(Ap as never)` converts an object to a primitive, which runs its methods",
+				'15:11 rejected\n  `String.raw({ raw: ["", ""] }, Ap)` converts an object to a primitive, which runs its methods',
+				"16:11 rejected\n  `Ap as never` converts an object to a primitive, which runs its methods",
+				'17:11 rejected\n  `"Type<Apple>".replace(Ap as never, "")` converts an object to a primitive, which runs its methods',
+				"18:11 accepted { a: string, ab: string, xy: string }",
+				"19:11 accepted $hole_190zz3k7ugl"
+			])
+		})
+
 		it("results each engine computes its own way", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
