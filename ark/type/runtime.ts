@@ -9,6 +9,7 @@ import {
 import {
 	arityOf,
 	Callable,
+	functionNameOf,
 	getBuiltinNameOfConstructor,
 	hasDomain,
 	printable,
@@ -80,7 +81,7 @@ export const { assign, freeze, is, preventExtensions } = Object
 // read only by the factories of Types that reference a validator, so kept off what a program can read
 const holesByValidator = new WeakMap<
 	object,
-	[id: string, holes: readonly unknown[]]
+	[id: string, holes: readonly unknown[], names: readonly unknown[]]
 >()
 
 const throwOnFail: ArkErrors.Handler = errors => errors.throw()
@@ -132,7 +133,7 @@ export class Validator extends Callable<
 		})
 		freeze(this.assert)
 		freeze(this)
-		holesByValidator.set(this, [id, freeze(holes)])
+		holesByValidator.set(this, [id, freeze(holes), holes.map(nameOf)])
 	}
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
@@ -450,12 +451,29 @@ export const holesOf = (
 	label: string
 ): readonly unknown[] => {
 	const created = holesByValidator.get(validator as object)
-	return created?.[0] === id ?
-			created[1]
-		:	throwError(
-				writeCreationMismatchMessage(label, describeValue(validator), expected)
+	if (created?.[0] !== id) {
+		return throwError(
+			writeCreationMismatchMessage(label, describeValue(validator), expected)
+		)
+	}
+	// its strings print its holes' names as they were when it was created, which a factory reading them again would miss
+	const [, holes, names] = created
+	for (let i = 0; i < holes.length; i++) {
+		if (nameOf(holes[i]) !== names[i]) {
+			throwError(
+				writeCreationMismatchMessage(
+					`${label}'s hole ${i}`,
+					`a function named ${JSON.stringify(nameOf(holes[i]))}`,
+					`a function named ${JSON.stringify(names[i])}`
+				)
 			)
+		}
+	}
+	return holes
 }
+
+const nameOf = (hole: unknown) =>
+	typeof hole === "function" ? functionNameOf(hole) : undefined
 
 // where a test driver's modules register what they export, by module and export name
 const helpersKey = Symbol.for("arktype.helpers")

@@ -975,6 +975,35 @@ contextualize(() => {
 			attest(created.Empty({}).values !== created.Empty({}).values).equals(true)
 		})
 
+		it("checks the names of a validator's holes are those it printed", async () => {
+			const isLong = (s: string) => s.length > 3
+			const builtIsLong = standIn(isLong.bind(null), "islong")
+			const Name = type("string").narrow(builtIsLong)
+			const created = await load({
+				Name: {
+					type: Name,
+					params: [{ kind: "function", label: "`isLong`", value: builtIsLong }]
+				},
+				User: {
+					type: type({ name: Name }),
+					params: [{ kind: "input", label: "Name", reads: [[[], Name]] }]
+				}
+			})
+			const name = created.Name(isLong)
+			attest(created.User(name).description).equals(
+				"{ name: a string and valid according to isLong }"
+			)
+			// arktype printed isLong in name's strings when it was created
+			Object.defineProperty(isLong, "name", { value: "renamed" })
+			attest(() => created.User(name)).throws(
+				writeCreationMismatchMessage(
+					"`Name`'s hole 0",
+					'a function named "renamed"',
+					'a function named "isLong"'
+				)
+			)
+		})
+
 		it("compares the inputs it receives with what the build read", async () => {
 			const o = {
 				name: "string" as const,
