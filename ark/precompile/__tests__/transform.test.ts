@@ -369,6 +369,20 @@ export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))`,
 			])
 		})
 
+		it("reports a site whose factory would read what a standalone validator doesn't have", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+const tag = Symbol("tag")
+const T = type({ [tag]: "0" }).or({ [tag]: "1" })
+export const Union = T.internal.assertHasKind("union")
+export const In = type({ a: T.in })`
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:4:22  T.internal.assertHasKind("union") can\'t be precompiled to a standalone validator yet\n  `T.internal` is read at runtime, where a standalone validator has no `internal`\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				"/main.ts:5:19  type({ a: T.in }) can't be precompiled to a standalone validator yet\n  `T.in` is read at runtime, where a standalone validator has no `in`\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			])
+		})
+
 		it("reports a Module whose site reads what only a factory receives", () => {
 			const result = precompile(
 				`import { type } from "arktype"

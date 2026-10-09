@@ -30,6 +30,7 @@ import {
 	runtimeMembers,
 	unstableArkMembers,
 	staticBodyOf,
+	validatorMembers,
 	type FunctionNode,
 	type ImportTarget,
 	type ModuleGraph
@@ -101,6 +102,8 @@ export interface SiteState {
 	trace: Trace
 	// each outermost expression in the site's source that evaluates to a hole or a Type it reads
 	readsByValue: Map<unknown, Node[]>
+	// each member the site reads of a Type, Scope or Generic, which a standalone build replaces with a value without it
+	unavailableReads: UnavailableRead[]
 	holes: unknown[]
 	interpreted: Set<Node>
 	// each call into arktype's API
@@ -112,6 +115,12 @@ export interface SiteState {
 	isEvaluated: boolean
 }
 
+export interface UnavailableRead {
+	node: Node
+	key: PropertyKey
+	replacedBy: "validator" | "Scope" | "Generic"
+}
+
 export const createSiteState = (
 	node: Node,
 	module: SourceModule
@@ -120,6 +129,7 @@ export const createSiteState = (
 	module,
 	trace: emptyTrace(),
 	readsByValue: new Map(),
+	unavailableReads: [],
 	holes: [],
 	interpreted: new Set(),
 	requests: [],
@@ -1195,6 +1205,9 @@ export class Interpreter {
 				"is derived from registry names or node ids, which are not stable"
 			)
 		}
+		const replacedBy = replacementOf(object, key)
+		if (replacedBy && ctx.site && ctx.module === ctx.site.module)
+			ctx.site.unavailableReads.push({ node, key, replacedBy })
 		const value = Reflect.get(object, key)
 		if (
 			typeof key === "string" &&
@@ -1827,6 +1840,16 @@ export class Interpreter {
 		)
 	}
 }
+
+// what a standalone build replaces a value with, if that has no such member
+const replacementOf = (
+	object: object,
+	key: PropertyKey
+): UnavailableRead["replacedBy"] | undefined =>
+	hasArkKind(object, "root") && !(key in validatorMembers) ? "validator"
+	: hasArkKind(object, "scope") ? "Scope"
+	: hasArkKind(object, "generic") ? "Generic"
+	: undefined
 
 // the facts arktype reads from a function or class by key, besides its name and length
 const answersFact = (k: PropertyKey) =>

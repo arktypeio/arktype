@@ -56,7 +56,8 @@ import {
 	Interpreter,
 	type InterpreterOptions,
 	type Read,
-	type SiteState
+	type SiteState,
+	type UnavailableRead
 } from "./interpreter.ts"
 import { SourceModule } from "./module.ts"
 import {
@@ -153,6 +154,8 @@ export interface Reference {
 	value: unknown
 	// whether another module can replace it, as a test runner's module mock does
 	isForeign: boolean
+	// a member it reads that a standalone build's value doesn't have, so passing it throws
+	unavailableRead: UnavailableRead | undefined
 }
 
 // what a site's factory receives: a hole or Type where the site evaluates it, then each input it compares
@@ -632,7 +635,7 @@ export class Precompiler {
 			const reasons = this.unsupportedReasonsOf(site)
 			const thrower =
 				site.parseError && !reasons.length ?
-					this.throwerOf(site, reasons)
+					this.throwerOf(site, module, reasons)
 				:	undefined
 			const factory =
 				reasons.length || site.parseError || !hasArkKind(site.value, "root") ?
@@ -787,6 +790,8 @@ export class Precompiler {
 					`\`${text}\` is read inside another value its factory receives`
 				)
 			}
+			if (reference.unavailableRead)
+				reasons.push(unavailableReadMessage(reference.unavailableRead, module))
 			passed.add(reference.value)
 			spans.push(reference)
 			params.push(
@@ -937,13 +942,19 @@ export class Precompiler {
 	}
 
 	// the holes a ParseError prints the names of, passed where the site reads them so its thrower can print them as arktype does
-	private throwerOf(site: Site, reasons: string[]): SiteThrower | undefined {
+	private throwerOf(
+		site: Site,
+		module: SourceModule,
+		reasons: string[]
+	): SiteThrower | undefined {
 		const { message } = site.parseError!
 		const spans: Span[] = []
 		const names: string[] = []
 		for (const reference of site.references) {
 			const name = typeof reference.value === "function" && reference.value.name
 			if (!name || !message.includes(name) || names.includes(name)) continue
+			if (reference.unavailableRead)
+				reasons.push(unavailableReadMessage(reference.unavailableRead, module))
 			spans.push(reference)
 			names.push(name)
 		}
@@ -1326,7 +1337,10 @@ export class Precompiler {
 					start: node.start,
 					end: node.end,
 					value,
-					isForeign: isImportInput || this.isImported(node, module)
+					isForeign: isImportInput || this.isImported(node, module),
+					unavailableRead: state.unavailableReads.find(read =>
+						contains(node, read.node)
+					)
 				})
 			}
 		}
@@ -2131,6 +2145,9 @@ const firstStatementOf = (program: Program) =>
 		statement =>
 			statement.type !== "ExpressionStatement" || !statement.directive
 	)!
+
+const unavailableReadMessage = (read: UnavailableRead, module: SourceModule) =>
+	`\`${module.snippetOf(read.node)}\` is read at runtime, where a standalone ${read.replacedBy} has no \`${String(read.key)}\``
 
 const islandValueMessage = (text: string) =>
 	`\`${text}\` is a runtime island's Type, which a precompiled site can't receive`

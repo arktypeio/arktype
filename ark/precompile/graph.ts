@@ -3,6 +3,7 @@ import * as arkregex from "arkregex"
 import * as arktype from "arktype"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import * as arktypeConfig from "arktype/config"
+import type { Validator } from "arktype/internal/runtime.ts"
 import type {
 	ArrowFunctionExpression,
 	Function,
@@ -75,6 +76,21 @@ export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
 		traverseApply: 1,
 		"~standard": 1
 	},
+	null
+)
+
+// a Type's members a standalone validator has, so reading any other at runtime in a standalone build throws or reads nothing
+export const validatorMembers: Record<string, 1> = Object.setPrototypeOf(
+	{
+		expression: 1,
+		description: 1,
+		meta: 1,
+		allows: 1,
+		assert: 1,
+		traverse: 1,
+		from: 1,
+		"~standard": 1
+	} satisfies Record<Exclude<keyof Validator, keyof globalThis.Function>, 1>,
 	null
 )
 
