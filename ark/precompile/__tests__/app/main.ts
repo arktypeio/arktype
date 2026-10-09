@@ -1,7 +1,22 @@
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { Handle, Payload, Profile, User, Users } from "./schemas.ts"
 
+const Node = type({ value: "number", "next?": "this" })
+
+// a bundle can rename a predicate, so its message doesn't print its name
+const Chain = type({
+	value: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive")),
+	"next?": "this"
+})
+
+const Tree = scope({
+	tree: { value: "number", "children?": "tree[]" }
+}).type("tree")
+
 const ada = { name: "Ada", email: "ada@example.com", age: 36, tags: ["math"] }
+
+const loop = { value: 1, children: [] as unknown[] }
+loop.children.push(loop)
 
 const samples: [(data: unknown) => unknown, unknown][] = [
 	[User, ada],
@@ -17,7 +32,11 @@ const samples: [(data: unknown) => unknown, unknown][] = [
 	[Payload, { kind: "update" }],
 	[Handle, " @ada "],
 	[Profile, { handle: "@ada", joined: "2020-06-01" }],
-	[Profile, { handle: "ada", joined: "2020-06-01" }]
+	[Profile, { handle: "ada", joined: "2020-06-01" }],
+	[Node, { value: 1, next: { value: 2, next: { value: "3" } } }],
+	[Chain, { value: 1, next: { value: -1 } }],
+	[Tree, { value: 1, children: [{ value: 2 }, { value: "3" }] }],
+	[data => Tree(data) === data, loop]
 ]
 
 console.log(

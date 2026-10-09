@@ -57,6 +57,14 @@ test("a mutated import", async () => {
 	)
 })
 
+test("a mutated import another site reads elsewhere", async () => {
+	const { pair } = await import("./shapes.ts")
+	pair.first = "number"
+	await expect(create()).rejects.toThrow(
+		'`pair.first` is "number", but was precompiled as "string"'
+	)
+})
+
 test("a mutated plain object", async () => {
 	const { tweaks } = await import("./tweaks.ts")
 	tweaks.enabled = true

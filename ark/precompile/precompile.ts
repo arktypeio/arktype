@@ -630,7 +630,7 @@ export class Precompiler {
 			}
 			const root = site.value as BaseRoot
 			if (factory) {
-				const name = `f${hashOf(`${root.hash}\n${factory.params.map(param => `${param.kind} ${param.label}`).join("\n")}`)}`
+				const name = `f${nameOf(site)}`
 				factoriesBySite.set(site, factory)
 				namesBySite.set(site, name)
 				exportsByName[name] = { type: root as never, params: factory.params }
@@ -1932,7 +1932,6 @@ const isStrict = (program: Program): boolean =>
 			statement.directive === "use strict"
 	)
 
-// named by content, so equal sites share a validator
 // a relative specifier for a file, which a bundler resolves as the module did
 const specifierOf = (importer: string, file: string) => {
 	const path = relative(dirname(importer), file).split("\\").join("/")
@@ -1942,8 +1941,9 @@ const specifierOf = (importer: string, file: string) => {
 const listTexts = (texts: Iterable<string>) =>
 	[...texts].map(text => `\`${text}\``).join(" and ")
 
+// a ParseError is named by its message, so equal sites share a thrower, and anything else by its site, since a cyclic Type's hash holds registry counters
 const nameOf = (site: Site) =>
-	hashOf(site.parseError?.message ?? (site.value as BaseRoot).hash)
+	hashOf(site.parseError?.message ?? `${site.start}`)
 
 // precompileStandalone refuses a whole artifact for one export it can't emit, so on a refusal each is emitted alone to find it
 const writeValidators = (

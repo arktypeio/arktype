@@ -150,6 +150,7 @@ contextualize(() => {
 			user: $.user,
 			cycles: x,
 			tree: $.tree,
+			node: type({ value: "number", "next?": "this" }),
 			deep: a0.onDeepUndeclaredKey("delete"),
 			parsed: type({ count: "string.numeric.parse", "+": "delete" }),
 			json: type("string.json.parse"),
@@ -166,6 +167,8 @@ contextualize(() => {
 		const validators = await load(types)
 		const cyclic: any = { value: 1, children: [] }
 		cyclic.children.push(cyclic)
+		const node: any = { value: 1 }
+		node.next = { value: 2, next: node }
 		const cyclicArray: unknown[] = []
 		cyclicArray.push(cyclicArray, cyclicArray)
 		const inputs = [
@@ -173,6 +176,8 @@ contextualize(() => {
 			{ name: "", age: -1.5, email: "x", tags: ["a", "b", "c", "d"] },
 			{ value: 1, children: [{ value: 2 }, { value: "3" }] },
 			cyclic,
+			node,
+			{ value: 1, next: { value: "2" } },
 			cyclicArray,
 			{ count: "5", extra: true },
 			new Point(),

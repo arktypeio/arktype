@@ -192,7 +192,11 @@ contextualize(() => {
 			'kind must be "delete" or "create" (was "update")',
 			"@ada",
 			{ handle: "@ada", joined: 2020 },
-			'handle must be a handle (was "ada")'
+			'handle must be a handle (was "ada")',
+			"next.next.value must be a number (was a string)",
+			"next.value must be positive (was -1)",
+			"children[1].value must be a number (was a string)",
+			true
 		])
 	})
 
@@ -424,6 +428,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 			"pass a mocked static helper",
 			"pass a stubbed define",
 			"pass a mutated import",
+			"pass a mutated import another site reads elsewhere",
 			"pass a mutated plain object",
 			"pass a hole with another arity",
 			"pass a hole of another kind",

@@ -21,13 +21,14 @@ export const Users = User.array()
 export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.code).snap(`import { ArkErrors } from "arktype"
 const max = 64
-export const User = $arkv1169pgizw3q
-export const Same = $arkv1169pgizw3q
-export const Users = $arkvu8qjlz7etl
+export const User = $arkvzvq2oze5lr
+export const Same = $arkv22ro8s3uuz
+export const Users = $arkv148ig5g1uwr
 export const isError = (data: unknown) => data instanceof ArkErrors
-import { v1169pgizw3q as $arkv1169pgizw3q } from "~arktype/1ttn8klr0go"
-import { vu8qjlz7etl as $arkvu8qjlz7etl } from "~arktype/1ttn8klr0go"`)
-			attest(Object.keys(result.modules)).snap(["~arktype/1ttn8klr0go"])
+import { vzvq2oze5lr as $arkvzvq2oze5lr } from "~arktype/niv4uq9j8l"
+import { v22ro8s3uuz as $arkv22ro8s3uuz } from "~arktype/niv4uq9j8l"
+import { v148ig5g1uwr as $arkv148ig5g1uwr } from "~arktype/niv4uq9j8l"`)
+			attest(Object.keys(result.modules)).snap(["~arktype/niv4uq9j8l"])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
@@ -40,8 +41,8 @@ export const A = type("string")`).code
 			).snap(`import "./polyfill.ts"
 import "arktype"
 import * as config from "./config.ts"
-export const A = $arkvek65jf4484
-import { vek65jf4484 as $arkvek65jf4484 } from "~arktype/1ebx9d7da25"`)
+export const A = $arkv2e1m8qabj8c
+import { v2e1m8qabj8c as $arkv2e1m8qabj8c } from "~arktype/18scx4hvmp"`)
 		})
 
 		it("unsupported sites", () => {
@@ -68,17 +69,17 @@ export const G = scope({ a: "string" })`,
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
 const field = (n: number) => type(\`string <= \${n}\`)
-export const A = $arkf2f7m2qez7rp(trim)
-export const B = $arkf27k5dqrbs0h(max)
-export const C = $arkv20nnjgkvd82
+export const A = $arkfytsovucmcv(trim)
+export const B = $arkf2bfm9voib1j(max)
+export const C = $arkv2cw04mqw80s
 export const D = $ark11nyj35o0sh()
 export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
-export const F = $arkv1bp5ims0ip5
+export const F = $arkvpatjbfbx3k
 export const G = scope({ a: "string" })
-import { f2f7m2qez7rp as $arkf2f7m2qez7rp } from "~arktype/145hosxkl80"
-import { f27k5dqrbs0h as $arkf27k5dqrbs0h } from "~arktype/145hosxkl80"
-import { v20nnjgkvd82 as $arkv20nnjgkvd82 } from "~arktype/145hosxkl80"
-import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/145hosxkl80"
+import { fytsovucmcv as $arkfytsovucmcv } from "~arktype/3k9u25xc99"
+import { f2bfm9voib1j as $arkf2bfm9voib1j } from "~arktype/3k9u25xc99"
+import { v2cw04mqw80s as $arkv2cw04mqw80s } from "~arktype/3k9u25xc99"
+import { vpatjbfbx3k as $arkvpatjbfbx3k } from "~arktype/3k9u25xc99"
 import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"`)
 		})
 	})
@@ -112,20 +113,20 @@ import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
 class Pet {}
 const petTag = Symbol("petTag")
-export const Name = $arkf1gmbnlsmwkb(trim, (s, ctx) => s.length > 0)
-export const User = $arkf17onxh5wa5v(Name, Pet, petTag)
-export const Either = $arkf177zfl998m9(trim)
-export const Extended = $arkf14b60szkb1e(ext)
-export const Pair = $arkfcfvlzq3rdy(Name, Either)
-export const Short = $arkf1h2fl3hww77(Name, s => s.length < 9)
-export const Stamped = $arkf1an86esmhhe(() => new Date())
-import { f1gmbnlsmwkb as $arkf1gmbnlsmwkb } from "~arktype/wartb1k4re"
-import { f17onxh5wa5v as $arkf17onxh5wa5v } from "~arktype/wartb1k4re"
-import { f177zfl998m9 as $arkf177zfl998m9 } from "~arktype/wartb1k4re"
-import { f14b60szkb1e as $arkf14b60szkb1e } from "~arktype/wartb1k4re"
-import { fcfvlzq3rdy as $arkfcfvlzq3rdy } from "~arktype/wartb1k4re"
-import { f1h2fl3hww77 as $arkf1h2fl3hww77 } from "~arktype/wartb1k4re"
-import { f1an86esmhhe as $arkf1an86esmhhe } from "~arktype/wartb1k4re"`)
+export const Name = $arkf1zfc4jvopxh(trim, (s, ctx) => s.length > 0)
+export const User = $arkfujb2tq68ew(Name, Pet, petTag)
+export const Either = $arkfyhi0i9lyrd(trim)
+export const Extended = $arkf1u6d12e2tku(ext)
+export const Pair = $arkf1wp1un5l57h(Name, Either)
+export const Short = $arkf1qr3n92up8j(Name, s => s.length < 9)
+export const Stamped = $arkfhcw8rg5ps0(() => new Date())
+import { f1zfc4jvopxh as $arkf1zfc4jvopxh } from "~arktype/1nohe0brkcw"
+import { fujb2tq68ew as $arkfujb2tq68ew } from "~arktype/1nohe0brkcw"
+import { fyhi0i9lyrd as $arkfyhi0i9lyrd } from "~arktype/1nohe0brkcw"
+import { f1u6d12e2tku as $arkf1u6d12e2tku } from "~arktype/1nohe0brkcw"
+import { f1wp1un5l57h as $arkf1wp1un5l57h } from "~arktype/1nohe0brkcw"
+import { f1qr3n92up8j as $arkf1qr3n92up8j } from "~arktype/1nohe0brkcw"
+import { fhcw8rg5ps0 as $arkfhcw8rg5ps0 } from "~arktype/1nohe0brkcw"`)
 		})
 
 		it("passes the inputs a site reads after its holes", () => {
@@ -172,24 +173,24 @@ import * as limits from "./limits.ts"
 const trim = (s: string) => s.trim()
 const o = { name: "string", tags: ["string"] }
 const alias = o
-export const Local = $arkf1beux5aqrso(trim, o)
-export const Imported = $arkf12fwruchwwb(max, o)
-export const Added = $arkf1seyv7qujj0(reboxed)
-export const Defined = $arkfnnd6q3k9w4(process.env.NODE_ENV)
-export const Namespaced = $arkfw790lt05pv(limits.boxed)
+export const Local = $arkf19cnbo9pame(trim, o)
+export const Imported = $arkf1uslk6cbzgz(max, o)
+export const Added = $arkf20bd0we3n85(reboxed)
+export const Defined = $arkf12afweyjfd6(process.env.NODE_ENV)
+export const Namespaced = $arkfzp95xqs0o7(limits.boxed)
 const box = shape
-export const Imports = ((shape: number) => $arkfq2rjvxr6lw($arki15vt9rj2an1, box))(1)
+export const Imports = ((shape: number) => $arkf1kdxkkysgwf($arki15vt9rj2an1, box))(1)
 export const Shadowed = (() => {
 	const o = 1
 	return type(alias.name)
 })()
 import { shape as $arki15vt9rj2an1 } from "./shapes.ts"
-import { f1beux5aqrso as $arkf1beux5aqrso } from "~arktype/12fw56fhif7"
-import { f12fwruchwwb as $arkf12fwruchwwb } from "~arktype/12fw56fhif7"
-import { f1seyv7qujj0 as $arkf1seyv7qujj0 } from "~arktype/12fw56fhif7"
-import { fnnd6q3k9w4 as $arkfnnd6q3k9w4 } from "~arktype/12fw56fhif7"
-import { fw790lt05pv as $arkfw790lt05pv } from "~arktype/12fw56fhif7"
-import { fq2rjvxr6lw as $arkfq2rjvxr6lw } from "~arktype/12fw56fhif7"`)
+import { f19cnbo9pame as $arkf19cnbo9pame } from "~arktype/3qz4c9i9sb"
+import { f1uslk6cbzgz as $arkf1uslk6cbzgz } from "~arktype/3qz4c9i9sb"
+import { f20bd0we3n85 as $arkf20bd0we3n85 } from "~arktype/3qz4c9i9sb"
+import { f12afweyjfd6 as $arkf12afweyjfd6 } from "~arktype/3qz4c9i9sb"
+import { fzp95xqs0o7 as $arkfzp95xqs0o7 } from "~arktype/3qz4c9i9sb"
+import { f1kdxkkysgwf as $arkf1kdxkkysgwf } from "~arktype/3qz4c9i9sb"`)
 		})
 
 		it("prints the names in a ParseError when it is thrown", () => {
@@ -249,14 +250,14 @@ export default (def: string) => def`,
 import single, { list } from "./helpers.ts"
 import * as helpers from "./helpers.ts"
 const own = (def: string) => list(def)
-export const List = $arkf9gpqhychhj(list)
-export const Own = $arkf1wq8iy0qjbs(list)
-export const Optional = $arkf2azzz0ipb51(helpers.optional, $arki1hye78qyfa1)
+export const List = $arkf3ztwe52hlc(list)
+export const Own = $arkf20bdtc14r0x(list)
+export const Optional = $arkfomeifcka3x(helpers.optional, $arki1hye78qyfa1)
 export const Single = type(single("string"))
 import { suffix as $arki1hye78qyfa1 } from "./suffix.ts"
-import { f9gpqhychhj as $arkf9gpqhychhj } from "~arktype/jq1uvk6hkp"
-import { f1wq8iy0qjbs as $arkf1wq8iy0qjbs } from "~arktype/jq1uvk6hkp"
-import { f2azzz0ipb51 as $arkf2azzz0ipb51 } from "~arktype/jq1uvk6hkp"`)
+import { f3ztwe52hlc as $arkf3ztwe52hlc } from "~arktype/173yau7674t"
+import { f20bdtc14r0x as $arkf20bdtc14r0x } from "~arktype/173yau7674t"
+import { fomeifcka3x as $arkfomeifcka3x } from "~arktype/173yau7674t"`)
 			attest(build("/helpers.ts", true).code)
 				.snap(`import { suffix } from "./suffix.ts"
 const base = (def: string) => \`\${def}[]\`
@@ -350,7 +351,7 @@ export const E = type("strng")`,
 			)
 			const lines = result.code.split("\n")
 			attest([lines[0], ...lines.slice(-12)]).snap([
-				'const { "v10r4iwvwtfo": $arkv10r4iwvwtfo } = ((runtime, Array) => {',
+				'const { "vk7v7o06cb9": $arkvk7v7o06cb9 } = ((runtime, Array) => {',
 				"})($ark$0, globalThis.Array);",
 				'const { "default": $ark29kiraik2u5 } = (({ "ParseError": ParseError }) => {',
 				"const throwParseError = () => {",
@@ -360,7 +361,7 @@ export const E = type("strng")`,
 				"})($ark$0);",
 				'import "arktype"',
 				'const Array = "shadowed"',
-				"export const T = $arkv10r4iwvwtfo",
+				"export const T = $arkvk7v7o06cb9",
 				"export const E = $ark29kiraik2u5()",
 				'import * as $ark$0 from "arktype/runtime"'
 			])
@@ -417,11 +418,21 @@ export const T = type("string[]")`,
 		])
 	})
 
+	it("keeps sites apart whose Types differ only in their scope's config", () => {
+		const { modules } = precompile(`import { scope } from "arktype"
+export const Custom = scope({}, { domain: { message: "custom" } }).type({ x: "string" })
+export const Default = scope({}).type({ x: "string" })`)
+		attest(Object.values(modules)[0].includes('message: "custom"')).equals(true)
+	})
+
 	it("writes the same modules in any order after unrelated work", () => {
-		const ids = ["main.ts", "dates.ts", "numbers.ts", "local.ts"].map(file =>
-			fromHere("environments", file)
-		)
-		const unrelated = fromHere("app", "schemas.ts")
+		const ids = [
+			...["main.ts", "dates.ts", "numbers.ts", "local.ts"].map(file =>
+				fromHere("environments", file)
+			),
+			fromHere("app", "main.ts")
+		]
+		const unrelated = fromHere("app", "admin.ts")
 		const build = (order: string[], runtime?: "arktype") => {
 			const precompiler = new Precompiler(
 				createNodeHost({ conditions: ["ark-ts"] }),
@@ -437,8 +448,14 @@ export const T = type("string[]")`,
 		}
 		for (const runtime of [undefined, "arktype"] as const) {
 			const first = build(ids, runtime)
-			for (let i = 0; i < 40; i++) type({ [`k${i}`]: `number > ${i}` })
-			scope({ After: "Date > d'2001-01-01T00:00:00.000Z'" }).export()
+			for (let i = 0; i < 40; i++) {
+				type({ [`k${i}`]: `number > ${i}` })
+				type({ value: `number > ${i}`, "next?": "this" })
+			}
+			scope({
+				After: "Date > d'2001-01-01T00:00:00.000Z'",
+				tree: { "children?": "tree[]" }
+			}).export()
 			attest(build([unrelated, ...[...ids].reverse()], runtime)).equals(first)
 		}
 	})
