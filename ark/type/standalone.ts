@@ -305,7 +305,7 @@ export class StandaloneArtifact {
 		if (printed) {
 			throwParseError(
 				writeUnprecompilableMessage(
-					`compiled code printing the name of ${this.labelOfName(printed[0])}`
+					`compiled code printing the name of ${this.labelsByHole.get(this.holeNamed(printed[0])) ?? printed[0]}`
 				)
 			)
 		}
@@ -342,10 +342,6 @@ export class StandaloneArtifact {
 			if (typeof hole === "function" && functionNameOf(hole) === name)
 				return hole
 		}
-	}
-
-	labelOfName(name: string): string {
-		return this.labelsByHole.get(this.holeNamed(name)) ?? name
 	}
 
 	// a hole received twice is the value the build read twice, so it's checked to be that value rather than for its facts
@@ -1036,10 +1032,14 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 
 export const holeNamePrefix = "$hole_"
 
-export const holeNamePattern = /\$hole_[\da-z]+/g
+const holeName = `${holeNamePrefix.replace("$", "\\$")}[\\da-z]+`
 
-const printedHoleNamePattern =
-	/valid according to (\$hole_[\da-z]+)|Function\((\$hole_[\da-z]+)\)|(\$hole_[\da-z]+)/g
+export const holeNamePattern = new RegExp(holeName, "g")
+
+const printedHoleNamePattern = new RegExp(
+	`valid according to (${holeName})|Function\\((${holeName})\\)|(${holeName})`,
+	"g"
+)
 
 export const writeUnprecompilableMessage = <value extends string>(
 	value: value
