@@ -7,7 +7,8 @@ import {
 	type BaseNode,
 	type BaseRoot,
 	type ContentUnit,
-	type NodeId
+	type NodeId,
+	type NodeKind
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
@@ -17,6 +18,7 @@ import {
 	writeRootApply
 } from "@ark/schema/internal"
 import {
+	appendStringifiedKey,
 	constructorNameOf,
 	functionNameOf,
 	hasDomain,
@@ -40,14 +42,16 @@ const indexRuntime = (value: unknown, path: string): void => {
 	if (typeof value === "function") runtimePathsByValue.set(value, path)
 	else if (hasDomain(value, "object")) {
 		runtimePathsByValue.set(value, path)
-		if (Object.getPrototypeOf(value) === Object.prototype)
-			for (const k in value) indexRuntime(value[k as never], `${path}.${k}`)
+		if (Object.getPrototypeOf(value) === Object.prototype) {
+			for (const [k, v] of Object.entries(value))
+				indexRuntime(v, `${path}.${k}`)
+		}
 	}
 }
 
 // an artifact reads what the runtime exports from it rather than copying it
-for (const name in runtime)
-	indexRuntime(runtime[name as never], `runtime.${name}`)
+for (const [name, value] of Object.entries(runtime))
+	indexRuntime(value, `runtime.${name}`)
 
 /**
  * #### an ES module that exports each Type as a validator running on arktype/runtime alone, and each Module as an object of them
@@ -61,7 +65,7 @@ export class StandaloneArtifact {
 	validatorNamesByRoot = new Map<BaseRoot, string>()
 	unit: ContentUnit
 	// traversal raises these itself, and a predicate or morph can raise any code
-	raisableCodes: { [code in ArkErrorCode]?: true } = {
+	raisableCodes: { [code in NodeKind | ArkErrorCode]?: true } = {
 		intersection: true,
 		predicate: true,
 		union: true,
@@ -70,7 +74,8 @@ export class StandaloneArtifact {
 	}
 	runsFunctions: boolean
 	traversalIndexByName: Record<string, number> = {}
-	propsByKeys = new Set<object>()
+	// each structure's propsByKey, which traversal reads only with `in`
+	keyLookups = new Set<object>()
 	objectUnits = new Set<unknown>()
 	constNamesByValue = new Map<unknown, string>()
 	emitting = new Set<object>()
@@ -92,7 +97,8 @@ export class StandaloneArtifact {
 				)
 			}
 		}
-		for (const value of Object.values(exports)) this.collectTypes(value)
+		for (const [name, value] of Object.entries(exports))
+			this.collectExport(value, appendStringifiedKey("", name))
 		// the runtime writes only en
 		const locale = $ark.config.locale
 		if (locale !== undefined && locale !== $ark.defaultConfig.locale)
@@ -103,14 +109,14 @@ export class StandaloneArtifact {
 		for (const root of this.roots)
 			if (root.onFail) throwParseError(writeUnprecompilableMessage("onFail"))
 		for (const context of this.unit.errorContexts)
-			this.raisableCodes[(context as { code: ArkErrorCode }).code] = true
+			this.raisableCodes[context.code] = true
 		this.runsFunctions = this.unit.declared.some(
 			node => node.hasKind("predicate") || node.hasKind("morph")
 		)
 		for (let i = 0; i < this.unit.declared.length; i++) {
 			const node = this.unit.declared[i]
 			this.traversalIndexByName[this.unit.names[node.id]] = i
-			if (node.hasKind("structure")) this.propsByKeys.add(node.propsByKey)
+			if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
 			else if (
 				node.hasKind("unit") &&
 				hasDomain(node.unit, "object") &&
@@ -124,16 +130,26 @@ export class StandaloneArtifact {
 		return [...this.validatorNamesByRoot.keys()]
 	}
 
-	collectTypes(value: unknown): void {
-		if (hasArkKind(value, "module"))
-			for (const entry of Object.values(value)) this.collectTypes(entry)
-		else if (hasArkKind(value, "generic"))
-			throwParseError(writeUnprecompilableMessage("a Generic"))
-		else if (!this.validatorNamesByRoot.has(value as BaseRoot)) {
-			const name = `validator${this.validatorNamesByRoot.size}`
-			this.validatorNamesByRoot.set(value as BaseRoot, name)
-			this.lateNames.add(name)
+	collectExport(value: unknown, path: string): void {
+		if (hasArkKind(value, "root")) return this.collectType(value)
+		if (!hasArkKind(value, "module")) {
+			return throwParseError(
+				writeUnprecompilableMessage(
+					hasArkKind(value, "generic") ?
+						`the Generic ${path}`
+					:	`the export ${path}`
+				)
+			)
 		}
+		for (const [k, entry] of Object.entries(value))
+			this.collectExport(entry, appendStringifiedKey(path, k))
+	}
+
+	collectType(root: BaseRoot): void {
+		if (this.validatorNamesByRoot.has(root)) return
+		const name = `validator${this.validatorNamesByRoot.size}`
+		this.validatorNamesByRoot.set(root, name)
+		this.lateNames.add(name)
 	}
 
 	collectMetaTypes(): boolean {
@@ -143,7 +159,7 @@ export class StandaloneArtifact {
 			if (!hasDomain(value, "object") || visited.has(value)) return
 			visited.add(value)
 			if (isNode(value)) {
-				if (value.isRoot()) this.collectTypes(value)
+				if (value.isRoot()) this.collectType(value)
 			} else if (isPlainLiteral(value))
 				for (const v of Object.values(value)) collect(v)
 		}
@@ -200,8 +216,9 @@ ${exported.join("\n")}
 
 	// a module is a plain object of validators, frozen like them
 	exportOf(value: unknown): string {
+		if (hasArkKind(value, "root")) return this.validatorNamesByRoot.get(value)!
 		if (!hasArkKind(value, "module"))
-			return this.validatorNamesByRoot.get(value as BaseRoot)!
+			return throwInternalError(`Unexpected export ${printable(value)}`)
 		const declared = this.moduleNamesByModule.get(value)
 		if (declared) return declared
 		const entries = Object.entries(value).map(
@@ -270,7 +287,7 @@ ${exported.join("\n")}
 		}
 		if (typeof value === "function") {
 			const name = functionNameOf(value)
-			return globalThis[name as never] === value ?
+			return Reflect.get(globalThis, name) === value ?
 					`globalThis[${JSON.stringify(name)}]`
 				:	throwParseError(writeUnprecompilableMessage(printable(value)))
 		}
@@ -281,7 +298,7 @@ ${exported.join("\n")}
 			)
 		}
 		// a structure's keys are read only with `in`, so they're emitted without their props
-		if (this.propsByKeys.has(value)) {
+		if (this.keyLookups.has(value)) {
 			const keys = Reflect.ownKeys(value)
 			if (keys.some(k => typeof k === "symbol"))
 				throwParseError(writeUnprecompilableMessage("a symbol key"))
@@ -292,89 +309,98 @@ ${exported.join("\n")}
 		}
 		if (this.emitting.has(value))
 			return throwParseError(writeUnprecompilableMessage("a cyclic object"))
-		const prototype = prototypeOf(value)
-		const keys = Reflect.ownKeys(value)
-		const isDateObject =
-			prototype === Date.prototype && isBrandedBy(value, getTime)
-		const isRegExpObject =
-			prototype === RegExp.prototype && isBrandedBy(value, getSource)
-		// a Date has no own keys and a RegExp only lastIndex, so any other is a property its copy would lack
-		if (
-			keys.length > (isRegExpObject ? 1 : 0) &&
-			(isDateObject || isRegExpObject)
-		) {
-			throwParseError(
-				writeUnprecompilableMessage(
-					`a ${isDateObject ? "Date" : "RegExp"} with its own properties`
+		if (isDateObject(value)) {
+			if (Reflect.ownKeys(value).length) {
+				throwParseError(
+					writeUnprecompilableMessage("a Date with its own properties")
 				)
-			)
-		}
-		if (isDateObject) {
+			}
 			return this.declareConst(
 				value,
-				`runtime.freeze(new Date(${(value as Date).getTime()}))`
+				`runtime.freeze(new Date(${value.getTime()}))`
 			)
 		}
-		if (isRegExpObject) {
-			const { source, flags, lastIndex } = value as RegExp
-			const regex = `new RegExp(${JSON.stringify(source)}, ${JSON.stringify(flags)})`
+		if (isRegExpObject(value)) {
+			if (Reflect.ownKeys(value).some(k => k !== "lastIndex")) {
+				throwParseError(
+					writeUnprecompilableMessage("a RegExp with its own properties")
+				)
+			}
+			const regex = `new RegExp(${JSON.stringify(value.source)}, ${JSON.stringify(value.flags)})`
 			// its methods write lastIndex, so it's kept from growing rather than frozen
 			return this.declareConst(
 				value,
-				`runtime.preventExtensions(${lastIndex ? `runtime.assign(${regex}, { lastIndex: ${lastIndex} })` : regex})`
+				`runtime.preventExtensions(${value.lastIndex ? `runtime.assign(${regex}, { lastIndex: ${value.lastIndex} })` : regex})`
 			)
 		}
-		const isArrayLiteral = prototype === Array.prototype && Array.isArray(value)
-		if (
-			!isArrayLiteral &&
-			prototype !== Object.prototype &&
-			prototype !== null
-		) {
+		return this.emitLiteral(value)
+	}
+
+	emitLiteral(value: object): string {
+		const prototype = prototypeOf(value)
+		const isArray = prototype === Array.prototype && Array.isArray(value)
+		if (!isArray && prototype !== Object.prototype && prototype !== null) {
 			return throwParseError(
 				writeUnprecompilableMessage(
 					`an instance of ${constructorNameOf(value) || "an anonymous class"}`
 				)
 			)
 		}
-		const propKeys = isArrayLiteral ? keys.filter(k => k !== "length") : keys
-		// a literal has only enumerable data properties
-		const isReproducible =
-			(!isArrayLiteral ||
-				(propKeys.length === (value as unknown[]).length &&
-					propKeys.every((k, i) => k === `${i}`))) &&
-			propKeys.every(k => {
-				const descriptor = Object.getOwnPropertyDescriptor(value, k)!
-				return (
-					typeof k === "string" &&
-					descriptor.enumerable &&
-					"value" in descriptor
-				)
-			})
-		if (!isReproducible) {
+		const symbol = Object.getOwnPropertySymbols(value)[0]
+		if (symbol) {
 			throwParseError(
-				writeUnprecompilableMessage(`${printable(value)}'s properties`)
+				writeUnprecompilableMessage(`the symbol key ${printable(symbol)}`)
 			)
 		}
+		const descriptors = Object.getOwnPropertyDescriptors(value)
+		const keys = Object.getOwnPropertyNames(value).filter(
+			k => !isArray || k !== "length"
+		)
+		// an array is copied as its elements, so a hole or another property would be lost
+		if (
+			isArray &&
+			(keys.length !== descriptors.length.value ||
+				keys.some((k, i) => k !== `${i}`))
+		) {
+			throwParseError(
+				writeUnprecompilableMessage("an array with holes or other properties")
+			)
+		}
+		// a literal is copied as its enumerable data properties
+		for (const k of keys) {
+			if (!("value" in descriptors[k])) {
+				throwParseError(
+					writeUnprecompilableMessage(`the accessor ${JSON.stringify(k)}`)
+				)
+			}
+			if (!descriptors[k].enumerable) {
+				throwParseError(
+					writeUnprecompilableMessage(
+						`the non-enumerable property ${JSON.stringify(k)}`
+					)
+				)
+			}
+		}
 		this.emitting.add(value)
-		const elements = propKeys.map(k => this.emitElement(value[k as never]))
+		const elements = keys.map(k => this.emitElement(descriptors[k].value))
 		this.emitting.delete(value)
 		const literal =
-			isArrayLiteral ?
+			isArray ?
 				`[${elements.join(", ")}]`
-			:	`{ ${prototype === null ? "__proto__: null, " : ""}${propKeys
+			:	`{ ${prototype === null ? "__proto__: null, " : ""}${keys
 					.map((k, i) => `[${JSON.stringify(k)}]: ${elements[i]}`)
 					.join(", ")} }`
 		if (!elements.some(element => this.lateNames.has(element)))
 			return this.declareConst(value, `runtime.freeze(${literal})`)
 		// assigning a __proto__ key to an object would set its prototype
-		if (prototype === Object.prototype && propKeys.includes("__proto__")) {
+		if (prototype === Object.prototype && keys.includes("__proto__")) {
 			throwParseError(
 				writeUnprecompilableMessage("a __proto__ key beside a Type")
 			)
 		}
 		const name = this.declareConst(
 			value,
-			isArrayLiteral ? "[]"
+			isArray ? "[]"
 			: prototype === null ? "{ __proto__: null }"
 			: "{}"
 		)
@@ -443,6 +469,12 @@ const isBrandedBy = (value: object, method: () => unknown): boolean => {
 		return false
 	}
 }
+
+const isDateObject = (value: object): value is Date =>
+	prototypeOf(value) === Date.prototype && isBrandedBy(value, getTime)
+
+const isRegExpObject = (value: object): value is RegExp =>
+	prototypeOf(value) === RegExp.prototype && isBrandedBy(value, getSource)
 
 const isPlainLiteral = (value: object): boolean => {
 	const prototype = prototypeOf(value)

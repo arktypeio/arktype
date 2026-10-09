@@ -384,8 +384,10 @@ contextualize(() => {
 			writeUnprecompilableMessage('the export name "\\ud800"')
 		)
 		attest(() =>
-			precompileStandalone({ M: scope({ "box<t>": { box: "t" } }).export() })
-		).throws(writeUnprecompilableMessage("a Generic"))
+			precompileStandalone({
+				M: scope({ "box<t>": { box: "t" }, "sub.a": "string" }).export()
+			})
+		).throws(writeUnprecompilableMessage("the Generic M.box"))
 		const T = scope({}, { domain: { message: () => "configured" } }).type(
 			"string"
 		)
@@ -406,7 +408,7 @@ contextualize(() => {
 			precompileStandalone({
 				T: type("string").configure({ accessor } as never)
 			})
-		).throws(writeUnprecompilableMessage('{"x":1}\'s properties'))
+		).throws(writeUnprecompilableMessage('the accessor "x"'))
 		const refusalOf = (value: object) => {
 			try {
 				precompileStandalone({
@@ -422,12 +424,24 @@ contextualize(() => {
 				Object.assign(Object.create(RegExp.prototype), { lastIndex: 0 })
 			),
 			map: refusalOf(new Map()),
+			hole: refusalOf(new Array(1)),
+			extra: refusalOf(Object.assign([1], { x: 1 })),
+			hidden: refusalOf(Object.defineProperty({}, "x", { value: 1 })),
+			symbol: refusalOf({ [Symbol("x")]: 1 }),
 			date: refusalOf(Object.assign(new Date(0), { x: 1 })),
 			regex: refusalOf(Object.assign(/x/, { x: 1 }))
 		}).equals({
 			fakeDate: writeUnprecompilableMessage("an instance of Date"),
 			fakeRegExp: writeUnprecompilableMessage("an instance of RegExp"),
 			map: writeUnprecompilableMessage("an instance of Map"),
+			hole: writeUnprecompilableMessage(
+				"an array with holes or other properties"
+			),
+			extra: writeUnprecompilableMessage(
+				"an array with holes or other properties"
+			),
+			hidden: writeUnprecompilableMessage('the non-enumerable property "x"'),
+			symbol: writeUnprecompilableMessage("the symbol key Symbol(x)"),
 			date: writeUnprecompilableMessage("a Date with its own properties"),
 			regex: writeUnprecompilableMessage("a RegExp with its own properties")
 		})

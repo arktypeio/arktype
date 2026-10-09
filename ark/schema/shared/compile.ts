@@ -8,6 +8,7 @@ import {
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
+import type { BaseErrorContext } from "./declare.ts"
 import {
 	registerNodeContextCopier,
 	type ArkError,
@@ -217,7 +218,7 @@ export declare namespace NodeCompiler {
 
 	export type Refs = Map<object | symbol, string>
 
-	export type ErrorContexts = object[]
+	export type ErrorContexts = BaseErrorContext[]
 }
 
 export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
@@ -311,7 +312,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return name
 	}
 
-	errorContext(errorContext: object): string {
+	errorContext(errorContext: BaseErrorContext): string {
 		if (!this.errorContexts) return registeredReference(errorContext)
 		return `errorContexts[${this.errorContexts.push(errorContext) - 1}]`
 	}
