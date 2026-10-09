@@ -1,6 +1,17 @@
 import { attest, contextualize } from "@ark/attest"
-import { precompileModule, renderDiagnostic } from "@ark/precompile"
-import { analyze, diagnosticsOf, memoryHost, statusesOf } from "./utils.ts"
+import { type } from "arktype"
+import {
+	precompileModule,
+	renderDiagnostic,
+	writeConfiguredThreadMessage
+} from "@ark/precompile"
+import {
+	analyze,
+	diagnosticsOf,
+	memoryHost,
+	precompile,
+	statusesOf
+} from "./utils.ts"
 
 contextualize(() => {
 	describe("configuration", () => {
@@ -58,6 +69,18 @@ configure({ numberAllowsNaN: true })`,
 			).snap([
 				"/main.ts:3:1  configure() is called more than once\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
+		})
+
+		it("configure in a thread where arktype has created a Type", () => {
+			type("string")
+			attest(() =>
+				precompile(
+					`import { configure } from "arktype/config"
+configure({ exactOptionalPropertyTypes: false })`,
+					{},
+					{ config: "/main.ts" }
+				)
+			).throws(writeConfiguredThreadMessage("/main.ts"))
 		})
 
 		it("configure with values that are not static", () => {

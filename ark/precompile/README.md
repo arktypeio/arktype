@@ -38,6 +38,28 @@ By default, each definition becomes a standalone validator and `arktype` resolve
 
 In either mode, the build fails if `arktype`, `@ark/schema` or `@ark/util` resolves to more than one copy across the files it reads, naming each copy's version and path and the file that reached it, since Types and errors from one copy aren't recognized by another.
 
+## Configuration
+
+A program that calls `configure()` does so once, in a module imported before any that defines a Type, and names it as the build's `config`:
+
+```ts
+// config.ts
+import { configure } from "arktype/config"
+
+configure({
+	onUndeclaredKey: "delete",
+	onFail: errors => errors.throw()
+})
+```
+
+```ts
+precompile.vite({ config: "./config.ts" })
+```
+
+The build evaluates the argument, which must be static, and precompiles every definition under it, so a `description` writer must be a static helper. Other writers and `onFail` can be any function: the call stays in the program, where it configures `arktype/runtime` and the arktype runtime islands run on. The runtime fixes its configuration when it creates its first validator and throws if `configure()` runs after that, runs from a module the build didn't transform, or applies a configuration other than the one a validator was built under, which the build stamps into the call and each validator.
+
+The precompiler applies the configuration to arktype in its own thread, so each driver runs it in a worker. The Turbopack loader applies it where Turbopack runs the loader, so a change to the configuration applies once the dev server restarts.
+
 ## Libraries
 
 A library ships its source, and the build precompiles it with the program if its `package.json` opts in:
@@ -95,7 +117,10 @@ export default {
 	turbopack: {
 		rules: { "*.js": { loaders: ["@ark/precompile/turbopack"] } },
 		// standalone mode only
-		resolveAlias: { arktype: "arktype/runtime" }
+		resolveAlias: {
+			arktype: "arktype/runtime",
+			"arktype/config": "arktype/runtime"
+		}
 	}
 }
 ```

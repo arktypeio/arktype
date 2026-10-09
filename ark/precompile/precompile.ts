@@ -1,11 +1,18 @@
-import { hasArkKind, writePrecompiledUnits, type BaseRoot } from "@ark/schema"
+import {
+	$ark,
+	hasArkKind,
+	writePrecompiledUnits,
+	type BaseRoot
+} from "@ark/schema"
 import {
 	appendStringifiedKey,
 	hashOf,
 	hasDomain,
 	ParseError,
-	registeredNameOf
+	registeredNameOf,
+	throwError
 } from "@ark/util"
+import { configure } from "arktype"
 import type { HoleKind } from "arktype/internal/runtime.ts"
 import {
 	holeNamePatternOf,
@@ -232,6 +239,10 @@ export class Precompiler {
 	config: string | undefined
 	inline: boolean
 	checkHelpers: boolean
+	// of the configuration precompilation applies to this thread's arktype before it evaluates a site
+	fingerprint: string | undefined
+	// the config module's local import closure, whose text decides the configuration
+	private configModules: string[] | undefined
 	// a site the mode cannot build fails a standalone build, while cache mode leaves it to runtime
 	private rejectionSeverity: Diagnostic["severity"]
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
@@ -417,8 +428,12 @@ export class Precompiler {
 	}
 
 	precompile(source: string, id: string): PrecompiledModule {
+		this.configModules ??= this.applyConfiguration()
 		const module = this.graph.add(id, source)
 		const { sites, diagnostics, dependencies } = this._analyze(module)
+		// every site is evaluated under the configuration
+		for (const dependency of this.configModules)
+			if (!dependencies.includes(dependency)) dependencies.push(dependency)
 		for (const node of module.program.body) {
 			const specifier =
 				(
@@ -481,6 +496,7 @@ export class Precompiler {
 						.join(", ")} } from ${JSON.stringify(specifier)}`
 				)
 			}
+			if (id === this.config) this.stampConfiguration(module, s)
 		} else {
 			const roots = sites.flatMap(site => site.roots)
 			if (roots.length) {
@@ -516,6 +532,49 @@ export class Precompiler {
 			diagnostics,
 			modules: this.inline ? {} : modules
 		}
+	}
+
+	// applies the config module's configure() argument to this thread's arktype, as the program applies it at runtime, returning the modules that decide it
+	private applyConfiguration(): string[] {
+		if (this.config === undefined) return []
+		const module = this.graph.moduleOf(this.config)
+		if (!(module instanceof SourceModule)) {
+			return throwError(
+				writeUnreadableConfigMessage(this.graph.pathOf(this.config))
+			)
+		}
+		const closure = [this.config]
+		let text = ""
+		for (let i = 0; i < closure.length; i++) {
+			const source = this.graph.host.readFile(closure[i]) ?? ""
+			text += `${this.graph.pathOf(closure[i])}\n${source}\n`
+			for (const id of this.localImportsOf(source, closure[i]))
+				if (!closure.includes(id)) closure.push(id)
+		}
+		const fingerprint = hashOf(text)
+		if (fingerprint !== configuredFingerprint) {
+			const call = this.configureCallsOf(module)[0]
+			if (!call) return closure
+			const [value, problems] = this.evaluateConfiguration(call, module)
+			// reported where the config module is precompiled
+			if (problems.length) return closure
+			if ($ark.resolvedConfig)
+				throwError(writeConfiguredThreadMessage(module.path))
+			configure(value as never)
+			configuredFingerprint = fingerprint
+		}
+		this.fingerprint = fingerprint
+		return closure
+	}
+
+	// each artifact checks its own fingerprint against the one the program's configure() passes the runtime
+	private stampConfiguration(module: SourceModule, s: MagicString): void {
+		const call = this.configureCallsOf(module)[0]
+		if (!call || this.fingerprint === undefined) return
+		const fingerprint = JSON.stringify(this.fingerprint)
+		if (call.arguments.length)
+			s.appendLeft(call.arguments[0].end, `, ${fingerprint}`)
+		else s.appendLeft(call.end - 1, `{}, ${fingerprint}`)
 	}
 
 	// arktype's keyword table registers before its keywords are created, if its build includes one
@@ -584,7 +643,7 @@ export class Precompiler {
 		const refusalsByName: Record<string, string> = {}
 		const validators =
 			Object.keys(exportsByName).length ?
-				writeValidators(exportsByName, refusalsByName)
+				writeValidators(exportsByName, refusalsByName, this.fingerprint)
 			:	""
 		const specifier = `~arktype/${hashOf(validators)}`
 		const imported = new Set<string>()
@@ -1386,27 +1445,34 @@ export class Precompiler {
 		return result
 	}
 
-	private checkConfiguration(module: SourceModule): Diagnostic[] {
-		const result: Diagnostic[] = []
-		let calls = 0
+	private configureCallsOf(module: SourceModule): CallExpression[] {
+		const result: CallExpression[] = []
 		for (const reference of module.scopes.references) {
 			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
 			const call = read?.parent
 			if (
-				name !== "configure" ||
-				call?.type !== "CallExpression" ||
-				call.callee !== read
+				name === "configure" &&
+				call?.type === "CallExpression" &&
+				call.callee === read
 			)
-				continue
-			calls++
+				result.push(call)
+		}
+		return result
+	}
+
+	private checkConfiguration(module: SourceModule): Diagnostic[] {
+		const result: Diagnostic[] = []
+		const calls = this.configureCallsOf(module)
+		for (let i = 0; i < calls.length; i++) {
+			const call = calls[i]
 			const problem =
 				this.config === undefined ?
 					"configure() is called, but the build has no `config` module"
 				: this.config !== module.id ?
 					`configure() is called outside the config module ${this.graph.pathOf(this.config)}`
-				: calls > 1 ? "configure() is called more than once"
+				: i > 0 ? "configure() is called more than once"
 				: undefined
-			const reasons = problem ? [] : this.configurationProblemsOf(call, module)
+			const reasons = problem ? [] : this.evaluateConfiguration(call, module)[1]
 			if (problem || reasons.length) {
 				result.push(
 					this.diagnostic(
@@ -1423,15 +1489,17 @@ export class Precompiler {
 		return result
 	}
 
-	private configurationProblemsOf(
+	private evaluateConfiguration(
 		call: CallExpression,
 		module: SourceModule
-	): string[] {
+	): [value: unknown, problems: string[]] {
+		const argument = call.arguments[0]
+		if (!argument) return [undefined, []]
 		const value = this.interpreter.evaluateSite(
-			createSiteState(call.arguments[0] ?? call, module)
+			createSiteState(argument, module)
 		)
 		const dynamic = rejectionOf(value)
-		if (dynamic) return chainOf(dynamic)
+		if (dynamic) return [undefined, chainOf(dynamic)]
 		const result: string[] = []
 		const visit = (o: unknown) => {
 			if (!isPlainContainer(o)) return
@@ -1452,7 +1520,7 @@ export class Precompiler {
 			}
 		}
 		visit(value.value)
-		return result
+		return [value.value, result]
 	}
 
 	private checkStandalone(
@@ -1770,11 +1838,24 @@ export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 		...(diagnostic.hint ? [`  ${diagnostic.hint}`] : [])
 	].join("\n")
 
-export const standaloneConfigurationMessage =
-	'configure() is not applied to standalone builds yet, so `config` requires runtime: "arktype"'
+// of the configuration applied to this thread's arktype, which another precompiler in the thread can share
+let configuredFingerprint: string | undefined
 
-export type standaloneConfigurationMessage =
-	typeof standaloneConfigurationMessage
+export const writeUnreadableConfigMessage = <path extends string>(
+	path: path
+): writeUnreadableConfigMessage<path> =>
+	`the config module ${path} can't be read`
+
+export type writeUnreadableConfigMessage<path extends string> =
+	`the config module ${path} can't be read`
+
+export const writeConfiguredThreadMessage = <path extends string>(
+	path: path
+): writeConfiguredThreadMessage<path> =>
+	`${path}'s configuration can't be applied in a thread where arktype has created a Type under a different one, so it applies once the build restarts in a thread of its own`
+
+export type writeConfiguredThreadMessage<path extends string> =
+	`${path}'s configuration can't be applied in a thread where arktype has created a Type under a different one, so it applies once the build restarts in a thread of its own`
 
 export const writeStandaloneDependencyMessage = <name extends string>(
 	name: name
@@ -1867,10 +1948,11 @@ const nameOf = (site: Site) =>
 // precompileStandalone refuses a whole artifact for one export it can't emit, so on a refusal each is emitted alone to find it
 const writeValidators = (
 	exportsByName: Record<string, StandaloneExport>,
-	refusalsByName: Record<string, string>
+	refusalsByName: Record<string, string>,
+	fingerprint: string | undefined
 ): string => {
 	try {
-		return precompileStandalone(exportsByName)
+		return precompileStandalone(exportsByName, fingerprint)
 	} catch {
 		const emitted = { ...exportsByName }
 		for (const name in exportsByName) {
@@ -1881,7 +1963,10 @@ const writeValidators = (
 				delete emitted[name]
 			}
 		}
-		return precompileStandalone(emitted)
+		// every export is refused when the whole artifact is, as under a configured locale
+		return Object.keys(emitted).length ?
+				precompileStandalone(emitted, fingerprint)
+			:	""
 	}
 }
 

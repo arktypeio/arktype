@@ -1,6 +1,17 @@
 import "./config.ts"
 import { type } from "arktype"
 
-export const Score = type("number")
+export const User = type({
+	name: "string",
+	email: "string.email",
+	"age?": "number % 3"
+})
 
-console.log(Score.allows(Number.NaN))
+export const results = [
+	User({ name: "Ada", email: "ada@example.com", age: undefined, role: "x" }),
+	User({ name: 1, email: "ada", age: 4 }),
+	User.description,
+	type("number").allows(Number.NaN)
+]
+
+console.log(JSON.stringify(results))

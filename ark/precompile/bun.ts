@@ -5,6 +5,7 @@ import type { InlineModule, PrecompilePluginOptions } from "./driver.ts"
 import {
 	createNodeHost,
 	optedInPackagesOf,
+	runtimeSpecifiers,
 	transformedFilterOf
 } from "./host.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
@@ -35,10 +36,12 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 				"arktype/runtime",
 				join(opts?.cwd ?? process.cwd(), "package.json")
 			)
-			build.module("arktype", () => ({
-				contents: `export * from ${JSON.stringify(runtime)}`,
-				loader: "js"
-			}))
+			for (const specifier of runtimeSpecifiers) {
+				build.module(specifier, () => ({
+					contents: `export * from ${JSON.stringify(runtime)}`,
+					loader: "js"
+				}))
+			}
 		}
 		const request = createAsyncPrecompiler({
 			precompilerOptions: {

@@ -1,3 +1,4 @@
+import "./config.ts"
 import { type } from "arktype"
 import { withId } from "./helpers.ts"
 

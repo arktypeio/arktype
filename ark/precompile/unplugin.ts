@@ -5,9 +5,9 @@ import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
 import {
 	createNodeHost,
 	optedInPackagesOf,
+	runtimeSpecifiers,
 	transformedFilterOf
 } from "./host.ts"
-import { standaloneConfigurationMessage } from "./precompile.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
 export type { PrecompilePluginOptions } from "./driver.ts"
@@ -16,10 +16,8 @@ export const precompile: UnpluginInstance<
 	PrecompilePluginOptions | undefined,
 	false
 > = createUnplugin(opts => {
-	if (opts?.runtime !== "arktype" && opts?.config)
-		throwError(standaloneConfigurationMessage)
 	let options = opts
-	// arktype in a worker of its own shares no state with the bundler's
+	// arktype in a worker of its own takes the program's configuration, and shares no state with the bundler's
 	const create = () =>
 		createAsyncPrecompiler({ precompilerOptions: options ?? {} })
 	let request = create()
@@ -41,19 +39,22 @@ export const precompile: UnpluginInstance<
 		name: "arktype",
 		enforce: "pre",
 		resolveId: {
-			filter: { id: /^arktype(?:\/runtime|\/internal)?$|^~arktype\// },
+			filter: {
+				id: /^arktype(?:\/runtime|\/internal|\/config)?$|^~arktype\//
+			},
 			async handler(id, importer) {
 				if (id.startsWith("~arktype/")) return `\0${id}`
 				if (!importer) return
 				// a virtual module has no directory of its own, so arktype resolves from the module it was written for
 				if (importer.startsWith("\0~arktype/"))
 					return host.resolve(id, importersById[importer])
-				if (id !== "arktype") return
+				if (!runtimeSpecifiers.includes(id)) return
 				const { errors, warnings } = await readDependency(importer)
 				for (const warning of warnings) this.warn(warning)
 				// thrown, since esbuild drops an error reported without a resolution
 				if (errors.length) throwError(errors.join("\n"))
 				if (isStandalone) return host.resolve("arktype/runtime", importer)
+				if (id !== "arktype") return
 				// arktype's keyword table registers before its keywords are created, if its build includes one
 				const keywords = host.resolve(
 					"arktype/internal/precompiled.js",
@@ -123,9 +124,10 @@ export const precompile: UnpluginInstance<
 			if (!(this as { meta?: { watchMode?: boolean } }).meta?.watchMode)
 				restart()
 		},
-		// a changed file may be in the forward closure of any module analyzed so far
+		// a changed file may be in the forward closure of any module analyzed so far, or change the configuration arktype can only take once
 		watchChange: () => {
-			void request("reset")
+			if (opts?.config) restart()
+			else void request("reset")
 		},
 		esbuild: {
 			// esbuild loads anything a plugin resolves in the plugin's namespace, so arktype's files are resolved natively
@@ -139,12 +141,12 @@ export const precompile: UnpluginInstance<
 					{
 						filter:
 							isStandalone ?
-								/^arktype(?:\/runtime|\/internal)?$/
+								/^arktype(?:\/runtime|\/internal|\/config)?$/
 							:	/^arktype\/(?:runtime|internal)$/
 					},
 					async args => {
 						if (args.pluginData === esbuildResolution) return
-						const isRuntime = args.path === "arktype"
+						const isRuntime = runtimeSpecifiers.includes(args.path)
 						const result = await build.resolve(
 							isRuntime ? "arktype/runtime" : args.path,
 							{

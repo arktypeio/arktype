@@ -1,4 +1,3 @@
-import { throwError } from "@ark/util"
 import { readFileSync, statSync } from "node:fs"
 import { resolve } from "node:path"
 import type { SourceMap } from "magic-string"
@@ -7,7 +6,6 @@ import { createNodeHost, type NodeHostOptions } from "./host.ts"
 import {
 	Precompiler,
 	renderDiagnostic,
-	standaloneConfigurationMessage,
 	type Diagnostic,
 	type PrecompileOptions
 } from "./precompile.ts"
@@ -19,8 +17,6 @@ export interface PrecompilePluginOptions
 export const createPrecompiler = (
 	opts?: PrecompilePluginOptions
 ): Precompiler => {
-	if (opts?.runtime !== "arktype" && opts?.config)
-		throwError(standaloneConfigurationMessage)
 	const cwd = opts?.cwd ?? process.cwd()
 	return new Precompiler(createNodeHost(opts), {
 		...opts,

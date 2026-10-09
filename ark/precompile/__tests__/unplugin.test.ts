@@ -1,9 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import {
-	standaloneConfigurationMessage,
-	writeStandaloneDependencyMessage
-} from "@ark/precompile"
+import { writeStandaloneDependencyMessage } from "@ark/precompile"
 import {
 	precompile,
 	type PrecompilePluginOptions
@@ -26,6 +23,8 @@ import { writeLibrary } from "./utils.ts"
 const app = fromHere("app")
 
 const library = writeLibrary()
+
+const configured = fromHere("configured")
 
 const runPlain = (root: string) =>
 	spawnSync(process.execPath, ["--conditions", "ark-ts", "main.ts"], {
@@ -214,7 +213,10 @@ contextualize(() => {
 
 		it(`${name} runtime islands`, async () => {
 			const islands = fromHere("islands")
-			const standalone = await bundle({}, islands)
+			const standalone = await bundle(
+				{ cwd: islands, config: "config.ts" },
+				islands
+			)
 			attest(run(standalone)).equals(runPlain(islands))
 			attest(standalone.includes(parserMessage)).equals(true)
 		})
@@ -223,6 +225,16 @@ contextualize(() => {
 			const standalone = await bundle({ cwd: library }, library)
 			attest(run(standalone)).equals(runPlain(library))
 			attest(standalone.includes(parserMessage)).equals(false)
+		})
+
+		it(`${name} configured`, async () => {
+			const opts = { cwd: configured, config: "config.ts" }
+			const standalone = await bundle(opts, configured)
+			attest(run(standalone)).equals(runPlain(configured))
+			attest(standalone.includes(parserMessage)).equals(false)
+			attest(
+				run(await bundle({ ...opts, runtime: "arktype" }, configured))
+			).equals(runPlain(configured))
 		})
 	}
 
@@ -342,12 +354,6 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		])
 	})
 
-	it("configure in standalone mode", () => {
-		attest(() => precompile.vite({ config: "config.ts" })).throws(
-			standaloneConfigurationMessage
-		)
-	})
-
 	it("vitest", async () => {
 		for (const runtime of [undefined, "arktype"] as const) {
 			const vitest = await startVitest(
@@ -363,6 +369,30 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 			)
 			await vitest.close()
 			attest(vitest.state.getCountOfFailedTests()).equals(0)
+		}
+	}).timeout(60000)
+
+	it("vitest configured", async () => {
+		for (const runtime of [undefined, "arktype"] as const) {
+			const vitest = await startVitest(
+				[],
+				{
+					root: configured,
+					config: false,
+					watch: false,
+					reporters: [],
+					env: { EXPECTED: runPlain(configured) }
+				},
+				viteConfig(
+					{ runtime, cwd: configured, config: "config.ts" },
+					configured
+				)
+			)
+			await vitest.close()
+			attest([
+				vitest.state.getCountOfFailedTests(),
+				vitest.state.getFiles().length
+			]).equals([0, 1])
 		}
 	}).timeout(60000)
 

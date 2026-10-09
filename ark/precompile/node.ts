@@ -2,7 +2,11 @@ import { throwError } from "@ark/util"
 import { registerHooks } from "node:module"
 import { fileURLToPath } from "node:url"
 import type { InlineModule, PrecompilePluginOptions } from "./driver.ts"
-import { optedInPackagesOf, transformedFilterOf } from "./host.ts"
+import {
+	optedInPackagesOf,
+	runtimeSpecifiers,
+	transformedFilterOf
+} from "./host.ts"
 import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
 
 export const register = (opts?: PrecompilePluginOptions): void => {
@@ -25,7 +29,8 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	)
 	registerHooks({
 		resolve: (specifier, context, nextResolve) => {
-			if (specifier !== "arktype") return nextResolve(specifier, context)
+			if (!runtimeSpecifiers.includes(specifier))
+				return nextResolve(specifier, context)
 			if (context.parentURL?.includes("/node_modules/")) {
 				const { errors, warnings } = request(
 					"readDependency",

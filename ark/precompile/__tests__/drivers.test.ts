@@ -26,17 +26,22 @@ const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
 		{ cwd, encoding: "utf8" }
 	)
 
-const bun = (args: string[], runtime?: "arktype", cwd = app) => {
+// options reach the plugin in app/preload.ts through the environment
+const bun = (args: string[], runtime?: "arktype", cwd = app, config = "") => {
 	// `bun test` sets NODE_ENV only if it isn't set, as a bundler run earlier in this process may have set it
 	const { NODE_ENV, ...env } = process.env
 	return spawnSync("bun", args, {
 		cwd,
 		encoding: "utf8",
-		env: { ...env, ARKTYPE_RUNTIME: runtime ?? "" }
+		env: { ...env, ARKTYPE_RUNTIME: runtime ?? "", ARKTYPE_CONFIG: config }
 	})
 }
 
 const islands = fromHere("islands")
+
+const configured = fromHere("configured")
+
+const localized = fromHere("localized")
 
 const checks = fromHere("checks")
 
@@ -80,7 +85,9 @@ contextualize(() => {
 		}).timeout(60000)
 
 		it("runtime islands", () => {
-			attest(node(["main.ts"], {}, islands).stdout).equals(runPlain(islands))
+			attest(node(["main.ts"], { config: "config.ts" }, islands).stdout).equals(
+				runPlain(islands)
+			)
 		}).timeout(60000)
 
 		it("checks static helpers under node --test", () => {
@@ -99,13 +106,29 @@ contextualize(() => {
 			attest(node(["main.ts"], {}, library).stdout).equals(runPlain(library))
 		}).timeout(60000)
 
-		it("precompiles apart from the program", () => {
-			const result = node(
+		it("configured", () => {
+			for (const runtime of [undefined, "arktype"] as const) {
+				attest(
+					node(["main.ts"], { runtime, config: "config.ts" }, configured).stdout
+				).equals(runPlain(configured))
+			}
+		}).timeout(60000)
+
+		it("refuses a configured locale", () => {
+			const { status, stderr } = node(
 				["main.ts"],
-				{ runtime: "arktype", config: "config.ts" },
-				fromHere("configured")
+				{ config: "config.ts" },
+				localized
 			)
-			attest(result.stdout).equals("true\n")
+			attest(status).equals(1)
+			attest(
+				stderr
+					.slice(stderr.indexOf("Error: ") + 7, stderr.indexOf("\n    at "))
+					.replace(`${localized}/`, "")
+			)
+				.snap(`main.ts:4:18  type("string") can't be precompiled to a standalone validator yet
+  a configured locale can't be precompiled to a standalone validator
+  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		}).timeout(60000)
 	})
 	describe("turbopack", () => {
@@ -137,6 +160,30 @@ contextualize(() => {
 			)
 		}).timeout(60000)
 
+		it("shares a configuration with the precompiler it replaces", () => {
+			const transform = `turbopack.call({
+	resourcePath: ${JSON.stringify(join(configured, "main.ts"))},
+	getOptions: () => (${JSON.stringify({ config: "config.ts", conditions, cwd: configured })}),
+	addDependency: () => {},
+	emitWarning: warning => { throw warning }
+}, readFileSync("main.ts", "utf8"))`
+			const { stdout } = spawnSync(
+				process.execPath,
+				["--conditions", "ark-ts", "--input-type=module"],
+				{
+					cwd: configured,
+					encoding: "utf8",
+					// a file the precompiler read changes, so the loader replaces it
+					input: `import turbopack from "${pathToFileURL(fromHere("..", "turbopack.ts"))}"
+import { readFileSync, utimesSync } from "node:fs"
+const first = ${transform}
+utimesSync("config.ts", new Date(), new Date())
+console.log(first === ${transform}, /fixConfig\\("\\w+"\\)/.test(first))`
+				}
+			)
+			attest(stdout).equals("true true\n")
+		}).timeout(60000)
+
 		it("reports dependencies before a rejected site's error", () => {
 			const roles = load("roles.ts")
 			attest(() => roles.run()).throws(
@@ -150,7 +197,12 @@ contextualize(() => {
 	if (bun(["--version"]).status !== 0) return
 
 	describe("bun", () => {
-		const preload = ["--conditions", "ark-ts", "--preload", "./preload.ts"]
+		const preload = [
+			"--conditions",
+			"ark-ts",
+			"--preload",
+			join(app, "preload.ts")
+		]
 
 		it("standalone", () => {
 			attest(bun([...preload, "main.ts"]).stdout).equals(expected)
@@ -158,6 +210,14 @@ contextualize(() => {
 
 		it("cache", () => {
 			attest(bun([...preload, "main.ts"], "arktype").stdout).equals(expected)
+		}).timeout(60000)
+
+		it("configured", () => {
+			for (const runtime of [undefined, "arktype"] as const) {
+				attest(
+					bun([...preload, "main.ts"], runtime, configured, "config.ts").stdout
+				).equals(runPlain(configured))
+			}
 		}).timeout(60000)
 
 		it("bun test", () => {
@@ -212,17 +272,7 @@ contextualize(() => {
 
 		it("runtime islands", () => {
 			attest(
-				bun(
-					[
-						"--conditions",
-						"ark-ts",
-						"--preload",
-						join(app, "preload.ts"),
-						"main.ts"
-					],
-					undefined,
-					islands
-				).stdout
+				bun([...preload, "main.ts"], undefined, islands, "config.ts").stdout
 			).equals(runPlain(islands))
 		}).timeout(60000)
 
