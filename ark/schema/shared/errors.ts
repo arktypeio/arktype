@@ -164,7 +164,8 @@ export class ArkError<
 	get expected(): string {
 		const locale = plainLocale
 		if (locale === undefined) return this.render("expected")
-		if (this.input.expected !== undefined) return this.input.expected
+		const text = this.input.expected
+		if (text !== undefined) return text
 
 		const config = this.meta?.expected ?? this.nodeConfig.expected
 
@@ -174,7 +175,8 @@ export class ArkError<
 	get actual(): string {
 		const locale = plainLocale
 		if (locale === undefined) return this.render("actual")
-		if (this.input.actual !== undefined) return this.input.actual
+		const text = this.input.actual
+		if (text !== undefined) return text
 
 		const config = this.meta?.actual ?? this.nodeConfig.actual
 
@@ -186,7 +188,8 @@ export class ArkError<
 	get problem(): string {
 		const locale = plainLocale
 		if (locale === undefined) return this.render("problem")
-		if (this.input.problem !== undefined) return this.input.problem
+		const text = this.input.problem
+		if (text !== undefined) return text
 
 		const config = this.meta?.problem ?? this.nodeConfig.problem
 
@@ -196,7 +199,8 @@ export class ArkError<
 	get message(): string {
 		const locale = plainLocale
 		if (locale === undefined) return this.render("message")
-		if (this.input.message !== undefined) return this.input.message
+		const text = this.input.message
+		if (text !== undefined) return text
 
 		const config = this.meta?.message ?? this.nodeConfig.message
 
