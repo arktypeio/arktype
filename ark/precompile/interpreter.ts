@@ -125,7 +125,7 @@ export interface SiteState {
 	interpreted: Set<Node>
 	// each call into arktype's API
 	requests: [Node, SourceModule][]
-	// each receiver and argument of those calls, whose holes a ParseError can print
+	// each receiver and argument of those calls, and each object whose getter the site runs, whose holes a ParseError can print
 	arktypeArguments: unknown[]
 	// each Type a request returned
 	roots: BaseRoot[]

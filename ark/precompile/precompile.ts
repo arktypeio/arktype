@@ -1355,7 +1355,7 @@ export class Precompiler {
 		const dynamic = rejectionOf(state)
 		if (dynamic) return rejectSite(site, dynamic)
 		if (state.error instanceof ParseError) {
-			// e.g. an island's, a declaration's or a getter's, which the site's thrower would throw without checking what it depends on
+			// e.g. an island's or a declaration's, which the site's thrower would throw without checking what it depends on
 			if (this.interpreter.parseErrorSites.get(state.error) !== state) {
 				return rejectSite(
 					site,
