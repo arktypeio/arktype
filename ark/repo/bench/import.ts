@@ -2,7 +2,7 @@
 
 import { flatMorph } from "@ark/util"
 import { spawnSync } from "node:child_process"
-import { mkdirSync, writeFileSync } from "node:fs"
+import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { loadavg } from "node:os"
 import {
@@ -109,12 +109,17 @@ const arms = scenarios.flatMap(scenario =>
 for (const arm of arms)
 	writeFileSync(arm.path, (await bundle(arm.scenario, arm.library)).js)
 
-const env = { ...process.env }
+const cold = { ...process.env }
 // the repo's ts runner resolves arktype to its sources through NODE_OPTIONS
-delete env.NODE_OPTIONS
-delete env.NODE_COMPILE_CACHE
+delete cold.NODE_OPTIONS
+delete cold.NODE_COMPILE_CACHE
 
-const run = (arm: (typeof arms)[number]): Sample => {
+// a warm process reads the code its bundle compiled to in an earlier process, as a returning visit or a primed server does
+const compileCache = join(out, "compile-cache")
+rmSync(compileCache, { recursive: true, force: true })
+const warm = { ...cold, NODE_COMPILE_CACHE: compileCache }
+
+const run = (arm: (typeof arms)[number], env: NodeJS.ProcessEnv): Sample => {
 	const result = spawnSync(
 		process.execPath,
 		[
@@ -129,14 +134,20 @@ const run = (arm: (typeof arms)[number]): Sample => {
 	return JSON.parse(result.stdout)
 }
 
-const samples = flatMorph(arms, (i, arm) => [arm.name, [] as Sample[]])
+for (const arm of arms) run(arm, warm)
+
+const samples = flatMorph(arms, (i, arm) => [
+	arm.name,
+	{ cold: [] as Sample[], warm: [] as Sample[] }
+])
 
 const loadBefore = loadavg()[0]
 
 for (let i = 0; i < processesPerArm; i++) {
 	for (let j = 0; j < arms.length; j++) {
 		const arm = arms[(i + j) % arms.length]
-		samples[arm.name].push(run(arm))
+		samples[arm.name].cold.push(run(arm, cold))
+		samples[arm.name].warm.push(run(arm, warm))
 	}
 }
 
@@ -162,9 +173,12 @@ console.table(
 	flatMorph(samples, (name, armSamples) => [
 		name,
 		{
-			"load (ms)": summarize(armSamples.map(s => s.load)),
-			"first parse (ms)": summarize(armSamples.map(s => s.firstParse)),
-			"heap (MiB)": summarize(armSamples.map(s => s.heap))
+			"load, cold (ms)": summarize(armSamples.cold.map(s => s.load)),
+			"load, warm (ms)": summarize(armSamples.warm.map(s => s.load)),
+			"first parse, cold (ms)": summarize(
+				armSamples.cold.map(s => s.firstParse)
+			),
+			"heap (MiB)": summarize(armSamples.cold.map(s => s.heap))
 		}
 	])
 )
