@@ -79,6 +79,8 @@ export class StandaloneArtifact {
 	traversalIndexByName: Record<string, number> = {}
 	// each structure's propsByKey, which traversal reads only with `in`
 	keyLookups = new Set<object>()
+	// each pattern's own RegExp, which only traversal reads
+	patternInstances = new Set<RegExp>()
 	objectUnits = new Set<unknown>()
 	constNamesByValue = new Map<unknown, string>()
 	declarationCounts: Record<DeclarationRole, number> = {
@@ -126,6 +128,7 @@ export class StandaloneArtifact {
 			const node = this.unit.declared[i]
 			this.traversalIndexByName[this.unit.names[node.id]] = i
 			if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
+			else if (node.hasKind("pattern")) this.patternInstances.add(node.instance)
 			else if (
 				node.hasKind("unit") &&
 				hasDomain(node.unit, "object") &&
@@ -345,11 +348,18 @@ export class StandaloneArtifact {
 				)
 			}
 			const regex = `new RegExp(${JSON.stringify(value.source)}, ${JSON.stringify(value.flags)})`
+			const initialized =
+				value.lastIndex ?
+					`runtime.assign(${regex}, { lastIndex: ${value.lastIndex} })`
+				:	regex
+			// V8 skips its fast test for a non-extensible RegExp, and no program can reach a pattern's own
+			if (this.patternInstances.has(value))
+				return this.declareConst(value, "literal", initialized)
 			// its methods write lastIndex, so it's kept from growing rather than frozen
 			return this.declareConst(
 				value,
 				"literal",
-				`runtime.preventExtensions(${value.lastIndex ? `runtime.assign(${regex}, { lastIndex: ${value.lastIndex} })` : regex})`
+				`runtime.preventExtensions(${initialized})`
 			)
 		}
 		return this.emitLiteral(value)
