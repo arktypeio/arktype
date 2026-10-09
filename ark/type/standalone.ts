@@ -41,7 +41,7 @@ import {
 } from "@ark/util"
 import { arktypeVersion } from "./entry.ts"
 import type { Generic } from "./generic.ts"
-import { ark, keywords, type type } from "./keywords/keywords.ts"
+import type { type } from "./keywords/keywords.ts"
 import type { Module } from "./module.ts"
 import type { HoleKind } from "./runtime.ts"
 import * as runtime from "./runtimeExports.ts"
@@ -123,13 +123,15 @@ export interface ConfiguredModule {
 }
 
 /**
- * #### an ES module exporting a getter for each Type, Module, Scope or Generic, which creates them all when one is first needed, and a function creating each factory's validator
+ * #### an ES module exporting a getter for each Type, Module, Scope or Generic, which creates them when one is first read, and a function creating each factory's validator
  */
 export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	configured?: ConfiguredModule,
 	// where each export was defined, which a Scope or Generic it holds names when used
-	sitesByName?: Record<string, string>
+	sitesByName?: Record<string, string>,
+	// each Module a site reads off arktype's keywords, which creates a Type only when one of its members is read
+	keywordReads?: ReadonlySet<string>
 ): string => {
 	const types: Record<string, ExportedValue> = {}
 	const factories: string[] = []
@@ -150,35 +152,14 @@ export const precompileStandalone = (
 	const sections = [
 		`import * as runtime from "arktype/runtime"`,
 		`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
-		...new StandaloneArtifact(types).write(configured, sitesByName),
+		...new StandaloneArtifact(types).write(
+			configured,
+			sitesByName,
+			keywordReads
+		),
 		...factories
 	]
 	return `${sections.filter(section => section).join("\n\n")}\n`
-}
-
-let ambientModules: WeakSet<object> | undefined
-
-// arktype's own keyword Modules, e.g. type.keywords.string
-const isAmbientModule = (module: object): boolean => {
-	// one holding a Type of another scope isn't, which spares resolving every keyword to tell
-	if (
-		Object.values(module).some(
-			member => hasArkKind(member, "root") && member.$ !== ark.internal
-		)
-	)
-		return false
-	if (!ambientModules) {
-		const found = new WeakSet<object>()
-		const collect = (module: object) => {
-			found.add(module)
-			for (const member of Object.values(module))
-				if (hasArkKind(member, "module")) collect(member)
-		}
-		collect($ark.ambient as object)
-		collect(keywords)
-		ambientModules = found
-	}
-	return ambientModules.has(module)
 }
 
 const moduleMembersOf = (module: object): runtime.ModuleMembers => {
@@ -546,7 +527,8 @@ export class StandaloneArtifact {
 	// a site reading what the artifact exports creates it when the site is first evaluated, where arktype would fix its configuration
 	write(
 		configured: ConfiguredModule | undefined,
-		sitesByName?: Record<string, string>
+		sitesByName?: Record<string, string>,
+		keywordReads?: ReadonlySet<string>
 	): string[] {
 		const names = Object.keys(this.exports)
 		if (!names.length) return []
@@ -559,7 +541,7 @@ export class StandaloneArtifact {
 					const value = this.exports[name]
 					let declaration = ""
 					let read = `(created ??= create())[${i}]`
-					if (hasArkKind(value, "module") && isAmbientModule(value)) {
+					if (keywordReads?.has(name) && hasArkKind(value, "module")) {
 						let lazyName = lazyNamesByModule.get(value)
 						if (!lazyName) {
 							lazyName = `lazy${i}`

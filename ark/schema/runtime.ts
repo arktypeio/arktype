@@ -115,7 +115,7 @@ export type configMismatchMessage = typeof configMismatchMessage
 export const writeCreatedBeforeConfigureMessage = <path extends string>(
 	path: path
 ): writeCreatedBeforeConfigureMessage<path> =>
-	`${path} creates a Type before configure() runs, but was precompiled under the configuration configure() applies, so the config module must be imported first`
+	`a Type precompiled in ${path} under the program's configuration is created before configure() runs, so the config module must be imported first`
 
 export type writeCreatedBeforeConfigureMessage<path extends string> =
-	`${path} creates a Type before configure() runs, but was precompiled under the configuration configure() applies, so the config module must be imported first`
+	`a Type precompiled in ${path} under the program's configuration is created before configure() runs, so the config module must be imported first`

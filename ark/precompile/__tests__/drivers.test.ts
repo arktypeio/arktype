@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process"
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
+import { configureAfterTypeMessage } from "@ark/schema"
 import { writeCreatedBeforeConfigureMessage } from "@ark/schema/runtime"
 import { writeLibrary } from "./utils.ts"
 
@@ -152,6 +153,28 @@ contextualize(() => {
 					writeCreatedBeforeConfigureMessage("schemas.ts")
 				)
 			).equals(true)
+		}).timeout(60000)
+
+		it("configured after a Type read from a keyword Module is created", () => {
+			for (const [entry, path] of [
+				["exportedFirst.ts", "exported.ts"],
+				["earlyFirst.ts", "schemas.ts"]
+			]) {
+				const plain = spawnSync(
+					process.execPath,
+					["--conditions", "ark-ts", entry],
+					{
+						cwd: configured,
+						encoding: "utf8"
+					}
+				)
+				attest(plain.stderr.includes(configureAfterTypeMessage)).equals(true)
+				attest(
+					node([entry], { config: "config.ts" }, configured).stderr.includes(
+						writeCreatedBeforeConfigureMessage(path)
+					)
+				).equals(true)
+			}
 		}).timeout(60000)
 
 		it("refuses a configured locale", () => {

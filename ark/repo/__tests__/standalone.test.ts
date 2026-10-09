@@ -12,7 +12,7 @@ import {
 	writeCreatedBeforeConfigureMessage
 } from "@ark/schema/runtime"
 import { arkKindOf, flatMorph, noSuggest } from "@ark/util"
-import { generic, scope, type } from "arktype"
+import { ark, generic, scope, type } from "arktype"
 import {
 	allowIslands,
 	arktypeVersion,
@@ -400,7 +400,8 @@ contextualize(() => {
 		const exports = {
 			S: scope({ a: "string" }),
 			M: scope({ a: "string" }).export(),
-			G: generic(["t", "string"])({ v: "t" })
+			G: generic(["t", "string"])({ v: "t" }),
+			K: ark.export().string
 		}
 		for (const [name, value] of Object.entries(exports)) {
 			// arktype fixes its configuration when it creates any of them
@@ -425,7 +426,9 @@ contextualize(() => {
 			bundle(
 				`${precompileStandalone(
 					{ Strings: type.keywords.string },
-					{ fingerprint: "f", path: "main.ts" }
+					{ fingerprint: "f", path: "main.ts" },
+					undefined,
+					new Set(["Strings"])
 				)}\nexport const configure = runtime.configure`
 			).js
 		)

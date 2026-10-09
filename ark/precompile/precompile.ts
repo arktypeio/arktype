@@ -126,6 +126,8 @@ export interface Site {
 	references: Reference[]
 	// the argument of a call to arktype's `define`, which returns it, so a standalone build evaluates it in place of the call
 	definition: Node | undefined
+	// e.g. `type.keywords.string`, which creates no Type until a member of the Module it reads is read
+	isKeywordRead: boolean
 }
 
 export interface Hole {
@@ -657,6 +659,7 @@ export class Precompiler {
 		const factoriesBySite = new Map<Site, SiteFactory>()
 		const exportsByName: Record<string, StandaloneExport> = {}
 		const sitesByName: Record<string, string> = {}
+		const keywordReads = new Set<string>()
 		// a site replaced by its value drops what it was written with, so a site inside it, like one in a thunk defining a Scope's alias, is dropped too
 		const replaced: Site[] = []
 		const folded: Site[] = []
@@ -701,6 +704,7 @@ export class Precompiler {
 				namesBySite.set(site, name)
 				exportsByName[name] = site.value as never
 				sitesByName[name] = module.positionOf(site)
+				if (site.isKeywordRead) keywordReads.add(name)
 				replaced.push(site)
 			}
 		}
@@ -712,7 +716,13 @@ export class Precompiler {
 			:	{ fingerprint, path: module.path }
 		const validators =
 			Object.keys(exportsByName).length ?
-				writeValidators(exportsByName, sitesByName, refusalsByName, configured)
+				writeValidators(
+					exportsByName,
+					sitesByName,
+					keywordReads,
+					refusalsByName,
+					configured
+				)
 			:	""
 		const specifier = `~arktype/${hashOf(validators)}`
 		const imported = new Set<string>()
@@ -1321,7 +1331,8 @@ export class Precompiler {
 			inputs: [],
 			helpers: [],
 			references: [],
-			definition: undefined
+			definition: undefined,
+			isKeywordRead: this.isKeywordRead(state.node, module)
 		}
 		if (this.mode === "standalone" && isInIsland(state.node, module)) {
 			site.status = "island"
@@ -1406,6 +1417,21 @@ export class Precompiler {
 		}
 		site.references.sort((l, r) => l.start - r.start)
 		return site
+	}
+
+	private isKeywordRead(node: Node, module: SourceModule): boolean {
+		const keys: string[] = []
+		node = unwrapExpression(node)
+		while (node.type === "MemberExpression" && !node.computed) {
+			keys.unshift(node.property.name)
+			node = unwrapExpression(node.object)
+		}
+		const reference = module.scopes.referencesById.get(node)
+		const [name, read] =
+			(reference && this.graph.arkExportOf(reference, module)) ?? []
+		// a namespace import's member names the export
+		if (read !== node) keys.shift()
+		return name === "keywords" || (name === "type" && keys[0] === "keywords")
 	}
 
 	private isImported(node: Node, module: SourceModule): boolean {
@@ -2155,11 +2181,17 @@ const nameOf = (site: Site) =>
 const writeValidators = (
 	exportsByName: Record<string, StandaloneExport>,
 	sitesByName: Record<string, string>,
+	keywordReads: ReadonlySet<string>,
 	refusalsByName: Record<string, string>,
 	configured: ConfiguredModule | undefined
 ): string => {
 	try {
-		return precompileStandalone(exportsByName, configured, sitesByName)
+		return precompileStandalone(
+			exportsByName,
+			configured,
+			sitesByName,
+			keywordReads
+		)
 	} catch {
 		for (const name in exportsByName) {
 			try {
@@ -2171,7 +2203,12 @@ const writeValidators = (
 		}
 		// every export is refused when the whole artifact is, as under a configured locale
 		return Object.keys(exportsByName).length ?
-				precompileStandalone(exportsByName, configured, sitesByName)
+				precompileStandalone(
+					exportsByName,
+					configured,
+					sitesByName,
+					keywordReads
+				)
 			:	""
 	}
 }
