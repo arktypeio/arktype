@@ -24,24 +24,22 @@ export const precompile: UnpluginInstance<
 	// arktype in a worker of its own takes the program's configuration, and shares no state with the bundler's
 	const create = () =>
 		createAsyncPrecompiler({ precompilerOptions: options ?? {} })
-	// each request goes to the worker the last reset or restart leaves
 	let precompiler = Promise.resolve(create())
 	const request = (...message: PrecompileRequest) =>
 		precompiler.then(send => send(...message))
+	const replace = (send: ReturnType<typeof create>) => {
+		void send("close")
+		return create()
+	}
 	const restart = () => {
-		precompiler = precompiler.then(send => {
-			void send("close")
-			return create()
-		})
+		precompiler = precompiler.then(replace)
 	}
 	// a changed file may be in the forward closure of any module analyzed so far, and a changed configuration needs a thread of its own
 	const reset = () => {
-		precompiler = precompiler.then(async send => {
+		precompiler = precompiler.then(async send =>
 			// a config module the worker can't read is reported where a module is transformed
-			if (!(await send("reset").catch(() => false))) return send
-			void send("close")
-			return create()
-		})
+			(await send("reset").catch(() => false)) ? replace(send) : send
+		)
 	}
 	const readDependency = (importer: string) =>
 		request("readDependency", importer) as Promise<{

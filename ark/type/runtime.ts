@@ -367,7 +367,6 @@ export const unavailableGeneric = (label: string): (() => never) =>
 		name => `${name} of ${label}`
 	)
 
-// true for each Type a Module holds, and the members of each Module it holds
 export type ModuleMembers = { [k: string]: true | ModuleMembers }
 
 // arktype's keyword Modules create each Type when it's first read, so reading the Module fixes no configuration

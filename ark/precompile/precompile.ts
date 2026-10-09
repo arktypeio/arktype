@@ -535,7 +535,6 @@ export class Precompiler {
 		}
 	}
 
-	// the first import reaching arktype, directly or through a binding the module defines with it
 	private arktypeImportOf(module: SourceModule): ImportDeclaration | undefined {
 		return module.program.body.find(
 			(statement): statement is ImportDeclaration =>
@@ -555,26 +554,22 @@ export class Precompiler {
 		if (holdsOtherConfiguration(fingerprint))
 			throwError(configuredThreadMessage)
 		if (threadConfiguration) return threadConfiguration
+		const evaluated = module && call && this.evaluateConfiguration(call, module)
 		const configuration: Configuration = {
 			modules,
 			fingerprint,
-			problem: undefined,
-			reasons: []
+			problem:
+				evaluated &&
+				(evaluated.problem ??
+					// as arktype fixes its configuration at the first Type, configure() would throw
+					($ark.resolvedConfig ?
+						"configure() is called after its argument creates a Type"
+					:	undefined)),
+			reasons: evaluated ? evaluated.reasons : []
 		}
-		if (module && call) {
-			const { value, problem, reasons } = this.evaluateConfiguration(
-				call,
-				module
-			)
-			// as arktype fixes its configuration at the first Type, configure() would throw
-			configuration.problem =
-				problem ??
-				($ark.resolvedConfig ?
-					"configure() is called after its argument creates a Type"
-				:	undefined)
-			configuration.reasons = reasons
-			if (!configuration.problem) configure(value as never)
+		if (evaluated) {
 			threadConfiguration = configuration
+			if (!configuration.problem) configure(evaluated.value as never)
 		}
 		// so a later configure() in the thread throws, as it does after arktype's first Type
 		void ark.internal.resolvedConfig
@@ -586,15 +581,15 @@ export class Precompiler {
 		return holdsOtherConfiguration(this.readConfiguration().fingerprint)
 	}
 
-	private readConfiguration(): Pick<
-		Configuration,
-		"modules" | "fingerprint"
-	> & {
-		module?: SourceModule
-		call?: CallExpression
-	} {
-		if (this.config === undefined)
-			return { modules: [], fingerprint: undefined }
+	private readConfiguration() {
+		if (this.config === undefined) {
+			return {
+				module: undefined,
+				modules: [],
+				call: undefined,
+				fingerprint: undefined
+			}
+		}
 		const module = this.graph.moduleOf(this.config)
 		if (!(module instanceof SourceModule)) {
 			return throwError(
@@ -2067,7 +2062,6 @@ interface Configuration {
 	reasons: string[]
 }
 
-// the configuration a build computed in this thread, which every later precompiler in it must share
 let threadConfiguration: Configuration | undefined
 
 // arktype can't change its configuration once set
