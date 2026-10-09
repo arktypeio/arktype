@@ -760,7 +760,10 @@ const G = type(String.raw({ raw: ["", ""] }, Ap) === "Type<Apple>" ? "string" : 
 const H = type(pick({ "Type<Apple>": "string" }) ?? "number")
 const I = type("Type<Apple>".replace(Ap as never, "") === "" ? "string" : "number")
 const J = type({ [["a", "b"].join("")]: "string", ["abc".replace(/b/, "").split(/c/)[0]]: "string", ["x".replace("x", s => s + "y")]: "string" })
-const K = type(Array.of(Ap, Z).map(t => t).toReversed()[1])`)
+const K = type(Array.of(Ap, Z).map(t => t).toReversed()[1])
+const L = type("Type<Apple>".split(new RegExp(Ap as never)).length === 2 ? "string" : "number")
+const replacer = (k: string, v: any) => (k === "" ? { a: Ap } : k === "a" ? v.proto.includes("Apple") : v)
+const M = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number")`)
 			).snap([
 				"5:12 accepted $hole_190zz3k7ugl",
 				"6:11 accepted $hole_1qnyuvq9gsm",
@@ -774,7 +777,9 @@ const K = type(Array.of(Ap, Z).map(t => t).toReversed()[1])`)
 				"16:11 rejected\n  `Ap as never` converts an object to a primitive, which runs its methods",
 				'17:11 rejected\n  `"Type<Apple>".replace(Ap as never, "")` converts an object to a primitive, which runs its methods',
 				"18:11 accepted { a: string, ab: string, xy: string }",
-				"19:11 accepted $hole_190zz3k7ugl"
+				"19:11 accepted $hole_190zz3k7ugl",
+				"20:11 rejected\n  `new RegExp(Ap as never)` converts an object to a primitive, which runs its methods",
+				"22:11 rejected\n  `v: any` (/main.ts:21:30) receives the name of `Apple` (/main.ts:3:1), which the build knows only by a placeholder"
 			])
 		})
 

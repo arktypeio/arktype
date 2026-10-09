@@ -17,11 +17,12 @@ import type {
 import {
 	globalsByName,
 	intrinsics,
+	conversionProblem,
 	isArkValue,
-	isObject,
 	isPlainContainer,
 	methodsByReceiverKind,
 	pureBuiltins,
+	pureConstructors,
 	type MethodReceiverKind,
 	type PureBuiltin
 } from "./builtins.ts"
@@ -172,6 +173,9 @@ const shortCircuit = { shortCircuit: true }
 
 const maxDepth = 64
 
+const unstableArkProblem =
+	"is derived from registry names or node ids, which are not stable"
+
 export class Interpreter {
 	graph: ModuleGraph
 	opts: InterpreterOptions
@@ -302,7 +306,7 @@ export class Interpreter {
 					node.quasi.quasis.map(quasi => quasi.value.cooked),
 					{ raw: node.quasi.quasis.map(quasi => quasi.value.raw) }
 				)
-				return this.callBuiltin(
+				return this.callNative(
 					String.raw,
 					[strings, ...values],
 					undefined,
@@ -439,7 +443,8 @@ export class Interpreter {
 						"spreads a value other than an object literal or Module"
 					)
 				}
-				const copy: object = { ...(spread as object) }
+				const copy = this.admit({ ...(spread as object) }, property, ctx)
+				if (isDynamic(copy)) return copy
 				for (const k of Reflect.ownKeys(copy)) {
 					const problem = this.overwriteProblem(result, k, property, ctx)
 					if (problem) return problem
@@ -619,11 +624,7 @@ export class Interpreter {
 	}
 
 	private coercion(node: Node, ctx: Context): DynamicValue {
-		return this.reject(
-			node,
-			ctx,
-			"converts an object to a primitive, which runs its methods"
-		)
+		return this.reject(node, ctx, conversionProblem)
 	}
 
 	private approximation(node: Node, ctx: Context): DynamicValue {
@@ -1106,7 +1107,7 @@ export class Interpreter {
 						property.computed ? this.evaluate(property.key, ctx)
 						: property.key.type === "Identifier" ? property.key.name
 						: String((property.key as { value: unknown }).value)
-					if (!isDynamic(key) && isObject(key))
+					if (!isDynamic(key) && hasDomain(key, "object"))
 						key = this.coercion(property.key, ctx)
 					used.push(key as PropertyKey)
 					this.destructure(
@@ -1201,19 +1202,13 @@ export class Interpreter {
 			typeof key === "string" &&
 			key in unstableArkMembers &&
 			!hasArkKind(object, "module")
-		) {
-			return this.reject(
-				node,
-				ctx,
-				"is derived from registry names or node ids, which are not stable"
-			)
-		}
+		)
+			return this.reject(node, ctx, unstableArkProblem)
 		const replacedBy = replacementOf(object, key)
 		if (replacedBy && ctx.site && ctx.module === ctx.site.module)
 			ctx.site.unavailableReads.push({ node, key, replacedBy })
-		const value = Reflect.get(object, key)
-		const named = this.placeholderIn(value)
-		if (named) return this.printsName(node, ctx, named)
+		const value = this.admit(Reflect.get(object, key), node, ctx)
+		if (isDynamic(value)) return value
 		if (
 			typeof key === "string" &&
 			key in runtimeMembers &&
@@ -1374,7 +1369,7 @@ export class Interpreter {
 				)
 			}
 			case "builtin":
-				return this.callBuiltin(fn as Function, args, receiver, node, ctx)
+				return this.callNative(fn as Function, args, receiver, node, ctx)
 			case "validator":
 				return this.reject(
 					node,
@@ -1393,19 +1388,36 @@ export class Interpreter {
 		)
 	}
 
-	private callBuiltin(
+	// interpreted code reaches native code only here, where each builtin declares where it takes an object rather than converting it
+	private callNative(
 		fn: Function,
 		args: unknown[],
 		receiver: unknown,
 		node: Node,
-		ctx: Context
+		ctx: Context,
+		isNew = false
 	): unknown {
 		const dynamic = findDynamic([receiver, ...args])
 		if (dynamic) return dynamic
-		const builtin = pureBuiltins.get(fn)
+		const builtin = (isNew ? pureConstructors : pureBuiltins).get(fn)
+		if (!builtin) {
+			return isNew ?
+					this.reject(
+						node,
+						ctx,
+						"constructs a value other than a Date or RegExp",
+						undefined,
+						"opaque"
+					)
+				:	this.reject(
+						node,
+						ctx,
+						"does not call a static helper or pure built-in"
+					)
+		}
 		const problem =
 			(
-				builtin?.writes &&
+				builtin.writes &&
 				!(
 					node.type === "CallExpression" &&
 					node.arguments[0] &&
@@ -1415,44 +1427,43 @@ export class Interpreter {
 				)
 			) ?
 				"writes to an object other than a new object or array literal"
-			:	(builtin?.check?.(args, receiver) ??
-				(this.convertsObject(builtin, args, receiver) ?
-					"converts an object to a primitive, which runs its methods"
-				:	undefined))
+			:	(builtin.check?.(args, receiver) ??
+				this.conversionOf(builtin, args, receiver))
 		if (problem) return this.reject(node, ctx, problem)
 
 		let result: unknown
 		const previous = this.activeCall
 		this.activeCall = { ctx, isArktype: false }
 		try {
-			result = Reflect.apply(fn, receiver, args)
+			result =
+				isNew ? Reflect.construct(fn, args) : Reflect.apply(fn, receiver, args)
 		} catch (e) {
 			if (e instanceof DynamicValue) return e
 			throw this.thrown(e, node, ctx)
 		} finally {
 			this.activeCall = previous
 		}
-		const named = this.placeholderIn(result)
-		if (named) return this.printsName(node, ctx, named)
 		const isApproximate =
-			builtin?.isApproximate ?
+			builtin.isApproximate ?
 				!args.every(arg => Number.isInteger(arg)) ||
 				!Number.isSafeInteger(result)
 			:	fn === Number.prototype.toString &&
 				args[0] !== undefined &&
 				args[0] !== 10 &&
 				!Number.isInteger(receiver)
-		return isApproximate ? this.approximation(node, ctx) : result
+		return isApproximate ?
+				this.approximation(node, ctx)
+			:	this.admit(result, node, ctx)
 	}
 
-	private convertsObject(
-		builtin: PureBuiltin | undefined,
+	private conversionOf(
+		builtin: PureBuiltin,
 		args: unknown[],
 		receiver: unknown
-	): boolean {
-		const objects = builtin?.objects ?? []
+	): string | undefined {
+		const objects = builtin.objects ?? []
 		for (let i = 0; i < args.length; i++) {
-			if (!isObject(args[i])) continue
+			if (!hasDomain(args[i], "object")) continue
 			const kind = objects[Math.min(i, objects.length - 1)]
 			if (
 				kind === "object" ||
@@ -1460,13 +1471,14 @@ export class Interpreter {
 				(kind === "callback" && this.standIns.get(args[i] as object)?.closure)
 			)
 				continue
-			return true
+			return conversionProblem
 		}
-		return (
+		if (
 			Array.isArray(receiver) &&
-			!builtin?.objectElements &&
-			receiver.some(isObject)
+			!builtin.objectElements &&
+			receiver.some(element => hasDomain(element, "object"))
 		)
+			return conversionProblem
 	}
 
 	private thrown(
@@ -1498,9 +1510,12 @@ export class Interpreter {
 		const previous = this.activeCall
 		this.activeCall = { ctx, isArktype: true }
 		try {
-			const result = Reflect.apply(fn, receiver, converted)
-			const named = this.placeholderIn(result)
-			if (named) return this.printsName(node, ctx, named)
+			const result = this.admit(
+				Reflect.apply(fn, receiver, converted),
+				node,
+				ctx
+			)
+			if (isDynamic(result)) return result
 			if (isPlainContainer(result)) this.arkObjects.add(result)
 			else if (ctx.site && hasArkKind(result, "root"))
 				ctx.site.roots.push(result)
@@ -1614,42 +1629,7 @@ export class Interpreter {
 			if (arg.type === "SpreadElement") args.push(...(value as unknown[]))
 			else args.push(value)
 		}
-		if (callee === RegExp) {
-			const dynamic = findDynamic(args)
-			if (dynamic) return dynamic
-			try {
-				return new RegExp(args[0] as string, args[1] as string)
-			} catch (e) {
-				throw this.thrown(e, node, ctx)
-			}
-		}
-		const [arg] = args
-		if (
-			callee === Date &&
-			args.length === 1 &&
-			(typeof arg === "number" ||
-				(typeof arg === "string" && isIsoInstant(arg)))
-		)
-			return new Date(arg)
-		if (callee === Date) {
-			return this.reject(
-				node,
-				ctx,
-				`${
-					!args.length ? "reads the clock"
-					: typeof arg === "string" ?
-						"reads the time zone, or a format each engine parses its own way"
-					:	"reads the time zone"
-				}`
-			)
-		}
-		return this.reject(
-			node,
-			ctx,
-			"constructs a value other than a Date or RegExp",
-			undefined,
-			"opaque"
-		)
+		return this.callNative(callee as Function, args, undefined, node, ctx, true)
 	}
 
 	// a standalone artifact prints a hole's name at creation, so the build names it by a placeholder it can find in what arktype prints
@@ -1703,12 +1683,14 @@ export class Interpreter {
 					this.notStaticHelper(standIn)
 				:	this.calledAtDefinition(standIn, undefined)
 		}
-		const result = this.interpretCall(
-			closure,
-			args,
-			closure.node,
-			active?.ctx ?? rootContext(closure.module, undefined)
-		)
+		const ctx = active?.ctx ?? rootContext(closure.module, undefined)
+		const params = runtimeParamsOf(closure.node)
+		for (let i = 0; i < args.length; i++) {
+			const param = params[Math.min(i, params.length - 1)] ?? closure.node
+			const admitted = this.admit(args[i], param, ctx, "receives")
+			if (isDynamic(admitted)) throw admitted
+		}
+		const result = this.interpretCall(closure, args, closure.node, ctx)
 		if (!active?.isArktype) {
 			if (isDynamic(result)) throw result
 			return result
@@ -1869,37 +1851,46 @@ export class Interpreter {
 		return proxy
 	}
 
-	// arktype prints a hole's name as its placeholder, so code reading what it prints would see a name the program never does
-	private placeholderIn(
+	// native code hands interpreted code arktype's printed placeholders and registry names, which the program sees as other text
+	private admit<value>(
+		value: value,
+		node: Node,
+		ctx: Context,
+		verb = "prints"
+	): value | DynamicValue {
+		const unstable = this.unstableIn(value, new Set())
+		if (!unstable) return value
+		if (unstable === "registry")
+			return this.reject(node, ctx, unstableArkProblem)
+		return this.reject(
+			node,
+			ctx,
+			`(${ctx.module.positionOf(node)}) ${verb} the name of ${this.labelOf(unstable)}, which the build knows only by a placeholder`,
+			undefined,
+			"placeholder"
+		)
+	}
+
+	private unstableIn(
 		value: unknown,
-		seen = new Set<unknown>()
-	): StandIn | undefined {
+		seen: Set<unknown>
+	): StandIn | "registry" | undefined {
+		if (value instanceof RegExp) return this.unstableIn(value.source, seen)
 		if (typeof value === "string") {
 			for (const name of value.match(holeNamePattern) ?? []) {
 				const standIn = this.standInsByName.get(name)
 				if (standIn) return standIn
 			}
-			return
+			return value.includes("$ark.") ? "registry" : undefined
 		}
 		if (!isPlainContainer(value) || seen.has(value)) return
 		seen.add(value)
 		for (const k of Reflect.ownKeys(value)) {
 			const descriptor = Reflect.getOwnPropertyDescriptor(value, k)!
-			const standIn =
-				this.placeholderIn(k, seen) ??
-				this.placeholderIn(descriptor.value, seen)
-			if (standIn) return standIn
+			const unstable =
+				this.unstableIn(k, seen) ?? this.unstableIn(descriptor.value, seen)
+			if (unstable) return unstable
 		}
-	}
-
-	private printsName(node: Node, ctx: Context, named: StandIn): DynamicValue {
-		return new DynamicValue(
-			ctx.module,
-			node,
-			`\`${ctx.module.snippetOf(node)}\` (${ctx.module.positionOf(node)}) prints the name of ${this.labelOf(named)}, which the build knows only by a placeholder`,
-			undefined,
-			"placeholder"
-		)
 	}
 
 	standInNamed(name: string): StandIn | undefined {
@@ -2167,26 +2158,6 @@ const inferredNameOf = (fn: FunctionNode): string => {
 			parent.key.name
 		:	""
 	)
-}
-
-// every engine reads an ISO date, or a date-time with Z or an offset, as one instant if its fields are in range
-const isoYear = String.raw`((?!-0{6})[+-]\d{6}|\d{4})`
-const isoMonth = String.raw`(0[1-9]|1[0-2])`
-const isoDay = String.raw`(0[1-9]|[12]\d|3[01])`
-const isoTime = String.raw`T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{3})?)?`
-const isoOffset = String.raw`(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)`
-
-const isoInstant = new RegExp(
-	`^${isoYear}(?:-${isoMonth}(?:-${isoDay})?)?(?:${isoTime}${isoOffset})?$`
-)
-
-const isIsoInstant = (s: string): boolean => {
-	const parts = isoInstant.exec(s)
-	if (!parts) return false
-	const [, year, month = "01", day = "01"] = parts
-	const date = new Date(0)
-	date.setUTCFullYear(+year, +month - 1, +day)
-	return date.getUTCDate() === +day
 }
 
 const unaryOperators: Record<string, (value: any) => unknown> = {

@@ -1,7 +1,6 @@
 import { arkKind, hasArkKind } from "@ark/schema"
 import { builtinConstructors, hasDomain } from "@ark/util"
 
-// what an argument may be other than a primitive: an object the builtin doesn't convert, a function the build interprets, or a RegExp
 export type ObjectArg = "object" | "callback" | "RegExp"
 
 export interface PureBuiltin {
@@ -41,10 +40,7 @@ export const globalsByName: Record<string, unknown> = Object.assign(
 	builtinConstructors
 )
 
-export const isObject = (value: unknown): value is object =>
-	typeof value === "object" ? value !== null : typeof value === "function"
-
-const conversionProblem =
+export const conversionProblem =
 	"converts an object to a primitive, which runs its methods"
 
 // an array-like's length is converted to a number
@@ -52,7 +48,7 @@ const withPrimitiveLength = (args: unknown[]) =>
 	(
 		!Array.isArray(args[0]) &&
 		isPlainContainer(args[0]) &&
-		isObject(args[0].length)
+		hasDomain(args[0].length, "object")
 	) ?
 		conversionProblem
 	:	undefined
@@ -61,7 +57,9 @@ const withPrimitiveLength = (args: unknown[]) =>
 const withPrimitiveKeys = (args: unknown[]) =>
 	(
 		Array.isArray(args[0]) &&
-		args[0].some(entry => isPlainContainer(entry) && isObject(entry[0]))
+		args[0].some(
+			entry => isPlainContainer(entry) && hasDomain(entry[0], "object")
+		)
 	) ?
 		conversionProblem
 	:	undefined
@@ -70,7 +68,7 @@ const withPrimitiveKeys = (args: unknown[]) =>
 const withPrimitiveStrings = (args: unknown[]) => {
 	const raw =
 		isPlainContainer(args[0]) ? Reflect.get(args[0], "raw") : undefined
-	return Array.isArray(raw) && raw.some(isObject) ?
+	return Array.isArray(raw) && raw.some(item => hasDomain(item, "object")) ?
 			conversionProblem
 		:	undefined
 }
@@ -238,6 +236,47 @@ definePure(
 	],
 	{ isApproximate: true }
 )
+
+// every engine reads an ISO date, or a date-time with Z or an offset, as one instant if its fields are in range
+const isoYear = String.raw`((?!-0{6})[+-]\d{6}|\d{4})`
+const isoMonth = String.raw`(0[1-9]|1[0-2])`
+const isoDay = String.raw`(0[1-9]|[12]\d|3[01])`
+const isoTime = String.raw`T(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d{3})?)?`
+const isoOffset = String.raw`(?:Z|[+-](?:[01]\d|2[0-3]):[0-5]\d)`
+
+const isoInstant = new RegExp(
+	`^${isoYear}(?:-${isoMonth}(?:-${isoDay})?)?(?:${isoTime}${isoOffset})?$`
+)
+
+const isIsoInstant = (s: string): boolean => {
+	const parts = isoInstant.exec(s)
+	if (!parts) return false
+	const [, year, month = "01", day = "01"] = parts
+	const date = new Date(0)
+	date.setUTCFullYear(+year, +month - 1, +day)
+	return date.getUTCDate() === +day
+}
+
+export const pureConstructors = new Map<Function, PureBuiltin>([
+	[RegExp, { name: "RegExp", objects: ["RegExp", undefined] }],
+	[
+		Date,
+		{
+			name: "Date",
+			check: args =>
+				(
+					args.length === 1 &&
+					(typeof args[0] === "number" ||
+						(typeof args[0] === "string" && isIsoInstant(args[0])))
+				) ?
+					undefined
+				: !args.length ? "reads the clock"
+				: typeof args[0] === "string" ?
+					"reads the time zone, or a format each engine parses its own way"
+				:	"reads the time zone"
+		}
+	]
+])
 
 export type MethodReceiverKind =
 	| "string"
