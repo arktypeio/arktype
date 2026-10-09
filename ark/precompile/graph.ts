@@ -610,7 +610,7 @@ const arktypeExportOf = (
 		}
 
 // arktype runs through a reference called or read as `type(def)` or `T.array()`, but not one passed along as `{ type: T }`
-const isComposing = (id: Node): boolean => {
+export const isComposing = (id: Node): boolean => {
 	let node = id
 	while (node.parent && isTransparent(node.parent)) node = node.parent
 	const parent = node.parent

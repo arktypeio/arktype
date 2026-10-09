@@ -2,6 +2,7 @@ import type { CallExpression, Node } from "oxc-parser"
 import {
 	bindingOfFunction,
 	enclosingFunctionOf,
+	isComposing,
 	runtimeExports,
 	staticBodyOf,
 	type FunctionNode,
@@ -89,7 +90,13 @@ const rootOf = (
 	if (graph.isArkBinding(binding, module)) return ["reference", reference.id]
 	const call = helperCallOf(reference.id)
 	const helper = call && graph.helperOf(call.callee, module)
-	return helper && graph.isArkHelper(helper[0], helper[1]) ?
+	if (!helper) return
+	const [fn, origin] = helper
+	// e.g. \`first().and(second())\` with \`first = () => M1\`, whose body only returns what the call composes
+	return (
+			graph.isArkHelper(fn, origin) ||
+				(isComposing(call) && graph.isArkExpression(staticBodyOf(fn)!, origin))
+		) ?
 			["helper", call]
 		:	undefined
 }

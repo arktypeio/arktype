@@ -551,6 +551,38 @@ export const Own = $arkf223z3o8tm04(function (this: unknown, s) { return s.lengt
 export const OwnFirst = $arkf27ogog5z6o5(function (this: unknown, s) { return this === undefined && s.length > 1 })`)
 		})
 
+		it("composes a Type a static helper returns", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+const trim = (s: string) => s.trim()
+const A = type({ a: "string" })
+const B = type({ b: "number" })
+const Trimmed = type({ a: type("string").pipe(trim) })
+const first = () => A
+const second = () => B
+const trimmed = () => Trimmed
+export const Both = first().and(second())
+export const Held = trimmed().and(second())`
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				"/main.ts:10:21  trimmed().and(second()) can't be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.trim()` (/main.ts:2:14), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			])
+			attest(result.code).snap(`import "arktype"
+import { v14kicz05lle as $arkv14kicz05lle } from "~arktype/qqhsh2wa8x"
+import { v1tqcuiwoyw9 as $arkv1tqcuiwoyw9 } from "~arktype/qqhsh2wa8x"
+import { f162fotcpngg as $arkf162fotcpngg } from "~arktype/qqhsh2wa8x"
+import { v26dtsitbpru as $arkv26dtsitbpru } from "~arktype/qqhsh2wa8x"
+const trim = (s: string) => s.trim()
+const A = $arkv14kicz05lle()
+const B = $arkv1tqcuiwoyw9()
+const Trimmed = $arkf162fotcpngg(trim)
+const first = () => A
+const second = () => B
+const trimmed = () => Trimmed
+export const Both = $arkv26dtsitbpru()
+export const Held = trimmed().and(second())`)
+		})
+
 		it("reports a Module whose site reads what only a factory receives", () => {
 			const result = precompile(
 				`import { type } from "arktype"
