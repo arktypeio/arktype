@@ -710,14 +710,20 @@ export class Precompiler {
 				folded.push(site)
 				continue
 			}
-			const reasons = this.unsupportedReasonsOf(site)
-			const factory =
-				reasons.length || site.parseError ?
-					undefined
-				:	(this.factoryOf(site, module, reasons, prefix) ??
-					(site.isCreatedEachRun ?
-						{ params: [], spans: [], inputs: [], imports: [] }
-					:	undefined))
+			let reasons: string[]
+			let factory: SiteFactory | undefined
+			try {
+				reasons = this.unsupportedReasonsOf(site)
+				if (!reasons.length && !site.parseError) {
+					factory =
+						this.factoryOf(site, module, reasons, prefix) ??
+						(site.isCreatedEachRun ?
+							{ params: [], spans: [], inputs: [], imports: [] }
+						:	undefined)
+				}
+			} catch (e) {
+				reasons = reasonsOf(e)
+			}
 			if (reasons.length) {
 				diagnostics.push(this.refuseWritten(module, site, reasons))
 				continue
@@ -751,7 +757,7 @@ export class Precompiler {
 				replaced.push(site)
 			}
 		}
-		const refusalsByName: Record<string, string> = {}
+		const refusalsByName: Record<string, string[]> = {}
 		const { fingerprint, problem } = this.configuration!
 		const configured =
 			fingerprint === undefined || problem ?
@@ -773,9 +779,7 @@ export class Precompiler {
 		let fixedAt = Infinity
 		for (const [site, name] of namesBySite) {
 			if (refusalsByName[name]) {
-				diagnostics.push(
-					this.refuseWritten(module, site, [refusalsByName[name]])
-				)
+				diagnostics.push(this.refuseWritten(module, site, refusalsByName[name]))
 				continue
 			}
 			const local = prefix + name
@@ -1238,6 +1242,24 @@ export class Precompiler {
 		return this.unsupported(module, site, reasons)
 	}
 
+	// what a stage throws for a site refuses it where it's written rather than failing the module
+	private refuseThrown(
+		module: SourceModule,
+		node: Node,
+		site: Site,
+		e: unknown
+	): Diagnostic {
+		refuse(site, reasonsOf(e))
+		return this.diagnostic(
+			module,
+			node,
+			"R1",
+			this.rejectionSeverity,
+			`${module.snippetOf(node)} cannot be precompiled`,
+			site.reasons
+		)
+	}
+
 	private unsupportedReasonsOf(site: Site): string[] {
 		const receivesNothing =
 			!hasArkKind(site.value, "root") && isFoldable(site.value)
@@ -1336,44 +1358,70 @@ export class Precompiler {
 		this.helperSitesByModule.set(module, helperSites)
 		const configureStart = this.configureStartOf(module)
 		for (const candidate of candidates) {
+			const node = candidate.state.node
 			let settledRanges = settledRangesByFn.get(candidate.fn)
 			if (!settledRanges)
 				settledRangesByFn.set(candidate.fn, (settledRanges = new Set()))
-			if (
-				isWithin(candidate.state.node, settledRanges) ||
-				!this.settle(candidate)
-			)
-				continue
-			settled.push(candidate)
-			settledRanges.add(rangeOf(candidate.state.node))
-			if (isFolded(candidate, settled, this.interpreter)) continue
-			if (candidate.helper) {
-				if (readsBindingOf(candidate.helper, candidate.state.node, module))
-					continue
-				helperSites.push(candidate.state.node)
-			}
-			const site = this.finalize(candidate, module)
-			if (this.mode === "standalone" && this.checkRuns(site, candidate, module))
-				sameWithinRun.add(site)
-			sites.push(site)
-			candidatesBySite.set(site, candidate)
-			if (!candidate.fn && !site.isKeywordRead && site.start < configureStart) {
-				diagnostics.push(
-					this.diagnostic(
-						module,
-						candidate.state.node,
-						"R3",
-						this.rejectionSeverity,
-						`${module.snippetOf(candidate.state.node)} is created while the config module loads, before configure() runs`,
-						[]
-					)
+			if (isWithin(node, settledRanges)) continue
+			try {
+				if (!this.settle(candidate)) continue
+				settled.push(candidate)
+				settledRanges.add(rangeOf(node))
+				if (isFolded(candidate, settled, this.interpreter)) continue
+				if (candidate.helper) {
+					if (readsBindingOf(candidate.helper, node, module)) continue
+					helperSites.push(node)
+				}
+				const site = this.finalize(candidate, module)
+				if (
+					this.mode === "standalone" &&
+					this.checkRuns(site, candidate, module)
 				)
+					sameWithinRun.add(site)
+				if (
+					site.status !== "rejected" &&
+					!candidate.fn &&
+					!site.isKeywordRead &&
+					site.start < configureStart
+				) {
+					const message = `${module.snippetOf(node)} is created while the config module loads, before configure() runs`
+					diagnostics.push(
+						this.diagnostic(
+							module,
+							node,
+							"R3",
+							this.rejectionSeverity,
+							message,
+							[]
+						)
+					)
+					// cache mode leaves the site to arktype, which creates it as the program does
+					if (this.mode === "standalone") {
+						sites.push(refuse(site, [message]))
+						continue
+					}
+				}
+				sites.push(site)
+				candidatesBySite.set(site, candidate)
+			} catch (e) {
+				// covering what it contains, as a settled site does
+				settledRanges.add(rangeOf(node))
+				const site = this.siteOf(candidate, module)
+				sites.push(site)
+				diagnostics.push(this.refuseThrown(module, node, site, e))
 			}
 		}
 		if (this.mode === "standalone")
 			this.checkShared(candidatesBySite, sameWithinRun, module)
-		for (const [site, candidate] of candidatesBySite)
-			diagnostics.push(...this.diagnosticsOf(site, candidate, module))
+		for (const [site, candidate] of candidatesBySite) {
+			try {
+				diagnostics.push(...this.diagnosticsOf(site, candidate, module))
+			} catch (e) {
+				diagnostics.push(
+					this.refuseThrown(module, candidate.state.node, site, e)
+				)
+			}
+		}
 		diagnostics.push(...this.checkConfiguration(module))
 		if (this.mode === "standalone") {
 			diagnostics.push(
@@ -1469,13 +1517,13 @@ export class Precompiler {
 			:	undefined
 	}
 
-	private finalize(candidate: SiteCandidate, module: SourceModule): Site {
-		const { state } = candidate
-		const [line, column] = module.lineAndColumnOf(state.node.start)
-		const site: Site = {
+	private siteOf(candidate: SiteCandidate, module: SourceModule): Site {
+		const { node } = candidate.state
+		const [line, column] = module.lineAndColumnOf(node.start)
+		return {
 			kind: candidate.kind,
-			start: state.node.start,
-			end: state.node.end,
+			start: node.start,
+			end: node.end,
 			line,
 			column,
 			status: "accepted",
@@ -1483,19 +1531,25 @@ export class Precompiler {
 			value: undefined,
 			roots: [],
 			parseError: undefined,
-			arktypeArguments: state.arktypeArguments,
+			arktypeArguments: candidate.state.arktypeArguments,
 			holes: [],
 			inputs: [],
 			helpers: [],
 			references: [],
 			definition: undefined,
-			isKeywordRead:
-				hasArkKind(state.value, "module") &&
-				this.isKeywordRead(state.node, module),
+			isKeywordRead: false,
 			isCreatedEachRun: false,
 			isInterned: false,
-			declarationStart: declarationStartOf(state.node)
+			declarationStart: declarationStartOf(node)
 		}
+	}
+
+	private finalize(candidate: SiteCandidate, module: SourceModule): Site {
+		const { state } = candidate
+		const site = this.siteOf(candidate, module)
+		site.isKeywordRead =
+			hasArkKind(state.value, "module") &&
+			this.isKeywordRead(state.node, module)
 		if (this.mode === "standalone" && isInIsland(state.node, module)) {
 			site.status = "island"
 			return site
@@ -1658,7 +1712,14 @@ export class Precompiler {
 					)
 				)
 			}
-			for (const value of arkObjectsIn(site.value)) {
+			let values: Set<unknown>
+			try {
+				values = arkObjectsIn(site.value)
+			} catch (e) {
+				refuse(site, reasonsOf(e))
+				continue
+			}
+			for (const value of values) {
 				const holder = holdersByValue.get(value)
 				if (!holder) holdersByValue.set(value, site)
 				else {
@@ -2682,48 +2743,63 @@ const repeatedRegionsOf = (node: Node): Node[] => {
 const nameOf = (site: Site) =>
 	hashOf(site.parseError?.message ?? `${site.start}`)
 
-// precompileStandalone refuses a whole artifact for one export it can't emit, so on a refusal each is emitted alone to find it
+// precompileStandalone refuses a whole artifact for an export it can't emit, so on a refusal each export is written alone, and those that can be are written together
 const writeValidators = (
 	exportsByName: Record<string, StandaloneExport>,
 	sitesByName: Record<string, string>,
 	keywordReads: ReadonlySet<string>,
-	refusalsByName: Record<string, string>,
+	refusalsByName: Record<string, string[]>,
 	configured: ConfiguredModule | undefined,
 	inline: boolean
 ): StandaloneModules => {
 	// a host without virtual modules places the units an artifact shares in it
-	const write = () =>
-		inline ?
-			{
-				code: precompileStandalone(
-					exportsByName,
+	const write = (names: string[]): StandaloneModules => {
+		const exports = Object.fromEntries(
+			names.map(name => [name, exportsByName[name]])
+		)
+		return inline ?
+				{
+					code: precompileStandalone(
+						exports,
+						configured,
+						sitesByName,
+						keywordReads
+					),
+					modules: {}
+				}
+			:	precompileStandaloneModules(
+					exports,
 					configured,
 					sitesByName,
 					keywordReads
-				),
-				modules: {}
-			}
-		:	precompileStandaloneModules(
-				exportsByName,
-				configured,
-				sitesByName,
-				keywordReads
-			)
+				)
+	}
 	try {
-		return write()
+		return write(Object.keys(exportsByName))
 	} catch {
-		for (const name in exportsByName) {
+		const writable = Object.keys(exportsByName).filter(name => {
 			try {
-				precompileStandalone({ [name]: exportsByName[name] })
+				write([name])
+				return true
 			} catch (e) {
-				refusalsByName[name] = (e as Error).message
-				delete exportsByName[name]
+				refusalsByName[name] = reasonsOf(e)
+				return false
 			}
+		})
+		// every export is refused, as under a configured locale
+		if (!writable.length) return { code: "", modules: {} }
+		try {
+			return write(writable)
+		} catch (e) {
+			// no export is known to write alone but not beside another, so which one does isn't sought
+			for (const name of writable) {
+				refusalsByName[name] = [
+					...reasonsOf(e),
+					"it can be written alone, but not beside the module's other validators"
+				]
+			}
+			return { code: "", modules: {} }
 		}
-		// every export is refused when the whole artifact is, as under a configured locale
-		return Object.keys(exportsByName).length ?
-				write()
-			:	{ code: "", modules: {} }
 	}
 }
 
@@ -2912,9 +2988,9 @@ const writeImport = (
 		:	`import "arktype"`
 }
 
-const rejectSite = (site: Site, dynamic: DynamicValue): Site => {
+const refuse = (site: Site, reasons: string[]): Site => {
 	site.status = "rejected"
-	site.reasons = chainOf(dynamic)
+	site.reasons = reasons
 	site.value = undefined
 	site.roots = []
 	site.holes = []
@@ -2922,6 +2998,9 @@ const rejectSite = (site: Site, dynamic: DynamicValue): Site => {
 	site.references = []
 	return site
 }
+
+const rejectSite = (site: Site, dynamic: DynamicValue): Site =>
+	refuse(site, chainOf(dynamic))
 
 const rejectionOf = (state: SiteState): DynamicValue | undefined =>
 	state.error instanceof DynamicValue ? state.error
@@ -2934,6 +3013,12 @@ const chainOf = (dynamic: DynamicValue): string[] => {
 		result.push(link.message)
 	return result
 }
+
+// e.g. a configured writer calling a function a site holds in its meta, which only fails once the site is written
+const reasonsOf = (e: unknown): string[] =>
+	e instanceof DynamicValue ? chainOf(e)
+	: e instanceof Error ? [e.message]
+	: [String(e)]
 
 const isMemberRead = (node: Node, root: Node): boolean => {
 	for (node = unwrapExpression(node); node !== root; ) {

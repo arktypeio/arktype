@@ -51,6 +51,16 @@ contextualize(() => {
 		])
 	})
 
+	it("rejects each site the build refuses while the config module loads or as a writer throws", () => {
+		attest(
+			check([], { cwd: fromHere("refused"), config: "config.ts" }).lines
+		).snap([
+			'config.ts:3:21  type("string") is created while the config module loads, before configure() runs\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.',
+			'main.ts:6:18  type("number").configure(meta) cannot be precompiled\n  arktype reads `inner.meta.label()` while defining the type, so it must be static\n  `inner.meta.label` is a function reached through a property rather than a binding\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+			"2 sites in 2 files: 0 accepted (0.0%)"
+		])
+	})
+
 	it("fails under a rate", () => {
 		attest(cli("--check", "--fail-under", "50").status).equals(0)
 		attest(cli("--check", "--fail-under", "60").status).equals(1)

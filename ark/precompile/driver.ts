@@ -95,6 +95,11 @@ export const answerRequests = (
 			return precompiler.readDependency(request[1])
 		if (request[0] === "transform")
 			return transformedModuleOf(precompiler, request[1], request[2])
+		if (
+			!precompiler.isTransformed(request[2]) ||
+			!precompiles(precompiler, request[1], request[2])
+		)
+			return { sites: [], diagnostics: [] } satisfies CheckedModule
 		const { sites, diagnostics } = precompiler.precompile(
 			request[1],
 			request[2]
@@ -193,13 +198,17 @@ export const createKeyedPrecompiler = (
 	}
 }
 
+// whether the build precompiles a module it transforms, which it leaves as it is if nothing its text imports can reach arktype
+const precompiles = (precompiler: Precompiler, source: string, id: string) =>
+	precompiler.checkHelpers || precompiler.importsArk(source, id)
+
 const transformedModuleOf = (
 	precompiler: Precompiler,
 	source: string,
 	id: string
 ): TransformedModule | undefined => {
 	if (!precompiler.isTransformed(id)) return
-	if (!precompiler.checkHelpers && !precompiler.importsArk(source, id)) {
+	if (!precompiles(precompiler, source, id)) {
 		return {
 			code: undefined,
 			map: undefined,
