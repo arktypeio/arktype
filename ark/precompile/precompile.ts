@@ -223,10 +223,11 @@ export class Precompiler {
 		return false
 	}
 
-	// the modules outside node_modules a module's text imports from
+	// the modules outside node_modules and arktype's packages a module's text imports from
 	localImportsOf(source: string, id: string): string[] {
 		const result: string[] = []
 		for (const [, specifier] of source.matchAll(importSpecifier)) {
+			if (arkPackageSpecifier.test(specifier)) continue
 			const targetId = this.graph.host.resolve(specifier, id)
 			if (targetId && !targetId.includes("/node_modules/"))
 				result.push(targetId)
