@@ -444,9 +444,7 @@ export class Precompiler {
 	precompile(source: string, id: string): PrecompiledModule {
 		this.configuration ??= this.applyConfiguration()
 		const module = this.graph.add(id, source)
-		const { sites, diagnostics, dependencies } = this._analyze(module)
-		for (const dependency of this.configurationModules)
-			if (!dependencies.includes(dependency)) dependencies.push(dependency)
+		const { sites, diagnostics } = this._analyze(module)
 		for (const node of module.program.body) {
 			const specifier =
 				(
@@ -545,7 +543,7 @@ export class Precompiler {
 					s.generateMap({ source: id, includeContent: true, hires: "boundary" })
 				:	undefined,
 			sites,
-			dependencies,
+			dependencies: this.dependenciesOfArtifact(module),
 			diagnostics,
 			modules: this.inline ? {} : modules
 		}
@@ -601,9 +599,16 @@ export class Precompiler {
 		return configuration
 	}
 
-	// every site is evaluated under the configuration, so a module's precompilation depends on these too
-	get configurationModules(): string[] {
-		return this.configuration?.modules ?? []
+	// every module the build read for this one, so a host rebuilds it once one changes
+	private dependenciesOfArtifact(module: SourceModule): string[] {
+		return [
+			...new Set([
+				// the graph records an import each time it follows one, so a module it read for an earlier one is here too
+				...this.graph.dependenciesOf(module.id),
+				// every site is evaluated under the configuration
+				...this.configuration!.modules
+			])
+		]
 	}
 
 	// arktype takes one configuration per thread, so a build whose configuration changed restarts in a new one

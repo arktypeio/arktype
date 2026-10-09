@@ -4,7 +4,15 @@ import { configuredThreadMessage } from "@ark/precompile"
 import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	realpathSync,
+	utimesSync,
+	writeFileSync
+} from "node:fs"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { configureAfterTypeMessage } from "@ark/schema"
@@ -394,6 +402,56 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 				join(hidden, "locale.ts"),
 				'export const describe = () => "a numeral"\n'
 			)
+		}).timeout(60000)
+
+		const loadMain = (dir: string, dependencies: string[] = []) => {
+			try {
+				return turbopack.call(
+					{
+						resourcePath: join(dir, "main.ts"),
+						getOptions: () => ({ conditions, cwd: dir }),
+						addDependency: dependency => dependencies.push(dependency),
+						emitWarning: warning => {
+							throw warning
+						}
+					},
+					readFileSync(join(dir, "main.ts"), "utf8")
+				)
+			} catch (e) {
+				return (e as Error).message
+			}
+		}
+
+		it("replaces its precompiler when a module it followed past a comment changes", () => {
+			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			writeFileSync(
+				join(dir, "main.ts"),
+				'import { type } from "arktype"\nimport { shape } from /* shapes */ "./shape.ts"\n\nexport const T = type(shape)\n'
+			)
+			const loadWith = (domain: string, at: Date) => {
+				writeFileSync(
+					join(dir, "shape.ts"),
+					`export const shape = { a: "${domain}" } as const\n`
+				)
+				utimesSync(join(dir, "shape.ts"), at, at)
+				return loadMain(dir)
+			}
+			attest(loadWith("string", new Date(0)).includes('"number"')).equals(false)
+			attest(loadWith("number", new Date()).includes('"number"')).equals(true)
+		}).timeout(60000)
+
+		it("replaces its precompiler when a module an import names is created", () => {
+			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			writeFileSync(
+				join(dir, "main.ts"),
+				'import { type } from "arktype"\nimport { shape } from "./shape.ts"\n\nexport const T = type(shape)\n'
+			)
+			attest(loadMain(dir)).satisfies(/cannot be precompiled/)
+			writeFileSync(
+				join(dir, "shape.ts"),
+				'export const shape = { a: "number" } as const\n'
+			)
+			attest(loadMain(dir).includes('"number"')).equals(true)
 		}).timeout(60000)
 
 		it("reports dependencies before a rejected site's error", () => {

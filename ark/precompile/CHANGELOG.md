@@ -47,6 +47,12 @@ import { precompile } from "@ark/precompile/unplugin"
 export default defineConfig({ plugins: [precompile.vite()] })
 ```
 
+In watch mode and in a dev server, a module is rebuilt when any module its definitions were read from changes: each module the build followed from it, including one imported with a comment before its specifier, and the config module with what it imports. These changes don't rebuild it until something else does:
+
+- creating a file one of its imports names, or one an import would now resolve to;
+- editing a `package.json`, since the packages that opt in are read at startup;
+- for a module left as it is because nothing it imports can reach arktype, a change past its direct imports that makes one of them export a Type.
+
 ### Emit each Type's code once
 
 Each Type's compiled code is a module named by its content, which every module composing the Type imports, so a bundle holds one copy however many modules reach it, and a factory receiving a Type from another module creates only its own validator. The Node and Bun drivers serve these modules through their hooks in standalone mode; Turbopack, which has no virtual modules, places them in each module that reaches them, as before.
@@ -83,7 +89,7 @@ These definitions are reported rather than precompiled:
 
 ### Precompile in Turbopack
 
-`@ark/precompile/turbopack` is a webpack loader for `turbopack.rules`, reporting each module's forward closure as its dependencies. In standalone mode, alias `arktype` to `arktype/runtime` with `turbopack.resolveAlias`.
+`@ark/precompile/turbopack` is a webpack loader for `turbopack.rules`, reporting each module's forward closure as its dependencies, with the bundler plugin's exceptions. In standalone mode, alias `arktype` to `arktype/runtime` with `turbopack.resolveAlias`.
 
 ```js
 // next.config.js

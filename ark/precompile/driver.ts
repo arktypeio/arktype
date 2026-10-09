@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from "node:fs"
-import { resolve } from "node:path"
+import { dirname, resolve } from "node:path"
 import type { SourceMap } from "magic-string"
 import { parentPort, workerData, type MessagePort } from "node:worker_threads"
 import {
@@ -128,6 +128,9 @@ export interface KeyedModule extends InlineModule {
 	files: string[]
 }
 
+const mtimeOf = (file: string) =>
+	statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? -1
+
 // for a host that keeps a precompiler across changes to the files it read, which it replaces once one changes
 export const createKeyedPrecompiler = (
 	opts: PrecompilePluginOptions
@@ -139,11 +142,19 @@ export const createKeyedPrecompiler = (
 		const { host } = result.graph
 		readTimes = {}
 		result.graph.host = {
-			resolve: host.resolve,
+			resolve: (specifier, importer) => {
+				const id = host.resolve(specifier, importer)
+				// the resolver caches that a file is missing, so creating the one a relative import names changes what it read
+				if (id === undefined && /^\.{0,2}\//.test(specifier)) {
+					const file = resolve(dirname(importer), specifier)
+					readTimes[file] ??= mtimeOf(file)
+				}
+				return id
+			},
 			readFile: file => {
-				const contents = host.readFile(file)
-				if (contents !== undefined) readTimes[file] = statSync(file).mtimeMs
-				return contents
+				// before reading, so a file written meanwhile changes, as does one it couldn't read once it's created
+				readTimes[file] ??= mtimeOf(file)
+				return host.readFile(file)
 			}
 		}
 		return result
@@ -151,23 +162,22 @@ export const createKeyedPrecompiler = (
 	let precompiler = create()
 	return (source, id) => {
 		const mtimes: Record<string, number> = {}
-		// a file the configuration read may since have been deleted, which changes it too
-		const mtimeOf = (file: string) =>
-			(mtimes[file] ??=
-				statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? Number.NaN)
+		const currentMtimeOf = (file: string) => (mtimes[file] ??= mtimeOf(file))
 		const files = precompiler.localClosureOf(id, file => {
 			if (file === id) return precompiler.localImportsOf(source, id)
 			const cached = importsByFile[file]
-			return cached?.[0] === mtimeOf(file) ?
+			if (currentMtimeOf(file) === -1) return []
+			return cached?.[0] === currentMtimeOf(file) ?
 					cached[1]
 				:	(importsByFile[file] = [
-						mtimeOf(file),
+						currentMtimeOf(file),
 						precompiler.localImportsOf(readFileSync(file, "utf8"), file)
 					])[1]
 		})
+		// what the precompiler cached for any module may be read for this one
 		if (
-			[...files, ...precompiler.configurationModules].some(
-				file => file in readTimes && readTimes[file] !== mtimeOf(file)
+			Object.keys(readTimes).some(
+				file => readTimes[file] !== currentMtimeOf(file)
 			)
 		)
 			precompiler = create()
