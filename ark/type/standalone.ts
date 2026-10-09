@@ -17,6 +17,7 @@ import {
 	writeRootApply
 } from "@ark/schema/internal"
 import {
+	constructorNameOf,
 	functionNameOf,
 	hasDomain,
 	isDate,
@@ -285,13 +286,28 @@ ${exported.join("\n")}
 			return throwParseError(writeUnprecompilableMessage("a cyclic object"))
 		const prototype = prototypeOf(value)
 		const keys = Reflect.ownKeys(value)
-		if (prototype === Date.prototype && keys.length === 0) {
+		const isDateObject =
+			prototype === Date.prototype && isBrandedBy(value, getTime)
+		const isRegExpObject =
+			prototype === RegExp.prototype && isBrandedBy(value, getSource)
+		// a Date has no own keys and a RegExp only lastIndex, so any other is a property its copy would lack
+		if (
+			keys.length > (isRegExpObject ? 1 : 0) &&
+			(isDateObject || isRegExpObject)
+		) {
+			throwParseError(
+				writeUnprecompilableMessage(
+					`a ${isDateObject ? "Date" : "RegExp"} with its own properties`
+				)
+			)
+		}
+		if (isDateObject) {
 			return this.declareConst(
 				value,
 				`runtime.freeze(new Date(${(value as Date).getTime()}))`
 			)
 		}
-		if (prototype === RegExp.prototype && keys.length === 1) {
+		if (isRegExpObject) {
 			const { source, flags, lastIndex } = value as RegExp
 			const regex = `new RegExp(${JSON.stringify(source)}, ${JSON.stringify(flags)})`
 			// its methods write lastIndex, so it's kept from growing rather than frozen
@@ -300,14 +316,24 @@ ${exported.join("\n")}
 				`runtime.preventExtensions(${lastIndex ? `runtime.assign(${regex}, { lastIndex: ${lastIndex} })` : regex})`
 			)
 		}
-		const isArrayLiteral = prototype === Array.prototype
+		const isArrayLiteral = prototype === Array.prototype && Array.isArray(value)
+		if (
+			!isArrayLiteral &&
+			prototype !== Object.prototype &&
+			prototype !== null
+		) {
+			return throwParseError(
+				writeUnprecompilableMessage(
+					`an instance of ${constructorNameOf(value) || "an anonymous class"}`
+				)
+			)
+		}
 		const propKeys = isArrayLiteral ? keys.filter(k => k !== "length") : keys
-		// a literal has its value's prototype and only enumerable data properties
+		// a literal has only enumerable data properties
 		const isReproducible =
-			(isArrayLiteral ?
-				propKeys.length === (value as unknown[]).length &&
-				propKeys.every((k, i) => k === `${i}`)
-			:	prototype === Object.prototype || prototype === null) &&
+			(!isArrayLiteral ||
+				(propKeys.length === (value as unknown[]).length &&
+					propKeys.every((k, i) => k === `${i}`))) &&
 			propKeys.every(k => {
 				const descriptor = Object.getOwnPropertyDescriptor(value, k)!
 				return (
@@ -390,6 +416,23 @@ ${exported.join("\n")}
 					`runtime.freeze({ ...runtime.runtimeConfig, ${configuredCodes.join(", ")} })`
 				)
 			:	"runtime.runtimeConfig"
+	}
+}
+
+const { getTime } = Date.prototype
+
+const getSource = Object.getOwnPropertyDescriptor(
+	RegExp.prototype,
+	"source"
+)!.get!
+
+// an object can have a builtin's prototype without being one, which only the builtin's methods can tell
+const isBrandedBy = (value: object, method: () => unknown): boolean => {
+	try {
+		method.call(value)
+		return true
+	} catch {
+		return false
 	}
 }
 

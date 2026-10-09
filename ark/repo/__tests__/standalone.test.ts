@@ -403,6 +403,30 @@ contextualize(() => {
 				T: type("string").configure({ accessor } as never)
 			})
 		).throws(writeUnprecompilableMessage('{"x":1}\'s properties'))
+		const refusalOf = (value: object) => {
+			try {
+				precompileStandalone({
+					T: type("string").configure({ value } as never)
+				})
+			} catch (e) {
+				return (e as Error).message
+			}
+		}
+		attest({
+			fakeDate: refusalOf(Object.create(Date.prototype)),
+			fakeRegExp: refusalOf(
+				Object.assign(Object.create(RegExp.prototype), { lastIndex: 0 })
+			),
+			map: refusalOf(new Map()),
+			date: refusalOf(Object.assign(new Date(0), { x: 1 })),
+			regex: refusalOf(Object.assign(/x/, { x: 1 }))
+		}).equals({
+			fakeDate: writeUnprecompilableMessage("an instance of Date"),
+			fakeRegExp: writeUnprecompilableMessage("an instance of RegExp"),
+			map: writeUnprecompilableMessage("an instance of Map"),
+			date: writeUnprecompilableMessage("a Date with its own properties"),
+			regex: writeUnprecompilableMessage("a RegExp with its own properties")
+		})
 	})
 
 	it("rejects a configured locale", () => {
