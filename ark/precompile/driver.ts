@@ -1,7 +1,7 @@
 import { readFileSync, statSync } from "node:fs"
 import { resolve } from "node:path"
 import type { SourceMap } from "magic-string"
-import type { MessagePort } from "node:worker_threads"
+import { parentPort, workerData, type MessagePort } from "node:worker_threads"
 import { createNodeHost, type NodeHostOptions } from "./host.ts"
 import {
 	Precompiler,
@@ -9,6 +9,7 @@ import {
 	type Diagnostic,
 	type PrecompileOptions
 } from "./precompile.ts"
+import { isPrecompilerWorker } from "./worker.ts"
 
 export interface PrecompilePluginOptions
 	extends PrecompileOptions,
@@ -181,4 +182,9 @@ const transformedModuleOf = (
 		modules: result.modules,
 		...renderDiagnostics(result.diagnostics)
 	}
+}
+
+if (isPrecompilerWorker) {
+	const data = workerData as PrecompilerWorkerData
+	answerRequests(data.port ?? parentPort!, data)
 }

@@ -56,6 +56,25 @@ const runPlain = (cwd: string) =>
 contextualize(() => {
 	const expected = runPlain(app)
 
+	it("loads from CommonJS, e.g. a webpack.config.js", () => {
+		const { stdout } = spawnSync(
+			process.execPath,
+			[
+				"--conditions",
+				"ark-ts",
+				"--input-type=commonjs",
+				"-e",
+				'console.log(JSON.stringify(["unplugin", "node", "turbopack"].map(name => Object.keys(require(`@ark/precompile/${name}`)))))'
+			],
+			{ cwd: fromHere(), encoding: "utf8" }
+		)
+		attest(JSON.parse(stdout)).equals([
+			["precompile"],
+			["register"],
+			["__esModule", "default"]
+		])
+	})
+
 	describe("node", () => {
 		it("standalone", () => {
 			attest(node(["main.ts"], {}).stdout).equals(expected)

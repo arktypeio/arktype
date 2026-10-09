@@ -1,6 +1,6 @@
+import { extname } from "node:path"
 import {
 	MessageChannel,
-	parentPort,
 	receiveMessageOnPort,
 	Worker,
 	workerData
@@ -15,6 +15,12 @@ export const isPrecompilerWorker = !!(
 	workerData as PrecompilerWorkerData | null
 )?.precompilerOptions
 
+// a worker runs the driver, since a module a CommonJS config requires can't await it
+const driverUrl = new URL(
+	`./driver${extname(import.meta.url)}`,
+	import.meta.url
+)
+
 // a precompiler in the program's thread would share arktype's modules and globals with it
 export const createSyncPrecompiler = (
 	data: Omit<PrecompilerWorkerData, "port" | "answered">
@@ -24,7 +30,7 @@ export const createSyncPrecompiler = (
 	let worker: Worker | undefined
 	return (...request) => {
 		if (!worker) {
-			worker = new Worker(new URL(import.meta.url), {
+			worker = new Worker(driverUrl, {
 				workerData: {
 					...data,
 					port: port2,
@@ -53,7 +59,7 @@ export const createAsyncPrecompiler = (
 		if (!worker) {
 			// a worker that never started has nothing to close
 			if (request[0] === "close") return Promise.resolve()
-			const started = new Worker(new URL(import.meta.url), {
+			const started = new Worker(driverUrl, {
 				workerData: data satisfies PrecompilerWorkerData
 			})
 			// it keeps the host's process alive only while a request is pending
@@ -76,12 +82,4 @@ export const createAsyncPrecompiler = (
 			)
 		)
 	}
-}
-
-// the worker requests are answered in runs this module
-if (isPrecompilerWorker) {
-	// awaited, since Bun drops a message that arrives once the module has evaluated without a listener
-	const driver = await import("./driver.ts")
-	const data = workerData as PrecompilerWorkerData
-	driver.answerRequests(data.port ?? parentPort!, data)
 }
