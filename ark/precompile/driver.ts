@@ -70,7 +70,6 @@ export interface TransformedModule extends InlineModule {
 
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
 
-// the part of a module's analysis a worker can send back
 export interface AnalyzedModule {
 	sites: Pick<Site, "start" | "line" | "column" | "status">[]
 	diagnostics: Diagnostic[]

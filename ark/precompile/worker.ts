@@ -30,6 +30,7 @@ export const createSyncPrecompiler = (
 	let worker: Worker | undefined
 	return (...request) => {
 		if (!worker) {
+			if (request[0] === "close") return
 			worker = new Worker(driverUrl, {
 				workerData: {
 					...data,

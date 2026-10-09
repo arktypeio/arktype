@@ -41,31 +41,37 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 		rate: 100,
 		files: files.length
 	}
-	for (const file of files) {
-		const result = request(
-			"analyze",
-			readFileSync(file, "utf8"),
-			file
-		) as AnalyzedModule
-		const path = relative(cwd, file)
-		const entries: [number, string][] = result.diagnostics.map(diagnostic => [
-			diagnostic.start,
-			renderDiagnostic({ ...diagnostic, file: relative(cwd, diagnostic.file) })
-		])
-		for (const site of result.sites) {
-			report.sites++
-			if (site.status === "rejected") continue
-			if (site.status === "island") report.islands++
-			else report.accepted++
-			entries.push([
-				site.start,
-				`${path}:${site.line}:${site.column}  ${site.status}`
+	try {
+		for (const file of files) {
+			const result = request(
+				"analyze",
+				readFileSync(file, "utf8"),
+				file
+			) as AnalyzedModule
+			const path = relative(cwd, file)
+			const entries: [number, string][] = result.diagnostics.map(diagnostic => [
+				diagnostic.start,
+				renderDiagnostic({
+					...diagnostic,
+					file: relative(cwd, diagnostic.file)
+				})
 			])
+			for (const site of result.sites) {
+				report.sites++
+				if (site.status === "rejected") continue
+				if (site.status === "island") report.islands++
+				else report.accepted++
+				entries.push([
+					site.start,
+					`${path}:${site.line}:${site.column}  ${site.status}`
+				])
+			}
+			entries.sort((l, r) => l[0] - r[0])
+			for (const [, line] of entries) report.lines.push(line)
 		}
-		entries.sort((l, r) => l[0] - r[0])
-		for (const [, line] of entries) report.lines.push(line)
+	} finally {
+		request("close")
 	}
-	request("close")
 	const precompiled = report.sites - report.islands
 	if (precompiled) report.rate = (100 * report.accepted) / precompiled
 	report.lines.push(
