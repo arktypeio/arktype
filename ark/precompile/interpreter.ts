@@ -28,6 +28,7 @@ import {
 	pureBuiltins,
 	pureConstructors,
 	type MethodReceiverKind,
+	type PlainContainer,
 	type PureBuiltin
 } from "./builtins.ts"
 import { DynamicValue, type DynamicCode } from "./dynamic.ts"
@@ -1158,7 +1159,13 @@ export class Interpreter {
 					if (property.type === "RestElement") {
 						this.destructure(
 							property.argument,
-							isDynamic(value) ? value : restOf(value, used),
+							isDynamic(value) ? value
+							: isPlainContainer(value) ? restOf(value, used)
+							: this.reject(
+									property,
+									ctx,
+									"copies the rest of a value other than an object literal"
+								),
 							ctx
 						)
 						continue
@@ -2073,9 +2080,8 @@ const collectHoles = (
 	}
 }
 
-const restOf = (value: unknown, used: PropertyKey[]) => {
+const restOf = (value: PlainContainer, used: PropertyKey[]) => {
 	const result: Record<PropertyKey, unknown> = {}
-	if (!isPlainContainer(value)) return result
 	for (const k of Reflect.ownKeys(value)) {
 		if (
 			!used.includes(k) &&

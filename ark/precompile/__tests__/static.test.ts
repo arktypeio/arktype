@@ -849,6 +849,22 @@ const B = type(\`'\${limits.constructor.name}'\`)`)
 			])
 		})
 
+		it("object rest over a value other than an object literal", () => {
+			attest(
+				statusesOf(`import { scope, type } from "arktype"
+const M = scope({ a: "string" }).export()
+const count = ({ ...rest }: object) => Object.keys(rest).length
+const A = type(count({ a: 1, b: 2 }) === 2 ? "string" : "number")
+const B = type(count("ab" as never) === 2 ? "string" : "number")
+const C = type(count(M) === 1 ? "string" : "number")`)
+			).snap([
+				"2:11 accepted",
+				"4:11 accepted string",
+				"5:11 rejected\n  `...rest` copies the rest of a value other than an object literal",
+				"6:11 rejected\n  `...rest` copies the rest of a value other than an object literal"
+			])
+		})
+
 		it("helper reached through a property", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
