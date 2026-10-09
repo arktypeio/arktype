@@ -2,7 +2,11 @@ import { arkKind, hasArkKind, type BaseRoot } from "@ark/schema"
 import { hashOf, hasDomain, ParseError } from "@ark/util"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
-import { holeNamePattern, holeNamePrefix } from "arktype/internal/standalone.ts"
+import {
+	holeNamePattern,
+	holeNamePrefix,
+	keyOf
+} from "arktype/internal/standalone.ts"
 import type {
 	CallExpression,
 	Class,
@@ -110,6 +114,8 @@ export interface SiteState {
 	interpreted: Set<Node>
 	// each call into arktype's API
 	requests: [Node, SourceModule][]
+	// each receiver and argument of those calls, whose holes a ParseError can print
+	arktypeArguments: unknown[]
 	// each Type a request returned
 	roots: BaseRoot[]
 	value: unknown
@@ -129,6 +135,7 @@ export const createSiteState = (
 	holes: [],
 	interpreted: new Set(),
 	requests: [],
+	arktypeArguments: [],
 	roots: [],
 	value: undefined,
 	error: undefined,
@@ -197,6 +204,38 @@ export class Interpreter {
 	}
 
 	// the expression that creates a hole and its module
+	// arktype can print what any value it is passed holds, by any route: a Type's holes, a Module's Types, a Scope's aliases, a Generic's definition
+	holesIn(
+		value: unknown,
+		holes = new Set<unknown>(),
+		seen = new Set<unknown>()
+	): Set<unknown> {
+		if (seen.has(value)) return holes
+		seen.add(value)
+		if (
+			typeof value === "symbol" ||
+			(hasDomain(value, "object") && this.standIns.has(value))
+		)
+			holes.add(value)
+		else if (hasArkKind(value, "root")) {
+			for (const hole of keyOf(value)[1]) {
+				if (typeof hole === "symbol" || this.standIns.has(hole as object))
+					holes.add(hole)
+			}
+		} else {
+			const held =
+				hasArkKind(value, "module") ? Object.values(value)
+				: hasArkKind(value, "scope") ? Object.values(value.aliases)
+				: hasArkKind(value, "generic") ?
+					[value.paramDefs, value.bodyDef, value.$]
+				: isPlainContainer(value) ?
+					Reflect.ownKeys(value).flatMap(k => [k, Reflect.get(value, k)])
+				:	[]
+			for (const child of held) this.holesIn(child, holes, seen)
+		}
+		return holes
+	}
+
 	sourceOf(hole: unknown): [Node, SourceModule] | undefined {
 		if (typeof hole === "symbol") return this.sourcesBySymbol.get(hole)
 		const standIn = hasDomain(hole, "object") && this.standIns.get(hole)
@@ -1530,7 +1569,10 @@ export class Interpreter {
 			if (isDynamic(value)) return value
 			converted.push(value)
 		}
-		if (ctx.site) collectHoles(converted, ctx.site.holes, this.standIns)
+		if (ctx.site) {
+			collectHoles(converted, ctx.site.holes, this.standIns)
+			ctx.site.arktypeArguments.push(receiver, ...converted)
+		}
 		const opaque = this.opaqueStandInOf([receiver, converted])
 		const previous = this.activeCall
 		this.activeCall = { ctx, isArktype: true }

@@ -121,6 +121,8 @@ export interface Site {
 	roots: BaseRoot[]
 	// the error the definition throws, which a factory throws when it is created
 	parseError: ParseError | undefined
+	// each receiver and argument the site called arktype with
+	arktypeArguments: unknown[]
 	holes: Hole[]
 	inputs: Input[]
 	helpers: Helper[]
@@ -640,7 +642,7 @@ export class Precompiler {
 				folded.push(site)
 				continue
 			}
-			const reasons = this.unsupportedReasonsOf(site, module)
+			const reasons = this.unsupportedReasonsOf(site)
 			const factory =
 				reasons.length || site.parseError || !hasArkKind(site.value, "root") ?
 					undefined
@@ -1056,7 +1058,7 @@ export class Precompiler {
 		)
 	}
 
-	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
+	private unsupportedReasonsOf(site: Site): string[] {
 		const receivesNothing =
 			!hasArkKind(site.value, "root") && isFoldable(site.value)
 		const result =
@@ -1075,24 +1077,32 @@ export class Precompiler {
 				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})${isReceived ? unreceived("receive") : ""}`
 			)
 		}
-		const referencesByHole = new Map<unknown, Reference>()
-		for (const reference of site.parseError ? site.references : []) {
-			if (!hasArkKind(reference.value, "root")) continue
-			for (const hole of keyOf(reference.value)[1])
-				if (!referencesByHole.has(hole)) referencesByHole.set(hole, reference)
-		}
-		for (const [hole, reference] of referencesByHole) {
-			const standIn =
-				hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
-			const source = this.interpreter.sourceOf(hole)
-			result.push(
-				`\`${module.snippetOf(reference)}\` holds ${
-					standIn ? this.interpreter.labelOf(standIn)
-					: source ?
-						`\`${source[1].snippetOf(source[0])}\` (${source[1].positionOf(source[0])})`
-					:	"a value the build doesn't stand in for"
-				}`
-			)
+		if (site.parseError) {
+			const holes = this.interpreter.holesIn(site.arktypeArguments)
+			for (const hole of site.holes) holes.delete(hole.value)
+			for (const hole of holes) {
+				const standIn =
+					hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
+				const source = this.interpreter.sourceOf(hole)
+				result.push(
+					`arktype is passed a value holding ${
+						standIn ? this.interpreter.labelOf(standIn)
+						: source ?
+							`\`${source[1].snippetOf(source[0])}\` (${source[1].positionOf(source[0])})`
+						:	`\`${String(hole)}\``
+					}`
+				)
+			}
+			// what arktype printed a placeholder for reached it by a route the build didn't record
+			if (
+				!site.holes.length &&
+				!holes.size &&
+				site.parseError.message.search(holeNamePattern) !== -1
+			) {
+				result.push(
+					"its ParseError prints the name of a function the build knows only by a placeholder"
+				)
+			}
 		}
 		for (const input of site.parseError || receivesNothing ? site.inputs : []) {
 			result.push(
@@ -1269,6 +1279,7 @@ export class Precompiler {
 			value: undefined,
 			roots: [],
 			parseError: undefined,
+			arktypeArguments: state.arktypeArguments,
 			holes: [],
 			inputs: [],
 			helpers: [],
@@ -1500,10 +1511,7 @@ export class Precompiler {
 		const result: Diagnostic[] = []
 		if (
 			site.parseError &&
-			!(
-				this.mode === "standalone" &&
-				this.unsupportedReasonsOf(site, module).length
-			)
+			!(this.mode === "standalone" && this.unsupportedReasonsOf(site).length)
 		) {
 			result.push(
 				this.diagnostic(

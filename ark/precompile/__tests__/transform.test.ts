@@ -282,7 +282,7 @@ import { f1kdxkkysgwf as $arkf1kdxkkysgwf } from "~arktype/okl6p4z104"`)
 		})
 
 		it("reports a ParseError site holding functions", () => {
-			const source = `import { type } from "arktype"
+			const source = `import { scope, type } from "arktype"
 import { extend } from "./extend.ts"
 const isZero = (n: number) => n === 0
 class Cat {}
@@ -301,7 +301,12 @@ const M1 = type({ a: type("string").pipe(fns.f) })
 const M2 = type({ a: type("string").pipe(fns.g) })
 export const Referenced = type("1").and(Negative)
 export const BothReferenced = DogT.and(CatT)
-export const Morphs = M1.and(M2)`
+export const Morphs = M1.and(M2)
+const negative = () => Negative
+const dog = () => DogT
+export const Helped = type("1").and(negative())
+export const HelpedClass = type.instanceOf(Error).and(dog())
+export const Scoped = scope({ a: DogT, b: "a & Error" }).export()`
 			const result = precompileModule(
 				source,
 				"/thrower.ts",
@@ -316,11 +321,14 @@ export const Morphs = M1.and(M2)`
 				'/thrower.ts:8:26  type("1").narrow(n => n === 0) can\'t be precompiled to a standalone validator yet\n  arktype calls `n => n === 0` (/thrower.ts:8:43)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				"/thrower.ts:9:21  type.instanceOf(Dog).and(type.instanceOf(Cat)) can't be precompiled to a standalone validator yet\n  arktype holds `Dog` (/thrower.ts:9:37)\n  arktype holds `Cat` (/thrower.ts:9:62)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				'/thrower.ts:10:26  type("1").and("2") throws a ParseError\n  Intersection of 1 and 2 results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.',
-				'/thrower.ts:18:27  type("1").and(Negative) can\'t be precompiled to a standalone validator yet\n  `Negative` holds `isNegative` (/thrower.ts:11:20)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				"/thrower.ts:19:31  DogT.and(CatT) can't be precompiled to a standalone validator yet\n  `DogT` holds `Dog` (/thrower.ts:5:1)\n  `CatT` holds `Cat` (/thrower.ts:4:1)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-				"/thrower.ts:20:23  M1.and(M2) can't be precompiled to a standalone validator yet\n  `M1` holds `f` (/thrower.ts:15:18)\n  `M2` holds `g` (/thrower.ts:15:46)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+				'/thrower.ts:18:27  type("1").and(Negative) can\'t be precompiled to a standalone validator yet\n  arktype is passed a value holding `isNegative` (/thrower.ts:11:20)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				"/thrower.ts:19:31  DogT.and(CatT) can't be precompiled to a standalone validator yet\n  arktype is passed a value holding `Dog` (/thrower.ts:5:1)\n  arktype is passed a value holding `Cat` (/thrower.ts:4:1)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+				"/thrower.ts:20:23  M1.and(M2) can't be precompiled to a standalone validator yet\n  arktype is passed a value holding `f` (/thrower.ts:15:18)\n  arktype is passed a value holding `g` (/thrower.ts:15:46)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+				'/thrower.ts:23:23  type("1").and(negative()) can\'t be precompiled to a standalone validator yet\n  arktype is passed a value holding `isNegative` (/thrower.ts:11:20)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				"/thrower.ts:24:28  type.instanceOf(Error).and(dog()) can't be precompiled to a standalone validator yet\n  arktype is passed a value holding `Dog` (/thrower.ts:5:1)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+				'/thrower.ts:25:23  scope({ a: DogT, b: "a & Error" }).export() can\'t be precompiled to a standalone validator yet\n  arktype is passed a value holding `Dog` (/thrower.ts:5:1)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
-			attest(result.code).snap(`import { type } from "arktype"
+			attest(result.code).snap(`import { scope, type } from "arktype"
 import { extend } from "./extend.ts"
 const isZero = (n: number) => n === 0
 class Cat {}
@@ -331,21 +339,26 @@ export const Anonymous = type("1").narrow(n => n === 0)
 export const Both = type.instanceOf(Dog).and(type.instanceOf(Cat))
 export const Unrelated = $arka9il3vu75e()
 const isNegative = (n: number) => n < 0
-const Negative = $arkfnob26chozj(isNegative)
-const DogT = $arkfgm2gx9bc6m(Dog)
-const CatT = $arkfg5kprldyto(Cat)
+const Negative = $arkf138cuyahcas(isNegative)
+const DogT = $arkf1n3watygaq6(Dog)
+const CatT = $arkf24xhxa0z6zi(Cat)
 const fns = { f: (s: string) => s.length, g: (s: string) => s.trim() }
-const M1 = $arkfypozk0svvs(fns.f)
-const M2 = $arkfeue5p3ikoz(fns.g)
+const M1 = $arkf2b24cuxkzkc(fns.f)
+const M2 = $arkfe7cggf8nto(fns.g)
 export const Referenced = type("1").and(Negative)
 export const BothReferenced = DogT.and(CatT)
 export const Morphs = M1.and(M2)
+const negative = () => Negative
+const dog = () => DogT
+export const Helped = type("1").and(negative())
+export const HelpedClass = type.instanceOf(Error).and(dog())
+export const Scoped = scope({ a: DogT, b: "a & Error" }).export()
 import $arka9il3vu75e from "~arktype/a9il3vu75e"
-import { fnob26chozj as $arkfnob26chozj } from "~arktype/u37s75k1n"
-import { fgm2gx9bc6m as $arkfgm2gx9bc6m } from "~arktype/u37s75k1n"
-import { fg5kprldyto as $arkfg5kprldyto } from "~arktype/u37s75k1n"
-import { fypozk0svvs as $arkfypozk0svvs } from "~arktype/u37s75k1n"
-import { feue5p3ikoz as $arkfeue5p3ikoz } from "~arktype/u37s75k1n"`)
+import { f138cuyahcas as $arkf138cuyahcas } from "~arktype/1luwdi2wju0"
+import { f1n3watygaq6 as $arkf1n3watygaq6 } from "~arktype/1luwdi2wju0"
+import { f24xhxa0z6zi as $arkf24xhxa0z6zi } from "~arktype/1luwdi2wju0"
+import { f2b24cuxkzkc as $arkf2b24cuxkzkc } from "~arktype/1luwdi2wju0"
+import { fe7cggf8nto as $arkfe7cggf8nto } from "~arktype/1luwdi2wju0"`)
 			attest(result.modules["~arktype/a9il3vu75e"])
 				.snap(`import * as runtime from "arktype/runtime"
 
