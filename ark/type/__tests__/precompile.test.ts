@@ -3,6 +3,7 @@ import {
 	$ark,
 	isNode,
 	precompileByContent,
+	registeredReference,
 	Traversal,
 	writePrecompiledUnits,
 	type NodeId
@@ -210,9 +211,10 @@ contextualize(() => {
 		const units = await precompileUnits([
 			type("number").narrow(named("isSignedPrecompiled", n => n > 0))
 		])
-		const T = type("number").narrow(named("isSignedPrecompiled", n => n < 0))
-		attest(T.internal.hash).snap(
-			'{"kind":"intersection","domain":"number","predicate":["$ark.isSignedPrecompiled$1"]}'
+		const isNegative = named("isSignedPrecompiled", (n: number) => n < 0)
+		const T = type("number").narrow(isNegative)
+		attest(registeredReference(isNegative)).satisfies(
+			/^\$ark\.isSignedPrecompiled\$\d+$/
 		)
 		attest(isPrecompiled(units, T.internal)).equals(true)
 		attest(T(-1)).equals(-1)
