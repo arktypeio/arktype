@@ -124,24 +124,22 @@ export const createKeyedPrecompiler = (
 	}
 	let precompiler = create()
 	return (source, id) => {
-		const files = [id]
-		let isStale = false
-		for (let i = 0; i < files.length; i++) {
-			const file = files[i]
-			const { mtimeMs } = statSync(file)
-			isStale ||= file in readTimes && readTimes[file] !== mtimeMs
+		const mtimes: Record<string, number> = {}
+		const mtimeOf = (file: string) => (mtimes[file] ??= statSync(file).mtimeMs)
+		const files = precompiler.localClosureOf(id, file => {
+			if (file === id) return precompiler.localImportsOf(source, id)
 			const cached = importsByFile[file]
-			const imports =
-				i === 0 ? precompiler.localImportsOf(source, id)
-				: cached?.[0] === mtimeMs ? cached[1]
-				: (importsByFile[file] = [
-						mtimeMs,
+			return cached?.[0] === mtimeOf(file) ?
+					cached[1]
+				:	(importsByFile[file] = [
+						mtimeOf(file),
 						precompiler.localImportsOf(readFileSync(file, "utf8"), file)
 					])[1]
-			for (const target of imports)
-				if (!files.includes(target)) files.push(target)
-		}
-		if (isStale) precompiler = create()
+		})
+		if (
+			files.some(file => file in readTimes && readTimes[file] !== mtimeOf(file))
+		)
+			precompiler = create()
 		const transformed = transformedModuleOf(precompiler, source, id)
 		for (const dependency of transformed?.dependencies ?? [])
 			if (!files.includes(dependency)) files.push(dependency)

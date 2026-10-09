@@ -1,10 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
+import { fromHere } from "@ark/fs"
 import {
+	configuredThreadMessage,
 	precompileModule,
-	renderDiagnostic,
-	writeConfiguredThreadMessage
+	renderDiagnostic
 } from "@ark/precompile"
+import { type } from "arktype"
+import { spawnSync } from "node:child_process"
 import {
 	analyze,
 	diagnosticsOf,
@@ -12,6 +14,32 @@ import {
 	precompile,
 	statusesOf
 } from "./utils.ts"
+
+// a process of its own, whose arktype has neither a configuration nor a Type
+const printedInFreshThread = (script: string): unknown =>
+	JSON.parse(
+		spawnSync(
+			process.execPath,
+			["--conditions", "ark-ts", "--input-type=module"],
+			{
+				cwd: fromHere(),
+				encoding: "utf8",
+				input: `import { renderDiagnostic } from "@ark/precompile"
+import { precompile } from "./utils.ts"
+
+const main = 'import { type } from "arktype"\\nexport const T = type({ a: "string" })'
+const outcomeOf = (files, opts) => {
+	try {
+		precompile(main, files, opts)
+		return "precompiled"
+	} catch (e) {
+		return e.message
+	}
+}
+${script}`
+			}
+		).stdout
+	)
 
 contextualize(() => {
 	describe("configuration", () => {
@@ -80,8 +108,53 @@ configure({ exactOptionalPropertyTypes: false })`,
 					{},
 					{ config: "/main.ts" }
 				)
-			).throws(writeConfiguredThreadMessage("/main.ts"))
+			).throws(configuredThreadMessage)
 		})
+
+		it("configure in a thread another configuration reached", () => {
+			attest(
+				printedInFreshThread(`const configured = argument => ({
+	"/config.ts": \`import { configure } from "arktype/config"\\n\${argument}\`
+})
+const opts = { config: "/config.ts" }
+console.log(JSON.stringify([
+	outcomeOf(configured('configure({ onUndeclaredKey: "delete" })'), opts),
+	outcomeOf(configured('configure({ onUndeclaredKey: "delete" })'), opts),
+	outcomeOf({}, {}),
+	outcomeOf(configured(""), opts),
+	outcomeOf(configured('configure({ onUndeclaredKey: "reject" })'), opts)
+]))`)
+			).equals([
+				"precompiled",
+				"precompiled",
+				configuredThreadMessage,
+				configuredThreadMessage,
+				configuredThreadMessage
+			])
+			attest(
+				printedInFreshThread(`import { configure } from "arktype"
+
+configure({ onUndeclaredKey: "delete" })
+console.log(JSON.stringify(outcomeOf({}, {})))`)
+			).equals(configuredThreadMessage)
+		}).timeout(60000)
+
+		it("configure with an argument that creates a Type", () => {
+			attest(
+				printedInFreshThread(`const config = \`import { configure } from "arktype/config"
+import { Email } from "./email.ts"
+
+configure({ keywords: { "string.email": \\\`\\\${Email.expression}!\\\` } })\`
+const { diagnostics } = precompile(
+	config,
+	{ "/email.ts": 'import { type } from "arktype"\\nexport const Email = type("string.email")' },
+	{ config: "/main.ts" }
+)
+console.log(JSON.stringify(diagnostics.map(renderDiagnostic)))`)
+			).snap([
+				"/main.ts:4:1  configure() is called after its argument creates a Type\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+			])
+		}).timeout(60000)
 
 		it("configure with values that are not static", () => {
 			attest(

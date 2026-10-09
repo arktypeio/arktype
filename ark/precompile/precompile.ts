@@ -244,10 +244,8 @@ export class Precompiler {
 	config: string | undefined
 	inline: boolean
 	checkHelpers: boolean
-	// of the configuration precompilation applies to this thread's arktype before it evaluates a site
-	fingerprint: string | undefined
-	// the config module's local import closure, whose text decides the configuration
-	private configModules: string[] | undefined
+	private configuration: Configuration | undefined
+	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
 	// a site the mode cannot build fails a standalone build, while cache mode leaves it to runtime
 	private rejectionSeverity: Diagnostic["severity"]
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
@@ -301,6 +299,20 @@ export class Precompiler {
 			if (arkPackageSpecifier.test(specifier)) continue
 			const targetId = this.graph.host.resolve(specifier, id)
 			if (targetId && this.graph.isFollowed(targetId)) result.push(targetId)
+		}
+		return result
+	}
+
+	// a module and each module the build follows its text to
+	localClosureOf(
+		id: string,
+		importsOf = (id: string) =>
+			this.localImportsOf(this.graph.host.readFile(id) ?? "", id)
+	): string[] {
+		const result = [id]
+		for (let i = 0; i < result.length; i++) {
+			for (const target of importsOf(result[i]))
+				if (!result.includes(target)) result.push(target)
 		}
 		return result
 	}
@@ -433,11 +445,11 @@ export class Precompiler {
 	}
 
 	precompile(source: string, id: string): PrecompiledModule {
-		this.configModules ??= this.applyConfiguration()
+		this.configuration ??= this.applyConfiguration()
 		const module = this.graph.add(id, source)
 		const { sites, diagnostics, dependencies } = this._analyze(module)
 		// every site is evaluated under the configuration
-		for (const dependency of this.configModules)
+		for (const dependency of this.configuration.modules)
 			if (!dependencies.includes(dependency)) dependencies.push(dependency)
 		for (const node of module.program.body) {
 			const specifier =
@@ -539,47 +551,65 @@ export class Precompiler {
 		}
 	}
 
-	// applies the config module's configure() argument to this thread's arktype, as the program applies it at runtime, returning the modules that decide it
-	private applyConfiguration(): string[] {
-		if (this.config === undefined) return []
+	// as the program applies it at runtime, before any site is evaluated
+	private applyConfiguration(): Configuration {
+		if (this.config === undefined) return this.checkThread([], undefined)
 		const module = this.graph.moduleOf(this.config)
 		if (!(module instanceof SourceModule)) {
 			return throwError(
 				writeUnreadableConfigMessage(this.graph.pathOf(this.config))
 			)
 		}
-		const closure = [this.config]
-		let text = ""
-		for (let i = 0; i < closure.length; i++) {
-			const source = this.graph.host.readFile(closure[i]) ?? ""
-			text += `${this.graph.pathOf(closure[i])}\n${source}\n`
-			for (const id of this.localImportsOf(source, closure[i]))
-				if (!closure.includes(id)) closure.push(id)
+		const modules = this.localClosureOf(module.id)
+		const call = this.configureCallsOf(module)[0]
+		if (!call) return this.checkThread(modules, undefined)
+		const fingerprint = hashOf(
+			modules
+				.map(id => `${this.graph.pathOf(id)}\n${this.graph.host.readFile(id)}`)
+				.join("\n")
+		)
+		if (fingerprint === threadFingerprint)
+			return { modules, fingerprint, reasons: [] }
+		this.checkThread(modules, fingerprint)
+		const [value, reasons] = this.evaluateConfiguration(call, module)
+		if (reasons.length) return { modules, fingerprint: undefined, reasons }
+		// as arktype fixes its configuration at the first Type, configure() would throw
+		if ($ark.resolvedConfig) {
+			return {
+				modules,
+				fingerprint: undefined,
+				problem: "configure() is called after its argument creates a Type",
+				reasons
+			}
 		}
-		const fingerprint = hashOf(text)
-		if (fingerprint !== configuredFingerprint) {
-			const call = this.configureCallsOf(module)[0]
-			if (!call) return closure
-			const [value, problems] = this.evaluateConfiguration(call, module)
-			// reported where the config module is precompiled
-			if (problems.length) return closure
-			if ($ark.resolvedConfig)
-				throwError(writeConfiguredThreadMessage(module.path))
-			configure(value as never)
-			configuredFingerprint = fingerprint
-		}
-		this.fingerprint = fingerprint
-		return closure
+		configure(value as never)
+		threadFingerprint = fingerprint
+		return { modules, fingerprint, reasons }
 	}
 
-	// each artifact checks its own fingerprint against the one the program's configure() passes the runtime
+	// this thread's arktype takes one configuration, before it creates a Type, which must be the build's
+	private checkThread(
+		modules: string[],
+		fingerprint: string | undefined
+	): Configuration {
+		const isConfigured =
+			threadFingerprint !== undefined || Object.keys($ark.config).length > 0
+		if (
+			fingerprint === undefined ? isConfigured : (
+				isConfigured || $ark.resolvedConfig
+			)
+		)
+			throwError(configuredThreadMessage)
+		return { modules, fingerprint, reasons: [] }
+	}
+
 	private stampConfiguration(module: SourceModule, s: MagicString): void {
 		const call = this.configureCallsOf(module)[0]
-		if (!call || this.fingerprint === undefined) return
-		const fingerprint = JSON.stringify(this.fingerprint)
+		const fingerprint = this.configuration!.fingerprint
+		if (!call || fingerprint === undefined) return
 		if (call.arguments.length)
-			s.appendLeft(call.arguments[0].end, `, ${fingerprint}`)
-		else s.appendLeft(call.end - 1, `{}, ${fingerprint}`)
+			s.appendLeft(call.arguments[0].end, `, ${JSON.stringify(fingerprint)}`)
+		else s.appendLeft(call.end - 1, `{}, ${JSON.stringify(fingerprint)}`)
 	}
 
 	// arktype's keyword table registers before its keywords are created, if its build includes one
@@ -673,7 +703,7 @@ export class Precompiler {
 					exportsByName,
 					sitesByName,
 					refusalsByName,
-					this.fingerprint
+					this.configuration!.fingerprint
 				)
 			:	""
 		const specifier = `~arktype/${hashOf(validators)}`
@@ -1533,6 +1563,8 @@ export class Precompiler {
 	}
 
 	private configureCallsOf(module: SourceModule): CallExpression[] {
+		const cached = this.configureCallsByModule.get(module)
+		if (cached) return cached
 		const result: CallExpression[] = []
 		for (const reference of module.scopes.references) {
 			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
@@ -1544,6 +1576,7 @@ export class Precompiler {
 			)
 				result.push(call)
 		}
+		this.configureCallsByModule.set(module, result)
 		return result
 	}
 
@@ -1558,8 +1591,12 @@ export class Precompiler {
 				: this.config !== module.id ?
 					`configure() is called outside the config module ${this.graph.pathOf(this.config)}`
 				: i > 0 ? "configure() is called more than once"
-				: undefined
-			const reasons = problem ? [] : this.evaluateConfiguration(call, module)[1]
+				: this.configuration?.problem
+			const reasons =
+				problem ?
+					[]
+				:	(this.configuration?.reasons ??
+					this.evaluateConfiguration(call, module)[1])
 			if (problem || reasons.length) {
 				result.push(
 					this.diagnostic(
@@ -1925,8 +1962,17 @@ export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 		...(diagnostic.hint ? [`  ${diagnostic.hint}`] : [])
 	].join("\n")
 
-// of the configuration applied to this thread's arktype, which another precompiler in the thread can share
-let configuredFingerprint: string | undefined
+interface Configuration {
+	// the config module's local import closure, which every module depends on
+	modules: string[]
+	fingerprint: string | undefined
+	// why the configure() call can't be applied, reported where the config module is precompiled
+	problem?: string
+	reasons: string[]
+}
+
+// another precompiler in the thread may share the configuration one applied
+let threadFingerprint: string | undefined
 
 export const writeUnreadableConfigMessage = <path extends string>(
 	path: path
@@ -1936,13 +1982,10 @@ export const writeUnreadableConfigMessage = <path extends string>(
 export type writeUnreadableConfigMessage<path extends string> =
 	`the config module ${path} can't be read`
 
-export const writeConfiguredThreadMessage = <path extends string>(
-	path: path
-): writeConfiguredThreadMessage<path> =>
-	`${path}'s configuration can't be applied in a thread where arktype has created a Type under a different one, so it applies once the build restarts in a thread of its own`
+export const configuredThreadMessage =
+	"arktype in this thread holds a configuration other than the build's, which it can't change once set, so the build must restart in a thread of its own"
 
-export type writeConfiguredThreadMessage<path extends string> =
-	`${path}'s configuration can't be applied in a thread where arktype has created a Type under a different one, so it applies once the build restarts in a thread of its own`
+export type configuredThreadMessage = typeof configuredThreadMessage
 
 export const writeStandaloneDependencyMessage = <name extends string>(
 	name: name

@@ -622,14 +622,15 @@ contextualize(() => {
 	})
 
 	it("rejects a configured locale", () => {
-		const { locale } = $ark.config
-		Object.assign($ark.config, { locale: de })
+		// a build checks that nothing configured its thread, so it's left as it was
+		const config = $ark.config
+		$ark.config = { ...config, locale: de }
 		try {
 			attest(() => precompileStandalone({ T: type("string") })).throws(
 				writeUnprecompilableMessage("a configured locale")
 			)
 		} finally {
-			Object.assign($ark.config, { locale })
+			$ark.config = config
 		}
 	})
 
