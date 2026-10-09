@@ -634,6 +634,51 @@ contextualize(() => {
 			)
 		})
 
+		it("compares the inputs it receives with what the build read", async () => {
+			const o = {
+				name: "string" as const,
+				tags: ["string"] as const,
+				at: new Date(0)
+			}
+			const T = type({ name: o.name, tags: o.tags }).and({
+				at: type("Date").atOrAfter(o.at)
+			})
+			const { T: create } = await load({
+				T: {
+					type: T,
+					params: [
+						{
+							kind: "input",
+							label: "o",
+							reads: [
+								[["name"], o.name],
+								[["tags"], o.tags],
+								[["at"], o.at]
+							]
+						}
+					]
+				}
+			})
+			attest(create(o)({ name: "a", tags: ["b"], at: new Date(1) })).equals({
+				name: "a",
+				tags: ["b"],
+				at: new Date(1)
+			})
+			attest(() => create({ ...o, name: "number" })).throws(
+				writeCreationMismatchMessage("`o.name`", '"number"', '"string"')
+			)
+			attest(() => create({ ...o, tags: ["string", "number"] })).throws(
+				writeCreationMismatchMessage(
+					"`o.tags`",
+					"an array of length 2",
+					"an array of length 1"
+				)
+			)
+			attest(() => create({ ...o, at: new Date(1) })).throws(
+				writeCreationMismatchMessage("`o.at`", "a Date at 1", "a Date at 0")
+			)
+		})
+
 		it("rejects an order that depends on a hole's name", () => {
 			const isEven = (n: number) => n % 2 === 0
 			const isPositive = (n: number) => n > 0

@@ -94,8 +94,8 @@ export class Validator extends Callable<
 		rootApply: RootApply,
 		node: BaseRoot,
 		attributes: ValidatorAttributes,
-		// its content address, which is its node's unless that node is named in a unit that aliases
-		id: string = node.id,
+		// its content address, which a factory receiving it checks
+		id: string,
 		holes: readonly unknown[] = []
 	) {
 		super(

@@ -227,20 +227,24 @@ contextualize(() => {
 	}
 
 	it("reads a module that defines a Type from an imported one", async () => {
-		const message = await esbuild({
-			entryPoints: [fromHere("app", "admin.ts")],
+		const { outputFiles } = await esbuild({
+			stdin: {
+				contents: `import { Admin } from "./admin.ts"
+console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags: [], role: "member" })))`,
+				resolveDir: app,
+				loader: "ts"
+			},
 			bundle: true,
 			write: false,
+			format: "esm",
 			logLevel: "silent",
+			conditions,
 			plugins: [precompile.esbuild({ cwd: app, conditions })]
-		}).then(
-			() => "",
-			(e: Error) => e.message
+		})
+		attest(run(outputFiles[0].text)).equals(
+			'role must be "admin" (was "member")\n'
 		)
-		attest(message.slice(message.indexOf("User.and")))
-			.snap(`User.and({ role: "'admin'" }) can't be precompiled to a standalone validator yet
-  \`User\` is imported from schemas.ts
-  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
+		attest(outputFiles[0].text.includes(parserMessage)).equals(false)
 	})
 
 	it("registers arktype's keyword table before arktype loads", async () => {

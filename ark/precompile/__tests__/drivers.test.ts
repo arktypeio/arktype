@@ -56,21 +56,21 @@ contextualize(() => {
 		}).timeout(60000)
 
 		it("fails a test file with a rejected site", () => {
-			const { status, stdout } = node(["--test", "admin.ts", "main.ts"], {})
+			const { status, stdout } = node(["--test", "roles.ts", "main.ts"], {})
 			attest(status).equals(1)
 			attest(
 				stdout
-					.match(/^. (?:admin|main)\.ts/gm)
+					.match(/^. (?:roles|main)\.ts/gm)
 					?.slice(0, 2)
 					.sort()
-			).equals(["✔ main.ts", "✖ admin.ts"])
+			).equals(["✔ main.ts", "✖ roles.ts"])
 			attest(
 				stdout
 					.slice(stdout.indexOf("Error: ") + 7, stdout.indexOf("\n    at "))
 					.replace(`${app}/`, "")
 			)
-				.snap(`admin.ts:3:22  User.and({ role: "'admin'" }) can't be precompiled to a standalone validator yet
-  \`User\` is imported from schemas.ts
+				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: "'admin'" … can't be precompiled to a standalone validator yet
+  its value is not a Type
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		}).timeout(60000)
 
@@ -121,11 +121,11 @@ contextualize(() => {
 		}).timeout(60000)
 
 		it("reports dependencies before a rejected site's error", () => {
-			const admin = load("admin.ts")
-			attest(() => admin.run()).throws(
-				"admin.ts:3:22  User.and({ role: \"'admin'\" }) can't be precompiled to a standalone validator yet"
+			const roles = load("roles.ts")
+			attest(() => roles.run()).throws(
+				'roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: "\'admin\'" … can\'t be precompiled to a standalone validator yet'
 			)
-			attest(admin.dependencies).equals(["schemas.ts", "ark.ts"])
+			attest(roles.dependencies).equals(["schemas.ts", "ark.ts"])
 		}).timeout(60000)
 	})
 
@@ -191,15 +191,15 @@ contextualize(() => {
 		}).timeout(60000)
 
 		it("fails a module with a rejected site", () => {
-			const { status, stderr } = bun([...preload, "admin.ts"])
+			const { status, stderr } = bun([...preload, "roles.ts"])
 			attest(status).equals(1)
 			attest(
 				stderr
 					.slice(stderr.indexOf("error: ") + 7, stderr.indexOf("\n      at "))
 					.replace(`${app}/`, "")
 			)
-				.snap(`admin.ts:3:22  User.and({ role: "'admin'" }) can't be precompiled to a standalone validator yet
-  \`User\` is imported from schemas.ts
+				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: "'admin'" … can't be precompiled to a standalone validator yet
+  its value is not a Type
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		}).timeout(60000)
 	})

@@ -23,6 +23,7 @@ import {
 	arkKindOf,
 	constructorNameOf,
 	functionNameOf,
+	hashOf,
 	hasDomain,
 	isArray,
 	isDate,
@@ -338,8 +339,10 @@ export class StandaloneArtifact {
 		)
 		if (!isPlainLiteral(value)) return
 		for (const k of Reflect.ownKeys(value)) {
-			if (!isArray(value) || k !== "length")
+			if (!isArray(value))
 				this.compareInput(param, [...path, k], Reflect.get(value, k), root)
+			else if (k !== "length")
+				this.compareInput(param, [...path, Number(k)], value[Number(k)], root)
 		}
 	}
 
@@ -465,16 +468,9 @@ export { factory${index} as ${JSON.stringify(name)} }`
 	writeValidator(root: BaseRoot, name: string): string {
 		const shape = this.shapeOf(root)
 		const nodeName = this.unit.names[root.id]
-		// a node keyed by content alone is named the same in any unit
-		const [id, holes] =
-			this.params || this.unit.declared.some(node => node.includesAlias) ?
-				keyOf(root)
-			:	[nodeName, []]
-		const key =
-			holes.length ?
-				`,\n\t${JSON.stringify(id)},\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]`
-			: id === nodeName ? ""
-			: `,\n\t${JSON.stringify(id)}`
+		// only a factory's Types hold holes
+		const [id, holes] = this.params ? keyOf(root) : [addressOf(root), []]
+		const key = `,\n\t${JSON.stringify(id)}${holes.length ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
 		return `const ${name} = new runtime.Validator(
 	(function (${rootApplyParams.join(", ")}) {
 		${writeRootApply(root, nodeName)}
@@ -808,6 +804,9 @@ const isHole = (value: unknown): boolean =>
 		!runtimePathsByValue.has(value) &&
 		Reflect.get(globalThis, functionNameOf(value)) !== value)
 
+// a node's name in a unit keys a function or instance by where the unit first reaches it, so a root is addressed by its hash, which names a hole by the placeholder its build gives it
+const addressOf = (root: BaseRoot) => hashOf(root.hash)
+
 const keysByRoot = new WeakMap<BaseRoot, [id: string, holes: unknown[]]>()
 
 // what any artifact keys a root's validator by: its content address, and the holes it holds in the order its code reads them
@@ -833,7 +832,7 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 		}
 	}
 	collect([unit.refs, unit.errorContexts, root.meta])
-	const key: [string, unknown[]] = [unit.names[root.id], holes]
+	const key: [string, unknown[]] = [addressOf(root), holes]
 	keysByRoot.set(root, key)
 	return key
 }

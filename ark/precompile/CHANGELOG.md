@@ -44,7 +44,9 @@ export const Name = type("string").pipe(trim)
 export const Name = $arkf1j3ffm9dngv(trim)
 ```
 
-A definition referencing a Type that holds functions receives that Type's validator and takes them from it. A definition that could depend on whether two values imported from other modules are equal is reported rather than precompiled, as is a default whose value is a function.
+A definition referencing a Type that holds functions receives that Type's validator and takes them from it. A definition reading a value through a binding (an object or a primitive declared in the module, an import, a `define`) receives it after those values and compares it with what the build read before creating anything: a primitive by `Object.is`, an object by its keys in order and then each value, a Type by its content, importing it if the module doesn't. A mismatch throws, naming the value and both readings, so a mocked module, a mutated object or a stubbed define fails at creation rather than validating differently.
+
+A definition that could depend on whether two values imported from other modules are equal is reported rather than precompiled, as is a default whose value is a function or a Module, Scope or Generic read through a binding.
 
 ### Precompile in Turbopack
 

@@ -1,5 +1,11 @@
 import { hasArkKind, writePrecompiledUnits, type BaseRoot } from "@ark/schema"
-import { hashOf, hasDomain, ParseError, registeredNameOf } from "@ark/util"
+import {
+	appendStringifiedKey,
+	hashOf,
+	hasDomain,
+	ParseError,
+	registeredNameOf
+} from "@ark/util"
 import type { HoleKind } from "arktype/internal/runtime.ts"
 import {
 	keyOf,
@@ -8,7 +14,7 @@ import {
 	type StandaloneExport
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
-import { dirname, join } from "node:path"
+import { dirname, join, relative } from "node:path"
 import type {
 	CallExpression,
 	ImportDeclarationSpecifier,
@@ -50,6 +56,7 @@ import {
 	isWriteTarget,
 	unwrapExpression,
 	walk,
+	type Binding,
 	type BindingKind
 } from "./scope.ts"
 import {
@@ -135,10 +142,13 @@ export interface Reference {
 	isForeign: boolean
 }
 
-// what a site's factory receives, each parameter written where the site evaluates it
+// what a site's factory receives: a hole or Type where the site evaluates it, then each input it compares
 export interface SiteFactory {
 	params: FactoryParam[]
 	spans: Span[]
+	inputs: string[]
+	// each export it compares that the module doesn't import, by specifier, with the local it's imported as
+	imports: [specifier: string, name: string, local: string][]
 }
 
 export interface Input {
@@ -212,6 +222,8 @@ export class Precompiler {
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
+	// the binding a local input reads, which its factory call receives it through
+	private bindingsByInput = new WeakMap<Input, Binding>()
 	private packagesByEntry: Record<string, [root: string, version: string]> =
 		Object.create(null)
 	private copiesByPackage: Record<ArkPackage, Record<string, PackageCopy>> = {
@@ -422,8 +434,25 @@ export class Precompiler {
 		// the local each binding the module imports from a virtual module is read through, by specifier and export name
 		const imports: Record<string, Record<string, string>> = {}
 		if (this.mode === "standalone") {
-			this.foldSites(module, sites, s, prefix, modules, imports, diagnostics)
+			const inputImports = this.foldSites(
+				module,
+				sites,
+				s,
+				prefix,
+				modules,
+				imports,
+				diagnostics
+			)
 			this.linkIslands(module, sites, s, prefix)
+			// each export a factory compares that the module didn't import, imported after its own imports
+			for (const specifier in inputImports) {
+				const locals = inputImports[specifier]
+				s.append(
+					`\nimport { ${Object.keys(locals)
+						.map(name => `${name} as ${locals[name]}`)
+						.join(", ")} } from ${JSON.stringify(specifier)}`
+				)
+			}
 		} else {
 			const roots = sites.flatMap(site => site.roots)
 			if (roots.length) {
@@ -486,7 +515,8 @@ export class Precompiler {
 		modules: Record<string, string>,
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[]
-	): void {
+	): Record<string, Record<string, string>> {
+		const inputImports: Record<string, Record<string, string>> = {}
 		const namesBySite = new Map<Site, string>()
 		const factoriesBySite = new Map<Site, SiteFactory>()
 		const exportsByName: Record<string, StandaloneExport> = {}
@@ -496,7 +526,7 @@ export class Precompiler {
 			const factory =
 				reasons.length || site.parseError ?
 					undefined
-				:	this.factoryOf(site, module, reasons)
+				:	this.factoryOf(site, module, reasons, prefix)
 			if (reasons.length) {
 				diagnostics.push(this.unsupported(module, site, reasons))
 				continue
@@ -544,6 +574,8 @@ export class Precompiler {
 				}
 			}
 			const factory = factoriesBySite.get(site)
+			for (const [specifier, name, local] of factory?.imports ?? [])
+				(inputImports[specifier] ??= {})[name] = local
 			// a ParseError is thrown where the site is evaluated, as arktype throws it
 			if (site.parseError) s.overwrite(site.start, site.end, `${local}()`)
 			else if (!factory) s.overwrite(site.start, site.end, local)
@@ -560,22 +592,27 @@ export class Precompiler {
 					start = span.end
 					separator = ", "
 				}
-				replace(start, site.end, ")")
+				const inputs = factory.inputs.map(
+					(input, i) => (i ? ", " : separator) + input
+				)
+				replace(start, site.end, `${inputs.join("")})`)
 			}
 			folded.push(site)
 		}
 		pruneArktypeImports(module, [...folded, ...module.islands], s)
 		diagnostics.sort((l, r) => l.start - r.start)
+		return inputImports
 	}
 
 	// what a site's factory receives, in the order the site evaluates it, adding to reasons what it can't receive
 	private factoryOf(
 		site: Site,
 		module: SourceModule,
-		reasons: string[]
+		reasons: string[],
+		prefix: string
 	): SiteFactory | undefined {
 		const [, held] = keyOf(site.value as BaseRoot)
-		if (!held.length) return
+		if (!held.length && !site.inputs.length) return
 		const holesByValue = new Map(site.holes.map(hole => [hole.value, hole]))
 		const params: FactoryParam[] = []
 		const spans: Span[] = []
@@ -654,7 +691,91 @@ export class Precompiler {
 				`${listTexts(foreignTexts)} may hold the same value at runtime, which the site's output depends on`
 			)
 		}
-		return { params, spans }
+		const readsByRoot = new Map<string, Input[]>()
+		for (const input of site.inputs) {
+			// a Type passed where the site reads it is compared there
+			if (!input.path.length && passed.has(input.value)) continue
+			const key = `${input.kind} ${input.file} ${input.name}`
+			readsByRoot.set(key, [...(readsByRoot.get(key) ?? []), input])
+		}
+		const inputs: string[] = []
+		const imports: SiteFactory["imports"] = []
+		for (const reads of readsByRoot.values()) {
+			const unsupported = reads.find(
+				input =>
+					hasArkKind(input.value, "module") ||
+					hasArkKind(input.value, "generic") ||
+					hasArkKind(input.value, "scope")
+			)
+			if (unsupported) {
+				reasons.push(
+					`\`${[unsupported.name, ...unsupported.path.map(String)].join(".")}\` is a ${
+						hasArkKind(unsupported.value, "module") ? "Module"
+						: hasArkKind(unsupported.value, "generic") ? "Generic"
+						: "Scope"
+					}, which a factory can't compare yet`
+				)
+				continue
+			}
+			const passedAs = this.inputExpressionOf(reads[0], site, module, prefix)
+			if (typeof passedAs === "string") {
+				reasons.push(passedAs)
+				continue
+			}
+			const [expression, label, imported] = passedAs
+			inputs.push(expression)
+			if (imported) imports.push(imported)
+			params.push({
+				kind: "input",
+				label,
+				reads: reads.map(input => [input.path, input.value])
+			})
+		}
+		return { params, spans, inputs, imports }
+	}
+
+	// the expression a factory call receives an input root through and how a mismatch names it, or why it can't
+	private inputExpressionOf(
+		input: Input,
+		site: Site,
+		module: SourceModule,
+		prefix: string
+	):
+		| [expression: string, label: string, imported?: SiteFactory["imports"][0]]
+		| string {
+		if (input.kind === "define") return [input.name, input.name]
+		const isVisible = (binding: Binding) =>
+			![...module.scopes.bindingsById.values()].some(
+				other =>
+					other !== binding &&
+					other.name === binding.name &&
+					other.scope.node.start <= site.start &&
+					site.end <= other.scope.node.end &&
+					contains(binding.scope.node, other.scope.node)
+			)
+		if (input.kind === "local") {
+			const binding = this.bindingsByInput.get(input)!
+			return isVisible(binding) ?
+					[binding.name, binding.name]
+				:	`\`${binding.name}\` (${module.positionOf(binding.id)}) is shadowed where the site is written, so its factory can't receive it`
+		}
+		let namespace: string | undefined
+		for (const binding of module.scopes.bindingsById.values()) {
+			if (binding.kind !== "import" || !isVisible(binding)) continue
+			const target = this.graph.importOf(binding, module)
+			if (target.kind === "namespace" && target.module.id === input.file)
+				namespace = appendStringifiedKey(binding.name, input.name)
+			else if (
+				(target.kind === "binding" || target.kind === "expression") &&
+				target.module.id === input.file &&
+				(target.kind === "binding" ? target.name : "default") === input.name
+			)
+				return [binding.name, binding.name]
+		}
+		if (namespace) return [namespace, namespace]
+		const specifier = specifierOf(module.id, input.file!)
+		const local = `${prefix}i${hashOf(`${specifier} ${input.name}`)}`
+		return [local, input.name, [specifier, input.name, local]]
 	}
 
 	private unsupported(
@@ -684,7 +805,8 @@ export class Precompiler {
 				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})`
 			)
 		}
-		for (const input of site.inputs) {
+		// a factory throws a ParseError without reading its inputs, so the error can't depend on them
+		for (const input of site.parseError ? site.inputs : []) {
 			result.push(
 				`\`${[input.name, ...input.path.map(String)].join(".")}\` is ${
 					input.kind === "import" ?
@@ -933,8 +1055,17 @@ export class Precompiler {
 		if (
 			root.module === module &&
 			contains(binding.scope.node, candidate.state.node)
-		)
-			return { kind: "local", file: undefined, name: binding.name, path, value }
+		) {
+			const input: Input = {
+				kind: "local",
+				file: undefined,
+				name: binding.name,
+				path,
+				value
+			}
+			this.bindingsByInput.set(input, binding)
+			return input
+		}
 		if (binding.exportNames.length) {
 			return {
 				kind: "import",
@@ -1518,6 +1649,12 @@ const isStrict = (program: Program): boolean =>
 	)
 
 // named by content, so equal sites share a validator
+// a relative specifier for a file, which a bundler resolves as the module did
+const specifierOf = (importer: string, file: string) => {
+	const path = relative(dirname(importer), file).split("\\").join("/")
+	return path.startsWith(".") ? path : `./${path}`
+}
+
 const listTexts = (texts: Iterable<string>) =>
 	[...texts].map(text => `\`${text}\``).join(" and ")
 

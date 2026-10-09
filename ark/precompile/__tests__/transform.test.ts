@@ -25,9 +25,9 @@ export const User = $arkv1169pgizw3q
 export const Same = $arkv1169pgizw3q
 export const Users = $arkvu8qjlz7etl
 export const isError = (data: unknown) => data instanceof ArkErrors
-import { v1169pgizw3q as $arkv1169pgizw3q } from "~arktype/1khoz0jbw1v"
-import { vu8qjlz7etl as $arkvu8qjlz7etl } from "~arktype/1khoz0jbw1v"`)
-			attest(Object.keys(result.modules)).snap(["~arktype/1khoz0jbw1v"])
+import { v1169pgizw3q as $arkv1169pgizw3q } from "~arktype/me1r68iwmn"
+import { vu8qjlz7etl as $arkvu8qjlz7etl } from "~arktype/me1r68iwmn"`)
+			attest(Object.keys(result.modules)).snap(["~arktype/me1r68iwmn"])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
@@ -41,7 +41,7 @@ export const A = type("string")`).code
 import "arktype"
 import * as config from "./config.ts"
 export const A = $arkvek65jf4484
-import { vek65jf4484 as $arkvek65jf4484 } from "~arktype/1mlwmfqh1db"`)
+import { vek65jf4484 as $arkvek65jf4484 } from "~arktype/2b02a24a2g2"`)
 		})
 
 		it("unsupported sites", () => {
@@ -60,7 +60,6 @@ export const G = scope({ a: "string" })`,
 				{ "/limits.ts": "export const max = 5" }
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:6:18  type(`string <= ${max}`) can't be precompiled to a standalone validator yet\n  `max` is imported from /limits.ts\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				"/main.ts:7:18  field(5) can't be precompiled to a standalone validator yet\n  it calls the static helper `field` (/main.ts:4:15)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				"/main.ts:8:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
 				'/main.ts:9:18  type({ "+": "delete", "[string]": "string", a: "\'a\'" }) can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: "a", + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
@@ -71,14 +70,15 @@ import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
 const field = (n: number) => type(\`string <= \${n}\`)
 export const A = $arkf2f7m2qez7rp(trim)
-export const B = type(\`string <= \${max}\`)
+export const B = $arkf27k5dqrbs0h(max)
 export const C = field(5)
 export const D = $ark11nyj35o0sh()
 export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
 export const F = $arkv1bp5ims0ip5
 export const G = scope({ a: "string" })
-import { f2f7m2qez7rp as $arkf2f7m2qez7rp } from "~arktype/22notqngc0z"
-import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/22notqngc0z"
+import { f2f7m2qez7rp as $arkf2f7m2qez7rp } from "~arktype/dglxw9k7c3"
+import { f27k5dqrbs0h as $arkf27k5dqrbs0h } from "~arktype/dglxw9k7c3"
+import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/dglxw9k7c3"
 import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"`)
 		})
 	})
@@ -111,18 +111,82 @@ import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
 class Pet {}
 const petTag = Symbol("petTag")
-export const Name = $arkfjn5p53yrnw(trim, (s, ctx) => s.length > 0)
+export const Name = $arkf1gmbnlsmwkb(trim, (s, ctx) => s.length > 0)
 export const User = $arkf17onxh5wa5v(Name, Pet, petTag)
 export const Either = $arkf177zfl998m9(trim)
 export const Extended = $arkf14b60szkb1e(ext)
 export const Pair = $arkfcfvlzq3rdy(Name, Either)
 export const Short = $arkf1h2fl3hww77(Name, s => s.length < 9)
-import { fjn5p53yrnw as $arkfjn5p53yrnw } from "~arktype/ee29jk5wba"
-import { f17onxh5wa5v as $arkf17onxh5wa5v } from "~arktype/ee29jk5wba"
-import { f177zfl998m9 as $arkf177zfl998m9 } from "~arktype/ee29jk5wba"
-import { f14b60szkb1e as $arkf14b60szkb1e } from "~arktype/ee29jk5wba"
-import { fcfvlzq3rdy as $arkfcfvlzq3rdy } from "~arktype/ee29jk5wba"
-import { f1h2fl3hww77 as $arkf1h2fl3hww77 } from "~arktype/ee29jk5wba"`)
+import { f1gmbnlsmwkb as $arkf1gmbnlsmwkb } from "~arktype/16c58s2b8hh"
+import { f17onxh5wa5v as $arkf17onxh5wa5v } from "~arktype/16c58s2b8hh"
+import { f177zfl998m9 as $arkf177zfl998m9 } from "~arktype/16c58s2b8hh"
+import { f14b60szkb1e as $arkf14b60szkb1e } from "~arktype/16c58s2b8hh"
+import { fcfvlzq3rdy as $arkfcfvlzq3rdy } from "~arktype/16c58s2b8hh"
+import { f1h2fl3hww77 as $arkf1h2fl3hww77 } from "~arktype/16c58s2b8hh"`)
+		})
+
+		it("passes the inputs a site reads after its holes", () => {
+			const source = `import { type } from "arktype"
+import { max } from "./limits.ts"
+import { reboxed } from "./reboxed.ts"
+import { shape } from "./shapes.ts"
+import * as limits from "./limits.ts"
+const trim = (s: string) => s.trim()
+const o = { name: "string", tags: ["string"] }
+const alias = o
+export const Local = type({ name: o.name }).pipe(trim)
+export const Imported = type(\`string <= \${limits.max}\`).or({ tags: o.tags })
+export const Added = type({ ...reboxed })
+export const Defined = type(process.env.NODE_ENV === "production" ? "string" : "number")
+export const Namespaced = type({ ...limits.boxed })
+const box = shape
+export const Imports = ((shape: number) => type({ ...box }))(1)
+export const Shadowed = (() => {
+	const o = 1
+	return type(alias.name)
+})()`
+			const result = precompileModule(
+				source,
+				"/inputs.ts",
+				memoryHost({
+					"/inputs.ts": source,
+					"/limits.ts":
+						'export const max = 5\nexport const boxed = { a: "string" }',
+					"/shapes.ts": 'export const shape = { a: "number" }',
+					"/reboxed.ts":
+						'import { boxed } from "./limits.ts"\nexport const reboxed = boxed'
+				}),
+				{ define: { "process.env.NODE_ENV": "production" } }
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				"/inputs.ts:18:9  type(alias.name) can't be precompiled to a standalone validator yet\n  `o` (/inputs.ts:7:7) is shadowed where the site is written, so its factory can't receive it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			])
+			attest(result.code).snap(`import { type } from "arktype"
+import { max } from "./limits.ts"
+import { reboxed } from "./reboxed.ts"
+import { shape } from "./shapes.ts"
+import * as limits from "./limits.ts"
+const trim = (s: string) => s.trim()
+const o = { name: "string", tags: ["string"] }
+const alias = o
+export const Local = $arkf1beux5aqrso(trim, o)
+export const Imported = $arkf12fwruchwwb(max, o)
+export const Added = $arkf1seyv7qujj0(reboxed)
+export const Defined = $arkfnnd6q3k9w4(process.env.NODE_ENV)
+export const Namespaced = $arkfw790lt05pv(limits.boxed)
+const box = shape
+export const Imports = ((shape: number) => $arkfq2rjvxr6lw($arki15vt9rj2an1, box))(1)
+export const Shadowed = (() => {
+	const o = 1
+	return type(alias.name)
+})()
+import { shape as $arki15vt9rj2an1 } from "./shapes.ts"
+import { f1beux5aqrso as $arkf1beux5aqrso } from "~arktype/1uext57ddsy"
+import { f12fwruchwwb as $arkf12fwruchwwb } from "~arktype/1uext57ddsy"
+import { f1seyv7qujj0 as $arkf1seyv7qujj0 } from "~arktype/1uext57ddsy"
+import { fnnd6q3k9w4 as $arkfnnd6q3k9w4 } from "~arktype/1uext57ddsy"
+import { fw790lt05pv as $arkfw790lt05pv } from "~arktype/1uext57ddsy"
+import { fq2rjvxr6lw as $arkfq2rjvxr6lw } from "~arktype/1uext57ddsy"`)
 		})
 
 		it("unsupported sites", () => {

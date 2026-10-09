@@ -162,6 +162,9 @@ export class Interpreter {
 	sitesByNode = new Map<Node, SiteState>()
 	standIns = new WeakMap<object, StandIn>()
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
+	// what each function, class or symbol expression outside a call evaluated to, which every evaluation of it reuses
+	private standInsByNode = new Map<Node, object>()
+	private symbolsByNode = new Map<Node, symbol>()
 	private valuesByBinding = new Map<Binding, Evaluated | "evaluating">()
 	private valuesByNode = new Map<Node, Evaluated>()
 	// unknown values a declaration computes, which it computes at runtime however a site uses them
@@ -217,9 +220,15 @@ export class Interpreter {
 			if (site.error !== undefined) throw site.error
 			return site.value
 		}
-		const value = this.evaluateNode(node, ctx)
-		if (typeof value === "symbol" && !this.sourcesBySymbol.has(value))
-			this.sourcesBySymbol.set(value, [node, ctx.module])
+		let value = this.evaluateNode(node, ctx)
+		if (typeof value === "symbol" && !this.sourcesBySymbol.has(value)) {
+			const evaluated = !ctx.env && this.symbolsByNode.get(node)
+			if (evaluated) value = evaluated
+			else {
+				this.sourcesBySymbol.set(value, [node, ctx.module])
+				if (!ctx.env) this.symbolsByNode.set(node, value)
+			}
+		}
 		this.recordRead(node, value, ctx)
 		return value
 	}
@@ -1599,6 +1608,9 @@ export class Interpreter {
 	}
 
 	private functionStandIn(closure: Closure, node: Node): object {
+		// the build can evaluate an expression the program runs once more than once, but it must stand in for the same value
+		const evaluated = !closure.env && this.standInsByNode.get(closure.node)
+		if (evaluated) return evaluated
 		const arity = parameterCount(closure.node)
 		const name = this.holeNameOf(closure.node, closure.module)
 		const standIn: StandIn = {
@@ -1613,7 +1625,7 @@ export class Interpreter {
 		}
 		const target =
 			closure.node.type === "ArrowFunctionExpression" ? () => {} : class {}
-		return this.standInProxy(target, standIn, {
+		const proxy = this.standInProxy(target, standIn, {
 			get: (target, k) =>
 				k === "length" ? arity
 				: k === "name" ? name
@@ -1625,6 +1637,8 @@ export class Interpreter {
 				throw this.calledAtDefinition(standIn, undefined)
 			}
 		})
+		if (!closure.env) this.standInsByNode.set(closure.node, proxy)
+		return proxy
 	}
 
 	private callStandIn(standIn: StandIn, args: unknown[]): unknown {
@@ -1679,6 +1693,8 @@ export class Interpreter {
 	}
 
 	private classStandIn(node: Class, ctx: Context): object {
+		const evaluated = !ctx.env && this.standInsByNode.get(node)
+		if (evaluated) return evaluated
 		const base =
 			node.superClass ? this.evaluate(node.superClass, ctx) : undefined
 		const effect = node.body.body.find(
@@ -1710,7 +1726,7 @@ export class Interpreter {
 			isCalled: false,
 			isDefinition: false
 		}
-		return this.standInProxy(target, standIn, {
+		const proxy = this.standInProxy(target, standIn, {
 			get: (target, k) =>
 				k === "length" ? length
 				: k === "name" ? name
@@ -1738,6 +1754,8 @@ export class Interpreter {
 				return Reflect.construct(target, args, newTarget)
 			}
 		})
+		if (!ctx.env) this.standInsByNode.set(node, proxy)
+		return proxy
 	}
 
 	private opaqueStandIn(dynamic: DynamicValue): object {
