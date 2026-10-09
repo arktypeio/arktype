@@ -20,10 +20,13 @@ import {
 } from "@ark/schema/internal"
 import {
 	appendStringifiedKey,
+	arkKindOf,
 	constructorNameOf,
 	functionNameOf,
 	hasDomain,
+	isArray,
 	isDate,
+	nameOf,
 	printable,
 	prototypeOf,
 	serializePrimitive,
@@ -33,11 +36,20 @@ import {
 import { arktypeVersion } from "./entry.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { Module } from "./module.ts"
+import type { HoleKind } from "./runtime.ts"
 import * as runtime from "./runtimeExports.ts"
 
 const writerKeys = ["expected", "actual", "problem", "message"] as const
 
 type DeclarationRole = "shape" | "keys" | "literal" | "config"
+
+// constraints a node keeps sorted by hash, which holds the names of the functions they hold
+const sortedConstraintKeys = [
+	"pattern",
+	"required",
+	"optional",
+	"index"
+] as const
 
 const runtimePathsByValue = new Map<unknown, string>()
 
@@ -56,15 +68,58 @@ const indexRuntime = (value: unknown, path: string): void => {
 for (const [name, value] of Object.entries(runtime))
 	indexRuntime(value, `runtime.${name}`)
 
+export type StandaloneExport = type.Any | Module | StandaloneFactory
+
+export interface StandaloneFactory {
+	// built with each parameter's build value in its place
+	type: type.Any
+	params: FactoryParam[]
+}
+
+export type FactoryParam = HoleParam | InputParam
+
+export interface HoleParam {
+	kind: HoleKind
+	// how a mismatch names it, e.g. `isEven` (src/user.ts:3:7)
+	label: string
+	value: unknown
+}
+
+export interface InputParam {
+	kind: "input"
+	label: string
+	// each value the build read from it, by path
+	reads: [path: PropertyKey[], value: unknown][]
+}
+
 /**
- * #### an ES module that exports each Type as a validator running on arktype/runtime alone, and each Module as an object of them
+ * #### an ES module that exports each Type as a validator running on arktype/runtime alone, each Module as an object of them, and each factory as a function creating one from what it receives
  */
 export const precompileStandalone = (
-	exports: Record<string, type.Any | Module>
-): string => new StandaloneArtifact(exports).write()
+	exports: Record<string, StandaloneExport>
+): string => {
+	const types: Record<string, type.Any | Module> = {}
+	const factories: StandaloneArtifact[] = []
+	for (const [name, value] of Object.entries(exports)) {
+		if (arkKindOf(value) !== undefined) types[name] = value as never
+		else {
+			const { type, params } = value as StandaloneFactory
+			factories.push(new StandaloneArtifact({ [name]: type }, params))
+		}
+	}
+	return new StandaloneArtifact(types).write(factories)
+}
 
 export class StandaloneArtifact {
 	exports: Record<string, type.Any | Module>
+	params: FactoryParam[] | undefined
+	// what a factory's code reads each hole through: a parameter, or the holes of a validator it receives
+	holeExpressions = new Map<unknown, string>()
+	labelsByHole = new Map<unknown, string>()
+	holesByName: Record<string, unknown> = {}
+	holeNamePattern: RegExp | undefined
+	// a factory's statements that check what it receives before it creates anything
+	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
 	unit: ContentUnit
 	// traversal raises these itself, and a predicate or morph can raise any code
@@ -98,7 +153,10 @@ export class StandaloneArtifact {
 	fills: string[] = []
 	lateNames = new Set<string>()
 
-	constructor(exports: Record<string, type.Any | Module>) {
+	constructor(
+		exports: Record<string, type.Any | Module>,
+		params?: FactoryParam[]
+	) {
 		this.exports = exports
 		for (const name in exports) {
 			// an ES module can't export a name holding an unpaired surrogate
@@ -135,6 +193,170 @@ export class StandaloneArtifact {
 				!isDate(node.unit)
 			)
 				this.objectUnits.add(node.unit)
+		}
+		this.params = params
+		if (params) this.receive(params)
+	}
+
+	// a factory checks the facts its code depends on in each hole, and compares each input with what the build read
+	receive(params: FactoryParam[]): void {
+		// a class's lineage is described by which of the others it extends
+		const classIndices = params.flatMap((param, i) =>
+			param.kind === "class" ? [i] : []
+		)
+		const classesOf = <v>(valueOf: (i: number) => v) =>
+			Object.fromEntries(
+				classIndices.map(i => [params[i].label, valueOf(i)] as const)
+			)
+		for (let i = 0; i < params.length; i++) {
+			const param = params[i]
+			if (param.kind === "input") {
+				for (const [path, value] of param.reads)
+					this.compareInput(`p${i}`, path, value, param.label)
+				continue
+			}
+			this.receiveHole(param.value, `p${i}`, param.label)
+			const expected = runtime.describeHole(
+				param.value,
+				param.kind,
+				classesOf(j => (params[j] as HoleParam).value)
+			)
+			const classesArg =
+				param.kind === "class" ?
+					`, { ${Object.entries(classesOf(j => `p${j}`))
+						.map(([label, param]) => `${JSON.stringify(label)}: ${param}`)
+						.join(", ")} }`
+				:	""
+			this.checks.push(
+				`runtime.checkFacts(runtime.describeHole(p${i}, "${param.kind}"${classesArg}), ${JSON.stringify(expected)}, ${JSON.stringify(param.label)})`
+			)
+		}
+		for (const hole of this.holeExpressions.keys()) {
+			const name = typeof hole === "function" && functionNameOf(hole)
+			if (name) this.holesByName[name] = hole
+		}
+		const names = Object.keys(this.holesByName)
+		if (!names.length) return
+		const alternatives = names.map(escapeRegex).join("|")
+		this.holeNamePattern = new RegExp(
+			`valid according to (${alternatives})|Function\\((${alternatives})\\)|(${alternatives})`,
+			"g"
+		)
+		// a string that prints a hole's name is completed at creation, so neither compiled code nor an order may depend on it
+		for (const name of names) {
+			if (this.unit.source.includes(name)) {
+				throwParseError(
+					writeUnprecompilableMessage(
+						`compiled code printing the name of ${this.labelsByHole.get(this.holesByName[name])}`
+					)
+				)
+			}
+		}
+		for (const node of this.unit.declared) {
+			const lists =
+				node.hasKind("union") ?
+					node.inner.ordered ?
+						[]
+					:	[node.branches]
+				:	sortedConstraintKeys.map(
+						k => (node.inner as Record<string, unknown>)[k]
+					)
+			for (const list of lists) {
+				if (!isArray(list)) continue
+				for (let i = 1; i < list.length; i++) {
+					const hole = this.nameOrderingOf(
+						(list[i - 1] as BaseNode).hash,
+						(list[i] as BaseNode).hash
+					)
+					if (hole) {
+						throwParseError(
+							writeUnprecompilableMessage(
+								`an order that depends on the name of ${this.labelsByHole.get(hole)}`
+							)
+						)
+					}
+				}
+			}
+		}
+	}
+
+	receiveHole(hole: unknown, expression: string, label: string): void {
+		if (this.holeExpressions.has(hole)) return
+		this.holeExpressions.set(hole, expression)
+		this.labelsByHole.set(hole, label)
+	}
+
+	compareInput(
+		param: string,
+		path: PropertyKey[],
+		value: unknown,
+		root: string
+	): void {
+		let expression = param
+		let label = root
+		for (const k of path) {
+			if (typeof k === "symbol") {
+				return throwParseError(
+					writeUnprecompilableMessage(`the symbol key of \`${label}\``)
+				)
+			}
+			expression += `[${JSON.stringify(k)}]`
+			label = appendStringifiedKey(label, k)
+		}
+		label = `\`${label}\``
+		if (hasArkKind(value, "root")) {
+			const [id, holes] = keyOf(value)
+			const holesName = `holes${this.checks.length}`
+			for (let i = 0; i < holes.length; i++)
+				this.receiveHole(holes[i], `${holesName}[${i}]`, `${label}'s hole ${i}`)
+			this.checks.push(
+				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(`Type<${value.expression}>`)}, ${JSON.stringify(label)})`
+			)
+			return
+		}
+		if (!hasDomain(value, "object")) {
+			if (typeof value === "symbol") {
+				throwParseError(
+					writeUnprecompilableMessage(`${printable(value)} read from ${label}`)
+				)
+			}
+			this.checks.push(
+				`runtime.checkInput(${expression}, ${this.emit(value)}, ${JSON.stringify(label)})`
+			)
+			return
+		}
+		if (
+			arkKindOf(value) !== undefined ||
+			!(isPlainLiteral(value) || isDateObject(value) || isRegExpObject(value))
+		) {
+			throwParseError(
+				writeUnprecompilableMessage(`${printable(value)} read from ${label}`)
+			)
+		}
+		this.checks.push(
+			`runtime.checkFacts(runtime.describeShape(${expression}), ${JSON.stringify(runtime.describeShape(value))}, ${JSON.stringify(label)})`
+		)
+		if (!isPlainLiteral(value)) return
+		for (const k of Reflect.ownKeys(value)) {
+			if (!isArray(value) || k !== "length")
+				this.compareInput(param, [...path, k], Reflect.get(value, k), root)
+		}
+	}
+
+	// the hole whose name decides which of two hashes sorts first, if one does
+	nameOrderingOf(l: string, r: string): unknown {
+		let i = 0
+		while (i < l.length && l[i] === r[i]) i++
+		for (const hole of Object.values(this.holesByName)) {
+			const reference = `.${nameOf(hole as Function)}"`
+			for (const hash of [l, r]) {
+				for (
+					let start = hash.indexOf(reference);
+					start !== -1;
+					start = hash.indexOf(reference, start + 1)
+				)
+					if (start < i && i < start + reference.length - 1) return hole
+			}
 		}
 	}
 
@@ -180,7 +402,39 @@ export class StandaloneArtifact {
 		return this.validatorNamesByRoot.size > typeCount
 	}
 
-	write(): string {
+	write(factories: StandaloneArtifact[]): string {
+		const exported = Object.entries(this.exports).map(
+			([name, value]) =>
+				`export { ${this.exportOf(value)} as ${JSON.stringify(name)} }`
+		)
+		const sections = [
+			`import * as runtime from "arktype/runtime"`,
+			`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
+			...(this.roots.length ? this.writeBody(`(${this.unit.source})`) : []),
+			...factories.map((factory, i) => factory.writeFactory(i)),
+			exported.join("\n")
+		]
+		return `${sections.filter(section => section).join("\n\n")}\n`
+	}
+
+	// each call creates its validator from the holes and inputs it receives, so it declares everything the validator holds
+	writeFactory(index: number): string {
+		const [[name, type]] = Object.entries(this.exports)
+		const statements = [
+			...this.checks,
+			...this.writeBody(`unit${index}`),
+			`return ${this.exportOf(type)}`
+		]
+		return `const unit${index} = ${this.unit.source}
+
+const factory${index} = (${this.params!.map((_, i) => `p${i}`).join(", ")}) => {
+${statements.filter(statement => statement).join("\n\n")}
+}
+
+export { factory${index} as ${JSON.stringify(name)} }`
+	}
+
+	writeBody(unit: string): string[] {
 		const refs = this.unit.refs.map(value => this.emit(value))
 		const errorContexts = this.unit.errorContexts.map(context =>
 			this.emit(context)
@@ -197,36 +451,62 @@ export class StandaloneArtifact {
 		const validators = [...this.validatorNamesByRoot].map(([root, name]) =>
 			this.writeValidator(root, name)
 		)
-		const exported = Object.entries(this.exports).map(
-			([name, value]) =>
-				`export { ${this.exportOf(value)} as ${JSON.stringify(name)} }`
-		)
-		const sections = [
-			`import * as runtime from "arktype/runtime"`,
-			`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
+		return [
 			this.declarations.join("\n"),
 			copies.join("\n"),
-			`const traversals = (${this.unit.source})([], [${refs.join(", ")}], [${errorContexts.join(", ")}])`,
+			`const traversals = ${unit}([], [${refs.join(", ")}], [${errorContexts.join(", ")}])`,
 			this.links.join("\n"),
 			validators.join("\n\n"),
 			this.modules.join("\n"),
-			this.fills.join("\n"),
-			exported.join("\n")
+			this.fills.join("\n")
 		]
-		return `${sections.filter(section => section).join("\n\n")}\n`
 	}
 
 	writeValidator(root: BaseRoot, name: string): string {
 		const shape = this.shapeOf(root)
+		const nodeName = this.unit.names[root.id]
+		// a node keyed by content alone is named the same in any unit
+		const [id, holes] =
+			this.params || this.unit.declared.some(node => node.includesAlias) ?
+				keyOf(root)
+			:	[nodeName, []]
+		const key =
+			holes.length ?
+				`,\n\t${JSON.stringify(id)},\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]`
+			: id === nodeName ? ""
+			: `,\n\t${JSON.stringify(id)}`
 		return `const ${name} = new runtime.Validator(
 	(function (${rootApplyParams.join(", ")}) {
-		${writeRootApply(root, this.unit.names[root.id])}
+		${writeRootApply(root, nodeName)}
 	})(${shape}, ${this.configOf(root)}, ${Object.values(rootApplyRuntime)
 		.map(value => this.emit(value))
 		.join(", ")}),
 	${shape},
-	{ expression: ${JSON.stringify(root.expression)}, description: ${JSON.stringify(root.description)}, meta: ${this.emit(root.meta)} }
+	{ expression: ${this.emitString(root.expression)}, description: ${this.emitString(root.description)}, meta: ${this.emit(root.meta)} }${key}
 )`
+	}
+
+	// a hole's name is known only at creation, so a string printing one is completed then with arktype's own printing
+	emitString(s: string): string {
+		if (!this.holeNamePattern) return JSON.stringify(s)
+		const parts: string[] = []
+		let start = 0
+		for (const match of s.matchAll(this.holeNamePattern)) {
+			if (match.index > start)
+				parts.push(JSON.stringify(s.slice(start, match.index)))
+			const [, predicate, fn, name] = match
+			const hole = this.holeExpressions.get(
+				this.holesByName[predicate ?? fn ?? name]
+			)
+			parts.push(
+				predicate ? `runtime.describePredicate({ predicate: ${hole} })`
+				: fn ? `"Function(" + runtime.baseNameOf(${hole}) + ")"`
+				: `runtime.functionNameOf(${hole})`
+			)
+			start = match.index + match[0].length
+		}
+		if (start < s.length) parts.push(JSON.stringify(s.slice(start)))
+		return parts.join(" + ") || '""'
 	}
 
 	// a module is a plain object of validators, frozen like them
@@ -289,6 +569,9 @@ export class StandaloneArtifact {
 	}
 
 	emit(value: unknown): string {
+		const hole = this.holeExpressions.get(value)
+		if (hole) return hole
+		if (typeof value === "string") return this.emitString(value)
 		if (typeof value === "symbol")
 			return throwParseError(writeUnprecompilableMessage(printable(value)))
 		if (!hasDomain(value, "object"))
@@ -318,13 +601,13 @@ export class StandaloneArtifact {
 		}
 		// a structure's keys are read only with `in`, so they're emitted without their props
 		if (this.keyLookups.has(value)) {
-			const keys = Reflect.ownKeys(value)
-			if (keys.some(k => typeof k === "symbol"))
-				throwParseError(writeUnprecompilableMessage("a symbol key"))
+			const keys = Reflect.ownKeys(value).map(
+				k => `[${typeof k === "symbol" ? this.emit(k) : JSON.stringify(k)}]: 1`
+			)
 			return this.declareConst(
 				value,
 				"keys",
-				`runtime.freeze({ __proto__: null, ${keys.map(k => `[${JSON.stringify(k)}]: 1`).join(", ")} })`
+				`runtime.freeze({ __proto__: null, ${keys.join(", ")} })`
 			)
 		}
 		if (this.emitting.has(value))
@@ -515,6 +798,45 @@ const isPlainLiteral = (value: object): boolean => {
 		prototype === Array.prototype
 	)
 }
+
+const isHole = (value: unknown): boolean =>
+	typeof value === "symbol" ||
+	(typeof value === "function" &&
+		!isNode(value) &&
+		!runtimePathsByValue.has(value) &&
+		Reflect.get(globalThis, functionNameOf(value)) !== value)
+
+const keysByRoot = new WeakMap<BaseRoot, [id: string, holes: unknown[]]>()
+
+// what any artifact keys a root's validator by: its content address, and the holes it holds in the order its code reads them
+export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
+	const cached = keysByRoot.get(root)
+	if (cached) return cached
+	const unit = precompileByContent([root])
+	const holes: unknown[] = []
+	const seen = new Set<unknown>()
+	const collect = (value: unknown): void => {
+		if (seen.has(value)) return
+		seen.add(value)
+		if (isHole(value)) holes.push(value)
+		else if (
+			hasDomain(value, "object") &&
+			!isNode(value) &&
+			isPlainLiteral(value)
+		) {
+			for (const k of Reflect.ownKeys(value)) {
+				collect(k)
+				collect(Reflect.get(value, k))
+			}
+		}
+	}
+	collect([unit.refs, unit.errorContexts, root.meta])
+	const key: [string, unknown[]] = [unit.names[root.id], holes]
+	keysByRoot.set(root, key)
+	return key
+}
+
+const escapeRegex = (s: string) => s.replace(/[$()*+.?[\\\]^{|}]/g, "\\$&")
 
 export const writeUnprecompilableMessage = <value extends string>(
 	value: value

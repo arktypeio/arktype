@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { $ark, hasArkKind } from "@ark/schema"
 import { noSuggest } from "@ark/util"
-import { scope, type, type Module } from "arktype"
+import { scope, type } from "arktype"
 import {
 	allowIslands,
 	arktypeVersion,
@@ -13,11 +13,14 @@ import {
 import { de } from "arktype/locales/de"
 import {
 	precompileStandalone,
-	writeUnprecompilableMessage
+	writeUnprecompilableMessage,
+	type StandaloneExport
 } from "arktype/internal/standalone.ts"
 import {
 	type as runtimeType,
-	writeUnavailableMemberMessage
+	writeCreationMismatchMessage,
+	writeUnavailableMemberMessage,
+	type HoleKind
 } from "arktype/runtime"
 import { buildSync } from "esbuild"
 import { spawnSync } from "node:child_process"
@@ -61,9 +64,23 @@ const importBesideArktype = async (js: string): Promise<any> => {
 }
 
 const load = (
-	exports: Record<string, type.Any | Module>
+	exports: Record<string, StandaloneExport>
 ): Promise<Record<string, any>> =>
 	importBesideArktype(bundle(precompileStandalone(exports)).js)
+
+// a factory built with each hole's value, as a build passes it in place of its source
+const loadFactory = async (
+	t: type.Any,
+	holes: [kind: HoleKind, label: string, value: unknown][]
+): Promise<(...holes: unknown[]) => any> =>
+	(
+		await load({
+			T: {
+				type: t,
+				params: holes.map(([kind, label, value]) => ({ kind, label, value }))
+			}
+		})
+	).T
 
 const observe = (result: unknown, input: unknown) =>
 	hasArkKind(result, "errors") ?
@@ -471,6 +488,168 @@ contextualize(() => {
 		} finally {
 			Object.assign($ark.config, { locale })
 		}
+	})
+
+	describe("factories", () => {
+		it("creates a validator from the holes it receives", async () => {
+			const trim = (s: string) => s.trim()
+			const isEven = (n: number) => n % 2 === 0
+			class Animal {}
+			class Dog extends Animal {}
+			const tag = Symbol("tag")
+			const T = type({
+				name: type("string").pipe(trim),
+				n: type("number").narrow(isEven),
+				pet: type.instanceOf(Dog),
+				[tag]: "string"
+			})
+			const create = await loadFactory(T, [
+				["function", "`trim`", trim],
+				["function", "`isEven`", isEven],
+				["class", "`Dog`", Dog],
+				["symbol", "`tag`", tag]
+			])
+			const validator = create(trim, isEven, Dog, tag)
+			const inputs = [
+				{ name: " a ", n: 2, pet: new Dog(), [tag]: "x" },
+				{ name: 1, n: 3, pet: new Animal(), [tag]: 1 },
+				{}
+			]
+			for (const input of inputs) {
+				attest(observe(validator(input), input)).equals(
+					observe(T(input), input)
+				)
+			}
+			attest([validator.expression, validator.description]).equals([
+				T.expression,
+				T.description
+			])
+		})
+
+		it("prints the names of the holes it receives", async () => {
+			const isEven = (n: number) => n % 2 === 0
+			const create = await loadFactory(type("number").narrow(isEven), [
+				["function", "`isEven`", isEven]
+			])
+			const isDivisibleBy2 = (n: number) => n % 2 === 0
+			attest(create(isDivisibleBy2)(1).toString()).snap(
+				"must be valid according to isDivisibleBy2 (was 1)"
+			)
+			attest(create(isDivisibleBy2).expression).snap("number")
+			attest(create((n: number) => n % 2 === 0).description).snap(
+				"a number and valid according to an anonymous predicate"
+			)
+		})
+
+		it("checks the facts it was precompiled for", async () => {
+			const isEven = (n: number) => n % 2 === 0
+			class Animal {}
+			class Dog extends Animal {}
+			const tag = Symbol("tag")
+			const create = await loadFactory(
+				type({
+					n: type("number").narrow(isEven),
+					pet: type.instanceOf(Dog),
+					owner: type.instanceOf(Animal),
+					[tag]: "string"
+				}),
+				[
+					["function", "`isEven`", isEven],
+					["class", "`Dog`", Dog],
+					["class", "`Animal`", Animal],
+					["symbol", "`tag`", tag]
+				]
+			)
+			const Cat = function () {}
+			Object.setPrototypeOf(Cat.prototype, Animal.prototype)
+			attest(create(isEven, Cat, Animal, Symbol("tag")).expression).snap(
+				"{ n: number, owner: Animal, pet: Cat, Symbol(tag): string }"
+			)
+			attest(() =>
+				create((n: number, ctx: unknown) => !!ctx, Dog, Animal, Symbol("tag"))
+			).throws(
+				writeCreationMismatchMessage(
+					"`isEven`",
+					"a function of 2 or more parameters",
+					"a function of 1 parameter"
+				)
+			)
+			attest(() => create(isEven, class {}, Animal, Symbol("tag"))).throws(
+				writeCreationMismatchMessage(
+					"`Dog`",
+					"a class",
+					"a class extending `Animal`"
+				)
+			)
+			attest(() => create(isEven, Map, Animal, Symbol("tag"))).throws(
+				writeCreationMismatchMessage(
+					"`Dog`",
+					"the builtin Map",
+					"a class extending `Animal`"
+				)
+			)
+			attest(() => create(Symbol("tag"), Dog, Animal, Symbol("tag"))).throws(
+				writeCreationMismatchMessage(
+					"`isEven`",
+					"Symbol(tag)",
+					"a function of 1 parameter"
+				)
+			)
+			attest(() => create(isEven, Dog, Animal, Symbol("other"))).throws(
+				writeCreationMismatchMessage("`tag`", "Symbol(other)", "Symbol(tag)")
+			)
+		})
+
+		it("takes the holes of a validator it receives", async () => {
+			const trim = (s: string) => s.trim()
+			const Name = type("string").pipe(trim)
+			const User = type({ name: Name })
+			const validators = await load({
+				Name: {
+					type: Name,
+					params: [{ kind: "function", label: "`trim`", value: trim }]
+				},
+				User: {
+					type: User,
+					params: [{ kind: "input", label: "Name", reads: [[[], Name]] }]
+				},
+				Text: type("string")
+			})
+			const create = validators.User
+			attest(create(validators.Name(trim))({ name: " a " })).equals({
+				name: "a"
+			})
+			attest(
+				create(validators.Name((s: string) => s.toUpperCase()))({ name: "a" })
+			).equals({ name: "A" })
+			attest(() => create(validators.Text)).throws(
+				writeCreationMismatchMessage(
+					"`Name`",
+					"Type<string>",
+					"Type<(In: string) => Out<unknown>>"
+				)
+			)
+		})
+
+		it("rejects an order that depends on a hole's name", () => {
+			const isEven = (n: number) => n % 2 === 0
+			const isPositive = (n: number) => n > 0
+			attest(() =>
+				precompileStandalone({
+					T: {
+						type: type("number")
+							.narrow(isEven)
+							.or(type("number").narrow(isPositive)),
+						params: [
+							{ kind: "function", label: "`isEven`", value: isEven },
+							{ kind: "function", label: "`isPositive`", value: isPositive }
+						]
+					}
+				})
+			).throws.snap(
+				"ParseError: an order that depends on the name of `isEven` can't be precompiled to a standalone validator"
+			)
+		})
 	})
 
 	it("checks the runtime's version before reading its exports", async () => {

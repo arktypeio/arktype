@@ -5,6 +5,7 @@ import type { ExpectedWriter } from "./shared/errors.ts"
 import type { Locale } from "./shared/locale.ts"
 import { configureLocale, defaultConfig } from "./shared/render.ts"
 
+export { describePredicate } from "./shared/errorWriters.ts"
 export * from "./shared/errors.ts"
 export * from "./shared/transform.ts"
 export * from "./shared/traversal.ts"
