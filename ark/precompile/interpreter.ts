@@ -1,4 +1,4 @@
-import { arkKind, hasArkKind, type BaseRoot } from "@ark/schema"
+import { arkKind, hasArkKind, isNode, type BaseRoot } from "@ark/schema"
 import { hashOf, hasDomain, ParseError } from "@ark/util"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
@@ -35,6 +35,7 @@ import { DynamicValue, type DynamicCode } from "./dynamic.ts"
 import {
 	bindingOfFunction,
 	contains,
+	contentMembers,
 	isFunctionNode,
 	readsBindingOf,
 	runtimeMembers,
@@ -179,6 +180,9 @@ const maxDepth = 64
 
 const unstableArkProblem =
 	"is derived from registry names or node ids, which are not stable"
+
+const outsideContentProblem =
+	"is not a member of the Type API or of a node's content, so it can depend on registry names or node ids"
 
 export class Interpreter {
 	graph: ModuleGraph
@@ -1265,7 +1269,17 @@ export class Interpreter {
 		}
 		if (object instanceof Date || object instanceof RegExp)
 			return this.notOwnData(node, ctx)
-		if (
+		if (isNode(object)) {
+			// a node's other members, like `trackedId`, can depend on the order nodes were created
+			if (
+				typeof key !== "string" ||
+				!(
+					key in contentMembers ||
+					Object.prototype.hasOwnProperty.call(object.inner, key)
+				)
+			)
+				return this.reject(node, ctx, outsideContentProblem)
+		} else if (
 			typeof key === "string" &&
 			key in unstableArkMembers &&
 			!hasArkKind(object, "module")

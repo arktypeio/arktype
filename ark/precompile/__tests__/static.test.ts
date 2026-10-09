@@ -920,12 +920,20 @@ const A = type(\`number < \${max()}\`)`,
 const User = type({ name: "string" })
 const A = type(\`'\${User.id}'\`)
 const B = type(JSON.stringify(User.json))
-const C = type(\`'\${JSON.stringify(User)}'\`)`)
+const C = type(\`'\${JSON.stringify(User)}'\`)
+const D = type(\`'\${User.internal.trackedId}'\`)
+const E = type(User.internal.hasKind("intersection") ? "string" : "number")
+const F = type(User.internal.assertHasKind("intersection").inner.domain?.kind === "domain" ? "string" : "number")
+const G = type(User.internal.assertHasKind("intersection").structure?.kind === "structure" ? "string" : "number")`)
 			).snap([
 				"2:14 accepted { name: string }",
-				"3:11 rejected\n  `User.id` is derived from registry names or node ids, which are not stable",
-				"4:11 rejected\n  `User.json` is derived from registry names or node ids, which are not stable",
-				"5:11 rejected\n  `JSON.stringify(User)` stringifies a function or arktype value"
+				"3:11 rejected\n  `User.id` is not a member of the Type API or of a node's content, so it can depend on registry names or node ids",
+				"4:11 rejected\n  `User.json` is not a member of the Type API or of a node's content, so it can depend on registry names or node ids",
+				"5:11 rejected\n  `JSON.stringify(User)` stringifies a function or arktype value",
+				"6:11 rejected\n  `User.internal.trackedId` is not a member of the Type API or of a node's content, so it can depend on registry names or node ids",
+				"7:11 accepted string",
+				"8:11 accepted string",
+				"9:11 accepted string"
 			])
 		})
 

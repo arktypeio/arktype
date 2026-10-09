@@ -3,7 +3,14 @@ import * as arkregex from "arkregex"
 import * as arktype from "arktype"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import * as arktypeConfig from "arktype/config"
+import type { BaseRoot } from "@ark/schema"
 import type { Validator } from "arktype/internal/runtime.ts"
+import type { ArrayType } from "arktype/internal/variants/array.ts"
+import type { BaseType } from "arktype/internal/variants/base.ts"
+import type { DateType } from "arktype/internal/variants/date.ts"
+import type { NumberType } from "arktype/internal/variants/number.ts"
+import type { ObjectType } from "arktype/internal/variants/object.ts"
+import type { StringType } from "arktype/internal/variants/string.ts"
 import type {
 	ArrowFunctionExpression,
 	Function,
@@ -91,6 +98,96 @@ export const validatorMembers: Record<string, 1> = Object.setPrototypeOf(
 		from: 1,
 		"~standard": 1
 	} satisfies Record<Exclude<keyof Validator, keyof globalThis.Function>, 1>,
+	null
+)
+
+// a node's members its content alone decides: the documented Type API less what prints registry names or node ids, and the node API `.internal` documents
+export const contentMembers: Record<string, 1> = Object.setPrototypeOf(
+	{
+		internal: 1,
+		expression: 1,
+		description: 1,
+		meta: 1,
+		assert: 1,
+		allows: 1,
+		from: 1,
+		traverse: 1,
+		"~standard": 1,
+		t: 1,
+		infer: 1,
+		inferIn: 1,
+		inferOut: 1,
+		inferIntrospectableOut: 1,
+		toJsonSchema: 1,
+		configure: 1,
+		describe: 1,
+		onUndeclaredKey: 1,
+		onDeepUndeclaredKey: 1,
+		in: 1,
+		out: 1,
+		brand: 1,
+		array: 1,
+		optional: 1,
+		default: 1,
+		filter: 1,
+		narrow: 1,
+		pipe: 1,
+		to: 1,
+		select: 1,
+		as: 1,
+		and: 1,
+		or: 1,
+		intersect: 1,
+		equals: 1,
+		ifEquals: 1,
+		extends: 1,
+		ifExtends: 1,
+		overlaps: 1,
+		extract: 1,
+		exclude: 1,
+		distribute: 1,
+		atLeastLength: 1,
+		atMostLength: 1,
+		moreThanLength: 1,
+		lessThanLength: 1,
+		exactlyLength: 1,
+		matching: 1,
+		atLeast: 1,
+		atMost: 1,
+		moreThan: 1,
+		lessThan: 1,
+		divisibleBy: 1,
+		atOrAfter: 1,
+		atOrBefore: 1,
+		laterThan: 1,
+		earlierThan: 1,
+		get: 1,
+		keyof: 1,
+		map: 1,
+		merge: 1,
+		omit: 1,
+		partial: 1,
+		pick: 1,
+		props: 1,
+		readonly: 1,
+		required: 1,
+		kind: 1,
+		inner: 1,
+		hasKind: 1,
+		assertHasKind: 1,
+		toString: 1
+	} satisfies Partial<
+		Record<
+			| keyof BaseType
+			| keyof StringType
+			| keyof NumberType
+			| keyof DateType
+			| keyof ArrayType<unknown[]>
+			| keyof ObjectType
+			| keyof BaseRoot,
+			1
+		>
+	>,
 	null
 )
 
