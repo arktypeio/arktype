@@ -1,18 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { standaloneConfigurationMessage } from "@ark/precompile"
-import { createTransformer } from "@ark/precompile/jest"
 import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
-import {
-	mkdtempSync,
-	readFileSync,
-	realpathSync,
-	utimesSync,
-	writeFileSync
-} from "node:fs"
-import { tmpdir } from "node:os"
+import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 
@@ -85,98 +76,6 @@ contextualize(() => {
 			attest(result.stdout).equals("true\n")
 		}).timeout(60000)
 	})
-	describe("jest", () => {
-		const options = { configString: "{}" }
-
-		const transform = (path: string, transformer = createTransformer()) => {
-			const source = readFileSync(path, "utf8")
-			return [
-				transformer.getCacheKey(source, path, options),
-				transformer.process(source, path, options).code
-			]
-		}
-
-		it("precompiles a module in either mode", () => {
-			const schemas = join(app, "schemas.ts")
-			attest(
-				transform(schemas, createTransformer({ conditions }))[1]
-			).satisfies(/^const { "v\w+": \$ark\w+,/)
-			attest(
-				transform(
-					schemas,
-					createTransformer({ conditions, runtime: "arktype" })
-				)[1]
-			).satisfies(/^;\(\({ "registerPrecompiledUnits": /)
-		}).timeout(60000)
-
-		it("keys a module by the files in its forward closure", () => {
-			const root = realpathSync(mkdtempSync(join(tmpdir(), "ark-jest-")))
-			const write = (file: string, contents: string, time: number) => {
-				writeFileSync(join(root, file), contents)
-				utimesSync(join(root, file), time, time)
-			}
-			write(
-				"main.ts",
-				'import { b } from "./b.ts"\nexport const B = b.array()\n',
-				1
-			)
-			write("b.ts", "export const b = 1\n", 1)
-			write("other.ts", "export const other = 1\n", 1)
-			const transformer = createTransformer({ cwd: root, runtime: "arktype" })
-			const main = join(root, "main.ts")
-			const [unchangedKey, unchanged] = transform(main, transformer)
-			write("other.ts", "export const other = 2\n", 2)
-			attest(transform(main, transformer)[0]).equals(unchangedKey)
-			write(
-				"b.ts",
-				'import { type } from "arktype"\nexport const b = type("string")\n',
-				3
-			)
-			const [key, code] = transform(main, transformer)
-			attest(key === unchangedKey).equals(false)
-			attest([unchanged, code].map(text => text.includes("$ark"))).equals([
-				false,
-				true
-			])
-		}).timeout(60000)
-
-		it("passes the precompiled module to another transformer", () => {
-			const root = realpathSync(mkdtempSync(join(tmpdir(), "ark-jest-")))
-			writeFileSync(
-				join(root, "next.cjs"),
-				"exports.createTransformer = banner => ({ process: code => ({ code: banner + code }), getCacheKey: () => banner })\n"
-			)
-			const transformer = createTransformer({
-				conditions,
-				cwd: root,
-				transformer: ["./next.cjs", "// next\n"]
-			})
-			const [key, code] = transform(join(app, "schemas.ts"), transformer)
-			attest(code).satisfies(/^\/\/ next\nconst { "v/)
-			attest(key === transform(join(app, "schemas.ts"))[0]).equals(false)
-		}).timeout(60000)
-
-		it("throws for configuration in standalone mode", () => {
-			attest(() =>
-				transform(
-					join(app, "main.ts"),
-					createTransformer({ config: "config.ts" })
-				)
-			).throws(standaloneConfigurationMessage)
-		}).timeout(60000)
-
-		it("throws for a rejected site", () => {
-			attest(() =>
-				transform(
-					join(app, "admin.ts"),
-					createTransformer({ conditions, cwd: app })
-				)
-			).throws(
-				"admin.ts:3:22  User.and({ role: \"'admin'\" }) can't be precompiled to a standalone validator yet"
-			)
-		}).timeout(60000)
-	})
-
 	describe("turbopack", () => {
 		const load = (file: string, opts: PrecompilePluginOptions = {}) => {
 			const resourcePath = join(app, file)

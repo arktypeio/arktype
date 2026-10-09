@@ -33,10 +33,6 @@
 			"ark-ts": "./bun.ts",
 			"default": "./out/bun.js"
 		},
-		"./jest": {
-			"ark-ts": "./jest.ts",
-			"default": "./out/jest.js"
-		},
 		"./node": {
 			"ark-ts": "./node.ts",
 			"default": "./out/node.js"

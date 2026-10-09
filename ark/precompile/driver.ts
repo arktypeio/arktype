@@ -1,5 +1,4 @@
 import { throwError } from "@ark/util"
-import { createHash } from "node:crypto"
 import { readFileSync, statSync } from "node:fs"
 import { resolve } from "node:path"
 import type { MessagePort } from "node:worker_threads"
@@ -45,8 +44,6 @@ export const renderDiagnostics = (
 
 export interface PrecompilerWorkerData {
 	precompilerOptions: PrecompilePluginOptions
-	// answer each module with a key, for a host that caches by file
-	isKeyed?: boolean | undefined
 	// a port to answer on and a flag notified after each answer, for a host that waits synchronously
 	port?: MessagePort | undefined
 	answered?: Int32Array | undefined
@@ -72,17 +69,12 @@ export const answerRequests = (
 	const create = () =>
 		createPrecompiler({ ...data.precompilerOptions, inline: true })
 	let precompiler: Precompiler | undefined
-	let precompileKeyed: ReturnType<typeof createKeyedPrecompiler> | undefined
 	port.on("message", (request: PrecompileRequest) => {
 		try {
 			port.postMessage({
 				result:
 					request[0] === "readDependency" ?
 						(precompiler ??= create()).readDependency(request[1])
-					: data.isKeyed ?
-						(precompileKeyed ??= createKeyedPrecompiler(
-							data.precompilerOptions
-						))(request[1], request[2])
 					:	inlineModuleOf((precompiler ??= create()), request[1], request[2])
 			} satisfies PrecompileAnswer)
 		} catch (e) {
@@ -98,8 +90,6 @@ export const answerRequests = (
 export interface KeyedModule extends InlineModule {
 	// the module's local import closure, the files its precompilation may read
 	files: string[]
-	// a hash of the module and when each of its files was modified
-	key: string
 }
 
 // for a host that keeps a precompiler across changes to the files it read, which it replaces once one changes
@@ -124,13 +114,11 @@ export const createKeyedPrecompiler = (
 	}
 	let precompiler = create()
 	return (source, id) => {
-		const hash = createHash("sha256").update(source)
 		const files = [id]
 		let isStale = false
 		for (let i = 0; i < files.length; i++) {
 			const file = files[i]
 			const { mtimeMs } = statSync(file)
-			hash.update(`\0${file}\0${mtimeMs}`)
 			isStale ||= file in readTimes && readTimes[file] !== mtimeMs
 			const cached = importsByFile[file]
 			const imports =
@@ -149,8 +137,7 @@ export const createKeyedPrecompiler = (
 			code: inlined?.code,
 			errors: inlined?.errors ?? [],
 			warnings: inlined?.warnings ?? [],
-			files,
-			key: hash.digest("hex")
+			files
 		}
 	}
 }

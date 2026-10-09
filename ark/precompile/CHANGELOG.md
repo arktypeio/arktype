@@ -27,20 +27,6 @@ export default {
 }
 ```
 
-### Precompile in jest
-
-`@ark/precompile/jest` is a jest transformer that precompiles each module and passes it on to the transformer named by its `transformer` option. Each module's cache key covers the files in its forward closure, so a change to any of them re-transforms it. In standalone mode, map `arktype` to `arktype/runtime` with `moduleNameMapper`.
-
-```js
-// jest.config.js
-export default {
-	transform: {
-		"\\.[jt]sx?$": ["@ark/precompile/jest", { transformer: "@swc/jest" }]
-	},
-	moduleNameMapper: { "^arktype$": "arktype/runtime" }
-}
-```
-
 ### Precompile in Bun
 
 `precompile()` from `@ark/precompile/bun` is a runtime plugin for `Bun.plugin`, so a preload precompiles each module Bun loads, including under `bun test`.

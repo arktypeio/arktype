@@ -63,21 +63,6 @@ Bun.plugin(precompile())
 
 The precompiler runs in a worker here too. Bun doesn't ask a runtime plugin to resolve packages, so in standalone mode `arktype` is replaced by `arktype/runtime` for every importer, and dependencies aren't checked for copies of arktype. Bun ignores the source map, so stack traces show lines of the transformed module.
 
-jest, as a transformer that passes each precompiled module on to the one you use, such as `babel-jest`, `ts-jest` or `@swc/jest`:
-
-```js
-// jest.config.js
-export default {
-	transform: {
-		"\\.[jt]sx?$": ["@ark/precompile/jest", { transformer: "@swc/jest" }]
-	},
-	// standalone mode only
-	moduleNameMapper: { "^arktype$": "arktype/runtime" }
-}
-```
-
-jest caches each file by a key, which here hashes when each file in the module's forward closure was modified, so editing a module a test imports re-transforms the modules that read it. A transformer config can be passed as `transformer: ["babel-jest", config]`.
-
 Turbopack, as a webpack loader in a rule for each extension your definitions are in:
 
 ```js
