@@ -1,4 +1,10 @@
-import { arkKind, hasArkKind, isNode, type BaseRoot } from "@ark/schema"
+import {
+	arkKind,
+	hasArkKind,
+	isNode,
+	type BaseNode,
+	type BaseRoot
+} from "@ark/schema"
 import { hashOf, hasDomain, ParseError } from "@ark/util"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
@@ -35,7 +41,9 @@ import { DynamicValue, type DynamicCode } from "./dynamic.ts"
 import {
 	bindingOfFunction,
 	contains,
-	contentMembers,
+	genericMembers,
+	nodeMembers,
+	scopeMembers,
 	isFunctionNode,
 	readsBindingOf,
 	runtimeMembers,
@@ -188,7 +196,11 @@ const receivedNameProblem = (label: string) =>
 	`receives the name of ${label}, which the build knows only by a placeholder`
 
 const outsideContentProblem =
-	"is not a member of the Type API or of a node's content, so it can depend on registry names or node ids"
+	"is not a documented member its content alone decides, so it can depend on registry names or node ids"
+
+// an alias's reference is the node id of what it resolves to
+const holdsNodeId = (node: BaseNode, key: string) =>
+	node.hasKind("alias") && (key === "reference" || key === "inner")
 
 export class Interpreter {
 	graph: ModuleGraph
@@ -1300,13 +1312,20 @@ export class Interpreter {
 		}
 		if (object instanceof Date || object instanceof RegExp)
 			return this.notOwnData(node, ctx)
-		if (isNode(object)) {
-			// a node's other members, like `trackedId`, can depend on the order nodes were created
+		const members =
+			isNode(object) ? nodeMembers
+			: hasArkKind(object, "scope") ? scopeMembers
+			: hasArkKind(object, "generic") ? genericMembers
+			: undefined
+		if (members) {
+			// their other members, like a node's `trackedId` or a Scope's `name`, can depend on the order arktype created things
 			if (
 				typeof key !== "string" ||
+				(isNode(object) && holdsNodeId(object, key)) ||
 				!(
-					key in contentMembers ||
-					Object.prototype.hasOwnProperty.call(object.inner, key)
+					key in members ||
+					(isNode(object) &&
+						Object.prototype.hasOwnProperty.call(object.inner, key))
 				)
 			)
 				return this.reject(node, ctx, outsideContentProblem)

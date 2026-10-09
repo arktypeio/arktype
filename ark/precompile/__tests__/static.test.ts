@@ -944,7 +944,7 @@ const A = type(\`number < \${max()}\`)`,
 
 		it("excluded arktype members", () => {
 			attest(
-				statusesOf(`import { type } from "arktype"
+				statusesOf(`import { generic, scope, type } from "arktype"
 const User = type({ name: "string" })
 const A = type(\`'\${User.id}'\`)
 const B = type(JSON.stringify(User.json))
@@ -952,16 +952,36 @@ const C = type(\`'\${JSON.stringify(User)}'\`)
 const D = type(\`'\${User.internal.trackedId}'\`)
 const E = type(User.internal.hasKind("intersection") ? "string" : "number")
 const F = type(User.internal.assertHasKind("intersection").inner.domain?.kind === "domain" ? "string" : "number")
-const G = type(User.internal.assertHasKind("intersection").structure?.kind === "structure" ? "string" : "number")`)
+const G = type(User.internal.assertHasKind("intersection").structure?.kind === "structure" ? "string" : "number")
+const $ = scope({ a: "string" })
+const Gen = generic("t")(["t", "[]"])
+const Self = type({ a: "string", "b?": "this" })
+const H = type(\`'\${$.name}'\`)
+const I = type(\`'\${Object.keys($.referencesById).join("|")}'\`)
+const J = type(\`'\${Object.keys(Gen.internal.referencesById).join("|")}'\`)
+const K = type(\`'\${Self.internal.select({ kind: "alias" })[0].reference}'\`)
+const L = type(\`'\${Self.internal.select({ kind: "alias" })[0].inner.reference}'\`)
+const M = type($.export().a)
+const N = type(Gen.names.length === 1 ? "string" : "number")`)
 			).snap([
 				"2:14 accepted { name: string }",
-				"3:11 rejected\n  `User.id` is not a member of the Type API or of a node's content, so it can depend on registry names or node ids",
-				"4:11 rejected\n  `User.json` is not a member of the Type API or of a node's content, so it can depend on registry names or node ids",
+				"3:11 rejected\n  `User.id` is not a documented member its content alone decides, so it can depend on registry names or node ids",
+				"4:11 rejected\n  `User.json` is not a documented member its content alone decides, so it can depend on registry names or node ids",
 				"5:11 rejected\n  `JSON.stringify(User)` stringifies a function or arktype value",
-				"6:11 rejected\n  `User.internal.trackedId` is not a member of the Type API or of a node's content, so it can depend on registry names or node ids",
+				"6:11 rejected\n  `User.internal.trackedId` is not a documented member its content alone decides, so it can depend on registry names or node ids",
 				"7:11 accepted string",
 				"8:11 accepted string",
-				"9:11 accepted string"
+				"9:11 accepted string",
+				"10:11 accepted",
+				"11:13 accepted",
+				"12:14 accepted { a: string, b?: this }",
+				"13:11 rejected\n  `$.name` is not a documented member its content alone decides, so it can depend on registry names or node ids",
+				"14:11 rejected\n  `$.referencesById` is not a documented member its content alone decides, so it can depend on registry names or node ids",
+				"15:11 rejected\n  `Gen.internal.referencesById` is not a documented member its content alone decides, so it can depend on registry names or node ids",
+				'16:11 rejected\n  `Self.internal.select({ kind: "alias" })[0].reference` is not a documented member its content alone decides, so it can depend on registry names or node ids',
+				'17:11 rejected\n  `Self.internal.select({ kind: "alias" })[0].inner` is not a documented member its content alone decides, so it can depend on registry names or node ids',
+				"18:11 accepted string",
+				"19:11 accepted string"
 			])
 		})
 

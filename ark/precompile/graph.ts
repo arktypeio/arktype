@@ -3,8 +3,10 @@ import * as arkregex from "arkregex"
 import * as arktype from "arktype"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import * as arktypeConfig from "arktype/config"
-import type { BaseRoot } from "@ark/schema"
+import type { BaseRoot, GenericRoot } from "@ark/schema"
+import type { Generic } from "arktype/internal/generic.ts"
 import type { Validator } from "arktype/internal/runtime.ts"
+import type { Scope } from "arktype/internal/scope.ts"
 import type { ArrayType } from "arktype/internal/variants/array.ts"
 import type { BaseType } from "arktype/internal/variants/base.ts"
 import type { DateType } from "arktype/internal/variants/date.ts"
@@ -102,7 +104,7 @@ export const validatorMembers: Record<string, 1> = Object.setPrototypeOf(
 )
 
 // a node's members its content alone decides: the documented Type API less what prints registry names or node ids, and the node API `.internal` documents
-export const contentMembers: Record<string, 1> = Object.setPrototypeOf(
+export const nodeMembers: Record<string, 1> = Object.setPrototypeOf(
 	{
 		internal: 1,
 		expression: 1,
@@ -187,6 +189,52 @@ export const contentMembers: Record<string, 1> = Object.setPrototypeOf(
 			| keyof BaseRoot,
 			1
 		>
+	>,
+	null
+)
+
+// a Scope's members its definitions alone decide, unlike its counted `name` or its `references`
+export const scopeMembers: Record<string, 1> = Object.setPrototypeOf(
+	{
+		t: 1,
+		config: 1,
+		exportedNames: 1,
+		aliases: 1,
+		internal: 1,
+		defineSchema: 1,
+		node: 1,
+		unit: 1,
+		enumerated: 1,
+		valueOf: 1,
+		instanceOf: 1,
+		type: 1,
+		match: 1,
+		fn: 1,
+		declare: 1,
+		define: 1,
+		generic: 1,
+		schema: 1,
+		import: 1,
+		export: 1,
+		resolve: 1
+	} satisfies Partial<Record<keyof Scope, 1>>,
+	null
+)
+
+// a Generic's members its definition alone decides
+export const genericMembers: Record<string, 1> = Object.setPrototypeOf(
+	{
+		t: 1,
+		bodyDef: 1,
+		params: 1,
+		names: 1,
+		constraints: 1,
+		$: 1,
+		arg$: 1,
+		internal: 1,
+		baseInstantiation: 1
+	} satisfies Partial<
+		Record<Exclude<keyof Generic | keyof GenericRoot, keyof Object>, 1>
 	>,
 	null
 )
