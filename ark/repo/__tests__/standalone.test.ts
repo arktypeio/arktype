@@ -411,6 +411,9 @@ contextualize(() => {
 		attest(() => precompileStandalone({ T: type("===", { a: 1 }) })).throws(
 			writeUnprecompilableMessage('the unit {"a":1}')
 		)
+		attest(() =>
+			precompileStandalone({ T: type.enumerated(type({ a: "string" })) })
+		).throws(writeUnprecompilableMessage("the unit Type<{ a: string }>"))
 		attest(() => precompileStandalone({ "\uD800": type("string") })).throws(
 			writeUnprecompilableMessage('the export name "\\ud800"')
 		)

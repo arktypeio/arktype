@@ -580,6 +580,14 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		if (runtimePath) return runtimePath
 		const declared = this.constNamesByValue.get(value)
 		if (declared) return declared
+		// a unit is compared by reference, so a copy wouldn't equal it
+		if (this.objectUnits.has(value)) {
+			throwParseError(
+				writeUnprecompilableMessage(
+					`the unit ${isNode(value) ? String(value) : printable(value)}`
+				)
+			)
+		}
 		if (isNode(value)) {
 			return value.isRoot() ?
 					this.shapeOf(value)
@@ -592,12 +600,6 @@ export { factory${index} as ${JSON.stringify(name)} }`
 			return Reflect.get(globalThis, name) === value ?
 					`globalThis[${JSON.stringify(name)}]`
 				:	throwParseError(writeUnprecompilableMessage(printable(value)))
-		}
-		// a unit is compared by reference, so a copy wouldn't equal it
-		if (this.objectUnits.has(value)) {
-			throwParseError(
-				writeUnprecompilableMessage(`the unit ${printable(value)}`)
-			)
 		}
 		// a structure's keys are read only with `in`, so they're emitted without their props
 		if (this.keyLookups.has(value)) {
@@ -724,7 +726,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 
 	// a Type a literal holds is data, so it's emitted as its validator rather than its shape
 	emitElement(value: unknown): string {
-		return isNode(value) && value.isRoot() ?
+		return isNode(value) && value.isRoot() && !this.objectUnits.has(value) ?
 				(this.validatorNamesByRoot.get(value) ??
 					throwInternalError(
 						`Unexpected Type ${value.expression} outside a meta`
