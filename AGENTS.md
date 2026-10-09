@@ -14,6 +14,7 @@ ArkType is TypeScript's 1:1 validator, optimized from editor to runtime. It pars
 pnpm i && pnpm build # install and build all packages
 pnpm test # run tests without type checking
 pnpm testFiles ark/type/__tests__/brand.test.ts # run and type check only the named test files
+pnpm typecheckRepo # incremental typecheck of the whole repo
 pnpm prChecks # lint, build, typecheck and test (run before PRs)
 ```
 

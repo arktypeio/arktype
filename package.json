@@ -27,7 +27,7 @@
 		"rmBuild": "pnpm -r exec rm -rf out",
 		"ts": "node ./ark/repo/ts.js",
 		"testRepoWithBenches": "pnpm typecheckRepo && pnpm testRepo && pnpm bench && pnpm testTypedLoose && pnpm testTsCompat && pnpm testTsVersions",
-		"typecheckRepo": "pnpm tsc",
+		"typecheckRepo": "tsc --incremental",
 		"testRepo": "pnpm test && pnpm testV8 && pnpm testIntegration && pnpm -r --filter \"@ark/attest\" test",
 		"testIntegration": "pnpm -r --filter \"arktype\" testIntegration",
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
