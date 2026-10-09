@@ -1011,6 +1011,36 @@ contextualize(() => {
 			)
 		})
 
+		it("checks a hole it receives twice is one value", async () => {
+			const isLong = (s: string) => s.length > 3
+			const builtIsLong = standIn(isLong.bind(null), "islong")
+			const Name = type("string").narrow(builtIsLong)
+			const created = await load({
+				Name: {
+					type: Name,
+					params: [{ kind: "function", label: "`isLong`", value: builtIsLong }]
+				},
+				User: {
+					type: type({ name: Name, nick: type("string").narrow(builtIsLong) }),
+					params: [
+						{ kind: "input", label: "Name", reads: [[[], Name]] },
+						{ kind: "function", label: "`fns.check`", value: builtIsLong }
+					]
+				}
+			})
+			const name = created.Name(isLong)
+			attest(created.User(name, isLong).description).equals(
+				"{ name: a string and valid according to isLong, nick: a string and valid according to isLong }"
+			)
+			attest(() => created.User(name, (s: string) => s.length > 100)).throws(
+				writeCreationMismatchMessage(
+					"`fns.check`",
+					"a value other than `Name`'s hole 0",
+					"`Name`'s hole 0"
+				)
+			)
+		})
+
 		it("compares the inputs it receives with what the build read", async () => {
 			const o = {
 				name: "string" as const,

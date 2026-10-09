@@ -248,8 +248,7 @@ export class StandaloneArtifact {
 				this.checks.push(
 					`runtime.checkHelper(p${i}, ${JSON.stringify(param.file)}, ${JSON.stringify(param.name)}, ${JSON.stringify(param.label)})`
 				)
-			} else {
-				this.receiveHole(param.value, `p${i}`, param.label)
+			} else if (this.receiveHole(param.value, `p${i}`, param.label)) {
 				checked.push([param.value, param.kind, `p${i}`])
 				if (param.kind === "class") this.classes.add(param.value)
 			}
@@ -349,10 +348,18 @@ export class StandaloneArtifact {
 		return this.labelsByHole.get(this.holeNamed(name)) ?? name
 	}
 
-	receiveHole(hole: unknown, expression: string, label: string): void {
-		if (this.holeExpressions.has(hole)) return
+	// a hole received twice is the value the build read twice, so it's checked to be that value rather than for its facts
+	receiveHole(hole: unknown, expression: string, label: string): boolean {
+		const received = this.holeExpressions.get(hole)
+		if (received) {
+			this.checks.push(
+				`runtime.checkIdentity(${expression}, ${received}, ${JSON.stringify(label)}, ${JSON.stringify(this.labelsByHole.get(hole))})`
+			)
+			return false
+		}
 		this.holeExpressions.set(hole, expression)
 		this.labelsByHole.set(hole, label)
+		return true
 	}
 
 	compareInput(
@@ -376,13 +383,6 @@ export class StandaloneArtifact {
 		if (hasArkKind(value, "root")) {
 			const [id, holes] = keyOf(value)
 			const holesName = `holes${this.checks.length}`
-			const protos = [value, ...value.references].flatMap(node =>
-				node.hasKind("proto") ? [node.proto] : []
-			)
-			for (let i = 0; i < holes.length; i++) {
-				this.receiveHole(holes[i], `${holesName}[${i}]`, `${label}'s hole ${i}`)
-				if (protos.includes(holes[i] as never)) this.classes.add(holes[i])
-			}
 			this.checks.push(
 				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(
 					// the names of its holes are known only once it's received
@@ -391,6 +391,13 @@ export class StandaloneArtifact {
 					:	`Type<${value.expression}>`
 				)}, ${JSON.stringify(label)})`
 			)
+			const protos = [value, ...value.references].flatMap(node =>
+				node.hasKind("proto") ? [node.proto] : []
+			)
+			for (let i = 0; i < holes.length; i++) {
+				this.receiveHole(holes[i], `${holesName}[${i}]`, `${label}'s hole ${i}`)
+				if (protos.includes(holes[i] as never)) this.classes.add(holes[i])
+			}
 			return
 		}
 		if (!hasDomain(value, "object")) {

@@ -773,6 +773,8 @@ export class Precompiler {
 			sourcesByHole.set(hole, sources)
 		}
 		const passed = new Set<unknown>()
+		// one value read through two texts is passed through each, since the program can change one but not the other
+		const textsByPassed = new Map<unknown, Set<string>>()
 		for (const reference of site.references) {
 			const text = module.snippetOf(reference)
 			const hole = holesByValue.get(reference.value)
@@ -800,7 +802,8 @@ export class Precompiler {
 						this.interpreter.sourceOf(value)?.[1] !== module
 				)
 			}
-			if (!holes.length || passed.has(reference.value)) continue
+			const texts = textsByPassed.get(reference.value) ?? new Set<string>()
+			if (!holes.length || texts.has(text)) continue
 			if (
 				factory.spans.length &&
 				reference.start < factory.spans[factory.spans.length - 1].end
@@ -812,6 +815,7 @@ export class Precompiler {
 			if (reference.unavailableRead)
 				reasons.push(unavailableReadMessage(reference.unavailableRead, module))
 			passed.add(reference.value)
+			textsByPassed.set(reference.value, texts.add(text))
 			factory.spans.push(reference)
 			factory.params.push(
 				hole ?
@@ -2052,11 +2056,10 @@ const specifierOf = (importer: string, file: string) => {
 	return path.startsWith(".") ? path : `./${path}`
 }
 
-// equality between values another module can replace is later work
+// a factory checks that the texts reading one hole read one value, but distinctness between values another module can replace is later work
 const identityReasonsOf = (
 	sourcesByHole: Map<unknown, Map<string, boolean>>
 ): string[] => {
-	const result: string[] = []
 	const foreignTexts = new Set<string>()
 	let foreignHoleCount = 0
 	for (const sources of sourcesByHole.values()) {
@@ -2064,19 +2067,13 @@ const identityReasonsOf = (
 		if (!foreign.length) continue
 		foreignHoleCount++
 		for (const [text] of foreign) foreignTexts.add(text)
-		if (sources.size > 1) {
-			result.push(
-				`${listTexts(sources.keys())} may hold different values at runtime, which the site's output depends on`
-			)
-		}
 	}
 	// the holes one validator holds are distinct, since the build of its own site proved them so
-	if (foreignHoleCount > 1 && foreignTexts.size > 1) {
-		result.push(
-			`${listTexts(foreignTexts)} may hold the same value at runtime, which the site's output depends on`
-		)
-	}
-	return result
+	return foreignHoleCount > 1 && foreignTexts.size > 1 ?
+			[
+				`${listTexts(foreignTexts)} may hold the same value at runtime, which the site's output depends on`
+			]
+		:	[]
 }
 
 const listTexts = (texts: Iterable<string>) =>

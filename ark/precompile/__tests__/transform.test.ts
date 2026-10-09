@@ -207,14 +207,14 @@ export const Short = $arkf1qr3n92up8j(Name, s => s.length < 9)
 export const Stamped = $arkfhcw8rg5ps0(() => new Date())
 class Kitten extends Pet {}
 export const Kept = $arkfexpx5piaav(Pet, Kitten)
-import { f1zfc4jvopxh as $arkf1zfc4jvopxh } from "~arktype/2awsjffioes"
-import { fujb2tq68ew as $arkfujb2tq68ew } from "~arktype/2awsjffioes"
-import { fyhi0i9lyrd as $arkfyhi0i9lyrd } from "~arktype/2awsjffioes"
-import { f1u6d12e2tku as $arkf1u6d12e2tku } from "~arktype/2awsjffioes"
-import { f1wp1un5l57h as $arkf1wp1un5l57h } from "~arktype/2awsjffioes"
-import { f1qr3n92up8j as $arkf1qr3n92up8j } from "~arktype/2awsjffioes"
-import { fhcw8rg5ps0 as $arkfhcw8rg5ps0 } from "~arktype/2awsjffioes"
-import { fexpx5piaav as $arkfexpx5piaav } from "~arktype/2awsjffioes"`)
+import { f1zfc4jvopxh as $arkf1zfc4jvopxh } from "~arktype/xcd4jdgijy"
+import { fujb2tq68ew as $arkfujb2tq68ew } from "~arktype/xcd4jdgijy"
+import { fyhi0i9lyrd as $arkfyhi0i9lyrd } from "~arktype/xcd4jdgijy"
+import { f1u6d12e2tku as $arkf1u6d12e2tku } from "~arktype/xcd4jdgijy"
+import { f1wp1un5l57h as $arkf1wp1un5l57h } from "~arktype/xcd4jdgijy"
+import { f1qr3n92up8j as $arkf1qr3n92up8j } from "~arktype/xcd4jdgijy"
+import { fhcw8rg5ps0 as $arkfhcw8rg5ps0 } from "~arktype/xcd4jdgijy"
+import { fexpx5piaav as $arkfexpx5piaav } from "~arktype/xcd4jdgijy"`)
 		})
 
 		it("passes the inputs a site reads after its holes", () => {
@@ -406,13 +406,50 @@ export default (def: string) => def
 Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/helpers.ts": { __proto__: null, "list": list, "optional": optional } })`)
 		})
 
+		it("passes a hole through each text reading it", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { a } from "./a.ts"
+import { alias } from "./b.ts"
+const fns = { check: (s: string) => s.length > 3 }
+const other = { check: fns.check }
+const Name = type("string").narrow(fns.check)
+export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))
+export const Checked = type({ a: type("string").narrow(other.check), b: type("string").narrow(fns.check), name: Name })`,
+				{
+					"/a.ts": "export const a = (s: string) => s",
+					"/b.ts": 'export { a as alias } from "./a.ts"'
+				}
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).equals([])
+			attest(result.code).snap(`import "arktype"
+import { a } from "./a.ts"
+import { alias } from "./b.ts"
+const fns = { check: (s: string) => s.length > 3 }
+const other = { check: fns.check }
+const Name = $arkf1c4z649gk1t(fns.check)
+export const Aliased = $arkf1jb9nbu9m8n(a, alias)
+export const Checked = $arkf1idhf3zei8v(other.check, fns.check, Name)
+import { f1c4z649gk1t as $arkf1c4z649gk1t } from "~arktype/1y9jqs9kvke"
+import { f1jb9nbu9m8n as $arkf1jb9nbu9m8n } from "~arktype/1y9jqs9kvke"
+import { f1idhf3zei8v as $arkf1idhf3zei8v } from "~arktype/1y9jqs9kvke"`)
+			attest(
+				result.modules[Object.keys(result.modules)[0]].match(
+					/runtime\.checkIdentity\(.*\)/g
+				)
+			).snap([
+				'runtime.checkIdentity(p1, p0, "`alias` (/main.ts:7:70)", "`a` (/main.ts:7:44)")',
+				'runtime.checkIdentity(p1, p0, "`fns.check` (/main.ts:8:95)", "`other.check` (/main.ts:8:56)")',
+				'runtime.checkIdentity(holes1[0], p0, "`Name`\'s hole 0", "`other.check` (/main.ts:8:56)")'
+			])
+		})
+
 		it("unsupported sites", () => {
 			const result = precompile(
 				`import { type } from "arktype"
 import { a } from "./a.ts"
 import { b, alias } from "./b.ts"
 export const Both = type("string").pipe(a, b)
-export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))
 class Foo {}
 export const Deleted = type({ "+": "delete", "[string]": "string", a: type.instanceOf(Foo).or("string") })`,
 				{
@@ -423,8 +460,7 @@ export const Deleted = type({ "+": "delete", "[string]": "string", a: type.insta
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				'/main.ts:4:21  type("string").pipe(a, b) can\'t be precompiled to a standalone validator yet\n  `a` and `b` may hold the same value at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:5:24  type("string").pipe(a).or(type("number").pipe(alias)) can\'t be precompiled to a standalone validator yet\n  `a` and `alias` may hold different values at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:7:24  type({ "+": "delete", "[string]": "string", a: type.instanc… can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: string | Foo, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/main.ts:6:24  type({ "+": "delete", "[string]": "string", a: type.instanc… can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: string | Foo, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 		})
 

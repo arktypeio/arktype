@@ -424,6 +424,23 @@ export const checkFacts = (
 		throwError(writeCreationMismatchMessage(label, actual, expected))
 }
 
+export const checkIdentity = (
+	value: unknown,
+	expected: unknown,
+	label: string,
+	expectedLabel: string
+): void => {
+	if (value !== expected) {
+		throwError(
+			writeCreationMismatchMessage(
+				label,
+				`a value other than ${expectedLabel}`,
+				expectedLabel
+			)
+		)
+	}
+}
+
 export const checkInput = (
 	value: unknown,
 	expected: unknown,
