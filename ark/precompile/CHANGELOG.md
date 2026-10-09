@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### Leave a definition to arktype with `// @ark-runtime`
+
+In a standalone build, a definition after a `// @ark-runtime` comment runs on arktype, which then ships beside the runtime. The build fails if a runtime island reads a precompiled validator other than to validate with it, or reaches arktype outside an island. `--check` lists islands and leaves them out of the rate `--fail-under` compares.
+
+```ts
+// @ark-runtime
+export const Shaped = type(await loadShape())
+```
+
 ### Precompile while bundling
 
 `@ark/precompile/unplugin` replaces each arktype definition with a standalone validator as Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun or Farm bundles it, so only arktype's runtime ships. `runtime: "arktype"` ships arktype instead, with precompiled code for each definition and for arktype's keywords in place of `new Function`. Either mode fails the build if `arktype`, `@ark/schema` or `@ark/util` resolves to more than one copy.

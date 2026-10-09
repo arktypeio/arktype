@@ -54,5 +54,4 @@ const report = check(positionals, {
 
 for (const line of report.lines) console.log(line)
 
-if (report.sites && (100 * report.accepted) / report.sites < failUnder)
-	process.exit(1)
+if (report.rate < failUnder) process.exit(1)

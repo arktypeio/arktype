@@ -10,3 +10,9 @@ export const makeField = (limit: number) => {
 	const Field = type(`string <= ${limit}`)
 	return Field
 }
+
+export const makeRuntimeField = (limit: number) => {
+	// @ark-runtime
+	const Field = type(`string <= ${limit}`)
+	return Field
+}

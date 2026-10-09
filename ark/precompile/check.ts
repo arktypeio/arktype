@@ -13,6 +13,9 @@ export interface CheckReport {
 	lines: string[]
 	sites: number
 	accepted: number
+	islands: number
+	// the percentage of sites accepted, of those not left to arktype as runtime islands
+	rate: number
 	files: number
 }
 
@@ -37,6 +40,8 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 		lines: [],
 		sites: 0,
 		accepted: 0,
+		islands: 0,
+		rate: 100,
 		files: files.length
 	}
 	for (const file of files) {
@@ -49,18 +54,20 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 		for (const site of result.sites) {
 			report.sites++
 			if (site.status === "rejected") continue
-			report.accepted++
+			if (site.status === "island") report.islands++
+			else report.accepted++
 			entries.push([
 				site.start,
-				`${path}:${site.line}:${site.column}  accepted`
+				`${path}:${site.line}:${site.column}  ${site.status}`
 			])
 		}
 		entries.sort((l, r) => l[0] - r[0])
 		for (const [, line] of entries) report.lines.push(line)
 	}
-	const rate = report.sites ? (100 * report.accepted) / report.sites : 100
+	const precompiled = report.sites - report.islands
+	if (precompiled) report.rate = (100 * report.accepted) / precompiled
 	report.lines.push(
-		`${report.sites} ${report.sites === 1 ? "site" : "sites"} in ${report.files} ${report.files === 1 ? "file" : "files"}: ${report.accepted} accepted (${rate.toFixed(1)}%)`
+		`${report.sites} ${report.sites === 1 ? "site" : "sites"} in ${report.files} ${report.files === 1 ? "file" : "files"}: ${report.accepted} accepted (${report.rate.toFixed(1)}%)${report.islands ? `, ${report.islands} ${report.islands === 1 ? "runtime island" : "runtime islands"}` : ""}`
 	)
 	return report
 }

@@ -17,7 +17,8 @@ contextualize(() => {
 		attest(check([], { cwd }).lines).snap([
 			"forms.ts:4:21  accepted",
 			'forms.ts:10:16  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
-			"2 sites in 2 files: 1 accepted (50.0%)"
+			"forms.ts:16:16  island",
+			"3 sites in 2 files: 1 accepted (50.0%), 1 runtime island"
 		])
 	})
 
@@ -36,7 +37,10 @@ contextualize(() => {
 forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
   \`limit\` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime
   With runtime: "arktype", arktype defines this at runtime.
-2 sites in 1 file: 1 accepted (50.0%)
+forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
+  \`limit\` is a parameter of makeRuntimeField (forms.ts:14:34); its value is known only at runtime
+  With runtime: "arktype", arktype defines this at runtime.
+3 sites in 1 file: 1 accepted (33.3%)
 `)
 	})
 

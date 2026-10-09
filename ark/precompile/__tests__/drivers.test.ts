@@ -25,19 +25,23 @@ const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
 		{ cwd, encoding: "utf8" }
 	)
 
-const bun = (args: string[], runtime?: "arktype") =>
+const bun = (args: string[], runtime?: "arktype", cwd = app) =>
 	spawnSync("bun", args, {
-		cwd: app,
+		cwd,
 		encoding: "utf8",
 		env: { ...process.env, ARKTYPE_RUNTIME: runtime ?? "" }
 	})
 
+const islands = fromHere("islands")
+
+const runPlain = (cwd: string) =>
+	spawnSync(process.execPath, ["--conditions", "ark-ts", "main.ts"], {
+		cwd,
+		encoding: "utf8"
+	}).stdout
+
 contextualize(() => {
-	const expected = spawnSync(
-		process.execPath,
-		["--conditions", "ark-ts", "main.ts"],
-		{ cwd: app, encoding: "utf8" }
-	).stdout
+	const expected = runPlain(app)
 
 	describe("node", () => {
 		it("standalone", () => {
@@ -65,6 +69,10 @@ contextualize(() => {
 				.snap(`admin.ts:3:22  User.and({ role: "'admin'" }) can't be precompiled to a standalone validator yet
   \`User\` is imported from schemas.ts
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
+		}).timeout(60000)
+
+		it("runtime islands", () => {
+			attest(node(["main.ts"], {}, islands).stdout).equals(runPlain(islands))
 		}).timeout(60000)
 
 		it("precompiles apart from the program", () => {
@@ -136,6 +144,22 @@ contextualize(() => {
 					"2 pass"
 				])
 			}
+		}).timeout(60000)
+
+		it("runtime islands", () => {
+			attest(
+				bun(
+					[
+						"--conditions",
+						"ark-ts",
+						"--preload",
+						join(app, "preload.ts"),
+						"main.ts"
+					],
+					undefined,
+					islands
+				).stdout
+			).equals(runPlain(islands))
 		}).timeout(60000)
 
 		it("fails a module with a rejected site", () => {

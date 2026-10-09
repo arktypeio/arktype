@@ -64,6 +64,10 @@
 		"./internal/precompiled.js": {
 			"default": "./out/precompiled.js"
 		},
+		"./internal/island.js": {
+			"ark-ts": "./island.ts",
+			"default": "./out/island.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"types": "./out/*.d.ts",

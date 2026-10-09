@@ -45,7 +45,9 @@ import {
 	exportNameOf,
 	isTransparent,
 	isWriteTarget,
-	unwrapExpression
+	unwrapExpression,
+	walk,
+	type BindingKind
 } from "./scope.ts"
 import {
 	findSites,
@@ -92,7 +94,7 @@ export interface Site {
 	end: number
 	line: number
 	column: number
-	status: "accepted" | "rejected"
+	status: "accepted" | "rejected" | "island"
 	reasons: string[]
 	// the value arktype computed, which a factory reproduces
 	value: unknown
@@ -394,9 +396,10 @@ export class Precompiler {
 		const modules: Record<string, string> = {}
 		// the local each binding the module imports from a virtual module is read through, by specifier and export name
 		const imports: Record<string, Record<string, string>> = {}
-		if (this.mode === "standalone")
+		if (this.mode === "standalone") {
 			this.foldSites(module, sites, s, prefix, modules, imports, diagnostics)
-		else {
+			this.linkIslands(module, sites, s, prefix)
+		} else {
 			const roots = sites.flatMap(site => site.roots)
 			if (roots.length) {
 				const table = `import { registerPrecompiledUnits } from "arktype/internal"\n\nregisterPrecompiledUnits(${writePrecompiledUnits(roots)})\n`
@@ -462,7 +465,7 @@ export class Precompiler {
 		const namesBySite = new Map<Site, string>()
 		const typesByName: Record<string, type.Any> = {}
 		for (const site of sites) {
-			if (site.status === "rejected") continue
+			if (site.status !== "accepted") continue
 			const reasons = this.unsupportedReasonsOf(site)
 			if (reasons.length) {
 				diagnostics.push(this.unsupported(module, site, reasons))
@@ -502,7 +505,7 @@ export class Precompiler {
 			s.overwrite(site.start, site.end, site.parseError ? `${local}()` : local)
 			folded.push(site)
 		}
-		pruneArktypeImports(module, folded, s)
+		pruneArktypeImports(module, [...folded, ...module.islands], s)
 		diagnostics.sort((l, r) => l.start - r.start)
 	}
 
@@ -598,8 +601,12 @@ export class Precompiler {
 			diagnostics.push(...this.diagnosticsOf(site, candidate, module))
 		}
 		diagnostics.push(...this.checkConfiguration(module))
-		if (this.mode === "standalone")
-			diagnostics.push(...this.checkStandalone(module, candidates))
+		if (this.mode === "standalone") {
+			diagnostics.push(
+				...this.checkStandalone(module, candidates),
+				...this.checkIslands(module)
+			)
+		}
 		return {
 			sites: sites.sort((l, r) => l.start - r.start),
 			diagnostics: diagnostics.sort((l, r) => l.start - r.start),
@@ -708,6 +715,10 @@ export class Precompiler {
 				end: node.end
 			}))
 		}
+		if (this.mode === "standalone" && isInIsland(state.node, module)) {
+			site.status = "island"
+			return site
+		}
 		const dynamic = rejectionOf(state)
 		if (dynamic) return rejectSite(site, dynamic)
 		if (state.error instanceof ParseError) site.parseError = state.error
@@ -812,6 +823,7 @@ export class Precompiler {
 		candidate: SiteCandidate,
 		module: SourceModule
 	): Diagnostic[] {
+		if (site.status === "island") return []
 		const node = candidate.state.node
 		if (site.status === "rejected") {
 			return [
@@ -953,7 +965,12 @@ export class Precompiler {
 		}
 		const written = new Set<Node>()
 		for (const reference of module.scopes.references) {
-			if (!reference.binding || reference.isWrite) continue
+			if (
+				!reference.binding ||
+				reference.isWrite ||
+				isInIsland(reference.id, module)
+			)
+				continue
 			const [write, value, isDirect] =
 				this.arkWriteOf(reference.id, module) ?? []
 			if (!write) continue
@@ -997,7 +1014,8 @@ export class Precompiler {
 				(name === "configure" &&
 					parent?.type === "CallExpression" &&
 					parent.callee === read) ||
-				this.graph.isRuntimeUse(id, module)
+				this.graph.isRuntimeUse(id, module) ||
+				isInIsland(id, module)
 			)
 				continue
 			if (isWithin(id, candidateRanges)) continue
@@ -1050,6 +1068,158 @@ export class Precompiler {
 				return
 			}
 			objects.push(parent)
+		}
+	}
+
+	// a runtime island runs on arktype, as must every definition it reaches, which the build would otherwise precompile
+	private checkIslands(module: SourceModule): Diagnostic[] {
+		const result: Diagnostic[] = []
+		const visited = new Set<Node>()
+		const visit = (node: Node, origin: SourceModule, reasons: string[]) =>
+			walk(node, child => {
+				const reference =
+					child.type === "Identifier" ?
+						origin.scopes.referencesById.get(child)
+					:	undefined
+				const binding = reference?.binding
+				if (
+					!binding ||
+					reference.isWrite ||
+					contains(node, binding.declaration)
+				)
+					return true
+				const [name, arkRead] = this.graph.arkExportOf(reference, origin) ?? []
+				if (arkRead) {
+					if (
+						!isInIsland(arkRead, origin) &&
+						!(name! in runtimeExports) &&
+						!this.graph.isRuntimeUse(child, origin)
+					) {
+						result.push(
+							this.diagnostic(
+								origin,
+								arkRead,
+								"R4",
+								"error",
+								`\`${origin.snippetOf(arkRead)}\` is arktype/runtime's outside a runtime island`,
+								reasons,
+								islandHint
+							)
+						)
+					}
+					return true
+				}
+				let read: Node = child
+				let target: ImportTarget =
+					binding.kind === "import" ?
+						this.graph.importOf(binding, origin)
+					:	{ kind: "binding", module: origin, binding, name: binding.name }
+				// e.g. `schemas.User`, with `schemas` a namespace import
+				if (
+					target.kind === "namespace" &&
+					child.parent?.type === "MemberExpression" &&
+					child.parent.object === child &&
+					!child.parent.computed
+				) {
+					read = child.parent
+					target = this.graph.exportOf(
+						target.module,
+						child.parent.property.name
+					)
+				}
+				if (target.kind !== "binding" && target.kind !== "expression")
+					return true
+				const declaration =
+					target.kind === "binding" ? target.binding.declaration : target.node
+				if (isInIsland(declaration, target.module)) return true
+				if (
+					target.kind === "binding" ?
+						this.graph.isArkBinding(target.binding, target.module)
+					:	this.graph.isArkExpression(target.node, target.module)
+				) {
+					// e.g. `User(data)` or `User.assert(data)`, which a standalone validator runs
+					if (
+						!(
+							read.parent?.type === "CallExpression" &&
+							read.parent.callee === read
+						) &&
+						!this.graph.isRuntimeUse(child, origin)
+					) {
+						result.push(
+							this.diagnostic(
+								origin,
+								read,
+								"R4",
+								"error",
+								`\`${origin.snippetOf(read)}\` is a precompiled validator, which a runtime island can only validate with`,
+								reasons,
+								islandHint
+							)
+						)
+					}
+					return true
+				}
+				if (
+					(target.kind === "binding" &&
+						!(target.binding.kind in declaredBindingKinds)) ||
+					visited.has(declaration)
+				)
+					return true
+				visited.add(declaration)
+				const step = `\`${origin.snippetOf(read)}\` (${target.module.positionOf(target.kind === "binding" ? target.binding.id : declaration)})`
+				visit(
+					declaration,
+					target.module,
+					reasons.length ?
+						[`${reasons[0]}, ${step}`]
+					:	[
+							`the runtime island at ${module.positionOf(node)} reaches it through ${step}`
+						]
+				)
+				return true
+			})
+		for (const island of module.islands) visit(island, module, [])
+		return result
+	}
+
+	// a runtime island reads arktype's exports from arktype, imported after the module allowing it beside arktype/runtime
+	private linkIslands(
+		module: SourceModule,
+		sites: Site[],
+		s: MagicString,
+		prefix: string
+	): void {
+		const namespace = `${prefix}$island`
+		let isLinked = false
+		for (const reference of module.scopes.references) {
+			const id = reference.id
+			if (
+				!isInIsland(id, module) ||
+				sites.some(
+					site =>
+						site.status === "accepted" &&
+						site.start <= id.start &&
+						id.end <= site.end
+				)
+			)
+				continue
+			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
+			if (!read) continue
+			const parent = read.parent
+			s.overwrite(
+				read.start,
+				read.end,
+				parent?.type === "Property" && parent.shorthand ?
+					`${module.textOf(read)}: ${namespace}.${name}`
+				:	`${namespace}.${name}`
+			)
+			isLinked = true
+		}
+		if (isLinked) {
+			s.prependLeft(
+				firstStatementOf(module.program).start,
+				`import "arktype/internal/island.js"\nimport * as ${namespace} from "arktype/internal"\n`
+			)
 		}
 	}
 
@@ -1263,11 +1433,7 @@ const inlineModules = (
 			:	`;${call};\n`
 	}
 	if (!declarations) return
-	const first = module.program.body.find(
-		statement =>
-			statement.type !== "ExpressionStatement" || !statement.directive
-	)!
-	s.prependLeft(first.start, declarations)
+	s.prependLeft(firstStatementOf(module.program).start, declarations)
 	for (const source in namespacesBySource) {
 		s.append(
 			`\nimport * as ${namespacesBySource[source]} from ${JSON.stringify(source)}`
@@ -1275,10 +1441,29 @@ const inlineModules = (
 	}
 }
 
+const firstStatementOf = (program: Program) =>
+	program.body.find(
+		statement =>
+			statement.type !== "ExpressionStatement" || !statement.directive
+	)!
+
+const isInIsland = (node: Node, module: SourceModule) =>
+	module.islands.some(island => contains(island, node))
+
+const declaredBindingKinds = {
+	const: 1,
+	let: 1,
+	var: 1,
+	function: 1,
+	class: 1
+} satisfies Partial<Record<BindingKind, 1>>
+
+const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
+
 // an import only folded sites read becomes `import "arktype"`, so the runtime loads where arktype would have
 const pruneArktypeImports = (
 	module: SourceModule,
-	folded: Site[],
+	folded: Span[],
 	s: MagicString
 ) => {
 	for (const statement of module.program.body) {
@@ -1298,7 +1483,7 @@ const pruneArktypeImports = (
 
 const isReadOutside = (
 	specifier: ImportDeclarationSpecifier,
-	sites: Site[],
+	sites: Span[],
 	module: SourceModule
 ) =>
 	!!module.scopes.bindingsById

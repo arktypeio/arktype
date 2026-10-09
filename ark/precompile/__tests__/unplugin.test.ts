@@ -27,8 +27,11 @@ const app = fromHere("app")
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts"]
 
-const viteConfig = (opts?: PrecompilePluginOptions): InlineConfig => ({
-	root: app,
+const viteConfig = (
+	opts?: PrecompilePluginOptions,
+	root = app
+): InlineConfig => ({
+	root,
 	configFile: false,
 	logLevel: "silent",
 	plugins: opts ? [precompile.vite({ ...opts, conditions })] : [],
@@ -42,9 +45,9 @@ const viteConfig = (opts?: PrecompilePluginOptions): InlineConfig => ({
 })
 
 const bundlers = {
-	vite: async (opts?: PrecompilePluginOptions) => {
+	vite: async (opts?: PrecompilePluginOptions, root = app) => {
 		const [{ output }] = (await viteBuild({
-			...viteConfig(opts),
+			...viteConfig(opts, root),
 			build: {
 				write: false,
 				minify: true,
@@ -53,9 +56,9 @@ const bundlers = {
 		})) as Rolldown.RolldownOutput[]
 		return output[0].code
 	},
-	esbuild: async (opts?: PrecompilePluginOptions) => {
+	esbuild: async (opts?: PrecompilePluginOptions, root = app) => {
 		const { outputFiles } = await esbuild({
-			entryPoints: [fromHere("app", "main.ts")],
+			entryPoints: [join(root, "main.ts")],
 			bundle: true,
 			write: false,
 			format: "esm",
@@ -199,6 +202,19 @@ contextualize(() => {
 
 		it(`${name} cache`, async () => {
 			attest(run(await bundle({ runtime: "arktype" }))).equals(expected)
+		})
+
+		it(`${name} runtime islands`, async () => {
+			const islands = fromHere("islands")
+			const standalone = await bundle({}, islands)
+			attest(run(standalone)).equals(
+				spawnSync(
+					process.execPath,
+					["--conditions", "ark-ts", join(islands, "main.ts")],
+					{ encoding: "utf8" }
+				).stdout
+			)
+			attest(standalone.includes(parserMessage)).equals(true)
 		})
 	}
 

@@ -13,13 +13,24 @@ export const assertRuntimeVersion = (version: string): void => {
 
 const loadedEntryKey = noSuggest("loadedArktypeEntry")
 
-// in standalone mode every import of arktype resolves to arktype/runtime, so loading both means one didn't
+interface EntryGlobals {
+	[loadedEntryKey]?: ArktypeEntry | "both"
+}
+
+// in standalone mode every import of arktype resolves to arktype/runtime except a runtime island's, so loading both means one didn't
 export const claimEntry = (entry: ArktypeEntry): void => {
-	const globals = globalThis as { [loadedEntryKey]?: ArktypeEntry }
+	const globals = globalThis as EntryGlobals
 	const loaded = globals[loadedEntryKey]
+	if (loaded === "both") return
 	if (loaded !== undefined && loaded !== entry)
 		throwError(writeEntryConflictMessage(entry, loaded))
 	globals[loadedEntryKey] = entry
+}
+
+// each module with a runtime island calls this before it imports arktype, so arktype loaded already means another importer reached it, which the runtime then refuses
+export const allowIslands = (): void => {
+	const globals = globalThis as EntryGlobals
+	if (globals[loadedEntryKey] !== "arktype") globals[loadedEntryKey] = "both"
 }
 
 export const writeEntryConflictMessage = <

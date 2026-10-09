@@ -4,7 +4,9 @@ import { $ark, hasArkKind } from "@ark/schema"
 import { noSuggest } from "@ark/util"
 import { scope, type, type Module } from "arktype"
 import {
+	allowIslands,
 	arktypeVersion,
+	claimEntry,
 	writeEntryConflictMessage,
 	writeRuntimeVersionMismatchMessage
 } from "arktype/internal/entry.ts"
@@ -496,6 +498,25 @@ contextualize(() => {
 		attest(
 			stderr.includes(writeEntryConflictMessage("arktype", "arktype/runtime"))
 		).equals(true)
+	})
+
+	it("loads beside arktype once a runtime island allows it", () => {
+		const entries = globalThis as Record<string, unknown>
+		const entry = entries[entryKey]
+		try {
+			delete entries[entryKey]
+			claimEntry("arktype/runtime")
+			allowIslands()
+			claimEntry("arktype")
+			claimEntry("arktype/runtime")
+			entries[entryKey] = "arktype"
+			allowIslands()
+			attest(() => claimEntry("arktype/runtime")).throws(
+				writeEntryConflictMessage("arktype/runtime", "arktype")
+			)
+		} finally {
+			entries[entryKey] = entry
+		}
 	})
 
 	it("bundles without node, scope, parse or code-generating code", () => {
