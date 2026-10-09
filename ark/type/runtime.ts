@@ -132,7 +132,11 @@ export class Validator extends Callable<
 		})
 		freeze(this.assert)
 		freeze(this)
-		holesByValidator.set(this, [id, freeze(holes), holes.map(holeNameOf)])
+		holesByValidator.set(this, [
+			id,
+			freeze(holes),
+			holes.map(functionNameOfHole)
+		])
 	}
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
@@ -430,15 +434,8 @@ export const checkIdentity = (
 	label: string,
 	expectedLabel: string
 ): void => {
-	if (value !== expected) {
-		throwError(
-			writeCreationMismatchMessage(
-				label,
-				`a value other than ${expectedLabel}`,
-				expectedLabel
-			)
-		)
-	}
+	if (value !== expected)
+		throwError(writeIdentityMismatchMessage(label, expectedLabel))
 }
 
 export const checkInput = (
@@ -465,14 +462,20 @@ export const holesOf = (
 ): readonly unknown[] => {
 	const created = holesByValidator.get(validator as object)
 	if (created?.[0] !== id) {
+		const actual = describeValue(validator)
 		return throwError(
-			writeCreationMismatchMessage(label, describeValue(validator), expected)
+			writeCreationMismatchMessage(
+				label,
+				// a Type's expression leaves out what can differ, like a predicate
+				actual === expected ? `another ${actual}` : actual,
+				expected
+			)
 		)
 	}
 	// its strings print its holes' names as they were when it was created, which a factory reading them again would miss
 	const [, holes, names] = created
 	for (let i = 0; i < holes.length; i++) {
-		const name = holeNameOf(holes[i])
+		const name = functionNameOfHole(holes[i])
 		if (name !== names[i]) {
 			throwError(
 				writeRenamedHoleMessage(
@@ -487,7 +490,7 @@ export const holesOf = (
 	return holes
 }
 
-const holeNameOf = (hole: unknown) =>
+const functionNameOfHole = (hole: unknown) =>
 	typeof hole === "function" ? functionNameOf(hole) : undefined
 
 const helpersKey = Symbol.for("arktype.helpers")
@@ -546,6 +549,20 @@ export type writeCreationMismatchMessage<
 	actual extends string,
 	expected extends string
 > = `${label} is ${actual}, but was precompiled as ${expected}`
+
+export const writeIdentityMismatchMessage = <
+	label extends string,
+	expectedLabel extends string
+>(
+	label: label,
+	expectedLabel: expectedLabel
+): writeIdentityMismatchMessage<label, expectedLabel> =>
+	`${label} is not ${expectedLabel}, which it was at build`
+
+export type writeIdentityMismatchMessage<
+	label extends string,
+	expectedLabel extends string
+> = `${label} is not ${expectedLabel}, which it was at build`
 
 export const writeRenamedHoleMessage = <
 	label extends string,

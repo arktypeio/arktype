@@ -964,7 +964,7 @@ export class Precompiler {
 		module: SourceModule
 	): string {
 		return message.replace(holeNamePattern, name => {
-			const standIn = this.interpreter.standInNamed(name)
+			const standIn = this.interpreter.standInsByName.get(name)
 			if (!standIn) return name
 			const reference = site.references.find(
 				reference =>
@@ -2047,7 +2047,7 @@ const isStrict = (program: Program): boolean =>
 			statement.directive === "use strict"
 	)
 
-const specifierOf = (importer: string, file: string) => {
+export const specifierOf = (importer: string, file: string): string => {
 	const path = relative(dirname(importer), file).split("\\").join("/")
 	return path.startsWith(".") ? path : `./${path}`
 }

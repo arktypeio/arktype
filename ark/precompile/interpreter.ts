@@ -195,7 +195,7 @@ export class Interpreter {
 	private validators = new WeakSet<object>()
 	private arkObjects = new WeakSet<object>()
 	private opaqueStandInsByValue = new WeakMap<object, StandIn>()
-	private standInsByName = new Map<string, StandIn>()
+	standInsByName = new Map<string, StandIn>()
 	private activeCall: { ctx: Context; isArktype: boolean } | undefined
 
 	constructor(graph: ModuleGraph, opts: InterpreterOptions = {}) {
@@ -1958,10 +1958,6 @@ export class Interpreter {
 				this.unstableIn(k, seen) ?? this.unstableIn(descriptor.value, seen)
 			if (unstable) return unstable
 		}
-	}
-
-	standInNamed(name: string): StandIn | undefined {
-		return this.standInsByName.get(name)
 	}
 
 	declaredNameOf(standIn: StandIn): string | undefined {

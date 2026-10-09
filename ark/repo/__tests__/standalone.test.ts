@@ -29,6 +29,7 @@ import {
 import {
 	type as runtimeType,
 	writeCreationMismatchMessage,
+	writeIdentityMismatchMessage,
 	writeRenamedHoleMessage,
 	writeUnavailableMemberMessage,
 	type HoleKind
@@ -820,7 +821,11 @@ contextualize(() => {
 					type: User,
 					params: [{ kind: "input", label: "Name", reads: [[[], Name]] }]
 				},
-				Text: type("string")
+				Text: type("string"),
+				Described: {
+					type: type("string").pipe(builtTrim).describe("a name"),
+					params: [{ kind: "function", label: "`trim`", value: builtTrim }]
+				}
 			})
 			const create = validators.User
 			attest(create(validators.Name(trim))({ name: " a " })).equals({
@@ -833,6 +838,13 @@ contextualize(() => {
 				writeCreationMismatchMessage(
 					"`Name`",
 					"Type<string>",
+					"Type<(In: string) => Out<unknown>>"
+				)
+			)
+			attest(() => create(validators.Described(trim))).throws(
+				writeCreationMismatchMessage(
+					"`Name`",
+					"another Type<(In: string) => Out<unknown>>",
 					"Type<(In: string) => Out<unknown>>"
 				)
 			)
@@ -1030,11 +1042,7 @@ contextualize(() => {
 				"{ name: a string and valid according to isLong, nick: a string and valid according to isLong }"
 			)
 			attest(() => created.User(name, (s: string) => s.length > 100)).throws(
-				writeCreationMismatchMessage(
-					"`fns.check`",
-					"a value other than `Name`'s hole 0",
-					"`Name`'s hole 0"
-				)
+				writeIdentityMismatchMessage("`fns.check`", "`Name`'s hole 0")
 			)
 		})
 

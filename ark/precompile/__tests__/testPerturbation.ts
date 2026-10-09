@@ -4,11 +4,12 @@ import { hasArkKind } from "@ark/schema"
 import { keyOf } from "arktype/internal/standalone.ts"
 import { bindingOfFunction } from "@ark/precompile/internal/graph.ts"
 import type { SourceModule } from "@ark/precompile/internal/module.ts"
+import { specifierOf } from "@ark/precompile/internal/precompile.ts"
 import MagicString from "magic-string"
 import { spawnSync } from "node:child_process"
 import { globSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { dirname, join, relative } from "node:path"
+import { join, relative } from "node:path"
 import {
 	isPerturbable,
 	perturbations,
@@ -44,11 +45,6 @@ const corpus = globSync(
 
 // the define the checks fixture's moded.ts is built with, which the worker sets unless it stubs it
 const define = { "process.env.ARK_MODE": "loose" }
-
-const specifierOf = (importer: string, file: string) => {
-	const path = relative(dirname(importer), file).split("\\").join("/")
-	return path.startsWith(".") ? path : `./${path}`
-}
 
 const createPrecompiler = () =>
 	new Precompiler(
@@ -243,10 +239,10 @@ const precompiled = runWorld("precompiled")
 const comparable = (observation: Observation | undefined) =>
 	JSON.stringify(observation).replace(/\btype\d+\b/g, "type")
 
-// what a factory's checks throw, a mismatch with what the build read or a hole renamed since its validator was created
+// what a factory's checks throw, a mismatch with what the build read, a hole renamed since its validator was created, or two values where it read one
 const isCreationCheck = (observation: Observation | undefined) =>
 	typeof observation?.threw === "string" &&
-	/ but was (?:precompiled as |named .* when .* was created$)/.test(
+	/ but was (?:precompiled as |named .* when .* was created$)|, which it was at build$/.test(
 		observation.threw
 	)
 
