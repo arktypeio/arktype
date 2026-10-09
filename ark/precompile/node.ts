@@ -1,48 +1,14 @@
 import { throwError } from "@ark/util"
 import { registerHooks } from "node:module"
 import { fileURLToPath } from "node:url"
-import {
-	MessageChannel,
-	receiveMessageOnPort,
-	Worker,
-	workerData
-} from "node:worker_threads"
-import type {
-	InlineModule,
-	PrecompileAnswer,
-	PrecompilePluginOptions,
-	PrecompileRequest,
-	PrecompilerWorkerData
-} from "./driver.ts"
+import type { InlineModule, PrecompilePluginOptions } from "./driver.ts"
 import { isTransformed } from "./host.ts"
-
-const isPrecompilerWorker = !!(workerData as PrecompilerWorkerData | null)?.port
+import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
 
 export const register = (opts?: PrecompilePluginOptions): void => {
 	// the worker inherits the flags that registered these hooks
 	if (isPrecompilerWorker) return
-	const { port1, port2 } = new MessageChannel()
-	const answered = new Int32Array(new SharedArrayBuffer(4))
-	let worker: Worker | undefined
-	const request = (...request: PrecompileRequest): unknown => {
-		if (!worker) {
-			worker = new Worker(new URL(import.meta.url), {
-				workerData: {
-					precompilerOptions: opts ?? {},
-					port: port2,
-					answered
-				} satisfies PrecompilerWorkerData,
-				transferList: [port2]
-			})
-			worker.unref()
-		}
-		Atomics.store(answered, 0, 0)
-		port1.postMessage(request)
-		Atomics.wait(answered, 0, 0)
-		const answer = receiveMessageOnPort(port1)!.message as PrecompileAnswer
-		if ("error" in answer) throw answer.error
-		return answer.result
-	}
+	const request = createSyncPrecompiler({ precompilerOptions: opts ?? {} })
 	const isStandalone = opts?.runtime !== "arktype"
 	registerHooks({
 		resolve: (specifier, context, nextResolve) => {
@@ -76,11 +42,4 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				:	loaded
 		}
 	})
-}
-
-// the worker the hooks request precompilation from runs this module
-if (isPrecompilerWorker) {
-	void import("./driver.ts").then(driver =>
-		driver.answerRequests(workerData.port, workerData)
-	)
 }

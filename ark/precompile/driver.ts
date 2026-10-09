@@ -1,4 +1,6 @@
 import { throwError } from "@ark/util"
+import { createHash } from "node:crypto"
+import { readFileSync, statSync } from "node:fs"
 import { resolve } from "node:path"
 import type { MessagePort } from "node:worker_threads"
 import { createNodeHost, isTransformed, type NodeHostOptions } from "./host.ts"
@@ -43,6 +45,8 @@ export const reportDiagnostics = (
 
 export interface PrecompilerWorkerData {
 	precompilerOptions: PrecompilePluginOptions
+	// answer each module with a key, for a host that caches by file
+	isKeyed?: boolean | undefined
 	// a port to answer on and a flag notified after each answer, for a host that waits synchronously
 	port?: MessagePort | undefined
 	answered?: Int32Array | undefined
@@ -56,6 +60,7 @@ export interface InlineModule {
 	// undefined when the module is unchanged
 	code: string | undefined
 	warnings: string[]
+	key?: string | undefined
 }
 
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
@@ -65,18 +70,64 @@ export const answerRequests = (
 	port: MessagePort,
 	data: PrecompilerWorkerData
 ): void => {
-	let precompiler: Precompiler | undefined
+	// when each file the precompiler read was modified, so a keyed request replaces it once one changes
+	let readTimes: Record<string, number> = {}
+	const importsByFile: Record<string, [mtimeMs: number, imports: string[]]> = {}
+	const create = () => {
+		const result = createPrecompiler({
+			...data.precompilerOptions,
+			inline: true
+		})
+		const { host } = result.graph
+		readTimes = {}
+		result.graph.host = {
+			resolve: host.resolve,
+			readFile: file => {
+				const contents = host.readFile(file)
+				if (contents !== undefined) readTimes[file] = statSync(file).mtimeMs
+				return contents
+			}
+		}
+		return result
+	}
+	let precompiler = create()
+	// a module's key hashes when each file in its forward closure was modified
+	const keyedModuleOf = (source: string, id: string): InlineModule => {
+		const hash = createHash("sha256").update(source)
+		const closure = [id]
+		let isStale = false
+		for (let i = 0; i < closure.length; i++) {
+			const file = closure[i]
+			const { mtimeMs } = statSync(file)
+			hash.update(`\0${file}\0${mtimeMs}`)
+			isStale ||= file in readTimes && readTimes[file] !== mtimeMs
+			const cached = importsByFile[file]
+			const imports =
+				i === 0 ? precompiler.localImportsOf(source, id)
+				: cached?.[0] === mtimeMs ? cached[1]
+				: (importsByFile[file] = [
+						mtimeMs,
+						precompiler.localImportsOf(readFileSync(file, "utf8"), file)
+					])[1]
+			for (const target of imports)
+				if (!closure.includes(target)) closure.push(target)
+		}
+		if (isStale) precompiler = create()
+		const inlined = inlineModuleOf(precompiler, source, id)
+		return {
+			code: inlined?.code,
+			warnings: inlined?.warnings ?? [],
+			key: hash.digest("hex")
+		}
+	}
 	port.on("message", (request: PrecompileRequest) => {
 		try {
-			precompiler ??= createPrecompiler({
-				...data.precompilerOptions,
-				inline: true
-			})
 			port.postMessage({
 				result:
-					request[0] === "transform" ?
-						inlineModuleOf(precompiler, request[1], request[2])
-					:	precompiler.readDependency(request[1])
+					request[0] === "readDependency" ?
+						precompiler.readDependency(request[1])
+					: data.isKeyed ? keyedModuleOf(request[1], request[2])
+					: inlineModuleOf(precompiler, request[1], request[2])
 			} satisfies PrecompileAnswer)
 		} catch (e) {
 			port.postMessage({ error: e } satisfies PrecompileAnswer)
