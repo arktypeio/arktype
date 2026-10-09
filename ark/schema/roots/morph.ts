@@ -1,8 +1,7 @@
-import { arrayEquals, liftArray, type array, type listable } from "@ark/util"
-import type { RootSchema } from "../kinds.ts"
+import { arrayEquals, type array } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import type { declareNode } from "../shared/declare.ts"
 import { isArkErrorResult } from "../shared/errors.ts"
 import {
 	implementNode,
@@ -29,18 +28,9 @@ export declare namespace Morph {
 		readonly declaredOut?: BaseRoot
 	}
 
-	export interface Schema extends BaseNormalizedSchema {
-		readonly in?: RootSchema
-		readonly morphs: listable<Morph | BaseRoot>
-		readonly declaredIn?: BaseRoot
-		readonly declaredOut?: BaseRoot
-	}
-
 	export interface Declaration
 		extends declareNode<{
 			kind: "morph"
-			schema: Schema
-			normalizedSchema: Schema
 			inner: Inner
 			childKind: RootKind
 		}> {}
@@ -63,11 +53,9 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 		hasAssociatedError: false,
 		keys: {
 			in: {
-				child: true,
-				parse: (schema, ctx) => ctx.$.parseSchema(schema)
+				child: true
 			},
 			morphs: {
-				parse: liftArray,
 				serialize: morphs =>
 					morphs.map(m => (hasArkKind(m, "root") ? m.json : namedReference(m)))
 			},
@@ -80,7 +68,6 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 				serialize: node => node.json
 			}
 		},
-		normalize: schema => schema,
 		defaults: {
 			description: node =>
 				`a morph from ${node.rawIn.description} to ${node.rawOut?.description ?? "unknown"}`

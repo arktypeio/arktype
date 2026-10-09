@@ -10,7 +10,7 @@ import {
 	type satisfy
 } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
-import type { RootSchema } from "../kinds.ts"
+
 import {
 	appendUniqueFlatRefs,
 	flatRef,
@@ -25,7 +25,7 @@ import type { MinLengthNode } from "../refinements/minLength.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import type { declareNode } from "../shared/declare.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
@@ -48,19 +48,6 @@ import {
 } from "./optional.ts"
 
 export declare namespace Sequence {
-	export interface NormalizedSchema extends BaseNormalizedSchema {
-		readonly prefix?: array<RootSchema>
-		readonly defaultables?: array<DefaultableSchema>
-		readonly optionals?: array<RootSchema>
-		readonly variadic?: RootSchema
-		readonly minVariadicLength?: number
-		readonly postfix?: array<RootSchema>
-	}
-
-	export type Schema = NormalizedSchema | RootSchema
-
-	export type DefaultableSchema = [schema: RootSchema, defaultValue: unknown]
-
 	export type DefaultableElement = [node: BaseRoot, defaultValue: unknown]
 
 	export interface Inner {
@@ -80,8 +67,6 @@ export declare namespace Sequence {
 	export interface Declaration
 		extends declareNode<{
 			kind: "sequence"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: array
 			reducibleTo: "sequence"
@@ -99,33 +84,15 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 		keys: {
 			prefix: {
 				child: true,
-				parse: (schema, ctx) => {
-					// empty affixes are omitted. an empty array should therefore
-					// be specified as `{ proto: Array, length: 0 }`
-					if (schema.length === 0) return undefined
-
-					return schema.map(element => ctx.$.parseStructuralValue(element))
-				}
+				structural: true
 			},
 			optionals: {
 				child: true,
-				parse: (schema, ctx) => {
-					if (schema.length === 0) return undefined
-
-					return schema.map(element => ctx.$.parseStructuralValue(element))
-				}
+				structural: true
 			},
 			defaultables: {
 				child: defaultables => defaultables.map(element => element[0]),
-				parse: (defaultables, ctx) => {
-					if (defaultables.length === 0) return undefined
-
-					return defaultables.map(element => {
-						const node = ctx.$.parseStructuralValue(element[0])
-						assertDefaultValueAssignability(node, element[1], null)
-						return [node, element[1]]
-					})
-				},
+				structural: true,
 				serialize: defaults =>
 					defaults.map(element => [
 						element[0].collapsibleJson,
@@ -143,58 +110,13 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 			},
 			variadic: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.parseStructuralValue(schema)
+				structural: true
 			},
-			minVariadicLength: {
-				// minVariadicLength is reflected in the id of this node,
-				// but not its IntersectionNode parent since it is superceded by the minLength
-				// node it implies
-				parse: min => (min === 0 ? undefined : min)
-			},
+			minVariadicLength: {},
 			postfix: {
 				child: true,
-				parse: (schema, ctx) => {
-					if (schema.length === 0) return undefined
-
-					return schema.map(element => ctx.$.parseStructuralValue(element))
-				}
+				structural: true
 			}
-		},
-		normalize: schema => {
-			if (typeof schema === "string") return { variadic: schema }
-
-			if (
-				"variadic" in schema ||
-				"prefix" in schema ||
-				"defaultables" in schema ||
-				"optionals" in schema ||
-				"postfix" in schema ||
-				"minVariadicLength" in schema
-			) {
-				if (schema.postfix?.length) {
-					if (!schema.variadic)
-						return throwParseError(postfixWithoutVariadicMessage)
-
-					if (schema.optionals?.length || schema.defaultables?.length)
-						return throwParseError(postfixAfterOptionalOrDefaultableMessage)
-				}
-				if (schema.minVariadicLength && !schema.variadic) {
-					return throwParseError(
-						"minVariadicLength may not be specified without a variadic element"
-					)
-				}
-				// a set engine adds the length bounds a tuple implies to its intersection
-				if (
-					!$ark.sets &&
-					(!schema.variadic ||
-						schema.prefix?.length ||
-						schema.postfix?.length ||
-						schema.minVariadicLength)
-				)
-					return throwParseError(missingSetEngineMessage)
-				return schema
-			}
-			return { variadic: schema }
 		},
 		defaults: {
 			description: node => {
@@ -218,6 +140,29 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
+		if (this.inner.postfix) {
+			if (!this.inner.variadic) throwParseError(postfixWithoutVariadicMessage)
+			if (this.inner.optionals || this.inner.defaultables)
+				throwParseError(postfixAfterOptionalOrDefaultableMessage)
+		}
+		if (this.inner.minVariadicLength && !this.inner.variadic) {
+			throwParseError(
+				"minVariadicLength may not be specified without a variadic element"
+			)
+		}
+		// a set engine adds the length bounds a tuple implies to its intersection
+		if (
+			!$ark.sets &&
+			(!this.inner.variadic ||
+				this.inner.prefix ||
+				this.inner.postfix ||
+				this.inner.minVariadicLength)
+		)
+			throwParseError(missingSetEngineMessage)
+		if (this.inner.defaultables) {
+			for (const [node, value] of this.inner.defaultables)
+				assertDefaultValueAssignability(node, value, null)
+		}
 		this.includesContextualMorph ||= this.defaultValueMorphs.some(
 			morph => morph.length === 2
 		)
@@ -293,10 +238,12 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			null
 			// cast is safe here as the only time this would not be a
 			// MinLengthNode would be when minLength is 0
-		:	(this.$.node("minLength", this.minLength) as never)
+		:	(this.$.node("minLength", { rule: this.minLength }) as never)
 	maxLength: number | null = this.variadic ? null : this.tuple.length
 	maxLengthNode: MaxLengthNode | ExactLengthNode | null =
-		this.maxLength === null ? null : this.$.node("maxLength", this.maxLength)
+		this.maxLength === null ?
+			null
+		:	this.$.node("maxLength", { rule: this.maxLength })
 	impliedSiblings: array<MaxLengthNode | MinLengthNode | ExactLengthNode> =
 		this.minLengthNode ?
 			this.maxLengthNode ?
@@ -371,7 +318,9 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	private _element: BaseRoot | undefined
 	get element(): BaseRoot {
-		return (this._element ??= this.$.node("union", this.children))
+		return (this._element ??= this.$.node("union", {
+			branches: this.children
+		}))
 	}
 
 	traverseTransform: TraverseTransform<array> = (data, ctx) => {

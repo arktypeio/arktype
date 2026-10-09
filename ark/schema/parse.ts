@@ -1,5 +1,4 @@
 import {
-	domainDescriptions,
 	entriesOf,
 	flatMorph,
 	isArray,
@@ -8,7 +7,6 @@ import {
 	printable,
 	throwInternalError,
 	throwParseError,
-	unset,
 	type Brand,
 	type dict,
 	type Entry,
@@ -18,20 +16,17 @@ import {
 import {
 	nodeClassesByKind,
 	nodeImplementationsByKind,
-	type NormalizedSchema
+	type NodeInput
 } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
-import type { TypeMeta } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
-	constraintKeys,
 	defaultValueSerializer,
 	isNodeKind,
 	precedenceOfKind,
 	type NodeKind,
-	type RootKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
@@ -72,59 +67,13 @@ export interface BaseParseContext
 export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
 	extends BaseParseContextInput {
 	kind: kind
-	def: NormalizedSchema<kind>
+	def: NodeInput<kind>
 }
 
 export interface NodeParseContext<kind extends NodeKind = NodeKind>
 	extends NodeParseContextInput<kind>,
 		AttachedParseContext {
 	id: NodeId
-}
-
-export const schemaKindOf = <kind extends RootKind = RootKind>(
-	schema: unknown,
-	allowedKinds?: readonly kind[]
-): kind => {
-	const kind = discriminateRootKind(schema)
-	if (allowedKinds && !allowedKinds.includes(kind as never)) {
-		return throwParseError(
-			`Root of kind ${kind} should be one of ${allowedKinds}`
-		)
-	}
-	return kind as never
-}
-
-const discriminateRootKind = (schema: unknown): RootKind => {
-	if (hasArkKind(schema, "root")) return schema.kind
-	if (typeof schema === "string") {
-		return (
-			schema[0] === "$" ? "alias"
-			: schema in domainDescriptions ? "domain"
-			: "proto"
-		)
-	}
-	if (typeof schema === "function") return "proto"
-
-	// throw at end of function
-	if (typeof schema !== "object" || schema === null)
-		return throwParseError(writeInvalidSchemaMessage(schema))
-
-	if ("morphs" in schema) return "morph"
-
-	if ("branches" in schema || isArray(schema)) return "union"
-
-	if ("unit" in schema) return "unit"
-
-	if ("reference" in schema) return "alias"
-
-	const schemaKeys = Object.keys(schema)
-
-	if (schemaKeys.length === 0 || schemaKeys.some(k => k in constraintKeys))
-		return "intersection"
-	if ("proto" in schema) return "proto"
-	if ("domain" in schema) return "domain"
-
-	return throwParseError(writeInvalidSchemaMessage(schema))
 }
 
 export const writeInvalidSchemaMessage = (schema: unknown): string =>
@@ -151,49 +100,37 @@ export const registerNodeId = (prefix: string): NodeId => {
 
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
-	const configuredSchema =
-		impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ?? ctx.def
+	const { meta: metaInput, ...input } = (impl.applyConfig?.(
+		ctx.def,
+		ctx.$.resolvedConfig
+	) ?? ctx.def) as dict & { meta?: ArkEnv.meta | string }
+
+	const meta: ArkEnv.meta =
+		metaInput === undefined ? {}
+		: typeof metaInput === "string" ? { description: metaInput }
+		: metaInput
+
+	// keys are ordered so equal inners share a key and json, with children
+	// after other values in order of precedence
+	const keys = Object.keys(input).sort((l, r) =>
+		isNodeKind(l) ?
+			isNodeKind(r) ? precedenceOfKind(l) - precedenceOfKind(r)
+			:	1
+		: isNodeKind(r) ? -1
+		: l < r ? -1
+		: 1
+	)
+
 	const inner: dict = {}
-	const { meta: metaSchema, ...innerSchema } = configuredSchema as dict & {
-		meta?: TypeMeta.Collapsible
-	}
-
-	const meta: ArkEnv.meta & dict =
-		metaSchema === undefined ? {}
-		: typeof metaSchema === "string" ? { description: metaSchema }
-		: (metaSchema as never)
-
-	// ensure node entries are parsed in order of precedence, with non-children
-	// parsed first
-	const innerSchemaEntries = entriesOf(innerSchema)
-		.sort(([lKey], [rKey]) =>
-			isNodeKind(lKey) ?
-				isNodeKind(rKey) ? precedenceOfKind(lKey) - precedenceOfKind(rKey)
-				:	1
-			: isNodeKind(rKey) ? -1
-			: lKey < rKey ? -1
-			: 1
-		)
-		.filter(([k, v]) => {
-			// move meta. prefixed props to meta, overwriting existing nested
-			// props of the same name if they exist
-			if (k.startsWith("meta.")) {
-				const metaKey = k.slice(5)
-				meta[metaKey] = v
-				return false
-			}
-			return true
-		})
-
-	for (const entry of innerSchemaEntries) {
-		const k = entry[0]
+	for (const k of keys) {
 		const keyImpl = impl.keys[k]
 		if (!keyImpl)
 			return throwParseError(`Key ${k} is not valid on ${ctx.kind} schema`)
-
-		const v = keyImpl.parse ? keyImpl.parse(entry[1], ctx) : entry[1]
-		if (v !== unset && (v !== undefined || keyImpl.preserveUndefined))
-			inner[k] = v
+		const v = input[k]
+		if (v === undefined && !keyImpl.preserveUndefined) continue
+		// an empty list of children is none, except a union's branches
+		if (keyImpl.child && isArray(v) && !v.length && k !== "branches") continue
+		inner[k] = keyImpl.structural ? deferAliases(v, ctx.$) : v
 	}
 
 	if ($ark.sets) {
@@ -219,6 +156,18 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	})
 
 	return node
+}
+
+// an alias belongs in a structural value, so a value holding one elsewhere is
+// deferred to an alias of its own
+const deferAliases = (v: unknown, $: BaseScope): unknown => {
+	if (isArray(v)) {
+		const deferred = v.map(element => deferAliases(element, $))
+		return deferred.some((element, i) => element !== v[i]) ? deferred : v
+	}
+	if (!isNode(v) || !v.includesShallowAlias || v.hasKind("alias")) return v
+	nodesByRegisteredId[v.id] = v
+	return $.node("alias", { reference: v.id }, { prereduced: true })
 }
 
 export type CreateNodeInput = {

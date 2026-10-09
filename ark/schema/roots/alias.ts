@@ -10,7 +10,7 @@ import {
 import { writeInnerJson, type BaseNode } from "../node.ts"
 import { nodesByRegisteredId, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import type { declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -35,18 +35,6 @@ import {
 import { BaseRoot } from "./root.ts"
 
 export declare namespace Alias {
-	export type Schema<alias extends string = string> =
-		| `$${alias}`
-		| NormalizedSchema<alias>
-
-	export interface NormalizedSchema<alias extends string = string>
-		extends BaseNormalizedSchema {
-		readonly reference: alias
-		readonly resolve?: () => BaseRoot
-		readonly operator?: string
-		readonly operands?: readonly BaseRoot[]
-	}
-
 	export interface Inner<alias extends string = string> {
 		readonly reference: alias
 		readonly resolve?: () => BaseRoot
@@ -57,16 +45,11 @@ export declare namespace Alias {
 	export interface Declaration
 		extends declareNode<{
 			kind: "alias"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 		}> {}
 
 	export type Node = AliasNode
 }
-
-export const normalizeAliasSchema = (schema: Alias.Schema): Alias.Inner =>
-	typeof schema === "string" ? { reference: schema } : schema
 
 const implementation: nodeImplementationOf<Alias.Declaration> =
 	implementNode<Alias.Declaration>({
@@ -75,12 +58,6 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 		collapsibleKey: "reference",
 		keys: {
 			reference: {
-				parse: reference => {
-					const referenced = nodesByRegisteredId[reference as NodeId]
-					if (hasArkKind(referenced, "context"))
-						referenced.isReferencedById = true
-					return reference
-				},
 				serialize: s => {
 					const referenced = nodesByRegisteredId[s as NodeId]
 					if (hasArkKind(referenced, "root")) return referenced.json
@@ -96,7 +73,6 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 				serialize: () => null
 			}
 		},
-		normalize: normalizeAliasSchema,
 		finalizeInnerJson: json => ({ reference: json.reference }),
 		defaults: {
 			description: node => node.expression
@@ -107,6 +83,12 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 	// written when created, so a definition that resolves afterward stays a reference
 	protected override _uncollapsedInnerJson: JsonObject = writeInnerJson(this)
 	readonly expression: string = expressionOf(this)
+
+	constructor(...args: ConstructorParameters<typeof BaseRoot>) {
+		super(...args)
+		const referenced = nodesByRegisteredId[this.reference as NodeId]
+		if (hasArkKind(referenced, "context")) referenced.isReferencedById = true
+	}
 	readonly structure = undefined
 	// a cycle passes an alias referencing its definition while it's parsed, so Allows bounds only those
 	closesCycle = true

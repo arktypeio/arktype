@@ -4,12 +4,10 @@ import {
 	domainOf,
 	flatMorph,
 	hasDomain,
-	isArray,
 	jsTypeOfDescriptions,
 	printable,
 	registeredNameOf,
 	serializePrimitive,
-	throwParseError,
 	unset,
 	type JsTypeOf,
 	type JsonStructure,
@@ -18,7 +16,7 @@ import {
 	type array,
 	type show
 } from "@ark/util"
-import type { NodeSchema, RootSchema, nodeOfKind } from "../kinds.ts"
+import type { nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import {
 	compileSerializedValue,
@@ -27,7 +25,7 @@ import {
 } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
-	BaseNormalizedSchema,
+	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
 import type { ArkError } from "../shared/errors.ts"
@@ -44,7 +42,6 @@ import {
 	registryName,
 	type RegisteredReference
 } from "../shared/registry.ts"
-import { missingSetEngineMessage } from "../shared/sets.ts"
 import {
 	applyMember,
 	type Traversal,
@@ -52,7 +49,6 @@ import {
 	type TraverseApply,
 	type TraverseTransform
 } from "../shared/traversal.ts"
-import { hasArkKind } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
 import { BaseRoot } from "./root.ts"
@@ -61,19 +57,16 @@ import type { Unit } from "./unit.ts"
 export declare namespace Union {
 	export type ChildKind = UnionChildKind
 
-	export type ChildSchema = NodeSchema<ChildKind>
-
 	export type ChildNode = nodeOfKind<ChildKind>
-
-	export type Schema = NormalizedSchema | readonly RootSchema[]
-
-	export interface NormalizedSchema extends BaseNormalizedSchema {
-		readonly branches: array<RootSchema>
-		readonly ordered?: true
-	}
 
 	export interface Inner {
 		readonly branches: readonly ChildNode[]
+		readonly ordered?: true
+	}
+
+	// a union's branches are flattened when it's created, so any root can be one
+	export interface Input extends BaseNodeInput {
+		readonly branches: readonly BaseRoot[]
 		readonly ordered?: true
 	}
 
@@ -84,8 +77,6 @@ export declare namespace Union {
 	export interface Declaration
 		extends declareNode<{
 			kind: "union"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			errorContext: ErrorContext
 			reducibleTo: RootKind
@@ -103,31 +94,9 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 		keys: {
 			ordered: {},
 			branches: {
-				child: true,
-				parse: (schema, ctx) => {
-					const branches: Union.ChildNode[] = []
-					for (const branchSchema of schema) {
-						const branchNodes =
-							hasArkKind(branchSchema, "root") ?
-								branchSchema.branches
-							:	ctx.$.parseSchema(branchSchema).branches
-						branches.push(...branchNodes)
-					}
-
-					// a set engine rejects overlapping branches that transform differently
-					if (
-						!ctx.def.ordered &&
-						!$ark.sets &&
-						branches.length > 1 &&
-						branches.some(branch => branch.includesTransform)
-					)
-						throwParseError(missingSetEngineMessage)
-
-					return branches
-				}
+				child: true
 			}
 		},
-		normalize: schema => (isArray(schema) ? { branches: schema } : schema),
 		defaults: {
 			description: node =>
 				node.distribute(branch => branch.description, describeBranches),

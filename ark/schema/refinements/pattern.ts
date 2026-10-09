@@ -2,7 +2,7 @@ import { InternalPrimitiveConstraint } from "../constraint.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type {
 	BaseErrorContext,
-	BaseNormalizedSchema,
+	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
 import {
@@ -12,7 +12,7 @@ import {
 import { $ark } from "../shared/registry.ts"
 
 export declare namespace Pattern {
-	export interface NormalizedSchema extends BaseNormalizedSchema {
+	export interface ExpandedSchema extends BaseNodeInput {
 		readonly rule: string
 		readonly flags?: string
 	}
@@ -22,15 +22,13 @@ export declare namespace Pattern {
 		readonly flags?: string
 	}
 
-	export type Schema = NormalizedSchema | string | RegExp
+	export type Schema = ExpandedSchema | string | RegExp
 
 	export interface ErrorContext extends BaseErrorContext<"pattern">, Inner {}
 
 	export interface Declaration
 		extends declareNode<{
 			kind: "pattern"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			intersectionIsOpen: true
 			prerequisite: string
@@ -48,13 +46,6 @@ const implementation: nodeImplementationOf<Pattern.Declaration> =
 			rule: {},
 			flags: {}
 		},
-		normalize: schema =>
-			typeof schema === "string" ? { rule: schema }
-			: schema instanceof RegExp ?
-				schema.flags ?
-					{ rule: schema.source, flags: schema.flags }
-				:	{ rule: schema.source }
-			:	schema,
 		obviatesBasisDescription: true,
 		obviatesBasisExpression: true,
 		hasAssociatedError: true,

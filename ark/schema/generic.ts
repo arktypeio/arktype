@@ -8,7 +8,7 @@ import {
 	type JsonStructure
 } from "@ark/util"
 import { intrinsic } from "./intrinsic.ts"
-import type { RootSchema } from "./kinds.ts"
+import type { RootSchema } from "./parseSchema.ts"
 import { isMutuallySimulated, type BaseNode } from "./node.ts"
 import { registerNodeId, type NodeId } from "./parse.ts"
 import {

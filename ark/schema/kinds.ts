@@ -2,8 +2,7 @@ import {
 	envHasCsp,
 	flatMorph,
 	withAlphabetizedKeys,
-	type array,
-	type listable
+	type array
 } from "@ark/util"
 import { mergeConfigs, type ResolvedConfig } from "./config.ts"
 import type { BaseNode } from "./node.ts"
@@ -24,11 +23,11 @@ import { Proto } from "./roots/proto.ts"
 import { Union } from "./roots/union.ts"
 import { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
+import type { BaseNodeInput } from "./shared/declare.ts"
 import type {
 	ConstraintKind,
 	NodeKind,
 	OpenNodeKind,
-	RootKind,
 	UnknownAttachments,
 	UnknownNodeImplementation
 } from "./shared/implement.ts"
@@ -148,13 +147,6 @@ export type nodeOfKind<kind extends NodeKind> = NodesByKind[kind]
 
 export type Declaration<kind extends NodeKind> = NodeDeclarationsByKind[kind]
 
-export type NodeSchema<kind extends NodeKind> = Declaration<kind>["schema"]
-
-export type RootSchema<kind extends RootKind = RootKind> = NodeSchema<kind>
-
-export type NormalizedSchema<kind extends NodeKind> =
-	Declaration<kind>["normalizedSchema"]
-
 export type childKindOf<kind extends NodeKind> = Declaration<kind>["childKind"]
 
 export type Prerequisite<kind extends NodeKind> =
@@ -167,8 +159,11 @@ export type reducibleKindOf<kind extends NodeKind> =
 
 export type Inner<kind extends NodeKind> = Declaration<kind>["inner"]
 
-export type defAttachedAs<kind extends ConstraintKind> =
-	kind extends OpenNodeKind ? listable<NodeSchema<kind>> : NodeSchema<kind>
+// a node is created from its inner and its meta
+export type NodeInput<kind extends NodeKind = NodeKind> =
+	kind extends "union" ? Union.Input
+	: kind extends "structure" ? Structure.Input
+	: Inner<kind> & BaseNodeInput
 
 export type innerAttachedAs<kind extends ConstraintKind> =
 	kind extends OpenNodeKind ? array<nodeOfKind<kind>> : nodeOfKind<kind>
@@ -176,9 +171,6 @@ export type innerAttachedAs<kind extends ConstraintKind> =
 /** make nested arrays mutable while keeping nested nodes immutable */
 export type mutableInnerOfKind<kind extends NodeKind> =
 	makeRootAndArrayPropertiesMutable<Inner<kind>>
-
-export type mutableNormalizedRootOfKind<kind extends NodeKind> =
-	makeRootAndArrayPropertiesMutable<NormalizedSchema<kind>>
 
 export type errorContext<kind extends NodeKind> =
 	Declaration<kind>["errorContext"]

@@ -49,12 +49,12 @@ export const intersectProps = (
 		: r.hasDefault() ? r.default
 		: unset
 
-	return ctx.$.node("optional", {
-		key,
-		value,
-		// unset is stripped during parsing
-		default: defaultIntersection
-	})
+	return ctx.$.node(
+		"optional",
+		defaultIntersection === unset ?
+			{ key, value }
+		:	{ key, value, default: defaultIntersection }
+	)
 }
 
 export const required: setImplementationOf<Required.Declaration> = {

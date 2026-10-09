@@ -5,7 +5,7 @@ import {
 	throwParseError
 } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
-import type { RootSchema, nodeOfKind } from "../kinds.ts"
+import type { nodeOfKind } from "../kinds.ts"
 import {
 	flatRef,
 	type BaseNode,
@@ -13,7 +13,7 @@ import {
 	type DeepNodeTransformation
 } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
+import type { declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type RootKind,
@@ -32,11 +32,6 @@ export declare namespace Index {
 
 	export type KeyNode = nodeOfKind<KeyKind>
 
-	export interface Schema extends BaseNormalizedSchema {
-		readonly signature: RootSchema<KeyKind>
-		readonly value: RootSchema
-	}
-
 	export interface Inner {
 		readonly signature: KeyNode
 		readonly value: BaseRoot
@@ -45,8 +40,6 @@ export declare namespace Index {
 	export interface Declaration
 		extends declareNode<{
 			kind: "index"
-			schema: Schema
-			normalizedSchema: Schema
 			inner: Inner
 			prerequisite: object
 			intersectionIsOpen: true
@@ -63,37 +56,13 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 		intersectionIsOpen: true,
 		keys: {
 			signature: {
-				child: true,
-				parse: (schema, ctx) => {
-					const key = ctx.$.parseSchema(schema)
-					// checked by equality first so intrinsic json parses without a set engine
-					if (
-						!key.equals($ark.intrinsic.string) &&
-						!key.equals($ark.intrinsic.symbol) &&
-						!key.equals($ark.intrinsic.key) &&
-						!key.extends($ark.intrinsic.key)
-					) {
-						return throwParseError(
-							writeInvalidPropertyKeyMessage(key.expression)
-						)
-					}
-					const enumerableBranches = key.branches.filter(b => b.hasKind("unit"))
-					if (enumerableBranches.length) {
-						return throwParseError(
-							writeEnumerableIndexBranches(
-								enumerableBranches.map(b => printable(b.unit))
-							)
-						)
-					}
-					return key as Index.KeyNode
-				}
+				child: true
 			},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.parseStructuralValue(schema)
+				structural: true
 			}
 		},
-		normalize: schema => schema,
 		defaults: {
 			description: node =>
 				`[${node.signature.expression}]: ${node.value.description}`
@@ -103,6 +72,27 @@ const implementation: nodeImplementationOf<Index.Declaration> =
 export class IndexNode extends BaseConstraint<Index.Declaration> {
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
 	expression = `[${this.signature.expression}]: ${this.value.expression}`
+
+	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
+		super(...args)
+		const key = this.signature
+		// checked by equality first so intrinsic json parses without a set engine
+		if (
+			!key.equals($ark.intrinsic.string) &&
+			!key.equals($ark.intrinsic.symbol) &&
+			!key.equals($ark.intrinsic.key) &&
+			!key.extends($ark.intrinsic.key)
+		)
+			throwParseError(writeInvalidPropertyKeyMessage(key.expression))
+		const enumerableBranches = key.branches.filter(b => b.hasKind("unit"))
+		if (enumerableBranches.length) {
+			throwParseError(
+				writeEnumerableIndexBranches(
+					enumerableBranches.map(b => printable(b.unit))
+				)
+			)
+		}
+	}
 
 	// its structure picks the keys it transforms by the signature's Allows
 	protected override get transformSelectsByContext(): boolean {

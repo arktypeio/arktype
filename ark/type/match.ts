@@ -425,7 +425,7 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		if (typeof defaultCase === "function")
 			this.case(intrinsic.unknown, defaultCase)
 
-		const schema: mutable<Union.Schema> = {
+		const schema: mutable<Union.Input> = {
 			branches: this.branches,
 			ordered: true
 		}

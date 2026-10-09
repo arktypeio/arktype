@@ -144,7 +144,13 @@ contextualize(() => {
 			],
 			[
 				() => type({ a: "string" }).get("a").or(type.instanceOf(WeakMap)),
-				() => type.$.node("union", [{ domain: "string" }, { proto: WeakMap }]),
+				() =>
+					type.$.node("union", {
+						branches: [
+							type.$.node("domain", { domain: "string" }),
+							type.$.node("proto", { proto: WeakMap })
+						]
+					}),
 				0
 			],
 			[() => type(configured()), configured, 0]

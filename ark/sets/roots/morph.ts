@@ -44,7 +44,7 @@ export const morph: setImplementationOf<Morph.Declaration> = {
 						...baseInner,
 						in: inBranch
 					}),
-				ctx.$.parseSchema
+				branches => ctx.$.node("union", { branches })
 			)
 		},
 		...defineRightwardIntersections("morph", (l, r, ctx) => {

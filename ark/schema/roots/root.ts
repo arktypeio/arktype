@@ -8,8 +8,12 @@ import {
 	type Fn,
 	type array
 } from "@ark/util"
-import { throwInvalidOperandError, type Constraint } from "../constraint.ts"
-import type { NodeSchema, nodeOfKind, reducibleKindOf } from "../kinds.ts"
+import {
+	constraintInputOf,
+	throwInvalidOperandError,
+	type Constraint
+} from "../constraint.ts"
+import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
 	BaseNode,
 	flatMorphsAreEqual,
@@ -199,7 +203,11 @@ export abstract class BaseRoot<
 
 	rawOr(r: BaseRoot): BaseRoot {
 		const branches = [...this.branches, ...(r.branches as any)]
-		return this.$.node("union", branches) as never
+		return this.$.node("union", { branches }) as never
+	}
+
+	private rootOfBranches(branches: readonly BaseRoot[]): BaseRoot {
+		return this.$.finalize(this.$.node("union", { branches }))
 	}
 
 	map(flatMapEntry: PropFlatMapper): BaseRoot {
@@ -246,8 +254,8 @@ export abstract class BaseRoot<
 
 	merge(r: unknown): BaseRoot {
 		const rNode = this.$.parseDefinition(r)
-		return this.$.schema(
-			rNode.distribute(branch =>
+		return this.rootOfBranches(
+			rNode.branches.flatMap(branch =>
 				this.applyStructuralOperation("merge", [
 					structureOf(branch) ??
 						throwParseError(
@@ -306,8 +314,8 @@ export abstract class BaseRoot<
 
 			return this.$.node("intersection", {
 				...(isHomomorphic && transformed.sequence ?
-					{ proto: Array }
-				:	{ domain: "object" }),
+					{ proto: this.$.node("proto", { proto: Array }) }
+				:	{ domain: this.$.node("domain", { domain: "object" }) }),
 				structure: transformed
 			})
 		})
@@ -338,13 +346,16 @@ export abstract class BaseRoot<
 	}
 
 	rawArray(): BaseRoot {
-		return this.$.parseSchema(
-			this.isUnknown() ?
-				{ proto: Array }
-			:	{
-					proto: Array,
-					sequence: this
-				},
+		const proto = this.$.node("proto", { proto: Array })
+		if (this.isUnknown()) return proto
+		return this.$.node(
+			"intersection",
+			{
+				proto,
+				structure: this.$.node("structure", {
+					sequence: this.$.node("sequence", { variadic: this })
+				})
+			},
 			{ prereduced: true }
 		) as never
 	}
@@ -462,7 +473,7 @@ export abstract class BaseRoot<
 						in: branch,
 						morphs: [morph]
 					}),
-			this.$.parseSchema
+			branches => this.$.node("union", { branches })
 		)
 	}
 
@@ -472,28 +483,28 @@ export abstract class BaseRoot<
 
 	constrain<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
-		schema: NodeSchema<kind>
+		schema: Constraint.Schema<kind>
 	): BaseRoot {
 		return this.$.finalize(this._constrain("root", kind, schema))
 	}
 
 	constrainIn<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
-		schema: NodeSchema<kind>
+		schema: Constraint.Schema<kind>
 	): BaseRoot {
 		return this.$.finalize(this._constrain("in", kind, schema))
 	}
 
 	constrainOut<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
-		schema: NodeSchema<kind>
+		schema: Constraint.Schema<kind>
 	): BaseRoot {
 		return this.$.finalize(this._constrain("out", kind, schema))
 	}
 
 	rawConstrain<kind extends Constraint.PrimitiveKind>(
 		kind: kind,
-		schema: NodeSchema<kind>
+		schema: Constraint.Schema<kind>
 	): BaseRoot {
 		return this._constrain("root", kind, schema)
 	}
@@ -503,7 +514,7 @@ export abstract class BaseRoot<
 		kind: Constraint.PrimitiveKind,
 		schema: any
 	): BaseRoot {
-		const constraint = this.$.node(kind, schema as never)
+		const constraint = this.$.node(kind, constraintInputOf(kind, schema))
 
 		if (constraint.isRoot()) {
 			// if the node reduces to `unknown`, nothing to do (e.g. minLength: 0)
@@ -530,7 +541,8 @@ export abstract class BaseRoot<
 		const partialIntersection = this.$.node("intersection", {
 			// important this is constraint.kind instead of kind in case
 			// the node was reduced during parsing
-			[constraint.kind]: constraint
+			[constraint.kind]:
+				constraint.impl.intersectionIsOpen ? [constraint] : constraint
 		})
 
 		const result =

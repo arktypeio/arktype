@@ -8,20 +8,13 @@ import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
-	createLengthRuleParser,
-	createLengthSchemaNormalizer,
 	type BaseRangeInner,
 	type LengthBoundableData,
-	type UnknownExpandedRangeSchema,
-	type UnknownNormalizedRangeSchema
+	type UnknownExpandedRangeSchema
 } from "./range.ts"
 
 export declare namespace MinLength {
 	export interface Inner extends BaseRangeInner {
-		rule: number
-	}
-
-	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
 		rule: number
 	}
 
@@ -36,8 +29,6 @@ export declare namespace MinLength {
 	export interface Declaration
 		extends declareNode<{
 			kind: "minLength"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: LengthBoundableData
 			reducibleTo: "intersection"
@@ -53,11 +44,8 @@ const implementation: nodeImplementationOf<MinLength.Declaration> =
 		collapsibleKey: "rule",
 		hasAssociatedError: true,
 		keys: {
-			rule: {
-				parse: createLengthRuleParser("minLength")
-			}
+			rule: {}
 		},
-		normalize: createLengthSchemaNormalizer("minLength"),
 		defaults: {
 			description: node =>
 				node.rule === 1 ? "non-empty" : `at least length ${node.rule}`,

@@ -1,6 +1,6 @@
 import { append, type Key } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
-import type { nodeOfKind, RootSchema } from "../kinds.ts"
+import type { nodeOfKind } from "../kinds.ts"
 import {
 	flatRef,
 	type BaseNode,
@@ -9,7 +9,6 @@ import {
 } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
-import type { BaseNormalizedSchema } from "../shared/declare.ts"
 import type { RootKind } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
@@ -25,11 +24,6 @@ export declare namespace Prop {
 	export type Kind = "required" | "optional"
 
 	export type Node = nodeOfKind<Kind>
-
-	export interface Schema extends BaseNormalizedSchema {
-		readonly key: Key
-		readonly value: RootSchema
-	}
 
 	export interface Inner {
 		readonly key: Key

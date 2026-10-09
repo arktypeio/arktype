@@ -1,4 +1,4 @@
-import { intrinsic, rootSchema } from "@ark/schema"
+import { intrinsic, node } from "@ark/schema"
 import { cached } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
 import { keywordModule } from "../scope.ts"
@@ -11,31 +11,31 @@ import { keywordModule } from "../scope.ts"
  */
 
 export const epoch = cached(() =>
-	rootSchema({
-		domain: {
+	node("intersection", {
+		domain: node("domain", {
 			domain: "number",
 			meta: "a number representing a Unix timestamp"
-		},
-		divisor: {
+		}),
+		divisor: node("divisor", {
 			rule: 1,
 			meta: `an integer representing a Unix timestamp`
-		},
-		min: {
+		}),
+		min: node("min", {
 			rule: -8640000000000000,
 			meta: `a Unix timestamp after -8640000000000000`
-		},
-		max: {
+		}),
+		max: node("max", {
 			rule: 8640000000000000,
 			meta: "a Unix timestamp before 8640000000000000"
-		},
+		}),
 		meta: "an integer representing a safe Unix timestamp"
 	})
 )
 
 export const integer = cached(() =>
-	rootSchema({
-		domain: "number",
-		divisor: 1
+	node("intersection", {
+		domain: node("domain", { domain: "number" }),
+		divisor: node("divisor", { rule: 1 })
 	})
 )
 
@@ -45,13 +45,13 @@ export const number: number.module = keywordModule(
 		integer,
 		epoch,
 		safe: () =>
-			rootSchema({
-				domain: {
+			node("intersection", {
+				domain: node("domain", {
 					domain: "number",
 					numberAllowsNaN: false
-				},
-				min: Number.MIN_SAFE_INTEGER,
-				max: Number.MAX_SAFE_INTEGER
+				}),
+				min: node("min", { rule: Number.MIN_SAFE_INTEGER }),
+				max: node("max", { rule: Number.MAX_SAFE_INTEGER })
 			}),
 		NaN: ["===", Number.NaN],
 		Infinity: ["===", Number.POSITIVE_INFINITY],

@@ -18,7 +18,7 @@ import {
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
 import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
-import type { NodeId, NodeParseContext } from "../parse.ts"
+import type { NodeId } from "../parse.ts"
 import type {
 	BaseRoot,
 	schemaKindOrRightOf,
@@ -27,11 +27,7 @@ import type {
 import type { BaseScope, ResolvedScopeConfig } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
-import type {
-	BaseErrorContext,
-	BaseNodeDeclaration,
-	BaseNormalizedSchema
-} from "./declare.ts"
+import type { BaseErrorContext, BaseNodeDeclaration } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
 import { namedReference } from "./registry.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
@@ -239,14 +235,9 @@ export const morphChildKinds = [
 
 export type MorphChildKind = (typeof morphChildKinds)[number]
 
-export type keySchemaDefinitions<d extends BaseNodeDeclaration> = {
-	[k in keyRequiringSchemaDefinition<d>]: NodeKeyImplementation<d, k>
+export type keyImplementationsOf<d extends BaseNodeDeclaration> = {
+	[k in keyof d["inner"]]-?: NodeKeyImplementation<d, k>
 }
-
-type keyRequiringSchemaDefinition<d extends BaseNodeDeclaration> = Exclude<
-	keyof d["normalizedSchema"],
-	keyof BaseNormalizedSchema
->
 
 export const defaultValueSerializer = (v: unknown): Json => {
 	if (typeof v === "string" || typeof v === "boolean" || v === null) return v
@@ -266,40 +257,30 @@ export const defaultValueSerializer = (v: unknown): Json => {
 
 export type NodeKeyImplementation<
 	d extends BaseNodeDeclaration,
-	k extends keyof d["normalizedSchema"],
-	instantiated = k extends keyof d["inner"] ? Exclude<d["inner"][k], undefined>
-	:	never
+	k extends keyof d["inner"],
+	instantiated = Exclude<d["inner"][k], undefined>
 > = requireKeys<
 	{
 		preserveUndefined?: true
 		child?: boolean | ((value: instantiated) => BaseNode[])
 		serialize?: (schema: instantiated) => Json
+		// a structural value defers an alias it holds elsewhere to an alias of its own
+		structural?: true
 		reduceIo?: (
 			ioKind: "in" | "out",
 			inner: makeRootAndArrayPropertiesMutable<d["inner"]>,
 			value: d["inner"][k]
 		) => void
-		parse?: (
-			schema: Exclude<d["normalizedSchema"][k], undefined>,
-			ctx: NodeParseContext<d["kind"]>
-		) => instantiated | undefined
 	},
-	// require parse if we can't guarantee the schema value will be valid on inner
-	| (d["normalizedSchema"][k] extends instantiated | undefined ? never
-	  :	"parse")
 	// require keys containing children specify it, although it can be false in cases like
 	// declaredOut where we don't want to treat the node as a child
-	| ([instantiated] extends [listable<BaseNode>] ? "child" : never)
+	[instantiated] extends [listable<BaseNode>] ? "child" : never
 >
 
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
-	keys: keySchemaDefinitions<d>
-	normalize: (schema: d["schema"], $: BaseScope) => d["normalizedSchema"]
-	applyConfig?: (
-		schema: d["normalizedSchema"],
-		config: ResolvedScopeConfig
-	) => d["normalizedSchema"]
+	keys: keyImplementationsOf<d>
+	applyConfig?: (inner: d["inner"], config: ResolvedScopeConfig) => d["inner"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: {
 		[k in keyof d["inner"]]: Json

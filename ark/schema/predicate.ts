@@ -2,7 +2,7 @@ import { BaseConstraint } from "./constraint.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseErrorContext,
-	BaseNormalizedSchema,
+	BaseNodeInput,
 	declareNode
 } from "./shared/declare.ts"
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
@@ -15,11 +15,11 @@ import type {
 
 export declare namespace Predicate {
 	export type Schema<predicate extends Predicate = Predicate> =
-		| NormalizedSchema<predicate>
+		| ExpandedSchema<predicate>
 		| predicate
 
-	export interface NormalizedSchema<predicate extends Predicate = Predicate>
-		extends BaseNormalizedSchema {
+	export interface ExpandedSchema<predicate extends Predicate = Predicate>
+		extends BaseNodeInput {
 		readonly predicate: predicate
 	}
 
@@ -34,8 +34,6 @@ export declare namespace Predicate {
 	export interface Declaration
 		extends declareNode<{
 			kind: "predicate"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			intersectionIsOpen: true
 			errorContext: ErrorContext
@@ -55,8 +53,6 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 		keys: {
 			predicate: {}
 		},
-		normalize: schema =>
-			typeof schema === "function" ? { predicate: schema } : schema,
 		defaults: {
 			description: node => describePredicate(node.predicate),
 			// error contexts from ctx.reject have neither a description nor a predicate

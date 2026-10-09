@@ -11,7 +11,6 @@ import {
 	type RootKind,
 	type Union,
 	type UnknownIntersectionResult,
-	type mutableNormalizedRootOfKind,
 	type nodeOfKind
 } from "@ark/schema"
 import type { TypeGuard } from "@ark/util"
@@ -150,7 +149,7 @@ const pipeMorphed = (
 					branch.rawIn.equals(viableBranches[i].rawIn)
 				)
 			)
-				return ctx.$.parseSchema(viableBranches)
+				return ctx.$.node("union", { branches: viableBranches })
 
 			// otherwise, the input has not changed so preserve metadata
 
@@ -165,13 +164,10 @@ const pipeMorphed = (
 				})
 			}
 
-			const schema: mutableNormalizedRootOfKind<"union"> = {
-				branches: viableBranches
-			}
-
-			if (meta) schema.meta = meta
-
-			return ctx.$.parseSchema(schema)
+			return ctx.$.node(
+				"union",
+				meta ? { branches: viableBranches, meta } : { branches: viableBranches }
+			)
 		}
 	)
 

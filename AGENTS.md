@@ -36,7 +36,7 @@ Keywords follow `typescriptType.constraint.subconstraint`, e.g. `string.email`, 
 
 To add a regex string validator, create it with `regexStringNode(/^pattern$/, "description")` (patterns must be anchored), register it in the `Scope.module()` in `ark/type/keywords/string.ts` and add it to the namespace `$` type.
 
-To add a number keyword, use `rootSchema()` with `domain`, `min`/`max`, `divisor` or `predicate` constraints. See `ark/type/keywords/number.ts`.
+To add a number keyword, use `node("intersection", …)` with a `domain` node and `min`/`max`, `divisor` or `predicate` nodes. See `ark/type/keywords/number.ts`.
 
 ## Code Style
 

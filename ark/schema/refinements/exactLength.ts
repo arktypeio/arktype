@@ -2,7 +2,7 @@ import { InternalPrimitiveConstraint } from "../constraint.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type {
 	BaseErrorContext,
-	BaseNormalizedSchema,
+	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
 import {
@@ -11,18 +11,18 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
-import { createLengthRuleParser, type LengthBoundableData } from "./range.ts"
+import { assertLengthRule, type LengthBoundableData } from "./range.ts"
 
 export declare namespace ExactLength {
 	export interface Inner {
 		readonly rule: number
 	}
 
-	export interface NormalizedSchema extends BaseNormalizedSchema {
+	export interface ExpandedSchema extends BaseNodeInput {
 		readonly rule: number
 	}
 
-	export type Schema = NormalizedSchema | number
+	export type Schema = ExpandedSchema | number
 
 	export interface ErrorContext
 		extends BaseErrorContext<"exactLength">,
@@ -30,8 +30,6 @@ export declare namespace ExactLength {
 
 	export type Declaration = declareNode<{
 		kind: "exactLength"
-		schema: Schema
-		normalizedSchema: NormalizedSchema
 		inner: Inner
 		prerequisite: LengthBoundableData
 		errorContext: ErrorContext
@@ -45,12 +43,8 @@ const implementation: nodeImplementationOf<ExactLength.Declaration> =
 		kind: "exactLength",
 		collapsibleKey: "rule",
 		keys: {
-			rule: {
-				parse: createLengthRuleParser("exactLength")
-			}
+			rule: {}
 		},
-		normalize: schema =>
-			typeof schema === "number" ? { rule: schema } : schema,
 		hasAssociatedError: true,
 		defaults: {
 			description: node => `exactly length ${node.rule}`,
@@ -59,6 +53,13 @@ const implementation: nodeImplementationOf<ExactLength.Declaration> =
 	})
 
 export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Declaration> {
+	constructor(
+		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
+	) {
+		super(...args)
+		assertLengthRule("exactLength", this.rule)
+	}
+
 	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
 		data.length === this.rule
 

@@ -47,7 +47,7 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 				$ark.intrinsic.unknown.internal
 			:	s.ctx.$.node(
 					s.kind,
-					Object.assign(s.baseInner, unflattenConstraints(s.l)),
+					Object.assign(s.baseInner, unflattenConstraints(s.l)) as never,
 					{ prereduced: true }
 				)
 		// a root, e.g. an empty array, can only meet the object a structure constrains

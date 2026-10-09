@@ -51,7 +51,7 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 		}
 		if (
 			// if any variadic adjacent elements were moved to minVariadicLength
-			minVariadicLength !== raw.minVariadicLength ||
+			minVariadicLength !== (raw.minVariadicLength ?? 0) ||
 			// or any postfix elements were moved to prefix
 			(raw.prefix && raw.prefix.length !== prefix.length)
 		) {
@@ -60,12 +60,12 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 				"sequence",
 				{
 					...raw,
-					// empty lists will be omitted during parsing
+					// empty lists are omitted when it's created
 					prefix,
 					defaultables,
 					optionals,
 					postfix,
-					minVariadicLength
+					...(minVariadicLength ? { minVariadicLength } : {})
 				},
 				{ prereduced: true }
 			)
@@ -91,15 +91,24 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 				viableBranches.length === 0 ? rootState.disjoint!
 				: viableBranches.length === 1 && viableBranches[0].result.length ?
 					ctx.$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
-				:	ctx.$.node(
-						"union",
-						viableBranches.map(state =>
-							// an empty tuple has no sequence, only an exact length of 0
-							state.result.length ?
-								{ proto: Array, sequence: sequenceTupleToInner(state.result) }
-							:	{ proto: Array, exactLength: 0 }
+				:	ctx.$.node("union", {
+						branches: viableBranches.map(state =>
+							ctx.$.node("intersection", {
+								proto: ctx.$.node("proto", { proto: Array }),
+								// an empty tuple has no sequence, only an exact length of 0
+								...(state.result.length ?
+									{
+										structure: ctx.$.node("structure", {
+											sequence: ctx.$.node(
+												"sequence",
+												sequenceTupleToInner(state.result)
+											)
+										})
+									}
+								:	{ exactLength: ctx.$.node("exactLength", { rule: 0 }) })
+							})
 						)
-					)
+					})
 			)
 		}
 

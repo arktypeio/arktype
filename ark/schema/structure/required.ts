@@ -11,14 +11,10 @@ export declare namespace Required {
 		missingValueDescription: string
 	}
 
-	export interface Schema extends Prop.Schema {}
-
 	export interface Inner extends Prop.Inner {}
 
 	export type Declaration = declareNode<
 		Prop.Declaration<"required"> & {
-			schema: Schema
-			normalizedSchema: Schema
 			inner: Inner
 			errorContext: ErrorContext
 		}
@@ -36,10 +32,9 @@ const implementation: nodeImplementationOf<Required.Declaration> =
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.parseStructuralValue(schema)
+				structural: true
 			}
 		},
-		normalize: schema => schema,
 		defaults: {
 			description: node => `${node.compiledKey}: ${node.value.description}`,
 			expected: ctx => ctx.missingValueDescription,

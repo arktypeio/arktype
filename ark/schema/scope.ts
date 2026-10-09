@@ -1,9 +1,7 @@
 import {
 	defineLazily,
 	flatMorph,
-	hasDomain,
 	includes,
-	isArray,
 	isThunk,
 	ParseError,
 	printable,
@@ -17,9 +15,7 @@ import {
 	type anyOrNever,
 	type array,
 	type conform,
-	type flattenListable,
 	type intersectUnion,
-	type listable,
 	type noSuggest,
 	type satisfy,
 	type show
@@ -37,13 +33,7 @@ import {
 	type GenericRootParser
 } from "./generic.ts"
 import { bootstrap } from "./intrinsic.ts"
-import {
-	nodeImplementationsByKind,
-	type NodeSchema,
-	type RootSchema,
-	type nodeOfKind,
-	type reducibleKindOf
-} from "./kinds.ts"
+import type { NodeInput, nodeOfKind, reducibleKindOf } from "./kinds.ts"
 import {
 	RootModule,
 	bindModule,
@@ -57,25 +47,28 @@ import {
 	nodesByRegisteredId,
 	parseNode,
 	registerNodeId,
-	schemaKindOf,
 	withId,
 	type AttachedParseContext,
 	type BaseParseContext,
 	type BaseParseContextInput,
-	type BaseParseOptions,
-	type NodeId,
-	type NodeParseContext,
-	type NodeParseContextInput
+	type BaseParseOptions
 } from "./parse.ts"
-import { Alias, isResolvable, resolveShallowAliases } from "./roots/alias.ts"
+import { parseSchema, type RootSchema } from "./parseSchema.ts"
+import {
+	type Alias,
+	isResolvable,
+	resolveShallowAliases
+} from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
+import type { Union } from "./roots/union.ts"
 import {
 	CompiledFunction,
 	NodeCompiler,
 	type InvokeOptions
 } from "./shared/compile.ts"
-import type { NodeKind, RootKind } from "./shared/implement.ts"
+import type { NodeKind } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
+import { missingSetEngineMessage } from "./shared/sets.ts"
 import {
 	Traversal,
 	type TraversalKind,
@@ -148,11 +141,6 @@ export type toInternalScope<$> = BaseScope<{
 }>
 
 type CachedResolution = BaseParseContext | BaseRoot | GenericRoot
-
-const schemaBranchesOf = (schema: object) =>
-	isArray(schema) ? schema
-	: "branches" in schema && isArray(schema.branches) ? schema.branches
-	: undefined
 
 const throwMismatchedNodeRootError = (expected: NodeKind, actual: NodeKind) =>
 	throwParseError(
@@ -546,10 +534,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (!uniqueValues.includes(value)) uniqueValues.push(value)
 
 		const branches = uniqueValues.map(unit => this.node("unit", { unit }, opts))
-		return this.node("union", branches, {
-			...opts,
-			prereduced: true
-		})
+		return this.node(
+			"union",
+			{ branches },
+			{
+				...opts,
+				prereduced: true
+			}
+		)
 	}
 
 	lazilyResolve(
@@ -567,76 +559,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 	}
 
-	schema: InternalSchemaParser = (schema, opts) =>
-		this.finalize(this.parseSchema(schema, opts))
-
-	parseSchema: InternalSchemaParser = (schema, opts) =>
-		this.node(schemaKindOf(schema), schema, opts)
-
-	// an alias belongs in a structural value, so a value holding one elsewhere is deferred to an alias of its own
-	parseStructuralValue(schema: RootSchema, opts?: BaseParseOptions): BaseRoot {
-		const node = this.parseSchema(schema, opts)
-		if (!node.includesShallowAlias || node.hasKind("alias")) return node
-		nodesByRegisteredId[node.id] = node
-		return this.node("alias", { reference: node.id }, { prereduced: true })
-	}
-
-	protected preparseNode(
-		kinds: NodeKind | listable<RootKind>,
-		schema: unknown,
-		opts: BaseParseOptions
-	): BaseNode | NodeParseContextInput {
-		let kind: NodeKind =
-			typeof kinds === "string" ? kinds : schemaKindOf(schema, kinds)
-
-		if (isNode(schema) && schema.kind === kind) return schema
-
-		if (kind === "alias" && !opts?.prereduced) {
-			const { reference } = Alias.implementation.normalize(
-				schema as never,
-				this
-			)
-			if (reference.startsWith("$")) {
-				const registered =
-					reference.startsWith("$ark.") ?
-						nodesByRegisteredId[reference.slice(5) as NodeId]
-					:	undefined
-				const resolution =
-					hasArkKind(registered, "root") ? registered : (
-						this.resolveRoot(reference.slice(1))
-					)
-				schema = resolution
-				kind = resolution.kind
-			}
-		} else if (kind === "union" && hasDomain(schema, "object")) {
-			const branches = schemaBranchesOf(schema)
-			if (branches?.length === 1) {
-				schema = branches[0]
-				kind = schemaKindOf(schema)
-			}
-		}
-
-		if (isNode(schema) && schema.kind === kind) return schema
-
-		const impl = nodeImplementationsByKind[kind]
-		const normalizedSchema = impl.normalize?.(schema, this) ?? schema
-
-		// check again after normalization in case a node is a valid collapsed
-		// schema for the kind (e.g. sequence can collapse to element accepting a Node')
-		if (isNode(normalizedSchema)) {
-			return normalizedSchema.kind === kind ?
-					normalizedSchema
-				:	throwMismatchedNodeRootError(kind, normalizedSchema.kind)
-		}
-
-		return {
-			...opts,
-			$: this,
-			kind,
-			def: normalizedSchema,
-			prefix: opts.alias ?? kind
-		}
-	}
+	schema = (schema: RootSchema, opts?: BaseParseOptions): BaseRoot =>
+		this.finalize(parseSchema(schema, this, opts))
 
 	bindReference<reference extends BaseNode | GenericRoot>(
 		reference: reference
@@ -953,26 +877,45 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this.lazyExports as never
 	}
 
-	node = <
-		kinds extends NodeKind | array<RootKind>,
-		prereduced extends boolean = false
-	>(
-		kinds: kinds,
-		nodeSchema: NodeSchema<flattenListable<kinds>>,
+	node = <kind extends NodeKind, prereduced extends boolean = false>(
+		kind: kind,
+		input: NodeInput<kind>,
 		opts = {} as BaseParseOptions<prereduced>
-	): nodeOfKind<
-		prereduced extends true ? flattenListable<kinds>
-		:	reducibleKindOf<flattenListable<kinds>>
-	> => {
-		const ctxOrNode = this.preparseNode(kinds, nodeSchema, opts)
+	): nodeOfKind<prereduced extends true ? kind : reducibleKindOf<kind>> => {
+		if (isNode(input)) {
+			return input.kind === kind ?
+					(this.bindReference(input) as never)
+				:	throwMismatchedNodeRootError(kind, input.kind)
+		}
 
-		if (isNode(ctxOrNode)) return this.bindReference(ctxOrNode) as never
+		if (kind === "union") {
+			const union = input as Union.Inner
+			const branches = union.branches.flatMap(branch =>
+				(branch as BaseRoot).hasKind("union") ?
+					(branch as {} as Union.Node).branches
+				:	branch
+			)
+			// a union of one branch is that branch
+			if (branches.length === 1) return this.bindReference(branches[0]) as never
+			// a set engine rejects overlapping branches that transform differently
+			if (
+				!union.ordered &&
+				!$ark.sets &&
+				branches.length > 1 &&
+				branches.some(branch => branch.includesTransform)
+			)
+				throwParseError(missingSetEngineMessage)
+			input = { ...input, branches } as never
+		}
 
-		const ctx = this.createParseContext(ctxOrNode)
+		const ctx = this.createParseContext({
+			...opts,
+			kind,
+			def: input as NodeInput,
+			prefix: opts.alias ?? kind
+		})
 
-		const node = parseNode(ctx)
-
-		return this.bindReference(node) as never
+		return this.bindReference(parseNode(ctx)) as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>
@@ -1040,15 +983,17 @@ export abstract class BaseScope<$ extends {} = {}> {
 }
 
 export class SchemaScope<$ extends {} = {}> extends BaseScope<$> {
-	parseOwnDefinitionFormat(def: unknown, ctx: NodeParseContext): BaseRoot {
-		return parseNode(ctx) as never
+	parseOwnDefinitionFormat(def: unknown, ctx: BaseParseContext): BaseRoot {
+		return parseSchema(def, this, ctx.alias ? { alias: ctx.alias } : undefined)
 	}
 
 	protected preparseOwnDefinitionFormat(
-		schema: RootSchema,
+		def: unknown,
 		opts: BaseParseOptions
-	): BaseRoot | NodeParseContextInput {
-		return this.preparseNode(schemaKindOf(schema), schema, opts) as never
+	): BaseRoot | BaseParseContextInput {
+		return hasArkKind(def, "root") ? def : (
+				{ ...opts, def, prefix: opts.alias ?? "schema" }
+			)
 	}
 
 	protected preparseOwnAliasEntry(k: string, v: unknown): AliasDefEntry {
@@ -1180,11 +1125,6 @@ export type SchemaScopeParser = <const aliases>(
 
 export const schemaScope: SchemaScopeParser = (aliases, config) =>
 	new SchemaScope(aliases, config)
-
-export type InternalSchemaParser = (
-	schema: RootSchema,
-	opts?: BaseParseOptions
-) => BaseRoot
 
 export const rootSchemaScope: SchemaScope = new SchemaScope({})
 

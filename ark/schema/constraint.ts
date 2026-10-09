@@ -1,19 +1,22 @@
 import {
 	capitalize,
-	isArray,
 	throwParseError,
 	type array,
 	type describe,
-	type listable
+	type dict
 } from "@ark/util"
-import type {
-	NodeSchema,
-	Prerequisite,
-	innerAttachedAs,
-	nodeOfKind
-} from "./kinds.ts"
+import type { NodeInput, Prerequisite, nodeOfKind } from "./kinds.ts"
 import { BaseNode } from "./node.ts"
-import type { NodeParseContext } from "./parse.ts"
+import type { Predicate } from "./predicate.ts"
+import type { After } from "./refinements/after.ts"
+import type { Before } from "./refinements/before.ts"
+import type { Divisor } from "./refinements/divisor.ts"
+import type { ExactLength } from "./refinements/exactLength.ts"
+import type { Max } from "./refinements/max.ts"
+import type { MaxLength } from "./refinements/maxLength.ts"
+import type { Min } from "./refinements/min.ts"
+import type { MinLength } from "./refinements/minLength.ts"
+import type { Pattern } from "./refinements/pattern.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
@@ -42,6 +45,23 @@ export declare namespace Constraint {
 	}
 
 	export type PrimitiveKind = Exclude<ConstraintKind, StructuralKind>
+
+	export type Schema<kind extends PrimitiveKind = PrimitiveKind> =
+		SchemasByKind[kind]
+
+	interface SchemasByKind {
+		pattern: Pattern.Schema
+		divisor: Divisor.Schema
+		exactLength: ExactLength.Schema
+		max: Max.Schema
+		min: Min.Schema
+		maxLength: MaxLength.Schema
+		minLength: MinLength.Schema
+		before: Before.Schema
+		after: After.Schema
+		structure: NodeInput<"structure">
+		predicate: Predicate.Schema
+	}
 }
 
 export abstract class BaseConstraint<
@@ -101,25 +121,36 @@ export abstract class InternalPrimitiveConstraint<
 	}
 }
 
-export const constraintKeyParser =
-	<kind extends ConstraintKind>(kind: kind) =>
-	(
-		schema: listable<NodeSchema<kind>>,
-		ctx: NodeParseContext
-	): innerAttachedAs<kind> | undefined => {
-		if (isArray(schema)) {
-			if (schema.length === 0) {
-				// Omit empty lists as input
-				return
-			}
-			return schema.map(schema => ctx.$.node(kind, schema as never)) as never
-		}
-		const child = ctx.$.node(kind, schema)
-		// If the constraint was reduced to a root node (like unknown for minLength: 0),
-		// omit it from the schema since it's trivially satisfied
-		if (child.isRoot()) return
-		return (child.hasOpenIntersection() ? [child] : child) as never
+// the inner of a constraint from what constrain takes, a rule alone or with
+// its options, e.g. 5 or { rule: 5, exclusive: true }
+export const constraintInputOf = <kind extends Constraint.PrimitiveKind>(
+	kind: kind,
+	schema: Constraint.Schema<kind>
+): NodeInput<kind> => {
+	if (typeof schema === "function") return { predicate: schema } as never
+	if (schema instanceof RegExp) {
+		return (
+			schema.flags ?
+				{ rule: schema.source, flags: schema.flags }
+			:	{ rule: schema.source }) as never
 	}
+	const { exclusive, ...input } = (
+		typeof schema === "object" && !(schema instanceof Date) ?
+			schema
+		:	{ rule: schema }) as dict & { rule: any }
+	if (kind === "after" || kind === "before") {
+		const limit = new Date(input.rule)
+		// an exclusive date limit is the closest inclusive one
+		if (exclusive) limit.setTime(limit.valueOf() + (kind === "after" ? 1 : -1))
+		return { ...input, rule: limit } as never
+	}
+	if (kind === "pattern" && !input.flags) delete input.flags
+	if (!exclusive) return input as never
+	return (
+		kind === "minLength" ? { ...input, rule: input.rule + 1 }
+		: kind === "maxLength" ? { ...input, rule: input.rule - 1 }
+		: { ...input, exclusive }) as never
+}
 
 export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &
 	kindLeftOf<kind>

@@ -1,15 +1,10 @@
 import {
 	domainDescriptions,
 	domainOf,
-	hasKey,
 	throwParseError,
 	type Domain as _Domain
 } from "@ark/util"
-import type {
-	BaseErrorContext,
-	BaseNormalizedSchema,
-	declareNode
-} from "../shared/declare.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -30,23 +25,11 @@ export declare namespace Domain {
 		readonly numberAllowsInfinity?: boolean
 	}
 
-	export interface NormalizedSchema<
-		domain extends NonEnumerable = NonEnumerable
-	> extends BaseNormalizedSchema,
-			Inner<domain> {}
-
-	export type Schema<
-		// only domains with an infinite number of values are allowed as bases
-		domain extends NonEnumerable = NonEnumerable
-	> = domain | NormalizedSchema<domain>
-
 	export interface ErrorContext extends BaseErrorContext<"domain">, Inner {}
 
 	export interface Declaration
 		extends declareNode<{
 			kind: "domain"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			errorContext: ErrorContext
 		}> {}
@@ -64,23 +47,16 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 			numberAllowsNaN: {},
 			numberAllowsInfinity: {}
 		},
-		normalize: schema =>
-			typeof schema === "string" ? { domain: schema }
-			: hasKey(schema, "numberAllowsNaN") && schema.domain !== "number" ?
-				throwParseError(Domain.writeBadAllowNanMessage(schema.domain))
-			: hasKey(schema, "numberAllowsInfinity") && schema.domain !== "number" ?
-				throwParseError(Domain.writeBadAllowInfinityMessage(schema.domain))
-			:	schema,
-		applyConfig: (schema, config) => {
-			if (schema.domain !== "number") return schema
-			if (schema.numberAllowsNaN === undefined && config.numberAllowsNaN)
-				schema = { ...schema, numberAllowsNaN: true }
+		applyConfig: (inner, config) => {
+			if (inner.domain !== "number") return inner
+			if (inner.numberAllowsNaN === undefined && config.numberAllowsNaN)
+				inner = { ...inner, numberAllowsNaN: true }
 			if (
-				schema.numberAllowsInfinity === undefined &&
+				inner.numberAllowsInfinity === undefined &&
 				config.numberAllowsInfinity
 			)
-				schema = { ...schema, numberAllowsInfinity: true }
-			return schema
+				inner = { ...inner, numberAllowsInfinity: true }
+			return inner
 		},
 		defaults: {
 			description: node => domainDescriptions[node.domain],
@@ -92,6 +68,16 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 	})
 
 export class DomainNode extends InternalBasis<Domain.Declaration> {
+	constructor(...args: ConstructorParameters<typeof InternalBasis>) {
+		super(...args)
+		if (this.domain !== "number") {
+			if (this.numberAllowsNaN !== undefined)
+				throwParseError(Domain.writeBadAllowNanMessage(this.domain))
+			if (this.numberAllowsInfinity !== undefined)
+				throwParseError(Domain.writeBadAllowInfinityMessage(this.domain))
+		}
+	}
+
 	private readonly requiresNaNCheck =
 		this.domain === "number" && !this.numberAllowsNaN
 

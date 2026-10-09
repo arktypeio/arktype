@@ -1,9 +1,9 @@
 import {
 	append,
 	conflatenate,
-	conflatenateAll,
 	flatMorph,
 	nameOf,
+	omit,
 	printable,
 	spliterate,
 	throwParseError,
@@ -13,7 +13,7 @@ import {
 	type Key,
 	type listable
 } from "@ark/util"
-import { BaseConstraint, constraintKeyParser } from "../constraint.ts"
+import { BaseConstraint } from "../constraint.ts"
 import { intrinsic } from "../intrinsic.ts"
 import type { BaseNode, GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
@@ -26,7 +26,7 @@ import {
 } from "../shared/compile.ts"
 import type {
 	attachmentsOf,
-	BaseNormalizedSchema,
+	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
 import {
@@ -68,15 +68,6 @@ export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 export type UndeclaredKeyHandling = "reject" | "delete"
 
 export declare namespace Structure {
-	export interface Schema extends BaseNormalizedSchema {
-		readonly optional?: readonly Optional.Schema[]
-		readonly required?: readonly Required.Schema[]
-		readonly index?: readonly Index.Schema[]
-		readonly sequence?: Sequence.Schema
-		readonly undeclared?: UndeclaredKeyBehavior
-		readonly rejectAllowsSymbolKeys?: boolean
-	}
-
 	export interface Inner {
 		readonly optional?: readonly Optional.Node[]
 		readonly required?: readonly Required.Node[]
@@ -90,11 +81,15 @@ export declare namespace Structure {
 		export type mutable = makeRootAndArrayPropertiesMutable<Inner>
 	}
 
+	// "ignore" overrides a scope's onUndeclaredKey, so it's dropped only after
+	// config is applied
+	export interface Input extends Omit<Inner, "undeclared">, BaseNodeInput {
+		readonly undeclared?: UndeclaredKeyBehavior
+	}
+
 	export interface Declaration
 		extends declareNode<{
 			kind: "structure"
-			schema: Schema
-			normalizedSchema: Schema
 			inner: Inner
 			prerequisite: object
 			childKind: StructuralKind
@@ -126,45 +121,23 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 	implementNode<Structure.Declaration>({
 		kind: "structure",
 		hasAssociatedError: false,
-		normalize: schema => {
+		applyConfig: (inner, config) => {
+			if ((inner.undeclared as UndeclaredKeyBehavior) === "ignore")
+				return omit(inner, { undeclared: 1 })
+			const undeclared = inner.undeclared ?? config.onUndeclaredKey
 			if (
-				schema.rejectAllowsSymbolKeys !== undefined &&
-				schema.undeclared !== "reject"
-			) {
-				throwParseError(
-					writeBadRejectAllowsSymbolKeysMessage(schema.undeclared ?? "ignore")
-				)
-			}
-			// a set engine rejects duplicate keys in order with its other reduce errors
-			if ($ark.sets) return schema
-			const seen: Record<Key, true | undefined> = Object.create(null)
-			for (const prop of conflatenateAll(schema.required, schema.optional)) {
-				if (prop.key in seen)
-					throwParseError(writeDuplicateKeyMessage(prop.key))
-				seen[prop.key] = true
-			}
-			return schema
-		},
-		applyConfig: (schema, config) => {
-			const undeclared = schema.undeclared ?? config.onUndeclaredKey
-			if (
-				schema.rejectAllowsSymbolKeys === undefined &&
+				inner.rejectAllowsSymbolKeys === undefined &&
 				undeclared === "reject" &&
 				config.rejectAllowsSymbolKeys
 			)
-				return { ...schema, undeclared, rejectAllowsSymbolKeys: true }
-			if (!schema.undeclared && config.onUndeclaredKey !== "ignore") {
-				return {
-					...schema,
-					undeclared: config.onUndeclaredKey
-				}
-			}
-			return schema
+				return { ...inner, undeclared, rejectAllowsSymbolKeys: true }
+			if (!inner.undeclared && config.onUndeclaredKey !== "ignore")
+				return { ...inner, undeclared: config.onUndeclaredKey }
+			return inner
 		},
 		keys: {
 			required: {
 				child: true,
-				parse: constraintKeyParser("required"),
 				reduceIo: (ioKind, inner, nodes) => {
 					// ensure we don't overwrite nodes added by optional
 					inner.required = append(
@@ -179,7 +152,6 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 			},
 			optional: {
 				child: true,
-				parse: constraintKeyParser("optional"),
 				reduceIo: (ioKind, inner, nodes) => {
 					if (ioKind === "in") {
 						inner.optional = nodes!.map(node => node.rawIn as OptionalNode)
@@ -195,16 +167,12 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 				}
 			},
 			index: {
-				child: true,
-				parse: constraintKeyParser("index")
+				child: true
 			},
 			sequence: {
-				child: true,
-				// e.g. ["number", "string"] is (number | string)[], not two sequences
-				parse: (schema, ctx) => ctx.$.node("sequence", schema)
+				child: true
 			},
 			undeclared: {
-				parse: behavior => (behavior === "ignore" ? undefined : behavior),
 				reduceIo: (ioKind, inner, value) => {
 					if (value === "reject") {
 						inner.undeclared = "reject"
@@ -228,6 +196,23 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
+		if (
+			this.rejectAllowsSymbolKeys !== undefined &&
+			this.undeclared !== "reject"
+		) {
+			throwParseError(
+				writeBadRejectAllowsSymbolKeysMessage(this.undeclared ?? "ignore")
+			)
+		}
+		// a set engine rejects duplicate keys in order with its other reduce errors
+		if (!$ark.sets) {
+			const seen: Record<Key, true | undefined> = Object.create(null)
+			for (const prop of this.props) {
+				if (prop.key in seen)
+					throwParseError(writeDuplicateKeyMessage(prop.key))
+				seen[prop.key] = true
+			}
+		}
 		this.includesTransform ||= this.structuralMorph !== undefined
 	}
 
@@ -263,7 +248,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			for (const { signature } of this.index)
 				branches = branches.concat(signature.branches)
 		}
-		return (this._keyof = this.$.node("union", branches))
+		return (this._keyof = this.$.node("union", { branches }))
 	}
 
 	map(flatMapProp: PropFlatMapper): StructureNode {
@@ -357,10 +342,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				} else if (this.sequence.variadic) {
 					// ideally we could return something more specific for postfix
 					// but there is no way to represent it using an index alone
-					const nonFixedElement = this.$.node(
-						"union",
-						this.sequence.variadicOrPostfix
-					)
+					const nonFixedElement = this.$.node("union", {
+						branches: this.sequence.variadicOrPostfix
+					})
 					value = value?.and(nonFixedElement) ?? nonFixedElement
 				}
 			}
@@ -411,10 +395,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			...(inner.sequence ? { sequence: inner.sequence.require() } : {}),
 			required: this.props.map(prop =>
 				prop.hasKind("optional") ?
-					{
-						key: prop.key,
-						value: prop.value
-					}
+					this.$.node("required", { key: prop.key, value: prop.value })
 				:	prop
 			)
 		})
@@ -1231,11 +1212,11 @@ export type PropFlatMapper = (entry: Prop.Node) => listable<MappedPropInner>
 export type MappedPropInner = BaseMappedPropInner | OptionalMappedPropInner
 
 // this assumes the props on Required.Inner are a subset of those on Optional.Inner
-export interface BaseMappedPropInner extends Required.Schema {
+export interface BaseMappedPropInner extends Required.Inner {
 	kind?: "required" | "optional"
 }
 
-export interface OptionalMappedPropInner extends Optional.Schema {
+export interface OptionalMappedPropInner extends Optional.Inner {
 	kind: "optional"
 }
 
@@ -1274,8 +1255,11 @@ export const normalizeIndex = (
 		k => k.hasKind("unit")
 	)
 
-	if (!enumerableBranches.length)
-		return { index: $.node("index", { signature, value }) }
+	if (!enumerableBranches.length) {
+		return {
+			index: $.node("index", { signature: signature as Index.KeyNode, value })
+		}
+	}
 
 	const normalized: NormalizedIndex = {}
 
@@ -1289,7 +1273,9 @@ export const normalizeIndex = (
 
 	if (nonEnumerableBranches.length) {
 		normalized.index = $.node("index", {
-			signature: nonEnumerableBranches,
+			signature: $.node("union", {
+				branches: nonEnumerableBranches
+			}) as Index.KeyNode,
 			value
 		})
 	}

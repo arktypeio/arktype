@@ -31,7 +31,6 @@ import {
 import type { BaseConstraint } from "./constraint.ts"
 import type {
 	Inner,
-	NormalizedSchema,
 	childKindOf,
 	mutableInnerOfKind,
 	nodeOfKind,
@@ -47,6 +46,7 @@ import type { BaseScope } from "./scope.ts"
 import { CompiledFunction, type NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
+	BaseNodeInput,
 	TypeMeta,
 	attachmentsOf
 } from "./shared/declare.ts"
@@ -631,7 +631,7 @@ export abstract class BaseNode<
 		}
 
 		// an alias read while definitions are open stands for its input and output alike, so a union of them is reduced once final
-		return this.$.node(this.kind, ioInner, {
+		return this.$.node(this.kind, ioInner as never, {
 			prereduced: this.hasKind("union") && this.includesAlias && !isIoFinal()
 		})
 	}
@@ -900,7 +900,7 @@ export abstract class BaseNode<
 			meta: this.meta
 		})
 
-		const transformedInner =
+		let transformedInner =
 			ctx.selected && !ctx.selected.includes(this) ?
 				innerWithMeta
 			:	mapper(this.kind, innerWithMeta, ctx)
@@ -928,9 +928,11 @@ export abstract class BaseNode<
 				this.kind === "index") &&
 			!("value" in transformedInner)
 		) {
-			return ctx.undeclaredKeyHandling ?
-					({ ...transformedInner, value: $ark.intrinsic.unknown } as never)
-				:	null
+			if (!ctx.undeclaredKeyHandling) return null
+			transformedInner = {
+				...transformedInner,
+				value: $ark.intrinsic.unknown
+			} as never
 		}
 
 		if (this.kind === "morph") {
@@ -940,7 +942,7 @@ export abstract class BaseNode<
 
 		return (transformedNode = $.node(
 			this.kind,
-			transformedInner,
+			transformedInner as never,
 			ctx.parseOptions
 		) as never)
 	}
@@ -967,7 +969,7 @@ export abstract class BaseNode<
 		if (normalized.boundary === "self") {
 			return this.$.node(
 				this.kind,
-				mapper(this.kind, { ...this.inner, meta: this.meta })
+				mapper(this.kind, { ...this.inner, meta: this.meta }) as never
 			) as never
 		}
 
@@ -1461,7 +1463,7 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	kind: kind,
 	innerWithMeta: Inner<kind> & { meta: ArkEnv.meta },
 	ctx: DeepNodeTransformContext
-) => NormalizedSchema<kind> | null
+) => (Inner<kind> & BaseNodeInput) | null
 
 // createRootApply's statements, compiled per root so V8 can inline its calls
 const compileRootApply = (node: BaseRoot): RootApply => {

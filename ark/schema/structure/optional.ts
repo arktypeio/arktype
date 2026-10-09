@@ -24,18 +24,12 @@ import { isResolutionFinal, queueUnchecked } from "../shared/utils.ts"
 import { BaseProp, type Prop } from "./prop.ts"
 
 export declare namespace Optional {
-	export interface Schema extends Prop.Schema {
-		default?: unknown
-	}
-
 	export interface Inner extends Prop.Inner {
 		default?: unknown
 	}
 
 	export type Declaration = declareNode<
 		Prop.Declaration<"optional"> & {
-			schema: Schema
-			normalizedSchema: Schema
 			inner: Inner
 		}
 	>
@@ -56,16 +50,12 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 			key: {},
 			value: {
 				child: true,
-				parse: (schema, ctx) => ctx.$.parseStructuralValue(schema)
+				structural: true
 			},
 			default: {
 				preserveUndefined: true
 			}
 		},
-		normalize: (schema, $) =>
-			!$ark.sets && $.resolvedConfig.exactOptionalPropertyTypes === false ?
-				throwParseError(missingSetEngineMessage)
-			:	schema,
 		defaults: {
 			description: node => `${node.compiledKey}?: ${node.value.description}`
 		}
@@ -74,6 +64,11 @@ const implementation: nodeImplementationOf<Optional.Declaration> =
 export class OptionalNode extends BaseProp<"optional"> {
 	constructor(...args: ConstructorParameters<typeof BaseProp>) {
 		super(...args)
+		if (
+			!$ark.sets &&
+			this.$.resolvedConfig.exactOptionalPropertyTypes === false
+		)
+			throwParseError(missingSetEngineMessage)
 		if ("default" in this.inner)
 			assertDefaultValueAssignability(this.value, this.inner.default, this.key)
 		this.includesContextualMorph ||= this.defaultValueMorph?.length === 2

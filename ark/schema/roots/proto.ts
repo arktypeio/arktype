@@ -1,8 +1,6 @@
 import {
-	builtinConstructors,
 	domainOf,
 	getBuiltinNameOfConstructor,
-	hasKey,
 	isArray,
 	isValidDate,
 	objectKindDescriptions,
@@ -12,37 +10,17 @@ import {
 	type Constructor
 } from "@ark/util"
 import type { NodeCompiler } from "../shared/compile.ts"
-import type {
-	BaseErrorContext,
-	BaseNormalizedSchema,
-	declareNode
-} from "../shared/declare.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { registeredReference } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
-import { isNode } from "../shared/utils.ts"
 import { InternalBasis } from "./basis.ts"
 
 export declare namespace Proto {
 	export type Reference = Constructor | BuiltinObjectKind
-
-	export type Schema<proto extends Reference = Reference> =
-		| proto
-		| ExpandedSchema<proto>
-
-	export interface NormalizedSchema<proto extends Constructor = Constructor>
-		extends BaseNormalizedSchema {
-		readonly proto: proto
-		readonly dateAllowsInvalid?: boolean
-	}
-
-	export interface ExpandedSchema<proto extends Reference = Reference> {
-		readonly proto: proto
-		readonly dateAllowsInvalid?: boolean
-	}
 
 	export interface Inner<proto extends Constructor = Constructor> {
 		readonly proto: proto
@@ -54,8 +32,6 @@ export declare namespace Proto {
 	export interface Declaration
 		extends declareNode<{
 			kind: "proto"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			errorContext: ErrorContext
 		}> {}
@@ -75,31 +51,14 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 			},
 			dateAllowsInvalid: {}
 		},
-		normalize: schema => {
-			const normalized: Proto.NormalizedSchema<Constructor> =
-				typeof schema === "string" ? { proto: builtinConstructors[schema] }
-				: typeof schema === "function" ?
-					isNode(schema) ? (schema as {} as ProtoNode)
-					:	{ proto: schema }
-				: typeof schema.proto === "string" ?
-					{ ...schema, proto: builtinConstructors[schema.proto] }
-				:	(schema as never)
-			if (typeof normalized.proto !== "function")
-				throwParseError(Proto.writeInvalidSchemaMessage(normalized.proto))
-
-			if (hasKey(normalized, "dateAllowsInvalid") && normalized.proto !== Date)
-				throwParseError(Proto.writeBadInvalidDateMessage(normalized.proto))
-			return normalized
-		},
-		applyConfig: (schema, config) => {
-			if (
-				schema.dateAllowsInvalid === undefined &&
-				schema.proto === Date &&
+		applyConfig: (inner, config) =>
+			(
+				inner.dateAllowsInvalid === undefined &&
+				inner.proto === Date &&
 				config.dateAllowsInvalid
-			)
-				return { ...schema, dateAllowsInvalid: true }
-			return schema
-		},
+			) ?
+				{ ...inner, dateAllowsInvalid: true }
+			:	inner,
 		defaults: {
 			description: node =>
 				node.builtinName ?
@@ -113,6 +72,14 @@ const implementation: nodeImplementationOf<Proto.Declaration> =
 	})
 
 export class ProtoNode extends InternalBasis<Proto.Declaration> {
+	constructor(...args: ConstructorParameters<typeof InternalBasis>) {
+		super(...args)
+		if (typeof this.proto !== "function")
+			throwParseError(Proto.writeInvalidSchemaMessage(this.proto))
+		if (this.dateAllowsInvalid !== undefined && this.proto !== Date)
+			throwParseError(Proto.writeBadInvalidDateMessage(this.proto))
+	}
+
 	builtinName: BuiltinObjectKind | null = getBuiltinNameOfConstructor(
 		this.proto
 	)

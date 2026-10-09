@@ -6,7 +6,7 @@ import {
 import type { BaseRoot } from "../roots/root.ts"
 import type {
 	BaseErrorContext,
-	BaseNormalizedSchema,
+	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
 import {
@@ -21,19 +21,17 @@ export declare namespace Divisor {
 		readonly rule: number
 	}
 
-	export interface NormalizedSchema extends BaseNormalizedSchema {
+	export interface ExpandedSchema extends BaseNodeInput {
 		readonly rule: number
 	}
 
-	export type Schema = NormalizedSchema | number
+	export type Schema = ExpandedSchema | number
 
 	export interface ErrorContext extends BaseErrorContext<"divisor">, Inner {}
 
 	export interface Declaration
 		extends declareNode<{
 			kind: "divisor"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: number
 			errorContext: ErrorContext
@@ -47,15 +45,8 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 		kind: "divisor",
 		collapsibleKey: "rule",
 		keys: {
-			rule: {
-				parse: divisor =>
-					Number.isInteger(divisor) ? divisor : (
-						throwParseError(writeNonIntegerDivisorMessage(divisor))
-					)
-			}
+			rule: {}
 		},
-		normalize: schema =>
-			typeof schema === "number" ? { rule: schema } : schema,
 		hasAssociatedError: true,
 		defaults: {
 			description: node =>
@@ -67,6 +58,14 @@ const implementation: nodeImplementationOf<Divisor.Declaration> =
 	})
 
 export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration> {
+	constructor(
+		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
+	) {
+		super(...args)
+		if (!Number.isInteger(this.rule))
+			throwParseError(writeNonIntegerDivisorMessage(this.rule))
+	}
+
 	traverseAllows: TraverseAllows<number> = data => data % this.rule === 0
 
 	readonly compiledCondition: string = `data % ${this.rule} === 0`

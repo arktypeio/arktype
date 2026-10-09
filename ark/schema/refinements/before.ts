@@ -9,21 +9,14 @@ import { $ark } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
-	createDateSchemaNormalizer,
-	parseDateLimit,
 	type BaseRangeInner,
 	type LimitSchemaValue,
-	type UnknownExpandedRangeSchema,
-	type UnknownNormalizedRangeSchema
+	type UnknownExpandedRangeSchema
 } from "./range.ts"
 
 export declare namespace Before {
 	export interface Inner extends BaseRangeInner {
 		rule: Date
-	}
-
-	export interface NormalizedSchema extends UnknownNormalizedRangeSchema {
-		rule: LimitSchemaValue
 	}
 
 	export interface ExpandedSchema extends UnknownExpandedRangeSchema {
@@ -37,8 +30,6 @@ export declare namespace Before {
 	export interface Declaration
 		extends declareNode<{
 			kind: "before"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			prerequisite: Date
 			errorContext: ErrorContext
@@ -54,11 +45,9 @@ const implementation: nodeImplementationOf<Before.Declaration> =
 		hasAssociatedError: true,
 		keys: {
 			rule: {
-				parse: parseDateLimit,
 				serialize: schema => schema.toISOString()
 			}
 		},
-		normalize: createDateSchemaNormalizer("before"),
 		defaults: {
 			description: node => `${node.collapsibleLimitString} or earlier`,
 			actual: describeCollapsibleDate

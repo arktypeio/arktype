@@ -110,7 +110,7 @@ contextualize(() => {
 	})
 
 	it("stringLimit", () => {
-		attest(node("min", 5).stringLimit).equals("5")
+		attest(node("min", { rule: 5 }).stringLimit).equals("5")
 	})
 
 	it("minLength 0 reduces to unconstrained", () => {

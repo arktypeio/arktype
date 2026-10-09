@@ -89,7 +89,7 @@ export const json: Module<json.$> = keywordModule(
 		stringify: () =>
 			node("morph", {
 				in: intrinsic.jsonObject,
-				morphs: (data: Json) => JSON.stringify(data),
+				morphs: [(data: Json) => JSON.stringify(data)],
 				declaredOut: intrinsic.string
 			})
 	},

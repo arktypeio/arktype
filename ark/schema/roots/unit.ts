@@ -6,11 +6,7 @@ import {
 	type Domain,
 	type JsonPrimitive
 } from "@ark/util"
-import type {
-	BaseErrorContext,
-	BaseNormalizedSchema,
-	declareNode
-} from "../shared/declare.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
@@ -21,10 +17,6 @@ import type { TraverseAllows } from "../shared/traversal.ts"
 import { InternalBasis } from "./basis.ts"
 
 export declare namespace Unit {
-	export interface Schema<value = unknown> extends BaseNormalizedSchema {
-		readonly unit: value
-	}
-
 	export interface Inner<value = unknown> {
 		readonly unit: value
 	}
@@ -36,8 +28,6 @@ export declare namespace Unit {
 	export interface Declaration
 		extends declareNode<{
 			kind: "unit"
-			schema: Schema
-			normalizedSchema: Schema
 			inner: Inner
 			errorContext: ErrorContext
 		}> {}
@@ -59,7 +49,6 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 					:	defaultValueSerializer(schema)
 			}
 		},
-		normalize: schema => schema,
 		defaults: {
 			description: node => printable(node.unit),
 			problem: ({ expected, actual }) =>

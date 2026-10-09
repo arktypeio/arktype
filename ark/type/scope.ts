@@ -18,11 +18,10 @@ import {
 	type GenericParamAst,
 	type GenericParamDef,
 	type Morph,
+	type NodeInput,
 	type NodeKind,
-	type NodeSchema,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
-	type RootKind,
 	type RootSchema,
 	type arkKind,
 	type exportedNameOf,
@@ -47,7 +46,6 @@ import {
 	type JsonStructure,
 	type anyOrNever,
 	type array,
-	type flattenListable,
 	type noSuggest
 } from "@ark/util"
 import { setEngine } from "arksets"
@@ -347,7 +345,11 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		this.node("proto", { proto: ctor }, { prereduced: true }) as never
 
 	or: NaryUnionParser<$> = (...defs: unknown[]) =>
-		this.schema(defs.map(def => this.parse(def))) as never
+		this.finalize(
+			this.node("union", {
+				branches: defs.map(def => this.parse(def))
+			})
+		) as never
 
 	and: NaryIntersectionParser<$> = (...defs: unknown[]) =>
 		defs.reduce<BaseRoot>(
@@ -550,11 +552,11 @@ export interface Scope<$ = {}> {
 
 	defineSchema<const def extends RootSchema>(schema: def): def
 
-	node<kinds extends NodeKind | array<RootKind>>(
-		kinds: kinds,
-		schema: NodeSchema<flattenListable<kinds>>,
+	node<kind extends NodeKind>(
+		kind: kind,
+		input: NodeInput<kind>,
 		opts?: BaseParseOptions
-	): nodeOfKind<reducibleKindOf<flattenListable<kinds>>>
+	): nodeOfKind<reducibleKindOf<kind>>
 
 	unit: UnitTypeParser<$>
 	enumerated: EnumeratedTypeParser<$>

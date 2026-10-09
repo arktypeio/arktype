@@ -2,8 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import { node, rootSchema } from "@ark/schema"
 
 contextualize(() => {
-	it("normalizes node schema", () => {
-		const d = node("proto", Date)
+	it("reparses a proto's json", () => {
+		const d = node("proto", { proto: Date })
 		attest(d.json).snap({ proto: "Date" })
 
 		const reparsed = rootSchema(d)

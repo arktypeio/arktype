@@ -1,4 +1,5 @@
 import {
+	constraintInputOf,
 	hasArkKind,
 	inProgress,
 	type BaseParseContext,
@@ -96,8 +97,10 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 			return ctx.$.node(
 				"intersection",
 				{
-					domain: "string",
-					pattern: def as RegExp
+					domain: ctx.$.node("domain", { domain: "string" }),
+					pattern: [
+						ctx.$.node("pattern", constraintInputOf("pattern", def as RegExp))
+					]
 				},
 				{ prereduced: true }
 			)

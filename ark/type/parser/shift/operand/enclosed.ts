@@ -1,4 +1,4 @@
-import { rootSchema } from "@ark/schema"
+import { node } from "@ark/schema"
 import {
 	Backslash,
 	cached,
@@ -25,13 +25,24 @@ export type SingleQuotedStringLiteral<contents extends string = string> =
 	`'${contents}'`
 
 const regexExecArray = cached(() =>
-	rootSchema({
-		proto: "Array",
-		sequence: "string",
-		required: {
-			key: "groups",
-			value: ["object", { unit: undefined }]
-		}
+	node("intersection", {
+		proto: node("proto", { proto: Array }),
+		structure: node("structure", {
+			sequence: node("sequence", {
+				variadic: node("domain", { domain: "string" })
+			}),
+			required: [
+				node("required", {
+					key: "groups",
+					value: node("union", {
+						branches: [
+							node("domain", { domain: "object" }),
+							node("unit", { unit: undefined })
+						]
+					})
+				})
+			]
+		})
 	})
 )
 
@@ -63,8 +74,8 @@ export const parseEnclosed = (
 		s.root = s.ctx.$.node(
 			"intersection",
 			{
-				domain: "string",
-				pattern: enclosed
+				domain: s.ctx.$.node("domain", { domain: "string" }),
+				pattern: [s.ctx.$.node("pattern", { rule: enclosed })]
 			},
 			{ prereduced: true }
 		)
@@ -72,7 +83,7 @@ export const parseEnclosed = (
 		if (enclosing === "x/") {
 			s.root = s.ctx.$.node("morph", {
 				in: s.root,
-				morphs: (s: string) => regex.exec(s),
+				morphs: [(s: string) => regex.exec(s)],
 				declaredOut: regexExecArray()
 			})
 		}

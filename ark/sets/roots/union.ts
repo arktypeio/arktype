@@ -82,12 +82,10 @@ export const union: setImplementationOf<Union.Declaration> = {
 
 			if (resultBranches instanceof Disjoint) return resultBranches
 
-			return ctx.$.parseSchema(
+			return ctx.$.node(
+				"union",
 				l.ordered || r.ordered ?
-					{
-						branches: resultBranches,
-						ordered: true as const
-					}
+					{ branches: resultBranches, ordered: true }
 				:	{ branches: resultBranches }
 			)
 		},
@@ -97,7 +95,8 @@ export const union: setImplementationOf<Union.Declaration> = {
 
 			if (branches.length === 1) return branches[0]
 
-			return ctx.$.parseSchema(
+			return ctx.$.node(
+				"union",
 				l.ordered ? { branches, ordered: true } : { branches }
 			)
 		})
@@ -246,7 +245,7 @@ export const discriminate = (node: Union.Node): Discriminant | null => {
 				branches[0]
 			:	node.$.node(
 					"union",
-					node.ordered ? { branches, ordered: true } : branches
+					node.ordered ? { branches, ordered: true } : { branches }
 				)
 
 		node.caseNodes.push(caseNode)
@@ -262,7 +261,7 @@ export const discriminate = (node: Union.Node): Discriminant | null => {
 		const branches = ctx.defaultEntries.map(entry => entry.branch)
 		cases.default = node.$.node(
 			"union",
-			node.ordered ? { branches, ordered: true } : branches,
+			node.ordered ? { branches, ordered: true } : { branches },
 			{
 				prereduced: true
 			}
@@ -447,47 +446,51 @@ const discriminantCaseToNode = (
 		: (
 			caseDiscriminant.hasKind("domain") && caseDiscriminant.domain === "number"
 		) ?
-			$.node("domain", typeofNumberSchema)
+			$.node("domain", typeofNumber)
 		:	caseDiscriminant
 	for (let i = path.length - 1; i >= 0; i--) {
 		const key = path[i]
+		const structure =
+			typeof key === "number" ?
+				$.node("structure", {
+					sequence: $.node("sequence", {
+						// create unknown for preceding elements (could be optimized with safe imports)
+						prefix: [...range(key).map(_ => $.node("intersection", {})), node],
+						variadic: $.node("intersection", {})
+					})
+				})
+			:	$.node("structure", {
+					required: [$.node("required", { key, value: node })]
+				})
 		node = $.node(
 			"intersection",
 			typeof key === "number" ?
-				{
-					proto: "Array",
-					sequence: {
-						// create unknown for preceding elements (could be optimized with safe imports)
-						prefix: [...range(key).map(_ => ({})), node],
-						variadic: {}
-					}
-				}
-			:	{
-					domain: "object",
-					required: [{ key, value: node }]
-				}
+				{ proto: $.node("proto", { proto: Array }), structure }
+			:	{ domain: $.node("domain", { domain: "object" }), structure }
 		)
-		if (includesPrimitives && isReadableOnPrimitive(key))
-			node = $.node("union", [node, ...primitiveSchemas])
+		if (includesPrimitives && isReadableOnPrimitive(key)) {
+			node = $.node("union", {
+				branches: [
+					node,
+					$.node("domain", { domain: "string" }),
+					$.node("domain", typeofNumber),
+					$.node("domain", { domain: "bigint" }),
+					$.node("domain", { domain: "symbol" }),
+					$.node("unit", { unit: true }),
+					$.node("unit", { unit: false })
+				]
+			})
+		}
 	}
 	return node
 }
 
 // a typeof check doesn't exclude NaN or Infinity
-const typeofNumberSchema: Domain.Schema = {
+const typeofNumber: Domain.Inner = {
 	domain: "number",
 	numberAllowsNaN: true,
 	numberAllowsInfinity: true
 }
-
-const primitiveSchemas: Union.ChildSchema[] = [
-	"string",
-	typeofNumberSchema,
-	"bigint",
-	"symbol",
-	{ unit: true },
-	{ unit: false }
-]
 
 const optionallyChainPropString = (path: PropertyKey[]): string =>
 	path.reduce<string>(

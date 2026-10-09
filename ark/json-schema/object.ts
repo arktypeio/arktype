@@ -5,9 +5,10 @@ import {
 	type Index,
 	type Intersection,
 	type Predicate,
+	type Structure,
 	type Traversal
 } from "@ark/schema"
-import { printable, throwParseError } from "@ark/util"
+import { printable, throwParseError, type mutable } from "@ark/util"
 import { type, type JsonSchema, type Out, type Type } from "arktype"
 
 import {
@@ -21,7 +22,7 @@ const parseMinMaxProperties = (
 	jsonSchema: JsonSchema.Object,
 	ctx: Traversal
 ) => {
-	const predicates: Predicate.Schema[] = []
+	const predicates: Predicate[] = []
 	if ("maxProperties" in jsonSchema) {
 		const maxProperties = jsonSchema.maxProperties
 
@@ -76,10 +77,14 @@ const parsePatternProperties = (jsonSchema: JsonSchema.Object) => {
 	// NB: We don't validate compatibility of schemas for overlapping patternProperties
 	// since getting the intersection of regexes is inherently non-trivial.
 	const indexSchemas = patternProperties.map(
-		([pattern, parsedPatternPropertySchema]) => ({
-			signature: { domain: "string" as const, pattern: [pattern] },
-			value: parsedPatternPropertySchema.internal
-		})
+		([pattern, parsedPatternPropertySchema]) =>
+			node("index", {
+				signature: node("intersection", {
+					domain: node("domain", { domain: "string" }),
+					pattern: [node("pattern", { rule: pattern.source })]
+				}),
+				value: parsedPatternPropertySchema.internal
+			})
 	)
 	return indexSchemas
 }
@@ -187,33 +192,27 @@ export const parseObjectJsonSchema: Type<
 	(In: JsonSchema.Object) => Out<Type<object, any>>,
 	any
 > = JsonSchemaScope.ObjectSchema.pipe((jsonSchema, ctx): Type<object> => {
-	const arktypeObjectSchema: Intersection.Schema<object> = {
-		domain: "object"
-	}
+	const structure: mutable<Structure.Input> = {}
 
 	const { requiredKeys, optionalKeys } = parseRequiredAndOptionalKeys(
 		jsonSchema,
 		ctx
 	)
-	const patternPropertiesIndexes: Index.Schema[] =
+	const patternPropertiesIndexes: Index.Node[] =
 		parsePatternProperties(jsonSchema) ?? []
 
 	const parsedPropertyNamesSchema = parsePropertyNames(jsonSchema)
 	if (parsedPropertyNamesSchema === undefined) {
-		arktypeObjectSchema.required = requiredKeys
-		arktypeObjectSchema.optional = optionalKeys
-		arktypeObjectSchema.index = patternPropertiesIndexes
+		structure.required = requiredKeys.map(prop => node("required", prop))
+		structure.optional = optionalKeys.map(prop => node("optional", prop))
+		structure.index = patternPropertiesIndexes
 	} else {
-		const propertyNamesIndex = {
-			signature: parsedPropertyNamesSchema,
-			value: type.unknown.internal
-		}
-
 		// Ensure all 'patternProperties' adhere to the 'propertyNames' schema
-		const propertyNamesNode = node("index", propertyNamesIndex)
-		for (const patternPropertyIndex of patternPropertiesIndexes) {
-			const patternPropertyNode = node("index", patternPropertyIndex)
-
+		const propertyNamesNode = node("index", {
+			signature: parsedPropertyNamesSchema as Index.KeyNode,
+			value: type.unknown.internal
+		})
+		for (const patternPropertyNode of patternPropertiesIndexes) {
 			if (!patternPropertyNode.signature.extends(propertyNamesNode.signature)) {
 				throwParseError(
 					writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage(
@@ -235,40 +234,46 @@ export const parseObjectJsonSchema: Type<
 				)
 			}
 		}
-		arktypeObjectSchema.required = requiredKeys
+		structure.required = requiredKeys.map(prop => node("required", prop))
 
 		// Update the value of optional keys that doen't adhere to the 'propertyNames' to be 'never'
-		arktypeObjectSchema.optional = optionalKeys.map(optionalKey =>
-			parsedPropertyNamesSchema.allows(optionalKey.key) ? optionalKey : (
-				{ ...optionalKey, value: type.never.internal }
+		structure.optional = optionalKeys.map(optionalKey =>
+			node(
+				"optional",
+				parsedPropertyNamesSchema.allows(optionalKey.key) ? optionalKey : (
+					{ ...optionalKey, value: type.never.internal }
+				)
 			)
 		)
 
 		// Set the 'propertyNames' constraints
-		arktypeObjectSchema.index = [
-			...patternPropertiesIndexes,
-			{
-				signature: parsedPropertyNamesSchema,
-				value: type.unknown.internal
-			}
-		]
-		arktypeObjectSchema.undeclared = "reject"
+		structure.index = [...patternPropertiesIndexes, propertyNamesNode]
+		structure.undeclared = "reject"
 	}
 
-	const potentialPredicates: (Predicate.Schema | undefined)[] =
-		parseMinMaxProperties(jsonSchema, ctx)
+	const potentialPredicates: (Predicate | undefined)[] = parseMinMaxProperties(
+		jsonSchema,
+		ctx
+	)
 
 	const additionalProperties = parseAdditionalProperties(jsonSchema)
-	if (typeof additionalProperties === "boolean") {
-		arktypeObjectSchema.undeclared ??=
-			additionalProperties ? "ignore" : "reject"
-	} else potentialPredicates.push(additionalProperties)
+	if (typeof additionalProperties === "boolean")
+		structure.undeclared ??= additionalProperties ? "ignore" : "reject"
+	else potentialPredicates.push(additionalProperties)
 
 	const predicates = potentialPredicates.filter(
 		potentialPredicate => potentialPredicate !== undefined
 	)
 
-	const typeWithoutPredicates = rootSchema(arktypeObjectSchema)
+	const arktypeObjectSchema: Intersection.Inner = {
+		domain: node("domain", { domain: "object" }),
+		structure: node("structure", structure)
+	}
+
+	const typeWithoutPredicates = node("intersection", arktypeObjectSchema)
 	if (predicates.length === 0) return typeWithoutPredicates as never
-	return rootSchema({ ...arktypeObjectSchema, predicate: predicates }) as never
+	return node("intersection", {
+		...arktypeObjectSchema,
+		predicate: predicates.map(predicate => node("predicate", { predicate }))
+	}) as never
 })
