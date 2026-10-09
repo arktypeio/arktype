@@ -26,6 +26,7 @@ import {
 import { listPattern } from "arktype/i18n"
 import { en } from "arktype/locales/en"
 import { AsyncLocalStorage } from "node:async_hooks"
+import { matrixOf } from "./locales/matrix.ts"
 
 // errors described by their own nodes, which union and intersection errors list
 const leavesOf = (error: ArkError): ArkError[] =>
@@ -1060,6 +1061,10 @@ m must be a bigint (was 5)`)
 					attest(errors.toLocaleString(spread)).equals(errors.summary)
 				}
 			}
+		})
+
+		it("a spread of en renders every fixture as en does", () => {
+			attest(matrixOf({ ...en })).equals(matrixOf(en))
 		})
 
 		it("a locale without a code's expected reads it whole in en", () => {
