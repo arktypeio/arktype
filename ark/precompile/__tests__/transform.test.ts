@@ -1,5 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
-import { Precompiler, renderDiagnostic } from "@ark/precompile"
+import {
+	precompileModule,
+	Precompiler,
+	renderDiagnostic
+} from "@ark/precompile"
 import { memoryHost, precompile } from "./utils.ts"
 
 contextualize(() => {
@@ -101,6 +105,19 @@ import "~arktype/units/1japii3t7y8"`)
 			attest(result.modules["~arktype/units/1japii3t7y8"].split("\n")[0]).snap(
 				'import { registerPrecompiledUnits } from "arktype/internal"'
 			)
+		})
+
+		it("reads JSX in a .js module", () => {
+			const source = `import { type } from "arktype"
+export const User = type({ name: "string" })
+export const Name = () => <span>name</span>`
+			const result = precompileModule(
+				source,
+				"/main.js",
+				memoryHost({ "/main.js": source })
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).equals([])
+			attest(result.code).satisfies(/export const User = \$ark\w+\n/)
 		})
 
 		it("leaves a module without sites unchanged", () => {

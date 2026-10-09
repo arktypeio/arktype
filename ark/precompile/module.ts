@@ -15,11 +15,12 @@ export class SourceModule {
 		this.id = id
 		this.path = path
 		this.source = source
-		const result = parseSync(id, source, {
-			lang: langOf(id),
-			sourceType: /\.c[jt]s$/.test(id) ? "commonjs" : "module",
-			preserveParens: false
-		})
+		let result = parse(id, source, langOf(id))
+		// Next and other tools allow JSX in a .js module
+		if (result.errors.length && id.endsWith(".js")) {
+			const jsx = parse(id, source, "jsx")
+			if (!jsx.errors.length) result = jsx
+		}
 		this.program = result.program
 		this.parseErrors = result.errors.map(e => e.message)
 		this.scopes = new ModuleScopes(this.program)
@@ -52,7 +53,16 @@ export class SourceModule {
 	}
 }
 
-const langOf = (id: string) =>
+const parse = (id: string, source: string, lang: Lang) =>
+	parseSync(id, source, {
+		lang,
+		sourceType: /\.c[jt]s$/.test(id) ? "commonjs" : "module",
+		preserveParens: false
+	})
+
+type Lang = "js" | "jsx" | "ts" | "tsx"
+
+const langOf = (id: string): Lang =>
 	/\.[cm]?tsx$/.test(id) ? "tsx"
 	: /\.[cm]?ts$/.test(id) ? "ts"
 	: /\.jsx$/.test(id) ? "jsx"
