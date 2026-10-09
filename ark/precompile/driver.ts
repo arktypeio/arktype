@@ -60,7 +60,6 @@ export interface InlineModule {
 	// undefined when the module is unchanged
 	code: string | undefined
 	warnings: string[]
-	key?: string | undefined
 }
 
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
@@ -70,14 +69,47 @@ export const answerRequests = (
 	port: MessagePort,
 	data: PrecompilerWorkerData
 ): void => {
-	// when each file the precompiler read was modified, so a keyed request replaces it once one changes
+	const create = () =>
+		createPrecompiler({ ...data.precompilerOptions, inline: true })
+	let precompiler: Precompiler | undefined
+	let precompileKeyed: ReturnType<typeof createKeyedPrecompiler> | undefined
+	port.on("message", (request: PrecompileRequest) => {
+		try {
+			port.postMessage({
+				result:
+					request[0] === "readDependency" ?
+						(precompiler ??= create()).readDependency(request[1])
+					: data.isKeyed ?
+						(precompileKeyed ??= createKeyedPrecompiler(
+							data.precompilerOptions
+						))(request[1], request[2])
+					:	inlineModuleOf((precompiler ??= create()), request[1], request[2])
+			} satisfies PrecompileAnswer)
+		} catch (e) {
+			port.postMessage({ error: e } satisfies PrecompileAnswer)
+		}
+		if (data.answered) {
+			Atomics.store(data.answered, 0, 1)
+			Atomics.notify(data.answered, 0)
+		}
+	})
+}
+
+export interface KeyedModule extends InlineModule {
+	// the module's local import closure, the files its precompilation may read
+	files: string[]
+	// a hash of the module and when each of its files was modified
+	key: string
+}
+
+// for a host that keeps a precompiler across changes to the files it read, which it replaces once one changes
+export const createKeyedPrecompiler = (
+	opts: PrecompilePluginOptions
+): ((source: string, id: string) => KeyedModule) => {
 	let readTimes: Record<string, number> = {}
 	const importsByFile: Record<string, [mtimeMs: number, imports: string[]]> = {}
 	const create = () => {
-		const result = createPrecompiler({
-			...data.precompilerOptions,
-			inline: true
-		})
+		const result = createPrecompiler({ ...opts, inline: true })
 		const { host } = result.graph
 		readTimes = {}
 		result.graph.host = {
@@ -91,13 +123,12 @@ export const answerRequests = (
 		return result
 	}
 	let precompiler = create()
-	// a module's key hashes when each file in its forward closure was modified
-	const keyedModuleOf = (source: string, id: string): InlineModule => {
+	return (source, id) => {
 		const hash = createHash("sha256").update(source)
-		const closure = [id]
+		const files = [id]
 		let isStale = false
-		for (let i = 0; i < closure.length; i++) {
-			const file = closure[i]
+		for (let i = 0; i < files.length; i++) {
+			const file = files[i]
 			const { mtimeMs } = statSync(file)
 			hash.update(`\0${file}\0${mtimeMs}`)
 			isStale ||= file in readTimes && readTimes[file] !== mtimeMs
@@ -110,33 +141,17 @@ export const answerRequests = (
 						precompiler.localImportsOf(readFileSync(file, "utf8"), file)
 					])[1]
 			for (const target of imports)
-				if (!closure.includes(target)) closure.push(target)
+				if (!files.includes(target)) files.push(target)
 		}
 		if (isStale) precompiler = create()
 		const inlined = inlineModuleOf(precompiler, source, id)
 		return {
 			code: inlined?.code,
 			warnings: inlined?.warnings ?? [],
+			files,
 			key: hash.digest("hex")
 		}
 	}
-	port.on("message", (request: PrecompileRequest) => {
-		try {
-			port.postMessage({
-				result:
-					request[0] === "readDependency" ?
-						precompiler.readDependency(request[1])
-					: data.isKeyed ? keyedModuleOf(request[1], request[2])
-					: inlineModuleOf(precompiler, request[1], request[2])
-			} satisfies PrecompileAnswer)
-		} catch (e) {
-			port.postMessage({ error: e } satisfies PrecompileAnswer)
-		}
-		if (data.answered) {
-			Atomics.store(data.answered, 0, 1)
-			Atomics.notify(data.answered, 0)
-		}
-	})
 }
 
 const inlineModuleOf = (

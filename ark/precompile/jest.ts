@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto"
 import { createRequire } from "node:module"
 import { join } from "node:path"
-import type { InlineModule, PrecompilePluginOptions } from "./driver.ts"
+import type { KeyedModule, PrecompilePluginOptions } from "./driver.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
 export interface PrecompileJestOptions extends PrecompilePluginOptions {
@@ -66,7 +66,7 @@ export const createTransformer = (
 			code = source,
 			warnings,
 			key
-		} = request("transform", source, path) as InlineModule
+		} = request("transform", source, path) as KeyedModule
 		return {
 			source,
 			code,

@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
+import { standaloneConfigurationMessage } from "@ark/precompile"
 import { createTransformer } from "@ark/precompile/jest"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
@@ -152,6 +153,15 @@ contextualize(() => {
 			const [key, code] = transform(join(app, "schemas.ts"), transformer)
 			attest(code).satisfies(/^\/\/ next\nconst { "v/)
 			attest(key === transform(join(app, "schemas.ts"))[0]).equals(false)
+		}).timeout(60000)
+
+		it("throws for configuration in standalone mode", () => {
+			attest(() =>
+				transform(
+					join(app, "main.ts"),
+					createTransformer({ config: "config.ts" })
+				)
+			).throws(standaloneConfigurationMessage)
 		}).timeout(60000)
 
 		it("throws for a rejected site", () => {
