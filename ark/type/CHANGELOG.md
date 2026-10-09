@@ -167,13 +167,20 @@ Built-in keywords set `meta.keyword` to their name, so a locale can find their p
 
 ### Standalone validators on `arktype/runtime`
 
-`precompileStandalone` writes an ES module exporting each Type as a validator that runs on the new `arktype/runtime` entry, without arktype's parser or nodes and without generating code, so it validates under a Content-Security-Policy that blocks `eval`:
+`@ark/precompile` can replace each Type a program defines with a validator that runs on the new `arktype/runtime` entry, without arktype's parser or nodes and without generating code, so it validates under a Content-Security-Policy that blocks `eval`:
 
 ```ts
-import { precompileStandalone } from "arktype/internal/standalone.ts"
+// vite.config.ts
+import { precompile } from "@ark/precompile/unplugin"
 
-// a module whose User validates, asserts and implements Standard Schema as the Type does
-const source = precompileStandalone({ User: type({ name: "string > 0" }) })
+export default defineConfig({
+	plugins: [precompile.vite()]
+})
+```
+
+```ts
+// bundled as a validator that validates, asserts and implements Standard Schema as the Type does
+export const User = type({ name: "string > 0" })
 ```
 
 A validator bakes `expression`, `description` and `meta`, and throws on members that compose or introspect a Type. A Module becomes a plain object of its validators. An artifact freezes what it creates, so a write to one throws in strict mode: its validators and their shared prototype, its Modules, configs and node shapes, and every literal it emits, such as `meta`. A RegExp is only made non-extensible, since its methods write `lastIndex`, and neither a Date's time nor a RegExp's pattern can be frozen. `arktype/runtime`'s `type` is frozen too. The build refuses what the runtime can't reproduce, like a Generic, or a narrow or morph that isn't one of arktype's keywords, naming it. An artifact refuses to load beside `arktype` or on another version of `arktype/runtime`.
