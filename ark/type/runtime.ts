@@ -50,8 +50,18 @@ export interface ValidatorAttributes {
 
 const throwOnFail: ArkErrors.Handler = errors => errors.throw()
 
+// an emitted literal's properties are enumerable and hold literals, globals or the runtime's own functions, so only its objects are the artifact's
+const freezeLiteral = <t>(value: t): t => {
+	if (typeof value !== "object" || value === null) return value
+	for (const v of Object.values(value)) freezeLiteral(v)
+	// like a Date's time, a RegExp's lastIndex is state its methods write
+	return value instanceof RegExp ?
+			Object.preventExtensions(value)
+		:	Object.freeze(value)
+}
+
 /**
- * #### a Type precompiled to validate without arktype
+ * #### a Type precompiled to validate without arktype, frozen with what it holds
  */
 export class Validator extends Callable<
 	(
@@ -64,6 +74,7 @@ export class Validator extends Callable<
 	description: string
 	meta: ArkEnv.meta
 	allows: (data: unknown) => boolean
+	"~standard": StandardSchemaV1.Props
 
 	constructor(
 		rootApply: RootApply,
@@ -81,8 +92,18 @@ export class Validator extends Callable<
 		)
 		this.expression = attributes.expression
 		this.description = attributes.description
-		this.meta = attributes.meta
-		this.allows = node.allows
+		this.meta = freezeLiteral(attributes.meta)
+		this.allows = Object.freeze(node.allows)
+		this["~standard"] = Object.freeze({
+			vendor: "arktype",
+			version: 1,
+			validate: Object.freeze((input: unknown) => {
+				const out = this(input)
+				return out instanceof ArkErrors ? out : { value: out }
+			})
+		})
+		Object.freeze(this.assert)
+		Object.freeze(this)
 	}
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
@@ -98,19 +119,6 @@ export class Validator extends Callable<
 
 	from(input: unknown): unknown {
 		return this.assert(input)
-	}
-
-	private _standard?: StandardSchemaV1.Props
-	get "~standard"(): StandardSchemaV1.Props {
-		return (this._standard ??= {
-			vendor: "arktype",
-			version: 1,
-			validate: input => {
-				const out = this(input)
-				if (out instanceof ArkErrors) return out
-				return { value: out }
-			}
-		})
 	}
 
 	toString(): string {
@@ -203,9 +211,22 @@ for (const [name, kind] of Object.entries(unavailableMembers)) {
 	)
 }
 
-export const type: { (): never; errors: typeof ArkErrors } = Object.assign(
-	() => throwError(writeUnavailableMemberMessage("type")),
-	{ errors: ArkErrors }
+for (
+	let prototype: object = Validator.prototype;
+	prototype !== Object.prototype;
+	prototype = Object.getPrototypeOf(prototype)
+) {
+	for (const k of Reflect.ownKeys(prototype)) {
+		const { value, get } = Object.getOwnPropertyDescriptor(prototype, k)!
+		if (k !== "constructor") Object.freeze(value ?? get)
+	}
+	Object.freeze(prototype)
+}
+
+export const type: { (): never; errors: typeof ArkErrors } = Object.freeze(
+	Object.assign(() => throwError(writeUnavailableMemberMessage("type")), {
+		errors: ArkErrors
+	})
 )
 
 export const writeUnavailableMemberMessage = <name extends string>(

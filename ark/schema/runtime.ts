@@ -24,12 +24,12 @@ export const runtimeLocale = {
 if (defaultLocale === undefined)
 	configureLocale(undefined, runtimeLocale as never)
 
-export const runtimeConfig: ResolvedConfig = {
+export const runtimeConfig: ResolvedConfig = Object.freeze({
 	...flatMorph(errorWritersByCode, (code, writers) => [
 		code,
-		{ expected: writeExpected, ...errorWriters, ...writers }
+		Object.freeze({ expected: writeExpected, ...errorWriters, ...writers })
 	]),
 	// errors are copied without generating code, so validation never needs eval
 	jitless: true,
 	onFail: null
-} as never
+}) as never

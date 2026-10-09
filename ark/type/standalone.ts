@@ -268,7 +268,7 @@ export const precompileStandalone = (
 	})
 	const moduleNames = new Map<object, string>()
 	const modules: string[] = []
-	// a module is a plain object of validators
+	// a module is a plain object of validators, frozen like them
 	const exportOf = (value: unknown): string => {
 		if (!hasArkKind(value, "module")) return types.get(value as type.Any)!
 		const declared = moduleNames.get(value)
@@ -278,7 +278,7 @@ export const precompileStandalone = (
 		)
 		const name = `module${moduleNames.size}`
 		moduleNames.set(value, name)
-		modules.push(`const ${name} = { ${entries.join(", ")} }`)
+		modules.push(`const ${name} = Object.freeze({ ${entries.join(", ")} })`)
 		return name
 	}
 	const exported = Object.entries(exports).map(

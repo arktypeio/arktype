@@ -13,7 +13,10 @@ import {
 	precompileStandalone,
 	writeUnprecompilableMessage
 } from "arktype/internal/standalone.ts"
-import { writeUnavailableMemberMessage } from "arktype/runtime"
+import {
+	type as runtimeType,
+	writeUnavailableMemberMessage
+} from "arktype/runtime"
 import { buildSync } from "esbuild"
 import { spawnSync } from "node:child_process"
 
@@ -265,6 +268,42 @@ contextualize(() => {
 		attest(validators.M.sub.c("x").summary).snap(
 			"must be a number (was a string)"
 		)
+	})
+
+	it("freezes what a program reads from it", async () => {
+		const T = type({ a: "string" }).configure({
+			examples: [{ a: "x" }],
+			pattern: /x/g
+		} as never)
+		const M = scope({ a: "string" }).export()
+		const { T: validator, M: module } = await load({ T, M })
+		const prototype = Object.getPrototypeOf(validator)
+		const writes = {
+			property: () => (validator.x = 1),
+			meta: () => (validator.meta.x = 1),
+			example: () => (validator.meta.examples[0].a = "y"),
+			pattern: () => (validator.meta.pattern.x = 1),
+			method: () => (validator.assert = () => {}),
+			deletedMethod: () => delete validator.assert,
+			standard: () => (validator["~standard"].validate = () => {}),
+			prototypeMethod: () => (prototype.from = () => {}),
+			deletedPrototypeMethod: () => delete prototype.from,
+			prototype: () => Object.setPrototypeOf(validator, {}),
+			type: () => ((runtimeType as any).x = 1),
+			module: () => (module.a = validator)
+		}
+		const unfrozen = Object.entries(writes).filter(([, write]) => {
+			try {
+				write()
+				return true
+			} catch (e) {
+				return !(e instanceof TypeError)
+			}
+		})
+		attest(unfrozen.map(([name]) => name)).equals([])
+		attest(validator.meta.pattern.test("x")).equals(true)
+		attest(validator.meta.pattern.test("x")).equals(false)
+		attest(validator({ a: "x" })).equals({ a: "x" })
 	})
 
 	it("rejects what it can't precompile", () => {
