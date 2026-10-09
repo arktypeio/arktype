@@ -15,11 +15,11 @@ const loadedEntryKey = noSuggest("loadedArktypeEntry")
 
 // in standalone mode every import of arktype resolves to arktype/runtime, so loading both means one didn't
 export const claimEntry = (entry: ArktypeEntry): void => {
-	const entries = globalThis as { [loadedEntryKey]?: ArktypeEntry }
-	const loaded = entries[loadedEntryKey]
+	const globals = globalThis as { [loadedEntryKey]?: ArktypeEntry }
+	const loaded = globals[loadedEntryKey]
 	if (loaded !== undefined && loaded !== entry)
 		throwError(writeEntryConflictMessage(entry, loaded))
-	entries[loadedEntryKey] = entry
+	globals[loadedEntryKey] = entry
 }
 
 export const writeEntryConflictMessage = <
@@ -29,12 +29,12 @@ export const writeEntryConflictMessage = <
 	entry: entry,
 	loaded: loaded
 ): writeEntryConflictMessage<entry, loaded> =>
-	`${entry} can't load beside ${loaded}. In standalone mode, every import of arktype must resolve to arktype/runtime.`
+	`${entry} can't load beside ${loaded}, since in standalone mode every import of arktype must resolve to arktype/runtime`
 
 export type writeEntryConflictMessage<
 	entry extends ArktypeEntry,
 	loaded extends ArktypeEntry
-> = `${entry} can't load beside ${loaded}. In standalone mode, every import of arktype must resolve to arktype/runtime.`
+> = `${entry} can't load beside ${loaded}, since in standalone mode every import of arktype must resolve to arktype/runtime`
 
 export const writeRuntimeVersionMismatchMessage = <
 	artifactVersion extends string,
@@ -43,9 +43,9 @@ export const writeRuntimeVersionMismatchMessage = <
 	artifactVersion: artifactVersion,
 	runtimeVersion: runtimeVersion
 ): writeRuntimeVersionMismatchMessage<artifactVersion, runtimeVersion> =>
-	`This artifact was built with arktype ${artifactVersion}, but ${runtimeVersion} is installed. Rebuild it with the installed arktype.`
+	`an artifact built with arktype ${artifactVersion} can't run on arktype ${runtimeVersion}, so it must be rebuilt with the installed arktype`
 
 export type writeRuntimeVersionMismatchMessage<
 	artifactVersion extends string,
 	runtimeVersion extends string
-> = `This artifact was built with arktype ${artifactVersion}, but ${runtimeVersion} is installed. Rebuild it with the installed arktype.`
+> = `an artifact built with arktype ${artifactVersion} can't run on arktype ${runtimeVersion}, so it must be rebuilt with the installed arktype`

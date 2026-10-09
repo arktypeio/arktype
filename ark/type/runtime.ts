@@ -273,7 +273,7 @@ export const type: { (): never; errors: typeof ArkErrors } = freeze(typeFacade)
 export const writeUnavailableMemberMessage = <name extends string>(
 	name: name
 ): writeUnavailableMemberMessage<name> =>
-	`${name} is unavailable in a standalone validator, which runs without arktype. To use it, precompile with runtime: "arktype"`
+	`${name} is unavailable in a standalone validator, which runs without arktype, so using it requires building with runtime: "arktype"`
 
 export type writeUnavailableMemberMessage<name extends string> =
-	`${name} is unavailable in a standalone validator, which runs without arktype. To use it, precompile with runtime: "arktype"`
+	`${name} is unavailable in a standalone validator, which runs without arktype, so using it requires building with runtime: "arktype"`
