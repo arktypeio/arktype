@@ -63,7 +63,7 @@ export const G = scope({ a: "string" })`,
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/main.ts:8:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
 				'/main.ts:9:18  type({ "+": "delete", "[string]": "string", a: "\'a\'" }) can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: "a", + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:11:18  scope({ a: "string" }) can\'t be precompiled to a standalone validator yet\n  its value is not a Type\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/main.ts:11:18  scope({ a: "string" }) can\'t be precompiled to a standalone validator yet\n  its value is not a Type or Module\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { scope, type } from "arktype"
 import { max } from "./limits.ts"
@@ -81,6 +81,26 @@ import { f2bfm9voib1j as $arkf2bfm9voib1j } from "~arktype/3k9u25xc99"
 import { v2cw04mqw80s as $arkv2cw04mqw80s } from "~arktype/3k9u25xc99"
 import { vpatjbfbx3k as $arkvpatjbfbx3k } from "~arktype/3k9u25xc99"
 import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"`)
+		})
+
+		it("folds Modules", () => {
+			const result = precompile(`import { scope, type } from "arktype"
+export const types = scope({ tree: { value: "number", "children?": "tree[]" } }).export()
+export const M = type.module({ a: "string", b: { c: "a" } })`)
+			attest(result.diagnostics).equals([])
+			attest(result.code).snap(`import "arktype"
+export const types = $arkv2f0bhdcpikw
+export const M = $arkv209i2jspcoq
+import { v2f0bhdcpikw as $arkv2f0bhdcpikw } from "~arktype/lyrf7rme87"
+import { v209i2jspcoq as $arkv209i2jspcoq } from "~arktype/lyrf7rme87"`)
+			attest(
+				Object.values(result.modules)[0]
+					.split("\n")
+					.filter(line => /^const module\d/.test(line))
+			).snap([
+				'const module0 = runtime.freeze({ ["tree"]: validator0 })',
+				'const module1 = runtime.freeze({ ["a"]: validator1, ["b"]: validator2 })'
+			])
 		})
 	})
 
@@ -283,6 +303,21 @@ export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))`,
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				'/main.ts:4:21  type("string").pipe(a, b) can\'t be precompiled to a standalone validator yet\n  `a` and `b` may hold the same value at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				'/main.ts:5:24  type("string").pipe(a).or(type("number").pipe(alias)) can\'t be precompiled to a standalone validator yet\n  `a` and `alias` may hold different values at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+			])
+		})
+
+		it("reports a Module whose site reads what only a factory receives", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { max } from "./limits.ts"
+const trim = (s: string) => s.trim()
+export const Held = type.module({ a: ["string", "=>", trim] })
+export const Read = type.module({ a: \`string <= \${max}\` })`,
+				{ "/limits.ts": "export const max = 5" }
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:4:21  type.module({ a: ["string", "=>", trim] }) can\'t be precompiled to a standalone validator yet\n  arktype holds `trim` (/main.ts:4:55), which only a Type\'s factory can receive yet\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				"/main.ts:5:21  type.module({ a: `string <= ${max}` }) can't be precompiled to a standalone validator yet\n  `max` is imported from /limits.ts, which only a Type's factory can compare yet\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 		})
 	})

@@ -9,9 +9,9 @@ const Chain = type({
 	"next?": "this"
 })
 
-const Tree = scope({
+const shapes = scope({
 	tree: { value: "number", "children?": "tree[]" }
-}).type("tree")
+}).export()
 
 const ada = { name: "Ada", email: "ada@example.com", age: 36, tags: ["math"] }
 
@@ -35,8 +35,8 @@ const samples: [(data: unknown) => unknown, unknown][] = [
 	[Profile, { handle: "ada", joined: "2020-06-01" }],
 	[Node, { value: 1, next: { value: 2, next: { value: "3" } } }],
 	[Chain, { value: 1, next: { value: -1 } }],
-	[Tree, { value: 1, children: [{ value: 2 }, { value: "3" }] }],
-	[data => Tree(data) === data, loop]
+	[shapes.tree, { value: 1, children: [{ value: 2 }, { value: "3" }] }],
+	[data => shapes.tree(data) === data, loop]
 ]
 
 console.log(

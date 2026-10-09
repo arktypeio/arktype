@@ -397,6 +397,35 @@ contextualize(() => {
 		)
 	})
 
+	it("validates cyclic data as a module's types", async () => {
+		const M = type.module({
+			a: { "b?": "b", "self?": "a" },
+			b: { "a?": "a", c: "string" },
+			Node: type({ value: "number", "next?": "this" }),
+			tree: { value: "number", "children?": "tree[]" }
+		})
+		const { M: validators } = await load({ M })
+		const a: any = { b: { c: "x" } }
+		a.self = a
+		a.b.a = a
+		const bad: any = { b: { c: 1 } }
+		bad.self = bad
+		bad.b.a = bad
+		const node: any = { value: 1 }
+		node.next = node
+		const tree: any = { value: 1, children: [] }
+		tree.children.push(tree, { value: "2" })
+		const inputs = [a, bad, node, { value: 1, next: { value: "2" } }, tree]
+		for (const name of ["a", "b", "Node", "tree"] as const) {
+			const t: type.Any = M[name]
+			for (const input of inputs) {
+				attest(observe(validators[name](input), input)).equals(
+					observe(t(input), input)
+				)
+			}
+		}
+	})
+
 	it("emits a Type in meta as its validator", async () => {
 		const N = type("number")
 		const T = type("string").configure({

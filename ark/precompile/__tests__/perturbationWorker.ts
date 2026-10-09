@@ -420,15 +420,31 @@ const samples = (): unknown[] => [
 	new Date(0)
 ]
 
+// a Type a morph returns is compared by its expression, since a precompiled program's is a validator
 const serialize = (out: unknown): unknown =>
 	(
 		hasDomain(out, "object") &&
 		(out as { " arkKind"?: string })[" arkKind"] === "errors"
 	) ?
 		{ errors: (out as { summary: string }).summary }
+	: typeof out === "function" && isArk(out) ?
+		{ type: (out as Function & { expression: string }).expression }
 	:	inspect(out, { depth: 4, breakLength: Infinity, maxArrayLength: 10 })
 
+// a precompiled Module is a frozen object of validators, so a Module is compared by its members
+const isModule = (value: unknown): value is Record<string, unknown> =>
+	hasDomain(value, "object") &&
+	((value as { " arkKind"?: unknown })[" arkKind"] === "module" ||
+		(isPlain(value) && !Array.isArray(value) && Object.isFrozen(value)))
+
 const observe = (value: unknown): Observation => {
+	if (isModule(value)) {
+		return {
+			module: Object.fromEntries(
+				Object.entries(value).map(([k, v]) => [k, observe(v)])
+			)
+		}
+	}
 	if (typeof value !== "function" || !isArk(value))
 		return { value: inspect(value, { depth: 1 }) }
 	const validate = value as ((data: unknown) => unknown) & {

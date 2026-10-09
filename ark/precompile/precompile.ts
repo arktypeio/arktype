@@ -616,7 +616,7 @@ export class Precompiler {
 					this.throwerOf(site, reasons)
 				:	undefined
 			const factory =
-				reasons.length || site.parseError ?
+				reasons.length || site.parseError || !hasArkKind(site.value, "root") ?
 					undefined
 				:	this.factoryOf(site, module, reasons, prefix)
 			if (reasons.length) {
@@ -628,16 +628,18 @@ export class Precompiler {
 				namesBySite.set(site, nameOf(site))
 				continue
 			}
-			const root = site.value as BaseRoot
 			if (factory) {
 				const name = `f${nameOf(site)}`
 				factoriesBySite.set(site, factory)
 				namesBySite.set(site, name)
-				exportsByName[name] = { type: root as never, params: factory.params }
+				exportsByName[name] = {
+					type: site.value as never,
+					params: factory.params
+				}
 			} else {
 				const name = `v${nameOf(site)}`
 				namesBySite.set(site, name)
-				exportsByName[name] = root as never
+				exportsByName[name] = site.value as never
 			}
 		}
 		const refusalsByName: Record<string, string> = {}
@@ -1030,33 +1032,38 @@ export class Precompiler {
 	}
 
 	private unsupportedReasonsOf(site: Site): string[] {
+		const isModule = hasArkKind(site.value, "module")
 		const result =
-			site.parseError || hasArkKind(site.value, "root") ?
+			site.parseError || isModule || hasArkKind(site.value, "root") ?
 				[]
-			:	["its value is not a Type"]
+			:	["its value is not a Type or Module"]
+		// only a Type's factory receives what its site reads, so a Module's site can't read what could change at runtime
+		const unreceived = (verb: string) =>
+			isModule ? `, which only a Type's factory can ${verb} yet` : ""
 		for (const hole of site.holes) {
-			if (!hole.isCalledAtDefinition && hole.kind !== "opaque") continue
+			const isReceived = !hole.isCalledAtDefinition && hole.kind !== "opaque"
+			if (isReceived && !isModule) continue
 			const holeModule = this.graph.moduleOf(hole.file) as SourceModule
 			result.push(
-				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})`
+				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})${isReceived ? unreceived("receive") : ""}`
 			)
 		}
 		// a factory throws a ParseError without reading its inputs or checking its helpers, so the error can't depend on them
-		for (const input of site.parseError ? site.inputs : []) {
+		for (const input of site.parseError || isModule ? site.inputs : []) {
 			result.push(
 				`\`${[input.name, ...input.path.map(String)].join(".")}\` is ${
 					input.kind === "import" ?
 						`imported from ${this.graph.pathOf(input.file!)}`
 					: input.kind === "local" ? "declared in a function around the site"
 					: "a define"
-				}`
+				}${unreceived("compare")}`
 			)
 		}
-		for (const helper of site.parseError && this.checkHelpers ?
+		for (const helper of (site.parseError || isModule) && this.checkHelpers ?
 			site.helpers
 		:	[]) {
 			result.push(
-				`it calls the static helper \`${helper.name}\` (${(this.graph.moduleOf(helper.file) as SourceModule).positionOf(helper)})`
+				`it calls the static helper \`${helper.name}\` (${(this.graph.moduleOf(helper.file) as SourceModule).positionOf(helper)})${unreceived("check")}`
 			)
 		}
 		return result
