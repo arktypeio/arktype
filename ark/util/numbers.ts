@@ -1,5 +1,4 @@
 import { throwParseError } from "./errors.ts"
-import { anchoredRegex, RegexPatterns } from "./strings.ts"
 
 export type Digit = 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9
 
@@ -22,30 +21,6 @@ export type NonNegativeIntegerLiteral<n extends bigint = bigint> =
  *      a precise literal type will be inferred (in TS4.8+).
  */
 
-const anchoredNegativeZeroPattern = /^-0\.?0*$/.source
-const positiveIntegerPattern = /[1-9]\d*/.source
-const looseDecimalPattern = /\.\d+/.source
-const strictDecimalPattern = /\.\d*[1-9]/.source
-
-type CreateNumberMatcherOptions = {
-	decimalPattern: string
-	allowDecimalOnly: boolean
-}
-
-const createNumberMatcher = (opts: CreateNumberMatcherOptions) =>
-	anchoredRegex(
-		RegexPatterns.negativeLookahead(anchoredNegativeZeroPattern) +
-			RegexPatterns.nonCapturingGroup(
-				"-?" +
-					RegexPatterns.nonCapturingGroup(
-						RegexPatterns.nonCapturingGroup("0|" + positiveIntegerPattern) +
-							RegexPatterns.nonCapturingGroup(opts.decimalPattern) +
-							"?"
-					) +
-					(opts.allowDecimalOnly ? "|" + opts.decimalPattern + "?" : "")
-			)
-	)
-
 /**
  *  Matches a well-formatted numeric expression according to the following rules:
  *    1. Must include an integer portion (i.e. '.321' must be written as '0.321')
@@ -53,13 +28,13 @@ const createNumberMatcher = (opts: CreateNumberMatcherOptions) =>
  *    3. If the value includes a decimal, its last digit may not be 0
  *    4. The value may not be "-0"
  */
-export const wellFormedNumberMatcher: RegExp = createNumberMatcher({
-	decimalPattern: strictDecimalPattern,
-	allowDecimalOnly: false
-})
+export const wellFormedNumberMatcher: RegExp =
+	// their sources reach users through keyword patterns and JSON Schema, so they keep their groups
+	// eslint-disable-next-line unicorn/better-regex
+	/^(?:(?!^-0\.?0*$)(?:-?(?:(?:0|[1-9]\d*)(?:\.\d*[1-9])?)))$/
 
-export const isWellFormedNumber: RegExp["test"] =
-	wellFormedNumberMatcher.test.bind(wellFormedNumberMatcher)
+export const isWellFormedNumber: RegExp["test"] = s =>
+	wellFormedNumberMatcher.test(s)
 
 /**
  * Similar to wellFormedNumber but more permissive in the following ways:
@@ -67,13 +42,11 @@ export const isWellFormedNumber: RegExp["test"] =
  *  - Allows numbers without an integer portion like ".5" (well-formed equivalent is "0.5")
  *  - Allows decimals with trailing zeroes like "0.10" (well-formed equivalent is "0.1")
  */
-export const numericStringMatcher: RegExp = createNumberMatcher({
-	decimalPattern: looseDecimalPattern,
-	allowDecimalOnly: true
-})
+export const numericStringMatcher: RegExp =
+	// eslint-disable-next-line unicorn/better-regex
+	/^(?:(?!^-0\.?0*$)(?:-?(?:(?:0|[1-9]\d*)(?:\.\d+)?)|\.\d+?))$/
 
-export const isNumericString =
-	numericStringMatcher.test.bind(numericStringMatcher)
+export const isNumericString: RegExp["test"] = s => numericStringMatcher.test(s)
 
 export const numberLikeMatcher = /^-?\d*\.?\d*$/
 const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
@@ -83,19 +56,15 @@ const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
  *    1. must begin with an integer, the first digit of which cannot be 0 unless the entire value is 0
  *    2. The value may not be "-0"
  */
-export const wellFormedIntegerMatcher: RegExp = anchoredRegex(
-	RegexPatterns.negativeLookahead("^-0$") +
-		"-?" +
-		RegexPatterns.nonCapturingGroup(
-			RegexPatterns.nonCapturingGroup("0|" + positiveIntegerPattern)
-		)
-)
+export const wellFormedIntegerMatcher: RegExp =
+	// eslint-disable-next-line unicorn/better-regex
+	/^(?:(?!^-0$)-?(?:(?:0|[1-9]\d*)))$/
 
-export const isWellFormedInteger: RegExp["test"] =
-	wellFormedIntegerMatcher.test.bind(wellFormedIntegerMatcher)
+export const isWellFormedInteger: RegExp["test"] = s =>
+	wellFormedIntegerMatcher.test(s)
 
 export const integerLikeMatcher = /^-?\d+$/
-const isIntegerLike = integerLikeMatcher.test.bind(integerLikeMatcher)
+const isIntegerLike = (s: string) => integerLikeMatcher.test(s)
 
 type NumericLiteralKind = "number" | "bigint" | "integer"
 
