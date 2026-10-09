@@ -24,8 +24,8 @@ export const parsers = { type }`
 		attest(precompile(source).code).snap(`import "arktype/internal/island.js"
 import * as $ark$island from "arktype/internal"
 import "arktype"
-import { v113ua4m0cbyo2f as $arkv113ua4m0cbyo2f } from "~arktype/75nx2z1h2kzl3"
-import { v16tqm51d9mp98 as $arkv16tqm51d9mp98 } from "~arktype/75nx2z1h2kzl3"
+import { v113ua4m0cbyo2f as $arkv113ua4m0cbyo2f } from "~arktype/qfd6t00oelcoq"
+import { v16tqm51d9mp98 as $arkv16tqm51d9mp98 } from "~arktype/qfd6t00oelcoq"
 import "arktype"
 export const A = $arkv113ua4m0cbyo2f()
 // @ark-runtime

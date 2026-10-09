@@ -2,15 +2,15 @@ import {
 	$ark,
 	hasArkKind,
 	isNode,
-	precompileByContent,
+	precompileRootUnits,
 	type ArkErrorCode,
 	type BaseNode,
 	type BaseRoot,
-	type ContentUnit,
 	type DefaultedNode,
 	type NodeId,
 	type NodeKind,
 	type Optional,
+	type RootUnit,
 	type Sequence
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -125,6 +125,23 @@ export interface ConfiguredModule {
 	path: string
 }
 
+// a module artifacts share, importing what it calls from the modules declared before it
+interface UnitModule {
+	imports: Record<string, string[]>
+	declarations: string[]
+	exports: string[]
+}
+
+export interface StandaloneModules {
+	code: string
+	// each module code imports by a ~arktype/ specifier
+	modules: Record<string, string>
+}
+
+const runtimeImport = `import * as runtime from "arktype/runtime"`
+
+const entryCheck = `runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`
+
 /**
  * #### an ES module exporting a getter for each Type, Module, Scope or Generic, which creates them when one is first read, and a function creating each factory's value
  */
@@ -136,6 +153,69 @@ export const precompileStandalone = (
 	// each Module a site reads off arktype's keywords, which creates a Type only when one of its members is read
 	keywordReads?: ReadonlySet<string>
 ): string => {
+	const units: Record<string, UnitModule> = {}
+	const sections = writeArtifact(
+		exports,
+		configured,
+		sitesByName,
+		keywordReads,
+		units,
+		{}
+	)
+	return writeSections([
+		runtimeImport,
+		entryCheck,
+		...Object.values(units).map(unit => unit.declarations.join("\n\n")),
+		...sections
+	])
+}
+
+// the units an artifact shares with others are modules of their own, so a bundler keeps one copy of each
+export const precompileStandaloneModules = (
+	exports: Record<string, StandaloneExport>,
+	configured?: ConfiguredModule,
+	sitesByName?: Record<string, string>,
+	keywordReads?: ReadonlySet<string>
+): StandaloneModules => {
+	const units: Record<string, UnitModule> = {}
+	const imports: Record<string, string[]> = {}
+	const sections = writeArtifact(
+		exports,
+		configured,
+		sitesByName,
+		keywordReads,
+		units,
+		imports
+	)
+	// imported first, so the runtime's version is checked before anything is created
+	const entry = writeSections([runtimeImport, entryCheck])
+	const entrySpecifier = `~arktype/entry${hashOf(entry)}`
+	const modules: Record<string, string> = { [entrySpecifier]: entry }
+	for (const specifier in units) {
+		const unit = units[specifier]
+		modules[specifier] = writeSections([
+			`${runtimeImport}\n${writeImports(unit.imports)}`,
+			...unit.declarations,
+			`export { ${unit.exports.join(", ")} }`
+		])
+	}
+	return {
+		code: writeSections([
+			`import ${JSON.stringify(entrySpecifier)}\n${runtimeImport}\n${writeImports(imports)}`,
+			...sections
+		]),
+		modules
+	}
+}
+
+const writeArtifact = (
+	exports: Record<string, StandaloneExport>,
+	configured: ConfiguredModule | undefined,
+	sitesByName: Record<string, string> | undefined,
+	keywordReads: ReadonlySet<string> | undefined,
+	units: Record<string, UnitModule>,
+	imports: Record<string, string[]>
+): string[] => {
 	const types: Record<string, ExportedValue> = {}
 	const factories: string[] = []
 	const tables = new Set<number>()
@@ -145,7 +225,7 @@ export const precompileStandalone = (
 			const { type, params, internedBy } = value as StandaloneFactory
 			if (internedBy !== undefined) tables.add(internedBy)
 			factories.push(
-				new StandaloneArtifact({ [name]: type }).writeFactory(
+				new StandaloneArtifact({ [name]: type }, units, imports).writeFactory(
 					name,
 					params,
 					factories.length,
@@ -163,18 +243,26 @@ export const precompileStandalone = (
 				.join("\n")
 		)
 	}
-	const sections = [
-		`import * as runtime from "arktype/runtime"`,
-		`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
-		...new StandaloneArtifact(types).write(
+	return [
+		...new StandaloneArtifact(types, units, imports).write(
 			configured,
 			sitesByName,
 			keywordReads
 		),
 		...factories
 	]
-	return `${sections.filter(section => section).join("\n\n")}\n`
 }
+
+const writeSections = (sections: string[]) =>
+	`${sections.filter(section => section).join("\n\n")}\n`
+
+const writeImports = (imports: Record<string, string[]>) =>
+	Object.entries(imports)
+		.map(
+			([specifier, names]) =>
+				`import { ${names.join(", ")} } from ${JSON.stringify(specifier)}`
+		)
+		.join("\n")
 
 const moduleMembersOf = (module: object): runtime.ModuleMembers => {
 	const result: runtime.ModuleMembers = {}
@@ -188,15 +276,48 @@ export const writeFixConfig = (
 ): string =>
 	`runtime.fixConfig(${configured ? `${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)}` : ""})`
 
+interface Declarations {
+	statements: string[]
+	namesByValue: Map<unknown, string>
+	counts: Record<DeclarationRole, number>
+}
+
+const createDeclarations = (): Declarations => ({
+	statements: [],
+	namesByValue: new Map(),
+	counts: { shape: 0, keys: 0, literal: 0, config: 0, unavailable: 0 }
+})
+
+// a unit being written to a module of its own
+interface SharedUnit {
+	unit: RootUnit
+	// what it reads from other modules, which it receives as parameters
+	params: string[]
+	args: string[]
+	imports: Record<string, string[]>
+	// each of its roots its own traversals read, created with them
+	shapesByName: Record<string, string>
+}
+
 export class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
+	// the modules every artifact of a program shares, each declared after those it imports
+	unitModules: Record<string, UnitModule>
+	imports: Record<string, string[]>
 	holeExpressions = new Map<unknown, string>()
 	labelsByHole = new Map<unknown, string>()
 	classes = new Set<unknown>()
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
-	// each Type compiles its own traversals as in the JIT, since a prop's shared across differently shaped objects makes its inline caches polymorphic
-	units = new Map<BaseRoot, ContentUnit>()
+	unitsByRoot = new Map<BaseRoot, RootUnit[]>()
+	// the unit holding each root in the first Type reaching it
+	unitsByHead = new Map<BaseRoot, RootUnit>()
+	sharedByUnit = new Map<RootUnit, boolean>()
+	// each local unit's traversals, by the const holding them
+	localNamesByUnit = new Map<RootUnit, string>()
+	// the unit whose values are being emitted, which names the nodes they hold
+	unit: RootUnit | undefined
+	writing: SharedUnit | undefined
 	// traversal raises these itself, and a predicate or morph can raise any code
 	raisableCodes: { [code in NodeKind | ArkErrorCode]?: true } = {
 		intersection: true,
@@ -212,17 +333,9 @@ export class StandaloneArtifact {
 	patternInstances = new Set<RegExp>()
 	defaultsByMorph = new Map<unknown, Default>()
 	objectUnits = new Set<unknown>()
-	constNamesByValue = new Map<unknown, string>()
-	declarationCounts: Record<DeclarationRole, number> = {
-		shape: 0,
-		keys: 0,
-		literal: 0,
-		config: 0,
-		unavailable: 0
-	}
+	declarations = createDeclarations()
 	emitting = new Set<object>()
 	moduleNamesByModule = new Map<object, string>()
-	declarations: string[] = []
 	links: string[] = []
 	modules: string[] = []
 	// a literal holding a validator is declared empty and filled once validators exist
@@ -231,8 +344,14 @@ export class StandaloneArtifact {
 	defaults: string[] = []
 	lateNames = new Set<string>()
 
-	constructor(exports: Record<string, ExportedValue>) {
+	constructor(
+		exports: Record<string, ExportedValue>,
+		unitModules: Record<string, UnitModule>,
+		imports: Record<string, string[]>
+	) {
 		this.exports = exports
+		this.unitModules = unitModules
+		this.imports = imports
 		for (const name in exports) {
 			// an ES module can't export a name holding an unpaired surrogate
 			if (/\p{Cs}/u.test(name)) {
@@ -250,8 +369,13 @@ export class StandaloneArtifact {
 		// a Type in a meta is emitted as its validator, so it needs traversals of its own
 		do {
 			for (const root of this.roots) {
-				if (!this.units.has(root))
-					this.units.set(root, precompileByContent([root], runtimeKeyOf))
+				if (this.unitsByRoot.has(root)) continue
+				const units = rootUnitsOf(root)
+				this.unitsByRoot.set(root, units)
+				for (const unit of units) {
+					for (const head of unit.roots)
+						if (!this.unitsByHead.has(head)) this.unitsByHead.set(head, unit)
+				}
 			}
 		} while (this.collectMetaTypes())
 		for (const root of this.roots) {
@@ -259,7 +383,7 @@ export class StandaloneArtifact {
 			if (root.onFail !== $ark.resolvedConfig!.onFail)
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
-		for (const unit of this.units.values()) {
+		for (const unit of this.units) {
 			for (const context of unit.errorContexts)
 				this.raisableCodes[context.code] = true
 		}
@@ -354,8 +478,8 @@ export class StandaloneArtifact {
 				)
 			}
 		}
-		const printed = [...this.units.values()]
-			.map(unit => unit.source)
+		const printed = this.units
+			.flatMap(unit => unit.members.map(([, source]) => source))
 			.join("\n")
 			.match(holeNamePattern)
 		if (printed) {
@@ -505,15 +629,51 @@ export class StandaloneArtifact {
 	}
 
 	get declared(): BaseNode[] {
-		return [...this.units.values()].flatMap(unit => unit.declared)
+		return this.units.flatMap(unit => unit.declared)
 	}
 
-	// a Type collected while emitting, e.g. a default's value, runs on the traversals of a unit reaching it
-	unitOf(node: BaseNode): ContentUnit {
-		return (
-			this.units.get(node as BaseRoot) ??
-			[...this.units.values()].find(unit => unit.names[node.id])!
-		)
+	// each Type's units, after those they call
+	get units(): RootUnit[] {
+		return [...new Set([...this.unitsByRoot.values()].flat())]
+	}
+
+	// a unit is shared when what it holds is the same wherever it's created, as are the units it reads
+	isShared(unit: RootUnit): boolean {
+		let shared = this.sharedByUnit.get(unit)
+		if (shared === undefined) {
+			// a unit reading its own roots, as in a cycle, is decided by what else it reads
+			this.sharedByUnit.set(unit, true)
+			const reads = [
+				...Object.values(unit.dependencies).map(([node]) => node),
+				...unit.refs.filter(ref => isNode(ref) && ref.isRoot())
+			] as BaseNode[]
+			// a node a unit refers to directly is its root's shape, rather than a validator
+			shared =
+				!unit.refs.some(ref => !isNode(ref) && this.holdsLocal(ref)) &&
+				!unit.errorContexts.some(context => this.holdsLocal(context)) &&
+				reads.every(node => this.isShared(unitOf(node, unit)))
+			this.sharedByUnit.set(unit, shared)
+		}
+		return shared
+	}
+
+	// a hole, a Type a literal holds or a morph applying its validator is created with the artifact
+	holdsLocal(value: unknown, seen = new Set<unknown>()): boolean {
+		if (seen.has(value)) return false
+		seen.add(value)
+		if (typeof value === "string") return value.includes(holeNamePrefix)
+		if (isHole(value)) return true
+		if (this.defaultsByMorph.has(value)) return true
+		if (!hasDomain(value, "object") || isNode(value) || !isPlainLiteral(value))
+			return false
+		return Reflect.ownKeys(value).some(k => {
+			const v = Reflect.get(value, k)
+			return (
+				this.holdsLocal(k, seen) ||
+				(isNode(v) && v.isRoot()) ||
+				this.holdsLocal(v, seen)
+			)
+		})
 	}
 
 	collectExport(value: unknown, path: string): void {
@@ -556,6 +716,7 @@ export class StandaloneArtifact {
 	): string[] {
 		const names = Object.keys(this.exports)
 		if (!names.length) return []
+		this.writeSharedUnits()
 		const lazyNamesByModule = new Map<object, string>()
 		return [
 			this.writeCreate(names, configured, sitesByName),
@@ -597,8 +758,8 @@ export class StandaloneArtifact {
 			writeFixConfig(configured),
 			// without validators, what is left is the Scopes and Generics exported and the Modules holding them
 			...(this.roots.length ?
-				this.writeBody(unit => `(${unit.source})`)
-			:	[this.declarations.join("\n"), this.modules.join("\n")]),
+				this.writeBody(unitFunction => `(${unitFunction})`)
+			:	[this.declarations.statements.join("\n"), this.modules.join("\n")]),
 			`return [${values.join(", ")}]`
 		]
 		return `var created
@@ -618,12 +779,15 @@ ${statements.filter(statement => statement).join("\n\n")}
 		internedBy?: number
 	): string {
 		this.receive(params)
+		this.writeSharedUnits()
 		const exported = this.exports[name]
 		// a Module, Scope or Generic declares what it holds, which the body then writes
 		const value = this.exportOf(exported, "", site)
 		const body = [
 			// each unit is evaluated once, at the first call, which may come before the artifact's body runs
-			...this.writeBody((unit, i) => `(unit${index}_${i} ??= ${unit.source})`),
+			...this.writeBody(
+				(unitFunction, i) => `(unit${index}_${i} ??= ${unitFunction})`
+			),
 			`return ${value}`
 		]
 		const keys =
@@ -639,7 +803,7 @@ ${statements.filter(statement => statement).join("\n\n")}
 				]
 			:	body)
 		]
-		const units = [...this.units.keys()].map((_, i) => `var unit${index}_${i}`)
+		const units = this.localUnits.map((_, i) => `var unit${index}_${i}`)
 		return `${units.join("\n")}
 
 function factory${index}(${params.map((_, i) => `p${i}`).join(", ")}) {
@@ -649,32 +813,203 @@ ${statements.filter(statement => statement).join("\n\n")}
 export { factory${index} as ${JSON.stringify(name)} }`
 	}
 
+	get localUnits(): RootUnit[] {
+		return this.units.filter(unit => !this.isShared(unit))
+	}
+
+	writeSharedUnits(): void {
+		for (const unit of this.units)
+			if (this.isShared(unit)) this.writeShared(unit)
+	}
+
+	// a shared unit is created by a function declaration, which an import cycle can call before its module is evaluated
+	writeShared(unit: RootUnit): void {
+		const specifier = `~arktype/${unit.name}`
+		if (this.unitModules[specifier]) return
+		const declarations = this.declarations
+		const writing: SharedUnit = (this.writing = {
+			unit,
+			params: [],
+			args: [],
+			imports: {},
+			shapesByName: {}
+		})
+		this.declarations = createDeclarations()
+		this.unit = unit
+		for (const name in unit.dependencies) this.readDependency(unit, name)
+		// a root its own traversals read, as in a cycle, is created with them
+		const ownRoots = unit.roots.filter(root =>
+			unit.refs.some(
+				ref => isNode(ref) && unit.names[ref.id] === unit.names[root.id]
+			)
+		)
+		for (const root of ownRoots) {
+			writing.shapesByName[unit.names[root.id]] = this.declareConst(
+				root,
+				"shape",
+				"{}"
+			)
+		}
+		const refs = unit.refs.map(
+			(value, i) => `const r${i} = ${this.emit(value)}`
+		)
+		const errorContexts = unit.errorContexts.map(context => this.emit(context))
+		const copies = this.writeCopies(unit.errorContexts, errorContexts)
+		const returned = unit.traversals.flat()
+		const links = ownRoots.map(root => {
+			const shape = writing.shapesByName[unit.names[root.id]]
+			returned.push(shape)
+			return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(root, shape, unit, this.traversalsOf(root, unit))}))`
+		})
+		const unitFunction = this.writeUnitFunction(
+			unit,
+			writing.params,
+			[
+				...this.declarations.statements,
+				...refs,
+				`const errorContexts = [${errorContexts.join(", ")}]`,
+				...copies
+			],
+			links,
+			returned
+		)
+		const moduleDeclarations = [
+			`var ${unit.name}Unit`,
+			`function ${unit.name}() {\n\treturn (${unit.name}Unit ??= (${unitFunction})(${writing.args.join(", ")}))\n}`
+		]
+		for (const root of unit.roots) {
+			const name = unit.names[root.id]
+			const shape = writing.shapesByName[name]
+			moduleDeclarations.push(
+				shape ?
+					`function ${name}Node() {\n\treturn ${unit.name}()[${returned.indexOf(shape)}]\n}`
+				:	`var ${name}Shape\nfunction ${name}Node() {\n\treturn (${name}Shape ??= runtime.freeze(${this.writeShape(
+						root,
+						`${name}Node()`,
+						unit,
+						this.traversalsOf(root, unit).map(
+							traversal => `${unit.name}()[${returned.indexOf(traversal)}]`
+						)
+					)}))\n}`
+			)
+		}
+		this.declarations = declarations
+		this.unit = undefined
+		this.writing = undefined
+		this.unitModules[specifier] = {
+			imports: writing.imports,
+			declarations: moduleDeclarations,
+			exports: [
+				unit.name,
+				...unit.roots.map(root => `${unit.names[root.id]}Node`)
+			]
+		}
+	}
+
+	writeUnitFunction(
+		unit: RootUnit,
+		params: string[],
+		prologue: string[],
+		epilogue: string[],
+		returned: string[]
+	): string {
+		return `function (${params.join(", ")}) {
+"use strict"
+${[...prologue, ...unit.members.map(([name, source]) => `const ${name} = ${source}`), ...epilogue].join("\n")}
+return [${returned.join(", ")}]
+}`
+	}
+
+	traversalsOf(root: BaseRoot, unit: RootUnit): string[] {
+		const name = unit.names[root.id]
+		return unit.traversals[
+			unit.roots.findIndex(head => unit.names[head.id] === name)
+		]
+	}
+
+	// what a unit reads from another module, which a shared unit receives as a parameter
+	read(specifier: string, name: string, param: string, arg: string): string {
+		const names = ((this.writing?.imports ?? this.imports)[specifier] ??= [])
+		if (!names.includes(name)) names.push(name)
+		if (!this.writing) return arg
+		if (!this.writing.params.includes(param)) {
+			this.writing.params.push(param)
+			this.writing.args.push(arg)
+		}
+		return param
+	}
+
+	readDependency(unit: RootUnit, name: string): string {
+		const dependency = unitOf(unit.dependencies[name][0], unit)
+		const index = dependency.traversals.flat().indexOf(name)
+		return this.isShared(dependency) ?
+				this.read(
+					`~arktype/${dependency.name}`,
+					dependency.name,
+					name,
+					`${dependency.name}()[${index}]`
+				)
+			:	`${this.localNamesByUnit.get(dependency)}[${index}]`
+	}
+
+	// contexts with the same keys share a function copying them, in a module of its own
+	writeCopies(contexts: readonly object[], names: string[]): string[] {
+		const namesByCopy: Record<string, string[]> = {}
+		for (let i = 0; i < contexts.length; i++) {
+			const copy = writeNodeContextCopy(contexts[i])
+			const copyName = `copy${hashOf(copy)}`
+			this.unitModules[`~arktype/${copyName}`] ??= {
+				imports: {},
+				declarations: [`function ${copyName}(e, input) {\n${copy}}`],
+				exports: [copyName]
+			}
+			const copied = (namesByCopy[
+				this.read(`~arktype/${copyName}`, copyName, copyName, copyName)
+			] ??= [])
+			if (!copied.includes(names[i])) copied.push(names[i])
+		}
+		return Object.entries(namesByCopy).map(
+			([copyName, copied]) =>
+				`runtime.copyNodeContexts(${copyName}, [${copied.join(", ")}])`
+		)
+	}
+
 	writeBody(
-		unitExpressionOf: (unit: ContentUnit, i: number) => string
+		wrapUnitFunction: (unitFunction: string, i: number) => string
 	): string[] {
-		const units = [...this.units.values()]
-		const traversals = units.map((unit, i) => {
+		const localContexts: object[] = []
+		const localContextNames: string[] = []
+		const traversals = this.localUnits.map((unit, i) => {
+			this.localNamesByUnit.set(unit, `traversals${i}`)
+			this.unit = unit
 			const refs = unit.refs.map(value => this.emit(value))
 			const errorContexts = unit.errorContexts.map(context =>
 				this.emit(context)
 			)
-			return `const traversals${i} = ${unitExpressionOf(unit, i)}([], [${refs.join(", ")}], [${errorContexts.join(", ")}])`
-		})
-		const contextNamesByCopy: Record<string, string[]> = {}
-		for (const context of new Set(units.flatMap(unit => unit.errorContexts))) {
-			;(contextNamesByCopy[writeNodeContextCopy(context)] ??= []).push(
-				this.emit(context)
+			this.unit = undefined
+			localContexts.push(...unit.errorContexts)
+			localContextNames.push(...errorContexts)
+			const dependencies = Object.keys(unit.dependencies)
+			const unitFunction = this.writeUnitFunction(
+				unit,
+				[...dependencies, "refs", "errorContexts"],
+				unit.refs.map((_, i) => `const r${i} = refs[${i}]`),
+				[],
+				unit.traversals.flat()
 			)
-		}
-		const copies = Object.entries(contextNamesByCopy).map(
-			([copy, names]) =>
-				`runtime.copyNodeContexts((e, input) => {\n${copy}}, [${names.join(", ")}])`
-		)
+			const args = [
+				...dependencies.map(name => this.readDependency(unit, name)),
+				`[${refs.join(", ")}]`,
+				`[${errorContexts.join(", ")}]`
+			]
+			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
+		})
+		const copies = this.writeCopies(localContexts, localContextNames)
 		const validators = [...this.validatorNamesByRoot].map(([root, name]) =>
 			this.writeValidator(root, name)
 		)
 		return [
-			this.declarations.join("\n"),
+			this.declarations.statements.join("\n"),
 			copies.join("\n"),
 			traversals.join("\n"),
 			this.links.join("\n"),
@@ -687,7 +1022,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 
 	writeValidator(root: BaseRoot, name: string): string {
 		const shape = this.shapeOf(root)
-		const nodeName = this.unitOf(root).names[root.id]
+		const nodeName = this.unitsByHead.get(root)!.names[root.id]
 		const [id, holes] = keyOf(root)
 		const key = `,\n\t${JSON.stringify(id)}${holes.length ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
 		return `const ${name} = new runtime.Validator(
@@ -734,7 +1069,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 			const kind = hasArkKind(value, "scope") ? "Scope" : "Generic"
 			const label = `the ${kind}${path && ` ${path}`}${site ? ` at ${site}` : ""}`
 			return (
-				this.constNamesByValue.get(value) ??
+				this.declarations.namesByValue.get(value) ??
 				this.declareConst(
 					value,
 					"unavailable",
@@ -763,22 +1098,57 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		role: DeclarationRole,
 		expression: string
 	): string {
-		const name = `${role}${this.declarationCounts[role]++}`
-		this.constNamesByValue.set(value, name)
-		this.declarations.push(`const ${name} = ${expression}`)
+		const name = `${role}${this.declarations.counts[role]++}`
+		this.declarations.namesByValue.set(value, name)
+		this.declarations.statements.push(`const ${name} = ${expression}`)
 		return name
 	}
 
-	shapeOf(node: BaseNode): string {
-		const declared = this.constNamesByValue.get(node)
+	shapeOf(node: BaseRoot): string {
+		const unit =
+			this.unit ? unitOf(node, this.unit) : this.unitsByHead.get(node)!
+		const name = unit.names[node.id]
+		const own = this.writing?.shapesByName[name]
+		if (own) return own
+		if (this.writing && this.isShared(unit)) {
+			return this.read(
+				`~arktype/${unit.name}`,
+				`${name}Node`,
+				name,
+				`${name}Node()`
+			)
+		}
+		const declared = this.declarations.namesByValue.get(node)
 		if (declared) return declared
-		const name = this.declareConst(node, "shape", "{}")
-		const unit = this.unitOf(node)
-		const unitIndex = [...this.units.values()].indexOf(unit)
-		const traversalIndex = unit.declared.findIndex(
-			declared => unit.names[declared.id] === unit.names[node.id]
+		if (this.isShared(unit)) {
+			return this.declareConst(
+				node,
+				"shape",
+				this.read(`~arktype/${unit.name}`, `${name}Node`, name, `${name}Node()`)
+			)
+		}
+		const shape = this.declareConst(node, "shape", "{}")
+		const traversals = unit.traversals.flat()
+		this.links.push(
+			`runtime.freeze(runtime.assign(${shape}, ${this.writeShape(
+				node,
+				shape,
+				unit,
+				this.traversalsOf(node, unit).map(
+					traversal =>
+						`${this.localNamesByUnit.get(unit)}[${traversals.indexOf(traversal)}]`
+				)
+			)}))`
 		)
-		const traversals = `traversals${unitIndex}[${traversalIndex}]`
+		return shape
+	}
+
+	writeShape(
+		node: BaseRoot,
+		shape: string,
+		unit: RootUnit,
+		traversals: string[]
+	): string {
 		const trackedName =
 			unit.names[node.trackedId as NodeId] ??
 			throwParseError(writeUnprecompilableMessage(`${node.expression}'s cycle`))
@@ -787,7 +1157,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 			node.hasKind("union") && node.compiledDiscriminant ?
 				`,\n\tdiscriminantDescription: ${JSON.stringify(node.discriminantDescription)}`
 			:	""
-		this.links.push(`runtime.freeze(runtime.assign(${name}, {
+		return `{
 	id: ${JSON.stringify(unit.names[node.id])},
 	trackedId: ${JSON.stringify(trackedName)},
 	isTransformedById: ${node.isTransformedById},
@@ -795,13 +1165,12 @@ export { factory${index} as ${JSON.stringify(name)} }`
 	transforms: ${node.transforms},
 	allowsRequiresContext: ${node.allowsRequiresContext},
 	allowsRequiresTraversal: ${node.allowsRequiresTraversal},
-	traverseAllows: ${traversals}[0],
-	traverseApply: ${traversals}[1],
-	traverseTransform: ${traversals}[2],
-	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${name}, data) ?? runtime.allowsInContext(${name}, data, runtime.runtimeConfig)` : `${traversals}[0]`},
+	traverseAllows: ${traversals[0]},
+	traverseApply: ${traversals[1]},
+	traverseTransform: ${traversals[2]},
+	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]},
 	$: runtime.runtimeScope${discriminantDescription}
-}))`)
-		return name
+}`
 	}
 
 	emit(value: unknown): string {
@@ -814,7 +1183,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
 		const runtimePath = runtimePathsByValue.get(value)
 		if (runtimePath) return runtimePath
-		const declared = this.constNamesByValue.get(value)
+		const declared = this.declarations.namesByValue.get(value)
 		if (declared) return declared
 		const defaulted = this.defaultsByMorph.get(value)
 		if (defaulted) return this.emitDefault(...defaulted)
@@ -989,7 +1358,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 
 	configOf(root: BaseRoot): string {
 		const config = root.$.resolvedConfig
-		const declared = this.constNamesByValue.get(config)
+		const declared = this.declarations.namesByValue.get(config)
 		if (declared) return declared
 		const configuredCodes: string[] = []
 		let code: ArkErrorCode
@@ -1075,20 +1444,44 @@ const collectDefaults = (
 	}
 }
 
+const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()
+
+// the units of the Type naming a unit, by the name of each root
+const unitsByRootNameOf = new WeakMap<RootUnit, Record<string, RootUnit>>()
+
+const rootUnitsOf = (root: BaseRoot): RootUnit[] => {
+	let units = unitsByRoot.get(root)
+	if (units) return units
+	units = precompileRootUnits(root, runtimeKeyOf)
+	const unitsByRootName: Record<string, RootUnit> = {}
+	for (const unit of units) {
+		unitsByRootNameOf.set(unit, unitsByRootName)
+		for (const head of unit.roots) unitsByRootName[unit.names[head.id]] = unit
+	}
+	unitsByRoot.set(root, units)
+	return units
+}
+
+// a node's names are those of the Type naming the unit reading it, so it's found among that Type's units
+const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
+	unitsByRootNameOf.get(reader)![reader.names[node.id]]
+
 const keysByRoot = new WeakMap<BaseRoot, [id: string, holes: unknown[]]>()
 
 export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 	const cached = keysByRoot.get(root)
 	if (cached) return cached
-	const unit = precompileByContent([root], runtimeKeyOf)
+	const units = rootUnitsOf(root)
 	const defaultsByMorph = new Map<unknown, Default>()
-	for (const node of unit.declared) {
-		if (node.hasKind("optional") || node.hasKind("sequence"))
-			collectDefaults(node, defaultsByMorph)
+	for (const unit of units) {
+		for (const node of unit.declared) {
+			if (node.hasKind("optional") || node.hasKind("sequence"))
+				collectDefaults(node, defaultsByMorph)
+		}
 	}
 	const holes: unknown[] = []
 	// a unit keys a function or object only by where it first reaches it, so the address adds what each is
-	const values: string[] = [unit.names[root.id]]
+	const values: string[] = [units[0].names[root.id]]
 	const seen = new Set<unknown>()
 	const collect = (value: unknown): void => {
 		if (seen.has(value)) return
@@ -1116,7 +1509,11 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 			}
 		} else values.push(printable(value))
 	}
-	collect([unit.refs, unit.errorContexts, root.meta])
+	collect([
+		units.map(unit => unit.refs),
+		units.map(unit => unit.errorContexts),
+		root.meta
+	])
 	const key: [string, unknown[]] = [hashOf(values.join("\n")), holes]
 	keysByRoot.set(root, key)
 	return key

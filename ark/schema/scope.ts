@@ -78,7 +78,8 @@ import type { Unit } from "./roots/unit.ts"
 import {
 	CompiledFunction,
 	NodeCompiler,
-	type InvokeOptions
+	type InvokeOptions,
+	type ReferenceOptions
 } from "./shared/compile.ts"
 import { isArkErrorResult } from "./shared/errors.ts"
 import { nodeKinds, type NodeKind } from "./shared/implement.ts"
@@ -253,7 +254,9 @@ const precompile = (
 		declared,
 		compiledUnit,
 		compiledUnit(
-			[...linkage.dependencies.keys()],
+			Object.values(linkage.dependencies).map(
+				([node, kind]) => node[`traverse${kind}`]
+			),
 			[...linkage.refs.keys()],
 			linkage.errorContexts
 		),
@@ -394,17 +397,19 @@ const precompileReferences = (
 	// strict as a module is, so writing to a frozen input copyOf left uncopied throws
 	unit.line(`"use strict"`)
 	let i = 0
-	for (const name of linkage.dependencies.values())
+	for (const name in linkage.dependencies)
 		unit.const(name, `dependencies[${i++}]`)
 	i = 0
 	for (const name of linkage.refs.values()) unit.const(name, `refs[${i++}]`)
 	for (const [name, source] of linkage.members) unit.const(name, source)
-	return unit.return(`[${traversals.join(", ")}]`)
+	return unit.return(
+		`[${traversals.map(names => `[${names.join(", ")}]`).join(", ")}]`
+	)
 }
 
-type UnitMember = [name: string, source: string]
+export type UnitMember = [name: string, source: string]
 
-const declareTraversals = (linkage: UnitLinkage, node: BaseNode): string => {
+const declareTraversals = (linkage: UnitLinkage, node: BaseNode): string[] => {
 	const traversals = [
 		declareTraversal(linkage, node, "Allows"),
 		declareTraversal(linkage, node, "Apply")
@@ -412,15 +417,18 @@ const declareTraversals = (linkage: UnitLinkage, node: BaseNode): string => {
 	// a prop or index signature is transformed by its structure
 	if (node.transforms && includes(transformedKinds, node.kind))
 		traversals.push(declareTraversal(linkage, node, "Transform"))
-	return `[${traversals.join(", ")}]`
+	return traversals
 }
+
+export type UnitDependency = [node: BaseNode, kind: TraversalKind]
 
 interface UnitLinkage {
 	referencesById: Record<string, BaseNode>
 	reused: Set<BaseNode>
 	unreached: Set<BaseNode>
 	reached: BaseNode[]
-	dependencies: Map<Fn, string>
+	// each traversal of a reused node the unit calls, by the name it calls
+	dependencies: Record<string, UnitDependency>
 	refs: NodeCompiler.Refs
 	errorContexts: NodeCompiler.ErrorContexts
 	members: UnitMember[]
@@ -432,7 +440,7 @@ const createLinkage = (nameOf?: (id: NodeId) => string): UnitLinkage => ({
 	reused: new Set(),
 	unreached: new Set(),
 	reached: [],
-	dependencies: new Map(),
+	dependencies: {},
 	refs: new Map(),
 	errorContexts: [],
 	members: [],
@@ -461,15 +469,18 @@ class TraversalCompiler extends NodeCompiler {
 		if (!reference) {
 			this.linkage.referencesById[node.id] = node
 			this.linkage.reached.push(node)
-		} else if (this.linkage.reused.has(reference)) {
-			const kind = opts?.kind ?? this.traversalKind
-			this.linkage.dependencies.set(
-				reference[`traverse${kind}`],
-				this.referenceToId(node.id, { kind })
-			)
 		} else if (this.linkage.unreached.delete(reference))
 			this.linkage.reached.push(reference)
 		return super.invoke(node, opts)
+	}
+
+	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
+		const reference = this.linkage.referencesById[id]
+		if (reference && this.linkage.reused.has(reference)) {
+			const kind = opts?.kind ?? this.traversalKind
+			this.linkage.dependencies[`${this.nameOf(id)}${kind}`] = [reference, kind]
+		}
+		return super.referenceToId(id, opts)
 	}
 
 	override nameOf(id: NodeId): string {
@@ -540,10 +551,72 @@ export const precompileByContent = (
 	}
 }
 
+export interface RootUnit {
+	// its first root's name, which addresses it
+	name: string
+	names: Record<NodeId, string>
+	// the roots another unit calls, more than one only in a cycle
+	roots: BaseRoot[]
+	// each root's traversals, by name
+	traversals: string[][]
+	declared: BaseNode[]
+	members: UnitMember[]
+	refs: unknown[]
+	errorContexts: NodeCompiler.ErrorContexts
+	dependencies: Record<string, UnitDependency>
+}
+
+// each root's unit holds the nodes it reaches before another root, so a prop's traversal is shared only by Types sharing the root it belongs to
+export const precompileRootUnits = (
+	root: BaseRoot,
+	keyOf?: (value: object | symbol) => string | undefined
+): RootUnit[] => {
+	let s = nameReferences([root], {}, keyOf)
+	const occurrencesById = occurrencesOfResolutions(s)
+	if (occurrencesById) s = nameReferences([root], occurrencesById, keyOf)
+	const units: RootUnit[] = []
+	// a component is completed after every component it calls
+	for (const component of s.components) {
+		const roots = component
+			.filter(node => node.isRoot())
+			.sort((l, r) => (s.names[l.id] < s.names[r.id] ? -1 : 1))
+		if (!roots.length) continue
+		const declaredByName: Record<string, BaseNode> = {}
+		const reached: BaseNode[] = [...roots]
+		for (const node of reached) {
+			if (declaredByName[s.names[node.id]]) continue
+			declaredByName[s.names[node.id]] = node
+			for (const callee of s.referencesById[node.id].callees)
+				if (!callee.isRoot() || roots.includes(callee)) reached.push(callee)
+		}
+		const linkage = createLinkage(id => s.names[id])
+		for (const node of s.reached) {
+			linkage.referencesById[node.id] = node
+			if (node.isRoot() && !declaredByName[s.names[node.id]])
+				linkage.reused.add(node)
+		}
+		const declared = Object.values(declaredByName)
+		const traversals = declared.map(node => declareTraversals(linkage, node))
+		units.push({
+			name: s.names[roots[0].id],
+			names: s.names,
+			roots: roots as BaseRoot[],
+			traversals: traversals.slice(0, roots.length),
+			declared,
+			members: linkage.members,
+			refs: [...linkage.refs.keys()],
+			errorContexts: linkage.errorContexts,
+			dependencies: linkage.dependencies
+		})
+	}
+	return units
+}
+
 interface ContentNamingState {
 	referencesById: Record<NodeId, ContentReference>
 	reached: BaseNode[]
 	stack: ContentReference[]
+	components: BaseNode[][]
 	keyOf: ((value: object | symbol) => string | undefined) | undefined
 	valueIndices: Map<unknown, number>
 	names: Record<NodeId, string>
@@ -560,6 +633,7 @@ const nameReferences = (
 		referencesById: {},
 		reached: [],
 		stack: [],
+		components: [],
 		keyOf,
 		valueIndices: new Map(),
 		names: {},
@@ -624,8 +698,11 @@ const nameReference = (
 			reference.lowLink = Math.min(reference.lowLink, calleeReference.index)
 		}
 	}
-	if (reference.lowLink === reference.index)
-		nameComponent(s, s.stack.splice(s.stack.lastIndexOf(reference)))
+	if (reference.lowLink === reference.index) {
+		const members = s.stack.splice(s.stack.lastIndexOf(reference))
+		nameComponent(s, members)
+		s.components.push(members.map(member => member.node))
+	}
 	return reference
 }
 

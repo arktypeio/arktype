@@ -18,10 +18,12 @@ import {
 	holeNamePattern,
 	keyOf,
 	precompileStandalone,
+	precompileStandaloneModules,
 	writeFixConfig,
 	type ConfiguredModule,
 	type FactoryParam,
-	type StandaloneExport
+	type StandaloneExport,
+	type StandaloneModules
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
@@ -751,10 +753,11 @@ export class Precompiler {
 					sitesByName,
 					keywordReads,
 					refusalsByName,
-					configured
+					configured,
+					this.inline
 				)
-			:	""
-		const specifier = `~arktype/${hashOf(validators)}`
+			:	{ code: "", modules: {} }
+		const specifier = `~arktype/${hashOf(validators.code)}`
 		const imported = new Set<string>()
 		for (const [site, name] of namesBySite) {
 			if (refusalsByName[name]) {
@@ -775,7 +778,8 @@ export class Precompiler {
 					modules[throwerSpecifier] = thrower
 					imports[throwerSpecifier] = { default: local }
 				} else {
-					modules[specifier] = validators
+					modules[specifier] = validators.code
+					Object.assign(modules, validators.modules)
 					;(imports[specifier] ??= {})[name] = local
 				}
 			}
@@ -2586,15 +2590,29 @@ const writeValidators = (
 	sitesByName: Record<string, string>,
 	keywordReads: ReadonlySet<string>,
 	refusalsByName: Record<string, string>,
-	configured: ConfiguredModule | undefined
-): string => {
+	configured: ConfiguredModule | undefined,
+	inline: boolean
+): StandaloneModules => {
+	// a host without virtual modules places the units an artifact shares in it
+	const write = () =>
+		inline ?
+			{
+				code: precompileStandalone(
+					exportsByName,
+					configured,
+					sitesByName,
+					keywordReads
+				),
+				modules: {}
+			}
+		:	precompileStandaloneModules(
+				exportsByName,
+				configured,
+				sitesByName,
+				keywordReads
+			)
 	try {
-		return precompileStandalone(
-			exportsByName,
-			configured,
-			sitesByName,
-			keywordReads
-		)
+		return write()
 	} catch {
 		for (const name in exportsByName) {
 			try {
@@ -2606,13 +2624,8 @@ const writeValidators = (
 		}
 		// every export is refused when the whole artifact is, as under a configured locale
 		return Object.keys(exportsByName).length ?
-				precompileStandalone(
-					exportsByName,
-					configured,
-					sitesByName,
-					keywordReads
-				)
-			:	""
+				write()
+			:	{ code: "", modules: {} }
 	}
 }
 
