@@ -1,5 +1,5 @@
 import { bench } from "@ark/attest"
-import { noSuggest } from "@ark/util"
+import { flatMorph, noSuggest } from "@ark/util"
 import type { ArkErrors, Type } from "arktype"
 import { precompileStandalone } from "arktype/internal/standalone.ts"
 import { mkdirSync, writeFileSync } from "node:fs"
@@ -58,7 +58,11 @@ writeFileSync(
 // standalone validators refuse to load beside arktype unless its claim is cleared
 delete (globalThis as Record<string, unknown>)[noSuggest("loadedArktypeEntry")]
 
-const standalone: Record<string, Type> = await import(standalonePath)
+// each export is a getter, creating the artifact's validators at its first call
+const standalone: Record<string, Type> = flatMorph(
+	(await import(standalonePath)) as Record<string, () => Type>,
+	(name, get) => [name, get()]
+)
 
 const standaloneRotating = Rotating.map((_, i) => standalone[`Rotating${i}`])
 
