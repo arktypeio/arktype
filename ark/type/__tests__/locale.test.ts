@@ -229,6 +229,8 @@ const withConfig = <t>(config: ArkConfig, fn: () => t): t => {
 		return fn()
 	} finally {
 		$ark.config = originalConfig
+		// resolving the original config restores the locale reads render in
+		configure({})
 		$ark.resolvedConfig = originalResolvedConfig
 	}
 }
@@ -635,9 +637,9 @@ b isn't allowed`)
 				attest(errors.toLocaleString(en)).snap(
 					"must be a string (was a number)"
 				)
-				// errors render with the config of the scope that raised them
+				// including errors from Types parsed before it was configured
 				attest(type("string")(5).toString()).snap(
-					"must be a string (was a number)"
+					" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
 				)
 			})
 		})
@@ -671,6 +673,22 @@ b isn't allowed`)
 					attest(calls).equals(1)
 				}
 			)
+		})
+
+		it("a locale configured later replaces a function", () => {
+			withConfig({ locale: () => xx }, () => {
+				const errors = type("string")(5) as ArkErrors
+				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
+				configure({ locale: en })
+				attest(errors.toString()).snap("must be a string (was a number)")
+				configure({ locale: xx })
+				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
+				configure({ locale: { ...en } })
+				attest(errors.toString()).snap("must be a string (was a number)")
+				configure({ locale: () => xx })
+				configure({ locale: undefined } as never)
+				attest(errors.toString()).snap("must be a string (was a number)")
+			})
 		})
 
 		it("a function selects one locale per read", () => {
@@ -766,6 +784,7 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 				])
 			} finally {
 				$ark.config = originalConfig
+				configure({})
 				$ark.resolvedConfig = originalResolvedConfig
 			}
 		})

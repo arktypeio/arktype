@@ -31,6 +31,15 @@ import {
 	type Locale
 } from "./locale.ts"
 import { $ark } from "./registry.ts"
+import {
+	defaultLocale,
+	outerLocale,
+	plainLocale,
+	readIn,
+	renderLocale,
+	selectLocale,
+	selectsLocale
+} from "./render.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { Traversal } from "./traversal.ts"
 import { arkKind } from "./utils.ts"
@@ -45,45 +54,20 @@ type ErrorSlot = "expected" | "actual" | "problem" | "message"
 
 type SlotConfig = string | ((...args: never[]) => string)
 
-// the locale of the outermost read in progress, which the reads it makes share
-let renderLocale: Locale | undefined
-
-// false until configure is passed a locale, so English reads check nothing else
-let localeConfigured = false
-
-export const noteLocaleConfigured = (): void => {
-	localeConfigured = true
+const readSlot = {
+	expected: (e: ArkError) => e.expected,
+	actual: (e: ArkError) => e.actual,
+	problem: (e: ArkError) => e.problem,
+	message: (e: ArkError) => e.message
 }
 
-const localizes = (): boolean => renderLocale !== undefined || localeConfigured
+const readErrorJson = (e: ArkError) => e.toJSON()
 
-// an outermost read selects a locale when a function is configured
-const selectsLocale = (): boolean =>
-	localeConfigured &&
-	renderLocale === undefined &&
-	typeof $ark.config.locale === "function"
+const readErrorsJson = (e: ArkErrors) => e.toJSON()
 
-const selectLocale = (): Locale => {
-	try {
-		const locale = ($ark.config.locale as () => Locale<any> | undefined)()
-		return locale === undefined ?
-				$ark.defaultConfig.locale
-			:	normalizeLocale(locale)
-	} catch {
-		// a throw from a getter would replace the TraversalError assert throws
-		return $ark.defaultConfig.locale
-	}
-}
+const readSummary = (e: ArkErrors) => e.toString()
 
-const readIn = <t>(locale: Locale, read: () => t): t => {
-	const outer = renderLocale
-	renderLocale = locale
-	try {
-		return read()
-	} finally {
-		renderLocale = outer
-	}
-}
+const readFlatProblems = (e: ArkErrors) => e.flatProblemsByPath
 
 // Array.prototype.toLocaleString passes each element its own arguments, a tag
 const isLocale = (locale: unknown): locale is Locale<any> =>
@@ -178,47 +162,45 @@ export class ArkError<
 	}
 
 	get expected(): string {
-		if (localizes()) return this.render("expected")
+		const locale = plainLocale
+		if (locale === undefined) return this.render("expected")
 		if (this.input.expected !== undefined) return this.input.expected
 
 		const config = this.meta?.expected ?? this.nodeConfig.expected
 
-		return typeof config === "function" ?
-				config(this as never, this.ctx.config.locale)
-			:	config
+		return typeof config === "function" ? config(this as never, locale) : config
 	}
 
 	get actual(): string {
-		if (localizes()) return this.render("actual")
+		const locale = plainLocale
+		if (locale === undefined) return this.render("actual")
 		if (this.input.actual !== undefined) return this.input.actual
 
 		const config = this.meta?.actual ?? this.nodeConfig.actual
 
 		return typeof config === "function" ?
-				config(this.data as never, this as never, this.ctx.config.locale)
+				config(this.data as never, this as never, locale)
 			:	config
 	}
 
 	get problem(): string {
-		if (localizes()) return this.render("problem")
+		const locale = plainLocale
+		if (locale === undefined) return this.render("problem")
 		if (this.input.problem !== undefined) return this.input.problem
 
 		const config = this.meta?.problem ?? this.nodeConfig.problem
 
-		return typeof config === "function" ?
-				config(this as never, this.ctx.config.locale)
-			:	config
+		return typeof config === "function" ? config(this as never, locale) : config
 	}
 
 	get message(): string {
-		if (localizes()) return this.render("message")
+		const locale = plainLocale
+		if (locale === undefined) return this.render("message")
 		if (this.input.message !== undefined) return this.input.message
 
 		const config = this.meta?.message ?? this.nodeConfig.message
 
-		return typeof config === "function" ?
-				config(this as never, this.ctx.config.locale)
-			:	config
+		return typeof config === "function" ? config(this as never, locale) : config
 	}
 
 	/**
@@ -226,24 +208,27 @@ export class ArkError<
 	 */
 	toLocaleString(locale?: Locale<any>): string {
 		return isLocale(locale) ?
-				readIn(normalizeLocale(locale), () => this.message)
+				readIn(normalizeLocale(locale), this as never, readSlot.message)
 			:	this.message
 	}
 
-	// a read through a locale, which writes what the app hasn't configured
+	// selects the locale of an outermost read, or writes a slot in a locale
+	// other than en
 	private render(slot: ErrorSlot): string {
-		if (selectsLocale()) return readIn(selectLocale(), () => this[slot])
 		const error: ArkError = this as never
-		const locale = renderLocale ?? this.ctx.config.locale
+		if (renderLocale === undefined)
+			return readIn(outerLocale(), error, readSlot[slot])
 		const config = this.configOf(slot)
-		if (
-			locale === $ark.defaultConfig.locale ||
-			config !== $ark.defaultConfig[this.code][slot]
+		if (config !== $ark.defaultConfig[this.code][slot])
+			return writeSlot(error, slot, config, renderLocale)
+		if (slot === "expected") return localeExpected(error, renderLocale)
+		const writer = localeWriter(
+			error,
+			slot,
+			this.configOf("expected"),
+			renderLocale
 		)
-			return writeSlot(error, slot, config, locale)
-		if (slot === "expected") return localeExpected(error, locale)
-		const writer = localeWriter(error, slot, this.configOf("expected"), locale)
-		return writeSlot(error, slot, writer, locale)
+		return writeSlot(error, slot, writer, renderLocale)
 	}
 
 	private configOf(slot: ErrorSlot): SlotConfig {
@@ -260,7 +245,8 @@ export class ArkError<
 	}
 
 	toJSON(): JsonObject {
-		if (selectsLocale()) return readIn(selectLocale(), () => this.toJSON())
+		if (selectsLocale())
+			return readIn(selectLocale(), this as never, readErrorJson)
 		const json: Record<string, unknown> = { data: this.data, path: this.path }
 		for (const k in this.input)
 			if (!(k in excludedFromJson)) json[k] = this.input[k as never]
@@ -348,12 +334,12 @@ const ownDescription = (error: ArkError): string | undefined =>
 // text or a keyword. Any scope's writer may have written it, so its text decides
 const isEnglish = (error: ArkError, description: string): boolean => {
 	const meta = error.meta
-	const en = $ark.defaultConfig.locale
 	return (
 		meta !== undefined &&
 		meta.description === undefined &&
 		meta.keyword === undefined &&
-		description === writeExpected(error, en[error.code].expected, en)
+		description ===
+			writeExpected(error, defaultLocale[error.code].expected, defaultLocale)
 	)
 }
 
@@ -421,8 +407,7 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	 * {@link byPath} flattened so that each value is an array of problem strings at that path.
 	 */
 	get flatProblemsByPath(): Record<string, string[]> {
-		if (selectsLocale())
-			return readIn(selectLocale(), () => this.flatProblemsByPath)
+		if (selectsLocale()) return readIn(selectLocale(), this, readFlatProblems)
 		return flatMorph(this.byPath, (k, v) => [k, v.flat.map(e => e.problem)])
 	}
 
@@ -564,7 +549,7 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	 */
 	toLocaleString(locale?: Locale<any>): string {
 		return isLocale(locale) ?
-				readIn(normalizeLocale(locale), () => this.summary)
+				readIn(normalizeLocale(locale), this, readSummary)
 			:	this.summary
 	}
 
@@ -582,12 +567,12 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	}
 
 	toJSON(): JsonArray {
-		if (selectsLocale()) return readIn(selectLocale(), () => this.toJSON())
+		if (selectsLocale()) return readIn(selectLocale(), this, readErrorsJson)
 		return this.issues.map(e => e.toJSON())
 	}
 
 	toString(): string {
-		if (selectsLocale()) return readIn(selectLocale(), () => this.toString())
+		if (selectsLocale()) return readIn(selectLocale(), this, readSummary)
 		const issues = this.issues
 		// join would convert each error through V8's slower generic ToPrimitive
 		let result = issues.length === 0 ? "" : issues[0].toString()
@@ -632,7 +617,7 @@ export class TraversalError extends Error {
 }
 
 const writeTraversalMessage = (errors: ArkErrors): string =>
-	selectsLocale() ? readIn(selectLocale(), () => writeTraversalMessage(errors))
+	selectsLocale() ? readIn(selectLocale(), errors, writeTraversalMessage)
 	: errors.length === 1 ? errors.summary
 	: "\n" + errors.issues.map(e => `  • ${indent(e)}`).join("\n")
 

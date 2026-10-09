@@ -9,22 +9,22 @@ import {
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type { TypeMeta } from "./shared/declare.ts"
-import {
-	noteLocaleConfigured,
-	type ActualConfig,
-	type ArkErrorCode,
-	type ArkErrors,
-	type ExpectedConfig,
-	type MessageConfig,
-	type ProblemConfig
+import type {
+	ActualConfig,
+	ArkErrorCode,
+	ArkErrors,
+	ExpectedConfig,
+	MessageConfig,
+	ProblemConfig
 } from "./shared/errors.ts"
 import {
 	isNodeKind,
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
-import { normalizeLocale, type Locale } from "./shared/locale.ts"
+import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
+import { configureLocale } from "./shared/render.ts"
 import type { SetEngine } from "./shared/sets.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
@@ -81,11 +81,8 @@ export type ResolvedUnknownNodeConfig = requireKeys<
 $ark.config ??= {}
 
 export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
-	if (config.locale !== undefined) {
-		if (!hasDomain(config.locale, "object"))
-			throwParseError(writeInvalidLocaleMessage(config.locale))
-		noteLocaleConfigured()
-	}
+	if (config.locale !== undefined && !hasDomain(config.locale, "object"))
+		throwParseError(writeInvalidLocaleMessage(config.locale))
 
 	const result = Object.assign($ark.config, mergeConfigs($ark.config, config))
 
@@ -98,12 +95,8 @@ export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
 /** $ark.config merged over base, with its static locale */
 export const resolveGlobalConfig = (base: ResolvedConfig): ResolvedConfig => {
 	const resolved = mergeConfigs(base, $ark.config)
-	const { locale } = $ark.config
 	// a locale function selects a locale per read, which is en if it returns none
-	;(resolved as { locale: Locale }).locale =
-		typeof locale === "object" ?
-			normalizeLocale(locale)
-		:	$ark.defaultConfig.locale
+	;(resolved as { locale: Locale }).locale = configureLocale($ark.config.locale)
 	return resolved
 }
 
