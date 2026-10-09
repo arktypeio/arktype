@@ -76,7 +76,8 @@ export interface ValidatorAttributes {
 }
 
 // captured when the runtime loads, so a program replacing them later can't keep an artifact from freezing what it creates
-export const { assign, freeze, is, preventExtensions } = Object
+export const { assign, defineProperties, freeze, is, preventExtensions } =
+	Object
 
 // read only by the factories of Types that reference a validator, so kept off what a program can read
 const holesByValidator = new WeakMap<
@@ -365,6 +366,29 @@ export const unavailableGeneric = (label: string): (() => never) =>
 		unavailableGenericMembers,
 		name => `${name} of ${label}`
 	)
+
+// true for each Type a Module holds, and the members of each Module it holds
+export type ModuleMembers = { [k: string]: true | ModuleMembers }
+
+// arktype's keyword Modules create each Type when it's first read, so reading the Module fixes no configuration
+export const lazyModule = (
+	members: ModuleMembers,
+	load: () => Record<string, unknown>
+): object => {
+	const descriptors: PropertyDescriptorMap = {}
+	for (const k in members) {
+		const member = members[k]
+		let module: object | undefined
+		descriptors[k] = {
+			enumerable: true,
+			get:
+				member === true ?
+					() => load()[k]
+				:	() => (module ??= lazyModule(member, () => load()[k] as never))
+		}
+	}
+	return freeze(defineProperties({}, descriptors))
+}
 
 export type HoleKind = "function" | "class" | "symbol"
 

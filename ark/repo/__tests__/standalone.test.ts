@@ -420,6 +420,24 @@ contextualize(() => {
 		}
 	})
 
+	it("fixes the configuration where a keyword Module's Type is first read", async () => {
+		const artifact = await importBesideArktype(
+			bundle(
+				`${precompileStandalone(
+					{ Strings: type.keywords.string },
+					{ fingerprint: "f", path: "main.ts" }
+				)}\nexport const configure = runtime.configure`
+			).js
+		)
+		// arktype creates a keyword's Type when it's first read
+		const strings = artifact.Strings()
+		attest(strings.json).is(strings.json)
+		attest(artifact.Strings()).is(strings)
+		artifact.configure({ domain: { message: "configured" } }, "f")
+		attest(strings.email(1).summary).snap("configured")
+		attest(() => artifact.configure({}, "f")).throws(configureAfterTypeMessage)
+	})
+
 	it("keeps the descriptions of a type another scope describes", async () => {
 		const lib = scope(
 			{ y: { v: "number" } },

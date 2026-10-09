@@ -142,7 +142,7 @@ contextualize(() => {
 			}
 		}).timeout(60000)
 
-		it("configured before a Type created where it's defined is", () => {
+		it("configured before a Type is created, after the module defining it loads", () => {
 			const opts = { config: "config.ts" }
 			attest(node(["later.ts"], opts, configured).stdout).equals(
 				runPlain(configured, "later.ts")

@@ -39,7 +39,7 @@ import {
 } from "@ark/util"
 import { arktypeVersion } from "./entry.ts"
 import type { Generic } from "./generic.ts"
-import type { type } from "./keywords/keywords.ts"
+import { ark, keywords, type type } from "./keywords/keywords.ts"
 import type { Module } from "./module.ts"
 import type { HoleKind } from "./runtime.ts"
 import * as runtime from "./runtimeExports.ts"
@@ -142,6 +142,38 @@ export const precompileStandalone = (
 		...factories
 	]
 	return `${sections.filter(section => section).join("\n\n")}\n`
+}
+
+let ambientModules: WeakSet<object> | undefined
+
+// arktype's own keyword Modules, e.g. type.keywords.string
+const isAmbientModule = (module: object): boolean => {
+	// one holding a Type of another scope isn't, which spares resolving every keyword to tell
+	if (
+		Object.values(module).some(
+			member => hasArkKind(member, "root") && member.$ !== ark.internal
+		)
+	)
+		return false
+	if (!ambientModules) {
+		const found = new WeakSet<object>()
+		const collect = (module: object) => {
+			found.add(module)
+			for (const member of Object.values(module))
+				if (hasArkKind(member, "module")) collect(member)
+		}
+		collect($ark.ambient as object)
+		collect(keywords)
+		ambientModules = found
+	}
+	return ambientModules.has(module)
+}
+
+const moduleMembersOf = (module: object): runtime.ModuleMembers => {
+	const result: runtime.ModuleMembers = {}
+	for (const [k, member] of Object.entries(module))
+		result[k] = hasArkKind(member, "module") ? moduleMembersOf(member) : true
+	return result
 }
 
 export const writeFixConfig = (
@@ -506,14 +538,26 @@ export class StandaloneArtifact {
 	): string[] {
 		const names = Object.keys(this.exports)
 		if (!names.length) return []
+		const lazyNamesByModule = new Map<object, string>()
 		return [
 			this.writeCreate(names, configured, sitesByName),
 			// declared as functions, which a site an import cycle reaches before the artifact is evaluated can call
 			names
-				.map(
-					(name, i) =>
-						`function get${i}() {\n\treturn (created ??= create())[${i}]\n}\n\nexport { get${i} as ${JSON.stringify(name)} }`
-				)
+				.map((name, i) => {
+					const value = this.exports[name]
+					let declaration = ""
+					let read = `(created ??= create())[${i}]`
+					if (hasArkKind(value, "module") && isAmbientModule(value)) {
+						let lazyName = lazyNamesByModule.get(value)
+						if (!lazyName) {
+							lazyName = `lazy${i}`
+							lazyNamesByModule.set(value, lazyName)
+							declaration = `var ${lazyName}\n\n`
+						}
+						read = `(${lazyName} ??= runtime.lazyModule(${JSON.stringify(moduleMembersOf(value))}, () => ${read}))`
+					}
+					return `${declaration}function get${i}() {\n\treturn ${read}\n}\n\nexport { get${i} as ${JSON.stringify(name)} }`
+				})
 				.join("\n")
 		]
 	}
