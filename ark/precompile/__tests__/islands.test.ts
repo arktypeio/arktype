@@ -24,17 +24,17 @@ export const parsers = { type }`
 import * as $ark$island from "arktype/internal"
 import "arktype"
 import "arktype"
-export const A = $arkek65jf4484
+export const A = $arkvek65jf4484
 // @ark-runtime
 export const B = $ark$island.type({ name: process.argv[2] })
 export const C = process.argv.length > 2 ?
 	// @ark-runtime
 	$ark$island.type(process.argv[2])
-:	$ark1bp5ims0ip5
+:	$arkv1bp5ims0ip5
 // @ark-runtime
 export const parsers = { type: $ark$island.type }
-import { vek65jf4484 as $arkek65jf4484 } from "~arktype/zj292r37sl"
-import { v1bp5ims0ip5 as $ark1bp5ims0ip5 } from "~arktype/zj292r37sl"`)
+import { vek65jf4484 as $arkvek65jf4484 } from "~arktype/zj292r37sl"
+import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/zj292r37sl"`)
 	})
 
 	it("means nothing in cache mode", () => {

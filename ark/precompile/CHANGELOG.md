@@ -33,6 +33,19 @@ import { precompile } from "@ark/precompile/unplugin"
 export default defineConfig({ plugins: [precompile.vite()] })
 ```
 
+### Precompile definitions holding functions
+
+In standalone mode, a definition holding a morph, a predicate, a class or a symbol is precompiled to a factory, and the definition becomes a call passing each of those values where it was written, so it is evaluated when the original would have been. The factory checks that each value is what its code was compiled for (a function's parameter count, a class's builtin and other ancestors, a symbol's description) and throws at creation if one isn't, then creates the validator, printing each function's own name in its descriptions and errors.
+
+```ts
+const trim = (s: string) => s.trim()
+export const Name = type("string").pipe(trim)
+// becomes
+export const Name = $arkf1j3ffm9dngv(trim)
+```
+
+A definition referencing a Type that holds functions receives that Type's validator and takes them from it. A definition that could depend on whether two values imported from other modules are equal is reported rather than precompiled, as is a default whose value is a function.
+
 ### Precompile in Turbopack
 
 `@ark/precompile/turbopack` is a webpack loader for `turbopack.rules`, reporting each module's forward closure as its dependencies. In standalone mode, alias `arktype` to `arktype/runtime` with `turbopack.resolveAlias`.

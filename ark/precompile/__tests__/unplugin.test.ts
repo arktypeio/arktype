@@ -190,7 +190,10 @@ contextualize(() => {
 			},
 			{ kind: "delete", id: "c4a760a8-dbcf-4e14-9f39-645a8e933d74" },
 			'id must be a UUID (was "1234")',
-			'kind must be "delete" or "create" (was "update")'
+			'kind must be "delete" or "create" (was "update")',
+			"@ada",
+			{ handle: "@ada", joined: 2020 },
+			'handle must be a handle (was "ada")'
 		])
 	})
 

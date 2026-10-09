@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import type { PrecompileOptions } from "@ark/precompile"
 import type { Type } from "arktype"
 import { analyze, statusesOf } from "./utils.ts"
 
@@ -137,13 +138,22 @@ const A = type("string").pipe(format).narrow((s, ctx) => s.length > 0 || ctx.rej
 		).snap(["function 137:143 arity 1", "function 152:203 arity 2"])
 	})
 
-	it("holes have no names at build", () => {
-		const result = analyze(`import { type } from "arktype"
+	it("holes are named by placeholders at build", () => {
+		const descriptionsOf = (opts?: PrecompileOptions) =>
+			analyze(
+				`import { type } from "arktype"
 const isPositive = (n: number) => n > 0
 class User {}
 const A = type("number").narrow(isPositive)
-const B = type.instanceOf(User)`)
-		attest(result.sites.map(site => (site.value as Type).description)).snap([
+const B = type.instanceOf(User)`,
+				{},
+				opts
+			).sites.map(site => (site.value as Type).description)
+		attest(descriptionsOf()).snap([
+			"a number and valid according to $hole_jq93cm53mt",
+			"an instance of $hole_24aaa5z9ooh"
+		])
+		attest(descriptionsOf({ runtime: "arktype" })).snap([
 			"a number and valid according to an anonymous predicate",
 			"an instance of "
 		])
@@ -155,7 +165,7 @@ const A = type({ a: ["string[]", "=", () => ${nonStatic}] })
 const B = type({ a: [["string", "=>", s => ${nonStatic}], "=", "a"] })
 const C = type({ a: [["string", ":", s => ${nonStatic}], "=", "a"] })`
 		attest(statusesOf(source)).snap([
-			"2:11 accepted { a: string[] = Function(fn) }",
+			"2:11 accepted { a: string[] = Function($hole_2cnk9nyqft4) }",
 			'6:11 accepted { a: (In: string) => Out<unknown> = "a" }',
 			"10:11 rejected\n  arktype calls a function (/main.ts:10:38) while defining the type, so it must be a static helper\n  the function (/main.ts:10:38) is not a static helper: its body is not one expression or one `return`"
 		])

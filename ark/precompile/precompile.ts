@@ -1,13 +1,12 @@
 import { hasArkKind, writePrecompiledUnits, type BaseRoot } from "@ark/schema"
+import { hashOf, hasDomain, ParseError, registeredNameOf } from "@ark/util"
+import type { HoleKind } from "arktype/internal/runtime.ts"
 import {
-	flatMorph,
-	hashOf,
-	hasDomain,
-	ParseError,
-	registeredNameOf
-} from "@ark/util"
-import type { type } from "arktype"
-import { precompileStandalone } from "arktype/internal/standalone.ts"
+	keyOf,
+	precompileStandalone,
+	type FactoryParam,
+	type StandaloneExport
+} from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join } from "node:path"
 import type {
@@ -65,8 +64,6 @@ export type PrecompileMode = "standalone" | "cache"
 export interface PrecompileOptions extends InterpreterOptions {
 	// the directory paths in messages are relative to
 	cwd?: string | undefined
-	// ship arktype and precompile only the code it compiles, rather than folding every arktype expression into a validator
-	runtime?: "arktype" | undefined
 	// the module whose `configure()` call sets the configuration
 	config?: string | undefined
 	// place what the module imports from virtual modules in the module itself, for hosts without them
@@ -109,6 +106,8 @@ export interface Site {
 	holes: Hole[]
 	inputs: Input[]
 	helpers: Helper[]
+	// each expression evaluating to a hole or a Type, which its factory receives in its place
+	references: Reference[]
 }
 
 export interface Hole {
@@ -116,6 +115,8 @@ export interface Hole {
 	// the expression evaluated in place at runtime, which is in the site's source unless the hole was read through a binding
 	start: number
 	end: number
+	// the value the build held in its place
+	value: unknown
 	kind: "function" | "class" | "symbol" | "opaque"
 	// the parameter count compiled for, undefined when no declaration gives one
 	arity: number | undefined
@@ -123,6 +124,21 @@ export interface Hole {
 	isCalledAtDefinition: boolean
 	// an opaque value arktype parsed as a Standard Schema
 	isDefinition: boolean
+}
+
+export interface Reference {
+	start: number
+	end: number
+	// a hole, or a Type whose holes its factory takes from the validator it receives
+	value: unknown
+	// whether another module can replace it, as a test runner's module mock does
+	isForeign: boolean
+}
+
+// what a site's factory receives, each parameter written where the site evaluates it
+export interface SiteFactory {
+	params: FactoryParam[]
+	spans: Span[]
 }
 
 export interface Input {
@@ -472,22 +488,39 @@ export class Precompiler {
 		diagnostics: Diagnostic[]
 	): void {
 		const namesBySite = new Map<Site, string>()
-		const typesByName: Record<string, type.Any> = {}
+		const factoriesBySite = new Map<Site, SiteFactory>()
+		const exportsByName: Record<string, StandaloneExport> = {}
 		for (const site of sites) {
 			if (site.status !== "accepted") continue
 			const reasons = this.unsupportedReasonsOf(site)
+			const factory =
+				reasons.length || site.parseError ?
+					undefined
+				:	this.factoryOf(site, module, reasons)
 			if (reasons.length) {
 				diagnostics.push(this.unsupported(module, site, reasons))
 				continue
 			}
-			const name = nameOf(site)
-			namesBySite.set(site, name)
-			if (!site.parseError) typesByName[name] = site.value as never
+			if (site.parseError) {
+				namesBySite.set(site, nameOf(site))
+				continue
+			}
+			const root = site.value as BaseRoot
+			if (factory) {
+				const name = `f${hashOf(`${root.hash}\n${factory.params.map(param => `${param.kind} ${param.label}`).join("\n")}`)}`
+				factoriesBySite.set(site, factory)
+				namesBySite.set(site, name)
+				exportsByName[name] = { type: root as never, params: factory.params }
+			} else {
+				const name = `v${nameOf(site)}`
+				namesBySite.set(site, name)
+				exportsByName[name] = root as never
+			}
 		}
 		const refusalsByName: Record<string, string> = {}
 		const validators =
-			Object.keys(typesByName).length ?
-				writeValidators(typesByName, refusalsByName)
+			Object.keys(exportsByName).length ?
+				writeValidators(exportsByName, refusalsByName)
 			:	""
 		const specifier = `~arktype/${hashOf(validators)}`
 		const imported = new Set<string>()
@@ -507,15 +540,117 @@ export class Precompiler {
 					imports[`~arktype/${name}`] = { default: local }
 				} else {
 					modules[specifier] = validators
-					;(imports[specifier] ??= {})[`v${name}`] = local
+					;(imports[specifier] ??= {})[name] = local
 				}
 			}
+			const factory = factoriesBySite.get(site)
 			// a ParseError is thrown where the site is evaluated, as arktype throws it
-			s.overwrite(site.start, site.end, site.parseError ? `${local}()` : local)
+			if (site.parseError) s.overwrite(site.start, site.end, `${local}()`)
+			else if (!factory) s.overwrite(site.start, site.end, local)
+			else {
+				// each parameter stays where it is written, so it is evaluated when the original evaluates it
+				let start = site.start
+				let separator = `${local}(`
+				for (const span of factory.spans) {
+					s.overwrite(start, span.start, separator)
+					start = span.end
+					separator = ", "
+				}
+				s.overwrite(start, site.end, ")")
+			}
 			folded.push(site)
 		}
 		pruneArktypeImports(module, [...folded, ...module.islands], s)
 		diagnostics.sort((l, r) => l.start - r.start)
+	}
+
+	// what a site's factory receives, in the order the site evaluates it, adding to reasons what it can't receive
+	private factoryOf(
+		site: Site,
+		module: SourceModule,
+		reasons: string[]
+	): SiteFactory | undefined {
+		const [, held] = keyOf(site.value as BaseRoot)
+		if (!held.length) return
+		const holesByValue = new Map(site.holes.map(hole => [hole.value, hole]))
+		const params: FactoryParam[] = []
+		const spans: Span[] = []
+		// the text each hole is read through, which can evaluate to another value at runtime if another module can replace it
+		const sourcesByHole = new Map<unknown, Map<string, boolean>>()
+		const addSource = (hole: unknown, text: string, isForeign: boolean) => {
+			const sources = sourcesByHole.get(hole) ?? new Map<string, boolean>()
+			sources.set(text, (sources.get(text) ?? false) || isForeign)
+			sourcesByHole.set(hole, sources)
+		}
+		const passed = new Set<unknown>()
+		for (const reference of site.references) {
+			const text = module.snippetOf(reference)
+			const hole = holesByValue.get(reference.value)
+			if (hole && !held.includes(hole.value)) {
+				// e.g. a default's thunk, which arktype calls from a function of its own
+				reasons.push(
+					`arktype holds \`${text}\` (${module.positionOf(reference)}) in a function of its own, which a standalone validator can't create yet`
+				)
+				continue
+			}
+			const holes = hole ? [hole.value] : keyOf(reference.value as BaseRoot)[1]
+			for (const value of holes) {
+				addSource(
+					value,
+					text,
+					reference.isForeign ||
+						this.interpreter.sourceOf(value)?.[1] !== module
+				)
+			}
+			if (!holes.length || passed.has(reference.value)) continue
+			if (spans.length && reference.start < spans[spans.length - 1].end) {
+				reasons.push(
+					`\`${text}\` is read inside another value its factory receives`
+				)
+			}
+			passed.add(reference.value)
+			spans.push(reference)
+			params.push(
+				hole ?
+					{
+						kind: hole.kind as HoleKind,
+						label: `\`${text}\` (${module.positionOf(reference)})`,
+						value: hole.value
+					}
+				:	{ kind: "input", label: text, reads: [[[], reference.value]] }
+			)
+		}
+		for (const value of held) {
+			if (sourcesByHole.has(value)) continue
+			// a value the build didn't stand in for is arktype's own, which the emitter refuses or writes itself
+			const source = this.interpreter.sourceOf(value)
+			if (!source) continue
+			const [node, origin] = source
+			reasons.push(
+				`arktype holds \`${origin.snippetOf(node)}\` (${origin.positionOf(node)}), which the site ${holesByValue.has(value) ? "reads outside its own source" : "cannot pass to its factory"}`
+			)
+		}
+		// equality between values another module can replace is later work
+		const foreignTexts = new Set<string>()
+		let foreignHoleCount = 0
+		for (const sources of sourcesByHole.values()) {
+			const foreign = [...sources].filter(([, isForeign]) => isForeign)
+			if (!foreign.length) continue
+			foreignHoleCount++
+			for (const [text] of foreign) foreignTexts.add(text)
+			if (sources.size > 1) {
+				reasons.push(
+					`${listTexts(sources.keys())} may hold different values at runtime, which the site's output depends on`
+				)
+			}
+		}
+		// the holes one validator holds are distinct, since the build of its own site proved them so
+		if (foreignHoleCount > 1 && foreignTexts.size > 1) {
+			reasons.push(
+				`${listTexts(foreignTexts)} may hold the same value at runtime, which the site's output depends on`
+			)
+		}
+		return { params, spans }
 	}
 
 	private unsupported(
@@ -539,6 +674,7 @@ export class Precompiler {
 				[]
 			:	["its value is not a Type"]
 		for (const hole of site.holes) {
+			if (!hole.isCalledAtDefinition && hole.kind !== "opaque") continue
 			const holeModule = this.graph.moduleOf(hole.file) as SourceModule
 			result.push(
 				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})`
@@ -722,7 +858,8 @@ export class Precompiler {
 				name: bindingOfFunction(node, helperModule)?.name ?? "default",
 				start: node.start,
 				end: node.end
-			}))
+			})),
+			references: []
 		}
 		if (this.mode === "standalone" && isInIsland(state.node, module)) {
 			site.status = "island"
@@ -748,7 +885,34 @@ export class Precompiler {
 			site.holes.push(hole)
 		}
 		site.holes.sort((l, r) => l.start - r.start)
+		for (const [value, reads] of state.readsByValue) {
+			if (
+				!hasArkKind(value, "root") &&
+				!site.holes.some(hole => hole.value === value)
+			)
+				continue
+			const isImportInput = site.inputs.some(
+				input => input.kind === "import" && input.value === value
+			)
+			for (const node of reads) {
+				site.references.push({
+					start: node.start,
+					end: node.end,
+					value,
+					isForeign: isImportInput || this.isImported(node, module)
+				})
+			}
+		}
+		site.references.sort((l, r) => l.start - r.start)
 		return site
+	}
+
+	// whether a reference reads an import, directly or through its members
+	private isImported(node: Node, module: SourceModule): boolean {
+		node = unwrapExpression(node)
+		while (node.type === "MemberExpression")
+			node = unwrapExpression(node.object)
+		return module.scopes.referencesById.get(node)?.binding?.kind === "import"
 	}
 
 	private inputOf(
@@ -792,10 +956,10 @@ export class Precompiler {
 			typeof value === "symbol" ? undefined : (
 				this.interpreter.standIns.get(value as object)!
 			)
-		const sourcesByValue = candidate.state.sourcesByValue
+		const { readsByValue } = candidate.state
 		const source =
-			sourcesByValue.get(value) ??
-			(standIn?.dynamic && sourcesByValue.get(standIn.dynamic))
+			readsByValue.get(value)?.[0] ??
+			(standIn?.dynamic && readsByValue.get(standIn.dynamic)?.[0])
 		if (!source && standIn?.closure?.env) {
 			return new DynamicValue(
 				standIn.module,
@@ -819,6 +983,7 @@ export class Precompiler {
 			file: origin.id,
 			start: node.start,
 			end: node.end,
+			value,
 			kind: standIn?.kind ?? "symbol",
 			arity: standIn?.arity,
 			description: standIn ? undefined : (value as symbol).description,
@@ -866,7 +1031,7 @@ export class Precompiler {
 					this.interpreter.standIns.get(value)
 				:	undefined
 			if (!standIn?.isDefinition || !standIn.dynamic) continue
-			const source = candidate.state.sourcesByValue.get(standIn.dynamic)
+			const source = candidate.state.readsByValue.get(standIn.dynamic)?.[0]
 			const [node, origin] =
 				source ? [source, module] : [standIn.node, standIn.module]
 			result.push(
@@ -1349,27 +1514,30 @@ const isStrict = (program: Program): boolean =>
 	)
 
 // named by content, so equal sites share a validator
+const listTexts = (texts: Iterable<string>) =>
+	[...texts].map(text => `\`${text}\``).join(" and ")
+
 const nameOf = (site: Site) =>
 	hashOf(site.parseError?.message ?? (site.value as BaseRoot).hash)
 
-// precompileStandalone refuses a whole artifact for one Type it can't emit, so on a refusal each is emitted alone to find it
+// precompileStandalone refuses a whole artifact for one export it can't emit, so on a refusal each is emitted alone to find it
 const writeValidators = (
-	typesByName: Record<string, type.Any>,
+	exportsByName: Record<string, StandaloneExport>,
 	refusalsByName: Record<string, string>
 ): string => {
-	const types = flatMorph(typesByName, (name, t) => [`v${name}`, t])
 	try {
-		return precompileStandalone(types)
+		return precompileStandalone(exportsByName)
 	} catch {
-		for (const name in typesByName) {
+		const emitted = { ...exportsByName }
+		for (const name in exportsByName) {
 			try {
-				precompileStandalone({ [name]: typesByName[name] })
+				precompileStandalone({ [name]: exportsByName[name] })
 			} catch (e) {
 				refusalsByName[name] = (e as Error).message
-				delete types[`v${name}`]
+				delete emitted[name]
 			}
 		}
-		return precompileStandalone(types)
+		return precompileStandalone(emitted)
 	}
 }
 
@@ -1522,6 +1690,7 @@ const rejectSite = (site: Site, dynamic: DynamicValue): Site => {
 	site.roots = []
 	site.holes = []
 	site.inputs = []
+	site.references = []
 	return site
 }
 

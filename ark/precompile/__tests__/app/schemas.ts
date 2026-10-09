@@ -21,3 +21,12 @@ export const Payload = type({
 	kind: "'delete'",
 	id: "string.uuid"
 })
+
+export const Handle = type("string")
+	.pipe(s => s.trim())
+	.narrow((s, ctx) => /^@\w+$/.test(s) || ctx.mustBe("a handle"))
+
+export const Profile = type({
+	handle: Handle,
+	joined: ["string", "=>", (s: string) => new Date(s).getUTCFullYear()]
+})

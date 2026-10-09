@@ -383,6 +383,7 @@ const B = type({ [tag]: "string" })`)
 					file: "/main.ts",
 					start: 132,
 					end: 135,
+					value: "Symbol(tag)",
 					kind: "symbol",
 					arity: undefined,
 					description: "tag",

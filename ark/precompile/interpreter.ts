@@ -1,5 +1,5 @@
 import { arkKind, hasArkKind, type BaseRoot } from "@ark/schema"
-import { hasDomain, ParseError } from "@ark/util"
+import { hashOf, hasDomain, ParseError } from "@ark/util"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import type {
@@ -45,6 +45,8 @@ import {
 export interface InterpreterOptions {
 	// values of bundler `define` constants, keyed by the expression they replace
 	define?: Record<string, unknown> | undefined
+	// ship arktype and precompile only the code it compiles, rather than folding every arktype expression into a validator
+	runtime?: "arktype" | undefined
 }
 
 export type InputRoot =
@@ -91,7 +93,8 @@ export interface SiteState {
 	node: Node
 	module: SourceModule
 	trace: Trace
-	sourcesByValue: Map<unknown, Node>
+	// each outermost expression in the site's source that evaluates to a hole or a Type it reads
+	readsByValue: Map<unknown, Node[]>
 	holes: unknown[]
 	interpreted: Set<Node>
 	// each call into arktype's API
@@ -110,7 +113,7 @@ export const createSiteState = (
 	node,
 	module,
 	trace: { reads: [], helpers: [] },
-	sourcesByValue: new Map(),
+	readsByValue: new Map(),
 	holes: [],
 	interpreted: new Set(),
 	requests: [],
@@ -174,6 +177,13 @@ export class Interpreter {
 		this.opts = opts
 	}
 
+	// the expression that creates a hole and its module
+	sourceOf(hole: unknown): [Node, SourceModule] | undefined {
+		if (typeof hole === "symbol") return this.sourcesBySymbol.get(hole)
+		const standIn = hasDomain(hole, "object") && this.standIns.get(hole)
+		return standIn ? [standIn.node, standIn.module] : undefined
+	}
+
 	evaluateSite(site: SiteState): SiteState {
 		if (site.isEvaluated) return site
 		site.isEvaluated = true
@@ -216,12 +226,16 @@ export class Interpreter {
 			contains(ctx.site.node, node) &&
 			(typeof value === "symbol" ||
 				value instanceof DynamicValue ||
-				(hasDomain(value, "object") && this.standIns.has(value)))
+				(hasDomain(value, "object") && this.standIns.has(value)) ||
+				// a Type the site reads, which its factory receives to take the holes it holds
+				(hasArkKind(value, "root") && isReference(node)))
 		) {
-			const previous = ctx.site.sourcesByValue.get(value)
-			// a hole is the outermost expression that evaluates to it
-			if (!previous || contains(node, previous))
-				ctx.site.sourcesByValue.set(value, node)
+			// an expression is evaluated after those it contains, so it replaces them
+			const reads = (ctx.site.readsByValue.get(value) ?? []).filter(
+				read => !contains(node, read)
+			)
+			if (!reads.some(read => contains(read, node))) reads.push(node)
+			ctx.site.readsByValue.set(value, reads)
 		}
 		return value
 	}
@@ -1570,8 +1584,16 @@ export class Interpreter {
 		)
 	}
 
+	// a standalone artifact prints a hole's name at creation, so the build names it by a placeholder it can find in what arktype prints
+	private holeNameOf(node: Node, module: SourceModule): string {
+		return this.opts.runtime === "arktype" ?
+				""
+			:	`$hole_${hashOf(`${module.path}:${node.start}`)}`
+	}
+
 	private functionStandIn(closure: Closure, node: Node): object {
 		const arity = parameterCount(closure.node)
+		const name = this.holeNameOf(closure.node, closure.module)
 		const standIn: StandIn = {
 			kind: "function",
 			module: closure.module,
@@ -1587,7 +1609,7 @@ export class Interpreter {
 		return this.standInProxy(target, standIn, {
 			get: (target, k) =>
 				k === "length" ? arity
-				: k === "name" ? ""
+				: k === "name" ? name
 				: answersFact(k) ? Reflect.get(target, k)
 				: this.refuse(standIn),
 			getPrototypeOf: target => Reflect.getPrototypeOf(target),
@@ -1670,6 +1692,7 @@ export class Interpreter {
 				element.type === "MethodDefinition" && element.kind === "constructor"
 		) as MethodDefinition | undefined
 		const length = constructor ? parameterCount(constructor.value) : 0
+		const name = this.holeNameOf(node, ctx.module)
 		const standIn: StandIn = {
 			kind: "class",
 			module: ctx.module,
@@ -1683,7 +1706,7 @@ export class Interpreter {
 		return this.standInProxy(target, standIn, {
 			get: (target, k) =>
 				k === "length" ? length
-				: k === "name" ? ""
+				: k === "name" ? name
 				: answersFact(k) ? Reflect.get(target, k)
 				: this.refuse(standIn),
 			getPrototypeOf: target => Reflect.getPrototypeOf(target),
@@ -1780,6 +1803,11 @@ export class Interpreter {
 // the facts arktype reads from a function or class by key, besides its name and length
 const answersFact = (k: PropertyKey) =>
 	k === arkKind || k === "constructor" || k === "prototype" || k === "toJSON"
+
+const isReference = (node: Node) => {
+	const { type } = unwrapExpression(node)
+	return type === "Identifier" || type === "MemberExpression"
+}
 
 export const isDynamic = (value: unknown): value is DynamicValue =>
 	value instanceof DynamicValue

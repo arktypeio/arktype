@@ -21,12 +21,12 @@ export const Users = User.array()
 export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.code).snap(`import { ArkErrors } from "arktype"
 const max = 64
-export const User = $ark1169pgizw3q
-export const Same = $ark1169pgizw3q
-export const Users = $arku8qjlz7etl
+export const User = $arkv1169pgizw3q
+export const Same = $arkv1169pgizw3q
+export const Users = $arkvu8qjlz7etl
 export const isError = (data: unknown) => data instanceof ArkErrors
-import { v1169pgizw3q as $ark1169pgizw3q } from "~arktype/1khoz0jbw1v"
-import { vu8qjlz7etl as $arku8qjlz7etl } from "~arktype/1khoz0jbw1v"`)
+import { v1169pgizw3q as $arkv1169pgizw3q } from "~arktype/1khoz0jbw1v"
+import { vu8qjlz7etl as $arkvu8qjlz7etl } from "~arktype/1khoz0jbw1v"`)
 			attest(Object.keys(result.modules)).snap(["~arktype/1khoz0jbw1v"])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
@@ -40,8 +40,8 @@ export const A = type("string")`).code
 			).snap(`import "./polyfill.ts"
 import "arktype"
 import * as config from "./config.ts"
-export const A = $arkek65jf4484
-import { vek65jf4484 as $arkek65jf4484 } from "~arktype/1mlwmfqh1db"`)
+export const A = $arkvek65jf4484
+import { vek65jf4484 as $arkvek65jf4484 } from "~arktype/1mlwmfqh1db"`)
 		})
 
 		it("unsupported sites", () => {
@@ -60,7 +60,6 @@ export const G = scope({ a: "string" })`,
 				{ "/limits.ts": "export const max = 5" }
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				'/main.ts:5:18  type("string").pipe(trim) can\'t be precompiled to a standalone validator yet\n  arktype holds `trim` (/main.ts:5:38)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				"/main.ts:6:18  type(`string <= ${max}`) can't be precompiled to a standalone validator yet\n  `max` is imported from /limits.ts\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				"/main.ts:7:18  field(5) can't be precompiled to a standalone validator yet\n  it calls the static helper `field` (/main.ts:4:15)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				"/main.ts:8:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
@@ -71,15 +70,77 @@ export const G = scope({ a: "string" })`,
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
 const field = (n: number) => type(\`string <= \${n}\`)
-export const A = type("string").pipe(trim)
+export const A = $arkf2f7m2qez7rp(trim)
 export const B = type(\`string <= \${max}\`)
 export const C = field(5)
 export const D = $ark11nyj35o0sh()
 export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
-export const F = $ark1bp5ims0ip5
+export const F = $arkv1bp5ims0ip5
 export const G = scope({ a: "string" })
-import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"
-import { v1bp5ims0ip5 as $ark1bp5ims0ip5 } from "~arktype/vmd6acqgbc"`)
+import { f2f7m2qez7rp as $arkf2f7m2qez7rp } from "~arktype/22notqngc0z"
+import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/22notqngc0z"
+import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"`)
+		})
+	})
+
+	describe("factories", () => {
+		it("folds a site holding functions to a factory call passed them in place", () => {
+			const source = `import { type } from "arktype"
+import { ext } from "./ext.ts"
+const trim = (s: string) => s.trim()
+class Pet {}
+const petTag = Symbol("petTag")
+export const Name = type("string").pipe(trim).narrow((s, ctx) => s.length > 0)
+export const User = type({ name: Name, pet: type.instanceOf(Pet), [petTag]: "string" })
+export const Either = type("string").pipe(trim).or(type("number").pipe(trim))
+export const Extended = type("string").pipe(ext)
+export const Pair = type([Name, Either])`
+			// a hole is registered by a name from its module and position, which no other test shares
+			const result = precompileModule(
+				source,
+				"/factories.ts",
+				memoryHost({
+					"/factories.ts": source,
+					"/ext.ts": "export const ext = (s: string) => s"
+				})
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).equals([])
+			attest(result.code).snap(`import "arktype"
+import { ext } from "./ext.ts"
+const trim = (s: string) => s.trim()
+class Pet {}
+const petTag = Symbol("petTag")
+export const Name = $arkfjn5p53yrnw(trim, (s, ctx) => s.length > 0)
+export const User = $arkf17onxh5wa5v(Name, Pet, petTag)
+export const Either = $arkf177zfl998m9(trim)
+export const Extended = $arkf14b60szkb1e(ext)
+export const Pair = $arkfcfvlzq3rdy(Name, Either)
+import { fjn5p53yrnw as $arkfjn5p53yrnw } from "~arktype/1j2509sapfe"
+import { f17onxh5wa5v as $arkf17onxh5wa5v } from "~arktype/1j2509sapfe"
+import { f177zfl998m9 as $arkf177zfl998m9 } from "~arktype/1j2509sapfe"
+import { f14b60szkb1e as $arkf14b60szkb1e } from "~arktype/1j2509sapfe"
+import { fcfvlzq3rdy as $arkfcfvlzq3rdy } from "~arktype/1j2509sapfe"`)
+		})
+
+		it("unsupported sites", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { a } from "./a.ts"
+import { b, alias } from "./b.ts"
+export const Both = type("string").pipe(a, b)
+export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))
+export const Defaulted = type({ a: ["string[]", "=", () => []] })`,
+				{
+					"/a.ts": "export const a = (s: string) => s",
+					"/b.ts":
+						'export const b = (s: string) => s\nexport { a as alias } from "./a.ts"'
+				}
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:4:21  type("string").pipe(a, b) can\'t be precompiled to a standalone validator yet\n  `a` and `b` may hold the same value at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:5:24  type("string").pipe(a).or(type("number").pipe(alias)) can\'t be precompiled to a standalone validator yet\n  `a` and `alias` may hold different values at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:6:26  type({ a: ["string[]", "=", () => []] }) can\'t be precompiled to a standalone validator yet\n  arktype holds `() => []` (/main.ts:6:54) in a function of its own, which a standalone validator can\'t create yet\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+			])
 		})
 	})
 
@@ -147,7 +208,7 @@ export const E = type("strng")`,
 			)
 			const lines = result.code.split("\n")
 			attest([lines[0], ...lines.slice(-12)]).snap([
-				'const { "v10r4iwvwtfo": $ark10r4iwvwtfo } = ((runtime, Array) => {',
+				'const { "v10r4iwvwtfo": $arkv10r4iwvwtfo } = ((runtime, Array) => {',
 				"})($ark$0, globalThis.Array);",
 				'const { "default": $ark29kiraik2u5 } = (({ "ParseError": ParseError }) => {',
 				"const throwParseError = () => {",
@@ -157,7 +218,7 @@ export const E = type("strng")`,
 				"})($ark$0);",
 				'import "arktype"',
 				'const Array = "shadowed"',
-				"export const T = $ark10r4iwvwtfo",
+				"export const T = $arkv10r4iwvwtfo",
 				"export const E = $ark29kiraik2u5()",
 				'import * as $ark$0 from "arktype/runtime"'
 			])
