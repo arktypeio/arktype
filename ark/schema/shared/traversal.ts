@@ -781,7 +781,7 @@ export const traverseKey = <result>(
 }
 
 // what a default's morph applies its value through: a node, or the validator a standalone build created from one
-export interface DefaultedValue {
+interface DefaultedValue {
 	(data: unknown, pipedFromCtx: Traversal): unknown
 	traverse: (data: unknown) => unknown
 }

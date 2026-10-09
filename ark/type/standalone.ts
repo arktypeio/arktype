@@ -80,7 +80,6 @@ type ExportedValue = type.Any | Module | Scope<any> | Generic
 export type StandaloneExport = ExportedValue | StandaloneFactory
 
 export interface StandaloneFactory {
-	// built with each parameter's build value in its place
 	type: type.Any
 	params: FactoryParam[]
 }
@@ -89,7 +88,6 @@ export type FactoryParam = HoleParam | InputParam | HelperParam
 
 export interface HoleParam {
 	kind: HoleKind
-	// how a mismatch names it, e.g. `isEven` (src/user.ts:3:7)
 	label: string
 	value: unknown
 }
@@ -97,11 +95,9 @@ export interface HoleParam {
 export interface InputParam {
 	kind: "input"
 	label: string
-	// each value the build read from it, by path
 	reads: [path: PropertyKey[], value: unknown][]
 }
 
-// a function the build called while defining the Type, which a test driver registers where its module exports it
 export interface HelperParam {
 	kind: "helper"
 	label: string
@@ -143,11 +139,9 @@ export const writeFixConfig = (
 export class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
 	params: FactoryParam[] | undefined
-	// what a factory's code reads each hole through: a parameter, or the holes of a validator it receives
 	holeExpressions = new Map<unknown, string>()
 	labelsByHole = new Map<unknown, string>()
 	classes = new Set<unknown>()
-	// a factory's statements that check what it receives before it creates anything
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
 	unit: ContentUnit
@@ -233,7 +227,6 @@ export class StandaloneArtifact {
 		if (params) this.receive(params)
 	}
 
-	// a factory checks the facts its code depends on in each hole, and compares each input with what the build read
 	receive(params: FactoryParam[]): void {
 		const checked: [hole: unknown, kind: HoleKind, expression: string][] = []
 		for (let i = 0; i < params.length; i++) {
@@ -411,7 +404,6 @@ export class StandaloneArtifact {
 		}
 	}
 
-	// the hole whose name decides which of two hashes sorts first, if one does
 	nameOrderingOf(l: string, r: string): unknown {
 		let i = 0
 		while (i < l.length && l[i] === r[i]) i++
@@ -947,7 +939,6 @@ const defaultedNodeKeys = [
 	"transforms"
 ] as const satisfies (keyof DefaultedNode)[]
 
-// arktype applies each default with a morph of its own, created from the key, the value and the default
 const collectDefaults = (
 	node: Optional.Node | Sequence.Node,
 	defaultsByMorph: Map<unknown, Default>
@@ -974,7 +965,6 @@ const collectDefaults = (
 
 const keysByRoot = new WeakMap<BaseRoot, [id: string, holes: unknown[]]>()
 
-// what any artifact keys a root's validator by: its content address, and the holes it holds in the order its code reads them
 export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 	const cached = keysByRoot.get(root)
 	if (cached) return cached
@@ -985,7 +975,7 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 			collectDefaults(node, defaultsByMorph)
 	}
 	const holes: unknown[] = []
-	// a unit names a node by its content, keying a function or object only by where the unit first reaches it, so the address adds what each is
+	// a unit keys a function or object only by where it first reaches it, so the address adds what each is
 	const values: string[] = [unit.names[root.id]]
 	const seen = new Set<unknown>()
 	const collect = (value: unknown): void => {
@@ -1019,12 +1009,10 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 	return key
 }
 
-// the name the build gives each function it stands in for, so a string printing it can be completed at creation
 export const holeNamePrefix = "$hole_"
 
 export const holeNamePattern = /\$hole_[\da-z]+/g
 
-// how arktype prints a function's name: in a predicate's description, in `Function(...)`, or alone
 const printedHoleNamePattern =
 	/valid according to (\$hole_[\da-z]+)|Function\((\$hole_[\da-z]+)\)|(\$hole_[\da-z]+)/g
 

@@ -106,7 +106,6 @@ export class Validator extends Callable<
 		rootApply: RootApply,
 		node: BaseRoot,
 		attributes: ValidatorAttributes,
-		// its content address, which a factory receiving it checks
 		id: string,
 		holes: readonly unknown[] = []
 	) {
@@ -363,7 +362,6 @@ export const unavailableGeneric = (label: string): (() => never) =>
 
 export type HoleKind = "function" | "class" | "symbol"
 
-// what a factory's code depends on in a hole it receives, described the same way at build
 export const describeHole = (
 	hole: unknown,
 	kind: HoleKind,
@@ -406,7 +404,6 @@ export const describeHole = (
 		:	"a class"
 }
 
-// how a definition reads an object: its prototype and keys, or the instant or pattern it holds
 export const describeShape = (value: unknown): string => {
 	if (!hasDomain(value, "object")) return describeValue(value)
 	if (value instanceof Date) return `a Date at ${getTime.call(value)}`
@@ -443,7 +440,6 @@ export const checkInput = (
 	}
 }
 
-// the holes a referenced validator was created with, if it was created from the content the build read
 export const holesOf = (
 	validator: unknown,
 	id: string,
@@ -475,7 +471,6 @@ export const holesOf = (
 const nameOf = (hole: unknown) =>
 	typeof hole === "function" ? functionNameOf(hole) : undefined
 
-// where a test driver's modules register what they export, by module and export name
 const helpersKey = Symbol.for("arktype.helpers")
 
 // a mock is another function, and a module a test runner replaced registered nothing, so either fails
@@ -505,7 +500,6 @@ const { getTime } = Date.prototype
 
 const isValidator = (value: unknown) => holesByValidator.has(value as object)
 
-// a symbol's description is printed in the messages of a Type keyed by it
 const describeValue = (value: unknown) =>
 	isValidator(value) ? String(value) : printable(value)
 

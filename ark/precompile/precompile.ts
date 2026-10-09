@@ -85,7 +85,7 @@ export interface PrecompileOptions extends InterpreterOptions {
 	config?: string | undefined
 	// place what the module imports from virtual modules in the module itself, for hosts without them
 	inline?: boolean | undefined
-	// check at creation that each static helper a standalone validator was built with is the function its module exports, as a test runner's module mocks can replace it
+	// check at creation that each static helper a factory calls is the one its module exports, which a test runner's module mock can replace
 	checkHelpers?: boolean | undefined
 }
 
@@ -125,7 +125,6 @@ export interface Site {
 	holes: Hole[]
 	inputs: Input[]
 	helpers: Helper[]
-	// each expression evaluating to a hole or a Type, which its factory receives in its place
 	references: Reference[]
 	// the argument of a call to arktype's `define`, which returns it, so a standalone build evaluates it in place of the call
 	definition: Node | undefined
@@ -136,7 +135,6 @@ export interface Hole {
 	// the expression evaluated in place at runtime, which is in the site's source unless the hole was read through a binding
 	start: number
 	end: number
-	// the value the build held in its place
 	value: unknown
 	kind: "function" | "class" | "symbol" | "opaque"
 	// the parameter count compiled for, undefined when no declaration gives one
@@ -150,7 +148,6 @@ export interface Hole {
 export interface Reference {
 	start: number
 	end: number
-	// a hole, or a Type whose holes its factory takes from the validator it receives
 	value: unknown
 	// whether another module can replace it, as a test runner's module mock does
 	isForeign: boolean
@@ -158,12 +155,10 @@ export interface Reference {
 	unavailableRead: UnavailableRead | undefined
 }
 
-// what a site's factory receives: a hole or Type where the site evaluates it, then each input it compares
-export interface SiteFactory {
+interface SiteFactory {
 	params: FactoryParam[]
 	spans: Span[]
 	inputs: string[]
-	// each export it compares that the module doesn't import, by specifier, with the local it's imported as
 	imports: [specifier: string, name: string, local: string][]
 }
 
@@ -176,13 +171,9 @@ export interface Input {
 	value: unknown
 }
 
-// a function the site calls through another module's export, which a test driver checks at creation
 export interface Helper {
-	// the module that exports it
 	file: string
-	// its export name
 	name: string
-	// where the module declares it
 	start: number
 	end: number
 }
@@ -245,7 +236,6 @@ export class Precompiler {
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
-	// the binding a local input reads, which its factory call receives it through
 	private bindingsByInput = new WeakMap<Input, Binding>()
 	private packagesByEntry: Record<string, [root: string, version: string]> =
 		Object.create(null)
@@ -485,7 +475,7 @@ export class Precompiler {
 				diagnostics
 			)
 			this.linkIslands(module, sites, s, prefix)
-			// a module mock replaces what a module exports, so each static helper a factory was built with is checked against what its own module registers
+			// a module mock replaces what a module exports, so the functions it exports are registered for factories to check
 			if (this.checkHelpers) {
 				const registered = Object.entries(this.registeredHelpersOf(module))
 				if (registered.length) {
@@ -497,7 +487,6 @@ export class Precompiler {
 					)
 				}
 			}
-			// each export a factory compares that the module didn't import, imported after its own imports
 			for (const specifier in inputImports) {
 				const locals = inputImports[specifier]
 				s.append(
@@ -742,7 +731,6 @@ export class Precompiler {
 		return inputImports
 	}
 
-	// what a site's factory receives, in the order the site evaluates it, adding to reasons what it can't receive
 	private factoryOf(
 		site: Site,
 		module: SourceModule,
@@ -931,7 +919,6 @@ export class Precompiler {
 		return { params, spans, inputs, imports }
 	}
 
-	// the functions a test driver registers of each module for factories to check, each export by the local holding it
 	private registeredHelpersOf(module: SourceModule): Record<string, string> {
 		const result: Record<string, string> = {}
 		for (const [name, entry] of Object.entries(module.scopes.exportsByName)) {
@@ -951,7 +938,7 @@ export class Precompiler {
 		return result
 	}
 
-	// a message as the program prints it, each placeholder for a function's name replaced by where the site reads the function, or else by its declaration
+	// each placeholder in a message replaced by where the site reads its function, or else by its declaration
 	private sourceNamed(
 		message: string,
 		site: Site,
@@ -1005,7 +992,6 @@ export class Precompiler {
 		})
 	}
 
-	// the expression a factory call receives an input root through and how a mismatch names it, or why it can't
 	private inputExpressionOf(
 		input: Input,
 		site: Site,
@@ -1340,7 +1326,6 @@ export class Precompiler {
 		return site
 	}
 
-	// whether a reference reads an import, directly or through its members
 	private isImported(node: Node, module: SourceModule): boolean {
 		node = unwrapExpression(node)
 		while (node.type === "MemberExpression")
@@ -2026,7 +2011,6 @@ const isStrict = (program: Program): boolean =>
 			statement.directive === "use strict"
 	)
 
-// a relative specifier for a file, which a bundler resolves as the module did
 const specifierOf = (importer: string, file: string) => {
 	const path = relative(dirname(importer), file).split("\\").join("/")
 	return path.startsWith(".") ? path : `./${path}`
