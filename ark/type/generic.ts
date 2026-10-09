@@ -16,6 +16,7 @@ import {
 	type ErrorMessage,
 	type ErrorType,
 	type Hkt,
+	type JsonStructure,
 	type Scanner,
 	type WhitespaceChar
 } from "@ark/util"
@@ -191,6 +192,7 @@ export interface Generic<
 	arg$: Scope<arg$>
 
 	internal: GenericRoot
+	json: JsonStructure
 }
 
 export type GenericConstructor<

@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	registeredReference,
-	toJson,
 	writeUnboundableMessage,
 	type ArkErrors
 } from "@ark/schema"
@@ -248,7 +247,7 @@ contextualize(() => {
 			}
 		})
 
-		attest(toJson(m.internal)).snap({
+		attest(m.internal.json).snap({
 			branches: [
 				{
 					in: {
@@ -291,7 +290,7 @@ contextualize(() => {
 			}
 		})
 
-		attest(toJson(m.internal)).snap({
+		attest(m.internal.json).snap({
 			branches: [
 				{
 					in: {
@@ -379,7 +378,7 @@ contextualize(() => {
 				default: "never"
 			})
 
-			attest(toJson(m.internal)).snap({
+			attest(m.internal.json).snap({
 				branches: [
 					{
 						in: {
@@ -423,7 +422,7 @@ contextualize(() => {
 					default: "never"
 				})
 
-			attest(toJson(m.internal)).snap({
+			attest(m.internal.json).snap({
 				branches: [
 					{
 						in: {
@@ -477,7 +476,7 @@ contextualize(() => {
 		})
 
 		// ensure structure is identical
-		attest(toJson(Initial.internal)).equals(toJson(Expected.internal))
+		attest(Initial.internal.json).equals(Expected.internal.json)
 		// ensure we are able to cache ordered unions like from matchers
 		attest(Initial.internal.id).equals(Expected.internal.id)
 		// ensure ids are doing what they're suppoed to
@@ -710,7 +709,7 @@ contextualize(() => {
 	unknown,
 	[(In: number) => "0", (In: number) => "1"]
 >`)
-		attest(toJson(numeric)).snap({
+		attest(numeric.json).snap({
 			branches: [
 				{ in: { unit: 0 }, morphs: ["$ark.numericZeroCase"] },
 				{ in: { unit: 1 }, morphs: ["$ark.numericOneCase"] }

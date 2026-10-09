@@ -1,6 +1,5 @@
 import { hasDomain, includes, type array, type JsonObject } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
-import { toCollapsibleJson } from "../node.ts"
 import type { PredicateNode } from "../predicate.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
@@ -81,8 +80,8 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 			structure: {
 				child: true,
 				serialize: node => {
-					if (!node.sequence?.minLength) return toCollapsibleJson(node)
-					const { sequence, ...structureJson } = toCollapsibleJson(node) as any
+					if (!node.sequence?.minLength) return node.collapsibleJson
+					const { sequence, ...structureJson } = node.collapsibleJson as any
 					const { minVariadicLength, ...sequenceJson } = sequence as JsonObject
 					const collapsibleSequenceJson =
 						sequenceJson.variadic && Object.keys(sequenceJson).length === 1 ?

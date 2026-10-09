@@ -1,13 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 import { writeInvalidUndeclaredBehaviorMessage } from "arktype/internal/parser/objectLiteral.ts"
-import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("can parse an undeclared restriction", () => {
 		const T = type({ "+": "reject" })
 		attest<{}>(T.infer)
-		attest(toJson(T)).snap({ undeclared: "reject", domain: "object" })
+		attest(T.json).snap({ undeclared: "reject", domain: "object" })
 	})
 
 	it("fails on type definition for undeclared", () => {
@@ -22,7 +21,7 @@ contextualize(() => {
 	it("can escape undeclared meta key", () => {
 		const T = type({ "\\+": "string" })
 		attest<{ "+": string }>(T.infer)
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			required: [{ key: "+", value: "string" }],
 			domain: "object"
 		})
@@ -45,7 +44,7 @@ contextualize(() => {
 				a: "string"
 			})
 
-			attest(toJson(T)).equals(toJson(T.onUndeclaredKey("ignore")))
+			attest(T.json).equals(T.onUndeclaredKey("ignore").json)
 
 			const dataWithExtraneousB = getExtraneousB()
 			attest(T(dataWithExtraneousB)).equals(dataWithExtraneousB)

@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	toJson,
 	writeMissingSubmoduleAccessMessage,
 	writeNonSubmoduleDotMessage,
 	writeUnresolvableMessage
@@ -37,9 +36,9 @@ contextualize.each(
 			>(types)
 
 			attest<number>(types.sub.alias.infer)
-			const Expected = toJson(type("number"))
-			attest(toJson(types.sub.alias)).equals(Expected)
-			attest(toJson(types.b)).equals(Expected)
+			const Expected = type("number").json
+			attest(types.sub.alias.json).equals(Expected)
+			attest(types.b.json).equals(Expected)
 		})
 
 		it("non-submodule dot access", $ => {
@@ -121,9 +120,11 @@ contextualize.each(
 				"Scope<{ b: number; mod: Submodule<{ a: number }> }>"
 			)
 
-			const types = use1.export()
-			attest(toJson(types.mod.a)).snap({ domain: "number" })
-			attest(toJson(types.b)).snap({ domain: "number" })
+			use1.export()
+			attest(use1.json).snap({
+				"mod.a": { domain: "number" },
+				b: { domain: "number" }
+			})
 		})
 
 		// https://github.com/arktypeio/arktype/issues/1103
@@ -143,9 +144,11 @@ contextualize.each(
 	mod2: Submodule<{ a: number }>
 }>`)
 
-			const types = use2.export()
-			attest(toJson(types.mod2.a)).snap({ domain: "number" })
-			attest(toJson(types.b)).snap({ domain: "number" })
+			use2.export()
+			attest(use2.json).snap({
+				"mod2.a": { domain: "number" },
+				b: { domain: "number" }
+			})
 		})
 	}
 )
@@ -227,14 +230,7 @@ contextualize.each(
 		saiyan: { name: string; powerLevel: number }
 	}>
 }>`)
-			const types = rootScope.export()
-			attest({
-				"user.root": toJson(types.user.root),
-				"user.admin": toJson(types.user.admin),
-				"user.saiyan": toJson(types.user.saiyan),
-				group: toJson(types.group),
-				elevatedUser: toJson(types.elevatedUser)
-			}).snap({
+			attest(rootScope.json).snap({
 				"user.root": {
 					required: [{ key: "name", value: "string" }],
 					domain: "object"
@@ -335,7 +331,9 @@ contextualize.each(
 			attest<Type<1, Expected$>>(types.outer.inner.alias)
 
 			attest(types.outer.inner.alias.expression).equals("1")
-			attest(toJson(types.outer.inner.alias)).snap({ unit: 1 })
+			attest(types.outer.inner.alias.$.json).snap({
+				"outer.inner.alias": { unit: 1 }
+			})
 		})
 
 		it("reference", $ => {

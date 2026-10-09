@@ -1,10 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	toJson,
-	TraversalError,
-	type JsonSchema,
-	type UnitNode
-} from "@ark/schema"
+import { TraversalError, type JsonSchema, type UnitNode } from "@ark/schema"
 import { flatMorph } from "@ark/util"
 import { Generic, keywords, scope, Type, type, type Ark } from "arktype"
 import * as assert from "node:assert/strict"
@@ -68,7 +63,7 @@ contextualize(() => {
 		const Units = type("'red' | 'blue'").select("unit")
 
 		attest<UnitNode[]>(Units)
-		attest(Units.map(toJson)).snap([{ unit: "blue" }, { unit: "red" }])
+		attest(Units).snap([{ unit: "blue" }, { unit: "red" }])
 	})
 
 	it("is treated as covariant", () => {
@@ -143,7 +138,7 @@ contextualize(() => {
 		const attachments: Record<keyof Ark.typeAttachments, string | object> =
 			flatMorph({ ...type }, (k, v) =>
 				v instanceof Type ? [k, v.expression]
-				: v instanceof Generic ? [k, v.names]
+				: v instanceof Generic ? [k, v.json]
 				: []
 			)
 
@@ -162,7 +157,7 @@ contextualize(() => {
 			undefined: "undefined",
 			arrayIndex: type.arrayIndex.expression,
 			Key: "string | symbol",
-			Record: keywords.Record.names,
+			Record: keywords.Record.internal.json,
 			Date: "Date",
 			Array: "Array"
 		})

@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
-	toJson,
 	writeIndivisibleMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
@@ -28,7 +27,7 @@ contextualize(() => {
 			})
 
 			attest<typeof Expected.t>(SchrodingersBox.t)
-			attest(toJson(SchrodingersBox)).equals(toJson(Expected))
+			attest(SchrodingersBox.json).equals(Expected.json)
 		})
 
 		it("body completions", () => {
@@ -69,7 +68,7 @@ contextualize(() => {
 			attest<typeof Expected.t>(SchrodingersBox.t)
 			// ideally, this would be reduced to { cat: { isAlive: boolean } }:
 			// https://github.com/arktypeio/arktype/issues/751
-			attest(toJson(SchrodingersBox)).equals(toJson(Expected))
+			attest(SchrodingersBox.json).equals(Expected.json)
 		})
 
 		it("referenced from other scope", () => {
@@ -81,7 +80,7 @@ contextualize(() => {
 			const Expected = type("string[]")
 
 			attest<typeof Expected.t>(StringArray.t)
-			attest(toJson(StringArray)).equals(toJson(Expected))
+			attest(StringArray.json).equals(Expected.json)
 		})
 
 		it("this not resolvable in generic def", () => {
@@ -256,7 +255,7 @@ contextualize(() => {
 			it("referenced in scope", ({ types }) => {
 				const Expected = type({ box: "0|1" })
 
-				attest(toJson(types.bitBox)).equals(toJson(Expected))
+				attest(types.bitBox.json).equals(Expected.json)
 				attest<typeof Expected.t>(types.bitBox.t)
 			})
 
@@ -266,7 +265,7 @@ contextualize(() => {
 				const Expected = type({ box: ["0|1", "|", { box: "'one'|'zero'" }] })
 
 				attest<typeof Expected.t>(T.t)
-				attest(toJson(T)).equals(toJson(Expected))
+				attest(T.json).equals(Expected.json)
 			})
 
 			it("in expression", ({ $ }) => {
@@ -275,7 +274,7 @@ contextualize(() => {
 				const Expected = type("string|boolean", "|", { box: "0|1" })
 
 				attest<typeof Expected.t>(T.t)
-				attest(toJson(T)).equals(toJson(Expected))
+				attest(T.json).equals(Expected.json)
 			})
 
 			it("right bounds", ({ $ }) => {
@@ -288,7 +287,7 @@ contextualize(() => {
 				})
 
 				attest<typeof Expected.t>(T.t)
-				attest(toJson(T)).equals(toJson(Expected))
+				attest(T.json).equals(Expected.json)
 			})
 
 			it("unclosed instantiation", ({ $ }) => {
@@ -351,7 +350,7 @@ contextualize(() => {
 				const Expected = type({ box: "'bar' | 'baz'" })
 
 				attest<typeof Expected.t>(T.t)
-				attest(toJson(T)).equals(toJson(Expected))
+				attest(T.json).equals(Expected.json)
 			})
 
 			it("declaration and instantiation leading and trailing whitespace", () => {
@@ -367,7 +366,7 @@ contextualize(() => {
 				})
 
 				attest<typeof Expected.t>(types.actual.t)
-				attest(toJson(Expected)).equals(toJson(types.actual))
+				attest(Expected.json).equals(types.actual.json)
 			})
 
 			it("allows external scope reference to be resolved", () => {
@@ -384,7 +383,7 @@ contextualize(() => {
 				const Expected = type("'internal' | 'external'")
 
 				attest<typeof Expected.t>(b.internal.t)
-				attest(toJson(b.internal)).equals(toJson(Expected))
+				attest(b.internal.json).equals(Expected.json)
 			})
 
 			it("external generic cyclic argument depth", () => {
@@ -553,7 +552,7 @@ contextualize(() => {
 				}>
 			>(T.t)
 
-			attest(toJson(T)).snap({
+			attest(T.json).snap({
 				required: [
 					{
 						key: "data",

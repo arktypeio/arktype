@@ -3,7 +3,6 @@ import {
 	$ark,
 	rootSchema,
 	schemaScope,
-	toJson,
 	writeBadRejectAllowsSymbolKeysMessage,
 	type ArkSchemaConfig
 } from "@ark/schema"
@@ -377,7 +376,7 @@ contextualize(() => {
 		it("self", () => {
 			const T = Base.configure({ description: "root-only" }, "self")
 
-			attest(toJson(T)).snap({
+			attest(T.json).snap({
 				required: [{ key: "foo", value: "string" }],
 				optional: [
 					{

@@ -1,10 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	boundKindPairsByLower,
 	Disjoint,
+	boundKindPairsByLower,
 	node,
 	rootSchema,
-	toJson,
 	writeInvalidLengthBoundMessage,
 	type ArkErrors
 } from "@ark/schema"
@@ -171,8 +170,8 @@ contextualize(() => {
 							unit: new Date(6)
 						})
 
-				attest(toJson(L.and(R))).equals(toJson(Expected))
-				attest(toJson(R.and(L))).equals(toJson(Expected))
+				attest(L.and(R).json).equals(Expected.json)
+				attest(R.and(L).json).equals(Expected.json)
 			})
 
 			it("non-overlapping exclusive", () => {
@@ -212,8 +211,8 @@ contextualize(() => {
 					...basis,
 					[min]: 4
 				} as never)
-				attest(toJson(lesser.and(greater))).equals(toJson(greater))
-				attest(toJson(greater.and(lesser))).equals(toJson(greater))
+				attest(lesser.and(greater).json).equals(greater.json)
+				attest(greater.and(lesser).json).equals(greater.json)
 			})
 
 			it("lesser max is stricter", () => {
@@ -225,8 +224,8 @@ contextualize(() => {
 					...basis,
 					[max]: { rule: 4, exclusive: true }
 				} as never)
-				attest(toJson(lesser.and(greater))).equals(toJson(lesser))
-				attest(toJson(greater.and(lesser))).equals(toJson(lesser))
+				attest(lesser.and(greater).json).equals(lesser.json)
+				attest(greater.and(lesser).json).equals(lesser.json)
 			})
 
 			it("exclusive wins if limits equal", () => {
@@ -238,8 +237,8 @@ contextualize(() => {
 					...basis,
 					[max]: 3
 				} as never)
-				attest(toJson(exclusive.and(inclusive))).equals(toJson(exclusive))
-				attest(toJson(inclusive.and(exclusive))).equals(toJson(exclusive))
+				attest(exclusive.and(inclusive).json).equals(exclusive.json)
+				attest(inclusive.and(exclusive).json).equals(exclusive.json)
 			})
 		})
 	}

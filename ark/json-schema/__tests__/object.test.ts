@@ -4,7 +4,7 @@ import {
 	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
 	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
 } from "@ark/json-schema"
-import { toJson, writeDuplicateKeyMessage } from "@ark/schema"
+import { writeDuplicateKeyMessage } from "@ark/schema"
 
 contextualize(() => {
 	it("type object", () => {
@@ -18,7 +18,7 @@ contextualize(() => {
 			type: "object",
 			maxProperties: 1
 		})
-		attest(toJson(tMaxProperties)).snap({
+		attest(tMaxProperties.json).snap({
 			domain: "object",
 			predicate: ["$ark.jsonSchemaObjectMaxPropertiesValidator"]
 		})
@@ -33,7 +33,7 @@ contextualize(() => {
 			type: "object",
 			minProperties: 2
 		})
-		attest(toJson(tMinProperties)).snap({
+		attest(tMinProperties.json).snap({
 			domain: "object",
 			predicate: ["$ark.jsonSchemaObjectMinPropertiesValidator"]
 		})
@@ -83,7 +83,7 @@ contextualize(() => {
 			additionalProperties: { type: "number" },
 			properties: { bar: { type: "string" } }
 		})
-		attest(toJson(tAdditionalProperties)).snap({
+		attest(tAdditionalProperties.json).snap({
 			domain: "object",
 			optional: [{ key: "bar", value: "string" }],
 			predicate: ["$ark.jsonSchemaObjectAdditionalPropertiesValidator"]

@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
 import {
-	toJson,
 	writeShallowCycleErrorMessage,
 	writeUnclosedGenericCycleMessage,
 	writeUnsatisfiedParameterConstraintMessage
@@ -1548,10 +1547,10 @@ p1[0].p0 must be x (was a number)`)
 			group: { members: "user[]" }
 		}).export()
 
-		attest(type.schema(toJson(types.node) as never).equals(types.node)).equals(
+		attest(type.schema(types.node.json as never).equals(types.node)).equals(
 			true
 		)
-		attest(type.schema(toJson(types.user) as never).equals(types.user)).equals(
+		attest(type.schema(types.user.json as never).equals(types.user)).equals(
 			true
 		)
 	})
@@ -1576,7 +1575,7 @@ p1[0].p0 must be x (was a number)`)
 			b: { "n?": "b" }
 		}).export()
 
-		attest(type.schema(toJson(a) as never).equals(a)).equals(true)
+		attest(type.schema(a.json as never).equals(a)).equals(true)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/928
@@ -2378,7 +2377,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		}).export()
 
 		attest(types.a.expression).snap("{ x: $a&$b, z?: $a&$b }")
-		attest(toJson(types.b)).equals({
+		attest(types.b.json).equals({
 			domain: "object",
 			required: [
 				{

@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	rootSchema,
-	toJson,
 	type BaseNode,
 	type DomainNode,
 	type Intersection,
@@ -17,22 +16,21 @@ contextualize(() => {
 
 	it("kind", () => {
 		const result = rootSchema({ domain: "string" }).select("domain")
-		attest<DomainNode[]>(result)
-		attest(result.map(toJson)).snap([{ domain: "string" }])
+		attest<DomainNode[]>(result).snap([{ domain: "string" }])
 	})
 
 	it("self", () => {
 		const selfResult = T.select("self")
-		attest<Intersection.Node[]>(selfResult)
-		attest(selfResult.map(toJson)).snap([
+		attest<Intersection.Node[]>(selfResult).snap([
 			{ required: [{ key: "foo", value: "string" }], domain: "object" }
 		])
 	})
 
 	it("children", () => {
 		const children = T.select("child")
-		attest<nodeOfKind<"intersection" | Intersection.ChildKind>[]>(children)
-		attest(children.map(toJson)).snap([
+		attest<nodeOfKind<"intersection" | Intersection.ChildKind>[]>(
+			children
+		).snap([
 			{ domain: "object" },
 			{ required: [{ key: "foo", value: "string" }] }
 		])
@@ -40,8 +38,7 @@ contextualize(() => {
 
 	it("shallow", () => {
 		const shallow = T.select("shallow")
-		attest<BaseNode[]>(shallow)
-		attest(shallow.map(toJson)).snap([
+		attest<BaseNode[]>(shallow).snap([
 			{ required: [{ key: "foo", value: "string" }], domain: "object" },
 			{ domain: "object" },
 			{ required: [{ key: "foo", value: "string" }] },
@@ -51,8 +48,7 @@ contextualize(() => {
 
 	it("references", () => {
 		const refs = T.select("references")
-		attest<BaseNode[]>(refs)
-		attest(refs.map(toJson)).snap([
+		attest<BaseNode[]>(refs).snap([
 			{ required: [{ key: "foo", value: "string" }], domain: "object" },
 			{ domain: "object" },
 			{ required: [{ key: "foo", value: "string" }] },
@@ -63,8 +59,7 @@ contextualize(() => {
 
 	it("predicate", () => {
 		const domains = T.select(n => n.hasKind("domain"))
-		attest<DomainNode[]>(domains)
-		attest(domains.map(toJson)).snap([
+		attest<DomainNode[]>(domains).snap([
 			{ domain: "object" },
 			{ domain: "string" }
 		])
@@ -72,8 +67,7 @@ contextualize(() => {
 
 	it("find", () => {
 		const domain = T.select({ method: "find", kind: "domain" })
-		attest<DomainNode | undefined>(domain)
-		attest(toJson(domain!)).snap({ domain: "object" })
+		attest<DomainNode | undefined>(domain).snap({ domain: "object" })
 
 		const pattern = T.select({ method: "find", kind: "pattern" })
 		attest<PatternNode | undefined>(pattern).snap(undefined)
@@ -81,8 +75,7 @@ contextualize(() => {
 
 	it("assertFind", () => {
 		const domain = T.select({ method: "assertFind", kind: "domain" })
-		attest<DomainNode>(domain)
-		attest(toJson(domain)).snap({ domain: "object" })
+		attest<DomainNode>(domain).snap({ domain: "object" })
 
 		attest(() =>
 			T.select({ method: "assertFind", kind: "pattern" })
@@ -93,8 +86,7 @@ contextualize(() => {
 
 	it("assertFilter", () => {
 		const domains = T.select({ method: "assertFilter", kind: "domain" })
-		attest<[DomainNode, ...DomainNode[]]>(domains)
-		attest(domains.map(toJson)).snap([
+		attest<[DomainNode, ...DomainNode[]]>(domains).snap([
 			{ domain: "object" },
 			{ domain: "string" }
 		])
@@ -208,8 +200,7 @@ contextualize(() => {
 			kind: "domain",
 			where: d => d.domain === "string"
 		})
-		attest<DomainNode[]>(result)
-		attest(result.map(toJson)).snap([{ domain: "string" }])
+		attest<DomainNode[]>(result).snap([{ domain: "string" }])
 	})
 
 	it("predicate narrows kind", () => {
@@ -218,7 +209,6 @@ contextualize(() => {
 			kind: "domain",
 			where: (d): d is StringDomain => d.domain === "string"
 		})
-		attest<StringDomain[]>(result)
-		attest(result.map(toJson)).snap([{ domain: "string" }])
+		attest<StringDomain[]>(result).snap([{ domain: "string" }])
 	})
 })

@@ -1,13 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
 import { declare, type, type Out } from "arktype"
 import { incompleteArrayTokenMessage } from "arktype/internal/parser/shift/operator/operator.ts"
-import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("shallow", () => {
 		const shallow = declare<number>().type("number")
 		attest<number>(shallow.infer)
-		attest(toJson(shallow)).equals(toJson(type("number")))
+		attest(shallow.json).equals(type("number").json)
 	})
 
 	it("obj", () => {

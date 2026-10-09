@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
 	intrinsic,
-	toJson,
 	writeInvalidOperandMessage,
 	type ArkErrors
 } from "@ark/schema"
@@ -108,7 +107,7 @@ contextualize(() => {
 		attest(T.t).type.toString.snap("(In: string) => Out<string>")
 
 		attest<string>(T.infer)
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			in: "string",
 			morphs: [
 				"$ark.parseJson",
@@ -179,7 +178,7 @@ contextualize(() => {
 		])
 		attest<Type<(In: boolean) => Out<boolean>>>(T)
 
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			in: [{ unit: false }, { unit: true }],
 			morphs: ["$ark.notMorph"]
 		})
@@ -260,7 +259,7 @@ contextualize(() => {
 			bar: number
 		}>(T.t)
 		const Expected = type({ foo: "string", bar: "number" })
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("disjoint", () => {
@@ -296,7 +295,7 @@ contextualize(() => {
 			}>
 		>(T)
 		const Expected = type({ a: "1", b: "1", c: "1", d: "1" })
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("two morphs", () => {
@@ -495,7 +494,7 @@ contextualize(() => {
 			| ((In: { a: string }) => Out<string>)
 			| ((In: { a: number }) => Out<number>)
 		>(T.t)
-		attest(toJson(T)).snap([
+		attest(T.json).snap([
 			{
 				in: { required: [{ key: "a", value: "number" }], domain: "object" },
 				morphs: ["$ark.addOne"]
@@ -553,7 +552,7 @@ contextualize(() => {
 		const types = $.export()
 
 		attest<(In: 3.14) => Out<string>>(types.aAndB.t)
-		attest(toJson(types.aAndB)).snap({
+		attest(types.aAndB.json).snap({
 			in: { unit: 3.14 },
 			morphs: ["$ark.stringifyNumberMorph"]
 		})
@@ -578,7 +577,7 @@ contextualize(() => {
 		const types = $.export()
 
 		attest(types.c.t).type.toString.snap("(In: { a: 1; b: 2 }) => Out<string>")
-		attest(toJson(types.c)).snap({
+		attest(types.c.json).snap({
 			in: {
 				required: [
 					{ key: "a", value: { unit: 1 } },
@@ -605,13 +604,13 @@ contextualize(() => {
 		}).export()
 		attest<boolean | ((In: number) => Out<string>)>(types.aOrB.t)
 
-		attest(toJson(types.aOrB)).snap([
+		attest(types.aOrB.json).snap([
 			{ in: "number", morphs: ["$ark._stringifyNumberUnionPipe"] },
 			{ unit: false },
 			{ unit: true }
 		])
 		attest<typeof types.aOrB>(types.bOrA)
-		attest(toJson(types.bOrA)).equals(toJson(types.aOrB))
+		attest(types.bOrA.json).equals(types.aOrB.json)
 	})
 
 	it("union with output", () => {
@@ -643,7 +642,7 @@ contextualize(() => {
 			  }
 		>(types.c.t)
 
-		attest(toJson(types.c)).snap([
+		attest(types.c.json).snap([
 			{ required: [{ key: "a", value: "Function" }], domain: "object" },
 			{
 				required: [
@@ -673,7 +672,7 @@ contextualize(() => {
 		const types = $.export()
 		attest<(In: string) => Out<boolean>>(types.b.t)
 
-		attest(toJson(types.b)).snap({
+		attest(types.b.json).snap({
 			in: "string",
 			morphs: ["$ark.stringToLength", "$ark.isZeroLength"]
 		})
@@ -692,7 +691,7 @@ contextualize(() => {
 
 		const types = $.export()
 		attest<(In: { a: string }) => Out<boolean>>(types.b.t)
-		attest(toJson(types.b)).snap({
+		attest(types.b.json).snap({
 			in: {
 				required: [
 					{
@@ -722,7 +721,7 @@ contextualize(() => {
 		)
 		attest<(In: { A: string }) => Out<boolean>>(T.t)
 		assertNodeKind(T.internal, "morph")
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			in: {
 				required: [
 					{
@@ -833,7 +832,7 @@ contextualize(() => {
 		}).export()
 		attest<{ a: (In: 1) => Out<number> }>(types.c.t)
 
-		attest(toJson(types.c)).snap({
+		attest(types.c.json).snap({
 			required: [
 				{
 					key: "a",
@@ -987,7 +986,7 @@ contextualize(() => {
 			) => Out<1[]>
 		>(T.t)
 
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			in: [
 				{ required: [{ key: "bar", value: { unit: 1 } }], domain: "object" },
 				{ required: [{ key: "foo", value: { unit: 1 } }], domain: "object" }
@@ -1068,7 +1067,7 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
 		const appendLength = type("string", "=>", appendLengthMorph)
 		const appendLengths = type("string").pipe(appendLength, appendLength)
 
-		attest(toJson(appendLengths)).snap({
+		attest(appendLengths.json).snap({
 			in: "string",
 			morphs: [
 				{
@@ -1098,7 +1097,7 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
 			appendLength
 		)
 
-		attest(toJson(appendSeparatedLengths)).snap({
+		attest(appendSeparatedLengths.json).snap({
 			in: "string",
 			morphs: [
 				{
@@ -1169,7 +1168,7 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
 		const Expected = type("string.json.parse").to({ name: "string" })
 
 		attest<typeof Expected>(T)
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("to args expression", () => {
@@ -1178,7 +1177,7 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
 		const Expected = type("string.json.parse").to({ name: "string" })
 
 		attest<typeof Expected>(T)
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("infers distributed pipes", () => {

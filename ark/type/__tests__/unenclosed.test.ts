@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { toJson, writeUnresolvableMessage } from "@ark/schema"
+import { writeUnresolvableMessage } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
 import { scope, type } from "arktype"
 
@@ -37,7 +37,7 @@ contextualize(() => {
 		it("positive whole", () => {
 			const Four = type("4")
 			attest<4>(Four.infer)
-			attest(toJson(Four)).snap({ unit: 4 })
+			attest(Four.json).snap({ unit: 4 })
 		})
 
 		it("positive decimal", () => {
@@ -105,19 +105,19 @@ contextualize(() => {
 			const T = type("12345678910987654321n")
 			// Is prime :D
 			attest<12345678910987654321n>(T.infer)
-			attest(toJson(T)).snap({ unit: "12345678910987654321n" })
+			attest(T.json).snap({ unit: "12345678910987654321n" })
 		})
 
 		it("negative", () => {
 			const T = type("-9801n")
 			attest<-9801n>(T.infer)
-			attest(toJson(T)).snap({ unit: "-9801n" })
+			attest(T.json).snap({ unit: "-9801n" })
 		})
 
 		it("zero", () => {
 			const T = type("0n")
 			attest<0n>(T.infer)
-			attest(toJson(T)).snap({ unit: "0n" })
+			attest(T.json).snap({ unit: "0n" })
 		})
 
 		it("decimal", () => {

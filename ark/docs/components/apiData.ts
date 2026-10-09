@@ -61,6 +61,17 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         },
         {
             "group": "Type",
+            "name": "json",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "internal JSON representation"
+                }
+            ],
+            "notes": []
+        },
+        {
+            "group": "Type",
             "name": "toJsonSchema",
             "summary": [
                 {

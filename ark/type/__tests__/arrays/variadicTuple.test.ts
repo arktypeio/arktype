@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { postfixAfterOptionalOrDefaultableMessage, toJson } from "@ark/schema"
+import { postfixAfterOptionalOrDefaultableMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 import {
 	multipleVariadicMesage,
@@ -24,7 +24,7 @@ contextualize(() => {
 		const T = type(["1", "...", "(Date[] | RegExp[])"])
 		attest<[1, ...(Date[] | RegExp[])]>(T.infer)
 		const Expected = type(["1", "...", "Date[]"]).or(["1", "...", "RegExp[]"])
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("distributes spread union tuples", () => {
@@ -35,7 +35,7 @@ contextualize(() => {
 		const T = type(["1", "...", CountOrFib])
 		attest<[1, 2, 3, 4] | [1, 1, 2, 3, 5, 8]>(T.infer)
 		const Expected = type(["1", ...counting]).or(["1", ...fibbing])
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("allows array keyword", () => {
@@ -73,7 +73,7 @@ contextualize(() => {
 		])
 		attest<[string, ...number[], boolean, bigint, symbol]>(T.infer)
 		attest<typeof Expected.infer>(T.infer)
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("errors on multiple variadic", () => {

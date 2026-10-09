@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
 	rootSchema,
-	toJson,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
@@ -13,40 +12,40 @@ contextualize(() => {
 	it("binary", () => {
 		const Binary = type("number|string")
 		attest<number | string>(Binary.infer)
-		attest(toJson(Binary)).snap(["number", "string"])
+		attest(Binary.json).snap(["number", "string"])
 	})
 
 	it("nary", () => {
 		const Nary = type("false|null|undefined|0|''")
 		attest<false | "" | 0 | null | undefined>(Nary.infer)
 		const Expected = type("===", false, null, undefined, 0, "")
-		attest(toJson(Nary)).equals(toJson(Expected))
+		attest(Nary.json).equals(Expected.json)
 	})
 
 	it("subtype pruning", () => {
 		const T = type({ a: "string" }, "|", { a: "'foo'" })
 		const Expected = type({ a: "string" })
 		attest<typeof Expected>(T)
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("multiple subtypes pruned", () => {
 		const T = type("'foo'|'bar'|string|'baz'|/.*/")
 		const Expected = type("string")
 		attest<string>(T.infer)
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("boolean is a union of true | false", () => {
 		const T = type("true|false")
 		attest(T.infer).type.toString("boolean")
-		attest(toJson(T)).equals(toJson(type("boolean")))
+		attest(T.json).equals(type("boolean").json)
 	})
 
 	it("nested tuple union", () => {
 		const T = type(["string|bigint", "|", ["number", "|", "boolean"]])
 		attest<string | number | bigint | boolean>(T.infer)
-		attest(toJson(T)).equals(toJson(type("string|bigint|number|boolean")))
+		attest(T.json).equals(type("string|bigint|number|boolean").json)
 	})
 
 	it("union of object arrays doesn't throw on non-object element", () => {
@@ -129,7 +128,7 @@ contextualize(() => {
 				| 45
 			>(T.infer)
 
-		attest(toJson(T)).snap([
+		attest(T.json).snap([
 			{ unit: 0 },
 			{ unit: 10 },
 			{ unit: 11 },
@@ -180,35 +179,33 @@ contextualize(() => {
 	})
 
 	const expected = () =>
-		toJson(
-			rootSchema([
-				{
-					domain: "object",
-					required: {
-						key: "a",
-						value: { domain: "string" }
-					}
-				},
-				{
-					domain: "object",
-					required: {
-						key: "b",
-						value: { domain: "number" }
-					}
+		rootSchema([
+			{
+				domain: "object",
+				required: {
+					key: "a",
+					value: { domain: "string" }
 				}
-			])
-		)
+			},
+			{
+				domain: "object",
+				required: {
+					key: "b",
+					value: { domain: "number" }
+				}
+			}
+		]).json
 
 	it("tuple", () => {
 		const T = type([{ a: "string" }, "|", { b: "number" }])
 		attest<{ a: string } | { b: number }>(T.infer)
-		attest(toJson(T)).equals(expected())
+		attest(T.json).equals(expected())
 	})
 
 	it("root", () => {
 		const T = type({ a: "string" }, "|", { b: "number" })
 		attest<{ a: string } | { b: number }>(T.infer)
-		attest(toJson(T)).equals(expected())
+		attest(T.json).equals(expected())
 	})
 
 	it("chained", () => {
@@ -221,7 +218,7 @@ contextualize(() => {
 					b: number
 			  }
 		>(T.infer)
-		attest(toJson(T)).equals(expected())
+		attest(T.json).equals(expected())
 	})
 
 	it("root autocompletion", () => {
@@ -286,7 +283,7 @@ contextualize(() => {
 
 	it("chained description", () => {
 		const T = type("number|string").describe("My custom type")
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			branches: [
 				{ meta: "My custom type", domain: "number" },
 				{ meta: "My custom type", domain: "string" }

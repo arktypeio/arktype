@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference, toJson } from "@ark/schema"
+import { registeredReference } from "@ark/schema"
 import { printable } from "@ark/util"
 import { type } from "arktype"
 
@@ -8,7 +8,7 @@ contextualize(() => {
 		it("literal", () => {
 			const T = type(["===", 5])
 			attest<5>(T.infer)
-			attest(toJson(T)).equals(toJson(type("5")))
+			attest(T.json).equals(type("5").json)
 		})
 
 		it("symbol with description", () => {
@@ -46,7 +46,7 @@ contextualize(() => {
 			attest<
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(T.infer)
-			attest(toJson(T)).equals([
+			attest(T.json).equals([
 				{ unit: oReference },
 				{ unit: sReference },
 				{ unit: "1n" },
@@ -63,7 +63,7 @@ contextualize(() => {
 		it("single", () => {
 			const T = type("===", true)
 			attest<true>(T.infer)
-			attest(toJson(T)).equals(toJson(type("true")))
+			attest(T.json).equals(type("true").json)
 		})
 
 		it("branches", () => {
@@ -75,7 +75,7 @@ contextualize(() => {
 			attest<
 				true | "foo" | 5 | 1n | null | undefined | { ark: boolean } | typeof s
 			>(T.infer)
-			attest(toJson(T)).equals([
+			attest(T.json).equals([
 				{ unit: oReference },
 				{ unit: sReference },
 				{ unit: "1n" },

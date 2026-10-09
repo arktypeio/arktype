@@ -1,9 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	registeredReference,
-	toJson,
-	writeUnresolvableMessage
-} from "@ark/schema"
+import { registeredReference, writeUnresolvableMessage } from "@ark/schema"
 import { type, type Type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 
@@ -11,13 +7,13 @@ contextualize(() => {
 	it("empty", () => {
 		const O = type({})
 		attest<object>(O.t).type.toString("object")
-		attest(toJson(O)).equals(toJson(type("object")))
+		attest(O.json).equals(type("object").json)
 	})
 
 	it("required", () => {
 		const O = type({ a: "string", b: "number" })
 		attest<{ a: string; b: number }>(O.infer)
-		attest(toJson(O)).snap({
+		attest(O.json).snap({
 			domain: "object",
 			required: [
 				{ key: "a", value: "string" },
@@ -29,7 +25,7 @@ contextualize(() => {
 	it("optional keys", () => {
 		const O = type({ "a?": "string", b: "number" })
 		attest<{ a?: string; b: number }>(O.infer)
-		attest(toJson(O)).snap({
+		attest(O.json).snap({
 			domain: "object",
 			required: [{ key: "b", value: "number" }],
 			optional: [{ key: "a", value: "string" }]
@@ -46,7 +42,7 @@ contextualize(() => {
 		attest(O.t).type.toString.snap("{ a?: string }")
 		attest(O.infer).type.toString.snap("{ a?: string }")
 		attest(O.inferIn).type.toString.snap("{ a?: string }")
-		attest(toJson(O)).snap({
+		attest(O.json).snap({
 			optional: [
 				{
 					key: "a",
@@ -67,7 +63,7 @@ contextualize(() => {
 		}>(T.t)
 		attest<{ [s]?: string }>(T.infer)
 
-		attest(toJson(T)).equals({
+		attest(T.json).equals({
 			optional: [
 				{
 					key: ref,
@@ -85,7 +81,7 @@ contextualize(() => {
 
 		attest<{ [s]?: { foo: string } }>(T.infer)
 
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			optional: [
 				{
 					key: ref,
@@ -134,7 +130,7 @@ contextualize(() => {
 			[s]: "string"
 		})
 		attest<{ [s]: string }>(T.infer)
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			domain: "object",
 			required: [{ key: name, value: "string" }]
 		})
@@ -165,21 +161,21 @@ contextualize(() => {
 		const c = { "c?": "string" } as const
 		const Abc = type(a).and(b).and(c)
 		attest<{ a?: string; b: string; c?: string }>(Abc.infer)
-		attest(toJson(Abc)).equals(toJson(type({ ...a, ...b, ...c })))
-		attest(toJson(Abc)).equals(toJson(type([[a, "&", b], "&", c])))
+		attest(Abc.json).equals(type({ ...a, ...b, ...c }).json)
+		attest(Abc.json).equals(type([[a, "&", b], "&", c]).json)
 	})
 
 	it("intersection", () => {
 		const T = type({ a: "number" }).and({ b: "boolean" })
 		// Should be simplified from {a: number} & {b: boolean} to {a: number, b: boolean}
 		attest(T.infer).type.toString.snap("{ a: number; b: boolean }")
-		attest(toJson(T)).equals(toJson(type({ a: "number", b: "boolean" })))
+		attest(T.json).equals(type({ a: "number", b: "boolean" }).json)
 	})
 
 	it("escaped optional token", () => {
 		const T = type({ "a\\?": "string" })
 		attest<{ "a?": string }>(T.infer)
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			required: [{ key: "a?", value: "string" }],
 			domain: "object"
 		})
@@ -199,7 +195,7 @@ contextualize(() => {
 			[s]: type.number.optional()
 		})
 		attest<{ [s]?: number }>(T.infer)
-		attest(toJson(T)).equals({
+		attest(T.json).equals({
 			optional: [
 				{
 					key: keyReference,

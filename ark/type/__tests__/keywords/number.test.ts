@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema, schemaScope, toJson } from "@ark/schema"
+import { rootSchema, schemaScope } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
@@ -105,8 +105,8 @@ contextualize(() => {
 			numberAllowsNaN: true,
 			numberAllowsInfinity: true
 		})
-		attest(toJson(Infinite.and(Both))).equals(toJson(Infinite))
-		attest(toJson(Both.and(NaNable))).equals(toJson(NaNable))
+		attest(Infinite.and(Both).json).equals(Infinite.json)
+		attest(Both.and(NaNable).json).equals(NaNable.json)
 		const Neither = Infinite.and(NaNable)
 		attest(Neither.allows(Number.POSITIVE_INFINITY)).equals(false)
 		attest(Neither.allows(Number.NaN)).equals(false)

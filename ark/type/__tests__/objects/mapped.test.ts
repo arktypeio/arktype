@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import type { anyOrNever, Fn, propValueOf } from "@ark/util"
 import { declare, type } from "arktype"
 import type { Default } from "arktype/internal/attributes.ts"
-import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("identity", () => {
@@ -276,7 +275,7 @@ contextualize(() => {
 		})
 
 		attest<typeof Expected.t>(mapped.t)
-		attest(toJson(mapped)).equals(toJson(Expected))
+		attest(mapped.json).equals(Expected.json)
 	})
 
 	it("filter and split values", () => {

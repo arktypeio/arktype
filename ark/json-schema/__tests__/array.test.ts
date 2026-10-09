@@ -4,7 +4,6 @@ import {
 	writeJsonSchemaArrayAdditionalItemsAndItemsAndPrefixItemsMessage,
 	writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage
 } from "@ark/json-schema"
-import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("type array", () => {
@@ -104,7 +103,7 @@ contextualize(() => {
 			type: "array",
 			contains: { type: "number" }
 		})
-		attest(toJson(tContains)).snap({
+		attest(tContains.json).snap({
 			proto: "Array",
 			predicate: ["$ark.jsonSchemaArrayContainsValidator"]
 		})
@@ -156,7 +155,7 @@ contextualize(() => {
 			type: "array",
 			uniqueItems: true
 		})
-		attest(toJson(tUniqueItems)).snap({
+		attest(tUniqueItems.json).snap({
 			proto: "Array",
 			predicate: ["$ark.jsonSchemaArrayUniqueItemsValidator"]
 		})

@@ -5,21 +5,20 @@ import {
 } from "@ark/util"
 import { type } from "arktype"
 import { writeExpressionExpectedMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
-import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("entire expression", () => {
 		const T = type("(string)")
 		const Expected = type("string")
 		attest<typeof Expected>(T)
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("overrides default precedence", () => {
 		const T = type("(boolean|number)[]")
 		const Expected = type("boolean|number").array()
 		attest<typeof Expected>(T)
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 	})
 
 	it("nested", () => {

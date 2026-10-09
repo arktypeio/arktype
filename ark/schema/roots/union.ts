@@ -17,7 +17,7 @@ import {
 	type show
 } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
-import { toJson, type BaseNode } from "../node.ts"
+import type { BaseNode } from "../node.ts"
 import {
 	compileSerializedValue,
 	returnsTransformErrors,
@@ -484,7 +484,7 @@ const discriminantToJson = (discriminant: Discriminant): JsonStructure => ({
 		k,
 		node === true ? node
 		: node.hasKind("union") && node.discriminantJson ? node.discriminantJson
-		: toJson(node)
+		: node.json
 	])
 })
 

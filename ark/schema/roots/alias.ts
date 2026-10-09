@@ -7,7 +7,7 @@ import {
 	type join,
 	type JsonObject
 } from "@ark/util"
-import { toJson, writeInnerJson, type BaseNode } from "../node.ts"
+import { writeInnerJson, type BaseNode } from "../node.ts"
 import { nodesByRegisteredId, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
@@ -60,7 +60,7 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 			reference: {
 				serialize: s => {
 					const referenced = nodesByRegisteredId[s as NodeId]
-					if (hasArkKind(referenced, "root")) return toJson(referenced)
+					if (hasArkKind(referenced, "root")) return referenced.json
 					return s.startsWith("$") ? s : `$ark.${s}`
 				}
 			},
@@ -81,7 +81,7 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 
 export class AliasNode extends BaseRoot<Alias.Declaration> {
 	// written when created, so a definition that resolves afterward stays a reference
-	readonly uncollapsedInnerJson: JsonObject = writeInnerJson(this)
+	protected override _uncollapsedInnerJson: JsonObject = writeInnerJson(this)
 	readonly expression: string = expressionOf(this)
 
 	constructor(...args: ConstructorParameters<typeof BaseRoot>) {

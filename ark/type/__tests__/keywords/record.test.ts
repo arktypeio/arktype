@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
-	toJson,
 	writeIndivisibleMessage,
 	writeUnsatisfiedParameterConstraintMessage
 } from "@ark/schema"
@@ -12,7 +11,7 @@ contextualize(() => {
 		const Expected = type({ "[string]": "number" })
 
 		const Expression = type("Record<string, number>")
-		attest(toJson(Expression)).equals(toJson(Expected))
+		attest(Expression.json).equals(Expected.json)
 		attest<typeof Expected.t>(Expression.t)
 	})
 
@@ -21,7 +20,7 @@ contextualize(() => {
 
 		const T = keywords.Record("string", "number")
 
-		attest(toJson(T)).equals(toJson(Expected))
+		attest(T.json).equals(Expected.json)
 		attest<typeof Expected.t>(T.t)
 	})
 

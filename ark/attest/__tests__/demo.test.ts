@@ -1,7 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
 import ts from "typescript"
-import { toJson } from "@ark/schema"
 
 const o = { ark: "type" } as const
 const shouldThrow = (a: false) => {
@@ -47,7 +46,7 @@ contextualize(() => {
 		// snapshot types and values seamlessly
 		attest(Even.infer).type.toString.snap("number")
 		// including object literals- no more long inline strings!
-		attest(toJson(Even)).snap({ domain: "number", divisor: 2 })
+		attest(Even.json).snap({ domain: "number", divisor: 2 })
 	})
 
 	it("error assertions", () => {

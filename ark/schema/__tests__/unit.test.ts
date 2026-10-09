@@ -1,17 +1,17 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference, rootSchema, toJson } from "@ark/schema"
+import { registeredReference, rootSchema } from "@ark/schema"
 
 contextualize(() => {
 	it("string allows", () => {
 		const T = rootSchema({ unit: "foo" })
-		attest(toJson(T)).snap({ unit: "foo" })
+		attest(T.json).snap({ unit: "foo" })
 		attest(T.allows("foo")).equals(true)
 		attest(T.allows("bar")).equals(false)
 	})
 
 	it("string apply", () => {
 		const T = rootSchema({ unit: "foo" })
-		attest(toJson(T)).snap({ unit: "foo" })
+		attest(T.json).snap({ unit: "foo" })
 		attest(T("foo")).equals("foo")
 		attest(T("bar")?.toString()).snap('must be "foo" (was "bar")')
 		attest(T(5)?.toString()).snap('must be "foo" (was 5)')
@@ -19,15 +19,15 @@ contextualize(() => {
 	it("treats equivalent dates as equal", () => {
 		const L = rootSchema({ unit: new Date(1337) })
 		const R = rootSchema({ unit: new Date(1337) })
-		attest(toJson(L)).snap({ unit: "1970-01-01T00:00:01.337Z" })
-		attest(toJson(L)).equals(toJson(R))
+		attest(L.json).snap({ unit: "1970-01-01T00:00:01.337Z" })
+		attest(L.json).equals(R.json)
 		attest(L.equals(R)).equals(true)
 	})
 
 	it("bigint", () => {
 		const T = rootSchema({ unit: 7n })
 		// serializes to string for JSON
-		attest(toJson(T)).snap({ unit: "7n" })
+		attest(T.json).snap({ unit: "7n" })
 		// preserves the bigint for context
 		attest(T.internal.assertHasKind("unit").errorContext).equals({
 			code: "unit",
@@ -42,7 +42,7 @@ contextualize(() => {
 
 	it("undefined", () => {
 		const T = rootSchema({ unit: undefined })
-		attest(toJson(T)).snap({ unit: "undefined" })
+		attest(T.json).snap({ unit: "undefined" })
 		attest(T.internal.assertHasKind("unit").errorContext).equals({
 			code: "unit",
 			description: "undefined",
@@ -59,7 +59,7 @@ contextualize(() => {
 		const status = Symbol("status")
 		const T = rootSchema({ unit: status })
 		// serializes to string for JSON
-		attest(toJson(T)).snap({ unit: "$ark.status" })
+		attest(T.json).snap({ unit: "$ark.status" })
 		// preserves the symbol for context
 		attest(T.internal.assertHasKind("unit").errorContext).equals({
 			code: "unit",
@@ -75,7 +75,7 @@ contextualize(() => {
 		const o = new Object()
 		const ref = registeredReference(o)
 		const T = rootSchema({ unit: o })
-		attest(toJson(T)).snap({ unit: ref })
+		attest(T.json).snap({ unit: ref })
 		attest(T.internal.assertHasKind("unit").errorContext).equals({
 			code: "unit",
 			description: "{}",
@@ -88,7 +88,7 @@ contextualize(() => {
 
 	it("NaN", () => {
 		const T = rootSchema({ unit: NaN })
-		attest(toJson(T)).snap({ unit: "NaN" })
+		attest(T.json).snap({ unit: "NaN" })
 		attest(T.expression).snap("NaN")
 		attest(T.allows(NaN)).equals(true)
 		attest(T.allows(0)).equals(false)
@@ -96,7 +96,7 @@ contextualize(() => {
 
 	it("Infinity", () => {
 		const T = rootSchema({ unit: Infinity })
-		attest(toJson(T)).snap({ unit: "Infinity" })
+		attest(T.json).snap({ unit: "Infinity" })
 		attest(T.expression).snap("Infinity")
 		attest(T.allows(Infinity)).equals(true)
 		attest(T.allows(0)).equals(false)
@@ -104,7 +104,7 @@ contextualize(() => {
 
 	it("-Infinity", () => {
 		const T = rootSchema({ unit: -Infinity })
-		attest(toJson(T)).snap({ unit: "-Infinity" })
+		attest(T.json).snap({ unit: "-Infinity" })
 		attest(T.expression).snap("-Infinity")
 		attest(T.allows(-Infinity)).equals(true)
 		attest(T.allows(0)).equals(false)

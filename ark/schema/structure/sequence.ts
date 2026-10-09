@@ -14,7 +14,6 @@ import { BaseConstraint } from "../constraint.ts"
 import {
 	appendUniqueFlatRefs,
 	flatRef,
-	toCollapsibleJson,
 	type BaseNode,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
@@ -96,7 +95,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				structural: true,
 				serialize: defaults =>
 					defaults.map(element => [
-						toCollapsibleJson(element[0]),
+						element[0].collapsibleJson,
 						defaultValueSerializer(element[1])
 					]),
 				reduceIo: (ioKind, inner, defaultables) => {

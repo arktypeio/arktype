@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { registerNodeId, rootSchema, schemaScope, toJson } from "@ark/schema"
+import { registerNodeId, rootSchema, schemaScope } from "@ark/schema"
 
 contextualize(() => {
 	it("unique ids for digit-ending prefixes", () => {
@@ -12,7 +12,7 @@ contextualize(() => {
 
 	it("single constraint", () => {
 		const T = rootSchema({ domain: "string", pattern: ".*" })
-		attest(toJson(T)).snap({ domain: "string", pattern: [".*"] })
+		attest(T.json).snap({ domain: "string", pattern: [".*"] })
 	})
 
 	it("multiple constraints", () => {
@@ -27,7 +27,7 @@ contextualize(() => {
 		})
 		const T = L.and(R)
 
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			domain: "number",
 			divisor: 15,
 			min: 5
@@ -37,8 +37,8 @@ contextualize(() => {
 	it("array union element from json", () => {
 		const T = rootSchema({ proto: Array, sequence: ["string", "number"] })
 		attest(T.expression).snap("(number | string)[]")
-		attest(toJson(T)).snap({ sequence: ["number", "string"], proto: "Array" })
-		attest(rootSchema(toJson(T) as never).equals(T)).equals(true)
+		attest(T.json).snap({ sequence: ["number", "string"], proto: "Array" })
+		attest(rootSchema(T.json as never).equals(T)).equals(true)
 	})
 
 	it("variadic element with minVariadicLength", () => {

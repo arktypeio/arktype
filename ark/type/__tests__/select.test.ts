@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { toJson, type DomainNode } from "@ark/schema"
+import type { DomainNode } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
@@ -29,14 +29,13 @@ contextualize(() => {
 					where: d => d.domain === "string"
 				})
 
-				attest<DomainNode[]>(selected)
-				attest(selected.map(toJson)).snap([{ domain: "string" }])
+				attest<DomainNode[]>(selected).snap([{ domain: "string" }])
 			})
 
 			it("fluent selector", ({
 				ExpectedConfiguredUser: ExpectedConfiguredUser
 			}) => {
-				attest(toJson(ExpectedConfiguredUser)).snap({
+				attest(ExpectedConfiguredUser).snap({
 					required: [
 						{ key: "name", value: { domain: "string", meta: "A STRING" } },
 						{ key: "platform", value: [{ unit: "android" }, { unit: "ios" }] }
@@ -65,7 +64,7 @@ contextualize(() => {
 					}
 				])
 
-				attest(toJson(T)).equals(toJson(ExpectedConfiguredUser))
+				attest(T.json).equals(ExpectedConfiguredUser.json)
 			})
 
 			it("args expression selector", ({ User, ExpectedConfiguredUser }) => {
@@ -82,7 +81,7 @@ contextualize(() => {
 					}
 				)
 
-				attest(toJson(T)).equals(toJson(ExpectedConfiguredUser))
+				attest(T.json).equals(ExpectedConfiguredUser.json)
 			})
 		}
 	)

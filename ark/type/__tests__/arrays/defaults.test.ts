@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { toJson, Traversal } from "@ark/schema"
+import { Traversal } from "@ark/schema"
 import { type } from "arktype"
 import { defaultablePostOptionalMessage } from "arktype/internal/parser/tupleLiteral.ts"
 
@@ -8,7 +8,7 @@ contextualize(() => {
 		const T = type([["number", "=", 5]])
 		attest(T.t).type.toString.snap("[Default<number, 5>]")
 		attest(T.expression).snap("[number = 5]")
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			sequence: { defaultables: [["number", 5]] },
 			proto: "Array",
 			maxLength: 1
@@ -25,7 +25,7 @@ contextualize(() => {
 		const T = type(["string = 'foo'"])
 		attest(T.t).type.toString.snap(`[Default<string, "foo">]`)
 		attest(T.expression).snap('[string = "foo"]')
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			sequence: { defaultables: [["string", "foo"]] },
 			proto: "Array",
 			maxLength: 1
@@ -44,7 +44,7 @@ contextualize(() => {
 		const T = type(["string", "number = 5"])
 		attest(T.t).type.toString.snap("[string, Default<number, 5>]")
 		attest(T.expression).snap("[string, number = 5]")
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			sequence: { defaultables: [["number", 5]], prefix: ["string"] },
 			proto: "Array",
 			maxLength: 2,
@@ -65,7 +65,7 @@ contextualize(() => {
 			'[number, Default<string, "foo">, ...number[]]'
 		)
 		attest(T.expression).snap('[number, string = "foo", ...number[]]')
-		attest(toJson(T)).snap({
+		attest(T.json).snap({
 			sequence: {
 				defaultables: [["string", "foo"]],
 				prefix: ["number"],
