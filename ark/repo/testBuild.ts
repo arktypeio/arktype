@@ -1,4 +1,5 @@
 import type { ArkErrors } from "arktype"
+import { buildSync } from "esbuild"
 import { readdirSync, readFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
 import { fileURLToPath, pathToFileURL } from "node:url"
@@ -206,6 +207,24 @@ for (const name of readdirSync(schemaOut)) {
 			)
 		}
 	}
+}
+
+// anything the chunks arktype/runtime loads can't drop ships in every artifact's bundle
+const runtimeBundle = buildSync({
+	stdin: {
+		contents: `export { Validator } from "arktype/runtime"`,
+		resolveDir: fileURLToPath(fromPackage("type")),
+		loader: "js"
+	},
+	bundle: true,
+	format: "esm",
+	platform: "neutral",
+	write: false
+}).outputFiles[0].text
+
+for (const marker of ["__export(", "initialRegistryContents"]) {
+	if (runtimeBundle.includes(marker))
+		throw new Error(`⚠️  Bundling arktype/runtime keeps ${marker}.`)
 }
 
 console.log("🧩 Every entry shares its package's modules and registry!")
