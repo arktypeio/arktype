@@ -80,6 +80,13 @@ const bundlers = {
 	}
 }
 
+// each thread a process starts takes the next id
+const nextThreadId = () => {
+	const worker = new Worker("", { eval: true })
+	void worker.terminate()
+	return worker.threadId
+}
+
 const run = (js: string) =>
 	spawnSync(process.execPath, ["--input-type=module"], {
 		input: js,
@@ -245,12 +252,6 @@ contextualize(() => {
 	}
 
 	it("keeps its worker across esbuild's rebuilds", async () => {
-		// each thread a process starts takes the next id
-		const nextThreadId = () => {
-			const worker = new Worker("", { eval: true })
-			void worker.terminate()
-			return worker.threadId
-		}
 		const first = nextThreadId()
 		const build = await context({
 			entryPoints: [join(app, "main.ts")],
@@ -265,6 +266,52 @@ contextualize(() => {
 		await build.rebuild()
 		await build.dispose()
 		attest(nextThreadId() - first - 1).equals(1)
+	}).timeout(60000)
+
+	it("keeps a configured build's worker until its configuration changes", async () => {
+		const root = fromHere("temp", "watched")
+		mkdirSync(root, { recursive: true })
+		const write = (file: string, text: string) =>
+			writeFileSync(join(root, file), text)
+		const configure = (onUndeclaredKey: string) =>
+			write(
+				"config.ts",
+				`import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "${onUndeclaredKey}" })\n`
+			)
+		configure("delete")
+		write("label.ts", 'export const label = "first"\n')
+		write(
+			"main.ts",
+			'import "./config.ts"\nimport { type } from "arktype"\nimport { label } from "./label.ts"\n\nconsole.log(label, JSON.stringify(type({ a: "string" })({ a: "x", b: 1 })))\n'
+		)
+		const first = nextThreadId()
+		const build = await context({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [
+				precompile.esbuild({ cwd: root, config: "config.ts", conditions })
+			]
+		})
+		const rebuilt = async () => run((await build.rebuild()).outputFiles[0].text)
+		const printed = [await rebuilt()]
+		write("label.ts", 'export const label = "second"\n')
+		printed.push(await rebuilt())
+		const unchanged = nextThreadId()
+		configure("ignore")
+		printed.push(await rebuilt())
+		await build.dispose()
+		attest(printed).equals([
+			'first {"a":"x"}\n',
+			'second {"a":"x"}\n',
+			'second {"a":"x","b":1}\n'
+		])
+		attest([unchanged - first - 1, nextThreadId() - unchanged - 1]).equals([
+			1, 1
+		])
 	}).timeout(60000)
 
 	it("reads a module that defines a Type from an imported one", async () => {

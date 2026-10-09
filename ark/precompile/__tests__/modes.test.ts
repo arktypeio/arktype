@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
+import { configureAfterTypeMessage } from "@ark/schema"
 import {
 	configuredThreadMessage,
 	precompileModule,
@@ -137,6 +138,30 @@ console.log(JSON.stringify([
 configure({ onUndeclaredKey: "delete" })
 console.log(JSON.stringify(outcomeOf({}, {})))`)
 			).equals(configuredThreadMessage)
+		}).timeout(60000)
+
+		it("configure in a thread after a build applied its configuration", () => {
+			const hostConfigures = `import { configure } from "arktype"
+
+const configured = {
+	"/config.ts": 'import { configure } from "arktype/config"\\nconfigure({ exactOptionalPropertyTypes: false })'
+}
+const precompiled = opts => {
+	precompile("export const x = 1", configured, opts)
+	let outcome = "configured"
+	try {
+		configure({ onUndeclaredKey: "delete" })
+	} catch (e) {
+		outcome = e.message
+	}
+	const { code, modules } = precompile(main, configured, opts)
+	console.log(JSON.stringify([outcome, [code, ...Object.values(modules)].join("").includes("undeclared")]))
+}`
+			for (const opts of ["{}", '{ config: "/config.ts" }']) {
+				attest(
+					printedInFreshThread(`${hostConfigures}\nprecompiled(${opts})`)
+				).equals([configureAfterTypeMessage, false])
+			}
 		}).timeout(60000)
 
 		it("configure with an argument that creates a Type", () => {

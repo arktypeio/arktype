@@ -74,7 +74,10 @@ export const answerRequests = (
 ): void => {
 	let precompiler: Precompiler | undefined
 	const answer = (request: PrecompileRequest): unknown => {
-		if (request[0] === "reset") return (precompiler = undefined)
+		if (request[0] === "reset") {
+			precompiler = createPrecompiler(data.precompilerOptions)
+			return precompiler.needsNewThread
+		}
 		if (request[0] === "close") return
 		precompiler ??= createPrecompiler(data.precompilerOptions)
 		return request[0] === "readDependency" ?

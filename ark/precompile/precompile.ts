@@ -12,7 +12,7 @@ import {
 	registeredNameOf,
 	throwError
 } from "@ark/util"
-import { configure } from "arktype"
+import { ark, configure } from "arktype"
 import type { HoleKind } from "arktype/internal/runtime.ts"
 import {
 	holeNamePattern,
@@ -534,7 +534,50 @@ export class Precompiler {
 
 	// as the program applies it at runtime, before any site is evaluated
 	private applyConfiguration(): Configuration {
-		if (this.config === undefined) return this.checkThread([], undefined)
+		const { module, modules, call, fingerprint } = this.readConfiguration()
+		if (holdsOtherConfiguration(fingerprint))
+			throwError(configuredThreadMessage)
+		if (threadConfiguration) return threadConfiguration
+		const configuration: Configuration = {
+			modules,
+			fingerprint,
+			problem: undefined,
+			reasons: []
+		}
+		if (module && call) {
+			const { value, problem, reasons } = this.evaluateConfiguration(
+				call,
+				module
+			)
+			// as arktype fixes its configuration at the first Type, configure() would throw
+			configuration.problem =
+				problem ??
+				($ark.resolvedConfig ?
+					"configure() is called after its argument creates a Type"
+				:	undefined)
+			configuration.reasons = reasons
+			if (!configuration.problem) configure(value as never)
+			threadConfiguration = configuration
+		}
+		// so a later configure() in the thread throws, as it does after arktype's first Type
+		void ark.internal.resolvedConfig
+		return configuration
+	}
+
+	// arktype takes one configuration per thread, so a build whose configuration changed restarts in a new one
+	get needsNewThread(): boolean {
+		return holdsOtherConfiguration(this.readConfiguration().fingerprint)
+	}
+
+	private readConfiguration(): Pick<
+		Configuration,
+		"modules" | "fingerprint"
+	> & {
+		module?: SourceModule
+		call?: CallExpression
+	} {
+		if (this.config === undefined)
+			return { modules: [], fingerprint: undefined }
 		const module = this.graph.moduleOf(this.config)
 		if (!(module instanceof SourceModule)) {
 			return throwError(
@@ -543,51 +586,26 @@ export class Precompiler {
 		}
 		const modules = this.localClosureOf(module.id)
 		const call = this.configureCallsOf(module)[0]
-		if (!call) return this.checkThread(modules, undefined)
-		const fingerprint = hashOf(
-			modules
-				.map(id => `${this.graph.pathOf(id)}\n${this.graph.host.readFile(id)}`)
-				.join("\n")
-		)
-		if (fingerprint === threadFingerprint)
-			return { modules, fingerprint, reasons: [] }
-		this.checkThread(modules, fingerprint)
-		const [value, reasons] = this.evaluateConfiguration(call, module)
-		if (reasons.length) return { modules, fingerprint: undefined, reasons }
-		// as arktype fixes its configuration at the first Type, configure() would throw
-		if ($ark.resolvedConfig) {
-			return {
-				modules,
-				fingerprint: undefined,
-				problem: "configure() is called after its argument creates a Type",
-				reasons
-			}
+		return {
+			module,
+			modules,
+			call,
+			fingerprint:
+				call &&
+				hashOf(
+					modules
+						.map(
+							id => `${this.graph.pathOf(id)}\n${this.graph.host.readFile(id)}`
+						)
+						.join("\n")
+				)
 		}
-		configure(value as never)
-		threadFingerprint = fingerprint
-		return { modules, fingerprint, reasons }
-	}
-
-	// this thread's arktype takes one configuration, before it creates a Type, which must be the build's
-	private checkThread(
-		modules: string[],
-		fingerprint: string | undefined
-	): Configuration {
-		const isConfigured =
-			threadFingerprint !== undefined || Object.keys($ark.config).length > 0
-		if (
-			fingerprint === undefined ? isConfigured : (
-				isConfigured || $ark.resolvedConfig
-			)
-		)
-			throwError(configuredThreadMessage)
-		return { modules, fingerprint, reasons: [] }
 	}
 
 	private stampConfiguration(module: SourceModule, s: MagicString): void {
 		const call = this.configureCallsOf(module)[0]
-		const fingerprint = this.configuration!.fingerprint
-		if (!call || fingerprint === undefined) return
+		const { fingerprint, problem } = this.configuration!
+		if (!call || fingerprint === undefined || problem) return
 		if (call.arguments.length)
 			s.appendLeft(call.arguments[0].end, `, ${JSON.stringify(fingerprint)}`)
 		else s.appendLeft(call.end - 1, `{}, ${JSON.stringify(fingerprint)}`)
@@ -672,9 +690,11 @@ export class Precompiler {
 			}
 		}
 		const refusalsByName: Record<string, string> = {}
-		const { fingerprint } = this.configuration!
+		const { fingerprint, problem } = this.configuration!
 		const configured =
-			fingerprint === undefined ? undefined : { fingerprint, path: module.path }
+			fingerprint === undefined || problem ?
+				undefined
+			:	{ fingerprint, path: module.path }
 		const validators =
 			Object.keys(exportsByName).length ?
 				writeValidators(exportsByName, sitesByName, refusalsByName, configured)
@@ -1570,27 +1590,25 @@ export class Precompiler {
 		const result: Diagnostic[] = []
 		const calls = this.configureCallsOf(module)
 		for (let i = 0; i < calls.length; i++) {
-			const call = calls[i]
-			const problem =
+			const misplaced =
 				this.config === undefined ?
 					"configure() is called, but the build has no `config` module"
 				: this.config !== module.id ?
 					`configure() is called outside the config module ${this.graph.pathOf(this.config)}`
 				: i > 0 ? "configure() is called more than once"
-				: this.configuration?.problem
-			const reasons =
-				problem ?
-					[]
-				:	(this.configuration?.reasons ??
-					this.evaluateConfiguration(call, module)[1])
-			if (problem || reasons.length) {
+				: undefined
+			const { problem, reasons } =
+				misplaced ?
+					{ problem: misplaced, reasons: [] }
+				:	(this.configuration ?? this.evaluateConfiguration(calls[i], module))
+			if (problem) {
 				result.push(
 					this.diagnostic(
 						module,
-						call,
+						calls[i],
 						"R3",
 						this.rejectionSeverity,
-						problem ?? `${module.snippetOf(call)} is not static`,
+						problem,
 						reasons
 					)
 				)
@@ -1602,15 +1620,14 @@ export class Precompiler {
 	private evaluateConfiguration(
 		call: CallExpression,
 		module: SourceModule
-	): [value: unknown, problems: string[]] {
+	): Pick<Configuration, "problem" | "reasons"> & { value: unknown } {
 		const argument = call.arguments[0]
-		if (!argument) return [undefined, []]
+		if (!argument) return { value: undefined, problem: undefined, reasons: [] }
 		const value = this.interpreter.evaluateSite(
 			createSiteState(argument, module)
 		)
 		const dynamic = rejectionOf(value)
-		if (dynamic) return [undefined, chainOf(dynamic)]
-		const result: string[] = []
+		const result = dynamic ? chainOf(dynamic) : []
 		const visit = (o: unknown) => {
 			if (!isPlainContainer(o)) return
 			for (const k of Reflect.ownKeys(o)) {
@@ -1629,8 +1646,13 @@ export class Precompiler {
 				visit(v)
 			}
 		}
-		visit(value.value)
-		return [value.value, result]
+		if (!dynamic) visit(value.value)
+		return {
+			value: value.value,
+			problem:
+				result.length ? `${module.snippetOf(call)} is not static` : undefined,
+			reasons: result
+		}
 	}
 
 	private checkStandalone(
@@ -1950,14 +1972,22 @@ export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 
 interface Configuration {
 	modules: string[]
+	// a hash of the modules' paths and text, if the config module calls configure()
 	fingerprint: string | undefined
 	// why the configure() call can't be applied, reported where the config module is precompiled
-	problem?: string
+	problem: string | undefined
 	reasons: string[]
 }
 
-// another precompiler in the thread may share the configuration one applied
-let threadFingerprint: string | undefined
+// the configuration a build computed in this thread, which every later precompiler in it must share
+let threadConfiguration: Configuration | undefined
+
+// arktype can't change its configuration once set
+const holdsOtherConfiguration = (fingerprint: string | undefined): boolean =>
+	threadConfiguration ?
+		threadConfiguration.fingerprint !== fingerprint
+	:	Object.keys($ark.config).length > 0 ||
+		(fingerprint !== undefined && $ark.resolvedConfig !== undefined)
 
 export const writeUnreadableConfigMessage = <path extends string>(
 	path: path

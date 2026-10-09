@@ -3,7 +3,7 @@ import { fromHere } from "@ark/fs"
 import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
-import { readFileSync } from "node:fs"
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { writeCreatedBeforeConfigureMessage } from "@ark/schema/runtime"
@@ -212,28 +212,67 @@ contextualize(() => {
 			)
 		}).timeout(60000)
 
-		it("shares a configuration with the precompiler it replaces", () => {
-			const transform = `turbopack.call({
-	resourcePath: ${JSON.stringify(join(configured, "main.ts"))},
-	getOptions: () => (${JSON.stringify({ config: "config.ts", conditions, cwd: configured })}),
-	addDependency: () => {},
-	emitWarning: warning => { throw warning }
-}, readFileSync("main.ts", "utf8"))`
-			const { stdout } = spawnSync(
-				process.execPath,
-				["--conditions", "ark-ts", "--input-type=module"],
-				{
-					cwd: configured,
-					encoding: "utf8",
-					// a file the precompiler read changes, so the loader replaces it
-					input: `import turbopack from "${pathToFileURL(fromHere("..", "turbopack.ts"))}"
+		// each file loaded before and after one the precompiler read changes, so the loader replaces it, in a process whose arktype takes the configuration
+		const loadedAcrossReplacement = (cwd: string, files: string[]) =>
+			JSON.parse(
+				spawnSync(
+					process.execPath,
+					["--conditions", "ark-ts", "--input-type=module"],
+					{
+						cwd,
+						encoding: "utf8",
+						input: `import turbopack from "${pathToFileURL(fromHere("..", "turbopack.ts"))}"
 import { readFileSync, utimesSync } from "node:fs"
-const first = ${transform}
+const load = file => {
+	try {
+		return turbopack.call({
+			resourcePath: ${JSON.stringify(cwd)} + "/" + file,
+			getOptions: () => (${JSON.stringify({ config: "config.ts", conditions, cwd })}),
+			addDependency: () => {},
+			emitWarning: warning => { throw warning }
+		}, readFileSync(file, "utf8"))
+	} catch (e) {
+		return e.message
+	}
+}
+const before = ${JSON.stringify(files)}.map(load)
 utimesSync("config.ts", new Date(), new Date())
-console.log(first === ${transform}, /fixConfig\\("\\w+", "main.ts"\\)/.test(first))`
-				}
+console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
+					}
+				).stdout
+			) as [before: string[], after: string[]]
+
+		it("shares a configuration with the precompiler it replaces", () => {
+			const [before, after] = loadedAcrossReplacement(configured, ["main.ts"])
+			attest(after).equals(before)
+			attest(before[0]).satisfies(/fixConfig\("\w+", "main.ts"\)/)
+		}).timeout(60000)
+
+		it("shares a configured writer's refusal with the precompiler it replaces", () => {
+			const [before, after] = loadedAcrossReplacement(writers, ["main.ts"])
+			attest(after).equals(before)
+			attest(before[0].includes("prints the name of `isLong`")).equals(true)
+		}).timeout(60000)
+
+		it("shares a configuration's problem with the precompiler it replaces", () => {
+			const dynamic = fromHere("temp", "dynamicConfig")
+			mkdirSync(dynamic, { recursive: true })
+			writeFileSync(
+				join(dynamic, "config.ts"),
+				'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: process.env.KEYS === "delete" ? "delete" : "ignore" })\n'
 			)
-			attest(stdout).equals("true true\n")
+			writeFileSync(
+				join(dynamic, "main.ts"),
+				'import "./config.ts"\nimport { type } from "arktype"\n\nexport const T = type({ a: "string" })\n'
+			)
+			const [before, after] = loadedAcrossReplacement(dynamic, [
+				"config.ts",
+				"main.ts"
+			])
+			attest(after).equals(before)
+			attest(before[0]).satisfies(
+				/config\.ts:3:1 {2}configure\(.* is not static/
+			)
 		}).timeout(60000)
 
 		it("reports dependencies before a rejected site's error", () => {

@@ -1,7 +1,11 @@
 import { hashOf, throwError } from "@ark/util"
 import { dirname } from "node:path"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
-import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
+import type {
+	PrecompilePluginOptions,
+	PrecompileRequest,
+	TransformedModule
+} from "./driver.ts"
 import {
 	createNodeHost,
 	optedInPackagesOf,
@@ -20,10 +24,24 @@ export const precompile: UnpluginInstance<
 	// arktype in a worker of its own takes the program's configuration, and shares no state with the bundler's
 	const create = () =>
 		createAsyncPrecompiler({ precompilerOptions: options ?? {} })
-	let request = create()
+	// each request goes to the worker the last reset or restart leaves
+	let precompiler = Promise.resolve(create())
+	const request = (...message: PrecompileRequest) =>
+		precompiler.then(send => send(...message))
 	const restart = () => {
-		void request("close")
-		request = create()
+		precompiler = precompiler.then(send => {
+			void send("close")
+			return create()
+		})
+	}
+	// a changed file may be in the forward closure of any module analyzed so far, and a changed configuration needs a thread of its own
+	const reset = () => {
+		precompiler = precompiler.then(async send => {
+			// a config module the worker can't read is reported where a module is transformed
+			if (!(await send("reset").catch(() => false))) return send
+			void send("close")
+			return create()
+		})
 	}
 	const readDependency = (importer: string) =>
 		request("readDependency", importer) as Promise<{
@@ -116,9 +134,7 @@ export const precompile: UnpluginInstance<
 			}
 		},
 		// loading the precompiler overlaps the bundler's own startup
-		buildStart: () => {
-			void request("reset")
-		},
+		buildStart: reset,
 		// a build that won't run again releases its worker, which Rollup, Vite, webpack and Rspack tell here and esbuild at onDispose
 		buildEnd() {
 			const native = this.getNativeBuildContext?.()
@@ -128,11 +144,7 @@ export const precompile: UnpluginInstance<
 				:	(this as { meta?: { watchMode?: boolean } }).meta?.watchMode
 			if (isWatching === false) restart()
 		},
-		// a changed file may be in the forward closure of any module analyzed so far, or change the configuration arktype can only take once
-		watchChange: () => {
-			if (opts?.config) restart()
-			else void request("reset")
-		},
+		watchChange: reset,
 		esbuild: {
 			// esbuild loads anything a plugin resolves in the plugin's namespace, so arktype's files are resolved natively
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
