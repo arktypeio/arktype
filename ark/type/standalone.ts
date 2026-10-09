@@ -36,6 +36,8 @@ import * as runtime from "./runtime.ts"
 
 const writerKeys = ["expected", "actual", "problem", "message"] as const
 
+type DeclarationRole = "shape" | "keys" | "literal" | "config"
+
 const runtimePathsByValue = new Map<unknown, string>()
 
 const indexRuntime = (value: unknown, path: string): void => {
@@ -78,6 +80,12 @@ export class StandaloneArtifact {
 	keyLookups = new Set<object>()
 	objectUnits = new Set<unknown>()
 	constNamesByValue = new Map<unknown, string>()
+	declarationCounts: Record<DeclarationRole, number> = {
+		shape: 0,
+		keys: 0,
+		literal: 0,
+		config: 0
+	}
 	emitting = new Set<object>()
 	moduleNamesByModule = new Map<object, string>()
 	declarations: string[] = []
@@ -180,25 +188,18 @@ export class StandaloneArtifact {
 			([name, value]) =>
 				`export { ${this.exportOf(value)} as ${JSON.stringify(name)} }`
 		)
-		return `import * as runtime from "arktype/runtime"
-
-runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})
-runtime.claimEntry("arktype/runtime")
-
-${this.declarations.join("\n")}
-
-const traversals = (${this.unit.source})([], [${refs.join(", ")}], [${errorContexts.join(", ")}])
-
-${this.links.join("\n")}
-
-${validators.join("\n\n")}
-
-${this.modules.join("\n")}
-
-${this.fills.join("\n")}
-
-${exported.join("\n")}
-`
+		const sections = [
+			`import * as runtime from "arktype/runtime"`,
+			`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
+			this.declarations.join("\n"),
+			`const traversals = (${this.unit.source})([], [${refs.join(", ")}], [${errorContexts.join(", ")}])`,
+			this.links.join("\n"),
+			validators.join("\n\n"),
+			this.modules.join("\n"),
+			this.fills.join("\n"),
+			exported.join("\n")
+		]
+		return `${sections.filter(section => section).join("\n\n")}\n`
 	}
 
 	writeValidator(root: BaseRoot, name: string): string {
@@ -232,8 +233,12 @@ ${exported.join("\n")}
 		return name
 	}
 
-	declareConst(value: object, expression: string): string {
-		const name = `o${this.constNamesByValue.size}`
+	declareConst(
+		value: object,
+		role: DeclarationRole,
+		expression: string
+	): string {
+		const name = `${role}${this.declarationCounts[role]++}`
 		this.constNamesByValue.set(value, name)
 		this.declarations.push(`const ${name} = ${expression}`)
 		return name
@@ -242,7 +247,7 @@ ${exported.join("\n")}
 	shapeOf(node: BaseNode): string {
 		const declared = this.constNamesByValue.get(node)
 		if (declared) return declared
-		const name = this.declareConst(node, "{}")
+		const name = this.declareConst(node, "shape", "{}")
 		const traversals = `traversals[${this.traversalIndexByName[this.unit.names[node.id]]}]`
 		const trackedName =
 			this.unit.names[node.trackedId as NodeId] ??
@@ -304,6 +309,7 @@ ${exported.join("\n")}
 				throwParseError(writeUnprecompilableMessage("a symbol key"))
 			return this.declareConst(
 				value,
+				"keys",
 				`runtime.freeze({ __proto__: null, ${keys.map(k => `[${JSON.stringify(k)}]: 1`).join(", ")} })`
 			)
 		}
@@ -317,6 +323,7 @@ ${exported.join("\n")}
 			}
 			return this.declareConst(
 				value,
+				"literal",
 				`runtime.freeze(new Date(${value.getTime()}))`
 			)
 		}
@@ -330,6 +337,7 @@ ${exported.join("\n")}
 			// its methods write lastIndex, so it's kept from growing rather than frozen
 			return this.declareConst(
 				value,
+				"literal",
 				`runtime.preventExtensions(${value.lastIndex ? `runtime.assign(${regex}, { lastIndex: ${value.lastIndex} })` : regex})`
 			)
 		}
@@ -384,14 +392,14 @@ ${exported.join("\n")}
 		this.emitting.add(value)
 		const elements = keys.map(k => this.emitElement(descriptors[k].value))
 		this.emitting.delete(value)
+		const entries = keys.map((k, i) => `[${JSON.stringify(k)}]: ${elements[i]}`)
+		if (prototype === null) entries.unshift("__proto__: null")
 		const literal =
-			isArray ?
-				`[${elements.join(", ")}]`
-			:	`{ ${prototype === null ? "__proto__: null, " : ""}${keys
-					.map((k, i) => `[${JSON.stringify(k)}]: ${elements[i]}`)
-					.join(", ")} }`
+			isArray ? `[${elements.join(", ")}]`
+			: entries.length ? `{ ${entries.join(", ")} }`
+			: "{}"
 		if (!elements.some(element => this.lateNames.has(element)))
-			return this.declareConst(value, `runtime.freeze(${literal})`)
+			return this.declareConst(value, "literal", `runtime.freeze(${literal})`)
 		// assigning a __proto__ key to an object would set its prototype
 		if (prototype === Object.prototype && keys.includes("__proto__")) {
 			throwParseError(
@@ -400,6 +408,7 @@ ${exported.join("\n")}
 		}
 		const name = this.declareConst(
 			value,
+			"literal",
 			isArray ? "[]"
 			: prototype === null ? "{ __proto__: null }"
 			: "{}"
@@ -447,6 +456,7 @@ ${exported.join("\n")}
 		return configuredCodes.length ?
 				this.declareConst(
 					config,
+					"config",
 					`runtime.freeze({ ...runtime.runtimeConfig, ${configuredCodes.join(", ")} })`
 				)
 			:	"runtime.runtimeConfig"
