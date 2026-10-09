@@ -289,7 +289,7 @@ export class StandaloneArtifact {
 			}
 		}
 		// a string that prints a hole's name is completed at creation, so neither compiled code nor an order may depend on it
-		const printed = /\$hole_[\da-z]+/.exec(this.unit.source)
+		const printed = this.unit.source.match(holeNamePattern)
 		if (printed) {
 			throwParseError(
 				writeUnprecompilableMessage(
@@ -585,7 +585,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 	emitString(s: string): string {
 		const parts: string[] = []
 		let start = 0
-		for (const match of s.matchAll(holeNamePattern)) {
+		for (const match of s.matchAll(printedHoleNamePattern)) {
 			if (match.index > start)
 				parts.push(JSON.stringify(s.slice(start, match.index)))
 			const [, predicate, fn, name] = match
@@ -1022,8 +1022,10 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 // the name the build gives each function it stands in for, so a string printing it can be completed at creation
 export const holeNamePrefix = "$hole_"
 
+export const holeNamePattern = /\$hole_[\da-z]+/g
+
 // how arktype prints a function's name: in a predicate's description, in `Function(...)`, or alone
-const holeNamePattern =
+const printedHoleNamePattern =
 	/valid according to (\$hole_[\da-z]+)|Function\((\$hole_[\da-z]+)\)|(\$hole_[\da-z]+)/g
 
 export const writeUnprecompilableMessage = <value extends string>(

@@ -46,6 +46,8 @@ const localized = fromHere("localized")
 
 const checks = fromHere("checks")
 
+const writers = fromHere("writers")
+
 const library = writeLibrary()
 
 const runPlain = (cwd: string, entry = "main.ts") =>
@@ -160,6 +162,24 @@ contextualize(() => {
 			)
 				.snap(`main.ts:4:18  type("string") can't be precompiled to a standalone validator yet
   a configured locale can't be precompiled to a standalone validator
+  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
+		}).timeout(60000)
+
+		it("reports a configured writer reading a hole's name", () => {
+			const { status, stderr } = node(
+				["main.ts"],
+				{ config: "config.ts" },
+				writers
+			)
+			attest(status).equals(1)
+			attest(
+				stderr
+					.slice(stderr.indexOf("Error: ") + 7, stderr.indexOf("\n    at "))
+					.split(`${writers}/`)
+					.join("")
+			)
+				.snap(`main.ts:6:21  type("string").narrow(isLong) can't be precompiled to a standalone validator yet
+  \`node.expression\` (config.ts:5:38) prints the name of \`isLong\` (main.ts:4:16), which the build knows only by a placeholder
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		}).timeout(60000)
 	})

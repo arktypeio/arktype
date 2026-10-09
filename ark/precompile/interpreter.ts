@@ -2,7 +2,7 @@ import { arkKind, hasArkKind, type BaseRoot } from "@ark/schema"
 import { hashOf, hasDomain, ParseError } from "@ark/util"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
-import { holeNamePrefix } from "arktype/internal/standalone.ts"
+import { holeNamePattern, holeNamePrefix } from "arktype/internal/standalone.ts"
 import type {
 	CallExpression,
 	Class,
@@ -187,6 +187,7 @@ export class Interpreter {
 	private validators = new WeakSet<object>()
 	private arkObjects = new WeakSet<object>()
 	private opaqueStandInsByValue = new WeakMap<object, StandIn>()
+	private standInsByName = new Map<string, StandIn>()
 	private activeCall: { ctx: Context; isArktype: boolean } | undefined
 
 	constructor(graph: ModuleGraph, opts: InterpreterOptions = {}) {
@@ -1207,6 +1208,8 @@ export class Interpreter {
 		if (replacedBy && ctx.site && ctx.module === ctx.site.module)
 			ctx.site.unavailableReads.push({ node, key, replacedBy })
 		const value = Reflect.get(object, key)
+		const named = this.placeholderIn(value)
+		if (named) return this.printsName(node, ctx, named)
 		if (
 			typeof key === "string" &&
 			key in runtimeMembers &&
@@ -1463,6 +1466,8 @@ export class Interpreter {
 		this.activeCall = { ctx, isArktype: true }
 		try {
 			const result = Reflect.apply(fn, receiver, converted)
+			const named = this.placeholderIn(result)
+			if (named) return this.printsName(node, ctx, named)
 			if (isPlainContainer(result)) this.arkObjects.add(result)
 			else if (ctx.site && hasArkKind(result, "root"))
 				ctx.site.roots.push(result)
@@ -1639,6 +1644,7 @@ export class Interpreter {
 		}
 		const target =
 			closure.node.type === "ArrowFunctionExpression" ? () => {} : class {}
+		if (name) this.standInsByName.set(name, standIn)
 		const proxy = this.standInProxy(target, standIn, {
 			get: (target, k) =>
 				k === "length" ? arity
@@ -1675,7 +1681,11 @@ export class Interpreter {
 			return result
 		}
 		const converted = this.toArktype(result)
-		if (isDynamic(converted)) throw this.calledAtDefinition(standIn, converted)
+		if (isDynamic(converted)) {
+			throw converted.hasCode("placeholder") ? converted : (
+					this.calledAtDefinition(standIn, converted)
+				)
+		}
 		return converted
 	}
 
@@ -1740,6 +1750,7 @@ export class Interpreter {
 			isCalled: false,
 			isDefinition: false
 		}
+		if (name) this.standInsByName.set(name, standIn)
 		const proxy = this.standInProxy(target, standIn, {
 			get: (target, k) =>
 				k === "length" ? length
@@ -1827,6 +1838,50 @@ export class Interpreter {
 		})
 		this.standIns.set(proxy, standIn)
 		return proxy
+	}
+
+	// arktype prints a hole's name as its placeholder, so code reading what it prints would see a name the program never does
+	private placeholderIn(
+		value: unknown,
+		seen = new Set<unknown>()
+	): StandIn | undefined {
+		if (typeof value === "string") {
+			for (const name of value.match(holeNamePattern) ?? []) {
+				const standIn = this.standInsByName.get(name)
+				if (standIn) return standIn
+			}
+			return
+		}
+		if (!isPlainContainer(value) || seen.has(value)) return
+		seen.add(value)
+		for (const k of Reflect.ownKeys(value)) {
+			const descriptor = Reflect.getOwnPropertyDescriptor(value, k)!
+			const standIn =
+				this.placeholderIn(k, seen) ??
+				this.placeholderIn(descriptor.value, seen)
+			if (standIn) return standIn
+		}
+	}
+
+	private printsName(node: Node, ctx: Context, named: StandIn): DynamicValue {
+		return new DynamicValue(
+			ctx.module,
+			node,
+			`\`${ctx.module.snippetOf(node)}\` (${ctx.module.positionOf(node)}) prints the name of ${this.labelOf(named)}, which the build knows only by a placeholder`,
+			undefined,
+			"placeholder"
+		)
+	}
+
+	private labelOf(standIn: StandIn): string {
+		const name =
+			standIn.closure?.name ||
+			bindingOfFunction(standIn.node, standIn.module)?.name
+		return `${
+			name ? `\`${name}\``
+			: standIn.kind === "class" ? "a class"
+			: "a function"
+		} (${standIn.module.positionOf(standIn.node)})`
 	}
 
 	private refuse(standIn: StandIn): never {

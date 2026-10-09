@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import type { PrecompileOptions } from "@ark/precompile"
 import type { Type } from "arktype"
-import { analyze, statusesOf } from "./utils.ts"
+import { analyze, diagnosticsOf, statusesOf } from "./utils.ts"
 
 const nonStatic = `{
 	const result = "string"
@@ -102,6 +102,30 @@ const B = Stateful("string")`)
 			statusesOf(`import { scope } from "arktype"
 const A = scope({ a: "number" }, { domain: { description: () => "a custom number" } }).export()`)
 		).snap(["2:11 accepted"])
+	})
+
+	it("code reading a hole's name is unsupported", () => {
+		const source = `import { type, scope, type Type } from "arktype"
+const isLong = (s: string) => s.length > 3
+const paginated = <t>(t: Type<t>) => type({ items: t.array(), page: "number" })
+const A = type({ a: type("string").narrow(isLong) }).configure({ description: "selected" }, { where: n => n.kind === "predicate" && n.expression.startsWith("is") })
+const B = type({ a: type("string").narrow(isLong) }).configure({ description: "selected" }, { where: n => n.kind === "predicate" })
+const C = scope({}, { predicate: { description: node => node.expression.toUpperCase() } }).type("string").narrow(isLong)
+const D = type("string").describe(type("string").narrow(isLong).description)
+const E = type({ a: type("string").narrow(isLong) }).configure({ description: "selected" }, { where: n => n.toString().includes("is") })
+const F = paginated(type("string").pipe(s => s.length))`
+		attest(statusesOf(source)).snap([
+			"4:11 rejected\n  `n.expression` (/main.ts:4:133) prints the name of `isLong` (/main.ts:2:16), which the build knows only by a placeholder",
+			"5:11 accepted { a: string }",
+			"6:11 rejected\n  `node.expression` (/main.ts:6:57) prints the name of `isLong` (/main.ts:2:16), which the build knows only by a placeholder",
+			'7:11 rejected\n  `type("string").narrow(isLong).description` (/main.ts:7:35) prints the name of `isLong` (/main.ts:2:16), which the build knows only by a placeholder',
+			"8:11 rejected\n  `n.toString()` (/main.ts:8:107) prints the name of `isLong` (/main.ts:2:16), which the build knows only by a placeholder",
+			"9:11 accepted { items: (In: string) => Out<unknown>[], page: number }"
+		])
+		attest(diagnosticsOf(source)[0])
+			.snap(`/main.ts:4:11  type({ a: type("string").narrow(isLong) }).configure({ desc… can't be precompiled to a standalone validator yet
+  \`n.expression\` (/main.ts:4:133) prints the name of \`isLong\` (/main.ts:2:16), which the build knows only by a placeholder
+  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 	})
 
 	it("narrows on literal values", () => {

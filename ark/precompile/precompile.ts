@@ -1476,11 +1476,14 @@ export class Precompiler {
 		if (site.status === "island") return []
 		const node = candidate.state.node
 		if (site.status === "rejected") {
+			const rejection = rejectionOf(candidate.state)
+			if (rejection?.hasCode("placeholder"))
+				return [this.unsupported(module, site, site.reasons)]
 			return [
 				this.diagnostic(
 					module,
 					node,
-					isCallback(rejectionOf(candidate.state)) ? "R2" : "R1",
+					rejection?.hasCode("callback") ? "R2" : "R1",
 					this.rejectionSeverity,
 					`${module.snippetOf(node)} cannot be precompiled`,
 					site.reasons
@@ -2235,12 +2238,6 @@ const rejectionOf = (state: SiteState): DynamicValue | undefined =>
 	state.error instanceof DynamicValue ? state.error
 	: state.error === undefined ? findDynamic(state.value)
 	: undefined
-
-const isCallback = (dynamic: DynamicValue | undefined): boolean => {
-	for (let link = dynamic; link; link = link.cause)
-		if (link.code === "callback") return true
-	return false
-}
 
 const chainOf = (dynamic: DynamicValue): string[] => {
 	const result: string[] = []
