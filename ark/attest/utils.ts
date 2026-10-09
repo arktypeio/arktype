@@ -1,12 +1,43 @@
 import { caller } from "@ark/fs"
 import { throwError } from "@ark/util"
-import { basename, relative } from "node:path"
+import { existsSync } from "node:fs"
+import { basename, relative, resolve } from "node:path"
 import ts from "typescript"
+import { getConfig } from "./config.ts"
 
 /** TypeScript 7+ is native and only exposes its API via tsgo's IPC client */
 export const isTs7: boolean = Number.parseInt(ts.version) >= 7
 
 export const getFileKey = (path: string): string => relative(".", path)
+
+const testFilePattern = /\.test\.[cm]?[jt]sx?$/
+
+/**
+ * Narrows the files whose assertions are analyzed to the test files named on
+ * the command line, e.g. `pnpm testFiles ark/type/__tests__/brand.test.ts`,
+ * since those are the only tests that will run. Analysis cost scales with the
+ * files analyzed, so one file takes seconds where the whole project takes
+ * minutes. With no test file named, every root file is analyzed as before.
+ *
+ * Only applies with `--onlyNamedTestFiles`, which `testFiles` passes along with
+ * mocha's `--no-package`. Otherwise, mocha adds named files to the configured
+ * spec, so every test still runs.
+ *
+ * A test that runs without having been analyzed fails with "Found no assertion
+ * data", so a narrowing that missed a file can never pass silently.
+ */
+export const narrowToNamedTestFiles = (rootFiles: string[]): string[] => {
+	if (!getConfig().onlyNamedTestFiles) return rootFiles
+	const named = new Set(
+		process.argv
+			.slice(2)
+			.filter(arg => testFilePattern.test(arg) && existsSync(arg))
+			.map(arg => resolve(arg).replace(/\\/g, "/"))
+	)
+	if (!named.size) return rootFiles
+	const narrowed = rootFiles.filter(path => named.has(path))
+	return narrowed.length ? narrowed : rootFiles
+}
 
 /**
  *  Can be used to allow arbitrarily chained property access and function calls.

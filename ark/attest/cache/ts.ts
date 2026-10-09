@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs"
 import { resolve, dirname, join } from "node:path"
 import ts from "typescript"
 import { getConfig } from "../config.ts"
+import { narrowToNamedTestFiles } from "../utils.ts"
 
 export class TsServer {
 	rootFiles!: string[]
@@ -28,15 +29,17 @@ export class TsServer {
 		// TS represents windows paths as `C:/Users/ssalb/...`
 		const normalizedCwd = fromCwd().replace(/\\/g, "/")
 
-		this.rootFiles = this.tsConfigInfo.parsed.fileNames.filter(path => {
-			if (!path.startsWith(normalizedCwd)) return
+		this.rootFiles = narrowToNamedTestFiles(
+			this.tsConfigInfo.parsed.fileNames.filter(path => {
+				if (!path.startsWith(normalizedCwd)) return
 
-			// exclude empty files as they lead to a crash
-			// when createVirtualTypeScriptEnvironment is called
-			const contents = readFile(path).trim()
+				// exclude empty files as they lead to a crash
+				// when createVirtualTypeScriptEnvironment is called
+				const contents = readFile(path).trim()
 
-			return contents !== ""
-		})
+				return contents !== ""
+			})
+		)
 
 		const system = tsvfs.createFSBackedSystem(
 			tsLibPaths.defaultMapFromNodeModules,

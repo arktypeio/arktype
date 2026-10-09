@@ -17,6 +17,7 @@
 	"scripts": {
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude \"ark/attest/**/*.test.*\"",
+		"testFiles": "mocha --onlyNamedTestFiles --no-package --node-option conditions=ark-ts --require ./ark/repo/mocha.globalSetup.ts --timeout 10000",
 		"prChecks": "pnpm lint && pnpm buildRepo && pnpm testRepoWithBenches",
 		"attest": "ts ./ark/attest/cli/cli.ts",
 		"build": "pnpm -r --filter !\"@ark/docs\" build",
@@ -26,7 +27,7 @@
 		"rmBuild": "pnpm -r exec rm -rf out",
 		"ts": "node ./ark/repo/ts.js",
 		"testRepoWithBenches": "pnpm typecheckRepo && pnpm testRepo && pnpm bench && pnpm testTypedLoose && pnpm testTsCompat && pnpm testTsVersions",
-		"typecheckRepo": "pnpm tsc",
+		"typecheckRepo": "tsc --incremental",
 		"testRepo": "pnpm test && pnpm testV8 && pnpm testIntegration && pnpm -r --filter \"@ark/attest\" test",
 		"testIntegration": "pnpm -r --filter \"arktype\" testIntegration",
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",
@@ -78,7 +79,7 @@
 		"typescript-eslint": "8.46.1"
 	},
 	"mocha": {
-		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
+		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.package.jsonc, the testFiles script AND .vscode/settings.json",
 		"spec": [
 			"**/__tests__/**/*.test.*"
 		],
