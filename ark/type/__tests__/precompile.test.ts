@@ -4,11 +4,13 @@ import {
 	isNode,
 	precompileByContent,
 	Traversal,
+	writePrecompiledUnits,
 	type NodeId
 } from "@ark/schema"
 import { liftArray } from "@ark/util"
 import { keywords, scope, type } from "arktype"
 import * as keywordFunctions from "arktype/internal/keywords/functions.ts"
+import { precompileStandalone } from "arktype/internal/standalone.ts"
 import {
 	corpus,
 	isPrecompiled,
@@ -18,6 +20,9 @@ import {
 
 contextualize(() => {
 	const isEven = (n: number) => n % 2 === 0
+
+	const named = <f extends Function>(name: string, f: f): f =>
+		Object.defineProperty(f, "name", { value: name })
 
 	const define = () =>
 		scope({
@@ -31,14 +36,28 @@ contextualize(() => {
 	const precompile = (types: ReturnType<typeof define>) =>
 		precompileByContent(Object.values(types).map(t => t.internal))
 
+	const emit = () => {
+		const types = define()
+		const roots = Object.values(types).map(t => t.internal)
+		return {
+			unit: precompile(types),
+			units: writePrecompiledUnits(roots),
+			artifact: precompileStandalone({ user: types.user, tree: types.tree })
+		}
+	}
+
 	it("names a unit by its content", () => {
-		const first = precompile(define())
+		const first = emit()
 		for (let i = 0; i < 40; i++) type({ [`k${i}`]: `number > ${i}` })
-		const second = precompile(define())
-		attest(Object.keys(second.names)[0] === Object.keys(first.names)[0]).equals(
-			false
-		)
-		attest(second.source).equals(first.source)
+		type("number").narrow(named("isEven", n => n % 2 === 1))
+		scope({ user: "string", tree: { "next?": "tree" } }).export()
+		const second = emit()
+		attest(
+			Object.keys(second.unit.names)[0] === Object.keys(first.unit.names)[0]
+		).equals(false)
+		attest(second.unit.source).equals(first.unit.source)
+		attest(second.units).equals(first.units)
+		attest(second.artifact).equals(first.artifact)
 	})
 
 	it("validates with a unit named by content", () => {
@@ -154,9 +173,6 @@ contextualize(() => {
 			precompiledOptional: undefined
 		})
 	})
-
-	const named = <f extends Function>(name: string, f: f): f =>
-		Object.defineProperty(f, "name", { value: name })
 
 	it("binds a unit for a function registered under a counted name", async () => {
 		const units = await precompileUnits([

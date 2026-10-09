@@ -1,9 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
+import { fromHere } from "@ark/fs"
 import {
+	createNodeHost,
 	precompileModule,
 	Precompiler,
 	renderDiagnostic
 } from "@ark/precompile"
+import { scope, type } from "arktype"
+import { readFileSync } from "node:fs"
 import { memoryHost, precompile } from "./utils.ts"
 
 contextualize(() => {
@@ -208,5 +212,31 @@ export const T = type("string[]")`,
 			"/check.ts false",
 			"/math.ts false"
 		])
+	})
+
+	it("writes the same modules in any order after unrelated work", () => {
+		const ids = ["main.ts", "dates.ts", "numbers.ts", "local.ts"].map(file =>
+			fromHere("environments", file)
+		)
+		const unrelated = fromHere("app", "schemas.ts")
+		const build = (order: string[], runtime?: "arktype") => {
+			const precompiler = new Precompiler(
+				createNodeHost({ conditions: ["ark-ts"] }),
+				{ runtime }
+			)
+			const results = Object.fromEntries(
+				order.map(id => [
+					id,
+					precompiler.precompile(readFileSync(id, "utf8"), id)
+				])
+			)
+			return ids.map(id => [results[id].code, results[id].modules])
+		}
+		for (const runtime of [undefined, "arktype"] as const) {
+			const first = build(ids, runtime)
+			for (let i = 0; i < 40; i++) type({ [`k${i}`]: `number > ${i}` })
+			scope({ After: "Date > d'2001-01-01T00:00:00.000Z'" }).export()
+			attest(build([unrelated, ...[...ids].reverse()], runtime)).equals(first)
+		}
 	})
 })
