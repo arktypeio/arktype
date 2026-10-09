@@ -11,6 +11,7 @@
 		"expressions",
 		"match",
 		"configuration",
+		"i18n",
 		"type-api",
 		"traversal-api",
 		"integrations",

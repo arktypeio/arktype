@@ -141,7 +141,7 @@ const out = Password("ez123")
 <tr>
 <td>**expected**</td>
 <td>
-✅ a function accepting the error context and returning a string of the format "must be ___"
+✅ a function accepting the error (its context, `data` and `path`) and returning a string of the format "must be ___"
 
 ✅ specific to errors and takes precedence over `description` in those cases
 
@@ -222,9 +222,13 @@ const out2 = User({ password: "ez123" })
 </tbody>
 </table>
 
+Each of these functions also receives the active [locale](/docs/i18n) as its last argument, so it can write its text in the language a message is read in.
+
 #### By Code
 
 Errors can also be configured by their associated `code` property at a _scope_ or _global_ level.
+
+Most codes name the kind of constraint that failed, like `divisor` or `minLength`. A key that `"+": "reject"` disallows has the code `undeclared`, and a value that matches none of the cases of a union checked by switching on a domain or a literal value, like `number | null`, `"a" | "b" | "c"` or objects with a discriminant key, has the code `discriminant`. See [every code and its data](/docs/i18n#error-codes).
 
 For example:
 
@@ -245,9 +249,9 @@ mod.isEven(3)
 
 #### ArkErrors
 
-For use cases like i18n that fall outside the scope of this composable message config, the `ArkErrors` returned on validation failure contains `ArkError` instances that can be discriminated via calls like `.hasCode("divisor")` and contain contextual data specific to that error type as well as getters for each composable error part.
+The `ArkErrors` returned on validation failure contains `ArkError` instances that can be discriminated via calls like `.hasCode("divisor")` and contain contextual data specific to that error type as well as getters for each composable error part.
 
-These `ArkError` instances can be arbitrarily transformed and composed with an internationalization library. This is still a topic we're working on investigating and documenting, so please reach out with any questions or feedback!
+To write messages in another language, configure a [locale](#locale).
 
 #### Serialization
 
@@ -272,6 +276,28 @@ if (out instanceof type.errors) {
 `flatByPath` maps each path string to an array of `ArkError` objects (decomposing union errors into their individual branches). `flatProblemsByPath` maps each path string to an array of human-readable problem strings.
 
 Unhandled validation errors (e.g. via `.assert()`) throw a `TraversalError`, which extends `Error` with cleaner multi-error formatting and a non-enumerable `arkErrors` property for programmatic access.
+
+### locale
+
+Error messages are written in English by default. You can configure a locale globally to write them in another language:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import { de } from "arktype/locales/de"
+
+configure({ locale: de })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+// ArkErrors: muss eine Zeichenkette sein, ist aber eine Zahl
+const out = type.string(5)
+```
+
+`locale` can also be a function that returns a locale each time a message is read. See [i18n](/docs/i18n) for both, and for changing or writing a locale.
 
 ### Keywords
 

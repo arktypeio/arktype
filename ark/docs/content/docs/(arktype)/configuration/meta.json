@@ -3,6 +3,7 @@
 	"pages": [
 		"[levels](/docs/configuration#levels)",
 		"[errors](/docs/configuration#errors)",
+		"[locale](/docs/configuration#locale)",
 		"[keywords](/docs/configuration#keywords)",
 		"[onUndeclaredKey](/docs/configuration#onundeclaredkey)",
 		"[jitless](/docs/configuration#jitless)",
