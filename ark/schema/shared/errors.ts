@@ -221,14 +221,26 @@ export class ArkError<
 		const config = this.configOf(slot)
 		if (config !== $ark.defaultConfig[this.code][slot])
 			return writeSlot(error, slot, config, renderLocale)
-		if (slot === "expected") return localeExpected(error, renderLocale)
+		const cited = this.citesDescription ? this.description : undefined
+		if (slot === "expected") return localeExpected(error, cited, renderLocale)
 		const writer = localeWriter(
 			error,
 			slot,
 			this.configOf("expected"),
+			cited,
 			renderLocale
 		)
 		return writeSlot(error, slot, writer, renderLocale)
+	}
+
+	// a discriminant's description lists its cases, while its meta is its union's
+	private get citesDescription(): boolean {
+		const value =
+			this.code !== "discriminant" &&
+			this.description !== undefined &&
+			!isDefaultDescription(this as never, this.description)
+		Object.defineProperty(this, "citesDescription", { value })
+		return value
 	}
 
 	private configOf(slot: ErrorSlot): SlotConfig {
@@ -285,38 +297,43 @@ const localeWriter = (
 	error: ArkError,
 	slot: Exclude<ErrorSlot, "expected">,
 	expected: SlotConfig,
+	cited: string | undefined,
 	locale: Locale
 ): SlotConfig => {
-	const description = ownDescription(error)
-	if (description !== undefined) {
+	if (cited !== undefined) {
 		const keywordWriter = keywordWriterOf(error, locale, slot)
-		if (keywordWriter !== undefined) return keywordWriter as never
+		if (keywordWriter !== undefined) return keywordWriter
 	}
 	const writer = locale[error.code][slot]
-	if (writer === undefined) return locale[slot] as never
+	if (writer === undefined) return locale[slot]
 	// a code's own problem frames the text of its locale's expected writer,
 	// not a keyword's phrase or authored text, while union and intersection
 	// frame their children's
+	if (
+		slot !== "problem" ||
+		error.code === "union" ||
+		error.code === "intersection"
+	)
+		return writer
 	return (
-			slot === "problem" &&
-				error.code !== "union" &&
-				error.code !== "intersection" &&
-				(expected !== $ark.defaultConfig[error.code].expected ||
-					(description !== undefined && !isEnglish(error, description)))
+			cited !== undefined ||
+				expected !== $ark.defaultConfig[error.code].expected
 		) ?
-			(locale.problem as never)
-		:	(writer as never)
+			locale.problem
+		:	writer
 }
 
-const localeExpected = (error: ArkError, locale: Locale): string => {
-	const description = ownDescription(error)
-	if (description !== undefined) {
-		const phrase = keywordPhraseOf(error, locale)
-		if (phrase !== undefined)
-			return writeKeywordExpected(phrase, error as never, locale)
-		if (!isEnglish(error, description)) return locale.cite(description)
-	}
-	return writeExpected(error, locale[error.code].expected, locale)
+const localeExpected = (
+	error: ArkError,
+	cited: string | undefined,
+	locale: Locale
+): string => {
+	if (cited === undefined)
+		return writeExpected(error, locale[error.code].expected, locale)
+	const phrase = keywordPhraseOf(error, locale)
+	return phrase === undefined ?
+			locale.cite(cited)
+		:	writeKeywordExpected(phrase, error as never, locale)
 }
 
 const writeExpected = (
@@ -326,13 +343,12 @@ const writeExpected = (
 ): string =>
 	typeof expected === "string" ? expected : expected(error as never, locale)
 
-// a discriminant's description lists its cases, while its meta is its union's
-const ownDescription = (error: ArkError): string | undefined =>
-	error.code === "discriminant" ? undefined : error.description
-
 // whether a description is what arktype writes for a node without authored
 // text or a keyword. Any scope's writer may have written it, so its text decides
-const isEnglish = (error: ArkError, description: string): boolean => {
+const isDefaultDescription = (
+	error: ArkError,
+	description: string
+): boolean => {
 	const meta = error.meta
 	return (
 		meta !== undefined &&

@@ -691,6 +691,16 @@ b isn't allowed`)
 			})
 		})
 
+		it("a read in another locale adds no keys to an error", () => {
+			const T = type({ a: type("number").describe("a count") })
+			const error = (T({ a: "x" }) as ArkErrors).issues[0]
+			const keys = Object.keys(error)
+			attest(error.toLocaleString(xx)).snap(
+				"a ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a count ⟦actual⟧"
+			)
+			attest(Object.keys(error)).equals(keys)
+		})
+
 		it("a function selects one locale per read", () => {
 			let calls = 0
 			withConfig({ locale: () => (calls++ % 2 ? en : xx) }, () => {
