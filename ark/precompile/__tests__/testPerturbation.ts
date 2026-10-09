@@ -1,5 +1,7 @@
 import { fromHere } from "@ark/fs"
 import { createNodeHost, Precompiler } from "@ark/precompile"
+import { hasArkKind } from "@ark/schema"
+import { keyOf } from "arktype/internal/standalone.ts"
 import type { SourceModule } from "@ark/precompile/internal/module.ts"
 import MagicString from "magic-string"
 import { spawnSync } from "node:child_process"
@@ -27,7 +29,7 @@ const corpus = globSync(
 	[
 		"ark/{type,schema}/__tests__/**/*.test.ts",
 		"ark/docs/components/snippets/*.ts",
-		"ark/precompile/__tests__/{app,checked,checks,environments,islands}/*.ts"
+		"ark/precompile/__tests__/{app,checked,checks,environments,held,islands}/*.ts"
 	],
 	{ cwd: root }
 )
@@ -91,6 +93,19 @@ for (const path of corpus) {
 			)
 				continue
 			names.add(binding.name)
+		}
+		// what a Type the site reads holds can change too, through any binding of the module that holds it
+		const held = new Set(
+			[site.value, ...site.references.map(reference => reference.value)]
+				.filter(value => hasArkKind(value, "root"))
+				.flatMap(root => keyOf(root)[1])
+		)
+		for (const binding of module.scopes.bindingsById.values()) {
+			if (
+				!binding.scope.parent &&
+				held.has(precompiler.interpreter.valueOfBinding(binding, module))
+			)
+				names.add(binding.name)
 		}
 		marked.appendLeft(site.start, `/*@${id}(*/`)
 		marked.prependRight(site.end, `/*)@${id}*/`)

@@ -15,6 +15,7 @@ export const perturbations = [
 	"arity",
 	"name",
 	"prototype",
+	"detach",
 	"mock",
 	"mockKind",
 	"define"
@@ -149,7 +150,13 @@ const run = async (
 				fn.prototype,
 				fn.prototype instanceof Date ? RegExp.prototype : Date.prototype
 			)
-		} else return false
+		} else if (
+			perturbation === "detach" &&
+			hasDomain(fn.prototype, "object") &&
+			Object.getPrototypeOf(fn.prototype) !== Object.prototype
+		)
+			Object.setPrototypeOf(fn.prototype, Object.prototype)
+		else return false
 		return true
 	}
 
