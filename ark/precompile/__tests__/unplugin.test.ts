@@ -432,6 +432,40 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		])
 	}).timeout(60000)
 
+	it("throws writing to a frozen input from a CommonJS bundle", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const T = type(["Function", "&", { "a?": "string.trim" }])
+try {
+	T(Object.freeze(Object.assign(() => 5, { a: " x " })))
+} catch (e) {
+	console.log((e as Error).name)
+}
+`,
+				// esbuild adds the directive itself where a tsconfig implies it
+				"tsconfig.json": "{}"
+			},
+			fromHere("temp", "commonjs")
+		)
+		const { outputFiles } = await esbuild({
+			entryPoints: [join(root, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "cjs",
+			logLevel: "silent",
+			conditions,
+			plugins: [precompile.esbuild({ cwd: root, conditions })]
+		})
+		attest(
+			spawnSync(process.execPath, ["--input-type=commonjs"], {
+				input: outputFiles[0].text,
+				encoding: "utf8"
+			}).stdout
+		).equals("TypeError\n")
+	}).timeout(60000)
+
 	it("reports what the standalone runtime's frozen values reject", async () => {
 		const root = writeFixture({
 			"write.ts":

@@ -912,9 +912,11 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		epilogue: string[],
 		returned: string[]
 	): string {
+		// a Transform member writes to its input, which a bundle's CommonJS or IIFE output leaves sloppy, where writing to a frozen input is ignored rather than throwing
+		const directive =
+			unit.declared.some(node => node.transforms) ? `"use strict"\n` : ""
 		return `function (${params.join(", ")}) {
-"use strict"
-${[...prologue, ...unit.members.map(([name, source]) => `const ${name} = ${source}`), ...epilogue].join("\n")}
+${directive}${[...prologue, ...unit.members.map(([name, source]) => `const ${name} = ${source}`), ...epilogue].join("\n")}
 return [${returned.join(", ")}]
 }`
 	}
