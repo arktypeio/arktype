@@ -184,6 +184,8 @@ export class Interpreter {
 	opts: InterpreterOptions
 	sitesByNode = new Map<Node, SiteState>()
 	standIns = new WeakMap<object, StandIn>()
+	// the site whose own call into arktype threw each ParseError, which only that site can fold to a thrower
+	parseErrorSites = new WeakMap<ParseError, SiteState>()
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
 	// what each function, class or symbol expression outside a call evaluated to, which every evaluation of it reuses
 	private standInsByNode = new Map<Node, object>()
@@ -1270,7 +1272,16 @@ export class Interpreter {
 			:	hasArkKind(object, "scope") || hasArkKind(object, "generic"))
 		)
 			ctx.site.unavailableReads.push(node)
-		const value = this.admit(Reflect.get(object, key), node, ctx)
+		// a getter is a call into arktype, which can throw a ParseError over what the object holds
+		ctx.site?.arktypeArguments.push(object)
+		let read
+		try {
+			read = Reflect.get(object, key)
+		} catch (e) {
+			this.claimParseError(e, ctx)
+			throw e
+		}
+		const value = this.admit(read, node, ctx)
 		if (isDynamic(value)) return value
 		if (
 			typeof key === "string" &&
@@ -1544,6 +1555,11 @@ export class Interpreter {
 			return conversionProblem
 	}
 
+	private claimParseError(e: unknown, ctx: Context): void {
+		if (e instanceof ParseError && ctx.site && !this.parseErrorSites.has(e))
+			this.parseErrorSites.set(e, ctx.site)
+	}
+
 	private thrown(
 		e: unknown,
 		node: Node,
@@ -1598,6 +1614,7 @@ export class Interpreter {
 					opaque.dynamic
 				)
 			}
+			this.claimParseError(e, ctx)
 			throw this.thrown(e, node, ctx)
 		} finally {
 			this.activeCall = previous

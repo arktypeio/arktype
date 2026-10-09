@@ -38,6 +38,33 @@ export const C = process.argv.length > 2 ?
 export const parsers = { type: $ark$island.type }`)
 	})
 
+	it("reports a site reading a ParseError it didn't throw itself", () => {
+		attest(
+			diagnosticsOf(`import { generic, type } from "arktype"
+const isZero = (n: number) => n === 0
+const fns = { f: (s: string) => s.length, g: (s: string) => s.trim() }
+// @ark-runtime
+const Zero = type("number").narrow(isZero)
+// @ark-runtime
+const One = type("1").and(Zero)
+// @ark-runtime
+const M1 = type({ a: type("string").pipe(fns.f) })
+// @ark-runtime
+const M2 = type({ a: type("string").pipe(fns.g) })
+// @ark-runtime
+const Both = M1.and(M2)
+// @ark-runtime
+const G = generic(["t", M1])(["t", "&", M2])
+export const FromIsland = type({ a: One })
+export const FromIntersection = type({ b: Both })
+export const FromGetter = type({ b: G.baseInstantiation as never })`)
+		).snap([
+			'/main.ts:16:27  type({ a: One }) cannot be precompiled\n  `type({ a: One })` reads a definition that throws a ParseError\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+			'/main.ts:17:33  type({ b: Both }) cannot be precompiled\n  `type({ b: Both })` reads a definition that throws a ParseError\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+			'/main.ts:18:27  type({ b: G.baseInstantiation as never }) cannot be precompiled\n  `type({ b: G.baseInstantiation as never })` reads a definition that throws a ParseError\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+		])
+	})
+
 	it("reports a factory site reading an island's Type", () => {
 		attest(
 			precompile(

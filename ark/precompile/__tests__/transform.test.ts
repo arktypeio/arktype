@@ -306,7 +306,9 @@ const negative = () => Negative
 const dog = () => DogT
 export const Helped = type("1").and(negative())
 export const HelpedClass = type.instanceOf(Error).and(dog())
-export const Scoped = scope({ a: DogT, b: "a & Error" }).export()`
+export const Scoped = scope({ a: DogT, b: "a & Error" }).export()
+export const Props = type("number").props
+export const NarrowedProps = type("number").narrow(isNegative).props`
 			const result = precompileModule(
 				source,
 				"/thrower.ts",
@@ -326,7 +328,9 @@ export const Scoped = scope({ a: DogT, b: "a & Error" }).export()`
 				"/thrower.ts:20:23  M1.and(M2) can't be precompiled to a standalone validator yet\n  arktype is passed a value holding `f` (/thrower.ts:15:18)\n  arktype is passed a value holding `g` (/thrower.ts:15:46)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				'/thrower.ts:23:23  type("1").and(negative()) can\'t be precompiled to a standalone validator yet\n  arktype is passed a value holding `isNegative` (/thrower.ts:11:20)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				"/thrower.ts:24:28  type.instanceOf(Error).and(dog()) can't be precompiled to a standalone validator yet\n  arktype is passed a value holding `Dog` (/thrower.ts:5:1)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-				'/thrower.ts:25:23  scope({ a: DogT, b: "a & Error" }).export() can\'t be precompiled to a standalone validator yet\n  arktype is passed a value holding `Dog` (/thrower.ts:5:1)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/thrower.ts:25:23  scope({ a: DogT, b: "a & Error" }).export() can\'t be precompiled to a standalone validator yet\n  arktype is passed a value holding `Dog` (/thrower.ts:5:1)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/thrower.ts:26:22  type("number").props throws a ParseError\n  props operand must be an object (was number)\n  The precompiled site throws the same ParseError when it is created.',
+				'/thrower.ts:27:30  type("number").narrow(isNegative).props can\'t be precompiled to a standalone validator yet\n  arktype calls `isNegative` (/thrower.ts:27:52)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { scope, type } from "arktype"
 import $arka9il3vu75e from "~arktype/16ceueuzjpy"
@@ -335,6 +339,7 @@ import { f1n3watygaq6 as $arkf1n3watygaq6 } from "~arktype/s7bly1xb95"
 import { f24xhxa0z6zi as $arkf24xhxa0z6zi } from "~arktype/s7bly1xb95"
 import { f2b24cuxkzkc as $arkf2b24cuxkzkc } from "~arktype/s7bly1xb95"
 import { fe7cggf8nto as $arkfe7cggf8nto } from "~arktype/s7bly1xb95"
+import $arkwwpq820n77 from "~arktype/pospw2b739"
 import { extend } from "./extend.ts"
 const isZero = (n: number) => n === 0
 class Cat {}
@@ -358,7 +363,9 @@ const negative = () => Negative
 const dog = () => DogT
 export const Helped = type("1").and(negative())
 export const HelpedClass = type.instanceOf(Error).and(dog())
-export const Scoped = scope({ a: DogT, b: "a & Error" }).export()`)
+export const Scoped = scope({ a: DogT, b: "a & Error" }).export()
+export const Props = $arkwwpq820n77()
+export const NarrowedProps = type("number").narrow(isNegative).props`)
 			attest(result.modules["~arktype/16ceueuzjpy"])
 				.snap(`import * as runtime from "arktype/runtime"
 

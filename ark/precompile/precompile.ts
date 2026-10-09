@@ -1329,8 +1329,20 @@ export class Precompiler {
 		}
 		const dynamic = rejectionOf(state)
 		if (dynamic) return rejectSite(site, dynamic)
-		if (state.error instanceof ParseError) site.parseError = state.error
-		else {
+		if (state.error instanceof ParseError) {
+			// e.g. an island's, a declaration's or a getter's, which the site's thrower would throw without checking what it depends on
+			if (this.interpreter.parseErrorSites.get(state.error) !== state) {
+				return rejectSite(
+					site,
+					new DynamicValue(
+						module,
+						state.node,
+						`\`${module.snippetOf(state.node)}\` reads a definition that throws a ParseError`
+					)
+				)
+			}
+			site.parseError = state.error
+		} else {
 			site.value = state.value
 			site.roots = state.roots
 			// e.g. a Generic aliased `define`, whose instantiation is a Type
