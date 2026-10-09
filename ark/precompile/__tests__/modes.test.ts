@@ -305,7 +305,7 @@ configure({ domain: { description: () => process.env.LANG === "de" ? "eine Zahl"
 			attest(
 				diagnosticsOf(
 					`import { configure } from "arktype/config"
-import { describe } from "./locale.ts"
+import { describe } from /* writer */ "./locale.ts"
 configure({ domain: { description: describe } })`,
 					{
 						"/locale.ts": `const german = process.env.LANG === "de"

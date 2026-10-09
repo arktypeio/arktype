@@ -564,7 +564,8 @@ export class Precompiler {
 		if (holdsOtherConfiguration(fingerprint))
 			throwError(configuredThreadMessage)
 		if (threadConfiguration) return threadConfiguration
-		const evaluated = module && call && this.evaluateConfiguration(call, module)
+		const evaluated =
+			module && call && this.evaluateConfiguration(call, module, modules)
 		const configuration: Configuration = {
 			modules,
 			fingerprint,
@@ -606,7 +607,7 @@ export class Precompiler {
 				writeUnreadableConfigMessage(this.graph.pathOf(this.config))
 			)
 		}
-		const modules = this.localClosureOf(module.id)
+		const modules = this.importClosureOf(module.id)
 		const call = this.configureCallsOf(module)[0]
 		return {
 			module,
@@ -1666,6 +1667,24 @@ export class Precompiler {
 		return result
 	}
 
+	// parsed, unlike localClosureOf, so it holds every module the interpreter can follow
+	private importClosureOf(id: string): string[] {
+		return this.localClosureOf(id, reached => this.importsOf(reached))
+	}
+
+	private importsOf(id: string): string[] {
+		const module = this.graph.moduleOf(id)
+		const result: string[] = []
+		if (!(module instanceof SourceModule)) return result
+		for (const statement of module.program.body) {
+			const specifier = "source" in statement && statement.source?.value
+			if (!specifier || arkPackageSpecifier.test(specifier)) continue
+			const target = this.graph.host.resolve(specifier, id)
+			if (target && this.graph.isFollowed(target)) result.push(target)
+		}
+		return result
+	}
+
 	private configureStartOf(module: SourceModule): number {
 		const config =
 			this.config === undefined ? undefined : this.graph.moduleOf(this.config)
@@ -1717,7 +1736,12 @@ export class Precompiler {
 			const { problem, reasons } =
 				misplaced ?
 					{ problem: misplaced, reasons: [] }
-				:	(this.configuration ?? this.evaluateConfiguration(calls[i], module))
+				:	(this.configuration ??
+					this.evaluateConfiguration(
+						calls[i],
+						module,
+						this.importClosureOf(module.id)
+					))
 			if (problem) {
 				result.push(
 					this.diagnostic(
@@ -1736,7 +1760,8 @@ export class Precompiler {
 
 	private evaluateConfiguration(
 		call: CallExpression,
-		module: SourceModule
+		module: SourceModule,
+		modules: string[]
 	): Pick<Configuration, "problem" | "reasons"> & { value: unknown } {
 		const argument = call.arguments[0]
 		if (!argument) return { value: undefined, problem: undefined, reasons: [] }
@@ -1745,7 +1770,7 @@ export class Precompiler {
 		)
 		const dynamic = rejectionOf(value)
 		const result = dynamic ? chainOf(dynamic) : []
-		const define = this.defineReadIn(this.localClosureOf(module.id))
+		const define = this.defineReadIn(modules)
 		if (define) {
 			result.push(
 				`${define} is a build define the configuration reads, and nothing compares its runtime value with the build's`
@@ -1778,7 +1803,7 @@ export class Precompiler {
 		}
 	}
 
-	// the configuration's code is all in its closure, and arktype may call any of it, like a description writer, while defining a Type
+	// arktype may call any of the configuration's code, like a description writer, while defining a Type
 	private defineReadIn(ids: string[]): string | undefined {
 		const { define } = this.interpreter.opts
 		if (!define) return
