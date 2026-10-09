@@ -268,6 +268,15 @@ contextualize(() => {
 		attest(bodies).equals([])
 	})
 
+	it("gives each Type its own traversal of a prop they share", () => {
+		const declarations = precompileStandalone({
+			A: type({ id: "number", a: "string" }),
+			B: type({ id: "number", b: "string" })
+		}).match(/^const required\w+Allows/gm)!
+		attest(declarations.length).equals(4)
+		attest(new Set(declarations).size).equals(3)
+	})
+
 	it("loads without a global one of its validators reads", async () => {
 		const Global = class {}
 		Object.assign(globalThis, { Global })

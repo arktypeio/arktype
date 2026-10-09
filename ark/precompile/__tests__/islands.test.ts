@@ -34,8 +34,8 @@ export const C = process.argv.length > 2 ?
 :	$arkvqkfg4egzmk()
 // @ark-runtime
 export const parsers = { type: $ark$island.type }
-import { v260eqyxrkgn as $arkv260eqyxrkgn } from "~arktype/1fvgfmsgkxj"
-import { vqkfg4egzmk as $arkvqkfg4egzmk } from "~arktype/1fvgfmsgkxj"`)
+import { v260eqyxrkgn as $arkv260eqyxrkgn } from "~arktype/11159l3f9zu"
+import { vqkfg4egzmk as $arkvqkfg4egzmk } from "~arktype/11159l3f9zu"`)
 	})
 
 	it("reports a factory site reading an island's Type", () => {

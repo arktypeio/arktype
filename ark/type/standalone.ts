@@ -156,7 +156,8 @@ export class StandaloneArtifact {
 	classes = new Set<unknown>()
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
-	unit: ContentUnit
+	// each Type compiles its own traversals as in the JIT, since a prop's shared across differently shaped objects makes its inline caches polymorphic
+	units = new Map<BaseRoot, ContentUnit>()
 	// traversal raises these itself, and a predicate or morph can raise any code
 	raisableCodes: { [code in NodeKind | ArkErrorCode]?: true } = {
 		intersection: true,
@@ -166,7 +167,6 @@ export class StandaloneArtifact {
 		undeclared: true
 	}
 	runsFunctions: boolean
-	traversalIndexByName: Record<string, number> = {}
 	// each structure's propsByKey, which traversal reads only with `in`
 	keyLookups = new Set<object>()
 	// each pattern's own RegExp, which only traversal reads
@@ -208,22 +208,26 @@ export class StandaloneArtifact {
 		const locale = $ark.config.locale
 		if (locale !== undefined && locale !== $ark.defaultConfig.locale)
 			throwParseError(writeUnprecompilableMessage("a configured locale"))
-		this.unit = precompileByContent(this.roots)
-		// a Type in a meta is emitted as its validator, so the unit needs its traversals
-		while (this.collectMetaTypes()) this.unit = precompileByContent(this.roots)
+		// a Type in a meta is emitted as its validator, so it needs traversals of its own
+		do {
+			for (const root of this.roots) {
+				if (!this.units.has(root))
+					this.units.set(root, precompileByContent([root]))
+			}
+		} while (this.collectMetaTypes())
 		for (const root of this.roots) {
 			// the runtime's own onFail is the one the program configures
 			if (root.onFail !== $ark.resolvedConfig!.onFail)
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
-		for (const context of this.unit.errorContexts)
-			this.raisableCodes[context.code] = true
-		this.runsFunctions = this.unit.declared.some(
+		for (const unit of this.units.values()) {
+			for (const context of unit.errorContexts)
+				this.raisableCodes[context.code] = true
+		}
+		this.runsFunctions = this.declared.some(
 			node => node.hasKind("predicate") || node.hasKind("morph")
 		)
-		for (let i = 0; i < this.unit.declared.length; i++) {
-			const node = this.unit.declared[i]
-			this.traversalIndexByName[this.unit.names[node.id]] = i
+		for (const node of this.declared) {
 			if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
 			else if (node.hasKind("pattern")) this.patternInstances.add(node.instance)
 			else if (node.hasKind("optional") || node.hasKind("sequence"))
@@ -301,7 +305,10 @@ export class StandaloneArtifact {
 				)
 			}
 		}
-		const printed = this.unit.source.match(holeNamePattern)
+		const printed = [...this.units.values()]
+			.map(unit => unit.source)
+			.join("\n")
+			.match(holeNamePattern)
 		if (printed) {
 			throwParseError(
 				writeUnprecompilableMessage(
@@ -309,7 +316,7 @@ export class StandaloneArtifact {
 				)
 			)
 		}
-		for (const node of this.unit.declared) {
+		for (const node of this.declared) {
 			const lists =
 				node.hasKind("union") ?
 					node.inner.ordered ?
@@ -448,6 +455,18 @@ export class StandaloneArtifact {
 		return [...this.validatorNamesByRoot.keys()]
 	}
 
+	get declared(): BaseNode[] {
+		return [...this.units.values()].flatMap(unit => unit.declared)
+	}
+
+	// a Type collected while emitting, e.g. a default's value, runs on the traversals of a unit reaching it
+	unitOf(node: BaseNode): ContentUnit {
+		return (
+			this.units.get(node as BaseRoot) ??
+			[...this.units.values()].find(unit => unit.names[node.id])!
+		)
+	}
+
 	collectExport(value: unknown, path: string): void {
 		if (hasArkKind(value, "root")) return this.collectType(value)
 		if (hasArkKind(value, "scope") || hasArkKind(value, "generic")) return
@@ -475,7 +494,7 @@ export class StandaloneArtifact {
 			} else if (isPlainLiteral(value))
 				for (const v of Object.values(value)) collect(v)
 		}
-		for (const node of this.unit.declared)
+		for (const node of this.declared)
 			for (const v of Object.values(node.meta)) collect(v)
 		return this.validatorNamesByRoot.size > typeCount
 	}
@@ -515,7 +534,7 @@ export class StandaloneArtifact {
 			writeFixConfig(configured),
 			// without validators, what is left is the Scopes and Generics exported and the Modules holding them
 			...(this.roots.length ?
-				this.writeBody(`(${this.unit.source})`)
+				this.writeBody(unit => `(${unit.source})`)
 			:	[this.declarations.join("\n"), this.modules.join("\n")]),
 			`return [${values.join(", ")}]`
 		]
@@ -537,10 +556,13 @@ ${statements.filter(statement => statement).join("\n\n")}
 		const statements = [
 			writeFixConfig(configured),
 			...this.checks,
-			...this.writeBody(`unit${index}`),
+			...this.writeBody((_, i) => `unit${index}_${i}`),
 			`return ${this.exportOf(this.exports[name])}`
 		]
-		return `const unit${index} = ${this.unit.source}
+		const units = [...this.units.values()].map(
+			(unit, i) => `const unit${index}_${i} = ${unit.source}`
+		)
+		return `${units.join("\n\n")}
 
 const factory${index} = (${params.map((_, i) => `p${i}`).join(", ")}) => {
 ${statements.filter(statement => statement).join("\n\n")}
@@ -549,15 +571,22 @@ ${statements.filter(statement => statement).join("\n\n")}
 export { factory${index} as ${JSON.stringify(name)} }`
 	}
 
-	writeBody(unit: string): string[] {
-		const refs = this.unit.refs.map(value => this.emit(value))
-		const errorContexts = this.unit.errorContexts.map(context =>
-			this.emit(context)
-		)
+	writeBody(
+		unitExpressionOf: (unit: ContentUnit, i: number) => string
+	): string[] {
+		const units = [...this.units.values()]
+		const traversals = units.map((unit, i) => {
+			const refs = unit.refs.map(value => this.emit(value))
+			const errorContexts = unit.errorContexts.map(context =>
+				this.emit(context)
+			)
+			return `const traversals${i} = ${unitExpressionOf(unit, i)}([], [${refs.join(", ")}], [${errorContexts.join(", ")}])`
+		})
 		const contextNamesByCopy: Record<string, string[]> = {}
-		for (let i = 0; i < errorContexts.length; i++) {
-			const copy = writeNodeContextCopy(this.unit.errorContexts[i])
-			;(contextNamesByCopy[copy] ??= []).push(errorContexts[i])
+		for (const context of new Set(units.flatMap(unit => unit.errorContexts))) {
+			;(contextNamesByCopy[writeNodeContextCopy(context)] ??= []).push(
+				this.emit(context)
+			)
 		}
 		const copies = Object.entries(contextNamesByCopy).map(
 			([copy, names]) =>
@@ -569,7 +598,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		return [
 			this.declarations.join("\n"),
 			copies.join("\n"),
-			`const traversals = ${unit}([], [${refs.join(", ")}], [${errorContexts.join(", ")}])`,
+			traversals.join("\n"),
 			this.links.join("\n"),
 			validators.join("\n\n"),
 			this.defaults.join("\n"),
@@ -580,7 +609,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 
 	writeValidator(root: BaseRoot, name: string): string {
 		const shape = this.shapeOf(root)
-		const nodeName = this.unit.names[root.id]
+		const nodeName = this.unitOf(root).names[root.id]
 		const [id, holes] = keyOf(root)
 		const key = `,\n\t${JSON.stringify(id)}${holes.length ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
 		return `const ${name} = new runtime.Validator(
@@ -666,9 +695,14 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		const declared = this.constNamesByValue.get(node)
 		if (declared) return declared
 		const name = this.declareConst(node, "shape", "{}")
-		const traversals = `traversals[${this.traversalIndexByName[this.unit.names[node.id]]}]`
+		const unit = this.unitOf(node)
+		const unitIndex = [...this.units.values()].indexOf(unit)
+		const traversalIndex = unit.declared.findIndex(
+			declared => unit.names[declared.id] === unit.names[node.id]
+		)
+		const traversals = `traversals${unitIndex}[${traversalIndex}]`
 		const trackedName =
-			this.unit.names[node.trackedId as NodeId] ??
+			unit.names[node.trackedId as NodeId] ??
 			throwParseError(writeUnprecompilableMessage(`${node.expression}'s cycle`))
 		// a discriminant's miss reads its union's description of the cases
 		const discriminantDescription =
@@ -676,7 +710,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 				`,\n\tdiscriminantDescription: ${JSON.stringify(node.discriminantDescription)}`
 			:	""
 		this.links.push(`runtime.freeze(runtime.assign(${name}, {
-	id: ${JSON.stringify(this.unit.names[node.id])},
+	id: ${JSON.stringify(unit.names[node.id])},
 	trackedId: ${JSON.stringify(trackedName)},
 	isTransformedById: ${node.isTransformedById},
 	includesAlias: ${node.includesAlias},
