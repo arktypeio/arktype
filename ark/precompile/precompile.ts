@@ -15,11 +15,9 @@ import {
 import { configure } from "arktype"
 import type { HoleKind } from "arktype/internal/runtime.ts"
 import {
-	holeNamePatternOf,
 	keyOf,
 	precompileStandalone,
 	writeFixConfig,
-	writeNamedString,
 	type ConfiguredModule,
 	type FactoryParam,
 	type StandaloneExport
@@ -54,7 +52,6 @@ import {
 import {
 	createSiteState,
 	findDynamic,
-	holeNamePrefix,
 	Interpreter,
 	type InterpreterOptions,
 	type Read,
@@ -167,12 +164,6 @@ export interface SiteFactory {
 	inputs: string[]
 	// each export it compares that the module doesn't import, by specifier, with the local it's imported as
 	imports: [specifier: string, name: string, local: string][]
-}
-
-// what a ParseError site's thrower receives: each hole its message names, where the site reads it
-export interface SiteThrower {
-	spans: Span[]
-	names: string[]
 }
 
 export interface Input {
@@ -642,7 +633,6 @@ export class Precompiler {
 		const inputImports: Record<string, Record<string, string>> = {}
 		const namesBySite = new Map<Site, string>()
 		const factoriesBySite = new Map<Site, SiteFactory>()
-		const throwersBySite = new Map<Site, SiteThrower>()
 		const exportsByName: Record<string, StandaloneExport> = {}
 		const sitesByName: Record<string, string> = {}
 		// a site replaced by its value drops what it was written with, so a site inside it, like one in a thunk defining a Scope's alias, is dropped too
@@ -664,10 +654,6 @@ export class Precompiler {
 				continue
 			}
 			const reasons = this.unsupportedReasonsOf(site)
-			const thrower =
-				site.parseError && !reasons.length ?
-					this.throwerOf(site, module, reasons)
-				:	undefined
 			const factory =
 				reasons.length || site.parseError || !hasArkKind(site.value, "root") ?
 					undefined
@@ -677,7 +663,6 @@ export class Precompiler {
 				continue
 			}
 			if (site.parseError) {
-				if (thrower) throwersBySite.set(site, thrower)
 				namesBySite.set(site, nameOf(site))
 				continue
 			}
@@ -718,7 +703,6 @@ export class Precompiler {
 				if (site.parseError) {
 					modules[`~arktype/${name}`] = writeParseErrorThrower(
 						site.parseError.message,
-						throwersBySite.get(site)?.names ?? [],
 						configured
 					)
 					imports[`~arktype/${name}`] = { default: local }
@@ -730,9 +714,8 @@ export class Precompiler {
 			const factory = factoriesBySite.get(site)
 			for (const [specifier, name, local] of factory?.imports ?? [])
 				(inputImports[specifier] ??= {})[name] = local
-			const call = throwersBySite.get(site) ?? factory
 			// a site becomes a call, so its validator is created, or its ParseError thrown, where arktype would create its Type
-			if (!call) s.overwrite(site.start, site.end, `${local}()`)
+			if (!factory) s.overwrite(site.start, site.end, `${local}()`)
 			else {
 				// each parameter stays where it is written, so it is evaluated when the original evaluates it
 				const replace = (start: number, end: number, text: string) =>
@@ -741,12 +724,12 @@ export class Precompiler {
 					:	s.overwrite(start, end, text)
 				let start = site.start
 				let separator = `${local}(`
-				for (const span of call.spans) {
+				for (const span of factory.spans) {
 					replace(start, span.start, separator)
 					start = span.end
 					separator = ", "
 				}
-				const inputs = (factory?.inputs ?? []).map(
+				const inputs = factory.inputs.map(
 					(input, i) => (i ? ", " : separator) + input
 				)
 				replace(start, site.end, `${inputs.join("")})`)
@@ -966,38 +949,6 @@ export class Precompiler {
 		return result
 	}
 
-	// the holes a ParseError prints the names of, passed where the site reads them so its thrower can print them as arktype does
-	private throwerOf(
-		site: Site,
-		module: SourceModule,
-		reasons: string[]
-	): SiteThrower | undefined {
-		const { message } = site.parseError!
-		const spans: Span[] = []
-		const names: string[] = []
-		for (const reference of site.references) {
-			const name = typeof reference.value === "function" && reference.value.name
-			if (!name || !message.includes(name) || names.includes(name)) continue
-			if (reference.unavailableRead)
-				reasons.push(unavailableReadMessage(reference.unavailableRead, module))
-			spans.push(reference)
-			names.push(name)
-		}
-		let unnamed = message
-		for (const name of names) unnamed = unnamed.split(name).join("")
-		if (unnamed.includes(holeNamePrefix)) {
-			reasons.push(
-				"its ParseError prints the name of a function the site reads outside its own source"
-			)
-			return
-		}
-		if (!spans.length) return
-		const order = spans
-			.map((_, i) => i)
-			.sort((l, r) => spans[l].start - spans[r].start)
-		return { spans: order.map(i => spans[i]), names: order.map(i => names[i]) }
-	}
-
 	// a message as the program prints it, with each placeholder for a function's name replaced by where the site reads it
 	private sourceNamed(
 		message: string,
@@ -1102,15 +1053,15 @@ export class Precompiler {
 		// only a Type's site folds to a factory receiving what it reads, so a Module's, Scope's or Generic's can't read what could change at runtime
 		const unreceived = (verb: string) =>
 			receivesNothing ? `, which only a Type's factory can ${verb} yet` : ""
+		// a ParseError's thrower checks nothing the site reads, though the error can depend on any of it
 		for (const hole of site.holes) {
 			const isReceived = !hole.isCalledAtDefinition && hole.kind !== "opaque"
-			if (isReceived && !receivesNothing) continue
+			if (isReceived && !receivesNothing && !site.parseError) continue
 			const holeModule = this.graph.moduleOf(hole.file) as SourceModule
 			result.push(
 				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})${isReceived ? unreceived("receive") : ""}`
 			)
 		}
-		// a factory throws a ParseError without reading its inputs or checking its helpers, so the error can't depend on them
 		for (const input of site.parseError || receivesNothing ? site.inputs : []) {
 			result.push(
 				`\`${[input.name, ...input.path.map(String)].join(".")}\` is ${
@@ -1313,7 +1264,7 @@ export class Precompiler {
 				site.inputs.push(input)
 		}
 		for (const value of state.holes) {
-			if (!isHeld(value, this.interpreter)) continue
+			if (!site.parseError && !isHeld(value, this.interpreter)) continue
 			const hole = this.holeOf(value, candidate, module)
 			if (hole instanceof DynamicValue) return rejectSite(site, hole)
 			site.holes.push(hole)
@@ -1346,12 +1297,7 @@ export class Precompiler {
 		for (const [value, reads] of state.readsByValue) {
 			if (
 				!hasArkKind(value, "root") &&
-				!site.holes.some(hole => hole.value === value) &&
-				!(
-					typeof value === "function" &&
-					value.name &&
-					site.parseError?.message.includes(value.name)
-				)
+				!site.holes.some(hole => hole.value === value)
 			)
 				continue
 			const isImportInput = site.inputs.some(
@@ -2101,13 +2047,12 @@ const writeValidators = (
 	}
 }
 
-// a message printing a hole's name prints the name of the function it receives, as a factory's strings do, and fixes the configuration as arktype's failed definition does
+// a thrower fixes the configuration as arktype's failed definition does
 const writeParseErrorThrower = (
 	message: string,
-	names: string[],
 	configured: ConfiguredModule | undefined
 ) =>
-	`import * as runtime from "arktype/runtime"\n\nconst throwParseError = (${names.map((_, i) => `p${i}`).join(", ")}) => {\n\t${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${writeNamedString(message, names.length ? holeNamePatternOf(names) : undefined, name => `p${names.indexOf(name)}`)})\n}\n\nexport { throwParseError as default }\n`
+	`import * as runtime from "arktype/runtime"\n\nconst throwParseError = () => {\n\t${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
 
 // each module runs in a function at the top of its importer, passed its imports and the globals the importer shadows
 const inlineModules = (

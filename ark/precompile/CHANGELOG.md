@@ -35,7 +35,7 @@ export default defineConfig({ plugins: [precompile.vite()] })
 
 ### Precompile definitions holding functions
 
-In standalone mode, a definition holding a morph, a predicate, a default's function, a class or a symbol is precompiled to a factory, and the definition becomes a call passing each of those values where it was written, so it is evaluated when the original would have been. The factory checks that each value is what its code was compiled for (a function's parameter count, a class's builtin and other ancestors, a symbol's description) and throws at creation if one isn't, then creates the validator, printing each function's own name in its descriptions and errors. A definition that throws a ParseError naming a function receives that function too, so the error names it as arktype would.
+In standalone mode, a definition holding a morph, a predicate, a default's function, a class or a symbol is precompiled to a factory, and the definition becomes a call passing each of those values where it was written, so it is evaluated when the original would have been. The factory checks that each value is what its code was compiled for (a function's parameter count, a class's builtin and other ancestors, a symbol's description) and throws at creation if one isn't, then creates the validator, printing each function's own name in its descriptions and errors.
 
 ```ts
 const trim = (s: string) => s.trim()
@@ -50,7 +50,7 @@ A definition referencing a Type that holds functions receives that Type's valida
 
 A definition calling a static helper (a function whose body is one expression) is precompiled with what the helper returned at build. Vitest through the plugin, `node --test` through `register()` and `bun test` through the Bun plugin replace whole modules when they mock one, so under them each module registers the functions it exports, and a definition calling a helper another module exports checks at creation that it received the registered function: a mock is another function, and a module the runner replaced registered nothing. `checkHelpers` sets this outside those runners, or turns it off; `bun test` is recognized by the `NODE_ENV` it sets, so a suite setting its own passes `checkHelpers: true`.
 
-A definition that could depend on whether two values imported from other modules are equal is reported rather than precompiled, as is a Module, Scope or Generic read through a binding.
+A definition that could depend on whether two values imported from other modules are equal is reported rather than precompiled, as is a Module, Scope or Generic read through a binding, and a definition throwing a ParseError that holds or calls a function.
 
 ### Precompile in Turbopack
 

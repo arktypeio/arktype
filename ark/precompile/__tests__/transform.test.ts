@@ -276,30 +276,56 @@ import { fzp95xqs0o7 as $arkfzp95xqs0o7 } from "~arktype/3qz4c9i9sb"
 import { f1kdxkkysgwf as $arkf1kdxkkysgwf } from "~arktype/3qz4c9i9sb"`)
 		})
 
-		it("prints the names in a ParseError when it is thrown", () => {
+		it("reports a ParseError site holding functions", () => {
 			const source = `import { type } from "arktype"
+import { extend } from "./extend.ts"
 const isZero = (n: number) => n === 0
+class Cat {}
+class Dog {}
+extend(Dog, Cat)
 export const Narrowed = type("1").narrow(isZero)
-export const Defaulted = type({ n: [type("number").narrow(isZero), "=", 3] })`
+export const Anonymous = type("1").narrow(n => n === 0)
+export const Both = type.instanceOf(Dog).and(type.instanceOf(Cat))
+export const Unrelated = type("1").and("2")`
 			const result = precompileModule(
 				source,
 				"/thrower.ts",
-				memoryHost({ "/thrower.ts": source })
+				memoryHost({
+					"/thrower.ts": source,
+					"/extend.ts":
+						"export const extend = (c: Function, base: Function) => Object.setPrototypeOf(c.prototype, base.prototype)"
+				})
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				'/thrower.ts:3:25  type("1").narrow(isZero) throws a ParseError\n  Intersection of 1 and isZero results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.',
-				'/thrower.ts:4:26  type({ n: [type("number").narrow(isZero), "=", 3] }) throws a ParseError\n  Default for n must be valid according to isZero (was 3)\n  The precompiled site throws the same ParseError when it is created.'
+				'/thrower.ts:7:25  type("1").narrow(isZero) throws a ParseError\n  Intersection of 1 and isZero results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.',
+				'/thrower.ts:7:25  type("1").narrow(isZero) can\'t be precompiled to a standalone validator yet\n  arktype calls `isZero` (/thrower.ts:7:42)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/thrower.ts:8:26  type("1").narrow(n => n === 0) throws a ParseError\n  Intersection of 1 and n => n === 0 results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.',
+				'/thrower.ts:8:26  type("1").narrow(n => n === 0) can\'t be precompiled to a standalone validator yet\n  arktype calls `n => n === 0` (/thrower.ts:8:43)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				"/thrower.ts:9:21  type.instanceOf(Dog).and(type.instanceOf(Cat)) throws a ParseError\n  Intersection of Dog and Cat results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.",
+				"/thrower.ts:9:21  type.instanceOf(Dog).and(type.instanceOf(Cat)) can't be precompiled to a standalone validator yet\n  arktype holds `Dog` (/thrower.ts:9:37)\n  arktype holds `Cat` (/thrower.ts:9:62)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+				'/thrower.ts:10:26  type("1").and("2") throws a ParseError\n  Intersection of 1 and 2 results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.'
 			])
-			attest(result.code).snap(`import "arktype"
+			attest(result.code).snap(`import { type } from "arktype"
+import { extend } from "./extend.ts"
 const isZero = (n: number) => n === 0
-export const Narrowed = $ark1iic477a2i9(isZero)
-export const Defaulted = $ark2d34z78syo(isZero)
-import $ark1iic477a2i9 from "~arktype/1iic477a2i9"
-import $ark2d34z78syo from "~arktype/2d34z78syo"`)
-			attest(Object.values(result.modules)).snap([
-				'import * as runtime from "arktype/runtime"\n\nconst throwParseError = (p0) => {\n\truntime.fixConfig()\n\tthrow new runtime.ParseError("Intersection of 1 and " + runtime.functionNameOf(p0) + " results in an unsatisfiable type")\n}\n\nexport { throwParseError as default }\n',
-				'import * as runtime from "arktype/runtime"\n\nconst throwParseError = (p0) => {\n\truntime.fixConfig()\n\tthrow new runtime.ParseError("Default for n must be " + runtime.describePredicate({ predicate: p0 }) + " (was 3)")\n}\n\nexport { throwParseError as default }\n'
-			])
+class Cat {}
+class Dog {}
+extend(Dog, Cat)
+export const Narrowed = type("1").narrow(isZero)
+export const Anonymous = type("1").narrow(n => n === 0)
+export const Both = type.instanceOf(Dog).and(type.instanceOf(Cat))
+export const Unrelated = $arka9il3vu75e()
+import $arka9il3vu75e from "~arktype/a9il3vu75e"`)
+			attest(result.modules["~arktype/a9il3vu75e"])
+				.snap(`import * as runtime from "arktype/runtime"
+
+const throwParseError = () => {
+	runtime.fixConfig()
+	throw new runtime.ParseError("Intersection of 1 and 2 results in an unsatisfiable type")
+}
+
+export { throwParseError as default }
+`)
 		})
 
 		it("checks the static helpers another module exports in a test driver", () => {

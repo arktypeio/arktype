@@ -44,7 +44,7 @@ import {
 } from "./scope.ts"
 
 // what a placeholder for a hole's name starts with
-export const holeNamePrefix = "$hole_"
+const holeNamePrefix = "$hole_"
 
 export interface InterpreterOptions {
 	// values of bundler `define` constants, keyed by the expression they replace
