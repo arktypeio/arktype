@@ -3,7 +3,7 @@ import { dirname } from "node:path"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
 import {
 	createPrecompiler,
-	reportDiagnostics,
+	renderDiagnostics,
 	type PrecompilePluginOptions
 } from "./driver.ts"
 import { transformedFilter } from "./host.ts"
@@ -69,7 +69,10 @@ export const precompile: UnpluginInstance<
 					modules[`\0${specifier}`] ??= result.modules[specifier]
 					importersById[`\0${specifier}`] ??= id
 				}
-				reportDiagnostics(result.diagnostics, message => this.warn(message))
+				const { errors, warnings } = renderDiagnostics(result.diagnostics)
+				for (const warning of warnings) this.warn(warning)
+				// thrown, since esbuild drops an error reported without a resolution
+				if (errors.length) throwError(errors.join("\n"))
 				return result.map && { code: result.code, map: result.map }
 			}
 		},

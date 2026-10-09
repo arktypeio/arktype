@@ -41,6 +41,10 @@
 			"ark-ts": "./node.ts",
 			"default": "./out/node.js"
 		},
+		"./turbopack": {
+			"ark-ts": "./turbopack.ts",
+			"default": "./out/turbopack.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"default": "./out/*.js"

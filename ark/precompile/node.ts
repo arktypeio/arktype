@@ -37,6 +37,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			) as InlineModule | undefined
 			for (const warning of transformed?.warnings ?? [])
 				process.emitWarning(warning)
+			if (transformed?.errors.length) throwError(transformed.errors.join("\n"))
 			return transformed?.code ?
 					{ ...loaded, source: transformed.code }
 				:	loaded

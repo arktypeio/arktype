@@ -77,3 +77,18 @@ export default {
 ```
 
 jest caches each file by a key, which here hashes when each file in the module's forward closure was modified, so editing a module a test imports re-transforms the modules that read it. A transformer config can be passed as `transformer: ["babel-jest", config]`.
+
+Turbopack, as a webpack loader in a rule for each extension your definitions are in:
+
+```js
+// next.config.js
+export default {
+	turbopack: {
+		rules: { "*.js": { loaders: ["@ark/precompile/turbopack"] } },
+		// standalone mode only
+		resolveAlias: { arktype: "arktype/runtime" }
+	}
+}
+```
+
+The loader reports each module's forward closure as its dependencies, so Turbopack reruns it when one of them changes.

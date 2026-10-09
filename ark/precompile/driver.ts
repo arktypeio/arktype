@@ -29,18 +29,18 @@ export const createPrecompiler = (
 	})
 }
 
-// thrown together, so a host that shows one error for a module shows each
-export const reportDiagnostics = (
-	diagnostics: Diagnostic[],
-	warn: (message: string) => void
-): void => {
+// a host that shows one error for a module throws a module's errors together
+export const renderDiagnostics = (
+	diagnostics: Diagnostic[]
+): { errors: string[]; warnings: string[] } => {
 	const errors: string[] = []
+	const warnings: string[] = []
 	for (const diagnostic of diagnostics) {
-		if (diagnostic.severity === "error")
-			errors.push(renderDiagnostic(diagnostic))
-		else warn(renderDiagnostic(diagnostic))
+		;(diagnostic.severity === "error" ? errors : warnings).push(
+			renderDiagnostic(diagnostic)
+		)
 	}
-	if (errors.length) throwError(errors.join("\n"))
+	return { errors, warnings }
 }
 
 export interface PrecompilerWorkerData {
@@ -59,6 +59,7 @@ export type PrecompileRequest =
 export interface InlineModule {
 	// undefined when the module is unchanged
 	code: string | undefined
+	errors: string[]
 	warnings: string[]
 }
 
@@ -147,6 +148,7 @@ export const createKeyedPrecompiler = (
 		const inlined = inlineModuleOf(precompiler, source, id)
 		return {
 			code: inlined?.code,
+			errors: inlined?.errors ?? [],
 			warnings: inlined?.warnings ?? [],
 			files,
 			key: hash.digest("hex")
@@ -161,12 +163,10 @@ const inlineModuleOf = (
 ): InlineModule | undefined => {
 	if (!isTransformed(id) || !precompiler.importsArk(source, id)) return
 	const result = precompiler.precompile(source, id)
-	const warnings: string[] = []
-	reportDiagnostics(result.diagnostics, message => warnings.push(message))
 	return {
 		code:
 			result.map &&
 			`${result.code}\n//# sourceMappingURL=${result.map.toUrl()}`,
-		warnings
+		...renderDiagnostics(result.diagnostics)
 	}
 }

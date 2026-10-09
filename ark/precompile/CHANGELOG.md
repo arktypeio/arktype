@@ -13,6 +13,20 @@ import { precompile } from "@ark/precompile/unplugin"
 export default defineConfig({ plugins: [precompile.vite()] })
 ```
 
+### Precompile in Turbopack
+
+`@ark/precompile/turbopack` is a webpack loader for `turbopack.rules`, reporting each module's forward closure as its dependencies. In standalone mode, alias `arktype` to `arktype/runtime` with `turbopack.resolveAlias`.
+
+```js
+// next.config.js
+export default {
+	turbopack: {
+		rules: { "*.js": { loaders: ["@ark/precompile/turbopack"] } },
+		resolveAlias: { arktype: "arktype/runtime" }
+	}
+}
+```
+
 ### Precompile in jest
 
 `@ark/precompile/jest` is a jest transformer that precompiles each module and passes it on to the transformer named by its `transformer` option. Each module's cache key covers the files in its forward closure, so a change to any of them re-transforms it. In standalone mode, map `arktype` to `arktype/runtime` with `moduleNameMapper`.

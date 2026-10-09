@@ -1,3 +1,4 @@
+import { throwError } from "@ark/util"
 import { createHash } from "node:crypto"
 import { createRequire } from "node:module"
 import { join } from "node:path"
@@ -64,9 +65,11 @@ export const createTransformer = (
 	): JestPrecompilation => {
 		const {
 			code = source,
+			errors,
 			warnings,
 			key
 		} = request("transform", source, path) as KeyedModule
+		if (errors.length) throwError(errors.join("\n"))
 		return {
 			source,
 			code,

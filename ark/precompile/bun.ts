@@ -1,3 +1,4 @@
+import { throwError } from "@ark/util"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { parentPort, Worker, workerData } from "node:worker_threads"
@@ -72,6 +73,7 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 				| InlineModule
 				| undefined
 			for (const warning of transformed?.warnings ?? []) console.warn(warning)
+			if (transformed?.errors.length) throwError(transformed.errors.join("\n"))
 			return { contents: transformed?.code ?? source }
 		})
 	}

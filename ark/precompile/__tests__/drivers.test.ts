@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { standaloneConfigurationMessage } from "@ark/precompile"
 import { createTransformer } from "@ark/precompile/jest"
+import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
 import {
@@ -173,6 +174,44 @@ contextualize(() => {
 			).throws(
 				"admin.ts:3:22  User.and({ role: \"'admin'\" }) can't be precompiled to a standalone validator yet"
 			)
+		}).timeout(60000)
+	})
+
+	describe("turbopack", () => {
+		const load = (file: string, opts: PrecompilePluginOptions = {}) => {
+			const resourcePath = join(app, file)
+			const dependencies: string[] = []
+			const run = () =>
+				turbopack.call(
+					{
+						resourcePath,
+						getOptions: () => ({ ...opts, conditions, cwd: app }),
+						addDependency: dependency =>
+							dependencies.push(dependency.replace(`${app}/`, "")),
+						emitWarning: warning => {
+							throw warning
+						}
+					},
+					readFileSync(resourcePath, "utf8")
+				)
+			return { run, dependencies }
+		}
+
+		it("precompiles a module in either mode", () => {
+			const standalone = load("schemas.ts")
+			attest(standalone.run()).satisfies(/^const { "v\w+": \$ark\w+,/)
+			attest(standalone.dependencies).equals(["ark.ts"])
+			attest(load("schemas.ts", { runtime: "arktype" }).run()).satisfies(
+				/^;\(\({ "registerPrecompiledUnits": /
+			)
+		}).timeout(60000)
+
+		it("reports dependencies before a rejected site's error", () => {
+			const admin = load("admin.ts")
+			attest(() => admin.run()).throws(
+				"admin.ts:3:22  User.and({ role: \"'admin'\" }) can't be precompiled to a standalone validator yet"
+			)
+			attest(admin.dependencies).equals(["schemas.ts", "ark.ts"])
 		}).timeout(60000)
 	})
 
