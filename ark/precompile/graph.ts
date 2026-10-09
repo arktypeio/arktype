@@ -517,12 +517,7 @@ export class ModuleGraph {
 
 	// e.g. `T.assert` or `type.errors`, which run at runtime in every mode, or `T.json`, which differs between the build and runtime
 	isRuntimeMember(member: MemberExpression, module: SourceModule): boolean {
-		const name =
-			member.computed ?
-				member.property.type === "Literal" ?
-					member.property.value
-				:	undefined
-			:	member.property.name
+		const name = memberNameOf(member)
 		if (typeof name !== "string") return false
 		if (name in runtimeMembers || name in unstableArkMembers) return true
 		const object = unwrapExpression(member.object)
@@ -673,6 +668,13 @@ const arktypeExportOf = (
 			kind: "unresolved",
 			message: `\`${namespace.specifier}\` has no export \`${name}\``
 		}
+
+export const memberNameOf = (member: MemberExpression): unknown =>
+	member.computed ?
+		member.property.type === "Literal" ?
+			member.property.value
+		:	undefined
+	:	member.property.name
 
 // arktype runs through a reference called or read as `type(def)` or `T.array()`, but not one passed along as `{ type: T }`
 const isComposing = (id: Node): boolean => {

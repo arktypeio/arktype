@@ -29,6 +29,7 @@ import type {
 	CallExpression,
 	ImportDeclaration,
 	ImportDeclarationSpecifier,
+	MemberExpression,
 	Node,
 	Program,
 	Span
@@ -39,6 +40,7 @@ import {
 	contains,
 	enclosingFunctionOf,
 	isArkObject,
+	memberNameOf,
 	ModuleGraph,
 	readsBindingOf,
 	runtimeExports,
@@ -1438,18 +1440,23 @@ export class Precompiler {
 	}
 
 	private isKeywordRead(node: Node, module: SourceModule): boolean {
-		const keys: string[] = []
+		let first: MemberExpression | undefined
+		let second: MemberExpression | undefined
 		node = unwrapExpression(node)
-		while (node.type === "MemberExpression" && !node.computed) {
-			keys.unshift(node.property.name)
+		while (node.type === "MemberExpression") {
+			second = first
+			first = node
 			node = unwrapExpression(node.object)
 		}
 		const reference = module.scopes.referencesById.get(node)
 		const [name, read] =
 			(reference && this.graph.arkExportOf(reference, module)) ?? []
-		// a namespace import's member names the export
-		if (read !== node) keys.shift()
-		return name === "keywords" || (name === "type" && keys[0] === "keywords")
+		// a namespace import's first member names the export
+		const next = read === node ? first : second
+		return (
+			name === "keywords" ||
+			(name === "type" && !!next && memberNameOf(next) === "keywords")
+		)
 	}
 
 	private isImported(node: Node, module: SourceModule): boolean {

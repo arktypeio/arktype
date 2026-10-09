@@ -274,15 +274,17 @@ export const Name = type("string")`,
 					opts
 				)
 			).equals([])
-			attest(
-				diagnosticsOf(
-					`import { type } from "arktype"
+			for (const read of ["type.keywords.string", 'type.keywords["string"]']) {
+				attest(
+					diagnosticsOf(
+						`import { type } from "arktype"
 export const suffix = "!"
-export const Strings = type.keywords.string`,
-					config,
-					opts
-				)
-			).equals([])
+export const Strings = ${read}`,
+						config,
+						opts
+					)
+				).equals([])
+			}
 		})
 
 		it("configure with a build define", () => {
