@@ -682,13 +682,27 @@ export type NodeErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
 export type MessageContext<code extends ArkErrorCode = ArkErrorCode> =
 	code extends unknown ?
 		omit<errorContext<code>, "meta"> &
-			omit<ArkError<code>, "message" | "toString" | "toJSON">
+			omit<
+				ArkError<code>,
+				"message" | "toString" | "toLocaleString" | "toJSON"
+			> &
+			unstringifiable
 	:	never
+
+// shadows Object's toString and toLocaleString, which read the message
+type unstringifiable = {
+	toString(never: never): string
+	toLocaleString(never: never): string
+}
 
 export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> =
 	code extends unknown ?
 		omit<errorContext<code>, "meta"> &
-			omit<ArkError<code>, "problem" | "message" | "toString" | "toJSON">
+			omit<
+				ArkError<code>,
+				"problem" | "message" | "toString" | "toLocaleString" | "toJSON"
+			> &
+			unstringifiable
 	:	never
 
 export type CustomErrorInput = show<
@@ -730,8 +744,15 @@ export type ExpectedContext<code extends ArkErrorCode = ArkErrorCode> =
 		omit<errorContext<code>, "meta"> &
 			omit<
 				ArkError<code>,
-				"expected" | "actual" | "problem" | "message" | "toString" | "toJSON"
-			>
+				| "expected"
+				| "actual"
+				| "problem"
+				| "message"
+				| "toString"
+				| "toLocaleString"
+				| "toJSON"
+			> &
+			unstringifiable
 	:	never
 
 export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
@@ -754,8 +775,10 @@ export type ActualContext<code extends ArkErrorCode = ArkErrorCode> =
 				| "problem"
 				| "message"
 				| "toString"
+				| "toLocaleString"
 				| "toJSON"
-			>
+			> &
+			unstringifiable
 	:	never
 
 export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (

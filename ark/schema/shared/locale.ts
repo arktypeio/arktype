@@ -59,7 +59,12 @@ export declare namespace Locale {
 	}
 
 	export type Writers<noun = string> = {
-		readonly [code in ArkErrorCode]: CodeWriters<code, noun>
+		readonly [code in ArkErrorCode]: code extends "required" ?
+			// its data is the object around the key, not a value to print
+			CodeWriters<code, noun> & {
+				readonly actual: string | ActualWriter<code, noun>
+			}
+		:	CodeWriters<code, noun>
 	}
 
 	export type CodeWriters<
@@ -127,7 +132,10 @@ export declare namespace Locale {
 
 // a locale computes expected text from an error's data, not its English
 type localeExpectedContext<code extends ArkErrorCode> =
-	code extends unknown ? omit<ExpectedContext<code>, "description"> : never
+	code extends "required" ?
+		omit<ExpectedContext<code>, "description" | "missingValueDescription">
+	: code extends unknown ? omit<ExpectedContext<code>, "description">
+	: never
 
 // keyword writers are told apart from nouns by a noun key
 type validateNoun<noun> = noun extends { readonly noun: unknown } ? never : noun

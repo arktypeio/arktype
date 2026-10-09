@@ -203,7 +203,10 @@ const xx: Locale = {
 	intersection: {
 		expected: e => e.errors.map(child => child.expected).join(mark("and"))
 	},
-	required: { expected: (e, locale) => describeMissing(e.missing, locale) },
+	required: {
+		expected: (e, locale) => describeMissing(e.missing, locale),
+		actual: mark("actual")
+	},
 	tag: "xx",
 	list: (items, type) => items.join(mark(type)),
 	plural: () => "other",
@@ -563,6 +566,22 @@ b isn't allowed`)
 				// @ts-expect-error
 				e.description()
 			).type.errors("Property 'description' does not exist")
+			attest((ctx: ProblemContext) =>
+				// @ts-expect-error
+				ctx.toString()
+			).type.errors("Expected 1 arguments, but got 0")
+			attest((ctx: ExpectedContext) =>
+				// @ts-expect-error
+				ctx.toLocaleString()
+			).type.errors("Expected 1 arguments, but got 0")
+			attest((ctx: MessageContext) =>
+				// @ts-expect-error
+				ctx.toLocaleString(en)
+			).type.errors("not assignable to parameter of type 'never'")
+			attest((e: Locale.ExpectedContext<"required">) =>
+				// @ts-expect-error
+				e.missingValueDescription()
+			).type.errors("Property 'missingValueDescription' does not exist")
 		})
 
 		it("see what every locale has", () => {
@@ -598,6 +617,15 @@ b isn't allowed`)
 			const { min: _, ...partial } = en
 			// @ts-expect-error
 			attest((): Locale => partial).type.errors("Property 'min' is missing")
+			attest(
+				(): Locale => ({
+					...en,
+					// @ts-expect-error
+					required: {
+						expected: (e, locale) => describeMissing(e.missing, locale)
+					}
+				})
+			).type.errors("Property 'actual' is missing")
 		})
 	})
 
