@@ -3,7 +3,7 @@ import { type domainDescriptions, domainOf } from "./domain.ts"
 import { throwParseError } from "./errors.ts"
 import { functionNameOf, prototypeOf } from "./facts.ts"
 import type { Fn } from "./functions.ts"
-import type { anyOrNever, satisfy } from "./generics.ts"
+import type { anyOrNever, satisfy, show } from "./generics.ts"
 import { tryParseNumber } from "./numbers.ts"
 import { defineProperties, isKeyOf } from "./records.ts"
 
@@ -307,13 +307,21 @@ export const typedArrayDescriptions = {
 } as const satisfies Record<keyof typedArrayConstructors, string>
 
 /** Each defaultObjectKind's completion for the phrase "must be _____" */
-export const objectKindDescriptions = {
-	...ecmascriptDescriptions,
-	...platformDescriptions,
-	...typedArrayDescriptions
-} as const satisfies Record<BuiltinObjectKind, string>
+export const objectKindDescriptions: objectKindDescriptions =
+	/* @__PURE__ */ Object.assign(
+		{},
+		ecmascriptDescriptions,
+		platformDescriptions,
+		typedArrayDescriptions
+	) satisfies Record<BuiltinObjectKind, string>
 
-export type objectKindDescriptions = typeof objectKindDescriptions
+export type objectKindDescriptions = Readonly<
+	show<
+		typeof ecmascriptDescriptions &
+			typeof platformDescriptions &
+			typeof typedArrayDescriptions
+	>
+>
 
 /**
  * this will only return an object kind if it's the root constructor
