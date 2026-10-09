@@ -52,3 +52,13 @@ register()
 ```
 
 The precompiler runs in a worker thread, so it shares no module state with the program. Pass `--enable-source-maps` for stack traces to point at the original lines.
+
+Bun, for `bun test` or any program, from a file listed in `preload` in `bunfig.toml`:
+
+```ts
+import { precompile } from "@ark/precompile/bun"
+
+Bun.plugin(precompile())
+```
+
+The precompiler runs in a worker here too. Bun doesn't ask a runtime plugin to resolve packages, so in standalone mode `arktype` is replaced by `arktype/runtime` for every importer, and dependencies aren't checked for copies of arktype. Bun ignores the source map, so stack traces show lines of the transformed module.

@@ -13,6 +13,17 @@ import { precompile } from "@ark/precompile/unplugin"
 export default defineConfig({ plugins: [precompile.vite()] })
 ```
 
+### Precompile in Bun
+
+`precompile()` from `@ark/precompile/bun` is a runtime plugin for `Bun.plugin`, so a preload precompiles each module Bun loads, including under `bun test`.
+
+```ts
+// preload.ts, listed in bunfig.toml
+import { precompile } from "@ark/precompile/bun"
+
+Bun.plugin(precompile())
+```
+
 ### Precompile in Node
 
 `register()` from `@ark/precompile/node` precompiles each module Node loads, through `module.registerHooks`, so `node --test` runs tests against precompiled code. In standalone mode it resolves `arktype` to `arktype/runtime`. The precompiler runs in a worker thread, so a program's own arktype never sees the Types it builds.

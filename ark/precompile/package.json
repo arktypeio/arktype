@@ -29,6 +29,10 @@
 			"ark-ts": "./unplugin.ts",
 			"default": "./out/unplugin.js"
 		},
+		"./bun": {
+			"ark-ts": "./bun.ts",
+			"default": "./out/bun.js"
+		},
 		"./node": {
 			"ark-ts": "./node.ts",
 			"default": "./out/node.js"

@@ -22,6 +22,13 @@ const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
 		{ cwd, encoding: "utf8" }
 	)
 
+const bun = (args: string[], runtime?: "arktype") =>
+	spawnSync("bun", args, {
+		cwd: app,
+		encoding: "utf8",
+		env: { ...process.env, ARKTYPE_RUNTIME: runtime ?? "" }
+	})
+
 contextualize(() => {
 	const expected = spawnSync(
 		process.execPath,
@@ -64,6 +71,43 @@ contextualize(() => {
 				fromHere("configured")
 			)
 			attest(result.stdout).equals("true\n")
+		})
+	})
+	// Bun is optional, so its tests run where it is installed
+	if (bun(["--version"]).status !== 0) return
+
+	describe("bun", () => {
+		const preload = ["--conditions", "ark-ts", "--preload", "./preload.ts"]
+
+		it("standalone", () => {
+			attest(bun([...preload, "main.ts"]).stdout).equals(expected)
+		})
+
+		it("cache", () => {
+			attest(bun([...preload, "main.ts"], "arktype").stdout).equals(expected)
+		})
+
+		it("bun test", () => {
+			for (const runtime of [undefined, "arktype"] as const) {
+				const result = bun(["test", ...preload, "./app.spec.ts"], runtime)
+				attest([result.status, result.stderr.match(/\d+ pass/)?.[0]]).equals([
+					0,
+					"2 pass"
+				])
+			}
+		})
+
+		it("fails a module with a rejected site", () => {
+			const { status, stderr } = bun([...preload, "admin.ts"])
+			attest(status).equals(1)
+			attest(
+				stderr
+					.slice(stderr.indexOf("error: ") + 7, stderr.indexOf("\n      at "))
+					.replace(`${app}/`, "")
+			)
+				.snap(`admin.ts:3:22  User.and({ role: "'admin'" }) can't be precompiled to a standalone validator yet
+  \`User\` is imported from schemas.ts
+  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		})
 	})
 })
