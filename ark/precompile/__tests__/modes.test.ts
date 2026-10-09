@@ -239,6 +239,52 @@ configure({ keywords: { "string.email": \`an address\${suffix}\` } })`
 			])
 		})
 
+		it("a Type created after the config module loads", () => {
+			const opts = { config: "/config.ts" }
+			for (const typeImport of [
+				'import type { Name } from "./main.ts"',
+				'import { type Name } from "./main.ts"'
+			]) {
+				attest(
+					diagnosticsOf(
+						`import { type } from "arktype"
+export const Name = type("string")`,
+						{
+							"/config.ts": `import { configure } from "arktype/config"
+${typeImport}
+configure({ onUndeclaredKey: "delete" })`
+						},
+						opts
+					)
+				).equals([])
+			}
+			const config = {
+				"/config.ts": `import { configure } from "arktype/config"
+import { suffix } from "./main.ts"
+configure({ keywords: { "string.email": \`an address\${suffix}\` } })`
+			}
+			// the program's entry decides whether this module or the config module it imports runs first
+			attest(
+				diagnosticsOf(
+					`import "./config.ts"
+import { type } from "arktype"
+export const suffix = "!"
+export const Name = type("string")`,
+					config,
+					opts
+				)
+			).equals([])
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+export const suffix = "!"
+export const Strings = type.keywords.string`,
+					config,
+					opts
+				)
+			).equals([])
+		})
+
 		it("configure with a build define", () => {
 			const opts = {
 				config: "/main.ts",

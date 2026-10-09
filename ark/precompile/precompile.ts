@@ -127,7 +127,7 @@ export interface Site {
 	references: Reference[]
 	// the argument of a call to arktype's `define`, which returns it, so a standalone build evaluates it in place of the call
 	definition: Node | undefined
-	// e.g. `type.keywords.string`, which creates no Type until a member of the Module it reads is read
+	// a Module like `type.keywords.string`, which creates no Type until one of its members is read
 	isKeywordRead: boolean
 }
 
@@ -229,6 +229,7 @@ export class Precompiler {
 	inline: boolean
 	checkHelpers: boolean
 	private configuration: Configuration | undefined
+	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
 	// a site the mode cannot build fails a standalone build, while cache mode leaves it to runtime
 	private rejectionSeverity: Diagnostic["severity"]
@@ -1222,7 +1223,7 @@ export class Precompiler {
 			const site = this.finalize(candidate, module)
 			sites.push(site)
 			diagnostics.push(...this.diagnosticsOf(site, candidate, module))
-			if (!candidate.fn && site.start < configureStart) {
+			if (!candidate.fn && !site.isKeywordRead && site.start < configureStart) {
 				diagnostics.push(
 					this.diagnostic(
 						module,
@@ -1347,7 +1348,9 @@ export class Precompiler {
 			helpers: [],
 			references: [],
 			definition: undefined,
-			isKeywordRead: this.isKeywordRead(state.node, module)
+			isKeywordRead:
+				hasArkKind(state.value, "module") &&
+				this.isKeywordRead(state.node, module)
 		}
 		if (this.mode === "standalone" && isInIsland(state.node, module)) {
 			site.status = "island"
@@ -1656,7 +1659,6 @@ export class Precompiler {
 		return result
 	}
 
-	// a module the config module imports loads before its configure() call runs, as does the code above that call
 	private configureStartOf(module: SourceModule): number {
 		const config =
 			this.config === undefined ? undefined : this.graph.moduleOf(this.config)
@@ -1664,9 +1666,34 @@ export class Precompiler {
 		const call = this.configureCallsOf(config)[0]
 		if (!call) return -Infinity
 		if (config === module) return call.start
-		const modules =
-			this.configuration?.modules ?? this.localClosureOf(config.id)
-		return modules.includes(module.id) ? Infinity : -Infinity
+		this.loadedBeforeConfigure ??= this.loadedBefore(config.id)
+		return this.loadedBeforeConfigure.includes(module.id) ? Infinity : -Infinity
+	}
+
+	// what a module's imports load before its body runs, except what imports it back, since then the program's entry decides which runs first
+	private loadedBefore(id: string): string[] {
+		const result: string[] = []
+		for (const target of this.valueImportsOf(id)) {
+			const closure = this.localClosureOf(target, reached =>
+				this.valueImportsOf(reached)
+			)
+			if (!closure.includes(id)) result.push(...closure)
+		}
+		return result
+	}
+
+	private valueImportsOf(id: string): string[] {
+		const module = this.graph.moduleOf(id)
+		const result: string[] = []
+		if (!(module instanceof SourceModule)) return result
+		for (const statement of module.program.body) {
+			const specifier = loadedSpecifierOf(statement)
+			if (specifier === undefined || arkPackageSpecifier.test(specifier))
+				continue
+			const target = this.graph.host.resolve(specifier, id)
+			if (target && this.graph.isFollowed(target)) result.push(target)
+		}
+		return result
 	}
 
 	private checkConfiguration(module: SourceModule): Diagnostic[] {
@@ -2131,6 +2158,37 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 }
 
 const arkPackageSpecifier = /^(arktype|@ark\/schema|@ark\/util)(?:\/|$)/
+
+// a type-only import loads nothing, and one whose every specifier is type-only may be erased
+const loadedSpecifierOf = (statement: Node): string | undefined => {
+	if (statement.type === "ImportDeclaration") {
+		return (
+				statement.importKind === "type" ||
+					(statement.specifiers.length > 0 &&
+						statement.specifiers.every(
+							specifier =>
+								specifier.type === "ImportSpecifier" &&
+								specifier.importKind === "type"
+						))
+			) ?
+				undefined
+			:	statement.source.value
+	}
+	if (statement.type === "ExportNamedDeclaration") {
+		return (
+				!statement.source ||
+					statement.exportKind === "type" ||
+					(statement.specifiers.length > 0 &&
+						statement.specifiers.every(
+							specifier => specifier.exportKind === "type"
+						))
+			) ?
+				undefined
+			:	statement.source.value
+	}
+	if (statement.type === "ExportAllDeclaration")
+		return statement.exportKind === "type" ? undefined : statement.source.value
+}
 
 const arktypeSpecifier =
 	/\b(?:from|import)\s*["'](?:arktype(?:\/config)?|arkregex|@ark\/(?:type|regex))["']/
