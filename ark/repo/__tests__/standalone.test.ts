@@ -270,6 +270,22 @@ contextualize(() => {
 		)
 	})
 
+	it("emits a Type in meta as its validator", async () => {
+		const N = type("number")
+		const T = type("string").configure({
+			schema: N,
+			list: [type("boolean")]
+		} as never)
+		const U = type("string | number").configure({ schema: N } as never)
+		const { T: validator, U: union, N: n } = await load({ T, U, N })
+		attest(validator.meta.schema === n).equals(true)
+		attest(validator.meta.list[0].expression).equals("boolean")
+		attest(validator.meta.list[0](true)).equals(true)
+		attest(Object.isFrozen(validator.meta.list)).equals(true)
+		attest(validator(1).issues[0].meta.schema === n).equals(true)
+		attest(union(true).issues[0].meta.schema === n).equals(true)
+	})
+
 	it("freezes what a program reads from it", async () => {
 		const T = type({ a: "string" }).configure({
 			examples: [{ a: "x" }],

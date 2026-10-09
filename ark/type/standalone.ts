@@ -23,6 +23,7 @@ import {
 	printable,
 	prototypeOf,
 	serializePrimitive,
+	throwInternalError,
 	throwParseError
 } from "@ark/util"
 import { arktypeVersion } from "./entry.ts"
@@ -56,7 +57,7 @@ export const precompileStandalone = (
 
 export class StandaloneArtifact {
 	exports: Record<string, type.Any | Module>
-	validatorNamesByType = new Map<type.Any, string>()
+	validatorNamesByRoot = new Map<BaseRoot, string>()
 	unit: ContentUnit
 	// traversal raises these itself, and a predicate or morph can raise any code
 	raisableCodes: { [code in ArkErrorCode]?: true } = {
@@ -76,18 +77,22 @@ export class StandaloneArtifact {
 	declarations: string[] = []
 	links: string[] = []
 	modules: string[] = []
+	// a literal holding a validator is declared empty and filled once validators exist
+	fills: string[] = []
+	lateNames = new Set<string>()
 
 	constructor(exports: Record<string, type.Any | Module>) {
 		this.exports = exports
 		for (const value of Object.values(exports)) this.collectTypes(value)
-		const roots = [...this.validatorNamesByType.keys()].map(t => t.internal)
 		// the runtime writes only en
 		const locale = $ark.config.locale
 		if (locale !== undefined && locale !== $ark.defaultConfig.locale)
 			throwParseError(writeUnprecompilableMessage("a configured locale"))
-		for (const root of roots)
+		this.unit = precompileByContent(this.roots)
+		// a Type in a meta is emitted as its validator, so the unit needs its traversals
+		while (this.collectMetaTypes()) this.unit = precompileByContent(this.roots)
+		for (const root of this.roots)
 			if (root.onFail) throwParseError(writeUnprecompilableMessage("onFail"))
-		this.unit = precompileByContent(roots)
 		for (const context of this.unit.errorContexts)
 			this.raisableCodes[(context as { code: ArkErrorCode }).code] = true
 		this.runsFunctions = this.unit.declared.some(
@@ -106,17 +111,36 @@ export class StandaloneArtifact {
 		}
 	}
 
+	get roots(): BaseRoot[] {
+		return [...this.validatorNamesByRoot.keys()]
+	}
+
 	collectTypes(value: unknown): void {
 		if (hasArkKind(value, "module"))
 			for (const entry of Object.values(value)) this.collectTypes(entry)
 		else if (hasArkKind(value, "generic"))
 			throwParseError(writeUnprecompilableMessage("a Generic"))
-		else if (!this.validatorNamesByType.has(value as type.Any)) {
-			this.validatorNamesByType.set(
-				value as type.Any,
-				`validator${this.validatorNamesByType.size}`
-			)
+		else if (!this.validatorNamesByRoot.has(value as BaseRoot)) {
+			const name = `validator${this.validatorNamesByRoot.size}`
+			this.validatorNamesByRoot.set(value as BaseRoot, name)
+			this.lateNames.add(name)
 		}
+	}
+
+	collectMetaTypes(): boolean {
+		const typeCount = this.validatorNamesByRoot.size
+		const visited = new Set<object>()
+		const collect = (value: unknown): void => {
+			if (!hasDomain(value, "object") || visited.has(value)) return
+			visited.add(value)
+			if (isNode(value)) {
+				if (value.isRoot()) this.collectTypes(value)
+			} else if (isPlainLiteral(value))
+				for (const v of Object.values(value)) collect(v)
+		}
+		for (const node of this.unit.declared)
+			for (const v of Object.values(node.meta)) collect(v)
+		return this.validatorNamesByRoot.size > typeCount
 	}
 
 	write(): string {
@@ -124,8 +148,8 @@ export class StandaloneArtifact {
 		const errorContexts = this.unit.errorContexts.map(context =>
 			this.emit(context)
 		)
-		const validators = [...this.validatorNamesByType].map(([t, name]) =>
-			this.writeValidator(t.internal, name)
+		const validators = [...this.validatorNamesByRoot].map(([root, name]) =>
+			this.writeValidator(root, name)
 		)
 		const exported = Object.entries(this.exports).map(
 			([name, value]) =>
@@ -145,6 +169,8 @@ ${this.links.join("\n")}
 ${validators.join("\n\n")}
 
 ${this.modules.join("\n")}
+
+${this.fills.join("\n")}
 
 ${exported.join("\n")}
 `
@@ -166,7 +192,7 @@ ${exported.join("\n")}
 	// a module is a plain object of validators, frozen like them
 	exportOf(value: unknown): string {
 		if (!hasArkKind(value, "module"))
-			return this.validatorNamesByType.get(value as type.Any)!
+			return this.validatorNamesByRoot.get(value as BaseRoot)!
 		const declared = this.moduleNamesByModule.get(value)
 		if (declared) return declared
 		const entries = Object.entries(value).map(
@@ -296,14 +322,41 @@ ${exported.join("\n")}
 			)
 		}
 		this.emitting.add(value)
+		const elements = propKeys.map(k => this.emitElement(value[k as never]))
+		this.emitting.delete(value)
 		const literal =
 			isArrayLiteral ?
-				`[${(value as unknown[]).map(v => this.emit(v)).join(", ")}]`
+				`[${elements.join(", ")}]`
 			:	`{ ${prototype === null ? "__proto__: null, " : ""}${propKeys
-					.map(k => `[${JSON.stringify(k)}]: ${this.emit(value[k as never])}`)
+					.map((k, i) => `[${JSON.stringify(k)}]: ${elements[i]}`)
 					.join(", ")} }`
-		this.emitting.delete(value)
-		return this.declareConst(value, `runtime.freeze(${literal})`)
+		if (!elements.some(element => this.lateNames.has(element)))
+			return this.declareConst(value, `runtime.freeze(${literal})`)
+		// assigning a __proto__ key to an object would set its prototype
+		if (prototype === Object.prototype && propKeys.includes("__proto__")) {
+			throwParseError(
+				writeUnprecompilableMessage("a __proto__ key beside a Type")
+			)
+		}
+		const name = this.declareConst(
+			value,
+			isArrayLiteral ? "[]"
+			: prototype === null ? "{ __proto__: null }"
+			: "{}"
+		)
+		this.lateNames.add(name)
+		this.fills.push(`runtime.freeze(runtime.assign(${name}, ${literal}))`)
+		return name
+	}
+
+	// a Type a literal holds is data, so it's emitted as its validator rather than its shape
+	emitElement(value: unknown): string {
+		return isNode(value) && value.isRoot() ?
+				(this.validatorNamesByRoot.get(value) ??
+					throwInternalError(
+						`Unexpected Type ${value.expression} outside a meta`
+					))
+			:	this.emit(value)
 	}
 
 	configOf(root: BaseRoot): string {
@@ -338,6 +391,15 @@ ${exported.join("\n")}
 				)
 			:	"runtime.runtimeConfig"
 	}
+}
+
+const isPlainLiteral = (value: object): boolean => {
+	const prototype = prototypeOf(value)
+	return (
+		prototype === Object.prototype ||
+		prototype === null ||
+		prototype === Array.prototype
+	)
 }
 
 export const writeUnprecompilableMessage = <value extends string>(
