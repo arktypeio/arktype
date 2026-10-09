@@ -114,6 +114,55 @@ export const isError = (data: unknown) => data instanceof type.errors`,
 		})
 	})
 
+	describe("inline", () => {
+		it("runs each module in a function passed the globals its importer shadows", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+const Array = "shadowed"
+export const T = type("string[]")
+export const E = type("strng")`,
+				{},
+				{ inline: true }
+			)
+			const lines = result.code.split("\n")
+			attest([lines[0], ...lines.slice(-12)]).snap([
+				'const { "v10r4iwvwtfo": $ark10r4iwvwtfo } = ((runtime, Array) => {',
+				"})($ark$0, globalThis.Array);",
+				'const { "default": $ark29kiraik2u5 } = (({ "ParseError": ParseError }) => {',
+				"const throwParseError = () => {",
+				"\tthrow new ParseError(\"'strng' is unresolvable\")",
+				"}",
+				'return { "default": throwParseError }',
+				"})($ark$0);",
+				'import "arktype"',
+				'const Array = "shadowed"',
+				"export const T = $ark10r4iwvwtfo",
+				"export const E = $ark29kiraik2u5()",
+				'import * as $ark$0 from "arktype/runtime"'
+			])
+			attest(result.modules).equals({})
+		})
+
+		it("registers the keyword table before arktype loads", () => {
+			const lines = precompile(
+				`import "./config.ts"
+import { type } from "arktype"
+export const T = type("string[]")`,
+				{},
+				{ inline: true, runtime: "arktype" }
+			).code.split("\n")
+			attest([lines[0], ...lines.slice(-6)]).snap([
+				';(({ "registerPrecompiledUnits": registerPrecompiledUnits }) => {',
+				"})($ark$0);",
+				'import "./config.ts"',
+				'import "arktype/internal/precompiled.js"',
+				'import { type } from "arktype"',
+				'export const T = type("string[]")',
+				'import * as $ark$0 from "arktype/internal"'
+			])
+		})
+	})
+
 	it("reads which modules may define a Type from their imports", () => {
 		const files = {
 			"/ark.ts": 'export { type } from "arktype"',

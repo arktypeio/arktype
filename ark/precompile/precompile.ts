@@ -41,7 +41,12 @@ import {
 	type SiteState
 } from "./interpreter.ts"
 import { SourceModule } from "./module.ts"
-import { isTransparent, isWriteTarget, unwrapExpression } from "./scope.ts"
+import {
+	exportNameOf,
+	isTransparent,
+	isWriteTarget,
+	unwrapExpression
+} from "./scope.ts"
 import {
 	findSites,
 	isFoldedHelper,
@@ -58,6 +63,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	runtime?: "arktype" | undefined
 	// the module whose `configure()` call sets the configuration
 	config?: string | undefined
+	// place what the module imports from virtual modules in the module itself, for hosts without them
+	inline?: boolean | undefined
 }
 
 export interface ModuleAnalysis {
@@ -177,6 +184,7 @@ export class Precompiler {
 	interpreter: Interpreter
 	mode: PrecompileMode
 	config: string | undefined
+	inline: boolean
 	// a site the mode cannot build fails a standalone build, while cache mode leaves it to runtime
 	private rejectionSeverity: Diagnostic["severity"]
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
@@ -195,6 +203,7 @@ export class Precompiler {
 		this.interpreter = new Interpreter(this.graph, opts)
 		this.mode = opts?.runtime === "arktype" ? "cache" : "standalone"
 		this.config = opts?.config
+		this.inline = !!opts?.inline
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
 
@@ -359,17 +368,36 @@ export class Precompiler {
 			}
 		}
 		const s = new MagicString(source)
+		let prefix = "$ark"
+		while (source.includes(prefix)) prefix += "$"
 		const modules: Record<string, string> = {}
+		// the local each binding the module imports from a virtual module is read through, by specifier and export name
+		const imports: Record<string, Record<string, string>> = {}
 		if (this.mode === "standalone")
-			this.foldSites(module, sites, s, modules, diagnostics)
+			this.foldSites(module, sites, s, prefix, modules, imports, diagnostics)
 		else {
 			const roots = sites.flatMap(site => site.roots)
 			if (roots.length) {
 				const table = `import { registerPrecompiledUnits } from "arktype/internal"\n\nregisterPrecompiledUnits(${writePrecompiledUnits(roots)})\n`
 				const specifier = `~arktype/units/${hashOf(table)}`
 				modules[specifier] = table
-				// imported last, so it loads after the module's other imports and registers before its body creates a Type
-				s.append(`\nimport "${specifier}"`)
+				imports[specifier] = {}
+			}
+			if (this.inline) this.importKeywords(module, s)
+		}
+		if (this.inline) inlineModules(module, s, prefix, modules, imports)
+		else {
+			// imported last, so they load after the module's other imports and before its body creates a Type
+			for (const specifier in imports) {
+				const locals = imports[specifier]
+				if (!Object.keys(locals).length) s.append(`\nimport "${specifier}"`)
+				for (const name in locals) {
+					s.append(
+						name === "default" ?
+							`\nimport ${locals[name]} from "${specifier}"`
+						:	`\nimport { ${name} as ${locals[name]} } from "${specifier}"`
+					)
+				}
 			}
 		}
 		return {
@@ -380,7 +408,24 @@ export class Precompiler {
 				:	undefined,
 			dependencies,
 			diagnostics,
-			modules
+			modules: this.inline ? {} : modules
+		}
+	}
+
+	// arktype's keyword table registers before its keywords are created, if its build includes one
+	private importKeywords(module: SourceModule, s: MagicString): void {
+		const statement = module.program.body.find(
+			statement =>
+				"source" in statement && statement.source?.value === "arktype"
+		)
+		if (
+			statement &&
+			this.graph.host.resolve("arktype/internal/precompiled.js", module.id)
+		) {
+			s.prependLeft(
+				statement.start,
+				`import "arktype/internal/precompiled.js"\n`
+			)
 		}
 	}
 
@@ -388,11 +433,11 @@ export class Precompiler {
 		module: SourceModule,
 		sites: Site[],
 		s: MagicString,
+		prefix: string,
 		modules: Record<string, string>,
+		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[]
 	): void {
-		let prefix = "$ark"
-		while (module.source.includes(prefix)) prefix += "$"
 		const namesBySite = new Map<Site, string>()
 		const typesByName: Record<string, type.Any> = {}
 		for (const site of sites) {
@@ -426,10 +471,10 @@ export class Precompiler {
 					modules[`~arktype/${name}`] = writeParseErrorThrower(
 						site.parseError.message
 					)
-					s.append(`\nimport ${local} from "~arktype/${name}"`)
+					imports[`~arktype/${name}`] = { default: local }
 				} else {
 					modules[specifier] = validators
-					s.append(`\nimport { v${name} as ${local} } from "${specifier}"`)
+					;(imports[specifier] ??= {})[`v${name}`] = local
 				}
 			}
 			// a ParseError is thrown where the site is evaluated, as arktype throws it
@@ -1115,7 +1160,81 @@ const writeValidators = (
 }
 
 const writeParseErrorThrower = (message: string) =>
-	`import { ParseError } from "arktype/runtime"\n\nexport default () => {\n\tthrow new ParseError(${JSON.stringify(message)})\n}\n`
+	`import { ParseError } from "arktype/runtime"\n\nconst throwParseError = () => {\n\tthrow new ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
+
+// each module runs in a function at the top of its importer, passed its imports and the globals the importer shadows
+const inlineModules = (
+	module: SourceModule,
+	s: MagicString,
+	prefix: string,
+	modules: Record<string, string>,
+	imports: Record<string, Record<string, string>>
+) => {
+	const namespacesBySource: Record<string, string> = {}
+	let declarations = ""
+	for (const specifier in imports) {
+		const inlined = new SourceModule(specifier, modules[specifier], specifier)
+		const body = new MagicString(inlined.source)
+		const params: string[] = []
+		const args: string[] = []
+		const localsByName: Record<string, string> = {}
+		for (const statement of inlined.program.body) {
+			if (statement.type === "ImportDeclaration") {
+				const namespace = (namespacesBySource[statement.source.value] ??=
+					`${prefix}$${Object.keys(namespacesBySource).length}`)
+				for (const binding of statement.specifiers) {
+					const name =
+						binding.type === "ImportSpecifier" ?
+							exportNameOf(binding.imported)
+						:	"default"
+					params.push(
+						binding.type === "ImportNamespaceSpecifier" ?
+							binding.local.name
+						:	`{ ${JSON.stringify(name)}: ${binding.local.name} }`
+					)
+					args.push(namespace)
+				}
+			} else if (statement.type === "ExportNamedDeclaration") {
+				for (const binding of statement.specifiers) {
+					localsByName[exportNameOf(binding.exported)] = exportNameOf(
+						binding.local
+					)
+				}
+			} else continue
+			body.remove(statement.start, statement.end)
+		}
+		for (const { id, binding } of inlined.scopes.root.unresolved) {
+			if (
+				binding ||
+				!(id.name in module.scopes.root.bindings) ||
+				params.includes(id.name)
+			)
+				continue
+			params.push(id.name)
+			args.push(`globalThis.${id.name}`)
+		}
+		const locals = imports[specifier]
+		const names = Object.keys(locals)
+		const objectOf = (valueOf: (name: string) => string) =>
+			`{ ${names.map(name => `${JSON.stringify(name)}: ${valueOf(name)}`).join(", ")} }`
+		const call = `((${params.join(", ")}) => {\n${body.toString().trim()}\n${names.length ? `return ${objectOf(name => localsByName[name])}\n` : ""}})(${args.join(", ")})`
+		declarations +=
+			names.length ?
+				`const ${objectOf(name => locals[name])} = ${call};\n`
+			:	`;${call};\n`
+	}
+	if (!declarations) return
+	const first = module.program.body.find(
+		statement =>
+			statement.type !== "ExpressionStatement" || !statement.directive
+	)!
+	s.prependLeft(first.start, declarations)
+	for (const source in namespacesBySource) {
+		s.append(
+			`\nimport * as ${namespacesBySource[source]} from ${JSON.stringify(source)}`
+		)
+	}
+}
 
 // an import only folded sites read becomes `import "arktype"`, so the runtime loads where arktype would have
 const pruneArktypeImports = (
