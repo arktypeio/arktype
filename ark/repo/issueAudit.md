@@ -1611,7 +1611,7 @@ No open issue tracks these. They turned up while reproducing other issues, and t
 
 ### Unfiled bugs
 
-- **Unanchored digit patterns infer an unsound type (2.2.8 and featherduster).** `type("/\\d+/")` infers `` `${number}` `` but accepts `"x1y"`. It is one case of a broader arkregex soundness gap, and a precise redesign of the inference is in progress. See the issue draft below. Found on [#839](https://github.com/arktypeio/arktype/issues/839).
+- **Unanchored digit patterns infer an unsound type (2.2.8 and featherduster).** `type("/\\d+/")` infers `` `${number}` `` but accepts `"x1y"`. It is one case of a broader arkregex soundness gap, and a precise redesign was built but not landed. See the issue draft below. Found on [#839](https://github.com/arktypeio/arktype/issues/839).
 - **`string[] & number[]` is `unknown[]` on 2.2.8 and accepts `["x"]`.** On featherduster it is `[]`, which is correct. No issue tracks it, so nothing needs closing. Found on [#1088](https://github.com/arktypeio/arktype/issues/1088).
 - **Flat tuple expressions silently drop operands at runtime.** They are a type error, but at runtime the extra operands are dropped (`string | false | true`). Separately, `type("string&number")` throws "unsatisfiable" at runtime but isn't a type error. Found on [#585](https://github.com/arktypeio/arktype/issues/585).
 - **A numeric finite index is a type error but works at runtime.** With `index: "1 | 3 | 5 | 7"`, `{ "[index]": "index" }` reports "Indexed key definition must be a string or symbol", but at runtime it expands fine. Found on [#584](https://github.com/arktypeio/arktype/issues/584).
@@ -1647,9 +1647,9 @@ Two TypeScript rules cause most of it. When TS matches a string against a templa
 
 arkregex uses `` `${string}` `` for `.`, `.*`, `.+`, `x+` and the text a missing anchor allows, and `` `${number}` `` for `\d`, so both rules come up whenever one sits next to another or next to a literal it can also match.
 
-**Status: a precise redesign is in progress on `fix/regex-redesign`.** It tracks, while parsing, what each placeholder can match, and decides merging and widening from that, so featherduster's sound types stay as they are. The first attempt below is superseded.
+**Status: open.** A precise redesign was built on `fix/regex-redesign` (68b17f351) and not landed. It tracks, while parsing, what each placeholder can match and decides merging and widening from that. On the 2,842-pattern corpus it rejects no matched string and widens 17 of the 1,549 types that were already sound, but it grows arkregex's source from 1,494 to 4,287 lines. Two large patterns that compiled now fail with TS2589, one crashes TS 6, and small patterns cost about 30% more instantiations.
 
-**The first attempt wasn't landed.** `fix/regex` (56d4f948a) stops merging `\d` into `` `${number}` ``, merges adjacent `` `${string}` ``s and absorbs repetitions. It cuts the rejected matches from 310,500 to 25,662, but three review rounds each found new ones. In the last round:
+**An earlier attempt wasn't landed either.** `fix/regex` (56d4f948a) stops merging `\d` into `` `${number}` ``, merges adjacent `` `${string}` ``s and absorbs repetitions. It cuts the rejected matches from 310,500 to 25,662, but three review rounds each found new ones. In the last round:
 
 - 1,604 matches in 62 patterns are rejected that featherduster accepted. Merging a `` `${string}` `` shifts which characters TS gives every later placeholder, so `^..\d$` rejects `"ab1"`, `^a..\d$` rejects `"abc1"` and `^(?:\d.*)+\d$` rejects `"11"`.
 - Some types widen with no soundness need. `^a..c$` becomes `` `a${string}c` `` and `^\d..` loses two required characters, because two raw `.` atoms are merged although the parser can tell them from `.*`.
@@ -1670,7 +1670,7 @@ The `\s` class is unrelated to template literals: `WhitespaceChar` in `@ark/util
 - Merge `` `${string}` `` runs once, after anchors are applied, and only where no placeholder follows, rather than in `appendNonRedundant`, `prependNonRedundant` and `appendRepetition`.
 - Don't merge raw `.` atoms. A prototype of this alone (`review-precision/variant-dot.patch`) removed every new rejection among the 100 patterns whose types it changed and restored 25 precise featherduster types.
 - Past a small repetition bound, widen a quantified union containing `` `${number}` `` instead of enumerating it.
-- Track during parsing whether each placeholder can match zero or several characters, and merge or absorb from that rather than from the finished type. This is a design change to `state.ts`.
+- Track during parsing whether each placeholder can match zero or several characters, and merge or absorb from that rather than from the finished type. This is a design change to `state.ts`, and it is what `fix/regex-redesign` does.
 
 The probes, their corpora and results, the per-pattern type changes and both reviews' evidence are in `.frizz/threads/567f8946-44d1-4e2c-9cfc-5152f7109381/regex-probe/` in the main checkout: `results-final.md`, `remaining-final.md` and `type-changes-final.md` for the worker's probe, and `review-sound/` and `review-precision/` for the reviewers'.
 
