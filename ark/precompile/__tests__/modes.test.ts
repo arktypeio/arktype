@@ -208,6 +208,37 @@ configure({ number: { description: describe } })`,
 			])
 		})
 
+		it("a Type created while the config module loads", () => {
+			attest(
+				diagnosticsOf(
+					`import { configure, type } from "arktype"
+export const Early = type("string")
+configure({ onUndeclaredKey: "delete" })
+export const Late = type("string")`,
+					{},
+					{ config: "/main.ts" }
+				)
+			).snap([
+				'/main.ts:2:22  type("string") is created while the config module loads, before configure() runs\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+			])
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+export const suffix = "!"
+export const Name = type("string")
+export const makeName = () => type("string")`,
+					{
+						"/config.ts": `import { configure } from "arktype/config"
+import { suffix } from "./main.ts"
+configure({ keywords: { "string.email": \`an address\${suffix}\` } })`
+					},
+					{ config: "/config.ts" }
+				)
+			).snap([
+				'/main.ts:3:21  type("string") is created while the config module loads, before configure() runs\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+			])
+		})
+
 		it("configure with a build define", () => {
 			const opts = {
 				config: "/main.ts",

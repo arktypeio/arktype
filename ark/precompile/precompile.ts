@@ -1199,6 +1199,7 @@ export class Precompiler {
 		const diagnostics: Diagnostic[] = []
 		const helperSites: Node[] = []
 		this.helperSitesByModule.set(module, helperSites)
+		const configureStart = this.configureStartOf(module)
 		for (const candidate of candidates) {
 			let settledRanges = settledRangesByFn.get(candidate.fn)
 			if (!settledRanges)
@@ -1219,6 +1220,18 @@ export class Precompiler {
 			const site = this.finalize(candidate, module)
 			sites.push(site)
 			diagnostics.push(...this.diagnosticsOf(site, candidate, module))
+			if (!candidate.fn && site.start < configureStart) {
+				diagnostics.push(
+					this.diagnostic(
+						module,
+						candidate.state.node,
+						"R3",
+						this.rejectionSeverity,
+						`${module.snippetOf(candidate.state.node)} is created while the config module loads, before configure() runs`,
+						[]
+					)
+				)
+			}
 		}
 		diagnostics.push(...this.checkConfiguration(module))
 		if (this.mode === "standalone") {
@@ -1639,6 +1652,19 @@ export class Precompiler {
 		}
 		this.configureCallsByModule.set(module, result)
 		return result
+	}
+
+	// a module the config module imports loads before its configure() call runs, as does the code above that call
+	private configureStartOf(module: SourceModule): number {
+		const config =
+			this.config === undefined ? undefined : this.graph.moduleOf(this.config)
+		if (!(config instanceof SourceModule)) return -Infinity
+		const call = this.configureCallsOf(config)[0]
+		if (!call) return -Infinity
+		if (config === module) return call.start
+		const modules =
+			this.configuration?.modules ?? this.localClosureOf(config.id)
+		return modules.includes(module.id) ? Infinity : -Infinity
 	}
 
 	private checkConfiguration(module: SourceModule): Diagnostic[] {
