@@ -312,11 +312,98 @@ contextualize(() => {
 		)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1023
 	it("any as out", () => {
 		const T = type("string", "=>", s => s as any)
 		attest<string>(T.in.infer)
-		// https://github.com/arktypeio/arktype/issues/1023
-		// attest<any>(T.infer)
+		attest<any>(T.infer)
+	})
+
+	it("any as out in a prop", () => {
+		const T = type({ a: ["string", "=>", s => s as any] })
+		attest(T.infer).type.toString.snap("{ a: any }")
+		attest(T.inferIn).type.toString.snap("{ a: string }")
+	})
+
+	it("any as out beside other props", () => {
+		const BesidePlain = type({
+			a: ["string", "=>", s => s as any],
+			b: "number"
+		})
+		attest(BesidePlain.infer).type.toString.snap("{ a: any; b: number }")
+		attest(BesidePlain.inferIn).type.toString.snap("{ a: string; b: number }")
+
+		const BesideMorph = type({
+			a: ["string", "=>", s => s as any],
+			n: "string.numeric.parse"
+		})
+		attest(BesideMorph.infer).type.toString.snap("{ a: any; n: number }")
+		attest(BesideMorph.inferIn).type.toString.snap("{ a: string; n: string }")
+	})
+
+	it("any as out in an array, tuple or union", () => {
+		const MorphAny = type("string", "=>", s => s as any)
+		const List = MorphAny.array()
+		attest(List.infer).type.toString.snap("any[]")
+		attest(List.inferIn).type.toString.snap("string[]")
+		const Tuple = type([MorphAny, "number"])
+		attest(Tuple.infer).type.toString.snap("[any, number]")
+		attest(Tuple.inferIn).type.toString.snap("[string, number]")
+		const Union = type({ a: MorphAny }).or("string")
+		attest(Union.infer).type.toString.snap("string | { a: any }")
+		attest(Union.inferIn).type.toString.snap("string | { a: string }")
+	})
+
+	it("any as out in a cyclic scope", () => {
+		const types = scope({
+			node: { a: ["string", "=>", s => s as any], "next?": "node" }
+		}).export()
+		attest(types.node.infer).type.toString.snap("{ a: any; next?: any }")
+	})
+
+	it("any as out beside a named type", () => {
+		interface User {
+			name: string
+		}
+		const T = type({
+			user: type({ name: "string" }).as<User>(),
+			a: ["string", "=>", s => s as any]
+		})
+		attest(T.infer).type.toString.snap("{ user: { name: string }; a: any }")
+		attest(T.inferIn).type.toString.snap(
+			"{ user: { name: string }; a: string }"
+		)
+	})
+
+	it("function returning any as out", () => {
+		const MorphFnAny = type("string").pipe(
+			s => (x: string) => JSON.parse(s + x)
+		)
+		attest(MorphFnAny.infer).type.toString.snap("(x: string) => any")
+		attest(type({ f: MorphFnAny }).infer).type.toString.snap(
+			"{ f: (x: string) => any }"
+		)
+		attest(MorphFnAny.array().infer).type.toString.snap(
+			"((x: string) => any)[]"
+		)
+		attest(type([MorphFnAny, "number"]).infer).type.toString.snap(
+			"[(x: string) => any, number]"
+		)
+		attest(MorphFnAny.or("number").infer).type.toString.snap(
+			"number | ((x: string) => any)"
+		)
+	})
+
+	it("JSON.parse as out", () => {
+		const T = type({ parse: type("string").pipe(() => JSON.parse) })
+		attest(T.infer).type.toString.snap(`{
+	parse: (
+		text: string,
+		reviver?:
+			| ((this: any, key: string, value: any) => any)
+			| undefined
+	) => any
+}`)
 	})
 
 	it("never as out", () => {

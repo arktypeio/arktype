@@ -365,6 +365,21 @@ type In = typeof T.inferIn
 
 https://github.com/arktypeio/arktype/issues/1160
 
+### Infer the output of morphs that return `any`
+
+A morph whose output was `any`, or a function returning `any`, was left in the inferred type as the morph itself:
+
+```ts
+const T = type({ a: ["string", "=>", s => JSON.parse(s)] })
+
+// previously { a: (In: string) => Out<any> }, now { a: any }
+type Out = typeof T.infer
+```
+
+Inferred types that contain no morphs, defaults or brands still keep their names, like interfaces passed to `.as`.
+
+https://github.com/arktypeio/arktype/issues/1023
+
 ### Name the narrow in an unsatisfiable intersection error
 
 When a narrow rejected every branch of a union it was intersected with, the error described the narrow by its expression, which omits predicates:
