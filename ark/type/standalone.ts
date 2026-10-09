@@ -7,8 +7,11 @@ import {
 	type BaseNode,
 	type BaseRoot,
 	type ContentUnit,
+	type DefaultedNode,
 	type NodeId,
-	type NodeKind
+	type NodeKind,
+	type Optional,
+	type Sequence
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
@@ -60,7 +63,7 @@ const indexRuntime = (value: unknown, path: string): void => {
 		runtimePathsByValue.set(value, path)
 		if (Object.getPrototypeOf(value) === Object.prototype) {
 			for (const [k, v] of Object.entries(value))
-				indexRuntime(v, `${path}.${k}`)
+				indexRuntime(v, appendStringifiedKey(path, k))
 		}
 	}
 }
@@ -145,6 +148,7 @@ export class StandaloneArtifact {
 	keyLookups = new Set<object>()
 	// each pattern's own RegExp, which only traversal reads
 	patternInstances = new Set<RegExp>()
+	defaultsByMorph = new Map<unknown, Default>()
 	objectUnits = new Set<unknown>()
 	constNamesByValue = new Map<unknown, string>()
 	declarationCounts: Record<DeclarationRole, number> = {
@@ -160,6 +164,8 @@ export class StandaloneArtifact {
 	modules: string[] = []
 	// a literal holding a validator is declared empty and filled once validators exist
 	fills: string[] = []
+	// each default's morph, created once the validator applying its value exists
+	defaults: string[] = []
 	lateNames = new Set<string>()
 
 	constructor(
@@ -196,6 +202,8 @@ export class StandaloneArtifact {
 			this.traversalIndexByName[this.unit.names[node.id]] = i
 			if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
 			else if (node.hasKind("pattern")) this.patternInstances.add(node.instance)
+			else if (node.hasKind("optional") || node.hasKind("sequence"))
+				collectDefaults(node, this.defaultsByMorph)
 			else if (
 				node.hasKind("unit") &&
 				hasDomain(node.unit, "object") &&
@@ -470,6 +478,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 			`const traversals = ${unit}([], [${refs.join(", ")}], [${errorContexts.join(", ")}])`,
 			this.links.join("\n"),
 			validators.join("\n\n"),
+			this.defaults.join("\n"),
 			this.modules.join("\n"),
 			this.fills.join("\n")
 		]
@@ -571,6 +580,8 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		if (runtimePath) return runtimePath
 		const declared = this.constNamesByValue.get(value)
 		if (declared) return declared
+		const defaulted = this.defaultsByMorph.get(value)
+		if (defaulted) return this.emitDefault(...defaulted)
 		// a unit is compared by reference, so a copy wouldn't equal it
 		if (this.objectUnits.has(value)) {
 			throwParseError(
@@ -639,6 +650,21 @@ export { factory${index} as ${JSON.stringify(name)} }`
 			)
 		}
 		return this.emitLiteral(value)
+	}
+
+	// the morph arktype creates for a default, called through a function since traversals are created before the validator it applies
+	emitDefault(
+		key: PropertyKey,
+		value: BaseRoot,
+		defaultValue: unknown
+	): string {
+		this.collectType(value)
+		const name = `default${this.defaults.length}`
+		const flags = defaultedNodeKeys.filter(k => value[k]).map(k => `${k}: true`)
+		this.defaults.push(
+			`const ${name} = runtime.computeDefaultValueMorph(${this.emit(key)}, ${this.validatorNamesByRoot.get(value)}, ${this.emit(defaultValue)}, {${flags.length ? ` ${flags.join(", ")} ` : ""}})`
+		)
+		return `(data, ctx) => ${name}(data, ctx)`
 	}
 
 	emitLiteral(value: object): string {
@@ -799,6 +825,41 @@ const isHole = (value: unknown): boolean =>
 		!runtimePathsByValue.has(value) &&
 		Reflect.get(globalThis, functionNameOf(value)) !== value)
 
+type Default = [key: PropertyKey, value: BaseRoot, defaultValue: unknown]
+
+const defaultedNodeKeys = [
+	"includesTransform",
+	"includesAlias",
+	"allowsRequiresContext",
+	"includesContextualMorph",
+	"transforms"
+] as const satisfies (keyof DefaultedNode)[]
+
+// arktype applies each default with a morph of its own, created from the key, the value and the default
+const collectDefaults = (
+	node: Optional.Node | Sequence.Node,
+	defaultsByMorph: Map<unknown, Default>
+): void => {
+	if (node.hasKind("optional")) {
+		if (node.defaultValueMorph) {
+			defaultsByMorph.set(node.defaultValueMorph, [
+				node.key,
+				node.value,
+				node.inner.default
+			])
+		}
+		return
+	}
+	for (let i = 0; i < node.defaultValueMorphs.length; i++) {
+		const [value, defaultValue] = node.defaultables![i]
+		defaultsByMorph.set(node.defaultValueMorphs[i], [
+			node.prefixLength + i,
+			value,
+			defaultValue
+		])
+	}
+}
+
 const keysByRoot = new WeakMap<BaseRoot, [id: string, holes: unknown[]]>()
 
 // what any artifact keys a root's validator by: its content address, and the holes it holds in the order its code reads them
@@ -806,6 +867,11 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 	const cached = keysByRoot.get(root)
 	if (cached) return cached
 	const unit = precompileByContent([root])
+	const defaultsByMorph = new Map<unknown, Default>()
+	for (const node of unit.declared) {
+		if (node.hasKind("optional") || node.hasKind("sequence"))
+			collectDefaults(node, defaultsByMorph)
+	}
 	const holes: unknown[] = []
 	// a unit names a node by its content, keying a function or object only by where the unit first reaches it, so the address adds what each is
 	const values: string[] = [unit.names[root.id]]
@@ -813,7 +879,11 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 	const collect = (value: unknown): void => {
 		if (seen.has(value)) return
 		seen.add(value)
-		if (isHole(value)) {
+		const defaulted = defaultsByMorph.get(value)
+		if (defaulted) {
+			values.push("default")
+			collect(defaulted[2])
+		} else if (isHole(value)) {
 			holes.push(value)
 			values.push("hole")
 		} else if (typeof value === "function" && !isNode(value))

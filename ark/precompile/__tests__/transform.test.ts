@@ -95,7 +95,8 @@ export const User = type({ name: Name, pet: type.instanceOf(Pet), [petTag]: "str
 export const Either = type("string").pipe(trim).or(type("number").pipe(trim))
 export const Extended = type("string").pipe(ext)
 export const Pair = type([Name, Either])
-export const Short = Name.narrow(s => s.length < 9)`
+export const Short = Name.narrow(s => s.length < 9)
+export const Stamped = type({ at: ["Date", "=", () => new Date()] })`
 			// a hole is registered by a name from its module and position, which no other test shares
 			const result = precompileModule(
 				source,
@@ -117,12 +118,14 @@ export const Either = $arkf177zfl998m9(trim)
 export const Extended = $arkf14b60szkb1e(ext)
 export const Pair = $arkfcfvlzq3rdy(Name, Either)
 export const Short = $arkf1h2fl3hww77(Name, s => s.length < 9)
-import { f1gmbnlsmwkb as $arkf1gmbnlsmwkb } from "~arktype/1ioeqcjqltt"
-import { f17onxh5wa5v as $arkf17onxh5wa5v } from "~arktype/1ioeqcjqltt"
-import { f177zfl998m9 as $arkf177zfl998m9 } from "~arktype/1ioeqcjqltt"
-import { f14b60szkb1e as $arkf14b60szkb1e } from "~arktype/1ioeqcjqltt"
-import { fcfvlzq3rdy as $arkfcfvlzq3rdy } from "~arktype/1ioeqcjqltt"
-import { f1h2fl3hww77 as $arkf1h2fl3hww77 } from "~arktype/1ioeqcjqltt"`)
+export const Stamped = $arkf1an86esmhhe(() => new Date())
+import { f1gmbnlsmwkb as $arkf1gmbnlsmwkb } from "~arktype/1m2y6nyqkup"
+import { f17onxh5wa5v as $arkf17onxh5wa5v } from "~arktype/1m2y6nyqkup"
+import { f177zfl998m9 as $arkf177zfl998m9 } from "~arktype/1m2y6nyqkup"
+import { f14b60szkb1e as $arkf14b60szkb1e } from "~arktype/1m2y6nyqkup"
+import { fcfvlzq3rdy as $arkfcfvlzq3rdy } from "~arktype/1m2y6nyqkup"
+import { f1h2fl3hww77 as $arkf1h2fl3hww77 } from "~arktype/1m2y6nyqkup"
+import { f1an86esmhhe as $arkf1an86esmhhe } from "~arktype/1m2y6nyqkup"`)
 		})
 
 		it("passes the inputs a site reads after its holes", () => {
@@ -269,8 +272,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 import { a } from "./a.ts"
 import { b, alias } from "./b.ts"
 export const Both = type("string").pipe(a, b)
-export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))
-export const Defaulted = type({ a: ["string[]", "=", () => []] })`,
+export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))`,
 				{
 					"/a.ts": "export const a = (s: string) => s",
 					"/b.ts":
@@ -279,8 +281,7 @@ export const Defaulted = type({ a: ["string[]", "=", () => []] })`,
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				'/main.ts:4:21  type("string").pipe(a, b) can\'t be precompiled to a standalone validator yet\n  `a` and `b` may hold the same value at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:5:24  type("string").pipe(a).or(type("number").pipe(alias)) can\'t be precompiled to a standalone validator yet\n  `a` and `alias` may hold different values at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:6:26  type({ a: ["string[]", "=", () => []] }) can\'t be precompiled to a standalone validator yet\n  arktype holds `() => []` (/main.ts:6:54) in a function of its own, which a standalone validator can\'t create yet\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/main.ts:5:24  type("string").pipe(a).or(type("number").pipe(alias)) can\'t be precompiled to a standalone validator yet\n  `a` and `alias` may hold different values at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 		})
 	})

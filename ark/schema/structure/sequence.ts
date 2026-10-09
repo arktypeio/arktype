@@ -36,15 +36,13 @@ import { missingSetEngineMessage } from "../shared/sets.ts"
 import { copyOf } from "../shared/transform.ts"
 import {
 	applyValue,
+	computeDefaultValueMorph,
 	traverseKey,
 	type TraverseAllows,
 	type TraverseApply,
 	type TraverseTransform
 } from "../shared/traversal.ts"
-import {
-	assertDefaultValueAssignability,
-	computeDefaultValueMorph
-} from "./optional.ts"
+import { assertDefaultValueAssignability } from "./optional.ts"
 
 export declare namespace Sequence {
 	export type DefaultableElement = [node: BaseRoot, defaultValue: unknown]

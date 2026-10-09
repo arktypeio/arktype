@@ -1,5 +1,9 @@
 import type { ArkError, Locale, Traversal } from "@ark/schema"
 import { FileConstructor, printable, type Json } from "@ark/util"
+import type {
+	EmptyCollectionLiteral,
+	inferDefaultLiteral
+} from "../parser/shift/operator/default.ts"
 import type { FormDataValue, ParsedFormData } from "./FormData.ts"
 import type { KeywordPhraseAlias } from "./phrases.ts"
 
@@ -186,6 +190,14 @@ export const normalizationsByForm = {
 		predicate: (s: string): boolean => s.normalize("NFKD") === s,
 		morphs: (s: string): string => s.normalize("NFKD")
 	}
+}
+
+// the default an empty collection literal parses to, a thunk so each traversal's is its own
+export const emptyCollectionDefaults = {
+	"[]": () => [],
+	"{}": () => ({})
+} as const satisfies {
+	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
 }
 
 const regexError = /* @__PURE__ */ keywordError(

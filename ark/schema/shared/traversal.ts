@@ -1,6 +1,7 @@
 import {
 	hasDomain,
 	isArray,
+	isThunk,
 	noSuggest,
 	objectKindOf,
 	stringifyPath
@@ -777,6 +778,67 @@ export const traverseKey = <result>(
 	const result = fn()
 	ctx.path.pop()
 	return result
+}
+
+// what a default's morph applies its value through: a node, or the validator a standalone build created from one
+export interface DefaultedValue {
+	(data: unknown, pipedFromCtx: Traversal): unknown
+	traverse: (data: unknown) => unknown
+}
+
+export type DefaultedNode = Pick<
+	BaseNode,
+	| "includesTransform"
+	| "includesAlias"
+	| "allowsRequiresContext"
+	| "includesContextualMorph"
+	| "transforms"
+>
+
+export const computeDefaultValueMorph = (
+	key: PropertyKey,
+	value: DefaultedValue,
+	defaultInput: unknown,
+	// a validator has no flags of its own, so a standalone build passes its node's
+	node: DefaultedNode = value as never
+): Morph<any> => {
+	const thunk = isThunk(defaultInput) ? defaultInput : undefined
+	if (!thunk && !node.includesTransform && !node.includesAlias) {
+		return data => {
+			data[key] = defaultInput
+			return data
+		}
+	}
+	if (!node.allowsRequiresContext && !node.includesContextualMorph) {
+		return data => {
+			const input = thunk ? thunk() : defaultInput
+			const output = value.traverse(input)
+			if (output instanceof ArkErrors)
+				return new TransformErrors(output, input).addTo(undefined, key)
+			data[key] = output
+			return data
+		}
+	}
+	let transformingDefault = false
+	return (data, ctx) => {
+		// transforming a default through a cyclic value can reach this morph again
+		if (transformingDefault) return data
+		if (!thunk && !node.transforms) {
+			data[key] = defaultInput
+			return data
+		}
+		transformingDefault = true
+		try {
+			data[key] = traverseKey(
+				key,
+				() => value(thunk ? thunk() : defaultInput, ctx),
+				ctx
+			)
+		} finally {
+			transformingDefault = false
+		}
+		return data
+	}
 }
 
 export type TraversalMethodsByKind<input = unknown> = {

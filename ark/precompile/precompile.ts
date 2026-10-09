@@ -673,7 +673,7 @@ export class Precompiler {
 			const text = module.snippetOf(reference)
 			const hole = holesByValue.get(reference.value)
 			if (hole && !held.includes(hole.value)) {
-				// e.g. a default's thunk, which arktype calls from a function of its own
+				// e.g. `pipe.try`'s morph, which arktype calls from a function of its own
 				reasons.push(
 					`arktype holds \`${text}\` (${module.positionOf(reference)}) in a function of its own, which a standalone validator can't create yet`
 				)

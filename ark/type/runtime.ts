@@ -30,6 +30,7 @@ export {
 	ArkError,
 	ArkErrors,
 	arrayIndexMatcher,
+	computeDefaultValueMorph,
 	copyNodeContexts,
 	copyOf,
 	describePredicate,

@@ -9,6 +9,7 @@ import {
 } from "@ark/util"
 import type { type } from "../../../keywords/keywords.ts"
 import type { DateLiteral } from "../../../attributes.ts"
+import { emptyCollectionDefaults } from "../../../keywords/functions.ts"
 import type { RootedRuntimeState } from "../../reduce/dynamic.ts"
 import type {
 	EnclosingLiteralStartToken,
@@ -35,13 +36,6 @@ export type EnclosedUnitLiteral = StringLiteral | DateLiteral
 export type EmptyCollectionLiteral = "[]" | "{}"
 
 export type DefaultLiteral = UnitLiteral | EmptyCollectionLiteral
-
-const emptyCollectionDefaults = {
-	"[]": () => [],
-	"{}": () => ({})
-} as const satisfies {
-	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
-}
 
 const emptyCollectionLiterals = keysOf(emptyCollectionDefaults)
 

@@ -16,8 +16,7 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import { missingSetEngineMessage } from "../shared/sets.ts"
-import { TransformErrors } from "../shared/transform.ts"
-import { traverseKey } from "../shared/traversal.ts"
+import { computeDefaultValueMorph } from "../shared/traversal.ts"
 import { isResolutionFinal, queueUnchecked } from "../shared/utils.ts"
 import { BaseProp, type Prop } from "./prop.ts"
 
@@ -107,50 +106,6 @@ export class OptionalNode extends BaseProp<"optional"> {
 export const Optional = {
 	implementation,
 	Node: OptionalNode
-}
-
-export const computeDefaultValueMorph = (
-	key: PropertyKey,
-	value: BaseRoot,
-	defaultInput: unknown
-): Morph<any> => {
-	const thunk = isThunk(defaultInput) ? defaultInput : undefined
-	if (!thunk && !value.includesTransform && !value.includesAlias) {
-		return data => {
-			data[key] = defaultInput
-			return data
-		}
-	}
-	if (!value.allowsRequiresContext && !value.includesContextualMorph) {
-		return data => {
-			const input = thunk ? thunk() : defaultInput
-			const output = value.traverse(input)
-			if (output instanceof ArkErrors)
-				return new TransformErrors(output, input).addTo(undefined, key)
-			data[key] = output
-			return data
-		}
-	}
-	let transformingDefault = false
-	return (data, ctx) => {
-		// transforming a default through a cyclic value can reach this morph again
-		if (transformingDefault) return data
-		if (!thunk && !value.transforms) {
-			data[key] = defaultInput
-			return data
-		}
-		transformingDefault = true
-		try {
-			data[key] = traverseKey(
-				key,
-				() => value(thunk ? thunk() : defaultInput, ctx),
-				ctx
-			)
-		} finally {
-			transformingDefault = false
-		}
-		return data
-	}
 }
 
 export const assertDefaultValueAssignability = (

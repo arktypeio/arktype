@@ -634,6 +634,74 @@ contextualize(() => {
 			)
 		})
 
+		it("applies defaults with the functions it receives", async () => {
+			const now = () => new Date(0)
+			const invalid = () => "x" as never
+			const shout = (s: string, ctx: unknown) => (ctx ? `${s}!` : s)
+			const greeting = () => "hi"
+			const empty = () => []
+			const types = {
+				Thunk: type({ at: ["Date", "=", now], n: "number = 1" }),
+				Invalid: type({ n: ["number", "=", invalid] }),
+				Element: type(["string", ["Date", "=", now]]),
+				Contextual: type({ s: [type("string").pipe(shout), "=", greeting] }),
+				Transforming: type({ name: ["string.trim", "=", " a "] }),
+				Empty: type({ values: "string[] = []", meta: "object = {}" }),
+				Tree: scope({
+					tree: { name: "string = 'root'", children: ["tree[]", "=", empty] }
+				}).export().tree
+			}
+			const created = await load({
+				Thunk: {
+					type: types.Thunk,
+					params: [{ kind: "function", label: "`now`", value: now }]
+				},
+				Invalid: {
+					type: types.Invalid,
+					params: [{ kind: "function", label: "`invalid`", value: invalid }]
+				},
+				Element: {
+					type: types.Element,
+					params: [{ kind: "function", label: "`now`", value: now }]
+				},
+				Contextual: {
+					type: types.Contextual,
+					params: [
+						{ kind: "function", label: "`shout`", value: shout },
+						{ kind: "function", label: "`greeting`", value: greeting }
+					]
+				},
+				Transforming: types.Transforming,
+				Empty: types.Empty,
+				Tree: {
+					type: types.Tree,
+					params: [{ kind: "function", label: "`empty`", value: empty }]
+				}
+			})
+			const validators: Record<string, (data: unknown) => unknown> = {
+				Thunk: created.Thunk(now),
+				Invalid: created.Invalid(invalid),
+				Element: created.Element(now),
+				Contextual: created.Contextual(shout, greeting),
+				Transforming: created.Transforming,
+				Empty: created.Empty,
+				Tree: created.Tree(empty)
+			}
+			const inputs = [{}, ["a"], { at: new Date(1), n: 2 }, { children: [{}] }]
+			for (const [name, t] of Object.entries(types)) {
+				for (const input of inputs) {
+					attest(observe(validators[name](input), input)).equals(
+						observe(t(input), input)
+					)
+				}
+			}
+			attest(created.Thunk(() => new Date(1))({})).equals({
+				at: new Date(1),
+				n: 1
+			})
+			attest(created.Empty({}).values !== created.Empty({}).values).equals(true)
+		})
+
 		it("compares the inputs it receives with what the build read", async () => {
 			const o = {
 				name: "string" as const,
