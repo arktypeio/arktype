@@ -48,11 +48,7 @@ import type {
 	UnknownAttachments,
 	UnknownNodeImplementation
 } from "./shared/implement.ts"
-import {
-	describeMissing,
-	keywordWriterOf,
-	type Locale
-} from "./shared/locale.ts"
+import { describeMissing, type Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { makeRootAndArrayPropertiesMutable } from "./shared/utils.ts"
@@ -187,45 +183,11 @@ export const en: Locale = {
 	message: shared.message
 }
 
-const predicate = nodeImplementationsByKind.predicate.defaults as {
-	actual: ActualWriter<"predicate">
-	problem: ProblemWriter<"predicate">
-}
-
-// a keyword's nodes describe their errors through meta, so en's phrases
-// write only errors a keyword raises through ctx: their actual, and the
-// problem of one that carries what the keyword caught
-const predicateDefaults = {
-	...predicate,
-	actual: (data, e, locale) => {
-		const actual =
-			e.predicate === undefined ?
-				keywordWriterOf(e, locale as Locale, "actual")
-			:	undefined
-		return (
-			actual === undefined ? predicate.actual(data, e, locale)
-			: typeof actual === "string" ? actual
-			: actual(data, e, locale as Locale)
-		)
-	},
-	problem: (e, locale) => {
-		const problem =
-			e.cause === undefined ?
-				undefined
-			:	keywordWriterOf(e, locale as Locale, "problem")
-		return (
-			problem === undefined ? predicate.problem(e, locale)
-			: typeof problem === "string" ? problem
-			: problem(e, locale as Locale)
-		)
-	}
-} satisfies typeof predicate
-
 $ark.defaultConfig = withAlphabetizedKeys(
 	Object.assign(
 		flatMorph(nodeImplementationsByKind, (kind, implementation) => [
 			kind,
-			kind === "predicate" ? predicateDefaults : implementation.defaults
+			implementation.defaults
 		]),
 		{
 			undeclared: {

@@ -262,7 +262,7 @@ contextualize(() => {
 				intersection: ["expected", "problem"],
 				divisor: ["expected"],
 				pattern: ["expected"],
-				predicate: ["expected", "actual"],
+				predicate: ["expected", "actual", "problem"],
 				required: ["expected", "actual"],
 				undeclared: ["expected", "actual"],
 				discriminant: ["expected", "actual"]

@@ -8,7 +8,7 @@ import type {
 	declareNode
 } from "./shared/declare.ts"
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
-import { describeCause } from "./shared/locale.ts"
+import { describeCause, keywordWriterOf, type Locale } from "./shared/locale.ts"
 import { namedReference, type RegisteredReference } from "./shared/registry.ts"
 import type {
 	Traversal,
@@ -64,10 +64,36 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 			description: describePredicate,
 			// error contexts from ctx.reject have neither a description nor a predicate
 			expected: ctx => ctx.description ?? describePredicate(ctx),
-			actual: (data, ctx) =>
-				ctx.morph ?
-					`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
-				:	printable(data)
+			// a keyword's nodes describe their errors through meta, so its phrase
+			// writes only errors it raises through ctx: their actual, and the
+			// problem of one that carries what the keyword caught
+			actual: (data, ctx, info) => {
+				const locale = info as Locale
+				const actual =
+					ctx.predicate === undefined ?
+						keywordWriterOf(ctx, locale, "actual")
+					:	undefined
+				return (
+					actual === undefined ?
+						ctx.morph ?
+							`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
+						:	printable(data)
+					: typeof actual === "string" ? actual
+					: actual(data, ctx, locale)
+				)
+			},
+			problem: (ctx, info) => {
+				const locale = info as Locale
+				const problem =
+					ctx.cause === undefined ?
+						undefined
+					:	keywordWriterOf(ctx, locale, "problem")
+				return (
+					problem === undefined ? locale.problem(ctx, locale)
+					: typeof problem === "string" ? problem
+					: problem(ctx, locale)
+				)
+			}
 		},
 		intersectionIsOpen: true
 	})
