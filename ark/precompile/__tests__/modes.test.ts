@@ -241,14 +241,17 @@ configure({ keywords: { "string.email": \`an address\${suffix}\` } })`
 
 		it("a Type created after the config module loads", () => {
 			const opts = { config: "/config.ts" }
+			// a compiler erases an import whose names are only used as types
 			for (const typeImport of [
 				'import type { Name } from "./main.ts"',
-				'import { type Name } from "./main.ts"'
+				'import { type Name } from "./main.ts"',
+				'import { Name } from "./main.ts"\nexport const name: Name = "x"'
 			]) {
 				attest(
 					diagnosticsOf(
 						`import { type } from "arktype"
-export const Name = type("string")`,
+export const Name = type("string")
+export type Name = typeof Name.infer`,
 						{
 							"/config.ts": `import { configure } from "arktype/config"
 ${typeImport}

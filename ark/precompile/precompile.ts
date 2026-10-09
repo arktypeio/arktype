@@ -1669,18 +1669,21 @@ export class Precompiler {
 
 	// parsed, unlike localClosureOf, so it holds every module the interpreter can follow
 	private importClosureOf(id: string): string[] {
-		return this.localClosureOf(id, reached => this.importsOf(reached))
+		return this.localClosureOf(id, reached =>
+			this.importsOf(reached).map(([target]) => target)
+		)
 	}
 
-	private importsOf(id: string): string[] {
+	private importsOf(id: string): [target: string, isErased: boolean][] {
 		const module = this.graph.moduleOf(id)
-		const result: string[] = []
+		const result: [string, boolean][] = []
 		if (!(module instanceof SourceModule)) return result
 		for (const statement of module.program.body) {
 			const specifier = "source" in statement && statement.source?.value
 			if (!specifier || arkPackageSpecifier.test(specifier)) continue
 			const target = this.graph.host.resolve(specifier, id)
-			if (target && this.graph.isFollowed(target)) result.push(target)
+			if (target && this.graph.isFollowed(target))
+				result.push([target, isErased(statement, module)])
 		}
 		return result
 	}
@@ -1696,28 +1699,16 @@ export class Precompiler {
 		return this.loadedBeforeConfigure.includes(module.id) ? Infinity : -Infinity
 	}
 
-	// what a module's imports load before its body runs, except what imports it back, since then the program's entry decides which runs first
+	// a module that imports this one back may run before or after it, as the program's entry decides
 	private loadedBefore(id: string): string[] {
-		const result: string[] = []
-		for (const target of this.valueImportsOf(id)) {
-			const closure = this.localClosureOf(target, reached =>
-				this.valueImportsOf(reached)
+		const loadedImportsOf = (from: string) =>
+			this.importsOf(from).flatMap(([target, isErased]) =>
+				isErased ? [] : [target]
 			)
-			if (!closure.includes(id)) result.push(...closure)
-		}
-		return result
-	}
-
-	private valueImportsOf(id: string): string[] {
-		const module = this.graph.moduleOf(id)
 		const result: string[] = []
-		if (!(module instanceof SourceModule)) return result
-		for (const statement of module.program.body) {
-			const specifier = loadedSpecifierOf(statement)
-			if (specifier === undefined || arkPackageSpecifier.test(specifier))
-				continue
-			const target = this.graph.host.resolve(specifier, id)
-			if (target && this.graph.isFollowed(target)) result.push(target)
+		for (const target of loadedImportsOf(id)) {
+			if (!this.importClosureOf(target).includes(id))
+				result.push(...this.localClosureOf(target, loadedImportsOf))
 		}
 		return result
 	}
@@ -2191,36 +2182,19 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 
 const arkPackageSpecifier = /^(arktype|@ark\/schema|@ark\/util)(?:\/|$)/
 
-// a type-only import loads nothing, and one whose every specifier is type-only may be erased
-const loadedSpecifierOf = (statement: Node): string | undefined => {
-	if (statement.type === "ImportDeclaration") {
-		return (
-				statement.importKind === "type" ||
-					(statement.specifiers.length > 0 &&
-						statement.specifiers.every(
-							specifier =>
-								specifier.type === "ImportSpecifier" &&
-								specifier.importKind === "type"
-						))
-			) ?
-				undefined
-			:	statement.source.value
-	}
-	if (statement.type === "ExportNamedDeclaration") {
-		return (
-				!statement.source ||
-					statement.exportKind === "type" ||
-					(statement.specifiers.length > 0 &&
-						statement.specifiers.every(
-							specifier => specifier.exportKind === "type"
-						))
-			) ?
-				undefined
-			:	statement.source.value
-	}
-	if (statement.type === "ExportAllDeclaration")
-		return statement.exportKind === "type" ? undefined : statement.source.value
-}
+// esbuild and tsc erase an import whose names are only used as types, which the scope analysis gives no reference, and a re-export of only types
+const isErased = (statement: Node, module: SourceModule): boolean =>
+	statement.type === "ImportDeclaration" ?
+		statement.specifiers.length > 0 &&
+		!statement.specifiers.some(
+			specifier =>
+				module.scopes.bindingsById.get(specifier.local)?.references.length
+		)
+	: statement.type === "ExportNamedDeclaration" ?
+		statement.exportKind === "type" ||
+		(statement.specifiers.length > 0 &&
+			statement.specifiers.every(specifier => specifier.exportKind === "type"))
+	:	statement.type === "ExportAllDeclaration" && statement.exportKind === "type"
 
 const arktypeSpecifier =
 	/\b(?:from|import)\s*["'](?:arktype(?:\/config)?|arkregex|@ark\/(?:type|regex))["']/
