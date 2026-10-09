@@ -20,7 +20,7 @@ import type {
 	MemberExpression,
 	Node
 } from "oxc-parser"
-import { join, relative } from "node:path"
+import { dirname, join, relative } from "node:path"
 import { isArkValue } from "./builtins.ts"
 import { dependencyOf, optsIn, type PrecompileHost } from "./host.ts"
 import { SourceModule } from "./module.ts"
@@ -295,7 +295,7 @@ const anyKind: ArkKind =
 
 const typeMethod: ArkKind = kinds.otherArk | kinds.returnsType
 
-// the kind of each member of a Type a standalone validator lacks, so reading one outside a site throws at runtime
+// the kind of each member of a Type a standalone validator lacks
 const typeMemberKinds: Record<string, ArkKind> = Object.setPrototypeOf(
 	{
 		in: kinds.type,
@@ -417,6 +417,8 @@ export class ModuleGraph {
 	private composingByFn = new Map<FunctionNode, boolean>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
+	private packageNamesByDir: Record<string, string | undefined> =
+		Object.create(null)
 
 	constructor(host: PrecompileHost, cwd?: string) {
 		this.host = host
@@ -476,6 +478,17 @@ export class ModuleGraph {
 				this.host.readFile(join(root, "package.json"))
 			))
 		)
+	}
+
+	// the name in the package.json nearest a module, e.g. `arksets` for one a workspace links from its source
+	packageNameOf(id: string): string | undefined {
+		const dir = dirname(id)
+		if (dir in this.packageNamesByDir) return this.packageNamesByDir[dir]
+		const manifest = this.host.readFile(join(dir, "package.json"))
+		return (this.packageNamesByDir[dir] =
+			manifest !== undefined ? JSON.parse(manifest).name
+			: dir === dirname(dir) ? undefined
+			: this.packageNameOf(dir))
 	}
 
 	private load(id: string, specifier: string): SourceModule | ImportTarget {
@@ -966,50 +979,90 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. `and` and `T` for `T.and`, or `in` and `T` for `const { in: I } = T`, with `T` only ever a Type, which a standalone validator replaces without the member
+	// e.g. `json` and `T` for `T.json` or `const { json } = T`, or `T` alone for `T[key]`, with `T` only ever a Type, which a validator replaces without them
 	unavailableReadOf(
 		node: Node,
 		module: SourceModule
-	): [name: string, object: Node] | undefined {
-		let name: unknown
-		let object: Node | undefined
-		let kind: ArkKind = 0
+	): [read: string | undefined, object: Node] | undefined {
+		let read: unknown
+		let objects: Node[] = []
+		let kindOf = (object: Node) => this.kindOf(object, module)
 		if (node.type === "MemberExpression") {
-			name = memberNameOf(node)
-			object = node.object
-			kind = this.kindOf(object, module)
+			read = memberNameOf(node)
+			objects = [node.object]
 		} else if (
-			node.type === "Property" &&
+			(node.type === "Property" || node.type === "RestElement") &&
 			node.parent?.type === "ObjectPattern"
 		) {
-			name = keyNameOf(node)
-			let root: Node = node.parent
+			if (node.type === "Property") read = keyNameOf(node)
+			const pattern = node.parent
+			let root: Node = pattern
 			while (root.parent && isPatternPart(root.parent)) root = root.parent
 			const parent = root.parent
-			object =
+			const source =
 				parent?.type === "VariableDeclarator" && parent.id === root ?
-					(parent.init ?? undefined)
+					parent.init
 				: parent?.type === "AssignmentExpression" && parent.left === root ?
 					parent.right
 				:	undefined
-			if (object) {
-				kind = this.patternKindOf(
-					node.parent,
-					root,
-					this.kindOf(object, module),
-					module,
-					this.finalKindOfKey
-				)
+			if (source) {
+				objects = [source]
+				kindOf = source =>
+					this.patternKindOf(
+						pattern,
+						root,
+						this.kindOf(source, module),
+						module,
+						this.finalKindOfKey
+					)
 			}
-		}
+		} else [read, objects] = this.reflectionOf(node, module) ?? [undefined, []]
+		const object = objects.find(object => isOnlyType(kindOf(object)))
 		return (
-				typeof name === "string" &&
-					name in typeMemberKinds &&
-					object &&
-					isOnlyType(kind)
+				object &&
+					(read === undefined ||
+						(typeof read === "string" &&
+							!(read in validatorMembers || read in Function.prototype)))
 			) ?
-				[name, object]
+				[read, object]
 			:	undefined
+	}
+
+	// e.g. `toJSON` and `T` for `JSON.stringify(T)`, or `T` alone for `Object.keys(T)`, `{ ...T }` or `for (k in T)`, which reflect on all of it
+	private reflectionOf(
+		node: Node,
+		module: SourceModule
+	): [read: unknown, objects: Node[]] | undefined {
+		if (
+			node.type === "SpreadElement" &&
+			node.parent?.type === "ObjectExpression"
+		)
+			return [undefined, [node.argument]]
+		if (node.type === "ForInStatement") return [undefined, [node.right]]
+		if (node.type === "BinaryExpression" && node.operator === "in") {
+			const key = node.left.type === "Literal" ? node.left.value : undefined
+			return [key, [node.right]]
+		}
+		if (node.type !== "CallExpression") return
+		const callee = normalize(node.callee)
+		if (callee.type !== "MemberExpression") return
+		const global = normalize(callee.object)
+		if (
+			global.type !== "Identifier" ||
+			module.scopes.referencesById.get(global)?.binding
+		)
+			return
+		const name = memberNameOf(callee)
+		const args = node.arguments.filter(arg => arg.type !== "SpreadElement")
+		return (
+			global.name === "JSON" && name === "stringify" ?
+				["toJSON", args.slice(0, 1)]
+			: (
+				(global.name === "Object" && name !== "is") || global.name === "Reflect"
+			) ?
+				[undefined, args]
+			:	undefined
+		)
 	}
 
 	// e.g. `T.assert` in `T.assert(x)` or `type.errors`, which run at runtime in every mode

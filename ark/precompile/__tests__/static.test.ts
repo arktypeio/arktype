@@ -111,6 +111,17 @@ const B = type(\`'\${Name.a}' | '\${Size[1]}'\`)`)
 			])
 		})
 
+		it("interfaces extending a namespace's member", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+declare namespace ns {
+	interface base {}
+}
+interface extended extends ns.base {}
+const A = type("string")`)
+			).equals([])
+		})
+
 		it("operators", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -791,9 +802,55 @@ const A = g().or("null")
 const B = (Math.random() > 1 ? T : T).out
 const { in: I } = T`)
 			).snap([
-				'/main.ts:7:11  g().or reads or from a standalone validator, which throws at runtime\n  `g()` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:8:11  (Math.random() > 1 ? T : T).out reads out from a standalone validator, which throws at runtime\n  `Math.random() > 1 ? T : T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:9:9  in: I reads in from a standalone validator, which throws at runtime\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				'/main.ts:7:11  g().or reads or, which a standalone validator lacks\n  `g()` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:8:11  (Math.random() > 1 ? T : T).out reads out, which a standalone validator lacks\n  `Math.random() > 1 ? T : T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:9:9  in: I reads in, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("members a standalone validator lacks, read outside any site", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const T = type({ a: "string" })
+console.log(T.expression, T.toString(), Object.is(T, T))
+console.log(T.json, "json" in T, JSON.stringify(T))`)
+			).snap([
+				'/main.ts:4:13  T.json reads json, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:4:21  "json" in T reads json, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:4:34  JSON.stringify(T) reads toJSON, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("reflection on a Type outside any site", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const T = type({ a: "string" })
+console.log(Object.keys(T), { ...T }, T[process.argv[2] as "json"])
+const { description, ...rest } = T
+for (const k in T) console.log(k)`)
+			).snap([
+				'/main.ts:3:13  Object.keys(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:3:31  ...T reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:3:39  T[process.argv[2] as "json"] reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:4:22  ...rest reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:5:1  for (const k in T) console.log(k) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("packages that read arktype's nodes outside a runtime island", () => {
+			attest(
+				diagnosticsOf(`import { discriminantJsonOf } from "arksets"
+import { ArkErrors, hasArkKind } from "@ark/schema"
+import { type } from "arktype"
+const T = type({ a: "0" }).or({ a: "1" })
+const check = (f: () => void) => f()
+check(() => console.log(discriminantJsonOf(T as never), hasArkKind(T, "root")))
+console.log(T({}) instanceof ArkErrors)
+// @ark-runtime
+const D = discriminantJsonOf(type({ a: "0" }).or({ a: "1" }).internal as never)`)
+			).snap([
+				'/main.ts:6:25  `discriminantJsonOf` is used outside a runtime island\n  arksets reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
+				'/main.ts:6:57  `hasArkKind` is used outside a runtime island\n  @ark/schema reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".'
 			])
 		})
 

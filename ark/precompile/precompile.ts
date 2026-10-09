@@ -266,9 +266,13 @@ export class Precompiler {
 		return this._analyze(this.graph.add(id, source))
 	}
 
-	// whether a module may define a Type, read from its imports so most modules that can't are never parsed
+	// whether a module may define a Type or, in a standalone build, read arktype's nodes, from its imports so most modules that can't are never parsed
 	importsArk(source: string, id: string): boolean {
 		if (arktypeSpecifier.test(source)) return true
+		if (this.mode === "standalone") {
+			for (const [, specifier] of source.matchAll(importSpecifier))
+				if (nodePackageSpecifier.test(specifier)) return true
+		}
 		for (const targetId of this.localImportsOf(source, id)) {
 			if (!this.namesArk(targetId)) continue
 			const target = this.graph.moduleOf(targetId)
@@ -1848,6 +1852,7 @@ export class Precompiler {
 			)
 		}
 		const written = new Set<Node>()
+		const writes = new Set<Node>()
 		for (const reference of module.scopes.references) {
 			if (
 				!reference.binding ||
@@ -1859,6 +1864,7 @@ export class Precompiler {
 				this.arkWriteOf(reference.id, module) ?? []
 			if (!write) continue
 			written.add(reference.id)
+			writes.add(write)
 			result.push(
 				this.diagnostic(
 					module,
@@ -1919,17 +1925,24 @@ export class Precompiler {
 		const settledRanges = new Set(
 			settled.map(candidate => rangeOf(candidate.state.node))
 		)
-		const unavailable: [node: Node, name: string, object: Node][] = []
+		const unavailable: [node: Node, read: string | undefined, object: Node][] =
+			[]
 		walk(module.program, node => {
-			if (isWithin(node, settledRanges) || isInIsland(node, module))
+			if (
+				isWithin(node, settledRanges) ||
+				isInIsland(node, module) ||
+				// e.g. `interface A extends B.C {}`, which only types
+				(node.type.startsWith("TS") && !isTransparent(node))
+			)
 				return false
 			const read =
 				!(node.type === "MemberExpression" && isWriteTarget(node)) &&
+				!writes.has(node) &&
 				this.graph.unavailableReadOf(node, module)
 			if (read) unavailable.push([node, ...read])
 			return true
 		})
-		for (const [node, name, object] of unavailable) {
+		for (const [node, read, object] of unavailable) {
 			// a chain is reported where it first reads one
 			if (
 				unavailable.some(([inner]) => inner !== node && contains(node, inner))
@@ -1941,12 +1954,48 @@ export class Precompiler {
 					node,
 					"R4",
 					"error",
-					`${module.snippetOf(node)} reads ${name} from a standalone validator, which throws at runtime`,
+					read === undefined ?
+						`${module.snippetOf(node)} reflects on a Type, whose properties a standalone validator doesn't share`
+					:	`${module.snippetOf(node)} reads ${read}, which a standalone validator lacks`,
 					[
 						`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
 					]
 				)
 			)
+		}
+		for (const statement of module.program.body) {
+			if (
+				statement.type !== "ImportDeclaration" ||
+				!nodePackageSpecifier.test(statement.source.value) ||
+				arkPackageName.test(this.graph.packageNameOf(module.id) ?? "")
+			)
+				continue
+			for (const specifier of statement.specifiers) {
+				// e.g. `ArkErrors`, which the standalone runtime shares
+				if (
+					statement.source.value === "@ark/schema" &&
+					specifier.type === "ImportSpecifier" &&
+					exportNameOf(specifier.imported) in runtimeExports
+				)
+					continue
+				const binding = module.scopes.bindingsById.get(specifier.local)
+				for (const reference of binding?.references ?? []) {
+					if (isInIsland(reference.id, module)) continue
+					result.push(
+						this.diagnostic(
+							module,
+							reference.id,
+							"R4",
+							"error",
+							`\`${binding!.name}\` is used outside a runtime island`,
+							[
+								`${statement.source.value} reads the nodes arktype creates, which a standalone build replaces with validators`
+							],
+							nodePackageHint
+						)
+					)
+				}
+			}
 		}
 		return result
 	}
@@ -2230,6 +2279,13 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 
 const arkPackageSpecifier = /^(arktype|@ark\/schema|@ark\/util)(?:\/|$)/
 
+// packages that create or read arktype's nodes, which a standalone validator doesn't have
+const nodePackageSpecifier =
+	/^(?:(?:arksets|@ark\/(?:json-schema|fast-check)|(?:arktype|@ark\/(?:type|schema))\/internal)(?:\/|$)|@ark\/schema$)/
+
+// arktype's own packages, which read their nodes by design wherever a workspace links their source
+const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
+
 // esbuild and tsc erase an import whose names are only used as types, which the scope analysis gives no reference, and a re-export of only types
 const isErased = (statement: Node, module: SourceModule): boolean =>
 	statement.type === "ImportDeclaration" ?
@@ -2479,6 +2535,8 @@ const declaredBindingKinds = {
 } satisfies Partial<Record<BindingKind, 1>>
 
 const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
+
+const nodePackageHint = `Read arktype's nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".`
 
 // an import only folded sites read becomes `import "arktype"`, so the runtime loads where arktype would have
 const pruneArktypeImports = (

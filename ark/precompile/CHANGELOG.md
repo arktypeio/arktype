@@ -15,7 +15,7 @@ A package whose `package.json` has `"arktype": { "precompile": true }` is precom
 
 ### Leave a definition to arktype with `// @ark-runtime`
 
-In a standalone build, a definition after a `// @ark-runtime` comment runs on arktype, which then ships beside the runtime. The build fails if a runtime island reads a precompiled validator other than to validate with it, or reaches arktype outside an island. `--check` lists islands and leaves them out of the rate `--fail-under` compares.
+In a standalone build, a definition after a `// @ark-runtime` comment runs on arktype, which then ships beside the runtime. The build fails if a runtime island reads a precompiled validator other than to validate with it, or reaches arktype outside an island. A package that reads arktype's nodes, like `arksets`, `@ark/schema` or `@ark/json-schema`, must be used in an island too, since a standalone build replaces them with validators. `--check` lists islands and leaves them out of the rate `--fail-under` compares.
 
 ```ts
 // @ark-runtime
@@ -26,7 +26,7 @@ export const Shaped = type(await loadShape())
 
 `@ark/precompile/unplugin` replaces each arktype definition with a standalone validator as Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun or Farm bundles it, so only arktype's runtime ships. `runtime: "arktype"` ships arktype instead, with precompiled code for each definition and for arktype's keywords in place of `new Function`. Either mode fails the build if `arktype`, `@ark/schema` or `@ark/util` resolves to more than one copy. A program's `configure()` call, in the module the `config` option names, applies to both: the build precompiles every definition under it, and in standalone mode the call configures `arktype/runtime`.
 
-A definition is the largest expression composing an arktype value, which the build follows from arktype's exports through bindings, imports, namespaces, object literals and what functions return, past casts and optional chains. A member a standalone validator has, like `.expression` or `.assert`, ends it, so reading one runs at runtime. In a standalone build, reading one it lacks, like `.and` or `.in`, outside any definition the build can precompile fails the build rather than throwing when the module loads.
+A definition is the largest expression composing an arktype value, which the build follows from arktype's exports through bindings, imports, namespaces, object literals and what functions return, past casts and optional chains. A member a standalone validator has, like `.expression` or `.assert`, ends it, so reading one runs at runtime. In a standalone build, reading one it lacks, like `.and`, `.in` or `.json`, outside any definition the build can precompile fails the build rather than throwing or reading `undefined` at runtime, as does reflecting on a Type there, like `JSON.stringify(T)`, `Object.keys(T)` or `{ ...T }`.
 
 ```ts
 // vite.config.ts

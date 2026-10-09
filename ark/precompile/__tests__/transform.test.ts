@@ -749,6 +749,25 @@ export const T = type("string[]")`,
 		])
 	})
 
+	it("reads which modules may read arktype's nodes from their imports in a standalone build", () => {
+		const standalone = new Precompiler(memoryHost({}))
+		const cached = new Precompiler(memoryHost({}), { runtime: "arktype" })
+		attest(
+			[
+				'import { discriminantJsonOf } from "arksets"',
+				'import { hasArkKind } from "@ark/schema"',
+				'import { ArkErrors } from "@ark/schema/runtime"'
+			].map(
+				source =>
+					`${source} ${standalone.importsArk(source, "/helpers.ts")} ${cached.importsArk(source, "/helpers.ts")}`
+			)
+		).snap([
+			'import { discriminantJsonOf } from "arksets" true false',
+			'import { hasArkKind } from "@ark/schema" true false',
+			'import { ArkErrors } from "@ark/schema/runtime" false false'
+		])
+	})
+
 	it("keeps sites apart whose Types differ only in their scope's config", () => {
 		const { modules } = precompile(`import { scope } from "arktype"
 export const Custom = scope({}, { domain: { message: "custom" } }).type({ x: "string" })
