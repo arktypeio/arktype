@@ -21,14 +21,14 @@ export const Users = User.array()
 export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.code).snap(`import { ArkErrors } from "arktype"
 const max = 64
-export const User = $arkvzvq2oze5lr
-export const Same = $arkv22ro8s3uuz
-export const Users = $arkv148ig5g1uwr
+export const User = $arkvzvq2oze5lr()
+export const Same = $arkv22ro8s3uuz()
+export const Users = $arkv148ig5g1uwr()
 export const isError = (data: unknown) => data instanceof ArkErrors
-import { vzvq2oze5lr as $arkvzvq2oze5lr } from "~arktype/niv4uq9j8l"
-import { v22ro8s3uuz as $arkv22ro8s3uuz } from "~arktype/niv4uq9j8l"
-import { v148ig5g1uwr as $arkv148ig5g1uwr } from "~arktype/niv4uq9j8l"`)
-			attest(Object.keys(result.modules)).snap(["~arktype/niv4uq9j8l"])
+import { vzvq2oze5lr as $arkvzvq2oze5lr } from "~arktype/121ob71oavq"
+import { v22ro8s3uuz as $arkv22ro8s3uuz } from "~arktype/121ob71oavq"
+import { v148ig5g1uwr as $arkv148ig5g1uwr } from "~arktype/121ob71oavq"`)
+			attest(Object.keys(result.modules)).snap(["~arktype/121ob71oavq"])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
@@ -41,8 +41,8 @@ export const A = type("string")`).code
 			).snap(`import "./polyfill.ts"
 import "arktype"
 import * as config from "./config.ts"
-export const A = $arkv2e1m8qabj8c
-import { v2e1m8qabj8c as $arkv2e1m8qabj8c } from "~arktype/18scx4hvmp"`)
+export const A = $arkv2e1m8qabj8c()
+import { v2e1m8qabj8c as $arkv2e1m8qabj8c } from "~arktype/vv7u34tft0"`)
 		})
 
 		it("unsupported sites", () => {
@@ -71,15 +71,15 @@ const trim = (s: string) => s.trim()
 const field = (n: number) => type(\`string <= \${n}\`)
 export const A = $arkf11rmdvxwrkb(trim)
 export const B = $arkf20bdtc14r0x(max)
-export const C = $arkv18f1a6ngbuy
+export const C = $arkv18f1a6ngbuy()
 export const D = $ark11nyj35o0sh()
 export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
-export const F = $arkv1pbxisbfbpm
+export const F = $arkv1pbxisbfbpm()
 export const G = type("string").description
-import { f11rmdvxwrkb as $arkf11rmdvxwrkb } from "~arktype/mvv020nu3"
-import { f20bdtc14r0x as $arkf20bdtc14r0x } from "~arktype/mvv020nu3"
-import { v18f1a6ngbuy as $arkv18f1a6ngbuy } from "~arktype/mvv020nu3"
-import { v1pbxisbfbpm as $arkv1pbxisbfbpm } from "~arktype/mvv020nu3"
+import { f11rmdvxwrkb as $arkf11rmdvxwrkb } from "~arktype/1c7z490b6rz"
+import { f20bdtc14r0x as $arkf20bdtc14r0x } from "~arktype/1c7z490b6rz"
+import { v18f1a6ngbuy as $arkv18f1a6ngbuy } from "~arktype/1c7z490b6rz"
+import { v1pbxisbfbpm as $arkv1pbxisbfbpm } from "~arktype/1c7z490b6rz"
 import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"`)
 		})
 
@@ -89,10 +89,10 @@ export const types = scope({ tree: { value: "number", "children?": "tree[]" } })
 export const M = type.module({ a: "string", b: { c: "a" } })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-export const types = $arkv2f0bhdcpikw
-export const M = $arkv209i2jspcoq
-import { v2f0bhdcpikw as $arkv2f0bhdcpikw } from "~arktype/lyrf7rme87"
-import { v209i2jspcoq as $arkv209i2jspcoq } from "~arktype/lyrf7rme87"`)
+export const types = $arkv2f0bhdcpikw()
+export const M = $arkv209i2jspcoq()
+import { v2f0bhdcpikw as $arkv2f0bhdcpikw } from "~arktype/11z0kew5vxw"
+import { v209i2jspcoq as $arkv209i2jspcoq } from "~arktype/11z0kew5vxw"`)
 			attest(
 				Object.values(result.modules)[0]
 					.split("\n")
@@ -112,16 +112,16 @@ export const Box = type("<t>", { box: "t" })
 export const BoxedTree = Box(types.tree)`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-const $ = $arkv207w5kbsr5e
-export const types = $arkvehauhbipgw
-export const Tree = $arkv148ig5g1uwr
-export const Box = $arkv1s13ylwl1x9
-export const BoxedTree = $arkv19p2bcm49l4
-import { v207w5kbsr5e as $arkv207w5kbsr5e } from "~arktype/1fk1eauq3qz"
-import { vehauhbipgw as $arkvehauhbipgw } from "~arktype/1fk1eauq3qz"
-import { v148ig5g1uwr as $arkv148ig5g1uwr } from "~arktype/1fk1eauq3qz"
-import { v1s13ylwl1x9 as $arkv1s13ylwl1x9 } from "~arktype/1fk1eauq3qz"
-import { v19p2bcm49l4 as $arkv19p2bcm49l4 } from "~arktype/1fk1eauq3qz"`)
+const $ = $arkv207w5kbsr5e()
+export const types = $arkvehauhbipgw()
+export const Tree = $arkv148ig5g1uwr()
+export const Box = $arkv1s13ylwl1x9()
+export const BoxedTree = $arkv19p2bcm49l4()
+import { v207w5kbsr5e as $arkv207w5kbsr5e } from "~arktype/22y1i32qnn"
+import { vehauhbipgw as $arkvehauhbipgw } from "~arktype/22y1i32qnn"
+import { v148ig5g1uwr as $arkv148ig5g1uwr } from "~arktype/22y1i32qnn"
+import { v1s13ylwl1x9 as $arkv1s13ylwl1x9 } from "~arktype/22y1i32qnn"
+import { v19p2bcm49l4 as $arkv19p2bcm49l4 } from "~arktype/22y1i32qnn"`)
 			attest(
 				Object.values(result.modules)[0]
 					.split("\n")
@@ -144,12 +144,12 @@ const create = () => {
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
 const create = () => {
-	const $ = $arkv2z182cdbhc
-	const types = $arkv11a751fkv8g
+	const $ = $arkv2z182cdbhc()
+	const types = $arkv11a751fkv8g()
 	return types
 }
-import { v2z182cdbhc as $arkv2z182cdbhc } from "~arktype/1yirv7nk3td"
-import { v11a751fkv8g as $arkv11a751fkv8g } from "~arktype/1yirv7nk3td"`)
+import { v2z182cdbhc as $arkv2z182cdbhc } from "~arktype/k1zjkpvl27"
+import { v11a751fkv8g as $arkv11a751fkv8g } from "~arktype/k1zjkpvl27"`)
 		})
 
 		it("leaves a define call's argument in its place", () => {
@@ -297,8 +297,8 @@ export const Defaulted = $ark2d34z78syo(isZero)
 import $ark1iic477a2i9 from "~arktype/1iic477a2i9"
 import $ark2d34z78syo from "~arktype/2d34z78syo"`)
 			attest(Object.values(result.modules)).snap([
-				'import * as runtime from "arktype/runtime"\n\nconst throwParseError = (p0) => {\n\tthrow new runtime.ParseError("Intersection of 1 and " + runtime.functionNameOf(p0) + " results in an unsatisfiable type")\n}\n\nexport { throwParseError as default }\n',
-				'import * as runtime from "arktype/runtime"\n\nconst throwParseError = (p0) => {\n\tthrow new runtime.ParseError("Default for n must be " + runtime.describePredicate({ predicate: p0 }) + " (was 3)")\n}\n\nexport { throwParseError as default }\n'
+				'import * as runtime from "arktype/runtime"\n\nconst throwParseError = (p0) => {\n\truntime.fixConfig()\n\tthrow new runtime.ParseError("Intersection of 1 and " + runtime.functionNameOf(p0) + " results in an unsatisfiable type")\n}\n\nexport { throwParseError as default }\n',
+				'import * as runtime from "arktype/runtime"\n\nconst throwParseError = (p0) => {\n\truntime.fixConfig()\n\tthrow new runtime.ParseError("Default for n must be " + runtime.describePredicate({ predicate: p0 }) + " (was 3)")\n}\n\nexport { throwParseError as default }\n'
 			])
 		})
 
@@ -437,7 +437,7 @@ export const Name = () => <span>name</span>`
 				memoryHost({ "/main.js": source })
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
-			attest(result.code).satisfies(/export const User = \$ark\w+\n/)
+			attest(result.code).satisfies(/export const User = \$ark\w+\(\)\n/)
 		})
 
 		it("leaves a module without sites unchanged", () => {
@@ -464,16 +464,16 @@ export const E = type("strng")`,
 			const lines = result.code.split("\n")
 			attest([lines[0], ...lines.slice(-12)]).snap([
 				'const { "vk7v7o06cb9": $arkvk7v7o06cb9 } = ((runtime, Array) => {',
-				"})($ark$0, globalThis.Array);",
-				'const { "default": $ark29kiraik2u5 } = (({ "ParseError": ParseError }) => {',
+				'const { "default": $ark29kiraik2u5 } = ((runtime) => {',
 				"const throwParseError = () => {",
-				"\tthrow new ParseError(\"'strng' is unresolvable\")",
+				"\truntime.fixConfig()",
+				"\tthrow new runtime.ParseError(\"'strng' is unresolvable\")",
 				"}",
 				'return { "default": throwParseError }',
 				"})($ark$0);",
 				'import "arktype"',
 				'const Array = "shadowed"',
-				"export const T = $arkvk7v7o06cb9",
+				"export const T = $arkvk7v7o06cb9()",
 				"export const E = $ark29kiraik2u5()",
 				'import * as $ark$0 from "arktype/runtime"'
 			])

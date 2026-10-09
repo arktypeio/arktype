@@ -8,10 +8,11 @@ import {
 } from "@ark/schema"
 import {
 	configMismatchMessage,
-	untransformedConfigureMessage
+	untransformedConfigureMessage,
+	writeCreatedBeforeConfigureMessage
 } from "@ark/schema/runtime"
-import { noSuggest } from "@ark/util"
-import { scope, type } from "arktype"
+import { arkKindOf, flatMorph, noSuggest } from "@ark/util"
+import { generic, scope, type } from "arktype"
 import {
 	allowIslands,
 	arktypeVersion,
@@ -72,20 +73,25 @@ const importBesideArktype = async (js: string): Promise<any> => {
 	}
 }
 
-// the program's configure call runs before the artifact, as its config module does
-const load = (
+// the program's configure call runs before the artifact, as its config module does, and each validator is read as a site reads it
+const load = async (
 	exports: Record<string, StandaloneExport>,
 	configure = "",
 	fingerprint = configure ? "f" : undefined
-): Promise<Record<string, any>> =>
-	importBesideArktype(
+): Promise<Record<string, any>> => {
+	const artifact = await importBesideArktype(
 		bundle(
-			precompileStandalone(exports, fingerprint).replace(
-				runtimeImport,
-				`${runtimeImport}\n${configure}`
-			)
+			precompileStandalone(
+				exports,
+				fingerprint === undefined ? undefined : { fingerprint, path: "main.ts" }
+			).replace(runtimeImport, `${runtimeImport}\n${configure}`)
 		).js
 	)
+	return flatMorph(exports, (name, value) => [
+		name,
+		arkKindOf(value) === undefined ? artifact[name] : artifact[name]()
+	])
+}
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
 
@@ -248,7 +254,7 @@ contextualize(() => {
 			}
 		})
 		try {
-			const { T } = await importBesideArktype(js)
+			const T = (await importBesideArktype(js)).T()
 			attest(T({ a: 1 }).summary).snap("a must be a string (was a number)")
 		} finally {
 			globalThis.Function = Function
@@ -263,7 +269,7 @@ contextualize(() => {
 			precompileStandalone({ S: type("string"), G: type.instanceOf(Global) })
 		)
 		delete (globalThis as { Global?: unknown }).Global
-		const { S } = await importBesideArktype(js)
+		const S = (await importBesideArktype(js)).S()
 		attest(S("s")).equals("s")
 	})
 
@@ -340,7 +346,9 @@ contextualize(() => {
 				() => "",
 				(e: Error) => e.message
 			)
-		attest(await messageOf("", "f")).equals(configureAfterTypeMessage)
+		attest(await messageOf("", "f")).equals(
+			writeCreatedBeforeConfigureMessage("main.ts")
+		)
 		attest(await messageOf(`runtime.configure({}, "g")`, "f")).equals(
 			configMismatchMessage
 		)
@@ -352,10 +360,49 @@ contextualize(() => {
 			`runtime.fixConfig()\nruntime.configure({}, "f")`
 		)
 		attest(
-			await importBesideArktype(bundle(createdFirst).js).catch(
-				(e: Error) => e.message
-			)
+			await importBesideArktype(bundle(createdFirst).js)
+				.then(artifact => artifact.T())
+				.catch((e: Error) => e.message)
 		).equals(configureAfterTypeMessage)
+	})
+
+	it("creates its validators where a site first reads them", async () => {
+		const artifact = await importBesideArktype(
+			bundle(
+				`${precompileStandalone(
+					{ T: type({ a: "string" }) },
+					{ fingerprint: "f", path: "main.ts" }
+				)}\nexport const configure = runtime.configure`
+			).js
+		)
+		artifact.configure({ domain: { message: "configured" } }, "f")
+		attest(artifact.T()({ a: 1 }).summary).snap("configured")
+		attest(artifact.T()).is(artifact.T())
+		attest(() => artifact.configure({}, "f")).throws(configureAfterTypeMessage)
+	})
+
+	it("fixes the configuration where a Scope, Module or Generic is first read", async () => {
+		const exports = {
+			S: scope({ a: "string" }),
+			M: scope({ a: "string" }).export(),
+			G: generic(["t", "string"])({ v: "t" })
+		}
+		for (const [name, value] of Object.entries(exports)) {
+			// arktype fixes its configuration when it creates any of them
+			const artifact = await importBesideArktype(
+				bundle(
+					`${precompileStandalone(
+						{ [name]: value },
+						{ fingerprint: "f", path: "main.ts" }
+					)}\nexport const configure = runtime.configure`
+				).js
+			)
+			artifact.configure({}, "f")
+			artifact[name]()
+			attest(() => artifact.configure({}, "f")).throws(
+				configureAfterTypeMessage
+			)
+		}
 	})
 
 	it("keeps the descriptions of a type another scope describes", async () => {
@@ -539,7 +586,7 @@ contextualize(() => {
 			setPrototypeOf: (o: object) => o
 		})
 		try {
-			const { M } = await importBesideArktype(source)
+			const M = (await importBesideArktype(source)).M()
 			attest(Object.isFrozen(M)).equals(true)
 			attest(Object.isFrozen(M.a)).equals(true)
 			attest(M.a.from("x")).equals("x")

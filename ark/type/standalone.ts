@@ -109,13 +109,17 @@ export interface HelperParam {
 	name: string
 }
 
+export interface ConfiguredModule {
+	fingerprint: string
+	path: string
+}
+
 /**
- * #### an ES module that exports each Type as a validator running on arktype/runtime alone, each Module as an object of them, each Scope or Generic as a value whose members throw, and each factory as a function creating a validator from what it receives
+ * #### an ES module exporting, for each Type, a function returning its validator, which runs on arktype/runtime alone, for each Module one returning an object of them, and for each Scope or Generic one returning a value whose members throw, all created on the first call; and for each factory a function creating its validator from what it receives
  */
 export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
-	// of the configuration the build applied, which the program must configure the runtime with
-	fingerprint?: string,
+	configured?: ConfiguredModule,
 	// where each export was defined, which a Scope or Generic it holds names when used
 	sitesByName?: Record<string, string>
 ): string => {
@@ -128,12 +132,13 @@ export const precompileStandalone = (
 			factories.push(new StandaloneArtifact({ [name]: type }, params))
 		}
 	}
-	return new StandaloneArtifact(types).write(
-		factories,
-		`runtime.fixConfig(${fingerprint === undefined ? "" : JSON.stringify(fingerprint)})`,
-		sitesByName
-	)
+	return new StandaloneArtifact(types).write(factories, configured, sitesByName)
 }
+
+export const writeFixConfig = (
+	configured: ConfiguredModule | undefined
+): string =>
+	`runtime.fixConfig(${configured ? `${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)}` : ""})`
 
 export class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
@@ -431,34 +436,64 @@ export class StandaloneArtifact {
 		return this.validatorNamesByRoot.size > typeCount
 	}
 
-	// the configuration is fixed when the first validator is created, which happens where the artifact loads or a factory is called
+	// a site reading what the artifact exports creates it when the site is first evaluated, where arktype would fix its configuration
 	write(
 		factories: StandaloneArtifact[],
-		fixConfig: string,
+		configured: ConfiguredModule | undefined,
 		sitesByName?: Record<string, string>
 	): string {
-		const exported = Object.entries(this.exports).map(([name, value]) => {
-			const site = sitesByName?.[name]
-			return `export { ${this.exportOf(value, site ? "" : appendStringifiedKey("", name), site)} as ${JSON.stringify(name)} }`
-		})
+		const names = Object.keys(this.exports)
 		const sections = [
 			`import * as runtime from "arktype/runtime"`,
 			`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
-			// without validators, what is left is the Scopes and Generics exported and the Modules holding them
-			...(this.roots.length ?
-				[fixConfig, ...this.writeBody(`(${this.unit.source})`)]
-			:	[this.declarations.join("\n"), this.modules.join("\n")]),
-			...factories.map((factory, i) => factory.writeFactory(i, fixConfig)),
-			exported.join("\n")
+			names.length ? this.writeCreate(names, configured, sitesByName) : "",
+			...factories.map((factory, i) => factory.writeFactory(i, configured)),
+			names
+				.map(
+					(name, i) =>
+						`const get${i} = () => (created ??= create())[${i}]\nexport { get${i} as ${JSON.stringify(name)} }`
+				)
+				.join("\n")
 		]
 		return `${sections.filter(section => section).join("\n\n")}\n`
 	}
 
+	writeCreate(
+		names: string[],
+		configured: ConfiguredModule | undefined,
+		sitesByName: Record<string, string> | undefined
+	): string {
+		const values = names.map(name => {
+			const site = sitesByName?.[name]
+			return this.exportOf(
+				this.exports[name],
+				site ? "" : appendStringifiedKey("", name),
+				site
+			)
+		})
+		const statements = [
+			writeFixConfig(configured),
+			// without validators, what is left is the Scopes and Generics exported and the Modules holding them
+			...(this.roots.length ?
+				this.writeBody(`(${this.unit.source})`)
+			:	[this.declarations.join("\n"), this.modules.join("\n")]),
+			`return [${values.join(", ")}]`
+		]
+		return `let created
+
+const create = () => {
+${statements.filter(statement => statement).join("\n\n")}
+}`
+	}
+
 	// each call creates its validator from the holes and inputs it receives, so it declares everything the validator holds
-	writeFactory(index: number, fixConfig: string): string {
+	writeFactory(
+		index: number,
+		configured: ConfiguredModule | undefined
+	): string {
 		const [[name, type]] = Object.entries(this.exports)
 		const statements = [
-			fixConfig,
+			writeFixConfig(configured),
 			...this.checks,
 			...this.writeBody(`unit${index}`),
 			`return ${this.exportOf(type)}`

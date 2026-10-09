@@ -25,17 +25,17 @@ export const parsers = { type }`
 import * as $ark$island from "arktype/internal"
 import "arktype"
 import "arktype"
-export const A = $arkv260eqyxrkgn
+export const A = $arkv260eqyxrkgn()
 // @ark-runtime
 export const B = $ark$island.type({ name: process.argv[2] })
 export const C = process.argv.length > 2 ?
 	// @ark-runtime
 	$ark$island.type(process.argv[2])
-:	$arkvqkfg4egzmk
+:	$arkvqkfg4egzmk()
 // @ark-runtime
 export const parsers = { type: $ark$island.type }
-import { v260eqyxrkgn as $arkv260eqyxrkgn } from "~arktype/2fu6mqodp9s"
-import { vqkfg4egzmk as $arkvqkfg4egzmk } from "~arktype/2fu6mqodp9s"`)
+import { v260eqyxrkgn as $arkv260eqyxrkgn } from "~arktype/1fvgfmsgkxj"
+import { vqkfg4egzmk as $arkvqkfg4egzmk } from "~arktype/1fvgfmsgkxj"`)
 	})
 
 	it("reports a factory site reading an island's Type", () => {

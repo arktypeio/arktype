@@ -18,7 +18,9 @@ import {
 	holeNamePatternOf,
 	keyOf,
 	precompileStandalone,
+	writeFixConfig,
 	writeNamedString,
+	type ConfiguredModule,
 	type FactoryParam,
 	type StandaloneExport
 } from "arktype/internal/standalone.ts"
@@ -697,14 +699,12 @@ export class Precompiler {
 			}
 		}
 		const refusalsByName: Record<string, string> = {}
+		const { fingerprint } = this.configuration!
+		const configured =
+			fingerprint === undefined ? undefined : { fingerprint, path: module.path }
 		const validators =
 			Object.keys(exportsByName).length ?
-				writeValidators(
-					exportsByName,
-					sitesByName,
-					refusalsByName,
-					this.configuration!.fingerprint
-				)
+				writeValidators(exportsByName, sitesByName, refusalsByName, configured)
 			:	""
 		const specifier = `~arktype/${hashOf(validators)}`
 		const imported = new Set<string>()
@@ -719,7 +719,8 @@ export class Precompiler {
 				if (site.parseError) {
 					modules[`~arktype/${name}`] = writeParseErrorThrower(
 						site.parseError.message,
-						throwersBySite.get(site)?.names ?? []
+						throwersBySite.get(site)?.names ?? [],
+						configured
 					)
 					imports[`~arktype/${name}`] = { default: local }
 				} else {
@@ -731,14 +732,9 @@ export class Precompiler {
 			for (const [specifier, name, local] of factory?.imports ?? [])
 				(inputImports[specifier] ??= {})[name] = local
 			const call = throwersBySite.get(site) ?? factory
-			// a ParseError is thrown where the site is evaluated, as arktype throws it
-			if (!call) {
-				s.overwrite(
-					site.start,
-					site.end,
-					site.parseError ? `${local}()` : local
-				)
-			} else {
+			// a site becomes a call, so its validator is created, or its ParseError thrown, where arktype would create its Type
+			if (!call) s.overwrite(site.start, site.end, `${local}()`)
+			else {
 				// each parameter stays where it is written, so it is evaluated when the original evaluates it
 				const replace = (start: number, end: number, text: string) =>
 					start === end ?
@@ -2086,10 +2082,10 @@ const writeValidators = (
 	exportsByName: Record<string, StandaloneExport>,
 	sitesByName: Record<string, string>,
 	refusalsByName: Record<string, string>,
-	fingerprint: string | undefined
+	configured: ConfiguredModule | undefined
 ): string => {
 	try {
-		return precompileStandalone(exportsByName, fingerprint, sitesByName)
+		return precompileStandalone(exportsByName, configured, sitesByName)
 	} catch {
 		const emitted = { ...exportsByName }
 		for (const name in exportsByName) {
@@ -2102,16 +2098,18 @@ const writeValidators = (
 		}
 		// every export is refused when the whole artifact is, as under a configured locale
 		return Object.keys(emitted).length ?
-				precompileStandalone(emitted, fingerprint, sitesByName)
+				precompileStandalone(emitted, configured, sitesByName)
 			:	""
 	}
 }
 
-// a message printing a hole's name prints the name of the function it receives, as a factory's strings do
-const writeParseErrorThrower = (message: string, names: string[]) =>
-	names.length ?
-		`import * as runtime from "arktype/runtime"\n\nconst throwParseError = (${names.map((_, i) => `p${i}`).join(", ")}) => {\n\tthrow new runtime.ParseError(${writeNamedString(message, holeNamePatternOf(names), name => `p${names.indexOf(name)}`)})\n}\n\nexport { throwParseError as default }\n`
-	:	`import { ParseError } from "arktype/runtime"\n\nconst throwParseError = () => {\n\tthrow new ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
+// a message printing a hole's name prints the name of the function it receives, as a factory's strings do, and fixes the configuration as arktype's failed definition does
+const writeParseErrorThrower = (
+	message: string,
+	names: string[],
+	configured: ConfiguredModule | undefined
+) =>
+	`import * as runtime from "arktype/runtime"\n\nconst throwParseError = (${names.map((_, i) => `p${i}`).join(", ")}) => {\n\t${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${writeNamedString(message, names.length ? holeNamePatternOf(names) : undefined, name => `p${names.indexOf(name)}`)})\n}\n\nexport { throwParseError as default }\n`
 
 // each module runs in a function at the top of its importer, passed its imports and the globals the importer shadows
 const inlineModules = (

@@ -81,18 +81,20 @@ export const configure = (
 	return config
 }
 
-// each artifact fixes the configuration before it creates a validator, which must be precompiled under it
-export const fixConfig = (fingerprint?: string): void => {
+// an artifact fixes the configuration when it first creates a validator, as arktype does at its first Type
+export const fixConfig = (
+	...configured: [] | [fingerprint: string, path: string]
+): void => {
 	Object.freeze(runtimeLocale.keywordPhrases)
 	Object.freeze(runtimeLocale)
 	Object.freeze(runtimeConfig)
-	if (fingerprint !== configuredFingerprint) {
-		throwParseError(
-			configuredFingerprint === undefined ?
-				configureAfterTypeMessage
-			:	configMismatchMessage
-		)
-	}
+	const [fingerprint, path] = configured
+	if (fingerprint === configuredFingerprint) return
+	throwParseError(
+		path === undefined || configuredFingerprint !== undefined ?
+			configMismatchMessage
+		:	writeCreatedBeforeConfigureMessage(path)
+	)
 }
 
 // a runtime island's arktype takes the configuration whether its config module runs before or after the island loads
@@ -112,3 +114,11 @@ export const configMismatchMessage =
 	"an artifact precompiled under another configuration can't run under this one, so it must be rebuilt"
 
 export type configMismatchMessage = typeof configMismatchMessage
+
+export const writeCreatedBeforeConfigureMessage = <path extends string>(
+	path: path
+): writeCreatedBeforeConfigureMessage<path> =>
+	`${path} creates a Type before configure() runs, but was precompiled under the configuration configure() applies, so the config module must be imported first`
+
+export type writeCreatedBeforeConfigureMessage<path extends string> =
+	`${path} creates a Type before configure() runs, but was precompiled under the configuration configure() applies, so the config module must be imported first`

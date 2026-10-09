@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
+import { writeCreatedBeforeConfigureMessage } from "@ark/schema/runtime"
 import { writeLibrary } from "./utils.ts"
 
 const app = fromHere("app")
@@ -47,8 +48,8 @@ const checks = fromHere("checks")
 
 const library = writeLibrary()
 
-const runPlain = (cwd: string) =>
-	spawnSync(process.execPath, ["--conditions", "ark-ts", "main.ts"], {
+const runPlain = (cwd: string, entry = "main.ts") =>
+	spawnSync(process.execPath, ["--conditions", "ark-ts", entry], {
 		cwd,
 		encoding: "utf8"
 	}).stdout
@@ -133,6 +134,18 @@ contextualize(() => {
 			}
 		}).timeout(60000)
 
+		it("configured before a Type created where it's defined is", () => {
+			const opts = { config: "config.ts" }
+			attest(node(["later.ts"], opts, configured).stdout).equals(
+				runPlain(configured, "later.ts")
+			)
+			attest(
+				node(["unconfigured.ts"], opts, configured).stderr.includes(
+					writeCreatedBeforeConfigureMessage("schemas.ts")
+				)
+			).equals(true)
+		}).timeout(60000)
+
 		it("refuses a configured locale", () => {
 			const { status, stderr } = node(
 				["main.ts"],
@@ -197,7 +210,7 @@ contextualize(() => {
 import { readFileSync, utimesSync } from "node:fs"
 const first = ${transform}
 utimesSync("config.ts", new Date(), new Date())
-console.log(first === ${transform}, /fixConfig\\("\\w+"\\)/.test(first))`
+console.log(first === ${transform}, /fixConfig\\("\\w+", "main.ts"\\)/.test(first))`
 				}
 			)
 			attest(stdout).equals("true true\n")
