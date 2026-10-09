@@ -24,6 +24,8 @@ export const parsers = { type }`
 		attest(precompile(source).code).snap(`import "arktype/internal/island.js"
 import * as $ark$island from "arktype/internal"
 import "arktype"
+import { v260eqyxrkgn as $arkv260eqyxrkgn } from "~arktype/2czgqujmpio"
+import { vqkfg4egzmk as $arkvqkfg4egzmk } from "~arktype/2czgqujmpio"
 import "arktype"
 export const A = $arkv260eqyxrkgn()
 // @ark-runtime
@@ -33,9 +35,7 @@ export const C = process.argv.length > 2 ?
 	$ark$island.type(process.argv[2])
 :	$arkvqkfg4egzmk()
 // @ark-runtime
-export const parsers = { type: $ark$island.type }
-import { v260eqyxrkgn as $arkv260eqyxrkgn } from "~arktype/11159l3f9zu"
-import { vqkfg4egzmk as $arkvqkfg4egzmk } from "~arktype/11159l3f9zu"`)
+export const parsers = { type: $ark$island.type }`)
 	})
 
 	it("reports a factory site reading an island's Type", () => {

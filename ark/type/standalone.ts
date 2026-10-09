@@ -508,10 +508,11 @@ export class StandaloneArtifact {
 		if (!names.length) return []
 		return [
 			this.writeCreate(names, configured, sitesByName),
+			// declared as functions, which a site an import cycle reaches before the artifact is evaluated can call
 			names
 				.map(
 					(name, i) =>
-						`const get${i} = () => (created ??= create())[${i}]\nexport { get${i} as ${JSON.stringify(name)} }`
+						`function get${i}() {\n\treturn (created ??= create())[${i}]\n}\n\nexport { get${i} as ${JSON.stringify(name)} }`
 				)
 				.join("\n")
 		]
@@ -538,9 +539,9 @@ export class StandaloneArtifact {
 			:	[this.declarations.join("\n"), this.modules.join("\n")]),
 			`return [${values.join(", ")}]`
 		]
-		return `let created
+		return `var created
 
-const create = () => {
+function create() {
 ${statements.filter(statement => statement).join("\n\n")}
 }`
 	}
@@ -556,15 +557,14 @@ ${statements.filter(statement => statement).join("\n\n")}
 		const statements = [
 			writeFixConfig(configured),
 			...this.checks,
-			...this.writeBody((_, i) => `unit${index}_${i}`),
+			// each unit is evaluated once, at the first call, which may come before the artifact's body runs
+			...this.writeBody((unit, i) => `(unit${index}_${i} ??= ${unit.source})`),
 			`return ${this.exportOf(this.exports[name])}`
 		]
-		const units = [...this.units.values()].map(
-			(unit, i) => `const unit${index}_${i} = ${unit.source}`
-		)
-		return `${units.join("\n\n")}
+		const units = [...this.units.keys()].map((_, i) => `var unit${index}_${i}`)
+		return `${units.join("\n")}
 
-const factory${index} = (${params.map((_, i) => `p${i}`).join(", ")}) => {
+function factory${index}(${params.map((_, i) => `p${i}`).join(", ")}) {
 ${statements.filter(statement => statement).join("\n\n")}
 }
 

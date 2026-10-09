@@ -243,6 +243,11 @@ contextualize(() => {
 			attest(standalone.includes(parserMessage)).equals(false)
 		}).timeout(60000)
 
+		it(`${name} import cycle`, async () => {
+			const cycle = fromHere("cycle")
+			attest(run(await bundle({ cwd: cycle }, cycle))).equals(runPlain(cycle))
+		}).timeout(60000)
+
 		it(`${name} configured`, async () => {
 			const opts = { cwd: configured, config: "config.ts" }
 			const standalone = await bundle(opts, configured)

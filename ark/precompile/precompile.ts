@@ -27,6 +27,7 @@ import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
 import type {
 	CallExpression,
+	ImportDeclaration,
 	ImportDeclarationSpecifier,
 	Node,
 	Program,
@@ -505,14 +506,18 @@ export class Precompiler {
 			}
 			if (this.inline) this.importKeywords(module, s)
 		}
-		if (this.inline) inlineModules(module, s, prefix, modules, imports)
+		// imported where the module imports arktype, so they're evaluated where arktype is, in an import cycle too
+		const arktypeImport = this.arktypeImportOf(module)
+		const insertImport = (text: string) =>
+			arktypeImport ? s.appendLeft(arktypeImport.end, text) : s.append(text)
+		if (this.inline)
+			inlineModules(module, s, prefix, modules, imports, insertImport)
 		else {
-			// imported last, so they load after the module's other imports and before its body creates a Type
 			for (const specifier in imports) {
 				const locals = imports[specifier]
-				if (!Object.keys(locals).length) s.append(`\nimport "${specifier}"`)
+				if (!Object.keys(locals).length) insertImport(`\nimport "${specifier}"`)
 				for (const name in locals) {
-					s.append(
+					insertImport(
 						name === "default" ?
 							`\nimport ${locals[name]} from "${specifier}"`
 						:	`\nimport { ${name} as ${locals[name]} } from "${specifier}"`
@@ -530,6 +535,20 @@ export class Precompiler {
 			diagnostics,
 			modules: this.inline ? {} : modules
 		}
+	}
+
+	// the first import reaching arktype, directly or through a binding the module defines with it
+	private arktypeImportOf(module: SourceModule): ImportDeclaration | undefined {
+		return module.program.body.find(
+			(statement): statement is ImportDeclaration =>
+				statement.type === "ImportDeclaration" &&
+				statement.importKind !== "type" &&
+				(statement.source.value === "arktype" ||
+					statement.specifiers.some(specifier => {
+						const binding = module.scopes.bindingsById.get(specifier.local)
+						return !!binding && this.graph.isArkBinding(binding, module)
+					}))
+		)
 	}
 
 	// as the program applies it at runtime, before any site is evaluated
@@ -2147,7 +2166,7 @@ const writeParseErrorThrower = (
 	message: string,
 	configured: ConfiguredModule | undefined
 ) =>
-	`import * as runtime from "arktype/runtime"\n\nconst throwParseError = () => {\n\t${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
+	`import * as runtime from "arktype/runtime"\n\nfunction throwParseError() {\n\t${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
 
 // each module runs in a function at the top of its importer, passed its imports and the globals the importer shadows
 const inlineModules = (
@@ -2155,10 +2174,12 @@ const inlineModules = (
 	s: MagicString,
 	prefix: string,
 	modules: Record<string, string>,
-	imports: Record<string, Record<string, string>>
+	imports: Record<string, Record<string, string>>,
+	insertImport: (text: string) => void
 ) => {
 	const namespacesBySource: Record<string, string> = {}
 	let declarations = ""
+	let loaders = 0
 	for (const specifier in imports) {
 		const inlined = new SourceModule(specifier, modules[specifier], specifier)
 		const body = new MagicString(inlined.source)
@@ -2205,15 +2226,24 @@ const inlineModules = (
 		const objectOf = (valueOf: (name: string) => string) =>
 			`{ ${names.map(name => `${JSON.stringify(name)}: ${valueOf(name)}`).join(", ")} }`
 		const call = `((${params.join(", ")}) => {\n${body.toString().trim()}\n${names.length ? `return ${objectOf(name => localsByName[name])}\n` : ""}})(${args.join(", ")})`
-		declarations +=
-			names.length ?
-				`const ${objectOf(name => locals[name])} = ${call};\n`
-			:	`;${call};\n`
+		if (!names.length) {
+			declarations += `;${call};\n`
+			continue
+		}
+		// each local is a function declaration, which a site an import cycle reaches before the module's body runs can call
+		const exports = `${prefix}$exports${loaders}`
+		const load = `${prefix}$load${loaders++}`
+		declarations += `var ${exports};\nfunction ${load}() {\nreturn (${exports} ??= ${call})\n}\n${names
+			.map(
+				name =>
+					`function ${locals[name]}(...args) {\nreturn ${load}()[${JSON.stringify(name)}](...args)\n}\n`
+			)
+			.join("")}${load}();\n`
 	}
 	if (!declarations) return
 	s.prependLeft(firstStatementOf(module.program).start, declarations)
 	for (const source in namespacesBySource) {
-		s.append(
+		insertImport(
 			`\nimport * as ${namespacesBySource[source]} from ${JSON.stringify(source)}`
 		)
 	}

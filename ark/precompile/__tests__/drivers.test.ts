@@ -48,6 +48,8 @@ const checks = fromHere("checks")
 
 const writers = fromHere("writers")
 
+const cycle = fromHere("cycle")
+
 const library = writeLibrary()
 
 const runPlain = (cwd: string, entry = "main.ts") =>
@@ -85,6 +87,10 @@ contextualize(() => {
 
 		it("cache", () => {
 			attest(node(["main.ts"], { runtime: "arktype" }).stdout).equals(expected)
+		}).timeout(60000)
+
+		it("import cycle", () => {
+			attest(node(["main.ts"], {}, cycle).stdout).equals(runPlain(cycle))
 		}).timeout(60000)
 
 		it("fails a test file with a rejected site", () => {
@@ -205,7 +211,9 @@ contextualize(() => {
 
 		it("precompiles a module in either mode", () => {
 			const standalone = load("schemas.ts")
-			attest(standalone.run()).satisfies(/^const { "v\w+": \$ark\w+,/)
+			attest(standalone.run()).satisfies(
+				/^var \$ark\$exports0;\nfunction \$ark\$load0\(\) {/
+			)
 			attest(standalone.dependencies).equals(["ark.ts"])
 			attest(load("schemas.ts", { runtime: "arktype" }).run()).satisfies(
 				/^;\(\({ "registerPrecompiledUnits": /
@@ -301,6 +309,12 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 
 		it("cache", () => {
 			attest(bun([...preload, "main.ts"], "arktype").stdout).equals(expected)
+		}).timeout(60000)
+
+		it("import cycle", () => {
+			attest(bun([...preload, "main.ts"], undefined, cycle).stdout).equals(
+				runPlain(cycle)
+			)
 		}).timeout(60000)
 
 		it("configured", () => {
