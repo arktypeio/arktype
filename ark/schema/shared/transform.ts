@@ -1,8 +1,8 @@
 import {
 	defineValue,
-	flatMorph,
 	hasDomain,
 	isArray,
+	isKeyOf,
 	objectKindOf,
 	typedArrayConstructors,
 	type BuiltinObjectKind,
@@ -73,12 +73,17 @@ export const copyOf = (data: object): object => {
 	if (prototype === Object.prototype) return { ...data }
 	const kind = objectKindOf(data)
 	if (kind === undefined) return Object.setPrototypeOf({ ...data }, prototype)
+	// a typed array's copy takes only its elements
+	if (isKeyOf(kind, typedArrayConstructors)) {
+		return Object.setPrototypeOf(
+			new typedArrayConstructors[kind](data as never),
+			prototype
+		)
+	}
 	const copyContents = copyContentsOf[kind]
 	// a builtin whose state can't be copied, e.g. a function, transforms in place
 	if (!copyContents) return data
 	const copy = Object.setPrototypeOf(copyContents(data as never), prototype)
-	// a typed array's copy takes only its elements
-	if (kind in typedArrayConstructors) return copy
 	// descriptors include state a spread skips, e.g. an Error's message
 	const descriptors: { [k: Key]: PropertyDescriptor } =
 		Object.getOwnPropertyDescriptors(data)
@@ -118,10 +123,6 @@ export const mergeTransformed = (
 const copyContentsOf: {
 	[kind in BuiltinObjectKind]?: (data: never) => object
 } = {
-	...flatMorph(typedArrayConstructors, (kind, TypedArray) => [
-		kind,
-		(data: never) => new TypedArray(data)
-	]),
 	ArrayBuffer: (data: ArrayBuffer) => data.slice(0),
 	Date: (data: Date) => new Date(data),
 	Error: () => new Error(),
