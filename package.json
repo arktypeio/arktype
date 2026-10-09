@@ -17,6 +17,7 @@
 	"scripts": {
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude \"ark/attest/**/*.test.*\"",
+		"testFiles": "mocha --no-package --node-option conditions=ark-ts --require ./ark/repo/mocha.globalSetup.ts --timeout 10000",
 		"prChecks": "pnpm lint && pnpm buildRepo && pnpm testRepoWithBenches",
 		"attest": "ts ./ark/attest/cli/cli.ts",
 		"build": "pnpm -r --filter !\"@ark/docs\" build",
@@ -78,7 +79,7 @@
 		"typescript-eslint": "8.46.1"
 	},
 	"mocha": {
-		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.jsonc AND .vscode/settings.json",
+		"//": "IF YOU UPDATE THE MOCHA CONFIG HERE, PLEASE ALSO UPDATE ark/repo/mocha.package.jsonc, the testFiles script AND .vscode/settings.json",
 		"spec": [
 			"**/__tests__/**/*.test.*"
 		],
