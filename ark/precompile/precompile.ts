@@ -54,6 +54,7 @@ import {
 } from "./host.ts"
 import {
 	createSiteState,
+	envReadOf,
 	findDynamic,
 	Interpreter,
 	type InterpreterOptions,
@@ -1710,11 +1711,10 @@ export class Precompiler {
 		)
 		const dynamic = rejectionOf(value)
 		const result = dynamic ? chainOf(dynamic) : []
-		const define =
-			dynamic ? undefined : this.interpreter.defineReadBy(value.trace)
+		const define = this.defineReadIn(this.localClosureOf(module.id))
 		if (define) {
 			result.push(
-				`\`${define}\` is a build define, and nothing compares its runtime value with the build's`
+				`${define} is a build define the configuration reads, and nothing compares its runtime value with the build's`
 			)
 		}
 		const visit = (o: unknown) => {
@@ -1741,6 +1741,25 @@ export class Precompiler {
 			problem:
 				result.length ? `${module.snippetOf(call)} is not static` : undefined,
 			reasons: result
+		}
+	}
+
+	// the configuration's code is all in its closure, and arktype may call any of it, like a description writer, while defining a Type
+	private defineReadIn(ids: string[]): string | undefined {
+		const { define } = this.interpreter.opts
+		if (!define) return
+		for (const id of ids) {
+			const module = this.graph.moduleOf(id)
+			if (!(module instanceof SourceModule)) continue
+			let result: string | undefined
+			walk(module.program, node => {
+				const name =
+					node.type === "MemberExpression" ? envReadOf(node, module) : undefined
+				if (name !== undefined && name in define)
+					result ??= `\`${name}\` (${module.positionOf(node)})`
+				return result === undefined
+			})
+			if (result) return result
 		}
 	}
 

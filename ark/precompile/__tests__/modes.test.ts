@@ -242,31 +242,31 @@ configure({ keywords: { "string.email": \`an address\${suffix}\` } })`
 		it("configure with a build define", () => {
 			const opts = {
 				config: "/main.ts",
-				define: { "process.env.MODE": "strict" }
-			}
-			const files = {
-				"/mode.ts": 'export const strict = process.env.MODE === "strict"'
+				define: { "process.env.LANG": "de" }
 			}
 			attest(
 				diagnosticsOf(
 					`import { configure } from "arktype/config"
-configure({ onUndeclaredKey: process.env.MODE === "strict" ? "reject" : "ignore" })`,
+configure({ domain: { description: () => process.env.LANG === "de" ? "eine Zahl" : "a number" } })`,
 					{},
 					opts
 				)
 			).snap([
-				"/main.ts:2:1  configure({ onUndeclaredKey: process.env.MODE === \"strict\" … is not static\n  `process.env.MODE` is a build define, and nothing compares its runtime value with the build's\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				"/main.ts:2:1  configure({ domain: { description: () => process.env.LANG =… is not static\n  `process.env.LANG` (/main.ts:2:42) is a build define the configuration reads, and nothing compares its runtime value with the build's\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
 			attest(
 				diagnosticsOf(
 					`import { configure } from "arktype/config"
-import { strict } from "./mode.ts"
-configure({ onUndeclaredKey: strict ? "reject" : "ignore" })`,
-					files,
+import { describe } from "./locale.ts"
+configure({ domain: { description: describe } })`,
+					{
+						"/locale.ts": `const german = process.env.LANG === "de"
+export const describe = () => (german ? "eine Zahl" : "a number")`
+					},
 					opts
 				)
 			).snap([
-				'/main.ts:3:1  configure({ onUndeclaredKey: strict ? "reject" : "ignore" }) is not static\n  `process.env.MODE` is a build define, and nothing compares its runtime value with the build\'s\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+				"/main.ts:3:1  configure({ domain: { description: describe } }) is not static\n  `process.env.LANG` (/locale.ts:1:16) is a build define the configuration reads, and nothing compares its runtime value with the build's\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
 		})
 	})
