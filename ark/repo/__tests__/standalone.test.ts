@@ -1076,6 +1076,29 @@ contextualize(() => {
 			)
 		})
 
+		it("checks the functions one expression created are named alike", async () => {
+			// as a factory like `longer(n)` creates them, each under the placeholder of the expression creating it
+			const longer = (n: number) =>
+				standIn((s: string) => s.length > n, "longer")
+			const longer3 = longer(3)
+			const longer1 = longer(1)
+			const create = await loadFactory(
+				type("string").narrow(longer3).narrow(longer1),
+				[
+					["function", "`longer(3)`", longer3],
+					["function", "`longer(1)`", longer1]
+				]
+			)
+			const named = (name: string) =>
+				Object.defineProperty((s: string) => s.length > 0, "name", {
+					value: name
+				})
+			attest(create(named("isA"), named("isA"))("abc")).equals("abc")
+			attest(() => create(named("isA"), named("isB"))).throws(
+				writeCreationMismatchMessage("`longer(1)`", '"isB"', '"isA"')
+			)
+		})
+
 		it("compares the inputs it receives with what the build read", async () => {
 			const o = {
 				name: "string" as const,

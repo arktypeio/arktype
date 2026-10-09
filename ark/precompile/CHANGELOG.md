@@ -37,7 +37,7 @@ export default defineConfig({ plugins: [precompile.vite()] })
 
 ### Precompile definitions holding functions
 
-In standalone mode, a definition holding a morph, a predicate, a default's function, a class or a symbol is precompiled to a factory, and the definition becomes a call passing each of those values where it was written, so it is evaluated when the original would have been. The factory checks that each value is what its code was compiled for (a function's parameter count, a class's builtin and other ancestors, a symbol's description), and that a value the definition reads through two expressions, or that a Type it references also holds, is still one value, and throws at creation if not, then creates the validator, printing each function's own name in its descriptions and errors.
+In standalone mode, a definition holding a morph, a predicate, a default's function, a class or a symbol is precompiled to a factory, and the definition becomes a call passing each of those values where it was written, so it is evaluated when the original would have been. The factory checks that each value is what its code was compiled for (a function's parameter count, a class's builtin and other ancestors, a symbol's description), and that a value the definition reads through two expressions, or that a Type it references also holds, is still one value, and throws at creation if not, then creates the validator, printing each function's own name in its descriptions and errors. Functions one expression created, like those of a predicate factory called twice, share the name it prints, so the factory checks they are named alike.
 
 ```ts
 const trim = (s: string) => s.trim()
