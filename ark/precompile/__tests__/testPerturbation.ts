@@ -2,12 +2,13 @@ import { fromHere } from "@ark/fs"
 import { createNodeHost, Precompiler } from "@ark/precompile"
 import { hasArkKind } from "@ark/schema"
 import { keyOf } from "arktype/internal/standalone.ts"
+import { bindingOfFunction } from "@ark/precompile/internal/graph.ts"
 import type { SourceModule } from "@ark/precompile/internal/module.ts"
 import MagicString from "magic-string"
 import { spawnSync } from "node:child_process"
 import { globSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
-import { join, relative } from "node:path"
+import { dirname, join, relative } from "node:path"
 import {
 	isPerturbable,
 	perturbations,
@@ -44,6 +45,11 @@ const corpus = globSync(
 // the define the checks fixture's moded.ts is built with, which the worker sets unless it stubs it
 const define = { "process.env.ARK_MODE": "loose" }
 
+const specifierOf = (importer: string, file: string) => {
+	const path = relative(dirname(importer), file).split("\\").join("/")
+	return path.startsWith(".") ? path : `./${path}`
+}
+
 const createPrecompiler = () =>
 	new Precompiler(
 		createNodeHost({ conditions: ["ark-ts", "import", "default"] }),
@@ -76,6 +82,7 @@ for (const path of corpus) {
 	// a comment beside a site survives its transform, so each world wraps the same expression
 	const marked = new MagicString(source)
 	const wrappers: [start: string, end: string, replacement: string][] = []
+	const heldImports: string[] = []
 	for (const site of folded) {
 		const id = Object.keys(sitesById).length
 		sitesById[id] = `${relative(root, path)}:${site.line}:${site.column}`
@@ -94,18 +101,24 @@ for (const path of corpus) {
 				continue
 			names.add(binding.name)
 		}
-		// what a Type the site reads holds can change too, through any binding of the module that holds it
+		// what a Type the site reads holds can change too, through the binding declaring it, imported if another module exports it
 		const held = new Set(
 			[site.value, ...site.references.map(reference => reference.value)]
 				.filter(value => hasArkKind(value, "root"))
 				.flatMap(root => keyOf(root)[1])
 		)
-		for (const binding of module.scopes.bindingsById.values()) {
-			if (
-				!binding.scope.parent &&
-				held.has(precompiler.interpreter.valueOfBinding(binding, module))
-			)
-				names.add(binding.name)
+		for (const value of held) {
+			const [node, declaring] = precompiler.interpreter.sourceOf(value) ?? []
+			const binding = node && bindingOfFunction(node, declaring!)
+			if (!binding || binding.scope.parent) continue
+			if (declaring === module) names.add(binding.name)
+			else if (binding.exportNames.length) {
+				const local = `$arkHeld${heldImports.length}`
+				heldImports.push(
+					`import { ${binding.exportNames[0]} as ${local} } from ${JSON.stringify(specifierOf(path, declaring!.id))}`
+				)
+				names.add(local)
+			}
 		}
 		marked.appendLeft(site.start, `/*@${id}(*/`)
 		marked.prependRight(site.end, `/*)@${id}*/`)
@@ -129,6 +142,7 @@ for (const path of corpus) {
 		}
 		return code
 	}
+	marked.append(heldImports.map(statement => `\n${statement}`).join(""))
 	const precompiled = createPrecompiler().precompile(
 		marked.toString(),
 		path
@@ -141,7 +155,7 @@ for (const path of corpus) {
 	const reached = [path]
 	for (const importer of reached) {
 		for (const target of precompiler.localImportsOf(
-			readFileSync(importer, "utf8"),
+			importer === path ? marked.toString() : readFileSync(importer, "utf8"),
 			importer
 		)) {
 			if (!isPerturbable(target) || reached.includes(target)) continue
