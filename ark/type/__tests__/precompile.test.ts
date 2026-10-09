@@ -202,9 +202,7 @@ contextualize(() => {
 			"precompiledOptional must be a number (was a string)"
 		)
 		attest(isPrecompiled(units, Undefinable.internal)).equals(false)
-		attest<unknown>(Undefinable({ precompiledOptional: undefined })).equals({
-			precompiledOptional: undefined
-		})
+		attest(Undefinable.allows({ precompiledOptional: undefined })).equals(true)
 	})
 
 	it("binds a unit for a function registered under a counted name", async () => {
