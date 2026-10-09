@@ -154,21 +154,33 @@ bench(
 	() => v.safeParse(MoltarStrict.valibot, moltarExtraKeysData).issues
 ).median([1.47, "us"])
 
+// arktype deletes undeclared keys and adds defaults in place, so each arm parses its own copy
+const copiesByArm = <data>(data: data) => ({
+	arktype: structuredClone(data),
+	standalone: structuredClone(data),
+	zod: structuredClone(data),
+	valibot: structuredClone(data)
+})
+
+const stripDataByArm = copiesByArm(moltarExtraKeysData)
+
+const defaultsDataByArm = copiesByArm(defaultsData)
+
 bench("moltar strip parse (arktype)", () =>
-	MoltarStrip.arktype(moltarExtraKeysData)
-).median([3.69, "us"])
+	MoltarStrip.arktype(stripDataByArm.arktype)
+).median([39.3, "ns"])
 
 bench("moltar strip parse (standalone)", () =>
-	standalone.MoltarStrip(moltarExtraKeysData)
-).median([42.84, "ns"])
+	standalone.MoltarStrip(stripDataByArm.standalone)
+).median([35.4, "ns"])
 
 bench("moltar strip parse (zod)", () =>
-	MoltarStrip.zod.safeParse(moltarExtraKeysData)
-).median([210.24, "ns"])
+	MoltarStrip.zod.safeParse(stripDataByArm.zod)
+).median([349, "ns"])
 
 bench("moltar strip parse (valibot)", () =>
-	v.safeParse(MoltarStrip.valibot, moltarExtraKeysData)
-).median([743.87, "ns"])
+	v.safeParse(MoltarStrip.valibot, stripDataByArm.valibot)
+).median([1.61, "us"])
 
 bench("moltar invalid allows (arktype)", () =>
 	Moltar.arktype.allows(moltarInvalidData)
@@ -367,22 +379,21 @@ bench("morph parse (valibot)", () =>
 	v.safeParse(Morph.valibot, morphData)
 ).median([117.08, "ns"])
 
-bench("defaults parse (arktype)", () => Defaults.arktype(defaultsData)).median([
-	697.76,
-	"ns"
-])
+bench("defaults parse (arktype)", () =>
+	Defaults.arktype(defaultsDataByArm.arktype)
+).median([26.3, "ns"])
 
 bench("defaults parse (standalone)", () =>
-	standalone.Defaults(defaultsData)
-).median([34.05, "ns"])
+	standalone.Defaults(defaultsDataByArm.standalone)
+).median([25.8, "ns"])
 
 bench("defaults parse (zod)", () =>
-	Defaults.zod.safeParse(defaultsData)
-).median([209.47, "ns"])
+	Defaults.zod.safeParse(defaultsDataByArm.zod)
+).median([317.7, "ns"])
 
 bench("defaults parse (valibot)", () =>
-	v.safeParse(Defaults.valibot, defaultsData)
-).median([518.05, "ns"])
+	v.safeParse(Defaults.valibot, defaultsDataByArm.valibot)
+).median([1.08, "us"])
 
 bench("tree parse (arktype)", () => Tree.arktype(treeData)).median([3.24, "us"])
 
