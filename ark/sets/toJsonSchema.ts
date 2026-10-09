@@ -8,6 +8,7 @@ import {
 	type RootKind,
 	type Sequence,
 	type Structure,
+	type Union,
 	type nodeOfKind
 } from "@ark/schema"
 import { flatMorph, hasKey, throwInternalError, type dict } from "@ark/util"
@@ -93,6 +94,23 @@ const toResolvedJsonSchema = (
 	return result
 }
 
+// a union's true and false branches are written as one boolean
+const branchGroupsOf = (node: Union.Node): BaseRoot[] => {
+	const branchGroups: BaseRoot[] = []
+	let firstBooleanIndex = -1
+	for (const branch of node.branches) {
+		if (branch.hasKind("unit") && branch.domain === "boolean") {
+			if (firstBooleanIndex === -1) {
+				firstBooleanIndex = branchGroups.length
+				branchGroups.push(branch)
+			} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
+			continue
+		}
+		branchGroups.push(branch)
+	}
+	return branchGroups
+}
+
 const innerToJsonSchemaByKind: {
 	[kind in RootKind]: (
 		node: nodeOfKind<kind>,
@@ -101,7 +119,7 @@ const innerToJsonSchemaByKind: {
 } = {
 	alias: (node, ctx) => toJsonSchemaRecurse(node.resolution, ctx),
 	union: (node, ctx) => {
-		const branchGroups = node.branchGroups
+		const branchGroups = branchGroupsOf(node)
 		// special case to simplify { const: true } | { const: false }
 		// to the canonical JSON Schema representation { type: "boolean" }
 		if (

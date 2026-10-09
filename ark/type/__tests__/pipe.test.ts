@@ -6,6 +6,7 @@ import {
 	type ArkErrors
 } from "@ark/schema"
 import {
+	discriminantJsonOf,
 	writeIndiscriminableMorphMessage,
 	writeMorphIntersectionMessage
 } from "arksets"
@@ -193,8 +194,9 @@ contextualize(() => {
 		attest<(In: 0 | 1 | 2) => Out<number>>(T.t)
 
 		attest(
-			T.internal.select({ method: "assertFind", kind: "union" })
-				.discriminantJson
+			discriminantJsonOf(
+				T.internal.select({ method: "assertFind", kind: "union" })
+			)
 		).snap({
 			kind: "unit",
 			path: [],
@@ -751,7 +753,7 @@ contextualize(() => {
 
 		attest<[number] | ((In: [string]) => Out<string[]>)>(types.c.t)
 
-		attest(types.c.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(types.c.internal.assertHasKind("union"))).snap({
 			kind: "domain",
 			path: ["0"],
 			cases: {

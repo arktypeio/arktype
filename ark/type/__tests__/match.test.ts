@@ -11,6 +11,7 @@ import {
 	throwOnDefault,
 	type Match
 } from "arktype/internal/match.ts"
+import { discriminantJsonOf } from "arksets"
 
 const throwDefaultRef = registeredReference(throwOnDefault)
 
@@ -574,7 +575,7 @@ contextualize(() => {
 			)
 			.default("assert")
 
-		attest(m.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(m.internal.assertHasKind("union"))).snap({
 			kind: "domain",
 			path: ["id"],
 			cases: {

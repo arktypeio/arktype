@@ -2,7 +2,6 @@ import {
 	appendUnique,
 	domainDescriptions,
 	domainOf,
-	flatMorph,
 	hasDomain,
 	jsTypeOfDescriptions,
 	printable,
@@ -10,7 +9,6 @@ import {
 	serializePrimitive,
 	unset,
 	type JsTypeOf,
-	type JsonStructure,
 	type SerializablePrimitive,
 	type SerializedPrimitive,
 	type array,
@@ -147,23 +145,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		this.branches[0].hasUnit(false) &&
 		this.branches[1].hasUnit(true)
 
-	get branchGroups(): BaseRoot[] {
-		const branchGroups: BaseRoot[] = []
-		let firstBooleanIndex = -1
-		for (const branch of this.branches) {
-			if (branch.hasKind("unit") && branch.domain === "boolean") {
-				if (firstBooleanIndex === -1) {
-					firstBooleanIndex = branchGroups.length
-					branchGroups.push(branch)
-				} else branchGroups[firstBooleanIndex] = $ark.intrinsic.boolean
-				continue
-			}
-			branchGroups.push(branch)
-		}
-
-		return branchGroups as never
-	}
-
 	unitBranches = this.branches.filter((n): n is Unit.Node | Morph.Node =>
 		n.rawIn.hasKind("unit")
 	)
@@ -180,10 +161,6 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		n => (n.hasKind("intersection") ? n.expression : n.nestableExpression),
 		expressBranches
 	)
-
-	get discriminantJson(): JsonStructure | null {
-		return this.discriminant ? discriminantToJson(this.discriminant) : null
-	}
 
 	discriminate(): Discriminant | null {
 		this.caseNodes.length = 0
@@ -474,19 +451,6 @@ const invokeTransform = (
 	: js.requiresContext && returnsTransformErrors(branch) ?
 		`ctx.transform(${js.ref(branch)}, data)`
 	:	js.invoke(branch)
-
-const discriminantToJson = (discriminant: Discriminant): JsonStructure => ({
-	kind: discriminant.kind,
-	path: discriminant.path.map(k =>
-		typeof k === "string" ? k : compileSerializedValue(k)
-	),
-	cases: flatMorph(discriminant.cases, (k, node) => [
-		k,
-		node === true ? node
-		: node.hasKind("union") && node.discriminantJson ? node.discriminantJson
-		: node.json
-	])
-})
 
 type DescribeBranchesOptions = {
 	delimiter?: string

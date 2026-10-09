@@ -1,13 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference } from "@ark/schema"
 import { scope, type } from "arktype"
+import { discriminantJsonOf } from "arksets"
 
 contextualize(() => {
 	it("2 literal branches", () => {
 		// should not use a switch with <=2 branches to avoid needless convolution
 		const T = type("'a'|'b'")
 		attest(T.json).snap([{ unit: "a" }, { unit: "b" }])
-		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: [],
 			cases: { '"a"': true, '"b"': true }
@@ -20,7 +21,7 @@ contextualize(() => {
 	it(">2 literal branches", () => {
 		const T = type("'a'|'b'|'c'")
 		attest(T.json).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
-		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: [],
 			cases: { '"a"': true, '"b"': true, '"c"': true }
@@ -34,7 +35,7 @@ contextualize(() => {
 	it(">2 domain branches", () => {
 		const T = type("string|bigint|number")
 		attest(T.json).snap(["bigint", "number", "string"])
-		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
 			kind: "domain",
 			path: [],
 			cases: {
@@ -53,7 +54,7 @@ contextualize(() => {
 	it("literals can be included in domain branches", () => {
 		const T = type("string|bigint|true")
 		attest(T.json).snap(["bigint", "string", { unit: true }])
-		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
 			kind: "domain",
 			path: [],
 			cases: { '"bigint"': true, '"string"': true, '"boolean"': { unit: true } }
@@ -95,7 +96,7 @@ contextualize(() => {
 			'climate must be "dry" or "wet" (was undefined)'
 		)
 
-		attest(climate.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(climate.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: ["color"],
 			cases: {
@@ -134,7 +135,7 @@ contextualize(() => {
 			}
 		])
 
-		attest(T.internal.assertHasKind("union").discriminantJson).equals(null)
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).equals(null)
 	})
 
 	it("discriminate optional key", () => {
@@ -146,7 +147,7 @@ contextualize(() => {
 			operator: "'to'"
 		})
 
-		attest(T.internal.assertHasKind("union").discriminantJson).equals(null)
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).equals(null)
 	})
 
 	it("overlapping default case", () => {
@@ -156,7 +157,7 @@ contextualize(() => {
 			{ temperature: "'hot'" }
 		])
 
-		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: ["color"],
 			cases: {
@@ -193,7 +194,7 @@ contextualize(() => {
 			["ocean|rainForest", "|", { temperature: "'hot'" }]
 		])
 
-		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: ["color"],
 			cases: {
@@ -236,14 +237,14 @@ contextualize(() => {
 
 	it("won't discriminate between possibly empty arrays", () => {
 		const T = type("string[]|boolean[]")
-		attest(T.internal.assertHasKind("union").discriminantJson).equals(null)
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).equals(null)
 	})
 
 	it("discriminant path including symbol", () => {
 		const s = Symbol("lobmyS")
 		const sRef = registeredReference(s)
 		const T = type({ [s]: "0" }).or({ [s]: "1" })
-		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: [sRef],
 			cases: {
@@ -294,7 +295,7 @@ contextualize(() => {
 
 		const Union = Discriminated.internal.assertHasKind("union")
 
-		attest(Union.discriminantJson).snap({
+		attest(discriminantJsonOf(Union)).snap({
 			kind: "unit",
 			path: ["innerA", "id"],
 			cases: {
@@ -327,7 +328,7 @@ contextualize(() => {
 			})
 			.onUndeclaredKey("reject")
 
-		attest(AorB.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(AorB.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: ["type"],
 			cases: {
@@ -349,7 +350,7 @@ contextualize(() => {
 			somethingelse: "number"
 		})
 
-		attest(AorB.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(AorB.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: ["something"],
 			cases: {
@@ -380,7 +381,7 @@ contextualize(() => {
 				name: "string"
 			})
 
-		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: ["id"],
 			cases: {
@@ -415,7 +416,7 @@ contextualize(() => {
 				name: "string"
 			})
 
-		attest(T.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
 			kind: "unit",
 			path: ["id"],
 			cases: {
@@ -438,12 +439,12 @@ contextualize(() => {
 	it("discriminate array and tuple", () => {
 		const T = type("null[] | false").or([type.undefined])
 
-		const { discriminantJson } = T.select({
+		const selected = T.select({
 			kind: "union",
 			method: "assertFind"
 		})
 
-		attest(discriminantJson).snap({
+		attest(discriminantJsonOf(selected)).snap({
 			kind: "domain",
 			path: [],
 			cases: {
@@ -463,12 +464,12 @@ contextualize(() => {
 	it("discriminate bounded array and tuple", () => {
 		const T = type("3 <= null[] <= 10 | false").or([type.undefined])
 
-		const { discriminantJson } = T.select({
+		const selected = T.select({
 			kind: "union",
 			method: "assertFind"
 		})
 
-		attest(discriminantJson).snap({
+		attest(discriminantJsonOf(selected)).snap({
 			kind: "domain",
 			path: [],
 			cases: {
@@ -539,7 +540,7 @@ contextualize(() => {
 
 			const Thing = s.type("AParent | BParent")
 
-			attest(Thing.internal.assertHasKind("union").discriminantJson).equals({
+			attest(discriminantJsonOf(Thing.internal.assertHasKind("union"))).equals({
 				kind: "unit",
 				path: ["type"],
 				cases: {

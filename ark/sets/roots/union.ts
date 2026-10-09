@@ -2,6 +2,7 @@ import {
 	$ark,
 	Disjoint,
 	compileLiteralPropAccess,
+	compileSerializedValue,
 	flatMorphsAreEqual,
 	flatRefsAreEqual,
 	isResolutionFinal,
@@ -28,7 +29,8 @@ import {
 	flatMorph,
 	integerLikeMatcher,
 	range,
-	throwParseError
+	throwParseError,
+	type JsonStructure
 } from "@ark/util"
 import {
 	defineRightwardIntersections,
@@ -701,6 +703,21 @@ type DiscriminantCandidate<kind extends DiscriminantKind = DiscriminantKind> = {
 type CandidateCases<kind extends DiscriminantKind = DiscriminantKind> = {
 	[caseKey in CaseKey<kind>]: CaseContext
 }
+
+export const discriminantJsonOf = (node: Union.Node): JsonStructure | null =>
+	node.discriminant && {
+		kind: node.discriminant.kind,
+		path: node.discriminant.path.map(k =>
+			typeof k === "string" ? k : compileSerializedValue(k)
+		),
+		cases: flatMorph(node.discriminant.cases, (k, caseNode) => [
+			k,
+			caseNode === true ? caseNode
+			: caseNode.hasKind("union") && caseNode.discriminant ?
+				discriminantJsonOf(caseNode)!
+			:	caseNode.json
+		])
+	}
 
 export const pruneDiscriminant = (
 	discriminantBranch: BaseRoot,
