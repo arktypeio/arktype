@@ -610,6 +610,25 @@ export const unwrapExpression = (node: Node): Node => {
 	return node
 }
 
+// e.g. `T` for `(T as Type)!` or `T?.and`, read past what only types an expression or ends its optional chain
+export const normalize = (node: Node): Node => {
+	while (isTransparent(node) || node.type === "ChainExpression")
+		node = node.expression
+	return node
+}
+
+// the expression a node is an operand of, past what only types it or ends its optional chain, and the operand that expression holds
+export const operatorOf = (
+	node: Node
+): [operand: Node, operator: Node | undefined] => {
+	while (
+		node.parent &&
+		(isTransparent(node.parent) || node.parent.type === "ChainExpression")
+	)
+		node = node.parent
+	return [node, node.parent ?? undefined]
+}
+
 // e.g. `o.a` in `o.a = 1`, `delete o.a` or `({ x: o.a } = p)`
 export const isWriteTarget = (node: Node): boolean => {
 	const parent = node.parent!

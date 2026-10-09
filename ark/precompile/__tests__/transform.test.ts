@@ -57,19 +57,21 @@ export const C = field(5)
 export const D = type("strin")
 export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
 export const F = type("number")
-export const G = type("string").description`,
+export const G = type("string").equals("string")
+export const H = type("string").description`,
 				{ "/limits.ts": "export const max = 5" }
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/main.ts:8:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
 				'/main.ts:9:18  type({ "+": "delete", "[string]": "string", a: "\'a\'" }) can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: "a", + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:11:18  type("string").description can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope or Generic\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/main.ts:11:18  type("string").equals("string") can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope or Generic\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/1xvqy5b1c2zdgz"
-import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/1xvqy5b1c2zdgz"
-import { v1clwekn1s6e3gq as $arkv1clwekn1s6e3gq } from "~arktype/1xvqy5b1c2zdgz"
-import { v1yj8wer0ou42kq as $arkv1yj8wer0ou42kq } from "~arktype/1xvqy5b1c2zdgz"
+import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/1ll2tyq1djn89c"
+import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/1ll2tyq1djn89c"
+import { v1clwekn1s6e3gq as $arkv1clwekn1s6e3gq } from "~arktype/1ll2tyq1djn89c"
+import { v1yj8wer0ou42kq as $arkv1yj8wer0ou42kq } from "~arktype/1ll2tyq1djn89c"
+import { vzonxq00imvowq as $arkvzonxq00imvowq } from "~arktype/1ll2tyq1djn89c"
 import $ark1sve6ft0pa6e4h from "~arktype/xuhdp21syk96k"
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
@@ -80,7 +82,8 @@ export const C = $arkv1clwekn1s6e3gq()
 export const D = $ark1sve6ft0pa6e4h()
 export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
 export const F = $arkv1yj8wer0ou42kq()
-export const G = type("string").description`)
+export const G = type("string").equals("string")
+export const H = $arkvzonxq00imvowq().description`)
 		})
 
 		it("folds Modules", () => {

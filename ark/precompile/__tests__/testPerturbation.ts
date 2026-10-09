@@ -2,7 +2,7 @@ import { fromHere } from "@ark/fs"
 import { createNodeHost, Precompiler } from "@ark/precompile"
 import { hasArkKind } from "@ark/schema"
 import { keyOf } from "arktype/internal/standalone.ts"
-import { bindingOfFunction } from "@ark/precompile/internal/graph.ts"
+import { bindingOfFunction, isArk } from "@ark/precompile/internal/graph.ts"
 import type { SourceModule } from "@ark/precompile/internal/module.ts"
 import { specifierOf } from "@ark/precompile/internal/precompile.ts"
 import MagicString from "magic-string"
@@ -92,7 +92,7 @@ for (const path of corpus) {
 				reference.isWrite ||
 				(binding.declaration.start >= site.start &&
 					binding.declaration.end <= site.end) ||
-				precompiler.graph.isArkBinding(binding, module)
+				isArk(precompiler.graph.bindingKindOf(binding, module))
 			)
 				continue
 			names.add(binding.name)
@@ -174,7 +174,7 @@ for (const path of corpus) {
 					exported.kind === "arktype" ||
 					exported.kind === "arktypeNamespace" ||
 					(exported.kind === "binding" &&
-						graph.isArkBinding(exported.binding, exported.module))
+						isArk(graph.bindingKindOf(exported.binding, exported.module)))
 				)
 			})
 		}

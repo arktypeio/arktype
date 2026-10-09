@@ -2,6 +2,7 @@ import type { CallExpression, Node } from "oxc-parser"
 import {
 	bindingOfFunction,
 	enclosingFunctionOf,
+	isArk,
 	runtimeExports,
 	staticBodyOf,
 	type FunctionNode,
@@ -10,13 +11,12 @@ import {
 import {
 	createSiteState,
 	isDynamic,
-	isValidator,
 	type Interpreter,
 	type SiteState
 } from "./interpreter.ts"
 import type { SourceModule } from "./module.ts"
 import type { SiteKind } from "./precompile.ts"
-import { isTransparent, type Reference } from "./scope.ts"
+import { operatorOf, type Reference } from "./scope.ts"
 
 export interface SiteCandidate {
 	kind: SiteKind
@@ -39,12 +39,13 @@ export const findSites = (
 	for (const reference of module.scopes.references) {
 		const found = rootOf(reference, module, graph)
 		if (!found) continue
-		const [kind, root] = found
+		const [kind, root, isOwnSite] = found
 		const fn = enclosingFunctionOf(reference.id)
 		const value =
-			kind === "reference" ?
+			kind !== "reference" ? undefined
+			: root === reference.id ?
 				interpreter.valueOfBinding(reference.binding!, module)
-			:	undefined
+			:	interpreter.evaluateSite(createSiteState(root, module)).value
 		// a binding the build could not compute is reported where it is defined, and validated data or a RegExp is read at runtime
 		if (
 			kind === "reference" &&
@@ -52,8 +53,8 @@ export const findSites = (
 		)
 			continue
 		const fallbacks: Node[] = []
-		const top = climb(root, isValidator(value), fallbacks, module, graph)
-		if (top === root && kind !== "helper") continue
+		const top = climb(root, fallbacks, module, graph)
+		if (top === root && !isOwnSite) continue
 		candidates.push({
 			kind,
 			root: kind === "helper" ? reference.id : root,
@@ -73,37 +74,38 @@ export const findSites = (
 	)
 }
 
+// what a site starts from, and whether it is a site even where nothing composes it, as a call to a helper composing a Type is
 const rootOf = (
 	reference: Reference,
 	module: SourceModule,
 	graph: ModuleGraph
-): [kind: SiteKind, root: Node] | undefined => {
+): [kind: SiteKind, root: Node, isOwnSite: boolean] | undefined => {
 	const binding = reference.binding
 	if (!binding || reference.isWrite) return
 	const [name, read] = graph.arkExportOf(reference, module) ?? []
 	if (name) {
 		return name in runtimeExports || name === "configure" ?
 				undefined
-			:	[name, read!]
+			:	[name, read!, false]
 	}
-	if (graph.isArkBinding(binding, module)) return ["reference", reference.id]
+	if (isArk(graph.bindingKindOf(binding, module)))
+		return ["reference", reference.id, false]
+	// e.g. `schemas.User`, with `schemas` a namespace import or an object literal holding Types
+	const member = reference.id.parent
+	if (
+		member?.type === "MemberExpression" &&
+		member.object === reference.id &&
+		isArk(graph.kindOf(member, module))
+	)
+		return ["reference", member, false]
 	const call = helperCallOf(reference.id)
 	const helper = call && graph.helperOf(call.callee, module)
 	if (!helper) return
-	const [fn, origin] = helper
-	// a call returning a Type is a site where a member composes it, as `first().and(second())` does, but not where it only validates
-	return (
-			graph.isArkHelper(fn, origin) ||
-				(isMemberObject(call) &&
-					!graph.isRuntimeUse(call, module) &&
-					graph.returnsArk(fn, origin))
-		) ?
-			["helper", call]
+	const isOwnSite = graph.composesArk(...helper)
+	return isOwnSite || isArk(graph.kindOf(call, module)) ?
+			["helper", call, isOwnSite]
 		:	undefined
 }
-
-const isMemberObject = (node: Node): boolean =>
-	node.parent?.type === "MemberExpression" && node.parent.object === node
 
 const helperCallOf = (id: Node): CallExpression | undefined => {
 	const parent = id.parent
@@ -117,38 +119,26 @@ const helperCallOf = (id: Node): CallExpression | undefined => {
 		:	undefined
 }
 
+// the largest expression the root's arktype value is composed into, through members, calls and arguments to static helpers
 const climb = (
 	root: Node,
-	isValidator: boolean,
 	fallbacks: Node[],
 	module: SourceModule,
 	graph: ModuleGraph
 ): Node => {
 	let top = root
 	for (;;) {
-		let probe = top
-		let parent = probe.parent
-		while (
-			parent &&
-			(isTransparent(parent) || parent.type === "ChainExpression")
-		) {
-			probe = parent
-			parent = parent.parent
-		}
-		if (
-			parent?.type === "MemberExpression" &&
-			parent.object === probe &&
-			!graph.isRuntimeMember(parent, module)
-		)
-			top = parent
+		const [probe, parent] = operatorOf(top)
+		const composer = graph.composerOf(top, module)
+		if (composer?.type === "MemberExpression") top = composer
 		else if (
-			parent?.type === "CallExpression" &&
-			(parent.callee === probe ?
-				!(isValidator && top === root)
-			:	!!graph.helperOf(parent.callee, module))
+			composer ||
+			(parent?.type === "CallExpression" &&
+				parent.callee !== probe &&
+				graph.helperOf(parent.callee, module))
 		) {
 			fallbacks.push(top)
-			top = parent
+			top = parent!
 		} else return top
 	}
 }

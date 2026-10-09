@@ -5,7 +5,7 @@ import * as arktype from "arktype"
 import * as arktypeConfig from "arktype/config"
 import type { BaseRoot, GenericRoot } from "@ark/schema"
 import type { Generic } from "arktype/internal/generic.ts"
-import type { Validator } from "arktype/internal/runtime.ts"
+import type { unavailableMember, Validator } from "arktype/internal/runtime.ts"
 import type { Scope } from "arktype/internal/scope.ts"
 import type { ArrayType } from "arktype/internal/variants/array.ts"
 import type { BaseType } from "arktype/internal/variants/base.ts"
@@ -27,6 +27,8 @@ import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
 	isTransparent,
+	normalize,
+	operatorOf,
 	unwrapExpression,
 	walk,
 	type Binding,
@@ -257,6 +259,131 @@ export const unstableArkMembers: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
+// what an expression may evaluate to, as flags joined where it may be either
+export const kinds = {
+	type: 1,
+	// a Scope, Module, Generic or method, or what only the build can read off an arktype value
+	otherArk: 2,
+	// a value arktype didn't create
+	data: 4,
+	// a function whose call may return a Type
+	returnsType: 8,
+	// a function whose call may return any arktype value
+	returnsArk: 16
+} as const
+
+export type ArkKind = number
+
+const anyKind: ArkKind =
+	kinds.type |
+	kinds.otherArk |
+	kinds.data |
+	kinds.returnsType |
+	kinds.returnsArk
+
+const typeMethod: ArkKind = kinds.otherArk | kinds.returnsType
+
+// the kind of each member of a Type a standalone validator lacks, so reading one outside a site throws at runtime
+const typeMemberKinds: Record<string, ArkKind> = Object.setPrototypeOf(
+	{
+		in: kinds.type,
+		out: kinds.type,
+		and: typeMethod,
+		or: typeMethod,
+		intersect: anyKind,
+		merge: typeMethod,
+		pipe: typeMethod,
+		to: typeMethod,
+		narrow: typeMethod,
+		filter: typeMethod,
+		array: typeMethod,
+		as: typeMethod,
+		brand: typeMethod,
+		configure: typeMethod,
+		describe: typeMethod,
+		onUndeclaredKey: typeMethod,
+		onDeepUndeclaredKey: typeMethod,
+		keyof: typeMethod,
+		get: typeMethod,
+		map: typeMethod,
+		omit: typeMethod,
+		pick: typeMethod,
+		partial: typeMethod,
+		required: typeMethod,
+		readonly: typeMethod,
+		extract: typeMethod,
+		exclude: typeMethod,
+		atLeastLength: typeMethod,
+		atMostLength: typeMethod,
+		moreThanLength: typeMethod,
+		lessThanLength: typeMethod,
+		exactlyLength: typeMethod,
+		matching: typeMethod,
+		atLeast: typeMethod,
+		atMost: typeMethod,
+		moreThan: typeMethod,
+		lessThan: typeMethod,
+		divisibleBy: typeMethod,
+		atOrAfter: typeMethod,
+		atOrBefore: typeMethod,
+		laterThan: typeMethod,
+		earlierThan: typeMethod,
+		optional: anyKind,
+		default: anyKind,
+		ifEquals: anyKind,
+		ifExtends: anyKind,
+		equals: anyKind,
+		extends: anyKind,
+		overlaps: anyKind,
+		distribute: anyKind,
+		select: anyKind,
+		props: anyKind,
+		internal: anyKind,
+		$: anyKind,
+		precompilation: kinds.data
+	} satisfies Record<unavailableMember, ArkKind>,
+	null
+)
+
+const exportKindOf = (name: ArkExportName): ArkKind =>
+	name in runtimeExports ? kinds.data
+	: name === "type" ? kinds.otherArk | kinds.returnsType | kinds.returnsArk
+	: kinds.otherArk | kinds.returnsArk
+
+// e.g. a Type for `T.in`, a method returning one for `T.and`, or a string for `T.expression`, which leaves arktype
+const memberKindOf = (object: ArkKind, name: unknown): ArkKind => {
+	if (!isArk(object)) return object & kinds.data
+	const kind =
+		typeof name !== "string" ? anyKind
+		: (
+			name in validatorMembers ||
+			name in runtimeMembers ||
+			name in unstableArkMembers
+		) ?
+			kinds.data
+		: object & kinds.otherArk ? anyKind
+		: (typeMemberKinds[name] ?? anyKind)
+	return kind | (object & kinds.data)
+}
+
+const callKindOf = (callee: ArkKind): ArkKind =>
+	(callee & (kinds.type | kinds.data) ? kinds.data : 0) |
+	(callee & kinds.returnsType ? kinds.type : 0) |
+	(callee & kinds.returnsArk ? anyKind : 0)
+
+export const isArk = (kind: ArkKind): boolean =>
+	(kind & (kinds.type | kinds.otherArk)) !== 0
+
+// a value that can only be a Type, so a standalone validator stands in for it wherever it is read
+const isOnlyType = (kind: ArkKind): boolean =>
+	(kind & (kinds.type | kinds.otherArk | kinds.data)) === kinds.type
+
+// a function whose call composes or defines an arktype value, as `type` or `T.and` is
+const isFactory = (kind: ArkKind): boolean =>
+	isArk(kind) && (kind & (kinds.returnsType | kinds.returnsArk)) !== 0
+
+type KindOfKey = (key: Binding | FunctionNode, module: SourceModule) => ArkKind
+
 export type ImportTarget =
 	| { kind: "arktype"; name: ArkExportName; value: unknown }
 	| { kind: "arktypeNamespace"; specifier: string; value: object }
@@ -273,8 +400,9 @@ export class ModuleGraph {
 	cwd: string | undefined
 	private modulesById: Record<string, SourceModule | ImportTarget> =
 		Object.create(null)
-	private arkBindings = new Map<Binding, boolean>()
-	private arkReturns = new Map<FunctionNode, boolean>()
+	private kindsByKey = new Map<Binding | FunctionNode, ArkKind>()
+	private kindsByNode = new Map<Node, ArkKind>()
+	private composingByFn = new Map<FunctionNode, boolean>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
 
@@ -469,31 +597,6 @@ export class ModuleGraph {
 		}
 	}
 
-	isArkBinding(binding: Binding, module: SourceModule): boolean {
-		const cached = this.arkBindings.get(binding)
-		if (cached !== undefined) return cached
-		this.arkBindings.set(binding, false)
-		let result = false
-		if (binding.kind === "import") {
-			const target = this.importOf(binding, module)
-			result =
-				target.kind === "arktype" ? !(target.name in runtimeExports)
-				: target.kind === "arktypeNamespace" ? true
-				: target.kind === "binding" ?
-					this.isArkBinding(target.binding, target.module)
-				:	target.kind === "expression" &&
-					this.isArkExpression(target.node, target.module)
-		} else if (
-			(binding.kind === "const" || binding.kind === "let") &&
-			!binding.writes.length &&
-			binding.declaration.type === "VariableDeclarator" &&
-			binding.declaration.init
-		)
-			result = this.isArkExpression(binding.declaration.init, module)
-		this.arkBindings.set(binding, result)
-		return result
-	}
-
 	// e.g. `type` imported from arktype, or `ark.type` with `ark` its namespace
 	arkExportOf(
 		reference: Reference,
@@ -515,141 +618,479 @@ export class ModuleGraph {
 		return exported.kind === "arktype" ? [exported.name, member] : undefined
 	}
 
-	// e.g. `T.assert` or `type.errors`, which run at runtime in every mode, or `T.json`, which differs between the build and runtime
-	isRuntimeMember(member: MemberExpression, module: SourceModule): boolean {
-		const name = memberNameOf(member)
-		if (typeof name !== "string") return false
-		if (name in runtimeMembers || name in unstableArkMembers) return true
-		const object = unwrapExpression(member.object)
-		const root =
-			object.type === "MemberExpression" ?
-				unwrapExpression(object.object)
-			:	object
+	// the export a node reads, e.g. `type` for `type` or `ark.type`
+	arkExportNameOf(node: Node, module: SourceModule): ArkExportName | undefined {
+		node = normalize(node)
+		const id = node.type === "MemberExpression" ? normalize(node.object) : node
 		const reference =
-			root.type === "Identifier" ?
-				module.scopes.referencesById.get(root)
+			id.type === "Identifier" ?
+				module.scopes.referencesById.get(id)
 			:	undefined
-		const [exportName, read] =
+		const [name, read] =
 			(reference && this.arkExportOf(reference, module)) ?? []
-		return name === "errors" && exportName === "type" && read === object
+		return read === node ? name : undefined
 	}
 
-	isRuntimeUse(id: Node, module: SourceModule): boolean {
-		for (
-			let node = id;
-			node.parent?.type === "MemberExpression" && node.parent.object === node;
-			node = node.parent
-		)
-			if (this.isRuntimeMember(node.parent, module)) return true
-		return false
-	}
-
-	isArkExpression(node: Node, module: SourceModule): boolean {
-		node = unwrapExpression(node)
-		while (
-			node.type === "MemberExpression" ||
-			node.type === "CallExpression" ||
-			node.type === "ChainExpression"
-		) {
-			if (node.type === "ChainExpression") {
-				node = unwrapExpression(node.expression)
-				continue
-			}
-			if (node.type === "CallExpression") {
-				const helper = this.helperOf(node.callee, module)
-				if (
-					helper &&
-					(this.isArkHelper(helper[0], helper[1]) ||
-						this.returnsArk(helper[0], helper[1]))
-				)
-					return true
-			} else if (this.isRuntimeMember(node, module)) return false
-			node = unwrapExpression(
-				node.type === "MemberExpression" ? node.object : node.callee
-			)
+	kindOf(node: Node, module: SourceModule): ArkKind {
+		node = normalize(node)
+		let result = this.kindsByNode.get(node)
+		if (result === undefined) {
+			result = this.transfer(node, module, this.finalKindOfKey)
+			this.kindsByNode.set(node, result)
 		}
-		const binding =
-			node.type === "Identifier" ?
-				module.scopes.referencesById.get(node)?.binding
-			:	undefined
-		return !!binding && this.isArkBinding(binding, module)
+		return result
 	}
 
-	helperOf(
+	private finalKindOfKey: KindOfKey = (key, module) =>
+		this.kindsByKey.get(key) ?? this.solve(key, module)
+
+	bindingKindOf(binding: Binding, module: SourceModule): ArkKind {
+		return this.finalKindOfKey(binding, module)
+	}
+
+	// the least kinds a key and every key it reads can hold, iterated from none to stability, so none depends on which was asked first
+	private solve(key: Binding | FunctionNode, module: SourceModule): ArkKind {
+		const assumed = new Map<Binding | FunctionNode, [ArkKind, SourceModule]>([
+			[key, [0, module]]
+		])
+		let isStable = false
+		const kindOfKey: KindOfKey = (key, origin) => {
+			const entry = this.kindsByKey.get(key) ?? assumed.get(key)?.[0]
+			if (entry !== undefined) return entry
+			assumed.set(key, [0, origin])
+			isStable = false
+			return 0
+		}
+		while (!isStable) {
+			isStable = true
+			for (const [key, entry] of assumed) {
+				const kind = entry[0] | this.keyKindOf(key, entry[1], kindOfKey)
+				if (kind === entry[0]) continue
+				entry[0] = kind
+				isStable = false
+			}
+		}
+		for (const [key, [kind]] of assumed) this.kindsByKey.set(key, kind)
+		return assumed.get(key)![0]
+	}
+
+	private keyKindOf(
+		key: Binding | FunctionNode,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		if ("type" in key) return this.returnKindIn(key, module, kindOfKey)
+		const binding = key
+		if (binding.kind === "import")
+			return this.targetKindOf(this.importOf(binding, module), kindOfKey)
+		if (
+			binding.kind !== "const" &&
+			binding.kind !== "let" &&
+			binding.kind !== "var"
+		)
+			return kinds.data
+		const declaration = binding.declaration
+		let result =
+			declaration.type === "VariableDeclarator" && declaration.init ?
+				this.patternKindOf(
+					binding.id,
+					declaration.id,
+					this.transfer(declaration.init, module, kindOfKey),
+					module,
+					kindOfKey
+				)
+			:	kinds.data
+		for (const write of binding.writes) {
+			const parent = write.parent
+			result |=
+				(
+					parent?.type === "AssignmentExpression" &&
+					parent.operator === "=" &&
+					parent.left === write
+				) ?
+					this.transfer(parent.right, module, kindOfKey)
+				: parent?.type === "VariableDeclarator" && parent.init ?
+					this.transfer(parent.init, module, kindOfKey)
+				:	kinds.data
+		}
+		return result
+	}
+
+	// e.g. `M.User` for `User` in `const { User } = M`
+	private patternKindOf(
+		node: Node,
+		pattern: Node,
+		kind: ArkKind,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		if (node === pattern) return kind
+		const parent = node.parent!
+		switch (parent.type) {
+			case "Property":
+				return memberKindOf(
+					this.patternKindOf(parent.parent!, pattern, kind, module, kindOfKey),
+					keyNameOf(parent)
+				)
+			case "AssignmentPattern":
+				return (
+					this.patternKindOf(parent, pattern, kind, module, kindOfKey) |
+					this.transfer(parent.right, module, kindOfKey)
+				)
+			default:
+				return memberKindOf(
+					this.patternKindOf(
+						parent.type === "RestElement" ? parent.parent! : parent,
+						pattern,
+						kind,
+						module,
+						kindOfKey
+					),
+					undefined
+				)
+		}
+	}
+
+	private returnKindIn(
+		fn: FunctionNode,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		if (fn.async || fn.generator || !fn.body) return kinds.data
+		if (fn.body.type !== "BlockStatement")
+			return this.transfer(fn.body, module, kindOfKey)
+		const statements = fn.body.body
+		// one that can end without a return statement returns undefined
+		let result =
+			statements[statements.length - 1]?.type === "ReturnStatement" ?
+				0
+			:	kinds.data
+		walk(fn.body, node => {
+			if (isFunctionNode(node)) return false
+			if (node.type === "ReturnStatement") {
+				result |=
+					node.argument ?
+						this.transfer(node.argument, module, kindOfKey)
+					:	kinds.data
+			}
+			return true
+		})
+		return result
+	}
+
+	private targetKindOf(target: ImportTarget, kindOfKey: KindOfKey): ArkKind {
+		switch (target.kind) {
+			case "arktype":
+				return exportKindOf(target.name)
+			case "arktypeNamespace":
+				return kinds.otherArk
+			case "binding":
+				return kindOfKey(target.binding, target.module)
+			case "expression":
+				return this.transfer(target.node, target.module, kindOfKey)
+			default:
+				return kinds.data
+		}
+	}
+
+	private transfer(
+		node: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		node = normalize(node)
+		const cached = this.kindsByNode.get(node)
+		if (cached !== undefined) return cached
+		switch (node.type) {
+			case "Identifier": {
+				const binding = module.scopes.referencesById.get(node)?.binding
+				return binding ? kindOfKey(binding, module) : kinds.data
+			}
+			case "MemberExpression": {
+				const exported = this.namespaceMemberOf(node, module)
+				if (exported) return this.targetKindOf(exported, kindOfKey)
+				const property = this.propertyOf(node, module)
+				if (property) return this.transfer(...property, kindOfKey)
+				const name = memberNameOf(node)
+				// the class of what a Type returns when validation fails
+				if (
+					name === "errors" &&
+					this.arkExportNameOf(node.object, module) === "type"
+				)
+					return kinds.data
+				return memberKindOf(this.transfer(node.object, module, kindOfKey), name)
+			}
+			case "CallExpression":
+			case "TaggedTemplateExpression": {
+				const callee = normalize(
+					node.type === "CallExpression" ? node.callee : node.tag
+				)
+				// e.g. `type({ a: "string" })`, where only a definition with parameters could make a Generic
+				if (
+					node.type === "CallExpression" &&
+					node.arguments.length === 1 &&
+					node.arguments[0].type !== "SpreadElement" &&
+					this.arkExportNameOf(callee, module) === "type"
+				)
+					return kinds.type
+				const fn = this.functionOf(callee, module)
+				return fn ?
+						kindOfKey(...fn)
+					:	callKindOf(this.transfer(callee, module, kindOfKey))
+			}
+			case "ConditionalExpression":
+				return (
+					this.transfer(node.consequent, module, kindOfKey) |
+					this.transfer(node.alternate, module, kindOfKey)
+				)
+			case "LogicalExpression":
+				return (
+					this.transfer(node.left, module, kindOfKey) |
+					this.transfer(node.right, module, kindOfKey)
+				)
+			case "SequenceExpression":
+				return this.transfer(
+					node.expressions[node.expressions.length - 1],
+					module,
+					kindOfKey
+				)
+			case "AssignmentExpression":
+				return node.operator === "=" ?
+						this.transfer(node.right, module, kindOfKey)
+					:	kinds.data
+			default:
+				return kinds.data
+		}
+	}
+
+	// e.g. `type({ name: "string" })` for `schemas.User` with `const schemas = { User: type({ name: "string" }) }`, or a class's static property
+	private propertyOf(
+		member: MemberExpression,
+		module: SourceModule
+	): [value: Node, module: SourceModule] | undefined {
+		const name = memberNameOf(member)
+		let object = normalize(member.object)
+		const binding =
+			object.type === "Identifier" ?
+				module.scopes.referencesById.get(object)?.binding
+			:	undefined
+		if (binding) {
+			const declaration = binding.declaration
+			if (binding.writes.length) return
+			if (binding.kind === "class") object = declaration
+			else if (
+				binding.kind === "const" &&
+				declaration.type === "VariableDeclarator" &&
+				declaration.id === binding.id &&
+				declaration.init
+			)
+				object = normalize(declaration.init)
+			else return
+		}
+		const properties =
+			object.type === "ObjectExpression" ? object.properties
+			: (
+				object.type === "ClassDeclaration" || object.type === "ClassExpression"
+			) ?
+				object.body.body.filter(
+					element => "static" in element && element.static
+				)
+			:	undefined
+		if (!properties || typeof name !== "string") return
+		let result: Node | null | undefined
+		for (const property of properties) {
+			// a later spread or computed key can replace any earlier property
+			if (!("key" in property) || keyNameOf(property) === undefined)
+				result = undefined
+			else if (keyNameOf(property) === name) {
+				result =
+					(
+						property.type === "PropertyDefinition" ||
+						(property.type === "Property" && property.kind === "init")
+					) ?
+						property.value
+					:	undefined
+			}
+		}
+		return result ? [result, module] : undefined
+	}
+
+	// e.g. `schemas.User` with `schemas` a namespace import
+	private namespaceMemberOf(
+		member: MemberExpression,
+		module: SourceModule
+	): ImportTarget | undefined {
+		const object = normalize(member.object)
+		const name = memberNameOf(member)
+		const binding =
+			object.type === "Identifier" ?
+				module.scopes.referencesById.get(object)?.binding
+			:	undefined
+		if (binding?.kind !== "import" || typeof name !== "string") return
+		const target = this.importOf(binding, module)
+		return (
+			target.kind === "namespace" ? this.exportOf(target.module, name)
+			: target.kind === "arktypeNamespace" ? arktypeExportOf(target, name)
+			: undefined
+		)
+	}
+
+	// the operator that needs arktype to run on an arktype value, as `.and` or a call to `type` does
+	composerOf(node: Node, module: SourceModule): Node | undefined {
+		const [operand, operator] = operatorOf(node)
+		const kind = this.kindOf(node, module)
+		return (
+				operator?.type === "MemberExpression" ?
+					operator.object === operand &&
+					isArk(kind) &&
+					isArk(this.kindOf(operator, module))
+				: operator?.type === "CallExpression" ?
+					operator.callee === operand && isFactory(kind)
+				: operator?.type === "TaggedTemplateExpression" ?
+					operator.tag === operand && isFactory(kind)
+				:	false
+			) ?
+				operator
+			:	undefined
+	}
+
+	// e.g. `and` and `T` for `T.and`, or `in` and `T` for `const { in: I } = T`, with `T` only ever a Type, which a standalone validator replaces without the member
+	unavailableReadOf(
+		node: Node,
+		module: SourceModule
+	): [name: string, object: Node] | undefined {
+		let name: unknown
+		let object: Node | undefined
+		let kind: ArkKind = 0
+		if (node.type === "MemberExpression") {
+			name = memberNameOf(node)
+			object = node.object
+			kind = this.kindOf(object, module)
+		} else if (
+			node.type === "Property" &&
+			node.parent?.type === "ObjectPattern"
+		) {
+			name = keyNameOf(node)
+			let root: Node = node.parent
+			while (root.parent && isPatternPart(root.parent)) root = root.parent
+			const parent = root.parent
+			object =
+				parent?.type === "VariableDeclarator" && parent.id === root ?
+					(parent.init ?? undefined)
+				: parent?.type === "AssignmentExpression" && parent.left === root ?
+					parent.right
+				:	undefined
+			if (object) {
+				kind = this.patternKindOf(
+					node.parent,
+					root,
+					this.kindOf(object, module),
+					module,
+					this.finalKindOfKey
+				)
+			}
+		}
+		return (
+				typeof name === "string" &&
+					name in typeMemberKinds &&
+					object &&
+					isOnlyType(kind)
+			) ?
+				[name, object]
+			:	undefined
+	}
+
+	// e.g. `T.assert` in `T.assert(x)` or `type.errors`, which run at runtime in every mode
+	leavesArk(node: Node, module: SourceModule): boolean {
+		for (;;) {
+			const [operand, operator] = operatorOf(node)
+			if (operator?.type !== "MemberExpression" || operator.object !== operand)
+				return false
+			if (!isArk(this.kindOf(operator, module))) return true
+			node = operator
+		}
+	}
+
+	private functionOf(
 		callee: Node,
 		module: SourceModule
 	): [FunctionNode, SourceModule] | undefined {
-		callee = unwrapExpression(callee)
-		let binding: Binding | undefined
-		if (callee.type === "Identifier")
-			binding = module.scopes.referencesById.get(callee)?.binding
-		else if (
-			callee.type === "MemberExpression" &&
-			!callee.computed &&
-			callee.object.type === "Identifier"
-		) {
-			const namespace = module.scopes.referencesById.get(callee.object)?.binding
-				?.declaration
-			if (namespace?.type !== "ImportNamespaceSpecifier") return
-			const target = this.resolve(
-				(namespace.parent as Extract<Node, { type: "ImportDeclaration" }>)
-					.source.value,
-				module
-			)
-			if (!(target instanceof SourceModule)) return
-			const exported = this.exportOf(target, callee.property.name)
-			return exported.kind === "binding" ?
-					this.boundHelperOf(exported.binding, exported.module)
-				:	undefined
+		callee = normalize(callee)
+		if (isFunctionNode(callee)) return [callee, module]
+		if (callee.type === "Identifier") {
+			const binding = module.scopes.referencesById.get(callee)?.binding
+			return binding && this.boundFunctionOf(binding, module)
 		}
-		return binding && this.boundHelperOf(binding, module)
+		if (callee.type !== "MemberExpression") return
+		const target = this.namespaceMemberOf(callee, module)
+		return target?.kind === "binding" ?
+				this.boundFunctionOf(target.binding, target.module)
+			:	undefined
 	}
 
-	boundHelperOf(
+	private boundFunctionOf(
 		binding: Binding,
 		module: SourceModule
 	): [FunctionNode, SourceModule] | undefined {
 		if (binding.kind === "import") {
 			const target = this.importOf(binding, module)
-			return target.kind === "binding" ?
-					this.boundHelperOf(target.binding, target.module)
-				:	undefined
+			if (target.kind === "binding")
+				return this.boundFunctionOf(target.binding, target.module)
+			// e.g. `export default () => A`
+			const fn = target.kind === "expression" && normalize(target.node)
+			return fn && isFunctionNode(fn) ? [fn, target.module] : undefined
 		}
 		const fn = functionOfBinding(binding)
-		return fn && staticBodyOf(fn) && !readsArguments(fn) ?
-				[fn, module]
-			:	undefined
+		return fn && [fn, module]
 	}
 
-	// e.g. `first = () => M1`, whose body composes nothing but whose call is a Type
-	returnsArk(fn: FunctionNode, module: SourceModule): boolean {
-		const cached = this.arkReturns.get(fn)
-		if (cached !== undefined) return cached
-		// e.g. `f = () => f().and(x)`, which reads itself as returning no Type while it's decided
-		this.arkReturns.set(fn, false)
-		const result = this.isArkExpression(staticBodyOf(fn)!, module)
-		this.arkReturns.set(fn, result)
-		return result
+	// a function whose single expression a site can fold into each call
+	helperOf(
+		callee: Node,
+		module: SourceModule
+	): [FunctionNode, SourceModule] | undefined {
+		if (isFunctionNode(normalize(callee))) return
+		const helper = this.functionOf(callee, module)
+		return helper && isStatic(helper[0]) ? helper : undefined
 	}
 
-	isArkHelper(fn: FunctionNode, module: SourceModule): boolean {
-		const body = staticBodyOf(fn)!
-		let result = false
-		walk(body, node => {
+	// a binding or exported expression holding an arktype value, or a function whose call returns one or, as a static helper, composes one
+	definesArk(
+		target: Extract<ImportTarget, { kind: "binding" | "expression" }>
+	): boolean {
+		const { module } = target
+		let fn: readonly [FunctionNode, SourceModule] | undefined
+		if (target.kind === "binding") {
+			if (isArk(this.bindingKindOf(target.binding, module))) return true
+			fn = this.boundFunctionOf(target.binding, module)
+		} else {
+			const node = normalize(target.node)
+			if (isArk(this.kindOf(node, module))) return true
+			if (isFunctionNode(node)) fn = [node, module]
+		}
+		return (
+			!!fn &&
+			(isArk(this.finalKindOfKey(...fn)) ||
+				(isStatic(fn[0]) && this.composesArk(...fn)))
+		)
+	}
+
+	// a static helper whose body composes an arktype value, so each call to it is a site
+	composesArk(fn: FunctionNode, module: SourceModule): boolean {
+		let result = this.composingByFn.get(fn)
+		if (result !== undefined) return result
+		result = false
+		walk(staticBodyOf(fn)!, node => {
 			if (result || isFunctionNode(node)) return false
-			if (node.type === "Identifier") {
-				const binding = module.scopes.referencesById.get(node)?.binding
-				if (
-					binding &&
-					binding.scope.node !== fn &&
-					isComposing(node) &&
-					this.isArkBinding(binding, module) &&
-					!this.isRuntimeUse(node, module)
-				)
-					result = true
-			}
+			// e.g. not `T.internal` in `T.internal.precompilation`, which only reads a member that leaves arktype
+			result =
+				!isTransparent(node) &&
+				node.type !== "ChainExpression" &&
+				!!this.composerOf(node, module) &&
+				!this.leavesArk(node, module)
 			return !result
 		})
+		this.composingByFn.set(fn, result)
 		return result
 	}
 }
@@ -676,17 +1117,18 @@ export const memberNameOf = (member: MemberExpression): unknown =>
 		:	undefined
 	:	member.property.name
 
-// arktype runs through a reference called or read as `type(def)` or `T.array()`, but not one passed along as `{ type: T }`
-const isComposing = (id: Node): boolean => {
-	let node = id
-	while (node.parent && isTransparent(node.parent)) node = node.parent
-	const parent = node.parent
-	return (
-		(parent?.type === "MemberExpression" && parent.object === node) ||
-		(parent?.type === "CallExpression" && parent.callee === node) ||
-		(parent?.type === "TaggedTemplateExpression" && parent.tag === node)
-	)
-}
+// e.g. `a` for `{ a: x }`, `{ "a": x }` or `{ ["a"]: x }`
+const keyNameOf = (property: { key: Node; computed: boolean }): unknown =>
+	property.key.type === "Literal" ? property.key.value
+	: property.computed || property.key.type !== "Identifier" ? undefined
+	: property.key.name
+
+const isPatternPart = (node: Node): boolean =>
+	node.type === "ObjectPattern" ||
+	node.type === "ArrayPattern" ||
+	node.type === "Property" ||
+	node.type === "AssignmentPattern" ||
+	node.type === "RestElement"
 
 export const isFunctionNode = (node: Node): node is FunctionNode =>
 	node.type === "ArrowFunctionExpression" ||
@@ -703,6 +1145,9 @@ export const staticBodyOf = (fn: FunctionNode): Node | undefined => {
 			(statements[0].argument ?? undefined)
 		:	undefined
 }
+
+const isStatic = (fn: FunctionNode): boolean =>
+	!!staticBodyOf(fn) && !readsArguments(fn)
 
 const functionOfBinding = (binding: Binding): FunctionNode | undefined => {
 	if (binding.writes.length) return

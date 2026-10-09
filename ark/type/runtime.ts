@@ -174,7 +174,7 @@ type typeOnlyMember =
 // introspection a build bakes only when asked, so otherwise absent as on any other validator
 type bakedMember = "json" | "toJSON" | "toJsonSchema"
 
-type unavailableMember = Exclude<
+export type unavailableMember = Exclude<
 	keyof (ArrayType & DateType & NumberType & ObjectType & StringType),
 	keyof Validator | keyof Function | typeOnlyMember | bakedMember
 >

@@ -39,6 +39,7 @@ import { DynamicValue } from "./dynamic.ts"
 import {
 	contains,
 	enclosingFunctionOf,
+	isArk,
 	isArkObject,
 	memberNameOf,
 	ModuleGraph,
@@ -347,12 +348,8 @@ export class Precompiler {
 			case "namespace":
 				return this.exportsArk(target.module)
 			case "expression":
-				return this.graph.isArkExpression(target.node, target.module)
-			case "binding": {
-				if (this.graph.isArkBinding(target.binding, target.module)) return true
-				const helper = this.graph.boundHelperOf(target.binding, target.module)
-				return !!helper && this.graph.isArkHelper(...helper)
-			}
+			case "binding":
+				return this.graph.definesArk(target)
 			default:
 				return false
 		}
@@ -545,7 +542,7 @@ export class Precompiler {
 				(statement.source.value === "arktype" ||
 					statement.specifiers.some(specifier => {
 						const binding = module.scopes.bindingsById.get(specifier.local)
-						return !!binding && this.graph.isArkBinding(binding, module)
+						return !!binding && isArk(this.graph.bindingKindOf(binding, module))
 					}))
 		)
 	}
@@ -1252,7 +1249,7 @@ export class Precompiler {
 		diagnostics.push(...this.checkConfiguration(module))
 		if (this.mode === "standalone") {
 			diagnostics.push(
-				...this.checkStandalone(module, candidates),
+				...this.checkStandalone(module, candidates, settled),
 				...this.checkIslands(module)
 			)
 		}
@@ -1274,10 +1271,11 @@ export class Precompiler {
 				)
 			)
 				return false
-			// reading a member of a Type, Scope or Module makes no request, so it is not a site of its own
+			// reading a member a standalone value has, like a Module's alias, makes no request, so it is not a site of its own
 			if (
 				candidate.kind === "reference" &&
 				!state.requests.length &&
+				!state.unavailableReads.length &&
 				isMemberRead(state.node, candidate.root)
 			)
 				return false
@@ -1491,7 +1489,7 @@ export class Precompiler {
 			callee.type === "MemberExpression" ?
 				!callee.computed &&
 				callee.property.name === "define" &&
-				this.graph.isArkExpression(callee.object, module)
+				isArk(this.graph.kindOf(callee.object, module))
 			:	!!reference &&
 				this.graph.arkExportOf(reference, module)?.[0] === "define"
 		if (!isDefine || definition.type === "SpreadElement") return
@@ -1501,11 +1499,14 @@ export class Precompiler {
 				child.type === "Identifier" ?
 					module.scopes.referencesById.get(child)?.binding
 				:	undefined
-			const helper = binding && this.graph.boundHelperOf(binding, module)
 			readsArk ||=
 				!!binding &&
-				(this.graph.isArkBinding(binding, module) ||
-					(!!helper && this.graph.isArkHelper(...helper)))
+				this.graph.definesArk({
+					kind: "binding",
+					module,
+					binding,
+					name: binding.name
+				})
 			return !readsArk
 		})
 		return readsArk ? undefined : definition
@@ -1827,7 +1828,8 @@ export class Precompiler {
 
 	private checkStandalone(
 		module: SourceModule,
-		candidates: SiteCandidate[]
+		candidates: SiteCandidate[],
+		settled: SiteCandidate[]
 	): Diagnostic[] {
 		const result: Diagnostic[] = []
 		if (candidates.length && !isStrict(module.program)) {
@@ -1896,7 +1898,7 @@ export class Precompiler {
 				(name === "configure" &&
 					parent?.type === "CallExpression" &&
 					parent.callee === read) ||
-				this.graph.isRuntimeUse(id, module) ||
+				this.graph.leavesArk(id, module) ||
 				isInIsland(id, module)
 			)
 				continue
@@ -1911,6 +1913,38 @@ export class Precompiler {
 					"error",
 					`\`${binding.name}\` is used outside a precompiled site`,
 					[]
+				)
+			)
+		}
+		const settledRanges = new Set(
+			settled.map(candidate => rangeOf(candidate.state.node))
+		)
+		const unavailable: [node: Node, name: string, object: Node][] = []
+		walk(module.program, node => {
+			if (isWithin(node, settledRanges) || isInIsland(node, module))
+				return false
+			const read =
+				!(node.type === "MemberExpression" && isWriteTarget(node)) &&
+				this.graph.unavailableReadOf(node, module)
+			if (read) unavailable.push([node, ...read])
+			return true
+		})
+		for (const [node, name, object] of unavailable) {
+			// a chain is reported where it first reads one
+			if (
+				unavailable.some(([inner]) => inner !== node && contains(node, inner))
+			)
+				continue
+			result.push(
+				this.diagnostic(
+					module,
+					node,
+					"R4",
+					"error",
+					`${module.snippetOf(node)} reads ${name} from a standalone validator, which throws at runtime`,
+					[
+						`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
+					]
 				)
 			)
 		}
@@ -1975,7 +2009,7 @@ export class Precompiler {
 					if (
 						!isInIsland(arkRead, origin) &&
 						!(name! in runtimeExports) &&
-						!this.graph.isRuntimeUse(child, origin)
+						!this.graph.leavesArk(child, origin)
 					) {
 						result.push(
 							this.diagnostic(
@@ -2015,9 +2049,11 @@ export class Precompiler {
 					target.kind === "binding" ? target.binding.declaration : target.node
 				if (isInIsland(declaration, target.module)) return true
 				if (
-					target.kind === "binding" ?
-						this.graph.isArkBinding(target.binding, target.module)
-					:	this.graph.isArkExpression(target.node, target.module)
+					isArk(
+						target.kind === "binding" ?
+							this.graph.bindingKindOf(target.binding, target.module)
+						:	this.graph.kindOf(target.node, target.module)
+					)
 				) {
 					// e.g. `User(data)` or `User.assert(data)`, which a standalone validator runs
 					if (
@@ -2025,7 +2061,7 @@ export class Precompiler {
 							read.parent?.type === "CallExpression" &&
 							read.parent.callee === read
 						) &&
-						!this.graph.isRuntimeUse(child, origin)
+						!this.graph.leavesArk(child, origin)
 					) {
 						result.push(
 							this.diagnostic(

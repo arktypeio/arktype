@@ -42,6 +42,7 @@ import {
 	bindingOfFunction,
 	contains,
 	genericMembers,
+	isArk,
 	nodeMembers,
 	scopeMembers,
 	isFunctionNode,
@@ -908,6 +909,7 @@ export class Interpreter {
 		return (
 			target.kind === "binding" ?
 				this.bindingValue(target.binding, target.module).value
+			: target.kind === "expression" ? this.exportValue(target).value
 			: target.kind === "arktype" ? target.value
 			: undefined
 		)
@@ -919,13 +921,13 @@ export class Interpreter {
 		return (
 			declaration.type === "VariableDeclarator" &&
 			!!declaration.init &&
-			this.graph.isArkExpression(declaration.init, module) &&
+			isArk(this.graph.kindOf(declaration.init, module)) &&
 			binding.writes.every(write => {
 				const assignment = write.parent
 				return (
 					assignment?.type === "AssignmentExpression" &&
 					assignment.operator === "=" &&
-					this.graph.isArkExpression(assignment.right, module)
+					isArk(this.graph.kindOf(assignment.right, module))
 				)
 			})
 		)

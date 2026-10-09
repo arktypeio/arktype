@@ -256,6 +256,102 @@ const B = type("string")("data")`)
 			])
 		})
 
+		it("Types helpers return, behind a cast or composed with a parameter", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type({ a: "string" })
+const first = () => A
+const make = (k: string) => first().and({ [k]: "number" })
+const Cast = (first() as typeof A).and({ b: "number" })
+const Asserted = first()!.or("null")
+const Z = make("z")`)
+			).snap([
+				"2:11 accepted { a: string }",
+				"5:14 accepted { a: string, b: number }",
+				"6:18 accepted { a: string } | null",
+				"7:11 accepted { a: string, z: number }"
+			])
+		})
+
+		it("a Type a helper returns, whichever site asks first", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type({ a: "string" })
+const First = f().or("string")
+function k(useQ: boolean) {
+	return useQ ? Q.and({ c: "number" }) : A.and({ b: "number" })
+}
+function f() {
+	return k(false).and({ d: "number" })
+}
+const Q = f().or("null")
+const R = Q.or("undefined")`)
+			).snap([
+				"2:11 accepted { a: string }",
+				"3:15 accepted string | { a: string, b: number, d: number }",
+				"5:16 rejected\n  `Q` can be read before its declaration (/main.ts:10:7)",
+				"5:41 accepted { a: string, b: number }",
+				"8:9 accepted { a: string, b: number, d: number }",
+				"10:11 accepted { a: string, b: number, d: number } | null",
+				"11:11 accepted { a: string, b: number, d: number } | undefined | null"
+			])
+		})
+
+		it("members a standalone validator has are read at runtime", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const A = type({ a: "string" })
+const label = () => A.description
+const L = A.description
+const make = (k: string) => A.and({ [k]: "number" })
+const upper = label().toUpperCase() + L.toUpperCase()
+const E = make("z").expression`)
+			).snap([
+				"2:11 accepted { a: string }",
+				"7:11 accepted { a: string, z: number }"
+			])
+		})
+
+		it("members a standalone validator lacks are sites", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const T = type({ a: "string.trim" })
+const I = T.in
+const label = () => T.out.expression`)
+			).snap([
+				"2:11 accepted { a: (In: string) => Out</^\\S.*\\S$|^\\S?$/> }",
+				"3:11 accepted { a: string }",
+				"4:21 accepted { a: /^\\S.*\\S$|^\\S?$/ }"
+			])
+		})
+
+		it("Types read through namespaces, object literals and default exports", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import * as schemas from "./schemas.ts"
+import Default from "./default.ts"
+import make from "./make.ts"
+const local = { User: type({ name: "string" }) }
+const A = schemas.User.or("null")
+const B = local.User.or("null")
+const C = Default.or("null")
+const D = make().or("null")`,
+					{
+						"/schemas.ts": `import { type } from "arktype"\nexport const User = type({ id: "string" })`,
+						"/default.ts": `import { type } from "arktype"\nexport default type({ d: "string" })`,
+						"/make.ts": `import { type } from "arktype"\nconst M = type({ m: "string" })\nexport default () => M`
+					}
+				)
+			).snap([
+				"5:23 accepted { name: string }",
+				"6:11 accepted { id: string } | null",
+				"7:11 accepted { name: string } | null",
+				"8:11 accepted { d: string } | null",
+				"9:11 accepted { m: string } | null"
+			])
+		})
+
 		it("validations are not sites", () => {
 			attest(
 				statusesOf(`import { type, scope, fn } from "arktype"
@@ -680,6 +776,24 @@ const D = type.enumerated(...Object.keys($))`)
 				"4:11 rejected\n  `Object.keys(A)` reflects on a value other than an object literal or Module",
 				"5:11 accepted",
 				'6:11 accepted "a"'
+			])
+		})
+
+		it("Types composed outside any site", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const T = type({ a: "string.trim" })
+function g() {
+	const t = T
+	return t
+}
+const A = g().or("null")
+const B = (Math.random() > 1 ? T : T).out
+const { in: I } = T`)
+			).snap([
+				'/main.ts:7:11  g().or reads or from a standalone validator, which throws at runtime\n  `g()` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:8:11  (Math.random() > 1 ? T : T).out reads out from a standalone validator, which throws at runtime\n  `Math.random() > 1 ? T : T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:9:9  in: I reads in from a standalone validator, which throws at runtime\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
 			])
 		})
 
