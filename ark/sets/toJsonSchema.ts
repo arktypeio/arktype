@@ -243,8 +243,10 @@ const reduceObjectJsonSchema = (
 		for (const index of node.index) {
 			const valueJsonSchema = toJsonSchemaRecurse(index.value, ctx)
 
+			// declared keys are checked against an index signature too, which
+			// additionalProperties would skip
 			if (index.signature.equals($ark.intrinsic.string)) {
-				schema.additionalProperties = valueJsonSchema
+				;(schema.patternProperties ??= {})[""] = valueJsonSchema
 				continue
 			}
 
@@ -262,7 +264,7 @@ const reduceObjectJsonSchema = (
 				}
 
 				if (keyBranch.hasKind("domain")) {
-					schema.additionalProperties = valueJsonSchema
+					;(schema.patternProperties ??= {})[""] = valueJsonSchema
 					continue
 				}
 
@@ -281,7 +283,7 @@ const reduceObjectJsonSchema = (
 						schema.patternProperties ??= {}
 						schema.patternProperties[keySchema.pattern] = valueJsonSchema
 					} else if (keyBranch.rawIn.equals($ark.intrinsic.string))
-						schema.additionalProperties = valueJsonSchema
+						(schema.patternProperties ??= {})[""] = valueJsonSchema
 					continue
 				}
 				if (!keyBranch.hasKind("intersection")) {
@@ -311,6 +313,16 @@ const reduceObjectJsonSchema = (
 				}
 			}
 		}
+	}
+
+	if (
+		schema.patternProperties?.[""] &&
+		!schema.properties &&
+		Object.keys(schema.patternProperties).length === 1
+	) {
+		// with no other keys or patterns, every key is an additional property
+		schema.additionalProperties = schema.patternProperties[""]
+		delete schema.patternProperties
 	}
 
 	if (node.undeclared && !schema.additionalProperties)

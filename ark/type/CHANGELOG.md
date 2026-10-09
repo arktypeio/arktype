@@ -392,6 +392,20 @@ const isC = (s: string) => s === "c"
 type("'a' | 'b'").narrow(isC)
 ```
 
+### Check declared keys against a string index signature in JSON Schema
+
+An index signature applies to every key, declared or not, but `toJsonSchema()` wrote a string index beside declared keys as `additionalProperties`, which JSON Schema doesn't apply to them. It now writes `patternProperties` with a pattern every key matches:
+
+```ts
+const T = type({ a: "unknown", "[string]": "string" })
+
+// previously { ..., additionalProperties: { type: "string" } }
+// now { ..., patternProperties: { "": { type: "string" } } }
+T.toJsonSchema()
+```
+
+A string index on an object with no other keys is still written as `additionalProperties`.
+
 ## 2.2.8
 
 ### Add `string.base58`

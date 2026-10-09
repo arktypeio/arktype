@@ -115,13 +115,15 @@ contextualize(() => {
 				baz: { const: 1 }
 			},
 			required: ["bar", "foo"],
-			additionalProperties: {
-				anyOf: [
-					{ type: "number" },
-					{ type: "string" },
-					{ type: "boolean" },
-					{ type: "null" }
-				]
+			patternProperties: {
+				"": {
+					anyOf: [
+						{ type: "number" },
+						{ type: "string" },
+						{ type: "boolean" },
+						{ type: "null" }
+					]
+				}
 			}
 		})
 	})
@@ -752,8 +754,10 @@ contextualize(() => {
 
 			const expected: JsonSchema = {
 				type: "object",
-				additionalProperties: { type: "number" },
-				patternProperties: { "^\\d+$": { type: "string" } }
+				patternProperties: {
+					"": { type: "number" },
+					"^\\d+$": { type: "string" }
+				}
 			}
 
 			attest(toJsonSchema(T, { fallback: { morph: ctx => ctx.base } })).equals(
