@@ -34,6 +34,7 @@ import type {
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
+	bindingOfFunction,
 	contains,
 	enclosingFunctionOf,
 	isArkObject,
@@ -949,15 +950,34 @@ export class Precompiler {
 		return result
 	}
 
-	// a message as the program prints it, with each placeholder for a function's name replaced by where the site reads it
+	// a message as the program prints it, each placeholder for a function's name replaced by where the site reads the function, or else by its declaration
 	private sourceNamed(
 		message: string,
 		site: Site,
 		module: SourceModule
 	): string {
-		for (const reference of site.references) {
-			const name = typeof reference.value === "function" && reference.value.name
-			if (name) message = message.split(name).join(module.snippetOf(reference))
+		const holes = new Set([
+			...site.holes.map(hole => hole.value),
+			...(hasArkKind(site.value, "root") ? keyOf(site.value)[1] : [])
+		])
+		for (const hole of holes) {
+			const standIn =
+				hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
+			// an opaque stand-in refuses to be read, even for its name
+			if (!standIn || standIn.kind === "opaque") continue
+			const { name } = hole as Function
+			if (!name || !message.includes(name)) continue
+			const reference = site.references.find(
+				reference => reference.value === hole
+			)
+			message = message
+				.split(name)
+				.join(
+					reference ?
+						module.snippetOf(reference)
+					:	(bindingOfFunction(standIn.node, standIn.module)?.name ??
+							standIn.module.snippetOf(standIn.node))
+				)
 		}
 		return message
 	}
@@ -1039,7 +1059,7 @@ export class Precompiler {
 			"unsupported",
 			"error",
 			`${module.snippetOf(site)} can't be precompiled to a standalone validator yet`,
-			reasons
+			reasons.map(reason => this.sourceNamed(reason, site, module))
 		)
 	}
 

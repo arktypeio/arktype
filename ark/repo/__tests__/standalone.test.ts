@@ -890,6 +890,13 @@ contextualize(() => {
 					"a class extending `Animal`"
 				)
 			)
+			attest(() => created.Narrowed(Dog, created.DogT(Dog))).throws(
+				writeCreationMismatchMessage(
+					"`AnimalT`",
+					"Type<Dog>",
+					"the Type it was at build"
+				)
+			)
 		})
 
 		it("applies defaults with the functions it receives", async () => {

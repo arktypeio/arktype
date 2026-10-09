@@ -382,7 +382,9 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 import { a } from "./a.ts"
 import { b, alias } from "./b.ts"
 export const Both = type("string").pipe(a, b)
-export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))`,
+export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))
+class Foo {}
+export const Deleted = type({ "+": "delete", "[string]": "string", a: type.instanceOf(Foo).or("string") })`,
 				{
 					"/a.ts": "export const a = (s: string) => s",
 					"/b.ts":
@@ -391,7 +393,8 @@ export const Aliased = type("string").pipe(a).or(type("number").pipe(alias))`,
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				'/main.ts:4:21  type("string").pipe(a, b) can\'t be precompiled to a standalone validator yet\n  `a` and `b` may hold the same value at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:5:24  type("string").pipe(a).or(type("number").pipe(alias)) can\'t be precompiled to a standalone validator yet\n  `a` and `alias` may hold different values at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/main.ts:5:24  type("string").pipe(a).or(type("number").pipe(alias)) can\'t be precompiled to a standalone validator yet\n  `a` and `alias` may hold different values at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:7:24  type({ "+": "delete", "[string]": "string", a: type.instanc… can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: string | Foo, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 		})
 

@@ -371,7 +371,12 @@ export class StandaloneArtifact {
 				if (protos.includes(holes[i] as never)) this.classes.add(holes[i])
 			}
 			this.checks.push(
-				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(`Type<${value.expression}>`)}, ${JSON.stringify(label)})`
+				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(
+					// the names of its holes are known only once it's received
+					value.expression.includes(holeNamePrefix) ?
+						"the Type it was at build"
+					:	`Type<${value.expression}>`
+				)}, ${JSON.stringify(label)})`
 			)
 			return
 		}
