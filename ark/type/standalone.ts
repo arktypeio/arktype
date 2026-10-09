@@ -320,15 +320,24 @@ export class StandaloneArtifact {
 
 	// a string that prints a hole's name is completed at creation, so neither compiled code nor an order may depend on it
 	refuseNameDependence(): void {
+		const holesByName = new Map<string, unknown>()
 		for (const hole of this.holeExpressions.keys()) {
-			if (
-				typeof hole === "function" &&
-				!functionNameOf(hole).startsWith(holeNamePrefix)
-			) {
+			if (typeof hole !== "function") continue
+			const name = functionNameOf(hole)
+			if (!name.startsWith(holeNamePrefix)) {
 				throwInternalError(
 					`Unexpected function ${this.labelsByHole.get(hole)} not named by a placeholder`
 				)
 			}
+			// an expression evaluated more than once creates a function each time under one placeholder, so what prints it can't say which
+			if (holesByName.has(name)) {
+				throwParseError(
+					writeUnprecompilableMessage(
+						`${this.labelsByHole.get(hole)} and another function one expression created`
+					)
+				)
+			}
+			holesByName.set(name, hole)
 		}
 		const printed = [...this.units.values()]
 			.map(unit => unit.source)

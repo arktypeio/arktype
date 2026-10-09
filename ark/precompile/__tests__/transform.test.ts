@@ -542,6 +542,20 @@ export const Own = $arkf1pp1bhu1wky3z8(function (this: unknown, s) { return s.le
 export const OwnFirst = $arkf1vcmva31ng9y85(function (this: unknown, s) { return this === undefined && s.length > 1 })`)
 		})
 
+		it("reports two functions one expression created", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+const named = (n: string) => ({ [n]: (s: string) => s.length > 1 })[n]
+export const Both = type("string").narrow(named("isA")).narrow(named("isB"))
+export const A = type("string").narrow(named("isA"))
+export const Received = A.narrow(named("isB"))`
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:3:21  type("string").narrow(named("isA")).narrow(named("isB")) can\'t be precompiled to a standalone validator yet\n  `named("isB")` (/main.ts:3:64) and another function one expression created can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:5:25  A.narrow(named("isB")) can\'t be precompiled to a standalone validator yet\n  `named("isB")` (/main.ts:5:34) and another function one expression created can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+			])
+		})
+
 		it("composes a Type a static helper returns", () => {
 			const result = precompile(
 				`import { type } from "arktype"
