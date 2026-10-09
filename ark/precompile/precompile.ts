@@ -710,11 +710,13 @@ export class Precompiler {
 			if (!imported.has(name)) {
 				imported.add(name)
 				if (site.parseError) {
-					modules[`~arktype/${name}`] = writeParseErrorThrower(
+					const thrower = writeParseErrorThrower(
 						site.parseError.message,
 						configured
 					)
-					imports[`~arktype/${name}`] = { default: local }
+					const throwerSpecifier = `~arktype/${hashOf(thrower)}`
+					modules[throwerSpecifier] = thrower
+					imports[throwerSpecifier] = { default: local }
 				} else {
 					modules[specifier] = validators
 					;(imports[specifier] ??= {})[name] = local

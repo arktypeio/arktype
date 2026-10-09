@@ -80,7 +80,7 @@ import { f11rmdvxwrkb as $arkf11rmdvxwrkb } from "~arktype/1dyijq1odr"
 import { f20bdtc14r0x as $arkf20bdtc14r0x } from "~arktype/1dyijq1odr"
 import { v18f1a6ngbuy as $arkv18f1a6ngbuy } from "~arktype/1dyijq1odr"
 import { v1pbxisbfbpm as $arkv1pbxisbfbpm } from "~arktype/1dyijq1odr"
-import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"`)
+import $ark11nyj35o0sh from "~arktype/r9wkw841zw"`)
 		})
 
 		it("folds Modules", () => {
@@ -353,13 +353,13 @@ const dog = () => DogT
 export const Helped = type("1").and(negative())
 export const HelpedClass = type.instanceOf(Error).and(dog())
 export const Scoped = scope({ a: DogT, b: "a & Error" }).export()
-import $arka9il3vu75e from "~arktype/a9il3vu75e"
+import $arka9il3vu75e from "~arktype/2bury3cvrz1"
 import { f138cuyahcas as $arkf138cuyahcas } from "~arktype/s2hj129l53"
 import { f1n3watygaq6 as $arkf1n3watygaq6 } from "~arktype/s2hj129l53"
 import { f24xhxa0z6zi as $arkf24xhxa0z6zi } from "~arktype/s2hj129l53"
 import { f2b24cuxkzkc as $arkf2b24cuxkzkc } from "~arktype/s2hj129l53"
 import { fe7cggf8nto as $arkfe7cggf8nto } from "~arktype/s2hj129l53"`)
-			attest(result.modules["~arktype/a9il3vu75e"])
+			attest(result.modules["~arktype/2bury3cvrz1"])
 				.snap(`import * as runtime from "arktype/runtime"
 
 const throwParseError = () => {

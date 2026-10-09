@@ -19,6 +19,7 @@ import {
 	type Rolldown
 } from "vite"
 import { startVitest } from "vitest/node"
+import { writeCreatedBeforeConfigureMessage } from "@ark/schema/runtime"
 import { writeLibrary } from "./utils.ts"
 
 const app = fromHere("app")
@@ -93,8 +94,10 @@ const run = (js: string) =>
 		encoding: "utf8"
 	}).stdout
 
-const writeFixture = (files: Record<string, string>): string => {
-	const root = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+const writeFixture = (
+	files: Record<string, string>,
+	root = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+): string => {
 	for (const path in files) {
 		mkdirSync(dirname(join(root, path)), { recursive: true })
 		writeFileSync(join(root, path), files[path])
@@ -270,9 +273,8 @@ contextualize(() => {
 
 	it("keeps a configured build's worker until its configuration changes", async () => {
 		const root = fromHere("temp", "watched")
-		mkdirSync(root, { recursive: true })
 		const write = (file: string, text: string) =>
-			writeFileSync(join(root, file), text)
+			writeFixture({ [file]: text }, root)
 		const configure = (onUndeclaredKey: string) =>
 			write(
 				"config.ts",
@@ -311,6 +313,30 @@ contextualize(() => {
 		])
 		attest([unchanged - first - 1, nextThreadId() - unchanged - 1]).equals([
 			1, 1
+		])
+	}).timeout(60000)
+
+	it("gives each module's ParseError a thrower naming it", async () => {
+		const definesInvalid = (name: string) =>
+			`import { type } from "arktype"\n\nexport const ${name} = (() => {\n\ttry {\n\t\treturn type({ x: "strng" } as never).expression\n\t} catch (e) {\n\t\treturn (e as Error).message\n\t}\n})()\n`
+		const root = writeFixture(
+			{
+				"config.ts":
+					'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n',
+				"a.ts": definesInvalid("a"),
+				"b.ts": definesInvalid("b"),
+				"main.ts":
+					'import { a } from "./a.ts"\nimport { b } from "./b.ts"\n\nconsole.log(JSON.stringify([a, b]))\n'
+			},
+			fromHere("temp", "throwers")
+		)
+		attest(
+			JSON.parse(
+				run(await bundlers.esbuild({ cwd: root, config: "config.ts" }, root))
+			)
+		).equals([
+			writeCreatedBeforeConfigureMessage("a.ts"),
+			writeCreatedBeforeConfigureMessage("b.ts")
 		])
 	}).timeout(60000)
 
