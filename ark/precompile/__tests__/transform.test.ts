@@ -180,7 +180,9 @@ export const Either = type("string").pipe(trim).or(type("number").pipe(trim))
 export const Extended = type("string").pipe(ext)
 export const Pair = type([Name, Either])
 export const Short = Name.narrow(s => s.length < 9)
-export const Stamped = type({ at: ["Date", "=", () => new Date()] })`
+export const Stamped = type({ at: ["Date", "=", () => new Date()] })
+class Kitten extends Pet {}
+export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
 			// a hole is registered by a name from its module and position, which no other test shares
 			const result = precompileModule(
 				source,
@@ -203,13 +205,16 @@ export const Extended = $arkf1u6d12e2tku(ext)
 export const Pair = $arkf1wp1un5l57h(Name, Either)
 export const Short = $arkf1qr3n92up8j(Name, s => s.length < 9)
 export const Stamped = $arkfhcw8rg5ps0(() => new Date())
-import { f1zfc4jvopxh as $arkf1zfc4jvopxh } from "~arktype/1nohe0brkcw"
-import { fujb2tq68ew as $arkfujb2tq68ew } from "~arktype/1nohe0brkcw"
-import { fyhi0i9lyrd as $arkfyhi0i9lyrd } from "~arktype/1nohe0brkcw"
-import { f1u6d12e2tku as $arkf1u6d12e2tku } from "~arktype/1nohe0brkcw"
-import { f1wp1un5l57h as $arkf1wp1un5l57h } from "~arktype/1nohe0brkcw"
-import { f1qr3n92up8j as $arkf1qr3n92up8j } from "~arktype/1nohe0brkcw"
-import { fhcw8rg5ps0 as $arkfhcw8rg5ps0 } from "~arktype/1nohe0brkcw"`)
+class Kitten extends Pet {}
+export const Kept = $arkfexpx5piaav(Pet, Kitten)
+import { f1zfc4jvopxh as $arkf1zfc4jvopxh } from "~arktype/2awsjffioes"
+import { fujb2tq68ew as $arkfujb2tq68ew } from "~arktype/2awsjffioes"
+import { fyhi0i9lyrd as $arkfyhi0i9lyrd } from "~arktype/2awsjffioes"
+import { f1u6d12e2tku as $arkf1u6d12e2tku } from "~arktype/2awsjffioes"
+import { f1wp1un5l57h as $arkf1wp1un5l57h } from "~arktype/2awsjffioes"
+import { f1qr3n92up8j as $arkf1qr3n92up8j } from "~arktype/2awsjffioes"
+import { fhcw8rg5ps0 as $arkfhcw8rg5ps0 } from "~arktype/2awsjffioes"
+import { fexpx5piaav as $arkfexpx5piaav } from "~arktype/2awsjffioes"`)
 		})
 
 		it("passes the inputs a site reads after its holes", () => {
