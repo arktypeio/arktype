@@ -1657,6 +1657,13 @@ export class Precompiler {
 		)
 		const dynamic = rejectionOf(value)
 		const result = dynamic ? chainOf(dynamic) : []
+		const define =
+			dynamic ? undefined : this.interpreter.defineReadBy(value.trace)
+		if (define) {
+			result.push(
+				`\`${define}\` is a build define, and nothing compares its runtime value with the build's`
+			)
+		}
 		const visit = (o: unknown) => {
 			if (!isPlainContainer(o)) return
 			for (const k of Reflect.ownKeys(o)) {

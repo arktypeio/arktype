@@ -207,6 +207,37 @@ configure({ number: { description: describe } })`,
 				"/main.ts:6:1  configure({ number: { description: describe } }) is not static\n  the description writer at /main.ts:2:18 must be a static helper, since arktype calls it while defining types\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
 		})
+
+		it("configure with a build define", () => {
+			const opts = {
+				config: "/main.ts",
+				define: { "process.env.MODE": "strict" }
+			}
+			const files = {
+				"/mode.ts": 'export const strict = process.env.MODE === "strict"'
+			}
+			attest(
+				diagnosticsOf(
+					`import { configure } from "arktype/config"
+configure({ onUndeclaredKey: process.env.MODE === "strict" ? "reject" : "ignore" })`,
+					{},
+					opts
+				)
+			).snap([
+				"/main.ts:2:1  configure({ onUndeclaredKey: process.env.MODE === \"strict\" … is not static\n  `process.env.MODE` is a build define, and nothing compares its runtime value with the build's\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+			])
+			attest(
+				diagnosticsOf(
+					`import { configure } from "arktype/config"
+import { strict } from "./mode.ts"
+configure({ onUndeclaredKey: strict ? "reject" : "ignore" })`,
+					files,
+					opts
+				)
+			).snap([
+				'/main.ts:3:1  configure({ onUndeclaredKey: strict ? "reject" : "ignore" }) is not static\n  `process.env.MODE` is a build define, and nothing compares its runtime value with the build\'s\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+			])
+		})
 	})
 
 	it("syntax errors", () => {

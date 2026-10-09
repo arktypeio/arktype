@@ -896,6 +896,30 @@ export class Interpreter {
 			:	{ value: result.value }
 	}
 
+	// a build define a value depends on, read by its own expression or by what declares a binding or export it reads
+	defineReadBy(trace: Trace, seen = new Set<object>()): string | undefined {
+		for (const { root } of trace.reads) {
+			if (root.kind === "define") return root.name
+			let declared: Evaluated | undefined
+			if (root.kind === "binding") {
+				if (seen.has(root.binding)) continue
+				seen.add(root.binding)
+				declared = this.bindingValue(root.binding, root.module)
+			} else {
+				const module = this.graph.moduleOf(root.file)
+				if ("kind" in module) continue
+				const target = this.graph.exportOf(module, root.name)
+				if (target.kind !== "binding" && target.kind !== "expression") continue
+				const key = target.kind === "binding" ? target.binding : target.node
+				if (seen.has(key)) continue
+				seen.add(key)
+				declared = this.exportValue(target)
+			}
+			const name = this.defineReadBy(declared.trace, seen)
+			if (name) return name
+		}
+	}
+
 	valueOfBinding(binding: Binding, module: SourceModule): unknown {
 		if (binding.kind !== "import")
 			return this.bindingValue(binding, module).value
