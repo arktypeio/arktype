@@ -1,5 +1,5 @@
 import type { ESLint, Linter, Rule } from "eslint"
-import type { AnalyzedModule } from "./driver.ts"
+import type { CheckedModule } from "./driver.ts"
 import type { NodeHostOptions } from "./host.ts"
 import type { PrecompileOptions } from "./precompile.ts"
 import { createSyncPrecompiler } from "./worker.ts"
@@ -14,11 +14,11 @@ const precompilersByOptions = new Map<
 	ReturnType<typeof createSyncPrecompiler>
 >()
 
-const analyze = (
+const check = (
 	opts: PrecompileRuleOptions,
 	source: string,
 	id: string
-): AnalyzedModule => {
+): CheckedModule => {
 	const key = JSON.stringify(opts)
 	let request = precompilersByOptions.get(key)
 	// a file may have changed since the last was linted, and the worker keeps the configuration it applied first
@@ -30,7 +30,7 @@ const analyze = (
 		request = createSyncPrecompiler({ precompilerOptions: opts })
 		precompilersByOptions.set(key, request)
 	}
-	return request("analyze", source, id) as AnalyzedModule
+	return request("check", source, id) as CheckedModule
 }
 
 const precompilable: Rule.RuleModule = {
@@ -56,7 +56,7 @@ const precompilable: Rule.RuleModule = {
 	},
 	create: context => ({
 		"Program:exit": () => {
-			const result = analyze(
+			const result = check(
 				{ ...context.options[0], cwd: context.cwd },
 				context.sourceCode.text,
 				context.filename

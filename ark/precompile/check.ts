@@ -1,6 +1,6 @@
 import { globSync, readFileSync } from "node:fs"
 import { relative, resolve } from "node:path"
-import type { AnalyzedModule } from "./driver.ts"
+import type { CheckedModule } from "./driver.ts"
 import type { NodeHostOptions } from "./host.ts"
 import { renderDiagnostic, type PrecompileOptions } from "./precompile.ts"
 import { createSyncPrecompiler } from "./worker.ts"
@@ -44,10 +44,10 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 	try {
 		for (const file of files) {
 			const result = request(
-				"analyze",
+				"check",
 				readFileSync(file, "utf8"),
 				file
-			) as AnalyzedModule
+			) as CheckedModule
 			const path = relative(cwd, file)
 			const entries: [number, string][] = result.diagnostics.map(diagnostic => [
 				diagnostic.start,

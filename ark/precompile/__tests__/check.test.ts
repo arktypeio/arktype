@@ -38,6 +38,19 @@ contextualize(() => {
 		])
 	})
 
+	it("reports what the build refuses while writing a site", () => {
+		attest(
+			check([], {
+				cwd: fromHere("calledHoles"),
+				config: "config.ts",
+				define: { "process.env.MODE": "lenient" }
+			}).lines
+		).snap([
+			'main.ts:6:18  type("string").narrow(() => lenient) can\'t be precompiled to a standalone validator yet\n  arktype calls `() => lenient` (main.ts:6:40)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+			"1 site in 2 files: 0 accepted (0.0%)"
+		])
+	})
+
 	it("fails under a rate", () => {
 		attest(cli("--check", "--fail-under", "50").status).equals(0)
 		attest(cli("--check", "--fail-under", "60").status).equals(1)

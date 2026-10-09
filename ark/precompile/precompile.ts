@@ -94,12 +94,10 @@ export interface ModuleAnalysis {
 	dependencies: string[]
 }
 
-export interface PrecompiledModule {
+export interface PrecompiledModule extends ModuleAnalysis {
 	code: string
 	// undefined when the module is unchanged
 	map: SourceMap | undefined
-	dependencies: string[]
-	diagnostics: Diagnostic[]
 	// the source of each virtual module the code imports, by specifier
 	modules: Record<string, string>
 }
@@ -265,12 +263,6 @@ export class Precompiler {
 
 	analyze(source: string, id: string): ModuleAnalysis {
 		return this._analyze(this.graph.add(id, source))
-	}
-
-	// as precompile() analyzes a module, under the configuration it applies to arktype in this thread
-	analyzeConfigured(source: string, id: string): ModuleAnalysis {
-		this.configuration ??= this.applyConfiguration()
-		return this.analyze(source, id)
 	}
 
 	// whether a module may define a Type, read from its imports so most modules that can't are never parsed
@@ -539,6 +531,7 @@ export class Precompiler {
 				s.hasChanged() ?
 					s.generateMap({ source: id, includeContent: true, hires: "boundary" })
 				:	undefined,
+			sites,
 			dependencies,
 			diagnostics,
 			modules: this.inline ? {} : modules
@@ -690,7 +683,7 @@ export class Precompiler {
 					undefined
 				:	this.factoryOf(site, module, reasons, prefix)
 			if (reasons.length) {
-				diagnostics.push(this.unsupported(module, site, reasons))
+				diagnostics.push(this.refuseWritten(module, site, reasons))
 				continue
 			}
 			if (site.parseError) {
@@ -734,7 +727,9 @@ export class Precompiler {
 		const imported = new Set<string>()
 		for (const [site, name] of namesBySite) {
 			if (refusalsByName[name]) {
-				diagnostics.push(this.unsupported(module, site, [refusalsByName[name]]))
+				diagnostics.push(
+					this.refuseWritten(module, site, [refusalsByName[name]])
+				)
 				continue
 			}
 			const local = prefix + name
@@ -1109,6 +1104,17 @@ export class Precompiler {
 			`${module.snippetOf(site)} can't be precompiled to a standalone validator yet`,
 			reasons.map(reason => this.sourceNamed(reason, site, module))
 		)
+	}
+
+	// so the sites a build returns agree with its diagnostics, as a check reports both
+	private refuseWritten(
+		module: SourceModule,
+		site: Site,
+		reasons: string[]
+	): Diagnostic {
+		site.status = "rejected"
+		site.reasons = reasons
+		return this.unsupported(module, site, reasons)
 	}
 
 	private unsupportedReasonsOf(site: Site): string[] {

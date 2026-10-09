@@ -50,7 +50,7 @@ export interface PrecompilerWorkerData {
 
 export type PrecompileRequest =
 	| [kind: "transform", source: string, id: string]
-	| [kind: "analyze", source: string, id: string]
+	| [kind: "check", source: string, id: string]
 	| [kind: "readDependency", importer: string]
 	| [kind: "reset"]
 	| [kind: "close"]
@@ -70,7 +70,7 @@ export interface TransformedModule extends InlineModule {
 
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
 
-export interface AnalyzedModule {
+export interface CheckedModule {
 	sites: Pick<Site, "start" | "line" | "column" | "status">[]
 	diagnostics: Diagnostic[]
 }
@@ -91,7 +91,7 @@ export const answerRequests = (
 			return precompiler.readDependency(request[1])
 		if (request[0] === "transform")
 			return transformedModuleOf(precompiler, request[1], request[2])
-		const { sites, diagnostics } = precompiler.analyzeConfigured(
+		const { sites, diagnostics } = precompiler.precompile(
 			request[1],
 			request[2]
 		)
@@ -103,7 +103,7 @@ export const answerRequests = (
 				status
 			})),
 			diagnostics
-		} satisfies AnalyzedModule
+		} satisfies CheckedModule
 	}
 	port.on("message", (request: PrecompileRequest) => {
 		try {
