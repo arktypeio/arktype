@@ -119,6 +119,9 @@ configure({
 		"string.creditCard": {
 			description: "configured"
 		},
+		"string.isbn": {
+			description: "configured"
+		},
 		"string.date.parse": {
 			description: "configured"
 		},
