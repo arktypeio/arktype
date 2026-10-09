@@ -84,6 +84,14 @@ export class StandaloneArtifact {
 
 	constructor(exports: Record<string, type.Any | Module>) {
 		this.exports = exports
+		for (const name in exports) {
+			// an ES module can't export a name holding an unpaired surrogate
+			if (/\p{Cs}/u.test(name)) {
+				throwParseError(
+					writeUnprecompilableMessage(`the export name ${JSON.stringify(name)}`)
+				)
+			}
+		}
 		for (const value of Object.values(exports)) this.collectTypes(value)
 		// the runtime writes only en
 		const locale = $ark.config.locale

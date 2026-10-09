@@ -277,9 +277,10 @@ contextualize(() => {
 			b: { a: "a" },
 			sub: scope({ c: "number" }).export()
 		}).export()
-		const validators = await load({ M, a: M.a })
+		const validators = await load({ M, a: M.a, "\uD83D\uDE00": M.a })
 		attest(Object.keys(validators.M)).equals(Object.keys(M))
 		attest(validators.M.a).equals(validators.a)
+		attest(validators["\uD83D\uDE00"]).equals(validators.a)
 		attest(validators.M.b({ a: 1 }).summary).equals(M.b({ a: 1 }).toString())
 		attest(validators.M.sub.c("x").summary).snap(
 			"must be a number (was a string)"
@@ -378,6 +379,9 @@ contextualize(() => {
 		).throws(writeUnprecompilableMessage("Function(isEven)"))
 		attest(() => precompileStandalone({ T: type("===", { a: 1 }) })).throws(
 			writeUnprecompilableMessage('the unit {"a":1}')
+		)
+		attest(() => precompileStandalone({ "\uD800": type("string") })).throws(
+			writeUnprecompilableMessage('the export name "\\ud800"')
 		)
 		attest(() =>
 			precompileStandalone({ M: scope({ "box<t>": { box: "t" } }).export() })
