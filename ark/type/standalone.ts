@@ -111,7 +111,7 @@ export interface ConfiguredModule {
 }
 
 /**
- * #### an ES module exporting, for each Type, a function returning its validator, which runs on arktype/runtime alone, for each Module one returning an object of them, and for each Scope or Generic one returning a value whose members throw, all created on the first call; and for each factory a function creating its validator from what it receives
+ * #### an ES module exporting a getter for each Type, Module, Scope or Generic, which creates them all when one is first needed, and a function creating each factory's validator
  */
 export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
