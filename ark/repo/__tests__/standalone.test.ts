@@ -165,6 +165,18 @@ contextualize(() => {
 		}
 	})
 
+	it("copies errors' contexts as arktype does", async () => {
+		const T = type({ a: "string", b: { c: "number > 0" } })
+		const { T: validator } = await load({ T })
+		const input = { b: { c: 0 } }
+		const copiesOf = (errors: any) =>
+			errors.issues.map((e: any) => [
+				Reflect.ownKeys(e),
+				{ ...e.toJSON(), path: [...e.path] }
+			])
+		attest(copiesOf(validator(input))).equals(copiesOf(T(input)))
+	})
+
 	it("bakes introspection", async () => {
 		const T = type({ name: "string", age: "number" }).describe("a person")
 		const { T: validator } = await load({ T })

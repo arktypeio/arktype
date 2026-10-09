@@ -72,7 +72,6 @@ export class RequiredNode extends BaseProp<"required"> {
 			missingValueDescription: this.value.defaultShortDescription,
 			missing: missingValueOf(this.value),
 			valueMeta: this.value.meta,
-			relativePath: [this.key],
 			meta: this.meta
 		}))
 	}

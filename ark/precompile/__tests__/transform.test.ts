@@ -25,9 +25,9 @@ export const User = $ark1169pgizw3q
 export const Same = $ark1169pgizw3q
 export const Users = $arku8qjlz7etl
 export const isError = (data: unknown) => data instanceof ArkErrors
-import { v1169pgizw3q as $ark1169pgizw3q } from "~arktype/1mraxz65kx7"
-import { vu8qjlz7etl as $arku8qjlz7etl } from "~arktype/1mraxz65kx7"`)
-			attest(Object.keys(result.modules)).snap(["~arktype/1mraxz65kx7"])
+import { v1169pgizw3q as $ark1169pgizw3q } from "~arktype/1khoz0jbw1v"
+import { vu8qjlz7etl as $arku8qjlz7etl } from "~arktype/1khoz0jbw1v"`)
+			attest(Object.keys(result.modules)).snap(["~arktype/1khoz0jbw1v"])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
@@ -41,7 +41,7 @@ export const A = type("string")`).code
 import "arktype"
 import * as config from "./config.ts"
 export const A = $arkek65jf4484
-import { vek65jf4484 as $arkek65jf4484 } from "~arktype/1nor5fmhz08"`)
+import { vek65jf4484 as $arkek65jf4484 } from "~arktype/1mlwmfqh1db"`)
 		})
 
 		it("unsupported sites", () => {
@@ -79,7 +79,7 @@ export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
 export const F = $ark1bp5ims0ip5
 export const G = scope({ a: "string" })
 import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"
-import { v1bp5ims0ip5 as $ark1bp5ims0ip5 } from "~arktype/1fxgbfuxg0s"`)
+import { v1bp5ims0ip5 as $ark1bp5ims0ip5 } from "~arktype/vmd6acqgbc"`)
 		})
 	})
 

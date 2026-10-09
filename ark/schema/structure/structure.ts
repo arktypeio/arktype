@@ -484,8 +484,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						() => applyValue(prop.value, data[prop.key as never], ctx, false),
 						ctx
 					)
-				} else if (prop.hasKind("required"))
-					ctx.errorFromNodeContext(prop.errorContext, data)
+				} else if (prop.hasKind("required")) {
+					traverseKey(
+						prop.key,
+						() => ctx.errorFromNodeContext(prop.errorContext, data),
+						ctx
+					)
+				}
 				if (ctx.failFast && ctx.currentErrorCount > errorCount) return false
 			}
 		}

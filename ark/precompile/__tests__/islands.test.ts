@@ -33,8 +33,8 @@ export const C = process.argv.length > 2 ?
 :	$ark1bp5ims0ip5
 // @ark-runtime
 export const parsers = { type: $ark$island.type }
-import { vek65jf4484 as $arkek65jf4484 } from "~arktype/11mj219p8ni"
-import { v1bp5ims0ip5 as $ark1bp5ims0ip5 } from "~arktype/11mj219p8ni"`)
+import { vek65jf4484 as $arkek65jf4484 } from "~arktype/zj292r37sl"
+import { v1bp5ims0ip5 as $ark1bp5ims0ip5 } from "~arktype/zj292r37sl"`)
 	})
 
 	it("means nothing in cache mode", () => {

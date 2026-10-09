@@ -93,14 +93,16 @@ export class ArkError<
 	) {
 		super()
 		this.ctx = ctx
-		if (isNodeContext && nodeContextCopier && !ctx.config.jitless) {
-			nodeContextCopier(this as never, input)
-			this._path =
-				input.relativePath ?
-					ctx.path.concat(input.relativePath)
-				:	ctx.path.slice()
-			// traversal assigns the data that failed the node's check
-			return
+		if (isNodeContext) {
+			let copy = copiesByContext.get(input)
+			if (!copy && compileCopy && !ctx.config.jitless)
+				copiesByContext.set(input, (copy = compileCopy(input)))
+			if (copy) {
+				copy(this as never, input)
+				this._path = ctx.path.slice()
+				// traversal assigns the data that failed the node's check
+				return
+			}
 		}
 		let prefixPath: array<PropertyKey> | undefined
 		let relativePath: array<PropertyKey> | undefined
@@ -405,16 +407,31 @@ const excludedFromJson = {
 const isSlot = (k: string) =>
 	k === "expected" || k === "actual" || k === "problem" || k === "message"
 
-export type NodeContextCopier = (
+export type NodeContextCopy = (
 	error: ArkError,
 	context: ArkErrorContextInput
 ) => void
 
-let nodeContextCopier: NodeContextCopier | undefined
+// a node's errors share its context, so a function written once for its keys copies it
+const copiesByContext = new WeakMap<object, NodeContextCopy>()
+
+let compileCopy:
+	| ((context: ArkErrorContextInput) => NodeContextCopy)
+	| undefined
 
 // registered beside arktype's compiler, so the runtime, which never generates code, ships without it
-export const registerNodeContextCopier = (copier: NodeContextCopier): void => {
-	nodeContextCopier = copier
+export const registerCopyCompiler = (
+	compile: (context: ArkErrorContextInput) => NodeContextCopy
+): void => {
+	compileCopy = compile
+}
+
+// a standalone artifact writes its contexts' copies, since its runtime can't compile them
+export const copyNodeContexts = (
+	copy: NodeContextCopy,
+	contexts: readonly object[]
+): void => {
+	for (const context of contexts) copiesByContext.set(context, copy)
 }
 
 export declare namespace ArkErrors {

@@ -15,6 +15,7 @@ import {
 	errorWritersByCode,
 	rootApplyParams,
 	rootApplyRuntime,
+	writeNodeContextCopy,
 	writeRootApply
 } from "@ark/schema/internal"
 import {
@@ -181,6 +182,15 @@ export class StandaloneArtifact {
 		const errorContexts = this.unit.errorContexts.map(context =>
 			this.emit(context)
 		)
+		const contextNamesByCopy: Record<string, string[]> = {}
+		for (let i = 0; i < errorContexts.length; i++) {
+			const copy = writeNodeContextCopy(this.unit.errorContexts[i])
+			;(contextNamesByCopy[copy] ??= []).push(errorContexts[i])
+		}
+		const copies = Object.entries(contextNamesByCopy).map(
+			([copy, names]) =>
+				`runtime.copyNodeContexts((e, input) => {\n${copy}}, [${names.join(", ")}])`
+		)
 		const validators = [...this.validatorNamesByRoot].map(([root, name]) =>
 			this.writeValidator(root, name)
 		)
@@ -192,6 +202,7 @@ export class StandaloneArtifact {
 			`import * as runtime from "arktype/runtime"`,
 			`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
 			this.declarations.join("\n"),
+			copies.join("\n"),
 			`const traversals = (${this.unit.source})([], [${refs.join(", ")}], [${errorContexts.join(", ")}])`,
 			this.links.join("\n"),
 			validators.join("\n\n"),

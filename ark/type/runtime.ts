@@ -21,6 +21,7 @@ export {
 	ArkError,
 	ArkErrors,
 	arrayIndexMatcher,
+	copyNodeContexts,
 	copyOf,
 	isAbsent,
 	isArkErrorResult,

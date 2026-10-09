@@ -93,8 +93,13 @@ export abstract class BaseProp<
 				() => applyValue(this.value, (data as any)[this.key], ctx),
 				ctx
 			)
-		} else if (this.hasKind("required"))
-			ctx.errorFromNodeContext(this.errorContext, data)
+		} else if (this.hasKind("required")) {
+			traverseKey(
+				this.key,
+				() => ctx.errorFromNodeContext(this.errorContext, data),
+				ctx
+			)
+		}
 	}
 
 	compile(js: NodeCompiler): void {
@@ -106,9 +111,12 @@ export abstract class BaseProp<
 		if (this.hasKind("required")) {
 			js.else(() =>
 				js.traversalKind === "Apply" ?
-					js.line(
-						`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)}, data)`
-					)
+					js
+						.line(`ctx.path.push(${key})`)
+						.line(
+							`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)}, data)`
+						)
+						.line("ctx.path.pop()")
 				:	js.return(false)
 			)
 		}
