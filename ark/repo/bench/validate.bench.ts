@@ -1,5 +1,9 @@
 import { bench } from "@ark/attest"
-import type { ArkErrors } from "arktype"
+import { noSuggest } from "@ark/util"
+import type { ArkErrors, Type } from "arktype"
+import { precompileStandalone } from "arktype/internal/standalone.ts"
+import { mkdirSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
 import * as v from "valibot"
 import {
 	Constraints,
@@ -30,9 +34,41 @@ import {
 	treeData
 } from "./scenarios.ts"
 
+const out = join(import.meta.dirname, "out")
+mkdirSync(out, { recursive: true })
+const standalonePath = join(out, "validate.standalone.js")
+writeFileSync(
+	standalonePath,
+	precompileStandalone({
+		Moltar: Moltar.arktype,
+		MoltarStrict: MoltarStrict.arktype,
+		MoltarStrip: MoltarStrip.arktype,
+		Product: Product.arktype,
+		Items: Items.arktype,
+		Patterns: Patterns.arktype,
+		Discriminated: Discriminated.arktype,
+		Constraints: Constraints.arktype,
+		Morph: Morph.arktype,
+		Defaults: Defaults.arktype,
+		Tree: Tree.arktype,
+		...Object.fromEntries(Rotating.map((t, i) => [`Rotating${i}`, t.arktype]))
+	})
+)
+
+// standalone validators refuse to load beside arktype unless its claim is cleared
+delete (globalThis as Record<string, unknown>)[noSuggest("loadedArktypeEntry")]
+
+const standalone: Record<string, Type> = await import(standalonePath)
+
+const standaloneRotating = Rotating.map((_, i) => standalone[`Rotating${i}`])
+
 bench("moltar allows (arktype)", () =>
 	Moltar.arktype.allows(moltarData)
 ).median([8.03, "ns"])
+
+bench("moltar allows (standalone)", () =>
+	standalone.Moltar.allows(moltarData)
+).median([13.08, "ns"])
 
 bench("moltar allows (valibot)", () => v.is(Moltar.valibot, moltarData)).median(
 	[700.18, "ns"]
@@ -40,6 +76,11 @@ bench("moltar allows (valibot)", () => v.is(Moltar.valibot, moltarData)).median(
 
 bench("moltar parse (arktype)", () => Moltar.arktype(moltarData)).median([
 	10.8,
+	"ns"
+])
+
+bench("moltar parse (standalone)", () => standalone.Moltar(moltarData)).median([
+	18.5,
 	"ns"
 ])
 
@@ -56,6 +97,10 @@ bench("moltar strict allows (arktype)", () =>
 	MoltarStrict.arktype.allows(moltarData)
 ).median([150.27, "ns"])
 
+bench("moltar strict allows (standalone)", () =>
+	standalone.MoltarStrict.allows(moltarData)
+).median([236.06, "ns"])
+
 bench("moltar strict allows (valibot)", () =>
 	v.is(MoltarStrict.valibot, moltarData)
 ).median([771.32, "ns"])
@@ -63,6 +108,10 @@ bench("moltar strict allows (valibot)", () =>
 bench("moltar strict parse (arktype)", () =>
 	MoltarStrict.arktype(moltarData)
 ).median([146.8, "ns"])
+
+bench("moltar strict parse (standalone)", () =>
+	standalone.MoltarStrict(moltarData)
+).median([229.05, "ns"])
 
 bench("moltar strict parse (zod)", () =>
 	MoltarStrict.zod.safeParse(moltarData)
@@ -76,6 +125,10 @@ bench("moltar strict invalid allows (arktype)", () =>
 	MoltarStrict.arktype.allows(moltarExtraKeysData)
 ).median([74.41, "ns"])
 
+bench("moltar strict invalid allows (standalone)", () =>
+	standalone.MoltarStrict.allows(moltarExtraKeysData)
+).median([38.25, "ns"])
+
 bench("moltar strict invalid allows (valibot)", () =>
 	v.is(MoltarStrict.valibot, moltarExtraKeysData)
 ).median([1.18, "us"])
@@ -85,6 +138,11 @@ bench(
 	"moltar strict invalid errors (arktype)",
 	() => (MoltarStrict.arktype(moltarExtraKeysData) as ArkErrors).summary
 ).median([4.95, "us"])
+
+bench(
+	"moltar strict invalid errors (standalone)",
+	() => (standalone.MoltarStrict(moltarExtraKeysData) as ArkErrors).summary
+).median([6.85, "us"])
 
 bench(
 	"moltar strict invalid errors (zod)",
@@ -100,6 +158,10 @@ bench("moltar strip parse (arktype)", () =>
 	MoltarStrip.arktype(moltarExtraKeysData)
 ).median([3.69, "us"])
 
+bench("moltar strip parse (standalone)", () =>
+	standalone.MoltarStrip(moltarExtraKeysData)
+).median([42.84, "ns"])
+
 bench("moltar strip parse (zod)", () =>
 	MoltarStrip.zod.safeParse(moltarExtraKeysData)
 ).median([210.24, "ns"])
@@ -112,6 +174,10 @@ bench("moltar invalid allows (arktype)", () =>
 	Moltar.arktype.allows(moltarInvalidData)
 ).median([5.26, "ns"])
 
+bench("moltar invalid allows (standalone)", () =>
+	standalone.Moltar.allows(moltarInvalidData)
+).median([10.81, "ns"])
+
 bench("moltar invalid allows (valibot)", () =>
 	v.is(Moltar.valibot, moltarInvalidData)
 ).median([974.94, "ns"])
@@ -120,6 +186,11 @@ bench(
 	"moltar invalid errors (arktype)",
 	() => (Moltar.arktype(moltarInvalidData) as ArkErrors).summary
 ).median([6.51, "us"])
+
+bench(
+	"moltar invalid errors (standalone)",
+	() => (standalone.Moltar(moltarInvalidData) as ArkErrors).summary
+).median([4.8, "us"])
 
 bench(
 	"moltar invalid errors (zod)",
@@ -136,6 +207,10 @@ bench("product parse (arktype)", () => Product.arktype(productData)).median([
 	"us"
 ])
 
+bench("product parse (standalone)", () =>
+	standalone.Product(productData)
+).median([2.5, "us"])
+
 bench("product parse (zod)", () => Product.zod.safeParse(productData)).median([
 	8.33,
 	"us"
@@ -151,6 +226,11 @@ bench(
 ).median([64.95, "us"])
 
 bench(
+	"product invalid errors (standalone)",
+	() => (standalone.Product(productInvalidData) as ArkErrors).summary
+).median([47.91, "us"])
+
+bench(
 	"product invalid errors (zod)",
 	() => Product.zod.safeParse(productInvalidData).error!.issues
 ).median([98.05, "us"])
@@ -162,6 +242,11 @@ bench(
 
 bench("items parse (arktype)", () => Items.arktype(itemsData)).median([
 	273.83,
+	"ns"
+])
+
+bench("items parse (standalone)", () => standalone.Items(itemsData)).median([
+	676.97,
 	"ns"
 ])
 
@@ -180,6 +265,11 @@ bench(
 ).median([7.28, "us"])
 
 bench(
+	"items invalid errors (standalone)",
+	() => (standalone.Items(itemsInvalidData) as ArkErrors).summary
+).median([7.44, "us"])
+
+bench(
 	"items invalid errors (zod)",
 	() => Items.zod.safeParse(itemsInvalidData).error!.issues
 ).median([24.56, "us"])
@@ -195,6 +285,11 @@ bench(
 ).median([48.56, "us"])
 
 bench(
+	"patterns invalid errors (standalone)",
+	() => (standalone.Patterns(patternsInvalidData) as ArkErrors).summary
+).median([64.33, "us"])
+
+bench(
 	"patterns invalid errors (zod)",
 	() => Patterns.zod.safeParse(patternsInvalidData).error!.issues
 ).median([27.43, "us"])
@@ -207,6 +302,10 @@ bench(
 bench("discriminated parse (arktype)", () =>
 	discriminatedData.map(d => Discriminated.arktype(d))
 ).median([53.83, "ns"])
+
+bench("discriminated parse (standalone)", () =>
+	discriminatedData.map(d => standalone.Discriminated(d))
+).median([74.25, "ns"])
 
 bench("discriminated parse (zod)", () =>
 	discriminatedData.map(d => Discriminated.zod.safeParse(d))
@@ -221,6 +320,10 @@ bench("rotating parse (arktype)", () =>
 	rotatingData.map((d, i) => Rotating[i].arktype(d))
 ).median([266.42, "ns"])
 
+bench("rotating parse (standalone)", () =>
+	rotatingData.map((d, i) => standaloneRotating[i](d))
+).median([166.94, "ns"])
+
 bench("rotating parse (zod)", () =>
 	rotatingData.map((d, i) => Rotating[i].zod.safeParse(d))
 ).median([1.63, "us"])
@@ -233,6 +336,10 @@ bench("constraints parse (arktype)", () =>
 	Constraints.arktype(constraintsData)
 ).median([80.2, "ns"])
 
+bench("constraints parse (standalone)", () =>
+	standalone.Constraints(constraintsData)
+).median([141.97, "ns"])
+
 bench("constraints parse (zod)", () =>
 	Constraints.zod.safeParse(constraintsData)
 ).median([756.43, "ns"])
@@ -243,6 +350,11 @@ bench("constraints parse (valibot)", () =>
 
 bench("morph parse (arktype)", () => Morph.arktype(morphData)).median([
 	40.5,
+	"ns"
+])
+
+bench("morph parse (standalone)", () => standalone.Morph(morphData)).median([
+	49.32,
 	"ns"
 ])
 
@@ -260,6 +372,10 @@ bench("defaults parse (arktype)", () => Defaults.arktype(defaultsData)).median([
 	"ns"
 ])
 
+bench("defaults parse (standalone)", () =>
+	standalone.Defaults(defaultsData)
+).median([34.05, "ns"])
+
 bench("defaults parse (zod)", () =>
 	Defaults.zod.safeParse(defaultsData)
 ).median([209.47, "ns"])
@@ -269,6 +385,11 @@ bench("defaults parse (valibot)", () =>
 ).median([518.05, "ns"])
 
 bench("tree parse (arktype)", () => Tree.arktype(treeData)).median([3.24, "us"])
+
+bench("tree parse (standalone)", () => standalone.Tree(treeData)).median([
+	1.45,
+	"us"
+])
 
 bench("tree parse (zod)", () => Tree.zod.safeParse(treeData)).median([
 	3.92,
