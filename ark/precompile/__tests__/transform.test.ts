@@ -189,6 +189,32 @@ import { fw790lt05pv as $arkfw790lt05pv } from "~arktype/248bm8cwjcl"
 import { fq2rjvxr6lw as $arkfq2rjvxr6lw } from "~arktype/248bm8cwjcl"`)
 		})
 
+		it("prints the names in a ParseError when it is thrown", () => {
+			const source = `import { type } from "arktype"
+const isZero = (n: number) => n === 0
+export const Narrowed = type("1").narrow(isZero)
+export const Defaulted = type({ n: [type("number").narrow(isZero), "=", 3] })`
+			const result = precompileModule(
+				source,
+				"/thrower.ts",
+				memoryHost({ "/thrower.ts": source })
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				'/thrower.ts:3:25  type("1").narrow(isZero) throws a ParseError\n  Intersection of 1 and isZero results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.',
+				'/thrower.ts:4:26  type({ n: [type("number").narrow(isZero), "=", 3] }) throws a ParseError\n  Default for n must be valid according to isZero (was 3)\n  The precompiled site throws the same ParseError when it is created.'
+			])
+			attest(result.code).snap(`import "arktype"
+const isZero = (n: number) => n === 0
+export const Narrowed = $ark1iic477a2i9(isZero)
+export const Defaulted = $ark2d34z78syo(isZero)
+import $ark1iic477a2i9 from "~arktype/1iic477a2i9"
+import $ark2d34z78syo from "~arktype/2d34z78syo"`)
+			attest(Object.values(result.modules)).snap([
+				'import * as runtime from "arktype/runtime"\n\nconst throwParseError = (p0) => {\n\tthrow new runtime.ParseError("Intersection of 1 and " + runtime.functionNameOf(p0) + " results in an unsatisfiable type")\n}\n\nexport { throwParseError as default }\n',
+				'import * as runtime from "arktype/runtime"\n\nconst throwParseError = (p0) => {\n\tthrow new runtime.ParseError("Default for n must be " + runtime.describePredicate({ predicate: p0 }) + " (was 3)")\n}\n\nexport { throwParseError as default }\n'
+			])
+		})
+
 		it("checks the static helpers another module exports in a test driver", () => {
 			const source = `import { type } from "arktype"
 import single, { list } from "./helpers.ts"
@@ -225,9 +251,9 @@ export const Own = $arkf1wq8iy0qjbs(list)
 export const Optional = $arkf2azzz0ipb51(helpers.optional, $arki1hye78qyfa1)
 export const Single = type(single("string"))
 import { suffix as $arki1hye78qyfa1 } from "./suffix.ts"
-import { f9gpqhychhj as $arkf9gpqhychhj } from "~arktype/1eiotpf8fg9"
-import { f1wq8iy0qjbs as $arkf1wq8iy0qjbs } from "~arktype/1eiotpf8fg9"
-import { f2azzz0ipb51 as $arkf2azzz0ipb51 } from "~arktype/1eiotpf8fg9"`)
+import { f9gpqhychhj as $arkf9gpqhychhj } from "~arktype/kq2nsuiqf4"
+import { f1wq8iy0qjbs as $arkf1wq8iy0qjbs } from "~arktype/kq2nsuiqf4"
+import { f2azzz0ipb51 as $arkf2azzz0ipb51 } from "~arktype/kq2nsuiqf4"`)
 			attest(build("/helpers.ts", true).code)
 				.snap(`import { suffix } from "./suffix.ts"
 const base = (def: string) => \`\${def}[]\`

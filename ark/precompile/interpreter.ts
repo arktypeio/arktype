@@ -42,6 +42,9 @@ import {
 	type Binding
 } from "./scope.ts"
 
+// what a placeholder for a hole's name starts with
+export const holeNamePrefix = "$hole_"
+
 export interface InterpreterOptions {
 	// values of bundler `define` constants, keyed by the expression they replace
 	define?: Record<string, unknown> | undefined
@@ -1604,7 +1607,7 @@ export class Interpreter {
 	private holeNameOf(node: Node, module: SourceModule): string {
 		return this.opts.runtime === "arktype" ?
 				""
-			:	`$hole_${hashOf(`${module.path}:${node.start}`)}`
+			:	`${holeNamePrefix}${hashOf(`${module.path}:${node.start}`)}`
 	}
 
 	private functionStandIn(closure: Closure, node: Node): object {
