@@ -91,7 +91,7 @@ export const precompile: UnpluginInstance<
 		},
 		transform: {
 			filter: {
-				id: { include: /\.(?:[jt]sx?|m[jt]s)$/, exclude: /\/node_modules\// }
+				id: { include: /\.(?:[cm]?[jt]s|[jt]sx)$/, exclude: /\/node_modules\// }
 			},
 			handler(code, id) {
 				const precompiler = precompilerOf()
