@@ -2,6 +2,7 @@ import { arkKind, hasArkKind, type BaseRoot } from "@ark/schema"
 import { hashOf, hasDomain, ParseError } from "@ark/util"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
+import { holeNamePrefix } from "arktype/internal/standalone.ts"
 import type {
 	CallExpression,
 	Class,
@@ -42,9 +43,6 @@ import {
 	unwrapExpression,
 	type Binding
 } from "./scope.ts"
-
-// what a placeholder for a hole's name starts with
-const holeNamePrefix = "$hole_"
 
 export interface InterpreterOptions {
 	// values of bundler `define` constants, keyed by the expression they replace

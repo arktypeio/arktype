@@ -95,6 +95,10 @@ const load = async (
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
 
+// the build holds another function in place of each the program will pass, named by a placeholder its factory completes with the received function's name
+const standIn = <fn extends Function>(fn: fn, id: string): fn =>
+	Object.defineProperty(fn, "name", { value: `$hole_${id}` })
+
 // a factory built with each hole's value, as a build passes it in place of its source
 const loadFactory = async (
 	t: type.Any,
@@ -688,16 +692,23 @@ contextualize(() => {
 			class Animal {}
 			class Dog extends Animal {}
 			const tag = Symbol("tag")
-			const T = type({
-				name: type("string").pipe(trim),
-				n: type("number").narrow(isEven),
-				pet: type.instanceOf(Dog),
-				[tag]: "string"
-			})
-			const create = await loadFactory(T, [
-				["function", "`trim`", trim],
-				["function", "`isEven`", isEven],
-				["class", "`Dog`", Dog],
+			const define = (t: typeof trim, e: typeof isEven, D: typeof Dog) =>
+				type({
+					name: type("string").pipe(t),
+					n: type("number").narrow(e),
+					pet: type.instanceOf(D),
+					[tag]: "string"
+				})
+			const T = define(trim, isEven, Dog)
+			const built = [
+				standIn(trim.bind(null), "trim"),
+				standIn(isEven.bind(null), "iseven"),
+				standIn(class extends Animal {}, "dog")
+			] as const
+			const create = await loadFactory(define(...built), [
+				["function", "`trim`", built[0]],
+				["function", "`isEven`", built[1]],
+				["class", "`Dog`", built[2]],
 				["symbol", "`tag`", tag]
 			])
 			const validator = create(trim, isEven, Dog, tag)
@@ -718,7 +729,7 @@ contextualize(() => {
 		})
 
 		it("prints the names of the holes it receives", async () => {
-			const isEven = (n: number) => n % 2 === 0
+			const isEven = standIn((n: number) => n % 2 === 0, "iseven")
 			const create = await loadFactory(type("number").narrow(isEven), [
 				["function", "`isEven`", isEven]
 			])
@@ -737,17 +748,20 @@ contextualize(() => {
 			class Animal {}
 			class Dog extends Animal {}
 			const tag = Symbol("tag")
+			const BuiltAnimal = standIn(class {}, "animal")
+			const BuiltDog = standIn(class extends BuiltAnimal {}, "dog")
+			const builtIsEven = standIn(isEven.bind(null), "iseven")
 			const create = await loadFactory(
 				type({
-					n: type("number").narrow(isEven),
-					pet: type.instanceOf(Dog),
-					owner: type.instanceOf(Animal),
+					n: type("number").narrow(builtIsEven),
+					pet: type.instanceOf(BuiltDog),
+					owner: type.instanceOf(BuiltAnimal),
 					[tag]: "string"
 				}),
 				[
-					["function", "`isEven`", isEven],
-					["class", "`Dog`", Dog],
-					["class", "`Animal`", Animal],
+					["function", "`isEven`", builtIsEven],
+					["class", "`Dog`", BuiltDog],
+					["class", "`Animal`", BuiltAnimal],
 					["symbol", "`tag`", tag]
 				]
 			)
@@ -793,12 +807,13 @@ contextualize(() => {
 
 		it("takes the holes of a validator it receives", async () => {
 			const trim = (s: string) => s.trim()
-			const Name = type("string").pipe(trim)
+			const builtTrim = standIn(trim.bind(null), "trim")
+			const Name = type("string").pipe(builtTrim)
 			const User = type({ name: Name })
 			const validators = await load({
 				Name: {
 					type: Name,
-					params: [{ kind: "function", label: "`trim`", value: trim }]
+					params: [{ kind: "function", label: "`trim`", value: builtTrim }]
 				},
 				User: {
 					type: User,
@@ -828,42 +843,57 @@ contextualize(() => {
 			const shout = (s: string, ctx: unknown) => (ctx ? `${s}!` : s)
 			const greeting = () => "hi"
 			const empty = () => []
-			const types = {
-				Thunk: type({ at: ["Date", "=", now], n: "number = 1" }),
-				Invalid: type({ n: ["number", "=", invalid] }),
-				Element: type(["string", ["Date", "=", now]]),
-				Contextual: type({ s: [type("string").pipe(shout), "=", greeting] }),
+			const define = (
+				n: typeof now,
+				i: typeof invalid,
+				s: typeof shout,
+				g: typeof greeting,
+				e: typeof empty
+			) => ({
+				Thunk: type({ at: ["Date", "=", n], n: "number = 1" }),
+				Invalid: type({ n: ["number", "=", i] }),
+				Element: type(["string", ["Date", "=", n]]),
+				Contextual: type({ s: [type("string").pipe(s), "=", g] }),
 				Transforming: type({ name: ["string.trim", "=", " a "] }),
 				Empty: type({ values: "string[] = []", meta: "object = {}" }),
 				Tree: scope({
-					tree: { name: "string = 'root'", children: ["tree[]", "=", empty] }
+					tree: { name: "string = 'root'", children: ["tree[]", "=", e] }
 				}).export().tree
-			}
+			})
+			const types = define(now, invalid, shout, greeting, empty)
+			const built = [
+				standIn(now.bind(null), "now"),
+				standIn(invalid.bind(null), "invalid"),
+				standIn(shout.bind(null), "shout"),
+				standIn(greeting.bind(null), "greeting"),
+				standIn(empty.bind(null), "empty")
+			] as const
+			const builtTypes = define(...built)
 			const created = await load({
 				Thunk: {
-					type: types.Thunk,
-					params: [{ kind: "function", label: "`now`", value: now }]
+					type: builtTypes.Thunk,
+					params: [{ kind: "function", label: "`now`", value: built[0] }]
 				},
 				Invalid: {
-					type: types.Invalid,
-					params: [{ kind: "function", label: "`invalid`", value: invalid }]
+					type: builtTypes.Invalid,
+					params: [{ kind: "function", label: "`invalid`", value: built[1] }]
 				},
 				Element: {
-					type: types.Element,
-					params: [{ kind: "function", label: "`now`", value: now }]
+					type: builtTypes.Element,
+					params: [{ kind: "function", label: "`now`", value: built[0] }]
 				},
 				Contextual: {
-					type: types.Contextual,
+					type: builtTypes.Contextual,
 					params: [
-						{ kind: "function", label: "`shout`", value: shout },
-						{ kind: "function", label: "`greeting`", value: greeting }
+						{ kind: "function", label: "`shout`", value: built[2] },
+						{ kind: "function", label: "`greeting`", value: built[3] }
 					]
 				},
-				Transforming: types.Transforming,
-				Empty: types.Empty,
+				Transforming: builtTypes.Transforming,
+				Empty: builtTypes.Empty,
 				Tree: {
-					type: types.Tree,
-					params: [{ kind: "function", label: "`empty`", value: empty }]
+					type: builtTypes.Tree,
+					params: [{ kind: "function", label: "`empty`", value: built[4] }]
 				}
 			})
 			const validators: Record<string, (data: unknown) => unknown> = {
@@ -970,8 +1000,8 @@ contextualize(() => {
 		})
 
 		it("rejects an order that depends on a hole's name", () => {
-			const isEven = (n: number) => n % 2 === 0
-			const isPositive = (n: number) => n > 0
+			const isEven = standIn((n: number) => n % 2 === 0, "iseven")
+			const isPositive = standIn((n: number) => n > 0, "ispositive")
 			attest(() =>
 				precompileStandalone({
 					T: {
@@ -986,6 +1016,26 @@ contextualize(() => {
 				})
 			).throws.snap(
 				"ParseError: an order that depends on the name of `isEven` can't be precompiled to a standalone validator"
+			)
+		})
+
+		it("completes only the names of the functions it receives", () => {
+			// a function named otherwise is printed by name in words like "and", where the factory can't find it
+			const and = (n: number) => n > 0
+			attest(() =>
+				precompileStandalone({
+					T: {
+						type: type("number").narrow(and),
+						params: [{ kind: "function", label: "`and`", value: and }]
+					}
+				})
+			).throws("Unexpected function `and` not named by a placeholder")
+			attest(() =>
+				precompileStandalone({ T: type("string").describe("$hole_other") })
+			).throws(
+				writeUnprecompilableMessage(
+					"the name of $hole_other, which the validator doesn't receive"
+				)
 			)
 		})
 	})

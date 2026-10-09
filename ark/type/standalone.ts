@@ -146,8 +146,6 @@ export class StandaloneArtifact {
 	// what a factory's code reads each hole through: a parameter, or the holes of a validator it receives
 	holeExpressions = new Map<unknown, string>()
 	labelsByHole = new Map<unknown, string>()
-	holesByName: Record<string, unknown> = {}
-	holeNamePattern: RegExp | undefined
 	// a factory's statements that check what it receives before it creates anything
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
@@ -274,21 +272,23 @@ export class StandaloneArtifact {
 			)
 		}
 		for (const hole of this.holeExpressions.keys()) {
-			const name = typeof hole === "function" && functionNameOf(hole)
-			if (name) this.holesByName[name] = hole
-		}
-		const names = Object.keys(this.holesByName)
-		if (!names.length) return
-		this.holeNamePattern = holeNamePatternOf(names)
-		// a string that prints a hole's name is completed at creation, so neither compiled code nor an order may depend on it
-		for (const name of names) {
-			if (this.unit.source.includes(name)) {
-				throwParseError(
-					writeUnprecompilableMessage(
-						`compiled code printing the name of ${this.labelsByHole.get(this.holesByName[name])}`
-					)
+			if (
+				typeof hole === "function" &&
+				!functionNameOf(hole).startsWith(holeNamePrefix)
+			) {
+				throwInternalError(
+					`Unexpected function ${this.labelsByHole.get(hole)} not named by a placeholder`
 				)
 			}
+		}
+		// a string that prints a hole's name is completed at creation, so neither compiled code nor an order may depend on it
+		const printed = /\$hole_[\da-z]+/.exec(this.unit.source)
+		if (printed) {
+			throwParseError(
+				writeUnprecompilableMessage(
+					`compiled code printing the name of ${this.labelOfName(printed[0])}`
+				)
+			)
 		}
 		for (const node of this.unit.declared) {
 			const lists =
@@ -316,6 +316,17 @@ export class StandaloneArtifact {
 				}
 			}
 		}
+	}
+
+	holeNamed(name: string): unknown {
+		for (const hole of this.holeExpressions.keys()) {
+			if (typeof hole === "function" && functionNameOf(hole) === name)
+				return hole
+		}
+	}
+
+	labelOfName(name: string): string {
+		return this.labelsByHole.get(this.holeNamed(name)) ?? name
 	}
 
 	receiveHole(hole: unknown, expression: string, label: string): void {
@@ -387,8 +398,9 @@ export class StandaloneArtifact {
 	nameOrderingOf(l: string, r: string): unknown {
 		let i = 0
 		while (i < l.length && l[i] === r[i]) i++
-		for (const hole of Object.values(this.holesByName)) {
-			const reference = `.${nameOf(hole as Function)}"`
+		for (const hole of this.holeExpressions.keys()) {
+			if (typeof hole !== "function") continue
+			const reference = `.${nameOf(hole)}"`
 			for (const hash of [l, r]) {
 				for (
 					let start = hash.indexOf(reference);
@@ -554,11 +566,28 @@ export { factory${index} as ${JSON.stringify(name)} }`
 
 	// a hole's name is known only at creation, so a string printing one is completed then with arktype's own printing
 	emitString(s: string): string {
-		return writeNamedString(
-			s,
-			this.holeNamePattern,
-			name => this.holeExpressions.get(this.holesByName[name])!
-		)
+		const parts: string[] = []
+		let start = 0
+		for (const match of s.matchAll(holeNamePattern)) {
+			if (match.index > start)
+				parts.push(JSON.stringify(s.slice(start, match.index)))
+			const [, predicate, fn, name] = match
+			const hole =
+				this.holeExpressions.get(this.holeNamed(predicate ?? fn ?? name)) ??
+				throwParseError(
+					writeUnprecompilableMessage(
+						`the name of ${predicate ?? fn ?? name}, which the validator doesn't receive`
+					)
+				)
+			parts.push(
+				predicate ? `runtime.describePredicate({ predicate: ${hole} })`
+				: fn ? `"Function(" + runtime.baseNameOf(${hole}) + ")"`
+				: `runtime.functionNameOf(${hole})`
+			)
+			start = match.index + match[0].length
+		}
+		if (start < s.length) parts.push(JSON.stringify(s.slice(start)))
+		return parts.join(" + ") || '""'
 	}
 
 	// a module is a plain object of validators, frozen like them
@@ -973,41 +1002,12 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 	return key
 }
 
-const escapeRegex = (s: string) => s.replace(/[$()*+.?[\\\]^{|}]/g, "\\$&")
+// the name the build gives each function it stands in for, so a string printing it can be completed at creation
+export const holeNamePrefix = "$hole_"
 
-// how a string prints each hole named in it: as a predicate's description, a function's name in `Function(...)`, or its name alone
-export const holeNamePatternOf = (names: string[]): RegExp => {
-	const alternatives = names.map(escapeRegex).join("|")
-	return new RegExp(
-		`valid according to (${alternatives})|Function\\((${alternatives})\\)|(${alternatives})`,
-		"g"
-	)
-}
-
-// a string printing holes' names, as an expression completing it with arktype's own printing once the holes are received
-export const writeNamedString = (
-	s: string,
-	pattern: RegExp | undefined,
-	expressionOf: (name: string) => string
-): string => {
-	if (!pattern) return JSON.stringify(s)
-	const parts: string[] = []
-	let start = 0
-	for (const match of s.matchAll(pattern)) {
-		if (match.index > start)
-			parts.push(JSON.stringify(s.slice(start, match.index)))
-		const [, predicate, fn, name] = match
-		const hole = expressionOf(predicate ?? fn ?? name)
-		parts.push(
-			predicate ? `runtime.describePredicate({ predicate: ${hole} })`
-			: fn ? `"Function(" + runtime.baseNameOf(${hole}) + ")"`
-			: `runtime.functionNameOf(${hole})`
-		)
-		start = match.index + match[0].length
-	}
-	if (start < s.length) parts.push(JSON.stringify(s.slice(start)))
-	return parts.join(" + ") || '""'
-}
+// how arktype prints a function's name: in a predicate's description, in `Function(...)`, or alone
+const holeNamePattern =
+	/valid according to (\$hole_[\da-z]+)|Function\((\$hole_[\da-z]+)\)|(\$hole_[\da-z]+)/g
 
 export const writeUnprecompilableMessage = <value extends string>(
 	value: value
