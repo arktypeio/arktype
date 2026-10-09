@@ -188,7 +188,15 @@ export const nodeMembers: Record<string, 1> = Object.setPrototypeOf(
 			| keyof DateType
 			| keyof ArrayType<unknown[]>
 			| keyof ObjectType
-			| keyof BaseRoot,
+			| Extract<
+					keyof BaseRoot,
+					| "kind"
+					| "inner"
+					| "hasKind"
+					| "assertHasKind"
+					| "traverse"
+					| "toString"
+			  >,
 			1
 		>
 	>,
@@ -236,7 +244,11 @@ export const genericMembers: Record<string, 1> = Object.setPrototypeOf(
 		internal: 1,
 		baseInstantiation: 1
 	} satisfies Partial<
-		Record<Exclude<keyof Generic | keyof GenericRoot, keyof Object>, 1>
+		Record<
+			| Exclude<keyof Generic, keyof Object>
+			| Extract<keyof GenericRoot, "baseInstantiation">,
+			1
+		>
 	>,
 	null
 )
