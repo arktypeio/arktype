@@ -49,6 +49,8 @@ const checks = fromHere("checks")
 
 const writers = fromHere("writers")
 
+const calledHoles = fromHere("calledHoles")
+
 const cycle = fromHere("cycle")
 
 const library = writeLibrary()
@@ -209,6 +211,24 @@ contextualize(() => {
 			)
 				.snap(`main.ts:6:21  type("string").narrow(isLong) can't be precompiled to a standalone validator yet
   \`node.expression\` (config.ts:5:38) prints the name of \`isLong\` (main.ts:4:16), which the build knows only by a placeholder
+  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
+		}).timeout(60000)
+
+		it("reports a configured writer calling a hole", () => {
+			const { status, stderr } = node(
+				["main.ts"],
+				{ config: "config.ts", define: { "process.env.MODE": "lenient" } },
+				calledHoles
+			)
+			attest(status).equals(1)
+			attest(
+				stderr
+					.slice(stderr.indexOf("Error: ") + 7, stderr.indexOf("\n    at "))
+					.split(`${calledHoles}/`)
+					.join("")
+			)
+				.snap(`main.ts:6:18  type("string").narrow(() => lenient) can't be precompiled to a standalone validator yet
+  arktype calls \`() => lenient\` (main.ts:6:40)
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		}).timeout(60000)
 	})

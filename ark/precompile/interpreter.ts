@@ -110,6 +110,8 @@ export interface StandIn {
 	// the parameter count arktype reads as `length`, if a declaration gives it
 	arity: number | undefined
 	isCalled: boolean
+	// by code arktype runs while defining a type, like a description writer, whose result the artifact can't bake from a function it receives at runtime
+	isCalledIndirectly: boolean
 	isDefinition: boolean
 }
 
@@ -223,7 +225,10 @@ export class Interpreter {
 	private opaqueStandInsByValue = new WeakMap<object, StandIn>()
 	private admitted = new WeakSet<object>()
 	standInsByName = new Map<string, StandIn>()
-	private activeCall: { ctx: Context; isArktype: boolean } | undefined
+	// whether arktype made the innermost native call, and whether it made any, so that it is defining a type
+	private activeCall:
+		| { ctx: Context; isArktype: boolean; isDefining: boolean }
+		| undefined
 
 	constructor(graph: ModuleGraph, opts: InterpreterOptions = {}) {
 		this.graph = graph
@@ -1467,6 +1472,7 @@ export class Interpreter {
 		switch (this.calleeKindOf(fn, receiver)) {
 			case "standIn": {
 				const standIn = this.standIns.get(fn as object)!
+				if (this.activeCall?.isDefining) standIn.isCalledIndirectly = true
 				if (standIn.closure && staticBodyOf(standIn.closure.node))
 					return this.interpretCall(standIn.closure, args, node, ctx)
 				return this.reject(
@@ -1542,7 +1548,11 @@ export class Interpreter {
 
 		let result: unknown
 		const previous = this.activeCall
-		this.activeCall = { ctx, isArktype: false }
+		this.activeCall = {
+			ctx,
+			isArktype: false,
+			isDefining: !!previous?.isDefining
+		}
 		try {
 			result =
 				isNew ? Reflect.construct(fn, args) : Reflect.apply(fn, receiver, args)
@@ -1625,7 +1635,7 @@ export class Interpreter {
 		}
 		const opaque = this.opaqueStandInOf([receiver, converted])
 		const previous = this.activeCall
-		this.activeCall = { ctx, isArktype: true }
+		this.activeCall = { ctx, isArktype: true, isDefining: true }
 		try {
 			const result = this.admit(
 				Reflect.apply(fn, receiver, converted),
@@ -1771,6 +1781,7 @@ export class Interpreter {
 			dynamic: undefined,
 			arity,
 			isCalled: false,
+			isCalledIndirectly: false,
 			isDefinition: false
 		}
 		const target =
@@ -1795,6 +1806,7 @@ export class Interpreter {
 	private callStandIn(standIn: StandIn, args: unknown[]): unknown {
 		const active = this.activeCall
 		if (active?.isArktype) standIn.isCalled = true
+		else if (active?.isDefining) standIn.isCalledIndirectly = true
 		const closure = standIn.closure!
 		if (!staticBodyOf(closure.node)) {
 			throw active?.isArktype === false ?
@@ -1882,6 +1894,7 @@ export class Interpreter {
 			dynamic: undefined,
 			arity: undefined,
 			isCalled: false,
+			isCalledIndirectly: false,
 			isDefinition: false
 		}
 		if (name) this.standInsByName.set(name, standIn)
@@ -1926,6 +1939,7 @@ export class Interpreter {
 			dynamic,
 			arity: undefined,
 			isCalled: false,
+			isCalledIndirectly: false,
 			isDefinition: false
 		}
 		// arktype may only ask whether an opaque value is a Standard Schema, since anything else it reads decides the type

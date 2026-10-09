@@ -1582,7 +1582,9 @@ export class Precompiler {
 			kind: standIn?.kind ?? "symbol",
 			arity: standIn?.arity,
 			description: standIn ? undefined : (value as symbol).description,
-			isCalledAtDefinition: !!standIn?.isCalled,
+			isCalledAtDefinition: !!(
+				standIn?.isCalled || standIn?.isCalledIndirectly
+			),
 			isDefinition: !!standIn?.isDefinition
 		}
 	}
