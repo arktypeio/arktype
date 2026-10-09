@@ -56,8 +56,7 @@ import {
 	Interpreter,
 	type InterpreterOptions,
 	type Read,
-	type SiteState,
-	type UnavailableRead
+	type SiteState
 } from "./interpreter.ts"
 import { SourceModule } from "./module.ts"
 import {
@@ -151,8 +150,6 @@ export interface Reference {
 	value: unknown
 	// whether another module can replace it, as a test runner's module mock does
 	isForeign: boolean
-	// a member it reads that a standalone build's value doesn't have, so passing it throws
-	unavailableRead: UnavailableRead | undefined
 }
 
 interface SiteFactory {
@@ -812,8 +809,6 @@ export class Precompiler {
 					`\`${text}\` is read inside another value its factory receives`
 				)
 			}
-			if (reference.unavailableRead)
-				reasons.push(unavailableReadMessage(reference.unavailableRead, module))
 			passed.add(reference.value)
 			textsByPassed.set(reference.value, texts.add(text))
 			factory.spans.push(reference)
@@ -1345,10 +1340,7 @@ export class Precompiler {
 					start: node.start,
 					end: node.end,
 					value,
-					isForeign: isImportInput || this.isImported(node, module),
-					unavailableRead: state.unavailableReads.find(read =>
-						contains(node, read.node)
-					)
+					isForeign: isImportInput || this.isImported(node, module)
 				})
 			}
 		}
@@ -2192,9 +2184,6 @@ const firstStatementOf = (program: Program) =>
 		statement =>
 			statement.type !== "ExpressionStatement" || !statement.directive
 	)!
-
-const unavailableReadMessage = (read: UnavailableRead, module: SourceModule) =>
-	`\`${module.snippetOf(read.node)}\` is read at runtime, where a standalone ${read.replacedBy} has no \`${String(read.key)}\``
 
 const islandValueMessage = (text: string) =>
 	`\`${text}\` is a runtime island's Type, which a precompiled site can't receive`

@@ -464,7 +464,7 @@ export const Deleted = type({ "+": "delete", "[string]": "string", a: type.insta
 			])
 		})
 
-		it("reports a site whose factory would read what a standalone validator doesn't have", () => {
+		it("passes a Type where a site reads a member a standalone validator doesn't have", () => {
 			const result = precompile(
 				`import { type } from "arktype"
 const tag = Symbol("tag")
@@ -472,10 +472,54 @@ const T = type({ [tag]: "0" }).or({ [tag]: "1" })
 export const Union = T.internal.assertHasKind("union")
 export const In = type({ a: T.in })`
 			)
+			attest(result.diagnostics.map(renderDiagnostic)).equals([])
+			attest(result.code).snap(`import "arktype"
+const tag = Symbol("tag")
+const T = $arkf5pa45p0hg4(tag)
+export const Union = $arkf1qyzy7utyf9(T)
+export const In = $arkf3ji8bam7dl(T)
+import { f5pa45p0hg4 as $arkf5pa45p0hg4 } from "~arktype/gajx6kvvg"
+import { f1qyzy7utyf9 as $arkf1qyzy7utyf9 } from "~arktype/gajx6kvvg"
+import { f3ji8bam7dl as $arkf3ji8bam7dl } from "~arktype/gajx6kvvg"`)
+		})
+
+		it("passes a read only through a text meaning the same at the site", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+const isLong = (s: string) => s.length > 1
+const isShort = (s: string) => s.length < 3
+const h = isLong
+const fns = { isLong }
+const shorts = () => [isShort]
+const Long = type("string").narrow(isLong)
+const N = type("string").narrow(isShort)
+const longs = () => [Long]
+export const Mapped = type([isLong].map(h => type("string").narrow(h)) as never)
+export const Shadowed = type([type("string").narrow(h), ...shorts().map(h => type("string").narrow(h))] as never)
+export const Renamed = type(Object.values(fns).map(h => type("string").narrow(h)) as never)
+export const Through = type(longs().map(N => type({ n: N })) as never)`
+			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				'/main.ts:4:22  T.internal.assertHasKind("union") can\'t be precompiled to a standalone validator yet\n  `T.internal` is read at runtime, where a standalone validator has no `internal`\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				"/main.ts:5:19  type({ a: T.in }) can't be precompiled to a standalone validator yet\n  `T.in` is read at runtime, where a standalone validator has no `in`\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+				'/main.ts:11:25  type([type("string").narrow(h), ...shorts().map(h => type("… can\'t be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.length < 3` (/main.ts:3:17), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:12:24  type(Object.values(fns).map(h => type("string").narrow(h)) … can\'t be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.length > 1` (/main.ts:2:16), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				"/main.ts:13:24  type(longs().map(N => type({ n: N })) as never) can't be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.length > 1` (/main.ts:2:16), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
+			attest(result.code).snap(`import { type } from "arktype"
+const isLong = (s: string) => s.length > 1
+const isShort = (s: string) => s.length < 3
+const h = isLong
+const fns = { isLong }
+const shorts = () => [isShort]
+const Long = $arkfnwuv001o8a(isLong)
+const N = $arkfyn4lizp57k(isShort)
+const longs = () => [Long]
+export const Mapped = $arkf1k2jbc8zx4u(isLong)
+export const Shadowed = type([type("string").narrow(h), ...shorts().map(h => type("string").narrow(h))] as never)
+export const Renamed = type(Object.values(fns).map(h => type("string").narrow(h)) as never)
+export const Through = type(longs().map(N => type({ n: N })) as never)
+import { fnwuv001o8a as $arkfnwuv001o8a } from "~arktype/1r9bngc9z71"
+import { fyn4lizp57k as $arkfyn4lizp57k } from "~arktype/1r9bngc9z71"
+import { f1k2jbc8zx4u as $arkf1k2jbc8zx4u } from "~arktype/1r9bngc9z71"`)
 		})
 
 		it("reports a Module whose site reads what only a factory receives", () => {

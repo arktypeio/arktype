@@ -44,6 +44,7 @@ import {
 	isTransparent,
 	runtimeParamsOf,
 	unwrapExpression,
+	walk,
 	type Binding
 } from "./scope.ts"
 
@@ -104,7 +105,7 @@ export interface SiteState {
 	// each outermost expression in the site's source that evaluates to a hole or a Type it reads
 	readsByValue: Map<unknown, Node[]>
 	// each member the site reads of a Type, Scope or Generic, which a standalone build replaces with a value without it
-	unavailableReads: UnavailableRead[]
+	unavailableReads: Node[]
 	holes: unknown[]
 	interpreted: Set<Node>
 	// each call into arktype's API
@@ -114,12 +115,6 @@ export interface SiteState {
 	value: unknown
 	error: DynamicValue | ParseError | undefined
 	isEvaluated: boolean
-}
-
-export interface UnavailableRead {
-	node: Node
-	key: PropertyKey
-	replacedBy: "validator" | "Scope" | "Generic"
 }
 
 export const createSiteState = (
@@ -265,7 +260,8 @@ export class Interpreter {
 				(hasDomain(value, "object") && this.standIns.has(value)) ||
 				// a Type the site reads, which its factory receives to take the holes it holds
 				(hasArkKind(value, "root") && isReference(node))
-			)
+			) ||
+			!this.isPassable(node, ctx.site)
 		)
 			return
 		// an expression is evaluated after those it contains, so it replaces them
@@ -274,6 +270,27 @@ export class Interpreter {
 		)
 		if (!reads.some(read => contains(read, node))) reads.push(node)
 		ctx.site.readsByValue.set(value, reads)
+	}
+
+	// a factory receives a read as its text at the site, so the text must evaluate there to what the read did
+	private isPassable(node: Node, site: SiteState): boolean {
+		if (site.unavailableReads.some(read => contains(node, read))) return false
+		let isPassable = true
+		walk(node, child => {
+			if (child.type === "ThisExpression") {
+				let owner: Node = child
+				while (owner !== node && !bindsThis(owner)) owner = owner.parent!
+				isPassable = owner !== node
+			} else {
+				const binding = site.module.scopes.referencesById.get(child)?.binding
+				isPassable =
+					!binding ||
+					!contains(site.node, binding.id) ||
+					contains(node, binding.id)
+			}
+			return isPassable
+		})
+		return isPassable
 	}
 
 	private evaluateNode(node: Node, ctx: Context): unknown {
@@ -645,6 +662,9 @@ export class Interpreter {
 		if (defined) return defined
 		const base = this.evaluateReference(node.object, ctx)
 		if (base.value === shortCircuit || isDynamic(base.value)) return base
+		// a factory receives the Type itself where it can't receive the member read
+		if (hasArkKind(base.value, "root"))
+			this.recordRead(node.object, base.value, ctx)
 		const dynamic = findDynamic(base.value)
 		if (dynamic) return { value: dynamic.asOperand() }
 		if (node.optional && (base.value === null || base.value === undefined))
@@ -1204,9 +1224,14 @@ export class Interpreter {
 			!hasArkKind(object, "module")
 		)
 			return this.reject(node, ctx, unstableArkProblem)
-		const replacedBy = replacementOf(object, key)
-		if (replacedBy && ctx.site && ctx.module === ctx.site.module)
-			ctx.site.unavailableReads.push({ node, key, replacedBy })
+		if (
+			ctx.site &&
+			ctx.module === ctx.site.module &&
+			(hasArkKind(object, "root") ?
+				!(key in validatorMembers)
+			:	hasArkKind(object, "scope") || hasArkKind(object, "generic"))
+		)
+			ctx.site.unavailableReads.push(node)
 		const value = this.admit(Reflect.get(object, key), node, ctx)
 		if (isDynamic(value)) return value
 		if (
@@ -1923,15 +1948,11 @@ export class Interpreter {
 	}
 }
 
-// what a standalone build replaces a value with, if that has no such member
-const replacementOf = (
-	object: object,
-	key: PropertyKey
-): UnavailableRead["replacedBy"] | undefined =>
-	hasArkKind(object, "root") && !(key in validatorMembers) ? "validator"
-	: hasArkKind(object, "scope") ? "Scope"
-	: hasArkKind(object, "generic") ? "Generic"
-	: undefined
+// `this` in a function other than an arrow, or in a class's members, is its own
+const bindsThis = (node: Node) =>
+	node.type === "FunctionExpression" ||
+	node.type === "FunctionDeclaration" ||
+	node.type === "ClassBody"
 
 // the facts arktype reads from a function or class by key, besides its name and length
 const answersFact = (k: PropertyKey) =>
