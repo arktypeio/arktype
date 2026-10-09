@@ -74,7 +74,7 @@ export const findSites = (
 	)
 }
 
-// what a site starts from, and whether it is a site even where nothing composes it, as a call to a helper composing a Type is
+// e.g. a call to a helper composing a Type, which is a site even where nothing composes it
 const rootOf = (
 	reference: Reference,
 	module: SourceModule,
@@ -90,21 +90,30 @@ const rootOf = (
 	}
 	if (isArk(graph.bindingKindOf(binding, module)))
 		return ["reference", reference.id, false]
-	// e.g. `schemas.User`, with `schemas` a namespace import or an object literal holding Types
-	const member = reference.id.parent
-	if (
-		member?.type === "MemberExpression" &&
-		member.object === reference.id &&
-		isArk(graph.kindOf(member, module))
-	)
-		return ["reference", member, false]
+	const member = arkMemberOf(reference.id, module, graph)
+	if (member) return ["reference", member, false]
 	const call = helperCallOf(reference.id)
 	const helper = call && graph.helperOf(call.callee, module)
 	if (!helper) return
 	const isOwnSite = graph.composesArk(...helper)
-	return isOwnSite || isArk(graph.kindOf(call, module)) ?
-			["helper", call, isOwnSite]
-		:	undefined
+	if (isArk(graph.kindOf(call, module))) return ["helper", call, isOwnSite]
+	const returned = arkMemberOf(call, module, graph)
+	if (returned) return ["reference", returned, false]
+	return isOwnSite ? ["helper", call, isOwnSite] : undefined
+}
+
+// e.g. `schemas.users.User` or `make().User`, with `schemas` a namespace import or an object literal holding Types and `make` a helper returning one
+const arkMemberOf = (
+	node: Node,
+	module: SourceModule,
+	graph: ModuleGraph
+): Node | undefined => {
+	for (;;) {
+		const [operand, member] = operatorOf(node)
+		if (member?.type !== "MemberExpression" || member.object !== operand) return
+		if (isArk(graph.kindOf(member, module))) return member
+		node = member
+	}
 }
 
 const helperCallOf = (id: Node): CallExpression | undefined => {
@@ -119,7 +128,7 @@ const helperCallOf = (id: Node): CallExpression | undefined => {
 		:	undefined
 }
 
-// the largest expression the root's arktype value is composed into, through members, calls and arguments to static helpers
+// e.g. `A.and(B).array()` from `A`, or `withId(A)` from `A` with `withId` a static helper
 const climb = (
 	root: Node,
 	fallbacks: Node[],

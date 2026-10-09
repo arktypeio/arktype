@@ -316,7 +316,8 @@ const label = () => A.description
 const L = A.description
 const make = (k: string) => A.and({ [k]: "number" })
 const upper = label().toUpperCase() + L.toUpperCase()
-const E = make("z").expression`)
+const E = make("z").expression
+const S = A.toString()`)
 			).snap([
 				"2:11 accepted { a: string }",
 				"7:11 accepted { a: string, z: number }"
@@ -360,6 +361,64 @@ const D = make().or("null")`,
 				"7:11 accepted { name: string } | null",
 				"8:11 accepted { d: string } | null",
 				"9:11 accepted { m: string } | null"
+			])
+		})
+
+		it("Types held in object literals and arrays, read however the build can", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import { schemas } from "./schemas.ts"
+const local = { users: { User: type({ name: "string" }) }, list: [type("string")] }
+const forms = () => ({ create: type({ title: "string" }) })
+const key = "users"
+const A = schemas.User.or("null")
+const B = local[key].User.or("null")
+const C = local.list[0].array()
+const D = forms().create.or("null")`,
+					{
+						"/schemas.ts": `import { type } from "arktype"\nconst User = type({ id: "string" })\nexport const schemas = { User }`
+					}
+				)
+			).snap([
+				"3:32 accepted { name: string }",
+				"3:67 accepted string",
+				"4:32 accepted { title: string }",
+				"6:11 accepted { id: string } | null",
+				"7:11 accepted { name: string } | null",
+				"8:11 accepted string[]",
+				"9:11 accepted { title: string } | null"
+			])
+		})
+
+		it("a Type passed to a helper the build can't interpret", () => {
+			attest(
+				statusesOf(`import { scope, type } from "arktype"
+const $ = scope({ a: "string" }).export()
+function print(x: unknown) {
+	console.log(x)
+	return ""
+}
+const issuesOf = (T: any) => T({}).issues
+const describe = (T: any) => print(issuesOf(T))
+describe(type("number"))
+describe($.a)`)
+			).snap(["2:11 accepted", "9:10 accepted number"])
+		})
+
+		it("Types a static helper composes from its parameter, also through another helper", () => {
+			attest(
+				statusesOf(`import { type, type Type } from "arktype"
+const A = type({ a: "string" })
+const withId = <t extends object>(t: Type<t>) => t.and({ id: "string" })
+const make = (k: string) => A.and({ [k]: "number" })
+const make2 = (k: string) => make(k)
+const B = withId(A).partial()
+const Z = make2("z").or("null")`)
+			).snap([
+				"2:11 accepted { a: string }",
+				"6:11 accepted { a?: string, id?: string }",
+				"7:11 accepted { a: string, z: number } | null"
 			])
 		})
 
@@ -805,6 +864,56 @@ const { in: I } = T`)
 				'/main.ts:7:11  g().or reads or, which a standalone validator lacks\n  `g()` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 				'/main.ts:8:11  (Math.random() > 1 ? T : T).out reads out, which a standalone validator lacks\n  `Math.random() > 1 ? T : T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 				'/main.ts:9:9  in: I reads in, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Type passed to a function that isn't a static helper", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const T = type({ a: "string" })
+function nullable(t: typeof T) {
+	const n = t.or("null")
+	return n
+}
+export const X = nullable(T)`)
+			).snap([
+				'/main.ts:4:12  t.or reads or, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("Types read through a computed key, a parameter's default or a superclass", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const T = type({ a: "string" })
+const k = "in" as const
+const { [k]: I } = T
+const f = ({ in: J } = T) => J
+console.log(f())
+class C {
+	static User = T
+}
+class D extends C {}
+const U = D.User.or("null")`)
+			).snap([
+				'/main.ts:4:9  [k]: I reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:5:14  in: J reads in, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:11:11  D.User.or reads or, which a standalone validator lacks\n  `D.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Type iterated from an array or returned by an object literal's method", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const forms = {
+	make() {
+		return type("string")
+	}
+}
+for (const t of [type("number")]) console.log(t.or("null"))
+export const X = forms.make().or("null")`)
+			).snap([
+				'/main.ts:7:47  t.or reads or, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:8:18  forms.make().or reads or, which a standalone validator lacks\n  `forms.make()` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
 			])
 		})
 

@@ -617,7 +617,7 @@ export const normalize = (node: Node): Node => {
 	return node
 }
 
-// the expression a node is an operand of, past what only types it or ends its optional chain, and the operand that expression holds
+// e.g. `T!` and `T!.and` for `T`
 export const operatorOf = (
 	node: Node
 ): [operand: Node, operator: Node | undefined] => {

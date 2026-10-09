@@ -15,9 +15,11 @@ import type { ObjectType } from "arktype/internal/variants/object.ts"
 import type { StringType } from "arktype/internal/variants/string.ts"
 import type {
 	ArrowFunctionExpression,
+	CallExpression,
 	Function,
 	ImportSpecifier,
 	MemberExpression,
+	NewExpression,
 	Node
 } from "oxc-parser"
 import { dirname, join, relative } from "node:path"
@@ -29,6 +31,7 @@ import {
 	isTransparent,
 	normalize,
 	operatorOf,
+	runtimeParamsOf,
 	unwrapExpression,
 	walk,
 	type Binding,
@@ -182,21 +185,24 @@ export const nodeMembers: Record<string, 1> = Object.setPrototypeOf(
 		toString: 1
 	} satisfies Partial<
 		Record<
-			| keyof BaseType
-			| keyof StringType
-			| keyof NumberType
-			| keyof DateType
-			| keyof ArrayType<unknown[]>
-			| keyof ObjectType
-			| Extract<
-					keyof BaseRoot,
-					| "kind"
-					| "inner"
-					| "hasKind"
-					| "assertHasKind"
-					| "traverse"
-					| "toString"
-			  >,
+			Exclude<
+				| keyof BaseType
+				| keyof StringType
+				| keyof NumberType
+				| keyof DateType
+				| keyof ArrayType<unknown[]>
+				| keyof ObjectType
+				| Extract<
+						keyof BaseRoot,
+						| "kind"
+						| "inner"
+						| "hasKind"
+						| "assertHasKind"
+						| "traverse"
+						| "toString"
+				  >,
+				UnstableArkMember
+			>,
 			1
 		>
 	>,
@@ -245,7 +251,7 @@ export const genericMembers: Record<string, 1> = Object.setPrototypeOf(
 		baseInstantiation: 1
 	} satisfies Partial<
 		Record<
-			| Exclude<keyof Generic, keyof Object>
+			| Exclude<keyof Generic, keyof Object | UnstableArkMember>
 			| Extract<keyof GenericRoot, "baseInstantiation">,
 			1
 		>
@@ -253,25 +259,25 @@ export const genericMembers: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
-export const unstableArkMembers: Record<string, 1> = Object.setPrototypeOf(
-	{
-		id: 1,
-		hash: 1,
-		innerHash: 1,
-		json: 1,
-		typeJson: 1,
-		innerJson: 1,
-		metaJson: 1,
-		collapsibleJson: 1,
-		toJSON: 1,
-		references: 1,
-		shallowReferences: 1,
-		precompilation: 1
-	},
-	null
-)
+// what counts nodes or names registry entries, so differs between a build and the program it builds
+export const unstableArkMembers = {
+	__proto__: null,
+	id: 1,
+	hash: 1,
+	innerHash: 1,
+	json: 1,
+	typeJson: 1,
+	innerJson: 1,
+	metaJson: 1,
+	collapsibleJson: 1,
+	toJSON: 1,
+	references: 1,
+	shallowReferences: 1,
+	precompilation: 1
+}
 
-// what an expression may evaluate to, as flags joined where it may be either
+type UnstableArkMember = keyof typeof unstableArkMembers
+
 export const kinds = {
 	type: 1,
 	// a Scope, Module, Generic or method, or what only the build can read off an arktype value
@@ -362,9 +368,9 @@ const exportKindOf = (name: ArkExportName): ArkKind =>
 	: name === "type" ? kinds.otherArk | kinds.returnsType | kinds.returnsArk
 	: kinds.otherArk | kinds.returnsArk
 
-// e.g. a Type for `T.in`, a method returning one for `T.and`, or a string for `T.expression`, which leaves arktype
-const memberKindOf = (object: ArkKind, name: unknown): ArkKind => {
-	if (!isArk(object)) return object & kinds.data
+// e.g. a Type for `T.in`, a method returning one for `T.and`, or a string for `T.expression` or `T.toString()`, which leave arktype
+const memberKindOf = (objectKind: ArkKind, name: unknown): ArkKind => {
+	if (!isArk(objectKind)) return objectKind & kinds.data
 	const kind =
 		typeof name !== "string" ? anyKind
 		: (
@@ -373,9 +379,10 @@ const memberKindOf = (object: ArkKind, name: unknown): ArkKind => {
 			name in unstableArkMembers
 		) ?
 			kinds.data
-		: object & kinds.otherArk ? anyKind
+		: objectKind & kinds.otherArk ? anyKind
+		: name in Function.prototype ? kinds.data
 		: (typeMemberKinds[name] ?? anyKind)
-	return kind | (object & kinds.data)
+	return kind | (objectKind & kinds.data)
 }
 
 const callKindOf = (callee: ArkKind): ArkKind =>
@@ -383,18 +390,35 @@ const callKindOf = (callee: ArkKind): ArkKind =>
 	(callee & kinds.returnsType ? kinds.type : 0) |
 	(callee & kinds.returnsArk ? anyKind : 0)
 
+const functionKindOf = (returned: ArkKind): ArkKind =>
+	kinds.data |
+	(returned & kinds.type ? kinds.returnsType : 0) |
+	(returned & (anyKind & ~kinds.type & ~kinds.data) ? kinds.returnsArk : 0)
+
 export const isArk = (kind: ArkKind): boolean =>
 	(kind & (kinds.type | kinds.otherArk)) !== 0
 
-// a value that can only be a Type, so a standalone validator stands in for it wherever it is read
 const isOnlyType = (kind: ArkKind): boolean =>
 	(kind & (kinds.type | kinds.otherArk | kinds.data)) === kinds.type
 
-// a function whose call composes or defines an arktype value, as `type` or `T.and` is
 const isFactory = (kind: ArkKind): boolean =>
-	isArk(kind) && (kind & (kinds.returnsType | kinds.returnsArk)) !== 0
+	(kind & (kinds.returnsType | kinds.returnsArk)) !== 0
 
-type KindOfKey = (key: Binding | FunctionNode, module: SourceModule) => ArkKind
+interface Application {
+	fn: FunctionNode
+	args: readonly ArkKind[]
+}
+
+type Key = Binding | FunctionNode | Application
+
+type KindOfKey = (key: Key, module: SourceModule) => ArkKind
+
+// e.g. `{ t }` from `wrap(A)` with `wrap = t => ({ t })`, whose `t` is read as the call passes it
+interface Located {
+	node: Node
+	module: SourceModule
+	kindOfKey: KindOfKey
+}
 
 export type ImportTarget =
 	| { kind: "arktype"; name: ArkExportName; value: unknown }
@@ -412,8 +436,12 @@ export class ModuleGraph {
 	cwd: string | undefined
 	private modulesById: Record<string, SourceModule | ImportTarget> =
 		Object.create(null)
-	private kindsByKey = new Map<Binding | FunctionNode, ArkKind>()
+	private kindsByKey = new Map<Key, ArkKind>()
 	private kindsByNode = new Map<Node, ArkKind>()
+	// a helper's parameters as one call passes them, which the kinds cached by node can't hold
+	private bindingKindOfKeys = new WeakSet<KindOfKey>()
+	private applicationsByFn = new Map<FunctionNode, Map<string, Application>>()
+	private resolving = new Set<Node>()
 	private composingByFn = new Map<FunctionNode, boolean>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
@@ -673,50 +701,71 @@ export class ModuleGraph {
 		return this.finalKindOfKey(binding, module)
 	}
 
-	// the least kinds a key and every key it reads can hold, iterated from none to stability, so none depends on which was asked first
-	private solve(key: Binding | FunctionNode, module: SourceModule): ArkKind {
-		const assumed = new Map<Binding | FunctionNode, [ArkKind, SourceModule]>([
-			[key, [0, module]]
-		])
-		let isStable = false
-		const kindOfKey: KindOfKey = (key, origin) => {
-			const entry = this.kindsByKey.get(key) ?? assumed.get(key)?.[0]
-			if (entry !== undefined) return entry
-			assumed.set(key, [0, origin])
-			isStable = false
-			return 0
-		}
-		while (!isStable) {
-			isStable = true
-			for (const [key, entry] of assumed) {
-				const kind = entry[0] | this.keyKindOf(key, entry[1], kindOfKey)
-				if (kind === entry[0]) continue
-				entry[0] = kind
-				isStable = false
+	// iterated from none, re-deciding a key only when one it read grew, so the result is least and doesn't depend on which was asked first
+	private solve(key: Key, module: SourceModule): ArkKind {
+		const assumed = new Map<Key, [ArkKind, SourceModule]>([[key, [0, module]]])
+		const readersByKey = new Map<Key, Set<Key>>()
+		const pending: Key[] = [key]
+		let reader = key
+		const kindOfKey: KindOfKey = (read, origin) => {
+			const final = this.kindsByKey.get(read)
+			if (final !== undefined) return final
+			let entry = assumed.get(read)
+			if (!entry) {
+				assumed.set(read, (entry = [0, origin]))
+				pending.push(read)
 			}
+			let readers = readersByKey.get(read)
+			if (!readers) readersByKey.set(read, (readers = new Set()))
+			readers.add(reader)
+			return entry[0]
+		}
+		while (pending.length) {
+			reader = pending.pop()!
+			const entry = assumed.get(reader)!
+			const kind = entry[0] | this.keyKindOf(reader, entry[1], kindOfKey)
+			if (kind === entry[0]) continue
+			entry[0] = kind
+			pending.push(...(readersByKey.get(reader) ?? []))
 		}
 		for (const [key, [kind]] of assumed) this.kindsByKey.set(key, kind)
 		return assumed.get(key)![0]
 	}
 
 	private keyKindOf(
-		key: Binding | FunctionNode,
+		key: Key,
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): ArkKind {
+		if ("args" in key) {
+			return this.transfer(
+				staticBodyOf(key.fn)!,
+				module,
+				this.appliedKindOfKey(key, module, kindOfKey)
+			)
+		}
 		if ("type" in key) return this.returnKindIn(key, module, kindOfKey)
 		const binding = key
-		if (binding.kind === "import")
-			return this.targetKindOf(this.importOf(binding, module), kindOfKey)
-		if (
-			binding.kind !== "const" &&
-			binding.kind !== "let" &&
-			binding.kind !== "var"
-		)
-			return kinds.data
+		switch (binding.kind) {
+			case "import":
+				return this.targetKindOf(this.importOf(binding, module), kindOfKey)
+			case "param":
+				return this.paramKindOf(binding, module, kindOfKey)
+			case "function":
+				return functionKindOf(
+					kindOfKey(binding.declaration as FunctionNode, module)
+				)
+			case "const":
+			case "let":
+			case "var":
+				break
+			default:
+				return kinds.data
+		}
 		const declaration = binding.declaration
 		let result =
-			declaration.type === "VariableDeclarator" && declaration.init ?
+			declaration.type !== "VariableDeclarator" ? kinds.data
+			: declaration.init ?
 				this.patternKindOf(
 					binding.id,
 					declaration.id,
@@ -724,7 +773,7 @@ export class ModuleGraph {
 					module,
 					kindOfKey
 				)
-			:	kinds.data
+			:	this.iteratedKindOf(declaration, binding, module, kindOfKey)
 		for (const write of binding.writes) {
 			const parent = write.parent
 			result |=
@@ -737,6 +786,85 @@ export class ModuleGraph {
 				: parent?.type === "VariableDeclarator" && parent.init ?
 					this.transfer(parent.init, module, kindOfKey)
 				:	kinds.data
+		}
+		return result
+	}
+
+	// e.g. `A | B` for `t` in `for (const t of [A, B])`
+	private iteratedKindOf(
+		declarator: Node,
+		binding: Binding,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		const loop = declarator.parent?.parent
+		if (
+			loop?.type !== "ForOfStatement" ||
+			loop.left !== declarator.parent ||
+			declarator.type !== "VariableDeclarator"
+		)
+			return kinds.data
+		const iterated = this.literalOf(loop.right, module, kindOfKey)
+		const element =
+			iterated?.node.type === "ArrayExpression" ?
+				this.heldKindOf(iterated)
+			:	memberKindOf(this.transfer(loop.right, module, kindOfKey), undefined)
+		return this.patternKindOf(
+			binding.id,
+			declarator.id,
+			element,
+			module,
+			kindOfKey
+		)
+	}
+
+	// e.g. `A | B` for `t` given `f(A)` and `f(B)`, or any value if `f` is exported or passed
+	private paramKindOf(
+		binding: Binding,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		const fn = binding.declaration as FunctionNode
+		const params = runtimeParamsOf(fn)
+		const index = params.findIndex(param => contains(param, binding.id))
+		const calls = this.callsOf(fn, module)
+		if (index === -1 || params[index].type === "RestElement" || !calls)
+			return kinds.data
+		let result = 0
+		for (const call of calls) {
+			const args = call.arguments
+			const spread = args.findIndex(arg => arg.type === "SpreadElement")
+			const arg = args[index]
+			result |= this.patternKindOf(
+				binding.id,
+				params[index],
+				spread !== -1 && spread <= index ? kinds.data
+				: arg ? this.transfer(arg, module, kindOfKey)
+				: kinds.data,
+				module,
+				kindOfKey
+			)
+		}
+		return result
+	}
+
+	// e.g. `f(A)` or `(t => t)(A)`, or undefined if `f` is exported or passed where the build can't see its calls
+	private callsOf(
+		fn: FunctionNode,
+		module: SourceModule
+	): (CallExpression | NewExpression)[] | undefined {
+		const binding = bindingOfFunction(fn, module)
+		if (binding && (binding.exportNames.length || binding.writes.length)) return
+		const result: (CallExpression | NewExpression)[] = []
+		for (const id of binding ? binding.references.map(r => r.id) : [fn]) {
+			const [operand, operator] = operatorOf(id)
+			if (
+				(operator?.type !== "CallExpression" &&
+					operator?.type !== "NewExpression") ||
+				operator.callee !== operand
+			)
+				return
+			result.push(operator)
 		}
 		return result
 	}
@@ -765,7 +893,9 @@ export class ModuleGraph {
 			default:
 				return memberKindOf(
 					this.patternKindOf(
-						parent.type === "RestElement" ? parent.parent! : parent,
+						parent.type === "RestElement" && parent !== pattern ?
+							parent.parent!
+						:	parent,
 						pattern,
 						kind,
 						module,
@@ -824,19 +954,39 @@ export class ModuleGraph {
 		kindOfKey: KindOfKey
 	): ArkKind {
 		node = normalize(node)
-		const cached = this.kindsByNode.get(node)
+		const cached =
+			this.bindingKindOfKeys.has(kindOfKey) ?
+				undefined
+			:	this.kindsByNode.get(node)
 		if (cached !== undefined) return cached
 		switch (node.type) {
 			case "Identifier": {
 				const binding = module.scopes.referencesById.get(node)?.binding
 				return binding ? kindOfKey(binding, module) : kinds.data
 			}
+			case "ArrowFunctionExpression":
+			case "FunctionExpression":
+				return functionKindOf(kindOfKey(node, module))
 			case "MemberExpression": {
 				const exported = this.namespaceMemberOf(node, module)
 				if (exported) return this.targetKindOf(exported, kindOfKey)
-				const property = this.propertyOf(node, module)
-				if (property) return this.transfer(...property, kindOfKey)
 				const name = memberNameOf(node)
+				const literal = this.literalOf(node.object, module, kindOfKey)
+				if (literal) {
+					// e.g. `o.a` in `const o = { a: o.a }`, which holds nothing until it holds something else
+					if (this.resolving.has(node)) return 0
+					this.resolving.add(node)
+					try {
+						const value = this.valueIn(literal, name)
+						return (
+							value === null ? kinds.data
+							: value ? this.transfer(value.node, value.module, value.kindOfKey)
+							: kinds.data | this.heldKindOf(literal)
+						)
+					} finally {
+						this.resolving.delete(node)
+					}
+				}
 				// the class of what a Type returns when validation fails
 				if (
 					name === "errors" &&
@@ -858,10 +1008,21 @@ export class ModuleGraph {
 					this.arkExportNameOf(callee, module) === "type"
 				)
 					return kinds.type
-				const fn = this.functionOf(callee, module)
-				return fn ?
-						kindOfKey(...fn)
-					:	callKindOf(this.transfer(callee, module, kindOfKey))
+				const fn =
+					this.functionOf(callee, module) ??
+					this.methodOf(callee, module, kindOfKey)
+				if (!fn) return callKindOf(this.transfer(callee, module, kindOfKey))
+				if (
+					node.type !== "CallExpression" ||
+					!isStatic(fn[0]) ||
+					!runtimeParamsOf(fn[0]).length
+				)
+					return kindOfKey(...fn)
+				// e.g. a Type for `withId(A)` with `withId = t => t.and({ id: "string" })`, though a call passing a string returns a string
+				return kindOfKey(
+					this.applicationOf(node, fn[0], module, kindOfKey),
+					fn[1]
+				)
 			}
 			case "ConditionalExpression":
 				return (
@@ -888,60 +1049,234 @@ export class ModuleGraph {
 		}
 	}
 
-	// e.g. `type({ name: "string" })` for `schemas.User` with `const schemas = { User: type({ name: "string" }) }`, or a class's static property
-	private propertyOf(
-		member: MemberExpression,
-		module: SourceModule
-	): [value: Node, module: SourceModule] | undefined {
-		const name = memberNameOf(member)
-		let object = normalize(member.object)
-		const binding =
-			object.type === "Identifier" ?
-				module.scopes.referencesById.get(object)?.binding
-			:	undefined
-		if (binding) {
-			const declaration = binding.declaration
-			if (binding.writes.length) return
-			if (binding.kind === "class") object = declaration
-			else if (
-				binding.kind === "const" &&
-				declaration.type === "VariableDeclarator" &&
-				declaration.id === binding.id &&
-				declaration.init
-			)
-				object = normalize(declaration.init)
-			else return
+	private applicationOf(
+		call: CallExpression,
+		fn: FunctionNode,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): Application {
+		const spread = call.arguments.findIndex(arg => arg.type === "SpreadElement")
+		const args = runtimeParamsOf(fn).map((param, i) =>
+			param.type === "RestElement" || (spread !== -1 && spread <= i) ?
+				kinds.data
+			: call.arguments[i] ? this.transfer(call.arguments[i], module, kindOfKey)
+			: kinds.data
+		)
+		let applications = this.applicationsByFn.get(fn)
+		if (!applications) this.applicationsByFn.set(fn, (applications = new Map()))
+		const id = args.join()
+		let result = applications.get(id)
+		if (!result) applications.set(id, (result = { fn, args }))
+		return result
+	}
+
+	private appliedKindOfKey(
+		{ fn, args }: Application,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindOfKey {
+		const params = runtimeParamsOf(fn)
+		const result: KindOfKey = (key, keyModule) => {
+			if (!("kind" in key) || key.kind !== "param" || key.declaration !== fn)
+				return kindOfKey(key, keyModule)
+			const index = params.findIndex(param => contains(param, key.id))
+			return index === -1 ?
+					kinds.data
+				:	this.patternKindOf(key.id, params[index], args[index], module, result)
 		}
-		const properties =
-			object.type === "ObjectExpression" ? object.properties
-			: (
-				object.type === "ClassDeclaration" || object.type === "ClassExpression"
-			) ?
-				object.body.body.filter(
-					element => "static" in element && element.static
+		this.bindingKindOfKeys.add(result)
+		return result
+	}
+
+	// e.g. `{ User: type(...) }` for `schemas`, `make()` or `forms.create`, read through bindings, imports, members and static helpers
+	private literalOf(
+		node: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		seen = new Set<Node>()
+	): Located | undefined {
+		node = normalize(node)
+		if (seen.has(node)) return
+		seen.add(node)
+		switch (node.type) {
+			case "ObjectExpression":
+			case "ArrayExpression":
+			case "ClassExpression":
+				return { node, module, kindOfKey }
+			case "Identifier": {
+				const binding = module.scopes.referencesById.get(node)?.binding
+				return (
+					binding && this.bindingLiteralOf(binding, module, kindOfKey, seen)
 				)
-			:	undefined
-		if (!properties || typeof name !== "string") return
-		let result: Node | null | undefined
-		for (const property of properties) {
-			// a later spread or computed key can replace any earlier property
-			if (!("key" in property) || keyNameOf(property) === undefined)
-				result = undefined
-			else if (keyNameOf(property) === name) {
-				result =
-					(
-						property.type === "PropertyDefinition" ||
-						(property.type === "Property" && property.kind === "init")
-					) ?
-						property.value
+			}
+			case "MemberExpression": {
+				const exported = this.namespaceMemberOf(node, module)
+				if (exported) return this.targetLiteralOf(exported, kindOfKey, seen)
+				const object = this.literalOf(node.object, module, kindOfKey, seen)
+				const value = object && this.valueIn(object, memberNameOf(node), seen)
+				return value ?
+						this.literalOf(value.node, value.module, value.kindOfKey, seen)
+					:	undefined
+			}
+			case "CallExpression": {
+				const fn = this.functionOf(node.callee, module)
+				const body =
+					fn && (isStatic(fn[0]) ? staticBodyOf(fn[0]) : onlyReturnOf(fn[0]))
+				return body ?
+						this.literalOf(
+							body,
+							fn[1],
+							this.appliedKindOfKey(
+								this.applicationOf(node, fn[0], module, kindOfKey),
+								fn[1],
+								kindOfKey
+							),
+							seen
+						)
 					:	undefined
 			}
 		}
-		return result ? [result, module] : undefined
+	}
+
+	private bindingLiteralOf(
+		binding: Binding,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		seen: Set<Node>
+	): Located | undefined {
+		if (binding.kind === "import") {
+			return this.targetLiteralOf(
+				this.importOf(binding, module),
+				kindOfKey,
+				seen
+			)
+		}
+		const declaration = binding.declaration
+		if (binding.writes.length) return
+		if (binding.kind === "class")
+			return { node: declaration, module, kindOfKey }
+		return (
+				binding.kind === "const" &&
+					declaration.type === "VariableDeclarator" &&
+					declaration.id === binding.id &&
+					declaration.init
+			) ?
+				this.literalOf(declaration.init, module, kindOfKey, seen)
+			:	undefined
+	}
+
+	private targetLiteralOf(
+		target: ImportTarget,
+		kindOfKey: KindOfKey,
+		seen: Set<Node>
+	): Located | undefined {
+		return (
+			target.kind === "binding" ?
+				this.bindingLiteralOf(target.binding, target.module, kindOfKey, seen)
+			: target.kind === "expression" ?
+				this.literalOf(target.node, target.module, kindOfKey, seen)
+			:	undefined
+		)
+	}
+
+	// the value a literal holds at a key, null if it holds none, or undefined if a spread, computed key or accessor can decide it
+	private valueIn(
+		literal: Located,
+		name: unknown,
+		seen = new Set<Node>()
+	): Located | null | undefined {
+		const { node } = literal
+		if (node.type === "ArrayExpression") {
+			const index =
+				typeof name === "number" ? name
+				: typeof name === "string" && /^(?:0|[1-9]\d*)$/.test(name) ?
+					Number(name)
+				:	undefined
+			// e.g. `length` or `map`, which no element can replace
+			if (index === undefined) return null
+			const elements = node.elements.slice(0, index + 1)
+			if (elements.some(element => element?.type === "SpreadElement")) return
+			const element = node.elements[index]
+			return element ? { ...literal, node: element } : null
+		}
+		const properties =
+			node.type === "ObjectExpression" ? node.properties
+			: node.type === "ClassDeclaration" || node.type === "ClassExpression" ?
+				node.body.body.filter(element => "static" in element && element.static)
+			:	[]
+		const key = name === undefined ? undefined : String(name)
+		for (let i = properties.length - 1; i >= 0; i--) {
+			const property = properties[i]
+			if (property.type === "SpreadElement") {
+				const spread = this.literalOf(
+					property.argument,
+					literal.module,
+					literal.kindOfKey,
+					seen
+				)
+				const value = spread && this.valueIn(spread, name, seen)
+				if (value !== null) return value
+				continue
+			}
+			if (!("key" in property)) continue
+			const propertyKey = keyNameOf(property)
+			if (propertyKey === undefined || key === undefined) return
+			if (String(propertyKey) !== key) continue
+			const isValue =
+				property.type === "PropertyDefinition" ||
+				(property.type === "Property" && property.kind === "init") ||
+				(property.type === "MethodDefinition" && property.kind === "method")
+			if (!isValue) return
+			return property.value ? { ...literal, node: property.value } : null
+		}
+		if (
+			(node.type === "ClassDeclaration" || node.type === "ClassExpression") &&
+			node.superClass
+		) {
+			const parent = this.literalOf(
+				node.superClass,
+				literal.module,
+				literal.kindOfKey,
+				seen
+			)
+			return parent && this.valueIn(parent, name, seen)
+		}
+		return null
+	}
+
+	// e.g. what `schemas[key]` or `schemas[key].User` may read
+	private heldKindOf(literal: Located, seen = new Set<Node>()): ArkKind {
+		const { node, module, kindOfKey } = literal
+		let result: ArkKind = 0
+		if (seen.has(node)) return result
+		seen.add(node)
+		const values =
+			node.type === "ArrayExpression" ? node.elements
+			: node.type === "ObjectExpression" ?
+				node.properties.map(property =>
+					property.type === "Property" ? property.value : property
+				)
+			: node.type === "ClassDeclaration" || node.type === "ClassExpression" ?
+				node.body.body.map(element =>
+					element.type === "PropertyDefinition" && element.static ?
+						element.value
+					:	null
+				)
+			:	[]
+		for (const value of values) {
+			if (!value) continue
+			const held = value.type === "SpreadElement" ? value.argument : value
+			const nested = this.literalOf(held, module, kindOfKey)
+			result |=
+				nested ? kinds.data | this.heldKindOf(nested, seen)
+				: held === value ? this.transfer(value, module, kindOfKey)
+				: memberKindOf(this.transfer(held, module, kindOfKey), undefined)
+		}
+		return result
 	}
 
 	// e.g. `schemas.User` with `schemas` a namespace import
-	private namespaceMemberOf(
+	namespaceMemberOf(
 		member: MemberExpression,
 		module: SourceModule
 	): ImportTarget | undefined {
@@ -960,7 +1295,7 @@ export class ModuleGraph {
 		)
 	}
 
-	// the operator that needs arktype to run on an arktype value, as `.and` or a call to `type` does
+	// e.g. `T.and` for `T`, or `type(def)` for `type`
 	composerOf(node: Node, module: SourceModule): Node | undefined {
 		const [operand, operator] = operatorOf(node)
 		const kind = this.kindOf(node, module)
@@ -979,7 +1314,7 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. `json` and `T` for `T.json` or `const { json } = T`, or `T` alone for `T[key]`, with `T` only ever a Type, which a validator replaces without them
+	// e.g. `json` and `T` for `T.json` or `const { json } = T`, or `T` alone for `T[key]`, where `T` can only be a Type
 	unavailableReadOf(
 		node: Node,
 		module: SourceModule
@@ -1004,7 +1339,8 @@ export class ModuleGraph {
 					parent.init
 				: parent?.type === "AssignmentExpression" && parent.left === root ?
 					parent.right
-				:	undefined
+				: root.type === "AssignmentPattern" ? root.right
+				: undefined
 			if (source) {
 				objects = [source]
 				kindOf = source =>
@@ -1041,7 +1377,10 @@ export class ModuleGraph {
 		if (node.type === "ForInStatement") return [undefined, [node.right]]
 		if (node.type === "BinaryExpression" && node.operator === "in") {
 			const key = node.left.type === "Literal" ? node.left.value : undefined
-			return [key, [node.right]]
+			// e.g. `"and" in T`, which a validator answers with the member that throws in its place
+			return typeof key === "string" && key in typeMemberKinds ?
+					undefined
+				:	[key, [node.right]]
 		}
 		if (node.type !== "CallExpression") return
 		const callee = normalize(node.callee)
@@ -1093,6 +1432,19 @@ export class ModuleGraph {
 			:	undefined
 	}
 
+	// e.g. `forms.create` with `forms = { create() { ... } }`
+	private methodOf(
+		callee: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): [FunctionNode, SourceModule] | undefined {
+		if (callee.type !== "MemberExpression") return
+		const literal = this.literalOf(callee.object, module, kindOfKey)
+		const value = literal && this.valueIn(literal, memberNameOf(callee))
+		const fn = value && normalize(value.node)
+		return fn && isFunctionNode(fn) ? [fn, value.module] : undefined
+	}
+
 	private boundFunctionOf(
 		binding: Binding,
 		module: SourceModule
@@ -1109,7 +1461,6 @@ export class ModuleGraph {
 		return fn && [fn, module]
 	}
 
-	// a function whose single expression a site can fold into each call
 	helperOf(
 		callee: Node,
 		module: SourceModule
@@ -1119,7 +1470,7 @@ export class ModuleGraph {
 		return helper && isStatic(helper[0]) ? helper : undefined
 	}
 
-	// a binding or exported expression holding an arktype value, or a function whose call returns one or, as a static helper, composes one
+	// e.g. a Type, an object literal holding one, or a function whose call returns one or, as a static helper, composes one
 	definesArk(
 		target: Extract<ImportTarget, { kind: "binding" | "expression" }>
 	): boolean {
@@ -1133,14 +1484,44 @@ export class ModuleGraph {
 			if (isArk(this.kindOf(node, module))) return true
 			if (isFunctionNode(node)) fn = [node, module]
 		}
+		const literal = this.targetLiteralOf(target, this.finalKindOfKey, new Set())
 		return (
-			!!fn &&
-			(isArk(this.finalKindOfKey(...fn)) ||
-				(isStatic(fn[0]) && this.composesArk(...fn)))
+			(!!literal && this.holdsArk(literal)) ||
+			(!!fn &&
+				(isArk(this.finalKindOfKey(...fn)) ||
+					(isStatic(fn[0]) && this.composesArk(...fn))))
 		)
 	}
 
-	// a static helper whose body composes an arktype value, so each call to it is a site
+	// e.g. `{ users: { User: type(...) } }`, whose members are sites
+	private holdsArk(literal: Located, seen = new Set<Node>()): boolean {
+		if (seen.has(literal.node)) return false
+		seen.add(literal.node)
+		const { node, module, kindOfKey } = literal
+		const values =
+			node.type === "ArrayExpression" ? node.elements
+			: node.type === "ObjectExpression" ?
+				node.properties.map(property =>
+					property.type === "Property" ? property.value : property.argument
+				)
+			: node.type === "ClassDeclaration" || node.type === "ClassExpression" ?
+				node.body.body.map(element =>
+					element.type === "PropertyDefinition" && element.static ?
+						element.value
+					:	null
+				)
+			:	[]
+		return values.some(value => {
+			if (!value) return false
+			if (value.type === "SpreadElement") value = value.argument
+			const nested = this.literalOf(value, module, kindOfKey)
+			if (nested) return this.holdsArk(nested, seen)
+			const kind = this.transfer(value, module, kindOfKey)
+			return isArk(kind) || isFactory(kind)
+		})
+	}
+
+	// e.g. `t => t.and(A)`, each call to which is a site
 	composesArk(fn: FunctionNode, module: SourceModule): boolean {
 		let result = this.composingByFn.get(fn)
 		if (result !== undefined) return result
@@ -1209,6 +1590,22 @@ export const staticBodyOf = (fn: FunctionNode): Node | undefined => {
 	return statements.length === 1 && statements[0].type === "ReturnStatement" ?
 			(statements[0].argument ?? undefined)
 		:	undefined
+}
+
+// e.g. `{ User }` in a function declaring `User` before returning it
+const onlyReturnOf = (fn: FunctionNode): Node | undefined => {
+	if (fn.async || fn.generator || fn.body?.type !== "BlockStatement") return
+	let result: Node | null | undefined
+	let returns = 0
+	walk(fn.body, node => {
+		if (isFunctionNode(node)) return false
+		if (node.type === "ReturnStatement") {
+			returns++
+			result = node.argument
+		}
+		return true
+	})
+	return returns === 1 ? (result ?? undefined) : undefined
 }
 
 const isStatic = (fn: FunctionNode): boolean =>

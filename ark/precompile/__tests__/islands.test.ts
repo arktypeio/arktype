@@ -118,6 +118,16 @@ export const D = type("boolean")`)
 		])
 	})
 
+	it("lets code outside it read what its Type has", () => {
+		attest(
+			diagnosticsOf(`import { type } from "arktype"
+// @ark-runtime
+const T = type({ a: "string" })
+const { in: I } = T
+console.log(I.expression)`)
+		).snap([])
+	})
+
 	it("fails for what an island reads that the build precompiles", () => {
 		attest(
 			diagnosticsOf(
@@ -152,6 +162,28 @@ export const Shared = type("string")`
 			'/b.ts:2:42  `type` is arktype/runtime\'s outside a runtime island\n  the runtime island at /main.ts:10:1 reaches it through `makeName` (/b.ts:2:14)\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".',
 			'/main.ts:6:22  `User` is a precompiled validator, which a runtime island can only validate with\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".',
 			'/main.ts:16:39  `b.Shared` is a precompiled validator, which a runtime island can only validate with\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".'
+		])
+	})
+
+	it("fails for a precompiled Type it reads through a cast or an object literal", () => {
+		attest(
+			diagnosticsOf(
+				`import * as b from "./b.ts"
+import { schemas } from "./b.ts"
+// @ark-runtime
+export const A = (b as typeof b).Shared.or("null")
+// @ark-runtime
+export const B = schemas.User.or("null")`,
+				{
+					"/b.ts": `import { type } from "arktype"
+export const Shared = type("string")
+const User = type({ name: "string" })
+export const schemas = { User }`
+				}
+			)
+		).snap([
+			'/main.ts:4:18  `(b as typeof b).Shared` is a precompiled validator, which a runtime island can only validate with\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".',
+			'/b.ts:4:26  `User` is a precompiled validator, which a runtime island can only validate with\n  the runtime island at /main.ts:6:1 reaches it through `schemas` (/b.ts:4:14)\n  A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".'
 		])
 	})
 })

@@ -37,6 +37,7 @@ import type {
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
+	bindingOfFunction,
 	contains,
 	enclosingFunctionOf,
 	isArk,
@@ -70,6 +71,8 @@ import {
 	exportNameOf,
 	isTransparent,
 	isWriteTarget,
+	normalize,
+	operatorOf,
 	unwrapExpression,
 	walk,
 	type Binding,
@@ -549,7 +552,15 @@ export class Precompiler {
 				(statement.source.value === "arktype" ||
 					statement.specifiers.some(specifier => {
 						const binding = module.scopes.bindingsById.get(specifier.local)
-						return !!binding && isArk(this.graph.bindingKindOf(binding, module))
+						return (
+							!!binding &&
+							this.graph.definesArk({
+								kind: "binding",
+								module,
+								binding,
+								name: binding.name
+							})
+						)
 					}))
 		)
 	}
@@ -1354,18 +1365,20 @@ export class Precompiler {
 			return state.requests.length ? undefined : candidate.root
 		}
 		const call = state.node
+		if (
+			call.type !== "CallExpression" ||
+			!state.requests.every(
+				([node, module]) =>
+					module === state.module &&
+					call.arguments.some(arg => contains(arg, node))
+			)
+		)
+			return
 		const fallback = fallbacks[fallbacks.length - 1]
-		return (
-				call.type === "CallExpression" &&
-					fallback &&
-					!contains(call.callee, fallback) &&
-					state.requests.every(
-						([node, module]) =>
-							module === state.module &&
-							call.arguments.some(arg => contains(arg, node))
-					)
-			) ?
-				fallbacks.pop()
+		if (fallback && !contains(call.callee, fallback)) return fallbacks.pop()
+		// e.g. a helper calling a function the build can't interpret, which leaves sites in its arguments to settle themselves
+		return candidate.kind === "helper" && rejection.isOpaque ?
+				candidate.root
 			:	undefined
 	}
 
@@ -2030,17 +2043,19 @@ export class Precompiler {
 			[]
 		walk(module.program, node => {
 			if (
-				isWithin(node, settledRanges) ||
+				settledRanges.has(rangeOf(node)) ||
 				isInIsland(node, module) ||
 				// e.g. `interface A extends B.C {}`, which only types
-				(node.type.startsWith("TS") && !isTransparent(node))
+				(node.type.startsWith("TS") && !isTransparent(node)) ||
+				(isFunctionNode(node) && this.isOnlyFolded(node, settledRanges, module))
 			)
 				return false
 			const read =
 				!(node.type === "MemberExpression" && isWriteTarget(node)) &&
 				!writes.has(node) &&
 				this.graph.unavailableReadOf(node, module)
-			if (read) unavailable.push([node, ...read])
+			if (read && !this.isDeclaredInIsland(read[1], module))
+				unavailable.push([node, ...read])
 			return true
 		})
 		for (const [node, read, object] of unavailable) {
@@ -2099,6 +2114,30 @@ export class Precompiler {
 			}
 		}
 		return result
+	}
+
+	// a static helper each call to which is a site, so its body never runs
+	private isOnlyFolded(
+		fn: FunctionNode,
+		settledRanges: Set<string>,
+		module: SourceModule
+	): boolean {
+		return (
+			isFoldedHelper(fn, module) &&
+			bindingOfFunction(fn, module)!.references.every(reference =>
+				isWithin(reference.id, settledRanges)
+			)
+		)
+	}
+
+	// e.g. `T` with `const T = type(...)` marked `// @ark-runtime`, which is arktype's own Type
+	private isDeclaredInIsland(node: Node, module: SourceModule): boolean {
+		node = normalize(node)
+		const binding =
+			node.type === "Identifier" ?
+				module.scopes.referencesById.get(node)?.binding
+			:	undefined
+		return !!binding && isInIsland(binding.declaration, module)
 	}
 
 	// a write a reference starts, and the arktype value it writes to or through, e.g. to its `meta`
@@ -2180,18 +2219,16 @@ export class Precompiler {
 					binding.kind === "import" ?
 						this.graph.importOf(binding, origin)
 					:	{ kind: "binding", module: origin, binding, name: binding.name }
-				// e.g. `schemas.User`, with `schemas` a namespace import
-				if (
+				// e.g. `schemas.User` or `(schemas as typeof schemas).User`, with `schemas` a namespace import
+				const [operand, member] = operatorOf(child)
+				const exported =
 					target.kind === "namespace" &&
-					child.parent?.type === "MemberExpression" &&
-					child.parent.object === child &&
-					!child.parent.computed
-				) {
-					read = child.parent
-					target = this.graph.exportOf(
-						target.module,
-						child.parent.property.name
-					)
+					member?.type === "MemberExpression" &&
+					member.object === operand &&
+					this.graph.namespaceMemberOf(member, origin)
+				if (exported) {
+					read = member
+					target = exported
 				}
 				if (target.kind !== "binding" && target.kind !== "expression")
 					return true
