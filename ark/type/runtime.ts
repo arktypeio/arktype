@@ -132,7 +132,7 @@ export class Validator extends Callable<
 		})
 		freeze(this.assert)
 		freeze(this)
-		holesByValidator.set(this, [id, freeze(holes), holes.map(nameOf)])
+		holesByValidator.set(this, [id, freeze(holes), holes.map(holeNameOf)])
 	}
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
@@ -472,12 +472,14 @@ export const holesOf = (
 	// its strings print its holes' names as they were when it was created, which a factory reading them again would miss
 	const [, holes, names] = created
 	for (let i = 0; i < holes.length; i++) {
-		if (nameOf(holes[i]) !== names[i]) {
+		const name = holeNameOf(holes[i])
+		if (name !== names[i]) {
 			throwError(
-				writeCreationMismatchMessage(
-					`${label}'s hole ${i}`,
-					`a function named ${JSON.stringify(nameOf(holes[i]))}`,
-					`a function named ${JSON.stringify(names[i])}`
+				writeRenamedHoleMessage(
+					label,
+					i,
+					JSON.stringify(name),
+					JSON.stringify(names[i])
 				)
 			)
 		}
@@ -485,7 +487,7 @@ export const holesOf = (
 	return holes
 }
 
-const nameOf = (hole: unknown) =>
+const holeNameOf = (hole: unknown) =>
 	typeof hole === "function" ? functionNameOf(hole) : undefined
 
 const helpersKey = Symbol.for("arktype.helpers")
@@ -544,3 +546,23 @@ export type writeCreationMismatchMessage<
 	actual extends string,
 	expected extends string
 > = `${label} is ${actual}, but was precompiled as ${expected}`
+
+export const writeRenamedHoleMessage = <
+	label extends string,
+	index extends number,
+	name extends string,
+	createdName extends string
+>(
+	label: label,
+	index: index,
+	name: name,
+	createdName: createdName
+): writeRenamedHoleMessage<label, index, name, createdName> =>
+	`${label}'s hole ${index} is a function named ${name}, but was named ${createdName} when ${label} was created`
+
+export type writeRenamedHoleMessage<
+	label extends string,
+	index extends number,
+	name extends string,
+	createdName extends string
+> = `${label}'s hole ${index} is a function named ${name}, but was named ${createdName} when ${label} was created`

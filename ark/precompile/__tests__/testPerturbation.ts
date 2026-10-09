@@ -229,9 +229,12 @@ const precompiled = runWorld("precompiled")
 const comparable = (observation: Observation | undefined) =>
 	JSON.stringify(observation).replace(/\btype\d+\b/g, "type")
 
+// what a factory's checks throw, a mismatch with what the build read or a hole renamed since its validator was created
 const isCreationCheck = (observation: Observation | undefined) =>
 	typeof observation?.threw === "string" &&
-	observation.threw.includes(" but was precompiled as ")
+	/ but was (?:precompiled as |named .* when .* was created$)/.test(
+		observation.threw
+	)
 
 const counts: Record<string, number> = {}
 const failures: string[] = []

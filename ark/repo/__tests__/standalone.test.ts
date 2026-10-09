@@ -29,6 +29,7 @@ import {
 import {
 	type as runtimeType,
 	writeCreationMismatchMessage,
+	writeRenamedHoleMessage,
 	writeUnavailableMemberMessage,
 	type HoleKind
 } from "arktype/runtime"
@@ -1003,11 +1004,7 @@ contextualize(() => {
 			// arktype printed isLong in name's strings when it was created
 			Object.defineProperty(isLong, "name", { value: "renamed" })
 			attest(() => created.User(name)).throws(
-				writeCreationMismatchMessage(
-					"`Name`'s hole 0",
-					'a function named "renamed"',
-					'a function named "isLong"'
-				)
+				writeRenamedHoleMessage("`Name`", 0, '"renamed"', '"isLong"')
 			)
 		})
 
