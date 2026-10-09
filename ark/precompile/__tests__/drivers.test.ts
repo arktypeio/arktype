@@ -397,7 +397,6 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 				attest(before[0].includes("a numeral")).equals(true)
 				attest(after).equals([configuredThreadMessage])
 			}
-			// the repo's typecheck includes the fixture, whose config module imports this
 			writeFileSync(
 				join(hidden, "locale.ts"),
 				'export const describe = () => "a numeral"\n'
