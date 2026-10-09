@@ -15,6 +15,7 @@ import {
 import { configure } from "arktype"
 import type { HoleKind } from "arktype/internal/runtime.ts"
 import {
+	holeNamePattern,
 	keyOf,
 	precompileStandalone,
 	writeFixConfig,
@@ -965,30 +966,19 @@ export class Precompiler {
 		site: Site,
 		module: SourceModule
 	): string {
-		const holes = new Set([
-			...site.holes.map(hole => hole.value),
-			...(hasArkKind(site.value, "root") ? keyOf(site.value)[1] : [])
-		])
-		for (const hole of holes) {
-			const standIn =
-				hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
-			// an opaque stand-in refuses to be read, even for its name
-			if (!standIn || standIn.kind === "opaque") continue
-			const { name } = hole as Function
-			if (!name || !message.includes(name)) continue
+		return message.replace(holeNamePattern, name => {
+			const standIn = this.interpreter.standInNamed(name)
+			if (!standIn) return name
 			const reference = site.references.find(
-				reference => reference.value === hole
+				reference =>
+					hasDomain(reference.value, "object") &&
+					this.interpreter.standIns.get(reference.value) === standIn
 			)
-			message = message
-				.split(name)
-				.join(
-					reference ?
-						module.snippetOf(reference)
-					:	(this.interpreter.declaredNameOf(standIn) ??
-							standIn.module.snippetOf(standIn.node))
-				)
-		}
-		return message
+			return reference ?
+					module.snippetOf(reference)
+				:	(this.interpreter.declaredNameOf(standIn) ??
+						standIn.module.snippetOf(standIn.node))
+		})
 	}
 
 	// a runtime island's Type is arktype's, which a factory can't take holes from or compare

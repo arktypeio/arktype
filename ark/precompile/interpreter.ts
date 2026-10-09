@@ -1902,6 +1902,10 @@ export class Interpreter {
 		)
 	}
 
+	standInNamed(name: string): StandIn | undefined {
+		return this.standInsByName.get(name)
+	}
+
 	declaredNameOf(standIn: StandIn): string | undefined {
 		return (
 			standIn.closure?.name ||
