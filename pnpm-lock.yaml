@@ -367,6 +367,9 @@ importers:
       '@ark/fs':
         specifier: workspace:*
         version: link:../fs
+      '@ark/precompile':
+        specifier: workspace:*
+        version: link:../precompile
       '@ark/schema':
         specifier: workspace:*
         version: link:../schema
