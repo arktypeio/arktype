@@ -1,4 +1,6 @@
 import {
+	getBuiltinNameOfConstructor,
+	hasDomain,
 	printable,
 	throwInternalError,
 	type Constructor,
@@ -8,8 +10,9 @@ import {
 	type satisfy
 } from "@ark/util"
 import type { Predicate } from "../predicate.ts"
-import type { ConstraintKind } from "./implement.ts"
+import { defaultValueSerializer, type ConstraintKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
+import { namedReference, registeredReference } from "./registry.ts"
 import type { StandardJSONSchemaV1 } from "./standardSchema.ts"
 
 class ToJsonSchemaError<
@@ -49,6 +52,68 @@ const defaultConfig: ToJsonSchema.Context = {
 		unit: ctx => ToJsonSchema.throw("unit", ctx),
 		date: ctx => ToJsonSchema.throw("date", ctx)
 	}
+}
+
+const annotate = <schema extends JsonSchema>(
+	base: schema,
+	keyword: string,
+	value: unknown
+): schema => ({ ...base, [`x-arktype-${keyword}`]: value })
+
+const appendAnnotation = <schema extends JsonSchema>(
+	base: schema,
+	keyword: string,
+	value: unknown
+): schema =>
+	annotate(base, keyword, [
+		...(((base as Record<string, unknown>)[`x-arktype-${keyword}`] as
+			| unknown[]
+			| undefined) ?? []),
+		value
+	])
+
+// writes what JSON Schema can't express as x-arktype-* keywords, referring
+// to a value that isn't JSON as a node's json would
+export const annotatingFallback: ToJsonSchema.HandlerByCode = {
+	arrayObject: ctx => annotate(ctx.base, "object", ctx.object),
+	arrayPostfix: ctx => annotate(ctx.base, "postfix", ctx.elements),
+	// written as the default itself
+	defaultValue: ctx => defaultValueSerializer(ctx.value) as never,
+	domain: ctx => annotate(ctx.base, "domain", ctx.domain),
+	morph: ctx => annotate(ctx.base, "out", ctx.out),
+	patternIntersection: ctx => {
+		const { allOf = [] } = ctx.base as { allOf?: readonly JsonSchema[] }
+		return { ...ctx.base, allOf: [...allOf, { pattern: ctx.pattern }] } as never
+	},
+	predicate: ctx =>
+		appendAnnotation(ctx.base, "predicates", namedReference(ctx.predicate)),
+	proto: ctx =>
+		annotate(
+			ctx.base,
+			"proto",
+			getBuiltinNameOfConstructor(ctx.proto) ?? registeredReference(ctx.proto)
+		),
+	symbolKey: ctx =>
+		appendAnnotation(ctx.base, "symbolKeys", {
+			key: ctx.key && registeredReference(ctx.key),
+			value: ctx.value,
+			optional: ctx.optional
+		}),
+	unit: ctx =>
+		annotate(
+			ctx.base,
+			"unit",
+			ctx.unit instanceof Date ? ctx.unit.toISOString()
+			: hasDomain(ctx.unit, "object") || typeof ctx.unit === "symbol" ?
+				registeredReference(ctx.unit)
+			:	defaultValueSerializer(ctx.unit)
+		),
+	date: ctx => ({
+		...ctx.base,
+		"x-arktype-proto": "Date",
+		...(ctx.before && { "x-arktype-before": ctx.before.toISOString() }),
+		...(ctx.after && { "x-arktype-after": ctx.after.toISOString() })
+	})
 }
 
 export const ToJsonSchema = {

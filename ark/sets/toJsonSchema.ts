@@ -225,7 +225,7 @@ const reduceObjectJsonSchema = (
 			const valueSchema = toJsonSchemaRecurse(prop.value, ctx)
 
 			if (typeof prop.key === "symbol") {
-				ctx.fallback.symbolKey({
+				schema = ctx.fallback.symbolKey({
 					code: "symbolKey",
 					base: schema,
 					key: prop.key,

@@ -33,6 +33,21 @@ T(input).b === input.b
 
 A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config.
 
+### Annotate what JSON Schema can't express
+
+Pass `annotatingFallback` as `toJsonSchema()`'s `fallback` to write each constraint JSON Schema can't express as an `x-arktype-*` keyword instead of throwing:
+
+```ts
+import { annotatingFallback, type } from "arktype"
+
+// { $schema: "...", "x-arktype-domain": "bigint" }
+type("bigint").toJsonSchema({ fallback: annotatingFallback })
+```
+
+A function, class or symbol is written as its `$ark` name, as in the type's `.json`. Validators ignore those keywords, so the schema accepts values the type rejects.
+
+A `symbolKey` fallback's result for a symbol-keyed property is now used instead of discarded.
+
 ### Reject shallow cycles
 
 An alias that resolved to itself without passing through an object, array or morph accepted every value. It now throws a ParseError:

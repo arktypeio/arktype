@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
+	annotatingFallback,
 	intrinsic,
 	rootSchema,
 	rootSchemaScope,
@@ -694,6 +695,136 @@ contextualize(() => {
     code: "date",
     base: {}
 }`)
+		})
+	})
+
+	describe("annotatingFallback", () => {
+		// x-arktype-* keywords aren't part of the JsonSchema type
+		const annotated = (T: BaseRoot): object =>
+			toJsonSchema(T, { fallback: annotatingFallback })
+
+		it("predicates", () => {
+			const T = rootSchema({
+				domain: "number",
+				predicate: [
+					function _isEven(n: number) {
+						return n % 2 === 0
+					},
+					function _isPositive(n: number) {
+						return n > 0
+					}
+				]
+			})
+
+			attest(annotated(T)).snap({
+				type: "number",
+				"x-arktype-predicates": ["$ark._isEven", "$ark._isPositive"]
+			})
+		})
+
+		it("bigint, undefined and Map", () => {
+			attest(annotated(rootSchema("bigint"))).snap({
+				"x-arktype-domain": "bigint"
+			})
+			attest(annotated(rootSchema({ unit: undefined }))).snap({
+				"x-arktype-unit": "undefined"
+			})
+			attest(annotated(rootSchema({ proto: Map }))).snap({
+				"x-arktype-proto": "Map"
+			})
+		})
+
+		it("morph", () => {
+			const T = rootSchema({
+				in: "string",
+				morphs: [(s: string) => Number.parseInt(s)]
+			})
+
+			attest(annotated(T)).snap({ type: "string", "x-arktype-out": null })
+		})
+
+		it("patterns", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: ["^a", "z$", "m"]
+			})
+
+			attest(annotated(T)).snap({
+				type: "string",
+				pattern: "^a",
+				allOf: [{ pattern: "m" }, { pattern: "z$" }]
+			})
+		})
+
+		it("symbol keys", () => {
+			const zildjian = Symbol("zildjian")
+			const T = rootSchema({
+				domain: "object",
+				required: [
+					{ key: "name", value: "string" },
+					{ key: zildjian, value: "number" }
+				],
+				index: [{ signature: "symbol", value: "number" }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "object",
+				properties: { name: { type: "string" } },
+				"x-arktype-symbolKeys": [
+					{ key: "$ark.zildjian1", value: { type: "number" }, optional: false },
+					{ key: null, value: { type: "number" }, optional: false }
+				],
+				required: ["name"]
+			})
+		})
+
+		it("date range", () => {
+			const T = rootSchema({
+				proto: "Date",
+				after: new Date("2000-01-01T00:00:00.000Z"),
+				before: new Date("2000-06-01T00:00:00.000Z")
+			})
+
+			attest(annotated(T)).snap({
+				"x-arktype-proto": "Date",
+				"x-arktype-before": "2000-06-01T00:00:00.000Z",
+				"x-arktype-after": "2000-01-01T00:00:00.000Z"
+			})
+		})
+
+		it("postfix and array props", () => {
+			const T = rootSchema({
+				proto: "Array",
+				sequence: {
+					variadic: "number",
+					postfix: ["string"]
+				},
+				required: [{ key: "extra", value: "string" }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "array",
+				minItems: 1,
+				items: { type: "number" },
+				"x-arktype-postfix": [{ type: "string" }],
+				"x-arktype-object": {
+					type: "object",
+					properties: { extra: { type: "string" } },
+					required: ["extra"]
+				}
+			})
+		})
+
+		it("default", () => {
+			const T = rootSchema({
+				domain: "object",
+				optional: [{ key: "foo", value: {}, default: 0n }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "object",
+				properties: { foo: { default: "0n" } }
+			})
 		})
 	})
 

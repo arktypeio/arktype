@@ -1,4 +1,5 @@
 export {
+	annotatingFallback,
 	ArkError,
 	ArkErrors,
 	Traversal,

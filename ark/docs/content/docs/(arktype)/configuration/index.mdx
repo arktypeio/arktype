@@ -575,6 +575,29 @@ const schema = T.toJsonSchema({
 })
 ```
 
+To keep what JSON Schema can't express rather than drop it, pass `annotatingFallback`. It writes each incompatible constraint as an `x-arktype-*` keyword, referring to a function, class or symbol by its `$ark` name as a Type's `.json` does:
+
+```ts
+import { annotatingFallback, type } from "arktype"
+
+const schema = type({
+	id: "bigint",
+	createdAt: "Date"
+}).toJsonSchema({ fallback: annotatingFallback })
+
+const result = {
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	type: "object",
+	properties: {
+		createdAt: { "x-arktype-proto": "Date" },
+		id: { "x-arktype-domain": "bigint" }
+	},
+	required: ["createdAt", "id"]
+}
+```
+
+Validators ignore those keywords, so the schema accepts values the Type rejects.
+
 These options can also be set at a [global or scope-level](/docs/configuration#levels).
 
 ### Fallback Codes
