@@ -120,15 +120,28 @@ export const precompileStandalone = (
 	sitesByName?: Record<string, string>
 ): string => {
 	const types: Record<string, ExportedValue> = {}
-	const factories: StandaloneArtifact[] = []
+	const factories: string[] = []
 	for (const [name, value] of Object.entries(exports)) {
 		if (arkKindOf(value) !== undefined) types[name] = value as never
 		else {
 			const { type, params } = value as StandaloneFactory
-			factories.push(new StandaloneArtifact({ [name]: type }, params))
+			factories.push(
+				new StandaloneArtifact({ [name]: type }).writeFactory(
+					name,
+					params,
+					factories.length,
+					configured
+				)
+			)
 		}
 	}
-	return new StandaloneArtifact(types).write(factories, configured, sitesByName)
+	const sections = [
+		`import * as runtime from "arktype/runtime"`,
+		`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
+		...new StandaloneArtifact(types).write(configured, sitesByName),
+		...factories
+	]
+	return `${sections.filter(section => section).join("\n\n")}\n`
 }
 
 export const writeFixConfig = (
@@ -138,7 +151,6 @@ export const writeFixConfig = (
 
 export class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
-	params: FactoryParam[] | undefined
 	holeExpressions = new Map<unknown, string>()
 	labelsByHole = new Map<unknown, string>()
 	classes = new Set<unknown>()
@@ -180,7 +192,7 @@ export class StandaloneArtifact {
 	defaults: string[] = []
 	lateNames = new Set<string>()
 
-	constructor(exports: Record<string, ExportedValue>, params?: FactoryParam[]) {
+	constructor(exports: Record<string, ExportedValue>) {
 		this.exports = exports
 		for (const name in exports) {
 			// an ES module can't export a name holding an unpaired surrogate
@@ -223,8 +235,6 @@ export class StandaloneArtifact {
 			)
 				this.objectUnits.add(node.unit)
 		}
-		this.params = params
-		if (params) this.receive(params)
 	}
 
 	receive(params: FactoryParam[]): void {
@@ -469,16 +479,13 @@ export class StandaloneArtifact {
 
 	// a site reading what the artifact exports creates it when the site is first evaluated, where arktype would fix its configuration
 	write(
-		factories: StandaloneArtifact[],
 		configured: ConfiguredModule | undefined,
 		sitesByName?: Record<string, string>
-	): string {
+	): string[] {
 		const names = Object.keys(this.exports)
-		const sections = [
-			`import * as runtime from "arktype/runtime"`,
-			`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
-			names.length ? this.writeCreate(names, configured, sitesByName) : "",
-			...factories.map((factory, i) => factory.writeFactory(i, configured)),
+		if (!names.length) return []
+		return [
+			this.writeCreate(names, configured, sitesByName),
 			names
 				.map(
 					(name, i) =>
@@ -486,7 +493,6 @@ export class StandaloneArtifact {
 				)
 				.join("\n")
 		]
-		return `${sections.filter(section => section).join("\n\n")}\n`
 	}
 
 	writeCreate(
@@ -519,19 +525,21 @@ ${statements.filter(statement => statement).join("\n\n")}
 
 	// each call creates its validator from the holes and inputs it receives, so it declares everything the validator holds
 	writeFactory(
+		name: string,
+		params: FactoryParam[],
 		index: number,
 		configured: ConfiguredModule | undefined
 	): string {
-		const [[name, type]] = Object.entries(this.exports)
+		this.receive(params)
 		const statements = [
 			writeFixConfig(configured),
 			...this.checks,
 			...this.writeBody(`unit${index}`),
-			`return ${this.exportOf(type)}`
+			`return ${this.exportOf(this.exports[name])}`
 		]
 		return `const unit${index} = ${this.unit.source}
 
-const factory${index} = (${this.params!.map((_, i) => `p${i}`).join(", ")}) => {
+const factory${index} = (${params.map((_, i) => `p${i}`).join(", ")}) => {
 ${statements.filter(statement => statement).join("\n\n")}
 }
 

@@ -2084,18 +2084,17 @@ const writeValidators = (
 	try {
 		return precompileStandalone(exportsByName, configured, sitesByName)
 	} catch {
-		const emitted = { ...exportsByName }
 		for (const name in exportsByName) {
 			try {
 				precompileStandalone({ [name]: exportsByName[name] })
 			} catch (e) {
 				refusalsByName[name] = (e as Error).message
-				delete emitted[name]
+				delete exportsByName[name]
 			}
 		}
 		// every export is refused when the whole artifact is, as under a configured locale
-		return Object.keys(emitted).length ?
-				precompileStandalone(emitted, configured, sitesByName)
+		return Object.keys(exportsByName).length ?
+				precompileStandalone(exportsByName, configured, sitesByName)
 			:	""
 	}
 }
