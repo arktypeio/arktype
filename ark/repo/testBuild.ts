@@ -123,8 +123,12 @@ for (const pkg of packages) {
 	}
 	const internalNames = exportedNamesOf(internalPath)
 	for (const module of modulesOf(pkg)) {
-		// arktype/runtime exports its own type and @ark/schema's runtime, which internal can't
-		if (name === "arktype" && module === "runtime") continue
+		// arktype/runtime and runtimeExports export a type of their own and @ark/schema's runtime, which internal can't
+		if (
+			name === "arktype" &&
+			(module === "runtime" || module === "runtimeExports")
+		)
+			continue
 		for (const exportedName of exportedNamesOf(
 			fileURLToPath(fromPackage(pkg, `out/${module}.js`))
 		)) {

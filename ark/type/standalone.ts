@@ -32,7 +32,7 @@ import {
 import { arktypeVersion } from "./entry.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { Module } from "./module.ts"
-import * as runtime from "./runtime.ts"
+import * as runtime from "./runtimeExports.ts"
 
 const writerKeys = ["expected", "actual", "problem", "message"] as const
 
