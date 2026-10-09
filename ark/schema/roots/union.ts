@@ -17,7 +17,7 @@ import {
 	type show
 } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
-import type { BaseNode } from "../node.ts"
+import { toJson, type BaseNode } from "../node.ts"
 import {
 	compileSerializedValue,
 	returnsTransformErrors,
@@ -174,14 +174,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// discriminated on construction, since relating branches can throw a ParseError,
 	// e.g. for an index signature and a prop with disjoint values
 	discriminant = this.discriminate()
-	discriminantJson =
-		this.discriminant ? discriminantToJson(this.discriminant) : null
 
 	expression: string = this.distribute(
 		// an intersection binds more tightly than a union, so it never needs parens
 		n => (n.hasKind("intersection") ? n.expression : n.nestableExpression),
 		expressBranches
 	)
+
+	get discriminantJson(): JsonStructure | null {
+		return this.discriminant ? discriminantToJson(this.discriminant) : null
+	}
 
 	discriminate(): Discriminant | null {
 		this.caseNodes.length = 0
@@ -482,7 +484,7 @@ const discriminantToJson = (discriminant: Discriminant): JsonStructure => ({
 		k,
 		node === true ? node
 		: node.hasKind("union") && node.discriminantJson ? node.discriminantJson
-		: node.json
+		: toJson(node)
 	])
 })
 

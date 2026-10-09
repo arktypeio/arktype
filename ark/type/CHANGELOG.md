@@ -33,6 +33,19 @@ T(input).b === input.b
 
 A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config.
 
+### Remove `.json`
+
+Types, scopes and generics no longer have a `.json` property, and a type no longer has `toJSON`, so `JSON.stringify` treats it like any other function. To serialize a type's internal structure, e.g. in a test, call `toJson` from `@ark/schema`:
+
+```ts
+import { toJson } from "@ark/schema"
+
+// previously type("string").json
+toJson(type("string")) // { domain: "string" }
+```
+
+A union's `discriminantJson` is written when read rather than when the union is created.
+
 ### Reject shallow cycles
 
 An alias that resolved to itself without passing through an object, array or morph accepted every value. It now throws a ParseError:
@@ -283,7 +296,7 @@ const handleRequest = (request: { id: number }) =>
 handleRequest({ id: 1 })
 ```
 
-The `$ark.x` names that functions get in a type's `json` or `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
+The `$ark.x` names that functions get in a type's `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
 
 https://github.com/arktypeio/arktype/issues/1676
 
@@ -408,7 +421,7 @@ A string index on an object with no other keys is still written as `additionalPr
 
 ### List optional keys by name
 
-An object's expression and JSON list its optional keys by name. A key with a default used to come before those without one:
+An object's expression lists its optional keys by name. A key with a default used to come before those without one:
 
 ```ts
 const T = type({ "bar?": "number", foo: "string = 'foo'" })

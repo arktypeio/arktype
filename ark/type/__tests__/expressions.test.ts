@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema, writeUnresolvableMessage } from "@ark/schema"
+import { rootSchema, toJson, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 
@@ -154,33 +154,37 @@ contextualize(() => {
 		it("=== single", () => {
 			const T = type("===", 5)
 			attest<5>(T.infer)
-			attest(T.json).equals(type("5").json)
+			attest(toJson(T)).equals(toJson(type("5")))
 		})
 
 		it("=== branches", () => {
 			const T = type("===", "foo", "bar", "baz")
 			attest<"foo" | "bar" | "baz">(T.infer)
-			attest(T.json).snap([{ unit: "bar" }, { unit: "baz" }, { unit: "foo" }])
+			attest(toJson(T)).snap([
+				{ unit: "bar" },
+				{ unit: "baz" },
+				{ unit: "foo" }
+			])
 		})
 
 		it("instanceof single", () => {
 			const T = type("instanceof", RegExp)
 			attest<RegExp>(T.infer)
 			const Expected = rootSchema(RegExp)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("instanceof branches", () => {
 			const T = type("instanceof", Array, Date)
 			attest<unknown[] | Date>(T.infer)
 			const Expected = rootSchema([Array, Date])
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("postfix", () => {
 			const T = type({ a: "string" }, "[]")
 			attest<{ a: string }[]>(T.infer)
-			attest(T.json).equals(type({ a: "string" }).array().json)
+			attest(toJson(T)).equals(toJson(type({ a: "string" }).array()))
 		})
 
 		it("infix", () => {
@@ -194,7 +198,9 @@ contextualize(() => {
 				  }
 			>(T.infer)
 
-			attest(T.json).equals(type({ a: "string" }).or({ b: "boolean" }).json)
+			attest(toJson(T)).equals(
+				toJson(type({ a: "string" }).or({ b: "boolean" }))
+			)
 		})
 
 		it("morph", () => {
@@ -220,7 +226,7 @@ contextualize(() => {
 			const T = type("keyof", [{ a: "string" }, "&", { b: "boolean" }])
 			const Expected = type("'a' | 'b'")
 			attest<typeof Expected.infer>(T.infer)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 	})
 })

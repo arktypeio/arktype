@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { Proto, rootSchema } from "@ark/schema"
+import { Proto, rootSchema, toJson } from "@ark/schema"
 import { type } from "arktype"
 import { writeInvalidConstructorMessage } from "arktype/internal/parser/tupleExpressions.ts"
 
@@ -9,7 +9,7 @@ contextualize(() => {
 			const T = type(["instanceof", Error])
 			attest<Error>(T.infer)
 			const Expected = rootSchema(Error)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 			const e = new Error()
 			attest(T(e)).equals(e)
 			attest(T(e)).equals(e)
@@ -110,12 +110,12 @@ contextualize(() => {
 		it("class", () => {
 			const T = type("instanceof", Error)
 			attest<Error>(T.infer)
-			attest(T.json).equals(type(["instanceof", Error]).json)
+			attest(toJson(T)).equals(toJson(type(["instanceof", Error])))
 		})
 		it("instance branches", () => {
 			const T = type("instanceof", Date, Map)
 			attest<Date | Map<unknown, unknown>>(T.infer)
-			attest(T.json).equals(type("Date | Map").json)
+			attest(toJson(T)).equals(toJson(type("Date | Map")))
 		})
 		it("non-constructor", () => {
 			// @ts-expect-error just an assignability failure so we can't validate an error message

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeUnresolvableMessage } from "@ark/schema"
+import { toJson, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
 import { writeUnterminatedEnclosedMessage } from "arktype/internal/parser/shift/operand/enclosed.ts"
 import { writeExpressionExpectedMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
@@ -15,7 +15,7 @@ contextualize(() => {
            number
     \t|boolean    []   `)
 		attest<string | number | boolean[]>(T.infer)
-		attest(T.json).equals(type("string|number|boolean[]").json)
+		attest(toJson(T)).equals(toJson(type("string|number|boolean[]")))
 	})
 
 	it("errors on bad whitespace", () => {

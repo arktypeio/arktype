@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
 	rootSchema,
+	toJson,
 	writeInvalidLengthBoundMessage,
 	writeInvalidOperandMessage,
 	writeUnboundableMessage
@@ -22,7 +23,7 @@ contextualize(() => {
 			const T = type("number>0")
 			attest<number>(T.infer)
 			attest(T).type.toString.snap("Type<number, {}>")
-			attest(T.json).snap({
+			attest(toJson(T)).snap({
 				domain: "number",
 				min: { exclusive: true, rule: 0 }
 			})
@@ -36,7 +37,7 @@ contextualize(() => {
 				domain: "number",
 				max: { rule: 10, exclusive: true }
 			})
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("<=", () => {
@@ -47,7 +48,7 @@ contextualize(() => {
 				domain: "number",
 				max: { rule: -49, exclusive: false }
 			})
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("==", () => {
@@ -55,7 +56,7 @@ contextualize(() => {
 			attest<number>(T.infer)
 			attest(T).type.toString.snap("Type<number, {}>")
 			const Expected = rootSchema({ unit: 3211993 })
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("== length", () => {
@@ -76,7 +77,7 @@ contextualize(() => {
 				min: { rule: -5, exclusive: true },
 				max: 5
 			})
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("<=,<", () => {
@@ -88,7 +89,7 @@ contextualize(() => {
 				min: { rule: -3.23 },
 				max: { rule: 4.654, exclusive: true }
 			})
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("whitespace following comparator", () => {
@@ -99,21 +100,24 @@ contextualize(() => {
 				domain: "number",
 				min: { rule: 3, exclusive: true }
 			})
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("single Date", () => {
 			const T = type("Date<d'2023/1/12'")
 			attest<Date>(T.infer)
 			attest(T).type.toString.snap("Type<Date, {}>")
-			attest(T.json).snap({ proto: "Date", before: "2023-01-12T04:59:59.999Z" })
+			attest(toJson(T)).snap({
+				proto: "Date",
+				before: "2023-01-12T04:59:59.999Z"
+			})
 		})
 
 		it("Date equality", () => {
 			const T = type("Date==d'2020-1-1'")
 			attest<Date>(T.infer)
 			attest(T).type.toString.snap("Type<Date, {}>")
-			attest(T.json).snap({ unit: "2020-01-01T05:00:00.000Z" })
+			attest(toJson(T)).snap({ unit: "2020-01-01T05:00:00.000Z" })
 			attest(T.allows(new Date("2020/01/01"))).equals(true)
 			attest(T.allows(new Date("2020/01/02"))).equals(false)
 		})
@@ -122,7 +126,7 @@ contextualize(() => {
 			const T = type("d'2001/10/10'< Date < d'2005/10/10'")
 			attest<Date>(T.infer)
 			attest(T.t).type.toString.snap("Date")
-			attest(T.json).snap({
+			attest(toJson(T)).snap({
 				proto: "Date",
 				before: "2005-10-10T03:59:59.999Z",
 				after: "2001-10-10T04:00:00.001Z"
@@ -293,7 +297,7 @@ contextualize(() => {
 			const T = type("1<(number[]|object[])<10")
 			attest<number[] | object[]>(T.infer)
 			const Expected = type("1<number[]<10 | 1<object[]<10")
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("number with right Date bound", () => {
@@ -318,7 +322,7 @@ contextualize(() => {
 			const T = type("number").atLeast(5)
 			const Expected = type("number>=5")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("invalid min operand", () => {
@@ -334,21 +338,21 @@ contextualize(() => {
 			const T = type("number").moreThan(5)
 			const Expected = type("number>5")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("atMost", () => {
 			const T = type("number").atMost(10)
 			const Expected = type("number<=10")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("lessThan", () => {
 			const T = type("number").lessThan(10)
 			const Expected = type("number<10")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("invalid max operand", () => {
@@ -364,14 +368,14 @@ contextualize(() => {
 			const T = type("string").atLeastLength(5)
 			const Expected = type("string>=5")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("moreThanLength", () => {
 			const T = type("string[]").moreThanLength(5)
 			const Expected = type("string[]>5")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("invalid minLength operand", () => {
@@ -391,14 +395,14 @@ contextualize(() => {
 			const T = type("string").atMostLength(10)
 			const Expected = type("string<=10")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("lessThanLength", () => {
 			const T = type("string[]").lessThanLength(10)
 			const Expected = type("string[]<10")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("invalid maxLength operand", () => {
@@ -419,14 +423,14 @@ contextualize(() => {
 			// widen the input to a string so both are non-narrowed
 			const Expected = type(`Date>=d'${"2022-01-01" as string}'`)
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("laterThan", () => {
 			const T = type("Date").laterThan(new Date("2022-01-01"))
 			const Expected = type(`Date>d'${"2022-01-01" as string}'`)
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("invalid after operand", () => {
@@ -442,14 +446,14 @@ contextualize(() => {
 			const T = type("Date").atOrBefore(5)
 			const Expected = type("Date<=5")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("earlierThan", () => {
 			const T = type("Date").earlierThan(5)
 			const Expected = type("Date<5")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("invalid before operand", () => {

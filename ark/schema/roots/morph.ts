@@ -1,5 +1,5 @@
 import { arrayEquals, type array } from "@ark/util"
-import type { BaseNode } from "../node.ts"
+import { toJson, type BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { isArkErrorResult } from "../shared/errors.ts"
@@ -57,15 +57,17 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 			},
 			morphs: {
 				serialize: morphs =>
-					morphs.map(m => (hasArkKind(m, "root") ? m.json : namedReference(m)))
+					morphs.map(m =>
+						hasArkKind(m, "root") ? toJson(m) : namedReference(m)
+					)
 			},
 			declaredIn: {
 				child: false,
-				serialize: node => node.json
+				serialize: toJson
 			},
 			declaredOut: {
 				child: false,
-				serialize: node => node.json
+				serialize: toJson
 			}
 		},
 		defaults: {

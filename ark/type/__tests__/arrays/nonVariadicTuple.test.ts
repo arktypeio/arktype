@@ -1,12 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
+import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("empty", () => {
 		const T = type([])
 		attest<[]>(T.infer)
 		attest(T.expression).snap("[]")
-		attest(T.json).snap({ proto: "Array", exactLength: 0 })
+		attest(toJson(T)).snap({ proto: "Array", exactLength: 0 })
 		attest(T([])).equals([])
 		attest(T([1]).toString()).snap("must be exactly length 0 (was 1)")
 	})

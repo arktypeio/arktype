@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	registeredReference,
+	toJson,
 	type ArkErrors,
 	type StandardSchemaV1
 } from "@ark/schema"
@@ -60,7 +61,7 @@ contextualize(() => {
 	provider: "GitHub" | "Google"
 	providerUserId: string
 }`)
-		attest(types.account.json).equals({
+		attest(toJson(types.account)).equals({
 			required: [
 				{ key: "provider", value: [{ unit: "GitHub" }, { unit: "Google" }] },
 				{ key: "providerUserId", value: "string" },
@@ -224,7 +225,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			}
 		}>(C.$.t)
 
-		attest(C.json).snap({
+		attest(toJson(C)).snap({
 			domain: "object",
 			required: [
 				{
@@ -333,7 +334,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			typeof CreatePatientInput.t.first_name
 		>()
 
-		attest(CreatePatientInput.json).snap({
+		attest(toJson(CreatePatientInput)).snap({
 			optional: [
 				{
 					key: "first_name",
@@ -470,7 +471,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const standalone = types.JsonSchemaArray.describe("standalone")
 
-		attest(standalone.json).equals({
+		attest(toJson(standalone)).equals({
 			required: [
 				{ key: "items", value: `$ark.${types.JsonSchema.internal.id}` },
 				{ key: "type", value: { unit: "array" } }
@@ -569,7 +570,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		attest<string>(T.t)
 
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			domain: { domain: "string", meta: 'This will "fail"' },
 			predicate: [
 				{
@@ -634,7 +635,12 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			domain: "object"
 		}
 
-		attest($.json).equals({
+		const types = $.export()
+		attest({
+			TypeWithKeywords: toJson(types.TypeWithKeywords),
+			Schema: toJson(types.Schema),
+			ArraySchema: toJson(types.ArraySchema)
+		}).equals({
 			TypeWithKeywords: arraySchema,
 			Schema: ["number", arraySchema],
 			ArraySchema: arraySchema
@@ -684,7 +690,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 			.narrow(validatePositiveBigint)
 
 		attest<(In: string | number) => Out<bigint>>(Amount.t)
-		attest(Amount.json).snap({
+		attest(toJson(Amount)).snap({
 			in: ["number", "string"],
 			morphs: [morphReference, { predicate: [predicateReference] }]
 		})
@@ -987,7 +993,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 
 		const Identity = Base.and("unknown")
 
-		attest(Base.json).equals(Identity.json)
+		attest(toJson(Base)).equals(toJson(Identity))
 		attest(Base.internal.id).equals(Identity.internal.id)
 	})
 
@@ -1028,13 +1034,13 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	it("deleted undeclared keys allowed in input", () => {
 		const T = type({ foo: "string" }).onUndeclaredKey("delete")
 
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			undeclared: "delete",
 			required: [{ key: "foo", value: "string" }],
 			domain: "object"
 		})
 
-		attest(T.in.json).snap({
+		attest(toJson(T.in)).snap({
 			required: [{ key: "foo", value: "string" }],
 			domain: "object"
 		})
@@ -1049,13 +1055,13 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 	it("deleted undeclared keys rejected in output", () => {
 		const T = type({ foo: "string" }).onUndeclaredKey("delete")
 
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			undeclared: "delete",
 			required: [{ key: "foo", value: "string" }],
 			domain: "object"
 		})
 
-		attest(T.out.json).snap({
+		attest(toJson(T.out)).snap({
 			undeclared: "reject",
 			required: [{ key: "foo", value: "string" }],
 			domain: "object"

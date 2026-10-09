@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { Disjoint, node, rootSchema } from "@ark/schema"
+import { Disjoint, node, rootSchema, toJson } from "@ark/schema"
 import { writeOrderedIntersectionMessage } from "arksets"
 
 contextualize(() => {
@@ -19,7 +19,7 @@ contextualize(() => {
 			divisor: 5
 		})
 		const T = L.and(R)
-		attest(T.json).snap([
+		attest(toJson(T)).snap([
 			{ domain: "number", divisor: 10 },
 			{ domain: "number", divisor: 15 }
 		])
@@ -27,7 +27,7 @@ contextualize(() => {
 
 	it("reduces union", () => {
 		const n = rootSchema(["number", {}, { unit: 5 }])
-		attest(n.json).snap({})
+		attest(toJson(n)).snap({})
 	})
 
 	it("union of all types reduced to unknown", () => {
@@ -42,13 +42,13 @@ contextualize(() => {
 			{ unit: null },
 			{ unit: undefined }
 		])
-		attest(n.json).snap({})
+		attest(toJson(n)).snap({})
 	})
 
 	it("normalizes union order", () => {
 		const L = rootSchema(["number", "string"])
 		const R = rootSchema(["string", "number"])
-		attest(L.json).equals(R.json)
+		attest(toJson(L)).equals(toJson(R))
 	})
 
 	it("doesn't normalize ordered unions", () => {
@@ -70,7 +70,7 @@ contextualize(() => {
 		})
 		const R = rootSchema(["string", Array])
 		const T = L.and(R)
-		attest(T.json).equals(L.json)
+		attest(toJson(T)).equals(toJson(L))
 	})
 
 	it("unordered union with ordered union", () => {
@@ -80,7 +80,7 @@ contextualize(() => {
 		})
 		const R = rootSchema(["number", "string"])
 		const T = L.and(R)
-		attest(T.json).equals(L.json)
+		attest(toJson(T)).equals(toJson(L))
 	})
 
 	it("intersection of ordered unions", () => {

@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	intrinsic,
+	toJson,
 	writeIndivisibleMessage,
 	writeUnresolvableMessage,
 	writeUnsatisfiableExpressionError
@@ -12,7 +13,7 @@ contextualize(() => {
 	it("two types", () => {
 		const T = type("boolean&true")
 		attest<true>(T.infer)
-		attest(T.json).is(type("true").json)
+		attest(T).is(type("true"))
 	})
 
 	it("intersection parsed before union", () => {
@@ -21,25 +22,25 @@ contextualize(() => {
 		// 2. "0" | "1" | "2"
 		const T = type("'0'|'1'&string|'2'")
 		attest<"0" | "1" | "2">(T.infer)
-		attest(T.json).equals(type("===", "0", "1", "2").json)
+		attest(toJson(T)).equals(toJson(type("===", "0", "1", "2")))
 	})
 
 	it("tuple expression", () => {
 		const T = type([{ a: "string" }, "&", { b: "number" }])
 		attest<{ a: string; b: number }>(T.infer)
-		attest(T.json).equals(type({ a: "string", b: "number" }).json)
+		attest(toJson(T)).equals(toJson(type({ a: "string", b: "number" })))
 	})
 
 	it("several types", () => {
 		const T = type("unknown&boolean&false")
 		attest<false>(T.infer)
-		attest(T.json).equals(type("false").json)
+		attest(toJson(T)).equals(toJson(type("false")))
 	})
 
 	it("method", () => {
 		const T = type({ a: "string" }).and({ b: "boolean" })
 		attest<{ a: string; b: boolean }>(T.infer)
-		attest(T.json).equals(type({ a: "string", b: "boolean" }).json)
+		attest(toJson(T)).equals(toJson(type({ a: "string", b: "boolean" })))
 	})
 
 	it("chained deep intersections", () => {

@@ -1,24 +1,25 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
+import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("shallow array intersection", () => {
 		const T = type("string[]&'foo'[]")
 		const Expected = type("'foo'[]")
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("deep array intersection", () => {
 		const T = type([{ a: "string" }, "[]"]).and([{ b: "number" }, "[]"])
 		const Expected = type([{ a: "string", b: "number" }, "[]"])
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("tuple intersection", () => {
 		const T = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
 		const Expected = type([{ a: "string", b: "boolean" }])
 		attest<typeof Expected>(T)
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("tuple and array", () => {
@@ -38,8 +39,8 @@ contextualize(() => {
 
 		attest<typeof Expected>(ArrayAndTuple)
 
-		attest(TupleAndArray.json).equals(Expected.json)
-		attest(ArrayAndTuple.json).equals(Expected.json)
+		attest(toJson(TupleAndArray)).equals(toJson(Expected))
+		attest(toJson(ArrayAndTuple)).equals(toJson(Expected))
 	})
 
 	it("variadic and tuple", () => {
@@ -52,7 +53,7 @@ contextualize(() => {
 			{ a: "string", c: "number" },
 			{ b: "boolean", d: "Date" }
 		])
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("variadic and array", () => {
@@ -64,7 +65,7 @@ contextualize(() => {
 			[{ b: "boolean", c: "number" }, "[]"]
 		])
 		attest<typeof Expected.infer>(T.infer)
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	// based on the equivalent type-level test from @ark/util
@@ -123,39 +124,39 @@ contextualize(() => {
 			])
 
 		const lrResult = L.and(R)
-		attest(lrResult.json).snap(Expected.json)
+		attest(toJson(lrResult)).snap(toJson(Expected))
 		const rlResult = R.and(L)
-		attest(rlResult.json).snap(Expected.json)
+		attest(toJson(rlResult)).snap(toJson(Expected))
 	})
 
 	it("reduces minLength", () => {
 		const T = type(["number", "number", "...", "number[]", "number"])
 		const Expected = type("number[]>=3")
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("length narrowing two others", () => {
 		const T = type("unknown[] >= 1").and("unknown[] <= 2").and("unknown[] <= 1")
-		attest(T.json).equals(type("unknown[] == 1").json)
+		attest(toJson(T)).equals(toJson(type("unknown[] == 1")))
 	})
 
 	it("length narrowing two others to one held", () => {
 		const L = type(["null", "null?"])
 		const R = type(["null"])
 
-		attest(L.and(R).json).equals(R.json)
-		attest(R.and(L).json).equals(R.json)
+		attest(toJson(L.and(R))).equals(toJson(R))
+		attest(toJson(R.and(L))).equals(toJson(R))
 	})
 
 	it("never optional element keeps length", () => {
 		const T = type("string[]").and(["string", "number?"])
-		attest(T.json).equals(type(["string"]).json)
+		attest(toJson(T)).equals(toJson(type(["string"])))
 		attest(T.allows(["a", 5])).equals(false)
 	})
 
 	it("disjoint arrays", () => {
 		const T = type("string[] & number[]")
-		attest(T.json).equals(type([]).json)
+		attest(toJson(T)).equals(toJson(type([])))
 		attest(T.allows([])).equals(true)
 		attest(T.allows([1])).equals(false)
 	})
@@ -164,21 +165,21 @@ contextualize(() => {
 		const WithProp = type("string[]").and({ "p0?": "string" })
 		const T = type("number[]").and(WithProp)
 
-		attest(T.json).equals(type([]).and({ "p0?": "string" }).json)
+		attest(toJson(T)).equals(toJson(type([]).and({ "p0?": "string" })))
 		attest(T.allows(Object.assign([], { p0: 5 }))).equals(false)
 		attest(type("number[]").or(WithProp).expression).snap(
 			"{ p0?: string } & string[] | number[]"
 		)
 		attest(WithProp.extends("number[]")).equals(false)
-		attest(type(["number[]", "&", { "x?": "1" }]).and("string[]").json).equals(
-			type([]).and({ "x?": "1" }).json
-		)
+		attest(
+			toJson(type(["number[]", "&", { "x?": "1" }]).and("string[]"))
+		).equals(toJson(type([]).and({ "x?": "1" })))
 	})
 
 	it("array with props", () => {
 		const T = type("Array").and({ name: "string" })
 
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			required: [{ key: "name", value: "string" }],
 			proto: "Array"
 		})
@@ -197,20 +198,20 @@ contextualize(() => {
 	it("shallow array intersection", () => {
 		const T = type("string[]&'foo'[]")
 		const Expected = type("'foo'[]")
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("deep array intersection", () => {
 		const T = type([{ a: "string" }, "[]"]).and([{ b: "number" }, "[]"])
 		const Expected = type([{ a: "string", b: "number" }, "[]"])
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("tuple intersection", () => {
 		const T = type([[{ a: "string" }], "&", [{ b: "boolean" }]])
 		const Expected = type([{ a: "string", b: "boolean" }])
 		attest<typeof Expected>(T)
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("tuple and array", () => {
@@ -230,8 +231,8 @@ contextualize(() => {
 
 		attest<typeof Expected>(ArrayAndTuple)
 
-		attest(TupleAndArray.json).equals(Expected.json)
-		attest(ArrayAndTuple.json).equals(Expected.json)
+		attest(toJson(TupleAndArray)).equals(toJson(Expected))
+		attest(toJson(ArrayAndTuple)).equals(toJson(Expected))
 	})
 
 	it("variadic and tuple", () => {
@@ -244,7 +245,7 @@ contextualize(() => {
 			{ a: "string", c: "number" },
 			{ b: "boolean", d: "Date" }
 		])
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("variadic and array", () => {
@@ -256,7 +257,7 @@ contextualize(() => {
 			[{ b: "boolean", c: "number" }, "[]"]
 		])
 		attest<typeof Expected.infer>(T.infer)
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	// based on the equivalent type-level test from @ark/util
@@ -315,8 +316,8 @@ contextualize(() => {
 			])
 
 		const LrResult = L.and(R)
-		attest(LrResult.json).snap(Expected.json)
+		attest(toJson(LrResult)).snap(toJson(Expected))
 		const RlResult = R.and(L)
-		attest(RlResult.json).snap(Expected.json)
+		attest(toJson(RlResult)).snap(toJson(Expected))
 	})
 })

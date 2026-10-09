@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { intrinsic, writeIndivisibleMessage } from "@ark/schema"
+import { intrinsic, toJson, writeIndivisibleMessage } from "@ark/schema"
 import { type } from "arktype"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/shift/operator/divisor.ts"
 
@@ -8,26 +8,26 @@ contextualize(() => {
 		it("integer literal", () => {
 			const DivisibleByTwo = type("number%2")
 			attest<number>(DivisibleByTwo.infer)
-			attest(DivisibleByTwo.json).snap({ domain: "number", divisor: 2 })
+			attest(toJson(DivisibleByTwo)).snap({ domain: "number", divisor: 2 })
 		})
 
 		it("chained", () => {
 			const T = type("number").divisibleBy(2)
 			const Expected = type("number%2")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("whitespace after %", () => {
 			const T = type("number % 5")
 			attest<number>(T.infer)
-			attest(T.json).snap({ domain: "number", divisor: 5 })
+			attest(toJson(T)).snap({ domain: "number", divisor: 5 })
 		})
 
 		it("with bounds", () => {
 			const T = type("7<number%8<222")
 			const Expected = type("number%8").and("7<number<222")
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 			attest(T.description).snap(
 				"a multiple of 8 and more than 7 and less than 222"
 			)
@@ -105,27 +105,27 @@ contextualize(() => {
 	describe("intersection", () => {
 		it("identical", () => {
 			const T = type("number%2&number%2")
-			attest(T.json).equals(type("number%2").json)
+			attest(toJson(T)).equals(toJson(type("number%2")))
 		})
 
 		it("purely divisible", () => {
 			const T = type("number%4&number%2")
-			attest(T.json).equals(type("number%4").json)
+			attest(toJson(T)).equals(toJson(type("number%4")))
 		})
 
 		it("common divisor", () => {
 			const T = type("number%6&number%4")
-			attest(T.json).equals(type("number%12").json)
+			attest(toJson(T)).equals(toJson(type("number%12")))
 		})
 
 		it("relatively prime", () => {
 			const T = type("number%2&number%3")
-			attest(T.json).equals(type("number%6").json)
+			attest(toJson(T)).equals(toJson(type("number%6")))
 		})
 
 		it("valid literal", () => {
 			const T = type("number%5&0")
-			attest(T.json).equals(type("0").json)
+			attest(toJson(T)).equals(toJson(type("0")))
 		})
 
 		it("invalid literal", () => {

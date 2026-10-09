@@ -11,7 +11,6 @@ import type {
 	ErrorType,
 	inferred,
 	intersectUnion,
-	JsonStructure,
 	Key,
 	listable,
 	merge,
@@ -199,7 +198,6 @@ export interface BaseTypeProp<
 	key: k
 	value: instantiateType<v, $>
 	meta: ArkEnv.meta
-	toJSON: () => JsonStructure
 }
 
 export interface DefaultedTypeProp<

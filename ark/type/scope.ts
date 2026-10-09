@@ -43,7 +43,6 @@ import {
 	type Dict,
 	type ErrorMessage,
 	type ErrorType,
-	type JsonStructure,
 	type anyOrNever,
 	type array,
 	type noSuggest
@@ -542,7 +541,6 @@ export interface Scope<$ = {}> {
 	[arkKind]: "scope"
 	config: ArkScopeConfig
 	references: readonly BaseNode[]
-	json: JsonStructure
 	exportedNames: array<exportedNameOf<$>>
 
 	/** The set of names defined at the root-level of the scope mapped to their

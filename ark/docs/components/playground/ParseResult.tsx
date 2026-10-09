@@ -72,7 +72,6 @@ const createTypeResult = (t: Type) => (
 			".expression",
 			".description",
 			".toJsonSchema()",
-			".json",
 			".precompilation"
 		]}
 		style={{
@@ -101,12 +100,6 @@ const createTypeResult = (t: Type) => (
 					e => String(e)
 				)}
 			/>
-		</Tab>
-		<Tab value=".json">
-			<TabDescription>
-				Serialized representation of the Type's internal structure
-			</TabDescription>
-			<DynamicCodeBlock lang="json" code={JSON.stringify(t.json, null, 4)} />
 		</Tab>
 		<Tab value=".precompilation">
 			<TabDescription>JIT-optimized validation code</TabDescription>

@@ -16,7 +16,6 @@ import type {
 	Callable,
 	ErrorMessage,
 	inferred,
-	JsonStructure,
 	unset
 } from "@ark/util"
 import type {
@@ -122,16 +121,6 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * type UnparsedNumber = typeof parseNumber.inferIn // string
 	 */
 	inferIn: distill.In<t>
-
-	/**
-	 * #### internal JSON representation
-	 */
-	json: JsonStructure
-
-	/**
-	 * alias of {@link json} for `JSON.stringify` compatibility
-	 */
-	toJSON(): JsonStructure
 
 	/**
 	 * #### generate a JSON Schema

@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	toJson,
 	writeShallowCycleErrorMessage,
 	writeUnresolvableMessage
 } from "@ark/schema"
@@ -40,7 +41,7 @@ contextualize(() => {
 			}
 		}>(types.a.infer)
 
-		attest(types.a.json).snap({
+		attest(toJson(types.a)).snap({
 			required: [
 				{
 					key: "b",
@@ -51,7 +52,7 @@ contextualize(() => {
 		})
 		attest<{ a: string }>(types.b.infer)
 
-		attest(types.b.json).snap({
+		attest(toJson(types.b)).snap({
 			required: [{ key: "a", value: "string" }],
 			domain: "object"
 		})
@@ -65,7 +66,7 @@ contextualize(() => {
 		})
 		const types = $.export()
 		attest<{ a: string; b: boolean }>(types.aAndB.infer)
-		attest(types.aAndB.json).snap({
+		attest(toJson(types.aAndB)).snap({
 			required: [
 				{ key: "a", value: "string" },
 				{ key: "b", value: [{ unit: false }, { unit: true }] }
@@ -76,13 +77,13 @@ contextualize(() => {
 
 	it("shallow in type", () => {
 		const T = type(() => type("string"))
-		attest(T.json).equals(type("string").json)
+		attest(toJson(T)).equals(toJson(type("string")))
 		attest<string>(T.infer)
 	})
 
 	it("deep in type", () => {
 		const T = type({ a: () => type("string") })
-		attest(T.json).equals(type({ a: "string" }).json)
+		attest(toJson(T)).equals(toJson(type({ a: "string" })))
 		attest<{ a: string }>(T.infer)
 	})
 
@@ -206,7 +207,10 @@ contextualize(() => {
 
 		const types = $.export()
 
-		attest($.json).snap({
+		attest({
+			id: toJson(types.id),
+			expandUserGroup: toJson(types.expandUserGroup)
+		}).snap({
 			id: { domain: "string" },
 			expandUserGroup: {
 				sequence: {

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeDuplicateAliasError } from "@ark/schema"
+import { toJson, writeDuplicateAliasError } from "@ark/schema"
 import { scope, type, type BoundModule, type Module, type Type } from "arktype"
 import { writePrefixedPrivateReferenceMessage } from "arktype/internal/parser/ast/validate.ts"
 
@@ -75,7 +75,9 @@ contextualize(() => {
 
 				attest(Object.keys(types)).equals(["hasCrept", "public"])
 
-				attest(types.public.json).equals(type("3|'no'|string.uuid|true").json)
+				attest(toJson(types.public)).equals(
+					toJson(type("3|'no'|string.uuid|true"))
+				)
 
 				// have to snapshot the module since TypeScript treats it as bivariant
 				attest(types).type.toString.snap(`Module<{
@@ -208,7 +210,12 @@ contextualize(() => {
 			>
 		>(T)
 		attest(T.expression).snap("{ bar: 1, baz: 1, foo: 1 } | 1")
-		attest(T.$.json).snap({
+		const exported = T.$.export()
+		attest({
+			foo: toJson(exported.foo),
+			bar: toJson(exported.bar),
+			baz: toJson(exported.baz)
+		}).snap({
 			foo: { unit: 1 },
 			bar: { unit: 1 },
 			baz: { unit: 1 }
@@ -221,7 +228,7 @@ contextualize(() => {
 			"#bar": "boolean"
 		}).export()
 		attest(Object.keys(types)).equals(["foo"])
-		attest(types.foo.json).equals(type("boolean[]").json)
+		attest(toJson(types.foo)).equals(toJson(type("boolean[]")))
 		attest<
 			Module<{
 				foo: boolean[]

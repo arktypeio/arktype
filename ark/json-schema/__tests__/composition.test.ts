@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { jsonSchemaToType } from "@ark/json-schema"
+import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("allOf", () => {
@@ -24,7 +25,7 @@ contextualize(() => {
 
 	it("not", () => {
 		const tNot = jsonSchemaToType({ not: { type: "string", maxLength: 3 } })
-		attest(tNot.json).snap({
+		attest(toJson(tNot)).snap({
 			predicate: ["$ark.jsonSchemaNotValidator"]
 		})
 
@@ -39,7 +40,7 @@ contextualize(() => {
 		const tOneOf = jsonSchemaToType({
 			oneOf: [{ type: "string", minLength: 10 }, { const: "foo" }]
 		})
-		attest(tOneOf.json).snap({
+		attest(toJson(tOneOf)).snap({
 			predicate: ["$ark.jsonSchemaOneOfValidator"]
 		})
 

@@ -3,18 +3,19 @@ import { writeUnclosedGroupMessage } from "@ark/util"
 import type { RegexExecArray } from "arkregex/internal/execArray.ts"
 import { type, type Out, type Type } from "arktype"
 import { writeUnterminatedEnclosedMessage } from "arktype/internal/parser/shift/operand/enclosed.ts"
+import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("with spaces", () => {
 		const T = type("'this has spaces'")
 		attest<"this has spaces">(T.infer)
-		attest(T.json).snap({ unit: "this has spaces" })
+		attest(toJson(T)).snap({ unit: "this has spaces" })
 	})
 
 	it("with neighbors", () => {
 		const T = type("'foo'|/.*/[]")
 		attest<"foo" | string[]>(T.infer)
-		attest(T.json).snap([
+		attest(toJson(T)).snap([
 			{ proto: "Array", sequence: { domain: "string", pattern: [".*"] } },
 			{ unit: "foo" }
 		])
@@ -44,7 +45,7 @@ contextualize(() => {
 	it("single-quoted", () => {
 		const T = type("'hello'")
 		attest<"hello">(T.infer)
-		attest(T.json).snap({ unit: "hello" })
+		attest(toJson(T)).snap({ unit: "hello" })
 	})
 
 	it("double-quoted", () => {

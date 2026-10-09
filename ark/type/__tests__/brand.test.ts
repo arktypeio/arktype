@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { type, type Brand, type Json } from "arktype"
+import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("fluent", () => {
@@ -66,7 +67,7 @@ contextualize(() => {
 
 		const String = type("string.numeric.parse#num")
 
-		attest(String.json).equals(Fluent.json)
+		attest(toJson(String)).equals(toJson(Fluent))
 		attest<typeof Fluent.t>(String.t)
 	})
 

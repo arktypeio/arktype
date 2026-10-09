@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { intrinsic, writeInvalidOperandMessage } from "@ark/schema"
+import { intrinsic, toJson, writeInvalidOperandMessage } from "@ark/schema"
 import { regex, type Regex, type Type, type } from "arktype"
 
 contextualize(() => {
@@ -14,34 +14,34 @@ contextualize(() => {
 
 		it("identical strings", () => {
 			const T = type("/a/&/a/")
-			attest(T.json).equals(type("/a/").json)
+			attest(toJson(T)).equals(toJson(type("/a/")))
 		})
 
 		it("string and list", () => {
-			const Expected = type("/a/&/b/&/c/").json
-			attest(type(["/a/", "&", "/b/&/c/"]).json).equals(Expected)
-			attest(type(["/a/", "&", "/b/&/c/"]).json).equals(Expected)
+			const Expected = toJson(type("/a/&/b/&/c/"))
+			attest(toJson(type(["/a/", "&", "/b/&/c/"]))).equals(Expected)
+			attest(toJson(type(["/a/", "&", "/b/&/c/"]))).equals(Expected)
 		})
 
 		it("redundant string and list", () => {
-			const Expected = type("/a/&/b/&/c/").json
-			attest(type(["/a/", "&", "/a/&/b/&/c/"]).json).equals(Expected)
-			attest(type(["/a/&/b/&/c/", "&", "/c/"]).json).equals(Expected)
+			const Expected = toJson(type("/a/&/b/&/c/"))
+			attest(toJson(type(["/a/", "&", "/a/&/b/&/c/"]))).equals(Expected)
+			attest(toJson(type(["/a/&/b/&/c/", "&", "/c/"]))).equals(Expected)
 		})
 
 		it("distinct lists", () => {
 			const T = type(["/a/&/b/", "&", "/c/&/d/"])
-			attest(T.json).equals(type("/a/&/b/&/c/&/d/").json)
+			attest(toJson(T)).equals(toJson(type("/a/&/b/&/c/&/d/")))
 		})
 
 		it("overlapping lists", () => {
 			const T = type(["/a/&/b/", "&", "/c/&/b/"])
-			attest(T.json).equals(type("/a/&/b/&/c/").json)
+			attest(toJson(T)).equals(toJson(type("/a/&/b/&/c/")))
 		})
 
 		it("identical lists", () => {
 			const T = type(["/a/&/b/", "&", "/b/&/a/"])
-			attest(T.json).equals(type("/a/&/b/").json)
+			attest(toJson(T)).equals(toJson(type("/a/&/b/")))
 		})
 	})
 
@@ -49,20 +49,20 @@ contextualize(() => {
 		it("flagless", () => {
 			const T = type(/.*/)
 			attest<string>(T.infer)
-			attest(T.json).equals(type("/.*/").json)
+			attest(toJson(T)).equals(toJson(type("/.*/")))
 		})
 
 		it("single flag preserved", () => {
 			const T = type(/a/i)
 			// the flag should prevent it from reducing to the same regex
-			attest(T.json === type("/a/").json).equals(false)
+			attest(toJson(T) === toJson(type("/a/"))).equals(false)
 			attest(T.allows("A")).equals(true)
 		})
 
 		it("flag order doesn't matter", () => {
 			const A = type(/a/gi)
 			const B = type(new RegExp("a", "ig"))
-			attest(A.json).equals(B.json)
+			attest(toJson(A)).equals(toJson(B))
 		})
 	})
 
@@ -71,7 +71,7 @@ contextualize(() => {
 			const T = type("string").matching("foo")
 			const Expected = type("/foo/")
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("invalid operand", () => {
@@ -118,7 +118,7 @@ contextualize(() => {
 		it("string literal matches RegExp instance", () => {
 			const FromString = type("/^\\\\d$/")
 			const FromInstance = type(/^\\d$/)
-			attest(FromString.json).equals(FromInstance.json)
+			attest(toJson(FromString)).equals(toJson(FromInstance))
 		})
 
 		it("preserves literal backslash", () => {
@@ -141,7 +141,7 @@ contextualize(() => {
 
 		it("escaped terminator preserved", () => {
 			const T = type("/^a\\/b$/")
-			attest(T.json).snap({ domain: "string", pattern: ["^a/b$"] })
+			attest(toJson(T)).snap({ domain: "string", pattern: ["^a/b$"] })
 			attest(T.allows("a/b")).equals(true)
 		})
 	})

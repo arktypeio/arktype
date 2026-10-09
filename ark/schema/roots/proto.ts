@@ -83,7 +83,8 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	builtinName: BuiltinObjectKind | null = getBuiltinNameOfConstructor(
 		this.proto
 	)
-	serializedConstructor: string = (this.json as { proto: string }).proto
+	serializedConstructor: string =
+		this.builtinName ?? registeredReference(this.proto)
 
 	private readonly requiresInvalidDateCheck =
 		this.proto === Date && !this.dateAllowsInvalid

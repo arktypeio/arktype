@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeUnresolvableMessage } from "@ark/schema"
+import { toJson, writeUnresolvableMessage } from "@ark/schema"
 import { type } from "arktype"
 import { incompleteArrayTokenMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
@@ -41,13 +41,13 @@ contextualize(() => {
 	it("tuple expression", () => {
 		const T = type(["string", "[]"])
 		attest<string[]>(T.infer)
-		attest(T.json).equals(type("string[]").json)
+		attest(toJson(T)).equals(toJson(type("string[]")))
 	})
 
 	it("root expression", () => {
 		const T = type("string", "[]")
 		attest<string[]>(T.infer)
-		attest(T.json).equals(type("string[]").json)
+		attest(toJson(T)).equals(toJson(type("string[]")))
 	})
 
 	it("chained", () => {

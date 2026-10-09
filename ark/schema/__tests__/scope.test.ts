@@ -4,6 +4,7 @@ import {
 	intrinsic,
 	rootSchema,
 	schemaScope,
+	toJson,
 	type ArkErrors,
 	type NodeId
 } from "@ark/schema"
@@ -75,11 +76,11 @@ contextualize(() => {
 				domain: "string"
 			}
 		}).export()
-		attest(types.a.json).snap({
+		attest(toJson(types.a)).snap({
 			domain: "object",
 			required: [{ key: "b", value: "string" }]
 		})
-		attest(types.b.json).snap({ domain: "string" })
+		attest(toJson(types.b)).snap({ domain: "string" })
 	})
 	it("cyclic", () => {
 		const types = schemaScope({
@@ -99,12 +100,12 @@ contextualize(() => {
 			}
 		}).export()
 
-		attest(types.a.json).equals({
+		attest(toJson(types.a)).equals({
 			domain: "object",
 			required: [{ key: "b", value: `$ark.${types.b.id}` }]
 		})
 
-		attest(types.b.json).equals({
+		attest(toJson(types.b)).equals({
 			domain: "object",
 			required: [{ key: "a", value: `$ark.${types.a.id}` }]
 		})

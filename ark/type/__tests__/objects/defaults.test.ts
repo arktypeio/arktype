@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	registeredReference,
+	toJson,
 	writeNonPrimitiveNonFunctionDefaultValueMessage
 } from "@ark/schema"
 import { deepClone } from "@ark/util"
@@ -36,7 +37,7 @@ contextualize(() => {
 			}>(O.inferIn)
 			attest<{ a: string; foo: number; bar: number; baz: number }>(O.infer)
 
-			attest(O.json).snap({
+			attest(toJson(O)).snap({
 				required: [{ key: "a", value: "string" }],
 				optional: [
 					{ default: 5, key: "bar", value: "number" },
@@ -89,7 +90,7 @@ contextualize(() => {
 			})
 			// this should not distribute to Default<true, true> | Default<false, true>
 			attest(O).type.toString.snap("Type<{ boo: Default<boolean, false> }, {}>")
-			attest(O.json).snap({
+			attest(toJson(O)).snap({
 				optional: [
 					{
 						default: false,
@@ -119,7 +120,7 @@ contextualize(() => {
 
 			attest<typeof types.stringDefault.t>(types.tupleDefault.t)
 
-			attest(types.stringDefault.json).snap({
+			attest(toJson(types.stringDefault)).snap({
 				required: [{ key: "foo", value: "string" }],
 				optional: [
 					{
@@ -131,7 +132,7 @@ contextualize(() => {
 				domain: "object"
 			})
 
-			attest(types.tupleDefault.json).equals(types.stringDefault.json)
+			attest(toJson(types.tupleDefault)).equals(toJson(types.stringDefault))
 		})
 
 		it("no shallow default in tuple expression", () => {
@@ -166,7 +167,7 @@ contextualize(() => {
 			attest(O.t).type.toString.snap('{ a: Default<string, ""> }')
 			attest<{ a?: string }>(O.inferIn)
 			attest<{ a: string }>(O.infer)
-			attest(O.json).snap({
+			attest(toJson(O)).snap({
 				optional: [
 					{
 						default: "",
@@ -266,7 +267,7 @@ contextualize(() => {
 	blep: (In: Default<boolean, false>) => Out<boolean>
 }`)
 
-			attest(T.json).snap({
+			attest(toJson(T)).snap({
 				optional: [
 					{
 						default: false,
@@ -307,7 +308,7 @@ contextualize(() => {
 	blep: (In: Default<boolean, false>) => To<boolean>
 }`)
 
-			attest(T.json).snap({
+			attest(toJson(T)).snap({
 				optional: [
 					{
 						default: false,
@@ -360,7 +361,7 @@ contextualize(() => {
 			const Expected = type({ key: ["number", "=", 42] })
 
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("bigint", () => {
@@ -368,7 +369,7 @@ contextualize(() => {
 			const Expected = type({ key: ["bigint", "=", 100n] })
 
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("string", () => {
@@ -376,7 +377,7 @@ contextualize(() => {
 			const Expected = type({ key: ["string", "=", "default value"] })
 
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("Date", () => {
@@ -407,7 +408,7 @@ contextualize(() => {
 			const Expected = type({ key: ["boolean", "=", true] })
 
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("false", () => {
@@ -415,7 +416,7 @@ contextualize(() => {
 			const Expected = type({ key: ["boolean", "=", false] })
 
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("null", () => {
@@ -426,7 +427,7 @@ contextualize(() => {
 			const Expected = type({ key: ["object | null", "=", null] })
 
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("undefined", () => {
@@ -436,7 +437,7 @@ contextualize(() => {
 			attest(T({})).snap({ key: undefined })
 
 			attest<typeof Expected>(T)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("incorrect default type", () => {
@@ -461,9 +462,11 @@ contextualize(() => {
 				obj: { foo: "string", bar: "specialNumber = 5" }
 			})
 
-			$.export()
-
-			attest($.json).snap({
+			const types = $.export()
+			attest({
+				specialNumber: toJson(types.specialNumber),
+				obj: toJson(types.obj)
+			}).snap({
 				specialNumber: {
 					domain: "number"
 				},
@@ -580,14 +583,16 @@ contextualize(() => {
 			const viaTuple = type({ values: ["string[]", "=", () => []] })
 			// the default is a distinct thunk per instance, so strip it before
 			// comparing the two schemas
-			const stripDefault = (json: typeof viaString.json) => {
+			const stripDefault = (json: unknown) => {
 				const clone = JSON.parse(JSON.stringify(json)) as {
 					optional?: Record<string, unknown>[]
 				}
 				for (const prop of clone.optional ?? []) delete prop.default
 				return clone
 			}
-			attest(stripDefault(viaString.json)).equals(stripDefault(viaTuple.json))
+			attest(stripDefault(toJson(viaString))).equals(
+				stripDefault(toJson(viaTuple))
+			)
 			attest(viaString.assert({}).values).equals([])
 			attest(viaTuple.assert({}).values).equals([])
 		})
@@ -639,14 +644,16 @@ contextualize(() => {
 			const viaTuple = type({ meta: ["object", "=", () => ({})] })
 			// the default thunks are distinct functions, so strip them before
 			// comparing the two schemas
-			const stripDefault = (json: typeof viaString.json) => {
+			const stripDefault = (json: unknown) => {
 				const clone = JSON.parse(JSON.stringify(json)) as {
 					optional?: Record<string, unknown>[]
 				}
 				for (const prop of clone.optional ?? []) delete prop.default
 				return clone
 			}
-			attest(stripDefault(viaString.json)).equals(stripDefault(viaTuple.json))
+			attest(stripDefault(toJson(viaString))).equals(
+				stripDefault(toJson(viaTuple))
+			)
 			attest(viaString.assert({}).meta).equals({})
 			attest(viaTuple.assert({}).meta).equals({})
 		})
@@ -909,7 +916,7 @@ contextualize(() => {
 			const R = type({ "bar?": "5" })
 
 			const T = L.and(R)
-			attest(T.json).snap({
+			attest(toJson(T)).snap({
 				optional: [{ default: 5, key: "bar", value: { unit: 5 } }],
 				domain: "object"
 			})
@@ -920,7 +927,7 @@ contextualize(() => {
 			const R = type({ bar: ["5", "=", 5] })
 
 			const T = L.and(R)
-			attest(T.json).snap({
+			attest(toJson(T)).snap({
 				optional: [{ default: 5, key: "bar", value: { unit: 5 } }],
 				domain: "object"
 			})
@@ -931,7 +938,7 @@ contextualize(() => {
 			const R = type({ bar: "number" })
 
 			const T = L.and(R)
-			attest(T.json).snap({
+			attest(toJson(T)).snap({
 				required: [{ key: "bar", value: "number" }],
 				domain: "object"
 			})

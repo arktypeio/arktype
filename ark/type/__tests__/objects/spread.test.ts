@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
 import { writeInvalidSpreadTypeMessage } from "arktype/internal/parser/objectLiteral.ts"
+import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("within scope", () => {
@@ -10,7 +11,7 @@ contextualize(() => {
 		}).export()
 
 		attest<{ isAdmin: true; name: string }>(s.admin.infer)
-		attest(s.admin.json).equals({
+		attest(toJson(s.admin)).equals({
 			domain: "object",
 			required: [
 				{ key: "isAdmin", value: { unit: true } },
@@ -24,7 +25,7 @@ contextualize(() => {
 		const Admin = type({ "...": User, isAdmin: "true" })
 
 		attest<{ isAdmin: true; name: string }>(Admin.infer)
-		attest(Admin.json).snap({
+		attest(toJson(Admin)).snap({
 			domain: "object",
 			required: [
 				{ key: "isAdmin", value: { unit: true } },
@@ -48,7 +49,7 @@ contextualize(() => {
 			overridden: number
 		}>(T.infer)
 
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			domain: "object",
 			required: [
 				{
@@ -67,7 +68,7 @@ contextualize(() => {
 
 		attest<{ "...": string }>(T.infer)
 
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			domain: "object",
 			required: [{ key: "...", value: "string" }]
 		})
@@ -88,7 +89,7 @@ contextualize(() => {
 		})
 
 		attest<{ isAdmin: true; name: string }>(AdminUser.infer)
-		attest(AdminUser.json).snap({
+		attest(toJson(AdminUser)).snap({
 			domain: "object",
 			required: [
 				{ key: "isAdmin", value: { unit: true } },

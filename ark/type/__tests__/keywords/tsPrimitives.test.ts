@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { intrinsic, rootSchema } from "@ark/schema"
+import { intrinsic, rootSchema, toJson } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
@@ -20,7 +20,7 @@ contextualize(() => {
 	it("any", () => {
 		const Any = type("unknown.any")
 		// equivalent to unknown at runtime
-		attest(Any.json).equals(type.unknown.json)
+		attest(toJson(Any)).equals(toJson(type.unknown))
 		// inferred as any
 		attest<any>(Any.infer)
 	})
@@ -28,7 +28,7 @@ contextualize(() => {
 	it("any in expression", () => {
 		const T = type("string", "&", "unknown.any")
 		attest<any>(T.infer)
-		attest(T.json).equals(intrinsic.string.json)
+		attest(toJson(T)).equals(toJson(intrinsic.string))
 	})
 
 	it("boolean", () => {
@@ -36,7 +36,7 @@ contextualize(() => {
 		attest<boolean>(Boolean.infer)
 		const Expected = rootSchema([{ unit: false }, { unit: true }])
 		// should be simplified to simple checks for true and false literals
-		attest(Boolean.json).equals(Expected.json)
+		attest(toJson(Boolean)).equals(toJson(Expected))
 	})
 
 	it("never", () => {
@@ -44,18 +44,18 @@ contextualize(() => {
 		attest<never>(Never.infer)
 		const Expected = rootSchema([])
 		// should be equivalent to a zero-branch union
-		attest(Never.json).equals(Expected.json)
+		attest(toJson(Never)).equals(toJson(Expected))
 	})
 
 	it("never in union", () => {
 		const T = type("string|never")
 		attest<string>(T.infer)
-		attest(T.json).equals(intrinsic.string.json)
+		attest(toJson(T)).equals(toJson(intrinsic.string))
 	})
 
 	it("unknown", () => {
 		const Expected = rootSchema({})
 		// should be equivalent to an unconstrained predicate
-		attest(type("unknown").json).equals(Expected.json)
+		attest(toJson(type("unknown"))).equals(toJson(Expected))
 	})
 })

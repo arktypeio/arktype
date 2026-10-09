@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	toJson,
 	writeInvalidPropertyKeyMessage,
 	writeUnboundableMessage,
 	writeUnresolvableMessage
@@ -12,7 +13,7 @@ contextualize(() => {
 	it("string index", () => {
 		const O = type({ "[string]": "string" })
 		attest<{ [x: string]: string }>(O.infer)
-		attest(O.json).snap({
+		attest(toJson(O)).snap({
 			domain: "object",
 			index: [{ signature: "string", value: "string" }]
 		})
@@ -32,7 +33,7 @@ b must be a string (was boolean)`)
 	it("symbol index", () => {
 		const O = type({ "[symbol]": "1" })
 		attest<{ [x: symbol]: 1 }>(O.infer)
-		attest(O.json).snap({
+		attest(toJson(O)).snap({
 			domain: "object",
 			index: [{ signature: "symbol", value: { unit: 1 } }]
 		})
@@ -68,13 +69,13 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 		const O = type({ "['foo' | 'bar']": "string" })
 		const Expected = type({ foo: "string", bar: "string" })
 		attest<typeof Expected>(O)
-		attest(O.json).equals(Expected.json)
+		attest(toJson(O)).equals(toJson(Expected))
 	})
 
 	it("non-enumerable indexed union", () => {
 		const O = type({ "[string | symbol]": "string" })
 		attest<{ [x: string]: string; [x: symbol]: string }>(O.infer)
-		attest(O.json).snap({
+		attest(toJson(O)).snap({
 			domain: "object",
 			index: [{ signature: ["string", "symbol"], value: "string" }]
 		})
@@ -86,7 +87,7 @@ value at [${zildjianName}] must be 1 (was undefined)`)
 			"[symbol]": "number"
 		})
 		attest<{ [x: string]: string; [x: symbol]: number }>(O.infer)
-		attest(O.json).snap({
+		attest(toJson(O)).snap({
 			index: [
 				{ value: "string", signature: "string" },
 				{ value: "number", signature: "symbol" }
@@ -124,7 +125,7 @@ value at [${symName}] must be a number (was a string)`)
 			"optional?": "'bar'"
 		})
 		attest<{ [x: string]: string; required: "foo"; optional?: "bar" }>(O.infer)
-		attest(O.json).snap({
+		attest(toJson(O)).snap({
 			domain: "object",
 			required: [{ key: "required", value: { unit: "foo" } }],
 			optional: [{ key: "optional", value: { unit: "bar" } }],
@@ -160,7 +161,7 @@ other must be a string (was a bigint)`)
 			baz: "string"
 		})
 
-		attest(types.obj.json).snap(Expected.json)
+		attest(toJson(types.obj)).snap(toJson(Expected))
 	})
 
 	it("intersection with named", () => {
@@ -169,7 +170,7 @@ other must be a string (was a bigint)`)
 			[k: string]: 4
 			a?: never
 		}>(T.infer)
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			optional: [{ key: "a", value: [] }],
 			index: [{ value: { unit: 4 }, signature: "string" }],
 			domain: "object"
@@ -206,7 +207,7 @@ other must be a string (was a bigint)`)
 		const Expected = type({
 			a: "true"
 		})
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("syntax error in index definition", () => {
@@ -262,7 +263,7 @@ other must be a string (was a bigint)`)
 	it("escaped index", () => {
 		const O = type({ "\\[string]": "string" })
 		attest<{ "[string]": string }>(O.infer)
-		attest(O.json).snap({
+		attest(toJson(O)).snap({
 			domain: "object",
 			required: [{ key: "[string]", value: "string" }]
 		})

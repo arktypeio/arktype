@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeUnsatisfiableExpressionError } from "@ark/schema"
+import { toJson, writeUnsatisfiableExpressionError } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
@@ -10,10 +10,10 @@ contextualize(() => {
 			const Cls = type("instanceof", Array)
 			const lr = Literal.and(Cls)
 			attest<number[]>(lr.infer)
-			attest(lr.json).equals(Literal.json)
+			attest(toJson(lr)).equals(toJson(Literal))
 			const rl = Cls.and(Literal)
 			attest<number[]>(rl.infer)
-			attest(rl.json).equals(Literal.json)
+			attest(toJson(rl)).equals(toJson(Literal))
 		})
 
 		it("unsatisfiable class & literal", () => {
@@ -31,8 +31,8 @@ contextualize(() => {
 		it("domain & literal", () => {
 			const Literal = type("'foo'")
 			const Domain = type("string")
-			attest(Literal.and(Domain).json).equals(Literal.json)
-			attest(Domain.and(Literal).json).equals(Literal.json)
+			attest(toJson(Literal.and(Domain))).equals(toJson(Literal))
+			attest(toJson(Domain.and(Literal))).equals(toJson(Literal))
 		})
 
 		it("unsatisfiable domain & literal", () => {
@@ -49,8 +49,8 @@ contextualize(() => {
 		it("domain & class", () => {
 			const Domain = type("object")
 			const Cls = type("instanceof", Date)
-			attest(Domain.and(Cls).json).equals(Cls.json)
-			attest(Cls.and(Domain).json).equals(Cls.json)
+			attest(toJson(Domain.and(Cls))).equals(toJson(Cls))
+			attest(toJson(Cls.and(Domain))).equals(toJson(Cls))
 		})
 	})
 })

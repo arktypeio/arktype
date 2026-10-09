@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	toJson,
 	writeNonStructuralOperandMessage,
 	writeUnresolvableMessage,
 	writeUnsatisfiableExpressionError
@@ -23,7 +24,7 @@ contextualize(() => {
 	it("object literal", () => {
 		const T = type({ a: "123", b: "123" }).keyof()
 		attest<"a" | "b">(T.infer)
-		attest(T.json).equals(type("'a'|'b'").json)
+		attest(toJson(T)).equals(toJson(type("'a'|'b'")))
 	})
 
 	it("overlapping union", () => {
@@ -31,7 +32,7 @@ contextualize(() => {
 			.or({ b: "number", c: "string" })
 			.keyof()
 		attest<"b">(T.infer)
-		attest(T.json).equals(type("'b'").json)
+		attest(toJson(T)).equals(toJson(type("'b'")))
 	})
 
 	it("non-overlapping union", () => {
@@ -43,7 +44,7 @@ contextualize(() => {
 	it("tuple expression", () => {
 		const T = type(["keyof", { a: "string" }])
 		attest<"a">(T.infer)
-		attest(T.json).equals(type("'a'").json)
+		attest(toJson(T)).equals(toJson(type("'a'")))
 	})
 
 	it("keyof non-object in union", () => {
@@ -100,13 +101,13 @@ contextualize.each(
 		it("groupable", $ => {
 			const T = $.type("(keyof ab & string)[]")
 			attest<("a" | "b")[]>(T.t)
-			attest(T.json).equals(type("===", "a", "b").array().json)
+			attest(toJson(T)).equals(toJson(type("===", "a", "b").array()))
 		})
 
 		it("intersection precedence", $ => {
 			const T = $.type("keyof bc & string")
 			attest<"b" | "c">(T.t)
-			attest(T.json).equals(type("===", "b", "c").json)
+			attest(toJson(T)).equals(toJson(type("===", "b", "c")))
 		})
 
 		it("union precedence", $ => {

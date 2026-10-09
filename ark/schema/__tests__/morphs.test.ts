@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { intrinsic, rootSchema } from "@ark/schema"
+import { intrinsic, rootSchema, toJson } from "@ark/schema"
 import { throwError, wellFormedNumberMatcher } from "@ark/util"
 
 contextualize(() => {
@@ -12,14 +12,14 @@ contextualize(() => {
 			},
 			morphs: (s: string) => Number.parseFloat(s)
 		})
-		attest(parseNumber.rawIn.json).snap({
+		attest(toJson(parseNumber.rawIn)).snap({
 			domain: "string",
 			pattern: [
 				"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d*[1-9])?)))$"
 			],
 			meta: "a well-formed numeric string"
 		})
-		attest(parseNumber.rawOut.json).snap({})
+		attest(toJson(parseNumber.rawOut)).snap({})
 	})
 
 	it("in/out union", () => {
@@ -64,10 +64,10 @@ contextualize(() => {
 				declaredMorph,
 				declared
 			}) => {
-				attest(declaredMorph.json).equals({
+				attest(toJson(declaredMorph)).equals({
 					morphs: declaredMorph.assertHasKind("morph").serializedMorphs,
-					declaredIn: declared.json,
-					declaredOut: declared.json
+					declaredIn: toJson(declared),
+					declaredOut: toJson(declared)
 				})
 
 				attest(declared.description).snap("declared")

@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
+import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	const parseNumber = (s: string) => Number(s)
@@ -13,7 +14,7 @@ contextualize(() => {
 
 		attest<(In: string) => Out<number>>(ParseLongNumber.t)
 
-		attest(ParseLongNumber.json).snap({
+		attest(toJson(ParseLongNumber)).snap({
 			in: { domain: "string", predicate: ["$ark.stringIsLong"] },
 			morphs: ["$ark.parseNumber"]
 		})
@@ -36,7 +37,7 @@ contextualize(() => {
 
 		attest<(In: `${bigint}`) => Out<number>>(ParseIntegerLike.t)
 
-		attest(ParseIntegerLike.json).snap({
+		attest(toJson(ParseIntegerLike)).snap({
 			in: { domain: "string", predicate: ["$ark.stringIsIntegerLike"] },
 			morphs: ["$ark.parseNumber"]
 		})

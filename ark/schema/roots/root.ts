@@ -92,10 +92,6 @@ export abstract class BaseRoot<
 		return super.rawOut as never
 	}
 
-	get internal(): this {
-		return this
-	}
-
 	private _standard?: StandardSchemaV1.ArkTypeProps
 	get "~standard"(): StandardSchemaV1.ArkTypeProps {
 		return (this._standard ??= {

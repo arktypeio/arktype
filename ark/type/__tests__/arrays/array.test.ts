@@ -6,6 +6,7 @@ import {
 	multipleVariadicMesage,
 	writeNonArraySpreadMessage
 } from "arktype/internal/parser/tupleLiteral.ts"
+import { toJson } from "@ark/schema"
 
 contextualize(() => {
 	describe("non-tuple", () => {
@@ -46,13 +47,13 @@ contextualize(() => {
 		it("tuple expression", () => {
 			const T = type(["string", "[]"])
 			attest<string[]>(T.infer)
-			attest(T.json).equals(type("string[]").json)
+			attest(toJson(T)).equals(toJson(type("string[]")))
 		})
 
 		it("root expression", () => {
 			const T = type("string", "[]")
 			attest<string[]>(T.infer)
-			attest(T.json).equals(type("string[]").json)
+			attest(toJson(T)).equals(toJson(type("string[]")))
 		})
 
 		it("chained", () => {
@@ -74,7 +75,7 @@ contextualize(() => {
 			const T = type([])
 			attest<[]>(T.infer)
 			attest(T.expression).snap("[]")
-			attest(T.json).snap({ proto: "Array", exactLength: 0 })
+			attest(toJson(T)).snap({ proto: "Array", exactLength: 0 })
 			attest(T([])).equals([])
 			attest(T([1]).toString()).snap("must be exactly length 0 (was 1)")
 		})
@@ -205,7 +206,7 @@ value at [1] must be a number (was boolean)`)
 			const T = type(["1", "...", "(Date[] | RegExp[])"])
 			attest<[1, ...(Date[] | RegExp[])]>(T.infer)
 			const Expected = type(["1", "...", "Date[]"]).or(["1", "...", "RegExp[]"])
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("distributes spread union tuples", () => {
@@ -216,7 +217,7 @@ value at [1] must be a number (was boolean)`)
 			const T = type(["1", "...", CountOrFib])
 			attest<[1, 2, 3, 4] | [1, 1, 2, 3, 5, 8]>(T.infer)
 			const Expected = type(["1", ...counting]).or(["1", ...fibbing])
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("allows array keyword", () => {
@@ -254,7 +255,7 @@ value at [1] must be a number (was boolean)`)
 			])
 			attest<[string, ...number[], boolean, bigint, symbol]>(T.infer)
 			attest<typeof Expected.infer>(T.infer)
-			attest(T.json).equals(Expected.json)
+			attest(toJson(T)).equals(toJson(Expected))
 		})
 
 		it("errors on multiple variadic", () => {
@@ -337,7 +338,7 @@ value at [1] must be a number (was boolean)`)
 	it("reduces minLength", () => {
 		const T = type(["number", "number", "...", "number[]", "number"])
 		const Expected = type("number[]>=3")
-		attest(T.json).equals(Expected.json)
+		attest(toJson(T)).equals(toJson(Expected))
 	})
 
 	it("multiple errors", () => {

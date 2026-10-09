@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import type { BaseNode } from "@ark/schema"
+import { toJson, type BaseNode } from "@ark/schema"
 import { ArkErrors, scope, type, type Type } from "arktype"
 
 type Value = {
@@ -741,7 +741,7 @@ const assertGeneratedRelations = (firstSeed: number, lastSeed: number) => {
 			}
 			if (!a.or(a).equals(a))
 				failures.push(`${seed} ${names[i]}: or isn't idempotent`)
-			if (serializable && !type.schema(a.json as never).equals(a))
+			if (serializable && !type.schema(toJson(a) as never).equals(a))
 				failures.push(`${seed} ${names[i]}: json doesn't parse back`)
 			try {
 				a.toJsonSchema({ fallback: ctx => ctx.base })

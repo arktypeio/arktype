@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	registeredReference,
+	toJson,
 	writeUnsatisfiableExpressionError,
 	type Traversal
 } from "@ark/schema"
@@ -14,7 +15,7 @@ contextualize(() => {
 		const isOddRef = registeredReference(isOdd)
 		const Odd = type(["number", ":", isOdd])
 		attest<number>(Odd.infer)
-		attest(Odd.json).equals({ domain: "number", predicate: [isOddRef] })
+		attest(toJson(Odd)).equals({ domain: "number", predicate: [isOddRef] })
 		attest(Odd(1)).equals(1)
 		attest(Odd(2).toString()).snap("must be valid according to isOdd (was 2)")
 	})
@@ -124,7 +125,7 @@ contextualize(() => {
 				return n === 5
 			})
 
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			in: "string",
 			morphs: [
 				"$ark._narrowMorphOutputMorph",
@@ -169,7 +170,7 @@ contextualize(() => {
 		attest<bigint>(A.inferIn)
 		attest<string>(A.infer)
 
-		attest(A.json).snap({
+		attest(toJson(A)).snap({
 			in: { domain: "bigint", predicate: [predicateId] },
 			morphs: [morphId]
 		})
@@ -273,7 +274,7 @@ contextualize(() => {
 		const unknownPredicate854 = () => true
 		const T = type("unknown").narrow(unknownPredicate854)
 		attest(T.t).type.toString.snap("unknown")
-		attest(T.json).snap({ predicate: ["$ark.unknownPredicate854"] })
+		attest(toJson(T)).snap({ predicate: ["$ark.unknownPredicate854"] })
 	})
 
 	it("preserves piped union branch narrows through an intersection", () => {

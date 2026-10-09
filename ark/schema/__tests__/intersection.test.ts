@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import { rootSchema, toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("normalizes refinement order", () => {
@@ -13,7 +13,7 @@ contextualize(() => {
 			min: 5,
 			divisor: 3
 		})
-		attest(L.json).equals(R.json)
+		attest(toJson(L)).equals(toJson(R))
 	})
 
 	it("multiple constraints", () => {

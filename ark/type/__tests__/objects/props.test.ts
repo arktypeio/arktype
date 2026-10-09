@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import {
+	toJson,
 	writeDuplicateKeyMessage,
 	writeLiteralUnionEntriesMessage,
 	writeNonStructuralOperandMessage
@@ -107,7 +108,7 @@ contextualize(() => {
 			})
 
 		attest(T({ foo: null })).equals({ foo: null })
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			required: [{ key: "foo", value: { unit: null } }],
 			domain: "object"
 		})

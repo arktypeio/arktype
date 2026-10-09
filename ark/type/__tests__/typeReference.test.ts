@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeUnresolvableMessage } from "@ark/schema"
+import { toJson, writeUnresolvableMessage } from "@ark/schema"
 import { ark, scope, type } from "arktype"
 
 contextualize(() => {
@@ -24,9 +24,9 @@ contextualize(() => {
 		const A = type({ a: "string" })
 		const $ = scope({ a: A })
 		const types = $.export()
-		attest(types.a.json).equals(A.json)
-		attest(A.$.json).equals(ark.json)
-		attest(types.a.$.json).equals($.json)
+		attest(toJson(types.a)).equals(toJson(A))
+		attest(A.$.internal).is(ark.internal)
+		attest(types.a.$).is($)
 		attest<{ a: string }>(types.a.infer)
 	})
 

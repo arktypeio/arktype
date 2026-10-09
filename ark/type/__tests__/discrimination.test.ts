@@ -1,12 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference } from "@ark/schema"
+import { registeredReference, toJson } from "@ark/schema"
 import { scope, type } from "arktype"
 
 contextualize(() => {
 	it("2 literal branches", () => {
 		// should not use a switch with <=2 branches to avoid needless convolution
 		const T = type("'a'|'b'")
-		attest(T.json).snap([{ unit: "a" }, { unit: "b" }])
+		attest(toJson(T)).snap([{ unit: "a" }, { unit: "b" }])
 		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
 			path: [],
@@ -19,7 +19,7 @@ contextualize(() => {
 
 	it(">2 literal branches", () => {
 		const T = type("'a'|'b'|'c'")
-		attest(T.json).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
+		attest(toJson(T)).snap([{ unit: "a" }, { unit: "b" }, { unit: "c" }])
 		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "unit",
 			path: [],
@@ -33,7 +33,7 @@ contextualize(() => {
 
 	it(">2 domain branches", () => {
 		const T = type("string|bigint|number")
-		attest(T.json).snap(["bigint", "number", "string"])
+		attest(toJson(T)).snap(["bigint", "number", "string"])
 		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "domain",
 			path: [],
@@ -52,7 +52,7 @@ contextualize(() => {
 
 	it("literals can be included in domain branches", () => {
 		const T = type("string|bigint|true")
-		attest(T.json).snap(["bigint", "string", { unit: true }])
+		attest(toJson(T)).snap(["bigint", "string", { unit: true }])
 		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "domain",
 			path: [],

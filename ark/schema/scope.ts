@@ -11,7 +11,6 @@ import {
 	type Dict,
 	type Fn,
 	type Hkt,
-	type JsonStructure,
 	type anyOrNever,
 	type array,
 	type conform,
@@ -504,14 +503,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return this
 	}
 
-	// json is populated when the scope is exported, so ensure it is populated
-	// before allowing external access
-	private _json: JsonStructure | undefined
-	get json(): JsonStructure {
-		if (!this._json) this.export()
-		return this._json!
-	}
-
 	defineSchema<def extends RootSchema>(def: def): def {
 		return def
 	}
@@ -827,7 +818,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 
-			this._json = resolutionsToJson(this._exportedResolutions)
 			Object.assign(this.resolutions, this._exportedResolutions)
 
 			for (const name in this._exportedResolutions) {
@@ -1060,14 +1050,6 @@ const addReferences = (
 ) => {
 	for (const id in references) base[id] ??= references[id]
 }
-
-const resolutionsToJson = (resolutions: InternalResolutions): JsonStructure =>
-	flatMorph(resolutions, (k, v) => [
-		k,
-		hasArkKind(v, "root") || hasArkKind(v, "generic") ? v.json
-		: hasArkKind(v, "module") ? resolutionsToJson(v)
-		: throwInternalError(`Unexpected resolution ${printable(v)}`)
-	])
 
 const maybeResolveSubalias = (
 	base: Dict,

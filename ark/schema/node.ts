@@ -61,6 +61,7 @@ import {
 	rootKinds,
 	structuralKinds,
 	type BasisKind,
+	type NodeKeyImplementation,
 	type NodeKind,
 	type OpenNodeKind,
 	type RefinementKind,
@@ -121,10 +122,6 @@ export abstract class BaseNode<
 	private hasReplacedReferences = false
 	private _shallowReferences: BaseNode[] | undefined
 	protected _flatRefs: FlatRef[] | undefined
-	protected _uncollapsedInnerJson: JsonObject | undefined
-	private _innerJson: JsonStructure | undefined
-	private _json: JsonStructure | undefined
-	private _collapsibleJson: Json | undefined
 	private _innerHash: string | undefined
 	private _hash: string | undefined
 	protected _flatMorphs: FlatRef<Morph.Node | Intersection.Node>[] | undefined
@@ -636,44 +633,10 @@ export abstract class BaseNode<
 		})
 	}
 
-	get innerJson(): JsonStructure {
-		return (this._innerJson ??= possiblyCollapse(
-			this.uncollapsedInnerJson,
-			this.impl.collapsibleKey,
-			false
-		))
-	}
-
-	get json(): JsonStructure {
-		return (this._json ??=
-			isEmptyObject(this.meta) ?
-				this.innerJson
-			:	possiblyCollapse(
-					{
-						...this.uncollapsedInnerJson,
-						meta: possiblyCollapse(
-							this.metaJson as JsonObject,
-							"description",
-							true
-						)
-					},
-					this.impl.collapsibleKey,
-					false
-				))
-	}
-
-	get collapsibleJson(): Json {
-		return (this._collapsibleJson ??= possiblyCollapse(
-			this.json as JsonObject,
-			this.impl.collapsibleKey,
-			true
-		))
-	}
-
 	get innerHash(): string {
 		return (this._innerHash ??= JSON.stringify({
 			kind: this.kind,
-			...this.innerJson
+			...toInnerJson(this)
 		}))
 	}
 
@@ -681,15 +644,11 @@ export abstract class BaseNode<
 		return (this._hash ??=
 			isEmptyObject(this.meta) ?
 				this.innerHash
-			:	JSON.stringify({ kind: this.kind, ...this.json }))
+			:	JSON.stringify({ kind: this.kind, ...toJson(this) }))
 	}
 
-	protected get uncollapsedInnerJson(): JsonObject {
-		return (this._uncollapsedInnerJson ??= writeInnerJson(this))
-	}
-
-	toJSON(): JsonStructure {
-		return this.json
+	get internal(): this {
+		return this
 	}
 
 	toString(): string {
@@ -1061,10 +1020,12 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 				return false
 			continue
 		}
-		if (l.impl.keys[k].child !== true) {
+		const keyImpl = l.impl.keys[k]
+		if (keyImpl.child !== true) {
+			const serialize = serializerOf(keyImpl)
 			if (
-				JSON.stringify((l.innerJson as Dict)[k]) !==
-				JSON.stringify((r.innerJson as Dict)[k])
+				JSON.stringify(serialize(v as never)) !==
+				JSON.stringify(serialize((r.inner as Dict)[k] as never))
 			)
 				return false
 			continue
@@ -1543,22 +1504,54 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 	)
 }
 
+// a Type is the node it declares as internal
+export const toJson = ({
+	internal: node
+}: {
+	internal: BaseNode
+}): JsonStructure =>
+	isEmptyObject(node.meta) ?
+		toInnerJson(node)
+	:	possiblyCollapse(
+			{
+				...uncollapsedInnerJsonOf(node),
+				meta: possiblyCollapse(node.metaJson as JsonObject, "description", true)
+			},
+			node.impl.collapsibleKey,
+			false
+		)
+
+export const toCollapsibleJson = (node: BaseNode): Json =>
+	possiblyCollapse(toJson(node) as JsonObject, node.impl.collapsibleKey, true)
+
+const toInnerJson = (node: BaseNode): JsonStructure =>
+	possiblyCollapse(
+		uncollapsedInnerJsonOf(node),
+		node.impl.collapsibleKey,
+		false
+	)
+
+// an alias keeps the json it wrote when created, so its hash is stable and a cycle stays finite
+const uncollapsedInnerJsonOf = (node: BaseNode): JsonObject =>
+	node.hasKind("alias") ? node.uncollapsedInnerJson : writeInnerJson(node)
+
 export const writeInnerJson = (node: BaseNode): JsonObject => {
 	const json: JsonObject = {}
-	for (const [k, v] of node.innerEntries) {
-		const keyImpl = node.impl.keys[k]
-		const serialize =
-			keyImpl.serialize ??
-			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
-		json[k] = serialize(v as never)
-	}
+	for (const [k, v] of node.innerEntries)
+		json[k] = serializerOf(node.impl.keys[k])(v as never)
 	return (node.impl.finalizeInnerJson?.(json) as JsonObject | undefined) ?? json
 }
 
+const serializerOf = (
+	keyImpl: NodeKeyImplementation<any, any>
+): ((value: never) => Json) =>
+	keyImpl.serialize ??
+	(keyImpl.child ? serializeListableChild : defaultValueSerializer)
+
 const serializeListableChild = (listableNode: listable<BaseNode>) =>
 	isArray(listableNode) ?
-		listableNode.map(node => node.collapsibleJson)
-	:	listableNode.collapsibleJson
+		listableNode.map(toCollapsibleJson)
+	:	toCollapsibleJson(listableNode)
 
 const possiblyCollapse = <allowPrimitive extends boolean>(
 	json: JsonObject,

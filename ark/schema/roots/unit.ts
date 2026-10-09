@@ -35,6 +35,12 @@ export declare namespace Unit {
 	export type Node = UnitNode
 }
 
+const serializeUnit = (unit: unknown): JsonPrimitive =>
+	unit instanceof Date ? unit.toISOString()
+	: hasDomain(unit, "object") || typeof unit === "symbol" ?
+		registeredReference(unit)
+	:	(defaultValueSerializer(unit) as JsonPrimitive)
+
 const implementation: nodeImplementationOf<Unit.Declaration> =
 	implementNode<Unit.Declaration>({
 		kind: "unit",
@@ -42,11 +48,7 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 		keys: {
 			unit: {
 				preserveUndefined: true,
-				serialize: schema =>
-					schema instanceof Date ? schema.toISOString()
-					: hasDomain(schema, "object") || typeof schema === "symbol" ?
-						registeredReference(schema)
-					:	defaultValueSerializer(schema)
+				serialize: serializeUnit
 			}
 		},
 		defaults: {
@@ -57,7 +59,7 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 	})
 
 export class UnitNode extends InternalBasis<Unit.Declaration> {
-	compiledValue: JsonPrimitive = (this.json as any).unit
+	compiledValue: JsonPrimitive = serializeUnit(this.unit)
 	serializedValue: string =
 		typeof this.unit === "string" || this.unit instanceof Date ?
 			JSON.stringify(this.compiledValue)

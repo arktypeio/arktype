@@ -1,13 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
-import { node, rootSchema } from "@ark/schema"
+import { node, rootSchema, toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("reparses a proto's json", () => {
 		const d = node("proto", { proto: Date })
-		attest(d.json).snap({ proto: "Date" })
+		attest(toJson(d)).snap({ proto: "Date" })
 
 		const reparsed = rootSchema(d)
-		attest(reparsed.json).equals(d.json)
+		attest(toJson(reparsed)).equals(toJson(d))
 		attest(reparsed.id).equals(d.id)
 	})
 
@@ -17,11 +17,11 @@ contextualize(() => {
 			required: [{ key: "foo", value: "Array" }]
 		})
 
-		attest(T).snap({
+		attest(toJson(T)).snap({
 			required: [{ key: "foo", value: "Array" }],
 			domain: "object"
 		})
 
-		attest(T.get("foo")).snap({ proto: "Array" })
+		attest(toJson(T.get("foo"))).snap({ proto: "Array" })
 	})
 })

@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	rootSchema,
+	toJson,
 	writeUnboundableMessage,
 	writeUnresolvableMessage,
 	type ArkErrors
@@ -67,7 +68,12 @@ contextualize(() => {
 				}
 			}>
 		>($)
-		attest($.json).snap({
+		const types = $.export()
+		attest({
+			id: toJson(types.id),
+			user: toJson(types.user),
+			usersById: toJson(types.usersById)
+		}).snap({
 			id: { domain: "string" },
 			user: {
 				required: [
@@ -108,7 +114,7 @@ contextualize(() => {
 
 		attest<typeof Expected.t>(types.actual.t)
 		attest(types.actual.expression).equals(Expected.expression)
-		attest(types.actual.$.json).equals($.json)
+		attest(types.actual.$).is($)
 
 		attest(() =>
 			// @ts-expect-error
@@ -164,11 +170,11 @@ contextualize(() => {
 
 		attest<string>(types.a.infer)
 		attest(types.a.expression).equals("string")
-		attest(types.a.$.json).equals($.json)
+		attest(types.a.$).is($)
 
 		attest<number>(types.b.infer)
 		attest(types.b.expression).equals("number")
-		attest(types.b.$.json).equals($.json)
+		attest(types.b.$).is($)
 	})
 
 	it("allows semantically valid helpers", () => {
@@ -409,7 +415,7 @@ contextualize(() => {
 				"{ c: { b: cyclic; c: cyclic } }"
 			)
 
-			attest(types.arf.json).equals({
+			attest(toJson(types.arf)).equals({
 				domain: "object",
 				required: [{ key: "b", value: `$ark.${types.bork.internal.id}` }]
 			})
@@ -427,7 +433,7 @@ contextualize(() => {
 				.snap(`b.c.b must be an object (was missing)
 b.c.c must be an object (was missing)`)
 
-			attest(types.bork.json).equals({
+			attest(toJson(types.bork)).equals({
 				domain: "object",
 				required: [
 					{
@@ -449,7 +455,7 @@ b.c.c must be an object (was missing)`)
 			}).export()
 			attest(types.a.infer).type.toString.snap("{ b: { a: 3 | cyclic } }")
 
-			attest(types.a.json).equals({
+			attest(toJson(types.a)).equals({
 				domain: "object",
 				required: [{ key: "b", value: `$ark.${types.b.internal.id}` }]
 			})
@@ -468,7 +474,7 @@ b.c.c must be an object (was missing)`)
 			)
 
 			attest(types.b.infer).type.toString.snap("{ a: 3 | { b: cyclic } }")
-			attest(types.b.json).equals({
+			attest(toJson(types.b)).equals({
 				domain: "object",
 				required: [
 					{ key: "a", value: [`$ark.${types.a.internal.id}`, { unit: 3 }] }
@@ -528,7 +534,7 @@ b.c.c must be an object (was missing)`)
 				}
 			}>
 		>(types)
-		attest(types.foo.json).snap({
+		attest(toJson(types.foo)).snap({
 			required: [{ key: "bar", value: "number" }],
 			domain: "object"
 		})
@@ -545,8 +551,8 @@ b.c.c must be an object (was missing)`)
 				bar: number
 			}>
 		>(types)
-		attest(types.foo.json).snap({ domain: "string" })
-		attest(types.bar.json).snap({ domain: "number" })
+		attest(toJson(types.foo)).snap({ domain: "string" })
+		attest(toJson(types.bar)).snap({ domain: "number" })
 	})
 
 	it("allows multiple scopes with the same name without collision", () => {

@@ -1,11 +1,9 @@
 import {
 	Callable,
 	flatMorph,
-	snapshot,
 	throwParseError,
 	type array,
-	type Hkt,
-	type JsonStructure
+	type Hkt
 } from "@ark/util"
 import { intrinsic } from "./intrinsic.ts"
 import type { RootSchema } from "./parseSchema.ts"
@@ -236,15 +234,6 @@ export class GenericRoot<
 	): this[name] {
 		Object.defineProperty(this, name, { value })
 		return value
-	}
-
-	get json(): JsonStructure {
-		return this.cacheGetter("json", {
-			params: this.params.map(param =>
-				param[1].isUnknown() ? param[0] : [param[0], param[1].json]
-			),
-			body: snapshot(this.bodyDef) as never
-		})
 	}
 
 	get params(): { [i in keyof params]: [params[i][0], BaseRoot] } {

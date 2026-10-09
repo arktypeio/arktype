@@ -16,9 +16,10 @@ attest<number>(Even.infer)
 // make assertions about types and values seamlessly
 attest(Even.infer).type.toString.snap("number")
 // including object literals- no more long inline strings!
-attest(Even.json).snap({
-	domain: "number",
-	divisor: 2
+attest(Even.toJsonSchema()).snap({
+	$schema: "https://json-schema.org/draft/2020-12/schema",
+	type: "integer",
+	multipleOf: 2
 })
 ```
 

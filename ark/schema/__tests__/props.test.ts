@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema } from "@ark/schema"
+import { rootSchema, toJson } from "@ark/schema"
 
 contextualize(() => {
 	it("normalizes prop order", () => {
@@ -17,7 +17,7 @@ contextualize(() => {
 				{ key: "a", value: "string" }
 			]
 		})
-		attest(L.json).equals(R.json)
+		attest(toJson(L)).equals(toJson(R))
 	})
 
 	it("preserves matching literal", () => {
@@ -34,7 +34,7 @@ contextualize(() => {
 
 		const T = L.and(R)
 
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			undeclared: "reject",
 			required: [{ key: "a", value: { unit: "foo" } }],
 			index: [{ value: "string", signature: "string" }],
@@ -56,7 +56,7 @@ contextualize(() => {
 
 		const T = L.and(R)
 
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			undeclared: "reject",
 			index: [{ signature: "string", value: { unit: "foo" } }],
 			domain: "object"
@@ -95,7 +95,7 @@ contextualize(() => {
 			undeclared: "reject"
 		})
 
-		attest(Result.json).snap(Expected.json)
+		attest(toJson(Result)).snap(toJson(Expected))
 	})
 
 	it("intersects non-subtype strict index signatures", () => {
@@ -124,7 +124,7 @@ contextualize(() => {
 			undeclared: "reject"
 		})
 
-		attest(Result.json).equals(Expected.json)
+		attest(toJson(Result)).equals(toJson(Expected))
 	})
 
 	it("prunes undeclared optional", () => {
@@ -141,7 +141,7 @@ contextualize(() => {
 
 		const T = L.and(R)
 
-		attest(T.json).snap(L.json)
+		attest(toJson(T)).snap(toJson(L))
 	})
 
 	it("prunes undeclared index", () => {
@@ -158,7 +158,7 @@ contextualize(() => {
 
 		const T = L.and(R)
 
-		attest(T.json).snap({
+		attest(toJson(T)).snap({
 			undeclared: "reject",
 			required: [{ key: "a", value: { unit: "foo" } }],
 			domain: "object"
@@ -198,6 +198,6 @@ contextualize(() => {
 
 		const T = L.and(R)
 
-		attest(T.json).equals(R.json)
+		attest(toJson(T)).equals(toJson(R))
 	})
 })
