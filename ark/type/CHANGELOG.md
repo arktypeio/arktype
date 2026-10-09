@@ -2,6 +2,169 @@
 
 ## Unreleased
 
+### Write error messages in other languages
+
+Configure a locale to write error messages in another language. ArkType ships two: `en`, the default, and `de`.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import { de } from "arktype/locales/de"
+
+configure({ locale: de })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+
+// ArkErrors: name muss mindestens 2 Zeichen lang sein, ist aber 1 Zeichen lang
+type({ name: "string >= 2" })({ name: "A" })
+```
+
+`locale` can also be a function, which is called each time a message is read, e.g. to return the locale of the current request. Messages are written when they are read, so validation does no locale work. `ArkErrors` and `ArkError` gain `toLocaleString(locale)`, which writes the summary or message in the locale it is given.
+
+Any message you configure, through `.describe()`, `.configure()` or errors configured by code, outranks the locale. Every error writer receives the active locale as its last argument, so it can translate its own text:
+
+```ts
+const Password = type("string >= 8").configure({
+	expected: (ctx, locale) =>
+		locale.tag === "de" ? "ein sicheres Passwort" : "a secure password"
+})
+```
+
+A locale is an object typed by `Locale`, which `arktype` exports, so you can spread one to change part of it or write your own. It writes a whole sentence for each error code and may give a code a fragment, like `eine Zeichenkette`, for unions and intersections to list. `de` cites a string you wrote, like a description, since it may be in any language: `muss ein Wert gemäß der Beschreibung „a secure password“ sein`. A locale's writers can also call an i18n library like i18next or Paraglide. See [the docs](https://arktype.io/docs/i18n).
+
+Errors carry what a locale writes from: a `required` error's `missing` and `valueMeta` describe the missing value, a narrow's error references its `predicate`, and built-in keywords with their own text, like `string.email`, set `meta.keyword` to their name. `arktype/i18n` exports `listPattern`, `isolate` and the other helpers `de` is written with, which come from `@ark/util` and `@ark/schema/i18n`. `@ark/schema` exports `en` and the `Locale` types.
+
+Descriptions, expressions, JSON Schema and `ParseError`s stay in English.
+
+https://github.com/arktypeio/arktype/issues/1498
+
+### Give undeclared keys the `undeclared` code
+
+A key that `"+": "reject"` disallows was a `predicate` error. It now has the code `undeclared`, and its `data` is the key's value rather than the object around it, as every other error's `data` is the value at its path:
+
+```ts
+const T = type({ "+": "reject", a: "string" })
+
+const out = T({ a: "x", b: 1 })
+
+if (out instanceof type.errors) {
+	// previously "predicate", now "undeclared"
+	out.issues[0].code
+	// previously { a: "x", b: 1 }, now 1
+	out.issues[0].data
+}
+```
+
+Configure its text with `undeclared` instead of `predicate`, e.g. `configure({ undeclared: { problem: "isn't allowed" } })`. The object is the input at `path.slice(0, -1)`. Rejecting a key now reads its value, so a getter or a `Proxy`'s `get` trap runs for it, as it already did for declared keys.
+
+Its message is unchanged, except that meta configured on the object's structure now reaches it:
+
+```ts
+// previously b must be removed, now b must be declared
+T.configure({ expected: "declared" }, { kind: "structure" })({ a: "x", b: 1 })
+```
+
+In an ordered union, like one `match` checks, whose branches fail at the key with different `actual` text, it prints the key's value rather than the object around it:
+
+```ts
+const m = match
+	.case({ "+": "reject", a: "string" }, o => o.a)
+	.case({ a: "string", b: "number" }, o => o.b)
+	.default("reject")
+
+// previously b must be removed or a number (was {"a":"x","b":"y"})
+// now b must be removed or a number (was "y")
+m({ a: "x", b: "y" })
+```
+
+An exhaustive `switch` over `ArkErrorCode` must now handle `undeclared` and `discriminant`.
+
+https://github.com/arktypeio/arktype/issues/1403
+
+### Give misses of `number | null` and discriminated unions the `discriminant` code
+
+A value that matched none of the cases of a union ArkType checks by switching on a domain or a literal value was a `predicate` error with English `expected` and `actual`. That includes most unions, not only objects with a discriminant key: any whose branches have different domains, like `number | null`, `string | undefined` or `string | number`, and any of three or more literal values, like `"a" | "b" | undefined`. It now has the code `discriminant`, so `predicate` config, at a scope or globally, no longer reaches it:
+
+```ts
+configure({ predicate: { problem: "is invalid" } })
+
+const out = type("number | null")("x")
+
+if (out instanceof type.errors) {
+	// previously "predicate", now "discriminant"
+	out.issues[0].code
+	// previously is invalid, now must be a number or null (was a string)
+	out.summary
+}
+```
+
+Its `data` is the discriminant's value. It carries `discriminantKind`, `cases` (the case values, or domains like `"string"` when `discriminantKind` is `"domain"`), `onKey` (whether the discriminant is at a key) and `absent` (whether the key was missing):
+
+```ts
+const Shape = type({ kind: "'circle'", r: "number" }).or({
+	kind: "'square'",
+	side: "number"
+})
+
+const out = Shape({ kind: "triangle" })
+
+if (out instanceof type.errors) {
+	const error = out.issues[0]
+	// previously { kind: "triangle" }, now "triangle"
+	error.data
+	// ["circle", "square"]
+	if (error.hasCode("discriminant")) error.cases
+}
+```
+
+Configure its text with `discriminant` instead of `predicate`. Its message is unchanged, except that `.configure({ expected, actual })` on a union whose discriminant is the value itself now applies, and that inside an outer union, it prints the discriminant's value rather than the object around it:
+
+```ts
+// previously must be "a", "b" or "c" (was "d")
+// now must be a letter (was "d")
+type("'a' | 'b' | 'c'").configure({ expected: "a letter" })("d")
+
+const T = type({ v: Shape }).or({ v: { kind: "string >= 9" } })
+
+// previously (was {"kind":"triangle"})
+// now v.kind must be "circle" or "square" or at least length 9 (was "triangle")
+T({ v: { kind: "triangle" } })
+```
+
+At a key, its `meta` is the union's without `expected` and `actual`, which describe the object around the key rather than its value. Its `toJSON()` also includes `description`, the cases it expected (`"circle" or "square"`).
+
+### Pass error writers the error and the locale
+
+Each error writer receives the active locale as its last argument. An `expected` writer receives the error rather than only its context, so it can read `data` and `path` too, and an `actual` writer receives `(data, error, locale)`.
+
+A writer's `ctx` is typed by its code, and no longer has `toJSON` or the parts of the message that could read the one it writes. Its `toString` and `toLocaleString`, which read the message, can no longer be called. `ctx.meta` may be `undefined` in an `expected` writer, as it already could in the others, since an error raised by `ctx.reject` has no meta:
+
+```ts
+import { configure } from "arktype/config"
+
+// previously type-checked and threw for an error from ctx.reject
+// now TS18048: 'ctx.meta' is possibly 'undefined'
+configure({ predicate: { expected: ctx => ctx.meta.title! } })
+```
+
+### Keep supplied text out of an error's own properties
+
+Text supplied when an error is created, as by `ctx.reject({ expected: "positive" })` or `ctx.mustBe("positive")`, was copied onto the error, hiding its `expected`, `actual`, `problem` and `message` getters. It now stays in the error's input, where the getters read it. Reading them and `toJSON()` give what they did, but `Object.keys(error)` and `{ ...error }` no longer include them, and assigning `error.expected` throws. Configure a writer instead of assigning text.
+
+### Reference the morph that threw in `pipe.try` errors
+
+A `pipe.try` error referenced the function that threw as `predicate` and wrote what it threw into its own `actual`. It now references the function as `morph`, with what it threw as `cause`, and writes its `actual` when read. Its message is unchanged, and an `actual` configured for `predicate` now reaches it.
+
+### Raise keyword parse errors as data
+
+The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`, `string.json`, `string.json.parse` and `string.regex` raise while parsing carried their own English `expected` text, and some their own `problem`. They now carry `meta.keyword`, a `description`, and what was thrown, if anything, as `cause`. Their messages are unchanged, and `predicate` config now reaches the text their own hid.
+
+### Reserve `meta.keyword`
+
+Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
+
 ### Reject `Infinity` from `number`
 
 `number` rejects `Infinity` and `-Infinity` by default, as it already rejects `NaN`:
