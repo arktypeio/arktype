@@ -1,9 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import {
-	precompile,
 	standaloneConfigurationMessage,
-	writeStandaloneDependencyMessage,
+	writeStandaloneDependencyMessage
+} from "@ark/precompile"
+import {
+	precompile,
 	type PrecompilePluginOptions
 } from "@ark/precompile/unplugin"
 import { build as esbuild } from "esbuild"

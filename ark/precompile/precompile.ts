@@ -197,6 +197,7 @@ export class Precompiler {
 		"@ark/schema": {},
 		"@ark/util": {}
 	}
+	private warnedDependencies: Record<string, true> = Object.create(null)
 
 	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
 		this.graph = new ModuleGraph(host, opts?.cwd)
@@ -310,6 +311,25 @@ export class Precompiler {
 		if (name !== "@ark/util")
 			reports.push(...this.readCopies("@ark/util", entry))
 		return reports
+	}
+
+	// a dependency isn't transformed, so its arktype import is checked where it resolves
+	readDependency(importer: string): { errors: string[]; warnings: string[] } {
+		const dependency = dependencyOf(importer)
+		if (!dependency) return { errors: [], warnings: [] }
+		const errors = this.readCopies("arktype", importer).map(report =>
+			[
+				report.message,
+				...report.reasons.map(reason => `  ${reason}`),
+				`  ${copiesHint}`
+			].join("\n")
+		)
+		const warnings: string[] = []
+		if (this.mode === "standalone" && !this.warnedDependencies[dependency]) {
+			this.warnedDependencies[dependency] = true
+			warnings.push(writeStandaloneDependencyMessage(dependency))
+		}
+		return { errors, warnings }
 	}
 
 	private packageOf(
@@ -1066,6 +1086,24 @@ export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 		...diagnostic.reasons.map(reason => `  ${reason}`),
 		...(diagnostic.hint ? [`  ${diagnostic.hint}`] : [])
 	].join("\n")
+
+export const standaloneConfigurationMessage =
+	'configure() is not applied to standalone builds yet, so `config` requires runtime: "arktype"'
+
+export type standaloneConfigurationMessage =
+	typeof standaloneConfigurationMessage
+
+// the package in node_modules a file belongs to, if any
+const dependencyOf = (file: string): string | undefined =>
+	/.*\/node_modules\/((?:@[^/]+\/)?[^/]+)/.exec(file)?.[1]
+
+export const writeStandaloneDependencyMessage = <name extends string>(
+	name: name
+): writeStandaloneDependencyMessage<name> =>
+	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`
+
+export type writeStandaloneDependencyMessage<name extends string> =
+	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`
 
 export const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."

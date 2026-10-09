@@ -54,3 +54,8 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 			existsSync(path) ? readFileSync(path, "utf8") : undefined
 	}
 }
+
+export const transformedFilter = {
+	include: /\.(?:[cm]?[jt]s|[jt]sx)$/,
+	exclude: /\/node_modules\//
+}
