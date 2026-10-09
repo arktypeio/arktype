@@ -109,11 +109,13 @@ export class Validator extends Callable<
 		id: string,
 		holes: readonly unknown[] = []
 	) {
+		// the configuration is fixed before any validator is created
+		const configuredOnFail = runtimeConfig.onFail
 		super(
 			(
 				data: unknown,
 				pipedFromCtx?: Traversal,
-				onFail: ArkErrors.Handler | null = runtimeConfig.onFail
+				onFail: ArkErrors.Handler | null = configuredOnFail
 			) =>
 				pipedFromCtx ? pipedFromCtx.pipe(node, data) : rootApply(data, onFail),
 			{ bind: null }
