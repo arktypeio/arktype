@@ -147,7 +147,10 @@ export const createKeyedPrecompiler = (
 	let precompiler = create()
 	return (source, id) => {
 		const mtimes: Record<string, number> = {}
-		const mtimeOf = (file: string) => (mtimes[file] ??= statSync(file).mtimeMs)
+		// a file the configuration read may since have been deleted, which changes it too
+		const mtimeOf = (file: string) =>
+			(mtimes[file] ??=
+				statSync(file, { throwIfNoEntry: false })?.mtimeMs ?? Number.NaN)
 		const files = precompiler.localClosureOf(id, file => {
 			if (file === id) return precompiler.localImportsOf(source, id)
 			const cached = importsByFile[file]
@@ -159,7 +162,9 @@ export const createKeyedPrecompiler = (
 					])[1]
 		})
 		if (
-			files.some(file => file in readTimes && readTimes[file] !== mtimeOf(file))
+			[...files, ...precompiler.configurationModules].some(
+				file => file in readTimes && readTimes[file] !== mtimeOf(file)
+			)
 		)
 			precompiler = create()
 		const transformed = transformedModuleOf(precompiler, source, id)

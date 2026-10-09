@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
+import { configuredThreadMessage } from "@ark/precompile"
 import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
@@ -264,7 +265,11 @@ contextualize(() => {
 		}).timeout(60000)
 
 		// each file loaded before and after one the precompiler read changes, so the loader replaces it, in a process whose arktype takes the configuration
-		const loadedAcrossReplacement = (cwd: string, files: string[]) =>
+		const loadedAcrossReplacement = (
+			cwd: string,
+			files: string[],
+			change = 'utimesSync("config.ts", new Date(), new Date())'
+		) =>
 			JSON.parse(
 				spawnSync(
 					process.execPath,
@@ -273,7 +278,7 @@ contextualize(() => {
 						cwd,
 						encoding: "utf8",
 						input: `import turbopack from "${pathToFileURL(fromHere("..", "turbopack.ts"))}"
-import { readFileSync, utimesSync } from "node:fs"
+import { readFileSync, rmSync, utimesSync, writeFileSync } from "node:fs"
 const load = file => {
 	try {
 		return turbopack.call({
@@ -287,7 +292,7 @@ const load = file => {
 	}
 }
 const before = ${JSON.stringify(files)}.map(load)
-utimesSync("config.ts", new Date(), new Date())
+${change}
 console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 					}
 				).stdout
@@ -323,6 +328,40 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 			attest(after).equals(before)
 			attest(before[0]).satisfies(
 				/config\.ts:3:1 {2}configure\(.* is not static/
+			)
+		}).timeout(60000)
+
+		it("replaces its precompiler when a module the configuration imports changes", () => {
+			const hidden = fromHere("temp", "hiddenConfigImport")
+			mkdirSync(hidden, { recursive: true })
+			writeFileSync(
+				join(hidden, "config.ts"),
+				'import { configure } from "arktype/config"\nimport { describe } from /* writer */ "./locale.ts"\n\nconfigure({ domain: { description: describe } })\n'
+			)
+			writeFileSync(
+				join(hidden, "main.ts"),
+				'import "./config.ts"\nimport { type } from "arktype"\n\nexport const T = type({ a: "number" })\n'
+			)
+			for (const change of [
+				`writeFileSync("locale.ts", 'export const describe = () => "a number"\\n')`,
+				'rmSync("locale.ts")'
+			]) {
+				writeFileSync(
+					join(hidden, "locale.ts"),
+					'export const describe = () => "a numeral"\n'
+				)
+				const [before, after] = loadedAcrossReplacement(
+					hidden,
+					["main.ts"],
+					change
+				)
+				attest(before[0].includes("a numeral")).equals(true)
+				attest(after).equals([configuredThreadMessage])
+			}
+			// the repo's typecheck includes the fixture, whose config module imports this
+			writeFileSync(
+				join(hidden, "locale.ts"),
+				'export const describe = () => "a numeral"\n'
 			)
 		}).timeout(60000)
 

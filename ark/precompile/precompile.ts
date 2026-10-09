@@ -431,8 +431,7 @@ export class Precompiler {
 		this.configuration ??= this.applyConfiguration()
 		const module = this.graph.add(id, source)
 		const { sites, diagnostics, dependencies } = this._analyze(module)
-		// every site is evaluated under the configuration
-		for (const dependency of this.configuration.modules)
+		for (const dependency of this.configurationModules)
 			if (!dependencies.includes(dependency)) dependencies.push(dependency)
 		for (const node of module.program.body) {
 			const specifier =
@@ -578,6 +577,11 @@ export class Precompiler {
 		// so a later configure() in the thread throws, as it does after arktype's first Type
 		void ark.internal.resolvedConfig
 		return configuration
+	}
+
+	// every site is evaluated under the configuration, so a module's precompilation depends on these too
+	get configurationModules(): string[] {
+		return this.configuration?.modules ?? []
 	}
 
 	// arktype takes one configuration per thread, so a build whose configuration changed restarts in a new one
