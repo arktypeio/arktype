@@ -132,7 +132,7 @@ export const alphabet = [
 	"z"
 ] as const
 
-// cyrb53, a 53-bit string hash
+// cyrb53's two 32-bit lanes, a 64-bit string hash
 export const hashOf = (input: string): string => {
 	let h1 = 0xdeadbeef
 	let h2 = 0x41c6ce57
@@ -145,5 +145,5 @@ export const hashOf = (input: string): string => {
 	h1 ^= Math.imul(h2 ^ (h2 >>> 13), 3266489909)
 	h2 = Math.imul(h2 ^ (h2 >>> 16), 2246822507)
 	h2 ^= Math.imul(h1 ^ (h1 >>> 13), 3266489909)
-	return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(36)
+	return (h2 >>> 0).toString(36) + (h1 >>> 0).toString(36).padStart(7, "0")
 }

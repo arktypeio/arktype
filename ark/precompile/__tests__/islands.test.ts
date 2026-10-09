@@ -24,16 +24,16 @@ export const parsers = { type }`
 		attest(precompile(source).code).snap(`import "arktype/internal/island.js"
 import * as $ark$island from "arktype/internal"
 import "arktype"
-import { v260eqyxrkgn as $arkv260eqyxrkgn } from "~arktype/2czgqujmpio"
-import { vqkfg4egzmk as $arkvqkfg4egzmk } from "~arktype/2czgqujmpio"
+import { v113ua4m0cbyo2f as $arkv113ua4m0cbyo2f } from "~arktype/75nx2z1h2kzl3"
+import { v16tqm51d9mp98 as $arkv16tqm51d9mp98 } from "~arktype/75nx2z1h2kzl3"
 import "arktype"
-export const A = $arkv260eqyxrkgn()
+export const A = $arkv113ua4m0cbyo2f()
 // @ark-runtime
 export const B = $ark$island.type({ name: process.argv[2] })
 export const C = process.argv.length > 2 ?
 	// @ark-runtime
 	$ark$island.type(process.argv[2])
-:	$arkvqkfg4egzmk()
+:	$arkv16tqm51d9mp98()
 // @ark-runtime
 export const parsers = { type: $ark$island.type }`)
 	})

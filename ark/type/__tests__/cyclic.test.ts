@@ -1528,10 +1528,10 @@ p1[0].p0 must be x (was a number)`)
 			"{ v: string, next?: this, + (undeclared): reject }"
 		)
 		attest(type({ a: strict }).expression).snap(
-			"{ a: { v: string, next?: synthetic1gygl89r02t, + (undeclared): reject } }"
+			"{ a: { v: string, next?: synthetic1vh94ep0mu8xlx, + (undeclared): reject } }"
 		)
 		attest(a.onDeepUndeclaredKey("reject").expression).snap(
-			"{ p?: synthetic1ddwfrt7wsp, + (undeclared): reject }"
+			"{ p?: synthetic12imoxi017z7bd, + (undeclared): reject }"
 		)
 	})
 

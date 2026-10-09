@@ -233,20 +233,22 @@ contextualize(() => {
 		const boxOf = type("<t>", { box: "t" })
 
 		attest(type({ a: T }).expression).snap(
-			"{ a: { v: number, next?: type1b8zgbj0qm5 } }"
+			"{ a: { v: number, next?: typegszdr00kec5od } }"
 		)
-		attest(T.array().expression).snap("{ v: number, next?: type1b8zgbj0qm5 }[]")
+		attest(T.array().expression).snap(
+			"{ v: number, next?: typegszdr00kec5od }[]"
+		)
 		attest(T.and({ x: "string" }).expression).snap(
-			"{ v: number, x: string, next?: type1b8zgbj0qm5 }"
+			"{ v: number, x: string, next?: typegszdr00kec5od }"
 		)
 		attest(boxOf(T).expression).snap(
-			"{ box: { v: number, next?: type1b8zgbj0qm5 } }"
+			"{ box: { v: number, next?: typegszdr00kec5od } }"
 		)
 		attest(T.pipe(t => t).expression).snap(
-			"(In: { v: number, next?: type1b8zgbj0qm5 }) => Out<unknown>"
+			"(In: { v: number, next?: typegszdr00kec5od }) => Out<unknown>"
 		)
 		attest(type({ a: T }).description).snap(
-			"{ a: { v: a number, next?: type1b8zgbj0qm5 } }"
+			"{ a: { v: a number, next?: typegszdr00kec5od } }"
 		)
 	})
 
@@ -263,7 +265,7 @@ contextualize(() => {
 		const T = $.type({ v: "number", "next?": "this" })
 
 		attest($.type({ a: T }).description).snap(
-			"{ a is { v is a number, next?: type1b8zgbj0qm5 } }"
+			"{ a is { v is a number, next?: typegszdr00kec5od } }"
 		)
 	})
 

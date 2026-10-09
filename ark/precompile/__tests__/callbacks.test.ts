@@ -174,8 +174,8 @@ const B = type.instanceOf(User)`,
 				opts
 			).sites.map(site => (site.value as Type).description)
 		attest(descriptionsOf()).snap([
-			"a number and valid according to $hole_jq93cm53mt",
-			"an instance of $hole_24aaa5z9ooh"
+			"a number and valid according to $hole_j0i6oq1s1b6p1",
+			"an instance of $hole_hkuzc012jnsq9"
 		])
 		attest(descriptionsOf({ runtime: "arktype" })).snap([
 			"a number and valid according to an anonymous predicate",
@@ -189,7 +189,7 @@ const A = type({ a: ["string[]", "=", () => ${nonStatic}] })
 const B = type({ a: [["string", "=>", s => ${nonStatic}], "=", "a"] })
 const C = type({ a: [["string", ":", s => ${nonStatic}], "=", "a"] })`
 		attest(statusesOf(source)).snap([
-			"2:11 accepted { a: string[] = Function($hole_2cnk9nyqft4) }",
+			"2:11 accepted { a: string[] = Function($hole_1vu6ogz1nemc20) }",
 			'6:11 accepted { a: (In: string) => Out<unknown> = "a" }',
 			"10:11 rejected\n  arktype calls a function (/main.ts:10:38) while defining the type, so it must be a static helper\n  a function (/main.ts:10:38) is not a static helper: its body is not one expression or one `return`"
 		])
