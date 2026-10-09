@@ -46,6 +46,8 @@ export const Name = $arkf1j3ffm9dngv(trim)
 
 A definition referencing a Type that holds functions receives that Type's validator and takes them from it. A definition reading a value through a binding (an object or a primitive declared in the module, an import, a `define`) receives it after those values and compares it with what the build read before creating anything: a primitive by `Object.is`, an object by its keys in order and then each value, a Type by its content, importing it if the module doesn't. A mismatch throws, naming the value and both readings, so a mocked module, a mutated object or a stubbed define fails at creation rather than validating differently.
 
+A definition calling a static helper (a function whose body is one expression) is precompiled with what the helper returned at build. Vitest through the plugin, `node --test` through `register()` and `bun test` through the Bun plugin replace whole modules when they mock one, so under them each module registers the functions it exports, and a definition calling a helper another module exports checks at creation that it received the registered function: a mock is another function, and a module the runner replaced registered nothing. `checkHelpers` sets this outside those runners, or turns it off; `bun test` is recognized by the `NODE_ENV` it sets, so a suite setting its own passes `checkHelpers: true`.
+
 A definition that could depend on whether two values imported from other modules are equal is reported rather than precompiled, as is a default whose value is a function or a Module, Scope or Generic read through a binding.
 
 ### Precompile in Turbopack

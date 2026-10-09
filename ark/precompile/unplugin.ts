@@ -14,7 +14,8 @@ export const precompile: UnpluginInstance<
 	PrecompilePluginOptions | undefined,
 	false
 > = createUnplugin(opts => {
-	let precompiler = createPrecompiler(opts)
+	let options = opts
+	let precompiler = createPrecompiler(options)
 	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
@@ -58,7 +59,7 @@ export const precompile: UnpluginInstance<
 			filter: { id: transformedFilterOf(packages) },
 			handler(code, id) {
 				if (!precompiler.isTransformed(id)) return
-				if (!precompiler.importsArk(code, id)) {
+				if (!precompiler.checkHelpers && !precompiler.importsArk(code, id)) {
 					// a module it imports may come to export a Type
 					for (const dependency of precompiler.localImportsOf(code, id))
 						this.addWatchFile(dependency)
@@ -87,11 +88,22 @@ export const precompile: UnpluginInstance<
 						ssr: { noExternal: packages },
 						test: { server: { deps: { inline: packages } } }
 					}
-				:	undefined
+				:	undefined,
+			// Vitest's module mocks replace what a module exports, which a factory checks its static helpers against
+			configResolved: config => {
+				if (
+					opts?.checkHelpers !== undefined ||
+					!process.env.VITEST ||
+					config.mode !== "test"
+				)
+					return
+				options = { ...opts, checkHelpers: true }
+				precompiler = createPrecompiler(options)
+			}
 		},
 		// a changed file may be in the forward closure of any module analyzed so far
 		watchChange: () => {
-			precompiler = createPrecompiler(opts)
+			precompiler = createPrecompiler(options)
 		},
 		esbuild: {
 			// esbuild loads anything a plugin resolves in the plugin's namespace, so arktype's files are resolved natively

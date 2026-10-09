@@ -8,7 +8,16 @@ import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
 export const register = (opts?: PrecompilePluginOptions): void => {
 	// the worker inherits the flags that registered these hooks
 	if (isPrecompilerWorker) return
-	const request = createSyncPrecompiler({ precompilerOptions: opts ?? {} })
+	const request = createSyncPrecompiler({
+		precompilerOptions: {
+			...opts,
+			// `node --test` marks each file's process, or runs the files in its own
+			checkHelpers:
+				opts?.checkHelpers ??
+				(process.env.NODE_TEST_CONTEXT !== undefined ||
+					process.execArgv.includes("--test"))
+		}
+	})
 	const isStandalone = opts?.runtime !== "arktype"
 	const filter = transformedFilterOf(
 		optedInPackagesOf(opts?.cwd ?? process.cwd())

@@ -26,14 +26,19 @@ const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
 		{ cwd, encoding: "utf8" }
 	)
 
-const bun = (args: string[], runtime?: "arktype", cwd = app) =>
-	spawnSync("bun", args, {
+const bun = (args: string[], runtime?: "arktype", cwd = app) => {
+	// `bun test` sets NODE_ENV only if it isn't set, as a bundler run earlier in this process may have set it
+	const { NODE_ENV, ...env } = process.env
+	return spawnSync("bun", args, {
 		cwd,
 		encoding: "utf8",
-		env: { ...process.env, ARKTYPE_RUNTIME: runtime ?? "" }
+		env: { ...env, ARKTYPE_RUNTIME: runtime ?? "" }
 	})
+}
 
 const islands = fromHere("islands")
+
+const checks = fromHere("checks")
 
 const library = writeLibrary()
 
@@ -76,6 +81,18 @@ contextualize(() => {
 
 		it("runtime islands", () => {
 			attest(node(["main.ts"], {}, islands).stdout).equals(runPlain(islands))
+		}).timeout(60000)
+
+		it("checks static helpers under node --test", () => {
+			const { status, stdout } = node(
+				["--experimental-test-module-mocks", "--test", "node.check.ts"],
+				{},
+				checks
+			)
+			attest([status, stdout.match(/^ℹ pass \d+/m)?.[0]]).equals([
+				0,
+				"ℹ pass 2"
+			])
 		}).timeout(60000)
 
 		it("packages that opt in", () => {
@@ -172,6 +189,25 @@ contextualize(() => {
 					"1 pass"
 				])
 			}
+		}).timeout(60000)
+
+		it("checks static helpers under bun test", () => {
+			const result = bun(
+				[
+					"test",
+					"--conditions",
+					"ark-ts",
+					"--preload",
+					join(app, "preload.ts"),
+					"./bun.check.ts"
+				],
+				undefined,
+				checks
+			)
+			attest([result.status, result.stderr.match(/\d+ pass/)?.[0]]).equals([
+				0,
+				"2 pass"
+			])
 		}).timeout(60000)
 
 		it("runtime islands", () => {

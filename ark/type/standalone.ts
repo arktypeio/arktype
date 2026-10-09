@@ -77,7 +77,7 @@ export interface StandaloneFactory {
 	params: FactoryParam[]
 }
 
-export type FactoryParam = HoleParam | InputParam
+export type FactoryParam = HoleParam | InputParam | HelperParam
 
 export interface HoleParam {
 	kind: HoleKind
@@ -91,6 +91,14 @@ export interface InputParam {
 	label: string
 	// each value the build read from it, by path
 	reads: [path: PropertyKey[], value: unknown][]
+}
+
+// a function the build called while defining the Type, which a test driver registers where its module exports it
+export interface HelperParam {
+	kind: "helper"
+	label: string
+	file: string
+	name: string
 }
 
 /**
@@ -214,6 +222,12 @@ export class StandaloneArtifact {
 			if (param.kind === "input") {
 				for (const [path, value] of param.reads)
 					this.compareInput(`p${i}`, path, value, param.label)
+				continue
+			}
+			if (param.kind === "helper") {
+				this.checks.push(
+					`runtime.checkHelper(p${i}, ${JSON.stringify(param.file)}, ${JSON.stringify(param.name)}, ${JSON.stringify(param.label)})`
+				)
 				continue
 			}
 			this.receiveHole(param.value, `p${i}`, param.label)

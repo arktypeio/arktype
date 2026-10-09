@@ -60,7 +60,6 @@ export const G = scope({ a: "string" })`,
 				{ "/limits.ts": "export const max = 5" }
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:7:18  field(5) can't be precompiled to a standalone validator yet\n  it calls the static helper `field` (/main.ts:4:15)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				"/main.ts:8:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
 				'/main.ts:9:18  type({ "+": "delete", "[string]": "string", a: "\'a\'" }) can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: "a", + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				'/main.ts:11:18  scope({ a: "string" }) can\'t be precompiled to a standalone validator yet\n  its value is not a Type\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
@@ -71,14 +70,15 @@ const trim = (s: string) => s.trim()
 const field = (n: number) => type(\`string <= \${n}\`)
 export const A = $arkf2f7m2qez7rp(trim)
 export const B = $arkf27k5dqrbs0h(max)
-export const C = field(5)
+export const C = $arkv20nnjgkvd82
 export const D = $ark11nyj35o0sh()
 export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
 export const F = $arkv1bp5ims0ip5
 export const G = scope({ a: "string" })
-import { f2f7m2qez7rp as $arkf2f7m2qez7rp } from "~arktype/14zuz27ejpi"
-import { f27k5dqrbs0h as $arkf27k5dqrbs0h } from "~arktype/14zuz27ejpi"
-import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/14zuz27ejpi"
+import { f2f7m2qez7rp as $arkf2f7m2qez7rp } from "~arktype/1qdht28d129"
+import { f27k5dqrbs0h as $arkf27k5dqrbs0h } from "~arktype/1qdht28d129"
+import { v20nnjgkvd82 as $arkv20nnjgkvd82 } from "~arktype/1qdht28d129"
+import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/1qdht28d129"
 import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"`)
 		})
 	})
@@ -187,6 +187,54 @@ import { f1seyv7qujj0 as $arkf1seyv7qujj0 } from "~arktype/248bm8cwjcl"
 import { fnnd6q3k9w4 as $arkfnnd6q3k9w4 } from "~arktype/248bm8cwjcl"
 import { fw790lt05pv as $arkfw790lt05pv } from "~arktype/248bm8cwjcl"
 import { fq2rjvxr6lw as $arkfq2rjvxr6lw } from "~arktype/248bm8cwjcl"`)
+		})
+
+		it("checks the static helpers another module exports in a test driver", () => {
+			const source = `import { type } from "arktype"
+import single, { list } from "./helpers.ts"
+import * as helpers from "./helpers.ts"
+const own = (def: string) => list(def)
+export const List = type(list("string"))
+export const Own = type(own("number"))
+export const Optional = type(helpers.optional("string"))
+export const Single = type(single("string"))`
+			const files = {
+				"/checked.ts": source,
+				"/helpers.ts": `import { suffix } from "./suffix.ts"
+const base = (def: string) => \`\${def}[]\`
+export const list = (def: string) => base(def)
+export const optional = (def: string) => suffix(def, " | undefined")
+export default (def: string) => def`,
+				"/suffix.ts":
+					"export const suffix = (def: string, s: string) => def + s"
+			}
+			const build = (id: keyof typeof files, checkHelpers: boolean) =>
+				precompileModule(files[id], id, memoryHost(files), { checkHelpers })
+			// a bundle runs the helpers the build read
+			attest(build("/checked.ts", false).diagnostics).equals([])
+			const checked = build("/checked.ts", true)
+			attest(checked.diagnostics.map(renderDiagnostic)).snap([
+				"/checked.ts:8:23  type(single(\"string\")) can't be precompiled to a standalone validator yet\n  `default` (/helpers.ts:5:16) is a static helper its module doesn't export through a binding, so a test driver can't register it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			])
+			attest(checked.code).snap(`import { type } from "arktype"
+import single, { list } from "./helpers.ts"
+import * as helpers from "./helpers.ts"
+const own = (def: string) => list(def)
+export const List = $arkf9gpqhychhj(list)
+export const Own = $arkf1wq8iy0qjbs(list)
+export const Optional = $arkf2azzz0ipb51(helpers.optional, $arki1hye78qyfa1)
+export const Single = type(single("string"))
+import { suffix as $arki1hye78qyfa1 } from "./suffix.ts"
+import { f9gpqhychhj as $arkf9gpqhychhj } from "~arktype/1eiotpf8fg9"
+import { f1wq8iy0qjbs as $arkf1wq8iy0qjbs } from "~arktype/1eiotpf8fg9"
+import { f2azzz0ipb51 as $arkf2azzz0ipb51 } from "~arktype/1eiotpf8fg9"`)
+			attest(build("/helpers.ts", true).code)
+				.snap(`import { suffix } from "./suffix.ts"
+const base = (def: string) => \`\${def}[]\`
+export const list = (def: string) => base(def)
+export const optional = (def: string) => suffix(def, " | undefined")
+export default (def: string) => def
+Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/helpers.ts": { __proto__: null, "list": list, "optional": optional } })`)
 		})
 
 		it("unsupported sites", () => {

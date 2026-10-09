@@ -679,6 +679,40 @@ contextualize(() => {
 			)
 		})
 
+		it("checks each helper is the function its module registered", async () => {
+			const { T: create } = await load({
+				T: {
+					type: type("string"),
+					params: [
+						{
+							kind: "helper",
+							label: "`list`",
+							file: "helpers.ts",
+							name: "list"
+						}
+					]
+				}
+			})
+			const list = (def: string) => `${def}[]`
+			const expected = "the function helpers.ts exports as `list`"
+			// a module a test runner replaced never registered what it exports
+			attest(() => create(list)).throws(
+				writeCreationMismatchMessage("`list`", "Function(list)", expected)
+			)
+			const registry = Symbol.for("arktype.helpers")
+			Reflect.set(globalThis, registry, {
+				"helpers.ts": { __proto__: null, list }
+			})
+			try {
+				attest(create(list)("a")).equals("a")
+				attest(() => create((def: string) => def)).throws(
+					writeCreationMismatchMessage("`list`", "Function(fn)", expected)
+				)
+			} finally {
+				Reflect.deleteProperty(globalThis, registry)
+			}
+		})
+
 		it("rejects an order that depends on a hole's name", () => {
 			const isEven = (n: number) => n % 2 === 0
 			const isPositive = (n: number) => n > 0

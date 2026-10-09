@@ -366,6 +366,42 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		}
 	}).timeout(60000)
 
+	it("vitest checks what each factory was built with at creation", async () => {
+		const checks = fromHere("checks")
+		const vitest = await startVitest(
+			[],
+			{
+				root: checks,
+				config: false,
+				watch: false,
+				reporters: [],
+				env: { ARK_MODE: "loose" }
+			},
+			viteConfig(
+				{ cwd: checks, define: { "process.env.ARK_MODE": "loose" } },
+				checks
+			)
+		)
+		await vitest.close()
+		attest(
+			vitest.state
+				.getFiles()
+				.flatMap(file => file.tasks)
+				.map(task => `${task.result?.state} ${task.name}`)
+		).snap([
+			"pass creates each validator from what the build read",
+			"pass a mocked module",
+			"pass a mocked static helper",
+			"pass a stubbed define",
+			"pass a mutated import",
+			"pass a mutated plain object",
+			"pass a hole with another arity",
+			"pass a hole of another kind",
+			"pass a hole with another prototype",
+			"pass a polyfilled builtin"
+		])
+	}).timeout(60000)
+
 	it("vitest with a package that opts in", async () => {
 		for (const runtime of [undefined, "arktype"] as const) {
 			const vitest = await startVitest(

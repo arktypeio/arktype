@@ -62,7 +62,10 @@ export interface Read {
 
 export interface Trace {
 	reads: Read[]
+	// each function the build interprets a call to
 	helpers: [FunctionNode, SourceModule][]
+	// each function read from another module's export, which a test runner's module mock can replace
+	exportedFunctions: Read[]
 }
 
 export interface Environment {
@@ -112,7 +115,7 @@ export const createSiteState = (
 ): SiteState => ({
 	node,
 	module,
-	trace: { reads: [], helpers: [] },
+	trace: emptyTrace(),
 	readsByValue: new Map(),
 	holes: [],
 	interpreted: new Set(),
@@ -660,12 +663,11 @@ export class Interpreter {
 
 	private consume(lookup: Lookup, ctx: Context): unknown {
 		const { value, read } = lookup
-		if (
-			read &&
-			!isDynamic(value) &&
-			!(hasDomain(value, "object") && this.standIns.has(value))
-		)
+		if (!read || isDynamic(value)) return value
+		if (!(hasDomain(value, "object") && this.standIns.has(value)))
 			ctx.trace.reads.push(read)
+		else if (read.root.kind === "export" && !read.path.length)
+			ctx.trace.exportedFunctions.push(read)
 		return value
 	}
 
@@ -1230,19 +1232,21 @@ export class Interpreter {
 				const result = this.exportValue(target)
 				if (result.error !== undefined) throw result.error
 				if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
-				if (
-					!isDynamic(result.value) &&
-					!(
-						hasDomain(result.value, "object") && this.standIns.has(result.value)
-					)
-				) {
-					ctx.trace.reads.push({
-						root: { kind: "export", file: target.module.id, name },
-						path: [],
-						value: result.value
-					})
-				}
-				return result.value
+				return this.consume(
+					{
+						value: result.value,
+						read: {
+							root: {
+								kind: "export",
+								file: target.module.id,
+								name: target.kind === "binding" ? target.name : "default"
+							},
+							path: [],
+							value: result.value
+						}
+					},
+					ctx
+				)
 			}
 		}
 		return this.reject(node, ctx, "reads a nested namespace import")
@@ -1539,11 +1543,7 @@ export class Interpreter {
 				this.destructure(param.argument, args.slice(i), callCtx)
 			else this.destructure(param, args[i], callCtx)
 		}
-		if (
-			closure.node.type === "FunctionDeclaration" ||
-			bindingOfFunction(closure.node, closure.module)
-		)
-			pushUnique(ctx.trace.helpers, closure.node, closure.module)
+		pushUnique(ctx.trace.helpers, closure.node, closure.module)
 		if (ctx.site && closure.module === ctx.site.module)
 			ctx.site.interpreted.add(closure.node)
 		return this.evaluate(staticBodyOf(closure.node)!, callCtx)
@@ -1925,7 +1925,11 @@ const createEnvironment = (parent: Environment | undefined): Environment => ({
 	parent
 })
 
-const emptyTrace = (): Trace => ({ reads: [], helpers: [] })
+const emptyTrace = (): Trace => ({
+	reads: [],
+	helpers: [],
+	exportedFunctions: []
+})
 
 const rootContext = (
 	module: SourceModule,
@@ -1943,6 +1947,7 @@ const mergeTrace = (into: Trace, from: Trace) => {
 	for (const read of from.reads) into.reads.push(read)
 	for (const [node, module] of from.helpers)
 		pushUnique(into.helpers, node, module)
+	for (const read of from.exportedFunctions) into.exportedFunctions.push(read)
 }
 
 const pushUnique = (

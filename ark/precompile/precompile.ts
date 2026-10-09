@@ -25,7 +25,6 @@ import type {
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
-	bindingOfFunction,
 	contains,
 	enclosingFunctionOf,
 	isArkObject,
@@ -75,6 +74,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	config?: string | undefined
 	// place what the module imports from virtual modules in the module itself, for hosts without them
 	inline?: boolean | undefined
+	// check at creation that each static helper a standalone validator was built with is the function its module exports, as a test runner's module mocks can replace it
+	checkHelpers?: boolean | undefined
 }
 
 export interface ModuleAnalysis {
@@ -160,9 +161,13 @@ export interface Input {
 	value: unknown
 }
 
+// a function the site calls through another module's export, which a test driver checks at creation
 export interface Helper {
+	// the module that exports it
 	file: string
+	// its export name
 	name: string
+	// where the module declares it
 	start: number
 	end: number
 }
@@ -217,6 +222,7 @@ export class Precompiler {
 	mode: PrecompileMode
 	config: string | undefined
 	inline: boolean
+	checkHelpers: boolean
 	// a site the mode cannot build fails a standalone build, while cache mode leaves it to runtime
 	private rejectionSeverity: Diagnostic["severity"]
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
@@ -239,6 +245,7 @@ export class Precompiler {
 		this.mode = opts?.runtime === "arktype" ? "cache" : "standalone"
 		this.config = opts?.config
 		this.inline = !!opts?.inline
+		this.checkHelpers = this.mode === "standalone" && !!opts?.checkHelpers
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
 
@@ -444,6 +451,18 @@ export class Precompiler {
 				diagnostics
 			)
 			this.linkIslands(module, sites, s, prefix)
+			// a module mock replaces what a module exports, so each static helper a factory was built with is checked against what its own module registers
+			if (this.checkHelpers) {
+				const registered = Object.entries(this.registeredHelpersOf(module))
+				if (registered.length) {
+					// a statement starting with an identifier, since stripping a type alias before it also strips a leading semicolon
+					s.append(
+						`\nObject.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { ${JSON.stringify(module.path)}: { __proto__: null, ${registered
+							.map(([name, local]) => `${JSON.stringify(name)}: ${local}`)
+							.join(", ")} } })`
+					)
+				}
+			}
 			// each export a factory compares that the module didn't import, imported after its own imports
 			for (const specifier in inputImports) {
 				const locals = inputImports[specifier]
@@ -612,7 +631,12 @@ export class Precompiler {
 		prefix: string
 	): SiteFactory | undefined {
 		const [, held] = keyOf(site.value as BaseRoot)
-		if (!held.length && !site.inputs.length) return
+		// a module that runs is its own, so only a helper another module exports can be a mock
+		const helpers =
+			this.checkHelpers ?
+				site.helpers.filter(helper => helper.file !== module.id)
+			:	[]
+		if (!held.length && !site.inputs.length && !helpers.length) return
 		const holesByValue = new Map(site.holes.map(hole => [hole.value, hole]))
 		const params: FactoryParam[] = []
 		const spans: Span[] = []
@@ -747,7 +771,62 @@ export class Precompiler {
 				reads: reads.map(input => [input.path, input.value])
 			})
 		}
+		for (const helper of helpers) {
+			const exporter = this.graph.moduleOf(helper.file) as SourceModule
+			const label = `\`${helper.name}\` (${exporter.positionOf(helper)})`
+			if (!(helper.name in this.registeredHelpersOf(exporter))) {
+				reasons.push(
+					`${label} is a static helper its module doesn't export through a binding, so a test driver can't register it`
+				)
+				continue
+			}
+			const passedAs = this.inputExpressionOf(
+				{
+					kind: "import",
+					file: helper.file,
+					name: helper.name,
+					path: [],
+					value: undefined
+				},
+				site,
+				module,
+				prefix
+			)
+			if (typeof passedAs === "string") {
+				reasons.push(passedAs)
+				continue
+			}
+			const [expression, , imported] = passedAs
+			inputs.push(expression)
+			if (imported) imports.push(imported)
+			params.push({
+				kind: "helper",
+				label,
+				file: exporter.path,
+				name: helper.name
+			})
+		}
 		return { params, spans, inputs, imports }
+	}
+
+	// the functions a test driver registers of each module for factories to check, each export by the local holding it
+	private registeredHelpersOf(module: SourceModule): Record<string, string> {
+		const result: Record<string, string> = {}
+		for (const [name, entry] of Object.entries(module.scopes.exportsByName)) {
+			if (
+				entry.kind !== "binding" ||
+				entry.binding.kind === "import" ||
+				name === "__proto__"
+			)
+				continue
+			const value = this.interpreter.valueOfBinding(entry.binding, module)
+			if (
+				hasDomain(value, "object") &&
+				this.interpreter.standIns.get(value)?.kind === "function"
+			)
+				result[name] = entry.binding.name
+		}
+		return result
 	}
 
 	// a runtime island's Type is arktype's, which a factory can't take holes from or compare
@@ -843,7 +922,7 @@ export class Precompiler {
 				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})`
 			)
 		}
-		// a factory throws a ParseError without reading its inputs, so the error can't depend on them
+		// a factory throws a ParseError without reading its inputs or checking its helpers, so the error can't depend on them
 		for (const input of site.parseError ? site.inputs : []) {
 			result.push(
 				`\`${[input.name, ...input.path.map(String)].join(".")}\` is ${
@@ -854,7 +933,9 @@ export class Precompiler {
 				}`
 			)
 		}
-		for (const helper of site.helpers) {
+		for (const helper of site.parseError && this.checkHelpers ?
+			site.helpers
+		:	[]) {
 			result.push(
 				`it calls the static helper \`${helper.name}\` (${(this.graph.moduleOf(helper.file) as SourceModule).positionOf(helper)})`
 			)
@@ -1017,12 +1098,7 @@ export class Precompiler {
 			parseError: undefined,
 			holes: [],
 			inputs: [],
-			helpers: state.trace.helpers.map(([node, helperModule]) => ({
-				file: helperModule.id,
-				name: bindingOfFunction(node, helperModule)?.name ?? "default",
-				start: node.start,
-				end: node.end
-			})),
+			helpers: [],
 			references: []
 		}
 		if (this.mode === "standalone" && isInIsland(state.node, module)) {
@@ -1049,6 +1125,30 @@ export class Precompiler {
 			site.holes.push(hole)
 		}
 		site.holes.sort((l, r) => l.start - r.start)
+		for (const { root, value } of state.trace.exportedFunctions) {
+			const node = this.interpreter.standIns.get(value as object)?.closure?.node
+			if (
+				root.kind !== "export" ||
+				!node ||
+				!state.trace.helpers.some(([helper]) => helper === node) ||
+				site.helpers.some(
+					helper => helper.file === root.file && helper.name === root.name
+				)
+			)
+				continue
+			const entry = (this.graph.moduleOf(root.file) as SourceModule).scopes
+				.exportsByName[root.name]
+			const declaration =
+				entry.kind === "binding" ? entry.binding.id
+				: entry.kind === "expression" ? entry.node
+				: node
+			site.helpers.push({
+				file: root.file,
+				name: root.name,
+				start: declaration.start,
+				end: declaration.end
+			})
+		}
 		for (const [value, reads] of state.readsByValue) {
 			if (
 				!hasArkKind(value, "root") &&

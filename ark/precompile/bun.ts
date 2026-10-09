@@ -52,7 +52,12 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 			if (!worker) {
 				worker = new Worker(new URL(import.meta.url), {
 					workerData: {
-						precompilerOptions: opts ?? {}
+						precompilerOptions: {
+							...opts,
+							// set by `bun test`
+							checkHelpers:
+								opts?.checkHelpers ?? process.env.NODE_ENV === "test"
+						}
 					} satisfies PrecompilerWorkerData
 				})
 				worker.on("message", (answer: PrecompileAnswer) =>

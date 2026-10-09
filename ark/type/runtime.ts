@@ -390,6 +390,32 @@ export const holesOf = (
 			)
 }
 
+// where a test driver's modules register what they export, by module and export name
+const helpersKey = Symbol.for("arktype.helpers")
+
+// a mock is another function, and a module a test runner replaced registered nothing, so either fails
+export const checkHelper = (
+	helper: unknown,
+	file: string,
+	name: string,
+	label: string
+): void => {
+	const registered = (
+		Reflect.get(globalThis, helpersKey) as
+			| Record<string, Record<string, unknown>>
+			| undefined
+	)?.[file]
+	if (!registered || !(name in registered) || registered[name] !== helper) {
+		throwError(
+			writeCreationMismatchMessage(
+				label,
+				describeValue(helper),
+				`the function ${file} exports as \`${name}\``
+			)
+		)
+	}
+}
+
 const { getTime } = Date.prototype
 
 const isValidator = (value: unknown) => holesByValidator.has(value as object)

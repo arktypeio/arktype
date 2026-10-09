@@ -147,7 +147,10 @@ const inlineModuleOf = (
 	source: string,
 	id: string
 ): InlineModule | undefined => {
-	if (!precompiler.isTransformed(id) || !precompiler.importsArk(source, id))
+	if (
+		!precompiler.isTransformed(id) ||
+		!(precompiler.checkHelpers || precompiler.importsArk(source, id))
+	)
 		return
 	const result = precompiler.precompile(source, id)
 	return {
