@@ -855,3 +855,8 @@ export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 	error: ActualContext<code>,
 	locale: Locale.Info
 ) => string
+
+export const configureAfterTypeMessage =
+	"configure must be called before any Type is created, e.g. from a module imported first"
+
+export type configureAfterTypeMessage = typeof configureAfterTypeMessage

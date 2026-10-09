@@ -185,6 +185,8 @@ export const User = type({ name: "string > 0" })
 
 A validator bakes `expression`, `description` and `meta`, and throws on members that compose or introspect a Type. A Module becomes a plain object of its validators. An artifact freezes what it creates, so a write to one throws in strict mode: its validators and their shared prototype, its Modules, configs and node shapes, and every literal it emits, such as `meta`. A RegExp is only made non-extensible, since its methods write `lastIndex`, and neither a Date's time nor a RegExp's pattern can be frozen. `arktype/runtime`'s `type` is frozen too. The build refuses what the runtime can't reproduce, like a Generic, or a narrow or morph that isn't one of arktype's keywords, naming it. An artifact refuses to load beside `arktype` or on another version of `arktype/runtime`.
 
+A program's `configure()` call stays in place and configures `arktype/runtime`, which fixes its configuration at the first validator it creates, as arktype does at the first Type. It throws if `configure()` comes after that, or under a configuration other than the one the validators were built under.
+
 ### Fix duplicate errors from `string.date.epoch.parse`
 
 An out-of-range timestamp in an object was reported twice, as an intersection of the same error:

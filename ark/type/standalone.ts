@@ -108,7 +108,9 @@ export interface HelperParam {
  * #### an ES module that exports each Type as a validator running on arktype/runtime alone, each Module as an object of them, and each factory as a function creating one from what it receives
  */
 export const precompileStandalone = (
-	exports: Record<string, StandaloneExport>
+	exports: Record<string, StandaloneExport>,
+	// of the configuration the build applied, which the program must configure the runtime with
+	fingerprint?: string
 ): string => {
 	const types: Record<string, type.Any | Module> = {}
 	const factories: StandaloneArtifact[] = []
@@ -119,7 +121,10 @@ export const precompileStandalone = (
 			factories.push(new StandaloneArtifact({ [name]: type }, params))
 		}
 	}
-	return new StandaloneArtifact(types).write(factories)
+	return new StandaloneArtifact(types).write(
+		factories,
+		`runtime.fixConfig(${fingerprint === undefined ? "" : JSON.stringify(fingerprint)})`
+	)
 }
 
 export class StandaloneArtifact {
@@ -190,8 +195,11 @@ export class StandaloneArtifact {
 		this.unit = precompileByContent(this.roots)
 		// a Type in a meta is emitted as its validator, so the unit needs its traversals
 		while (this.collectMetaTypes()) this.unit = precompileByContent(this.roots)
-		for (const root of this.roots)
-			if (root.onFail) throwParseError(writeUnprecompilableMessage("onFail"))
+		for (const root of this.roots) {
+			// the runtime's own onFail is the one the program configures
+			if (root.onFail !== $ark.resolvedConfig!.onFail)
+				throwParseError(writeUnprecompilableMessage("onFail"))
+		}
 		for (const context of this.unit.errorContexts)
 			this.raisableCodes[context.code] = true
 		this.runsFunctions = this.unit.declared.some(
@@ -423,7 +431,8 @@ export class StandaloneArtifact {
 		return this.validatorNamesByRoot.size > typeCount
 	}
 
-	write(factories: StandaloneArtifact[]): string {
+	// the configuration is fixed when the first validator is created, which happens where the artifact loads or a factory is called
+	write(factories: StandaloneArtifact[], fixConfig: string): string {
 		const exported = Object.entries(this.exports).map(
 			([name, value]) =>
 				`export { ${this.exportOf(value)} as ${JSON.stringify(name)} }`
@@ -431,17 +440,20 @@ export class StandaloneArtifact {
 		const sections = [
 			`import * as runtime from "arktype/runtime"`,
 			`runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`,
-			...(this.roots.length ? this.writeBody(`(${this.unit.source})`) : []),
-			...factories.map((factory, i) => factory.writeFactory(i)),
+			...(this.roots.length ?
+				[fixConfig, ...this.writeBody(`(${this.unit.source})`)]
+			:	[]),
+			...factories.map((factory, i) => factory.writeFactory(i, fixConfig)),
 			exported.join("\n")
 		]
 		return `${sections.filter(section => section).join("\n\n")}\n`
 	}
 
 	// each call creates its validator from the holes and inputs it receives, so it declares everything the validator holds
-	writeFactory(index: number): string {
+	writeFactory(index: number, fixConfig: string): string {
 		const [[name, type]] = Object.entries(this.exports)
 		const statements = [
+			fixConfig,
 			...this.checks,
 			...this.writeBody(`unit${index}`),
 			`return ${this.exportOf(type)}`
@@ -761,7 +773,8 @@ export { factory${index} as ${JSON.stringify(name)} }`
 			const writers: string[] = []
 			for (const k of writerKeys) {
 				const writer = config[code][k]
-				if (writer === $ark.defaultConfig[code][k]) continue
+				// the runtime's config holds the defaults and the writers the program configures
+				if (writer === $ark.resolvedConfig![code][k]) continue
 				if (typeof writer === "string")
 					writers.push(`${k}: ${JSON.stringify(writer)}`)
 				else if (this.runsFunctions || this.raisableCodes[code]) {

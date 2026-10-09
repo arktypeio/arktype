@@ -25,9 +25,9 @@ export const User = $arkv1169pgizw3q
 export const Same = $arkv1169pgizw3q
 export const Users = $arkvu8qjlz7etl
 export const isError = (data: unknown) => data instanceof ArkErrors
-import { v1169pgizw3q as $arkv1169pgizw3q } from "~arktype/26cntzsxxw1"
-import { vu8qjlz7etl as $arkvu8qjlz7etl } from "~arktype/26cntzsxxw1"`)
-			attest(Object.keys(result.modules)).snap(["~arktype/26cntzsxxw1"])
+import { v1169pgizw3q as $arkv1169pgizw3q } from "~arktype/1ttn8klr0go"
+import { vu8qjlz7etl as $arkvu8qjlz7etl } from "~arktype/1ttn8klr0go"`)
+			attest(Object.keys(result.modules)).snap(["~arktype/1ttn8klr0go"])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
@@ -41,7 +41,7 @@ export const A = type("string")`).code
 import "arktype"
 import * as config from "./config.ts"
 export const A = $arkvek65jf4484
-import { vek65jf4484 as $arkvek65jf4484 } from "~arktype/1y14thr7nhs"`)
+import { vek65jf4484 as $arkvek65jf4484 } from "~arktype/1ebx9d7da25"`)
 		})
 
 		it("unsupported sites", () => {
@@ -75,10 +75,10 @@ export const D = $ark11nyj35o0sh()
 export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
 export const F = $arkv1bp5ims0ip5
 export const G = scope({ a: "string" })
-import { f2f7m2qez7rp as $arkf2f7m2qez7rp } from "~arktype/1qdht28d129"
-import { f27k5dqrbs0h as $arkf27k5dqrbs0h } from "~arktype/1qdht28d129"
-import { v20nnjgkvd82 as $arkv20nnjgkvd82 } from "~arktype/1qdht28d129"
-import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/1qdht28d129"
+import { f2f7m2qez7rp as $arkf2f7m2qez7rp } from "~arktype/145hosxkl80"
+import { f27k5dqrbs0h as $arkf27k5dqrbs0h } from "~arktype/145hosxkl80"
+import { v20nnjgkvd82 as $arkv20nnjgkvd82 } from "~arktype/145hosxkl80"
+import { v1bp5ims0ip5 as $arkv1bp5ims0ip5 } from "~arktype/145hosxkl80"
 import $ark11nyj35o0sh from "~arktype/11nyj35o0sh"`)
 		})
 	})
@@ -119,13 +119,13 @@ export const Extended = $arkf14b60szkb1e(ext)
 export const Pair = $arkfcfvlzq3rdy(Name, Either)
 export const Short = $arkf1h2fl3hww77(Name, s => s.length < 9)
 export const Stamped = $arkf1an86esmhhe(() => new Date())
-import { f1gmbnlsmwkb as $arkf1gmbnlsmwkb } from "~arktype/1m2y6nyqkup"
-import { f17onxh5wa5v as $arkf17onxh5wa5v } from "~arktype/1m2y6nyqkup"
-import { f177zfl998m9 as $arkf177zfl998m9 } from "~arktype/1m2y6nyqkup"
-import { f14b60szkb1e as $arkf14b60szkb1e } from "~arktype/1m2y6nyqkup"
-import { fcfvlzq3rdy as $arkfcfvlzq3rdy } from "~arktype/1m2y6nyqkup"
-import { f1h2fl3hww77 as $arkf1h2fl3hww77 } from "~arktype/1m2y6nyqkup"
-import { f1an86esmhhe as $arkf1an86esmhhe } from "~arktype/1m2y6nyqkup"`)
+import { f1gmbnlsmwkb as $arkf1gmbnlsmwkb } from "~arktype/wartb1k4re"
+import { f17onxh5wa5v as $arkf17onxh5wa5v } from "~arktype/wartb1k4re"
+import { f177zfl998m9 as $arkf177zfl998m9 } from "~arktype/wartb1k4re"
+import { f14b60szkb1e as $arkf14b60szkb1e } from "~arktype/wartb1k4re"
+import { fcfvlzq3rdy as $arkfcfvlzq3rdy } from "~arktype/wartb1k4re"
+import { f1h2fl3hww77 as $arkf1h2fl3hww77 } from "~arktype/wartb1k4re"
+import { f1an86esmhhe as $arkf1an86esmhhe } from "~arktype/wartb1k4re"`)
 		})
 
 		it("passes the inputs a site reads after its holes", () => {
@@ -184,12 +184,12 @@ export const Shadowed = (() => {
 	return type(alias.name)
 })()
 import { shape as $arki15vt9rj2an1 } from "./shapes.ts"
-import { f1beux5aqrso as $arkf1beux5aqrso } from "~arktype/248bm8cwjcl"
-import { f12fwruchwwb as $arkf12fwruchwwb } from "~arktype/248bm8cwjcl"
-import { f1seyv7qujj0 as $arkf1seyv7qujj0 } from "~arktype/248bm8cwjcl"
-import { fnnd6q3k9w4 as $arkfnnd6q3k9w4 } from "~arktype/248bm8cwjcl"
-import { fw790lt05pv as $arkfw790lt05pv } from "~arktype/248bm8cwjcl"
-import { fq2rjvxr6lw as $arkfq2rjvxr6lw } from "~arktype/248bm8cwjcl"`)
+import { f1beux5aqrso as $arkf1beux5aqrso } from "~arktype/12fw56fhif7"
+import { f12fwruchwwb as $arkf12fwruchwwb } from "~arktype/12fw56fhif7"
+import { f1seyv7qujj0 as $arkf1seyv7qujj0 } from "~arktype/12fw56fhif7"
+import { fnnd6q3k9w4 as $arkfnnd6q3k9w4 } from "~arktype/12fw56fhif7"
+import { fw790lt05pv as $arkfw790lt05pv } from "~arktype/12fw56fhif7"
+import { fq2rjvxr6lw as $arkfq2rjvxr6lw } from "~arktype/12fw56fhif7"`)
 		})
 
 		it("prints the names in a ParseError when it is thrown", () => {
@@ -254,9 +254,9 @@ export const Own = $arkf1wq8iy0qjbs(list)
 export const Optional = $arkf2azzz0ipb51(helpers.optional, $arki1hye78qyfa1)
 export const Single = type(single("string"))
 import { suffix as $arki1hye78qyfa1 } from "./suffix.ts"
-import { f9gpqhychhj as $arkf9gpqhychhj } from "~arktype/kq2nsuiqf4"
-import { f1wq8iy0qjbs as $arkf1wq8iy0qjbs } from "~arktype/kq2nsuiqf4"
-import { f2azzz0ipb51 as $arkf2azzz0ipb51 } from "~arktype/kq2nsuiqf4"`)
+import { f9gpqhychhj as $arkf9gpqhychhj } from "~arktype/jq1uvk6hkp"
+import { f1wq8iy0qjbs as $arkf1wq8iy0qjbs } from "~arktype/jq1uvk6hkp"
+import { f2azzz0ipb51 as $arkf2azzz0ipb51 } from "~arktype/jq1uvk6hkp"`)
 			attest(build("/helpers.ts", true).code)
 				.snap(`import { suffix } from "./suffix.ts"
 const base = (def: string) => \`\${def}[]\`

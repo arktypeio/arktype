@@ -9,13 +9,14 @@ import {
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type { TypeMeta } from "./shared/declare.ts"
-import type {
-	ActualConfig,
-	ArkErrorCode,
-	ArkErrors,
-	ExpectedConfig,
-	MessageConfig,
-	ProblemConfig
+import {
+	configureAfterTypeMessage,
+	type ActualConfig,
+	type ArkErrorCode,
+	type ArkErrors,
+	type ExpectedConfig,
+	type MessageConfig,
+	type ProblemConfig
 } from "./shared/errors.ts"
 import {
 	isNodeKind,
@@ -241,8 +242,3 @@ export type resolveConfig<config extends ArkSchemaConfig> = show<
 >
 
 export type ResolvedConfig = resolveConfig<ArkSchemaConfig>
-
-export const configureAfterTypeMessage =
-	"configure must be called before any Type is created, e.g. from a module imported first"
-
-export type configureAfterTypeMessage = typeof configureAfterTypeMessage

@@ -1,6 +1,11 @@
 import type { BaseRoot, RootApply, StandardSchemaV1 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
-import { ArkErrors, runtimeLocale, type Traversal } from "@ark/schema/runtime"
+import {
+	ArkErrors,
+	runtimeConfig,
+	runtimeLocale,
+	type Traversal
+} from "@ark/schema/runtime"
 import {
 	arityOf,
 	Callable,
@@ -31,9 +36,11 @@ export {
 	ArkErrors,
 	arrayIndexMatcher,
 	computeDefaultValueMorph,
+	configure,
 	copyNodeContexts,
 	copyOf,
 	describePredicate,
+	fixConfig,
 	isAbsent,
 	isArkErrorResult,
 	mergeTransformed,
@@ -103,7 +110,7 @@ export class Validator extends Callable<
 			(
 				data: unknown,
 				pipedFromCtx?: Traversal,
-				onFail: ArkErrors.Handler | null = null
+				onFail: ArkErrors.Handler | null = runtimeConfig.onFail
 			) =>
 				pipedFromCtx ? pipedFromCtx.pipe(node, data) : rootApply(data, onFail),
 			{ bind: null }

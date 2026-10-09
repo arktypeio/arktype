@@ -1,10 +1,8 @@
 import {
-	describeCollapsibleDate,
 	domainDescriptions,
 	domainOf,
 	envHasCsp,
 	flatMorph,
-	listPattern,
 	objectKindDescriptions,
 	printable,
 	withAlphabetizedKeys,
@@ -30,7 +28,11 @@ import { Union } from "./roots/union.ts"
 import { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
 import type { BaseNodeInput } from "./shared/declare.ts"
-import { errorWriters, errorWritersByCode } from "./shared/errorWriters.ts"
+import {
+	enInfo,
+	errorWriters,
+	errorWritersByCode
+} from "./shared/errorWriters.ts"
 import type { ArkErrorCode, ErrorContextsByCode } from "./shared/errors.ts"
 import type {
 	ConstraintKind,
@@ -145,15 +147,7 @@ export const en: Locale.Complete = {
 		problem: errorWriters.problem,
 		actual: describeDiscriminant
 	},
-	tag: "en",
-	list: listPattern(
-		{ two: " or ", middle: ", ", end: " or " },
-		{ two: " and ", middle: ", ", end: " and " }
-	),
-	plural: n => (n === 1 ? "one" : "other"),
-	number: String,
-	date: describeCollapsibleDate,
-	verbatim: text => text,
+	...enInfo,
 	cite: text => text,
 	// a domain is named by its noun whatever its meta, as DomainNode's
 	// defaultShortDescription does

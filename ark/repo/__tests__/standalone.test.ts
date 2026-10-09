@@ -1,6 +1,15 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { $ark, hasArkKind } from "@ark/schema"
+import {
+	$ark,
+	configureAfterTypeMessage,
+	hasArkKind,
+	type ArkSchemaConfig
+} from "@ark/schema"
+import {
+	configMismatchMessage,
+	untransformedConfigureMessage
+} from "@ark/schema/runtime"
 import { noSuggest } from "@ark/util"
 import { scope, type } from "arktype"
 import {
@@ -63,10 +72,22 @@ const importBesideArktype = async (js: string): Promise<any> => {
 	}
 }
 
+// the program's configure call runs before the artifact, as its config module does
 const load = (
-	exports: Record<string, StandaloneExport>
+	exports: Record<string, StandaloneExport>,
+	configure = "",
+	fingerprint = configure ? "f" : undefined
 ): Promise<Record<string, any>> =>
-	importBesideArktype(bundle(precompileStandalone(exports)).js)
+	importBesideArktype(
+		bundle(
+			precompileStandalone(exports, fingerprint).replace(
+				runtimeImport,
+				`${runtimeImport}\n${configure}`
+			)
+		).js
+	)
+
+const runtimeImport = `import * as runtime from "arktype/runtime"`
 
 // a factory built with each hole's value, as a build passes it in place of its source
 const loadFactory = async (
@@ -279,6 +300,59 @@ contextualize(() => {
 		attest(validator({ a: 1 }).summary).snap("configured")
 	})
 
+	it("validates with the configuration its program applies", async () => {
+		const config: ArkSchemaConfig = {
+			domain: { message: ctx => `configured ${ctx.problem}` },
+			divisor: {
+				expected: (ctx, locale) => `a multiple of ${locale.number(ctx.rule)}`
+			},
+			onFail: errors => errors.summary
+		}
+		const { T } = scope(
+			{ T: { a: "string", b: "number % 2" } },
+			config
+		).export()
+		const { T: validator } = await load(
+			{ T: type({ a: "string", b: "number % 2" }) },
+			`runtime.configure({
+	domain: { message: ctx => \`configured \${ctx.problem}\` },
+	divisor: {
+		expected: (ctx, locale) => \`a multiple of \${locale.number(ctx.rule)}\`
+	},
+	onFail: errors => errors.summary
+}, "f")`
+		)
+		const input = { a: 1, b: 3 }
+		attest(validator(input)).equals(T(input))
+		attest(validator(input)).snap(
+			"configured must be a string (was a number)\nb must be a multiple of 2 (was 3)"
+		)
+	})
+
+	it("throws for a configuration it wasn't precompiled under", async () => {
+		const messageOf = (configure: string, fingerprint?: string) =>
+			load({ T: type("string") }, configure, fingerprint).then(
+				() => "",
+				(e: Error) => e.message
+			)
+		attest(await messageOf("", "f")).equals(configureAfterTypeMessage)
+		attest(await messageOf(`runtime.configure({}, "g")`, "f")).equals(
+			configMismatchMessage
+		)
+		attest(await messageOf(`runtime.configure({})`)).equals(
+			untransformedConfigureMessage
+		)
+		const createdFirst = precompileStandalone({ T: type("string") }).replace(
+			"runtime.fixConfig()",
+			`runtime.fixConfig()\nruntime.configure({}, "f")`
+		)
+		attest(
+			await importBesideArktype(bundle(createdFirst).js).catch(
+				(e: Error) => e.message
+			)
+		).equals(configureAfterTypeMessage)
+	})
+
 	it("keeps the descriptions of a type another scope describes", async () => {
 		const lib = scope(
 			{ y: { v: "number" } },
@@ -365,6 +439,8 @@ contextualize(() => {
 			shape: () => (shape.traverseApply = () => {}),
 			config: () => (config.jitless = false),
 			configuredWriters: () => (config.divisor.message = "even"),
+			locale: () => (config.locale.problem = () => "odd"),
+			keywordPhrases: () => (config.locale.keywordPhrases.x = {}),
 			nodeMeta: () => (nodeMeta.message = "long")
 		}
 		const unfrozen = Object.entries(writes).filter(([, write]) => {
@@ -858,6 +934,23 @@ contextualize(() => {
 		} finally {
 			entries[entryKey] = entry
 		}
+	})
+
+	it("shares the program's configuration with runtime islands", async () => {
+		const sharedBy = async (program: string): Promise<unknown[]> =>
+			(
+				await importBesideArktype(
+					bundle(`import { configure, shareConfig } from "@ark/schema/runtime"
+const shared = []
+${program}
+export default shared`).js
+				)
+			).default
+		const configure = `configure({ onFail: null }, "f")`
+		const share = "shareConfig(config => shared.push(config))"
+		attest(await sharedBy(`${configure}\n${share}`)).equals([{ onFail: null }])
+		attest(await sharedBy(`${share}\n${configure}`)).equals([{ onFail: null }])
+		attest(await sharedBy(share)).equals([])
 	})
 
 	it("bundles without node, scope, parse or code-generating code", () => {

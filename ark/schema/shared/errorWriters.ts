@@ -5,6 +5,7 @@ import {
 	domainOf,
 	functionNameOf,
 	isValidDate,
+	listPattern,
 	objectKindOrDomainOf,
 	printable,
 	type requireKeys
@@ -43,6 +44,19 @@ export const errorWriters: {
 				`value at ${propString} ${ctx.problem}`
 			:	`${propString} ${ctx.problem}`
 	}
+}
+
+// what a writer you configure receives of en
+export const enInfo: Locale.Info = {
+	tag: "en",
+	list: listPattern(
+		{ two: " or ", middle: ", ", end: " or " },
+		{ two: " and ", middle: ", ", end: " and " }
+	),
+	plural: n => (n === 1 ? "one" : "other"),
+	number: String,
+	date: describeCollapsibleDate,
+	verbatim: text => text
 }
 
 export const errorWritersByCode: {
