@@ -11,6 +11,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	const request = createSyncPrecompiler({
 		precompilerOptions: {
 			...opts,
+			inline: true,
 			// `node --test` marks each file's process, or runs the files in its own
 			checkHelpers:
 				opts?.checkHelpers ??

@@ -1,12 +1,14 @@
 import { hashOf, throwError } from "@ark/util"
 import { dirname } from "node:path"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
+import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
 import {
-	createPrecompiler,
-	renderDiagnostics,
-	type PrecompilePluginOptions
-} from "./driver.ts"
-import { optedInPackagesOf, transformedFilterOf } from "./host.ts"
+	createNodeHost,
+	optedInPackagesOf,
+	transformedFilterOf
+} from "./host.ts"
+import { standaloneConfigurationMessage } from "./precompile.ts"
+import { createAsyncPrecompiler } from "./worker.ts"
 
 export type { PrecompilePluginOptions } from "./driver.ts"
 
@@ -14,8 +16,24 @@ export const precompile: UnpluginInstance<
 	PrecompilePluginOptions | undefined,
 	false
 > = createUnplugin(opts => {
+	if (opts?.runtime !== "arktype" && opts?.config)
+		throwError(standaloneConfigurationMessage)
 	let options = opts
-	let precompiler = createPrecompiler(options)
+	// arktype in a worker of its own shares no state with the bundler's
+	const create = () =>
+		createAsyncPrecompiler({ precompilerOptions: options ?? {} })
+	let request = create()
+	const restart = () => {
+		void request("close")
+		request = create()
+	}
+	const readDependency = (importer: string) =>
+		request("readDependency", importer) as Promise<{
+			errors: string[]
+			warnings: string[]
+		}>
+	const host = createNodeHost(opts)
+	const isStandalone = opts?.runtime !== "arktype"
 	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
@@ -24,20 +42,18 @@ export const precompile: UnpluginInstance<
 		enforce: "pre",
 		resolveId: {
 			filter: { id: /^arktype(?:\/runtime|\/internal)?$|^~arktype\// },
-			handler(id, importer) {
+			async handler(id, importer) {
 				if (id.startsWith("~arktype/")) return `\0${id}`
 				if (!importer) return
-				const host = precompiler.graph.host
 				// a virtual module has no directory of its own, so arktype resolves from the module it was written for
 				if (importer.startsWith("\0~arktype/"))
 					return host.resolve(id, importersById[importer])
 				if (id !== "arktype") return
-				const { errors, warnings } = precompiler.readDependency(importer)
+				const { errors, warnings } = await readDependency(importer)
 				for (const warning of warnings) this.warn(warning)
 				// thrown, since esbuild drops an error reported without a resolution
 				if (errors.length) throwError(errors.join("\n"))
-				if (precompiler.mode === "standalone")
-					return host.resolve("arktype/runtime", importer)
+				if (isStandalone) return host.resolve("arktype/runtime", importer)
 				// arktype's keyword table registers before its keywords are created, if its build includes one
 				const keywords = host.resolve(
 					"arktype/internal/precompiled.js",
@@ -57,26 +73,23 @@ export const precompile: UnpluginInstance<
 		},
 		transform: {
 			filter: { id: transformedFilterOf(packages) },
-			handler(code, id) {
-				if (!precompiler.isTransformed(id)) return
-				if (!precompiler.checkHelpers && !precompiler.importsArk(code, id)) {
-					// a module it imports may come to export a Type
-					for (const dependency of precompiler.localImportsOf(code, id))
-						this.addWatchFile(dependency)
-					return
-				}
-				const result = precompiler.precompile(code, id)
-				for (const dependency of result.dependencies)
+			async handler(code, id) {
+				const transformed = (await request("transform", code, id)) as
+					| TransformedModule
+					| undefined
+				if (!transformed) return
+				for (const dependency of transformed.dependencies)
 					if (dependency !== id) this.addWatchFile(dependency)
-				for (const specifier in result.modules) {
-					modules[`\0${specifier}`] ??= result.modules[specifier]
+				for (const specifier in transformed.modules) {
+					modules[`\0${specifier}`] ??= transformed.modules[specifier]
 					importersById[`\0${specifier}`] ??= id
 				}
-				const { errors, warnings } = renderDiagnostics(result.diagnostics)
-				for (const warning of warnings) this.warn(warning)
+				for (const warning of transformed.warnings) this.warn(warning)
 				// thrown, since esbuild drops an error reported without a resolution
-				if (errors.length) throwError(errors.join("\n"))
-				return result.map && { code: result.code, map: result.map }
+				if (transformed.errors.length) throwError(transformed.errors.join("\n"))
+				return (
+					transformed.code && { code: transformed.code, map: transformed.map }
+				)
 			}
 		},
 		vite: {
@@ -98,19 +111,25 @@ export const precompile: UnpluginInstance<
 				)
 					return
 				options = { ...opts, checkHelpers: true }
-				precompiler = createPrecompiler(options)
+				restart()
 			}
+		},
+		// loading the precompiler overlaps the bundler's own startup
+		buildStart: () => {
+			void request("reset")
+		},
+		// a build that won't run again releases its worker
+		buildEnd() {
+			if (!(this as { meta?: { watchMode?: boolean } }).meta?.watchMode)
+				restart()
 		},
 		// a changed file may be in the forward closure of any module analyzed so far
 		watchChange: () => {
-			precompiler = createPrecompiler(options)
+			void request("reset")
 		},
 		esbuild: {
 			// esbuild loads anything a plugin resolves in the plugin's namespace, so arktype's files are resolved natively
-			onResolveFilter:
-				precompiler.mode === "standalone" ?
-					/^~arktype\//
-				:	/^arktype$|^~arktype\//,
+			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
 			setup: build => {
 				// the entry arktype resolves to in cache mode imports arktype's files by path
 				build.onResolve({ filter: /^(?:\/|[A-Za-z]:[/\\])/ }, args =>
@@ -119,14 +138,15 @@ export const precompile: UnpluginInstance<
 				build.onResolve(
 					{
 						filter:
-							precompiler.mode === "standalone" ?
+							isStandalone ?
 								/^arktype(?:\/runtime|\/internal)?$/
 							:	/^arktype\/(?:runtime|internal)$/
 					},
 					async args => {
 						if (args.pluginData === esbuildResolution) return
+						const isRuntime = args.path === "arktype"
 						const result = await build.resolve(
-							args.path === "arktype" ? "arktype/runtime" : args.path,
+							isRuntime ? "arktype/runtime" : args.path,
 							{
 								kind: args.kind,
 								importer: args.importer,
@@ -138,10 +158,8 @@ export const precompile: UnpluginInstance<
 								pluginData: esbuildResolution
 							}
 						)
-						if (args.path !== "arktype") return result
-						const { errors, warnings } = precompiler.readDependency(
-							args.importer
-						)
+						if (!isRuntime) return result
+						const { errors, warnings } = await readDependency(args.importer)
 						return {
 							...result,
 							errors: [...result.errors, ...errors.map(text => ({ text }))],

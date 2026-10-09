@@ -1,6 +1,7 @@
 import { throwError } from "@ark/util"
 import { readFileSync, statSync } from "node:fs"
 import { resolve } from "node:path"
+import type { SourceMap } from "magic-string"
 import type { MessagePort } from "node:worker_threads"
 import { createNodeHost, type NodeHostOptions } from "./host.ts"
 import {
@@ -52,6 +53,9 @@ export interface PrecompilerWorkerData {
 export type PrecompileRequest =
 	| [kind: "transform", source: string, id: string]
 	| [kind: "readDependency", importer: string]
+	// e.g. after a file changes in watch mode
+	| [kind: "reset"]
+	| [kind: "close"]
 
 export interface InlineModule {
 	// undefined when the module is unchanged
@@ -60,23 +64,32 @@ export interface InlineModule {
 	warnings: string[]
 }
 
+export interface TransformedModule extends InlineModule {
+	// in the code of a module whose host has no virtual modules
+	map: SourceMap | undefined
+	// what the module's precompilation read, each of which can change it
+	dependencies: string[]
+	modules: Record<string, string>
+}
+
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
 
 export const answerRequests = (
 	port: MessagePort,
 	data: PrecompilerWorkerData
 ): void => {
-	const create = () =>
-		createPrecompiler({ ...data.precompilerOptions, inline: true })
 	let precompiler: Precompiler | undefined
+	const answer = (request: PrecompileRequest): unknown => {
+		if (request[0] === "reset") return (precompiler = undefined)
+		if (request[0] === "close") return
+		precompiler ??= createPrecompiler(data.precompilerOptions)
+		return request[0] === "readDependency" ?
+				precompiler.readDependency(request[1])
+			:	transformedModuleOf(precompiler, request[1], request[2])
+	}
 	port.on("message", (request: PrecompileRequest) => {
 		try {
-			port.postMessage({
-				result:
-					request[0] === "readDependency" ?
-						(precompiler ??= create()).readDependency(request[1])
-					:	inlineModuleOf((precompiler ??= create()), request[1], request[2])
-			} satisfies PrecompileAnswer)
+			port.postMessage({ result: answer(request) } satisfies PrecompileAnswer)
 		} catch (e) {
 			port.postMessage({ error: e } satisfies PrecompileAnswer)
 		}
@@ -84,6 +97,7 @@ export const answerRequests = (
 			Atomics.store(data.answered, 0, 1)
 			Atomics.notify(data.answered, 0)
 		}
+		if (request[0] === "close") port.close()
 	})
 }
 
@@ -132,31 +146,45 @@ export const createKeyedPrecompiler = (
 				if (!files.includes(target)) files.push(target)
 		}
 		if (isStale) precompiler = create()
-		const inlined = inlineModuleOf(precompiler, source, id)
+		const transformed = transformedModuleOf(precompiler, source, id)
+		for (const dependency of transformed?.dependencies ?? [])
+			if (!files.includes(dependency)) files.push(dependency)
 		return {
-			code: inlined?.code,
-			errors: inlined?.errors ?? [],
-			warnings: inlined?.warnings ?? [],
+			code: transformed?.code,
+			errors: transformed?.errors ?? [],
+			warnings: transformed?.warnings ?? [],
 			files
 		}
 	}
 }
 
-const inlineModuleOf = (
+const transformedModuleOf = (
 	precompiler: Precompiler,
 	source: string,
 	id: string
-): InlineModule | undefined => {
-	if (
-		!precompiler.isTransformed(id) ||
-		!(precompiler.checkHelpers || precompiler.importsArk(source, id))
-	)
-		return
+): TransformedModule | undefined => {
+	if (!precompiler.isTransformed(id)) return
+	if (!precompiler.checkHelpers && !precompiler.importsArk(source, id)) {
+		return {
+			code: undefined,
+			map: undefined,
+			// a module it imports may come to export a Type
+			dependencies: precompiler.localImportsOf(source, id),
+			modules: {},
+			errors: [],
+			warnings: []
+		}
+	}
 	const result = precompiler.precompile(source, id)
 	return {
 		code:
 			result.map &&
-			`${result.code}\n//# sourceMappingURL=${result.map.toUrl()}`,
+			(precompiler.inline ?
+				`${result.code}\n//# sourceMappingURL=${result.map.toUrl()}`
+			:	result.code),
+		map: precompiler.inline ? undefined : result.map,
+		dependencies: result.dependencies,
+		modules: result.modules,
 		...renderDiagnostics(result.diagnostics)
 	}
 }

@@ -1,19 +1,13 @@
 import { throwError } from "@ark/util"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import { parentPort, Worker, workerData } from "node:worker_threads"
-import type {
-	InlineModule,
-	PrecompileAnswer,
-	PrecompilePluginOptions,
-	PrecompileRequest,
-	PrecompilerWorkerData
-} from "./driver.ts"
+import type { InlineModule, PrecompilePluginOptions } from "./driver.ts"
 import {
 	createNodeHost,
 	optedInPackagesOf,
 	transformedFilterOf
 } from "./host.ts"
+import { createAsyncPrecompiler } from "./worker.ts"
 
 // declared here, since bun-types declares globals beside @types/node's
 export interface BunPluginBuilder {
@@ -46,32 +40,14 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 				loader: "js"
 			}))
 		}
-		const pending: ((answer: PrecompileAnswer) => void)[] = []
-		let worker: Worker | undefined
-		const request = (...request: PrecompileRequest): Promise<unknown> => {
-			if (!worker) {
-				worker = new Worker(new URL(import.meta.url), {
-					workerData: {
-						precompilerOptions: {
-							...opts,
-							// set by `bun test`
-							checkHelpers:
-								opts?.checkHelpers ?? process.env.NODE_ENV === "test"
-						}
-					} satisfies PrecompilerWorkerData
-				})
-				worker.on("message", (answer: PrecompileAnswer) =>
-					pending.shift()!(answer)
-				)
-				worker.unref()
+		const request = createAsyncPrecompiler({
+			precompilerOptions: {
+				...opts,
+				inline: true,
+				// set by `bun test`
+				checkHelpers: opts?.checkHelpers ?? process.env.NODE_ENV === "test"
 			}
-			worker.postMessage(request)
-			return new Promise((resolve, reject) =>
-				pending.push(answer =>
-					"error" in answer ? reject(answer.error) : resolve(answer.result)
-				)
-			)
-		}
+		})
 		const { include, exclude } = transformedFilterOf(
 			optedInPackagesOf(opts?.cwd ?? process.cwd())
 		)
@@ -88,10 +64,3 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 		})
 	}
 })
-
-// the worker the plugin requests precompilation from runs this module
-if ((workerData as PrecompilerWorkerData | null)?.precompilerOptions) {
-	// awaited, since Bun drops a message that arrives once the module has evaluated without a listener
-	const driver = await import("./driver.ts")
-	driver.answerRequests(parentPort!, workerData)
-}
