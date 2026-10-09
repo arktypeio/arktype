@@ -37,3 +37,18 @@ By default, each definition becomes a standalone validator and `arktype` resolve
 `precompile.vite({ runtime: "arktype" })` ships arktype and leaves definitions as written, registering the code arktype would compile for each one, and for arktype's keywords before arktype loads. A definition the build can't precompile is compiled at runtime as usual, so this mode fails a build only for the reason below.
 
 In either mode, the build fails if `arktype`, `@ark/schema` or `@ark/util` resolves to more than one copy across the files it reads, naming each copy's version and path and the file that reached it, since Types and errors from one copy aren't recognized by another.
+
+## Test runners and runtimes
+
+Where there are no virtual modules, the validators or units a module needs are placed at the top of the module itself. Each driver takes the plugin's options, fails on the same errors and resolves `arktype` to `arktype/runtime` in standalone mode where its host allows.
+
+Node, for `node --test` or any program (Node 22.15 or later):
+
+```ts
+// register.ts, run with `node --import ./register.ts --test`
+import { register } from "@ark/precompile/node"
+
+register()
+```
+
+The precompiler runs in a worker thread, so it shares no module state with the program. Pass `--enable-source-maps` for stack traces to point at the original lines.

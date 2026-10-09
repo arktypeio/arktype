@@ -29,6 +29,10 @@
 			"ark-ts": "./unplugin.ts",
 			"default": "./out/unplugin.js"
 		},
+		"./node": {
+			"ark-ts": "./node.ts",
+			"default": "./out/node.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"default": "./out/*.js"

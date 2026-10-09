@@ -59,3 +59,6 @@ export const transformedFilter = {
 	include: /\.(?:[cm]?[jt]s|[jt]sx)$/,
 	exclude: /\/node_modules\//
 }
+
+export const isTransformed = (id: string): boolean =>
+	transformedFilter.include.test(id) && !transformedFilter.exclude.test(id)

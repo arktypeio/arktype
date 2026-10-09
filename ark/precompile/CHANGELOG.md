@@ -13,6 +13,17 @@ import { precompile } from "@ark/precompile/unplugin"
 export default defineConfig({ plugins: [precompile.vite()] })
 ```
 
+### Precompile in Node
+
+`register()` from `@ark/precompile/node` precompiles each module Node loads, through `module.registerHooks`, so `node --test` runs tests against precompiled code. In standalone mode it resolves `arktype` to `arktype/runtime`. The precompiler runs in a worker thread, so a program's own arktype never sees the Types it builds.
+
+```ts
+// register.ts, run with `node --import ./register.ts --test`
+import { register } from "@ark/precompile/node"
+
+register({ runtime: "arktype" })
+```
+
 ### Place precompiled code in each module
 
 `inline: true` places what a module would import from virtual modules, its validators or its cache-mode units, at the top of the module itself, for hosts that have no virtual modules. In cache mode it also imports arktype's keyword table before the module's first import of arktype.
