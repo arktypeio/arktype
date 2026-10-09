@@ -11,7 +11,7 @@ import type {
 } from "./driver.ts"
 import { createNodeHost, transformedFilter } from "./host.ts"
 
-// the part of Bun's plugin API the plugin uses
+// declared here, since bun-types declares globals beside @types/node's
 export interface BunPluginBuilder {
 	module(
 		specifier: string,

@@ -65,7 +65,6 @@ export interface InlineModule {
 
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
 
-// a precompiler in the program's thread would share arktype's modules and globals with it
 export const answerRequests = (
 	port: MessagePort,
 	data: PrecompilerWorkerData
