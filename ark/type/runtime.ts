@@ -48,6 +48,9 @@ export interface ValidatorAttributes {
 	meta: ArkEnv.meta
 }
 
+// captured when the runtime loads, so a program replacing them later can't keep an artifact from freezing what it creates
+export const { assign, freeze, preventExtensions } = Object
+
 const throwOnFail: ArkErrors.Handler = errors => errors.throw()
 
 // an emitted literal's properties are enumerable and hold literals, globals or the runtime's own functions, so only its objects are the artifact's
@@ -55,9 +58,7 @@ const freezeLiteral = <t>(value: t): t => {
 	if (typeof value !== "object" || value === null) return value
 	for (const v of Object.values(value)) freezeLiteral(v)
 	// like a Date's time, a RegExp's lastIndex is state its methods write
-	return value instanceof RegExp ?
-			Object.preventExtensions(value)
-		:	Object.freeze(value)
+	return value instanceof RegExp ? preventExtensions(value) : freeze(value)
 }
 
 /**
@@ -93,17 +94,17 @@ export class Validator extends Callable<
 		this.expression = attributes.expression
 		this.description = attributes.description
 		this.meta = freezeLiteral(attributes.meta)
-		this.allows = Object.freeze(node.allows)
-		this["~standard"] = Object.freeze({
+		this.allows = freeze(node.allows)
+		this["~standard"] = freeze({
 			vendor: "arktype",
 			version: 1,
-			validate: Object.freeze((input: unknown) => {
+			validate: freeze((input: unknown) => {
 				const out = this(input)
 				return out instanceof ArkErrors ? out : { value: out }
 			})
 		})
-		Object.freeze(this.assert)
-		Object.freeze(this)
+		freeze(this.assert)
+		freeze(this)
 	}
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
@@ -218,13 +219,13 @@ for (
 ) {
 	for (const k of Reflect.ownKeys(prototype)) {
 		const { value, get } = Object.getOwnPropertyDescriptor(prototype, k)!
-		if (k !== "constructor") Object.freeze(value ?? get)
+		if (k !== "constructor") freeze(value ?? get)
 	}
-	Object.freeze(prototype)
+	freeze(prototype)
 }
 
-export const type: { (): never; errors: typeof ArkErrors } = Object.freeze(
-	Object.assign(() => throwError(writeUnavailableMemberMessage("type")), {
+export const type: { (): never; errors: typeof ArkErrors } = freeze(
+	assign(() => throwError(writeUnavailableMemberMessage("type")), {
 		errors: ArkErrors
 	})
 )

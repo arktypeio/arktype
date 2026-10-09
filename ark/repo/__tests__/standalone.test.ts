@@ -306,6 +306,28 @@ contextualize(() => {
 		attest(validator({ a: "x" })).equals({ a: "x" })
 	})
 
+	it("freezes with the builtins its runtime loaded with", async () => {
+		const runtimeUrl = urlOf(bundle(`export * from "arktype/runtime"`).js)
+		await import(runtimeUrl)
+		const source = precompileStandalone({
+			M: scope({ a: "string" }).export()
+		}).replace(`"arktype/runtime"`, JSON.stringify(runtimeUrl))
+		const { freeze, assign, setPrototypeOf } = Object
+		Object.assign(Object, {
+			freeze: (o: object) => o,
+			assign: (o: object) => o,
+			setPrototypeOf: (o: object) => o
+		})
+		try {
+			const { M } = await importBesideArktype(source)
+			attest(Object.isFrozen(M)).equals(true)
+			attest(Object.isFrozen(M.a)).equals(true)
+			attest(M.a.from("x")).equals("x")
+		} finally {
+			assign(Object, { freeze, assign, setPrototypeOf })
+		}
+	})
+
 	it("rejects what it can't precompile", () => {
 		const isEven = (n: number) => n % 2 === 0
 		attest(() =>

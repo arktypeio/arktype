@@ -175,7 +175,7 @@ ${exported.join("\n")}
 		const name = `module${this.moduleNamesByModule.size}`
 		this.moduleNamesByModule.set(value, name)
 		this.modules.push(
-			`const ${name} = Object.freeze({ ${entries.join(", ")} })`
+			`const ${name} = runtime.freeze({ ${entries.join(", ")} })`
 		)
 		return name
 	}
@@ -200,7 +200,7 @@ ${exported.join("\n")}
 			node.hasKind("union") && node.compiledDiscriminant ?
 				`,\n\tdiscriminantDescription: ${JSON.stringify(node.discriminantDescription)}`
 			:	""
-		this.links.push(`Object.assign(${name}, {
+		this.links.push(`runtime.assign(${name}, {
 	id: ${JSON.stringify(this.unit.names[node.id])},
 	trackedId: ${JSON.stringify(trackedName)},
 	isTransformedById: ${node.isTransformedById},
@@ -267,7 +267,7 @@ ${exported.join("\n")}
 			return this.declareConst(
 				value,
 				lastIndex ?
-					`Object.assign(${regex}, { lastIndex: ${lastIndex} })`
+					`runtime.assign(${regex}, { lastIndex: ${lastIndex} })`
 				:	regex
 			)
 		}
@@ -305,7 +305,7 @@ ${exported.join("\n")}
 		this.emitting.delete(value)
 		return this.declareConst(
 			value,
-			isFrozen ? `Object.freeze(${literal})` : literal
+			isFrozen ? `runtime.freeze(${literal})` : literal
 		)
 	}
 
