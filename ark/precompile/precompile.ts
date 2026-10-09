@@ -140,6 +140,8 @@ export interface Site {
 	isCreatedEachRun: boolean
 	// whether arktype returns the Type it created before for the same holes, as outside a Scope created each run, which a factory then does too
 	isInterned: boolean
+	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
+	declarationStart: number | undefined
 }
 
 export interface Hole {
@@ -759,6 +761,7 @@ export class Precompiler {
 			:	{ code: "", modules: {} }
 		const specifier = `~arktype/${hashOf(validators.code)}`
 		const imported = new Set<string>()
+		let fixedAt = Infinity
 		for (const [site, name] of namesBySite) {
 			if (refusalsByName[name]) {
 				diagnostics.push(
@@ -786,9 +789,15 @@ export class Precompiler {
 			const factory = factoriesBySite.get(site)
 			for (const [specifier, name, local] of factory?.imports ?? [])
 				(inputImports[specifier] ??= {})[name] = local
+			// a bundler can drop a variable's site with the variable when nothing reads it, unless it throws a ParseError
+			const isPure = site.declarationStart !== undefined && !site.parseError
+			// a keyword Module creates no Type until one of its members is read
+			if (isPure && !site.isKeywordRead)
+				fixedAt = Math.min(fixedAt, site.declarationStart!)
 			// a site becomes a call, so its validator is created, or its ParseError thrown, where arktype would create its Type
+			const call = isPure ? `/* @__PURE__ */ ${local}(` : `${local}(`
 			if (!factory?.spans.length && !factory?.inputs.length)
-				s.overwrite(site.start, site.end, `${local}()`)
+				s.overwrite(site.start, site.end, `${call})`)
 			else {
 				// each parameter stays where it is written, so it is evaluated when the original evaluates it
 				const replace = (start: number, end: number, text: string) =>
@@ -796,7 +805,7 @@ export class Precompiler {
 						s.appendLeft(start, text)
 					:	s.overwrite(start, end, text)
 				let start = site.start
-				let separator = `${local}(`
+				let separator = call
 				for (const span of factory.spans) {
 					replace(start, span.start, separator)
 					start = span.end
@@ -808,6 +817,14 @@ export class Precompiler {
 				replace(start, site.end, `${inputs.join("")})`)
 			}
 			folded.push(site)
+		}
+		// the configuration is fixed where the first site a bundler can drop would fix it, as arktype fixes it creating the first Type
+		if (fixedAt !== Infinity) {
+			const fixer = writeConfigFixer(configured)
+			const fixerSpecifier = `~arktype/${hashOf(fixer)}`
+			modules[fixerSpecifier] = fixer
+			imports[fixerSpecifier] = { default: `${prefix}fixConfig` }
+			s.appendLeft(fixedAt, `${prefix}fixConfig()\n`)
 		}
 		pruneArktypeImports(module, [...folded, ...module.islands], s)
 		diagnostics.sort((l, r) => l.start - r.start)
@@ -1418,7 +1435,8 @@ export class Precompiler {
 				hasArkKind(state.value, "module") &&
 				this.isKeywordRead(state.node, module),
 			isCreatedEachRun: false,
-			isInterned: false
+			isInterned: false,
+			declarationStart: declarationStartOf(state.node)
 		}
 		if (this.mode === "standalone" && isInIsland(state.node, module)) {
 			site.status = "island"
@@ -2636,6 +2654,9 @@ const writeParseErrorThrower = (
 ) =>
 	`import * as runtime from "arktype/runtime"\n\nfunction throwParseError() {\n\t${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
 
+const writeConfigFixer = (configured: ConfiguredModule | undefined) =>
+	`import * as runtime from "arktype/runtime"\n\nfunction fixConfig() {\n\t${writeFixConfig(configured)}\n}\n\nexport { fixConfig as default }\n`
+
 // each module runs in a function at the top of its importer, passed its imports and the globals the importer shadows
 const inlineModules = (
 	module: SourceModule,
@@ -2728,6 +2749,24 @@ const islandValueMessage = (text: string) =>
 
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))
+
+// only a statement's first variable, so nothing the statement runs comes before its site
+const declarationStartOf = (node: Node): number | undefined => {
+	const declarator = node.parent
+	if (declarator?.type !== "VariableDeclarator" || declarator.init !== node)
+		return
+	const declaration = declarator.parent
+	if (
+		declaration?.type !== "VariableDeclaration" ||
+		declaration.declarations[0] !== declarator
+	)
+		return
+	const statement =
+		declaration.parent?.type === "ExportNamedDeclaration" ?
+			declaration.parent
+		:	declaration
+	return statement.parent?.type === "Program" ? statement.start : undefined
+}
 
 const declaredBindingKinds = {
 	const: 1,

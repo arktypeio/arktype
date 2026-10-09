@@ -19,6 +19,7 @@ import {
 	type Rolldown
 } from "vite"
 import { startVitest } from "vitest/node"
+import { configureAfterTypeMessage } from "@ark/schema"
 import { writeCreatedBeforeConfigureMessage } from "@ark/schema/runtime"
 import { writeLibrary } from "./utils.ts"
 
@@ -463,6 +464,63 @@ console.log(
 		const expected = "[true,true,true,false]\n"
 		attest(runPlain(root)).equals(expected)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
+	}).timeout(60000)
+
+	it("creates one Type for a definition two modules share, and only the Types a bundle imports", async () => {
+		const root = writeFixture(
+			{
+				"a.ts": `import { type } from "arktype"
+
+export const A = type({ a: "string" })
+export const Unimported = type({ a: "'unimported'" })
+`,
+				"b.ts": `import { type } from "arktype"
+
+export const B = type({ a: "string" })
+`,
+				"main.ts": `import { A } from "./a.ts"
+import { B } from "./b.ts"
+
+console.log(A === B)
+`
+			},
+			fromHere("temp", "shared")
+		)
+		attest(runPlain(root)).equals("true\n")
+		const bundle = await bundlers.esbuild({ cwd: root }, root)
+		attest(run(bundle)).equals("true\n")
+		attest(bundle.includes("unimported")).equals(false)
+	}).timeout(60000)
+
+	it("fixes the configuration where a Type a bundle drops was created", async () => {
+		const root = writeFixture(
+			{
+				"config.ts":
+					'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n',
+				"unread.ts":
+					'import { type } from "arktype"\n\nconst Unread = type({ dropped: "string" })\n',
+				"main.ts": 'import "./unread.ts"\nimport "./config.ts"\n'
+			},
+			fromHere("temp", "dropped")
+		)
+		const stderrOf = (args: string[], input?: string) =>
+			spawnSync(process.execPath, args, { cwd: root, input, encoding: "utf8" })
+				.stderr
+		attest(
+			stderrOf(["--conditions", "ark-ts", "main.ts"]).includes(
+				configureAfterTypeMessage
+			)
+		).equals(true)
+		const bundle = await bundlers.esbuild(
+			{ cwd: root, config: "config.ts" },
+			root
+		)
+		attest(bundle.includes("dropped")).equals(false)
+		attest(
+			stderrOf(["--input-type=module"], bundle).includes(
+				writeCreatedBeforeConfigureMessage("unread.ts")
+			)
+		).equals(true)
 	}).timeout(60000)
 
 	it("throws writing to a frozen input from a CommonJS bundle", async () => {

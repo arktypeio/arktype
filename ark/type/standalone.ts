@@ -250,12 +250,107 @@ const writeArtifact = (
 		)
 	}
 	return [
-		...new StandaloneArtifact(types, shared, imports).write(
+		...writeCreations(
+			types,
 			configured,
 			sitesByName,
-			keywordReads
+			keywordReads,
+			shared,
+			imports
 		),
 		...factories
+	]
+}
+
+interface Creation {
+	indices: number[]
+	values: Set<unknown>
+	code: string
+}
+
+// a site reading an export creates it when first evaluated, where arktype would fix its configuration, along with the exports sharing a value it creates
+const writeCreations = (
+	types: Record<string, ExportedValue>,
+	configured: ConfiguredModule | undefined,
+	sitesByName: Record<string, string> | undefined,
+	keywordReads: ReadonlySet<string> | undefined,
+	shared: Record<string, SharedModule>,
+	imports: Record<string, string[]>
+): string[] => {
+	const names = Object.keys(types)
+	const artifactOf = (indices: number[]) =>
+		new StandaloneArtifact(
+			Object.fromEntries(indices.map(i => [names[i], types[names[i]]])),
+			shared,
+			imports
+		)
+	const readsByIndex: Record<number, string> = {}
+	// a validator a module of its own creates is read from it once the site has fixed the configuration
+	const addressed = new Set<number>()
+	let creations: Creation[] = []
+	for (let i = 0; i < names.length; i++) {
+		const artifact = artifactOf([i])
+		const value = types[names[i]]
+		if (hasArkKind(value, "root") && artifact.isAddressed(value)) {
+			artifact.writeSharedUnits()
+			readsByIndex[i] = artifact.readValidator(value)
+			addressed.add(i)
+			continue
+		}
+		const code = artifact.writeCreate(i, configured, sitesByName)
+		const values = artifact.comparedValues
+		const joined = creations.filter(creation =>
+			values.some(value => creation.values.has(value))
+		)
+		creations = creations.filter(creation => !joined.includes(creation))
+		creations.push({
+			indices: [...joined.flatMap(creation => creation.indices), i].sort(
+				(l, r) => l - r
+			),
+			values: new Set([
+				...joined.flatMap(creation => [...creation.values]),
+				...values
+			]),
+			code
+		})
+	}
+	for (const creation of creations) {
+		const [index] = creation.indices
+		if (creation.indices.length > 1) {
+			creation.code = artifactOf(creation.indices).writeCreate(
+				index,
+				configured,
+				sitesByName
+			)
+		}
+		for (const [position, i] of creation.indices.entries()) {
+			readsByIndex[i] =
+				`(created${index} ??= create${index}())${creation.indices.length > 1 ? `[${position}]` : ""}`
+		}
+	}
+	const lazyNamesByModule = new Map<object, string>()
+	// declared as functions, which a site an import cycle reaches before the artifact is evaluated can call
+	const getters = names.map((name, i) => {
+		const value = types[name]
+		let declaration = ""
+		let read = readsByIndex[i]
+		if (keywordReads?.has(name) && hasArkKind(value, "module")) {
+			let lazyName = lazyNamesByModule.get(value)
+			if (!lazyName) {
+				lazyName = `lazy${i}`
+				lazyNamesByModule.set(value, lazyName)
+				declaration = `var ${lazyName}\n\n`
+			}
+			read = `(${lazyName} ??= runtime.lazyModule(${JSON.stringify(moduleMembersOf(value))}, () => ${read}))`
+		}
+		const fix = addressed.has(i) ? `\t${writeFixConfig(configured)}\n` : ""
+		return `${declaration}function get${i}() {\n${fix}\treturn ${read}\n}\n\nexport { get${i} as ${JSON.stringify(name)} }`
+	})
+	return [
+		...creations
+			.sort((l, r) => l.indices[0] - r.indices[0])
+			.map(creation => creation.code),
+		getters.join("\n")
 	]
 }
 
@@ -285,13 +380,19 @@ export const writeFixConfig = (
 interface Declarations {
 	statements: string[]
 	namesByValue: Map<unknown, string>
-	counts: Record<DeclarationRole, number>
+	valuesByRole: Record<DeclarationRole, unknown[]>
 }
 
 const createDeclarations = (): Declarations => ({
 	statements: [],
 	namesByValue: new Map(),
-	counts: { shape: 0, keys: 0, literal: 0, config: 0, unavailable: 0 }
+	valuesByRole: {
+		shape: [],
+		keys: [],
+		literal: [],
+		config: [],
+		unavailable: []
+	}
 })
 
 interface SharedUnit {
@@ -346,6 +447,8 @@ export class StandaloneArtifact {
 	// each default's morph, created once the validator applying its value exists
 	defaults: string[] = []
 	lateNames = new Set<string>()
+	// the Types exported and those their metas hold, rather than a default's
+	comparedRoots: BaseRoot[]
 
 	constructor(
 		exports: Record<string, ExportedValue>,
@@ -380,6 +483,7 @@ export class StandaloneArtifact {
 				}
 			}
 		} while (this.collectMetaTypes())
+		this.comparedRoots = this.roots
 		for (const root of this.roots) {
 			// the runtime's own onFail is the one the program configures
 			if (root.onFail !== $ark.resolvedConfig!.onFail)
@@ -638,6 +742,16 @@ export class StandaloneArtifact {
 		return [...new Set([...this.unitRoots].flatMap(rootUnitsOf))]
 	}
 
+	// what creating the exports makes that a program can compare, other than what a module of its own creates
+	get comparedValues(): unknown[] {
+		return [
+			...this.comparedRoots.filter(root => !this.isAddressed(root)),
+			...this.moduleNamesByModule.keys(),
+			...this.declarations.valuesByRole.literal,
+			...this.declarations.valuesByRole.unavailable
+		]
+	}
+
 	// a unit is shared when its name addresses it, holding no value keyed by identity or a program's scope, what it holds is the same wherever it's created, and so are the units it reads
 	isShared(unit: RootUnit): boolean {
 		let shared = this.sharedByUnit.get(unit)
@@ -709,45 +823,13 @@ export class StandaloneArtifact {
 		return this.validatorNamesByRoot.size > typeCount
 	}
 
-	// a site reading what the artifact exports creates it when the site is first evaluated, where arktype would fix its configuration
-	write(
-		configured: ConfiguredModule | undefined,
-		sitesByName?: Record<string, string>,
-		keywordReads?: ReadonlySet<string>
-	): string[] {
-		const names = Object.keys(this.exports)
-		if (!names.length) return []
-		this.writeSharedUnits()
-		const lazyNamesByModule = new Map<object, string>()
-		return [
-			this.writeCreate(names, configured, sitesByName),
-			// declared as functions, which a site an import cycle reaches before the artifact is evaluated can call
-			names
-				.map((name, i) => {
-					const value = this.exports[name]
-					let declaration = ""
-					let read = `(created ??= create())[${i}]`
-					if (keywordReads?.has(name) && hasArkKind(value, "module")) {
-						let lazyName = lazyNamesByModule.get(value)
-						if (!lazyName) {
-							lazyName = `lazy${i}`
-							lazyNamesByModule.set(value, lazyName)
-							declaration = `var ${lazyName}\n\n`
-						}
-						read = `(${lazyName} ??= runtime.lazyModule(${JSON.stringify(moduleMembersOf(value))}, () => ${read}))`
-					}
-					return `${declaration}function get${i}() {\n\treturn ${read}\n}\n\nexport { get${i} as ${JSON.stringify(name)} }`
-				})
-				.join("\n")
-		]
-	}
-
 	writeCreate(
-		names: string[],
+		index: number,
 		configured: ConfiguredModule | undefined,
 		sitesByName: Record<string, string> | undefined
 	): string {
-		const values = names.map(name => {
+		this.writeSharedUnits()
+		const values = Object.keys(this.exports).map(name => {
 			const site = sitesByName?.[name]
 			return this.exportOf(
 				this.exports[name],
@@ -761,11 +843,11 @@ export class StandaloneArtifact {
 			...(this.roots.length ?
 				this.writeBody(unitFunction => `(${unitFunction})`)
 			:	[this.declarations.statements.join("\n"), this.modules.join("\n")]),
-			`return [${values.join(", ")}]`
+			`return ${values.length === 1 ? values[0] : `[${values.join(", ")}]`}`
 		]
-		return `var created
+		return `var created${index}
 
-function create() {
+function create${index}() {
 ${statements.filter(statement => statement).join("\n\n")}
 }`
 	}
@@ -1009,7 +1091,9 @@ return [${returned.join(", ")}]
 		})
 		const copies = this.writeCopies(localContexts, localContextNames)
 		const validators = [...this.validatorNamesByRoot].map(([root, name]) =>
-			this.writeValidator(root, name)
+			this.isAddressed(root) ?
+				`const ${name} = ${this.readValidator(root)}`
+			:	`const ${name} = ${this.writeValidator(root)}`
 		)
 		return [
 			this.declarations.statements.join("\n"),
@@ -1023,12 +1107,56 @@ return [${returned.join(", ")}]
 		]
 	}
 
-	writeValidator(root: BaseRoot, name: string): string {
+	// a validator its content addresses is a module of its own, so every module creating it gets one object, as arktype's Type is
+	isAddressed(root: BaseRoot): boolean {
+		return (
+			this.isShared(this.unitsByHead.get(root)!) &&
+			!keyOf(root)[1].length &&
+			!this.holdsLocal(root.meta) &&
+			!this.holdsLocal(root.description)
+		)
+	}
+
+	readValidator(root: BaseRoot): string {
+		return this.readCreated("validator", () => this.writeValidator(root))
+	}
+
+	// a value a module of its own creates when first read, so every module reading it gets one object
+	readCreated(kind: string, write: () => string, context = ""): string {
+		const { declarations, imports, writing, unit } = this
+		this.declarations = createDeclarations()
+		this.imports = {}
+		this.writing = undefined
+		this.unit = undefined
+		const created = write()
+		const { statements } = this.declarations
+		const moduleImports = this.imports
+		this.declarations = declarations
+		this.imports = imports
+		this.writing = writing
+		this.unit = unit
+		const value =
+			statements.length ?
+				`(function () {\n${statements.join("\n")}\nreturn ${created}\n})()`
+			:	created
+		const name = `${kind}${hashOf(`${context}${value}`)}`
+		this.sharedModules[`~arktype/${name}`] ??= {
+			imports: moduleImports,
+			declarations: [
+				`var ${name}Value`,
+				`function ${name}() {\n\treturn (${name}Value ??= ${value})\n}`
+			],
+			exports: [name]
+		}
+		return `${this.read(`~arktype/${name}`, name, name, name)}()`
+	}
+
+	writeValidator(root: BaseRoot): string {
 		const shape = this.shapeOf(root)
 		const nodeName = this.unitsByHead.get(root)!.names[root.id]
 		const [id, holes] = keyOf(root)
 		const key = `,\n\t${JSON.stringify(id)}${holes.length ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
-		return `const ${name} = new runtime.Validator(
+		return `new runtime.Validator(
 	(function (${rootApplyParams.join(", ")}) {
 		${writeRootApply(root, nodeName)}
 	})(${shape}, ${this.configOf(root)}, ${Object.values(rootApplyRuntime)
@@ -1049,30 +1177,11 @@ return [${returned.join(", ")}]
 			this.holdsLocal(node.meta)
 		)
 			return this.emitLiteral(node.meta)
-		const { declarations, writing } = this
-		const reader = this.unit
-		this.declarations = createDeclarations()
-		this.writing = undefined
-		this.unit = undefined
-		const created = `runtime.freeze(${this.writeLiteral(node.meta)[0]})`
-		const { statements } = this.declarations
-		this.declarations = declarations
-		this.writing = writing
-		this.unit = reader
-		const value =
-			statements.length ?
-				`(function () {\n${statements.join("\n")}\nreturn ${created}\n})()`
-			:	created
-		const name = `meta${hashOf(`${unit.names[node.id]}\n${value}`)}`
-		this.sharedModules[`~arktype/${name}`] ??= {
-			imports: {},
-			declarations: [
-				`var ${name}Value`,
-				`function ${name}() {\n\treturn (${name}Value ??= ${value})\n}`
-			],
-			exports: [name]
-		}
-		return `${this.read(`~arktype/${name}`, name, name, name)}()`
+		return this.readCreated(
+			"meta",
+			() => `runtime.freeze(${this.writeLiteral(node.meta)[0]})`,
+			`${unit.names[node.id]}\n`
+		)
 	}
 
 	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator
@@ -1150,7 +1259,9 @@ return [${returned.join(", ")}]
 		role: DeclarationRole,
 		expression: string
 	): string {
-		const name = `${role}${this.declarations.counts[role]++}`
+		const values = this.declarations.valuesByRole[role]
+		const name = `${role}${values.length}`
+		values.push(value)
 		this.declarations.namesByValue.set(value, name)
 		this.declarations.statements.push(`const ${name} = ${expression}`)
 		return name
