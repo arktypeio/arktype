@@ -17,7 +17,7 @@
 	"scripts": {
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude \"ark/attest/**/*.test.*\"",
-		"testFiles": "mocha --no-package --node-option conditions=ark-ts --require ./ark/repo/mocha.globalSetup.ts --timeout 10000",
+		"testFiles": "mocha --onlyNamedTestFiles --no-package --node-option conditions=ark-ts --require ./ark/repo/mocha.globalSetup.ts --timeout 10000",
 		"prChecks": "pnpm lint && pnpm buildRepo && pnpm testRepoWithBenches",
 		"attest": "ts ./ark/attest/cli/cli.ts",
 		"build": "pnpm -r --filter !\"@ark/docs\" build",
