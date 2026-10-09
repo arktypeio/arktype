@@ -92,7 +92,8 @@ type ExportedValue = type.Any | Module | Scope<any> | Generic
 export type StandaloneExport = ExportedValue | StandaloneFactory
 
 export interface StandaloneFactory {
-	type: type.Any
+	// a Type, or a Module, Scope or Generic arktype creates anew each time its site runs
+	type: ExportedValue
 	params: FactoryParam[]
 }
 
@@ -123,7 +124,7 @@ export interface ConfiguredModule {
 }
 
 /**
- * #### an ES module exporting a getter for each Type, Module, Scope or Generic, which creates them when one is first read, and a function creating each factory's validator
+ * #### an ES module exporting a getter for each Type, Module, Scope or Generic, which creates them when one is first read, and a function creating each factory's value
  */
 export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
@@ -144,7 +145,8 @@ export const precompileStandalone = (
 					name,
 					params,
 					factories.length,
-					configured
+					configured,
+					sitesByName?.[name]
 				)
 			)
 		}
@@ -599,15 +601,18 @@ ${statements.filter(statement => statement).join("\n\n")}
 		name: string,
 		params: FactoryParam[],
 		index: number,
-		configured: ConfiguredModule | undefined
+		configured: ConfiguredModule | undefined,
+		site?: string
 	): string {
 		this.receive(params)
+		// a Module, Scope or Generic declares what it holds, which the body then writes
+		const value = this.exportOf(this.exports[name], "", site)
 		const statements = [
 			writeFixConfig(configured),
 			...this.checks,
 			// each unit is evaluated once, at the first call, which may come before the artifact's body runs
 			...this.writeBody((unit, i) => `(unit${index}_${i} ??= ${unit.source})`),
-			`return ${this.exportOf(this.exports[name])}`
+			`return ${value}`
 		]
 		const units = [...this.units.keys()].map((_, i) => `var unit${index}_${i}`)
 		return `${units.join("\n")}

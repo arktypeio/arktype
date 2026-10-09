@@ -52,9 +52,12 @@ A definition referencing a Type that holds functions receives that Type's valida
 
 A definition calling a static helper (a function whose body is one expression) is precompiled with what the helper returned at build. Vitest through the plugin, `node --test` through `register()` and `bun test` through the Bun plugin replace whole modules when they mock one, so under them each module registers the functions it exports, and a definition calling a helper another module exports checks at creation that it received the registered function: a mock is another function, and a module the runner replaced registered nothing. `checkHelpers` sets this outside those runners, or turns it off; `bun test` is recognized by the `NODE_ENV` it sets, so a suite setting its own passes `checkHelpers: true`.
 
+A definition in a function, a loop's body or an instance's field runs each time they do, and arktype creates a new Scope, Module or Generic each time, and a new Type when its Scope is new. Such a definition is precompiled to a factory taking nothing, so each run creates new validators from the same code and its values are distinct where arktype's are.
+
 These definitions are reported rather than precompiled:
 
 - one that could depend on two values imported from other modules being distinct;
+- one arktype creates anew each time it runs, holding a value that is the same each time or that another definition holds too, like `$.export()` in a function when `$` is not;
 - a Module, Scope or Generic read through a binding;
 - one reading a function only through a binding it declares itself, such as a callback's parameter;
 - one throwing a ParseError that reads a binding, or holds or calls a function, itself or through any value it passes to arktype;

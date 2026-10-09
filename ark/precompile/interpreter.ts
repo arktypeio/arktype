@@ -296,6 +296,35 @@ export class Interpreter {
 		return site
 	}
 
+	// a site as it evaluates the next time it runs, when what its region declares and defines, like a function's locals, is evaluated anew
+	evaluateAgain(node: Node, module: SourceModule, region: Node): SiteState {
+		const isRerun = (node: Node | null | undefined): boolean =>
+			!!node && (node === region || isRerun(node.parent))
+		const hide = <key, value>(
+			cache: Map<key, value>,
+			nodeOf: (key: key) => Node
+		) => {
+			const kept = [...cache].filter(([key]) => isRerun(nodeOf(key)))
+			for (const [key] of kept) cache.delete(key)
+			// what the run adds is its own
+			return () => {
+				for (const key of [...cache.keys()])
+					if (isRerun(nodeOf(key))) cache.delete(key)
+				for (const [key, value] of kept) cache.set(key, value)
+			}
+		}
+		const restores = [
+			hide(this.valuesByBinding, binding => binding.declaration),
+			hide(this.valuesByNode, node => node),
+			hide(this.sitesByNode, node => node)
+		]
+		try {
+			return this.evaluateSite(createSiteState(node, module))
+		} finally {
+			for (const restore of restores) restore()
+		}
+	}
+
 	evaluate(node: Node, ctx: Context): unknown {
 		const site = ctx.env ? undefined : this.sitesByNode.get(node)
 		// a definition nested in the site is part of it, so its holes and inputs are the site's

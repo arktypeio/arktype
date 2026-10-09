@@ -854,6 +854,24 @@ const D = discriminantJsonOf(type({ a: "0" }).or({ a: "1" }).internal as never)`
 			])
 		})
 
+		it("what arktype creates anew each run, but shares with its last run or another site", () => {
+			attest(
+				statusesOf(`import { scope } from "arktype"
+const $ = scope({ a: "string" })
+const exported = () => $.export()
+const twice = () => {
+	const local = scope({ a: "string" })
+	return [local.type("a"), local.type("a")]
+}`)
+			).snap([
+				"2:11 accepted",
+				"3:24 rejected\n  `$.export()` creates a new Module each time it runs, though a Type it holds is the same each time",
+				"5:16 accepted",
+				'6:10 rejected\n  `local.type("a")` creates a new Type each time it runs, sharing a Type with the site at /main.ts:6:27',
+				'6:27 rejected\n  `local.type("a")` creates a new Type each time it runs, sharing a Type with the site at /main.ts:6:10'
+			])
+		})
+
 		it("identity of arktype values", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

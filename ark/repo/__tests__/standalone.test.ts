@@ -1144,6 +1144,22 @@ contextualize(() => {
 			)
 		})
 
+		it("creates a Module, Scope or Generic anew at each call", async () => {
+			const created = await load({
+				M: { type: scope({ a: "string", b: { a: "a" } }).export(), params: [] },
+				S: { type: scope({ a: "string" }), params: [] },
+				G: { type: type("<t>", { box: "t" }), params: [] }
+			})
+			const [m1, m2] = [created.M(), created.M()]
+			attest([m1 === m2, m1.a === m2.a, m1.b({ a: "x" })]).equals([
+				false,
+				false,
+				{ a: "x" }
+			])
+			attest(created.S() === created.S()).equals(false)
+			attest(created.G() === created.G()).equals(false)
+		})
+
 		it("checks each helper is the function its module registered", async () => {
 			const { T: create } = await load({
 				T: {
