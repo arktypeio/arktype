@@ -13,7 +13,7 @@ import {
 	type MessageWriter,
 	type ProblemContext
 } from "@ark/schema"
-import { flatMorph, listPattern, type Domain } from "@ark/util"
+import { flatMorph, type Domain } from "@ark/util"
 import {
 	ark,
 	configure,
@@ -23,6 +23,7 @@ import {
 	type ArkConfig,
 	type Locale as ArkLocale
 } from "arktype"
+import { listPattern } from "arktype/i18n"
 import { en } from "arktype/locales/en"
 import { AsyncLocalStorage } from "node:async_hooks"
 
