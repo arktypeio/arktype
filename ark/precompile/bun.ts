@@ -1,8 +1,9 @@
 import { throwError } from "@ark/util"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
-import type { InlineModule, PrecompilePluginOptions } from "./driver.ts"
+import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
 import {
+	appendSourceMap,
 	createNodeHost,
 	optedInPackagesOf,
 	runtimeSpecifiers,
@@ -30,23 +31,26 @@ export interface BunPlugin {
 export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 	name: "arktype",
 	setup: build => {
-		if (opts?.runtime !== "arktype") {
+		const isStandalone = opts?.runtime !== "arktype"
+		if (isStandalone) {
 			// a runtime plugin isn't asked to resolve a package, so arktype is replaced for every importer
 			const runtime = createNodeHost(opts).resolve(
 				"arktype/runtime",
 				join(opts?.cwd ?? process.cwd(), "package.json")
 			)
-			for (const specifier of runtimeSpecifiers) {
+			for (const specifier of [...runtimeSpecifiers, "arktype/runtime"]) {
 				build.module(specifier, () => ({
 					contents: `export * from ${JSON.stringify(runtime)}`,
 					loader: "js"
 				}))
 			}
 		}
+		const registered = new Set<string>()
 		const request = createAsyncPrecompiler({
 			precompilerOptions: {
 				...opts,
-				inline: true,
+				// a standalone module imports what it shares with others, which the plugin serves
+				inline: !isStandalone,
 				// set by `bun test`
 				checkHelpers: opts?.checkHelpers ?? process.env.NODE_ENV === "test"
 			}
@@ -59,11 +63,17 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 		build.onLoad({ filter }, async ({ path }) => {
 			const source = readFileSync(path, "utf8")
 			const transformed = (await request("transform", source, path)) as
-				| InlineModule
+				| TransformedModule
 				| undefined
 			for (const warning of transformed?.warnings ?? []) console.warn(warning)
 			if (transformed?.errors.length) throwError(transformed.errors.join("\n"))
-			return { contents: transformed?.code ?? source }
+			if (!transformed?.code) return { contents: source }
+			for (const [specifier, contents] of Object.entries(transformed.modules)) {
+				if (registered.has(specifier)) continue
+				registered.add(specifier)
+				build.module(specifier, () => ({ contents, loader: "js" }))
+			}
+			return { contents: appendSourceMap(transformed.code, transformed.map) }
 		})
 	}
 })

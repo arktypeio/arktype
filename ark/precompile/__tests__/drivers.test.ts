@@ -97,6 +97,37 @@ contextualize(() => {
 			attest(node(["main.ts"], {}, cycle).stdout).equals(runPlain(cycle))
 		}).timeout(60000)
 
+		it("serves the modules a standalone module imports", () => {
+			const observer = `import { registerHooks } from "node:module"
+const kinds = new Set()
+registerHooks({ load: (url, context, nextLoad) => {
+	if (url.startsWith("arktype:")) kinds.add(/^arktype:~arktype\\/(entry|copy|expression|alias|domain|intersection|morph|proto|union|unit)?/.exec(url)[1] ?? "validators")
+	return nextLoad(url, context)
+} })
+process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
+			const { stdout } = node(
+				[
+					"--import",
+					`data:text/javascript,${encodeURIComponent(observer)}`,
+					"main.ts"
+				],
+				{}
+			)
+			attest(stdout.slice(0, expected.length)).equals(expected)
+			attest(JSON.parse(stdout.slice(expected.length))).snap([
+				"alias",
+				"copy",
+				"domain",
+				"entry",
+				"expression",
+				"intersection",
+				"proto",
+				"union",
+				"unit",
+				"validators"
+			])
+		}).timeout(60000)
+
 		it("fails a test file with a rejected site", () => {
 			const { status, stdout } = node(["--test", "roles.ts", "main.ts"], {})
 			attest(status).equals(1)

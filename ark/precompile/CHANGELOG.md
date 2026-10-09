@@ -44,7 +44,7 @@ export default defineConfig({ plugins: [precompile.vite()] })
 
 ### Emit each Type's code once
 
-Each Type's compiled code is a module named by its content, which every module composing the Type imports, so a bundle holds one copy however many modules reach it, and a factory receiving a Type from another module creates only its own validator. Hosts without virtual modules, like Turbopack and the Node and Bun drivers, place these modules in each module that reaches them, as before.
+Each Type's compiled code is a module named by its content, which every module composing the Type imports, so a bundle holds one copy however many modules reach it, and a factory receiving a Type from another module creates only its own validator. The Node and Bun drivers serve these modules through their hooks in standalone mode; Turbopack, which has no virtual modules, places them in each module that reaches them, as before.
 
 ### Precompile definitions holding functions
 

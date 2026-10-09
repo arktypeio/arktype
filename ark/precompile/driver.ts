@@ -2,7 +2,11 @@ import { readFileSync, statSync } from "node:fs"
 import { resolve } from "node:path"
 import type { SourceMap } from "magic-string"
 import { parentPort, workerData, type MessagePort } from "node:worker_threads"
-import { createNodeHost, type NodeHostOptions } from "./host.ts"
+import {
+	appendSourceMap,
+	createNodeHost,
+	type NodeHostOptions
+} from "./host.ts"
 import {
 	Precompiler,
 	renderDiagnostic,
@@ -202,7 +206,7 @@ const transformedModuleOf = (
 		code:
 			result.map &&
 			(precompiler.inline ?
-				`${result.code}\n//# sourceMappingURL=${result.map.toUrl()}`
+				appendSourceMap(result.code, result.map)
 			:	result.code),
 		map: precompiler.inline ? undefined : result.map,
 		dependencies: result.dependencies,

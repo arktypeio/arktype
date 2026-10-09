@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs"
 import { dirname, join } from "node:path"
+import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 
 export interface PrecompileHost {
@@ -115,6 +116,15 @@ const packageRootOf = (name: string, from: string): string | undefined => {
 		if (dir === dirname(dir)) return
 	}
 }
+
+// a host without a channel for source maps reads one from the code
+export const appendSourceMap = (
+	code: string,
+	map: SourceMap | undefined
+): string =>
+	map ?
+		`${code}\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(JSON.stringify(map)).toString("base64")}`
+	:	code
 
 export const runtimeSpecifiers = ["arktype", "arktype/config"]
 
