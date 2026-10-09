@@ -220,24 +220,30 @@ export class Interpreter {
 		const value = this.evaluateNode(node, ctx)
 		if (typeof value === "symbol" && !this.sourcesBySymbol.has(value))
 			this.sourcesBySymbol.set(value, [node, ctx.module])
+		this.recordRead(node, value, ctx)
+		return value
+	}
+
+	private recordRead(node: Node, value: unknown, ctx: Context): void {
 		if (
-			ctx.site &&
-			ctx.module === ctx.site.module &&
-			contains(ctx.site.node, node) &&
-			(typeof value === "symbol" ||
+			!ctx.site ||
+			ctx.module !== ctx.site.module ||
+			!contains(ctx.site.node, node) ||
+			!(
+				typeof value === "symbol" ||
 				value instanceof DynamicValue ||
 				(hasDomain(value, "object") && this.standIns.has(value)) ||
 				// a Type the site reads, which its factory receives to take the holes it holds
-				(hasArkKind(value, "root") && isReference(node)))
-		) {
-			// an expression is evaluated after those it contains, so it replaces them
-			const reads = (ctx.site.readsByValue.get(value) ?? []).filter(
-				read => !contains(node, read)
+				(hasArkKind(value, "root") && isReference(node))
 			)
-			if (!reads.some(read => contains(read, node))) reads.push(node)
-			ctx.site.readsByValue.set(value, reads)
-		}
-		return value
+		)
+			return
+		// an expression is evaluated after those it contains, so it replaces them
+		const reads = (ctx.site.readsByValue.get(value) ?? []).filter(
+			read => !contains(node, read)
+		)
+		if (!reads.some(read => contains(read, node))) reads.push(node)
+		ctx.site.readsByValue.set(value, reads)
 	}
 
 	private evaluateNode(node: Node, ctx: Context): unknown {
@@ -1264,6 +1270,7 @@ export class Interpreter {
 		let fn: unknown
 		if (callee.type === "MemberExpression") {
 			receiver = this.consume(this.evaluateReference(callee.object, ctx), ctx)
+			this.recordRead(callee.object, receiver, ctx)
 			if (receiver === shortCircuit) return shortCircuit
 			if (isDynamic(receiver)) return receiver
 			if (callee.optional && (receiver === null || receiver === undefined))

@@ -94,7 +94,8 @@ export const Name = type("string").pipe(trim).narrow((s, ctx) => s.length > 0)
 export const User = type({ name: Name, pet: type.instanceOf(Pet), [petTag]: "string" })
 export const Either = type("string").pipe(trim).or(type("number").pipe(trim))
 export const Extended = type("string").pipe(ext)
-export const Pair = type([Name, Either])`
+export const Pair = type([Name, Either])
+export const Short = Name.narrow(s => s.length < 9)`
 			// a hole is registered by a name from its module and position, which no other test shares
 			const result = precompileModule(
 				source,
@@ -115,11 +116,13 @@ export const User = $arkf17onxh5wa5v(Name, Pet, petTag)
 export const Either = $arkf177zfl998m9(trim)
 export const Extended = $arkf14b60szkb1e(ext)
 export const Pair = $arkfcfvlzq3rdy(Name, Either)
-import { fjn5p53yrnw as $arkfjn5p53yrnw } from "~arktype/1j2509sapfe"
-import { f17onxh5wa5v as $arkf17onxh5wa5v } from "~arktype/1j2509sapfe"
-import { f177zfl998m9 as $arkf177zfl998m9 } from "~arktype/1j2509sapfe"
-import { f14b60szkb1e as $arkf14b60szkb1e } from "~arktype/1j2509sapfe"
-import { fcfvlzq3rdy as $arkfcfvlzq3rdy } from "~arktype/1j2509sapfe"`)
+export const Short = $arkf1h2fl3hww77(Name, s => s.length < 9)
+import { fjn5p53yrnw as $arkfjn5p53yrnw } from "~arktype/ee29jk5wba"
+import { f17onxh5wa5v as $arkf17onxh5wa5v } from "~arktype/ee29jk5wba"
+import { f177zfl998m9 as $arkf177zfl998m9 } from "~arktype/ee29jk5wba"
+import { f14b60szkb1e as $arkf14b60szkb1e } from "~arktype/ee29jk5wba"
+import { fcfvlzq3rdy as $arkfcfvlzq3rdy } from "~arktype/ee29jk5wba"
+import { f1h2fl3hww77 as $arkf1h2fl3hww77 } from "~arktype/ee29jk5wba"`)
 		})
 
 		it("unsupported sites", () => {

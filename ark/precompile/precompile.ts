@@ -549,14 +549,18 @@ export class Precompiler {
 			else if (!factory) s.overwrite(site.start, site.end, local)
 			else {
 				// each parameter stays where it is written, so it is evaluated when the original evaluates it
+				const replace = (start: number, end: number, text: string) =>
+					start === end ?
+						s.appendLeft(start, text)
+					:	s.overwrite(start, end, text)
 				let start = site.start
 				let separator = `${local}(`
 				for (const span of factory.spans) {
-					s.overwrite(start, span.start, separator)
+					replace(start, span.start, separator)
 					start = span.end
 					separator = ", "
 				}
-				s.overwrite(start, site.end, ")")
+				replace(start, site.end, ")")
 			}
 			folded.push(site)
 		}
