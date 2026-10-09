@@ -5,11 +5,12 @@ import {
 	precompile,
 	type PrecompilePluginOptions
 } from "@ark/precompile/unplugin"
-import { build as esbuild } from "esbuild"
+import { context, build as esbuild } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
+import { Worker } from "node:worker_threads"
 import {
 	build as viteBuild,
 	defaultClientConditions,
@@ -242,6 +243,29 @@ contextualize(() => {
 			).equals(runPlain(configured))
 		}).timeout(60000)
 	}
+
+	it("keeps its worker across esbuild's rebuilds", async () => {
+		// each thread a process starts takes the next id
+		const nextThreadId = () => {
+			const worker = new Worker("", { eval: true })
+			void worker.terminate()
+			return worker.threadId
+		}
+		const first = nextThreadId()
+		const build = await context({
+			entryPoints: [join(app, "main.ts")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ cwd: app, conditions })]
+		})
+		await build.rebuild()
+		await build.rebuild()
+		await build.dispose()
+		attest(nextThreadId() - first - 1).equals(1)
+	}).timeout(60000)
 
 	it("reads a module that defines a Type from an imported one", async () => {
 		const { outputFiles } = await esbuild({

@@ -119,10 +119,14 @@ export const precompile: UnpluginInstance<
 		buildStart: () => {
 			void request("reset")
 		},
-		// a build that won't run again releases its worker
+		// a build that won't run again releases its worker, which only Rollup, Vite, webpack and Rspack say, and esbuild disposes of
 		buildEnd() {
-			if (!(this as { meta?: { watchMode?: boolean } }).meta?.watchMode)
-				restart()
+			const native = this.getNativeBuildContext?.()
+			const isWatching =
+				native && "compiler" in native ?
+					native.compiler.watchMode
+				:	(this as { meta?: { watchMode?: boolean } }).meta?.watchMode
+			if (isWatching === false) restart()
 		},
 		// a changed file may be in the forward closure of any module analyzed so far, or change the configuration arktype can only take once
 		watchChange: () => {
@@ -133,6 +137,7 @@ export const precompile: UnpluginInstance<
 			// esbuild loads anything a plugin resolves in the plugin's namespace, so arktype's files are resolved natively
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
 			setup: build => {
+				build.onDispose(restart)
 				// the entry arktype resolves to in cache mode imports arktype's files by path
 				build.onResolve({ filter: /^(?:\/|[A-Za-z]:[/\\])/ }, args =>
 					args.namespace === "file" ? undefined : { path: args.path }
