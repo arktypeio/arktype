@@ -54,7 +54,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			if (url.startsWith("arktype:")) {
 				return {
 					format: "module",
-					source: modules[url.slice(8)],
+					source: modules[url.slice("arktype:".length)],
 					shortCircuit: true
 				}
 			}

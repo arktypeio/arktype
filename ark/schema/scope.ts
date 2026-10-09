@@ -538,9 +538,7 @@ export const precompileByContent = (
 	roots: readonly BaseNode[],
 	keyOf?: (value: object | symbol) => string | undefined
 ): ContentUnit => {
-	let s = nameReferences(roots, {}, keyOf)
-	const occurrencesById = occurrencesOfResolutions(s)
-	if (occurrencesById) s = nameReferences(roots, occurrencesById, keyOf)
+	const s = nameContent(roots, keyOf)
 	const names: Record<NodeId, string> = {}
 	const linkage = createLinkage(
 		id => names[id] ?? throwInternalError(`Unexpected unnamed node ${id}`)
@@ -567,7 +565,7 @@ export interface RootUnit {
 	// its first root's name, which addresses it
 	name: string
 	names: Record<NodeId, string>
-	// the roots another unit calls, more than one only in a cycle
+	// its component's roots, more than one only in a cycle
 	roots: BaseRoot[]
 	// each root's traversals, by name
 	traversals: string[][]
@@ -578,7 +576,6 @@ export interface RootUnit {
 	dependencies: Record<string, UnitDependency>
 	// the nodes whose names hold a value keyed by identity, which name them only within this pass
 	identityNamed: ReadonlySet<NodeId>
-	// the unit of each root this pass reaches
 	unitsById: Record<NodeId, RootUnit>
 }
 
@@ -587,9 +584,7 @@ export const precompileRootUnits = (
 	root: BaseRoot,
 	keyOf?: (value: object | symbol) => string | undefined
 ): RootUnit[] => {
-	let s = nameReferences([root], {}, keyOf)
-	const occurrencesById = occurrencesOfResolutions(s)
-	if (occurrencesById) s = nameReferences([root], occurrencesById, keyOf)
+	const s = nameContent([root], keyOf)
 	const units: RootUnit[] = []
 	const unitsById: Record<NodeId, RootUnit> = {}
 	// a component is completed after every component it calls
@@ -644,6 +639,15 @@ interface ContentNamingState {
 	inputsByHash: Record<string, string>
 	occurrencesById: Record<NodeId, number>
 	identityNamed: Set<NodeId>
+}
+
+const nameContent = (
+	roots: readonly BaseNode[],
+	keyOf: ContentNamingState["keyOf"]
+): ContentNamingState => {
+	const s = nameReferences(roots, {}, keyOf)
+	const occurrencesById = occurrencesOfResolutions(s)
+	return occurrencesById ? nameReferences(roots, occurrencesById, keyOf) : s
 }
 
 const nameReferences = (

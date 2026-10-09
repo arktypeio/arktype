@@ -45,7 +45,7 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 				}))
 			}
 		}
-		const registered = new Set<string>()
+		const modules: Record<string, string> = {}
 		const request = createAsyncPrecompiler({
 			precompilerOptions: {
 				...opts,
@@ -68,10 +68,13 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 			for (const warning of transformed?.warnings ?? []) console.warn(warning)
 			if (transformed?.errors.length) throwError(transformed.errors.join("\n"))
 			if (!transformed?.code) return { contents: source }
-			for (const [specifier, contents] of Object.entries(transformed.modules)) {
-				if (registered.has(specifier)) continue
-				registered.add(specifier)
-				build.module(specifier, () => ({ contents, loader: "js" }))
+			for (const specifier in transformed.modules) {
+				if (modules[specifier] !== undefined) continue
+				modules[specifier] = transformed.modules[specifier]
+				build.module(specifier, () => ({
+					contents: modules[specifier],
+					loader: "js"
+				}))
 			}
 			return { contents: appendSourceMap(transformed.code, transformed.map) }
 		})

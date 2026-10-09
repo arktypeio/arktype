@@ -125,8 +125,7 @@ export interface ConfiguredModule {
 	path: string
 }
 
-// a module artifacts share, importing what it calls from the modules declared before it
-interface UnitModule {
+interface SharedModule {
 	imports: Record<string, string[]>
 	declarations: string[]
 	exports: string[]
@@ -153,19 +152,19 @@ export const precompileStandalone = (
 	// each Module a site reads off arktype's keywords, which creates a Type only when one of its members is read
 	keywordReads?: ReadonlySet<string>
 ): string => {
-	const units: Record<string, UnitModule> = {}
+	const shared: Record<string, SharedModule> = {}
 	const sections = writeArtifact(
 		exports,
 		configured,
 		sitesByName,
 		keywordReads,
-		units,
+		shared,
 		{}
 	)
 	return writeSections([
 		runtimeImport,
 		entryCheck,
-		...Object.values(units).map(unit => unit.declarations.join("\n\n")),
+		...Object.values(shared).map(module => module.declarations.join("\n\n")),
 		...sections
 	])
 }
@@ -177,26 +176,33 @@ export const precompileStandaloneModules = (
 	sitesByName?: Record<string, string>,
 	keywordReads?: ReadonlySet<string>
 ): StandaloneModules => {
-	const units: Record<string, UnitModule> = {}
+	const shared: Record<string, SharedModule> = {}
 	const imports: Record<string, string[]> = {}
 	const sections = writeArtifact(
 		exports,
 		configured,
 		sitesByName,
 		keywordReads,
-		units,
+		shared,
 		imports
 	)
 	// imported first, so the runtime's version is checked before anything is created
 	const entry = writeSections([runtimeImport, entryCheck])
 	const entrySpecifier = `~arktype/entry${hashOf(entry)}`
 	const modules: Record<string, string> = { [entrySpecifier]: entry }
-	for (const specifier in units) {
-		const unit = units[specifier]
+	for (const specifier in shared) {
+		const { imports, declarations, exports } = shared[specifier]
 		modules[specifier] = writeSections([
-			`${runtimeImport}\n${writeImports(unit.imports)}`,
-			...unit.declarations,
-			`export { ${unit.exports.join(", ")} }`
+			[
+				declarations.some(declaration => declaration.includes("runtime.")) ?
+					runtimeImport
+				:	"",
+				writeImports(imports)
+			]
+				.filter(statement => statement)
+				.join("\n"),
+			...declarations,
+			`export { ${exports.join(", ")} }`
 		])
 	}
 	return {
@@ -213,7 +219,7 @@ const writeArtifact = (
 	configured: ConfiguredModule | undefined,
 	sitesByName: Record<string, string> | undefined,
 	keywordReads: ReadonlySet<string> | undefined,
-	units: Record<string, UnitModule>,
+	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
 ): string[] => {
 	const types: Record<string, ExportedValue> = {}
@@ -225,7 +231,7 @@ const writeArtifact = (
 			const { type, params, internedBy } = value as StandaloneFactory
 			if (internedBy !== undefined) tables.add(internedBy)
 			factories.push(
-				new StandaloneArtifact({ [name]: type }, units, imports).writeFactory(
+				new StandaloneArtifact({ [name]: type }, shared, imports).writeFactory(
 					name,
 					params,
 					factories.length,
@@ -244,7 +250,7 @@ const writeArtifact = (
 		)
 	}
 	return [
-		...new StandaloneArtifact(types, units, imports).write(
+		...new StandaloneArtifact(types, shared, imports).write(
 			configured,
 			sitesByName,
 			keywordReads
@@ -288,7 +294,6 @@ const createDeclarations = (): Declarations => ({
 	counts: { shape: 0, keys: 0, literal: 0, config: 0, unavailable: 0 }
 })
 
-// a unit being written to a module of its own
 interface SharedUnit {
 	unit: RootUnit
 	// what it reads from other modules, which it receives as parameters
@@ -301,20 +306,17 @@ interface SharedUnit {
 
 export class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
-	// the modules every artifact of a program shares, each declared after those it imports
-	unitModules: Record<string, UnitModule>
+	sharedModules: Record<string, SharedModule>
 	imports: Record<string, string[]>
 	holeExpressions = new Map<unknown, string>()
 	labelsByHole = new Map<unknown, string>()
 	classes = new Set<unknown>()
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
-	// the roots whose units the artifact holds
 	unitRoots = new Set<BaseRoot>()
 	// the unit holding each root in the first Type reaching it
 	unitsByHead = new Map<BaseRoot, RootUnit>()
 	sharedByUnit = new Map<RootUnit, boolean>()
-	// each local unit's traversals, by the const holding them
 	localNamesByUnit = new Map<RootUnit, string>()
 	// the unit whose values are being emitted, which names the nodes they hold
 	unit: RootUnit | undefined
@@ -347,11 +349,11 @@ export class StandaloneArtifact {
 
 	constructor(
 		exports: Record<string, ExportedValue>,
-		unitModules: Record<string, UnitModule>,
+		sharedModules: Record<string, SharedModule>,
 		imports: Record<string, string[]>
 	) {
 		this.exports = exports
-		this.unitModules = unitModules
+		this.sharedModules = sharedModules
 		this.imports = imports
 		for (const name in exports) {
 			// an ES module can't export a name holding an unpaired surrogate
@@ -657,13 +659,12 @@ export class StandaloneArtifact {
 		return shared
 	}
 
-	// a hole, a Type a literal holds or a morph applying its validator is created with the artifact
+	// a hole or a Type a literal holds is created with the artifact
 	holdsLocal(value: unknown, seen = new Set<unknown>()): boolean {
 		if (seen.has(value)) return false
 		seen.add(value)
 		if (typeof value === "string") return value.includes(holeNamePrefix)
 		if (isHole(value)) return true
-		if (this.defaultsByMorph.has(value)) return true
 		if (!hasDomain(value, "object") || isNode(value) || !isPlainLiteral(value))
 			return false
 		return Reflect.ownKeys(value).some(k => {
@@ -825,7 +826,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 	// a shared unit is created by a function declaration, which an import cycle can call before its module is evaluated
 	writeShared(unit: RootUnit): void {
 		const specifier = `~arktype/${unit.name}`
-		if (this.unitModules[specifier]) return
+		if (this.sharedModules[specifier]) return
 		const declarations = this.declarations
 		const writing: SharedUnit = (this.writing = {
 			unit,
@@ -896,7 +897,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		this.declarations = declarations
 		this.unit = undefined
 		this.writing = undefined
-		this.unitModules[specifier] = {
+		this.sharedModules[specifier] = {
 			imports: writing.imports,
 			declarations: moduleDeclarations,
 			exports: [
@@ -960,7 +961,7 @@ return [${returned.join(", ")}]
 		for (let i = 0; i < contexts.length; i++) {
 			const copy = writeNodeContextCopy(contexts[i])
 			const copyName = `copy${hashOf(copy)}`
-			this.unitModules[`~arktype/${copyName}`] ??= {
+			this.sharedModules[`~arktype/${copyName}`] ??= {
 				imports: {},
 				declarations: [`function ${copyName}(e, input) {\n${copy}}`],
 				exports: [copyName]
@@ -1063,7 +1064,7 @@ return [${returned.join(", ")}]
 				`(function () {\n${statements.join("\n")}\nreturn ${created}\n})()`
 			:	created
 		const name = `meta${hashOf(`${unit.names[node.id]}\n${value}`)}`
-		this.unitModules[`~arktype/${name}`] ??= {
+		this.sharedModules[`~arktype/${name}`] ??= {
 			imports: {},
 			declarations: [
 				`var ${name}Value`,
@@ -1077,7 +1078,7 @@ return [${returned.join(", ")}]
 	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator
 	readExpression(expression: string): string {
 		const name = `expression${hashOf(expression)}`
-		this.unitModules[`~arktype/${name}`] ??= {
+		this.sharedModules[`~arktype/${name}`] ??= {
 			imports: {},
 			declarations: [
 				`function ${name}() {\n\treturn ${JSON.stringify(expression)}\n}`
@@ -1515,7 +1516,7 @@ const rootUnitsOf = (root: BaseRoot): RootUnit[] => {
 	return units
 }
 
-// a root a unit reads was reached by the pass naming the unit, which may name another root alike
+// a pass can reach content-equal roots, which share a name but not a unit
 const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
 	reader.unitsById[node.id]
 

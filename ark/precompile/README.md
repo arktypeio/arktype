@@ -86,7 +86,7 @@ The marker applies to the statement or expression that starts after it. arktype 
 
 ## Test runners and runtimes
 
-Where there are no virtual modules, the validators or units a module needs are placed at the top of the module itself. Each driver takes the plugin's options, fails on the same errors and resolves `arktype` to `arktype/runtime` in standalone mode where its host allows.
+In standalone mode, the Node and Bun drivers serve the `~arktype/` modules a module shares with others, as the plugin does. Where there are no virtual modules, as with Turbopack, `inline: true` and cache mode, the validators or units a module needs are placed at the top of the module itself. Each driver takes the plugin's options, fails on the same errors and resolves `arktype` to `arktype/runtime` in standalone mode where its host allows.
 
 Node, for `node --test` or any program (Node 22.15 or later):
 
@@ -107,7 +107,7 @@ import { precompile } from "@ark/precompile/bun"
 Bun.plugin(precompile())
 ```
 
-The precompiler runs in a worker here too. Bun doesn't ask a runtime plugin to resolve packages, so in standalone mode `arktype` is replaced by `arktype/runtime` for every importer, and dependencies aren't checked for copies of arktype. Bun ignores the source map, so stack traces show lines of the transformed module.
+The precompiler runs in a worker here too. Bun doesn't ask a runtime plugin to resolve packages, so in standalone mode `arktype` and `arktype/runtime` are replaced by the runtime `cwd` resolves for every importer, including the modules the driver serves, and dependencies aren't checked for copies of arktype. Bun ignores the source map, so stack traces show lines of the transformed module.
 
 Turbopack, as a webpack loader in a rule for each extension your definitions are in:
 
