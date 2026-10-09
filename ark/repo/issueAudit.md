@@ -4,7 +4,7 @@ This audit covers the 223 issues open on arktypeio/arktype on 2026-10-07. Every 
 
 | Category                                                                               | Issues                                       | Suggested action                        |
 | -------------------------------------------------------------------------------------- | -------------------------------------------- | --------------------------------------- |
-| [Fix tracker](#fix-tracker)                                                            | 14 fixed, 1 awaiting a decision, 0 in review | post the comments on fixed issues       |
+| [Fix tracker](#fix-tracker)                                                            | 15 fixed, 0 awaiting a decision, 0 in review | post the comments on fixed issues       |
 | [Easy-win bugs](#easy-win-bugs)                                                        | 15                                           | fix on featherduster                    |
 | [Clear bugs](#clear-bugs)                                                              | 28                                           | schedule; 16 need a decision first      |
 | [Fixed on featherduster](#fixed-on-featherduster)                                      | 22                                           | close when featherduster ships          |
@@ -23,23 +23,23 @@ Each entry lists the package the work lands in, the effort, whether the change i
 
 This section is updated as fixes from this audit land. A fix that only corrects behavior lands on the featherduster branch directly. One that makes an API or behavior decision waits here for approval first. Each landed fix comes with a comment to post on its issue. Every snippet in a comment was run against the fixed tree. The comments refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
 
-| Issue              | Status                  | Commits                                                          |
-| ------------------ | ----------------------- | ---------------------------------------------------------------- |
-| [#1121](#fix-1121) | fixed in featherduster  | 23f54d05b                                                        |
-| [#1473](#fix-1473) | fixed in featherduster  | 312718029                                                        |
-| [#1306](#fix-1306) | fixed in featherduster  | 99934ba9f                                                        |
-| [#1470](#fix-1470) | fixed in featherduster  | f923ffeb1                                                        |
-| [#1529](#fix-1529) | fixed in featherduster  | f7c43123b, 49fea0d79                                             |
-| [#1555](#fix-1555) | fixed in featherduster  | 0332e7a9d                                                        |
-| [#1548](#fix-1548) | fixed in featherduster  | 09fb6f7f9                                                        |
-| [#1530](#fix-1530) | fixed in featherduster  | 196ced06c                                                        |
-| [#1577](#fix-1577) | fixed in featherduster  | 46acabbf1                                                        |
-| [#1430](#fix-1430) | fixed in featherduster  | 8c66cc7c1                                                        |
-| [#1600](#fix-1600) | fixed in featherduster  | f1fc4e798                                                        |
-| [#1676](#fix-1676) | fixed in featherduster  | 84ff9fbb6                                                        |
-| [#1445](#fix-1445) | fixed in featherduster  | 9987af9cb, 551d873e1, d5b4fc498, 35cbdb031, 6060504dc, 309c867ee |
-| [#1160](#fix-1160) | fixed in featherduster  | a55e764a7                                                        |
-| [#1023](#fix-1023) | fix awaiting a decision | A f641e654e, B 12d552c0a, C 0361af515, D 8cba24727               |
+| Issue              | Status                 | Commits                                                          |
+| ------------------ | ---------------------- | ---------------------------------------------------------------- |
+| [#1121](#fix-1121) | fixed in featherduster | 23f54d05b                                                        |
+| [#1473](#fix-1473) | fixed in featherduster | 312718029                                                        |
+| [#1306](#fix-1306) | fixed in featherduster | 99934ba9f                                                        |
+| [#1470](#fix-1470) | fixed in featherduster | f923ffeb1                                                        |
+| [#1529](#fix-1529) | fixed in featherduster | f7c43123b, 49fea0d79                                             |
+| [#1555](#fix-1555) | fixed in featherduster | 0332e7a9d                                                        |
+| [#1548](#fix-1548) | fixed in featherduster | 09fb6f7f9                                                        |
+| [#1530](#fix-1530) | fixed in featherduster | 196ced06c                                                        |
+| [#1577](#fix-1577) | fixed in featherduster | 46acabbf1                                                        |
+| [#1430](#fix-1430) | fixed in featherduster | 8c66cc7c1                                                        |
+| [#1600](#fix-1600) | fixed in featherduster | f1fc4e798                                                        |
+| [#1676](#fix-1676) | fixed in featherduster | 84ff9fbb6                                                        |
+| [#1445](#fix-1445) | fixed in featherduster | 9987af9cb, 551d873e1, d5b4fc498, 35cbdb031, 6060504dc, 309c867ee |
+| [#1160](#fix-1160) | fixed in featherduster | a55e764a7                                                        |
+| [#1023](#fix-1023) | fixed in featherduster | 9dfead2f3                                                        |
 
 ### Fixed in featherduster
 
@@ -396,37 +396,57 @@ T({}).toString() // "foo must be a string (was missing)"
 
 Workaround on 2.2.8: cast the result, e.g. `type({ foo: "string = 'bar'" }).required().as<{ foo: string }>()`.
 
-### Ready, awaiting a decision
-
 ### <a id="fix-1023"></a>[#1023](https://github.com/arktypeio/arktype/issues/1023) Infer any as morph return
 
-Four fixes are implemented and measured, none landed: A on `fix/infer` (f641e654e), B on `infer-1023/b` (12d552c0a), C on `infer-1023/c` (0361af515) and D on `infer-1023/d` (8cba24727). **Decision:** the maintainer wants names preserved, soundness everywhere and minimal cost, which none of the four gives: D expands named types and breaks declaration emit, C is unsound for a nested morph returning a function that returns any and costs +3.6% to +13.6% per object with a morph or default, A is top-level only, and B fails the bench gate. A fifth option, E on `infer-1023/e`, is being built and measured: it keeps the name-preserving shortcut but takes it only when the type contains no morph, default or (on the input side) brand. The [note](#note-1023) has the benchmarks and trade-offs for A to D.
+Fixed in featherduster by 9dfead2f3.
+
+Comment to post:
+
+Fixed on the `featherduster` branch (#1685) in 9dfead2.
+
+To keep names like interfaces in inferred types, `.infer` returned the original type whenever it was mutually assignable with its inferred output. A morph returning `any` is mutually assignable with `any`, so the morph itself was left in the inferred type. The check now asks whether inference would change anything, so a morph returning `any` infers `any` at every depth, while types with no morphs, defaults or brands keep their names:
+
+```ts
+const T = type("string", "=>", s => s as any)
+type Out = typeof T.infer // any (was (In: string) => Out<any>)
+
+const N = type({ a: ["string", "=>", s => s as any], b: "number" })
+type NestedOut = typeof N.infer // { a: any; b: number }
+
+interface User {
+	name: string
+}
+const U = type({ name: "string" }).as<User>()
+type UserOut = typeof U.infer // User
+```
+
+Workaround on 2.2.8: return `unknown` instead of `any`, e.g. `s => JSON.parse(s) as unknown`, which infers `unknown`.
 
 ## Easy-win bugs
 
 These are unambiguous bugs, each verified to reproduce on the featherduster branch. The fix is local, you can name it in a sentence, it is about 30 changed lines or fewer, and it adds no API. The verifier checked each fix location on featherduster, and most fixes were prototyped in a scratch copy.
 
-| Issue                                                     | Package   | Effort  | Status                               | Bug                                                                                                                                                                                                                                                                               |
-| --------------------------------------------------------- | --------- | ------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [#1023](https://github.com/arktypeio/arktype/issues/1023) | `arktype` | trivial | [fix awaiting a decision](#fix-1023) | A morph returning `any` infers its output as the morph function `(In: string) => Out<any>` instead of `any`, at the top level and nested.                                                                                                                                         |
-| [#1306](https://github.com/arktypeio/arktype/issues/1306) | `attest`  | trivial | [fixed in featherduster](#fix-1306)  | attest trace/stats run tsc with --incremental false, which errors (TS6379) on composite projects, so tsc skips type checking and the trace/stats are empty.                                                                                                                       |
-| [#1445](https://github.com/arktypeio/arktype/issues/1445) | `schema`  | trivial | [fixed in featherduster](#fix-1445)  | match throws "The intersection of distinct morphs at a single path is indeterminate" when discrimination reorders tuple cases, even though the reordered cases' inputs are disjoint.                                                                                              |
-| [#1470](https://github.com/arktypeio/arktype/issues/1470) | `schema`  | trivial | [fixed in featherduster](#fix-1470)  | `.configure({ title })` (or `.describe()`) on a union of string literals makes toJsonSchema emit `anyOf: [{const, title}, ...]` instead of `enum` plus `title`.                                                                                                                   |
-| [#1473](https://github.com/arktypeio/arktype/issues/1473) | `schema`  | trivial | [fixed in featherduster](#fix-1473)  | The `new Function` CSP probe runs on import even when `jitless: true` is configured, which logs a CSP violation in strict-CSP browsers.                                                                                                                                           |
-| [#1529](https://github.com/arktypeio/arktype/issues/1529) | `docs`    | trivial | [fixed in featherduster](#fix-1529)  | In the docs playground, `regex()` from arkregex is typed `any` because the bundled arkregex declarations it loads are missing the internal `s` namespace.                                                                                                                         |
-| [#1548](https://github.com/arktypeio/arktype/issues/1548) | `util`    | trivial | [fixed in featherduster](#fix-1548)  | With @cloudflare/workers-types and no DOM lib, the File, Blob, URL and Headers keywords infer as `never`.                                                                                                                                                                         |
-| [#1577](https://github.com/arktypeio/arktype/issues/1577) | `arktype` | trivial | [fixed in featherduster](#fix-1577)  | Under pnpm, exporting a branded (or `Json`-typed) Type fails declaration emit (TS2883) because `Brand` and `Json` live in `@ark/util` and aren't re-exported from `arktype`.                                                                                                      |
-| [#1600](https://github.com/arktypeio/arktype/issues/1600) | `schema`  | trivial | [fixed in featherduster](#fix-1600)  | Any definition-taking method (`.to`, `.or`, `.and`, ...) on a type produced by `type.Record(...)` parses string definitions as @ark/schema schemas, so `"string[]"` crashes with `instanceOf operand must be a function`.                                                         |
-| [#1121](https://github.com/arktypeio/arktype/issues/1121) | `schema`  | small   | [fixed in featherduster](#fix-1121)  | Plain {} objects used as name maps inherit Object.prototype members. The original register case is fixed, but alias names like toString/constructor/valueOf still cause false ParseErrors and internal TypeErrors.                                                                |
-| [#1160](https://github.com/arktypeio/arktype/issues/1160) | `arktype` | small   | [fixed in featherduster](#fix-1160)  | .required() on a key with a default keeps Default&lt;...> in the type, so inferIn still says the key is optional even though runtime requires it.                                                                                                                                 |
-| [#1430](https://github.com/arktypeio/arktype/issues/1430) | `schema`  | small   | [fixed in featherduster](#fix-1430)  | Array/tuple types with minLength/maxLength constraints drop them from `.expression` and `.description`.                                                                                                                                                                           |
-| [#1530](https://github.com/arktypeio/arktype/issues/1530) | `regex`   | small   | [fixed in featherduster](#fix-1530)  | With capture groups in several alternation branches, the inferred captures tuples are too short: earlier branches lack trailing `undefined`s, and later branches are padded only for the first branch's groups, which also shifts the inferred index of later captures.           |
-| [#1555](https://github.com/arktypeio/arktype/issues/1555) | `util`    | small   | [fixed in featherduster](#fix-1555)  | Importing arktype throws `ReferenceError: Blob is not defined` (or URL/FormData/...) in runtimes lacking web platform globals (WeChat mini programs, AudioWorklet, bare V8/QuickJS).                                                                                              |
-| [#1676](https://github.com/arktypeio/arktype/issues/1676) | `schema`  | small   | [fixed in featherduster](#fix-1676)  | Types built from fresh functions (narrow/pipe/match/defaults) are never garbage collected because each function is register()ed into the global $ark registry. On 2.2.8 this also pins the nodes built from them; on featherduster only the function and its closure stay pinned. |
+| Issue                                                     | Package   | Effort  | Status                              | Bug                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------- | --------- | ------- | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#1023](https://github.com/arktypeio/arktype/issues/1023) | `arktype` | trivial | [fixed in featherduster](#fix-1023) | A morph returning `any` infers its output as the morph function `(In: string) => Out<any>` instead of `any`, at the top level and nested.                                                                                                                                         |
+| [#1306](https://github.com/arktypeio/arktype/issues/1306) | `attest`  | trivial | [fixed in featherduster](#fix-1306) | attest trace/stats run tsc with --incremental false, which errors (TS6379) on composite projects, so tsc skips type checking and the trace/stats are empty.                                                                                                                       |
+| [#1445](https://github.com/arktypeio/arktype/issues/1445) | `schema`  | trivial | [fixed in featherduster](#fix-1445) | match throws "The intersection of distinct morphs at a single path is indeterminate" when discrimination reorders tuple cases, even though the reordered cases' inputs are disjoint.                                                                                              |
+| [#1470](https://github.com/arktypeio/arktype/issues/1470) | `schema`  | trivial | [fixed in featherduster](#fix-1470) | `.configure({ title })` (or `.describe()`) on a union of string literals makes toJsonSchema emit `anyOf: [{const, title}, ...]` instead of `enum` plus `title`.                                                                                                                   |
+| [#1473](https://github.com/arktypeio/arktype/issues/1473) | `schema`  | trivial | [fixed in featherduster](#fix-1473) | The `new Function` CSP probe runs on import even when `jitless: true` is configured, which logs a CSP violation in strict-CSP browsers.                                                                                                                                           |
+| [#1529](https://github.com/arktypeio/arktype/issues/1529) | `docs`    | trivial | [fixed in featherduster](#fix-1529) | In the docs playground, `regex()` from arkregex is typed `any` because the bundled arkregex declarations it loads are missing the internal `s` namespace.                                                                                                                         |
+| [#1548](https://github.com/arktypeio/arktype/issues/1548) | `util`    | trivial | [fixed in featherduster](#fix-1548) | With @cloudflare/workers-types and no DOM lib, the File, Blob, URL and Headers keywords infer as `never`.                                                                                                                                                                         |
+| [#1577](https://github.com/arktypeio/arktype/issues/1577) | `arktype` | trivial | [fixed in featherduster](#fix-1577) | Under pnpm, exporting a branded (or `Json`-typed) Type fails declaration emit (TS2883) because `Brand` and `Json` live in `@ark/util` and aren't re-exported from `arktype`.                                                                                                      |
+| [#1600](https://github.com/arktypeio/arktype/issues/1600) | `schema`  | trivial | [fixed in featherduster](#fix-1600) | Any definition-taking method (`.to`, `.or`, `.and`, ...) on a type produced by `type.Record(...)` parses string definitions as @ark/schema schemas, so `"string[]"` crashes with `instanceOf operand must be a function`.                                                         |
+| [#1121](https://github.com/arktypeio/arktype/issues/1121) | `schema`  | small   | [fixed in featherduster](#fix-1121) | Plain {} objects used as name maps inherit Object.prototype members. The original register case is fixed, but alias names like toString/constructor/valueOf still cause false ParseErrors and internal TypeErrors.                                                                |
+| [#1160](https://github.com/arktypeio/arktype/issues/1160) | `arktype` | small   | [fixed in featherduster](#fix-1160) | .required() on a key with a default keeps Default&lt;...> in the type, so inferIn still says the key is optional even though runtime requires it.                                                                                                                                 |
+| [#1430](https://github.com/arktypeio/arktype/issues/1430) | `schema`  | small   | [fixed in featherduster](#fix-1430) | Array/tuple types with minLength/maxLength constraints drop them from `.expression` and `.description`.                                                                                                                                                                           |
+| [#1530](https://github.com/arktypeio/arktype/issues/1530) | `regex`   | small   | [fixed in featherduster](#fix-1530) | With capture groups in several alternation branches, the inferred captures tuples are too short: earlier branches lack trailing `undefined`s, and later branches are padded only for the first branch's groups, which also shifts the inferred index of later captures.           |
+| [#1555](https://github.com/arktypeio/arktype/issues/1555) | `util`    | small   | [fixed in featherduster](#fix-1555) | Importing arktype throws `ReferenceError: Blob is not defined` (or URL/FormData/...) in runtimes lacking web platform globals (WeChat mini programs, AudioWorklet, bare V8/QuickJS).                                                                                              |
+| [#1676](https://github.com/arktypeio/arktype/issues/1676) | `schema`  | small   | [fixed in featherduster](#fix-1676) | Types built from fresh functions (narrow/pipe/match/defaults) are never garbage collected because each function is register()ed into the global $ark registry. On 2.2.8 this also pins the nodes built from them; on featherduster only the function and its closure stay pinned. |
 
 ### [#1023](https://github.com/arktypeio/arktype/issues/1023) Infer any as morph return
 
-`arktype` · effort trivial · [fix awaiting a decision](#fix-1023) · [note](#note-1023) · 2.2.8: reproduces, featherduster: reproduces
+`arktype` · effort trivial · [fixed in featherduster](#fix-1023) · 2.2.8: reproduces, featherduster: reproduces
 
 **Summary:** A morph returning `any` infers its output as the morph function `(In: string) => Out<any>` instead of `any`, at the top level and nested.
 
@@ -1656,7 +1676,7 @@ The probes, their corpora and results, the per-pattern type changes and both rev
 
 ## Notes by issue
 
-These 130 notes were drafted as issue comments and then kept here for review instead. Each states what was verified on 2.2.8 and the featherduster branch, a root cause, a workaround, or a related issue, and every code sample in them was run. They refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
+These 129 notes were drafted as issue comments and then kept here for review instead. Each states what was verified on 2.2.8 and the featherduster branch, a root cause, a workaround, or a related issue, and every code sample in them was run. They refer to the branch as `featherduster` ([#1685](https://github.com/arktypeio/arktype/pull/1685)).
 
 ### <a id="note-462"></a>[#462](https://github.com/arktypeio/arktype/issues/462) arktype dedicated Promise handling
 
@@ -2140,487 +2160,6 @@ const InThePast = type("Date").narrow(
 InThePast(new Date(Date.now() + 60_000)).toString()
 // "must be in the past (was 8:09:52.883 PM, October 7, 2026)"
 ```
-
-### <a id="note-1023"></a>[#1023](https://github.com/arktypeio/arktype/issues/1023) Infer any as morph return
-
-**Problem.** `.infer` / `.inferIn` / `.inferOut` come from `distill` in
-`ark/type/attributes.ts`, which replaces each morph and default with its
-output or input. `finalizeDistillation` has a shortcut: if the distilled type
-equals the original (mutually assignable), it returns the original, so named
-types (`.as<User>()`, class instances, `Record<...>`, typed arrays) keep
-their names in hovers. A morph returning `any` breaks it: `any` is mutually
-assignable with the morph `(In: string) => Out<any>`, so the shortcut hands
-back the morph as the inferred output. That is unsound: the validator
-outputs a string, and a string isn't assignable to a function type. BASE
-(d90e76820)'s distill is the same as 2.2.8's, apart from #1160's `required`.
-The examples below were not re-run on 2.2.8 itself, but this nested case
-fails there:
-
-```ts
-const N = type({ a: ["string", "=>", s => s as any], b: "number" })
-export const nested: string = N.assert({ a: "x", b: 1 }).a
-// TS2322: Type '(In: string) => Out<any>' is not assignable to type 'string'.
-```
-
-All numbers below come from one run of one harness over five detached
-measurement worktrees: BASE d90e76820, A f641e654e, B 12d552c0a, C 0361af515,
-D 8cba24727. Instantiation counts are deterministic, and every repeat gave
-the same count.
-
-#### The options
-
-**A: root-only fix.** Branch `fix/infer`, commit f641e654e, on top of BASE.
-In the shortcut's equal branch, `0 extends 1 & distilled` returns `any` when
-the whole result is `any`.
-
-- Soundness: sound at the top level and in top-level unions, unless the morph
-  returns a function returning any. Still unsound
-  wherever the any is nested: props, arrays, tuples, unions of objects,
-  optional keys, records, cyclic scopes, defaulted morphs, `"unknown.any = 5"`
-  and piped `unknown.any`.
-- Precision and hovers: no change anywhere else.
-- Snapshots: none. pipe.test.ts restores the commented-out
-  `attest<any>(T.infer)`. Typed tests: 1617 passing.
-- Cost: about +2 to +25 per use (type.fn +25, match +2 per case), plus +41
-  once per program on the first nary `type.pipe`.
-
-**B: nested any infers unknown.** Branch `infer-1023/b`, commit 12d552c0a, on
-top of A. A new helper, `distillUnwrapped`, turns an any unwrapped from a
-morph's in/out/To or from a Default into `unknown`. `unknown` no longer counts
-as equal to the morph, so the shortcut stops firing. If the whole result is
-`unknown`, it distills again with `any` so the root keeps `any`.
-
-- Soundness: sound in every #1023 probe, but a morph that returns a function
-  returning any (`s => (x: string): any => s`, `() => JSON.parse`) still
-  infers as the morph, at the root and nested.
-- Precision: nested any becomes `unknown`, including cases BASE and A already
-  got right and sound:
-  - beside a real morph: `{ a: unknown; n: number }`
-  - the realWorld any/never test: `{ any: unknown; never: never }`
-  - the parameter of a chained `.pipe` after the any object
-  - `.inferIn` of a piped `unknown.any` prop: `{ a?: unknown }`
-- Hovers: a named type beside a morph returning any is expanded
-  (`{ user: { name: string; age: number }; a: unknown }`), as every tree
-  already does beside any other morph. Named types elsewhere keep their names.
-- Snapshots: realWorld "distills morphs returning any/never" `.infer` changes
-  from `{ any: any; never: never }` to `{ any: unknown; never: never }`. 7 new
-  tests. Typed tests: 1624 passing.
-- Cost: fails the bench gate on `pipe(2|5|10)` (+735, +20.5% to +30.3%). That
-  is paid once per program. Per use: +15 to +24 per chained `.pipe`, +6 per
-  match case, +15 to +33 per object with morphs or defaults.
-
-**C: distill twice.** Branch `infer-1023/c`, commit 0361af515, on top of
-BASE (not A). `_distill` gains a `distilledAny` parameter.
-
-- The first pass distills `any` as `unknown`, which can't equal a morph. If
-  the result equals `t`, `t` is returned and names survive.
-- Otherwise a second pass distills with `any`, giving `any` at every depth.
-- A root morph always changes, so it skips the first pass.
-- Soundness: sound in every #1023 probe, but a morph that returns a function
-  returning any still infers as the morph when nested, in arrays, tuples and
-  unions. Only the bare root is fixed, since a root morph skips the first pass.
-- Precision: `any` wherever BASE gave the morph. Every case where BASE was
-  already sound is unchanged, including beside a real morph and the realWorld
-  test.
-- Hovers: like B, a named type beside a morph returning any is expanded.
-  Named types elsewhere keep their names.
-- Snapshots: none. 5 new tests. Typed tests: 1622 passing.
-- Cost: passes the gate, with `pipe(N)` +274 (+7.6% to +11.3%) once per
-  program. Per use it is the most expensive option for objects with morphs or
-  defaults, because they are distilled twice: +199 (+3.6%) for an object with
-  morphs, +810 (+13.6%) for a 10-prop object with one default, and +17 per
-  match case.
-
-**D: drop the equality shortcut.** Branch `infer-1023/d`, commit 8cba24727,
-on top of BASE. Deletes `finalizeDistillation` and the `equals` import;
-`_distill` becomes `distill`. ark/json-schema/json.ts stops exporting
-`innerParseJsonSchema`, which otherwise hits TS5088.
-
-- Soundness: sound in every probe, including a morph returning a function
-  that returns any.
-- Precision: `any` at every depth, same as C.
-- Hovers: every named type that distill can map is expanded, everywhere:
-  `.as<User>()`, interfaces, classes without private members (Point,
-  TimeStub, `ArkClass`), `Record<string, number>` (shown as
-  `{ [x: string]: number }`), typed arrays (Uint8Array expands to its whole
-  member list), platform classes (`TextEncoder`, `AbortController`), and
-  recursive interfaces (which become anonymous cyclic types).
-- Hovers, unchanged: Date, Map, URL, Blob, classes with private members,
-  brands, functions.
-- Snapshots: 4 change.
-  - instanceOf `ArkClass` becomes `{ isArk: boolean }`.
-  - realWorld TimeStub becomes expanded.
-  - realWorld `{ name: string } & string[]` is reordered to
-    `string[] & { name: string }`.
-  - realWorld `WithMethods` becomes `{ any: () => any; never: () => never }`.
-- Tests: 7 new tests across pipe.test.ts and cast.test.ts. Typed tests: 1624
-  passing.
-- Compile cost: an exported value whose type is inferred from a recursive
-  named type or some platform classes fails declaration emit (TS5088, TS4023).
-  See "Compile differences".
-- Cost: cheaper on every isolated bench that changes. `cyclic 10 intersection` is -31.6%,
-  -69 per chained `.pipe`, -36 per match case, and whole-repo -0.38%.
-
-#### Type benches
-
-All seven `ark/type/__tests__/*.bench.ts` (87 benches with `.types`) run on
-all five trees via `node ark/repo/ts.js`. Only benches that differ in some
-option are listed. object, operand, and the other cyclic benches are
-identical in all five. **GATE** = more than 20% over the in-file baseline,
-which is what the repo's bench gate compares against.
-
-| bench                                     | BASE  | A           | B                      | C             | D              |
-| ----------------------------------------- | ----- | ----------- | ---------------------- | ------------- | -------------- |
-| cyclic 10 intersection                    | 14834 | +22 (+0.1%) | 0                      | +69 (+0.5%)   | -4691 (-31.6%) |
-| match case(3, define)                     | 2130  | +6 (+0.3%)  | +16 (+0.8%)            | +48 (+2.3%)   | -84 (-3.9%)    |
-| match case(10, define)                    | 7768  | +20 (+0.3%) | +58 (+0.7%)            | +167 (+2.1%)  | -336 (-4.3%)   |
-| match match.in<t> cases define and invoke | 2800  | +6 (+0.2%)  | +22 (+0.8%)            | +60 (+2.1%)   | -152 (-5.4%)   |
-| match record(3, define)                   | 2479  | +6 (+0.2%)  | +12 (+0.5%)            | +42 (+1.7%)   | -36 (-1.5%)    |
-| match record(10, define)                  | 7146  | +20 (+0.3%) | +40 (+0.6%)            | +140 (+2.0%)  | -120 (-1.7%)   |
-| match record.in<t> define and invoke      | 3517  | +10 (+0.3%) | +12 (+0.3%)            | +54 (+1.5%)   | -96 (-2.7%)    |
-| nary pipe(2)                              | 2422  | +43 (+1.8%) | +735 (+30.3%) **GATE** | +274 (+11.3%) | -188 (-7.8%)   |
-| nary pipe-chained(2)                      | 245   | +2 (+0.8%)  | 0                      | +5 (+2.0%)    | -11 (-4.5%)    |
-| nary pipe(5)                              | 2817  | +43 (+1.5%) | +735 (+26.1%) **GATE** | +274 (+9.7%)  | -188 (-6.7%)   |
-| nary pipe-chained(5)                      | 1413  | +2 (+0.1%)  | +60 (+4.2%)            | +24 (+1.7%)   | -143 (-10.1%)  |
-| nary pipe(10)                             | 3592  | +43 (+1.2%) | +735 (+20.5%) **GATE** | +274 (+7.6%)  | -188 (-5.2%)   |
-| nary pipe-chained(10)                     | 3958  | +2 (+0.1%)  | +180 (+4.5%)           | -1 (-0.0%)    | -488 (-12.3%)  |
-| nary fun(0)                               | 1127  | +15 (+1.3%) | 0                      | +16 (+1.4%)   | -76 (-6.7%)    |
-| nary fun(1, implicit)                     | 1201  | +12 (+1.0%) | 0                      | +12 (+1.0%)   | -80 (-6.7%)    |
-| nary fun(1, explicit)                     | 2155  | +25 (+1.2%) | 0                      | +19 (+0.9%)   | -123 (-5.7%)   |
-| nary fun(2)                               | 3266  | +31 (+0.9%) | 0                      | +22 (+0.7%)   | -143 (-4.4%)   |
-| nary fun(5)                               | 6980  | +49 (+0.7%) | 0                      | +31 (+0.4%)   | -194 (-2.8%)   |
-| nary fun(10)                              | 14556 | +79 (+0.5%) | 0                      | +46 (+0.3%)   | -239 (-1.6%)   |
-| operator filter-tuple                     | 1144  | +2 (+0.2%)  | 0                      | +3 (+0.3%)    | -12 (-1.0%)    |
-| operator filter-chain                     | 654   | +2 (+0.3%)  | 0                      | +3 (+0.5%)    | -11 (-1.7%)    |
-| operator morph-tuple                      | 1206  | +2 (+0.2%)  | 0                      | +3 (+0.2%)    | -12 (-1.0%)    |
-| operator morph-chain                      | 765   | +2 (+0.3%)  | 0                      | +3 (+0.4%)    | -11 (-1.4%)    |
-| operator morph-chain-all                  | 2929  | +2 (+0.1%)  | 0                      | +5 (+0.2%)    | -11 (-0.4%)    |
-| operator to-string                        | 1732  | -8 (-0.5%)  | -8 (-0.5%)             | -10 (-0.6%)   | -8 (-0.5%)     |
-| operator to-chain                         | 1913  | -8 (-0.4%)  | -8 (-0.4%)             | -10 (-0.5%)   | -8 (-0.4%)     |
-| operator to-tuple                         | 1599  | -8 (-0.5%)  | -8 (-0.5%)             | -10 (-0.6%)   | -8 (-0.5%)     |
-| operator to-args                          | 3442  | -8 (-0.2%)  | -4 (-0.1%)             | -4 (-0.1%)    | -54 (-1.6%)    |
-
-Only B fails the gate, on all three `pipe(N)`. D's -31.6% only triggers the
-"consider setting a new baseline" message.
-
-**One-time vs per-use.** The method is the same as infer-ab:
-
-- _warmed_: each differing bench file's `bench.baseline` also runs
-  distill-heavy code: pipes, a morph returning any at the top and nested,
-  defaults, `type.fn`, `.to`. Generic work that is cached for the rest of a
-  program is then paid by the baseline.
-- _warmed2_: the nary and match baselines also run a 10-step chained pipe and
-  match cases of the same shape, with different literals. Any delta left
-  after that is paid per use.
-
-Results:
-
-- One-time: `pipe(N)` drops to +2 (A), 0 (B), +5 (C) and -11 (D) when warmed.
-  So the one-time `type.pipe` cost is A +41, B +735, C +269, D about -177.
-- Per use: every other delta keeps its size when warmed, apart from shifts of
-  a few instantiations. Examples: case(10) is C +197 and D -321, and cyclic 10
-  intersection is D -4664.
-- One artifact: in warmed operator.bench, D gains +6 to +22 on six benches
-  that never touch distill (union-string, divisor, …). They are 0 when
-  isolated, so this is cache order, not distill work.
-
-A dedicated per-use bench (`perUse.bench.ts`) adds object shapes. Its
-baseline runs every shape once with different keys and literals, and every
-bench forces both `.infer` and `.inferIn`:
-
-| per use (warmed, same shape)                                     | BASE  | A           | B           | C             | D              |
-| ---------------------------------------------------------------- | ----- | ----------- | ----------- | ------------- | -------------- |
-| plain 10-prop object, out+in                                     | 5111  | +23         | 0           | +42 (+0.8%)   | -117 (-2.3%)   |
-| object with morphs (5 props, 3 morphs), out+in                   | 5460  | 0           | +33         | +199 (+3.6%)  | -73 (-1.3%)    |
-| 10-prop object with one default, out+in                          | 5936  | 0           | +33         | +810 (+13.6%) | -71 (-1.2%)    |
-| nested default, out                                              | 2160  | 0           | +15         | +142 (+6.6%)  | -33 (-1.5%)    |
-| object with a morph returning any, out+in                        | 2203  | +10         | -29         | +222 (+10.1%) | -128 (-5.8%)   |
-| `.as<User>()` in an object, out                                  | 1981  | +10         | 0           | +11           | -53 (-2.7%)    |
-| `type.Record("string", "number")`, out                           | 368   | +2          | 0           | +7            | -21            |
-| per chained `.pipe` (pipes 6-10: (chained(10) - chained(5)) / 5) | 509   | 0           | +24         | -5            | -69            |
-| pipe-chained(5), whole chain                                     | 1397  | +2          | +60 (+4.3%) | +24 (+1.7%)   | -143 (-10.2%)  |
-| per match case ((case(6) - case(3)) / 3)                         | 811   | +2          | +6          | +17           | -36            |
-| `type.fn` with 2 params and a return                             | 2166  | +25 (+1.2%) | 0           | +20 (+0.9%)   | -131 (-6.0%)   |
-| cyclic 10 intersection (warmed)                                  | 14559 | +22         | 0           | +69 (+0.5%)   | -4664 (-32.0%) |
-
-C's per-pipe cost isn't linear: +24 over the first 5 pipes and -1 at 10.
-Both counts are deterministic.
-
-#### Whole-repo tsc
-
-`pnpm exec tsc --noEmit -p . --extendedDiagnostics` (TS 7.1.0-dev.20261006.1),
-1076 files on every tree, all clean.
-
-How to read the totals:
-
-- Totals depend on which files are included and in what order.
-- Each option also adds tests, so the source-only rows check out BASE's test
-  files into the option's tree, leaving only the source different.
-- `--singleThreaded` is the reliable count. The default build runs several
-  checkers in parallel, each of which repeats work that the others also do,
-  and how files are split between them moves the total. It even turns D's
-  saving into a cost.
-- Both modes were identical across 3 runs.
-
-| tree           | single-threaded | vs BASE          | default (parallel) | vs BASE           |
-| -------------- | --------------- | ---------------- | ------------------ | ----------------- |
-| BASE           | 6,473,225       |                  | 7,054,405          |                   |
-| A, source only | 6,484,183       | +10,958 (+0.17%) | 7,101,006          | +46,601 (+0.66%)  |
-| B, source only | 6,499,289       | +26,064 (+0.40%) | 7,169,798          | +115,393 (+1.64%) |
-| C, source only | 6,535,477       | +62,252 (+0.96%) | 7,183,265          | +128,860 (+1.83%) |
-| D, source only | 6,448,838       | -24,387 (-0.38%) | 7,076,920          | +22,515 (+0.32%)  |
-| A, committed   | 6,484,274       | +11,049 (+0.17%) | 7,101,098          | +46,693 (+0.66%)  |
-| B, committed   | 6,508,291       | +35,066 (+0.54%) | 7,152,208          | +97,803 (+1.39%)  |
-| C, committed   | 6,548,524       | +75,299 (+1.16%) | 7,229,923          | +175,518 (+2.49%) |
-| D, committed   | 6,461,349       | -11,876 (-0.18%) | 7,087,312          | +32,907 (+0.47%)  |
-
-Check time can't tell the trees apart. It was measured single-threaded,
-source only, in 2 passes of 8 interleaved rounds on a shared machine
-(`raw/tsc-times-pass{1,2}.txt`).
-
-- Single runs spread from 5.4s to 13.4s. Pass 1 overlapped with the hover
-  runs; pass 2 ran with nothing else of mine running.
-- Medians were 6.6s to 8.7s in pass 1 and 8.2s to 9.3s in pass 2. The order
-  of the trees flips between passes: D was fastest in pass 1 and slowest in
-  pass 2.
-- A 1% difference in instantiations is far below this noise.
-
-#### Hovers
-
-The harness is `hover.ts` over `examples.ts`:
-
-- It uses TypeScript 6's API (`typeToString`, NoTruncation) and gives each
-  tree its own program, under the repo tsconfig (`lib: ES2020`, `@types/node`).
-- `MorphAny = type("string").pipe(s => s as any)`.
-- `UserT = type({ name: "string", age: "number" }).as<User>()`.
-- `.infer` is `.inferOut`.
-- **unsound** means a value the validator outputs (for `inferIn`, a value it
-  accepts) isn't assignable to the type. Every morph left in `.infer` is
-  unsound, since the morph returns its string input.
-- "same" means the same text as BASE.
-
-| example                                                    | BASE                                                                            | A                | B                                                     | C                                                 | D                                                                            |
-| ---------------------------------------------------------- | ------------------------------------------------------------------------------- | ---------------- | ----------------------------------------------------- | ------------------------------------------------- | ---------------------------------------------------------------------------- |
-| top `["string", "=>", s => s as any]` .infer               | `(In: string) => Out<any>` **unsound**                                          | `any`            | `any`                                                 | `any`                                             | `any`                                                                        |
-| nested `{ a: [same] }` .infer                              | `{ a: (In: string) => Out<any> }` **unsound**                                   | same **unsound** | `{ a: unknown }`                                      | `{ a: any }`                                      | `{ a: any }`                                                                 |
-| nested .inferIn                                            | `{ a: string }`                                                                 | same             | same                                                  | same                                              | same                                                                         |
-| beside a normal prop `b: "string"`                         | `{ a: (In: string) => Out<any>; b: string }` **unsound**                        | same **unsound** | `{ a: unknown; b: string }`                           | `{ a: any; b: string }`                           | `{ a: any; b: string }`                                                      |
-| beside a real morph `n: "string.numeric.parse"`            | `{ a: any; n: number }`                                                         | same             | `{ a: unknown; n: number }`                           | same                                              | same                                                                         |
-| array `MorphAny.array()`                                   | `((In: string) => Out<any>)[]` **unsound**                                      | same **unsound** | `unknown[]`                                           | `any[]`                                           | `any[]`                                                                      |
-| tuple `[MorphAny, "number"]`                               | `[(In: string) => Out<any>, number]` **unsound**                                | same **unsound** | `[unknown, number]`                                   | `[any, number]`                                   | `[any, number]`                                                              |
-| `type({ a: MorphAny }).or("string")`                       | `string \| { a: (In: string) => Out<any> }` **unsound**                         | same **unsound** | `string \| { a: unknown }`                            | `string \| { a: any }`                            | `string \| { a: any }`                                                       |
-| `{ a: MorphAny.or("number") }`                             | `{ a: number \| ((In: string) => Out<any>) }` **unsound**                       | same **unsound** | `{ a: unknown }`                                      | `{ a: any }`                                      | `{ a: any }`                                                                 |
-| optional key `{ "a?": MorphAny }`                          | `{ a?: (In: string) => Out<any> }` **unsound**                                  | same **unsound** | `{ a?: unknown }`                                     | `{ a?: any }`                                     | `{ a?: any }`                                                                |
-| deep `{ x: { y: { a: MorphAny } } }`                       | morph at depth 3 **unsound**                                                    | same **unsound** | `unknown` at depth 3                                  | `any` at depth 3                                  | `any` at depth 3                                                             |
-| `type.Record("string", MorphAny)`                          | `Record<string, (In: string) => Out<any>>` **unsound**                          | same **unsound** | `{ [x: string]: unknown }`                            | `{ [x: string]: any }`                            | `{ [x: string]: any }`                                                       |
-| cyclic scope `node: { a: MorphAny, "next?": "node" }`      | `{ a: (In: string) => Out<any>; next?: … }` **unsound**                         | same **unsound** | `{ a: unknown; … }`                                   | `{ a: any; … }`                                   | `{ a: any; … }`                                                              |
-| defaulted morph `{ a: MorphAny.default("x") }`             | `{ a: (In: Default<string, "x">) => Out<any> }` **unsound**                     | same **unsound** | `{ a: unknown }`                                      | `{ a: any }`                                      | `{ a: any }`                                                                 |
-| defaulted morph .inferIn                                   | `{ a?: string }`                                                                | same             | same                                                  | same                                              | same                                                                         |
-| `{ a: "unknown.any = 5" }` .infer                          | `{ a: ((In: Default<unknown, 5>) => Out<any>) \| Default<any, 5> }` **unsound** | same **unsound** | `{ a: unknown }`                                      | `{ a: any }`                                      | `{ a: any }`                                                                 |
-| `{ a: "unknown.any = 5" }` .inferIn                        | same as .infer **unsound**                                                      | same **unsound** | `{ a: unknown }` **unsound** (key required)           | `{ a: any }` **unsound** (key required)           | `{ a: any }` **unsound** (key required)                                      |
-| piped `{ a: type("unknown.any").pipe(x => x) }` .infer     | `{ a: (In: any) => Out<any> }` **unsound**                                      | same **unsound** | `{ a: unknown }`                                      | `{ a: any }`                                      | `{ a: any }`                                                                 |
-| piped prop .inferIn                                        | `{ a?: any }`                                                                   | same             | `{ a?: unknown }`                                     | same                                              | same                                                                         |
-| piped `type("unknown.any").pipe(x => x)` .infer / .inferIn | `(In: any) => Out<any>` **unsound**                                             | `any`            | `any`                                                 | `any`                                             | `any`                                                                        |
-| realWorld any/never test .infer                            | `{ any: any; never: never }`                                                    | same             | `{ any: unknown; never: never }`                      | same                                              | same                                                                         |
-| realWorld `.as<WithMethods>()`                             | `WithMethods`                                                                   | same             | same                                                  | same                                              | `{ any: () => any; never: () => never }`                                     |
-| chained `Nested.pipe(o => o).pipe(o => o.a)` .infer        | `(In: { a: string }) => Out<any>` **unsound**                                   | `any`            | `unknown`                                             | `any`                                             | `any`                                                                        |
-| `.as<User>()` alone (.infer and .inferIn)                  | `User`                                                                          | same             | same                                                  | same                                              | `{ name: string; age: number }`                                              |
-| `{ user: UserT }`                                          | `{ user: User }`                                                                | same             | same                                                  | same                                              | `{ user: { name: string; age: number } }`                                    |
-| `{ user: UserT, a: MorphAny }`                             | `{ user: User; a: (In: string) => Out<any> }` **unsound**                       | same **unsound** | `{ user: { name: string; age: number }; a: unknown }` | `{ user: { name: string; age: number }; a: any }` | same as C                                                                    |
-| class `type.instanceOf(Point)`                             | `Point`                                                                         | same             | same                                                  | same                                              | `{ x: number; y: number; norm: () => number }`                               |
-| `{ p: Point }`                                             | `{ p: Point }`                                                                  | same             | same                                                  | same                                              | `{ p: { x: number; y: number; norm: () => number } }`                        |
-| `type.Record("string", "number")`                          | `Record<string, number>`                                                        | same             | same                                                  | same                                              | `{ [x: string]: number }`                                                    |
-| `{ bytes: "TypedArray.Uint8" }`                            | `{ bytes: Uint8Array<ArrayBufferLike> }`                                        | same             | same                                                  | same                                              | `{ bytes: { [x: number]: number; …every Uint8Array member… } }`              |
-| `type.instanceOf(TextEncoder)`                             | `TextEncoder`                                                                   | same             | same                                                  | same                                              | `{ readonly encoding: string; encode: …; encodeInto: … }`                    |
-| `.as<TimeStub>()` (private constructor)                    | `TimeStub`                                                                      | same             | same                                                  | same                                              | `{ readonly isoString: string; toDate: () => Date; toString: () => string }` |
-| recursive `.as<Tree>()`                                    | `Tree`                                                                          | same             | same                                                  | same                                              | anonymous cyclic `{ value: number; children: …[] }`                          |
-
-Soundness per option over these examples:
-
-- BASE: unsound in every nested case, at the top level, in the chained pipe
-  and in piped `unknown.any`.
-- A: unsound in every nested case. Sound at the top level and in the chained
-  pipe.
-- B, C, D: sound on every example above, apart from the `"unknown.any = 5"`
-  `.inferIn` key (B and C are not sound for a morph that returns a function
-  returning any; see Verification).
-  That case is unsound on all five trees, because `withDefault` distributes
-  over `any`. It was already broken on BASE, and none of the options fixes it.
-
-Precision:
-
-- C and D are identical on every #1023 example.
-- B differs from C and D only by `unknown` in place of `any`, plus the
-  piped-prop input.
-- D differs from C only in expanding named types.
-
-Raw output: `hover-output.txt`, `results.json` and `table.md`, which also has
-the probes left out above.
-
-#### Compile differences
-
-These are concrete user code and its results, from the `usage_*` and `emit_*`
-probes. "Fails" means a type error. Unless noted, the morphs return their
-string input.
-
-Compiles on BASE (same distill as 2.2.8), fails under an option:
-
-- **B**: anything that uses a nested any as any.
-  - `(o: typeof BesideMorph.infer) => o.a.toUpperCase()` beside a real morph
-    fails with `'o.a' is of type 'unknown'`.
-  - `Nested.pipe(o => o).pipe(o => o.a.toUpperCase())`: the chained pipe's
-    parameter is now `{ a: unknown }`.
-  - The realWorld `o.any.foo`.
-  - `(o: typeof KeyAnyPiped.inferIn) => o.a?.toUpperCase()` fails with
-    `Property 'toUpperCase' does not exist on type '{}'`.
-- **B, C**: declaration emit of an exported value whose type comes from an
-  object with a named platform or recursive type _beside a morph returning
-  any_.
-  - `export const f = (v: unknown) => type({ c: type.instanceOf(AbortController), a: MorphAny }).assert(v)`
-    fails with TS4023: `has or is using name 'AbortSignal' from external
-module ".../@types/node/web-globals/abortcontroller" but cannot be named`,
-    plus 5 more names.
-  - `{ t: TreeT, a: MorphAny }` fails with TS5088 (cyclic structure cannot be
-    trivially serialized).
-  - All five trees already fail the same way beside a real morph
-    (`n: "string.numeric.parse"`). BASE avoids the failure only because it
-    returns the unsound original type.
-- **D**: the same declaration-emit failures, but with no morph anywhere.
-  - `export const f = (v: unknown) => type.instanceOf(AbortController).assert(v)`
-    fails with TS4023, as above.
-  - `export const g = (v: unknown) => type({ value: "number", children: "unknown[]" }).as<Tree>().assert(v)`
-    and `export const t = TreeT.infer` fail with TS5088.
-  - The repo hit this itself: json.ts's exported `innerParseJsonSchema`, which
-    D unexports.
-  - TextEncoder, Uint8Array, Point, User and Record expand but still emit.
-    URL and Blob are not expanded.
-  - TS 7 `tsc` reports both codes. TS 6's API reports only TS4023.
-- A scope's cyclic type (`scope({ node: { a: MorphAny, "next?": "node" } })`)
-  fails TS5088 on all five trees, so nothing changes there.
-
-Fails on BASE, compiles under an option:
-
-- **A, B, C, D**: assigning the runtime output at the top level
-  (`const o: typeof Top.infer = "foo"`), calling a method on it, and the
-  chained-pipe output (`const o: typeof Chained.infer = "foo"`).
-- **B, C, D**: assigning the runtime output when nested: `{ a: "foo" }`,
-  `["foo"]`, `["foo", 1]`, the union, defaulted morphs, and `{ a: 5 }` for
-  `"unknown.any = 5"`.
-- **C, D**: calling a method on the nested any, `o.a.toUpperCase()`. B still
-  rejects it, now with `'o.a' is of type 'unknown'`.
-- **D only**: assigning an `.as<Interface>()` value to an index-signature type,
-  `const r: Record<string, string | number> = u` where `u: typeof UserT.infer`.
-  The expanded anonymous type gains an implicit index signature.
-
-No difference on any tree:
-
-- `p instanceof Point` narrowing.
-- Assigning `.infer` back to `User`, `Tree`, `TextEncoder`, `Uint8Array` or
-  `Record<string, number>`.
-- A narrower parameter for an interface method: D prints methods as function
-  properties, but the signature keeps its method declaration, so it is still
-  checked bivariantly.
-
-#### Trade-offs and comparison
-
-- **Sound**: D is the only option sound across every probe. B and C are sound
-  for every morph whose output is any, but still infer the morph when its
-  output is a function returning any (C fixes that only at the bare root). A
-  is sound only at the top level. All five still mistype the
-  `"unknown.any = 5"` input, a separate bug.
-- **Precision of the fix**: C and D give `any`, which is what the user wrote,
-  at every depth. B gives `unknown` when nested, and it also turns `any` that
-  BASE and A already inferred correctly into `unknown`. That is the only
-  option that makes previously compiling, correct code fail to typecheck: the
-  beside-a-real-morph case, the chained pipe and piped `unknown.any`.
-- **Named types**: A, B and C keep names everywhere except beside a morph
-  returning any. There B and C expand them, as all trees already do beside
-  any other morph. D expands every mappable named type in every hover and
-  changes 4 existing snapshots.
-- **Declaration emit**: D is the only option that adds declaration-emit
-  errors to code with no morph at all, and the cases it breaks are common: recursive
-  interfaces (TS5088) and AbortController under `@types/node` (TS4023). B and
-  C add the same errors only beside a morph returning any, where BASE was
-  unsound anyway.
-- **Bench gate**: A, C and D pass. B fails it on `pipe(2|5|10)` (+20.5% to
-  +30.3%), a one-time cost per program.
-- **Per-use cost**:
-  - D is cheapest everywhere: -1% to -12% per use, and -32% on cyclic
-    intersections. The one exception is the +6 to +22 cache-order artifact
-    in warmed operator.bench.
-  - A costs a few instantiations per use.
-  - B costs +24 per chained `.pipe` and is otherwise about free.
-  - C pays for distilling twice on every object with a morph or default:
-    +3.6% to +13.6% per object, +17 per match case.
-- **Whole repo**, single-threaded, source only: D -0.38%, A +0.17%, B +0.40%,
-  C +0.96%.
-- **Shape of the change**:
-  - A: 5 lines.
-  - B: a helper and a root fallback on top of A.
-  - C: threads a parameter through every distill helper and runs a second pass.
-  - D: deletes code, but it also needed an unexport in json-schema, and users
-    with exported inferred types may need annotations.
-
-#### Verification
-
-An independent re-run reproduced every bench row, per-use row, whole-repo
-count, hover cell and compile claim above. It found one case the comparison
-had missed, folded into the soundness lines above:
-
-**A morph whose output is a function returning any.**
-
-The same root cause one level down: `(x: string) => any` is mutually assignable
-with `(In: string) => Out<(x: string) => any>`, because the morph's `Out<…>`
-return is assignable to `any`. The first pass of C (and B's `unknown`) only
-replaces an `any` that is the output itself, so the shortcut still fires.
-
-```ts
-const MorphFnAny = type("string").pipe(
-	s =>
-		(x: string): any =>
-			s + x
-)
-```
-
-| example                                            | BASE                                                         | A                | B                                       | C                                   | D                                               |
-| -------------------------------------------------- | ------------------------------------------------------------ | ---------------- | --------------------------------------- | ----------------------------------- | ----------------------------------------------- |
-| `MorphFnAny` .infer                                | `(In: string) => Out<(x: string) => any>` **unsound**        | same **unsound** | same **unsound**                        | `(x: string) => any`                | `(x: string) => any`                            |
-| `{ f: MorphFnAny }` .infer                         | `{ f: (In: string) => Out<(x: string) => any> }` **unsound** | same **unsound** | same **unsound**                        | same **unsound**                    | `{ f: (x: string) => any }`                     |
-| `MorphFnAny.array()` .infer                        | morph`[]` **unsound**                                        | same             | same                                    | same **unsound**                    | `((x: string) => any)[]`                        |
-| `[MorphFnAny, "number"]` .infer                    | morph tuple **unsound**                                      | same             | same                                    | same **unsound**                    | `[(x: string) => any, number]`                  |
-| `MorphFnAny.or("number")` .infer                   | `number \| morph` **unsound**                                | same             | same                                    | same **unsound**                    | `number \| ((x: string) => any)`                |
-| `{ parse: type("string").pipe(() => JSON.parse) }` | morph returning `typeof JSON.parse` **unsound**              | same             | same                                    | same **unsound**                    | `{ parse: (text: string, reviver?: …) => any }` |
-| `{ f: MorphFnAny, a: MorphAny }`                   | both morphs **unsound**                                      | same             | `{ f: (x: string) => any; a: unknown }` | `{ f: (x: string) => any; a: any }` | same as C                                       |
-| `{ f: MorphFnAny, n: "string.numeric.parse" }`     | `{ f: (x: string) => any; n: number }`                       | same             | same                                    | same                                | same                                            |
-
-Unsound because the output function returns a string, and
-`(x: string) => string` isn't assignable to `(In: string) => Out<…>`.
-`(o: typeof Nested.infer) => { const r: string = o.f("x") }` fails on BASE, A, B
-and C (`Type 'Out<(x: string) => any>' is not assignable to type 'string'`) and
-compiles on D. C fixes only the bare root, because a root morph skips its first
-pass; a root union does not.
-
-#### Files
-
-Everything is in `.frizz/threads/567f8946-44d1-4e2c-9cfc-5152f7109381/infer-1023/`.
-
-- Bench harness:
-  - `runBenches.ts` records the count and the in-file baseline per bench.
-  - `compareBenches.ts` and `benchTable.ts` render the tables.
-  - `makeWarmed.ts` and `makeWarmed2.ts` came from infer-ab. The files they
-    generate are in `generated/`.
-  - `perUse.bench.ts` and `runPerUse.ts`.
-  - Results: `bench-*.tsv`, `bench-*-diff.txt` and `bench-*table.md`.
-- Whole-repo tsc: `tsc.ts` and `tscTime.ts`, with output in `raw/tsc-*.txt`.
-- Hovers: `hover.ts`, `examples.ts`, `decls.ts` and `makeTable.ts` produce
-  `hover-output.txt`, `results.json` and `table.md`.
-- Declaration emit: `emitCheck.ts` runs TS 7 declaration emit, with output in
-  `raw/emit-*.txt` and `emit-summary.txt`.
-- Raw bench output is in `raw/`.
-- The measurement worktrees (`infer-1023-m-*`) have been removed. To rerun,
-  recreate them detached at the five commits and run `pnpm i --offline
---frozen-lockfile`. For source-only tsc, also run
-  `git checkout d90e76820 -- <the option's changed test files>`.
 
 ### <a id="note-1026"></a>[#1026](https://github.com/arktypeio/arktype/issues/1026) Only allow AliasNode as a structural reference
 
