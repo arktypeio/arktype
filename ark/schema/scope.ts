@@ -186,6 +186,18 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 // identity rather than names to support HMR and multi-bundle environments.
 let anonymousScopeCount = 0
 
+let isCreatingBuiltin = false
+
+// a scope arktype creates for its own keywords, whose nodes every program shares
+export const createBuiltinScope = <scope>(create: () => scope): scope => {
+	isCreatingBuiltin = true
+	try {
+		return create()
+	} finally {
+		isCreatingBuiltin = false
+	}
+}
+
 export type GlobalOnlyConfigOptionName = satisfy<
 	keyof ArkSchemaConfig,
 	| "dateAllowsInvalid"
@@ -564,6 +576,10 @@ export interface RootUnit {
 	refs: unknown[]
 	errorContexts: NodeCompiler.ErrorContexts
 	dependencies: Record<string, UnitDependency>
+	// the nodes whose names hold a value keyed by identity, which name them only within this pass
+	identityNamed: ReadonlySet<NodeId>
+	// the unit of each root this pass reaches
+	unitsById: Record<NodeId, RootUnit>
 }
 
 // each root's unit holds the nodes it reaches before another root, so a prop's traversal is shared only by Types sharing the root it belongs to
@@ -575,6 +591,7 @@ export const precompileRootUnits = (
 	const occurrencesById = occurrencesOfResolutions(s)
 	if (occurrencesById) s = nameReferences([root], occurrencesById, keyOf)
 	const units: RootUnit[] = []
+	const unitsById: Record<NodeId, RootUnit> = {}
 	// a component is completed after every component it calls
 	for (const component of s.components) {
 		const roots = component
@@ -597,7 +614,7 @@ export const precompileRootUnits = (
 		}
 		const declared = Object.values(declaredByName)
 		const traversals = declared.map(node => declareTraversals(linkage, node))
-		units.push({
+		const unit: RootUnit = {
 			name: s.names[roots[0].id],
 			names: s.names,
 			roots: roots as BaseRoot[],
@@ -606,8 +623,12 @@ export const precompileRootUnits = (
 			members: linkage.members,
 			refs: [...linkage.refs.keys()],
 			errorContexts: linkage.errorContexts,
-			dependencies: linkage.dependencies
-		})
+			dependencies: linkage.dependencies,
+			identityNamed: s.identityNamed,
+			unitsById
+		}
+		units.push(unit)
+		for (const root of roots) unitsById[root.id] = unit
 	}
 	return units
 }
@@ -622,6 +643,7 @@ interface ContentNamingState {
 	names: Record<NodeId, string>
 	inputsByHash: Record<string, string>
 	occurrencesById: Record<NodeId, number>
+	identityNamed: Set<NodeId>
 }
 
 const nameReferences = (
@@ -638,7 +660,8 @@ const nameReferences = (
 		valueIndices: new Map(),
 		names: {},
 		inputsByHash: {},
-		occurrencesById
+		occurrencesById,
+		identityNamed: new Set()
 	}
 	for (const root of roots)
 		if (!s.referencesById[root.id]) nameReference(s, root)
@@ -672,6 +695,7 @@ const occurrencesOfResolutions = (
 interface ContentReference {
 	node: BaseNode
 	content: string
+	holdsIdentity: boolean
 	callees: BaseNode[]
 	index: number
 	lowLink: number
@@ -701,6 +725,14 @@ const nameReference = (
 	if (reference.lowLink === reference.index) {
 		const members = s.stack.splice(s.stack.lastIndexOf(reference))
 		nameComponent(s, members)
+		if (
+			members.some(
+				member =>
+					member.holdsIdentity ||
+					member.callees.some(callee => s.identityNamed.has(callee.id))
+			)
+		)
+			for (const member of members) s.identityNamed.add(member.node.id)
 		s.components.push(members.map(member => member.node))
 	}
 	return reference
@@ -717,6 +749,7 @@ const compileContent = (
 	const linkage = createLinkage(positionOf)
 	declareTraversals(linkage, node)
 	const serializing = new Set<object>()
+	let holdsIdentity = false
 	const serialize = (value: unknown): string => {
 		if (isNode(value)) {
 			linkage.referencesById[value.id] ??= value
@@ -739,6 +772,7 @@ const compileContent = (
 		) {
 			let i = s.valueIndices.get(value)
 			if (i === undefined) s.valueIndices.set(value, (i = s.valueIndices.size))
+			holdsIdentity = true
 			return `v${i}`
 		}
 		serializing.add(value as object)
@@ -752,6 +786,8 @@ const compileContent = (
 	const occurrence = s.occurrencesById[node.id]
 	const content = [
 		node.kind,
+		// a program's scope keeps its nodes apart from content-equal ones of another
+		...(node.$.isBuiltin ? [] : [serialize(node.$)]),
 		...linkage.members.map(([name, source]) => `${name} = ${source}`),
 		[...linkage.refs.keys()].map(serialize).join(),
 		linkage.errorContexts.map(serialize).join(),
@@ -760,6 +796,7 @@ const compileContent = (
 	return {
 		node,
 		content,
+		holdsIdentity,
 		callees: calleeIds.map(
 			id =>
 				linkage.referencesById[id] ??
@@ -937,6 +974,7 @@ const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly name: string
+	readonly isBuiltin: boolean = isCreatingBuiltin
 	private readonly scopeConfig: ArkSchemaScopeConfig | undefined
 
 	get [arkKind](): "scope" {
@@ -1731,7 +1769,9 @@ export type SchemaScopeParser = <const aliases>(
 export const schemaScope: SchemaScopeParser = (aliases, config) =>
 	new SchemaScope(aliases, config)
 
-export const rootSchemaScope: SchemaScope = new SchemaScope({})
+export const rootSchemaScope: SchemaScope = createBuiltinScope(
+	() => new SchemaScope({})
+)
 
 export const bootstrapRootScope = (): void => {
 	// ensure the scope is resolved so JIT will be applied to future types

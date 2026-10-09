@@ -1,6 +1,7 @@
 import {
 	$ark,
 	BaseScope,
+	createBuiltinScope,
 	hasArkKind,
 	LazyGenericRoot,
 	parseGeneric,
@@ -407,9 +408,9 @@ export const keywordModule = (
 			module,
 			name,
 			() =>
-				(exports ??= new InternalScope(def, config).exportLazily())[
-					name as never
-				]
+				(exports ??= createBuiltinScope(
+					() => new InternalScope(def, config)
+				).exportLazily())[name as never]
 		)
 	}
 	return module

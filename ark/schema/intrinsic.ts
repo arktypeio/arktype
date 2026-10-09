@@ -1,5 +1,10 @@
 import { defineValue } from "@ark/util"
-import { bootstrapRootScope, node, schemaScope } from "./scope.ts"
+import {
+	bootstrapRootScope,
+	createBuiltinScope,
+	node,
+	schemaScope
+} from "./scope.ts"
 import { $ark } from "./shared/registry.ts"
 import { arrayIndexSource } from "./structure/shared.ts"
 
@@ -100,7 +105,7 @@ export const bootstrap = (): void => {
 	defineValue($ark, "intrinsic", undefined)
 	try {
 		bootstrapRootScope()
-		Object.assign(intrinsicTarget, bootstrapIntrinsic())
+		Object.assign(intrinsicTarget, createBuiltinScope(bootstrapIntrinsic))
 	} catch (e) {
 		bootstrapped = false
 		bootstrapOnRead()

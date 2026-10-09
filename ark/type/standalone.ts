@@ -309,7 +309,8 @@ export class StandaloneArtifact {
 	classes = new Set<unknown>()
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
-	unitsByRoot = new Map<BaseRoot, RootUnit[]>()
+	// the roots whose units the artifact holds
+	unitRoots = new Set<BaseRoot>()
 	// the unit holding each root in the first Type reaching it
 	unitsByHead = new Map<BaseRoot, RootUnit>()
 	sharedByUnit = new Map<RootUnit, boolean>()
@@ -369,10 +370,9 @@ export class StandaloneArtifact {
 		// a Type in a meta is emitted as its validator, so it needs traversals of its own
 		do {
 			for (const root of this.roots) {
-				if (this.unitsByRoot.has(root)) continue
-				const units = rootUnitsOf(root)
-				this.unitsByRoot.set(root, units)
-				for (const unit of units) {
+				if (this.unitRoots.has(root)) continue
+				this.unitRoots.add(root)
+				for (const unit of rootUnitsOf(root)) {
 					for (const head of unit.roots)
 						if (!this.unitsByHead.has(head)) this.unitsByHead.set(head, unit)
 				}
@@ -633,10 +633,10 @@ export class StandaloneArtifact {
 
 	// each Type's units, after those they call
 	get units(): RootUnit[] {
-		return [...new Set([...this.unitsByRoot.values()].flat())]
+		return [...new Set([...this.unitRoots].flatMap(rootUnitsOf))]
 	}
 
-	// a unit is shared when what it holds is the same wherever it's created, as are the units it reads
+	// a unit is shared when its name addresses it, holding no value keyed by identity or a program's scope, what it holds is the same wherever it's created, and so are the units it reads
 	isShared(unit: RootUnit): boolean {
 		let shared = this.sharedByUnit.get(unit)
 		if (shared === undefined) {
@@ -648,6 +648,7 @@ export class StandaloneArtifact {
 			] as BaseNode[]
 			// a node a unit refers to directly is its root's shape, rather than a validator
 			shared =
+				!unit.identityNamed.has(unit.roots[0].id) &&
 				!unit.refs.some(ref => !isNode(ref) && this.holdsLocal(ref)) &&
 				!unit.errorContexts.some(context => this.holdsLocal(context)) &&
 				reads.every(node => this.isShared(unitOf(node, unit)))
@@ -1033,8 +1034,44 @@ return [${returned.join(", ")}]
 		.map(value => this.emit(value))
 		.join(", ")}),
 	${shape},
-	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root.expression)}()`}, description: ${this.emitString(root.description)}, meta: ${this.emit(root.meta)} }${key}
+	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root.expression)}()`}, description: ${this.emitString(root.description)}, meta: ${this.emitMeta(root, this.unitsByHead.get(root)!)} }${key}
 )`
+	}
+
+	// a node's meta is one object wherever its errors or its validator read it, so one its name addresses is a module of its own
+	emitMeta(node: BaseNode, unit: RootUnit): string {
+		const declared = this.declarations.namesByValue.get(node.meta)
+		if (declared) return declared
+		if (
+			!node.$.isBuiltin ||
+			unit.identityNamed.has(node.id) ||
+			this.holdsLocal(node.meta)
+		)
+			return this.emitLiteral(node.meta)
+		const { declarations, writing } = this
+		const reader = this.unit
+		this.declarations = createDeclarations()
+		this.writing = undefined
+		this.unit = undefined
+		const created = `runtime.freeze(${this.writeLiteral(node.meta)[0]})`
+		const { statements } = this.declarations
+		this.declarations = declarations
+		this.writing = writing
+		this.unit = reader
+		const value =
+			statements.length ?
+				`(function () {\n${statements.join("\n")}\nreturn ${created}\n})()`
+			:	created
+		const name = `meta${hashOf(`${unit.names[node.id]}\n${value}`)}`
+		this.unitModules[`~arktype/${name}`] ??= {
+			imports: {},
+			declarations: [
+				`var ${name}Value`,
+				`function ${name}() {\n\treturn (${name}Value ??= ${value})\n}`
+			],
+			exports: [name]
+		}
+		return `${this.read(`~arktype/${name}`, name, name, name)}()`
 	}
 
 	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator
@@ -1199,6 +1236,8 @@ return [${returned.join(", ")}]
 		if (runtimePath) return runtimePath
 		const declared = this.declarations.namesByValue.get(value)
 		if (declared) return declared
+		const metaNode = this.unit?.declared.find(node => node.meta === value)
+		if (metaNode) return this.emitMeta(metaNode, this.unit!)
 		const defaulted = this.defaultsByMorph.get(value)
 		if (defaulted) return this.emitDefault(...defaulted)
 		// a unit is compared by reference, so a copy wouldn't equal it
@@ -1287,6 +1326,32 @@ return [${returned.join(", ")}]
 	}
 
 	emitLiteral(value: object): string {
+		const [literal, elements] = this.writeLiteral(value)
+		if (!elements.some(element => this.lateNames.has(element)))
+			return this.declareConst(value, "literal", `runtime.freeze(${literal})`)
+		const prototype = prototypeOf(value)
+		// assigning a __proto__ key to an object would set its prototype
+		if (
+			prototype === Object.prototype &&
+			Object.getOwnPropertyNames(value).includes("__proto__")
+		) {
+			throwParseError(
+				writeUnprecompilableMessage("a __proto__ key beside a Type")
+			)
+		}
+		const name = this.declareConst(
+			value,
+			"literal",
+			Array.isArray(value) ? "[]"
+			: prototype === null ? "{ __proto__: null }"
+			: "{}"
+		)
+		this.lateNames.add(name)
+		this.fills.push(`runtime.freeze(runtime.assign(${name}, ${literal}))`)
+		return name
+	}
+
+	writeLiteral(value: object): [literal: string, elements: string[]] {
 		const prototype = prototypeOf(value)
 		const isArray = prototype === Array.prototype && Array.isArray(value)
 		if (!isArray && prototype !== Object.prototype && prototype !== null) {
@@ -1340,24 +1405,7 @@ return [${returned.join(", ")}]
 			isArray ? `[${elements.join(", ")}]`
 			: entries.length ? `{ ${entries.join(", ")} }`
 			: "{}"
-		if (!elements.some(element => this.lateNames.has(element)))
-			return this.declareConst(value, "literal", `runtime.freeze(${literal})`)
-		// assigning a __proto__ key to an object would set its prototype
-		if (prototype === Object.prototype && keys.includes("__proto__")) {
-			throwParseError(
-				writeUnprecompilableMessage("a __proto__ key beside a Type")
-			)
-		}
-		const name = this.declareConst(
-			value,
-			"literal",
-			isArray ? "[]"
-			: prototype === null ? "{ __proto__: null }"
-			: "{}"
-		)
-		this.lateNames.add(name)
-		this.fills.push(`runtime.freeze(runtime.assign(${name}, ${literal}))`)
-		return name
+		return [literal, elements]
 	}
 
 	// a Type a literal holds is data, so it's emitted as its validator rather than its shape
@@ -1460,25 +1508,16 @@ const collectDefaults = (
 
 const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()
 
-// the units of the Type naming a unit, by the name of each root
-const unitsByRootNameOf = new WeakMap<RootUnit, Record<string, RootUnit>>()
-
 const rootUnitsOf = (root: BaseRoot): RootUnit[] => {
 	let units = unitsByRoot.get(root)
-	if (units) return units
-	units = precompileRootUnits(root, runtimeKeyOf)
-	const unitsByRootName: Record<string, RootUnit> = {}
-	for (const unit of units) {
-		unitsByRootNameOf.set(unit, unitsByRootName)
-		for (const head of unit.roots) unitsByRootName[unit.names[head.id]] = unit
-	}
-	unitsByRoot.set(root, units)
+	if (!units)
+		unitsByRoot.set(root, (units = precompileRootUnits(root, runtimeKeyOf)))
 	return units
 }
 
-// a node's names are those of the Type naming the unit reading it, so it's found among that Type's units
+// a root a unit reads was reached by the pass naming the unit, which may name another root alike
 const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
-	unitsByRootNameOf.get(reader)![reader.names[node.id]]
+	reader.unitsById[node.id]
 
 const keysByRoot = new WeakMap<BaseRoot, [id: string, holes: unknown[]]>()
 

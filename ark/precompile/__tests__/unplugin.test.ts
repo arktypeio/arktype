@@ -432,6 +432,39 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		])
 	}).timeout(60000)
 
+	it("keeps each meta an error or a Type exposes the object arktype's is", async () => {
+		const root = writeFixture(
+			{
+				"name.ts": `import { type } from "arktype"
+
+export const Name = type("string").configure({ description: "a name" })
+`,
+				"main.ts": `import { scope, type } from "arktype"
+import { Name } from "./name.ts"
+
+const User = type({ name: Name })
+const Short = type("string <= 3")
+const ShortWord = type("string.alphanumeric <= 3")
+const Tagged = type({ n: type("number").configure({ description: "tagged" }) })
+const ScopedTagged = scope({}).type({ n: ["number", "@", { description: "tagged" }] })
+const metaOf = (out: unknown) => [...(out as Iterable<{ meta: object }>)][0].meta
+console.log(
+	JSON.stringify([
+		metaOf(Name(5)) === Name.meta,
+		metaOf(User({ name: 5 })) === Name.meta,
+		metaOf(Short("abcd")) === metaOf(ShortWord("abcd")),
+		metaOf(Tagged({ n: "x" })) === metaOf(ScopedTagged({ n: "x" }))
+	])
+)
+`
+			},
+			fromHere("temp", "metas")
+		)
+		const expected = "[true,true,true,false]\n"
+		attest(runPlain(root)).equals(expected)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
+	}).timeout(60000)
+
 	it("throws writing to a frozen input from a CommonJS bundle", async () => {
 		const root = writeFixture(
 			{

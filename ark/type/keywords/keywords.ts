@@ -1,4 +1,5 @@
 import {
+	createBuiltinScope,
 	RootModule,
 	type ArkErrors,
 	type arkKind,
@@ -79,18 +80,20 @@ export declare namespace Ark {
 // refuses to load beside a standalone artifact, which claims arktype/runtime
 claimEntry("arktype")
 
-export const ark: Scope<Ark> = scope(
-	{
-		...tsKeywordDefinitions,
-		...tsGenericDefinitions,
-		...prototypeDefinitions,
-		...builtinDefinitions,
-		string,
-		number,
-		object,
-		unknown
-	},
-	{ prereducedAliases: true, name: "ark" }
+export const ark: Scope<Ark> = createBuiltinScope(() =>
+	scope(
+		{
+			...tsKeywordDefinitions,
+			...tsGenericDefinitions,
+			...prototypeDefinitions,
+			...builtinDefinitions,
+			string,
+			number,
+			object,
+			unknown
+		},
+		{ prereducedAliases: true, name: "ark" }
+	)
 ) as never
 
 const arkExports: Module<Ark> = ark.internal.exportLazily() as never
