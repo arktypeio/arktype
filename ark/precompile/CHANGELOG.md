@@ -50,7 +50,14 @@ A definition referencing a Type that holds functions receives that Type's valida
 
 A definition calling a static helper (a function whose body is one expression) is precompiled with what the helper returned at build. Vitest through the plugin, `node --test` through `register()` and `bun test` through the Bun plugin replace whole modules when they mock one, so under them each module registers the functions it exports, and a definition calling a helper another module exports checks at creation that it received the registered function: a mock is another function, and a module the runner replaced registered nothing. `checkHelpers` sets this outside those runners, or turns it off; `bun test` is recognized by the `NODE_ENV` it sets, so a suite setting its own passes `checkHelpers: true`.
 
-A definition that could depend on two values imported from other modules being distinct is reported rather than precompiled, as is a Module, Scope or Generic read through a binding, a definition reading a function only through a binding it declares itself, such as a callback's parameter, a definition throwing a ParseError that reads a binding or holds or calls a function, itself or through any value it passes to arktype, or that another definition threw, such as a runtime island it reads, and one whose code sees a function's name in what arktype prints, such as a `where` selector or description writer reading a predicate's `expression`, or a `JSON.stringify` replacer receiving a Type's JSON.
+These definitions are reported rather than precompiled:
+
+- one that could depend on two values imported from other modules being distinct;
+- a Module, Scope or Generic read through a binding;
+- one reading a function only through a binding it declares itself, such as a callback's parameter;
+- one throwing a ParseError that reads a binding, or holds or calls a function, itself or through any value it passes to arktype;
+- one throwing a ParseError another definition threw, such as a runtime island it reads;
+- one whose code sees a function's name in what arktype prints, such as a `where` selector or description writer reading a predicate's `expression`, or a `JSON.stringify` replacer receiving a Type's JSON.
 
 ### Precompile in Turbopack
 
