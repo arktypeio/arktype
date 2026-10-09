@@ -559,13 +559,12 @@ export class StandaloneArtifact {
 		if (hasArkKind(value, "root")) {
 			const [id, holes] = keyOf(value)
 			const holesName = `holes${this.checks.length}`
+			const expected =
+				value.expression.includes(holeNamePrefix) ?
+					""
+				:	`, ${this.readExpression(value.expression)}`
 			this.checks.push(
-				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(
-					// the names of its holes are known only once it's received
-					value.expression.includes(holeNamePrefix) ?
-						"the Type it was at build"
-					:	`Type<${value.expression}>`
-				)}, ${JSON.stringify(label)})`
+				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(label)}${expected})`
 			)
 			const protos = [value, ...value.references].flatMap(node =>
 				node.hasKind("proto") ? [node.proto] : []
@@ -1032,8 +1031,21 @@ return [${returned.join(", ")}]
 		.map(value => this.emit(value))
 		.join(", ")}),
 	${shape},
-	{ expression: ${this.emitString(root.expression)}, description: ${this.emitString(root.description)}, meta: ${this.emit(root.meta)} }${key}
+	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root.expression)}()`}, description: ${this.emitString(root.description)}, meta: ${this.emit(root.meta)} }${key}
 )`
+	}
+
+	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator
+	readExpression(expression: string): string {
+		const name = `expression${hashOf(expression)}`
+		this.unitModules[`~arktype/${name}`] ??= {
+			imports: {},
+			declarations: [
+				`function ${name}() {\n\treturn ${JSON.stringify(expression)}\n}`
+			],
+			exports: [name]
+		}
+		return this.read(`~arktype/${name}`, name, name, name)
 	}
 
 	// a hole's name is known only at creation, so a string printing one is completed then with arktype's own printing

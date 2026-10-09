@@ -482,12 +482,15 @@ export const checkInput = (
 export const holesOf = (
 	validator: unknown,
 	id: string,
-	expected: string,
-	label: string
+	label: string,
+	// omitted when it prints a hole's name, which is known only once received
+	expressionOf?: () => string
 ): readonly unknown[] => {
 	const created = holesByValidator.get(validator as object)
 	if (created?.[0] !== id) {
 		const actual = describeValue(validator)
+		const expected =
+			expressionOf ? `Type<${expressionOf()}>` : "the Type it was at build"
 		return throwError(
 			writeCreationMismatchMessage(
 				label,
