@@ -181,6 +181,12 @@ const maxDepth = 64
 const unstableArkProblem =
 	"is derived from registry names or node ids, which are not stable"
 
+const printedNameProblem = (label: string) =>
+	`prints the name of ${label}, which the build knows only by a placeholder`
+
+const receivedNameProblem = (label: string) =>
+	`receives the name of ${label}, which the build knows only by a placeholder`
+
 const outsideContentProblem =
 	"is not a member of the Type API or of a node's content, so it can depend on registry names or node ids"
 
@@ -203,6 +209,7 @@ export class Interpreter {
 	private validators = new WeakSet<object>()
 	private arkObjects = new WeakSet<object>()
 	private opaqueStandInsByValue = new WeakMap<object, StandIn>()
+	private admitted = new WeakSet<object>()
 	standInsByName = new Map<string, StandIn>()
 	private activeCall: { ctx: Context; isArktype: boolean } | undefined
 
@@ -211,7 +218,6 @@ export class Interpreter {
 		this.opts = opts
 	}
 
-	// the expression that creates a hole and its module
 	// arktype can print what any value it is passed holds, by any route: a Type's holes, a Module's Types, a Scope's aliases, a Generic's definition
 	holesIn(
 		value: unknown,
@@ -244,6 +250,7 @@ export class Interpreter {
 		return holes
 	}
 
+	// the expression that creates a hole and its module
 	sourceOf(hole: unknown): [Node, SourceModule] | undefined {
 		if (typeof hole === "symbol") return this.sourcesBySymbol.get(hole)
 		const standIn = hasDomain(hole, "object") && this.standIns.get(hole)
@@ -1791,7 +1798,12 @@ export class Interpreter {
 		const params = runtimeParamsOf(closure.node)
 		for (let i = 0; i < args.length; i++) {
 			const param = params[Math.min(i, params.length - 1)] ?? closure.node
-			const admitted = this.admit(args[i], param, ctx, "receives")
+			const admitted = this.admit(
+				args[i],
+				param,
+				{ ...ctx, module: closure.module },
+				receivedNameProblem
+			)
 			if (isDynamic(admitted)) throw admitted
 		}
 		const result = this.interpretCall(closure, args, closure.node, ctx)
@@ -1960,16 +1972,21 @@ export class Interpreter {
 		value: value,
 		node: Node,
 		ctx: Context,
-		verb = "prints"
+		problemOf = printedNameProblem
 	): value | DynamicValue {
-		const unstable = this.unstableIn(value, new Set())
-		if (!unstable) return value
+		const seen = new Set<unknown>()
+		const unstable = this.unstableIn(value, seen)
+		if (!unstable) {
+			// nothing writes to a plain container once interpreted code holds it, so a clean one stays clean
+			for (const container of seen) this.admitted.add(container as object)
+			return value
+		}
 		if (unstable === "registry")
 			return this.reject(node, ctx, unstableArkProblem)
 		return this.reject(
 			node,
 			ctx,
-			`(${ctx.module.positionOf(node)}) ${verb} the name of ${this.labelOf(unstable)}, which the build knows only by a placeholder`,
+			`(${ctx.module.positionOf(node)}) ${problemOf(this.labelOf(unstable))}`,
 			undefined,
 			"placeholder"
 		)
@@ -1987,7 +2004,8 @@ export class Interpreter {
 			}
 			return value.includes("$ark.") ? "registry" : undefined
 		}
-		if (!isPlainContainer(value) || seen.has(value)) return
+		if (!isPlainContainer(value) || seen.has(value) || this.admitted.has(value))
+			return
 		seen.add(value)
 		for (const k of Reflect.ownKeys(value)) {
 			const descriptor = Reflect.getOwnPropertyDescriptor(value, k)!

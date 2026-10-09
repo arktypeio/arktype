@@ -783,6 +783,34 @@ const M = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number
 			])
 		})
 
+		it("a callback receiving a placeholder from a built-in, in its own module", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import { replacer } from "./replacer.ts"
+const J = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number")`,
+					{
+						"/replacer.ts": `import { type } from "arktype"
+class Apple {}
+const Ap = type.instanceOf(Apple)
+export const replacer = (k: string, v: any) => (k === "" ? { a: Ap } : k === "a" ? v.proto.includes("Apple") : v)`
+					}
+				)
+			).snap([
+				"3:11 rejected\n  `v: any` (/replacer.ts:4:37) receives the name of `Apple` (/replacer.ts:2:1), which the build knows only by a placeholder"
+			])
+		})
+
+		it("a callback over a long array, whose elements it admits once", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const codes = Array.from({ length: 5000 }, (_, i) => \`c\${i}\`)
+const Code = type.enumerated(...codes.map(c => c.toUpperCase()))`).map(status =>
+					status.split(" ", 2).join(" ")
+				)
+			).snap(["3:14 accepted"])
+		})
+
 		it("results each engine computes its own way", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
