@@ -744,9 +744,27 @@ export class Precompiler {
 				site.helpers.filter(helper => helper.file !== module.id)
 			:	[]
 		if (!held.length && !site.inputs.length && !helpers.length) return
+		const factory: SiteFactory = {
+			params: [],
+			spans: [],
+			inputs: [],
+			imports: []
+		}
+		const passed = this.receiveReferences(site, module, held, factory, reasons)
+		this.receiveInputs(site, module, prefix, passed, factory, reasons)
+		for (const helper of helpers)
+			this.receiveHelper(helper, site, module, prefix, factory, reasons)
+		return factory
+	}
+
+	private receiveReferences(
+		site: Site,
+		module: SourceModule,
+		held: unknown[],
+		factory: SiteFactory,
+		reasons: string[]
+	): Set<unknown> {
 		const holesByValue = new Map(site.holes.map(hole => [hole.value, hole]))
-		const params: FactoryParam[] = []
-		const spans: Span[] = []
 		// the text each hole is read through, which can evaluate to another value at runtime if another module can replace it
 		const sourcesByHole = new Map<unknown, Map<string, boolean>>()
 		const addSource = (hole: unknown, text: string, isForeign: boolean) => {
@@ -783,7 +801,10 @@ export class Precompiler {
 				)
 			}
 			if (!holes.length || passed.has(reference.value)) continue
-			if (spans.length && reference.start < spans[spans.length - 1].end) {
+			if (
+				factory.spans.length &&
+				reference.start < factory.spans[factory.spans.length - 1].end
+			) {
 				reasons.push(
 					`\`${text}\` is read inside another value its factory receives`
 				)
@@ -791,8 +812,8 @@ export class Precompiler {
 			if (reference.unavailableRead)
 				reasons.push(unavailableReadMessage(reference.unavailableRead, module))
 			passed.add(reference.value)
-			spans.push(reference)
-			params.push(
+			factory.spans.push(reference)
+			factory.params.push(
 				hole ?
 					{
 						kind: hole.kind as HoleKind,
@@ -812,26 +833,18 @@ export class Precompiler {
 				`arktype holds \`${origin.snippetOf(node)}\` (${origin.positionOf(node)}), which the site ${holesByValue.has(value) ? "reads outside its own source" : "cannot pass to its factory"}`
 			)
 		}
-		// equality between values another module can replace is later work
-		const foreignTexts = new Set<string>()
-		let foreignHoleCount = 0
-		for (const sources of sourcesByHole.values()) {
-			const foreign = [...sources].filter(([, isForeign]) => isForeign)
-			if (!foreign.length) continue
-			foreignHoleCount++
-			for (const [text] of foreign) foreignTexts.add(text)
-			if (sources.size > 1) {
-				reasons.push(
-					`${listTexts(sources.keys())} may hold different values at runtime, which the site's output depends on`
-				)
-			}
-		}
-		// the holes one validator holds are distinct, since the build of its own site proved them so
-		if (foreignHoleCount > 1 && foreignTexts.size > 1) {
-			reasons.push(
-				`${listTexts(foreignTexts)} may hold the same value at runtime, which the site's output depends on`
-			)
-		}
+		reasons.push(...identityReasonsOf(sourcesByHole))
+		return passed
+	}
+
+	private receiveInputs(
+		site: Site,
+		module: SourceModule,
+		prefix: string,
+		passed: Set<unknown>,
+		factory: SiteFactory,
+		reasons: string[]
+	): void {
 		const readsByRoot = new Map<string, Input[]>()
 		for (const input of site.inputs) {
 			// a Type passed where the site reads it is compared there
@@ -839,8 +852,6 @@ export class Precompiler {
 			const key = `${input.kind} ${input.file} ${input.name}`
 			readsByRoot.set(key, [...(readsByRoot.get(key) ?? []), input])
 		}
-		const inputs: string[] = []
-		const imports: SiteFactory["imports"] = []
 		for (const reads of readsByRoot.values()) {
 			const island = reads.find(input => this.isIslandValue(input.value, site))
 			if (island) {
@@ -873,50 +884,57 @@ export class Precompiler {
 				continue
 			}
 			const [expression, label, imported] = passedAs
-			inputs.push(expression)
-			if (imported) imports.push(imported)
-			params.push({
+			factory.inputs.push(expression)
+			if (imported) factory.imports.push(imported)
+			factory.params.push({
 				kind: "input",
 				label,
 				reads: reads.map(input => [input.path, input.value])
 			})
 		}
-		for (const helper of helpers) {
-			const exporter = this.graph.moduleOf(helper.file) as SourceModule
-			const label = `\`${helper.name}\` (${exporter.positionOf(helper)})`
-			if (!(helper.name in this.registeredHelpersOf(exporter))) {
-				reasons.push(
-					`${label} is a static helper its module doesn't export through a binding, so a test driver can't register it`
-				)
-				continue
-			}
-			const passedAs = this.inputExpressionOf(
-				{
-					kind: "import",
-					file: helper.file,
-					name: helper.name,
-					path: [],
-					value: undefined
-				},
-				site,
-				module,
-				prefix
+	}
+
+	private receiveHelper(
+		helper: Helper,
+		site: Site,
+		module: SourceModule,
+		prefix: string,
+		factory: SiteFactory,
+		reasons: string[]
+	): void {
+		const exporter = this.graph.moduleOf(helper.file) as SourceModule
+		const label = `\`${helper.name}\` (${exporter.positionOf(helper)})`
+		if (!(helper.name in this.registeredHelpersOf(exporter))) {
+			reasons.push(
+				`${label} is a static helper its module doesn't export through a binding, so a test driver can't register it`
 			)
-			if (typeof passedAs === "string") {
-				reasons.push(passedAs)
-				continue
-			}
-			const [expression, , imported] = passedAs
-			inputs.push(expression)
-			if (imported) imports.push(imported)
-			params.push({
-				kind: "helper",
-				label,
-				file: exporter.path,
-				name: helper.name
-			})
+			return
 		}
-		return { params, spans, inputs, imports }
+		const passedAs = this.inputExpressionOf(
+			{
+				kind: "import",
+				file: helper.file,
+				name: helper.name,
+				path: [],
+				value: undefined
+			},
+			site,
+			module,
+			prefix
+		)
+		if (typeof passedAs === "string") {
+			reasons.push(passedAs)
+			return
+		}
+		const [expression, , imported] = passedAs
+		factory.inputs.push(expression)
+		if (imported) factory.imports.push(imported)
+		factory.params.push({
+			kind: "helper",
+			label,
+			file: exporter.path,
+			name: helper.name
+		})
 	}
 
 	private registeredHelpersOf(module: SourceModule): Record<string, string> {
@@ -2014,6 +2032,33 @@ const isStrict = (program: Program): boolean =>
 const specifierOf = (importer: string, file: string) => {
 	const path = relative(dirname(importer), file).split("\\").join("/")
 	return path.startsWith(".") ? path : `./${path}`
+}
+
+// equality between values another module can replace is later work
+const identityReasonsOf = (
+	sourcesByHole: Map<unknown, Map<string, boolean>>
+): string[] => {
+	const result: string[] = []
+	const foreignTexts = new Set<string>()
+	let foreignHoleCount = 0
+	for (const sources of sourcesByHole.values()) {
+		const foreign = [...sources].filter(([, isForeign]) => isForeign)
+		if (!foreign.length) continue
+		foreignHoleCount++
+		for (const [text] of foreign) foreignTexts.add(text)
+		if (sources.size > 1) {
+			result.push(
+				`${listTexts(sources.keys())} may hold different values at runtime, which the site's output depends on`
+			)
+		}
+	}
+	// the holes one validator holds are distinct, since the build of its own site proved them so
+	if (foreignHoleCount > 1 && foreignTexts.size > 1) {
+		result.push(
+			`${listTexts(foreignTexts)} may hold the same value at runtime, which the site's output depends on`
+		)
+	}
+	return result
 }
 
 const listTexts = (texts: Iterable<string>) =>

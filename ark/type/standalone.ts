@@ -244,6 +244,13 @@ export class StandaloneArtifact {
 				if (param.kind === "class") this.classes.add(param.value)
 			}
 		}
+		this.checkFacts(checked)
+		this.refuseNameDependence()
+	}
+
+	checkFacts(
+		checked: [hole: unknown, kind: HoleKind, expression: string][]
+	): void {
 		// arktype relates a class to every other the definition holds, including those of a Type it references, which that Type's factory didn't see
 		for (const hole of this.classes) {
 			if (!checked.some(([checkedHole]) => checkedHole === hole))
@@ -271,6 +278,10 @@ export class StandaloneArtifact {
 				`runtime.checkFacts(runtime.describeHole(${expression}, "${kind}"${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}, ${JSON.stringify(this.labelsByHole.get(hole))})`
 			)
 		}
+	}
+
+	// a string that prints a hole's name is completed at creation, so neither compiled code nor an order may depend on it
+	refuseNameDependence(): void {
 		for (const hole of this.holeExpressions.keys()) {
 			if (
 				typeof hole === "function" &&
@@ -281,7 +292,6 @@ export class StandaloneArtifact {
 				)
 			}
 		}
-		// a string that prints a hole's name is completed at creation, so neither compiled code nor an order may depend on it
 		const printed = this.unit.source.match(holeNamePattern)
 		if (printed) {
 			throwParseError(
