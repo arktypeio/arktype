@@ -1,15 +1,17 @@
 import type { array } from "./arrays.ts"
 import { domainOf, type Primitive } from "./domain.ts"
+import { throwInternalError } from "./errors.ts"
 import {
 	constructorNameOf,
 	expressionOf,
+	functionNameOf,
 	isDate,
 	ownEntriesOf,
 	toJsonMethodOf
 } from "./facts.ts"
+import { objectKindOf } from "./objectKinds.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
 import type { dict } from "./records.ts"
-import { baseNameOf, isDotAccessible } from "./registry.ts"
 
 export type SerializationOptions = {
 	onCycle?: (value: object) => string
@@ -250,3 +252,31 @@ const months = [
 
 const pad = (value: number, length: number) =>
 	String(value).padStart(length, "0")
+
+export const isDotAccessible = (keyName: string): boolean =>
+	/^[$A-Z_a-z][\w$]*$/.test(keyName)
+
+export const baseNameOf = (value: object | symbol): string => {
+	switch (typeof value) {
+		case "object": {
+			if (value === null) break
+
+			const prefix = objectKindOf(value) ?? "object"
+			// convert to camelCase
+			return prefix[0].toLowerCase() + prefix.slice(1)
+		}
+		case "function":
+			return isDotAccessible(functionNameOf(value)) ?
+					functionNameOf(value)
+				:	"fn"
+		case "symbol":
+			return value.description && isDotAccessible(value.description) ?
+					value.description
+				:	"symbol"
+	}
+	return throwInternalError(
+		`Unexpected attempt to register serializable value of type ${domainOf(
+			value
+		)}`
+	)
+}

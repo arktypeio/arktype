@@ -514,5 +514,6 @@ contextualize(() => {
 			)
 		).equals([])
 		attest(/new Function|extends Function/.test(js)).equals(false)
+		attest(js.includes("initialRegistryContents")).equals(false)
 	})
 })

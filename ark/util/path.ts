@@ -1,8 +1,7 @@
 import { ReadonlyArray, type array } from "./arrays.ts"
 import { throwParseError } from "./errors.ts"
 import type { requireKeys } from "./records.ts"
-import { isDotAccessible } from "./registry.ts"
-import { printable, type JsonArray } from "./serialize.ts"
+import { isDotAccessible, printable, type JsonArray } from "./serialize.ts"
 
 export type StringifyPathOptions<stringifiable = PropertyKey> = requireKeys<
 	{

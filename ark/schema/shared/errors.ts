@@ -26,15 +26,11 @@ import type {
 import type { DiscriminantErrorContext } from "../roots/union.ts"
 import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
+import { keywordWriterOf, writeKeywordExpected, type Locale } from "./locale.ts"
 import {
-	keywordWriterOf,
-	normalizeLocale,
-	writeKeywordExpected,
-	type Locale
-} from "./locale.ts"
-import { $ark } from "./registry.ts"
-import {
+	defaultConfig,
 	defaultLocale,
+	normalizeLocale,
 	outerLocale,
 	plainLocale,
 	readIn,
@@ -252,7 +248,7 @@ export class ArkError<
 		if (renderLocale === undefined)
 			return readIn(outerLocale(), error, readSlot[slot])
 		const config = this.configOf(slot)
-		if (config !== $ark.defaultConfig[this.code][slot])
+		if (config !== defaultConfig[this.code][slot])
 			return writeSlot(error, slot, config, renderLocale)
 		const cited = this.citesDescription ? this.description : undefined
 		if (slot === "expected") return localeExpected(error, cited, renderLocale)
@@ -281,7 +277,7 @@ export class ArkError<
 			this.input[slot] ??
 			this.meta?.[slot] ??
 			this.nodeConfig[slot] ??
-			$ark.defaultConfig[this.code][slot]
+			defaultConfig[this.code][slot]
 		)
 	}
 
@@ -349,8 +345,7 @@ const localeWriter = (
 	)
 		return writer
 	return (
-			cited !== undefined ||
-				expected !== $ark.defaultConfig[error.code].expected
+			cited !== undefined || expected !== defaultConfig[error.code].expected
 		) ?
 			locale.problem
 		:	writer

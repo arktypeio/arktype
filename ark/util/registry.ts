@@ -1,8 +1,6 @@
-import { domainOf } from "./domain.ts"
-import { throwInternalError } from "./errors.ts"
-import { functionNameOf } from "./facts.ts"
 import { isomorphic } from "./isomorphic.ts"
-import { FileConstructor, objectKindOf } from "./objectKinds.ts"
+import { FileConstructor } from "./objectKinds.ts"
+import { baseNameOf } from "./serialize.ts"
 
 // Eventually we can just import from package.json in the source itself
 // but for now, import assertions are too unstable and it wouldn't support
@@ -85,32 +83,4 @@ const isNameTaken = (name: string) => {
 	if (name in nameCounts) return true
 	const counted = /^(.+)\$([1-9]\d*)$/.exec(name)
 	return !!counted && Number(counted[2]) <= (nameCounts[counted[1]] ?? 0)
-}
-
-export const isDotAccessible = (keyName: string): boolean =>
-	/^[$A-Z_a-z][\w$]*$/.test(keyName)
-
-export const baseNameOf = (value: object | symbol): string => {
-	switch (typeof value) {
-		case "object": {
-			if (value === null) break
-
-			const prefix = objectKindOf(value) ?? "object"
-			// convert to camelCase
-			return prefix[0].toLowerCase() + prefix.slice(1)
-		}
-		case "function":
-			return isDotAccessible(functionNameOf(value)) ?
-					functionNameOf(value)
-				:	"fn"
-		case "symbol":
-			return value.description && isDotAccessible(value.description) ?
-					value.description
-				:	"symbol"
-	}
-	return throwInternalError(
-		`Unexpected attempt to register serializable value of type ${domainOf(
-			value
-		)}`
-	)
 }

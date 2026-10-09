@@ -3,7 +3,7 @@ import {
 	type BuiltinObjectKind,
 	type Domain,
 	type ListType,
-	omit,
+	type omit,
 	printable
 } from "@ark/util"
 import type { MissingBasis, MissingValue } from "../structure/required.ts"
@@ -16,7 +16,9 @@ import type {
 	MessageContext,
 	ProblemContext
 } from "./errors.ts"
-import { $ark } from "./registry.ts"
+import { defaultConfig } from "./render.ts"
+
+export { normalizeLocale } from "./render.ts"
 
 export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
 
@@ -128,49 +130,6 @@ type localeExpectedContext<code extends ArkErrorCode> =
 	: code extends unknown ? omit<ExpectedContext<code>, "description">
 	: never
 
-const normalizedLocales = new WeakMap<object, Locale>()
-
-/** a locale completed from en, since an untyped or older one may lack entries */
-export const normalizeLocale = (locale: Locale): Locale => {
-	const en = $ark.defaultConfig.locale
-	if (locale === en) return en
-	let normalized = normalizedLocales.get(locale)
-	if (normalized === undefined) {
-		normalized = completeFrom(en, locale)
-		normalizedLocales.set(locale, normalized)
-	}
-	return normalized
-}
-
-const completeFrom = (en: Locale, locale: Locale): Locale => {
-	let completed: Record<string, unknown> | undefined
-	const fill = (k: string, entry: unknown) => {
-		completed ??= { ...locale }
-		completed[k] = entry
-	}
-	let k: keyof Locale
-	for (k in en) {
-		const entry = locale[k] as any
-		if (entry === undefined) {
-			const fallback = en[k]
-			// a keyword without a phrase renders its English description, and a
-			// code without writers reads its expected text whole in en
-			fill(
-				k,
-				k === "keywordPhrases" ? {}
-				: typeof fallback === "object" ?
-					omit(fallback as Locale.CodeWriters, { expected: 1 })
-				:	fallback
-			)
-		} else if (
-			k === "nouns" &&
-			Object.keys(en.nouns).some(id => entry[id] === undefined)
-		)
-			fill(k, { ...en.nouns, ...entry })
-	}
-	return (completed as Locale | undefined) ?? locale
-}
-
 const keywordPhraseOf = (
 	error: { readonly meta?: ArkEnv.meta },
 	locale: Locale
@@ -230,8 +189,7 @@ const describeBasis = (basis: MissingBasis, locale: Locale): string =>
 	(
 		(basis.code === "unit" || basis.code === "proto") &&
 		basis.meta.keyword === undefined &&
-		basis.description !==
-			$ark.defaultConfig[basis.code].description(basis as never)
+		basis.description !== defaultConfig[basis.code].description(basis as never)
 	) ?
 		locale.cite(basis.description!)
 	:	locale.basis(basis, locale)

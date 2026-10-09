@@ -93,7 +93,7 @@ export const resolveGlobalConfig = (base: ResolvedConfig): ResolvedConfig => {
 	// a locale function selects a locale per read, which is en if it returns none
 	;(resolved as { locale: Locale }).locale = configureLocale(
 		$ark.config.locale,
-		base.locale as Locale.Complete
+		base
 	)
 	return resolved
 }

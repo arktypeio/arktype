@@ -3,7 +3,7 @@ import type { ResolvedConfig } from "./config.ts"
 import { errorWriters, errorWritersByCode } from "./shared/errorWriters.ts"
 import type { ExpectedWriter } from "./shared/errors.ts"
 import type { Locale } from "./shared/locale.ts"
-import { configureLocale, defaultLocale } from "./shared/render.ts"
+import { configureLocale, defaultConfig } from "./shared/render.ts"
 
 export * from "./shared/errors.ts"
 export * from "./shared/transform.ts"
@@ -20,10 +20,6 @@ export const runtimeLocale = {
 	...errorWriters
 }
 
-// unless arktype has resolved its config, which sets the locale itself
-if (defaultLocale === undefined)
-	configureLocale(undefined, runtimeLocale as never)
-
 export const runtimeConfig: ResolvedConfig = Object.freeze({
 	...flatMorph(errorWritersByCode, (code, writers) => [
 		code,
@@ -31,8 +27,12 @@ export const runtimeConfig: ResolvedConfig = Object.freeze({
 	]),
 	// errors are copied without generating code, so validation never needs eval
 	jitless: true,
-	onFail: null
+	onFail: null,
+	locale: runtimeLocale
 }) as never
+
+// unless arktype has resolved its config, which sets the locale itself
+if (defaultConfig === undefined) configureLocale(undefined, runtimeConfig)
 
 // a node shape's $, which traversal reads only for its config
 export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({
