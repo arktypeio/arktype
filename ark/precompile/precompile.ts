@@ -643,7 +643,7 @@ export class Precompiler {
 				folded.push(site)
 				continue
 			}
-			const reasons = this.unsupportedReasonsOf(site)
+			const reasons = this.unsupportedReasonsOf(site, module)
 			const factory =
 				reasons.length || site.parseError || !hasArkKind(site.value, "root") ?
 					undefined
@@ -1068,7 +1068,7 @@ export class Precompiler {
 		)
 	}
 
-	private unsupportedReasonsOf(site: Site): string[] {
+	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
 		const receivesNothing =
 			!hasArkKind(site.value, "root") && isFoldable(site.value)
 		const result =
@@ -1085,6 +1085,18 @@ export class Precompiler {
 			const holeModule = this.graph.moduleOf(hole.file) as SourceModule
 			result.push(
 				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})${isReceived ? unreceived("receive") : ""}`
+			)
+		}
+		const referencesByHole = new Map<unknown, Reference>()
+		for (const reference of site.parseError ? site.references : []) {
+			if (!hasArkKind(reference.value, "root")) continue
+			for (const hole of keyOf(reference.value)[1])
+				if (!referencesByHole.has(hole)) referencesByHole.set(hole, reference)
+		}
+		for (const [hole, reference] of referencesByHole) {
+			const source = this.interpreter.sourceOf(hole)
+			result.push(
+				`\`${module.snippetOf(reference)}\` holds ${source ? `\`${source[1].snippetOf(source[0])}\` (${source[1].positionOf(source[0])})` : "a function"}`
 			)
 		}
 		for (const input of site.parseError || receivesNothing ? site.inputs : []) {
@@ -1494,7 +1506,13 @@ export class Precompiler {
 			]
 		}
 		const result: Diagnostic[] = []
-		if (site.parseError) {
+		if (
+			site.parseError &&
+			!(
+				this.mode === "standalone" &&
+				this.unsupportedReasonsOf(site, module).length
+			)
+		) {
 			result.push(
 				this.diagnostic(
 					module,

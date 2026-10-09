@@ -291,7 +291,17 @@ extend(Dog, Cat)
 export const Narrowed = type("1").narrow(isZero)
 export const Anonymous = type("1").narrow(n => n === 0)
 export const Both = type.instanceOf(Dog).and(type.instanceOf(Cat))
-export const Unrelated = type("1").and("2")`
+export const Unrelated = type("1").and("2")
+const isNegative = (n: number) => n < 0
+const Negative = type("number").narrow(isNegative)
+const DogT = type.instanceOf(Dog)
+const CatT = type.instanceOf(Cat)
+const fns = { f: (s: string) => s.length, g: (s: string) => s.trim() }
+const M1 = type({ a: type("string").pipe(fns.f) })
+const M2 = type({ a: type("string").pipe(fns.g) })
+export const Referenced = type("1").and(Negative)
+export const BothReferenced = DogT.and(CatT)
+export const Morphs = M1.and(M2)`
 			const result = precompileModule(
 				source,
 				"/thrower.ts",
@@ -302,13 +312,13 @@ export const Unrelated = type("1").and("2")`
 				})
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				'/thrower.ts:7:25  type("1").narrow(isZero) throws a ParseError\n  Intersection of 1 and isZero results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.',
 				'/thrower.ts:7:25  type("1").narrow(isZero) can\'t be precompiled to a standalone validator yet\n  arktype calls `isZero` (/thrower.ts:7:42)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/thrower.ts:8:26  type("1").narrow(n => n === 0) throws a ParseError\n  Intersection of 1 and n => n === 0 results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.',
 				'/thrower.ts:8:26  type("1").narrow(n => n === 0) can\'t be precompiled to a standalone validator yet\n  arktype calls `n => n === 0` (/thrower.ts:8:43)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				"/thrower.ts:9:21  type.instanceOf(Dog).and(type.instanceOf(Cat)) throws a ParseError\n  Intersection of Dog and Cat results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.",
 				"/thrower.ts:9:21  type.instanceOf(Dog).and(type.instanceOf(Cat)) can't be precompiled to a standalone validator yet\n  arktype holds `Dog` (/thrower.ts:9:37)\n  arktype holds `Cat` (/thrower.ts:9:62)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-				'/thrower.ts:10:26  type("1").and("2") throws a ParseError\n  Intersection of 1 and 2 results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.'
+				'/thrower.ts:10:26  type("1").and("2") throws a ParseError\n  Intersection of 1 and 2 results in an unsatisfiable type\n  The precompiled site throws the same ParseError when it is created.',
+				'/thrower.ts:18:27  type("1").and(Negative) can\'t be precompiled to a standalone validator yet\n  `Negative` holds `(n: number) => n < 0` (/thrower.ts:11:20)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				"/thrower.ts:19:31  DogT.and(CatT) can't be precompiled to a standalone validator yet\n  `DogT` holds `class Dog {}` (/thrower.ts:5:1)\n  `CatT` holds `class Cat {}` (/thrower.ts:4:1)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+				"/thrower.ts:20:23  M1.and(M2) can't be precompiled to a standalone validator yet\n  `M1` holds `(s: string) => s.length` (/thrower.ts:15:18)\n  `M2` holds `(s: string) => s.trim()` (/thrower.ts:15:46)\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import { type } from "arktype"
 import { extend } from "./extend.ts"
@@ -320,7 +330,22 @@ export const Narrowed = type("1").narrow(isZero)
 export const Anonymous = type("1").narrow(n => n === 0)
 export const Both = type.instanceOf(Dog).and(type.instanceOf(Cat))
 export const Unrelated = $arka9il3vu75e()
-import $arka9il3vu75e from "~arktype/a9il3vu75e"`)
+const isNegative = (n: number) => n < 0
+const Negative = $arkfnob26chozj(isNegative)
+const DogT = $arkfgm2gx9bc6m(Dog)
+const CatT = $arkfg5kprldyto(Cat)
+const fns = { f: (s: string) => s.length, g: (s: string) => s.trim() }
+const M1 = $arkfypozk0svvs(fns.f)
+const M2 = $arkfeue5p3ikoz(fns.g)
+export const Referenced = type("1").and(Negative)
+export const BothReferenced = DogT.and(CatT)
+export const Morphs = M1.and(M2)
+import $arka9il3vu75e from "~arktype/a9il3vu75e"
+import { fnob26chozj as $arkfnob26chozj } from "~arktype/u37s75k1n"
+import { fgm2gx9bc6m as $arkfgm2gx9bc6m } from "~arktype/u37s75k1n"
+import { fg5kprldyto as $arkfg5kprldyto } from "~arktype/u37s75k1n"
+import { fypozk0svvs as $arkfypozk0svvs } from "~arktype/u37s75k1n"
+import { feue5p3ikoz as $arkfeue5p3ikoz } from "~arktype/u37s75k1n"`)
 			attest(result.modules["~arktype/a9il3vu75e"])
 				.snap(`import * as runtime from "arktype/runtime"
 
