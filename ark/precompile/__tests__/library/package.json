@@ -1,0 +1,7 @@
+{
+	"private": true,
+	"type": "module",
+	"dependencies": {
+		"tagged": "1.0.0"
+	}
+}

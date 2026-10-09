@@ -21,8 +21,17 @@ import {
 	type Rolldown
 } from "vite"
 import { startVitest } from "vitest/node"
+import { writeLibrary } from "./utils.ts"
 
 const app = fromHere("app")
+
+const library = writeLibrary()
+
+const runPlain = (root: string) =>
+	spawnSync(process.execPath, ["--conditions", "ark-ts", "main.ts"], {
+		cwd: root,
+		encoding: "utf8"
+	}).stdout
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts"]
@@ -155,11 +164,7 @@ const buildDependency = async (
 const parserMessage = "is unresolvable"
 
 contextualize(() => {
-	const expected = spawnSync(
-		process.execPath,
-		["--conditions", "ark-ts", fromHere("app", "main.ts")],
-		{ encoding: "utf8" }
-	).stdout
+	const expected = runPlain(app)
 
 	it("runs without the plugin", () => {
 		attest(JSON.parse(expected)).snap([
@@ -207,14 +212,14 @@ contextualize(() => {
 		it(`${name} runtime islands`, async () => {
 			const islands = fromHere("islands")
 			const standalone = await bundle({}, islands)
-			attest(run(standalone)).equals(
-				spawnSync(
-					process.execPath,
-					["--conditions", "ark-ts", join(islands, "main.ts")],
-					{ encoding: "utf8" }
-				).stdout
-			)
+			attest(run(standalone)).equals(runPlain(islands))
 			attest(standalone.includes(parserMessage)).equals(true)
+		})
+
+		it(`${name} packages that opt in`, async () => {
+			const standalone = await bundle({ cwd: library }, library)
+			attest(run(standalone)).equals(runPlain(library))
+			attest(standalone.includes(parserMessage)).equals(false)
 		})
 	}
 
@@ -351,6 +356,27 @@ contextualize(() => {
 			)
 			await vitest.close()
 			attest(vitest.state.getCountOfFailedTests()).equals(0)
+		}
+	}).timeout(60000)
+
+	it("vitest with a package that opts in", async () => {
+		for (const runtime of [undefined, "arktype"] as const) {
+			const vitest = await startVitest(
+				[],
+				{
+					root: library,
+					config: false,
+					watch: false,
+					reporters: [],
+					env: { ARKTYPE_RUNTIME: runtime ?? "" }
+				},
+				viteConfig({ runtime, cwd: library }, library)
+			)
+			await vitest.close()
+			attest([
+				vitest.state.getCountOfFailedTests(),
+				vitest.state.getFiles().length
+			]).equals([0, 1])
 		}
 	}).timeout(60000)
 })

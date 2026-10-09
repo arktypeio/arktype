@@ -9,7 +9,11 @@ import type {
 	PrecompileRequest,
 	PrecompilerWorkerData
 } from "./driver.ts"
-import { createNodeHost, transformedFilter } from "./host.ts"
+import {
+	createNodeHost,
+	optedInPackagesOf,
+	transformedFilterOf
+} from "./host.ts"
 
 // declared here, since bun-types declares globals beside @types/node's
 export interface BunPluginBuilder {
@@ -63,10 +67,11 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 				)
 			)
 		}
-		// a runtime plugin's onLoad must return a module, so the filter excludes what isn't transformed
-		const filter = new RegExp(
-			`^(?!.*${transformedFilter.exclude.source}).*${transformedFilter.include.source}`
+		const { include, exclude } = transformedFilterOf(
+			optedInPackagesOf(opts?.cwd ?? process.cwd())
 		)
+		// a runtime plugin's onLoad must return a module, so the filter excludes what isn't transformed
+		const filter = new RegExp(`^(?!.*${exclude.source}).*${include.source}`)
 		build.onLoad({ filter }, async ({ path }) => {
 			const source = readFileSync(path, "utf8")
 			const transformed = (await request("transform", source, path)) as

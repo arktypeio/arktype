@@ -32,11 +32,24 @@ export default defineConfig({
 })
 ```
 
-By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`, so arktype's parser never ships. A definition that holds a function, reads a value from another module or calls a static helper can't be precompiled this way yet, and fails the build with the reasons why. A dependency that imports arktype gets `arktype/runtime` too, where defining a Type throws, so the build warns once for each such package.
+By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`, so arktype's parser never ships. A definition that holds a function, reads a value from another module or calls a static helper can't be precompiled this way yet, and fails the build with the reasons why. A dependency that imports arktype gets `arktype/runtime` too, where defining a Type throws, so the build warns once for each such package unless it [opts in](#libraries).
 
 `precompile.vite({ runtime: "arktype" })` ships arktype and leaves definitions as written, registering the code arktype would compile for each one, and for arktype's keywords before arktype loads. A definition the build can't precompile is compiled at runtime as usual, so this mode fails a build only for the reason below.
 
 In either mode, the build fails if `arktype`, `@ark/schema` or `@ark/util` resolves to more than one copy across the files it reads, naming each copy's version and path and the file that reached it, since Types and errors from one copy aren't recognized by another.
+
+## Libraries
+
+A library ships its source, and the build precompiles it with the program if its `package.json` opts in:
+
+```json
+{
+	"name": "my-schemas",
+	"arktype": { "precompile": true }
+}
+```
+
+Its definitions then fold like the program's and its static helpers are static. The plugin transforms its modules, and tells Vite and Vitest not to prebundle or externalize it, as do the Node and Bun drivers. They find such packages through the dependencies declared by the nearest `package.json` to `cwd`, and by each package that opts in. A dependency that doesn't opt in isn't read.
 
 ## Runtime islands
 

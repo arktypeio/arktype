@@ -6,6 +6,7 @@ import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
+import { writeLibrary } from "./utils.ts"
 
 const app = fromHere("app")
 
@@ -33,6 +34,8 @@ const bun = (args: string[], runtime?: "arktype", cwd = app) =>
 	})
 
 const islands = fromHere("islands")
+
+const library = writeLibrary()
 
 const runPlain = (cwd: string) =>
 	spawnSync(process.execPath, ["--conditions", "ark-ts", "main.ts"], {
@@ -73,6 +76,10 @@ contextualize(() => {
 
 		it("runtime islands", () => {
 			attest(node(["main.ts"], {}, islands).stdout).equals(runPlain(islands))
+		}).timeout(60000)
+
+		it("packages that opt in", () => {
+			attest(node(["main.ts"], {}, library).stdout).equals(runPlain(library))
 		}).timeout(60000)
 
 		it("precompiles apart from the program", () => {
@@ -142,6 +149,27 @@ contextualize(() => {
 				attest([result.status, result.stderr.match(/\d+ pass/)?.[0]]).equals([
 					0,
 					"2 pass"
+				])
+			}
+		}).timeout(60000)
+
+		it("packages that opt in", () => {
+			for (const runtime of [undefined, "arktype"] as const) {
+				const result = bun(
+					[
+						"test",
+						"--conditions",
+						"ark-ts",
+						"--preload",
+						join(app, "preload.ts"),
+						"./tagged.spec.ts"
+					],
+					runtime,
+					library
+				)
+				attest([result.status, result.stderr.match(/\d+ pass/)?.[0]]).equals([
+					0,
+					"1 pass"
 				])
 			}
 		}).timeout(60000)

@@ -31,7 +31,11 @@ import {
 	type FunctionNode,
 	type ImportTarget
 } from "./graph.ts"
-import type { PrecompileHost } from "./host.ts"
+import {
+	dependencyOf,
+	transformedExtension,
+	type PrecompileHost
+} from "./host.ts"
 import {
 	createSiteState,
 	findDynamic,
@@ -210,6 +214,11 @@ export class Precompiler {
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
 
+	// whether a host transforms a module, which it does for a module the build follows
+	isTransformed(id: string): boolean {
+		return transformedExtension.test(id) && this.graph.isFollowed(id)
+	}
+
 	analyze(source: string, id: string): ModuleAnalysis {
 		return this._analyze(this.graph.add(id, source))
 	}
@@ -225,14 +234,13 @@ export class Precompiler {
 		return false
 	}
 
-	// the modules outside node_modules and arktype's packages a module's text imports from
+	// the modules the build follows a module's text to, other than arktype's packages
 	localImportsOf(source: string, id: string): string[] {
 		const result: string[] = []
 		for (const [, specifier] of source.matchAll(importSpecifier)) {
 			if (arkPackageSpecifier.test(specifier)) continue
 			const targetId = this.graph.host.resolve(specifier, id)
-			if (targetId && !targetId.includes("/node_modules/"))
-				result.push(targetId)
+			if (targetId && this.graph.isFollowed(targetId)) result.push(targetId)
 		}
 		return result
 	}
@@ -316,10 +324,11 @@ export class Precompiler {
 		return reports
 	}
 
-	// a dependency isn't transformed, so its arktype import is checked where it resolves
+	// a dependency that doesn't opt in isn't transformed, so its arktype import is checked where it resolves
 	readDependency(importer: string): { errors: string[]; warnings: string[] } {
-		const dependency = dependencyOf(importer)
-		if (!dependency) return { errors: [], warnings: [] }
+		const [, dependency] = dependencyOf(importer) ?? []
+		if (!dependency || this.graph.isFollowed(importer))
+			return { errors: [], warnings: [] }
 		const errors = this.readCopies("arktype", importer).map(report =>
 			[
 				report.message,
@@ -1263,10 +1272,6 @@ export const standaloneConfigurationMessage =
 
 export type standaloneConfigurationMessage =
 	typeof standaloneConfigurationMessage
-
-// the package in node_modules a file belongs to, if any
-const dependencyOf = (file: string): string | undefined =>
-	/.*\/node_modules\/((?:@[^/]+\/)?[^/]+)/.exec(file)?.[1]
 
 export const writeStandaloneDependencyMessage = <name extends string>(
 	name: name

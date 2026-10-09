@@ -10,9 +10,9 @@ import type {
 	MemberExpression,
 	Node
 } from "oxc-parser"
-import { relative } from "node:path"
+import { join, relative } from "node:path"
 import { isArkValue } from "./builtins.ts"
-import type { PrecompileHost } from "./host.ts"
+import { dependencyOf, optsIn, type PrecompileHost } from "./host.ts"
 import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
@@ -114,6 +114,7 @@ export class ModuleGraph {
 		Object.create(null)
 	private arkBindings = new Map<Binding, boolean>()
 	private importsById: Record<string, string[]> = Object.create(null)
+	private optsInByPackage: Record<string, boolean> = Object.create(null)
 
 	constructor(host: PrecompileHost, cwd?: string) {
 		this.host = host
@@ -152,7 +153,7 @@ export class ModuleGraph {
 				message: `\`${specifier}\` cannot be resolved from ${importer.path}`
 			}
 		}
-		if (id.includes("/node_modules/")) {
+		if (!this.isFollowed(id)) {
 			return {
 				kind: "package",
 				message: `\`${specifier}\` is a package the build does not read`
@@ -162,6 +163,17 @@ export class ModuleGraph {
 		if (!imports.includes(id)) imports.push(id)
 		this.modulesById[id] ??= this.load(id, specifier)
 		return this.modulesById[id]
+	}
+
+	// a module outside node_modules, or in a package whose package.json opts in
+	isFollowed(id: string): boolean {
+		const [root] = dependencyOf(id) ?? []
+		return (
+			root === undefined ||
+			(this.optsInByPackage[root] ??= optsIn(
+				this.host.readFile(join(root, "package.json"))
+			))
+		)
 	}
 
 	private load(id: string, specifier: string): SourceModule | ImportTarget {

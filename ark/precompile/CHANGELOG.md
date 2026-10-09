@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### Precompile packages that opt in
+
+A package whose `package.json` has `"arktype": { "precompile": true }` is precompiled with the program that depends on it: the build follows its modules and folds its definitions like the program's, through the bundler plugin, Vite's dev server and Vitest, and the Node and Bun drivers. A dependency that doesn't opt in is left as before.
+
+```json
+{
+	"name": "my-schemas",
+	"arktype": { "precompile": true }
+}
+```
+
 ### Leave a definition to arktype with `// @ark-runtime`
 
 In a standalone build, a definition after a `// @ark-runtime` comment runs on arktype, which then ships beside the runtime. The build fails if a runtime island reads a precompiled validator other than to validate with it, or reaches arktype outside an island. `--check` lists islands and leaves them out of the rate `--fail-under` compares.

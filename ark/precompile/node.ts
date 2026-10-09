@@ -2,7 +2,7 @@ import { throwError } from "@ark/util"
 import { registerHooks } from "node:module"
 import { fileURLToPath } from "node:url"
 import type { InlineModule, PrecompilePluginOptions } from "./driver.ts"
-import { isTransformed } from "./host.ts"
+import { optedInPackagesOf, transformedFilterOf } from "./host.ts"
 import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
 
 export const register = (opts?: PrecompilePluginOptions): void => {
@@ -10,6 +10,9 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	if (isPrecompilerWorker) return
 	const request = createSyncPrecompiler({ precompilerOptions: opts ?? {} })
 	const isStandalone = opts?.runtime !== "arktype"
+	const filter = transformedFilterOf(
+		optedInPackagesOf(opts?.cwd ?? process.cwd())
+	)
 	registerHooks({
 		resolve: (specifier, context, nextResolve) => {
 			if (specifier !== "arktype") return nextResolve(specifier, context)
@@ -27,7 +30,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			const loaded = nextLoad(url, context)
 			if (!url.startsWith("file:") || loaded.source === undefined) return loaded
 			const id = fileURLToPath(url)
-			if (!isTransformed(id)) return loaded
+			if (!filter.include.test(id) || filter.exclude.test(id)) return loaded
 			const transformed = request(
 				"transform",
 				typeof loaded.source === "string" ?

@@ -7,8 +7,10 @@ import {
 	type PrecompileHost,
 	type PrecompileOptions
 } from "@ark/precompile"
+import { fromHere } from "@ark/fs"
 import { hasArkKind } from "@ark/schema"
-import { posix } from "node:path"
+import { mkdirSync, writeFileSync } from "node:fs"
+import { join, posix } from "node:path"
 
 // a bare specifier resolves to a package in node_modules, which the build does not read
 export const memoryHost = (files: Record<string, string>): PrecompileHost => ({
@@ -77,3 +79,25 @@ export const inputsOf = (
 				input => `${input.kind} ${[input.name, ...input.path].join(".")}`
 			))
 	])
+
+// a program importing a package that opts in, which the tests write since git ignores node_modules
+export const writeLibrary = (): string => {
+	const root = fromHere("library")
+	const tagged = join(root, "node_modules", "tagged")
+	mkdirSync(tagged, { recursive: true })
+	writeFileSync(
+		join(tagged, "package.json"),
+		JSON.stringify({
+			name: "tagged",
+			version: "1.0.0",
+			type: "module",
+			exports: "./index.js",
+			arktype: { precompile: true }
+		})
+	)
+	writeFileSync(
+		join(tagged, "index.js"),
+		'import { type } from "arktype"\n\nexport const Tagged = type({ tag: "string" })\n'
+	)
+	return root
+}

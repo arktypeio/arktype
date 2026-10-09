@@ -6,7 +6,7 @@ import {
 	renderDiagnostics,
 	type PrecompilePluginOptions
 } from "./driver.ts"
-import { transformedFilter } from "./host.ts"
+import { optedInPackagesOf, transformedFilterOf } from "./host.ts"
 
 export type { PrecompilePluginOptions } from "./driver.ts"
 
@@ -15,6 +15,7 @@ export const precompile: UnpluginInstance<
 	false
 > = createUnplugin(opts => {
 	let precompiler = createPrecompiler(opts)
+	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
 	return {
@@ -54,8 +55,9 @@ export const precompile: UnpluginInstance<
 			handler: id => modules[id]
 		},
 		transform: {
-			filter: { id: transformedFilter },
+			filter: { id: transformedFilterOf(packages) },
 			handler(code, id) {
+				if (!precompiler.isTransformed(id)) return
 				if (!precompiler.importsArk(code, id)) {
 					// a module it imports may come to export a Type
 					for (const dependency of precompiler.localImportsOf(code, id))
@@ -75,6 +77,17 @@ export const precompile: UnpluginInstance<
 				if (errors.length) throwError(errors.join("\n"))
 				return result.map && { code: result.code, map: result.map }
 			}
+		},
+		vite: {
+			// Vite and Vitest leave dependencies to Node or to their prebundling unless told otherwise
+			config: () =>
+				packages.length ?
+					{
+						optimizeDeps: { exclude: packages },
+						ssr: { noExternal: packages },
+						test: { server: { deps: { inline: packages } } }
+					}
+				:	undefined
 		},
 		// a changed file may be in the forward closure of any module analyzed so far
 		watchChange: () => {

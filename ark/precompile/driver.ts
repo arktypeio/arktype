@@ -2,7 +2,7 @@ import { throwError } from "@ark/util"
 import { readFileSync, statSync } from "node:fs"
 import { resolve } from "node:path"
 import type { MessagePort } from "node:worker_threads"
-import { createNodeHost, isTransformed, type NodeHostOptions } from "./host.ts"
+import { createNodeHost, type NodeHostOptions } from "./host.ts"
 import {
 	Precompiler,
 	renderDiagnostic,
@@ -147,7 +147,8 @@ const inlineModuleOf = (
 	source: string,
 	id: string
 ): InlineModule | undefined => {
-	if (!isTransformed(id) || !precompiler.importsArk(source, id)) return
+	if (!precompiler.isTransformed(id) || !precompiler.importsArk(source, id))
+		return
 	const result = precompiler.precompile(source, id)
 	return {
 		code:
