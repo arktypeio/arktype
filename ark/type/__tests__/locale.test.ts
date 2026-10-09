@@ -187,25 +187,31 @@ const mark = (label: string) => `⟦${label}⟧`
 const marks = (o: object): Record<string, string> =>
 	Object.fromEntries(Object.keys(o).map(k => [k, mark(k)]))
 
+const xxProblem: Locale.ProblemWriter = e =>
+	`${mark("problem")} ${e.expected} ${e.actual}`
+
 // a marker for every entry, so any other text in its output is arktype's
 const xx: Locale = {
 	...(flatMorph(en, (k, v) =>
 		typeof v === "object" && k !== "nouns" && k !== "keywordPhrases" ?
-			[k, { expected: mark(k) }]
+			[k, { expected: mark(k), problem: xxProblem }]
 		:	[]
 	) as {} as Locale.Writers),
 	union: {
 		expected: e =>
 			e.errors
 				.map(child => `${child.propString} ${child.expected} ${child.actual}`)
-				.join(mark("or"))
+				.join(mark("or")),
+		problem: xxProblem
 	},
 	intersection: {
-		expected: e => e.errors.map(child => child.expected).join(mark("and"))
+		expected: e => e.errors.map(child => child.expected).join(mark("and")),
+		problem: xxProblem
 	},
 	required: {
 		expected: (e, locale) => describeMissing(e.missing, locale),
-		actual: mark("actual")
+		actual: mark("actual"),
+		problem: xxProblem
 	},
 	tag: "xx",
 	list: (items, type) => items.join(mark(type)),
@@ -214,12 +220,11 @@ const xx: Locale = {
 	date: () => mark("date"),
 	verbatim: text => text,
 	cite: text => `${mark("cite")} ${text}`,
-	expectedNoun: noun => noun,
 	basis: basis => mark(basis.code),
 	nouns: marks(en.nouns) as Locale["nouns"],
 	keywordPhrases: marks(en.keywordPhrases),
 	actual: () => mark("actual"),
-	problem: e => `${mark("problem")} ${e.expected} ${e.actual}`,
+	problem: xxProblem,
 	message: e => `${e.propString} ${mark("message")} ${e.problem}`
 }
 
@@ -249,8 +254,11 @@ contextualize(() => {
 		it("has the writers each kind writes itself", () => {
 			const slotsByCode: Record<string, string[]> = {}
 			for (const [k, v] of Object.entries(en)) {
-				if (typeof v === "object" && k !== "nouns" && k !== "keywordPhrases")
-					slotsByCode[k] = Object.keys(v)
+				if (typeof v === "object" && k !== "nouns" && k !== "keywordPhrases") {
+					slotsByCode[k] = Object.keys(v).filter(
+						slot => v[slot] !== en[slot as never]
+					)
+				}
 			}
 			attest(slotsByCode).snap({
 				min: ["expected"],
@@ -267,7 +275,7 @@ contextualize(() => {
 				intersection: ["expected", "problem"],
 				divisor: ["expected"],
 				pattern: ["expected"],
-				predicate: ["expected", "actual", "problem"],
+				predicate: ["expected", "problem", "actual"],
 				required: ["expected", "actual"],
 				undeclared: ["expected", "actual"],
 				discriminant: ["expected", "actual"]
@@ -342,8 +350,10 @@ contextualize(() => {
 					{ two: " or ", middle: ", ", end: ", or " },
 					{ two: " and ", middle: ", ", end: ", and " }
 				),
-				nouns: { ...en.nouns, boolean: "a boolean", never: "nothing" },
-				expectedNoun: noun => `<${noun}>`
+				nouns: flatMorph(
+					{ ...en.nouns, boolean: "a boolean", never: "nothing" },
+					(id, noun) => [id, `<${noun}>`]
+				)
 			}
 			const describe = (T: type.Any) => describeMissing(missingOf(T), plain)
 			attest(describe(type({ a: "boolean" }))).snap("<a boolean>")
@@ -585,20 +595,17 @@ b isn't allowed`)
 		})
 
 		it("see what every locale has", () => {
-			// a locale of any noun is the Info a writer receives
-			const toInfo = (locale: Locale<{ readonly ins: string }>): Locale.Info =>
-				locale
-			attest(toInfo(en as never)).is(en)
 			attest((locale: Locale.Info) =>
 				// @ts-expect-error
-				locale.expectedNoun("a")
-			).type.errors("Property 'expectedNoun' does not exist")
+				locale.cite("a")
+			).type.errors("Property 'cite' does not exist")
 		})
 
 		it("arktype's Locale names its writers and contexts", () => {
 			const rule = (e: ArkLocale.ExpectedContext<"min">) => e.rule
 			const min: ArkLocale.CodeWriters<"min"> = {
-				expected: (e, locale) => `> ${locale.number(rule(e))}`
+				expected: (e, locale) => `> ${locale.number(rule(e))}`,
+				problem: xxProblem
 			}
 			const phrases: ArkLocale.Data["keywordPhrases"] = {
 				"string.email": { noun: "an email address" }
@@ -622,10 +629,25 @@ b isn't allowed`)
 					...en,
 					// @ts-expect-error
 					required: {
-						expected: (e, locale) => describeMissing(e.missing, locale)
+						expected: (e, locale) => describeMissing(e.missing, locale),
+						problem: xxProblem
 					}
 				})
 			).type.errors("Property 'actual' is missing")
+			attest(
+				(): Locale => ({
+					...en,
+					// @ts-expect-error
+					min: { expected: "positive" }
+				})
+			).type.errors("Property 'problem' is missing")
+			attest(
+				(): Locale.Complete => ({
+					...en,
+					// @ts-expect-error
+					min: { problem: "must be positive" }
+				})
+			).type.errors("Property 'expected' is missing")
 		})
 	})
 
@@ -940,30 +962,32 @@ c ⟦message⟧ ⟦problem⟧ ⟦cite⟧ unit 1⟦or⟧⟦cite⟧ unit 2 ⟦actu
 		it("an untyped locale renders what it lacks through en", () => {
 			const partial = {
 				tag: "partial",
-				domain: { expected: () => "<domain>" },
+				domain: {
+					expected: (e: Locale.ExpectedContext<"domain">, locale: Locale) =>
+						locale.nouns[e.domain]
+				},
 				min: { problem: () => "<min>" },
-				nouns: { boolean: "<boolean>" }
+				nouns: { string: "<string>" }
 			} as {} as Locale
-			const T = type({ k: "string", j: "number > 0", l: "boolean" })
-			const rendered = (T({ k: 5, j: 0 }) as ArkErrors).toLocaleString(partial)
+			const def = {
+				k: "string",
+				j: "number > 0",
+				l: "boolean",
+				m: "bigint"
+			} as const
+			const data = { k: 5, j: 0, m: 5 }
+			const rendered = (type(def)(data) as ArkErrors).toLocaleString(partial)
 			attest(rendered).snap(`j <min>
-k must be <domain> (was 5)
-l must be <boolean> (was missing)`)
+k must be <string> (was 5)
+l must be boolean (was missing)
+m must be a bigint (was 5)`)
 			attest(
 				withConfig({ locale: partial }, () =>
-					scope({})
-						.type({
-							k: "string",
-							j: "number > 0",
-							l: "boolean"
-						})({ k: 5, j: 0 })
-						.toString()
+					scope({}).type(def)(data).toString()
 				)
 			).equals(rendered)
 			attest(
-				withConfig({ locale: () => partial }, () =>
-					T({ k: 5, j: 0 }).toString()
-				)
+				withConfig({ locale: () => partial }, () => type(def)(data).toString())
 			).equals(rendered)
 		})
 
@@ -1036,6 +1060,26 @@ l must be <boolean> (was missing)`)
 					attest(errors.toLocaleString(spread)).equals(errors.summary)
 				}
 			}
+		})
+
+		it("a locale without a code's expected reads it whole in en", () => {
+			const { expected: _, ...union } = xx.union
+			const locale: Locale = { ...xx, union }
+			const errors = type({ a: "string" }).or({ b: "number" })({}) as ArkErrors
+			attest(withConfig({ locale }, () => errors.issues[0].expected)).snap(
+				"a must be a string (was missing) or b must be a number (was missing)"
+			)
+			attest(errors.toLocaleString(locale)).snap(
+				" ⟦message⟧ ⟦problem⟧ a must be a string (was missing) or b must be a number (was missing) ⟦actual⟧"
+			)
+		})
+
+		it("an untyped locale without a code reads its expected whole in en", () => {
+			const { union: _, ...untyped } = xx
+			const errors = type({ a: "string" }).or({ b: "number" })({}) as ArkErrors
+			attest(errors.toLocaleString(untyped as {} as Locale)).snap(
+				"a must be a string (was missing) or b must be a number (was missing)"
+			)
 		})
 
 		it("a spread of en lists a missing true, false and more as given", () => {

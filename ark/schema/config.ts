@@ -228,7 +228,7 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly onFail?: ArkErrors.Handler | null
 	readonly keywords?: Record<string, TypeMeta.Collapsible | undefined>
 	readonly toJsonSchema?: ToJsonSchema.Options
-	readonly locale?: Locale<any> | (() => Locale<any> | undefined)
+	readonly locale?: Locale | (() => Locale | undefined)
 }
 
 export type resolveConfig<config extends ArkSchemaConfig> = show<

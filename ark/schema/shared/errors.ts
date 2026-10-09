@@ -69,7 +69,7 @@ const readSummary = (e: ArkErrors) => e.toString()
 const readFlatProblems = (e: ArkErrors) => e.flatProblemsByPath
 
 // Array.prototype.toLocaleString passes each element its own arguments, a tag
-const isLocale = (locale: unknown): locale is Locale<any> =>
+const isLocale = (locale: unknown): locale is Locale =>
 	typeof locale === "object" && locale !== null
 
 export class ArkError<
@@ -209,7 +209,7 @@ export class ArkError<
 	/**
 	 * The message in `locale`, or in the locale a read selects without one.
 	 */
-	toLocaleString(locale?: Locale<any>): string {
+	toLocaleString(locale?: Locale): string {
 		return isLocale(locale) ?
 				readIn(normalizeLocale(locale), this as never, readSlot.message)
 			:	this.message
@@ -331,9 +331,13 @@ const localeExpected = (
 	cited: string | undefined,
 	locale: Locale
 ): string => {
-	if (cited === undefined)
-		return writeExpected(error, locale[error.code].expected, locale)
-	return writeKeywordExpected(error as never, locale) ?? locale.cite(cited)
+	if (cited !== undefined)
+		return writeKeywordExpected(error as never, locale) ?? locale.cite(cited)
+	const expected = locale[error.code].expected
+	// read whole in en, never as en's frame around the locale's text
+	return expected === undefined ?
+			readIn(defaultLocale, error, readSlot.expected)
+		:	writeExpected(error, expected, locale)
 }
 
 const writeExpected = (
@@ -563,7 +567,7 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	/**
 	 * The summary in `locale`, or in the locale a read selects without one.
 	 */
-	toLocaleString(locale?: Locale<any>): string {
+	toLocaleString(locale?: Locale): string {
 		return isLocale(locale) ?
 				readIn(normalizeLocale(locale), this, readSummary)
 			:	this.summary

@@ -120,19 +120,24 @@ const enWritersOf = (
 		expected:
 			kind === "union" || kind === "intersection" ? defaults.expected
 			: kind === "required" ? describeRequired
-			: defaults.description
+			: defaults.description,
+		problem: defaults.problem
 	}
-	for (const slot of ["actual", "problem", "message"] as const)
+	for (const slot of ["actual", "message"] as const)
 		if (defaults[slot] !== shared[slot]) writers[slot] = defaults[slot]
 	return writers as never
 }
 
-const undeclared = { expected: "removed", actual: "" } as const
+const undeclared = {
+	expected: "removed",
+	problem: shared.problem,
+	actual: ""
+} as const
 
 const listCases: Locale.ExpectedWriter<"discriminant"> = (e, locale) =>
 	describeBranches(
 		e.discriminantKind === "domain" ?
-			e.cases.map(domain => locale.expectedNoun(locale.nouns[domain]))
+			e.cases.map(domain => locale.nouns[domain])
 		:	e.cases.map(unit => printable(unit))
 	)
 
@@ -145,14 +150,18 @@ const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
 		locale.nouns[domainOf(data)]
 	:	printable(data)
 
-export const en: Locale = {
+export const en: Locale.Complete = {
 	...(flatMorph(
 		nodeImplementationsByKind,
 		(kind, { hasAssociatedError, defaults }) =>
 			hasAssociatedError ? [kind, enWritersOf(kind, defaults)] : []
-	) as Pick<Locale.Writers, ArkErrorCode & NodeKind>),
+	) as Pick<Locale.Complete, ArkErrorCode & NodeKind>),
 	undeclared,
-	discriminant: { expected: listCases, actual: describeDiscriminant },
+	discriminant: {
+		expected: listCases,
+		problem: shared.problem,
+		actual: describeDiscriminant
+	},
 	tag: "en",
 	list: listPattern(
 		{ two: " or ", middle: ", ", end: " or " },
@@ -163,11 +172,10 @@ export const en: Locale = {
 	date: describeCollapsibleDate,
 	verbatim: text => text,
 	cite: text => text,
-	expectedNoun: noun => noun,
 	// a domain is named by its noun whatever its meta, as DomainNode's
 	// defaultShortDescription does
 	basis: (basis, locale) =>
-		basis.code === "domain" ? locale.expectedNoun(locale.nouns[basis.domain])
+		basis.code === "domain" ? locale.nouns[basis.domain]
 		: basis.meta.description === undefined ?
 			nodeImplementationsByKind[basis.code].defaults.description(basis as never)
 		:	locale.cite(basis.meta.description),
@@ -190,11 +198,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			implementation.defaults
 		]),
 		{
-			undeclared: {
-				...undeclared,
-				problem: shared.problem,
-				message: shared.message
-			},
+			undeclared: { ...undeclared, message: shared.message },
 			// a union's context describes its cases in English
 			discriminant: {
 				expected: e => e.description ?? listCases(e, en),

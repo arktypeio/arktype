@@ -3,7 +3,7 @@ import {
 	type BuiltinObjectKind,
 	type Domain,
 	type ListType,
-	type omit,
+	omit,
 	printable
 } from "@ark/util"
 import type { MissingBasis, MissingValue } from "../structure/required.ts"
@@ -23,13 +23,11 @@ export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
 /** a domain, a builtin object kind, or the types unknown and never */
 export type NounId = Domain | BuiltinObjectKind | "unknown" | "never"
 
-export type Locale<
-	noun = string,
-	keywordAlias extends string = string
-> = Locale.Data<noun, keywordAlias> & Locale.Writers<noun>
+export type Locale<keywordAlias extends string = string> =
+	Locale.Data<keywordAlias> & Locale.Writers
 
 export declare namespace Locale {
-	/** what every locale has, whatever its nouns: all a user writer sees */
+	/** what every locale has: all a writer you configure sees */
 	export interface Info {
 		/** BCP 47 tag */
 		readonly tag: string
@@ -39,95 +37,88 @@ export declare namespace Locale {
 		readonly date: (date: Date) => string
 		/** wraps text shown as written: paths, printed values, names */
 		readonly verbatim: (text: string) => string
-		/** frames an expected string written without the locale */
+	}
+
+	export interface Data<keywordAlias extends string = string> extends Info {
+		/** names expected text written without the locale, like a description */
 		readonly cite: (text: string) => string
-	}
-
-	export interface Data<noun = string, keywordAlias extends string = string>
-		extends Info {
-		/** renders a noun where expected text goes */
-		readonly expectedNoun: (noun: noun) => string
-		/** renders one alternative of a missing value where expected text goes */
-		readonly basis: (basis: MissingBasis, locale: Locale<noun>) => string
-		readonly nouns: { readonly [id in NounId]: validateNoun<noun> }
+		/** names one alternative of a missing value */
+		readonly basis: (basis: MissingBasis, locale: Locale) => string
+		/** each type's name, as the locale's "must be" takes it */
+		readonly nouns: { readonly [id in NounId]: string }
 		readonly keywordPhrases: {
-			readonly [alias in keywordAlias]?: KeywordPhrase<noun>
+			readonly [alias in keywordAlias]?: KeywordPhrase
 		}
-		readonly actual: ActualWriter<ArkErrorCode, noun>
-		readonly problem: ProblemWriter<ArkErrorCode, noun>
-		readonly message: MessageWriter<ArkErrorCode, noun>
+		readonly actual: ActualWriter
+		/** the problem of a keyword's phrase or of expected text you wrote */
+		readonly problem: ProblemWriter
+		readonly message: MessageWriter
 	}
 
-	export type Writers<noun = string> = {
+	export type Writers = {
 		readonly [code in ArkErrorCode]: code extends "required" ?
 			// its data is the object around the key, not a value to print
-			CodeWriters<code, noun> & {
-				readonly actual: string | ActualWriter<code, noun>
-			}
-		:	CodeWriters<code, noun>
+			CodeWriters<code> & { readonly actual: string | ActualWriter<code> }
+		:	CodeWriters<code>
 	}
 
-	export type CodeWriters<
-		code extends ArkErrorCode = ArkErrorCode,
-		noun = string
-	> = {
-		readonly expected: string | ExpectedWriter<code, noun>
-		readonly actual?: string | ActualWriter<code, noun>
-		readonly problem?: string | ProblemWriter<code, noun>
-		readonly message?: string | MessageWriter<code, noun>
+	export type CodeWriters<code extends ArkErrorCode = ArkErrorCode> = {
+		/** the sentence for an error of this code, without its subject */
+		readonly problem: string | ProblemWriter<code>
+		/** what unions and intersections list, as "must be" takes it */
+		readonly expected?: string | ExpectedWriter<code>
+		readonly actual?: string | ActualWriter<code>
+		readonly message?: string | MessageWriter<code>
 	}
 
 	export type ExpectedContext<code extends ArkErrorCode = ArkErrorCode> =
 		localeExpectedContext<code>
 
-	export type ExpectedWriter<
-		code extends ArkErrorCode = ArkErrorCode,
-		noun = string
-	> = (error: ExpectedContext<code>, locale: Locale<noun>) => string
-
-	export type ActualWriter<
-		code extends ArkErrorCode = ArkErrorCode,
-		noun = string
-	> = (
-		data: getAssociatedDataForError<code>,
-		error: ActualContext<code>,
-		locale: Locale<noun>
+	export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
+		error: ExpectedContext<code>,
+		locale: Locale
 	) => string
 
-	export type ProblemWriter<
-		code extends ArkErrorCode = ArkErrorCode,
-		noun = string
-	> = (error: ProblemContext<code>, locale: Locale<noun>) => string
+	export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
+		data: getAssociatedDataForError<code>,
+		error: ActualContext<code>,
+		locale: Locale
+	) => string
 
-	export type MessageWriter<
-		code extends ArkErrorCode = ArkErrorCode,
-		noun = string
-	> = (error: MessageContext<code>, locale: Locale<noun>) => string
+	export type ProblemWriter<code extends ArkErrorCode = ArkErrorCode> = (
+		error: ProblemContext<code>,
+		locale: Locale
+	) => string
 
-	export type KeywordPhrase<noun = string> = noun | KeywordWriters<noun>
+	export type MessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
+		error: MessageContext<code>,
+		locale: Locale
+	) => string
 
-	export type KeywordWriters<noun = string> = Omit<
-		CodeWriters<ArkErrorCode, noun>,
-		"expected"
-	> & {
-		readonly noun: noun
-		readonly expected?: string | KeywordExpectedWriter<noun>
+	export type KeywordPhrase = string | KeywordWriters
+
+	export type KeywordWriters = Partial<Omit<CodeWriters, "expected">> & {
+		readonly noun: string
+		readonly expected?: string | KeywordExpectedWriter
 	}
 
 	/** describes an error, or a missing value by its basis */
-	export type KeywordExpectedWriter<noun = string> = (
+	export type KeywordExpectedWriter = (
 		error: ExpectedContext | MissingBasis,
-		locale: Locale<noun>
+		locale: Locale
 	) => string
 
-	export type Complete<
-		noun = string,
-		keywordAlias extends string = string
-	> = Locale<noun, keywordAlias> & {
-		readonly keywordPhrases: {
-			readonly [alias in keywordAlias]: KeywordPhrase<noun>
+	/** a locale with every fragment and keyword phrase, which its unions may list */
+	export type Complete<keywordAlias extends string = string> =
+		Locale<keywordAlias> & {
+			readonly [code in ArkErrorCode]: {
+				readonly expected: string | ExpectedWriter<code>
+			}
+		} & {
+			readonly keywordPhrases: {
+				readonly [alias in keywordAlias]: KeywordPhrase
+			}
 		}
-	}
 }
 
 // a locale computes expected text from an error's data, not its English
@@ -137,13 +128,10 @@ type localeExpectedContext<code extends ArkErrorCode> =
 	: code extends unknown ? omit<ExpectedContext<code>, "description">
 	: never
 
-// keyword writers are told apart from nouns by a noun key
-type validateNoun<noun> = noun extends { readonly noun: unknown } ? never : noun
-
 const normalizedLocales = new WeakMap<object, Locale>()
 
 /** a locale completed from en, since an untyped or older one may lack entries */
-export const normalizeLocale = (locale: Locale<any>): Locale => {
+export const normalizeLocale = (locale: Locale): Locale => {
 	const en = $ark.defaultConfig.locale
 	if (locale === en) return en
 	let normalized = normalizedLocales.get(locale)
@@ -154,7 +142,7 @@ export const normalizeLocale = (locale: Locale<any>): Locale => {
 	return normalized
 }
 
-const completeFrom = (en: Locale, locale: Locale<any>): Locale => {
+const completeFrom = (en: Locale, locale: Locale): Locale => {
 	let completed: Record<string, unknown> | undefined
 	const fill = (k: string, entry: unknown) => {
 		completed ??= { ...locale }
@@ -163,26 +151,30 @@ const completeFrom = (en: Locale, locale: Locale<any>): Locale => {
 	let k: keyof Locale
 	for (k in en) {
 		const entry = locale[k] as any
-		const enEntry = en[k] as any
-		if (entry === undefined)
-			// a keyword without a phrase renders its English description
-			fill(k, k === "keywordPhrases" ? {} : enEntry)
-		else if (k === "nouns") {
-			if (Object.keys(enEntry).some(id => entry[id] === undefined))
-				fill(k, { ...enEntry, ...entry })
-		} else if (k !== "keywordPhrases" && typeof enEntry === "object") {
-			// an error code's writers
-			if (entry.expected === undefined)
-				fill(k, { ...entry, expected: enEntry.expected })
-		}
+		if (entry === undefined) {
+			const fallback = en[k]
+			// a keyword without a phrase renders its English description, and a
+			// code without writers reads its expected text whole in en
+			fill(
+				k,
+				k === "keywordPhrases" ? {}
+				: typeof fallback === "object" ?
+					omit(fallback as Locale.CodeWriters, { expected: 1 })
+				:	fallback
+			)
+		} else if (
+			k === "nouns" &&
+			Object.keys(en.nouns).some(id => entry[id] === undefined)
+		)
+			fill(k, { ...en.nouns, ...entry })
 	}
 	return (completed as Locale | undefined) ?? locale
 }
 
-const keywordPhraseOf = <noun>(
+const keywordPhraseOf = (
 	error: { readonly meta?: ArkEnv.meta },
-	locale: Locale<noun>
-): Locale.KeywordPhrase<noun> | undefined => {
+	locale: Locale
+): Locale.KeywordPhrase | undefined => {
 	const keyword = error.meta?.keyword
 	// meta.keyword is any string, so it may name an Object.prototype key
 	return (
@@ -193,51 +185,39 @@ const keywordPhraseOf = <noun>(
 		:	locale.keywordPhrases[keyword]
 }
 
-const hasWriters = <noun>(
-	phrase: Locale.KeywordPhrase<noun> | undefined
-): phrase is Locale.KeywordWriters<noun> =>
-	typeof phrase === "object" && phrase !== null && "noun" in phrase
-
 /** the writer a locale has for an error's keyword in a slot other than expected */
-export const keywordWriterOf = <
-	slot extends "actual" | "problem" | "message",
-	noun
->(
+export const keywordWriterOf = <slot extends "actual" | "problem" | "message">(
 	error: { readonly meta?: ArkEnv.meta },
-	locale: Locale<noun>,
+	locale: Locale,
 	slot: slot
-): Locale.KeywordWriters<noun>[slot] | undefined => {
+): Locale.KeywordWriters[slot] | undefined => {
 	const phrase = keywordPhraseOf(error, locale)
-	return hasWriters(phrase) ? phrase[slot] : undefined
+	return typeof phrase === "object" ? phrase[slot] : undefined
 }
 
 /** a locale's phrase for a keyword, if it has one, as expected text */
-export const writeKeywordExpected = <noun>(
+export const writeKeywordExpected = (
 	error: Locale.ExpectedContext | MissingBasis,
-	locale: Locale<noun>
+	locale: Locale
 ): string | undefined => {
 	const phrase = keywordPhraseOf(error, locale)
 	return (
-		phrase === undefined ? undefined
-		: !hasWriters(phrase) ? locale.expectedNoun(phrase)
-		: phrase.expected === undefined ? locale.expectedNoun(phrase.noun)
+		typeof phrase !== "object" ? phrase
+		: phrase.expected === undefined ? phrase.noun
 		: typeof phrase.expected === "string" ? phrase.expected
 		: phrase.expected(error, locale)
 	)
 }
 
 /** renders a missing value where expected text goes */
-export const describeMissing = <noun>(
+export const describeMissing = (
 	missing: MissingValue,
-	locale: Locale<noun>
+	locale: Locale
 ): string => {
-	if (missing.code === "intersection")
-		return locale.expectedNoun(locale.nouns.unknown)
+	if (missing.code === "intersection") return locale.nouns.unknown
 	if (missing.code !== "union") return describeBasis(missing, locale)
-	if (missing.branches.length === 0)
-		return locale.expectedNoun(locale.nouns.never)
-	if (isBooleanPair(missing.branches))
-		return locale.expectedNoun(locale.nouns.boolean)
+	if (missing.branches.length === 0) return locale.nouns.never
+	if (isBooleanPair(missing.branches)) return locale.nouns.boolean
 	const branches: string[] = []
 	for (const branch of missing.branches)
 		appendUnique(branches, describeMissing(branch, locale))
@@ -246,10 +226,7 @@ export const describeMissing = <noun>(
 
 // a unit or proto's description is authored, by its meta or a scope's
 // writer, unless it is what arktype writes for it
-const describeBasis = <noun>(
-	basis: MissingBasis,
-	locale: Locale<noun>
-): string =>
+const describeBasis = (basis: MissingBasis, locale: Locale): string =>
 	(
 		(basis.code === "unit" || basis.code === "proto") &&
 		basis.meta.keyword === undefined &&
@@ -289,9 +266,9 @@ export interface PathGroup {
 }
 
 /** a union's errors by path, in the order each path first failed */
-export const groupByPath = <noun>(
+export const groupByPath = (
 	union: Locale.ExpectedContext<"union">,
-	locale: Locale<noun>
+	locale: Locale
 ): PathGroup[] => {
 	const groups: ArkError[][] = []
 	for (const error of union.errors) {
@@ -301,8 +278,7 @@ export const groupByPath = <noun>(
 	}
 	return groups.map(group => {
 		const expected: string[] = []
-		if (isBooleanPair(group))
-			expected.push(locale.expectedNoun(locale.nouns.boolean))
+		if (isBooleanPair(group)) expected.push(locale.nouns.boolean)
 		else for (const error of group) appendUnique(expected, error.expected)
 		const actual = group[0].actual
 		const propString = group[0].propString

@@ -16,7 +16,7 @@ cases({
 		strictEqual(type({ k: "string" })({ k: 5 }).toString(), "k <string>! (5)")
 	},
 	rendersWhatItLacksThroughEn: () => {
-		strictEqual(type("number > 0")(0).toString(), "positive! (0)")
+		strictEqual(type("number > 0")(0).toString(), "must be positive (was 0)")
 		strictEqual(type("string.email")("x").toString(), 'an email address! ("x")')
 	},
 	describesInEnglish: () => {

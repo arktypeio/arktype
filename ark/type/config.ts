@@ -20,7 +20,7 @@ type parseConfigurableFlatAlias<k extends string, v> =
 
 export interface ArkConfig extends ArkSchemaConfig {
 	keywords?: KeywordConfig
-	locale?: Locale<any> | (() => Locale<any> | undefined)
+	locale?: Locale | (() => Locale | undefined)
 }
 
 export const configure: <config extends ArkConfig>(config: config) => config =

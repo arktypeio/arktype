@@ -1,10 +1,10 @@
 import { normalizeLocale, type Locale } from "./locale.ts"
 import { $ark } from "./registry.ts"
 
-type LocaleSelector = () => Locale<any> | undefined
+type LocaleSelector = () => Locale | undefined
 
 /** the defaultConfig's locale, once the global config has resolved */
-export let defaultLocale: Locale
+export let defaultLocale: Locale.Complete
 
 /** defaultLocale, unless a read may render in another locale */
 export let plainLocale: Locale | undefined
@@ -28,9 +28,9 @@ const plainLocaleIn = (locale: Locale | undefined): Locale | undefined => {
  * returning it if it isn't a function
  */
 export const configureLocale = (
-	locale: Locale<any> | LocaleSelector | undefined
+	locale: Locale | LocaleSelector | undefined
 ): Locale => {
-	defaultLocale = $ark.defaultConfig.locale
+	defaultLocale = $ark.defaultConfig.locale as Locale.Complete
 	if (typeof locale === "function") {
 		selector = locale
 		configured = defaultLocale
