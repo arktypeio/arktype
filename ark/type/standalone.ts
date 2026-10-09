@@ -200,7 +200,7 @@ ${exported.join("\n")}
 			node.hasKind("union") && node.compiledDiscriminant ?
 				`,\n\tdiscriminantDescription: ${JSON.stringify(node.discriminantDescription)}`
 			:	""
-		this.links.push(`runtime.assign(${name}, {
+		this.links.push(`runtime.freeze(runtime.assign(${name}, {
 	id: ${JSON.stringify(this.unit.names[node.id])},
 	trackedId: ${JSON.stringify(trackedName)},
 	isTransformedById: ${node.isTransformedById},
@@ -212,8 +212,8 @@ ${exported.join("\n")}
 	traverseApply: ${traversals}[1],
 	traverseTransform: ${traversals}[2],
 	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${name}, data) ?? runtime.allowsInContext(${name}, data, runtime.runtimeConfig)` : `${traversals}[0]`},
-	$: { resolvedConfig: runtime.runtimeConfig }${discriminantDescription}
-})`)
+	$: runtime.runtimeScope${discriminantDescription}
+}))`)
 		return name
 	}
 
@@ -252,42 +252,42 @@ ${exported.join("\n")}
 				throwParseError(writeUnprecompilableMessage("a symbol key"))
 			return this.declareConst(
 				value,
-				`{ __proto__: null, ${keys.map(k => `[${JSON.stringify(k)}]: 1`).join(", ")} }`
+				`runtime.freeze({ __proto__: null, ${keys.map(k => `[${JSON.stringify(k)}]: 1`).join(", ")} })`
 			)
 		}
 		if (this.emitting.has(value))
 			return throwParseError(writeUnprecompilableMessage("a cyclic object"))
 		const prototype = prototypeOf(value)
 		const keys = Reflect.ownKeys(value)
-		if (prototype === Date.prototype && keys.length === 0)
-			return this.declareConst(value, `new Date(${(value as Date).getTime()})`)
+		if (prototype === Date.prototype && keys.length === 0) {
+			return this.declareConst(
+				value,
+				`runtime.freeze(new Date(${(value as Date).getTime()}))`
+			)
+		}
 		if (prototype === RegExp.prototype && keys.length === 1) {
 			const { source, flags, lastIndex } = value as RegExp
 			const regex = `new RegExp(${JSON.stringify(source)}, ${JSON.stringify(flags)})`
+			// its methods write lastIndex, so it's kept from growing rather than frozen
 			return this.declareConst(
 				value,
-				lastIndex ?
-					`runtime.assign(${regex}, { lastIndex: ${lastIndex} })`
-				:	regex
+				`runtime.preventExtensions(${lastIndex ? `runtime.assign(${regex}, { lastIndex: ${lastIndex} })` : regex})`
 			)
 		}
 		const isArrayLiteral = prototype === Array.prototype
-		const isFrozen = Object.isFrozen(value)
 		const propKeys = isArrayLiteral ? keys.filter(k => k !== "length") : keys
-		// a literal has its value's prototype and frozenness, and only enumerable data properties
+		// a literal has its value's prototype and only enumerable data properties
 		const isReproducible =
 			(isArrayLiteral ?
 				propKeys.length === (value as unknown[]).length &&
 				propKeys.every((k, i) => k === `${i}`)
 			:	prototype === Object.prototype || prototype === null) &&
-			(isFrozen || Object.isExtensible(value)) &&
 			propKeys.every(k => {
 				const descriptor = Object.getOwnPropertyDescriptor(value, k)!
 				return (
 					typeof k === "string" &&
 					descriptor.enumerable &&
-					"value" in descriptor &&
-					(isFrozen || (descriptor.writable && descriptor.configurable))
+					"value" in descriptor
 				)
 			})
 		if (!isReproducible) {
@@ -303,10 +303,7 @@ ${exported.join("\n")}
 					.map(k => `[${JSON.stringify(k)}]: ${this.emit(value[k as never])}`)
 					.join(", ")} }`
 		this.emitting.delete(value)
-		return this.declareConst(
-			value,
-			isFrozen ? `runtime.freeze(${literal})` : literal
-		)
+		return this.declareConst(value, `runtime.freeze(${literal})`)
 	}
 
 	configOf(root: BaseRoot): string {
@@ -330,14 +327,14 @@ ${exported.join("\n")}
 			}
 			if (writers.length) {
 				configuredCodes.push(
-					`${code}: { ...runtime.runtimeConfig.${code}, ${writers.join(", ")} }`
+					`${code}: runtime.freeze({ ...runtime.runtimeConfig.${code}, ${writers.join(", ")} })`
 				)
 			}
 		}
 		return configuredCodes.length ?
 				this.declareConst(
 					config,
-					`{ ...runtime.runtimeConfig, ${configuredCodes.join(", ")} }`
+					`runtime.freeze({ ...runtime.runtimeConfig, ${configuredCodes.join(", ")} })`
 				)
 			:	"runtime.runtimeConfig"
 	}

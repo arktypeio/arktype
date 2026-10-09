@@ -25,6 +25,7 @@ export {
 	isArkErrorResult,
 	mergeTransformed,
 	runtimeConfig,
+	runtimeScope,
 	TransformErrors,
 	Traversal,
 	TraversalError
@@ -52,14 +53,6 @@ export interface ValidatorAttributes {
 export const { assign, freeze, preventExtensions } = Object
 
 const throwOnFail: ArkErrors.Handler = errors => errors.throw()
-
-// an emitted literal's properties are enumerable and hold literals, globals or the runtime's own functions, so only its objects are the artifact's
-const freezeLiteral = <t>(value: t): t => {
-	if (typeof value !== "object" || value === null) return value
-	for (const v of Object.values(value)) freezeLiteral(v)
-	// like a Date's time, a RegExp's lastIndex is state its methods write
-	return value instanceof RegExp ? preventExtensions(value) : freeze(value)
-}
 
 /**
  * #### a Type precompiled to validate without arktype, frozen with what it holds
@@ -93,7 +86,7 @@ export class Validator extends Callable<
 		)
 		this.expression = attributes.expression
 		this.description = attributes.description
-		this.meta = freezeLiteral(attributes.meta)
+		this.meta = attributes.meta
 		this.allows = freeze(node.allows)
 		this["~standard"] = freeze({
 			vendor: "arktype",
@@ -212,17 +205,15 @@ for (const [name, kind] of Object.entries(unavailableMembers)) {
 	)
 }
 
-for (
-	let prototype: object = Validator.prototype;
-	prototype !== Object.prototype;
-	prototype = Object.getPrototypeOf(prototype)
-) {
-	for (const k of Reflect.ownKeys(prototype)) {
-		const { value, get } = Object.getOwnPropertyDescriptor(prototype, k)!
-		if (k !== "constructor") freeze(value ?? get)
-	}
-	freeze(prototype)
+// every validator shares it, so replacing one of its methods would change them all
+for (const k of Reflect.ownKeys(Validator.prototype)) {
+	const { value, get } = Object.getOwnPropertyDescriptor(
+		Validator.prototype,
+		k
+	)!
+	if (k !== "constructor") freeze(value ?? get)
 }
+freeze(Validator.prototype)
 
 export const type: { (): never; errors: typeof ArkErrors } = freeze(
 	assign(() => throwError(writeUnavailableMemberMessage("type")), {

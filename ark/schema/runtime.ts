@@ -33,3 +33,8 @@ export const runtimeConfig: ResolvedConfig = Object.freeze({
 	jitless: true,
 	onFail: null
 }) as never
+
+// a node shape's $, which traversal reads only for its config
+export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({
+	resolvedConfig: runtimeConfig
+})

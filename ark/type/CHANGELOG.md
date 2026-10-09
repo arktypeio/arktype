@@ -176,7 +176,7 @@ import { precompileStandalone } from "arktype/internal/standalone.ts"
 const source = precompileStandalone({ User: type({ name: "string > 0" }) })
 ```
 
-A validator bakes `expression`, `description` and `meta`, and throws on members that compose or introspect a Type. A Module becomes a plain object of its validators. Validators, their prototypes, their `meta`, Modules and `type` are frozen, so a write to one throws in strict mode. The build refuses what the runtime can't reproduce, like a Generic, or a narrow or morph that isn't one of arktype's keywords, naming it. An artifact refuses to load beside `arktype` or on another version of `arktype/runtime`.
+A validator bakes `expression`, `description` and `meta`, and throws on members that compose or introspect a Type. A Module becomes a plain object of its validators. An artifact freezes what it creates, so a write to one throws in strict mode: its validators and their shared prototype, its Modules, configs and node shapes, and every literal it emits, such as `meta`. A RegExp is only made non-extensible, since its methods write `lastIndex`, and neither a Date's time nor a RegExp's pattern can be frozen. `arktype/runtime`'s `type` is frozen too. The build refuses what the runtime can't reproduce, like a Generic, or a narrow or morph that isn't one of arktype's keywords, naming it. An artifact refuses to load beside `arktype` or on another version of `arktype/runtime`.
 
 ### Fix duplicate errors from `string.date.epoch.parse`
 

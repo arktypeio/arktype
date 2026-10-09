@@ -276,8 +276,15 @@ contextualize(() => {
 			pattern: /x/g
 		} as never)
 		const M = scope({ a: "string" }).export()
-		const { T: validator, M: module } = await load({ T, M })
+		const { n: Cyclic } = scope({ n: { "next?": "n", v: "number" } }).export()
+		const Even = scope({}, { divisor: { message: "odd" } }).type("number % 2")
+		const Long = type("string").atLeastLength(3)
+		const artifact = await load({ T, M, Cyclic, Even, Long })
+		const { T: validator, M: module } = artifact
 		const prototype = Object.getPrototypeOf(validator)
+		const shape = artifact.Cyclic("x", { pipe: (node: unknown) => node })
+		const config = artifact.Even(1).issues[0].ctx.config
+		const nodeMeta = artifact.Long("a").issues[0].meta
 		const writes = {
 			property: () => (validator.x = 1),
 			meta: () => (validator.meta.x = 1),
@@ -290,7 +297,11 @@ contextualize(() => {
 			deletedPrototypeMethod: () => delete prototype.from,
 			prototype: () => Object.setPrototypeOf(validator, {}),
 			type: () => ((runtimeType as any).x = 1),
-			module: () => (module.a = validator)
+			module: () => (module.a = validator),
+			shape: () => (shape.traverseApply = () => {}),
+			config: () => (config.jitless = false),
+			configuredWriters: () => (config.divisor.message = "even"),
+			nodeMeta: () => (nodeMeta.message = "long")
 		}
 		const unfrozen = Object.entries(writes).filter(([, write]) => {
 			try {
