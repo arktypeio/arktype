@@ -7,10 +7,13 @@ import {
 	writePrecompiledUnits,
 	type NodeId
 } from "@ark/schema"
-import { liftArray } from "@ark/util"
+import { flatMorph, liftArray } from "@ark/util"
 import { keywords, scope, type } from "arktype"
 import * as keywordFunctions from "arktype/internal/keywords/functions.ts"
-import { precompileStandalone } from "arktype/internal/standalone.ts"
+import {
+	precompileStandalone,
+	runtimeKeyOf
+} from "arktype/internal/standalone.ts"
 import {
 	corpus,
 	isPrecompiled,
@@ -58,6 +61,35 @@ contextualize(() => {
 		attest(second.unit.source).equals(first.unit.source)
 		attest(second.units).equals(first.units)
 		attest(second.artifact).equals(first.artifact)
+	})
+
+	it("names a node the same whichever roots reach it", () => {
+		const Email = type("string.email")
+		const After = type("Date > d'2000-01-01'")
+		// as a build names them, since a required prop's context holds its value's, which can reach Date before isValidDate
+		const namesOf = (...types: type.Any[]) =>
+			precompileByContent(
+				types.map(t => t.internal),
+				runtimeKeyOf
+			).names
+		const alone = { ...namesOf(Email), ...namesOf(After) }
+		const reached = namesOf(
+			type({ id: "string.uuid", at: "Date > d'1999-01-01'" }),
+			Email,
+			After
+		)
+		attest(flatMorph(alone, id => [id, reached[id]])).equals(alone)
+	})
+
+	it("names a cyclic unit the same after validating deep data", () => {
+		const { tree } = scope({
+			tree: { value: "number", "children?": "tree[]" }
+		}).export()
+		const artifact = precompileStandalone({ tree })
+		let data: unknown = { value: 0 }
+		for (let i = 0; i < 100; i++) data = { value: i, children: [data] }
+		tree(data)
+		attest(precompileStandalone({ tree })).equals(artifact)
 	})
 
 	it("validates with a unit named by content", () => {

@@ -7,6 +7,8 @@ import {
 	hasDomain,
 	includes,
 	isArray,
+	isDateObject,
+	isRegExpObject,
 	isThunk,
 	isValidDate,
 	jsTypeOfDescriptions,
@@ -510,11 +512,12 @@ export interface ContentUnit {
 }
 
 export const precompileByContent = (
-	roots: readonly BaseNode[]
+	roots: readonly BaseNode[],
+	keyOf?: (value: object | symbol) => string | undefined
 ): ContentUnit => {
-	let s = nameReferences(roots, {})
+	let s = nameReferences(roots, {}, keyOf)
 	const occurrencesById = occurrencesOfResolutions(s)
-	if (occurrencesById) s = nameReferences(roots, occurrencesById)
+	if (occurrencesById) s = nameReferences(roots, occurrencesById, keyOf)
 	const names: Record<NodeId, string> = {}
 	const linkage = createLinkage(
 		id => names[id] ?? throwInternalError(`Unexpected unnamed node ${id}`)
@@ -541,6 +544,7 @@ interface ContentNamingState {
 	referencesById: Record<NodeId, ContentReference>
 	reached: BaseNode[]
 	stack: ContentReference[]
+	keyOf: ((value: object | symbol) => string | undefined) | undefined
 	valueIndices: Map<unknown, number>
 	names: Record<NodeId, string>
 	inputsByHash: Record<string, string>
@@ -549,12 +553,14 @@ interface ContentNamingState {
 
 const nameReferences = (
 	roots: readonly BaseNode[],
-	occurrencesById: Record<NodeId, number>
+	occurrencesById: Record<NodeId, number>,
+	keyOf: ContentNamingState["keyOf"]
 ): ContentNamingState => {
 	const s: ContentNamingState = {
 		referencesById: {},
 		reached: [],
 		stack: [],
+		keyOf,
 		valueIndices: new Map(),
 		names: {},
 		inputsByHash: {},
@@ -641,6 +647,13 @@ const compileContent = (
 		}
 		if (!hasDomain(value, "object") && typeof value !== "symbol")
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
+		const key =
+			s.keyOf?.(value) ??
+			(typeof value !== "object" ? undefined
+			: isRegExpObject(value) ? `${value} ${value.lastIndex}`
+			: isDateObject(value) ? `Date ${value.getTime()}`
+			: undefined)
+		if (key !== undefined) return key
 		const prototype = typeof value === "object" && Object.getPrototypeOf(value)
 		// a value inside itself has no finite content, so like an instance it's keyed by identity
 		if (

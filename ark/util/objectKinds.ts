@@ -219,6 +219,27 @@ export const isValidDate = (date: Date): boolean => {
 	}
 }
 
+const regExpSource = Object.getOwnPropertyDescriptor(
+	RegExp.prototype,
+	"source"
+)!.get!
+
+// an object can have a builtin's prototype without being one, which only the builtin's methods can tell
+const isBrandedBy = (value: object, method: () => unknown): boolean => {
+	try {
+		method.call(value)
+		return true
+	} catch {
+		return false
+	}
+}
+
+export const isDateObject = (value: object): value is Date =>
+	prototypeOf(value) === Date.prototype && isBrandedBy(value, dateGetTime)
+
+export const isRegExpObject = (value: object): value is RegExp =>
+	prototypeOf(value) === RegExp.prototype && isBrandedBy(value, regExpSource)
+
 export const writeInvalidDateMessage = <source extends string>(
 	source: source
 ): writeInvalidDateMessage<source> =>

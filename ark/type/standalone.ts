@@ -30,6 +30,8 @@ import {
 	hasDomain,
 	isArray,
 	isDate,
+	isDateObject,
+	isRegExpObject,
 	nameOf,
 	printable,
 	prototypeOf,
@@ -73,6 +75,16 @@ const indexRuntime = (value: unknown, path: string): void => {
 // an artifact reads what the runtime exports from it rather than copying it
 for (const [name, value] of Object.entries(runtime))
 	indexRuntime(value, `runtime.${name}`)
+
+// a value the runtime holds is named by its path, since its state and the order roots reach it vary between builds
+export const runtimeKeyOf = (value: object | symbol): string | undefined =>
+	runtimePathsByValue.get(value) ??
+	((
+		typeof value === "function" &&
+		Reflect.get(globalThis, functionNameOf(value)) === value
+	) ?
+		`globalThis.${functionNameOf(value)}`
+	:	undefined)
 
 // what an artifact exports as it is, rather than creating it in a factory
 type ExportedValue = type.Any | Module | Scope<any> | Generic
@@ -244,7 +256,7 @@ export class StandaloneArtifact {
 		do {
 			for (const root of this.roots) {
 				if (!this.units.has(root))
-					this.units.set(root, precompileByContent([root]))
+					this.units.set(root, precompileByContent([root], runtimeKeyOf))
 			}
 		} while (this.collectMetaTypes())
 		for (const root of this.roots) {
@@ -991,27 +1003,6 @@ export { factory${index} as ${JSON.stringify(name)} }`
 
 const { getTime } = Date.prototype
 
-const getSource = Object.getOwnPropertyDescriptor(
-	RegExp.prototype,
-	"source"
-)!.get!
-
-// an object can have a builtin's prototype without being one, which only the builtin's methods can tell
-const isBrandedBy = (value: object, method: () => unknown): boolean => {
-	try {
-		method.call(value)
-		return true
-	} catch {
-		return false
-	}
-}
-
-const isDateObject = (value: object): value is Date =>
-	prototypeOf(value) === Date.prototype && isBrandedBy(value, getTime)
-
-const isRegExpObject = (value: object): value is RegExp =>
-	prototypeOf(value) === RegExp.prototype && isBrandedBy(value, getSource)
-
 const isPlainLiteral = (value: object): boolean => {
 	const prototype = prototypeOf(value)
 	return (
@@ -1067,7 +1058,7 @@ const keysByRoot = new WeakMap<BaseRoot, [id: string, holes: unknown[]]>()
 export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 	const cached = keysByRoot.get(root)
 	if (cached) return cached
-	const unit = precompileByContent([root])
+	const unit = precompileByContent([root], runtimeKeyOf)
 	const defaultsByMorph = new Map<unknown, Default>()
 	for (const node of unit.declared) {
 		if (node.hasKind("optional") || node.hasKind("sequence"))
@@ -1081,14 +1072,15 @@ export const keyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 		if (seen.has(value)) return
 		seen.add(value)
 		const defaulted = defaultsByMorph.get(value)
+		const runtimeKey = hasDomain(value, "object") && runtimeKeyOf(value)
 		if (defaulted) {
 			values.push("default")
 			collect(defaulted[2])
-		} else if (isHole(value)) {
+		} else if (runtimeKey) values.push(runtimeKey)
+		else if (isHole(value)) {
 			holes.push(value)
 			values.push("hole")
-		} else if (typeof value === "function" && !isNode(value))
-			values.push(runtimePathsByValue.get(value) ?? functionNameOf(value))
+		}
 		// a meta isn't part of a node's content, though what it holds is printed
 		else if (!hasDomain(value, "object"))
 			values.push(typeof value === "symbol" ? "symbol" : printable(value))
