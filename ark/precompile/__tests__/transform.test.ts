@@ -268,12 +268,12 @@ export const Shadowed = (() => {
 	return type(alias.name)
 })()
 import { shape as $arki15vt9rj2an1 } from "./shapes.ts"
-import { f19cnbo9pame as $arkf19cnbo9pame } from "~arktype/3qz4c9i9sb"
-import { f1uslk6cbzgz as $arkf1uslk6cbzgz } from "~arktype/3qz4c9i9sb"
-import { f20bd0we3n85 as $arkf20bd0we3n85 } from "~arktype/3qz4c9i9sb"
-import { f12afweyjfd6 as $arkf12afweyjfd6 } from "~arktype/3qz4c9i9sb"
-import { fzp95xqs0o7 as $arkfzp95xqs0o7 } from "~arktype/3qz4c9i9sb"
-import { f1kdxkkysgwf as $arkf1kdxkkysgwf } from "~arktype/3qz4c9i9sb"`)
+import { f19cnbo9pame as $arkf19cnbo9pame } from "~arktype/okl6p4z104"
+import { f1uslk6cbzgz as $arkf1uslk6cbzgz } from "~arktype/okl6p4z104"
+import { f20bd0we3n85 as $arkf20bd0we3n85 } from "~arktype/okl6p4z104"
+import { f12afweyjfd6 as $arkf12afweyjfd6 } from "~arktype/okl6p4z104"
+import { fzp95xqs0o7 as $arkfzp95xqs0o7 } from "~arktype/okl6p4z104"
+import { f1kdxkkysgwf as $arkf1kdxkkysgwf } from "~arktype/okl6p4z104"`)
 		})
 
 		it("reports a ParseError site holding functions", () => {

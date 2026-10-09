@@ -837,6 +837,61 @@ contextualize(() => {
 			)
 		})
 
+		it("checks a class's lineage against the classes of the Types it receives", async () => {
+			class Animal {}
+			class Dog extends Animal {}
+			class Stray {}
+			const BuiltAnimal = standIn(class {}, "animal")
+			const BuiltDog = standIn(class extends BuiltAnimal {}, "dog")
+			const AnimalT = type.instanceOf(BuiltAnimal)
+			const DogT = type.instanceOf(BuiltDog)
+			const created = await load({
+				AnimalT: {
+					type: AnimalT,
+					params: [{ kind: "class", label: "`Animal`", value: BuiltAnimal }]
+				},
+				DogT: {
+					type: DogT,
+					params: [{ kind: "class", label: "`Dog`", value: BuiltDog }]
+				},
+				// arktype keeps only Dog, since it extends Animal
+				Narrowed: {
+					type: type.instanceOf(BuiltDog).and(AnimalT),
+					params: [
+						{ kind: "class", label: "`Dog`", value: BuiltDog },
+						{ kind: "input", label: "AnimalT", reads: [[[], AnimalT]] }
+					]
+				},
+				Widened: {
+					type: type.instanceOf(BuiltAnimal).and(DogT),
+					params: [
+						{ kind: "class", label: "`Animal`", value: BuiltAnimal },
+						{ kind: "input", label: "DogT", reads: [[[], DogT]] }
+					]
+				}
+			})
+			const animalT = created.AnimalT(Animal)
+			attest(created.Narrowed(Dog, animalT).expression).equals("Dog")
+			attest(created.Widened(Animal, created.DogT(Dog)).expression).equals(
+				"Dog"
+			)
+			// arktype throws once Dog doesn't extend Animal, since nothing is both
+			attest(() => created.Narrowed(Stray, animalT)).throws(
+				writeCreationMismatchMessage(
+					"`Dog`",
+					"a class",
+					"a class extending `AnimalT`'s hole 0"
+				)
+			)
+			attest(() => created.Widened(Animal, created.DogT(Stray))).throws(
+				writeCreationMismatchMessage(
+					"`DogT`'s hole 0",
+					"a class",
+					"a class extending `Animal`"
+				)
+			)
+		})
+
 		it("applies defaults with the functions it receives", async () => {
 			const now = () => new Date(0)
 			const invalid = () => "x" as never

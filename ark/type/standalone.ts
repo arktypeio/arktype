@@ -146,6 +146,7 @@ export class StandaloneArtifact {
 	// what a factory's code reads each hole through: a parameter, or the holes of a validator it receives
 	holeExpressions = new Map<unknown, string>()
 	labelsByHole = new Map<unknown, string>()
+	classes = new Set<unknown>()
 	// a factory's statements that check what it receives before it creates anything
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
@@ -234,41 +235,47 @@ export class StandaloneArtifact {
 
 	// a factory checks the facts its code depends on in each hole, and compares each input with what the build read
 	receive(params: FactoryParam[]): void {
-		// a class's lineage is described by which of the others it extends
-		const classIndices = params.flatMap((param, i) =>
-			param.kind === "class" ? [i] : []
-		)
-		const classesOf = <v>(valueOf: (i: number) => v) =>
-			Object.fromEntries(
-				classIndices.map(i => [params[i].label, valueOf(i)] as const)
-			)
+		const checked: [hole: unknown, kind: HoleKind, expression: string][] = []
 		for (let i = 0; i < params.length; i++) {
 			const param = params[i]
 			if (param.kind === "input") {
 				for (const [path, value] of param.reads)
 					this.compareInput(`p${i}`, path, value, param.label)
-				continue
-			}
-			if (param.kind === "helper") {
+			} else if (param.kind === "helper") {
 				this.checks.push(
 					`runtime.checkHelper(p${i}, ${JSON.stringify(param.file)}, ${JSON.stringify(param.name)}, ${JSON.stringify(param.label)})`
 				)
-				continue
+			} else {
+				this.receiveHole(param.value, `p${i}`, param.label)
+				checked.push([param.value, param.kind, `p${i}`])
+				if (param.kind === "class") this.classes.add(param.value)
 			}
-			this.receiveHole(param.value, `p${i}`, param.label)
-			const expected = runtime.describeHole(
-				param.value,
-				param.kind,
-				classesOf(j => (params[j] as HoleParam).value)
+		}
+		// arktype relates a class to every other the definition holds, including those of a Type it references, which that Type's factory didn't see
+		for (const hole of this.classes) {
+			if (!checked.some(([checkedHole]) => checkedHole === hole))
+				checked.push([hole, "class", this.holeExpressions.get(hole)!])
+		}
+		const classesOf = <v>(valueOf: (hole: unknown) => v) =>
+			Object.fromEntries(
+				[...this.classes].map(hole => [
+					this.labelsByHole.get(hole)!,
+					valueOf(hole)
+				])
 			)
-			const classesArg =
-				param.kind === "class" ?
-					`, { ${Object.entries(classesOf(j => `p${j}`))
-						.map(([label, param]) => `${JSON.stringify(label)}: ${param}`)
-						.join(", ")} }`
-				:	""
+		const classesArg = `, { ${Object.entries(
+			classesOf(hole => this.holeExpressions.get(hole))
+		)
+			.map(([label, expression]) => `${JSON.stringify(label)}: ${expression}`)
+			.join(", ")} }`
+		for (const [hole, kind, expression] of checked) {
+			const expected = runtime.describeHole(
+				hole,
+				kind,
+				classesOf(hole => hole)
+			)
 			this.checks.push(
-				`runtime.checkFacts(runtime.describeHole(p${i}, "${param.kind}"${classesArg}), ${JSON.stringify(expected)}, ${JSON.stringify(param.label)})`
+				`runtime.checkFacts(runtime.describeHole(${expression}, "${kind}"${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}, ${JSON.stringify(this.labelsByHole.get(hole))})`
 			)
 		}
 		for (const hole of this.holeExpressions.keys()) {
@@ -356,8 +363,13 @@ export class StandaloneArtifact {
 		if (hasArkKind(value, "root")) {
 			const [id, holes] = keyOf(value)
 			const holesName = `holes${this.checks.length}`
-			for (let i = 0; i < holes.length; i++)
+			const protos = [value, ...value.references].flatMap(node =>
+				node.hasKind("proto") ? [node.proto] : []
+			)
+			for (let i = 0; i < holes.length; i++) {
 				this.receiveHole(holes[i], `${holesName}[${i}]`, `${label}'s hole ${i}`)
+				if (protos.includes(holes[i] as never)) this.classes.add(holes[i])
+			}
 			this.checks.push(
 				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(`Type<${value.expression}>`)}, ${JSON.stringify(label)})`
 			)
