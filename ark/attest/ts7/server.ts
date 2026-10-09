@@ -10,7 +10,7 @@ import type * as tsgoFs from "typescript/unstable/fs"
 import type * as tsgoApi from "typescript/unstable/sync"
 import type { LinePositionRange } from "../cache/getCachedAssertions.ts"
 import { getConfig } from "../config.ts"
-import { isTs7 } from "../utils.ts"
+import { isTs7, narrowToNamedTestFiles } from "../utils.ts"
 
 // resolved relative to attest so the API matches the installed typescript
 const requireTypeScript = createRequire(import.meta.url)
@@ -77,8 +77,10 @@ export class TsgoServer {
 			throwError(configErrors.map(error => error.text).join("\n"))
 
 		const normalizedCwd = fromCwd().replace(/\\/g, "/")
-		this.rootFiles = this.project.parsedCommandLine.fileNames.filter(path =>
-			path.startsWith(normalizedCwd)
+		this.rootFiles = narrowToNamedTestFiles(
+			this.project.parsedCommandLine.fileNames.filter(path =>
+				path.startsWith(normalizedCwd)
+			)
 		)
 	}
 
