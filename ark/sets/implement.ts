@@ -1,4 +1,4 @@
-import { flatMorph } from "@ark/util"
+import { flatMorph, type mutable } from "@ark/util"
 import {
 	schemaKindsRightOf,
 	type BaseNodeDeclaration,
@@ -17,6 +17,7 @@ interface CommonSetImplementationInput<d extends BaseNodeDeclaration> {
 		inner: d["inner"],
 		$: BaseScope
 	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
+	sort?: (inner: mutable<d["inner"]>) => void
 }
 
 export type setImplementationOf<d extends BaseNodeDeclaration> =

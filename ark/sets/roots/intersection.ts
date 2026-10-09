@@ -5,7 +5,11 @@ import {
 	type IntersectionContext,
 	type nodeOfKind
 } from "@ark/schema"
-import { flattenConstraints, intersectConstraints } from "../constraint.ts"
+import {
+	flattenConstraints,
+	intersectConstraints,
+	sortSiblings
+} from "../constraint.ts"
 import {
 	defineRightwardIntersections,
 	type setImplementationOf
@@ -13,6 +17,10 @@ import {
 import { intersectOrPipeNodes } from "../intersections.ts"
 
 export const intersection: setImplementationOf<Intersection.Declaration> = {
+	// predicates keep their order, since each narrows the input of the next
+	sort: inner => {
+		if (inner.pattern) inner.pattern = sortSiblings(inner.pattern)
+	},
 	// leverage reduction logic from intersection and identity to ensure initial
 	// parse result is reduced
 	reduce: (inner, $) =>

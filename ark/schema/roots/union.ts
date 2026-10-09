@@ -111,40 +111,17 @@ const implementation: nodeImplementationOf<Union.Declaration> =
 							hasArkKind(branchSchema, "root") ?
 								branchSchema.branches
 							:	ctx.$.parseSchema(branchSchema).branches
-						for (const node of branchNodes) {
-							if (node.hasKind("morph")) {
-								const matchingMorphIndex = branches.findIndex(
-									matching =>
-										matching.hasKind("morph") && matching.hasEqualMorphs(node)
-								)
-								if (matchingMorphIndex === -1) branches.push(node)
-								else {
-									const matchingMorph = branches[
-										matchingMorphIndex
-									] as Morph.Node
-									const mergedIn =
-										matchingMorph.inner.in && node.inner.in ?
-											matchingMorph.inner.in.rawOr(node.inner.in)
-										:	matchingMorph.rawIn.rawOr(node.rawIn)
-									branches[matchingMorphIndex] = ctx.$.node("morph", {
-										...matchingMorph.inner,
-										in: mergedIn
-									})
-								}
-							} else branches.push(node)
-						}
+						branches.push(...branchNodes)
 					}
 
-					if (!ctx.def.ordered) {
-						// a set engine rejects overlapping branches that transform differently
-						if (
-							!$ark.sets &&
-							branches.length > 1 &&
-							branches.some(branch => branch.includesTransform)
-						)
-							throwParseError(missingSetEngineMessage)
-						branches.sort((l, r) => (l.hash < r.hash ? -1 : 1))
-					}
+					// a set engine rejects overlapping branches that transform differently
+					if (
+						!ctx.def.ordered &&
+						!$ark.sets &&
+						branches.length > 1 &&
+						branches.some(branch => branch.includesTransform)
+					)
+						throwParseError(missingSetEngineMessage)
 
 					return branches
 				}

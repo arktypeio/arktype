@@ -406,6 +406,19 @@ T.toJsonSchema()
 
 A string index on an object with no other keys is still written as `additionalProperties`.
 
+### List optional keys by name
+
+An object's expression and JSON list its optional keys by name. A key with a default used to come before those without one:
+
+```ts
+const T = type({ "bar?": "number", foo: "string = 'foo'" })
+
+// previously '{ foo: string = "foo", bar?: number }'
+T.expression // '{ bar?: number, foo: string = "foo" }'
+```
+
+Symbol keys follow string keys.
+
 ## 2.2.8
 
 ### Add `string.base58`

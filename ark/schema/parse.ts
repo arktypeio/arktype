@@ -2,16 +2,16 @@ import {
 	domainDescriptions,
 	entriesOf,
 	flatMorph,
-	hasDomain,
 	isArray,
 	isEmptyObject,
+	nameOf,
 	printable,
 	throwInternalError,
 	throwParseError,
 	unset,
 	type Brand,
 	type dict,
-	type Json,
+	type Entry,
 	type listable,
 	type PartialRecord
 } from "@ark/util"
@@ -132,11 +132,6 @@ export const writeInvalidSchemaMessage = (schema: unknown): string =>
 
 const nodeCountsByPrefix: PartialRecord<string, number> = Object.create(null)
 
-const serializeListableChild = (listableNode: listable<BaseNode>) =>
-	isArray(listableNode) ?
-		listableNode.map(node => node.collapsibleJson)
-	:	listableNode.collapsibleJson
-
 export type NodeId = Brand<string, "NodeId">
 
 export type NodeResolver = (id: NodeId) => BaseNode
@@ -201,14 +196,17 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 			inner[k] = v
 	}
 
-	if (!ctx.prereduced && $ark.sets) {
-		const reduced = $ark.sets.reduce(ctx.kind, inner, ctx.$)
-		if (reduced) {
-			if (reduced instanceof Disjoint) return reduced.throw()
+	if ($ark.sets) {
+		$ark.sets.sort(ctx.kind, inner)
+		if (!ctx.prereduced) {
+			const reduced = $ark.sets.reduce(ctx.kind, inner, ctx.$)
+			if (reduced) {
+				if (reduced instanceof Disjoint) return reduced.throw()
 
-			// we can't cache this reduction for now in case the reduction involved
-			// impliedSiblings
-			return withMeta(reduced, meta)
+				// we can't cache this reduction for now in case the reduction involved
+				// impliedSiblings
+				return withMeta(reduced, meta)
+			}
 		}
 	}
 
@@ -243,16 +241,9 @@ export const createNode = ({
 	const impl = nodeImplementationsByKind[kind]
 	const innerEntries = entriesOf(inner)
 	const children: BaseNode[] = []
-	let innerJson: dict = {}
 
 	for (const [k, v] of innerEntries) {
 		const keyImpl = impl.keys[k]
-		const serialize =
-			keyImpl.serialize ??
-			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
-
-		innerJson[k] = serialize(v as never)
-
 		if (keyImpl.child === true) {
 			const listableNode = v as listable<BaseNode>
 			if (isArray(listableNode)) children.push(...listableNode)
@@ -261,39 +252,22 @@ export const createNode = ({
 			children.push(...keyImpl.child(v as never))
 	}
 
-	if (impl.finalizeInnerJson)
-		innerJson = impl.finalizeInnerJson(innerJson) as never
+	const metaJson: dict =
+		isEmptyObject(meta) ?
+			{}
+		:	flatMorph(meta, (k, v) => [
+				k,
+				k === "examples" ? v : defaultValueSerializer(v)
+			])
 
-	const uncollapsedInnerJson = innerJson
-	innerJson = possiblyCollapse(innerJson, impl.collapsibleKey, false)
-	const innerHash = JSON.stringify({ kind, ...innerJson })
+	// nodes are only cached with a set engine, which reduces them first
+	const key =
+		ignoreCache || !$ark.sets ?
+			undefined
+		:	nodeKeyOf(kind, inner, innerEntries, metaJson)
 
-	let json = innerJson
-	let hash = innerHash
-	let metaJson: ArkEnv.meta & dict = {}
-
-	if (!isEmptyObject(meta)) {
-		metaJson = flatMorph(meta, (k, v) => [
-			k,
-			k === "examples" ? v : defaultValueSerializer(v)
-		]) as never
-		json = possiblyCollapse(
-			{
-				...uncollapsedInnerJson,
-				meta: possiblyCollapse(metaJson, "description", true)
-			},
-			impl.collapsibleKey,
-			false
-		)
-		hash = JSON.stringify({ kind, ...json })
-	}
-
-	const collapsibleJson = possiblyCollapse(json, impl.collapsibleKey, true)
-
-	// we have to wait until after reduction to return a cached entry,
-	// since reduction can add impliedSiblings
-	if (!ignoreCache) {
-		const cached = $.nodesByHash.get(hash)
+	if (key) {
+		const cached = $.nodesByKey.get(key)
 		if (cached) return cached
 	}
 
@@ -303,20 +277,57 @@ export const createNode = ({
 		impl,
 		inner,
 		innerEntries,
-		innerJson,
-		innerHash,
 		meta,
 		metaJson,
-		json,
-		hash,
-		collapsibleJson: collapsibleJson as Json,
 		children
 	}
 
 	const node: BaseNode = new nodeClassesByKind[kind](attachments as never, $)
 
-	return ignoreCache || !$ark.sets ? node : $.nodesByHash.set(hash, node)
+	return key ? $.nodesByKey.set(key, node) : node
 }
+
+// a node's children are cached before it, so their ids can stand in for
+// their content
+const nodeKeyOf = (
+	kind: NodeKind,
+	inner: dict,
+	innerEntries: readonly Entry<string>[],
+	metaJson: dict
+): string => {
+	let key: string = kind
+	for (const [k, v] of innerEntries)
+		key += `,${k}:${k === "unit" ? literalKeyOf(v) : valueKeyOf(v)}`
+	// an alias inlines a reference that has resolved when it's written
+	if (
+		kind === "alias" &&
+		hasArkKind(nodesByRegisteredId[inner.reference as NodeId], "root")
+	)
+		key += "!"
+	return isEmptyObject(metaJson) ? key : key + JSON.stringify(metaJson)
+}
+
+const valueKeyOf = (v: unknown): string =>
+	isNode(v) ? `#${v.id}`
+	: isArray(v) ? `[${v.map(valueKeyOf).join()}]`
+	: literalKeyOf(v)
+
+// objects are compared by reference, except dates, which units compare by value
+const literalKeyOf = (v: unknown): string =>
+	typeof v === "string" ? JSON.stringify(v)
+	: typeof v === "number" ?
+		Object.is(v, -0) ?
+			"-0"
+		:	`${v}`
+	: typeof v === "bigint" ? `${v}n`
+	: v instanceof Date ? `d'${v.toISOString()}'`
+	: (
+		(typeof v === "object" && v !== null) ||
+		typeof v === "function" ||
+		typeof v === "symbol"
+	) ?
+		`$${nameOf(v)}`
+	:	`${v}`
 
 export const withId = <node extends BaseNode>(node: node, id: NodeId): node => {
 	if (node.id === id) return node
@@ -347,28 +358,4 @@ export const withMeta = <node extends BaseNode>(
 		meta,
 		$: node.$
 	}) as never
-}
-
-const possiblyCollapse = <allowPrimitive extends boolean>(
-	json: dict,
-	toKey: string | undefined,
-	allowPrimitive: allowPrimitive
-): [allowPrimitive] extends [false] ? dict : unknown => {
-	const collapsibleKeys = Object.keys(json)
-	if (collapsibleKeys.length === 1 && collapsibleKeys[0] === toKey) {
-		const collapsed = json[toKey]
-
-		if (allowPrimitive) return collapsed as never
-
-		if (
-			// if the collapsed value is still an object
-			hasDomain(collapsed, "object") &&
-			// and the JSON did not include any implied keys
-			(Object.keys(collapsed).length === 1 || Array.isArray(collapsed))
-		) {
-			// we can replace it with its collapsed value
-			return collapsed as never
-		}
-	}
-	return json as never
 }

@@ -4,6 +4,7 @@ import {
 	Disjoint,
 	type BaseConstraint,
 	type BaseNode,
+	type BaseProp,
 	type BaseRoot,
 	type Intersection,
 	type IntersectionContext,
@@ -17,6 +18,7 @@ import {
 	appendUnique,
 	throwInternalError,
 	type array,
+	type Key,
 	type listable,
 	type satisfy
 } from "@ark/util"
@@ -103,12 +105,39 @@ export const flattenConstraints = (inner: object): BaseConstraint[] => {
 			: l.precedence > r.precedence ? 1
 				// preserve order for predicates
 			: l.kind === "predicate" && r.kind === "predicate" ? 0
-			: l.hash < r.hash ? -1
-			: 1
+			: compareSiblings(l, r)
 		)
 
 	return result
 }
+
+export const sortSiblings = <node extends BaseNode>(
+	nodes: readonly node[]
+): readonly node[] => {
+	for (let i = 1; i < nodes.length; i++) {
+		if (compareSiblings(nodes[i - 1], nodes[i]) > 0)
+			return [...nodes].sort(compareSiblings)
+	}
+	return nodes
+}
+
+// props are ordered by key, which orders them as their hashes would without
+// writing their values
+const compareSiblings = (l: BaseNode, r: BaseNode): number =>
+	l.hasKind("required") || l.hasKind("optional") ?
+		compareKeys(l.key, (r as BaseProp).key) || (l.hash < r.hash ? -1 : 1)
+	: l.hash < r.hash ? -1
+	: 1
+
+const compareKeys = (l: Key, r: Key): number =>
+	typeof l === "symbol" ?
+		typeof r === "symbol" ?
+			0
+		:	1
+	: typeof r === "symbol" ? -1
+	: l === r ? 0
+	: JSON.stringify(l) < JSON.stringify(r) ? -1
+	: 1
 
 type FlatIntersectionInner = Intersection.Inner & Structure.Inner
 

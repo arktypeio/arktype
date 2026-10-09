@@ -10,7 +10,11 @@ import {
 	type nodeOfKind
 } from "@ark/schema"
 import { throwParseError, type Key } from "@ark/util"
-import { flattenConstraints, intersectConstraints } from "../constraint.ts"
+import {
+	flattenConstraints,
+	intersectConstraints,
+	sortSiblings
+} from "../constraint.ts"
 import type { setImplementationOf } from "../implement.ts"
 import { intersectNodesRoot } from "../intersections.ts"
 
@@ -45,6 +49,11 @@ const allowedKeysOf = (node: Structure.Node): BaseRoot =>
 	:	node.keyof()
 
 export const structure: setImplementationOf<Structure.Declaration> = {
+	sort: inner => {
+		if (inner.required) inner.required = sortSiblings(inner.required)
+		if (inner.optional) inner.optional = sortSiblings(inner.optional)
+		if (inner.index) inner.index = sortSiblings(inner.index)
+	},
 	intersections: {
 		structure: (l, r, ctx) => {
 			const lInner = { ...l.inner }

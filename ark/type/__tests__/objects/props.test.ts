@@ -61,10 +61,10 @@ contextualize(() => {
 		}>(T.infer)
 
 		attest(snapshottableProps(T.props)).snap([
-			{ kind: "required", key: `Symbol(${sReference})`, value: "1" },
 			{ kind: "required", key: "foo", value: "3" },
-			{ kind: "optional", key: `Symbol(${s2Reference})`, value: "2" },
-			{ kind: "optional", key: "foo2", value: "4" }
+			{ kind: "required", key: `Symbol(${sReference})`, value: "1" },
+			{ kind: "optional", key: "foo2", value: "4" },
+			{ kind: "optional", key: `Symbol(${s2Reference})`, value: "2" }
 		])
 	})
 

@@ -3,6 +3,7 @@ import {
 	DynamicFunction,
 	appendUnique,
 	flatMorph,
+	hasDomain,
 	includes,
 	isArray,
 	isEmptyObject,
@@ -16,6 +17,8 @@ import {
 	type Dict,
 	type Fn,
 	type GuardablePredicate,
+	type Json,
+	type JsonObject,
 	type JsonStructure,
 	type Key,
 	type array,
@@ -52,6 +55,7 @@ import { isArkErrorResult, type ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
 	constraintKinds,
+	defaultValueSerializer,
 	precedenceOfKind,
 	refinementKinds,
 	rootKinds,
@@ -117,6 +121,12 @@ export abstract class BaseNode<
 	private hasReplacedReferences = false
 	private _shallowReferences: BaseNode[] | undefined
 	protected _flatRefs: FlatRef[] | undefined
+	protected _uncollapsedInnerJson: JsonObject | undefined
+	private _innerJson: JsonStructure | undefined
+	private _json: JsonStructure | undefined
+	private _collapsibleJson: Json | undefined
+	private _innerHash: string | undefined
+	private _hash: string | undefined
 	protected _flatMorphs: FlatRef<Morph.Node | Intersection.Node>[] | undefined
 	allows: (data: d["prerequisite"]) => boolean
 
@@ -148,13 +158,8 @@ export abstract class BaseNode<
 		self.impl = attachments.impl
 		self.inner = attachments.inner
 		self.innerEntries = attachments.innerEntries
-		self.innerJson = attachments.innerJson
-		self.innerHash = attachments.innerHash
 		self.meta = attachments.meta
 		self.metaJson = attachments.metaJson
-		self.json = attachments.json
-		self.hash = attachments.hash
-		self.collapsibleJson = attachments.collapsibleJson
 		self.children = attachments.children
 		this.precedence = precedenceOfKind(this.kind)
 		this.$ = $
@@ -631,6 +636,58 @@ export abstract class BaseNode<
 		})
 	}
 
+	get innerJson(): JsonStructure {
+		return (this._innerJson ??= possiblyCollapse(
+			this.uncollapsedInnerJson,
+			this.impl.collapsibleKey,
+			false
+		))
+	}
+
+	get json(): JsonStructure {
+		return (this._json ??=
+			isEmptyObject(this.meta) ?
+				this.innerJson
+			:	possiblyCollapse(
+					{
+						...this.uncollapsedInnerJson,
+						meta: possiblyCollapse(
+							this.metaJson as JsonObject,
+							"description",
+							true
+						)
+					},
+					this.impl.collapsibleKey,
+					false
+				))
+	}
+
+	get collapsibleJson(): Json {
+		return (this._collapsibleJson ??= possiblyCollapse(
+			this.json as JsonObject,
+			this.impl.collapsibleKey,
+			true
+		))
+	}
+
+	get innerHash(): string {
+		return (this._innerHash ??= JSON.stringify({
+			kind: this.kind,
+			...this.innerJson
+		}))
+	}
+
+	get hash(): string {
+		return (this._hash ??=
+			isEmptyObject(this.meta) ?
+				this.innerHash
+			:	JSON.stringify({ kind: this.kind, ...this.json }))
+	}
+
+	protected get uncollapsedInnerJson(): JsonObject {
+		return (this._uncollapsedInnerJson ??= writeInnerJson(this))
+	}
+
 	toJSON(): JsonStructure {
 		return this.json
 	}
@@ -641,7 +698,7 @@ export abstract class BaseNode<
 
 	equals(r: unknown): boolean {
 		const rNode: BaseNode = isNode(r) ? r : this.$.parseDefinition(r)
-		if (this.innerHash === rNode.innerHash) return true
+		if (this === rNode || this.innerHash === rNode.innerHash) return true
 		return (
 			(this.includesAlias || rNode.includesAlias) &&
 			isResolutionFinal() &&
@@ -1482,4 +1539,45 @@ const compileRootApply = (node: BaseRoot): RootApply => {
 		node.$.resolvedConfig,
 		unset
 	)
+}
+
+export const writeInnerJson = (node: BaseNode): JsonObject => {
+	const json: JsonObject = {}
+	for (const [k, v] of node.innerEntries) {
+		const keyImpl = node.impl.keys[k]
+		const serialize =
+			keyImpl.serialize ??
+			(keyImpl.child ? serializeListableChild : defaultValueSerializer)
+		json[k] = serialize(v as never)
+	}
+	return (node.impl.finalizeInnerJson?.(json) as JsonObject | undefined) ?? json
+}
+
+const serializeListableChild = (listableNode: listable<BaseNode>) =>
+	isArray(listableNode) ?
+		listableNode.map(node => node.collapsibleJson)
+	:	listableNode.collapsibleJson
+
+const possiblyCollapse = <allowPrimitive extends boolean>(
+	json: JsonObject,
+	toKey: string | undefined,
+	allowPrimitive: allowPrimitive
+): [allowPrimitive] extends [false] ? JsonStructure : Json => {
+	const collapsibleKeys = Object.keys(json)
+	if (collapsibleKeys.length === 1 && collapsibleKeys[0] === toKey) {
+		const collapsed = json[toKey]
+
+		if (allowPrimitive) return collapsed as never
+
+		if (
+			// if the collapsed value is still an object
+			hasDomain(collapsed, "object") &&
+			// and the JSON did not include any implied keys
+			(Object.keys(collapsed).length === 1 || Array.isArray(collapsed))
+		) {
+			// we can replace it with its collapsed value
+			return collapsed as never
+		}
+	}
+	return json as never
 }

@@ -1,4 +1,5 @@
 import {
+	$ark,
 	Disjoint,
 	compileLiteralPropAccess,
 	flatMorphsAreEqual,
@@ -33,12 +34,22 @@ import {
 	defineRightwardIntersections,
 	type setImplementationOf
 } from "../implement.ts"
+import { sortSiblings } from "../constraint.ts"
 import { intersectNodesRoot, intersectOrPipeNodes } from "../intersections.ts"
 
 export const union: setImplementationOf<Union.Declaration> = {
+	sort: inner => {
+		if (!inner.ordered) inner.branches = sortSiblings(inner.branches)
+	},
 	reduce: (inner, $) => {
-		const reducedBranches = reduceBranches(inner)
+		const reducedBranches = reduceBranches({
+			...inner,
+			branches: mergeMorphBranches(inner.branches, $)
+		})
 		if (reducedBranches.length === 1) return reducedBranches[0]
+
+		if (!inner.ordered && isUnknownUnion(reducedBranches))
+			return $.node("intersection", {}, { prereduced: true })
 
 		if (reducedBranches.length === inner.branches.length) return
 
@@ -548,6 +559,59 @@ export const intersectBranches = (
 	return resultBranches.length === 0 ?
 			Disjoint.init("union", l, r)
 		:	resultBranches
+}
+
+// morphs that transform alike are one morph from either input
+const mergeMorphBranches = (
+	branches: readonly Union.ChildNode[],
+	$: BaseScope
+): readonly Union.ChildNode[] => {
+	if (!branches.some(branch => branch.hasKind("morph"))) return branches
+	const merged: Union.ChildNode[] = []
+	for (const branch of branches) {
+		if (!branch.hasKind("morph")) {
+			merged.push(branch)
+			continue
+		}
+		const matchingIndex = merged.findIndex(
+			matching => matching.hasKind("morph") && matching.hasEqualMorphs(branch)
+		)
+		if (matchingIndex === -1) {
+			merged.push(branch)
+			continue
+		}
+		const matching = merged[matchingIndex] as Morph.Node
+		const mergedIn =
+			matching.inner.in && branch.inner.in ?
+				matching.inner.in.rawOr(branch.inner.in)
+			:	matching.rawIn.rawOr(branch.rawIn)
+		merged[matchingIndex] = $.node("morph", { ...matching.inner, in: mergedIn })
+	}
+	return merged
+}
+
+const unknownUnionBranches = [
+	"string",
+	"number",
+	"object",
+	"bigint",
+	"symbol",
+	"true",
+	"false",
+	"undefined",
+	"null"
+] as const
+
+let unknownUnionHashes: string[] | undefined
+
+// a union of every domain and unit without one allows anything
+const isUnknownUnion = (branches: readonly Union.ChildNode[]): boolean => {
+	if (branches.length !== unknownUnionBranches.length || !$ark.intrinsic)
+		return false
+	unknownUnionHashes ??= unknownUnionBranches
+		.map(name => $ark.intrinsic[name].hash)
+		.sort()
+	return branches.every((branch, i) => branch.hash === unknownUnionHashes![i])
 }
 
 export const reduceBranches = ({

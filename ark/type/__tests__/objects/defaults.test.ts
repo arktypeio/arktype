@@ -39,8 +39,8 @@ contextualize(() => {
 			attest(O.json).snap({
 				required: [{ key: "a", value: "string" }],
 				optional: [
-					{ default: "$ark.fnDefaultTo5", key: "baz", value: "number" },
 					{ default: 5, key: "bar", value: "number" },
+					{ default: "$ark.fnDefaultTo5", key: "baz", value: "number" },
 					{ default: 5, key: "foo", value: "number" }
 				],
 				domain: "object"

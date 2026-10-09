@@ -69,7 +69,6 @@ import {
 } from "./parse.ts"
 import { Alias, isResolvable, resolveShallowAliases } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import type { UnionNode } from "./roots/union.ts"
 import {
 	CompiledFunction,
 	NodeCompiler,
@@ -226,38 +225,6 @@ export const withFixedGlobalConfig = <t>(
 }
 
 $ark.ambient ??= {} as never
-
-let rawUnknownUnion: UnionNode | undefined
-
-// reduce union of all possible values reduces to unknown
-const cacheUnknownUnion = ($: BaseScope): void => {
-	scopesWithUnknownUnion.add($)
-	rawUnknownUnion ??= $.node(
-		"union",
-		{
-			branches: [
-				"string",
-				"number",
-				"object",
-				"bigint",
-				"symbol",
-				{ unit: true },
-				{ unit: false },
-				{ unit: undefined },
-				{ unit: null }
-			]
-		},
-		{ prereduced: true }
-	)
-
-	$.nodesByHash.pin(
-		rawUnknownUnion.hash,
-		$.node("intersection", {}, { prereduced: true })
-	)
-}
-
-// held apart from each scope, which may be frozen before its first parse
-const scopesWithUnknownUnion = new WeakSet<BaseScope>()
 
 // leaves read no object property, so sharing them can't make an inline cache polymorphic
 const isLeafIn = (
@@ -474,7 +441,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
 	resolved = false
-	readonly nodesByHash: WeakCache<BaseNode> = new WeakCache()
+	readonly nodesByKey: WeakCache<BaseNode> = new WeakCache()
 
 	constructor(
 		/** The set of names defined at the root-level of the scope mapped to their
@@ -875,7 +842,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 		input: input
 	): input & AttachedParseContext {
 		bootstrap()
-		if (!scopesWithUnknownUnion.has(this)) cacheUnknownUnion(this)
 		const id = input.id ?? registerNodeId(input.prefix)
 		return Object.assign(input, {
 			[arkKind]: "context" as const,
@@ -1226,7 +1192,6 @@ const importedGlobalConfig = currentGlobalConfig()
 
 export const bootstrapRootScope = (parseIntrinsics: () => void): void =>
 	withFixedGlobalConfig(() => {
-		cacheUnknownUnion(rootSchemaScope)
 		// ensure the scope is resolved so JIT will be applied to future types
 		rootSchemaScope.export()
 		parseIntrinsics()

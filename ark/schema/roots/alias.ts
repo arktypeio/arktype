@@ -4,9 +4,10 @@ import {
 	throwInternalError,
 	throwParseError,
 	type array,
-	type join
+	type join,
+	type JsonObject
 } from "@ark/util"
-import type { BaseNode } from "../node.ts"
+import { writeInnerJson, type BaseNode } from "../node.ts"
 import { nodesByRegisteredId, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNormalizedSchema, declareNode } from "../shared/declare.ts"
@@ -103,6 +104,8 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 	})
 
 export class AliasNode extends BaseRoot<Alias.Declaration> {
+	// written when created, so a definition that resolves afterward stays a reference
+	protected override _uncollapsedInnerJson: JsonObject = writeInnerJson(this)
 	readonly expression: string = expressionOf(this)
 	readonly structure = undefined
 	// a cycle passes an alias referencing its definition while it's parsed, so Allows bounds only those

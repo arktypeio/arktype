@@ -352,7 +352,7 @@ contextualize(() => {
 			foo: Default<string, "foo">
 			bar?: number
 		}>(Original.t)
-		attest(Original.expression).snap('{ foo: string = "foo", bar?: number }')
+		attest(Original.expression).snap('{ bar?: number, foo: string = "foo" }')
 
 		const T = Original.map(prop => {
 			if (prop.key === "foo") {
@@ -368,6 +368,6 @@ contextualize(() => {
 			bar?: number
 			foo: Default<string, "foot">
 		}>(T.t)
-		attest(T.expression).snap('{ foo: string = "foot", bar?: number }')
+		attest(T.expression).snap('{ bar?: number, foo: string = "foot" }')
 	})
 })

@@ -358,15 +358,10 @@ export interface UnknownAttachments {
 
 	readonly inner: Record<string, any>
 	readonly innerEntries: readonly Entry<string>[]
-	readonly innerJson: object
-	readonly innerHash: string
 
 	readonly meta: ArkEnv.meta
 	readonly metaJson: object
 
-	readonly json: object
-	readonly hash: string
-	readonly collapsibleJson: Json
 	readonly children: BaseNode[]
 }
 
@@ -374,9 +369,6 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	extends UnknownAttachments {
 	kind: d["kind"]
 	inner: d["inner"]
-	json: JsonStructure
-	innerJson: JsonStructure
-	collapsibleJson: Json
 	children: nodeOfKind<d["childKind"]>[]
 }
 

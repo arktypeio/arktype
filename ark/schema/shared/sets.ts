@@ -18,6 +18,8 @@ export interface SetEngine {
 		inner: dict,
 		$: BaseScope
 	): BaseNode | Disjoint | undefined
+	// orders a node's unordered children in place, so equal nodes share a key
+	sort(kind: NodeKind, inner: dict): void
 	discriminate(node: Union.Node): Discriminant | null
 	toJsonSchema(node: BaseRoot, opts: ToJsonSchema.Options): JsonSchema
 	toJsonSchemaRecurse(node: BaseRoot, ctx: ToJsonSchema.Context): JsonSchema

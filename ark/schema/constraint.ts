@@ -112,11 +112,7 @@ export const constraintKeyParser =
 				// Omit empty lists as input
 				return
 			}
-			const nodes = schema.map(schema => ctx.$.node(kind, schema as never))
-			// predicate order must be preserved to ensure inputs are narrowed
-			// and checked in the correct order
-			if (kind === "predicate") return nodes as never
-			return nodes.sort((l, r) => (l.hash < r.hash ? -1 : 1)) as never
+			return schema.map(schema => ctx.$.node(kind, schema as never)) as never
 		}
 		const child = ctx.$.node(kind, schema)
 		// If the constraint was reduced to a root node (like unknown for minLength: 0),

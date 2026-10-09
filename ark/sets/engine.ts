@@ -8,6 +8,7 @@ export const setEngine: SetEngine = {
 	intersect: intersectNodesRoot,
 	pipe: pipeNodesRoot,
 	reduce: (kind, inner, $) => setImplementationsByKind[kind].reduce?.(inner, $),
+	sort: (kind, inner) => setImplementationsByKind[kind].sort?.(inner),
 	discriminate,
 	toJsonSchema,
 	toJsonSchemaRecurse: (node, ctx) =>
