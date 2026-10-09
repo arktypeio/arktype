@@ -52,10 +52,8 @@ export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({
 
 let configuredFingerprint: string | undefined
 let programConfig: ArkSchemaConfig | undefined
-// the configure of the arktype runtime islands run on
 let configureIslands: ((config: ArkSchemaConfig) => unknown) | undefined
 
-// a standalone build passes the fingerprint of the configuration it precompiled every Type under
 export const configure = (
 	config: ArkSchemaConfig,
 	fingerprint?: string
@@ -81,7 +79,6 @@ export const configure = (
 	return config
 }
 
-// an artifact fixes the configuration when it first creates a validator, as arktype does at its first Type
 export const fixConfig = (
 	...configured: [] | [fingerprint: string, path: string]
 ): void => {

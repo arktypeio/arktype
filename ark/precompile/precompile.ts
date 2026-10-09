@@ -305,7 +305,6 @@ export class Precompiler {
 		return result
 	}
 
-	// a module and each module the build follows its text to
 	localClosureOf(
 		id: string,
 		importsOf = (id: string) =>
@@ -1959,7 +1958,6 @@ export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 	].join("\n")
 
 interface Configuration {
-	// the config module's local import closure, which every module depends on
 	modules: string[]
 	fingerprint: string | undefined
 	// why the configure() call can't be applied, reported where the config module is precompiled

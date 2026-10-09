@@ -119,7 +119,7 @@ export const precompile: UnpluginInstance<
 		buildStart: () => {
 			void request("reset")
 		},
-		// a build that won't run again releases its worker, which only Rollup, Vite, webpack and Rspack say, and esbuild disposes of
+		// a build that won't run again releases its worker, which Rollup, Vite, webpack and Rspack tell here and esbuild at onDispose
 		buildEnd() {
 			const native = this.getNativeBuildContext?.()
 			const isWatching =

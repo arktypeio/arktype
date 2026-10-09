@@ -49,7 +49,6 @@ export const createSyncPrecompiler = (
 	}
 }
 
-// for a host that waits asynchronously, answered in the order it asks
 export const createAsyncPrecompiler = (
 	data: Omit<PrecompilerWorkerData, "port" | "answered">
 ): ((...request: PrecompileRequest) => Promise<unknown>) => {
@@ -57,7 +56,6 @@ export const createAsyncPrecompiler = (
 	let worker: Worker | undefined
 	return (...request) => {
 		if (!worker) {
-			// a worker that never started has nothing to close
 			if (request[0] === "close") return Promise.resolve()
 			const started = new Worker(driverUrl, {
 				workerData: data satisfies PrecompilerWorkerData

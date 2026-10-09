@@ -50,7 +50,6 @@ export interface PrecompilerWorkerData {
 export type PrecompileRequest =
 	| [kind: "transform", source: string, id: string]
 	| [kind: "readDependency", importer: string]
-	// e.g. after a file changes in watch mode
 	| [kind: "reset"]
 	| [kind: "close"]
 
@@ -62,9 +61,7 @@ export interface InlineModule {
 }
 
 export interface TransformedModule extends InlineModule {
-	// in the code of a module whose host has no virtual modules
 	map: SourceMap | undefined
-	// what the module's precompilation read, each of which can change it
 	dependencies: string[]
 	modules: Record<string, string>
 }
@@ -163,8 +160,9 @@ const transformedModuleOf = (
 		return {
 			code: undefined,
 			map: undefined,
-			// a module it imports may come to export a Type
-			dependencies: precompiler.localImportsOf(source, id),
+			// a module it imports may come to export a Type, which only the bundler plugin watches for here
+			dependencies:
+				precompiler.inline ? [] : precompiler.localImportsOf(source, id),
 			modules: {},
 			errors: [],
 			warnings: []

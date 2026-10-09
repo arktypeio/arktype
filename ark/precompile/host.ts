@@ -116,7 +116,6 @@ const packageRootOf = (name: string, from: string): string | undefined => {
 	}
 }
 
-// what a standalone build resolves to arktype/runtime, which exports configure() too
 export const runtimeSpecifiers = ["arktype", "arktype/config"]
 
 export const transformedExtension = /\.(?:[cm]?[jt]s|[jt]sx)$/
