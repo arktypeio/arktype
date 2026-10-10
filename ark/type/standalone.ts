@@ -2085,13 +2085,12 @@ type ComposedString = "expression" | "description"
 // a string shorter than this is written wherever it's printed, as gzip compresses its repeats about as well as a call
 const minComposedLength = 64
 
-// a root's string split around the longest strings of the roots it references, each a root of its own
 const partsOf = (
 	root: BaseRoot,
 	kind: ComposedString
 ): (string | BaseRoot)[] => {
 	const s = root[kind]
-	const candidates = new Map<string, BaseRoot>()
+	const candidates: Record<string, BaseRoot> = Object.create(null)
 	for (const node of root.references) {
 		if (!node.isRoot()) continue
 		const part = node[kind]
@@ -2100,10 +2099,10 @@ const partsOf = (
 			part !== s &&
 			!part.includes(holeNamePrefix)
 		)
-			candidates.set(part, node)
+			candidates[part] = node
 	}
 	const taken: [start: number, end: number, root: BaseRoot][] = []
-	for (const part of [...candidates.keys()].sort(
+	for (const part of Object.keys(candidates).sort(
 		(l, r) => r.length - l.length
 	)) {
 		for (
@@ -2112,8 +2111,12 @@ const partsOf = (
 			start = s.indexOf(part, start + 1)
 		) {
 			const end = start + part.length
-			if (taken.every(([l, r]) => end <= l || r <= start))
-				taken.push([start, end, candidates.get(part)!])
+			if (
+				taken.every(
+					([takenStart, takenEnd]) => end <= takenStart || takenEnd <= start
+				)
+			)
+				taken.push([start, end, candidates[part]])
 		}
 	}
 	const parts: (string | BaseRoot)[] = []

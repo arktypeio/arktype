@@ -259,15 +259,14 @@ export const errorFromContext = (
 	input: ArkErrorContextInput
 ): ArkError => ctx.addError(errorOfContext(input, ctx.path, ctx.config))
 
-/** what a root returns for data its Allows rejected, with the errors its Apply finds */
 export const applyRejected = (
 	node: BaseNode,
 	data: unknown,
 	config: ResolvedConfig,
 	onFail: ArkErrors.Handler | null,
-	Ctx: typeof InternalTraversal = InternalTraversal
+	ctor: typeof InternalTraversal = InternalTraversal
 ): unknown => {
-	const ctx = new Ctx(data, config)
+	const ctx = new ctor(data, config)
 	node.traverseApply(data, ctx)
 	return ctx.finalize(onFail)
 }
@@ -327,7 +326,7 @@ export const transformed = (
 	return data
 }
 
-// a validator or morph piping to a node calls only the pipe it can use, so a bundle leaves out the others
+// a validator or compiled morph piping to a node calls only the pipe it can use, so a bundle with no cyclic node leaves out the others
 export const pipeOf = (node: BaseNode): TraversePipe =>
 	node.includesAlias ? pipe
 	: node.transforms ? pipeTransformed
@@ -529,7 +528,6 @@ export const transformResolution = (
 	return Object.setPrototypeOf(placeholder, Object.getPrototypeOf(result))
 }
 
-// what a traversal tracks of the cyclic nodes it enters
 class Resolutions {
 	seen: { [id in string]?: Map<unknown, ResolutionState> } = {}
 	// a cyclic root's Apply leaves resolutions untracked until its data is deep or broad enough to be cyclic
