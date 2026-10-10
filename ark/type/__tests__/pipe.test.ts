@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
+	flatProblemsByPath,
 	intrinsic,
 	registeredReference,
 	writeInvalidOperandMessage,
@@ -506,6 +507,27 @@ contextualize(() => {
 		)
 		attest(T("x").toString()).snap('must be a letter (was "x")')
 		attest(received === added).equals(true)
+	})
+
+	it("flattens an intersection a piped node raises into the one at its path", () => {
+		// a cyclic node a morph pipes to is applied in its own traversal, whose errors are merged
+		const $ = scope({ node: { s: "(string >= 5) & /^a/", "next?": "node" } })
+		const T = type({ s: "string" }).pipe((o, ctx) => {
+			ctx.error({ expected: "own", path: ["s"] })
+			return o
+		}, $.type("node"))
+		const out = T({ s: "b" }) as ArkErrors
+		attest(out.summary).snap(`s ({"s":"b"}) must be...
+  ◦ own
+  ◦ matched by ^a
+  ◦ at least length 5`)
+		attest(flatProblemsByPath(out)).snap({
+			s: [
+				'must be own (was {"s":"b"})',
+				'must be matched by ^a (was "b")',
+				"must be at least length 5 (was 1)"
+			]
+		})
 	})
 
 	it("checks a result only against the errors its morph added", () => {

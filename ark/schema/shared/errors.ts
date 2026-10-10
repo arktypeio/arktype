@@ -159,10 +159,12 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 						// an error added with its own path isn't at ctx.path
 						path: [...existing.path],
 						code: "intersection",
-						errors:
-							existing.code === "intersection" ?
-								[...existing.errors, error]
-							:	[existing, error]
+						errors: [
+							...(existing.code === "intersection" ?
+								existing.errors
+							:	[existing]),
+							...(error.code === "intersection" ? error.errors : [error])
+						]
 					} as never,
 					this.config
 				)

@@ -663,6 +663,22 @@ const T = type({
 T({ a: "x" }).toString()
 ```
 
+### Flatten an intersection a morph returns into the errors at its path
+
+A morph returning errors that held an intersection at a path where the traversal already had an error nested that intersection inside the new one, garbling its text, and `flatByPath` and `flatProblemsByPath` held the nested intersection:
+
+```ts
+const Inner = type({ s: "(string >= 5) & /^a/" })
+const T = type({ s: "string" }).pipe((o, ctx) => {
+	ctx.error({ expected: "own", path: ["s"] })
+	return Inner(o)
+})
+
+// previously s ({"s":"b"}) must be... ◦ own ◦ ◦ matched by ^a ◦ at least length 5
+// now s ({"s":"b"}) must be... ◦ own ◦ matched by ^a ◦ at least length 5
+T({ s: "b" }).toString()
+```
+
 ### Configure before importing anything else
 
 `arktype` and `@ark/schema` now each load as a single module, so `configure()` must run before any import of either package, including `./internal/*` deep imports. Only `./config` and `./internal/config.*` load without the rest of the package.
