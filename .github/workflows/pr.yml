@@ -113,6 +113,11 @@ jobs:
       - name: Change what precompiled sites read
         run: pnpm testPerturbation
 
+      - name: Run generated programs through the build
+        run: pnpm testFiles ark/precompile/__tests__/programs.test.ts --skipTypes
+        env:
+          ARK_PRECOMPILE_PROGRAMS: 300
+
   environments:
     needs: core
     runs-on: ubuntu-latest

@@ -300,6 +300,18 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 		after: () => {},
 		afterEach: () => {},
 		$arkMock: mock,
+		// a generated program's record of what one of its sites creates, and how that validates data generated for it
+		$arkObserve: (
+			key: string,
+			create: () => unknown,
+			inputsOf: () => unknown[]
+		) => {
+			try {
+				observations[key] = observeValidation(create(), inputsOf)
+			} catch (e) {
+				observations[key] = { threw: messageOf(e) }
+			}
+		},
 		$arkSite: (
 			id: number,
 			readsOf: () => (() => unknown)[],
@@ -491,6 +503,87 @@ const sample = (validate: (data: unknown) => unknown) =>
 			return { threw: messageOf(e) }
 		}
 	})
+
+// the result of a call, as design/precompile.md §2 observes it: its output, every field of each error, or what it throws
+const outcomeOf = (call: () => unknown, input?: unknown): Observation => {
+	try {
+		const out: any = call()
+		return (
+				hasDomain(out, "object") &&
+					(out as { " arkKind"?: string })[" arkKind"] === "errors"
+			) ?
+				{
+					summary: out.summary,
+					errors: out.issues.map((e: any) => ({
+						keys: Reflect.ownKeys(e).map(String),
+						code: e.code,
+						path: e.path.map(String),
+						data: serialize(e.data),
+						expected: e.expected,
+						actual: e.actual,
+						problem: e.problem,
+						message: e.message
+					}))
+				}
+			:	{ out: serialize(out), isInput: out === input }
+	} catch (e) {
+		return { threw: String(e) }
+	}
+}
+
+// each call gets its own copy of an input, so what one mutates the next doesn't see
+const observeValidation = (
+	value: unknown,
+	inputsOf: () => unknown[]
+): Observation => {
+	if (isStandIn(value)) return { module: {} }
+	if (isModule(value)) {
+		return {
+			module: Object.fromEntries(
+				Object.entries(value).map(([k, v]) => [
+					k,
+					observeValidation(v, inputsOf)
+				])
+			)
+		}
+	}
+	if (typeof value !== "function") return { value: serialize(value) }
+	const calls = (method: (fn: any, input: unknown) => unknown) =>
+		inputsOf().map((_, i) => {
+			const input = inputsOf()[i]
+			return outcomeOf(() => method(value, input), input)
+		})
+	if (!isArk(value) || isTypedFn(value)) {
+		return {
+			...(isTypedFn(value) && observe(value)),
+			calls: calls((fn, input) => fn(input))
+		}
+	}
+	const t = value as any
+	return {
+		expression: t.expression,
+		description: t.description,
+		string: String(t),
+		meta: serialize(t.meta),
+		json: outcomeOf(() => t.json),
+		toJsonSchema: outcomeOf(() => t.toJsonSchema()),
+		standardJsonSchema: (["input", "output"] as const).map(io =>
+			outcomeOf(() =>
+				t["~standard"].jsonSchema[io]({ target: "draft-2020-12" })
+			)
+		),
+		traverse: inputsOf().map((_, i) => {
+			const input = inputsOf()[i]
+			return {
+				...outcomeOf(() => t.traverse(input), input),
+				mutated: serialize(input)
+			}
+		}),
+		allows: calls((fn, input) => fn.allows(input)),
+		assert: calls((fn, input) => fn.assert(input)),
+		standard: calls((fn, input) => fn["~standard"].validate(input))
+	}
+}
 
 const observe = (value: unknown): Observation => {
 	if (isStandIn(value)) return { module: {} }

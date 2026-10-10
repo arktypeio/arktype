@@ -43,6 +43,8 @@ const define = { "process.env.ARK_MODE": "loose" }
 export interface BuildOptions {
 	mode: PrecompileMode
 	introspection?: readonly IntrospectionMember[]
+	// run a file where no site folds, as for a program that records its own observations
+	runsUnfolded?: boolean
 }
 
 const createPrecompiler = (opts: BuildOptions) =>
@@ -93,7 +95,7 @@ export const buildPerturbed = (
 				!unsupported.has(site.start) &&
 				!/\bawait\b|\byield\b/.test(source.slice(site.start, site.end))
 		)
-		if (!folded.length) continue
+		if (!folded.length && !opts.runsUnfolded) continue
 		const module = precompiler.graph.moduleOf(path) as SourceModule
 		// a comment beside a site survives its transform, so each world wraps the same expression
 		const marked = new MagicString(source)
@@ -307,9 +309,11 @@ export const runWorld = async (
 	return JSON.parse(readFileSync(resultPath, "utf8"))
 }
 
-// a name arktype registers from a counter differs between processes with different histories
-const comparable = (observation: Observation | undefined) =>
-	JSON.stringify(observation).replace(/\btype\d+\b/g, "type")
+// a name arktype registers a value or node by follows the history of the process, as a name when first registered and a counter
+export const comparable = (observation: unknown): string =>
+	(JSON.stringify(observation) ?? "undefined")
+		.replace(/\btype\d+\b/g, "type")
+		.replace(/\$ark\.[\w$&|]+/g, "$ark")
 
 // what a factory's checks throw, a mismatch with what the build read, a hole renamed since its validator was created, or two values where it read one
 const isCreationCheck = (observation: Observation | undefined) =>
@@ -331,6 +335,7 @@ export interface WorldComparison {
 	observedSites: Set<string>
 }
 
+// an observation a program records itself is labeled by its key, and a site's by where it is
 export const compareWorlds = (
 	build: PerturbedBuild,
 	original: WorldResults,
@@ -345,7 +350,8 @@ export const compareWorlds = (
 			if (!originals) continue
 			for (const [key, expected] of Object.entries(originals)) {
 				const actual = precompiled[file.path][kind]?.[key]
-				const site = build.sitesById[Number(key.split(":")[0])]
+				const [id, occurrence] = key.split(":")
+				const site = occurrence ? build.sitesById[Number(id)] : key
 				const outcome =
 					!actual ? "unobserved precompiled"
 					: comparable(actual) === comparable(expected) ?

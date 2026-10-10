@@ -1,0 +1,878 @@
+import { attest, contextualize } from "@ark/attest"
+import { fromHere } from "@ark/fs"
+import type { Diagnostic } from "@ark/precompile"
+import { type } from "arktype"
+import fc from "fast-check"
+import { mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
+import {
+	dataOf,
+	defOf,
+	emptyArray,
+	morphs,
+	noise,
+	nodeOf,
+	predicates,
+	sourceOf,
+	type Node
+} from "./grammar.ts"
+import type { Perturbation, World } from "./perturbationWorker.ts"
+import {
+	buildPerturbed,
+	comparable,
+	compareWorlds,
+	runWorld,
+	type BuildOptions,
+	type Disagreement
+} from "./testPerturbation.ts"
+
+// checks the generated programs of the precompilation design (design/precompile.md §12) through the build: modules
+// defining Types where a build folds them, each run as written and precompiled in standalone and cache mode, unchanged
+// and under each perturbation of testPerturbation.ts
+// ARK_PRECOMPILE_PROGRAMS=<count>[:<seed>] checks that many programs from the seed
+
+interface Fragment {
+	// what containers.js exports, which a perturbation can mock or swap where main.js imports it
+	containers: string[]
+	exports: string[]
+	main: string[]
+}
+
+type FragmentOf = (id: string) => Fragment
+
+// a site main.js observes, by what it creates and how that validates the inputs
+const observed = (key: string, site: string, inputs: unknown[]) =>
+	`$arkObserve(${JSON.stringify(key)}, () => ${site}, () => [${inputs.map(sourceOf).join(", ")}])`
+
+const inputsOf = (data: fc.Arbitrary<unknown>) =>
+	fc.array(fc.oneof({ weight: 4, arbitrary: data }, noise), {
+		minLength: 1,
+		maxLength: 4
+	})
+
+const noAliases = (name: string) =>
+	fc.constant(`no alias ${name}`) as fc.Arbitrary<unknown>
+
+const isDefinable = (def: unknown) => {
+	try {
+		type(def as never)
+		return true
+	} catch {
+		return false
+	}
+}
+
+const definitions: fc.Arbitrary<FragmentOf> = nodeOf([]).chain(node =>
+	inputsOf(dataOf(node, noAliases)).map(
+		(inputs): FragmentOf =>
+			id => ({
+				containers: [],
+				exports: [],
+				main: [observed(id, `type(${sourceOf(defOf(node))})`, inputs)]
+			})
+	)
+)
+
+const holders = {
+	object: (element: string) => `type({ a: ${element} })`,
+	tuple: (element: string) => `type([${element}])`,
+	prefixed: (element: string) => `type(["string", ${element}])`,
+	scope: (element: string) => `scope({ o: { a: ${element} } }).type("o")`
+}
+
+// arktype checks a default where it creates the node holding it, by a narrow reading state the program changes between sites
+const narrowedState: fc.Arbitrary<FragmentOf> = fc
+	.array(
+		fc.record({
+			holder: fc.constantFrom(
+				...(Object.keys(holders) as (keyof typeof holders)[])
+			),
+			limit: fc.integer({ min: 0, max: 10 }),
+			inputs: inputsOf(fc.constantFrom({}, { a: 1 }, [], [1], ["a"], ["a", 20]))
+		}),
+		{ minLength: 2, maxLength: 3 }
+	)
+	.chain(sites =>
+		fc.integer({ min: 0, max: 10 }).map(
+			(defaultValue): FragmentOf =>
+				id => {
+					const element = `[["number", ":", atMost${id}], "=", ${defaultValue}]`
+					return {
+						containers: [],
+						exports: [],
+						main: [
+							`let max${id} = 10`,
+							`const atMost${id} = n => { const limit = max${id}; return n <= limit }`,
+							...sites.flatMap((site, i) => [
+								observed(
+									`${id}.${i}`,
+									holders[site.holder](element),
+									site.inputs
+								),
+								`max${id} = ${site.limit}`
+							])
+						]
+					}
+				}
+		)
+	)
+
+const defaultedReads = {
+	omit: (t: string) => `${t}.omit("a")`,
+	pick: (t: string) => `${t}.pick("x")`,
+	keyof: (t: string) => `${t}.keyof()`,
+	json: (t: string) => `${t}.omit("a").json`,
+	toJsonSchema: (t: string) => `${t}.omit("a").toJsonSchema()`,
+	and: (t: string) => `${t}.and({ y: "string" })`,
+	array: (t: string) => `${t}.array()`
+}
+
+const scopedReads = [
+	`.type("o")`,
+	`.type("keyof o")`,
+	`.type({ o: "o" })`,
+	`.type("o | string").extract("string")`,
+	`.export().p`
+]
+
+// a default a narrow may reject, checked wherever a definition reaches it, through what derives from it or a Scope's caches
+const defaults: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		predicate: fc.constantFrom(
+			...(Object.keys(predicates) as (keyof typeof predicates)[])
+		),
+		value: fc.constantFrom(0, 1, 3, 4),
+		isScoped: fc.boolean(),
+		reads: fc.array(fc.nat(scopedReads.length - 1), {
+			minLength: 1,
+			maxLength: 3
+		}),
+		derivations: fc.array(
+			fc.constantFrom(
+				...(Object.keys(defaultedReads) as (keyof typeof defaultedReads)[])
+			),
+			{ minLength: 1, maxLength: 3 }
+		),
+		// a site the program never runs, which the build evaluates first
+		unused: fc.option(fc.nat(scopedReads.length - 1), { nil: undefined }),
+		inputs: inputsOf(
+			fc.constantFrom({}, { x: "", a: 3 }, { x: "", a: 4 }, "a", "x", [])
+		)
+	})
+	.map(
+		({
+			predicate,
+			value,
+			isScoped,
+			reads,
+			derivations,
+			unused,
+			inputs
+		}): FragmentOf =>
+			id => {
+				if (!isScoped) {
+					const defined = `type({ x: "string", a: [["number", ":", ${predicate}], "=", ${value}] })`
+					return {
+						containers: [],
+						exports: [],
+						main: derivations.map((derivation, i) =>
+							observed(
+								`${id}.${i}`,
+								defaultedReads[derivation](defined),
+								inputs
+							)
+						)
+					}
+				}
+				return {
+					containers: [],
+					exports: [],
+					main: [
+						`const $${id} = scope({ ev: ["number", ":", ${predicate}], o: { a: "ev = ${value}" }, p: { b: "ev" } })`,
+						...(unused === undefined ?
+							[]
+						:	[`const unused${id} = () => $${id}${scopedReads[unused]}`]),
+						...reads.map((read, i) =>
+							observed(`${id}.${i}`, `$${id}${scopedReads[read]}`, inputs)
+						)
+					]
+				}
+			}
+	)
+
+// what each alias of a Scope or Generic allows, to a bounded depth where it is a cycle
+const dataByAliasOf = (nodes: Record<string, Node>) =>
+	fc.letrec(tie =>
+		Object.fromEntries(
+			Object.entries(nodes).map(([name, node]) => [
+				name,
+				fc.oneof(
+					{ maxDepth: 2, depthIdentifier: "alias" },
+					noise,
+					dataOf(node, tie)
+				)
+			])
+		)
+	)
+
+const moduleSites = {
+	prop: (m: string, k: string) => `type({ x: ${m}.${k} })`,
+	or: (m: string, k: string) => `${m}.${k}.or(${m}.a)`,
+	array: (m: string, k: string) => `${m}.${k}.array()`,
+	keyof: (m: string, k: string) => `${m}.${k}.keyof()`,
+	member: (m: string, k: string) => `${m}.${k}`
+}
+
+const thunkAlias = { kind: "alias", name: "t" } as const
+
+// sites a thunk alias decides that hold none of what it returns
+const throughThunk = fc.constantFrom<Node>(
+	{ kind: "union", l: thunkAlias, r: { kind: "literal", value: 5n } },
+	{ kind: "keyof", node: thunkAlias },
+	{
+		kind: "intersection",
+		l: thunkAlias,
+		r: {
+			kind: "object",
+			props: [
+				{ key: "z", optional: false, node: { kind: "keyword", name: "string" } }
+			]
+		}
+	}
+)
+
+// two Scopes or Modules alike but for one alias, so a factory receiving one in place of the other must tell them apart
+const containers: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		form: fc.constantFrom("scope", "export", "module"),
+		aliases: fc.record({ a: nodeOf(["a", "b"]), b: nodeOf(["a", "b"]) }),
+		thunk: fc.option(nodeOf(["a", "b"]), { nil: undefined }),
+		changed: fc.constantFrom("a", "b", "t"),
+		replacement: nodeOf(["a", "b"])
+	})
+	.chain(({ form, aliases, thunk, changed, replacement }) => {
+		// a thunk alias resolves through the Scope declaring it, which a Module doesn't name
+		const nodes: Record<string, Node> =
+			form !== "module" && thunk ? { ...aliases, t: thunk } : aliases
+		const names = Object.keys(nodes)
+		const dataByAlias = dataByAliasOf(nodes)
+		const sites =
+			form === "scope" ?
+				(nodes.t ? fc.oneof(nodeOf(names), throughThunk) : nodeOf(names)).chain(
+					node =>
+						fc.record({
+							site: fc.constant(
+								(read: string) => `${read}.type(${sourceOf(defOf(node))})`
+							),
+							inputs: inputsOf(dataOf(node, name => dataByAlias[name]))
+						})
+				)
+			:	fc
+					.record({
+						alias: fc.constantFrom(...names),
+						kind: fc.constantFrom(
+							...(Object.keys(moduleSites) as (keyof typeof moduleSites)[])
+						)
+					})
+					.chain(({ alias, kind }) =>
+						fc.record({
+							site: fc.constant((read: string) =>
+								moduleSites[kind](read, alias)
+							),
+							inputs: inputsOf(dataByAlias[alias])
+						})
+					)
+		return fc.array(sites, { minLength: 1, maxLength: 3 }).map(
+			(observedSites): FragmentOf =>
+				id => {
+					const declare = (name: string, isChanged: boolean) => {
+						const defs = Object.entries(nodes).map(([alias, node]) => {
+							const def = sourceOf(
+								defOf(isChanged && changed === alias ? replacement : node)
+							)
+							return `${alias}: ${alias === "t" ? `() => ${name}.type(${def})` : def}`
+						})
+						return form === "module" ?
+								[`export const ${name} = type.module({ ${defs.join(", ")} })`]
+							:	[
+									`export const ${name} = scope({ ${defs.join(", ")} })`,
+									...(form === "export" ?
+										[`export const ${name}M = ${name}.export()`]
+									:	[])
+								]
+					}
+					const name = form === "module" ? `M${id}` : `$${id}`
+					const read = form === "export" ? `${name}M` : name
+					return {
+						containers: [...declare(name, false), ...declare(`${name}b`, true)],
+						exports: [read, `${read}b`],
+						main: observedSites.map(({ site, inputs }, i) =>
+							observed(`${id}.${i}`, site(read), inputs)
+						)
+					}
+				}
+		)
+	})
+
+// Generics alike but for their body, or bound into Scopes alike but for what their argument means
+const generics: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		body: nodeOf(["t"]),
+		replacement: nodeOf(["t"]),
+		arg: nodeOf([]),
+		bound: fc.option(fc.tuple(nodeOf([]), nodeOf([])), { nil: undefined })
+	})
+	.chain(({ body, replacement, arg, bound }) => {
+		const argument = bound ? bound[0] : arg
+		return inputsOf(dataOf(body, () => dataOf(argument, noAliases))).map(
+			(inputs): FragmentOf =>
+				id => ({
+					containers:
+						bound ?
+							[
+								`const $${id} = scope({ "Box<t>": ${sourceOf(defOf(body))}, foo: "string" })`,
+								...bound.map(
+									(foo, i) =>
+										`export const G${id}${i ? "b" : ""} = scope({ ...$${id}.export("Box"), foo: ${sourceOf(defOf(foo))} }).export().Box`
+								)
+							]
+						:	[body, replacement].map(
+								(node, i) =>
+									`export const G${id}${i ? "b" : ""} = generic("t")(${sourceOf(defOf(node))})`
+							),
+					exports: [`G${id}`, `G${id}b`],
+					main: [
+						observed(
+							id,
+							`G${id}(${bound ? `"foo"` : sourceOf(defOf(arg))})`,
+							inputs
+						)
+					]
+				})
+		)
+	})
+
+const derivations = {
+	or: (l: string, r: string) => `${l}.or(${r})`,
+	and: (l: string, r: string) => `${l}.and(${r})`,
+	union: (l: string, r: string) => `type([${l}, "|", ${r}])`,
+	merge: (l: string, r: string) => `${l}.merge(${r})`,
+	keyof: (l: string) => `${l}.keyof()`,
+	omit: (l: string) => `${l}.omit("a")`,
+	pick: (l: string) => `${l}.pick("a", "b")`,
+	array: (l: string) => `${l}.array()`,
+	pipe: (l: string) => `${l}.pipe(${morphs.size.name})`,
+	narrow: (l: string) => `${l}.narrow(${predicates.isEven.name})`
+}
+
+type Derivation = keyof typeof derivations
+
+const introspections = {
+	json: (t: string) => `${t}.json`,
+	toJSON: (t: string) => `${t}.toJSON()`,
+	toJsonSchema: (t: string) => `${t}.toJsonSchema()`
+}
+
+// Types derived from others the program defines, inline, its own or imported, and what reads their introspection
+const derived: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		l: nodeOf([]),
+		r: nodeOf([]),
+		placement: fc.constantFrom("inline", "local", "imported"),
+		derivations: fc.array(
+			fc.constantFrom(...(Object.keys(derivations) as Derivation[])),
+			{ minLength: 1, maxLength: 3 }
+		),
+		introspection: fc.option(
+			fc.constantFrom(
+				...(Object.keys(introspections) as (keyof typeof introspections)[])
+			),
+			{ nil: undefined }
+		)
+	})
+	// a Type the module declares must be definable for the module to load
+	.filter(
+		({ l, r, placement }) =>
+			placement === "inline" || (isDefinable(defOf(l)) && isDefinable(defOf(r)))
+	)
+	.chain(({ l, r, placement, derivations: applied, introspection }) =>
+		inputsOf(fc.oneof(dataOf(l, noAliases), dataOf(r, noAliases))).map(
+			(inputs): FragmentOf =>
+				id => {
+					const [lDef, rDef] = [l, r].map(
+						node => `type(${sourceOf(defOf(node))})`
+					)
+					const [lName, rName] =
+						placement === "inline" ? [lDef, rDef] : [`L${id}`, `R${id}`]
+					const sites = applied.map((derivation, i) =>
+						observed(
+							`${id}.${i}`,
+							derivations[derivation](lName, rName),
+							inputs
+						)
+					)
+					if (introspection) {
+						sites.push(
+							observed(
+								`${id}.${introspection}`,
+								introspections[introspection](
+									derivations[applied[0]](lName, rName)
+								),
+								[]
+							)
+						)
+					}
+					const declarations = [
+						`const L${id} = ${lDef}`,
+						`const R${id} = ${rDef}`
+					]
+					return (
+						placement === "inline" ?
+							{ containers: [], exports: [], main: sites }
+						: placement === "local" ?
+							{ containers: [], exports: [], main: [...declarations, ...sites] }
+						:	{
+								containers: declarations.map(
+									declaration => `export ${declaration}`
+								),
+								exports: [`L${id}`, `R${id}`],
+								main: sites
+							}
+					)
+				}
+		)
+	)
+
+// values a definition reads, an object another module can write to and a static helper, imported or the module's own
+const bindings: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		limit: fc.integer({ min: 0, max: 4 }),
+		key: fc.constantFrom("a", "b"),
+		element: fc.constantFrom("string", "number", "boolean"),
+		isImported: fc.boolean(),
+		inputs: inputsOf(
+			fc.oneof(
+				fc.integer({ min: -1, max: 6 }),
+				fc.string({ maxLength: 6 }),
+				fc.record({ a: noise, b: noise }, { requiredKeys: [] }),
+				fc.array(fc.oneof(fc.string({ maxLength: 2 }), fc.integer()), {
+					maxLength: 3
+				})
+			)
+		)
+	})
+	.map(
+		({ limit, key, element, isImported, inputs }): FragmentOf =>
+			id => {
+				const declarations = [
+					`const limits${id} = { max: ${limit}, key: "${key}" }`,
+					`const arrayOf${id} = def => \`\${def}[]\``
+				]
+				return {
+					containers:
+						isImported ?
+							declarations.map(declaration => `export ${declaration}`)
+						:	[],
+					exports: isImported ? [`limits${id}`, `arrayOf${id}`] : [],
+					main: [
+						...(isImported ? [] : declarations),
+						observed(
+							`${id}.0`,
+							`type(\`string <= \${limits${id}.max}\`)`,
+							inputs
+						),
+						observed(
+							`${id}.1`,
+							`type({ [limits${id}.key]: arrayOf${id}("${element}") })`,
+							inputs
+						),
+						observed(`${id}.2`, `type(arrayOf${id}("${element}"))`, inputs)
+					]
+				}
+			}
+	)
+
+const keywordCases = ["string", "number", "boolean", "bigint", "object"]
+
+// matchers and TypedFns, each calling holes the program holds
+const matchers: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		cases: fc.uniqueArray(
+			fc.tuple(
+				fc.constantFrom(...keywordCases),
+				fc.constantFrom(...(Object.keys(morphs) as (keyof typeof morphs)[]))
+			),
+			{ selector: ([key]) => key, minLength: 1, maxLength: 3 }
+		),
+		fallback: fc.constantFrom(`"assert"`, `"never"`, morphs.box.name),
+		params: fc.array(fc.constantFrom(...keywordCases), { maxLength: 2 }),
+		implementation: fc.constantFrom(
+			...(Object.keys(morphs) as (keyof typeof morphs)[])
+		),
+		returns: fc.option(fc.constantFrom(...keywordCases), { nil: undefined }),
+		inputs: inputsOf(
+			fc.oneof(
+				fc.string({ maxLength: 3 }),
+				fc.integer({ min: -2, max: 4 }),
+				fc.boolean(),
+				fc.bigInt({ min: -2n, max: 2n })
+			)
+		)
+	})
+	.map(
+		({
+			cases,
+			fallback,
+			params,
+			implementation,
+			returns,
+			inputs
+		}): FragmentOf =>
+			id => ({
+				containers: [],
+				exports: [],
+				main: [
+					observed(
+						`${id}.match`,
+						`match({ ${cases.map(([key, morph]) => `${key}: ${morph}`).join(", ")}, default: ${fallback} })`,
+						inputs
+					),
+					observed(
+						`${id}.fn`,
+						`type.fn(${[...params, ...(returns ? [":", returns] : [])].map(def => JSON.stringify(def)).join(", ")})(${implementation})`,
+						inputs
+					)
+				]
+			})
+	)
+
+const holes: Record<string, Function> = { ...morphs, ...predicates, emptyArray }
+
+interface Program {
+	containers: string
+	// one site to a line, so a site a build refuses is dropped by its line
+	main: string[]
+}
+
+const programOf = (fragmentsOf: FragmentOf[]): Program => {
+	const fragments = fragmentsOf.map((fragmentOf, i) => fragmentOf(`${i}`))
+	const containers = fragments.flatMap(fragment => fragment.containers)
+	const main = fragments.flatMap(fragment => fragment.main)
+	const used = Object.keys(holes).filter(name =>
+		new RegExp(`\\b${name}\\b`).test([...containers, ...main].join("\n"))
+	)
+	const exported = [...used, ...fragments.flatMap(fragment => fragment.exports)]
+	return {
+		containers: [
+			`import { generic, scope, type } from "arktype"`,
+			...used.map(name => `export const ${name} = ${holes[name]}`),
+			...containers
+		].join("\n"),
+		main: [
+			`import { generic, match, scope, type } from "arktype"`,
+			`import { ${exported.join(", ")} } from "./containers.js"`,
+			...main
+		]
+	}
+}
+
+const sourceOfProgram = (program: Program) =>
+	`// containers.js\n${program.containers}\n\n// main.js\n${program.main.join("\n")}`
+
+const programs = fc
+	.array(
+		fc.oneof(
+			definitions,
+			narrowedState,
+			defaults,
+			containers,
+			generics,
+			derived,
+			bindings,
+			matchers
+		),
+		{
+			minLength: 1,
+			maxLength: 3
+		}
+	)
+	.map(fragmentsOf => {
+		const program = programOf(fragmentsOf)
+		return Object.assign(program, {
+			[fc.toStringMethod]: () => sourceOfProgram(program)
+		})
+	})
+
+const isObserved = (line: string | undefined) =>
+	!!line?.startsWith("$arkObserve(")
+
+// what a standalone build runs of a program, without the sites it refuses, or nothing if it refuses another statement
+const foldedProgramOf = (
+	program: Program,
+	errors: Diagnostic[]
+): Program | undefined => {
+	const refusedLines = new Set<number>()
+	for (const error of errors) {
+		if (
+			!error.file.endsWith("main.js") ||
+			!isObserved(program.main[error.line - 1])
+		)
+			return
+		refusedLines.add(error.line - 1)
+	}
+	return {
+		...program,
+		main: program.main.filter((_, i) => !refusedLines.has(i))
+	}
+}
+
+// each mode's build wraps the same sites, so one world as written serves both
+const buildOptions: BuildOptions = {
+	mode: "standalone",
+	introspection: ["json", "toJSON", "toJsonSchema", "~standard.jsonSchema"],
+	runsUnfolded: true
+}
+
+const write = (program: Program, dir: string) => {
+	mkdirSync(dir, { recursive: true })
+	writeFileSync(join(dir, "containers.js"), program.containers)
+	writeFileSync(join(dir, "main.js"), program.main.join("\n"))
+	return [join(dir, "main.js")]
+}
+
+interface Counts {
+	known: Record<string, number>
+	excluded: Record<string, number>
+	unbaked: number
+	programs: number
+	sites: number
+	precompiledSites: number
+	refusedPrograms: number
+	refusals: Record<string, number>
+}
+
+// the disagreements of a program's precompiled worlds with the one as written, in cache mode and standalone mode
+const disagreementsOf = async (
+	program: Program,
+	dir: string,
+	counts: Counts
+): Promise<string[]> => {
+	const corpus = write(program, dir)
+	const cache = buildPerturbed(corpus, { ...buildOptions, mode: "cache" })
+	const standalone = buildPerturbed(corpus, buildOptions)
+	for (const error of standalone.errors) {
+		// a reason is counted without the names and positions it quotes
+		const reason = (error.reasons[0] ?? error.message)
+			.replace(/`[^`]*`/g, "`…`")
+			.replace(/ \(\S+:\d+:\d+\)| from \S+$/g, "")
+		counts.refusals[reason] = (counts.refusals[reason] ?? 0) + 1
+	}
+	const foldedDir = join(dir, "folded")
+	let folded: Program | undefined = program
+	let foldedBuild = standalone
+	// a site can be refused once another reading the same definition is dropped
+	while (folded && foldedBuild.errors.length) {
+		folded = foldedProgramOf(folded, foldedBuild.errors)
+		if (folded)
+			foldedBuild = buildPerturbed(write(folded, foldedDir), buildOptions)
+	}
+	counts.programs++
+	counts.sites += program.main.filter(isObserved).length
+	counts.precompiledSites += folded?.main.filter(isObserved).length ?? 0
+	if (!folded) counts.refusedPrograms++
+	const [original, cached, foldedOriginal, precompiled] = await Promise.all([
+		runWorld("original", cache.manifest, dir),
+		runWorld("cache", cache.manifest, dir),
+		folded &&
+			(foldedBuild === standalone ? undefined : (
+				runWorld("original", foldedBuild.manifest, foldedDir)
+			)),
+		folded &&
+			runWorld(
+				"standalone",
+				foldedBuild.manifest,
+				foldedBuild === standalone ? dir : foldedDir
+			)
+	])
+	const unknownOf = (run: Program, disagreements: Disagreement[]) =>
+		disagreements.filter(disagreement => {
+			if (isUnbaked(disagreement)) {
+				counts.unbaked++
+				return false
+			}
+			const excluded = allowanceOf(exclusions, run, disagreement)
+			if (excluded) {
+				counts.excluded[excluded.reason] =
+					(counts.excluded[excluded.reason] ?? 0) + 1
+				return false
+			}
+			const known = allowanceOf(knownFailures, run, disagreement)
+			if (known)
+				counts.known[known.reason] = (counts.known[known.reason] ?? 0) + 1
+			return !known
+		})
+	return [
+		...reportOf(
+			"cache",
+			unknownOf(program, compareWorlds(cache, original, cached).disagreements)
+		),
+		...(folded && precompiled ?
+			reportOf(
+				"standalone",
+				unknownOf(
+					folded,
+					compareWorlds(foldedBuild, foldedOriginal ?? original, precompiled)
+						.disagreements
+				)
+			)
+		:	[])
+	]
+}
+
+const introspectionKeys = ["json", "toJsonSchema", "standardJsonSchema"]
+
+// a JSON Schema the build can't bake throws where it's read (R4)
+const isUnbaked = ({ original, precompiled }: Disagreement) =>
+	Object.keys({ ...original, ...precompiled }).every(
+		k =>
+			comparable(original[k]) === comparable(precompiled[k]) ||
+			(introspectionKeys.includes(k) &&
+				comparable(precompiled[k]).includes(
+					"can't be precompiled to a standalone validator"
+				))
+	)
+
+// a kind of disagreement counted rather than failing, by the line of main.js observing the site
+interface Allowance {
+	reason: string
+	matches: (
+		disagreement: Disagreement,
+		line: string,
+		program: Program
+	) => boolean
+}
+
+const isHoleChanged = (perturbation: Perturbation) =>
+	perturbation === "arity" ||
+	perturbation === "mock" ||
+	perturbation === "mockKind"
+
+// a finding not yet fixed, named with the lane fixing it
+const knownFailures: Allowance[] = [
+	{
+		reason:
+			"runtime lane: an introspection site folded to its data or what it throws never checks its definition's holes",
+		matches: ({ perturbation, original, precompiled }, line) =>
+			isHoleChanged(perturbation) &&
+			/\.(?:json|toJSON\(\)|toJsonSchema\(\)), \(\) => \[]\)$/.test(line) &&
+			String(original.threw).startsWith("ParseError") &&
+			!String(precompiled.threw).startsWith("ParseError")
+	},
+	{
+		reason:
+			"factories lane: a Generic's default thunk isn't arity-checked where it's instantiated",
+		matches: ({ perturbation }, line) =>
+			perturbation === "arity" && /\(\) => G\d+\(/.test(line)
+	}
+]
+
+// a disagreement outside the guarantee (design/precompile.md §2)
+const exclusions: Allowance[] = [
+	{
+		reason:
+			"which evaluation of a definition throws where a narrow checking its default answers differently between calls",
+		matches: ({ original, precompiled }, line) =>
+			/\batMost\d/.test(line) &&
+			[original.threw, precompiled.threw].some(threw =>
+				/^ParseError: Default .*must be valid according to atMost\d/.test(
+					String(threw)
+				)
+			) &&
+			original.threw !== precompiled.threw
+	},
+	{
+		// a standalone build reads a function's name where it runs, as a bundler may rename it, and can't replay when arktype first saw it
+		reason:
+			"a program renames a function after passing it to arktype, whose registry keeps the name it had then",
+		matches: ({ perturbation, original, precompiled }) =>
+			perturbation === "name" &&
+			String(precompiled.description).includes("perturbed") &&
+			!String(original.description).includes("perturbed")
+	}
+]
+
+// a site is labeled by its position in main.js or by the key main.js observes it by
+const allowanceOf = (
+	allowances: Allowance[],
+	program: Program,
+	disagreement: Disagreement
+): Allowance | undefined => {
+	const lineNumber = /:(\d+):\d+$/.exec(disagreement.site)?.[1]
+	const line =
+		lineNumber ?
+			program.main[Number(lineNumber) - 1]
+		:	program.main.find(line =>
+				line.startsWith(`$arkObserve(${JSON.stringify(disagreement.site)},`)
+			)
+	return line === undefined ? undefined : (
+			allowances.find(allowance =>
+				allowance.matches(disagreement, line, program)
+			)
+		)
+}
+
+// a site's disagreements under each perturbation, by the observations the first one changes
+const reportOf = (world: World, disagreements: Disagreement[]): string[] => {
+	const disagreementsBySite: Record<string, Disagreement[]> = {}
+	for (const disagreement of disagreements)
+		(disagreementsBySite[disagreement.site] ??= []).push(disagreement)
+	return Object.entries(disagreementsBySite).map(([site, [first, ...rest]]) =>
+		[
+			`${world} ${site} under ${[first, ...rest].map(d => d.perturbation).join(", ")}`,
+			...Object.keys({ ...first.original, ...first.precompiled })
+				.filter(
+					k =>
+						comparable(first.original[k]) !== comparable(first.precompiled[k])
+				)
+				.map(
+					k =>
+						`  ${k}: ${JSON.stringify(first.original[k])?.slice(0, 300)}\n  precompiled ${k}: ${JSON.stringify(first.precompiled[k])?.slice(0, 300)}`
+				)
+		].join("\n")
+	)
+}
+
+const [runs = 20, seed = 1] =
+	process.env.ARK_PRECOMPILE_PROGRAMS?.split(":").map(Number) ?? []
+
+const out = fromHere("temp", "programs", `${seed}`)
+
+contextualize(() => {
+	it("agree through the build", async () => {
+		rmSync(out, { recursive: true, force: true })
+		const counts: Counts = {
+			known: {},
+			excluded: {},
+			unbaked: 0,
+			programs: 0,
+			sites: 0,
+			precompiledSites: 0,
+			refusedPrograms: 0,
+			refusals: {}
+		}
+		await fc.assert(
+			fc.asyncProperty(programs, async program => {
+				attest(
+					await disagreementsOf(
+						program,
+						join(out, `${counts.programs}`),
+						counts
+					)
+				).equals([])
+			}),
+			{ numRuns: runs, seed, errorWithCause: true }
+		)
+		if (process.env.ARK_PRECOMPILE_PROGRAMS) console.log(counts)
+		attest(counts.precompiledSites > counts.sites / 2).equals(true)
+	}).timeout(runs * 30_000)
+})
