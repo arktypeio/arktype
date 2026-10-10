@@ -1033,6 +1033,20 @@ contextualize(() => {
 			attest(created.Empty({}).values !== created.Empty({}).values).equals(true)
 		})
 
+		it("doesn't fill a default again while traversing the value it filled in", async () => {
+			const empty = () => []
+			const define = (e: typeof empty): type.Any =>
+				type({ "p1?": ["this", "&", { p1: ["string[]", "=", e] }] } as never)
+			const built = standIn(empty.bind(null), "empty")
+			const create = await loadFactory(define(built), [
+				["function", "`empty`", built]
+			])
+			const input = { p1: {} }
+			attest(Object.keys(create(empty)(input).p1.p1)).equals(
+				Object.keys((define(empty)(input) as any).p1.p1)
+			)
+		})
+
 		it("checks the names of a validator's holes are those it printed", async () => {
 			const isLong = (s: string) => s.length > 3
 			const builtIsLong = standIn(isLong.bind(null), "islong")

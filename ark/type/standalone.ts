@@ -466,6 +466,7 @@ export class StandaloneArtifact {
 	// each pattern's own RegExp, which only traversal reads
 	patternInstances = new Set<RegExp>()
 	defaultsByMorph = new Map<unknown, Default>()
+	defaultNamesByMorph = new Map<unknown, string>()
 	objectUnits = new Set<unknown>()
 	declarations = createDeclarations()
 	emitting = new Set<object>()
@@ -1331,7 +1332,7 @@ return [${returned.join(", ")}]
 		const metaOwner = this.unit?.metaOwners.get(value)
 		if (metaOwner) return this.emitMeta(metaOwner)
 		const defaulted = this.defaultsByMorph.get(value)
-		if (defaulted) return this.emitDefault(...defaulted)
+		if (defaulted) return this.emitDefault(value, ...defaulted)
 		// a unit is compared by reference, so a copy wouldn't equal it
 		if (this.objectUnits.has(value)) {
 			throwParseError(
@@ -1404,12 +1405,17 @@ return [${returned.join(", ")}]
 
 	// the morph arktype creates for a default, called through a function since traversals are created before the validator it applies
 	emitDefault(
+		morph: unknown,
 		key: PropertyKey,
 		value: BaseRoot,
 		defaultValue: unknown
 	): string {
+		// every traversal reaching a default shares its morph, as arktype's node holds one, whose guard keeps a value it fills in from being defaulted again
+		let name = this.defaultNamesByMorph.get(morph)
+		if (name) return `(data, ctx) => ${name}(data, ctx)`
 		this.collectType(value)
-		const name = `default${this.defaults.length}`
+		name = `default${this.defaults.length}`
+		this.defaultNamesByMorph.set(morph, name)
 		const flags = defaultedNodeKeys.filter(k => value[k]).map(k => `${k}: true`)
 		this.defaults.push(
 			`const ${name} = runtime.computeDefaultValueMorph(${this.emit(key)}, ${this.validatorNamesByRoot.get(value)}, ${this.emit(defaultValue)}, {${flags.length ? ` ${flags.join(", ")} ` : ""}})`
