@@ -1,5 +1,20 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
+import { scope, type } from "arktype"
+
+const collectRefs = (schema: unknown, refs = new Set<string>()) => {
+	if (typeof schema !== "object" || schema === null) return refs
+	for (const [k, v] of Object.entries(schema)) {
+		if (k === "$ref") refs.add((v as string).replace("#/$defs/", ""))
+		else collectRefs(v, refs)
+	}
+	return refs
+}
+
+// every $ref should point to a definition, and every definition should be referenced
+const attestRefsResolve = (schema: object) => {
+	const defs = (schema as { $defs: object }).$defs
+	attest([...collectRefs(schema)].sort()).equals(Object.keys(defs).sort())
+}
 
 contextualize(() => {
 	describe("target option", () => {
@@ -114,6 +129,32 @@ contextualize(() => {
 			attest("definitions" in schema).equals(true)
 			attest("$defs" in schema).equals(false)
 			attest(Object.keys(schema.definitions as object).length > 0).equals(true)
+		})
+	})
+
+	describe("useRefs", () => {
+		it("union of object and null", () => {
+			const T = type({ a: "string" }).or("null")
+			attestRefsResolve(T.toJsonSchema({ useRefs: true }))
+		})
+
+		it("partially overlapping discriminated union", () => {
+			const T = type.or(
+				{ a: type.enumerated("a", "b", "c"), b: "1" },
+				{ a: type.enumerated("a", "e", "f"), b: "2" }
+			)
+			attestRefsResolve(T.toJsonSchema({ useRefs: true }))
+		})
+
+		it("discriminated union in a cyclic scope", () => {
+			const types = scope({
+				TypeA: { kind: "'a'", value: "number" },
+				TypeB: { kind: "'b'", value: "number" },
+				Union: "TypeA | TypeB",
+				Node: { source: "SearchNode", data: "Union" },
+				SearchNode: "Node"
+			}).export()
+			attestRefsResolve(types.SearchNode.toJsonSchema())
 		})
 	})
 })
