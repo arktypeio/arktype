@@ -77,6 +77,11 @@ const modulesBySpecifier: Record<string, string> = {}
 
 let artifactCount = 0
 
+// the runtime returns the validator the first artifact created at an address to every later one
+const validatorAddressPattern = /runtime\.addressed\("(\w+)"/g
+const createdAddresses = new Set<string>()
+const reusingArtifacts = new WeakSet<object>()
+
 const loadArtifact = async (
 	exports: Record<string, StandaloneExport>,
 	layout: Layout,
@@ -102,7 +107,14 @@ const loadArtifact = async (
 	}
 	const path = join(out, `artifact${artifactCount++}.js`)
 	writeFileSync(path, link(code))
-	return importBesideArktype(path)
+	let reuses = false
+	for (const [, address] of code.matchAll(validatorAddressPattern)) {
+		reuses ||= createdAddresses.has(address)
+		createdAddresses.add(address)
+	}
+	const artifact = await importBesideArktype(path)
+	if (reuses) reusingArtifacts.add(artifact)
+	return artifact
 }
 
 // a precompiled Type holding functions or symbols is a factory, passed them as a build passes what its site holds
@@ -363,10 +375,11 @@ const foldedIntrospectionOf = (
 	return exports
 }
 
-// what each folded site returns, and whether two of its calls, or toJSON() and json, return one object
+// what each folded site returns, and whether two of its calls, toJSON() and json, or json and a validator's, return one object
 const observeFolded = (
 	read: (member: FoldedMember) => unknown,
-	members: string[]
+	members: string[],
+	readBaked: (() => unknown) | undefined
 ) => [
 	...members.flatMap(member => [
 		observe(() => read(member as FoldedMember), undefined),
@@ -377,7 +390,8 @@ const observeFolded = (
 	]),
 	members.includes("json") && members.includes("toJSON") ?
 		observe(() => read("toJSON") === read("json"), undefined)
-	:	undefined
+	:	undefined,
+	readBaked && observe(() => readBaked() === read("json"), undefined)
 ]
 
 const observeCall = (t: Validator, input: unknown) => {
@@ -546,11 +560,18 @@ const compareFolded = async (
 ) => {
 	const folded = foldedIntrospectionOf(node)
 	if (!Object.keys(folded).length) return
+	// a validator baking the Type's json, which a site reading it returns as the same object
+	let isBaked = !!folded.json && !keyOf(node)[1].length
 	let artifact: any
 	try {
-		artifact = await loadArtifact(folded, layout, []).catch(e => {
+		artifact = await loadArtifact(
+			isBaked ? { ...folded, T: node as never } : folded,
+			layout,
+			isBaked ? ["json"] : []
+		).catch(e => {
 			// e.g. a schema calling a default's thunk, which arktype calls each time it writes one
-			if (!(e instanceof ParseError) || !folded.toJsonSchema) throw e
+			if (!(e instanceof ParseError)) throw e
+			isBaked = false
 			delete folded.toJsonSchema
 			return loadArtifact(folded, layout, [])
 		})
@@ -560,15 +581,22 @@ const compareFolded = async (
 		return
 	}
 	const members = Object.keys(folded)
+	// another artifact's validator of the same address reads that artifact's json
+	const readsBaked = isBaked && !reusingArtifacts.has(artifact)
 	const expected = observeStably(() =>
 		observeFolded(
 			member => (member === "json" ? node.json : node[member]()),
-			members
+			members,
+			readsBaked ? () => node.json : undefined
 		)
 	)
 	if (!members.length || !expected) return
 	result.isFolded = true
-	const actual = observeFolded(member => artifact[member](), members)
+	const actual = observeFolded(
+		member => artifact[member](),
+		members,
+		readsBaked ? () => artifact.T().json : undefined
+	)
 	if (!isEqual(expected, actual))
 		disagree("folded", { members, arktype: expected, precompiled: actual })
 }

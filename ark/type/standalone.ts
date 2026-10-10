@@ -986,21 +986,10 @@ ${statements.filter(statement => statement).join("\n\n")}
 		this.receive(params)
 		this.writeSharedUnits()
 		// the program reads it here, so a schema the build can't write refuses the site
-		let value =
+		const value =
 			member === "toJsonSchema" ?
 				this.writeJsonSchema(type, () => data, true)
-			:	this.writeData(data)
-		// arktype returns one object from every read of a Type's json
-		if (member !== "toJsonSchema") {
-			const json = `json${hashOf(value)}`
-			this.sharedModules[`~arktype/${json}`] ??= {
-				readsRuntime: false,
-				imports: {},
-				declarations: [`const ${json} = ${value}`],
-				exports: [json]
-			}
-			value = this.read(`~arktype/${json}`, json, json, json)
-		}
+			:	this.readJson(type)
 		const defaults = this.writeDefaultChecks()
 		// arktype checked the Type's defaults where it created it, which a site reading its introspection does at each call
 		const checks =
@@ -1329,10 +1318,7 @@ return [${returned.join(", ")}]
 		const bakes = (member: IntrospectionMember) =>
 			this.baking.members.has(member)
 		if (bakes("json") || bakes("toJSON")) {
-			// arktype returns one object from every read
-			const json =
-				this.declarations.namesByValue.get(root.json) ??
-				this.declareConst(root.json, "json", this.writeData(root.json))
+			const json = this.readJson(root)
 			if (bakes("json")) members.push(`json: ${json}`)
 			if (bakes("toJSON")) members.push(`toJSON: runtime.freeze(() => ${json})`)
 		}
@@ -1350,6 +1336,26 @@ return [${returned.join(", ")}]
 			)
 		}
 		return members.map(member => `, ${member}`).join("")
+	}
+
+	// arktype returns one json object per node, which every validator of it and every site reading it share, unless it prints what the artifact receives
+	readJson(root: BaseRoot): string {
+		const value = this.writeData(root.json)
+		if (keyOf(root)[1].length) {
+			return (
+				this.declarations.namesByValue.get(root.json) ??
+				this.declareConst(root.json, "json", value)
+			)
+		}
+		// a node without an address is one only another with the same json shares, which is no less than arktype's identity promises
+		const name = `json${heldAddressOf(root) ?? hashOf(value)}`
+		this.sharedModules[`~arktype/${name}`] ??= {
+			readsRuntime: false,
+			imports: {},
+			declarations: [`const ${name} = ${value}`],
+			exports: [name]
+		}
+		return this.read(`~arktype/${name}`, name, name, name)
 	}
 
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {

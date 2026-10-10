@@ -610,6 +610,53 @@ console.log(
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
 	}).timeout(60000)
 
+	it("returns one json object from a site reading it and the validator baking it", async () => {
+		const root = writeFixture(
+			{
+				"user.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string" })
+`,
+				"main.ts": `import { User } from "./user.ts"
+
+const all = [User]
+console.log(JSON.stringify([User.json === all[0].json, User.toJSON() === all[0].json]))
+`
+			},
+			fromHere("temp", "json")
+		)
+		attest(runPlain(root)).equals("[true,true]\n")
+		attest(
+			run(await bundlers.esbuild({ cwd: root, introspection: ["json"] }, root))
+		).equals("[true,true]\n")
+	}).timeout(60000)
+
+	it("drops the validator of a Type read only for its introspection", async () => {
+		const root = writeFixture(
+			{
+				"user.ts": `import { type } from "arktype"
+
+export const User = type({ name: "string", age: "number.integer" })
+`,
+				"main.ts": `import { User } from "./user.ts"
+
+console.log(JSON.stringify(User.toJsonSchema()))
+`
+			},
+			fromHere("temp", "introspectedOnly")
+		)
+		const bundle = await bundlers.esbuild({ cwd: root }, root)
+		attest(run(bundle)).equals(runPlain(root))
+		attest(bundle.includes("traverseAllows")).equals(false)
+		// a module mock could replace User, so a build checking helpers compares it
+		const checked = await bundlers.esbuild(
+			{ cwd: root, checkHelpers: true },
+			root
+		)
+		attest(run(checked)).equals(runPlain(root))
+		attest(checked.includes("traverseAllows")).equals(true)
+	}).timeout(60000)
+
 	it("shares a Type definitions reach through different copies whichever runs first", async () => {
 		const files = {
 			"string.ts": `import { type } from "arktype"

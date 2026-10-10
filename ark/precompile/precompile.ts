@@ -1881,6 +1881,16 @@ export class Precompiler {
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
 				site.inputs.push(input)
 		}
+		// what a site reading an imported Type's introspection returns doesn't depend on the Type at runtime, which only a module mock replaces
+		if (site.introspection && !this.checkHelpers) {
+			const { type } = site.introspection
+			site.inputs = site.inputs.filter(
+				input =>
+					input.kind !== "import" ||
+					input.path.length > 0 ||
+					input.value !== type
+			)
+		}
 		for (const value of state.holes) {
 			if (!site.parseError && !isHeld(value, this.interpreter)) continue
 			const hole = this.holeOf(value, candidate, module)
