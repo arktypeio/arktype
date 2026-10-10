@@ -706,10 +706,12 @@ export class Precompiler {
 			}
 			const reasons = this.unsupportedReasonsOf(site)
 			const factory =
-				reasons.length || site.parseError ? undefined
-				: site.isCreatedEachRun ?
-					{ params: [], spans: [], inputs: [], imports: [] }
-				:	this.factoryOf(site, module, reasons, prefix)
+				reasons.length || site.parseError ?
+					undefined
+				:	(this.factoryOf(site, module, reasons, prefix) ??
+					(site.isCreatedEachRun ?
+						{ params: [], spans: [], inputs: [], imports: [] }
+					:	undefined))
 			if (reasons.length) {
 				diagnostics.push(this.refuseWritten(module, site, reasons))
 				continue
@@ -1276,6 +1278,7 @@ export class Precompiler {
 		const settledRangesByFn = new Map<FunctionNode | undefined, Set<string>>()
 		const sites: Site[] = []
 		const candidatesBySite = new Map<Site, SiteCandidate>()
+		const sameWithinRun = new Set<Site>()
 		const diagnostics: Diagnostic[] = []
 		const helperSites: Node[] = []
 		this.helperSitesByModule.set(module, helperSites)
@@ -1298,7 +1301,8 @@ export class Precompiler {
 				helperSites.push(candidate.state.node)
 			}
 			const site = this.finalize(candidate, module)
-			if (this.mode === "standalone") this.checkRuns(site, candidate, module)
+			if (this.mode === "standalone" && this.checkRuns(site, candidate, module))
+				sameWithinRun.add(site)
 			sites.push(site)
 			candidatesBySite.set(site, candidate)
 			if (!candidate.fn && !site.isKeywordRead && site.start < configureStart) {
@@ -1314,7 +1318,8 @@ export class Precompiler {
 				)
 			}
 		}
-		if (this.mode === "standalone") this.checkShared(candidatesBySite, module)
+		if (this.mode === "standalone")
+			this.checkShared(candidatesBySite, sameWithinRun, module)
 		for (const [site, candidate] of candidatesBySite)
 			diagnostics.push(...this.diagnosticsOf(site, candidate, module))
 		diagnostics.push(...this.checkConfiguration(module))
@@ -1529,27 +1534,34 @@ export class Precompiler {
 		site: Site,
 		candidate: SiteCandidate,
 		module: SourceModule
-	): void {
+	): boolean {
 		const node = candidate.state.node
-		if (site.status !== "accepted" || !isFoldable(site.value)) return
-		if (this.isFactory(site, module)) {
-			site.isInterned =
-				this.interpreter.evaluateAgain(
-					node,
-					module,
-					repeatedRegionOf(node) ?? node
-				).value === site.value
-			return
+		if (site.status !== "accepted" || !isFoldable(site.value)) return false
+		const isFactory = this.isFactory(site, module)
+		const regions = repeatedRegionsOf(node)
+		if (!isFactory && !regions.length) return false
+		// outermost first, since a callback reads the same Scope each time it runs when the function calling it creates the Scope
+		const outer = this.interpreter.evaluateAgain(
+			node,
+			module,
+			regions[regions.length - 1] ?? node
+		)
+		if (outer.value === site.value) {
+			site.isInterned = isFactory
+			return false
 		}
-		const region = repeatedRegionOf(node)
-		if (!region) return
-		const again = this.interpreter.evaluateAgain(node, module, region)
-		if (again.value === site.value) return
+		if (!regions.length) return false
+		const again =
+			regions.length === 1 ?
+				outer
+			:	this.interpreter.evaluateAgain(node, module, regions[0])
+		// neither a getter nor a factory is the same within one run but new across runs
+		if (again.value === site.value) return true
 		const created = arkObjectsIn(again.value)
 		const kept = [...arkObjectsIn(site.value)].find(value => created.has(value))
-		if (again.error === undefined && !kept) {
+		if (isFactory || (again.error === undefined && !kept)) {
 			site.isCreatedEachRun = true
-			return
+			return false
 		}
 		const snippet = module.snippetOf(node)
 		rejectSite(
@@ -1562,11 +1574,13 @@ export class Precompiler {
 				:	`\`${snippet}\` runs more than once, and the build can't evaluate it again`
 			)
 		)
+		return false
 	}
 
 	// each site arktype recreates is its own factory, so none can share what it creates with another, as two exports of one Scope in a function do
 	private checkShared(
 		candidatesBySite: Map<Site, SiteCandidate>,
+		sameWithinRun: Set<Site>,
 		module: SourceModule
 	): void {
 		const holdersByValue = new Map<unknown, Site>()
@@ -1581,6 +1595,17 @@ export class Precompiler {
 				)
 			)
 				continue
+			if (sameWithinRun.has(site)) {
+				const node = candidatesBySite.get(site)!.state.node
+				rejectSite(
+					site,
+					new DynamicValue(
+						module,
+						node,
+						`\`${module.snippetOf(node)}\` is the same each time its innermost function or loop runs, but new each time an enclosing one runs`
+					)
+				)
+			}
 			for (const value of arkObjectsIn(site.value)) {
 				const holder = holdersByValue.get(value)
 				if (!holder) holdersByValue.set(value, site)
@@ -2577,15 +2602,16 @@ const kindNameOf = (value: unknown) =>
 	: hasArkKind(value, "scope") ? "Scope"
 	: "Generic"
 
-// the innermost part of the program around a node that runs more than once, like a function or a loop's body
-const repeatedRegionOf = (node: Node): Node | undefined => {
+// e.g. a callback's body and the function calling it, innermost first
+const repeatedRegionsOf = (node: Node): Node[] => {
+	const result: Node[] = []
 	for (
 		let child = node, parent = node.parent;
 		parent;
 		child = parent, parent = parent.parent
 	) {
-		if (isFunctionNode(parent)) return parent
-		if (
+		if (isFunctionNode(parent)) result.push(parent)
+		else if (
 			parent.type === "WhileStatement" ||
 			parent.type === "DoWhileStatement" ||
 			(parent.type === "ForStatement" && child !== parent.init) ||
@@ -2595,8 +2621,9 @@ const repeatedRegionOf = (node: Node): Node | undefined => {
 				!parent.static &&
 				child === parent.value)
 		)
-			return child
+			result.push(child)
 	}
+	return result
 }
 
 // a ParseError is named by its message, so equal sites share a thrower, and anything else by its site, since a cyclic Type's hash holds registry counters
