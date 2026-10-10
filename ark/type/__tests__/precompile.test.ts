@@ -250,6 +250,20 @@ contextualize(() => {
 		)
 	})
 
+	it("binds a unit for a function a minifier renamed, unless its arity changed", async () => {
+		const units = await precompileUnits([
+			type("number").narrow(named("isPositivePrecompiled", n => n > 0))
+		])
+		const T = type("number").narrow(named("a", (n: number) => n > 0))
+		const Contextual = type("number").narrow(
+			named("a", (n: number, ctx) => n > 0 || ctx.reject("positive"))
+		)
+		attest(isPrecompiled(units, T.internal)).equals(true)
+		attest(T(-1).toString()).snap("must be valid according to a (was -1)")
+		attest(isPrecompiled(units, Contextual.internal)).equals(false)
+		attest(Contextual(-1).toString()).snap("must be positive (was -1)")
+	})
+
 	it("misses a unit whose functions are shared differently", async () => {
 		const isShared = named("isSharedPrecompiled", (n: number) => n > 0)
 		const units = await precompileUnits([

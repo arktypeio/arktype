@@ -401,29 +401,26 @@ const bindPrecompiled = (
 
 // compiling reads each function's arity and whether the set engine is installed, neither in the hash
 const precompiledKeyOf = (root: BaseRoot): string => {
-	// a registered name's count depends on what was registered before, so each is keyed by its base name and first occurrence
-	const keysByName: Record<string, string> = {}
-	const content = root.hash.replace(
-		/(?<!\\)"\$ark\.([\w$]+)"/g,
-		(_, name: string) =>
-			`"${(keysByName[name] ??= `${name.replace(/\$[1-9]\d*$/, "")}#${Object.keys(keysByName).length}`)}"`
-	)
-	const arities = new Set<string>()
+	const aritiesByName: Record<string, number> = {}
 	// a child the hash leaves out, like an empty structure, is still compiled and bound
 	let childCounts = ""
 	for (const id in root.referencesById) {
 		const node = root.referencesById[id]
 		childCounts += `${node.children.length},`
 		forEachValue(node.inner, value => {
-			if (typeof value !== "function" || isNode(value)) return
-			const key = keysByName[nameOf(value)]
-			// a builtin constructor is hashed by its global name, which fixes its arity
-			if (key) arities.add(`${key}:${arityOf(value)}`)
+			if (typeof value === "function" && !isNode(value))
+				aritiesByName[nameOf(value)] = arityOf(value)
 		})
 	}
-	return hashOf(
-		`${content}\n${childCounts}\n${[...arities].sort()}\n${$ark.sets !== undefined}`
+	// a registered name's count depends on what was registered before, and a function's name on whether it was minified
+	const keysByName: Record<string, string> = {}
+	let nameCount = 0
+	const content = root.hash.replace(
+		/(?<!\\)"\$ark\.([\w$]+)"/g,
+		(_, name: string) =>
+			`"${(keysByName[name] ??= `${name in aritiesByName ? `fn:${aritiesByName[name]}` : name.replace(/\$[1-9]\d*$/, "")}#${nameCount++}`)}"`
 	)
+	return hashOf(`${content}\n${childCounts}\n${$ark.sets !== undefined}`)
 }
 
 const precompileReferences = (

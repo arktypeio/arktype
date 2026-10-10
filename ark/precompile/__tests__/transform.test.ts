@@ -101,7 +101,7 @@ $arkfixConfig()
 export const A=/* @__PURE__ */ $arkvq0j6e21xyk07n();`)
 			attest(precompile(source, {}, { runtime: "arktype" }).code)
 				.snap(`import"./polyfill.ts";import{type}from"arktype";
-import "~arktype/units/1jwzq9j01rf0w4"
+import "~arktype/units/1kx9apa132ige2"
 export const A=type("string");`)
 		})
 
@@ -1010,8 +1010,8 @@ import { other } from "./other.ts"`
 				{ runtime: "arktype" }
 			)
 			attest(result.code).snap(`import { type } from "arktype"
-import "~arktype/units/1jwzq9j01rf0w4"
-import "~arktype/units/1pg5awm1bkaj3d"
+import "~arktype/units/1kx9apa132ige2"
+import "~arktype/units/nqmgik1kbyfoe"
 let def = "string"
 def = "number"
 export const Trimmed = type("string").pipe(s => s.trim())
