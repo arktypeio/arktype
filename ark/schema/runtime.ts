@@ -239,13 +239,22 @@ const staticTextOf = (value: unknown, seen: unknown[]): string => {
 		Date.prototype,
 		RegExp.prototype
 	]
+	// arktype keeps what a keyword's meta holds by reference, so the program can read any key of it, inherited or not
+	const enumerable: PropertyKey[] = []
+	for (const k in value) enumerable.push(k)
 	let entries = ""
-	// arktype merges a configuration's inherited keys too
-	for (const k in value)
-		entries += `${JSON.stringify(k)}:${staticTextOf((value as Record<string, unknown>)[k], seen)},`
-	return `${tag}${builtins.includes(Object.getPrototypeOf(value)) ? "" : "instance"}${
+	for (const k of new Set([...enumerable, ...Reflect.ownKeys(value)])) {
+		entries += `${enumerable.includes(k) ? "" : "~"}${
+			typeof k === "symbol" ?
+				// a symbol the registry doesn't name is another in each run, so it never matches
+				`@${JSON.stringify(Symbol.keyFor(k) ?? Math.random())}`
+			:	JSON.stringify(k)
+		}:${staticTextOf((value as Record<PropertyKey, unknown>)[k], seen)},`
+	}
+	// the prototype, since an own Symbol.toStringTag can give any object a builtin's tag
+	return `${tag}${builtins.indexOf(Object.getPrototypeOf(value))}${
 		tag === "[object Date]" ? Number(value)
-		: tag === "[object RegExp]" ? `${value}${(value as RegExp).lastIndex}`
+		: tag === "[object RegExp]" ? `${value}`
 		: ""
 	}{${entries}}`
 }

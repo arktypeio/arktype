@@ -683,7 +683,16 @@ contextualize(() => {
 			[{ a: 1 }, { a: 1n }],
 			[{ a: "1" }, { a: 1 }],
 			[new Date(0), new Date(1)],
-			[cyclic, { self: {} }]
+			[cyclic, { self: {} }],
+			[{}, { [Symbol.for("k")]: 2 }],
+			[{ [Symbol("k")]: 2 }, { [Symbol("k")]: 2 }],
+			[{}, Object.defineProperty({}, "x", { value: 2 })],
+			[
+				new Date(0),
+				Object.defineProperty({ [Symbol.toStringTag]: "Date" }, "valueOf", {
+					value: () => 0
+				})
+			]
 		]
 		attest(
 			pairs.filter(([l, r]) => fingerprintOf(l) === fingerprintOf(r))
