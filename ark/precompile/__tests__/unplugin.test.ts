@@ -260,6 +260,16 @@ contextualize(() => {
 		}).timeout(60000)
 	}
 
+	it("vite standalone for SSR, bundling Rolldown's runtime module", async () => {
+		const config = viteConfig({})
+		const { output } = (await viteBuild({
+			...config,
+			ssr: { ...config.ssr, noExternal: true },
+			build: { write: false, ssr: "main.ts" }
+		})) as Rolldown.RolldownOutput
+		attest(run(output[0].code)).equals(expected)
+	}).timeout(60000)
+
 	it("keeps its worker across esbuild's rebuilds", async () => {
 		const first = nextThreadId()
 		const build = await context({

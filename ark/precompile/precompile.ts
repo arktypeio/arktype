@@ -56,11 +56,7 @@ import {
 	type FunctionNode,
 	type ImportTarget
 } from "./graph.ts"
-import {
-	dependencyOf,
-	transformedExtension,
-	type PrecompileHost
-} from "./host.ts"
+import { dependencyOf, transformedId, type PrecompileHost } from "./host.ts"
 import {
 	createSiteState,
 	envReadOf,
@@ -275,7 +271,7 @@ export class Precompiler {
 
 	// whether a host transforms a module, which it does for a module the build follows
 	isTransformed(id: string): boolean {
-		return transformedExtension.test(id) && this.graph.isFollowed(id)
+		return transformedId.test(id) && this.graph.isFollowed(id)
 	}
 
 	analyze(source: string, id: string): ModuleAnalysis {

@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from "node:fs"
-import { dirname, resolve } from "node:path"
+import { dirname, isAbsolute, resolve } from "node:path"
 import type { SourceMap } from "magic-string"
 import { parentPort, workerData, type MessagePort } from "node:worker_threads"
 import {
@@ -175,7 +175,7 @@ const createTrackedPrecompiler = (
 
 // the resolver caches what each directory holds, so creating a file where a relative import looks, as beside a directory it resolved to, changes what it resolves to
 const lookedIn = (specifier: string, importer: string): string[] => {
-	if (!/^\.{0,2}\//.test(specifier)) return []
+	if (!isAbsolute(importer) || !/^\.{0,2}\//.test(specifier)) return []
 	const target = resolve(dirname(importer), specifier)
 	return [dirname(target), target]
 }

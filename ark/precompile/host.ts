@@ -1,5 +1,5 @@
 import { existsSync, readFileSync, realpathSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { dirname, isAbsolute, join } from "node:path"
 import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 
@@ -57,6 +57,7 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 	}
 	return {
 		resolve: (specifier, importer) => {
+			if (!isAbsolute(importer)) return
 			const result = resolver.resolveFileSync(importer, specifier)
 			if (!result.error || !/tsconfig/i.test(result.error)) return result.path
 			// a tsconfig the resolver cannot load, like one extending a file a tool generates, fails every resolution
@@ -65,7 +66,9 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 		},
 		readFile,
 		tsconfigsOf: importer =>
-			opts?.tsconfig ? [opts.tsconfig] : tsconfigsIn(dirname(importer))
+			opts?.tsconfig ? [opts.tsconfig]
+			: isAbsolute(importer) ? tsconfigsIn(dirname(importer))
+			: []
 	}
 }
 
@@ -141,12 +144,13 @@ export const appendSourceMap = (
 
 export const runtimeSpecifiers = ["arktype", "arktype/config"]
 
-export const transformedExtension = /\.(?:[cm]?[jt]s|[jt]sx)$/
+// a virtual module, like Rolldown's `\0rolldown/runtime.js`, names no file to read or resolve from
+export const transformedId = /^[^\0].*\.(?:[cm]?[jt]s|[jt]sx)$/
 
 export const transformedFilterOf = (
 	packages: string[]
 ): { include: RegExp; exclude: RegExp } => ({
-	include: transformedExtension,
+	include: transformedId,
 	// a module in node_modules, unless the package it's in, after the last node_modules, opts in
 	exclude:
 		packages.length ?
