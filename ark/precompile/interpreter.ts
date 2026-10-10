@@ -835,8 +835,12 @@ export class Interpreter {
 		if (defined) return defined
 		const base = this.evaluateReference(node.object, ctx)
 		if (base.value === shortCircuit || isDynamic(base.value)) return base
-		// a factory receives the Type itself where it can't receive the member read
-		if (hasArkKind(base.value, "root"))
+		// a factory receives the Type, Scope or Generic itself where it can't receive the member read, as `$` in `$.type.or("a", "b")`
+		if (
+			hasArkKind(base.value, "root") ||
+			hasArkKind(base.value, "scope") ||
+			hasArkKind(base.value, "generic")
+		)
 			this.recordRead(node.object, base.value, ctx)
 		const dynamic = findDynamic(base.value)
 		if (dynamic) return { value: dynamic.asOperand() }

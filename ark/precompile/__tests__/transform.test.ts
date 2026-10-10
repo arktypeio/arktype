@@ -216,6 +216,21 @@ export const BoxedTree = /* @__PURE__ */ $arkv1tryxgh0tpn3pk()`)
 			])
 		})
 
+		it("receives a Scope a site reads through a member chain", () => {
+			const result = precompile(`import { scope } from "arktype"
+const isLong = (s: string) => s.length > 1
+const $ = scope({ s: ["string", ":", isLong] })
+export const F = $.type.fn("s")(s => s)
+export const O = $.type.or("s", "number")`)
+			attest(result.diagnostics).equals([])
+			attest(
+				result.code.split("\n").filter(line => line.startsWith("export"))
+			).snap([
+				"export const F = /* @__PURE__ */ $arkfh269dm1h6q2v5($, s => s)",
+				"export const O = /* @__PURE__ */ $arkfe5h3530tuatax($)"
+			])
+		})
+
 		it("drops a site written inside a Scope it folds", () => {
 			const result = precompile(`import { scope } from "arktype"
 const create = () => {
