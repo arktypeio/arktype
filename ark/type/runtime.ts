@@ -371,14 +371,15 @@ const writeStandardJsonSchema = (
 	return writers[i]() as Record<string, unknown>
 }
 
-// arktype's ToJsonSchema.Error, without the nodes its context holds
 class ToJsonSchemaError extends Error {
 	readonly name = "ToJsonSchemaError"
 	readonly code: string
+	readonly context: object
 
-	constructor(code: string, message: string) {
+	constructor(code: string, message: string, context: object) {
 		super(message)
 		this.code = code
+		this.context = context
 	}
 
 	hasCode(code: string): boolean {
@@ -386,8 +387,12 @@ class ToJsonSchemaError extends Error {
 	}
 }
 
-export const throwJsonSchemaError = (code: string, message: string): never => {
-	throw new ToJsonSchemaError(code, message)
+export const throwJsonSchemaError = (
+	code: string,
+	message: string,
+	context: object
+): never => {
+	throw new ToJsonSchemaError(code, message, context)
 }
 
 // e.g. printing a ToJsonSchemaError's context keyed by a symbol, whose TypeError each engine words its own way

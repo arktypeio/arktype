@@ -126,8 +126,8 @@ export const schema = T.toJsonSchema()`)
 const Length = type("string").pipe(s => s.length)
 export const schema = Length.toJsonSchema()`)
 			attest(result.code).snap(`import "arktype"
-import { f2yr47m0y316vp as $arkf2yr47m0y316vp } from "~arktype/wzkf3g0wuspfe"
-import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/wzkf3g0wuspfe"
+import { f2yr47m0y316vp as $arkf2yr47m0y316vp } from "~arktype/su5cqt1yv9pgq"
+import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/su5cqt1yv9pgq"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 const Length = /* @__PURE__ */ $arkf2yr47m0y316vp(s => s.length)

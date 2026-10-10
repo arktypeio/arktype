@@ -126,6 +126,22 @@ const standIn = <fn extends Function>(fn: fn, id: string): fn =>
 	Object.defineProperty(fn, "name", { value: `$hole_${id}` })
 
 // a factory built with each hole's value, as a build passes it in place of its source
+const jsonSchemaErrorOf = (t: { toJsonSchema: () => unknown }) => {
+	try {
+		t.toJsonSchema()
+	} catch (e) {
+		const error = e as ToJsonSchema.Error
+		return [
+			Object.keys(error),
+			error.name,
+			error.code,
+			error.context,
+			error.hasCode(error.code),
+			error instanceof Error
+		]
+	}
+}
+
 const loadFactory = async (
 	t: type.Any,
 	holes: [kind: HoleKind, label: string, value: unknown][],
@@ -442,20 +458,47 @@ contextualize(() => {
     out: null
 }`)
 		attest(thrownBy(() => validator.toJsonSchema())).equals(message)
-		const errorOf = (t: { toJsonSchema: () => unknown }) => {
-			try {
-				t.toJsonSchema()
-			} catch (e) {
-				const error = e as ToJsonSchema.Error
-				return [
-					error.name,
-					error.code,
-					error.hasCode("morph"),
-					error instanceof Error
-				]
-			}
+		attest(jsonSchemaErrorOf(validator)).equals(jsonSchemaErrorOf(T))
+	})
+
+	it("throws a ToJsonSchemaError with the values its context holds, from a validator or a site of its own", async () => {
+		const isLong = standIn((s: string) => s.length > 5, "long")
+		const Long = type("string").narrow(isLong)
+		const long = (
+			await loadFactory(Long, [["function", "long", isLong]], ["toJsonSchema"])
+		)(isLong)
+		const Types = {
+			After: type("Date > d'2020-01-01'"),
+			Epoch: type.unit(new Date(0)),
+			Big: type("1n"),
+			Instance: type("instanceof", Map)
 		}
-		attest(errorOf(validator)).equals(errorOf(T))
+		const validators = await load(Types, undefined, undefined, ["toJsonSchema"])
+		const sites = await load(
+			flatMorph(Types, (name, T) => {
+				let thrown: unknown
+				try {
+					T.toJsonSchema()
+				} catch (e) {
+					thrown = e
+				}
+				const site: StandaloneExport = {
+					member: "toJsonSchema",
+					type: T.internal,
+					data: undefined,
+					params: [],
+					thrown
+				}
+				return [name, site]
+			})
+		)
+		attest(jsonSchemaErrorOf(long)).equals(jsonSchemaErrorOf(Long))
+		for (const [name, T] of Object.entries(Types)) {
+			attest(jsonSchemaErrorOf(validators[name])).equals(jsonSchemaErrorOf(T))
+			attest(jsonSchemaErrorOf({ toJsonSchema: sites[name] })).equals(
+				jsonSchemaErrorOf(T)
+			)
+		}
 	})
 
 	it("throws where it's read a JSON Schema that calls a default's thunk", async () => {

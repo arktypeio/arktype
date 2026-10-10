@@ -1220,7 +1220,7 @@ ${statements.filter(statement => statement).join("\n\n")}
 					...this.writeCalledBody(index),
 					...defaults.map(({ check }) => check)
 				]
-			:	this.checks
+			:	[...this.checks, ...this.declarations.statements]
 		return this.writeFactoryFunction(index, params, [
 			...checks,
 			`return ${value}`
@@ -1643,7 +1643,7 @@ return [${returned.join(", ")}]
 				schema = write()
 			} catch (e) {
 				if (e instanceof ToJsonSchema.Error)
-					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)})`
+					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)}, ${this.writeData(e.context, true)})`
 				if (isSymbolConversion(e)) return "runtime.serializeSymbol()"
 				throw e
 			}
@@ -1654,7 +1654,16 @@ return [${returned.join(", ")}]
 		}
 	}
 
-	writeData(value: unknown): string {
+	// a ToJsonSchemaError's context holds the validator's own values, like a predicate or a Date bound, beside its data
+	writeData(value: unknown, holdsValues = false): string {
+		if (
+			holdsValues &&
+			(typeof value === "function" ||
+				typeof value === "symbol" ||
+				typeof value === "bigint" ||
+				(hasDomain(value, "object") && isDateObject(value)))
+		)
+			return this.emit(value)
 		if (typeof value === "string") return this.emitString(value)
 		if (value === undefined) return "void 0"
 		if (
@@ -1680,11 +1689,11 @@ return [${returned.join(", ")}]
 			)
 		}
 		if (isArray)
-			return `[${(value as unknown[]).map(v => this.writeData(v)).join(", ")}]`
+			return `[${(value as unknown[]).map(v => this.writeData(v, holdsValues)).join(", ")}]`
 		const entries = Object.entries(value as object).map(
 			// a __proto__ key would set an object literal's prototype
 			([k, v]) =>
-				`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v)}`
+				`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, holdsValues)}`
 		)
 		if (prototype === null) entries.unshift("__proto__: null")
 		return `{ ${entries.join(", ")} }`

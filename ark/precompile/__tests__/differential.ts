@@ -1,6 +1,6 @@
 import { fromHere } from "@ark/fs"
 import { hasArkKind, type BaseRoot } from "@ark/schema"
-import { noSuggest, ParseError } from "@ark/util"
+import { hasDomain, noSuggest, ParseError } from "@ark/util"
 import {
 	holeNamePrefix,
 	introspectionMembers,
@@ -61,15 +61,24 @@ const importBesideArktype = async (path: string): Promise<any> => {
 	}
 }
 
-// a function the runtime exports for arktype's nodes to hold, like a matcher's onFail, is its copy's in what an artifact creates
+// a function the runtime exports for arktype's nodes to hold, like a matcher's onFail or a keyword's predicate, is its copy's in what an artifact creates
 const counterparts = new Map<unknown, unknown>()
-for (const [name, copy] of Object.entries(
-	await importBesideArktype(join(out, "runtime.js"))
-)) {
-	const original = (arktypeRuntime as Record<string, unknown>)[name]
+const pairCopies = (copy: unknown, original: unknown): void => {
 	if (typeof copy === "function" && typeof original === "function")
 		counterparts.set(copy, original)
+	else if (
+		hasDomain(copy, "object") &&
+		hasDomain(original, "object") &&
+		Object.getPrototypeOf(copy) === Object.prototype
+	) {
+		for (const [k, v] of Object.entries(copy))
+			pairCopies(v, (original as Record<string, unknown>)[k])
+	}
 }
+for (const [name, copy] of Object.entries(
+	await importBesideArktype(join(out, "runtime.js"))
+))
+	pairCopies(copy, (arktypeRuntime as Record<string, unknown>)[name])
 
 const link = (code: string) =>
 	code
@@ -300,7 +309,10 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 				}
 			:	{ out: result, isInput: result === input }
 	} catch (e) {
-		return { threw: String(e) }
+		return {
+			threw: String(e),
+			context: (e as { context?: unknown } | undefined)?.context
+		}
 	}
 }
 
