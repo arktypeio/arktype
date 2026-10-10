@@ -400,6 +400,21 @@ export const checkIdentity = (
 		throwError(writeIdentityMismatchMessage(label, expectedLabel))
 }
 
+// e.g. the narrows of two Types another module exports, which the build compiled as distinct functions though a mock can make them one
+export const checkDistinct = (
+	holes: readonly unknown[],
+	labels: readonly string[]
+): void => {
+	for (let i = 1; i < holes.length; i++) {
+		const first = holes.indexOf(holes[i])
+		if (first !== i) {
+			throwError(
+				writeCreationMismatchMessage(labels[i], labels[first], "another value")
+			)
+		}
+	}
+}
+
 // arktype checks a default on a narrowed Type where it defines it, throwing its errors in en as a ParseError
 export const checkDefault = (
 	validator: Validator,

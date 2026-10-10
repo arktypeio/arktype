@@ -187,6 +187,7 @@ interface SiteFactory {
 	spans: Span[]
 	inputs: string[]
 	imports: [specifier: string, name: string, local: string][]
+	distinct: unknown[]
 }
 
 export interface Input {
@@ -787,7 +788,7 @@ export class Precompiler {
 					factory =
 						this.factoryOf(site, module, reasons, prefix) ??
 						(site.isCreatedEachRun ?
-							{ params: [], spans: [], inputs: [], imports: [] }
+							{ params: [], spans: [], inputs: [], imports: [], distinct: [] }
 						:	undefined)
 				}
 			} catch (e) {
@@ -813,7 +814,8 @@ export class Precompiler {
 					params: factory.params,
 					internedBy: site.isInterned ? table : undefined,
 					isCreatedEachRun: site.isCreatedEachRun,
-					defaultChecks: site.defaultChecks
+					defaultChecks: site.defaultChecks,
+					distinct: factory.distinct
 				}
 				sitesByName[name] = exportSiteOf(site)
 				replaced.push([site, factory.spans])
@@ -989,7 +991,8 @@ export class Precompiler {
 			params: [],
 			spans: [],
 			inputs: [],
-			imports: []
+			imports: [],
+			distinct: []
 		}
 		const passed = this.receiveReferences(site, module, held, factory, reasons)
 		this.receiveInputs(site, module, prefix, passed, factory, reasons)
@@ -1076,7 +1079,7 @@ export class Precompiler {
 				`arktype holds \`${origin.snippetOf(node)}\` (${origin.positionOf(node)}), which the site ${holesByValue.has(value) ? "reads outside its own source" : "cannot pass to its factory"}`
 			)
 		}
-		reasons.push(...identityReasonsOf(sourcesByHole))
+		factory.distinct = foreignHolesOf(sourcesByHole)
 		return passed
 	}
 
@@ -2920,28 +2923,21 @@ export const specifierOf = (importer: string, file: string): string => {
 	return path.startsWith(".") ? path : `./${path}`
 }
 
-// a factory checks that the texts reading one hole read one value, but distinctness between values another module can replace is later work
-const identityReasonsOf = (
+// a mock can make holes another module supplies through two texts one function, which the factory checks the build's distinct holes aren't
+const foreignHolesOf = (
 	sourcesByHole: Map<unknown, Map<string, boolean>>
-): string[] => {
+): unknown[] => {
 	const foreignTexts = new Set<string>()
-	let foreignHoleCount = 0
-	for (const sources of sourcesByHole.values()) {
+	const holes: unknown[] = []
+	for (const [hole, sources] of sourcesByHole) {
 		const foreign = [...sources].filter(([, isForeign]) => isForeign)
 		if (!foreign.length) continue
-		foreignHoleCount++
+		holes.push(hole)
 		for (const [text] of foreign) foreignTexts.add(text)
 	}
 	// the holes one validator holds are distinct, since the build of its own site proved them so
-	return foreignHoleCount > 1 && foreignTexts.size > 1 ?
-			[
-				`${listTexts(foreignTexts)} may hold the same value at runtime, which the site's output depends on`
-			]
-		:	[]
+	return holes.length > 1 && foreignTexts.size > 1 ? holes : []
 }
-
-const listTexts = (texts: Iterable<string>) =>
-	[...texts].map(text => `\`${text}\``).join(" and ")
 
 type Foldable = Parameters<typeof keyOf>[0]
 

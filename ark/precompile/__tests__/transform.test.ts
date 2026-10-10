@@ -711,23 +711,35 @@ export const Checked = /* @__PURE__ */ $arkfel68or0or1ja7(other.check, fns.check
 			])
 		})
 
-		it("unsupported sites", () => {
+		it("checks the holes another module supplies through two texts are distinct", () => {
 			const result = precompile(
 				`import { type } from "arktype"
 import { a } from "./a.ts"
-import { b, alias } from "./b.ts"
-export const Both = type("string").pipe(a, b)
-class Foo {}
-export const Deleted = type({ "+": "delete", "[string]": "string", a: type.instanceOf(Foo).or("string") })`,
+import { b } from "./b.ts"
+export const Both = type("string").pipe(a, b)`,
 				{
 					"/a.ts": "export const a = (s: string) => s",
-					"/b.ts":
-						'export const b = (s: string) => s\nexport { a as alias } from "./a.ts"'
+					"/b.ts": "export const b = (s: string) => s"
 				}
 			)
+			attest(result.diagnostics).equals([])
+			attest(
+				result.modules[Object.keys(result.modules)[0]].match(
+					/runtime\.checkDistinct\(.*\)/g
+				)
+			).snap([
+				'runtime.checkDistinct([p0, p1], ["`a` (/main.ts:4:41)","`b` (/main.ts:4:44)"])'
+			])
+		})
+
+		it("unsupported sites", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+class Foo {}
+export const Deleted = type({ "+": "delete", "[string]": "string", a: type.instanceOf(Foo).or("string") })`
+			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				'/main.ts:4:21  type("string").pipe(a, b) can\'t be precompiled to a standalone validator yet\n  `a` and `b` may hold the same value at runtime, which the site\'s output depends on\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:6:24  type({ "+": "delete", "[string]": "string", a: type.instanc… can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: string | Foo, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/main.ts:3:24  type({ "+": "delete", "[string]": "string", a: type.instanc… can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: string | Foo, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 		})
 

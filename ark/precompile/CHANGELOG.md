@@ -62,7 +62,7 @@ Each Type is created where a site first reads it, so a bundler drops one nothing
 
 ### Precompile definitions holding functions
 
-In standalone mode, a definition holding a morph, a predicate, a default's function, a class or a symbol is precompiled to a factory, and the definition becomes a call passing each of those values where it was written, so it is evaluated when the original would have been. The factory checks that each value is what its code was compiled for (a function's parameter count, a class's builtin and other ancestors, a symbol's description), and that a value the definition reads through two expressions, or that a Type it references also holds, is still one value, and throws at creation if not, then creates the validator, printing each function's own name in its descriptions and errors. Functions one expression created, like those of a predicate factory called twice, share the name it prints, so the factory checks they are named alike.
+In standalone mode, a definition holding a morph, a predicate, a default's function, a class or a symbol is precompiled to a factory, and the definition becomes a call passing each of those values where it was written, so it is evaluated when the original would have been. The factory checks that each value is what its code was compiled for (a function's parameter count, a class's builtin and other ancestors, a symbol's description), and that a value the definition reads through two expressions, or that a Type it references also holds, is still one value, and that values it reads from other modules through two expressions, which a mock could make one, are still distinct, and throws at creation if not, then creates the validator, printing each function's own name in its descriptions and errors. Functions one expression created, like those of a predicate factory called twice, share the name it prints, so the factory checks they are named alike.
 
 ```ts
 const trim = (s: string) => s.trim()
@@ -85,7 +85,6 @@ A definition in a function, a loop's body or an instance's field runs each time 
 
 These definitions are reported rather than precompiled:
 
-- one that could depend on two values imported from other modules being distinct;
 - one arktype creates anew each time it runs, holding a value that is the same each time or that another definition holds too, like `$.export()` in a function when `$` is not, unless arktype holds that value once wherever a definition reaches it, as it does the keyword Types of `type.fn("string")`, which each call then reads from where every precompiled module holds them;
 - one that is the same each time its innermost function or loop runs but new each time an enclosing one runs, like `$.type("a")` in a callback when the function calling it creates `$`;
 - one reading a function only through a binding it declares itself, such as a callback's parameter;

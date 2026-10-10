@@ -1295,6 +1295,50 @@ export const Island = type("string")`)
 			)
 		})
 
+		it("checks the holes of Types another module supplies are distinct", async () => {
+			// a mock can make the Types two imports read hold one function, which the build compiled as two
+			const isLong = (s: string) => s.length > 3
+			const isShort = (s: string) => s.length < 3
+			const builtIsLong = standIn(isLong.bind(null), "islong")
+			const builtIsShort = standIn(isShort.bind(null), "isshort")
+			const Long = type("string").narrow(builtIsLong)
+			const Short = type("string").narrow(builtIsShort)
+			const created = await load({
+				Long: {
+					type: Long,
+					params: [{ kind: "function", label: "`isLong`", value: builtIsLong }]
+				},
+				Short: {
+					type: Short,
+					params: [
+						{ kind: "function", label: "`isShort`", value: builtIsShort }
+					]
+				},
+				Pair: {
+					type: type({ long: Long, short: Short }),
+					params: [
+						{ kind: "input", label: "Long", reads: [[[], Long]] },
+						{ kind: "input", label: "Short", reads: [[[], Short]] }
+					],
+					distinct: [builtIsLong, builtIsShort]
+				}
+			})
+			const Pair = created.Pair(created.Long(isLong), created.Short(isShort))
+			attest(Pair({ long: "abcd", short: "a" })).equals({
+				long: "abcd",
+				short: "a"
+			})
+			attest(() =>
+				created.Pair(created.Long(isLong), created.Short(isLong))
+			).throws(
+				writeCreationMismatchMessage(
+					"`Short`'s hole 0",
+					"`Long`'s hole 0",
+					"another value"
+				)
+			)
+		})
+
 		it("checks the functions one expression created are named alike", async () => {
 			// as a factory like `longer(n)` creates them, each under the placeholder of the expression creating it
 			const longer = (n: number) =>

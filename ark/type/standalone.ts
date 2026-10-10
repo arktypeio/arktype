@@ -114,6 +114,8 @@ export interface StandaloneFactory {
 	// whether arktype creates its Type anew each time its site runs, even one it holds under an address
 	isCreatedEachRun?: boolean
 	defaultChecks?: readonly DefaultCheck[]
+	// holes another module supplies through two or more texts, which a mock could make one function, so the factory checks they differ
+	distinct?: readonly unknown[]
 }
 
 export type FactoryParam = HoleParam | InputParam | HelperParam
@@ -255,8 +257,14 @@ const writeArtifact = (
 	for (const [name, value] of Object.entries(exports)) {
 		if (arkKindOf(value) !== undefined) types[name] = value as never
 		else {
-			const { type, params, internedBy, isCreatedEachRun, defaultChecks } =
-				value as StandaloneFactory
+			const {
+				type,
+				params,
+				internedBy,
+				isCreatedEachRun,
+				defaultChecks,
+				distinct
+			} = value as StandaloneFactory
 			if (internedBy !== undefined) tables.add(internedBy)
 			const artifact = new StandaloneArtifact(
 				{ [name]: type },
@@ -274,7 +282,8 @@ const writeArtifact = (
 					params,
 					factories.length,
 					configured,
-					internedBy
+					internedBy,
+					distinct
 				)
 			)
 		}
@@ -909,10 +918,16 @@ ${statements.filter(statement => statement).join("\n\n")}
 		params: FactoryParam[],
 		index: number,
 		configured: ConfiguredModule | undefined,
-		internedBy?: number
+		internedBy?: number,
+		distinct: readonly unknown[] = []
 	): string {
 		this.checkAddressed()
 		this.receive(params)
+		if (distinct.length) {
+			this.checks.push(
+				`runtime.checkDistinct([${distinct.map(hole => this.holeExpressions.get(hole)).join(", ")}], ${JSON.stringify(distinct.map(hole => this.labelsByHole.get(hole)))})`
+			)
+		}
 		this.writeSharedUnits()
 		const exported = this.exports[name]
 		// a Module, Scope or Generic declares what it holds, which the body then writes
