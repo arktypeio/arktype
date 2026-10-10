@@ -1027,7 +1027,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		})
 		this.declarations = createDeclarations()
 		this.unit = unit
-		for (const name in unit.dependencies) this.readDependency(unit, name)
+		const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(unit)
 		// a root its own traversals read, as in a cycle, is created with them
 		const ownRoots = unit.roots.filter(root =>
 			unit.refs.some(
@@ -1054,7 +1054,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		})
 		const unitFunction = this.writeUnitFunction(
 			unit,
-			writing.params,
+			[...dependencyParams, ...writing.params],
 			[
 				...this.declarations.statements,
 				...refs,
@@ -1066,7 +1066,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		)
 		const moduleDeclarations = [
 			`var ${unit.name}Unit`,
-			`function ${unit.name}() {\n\treturn (${unit.name}Unit ??= (${unitFunction})(${writing.args.join(", ")}))\n}`
+			`function ${unit.name}() {\n\treturn (${unit.name}Unit ??= (${unitFunction})(${[...dependencyArgs, ...writing.args].join(", ")}))\n}`
 		]
 		for (const root of unit.roots) {
 			const name = unit.names[root.id]
@@ -1105,9 +1105,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		epilogue: string[],
 		returned: string[]
 	): string {
-		// a Transform member writes to its input, which a bundle's CommonJS or IIFE output leaves sloppy, where writing to a frozen input is ignored rather than throwing
-		const directive =
-			unit.declared.some(node => node.transforms) ? `"use strict"\n` : ""
+		const directive = isStrict(unit) ? `"use strict"\n` : ""
 		return `function (${params.join(", ")}) {
 ${directive}${[...prologue, ...unit.members.map(([name, source]) => `const ${name} = ${source}`), ...epilogue].join("\n")}
 return [${returned.join(", ")}]
@@ -1122,8 +1120,7 @@ return [${returned.join(", ")}]
 	}
 
 	read(specifier: string, name: string, param: string, arg: string): string {
-		const names = ((this.writing?.imports ?? this.imports)[specifier] ??= [])
-		if (!names.includes(name)) names.push(name)
+		this.importName(specifier, name)
 		if (!this.writing) return arg
 		if (!this.writing.params.includes(param)) {
 			this.writing.params.push(param)
@@ -1132,17 +1129,39 @@ return [${returned.join(", ")}]
 		return param
 	}
 
-	readDependency(unit: RootUnit, name: string): string {
-		const dependency = unitOf(unit.dependencies[name][0], unit)
-		const index = dependency.traversals.flat().indexOf(name)
-		return isSharedUnit(dependency) ?
-				this.read(
-					`~arktype/${dependency.name}`,
-					dependency.name,
-					name,
-					`${dependency.name}()[${index}]`
-				)
-			:	`${this.localNamesByUnit.get(dependency)}[${index}]`
+	importName(specifier: string, name: string): void {
+		const names = ((this.writing?.imports ?? this.imports)[specifier] ??= [])
+		if (!names.includes(name)) names.push(name)
+	}
+
+	// a unit receives the traversals of each unit it reads as one array, which it destructures unless it declares "use strict", which a function destructuring its parameters can't
+	dependencyParamsOf(unit: RootUnit): [params: string[], args: string[]] {
+		const namesBySource = new Map<string, string[]>()
+		const params: string[] = []
+		const args: string[] = []
+		for (const name in unit.dependencies) {
+			const dependency = unitOf(unit.dependencies[name][0], unit)
+			const index = dependency.traversals.flat().indexOf(name)
+			if (isSharedUnit(dependency))
+				this.importName(`~arktype/${dependency.name}`, dependency.name)
+			const source =
+				isSharedUnit(dependency) ?
+					`${dependency.name}()`
+				:	this.localNamesByUnit.get(dependency)!
+			if (isStrict(unit)) {
+				params.push(name)
+				args.push(`${source}[${index}]`)
+			} else {
+				let names = namesBySource.get(source)
+				if (!names) namesBySource.set(source, (names = []))
+				names[index] = name
+			}
+		}
+		for (const [source, names] of namesBySource) {
+			params.push(`[${Array.from(names, name => name ?? "").join(", ")}]`)
+			args.push(source)
+		}
+		return [params, args]
 	}
 
 	// contexts with the same keys share a function building their errors, in a module of its own
@@ -1190,16 +1209,16 @@ return [${returned.join(", ")}]
 			this.unit = undefined
 			localContexts.push(...unit.errorContexts)
 			localContextNames.push(...errorContexts)
-			const dependencies = Object.keys(unit.dependencies)
+			const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(unit)
 			const unitFunction = this.writeUnitFunction(
 				unit,
-				[...dependencies, "refs", "errorContexts"],
+				[...dependencyParams, "refs", "errorContexts"],
 				unit.refs.map((_, i) => `const r${i} = refs[${i}]`),
 				[],
 				unit.traversals.flat()
 			)
 			const args = [
-				...dependencies.map(name => this.readDependency(unit, name)),
+				...dependencyArgs,
 				`[${refs.join(", ")}]`,
 				`[${errorContexts.join(", ")}]`
 			]
@@ -1935,6 +1954,10 @@ const raisableCodesOf = (root: BaseRoot): RaisableCodes => {
 }
 
 const sharedByUnit = new WeakMap<RootUnit, boolean>()
+
+// a Transform member writes to its input, which a bundle's CommonJS or IIFE output leaves sloppy, where writing to a frozen input is ignored rather than throwing
+const isStrict = (unit: RootUnit): boolean =>
+	unit.declared.some(node => node.transforms)
 
 const isSharedUnit = (unit: RootUnit): boolean => {
 	let shared = sharedByUnit.get(unit)
