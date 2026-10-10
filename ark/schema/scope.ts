@@ -408,8 +408,13 @@ const precompiledKeyOf = (root: BaseRoot): string => {
 		const node = root.referencesById[id]
 		childCounts += `${node.children.length},`
 		forEachValue(node.inner, value => {
-			if (typeof value === "function" && !isNode(value))
-				aritiesByName[nameOf(value)] = arityOf(value)
+			if (typeof value === "function" && !isNode(value)) {
+				// only a predicate's or morph's arity is compiled, and reading another's mustn't record it
+				aritiesByName[nameOf(value)] =
+					node.hasKind("predicate") || node.hasKind("morph") ?
+						arityOf(value)
+					:	value.length
+			}
 		})
 	}
 	// a registered name's count depends on what was registered before, and a function's name on whether it was minified

@@ -280,6 +280,16 @@ contextualize(() => {
 		attest(U(2)).equals(4)
 	})
 
+	it("keys a unit without reading the arity of a function arktype doesn't call", async () => {
+		await precompileUnits([type({ unrelated: "string" })])
+		const count = function (_: unknown) {
+			return arguments.length
+		}
+		type("===", count)
+		Object.defineProperty(count, "length", { value: 2 })
+		attest(type(["unknown", "=>", count])(0)).equals(2)
+	})
+
 	it("misses a unit whose functions are shared differently", async () => {
 		const isShared = named("isSharedPrecompiled", (n: number) => n > 0)
 		const units = await precompileUnits([
