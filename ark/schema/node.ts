@@ -436,7 +436,8 @@ export abstract class BaseNode<
 			: l.propString > r.propString ? 1
 			: l.propString < r.propString ? -1
 			: l.node.expression < r.node.expression ? -1
-			: 1
+			: l.node.expression > r.node.expression ? 1
+			: 0
 		)
 		this._flatMorphs = flatMorphs
 	}
