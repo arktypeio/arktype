@@ -226,7 +226,7 @@ $ark.ambient ??= {} as never
 const isLeafIn = (
 	node: BaseNode,
 	referencesById: Record<string, BaseNode>
-): boolean => {
+): node is BaseRoot => {
 	if (!node.isRoot()) return false
 	for (const id in node.referencesById) {
 		const reference = node.referencesById[id]
@@ -242,22 +242,33 @@ const isLeafIn = (
 
 const precompile = (
 	references: readonly BaseNode[],
-	owningScope?: BaseScope
+	owningScope?: BaseScope,
+	// a Type's unit binds only it: a node it shares can outlive it in a cache, and each traversal in a unit holds all its refs
+	root?: BaseRoot
 ): Fn => {
 	const linkage = createLinkage()
 	for (const node of references) linkage.referencesById[node.id] = node
 	const declared: BaseNode[] = []
 	for (const node of references) {
-		if (node.isReusableLeaf && isLeafIn(node, linkage.referencesById))
+		if (
+			node !== root &&
+			node.isReusableLeaf &&
+			isLeafIn(node, linkage.referencesById)
+		) {
+			if (!node.compiledUnit) precompile(node.references, undefined, node)
 			linkage.reused.add(node)
-		else if (
-			node.compiledUnit &&
-			(!owningScope || node.$ !== owningScope) &&
-			// compiling an alias can create nodes, so every unit declares its own
-			!node.hasKind("alias")
-		)
+		} else if (
+			root ?
+				node !== root
+			:	node.compiledUnit &&
+				(!owningScope || node.$ !== owningScope) &&
+				// compiling an alias can create nodes, so every unit declares its own
+				!node.hasKind("alias")
+		) {
+			// a leaf is compiled alone once another Type's unit reaches it
+			if (root) node.isReusableLeaf ||= isLeafIn(node, linkage.referencesById)
 			linkage.unreached.add(node)
-		else declared.push(node)
+		} else declared.push(node)
 	}
 	const compiledUnit = precompileReferences(declared, linkage).compile()
 	bindUnit(
@@ -285,8 +296,8 @@ const bindUnit = (
 ): void => {
 	for (let i = 0; i < declared.length; i++) {
 		const node = declared[i]
-		if (node.compiledUnit && (!owningScope || node.$ !== owningScope)) {
-			// if node has already been bound to another scope or anonymous type, don't rebind it
+		if (owningScope ? node.$ !== owningScope : node.compiledUnit) {
+			// a node of another scope or Type outlives this unit, so it's bound by its own
 			continue
 		}
 		const [traverseAllows, traverseApply, traverseTransform] =
@@ -1728,7 +1739,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			!bindPrecompiledUnit?.(node) &&
 			!this.resolvedConfig.jitless
 		)
-			precompile(references)
+			precompile(references, undefined, node)
 		return node
 	}
 

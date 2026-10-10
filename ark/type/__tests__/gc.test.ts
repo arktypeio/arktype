@@ -66,6 +66,13 @@ contextualize(() => {
 			tupleDefault: capture(captured =>
 				type(["string", ["object", "=", () => captured]])(["a"])
 			),
+			// a string definition is cached for the scope, which would hold a unit compiling it with the morph
+			sibling: capture(captured =>
+				type({
+					a: "number > 1234",
+					b: ["number", "=>", n => captured && n]
+				})({ a: 1235, b: 1 })
+			),
 			match: capture(captured =>
 				match({ number: () => captured, default: "assert" })(1)
 			),
