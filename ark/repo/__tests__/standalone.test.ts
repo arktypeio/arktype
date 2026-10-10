@@ -769,6 +769,15 @@ contextualize(() => {
 		]).equals([5, "must be a string (was a number)", true])
 	})
 
+	it("refuses a configured intersection writer for any Type", () => {
+		const T = scope({}, { intersection: { message: () => "configured" } }).type(
+			"string >= 5 & /^a/"
+		)
+		attest(() => precompileStandalone({ T })).throws(
+			writeUnprecompilableMessage("a configured intersection message")
+		)
+	})
+
 	it("rejects a configured locale", () => {
 		// a build checks that nothing configured its thread, so it's left as it was
 		const config = $ark.config

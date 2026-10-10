@@ -1664,7 +1664,12 @@ return [${returned.join(", ")}]
 				if (writer === $ark.resolvedConfig![code][k]) continue
 				if (typeof writer === "string")
 					writers.push(`${k}: ${JSON.stringify(writer)}`)
-				else if (raisable === "any" || raisable[code]) {
+				// grouping errors at a path can raise an intersection in any validator
+				else if (
+					raisable === "any" ||
+					raisable[code] ||
+					code === "intersection"
+				) {
 					throwParseError(
 						writeUnprecompilableMessage(`a configured ${code} ${k}`)
 					)
