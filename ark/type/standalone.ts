@@ -1631,10 +1631,10 @@ return [${returned.join(", ")}]
 					.join(", ")} }`
 		let config = `runtime.raising(${this.scopeConfigOf(root, raisable)}, ${writers})`
 		// a callback can raise any code, on data of any kind
-		if (raisable === "any" || hasIndexSignature(root))
+		if (raisable === "any" || declares(root, hasIndexSignature))
 			config = `runtime.printing(${config}, runtime.printCompact)`
 		// a callback can raise an error whose meta holds writers
-		return raisable === "any" || hasMetaWriter(root) ?
+		return raisable === "any" || declares(root, hasMetaWriter) ?
 				`runtime.inEn(${config})`
 			:	config
 	}
@@ -1736,19 +1736,14 @@ const raisableCodesByRoot = new WeakMap<BaseRoot, RaisableCodes>()
 const raisableCodesOf = (root: BaseRoot): RaisableCodes => {
 	let codes = raisableCodesByRoot.get(root)
 	if (codes) return codes
-	const units = rootUnitsOf(root)
 	// a predicate or morph can raise any code
 	if (
-		units.some(unit =>
-			unit.declared.some(
-				node => node.hasKind("predicate") || node.hasKind("morph")
-			)
-		)
+		declares(root, node => node.hasKind("predicate") || node.hasKind("morph"))
 	)
 		codes = "any"
 	else {
 		codes = {}
-		for (const unit of units) {
+		for (const unit of rootUnitsOf(root)) {
 			for (const context of unit.errorContexts)
 				codes[context.code as ArkErrorCode] = true
 			// traversal raises these itself
@@ -1801,21 +1796,18 @@ export const isAddressed = (value: unknown): value is BaseRoot =>
 	) &&
 	heldAddressOf(value) !== undefined
 
+const declares = (
+	root: BaseRoot,
+	predicate: (node: BaseNode) => boolean
+): boolean => rootUnitsOf(root).some(unit => unit.declared.some(predicate))
+
 // a key an index signature checks may be checked by another prop, whose errors
 // are grouped into an intersection on data of any kind
-const hasIndexSignature = (root: BaseRoot): boolean =>
-	rootUnitsOf(root).some(unit =>
-		unit.declared.some(
-			node => node.hasKind("structure") && node.index !== undefined
-		)
-	)
+const hasIndexSignature = (node: BaseNode): boolean =>
+	node.hasKind("structure") && node.index !== undefined
 
-const hasMetaWriter = (root: BaseRoot): boolean =>
-	rootUnitsOf(root).some(unit =>
-		unit.declared.some(node =>
-			writerKeys.some(k => typeof node.meta[k] === "function")
-		)
-	)
+const hasMetaWriter = (node: BaseNode): boolean =>
+	writerKeys.some(k => typeof node.meta[k] === "function")
 
 const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (seen.has(value)) return false
