@@ -1761,6 +1761,36 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 		})
 
+		it("writes the nodes a factory's variants share once", () => {
+			const one = standIn((o: object) => !!o, "check")
+			const two = standIn((o: object, ctx: unknown) => !!ctx, "check")
+			const variantOf = (check: Function): StandaloneFactory => ({
+				type: type({ name: "string" }).narrow(check as never),
+				params: [{ kind: "function", label: "`check`", value: check }],
+				selected: [check]
+			})
+			const code = precompileStandalone({
+				T: {
+					variants: [variantOf(one), variantOf(two)],
+					selecting: [0],
+					variantsByCounts: [1, 0, 1]
+				}
+			})
+			// each variant's predicate holds a stand-in of its own, so only its structure and prop are written once
+			attest(
+				code.match(
+					/(?<=const )(intersection|structure|predicate|required)(?=\w*Allows = )/g
+				)
+			).snap([
+				"intersection",
+				"intersection",
+				"structure",
+				"predicate",
+				"predicate",
+				"required"
+			])
+		})
+
 		it("checks the functions one expression created are named alike", async () => {
 			// as a factory like `longer(n)` creates them, each under the placeholder of the expression creating it
 			const longer = (n: number) =>

@@ -819,11 +819,8 @@ export function both(a: (s: string) => boolean, b: (n: number) => boolean) {
 					/runtime\.(selectVariant|checkDistinct)\(.*?"]\)/g
 				)
 			).snap([
-				'runtime.checkDistinct([p0, p1], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])',
-				'runtime.checkDistinct([p0, p1], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])',
-				'runtime.checkDistinct([p0, p1], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])',
-				'runtime.checkDistinct([p0, p1], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])',
-				'runtime.selectVariant([p0, p1], [3,2,3,1,0,1,3,2,3], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])'
+				'runtime.selectVariant([p0, p1], [3,2,3,1,0,1,3,2,3], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])',
+				'runtime.checkDistinct([p0, p1], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])'
 			])
 		})
 
