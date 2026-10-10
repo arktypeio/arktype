@@ -316,6 +316,8 @@ export class Interpreter {
 	private valuesByNode = new TreeCache<Node, Evaluated>(node => node)
 	// unknown values a declaration computes, which it computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
+	// each Type a declaration created comparing what the program holds, which a site reading it receives so the declaration runs
+	comparedAtCreation = new WeakSet<object>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	// one stand-in for each site, parameter and count a variant assumes, so evaluating a site again reads the one it read
 	private parameterStandIns = new WeakMap<
@@ -1033,14 +1035,17 @@ export class Interpreter {
 				)
 			}
 		}
+		let isReceived = isChangeable(result.value)
 		if (!isArkValue(result.value) || readsAgain(result.value))
 			mergeTrace(ctx.trace, result.trace)
 		else {
 			// arktype values cannot change, so one read where the binding was declared, like an import behind an alias, holds at the site
 			for (const read of result.trace.reads)
 				if (isArkValue(read.value)) ctx.trace.reads.push(read)
+			// unless the declaration compares what the program holds, which runs only if a bundler keeps it for the site
+			isReceived = this.comparedAtCreation.has(result.value as object)
 		}
-		return isChangeable(result.value) ?
+		return isReceived ?
 				{
 					value: result.value,
 					read: {
@@ -1208,16 +1213,23 @@ export class Interpreter {
 		} catch (e) {
 			result = { value: undefined, trace: ctx.trace, error: e }
 		}
-		this.markDeclared(result.value)
+		this.markDeclared(result)
 		this.valuesByBinding.set(binding, result)
 		return result
 	}
 
-	private markDeclared(value: unknown): void {
+	private markDeclared({ value, trace }: Evaluated): void {
 		findDynamic(value, dynamic => {
 			this.declaredDynamics.add(dynamic)
 			return false
 		})
+		if (
+			isArkValue(value) &&
+			trace.reads.some(
+				read => read.root.kind === "binding" || !isArkValue(read.value)
+			)
+		)
+			this.comparedAtCreation.add(value as object)
 	}
 
 	private nodeValue(node: Node, module: SourceModule): Evaluated {
@@ -1230,7 +1242,7 @@ export class Interpreter {
 		} catch (e) {
 			result = { value: undefined, trace: ctx.trace, error: e }
 		}
-		this.markDeclared(result.value)
+		this.markDeclared(result)
 		this.valuesByNode.set(node, result)
 		return result
 	}

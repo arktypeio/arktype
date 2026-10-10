@@ -24,6 +24,7 @@ import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
+import { writeCreationMismatchMessage } from "arktype/runtime"
 import { writeLibrary } from "./utils.ts"
 
 const app = fromHere("app")
@@ -97,6 +98,14 @@ const run = (js: string) =>
 		input: js,
 		encoding: "utf8"
 	}).stdout
+
+const thrownBy = (js: string) =>
+	/^\w*Error: (.*)$/m.exec(
+		spawnSync(process.execPath, ["--input-type=module"], {
+			input: js,
+			encoding: "utf8"
+		}).stderr
+	)?.[1]
 
 const writeFixture = (
 	files: Record<string, string>,
@@ -658,6 +667,72 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		)
 		attest(run(checked)).equals(runPlain(root))
 		attest(checked.includes("traverseAllows")).equals(true)
+	}).timeout(60000)
+
+	it("creates a Type read only for its introspection where its creation compares what the program holds", async () => {
+		const files = {
+			"data.ts": `export const settings = { label: "a user" }
+`,
+			"mutate.ts": `import { settings } from "./data.ts"
+
+settings.label = "changed"
+`,
+			"user.ts": `import { type } from "arktype"
+import { settings } from "./data.ts"
+
+export const User = type({ name: "string" }).describe(settings.label)
+`
+		}
+		// arktype reads the label where it creates User, which precedes the change
+		const after = writeFixture(
+			{
+				...files,
+				"main.ts": `import { User } from "./user.ts"
+import "./mutate.ts"
+
+console.log(User.toJsonSchema().description)
+`
+			},
+			fromHere("temp", "comparedAfter")
+		)
+		attest(run(await bundlers.esbuild({ cwd: after }, after))).equals(
+			runPlain(after)
+		)
+		const mains = {
+			imported: `import "./mutate.ts"
+import { User } from "./user.ts"
+
+console.log(User.toJsonSchema().description)
+`,
+			local: `import "./mutate.ts"
+import { type } from "arktype"
+import { settings } from "./data.ts"
+
+const User = type({ name: "string" }).describe(settings.label)
+console.log(User.toJsonSchema().description)
+`,
+			composed: `import "./mutate.ts"
+import { type } from "arktype"
+import { settings } from "./data.ts"
+
+const User = type({ name: "string" }).describe(settings.label)
+const Admin = User.and({ admin: "true" })
+console.log(Admin.description)
+`
+		}
+		for (const [name, main] of Object.entries(mains)) {
+			const root = writeFixture(
+				{ ...files, "main.ts": main },
+				fromHere("temp", `compared${name}`)
+			)
+			attest(thrownBy(await bundlers.esbuild({ cwd: root }, root))).equals(
+				writeCreationMismatchMessage(
+					"`settings.label`",
+					'"changed"',
+					'"a user"'
+				)
+			)
+		}
 	}).timeout(60000)
 
 	it("shares a Type definitions reach through different copies whichever runs first", async () => {

@@ -2106,9 +2106,13 @@ export class Precompiler {
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
 				site.inputs.push(input)
 		}
-		// what a site reading an imported Type's introspection returns doesn't depend on the Type at runtime, which only a module mock replaces
-		if (site.introspection && !this.checkHelpers) {
-			const { type } = site.introspection
+		// what a site reading an imported Type's introspection returns doesn't depend on the Type at runtime, which only a module mock replaces, unless the Type's creation compares what the program holds, which runs only if the site receives it
+		const type = site.introspection?.type
+		if (
+			type &&
+			!this.checkHelpers &&
+			!this.interpreter.comparedAtCreation.has(type)
+		) {
 			site.inputs = site.inputs.filter(
 				input =>
 					input.kind !== "import" ||
