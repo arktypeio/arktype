@@ -342,6 +342,15 @@ type("string")
 	.toJsonSchema({ dialect: null })
 ```
 
+### Throw when merging an array
+
+Like the `...` spread operator, `.merge`, `type.merge` and `Merge` extend an object, so an array or tuple on either side now throws a `ParseError`. Previously, including in 2.2.7, the result was an object holding the array's elements, which accepted non-arrays and threw an internal error from `toJsonSchema()`:
+
+```ts
+// previously accepted { a: "x" }, now throws ParseError: merge operand must resolve to an object literal type (was object[])
+type("object[]").merge({ a: "string" })
+```
+
 ### Throw from every `export()` of a scope with an invalid alias
 
 After a scope's `export()` threw a `ParseError`, a later `export()`, `export(...names)` or `import()` returned a module whose aliases from the failed one on were `undefined`. Each now throws the same error:

@@ -259,14 +259,16 @@ export abstract class BaseRoot<
 	merge(r: unknown): BaseRoot {
 		const rNode = this.$.parseDefinition(r)
 		return this.rootOfBranches(
-			rNode.branches.flatMap(branch =>
-				this.applyStructuralOperation("merge", [
+			rNode.branches.flatMap(branch => {
+				const structure =
 					structureOf(branch) ??
-						throwParseError(
-							writeNonStructuralOperandMessage("merge", branch.expression)
-						)
-				])
-			)
+					throwParseError(
+						writeNonStructuralOperandMessage("merge", branch.expression)
+					)
+				if (structure.sequence)
+					throwParseError(writeArrayMergeOperandMessage(branch.expression))
+				return this.applyStructuralOperation("merge", [structure])
+			})
 		)
 	}
 
@@ -293,6 +295,8 @@ export abstract class BaseRoot<
 					writeNonStructuralOperandMessage(operation, branch.expression)
 				)
 			}
+			if (operation === "merge" && structure.sequence)
+				throwParseError(writeArrayMergeOperandMessage(branch.expression))
 
 			if (operation === "keyof") return structure.keyof()
 			if (operation === "get") return structure.get(...(args as [never]))
@@ -756,6 +760,15 @@ export const writeNonStructuralOperandMessage = <
 	operand: operand
 ): writeNonStructuralOperandMessage<operation, operand> =>
 	`${operation} operand must be an object (was ${operand})`
+
+// like a spread, a merge extends an object, so neither side can be an array
+export const writeArrayMergeOperandMessage = <operand extends string>(
+	operand: operand
+): writeArrayMergeOperandMessage<operand> =>
+	`merge operand must resolve to an object literal type (was ${operand})`
+
+export type writeArrayMergeOperandMessage<operand extends string> =
+	`merge operand must resolve to an object literal type (was ${operand})`
 
 export type writeNonStructuralOperandMessage<
 	operation extends StructuralOperationName,
