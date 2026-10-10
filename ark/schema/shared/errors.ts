@@ -98,7 +98,8 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		const issues = this._issues
 		if (this.written) return issues
 		this.written = true
-		const locale = (this.locale ??= renderer?.select() ?? this.config.locale)
+		const locale = (this.locale ??=
+			rendererOf(this.config)?.select() ?? this.config.locale)
 		for (const error of issues) writeError(error, this.config, locale)
 		return issues
 	}
@@ -240,7 +241,7 @@ export const messageAt = (error: ArkError, path: PropertyKey[]): string => {
 	const config = ErrorSource.configOf(error)
 	const copy = unwrittenError(error)
 	copy.path = path
-	writeError(copy, config, renderer?.select() ?? config.locale)
+	writeError(copy, config, rendererOf(config)?.select() ?? config.locale)
 	return copy.message
 }
 
@@ -410,7 +411,9 @@ export const writeError = (
 	if (error.code === "union" || error.code === "intersection")
 		for (const e of error.errors) writeError(e, config, locale)
 	error.propString ??= stringifyPath(error.path)
-	if (renderer && locale !== renderer.en) renderer.write(error, config, locale)
+	const rendering = rendererOf(config)
+	if (rendering && locale !== rendering.en)
+		rendering.write(error, config, locale)
 	else writeText(error, config, locale)
 }
 
@@ -454,10 +457,15 @@ export const registerLocaleRenderer = (registered: LocaleRenderer): void => {
 	renderer = registered
 }
 
+// a standalone runtime's config holds only en's info as its locale, so its
+// errors are written in en even beside arktype
+const rendererOf = (config: ResolvedConfig): LocaleRenderer | undefined =>
+	"cite" in config.locale ? renderer : undefined
+
 // a copy of an error written in a locale, which leaves the error as written
 const writtenIn = (error: ArkError, locale: Locale): ArkError => {
 	const config = ErrorSource.configOf(error)
-	if (!renderer && locale !== config.locale)
+	if (!rendererOf(config) && locale !== config.locale)
 		return throwError(unrenderedLocaleMessage)
 	const copy = unwrittenError(error)
 	writeError(copy, config, locale)

@@ -768,6 +768,23 @@ contextualize(() => {
 		attest(errors.toLocaleString()).equals(errors.summary)
 	})
 
+	it("writes errors only in en beside a runtime island", async () => {
+		const { js } = bundle(`${precompileStandalone({ T: type("string") })}
+import "arktype/internal/island.js"
+import { type } from "arktype"
+export { de } from "arktype/locales/de"
+export const Island = type("string")`)
+		const artifact = await importBesideArktype(js)
+		const errors = artifact.T()(1)
+		attest(() => errors.toLocaleString(artifact.de)).throws(
+			unrenderedLocaleMessage
+		)
+		attest(errors.summary).snap("must be a string (was a number)")
+		attest(artifact.Island(1).toLocaleString(artifact.de)).snap(
+			"muss eine Zeichenkette sein, ist aber eine Zahl"
+		)
+	})
+
 	describe("factories", () => {
 		it("creates a validator from the holes it receives", async () => {
 			const trim = (s: string) => s.trim()
