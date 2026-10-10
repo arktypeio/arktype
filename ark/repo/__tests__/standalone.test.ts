@@ -5,7 +5,8 @@ import {
 	configureAfterTypeMessage,
 	hasArkKind,
 	type ArkSchemaConfig,
-	type Locale
+	type Locale,
+	type Traversal
 } from "@ark/schema"
 import {
 	configMismatchMessage,
@@ -344,6 +345,26 @@ contextualize(() => {
 			summary
 		])
 		attest(summary).snap("en; a, b or c; other; 1.5; 1970; v")
+	})
+
+	it("passes a writer a callback's error holds en's locale", async () => {
+		const isLarge = (n: number, ctx: Traversal) =>
+			n > 3 ||
+			ctx.reject({
+				expected: "more than 3",
+				meta: {
+					actual: (data, ctx, locale) => locale.number(data as number),
+					problem: (ctx, locale) =>
+						`${locale.tag}: ${ctx.expected} (${ctx.actual})`
+				}
+			})
+		const built = standIn(isLarge.bind(null), "islarge")
+		const create = await loadFactory(type("number").narrow(built), [
+			["function", "`isLarge`", built]
+		])
+		const summary = type("number").narrow(isLarge)(1.5).toString()
+		attest(create(isLarge)(1.5).summary).equals(summary)
+		attest(summary).snap("en: more than 3 (1.5)")
 	})
 
 	it("writes errors with configured strings", async () => {

@@ -1633,7 +1633,10 @@ return [${returned.join(", ")}]
 		// a callback can raise any code, on data of any kind
 		if (raisable === "any" || hasIndexSignature(root))
 			config = `runtime.printing(${config}, runtime.printCompact)`
-		return hasMetaWriter(root) ? `runtime.inEn(${config})` : config
+		// a callback can raise an error whose meta holds writers
+		return raisable === "any" || hasMetaWriter(root) ?
+				`runtime.inEn(${config})`
+			:	config
 	}
 
 	// the config of a scope whose writers differ from the program's
