@@ -1,4 +1,4 @@
-import { serializePrimitive, throwParseError } from "@ark/util"
+import { hashOf, serializePrimitive, throwParseError } from "@ark/util"
 import type { ArkSchemaConfig, ResolvedConfig } from "./config.ts"
 import {
 	enInfo,
@@ -161,15 +161,44 @@ export const configure = (
 ): ArkSchemaConfig => {
 	if (Object.isFrozen(runtimeConfig))
 		return throwParseError(configureAfterTypeMessage)
-	if (fingerprint === undefined)
-		return throwParseError(untransformedConfigureMessage)
+	const received = fingerprintOf(config)
+	// a loader or plugin can change a module the configuration reads after the build read it
+	if (fingerprint !== undefined && fingerprint !== received)
+		return throwParseError(configuredUnlikeBuildMessage)
 	configureIslands?.(config)
 	if ("onFail" in config)
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
 	;(runtimeConfig as { locale: Locale.Info }).locale = enInfo
-	configuredFingerprint = fingerprint
+	configuredFingerprint = received
 	programConfig = config
 	return config
+}
+
+// the configuration's values apart from its functions, which the runtime can't compare with the build's
+export const fingerprintOf = (config: object): string =>
+	hashOf(staticTextOf(config, []))
+
+const staticTextOf = (value: unknown, ancestors: object[]): string => {
+	if (typeof value === "function") return "function"
+	if (typeof value !== "object" || value === null) {
+		return (
+			typeof value === "string" ? JSON.stringify(value)
+			: typeof value === "bigint" ? `${value}n`
+			: Object.is(value, -0) ? "-0"
+			: String(value)
+		)
+	}
+	if (ancestors.includes(value)) return "cycle"
+	const tag = Object.prototype.toString.call(value)
+	const entries = Object.keys(value).map(
+		k =>
+			`${JSON.stringify(k)}:${staticTextOf((value as Record<string, unknown>)[k], [...ancestors, value])}`
+	)
+	return `${tag}${
+		tag === "[object Date]" ? Number(value)
+		: tag === "[object RegExp]" ? String(value)
+		: ""
+	}{${entries}}`
 }
 
 export const fixConfig = (
@@ -193,10 +222,10 @@ export const shareConfig = (
 	if (programConfig) configureArktype(programConfig)
 }
 
-export const untransformedConfigureMessage =
-	"configure must be called from the module a standalone build's config option names, since it precompiles every Type under that configuration"
+export const configuredUnlikeBuildMessage =
+	"configure() receives other values than its build precompiled under, as when a loader or plugin changes a module the configuration reads, so the build's Types can't run under it"
 
-export type untransformedConfigureMessage = typeof untransformedConfigureMessage
+export type configuredUnlikeBuildMessage = typeof configuredUnlikeBuildMessage
 
 export const configMismatchMessage =
 	"an artifact precompiled under another configuration can't run under this one, so it must be rebuilt"

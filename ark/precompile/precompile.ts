@@ -666,27 +666,31 @@ export class Precompiler {
 
 	// as the program applies it at runtime, before any site is evaluated
 	private applyConfiguration(): Configuration {
-		const { module, modules, call, fingerprint } = this.readConfiguration()
-		if (holdsOtherConfiguration(fingerprint))
-			throwError(configuredThreadMessage)
+		const { module, modules, call, version } = this.readConfiguration()
+		if (holdsOtherConfiguration(version)) throwError(configuredThreadMessage)
 		if (threadConfiguration) return threadConfiguration
 		const evaluated =
 			module && call && this.evaluateConfiguration(call, module, modules)
+		const problem =
+			evaluated &&
+			(evaluated.problem ??
+				// as arktype fixes its configuration at the first Type, configure() would throw
+				($ark.resolvedConfig ?
+					"configure() is called after its argument creates a Type"
+				:	undefined))
 		const configuration: Configuration = {
 			modules,
-			fingerprint,
-			problem:
-				evaluated &&
-				(evaluated.problem ??
-					// as arktype fixes its configuration at the first Type, configure() would throw
-					($ark.resolvedConfig ?
-						"configure() is called after its argument creates a Type"
-					:	undefined)),
+			version,
+			fingerprint:
+				evaluated && !problem ?
+					arktypeRuntime.fingerprintOf(evaluated.value ?? {})
+				:	undefined,
+			problem,
 			reasons: evaluated ? evaluated.reasons : []
 		}
 		if (evaluated) {
 			threadConfiguration = configuration
-			if (!configuration.problem) configure(evaluated.value as never)
+			if (!problem) configure(evaluated.value as never)
 		}
 		// so a later configure() in the thread throws, as it does after arktype's first Type
 		void ark.internal.resolvedConfig
@@ -710,7 +714,7 @@ export class Precompiler {
 
 	// arktype takes one configuration per thread, so a build whose configuration changed restarts in a new one
 	get needsNewThread(): boolean {
-		return holdsOtherConfiguration(this.readConfiguration().fingerprint)
+		return holdsOtherConfiguration(this.readConfiguration().version)
 	}
 
 	private readConfiguration() {
@@ -719,7 +723,7 @@ export class Precompiler {
 				module: undefined,
 				modules: [],
 				call: undefined,
-				fingerprint: undefined
+				version: undefined
 			}
 		}
 		const module = this.graph.moduleOf(this.config)
@@ -734,17 +738,21 @@ export class Precompiler {
 			module,
 			modules,
 			call,
-			fingerprint:
+			version:
 				call &&
 				hashOf(
 					modules
-						.map(id => {
-							const module = this.graph.moduleOf(id)
-							return `${this.graph.pathOf(id)}\n${module instanceof SourceModule ? module.source : this.graph.host.readFile(id)}`
-						})
+						.map(id => `${this.graph.pathOf(id)}\n${this.sourceOf(id)}`)
 						.join("\n")
 				)
 		}
+	}
+
+	private sourceOf(id: string): string | undefined {
+		const module = this.graph.moduleOf(id)
+		return module instanceof SourceModule ?
+				module.source
+			:	this.graph.host.readFile(id)
 	}
 
 	private stampConfiguration(module: SourceModule, s: MagicString): void {
@@ -2841,6 +2849,8 @@ export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 interface Configuration {
 	modules: string[]
 	// a hash of the modules' paths and text, if the config module calls configure()
+	version: string | undefined
+	// the values configure() receives, which the program's configure() checks
 	fingerprint: string | undefined
 	// why the configure() call can't be applied, reported where the config module is precompiled
 	problem: string | undefined
@@ -2850,11 +2860,11 @@ interface Configuration {
 let threadConfiguration: Configuration | undefined
 
 // arktype can't change its configuration once set
-const holdsOtherConfiguration = (fingerprint: string | undefined): boolean =>
+const holdsOtherConfiguration = (version: string | undefined): boolean =>
 	threadConfiguration ?
-		threadConfiguration.fingerprint !== fingerprint
+		threadConfiguration.version !== version
 	:	Object.keys($ark.config).length > 0 ||
-		(fingerprint !== undefined && $ark.resolvedConfig !== undefined)
+		(version !== undefined && $ark.resolvedConfig !== undefined)
 
 export const writeUnreadableConfigMessage = <path extends string>(
 	path: path

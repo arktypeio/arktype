@@ -11,8 +11,9 @@ import {
 } from "@ark/schema"
 import {
 	configMismatchMessage,
+	configuredUnlikeBuildMessage,
+	fingerprintOf,
 	unrenderedLocaleMessage,
-	untransformedConfigureMessage,
 	writeCreatedBeforeConfigureMessage
 } from "@ark/schema/runtime"
 import { arkKindOf, flatMorph, noSuggest } from "@ark/util"
@@ -85,7 +86,7 @@ const importBesideArktype = async (js: string): Promise<any> => {
 const load = async (
 	exports: Record<string, StandaloneExport>,
 	configure = "",
-	fingerprint = configure ? "f" : undefined,
+	fingerprint?: string,
 	introspection?: IntrospectionMember[]
 ): Promise<Record<string, any>> => {
 	const artifact = await importBesideArktype(
@@ -459,9 +460,9 @@ contextualize(() => {
 			params: [{ kind: "function", label: "`write`", value: built }]
 		}
 		const unconfigured = (await load({ T })).T(write)
-		const configured = (await load({ T }, `runtime.configure({}, "f")`)).T(
-			write
-		)
+		const configured = (
+			await load({ T }, "runtime.configure({})", fingerprintOf({}))
+		).T(write)
 		const summary = define(write)("x").toString()
 		attest([unconfigured("x").summary, configured("x").summary]).equals([
 			summary,
@@ -545,7 +546,8 @@ contextualize(() => {
 		expected: (ctx, locale) => \`a multiple of \${locale.number(ctx.rule)}\`
 	},
 	onFail: errors => errors.summary
-}, "f")`
+})`,
+			fingerprintOf(config)
 		)
 		const input = { a: 1, b: 3 }
 		attest(validator(input)).equals(T(input))
@@ -560,18 +562,23 @@ contextualize(() => {
 				() => "",
 				(e: Error) => e.message
 			)
-		attest(await messageOf("", "f")).equals(
+		const built = fingerprintOf({})
+		attest(await messageOf("", built)).equals(
 			writeCreatedBeforeConfigureMessage("main.ts")
 		)
-		attest(await messageOf(`runtime.configure({}, "g")`, "f")).equals(
-			configMismatchMessage
-		)
-		attest(await messageOf(`runtime.configure({})`)).equals(
-			untransformedConfigureMessage
-		)
+		attest(
+			await messageOf(
+				`runtime.configure({ onUndeclaredKey: "delete" }, "${built}")`,
+				built
+			)
+		).equals(configuredUnlikeBuildMessage)
+		attest(
+			await messageOf(`runtime.configure({ onUndeclaredKey: "delete" })`, built)
+		).equals(configMismatchMessage)
+		attest(await messageOf("runtime.configure({})", built)).equals("")
 		const createdFirst = precompileStandalone({ T: type("string") }).replace(
 			"runtime.fixConfig()",
-			`runtime.fixConfig()\nruntime.configure({}, "f")`
+			"runtime.fixConfig()\nruntime.configure({})"
 		)
 		attest(
 			await importBesideArktype(bundle(createdFirst).js)
@@ -581,18 +588,21 @@ contextualize(() => {
 	})
 
 	it("creates its validators where a site first reads them", async () => {
+		const config = { domain: { message: "configured" } }
 		const artifact = await importBesideArktype(
 			bundle(
 				`${precompileStandalone(
 					{ T: type({ a: "string" }) },
-					{ configured: { fingerprint: "f", path: "main.ts" } }
+					{
+						configured: { fingerprint: fingerprintOf(config), path: "main.ts" }
+					}
 				)}\nexport const configure = runtime.configure`
 			).js
 		)
-		artifact.configure({ domain: { message: "configured" } }, "f")
+		artifact.configure(config)
 		attest(artifact.T()({ a: 1 }).summary).snap("configured")
 		attest(artifact.T()).is(artifact.T())
-		attest(() => artifact.configure({}, "f")).throws(configureAfterTypeMessage)
+		attest(() => artifact.configure(config)).throws(configureAfterTypeMessage)
 	})
 
 	it("fixes the configuration where a Scope, Module or Generic is first read", async () => {
@@ -608,25 +618,24 @@ contextualize(() => {
 				bundle(
 					`${precompileStandalone(
 						{ [name]: value },
-						{ configured: { fingerprint: "f", path: "main.ts" } }
+						{ configured: { fingerprint: fingerprintOf({}), path: "main.ts" } }
 					)}\nexport const configure = runtime.configure`
 				).js
 			)
-			artifact.configure({}, "f")
+			artifact.configure({})
 			artifact[name]()
-			attest(() => artifact.configure({}, "f")).throws(
-				configureAfterTypeMessage
-			)
+			attest(() => artifact.configure({})).throws(configureAfterTypeMessage)
 		}
 	})
 
 	it("fixes the configuration where a keyword Module's Type is first read", async () => {
+		const config = { domain: { message: "configured" } }
 		const artifact = await importBesideArktype(
 			bundle(
 				`${precompileStandalone(
 					{ Strings: type.keywords.string },
 					{
-						configured: { fingerprint: "f", path: "main.ts" },
+						configured: { fingerprint: fingerprintOf(config), path: "main.ts" },
 						keywordReads: new Set(["Strings"])
 					}
 				)}\nexport const configure = runtime.configure`
@@ -636,9 +645,9 @@ contextualize(() => {
 		const strings = artifact.Strings()
 		attest(strings.json).is(strings.json)
 		attest(artifact.Strings()).is(strings)
-		artifact.configure({ domain: { message: "configured" } }, "f")
+		artifact.configure(config)
 		attest(strings.email(1).summary).snap("configured")
-		attest(() => artifact.configure({}, "f")).throws(configureAfterTypeMessage)
+		attest(() => artifact.configure(config)).throws(configureAfterTypeMessage)
 	})
 
 	it("keeps the descriptions of a type another scope describes", async () => {
@@ -1821,7 +1830,7 @@ ${program}
 export default shared`).js
 				)
 			).default
-		const configure = `configure({ onFail: null }, "f")`
+		const configure = "configure({ onFail: null })"
 		const share = "shareConfig(config => shared.push(config))"
 		attest(await sharedBy(`${configure}\n${share}`)).equals([{ onFail: null }])
 		attest(await sharedBy(`${share}\n${configure}`)).equals([{ onFail: null }])

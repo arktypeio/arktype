@@ -16,7 +16,10 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { configureAfterTypeMessage } from "@ark/schema"
-import { writeCreatedBeforeConfigureMessage } from "@ark/schema/runtime"
+import {
+	configuredUnlikeBuildMessage,
+	writeCreatedBeforeConfigureMessage
+} from "@ark/schema/runtime"
 import { writeLibrary } from "./utils.ts"
 
 const app = fromHere("app")
@@ -67,11 +70,12 @@ const cycle = fromHere("cycle")
 
 const library = writeLibrary()
 
-const runPlain = (cwd: string, entry = "main.ts") =>
-	spawnSync(process.execPath, ["--conditions", "ark-ts", entry], {
-		cwd,
-		encoding: "utf8"
-	}).stdout
+const runPlain = (cwd: string, ...args: string[]) =>
+	spawnSync(
+		process.execPath,
+		["--conditions", "ark-ts", ...(args.length ? args : ["main.ts"])],
+		{ cwd, encoding: "utf8" }
+	).stdout
 
 contextualize(() => {
 	const expected = runPlain(app)
@@ -200,6 +204,19 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			}
 		}).timeout(60000)
 
+		it("configured by a module a later loader rewrites", () => {
+			const args = ["--import", "./rewrite.ts", "main.ts"]
+			attest(
+				node(args, { config: "config.ts" }, transpiled).stderr.includes(
+					configuredUnlikeBuildMessage
+				)
+			).equals(true)
+			attest(
+				node(args, { runtime: "arktype", config: "config.ts" }, transpiled)
+					.stdout
+			).equals(runPlain(transpiled, ...args))
+		}).timeout(60000)
+
 		it("refuses in standalone mode a module a loader keeps its text from", () => {
 			const { status, stderr } = node(
 				["--import", "./bypass.ts", "main.ts"],
@@ -212,7 +229,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 					.slice(stderr.indexOf("Error: ") + 7, stderr.indexOf("\n    at "))
 					.replace(`${transpiled}/`, "")
 			).snap(
-				"config.ts imports arktype, but a loader compiles it without passing its text through @ark/precompile/node's hooks, as tsx does in a CommonJS package, so a standalone build can't precompile it"
+				"main.ts imports arktype, but a loader compiles it without passing its text through @ark/precompile/node's hooks, as tsx does in a CommonJS package, so a standalone build can't precompile it"
 			)
 			attest(
 				node(
