@@ -1058,26 +1058,20 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		})
 	}
 
-	// arktype creates a node once per Scope and content, so a check is keyed by the Scope's name or the one received, the node's content and holes
+	// arktype creates a node once per Scope and content, so a check is keyed by its Scope, builtin or received, and the node's content and holes
 	writeDefaultKey([node, value, key]: DefaultCheck, owner: BaseNode): string {
 		const $ = owner.$
 		const [id, holes] = encodeKey(
-			[
-				$.isBuiltin ? $.name : null,
-				owner.isRoot() ? owner : owner.inner,
-				node,
-				value,
-				key
-			],
+			[$.isBuiltin ? $.name : null, owner.inner, node, value, key],
 			undefined,
 			false
 		)
-		const expressions = [$, ...holes].map(
-			hole =>
-				this.scopeExpressions.get(hole) ??
-				this.holeExpressions.get(hole) ??
-				"undefined"
-		)
+		const expressions = [
+			...($.isBuiltin ? [] : [this.scopeExpressions.get($)]),
+			...holes.map(hole => this.holeExpressions.get(hole))
+		]
+		// e.g. the Scope a received Type parses `.and()` in, so the check runs each time rather than once for every Scope
+		if (expressions.includes(undefined)) return "null"
 		return `[${JSON.stringify(id)}, [${expressions.join(", ")}]]`
 	}
 

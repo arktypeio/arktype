@@ -1084,17 +1084,13 @@ export class Precompiler {
 			:	[]
 	}
 
-	// arktype checks a default once per node holding it, or once per cache entry for one a definition writes, unless the site creates either anew
+	// arktype checks a default once per node holding it, so one the site creates anew, or one without a node, is checked each time it runs
 	private defaultChecksOf(site: Site): DefaultCheck[] {
-		return site.defaultChecks.map(check => {
-			const [node, value, key, owner] = check
-			return (
-					site.checkedEachRun.has(check) ||
-						(!owner && !this.interpreter.reachedByEntries.has(check))
-				) ?
-					[node, value, key, undefined]
-				:	[node, value, key, owner ?? node]
-		})
+		return site.defaultChecks.map(check =>
+			site.checkedEachRun.has(check) ?
+				[check[0], check[1], check[2], undefined]
+			:	check
+		)
 	}
 
 	private isFactory(site: Site, module: SourceModule): boolean {
@@ -2007,7 +2003,7 @@ export class Precompiler {
 		}
 		// a check is keyed by the Scope its node is created in, so a site reading that Scope passes it
 		const checkScopes = new Set(
-			site.defaultChecks.map(([node, , , owner]) => (owner ?? node).$)
+			site.defaultChecks.flatMap(([, , , owner]) => (owner ? [owner.$] : []))
 		)
 		for (const [value, reads] of state.readsByValue) {
 			if (
