@@ -372,6 +372,12 @@ export class Precompiler {
 		}
 	}
 
+	// so a module's copies are reported as checking it alone would, rather than against those modules checked before it reached
+	forgetCopies(): void {
+		for (const name of Object.keys(this.copiesByPackage) as ArkPackage[])
+			this.copiesByPackage[name] = {}
+	}
+
 	// each package arktype runs on that importer reaches in a copy other than one reached before
 	readCopies(name: ArkPackage, importer: string): CopiesReport[] {
 		const entry = this.graph.host.resolve(name, importer)

@@ -403,18 +403,18 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 			)
 		}).timeout(60000)
 
-		const loadMain = (dir: string, dependencies: string[] = []) => {
+		const loadIn = (dir: string, file = "main.ts") => {
 			try {
 				return turbopack.call(
 					{
-						resourcePath: join(dir, "main.ts"),
+						resourcePath: join(dir, file),
 						getOptions: () => ({ conditions, cwd: dir }),
-						addDependency: dependency => dependencies.push(dependency),
+						addDependency: () => {},
 						emitWarning: warning => {
 							throw warning
 						}
 					},
-					readFileSync(join(dir, "main.ts"), "utf8")
+					readFileSync(join(dir, file), "utf8")
 				)
 			} catch (e) {
 				return (e as Error).message
@@ -433,7 +433,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 					`export const shape = { a: "${domain}" } as const\n`
 				)
 				utimesSync(join(dir, "shape.ts"), at, at)
-				return loadMain(dir)
+				return loadIn(dir)
 			}
 			attest(loadWith("string", new Date(0)).includes('"number"')).equals(false)
 			attest(loadWith("number", new Date()).includes('"number"')).equals(true)
@@ -445,12 +445,32 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 				join(dir, "main.ts"),
 				'import { type } from "arktype"\nimport { shape } from "./shape.ts"\n\nexport const T = type(shape)\n'
 			)
-			attest(loadMain(dir)).satisfies(/cannot be precompiled/)
+			attest(loadIn(dir)).satisfies(/cannot be precompiled/)
 			writeFileSync(
 				join(dir, "shape.ts"),
 				'export const shape = { a: "number" } as const\n'
 			)
-			attest(loadMain(dir).includes('"number"')).equals(true)
+			attest(loadIn(dir).includes('"number"')).equals(true)
+		}).timeout(60000)
+
+		it("replaces its precompiler when a module it transformed changes", () => {
+			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			writeFileSync(
+				join(dir, "main.ts"),
+				'import { type } from "arktype"\nimport { shape } from "./shape.ts"\n\nexport const T = type(shape)\n'
+			)
+			const writeShape = (domain: string, at: Date) => {
+				writeFileSync(
+					join(dir, "shape.ts"),
+					`import { type } from "arktype"\n\nexport const shape = { a: "${domain}" } as const\n\nexport const Shape = type(shape)\n`
+				)
+				utimesSync(join(dir, "shape.ts"), at, at)
+			}
+			writeShape("string", new Date(0))
+			loadIn(dir, "shape.ts")
+			attest(loadIn(dir).includes('"number"')).equals(false)
+			writeShape("number", new Date())
+			attest(loadIn(dir).includes('"number"')).equals(true)
 		}).timeout(60000)
 
 		it("reports dependencies before a rejected site's error", () => {

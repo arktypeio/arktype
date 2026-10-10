@@ -21,8 +21,8 @@ const check = (
 ): CheckedModule => {
 	const key = JSON.stringify(opts)
 	let request = precompilersByOptions.get(key)
-	// a file may have changed since the last was linted, and the worker keeps the configuration it applied first
-	if (request?.("reset")) {
+	// a file read for an earlier one may have changed since, and the worker keeps the configuration it applied first
+	if (request?.("refresh")) {
 		request("close")
 		request = undefined
 	}
@@ -30,7 +30,7 @@ const check = (
 		request = createSyncPrecompiler({ precompilerOptions: opts })
 		precompilersByOptions.set(key, request)
 	}
-	return request("check", source, id) as CheckedModule
+	return request("lint", source, id) as CheckedModule
 }
 
 const precompilable: Rule.RuleModule = {

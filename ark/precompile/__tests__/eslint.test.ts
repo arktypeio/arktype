@@ -2,18 +2,23 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { configs } from "@ark/precompile/eslint"
 import { Linter } from "eslint"
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs"
 import { dirname } from "node:path"
 
-const lint = (code: string, options: object = {}) =>
-	new Linter({ configType: "flat", cwd: fromHere("checked") })
+const lint = (
+	code: string,
+	options: object = {},
+	filename = fromHere("checked", "linted.js"),
+	cwd = fromHere("checked")
+) =>
+	new Linter({ configType: "flat", cwd })
 		.verify(
 			code,
 			[
-				{ files: ["**/*.js"], ...configs.recommended },
+				{ files: ["**/*.{js,ts}"], ...configs.recommended },
 				{ rules: { "@ark/precompile/precompilable": ["warn", options] } }
 			],
-			{ filename: fromHere("checked", "linted.js") }
+			{ filename }
 		)
 		.map(
 			message =>
@@ -61,6 +66,53 @@ configure({ predicate: { description: () => "satisfying a predicate" } })
 `
 		)
 		attest(lint(code, { config })).equals([])
+	})
+
+	it("rereads a module an earlier file read once it changes", () => {
+		const limits = fromHere("temp", "linted", "limits.ts")
+		mkdirSync(dirname(limits), { recursive: true })
+		const code = `import { type } from "arktype"
+import { max } from "./limits.ts"
+export const Field = type(\`string <= \${max}\`)`
+		const filename = fromHere("temp", "linted", "field.js")
+		writeFileSync(limits, "export const max = 5\n")
+		attest(lint(code, {}, filename, fromHere())).equals([])
+		writeFileSync(limits, "export const max = Number(process.env.MAX)\n")
+		utimesSync(limits, new Date(Date.now() + 1000), new Date(Date.now() + 1000))
+		attest(lint(code, {}, filename, fromHere())).snap([
+			'3:22-3:46 type(`string <= ${max}`) cannot be precompiled\n`max` is imported from temp/linted/limits.ts\n`process.env.MAX` is not a build define\nStandalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+		])
+	})
+
+	it("reads a module from its file for a later file, not as it was linted unsaved", () => {
+		const limits = fromHere("temp", "linted", "limits.ts")
+		mkdirSync(dirname(limits), { recursive: true })
+		const limitsWith = (max: string) => `import { type } from "arktype"
+export const max = ${max}
+export const Max = type("number")
+`
+		writeFileSync(limits, limitsWith("5"))
+		attest(
+			lint(limitsWith("Number(process.env.MAX)"), {}, limits, fromHere())
+		).equals([])
+		const code = `import { type } from "arktype"
+import { max } from "./limits.ts"
+export const Field = type(\`string <= \${max}\`)`
+		attest(
+			lint(code, {}, fromHere("temp", "linted", "field.js"), fromHere())
+		).equals([])
+	})
+
+	it("reports only the copies of arktype's packages the linted file reaches", () => {
+		const code = `import { type } from "arktype"
+export const Name = type("string")`
+		const options = { conditions: ["ark-ts"] }
+		attest(
+			lint(code, options, fromHere("checked", "linted.js"), fromHere())
+		).equals([])
+		attest(
+			lint(code, options, fromHere("keywordTable", "linted.ts"), fromHere())
+		).equals([])
 	})
 
 	it("takes defines", () => {
