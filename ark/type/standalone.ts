@@ -430,15 +430,6 @@ export class StandaloneArtifact {
 	// the unit whose values are being emitted, which names the nodes they hold
 	unit: RootUnit | undefined
 	writing: SharedUnit | undefined
-	// traversal raises these itself, and a predicate or morph can raise any code
-	raisableCodes: { [code in NodeKind | ArkErrorCode]?: true } = {
-		intersection: true,
-		predicate: true,
-		union: true,
-		discriminant: true,
-		undeclared: true
-	}
-	runsFunctions: boolean
 	// each structure's propsByKey, which traversal reads only with `in`
 	keyLookups = new Set<object>()
 	// each pattern's own RegExp, which only traversal reads
@@ -499,13 +490,6 @@ export class StandaloneArtifact {
 			if (root.onFail !== $ark.resolvedConfig!.onFail)
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
-		for (const unit of this.units) {
-			for (const context of unit.errorContexts)
-				this.raisableCodes[context.code] = true
-		}
-		this.runsFunctions = this.declared.some(
-			node => node.hasKind("predicate") || node.hasKind("morph")
-		)
 		for (const node of this.declared) {
 			if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
 			else if (node.hasKind("pattern")) this.patternInstances.add(node.instance)
@@ -1539,8 +1523,7 @@ return [${returned.join(", ")}]
 
 	configOf(root: BaseRoot): string {
 		const config = root.$.resolvedConfig
-		const declared = this.declarations.namesByValue.get(config)
-		if (declared) return declared
+		const raisable = raisableCodesOf(root)
 		const configuredCodes: string[] = []
 		let code: ArkErrorCode
 		for (code in errorWritersByCode) {
@@ -1551,7 +1534,7 @@ return [${returned.join(", ")}]
 				if (writer === $ark.resolvedConfig![code][k]) continue
 				if (typeof writer === "string")
 					writers.push(`${k}: ${JSON.stringify(writer)}`)
-				else if (this.runsFunctions || this.raisableCodes[code]) {
+				else if (raisable === "any" || raisable[code]) {
 					throwParseError(
 						writeUnprecompilableMessage(`a configured ${code} ${k}`)
 					)
@@ -1563,13 +1546,15 @@ return [${returned.join(", ")}]
 				)
 			}
 		}
-		return configuredCodes.length ?
-				this.declareConst(
-					config,
-					"config",
-					`runtime.freeze({ ...runtime.runtimeConfig, ${configuredCodes.join(", ")} })`
-				)
-			:	"runtime.runtimeConfig"
+		if (!configuredCodes.length) return "runtime.runtimeConfig"
+		return (
+			this.declarations.namesByValue.get(config) ??
+			this.declareConst(
+				config,
+				"config",
+				`runtime.freeze({ ...runtime.runtimeConfig, ${configuredCodes.join(", ")} })`
+			)
+		)
 	}
 }
 
@@ -1656,6 +1641,40 @@ const metaOwnerNameOf = (
 	if (!ownerNamesByNode.has(owner))
 		ownerNamesByNode.set(owner, contentNameOf(owner, runtimeKeyOf))
 	return ownerNamesByNode.get(owner)
+}
+
+type RaisableCodes = "any" | { [code in NodeKind | ArkErrorCode]?: true }
+
+const raisableCodesByRoot = new WeakMap<BaseRoot, RaisableCodes>()
+
+// what a Type's traversal can raise, so a configured writer it can't emit is refused only for a Type raising its code
+const raisableCodesOf = (root: BaseRoot): RaisableCodes => {
+	let codes = raisableCodesByRoot.get(root)
+	if (codes) return codes
+	const units = rootUnitsOf(root)
+	// a predicate or morph can raise any code
+	if (
+		units.some(unit =>
+			unit.declared.some(
+				node => node.hasKind("predicate") || node.hasKind("morph")
+			)
+		)
+	)
+		codes = "any"
+	else {
+		// traversal raises these itself
+		codes = {
+			intersection: true,
+			predicate: true,
+			union: true,
+			discriminant: true,
+			undeclared: true
+		}
+		for (const unit of units)
+			for (const context of unit.errorContexts) codes[context.code] = true
+	}
+	raisableCodesByRoot.set(root, codes)
+	return codes
 }
 
 const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()

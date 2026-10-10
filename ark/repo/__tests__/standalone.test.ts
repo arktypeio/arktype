@@ -704,6 +704,23 @@ contextualize(() => {
 		})
 	})
 
+	it("refuses a configured writer only for a Type raising its code", async () => {
+		// both metas hold one object, so one creation makes both Types
+		const shared = { note: "shared" }
+		const Quiet = scope({}, { domain: { message: () => "configured" } })
+			.type("unknown")
+			.configure({ shared } as never)
+		const Loud = scope({})
+			.type("string")
+			.configure({ shared } as never)
+		const loaded = await load({ Quiet, Loud })
+		attest([
+			loaded.Quiet(5),
+			loaded.Loud(5).summary,
+			loaded.Quiet.meta.shared === loaded.Loud.meta.shared
+		]).equals([5, "must be a string (was a number)", true])
+	})
+
 	it("rejects a configured locale", () => {
 		// a build checks that nothing configured its thread, so it's left as it was
 		const config = $ark.config
