@@ -43,7 +43,7 @@ import { flatProblemsByPath } from "arktype"
 flatProblemsByPath(out)
 ```
 
-Its `message`, `transform`, `merge`, `add` and `toTraversalError` are gone: read `summary`, and call `throw()`. A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`, and a morph returning another validation's `ArkErrors` adds them at its path. A morph fails by returning an `ArkErrors` or an error its `ctx.error` returned, so an error from another validation that it returns is now its output.
+Its `message`, `transform`, `merge`, `add` and `toTraversalError` are gone: read `summary`, and call `throw()`. A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`, and a morph returning another validation's `ArkErrors` adds them at its path. A morph fails by returning an `ArkErrors` or an error `ctx.error` returned during its own call. Any other error it returns, like one an earlier morph added or another validation's, is its output, where it failed the morph before.
 
 Errors' text is written when they are first read, through `issues`, `summary`, `toString()`, `toJSON()`, `throw()` or Standard Schema's `issues`. That read writes each error's `propString`, `expected`, `actual`, `problem` and `message`, so a configured writer is called once per error, where it was called at each read. A union or intersection whose locale has no `expected` for it is described in en, which writes its errors' `expected` again in en, and a union's errors' `actual`. A locale function is called once per `ArkErrors`, at that read, and its errors keep the locale it returned. Previously each read called it, so errors read after the language changed were written in the new one.
 

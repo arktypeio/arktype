@@ -490,6 +490,24 @@ contextualize(() => {
 		attest(piped).equals(0)
 	})
 
+	it("passes on an error an earlier morph added as a later one's output", () => {
+		let added: unknown
+		let received: unknown
+		const T = type("string").pipe(
+			(s, ctx) => {
+				added = ctx.error("a letter")
+				return s
+			},
+			() => added,
+			e => {
+				received = e
+				return "received"
+			}
+		)
+		attest(T("x").toString()).snap('must be a letter (was "x")')
+		attest(received === added).equals(true)
+	})
+
 	it("checks a result only against the errors its morph added", () => {
 		let reads = 0
 		let counted: object | undefined
