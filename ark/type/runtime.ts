@@ -459,25 +459,27 @@ export const holesOf = (
 	holder: unknown,
 	id: string,
 	label: string,
-	// omitted when it prints a hole's name, which is known only once received
-	expressionOf?: () => string,
-	kind = "Type"
+	// a Type's expression, omitted when it prints a hole's name, which is known only once received
+	expected: (() => string) | "Type" | "Module" | "Scope" | "Generic" = "Type"
 ): readonly unknown[] => {
 	const created = holesByValue.get(holder as object)
 	if (created?.[0] !== id) {
+		const kind = typeof expected === "string" ? expected : "Type"
 		// a Module's, Scope's or Generic's stand-in prints as an object, so it's named by its kind
 		const actual =
 			created && !isValidator(holder) ?
 				`another ${kind}`
 			:	describeValue(holder)
-		const expected =
-			expressionOf ? `Type<${expressionOf()}>` : `the ${kind} it was at build`
+		const description =
+			typeof expected === "string" ?
+				`the ${kind} it was at build`
+			:	`Type<${expected()}>`
 		return throwError(
 			writeCreationMismatchMessage(
 				label,
 				// a Type's expression leaves out what can differ, like a predicate
-				actual === expected ? `another ${actual}` : actual,
-				expected
+				actual === description ? `another ${actual}` : actual,
+				description
 			)
 		)
 	}

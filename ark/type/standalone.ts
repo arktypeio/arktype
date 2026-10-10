@@ -103,6 +103,8 @@ export const runtimeKeyOf = (value: object | symbol): string | undefined =>
 // what an artifact exports as it is, rather than creating it in a factory
 type ExportedValue = type.Any | Module | Scope<any> | Generic | TypedFn
 
+export type Foldable = BaseRoot | ExportedValue | BaseScope | GenericRoot
+
 export type StandaloneExport = ExportedValue | StandaloneFactory
 
 export interface StandaloneFactory {
@@ -150,7 +152,7 @@ export interface ExportSite {
 	// each string it passed arktype's type, which arktype's parse cache may hold its Type under
 	definitions: readonly string[]
 	// each Type another run or site holds too, which only an address keeps one object
-	addressed?: readonly unknown[]
+	addressed?: readonly BaseRoot[]
 }
 
 export interface ConfiguredModule {
@@ -494,7 +496,7 @@ export class StandaloneArtifact {
 	declarations = createDeclarations()
 	emitting = new Set<object>()
 	moduleNamesByModule = new Map<object, string>()
-	typedFnNames = new Map<InternalTypedFn, string>()
+	namesByTypedFn = new Map<InternalTypedFn, string>()
 	links: string[] = []
 	modules: string[] = []
 	// a literal holding a validator is declared empty and filled once validators exist
@@ -726,42 +728,26 @@ export class StandaloneArtifact {
 			label = appendStringifiedKey(label, k)
 		}
 		label = `\`${label}\``
-		if (hasArkKind(value, "root")) {
-			const [id, holes] = keyOf(value)
-			this.receivedMetas.set(value.meta, `${expression}.meta`)
-			const holesName = `holes${this.checks.length}`
-			const expected =
-				value.expression.includes(holeNamePrefix) ?
-					""
-				:	`, ${this.readExpression(value)}`
-			this.checks.push(
-				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(label)}${expected})`
-			)
-			const protos = [value, ...value.references].flatMap(node =>
-				node.hasKind("proto") ? [node.proto] : []
-			)
-			for (let i = 0; i < holes.length; i++) {
-				this.receiveHole(holes[i], `${holesName}[${i}]`, `${label}'s hole ${i}`)
-				if (protos.includes(holes[i] as never)) this.classes.add(holes[i])
-			}
-			return
-		}
 		if (
+			hasArkKind(value, "root") ||
 			hasArkKind(value, "module") ||
 			hasArkKind(value, "scope") ||
 			hasArkKind(value, "generic")
 		) {
 			const [id, holes] = keyOf(value)
+			const isType = hasArkKind(value, "root")
+			if (isType) this.receivedMetas.set(value.meta, `${expression}.meta`)
 			const holesName = `holes${this.checks.length}`
+			const expected =
+				!isType ? `, "${kindNameOf(value)}"`
+				: value.expression.includes(holeNamePrefix) ? ""
+				: `, ${this.readExpression(value)}`
 			this.checks.push(
-				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(label)}, undefined, "${
-					hasArkKind(value, "module") ? "Module"
-					: hasArkKind(value, "scope") ? "Scope"
-					: "Generic"
-				}")`
+				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(label)}${expected})`
 			)
-			// a class it holds is related to the others this artifact's Types hold
-			const protos = this.declared.flatMap(node =>
+			// a class a Module, Scope or Generic holds is related to the others this artifact's Types hold
+			const related = isType ? [value, ...value.references] : this.declared
+			const protos = related.flatMap(node =>
 				node.hasKind("proto") ? [node.proto] : []
 			)
 			for (let i = 0; i < holes.length; i++) {
@@ -836,7 +822,7 @@ export class StandaloneArtifact {
 		return [
 			...this.comparedRoots.filter(root => !this.validatorAddressOf(root)),
 			...this.moduleNamesByModule.keys(),
-			...this.typedFnNames.keys(),
+			...this.namesByTypedFn.keys(),
 			...this.declarations.valuesByRole.literal,
 			...this.declarations.valuesByRole.standIn
 		]
@@ -846,7 +832,7 @@ export class StandaloneArtifact {
 	checkAddressed(): void {
 		for (const name in this.exports) {
 			for (const value of this.sitesByName?.[name]?.addressed ?? []) {
-				if (!hasArkKind(value, "root") || !this.validatorAddressOf(value)) {
+				if (!this.validatorAddressOf(value)) {
 					throwParseError(
 						writeUnprecompilableMessage("a Type another run or site holds too")
 					)
@@ -1310,7 +1296,7 @@ return [${returned.join(", ")}]
 		return parts.join(" + ") || '""'
 	}
 
-	// a module is a plain object of validators, frozen like them, a TypedFn arktype's wrapper validating with them, and a Scope or Generic an empty one, since resolving an alias or instantiating a Generic needs arktype
+	// a Scope or Generic is an empty object, since resolving an alias or instantiating a Generic needs arktype
 	exportOf(value: unknown): string {
 		if (hasArkKind(value, "root")) return this.validatorNamesByRoot.get(value)!
 		if (hasArkKind(value, "scope") || hasArkKind(value, "generic")) {
@@ -1323,10 +1309,10 @@ return [${returned.join(", ")}]
 			)
 		}
 		if (isTypedFn(value)) {
-			let name = this.typedFnNames.get(value)
+			let name = this.namesByTypedFn.get(value)
 			if (name) return name
-			name = `typedFn${this.typedFnNames.size}`
-			this.typedFnNames.set(value, name)
+			name = `typedFn${this.namesByTypedFn.size}`
+			this.namesByTypedFn.set(value, name)
 			this.modules.push(
 				`const ${name} = runtime.typedFn(${this.emit(value.raw)}, ${this.exportOf(value.params)}, ${this.exportOf(value.returns)})`
 			)
@@ -1348,7 +1334,7 @@ return [${returned.join(", ")}]
 	}
 
 	// a factory reading a Module, Scope or Generic compares it with the build's and takes the holes it holds
-	withHoles(value: Parameters<typeof keyOf>[0], expression: string): string {
+	withHoles(value: Foldable, expression: string): string {
 		const [id, holes] = keyOf(value)
 		return `runtime.holdHoles(${expression}, ${JSON.stringify(id)}${holes.length ? `, [${holes.map(hole => this.emit(hole)).join(", ")}]` : ""})`
 	}
@@ -1804,7 +1790,7 @@ const isAddressable = (root: BaseRoot, unit: RootUnit): boolean =>
 	!holdsLocal(root.description)
 
 // e.g. a keyword's Type, which arktype holds once wherever a definition reaches it, so each run and artifact reads one validator
-export const isAddressed = (value: unknown): boolean =>
+export const isAddressed = (value: unknown): value is BaseRoot =>
 	hasArkKind(value, "root") &&
 	isAddressable(
 		value,
@@ -1914,9 +1900,7 @@ const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
 
 const keysByValue = new WeakMap<object, [id: string, holes: unknown[]]>()
 
-export const keyOf = (
-	value: BaseRoot | ExportedValue | BaseScope | GenericRoot
-): [id: string, holes: unknown[]] =>
+export const keyOf = (value: Foldable): [id: string, holes: unknown[]] =>
 	hasArkKind(value, "root") ? rootKeyOf(value) : definitionKeyOf(value)
 
 const rootKeyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
@@ -2056,10 +2040,20 @@ const definitionKeyOf = (container: object): [id: string, holes: unknown[]] => {
 	return key
 }
 
+export const isTypedFn = (value: unknown): value is InternalTypedFn =>
+	value instanceof InternalTypedFn
+
+export const kindNameOf = (value: unknown): string =>
+	hasArkKind(value, "root") ? "Type"
+	: hasArkKind(value, "module") ? "Module"
+	: hasArkKind(value, "scope") ? "Scope"
+	: hasArkKind(value, "generic") ? "Generic"
+	: "TypedFn"
+
 // a container whose key leaves out what decides what it creates, which a factory can't compare with the build's
 const incomparable = new WeakSet<object>()
 
-export const isComparable = (value: Parameters<typeof keyOf>[0]): boolean => {
+export const isComparable = (value: Foldable): boolean => {
 	keyOf(value)
 	return !incomparable.has(value)
 }
@@ -2071,9 +2065,6 @@ const printablePrimitive = (value: unknown): string =>
 	Object.is(value, -0) ? "-0" : printable(value)
 
 const valueTupleHeads: unknown[] = ["instanceof", "==="]
-
-export const isTypedFn = (value: unknown): value is InternalTypedFn =>
-	value instanceof InternalTypedFn
 
 const valueOperators: unknown[] = [":", "=>", "=", "@"]
 

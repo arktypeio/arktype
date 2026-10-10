@@ -1445,7 +1445,7 @@ export const Island = type("string")`)
 			const M = scope({ a: "string" }).export()
 			attest(() =>
 				precompileStandalone({ M: { type: M, params: [] } }, undefined, {
-					M: { definitions: [], addressed: [M.a] }
+					M: { definitions: [], addressed: [M.a.internal] }
 				})
 			).throws(
 				writeUnprecompilableMessage("a Type another run or site holds too")

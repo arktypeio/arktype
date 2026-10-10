@@ -21,6 +21,7 @@ import {
 	isComparable,
 	isTypedFn,
 	keyOf,
+	kindNameOf,
 	precompileStandalone,
 	precompileStandaloneModules,
 	writeFixConfig,
@@ -28,6 +29,7 @@ import {
 	type DefaultCheck,
 	type ExportSite,
 	type FactoryParam,
+	type Foldable,
 	type StandaloneExport,
 	type StandaloneModules
 } from "arktype/internal/standalone.ts"
@@ -150,7 +152,7 @@ export interface Site {
 	// whether arktype returns the Type it created before for the same holes, as outside a Scope created each run, which a factory then does too
 	isInterned: boolean
 	// each Type another run or site holds too, which arktype holds once and a factory then reads from its address
-	addressed: unknown[]
+	addressed: Set<BaseRoot>
 	// each default arktype checks while defining what the site creates, which the build can't and its factory does at creation
 	defaultChecks: DefaultCheck[]
 	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
@@ -1697,7 +1699,7 @@ export class Precompiler {
 			isKeywordRead: false,
 			isCreatedEachRun: false,
 			isInterned: false,
-			addressed: [],
+			addressed: new Set(),
 			defaultChecks: [],
 			declarationStart: declarationStartOf(node)
 		}
@@ -1889,10 +1891,13 @@ export class Precompiler {
 		const kept = [...arkObjectsIn(site.value)].filter(value =>
 			created.has(value)
 		)
+		const addressed = kept.filter(isAddressed)
 		// e.g. a Module whose Types are the same each run, which a factory creating it anew reads from their addresses
-		if (again.error === undefined ? kept.every(isAddressed) : isFactory) {
+		if (
+			again.error === undefined ? addressed.length === kept.length : isFactory
+		) {
 			site.isCreatedEachRun = true
-			site.addressed.push(...kept)
+			for (const value of addressed) site.addressed.add(value)
 			return false
 		}
 		const snippet = module.snippetOf(node)
@@ -1964,7 +1969,7 @@ export class Precompiler {
 				if (!site.isCreatedEachRun && !holder.isCreatedEachRun) continue
 				// e.g. a keyword's Type, which each factory reads from where every artifact holds it
 				if (isAddressed(value)) {
-					site.addressed.push(value)
+					site.addressed.add(value)
 					continue
 				}
 				if (!site.isCreatedEachRun) continue
@@ -2939,8 +2944,6 @@ const foreignHolesOf = (
 	return holes.length > 1 && foreignTexts.size > 1 ? holes : []
 }
 
-type Foldable = Parameters<typeof keyOf>[0]
-
 const covers = (span: Span, site: Site) =>
 	span.start <= site.start && site.end <= span.end
 
@@ -2963,13 +2966,6 @@ const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
 	}
 	return result
 }
-
-const kindNameOf = (value: unknown) =>
-	hasArkKind(value, "root") ? "Type"
-	: hasArkKind(value, "module") ? "Module"
-	: hasArkKind(value, "scope") ? "Scope"
-	: hasArkKind(value, "generic") ? "Generic"
-	: "TypedFn"
 
 // e.g. a callback's body and the function calling it, innermost first
 const repeatedRegionsOf = (node: Node): Node[] => {
@@ -2997,7 +2993,7 @@ const repeatedRegionsOf = (node: Node): Node[] => {
 
 const exportSiteOf = (site: Site): ExportSite => ({
 	definitions: site.parsedDefinitions,
-	addressed: site.addressed
+	addressed: [...site.addressed]
 })
 
 // a ParseError is named by its message, so equal sites share a thrower, and anything else by its site, since a cyclic Type's hash holds registry counters
