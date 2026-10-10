@@ -127,6 +127,11 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		return summarize(this._issues.map(error => writtenIn(error, locale)))
 	}
 
+	/** @internal the config its errors are written with */
+	get _config(): ResolvedConfig {
+		return this.config
+	}
+
 	/** @internal the errors grouped by path, without their text */
 	get _issues(): ArkError[] {
 		const added = this._added
@@ -219,7 +224,7 @@ export const mergeErrors = (
 ): void => {
 	// a copy is written with the config of the errors holding it, as their summary is
 	for (const error of merged._issues)
-		addError(errors, unwrittenError(error, prefix, errors["config"]))
+		addError(errors, unwrittenError(error, prefix, errors._config))
 }
 
 /**
