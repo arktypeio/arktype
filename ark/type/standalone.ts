@@ -1686,11 +1686,13 @@ const writeAddress = (node: BaseNode): string | undefined => {
 	const { $ } = node
 	if (!$.isBuiltin) return
 	// a scope keys a child by its id, which a copy another scope binds shares with what it copies
-	const key = cachedKeyOf(node, reference =>
-		isNode(reference) ?
-			addressOf(originalOf(reference))
-		:	runtimeKeyOf(reference)
-	)
+	const key = cachedKeyOf(node, reference => {
+		const key =
+			isNode(reference) ?
+				addressOf(originalOf(reference))
+			:	runtimeKeyOf(reference)
+		return key && `${isNode(reference) ? "#" : "$"}${key}`
+	})
 	if (key !== undefined) return hashOf(`${$.name}\nkey\n${key}`)
 	for (const name in $.resolutions)
 		if ($.resolutions[name] === node) return hashOf(`${$.name}\nalias\n${name}`)
