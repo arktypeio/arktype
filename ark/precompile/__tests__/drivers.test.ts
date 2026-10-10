@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { configuredThreadMessage } from "@ark/precompile"
+import { configuredThreadMessage, writeTextlessMessage } from "@ark/precompile"
 import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
@@ -225,12 +225,8 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			)
 			attest(status).equals(1)
 			attest(
-				stderr
-					.slice(stderr.indexOf("Error: ") + 7, stderr.indexOf("\n    at "))
-					.replace(`${transpiled}/`, "")
-			).snap(
-				"main.ts imports arktype, but a loader compiles it without passing its text through @ark/precompile/node's hooks, as tsx does in a CommonJS package, so a standalone build can't precompile it"
-			)
+				stderr.includes(writeTextlessMessage(join(transpiled, "main.ts")))
+			).equals(true)
 			attest(
 				node(
 					["--import", "./bypass.ts", "main.ts"],
@@ -238,6 +234,18 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 					transpiled
 				).stdout
 			).equals(runPlain(transpiled))
+		}).timeout(60000)
+
+		it("refuses in standalone mode a module loaded before register() ran", () => {
+			const { status, stderr } = spawnSync(
+				process.execPath,
+				["--conditions", "ark-ts", "start.ts"],
+				{ cwd: transpiled, encoding: "utf8" }
+			)
+			attest(status).equals(1)
+			attest(
+				stderr.includes(writeTextlessMessage(join(transpiled, "start.ts")))
+			).equals(true)
 		}).timeout(60000)
 
 		it("configured before a Type is created, after the module defining it loads", () => {

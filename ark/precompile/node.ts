@@ -6,7 +6,8 @@ import {
 	appendSourceMap,
 	optedInPackagesOf,
 	runtimeSpecifiers,
-	transformedFilterOf
+	transformedFilterOf,
+	writeTextlessMessage
 } from "./host.ts"
 import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
 
@@ -33,7 +34,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 		filter.include.test(id) && !filter.exclude.test(id)
 	const modules: Record<string, string> = {}
 	const importersByUrl: Record<string, string> = {}
-	// a loader that compiles a module itself, as tsx does a CommonJS package's, gives these hooks none of its text
+	// a module loaded before register() ran, or by a loader that compiles it itself as tsx does a CommonJS package's, gives these hooks none of its text
 	const givenUrls = new Set<string>()
 	registerHooks({
 		resolve: (specifier, context, nextResolve) => {
@@ -98,6 +99,3 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 
 const textOf = (source: NonNullable<LoadFnOutput["source"]>): string =>
 	typeof source === "string" ? source : new TextDecoder().decode(source)
-
-const writeTextlessMessage = (path: string) =>
-	`${path} imports arktype, but a loader compiles it without passing its text through @ark/precompile/node's hooks, as tsx does in a CommonJS package, so a standalone build can't precompile it`

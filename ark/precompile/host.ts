@@ -158,3 +158,11 @@ export const transformedFilterOf = (
 			)
 		:	/\/node_modules\//
 })
+
+export const writeTextlessMessage = <path extends string>(
+	path: path
+): writeTextlessMessage<path> =>
+	`${path} imports arktype but was loaded without @ark/precompile/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it`
+
+export type writeTextlessMessage<path extends string> =
+	`${path} imports arktype but was loaded without @ark/precompile/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it`
