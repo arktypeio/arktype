@@ -99,6 +99,8 @@ export interface StandaloneFactory {
 	params: FactoryParam[]
 	// the table of each factory whose Type arktype returns again for the same holes, shared by those returning one Type at build
 	internedBy?: number | undefined
+	// whether arktype creates its Type anew each time its site runs, even one its content addresses
+	isCreatedEachRun?: boolean
 }
 
 export type FactoryParam = HoleParam | InputParam | HelperParam
@@ -230,10 +232,14 @@ const writeArtifact = (
 	for (const [name, value] of Object.entries(exports)) {
 		if (arkKindOf(value) !== undefined) types[name] = value as never
 		else {
-			const { type, params, internedBy } = value as StandaloneFactory
+			const { type, params, internedBy, isCreatedEachRun } =
+				value as StandaloneFactory
 			if (internedBy !== undefined) tables.add(internedBy)
+			const artifact = new StandaloneArtifact({ [name]: type }, shared, imports)
+			if (isCreatedEachRun && hasArkKind(type, "root"))
+				artifact.createdEachCall.add(type)
 			factories.push(
-				new StandaloneArtifact({ [name]: type }, shared, imports).writeFactory(
+				artifact.writeFactory(
 					name,
 					params,
 					factories.length,
@@ -451,6 +457,8 @@ export class StandaloneArtifact {
 	lateNames = new Set<string>()
 	// the Types exported and those their metas hold, rather than a default's
 	comparedRoots: BaseRoot[]
+	// a Type arktype creates anew each time its site runs, which its factory then does too
+	createdEachCall = new Set<BaseRoot>()
 
 	constructor(
 		exports: Record<string, ExportedValue>,
@@ -1093,7 +1101,7 @@ return [${returned.join(", ")}]
 		})
 		const copies = this.writeCopies(localContexts, localContextNames)
 		const validators = [...this.validatorNamesByRoot].map(([root, name]) =>
-			this.isAddressed(root) ?
+			this.isAddressed(root) && !this.createdEachCall.has(root) ?
 				`const ${name} = ${this.readValidator(root)}`
 			:	`const ${name} = ${this.writeValidator(root)}`
 		)

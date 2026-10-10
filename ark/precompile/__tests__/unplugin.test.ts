@@ -474,6 +474,34 @@ console.log(
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
 	}).timeout(60000)
 
+	it("creates a Type anew for each call where arktype does, though its content addresses it", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const trim = () => type("string.trim")
+const plain = () => type({ a: "string" })
+const narrowed = (fn: (s: string) => boolean) => type("string").narrow(fn)
+const isLong = (s: string) => s.length > 3
+const Trim = type("string.trim")
+console.log(
+	JSON.stringify([
+		trim() === trim(),
+		trim() === Trim,
+		trim().meta === Trim.meta,
+		plain() === plain(),
+		narrowed(isLong) === narrowed(isLong)
+	])
+)
+`
+			},
+			fromHere("temp", "eachCall")
+		)
+		const expected = "[false,false,true,true,true]\n"
+		attest(runPlain(root)).equals(expected)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
+	}).timeout(60000)
+
 	it("creates one Type for a definition two modules share, and only the Types a bundle imports", async () => {
 		const root = writeFixture(
 			{

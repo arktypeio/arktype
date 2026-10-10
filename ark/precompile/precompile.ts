@@ -728,7 +728,8 @@ export class Precompiler {
 				exportsByName[name] = {
 					type: site.value as never,
 					params: factory.params,
-					internedBy: site.isInterned ? table : undefined
+					internedBy: site.isInterned ? table : undefined,
+					isCreatedEachRun: site.isCreatedEachRun
 				}
 				sitesByName[name] = module.positionOf(site)
 				// a factory passed no function written in the site replaces all of it
