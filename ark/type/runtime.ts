@@ -521,20 +521,15 @@ export const holesOf = (
 // a hole is held weakly, as arktype holds a Type it may return again, so a function created for one call doesn't outlive it
 class InternTable {
 	value: unknown = undefined
-	private readonly byObject = new WeakMap<WeakKey, InternTable>()
-	private readonly byValue = new Map<unknown, InternTable>()
+	private readonly tablesByObject = new WeakMap<object, InternTable>()
+	// a symbol is a WeakMap key only in engines since ES2023
+	private readonly tablesByValue = new Map<unknown, InternTable>()
 
 	next(hole: unknown): InternTable {
-		const table =
-			(
-				(typeof hole === "object" && hole !== null) ||
-				typeof hole === "function" ||
-				(typeof hole === "symbol" && Symbol.keyFor(hole) === undefined)
-			) ?
-				this.byObject
-			:	this.byValue
-		let next = table.get(hole as never)
-		if (!next) table.set(hole as never, (next = new InternTable()))
+		const tables =
+			hasDomain(hole, "object") ? this.tablesByObject : this.tablesByValue
+		let next = tables.get(hole as never)
+		if (!next) tables.set(hole as never, (next = new InternTable()))
 		return next
 	}
 }

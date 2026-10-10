@@ -1,4 +1,7 @@
-import { makeItem } from "./items.ts"
+import { makeItem, makePositiveItem } from "./items.ts"
 
 // runs before items.ts imports arktype, which main.ts has loaded already
-export const checkedItem = `${makeItem().expression}: ${makeItem()({ id: "1" })?.toString()}`
+export const checkedItem = [
+	`${makeItem().expression}: ${makeItem()({ id: "1" })?.toString()}`,
+	makePositiveItem()({ id: -1 })?.toString()
+]

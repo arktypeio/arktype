@@ -250,13 +250,6 @@ const writeArtifact = (
 			)
 		}
 	}
-	if (tables.size) {
-		factories.unshift(
-			[...tables]
-				.map(table => `const interned${table} = runtime.internTable()`)
-				.join("\n")
-		)
-	}
 	return [
 		...writeCreations(
 			types,
@@ -266,6 +259,8 @@ const writeArtifact = (
 			shared,
 			imports
 		),
+		// created at a factory's first call, which an import cycle can reach before the artifact's body runs
+		[...tables].map(table => `var interned${table}`).join("\n"),
 		...factories
 	]
 }
@@ -867,16 +862,16 @@ ${statements.filter(statement => statement).join("\n\n")}
 			),
 			`return ${value}`
 		]
-		const keys =
-			internedBy === undefined || !hasArkKind(exported, "root") ?
-				undefined
-			:	keyOf(exported)[1].map(hole => this.holeExpressions.get(hole))
+		const holes =
+			internedBy !== undefined && hasArkKind(exported, "root") ?
+				keyOf(exported)[1].map(hole => this.holeExpressions.get(hole)!)
+			:	undefined
 		const statements = [
 			writeFixConfig(configured),
 			...this.checks,
-			...(keys?.every(key => key !== undefined) ?
+			...(holes ?
 				[
-					`return runtime.intern(interned${internedBy}, [${keys.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n})`
+					`return runtime.intern((interned${internedBy} ??= runtime.internTable()), [${holes.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n})`
 				]
 			:	body)
 		]
