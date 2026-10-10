@@ -4,6 +4,8 @@ import {
 	isNode,
 	precompileRootUnits,
 	registeredReference,
+	rootSchema,
+	schemaScope,
 	writePrecompiledUnits,
 	type BaseNode,
 	type BaseScope
@@ -259,6 +261,13 @@ contextualize(() => {
 		})
 		attest(isPrecompiled(units, T.internal)).equals(false)
 		attest(T({ a: 1, b: -1 })).equals({ a: 1, b: -1 })
+	})
+
+	it("misses a root whose JSON leaves out a child", async () => {
+		const units = await precompileUnits([rootSchema({ required: [] }) as never])
+		const T = schemaScope({}).parse({})
+		attest(isPrecompiled(units, T)).equals(false)
+		attest(T.allows(1)).equals(true)
 	})
 
 	it("misses a cyclic type", async () => {

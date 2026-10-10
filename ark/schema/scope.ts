@@ -409,8 +409,12 @@ const precompiledKeyOf = (root: BaseRoot): string => {
 			`"${(keysByName[name] ??= `${name.replace(/\$[1-9]\d*$/, "")}#${Object.keys(keysByName).length}`)}"`
 	)
 	const arities = new Set<string>()
+	// a child the hash leaves out, like an empty structure, is still compiled and bound
+	let childCounts = ""
 	for (const id in root.referencesById) {
-		forEachValue(root.referencesById[id].inner, value => {
+		const node = root.referencesById[id]
+		childCounts += `${node.children.length},`
+		forEachValue(node.inner, value => {
 			if (typeof value !== "function" || isNode(value)) return
 			const key = keysByName[nameOf(value)]
 			// a builtin constructor is hashed by its global name, which fixes its arity
@@ -418,7 +422,7 @@ const precompiledKeyOf = (root: BaseRoot): string => {
 		})
 	}
 	return hashOf(
-		`${content}\n${[...arities].sort()}\n${$ark.sets !== undefined}`
+		`${content}\n${childCounts}\n${[...arities].sort()}\n${$ark.sets !== undefined}`
 	)
 }
 
