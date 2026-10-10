@@ -175,7 +175,13 @@ export const configure = (
 	;(runtimeConfig as { locale: Locale.Info }).locale = enInfo
 	configuredFingerprint = received
 	configuredValue = config
-	programConfig = config
+	// arktype copies a code's writers when configure() is called, so a later write reaches neither
+	const held: Record<string, unknown> = {}
+	for (const k in config) {
+		const v = (config as Record<string, unknown>)[k]
+		held[k] = v && typeof v === "object" ? { ...v } : v
+	}
+	programConfig = held
 	return config
 }
 

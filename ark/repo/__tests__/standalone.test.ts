@@ -702,6 +702,17 @@ config.onUndeclaredKey = "reject"`,
 		).equals(writtenConfigMessage)
 	})
 
+	it("writes errors with the writers configure() received", async () => {
+		const { T } = await load(
+			{ T: type({ a: "string" }) },
+			`const domain = { expected: () => "E1" }
+runtime.configure({ domain })
+domain.expected = () => "E2"`,
+			fingerprintOf({ domain: { expected: () => "" } })
+		)
+		attest(T({ a: 1 }).summary).snap("a must be E1 (was a number)")
+	})
+
 	it("throws for a second configure() with other values", async () => {
 		const built = fingerprintOf({ numberAllowsNaN: true })
 		const configured = `runtime.configure({ numberAllowsNaN: true }, "${built}")`
