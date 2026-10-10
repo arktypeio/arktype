@@ -123,7 +123,7 @@ export const H = type("string").description`,
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/main.ts:8:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
 				'/main.ts:9:18  type({ "+": "delete", "[string]": "string", a: "\'a\'" }) can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: "a", + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:11:18  type("string").equals("string") can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope or Generic\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/main.ts:11:18  type("string").equals("string") can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { type } from "arktype"
 import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/ulzec91twyof2"
@@ -875,6 +875,23 @@ export const B = $.type({ b: "a" })`,
 				"export const Read = /* @__PURE__ */ $arkf31x3lt13lnlin(max)",
 				"export const $ = /* @__PURE__ */ $arkf16tqm51d9mp98(trim)",
 				"export const B = /* @__PURE__ */ $arkf1tiybtv1jozo2t($)"
+			])
+		})
+
+		it("folds a TypedFn to a factory receiving its implementation", () => {
+			const result = precompile(`import { type } from "arktype"
+export const len = type.fn("string", ":", "number")(s => s.length)
+export const make = () => type.fn("string")(s => s)`)
+			attest(result.diagnostics.map(d => d.reasons)).snap([
+				[
+					'`type.fn("string")(s => s)` creates a new TypedFn each time it runs, though a Type it holds is the same each time'
+				]
+			])
+			attest(
+				result.code.split("\n").filter(line => line.startsWith("export"))
+			).snap([
+				"export const len = /* @__PURE__ */ $arkfogqwaj0g9p34d(s => s.length)",
+				'export const make = () => type.fn("string")(s => s)'
 			])
 		})
 	})

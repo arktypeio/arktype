@@ -46,6 +46,7 @@ import {
 	throwParseError
 } from "@ark/util"
 import { arktypeVersion } from "./entry.ts"
+import { InternalTypedFn, type TypedFn } from "./fn.ts"
 import { cachedDefinitionOf } from "./parser/definition.ts"
 import type { Generic } from "./generic.ts"
 import type { type } from "./keywords/keywords.ts"
@@ -100,12 +101,12 @@ export const runtimeKeyOf = (value: object | symbol): string | undefined =>
 	:	undefined)
 
 // what an artifact exports as it is, rather than creating it in a factory
-type ExportedValue = type.Any | Module | Scope<any> | Generic
+type ExportedValue = type.Any | Module | Scope<any> | Generic | TypedFn
 
 export type StandaloneExport = ExportedValue | StandaloneFactory
 
 export interface StandaloneFactory {
-	// a Type, or a Module, Scope or Generic arktype creates anew each time its site runs
+	// a Type, or a Module, Scope, Generic or TypedFn arktype creates anew each time its site runs
 	type: ExportedValue
 	params: FactoryParam[]
 	// the table of each factory whose Type arktype returns again for the same holes, shared by those returning one Type at build
@@ -474,6 +475,7 @@ export class StandaloneArtifact {
 	declarations = createDeclarations()
 	emitting = new Set<object>()
 	moduleNamesByModule = new Map<object, string>()
+	typedFnNames = new Map<InternalTypedFn, string>()
 	links: string[] = []
 	modules: string[] = []
 	// a literal holding a validator is declared empty and filled once validators exist
@@ -810,6 +812,7 @@ export class StandaloneArtifact {
 		return [
 			...this.comparedRoots.filter(root => !this.validatorAddressOf(root)),
 			...this.moduleNamesByModule.keys(),
+			...this.typedFnNames.keys(),
 			...this.declarations.valuesByRole.literal,
 			...this.declarations.valuesByRole.standIn
 		]
@@ -838,6 +841,10 @@ export class StandaloneArtifact {
 	collectExport(value: unknown, path: string): void {
 		if (hasArkKind(value, "root")) return this.collectType(value)
 		if (hasArkKind(value, "scope") || hasArkKind(value, "generic")) return
+		if (isTypedFn(value)) {
+			this.collectType(value.params)
+			return this.collectType(value.returns)
+		}
 		if (!hasArkKind(value, "module"))
 			return throwParseError(writeUnprecompilableMessage(`the export ${path}`))
 		for (const [k, entry] of Object.entries(value))
@@ -1254,7 +1261,7 @@ return [${returned.join(", ")}]
 		return parts.join(" + ") || '""'
 	}
 
-	// a module is a plain object of validators, frozen like them, and a Scope or Generic an empty one, since resolving an alias or instantiating a Generic needs arktype
+	// a module is a plain object of validators, frozen like them, a TypedFn arktype's wrapper validating with them, and a Scope or Generic an empty one, since resolving an alias or instantiating a Generic needs arktype
 	exportOf(value: unknown): string {
 		if (hasArkKind(value, "root")) return this.validatorNamesByRoot.get(value)!
 		if (hasArkKind(value, "scope") || hasArkKind(value, "generic")) {
@@ -1265,6 +1272,16 @@ return [${returned.join(", ")}]
 				"standIn",
 				this.withHoles(value, "runtime.freeze({})")
 			)
+		}
+		if (isTypedFn(value)) {
+			let name = this.typedFnNames.get(value)
+			if (name) return name
+			name = `typedFn${this.typedFnNames.size}`
+			this.typedFnNames.set(value, name)
+			this.modules.push(
+				`const ${name} = runtime.typedFn(${this.emit(value.raw)}, ${this.exportOf(value.params)}, ${this.exportOf(value.returns)})`
+			)
+			return name
 		}
 		if (!hasArkKind(value, "module"))
 			return throwInternalError(`Unexpected export ${printable(value)}`)
@@ -1878,6 +1895,11 @@ const definitionKeyOf = (value: object): [id: string, holes: unknown[]] => {
 		} else if (value instanceof LazyGenericRoot) {
 			values.push("Generic")
 			collect(value.bodyDef, true)
+		} else if (isTypedFn(value)) {
+			values.push("TypedFn")
+			collect(value.params, false)
+			collect(value.returns, false)
+			collect(value.raw, false)
 		}
 		// e.g. `() => User` as an alias or a property's definition, which arktype calls rather than holds
 		else if (isDefinition && isThunk(value)) values.push("thunk")
@@ -1907,6 +1929,9 @@ const definitionKeyOf = (value: object): [id: string, holes: unknown[]] => {
 }
 
 const valueTupleHeads: unknown[] = ["instanceof", "==="]
+
+export const isTypedFn = (value: unknown): value is InternalTypedFn =>
+	value instanceof InternalTypedFn
 
 const valueOperators: unknown[] = [":", "=>", "=", "@"]
 

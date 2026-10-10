@@ -450,8 +450,35 @@ const isStandIn = (value: unknown): boolean =>
 	((value as { " arkKind"?: unknown })[" arkKind"] === "scope" ||
 		(value as { " arkKind"?: unknown })[" arkKind"] === "generic")
 
+// a TypedFn holds its parameters' and return's Types, as validators in a precompiled program
+const isTypedFn = (
+	value: unknown
+): value is ((...args: unknown[]) => unknown) & {
+	expression: string
+	params: unknown
+	returns: unknown
+} => typeof value === "function" && "params" in value && "returns" in value
+
+const sample = (validate: (data: unknown) => unknown) =>
+	samples().map(data => {
+		try {
+			return serialize(validate(data))
+		} catch (e) {
+			return { threw: messageOf(e) }
+		}
+	})
+
 const observe = (value: unknown): Observation => {
 	if (isStandIn(value)) return { module: {} }
+	if (isTypedFn(value)) {
+		return {
+			name: value.name,
+			expression: value.expression,
+			params: observe(value.params),
+			returns: observe(value.returns),
+			samples: sample(value)
+		}
+	}
 	if (isModule(value)) {
 		return {
 			module: Object.fromEntries(
@@ -468,13 +495,7 @@ const observe = (value: unknown): Observation => {
 	return {
 		expression: validate.expression,
 		description: validate.description,
-		samples: samples().map(data => {
-			try {
-				return serialize(validate(data))
-			} catch (e) {
-				return { threw: messageOf(e) }
-			}
-		})
+		samples: sample(validate)
 	}
 }
 

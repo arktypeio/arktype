@@ -17,6 +17,7 @@ import type { HoleKind } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	holeNamePattern,
+	isTypedFn,
 	keyOf,
 	precompileStandalone,
 	precompileStandaloneModules,
@@ -1273,7 +1274,7 @@ export class Precompiler {
 		const result =
 			site.parseError || isFoldable(site.value) ?
 				[]
-			:	["its value is not a Type, Module, Scope or Generic"]
+			:	["its value is not a Type, Module, Scope, Generic or TypedFn"]
 		// a ParseError's thrower checks nothing the site reads, though the error can depend on any of it
 		for (const hole of site.holes) {
 			const isReceived = !hole.isCalledAtDefinition && hole.kind !== "opaque"
@@ -2777,7 +2778,8 @@ const isFoldable = (value: unknown): value is Foldable =>
 	hasArkKind(value, "root") ||
 	hasArkKind(value, "module") ||
 	hasArkKind(value, "scope") ||
-	hasArkKind(value, "generic")
+	hasArkKind(value, "generic") ||
+	isTypedFn(value)
 
 // e.g. a Module and each Type it holds, which a program can compare by identity
 const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
@@ -2785,6 +2787,10 @@ const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
 	result.add(value)
 	if (hasArkKind(value, "module"))
 		for (const member of Object.values(value)) arkObjectsIn(member, result)
+	if (isTypedFn(value)) {
+		arkObjectsIn(value.params, result)
+		arkObjectsIn(value.returns, result)
+	}
 	return result
 }
 
@@ -2792,7 +2798,8 @@ const kindNameOf = (value: unknown) =>
 	hasArkKind(value, "root") ? "Type"
 	: hasArkKind(value, "module") ? "Module"
 	: hasArkKind(value, "scope") ? "Scope"
-	: "Generic"
+	: hasArkKind(value, "generic") ? "Generic"
+	: "TypedFn"
 
 // e.g. a callback's body and the function calling it, innermost first
 const repeatedRegionsOf = (node: Node): Node[] => {

@@ -73,7 +73,7 @@ export const Name = $arkf1j3ffm9dngv(trim)
 
 A default is applied as arktype applies it, through its value's validator, so a default its value transforms and the `[]` or `{}` a string default parses to are precompiled too.
 
-A matcher is precompiled the same way, receiving its handlers, and one whose default is `"assert"` or `"never"` throws for data no case matches, as arktype's does.
+A matcher is precompiled the same way, receiving its handlers, and one whose default is `"assert"` or `"never"` throws for data no case matches, as arktype's does. So is a `type.fn` TypedFn, receiving its implementation: it is arktype's own wrapper, validating with the validators of its parameters and return, and named for the function it receives.
 
 A definition referencing a Type that holds functions receives that Type's validator and takes them from it. A definition reading a value through a binding (an object or a primitive declared in the module, an import, a `define`) receives it after those values and compares it with what the build read before creating anything: a primitive by `Object.is`, an object by its keys in order and then each value, a Type by its content, importing it if the module doesn't. A mismatch throws, naming the value and both readings, so a mocked module, a mutated object or a stubbed define fails at creation rather than validating differently.
 

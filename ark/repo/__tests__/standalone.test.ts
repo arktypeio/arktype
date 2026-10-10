@@ -1102,6 +1102,28 @@ contextualize(() => {
 			)
 		})
 
+		it("wraps the function it receives as a TypedFn", async () => {
+			const length = standIn((s: string) => s.length, "length")
+			const create = await loadFactory(
+				type.fn("string", ":", "number")(length) as never,
+				[["function", "`length`", length]]
+			)
+			const count = create(function count(s: string) {
+				return s.length
+			})
+			attest([count("abc"), count.name, count.expression]).equals([
+				3,
+				"bound typed count",
+				"(string) => number"
+			])
+			attest(() => count(1)).throws.snap(
+				"TraversalError: value at [0] must be a string (was a number)"
+			)
+			attest(() => create((s: string) => s)("b")).throws.snap(
+				"TraversalError: must be a number (was a string)"
+			)
+		})
+
 		it("checks the names of a validator's holes are those it printed", async () => {
 			const isLong = (s: string) => s.length > 3
 			const builtIsLong = standIn(isLong.bind(null), "islong")
@@ -1429,6 +1451,7 @@ export default shared`).js
 			"schema/shared/utils.ts",
 			"schema/structure/shared.ts",
 			"type/entry.ts",
+			"type/fn.ts",
 			"type/keywords/functions.ts",
 			"type/runtime.ts"
 		])

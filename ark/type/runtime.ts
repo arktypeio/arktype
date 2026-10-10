@@ -42,8 +42,10 @@ import {
 	printable,
 	prototypeOf,
 	throwError,
+	type Fn,
 	type inferred
 } from "@ark/util"
+import { InternalTypedFn } from "./fn.ts"
 import { raisedErrorPhrases } from "./keywords/functions.ts"
 import type { ArrayType } from "./variants/array.ts"
 import type { DateType } from "./variants/date.ts"
@@ -284,6 +286,14 @@ for (const k of Reflect.ownKeys(Validator.prototype)) {
 	if (k !== "constructor") freeze(value ?? get)
 }
 freeze(Validator.prototype)
+
+// arktype's own wrapper, so its name, members and expression are those arktype gives the function the program passes
+export const typedFn = (
+	raw: Fn,
+	params: Validator,
+	returns: Validator
+): InternalTypedFn =>
+	freeze(new InternalTypedFn(raw, params as never, returns as never))
 
 // arktype's parser, of which the runtime has only the class of the errors a validator returns
 export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
