@@ -7,6 +7,7 @@ import {
 	allowsAcyclic,
 	allowsInContext,
 	applyCyclic,
+	applyRejected,
 	transformResolution,
 	Traversal
 } from "./traversal.ts"
@@ -16,9 +17,17 @@ export const rootApplyRuntime = {
 	TransformErrors,
 	addTransformErrors,
 	applyCyclic,
+	applyRejected,
 	allowsAcyclic,
 	allowsInContext,
 	transformResolution
+}
+
+// a root apply reads each of these it calls from its node once, when it's created
+const nodeMembers = {
+	allows: "allows",
+	traverseAllows: "traverseAllows",
+	transform: "traverseTransform"
 }
 
 export const rootApplyParams = [
@@ -36,10 +45,7 @@ export const writeRootApply = (node: BaseRoot, name: string): string => {
 			body.return(
 				"applyCyclic(node, data, new Traversal(data, config)).finalize(onFail)"
 			)
-		:	body
-				.const("ctx", "new Traversal(data, config)")
-				.line("apply(data, ctx)")
-				.return("ctx.finalize(onFail)")
+		:	body.return("applyRejected(node, data, config, onFail, Traversal)")
 	// a valid result is often data itself, which is cheaper to compare than instanceof
 	const returnResult = () =>
 		node.includesMorph ?
@@ -90,7 +96,11 @@ export const writeRootApply = (node: BaseRoot, name: string): string => {
 		applyFailed.body ?
 			`const applyFailed = function ${applyFailed.write(`${name}ApplyFailed`)}\n`
 		:	""
+	const rootApply = `${failurePath}return (function ${js.write(`${name}RootApply`)})`
+	const read = Object.entries(nodeMembers).filter(([member]) =>
+		new RegExp(`\\b${member}\\b`).test(rootApply)
+	)
 	return `"use strict"
-const allows = node.allows, traverseAllows = node.traverseAllows, apply = node.traverseApply, transform = node.traverseTransform
-${failurePath}return (function ${js.write(`${name}RootApply`)})`
+const ${read.map(([member, key]) => `${member} = node.${key}`).join(", ")}
+${rootApply}`
 }
