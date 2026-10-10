@@ -214,6 +214,7 @@ export const hasObjectKind = <kind extends keyof builtinConstructors>(
 export const isArray: (data: unknown) => data is readonly unknown[] =
 	Array.isArray
 
+// reads of prototypes run in functions annotated pure, so a bundler can drop those nothing uses
 const dateToString = /* @__PURE__ */ (() => Date.prototype.toString)()
 const dateGetTime = /* @__PURE__ */ (() => Date.prototype.getTime)()
 
