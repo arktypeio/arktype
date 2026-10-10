@@ -1045,7 +1045,11 @@ export { factory${index} as ${JSON.stringify(name)} }`
 			(value, i) => `const r${i} = ${this.emit(value)}`
 		)
 		const errorContexts = unit.errorContexts.map(context => this.emit(context))
-		const builders = this.writeBuilders(unit.errorContexts, errorContexts)
+		const builders = this.writeBuilders(
+			unit.errorContexts,
+			errorContexts,
+			"errorContexts"
+		)
 		const returned = unit.traversals.flat()
 		const links = ownRoots.map(root => {
 			const shape = writing.shapesByName[unit.names[root.id]]
@@ -1164,8 +1168,13 @@ return [${returned.join(", ")}]
 		return [params, args]
 	}
 
-	// contexts with the same keys share a function building their errors, in a module of its own
-	writeBuilders(contexts: readonly object[], names: string[]): string[] {
+	// contexts with the same keys share a function building their errors, in a module of its own; one building
+	// every context registers `all`, the array already holding them
+	writeBuilders(
+		contexts: readonly object[],
+		names: string[],
+		all?: string
+	): string[] {
 		const namesByBuilder: Record<string, string[]> = {}
 		for (let i = 0; i < contexts.length; i++) {
 			const builder = writeErrorBuilder(contexts[i])
@@ -1190,7 +1199,7 @@ return [${returned.join(", ")}]
 		}
 		return Object.entries(namesByBuilder).map(
 			([builderName, built]) =>
-				`runtime.registerErrorBuilder(${builderName}, [${built.join(", ")}])`
+				`runtime.registerErrorBuilder(${builderName}, ${all && built.length === names.length ? all : `[${built.join(", ")}]`})`
 		)
 	}
 
