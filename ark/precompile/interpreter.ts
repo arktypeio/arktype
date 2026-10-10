@@ -1260,7 +1260,8 @@ export class Interpreter {
 		module: SourceModule
 	): boolean {
 		try {
-			return [...this.holesIn(value)].some(hole =>
+			// with what arktype was passed but doesn't hold, as a narrow it called on a literal, whose kind it checked too
+			return [...this.holesIn(value), ...(site?.holes ?? [])].some(hole =>
 				this.checksHole(site, hole, module)
 			)
 		} catch (e) {

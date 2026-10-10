@@ -738,6 +738,70 @@ console.log(Admin.description)
 		}
 	}).timeout(60000)
 
+	it("checks each function a definition reads where arktype would, though its Type drops it or a site reads only its introspection", async () => {
+		const definitions = {
+			thrown: `type(["'a'", "=>", double]).or(type({})).toJsonSchema()`,
+			called: `type([["null", ":", isPositive], "[]"])`,
+			json: `type([]).or(type([["null", ":", isPositive], "[]"])).json`
+		}
+		const errorOf = (root: string, file: string) =>
+			/^\w*Error: (.*)$/m.exec(
+				spawnSync(process.execPath, ["--conditions", "ark-ts", file], {
+					cwd: root,
+					encoding: "utf8"
+				}).stderr
+			)?.[1]
+		const results: Record<string, unknown> = {}
+		for (const [name, definition] of Object.entries(definitions)) {
+			const root = writeFixture(
+				{
+					"package.json": `{ "type": "module" }`,
+					"containers.js": `export const double = data => (typeof data === "number" ? data * 2 : data)
+export const isPositive = (data, ctx) => typeof data !== "number" || data > 0 || ctx.reject("positive")
+`,
+					"main.js": `import { type } from "arktype"
+import { double, isPositive } from "./containers.js"
+
+${definition}
+`
+				},
+				fromHere("temp", `checkedHoles${name}`)
+			)
+			const { outputFiles } = await esbuild({
+				entryPoints: [join(root, "main.js")],
+				bundle: true,
+				write: false,
+				format: "esm",
+				minify: true,
+				conditions,
+				// e.g. a module the runtime resolves to another copy than the build read
+				external: ["./containers.js"],
+				logLevel: "silent",
+				plugins: [precompile.esbuild({ cwd: root, conditions })]
+			})
+			writeFileSync(join(root, "bundle.js"), outputFiles[0].text)
+			writeFileSync(
+				join(root, "containers.js"),
+				`export const double = Symbol("double")\nexport const isPositive = Symbol("isPositive")\n`
+			)
+			results[name] = [errorOf(root, "main.js"), errorOf(root, "bundle.js")]
+		}
+		attest(results).snap({
+			thrown: [
+				"Morph expression requires a function following '=>' (was symbol)",
+				"`double` (main.js:4:20) is Symbol(double), but was precompiled as a function of 1 parameter"
+			],
+			called: [
+				"Narrow expression requires a function following ':' (was symbol)",
+				"`isPositive` (main.js:4:21) is Symbol(isPositive), but was precompiled as a function of 2 or more parameters"
+			],
+			json: [
+				"Narrow expression requires a function following ':' (was symbol)",
+				"`isPositive` (main.js:4:33) is Symbol(isPositive), but was precompiled as a function of 2 or more parameters"
+			]
+		})
+	}).timeout(60000)
+
 	it("shares a Type definitions reach through different copies whichever runs first", async () => {
 		const files = {
 			"string.ts": `import { type } from "arktype"

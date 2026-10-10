@@ -159,6 +159,8 @@ export interface Site {
 	arktypeArguments: unknown[]
 	parsedDefinitions: string[]
 	holes: Hole[]
+	// each function arktype calls while defining what the site creates, which it checks is a function first, as for a narrow on a literal
+	called: Hole[]
 	inputs: Input[]
 	helpers: Helper[]
 	references: Reference[]
@@ -1144,13 +1146,17 @@ export class Precompiler {
 
 	private isFactory(site: Site, module: SourceModule): boolean {
 		const created = createdBy(site)
+		if (!created) return false
+		const dropped = this.droppedHolesOf(site)
 		return (
-			!!created &&
-			(keyOf(created)[1].length > 0 ||
-				site.inputs.length > 0 ||
-				site.defaultChecks.length > 0 ||
-				this.droppedHolesOf(site).size > 0 ||
-				this.mockableHelpersOf(site, module).length > 0)
+			keyOf(created)[1].length > 0 ||
+			site.inputs.length > 0 ||
+			site.defaultChecks.length > 0 ||
+			// one its module creates and reads in place is the same function however the program runs
+			site.references.some(
+				reference => dropped.has(reference.value) && !reference.isOwnHole
+			) ||
+			this.mockableHelpersOf(site, module).length > 0
 		)
 	}
 
@@ -1173,7 +1179,7 @@ export class Precompiler {
 			)
 		)
 			return dropped
-		for (const hole of site.holes) {
+		for (const hole of [...site.holes, ...site.called]) {
 			if (hole.kind === "function" && !held.includes(hole.value))
 				dropped.add(hole.value)
 		}
@@ -1295,7 +1301,9 @@ export class Precompiler {
 		factory: SiteFactory,
 		reasons: string[]
 	): Set<unknown> {
-		const holesByValue = new Map(site.holes.map(hole => [hole.value, hole]))
+		const holesByValue = new Map(
+			[...site.holes, ...site.called].map(hole => [hole.value, hole])
+		)
 		// the text each hole is read through, which can evaluate to another value at runtime if another module can replace it
 		const sourcesByHole = new Map<unknown, Map<string, boolean>>()
 		const addSource = (hole: unknown, text: string, isForeign: boolean) => {
@@ -1306,14 +1314,17 @@ export class Precompiler {
 		const passed = new Set<unknown>()
 		// one value read through two texts is passed through each, since the program can change one but not the other
 		const textsByPassed = new Map<unknown, Set<string>>()
-		// what a site reading a Type's introspection needn't receive, since it creates no validator, nothing the program does changes those checks, and no default check calls them
+		// what a site needs only to check, since its validator doesn't hold it or it reads only introspection, and needn't receive where nothing the program does changes that check and no default's check calls or is identified by it
 		const unchecked = new Set<unknown>()
-		const called = new Set(
+		const calledByChecks = new Set(
 			site.defaultChecks.flatMap(([node]) => keyOf(node.in as BaseRoot)[1])
 		)
 		for (const reference of site.references) {
 			const text = module.snippetOf(reference)
 			const hole = holesByValue.get(reference.value)
+			// e.g. beside `pipe.try`'s morph, where nothing the site reads is dropped
+			if (hole && site.called.includes(hole) && !dropped.has(hole.value))
+				continue
 			// a class an intersection dropped decided which side survived, so it's received for its lineage
 			if (
 				hole &&
@@ -1329,8 +1340,8 @@ export class Precompiler {
 			}
 			const holes = hole ? [hole.value] : keyOf(reference.value as Foldable)[1]
 			if (
-				site.introspection &&
-				!holes.some(value => called.has(value)) &&
+				(site.introspection || (hole && dropped.has(hole.value))) &&
+				!holes.some(value => calledByChecks.has(value)) &&
 				(hole ?
 					reference.isOwnHole
 				:	!this.interpreter.isCheckedAtCreation(reference.value))
@@ -2047,6 +2058,7 @@ export class Precompiler {
 			arktypeArguments: candidate.state.arktypeArguments,
 			parsedDefinitions: candidate.state.parsedDefinitions,
 			holes: [],
+			called: [],
 			inputs: [],
 			helpers: [],
 			references: [],
@@ -2141,10 +2153,13 @@ export class Precompiler {
 			)
 		}
 		for (const value of state.holes) {
-			if (!site.parseError && !isHeld(value, this.interpreter)) continue
+			const isCalled = !site.parseError && !isHeld(value, this.interpreter)
 			const hole = this.holeOf(value, candidate, module)
-			if (hole instanceof DynamicValue) return rejectSite(site, hole)
-			site.holes.push(hole)
+			if (!isCalled) {
+				if (hole instanceof DynamicValue) return rejectSite(site, hole)
+				site.holes.push(hole)
+			} else if (!(hole instanceof DynamicValue) && hole.kind === "function")
+				site.called.push(hole)
 		}
 		site.holes.sort((l, r) => l.start - r.start)
 		for (const { root, value } of state.trace.exportedFunctions) {
@@ -2177,7 +2192,7 @@ export class Precompiler {
 			if (value === undefined) continue
 			if (
 				!hasArkKind(value, "root") &&
-				!site.holes.some(hole => hole.value === value) &&
+				![...site.holes, ...site.called].some(hole => hole.value === value) &&
 				!(isFoldable(value) && keyOf(value)[1].length)
 			)
 				continue
@@ -3932,6 +3947,7 @@ const refuse = (site: Site, reasons: string[]): Site => {
 	site.value = undefined
 	site.roots = []
 	site.holes = []
+	site.called = []
 	site.inputs = []
 	site.references = []
 	return site
