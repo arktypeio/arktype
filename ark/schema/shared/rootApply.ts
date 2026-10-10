@@ -23,12 +23,7 @@ export const rootApplyRuntime = {
 	transformResolution
 }
 
-// a root apply reads each of these it calls from its node once, when it's created
-const nodeMembers = {
-	allows: "allows",
-	traverseAllows: "traverseAllows",
-	transform: "traverseTransform"
-}
+const nodeMembers = ["allows", "traverseAllows", "traverseTransform"]
 
 export const rootApplyParams = [
 	"node",
@@ -75,32 +70,35 @@ export const writeRootApply = (node: BaseRoot, name: string): string => {
 				.if("!(untracked ?? allowsInContext(node, data, config))", fallback)
 				.const("ctx", "new Traversal(data, config)")
 				.set("ctx.tracksTransforms", "untracked === undefined")
-				.const("result", `transformResolution(ctx, "${name}", data, transform)`)
+				.const(
+					"result",
+					`transformResolution(ctx, "${name}", data, traverseTransform)`
+				)
 		} else {
 			js.if("!allows(data)", fallback)
 				.const("ctx", "new Traversal(data, config)")
-				.const("result", "transform(data, ctx)")
+				.const("result", "traverseTransform(data, ctx)")
 		}
 		js.return("ctx.hasError() ? ctx.finalize(onFail) : result")
 	} else if (node.hasKind("union") && !node.compiledDiscriminant) {
-		js.const("result", "transform(data)").if(
+		js.const("result", "traverseTransform(data)").if(
 			`result === ${JSON.stringify(unset)}`,
 			fallback
 		)
 		returnResult()
 	} else if (node.includesMorph) {
-		js.if("!allows(data)", fallback).const("result", "transform(data)")
+		js.if("!allows(data)", fallback).const("result", "traverseTransform(data)")
 		returnResult()
-	} else js.if("!allows(data)", fallback).return("transform(data)")
+	} else js.if("!allows(data)", fallback).return("traverseTransform(data)")
 	const failurePath =
 		applyFailed.body ?
 			`const applyFailed = function ${applyFailed.write(`${name}ApplyFailed`)}\n`
 		:	""
 	const rootApply = `${failurePath}return (function ${js.write(`${name}RootApply`)})`
-	const read = Object.entries(nodeMembers).filter(([member]) =>
+	const read = nodeMembers.filter(member =>
 		new RegExp(`\\b${member}\\b`).test(rootApply)
 	)
 	return `"use strict"
-const ${read.map(([member, key]) => `${member} = node.${key}`).join(", ")}
+const ${read.map(member => `${member} = node.${member}`).join(", ")}
 ${rootApply}`
 }

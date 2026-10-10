@@ -264,7 +264,7 @@ export const applyRejected = (
 	data: unknown,
 	config: ResolvedConfig,
 	onFail: ArkErrors.Handler | null,
-	ctor: typeof InternalTraversal = InternalTraversal
+	ctor: typeof InternalTraversal
 ): unknown => {
 	const ctx = new ctor(data, config)
 	node.traverseApply(data, ctx)
