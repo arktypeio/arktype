@@ -730,6 +730,24 @@ domain.expected = () => "E2"`,
 		).equals("")
 	})
 
+	it("throws for a second configure() with other functions", async () => {
+		const built = fingerprintOf({ divisor: { description: () => "" } })
+		const configured = (description: string, stamp = "") =>
+			`runtime.configure({ divisor: { description: ${description} } }${stamp && `, "${stamp}"`})`
+		attest(
+			await messageOf(
+				`${configured('() => "one"', built)}\n${configured('() => "two"')}`,
+				built
+			)
+		).equals(reconfiguredMessage)
+		attest(
+			await messageOf(
+				`const describe = () => "one"\n${configured("describe", built)}\n${configured("describe")}`,
+				built
+			)
+		).equals("")
+	})
+
 	it("creates its validators where a site first reads them", async () => {
 		const config = { domain: { message: "configured" } }
 		const artifact = await importBesideArktype(

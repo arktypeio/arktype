@@ -152,6 +152,7 @@ export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({
 })
 
 let configuredFingerprint: string | undefined
+let configuredReached: unknown[]
 let recheck: (() => unknown) | undefined
 let programConfig: ArkSchemaConfig | undefined
 let configureIslands: ((config: ArkSchemaConfig) => unknown) | undefined
@@ -162,18 +163,27 @@ export const configure = (
 ): ArkSchemaConfig => {
 	if (Object.isFrozen(runtimeConfig))
 		return throwParseError(configureAfterTypeMessage)
-	const received = fingerprintOf(config)
+	const reached: unknown[] = []
+	const received = fingerprintOf(config, reached)
 	// a loader or plugin can change a module the configuration reads after the build read it
 	if (fingerprint !== undefined && fingerprint !== received)
 		return throwParseError(configuredUnlikeBuildMessage)
 	// a module the build didn't transform, like a dependency's, can configure arktype too, which merges what the runtime keeps apart
-	if (configuredFingerprint !== undefined && configuredFingerprint !== received)
+	if (
+		configuredFingerprint !== undefined &&
+		(configuredFingerprint !== received ||
+			// the same text visits the same places, where the fingerprint counts a function only as one
+			reached.some(
+				(v, i) => typeof v === "function" && v !== configuredReached[i]
+			))
+	)
 		return throwParseError(reconfiguredMessage)
 	configureIslands?.(config)
 	if ("onFail" in config)
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
 	;(runtimeConfig as { locale: Locale.Info }).locale = enInfo
 	configuredFingerprint = received
+	configuredReached = reached
 	// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
 	recheck = () =>
 		fingerprintOf(config) !== received && throwParseError(writtenConfigMessage)
@@ -188,8 +198,11 @@ export const configure = (
 }
 
 // the configuration's values apart from its functions, which the runtime can't compare with the build's
-export const fingerprintOf = (config: object): string => {
-	const text = staticTextOf(config, [])
+export const fingerprintOf = (
+	config: object,
+	reached: unknown[] = []
+): string => {
+	const text = staticTextOf(config, reached)
 	// two 32-bit lanes, since a check for equality needs texts apart in the state but not its bits spread
 	let a = 1
 	let b = 2
@@ -200,9 +213,11 @@ export const fingerprintOf = (config: object): string => {
 	return `${(a >>> 0).toString(36)}_${(b >>> 0).toString(36)}`
 }
 
-const staticTextOf = (value: unknown, seen: object[]): string => {
-	if (typeof value === "function") return "function"
-	if (typeof value !== "object" || value === null) {
+const staticTextOf = (value: unknown, seen: unknown[]): string => {
+	if (
+		value === null ||
+		(typeof value !== "object" && typeof value !== "function")
+	) {
 		return (
 			typeof value === "string" ? JSON.stringify(value)
 			: typeof value === "bigint" ? `${value}n`
@@ -214,6 +229,7 @@ const staticTextOf = (value: unknown, seen: object[]): string => {
 	const index = seen.indexOf(value)
 	if (index !== -1) return `#${index}`
 	seen.push(value)
+	if (typeof value === "function") return "function"
 	const tag = Object.prototype.toString.call(value)
 	// listed here, since a bundler keeps a module-level read of a prototype even where nothing configures
 	const builtins = [
