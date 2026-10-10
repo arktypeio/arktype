@@ -1779,13 +1779,25 @@ export class Precompiler {
 		if (reads) return reads
 		this.readsByModule.set(
 			module,
-			(reads = findSites(module, this.graph, this.mode === "standalone"))
+			(reads = findSites(module, this.graph, this.mode === "standalone").filter(
+				read => !this.callsConfigure(read.root, module)
+			))
 		)
 		for (const { candidate } of reads) {
 			if (candidate)
 				this.interpreter.sitesByNode.set(candidate.state.node, candidate.state)
 		}
 		return reads
+	}
+
+	// e.g. `setup()` with `setup = () => configure(...)`, which is refused where it calls configure()
+	private callsConfigure(node: Node, module: SourceModule): boolean {
+		const helper =
+			node.type === "CallExpression" && this.graph.helperOf(node.callee, module)
+		return (
+			!!helper &&
+			this.configureCallsOf(helper[1]).some(call => contains(helper[0], call))
+		)
 	}
 
 	private candidatesOf(module: SourceModule): SiteCandidate[] {
@@ -2513,6 +2525,18 @@ export class Precompiler {
 		module: SourceModule,
 		modules: string[]
 	): Pick<Configuration, "problem" | "reasons"> & { value: unknown } {
+		// the program may run a call elsewhere later or not at all, though the build applies it before any site
+		if (
+			call.parent?.type !== "ExpressionStatement" ||
+			call.parent.parent !== module.program
+		) {
+			return {
+				value: undefined,
+				problem:
+					"configure() must be called once, unconditionally, at the config module's top level",
+				reasons: []
+			}
+		}
 		const argument = call.arguments[0]
 		if (!argument) return { value: undefined, problem: undefined, reasons: [] }
 		const value = this.interpreter.evaluateSite(

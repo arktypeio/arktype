@@ -321,6 +321,31 @@ ${call}`,
 			])
 		})
 
+		it("configure other than at the config module's top level", () => {
+			const setup = `import { configure } from "arktype/config"
+export const setup = () => configure({ onUndeclaredKey: "reject" })`
+			attest([
+				...diagnosticsOf(
+					`import { configure } from "arktype/config"
+if (process.env.STRICT) configure({ onUndeclaredKey: "reject" })`,
+					{},
+					{ config: "/main.ts" }
+				),
+				...diagnosticsOf(setup, {}, { config: "/main.ts" }),
+				...diagnosticsOf(
+					`import { setup } from "./config.ts"
+import { type } from "arktype"
+setup()
+export const A = type({ a: "string" })`,
+					{ "/config.ts": setup },
+					{ config: "/config.ts" }
+				)
+			]).snap([
+				"/main.ts:2:25  configure() must be called once, unconditionally, at the config module's top level\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+				"/main.ts:2:28  configure() must be called once, unconditionally, at the config module's top level\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+			])
+		})
+
 		it("configure with values that are not static", () => {
 			attest(
 				diagnosticsOf(
