@@ -2342,6 +2342,8 @@ const encodeKey = (
 				refusal ??= `has an hkt body${at(path)}, whose results decide what it creates`
 			else write(value.bodyDef, path, true)
 			write(value.$, path, true)
+			// a Generic bound into another Scope parses its arguments there
+			write(value.arg$, path, true)
 		} else if (isTypedFn(value)) {
 			values.push("TypedFn")
 			write(value.params, path, false)

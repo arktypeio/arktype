@@ -249,11 +249,11 @@ export const Box = type("<t>", { box: "t" })
 export const BoxedTree = Box(types.tree)`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/o3osq103x6epv"
-import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/o3osq103x6epv"
-import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/o3osq103x6epv"
-import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/o3osq103x6epv"
-import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/o3osq103x6epv"
+import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/vxbny20dlfpyx"
+import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/vxbny20dlfpyx"
+import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/vxbny20dlfpyx"
+import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/vxbny20dlfpyx"
+import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/vxbny20dlfpyx"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 const $ = /* @__PURE__ */ $arkvq7pa6c00qqwz6()
@@ -267,9 +267,9 @@ export const BoxedTree = /* @__PURE__ */ $arkv1tryxgh0tpn3pk()`)
 					.filter(line => /^const (standIn|module)\d/.test(line))
 			).snap([
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "2ug25d0g2fmpu")',
-				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "1s98i630opcfcs")',
-				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "163lwd7008l6df")',
-				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "6ljgkd0jin6zz")'
+				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "k78ow71g3ri51")',
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "t8htl11pahkmk")',
+				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "dpg9qw0fjxmwu")'
 			])
 		})
 
@@ -352,11 +352,11 @@ export const make = () => ({
 })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/j6ar3n0gl4q7m"
-import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/j6ar3n0gl4q7m"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/j6ar3n0gl4q7m"
-import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/j6ar3n0gl4q7m"
-import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/j6ar3n0gl4q7m"
+import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/vq7vhk0sy60a6"
+import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/vq7vhk0sy60a6"
+import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/vq7vhk0sy60a6"
+import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/vq7vhk0sy60a6"
+import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/vq7vhk0sy60a6"
 export const make = () => ({
 	$: $arkf1a6evaf1ilxqcd(),
 	types: $arkf14gb4ky1hqquxy(),

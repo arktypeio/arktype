@@ -62,6 +62,17 @@ export const BoxOf = type.generic("t")(
 	}
 )
 
+const boxes = scope({ "Box<t>": { v: "t" }, foo: "string" })
+// each pair differs only in the Scope a Generic bound into it parses its arguments in
+export const NumberFooBox = scope({
+	...boxes.export("Box"),
+	foo: "number"
+}).export().Box
+export const BooleanFooBox = scope({
+	...boxes.export("Box"),
+	foo: "boolean"
+}).export().Box
+
 export const shortNames = scope({ name: ["string", ":", isShort] }).export()
 export const longNames = scope({ name: ["string", ":", isLong] }).export()
 
