@@ -57,6 +57,8 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	}
 	const modules: Record<string, string> = {}
 	const importersByUrl: Record<string, string> = {}
+	// a loader that compiles a module itself, as tsx does a CommonJS package's, gives these hooks none of its text
+	const givenUrls = new Set<string>()
 	registerHooks({
 		resolve: (specifier, context, nextResolve) => {
 			if (specifier.startsWith("~arktype/"))
@@ -66,6 +68,15 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				context = { ...context, parentURL: importersByUrl[context.parentURL] }
 			if (!runtimeSpecifiers.includes(specifier))
 				return nextResolve(specifier, context)
+			const importer = context.parentURL
+			// a module these hooks never saw wasn't precompiled, so nothing checked what it reads of arktype/runtime
+			if (
+				isStandalone &&
+				importer?.startsWith("file:") &&
+				!givenUrls.has(importer) &&
+				isTransformed(fileURLToPath(importer))
+			)
+				throwError(writeTextlessMessage(fileURLToPath(importer)))
 			if (context.parentURL?.includes("/node_modules/")) {
 				const { errors, warnings } = request(
 					"readDependency",
@@ -85,9 +96,10 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				}
 			}
 			const loaded = nextLoad(url, context)
-			if (!url.startsWith("file:") || loaded.source === undefined) return loaded
+			if (!url.startsWith("file:")) return loaded
 			const id = fileURLToPath(url)
-			if (!isTransformed(id)) return loaded
+			if (!isTransformed(id) || loaded.source === undefined) return loaded
+			givenUrls.add(url)
 			giveConfiguration(context, nextLoad)
 			const transformed = request("transform", textOf(loaded.source), id) as
 				| TransformedModule
@@ -110,3 +122,6 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 
 const textOf = (source: NonNullable<LoadFnOutput["source"]>): string =>
 	typeof source === "string" ? source : new TextDecoder().decode(source)
+
+const writeTextlessMessage = (path: string) =>
+	`${path} imports arktype, but a loader compiles it without passing its text through @ark/precompile/node's hooks, as tsx does in a CommonJS package, so a standalone build can't precompile it`

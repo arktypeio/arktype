@@ -200,6 +200,29 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			}
 		}).timeout(60000)
 
+		it("refuses in standalone mode a module a loader keeps its text from", () => {
+			const { status, stderr } = node(
+				["--import", "./bypass.ts", "main.ts"],
+				{ config: "config.ts" },
+				transpiled
+			)
+			attest(status).equals(1)
+			attest(
+				stderr
+					.slice(stderr.indexOf("Error: ") + 7, stderr.indexOf("\n    at "))
+					.replace(`${transpiled}/`, "")
+			).snap(
+				"config.ts imports arktype, but a loader compiles it without passing its text through @ark/precompile/node's hooks, as tsx does in a CommonJS package, so a standalone build can't precompile it"
+			)
+			attest(
+				node(
+					["--import", "./bypass.ts", "main.ts"],
+					{ runtime: "arktype", config: "config.ts" },
+					transpiled
+				).stdout
+			).equals(runPlain(transpiled))
+		}).timeout(60000)
+
 		it("configured before a Type is created, after the module defining it loads", () => {
 			const opts = { config: "config.ts" }
 			attest(node(["later.ts"], opts, configured).stdout).equals(
