@@ -211,7 +211,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				continue
 			}
 			const morphed =
-				morph.length === 1 ?
+				arityOf(morph) === 1 ?
 					(morph as Morph.ContextFree)(result as never)
 				:	callMorph(ctx, morph, result)
 			if (morphed instanceof ArkErrors) {

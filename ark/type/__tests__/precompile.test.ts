@@ -264,6 +264,22 @@ contextualize(() => {
 		attest(Contextual(-1).toString()).snap("must be positive (was -1)")
 	})
 
+	it("binds a unit by the arity arktype first read, though it changes after", async () => {
+		const units = await precompileUnits([
+			type([
+				"number",
+				"=>",
+				named("doublePrecompiled", (n: number) => n * 2)
+			]).or("string")
+		])
+		const double = named("doublePrecompiled", (n: number) => n * 2)
+		const L = type(["number", "=>", double])
+		Object.defineProperty(double, "length", { value: 2 })
+		const U = L.or("string")
+		attest(isPrecompiled(units, U.internal)).equals(true)
+		attest(U(2)).equals(4)
+	})
+
 	it("misses a unit whose functions are shared differently", async () => {
 		const isShared = named("isSharedPrecompiled", (n: number) => n > 0)
 		const units = await precompileUnits([

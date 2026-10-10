@@ -20,7 +20,14 @@ export const isDate = (value: unknown): value is Date => value instanceof Date
 export const prototypeOf = (o: object): object | null =>
 	Object.getPrototypeOf(o)
 
-export const arityOf = (fn: Function): number => fn.length
+const arities = new WeakMap<Function, number>()
+
+// what arktype creates from a function depends on its length, which can change after, so it's read once
+export const arityOf = (fn: Function): number => {
+	let arity = arities.get(fn)
+	if (arity === undefined) arities.set(fn, (arity = fn.length))
+	return arity
+}
 
 export const functionNameOf = (fn: Function): string => fn.name
 

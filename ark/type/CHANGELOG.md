@@ -342,6 +342,19 @@ type("string")
 	.toJsonSchema({ dialect: null })
 ```
 
+### Read a function's arity once
+
+arktype reads a function's `length` once, the first time, so a morph whose `length` changed after a Type referencing it was created is still called as it was then:
+
+```ts
+const double = (data: any) => (typeof data === "number" ? data * 2 : data)
+const T = type(["number % 2", "=>", double])
+Object.defineProperty(double, "length", { value: 2 })
+
+// previously threw a TypeError, now 0
+T.or("string")(0)
+```
+
 ### Fix `ctx.data` after a morph that reads `ctx`
 
 After a morph taking `ctx` ran, `ctx.data` kept reading from that morph's input, so a narrow picking a later union branch saw the wrong value and valid data could be left untransformed:
