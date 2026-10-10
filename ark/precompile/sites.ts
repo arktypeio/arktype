@@ -28,19 +28,57 @@ export interface SiteCandidate {
 	state: SiteState
 	// the calls the site climbed through, innermost first, as the callee or argument the site can shrink back to
 	fallbacks: Node[]
+	isSite?: boolean
+}
+
+// a reference that can start a site, and the site it climbs to if it does
+export interface SiteRead {
+	reference: Reference
+	kind: SiteKind
+	root: Node
+	candidate: SiteCandidate | undefined
 }
 
 export const findSites = (
 	module: SourceModule,
-	graph: ModuleGraph,
-	interpreter: Interpreter
-): SiteCandidate[] => {
-	const candidates: SiteCandidate[] = []
+	graph: ModuleGraph
+): SiteRead[] => {
+	const reads: SiteRead[] = []
+	// candidates climbing to one node evaluate it once
+	const statesByNode = new Map<Node, SiteState>()
 	for (const reference of module.scopes.references) {
 		const found = rootOf(reference, module, graph)
 		if (!found) continue
 		const [kind, root, isOwnSite] = found
-		const fn = enclosingFunctionOf(reference.id)
+		const fallbacks: Node[] = []
+		const top = climb(root, fallbacks, module, graph)
+		let candidate: SiteCandidate | undefined
+		if (top !== root || isOwnSite) {
+			let state = statesByNode.get(top)
+			if (!state) statesByNode.set(top, (state = createSiteState(top, module)))
+			const fn = enclosingFunctionOf(reference.id)
+			candidate = {
+				kind,
+				root: kind === "helper" ? reference.id : root,
+				fn,
+				helper: fn && isFoldedHelper(fn, module) ? fn : undefined,
+				state,
+				fallbacks
+			}
+		}
+		reads.push({ reference, kind, root, candidate })
+	}
+	return reads
+}
+
+// each reference is read before any site settles, so a site's holes are judged after what the module's bindings ran, like a Scope's thunks its export calls
+export const filterSites = (
+	reads: SiteRead[],
+	module: SourceModule,
+	interpreter: Interpreter
+): SiteCandidate[] => {
+	const candidates: SiteCandidate[] = []
+	for (const { reference, kind, root, candidate } of reads) {
 		const value =
 			kind !== "reference" ? undefined
 			: root === reference.id ?
@@ -52,17 +90,7 @@ export const findSites = (
 			(value === undefined || isDynamic(value) || value instanceof RegExp)
 		)
 			continue
-		const fallbacks: Node[] = []
-		const top = climb(root, fallbacks, module, graph)
-		if (top === root && !isOwnSite) continue
-		candidates.push({
-			kind,
-			root: kind === "helper" ? reference.id : root,
-			fn,
-			helper: fn && isFoldedHelper(fn, module) ? fn : undefined,
-			state: createSiteState(top, module),
-			fallbacks
-		})
+		if (candidate) candidates.push(candidate)
 	}
 	// a call to a static helper is a site only if the helper's own sites do not cover it, so those settle first
 	return candidates.sort(

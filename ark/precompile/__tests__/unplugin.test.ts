@@ -512,6 +512,22 @@ console.log(
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
 	}).timeout(60000)
 
+	it("composes the Type a binding holds, which its site creates once", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const Trim = type("string.trim")
+const Box = type({ t: Trim })
+console.log(Box.get("t") === Trim)
+`
+			},
+			fromHere("temp", "once")
+		)
+		attest(runPlain(root)).equals("true\n")
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals("true\n")
+	}).timeout(60000)
+
 	it("creates one Type for a definition two modules share, and only the Types a bundle imports", async () => {
 		const shared = `[
 	type({ a: "string" }),

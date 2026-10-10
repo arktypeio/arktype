@@ -286,9 +286,16 @@ export class Interpreter {
 		| { ctx: Context; isArktype: boolean; isDefining: boolean }
 		| undefined
 
-	constructor(graph: ModuleGraph, opts: InterpreterOptions = {}) {
+	private registerSites: ((module: SourceModule) => unknown) | undefined
+
+	constructor(
+		graph: ModuleGraph,
+		opts: InterpreterOptions = {},
+		registerSites?: (module: SourceModule) => unknown
+	) {
 		this.graph = graph
 		this.opts = opts
+		this.registerSites = registerSites
 	}
 
 	// arktype can print what any value it is passed holds, by any route: a Type's holes, a Module's Types, a Scope's aliases, a Generic's definition
@@ -390,6 +397,7 @@ export class Interpreter {
 			!(ctx.site?.module === site.module && contains(ctx.site.node, node))
 		) {
 			this.evaluateSite(site)
+			mergeTrace(ctx.trace, site.trace)
 			if (site.error !== undefined) throw site.error
 			return site.value
 		}
@@ -1116,6 +1124,7 @@ export class Interpreter {
 			}
 		}
 		if (cached) return cached
+		this.registerSites?.(module)
 		this.valuesByBinding.set(binding, "evaluating")
 		const declaration = binding.declaration
 		const ctx = rootContext(module, declaration)
@@ -1157,6 +1166,7 @@ export class Interpreter {
 	private nodeValue(node: Node, module: SourceModule): Evaluated {
 		let result = this.valuesByNode.get(node)
 		if (result) return result
+		this.registerSites?.(module)
 		const ctx = rootContext(module, node)
 		try {
 			result = { value: this.evaluate(node, ctx), trace: ctx.trace }

@@ -78,7 +78,13 @@ import {
 	type Binding,
 	type BindingKind
 } from "./scope.ts"
-import { findSites, isFoldedHelper, type SiteCandidate } from "./sites.ts"
+import {
+	filterSites,
+	findSites,
+	isFoldedHelper,
+	type SiteCandidate,
+	type SiteRead
+} from "./sites.ts"
 
 export type PrecompileMode = "standalone" | "cache"
 
@@ -245,6 +251,8 @@ export class Precompiler {
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
 	// a site the mode cannot build fails a standalone build, while cache mode leaves it to runtime
 	private rejectionSeverity: Diagnostic["severity"]
+	private readsByModule = new WeakMap<SourceModule, SiteRead[]>()
+	private candidatesByModule = new WeakMap<SourceModule, SiteCandidate[]>()
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
@@ -264,7 +272,9 @@ export class Precompiler {
 
 	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
 		this.graph = new ModuleGraph(host, opts?.cwd)
-		this.interpreter = new Interpreter(this.graph, opts)
+		this.interpreter = new Interpreter(this.graph, opts, module =>
+			this.readsOf(module)
+		)
 		this.mode = opts?.runtime === "arktype" ? "cache" : "standalone"
 		this.config = opts?.config
 		this.inline = !!opts?.inline
@@ -1377,9 +1387,7 @@ export class Precompiler {
 				dependencies: [module.id]
 			}
 		}
-		const candidates = findSites(module, this.graph, this.interpreter)
-		for (const candidate of candidates)
-			this.interpreter.sitesByNode.set(candidate.state.node, candidate.state)
+		const candidates = this.candidatesOf(module)
 		const settled: SiteCandidate[] = []
 		const settledRangesByFn = new Map<FunctionNode | undefined, Set<string>>()
 		const sites: Site[] = []
@@ -1488,7 +1496,32 @@ export class Precompiler {
 		}
 	}
 
+	// a module's sites are registered before anything in it is evaluated, so each runs once however it is first reached
+	private readsOf(module: SourceModule): SiteRead[] {
+		let reads = this.readsByModule.get(module)
+		if (reads) return reads
+		this.readsByModule.set(module, (reads = findSites(module, this.graph)))
+		for (const { candidate } of reads) {
+			if (candidate)
+				this.interpreter.sitesByNode.set(candidate.state.node, candidate.state)
+		}
+		return reads
+	}
+
+	private candidatesOf(module: SourceModule): SiteCandidate[] {
+		let candidates = this.candidatesByModule.get(module)
+		if (!candidates) {
+			candidates = filterSites(this.readsOf(module), module, this.interpreter)
+			this.candidatesByModule.set(module, candidates)
+		}
+		return candidates
+	}
+
 	private settle(candidate: SiteCandidate): boolean {
+		return (candidate.isSite ??= this.settleOnce(candidate))
+	}
+
+	private settleOnce(candidate: SiteCandidate): boolean {
 		for (;;) {
 			const state = this.interpreter.evaluateSite(candidate.state)
 			// a call whose every request is in a static helper's own sites reaches them at runtime, and defines nothing itself
@@ -1520,7 +1553,7 @@ export class Precompiler {
 		let result = this.helperSitesByModule.get(module)
 		if (result) return result
 		this.helperSitesByModule.set(module, (result = []))
-		for (const candidate of findSites(module, this.graph, this.interpreter)) {
+		for (const candidate of this.candidatesOf(module)) {
 			if (
 				candidate.helper &&
 				this.settle(candidate) &&
