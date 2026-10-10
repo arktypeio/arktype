@@ -14,6 +14,7 @@ import {
 } from "@ark/util"
 import { ark, configure } from "arktype"
 import type { HoleKind } from "arktype/internal/runtime.ts"
+import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	holeNamePattern,
 	keyOf,
@@ -830,8 +831,53 @@ export class Precompiler {
 			s.appendLeft(fixedAt, `${prefix}fixConfig()\n`)
 		}
 		pruneArktypeImports(module, [...folded, ...module.islands], s)
+		diagnostics.push(...this.checkRuntimeImports(module, sites))
 		diagnostics.sort((l, r) => l.start - r.start)
 		return inputImports
+	}
+
+	// e.g. `scope` in a static helper whose every call is a site, which keeps its import of an export arktype/runtime lacks
+	private checkRuntimeImports(
+		module: SourceModule,
+		sites: Site[]
+	): Diagnostic[] {
+		const result: Diagnostic[] = []
+		const spans = [...sites, ...module.islands]
+		for (const statement of module.program.body) {
+			if (
+				statement.type !== "ImportDeclaration" ||
+				statement.source.value !== "arktype" ||
+				statement.importKind === "type"
+			)
+				continue
+			for (const specifier of statement.specifiers) {
+				if (
+					specifier.type !== "ImportSpecifier" ||
+					specifier.importKind === "type" ||
+					exportNameOf(specifier.imported) in arktypeRuntime
+				)
+					continue
+				const read = module.scopes.bindingsById
+					.get(specifier.local)
+					?.references.find(
+						({ id }) =>
+							!spans.some(span => span.start <= id.start && id.end <= span.end)
+					)
+				if (!read) continue
+				result.push(
+					this.diagnostic(
+						module,
+						read.id,
+						"R4",
+						"error",
+						`\`${module.textOf(read.id)}\` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module`,
+						[],
+						runtimeImportHint
+					)
+				)
+			}
+		}
+		return result
 	}
 
 	// a module that runs is its own, so only a helper another module exports can be a mock
@@ -2805,6 +2851,8 @@ const declaredBindingKinds = {
 } satisfies Partial<Record<BindingKind, 1>>
 
 const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
+
+const runtimeImportHint = `Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: "arktype".`
 
 const nodePackageHint = `Read arktype's nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".`
 

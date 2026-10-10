@@ -75,6 +75,19 @@ $arkfixConfig()
 export const A = /* @__PURE__ */ $arkv62gs0h1rkzfa4()`)
 		})
 
+		it("reports an export arktype/runtime lacks that a kept helper reads", () => {
+			const result = precompile(`import { match, scope } from "arktype"
+const isLong = (s: string) => s.length > 1
+const scoped = (fn: (s: string) => boolean) => scope({ a: "string" }).type("a").narrow(fn)
+const matcher = (fn: (s: string) => string) => match({ string: fn, default: "assert" })
+export const A = scoped(isLong)
+export const M = matcher(s => s)`)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				"/main.ts:3:48  `scope` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: \"arktype\".",
+				"/main.ts:4:48  `match` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: \"arktype\"."
+			])
+		})
+
 		it("unsupported sites", () => {
 			const result = precompile(
 				`import { type } from "arktype"
