@@ -1362,6 +1362,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				if (v.phase === "resolving") v.closesCycle = true
 				return this.aliasOf(v)
 			}
+			if (v.phase === "failed") throw v.error
 			if (v.phase === "resolved") {
 				return throwInternalError(
 					`Unexpected resolved context for was uncached by its scope: ${printable(v)}`
@@ -1388,23 +1389,35 @@ export abstract class BaseScope<$ extends {} = {}> {
 				return this.aliasOf(v)
 			}
 			v.phase = "resolved"
-			return resolving(() => {
-				// it reaches no definition still open, so its component closes with it
-				if (v.lowlink === v.index) {
-					for (const member of openMembers.splice(membersStart)) {
-						member.phase = "resolved"
-						member.$.resolveContext(member.alias!, member, member.resolution!)
-						$ark.reached?.store(mark, member.$.resolutions, member.alias)
-						delete member.resolution
+			const component = [v]
+			try {
+				return resolving(() => {
+					// it reaches no definition still open, so its component closes with it
+					if (v.lowlink === v.index) {
+						for (const member of openMembers.splice(membersStart)) {
+							component.push(member)
+							member.phase = "resolved"
+							member.$.resolveContext(member.alias!, member, member.resolution!)
+							$ark.reached?.store(mark, member.$.resolutions, member.alias)
+							delete member.resolution
+						}
 					}
+					return node.includesShallowAlias ?
+							this.resolvePending(
+								name,
+								(this.resolutions[name] = withId(node, v.id))
+							)
+						:	this.resolveContext(name, v, node)
+				})
+			} catch (e) {
+				// a check deferred until its component closed failed, and reparsing would reuse the nodes it checked
+				for (const ctx of component) {
+					ctx.phase = "failed"
+					ctx.error = e
+					ctx.$.resolutions[ctx.alias!] = ctx
 				}
-				return node.includesShallowAlias ?
-						this.resolvePending(
-							name,
-							(this.resolutions[name] = withId(node, v.id))
-						)
-					:	this.resolveContext(name, v, node)
-			})
+				throw e
+			}
 		}
 		const isScopeAlias = Object.prototype.hasOwnProperty.call(
 			this.aliases,

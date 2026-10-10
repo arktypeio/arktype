@@ -233,6 +233,17 @@ contextualize(() => {
 		attest(() => $.type("b")).throws(writeUnresolvableMessage("bad"))
 	})
 
+	it("errors on each export after a default in a cycle fails", () => {
+		const $ = scope({
+			// @ts-expect-error
+			a: { b: "c = 1" },
+			c: { x: "a" }
+		})
+		const message = "Default for b must be an object (was a number)"
+		attest(() => $.export()).throws(message)
+		attest(() => $.export()).throws(message)
+	})
+
 	it("exports from an alias's thunk what's exported before it", () => {
 		const $ = scope({ b: "string", a: () => $.export().b })
 		attest($.export().a("x")).equals("x")

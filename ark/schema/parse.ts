@@ -58,13 +58,14 @@ export interface AttachedParseContext {
 	[arkKind]: "context"
 	$: BaseScope
 	id: NodeId
-	phase: "unresolved" | "resolving" | "member" | "resolved"
+	phase: "unresolved" | "resolving" | "member" | "resolved" | "failed"
 	isReferencedById?: true
 	isReferencedAsThis?: true
 	index?: number
 	lowlink?: number
 	closesCycle?: true
 	resolution?: BaseRoot
+	error?: unknown
 }
 
 export interface BaseParseContext
