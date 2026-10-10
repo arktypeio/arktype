@@ -1107,8 +1107,35 @@ export class Precompiler {
 			(held.length > 0 ||
 				site.inputs.length > 0 ||
 				site.defaultChecks.length > 0 ||
+				this.droppedHolesOf(site).size > 0 ||
 				this.mockableHelpersOf(site, module).length > 0)
 		)
+	}
+
+	// e.g. a narrow or a default's thunk an intersection reduced to `never` drops, whose kind and parameters arktype checked as it parsed them
+	private droppedHolesOf(site: Site): Set<unknown> {
+		const dropped = new Set<unknown>()
+		// a Scope or Generic holds the definitions it reads, while a Type or Module holds what they reduce to
+		const value = site.introspection?.type ?? site.value
+		if (!hasArkKind(value, "root") && !hasArkKind(value, "module"))
+			return dropped
+		const held = [
+			value,
+			...site.defaultChecks.map(([node]) => node.in as BaseRoot)
+		].flatMap(value => keyOf(value)[1])
+		// a function arktype created can hold one the site read, as `pipe.try` holds its morph
+		if (
+			held.some(
+				value =>
+					typeof value === "function" && !this.interpreter.standIns.has(value)
+			)
+		)
+			return dropped
+		for (const hole of site.holes) {
+			if (hole.kind === "function" && !held.includes(hole.value))
+				dropped.add(hole.value)
+		}
+		return dropped
 	}
 
 	private factoryOf(
@@ -1145,6 +1172,7 @@ export class Precompiler {
 			site,
 			module,
 			held,
+			this.droppedHolesOf(site),
 			scopes,
 			factory,
 			reasons
@@ -1159,6 +1187,7 @@ export class Precompiler {
 		site: Site,
 		module: SourceModule,
 		held: unknown[],
+		dropped: ReadonlySet<unknown>,
 		scopes: ReadonlySet<unknown>,
 		factory: SiteFactory,
 		reasons: string[]
@@ -1178,7 +1207,12 @@ export class Precompiler {
 			const text = module.snippetOf(reference)
 			const hole = holesByValue.get(reference.value)
 			// a class an intersection dropped decided which side survived, so it's received for its lineage
-			if (hole && !held.includes(hole.value) && hole.kind !== "class") {
+			if (
+				hole &&
+				!held.includes(hole.value) &&
+				hole.kind !== "class" &&
+				!dropped.has(hole.value)
+			) {
 				// e.g. `pipe.try`'s morph, which arktype calls from a function of its own
 				reasons.push(
 					`arktype holds \`${text}\` (${module.positionOf(reference)}) in a function of its own, which a standalone validator can't create yet`
