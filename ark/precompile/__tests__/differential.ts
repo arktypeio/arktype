@@ -587,7 +587,7 @@ const compareFolded = async (
 	const folded = foldedIntrospectionOf(node)
 	if (!Object.keys(folded).length) return
 	// a validator baking the Type's json, which a site reading it returns as the same object
-	let isBaked = !!folded.json && !keyOf(node)[1].length
+	let isBaked = !!folded.json
 	let artifact: any
 	try {
 		artifact = await loadArtifact(

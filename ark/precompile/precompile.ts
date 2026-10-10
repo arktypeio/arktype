@@ -21,6 +21,7 @@ import { ark, configure } from "arktype"
 import type { HoleKind, IntrospectionMember } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
+	appendPath,
 	holeNamePattern,
 	introspectionMembers,
 	isAddressed,
@@ -1508,12 +1509,7 @@ export class Precompiler {
 		for (const [value, text] of reads) {
 			if (seen.has(value)) continue
 			seen.add(value)
-			if (
-				!hasArkKind(value, "scope") &&
-				!hasArkKind(value, "generic") &&
-				!hasArkKind(value, "module")
-			)
-				continue
+			if (!isFoldable(value)) continue
 			const [, holes, refusal, thunks] = keyOf(value)
 			if (refusal) {
 				result.push(`\`${text}\` ${refusal}, so a factory can't compare it`)
@@ -1528,7 +1524,7 @@ export class Precompiler {
 			)
 			if (resolved) {
 				result.push(
-					`\`${text}\`'s alias \`${resolved[1]}\` is a thunk the site resolves, so a factory can't compare what it returns`
+					`\`${appendPath(text, resolved[2])}\`'s alias \`${resolved[1]}\` is a thunk the site resolves, so a factory can't compare what it returns`
 				)
 				continue
 			}

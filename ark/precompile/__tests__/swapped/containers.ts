@@ -101,5 +101,19 @@ export const sharedModule = type.module({
 	a: type.module({ b: ShortString, c: type("number") })
 })
 
+// each pair differs only in the Scope where the methods of the Types it holds parse their arguments
+const stringF = scope({ f: "string" })
+const numberF = scope({ f: "number" })
+export const BigintOfStringF = stringF.type("bigint")
+export const BigintOfNumberF = numberF.type("bigint")
+export const stringIds = scope({
+	id: "string",
+	user: { name: "string" }
+}).export()
+export const numberIds = scope({
+	id: "number",
+	user: { name: "string" }
+}).export()
+
 export const lengthOf = type.fn("string")(s => s.length)
 export const doubled = type.fn("number")(n => n * 2)

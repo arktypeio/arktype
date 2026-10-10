@@ -33,7 +33,6 @@ contextualize(() => {
 	const define = () =>
 		scope({
 			user: { name: "string", age: "number.integer >= 0" },
-			even: ["number", ":", isEven],
 			tree: { value: "number", "children?": "tree[]" },
 			a: { n: "string.numeric.parse", "b?": "b" },
 			b: { "a?": "a" }
@@ -41,7 +40,9 @@ contextualize(() => {
 
 	const emit = () => {
 		const types = define()
-		const roots = Object.values(types).map(t => t.internal)
+		// a Type of a Scope holding a predicate holds it too, so a static artifact couldn't export the Scope's Types
+		const even = type(["number", ":", isEven])
+		const roots = [...Object.values(types), even].map(t => t.internal)
 		return {
 			names: precompileRootUnits(types.user.internal)[0].names,
 			units: writePrecompiledUnits(roots),

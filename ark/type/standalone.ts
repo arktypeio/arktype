@@ -1365,7 +1365,7 @@ return [${returned.join(", ")}]
 	// arktype returns one json object per node, which every validator of it and every site reading it share, unless it prints what the artifact receives
 	readJson(root: BaseRoot): string {
 		const value = this.writeData(root.json)
-		if (keyOf(root)[1].length) {
+		if (holdsLocal(root.json)) {
 			return (
 				this.declarations.namesByValue.get(root.json) ??
 				this.declareConst(root.json, "json", value)
@@ -2233,7 +2233,8 @@ export type Key = [
 	holes: unknown[],
 	// e.g. "configures `domain.description` with a function, whose results decide what it creates"
 	refusal: string | undefined,
-	thunks: readonly ThunkAlias[]
+	// with the path from the keyed value to the Scope holding each
+	thunks: readonly [...ThunkAlias, path: string][]
 ]
 
 const keysByValue = new WeakMap<object, Key>()
@@ -2260,12 +2261,14 @@ const rootKeyOf = (root: BaseRoot): Key => {
 	}
 	// a unit keys a function or object only by where it first reaches it, so the key adds what each is and where each is reached again
 	return encodeKey(
-		[
-			units[0].names[root.id],
-			units.map(unit => unit.refs),
-			units.map(unit => unit.errorContexts),
-			root.meta
-		],
+		{
+			name: units[0].names[root.id],
+			refs: units.map(unit => unit.refs),
+			errorContexts: units.map(unit => unit.errorContexts),
+			meta: root.meta,
+			// where its methods, like `and` and `or`, parse their arguments
+			$: root.$
+		},
 		defaultsByMorph
 	)
 }
@@ -2281,11 +2284,18 @@ const encodeKey = (
 	const values: string[] = []
 	const holes: unknown[] = []
 	const seen = new Map<unknown, number>()
-	const thunks: ThunkAlias[] = []
+	const thunks: [...ThunkAlias, path: string][] = []
 	let refusal: string | undefined
 	const holeIndexOf = (hole: unknown) => {
 		const index = holes.indexOf(hole)
 		return index === -1 ? holes.push(hole) - 1 : index
+	}
+	const writeKeyOf = (kind: string, value: Foldable, path: string) => {
+		const [id, held, nested, nestedThunks] = keyOf(value)
+		values.push(`${kind} ${id} ${held.map(holeIndexOf)}`)
+		refusal ??= nested
+		for (const [scope, alias, at] of nestedThunks)
+			thunks.push([scope, alias, appendPath(path, at)])
 	}
 	const at = (path: string) => (path ? ` at \`${path}\`` : "")
 	const write = (
@@ -2307,11 +2317,7 @@ const encodeKey = (
 		} else if (runtimeKey) values.push(`runtime ${runtimeKey}`)
 		else if (isNode(value)) {
 			if (defaultsByMorph || !value.isRoot()) values.push("node")
-			else {
-				const [id, held, nested] = keyOf(value)
-				values.push(`Type ${id} ${held.map(holeIndexOf)}`)
-				refusal ??= nested
-			}
+			else writeKeyOf("Type", value, path)
 		} else if (hasArkKind(value, "module")) {
 			const entries = Object.entries(value)
 			values.push(`Module ${entries.length}`)
@@ -2322,6 +2328,8 @@ const encodeKey = (
 		} else if (hasArkKind(value, "scope")) {
 			// a builtin scope holds only arktype's own functions, named stably
 			if (value.isBuiltin) values.push(`Scope ${value.name}`)
+			// e.g. a Type's, which each Type of the Scope shares
+			else if (value !== start) writeKeyOf("Scope", value, path)
 			else {
 				const aliases = Object.entries(value.aliases)
 				values.push(
@@ -2333,7 +2341,7 @@ const encodeKey = (
 					values.push(JSON.stringify(k))
 					if (isThunkAlias(def)) {
 						values.push("thunk")
-						thunks.push([value, k])
+						thunks.push([value, k, ""])
 					} else write(def, appendStringifiedKey(path, k), true)
 				}
 			}
@@ -2344,9 +2352,9 @@ const encodeKey = (
 			if (value.hkt)
 				refusal ??= `has an hkt body${at(path)}, whose results decide what it creates`
 			else write(value.bodyDef, path, true)
-			write(value.$, path, true)
+			write(value.$, appendStringifiedKey(path, "$"), true)
 			// a Generic bound into another Scope parses its arguments there
-			write(value.arg$, path, true)
+			write(value.arg$, appendStringifiedKey(path, "arg$"), true)
 		} else if (isTypedFn(value)) {
 			values.push("TypedFn")
 			write(value.params, path, false)
@@ -2397,6 +2405,12 @@ const encodeKey = (
 	write(start, "", isDefinition)
 	return [hashOf(values.join("\n")), holes, refusal, thunks]
 }
+
+export const appendPath = (path: string, rest: string): string =>
+	!path ? rest
+	: !rest ? path
+	: rest[0] === "[" ? path + rest
+	: `${path}.${rest}`
 
 // arktype holds a Generic alias as a function too, which it calls with arguments rather than to resolve it
 const isThunkAlias = (def: unknown): boolean =>
