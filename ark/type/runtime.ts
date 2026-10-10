@@ -58,7 +58,7 @@ import type { StringType } from "./variants/string.ts"
 // a bundle with code splitting drops a star export from another package
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 export {
-	addMorphErrors,
+	addErrors,
 	addTransformErrors,
 	afterWriters,
 	aliasVisits,

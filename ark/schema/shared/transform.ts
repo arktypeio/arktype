@@ -9,12 +9,12 @@ import {
 	type Key
 } from "@ark/util"
 import { arrayIndexMatcher } from "../structure/shared.ts"
-import type { ArkErrorResult } from "./errors.ts"
+import type { ArkErrors } from "./errors.ts"
 
 export class TransformErrors {
 	entries: TransformErrors.Entry[]
 
-	constructor(result: ArkErrorResult, data: unknown) {
+	constructor(result: ArkErrors, data: unknown) {
 		this.entries = [{ reversedPath: [], result, data }]
 	}
 
@@ -33,7 +33,7 @@ export class TransformErrors {
 export declare namespace TransformErrors {
 	export interface Entry {
 		reversedPath: PropertyKey[]
-		result: ArkErrorResult
+		result: ArkErrors
 		data: unknown
 	}
 }

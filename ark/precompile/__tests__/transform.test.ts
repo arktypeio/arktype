@@ -440,14 +440,14 @@ export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/r8iwni02q8oq9"
-import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/r8iwni02q8oq9"
-import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/r8iwni02q8oq9"
-import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/r8iwni02q8oq9"
-import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/r8iwni02q8oq9"
-import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/r8iwni02q8oq9"
-import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/r8iwni02q8oq9"
-import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/r8iwni02q8oq9"
+import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/1juco1m1mxyayl"
+import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/1juco1m1mxyayl"
+import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/1juco1m1mxyayl"
+import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/1juco1m1mxyayl"
+import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/1juco1m1mxyayl"
+import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/1juco1m1mxyayl"
+import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/1juco1m1mxyayl"
+import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/1juco1m1mxyayl"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()

@@ -92,7 +92,7 @@ import {
 	TransformErrors
 } from "./shared/transform.ts"
 import {
-	addMorphErrors,
+	addErrors,
 	addTransformErrors,
 	allowsInBranch,
 	callMorph,
@@ -318,7 +318,7 @@ type CompiledUnit = (
 ) => PrecompiledTraversals[]
 
 const unitConstants = {
-	addMorphErrors,
+	addErrors,
 	addTransformErrors,
 	allowsInBranch,
 	arrayIndexMatcher,

@@ -11,7 +11,7 @@ import {
 import { $ark, namedReference } from "../shared/registry.ts"
 import { TransformErrors } from "../shared/transform.ts"
 import {
-	addMorphErrors,
+	addErrors,
 	applyMember,
 	callMorph,
 	pipe,
@@ -181,9 +181,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 					`${js.ref(isArkErrorResult)}(${morphed})`,
 					() =>
 						js.requiresContext ?
-							js
-								.line(`${js.ref(addMorphErrors)}(ctx, ${morphed})`)
-								.return("data")
+							js.line(`${js.ref(addErrors)}(ctx, ${morphed})`).return("data")
 						:	js.return(`new ${js.ref(TransformErrors)}(${morphed}, ${result})`)
 				)
 			}
@@ -217,7 +215,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 					(morph as Morph.ContextFree)(result as never)
 				:	callMorph(ctx, morph, result)
 			if (isArkErrorResult(morphed)) {
-				addMorphErrors(ctx, morphed)
+				addErrors(ctx, morphed)
 				return data
 			}
 			result = morphed

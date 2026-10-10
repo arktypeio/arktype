@@ -77,7 +77,7 @@ import {
 	writeRootApply
 } from "./shared/rootApply.ts"
 import {
-	addMorphErrors,
+	addErrors,
 	allowsAcyclic,
 	allowsInContext,
 	allowsUntracked,
@@ -536,7 +536,7 @@ export abstract class BaseNode<
 					)
 					if (isArkErrorResult(morphed)) {
 						const ctx = new Traversal(data, this.$.resolvedConfig)
-						addMorphErrors(ctx, morphed)
+						addErrors(ctx, morphed)
 						return ctx.finalize(onFail)
 					}
 					result = morphed

@@ -19,7 +19,6 @@ import {
 	type ArkErrorCode,
 	type ArkErrorContextInput,
 	type ArkErrorInput,
-	type ArkErrorResult,
 	type NodeErrorContextInput
 } from "./errors.ts"
 import { TransformErrors } from "./transform.ts"
@@ -471,16 +470,8 @@ export const allowsInBranch = (
 	return ctx.popBranch()!.errorCount === 0 && allowed
 }
 
-// an error ctx.error created was added with it
-export const addMorphErrors = (
-	ctx: InternalTraversal,
-	result: ArkErrorResult
-): void => {
-	if (result instanceof ArkErrors) addErrors(ctx, result)
-}
-
 // a morph that returns ctx.errors has already added them
-const addErrors = (ctx: InternalTraversal, errors: ArkErrors): void => {
+export const addErrors = (ctx: InternalTraversal, errors: ArkErrors): void => {
 	if (errors !== ctx._errors) mergeErrors(errorsOf(ctx), errors, ctx.path)
 }
 
@@ -496,7 +487,7 @@ export const addTransformErrors = (
 		for (let i = reversedPath.length - 1; i >= 0; i--)
 			ctx.path.push(reversedPath[i])
 		receive(ctx, data)
-		addMorphErrors(ctx, result)
+		addErrors(ctx, result)
 	}
 	ctx.path = path
 	ctx.received = received
