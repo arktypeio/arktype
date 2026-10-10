@@ -579,6 +579,21 @@ export interface RootUnit {
 	unitsById: Record<NodeId, RootUnit>
 }
 
+const referencesByBound = new WeakMap<BaseNode, BaseNode>()
+
+// the node another scope bound, whose meta the bound node holds
+export const boundReferenceOf = (node: BaseNode): BaseNode | undefined =>
+	referencesByBound.get(node)
+
+// a node's name in a pass of its own, unless it holds a value keyed by identity
+export const contentNameOf = (
+	node: BaseNode,
+	keyOf?: (value: object | symbol) => string | undefined
+): string | undefined => {
+	const s = nameContent([node], keyOf)
+	return s.identityNamed.has(node.id) ? undefined : s.names[node.id]
+}
+
 // each root's unit holds the nodes it reaches before another root, so a prop's traversal is shared only by Types sharing the root it belongs to
 export const precompileRootUnits = (
 	root: BaseRoot,
@@ -1151,6 +1166,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (reference.hasKind("alias")) return reference
 			return composing(() => {
 				const bound = new (reference.constructor as any)(reference, this)
+				referencesByBound.set(bound, reference)
 				// a bound node keeps the descriptions of the scope that created it
 				if (
 					reference.includesKeptDescription ||

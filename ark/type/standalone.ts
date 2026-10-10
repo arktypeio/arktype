@@ -1,5 +1,7 @@
 import {
 	$ark,
+	boundReferenceOf,
+	contentNameOf,
 	hasArkKind,
 	isNode,
 	precompileRootUnits,
@@ -1167,20 +1169,17 @@ return [${returned.join(", ")}]
 )`
 	}
 
-	// a node's meta is one object wherever its errors or its validator read it, so one its name addresses is a module of its own
+	// a node's meta is one object wherever its errors or its validator read it, so one a builtin node holds is a module of its own
 	emitMeta(node: BaseNode, unit: RootUnit): string {
 		const declared = this.declarations.namesByValue.get(node.meta)
 		if (declared) return declared
-		if (
-			!node.$.isBuiltin ||
-			unit.identityNamed.has(node.id) ||
-			this.holdsLocal(node.meta)
-		)
-			return this.emitLiteral(node.meta)
+		const ownerName =
+			this.holdsLocal(node.meta) ? undefined : metaOwnerNameOf(node, unit)
+		if (ownerName === undefined) return this.emitLiteral(node.meta)
 		return this.readCreated(
 			"meta",
 			() => `runtime.freeze(${this.writeLiteral(node.meta)[0]})`,
-			`${unit.names[node.id]}\n`
+			`${ownerName}\n`
 		)
 	}
 
@@ -1348,7 +1347,7 @@ return [${returned.join(", ")}]
 		if (runtimePath) return runtimePath
 		const declared = this.declarations.namesByValue.get(value)
 		if (declared) return declared
-		const metaNode = this.unit?.declared.find(node => node.meta === value)
+		const metaNode = this.unit && metaNodesOf(this.unit).get(value)
 		if (metaNode) return this.emitMeta(metaNode, this.unit!)
 		const defaulted = this.defaultsByMorph.get(value)
 		if (defaulted) return this.emitDefault(...defaulted)
@@ -1616,6 +1615,39 @@ const collectDefaults = (
 			defaultValue
 		])
 	}
+}
+
+const metaNodesByPass = new WeakMap<object, Map<unknown, BaseNode>>()
+
+// a context can hold another node's meta, like a required key's value's
+const metaNodesOf = (unit: RootUnit): Map<unknown, BaseNode> => {
+	let metaNodes = metaNodesByPass.get(unit.unitsById)
+	if (!metaNodes) {
+		metaNodes = new Map()
+		for (const passUnit of new Set(Object.values(unit.unitsById))) {
+			for (const node of passUnit.declared)
+				if (!metaNodes.has(node.meta)) metaNodes.set(node.meta, node)
+		}
+		metaNodesByPass.set(unit.unitsById, metaNodes)
+	}
+	return metaNodes
+}
+
+const ownerNamesByNode = new WeakMap<BaseNode, string | undefined>()
+
+// the content name of the builtin node holding a meta, which a node another scope binds shares with its reference, as every program does
+const metaOwnerNameOf = (
+	node: BaseNode,
+	unit: RootUnit
+): string | undefined => {
+	if (node.$.isBuiltin && !unit.identityNamed.has(node.id))
+		return unit.names[node.id]
+	let owner: BaseNode | undefined = node
+	while (owner && !owner.$.isBuiltin) owner = boundReferenceOf(owner)
+	if (owner?.meta !== node.meta) return
+	if (!ownerNamesByNode.has(owner))
+		ownerNamesByNode.set(owner, contentNameOf(owner, runtimeKeyOf))
+	return ownerNamesByNode.get(owner)
 }
 
 const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()

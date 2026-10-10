@@ -41,6 +41,7 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 				"~arktype/meta13k1xpv1t1c194",
 				"~arktype/copyr7igwt0vxgo5c",
 				"~arktype/intersectionm87qy20os6p63",
+				"~arktype/meta18aiueg04v7go5",
 				"~arktype/meta1mu8wcj0vy3917",
 				"~arktype/copyfyolon01lvuko",
 				"~arktype/intersectionvgctxr0kwnuhv",
@@ -123,8 +124,8 @@ export const types = scope({ tree: { value: "number", "children?": "tree[]" } })
 export const M = type.module({ a: "string", b: { c: "a" } })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vsjkdln005ypg0 as $arkvsjkdln005ypg0 } from "~arktype/1whb8ri1kd8xvn"
-import { vuorrac1fkpkl6 as $arkvuorrac1fkpkl6 } from "~arktype/1whb8ri1kd8xvn"
+import { vsjkdln005ypg0 as $arkvsjkdln005ypg0 } from "~arktype/5agb2y06m9dst"
+import { vuorrac1fkpkl6 as $arkvuorrac1fkpkl6 } from "~arktype/5agb2y06m9dst"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 export const types = /* @__PURE__ */ $arkvsjkdln005ypg0()
@@ -148,11 +149,11 @@ export const Box = type("<t>", { box: "t" })
 export const BoxedTree = Box(types.tree)`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/1af7u8411y9u3t"
-import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/1af7u8411y9u3t"
-import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/1af7u8411y9u3t"
-import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/1af7u8411y9u3t"
-import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/1af7u8411y9u3t"
+import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/pgtqtw1fcibqb"
+import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/pgtqtw1fcibqb"
+import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/pgtqtw1fcibqb"
+import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/pgtqtw1fcibqb"
+import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/pgtqtw1fcibqb"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 const $ = /* @__PURE__ */ $arkvq7pa6c00qqwz6()
@@ -181,8 +182,8 @@ const create = () => {
 }`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1bev4io0lhnrds as $arkf1bev4io0lhnrds } from "~arktype/1iw2tsi0ezujp4"
-import { f17s8udm1bx77ds as $arkf17s8udm1bx77ds } from "~arktype/1iw2tsi0ezujp4"
+import { f1bev4io0lhnrds as $arkf1bev4io0lhnrds } from "~arktype/1p6l3fa145un97"
+import { f17s8udm1bx77ds as $arkf17s8udm1bx77ds } from "~arktype/1p6l3fa145un97"
 const create = () => {
 	const $ = $arkf1bev4io0lhnrds()
 	const types = $arkf17s8udm1bx77ds()
@@ -201,11 +202,11 @@ export const make = () => ({
 })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/aowtz00lim6ly"
-import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/aowtz00lim6ly"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/aowtz00lim6ly"
-import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/aowtz00lim6ly"
-import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/aowtz00lim6ly"
+import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/1qrcjfc1on4vln"
+import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/1qrcjfc1on4vln"
+import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/1qrcjfc1on4vln"
+import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/1qrcjfc1on4vln"
+import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/1qrcjfc1on4vln"
 export const make = () => ({
 	$: $arkf1a6evaf1ilxqcd(),
 	types: $arkf14gb4ky1hqquxy(),
@@ -226,11 +227,11 @@ class Holder {
 }`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { veq2llt0aejyl2 as $arkveq2llt0aejyl2 } from "~arktype/sfestd0yswuqb"
-import { v1hn2e10012161b as $arkv1hn2e10012161b } from "~arktype/sfestd0yswuqb"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/sfestd0yswuqb"
-import { vd4uuz90f9hzi3 as $arkvd4uuz90f9hzi3 } from "~arktype/sfestd0yswuqb"
-import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/sfestd0yswuqb"
+import { veq2llt0aejyl2 as $arkveq2llt0aejyl2 } from "~arktype/i14fh71pbultg"
+import { v1hn2e10012161b as $arkv1hn2e10012161b } from "~arktype/i14fh71pbultg"
+import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/i14fh71pbultg"
+import { vd4uuz90f9hzi3 as $arkvd4uuz90f9hzi3 } from "~arktype/i14fh71pbultg"
+import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/i14fh71pbultg"
 const made: unknown[] = []
 for (let $ = $arkveq2llt0aejyl2(), i = 0; i < 2; i++)
 	made.push($arkv1hn2e10012161b(), $arkf1fqowp70udipzn())
@@ -282,14 +283,14 @@ export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/2yutd902p30a0"
-import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/2yutd902p30a0"
-import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/2yutd902p30a0"
-import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/2yutd902p30a0"
-import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/2yutd902p30a0"
-import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/2yutd902p30a0"
-import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/2yutd902p30a0"
-import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/2yutd902p30a0"
+import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/12xydsk0crlcui"
+import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/12xydsk0crlcui"
+import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/12xydsk0crlcui"
+import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/12xydsk0crlcui"
+import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/12xydsk0crlcui"
+import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/12xydsk0crlcui"
+import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/12xydsk0crlcui"
+import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/12xydsk0crlcui"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
@@ -426,11 +427,11 @@ export const NarrowedProps = type("number").narrow(isNegative).props`
 			])
 			attest(result.code).snap(`import { scope, type } from "arktype"
 import $arkhhfme10rgsm2a from "~arktype/in37f40k9qr2u"
-import { fi32fv11rij4as as $arkfi32fv11rij4as } from "~arktype/1c9a4bg1tcy5u7"
-import { fge601l1l8djke as $arkfge601l1l8djke } from "~arktype/1c9a4bg1tcy5u7"
-import { f15on17z0md0pi6 as $arkf15on17z0md0pi6 } from "~arktype/1c9a4bg1tcy5u7"
-import { f1rkl43l16h747g as $arkf1rkl43l16h747g } from "~arktype/1c9a4bg1tcy5u7"
-import { fk4dreo1vs7gyk as $arkfk4dreo1vs7gyk } from "~arktype/1c9a4bg1tcy5u7"
+import { fi32fv11rij4as as $arkfi32fv11rij4as } from "~arktype/1tvchrf19x00gu"
+import { fge601l1l8djke as $arkfge601l1l8djke } from "~arktype/1tvchrf19x00gu"
+import { f15on17z0md0pi6 as $arkf15on17z0md0pi6 } from "~arktype/1tvchrf19x00gu"
+import { f1rkl43l16h747g as $arkf1rkl43l16h747g } from "~arktype/1tvchrf19x00gu"
+import { fk4dreo1vs7gyk as $arkfk4dreo1vs7gyk } from "~arktype/1tvchrf19x00gu"
 import $arkrhchbs1xkut83 from "~arktype/o94jis1u2oxph"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { extend } from "./extend.ts"
@@ -530,9 +531,9 @@ export const Checked = type({ a: type("string").narrow(other.check), b: type("st
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/1p5tmxo0loohhw"
-import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/1p5tmxo0loohhw"
-import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/1p5tmxo0loohhw"
+import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/1ke9bv900i8gcv"
+import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/1ke9bv900i8gcv"
+import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/1ke9bv900i8gcv"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { a } from "./a.ts"
 import { alias } from "./b.ts"
@@ -583,9 +584,9 @@ export const In = type({ a: T.in })`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1bg5ghg1udq2qc as $arkf1bg5ghg1udq2qc } from "~arktype/tkwthx14enka5"
-import { fnlxeht0j9hv9h as $arkfnlxeht0j9hv9h } from "~arktype/tkwthx14enka5"
-import { fe5h3530tuatax as $arkfe5h3530tuatax } from "~arktype/tkwthx14enka5"
+import { f1bg5ghg1udq2qc as $arkf1bg5ghg1udq2qc } from "~arktype/d6gl6z03zwmrr"
+import { fnlxeht0j9hv9h as $arkfnlxeht0j9hv9h } from "~arktype/d6gl6z03zwmrr"
+import { fe5h3530tuatax as $arkfe5h3530tuatax } from "~arktype/d6gl6z03zwmrr"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 const tag = Symbol("tag")
 $arkfixConfig()
@@ -709,12 +710,12 @@ const loop = (): never => loop().and(B)`
 				"/main.ts:10:21  trimmed().and(second()) can't be precompiled to a standalone validator yet\n  arktype holds `(s: string) => s.trim()` (/main.ts:2:14), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1cn9um40x6lmvc"
-import { v1oigsr31najz55 as $arkv1oigsr31najz55 } from "~arktype/1cn9um40x6lmvc"
-import { fd9jxkn0kakf0g as $arkfd9jxkn0kakf0g } from "~arktype/1cn9um40x6lmvc"
-import { v112lir714tv8ze as $arkv112lir714tv8ze } from "~arktype/1cn9um40x6lmvc"
-import { vrg81gy0tev40w as $arkvrg81gy0tev40w } from "~arktype/1cn9um40x6lmvc"
-import { vp99ye0097h426 as $arkvp99ye0097h426 } from "~arktype/1cn9um40x6lmvc"
+import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/16t6xt41b2ydkp"
+import { v1oigsr31najz55 as $arkv1oigsr31najz55 } from "~arktype/16t6xt41b2ydkp"
+import { fd9jxkn0kakf0g as $arkfd9jxkn0kakf0g } from "~arktype/16t6xt41b2ydkp"
+import { v112lir714tv8ze as $arkv112lir714tv8ze } from "~arktype/16t6xt41b2ydkp"
+import { vrg81gy0tev40w as $arkvrg81gy0tev40w } from "~arktype/16t6xt41b2ydkp"
+import { vp99ye0097h426 as $arkvp99ye0097h426 } from "~arktype/16t6xt41b2ydkp"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 const trim = (s: string) => s.trim()
 $arkfixConfig()
@@ -760,6 +761,7 @@ export const Team = type({ lead: User })`
 				"~arktype/metarttxqf0uu0rvh",
 				"~arktype/copyfyolon01lvuko",
 				"~arktype/intersectionxf7vnb0owa73y",
+				"~arktype/meta1mxb3kg1rnydhv",
 				"~arktype/1c1qm3a0f4lqlh"
 			])
 		})

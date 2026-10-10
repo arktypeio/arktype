@@ -440,28 +440,36 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 
 export const Name = type("string").configure({ description: "a name" })
 `,
+				"scoped.ts": `import { scope } from "arktype"
+
+export const Scoped = scope({ X: "string" }).type({ x: "X" })
+`,
 				"main.ts": `import { scope, type } from "arktype"
 import { Name } from "./name.ts"
+import { Scoped } from "./scoped.ts"
 
 const User = type({ name: Name })
 const Short = type("string <= 3")
 const ShortWord = type("string.alphanumeric <= 3")
 const Tagged = type({ n: type("number").configure({ description: "tagged" }) })
 const ScopedTagged = scope({}).type({ n: ["number", "@", { description: "tagged" }] })
+const Local = scope({ Y: "string" }).type({ y: "Y" })
 const metaOf = (out: unknown) => [...(out as Iterable<{ meta: object }>)][0].meta
 console.log(
 	JSON.stringify([
 		metaOf(Name(5)) === Name.meta,
 		metaOf(User({ name: 5 })) === Name.meta,
 		metaOf(Short("abcd")) === metaOf(ShortWord("abcd")),
-		metaOf(Tagged({ n: "x" })) === metaOf(ScopedTagged({ n: "x" }))
+		metaOf(Tagged({ n: "x" })) === metaOf(ScopedTagged({ n: "x" })),
+		metaOf(Scoped({ x: 5 })) === type("string").meta,
+		metaOf(Local({ y: 5 })) === metaOf(Scoped({ x: 5 }))
 	])
 )
 `
 			},
 			fromHere("temp", "metas")
 		)
-		const expected = "[true,true,true,false]\n"
+		const expected = "[true,true,true,false,true,true]\n"
 		attest(runPlain(root)).equals(expected)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
 	}).timeout(60000)
