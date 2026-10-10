@@ -165,6 +165,9 @@ export const configure = (
 	// a loader or plugin can change a module the configuration reads after the build read it
 	if (fingerprint !== undefined && fingerprint !== received)
 		return throwParseError(configuredUnlikeBuildMessage)
+	// a module the build didn't transform, like a dependency's, can configure arktype too, which merges what the runtime keeps apart
+	if (configuredFingerprint !== undefined && configuredFingerprint !== received)
+		return throwParseError(reconfiguredMessage)
 	configureIslands?.(config)
 	if ("onFail" in config)
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
@@ -226,6 +229,11 @@ export const configuredUnlikeBuildMessage =
 	"configure() receives other values than its build precompiled under, as when a loader or plugin changes a module the configuration reads, so the build's Types can't run under it"
 
 export type configuredUnlikeBuildMessage = typeof configuredUnlikeBuildMessage
+
+export const reconfiguredMessage =
+	"configure() is called again with other values, which arktype merges with the first call's but a standalone build can't precompile under"
+
+export type reconfiguredMessage = typeof reconfiguredMessage
 
 export const configMismatchMessage =
 	"an artifact precompiled under another configuration can't run under this one, so it must be rebuilt"

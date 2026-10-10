@@ -14,6 +14,7 @@ import {
 	configMismatchMessage,
 	configuredUnlikeBuildMessage,
 	fingerprintOf,
+	reconfiguredMessage,
 	unrenderedLocaleMessage,
 	writeCreatedBeforeConfigureMessage
 } from "@ark/schema/runtime"
@@ -107,6 +108,13 @@ const load = async (
 		arkKindOf(value) === undefined ? artifact[name] : artifact[name]()
 	])
 }
+
+// what creating a validator after the given configure() call throws
+const messageOf = (configure: string, fingerprint?: string) =>
+	load({ T: type("string") }, configure, fingerprint).then(
+		() => "",
+		(e: Error) => e.message
+	)
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
 
@@ -622,11 +630,6 @@ contextualize(() => {
 	})
 
 	it("throws for a configuration it wasn't precompiled under", async () => {
-		const messageOf = (configure: string, fingerprint?: string) =>
-			load({ T: type("string") }, configure, fingerprint).then(
-				() => "",
-				(e: Error) => e.message
-			)
 		const built = fingerprintOf({})
 		attest(await messageOf("", built)).equals(
 			writeCreatedBeforeConfigureMessage("main.ts")
@@ -650,6 +653,23 @@ contextualize(() => {
 				.then(artifact => artifact.T())
 				.catch((e: Error) => e.message)
 		).equals(configureAfterTypeMessage)
+	})
+
+	it("throws for a second configure() with other values", async () => {
+		const built = fingerprintOf({ numberAllowsNaN: true })
+		const configured = `runtime.configure({ numberAllowsNaN: true }, "${built}")`
+		attest(
+			await messageOf(
+				`runtime.configure({ onUndeclaredKey: "delete" })\n${configured}`,
+				built
+			)
+		).equals(reconfiguredMessage)
+		attest(
+			await messageOf(
+				`runtime.configure({ numberAllowsNaN: true })\n${configured}`,
+				built
+			)
+		).equals("")
 	})
 
 	it("creates its validators where a site first reads them", async () => {
