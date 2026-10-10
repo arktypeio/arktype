@@ -186,18 +186,6 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 // identity rather than names to support HMR and multi-bundle environments.
 let anonymousScopeCount = 0
 
-let isCreatingBuiltin = false
-
-// a scope arktype creates for its own keywords, whose nodes every program shares
-export const createBuiltinScope = <scope>(create: () => scope): scope => {
-	isCreatingBuiltin = true
-	try {
-		return create()
-	} finally {
-		isCreatingBuiltin = false
-	}
-}
-
 export type GlobalOnlyConfigOptionName = satisfy<
 	keyof ArkSchemaConfig,
 	| "dateAllowsInvalid"
@@ -212,6 +200,8 @@ export type GlobalOnlyConfigOptionName = satisfy<
 export interface ScopeOnlyConfigOptions {
 	name?: string
 	prereducedAliases?: boolean
+	/** @internal arktype's own, whose name a precompiled program addresses its nodes by */
+	builtin?: boolean
 }
 
 export interface ArkSchemaScopeConfig
@@ -534,9 +524,15 @@ export interface ContentUnit {
 	errorContexts: NodeCompiler.ErrorContexts
 }
 
+// null keys a value by identity
+export type ContentKeyOf = (
+	value: object | symbol,
+	metaOwner: BaseNode | undefined
+) => string | null | undefined
+
 export const precompileByContent = (
 	roots: readonly BaseNode[],
-	keyOf?: (value: object | symbol) => string | undefined
+	keyOf?: ContentKeyOf
 ): ContentUnit => {
 	const s = nameContent(roots, keyOf)
 	const names: Record<NodeId, string> = {}
@@ -577,27 +573,14 @@ export interface RootUnit {
 	// the nodes whose names hold a value keyed by identity, which name them only within this pass
 	identityNamed: ReadonlySet<NodeId>
 	unitsById: Record<NodeId, RootUnit>
-}
-
-const referencesByBound = new WeakMap<BaseNode, BaseNode>()
-
-// the node another scope bound, whose meta the bound node holds
-export const boundReferenceOf = (node: BaseNode): BaseNode | undefined =>
-	referencesByBound.get(node)
-
-// a node's name in a pass of its own, unless it holds a value keyed by identity
-export const contentNameOf = (
-	node: BaseNode,
-	keyOf?: (value: object | symbol) => string | undefined
-): string | undefined => {
-	const s = nameContent([node], keyOf)
-	return s.identityNamed.has(node.id) ? undefined : s.names[node.id]
+	// a context's meta is emitted as its name keyed it
+	metaOwners: ReadonlyMap<object, BaseNode>
 }
 
 // each root's unit holds the nodes it reaches before another root, so a prop's traversal is shared only by Types sharing the root it belongs to
 export const precompileRootUnits = (
 	root: BaseRoot,
-	keyOf?: (value: object | symbol) => string | undefined
+	keyOf?: ContentKeyOf
 ): RootUnit[] => {
 	const s = nameContent([root], keyOf)
 	const units: RootUnit[] = []
@@ -635,7 +618,8 @@ export const precompileRootUnits = (
 			errorContexts: linkage.errorContexts,
 			dependencies: linkage.dependencies,
 			identityNamed: s.identityNamed,
-			unitsById
+			unitsById,
+			metaOwners: s.metaOwners
 		}
 		units.push(unit)
 		for (const root of roots) unitsById[root.id] = unit
@@ -648,7 +632,8 @@ interface ContentNamingState {
 	reached: BaseNode[]
 	stack: ContentReference[]
 	components: BaseNode[][]
-	keyOf: ((value: object | symbol) => string | undefined) | undefined
+	keyOf: ContentKeyOf | undefined
+	metaOwners: Map<object, BaseNode>
 	valueIndices: Map<unknown, number>
 	names: Record<NodeId, string>
 	inputsByHash: Record<string, string>
@@ -676,6 +661,7 @@ const nameReferences = (
 		stack: [],
 		components: [],
 		keyOf,
+		metaOwners: new Map(),
 		valueIndices: new Map(),
 		names: {},
 		inputsByHash: {},
@@ -767,6 +753,13 @@ const compileContent = (
 		id === node.id ? "$" : `$${(positionsById[id] ??= calleeIds.push(id) - 1)}`
 	const linkage = createLinkage(positionOf)
 	declareTraversals(linkage, node)
+	// a context holds the metas of the nodes compiled with it
+	if (s.keyOf) {
+		for (const reference of [node, ...node.references]) {
+			if (!s.metaOwners.has(reference.meta))
+				s.metaOwners.set(reference.meta, reference)
+		}
+	}
 	const serializing = new Set<object>()
 	let holdsIdentity = false
 	const serialize = (value: unknown): string => {
@@ -776,16 +769,18 @@ const compileContent = (
 		}
 		if (!hasDomain(value, "object") && typeof value !== "symbol")
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
-		const key =
-			s.keyOf?.(value) ??
-			(typeof value !== "object" ? undefined
-			: isRegExpObject(value) ? `${value} ${value.lastIndex}`
-			: isDateObject(value) ? `Date ${value.getTime()}`
-			: undefined)
-		if (key !== undefined) return key
+		let key = s.keyOf?.(value, s.metaOwners.get(value as object))
+		if (key === undefined && typeof value === "object") {
+			key =
+				isRegExpObject(value) ? `${value} ${value.lastIndex}`
+				: isDateObject(value) ? `Date ${value.getTime()}`
+				: undefined
+		}
+		if (typeof key === "string") return key
 		const prototype = typeof value === "object" && Object.getPrototypeOf(value)
 		// a value inside itself has no finite content, so like an instance it's keyed by identity
 		if (
+			key === null ||
 			serializing.has(value as object) ||
 			(!isArray(value) && prototype !== Object.prototype && prototype !== null)
 		) {
@@ -993,7 +988,7 @@ const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
 
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly name: string
-	readonly isBuiltin: boolean = isCreatingBuiltin
+	readonly isBuiltin: boolean
 	private readonly scopeConfig: ArkSchemaScopeConfig | undefined
 
 	get [arkKind](): "scope" {
@@ -1019,6 +1014,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		config?: ArkSchemaScopeConfig
 	) {
 		this.name = config?.name ?? `anonymousScope${anonymousScopeCount++}`
+		this.isBuiltin = config?.builtin === true
 		this.scopeConfig = config
 
 		const aliasEntries = Object.entries(def).map(entry =>
@@ -1166,7 +1162,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (reference.hasKind("alias")) return reference
 			return composing(() => {
 				const bound = new (reference.constructor as any)(reference, this)
-				referencesByBound.set(bound, reference)
+				bound.boundFrom = reference
 				// a bound node keeps the descriptions of the scope that created it
 				if (
 					reference.includesKeptDescription ||
@@ -1789,8 +1785,9 @@ export type SchemaScopeParser = <const aliases>(
 export const schemaScope: SchemaScopeParser = (aliases, config) =>
 	new SchemaScope(aliases, config)
 
-export const rootSchemaScope: SchemaScope = createBuiltinScope(
-	() => new SchemaScope({})
+export const rootSchemaScope: SchemaScope = new SchemaScope(
+	{},
+	{ builtin: true, name: "schema" }
 )
 
 export const bootstrapRootScope = (): void => {

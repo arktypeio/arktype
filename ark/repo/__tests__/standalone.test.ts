@@ -536,7 +536,7 @@ contextualize(() => {
 			writeUnavailableMemberMessage("calling the Generic Boxes.box")
 		)
 		const sited = precompileStandalone({ $ }, undefined, {
-			$: "src/schemas.ts:1:11"
+			$: { position: "src/schemas.ts:1:11", definitions: [] }
 		})
 		attest(sited.includes('"the Scope at src/schemas.ts:1:11"')).equals(true)
 	})

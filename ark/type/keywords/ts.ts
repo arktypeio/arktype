@@ -41,7 +41,8 @@ export const tsKeywordDefinitions: Record<
 }
 
 export const arkTsKeywords: arkTsKeywords = keywordModule(
-	tsKeywordDefinitions
+	tsKeywordDefinitions,
+	{ name: "ts" }
 ) as never
 
 export type arkTsKeywords = Module<arkTsKeywords.$>
@@ -251,7 +252,8 @@ export const tsGenericDefinitions = {
 }
 
 export const arkTsGenerics: arkTsGenerics.module = keywordModule(
-	tsGenericDefinitions
+	tsGenericDefinitions,
+	{ name: "ts.generics" }
 ) as never
 
 export declare namespace arkTsGenerics {

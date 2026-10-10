@@ -1,13 +1,13 @@
 import {
 	$ark,
-	boundReferenceOf,
-	contentNameOf,
+	cachedKeyOf,
 	hasArkKind,
 	isNode,
 	precompileRootUnits,
 	type ArkErrorCode,
 	type BaseNode,
 	type BaseRoot,
+	type ContentKeyOf,
 	type DefaultedNode,
 	type NodeId,
 	type NodeKind,
@@ -42,6 +42,7 @@ import {
 	throwParseError
 } from "@ark/util"
 import { arktypeVersion } from "./entry.ts"
+import { cachedDefinitionOf } from "./parser/definition.ts"
 import type { Generic } from "./generic.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { Module } from "./module.ts"
@@ -51,7 +52,13 @@ import type { Scope } from "./scope.ts"
 
 const writerKeys = ["expected", "actual", "problem", "message"] as const
 
-type DeclarationRole = "shape" | "keys" | "literal" | "config" | "unavailable"
+type DeclarationRole =
+	| "shape"
+	| "keys"
+	| "literal"
+	| "meta"
+	| "config"
+	| "unavailable"
 
 // constraints a node keeps sorted by hash, which holds the names of the functions they hold
 const sortedConstraintKeys = [
@@ -99,7 +106,7 @@ export interface StandaloneFactory {
 	params: FactoryParam[]
 	// the table of each factory whose Type arktype returns again for the same holes, shared by those returning one Type at build
 	internedBy?: number | undefined
-	// whether arktype creates its Type anew each time its site runs, even one its content addresses
+	// whether arktype creates its Type anew each time its site runs, even one it holds under an address
 	isCreatedEachRun?: boolean
 }
 
@@ -124,12 +131,20 @@ export interface HelperParam {
 	name: string
 }
 
+export interface ExportSite {
+	// where it was defined, which a Scope or Generic it holds names when used
+	position: string
+	// each string it passed arktype's type, which arktype's parse cache may hold its Type under
+	definitions: readonly string[]
+}
+
 export interface ConfiguredModule {
 	fingerprint: string
 	path: string
 }
 
 interface SharedModule {
+	readsRuntime: boolean
 	imports: Record<string, string[]>
 	declarations: string[]
 	exports: string[]
@@ -151,8 +166,7 @@ const entryCheck = `runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion
 export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	configured?: ConfiguredModule,
-	// where each export was defined, which a Scope or Generic it holds names when used
-	sitesByName?: Record<string, string>,
+	sitesByName?: Record<string, ExportSite>,
 	// each Module a site reads off arktype's keywords, which creates a Type only when one of its members is read
 	keywordReads?: ReadonlySet<string>
 ): string => {
@@ -177,7 +191,7 @@ export const precompileStandalone = (
 export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
 	configured?: ConfiguredModule,
-	sitesByName?: Record<string, string>,
+	sitesByName?: Record<string, ExportSite>,
 	keywordReads?: ReadonlySet<string>
 ): StandaloneModules => {
 	const shared: Record<string, SharedModule> = {}
@@ -195,14 +209,9 @@ export const precompileStandaloneModules = (
 	const entrySpecifier = `~arktype/entry${hashOf(entry)}`
 	const modules: Record<string, string> = { [entrySpecifier]: entry }
 	for (const specifier in shared) {
-		const { imports, declarations, exports } = shared[specifier]
+		const { readsRuntime, imports, declarations, exports } = shared[specifier]
 		modules[specifier] = writeSections([
-			[
-				declarations.some(declaration => declaration.includes("runtime.")) ?
-					runtimeImport
-				:	"",
-				writeImports(imports)
-			]
+			[readsRuntime ? runtimeImport : "", writeImports(imports)]
 				.filter(statement => statement)
 				.join("\n"),
 			...declarations,
@@ -221,7 +230,7 @@ export const precompileStandaloneModules = (
 const writeArtifact = (
 	exports: Record<string, StandaloneExport>,
 	configured: ConfiguredModule | undefined,
-	sitesByName: Record<string, string> | undefined,
+	sitesByName: Record<string, ExportSite> | undefined,
 	keywordReads: ReadonlySet<string> | undefined,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
@@ -229,22 +238,28 @@ const writeArtifact = (
 	const types: Record<string, ExportedValue> = {}
 	const factories: string[] = []
 	const tables = new Set<number>()
+	const definitionAddresses = definitionAddressesOf(exports, sitesByName)
 	for (const [name, value] of Object.entries(exports)) {
 		if (arkKindOf(value) !== undefined) types[name] = value as never
 		else {
 			const { type, params, internedBy, isCreatedEachRun } =
 				value as StandaloneFactory
 			if (internedBy !== undefined) tables.add(internedBy)
-			const artifact = new StandaloneArtifact({ [name]: type }, shared, imports)
+			const artifact = new StandaloneArtifact(
+				{ [name]: type },
+				shared,
+				imports,
+				sitesByName,
+				definitionAddresses
+			)
 			if (isCreatedEachRun && hasArkKind(type, "root"))
-				artifact.createdEachCall.add(type)
+				artifact.createdEachRun.add(type)
 			factories.push(
 				artifact.writeFactory(
 					name,
 					params,
 					factories.length,
 					configured,
-					sitesByName?.[name],
 					internedBy
 				)
 			)
@@ -255,6 +270,7 @@ const writeArtifact = (
 			types,
 			configured,
 			sitesByName,
+			definitionAddresses,
 			keywordReads,
 			shared,
 			imports
@@ -271,11 +287,12 @@ interface Creation {
 	code: string
 }
 
-// a site reading an export creates it when first evaluated, where arktype would fix its configuration, along with the exports sharing a value it creates
+// an export is created where a site first reads it, as arktype fixes its configuration there, with the exports sharing a value it creates
 const writeCreations = (
 	types: Record<string, ExportedValue>,
 	configured: ConfiguredModule | undefined,
-	sitesByName: Record<string, string> | undefined,
+	sitesByName: Record<string, ExportSite> | undefined,
+	definitionAddresses: ReadonlyMap<unknown, string>,
 	keywordReads: ReadonlySet<string> | undefined,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
@@ -285,22 +302,15 @@ const writeCreations = (
 		new StandaloneArtifact(
 			Object.fromEntries(indices.map(i => [names[i], types[names[i]]])),
 			shared,
-			imports
+			imports,
+			sitesByName,
+			definitionAddresses
 		)
 	const readsByIndex: Record<number, string> = {}
-	// a validator a module of its own creates is read from it once the site has fixed the configuration
-	const addressed = new Set<number>()
 	let creations: Creation[] = []
 	for (let i = 0; i < names.length; i++) {
 		const artifact = artifactOf([i])
-		const value = types[names[i]]
-		if (hasArkKind(value, "root") && artifact.isAddressed(value)) {
-			artifact.writeSharedUnits()
-			readsByIndex[i] = artifact.readValidator(value)
-			addressed.add(i)
-			continue
-		}
-		const code = artifact.writeCreate(i, configured, sitesByName)
+		const code = artifact.writeCreate(i, configured)
 		const values = artifact.comparedValues
 		const joined = creations.filter(creation =>
 			values.some(value => creation.values.has(value))
@@ -322,8 +332,7 @@ const writeCreations = (
 		if (creation.indices.length > 1) {
 			creation.code = artifactOf(creation.indices).writeCreate(
 				index,
-				configured,
-				sitesByName
+				configured
 			)
 		}
 		for (const [position, i] of creation.indices.entries()) {
@@ -346,8 +355,7 @@ const writeCreations = (
 			}
 			read = `(${lazyName} ??= runtime.lazyModule(${JSON.stringify(moduleMembersOf(value))}, () => ${read}))`
 		}
-		const fix = addressed.has(i) ? `\t${writeFixConfig(configured)}\n` : ""
-		return `${declaration}function get${i}() {\n${fix}\treturn ${read}\n}\n\nexport { get${i} as ${JSON.stringify(name)} }`
+		return `${declaration}function get${i}() {\n\treturn ${read}\n}\n\nexport { get${i} as ${JSON.stringify(name)} }`
 	})
 	return [
 		...creations
@@ -355,6 +363,33 @@ const writeCreations = (
 			.map(creation => creation.code),
 		getters.join("\n")
 	]
+}
+
+// arktype's parse cache returns one Type for a definition wherever it's parsed
+const definitionAddressesOf = (
+	exports: Record<string, StandaloneExport>,
+	sitesByName: Record<string, ExportSite> | undefined
+): Map<unknown, string> => {
+	const addresses = new Map<unknown, string>()
+	for (const [name, exported] of Object.entries(exports)) {
+		const value =
+			arkKindOf(exported) === undefined ?
+				(exported as StandaloneFactory).type
+			:	exported
+		if (!hasArkKind(value, "root") || !value.$.isBuiltin) continue
+		for (const definition of sitesByName?.[name]?.definitions ?? []) {
+			if (
+				!addresses.has(value) &&
+				cachedDefinitionOf(value.$, definition) === value
+			) {
+				addresses.set(
+					value,
+					hashOf(`${value.$.name}\ndefinition\n${definition}`)
+				)
+			}
+		}
+	}
+	return addresses
 }
 
 const writeSections = (sections: string[]) =>
@@ -393,6 +428,7 @@ const createDeclarations = (): Declarations => ({
 		shape: [],
 		keys: [],
 		literal: [],
+		meta: [],
 		config: [],
 		unavailable: []
 	}
@@ -412,6 +448,8 @@ export class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
 	sharedModules: Record<string, SharedModule>
 	imports: Record<string, string[]>
+	sitesByName: Record<string, ExportSite> | undefined
+	definitionAddresses: ReadonlyMap<unknown, string>
 	holeExpressions = new Map<unknown, string>()
 	labelsByHole = new Map<unknown, string>()
 	classes = new Set<unknown>()
@@ -444,16 +482,22 @@ export class StandaloneArtifact {
 	// the Types exported and those their metas hold, rather than a default's
 	comparedRoots: BaseRoot[]
 	// a Type arktype creates anew each time its site runs, which its factory then does too
-	createdEachCall = new Set<BaseRoot>()
+	createdEachRun = new Set<BaseRoot>()
+	// a factory's errors expose the meta of a Type it receives, not a copy
+	receivedMetas = new Map<object, string>()
 
 	constructor(
 		exports: Record<string, ExportedValue>,
 		sharedModules: Record<string, SharedModule>,
-		imports: Record<string, string[]>
+		imports: Record<string, string[]>,
+		sitesByName?: Record<string, ExportSite>,
+		definitionAddresses: ReadonlyMap<unknown, string> = new Map()
 	) {
 		this.exports = exports
 		this.sharedModules = sharedModules
 		this.imports = imports
+		this.sitesByName = sitesByName
+		this.definitionAddresses = definitionAddresses
 		for (const name in exports) {
 			// an ES module can't export a name holding an unpaired surrogate
 			if (/\p{Cs}/u.test(name)) {
@@ -653,6 +697,7 @@ export class StandaloneArtifact {
 		label = `\`${label}\``
 		if (hasArkKind(value, "root")) {
 			const [id, holes] = keyOf(value)
+			this.receivedMetas.set(value.meta, `${expression}.meta`)
 			const holesName = `holes${this.checks.length}`
 			const expected =
 				value.expression.includes(holeNamePrefix) ?
@@ -731,17 +776,16 @@ export class StandaloneArtifact {
 		return [...new Set([...this.unitRoots].flatMap(rootUnitsOf))]
 	}
 
-	// what creating the exports makes that a program can compare, other than what a module of its own creates
+	// a value read through an address is one object without its exports being created together
 	get comparedValues(): unknown[] {
 		return [
-			...this.comparedRoots.filter(root => !this.isAddressed(root)),
+			...this.comparedRoots.filter(root => !this.addressOf(root)),
 			...this.moduleNamesByModule.keys(),
 			...this.declarations.valuesByRole.literal,
 			...this.declarations.valuesByRole.unavailable
 		]
 	}
 
-	// a unit is shared when its name addresses it, holding no value keyed by identity or a program's scope, what it holds is the same wherever it's created, and so are the units it reads
 	isShared(unit: RootUnit): boolean {
 		let shared = this.sharedByUnit.get(unit)
 		if (shared === undefined) {
@@ -754,30 +798,12 @@ export class StandaloneArtifact {
 			// a node a unit refers to directly is its root's shape, rather than a validator
 			shared =
 				!unit.identityNamed.has(unit.roots[0].id) &&
-				!unit.refs.some(ref => !isNode(ref) && this.holdsLocal(ref)) &&
-				!unit.errorContexts.some(context => this.holdsLocal(context)) &&
+				!unit.refs.some(ref => !isNode(ref) && holdsLocal(ref)) &&
+				!unit.errorContexts.some(context => holdsLocal(context)) &&
 				reads.every(node => this.isShared(unitOf(node, unit)))
 			this.sharedByUnit.set(unit, shared)
 		}
 		return shared
-	}
-
-	// a hole or a Type a literal holds is created with the artifact
-	holdsLocal(value: unknown, seen = new Set<unknown>()): boolean {
-		if (seen.has(value)) return false
-		seen.add(value)
-		if (typeof value === "string") return value.includes(holeNamePrefix)
-		if (isHole(value)) return true
-		if (!hasDomain(value, "object") || isNode(value) || !isPlainLiteral(value))
-			return false
-		return Reflect.ownKeys(value).some(k => {
-			const v = Reflect.get(value, k)
-			return (
-				this.holdsLocal(k, seen) ||
-				(isNode(v) && v.isRoot()) ||
-				this.holdsLocal(v, seen)
-			)
-		})
 	}
 
 	collectExport(value: unknown, path: string): void {
@@ -812,14 +838,10 @@ export class StandaloneArtifact {
 		return this.validatorNamesByRoot.size > typeCount
 	}
 
-	writeCreate(
-		index: number,
-		configured: ConfiguredModule | undefined,
-		sitesByName: Record<string, string> | undefined
-	): string {
+	writeCreate(index: number, configured: ConfiguredModule | undefined): string {
 		this.writeSharedUnits()
 		const values = Object.keys(this.exports).map(name => {
-			const site = sitesByName?.[name]
+			const site = this.sitesByName?.[name]?.position
 			return this.exportOf(
 				this.exports[name],
 				site ? "" : appendStringifiedKey("", name),
@@ -847,14 +869,17 @@ ${statements.filter(statement => statement).join("\n\n")}
 		params: FactoryParam[],
 		index: number,
 		configured: ConfiguredModule | undefined,
-		site?: string,
 		internedBy?: number
 	): string {
 		this.receive(params)
 		this.writeSharedUnits()
 		const exported = this.exports[name]
 		// a Module, Scope or Generic declares what it holds, which the body then writes
-		const value = this.exportOf(exported, "", site)
+		const value = this.exportOf(
+			exported,
+			"",
+			this.sitesByName?.[name]?.position
+		)
 		const body = [
 			// each unit is evaluated once, at the first call, which may come before the artifact's body runs
 			...this.writeBody(
@@ -969,6 +994,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		this.unit = undefined
 		this.writing = undefined
 		this.sharedModules[specifier] = {
+			readsRuntime: true,
 			imports: writing.imports,
 			declarations: moduleDeclarations,
 			exports: [
@@ -1033,6 +1059,7 @@ return [${returned.join(", ")}]
 			const copy = writeNodeContextCopy(contexts[i])
 			const copyName = `copy${hashOf(copy)}`
 			this.sharedModules[`~arktype/${copyName}`] ??= {
+				readsRuntime: false,
 				imports: {},
 				declarations: [`function ${copyName}(e, input) {\n${copy}}`],
 				exports: [copyName]
@@ -1079,11 +1106,10 @@ return [${returned.join(", ")}]
 			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
 		})
 		const copies = this.writeCopies(localContexts, localContextNames)
-		const validators = [...this.validatorNamesByRoot].map(([root, name]) =>
-			this.isAddressed(root) && !this.createdEachCall.has(root) ?
-				`const ${name} = ${this.readValidator(root)}`
-			:	`const ${name} = ${this.writeValidator(root)}`
-		)
+		const validators = [...this.validatorNamesByRoot].map(([root, name]) => {
+			const address = this.addressOf(root)
+			return `const ${name} = ${address ? `runtime.addressed(${JSON.stringify(address)}, () => ${this.writeValidator(root)})` : this.writeValidator(root)}`
+		})
 		return [
 			this.declarations.statements.join("\n"),
 			copies.join("\n"),
@@ -1096,48 +1122,17 @@ return [${returned.join(", ")}]
 		]
 	}
 
-	// a validator its content addresses is a module of its own, so every module creating it gets one object, as arktype's Type is
-	isAddressed(root: BaseRoot): boolean {
-		return (
-			this.isShared(this.unitsByHead.get(root)!) &&
-			!keyOf(root)[1].length &&
-			!this.holdsLocal(root.meta) &&
-			!this.holdsLocal(root.description)
+	// a Type created anew where its site runs, or holding what its artifact creates, is created by every artifact reading it
+	addressOf(root: BaseRoot): string | undefined {
+		if (
+			this.createdEachRun.has(root) ||
+			!this.isShared(this.unitsByHead.get(root)!) ||
+			keyOf(root)[1].length ||
+			holdsLocal(root.meta) ||
+			holdsLocal(root.description)
 		)
-	}
-
-	readValidator(root: BaseRoot): string {
-		return this.readCreated("validator", () => this.writeValidator(root))
-	}
-
-	// a value a module of its own creates when first read, so every module reading it gets one object
-	readCreated(kind: string, write: () => string, context = ""): string {
-		const { declarations, imports, writing, unit } = this
-		this.declarations = createDeclarations()
-		this.imports = {}
-		this.writing = undefined
-		this.unit = undefined
-		const created = write()
-		const { statements } = this.declarations
-		const moduleImports = this.imports
-		this.declarations = declarations
-		this.imports = imports
-		this.writing = writing
-		this.unit = unit
-		const value =
-			statements.length ?
-				`(function () {\n${statements.join("\n")}\nreturn ${created}\n})()`
-			:	created
-		const name = `${kind}${hashOf(`${context}${value}`)}`
-		this.sharedModules[`~arktype/${name}`] ??= {
-			imports: moduleImports,
-			declarations: [
-				`var ${name}Value`,
-				`function ${name}() {\n\treturn (${name}Value ??= ${value})\n}`
-			],
-			exports: [name]
-		}
-		return `${this.read(`~arktype/${name}`, name, name, name)}()`
+			return
+		return addressOf(root) ?? this.definitionAddresses.get(root)
 	}
 
 	writeValidator(root: BaseRoot): string {
@@ -1152,21 +1147,22 @@ return [${returned.join(", ")}]
 		.map(value => this.emit(value))
 		.join(", ")}),
 	${shape},
-	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root.expression)}()`}, description: ${this.emitString(root.description)}, meta: ${this.emitMeta(root, this.unitsByHead.get(root)!)} }${key}
+	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root.expression)}()`}, description: ${this.emitString(root.description)}, meta: ${this.emitMeta(root)} }${key}
 )`
 	}
 
-	// a node's meta is one object wherever its errors or its validator read it, so one a builtin node holds is a module of its own
-	emitMeta(node: BaseNode, unit: RootUnit): string {
-		const declared = this.declarations.namesByValue.get(node.meta)
+	// a node's meta is one object wherever its errors or its validator read it
+	emitMeta(node: BaseNode): string {
+		const declared =
+			this.declarations.namesByValue.get(node.meta) ??
+			(this.writing ? undefined : this.receivedMetas.get(node.meta))
 		if (declared) return declared
-		const ownerName =
-			this.holdsLocal(node.meta) ? undefined : metaOwnerNameOf(node, unit)
-		if (ownerName === undefined) return this.emitLiteral(node.meta)
-		return this.readCreated(
+		const address = metaAddressOf(node)
+		if (address === undefined) return this.emitLiteral(node.meta)
+		return this.declareConst(
+			node.meta,
 			"meta",
-			() => `runtime.freeze(${this.writeLiteral(node.meta)[0]})`,
-			`${ownerName}\n`
+			`runtime.addressedMeta(${JSON.stringify(address)}, ${this.writeLiteral(node.meta)[0]})`
 		)
 	}
 
@@ -1174,6 +1170,7 @@ return [${returned.join(", ")}]
 	readExpression(expression: string): string {
 		const name = `expression${hashOf(expression)}`
 		this.sharedModules[`~arktype/${name}`] ??= {
+			readsRuntime: false,
 			imports: {},
 			declarations: [
 				`function ${name}() {\n\treturn ${JSON.stringify(expression)}\n}`
@@ -1334,8 +1331,8 @@ return [${returned.join(", ")}]
 		if (runtimePath) return runtimePath
 		const declared = this.declarations.namesByValue.get(value)
 		if (declared) return declared
-		const metaNode = this.unit && metaNodesOf(this.unit).get(value)
-		if (metaNode) return this.emitMeta(metaNode, this.unit!)
+		const metaOwner = this.unit?.metaOwners.get(value)
+		if (metaOwner) return this.emitMeta(metaOwner)
 		const defaulted = this.defaultsByMorph.get(value)
 		if (defaulted) return this.emitDefault(...defaulted)
 		// a unit is compared by reference, so a copy wouldn't equal it
@@ -1605,39 +1602,6 @@ const collectDefaults = (
 	}
 }
 
-const metaNodesByPass = new WeakMap<object, Map<unknown, BaseNode>>()
-
-// a context can hold another node's meta, like a required key's value's
-const metaNodesOf = (unit: RootUnit): Map<unknown, BaseNode> => {
-	let metaNodes = metaNodesByPass.get(unit.unitsById)
-	if (!metaNodes) {
-		metaNodes = new Map()
-		for (const passUnit of new Set(Object.values(unit.unitsById))) {
-			for (const node of passUnit.declared)
-				if (!metaNodes.has(node.meta)) metaNodes.set(node.meta, node)
-		}
-		metaNodesByPass.set(unit.unitsById, metaNodes)
-	}
-	return metaNodes
-}
-
-const ownerNamesByNode = new WeakMap<BaseNode, string | undefined>()
-
-// the content name of the builtin node holding a meta, which a node another scope binds shares with its reference, as every program does
-const metaOwnerNameOf = (
-	node: BaseNode,
-	unit: RootUnit
-): string | undefined => {
-	if (node.$.isBuiltin && !unit.identityNamed.has(node.id))
-		return unit.names[node.id]
-	let owner: BaseNode | undefined = node
-	while (owner && !owner.$.isBuiltin) owner = boundReferenceOf(owner)
-	if (owner?.meta !== node.meta) return
-	if (!ownerNamesByNode.has(owner))
-		ownerNamesByNode.set(owner, contentNameOf(owner, runtimeKeyOf))
-	return ownerNamesByNode.get(owner)
-}
-
 type RaisableCodes = "any" | { [code in NodeKind | ArkErrorCode]?: true }
 
 const raisableCodesByRoot = new WeakMap<BaseRoot, RaisableCodes>()
@@ -1672,12 +1636,70 @@ const raisableCodesOf = (root: BaseRoot): RaisableCodes => {
 	return codes
 }
 
+// a hole or a Type a literal holds is created with the artifact
+const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
+	if (seen.has(value)) return false
+	seen.add(value)
+	if (typeof value === "string") return value.includes(holeNamePrefix)
+	if (isHole(value)) return true
+	if (!hasDomain(value, "object") || isNode(value) || !isPlainLiteral(value))
+		return false
+	return Reflect.ownKeys(value).some(k => {
+		const v = Reflect.get(value, k)
+		return (
+			holdsLocal(k, seen) || (isNode(v) && v.isRoot()) || holdsLocal(v, seen)
+		)
+	})
+}
+
+const addressesByNode = new WeakMap<BaseNode, string | null>()
+
+// a builtin scope's cache or alias holds one node for every definition reaching it, whatever ran first
+const addressOf = (node: BaseNode): string | undefined => {
+	let address = addressesByNode.get(node)
+	if (address === undefined) {
+		address = writeAddress(node) ?? null
+		addressesByNode.set(node, address)
+	}
+	return address ?? undefined
+}
+
+const writeAddress = (node: BaseNode): string | undefined => {
+	const { $ } = node
+	if (!$.isBuiltin) return
+	// a scope keys a child by its id, which a copy another scope binds shares with what it copies
+	const key = cachedKeyOf(node, reference =>
+		isNode(reference) ?
+			addressOf(originalOf(reference))
+		:	runtimeKeyOf(reference)
+	)
+	if (key !== undefined) return hashOf(`${$.name}\nkey\n${key}`)
+	for (const name in $.resolutions)
+		if ($.resolutions[name] === node) return hashOf(`${$.name}\nalias\n${name}`)
+}
+
+const originalOf = (node: BaseNode): BaseNode => {
+	while (node.boundFrom) node = node.boundFrom
+	return node
+}
+
+// a copy holds the meta of what it copies
+const metaAddressOf = (node: BaseNode): string | undefined => {
+	if (holdsLocal(node.meta)) return
+	const address = addressOf(originalOf(node))
+	return address && hashOf(`meta\n${address}`)
+}
+
+// a meta is named by its address, so units sharing a name share their metas
+const contentKeyOf: ContentKeyOf = (value, metaOwner) =>
+	runtimeKeyOf(value) ?? (metaOwner && (metaAddressOf(metaOwner) ?? null))
+
 const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()
 
 const rootUnitsOf = (root: BaseRoot): RootUnit[] => {
 	let units = unitsByRoot.get(root)
 	if (!units)
-		unitsByRoot.set(root, (units = precompileRootUnits(root, runtimeKeyOf)))
+		unitsByRoot.set(root, (units = precompileRootUnits(root, contentKeyOf)))
 	return units
 }
 

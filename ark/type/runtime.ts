@@ -536,6 +536,25 @@ class InternTable {
 
 export const internTable = (): InternTable => new InternTable()
 
+const valuesByAddress = new Map<string, unknown>()
+
+// arktype holds one object under its address wherever a program reaches it, so every artifact creating it reads the first
+export const addressed = <value>(
+	address: string,
+	create: () => value
+): value => {
+	let value = valuesByAddress.get(address)
+	if (value === undefined) valuesByAddress.set(address, (value = create()))
+	return value as value
+}
+
+// a meta is created where it's read, since a literal is cheaper than a function creating it
+export const addressedMeta = (address: string, meta: object): object => {
+	let held = valuesByAddress.get(address)
+	if (held === undefined) valuesByAddress.set(address, (held = freeze(meta)))
+	return held as object
+}
+
 // arktype returns the Type it created before for one definition and the same holes, so its factory does too
 export const intern = <value>(
 	table: InternTable,

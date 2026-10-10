@@ -22,6 +22,7 @@ import {
 	precompileStandaloneModules,
 	writeFixConfig,
 	type ConfiguredModule,
+	type ExportSite,
 	type FactoryParam,
 	type StandaloneExport,
 	type StandaloneModules
@@ -129,6 +130,7 @@ export interface Site {
 	parseError: ParseError | undefined
 	// each receiver and argument the site called arktype with
 	arktypeArguments: unknown[]
+	parsedDefinitions: string[]
 	holes: Hole[]
 	inputs: Input[]
 	helpers: Helper[]
@@ -694,7 +696,7 @@ export class Precompiler {
 		const namesBySite = new Map<Site, string>()
 		const factoriesBySite = new Map<Site, SiteFactory>()
 		const exportsByName: Record<string, StandaloneExport> = {}
-		const sitesByName: Record<string, string> = {}
+		const sitesByName: Record<string, ExportSite> = {}
 		const keywordReads = new Set<string>()
 		// sites arktype returned one Type for share a table, as they share it in the program
 		const tablesByValue = new Map<unknown, number>()
@@ -751,14 +753,14 @@ export class Precompiler {
 					internedBy: site.isInterned ? table : undefined,
 					isCreatedEachRun: site.isCreatedEachRun
 				}
-				sitesByName[name] = module.positionOf(site)
+				sitesByName[name] = exportSiteOf(module, site)
 				// a factory passed no function written in the site replaces all of it
 				if (!factory.spans.length) replaced.push(site)
 			} else {
 				const name = `v${nameOf(site)}`
 				namesBySite.set(site, name)
 				exportsByName[name] = site.value as never
-				sitesByName[name] = module.positionOf(site)
+				sitesByName[name] = exportSiteOf(module, site)
 				if (site.isKeywordRead) keywordReads.add(name)
 				replaced.push(site)
 			}
@@ -1538,6 +1540,7 @@ export class Precompiler {
 			roots: [],
 			parseError: undefined,
 			arktypeArguments: candidate.state.arktypeArguments,
+			parsedDefinitions: candidate.state.parsedDefinitions,
 			holes: [],
 			inputs: [],
 			helpers: [],
@@ -2745,6 +2748,11 @@ const repeatedRegionsOf = (node: Node): Node[] => {
 	return result
 }
 
+const exportSiteOf = (module: SourceModule, site: Site): ExportSite => ({
+	position: module.positionOf(site),
+	definitions: site.parsedDefinitions
+})
+
 // a ParseError is named by its message, so equal sites share a thrower, and anything else by its site, since a cyclic Type's hash holds registry counters
 const nameOf = (site: Site) =>
 	hashOf(site.parseError?.message ?? `${site.start}`)
@@ -2752,7 +2760,7 @@ const nameOf = (site: Site) =>
 // precompileStandalone refuses a whole artifact for an export it can't emit, so on a refusal each export is written alone, and those that can be are written together
 const writeValidators = (
 	exportsByName: Record<string, StandaloneExport>,
-	sitesByName: Record<string, string>,
+	sitesByName: Record<string, ExportSite>,
 	keywordReads: ReadonlySet<string>,
 	refusalsByName: Record<string, string[]>,
 	configured: ConfiguredModule | undefined,

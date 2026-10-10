@@ -503,29 +503,141 @@ console.log(
 	}).timeout(60000)
 
 	it("creates one Type for a definition two modules share, and only the Types a bundle imports", async () => {
+		const shared = `[
+	type({ a: "string" }),
+	type("string"),
+	type("string.email"),
+	type("string.trim"),
+	type({ n: "number.integer" })
+] as const`
 		const root = writeFixture(
 			{
 				"a.ts": `import { type } from "arktype"
 
-export const A = type({ a: "string" })
+export const A = ${shared}
 export const Unimported = type({ a: "'unimported'" })
 `,
 				"b.ts": `import { type } from "arktype"
 
-export const B = type({ a: "string" })
+export const B = ${shared}
 `,
 				"main.ts": `import { A } from "./a.ts"
 import { B } from "./b.ts"
 
-console.log(A === B)
+console.log(JSON.stringify(A.map((a, i) => [a === B[i], a.meta === B[i].meta])))
 `
 			},
 			fromHere("temp", "shared")
 		)
-		attest(runPlain(root)).equals("true\n")
+		const expected =
+			"[[true,true],[true,true],[true,true],[false,true],[true,true]]\n"
+		attest(runPlain(root)).equals(expected)
 		const bundle = await bundlers.esbuild({ cwd: root }, root)
-		attest(run(bundle)).equals("true\n")
+		attest(run(bundle)).equals(expected)
 		attest(bundle.includes("unimported")).equals(false)
+		// two modules' artifacts share no module here, so their Types meet in the runtime
+		attest(
+			run(await bundlers.esbuild({ cwd: root, inline: true }, root))
+		).equals(expected)
+	}).timeout(60000)
+
+	it("keeps apart the Types arktype creates apart, though their content is equal", async () => {
+		const root = writeFixture(
+			{
+				"a.ts": `import { type } from "arktype"
+
+export const Trim = type("string.trim")
+export const Email = type("string.email")
+`,
+				"main.ts": `import { type } from "arktype"
+import { Email, Trim } from "./a.ts"
+
+const keyword = (name: "string.trim" | "string.email") => type(name)
+const Int = type("number.integer")
+const Mod = type("number % 1")
+console.log(
+	JSON.stringify([
+		type("Record<string, number>") === type({ "[string]": "number" }),
+		type("Exclude<string | number, number>") === type("string"),
+		Int === Mod,
+		Int.meta === Mod.meta,
+		type("unknown.any") === type("unknown"),
+		keyword("string.trim") === keyword("string.trim"),
+		keyword("string.trim") === Trim,
+		keyword("string.email") === Email,
+		(type.keywords.string.email as unknown) === Email
+	])
+)
+`
+			},
+			fromHere("temp", "apart")
+		)
+		const expected = "[false,false,false,false,false,false,false,true,true]\n"
+		attest(runPlain(root)).equals(expected)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
+	}).timeout(60000)
+
+	it("shares a Type definitions reach through different copies whichever runs first", async () => {
+		const files = {
+			"string.ts": `import { type } from "arktype"
+
+export const A = type({ a: "string" })
+`,
+			// keyof returns the copy of string another scope holds
+			"keyof.ts": `import { type } from "arktype"
+
+export const B = type({ a: type({ "[string]": "number" }).keyof() })
+`
+		}
+		const log = `console.log(JSON.stringify([A === B, A.meta === B.meta, [...(A({ a: 1 }) as any)][0].meta === [...(B({ a: 1 }) as any)][0].meta]))\n`
+		const orders = {
+			stringFirst:
+				'import { A } from "./string.ts"\nimport { B } from "./keyof.ts"\n',
+			keyofFirst:
+				'import { B } from "./keyof.ts"\nimport { A } from "./string.ts"\n'
+		}
+		for (const [name, imports] of Object.entries(orders)) {
+			const root = writeFixture(
+				{ ...files, "main.ts": `${imports}\n${log}` },
+				fromHere("temp", name)
+			)
+			attest(runPlain(root)).equals("[true,true,true]\n")
+			attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
+				"[true,true,true]\n"
+			)
+		}
+	}).timeout(60000)
+
+	it("keeps a meta holding a Type the one another module's errors expose", async () => {
+		const root = writeFixture(
+			{
+				"a.ts": `import { type } from "arktype"
+
+export const Other = type({ o: "number" })
+// a meta key a program declares on ArkEnv
+export const T = type("string").configure({ example: Other } as {})
+export const W = type({ t: T, list: T.array() })
+`,
+				"b.ts": `import { type } from "arktype"
+import { T, W } from "./a.ts"
+
+export const V = type({ w: W, t: T })
+`,
+				"main.ts": `import { Other, T, W } from "./a.ts"
+import { V } from "./b.ts"
+
+const first = (out: unknown) => [...(out as Iterable<{ meta: any }>)][0]
+const fromW = first(W({ t: 1, list: [] }))
+const fromV = first(V({ w: { t: 1, list: [] }, t: "" }))
+console.log(JSON.stringify([fromV.meta === T.meta, fromV.meta === fromW.meta, fromV.meta.example === Other]))
+`
+			},
+			fromHere("temp", "metaType")
+		)
+		attest(runPlain(root)).equals("[true,true,true]\n")
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
+			"[true,true,true]\n"
+		)
 	}).timeout(60000)
 
 	it("fixes the configuration where a Type a bundle drops was created", async () => {

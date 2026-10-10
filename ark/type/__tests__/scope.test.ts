@@ -634,7 +634,10 @@ b.c.c must be an object (was missing)`)
 
 	it("frozen modules and parsers", () => {
 		const Frozen: Module<{ root: string }> = Object.freeze(
-			keywordModule({ root: () => ["string", "@", "a frozen root"] }, {})
+			keywordModule(
+				{ root: () => ["string", "@", "a frozen root"] },
+				{ name: "frozen" }
+			)
 		) as never
 		attest(Frozen.root(5).toString()).snap(
 			"must be a frozen root (was a number)"

@@ -6,6 +6,7 @@ import {
 	type BaseRoot
 } from "@ark/schema"
 import { hashOf, hasDomain, ParseError } from "@ark/util"
+import { type } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import {
@@ -130,6 +131,8 @@ export interface SiteState {
 	requests: [Node, SourceModule][]
 	// each receiver and argument of those calls, and each object whose getter the site runs, whose holes a ParseError can print
 	arktypeArguments: unknown[]
+	// each string passed to arktype's type, whose parse cache returns its Type again for it
+	parsedDefinitions: string[]
 	// each Type a request returned
 	roots: BaseRoot[]
 	value: unknown
@@ -150,6 +153,7 @@ export const createSiteState = (
 	interpreted: new Set(),
 	requests: [],
 	arktypeArguments: [],
+	parsedDefinitions: [],
 	roots: [],
 	value: undefined,
 	error: undefined,
@@ -1715,6 +1719,8 @@ export class Interpreter {
 		if (ctx.site) {
 			collectHoles(converted, ctx.site.holes, this.standIns)
 			ctx.site.arktypeArguments.push(receiver, ...converted)
+			if (fn === type && typeof converted[0] === "string")
+				ctx.site.parsedDefinitions.push(converted[0])
 		}
 		const opaque = this.opaqueStandInOf([receiver, converted])
 		const previous = this.activeCall

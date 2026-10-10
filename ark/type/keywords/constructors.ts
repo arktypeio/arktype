@@ -40,7 +40,8 @@ export const prototypeDefinitions = {
 }
 
 export const arkPrototypes: arkPrototypes.module = keywordModule(
-	prototypeDefinitions
+	prototypeDefinitions,
+	{ name: "constructors" }
 ) as never
 
 export declare namespace arkPrototypes {

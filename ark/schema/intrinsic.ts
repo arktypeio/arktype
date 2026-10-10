@@ -1,10 +1,5 @@
 import { defineValue } from "@ark/util"
-import {
-	bootstrapRootScope,
-	createBuiltinScope,
-	node,
-	schemaScope
-} from "./scope.ts"
+import { bootstrapRootScope, node, schemaScope } from "./scope.ts"
 import { $ark } from "./shared/registry.ts"
 import { arrayIndexSource } from "./structure/shared.ts"
 
@@ -27,7 +22,7 @@ const bootstrapIntrinsic = () => {
 			Array,
 			Date
 		},
-		{ prereducedAliases: true }
+		{ prereducedAliases: true, builtin: true, name: "intrinsic" }
 	).export()
 
 	$ark.intrinsic = { ...intrinsicBases } as never
@@ -42,7 +37,7 @@ const bootstrapIntrinsic = () => {
 			key: ["string", "symbol"],
 			nonNegativeIntegerString: { domain: "string", pattern: arrayIndexSource }
 		},
-		{ prereducedAliases: true }
+		{ prereducedAliases: true, builtin: true, name: "intrinsic.roots" }
 	).export()
 
 	// needed to parse index signatures for JSON
@@ -66,7 +61,7 @@ const bootstrapIntrinsic = () => {
 			},
 			jsonData: ["$jsonPrimitive", "$jsonObject"]
 		},
-		{ prereducedAliases: true }
+		{ prereducedAliases: true, builtin: true, name: "intrinsic.json" }
 	).export()
 
 	const intrinsic = {
@@ -105,7 +100,7 @@ export const bootstrap = (): void => {
 	defineValue($ark, "intrinsic", undefined)
 	try {
 		bootstrapRootScope()
-		Object.assign(intrinsicTarget, createBuiltinScope(bootstrapIntrinsic))
+		Object.assign(intrinsicTarget, bootstrapIntrinsic())
 	} catch (e) {
 		bootstrapped = false
 		bootstrapOnRead()

@@ -31,9 +31,9 @@ export const builtinDefinitions: Record<
 	Merge
 }
 
-export const arkBuiltins: arkBuiltins = keywordModule(
-	builtinDefinitions
-) as never
+export const arkBuiltins: arkBuiltins = keywordModule(builtinDefinitions, {
+	name: "builtins"
+}) as never
 
 export type arkBuiltins = Module<arkBuiltins.$>
 

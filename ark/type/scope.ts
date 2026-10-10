@@ -1,7 +1,6 @@
 import {
 	$ark,
 	BaseScope,
-	createBuiltinScope,
 	hasArkKind,
 	LazyGenericRoot,
 	parseGeneric,
@@ -396,9 +395,10 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		InternalScope.scope(def as never, config).export()) as never
 }
 
+// a builtin scope's name addresses its nodes in a precompiled program, so each has its own
 export const keywordModule = (
 	def: Dict,
-	config: ArkScopeConfig = {}
+	config: ArkScopeConfig & { name: string }
 ): RootModule => {
 	const module = new RootModule({})
 	let exports: RootModule | undefined
@@ -408,9 +408,10 @@ export const keywordModule = (
 			module,
 			name,
 			() =>
-				(exports ??= createBuiltinScope(
-					() => new InternalScope(def, config)
-				).exportLazily())[name as never]
+				(exports ??= new InternalScope(def, {
+					...config,
+					builtin: true
+				}).exportLazily())[name as never]
 		)
 	}
 	return module

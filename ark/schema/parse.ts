@@ -290,6 +290,46 @@ const literalKeyOf = (v: unknown): string =>
 		`$${nameOf(v)}`
 	:	`${v}`
 
+const isReference = (v: unknown): v is object | symbol =>
+	!isDate(v) &&
+	((typeof v === "object" && v !== null) ||
+		typeof v === "function" ||
+		typeof v === "symbol")
+
+export const cachedKeyOf = (
+	node: BaseNode,
+	keyOfReference: (reference: object | symbol) => string | undefined
+): string | undefined => {
+	const { kind, innerEntries } = node
+	const inner = node.inner as dict
+	const metaJson = node.metaJson as dict
+	if (
+		!$ark.sets ||
+		kind === "alias" ||
+		node.$.nodesByKey.get(nodeKeyOf(kind, inner, innerEntries, metaJson)) !==
+			node
+	)
+		return
+	const keyOf = (v: unknown): string | undefined => {
+		if (isArray(v)) {
+			const keys = v.map(keyOf)
+			return keys.includes(undefined) ? undefined : `[${keys.join()}]`
+		}
+		return isNode(v) || isReference(v) ? keyOfReference(v) : literalKeyOf(v)
+	}
+	let key: string = kind
+	for (const [k, v] of innerEntries) {
+		const valueKey =
+			k === "unit" ?
+				isReference(v) ? keyOfReference(v)
+				:	literalKeyOf(v)
+			:	keyOf(v)
+		if (valueKey === undefined) return
+		key += `,${k}:${valueKey}`
+	}
+	return isEmptyObject(metaJson) ? key : key + JSON.stringify(metaJson)
+}
+
 // a basis or primitive constraint's error context includes its description,
 // so its writer runs on construction whether or not the node is compiled
 export const resolveDescription = <node extends BaseNode>(node: node): node => {
