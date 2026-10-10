@@ -551,10 +551,10 @@ export class Precompiler {
 			}
 			if (this.inline) this.importKeywords(module, s)
 		}
-		// imported where the module imports arktype, so they're evaluated where arktype is, in an import cycle too
-		const arktypeImport = this.arktypeImportOf(module)
-		const insertImport = (text: string) =>
-			arktypeImport ? s.appendLeft(arktypeImport.end, text) : s.append(text)
+		let inserted = ""
+		const insertImport = (text: string) => {
+			inserted += text
+		}
 		if (this.inline)
 			inlineModules(module, s, prefix, modules, imports, insertImport)
 		else {
@@ -569,6 +569,18 @@ export class Precompiler {
 					)
 				}
 			}
+		}
+		// imported where the module imports arktype, so they're evaluated where arktype is, in an import cycle too
+		const arktypeImport = this.arktypeImportOf(module)
+		if (inserted && !arktypeImport) s.append(inserted)
+		else if (inserted && arktypeImport) {
+			const lineEnd = source.indexOf("\n", arktypeImport.end)
+			const rest = source.slice(
+				arktypeImport.end,
+				lineEnd === -1 ? undefined : lineEnd
+			)
+			// minified code can continue the import's line with a site or the configuration's fixer, which the imports precede
+			s.prependLeft(arktypeImport.end, rest.trim() ? `${inserted}\n` : inserted)
 		}
 		return {
 			code: s.toString(),
@@ -3059,8 +3071,13 @@ const pruneArktypeImports = (
 		const kept = statement.specifiers.filter(specifier =>
 			isReadOutside(specifier, folded, module)
 		)
-		if (kept.length < statement.specifiers.length)
-			s.overwrite(statement.start, statement.end, writeImport(kept, module))
+		if (kept.length < statement.specifiers.length) {
+			s.overwrite(
+				statement.start,
+				statement.source.end,
+				writeImport(kept, module)
+			)
+		}
 	}
 }
 

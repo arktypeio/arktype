@@ -91,6 +91,20 @@ $arkfixConfig()
 export const A = /* @__PURE__ */ $arkv62gs0h1rkzfa4()`)
 		})
 
+		it("keeps a minified module's statements apart", () => {
+			const source = `import"./polyfill.ts";import{type}from"arktype";export const A=type("string");`
+			attest(precompile(source).code)
+				.snap(`import"./polyfill.ts";import "arktype";
+import { vq0j6e21xyk07n as $arkvq0j6e21xyk07n } from "~arktype/14aensl1ixw16e"
+import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+$arkfixConfig()
+export const A=/* @__PURE__ */ $arkvq0j6e21xyk07n();`)
+			attest(precompile(source, {}, { runtime: "arktype" }).code)
+				.snap(`import"./polyfill.ts";import{type}from"arktype";
+import "~arktype/units/17wsonu17h2zoq"
+export const A=type("string");`)
+		})
+
 		it("reports an export arktype/runtime lacks that a kept helper reads", () => {
 			const result = precompile(`import { match, scope } from "arktype"
 const isLong = (s: string) => s.length > 1
