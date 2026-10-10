@@ -47,8 +47,10 @@ export type EcmascriptObjects = satisfy<
 	}
 >
 
+// reads of globals run in functions annotated pure, so a bundler can drop those nothing uses
 /** Node18 */
-export const FileConstructor = globalThis.File ?? globalThis.Blob
+export const FileConstructor = /* @__PURE__ */ (() =>
+	globalThis.File ?? globalThis.Blob)()
 
 // need to type these explicitly due to a resolution issue
 export type platformConstructors = {
@@ -65,31 +67,32 @@ export type platformConstructors = {
 // Platform APIs
 // See https://developer.mozilla.org/en-US/docs/Web/API
 // Must be implemented in Node etc. as well as the browser to include here
-export const platformConstructors: platformConstructors = {
-	ArrayBuffer,
-	Blob: globalThis.Blob,
-	File: FileConstructor,
-	// Node loads undici on the first read of any of these
-	get FormData() {
-		return globalThis.FormData
-	},
-	get Headers() {
-		return globalThis.Headers
-	},
-	get Request() {
-		return globalThis.Request
-	},
-	get Response() {
-		return globalThis.Response
-	},
-	URL: globalThis.URL
-}
+export const platformConstructors =
+	/* @__PURE__ */ ((): platformConstructors => ({
+		ArrayBuffer,
+		Blob: globalThis.Blob,
+		File: FileConstructor,
+		// Node loads undici on the first read of any of these
+		get FormData() {
+			return globalThis.FormData
+		},
+		get Headers() {
+			return globalThis.Headers
+		},
+		get Request() {
+			return globalThis.Request
+		},
+		get Response() {
+			return globalThis.Response
+		},
+		URL: globalThis.URL
+	}))()
 
 export type PlatformObjects = instantiateConstructors<
 	keyof platformConstructors
 >
 
-export const typedArrayConstructors = {
+export const typedArrayConstructors = /* @__PURE__ */ (() => ({
 	Int8Array,
 	Uint8Array,
 	Uint8ClampedArray,
@@ -101,7 +104,7 @@ export const typedArrayConstructors = {
 	Float64Array,
 	BigInt64Array,
 	BigUint64Array
-}
+}))()
 
 export type typedArrayConstructors = typeof typedArrayConstructors
 
@@ -211,8 +214,8 @@ export const hasObjectKind = <kind extends keyof builtinConstructors>(
 export const isArray: (data: unknown) => data is readonly unknown[] =
 	Array.isArray
 
-const dateToString = Date.prototype.toString
-const dateGetTime = Date.prototype.getTime
+const dateToString = /* @__PURE__ */ (() => Date.prototype.toString)()
+const dateGetTime = /* @__PURE__ */ (() => Date.prototype.getTime)()
 
 export const isValidDate = (date: Date): boolean => {
 	if (date.toString !== dateToString) return date.toString() !== "Invalid Date"
@@ -223,10 +226,8 @@ export const isValidDate = (date: Date): boolean => {
 	}
 }
 
-const regExpSource = Object.getOwnPropertyDescriptor(
-	RegExp.prototype,
-	"source"
-)!.get!
+const regExpSource = /* @__PURE__ */ (() =>
+	Object.getOwnPropertyDescriptor(RegExp.prototype, "source")!.get!)()
 
 // an object can have a builtin's prototype without being one, which only the builtin's methods can tell
 const isBrandedBy = (value: object, method: () => unknown): boolean => {

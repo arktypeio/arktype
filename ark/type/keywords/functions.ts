@@ -88,8 +88,8 @@ export const maxEpoch = 8640000000000000
 
 export const epochDescriptions = {
 	domain: "a number representing a Unix timestamp",
-	min: `a Unix timestamp after ${-maxEpoch}`,
-	max: `a Unix timestamp before ${maxEpoch}`
+	min: "a Unix timestamp after -8640000000000000",
+	max: "a Unix timestamp before 8640000000000000"
 }
 
 // number.epoch's phrase describes its errors
