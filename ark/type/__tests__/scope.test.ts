@@ -233,6 +233,11 @@ contextualize(() => {
 		attest(() => $.type("b")).throws(writeUnresolvableMessage("bad"))
 	})
 
+	it("exports from an alias's thunk what's exported before it", () => {
+		const $ = scope({ b: "string", a: () => $.export().b })
+		attest($.export().a("x")).equals("x")
+	})
+
 	it("errors on each export after an alias fails", () => {
 		const $ = scope({
 			even: ["number", ":", n => n % 2 === 0],

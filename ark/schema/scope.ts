@@ -1526,16 +1526,21 @@ export abstract class BaseScope<$ extends {} = {}> {
 	export(...names: string[]): SchemaModule {
 		if (!this._exports) {
 			const mark = $ark.reached?.mark()
-			// cached only if every alias resolves, so a later call throws the same error
-			const exports: RootExportCache = {}
-			for (const name of this.exportedNames) {
-				const def = this.aliases[name]
-				exports[name] =
-					this.lazyExports ? this.lazyExports[name]
-					: hasArkKind(def, "module") ? bindModule(def, this)
-					: this.maybeResolve(name)!
+			// an alias resolving can export again, which returns what's exported so far
+			this._exports = {}
+			try {
+				for (const name of this.exportedNames) {
+					const def = this.aliases[name]
+					this._exports[name] =
+						this.lazyExports ? this.lazyExports[name]
+						: hasArkKind(def, "module") ? bindModule(def, this)
+						: this.maybeResolve(name)!
+				}
+			} catch (e) {
+				// so a later call throws the same error
+				this._exports = undefined
+				throw e
 			}
-			this._exports = exports
 
 			this._exportedResolutions = resolutionsOfModule(this, this._exports)
 
