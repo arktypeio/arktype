@@ -276,7 +276,6 @@ export type errorWritersOf<code extends ArkErrorCode> = requireKeys<
 	:	"expected"
 >
 
-/** data a check of units rejected, printed by its kind if no unit is an object */
 export const printUnlike = (data: unknown, units: readonly unknown[]): string =>
 	// a primitive prints the same either way, so only an object reads the units
 	hasDomain(data, "object") && !units.some(unit => hasDomain(unit, "object")) ?

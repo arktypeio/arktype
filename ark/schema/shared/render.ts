@@ -173,8 +173,7 @@ const localeExpected = (
 	return inEn.expected
 }
 
-// an error's text in en as far as its expected reads, so no writer of a slot
-// it doesn't is called again
+// only as far as its expected reads, so a writer of no other slot is called again
 const writeInEn = (
 	error: ArkError,
 	config: ResolvedConfig,

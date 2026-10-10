@@ -208,12 +208,10 @@ const pathEquals = (l: array<PropertyKey>, r: array<PropertyKey>) => {
 	return true
 }
 
-/** adds an error, which is merged into an intersection with any at its path when read */
 export const addError = (errors: ArkErrors, error: ArkError): void => {
 	errors._added.push(error)
 }
 
-/** adds copies of another traversal's errors, prefixing their paths */
 export const mergeErrors = (
 	errors: ArkErrors,
 	merged: ArkErrors,
@@ -230,7 +228,6 @@ export const mergeErrors = (
 export const messageIn = (error: ArkError, locale: Locale): string =>
 	writtenIn(error, locale).message
 
-/** an error's message as if it had been raised at another path */
 export const messageAt = (error: ArkError, path: PropertyKey[]): string => {
 	const config = ErrorSource.configOf(error)
 	const copy = unwrittenError(error)
@@ -239,7 +236,6 @@ export const messageAt = (error: ArkError, path: PropertyKey[]): string => {
 	return copy.message
 }
 
-/** an error from a context compiled code or a callback raises, which may be at another path */
 export const errorOfContext = (
 	input: ArkErrorContextInput,
 	basePath: array<PropertyKey>,
@@ -301,14 +297,12 @@ const pathKeys = {
 	propString: 1
 }
 
-/** an error a node's context raises, built with its keys in order */
 export type ErrorBuilder = (
 	context: ArkErrorContextInput,
 	path: PropertyKey[],
 	data: unknown
 ) => ArkError
 
-/** builds an error from a node's context with the builder of its shape */
 export const errorOfNodeContext = (
 	context: ArkErrorContextInput,
 	path: PropertyKey[],
@@ -353,7 +347,7 @@ class Identity {
 	}
 }
 
-// what a copy of an error is written from, kept in private fields so that it stays a plain object
+// private fields, so an error stays a plain object
 class ErrorSource extends Identity {
 	#config: ResolvedConfig
 	// a context with any text supplied for the error, which a copy keeps
@@ -387,16 +381,11 @@ const stampError = (
 	return error
 }
 
-/** the text supplied for an error's slot, which writing it again reads */
 export const suppliedText = (
 	error: ArkError,
 	slot: "expected" | "actual" | "problem" | "message"
 ): string | undefined => ErrorSource.inputOf(error)?.[slot]
 
-/**
- * writes an error's text in its slots that weren't supplied, after its
- * children's. An error written again, e.g. as a child of another, is unchanged
- */
 export const writeError = (
 	error: ArkError,
 	config: ResolvedConfig,
@@ -411,7 +400,6 @@ export const writeError = (
 	else writeText(error, config, locale)
 }
 
-/** writes an error's text with its meta's writers or its config's, in its slots through last */
 export const writeText = (
 	error: ArkError,
 	config: ResolvedConfig,
@@ -439,7 +427,7 @@ export const writeText = (
 		typeof message === "function" ? message(error as never, locale) : message
 }
 
-/** writes errors in arktype's locales, which a standalone runtime ships without */
+// registered by arktype, so a standalone runtime ships without its locales
 export interface LocaleRenderer {
 	/** the locale errors.ts writes itself */
 	en: Locale
@@ -459,7 +447,6 @@ export const registerLocaleRenderer = (registered: LocaleRenderer): void => {
 const rendererOf = (config: ResolvedConfig): LocaleRenderer | undefined =>
 	"cite" in config.locale ? renderer : undefined
 
-// a copy of an error written in a locale, which leaves the error as written
 const writtenIn = (error: ArkError, locale: Locale): ArkError => {
 	const config = ErrorSource.configOf(error)
 	if (!rendererOf(config) && locale !== config.locale)
@@ -472,7 +459,6 @@ const writtenIn = (error: ArkError, locale: Locale): ArkError => {
 const isLocale = (locale: unknown): locale is Locale =>
 	typeof locale === "object" && locale !== null
 
-/** a copy of an error with the text it was created with, its paths prefixed */
 export const unwrittenError = (
 	error: ArkError,
 	prefix?: array<PropertyKey>

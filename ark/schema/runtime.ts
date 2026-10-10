@@ -56,7 +56,6 @@ const writeExpected: ExpectedWriter = ctx => ctx.description!
 // data no writer of its code describes is a string or a number, unless printing configured its validator
 const writeActual: ActualWriter = data => serializePrimitive(data as never)
 
-// en's writers of each code a validator can raise, added as validators are created, which every config reads as its prototype's
 const registered: { [code in ArkErrorCode]?: ResolvedConfig[code] } = {}
 
 // frozen when the first validator is created, as arktype fixes its config when the first Type is
@@ -95,7 +94,6 @@ const register = (code: ArkErrorCode, writers: object): void => {
 	}
 }
 
-/** registers en's writers of each code a validator can raise, returning its config */
 export const raising = (
 	config: ResolvedConfig,
 	writersByCode: ErrorWritersByCode
@@ -107,7 +105,6 @@ export const raising = (
 	return config
 }
 
-/** a validator's config that prints data no writer describes with printer, as it may be other than a string or number */
 export const printing = (
 	config: ResolvedConfig,
 	printer: (data: unknown) => string
@@ -126,11 +123,9 @@ export const printing = (
 	return Object.freeze(Object.create(config, descriptors))
 }
 
-/** a validator's config whose meta holds writers, which receive en's locale as arktype's do */
 export const inEn = (config: ResolvedConfig): ResolvedConfig =>
 	Object.freeze(Object.create(config, { locale: { value: enInfo } }))
 
-/** a scope's config, whose writers for each code replace en's and the program's */
 export const scopeConfig = (overridesByCode: {
 	[code in ArkErrorCode]?: [writers: object, overrides: object]
 }): ResolvedConfig => {

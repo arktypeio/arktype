@@ -30,10 +30,8 @@ export type BranchTraversal = {
 	errorCount: number
 }
 
-// a standalone runtime whose validators pass no callback ctx creates these
-// without the methods only callbacks call. Its fields are assigned by its
-// constructor, since V8 creates a subclass's instances more slowly when they
-// are defined by initializers
+// fields are assigned by the constructor, since V8 creates a subclass's
+// instances more slowly from initializers
 export class InternalTraversal {
 	/**
 	 * #### the path being validated or morphed

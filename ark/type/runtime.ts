@@ -137,10 +137,10 @@ export { assertRuntimeVersion, claimEntry } from "./entry.ts"
 export * from "./keywords/functions.ts"
 
 // en as predicate's writers read it to write an error a keyword raised through ctx
-const keywordLocale = {
+const keywordLocale: Locale = {
 	keywordPhrases: raisedErrorPhrases,
 	problem: writeProblem
-} as {} as Locale
+} as never
 
 /** predicate's writers in en, which write an error a keyword raised with its phrase */
 export const predicateWriters: ErrorWritersByCode["predicate"] = {
