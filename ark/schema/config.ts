@@ -56,7 +56,11 @@ export interface CacheReach {
 	node: (node: object) => void
 	// an entry another cache returns, which reaches what computing it reached
 	cached: (cache: object, key: unknown) => void
+	// a Scope's alias defined by a thunk, whose result decides what a definition resolving it creates
+	thunk: (scope: object, alias: string) => void
+	// where computing a cache entry begins, as how much the definition has reached
 	mark: () => number | undefined
+	// what the definition reached since the mark, which a definition the cache returns the entry to reaches
 	store: (mark: number | undefined, cache: object, key: unknown) => void
 }
 

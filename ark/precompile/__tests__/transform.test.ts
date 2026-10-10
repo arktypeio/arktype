@@ -288,7 +288,7 @@ export const O = $.type.or("s", "number")`)
 			])
 		})
 
-		it("refuses a Scope's thunk alias only where a site holds what it returned and a program can replace the Scope", () => {
+		it("refuses a Scope's thunk alias only where a site resolves it and a program can replace the Scope", () => {
 			const scopeOf = (name: string) => `scope({
 		b: "3.14",
 		a: ["number", "=>", stringify],
@@ -318,7 +318,7 @@ export const imported = ${scopeOf("imported")}`
 				[
 					14,
 					"imported.export() can't be precompiled to a standalone validator yet",
-					"`imported`'s alias `aAndB` is a thunk, whose result the site holds, so a factory can't compare it"
+					"`imported`'s alias `aAndB` is a thunk the site resolves, so a factory can't compare what it returns"
 				]
 			])
 		})

@@ -1,4 +1,4 @@
-import { Hkt, scope, type } from "arktype"
+import { Hkt, scope, type, type Scope } from "arktype"
 
 const isShort = (s: string) => s.length < 3
 const isLong = (s: string) => s.length > 3
@@ -34,6 +34,20 @@ export const keepsA = scope({ c: ["'a' | 'b'", ":", isA] })
 export const keepsB = scope({ c: ["'a' | 'b'", ":", isB] })
 export const holdsShort = scope({ a: ShortString, c: ["string", ":", isShort] })
 export const holdsLong = scope({ a: ShortString, c: ["string", ":", isLong] })
+
+// each pair differs only in what its thunks return, which a site can flatten, intersect, key or instantiate without holding, so each is annotated
+export const thunksReturningX: Scope<any> = scope({
+	f: "string",
+	t: () => thunksReturningX.type("f | number"),
+	k: () => thunksReturningX.type({ x: "f" }),
+	G: () => type.generic("t")({ v: "t" })
+})
+export const thunksReturningY: Scope<any> = scope({
+	f: "string",
+	t: () => thunksReturningY.type("f | boolean"),
+	k: () => thunksReturningY.type({ y: "f" }),
+	G: () => type.generic("t")({ w: "t" })
+})
 
 export const ArrayOf = type.generic("t")(
 	args => args.t.array(),

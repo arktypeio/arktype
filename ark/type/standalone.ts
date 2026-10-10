@@ -2224,7 +2224,7 @@ const rootUnitsOf = (root: BaseRoot): RootUnit[] => {
 const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
 	reader.unitsById[node.id]
 
-// a Scope's alias defined by a thunk, keyed only by where it is, so a site holding what the thunk returned is refused
+// a Scope's alias defined by a thunk, keyed only by where it is, so a site resolving it is refused
 export type ThunkAlias = [scope: BaseScope, alias: string]
 
 export type Key = [

@@ -5,6 +5,7 @@ import {
 	isNode,
 	type BaseNode,
 	type BaseRoot,
+	type BaseScope,
 	type CacheReach
 } from "@ark/schema"
 import { hashOf, hasDomain, ParseError } from "@ark/util"
@@ -18,7 +19,8 @@ import {
 	keyOf,
 	type DefaultCheck,
 	type FoldedMember,
-	type StandaloneIntrospection
+	type StandaloneIntrospection,
+	type ThunkAlias
 } from "arktype/internal/standalone.ts"
 import type {
 	CallExpression,
@@ -124,6 +126,8 @@ export interface StandIn {
 	isDefinition: boolean
 }
 
+export type Reached = DefaultCheck | ThunkAlias
+
 export interface SiteState {
 	node: Node
 	module: SourceModule
@@ -140,8 +144,8 @@ export interface SiteState {
 	arktypeArguments: unknown[]
 	// each string passed to arktype's type, whose parse cache returns its Type again for it
 	parsedDefinitions: string[]
-	// each default check arktype deferred, directly or in computing what a cache returned, in the order the site reached them
-	defaultChecks: DefaultCheck[]
+	// each default check arktype deferred and thunk alias it resolved, directly or in computing what a cache returned, in the order the site reached them
+	reached: Reached[]
 	// each Type a request returned
 	roots: BaseRoot[]
 	// e.g. `User` and "json" for `User.json`, which a standalone build folds to what arktype returns
@@ -167,7 +171,7 @@ export const createSiteState = (
 	requests: [],
 	arktypeArguments: [],
 	parsedDefinitions: [],
-	defaultChecks: [],
+	reached: [],
 	roots: [],
 	introspection: undefined,
 	value: undefined,
@@ -297,8 +301,8 @@ export class Interpreter {
 	parseErrorSites = new WeakMap<ParseError, SiteState>()
 	// each default check deferred by the node whose creation ran it, which a site the node cache returns it to reaches
 	private checksByOwner = new Map<object, DefaultCheck[]>()
-	// the checks computing each cache entry reached, by cache and key
-	private checksByEntry = new WeakMap<object, Map<unknown, DefaultCheck[]>>()
+	// what computing each cache entry reached, by cache and key
+	private reachedByEntry = new WeakMap<object, Map<unknown, Reached[]>>()
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
 	// what each function, class or symbol expression outside a call evaluated to, which every evaluation of it reuses
 	private standInsByNode = new Map<Node, object>()
@@ -1860,11 +1864,11 @@ export class Interpreter {
 		const site = this.activeCall?.ctx.site
 		if (!site || !this.holdsStandIn(node.in as BaseRoot)) return false
 		const check: DefaultCheck = [node, value, key]
-		site.defaultChecks.push(check)
+		site.reached.push(check)
 		if (owner) {
-			const checks = this.checksByOwner.get(owner)
-			if (checks) checks.push(check)
-			else this.checksByOwner.set(owner, [check])
+			let checks = this.checksByOwner.get(owner)
+			if (!checks) this.checksByOwner.set(owner, (checks = []))
+			checks.push(check)
 		}
 		return true
 	}
@@ -1872,20 +1876,24 @@ export class Interpreter {
 	private reached: CacheReach = {
 		node: node => {
 			const checks = this.checksByOwner.get(node)
-			if (checks) this.activeCall?.ctx.site?.defaultChecks.push(...checks)
+			if (checks) this.activeCall?.ctx.site?.reached.push(...checks)
 		},
 		cached: (cache, key) => {
-			const checks = this.checksByEntry.get(cache)?.get(key)
-			if (checks) this.activeCall?.ctx.site?.defaultChecks.push(...checks)
+			const reached = this.reachedByEntry.get(cache)?.get(key)
+			if (reached) this.activeCall?.ctx.site?.reached.push(...reached)
 		},
-		mark: () => this.activeCall?.ctx.site?.defaultChecks.length,
+		thunk: (scope, alias) =>
+			this.activeCall?.ctx.site?.reached.push([scope as BaseScope, alias]),
+		mark: () => this.activeCall?.ctx.site?.reached.length,
 		// an entry computed again, as an alias resolved once its references are, reaches what each computation did
 		store: (mark, cache, key) => {
-			const reached = this.activeCall?.ctx.site?.defaultChecks
+			const reached = this.activeCall?.ctx.site?.reached
 			if (mark === undefined || !reached || reached.length === mark) return
-			let entries = this.checksByEntry.get(cache)
-			if (!entries) this.checksByEntry.set(cache, (entries = new Map()))
-			entries.set(key, [...(entries.get(key) ?? []), ...reached.slice(mark)])
+			let entries = this.reachedByEntry.get(cache)
+			if (!entries) this.reachedByEntry.set(cache, (entries = new Map()))
+			let stored = entries.get(key)
+			if (!stored) entries.set(key, (stored = []))
+			stored.push(...reached.slice(mark))
 		}
 	}
 

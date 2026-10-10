@@ -1347,7 +1347,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	private resolveUncached(
 		name: string,
 		cached: BaseParseContext | undefined,
-		// where resolving it began, which each alias its cycle closes reaches from
+		// the start of resolving it, from which each member of a cycle it closes reaches
 		mark: number | undefined
 	): Exclude<CachedResolution, BaseParseContext> | undefined {
 		if (cached) {
@@ -1415,6 +1415,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		// a reference to a thunk's alias while it's called is a cycle, but a generic's declaration is called again
 		if (isScopeAlias && isThunk(def) && !(def instanceof LazyGenericRoot)) {
+			$ark.reached?.thunk(this, name)
 			const preparsed = this.preparseOwnDefinitionFormat(def, { alias: name })
 			const ctx = registerParseContext(
 				this.createParseContext(preparsed as BaseParseContextInput)

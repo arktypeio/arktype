@@ -37,7 +37,8 @@ import {
 	type StandaloneExport,
 	type StandaloneIntrospection,
 	type StandaloneModules,
-	type StandaloneOptions
+	type StandaloneOptions,
+	type ThunkAlias
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
@@ -164,6 +165,8 @@ export interface Site {
 	addressed: Set<BaseRoot>
 	// each default arktype checks while defining what the site creates, which the build can't and its factory does at creation
 	defaultChecks: DefaultCheck[]
+	// each thunk alias arktype resolves while defining it, directly or in computing what a cache returns
+	thunks: ThunkAlias[]
 	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
 	declarationStart: number | undefined
 	// e.g. `User` and "json" for `User.json`, which a standalone build folds to the data arktype returns
@@ -1474,13 +1477,16 @@ export class Precompiler {
 				result.push(`\`${text}\` ${refusal}, so a factory can't compare it`)
 				continue
 			}
-			// e.g. `aAndB: () => $.type("a&b")`, the docs' way to use a Type's methods in a Scope, which decides only what holds its result
-			const reached = thunks.find(([scope, alias]) =>
-				reaches(site.value, scope.resolutions[alias])
+			// e.g. `aAndB: () => $.type("a&b")`, the docs' way to use a Type's methods in a Scope, which decides only what a site resolving it creates
+			const resolved = thunks.find(([scope, alias]) =>
+				site.thunks.some(
+					([resolvedScope, resolvedAlias]) =>
+						resolvedScope === scope && resolvedAlias === alias
+				)
 			)
-			if (reached) {
+			if (resolved) {
 				result.push(
-					`\`${text}\`'s alias \`${reached[1]}\` is a thunk, whose result the site holds, so a factory can't compare it`
+					`\`${text}\`'s alias \`${resolved[1]}\` is a thunk the site resolves, so a factory can't compare what it returns`
 				)
 				continue
 			}
@@ -1840,6 +1846,7 @@ export class Precompiler {
 			isInterned: false,
 			addressed: new Set(),
 			defaultChecks: [],
+			thunks: [],
 			declarationStart: declarationStartOf(node),
 			introspection: undefined
 		}
@@ -1857,6 +1864,11 @@ export class Precompiler {
 		}
 		const dynamic = rejectionOf(state)
 		if (dynamic) return rejectSite(site, dynamic)
+		const checks = new Set<DefaultCheck>()
+		for (const reached of state.reached) {
+			if (!hasArkKind(reached[0], "scope")) checks.add(reached as DefaultCheck)
+			else site.thunks.push(reached as ThunkAlias)
+		}
 		if (state.error instanceof ParseError) {
 			// e.g. an island's or a declaration's, which the site's thrower would throw without checking what it depends on
 			if (this.interpreter.parseErrorSites.get(state.error) !== state) {
@@ -1874,7 +1886,7 @@ export class Precompiler {
 			site.value = state.value
 			site.roots = state.roots
 			// arktype checks a default where it first creates its node, so a site checks those it creates and those computing what a cache returns it did
-			site.defaultChecks = [...new Set(state.defaultChecks)]
+			site.defaultChecks = [...checks]
 			// e.g. a Generic aliased `define`, whose instantiation is a Type
 			if (!isFoldable(state.value))
 				site.definition = this.definitionOf(state.node, module)
@@ -3112,15 +3124,6 @@ const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
 	}
 	return result
 }
-
-// a resolution is found by content, so another definition equal to it reaches it too
-const reaches = (value: unknown, resolution: unknown): boolean =>
-	hasArkKind(resolution, "root") &&
-	[...arkObjectsIn(value)].some(
-		root =>
-			hasArkKind(root, "root") &&
-			(root === resolution || root.references.includes(resolution))
-	)
 
 // e.g. a callback's body and the function calling it, innermost first
 const repeatedRegionsOf = (node: Node): Node[] => {
