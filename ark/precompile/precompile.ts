@@ -2548,7 +2548,10 @@ export class Precompiler {
 				`${define} is a build define the configuration reads, and nothing compares its runtime value with the build's`
 			)
 		}
+		const objects = new Set<unknown>()
 		const visit = (o: unknown) => {
+			if (typeof o !== "object" || o === null || objects.has(o)) return
+			objects.add(o)
 			if (o instanceof ModuleNamespace) {
 				result.push(
 					"a namespace import used as a value is not in the static subset"
@@ -2574,7 +2577,7 @@ export class Precompiler {
 		if (!dynamic) {
 			visit(value.value)
 			result.push(
-				...this.writableObjectsIn(value.value, value.trace.reads, modules)
+				...this.writableObjectsIn(objects, value.trace.reads, modules)
 			)
 		}
 		return {
@@ -2587,18 +2590,10 @@ export class Precompiler {
 
 	// arktype reads a keyword's meta when the keyword is first created, so a write after configure() can reach the program but not the build
 	private writableObjectsIn(
-		value: unknown,
+		objects: Set<unknown>,
 		reads: Read[],
 		ids: string[]
 	): string[] {
-		const objects = new Set<unknown>()
-		const collect = (o: unknown) => {
-			if (typeof o !== "object" || o === null || objects.has(o)) return
-			objects.add(o)
-			if (isPlainContainer(o))
-				for (const k of Reflect.ownKeys(o)) collect(Reflect.get(o, k))
-		}
-		collect(value)
 		const result = new Set<string>()
 		// read from what the argument read, so no other site's evaluation decides it
 		for (const { root, value } of reads) {

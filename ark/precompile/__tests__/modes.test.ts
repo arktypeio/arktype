@@ -418,6 +418,21 @@ configure({ number: { description: describe } })`,
 			).snap([
 				"/main.ts:6:1  configure({ number: { description: describe } }) is not static\n  the description writer at /main.ts:2:18 must be a static helper, since arktype calls it while defining types\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
+			attest(
+				diagnosticsOf(
+					`import { configure } from "arktype/config"
+const describe = (n: unknown) => {
+	const text = "a number"
+	return text
+}
+const meta = { description: describe }
+configure({ number: meta, bigint: meta })`,
+					{},
+					{ config: "/main.ts" }
+				)
+			).snap([
+				"/main.ts:7:1  configure({ number: meta, bigint: meta }) is not static\n  the description writer at /main.ts:2:18 must be a static helper, since arktype calls it while defining types\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+			])
 		})
 
 		it("a Type created while the config module loads", () => {
