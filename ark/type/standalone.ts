@@ -19,7 +19,6 @@ import {
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	errorWritersByCode,
-	rootApplyParams,
 	rootApplyRuntime,
 	writeErrorBuilder,
 	writeRootApply
@@ -1136,24 +1135,37 @@ return [${returned.join(", ")}]
 		const nodeName = this.unitsByHead.get(root)!.names[root.id]
 		const [id, holes] = keyOf(root)
 		const key = `,\n\t${JSON.stringify(id)}${holes.length ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
-		const apply = writeRootApply(root, nodeName)
-		const callbacks = raisableCodesOf(root) === "any"
-		// what the root's apply doesn't read is left out, and a traversal no callback sees lacks the API Traversal adds for them
-		const runtimeArgs = Object.entries(rootApplyRuntime).map(
-			([param, value]) =>
-				!new RegExp(`\\b${param}\\b`).test(apply) ? "undefined"
-				: value === rootApplyRuntime.Traversal && !callbacks ?
-					this.emit(InternalTraversal)
-				:	this.emit(value)
-		)
 		return `new runtime.Validator(
-	(function (${rootApplyParams.join(", ")}) {
-		${apply}
-	})(${shape}, ${this.configOf(root)}, ${runtimeArgs.join(", ")}),
+	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
 	${this.emit(pipeOf(root))},
 	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root.expression)}()`}, description: ${this.emitString(root.description)}, meta: ${this.emitMeta(root)} }${key}
 )`
+	}
+
+	// a root's apply is passed only what its strategy reads, and a traversal no callback sees lacks the API Traversal adds for them
+	emitRootApply(root: BaseRoot, shape: string, nodeName: string): string {
+		const callbacks = raisableCodesOf(root) === "any"
+		const config = this.configOf(root)
+		// as writeRootApply's "allows" strategy, outside a cycle, with an arrow of its own so its allows call sees one root's data
+		if (root.rootApplyStrategy === "allows" && !root.includesAlias) {
+			return `((allows, node, config) => (data, onFail) =>
+		allows(data) ? data : runtime.applyRejected(node, data, config, onFail${callbacks ? ", runtime.Traversal" : ""}))(${shape}.allows, ${shape}, ${config})`
+		}
+		const apply = writeRootApply(root, nodeName)
+		const read = Object.entries(rootApplyRuntime).filter(([param]) =>
+			new RegExp(`\\b${param}\\b`).test(apply)
+		)
+		const params = read.map(([param]) => `, ${param}`).join("")
+		const args = read
+			.map(
+				([, value]) =>
+					`, ${this.emit(value === rootApplyRuntime.Traversal && !callbacks ? InternalTraversal : value)}`
+			)
+			.join("")
+		return `(function (node, config${params}) {
+		${apply}
+	})(${shape}, ${config}${args})`
 	}
 
 	// a node's meta is one object wherever its errors or its validator read it

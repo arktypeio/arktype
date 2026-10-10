@@ -63,6 +63,7 @@ export {
 	allowsInContext,
 	allowsUntracked,
 	applyCyclic,
+	applyRejected,
 	ArkErrors,
 	arrayIndexMatcher,
 	beforeWriters,

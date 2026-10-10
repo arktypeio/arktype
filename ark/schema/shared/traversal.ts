@@ -282,6 +282,19 @@ export const errorFromContext = (
 	input: ArkErrorContextInput
 ): ArkError => ctx.addError(errorOfContext(input, ctx.path, ctx.config))
 
+/** what a root returns for data its Allows rejected, with the errors its Apply finds */
+export const applyRejected = (
+	node: BaseNode,
+	data: unknown,
+	config: ResolvedConfig,
+	onFail: ArkErrors.Handler | null,
+	Ctx: typeof InternalTraversal = InternalTraversal
+): unknown => {
+	const ctx = new Ctx(data, config)
+	node.traverseApply(data, ctx)
+	return ctx.finalize(onFail)
+}
+
 const receive = (ctx: InternalTraversal, data: unknown): void => {
 	ctx.received = data
 	ctx.receivedDepth = ctx.path.length
