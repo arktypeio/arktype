@@ -278,6 +278,8 @@ export class Precompiler {
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
+	// why the configuration the analyses were made under can't be applied, which refuses each site
+	private analyzedProblem: string | undefined
 	private bindingsByInput = new WeakMap<Input, Binding>()
 	private packagesByEntry: Record<string, [root: string, version: string]> =
 		Object.create(null)
@@ -666,27 +668,40 @@ export class Precompiler {
 
 	// as the program applies it at runtime, before any site is evaluated
 	private applyConfiguration(): Configuration {
-		const { module, modules, call, version } = this.readConfiguration()
-		if (holdsOtherConfiguration(version)) throwError(configuredThreadMessage)
-		if (threadConfiguration) return threadConfiguration
+		const { module, modules, call, version, files } = this.readConfiguration()
+		const applied = threadConfiguration
+		if (applied && applied.version === version) return applied
+		if (holdsOtherConfiguration(files)) throwError(configuredThreadMessage)
 		const evaluated =
 			module && call && this.evaluateConfiguration(call, module, modules)
 		const problem =
 			evaluated &&
 			(evaluated.problem ??
 				// as arktype fixes its configuration at the first Type, configure() would throw
-				($ark.resolvedConfig ?
+				(!applied && $ark.resolvedConfig ?
 					"configure() is called after its argument creates a Type"
 				:	undefined))
 		const configuration: Configuration = {
 			modules,
 			version,
+			files,
 			fingerprint:
 				evaluated && !problem ?
 					arktypeRuntime.fingerprintOf(evaluated.value ?? {})
 				:	undefined,
 			problem,
 			reasons: evaluated ? evaluated.reasons : []
+		}
+		if (applied) {
+			// e.g. the config module as a plugin ahead of arktype's transpiled it, which configures what its file does
+			return problem || configuration.fingerprint === applied.fingerprint ?
+					configuration
+				:	{
+						...configuration,
+						fingerprint: undefined,
+						problem: configurationConflictMessage,
+						reasons: [configurationConflictReason]
+					}
 		}
 		if (evaluated) {
 			threadConfiguration = configuration
@@ -695,6 +710,11 @@ export class Precompiler {
 		// so a later configure() in the thread throws, as it does after arktype's first Type
 		void ark.internal.resolvedConfig
 		return configuration
+	}
+
+	// a module given anew configures other values than arktype in this thread holds, as an unsaved config module in an editor can
+	get conflictsWithThread(): boolean {
+		return this.configuration?.problem === configurationConflictMessage
 	}
 
 	private dependenciesOfArtifact(module: SourceModule): string[] {
@@ -712,9 +732,9 @@ export class Precompiler {
 		]
 	}
 
-	// arktype takes one configuration per thread, so a build whose configuration changed restarts in a new one
+	// arktype takes one configuration per thread, so a build whose configuration's files changed restarts in a new one
 	get needsNewThread(): boolean {
-		return holdsOtherConfiguration(this.readConfiguration().version)
+		return holdsOtherConfiguration(this.readConfiguration().files)
 	}
 
 	private readConfiguration() {
@@ -723,7 +743,8 @@ export class Precompiler {
 				module: undefined,
 				modules: [],
 				call: undefined,
-				version: undefined
+				version: undefined,
+				files: undefined
 			}
 		}
 		const module = this.graph.moduleOf(this.config)
@@ -744,8 +765,24 @@ export class Precompiler {
 					modules
 						.map(id => `${this.graph.pathOf(id)}\n${this.sourceOf(id)}`)
 						.join("\n")
-				)
+				),
+			files: call && hashOf(this.filesOf(module.id).join("\n"))
 		}
+	}
+
+	// each module a module's file imports, with its file's path and text, though a host may give any of them otherwise
+	private filesOf(id: string): string[] {
+		const sourcesById: Record<string, string | undefined> = {}
+		return this.localClosureOf(id, reached => {
+			const source = (sourcesById[reached] = this.graph.host.readFile(reached))
+			if (source === undefined) return []
+			const module = new SourceModule(
+				reached,
+				source,
+				this.graph.pathOf(reached)
+			)
+			return this.importsIn(module).map(([target]) => target)
+		}).map(reached => `${this.graph.pathOf(reached)}\n${sourcesById[reached]}`)
 	}
 
 	private sourceOf(id: string): string | undefined {
@@ -1498,6 +1535,13 @@ export class Precompiler {
 
 	// a second analysis would evaluate its sites again over values the first created and arktype changed, as a scope its first export resolved
 	private analysisOf(module: SourceModule): ModuleAnalysis {
+		const problem =
+			this.configuration?.problem &&
+			[this.configuration.problem, ...this.configuration.reasons].join("\n")
+		if (problem !== this.analyzedProblem) {
+			this.analysesByModule = new WeakMap()
+			this.analyzedProblem = problem
+		}
 		let analysis = this.analysesByModule.get(module)
 		if (!analysis)
 			this.analysesByModule.set(module, (analysis = this._analyze(module)))
@@ -2265,12 +2309,17 @@ export class Precompiler {
 
 	private importsOf(id: string): [target: string, isErased: boolean][] {
 		const module = this.graph.moduleOf(id)
+		return module instanceof SourceModule ? this.importsIn(module) : []
+	}
+
+	private importsIn(
+		module: SourceModule
+	): [target: string, isErased: boolean][] {
 		const result: [string, boolean][] = []
-		if (!(module instanceof SourceModule)) return result
 		for (const statement of module.program.body) {
 			const specifier = "source" in statement && statement.source?.value
 			if (!specifier || arkPackageSpecifier.test(specifier)) continue
-			const target = this.graph.host.resolve(specifier, id)
+			const target = this.graph.host.resolve(specifier, module.id)
 			if (target && this.graph.isFollowed(target))
 				result.push([target, isErased(statement, module)])
 		}
@@ -2848,8 +2897,10 @@ export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 
 interface Configuration {
 	modules: string[]
-	// a hash of the modules' paths and text, if the config module calls configure()
+	// a hash of the paths and text of the modules it's read from, if the config module calls configure()
 	version: string | undefined
+	// the same for their files, which a host can give otherwise, as a plugin ahead of arktype's transpiles one
+	files: string | undefined
 	// the values configure() receives, which the program's configure() checks
 	fingerprint: string | undefined
 	// why the configure() call can't be applied, reported where the config module is precompiled
@@ -2860,11 +2911,11 @@ interface Configuration {
 let threadConfiguration: Configuration | undefined
 
 // arktype can't change its configuration once set
-const holdsOtherConfiguration = (version: string | undefined): boolean =>
+const holdsOtherConfiguration = (files: string | undefined): boolean =>
 	threadConfiguration ?
-		threadConfiguration.version !== version
+		threadConfiguration.files !== files
 	:	Object.keys($ark.config).length > 0 ||
-		(version !== undefined && $ark.resolvedConfig !== undefined)
+		(files !== undefined && $ark.resolvedConfig !== undefined)
 
 export const writeUnreadableConfigMessage = <path extends string>(
 	path: path
@@ -2878,6 +2929,14 @@ export const configuredThreadMessage =
 	"arktype in this thread holds a configuration other than the build's, which it can't change once set, so the build must restart in a thread of its own"
 
 export type configuredThreadMessage = typeof configuredThreadMessage
+
+export const configurationConflictMessage =
+	"configure() is given other values than arktype in this thread already applied"
+
+export type configurationConflictMessage = typeof configurationConflictMessage
+
+const configurationConflictReason =
+	"a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set"
 
 export const writeStandaloneDependencyMessage = <name extends string>(
 	name: name

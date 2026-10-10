@@ -5,7 +5,7 @@ import {
 	precompile,
 	type PrecompilePluginOptions
 } from "@ark/precompile/unplugin"
-import { context, build as esbuild } from "esbuild"
+import { context, build as esbuild, transformSync } from "esbuild"
 import { spawnSync } from "node:child_process"
 import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -277,6 +277,30 @@ contextualize(() => {
 			build: { write: false, ssr: "main.ts" }
 		})) as Rolldown.RolldownOutput
 		attest(run(output[0].code)).equals(expected)
+	}).timeout(60000)
+
+	it("vite configured, with a plugin ahead of arktype's transpiling the config module", async () => {
+		const config = viteConfig(
+			{ cwd: configured, config: "config.ts" },
+			configured
+		)
+		const transpile = {
+			name: "transpile",
+			enforce: "pre" as const,
+			transform: (code: string, id: string) =>
+				id.endsWith("/config.ts") ?
+					transformSync(code, { loader: "ts" }).code
+				:	undefined
+		}
+		const [{ output }] = (await viteBuild({
+			...config,
+			plugins: [transpile, ...config.plugins!],
+			build: {
+				write: false,
+				lib: { entry: "main.ts", formats: ["es"] }
+			}
+		})) as Rolldown.RolldownOutput[]
+		attest(run(output[0].code)).equals(runPlain(configured))
 	}).timeout(60000)
 
 	it("keeps its worker across esbuild's rebuilds", async () => {

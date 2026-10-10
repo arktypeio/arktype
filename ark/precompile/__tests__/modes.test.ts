@@ -206,7 +206,24 @@ console.log(JSON.stringify([
 			).equals([["rejected"], ["rejected"]])
 		}).timeout(60000)
 
-		it("configure given unlike the configuration the build applied", () => {
+		it("configure given anew with the values the build applied", () => {
+			attest(
+				printedInFreshThread(`import { Precompiler } from "@ark/precompile"
+import { memoryHost } from "./utils.ts"
+
+const config = 'import { configure } from "arktype/config"\\nimport type { Mode } from "./mode.ts"\\nconfigure({ onUndeclaredKey: "reject" as Mode })'
+const files = { "/config.ts": config, "/mode.ts": 'export type Mode = "reject"', "/main.ts": main }
+const precompiler = new Precompiler(memoryHost(files), { config: "/config.ts" })
+const stampOf = source => precompiler.precompile(source, "/config.ts").code
+precompiler.precompile(main, "/main.ts")
+console.log(JSON.stringify([stampOf(config), stampOf('import { configure } from "arktype/config"\\nconfigure({onUndeclaredKey:"reject"})')]))`)
+			).snap([
+				'import { configure } from "arktype/config"\nimport type { Mode } from "./mode.ts"\nconfigure({ onUndeclaredKey: "reject" as Mode }, "x5lmhc1rv7b0k")',
+				'import { configure } from "arktype/config"\nconfigure({onUndeclaredKey:"reject"}, "x5lmhc1rv7b0k")'
+			])
+		}).timeout(60000)
+
+		it("configure given anew with other values than the build applied", () => {
 			attest(
 				printedInFreshThread(`import { Precompiler } from "@ark/precompile"
 import { memoryHost } from "./utils.ts"
@@ -217,19 +234,16 @@ const outcomes = [
 	["/main.ts", main],
 	["/config.ts", config.replace("reject", "delete")],
 	["/main.ts", main]
-].map(([id, source]) => {
-	try {
-		precompiler.precompile(source, id)
-		return "precompiled"
-	} catch (e) {
-		return e.message
-	}
-})
+].map(([id, source]) => precompiler.precompile(source, id).diagnostics.map(renderDiagnostic))
 console.log(JSON.stringify(outcomes))`)
-			).equals([
-				"precompiled",
-				configuredThreadMessage,
-				configuredThreadMessage
+			).snap([
+				[],
+				[
+					"/config.ts:2:1  configure() is given other values than arktype in this thread already applied\n  a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				],
+				[
+					"/main.ts:2:18  type({ a: \"string\" }) is created under a configuration the build can't apply\n  configure() is given other values than arktype in this thread already applied (/config.ts)\n  a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				]
 			])
 		}).timeout(60000)
 
