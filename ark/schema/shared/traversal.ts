@@ -61,24 +61,8 @@ export class InternalTraversal {
 	declare config: ResolvedConfig
 
 	declare branches: BranchTraversal[]
-	declare seen: { [id in string]?: Map<unknown, ResolutionState> }
-	// a cyclic root's Apply leaves resolutions untracked until its data is deep or broad enough to be cyclic
-	declare tracksResolutions: boolean
-	declare resolving: ResolvingFrame[] | undefined
-	declare resolvingDepth: number
-	declare untrackedVisits: number
-	declare recordedFailure: boolean
-	declare enteredCount: number
-	declare earliestAssumed: number
-	declare assumed: unknown[] | undefined
-	declare reachedInvalid: InvalidResolution | undefined
-	// data reaching an object by a shorter path than it first did is applied in order of path length
-	declare deferredByLength: DeferredResolution[][] | undefined
-	declare applyingLength: number
-	// the length of the shortest path an object was deferred at, or -1 once applied
-	declare shortestPathLengths:
-		| { [id in string]?: Map<unknown, number> }
-		| undefined
+	// what it tracks of the cyclic nodes it enters, once it enters one
+	declare resolutions: Resolutions | undefined
 	// data a root allowed within the bounds is a tree, so each path is transformed
 	declare tracksTransforms: boolean
 	declare transformedByResolutionId:
@@ -97,19 +81,7 @@ export class InternalTraversal {
 		this.root = root
 		this.config = config
 		this.branches = []
-		this.seen = {}
-		this.tracksResolutions = true
-		this.resolving = undefined
-		this.resolvingDepth = 0
-		this.untrackedVisits = 0
-		this.recordedFailure = false
-		this.enteredCount = 0
-		this.earliestAssumed = Number.POSITIVE_INFINITY
-		this.assumed = undefined
-		this.reachedInvalid = undefined
-		this.deferredByLength = undefined
-		this.applyingLength = 0
-		this.shortestPathLengths = undefined
+		this.resolutions = undefined
 		this.tracksTransforms = true
 		this.transformedByResolutionId = undefined
 		this.received = root
@@ -550,6 +522,31 @@ export const transformResolution = (
 	return Object.setPrototypeOf(placeholder, Object.getPrototypeOf(result))
 }
 
+// what a traversal tracks of the cyclic nodes it enters
+class Resolutions {
+	seen: { [id in string]?: Map<unknown, ResolutionState> } = {}
+	// a cyclic root's Apply leaves resolutions untracked until its data is deep or broad enough to be cyclic
+	tracked = true
+	// reused by depth, so entering doesn't allocate
+	frames: ResolvingFrame[] | undefined = undefined
+	depth = 0
+	untrackedVisits = 0
+	recordedFailure = false
+	enteredCount = 0
+	earliestAssumed = Number.POSITIVE_INFINITY
+	assumed: unknown[] | undefined = undefined
+	reachedInvalid: InvalidResolution | undefined = undefined
+	// data reaching an object by a shorter path than it first did is applied in order of path length
+	deferredByLength: DeferredResolution[][] | undefined = undefined
+	applyingLength = 0
+	// the length of the shortest path an object was deferred at, or -1 once applied
+	shortestPathLengths: { [id in string]?: Map<unknown, number> } | undefined =
+		undefined
+}
+
+const resolutionsOf = (ctx: InternalTraversal): Resolutions =>
+	(ctx.resolutions ??= new Resolutions())
+
 // undefined once entered, else whether data is known or assumed valid
 export const enterResolution = (
 	ctx: InternalTraversal,
@@ -557,22 +554,23 @@ export const enterResolution = (
 	data: unknown,
 	apply?: TraverseApply
 ): boolean | undefined => {
+	const resolutions = resolutionsOf(ctx)
 	if (
-		ctx.deferredByLength &&
+		resolutions.deferredByLength &&
 		apply &&
 		!ctx.currentBranch &&
 		(typeof data === "object" ? data !== null : typeof data === "function")
 	) {
-		const lengths = (ctx.shortestPathLengths![id] ??= new Map())
+		const lengths = (resolutions.shortestPathLengths![id] ??= new Map())
 		const length = ctx.path.length
 		const shortestLength = lengths.get(data)
 		if (shortestLength !== undefined && shortestLength <= length) return true
-		if (length === ctx.applyingLength) {
+		if (length === resolutions.applyingLength) {
 			lengths.set(data, -1)
 			apply(data, ctx)
 		} else {
 			lengths.set(data, length)
-			;(ctx.deferredByLength[length] ??= []).push({
+			;(resolutions.deferredByLength[length] ??= []).push({
 				id,
 				data,
 				apply,
@@ -583,11 +581,14 @@ export const enterResolution = (
 	}
 	// untracked, every state is a failure, so none is looked up before the first
 	const states =
-		ctx.tracksResolutions || ctx.recordedFailure ? ctx.seen[id] : undefined
+		resolutions.tracked || resolutions.recordedFailure ?
+			resolutions.seen[id]
+		:	undefined
 	const state = states?.get(data)
 	if (state !== undefined) {
 		if (typeof state === "number") {
-			if (state < ctx.earliestAssumed) ctx.earliestAssumed = state
+			if (state < resolutions.earliestAssumed)
+				resolutions.earliestAssumed = state
 			return true
 		}
 		if (typeof state === "boolean") return state
@@ -598,19 +599,18 @@ export const enterResolution = (
 		if (state.reported) {
 			// its errors belong at the shorter path, which only applying by path length finds
 			if (ctx.path.length < state.pathLength) throw reachedByShorterPath
-			ctx.reachedInvalid ??= state
+			resolutions.reachedInvalid ??= state
 			return false
 		}
 		// its errors were discarded with a branch, so it's traversed again
 	}
 	if (
-		!ctx.tracksResolutions &&
-		(ctx.resolvingDepth >= maxAliasDepth ||
-			++ctx.untrackedVisits > maxAliasVisits)
+		!resolutions.tracked &&
+		(resolutions.depth >= maxAliasDepth ||
+			++resolutions.untrackedVisits > maxAliasVisits)
 	)
 		throw untrackedBound
-	// frames are reused by depth, so entering doesn't allocate
-	const frame = ((ctx.resolving ??= [])[ctx.resolvingDepth++] ??= {
+	const frame = ((resolutions.frames ??= [])[resolutions.depth++] ??= {
 		id,
 		data,
 		entered: 0,
@@ -622,14 +622,17 @@ export const enterResolution = (
 	frame.id = id
 	frame.data = data
 	frame.errorCount = ctx.currentErrorCount
-	if (!ctx.tracksResolutions) return
-	;(states ?? (ctx.seen[id] = new Map())).set(data, ++ctx.enteredCount)
-	frame.entered = ctx.enteredCount
-	frame.outerReachedInvalid = ctx.reachedInvalid
-	ctx.reachedInvalid = undefined
-	frame.outerEarliestAssumed = ctx.earliestAssumed
-	frame.assumedLength = (ctx.assumed ??= []).length
-	ctx.earliestAssumed = Number.POSITIVE_INFINITY
+	if (!resolutions.tracked) return
+	;(states ?? (resolutions.seen[id] = new Map())).set(
+		data,
+		++resolutions.enteredCount
+	)
+	frame.entered = resolutions.enteredCount
+	frame.outerReachedInvalid = resolutions.reachedInvalid
+	resolutions.reachedInvalid = undefined
+	frame.outerEarliestAssumed = resolutions.earliestAssumed
+	frame.assumedLength = (resolutions.assumed ??= []).length
+	resolutions.earliestAssumed = Number.POSITIVE_INFINITY
 	return
 }
 
@@ -638,18 +641,19 @@ export const exitResolution = (
 	ctx: InternalTraversal,
 	allowed?: boolean
 ): boolean => {
-	const frame = ctx.resolving![--ctx.resolvingDepth]
-	if (!ctx.tracksResolutions) return allowed ?? exitUntracked(ctx, frame)
-	const reachedInvalid = ctx.reachedInvalid
-	ctx.reachedInvalid = frame.outerReachedInvalid
+	const resolutions = ctx.resolutions!
+	const frame = resolutions.frames![--resolutions.depth]
+	if (!resolutions.tracked) return allowed ?? exitUntracked(ctx, frame)
+	const reachedInvalid = resolutions.reachedInvalid
+	resolutions.reachedInvalid = frame.outerReachedInvalid
 	const valid =
 		allowed ??
 		(reachedInvalid === undefined && ctx.currentErrorCount === frame.errorCount)
 	const data = frame.data
-	const states = ctx.seen[frame.id]!
+	const states = resolutions.seen[frame.id]!
 	// a primitive has no identity, so each place it's reached reports its own errors
 	if (typeof data === "object" ? data === null : typeof data !== "function") {
-		ctx.earliestAssumed = frame.outerEarliestAssumed
+		resolutions.earliestAssumed = frame.outerEarliestAssumed
 		states.delete(data)
 		return valid
 	}
@@ -657,13 +661,13 @@ export const exitResolution = (
 		valid || allowed === false ?
 			valid
 		:	invalidResolution(ctx, reachedInvalid?.error)
-	const earliestAssumed = ctx.earliestAssumed
-	ctx.earliestAssumed = frame.outerEarliestAssumed
-	const assumed = ctx.assumed!
+	const earliestAssumed = resolutions.earliestAssumed
+	resolutions.earliestAssumed = frame.outerEarliestAssumed
+	const assumed = resolutions.assumed!
 	if (valid && earliestAssumed < frame.entered) {
 		assumed.push(states, data)
-		if (earliestAssumed < ctx.earliestAssumed)
-			ctx.earliestAssumed = earliestAssumed
+		if (earliestAssumed < resolutions.earliestAssumed)
+			resolutions.earliestAssumed = earliestAssumed
 		return true
 	}
 	// nothing it assumed is in progress, so each result that assumed it is valid with it, or unknown without it
@@ -674,7 +678,8 @@ export const exitResolution = (
 	}
 	assumed.length = frame.assumedLength
 	states.set(data, state)
-	if (typeof state === "object" && state.reported) ctx.reachedInvalid ??= state
+	if (typeof state === "object" && state.reported)
+		resolutions.reachedInvalid ??= state
 	return valid
 }
 
@@ -685,8 +690,12 @@ const exitUntracked = (
 ): boolean => {
 	if (ctx.currentErrorCount === frame.errorCount) return true
 	if (!hasDomain(frame.data, "object")) return false
-	;(ctx.seen[frame.id] ??= new Map()).set(frame.data, invalidResolution(ctx))
-	ctx.recordedFailure = true
+	const resolutions = ctx.resolutions!
+	;(resolutions.seen[frame.id] ??= new Map()).set(
+		frame.data,
+		invalidResolution(ctx)
+	)
+	resolutions.recordedFailure = true
 	return false
 }
 
@@ -697,14 +706,16 @@ const applyByPathLength = (
 	apply: TraverseApply,
 	data: unknown
 ): void => {
-	const deferredByLength: DeferredResolution[][] = (ctx.deferredByLength = [])
-	ctx.shortestPathLengths = {}
+	const resolutions = resolutionsOf(ctx)
+	const deferredByLength: DeferredResolution[][] =
+		(resolutions.deferredByLength = [])
+	resolutions.shortestPathLengths = {}
 	enterResolution(ctx, id, data, apply)
 	for (let length = 1; length < deferredByLength.length; length++) {
 		if (!deferredByLength[length]) continue
-		ctx.applyingLength = length
+		resolutions.applyingLength = length
 		for (const deferred of deferredByLength[length]) {
-			const lengths = ctx.shortestPathLengths[deferred.id]!
+			const lengths = resolutions.shortestPathLengths[deferred.id]!
 			// it was deferred again at a shorter path, so it's been applied there
 			if (lengths.get(deferred.data) !== length) continue
 			lengths.set(deferred.data, -1)
@@ -778,7 +789,7 @@ export const applyCyclic = <ctx extends InternalTraversal>(
 		applyByPathLength(ctx, node.trackedId, node.traverseApply, data)
 		return ctx
 	}
-	ctx.tracksResolutions = false
+	resolutionsOf(ctx).tracked = false
 	try {
 		try {
 			// data reaching its root again is cyclic, so untracked it exceeds the bounds
