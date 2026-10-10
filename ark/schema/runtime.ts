@@ -56,9 +56,6 @@ const writeExpected: ExpectedWriter = ctx => ctx.description!
 // data no writer of its code describes is a string or a number, unless printing configured its validator
 const writeActual: ActualWriter = data => serializePrimitive(data as never)
 
-// what writers configure() is passed receive of en, which en's own don't read
-export const runtimeLocale: Locale.Info = {} as never
-
 // en's writers of each code a validator can raise, added as validators are created, which every config reads as its prototype's
 const registered: { [code in ArkErrorCode]?: ResolvedConfig[code] } = {}
 
@@ -69,7 +66,8 @@ export const runtimeConfig: ResolvedConfig = Object.assign(
 		// errors are built without generating code, so validation never needs eval
 		jitless: true,
 		onFail: null,
-		locale: runtimeLocale
+		// en's writers don't read the locale, which is en's where configure() or a meta adds writers that may
+		locale: Object.freeze({})
 	}
 )
 
@@ -128,6 +126,10 @@ export const printing = (
 	return Object.freeze(Object.create(config, descriptors))
 }
 
+/** a validator's config whose meta holds writers, which receive en's locale as arktype's do */
+export const inEn = (config: ResolvedConfig): ResolvedConfig =>
+	Object.freeze(Object.create(config, { locale: { value: enInfo } }))
+
 /** a scope's config, whose writers for each code replace en's and the program's */
 export const scopeConfig = (overridesByCode: {
 	[code in ArkErrorCode]?: [writers: object, overrides: object]
@@ -165,7 +167,7 @@ export const configure = (
 	configureIslands?.(config)
 	if ("onFail" in config)
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
-	Object.assign(runtimeLocale, enInfo)
+	;(runtimeConfig as { locale: Locale.Info }).locale = enInfo
 	configuredFingerprint = fingerprint
 	programConfig = config
 	return config
@@ -174,7 +176,6 @@ export const configure = (
 export const fixConfig = (
 	...configured: [] | [fingerprint: string, path: string]
 ): void => {
-	Object.freeze(runtimeLocale)
 	Object.freeze(runtimeConfig)
 	const [fingerprint, path] = configured
 	if (fingerprint === configuredFingerprint) return

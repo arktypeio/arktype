@@ -1604,17 +1604,17 @@ return [${returned.join(", ")}]
 	// a validator's config, which registers en's writers of each code it can raise
 	configOf(root: BaseRoot): string {
 		const raisable = raisableCodesOf(root)
-		const config = this.scopeConfigOf(root, raisable)
+		const writers =
+			raisable === "any" ?
+				"runtime.allErrorWriters"
+			:	`{ ${Object.keys(raisable)
+					.map(code => `${code}: runtime.${code}Writers`)
+					.join(", ")} }`
+		let config = `runtime.raising(${this.scopeConfigOf(root, raisable)}, ${writers})`
 		// a callback can raise any code, on data of any kind
-		if (raisable === "any")
-			return `runtime.printing(runtime.raising(${config}, runtime.allErrorWriters), runtime.printCompact)`
-		const writers = Object.keys(raisable).map(
-			code => `${code}: runtime.${code}Writers`
-		)
-		const raising = `runtime.raising(${config}, { ${writers.join(", ")} })`
-		return hasIndexSignature(root) ?
-				`runtime.printing(${raising}, runtime.printCompact)`
-			:	raising
+		if (raisable === "any" || hasIndexSignature(root))
+			config = `runtime.printing(${config}, runtime.printCompact)`
+		return hasMetaWriter(root) ? `runtime.inEn(${config})` : config
 	}
 
 	// the config of a scope whose writers differ from the program's
@@ -1785,6 +1785,13 @@ const hasIndexSignature = (root: BaseRoot): boolean =>
 	rootUnitsOf(root).some(unit =>
 		unit.declared.some(
 			node => node.hasKind("structure") && node.index !== undefined
+		)
+	)
+
+const hasMetaWriter = (root: BaseRoot): boolean =>
+	rootUnitsOf(root).some(unit =>
+		unit.declared.some(node =>
+			writerKeys.some(k => typeof node.meta[k] === "function")
 		)
 	)
 

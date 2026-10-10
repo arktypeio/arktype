@@ -55,7 +55,7 @@ export const errorWriters: {
 }
 
 // what a writer you configure receives of en
-export const enInfo: Locale.Info = {
+export const enInfo: Locale.Info = /* @__PURE__ */ Object.freeze<Locale.Info>({
 	tag: "en",
 	list: /* @__PURE__ */ listPattern(
 		{ two: " or ", middle: ", ", end: " or " },
@@ -65,7 +65,7 @@ export const enInfo: Locale.Info = {
 	number: String,
 	date: describeCollapsibleDate,
 	verbatim: text => text
-}
+})
 
 export const afterWriters: errorWritersOf<"after"> = {
 	actual: describeCollapsibleDate

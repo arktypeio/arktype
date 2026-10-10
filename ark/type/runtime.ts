@@ -86,6 +86,7 @@ export {
 	fixConfig,
 	flatByPath,
 	flatProblemsByPath,
+	inEn,
 	InternalTraversal,
 	intersectionWriters,
 	isAbsent,

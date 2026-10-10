@@ -4,7 +4,8 @@ import {
 	$ark,
 	configureAfterTypeMessage,
 	hasArkKind,
-	type ArkSchemaConfig
+	type ArkSchemaConfig,
+	type Locale
 } from "@ark/schema"
 import {
 	configMismatchMessage,
@@ -315,6 +316,34 @@ contextualize(() => {
 			"TypeError: runtimeType is not a function"
 		)
 		attest(Reflect.ownKeys(runtimeType)).equals(["errors"])
+	})
+
+	it("passes a writer its meta holds en's locale, configured or not", async () => {
+		const write = (ctx: unknown, locale: Locale.Info) =>
+			[
+				locale.tag,
+				locale.list(["a", "b", "c"], "or"),
+				locale.plural(2),
+				locale.number(1.5),
+				locale.date(new Date(0)),
+				locale.verbatim("v")
+			].join("; ")
+		const define = (w: typeof write) => type("number").configure({ message: w })
+		const built = standIn(write.bind(null), "write")
+		const T: StandaloneExport = {
+			type: define(built),
+			params: [{ kind: "function", label: "`write`", value: built }]
+		}
+		const unconfigured = (await load({ T })).T(write)
+		const configured = (await load({ T }, `runtime.configure({}, "f")`)).T(
+			write
+		)
+		const summary = define(write)("x").toString()
+		attest([unconfigured("x").summary, configured("x").summary]).equals([
+			summary,
+			summary
+		])
+		attest(summary).snap("en; a, b or c; other; 1.5; 1970; v")
 	})
 
 	it("writes errors with configured strings", async () => {
