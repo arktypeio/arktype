@@ -785,8 +785,10 @@ export class Precompiler {
 					modules[throwerSpecifier] = thrower
 					imports[throwerSpecifier] = { default: local }
 				} else {
-					modules[specifier] = validators.code
-					Object.assign(modules, validators.modules)
+					if (!(specifier in modules)) {
+						modules[specifier] = validators.code
+						Object.assign(modules, validators.modules)
+					}
 					;(imports[specifier] ??= {})[name] = local
 				}
 			}
