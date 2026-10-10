@@ -344,7 +344,7 @@ type("string")
 
 ### Throw when merging an array
 
-Like the `...` spread operator, `.merge`, `type.merge` and `Merge` extend an object, so an array or tuple on either side now throws a `ParseError`. Previously, including in 2.2.7, the result was an object holding the array's elements, which accepted non-arrays and threw an internal error from `toJsonSchema()`:
+Like the `...` spread operator, `.merge`, `type.merge` and `Merge` extend an object, so an array, a tuple or an instance of another class like `Date` on either side now throws a `ParseError`. Previously, including in 2.2.7, merging an array gave an object, which accepted non-arrays, and for a tuple threw an internal error from `toJsonSchema()`:
 
 ```ts
 // previously accepted { a: "x" }, now throws ParseError: merge operand must resolve to an object literal type (was object[])

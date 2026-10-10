@@ -1,5 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeNonStructuralOperandMessage } from "@ark/schema"
+import {
+	writeInvalidMergeOperandMessage,
+	writeNonStructuralOperandMessage
+} from "@ark/schema"
 import { keywords, scope, type } from "arktype"
 
 contextualize(() => {
@@ -88,5 +91,17 @@ contextualize(() => {
 			.type.errors(
 				`ErrorType<["Merged type must be an object", actual: string]>`
 			)
+	})
+
+	it("array operand", () => {
+		attest(() => type("unknown[]").merge({ a: "string" })).throws(
+			writeInvalidMergeOperandMessage("Array")
+		)
+		attest(() => type({ a: "string" }).merge(type([]))).throws(
+			writeInvalidMergeOperandMessage("[]")
+		)
+		attest(() => type({ a: "string" }).merge(type(["string"]))).throws(
+			writeInvalidMergeOperandMessage("[string]")
+		)
 	})
 })

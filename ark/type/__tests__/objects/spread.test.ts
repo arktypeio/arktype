@@ -1,5 +1,4 @@
 import { attest, contextualize } from "@ark/attest"
-import { writeArrayMergeOperandMessage } from "@ark/schema"
 import { scope, type } from "arktype"
 import { writeInvalidSpreadTypeMessage } from "arktype/internal/parser/objectLiteral.ts"
 
@@ -129,15 +128,6 @@ contextualize(() => {
 				foo: "string"
 			})
 		).throws(writeInvalidSpreadTypeMessage("Date"))
-	})
-
-	it("merge errors on an array", () => {
-		attest(() => type("object[]").merge({ a: "string" })).throws(
-			writeArrayMergeOperandMessage("object[]")
-		)
-		attest(() => type({ a: "string" }).merge(type(["string"]))).throws(
-			writeArrayMergeOperandMessage("[string]")
-		)
 	})
 
 	it("autocompletes shallow string", () => {
