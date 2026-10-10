@@ -370,11 +370,11 @@ class ErrorSource extends Identity {
 	}
 
 	static configOf(error: ArkError): ResolvedConfig {
-		return (error as {} as ErrorSource).#config
+		return #config in error ? error.#config : throwError(copiedErrorMessage)
 	}
 
 	static inputOf(error: ArkError): ArkErrorContextInput | undefined {
-		return (error as {} as ErrorSource).#input
+		return #input in error ? error.#input : throwError(copiedErrorMessage)
 	}
 }
 
@@ -748,3 +748,8 @@ export const unrenderedLocaleMessage =
 	"a standalone validator's errors can only be written in en, since writing another locale requires arktype"
 
 export type unrenderedLocaleMessage = typeof unrenderedLocaleMessage
+
+export const copiedErrorMessage =
+	"an error can only be written again as validation returned it, not as a copy"
+
+export type copiedErrorMessage = typeof copiedErrorMessage

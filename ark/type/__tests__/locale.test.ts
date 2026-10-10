@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
+	copiedErrorMessage,
 	describeMissing,
 	flatProblemsByPath,
 	messageIn,
@@ -690,6 +691,17 @@ b isn't allowed`)
 			attest(errors.toLocaleString()).equals(errors.summary)
 			// Array.prototype.toLocaleString passes each element its tag
 			attest([errors].toLocaleString("de")).equals(errors.summary)
+		})
+
+		it("messageIn throws for a copy of an error", () => {
+			const error = (type({ k: "string" })({ k: 5 }) as ArkErrors).issues[0]
+			const copies = [
+				{ ...error },
+				structuredClone(error),
+				new Proxy(error, {})
+			]
+			for (const copy of copies)
+				attest(() => messageIn(copy, xx)).throws(copiedErrorMessage)
 		})
 
 		it("toLocaleString reaches union and intersection children", () => {

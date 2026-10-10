@@ -30,6 +30,8 @@ for (const error of out.issues) {
 }
 ```
 
+`messageIn` reads what the error was created with from the error validation returned, so a spread, `structuredClone` or Proxy of it throws.
+
 `path` is a plain array rather than a `ReadonlyPath`. A `propString` passed to `ctx.reject` or `ctx.error` is ignored, since it's written from the path.
 
 `ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()`, `toString()` and `toLocaleString(locale)`. `byPath`, `flatByPath`, `flatProblemsByPath` and `byAncestorPath` are functions of an `ArkErrors`, exported by `arktype`, `arktype/runtime` and `@ark/schema`:
