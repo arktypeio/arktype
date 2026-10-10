@@ -547,23 +547,16 @@ export const byPath = (errors: ArkErrors): Record<string, ArkError> => {
  * ✅ Since "intersection" errors will be flattened to their constituent `errors`,
  * they will never be directly present in this representation.
  */
-export const flatByPath = (errors: ArkErrors): Record<string, ArkError[]> => {
-	const result: Record<string, ArkError[]> = Object.create(null)
-	for (const error of errors.issues) result[error.propString] = flat(error)
-	return result
-}
+export const flatByPath = (errors: ArkErrors): Record<string, ArkError[]> =>
+	recordByPath(errors, flat)
 
 /**
  * {@link byPath} flattened so that each value is an array of problem strings at that path.
  */
 export const flatProblemsByPath = (
 	errors: ArkErrors
-): Record<string, string[]> => {
-	const result: Record<string, string[]> = Object.create(null)
-	for (const error of errors.issues)
-		result[error.propString] = flat(error).map(e => e.problem)
-	return result
-}
+): Record<string, string[]> =>
+	recordByPath(errors, error => flat(error).map(e => e.problem))
 
 /**
  * All path strings at which errors are present mapped to the errors occuring
@@ -580,6 +573,27 @@ export const byAncestorPath = (
 		for (const k of error.path) {
 			propString = appendStringifiedKey(propString, k)
 			;(result[propString] ??= []).push(...errorsAtPath)
+		}
+	}
+	return result
+}
+
+// a path __proto__ is defined, since assigning it would set the prototype
+const recordByPath = <v>(
+	errors: ArkErrors,
+	valueOf: (error: ArkError) => v
+): Record<string, v> => {
+	const result: Record<string, v> = {}
+	for (const error of errors.issues) {
+		if (error.propString !== "__proto__")
+			result[error.propString] = valueOf(error)
+		else {
+			Object.defineProperty(result, "__proto__", {
+				value: valueOf(error),
+				enumerable: true,
+				writable: true,
+				configurable: true
+			})
 		}
 	}
 	return result

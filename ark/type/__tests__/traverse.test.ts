@@ -389,6 +389,20 @@ b must be a number (was a string)`)
 		attest(out.count).equals(12)
 	})
 
+	it("flattens errors by path into plain objects", () => {
+		const out = type({ ["__proto__"]: "string", a: "string" })(
+			JSON.parse('{ "__proto__": 1, "a": 2 }')
+		) as ArkErrors
+		const problems = flatProblemsByPath(out)
+		attest(Object.getPrototypeOf(problems)).is(Object.prototype)
+		attest(Object.getPrototypeOf(flatByPath(out))).is(Object.prototype)
+		attest(Object.entries(problems)).snap([
+			["__proto__", ["must be a string (was a number)"]],
+			["a", ["must be a string (was a number)"]]
+		])
+		attest(Object.keys(flatByPath(out))).equals(["__proto__", "a"])
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1149
 	it("morphs apply when not at an error path, even on failed validation", () => {
 		const AgeType = type("string.numeric.parse").to("number>18")
