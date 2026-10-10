@@ -1704,11 +1704,8 @@ const originalOf = (node: BaseNode): BaseNode => {
 }
 
 // a copy holds the meta of what it copies
-const metaAddressOf = (node: BaseNode): string | undefined => {
-	if (holdsLocal(node.meta)) return
-	const address = addressOf(originalOf(node))
-	return address && hashOf(`meta\n${address}`)
-}
+const metaAddressOf = (node: BaseNode): string | undefined =>
+	holdsLocal(node.meta) ? undefined : addressOf(originalOf(node))
 
 // a meta is named by its address, so units sharing a name share their metas
 const contentKeyOf: ContentKeyOf = (value, metaOwner) =>
