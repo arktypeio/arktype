@@ -260,10 +260,7 @@ export class Precompiler {
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
-	private analysesByModule = new WeakMap<
-		SourceModule,
-		[fingerprint: string | undefined, analysis: ModuleAnalysis]
-	>()
+	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
 	private bindingsByInput = new WeakMap<Input, Binding>()
 	private packagesByEntry: Record<string, [root: string, version: string]> =
 		Object.create(null)
@@ -292,6 +289,8 @@ export class Precompiler {
 	}
 
 	analyze(source: string, id: string): ModuleAnalysis {
+		// one the thread applied is the configuration precompile() would analyze under, and applying it again configures nothing
+		if (threadConfiguration) this.configuration ??= this.applyConfiguration()
 		return this.analysisOf(this.graph.add(id, source))
 	}
 
@@ -1336,14 +1335,9 @@ export class Precompiler {
 
 	// a second analysis would evaluate its sites again over values the first created and arktype changed, as a scope its first export resolved
 	private analysisOf(module: SourceModule): ModuleAnalysis {
-		const { fingerprint } = this.configuration ?? {}
-		const kept = this.analysesByModule.get(module)
-		// one made before the configuration was applied evaluated its sites without it
-		let analysis = kept && kept[0] === fingerprint ? kept[1] : undefined
-		if (!analysis) {
-			analysis = this._analyze(module)
-			this.analysesByModule.set(module, [fingerprint, analysis])
-		}
+		let analysis = this.analysesByModule.get(module)
+		if (!analysis)
+			this.analysesByModule.set(module, (analysis = this._analyze(module)))
 		return {
 			sites: analysis.sites.map(site => ({ ...site })),
 			diagnostics: [...analysis.diagnostics],

@@ -164,6 +164,48 @@ const precompiled = opts => {
 			}
 		}).timeout(60000)
 
+		it("analyzes a module once in a thread another precompiler configured", () => {
+			attest(
+				printedInFreshThread(`import { Precompiler } from "@ark/precompile"
+import { memoryHost } from "./utils.ts"
+
+const configured = {
+	"/config.ts": 'import { configure } from "arktype/config"\\nconfigure({ onUndeclaredKey: "reject" })'
+}
+const opts = { config: "/config.ts" }
+precompile("export const x = 1", configured, opts)
+const source = 'import { scope } from "arktype"\\nconst $ = scope({ a: () => 42 } as never) as any\\nexport const exported = () => $.export()'
+const precompiler = new Precompiler(memoryHost({ ...configured, "/main.ts": source }), opts)
+const statusesOf = ({ sites }) => sites.map(site => site.status)
+console.log(JSON.stringify([
+	statusesOf(precompiler.analyze(source, "/main.ts")),
+	statusesOf(precompiler.precompile(source, "/main.ts"))
+]))`)
+			).snap([
+				["accepted", "accepted"],
+				["accepted", "accepted"]
+			])
+		}).timeout(60000)
+
+		it("analyzes a module under the configuration its thread holds", () => {
+			attest(
+				printedInFreshThread(`import { Precompiler } from "@ark/precompile"
+import { memoryHost } from "./utils.ts"
+
+const configured = {
+	"/config.ts": 'import { configure } from "arktype/config"\\nconfigure({ onUndeclaredKey: process.argv.length > 99 ? "delete" : "reject" })'
+}
+const opts = { config: "/config.ts" }
+precompile("export const x = 1", configured, opts)
+const precompiler = new Precompiler(memoryHost({ ...configured, "/main.ts": main }), opts)
+const statusesOf = ({ sites }) => sites.map(site => site.status)
+console.log(JSON.stringify([
+	statusesOf(precompiler.analyze(main, "/main.ts")),
+	statusesOf(precompiler.precompile(main, "/main.ts"))
+]))`)
+			).equals([["rejected"], ["rejected"]])
+		}).timeout(60000)
+
 		it("configure with an argument that creates a Type", () => {
 			attest(
 				printedInFreshThread(`const config = \`import { configure } from "arktype/config"
