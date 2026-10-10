@@ -1176,29 +1176,28 @@ return [${returned.join(", ")}]
 
 	// a unit receives the traversals of each unit it reads as one array, which it destructures unless it declares "use strict", which a function destructuring its parameters can't
 	dependencyParamsOf(unit: RootUnit): [params: string[], args: string[]] {
-		const namesBySource = new Map<string, string[]>()
+		const namesBySource: Record<string, string[]> = {}
 		const params: string[] = []
 		const args: string[] = []
+		const isStrict = declaresStrict(unit)
 		for (const name in unit.dependencies) {
 			const dependency = unitOf(unit.dependencies[name][0], unit)
 			const index = dependency.traversals.flat().indexOf(name)
-			if (isSharedUnit(dependency))
+			const isShared = isSharedUnit(dependency)
+			if (isShared)
 				this.importName(`~arktype/${dependency.name}`, dependency.name)
 			const source =
-				isSharedUnit(dependency) ?
+				isShared ?
 					`${dependency.name}()`
 				:	this.localNamesByUnit.get(dependency)!
-			if (declaresStrict(unit)) {
+			if (isStrict) {
 				params.push(name)
 				args.push(`${source}[${index}]`)
-			} else {
-				let names = namesBySource.get(source)
-				if (!names) namesBySource.set(source, (names = []))
-				names[index] = name
-			}
+			} else (namesBySource[source] ??= [])[index] = name
 		}
-		for (const [source, names] of namesBySource) {
-			params.push(`[${Array.from(names, name => name ?? "").join(", ")}]`)
+		// a traversal the unit doesn't read is a hole, which join writes as ""
+		for (const source in namesBySource) {
+			params.push(`[${namesBySource[source].join(", ")}]`)
 			args.push(source)
 		}
 		return [params, args]
