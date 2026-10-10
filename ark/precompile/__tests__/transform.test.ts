@@ -277,6 +277,52 @@ export const C = type.define({ c: type("string") })`)
 					.sites.map(site => (site.value as { expression: string }).expression)
 			).equals(["string"])
 		})
+
+		it("reads a module given again as the module it was", () => {
+			const files: Record<string, string> = {
+				"/x.ts": 'export const shape = { a: "string" }',
+				"/y.ts": 'import { shape as s } from "./x.ts"\nexport const shape = s',
+				"/b.ts":
+					'import { type } from "arktype"\nimport { shape } from "./x.ts"\nimport { shape as again } from "./y.ts"\nexport const U = type(shape === again ? "string" : "number")'
+			}
+			const precompiler = new Precompiler(memoryHost(files))
+			for (const id of ["/x.ts", "/y.ts", "/b.ts", "/x.ts"])
+				precompiler.precompile(files[id], id)
+			attest(
+				precompiler
+					.precompile(files["/b.ts"], "/b.ts")
+					.sites.map(site => (site.value as { expression: string }).expression)
+			).equals(["string"])
+		})
+
+		it("reads a module's importers again once it's given another version", () => {
+			const files: Record<string, string> = {
+				"/x.ts": 'export const shape = { a: "string" }',
+				"/y.ts": 'import { shape as s } from "./x.ts"\nexport const shape = s',
+				"/c.ts":
+					'import { type } from "arktype"\nimport { shape } from "./y.ts"\nexport const V = type(shape)'
+			}
+			const precompiler = new Precompiler(memoryHost(files))
+			precompiler.precompile(files["/c.ts"], "/c.ts")
+			precompiler.precompile('export const shape = { a: "number" }', "/x.ts")
+			attest(
+				precompiler
+					.precompile(files["/c.ts"], "/c.ts")
+					.sites.map(site => (site.value as { expression: string }).expression)
+			).equals(["{ a: number }"])
+		})
+
+		it("folds a module given again as it folded it", () => {
+			const source = `import { scope } from "arktype"
+const $ = scope({ a: () => 42 })
+export const exported = () => $.export()`
+			const precompiler = new Precompiler(memoryHost({ "/main.ts": source }))
+			const statusesOf = () =>
+				precompiler
+					.precompile(source, "/main.ts")
+					.sites.map(site => `${site.line}:${site.column} ${site.status}`)
+			attest(statusesOf()).equals(statusesOf())
+		})
 	})
 
 	describe("factories", () => {

@@ -450,7 +450,6 @@ export class ModuleGraph {
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
 	private packageNamesByDir: Record<string, string | undefined> =
 		Object.create(null)
-	private given = new WeakSet<SourceModule>()
 
 	constructor(host: PrecompileHost, cwd?: string) {
 		this.host = host
@@ -463,20 +462,38 @@ export class ModuleGraph {
 
 	add(id: string, source: string): SourceModule {
 		const existing = this.modulesById[id]
-		// a module another read keeps what it evaluated to, so an object it exports stays one object, as in one program
-		if (
-			existing instanceof SourceModule &&
-			!this.given.has(existing) &&
-			existing.source === source
-		) {
-			this.given.add(existing)
+		// a program evaluates a module once, so one given again as the graph holds it is that module
+		if (existing instanceof SourceModule && existing.source === source)
 			return existing
-		}
+		if (existing) this.dropImportersOf(id)
 		const module = new SourceModule(id, source, this.pathOf(id))
-		// one already given is parsed anew, since analyzing a module twice changes what its sites fold to
-		this.given.add(module)
 		this.modulesById[id] = module
 		return module
+	}
+
+	// what a module's importers evaluated to holds what its previous version did, so each is evaluated again
+	private dropImportersOf(id: string): void {
+		const dropped = [id]
+		for (let i = 0; i < dropped.length; i++) {
+			for (const importer in this.importsById) {
+				if (
+					this.importsById[importer].includes(dropped[i]) &&
+					!dropped.includes(importer)
+				)
+					dropped.push(importer)
+			}
+		}
+		for (const droppedId of dropped) {
+			delete this.importsById[droppedId]
+			const module = this.modulesById[droppedId]
+			if (droppedId !== id && module instanceof SourceModule) {
+				this.modulesById[droppedId] = new SourceModule(
+					droppedId,
+					module.source,
+					module.path
+				)
+			}
+		}
 	}
 
 	moduleOf(id: string): SourceModule | ImportTarget {

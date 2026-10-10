@@ -248,6 +248,10 @@ export class Precompiler {
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
+	private analysesByModule = new WeakMap<
+		SourceModule,
+		[fingerprint: string | undefined, analysis: ModuleAnalysis]
+	>()
 	private bindingsByInput = new WeakMap<Input, Binding>()
 	private packagesByEntry: Record<string, [root: string, version: string]> =
 		Object.create(null)
@@ -274,7 +278,7 @@ export class Precompiler {
 	}
 
 	analyze(source: string, id: string): ModuleAnalysis {
-		return this._analyze(this.graph.add(id, source))
+		return this.analysisOf(this.graph.add(id, source))
 	}
 
 	// whether a module may define a Type or, in a standalone build, read arktype's nodes, from its imports so most modules that can't are never parsed
@@ -453,7 +457,7 @@ export class Precompiler {
 	precompile(source: string, id: string): PrecompiledModule {
 		this.configuration ??= this.applyConfiguration()
 		const module = this.graph.add(id, source)
-		const { sites, diagnostics } = this._analyze(module)
+		const { sites, diagnostics } = this.analysisOf(module)
 		for (const node of module.program.body) {
 			const specifier =
 				(
@@ -1337,6 +1341,23 @@ export class Precompiler {
 			)
 		}
 		return result
+	}
+
+	// a second analysis would evaluate its sites again over values the first created and arktype changed, as a scope its first export resolved
+	private analysisOf(module: SourceModule): ModuleAnalysis {
+		const { fingerprint } = this.configuration ?? {}
+		const kept = this.analysesByModule.get(module)
+		// one made before the configuration was applied evaluated its sites without it
+		let analysis = kept && kept[0] === fingerprint ? kept[1] : undefined
+		if (!analysis) {
+			analysis = this._analyze(module)
+			this.analysesByModule.set(module, [fingerprint, analysis])
+		}
+		return {
+			sites: analysis.sites.map(site => ({ ...site })),
+			diagnostics: [...analysis.diagnostics],
+			dependencies: analysis.dependencies
+		}
 	}
 
 	private _analyze(module: SourceModule): ModuleAnalysis {
