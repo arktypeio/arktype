@@ -631,8 +631,9 @@ export const User = type({ name: "string" })
 `,
 				"main.ts": `import { User } from "./user.ts"
 
-const all = [User]
-console.log(JSON.stringify([User.json === all[0].json, User.toJSON() === all[0].json]))
+// read through a parameter, so the validator's own json
+const baked = [User].map(t => t.json)[0]
+console.log(JSON.stringify([User.json === baked, User.toJSON() === baked]))
 `
 			},
 			fromHere("temp", "json")

@@ -742,7 +742,7 @@ export class Precompiler {
 		return this.configuration?.problem === configurationConflictMessage
 	}
 
-	// what the configured code arktype calls reads, which nothing compares with the program's once the schema is baked
+	// a baked schema isn't written again, so it would keep the build's value of anything a configured writer reads that the program can change
 	private bake<t>(write: () => t): t {
 		let result: [t, { reads: Read[] }]
 		try {
@@ -750,9 +750,7 @@ export class Precompiler {
 		} catch (e) {
 			if (!(e instanceof DynamicValue)) throw e
 			return throwParseError(
-				writeUnprecompilableMessage(
-					"a JSON Schema whose configured writer the build can't evaluate"
-				)
+				`${writeUnprecompilableMessage("a JSON Schema whose configured writer the build can't evaluate")}: ${chainOf(e).join(": ")}`
 			)
 		}
 		const [value, { reads }] = result

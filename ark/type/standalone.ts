@@ -1396,7 +1396,6 @@ return [${returned.join(", ")}]
 		const namesBySource: Record<string, string[]> = {}
 		const params: string[] = []
 		const args: string[] = []
-		const isStrict = declaresStrict(unit)
 		for (const name in unit.dependencies) {
 			const dependency = unitOf(unit.dependencies[name][0], unit)
 			const index = dependency.traversals.flat().indexOf(name)
@@ -1407,7 +1406,7 @@ return [${returned.join(", ")}]
 				isShared ?
 					`${dependency.name}()`
 				:	this.localNamesByUnit.get(dependency)!
-			if (isStrict) {
+			if (declaresStrict(unit)) {
 				params.push(name)
 				args.push(`${source}[${index}]`)
 			} else (namesBySource[source] ??= [])[index] = name
@@ -1568,7 +1567,7 @@ return [${returned.join(", ")}]
 			)
 		if (bakes("toJsonSchema")) {
 			const written = this.emitJsonSchema(root, () => root.toJsonSchema())
-			// the schema for a target, where it's one the validator bakes anyway
+			// a target's schema is returned only where the validator bakes its text anyway, so taking one adds no writer
 			const byTarget = supportedJsonSchemaTargets.map(
 				target =>
 					this.jsonSchemaNamesByText[
@@ -1598,7 +1597,7 @@ return [${returned.join(", ")}]
 				this.declareConst(root.json, "json", value)
 			)
 		}
-		// a node without an address is one only another with the same json shares, which is no less than arktype's identity promises
+		// arktype doesn't promise Types defined apart are distinct, so a node without an address shares json with any whose text is the same
 		const name = `json${heldAddressOf(root) ?? hashOf(value)}`
 		this.sharedModules[`~arktype/${name}`] ??= {
 			readsRuntime: false,
@@ -2194,11 +2193,10 @@ return [${returned.join(", ")}]
 
 const { getTime } = Date.prototype
 
-// what arktype throws writing a JSON Schema it can't, which a standalone validator throws again where it's read
 export const isJsonSchemaError = (e: unknown): boolean =>
 	e instanceof ToJsonSchema.Error || isSymbolConversion(e)
 
-// the TypeError of a symbol arktype prints, e.g. in a ToJsonSchemaError's context, which the runtime raises again rather than bake the engine's message
+// each engine words the TypeError of printing a symbol its own way, so the runtime raises it again rather than bake the build's
 const isSymbolConversion = (e: unknown): boolean => {
 	if (!(e instanceof TypeError)) return false
 	try {
