@@ -20,7 +20,10 @@ import {
 } from "vite"
 import { startVitest } from "vitest/node"
 import { configureAfterTypeMessage } from "@ark/schema"
-import { writeCreatedBeforeConfigureMessage } from "@ark/schema/runtime"
+import {
+	writeCreatedBeforeConfigureMessage,
+	writtenConfigMessage
+} from "@ark/schema/runtime"
 import { writeLibrary } from "./utils.ts"
 
 const app = fromHere("app")
@@ -747,6 +750,15 @@ console.log(JSON.stringify([fromV.meta === T.meta, fromV.meta === fromW.meta, fr
 				writeCreatedBeforeConfigureMessage("unread.ts")
 			)
 		).equals(true)
+	}).timeout(60000)
+
+	it("leaves the configuration's check out of a bundle that never configures", async () => {
+		const bundle = await bundlers.esbuild({ cwd: app })
+		attest(
+			[writtenConfigMessage, "[object Date]"].filter(text =>
+				bundle.includes(text)
+			)
+		).equals([])
 	}).timeout(60000)
 
 	it("throws writing to a frozen input from a CommonJS bundle", async () => {

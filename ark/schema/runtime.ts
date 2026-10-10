@@ -152,7 +152,7 @@ export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({
 })
 
 let configuredFingerprint: string | undefined
-let configuredValue: object | undefined
+let recheck: (() => unknown) | undefined
 let programConfig: ArkSchemaConfig | undefined
 let configureIslands: ((config: ArkSchemaConfig) => unknown) | undefined
 
@@ -174,7 +174,9 @@ export const configure = (
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
 	;(runtimeConfig as { locale: Locale.Info }).locale = enInfo
 	configuredFingerprint = received
-	configuredValue = config
+	// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
+	recheck = () =>
+		fingerprintOf(config) !== received && throwParseError(writtenConfigMessage)
 	// arktype copies a code's writers when configure() is called, so a later write reaches neither
 	const held: Record<string, unknown> = {}
 	for (const k in config) {
@@ -213,36 +215,29 @@ const staticTextOf = (value: unknown, seen: object[]): string => {
 	if (index !== -1) return `#${index}`
 	seen.push(value)
 	const tag = Object.prototype.toString.call(value)
-	const prototype = Object.getPrototypeOf(value)
+	// listed here, since a bundler keeps a module-level read of a prototype even where nothing configures
+	const builtins = [
+		null,
+		Object.prototype,
+		Array.prototype,
+		Date.prototype,
+		RegExp.prototype
+	]
 	let entries = ""
 	// arktype merges a configuration's inherited keys too
 	for (const k in value)
 		entries += `${JSON.stringify(k)}:${staticTextOf((value as Record<string, unknown>)[k], seen)},`
-	return `${tag}${builtinPrototypes.includes(prototype) ? "" : "instance"}${
+	return `${tag}${builtins.includes(Object.getPrototypeOf(value)) ? "" : "instance"}${
 		tag === "[object Date]" ? Number(value)
 		: tag === "[object RegExp]" ? `${value}${(value as RegExp).lastIndex}`
 		: ""
 	}{${entries}}`
 }
 
-const builtinPrototypes: unknown[] = [
-	null,
-	Object.prototype,
-	Array.prototype,
-	Date.prototype,
-	RegExp.prototype
-]
-
 export const fixConfig = (
 	...configured: [] | [fingerprint: string, path: string]
 ): void => {
-	// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
-	if (
-		!Object.isFrozen(runtimeConfig) &&
-		configuredValue &&
-		fingerprintOf(configuredValue) !== configuredFingerprint
-	)
-		throwParseError(writtenConfigMessage)
+	if (!Object.isFrozen(runtimeConfig)) recheck?.()
 	Object.freeze(runtimeConfig)
 	const [fingerprint, path] = configured
 	if (fingerprint === configuredFingerprint) return
