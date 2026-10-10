@@ -406,6 +406,15 @@ describe($.a)`)
 			).snap(["2:11 accepted", "9:10 accepted number"])
 		})
 
+		it("each Type passed to one call of a helper the build can't interpret", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+import { router } from "some-router"
+const route = (input: unknown, output: unknown) => router.register(input, output)
+export const getUser = route(type({ id: "string" }), type({ name: "string" }))`)
+			).snap(["4:30 accepted { id: string }", "4:54 accepted { name: string }"])
+		})
+
 		it("Types a static helper composes from its parameter, also through another helper", () => {
 			attest(
 				statusesOf(`import { type, type Type } from "arktype"

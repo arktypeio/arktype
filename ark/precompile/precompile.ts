@@ -1366,13 +1366,14 @@ export class Precompiler {
 		this.helperSitesByModule.set(module, helperSites)
 		const configureStart = this.configureStartOf(module)
 		for (const candidate of candidates) {
-			const node = candidate.state.node
 			let settledRanges = settledRangesByFn.get(candidate.fn)
 			if (!settledRanges)
 				settledRangesByFn.set(candidate.fn, (settledRanges = new Set()))
-			if (isWithin(node, settledRanges)) continue
+			if (isWithin(candidate.state.node, settledRanges)) continue
 			try {
 				if (!this.settle(candidate)) continue
+				// settling can move the candidate to a fallback inside it
+				const node = candidate.state.node
 				settled.push(candidate)
 				settledRanges.add(rangeOf(node))
 				if (isFolded(candidate, settled, this.interpreter)) continue
@@ -1412,6 +1413,7 @@ export class Precompiler {
 				sites.push(site)
 				candidatesBySite.set(site, candidate)
 			} catch (e) {
+				const node = candidate.state.node
 				// covering what it contains, as a settled site does
 				settledRanges.add(rangeOf(node))
 				const site = this.siteOf(candidate, module)
