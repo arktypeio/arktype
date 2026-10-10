@@ -301,7 +301,6 @@ const leafKeyOf = (v: unknown, keyOf: ReferenceKeyOf): string | undefined =>
 		keyOf(v)
 	:	`${v}`
 
-// the key a scope's cache holds a node under, with what it references keyed by keyOf
 export const cachedKeyOf = (
 	node: BaseNode,
 	keyOf: ReferenceKeyOf

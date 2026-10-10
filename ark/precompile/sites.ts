@@ -31,7 +31,6 @@ export interface SiteCandidate {
 	isSite?: boolean
 }
 
-// a reference that can start a site, and the site it climbs to if it does
 export interface SiteRead {
 	reference: Reference
 	kind: SiteKind

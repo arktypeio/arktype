@@ -11,7 +11,6 @@ import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
 import { memoryHost, precompile } from "./utils.ts"
 
-// arktype keeps the node it cached first and names what a meta holds by a count, so each build runs in a process of its own
 const buildInProcess = (
 	files: Record<string, string>,
 	order: string[]

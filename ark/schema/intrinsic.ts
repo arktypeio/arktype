@@ -1,10 +1,18 @@
 import { defineValue } from "@ark/util"
-import { bootstrapRootScope, node, schemaScope } from "./scope.ts"
+import {
+	bootstrapRootScope,
+	node,
+	SchemaScope,
+	type SchemaScopeParser
+} from "./scope.ts"
 import { $ark } from "./shared/registry.ts"
 import { arrayIndexSource } from "./structure/shared.ts"
 
+const builtinScope: SchemaScopeParser = (aliases, config) =>
+	new SchemaScope(aliases, config, true)
+
 const bootstrapIntrinsic = () => {
-	const intrinsicBases = schemaScope(
+	const intrinsicBases = builtinScope(
 		{
 			bigint: "bigint",
 			// since we know this won't be reduced, it can be safely cast to a union
@@ -22,12 +30,12 @@ const bootstrapIntrinsic = () => {
 			Array,
 			Date
 		},
-		{ prereducedAliases: true, builtin: true, name: "intrinsic" }
+		{ prereducedAliases: true, name: "intrinsic" }
 	).export()
 
 	$ark.intrinsic = { ...intrinsicBases } as never
 
-	const intrinsicRoots = schemaScope(
+	const intrinsicRoots = builtinScope(
 		{
 			integer: {
 				domain: "number",
@@ -37,13 +45,13 @@ const bootstrapIntrinsic = () => {
 			key: ["string", "symbol"],
 			nonNegativeIntegerString: { domain: "string", pattern: arrayIndexSource }
 		},
-		{ prereducedAliases: true, builtin: true, name: "intrinsic.roots" }
+		{ prereducedAliases: true, name: "intrinsic.roots" }
 	).export()
 
 	// needed to parse index signatures for JSON
 	Object.assign($ark.intrinsic, intrinsicRoots)
 
-	const intrinsicJson = schemaScope(
+	const intrinsicJson = builtinScope(
 		{
 			jsonPrimitive: [
 				"string",
@@ -61,7 +69,7 @@ const bootstrapIntrinsic = () => {
 			},
 			jsonData: ["$jsonPrimitive", "$jsonObject"]
 		},
-		{ prereducedAliases: true, builtin: true, name: "intrinsic.json" }
+		{ prereducedAliases: true, name: "intrinsic.json" }
 	).export()
 
 	const intrinsic = {

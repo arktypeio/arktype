@@ -21,7 +21,12 @@ import type {
 	inferDefinition,
 	validateDefinition
 } from "../parser/definition.ts"
-import { $arkTypeRegistry, scope, type bindThis, type Scope } from "../scope.ts"
+import {
+	$arkTypeRegistry,
+	InternalScope,
+	type bindThis,
+	type Scope
+} from "../scope.ts"
 import type {
 	DefinitionParser,
 	SchemaParser,
@@ -79,7 +84,7 @@ export declare namespace Ark {
 // refuses to load beside a standalone artifact, which claims arktype/runtime
 claimEntry("arktype")
 
-export const ark: Scope<Ark> = scope(
+export const ark: Scope<Ark> = new InternalScope(
 	{
 		...tsKeywordDefinitions,
 		...tsGenericDefinitions,
@@ -90,7 +95,8 @@ export const ark: Scope<Ark> = scope(
 		object,
 		unknown
 	},
-	{ prereducedAliases: true, name: "ark", builtin: true }
+	{ prereducedAliases: true, name: "ark" },
+	true
 ) as never
 
 const arkExports: Module<Ark> = ark.internal.exportLazily() as never

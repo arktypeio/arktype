@@ -201,8 +201,6 @@ export type GlobalOnlyConfigOptionName = satisfy<
 export interface ScopeOnlyConfigOptions {
 	name?: string
 	prereducedAliases?: boolean
-	/** @internal arktype's own, whose name a precompiled program addresses its nodes by */
-	builtin?: boolean
 }
 
 export interface ArkSchemaScopeConfig
@@ -575,7 +573,6 @@ export interface RootUnit {
 	// the nodes whose names hold a value keyed by identity, which name them only within this pass
 	identityNamed: ReadonlySet<NodeId>
 	unitsById: Record<NodeId, RootUnit>
-	// a context's meta is emitted as its name keyed it
 	metaOwners: ReadonlyMap<object, BaseNode>
 }
 
@@ -771,13 +768,13 @@ const compileContent = (
 		}
 		if (!hasDomain(value, "object") && typeof value !== "symbol")
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
-		let key = s.keyOf?.(value, s.metaOwners.get(value as object))
-		if (key === undefined && typeof value === "object") {
-			key =
-				isRegExpObject(value) ? `${value} ${value.lastIndex}`
-				: isDateObject(value) ? `Date ${value.getTime()}`
-				: undefined
-		}
+		const keyed = s.keyOf?.(value, s.metaOwners.get(value as object))
+		const key =
+			keyed !== undefined ? keyed
+			: typeof value === "symbol" ? undefined
+			: isRegExpObject(value) ? `${value} ${value.lastIndex}`
+			: isDateObject(value) ? `Date ${value.getTime()}`
+			: undefined
 		if (typeof key === "string") return key
 		const prototype = typeof value === "object" && Object.getPrototypeOf(value)
 		// a value inside itself has no finite content, so like an instance it's keyed by identity
@@ -1013,10 +1010,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		/** The set of names defined at the root-level of the scope mapped to their
 		 * corresponding definitions.**/
 		def: Record<string, unknown>,
-		config?: ArkSchemaScopeConfig
+		config?: ArkSchemaScopeConfig,
+		isBuiltin = false
 	) {
 		this.name = config?.name ?? `anonymousScope${anonymousScopeCount++}`
-		this.isBuiltin = config?.builtin === true
+		this.isBuiltin = isBuiltin
 		this.scopeConfig = config
 
 		const aliasEntries = Object.entries(def).map(entry =>
@@ -1789,7 +1787,8 @@ export const schemaScope: SchemaScopeParser = (aliases, config) =>
 
 export const rootSchemaScope: SchemaScope = new SchemaScope(
 	{},
-	{ builtin: true, name: "schema" }
+	{ name: "schema" },
+	true
 )
 
 export const bootstrapRootScope = (): void => {

@@ -561,7 +561,6 @@ console.log(JSON.stringify(A.map((a, i) => [a === B[i], a.meta === B[i].meta])))
 		const bundle = await bundlers.esbuild({ cwd: root }, root)
 		attest(run(bundle)).equals(expected)
 		attest(bundle.includes("unimported")).equals(false)
-		// two modules' artifacts share no module here, so their Types meet in the runtime
 		attest(
 			run(await bundlers.esbuild({ cwd: root, inline: true }, root))
 		).equals(expected)
@@ -609,7 +608,6 @@ console.log(
 
 export const A = type({ a: "string" })
 `,
-			// keyof returns the copy of string another scope holds
 			"keyof.ts": `import { type } from "arktype"
 
 export const B = type({ a: type({ "[string]": "number" }).keyof() })
@@ -640,7 +638,6 @@ export const B = type({ a: type({ "[string]": "number" }).keyof() })
 				"a.ts": `import { type } from "arktype"
 
 export const Other = type({ o: "number" })
-// a meta key a program declares on ArkEnv
 export const T = type("string").configure({ example: Other } as {})
 export const W = type({ t: T, list: T.array() })
 `,

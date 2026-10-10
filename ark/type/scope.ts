@@ -408,10 +408,9 @@ export const keywordModule = (
 			module,
 			name,
 			() =>
-				(exports ??= new InternalScope(def, {
-					...config,
-					builtin: true
-				}).exportLazily())[name as never]
+				(exports ??= new InternalScope(def, config, true).exportLazily())[
+					name as never
+				]
 		)
 	}
 	return module

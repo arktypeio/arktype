@@ -86,7 +86,7 @@ The marker applies to the statement or expression that starts after it. arktype 
 
 ## Test runners and runtimes
 
-In standalone mode, the Node and Bun drivers serve the `~arktype/` modules a module shares with others, as the plugin does. Where there are no virtual modules, as with Turbopack, `inline: true` and cache mode, the validators or units a module needs are placed at the top of the module itself, and the runtime holds a Type two modules create as one object. Each driver takes the plugin's options, fails on the same errors and resolves `arktype` to `arktype/runtime` in standalone mode where its host allows.
+In standalone mode, the Node and Bun drivers serve the `~arktype/` modules a module shares with others, as the plugin does. Where there are no virtual modules, as with Turbopack, `inline: true` and cache mode, the validators or units a module needs are placed at the top of the module itself, and the runtime holds a Type arktype caches for every definition reaching it as one object, whichever module creates it first. Each driver takes the plugin's options, fails on the same errors and resolves `arktype` to `arktype/runtime` in standalone mode where its host allows.
 
 Node, for `node --test` or any program (Node 22.15 or later):
 

@@ -285,7 +285,6 @@ interface Creation {
 	code: string
 }
 
-// an export is created where a site first reads it, as arktype fixes its configuration there, with the exports sharing a value it creates
 const writeCreations = (
 	types: Record<string, ExportedValue>,
 	configured: ConfiguredModule | undefined,
@@ -778,7 +777,7 @@ export class StandaloneArtifact {
 	// a value read through an address is one object without its exports being created together
 	get comparedValues(): unknown[] {
 		return [
-			...this.comparedRoots.filter(root => !this.addressOf(root)),
+			...this.comparedRoots.filter(root => !this.validatorAddressOf(root)),
 			...this.moduleNamesByModule.keys(),
 			...this.declarations.valuesByRole.literal,
 			...this.declarations.valuesByRole.standIn
@@ -1017,7 +1016,6 @@ return [${returned.join(", ")}]
 		]
 	}
 
-	// what a unit reads from another module, which a shared unit receives as a parameter
 	read(specifier: string, name: string, param: string, arg: string): string {
 		const names = ((this.writing?.imports ?? this.imports)[specifier] ??= [])
 		if (!names.includes(name)) names.push(name)
@@ -1104,7 +1102,7 @@ return [${returned.join(", ")}]
 		})
 		const builders = this.writeBuilders(localContexts, localContextNames)
 		const validators = [...this.validatorNamesByRoot].map(([root, name]) => {
-			const address = this.addressOf(root)
+			const address = this.validatorAddressOf(root)
 			return `const ${name} = ${address ? `runtime.addressed(${JSON.stringify(address)}, () => ${this.writeValidator(root)})` : this.writeValidator(root)}`
 		})
 		return [
@@ -1120,7 +1118,7 @@ return [${returned.join(", ")}]
 	}
 
 	// a Type created anew where its site runs, or holding what its artifact creates, is created by every artifact reading it
-	addressOf(root: BaseRoot): string | undefined {
+	validatorAddressOf(root: BaseRoot): string | undefined {
 		if (
 			this.createdEachRun.has(root) ||
 			!this.isShared(this.unitsByHead.get(root)!) ||
@@ -1129,7 +1127,7 @@ return [${returned.join(", ")}]
 			holdsLocal(root.description)
 		)
 			return
-		return addressOf(root) ?? this.definitionAddresses.get(root)
+		return heldAddressOf(root) ?? this.definitionAddresses.get(root)
 	}
 
 	writeValidator(root: BaseRoot): string {
@@ -1654,7 +1652,6 @@ const raisableCodesOf = (root: BaseRoot): RaisableCodes => {
 	return codes
 }
 
-// a hole or a Type a literal holds is created with the artifact
 const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (seen.has(value)) return false
 	seen.add(value)
@@ -1673,23 +1670,23 @@ const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 const addressesByNode = new WeakMap<BaseNode, string | null>()
 
 // a builtin scope's cache or alias holds one node for every definition reaching it, whatever ran first
-const addressOf = (node: BaseNode): string | undefined => {
+const heldAddressOf = (node: BaseNode): string | undefined => {
 	let address = addressesByNode.get(node)
 	if (address === undefined) {
-		address = writeAddress(node) ?? null
+		address = maybeHeldAddressOf(node) ?? null
 		addressesByNode.set(node, address)
 	}
 	return address ?? undefined
 }
 
-const writeAddress = (node: BaseNode): string | undefined => {
+const maybeHeldAddressOf = (node: BaseNode): string | undefined => {
 	const { $ } = node
 	if (!$.isBuiltin) return
 	// a scope keys a child by its id, which a copy another scope binds shares with what it copies
 	const key = cachedKeyOf(node, reference => {
 		const key =
 			isNode(reference) ?
-				addressOf(originalOf(reference))
+				heldAddressOf(originalOf(reference))
 			:	runtimeKeyOf(reference)
 		return key && `${isNode(reference) ? "#" : "$"}${key}`
 	})
@@ -1705,7 +1702,7 @@ const originalOf = (node: BaseNode): BaseNode => {
 
 // a copy holds the meta of what it copies
 const metaAddressOf = (node: BaseNode): string | undefined =>
-	holdsLocal(node.meta) ? undefined : addressOf(originalOf(node))
+	holdsLocal(node.meta) ? undefined : heldAddressOf(originalOf(node))
 
 // a meta is named by its address, so units sharing a name share their metas
 const contentKeyOf: ContentKeyOf = (value, metaOwner) =>
