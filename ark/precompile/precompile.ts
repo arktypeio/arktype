@@ -279,6 +279,7 @@ export class Precompiler {
 		"@ark/util": {}
 	}
 	private warnedDependencies: Record<string, true> = Object.create(null)
+	private intrinsicUnits: Record<string, string> | undefined
 
 	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
 		this.graph = new ModuleGraph(host, opts?.cwd)
@@ -563,13 +564,26 @@ export class Precompiler {
 			}
 			if (id === this.config) this.stampConfiguration(module, s)
 		} else {
-			// a unit is a module of its own, so the modules whose Types call it share it
-			const units = writePrecompiledUnits(sites.flatMap(site => site.roots))
-			for (const key in units) {
-				const specifier = `~arktype/units/${key}`
-				modules[specifier] =
-					`import { registerPrecompiledUnits } from "arktype/internal/precompiled.js"\n\nregisterPrecompiledUnits({ ${JSON.stringify(key)}: ${units[key]} })\n`
-				imports[specifier] = {}
+			const roots = sites.flatMap(site => site.roots)
+			if (roots.length) {
+				// a program's first Type exports arktype's builtin scopes, whose roots then bind units like its own
+				const intrinsicUnits = (this.intrinsicUnits ??= writePrecompiledUnits(
+					Object.values($ark.intrinsic).filter(value =>
+						hasArkKind(value, "root")
+					)
+				))
+				const intrinsicTable = writeUnitTable(intrinsicUnits)
+				const intrinsicSpecifier = `~arktype/units/${hashOf(intrinsicTable)}`
+				modules[intrinsicSpecifier] = intrinsicTable
+				imports[intrinsicSpecifier] = {}
+				// a unit is a module of its own, so the modules whose Types call it share it
+				const units = writePrecompiledUnits(roots)
+				for (const key in units) {
+					if (key in intrinsicUnits) continue
+					const specifier = `~arktype/units/${key}`
+					modules[specifier] = writeUnitTable({ [key]: units[key] })
+					imports[specifier] = {}
+				}
 			}
 		}
 		let inserted = ""
@@ -3042,6 +3056,13 @@ const writeConfigFixer = (configured: ConfiguredModule | undefined) =>
 	`import * as runtime from "arktype/runtime"\n\nfunction fixConfig() {\n\t${writeFixConfig(configured)}\n}\n\nexport { fixConfig as default }\n`
 
 // each module runs in a function at the top of its importer, passed its imports and the globals the importer shadows
+const writeUnitTable = (units: Record<string, string>) =>
+	`import { registerPrecompiledUnits } from "arktype/internal/precompiled.js"\n\nregisterPrecompiledUnits({ ${Object.entries(
+		units
+	)
+		.map(([key, unit]) => `${JSON.stringify(key)}: ${unit}`)
+		.join(", ")} })\n`
+
 const inlineModules = (
 	module: SourceModule,
 	s: MagicString,

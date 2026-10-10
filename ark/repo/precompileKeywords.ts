@@ -1,4 +1,5 @@
 import {
+	$ark,
 	BaseScope,
 	hasArkKind,
 	writePrecompiledUnits,
@@ -24,5 +25,9 @@ const resolveAll = (module: object): void => {
 }
 
 resolveAll(keywords)
+
+// the builtin scopes' roots, which their exports bind rather than finalize
+for (const value of Object.values($ark.intrinsic))
+	if (hasArkKind(value, "root")) roots.push(value)
 
 process.stdout.write(JSON.stringify(writePrecompiledUnits(roots)))

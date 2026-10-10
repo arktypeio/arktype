@@ -2,7 +2,7 @@
 import { evaluatedBodies } from "./csp.ts"
 import "./jitlessConfig.ts"
 
-import { hasArkKind } from "@ark/schema"
+import { $ark, hasArkKind, type BaseRoot } from "@ark/schema"
 import { deepStrictEqual, strictEqual } from "node:assert/strict"
 import { execFileSync } from "node:child_process"
 import { fileURLToPath } from "node:url"
@@ -36,24 +36,31 @@ const interpreted = corpus.map(([def]) => scope({}).type(def as never))
 
 const units = await precompile(interpreted)
 
+const isUnbound = (root: BaseRoot) =>
+	!root.includesAlias &&
+	!isPrecompiled(keywordUnits, root) &&
+	// the corpus registers again the units it shares with keywords
+	!isPrecompiled(units, root)
+
 const unboundKeywordsOf = (module: object, path: string): string[] =>
 	Object.entries(module).flatMap(([k, resolution]) =>
 		hasArkKind(resolution, "module") ?
 			unboundKeywordsOf(resolution, `${path}${k}.`)
-		: (
-			hasArkKind(resolution, "root") &&
-			!resolution.includesAlias &&
-			!isPrecompiled(keywordUnits, resolution) &&
-			// the corpus registers again the units it shares with keywords
-			!isPrecompiled(units, resolution)
-		) ?
-			[`${path}${k}`]
-		:	[]
+		: hasArkKind(resolution, "root") && isUnbound(resolution) ? [`${path}${k}`]
+		: []
 	)
 
 cases({
 	bindsEveryAcyclicKeyword: () => {
 		deepStrictEqual(unboundKeywordsOf(keywords, ""), [])
+	},
+	bindsEveryAcyclicBuiltinRoot: () => {
+		deepStrictEqual(
+			Object.entries($ark.intrinsic).flatMap(([k, value]) =>
+				hasArkKind(value, "root") && isUnbound(value) ? [k] : []
+			),
+			[]
+		)
 	},
 	matchesTheInterpreter: () => {
 		for (let i = 0; i < corpus.length; i++) {

@@ -1519,8 +1519,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 			this.references = Object.values(this.referencesById)
 			if (!this.lazyExports) {
 				this.references = referencesThroughAliases(this.references)
-				if (!this.resolvedConfig.jitless)
-					this.compiledUnit = precompile(this.references, this)
+				let uncompiled = this.references
+				if (bindPrecompiledUnit) {
+					// a root a registered unit holds binds it, so the scope's unit compiles only the rest
+					for (const node of uncompiled)
+						if (node.isRoot() && !node.compiledUnit) bindPrecompiledUnit(node)
+					uncompiled = uncompiled.filter(node => !node.compiledUnit)
+				}
+				if (uncompiled.length && !this.resolvedConfig.jitless)
+					this.compiledUnit = precompile(uncompiled, this)
 				this.resolved = true
 			}
 		}
