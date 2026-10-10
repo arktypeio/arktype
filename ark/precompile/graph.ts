@@ -450,6 +450,7 @@ export class ModuleGraph {
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
 	private packageNamesByDir: Record<string, string | undefined> =
 		Object.create(null)
+	private given = new WeakSet<SourceModule>()
 
 	constructor(host: PrecompileHost, cwd?: string) {
 		this.host = host
@@ -461,7 +462,19 @@ export class ModuleGraph {
 	}
 
 	add(id: string, source: string): SourceModule {
+		const existing = this.modulesById[id]
+		// a module another read keeps what it evaluated to, so an object it exports stays one object, as in one program
+		if (
+			existing instanceof SourceModule &&
+			!this.given.has(existing) &&
+			existing.source === source
+		) {
+			this.given.add(existing)
+			return existing
+		}
 		const module = new SourceModule(id, source, this.pathOf(id))
+		// one already given is parsed anew, since analyzing a module twice changes what its sites fold to
+		this.given.add(module)
 		this.modulesById[id] = module
 		return module
 	}

@@ -258,6 +258,25 @@ export const B = (["a[]", "=>", trim])
 export const C = type.define({ c: type("string") })`)
 			attest(result.diagnostics.map(d => d.line)).equals([5])
 		})
+
+		it("reads a module given after another read it as the module that one read", () => {
+			const files: Record<string, string> = {
+				"/x.ts": 'export const shape = { a: "string" }',
+				"/y.ts": 'import { shape as s } from "./x.ts"\nexport const shape = s',
+				"/c.ts":
+					'import { type } from "arktype"\nimport { shape } from "./y.ts"\nexport const V = type(shape)',
+				"/b.ts":
+					'import { type } from "arktype"\nimport { shape } from "./x.ts"\nimport { shape as again } from "./y.ts"\nexport const U = type(shape === again ? "string" : "number")'
+			}
+			const precompiler = new Precompiler(memoryHost(files))
+			for (const id of ["/y.ts", "/c.ts", "/x.ts"])
+				precompiler.precompile(files[id], id)
+			attest(
+				precompiler
+					.precompile(files["/b.ts"], "/b.ts")
+					.sites.map(site => (site.value as { expression: string }).expression)
+			).equals(["string"])
+		})
 	})
 
 	describe("factories", () => {
