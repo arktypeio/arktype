@@ -218,6 +218,18 @@ contextualize(() => {
 			)
 		})
 
+		it("errors on each export after a generic's constraint fails its body", () => {
+			const $ = scope({
+				// @ts-expect-error
+				"f<t extends string>": "t % 2",
+				g: "f<'a'>"
+			})
+			const message = writeIndivisibleMessage(intrinsic.string)
+			attest(() => $.export()).throws(message)
+			attest(() => $.export()).throws(message)
+			attest(() => $.type("g")).throws(message)
+		})
+
 		it("constraint parse error", () => {
 			attest(() => {
 				// @ts-expect-error

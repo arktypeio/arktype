@@ -1443,7 +1443,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 			const generic = (this.resolutions[name] = this.bindReference(def))
 			generic.alias ??= name
 			// instantiated once cached, so its errors surface here and its body can reference it
-			void generic.baseInstantiation
+			try {
+				void generic.baseInstantiation
+			} catch (e) {
+				delete this.resolutions[name]
+				throw e
+			}
 			return generic
 		}
 
