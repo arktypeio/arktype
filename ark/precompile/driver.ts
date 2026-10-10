@@ -55,11 +55,9 @@ export interface PrecompilerWorkerData {
 export type PrecompileRequest =
 	| [kind: "transform", source: string, id: string]
 	| [kind: "check", source: string, id: string]
-	// a check reporting only the copies of arktype's packages the module reaches, as checking it alone would
 	| [kind: "lint", source: string, id: string]
 	| [kind: "readDependency", importer: string]
 	| [kind: "reset"]
-	// a reset only if a file the precompiler read has changed since
 	| [kind: "refresh"]
 	| [kind: "close"]
 
@@ -152,7 +150,6 @@ interface TrackedPrecompiler {
 	readTimes: Record<string, number>
 }
 
-// for a host that keeps a precompiler across changes to the files it read, which it replaces once one changes
 const createTrackedPrecompiler = (
 	opts: PrecompilePluginOptions
 ): TrackedPrecompiler => {
@@ -183,7 +180,7 @@ const lookedIn = (specifier: string, importer: string): string[] => {
 	return [dirname(target), target]
 }
 
-// a module given rather than read stands for its file in each module after it that imports it, so only while it's what the file reads, which one unsaved in an editor isn't
+// a given module stands for its file in later imports, so one unlike its file, as unsaved in an editor, replaces the precompiler
 const recordGiven = (
 	{ precompiler, readTimes }: TrackedPrecompiler,
 	source: string,
@@ -199,7 +196,7 @@ const isStale = (
 	mtimeNowOf: (file: string) => number = mtimeOf
 ) => Object.keys(readTimes).some(file => readTimes[file] !== mtimeNowOf(file))
 
-// for a loader without a worker, like Turbopack's, which keeps an inline precompiler for each option set
+// Turbopack's loader has no worker to hold a precompiler, so it keeps one inline per option set until a file it read changes
 export const createKeyedPrecompiler = (
 	opts: PrecompilePluginOptions
 ): ((source: string, id: string) => KeyedModule) => {
@@ -235,7 +232,6 @@ export const createKeyedPrecompiler = (
 	}
 }
 
-// whether the build precompiles a module it transforms, which it leaves as it is if nothing its text imports can reach arktype
 const precompiles = (precompiler: Precompiler, source: string, id: string) =>
 	precompiler.checkHelpers || precompiler.importsArk(source, id)
 

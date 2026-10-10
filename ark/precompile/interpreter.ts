@@ -193,7 +193,7 @@ const shortCircuit = { shortCircuit: true }
 
 const rootsByNode = new WeakMap<Node, Node>()
 
-// the root of a node's tree, which is fixed once its module is parsed
+// memoized, since a tree's parents are fixed once its module is parsed
 const rootOf = (node: Node): Node => {
 	const path: Node[] = []
 	let ancestor = node
@@ -206,7 +206,7 @@ const rootOf = (node: Node): Node => {
 	return root
 }
 
-// a cache listing its keys by the tree each is in, so evaluating a site again visits its own module's alone rather than every module's evaluated so far
+// so evaluating a site again visits the keys of its own module alone
 class TreeCache<key, value> extends Map<key, value> {
 	nodeOf: (key: key) => Node
 	private keysByRoot = new Map<Node, Set<key>>()

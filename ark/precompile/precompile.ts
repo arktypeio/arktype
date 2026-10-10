@@ -375,7 +375,7 @@ export class Precompiler {
 		}
 	}
 
-	// so a module's copies are reported as checking it alone would, rather than against those modules checked before it reached
+	// so a lint reports the copies its file reaches, as linting it alone would
 	forgetCopies(): void {
 		for (const name of Object.keys(this.copiesByPackage) as ArkPackage[])
 			this.copiesByPackage[name] = {}
@@ -1261,7 +1261,6 @@ export class Precompiler {
 		return this.unsupported(module, site, reasons)
 	}
 
-	// what a stage throws for a site refuses it where it's written rather than failing the module
 	private refuseThrown(
 		module: SourceModule,
 		node: Node,
@@ -2788,7 +2787,7 @@ const exportSiteOf = (module: SourceModule, site: Site): ExportSite => ({
 const nameOf = (site: Site) =>
 	hashOf(site.parseError?.message ?? `${site.start}`)
 
-// precompileStandalone refuses a whole artifact for an export it can't emit, so on a refusal each export is written alone, and those that can be are written together
+// precompileStandalone refuses a whole artifact for one export it can't emit, so each is tried alone to refuse only those
 const writeValidators = (
 	exportsByName: Record<string, StandaloneExport>,
 	sitesByName: Record<string, ExportSite>,
@@ -2832,19 +2831,7 @@ const writeValidators = (
 			}
 		})
 		// every export is refused, as under a configured locale
-		if (!writable.length) return { code: "", modules: {} }
-		try {
-			return write(writable)
-		} catch (e) {
-			// no export is known to write alone but not beside another, so which one does isn't sought
-			for (const name of writable) {
-				refusalsByName[name] = [
-					...reasonsOf(e),
-					"it can be written alone, but not beside the module's other validators"
-				]
-			}
-			return { code: "", modules: {} }
-		}
+		return writable.length ? write(writable) : { code: "", modules: {} }
 	}
 }
 
