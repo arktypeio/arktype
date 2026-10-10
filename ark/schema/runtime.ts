@@ -1,4 +1,4 @@
-import { hashOf, serializePrimitive, throwParseError } from "@ark/util"
+import { serializePrimitive, throwParseError } from "@ark/util"
 import type { ArkSchemaConfig, ResolvedConfig } from "./config.ts"
 import {
 	enInfo,
@@ -186,8 +186,17 @@ export const configure = (
 }
 
 // the configuration's values apart from its functions, which the runtime can't compare with the build's
-export const fingerprintOf = (config: object): string =>
-	hashOf(staticTextOf(config, []))
+export const fingerprintOf = (config: object): string => {
+	const text = staticTextOf(config, [])
+	// two 32-bit lanes, since a check for equality needs texts apart in the state but not its bits spread
+	let a = 1
+	let b = 2
+	for (let i = 0; i < text.length; i++) {
+		a = Math.imul(a ^ text.charCodeAt(i), 2654435761)
+		b = Math.imul(b ^ text.charCodeAt(i), 1597334677)
+	}
+	return `${(a >>> 0).toString(36)}_${(b >>> 0).toString(36)}`
+}
 
 const staticTextOf = (value: unknown, seen: object[]): string => {
 	if (typeof value === "function") return "function"
