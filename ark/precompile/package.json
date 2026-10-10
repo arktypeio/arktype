@@ -82,6 +82,7 @@
 		"access": "public"
 	},
 	"devDependencies": {
+		"@ark/fast-check": "workspace:*",
 		"@typescript-eslint/scope-manager": "8.46.1",
 		"arktype": "workspace:*",
 		"esbuild": "0.25.10",
