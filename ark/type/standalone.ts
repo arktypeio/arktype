@@ -1645,8 +1645,7 @@ return [${returned.join(", ")}]
 		// a callback can raise any code, on data of any kind
 		if (raisable === "any" || declares(root, hasIndexSignature))
 			config = `runtime.printing(${config}, runtime.printCompact)`
-		// a callback can raise an error whose meta holds writers
-		return raisable === "any" || declares(root, hasMetaWriter) ?
+		return declares(root, node => hasMetaWriter(node) || holdsCallback(node)) ?
 				`runtime.inEn(${config})`
 			:	config
 	}
@@ -1825,6 +1824,12 @@ const hasIndexSignature = (node: BaseNode): boolean =>
 
 const hasMetaWriter = (node: BaseNode): boolean =>
 	writerKeys.some(k => typeof node.meta[k] === "function")
+
+// a function arktype doesn't own can raise an error whose meta holds writers
+const holdsCallback = (node: BaseNode): boolean =>
+	node.hasKind("predicate") ?
+		isHole(node.predicate)
+	:	node.hasKind("morph") && node.morphs.some(isHole)
 
 const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (seen.has(value)) return false

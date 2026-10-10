@@ -367,6 +367,11 @@ contextualize(() => {
 		attest(summary).snap("en: more than 3 (1.5)")
 	})
 
+	it("leaves en's locale out of a validator whose callbacks are all arktype's", () => {
+		const T = type({ url: "string.url", n: "string.integer.parse" })
+		attest(precompileStandalone({ T }).includes("runtime.inEn(")).equals(false)
+	})
+
 	it("writes errors with configured strings", async () => {
 		const $ = scope(
 			{ T: { a: "string" } },
