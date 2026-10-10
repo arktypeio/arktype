@@ -279,6 +279,14 @@ type({ d: [{ a: "string" }, "number = 2"] }).onDeepUndeclaredKey("delete")({
 })
 ```
 
+### Throw a `ParseError` when a tuple expression narrows a morph
+
+```ts
+// previously threw "TypeError: Cannot read properties of null (reading 'description')",
+// now "ParseError: Predicate operand must be unknown (was a morph)"
+type([["string", "=>", s => s.length], ":", n => n % 2 === 0])
+```
+
 ### Describe a range's minimum first in every engine
 
 Firefox described a range by its maximum first, since the order depended on how the engine sorts:

@@ -530,7 +530,8 @@ export abstract class BaseRoot<
 		) {
 			return throwInvalidOperandError(
 				kind,
-				constraint.impliedBasis as never,
+				// a predicate implies no basis, but can't constrain a morph either
+				(constraint.impliedBasis ?? $ark.intrinsic.unknown.internal) as never,
 				this as never
 			)
 		}
