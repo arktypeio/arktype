@@ -710,7 +710,7 @@ export class StandaloneArtifact {
 			const expected =
 				value.expression.includes(holeNamePrefix) ?
 					""
-				:	`, ${this.readExpression(value.expression)}`
+				:	`, ${this.readExpression(value)}`
 			this.checks.push(
 				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(label)}${expected})`
 			)
@@ -1170,7 +1170,7 @@ return [${returned.join(", ")}]
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
 	${this.emit(pipeOf(root))},
-	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root.expression)}()`}, description: ${this.emitString(root.description)}, meta: ${this.emitMeta(root)} }${key}
+	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root)}()`}, description: ${this.emitDescription(root)}, meta: ${this.emitMeta(root)} }${key}
 )`
 	}
 
@@ -1215,17 +1215,40 @@ return [${returned.join(", ")}]
 	}
 
 	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator
-	readExpression(expression: string): string {
-		const name = `expression${hashOf(expression)}`
+	readExpression(root: BaseRoot): string {
+		const name = this.writeStringModule(root, "expression")
+		return this.read(`~arktype/${name}`, name, name, name)
+	}
+
+	// a description holding those of the roots it references is composed from their modules, else written where it's read
+	emitDescription(root: BaseRoot): string {
+		if (
+			root.description.includes(holeNamePrefix) ||
+			partsOf(root, "description").every(part => typeof part === "string")
+		)
+			return this.emitString(root.description)
+		const name = this.writeStringModule(root, "description")
+		return `${this.read(`~arktype/${name}`, name, name, name)}()`
+	}
+
+	// a string is composed from those of the roots it references, so one many Types print is written once
+	writeStringModule(root: BaseRoot, kind: ComposedString): string {
+		const imports: Record<string, string[]> = {}
+		const parts = partsOf(root, kind).map(part => {
+			if (typeof part === "string") return JSON.stringify(part)
+			const name = this.writeStringModule(part, kind)
+			imports[`~arktype/${name}`] = [name]
+			return `${name}()`
+		})
+		const body = parts.join(" + ")
+		const name = `${kind}${hashOf(body)}`
 		this.sharedModules[`~arktype/${name}`] ??= {
 			readsRuntime: false,
-			imports: {},
-			declarations: [
-				`function ${name}() {\n\treturn ${JSON.stringify(expression)}\n}`
-			],
+			imports,
+			declarations: [`function ${name}() {\n\treturn ${body}\n}`],
 			exports: [name]
 		}
-		return this.read(`~arktype/${name}`, name, name, name)
+		return name
 	}
 
 	// a hole's name is known only at creation, so a string printing one is completed then with arktype's own printing
@@ -1979,6 +2002,53 @@ export const isTypedFn = (value: unknown): value is InternalTypedFn =>
 	value instanceof InternalTypedFn
 
 const valueOperators: unknown[] = [":", "=>", "=", "@"]
+
+type ComposedString = "expression" | "description"
+
+// a string shorter than this is written wherever it's printed, as gzip compresses its repeats about as well as a call
+const minComposedLength = 64
+
+// a root's string split around the longest strings of the roots it references, each a root of its own
+const partsOf = (
+	root: BaseRoot,
+	kind: ComposedString
+): (string | BaseRoot)[] => {
+	const s = root[kind]
+	const candidates = new Map<string, BaseRoot>()
+	for (const node of root.references) {
+		if (!node.isRoot()) continue
+		const part = node[kind]
+		if (
+			part.length >= minComposedLength &&
+			part !== s &&
+			!part.includes(holeNamePrefix)
+		)
+			candidates.set(part, node)
+	}
+	const taken: [start: number, end: number, root: BaseRoot][] = []
+	for (const part of [...candidates.keys()].sort(
+		(l, r) => r.length - l.length
+	)) {
+		for (
+			let start = s.indexOf(part);
+			start !== -1;
+			start = s.indexOf(part, start + 1)
+		) {
+			const end = start + part.length
+			if (taken.every(([l, r]) => end <= l || r <= start))
+				taken.push([start, end, candidates.get(part)!])
+		}
+	}
+	const parts: (string | BaseRoot)[] = []
+	let at = 0
+	for (const [start, end, part] of taken.sort(([l], [r]) => l - r)) {
+		if (start > at) parts.push(s.slice(at, start))
+		parts.push(part)
+		at = end
+	}
+	if (at < s.length) parts.push(s.slice(at))
+	return parts
+}
 
 export const holeNamePrefix = "$hole_"
 
