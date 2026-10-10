@@ -18,6 +18,7 @@ import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	holeNamePattern,
 	isAddressed,
+	isComparable,
 	isTypedFn,
 	keyOf,
 	precompileStandalone,
@@ -177,6 +178,8 @@ export interface Reference {
 	value: unknown
 	// whether another module can replace it, as a test runner's module mock does
 	isForeign: boolean
+	// whether it reads, through a binding nothing writes, what the site initializing that binding created, which nothing can replace
+	isFixed: boolean
 }
 
 interface SiteFactory {
@@ -779,7 +782,7 @@ export class Precompiler {
 			let reasons: string[]
 			let factory: SiteFactory | undefined
 			try {
-				reasons = this.unsupportedReasonsOf(site)
+				reasons = this.unsupportedReasonsOf(site, module)
 				if (!reasons.length && !site.parseError) {
 					factory =
 						this.factoryOf(site, module, reasons, prefix) ??
@@ -1309,7 +1312,59 @@ export class Precompiler {
 		)
 	}
 
-	private unsupportedReasonsOf(site: Site): string[] {
+	// a factory compares a container it receives by definition, which leaves out what a function arktype calls while defining what it creates returns
+	private incomparableReasonsOf(site: Site, module: SourceModule): string[] {
+		const reads: [value: unknown, text: string][] = [
+			...site.references
+				.filter(reference => !reference.isFixed)
+				.map((reference): [unknown, string] => [
+					reference.value,
+					module.snippetOf(reference)
+				]),
+			...site.inputs
+				.filter(
+					input =>
+						input.kind === "import" ||
+						input.path.length ||
+						!this.isCreatedBy(this.bindingsByInput.get(input), input.value)
+				)
+				.map((input): [unknown, string] => [
+					input.value,
+					[input.name, ...input.path.map(String)].join(".")
+				])
+		]
+		const result: string[] = []
+		const seen = new Set<unknown>()
+		for (const [value, text] of reads) {
+			if (seen.has(value)) continue
+			seen.add(value)
+			if (
+				!hasArkKind(value, "scope") &&
+				!hasArkKind(value, "generic") &&
+				!hasArkKind(value, "module")
+			)
+				continue
+			if (!isComparable(value)) {
+				result.push(
+					`\`${text}\` holds a thunk, an hkt body or a configured function, whose results decide what it creates, so a factory can't compare it`
+				)
+				continue
+			}
+			for (const hole of keyOf(value)[1]) {
+				const standIn =
+					hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
+				if (standIn && (standIn.isCalled || standIn.isCalledIndirectly)) {
+					result.push(
+						`arktype calls ${this.interpreter.labelOf(standIn)} while defining what \`${text}\` creates, so a factory can't compare it`
+					)
+					break
+				}
+			}
+		}
+		return result
+	}
+
+	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
 		const result =
 			site.parseError || isFoldable(site.value) ?
 				[]
@@ -1323,26 +1378,7 @@ export class Precompiler {
 				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})`
 			)
 		}
-		// a factory compares what it receives by definition, which leaves out what a function arktype calls while resolving one returns
-		const read = new Set([...site.references, ...site.inputs].map(r => r.value))
-		for (const value of read) {
-			if (
-				!hasArkKind(value, "scope") &&
-				!hasArkKind(value, "generic") &&
-				!hasArkKind(value, "module")
-			)
-				continue
-			for (const hole of keyOf(value)[1]) {
-				const standIn =
-					hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
-				if (standIn && (standIn.isCalled || standIn.isCalledIndirectly)) {
-					result.push(
-						`arktype calls ${this.interpreter.labelOf(standIn)} while defining what a ${kindNameOf(value)} the site receives holds, which a factory can't compare`
-					)
-					break
-				}
-			}
-		}
+		result.push(...this.incomparableReasonsOf(site, module))
 		if (site.parseError) {
 			const holes = this.interpreter.holesIn(site.arktypeArguments)
 			for (const hole of site.holes) holes.delete(hole.value)
@@ -1782,16 +1818,40 @@ export class Precompiler {
 				input => input.kind === "import" && input.value === value
 			)
 			for (const node of reads) {
+				const isForeign = isImportInput || this.isImported(node, module)
+				const read = unwrapExpression(node)
 				site.references.push({
 					start: node.start,
 					end: node.end,
 					value,
-					isForeign: isImportInput || this.isImported(node, module)
+					isForeign,
+					isFixed:
+						!isForeign &&
+						read.type === "Identifier" &&
+						this.isCreatedBy(
+							module.scopes.referencesById.get(read)?.binding,
+							value
+						)
 				})
 			}
 		}
 		site.references.sort((l, r) => l.start - r.start)
 		return site
+	}
+
+	// e.g. `$` in `const $ = scope(…)`, which holds what that site creates however the program runs
+	private isCreatedBy(binding: Binding | undefined, value: unknown): boolean {
+		const declaration = binding?.declaration
+		return (
+			!!binding &&
+			binding.kind !== "import" &&
+			!binding.writes.length &&
+			declaration?.type === "VariableDeclarator" &&
+			declaration.id === binding.id &&
+			!!declaration.init &&
+			this.interpreter.sitesByNode.get(unwrapExpression(declaration.init))
+				?.value === value
+		)
 	}
 
 	// a site in a function or a loop runs again, and creates anew each Scope, Module or Generic, and each Type arktype doesn't intern
@@ -2096,7 +2156,10 @@ export class Precompiler {
 		const result: Diagnostic[] = []
 		if (
 			site.parseError &&
-			!(this.mode === "standalone" && this.unsupportedReasonsOf(site).length)
+			!(
+				this.mode === "standalone" &&
+				this.unsupportedReasonsOf(site, module).length
+			)
 		) {
 			result.push(
 				this.diagnostic(

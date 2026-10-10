@@ -743,13 +743,6 @@ export class StandaloneArtifact {
 			hasArkKind(value, "generic")
 		) {
 			const [id, holes] = keyOf(value)
-			if (incomparable.has(value)) {
-				throwParseError(
-					writeUnprecompilableMessage(
-						`the functions arktype calls defining what ${label} creates`
-					)
-				)
-			}
 			const holesName = `holes${this.checks.length}`
 			this.checks.push(
 				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(label)}, undefined, "${
@@ -2050,6 +2043,11 @@ const definitionKeyOf = (container: object): [id: string, holes: unknown[]] => {
 
 // a container whose key leaves out what decides what it creates, which a factory can't compare with the build's
 const incomparable = new WeakSet<object>()
+
+export const isComparable = (value: Parameters<typeof keyOf>[0]): boolean => {
+	keyOf(value)
+	return !incomparable.has(value)
+}
 
 const scopeConfigOf = (scope: BaseScope): unknown =>
 	(scope as unknown as { scopeConfig: unknown }).scopeConfig

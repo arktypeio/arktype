@@ -231,6 +231,40 @@ export const O = $.type.or("s", "number")`)
 			])
 		})
 
+		it("refuses a Scope whose thunk decides its Types only where a program can replace it", () => {
+			const scopeOf = (name: string) => `scope({
+		b: "3.14",
+		a: ["number", "=>", stringify],
+		aAndB: () => ${name}.type("a&b"),
+		bAndA: () => ${name}.type("b&a")
+	})`
+			const result = precompile(
+				`import { scope } from "arktype"
+import { imported } from "./schemas.ts"
+export const make = () => {
+	const stringify = (data: number) => \`\${data}\`
+	const $ = ${scopeOf("$")}
+	const types = $.export()
+	return types
+}
+export const Imported = imported.export()`,
+				{
+					"/schemas.ts": `import { scope } from "arktype"
+const stringify = (data: number) => \`\${data}\`
+export const imported = ${scopeOf("imported")}`
+				}
+			)
+			attest(
+				result.diagnostics.map(d => [d.line, d.message, ...d.reasons])
+			).snap([
+				[
+					14,
+					"imported.export() can't be precompiled to a standalone validator yet",
+					"`imported` holds a thunk, an hkt body or a configured function, whose results decide what it creates, so a factory can't compare it"
+				]
+			])
+		})
+
 		it("drops a site written inside a Scope it folds", () => {
 			const result = precompile(`import { scope } from "arktype"
 const create = () => {

@@ -1019,22 +1019,6 @@ export const Island = type("string")`)
 			}
 		})
 
-		it("refuses a Scope it receives whose thunk decides its Types", () => {
-			const $ = scope({ s: () => type("string") })
-			attest(() =>
-				precompileStandalone({
-					B: {
-						type: $.type({ a: "s" }),
-						params: [{ kind: "input", label: "$", reads: [[[], $]] }]
-					}
-				})
-			).throws(
-				writeUnprecompilableMessage(
-					"the functions arktype calls defining what `$` creates"
-				)
-			)
-		})
-
 		it("checks a class's lineage against the classes of the Types it receives", async () => {
 			class Animal {}
 			class Dog extends Animal {}
