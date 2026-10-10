@@ -58,8 +58,6 @@ export type PrecompileRequest =
 	| [kind: "check", source: string, id: string]
 	| [kind: "lint", source: string, id: string]
 	| [kind: "readDependency", importer: string]
-	| [kind: "unappliedConfigurationModules"]
-	| [kind: "give", source: string, id: string]
 	| [kind: "reset"]
 	| [kind: "refresh"]
 	| [kind: "close"]
@@ -101,9 +99,6 @@ export const answerRequests = (
 		const { precompiler } = tracked
 		if (request[0] === "readDependency")
 			return precompiler.readDependency(request[1])
-		if (request[0] === "unappliedConfigurationModules")
-			return precompiler.unappliedConfigurationModules
-		if (request[0] === "give") return precompiler.give(request[1], request[2])
 		if (request[0] === "transform")
 			return transformedModuleOf(precompiler, request[1], request[2])
 		if (request[0] === "check")

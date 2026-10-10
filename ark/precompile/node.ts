@@ -1,10 +1,6 @@
 import { throwError } from "@ark/util"
-import {
-	registerHooks,
-	type LoadFnOutput,
-	type LoadHookContext
-} from "node:module"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { registerHooks, type LoadFnOutput } from "node:module"
+import { fileURLToPath } from "node:url"
 import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
 import {
 	appendSourceMap,
@@ -35,26 +31,6 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	)
 	const isTransformed = (id: string) =>
 		filter.include.test(id) && !filter.exclude.test(id)
-	// hooks registered after these, like tsx's, may give the program other text than a file's, which the configuration is read from
-	const giveConfiguration = (
-		context: LoadHookContext,
-		nextLoad: (url: string, context: LoadHookContext) => LoadFnOutput
-	) => {
-		const given: string[] = []
-		for (;;) {
-			const id = (request("unappliedConfigurationModules") as string[]).find(
-				id => !given.includes(id) && isTransformed(id)
-			)
-			if (id === undefined) return
-			given.push(id)
-			const { source } = nextLoad(pathToFileURL(id).href, {
-				...context,
-				format: undefined,
-				importAttributes: {}
-			})
-			if (source !== undefined) request("give", textOf(source), id)
-		}
-	}
 	const modules: Record<string, string> = {}
 	const importersByUrl: Record<string, string> = {}
 	// a loader that compiles a module itself, as tsx does a CommonJS package's, gives these hooks none of its text
@@ -101,7 +77,6 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			const id = fileURLToPath(url)
 			if (!isTransformed(id) || loaded.source === undefined) return loaded
 			givenUrls.add(url)
-			giveConfiguration(context, nextLoad)
 			const transformed = request("transform", textOf(loaded.source), id) as
 				| TransformedModule
 				| undefined

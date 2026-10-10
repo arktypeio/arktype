@@ -315,21 +315,9 @@ export class Precompiler {
 
 	analyze(source: string, id: string): ModuleAnalysis {
 		const module = this.add(id, source)
-		// one the thread applied is the configuration precompile() would analyze under, and applying it again configures nothing
+		// precompile() analyzes under the thread's configuration, and applying it again leaves it as is
 		if (threadConfiguration) this.configuration ??= this.applyConfiguration()
 		return this.analysisOf(module)
-	}
-
-	// until the configuration is applied, the modules it's read from, which a host whose program loads them unlike their files gives first
-	get unappliedConfigurationModules(): string[] {
-		if (this.config === undefined || this.configuration) return []
-		return this.importClosureOf(this.config).filter(
-			id => this.graph.moduleOf(id) instanceof SourceModule
-		)
-	}
-
-	give(source: string, id: string): void {
-		this.add(id, source)
 	}
 
 	// the configuration is read from the versions of its modules the graph holds, so one given anew reads it again
