@@ -54,7 +54,7 @@ import type {
 	attachmentsOf
 } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
-import { isArkErrorResult, type ArkErrors } from "./shared/errors.ts"
+import { ArkErrors } from "./shared/errors.ts"
 import {
 	basisKinds,
 	constraintKinds,
@@ -534,7 +534,7 @@ export abstract class BaseNode<
 					const morphed = (branch.morphs[j] as Morph.ContextFree)(
 						result as never
 					)
-					if (isArkErrorResult(morphed)) {
+					if (morphed instanceof ArkErrors) {
 						const ctx = new Traversal(data, this.$.resolvedConfig)
 						addErrors(ctx, morphed)
 						return ctx.finalize(onFail)

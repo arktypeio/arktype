@@ -81,7 +81,7 @@ import {
 	type InvokeOptions,
 	type ReferenceOptions
 } from "./shared/compile.ts"
-import { isArkErrorResult } from "./shared/errors.ts"
+import { ArkErrors } from "./shared/errors.ts"
 import { nodeKinds, type NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
@@ -321,12 +321,12 @@ const unitConstants = {
 	addErrors,
 	addTransformErrors,
 	allowsInBranch,
+	ArkErrors,
 	arrayIndexMatcher,
 	callMorph,
 	copyOf,
 	errorFromContext,
 	isAbsent,
-	isArkErrorResult,
 	isValidDate,
 	jsTypeOfDescriptions,
 	mergeTransformed,

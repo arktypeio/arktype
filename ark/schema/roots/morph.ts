@@ -2,7 +2,7 @@ import { arityOf, arrayEquals, type array } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
-import { isArkErrorResult } from "../shared/errors.ts"
+import { ArkErrors } from "../shared/errors.ts"
 import {
 	implementNode,
 	type nodeImplementationOf,
@@ -178,7 +178,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 						`${js.ref(morph)}(${result})`
 					:	`${js.ref(callMorph)}(ctx, ${js.ref(morph)}, ${result})`
 				js.const(morphed, call).if(
-					`${js.ref(isArkErrorResult)}(${morphed})`,
+					`${morphed} instanceof ${js.ref(ArkErrors)}`,
 					() =>
 						js.requiresContext ?
 							js.line(`${js.ref(addErrors)}(ctx, ${morphed})`).return("data")
@@ -214,7 +214,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				morph.length === 1 ?
 					(morph as Morph.ContextFree)(result as never)
 				:	callMorph(ctx, morph, result)
-			if (isArkErrorResult(morphed)) {
+			if (morphed instanceof ArkErrors) {
 				addErrors(ctx, morphed)
 				return data
 			}

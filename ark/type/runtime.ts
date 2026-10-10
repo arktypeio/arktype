@@ -92,7 +92,6 @@ export {
 	InternalTraversal,
 	intersectionWriters,
 	isAbsent,
-	isArkErrorResult,
 	maxLengthWriters,
 	maxWriters,
 	mergeTransformed,

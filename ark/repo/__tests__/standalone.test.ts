@@ -347,7 +347,7 @@ contextualize(() => {
 		attest(summary).snap("en; a, b or c; other; 1.5; 1970; v")
 	})
 
-	it("passes a writer a callback's error holds en's locale", async () => {
+	it("passes en's locale to the writers in a callback's error meta", async () => {
 		const isLarge = (n: number, ctx: Traversal) =>
 			n > 3 ||
 			ctx.reject({

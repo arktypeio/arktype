@@ -26,9 +26,6 @@ import type { NodeKind } from "./implement.ts"
 import type { Locale } from "./locale.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 
-export const isArkErrorResult = (result: unknown): result is ArkErrors =>
-	result instanceof ArkErrors
-
 /**
  * A failed check: its context, the data and path it failed at, and the text
  * written for it when its errors are first read.
