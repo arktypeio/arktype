@@ -1322,17 +1322,31 @@ return [${returned.join(", ")}]
 			if (bakes("json")) members.push(`json: ${json}`)
 			if (bakes("toJSON")) members.push(`toJSON: runtime.freeze(() => ${json})`)
 		}
+		// written first, so toJsonSchema can return one for the target the program passes
+		const standard =
+			bakes("~standard.jsonSchema") &&
+			(["input", "output"] as const).map(
+				io =>
+					`[${supportedJsonSchemaTargets.map(target => this.emitJsonSchema(root, () => root["~standard"].jsonSchema[io]({ target }))).join(", ")}]`
+			)
 		if (bakes("toJsonSchema")) {
+			const written = this.emitJsonSchema(root, () => root.toJsonSchema())
+			// the schema for a target, where it's one the validator bakes anyway
+			const byTarget = supportedJsonSchemaTargets.map(
+				target =>
+					this.jsonSchemaNamesByText[
+						this.writeJsonSchemaWriter(root, () =>
+							root.toJsonSchema({ target })
+						)
+					] ?? 0
+			)
 			members.push(
-				`toJsonSchema: runtime.bakedJsonSchema(${this.emitJsonSchema(root, () => root.toJsonSchema())})`
+				`toJsonSchema: runtime.bakedJsonSchema(${written}, [${byTarget.join(", ")}])`
 			)
 		}
-		if (bakes("~standard.jsonSchema")) {
-			const { jsonSchema } = root["~standard"]
-			const writers = (io: "input" | "output") =>
-				`[${supportedJsonSchemaTargets.map(target => this.emitJsonSchema(root, () => jsonSchema[io]({ target }))).join(", ")}]`
+		if (standard) {
 			members.push(
-				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${writers("input")}, ${writers("output")}) }`
+				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${standard.join(", ")}) }`
 			)
 		}
 		return members.map(member => `, ${member}`).join("")
@@ -1359,8 +1373,7 @@ return [${returned.join(", ")}]
 	}
 
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
-		// arktype writes its JSON Schema anew each call
-		const writer = `() => ${this.writeJsonSchema(root, () => this.baking.write(write), false)}`
+		const writer = this.writeJsonSchemaWriter(root, write)
 		let name = this.jsonSchemaNamesByText[writer]
 		if (!name) {
 			name = `jsonSchema${Object.keys(this.jsonSchemaNamesByText).length}`
@@ -1368,6 +1381,11 @@ return [${returned.join(", ")}]
 			this.declarations.statements.push(`const ${name} = ${writer}`)
 		}
 		return name
+	}
+
+	// arktype writes its JSON Schema anew each call
+	writeJsonSchemaWriter(root: BaseRoot, write: () => unknown): string {
+		return `() => ${this.writeJsonSchema(root, () => this.baking.write(write), false)}`
 	}
 
 	// a schema the program reads only through a validator throws why the build can't write it, where it's read

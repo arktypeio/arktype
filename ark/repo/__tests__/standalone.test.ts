@@ -7,6 +7,7 @@ import {
 	type ArkSchemaConfig,
 	writeInvalidJsonSchemaTargetMessage,
 	type Locale,
+	type ToJsonSchema,
 	type Traversal
 } from "@ark/schema"
 import {
@@ -356,7 +357,14 @@ contextualize(() => {
 		attest(() =>
 			validator["~standard"].jsonSchema.input({ target: "openapi-3.0" })
 		).throws(writeInvalidJsonSchemaTargetMessage("openapi-3.0"))
-		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
+		// options naming nothing, or only a target whose schema the validator bakes, are what it can write
+		attest(validator.toJsonSchema({})).equals(T.toJsonSchema({}))
+		for (const target of ["draft-2020-12", "draft-07"] as const) {
+			attest(validator.toJsonSchema({ target })).equals(
+				T.toJsonSchema({ target })
+			)
+		}
+		attest(() => validator.toJsonSchema({ useRefs: true })).throws(
 			bakedJsonSchemaOptionsMessage
 		)
 		attest(() =>
@@ -366,6 +374,19 @@ contextualize(() => {
 			})
 		).throws(bakedJsonSchemaOptionsMessage)
 		attest(Object.isFrozen(validator["~standard"].jsonSchema)).equals(true)
+	})
+
+	it("takes a target only where it bakes that target's JSON Schema", async () => {
+		const T = type({ a: "string" })
+		const { T: validator } = await load({ T }, undefined, undefined, [
+			"toJsonSchema"
+		])
+		attest(validator.toJsonSchema({ target: "draft-2020-12" })).equals(
+			T.toJsonSchema({ target: "draft-2020-12" })
+		)
+		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
+			bakedJsonSchemaOptionsMessage
+		)
 	})
 
 	it("bakes only the introspection its build lists", async () => {
@@ -410,6 +431,20 @@ contextualize(() => {
     out: null
 }`)
 		attest(thrownBy(() => validator.toJsonSchema())).equals(message)
+		const errorOf = (t: { toJsonSchema: () => unknown }) => {
+			try {
+				t.toJsonSchema()
+			} catch (e) {
+				const error = e as ToJsonSchema.Error
+				return [
+					error.name,
+					error.code,
+					error.hasCode("morph"),
+					error instanceof Error
+				]
+			}
+		}
+		attest(errorOf(validator)).equals(errorOf(T))
 	})
 
 	it("throws where it's read a JSON Schema that calls a default's thunk", async () => {

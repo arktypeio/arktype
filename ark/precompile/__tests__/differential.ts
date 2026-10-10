@@ -12,7 +12,10 @@ import {
 } from "arktype/internal/standalone.ts"
 import type { IntrospectionMember } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
-import { writeUnbakedMessage } from "arktype/runtime"
+import {
+	bakedJsonSchemaOptionsMessage,
+	writeUnbakedMessage
+} from "arktype/runtime"
 import { DynamicValue } from "@ark/precompile/internal/dynamic.ts"
 import { buildSync } from "esbuild"
 import { mkdtempSync, writeFileSync } from "node:fs"
@@ -318,6 +321,12 @@ const observeIntrospection = (t: Validator) => ({
 	json: observe(() => t.json, undefined),
 	isToJsonTheJson: observe(() => t.toJSON() === t.json, undefined),
 	jsonSchema: observe(() => t.toJsonSchema(), undefined),
+	// options naming nothing, and each target, whose schema a validator writes only where it bakes it
+	jsonSchemaByOptions: [
+		{},
+		{ target: "draft-2020-12" },
+		{ target: "draft-07" }
+	].map(opts => observe(() => t.toJsonSchema(opts), undefined)),
 	// a target arktype supports, the other and one it rejects
 	standardJsonSchema: (["input", "output"] as const).flatMap(io =>
 		["draft-2020-12", "draft-07", "openapi-3.0"].map(target =>
@@ -331,7 +340,12 @@ const unbakedSuffix = writeUnbakedMessage("")
 const threwUnbaked = (observation: unknown): boolean =>
 	(observation as { threw?: string }).threw?.endsWith(unbakedSuffix) ?? false
 
-// a schema the build can't bake throws why where it's read, so arktype's is left uncompared
+const threwOptions = (observation: unknown): boolean =>
+	(observation as { threw?: string }).threw?.endsWith(
+		bakedJsonSchemaOptionsMessage
+	) ?? false
+
+// a schema the build can't bake throws why where it's read, as one for a target it doesn't bake does, so arktype's is left uncompared
 const maskUnbaked = (
 	arktype: Introspection,
 	baked: Introspection
@@ -339,6 +353,15 @@ const maskUnbaked = (
 	...arktype,
 	jsonSchema:
 		threwUnbaked(baked.jsonSchema) ? baked.jsonSchema : arktype.jsonSchema,
+	jsonSchemaByOptions: arktype.jsonSchemaByOptions.map((observation, i) =>
+		(
+			threwUnbaked(baked.jsonSchemaByOptions[i]) ||
+			// options naming nothing are always the configured schema
+			(i > 0 && threwOptions(baked.jsonSchemaByOptions[i]))
+		) ?
+			baked.jsonSchemaByOptions[i]
+		:	observation
+	),
 	standardJsonSchema: arktype.standardJsonSchema.map((observation, i) =>
 		threwUnbaked(baked.standardJsonSchema[i]) ?
 			baked.standardJsonSchema[i]

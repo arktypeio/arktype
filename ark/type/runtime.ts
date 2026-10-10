@@ -302,12 +302,22 @@ for (const k of Reflect.ownKeys(Validator.prototype)) {
 }
 freeze(Validator.prototype)
 
+// a target's is 0 where the validator doesn't bake its schema
 export const bakedJsonSchema = (
-	write: () => JsonSchema
-): ((opts?: unknown) => JsonSchema) =>
-	freeze((opts?: unknown) =>
-		opts === undefined ? write() : throwError(bakedJsonSchemaOptionsMessage)
-	)
+	write: () => JsonSchema,
+	byTarget: readonly ((() => JsonSchema) | 0)[]
+): ((opts?: { target?: unknown }) => JsonSchema) =>
+	freeze((opts?: { target?: unknown }) => {
+		// arktype merges the keys a for...in loop reads
+		const keys: string[] = []
+		for (const k in opts) keys.push(k)
+		if (!keys.length) return write()
+		const written =
+			keys.length === 1 &&
+			keys[0] === "target" &&
+			byTarget[supportedJsonSchemaTargets.indexOf(opts!.target as never)]
+		return written ? written() : throwError(bakedJsonSchemaOptionsMessage)
+	})
 
 type JsonSchemaWritersByTarget = readonly (() => JsonSchema)[]
 
@@ -336,9 +346,23 @@ const writeStandardJsonSchema = (
 	return writers[i]() as Record<string, unknown>
 }
 
-// without the nodes arktype's context holds
+// arktype's ToJsonSchema.Error, without the nodes its context holds
+class ToJsonSchemaError extends Error {
+	readonly name = "ToJsonSchemaError"
+	readonly code: string
+
+	constructor(code: string, message: string) {
+		super(message)
+		this.code = code
+	}
+
+	hasCode(code: string): boolean {
+		return this.code === code
+	}
+}
+
 export const throwJsonSchemaError = (code: string, message: string): never => {
-	throw assign(new Error(message), { name: "ToJsonSchemaError", code })
+	throw new ToJsonSchemaError(code, message)
 }
 
 // e.g. printing a ToJsonSchemaError's context keyed by a symbol, whose TypeError each engine words its own way
@@ -723,7 +747,7 @@ export type writeRenamedHoleMessage<
 > = `${label}'s hole ${index} is a function named ${name}, but was named ${createdName} when ${label} was created`
 
 export const bakedJsonSchemaOptionsMessage =
-	"a standalone validator's JSON Schema is written at build under the program's configuration, so it takes no options. Configure them with configure({ toJsonSchema }), or build with runtime: \"arktype\"."
+	"a standalone validator's JSON Schema is written at build under the program's configuration, so it takes no options but a target whose schema it bakes. Configure them with configure({ toJsonSchema }), or build with runtime: \"arktype\"."
 
 export type bakedJsonSchemaOptionsMessage = typeof bakedJsonSchemaOptionsMessage
 
