@@ -289,9 +289,17 @@ export class Precompiler {
 	}
 
 	analyze(source: string, id: string): ModuleAnalysis {
+		const module = this.add(id, source)
 		// one the thread applied is the configuration precompile() would analyze under, and applying it again configures nothing
 		if (threadConfiguration) this.configuration ??= this.applyConfiguration()
-		return this.analysisOf(this.graph.add(id, source))
+		return this.analysisOf(module)
+	}
+
+	// the configuration is read from the versions of its modules the graph holds, so one given anew reads it again
+	private add(id: string, source: string): SourceModule {
+		const module = this.graph.add(id, source)
+		if (this.configuration?.modules.includes(id)) this.configuration = undefined
+		return module
 	}
 
 	// whether a module may define a Type or, in a standalone build, read arktype's nodes, from its imports so most modules that can't are never parsed
@@ -468,8 +476,8 @@ export class Precompiler {
 	}
 
 	precompile(source: string, id: string): PrecompiledModule {
+		const module = this.add(id, source)
 		this.configuration ??= this.applyConfiguration()
-		const module = this.graph.add(id, source)
 		const { sites, diagnostics } = this.analysisOf(module)
 		for (const node of module.program.body) {
 			const specifier =
@@ -670,9 +678,10 @@ export class Precompiler {
 				call &&
 				hashOf(
 					modules
-						.map(
-							id => `${this.graph.pathOf(id)}\n${this.graph.host.readFile(id)}`
-						)
+						.map(id => {
+							const module = this.graph.moduleOf(id)
+							return `${this.graph.pathOf(id)}\n${module instanceof SourceModule ? module.source : this.graph.host.readFile(id)}`
+						})
 						.join("\n")
 				)
 		}

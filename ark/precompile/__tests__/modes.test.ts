@@ -206,6 +206,33 @@ console.log(JSON.stringify([
 			).equals([["rejected"], ["rejected"]])
 		}).timeout(60000)
 
+		it("configure given unlike the configuration the build applied", () => {
+			attest(
+				printedInFreshThread(`import { Precompiler } from "@ark/precompile"
+import { memoryHost } from "./utils.ts"
+
+const config = 'import { configure } from "arktype/config"\\nconfigure({ onUndeclaredKey: "reject" })'
+const precompiler = new Precompiler(memoryHost({ "/config.ts": config, "/main.ts": main }), { config: "/config.ts" })
+const outcomes = [
+	["/main.ts", main],
+	["/config.ts", config.replace("reject", "delete")],
+	["/main.ts", main]
+].map(([id, source]) => {
+	try {
+		precompiler.precompile(source, id)
+		return "precompiled"
+	} catch (e) {
+		return e.message
+	}
+})
+console.log(JSON.stringify(outcomes))`)
+			).equals([
+				"precompiled",
+				configuredThreadMessage,
+				configuredThreadMessage
+			])
+		}).timeout(60000)
+
 		it("configure with an argument that creates a Type", () => {
 			attest(
 				printedInFreshThread(`const config = \`import { configure } from "arktype/config"

@@ -8,6 +8,7 @@ import {
 	type NodeHostOptions
 } from "./host.ts"
 import {
+	configuredThreadMessage,
 	Precompiler,
 	renderDiagnostic,
 	type Diagnostic,
@@ -86,12 +87,13 @@ export const answerRequests = (
 	data: PrecompilerWorkerData
 ): void => {
 	let tracked: TrackedPrecompiler | undefined
+	let needsOtherThread = false
 	const answer = (request: PrecompileRequest): unknown => {
 		if (request[0] === "close") return
 		if (request[0] === "refresh" && tracked && !isStale(tracked)) return false
 		if (request[0] === "reset" || request[0] === "refresh") {
 			tracked = createTrackedPrecompiler(data.precompilerOptions)
-			return tracked.precompiler.needsNewThread
+			return needsOtherThread || tracked.precompiler.needsNewThread
 		}
 		tracked ??= createTrackedPrecompiler(data.precompilerOptions)
 		const { precompiler } = tracked
@@ -104,13 +106,19 @@ export const answerRequests = (
 		precompiler.forgetCopies()
 		const { isKept } = tracked
 		tracked.isKept = true
-		const checked = checkedModuleOf(
-			precompiler,
-			request[1],
-			request[2],
-			tracked
-		)
-		if (!isKept || resolvesAgain(tracked, request[2])) return checked
+		try {
+			const checked = checkedModuleOf(
+				precompiler,
+				request[1],
+				request[2],
+				tracked
+			)
+			if (!isKept || resolvesAgain(tracked, request[2])) return checked
+		} catch (e) {
+			if ((e as Error).message !== configuredThreadMessage) throw e
+			// a module given unlike the configuration this thread applied, as unsaved in an editor, reads another
+			needsOtherThread = true
+		}
 		// the rule refreshes and asks again, since a new precompiler's configuration may need a new thread
 		tracked = undefined
 	}

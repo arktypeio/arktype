@@ -139,6 +139,29 @@ export const T = type(shape)`
 		attest(lint(code, {}, main, fromHere())).equals([])
 	})
 
+	it("applies a config module as it's linted unsaved", () => {
+		const config = fromHere("temp", "unsaved", "config.ts")
+		mkdirSync(dirname(config), { recursive: true })
+		const configWith = (onUndeclaredKey: string) =>
+			`import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: ${onUndeclaredKey} })\n`
+		writeFileSync(config, configWith('"reject"'))
+		const main = fromHere("temp", "unsaved", "main.ts")
+		const code = `import { type } from "arktype"
+export const T = type({ a: "string" })`
+		writeFileSync(main, code)
+		attest(lint(code, { config }, main, fromHere())).equals([])
+		attest(
+			lint(
+				configWith('process.argv.length > 99 ? "delete" : "reject"'),
+				{ config },
+				config,
+				fromHere()
+			)
+		).snap([
+			"3:1-3:79 configure({ onUndeclaredKey: process.argv.length > 99 ? \"de… is not static\n`process` is a global the build does not read\nThe configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+		])
+	})
+
 	it("reports only the copies of arktype's packages the linted file reaches", () => {
 		const code = `import { type } from "arktype"
 export const Name = type("string")`
