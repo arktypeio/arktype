@@ -7,6 +7,7 @@ import {
 	type show
 } from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
+import type { BaseNode } from "./node.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { TypeMeta } from "./shared/declare.ts"
@@ -44,7 +45,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 				node: BaseRoot,
 				value: unknown,
 				key: PropertyKey | null,
-				owner: object | undefined
+				owner: BaseNode | undefined
 		  ) => boolean)
 		| undefined
 	reached?: CacheReach | undefined

@@ -303,6 +303,8 @@ export class Interpreter {
 	private checksByOwner = new Map<object, DefaultCheck[]>()
 	// what computing each cache entry reached, by cache and key
 	private reachedByEntry = new WeakMap<object, Map<unknown, Reached[]>>()
+	// what computing a cache's entry reached, whose checks arktype runs once per entry rather than each time a definition runs
+	reachedByEntries = new WeakSet<Reached>()
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
 	// what each function, class or symbol expression outside a call evaluated to, which every evaluation of it reuses
 	private standInsByNode = new Map<Node, object>()
@@ -1859,11 +1861,11 @@ export class Interpreter {
 		node: BaseRoot,
 		value: unknown,
 		key: PropertyKey | null,
-		owner: object | undefined
+		owner: BaseNode | undefined
 	): boolean => {
 		const site = this.activeCall?.ctx.site
 		if (!site || !this.holdsStandIn(node.in as BaseRoot)) return false
-		const check: DefaultCheck = [node, value, key]
+		const check: DefaultCheck = [node, value, key, owner]
 		site.reached.push(check)
 		if (owner) {
 			let checks = this.checksByOwner.get(owner)
@@ -1893,7 +1895,10 @@ export class Interpreter {
 			if (!entries) this.reachedByEntry.set(cache, (entries = new Map()))
 			let stored = entries.get(key)
 			if (!stored) entries.set(key, (stored = []))
-			stored.push(...reached.slice(mark))
+			for (const item of reached.slice(mark)) {
+				stored.push(item)
+				this.reachedByEntries.add(item)
+			}
 		}
 	}
 

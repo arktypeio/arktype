@@ -496,30 +496,25 @@ export const checkDistinct = (
 	}
 }
 
-// a default, keyed by its checked Type's id and holes as arktype keys a node by its content
-export type DefaultKey = [
-	id: string,
-	value: unknown,
-	key: PropertyKey | null,
-	holes: readonly unknown[]
-]
+// the node whose creation checks a default, keyed as arktype keys it: by its Scope, its content and the functions it holds
+export type DefaultKey = [id: string, holes: readonly unknown[]]
 
-const checkedDefaultOf = ([id, value, key, holes]: DefaultKey): InternTable => {
-	let table = checkedDefaults.next(id).next(value).next(key)
+const checkedDefaultOf = ([id, holes]: DefaultKey): InternTable => {
+	let table = checkedDefaults.next(id)
 	for (const hole of holes) table = table.next(hole)
 	return table
 }
 
-// arktype checks a default on a narrowed Type once, where it creates the node holding it, throwing its errors in en as a ParseError
+// arktype checks a default once per node holding it, or at each run of a definition writing it, throwing its errors in en as a ParseError
 export const checkDefault = (
 	validator: Validator,
 	value: unknown,
 	key: PropertyKey | null,
+	defaultKey: DefaultKey | null,
 	config: ResolvedConfig = runtimeConfig
 ): void => {
-	const [id, holes] = holesByValue.get(validator)!
-	const checked = checkedDefaultOf([id, value, key, holes])
-	if (checked.value) return
+	const checked = defaultKey && checkedDefaultOf(defaultKey)
+	if (checked?.value) return
 	const out = validator.traverse(value)
 	if (out instanceof ArkErrors) {
 		if (key === null) throwParseError(`Default ${out.summary}`)
@@ -527,7 +522,7 @@ export const checkDefault = (
 		mergeErrors(atPath, out, [key])
 		throwParseError(`Default for ${atPath.summary}`)
 	}
-	checked.value = true
+	if (checked) checked.value = true
 }
 
 export const checkInput = (
@@ -648,13 +643,13 @@ export const intern = <value>(
 	table: InternTable,
 	holes: readonly unknown[],
 	create: () => value,
-	// defaults the definition reaches, which a definition creating the Type first may not have checked
-	defaults: readonly DefaultKey[] = []
+	// defaults the definition reaches, which a definition creating the Type first may not have checked, or checks each time it runs
+	defaults: readonly (DefaultKey | null)[] = []
 ): value => {
 	for (const hole of holes) table = table.next(hole)
 	if (
 		table.value !== undefined &&
-		defaults.some(key => !checkedDefaultOf(key).value)
+		defaults.some(key => key === null || !checkedDefaultOf(key).value)
 	)
 		create()
 	return (table.value ??= create()) as value

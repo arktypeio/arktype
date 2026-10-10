@@ -1465,7 +1465,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 				T: {
 					type: T,
 					params: [{ kind: "function", label: "`isEven`", value: isEven }],
-					defaultChecks: [[optional.value, 3, "a"]]
+					defaultChecks: [[optional.value, 3, "a", optional]]
 				}
 			})
 			attest(create((n: number) => n > 0)({})).equals({ a: 3 })

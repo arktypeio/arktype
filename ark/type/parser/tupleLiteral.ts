@@ -48,14 +48,8 @@ export const parseTupleLiteral = (
 		if (
 			typeof def[i] === "string" &&
 			typeof possibleDefaultValue === "function"
-		) {
-			assertDefaultAssignability(
-				valueNode,
-				possibleDefaultValue(),
-				null,
-				possibleDefaultValue
-			)
-		}
+		)
+			assertDefaultAssignability(valueNode, possibleDefaultValue(), null)
 
 		i++
 		if (spread) {

@@ -152,7 +152,9 @@ export type FactoryParam = HoleParam | InputParam | HelperParam
 export type DefaultCheck = [
 	node: BaseRoot,
 	value: unknown,
-	key: PropertyKey | null
+	key: PropertyKey | null,
+	// the node arktype checks it once for, absent where it checks it each time the site runs
+	owner: BaseNode | undefined
 ]
 
 export interface HoleParam {
@@ -292,8 +294,7 @@ const writeArtifact = (
 				sitesByName,
 				definitionAddresses,
 				baking,
-				undefined,
-				value.defaultChecks
+				value
 			)
 			factories.push(
 				artifact.writeIntrospection(name, value, factories.length, configured)
@@ -537,6 +538,8 @@ export class StandaloneArtifact {
 	createdEachRun = new Set<BaseRoot>()
 	// what a factory receives and checks, absent for an artifact creating its exports once
 	factory: StandaloneFactory | undefined
+	// each Scope a factory receives, which identifies the nodes arktype creates in it
+	scopeExpressions = new Map<unknown, string>()
 	// each default arktype checks where it defines the Type, which the factory checks once it creates the validators
 	defaultChecks: readonly DefaultCheck[]
 	// a factory's errors expose the meta of a Type it receives, not a copy
@@ -552,15 +555,15 @@ export class StandaloneArtifact {
 		sitesByName: Record<string, ExportSite> | undefined,
 		definitionAddresses: ReadonlyMap<unknown, string>,
 		baking: Baking,
-		factory?: StandaloneFactory,
-		defaultChecks = factory?.defaultChecks ?? []
+		// a site reading a Type's introspection receives only what its default checks read
+		factory?: StandaloneFactory | StandaloneIntrospection
 	) {
 		this.exports = exports
 		this.baking = baking
-		this.factory = factory
-		this.defaultChecks = defaultChecks
-		if (factory?.isCreatedEachRun && hasArkKind(factory.type, "root"))
-			this.createdEachRun.add(factory.type)
+		this.factory = factory && "member" in factory ? undefined : factory
+		this.defaultChecks = factory?.defaultChecks ?? []
+		if (this.factory?.isCreatedEachRun && hasArkKind(this.factory.type, "root"))
+			this.createdEachRun.add(this.factory.type)
 		this.sharedModules = sharedModules
 		this.imports = imports
 		this.sitesByName = sitesByName
@@ -575,7 +578,8 @@ export class StandaloneArtifact {
 		}
 		for (const [name, value] of Object.entries(exports))
 			this.collectExport(value, appendStringifiedKey("", name))
-		for (const [node] of defaultChecks) this.collectType(node.in as BaseRoot)
+		for (const [node] of this.defaultChecks)
+			this.collectType(node.in as BaseRoot)
 		// the runtime writes only en
 		const locale = $ark.config.locale
 		if (locale !== undefined && locale !== $ark.defaultConfig.locale)
@@ -766,6 +770,7 @@ export class StandaloneArtifact {
 			label = appendStringifiedKey(label, k)
 		}
 		label = `\`${label}\``
+		if (hasArkKind(value, "scope")) this.scopeExpressions.set(value, expression)
 		if (
 			hasArkKind(value, "root") ||
 			hasArkKind(value, "module") ||
@@ -1040,16 +1045,40 @@ export { factory${index} as ${JSON.stringify(name)} }`
 	}
 
 	writeDefaultChecks(): { check: string; key: string }[] {
-		return this.defaultChecks.map(([node, defaultValue, key]) => {
+		return this.defaultChecks.map(check => {
+			const [node, defaultValue, key, owner] = check
 			const input = node.in as BaseRoot
 			const config = this.scopeConfigOf(input, raisableCodesOf(input))
-			const [id, held] = keyOf(input)
 			const args = `${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}`
+			const defaultKey = owner ? this.writeDefaultKey(check, owner) : "null"
 			return {
-				check: `runtime.checkDefault(${this.validatorNamesByRoot.get(input)}, ${args}${config === "runtime.runtimeConfig" ? "" : `, ${config}`})`,
-				key: `[${JSON.stringify(id)}, ${args}, [${held.map(hole => this.holeExpressions.get(hole)).join(", ")}]]`
+				check: `runtime.checkDefault(${this.validatorNamesByRoot.get(input)}, ${args}, ${defaultKey}${config === "runtime.runtimeConfig" ? "" : `, ${config}`})`,
+				key: defaultKey
 			}
 		})
+	}
+
+	// arktype creates a node once per Scope and content, so a check is keyed by the Scope's name or the one received, the node's content and holes
+	writeDefaultKey([node, value, key]: DefaultCheck, owner: BaseNode): string {
+		const $ = owner.$
+		const [id, holes] = encodeKey(
+			[
+				$.isBuiltin ? $.name : null,
+				owner.isRoot() ? owner : owner.inner,
+				node,
+				value,
+				key
+			],
+			undefined,
+			false
+		)
+		const expressions = [$, ...holes].map(
+			hole =>
+				this.scopeExpressions.get(hole) ??
+				this.holeExpressions.get(hole) ??
+				"undefined"
+		)
+		return `[${JSON.stringify(id)}, [${expressions.join(", ")}]]`
 	}
 
 	get localUnits(): RootUnit[] {
@@ -2273,7 +2302,9 @@ const rootKeyOf = (root: BaseRoot): Key => {
 const encodeKey = (
 	start: unknown,
 	// a root's, whose nodes its units' names key
-	defaultsByMorph?: ReadonlyMap<unknown, Default>
+	defaultsByMorph?: ReadonlyMap<unknown, Default>,
+	// whether a function in it is a thunk arktype calls rather than a value it holds
+	isDefinition = !defaultsByMorph
 ): Key => {
 	const values: string[] = []
 	const holes: unknown[] = []
@@ -2391,7 +2422,7 @@ const encodeKey = (
 		} else
 			refusal ??= `holds ${printable(value)}${at(path)}, which its key can't encode`
 	}
-	write(start, "", !defaultsByMorph)
+	write(start, "", isDefinition)
 	return [hashOf(values.join("\n")), holes, refusal, thunks]
 }
 

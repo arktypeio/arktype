@@ -118,7 +118,7 @@ export const assertDefaultValueAssignability = (
 	node: BaseRoot,
 	value: unknown,
 	key: PropertyKey | null,
-	owner?: object
+	owner?: BaseNode
 ): unknown => {
 	// a function default is checked each time it's applied
 	if (isThunk(value)) return value
@@ -134,8 +134,8 @@ export const assertDefaultAssignability = (
 	node: BaseRoot,
 	value: unknown,
 	key: PropertyKey | null,
-	// the node whose creation checks it, or the function string syntax creates for the default
-	owner?: object
+	// the node whose creation checks it, absent where arktype checks it each time the definition runs, as for `.default()`
+	owner?: BaseNode
 ): unknown => {
 	if (!isResolutionFinal() && node.includesAlias) {
 		queueUnchecked(() => assertDefaultAssignability(node, value, key, owner))
