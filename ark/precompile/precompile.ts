@@ -286,8 +286,13 @@ export class Precompiler {
 	importsArk(source: string, id: string): boolean {
 		if (arktypeSpecifier.test(source)) return true
 		if (this.mode === "standalone") {
-			for (const [, specifier] of source.matchAll(importSpecifier))
-				if (nodePackageSpecifier.test(specifier)) return true
+			for (const [, specifier] of source.matchAll(importSpecifier)) {
+				if (
+					nodePackageSpecifier.test(specifier) ||
+					localeSpecifier.test(specifier)
+				)
+					return true
+			}
 		}
 		for (const targetId of this.localImportsOf(source, id)) {
 			if (!this.namesArk(targetId)) continue
@@ -2297,14 +2302,16 @@ export class Precompiler {
 		for (const statement of module.program.body) {
 			if (
 				statement.type !== "ImportDeclaration" ||
-				!nodePackageSpecifier.test(statement.source.value) ||
 				arkPackageName.test(this.graph.packageNameOf(module.id) ?? "")
 			)
 				continue
+			const source = statement.source.value
+			const isLocale = localeSpecifier.test(source)
+			if (!isLocale && !nodePackageSpecifier.test(source)) continue
 			for (const specifier of statement.specifiers) {
 				// e.g. `ArkErrors`, which the standalone runtime shares
 				if (
-					statement.source.value === "@ark/schema" &&
+					source === "@ark/schema" &&
 					specifier.type === "ImportSpecifier" &&
 					exportNameOf(specifier.imported) in runtimeExports
 				)
@@ -2319,10 +2326,14 @@ export class Precompiler {
 							"R4",
 							"error",
 							`\`${binding!.name}\` is used outside a runtime island`,
-							[
-								`${statement.source.value} reads the nodes arktype creates, which a standalone build replaces with validators`
-							],
-							nodePackageHint
+							isLocale ?
+								[
+									`${source} writes arktype's errors in a locale, which needs the description writers of arktype's nodes, so a standalone validator writes its errors only in en`
+								]
+							:	[
+									`${source} reads the nodes arktype creates, which a standalone build replaces with validators`
+								],
+							isLocale ? localeHint : nodePackageHint
 						)
 					)
 				}
@@ -2631,6 +2642,9 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 }
 
 const arkPackageSpecifier = /^(arktype|@ark\/schema|@ark\/util)(?:\/|$)/
+
+// arktype's locales, which write the errors of arktype's Types
+const localeSpecifier = /^(?:arktype|@ark\/type)\/locales(?:\/|$)/
 
 // packages that create or read arktype's nodes, which a standalone validator doesn't have
 const nodePackageSpecifier =
@@ -2968,6 +2982,8 @@ const islandHint = `A runtime island runs on arktype, as must what it reads. Mar
 const runtimeImportHint = `Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: "arktype".`
 
 const nodePackageHint = `Read arktype's nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".`
+
+const localeHint = `Write errors in a locale in a definition marked // @ark-runtime, or build with runtime: "arktype".`
 
 // an import only folded sites read becomes `import "arktype"`, so the runtime loads where arktype would have
 const pruneArktypeImports = (

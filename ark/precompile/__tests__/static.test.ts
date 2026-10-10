@@ -1004,6 +1004,19 @@ const D = discriminantJsonOf(type({ a: "0" }).or({ a: "1" }).internal as never)`
 			])
 		})
 
+		it("a locale outside a runtime island", () => {
+			attest(
+				diagnosticsOf(`import { de } from "arktype/locales/de"
+import { type } from "arktype"
+const T = type("string")
+console.log(T.assert, de.tag)
+// @ark-runtime
+const D = type("string")(1).toLocaleString(de)`)
+			).snap([
+				"/main.ts:4:23  `de` is used outside a runtime island\n  arktype/locales/de writes arktype's errors in a locale, which needs the description writers of arktype's nodes, so a standalone validator writes its errors only in en\n  Write errors in a locale in a definition marked // @ark-runtime, or build with runtime: \"arktype\"."
+			])
+		})
+
 		it("what arktype creates anew each run, but shares with its last run or another site", () => {
 			attest(
 				statusesOf(`import { scope } from "arktype"

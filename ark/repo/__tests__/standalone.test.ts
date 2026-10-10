@@ -8,6 +8,7 @@ import {
 } from "@ark/schema"
 import {
 	configMismatchMessage,
+	unrenderedLocaleMessage,
 	untransformedConfigureMessage,
 	writeCreatedBeforeConfigureMessage
 } from "@ark/schema/runtime"
@@ -715,6 +716,13 @@ contextualize(() => {
 		} finally {
 			$ark.config = config
 		}
+	})
+
+	it("writes errors only in en", async () => {
+		const { T } = await load({ T: type("string") })
+		const errors = T(1)
+		attest(() => errors.toLocaleString(de)).throws(unrenderedLocaleMessage)
+		attest(errors.toLocaleString()).equals(errors.summary)
 	})
 
 	describe("factories", () => {
