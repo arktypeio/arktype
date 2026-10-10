@@ -1580,17 +1580,17 @@ return [${returned.join(", ")}]
 			node.hasKind("union") && node.compiledDiscriminant ?
 				`,\n\tdiscriminantDescription: ${JSON.stringify(node.discriminantDescription)}`
 			:	""
+		// a flag that is false, or a traversal the node lacks, is left out, which the runtime reads as undefined
+		const flags = shapeFlags.flatMap(flag =>
+			node[flag] ? [`\n\t${flag}: true,`] : []
+		)
+		const transform =
+			traversals[2] ? `\n\ttraverseTransform: ${traversals[2]},` : ""
 		return `{
 	id: ${JSON.stringify(unit.names[node.id])},
-	trackedId: ${JSON.stringify(trackedName)},
-	isTransformedById: ${node.isTransformedById},
-	includesAlias: ${node.includesAlias},
-	transforms: ${node.transforms},
-	allowsRequiresContext: ${node.allowsRequiresContext},
-	allowsRequiresTraversal: ${node.allowsRequiresTraversal},
+	trackedId: ${JSON.stringify(trackedName)},${flags.join("")}
 	traverseAllows: ${traversals[0]},
-	traverseApply: ${traversals[1]},
-	traverseTransform: ${traversals[2]},
+	traverseApply: ${traversals[1]},${transform}
 	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]},
 	$: runtime.runtimeScope${discriminantDescription}
 }`
@@ -1865,6 +1865,14 @@ const assertBakeableJsonSchema = (root: BaseRoot): void => {
 		)
 	}
 }
+
+const shapeFlags = [
+	"isTransformedById",
+	"includesAlias",
+	"transforms",
+	"allowsRequiresContext",
+	"allowsRequiresTraversal"
+] as const
 
 const callsDefaultThunk = (node: BaseNode): boolean =>
 	node.hasKind("optional") ? typeof node.inner.default === "function"
