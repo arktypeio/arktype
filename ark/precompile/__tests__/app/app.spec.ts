@@ -11,5 +11,5 @@ test("runs through the transform", () => {
 	const precompilation = () => User.internal.precompilation
 	if (process.env.ARKTYPE_RUNTIME === "arktype")
 		expect(precompilation()).not.toMatch(/^function anonymous/)
-	else expect(precompilation).toThrow("internal is unavailable")
+	else expect(precompilation).toThrow("internal` is undefined")
 })

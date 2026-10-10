@@ -764,14 +764,14 @@ export class Precompiler {
 					internedBy: site.isInterned ? table : undefined,
 					isCreatedEachRun: site.isCreatedEachRun
 				}
-				sitesByName[name] = exportSiteOf(module, site)
+				sitesByName[name] = exportSiteOf(site)
 				// a factory passed no function written in the site replaces all of it
 				if (!factory.spans.length) replaced.push(site)
 			} else {
 				const name = `v${nameOf(site)}`
 				namesBySite.set(site, name)
 				exportsByName[name] = site.value as never
-				sitesByName[name] = exportSiteOf(module, site)
+				sitesByName[name] = exportSiteOf(site)
 				if (site.isKeywordRead) keywordReads.add(name)
 				replaced.push(site)
 			}
@@ -2778,8 +2778,7 @@ const repeatedRegionsOf = (node: Node): Node[] => {
 	return result
 }
 
-const exportSiteOf = (module: SourceModule, site: Site): ExportSite => ({
-	position: module.positionOf(site),
+const exportSiteOf = (site: Site): ExportSite => ({
 	definitions: site.parsedDefinitions
 })
 

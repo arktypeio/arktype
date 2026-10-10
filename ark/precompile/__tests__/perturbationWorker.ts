@@ -444,25 +444,14 @@ const isModule = (value: unknown): value is Record<string, unknown> =>
 	((value as { " arkKind"?: unknown })[" arkKind"] === "module" ||
 		(isPlain(value) && !Array.isArray(value) && Object.isFrozen(value)))
 
-// a precompiled Scope or Generic is a stand-in whose members throw, so of either only its kind is compared
-const standInKindOf = (value: unknown): string | undefined => {
-	if (!hasDomain(value, "object")) return
-	const kind = (value as { " arkKind"?: unknown })[" arkKind"]
-	if (kind === "scope" || kind === "generic") return kind
-	if (isArk(value) || !Object.isFrozen(value)) return
-	try {
-		void (value as { aliases?: unknown; params?: unknown })[
-			typeof value === "function" ? "params" : "aliases"
-		]
-	} catch (e) {
-		if (messageOf(e).includes("unavailable in a standalone validator"))
-			return typeof value === "function" ? "generic" : "scope"
-	}
-}
+// a precompiled Scope or Generic is an empty object, so either is compared as one
+const isStandIn = (value: unknown): boolean =>
+	hasDomain(value, "object") &&
+	((value as { " arkKind"?: unknown })[" arkKind"] === "scope" ||
+		(value as { " arkKind"?: unknown })[" arkKind"] === "generic")
 
 const observe = (value: unknown): Observation => {
-	const standInKind = standInKindOf(value)
-	if (standInKind) return { standIn: standInKind }
+	if (isStandIn(value)) return { module: {} }
 	if (isModule(value)) {
 		return {
 			module: Object.fromEntries(

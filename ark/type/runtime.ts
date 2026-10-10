@@ -15,17 +15,13 @@ import {
 	printable,
 	prototypeOf,
 	throwError,
-	type arkKind,
 	type inferred
 } from "@ark/util"
-import type { Generic } from "./generic.ts"
 import { raisedErrorPhrases } from "./keywords/functions.ts"
-import type { Scope } from "./scope.ts"
 import type { ArrayType } from "./variants/array.ts"
 import type { DateType } from "./variants/date.ts"
 import type { NumberType } from "./variants/number.ts"
 import type { ObjectType } from "./variants/object.ts"
-import type { TypeParser } from "./type.ts"
 import type { StringType } from "./variants/string.ts"
 
 // a bundle with code splitting drops a star export from another package
@@ -179,78 +175,11 @@ type typeOnlyMember =
 // introspection a build bakes only when asked, so otherwise absent as on any other validator
 type bakedMember = "json" | "toJSON" | "toJsonSchema"
 
+// what a Type has that a validator lacks, so reading it reads undefined
 export type unavailableMember = Exclude<
 	keyof (ArrayType & DateType & NumberType & ObjectType & StringType),
 	keyof Validator | keyof Function | typeOnlyMember | bakedMember
 >
-
-// each composes or introspects a node, which a standalone validator doesn't have
-const unavailableMembers = {
-	$: "property",
-	and: "method",
-	array: "method",
-	as: "method",
-	atLeast: "method",
-	atLeastLength: "method",
-	atMost: "method",
-	atMostLength: "method",
-	atOrAfter: "method",
-	atOrBefore: "method",
-	brand: "method",
-	configure: "method",
-	default: "method",
-	describe: "method",
-	distribute: "method",
-	divisibleBy: "method",
-	earlierThan: "method",
-	equals: "method",
-	exactlyLength: "method",
-	exclude: "method",
-	extends: "method",
-	extract: "method",
-	filter: "method",
-	get: "method",
-	ifEquals: "method",
-	ifExtends: "method",
-	in: "property",
-	internal: "property",
-	intersect: "method",
-	keyof: "method",
-	laterThan: "method",
-	lessThan: "method",
-	lessThanLength: "method",
-	map: "method",
-	matching: "method",
-	merge: "method",
-	moreThan: "method",
-	moreThanLength: "method",
-	narrow: "method",
-	omit: "method",
-	onDeepUndeclaredKey: "method",
-	onUndeclaredKey: "method",
-	optional: "method",
-	or: "method",
-	out: "property",
-	overlaps: "method",
-	partial: "method",
-	pick: "method",
-	pipe: "method",
-	precompilation: "property",
-	props: "property",
-	readonly: "method",
-	required: "method",
-	select: "method",
-	to: "method"
-} satisfies Record<unavailableMember, "method" | "property">
-
-for (const [name, kind] of Object.entries(unavailableMembers)) {
-	const throwUnavailable = () => throwError(writeUnavailableMemberMessage(name))
-	Object.defineProperty(
-		Validator.prototype,
-		name,
-		kind === "method" ? { value: throwUnavailable } : { get: throwUnavailable }
-	)
-}
 
 // every validator shares it, so replacing one of its methods would change them all
 for (const k of Reflect.ownKeys(Validator.prototype)) {
@@ -262,115 +191,10 @@ for (const k of Reflect.ownKeys(Validator.prototype)) {
 }
 freeze(Validator.prototype)
 
-// each parses or composes a Type, which the runtime can't
-const unavailableStatics = {
-	$: 1,
-	and: 1,
-	Array: 1,
-	arrayIndex: 1,
-	bigint: 1,
-	boolean: 1,
-	Date: 1,
-	declare: 1,
-	define: 1,
-	enumerated: 1,
-	false: 1,
-	fn: 1,
-	generic: 1,
-	hkt: 1,
-	instanceOf: 1,
-	Key: 1,
-	keywords: 1,
-	match: 1,
-	merge: 1,
-	module: 1,
-	never: 1,
-	null: 1,
-	number: 1,
-	object: 1,
-	or: 1,
-	pipe: 1,
-	raw: 1,
-	Record: 1,
-	schema: 1,
-	scope: 1,
-	string: 1,
-	symbol: 1,
-	true: 1,
-	undefined: 1,
-	unit: 1,
-	unknown: 1,
-	valueOf: 1
-} satisfies Record<Exclude<keyof TypeParser, "errors">, 1>
-
-const freezeUnavailable = <o extends object>(
-	o: o,
-	members: object,
-	nameOf: (member: string) => string
-): o => {
-	for (const member in members) {
-		Object.defineProperty(o, member, {
-			get: () => throwError(writeUnavailableMemberMessage(nameOf(member)))
-		})
-	}
-	return freeze(o)
-}
-
-export const type: { (): never; errors: typeof ArkErrors } = freezeUnavailable(
-	assign(() => throwError(writeUnavailableMemberMessage("type")), {
-		errors: ArkErrors
-	}),
-	unavailableStatics,
-	name => `type.${name}`
-)
-
-// each defines or introspects a Type, which the runtime can't
-const unavailableScopeMembers = {
-	aliases: 1,
-	config: 1,
-	declare: 1,
-	define: 1,
-	defineSchema: 1,
-	enumerated: 1,
-	export: 1,
-	exportedNames: 1,
-	fn: 1,
-	generic: 1,
-	import: 1,
-	instanceOf: 1,
-	internal: 1,
-	json: 1,
-	match: 1,
-	node: 1,
-	references: 1,
-	resolve: 1,
-	schema: 1,
-	type: 1,
-	unit: 1,
-	valueOf: 1
-} satisfies Record<Exclude<keyof Scope, arkKind | "t">, 1>
-
-const unavailableGenericMembers = {
-	$: 1,
-	arg$: 1,
-	bodyDef: 1,
-	constraints: 1,
-	internal: 1,
-	json: 1,
-	names: 1,
-	params: 1
-} satisfies Record<Exclude<keyof Generic, keyof Function | arkKind | "t">, 1>
-
-// a label names where the build folded it, e.g. "the Scope at src/user.ts:3:7"
-export const unavailableScope = (label: string): object =>
-	freezeUnavailable({}, unavailableScopeMembers, name => `${name} of ${label}`)
-
-export const unavailableGeneric = (label: string): (() => never) =>
-	freezeUnavailable(
-		() => throwError(writeUnavailableMemberMessage(`calling ${label}`)),
-		unavailableGenericMembers,
-		name => `${name} of ${label}`
-	)
+// arktype's parser, of which the runtime has only the class of the errors a validator returns
+export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
+	errors: ArkErrors
+})
 
 export type ModuleMembers = { [k: string]: true | ModuleMembers }
 
@@ -604,14 +428,6 @@ const isValidator = (value: unknown) => holesByValidator.has(value as object)
 
 const describeValue = (value: unknown) =>
 	isValidator(value) ? String(value) : printable(value)
-
-export const writeUnavailableMemberMessage = <name extends string>(
-	name: name
-): writeUnavailableMemberMessage<name> =>
-	`${name} is unavailable in a standalone validator, which runs without arktype, so using it requires building with runtime: "arktype"`
-
-export type writeUnavailableMemberMessage<name extends string> =
-	`${name} is unavailable in a standalone validator, which runs without arktype, so using it requires building with runtime: "arktype"`
 
 export const writeCreationMismatchMessage = <
 	label extends string,

@@ -31,7 +31,6 @@ import {
 	writeCreationMismatchMessage,
 	writeIdentityMismatchMessage,
 	writeRenamedHoleMessage,
-	writeUnavailableMemberMessage,
 	type HoleKind
 } from "arktype/runtime"
 import { buildSync } from "esbuild"
@@ -287,28 +286,17 @@ contextualize(() => {
 		attest(S("s")).equals("s")
 	})
 
-	it("throws on members that need arktype", async () => {
+	it("has none of the members that need arktype", async () => {
 		const { T } = await load({ T: type("string") })
-		attest(() => T.and("number")).throws(writeUnavailableMemberMessage("and"))
-		attest(() => T.in).throws(writeUnavailableMemberMessage("in"))
-		attest("toJsonSchema" in T).equals(false)
-		attest(JSON.stringify({ T })).equals("{}")
-		attest(() => (runtimeType as any).string.allows("s")).throws(
-			writeUnavailableMemberMessage("type.string")
+		attest(() => T.and("number")).throws.snap(
+			"TypeError: T.and is not a function"
 		)
-		const unanswered = Reflect.ownKeys(type).filter(k => {
-			if (k === "length" || k === "name" || k === "errors") return false
-			try {
-				Reflect.get(runtimeType, k)
-				return true
-			} catch (e) {
-				return (
-					(e as Error).message !==
-					writeUnavailableMemberMessage(`type.${String(k)}`)
-				)
-			}
-		})
-		attest(unanswered).equals([])
+		attest(["and", "in", "json", "toJsonSchema"].filter(k => k in T)).equals([])
+		attest(JSON.stringify({ T })).equals("{}")
+		attest(() => (runtimeType as any)("string")).throws.snap(
+			"TypeError: runtimeType is not a function"
+		)
+		attest(Reflect.ownKeys(runtimeType)).equals(["errors"])
 	})
 
 	it("writes errors with configured strings", async () => {
@@ -510,34 +498,19 @@ contextualize(() => {
 		}
 	})
 
-	it("exports a Scope or Generic as a value whose members throw", async () => {
+	it("exports a Scope or Generic as an empty object", async () => {
 		const $ = scope({ "box<t>": { box: "t" }, a: "string" })
 		const Box = type("<t>", { box: "t" })
 		const { $: standIn, Box: box, M } = await load({ $, Box, M: $.export() })
-		attest(() => standIn.type).throws(
-			writeUnavailableMemberMessage("type of the Scope $")
-		)
-		attest(() => box("string")).throws(
-			writeUnavailableMemberMessage("calling the Generic Box")
-		)
-		attest(() => box.names).throws(
-			writeUnavailableMemberMessage("names of the Generic Box")
-		)
-		attest(() => M.box("string")).throws(
-			writeUnavailableMemberMessage("calling the Generic M.box")
-		)
+		attest(standIn).equals({})
+		attest(() => box("string")).throws.snap("TypeError: box is not a function")
+		attest(M.box).equals({})
 		attest(M.a("x")).equals("x")
 		// an artifact without validators still declares its stand-ins and the Modules holding them
 		const { Boxes } = await load({
 			Boxes: scope({ "box<t>": { box: "t" } }).export()
 		})
-		attest(() => Boxes.box("string")).throws(
-			writeUnavailableMemberMessage("calling the Generic Boxes.box")
-		)
-		const sited = precompileStandalone({ $ }, undefined, {
-			$: { position: "src/schemas.ts:1:11", definitions: [] }
-		})
-		attest(sited.includes('"the Scope at src/schemas.ts:1:11"')).equals(true)
+		attest(Boxes).equals({ box: {} })
 	})
 
 	it("emits a Type in meta as its validator", async () => {

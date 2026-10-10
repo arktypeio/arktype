@@ -144,7 +144,7 @@ export const M = /* @__PURE__ */ $arkvuorrac1fkpkl6()`)
 			])
 		})
 
-		it("folds Scopes and Generics to values whose members throw", () => {
+		it("folds Scopes and Generics to empty objects", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 const $ = scope({ tree: { value: "number", "children?": "tree[]" }, "box<t>": { box: "t" } })
 export const types = $.export()
@@ -153,11 +153,11 @@ export const Box = type("<t>", { box: "t" })
 export const BoxedTree = Box(types.tree)`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/wgr0gl0vxmn6l"
-import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/wgr0gl0vxmn6l"
-import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/wgr0gl0vxmn6l"
-import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/wgr0gl0vxmn6l"
-import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/wgr0gl0vxmn6l"
+import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/18foo8t086d12s"
+import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/18foo8t086d12s"
+import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/18foo8t086d12s"
+import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/18foo8t086d12s"
+import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/18foo8t086d12s"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 const $ = /* @__PURE__ */ $arkvq7pa6c00qqwz6()
@@ -168,12 +168,12 @@ export const BoxedTree = /* @__PURE__ */ $arkv1tryxgh0tpn3pk()`)
 			attest(
 				Object.values(result.modules)[0]
 					.split("\n")
-					.filter(line => /^const (unavailable|module)\d/.test(line))
+					.filter(line => /^const (standIn|module)\d/.test(line))
 			).snap([
-				'const unavailable0 = runtime.unavailableScope("the Scope at /main.ts:2:11")',
-				'const unavailable0 = runtime.unavailableGeneric("the Generic box at /main.ts:3:22")',
-				'const module0 = runtime.freeze({ ["tree"]: validator0, ["box"]: unavailable0 })',
-				'const unavailable0 = runtime.unavailableGeneric("the Generic at /main.ts:5:20")'
+				"const standIn0 = runtime.freeze({})",
+				"const standIn0 = runtime.freeze({})",
+				'const module0 = runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 })',
+				"const standIn0 = runtime.freeze({})"
 			])
 		})
 
@@ -186,8 +186,8 @@ const create = () => {
 }`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1bev4io0lhnrds as $arkf1bev4io0lhnrds } from "~arktype/15hljwr18mhxb9"
-import { f17s8udm1bx77ds as $arkf17s8udm1bx77ds } from "~arktype/15hljwr18mhxb9"
+import { f1bev4io0lhnrds as $arkf1bev4io0lhnrds } from "~arktype/1gaxp6n03kvj5q"
+import { f17s8udm1bx77ds as $arkf17s8udm1bx77ds } from "~arktype/1gaxp6n03kvj5q"
 const create = () => {
 	const $ = $arkf1bev4io0lhnrds()
 	const types = $arkf17s8udm1bx77ds()
@@ -206,11 +206,11 @@ export const make = () => ({
 })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/1vprs1c1v5w5ho"
-import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/1vprs1c1v5w5ho"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/1vprs1c1v5w5ho"
-import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/1vprs1c1v5w5ho"
-import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/1vprs1c1v5w5ho"
+import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/1uklr0h1jw9kvj"
+import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/1uklr0h1jw9kvj"
+import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/1uklr0h1jw9kvj"
+import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/1uklr0h1jw9kvj"
+import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/1uklr0h1jw9kvj"
 export const make = () => ({
 	$: $arkf1a6evaf1ilxqcd(),
 	types: $arkf14gb4ky1hqquxy(),
@@ -231,11 +231,11 @@ class Holder {
 }`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { veq2llt0aejyl2 as $arkveq2llt0aejyl2 } from "~arktype/u0oq890y1r64l"
-import { v1hn2e10012161b as $arkv1hn2e10012161b } from "~arktype/u0oq890y1r64l"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/u0oq890y1r64l"
-import { vd4uuz90f9hzi3 as $arkvd4uuz90f9hzi3 } from "~arktype/u0oq890y1r64l"
-import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/u0oq890y1r64l"
+import { veq2llt0aejyl2 as $arkveq2llt0aejyl2 } from "~arktype/1hdg5wx1vkn8nf"
+import { v1hn2e10012161b as $arkv1hn2e10012161b } from "~arktype/1hdg5wx1vkn8nf"
+import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/1hdg5wx1vkn8nf"
+import { vd4uuz90f9hzi3 as $arkvd4uuz90f9hzi3 } from "~arktype/1hdg5wx1vkn8nf"
+import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/1hdg5wx1vkn8nf"
 const made: unknown[] = []
 for (let $ = $arkveq2llt0aejyl2(), i = 0; i < 2; i++)
 	made.push($arkv1hn2e10012161b(), $arkf1fqowp70udipzn())

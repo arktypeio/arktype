@@ -58,7 +58,7 @@ type DeclarationRole =
 	| "literal"
 	| "meta"
 	| "config"
-	| "unavailable"
+	| "standIn"
 
 // constraints a node keeps sorted by hash, which holds the names of the functions they hold
 const sortedConstraintKeys = [
@@ -132,8 +132,6 @@ export interface HelperParam {
 }
 
 export interface ExportSite {
-	// where it was defined, which a Scope or Generic it holds names when used
-	position: string
 	// each string it passed arktype's type, which arktype's parse cache may hold its Type under
 	definitions: readonly string[]
 }
@@ -430,7 +428,7 @@ const createDeclarations = (): Declarations => ({
 		literal: [],
 		meta: [],
 		config: [],
-		unavailable: []
+		standIn: []
 	}
 })
 
@@ -782,7 +780,7 @@ export class StandaloneArtifact {
 			...this.comparedRoots.filter(root => !this.addressOf(root)),
 			...this.moduleNamesByModule.keys(),
 			...this.declarations.valuesByRole.literal,
-			...this.declarations.valuesByRole.unavailable
+			...this.declarations.valuesByRole.standIn
 		]
 	}
 
@@ -840,14 +838,9 @@ export class StandaloneArtifact {
 
 	writeCreate(index: number, configured: ConfiguredModule | undefined): string {
 		this.writeSharedUnits()
-		const values = Object.keys(this.exports).map(name => {
-			const site = this.sitesByName?.[name]?.position
-			return this.exportOf(
-				this.exports[name],
-				site ? "" : appendStringifiedKey("", name),
-				site
-			)
-		})
+		const values = Object.values(this.exports).map(value =>
+			this.exportOf(value)
+		)
 		const statements = [
 			writeFixConfig(configured),
 			// without validators, what is left is the Scopes and Generics exported and the Modules holding them
@@ -875,11 +868,7 @@ ${statements.filter(statement => statement).join("\n\n")}
 		this.writeSharedUnits()
 		const exported = this.exports[name]
 		// a Module, Scope or Generic declares what it holds, which the body then writes
-		const value = this.exportOf(
-			exported,
-			"",
-			this.sitesByName?.[name]?.position
-		)
+		const value = this.exportOf(exported)
 		const body = [
 			// each unit is evaluated once, at the first call, which may come before the artifact's body runs
 			...this.writeBody(
@@ -1213,19 +1202,13 @@ return [${returned.join(", ")}]
 		return parts.join(" + ") || '""'
 	}
 
-	// a module is a plain object of validators, frozen like them
-	exportOf(value: unknown, path = "", site?: string): string {
+	// a module is a plain object of validators, frozen like them, and a Scope or Generic an empty one, since resolving an alias or instantiating a Generic needs arktype
+	exportOf(value: unknown): string {
 		if (hasArkKind(value, "root")) return this.validatorNamesByRoot.get(value)!
 		if (hasArkKind(value, "scope") || hasArkKind(value, "generic")) {
-			const kind = hasArkKind(value, "scope") ? "Scope" : "Generic"
-			const label = `the ${kind}${path && ` ${path}`}${site ? ` at ${site}` : ""}`
 			return (
 				this.declarations.namesByValue.get(value) ??
-				this.declareConst(
-					value,
-					"unavailable",
-					`runtime.unavailable${kind}(${JSON.stringify(label)})`
-				)
+				this.declareConst(value, "standIn", "runtime.freeze({})")
 			)
 		}
 		if (!hasArkKind(value, "module"))
@@ -1233,8 +1216,7 @@ return [${returned.join(", ")}]
 		const declared = this.moduleNamesByModule.get(value)
 		if (declared) return declared
 		const entries = Object.entries(value).map(
-			([k, entry]) =>
-				`[${JSON.stringify(k)}]: ${this.exportOf(entry, appendStringifiedKey(path, k), site)}`
+			([k, entry]) => `[${JSON.stringify(k)}]: ${this.exportOf(entry)}`
 		)
 		const name = `module${this.moduleNamesByModule.size}`
 		this.moduleNamesByModule.set(value, name)
