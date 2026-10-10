@@ -187,6 +187,55 @@ class ModuleNamespace {
 
 const shortCircuit = { shortCircuit: true }
 
+const rootsByNode = new WeakMap<Node, Node>()
+
+// the root of a node's tree, which is fixed once its module is parsed
+const rootOf = (node: Node): Node => {
+	const path: Node[] = []
+	let ancestor = node
+	while (!rootsByNode.has(ancestor) && ancestor.parent) {
+		path.push(ancestor)
+		ancestor = ancestor.parent
+	}
+	const root = rootsByNode.get(ancestor) ?? ancestor
+	for (const node of path) rootsByNode.set(node, root)
+	return root
+}
+
+// a cache listing its keys by the tree each is in, so evaluating a site again visits its own module's alone rather than every module's evaluated so far
+class TreeCache<key, value> extends Map<key, value> {
+	nodeOf: (key: key) => Node
+	private keysByRoot = new Map<Node, Set<key>>()
+
+	constructor(nodeOf: (key: key) => Node) {
+		super()
+		this.nodeOf = nodeOf
+	}
+
+	override set(key: key, value: value): this {
+		super.set(key, value)
+		const root = rootOf(this.nodeOf(key))
+		const keys = this.keysByRoot.get(root)
+		if (keys) keys.add(key)
+		else this.keysByRoot.set(root, new Set([key]))
+		return this
+	}
+
+	override delete(key: key): boolean {
+		this.keysByRoot.get(rootOf(this.nodeOf(key)))?.delete(key)
+		return super.delete(key)
+	}
+
+	override clear(): void {
+		this.keysByRoot.clear()
+		super.clear()
+	}
+
+	keysIn(root: Node): key[] {
+		return [...(this.keysByRoot.get(root) ?? [])]
+	}
+}
+
 const maxDepth = 64
 
 const unstableArkProblem =
@@ -208,7 +257,7 @@ const holdsNodeId = (node: BaseNode, key: string) =>
 export class Interpreter {
 	graph: ModuleGraph
 	opts: InterpreterOptions
-	sitesByNode = new Map<Node, SiteState>()
+	sitesByNode = new TreeCache<Node, SiteState>(node => node)
 	standIns = new WeakMap<object, StandIn>()
 	// the site whose own call into arktype threw each ParseError, which only that site can fold to a thrower
 	parseErrorSites = new WeakMap<ParseError, SiteState>()
@@ -216,8 +265,10 @@ export class Interpreter {
 	// what each function, class or symbol expression outside a call evaluated to, which every evaluation of it reuses
 	private standInsByNode = new Map<Node, object>()
 	private symbolsByNode = new Map<Node, symbol>()
-	private valuesByBinding = new Map<Binding, Evaluated | "evaluating">()
-	private valuesByNode = new Map<Node, Evaluated>()
+	private valuesByBinding = new TreeCache<Binding, Evaluated | "evaluating">(
+		binding => binding.declaration
+	)
+	private valuesByNode = new TreeCache<Node, Evaluated>(node => node)
 	// unknown values a declaration computes, which it computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
@@ -300,23 +351,24 @@ export class Interpreter {
 	evaluateAgain(node: Node, module: SourceModule, region: Node): SiteState {
 		const isRerun = (node: Node | null | undefined): boolean =>
 			!!node && (node === region || isRerun(node.parent))
-		const hide = <key, value>(
-			cache: Map<key, value>,
-			nodeOf: (key: key) => Node
-		) => {
-			const kept = [...cache].filter(([key]) => isRerun(nodeOf(key)))
+		const root = rootOf(region)
+		const hide = <key, value>(cache: TreeCache<key, value>) => {
+			const kept = cache
+				.keysIn(root)
+				.filter(key => isRerun(cache.nodeOf(key)))
+				.map(key => [key, cache.get(key)!] as const)
 			for (const [key] of kept) cache.delete(key)
 			// what the run adds is its own
 			return () => {
-				for (const key of [...cache.keys()])
-					if (isRerun(nodeOf(key))) cache.delete(key)
+				for (const key of cache.keysIn(root))
+					if (isRerun(cache.nodeOf(key))) cache.delete(key)
 				for (const [key, value] of kept) cache.set(key, value)
 			}
 		}
 		const restores = [
-			hide(this.valuesByBinding, binding => binding.declaration),
-			hide(this.valuesByNode, node => node),
-			hide(this.sitesByNode, node => node)
+			hide(this.valuesByBinding),
+			hide(this.valuesByNode),
+			hide(this.sitesByNode)
 		]
 		try {
 			return this.evaluateSite(createSiteState(node, module))
