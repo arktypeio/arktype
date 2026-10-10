@@ -65,7 +65,7 @@ export const runtimeConfig: ResolvedConfig = Object.assign(
 		// errors are built without generating code, so validation never needs eval
 		jitless: true,
 		onFail: null,
-		// en's writers don't read the locale, which is en's where configure() or a meta adds writers that may
+		// en's writers don't read it, and inEn and configure() give en to writers that may
 		locale: Object.freeze({})
 	}
 )

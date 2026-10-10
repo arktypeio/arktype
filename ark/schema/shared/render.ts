@@ -184,7 +184,7 @@ const localeExpected = (
 	return inEn.expected
 }
 
-// only as far as its expected reads, so a writer of no other slot is called again
+// only the slots its expected reads, so no other slot's writer is called twice
 const writeInEn = (
 	error: ArkError,
 	config: ResolvedConfig,
