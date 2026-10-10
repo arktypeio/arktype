@@ -1213,6 +1213,15 @@ export const B = list("number")`)
 			).snap(["7:18 accepted string <= 5", "8:18 accepted number[]"])
 		})
 
+		it("static helpers a minified keepNames names", () => {
+			attest(
+				statusesOf(`import { type as o } from "arktype"
+var i=Object.defineProperty;var e=(n,s)=>i(n,"name",{value:s,configurable:!0});
+function r(n){return o({a:o("number").atLeast(n)})}e(r,"field");
+export const a=r(5)`)
+			).snap(["4:16 accepted { a: number >= 5 }"])
+		})
+
 		it("a helper exported by a clause", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

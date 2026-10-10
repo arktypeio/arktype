@@ -1687,10 +1687,19 @@ const namedFunctionOf = (node: Node, module: SourceModule): Node => {
 	)
 		return node
 	const define = namer.body.callee
+	const [target, value] = namer.params.map(param =>
+		param.type === "Identifier" ? param.name : ""
+	)
+	// a minifier renames the parameters and writes `true` as `!0`
+	const call = compactTextOf(namer.body, module)
+		.replace("{value,", "{value:value,")
+		.replace("!0", "true")
 	const defineProperty = initOf(define, module)
 	return (
-			compactTextOf(namer, module) ===
-				`(target,value)=>${define.name}(target,"name",{value,configurable:true})` &&
+			namer.params.length === 2 &&
+				target &&
+				call ===
+					`${define.name}(${target},"name",{value:${value},configurable:true})` &&
 				defineProperty?.type === "MemberExpression" &&
 				compactTextOf(defineProperty, module) === "Object.defineProperty" &&
 				!module.scopes.referencesById.get(defineProperty.object)?.binding
