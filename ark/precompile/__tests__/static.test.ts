@@ -622,6 +622,36 @@ const B = type(\`'\${import.meta.env.MODE}'\`)`,
 				]
 			])
 		})
+
+		it("a Type's introspection at a site of its own", () => {
+			const source = `import { type } from "arktype"
+import { User } from "./user.ts"
+const T = type({ a: "string" })
+const a = T.json
+const b = T.toJSON()
+const c = T.toJsonSchema({ target: "draft-07" })
+const d = User.json`
+			const files = {
+				"/user.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`
+			}
+			attest(statusesOf(source, files)).snap([
+				"3:11 accepted { a: string }",
+				"4:11 accepted",
+				"5:11 accepted",
+				"6:11 accepted",
+				"7:11 accepted"
+			])
+			// the validator User imports to can lack json, so the site compares User itself
+			const { sites } = analyze(source, files)
+			attest(
+				sites[sites.length - 1].inputs.map(input => [input.name, input.path])
+			).snap([["User", []]])
+			attest(statusesOf(source, files, { runtime: "arktype" })).snap([
+				"3:11 accepted { a: string }",
+				"6:11 accepted"
+			])
+		})
 	})
 
 	describe("rejected", () => {
@@ -967,19 +997,21 @@ export const X = forms.make().or("null")`)
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
 const T = type({ a: "string" })
+const jsonOf = (t: typeof T) => t.json
 console.log(T.expression, T.toString(), Object.is(T, T))
-console.log(T.json, "json" in T, JSON.stringify(T))`)
+console.log(jsonOf(T), "json" in T, JSON.stringify(T))`)
 			).snap([
-				'/main.ts:4:13  T.json reads json, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:4:21  "json" in T reads json, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:4:34  JSON.stringify(T) reads toJSON, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				'/main.ts:3:33  t.json reads json, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:5:24  "json" in T reads json, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:5:37  JSON.stringify(T) reads toJSON, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
 			])
 		})
 
 		it("members a build's introspection option bakes", () => {
 			const source = `import { type } from "arktype"
 const T = type({ a: "string" })
-console.log(T.json, "json" in T, JSON.stringify(T), T.toJSON)`
+const jsonOf = (t: typeof T) => t.json
+console.log(jsonOf(T), "json" in T, JSON.stringify(T), T.toJSON)`
 			attest(
 				diagnosticsOf(source, {}, { introspection: ["json", "toJSON"] })
 			).equals([])
@@ -988,8 +1020,8 @@ console.log(T.json, "json" in T, JSON.stringify(T), T.toJSON)`
 					diagnostic => diagnostic.split("\n")[0]
 				)
 			).snap([
-				"/main.ts:3:13  T.json reads json, which a standalone validator lacks",
-				'/main.ts:3:21  "json" in T reads json, which a standalone validator lacks'
+				"/main.ts:3:33  t.json reads json, which a standalone validator lacks",
+				'/main.ts:4:24  "json" in T reads json, which a standalone validator lacks'
 			])
 			attest(
 				() =>
@@ -1352,6 +1384,17 @@ const A = type(\`number < \${max()}\`)`,
 				)
 			).snap([
 				"3:11 rejected\n  the site reads `limits` (/limits.ts:1:7), which its module cannot import, so the site cannot compare it at creation"
+			])
+		})
+
+		it("introspection printing a function's placeholder", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const T = type("string").pipe(s => s.length)
+const a = T.json`)
+			).snap([
+				"2:11 accepted (In: string) => Out<unknown>",
+				"3:11 rejected\n  `T.json` (/main.ts:3:11) prints the name of a function (/main.ts:2:31), which the build knows only by a placeholder"
 			])
 		})
 

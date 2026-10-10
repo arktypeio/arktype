@@ -108,7 +108,20 @@ type ExportedValue = type.Any | Module | Scope<any> | Generic | TypedFn
 
 export type Foldable = BaseRoot | ExportedValue | BaseScope | GenericRoot
 
-export type StandaloneExport = ExportedValue | StandaloneFactory
+export type StandaloneExport =
+	| ExportedValue
+	| StandaloneFactory
+	| StandaloneIntrospection
+
+export type IntrospectedMember = "json" | "toJSON" | "toJsonSchema"
+
+// what a site reading a Type's introspection returns, as arktype returned it at build
+export interface StandaloneIntrospection {
+	member: IntrospectedMember
+	type: BaseRoot
+	data: unknown
+	params: FactoryParam[]
+}
 
 export interface StandaloneFactory {
 	// a Type, or a Module, Scope, Generic or TypedFn arktype creates anew each time its site runs
@@ -251,7 +264,17 @@ const writeArtifact = (
 	const definitionAddresses = definitionAddressesOf(exports, sitesByName)
 	for (const [name, value] of Object.entries(exports)) {
 		if (arkKindOf(value) !== undefined) types[name] = value as never
-		else {
+		else if ("member" in value) {
+			const artifact = new StandaloneArtifact(
+				{},
+				shared,
+				imports,
+				sitesByName,
+				definitionAddresses,
+				introspection
+			)
+			factories.push(artifact.writeIntrospection(name, value, factories.length))
+		} else {
 			const {
 				type,
 				params,
@@ -955,6 +978,32 @@ ${statements.filter(statement => statement).join("\n\n")}
 export { factory${index} as ${JSON.stringify(name)} }`
 	}
 
+	writeIntrospection(
+		name: string,
+		{ member, type, data, params }: StandaloneIntrospection,
+		index: number
+	): string {
+		if (member === "toJsonSchema") assertBakeableJsonSchema(type)
+		this.receive(params)
+		let value = this.writeData(data)
+		// arktype returns one object from every read of a Type's json, and writes its JSON Schema anew each call
+		if (member !== "toJsonSchema") {
+			const json = `json${hashOf(value)}`
+			this.sharedModules[`~arktype/${json}`] ??= {
+				readsRuntime: false,
+				imports: {},
+				declarations: [`const ${json} = ${value}`],
+				exports: [json]
+			}
+			value = this.read(`~arktype/${json}`, json, json, json)
+		}
+		return `function factory${index}(${params.map((_, i) => `p${i}`).join(", ")}) {
+${[...this.checks, `return ${value}`].join("\n\n")}
+}
+
+export { factory${index} as ${JSON.stringify(name)} }`
+	}
+
 	get localUnits(): RootUnit[] {
 		return this.units.filter(unit => !isSharedUnit(unit))
 	}
@@ -1231,12 +1280,7 @@ return [${returned.join(", ")}]
 
 	// a function writing the schema anew each call, as arktype does, or throwing the error arktype throws writing it
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
-		// arktype calls the thunk again each time it writes the schema
-		if (root.references.some(callsDefaultThunk)) {
-			throwParseError(
-				writeUnprecompilableMessage("a JSON Schema calling a default's thunk")
-			)
-		}
+		assertBakeableJsonSchema(root)
 		let writer: string
 		try {
 			writer = `() => (${this.writeData(write())})`
@@ -1793,6 +1837,15 @@ return [${returned.join(", ")}]
 }
 
 const { getTime } = Date.prototype
+
+// arktype calls a default's thunk again each time it writes a schema holding the default
+const assertBakeableJsonSchema = (root: BaseRoot): void => {
+	if (root.references.some(callsDefaultThunk)) {
+		throwParseError(
+			writeUnprecompilableMessage("a JSON Schema calling a default's thunk")
+		)
+	}
+}
 
 const callsDefaultThunk = (node: BaseNode): boolean =>
 	node.hasKind("optional") ? typeof node.inner.default === "function"

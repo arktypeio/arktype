@@ -14,7 +14,9 @@ import {
 	holeNamePattern,
 	holeNamePrefix,
 	keyOf,
-	type DefaultCheck
+	type DefaultCheck,
+	type IntrospectedMember,
+	type StandaloneIntrospection
 } from "arktype/internal/standalone.ts"
 import type {
 	CallExpression,
@@ -61,6 +63,7 @@ import {
 import type { SourceModule } from "./module.ts"
 import {
 	isTransparent,
+	normalize,
 	runtimeParamsOf,
 	unwrapExpression,
 	walk,
@@ -139,6 +142,8 @@ export interface SiteState {
 	defaultChecks: DefaultCheck[]
 	// each Type a request returned
 	roots: BaseRoot[]
+	// e.g. `User` and "json" for `User.json`, which a standalone build folds to what arktype returns
+	introspection: Pick<StandaloneIntrospection, "member" | "type"> | undefined
 	value: unknown
 	error: DynamicValue | ParseError | undefined
 	isEvaluated: boolean
@@ -160,6 +165,7 @@ export const createSiteState = (
 	parsedDefinitions: [],
 	defaultChecks: [],
 	roots: [],
+	introspection: undefined,
 	value: undefined,
 	error: undefined,
 	isEvaluated: false
@@ -258,6 +264,21 @@ const receivedNameProblem = (label: string) =>
 
 const outsideContentProblem =
 	"is not a documented member its content alone decides, so it can depend on registry names or node ids"
+
+// e.g. `T.json` at a site of its own, which folds to the data arktype returns unless it prints a registry name
+const isIntrospectionRead = (
+	object: unknown,
+	key: PropertyKey,
+	node: Node,
+	site: SiteState | undefined
+): boolean =>
+	hasArkKind(object, "root") &&
+	!!site &&
+	(key === "json" ?
+		site.node === node
+	:	(key === "toJSON" || key === "toJsonSchema") &&
+		site.node.type === "CallExpression" &&
+		normalize(site.node.callee) === node)
 
 // an alias's reference is the node id of what it resolves to
 const holdsNodeId = (node: BaseNode, key: string) =>
@@ -849,16 +870,14 @@ export class Interpreter {
 		const key = this.keyOf(node, ctx)
 		if (isDynamic(key)) return { value: key }
 		const value = this.readMember(base.value, key, node, ctx)
-		return base.read ?
-				{
-					value,
-					read: {
-						root: base.read.root,
-						path: [...base.read.path, key],
-						value
-					}
-				}
-			:	{ value }
+		if (!base.read) return { value }
+		// the site compares the Type, as its validator can lack the member
+		if (isIntrospectionRead(base.value, key, node, ctx.site))
+			return { value, read: base.read }
+		return {
+			value,
+			read: { root: base.read.root, path: [...base.read.path, key], value }
+		}
 	}
 
 	private keyOf(
@@ -1397,7 +1416,12 @@ export class Interpreter {
 			: hasArkKind(object, "scope") ? scopeMembers
 			: hasArkKind(object, "generic") ? genericMembers
 			: undefined
-		if (members) {
+		if (isIntrospectionRead(object, key, node, ctx.site)) {
+			ctx.site!.introspection = {
+				member: key as IntrospectedMember,
+				type: object as BaseRoot
+			}
+		} else if (members) {
 			// their other members, like a node's `trackedId` or a Scope's `name`, can depend on the order arktype created things
 			if (
 				typeof key !== "string" ||

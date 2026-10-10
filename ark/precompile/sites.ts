@@ -3,6 +3,8 @@ import {
 	bindingOfFunction,
 	enclosingFunctionOf,
 	isArk,
+	isOnlyType,
+	memberNameOf,
 	runtimeExports,
 	staticBodyOf,
 	type FunctionNode,
@@ -40,7 +42,9 @@ export interface SiteRead {
 
 export const findSites = (
 	module: SourceModule,
-	graph: ModuleGraph
+	graph: ModuleGraph,
+	// whether a Type's json or toJSON() at a site of its own folds to what arktype returns, as a standalone build bakes it
+	foldsIntrospection: boolean
 ): SiteRead[] => {
 	const reads: SiteRead[] = []
 	// candidates climbing to one node evaluate it once
@@ -50,7 +54,10 @@ export const findSites = (
 		if (!found) continue
 		const [kind, root, isOwnSite] = found
 		const fallbacks: Node[] = []
-		const top = climb(root, fallbacks, module, graph)
+		const climbed = climb(root, fallbacks, module, graph)
+		const top =
+			(foldsIntrospection && introspectionReadOf(climbed, module, graph)) ||
+			climbed
 		let candidate: SiteCandidate | undefined
 		if (top !== root || isOwnSite) {
 			let state = statesByNode.get(top)
@@ -141,6 +148,28 @@ const arkMemberOf = (
 		if (isArk(graph.kindOf(member, module))) return member
 		node = member
 	}
+}
+
+// e.g. `T.json` or `T.toJSON()`, which arktype computes from the Type alone
+const introspectionReadOf = (
+	node: Node,
+	module: SourceModule,
+	graph: ModuleGraph
+): Node | undefined => {
+	const [operand, member] = operatorOf(node)
+	if (
+		member?.type !== "MemberExpression" ||
+		member.object !== operand ||
+		!isOnlyType(graph.kindOf(node, module))
+	)
+		return
+	const name = memberNameOf(member)
+	if (name === "json") return member
+	if (name !== "toJSON") return
+	const [callee, call] = operatorOf(member)
+	return call?.type === "CallExpression" && call.callee === callee ?
+			call
+		:	undefined
 }
 
 const helperCallOf = (id: Node): CallExpression | undefined => {

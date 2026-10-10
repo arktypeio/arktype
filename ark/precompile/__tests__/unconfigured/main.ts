@@ -3,4 +3,4 @@ import { type } from "arktype"
 
 export const User = type({ name: "string" })
 
-export const json = User.json
+export const json = JSON.stringify(User)

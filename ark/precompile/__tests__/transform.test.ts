@@ -76,6 +76,50 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
+		it("folds a Type's introspection at a site of its own", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { User } from "./user.ts"
+const Point = type({ x: "number" })
+export const json = Point.json
+export const schema = Point.toJsonSchema()
+export const userJson = User.toJSON()`,
+				{
+					"/user.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`
+				}
+			)
+			attest(result.code).snap(`import "arktype"
+import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1fm2aub1k859mb"
+import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/1fm2aub1k859mb"
+import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/1fm2aub1k859mb"
+import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/1fm2aub1k859mb"
+import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+import { User } from "./user.ts"
+$arkfixConfig()
+const Point = /* @__PURE__ */ $arkvq10hui17onwk2()
+export const json = /* @__PURE__ */ $arkf1uqk4wc118rbng()
+export const schema = /* @__PURE__ */ $arkf1mrbczv1xkyq28()
+export const userJson = /* @__PURE__ */ $arkf17hn9zj1vlnawy(User)`)
+			attest(
+				Object.entries(result.modules).flatMap(([specifier, module]) =>
+					specifier.includes("json") ? [module] : []
+				)
+			).snap([
+				'const jsonwu0uj30x45irq = { "required": [{ "key": "x", "value": "number" }], "domain": "object" }\n\nexport { jsonwu0uj30x45irq }\n',
+				'const jsonojwwr914i8eh2 = { "required": [{ "key": "name", "value": "string" }], "domain": "object" }\n\nexport { jsonojwwr914i8eh2 }\n'
+			])
+		})
+
+		it("refuses to fold a JSON Schema calling a default's thunk", () => {
+			const result = precompile(`import { type } from "arktype"
+const T = type({ a: ["number[]", "=", () => []] })
+export const schema = T.toJsonSchema()`)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				"/main.ts:3:23  T.toJsonSchema() can't be precompiled to a standalone validator yet\n  a JSON Schema calling a default's thunk can't be precompiled to a standalone validator\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			])
+		})
+
 		it("loads arktype where it was imported", () => {
 			attest(
 				precompile(`import "./polyfill.ts"

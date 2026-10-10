@@ -404,7 +404,7 @@ const functionKindOf = (returned: ArkKind): ArkKind =>
 export const isArk = (kind: ArkKind): boolean =>
 	(kind & (kinds.type | kinds.otherArk)) !== 0
 
-const isOnlyType = (kind: ArkKind): boolean =>
+export const isOnlyType = (kind: ArkKind): boolean =>
 	(kind & (kinds.type | kinds.otherArk | kinds.data)) === kinds.type
 
 const isFactory = (kind: ArkKind): boolean =>

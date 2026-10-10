@@ -249,6 +249,15 @@ contextualize(() => {
 			attest(run(await bundle({ cwd: cycle }, cycle))).equals(runPlain(cycle))
 		}).timeout(60000)
 
+		it(`${name} static introspection`, async () => {
+			const introspected = fromHere("introspected")
+			const standalone = await bundle(
+				{ cwd: introspected, introspection: ["toJsonSchema"] },
+				introspected
+			)
+			attest(run(standalone)).equals(runPlain(introspected))
+		}).timeout(60000)
+
 		it(`${name} configured`, async () => {
 			const opts = { cwd: configured, config: "config.ts" }
 			const standalone = await bundle(opts, configured)

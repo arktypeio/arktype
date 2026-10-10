@@ -32,6 +32,7 @@ import {
 	type FactoryParam,
 	type Foldable,
 	type StandaloneExport,
+	type StandaloneIntrospection,
 	type StandaloneModules,
 	type StandaloneOptions
 } from "arktype/internal/standalone.ts"
@@ -161,6 +162,8 @@ export interface Site {
 	defaultChecks: DefaultCheck[]
 	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
 	declarationStart: number | undefined
+	// e.g. `User` and "json" for `User.json`, which a standalone build folds to the data arktype returns
+	introspection: Pick<StandaloneIntrospection, "member" | "type"> | undefined
 }
 
 export interface Hole {
@@ -807,6 +810,27 @@ export class Precompiler {
 				diagnostics.push(this.refuseWritten(module, site, reasons))
 				continue
 			}
+			if (site.introspection) {
+				// a site reading what another module exports checks it at each call, as a factory does
+				factory ??= {
+					params: [],
+					spans: [],
+					inputs: [],
+					imports: [],
+					distinct: []
+				}
+				const name = `f${nameOf(site)}`
+				factoriesBySite.set(site, factory)
+				namesBySite.set(site, name)
+				exportsByName[name] = {
+					...site.introspection,
+					data: site.value,
+					params: factory.params
+				}
+				sitesByName[name] = exportSiteOf(site)
+				replaced.push([site, factory.spans])
+				continue
+			}
 			if (site.parseError) {
 				namesBySite.set(site, nameOf(site))
 				continue
@@ -889,8 +913,8 @@ export class Precompiler {
 				(inputImports[specifier] ??= {})[name] = local
 			// a bundler can drop a variable's site with the variable when nothing reads it, unless it throws a ParseError
 			const isPure = site.declarationStart !== undefined && !site.parseError
-			// a keyword Module creates no Type until one of its members is read
-			if (isPure && !site.isKeywordRead)
+			// a keyword Module creates no Type until one of its members is read, and introspection creates none
+			if (isPure && !site.isKeywordRead && !site.introspection)
 				fixedAt = Math.min(fixedAt, site.declarationStart!)
 			// a site becomes a call, so its validator is created, or its ParseError thrown, where arktype would create its Type
 			const call = isPure ? `/* @__PURE__ */ ${local}(` : `${local}(`
@@ -982,9 +1006,13 @@ export class Precompiler {
 	}
 
 	private isFactory(site: Site, module: SourceModule): boolean {
+		const held =
+			isFoldable(site.value) ? keyOf(site.value)[1]
+			: site.introspection ? []
+			: undefined
 		return (
-			isFoldable(site.value) &&
-			(keyOf(site.value)[1].length > 0 ||
+			!!held &&
+			(held.length > 0 ||
 				site.inputs.length > 0 ||
 				this.mockableHelpersOf(site, module).length > 0)
 		)
@@ -997,7 +1025,7 @@ export class Precompiler {
 		prefix: string
 	): SiteFactory | undefined {
 		if (!this.isFactory(site, module)) return
-		const [, held] = keyOf(site.value as Foldable)
+		const held = isFoldable(site.value) ? keyOf(site.value)[1] : []
 		const helpers = this.mockableHelpersOf(site, module)
 		const factory: SiteFactory = {
 			params: [],
@@ -1381,7 +1409,7 @@ export class Precompiler {
 
 	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
 		const result =
-			site.parseError || isFoldable(site.value) ?
+			site.parseError || isFoldable(site.value) || site.introspection ?
 				[]
 			:	["its value is not a Type, Module, Scope, Generic or TypedFn"]
 		// a ParseError's thrower checks nothing the site reads, though the error can depend on any of it
@@ -1583,7 +1611,10 @@ export class Precompiler {
 	private readsOf(module: SourceModule): SiteRead[] {
 		let reads = this.readsByModule.get(module)
 		if (reads) return reads
-		this.readsByModule.set(module, (reads = findSites(module, this.graph)))
+		this.readsByModule.set(
+			module,
+			(reads = findSites(module, this.graph, this.mode === "standalone"))
+		)
 		for (const { candidate } of reads) {
 			if (candidate)
 				this.interpreter.sitesByNode.set(candidate.state.node, candidate.state)
@@ -1711,7 +1742,8 @@ export class Precompiler {
 			isInterned: false,
 			addressed: new Set(),
 			defaultChecks: [],
-			declarationStart: declarationStartOf(node)
+			declarationStart: declarationStartOf(node),
+			introspection: undefined
 		}
 	}
 
@@ -1784,6 +1816,7 @@ export class Precompiler {
 			// e.g. a Generic aliased `define`, whose instantiation is a Type
 			if (!isFoldable(state.value))
 				site.definition = this.definitionOf(state.node, module)
+			if (this.mode === "standalone") site.introspection = state.introspection
 		}
 		for (const read of state.trace.reads) {
 			const input = this.inputOf(read, candidate, module)

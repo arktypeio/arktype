@@ -314,6 +314,52 @@ const observeIntrospection = (t: Validator) => ({
 	)
 })
 
+type FoldedMember = "json" | "toJSON" | "toJsonSchema"
+
+const foldedMembers: FoldedMember[] = ["json", "toJSON", "toJsonSchema"]
+
+const printsName = (data: unknown): boolean =>
+	typeof data === "string" ?
+		data.includes("$ark.") || data.includes(holeNamePrefix)
+	:	typeof data === "object" &&
+		data !== null &&
+		Object.values(data).some(printsName)
+
+// what a site reading the Type's json, toJSON() or toJsonSchema() folds to, which a build refuses where it prints a function's name
+const foldedIntrospectionOf = (
+	node: BaseRoot
+): Record<string, StandaloneExport> => {
+	const exports: Record<string, StandaloneExport> = {}
+	for (const member of foldedMembers) {
+		let data: unknown
+		try {
+			data = member === "json" ? node.json : node[member]()
+		} catch {
+			continue
+		}
+		if (!printsName(data))
+			exports[member] = { member, type: node, data, params: [] }
+	}
+	return exports
+}
+
+// what each folded site returns, and whether two of its calls, or toJSON() and json, return one object
+const observeFolded = (
+	read: (member: FoldedMember) => unknown,
+	members: string[]
+) => [
+	...members.flatMap(member => [
+		observe(() => read(member as FoldedMember), undefined),
+		observe(
+			() => read(member as FoldedMember) === read(member as FoldedMember),
+			undefined
+		)
+	]),
+	members.includes("json") && members.includes("toJSON") ?
+		observe(() => read("toJSON") === read("json"), undefined)
+	:	undefined
+]
+
 const observeCall = (t: Validator, input: unknown) => {
 	const traversed = cloneInput(input)
 	return {
@@ -376,6 +422,8 @@ export interface Comparison {
 	harnessLimited: number
 	// whether its introspection was compared, which a refused bake or arktype disagreeing with itself prevents
 	isIntrospected: boolean
+	// whether a site reading its introspection was compared, which data printing a function's name prevents
+	isFolded: boolean
 	disagreements: string[]
 }
 
@@ -387,6 +435,7 @@ export const compare = async (
 	const result: Comparison = {
 		harnessLimited: 0,
 		isIntrospected: false,
+		isFolded: false,
 		disagreements: []
 	}
 	const holes = keyOf(node)[1]
@@ -398,6 +447,7 @@ export const compare = async (
 					{ depth: 5, breakLength: 120 }
 				).slice(0, 4000)
 			)
+		await compareFolded(node, layout, result, disagree)
 		let artifact: any
 		// introspection the build refuses to bake, like a schema calling a default's thunk, leaves the rest to compare
 		let isBaked = true
@@ -460,4 +510,39 @@ export const compare = async (
 		}
 	}
 	return result
+}
+
+const compareFolded = async (
+	node: BaseRoot,
+	layout: Layout,
+	result: Comparison,
+	disagree: (observation: string, details: object) => void
+) => {
+	const folded = foldedIntrospectionOf(node)
+	if (!Object.keys(folded).length) return
+	let artifact: any
+	try {
+		artifact = await loadArtifact(folded, layout, []).catch(e => {
+			// e.g. a schema calling a default's thunk, which arktype calls each time it writes one
+			if (!(e instanceof ParseError) || !folded.toJsonSchema) throw e
+			delete folded.toJsonSchema
+			return loadArtifact(folded, layout, [])
+		})
+	} catch (e) {
+		if (!(e instanceof ParseError))
+			disagree("folded build", { threw: String(e) })
+		return
+	}
+	const members = Object.keys(folded)
+	const expected = observeStably(() =>
+		observeFolded(
+			member => (member === "json" ? node.json : node[member]()),
+			members
+		)
+	)
+	if (!members.length || !expected) return
+	result.isFolded = true
+	const actual = observeFolded(member => artifact[member](), members)
+	if (!isEqual(expected, actual))
+		disagree("folded", { members, arktype: expected, precompiled: actual })
 }
