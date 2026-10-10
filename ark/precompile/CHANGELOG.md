@@ -120,7 +120,7 @@ Bun.plugin(precompile())
 
 ### Precompile in Node
 
-`register()` from `@ark/precompile/node` precompiles each module Node loads, through `module.registerHooks`, so `node --test` runs tests against precompiled code. In standalone mode it resolves `arktype` to `arktype/runtime`. The precompiler runs in a worker thread, so a program's own arktype never sees the Types it builds.
+`register()` from `@ark/precompile/node` precompiles each module Node loads, through `module.registerHooks`, so `node --test` runs tests against precompiled code. In standalone mode it resolves `arktype` to `arktype/runtime`. The precompiler runs in a worker thread, so a program's own arktype never sees the Types it builds. Before applying the configuration, it reads the config module and what it imports through the loaders registered after it, such as tsx's, so the build is configured as the program runs.
 
 ```ts
 // register.ts, run with `node --import ./register.ts --test`

@@ -53,6 +53,8 @@ const islands = fromHere("islands")
 
 const configured = fromHere("configured")
 
+const transpiled = fromHere("transpiled")
+
 const localized = fromHere("localized")
 
 const checks = fromHere("checks")
@@ -183,6 +185,18 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 				attest(
 					node(["main.ts"], { runtime, config: "config.ts" }, configured).stdout
 				).equals(runPlain(configured))
+			}
+		}).timeout(60000)
+
+		it("configured by modules a loader registered after it transpiles", () => {
+			for (const runtime of [undefined, "arktype"] as const) {
+				attest(
+					node(
+						["--import", "./loader.ts", "main.ts"],
+						{ runtime, config: "config.ts" },
+						transpiled
+					).stdout
+				).equals(runPlain(transpiled))
 			}
 		}).timeout(60000)
 

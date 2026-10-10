@@ -1,6 +1,10 @@
 import { throwError } from "@ark/util"
-import { registerHooks } from "node:module"
-import { fileURLToPath } from "node:url"
+import {
+	registerHooks,
+	type LoadFnOutput,
+	type LoadHookContext
+} from "node:module"
+import { fileURLToPath, pathToFileURL } from "node:url"
 import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
 import {
 	appendSourceMap,
@@ -29,6 +33,28 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	const filter = transformedFilterOf(
 		optedInPackagesOf(opts?.cwd ?? process.cwd())
 	)
+	const isTransformed = (id: string) =>
+		filter.include.test(id) && !filter.exclude.test(id)
+	// hooks registered after these, like tsx's, may give the program other text than a file's, which the configuration is read from
+	const giveConfiguration = (
+		context: LoadHookContext,
+		nextLoad: (url: string, context: LoadHookContext) => LoadFnOutput
+	) => {
+		const given: string[] = []
+		for (;;) {
+			const id = (request("unappliedConfigurationModules") as string[]).find(
+				id => !given.includes(id) && isTransformed(id)
+			)
+			if (id === undefined) return
+			given.push(id)
+			const { source } = nextLoad(pathToFileURL(id).href, {
+				...context,
+				format: undefined,
+				importAttributes: {}
+			})
+			if (source !== undefined) request("give", textOf(source), id)
+		}
+	}
 	const modules: Record<string, string> = {}
 	const importersByUrl: Record<string, string> = {}
 	registerHooks({
@@ -61,14 +87,11 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			const loaded = nextLoad(url, context)
 			if (!url.startsWith("file:") || loaded.source === undefined) return loaded
 			const id = fileURLToPath(url)
-			if (!filter.include.test(id) || filter.exclude.test(id)) return loaded
-			const transformed = request(
-				"transform",
-				typeof loaded.source === "string" ?
-					loaded.source
-				:	new TextDecoder().decode(loaded.source),
-				id
-			) as TransformedModule | undefined
+			if (!isTransformed(id)) return loaded
+			giveConfiguration(context, nextLoad)
+			const transformed = request("transform", textOf(loaded.source), id) as
+				| TransformedModule
+				| undefined
 			for (const warning of transformed?.warnings ?? [])
 				process.emitWarning(warning)
 			if (transformed?.errors.length) throwError(transformed.errors.join("\n"))
@@ -84,3 +107,6 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 		}
 	})
 }
+
+const textOf = (source: NonNullable<LoadFnOutput["source"]>): string =>
+	typeof source === "string" ? source : new TextDecoder().decode(source)

@@ -295,6 +295,18 @@ export class Precompiler {
 		return this.analysisOf(module)
 	}
 
+	// until the configuration is applied, the modules it's read from, which a host whose program loads them unlike their files gives first
+	get unappliedConfigurationModules(): string[] {
+		if (this.config === undefined || this.configuration) return []
+		return this.importClosureOf(this.config).filter(
+			id => this.graph.moduleOf(id) instanceof SourceModule
+		)
+	}
+
+	give(source: string, id: string): void {
+		this.add(id, source)
+	}
+
 	// the configuration is read from the versions of its modules the graph holds, so one given anew reads it again
 	private add(id: string, source: string): SourceModule {
 		const module = this.graph.add(id, source)
