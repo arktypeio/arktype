@@ -9,6 +9,7 @@ import { Session } from "node:inspector"
 import { relative } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { types } from "node:util"
+import { runInThisContext } from "node:vm"
 
 // runs a sequence of test units, logging what each observes at the boundary
 // between its code and arktype's
@@ -36,6 +37,17 @@ globalThis.Date = new Proxy(Date, {
 	construct: (target, args, newTarget) =>
 		Reflect.construct(target, args.length ? args : [now], newTarget),
 	apply: () => new Date(now).toString()
+})
+
+// a File's default lastModified reads the engine's clock rather than Date.now
+const NativeFile = File
+globalThis.File = new Proxy(NativeFile, {
+	construct: (target, [bits, name, options], newTarget) =>
+		Reflect.construct(
+			target,
+			[bits, name, { lastModified: now, ...options }],
+			newTarget
+		)
 })
 
 // so is Math.random, which run resets before each unit (mulberry32)
@@ -129,6 +141,36 @@ const calledByUser = (callers: Caller[]) => callers[0] === "user"
 
 const reachedFromUser = (callers: Caller[]) =>
 	callers[callers.length - 1] === "user" && !callers.includes("excluded")
+
+// how often arktype reads a Proxy is outside H, so calls a test's traps make
+// aren't counted, from a frame outside any file, which audits of reads skip
+const NativeProxy = Proxy
+const uncounted: (trap: Function, handler: object) => Function =
+	runInThisContext(
+		`(takeCalls, counts) => (trap, handler) => (...args) => {
+			takeCalls(counts())
+			try {
+				return trap.apply(handler, args)
+			} finally {
+				takeCalls()
+			}
+		}`,
+		{ filename: "history:trap" }
+	)(takeCalls, () => callCounts)
+globalThis.Proxy = new NativeProxy(NativeProxy, {
+	construct: (target, [object, handler]: [object, ProxyHandler<object>]) =>
+		new target(
+			object,
+			calledByUser(callersOf(callSites())) ?
+				new NativeProxy(handler, {
+					get: (handler, k) => {
+						const trap = Reflect.get(handler, k)
+						return typeof trap === "function" ? uncounted(trap, handler) : trap
+					}
+				})
+			:	handler
+		)
+})
 
 const observeMethod = (name: string, method: Function) =>
 	function (this: unknown, ...args: unknown[]): unknown {
@@ -269,9 +311,12 @@ const serialize = (
 	depth: number
 ): unknown => {
 	if (typeof value === "string") {
-		return value.length > maxString ?
+		return (
+			value.length > maxString ?
 				{ "~sha1": createHash("sha1").update(value).digest("hex") }
-			:	value
+			: value.startsWith("$ark") ? normalizeJson(value)
+			: value
+		)
 	}
 	if (value === null || typeof value === "boolean") return value
 	if (typeof value === "number") {

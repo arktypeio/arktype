@@ -705,21 +705,19 @@ contextualize(() => {
 			toJsonSchema(T, { fallback: annotatingFallback })
 
 		it("predicates", () => {
+			const isEven = (n: number) => n % 2 === 0
+			const isPositive = (n: number) => n > 0
 			const T = rootSchema({
 				domain: "number",
-				predicate: [
-					function _isEven(n: number) {
-						return n % 2 === 0
-					},
-					function _isPositive(n: number) {
-						return n > 0
-					}
-				]
+				predicate: [isEven, isPositive]
 			})
 
 			attest(annotated(T)).snap({
 				type: "number",
-				"x-arktype-predicates": ["$ark._isEven", "$ark._isPositive"]
+				"x-arktype-predicates": [
+					registeredReference(isEven),
+					registeredReference(isPositive)
+				]
 			})
 		})
 

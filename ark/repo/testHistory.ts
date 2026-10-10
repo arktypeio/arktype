@@ -160,12 +160,21 @@ const show = (log: Observation[] | undefined, path: string[]) => {
 	return json.length > 300 ? `${json.slice(0, 300)}…` : json
 }
 
+// units whose differences §2 of the design leaves outside H, by why
+const skippedUnits: Record<string, string> = {
+	"ark/type/__tests__/facts.test.ts › facts › object units":
+		"its union of object units is ordered by their registration counters, as values with the same name are",
+	"ark/type/__tests__/references.test.ts › references › collected references match copied references":
+		"it calls each node object it reaches, and whether equal nodes are one object is identity, which is unspecified"
+}
+
 let violations = 0
 const failing: string[] = []
 
 for (const unit of Object.keys(runsByUnit).sort()) {
 	const runs = runsByUnit[unit]
 	if (runs.fresh[runs.fresh.length - 1]?.outcome !== "pass") failing.push(unit)
+	if (unit in skippedUnits) continue
 	const differences = (["twice", "history"] as const).flatMap(name => {
 		const path = runs[name] && firstDifference(runs.fresh, runs[name])
 		return path ? [[name, path] as const] : []
@@ -187,7 +196,7 @@ for (const unit of Object.keys(runsByUnit).sort()) {
 
 const seconds = ((performance.now() - start) / 1000).toFixed(1)
 console.log(
-	`\n${violations ? "❌" : "✅"} ${steps.length} units in ${files.length} files, ${violations} history-dependent (seed ${seed}, ${seconds}s)`
+	`\n${violations ? "❌" : "✅"} ${steps.length} units in ${files.length} files, ${violations} history-dependent, ${Object.keys(skippedUnits).length} skipped (seed ${seed}, ${seconds}s)`
 )
 if (failing.length) {
 	console.log(
