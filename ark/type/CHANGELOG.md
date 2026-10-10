@@ -342,6 +342,22 @@ type("string")
 	.toJsonSchema({ dialect: null })
 ```
 
+### Throw from every `export()` of a scope with an invalid alias
+
+After a scope's `export()` threw a `ParseError`, a later `export()`, `export(...names)` or `import()` returned a module whose aliases from the failed one on were `undefined`. Each now throws the same error:
+
+```ts
+const $ = scope({
+	even: ["number", ":", n => n % 2 === 0],
+	a: { b: "even = 1" },
+	c: { d: "even" }
+})
+
+$.export() // throws ParseError: Default for b must be valid according to an anonymous predicate (was 1)
+// previously { even, a: undefined, c: undefined }, now throws the same ParseError
+$.export()
+```
+
 ### Read a function's arity once
 
 arktype reads a function's `length` once, the first time, so a morph whose `length` changed after a Type referencing it was created is still called as it was then:

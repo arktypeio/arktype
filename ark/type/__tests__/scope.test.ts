@@ -233,6 +233,20 @@ contextualize(() => {
 		attest(() => $.type("b")).throws(writeUnresolvableMessage("bad"))
 	})
 
+	it("errors on each export after an alias fails", () => {
+		const $ = scope({
+			even: ["number", ":", n => n % 2 === 0],
+			a: { b: "even = 1" },
+			c: { d: "even" }
+		})
+		const message =
+			"Default for b must be valid according to an anonymous predicate (was 1)"
+		attest(() => $.export()).throws(message)
+		attest(() => $.export()).throws(message)
+		attest(() => $.export("c")).throws(message)
+		attest(() => $.import()).throws(message)
+	})
+
 	it("autocompletion", () => {
 		attest(() => {
 			scope({
