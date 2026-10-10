@@ -61,6 +61,16 @@ contextualize(() => {
 		])
 	})
 
+	it("rejects each site under a configuration the build can't apply", () => {
+		attest(
+			check([], { cwd: fromHere("unapplied"), config: "config.ts" }).lines
+		).snap([
+			"config.ts:3:1  configure({ onUndeclaredKey: process.argv.length > 99 ? \"de… is not static\n  `process` is a global the build does not read\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+			'main.ts:4:18  type({ a: "string" }) is created under a configuration the build can\'t apply\n  configure({ onUndeclaredKey: process.argv.length > 99 ? "de… is not static (config.ts)\n  `process` is a global the build does not read\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.',
+			"1 site in 2 files: 0 accepted (0.0%)"
+		])
+	})
+
 	it("fails under a rate", () => {
 		attest(cli("--check", "--fail-under", "50").status).equals(0)
 		attest(cli("--check", "--fail-under", "60").status).equals(1)

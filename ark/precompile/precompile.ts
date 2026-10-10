@@ -1421,6 +1421,24 @@ export class Precompiler {
 						continue
 					}
 				}
+				const configuration = this.configuration
+				// the build evaluated it without the configuration the program applies
+				if (
+					configuration?.problem &&
+					this.mode === "standalone" &&
+					site.status === "accepted"
+				) {
+					const message = `${module.snippetOf(node)} is created under a configuration the build can't apply`
+					const refusal = [
+						`${configuration.problem} (${this.graph.pathOf(this.config!)})`,
+						...configuration.reasons
+					]
+					diagnostics.push(
+						this.diagnostic(module, node, "R3", "error", message, refusal)
+					)
+					sites.push(refuse(site, [message, ...refusal]))
+					continue
+				}
 				sites.push(site)
 				candidatesBySite.set(site, candidate)
 			} catch (e) {
