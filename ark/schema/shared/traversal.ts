@@ -723,7 +723,7 @@ const traversalOf = <ctx extends InternalTraversal>(
 
 const lastOf = <t>(array: readonly t[]): t => array[array.length - 1]
 
-const transforming = noSuggest("transforming")
+const transforming = /* @__PURE__ */ noSuggest("transforming")
 
 export const maxAliasDepth = 64
 
@@ -750,9 +750,9 @@ export const aliasVisits = {
 	}
 }
 
-const untrackedBound = noSuggest("untrackedBound")
+const untrackedBound = /* @__PURE__ */ noSuggest("untrackedBound")
 
-const reachedByShorterPath = noSuggest("reachedByShorterPath")
+const reachedByShorterPath = /* @__PURE__ */ noSuggest("reachedByShorterPath")
 
 // once tracked, a cyclic root is entered as its own resolution, so data reaching it again isn't traversed twice
 export const applyCyclic = <ctx extends InternalTraversal>(

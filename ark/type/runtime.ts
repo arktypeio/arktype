@@ -495,7 +495,7 @@ export const intern = <value>(
 const functionNameOfHole = (hole: unknown) =>
 	typeof hole === "function" ? functionNameOf(hole) : undefined
 
-const helpersKey = Symbol.for("arktype.helpers")
+const helpersKey = /* @__PURE__ */ Symbol.for("arktype.helpers")
 
 // a mock is another function, and a module a test runner replaced registered nothing, so either fails
 export const checkHelper = (

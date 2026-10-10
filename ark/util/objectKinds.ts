@@ -115,10 +115,14 @@ export type builtinConstructors = ecmascriptConstructors &
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const builtinConstructors: builtinConstructors = defineProperties(
-	defineProperties({ ...ecmascriptConstructors }, platformConstructors),
-	typedArrayConstructors
-)
+export const builtinConstructors: builtinConstructors =
+	/* @__PURE__ */ defineProperties(
+		/* @__PURE__ */ defineProperties(
+			/* @__PURE__ */ Object.assign({}, ecmascriptConstructors),
+			platformConstructors
+		),
+		typedArrayConstructors
+	)
 
 export type BuiltinObjectKind = keyof builtinConstructors
 

@@ -170,7 +170,7 @@ const stringifyUnquoted = (
 
 /** a symbol as printable prints it */
 export const printSymbol = (symbol: symbol): string =>
-	`Symbol(${baseNameOf(symbol)})`
+	`Symbol(${baseNameOfSymbol(symbol)})`
 
 const printableOpts = {
 	onCycle: () => "(cycle)",
@@ -181,15 +181,15 @@ const printableOpts = {
 	onBigInt: n => `${bigIntMarker}${n}n`
 } satisfies SerializationOptions
 
-const ownDataPrintableOpts = {
-	...printableOpts,
-	onAccessor: descriptor => (descriptor.get ? "(getter)" : "(setter)")
-} satisfies SerializationOptions
+const ownDataPrintableOpts = /* @__PURE__ */ Object.assign({}, printableOpts, {
+	onAccessor: (descriptor: PropertyDescriptor) =>
+		descriptor.get ? "(getter)" : "(setter)"
+}) satisfies SerializationOptions
 
 // private use character that JSON.stringify leaves unescaped
 const bigIntMarker = "\uE000"
 
-const quotedBigIntMarker = new RegExp(`"${bigIntMarker}(-?\\d+n)"`, "g")
+const quotedBigIntMarker = /"\uE000(-?\d+n)"/g
 
 const _serialize = (
 	data: unknown,
@@ -300,9 +300,7 @@ export const baseNameOf = (value: object | symbol): string => {
 					functionNameOf(value)
 				:	"fn"
 		case "symbol":
-			return value.description && isDotAccessible(value.description) ?
-					value.description
-				:	"symbol"
+			return baseNameOfSymbol(value)
 	}
 	return throwInternalError(
 		`Unexpected attempt to register serializable value of type ${domainOf(
@@ -310,3 +308,8 @@ export const baseNameOf = (value: object | symbol): string => {
 		)}`
 	)
 }
+
+const baseNameOfSymbol = (symbol: symbol): string =>
+	symbol.description && isDotAccessible(symbol.description) ?
+		symbol.description
+	:	"symbol"
