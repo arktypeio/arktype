@@ -104,8 +104,8 @@ export const answerRequests = (
 		if (request[0] === "check")
 			return checkedModuleOf(precompiler, request[1], request[2])
 		precompiler.forgetCopies()
-		const { isKept } = tracked
-		tracked.isKept = true
+		const { hasAnswered } = tracked
+		tracked.hasAnswered = true
 		try {
 			const checked = checkedModuleOf(
 				precompiler,
@@ -113,7 +113,8 @@ export const answerRequests = (
 				request[2],
 				tracked
 			)
-			if (!isKept || resolvesAgain(tracked, request[2])) return checked
+			if (!hasAnswered || resolvesAsRecorded(tracked, request[2]))
+				return checked
 		} catch (e) {
 			if ((e as Error).message !== configuredThreadMessage) throw e
 			// a module given unlike the configuration this thread applied, as unsaved in an editor, reads another
@@ -170,9 +171,9 @@ interface TrackedPrecompiler {
 	precompiler: Precompiler
 	// each file the precompiler read, with its mtime when it was first read
 	readTimes: Record<string, number>
-	resolutions: Map<string, Map<string, string | undefined>>
+	targetsByImporter: Record<string, Record<string, string | undefined>>
 	opts: PrecompilePluginOptions
-	isKept: boolean
+	hasAnswered: boolean
 	importsByFile: Record<string, [mtimeMs: number, imports: string[]]>
 }
 
@@ -180,17 +181,17 @@ const createTrackedPrecompiler = (
 	opts: PrecompilePluginOptions
 ): TrackedPrecompiler => {
 	const readTimes: Record<string, number> = {}
-	const resolutions = new Map<string, Map<string, string | undefined>>()
+	const targetsByImporter: TrackedPrecompiler["targetsByImporter"] =
+		Object.create(null)
 	const precompiler = createPrecompiler(opts)
 	const { host } = precompiler.graph
 	precompiler.graph.host = {
 		...host,
 		resolve: (specifier, importer) => {
-			let targets = resolutions.get(importer)
-			if (!targets) resolutions.set(importer, (targets = new Map()))
-			if (!targets.has(specifier))
-				targets.set(specifier, host.resolve(specifier, importer))
-			return targets.get(specifier)
+			const targets = (targetsByImporter[importer] ??= Object.create(null))
+			if (!(specifier in targets))
+				targets[specifier] = host.resolve(specifier, importer)
+			return targets[specifier]
 		},
 		readFile: file => {
 			// before reading, so a file written meanwhile changes, as does one it couldn't read once it's created
@@ -201,23 +202,25 @@ const createTrackedPrecompiler = (
 	return {
 		precompiler,
 		readTimes,
-		resolutions,
+		targetsByImporter,
 		opts,
-		isKept: false,
+		hasAnswered: false,
 		importsByFile: {}
 	}
 }
 
 // a resolver caches what it read, so a kept precompiler's imports are resolved again by a new one before its answer is used
-const resolvesAgain = (
-	{ precompiler, resolutions, opts }: TrackedPrecompiler,
+const resolvesAsRecorded = (
+	{ precompiler, targetsByImporter, opts }: TrackedPrecompiler,
 	id: string
 ): boolean => {
 	const host = createNodeHost(opts)
 	const reached = new Set([id])
 	if (precompiler.config) reached.add(precompiler.config)
 	for (const importer of reached) {
-		for (const [specifier, target] of resolutions.get(importer) ?? []) {
+		const targets = targetsByImporter[importer]
+		for (const specifier in targets) {
+			const target = targets[specifier]
 			if (host.resolve(specifier, importer) !== target) return false
 			if (target !== undefined) reached.add(target)
 		}
@@ -251,12 +254,12 @@ export const createKeyedPrecompiler = (
 		const currentMtimeOf = (file: string) => (mtimes[file] ??= mtimeOf(file))
 		if (isStale(tracked, currentMtimeOf))
 			tracked = createTrackedPrecompiler({ ...opts, inline: true })
-		if (tracked.isKept) {
+		if (tracked.hasAnswered) {
 			const keyed = keyedModuleOf(tracked, source, id, currentMtimeOf)
-			if (resolvesAgain(tracked, id)) return keyed
+			if (resolvesAsRecorded(tracked, id)) return keyed
 			tracked = createTrackedPrecompiler({ ...opts, inline: true })
 		}
-		tracked.isKept = true
+		tracked.hasAnswered = true
 		return keyedModuleOf(tracked, source, id, currentMtimeOf)
 	}
 }

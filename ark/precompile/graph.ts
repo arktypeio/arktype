@@ -475,7 +475,7 @@ export class ModuleGraph {
 		return module
 	}
 
-	// what a module's importers evaluated to holds what its previous version did, so each is evaluated again
+	// each importer was evaluated against the previous version, so it's evaluated again
 	private dropImportersOf(id: string): void {
 		const dropped = [id]
 		for (let i = 0; i < dropped.length; i++) {
