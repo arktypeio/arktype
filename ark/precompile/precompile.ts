@@ -78,6 +78,7 @@ import {
 	findDynamic,
 	Interpreter,
 	type InterpreterOptions,
+	ModuleNamespace,
 	type Read,
 	type SiteState
 } from "./interpreter.ts"
@@ -2526,6 +2527,11 @@ export class Precompiler {
 			)
 		}
 		const visit = (o: unknown) => {
+			if (o instanceof ModuleNamespace) {
+				result.push(
+					"a namespace import used as a value is not in the static subset"
+				)
+			}
 			if (!isPlainContainer(o)) return
 			for (const k of Reflect.ownKeys(o)) {
 				const v = Reflect.get(o, k)

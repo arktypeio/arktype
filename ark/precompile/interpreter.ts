@@ -200,7 +200,7 @@ interface Evaluated {
 	error?: unknown
 }
 
-class ModuleNamespace {
+export class ModuleNamespace {
 	module: SourceModule
 
 	constructor(module: SourceModule) {

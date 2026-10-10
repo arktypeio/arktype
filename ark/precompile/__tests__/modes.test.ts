@@ -298,6 +298,29 @@ written.description = "two"`,
 			])
 		})
 
+		it("configure with a namespace import", () => {
+			const files = { "/mode.ts": 'export const onUndeclaredKey = "reject"' }
+			attest(
+				[
+					"configure(kw)",
+					"configure({ keywords: kw })",
+					"configure({ ...kw })"
+				].flatMap(call =>
+					diagnosticsOf(
+						`import { configure } from "arktype/config"
+import * as kw from "./mode.ts"
+${call}`,
+						files,
+						{ config: "/main.ts" }
+					)
+				)
+			).snap([
+				"/main.ts:3:1  configure(kw) is not static\n  a namespace import used as a value is not in the static subset\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+				"/main.ts:3:1  configure({ keywords: kw }) is not static\n  a namespace import used as a value is not in the static subset\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+				"/main.ts:3:1  configure({ ...kw }) is not static\n  `...kw` spreads a value other than an object literal or Module\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+			])
+		})
+
 		it("configure with values that are not static", () => {
 			attest(
 				diagnosticsOf(
