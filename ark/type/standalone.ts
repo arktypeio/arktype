@@ -152,9 +152,7 @@ export type FactoryParam = HoleParam | InputParam | HelperParam
 export type DefaultCheck = [
 	node: BaseRoot,
 	value: unknown,
-	key: PropertyKey | null,
-	// the node arktype checks it once for, absent where it checks it each time the site runs
-	owner: BaseNode | undefined
+	key: PropertyKey | null
 ]
 
 export interface HoleParam {
@@ -538,8 +536,6 @@ export class StandaloneArtifact {
 	createdEachRun = new Set<BaseRoot>()
 	// what a factory receives and checks, absent for an artifact creating its exports once
 	factory: StandaloneFactory | undefined
-	// each Scope a factory receives, which identifies the nodes arktype creates in it
-	scopeExpressions = new Map<unknown, string>()
 	// each default arktype checks where it defines the Type, which the factory checks once it creates the validators
 	defaultChecks: readonly DefaultCheck[]
 	// a factory's errors expose the meta of a Type it receives, not a copy
@@ -770,7 +766,6 @@ export class StandaloneArtifact {
 			label = appendStringifiedKey(label, k)
 		}
 		label = `\`${label}\``
-		if (hasArkKind(value, "scope")) this.scopeExpressions.set(value, expression)
 		if (
 			hasArkKind(value, "root") ||
 			hasArkKind(value, "module") ||
@@ -1045,34 +1040,17 @@ export { factory${index} as ${JSON.stringify(name)} }`
 	}
 
 	writeDefaultChecks(): { check: string; key: string }[] {
-		return this.defaultChecks.map(check => {
-			const [node, defaultValue, key, owner] = check
+		return this.defaultChecks.map(([node, defaultValue, key]) => {
 			const input = node.in as BaseRoot
 			const config = this.scopeConfigOf(input, raisableCodesOf(input))
-			const args = `${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}`
-			const defaultKey = owner ? this.writeDefaultKey(check, owner) : "null"
+			// a narrow whose answer never changes answers an equal check alike, so a check is keyed by its content and the functions it holds
+			const [id, holes] = encodeKey([input, defaultValue], undefined, false)
+			const defaultKey = `[${JSON.stringify(id)}, [${holes.map(hole => this.emit(hole)).join(", ")}]]`
 			return {
-				check: `runtime.checkDefault(${this.validatorNamesByRoot.get(input)}, ${args}, ${defaultKey}${config === "runtime.runtimeConfig" ? "" : `, ${config}`})`,
+				check: `runtime.checkDefault(${this.validatorNamesByRoot.get(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey}${config === "runtime.runtimeConfig" ? "" : `, ${config}`})`,
 				key: defaultKey
 			}
 		})
-	}
-
-	// arktype creates a node once per Scope and content, so a check is keyed by its Scope, builtin or received, and the node's content and holes
-	writeDefaultKey([node, value, key]: DefaultCheck, owner: BaseNode): string {
-		const $ = owner.$
-		const [id, holes] = encodeKey(
-			[$.isBuiltin ? $.name : null, owner.inner, node, value, key],
-			undefined,
-			false
-		)
-		const expressions = [
-			...($.isBuiltin ? [] : [this.scopeExpressions.get($)]),
-			...holes.map(hole => this.holeExpressions.get(hole))
-		]
-		// e.g. the Scope a received Type parses `.and()` in, so the check runs each time rather than once for every Scope
-		if (expressions.includes(undefined)) return "null"
-		return `[${JSON.stringify(id)}, [${expressions.join(", ")}]]`
 	}
 
 	get localUnits(): RootUnit[] {

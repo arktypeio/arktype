@@ -1863,7 +1863,7 @@ export class Interpreter {
 	): boolean => {
 		const site = this.activeCall?.ctx.site
 		if (!site || !this.holdsStandIn(node.in as BaseRoot)) return false
-		const check: DefaultCheck = [node, value, key, owner]
+		const check: DefaultCheck = [node, value, key]
 		site.reached.push(check)
 		if (owner) {
 			let checks = this.checksByOwner.get(owner)

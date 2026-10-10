@@ -495,7 +495,7 @@ export const checkDistinct = (
 	}
 }
 
-// the node whose creation checks a default, keyed as arktype keys it: by its Scope, its content and the functions it holds
+// a default's checked Type and value, keyed by their content and the functions they hold
 export type DefaultKey = [id: string, holes: readonly unknown[]]
 
 const checkedDefaultOf = ([id, holes]: DefaultKey): InternTable => {
@@ -504,16 +504,16 @@ const checkedDefaultOf = ([id, holes]: DefaultKey): InternTable => {
 	return table
 }
 
-// arktype checks a default once per node holding it, or at each run of a definition writing it, throwing its errors in en as a ParseError
+// arktype checks a default on a narrowed Type where it creates the node holding it, throwing its errors in en as a ParseError
 export const checkDefault = (
 	validator: Validator,
 	value: unknown,
 	key: PropertyKey | null,
-	defaultKey: DefaultKey | null,
+	defaultKey: DefaultKey,
 	config: ResolvedConfig = runtimeConfig
 ): void => {
-	const checked = defaultKey && checkedDefaultOf(defaultKey)
-	if (checked?.value) return
+	const checked = checkedDefaultOf(defaultKey)
+	if (checked.value) return
 	const out = validator.traverse(value)
 	if (out instanceof ArkErrors) {
 		if (key === null) throwParseError(`Default ${out.summary}`)
@@ -521,7 +521,7 @@ export const checkDefault = (
 		mergeErrors(atPath, out, [key])
 		throwParseError(`Default for ${atPath.summary}`)
 	}
-	if (checked) checked.value = true
+	checked.value = true
 }
 
 export const checkInput = (
@@ -642,13 +642,13 @@ export const intern = <value>(
 	table: InternTable,
 	holes: readonly unknown[],
 	create: () => value,
-	// defaults the definition reaches, which a definition creating the Type first may not have checked, or checks each time it runs
-	defaults: readonly (DefaultKey | null)[] = []
+	// defaults the definition reaches, which a definition creating the Type first may not have checked
+	defaults: readonly DefaultKey[] = []
 ): value => {
 	for (const hole of holes) table = table.next(hole)
 	if (
 		table.value !== undefined &&
-		defaults.some(key => key === null || !checkedDefaultOf(key).value)
+		defaults.some(key => !checkedDefaultOf(key).value)
 	)
 		create()
 	return (table.value ??= create()) as value

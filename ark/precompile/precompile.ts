@@ -2,8 +2,7 @@ import {
 	$ark,
 	hasArkKind,
 	writePrecompiledUnits,
-	type BaseRoot,
-	type BaseScope
+	type BaseRoot
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { fingerprintOf } from "@ark/schema/runtime"
@@ -169,8 +168,6 @@ export interface Site {
 	addressed: Set<BaseRoot>
 	// each default arktype checks while defining what the site creates, which the build can't and its factory does at creation
 	defaultChecks: DefaultCheck[]
-	// each check the site defers anew when it runs again, as for a node of a Scope it creates, which arktype runs each time
-	checkedEachRun: Set<DefaultCheck>
 	// each thunk alias arktype resolves while defining it, directly or in computing what a cache returns
 	thunks: ThunkAlias[]
 	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
@@ -902,7 +899,7 @@ export class Precompiler {
 					...site.introspection,
 					data: site.value,
 					params: factory.params,
-					defaultChecks: this.defaultChecksOf(site)
+					defaultChecks: site.defaultChecks
 				}
 				sitesByName[name] = exportSiteOf(site)
 				replaced.push([site, factory.spans])
@@ -924,7 +921,7 @@ export class Precompiler {
 					params: factory.params,
 					internedBy: site.isInterned ? table : undefined,
 					isCreatedEachRun: site.isCreatedEachRun,
-					defaultChecks: this.defaultChecksOf(site),
+					defaultChecks: site.defaultChecks,
 					distinct: factory.distinct
 				}
 				sitesByName[name] = exportSiteOf(site)
@@ -1086,15 +1083,6 @@ export class Precompiler {
 			:	[]
 	}
 
-	// arktype checks a default once per node holding it, so one the site creates anew, or one without a node, is checked each time it runs
-	private defaultChecksOf(site: Site): DefaultCheck[] {
-		return site.defaultChecks.map(check =>
-			site.checkedEachRun.has(check) ?
-				[check[0], check[1], check[2], undefined]
-			:	check
-		)
-	}
-
 	private isFactory(site: Site, module: SourceModule): boolean {
 		const held =
 			isFoldable(site.value) ? keyOf(site.value)[1]
@@ -1152,12 +1140,6 @@ export class Precompiler {
 				].flatMap(value => keyOf(value)[1])
 			)
 		]
-		// a Scope a check's node is created in identifies it, so a factory receives one it reads
-		const scopes = new Set(
-			this.defaultChecksOf(site).flatMap(([, , , owner]) =>
-				owner && !owner.$.isBuiltin ? [owner.$] : []
-			)
-		)
 		const helpers = this.mockableHelpersOf(site, module)
 		const factory: SiteFactory = {
 			params: [],
@@ -1171,7 +1153,6 @@ export class Precompiler {
 			module,
 			held,
 			this.droppedHolesOf(site),
-			scopes,
 			factory,
 			reasons
 		)
@@ -1186,7 +1167,6 @@ export class Precompiler {
 		module: SourceModule,
 		held: unknown[],
 		dropped: ReadonlySet<unknown>,
-		scopes: ReadonlySet<unknown>,
 		factory: SiteFactory,
 		reasons: string[]
 	): Set<unknown> {
@@ -1234,8 +1214,7 @@ export class Precompiler {
 				)
 			}
 			const texts = textsByPassed.get(reference.value) ?? new Set<string>()
-			if ((!holes.length && !scopes.has(reference.value)) || texts.has(text))
-				continue
+			if (!holes.length || texts.has(text)) continue
 			if (
 				factory.spans.length &&
 				reference.start < factory.spans[factory.spans.length - 1].end
@@ -1921,7 +1900,6 @@ export class Precompiler {
 			isInterned: false,
 			addressed: new Set(),
 			defaultChecks: [],
-			checkedEachRun: new Set(),
 			thunks: [],
 			declarationStart: declarationStartOf(node),
 			introspection: undefined
@@ -2015,14 +1993,9 @@ export class Precompiler {
 				end: declaration.end
 			})
 		}
-		// a check is keyed by the Scope its node is created in, so a site reading that Scope passes it
-		const checkScopes = new Set(
-			site.defaultChecks.flatMap(([, , , owner]) => (owner ? [owner.$] : []))
-		)
 		for (const [value, reads] of state.readsByValue) {
 			if (
 				!hasArkKind(value, "root") &&
-				!checkScopes.has(value as BaseScope) &&
 				!site.holes.some(hole => hole.value === value) &&
 				!(isFoldable(value) && keyOf(value)[1].length)
 			)
@@ -2084,10 +2057,6 @@ export class Precompiler {
 			module,
 			regions[regions.length - 1] ?? node
 		)
-		// a check the run reaches again ran once, while one it defers anew, as for a node of a Scope it creates, runs each time
-		const reachedAgain = new Set(outer.reached)
-		for (const check of site.defaultChecks)
-			if (!reachedAgain.has(check)) site.checkedEachRun.add(check)
 		if (outer.value === site.value) {
 			site.isInterned = isFactory
 			return false
