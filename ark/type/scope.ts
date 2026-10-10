@@ -278,15 +278,18 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			name,
 			// use a thunk definition for the generic so that we can parse
 			// constraints within the current scope
-			new LazyGenericRoot(() => {
-				const params = this.parseGenericParams(paramString, {
-					alias: genericName
-				})
+			new LazyGenericRoot(
+				() => {
+					const params = this.parseGenericParams(paramString, {
+						alias: genericName
+					})
 
-				const generic = parseGeneric(params, def, this as never, genericName)
+					const generic = parseGeneric(params, def, this as never, genericName)
 
-				return generic
-			})
+					return generic
+				},
+				{ attach: { bodyDef: def } }
+			)
 		]
 	}
 

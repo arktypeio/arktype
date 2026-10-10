@@ -151,9 +151,9 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 					.slice(stdout.indexOf("Error: ") + 7, stdout.indexOf("\n    at "))
 					.replace(`${app}/`, "")
 			)
-				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: "'admin'" … can't be precompiled to a standalone validator yet
-  \`User\` is imported from schemas.ts, which only a Type's factory can compare yet
-  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
+				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
+  \`process.env.ADMIN_ROLE\` is not a build define
+  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
 		}).timeout(60000)
 
 		it("runtime islands", () => {
@@ -539,7 +539,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 		it("reports dependencies before a rejected site's error", () => {
 			const roles = load("roles.ts")
 			attest(() => roles.run()).throws(
-				'roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: "\'admin\'" … can\'t be precompiled to a standalone validator yet'
+				'roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: `\'${proces… cannot be precompiled'
 			)
 			attest(roles.dependencies).equals(["schemas.ts", "ark.ts", tsconfig])
 		}).timeout(60000)
@@ -642,9 +642,9 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 					.slice(stderr.indexOf("error: ") + 7, stderr.indexOf("\n      at "))
 					.replace(`${app}/`, "")
 			)
-				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: "'admin'" … can't be precompiled to a standalone validator yet
-  \`User\` is imported from schemas.ts, which only a Type's factory can compare yet
-  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
+				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
+  \`process.env.ADMIN_ROLE\` is not a build define
+  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
 		}).timeout(60000)
 	})
 })

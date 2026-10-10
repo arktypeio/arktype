@@ -718,14 +718,15 @@ export class Precompiler {
 		const keywordReads = new Set<string>()
 		// sites arktype returned one Type for share a table, as they share it in the program
 		const tablesByValue = new Map<unknown, number>()
-		// a site replaced by its value drops what it was written with, so a site inside it, like one in a thunk defining a Scope's alias, is dropped too
-		const replaced: Site[] = []
+		// e.g. a site in a thunk defining a Scope's alias, dropped with the rest of the text its factory replaces
+		const replaced: [site: Site, spans: readonly Span[]][] = []
 		const folded: Site[] = []
 		for (const site of sites) {
 			if (
 				site.status !== "accepted" ||
 				replaced.some(
-					outer => outer.start <= site.start && site.end <= outer.end
+					([outer, spans]) =>
+						covers(outer, site) && !spans.some(span => covers(span, site))
 				)
 			)
 				continue
@@ -772,15 +773,14 @@ export class Precompiler {
 					isCreatedEachRun: site.isCreatedEachRun
 				}
 				sitesByName[name] = exportSiteOf(site)
-				// a factory passed no function written in the site replaces all of it
-				if (!factory.spans.length) replaced.push(site)
+				replaced.push([site, factory.spans])
 			} else {
 				const name = `v${nameOf(site)}`
 				namesBySite.set(site, name)
 				exportsByName[name] = site.value as never
 				sitesByName[name] = exportSiteOf(site)
 				if (site.isKeywordRead) keywordReads.add(name)
-				replaced.push(site)
+				replaced.push([site, []])
 			}
 		}
 		const refusalsByName: Record<string, string[]> = {}
@@ -926,7 +926,7 @@ export class Precompiler {
 
 	private isFactory(site: Site, module: SourceModule): boolean {
 		return (
-			hasArkKind(site.value, "root") &&
+			isFoldable(site.value) &&
 			(keyOf(site.value)[1].length > 0 ||
 				site.inputs.length > 0 ||
 				this.mockableHelpersOf(site, module).length > 0)
@@ -940,7 +940,7 @@ export class Precompiler {
 		prefix: string
 	): SiteFactory | undefined {
 		if (!this.isFactory(site, module)) return
-		const [, held] = keyOf(site.value as BaseRoot)
+		const [, held] = keyOf(site.value as Foldable)
 		const helpers = this.mockableHelpersOf(site, module)
 		const factory: SiteFactory = {
 			params: [],
@@ -984,7 +984,7 @@ export class Precompiler {
 				)
 				continue
 			}
-			const holes = hole ? [hole.value] : keyOf(reference.value as BaseRoot)[1]
+			const holes = hole ? [hole.value] : keyOf(reference.value as Foldable)[1]
 			// a Type without holes is written into the site's own code rather than received
 			if (holes.length && this.isIslandValue(reference.value, site)) {
 				if (!passed.has(reference.value)) reasons.push(islandValueMessage(text))
@@ -1059,22 +1059,6 @@ export class Precompiler {
 					islandValueMessage(
 						[island.name, ...island.path.map(String)].join(".")
 					)
-				)
-				continue
-			}
-			const unsupported = reads.find(
-				input =>
-					hasArkKind(input.value, "module") ||
-					hasArkKind(input.value, "generic") ||
-					hasArkKind(input.value, "scope")
-			)
-			if (unsupported) {
-				reasons.push(
-					`\`${[unsupported.name, ...unsupported.path.map(String)].join(".")}\` is a ${
-						hasArkKind(unsupported.value, "module") ? "Module"
-						: hasArkKind(unsupported.value, "generic") ? "Generic"
-						: "Scope"
-					}, which a factory can't compare yet`
 				)
 				continue
 			}
@@ -1286,22 +1270,17 @@ export class Precompiler {
 	}
 
 	private unsupportedReasonsOf(site: Site): string[] {
-		const receivesNothing =
-			!hasArkKind(site.value, "root") && isFoldable(site.value)
 		const result =
 			site.parseError || isFoldable(site.value) ?
 				[]
 			:	["its value is not a Type, Module, Scope or Generic"]
-		// only a Type's site folds to a factory receiving what it reads, so a Module's, Scope's or Generic's can't read what could change at runtime
-		const unreceived = (verb: string) =>
-			receivesNothing ? `, which only a Type's factory can ${verb} yet` : ""
 		// a ParseError's thrower checks nothing the site reads, though the error can depend on any of it
 		for (const hole of site.holes) {
 			const isReceived = !hole.isCalledAtDefinition && hole.kind !== "opaque"
-			if (isReceived && !receivesNothing && !site.parseError) continue
+			if (isReceived && !site.parseError) continue
 			const holeModule = this.graph.moduleOf(hole.file) as SourceModule
 			result.push(
-				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})${isReceived ? unreceived("receive") : ""}`
+				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})`
 			)
 		}
 		if (site.parseError) {
@@ -1331,23 +1310,21 @@ export class Precompiler {
 				)
 			}
 		}
-		for (const input of site.parseError || receivesNothing ? site.inputs : []) {
+		for (const input of site.parseError ? site.inputs : []) {
 			result.push(
 				`\`${[input.name, ...input.path.map(String)].join(".")}\` is ${
 					input.kind === "import" ?
 						`imported from ${this.graph.pathOf(input.file!)}`
 					: input.kind === "local" ? "declared in a function around the site"
 					: "a define"
-				}${unreceived("compare")}`
+				}`
 			)
 		}
-		for (const helper of (
-			(site.parseError || receivesNothing) && this.checkHelpers
-		) ?
+		for (const helper of site.parseError && this.checkHelpers ?
 			site.helpers
 		:	[]) {
 			result.push(
-				`it calls the static helper \`${helper.name}\` (${(this.graph.moduleOf(helper.file) as SourceModule).positionOf(helper)})${unreceived("check")}`
+				`it calls the static helper \`${helper.name}\` (${(this.graph.moduleOf(helper.file) as SourceModule).positionOf(helper)})`
 			)
 		}
 		return result
@@ -1702,7 +1679,8 @@ export class Precompiler {
 		for (const [value, reads] of state.readsByValue) {
 			if (
 				!hasArkKind(value, "root") &&
-				!site.holes.some(hole => hole.value === value)
+				!site.holes.some(hole => hole.value === value) &&
+				!(isFoldable(value) && keyOf(value)[1].length)
 			)
 				continue
 			const isImportInput = site.inputs.some(
@@ -1751,7 +1729,8 @@ export class Precompiler {
 		if (again.value === site.value) return true
 		const created = arkObjectsIn(again.value)
 		const kept = [...arkObjectsIn(site.value)].find(value => created.has(value))
-		if (isFactory || (again.error === undefined && !kept)) {
+		// e.g. a Module whose Types are the same each run, which a factory, creating them all anew, can't reproduce
+		if (again.error === undefined ? !kept : isFactory) {
 			site.isCreatedEachRun = true
 			return false
 		}
@@ -2789,7 +2768,12 @@ const identityReasonsOf = (
 const listTexts = (texts: Iterable<string>) =>
 	[...texts].map(text => `\`${text}\``).join(" and ")
 
-const isFoldable = (value: unknown) =>
+type Foldable = Parameters<typeof keyOf>[0]
+
+const covers = (span: Span, site: Site) =>
+	span.start <= site.start && site.end <= span.end
+
+const isFoldable = (value: unknown): value is Foldable =>
 	hasArkKind(value, "root") ||
 	hasArkKind(value, "module") ||
 	hasArkKind(value, "scope") ||

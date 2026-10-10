@@ -62,7 +62,11 @@ export class LazyGenericBody<
 	returns = unknown
 > extends Callable<(args: argResolutions) => returns> {}
 
-export class LazyGenericRoot extends Callable<() => GenericRoot> {}
+// holds its body's definition, which a standalone build reads for the functions a Scope defining it holds
+export class LazyGenericRoot extends Callable<
+	() => GenericRoot,
+	{ bodyDef: unknown }
+> {}
 
 export interface GenericAst<
 	params extends array<GenericParamAst> = array<GenericParamAst>,

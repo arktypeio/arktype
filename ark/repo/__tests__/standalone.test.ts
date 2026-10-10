@@ -25,6 +25,7 @@ import { de } from "arktype/locales/de"
 import {
 	precompileStandalone,
 	writeUnprecompilableMessage,
+	type FactoryParam,
 	type StandaloneExport
 } from "arktype/internal/standalone.ts"
 import {
@@ -882,6 +883,43 @@ contextualize(() => {
 					"another Type<(In: string) => Out<unknown>>",
 					"Type<(In: string) => Out<unknown>>"
 				)
+			)
+		})
+
+		it("takes the holes of a Scope it receives", async () => {
+			const isLong = (s: string) => s.length > 1
+			const define = (fn: typeof isLong) => {
+				const $ = scope({ a: ["string", ":", fn], b: { a: "a" } })
+				return { $, B: $.type("b"), M: $.export() }
+			}
+			const built = standIn(isLong.bind(null), "long")
+			const { $, B, M } = define(built)
+			const received: FactoryParam = {
+				kind: "input",
+				label: "$",
+				reads: [[[], $]]
+			}
+			const created = await load({
+				S: {
+					type: $,
+					params: [{ kind: "function", label: "`isLong`", value: built }]
+				},
+				B: { type: B, params: [received] },
+				M: { type: M, params: [received] },
+				Other: scope({ a: "string" })
+			})
+			const original = define(isLong)
+			const $$ = created.S(isLong)
+			for (const input of [{ a: "x" }, { a: "xy" }]) {
+				attest(observe(created.B($$)(input), input)).equals(
+					observe(original.B(input), input)
+				)
+				attest(observe(created.M($$).b(input), input)).equals(
+					observe(original.M.b(input), input)
+				)
+			}
+			attest(() => created.B(created.Other)).throws.snap(
+				"Error: `$` is another Scope, but was precompiled as the Scope it was at build"
 			)
 		})
 

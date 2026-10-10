@@ -153,8 +153,8 @@ export const types = scope({ tree: { value: "number", "children?": "tree[]" } })
 export const M = type.module({ a: "string", b: { c: "a" } })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vsjkdln005ypg0 as $arkvsjkdln005ypg0 } from "~arktype/1xldlyk1z0fveu"
-import { vuorrac1fkpkl6 as $arkvuorrac1fkpkl6 } from "~arktype/1xldlyk1z0fveu"
+import { vsjkdln005ypg0 as $arkvsjkdln005ypg0 } from "~arktype/g0hu221n8wjrt"
+import { vuorrac1fkpkl6 as $arkvuorrac1fkpkl6 } from "~arktype/g0hu221n8wjrt"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 export const types = /* @__PURE__ */ $arkvsjkdln005ypg0()
@@ -164,8 +164,8 @@ export const M = /* @__PURE__ */ $arkvuorrac1fkpkl6()`)
 					.split("\n")
 					.filter(line => /^const module\d/.test(line))
 			).snap([
-				'const module0 = runtime.freeze({ ["tree"]: validator0 })',
-				'const module0 = runtime.freeze({ ["a"]: validator0, ["b"]: validator1 })'
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0 }), "17wfcqx19v4cja")',
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["a"]: validator0, ["b"]: validator1 }), "mjeelq1s3o1ic")'
 			])
 		})
 
@@ -178,11 +178,11 @@ export const Box = type("<t>", { box: "t" })
 export const BoxedTree = Box(types.tree)`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/obxjpz12xvw4x"
-import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/obxjpz12xvw4x"
-import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/obxjpz12xvw4x"
-import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/obxjpz12xvw4x"
-import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/obxjpz12xvw4x"
+import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/y6r9cu1pizv6d"
+import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/y6r9cu1pizv6d"
+import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/y6r9cu1pizv6d"
+import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/y6r9cu1pizv6d"
+import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/y6r9cu1pizv6d"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 const $ = /* @__PURE__ */ $arkvq7pa6c00qqwz6()
@@ -195,10 +195,10 @@ export const BoxedTree = /* @__PURE__ */ $arkv1tryxgh0tpn3pk()`)
 					.split("\n")
 					.filter(line => /^const (standIn|module)\d/.test(line))
 			).snap([
-				"const standIn0 = runtime.freeze({})",
-				"const standIn0 = runtime.freeze({})",
-				'const module0 = runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 })',
-				"const standIn0 = runtime.freeze({})"
+				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "f6eonf0nfc8hc")',
+				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "17rlknn1rxfhlr")',
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "zyju7m0g52y27")',
+				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "xyxzq169vd6e")'
 			])
 		})
 
@@ -211,8 +211,8 @@ const create = () => {
 }`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1bev4io0lhnrds as $arkf1bev4io0lhnrds } from "~arktype/1xzi5wt18a9xyq"
-import { f17s8udm1bx77ds as $arkf17s8udm1bx77ds } from "~arktype/1xzi5wt18a9xyq"
+import { f1bev4io0lhnrds as $arkf1bev4io0lhnrds } from "~arktype/2ug83x0873tsg"
+import { f17s8udm1bx77ds as $arkf17s8udm1bx77ds } from "~arktype/2ug83x0873tsg"
 const create = () => {
 	const $ = $arkf1bev4io0lhnrds()
 	const types = $arkf17s8udm1bx77ds()
@@ -231,11 +231,11 @@ export const make = () => ({
 })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/12vze2o11ocxq9"
-import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/12vze2o11ocxq9"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/12vze2o11ocxq9"
-import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/12vze2o11ocxq9"
-import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/12vze2o11ocxq9"
+import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/1af35si1oyu3pp"
+import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/1af35si1oyu3pp"
+import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/1af35si1oyu3pp"
+import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/1af35si1oyu3pp"
+import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/1af35si1oyu3pp"
 export const make = () => ({
 	$: $arkf1a6evaf1ilxqcd(),
 	types: $arkf14gb4ky1hqquxy(),
@@ -256,11 +256,11 @@ class Holder {
 }`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { veq2llt0aejyl2 as $arkveq2llt0aejyl2 } from "~arktype/16jeljx1lwge58"
-import { v1hn2e10012161b as $arkv1hn2e10012161b } from "~arktype/16jeljx1lwge58"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/16jeljx1lwge58"
-import { vd4uuz90f9hzi3 as $arkvd4uuz90f9hzi3 } from "~arktype/16jeljx1lwge58"
-import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/16jeljx1lwge58"
+import { veq2llt0aejyl2 as $arkveq2llt0aejyl2 } from "~arktype/1nb3z7o0621844"
+import { v1hn2e10012161b as $arkv1hn2e10012161b } from "~arktype/1nb3z7o0621844"
+import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/1nb3z7o0621844"
+import { vd4uuz90f9hzi3 as $arkvd4uuz90f9hzi3 } from "~arktype/1nb3z7o0621844"
+import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/1nb3z7o0621844"
 const made: unknown[] = []
 for (let $ = $arkveq2llt0aejyl2(), i = 0; i < 2; i++)
 	made.push($arkv1hn2e10012161b(), $arkf1fqowp70udipzn())
@@ -856,18 +856,25 @@ export const Team = type({ lead: User })`
 			])
 		})
 
-		it("reports a Module whose site reads what only a factory receives", () => {
+		it("folds a Module or Scope holding a function or reading an import to a factory", () => {
 			const result = precompile(
-				`import { type } from "arktype"
+				`import { scope, type } from "arktype"
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
 export const Held = type.module({ a: ["string", "=>", trim] })
-export const Read = type.module({ a: \`string <= \${max}\` })`,
+export const Read = type.module({ a: \`string <= \${max}\` })
+export const $ = scope({ a: ["string", "=>", trim] })
+export const B = $.type({ b: "a" })`,
 				{ "/limits.ts": "export const max = 5" }
 			)
-			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				'/main.ts:4:21  type.module({ a: ["string", "=>", trim] }) can\'t be precompiled to a standalone validator yet\n  arktype holds `trim` (/main.ts:4:55), which only a Type\'s factory can receive yet\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				"/main.ts:5:21  type.module({ a: `string <= ${max}` }) can't be precompiled to a standalone validator yet\n  `max` is imported from /limits.ts, which only a Type's factory can compare yet\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			attest(result.diagnostics).equals([])
+			attest(
+				result.code.split("\n").filter(line => line.startsWith("export"))
+			).snap([
+				"export const Held = /* @__PURE__ */ $arkf1k0gu4008rxk37(trim)",
+				"export const Read = /* @__PURE__ */ $arkf31x3lt13lnlin(max)",
+				"export const $ = /* @__PURE__ */ $arkf16tqm51d9mp98(trim)",
+				"export const B = /* @__PURE__ */ $arkf1tiybtv1jozo2t($)"
 			])
 		})
 	})

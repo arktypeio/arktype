@@ -423,8 +423,13 @@ export class Interpreter {
 				typeof value === "symbol" ||
 				value instanceof DynamicValue ||
 				(hasDomain(value, "object") && this.standIns.has(value)) ||
-				// a Type the site reads, which its factory receives to take the holes it holds
-				(hasArkKind(value, "root") && isReference(node))
+				// a Type, Module, Scope or Generic the site reads, which its factory receives to take the holes it holds
+				(isReference(node) &&
+					(hasArkKind(value, "root") ||
+						hasArkKind(value, "scope") ||
+						hasArkKind(value, "generic") ||
+						// e.g. `M` but not `M.a`, whose Type is received instead
+						(hasArkKind(value, "module") && !isMemberObject(node))))
 			) ||
 			!this.isPassable(node, ctx.site)
 		)
@@ -2170,6 +2175,9 @@ const bindsThis = (node: Node) =>
 // the facts arktype reads from a function or class by key, besides its name and length
 const answersFact = (k: PropertyKey) =>
 	k === arkKind || k === "constructor" || k === "prototype" || k === "toJSON"
+
+const isMemberObject = (node: Node) =>
+	node.parent?.type === "MemberExpression" && node.parent.object === node
 
 const isReference = (node: Node) => {
 	const { type } = unwrapExpression(node)

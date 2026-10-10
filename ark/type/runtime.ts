@@ -176,8 +176,8 @@ export interface ValidatorAttributes {
 export const { assign, defineProperties, freeze, is, preventExtensions } =
 	Object
 
-// read only by the factories of Types that reference a validator, so kept off what a program can read
-const holesByValidator = new WeakMap<
+// read only by the factories of what references a validator, Module, Scope or Generic, so kept off what a program can read
+const holesByValue = new WeakMap<
 	object,
 	[id: string, holes: readonly unknown[], names: readonly unknown[]]
 >()
@@ -233,11 +233,7 @@ export class Validator extends Callable<
 		})
 		freeze(this.assert)
 		freeze(this)
-		holesByValidator.set(this, [
-			id,
-			freeze(holes),
-			holes.map(functionNameOfHole)
-		])
+		holdHoles(this, id, holes)
 	}
 
 	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
@@ -405,18 +401,33 @@ export const checkInput = (
 	}
 }
 
+// e.g. a Scope's stand-in, whose holes the factory of each Type defined in it takes
+export const holdHoles = <value extends object>(
+	value: value,
+	id: string,
+	holes: readonly unknown[] = []
+): value => {
+	holesByValue.set(value, [id, freeze(holes), holes.map(functionNameOfHole)])
+	return value
+}
+
 export const holesOf = (
-	validator: unknown,
+	holder: unknown,
 	id: string,
 	label: string,
 	// omitted when it prints a hole's name, which is known only once received
-	expressionOf?: () => string
+	expressionOf?: () => string,
+	kind = "Type"
 ): readonly unknown[] => {
-	const created = holesByValidator.get(validator as object)
+	const created = holesByValue.get(holder as object)
 	if (created?.[0] !== id) {
-		const actual = describeValue(validator)
+		// a Module's, Scope's or Generic's stand-in prints as an object, so it's named by its kind
+		const actual =
+			created && !isValidator(holder) ?
+				`another ${kind}`
+			:	describeValue(holder)
 		const expected =
-			expressionOf ? `Type<${expressionOf()}>` : "the Type it was at build"
+			expressionOf ? `Type<${expressionOf()}>` : `the ${kind} it was at build`
 		return throwError(
 			writeCreationMismatchMessage(
 				label,
@@ -523,7 +534,7 @@ export const checkHelper = (
 
 const { getTime } = Date.prototype
 
-const isValidator = (value: unknown) => holesByValidator.has(value as object)
+const isValidator = (value: unknown) => value instanceof Validator
 
 const describeValue = (value: unknown) =>
 	isValidator(value) ? String(value) : printable(value)
