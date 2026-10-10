@@ -1,17 +1,14 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	registeredReference,
+	throwOnDefault,
 	writeUnboundableMessage,
 	type ArkErrors,
 	type BaseRoot
 } from "@ark/schema"
 import { match, scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
-import {
-	doubleAtMessage,
-	throwOnDefault,
-	type Match
-} from "arktype/internal/match.ts"
+import { doubleAtMessage, type Match } from "arktype/internal/match.ts"
 import { discriminantJsonOf } from "arksets"
 
 const throwDefaultRef = registeredReference(throwOnDefault)

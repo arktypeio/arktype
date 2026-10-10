@@ -105,6 +105,7 @@ export {
 	runtimeConfig,
 	runtimeScope,
 	scopeConfig,
+	throwOnDefault,
 	TransformErrors,
 	transformed,
 	transformedInApply,
@@ -208,8 +209,8 @@ export class Validator extends Callable<
 		id: string,
 		holes: readonly unknown[] = []
 	) {
-		// the configuration is fixed before any validator is created
-		const configuredOnFail = runtimeConfig.onFail
+		// the configuration is fixed before any validator is created, though a Type's meta can name its own, as a matcher asserting its default does
+		const configuredOnFail = attributes.meta.onFail ?? runtimeConfig.onFail
 		super(
 			(
 				data: unknown,

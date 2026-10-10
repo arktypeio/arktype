@@ -13,7 +13,7 @@ import {
 	writeCreatedBeforeConfigureMessage
 } from "@ark/schema/runtime"
 import { arkKindOf, flatMorph, noSuggest } from "@ark/util"
-import { ark, generic, scope, type } from "arktype"
+import { ark, generic, match, scope, type } from "arktype"
 import {
 	allowIslands,
 	arktypeVersion,
@@ -1079,6 +1079,26 @@ contextualize(() => {
 			const input = { p1: {} }
 			attest(Object.keys(create(empty)(input).p1.p1)).equals(
 				Object.keys((define(empty)(input) as any).p1.p1)
+			)
+		})
+
+		it("throws for data no case of a matcher asserting its default matches", async () => {
+			const length = standIn((s: string) => s.length, "length")
+			const negate = standIn((n: number) => -n, "negate")
+			const create = await loadFactory(
+				match({ string: length, number: negate, default: "assert" }) as never,
+				[
+					["function", "`length`", length],
+					["function", "`negate`", negate]
+				]
+			)
+			const matcher = create(
+				(s: string) => s.length,
+				(n: number) => -n
+			)
+			attest([matcher("abc"), matcher(2)]).equals([3, -2])
+			attest(() => matcher(true)).throws.snap(
+				"TraversalError: must be a string or a number (was boolean)"
 			)
 		})
 

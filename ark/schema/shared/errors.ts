@@ -193,6 +193,9 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	}
 }
 
+// a matcher asserting its default holds it as its onFail, which a standalone validator then reads from its runtime
+export const throwOnDefault: ArkErrors.Handler = errors => errors.throw()
+
 // a path's string is its error's propString, written once
 const pathKeyOf = (error: ArkError): string =>
 	(error.propString ??= stringifyPath(error.path))

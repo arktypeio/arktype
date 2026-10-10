@@ -527,8 +527,11 @@ export class StandaloneArtifact {
 		} while (this.collectMetaTypes())
 		this.comparedRoots = this.roots
 		for (const root of this.roots) {
-			// the runtime's own onFail is the one the program configures
-			if (root.onFail !== $ark.resolvedConfig!.onFail)
+			// the runtime's own onFail is the one the program configures, which only a validator's meta overrides
+			if (
+				root.meta.onFail === undefined &&
+				root.onFail !== $ark.resolvedConfig!.onFail
+			)
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
 		for (const node of this.declared) {

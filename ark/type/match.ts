@@ -1,5 +1,6 @@
 import {
 	intrinsic,
+	throwOnDefault,
 	type ArkErrors,
 	type BaseRoot,
 	type Morph,
@@ -451,8 +452,6 @@ export class InternalChainedMatchParser extends Callable<InternalCaseParserFn> {
 		return this.$.finalize(inputValidatedCases) as never
 	}
 }
-
-export const throwOnDefault: ArkErrors.Handler = errors => errors.throw()
 
 export const chainedAtMessage = `A key matcher must be specified before the first case i.e. match.at('foo') or match.in<object>().at('bar')`
 export type chainedAtMessage = typeof chainedAtMessage

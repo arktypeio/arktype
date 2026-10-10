@@ -8,6 +8,7 @@ import {
 	precompileStandaloneModules,
 	type StandaloneExport
 } from "arktype/internal/standalone.ts"
+import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import { DynamicValue } from "@ark/precompile/internal/dynamic.ts"
 import { buildSync } from "esbuild"
 import { mkdtempSync, writeFileSync } from "node:fs"
@@ -50,6 +51,16 @@ const importBesideArktype = async (path: string): Promise<any> => {
 	} finally {
 		entries[entryKey] = entry
 	}
+}
+
+// a function the runtime exports for arktype's nodes to hold, like a matcher's onFail, is its copy's in what an artifact creates
+const counterparts = new Map<unknown, unknown>()
+for (const [name, copy] of Object.entries(
+	await importBesideArktype(join(out, "runtime.js"))
+)) {
+	const original = (arktypeRuntime as Record<string, unknown>)[name]
+	if (typeof copy === "function" && typeof original === "function")
+		counterparts.set(copy, original)
 }
 
 const link = (code: string) =>
@@ -188,7 +199,7 @@ const { toString } = Object.prototype
 const isEqual = (l: unknown, r: unknown): boolean => {
 	const seen = new Map<object, Set<object>>()
 	const equals = (l: any, r: any): boolean => {
-		if (Object.is(l, r)) return true
+		if (Object.is(l, r) || counterparts.get(r) === l) return true
 		if (
 			typeof l !== "object" ||
 			typeof r !== "object" ||
