@@ -1009,6 +1009,9 @@ export class Precompiler {
 			:	{ code: "", modules: {} }
 		const specifier = `~arktype/${hashOf(validators.code)}`
 		const imported = new Set<string>()
+		// the source a site's call keeps, which still reads the bindings it holds
+		const kept: Span[] = []
+		const passed: string[] = []
 		let fixedAt = Infinity
 		for (const [site, name] of namesBySite) {
 			if (refusalsByName[name]) {
@@ -1037,6 +1040,8 @@ export class Precompiler {
 			const factory = factoriesBySite.get(site)
 			for (const [specifier, name, local] of factory?.imports ?? [])
 				(inputImports[specifier] ??= {})[name] = local
+			kept.push(...(factory?.spans ?? []))
+			passed.push(...(factory?.inputs ?? []))
 			// a bundler can drop a variable's site with the variable when nothing reads it, unless it throws
 			const isPure =
 				site.declarationStart !== undefined &&
@@ -1078,6 +1083,7 @@ export class Precompiler {
 			s.appendLeft(fixedAt, `${prefix}fixConfig()\n`)
 		}
 		pruneArktypeImports(module, [...folded, ...module.islands], s)
+		keepImportedModules(module, folded, kept, passed, s)
 		diagnostics.push(...this.checkRuntimeImports(module, sites))
 		diagnostics.sort((l, r) => l.start - r.start)
 		return inputImports
@@ -3820,6 +3826,53 @@ const pruneArktypeImports = (
 				statement.start,
 				statement.source.end,
 				writeImport(kept, module)
+			)
+		}
+	}
+}
+
+// TypeScript drops an import whose bindings nothing reads, as when only folded sites read them, so the module it imports runs only through an import of its own
+const keepImportedModules = (
+	module: SourceModule,
+	folded: Span[],
+	kept: Span[],
+	passed: string[],
+	s: MagicString
+) => {
+	const isWithin = (id: Span, spans: Span[]) =>
+		spans.some(span => span.start <= id.start && id.end <= span.end)
+	for (const statement of module.program.body) {
+		if (
+			statement.type !== "ImportDeclaration" ||
+			statement.source.value === "arktype" ||
+			statement.importKind === "type"
+		)
+			continue
+		const values = statement.specifiers.filter(
+			specifier =>
+				specifier.type !== "ImportSpecifier" || specifier.importKind !== "type"
+		)
+		const references = values.flatMap(
+			specifier =>
+				module.scopes.bindingsById.get(specifier.local)?.references ?? []
+		)
+		const isPassed = ({ local: { name } }: ImportDeclarationSpecifier) =>
+			passed.some(
+				input =>
+					input === name ||
+					input.startsWith(`${name}.`) ||
+					input.startsWith(`${name}[`)
+			)
+		if (
+			references.length &&
+			references.every(
+				({ id }) => isWithin(id, folded) && !isWithin(id, kept)
+			) &&
+			!values.some(isPassed)
+		) {
+			s.appendLeft(
+				statement.end,
+				`\nimport ${module.textOf({ start: statement.source.start, end: statement.end })}`
 			)
 		}
 	}

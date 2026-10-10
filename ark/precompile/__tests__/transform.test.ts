@@ -96,6 +96,7 @@ import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/1bnva9f0jvmnzp"
 import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/1bnva9f0jvmnzp"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { User } from "./user.ts"
+import "./user.ts"
 $arkfixConfig()
 const Point = /* @__PURE__ */ $arkvq10hui17onwk2()
 export const json = /* @__PURE__ */ $arkf1uqk4wc118rbng()

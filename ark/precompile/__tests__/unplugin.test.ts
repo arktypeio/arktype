@@ -643,13 +643,16 @@ console.log(JSON.stringify([User.json === all[0].json, User.toJSON() === all[0].
 		).equals("[true,true]\n")
 	}).timeout(60000)
 
-	it("drops the validator of a Type read only for its introspection", async () => {
+	it("drops the validator of a Type read only for its introspection, but not its module", async () => {
 		const root = writeFixture(
 			{
 				"user.ts": `import { type } from "arktype"
 
+console.log("user.ts")
 export const User = type({ name: "string", age: "number.integer" })
 `,
+				// TypeScript's defaults, which drop an import nothing reads
+				"tsconfig.json": "{}",
 				"main.ts": `import { User } from "./user.ts"
 
 console.log(JSON.stringify(User.toJsonSchema()))
