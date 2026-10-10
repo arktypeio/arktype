@@ -232,6 +232,22 @@ contextualize(() => {
 		attest(copiesOf(validator(input))).equals(copiesOf(T(input)))
 	})
 
+	it("prints the data of errors at one path whichever validator is created first", async () => {
+		const T = type({ "[/^a/]": "string[] >= 2", "[/a$/]": "unknown[] <= 0" })
+		const Parsed = type("string.json.parse")
+		const input = { a: ["q"] }
+		const summary = T(input).toString()
+		const alone = await load({ T })
+		const afterCallback = await load({ Parsed, T })
+		attest([alone.T(input).summary, afterCallback.T(input).summary]).equals([
+			summary,
+			summary
+		])
+		attest(summary).snap(
+			'a (["q"]) must be...\n  ◦ at least length 2\n  ◦ exactly length 0'
+		)
+	})
+
 	it("bakes introspection", async () => {
 		const T = type({ name: "string", age: "number" }).describe("a person")
 		const { T: validator } = await load({ T })

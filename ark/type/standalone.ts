@@ -1607,11 +1607,14 @@ return [${returned.join(", ")}]
 		const config = this.scopeConfigOf(root, raisable)
 		// a callback can raise any code, on data of any kind
 		if (raisable === "any")
-			return `runtime.raising(${config}, runtime.allErrorWriters, runtime.printCompact)`
+			return `runtime.printing(runtime.raising(${config}, runtime.allErrorWriters), runtime.printCompact)`
 		const writers = Object.keys(raisable).map(
 			code => `${code}: runtime.${code}Writers`
 		)
-		return `runtime.raising(${config}, { ${writers.join(", ")} })`
+		const raising = `runtime.raising(${config}, { ${writers.join(", ")} })`
+		return hasIndexSignature(root) ?
+				`runtime.printing(${raising}, runtime.printCompact)`
+			:	raising
 	}
 
 	// the config of a scope whose writers differ from the program's
@@ -1775,6 +1778,15 @@ export const isAddressed = (value: unknown): boolean =>
 		rootUnitsOf(value).find(unit => unit.roots.includes(value))!
 	) &&
 	heldAddressOf(value) !== undefined
+
+// a key an index signature checks may be checked by another prop, whose errors
+// are grouped into an intersection on data of any kind
+const hasIndexSignature = (root: BaseRoot): boolean =>
+	rootUnitsOf(root).some(unit =>
+		unit.declared.some(
+			node => node.hasKind("structure") && node.index !== undefined
+		)
+	)
 
 const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (seen.has(value)) return false

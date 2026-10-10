@@ -53,17 +53,14 @@ export type ErrorWritersByCode = {
 // node error contexts carry their descriptions, so expected reads them rather than describing a node
 const writeExpected: ExpectedWriter = ctx => ctx.description!
 
-// data no writer of its code describes is a string or a number, unless a callback raised its error
-let printActual: (data: unknown) => string = data =>
-	serializePrimitive(data as never)
-
-const writeActual: ActualWriter = data => printActual(data)
+// data no writer of its code describes is a string or a number, unless printing configured its validator
+const writeActual: ActualWriter = data => serializePrimitive(data as never)
 
 // what writers configure() is passed receive of en, which en's own don't read
 export const runtimeLocale: Locale.Info = {} as never
 
 // en's writers of each code a validator can raise, added as validators are created, which every config reads as its prototype's
-const registered: Partial<ResolvedConfig> = {}
+const registered: { [code in ArkErrorCode]?: ResolvedConfig[code] } = {}
 
 // frozen when the first validator is created, as arktype fixes its config when the first Type is
 export const runtimeConfig: ResolvedConfig = Object.assign(
@@ -100,22 +97,35 @@ const register = (code: ArkErrorCode, writers: object): void => {
 	}
 }
 
-/**
- * registers en's writers of each code a validator can raise, and the printer
- * of data they don't describe if it may be other than a string or number,
- * returning the validator's config
- */
+/** registers en's writers of each code a validator can raise, returning its config */
 export const raising = (
 	config: ResolvedConfig,
-	writersByCode: ErrorWritersByCode,
-	printer?: (data: unknown) => string
+	writersByCode: ErrorWritersByCode
 ): ResolvedConfig => {
-	if (printer) printActual = printer
 	// errors at one path are grouped into an intersection
 	register("intersection", intersectionWriters)
 	let code: ArkErrorCode
 	for (code in writersByCode) register(code, writersByCode[code]!)
 	return config
+}
+
+/** a validator's config that prints data no writer describes with printer, as it may be other than a string or number */
+export const printing = (
+	config: ResolvedConfig,
+	printer: (data: unknown) => string
+): ResolvedConfig => {
+	const descriptors: PropertyDescriptorMap = {}
+	let code: ArkErrorCode
+	for (code in registered) {
+		const writers = config[code]
+		if (writers.actual === writeActual) {
+			descriptors[code] = {
+				value: Object.freeze({ ...writers, actual: printer }),
+				enumerable: true
+			}
+		}
+	}
+	return Object.freeze(Object.create(config, descriptors))
 }
 
 /** a scope's config, whose writers for each code replace en's and the program's */

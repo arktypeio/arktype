@@ -100,6 +100,7 @@ export {
 	pipe,
 	pipeChecked,
 	pipeTransformed,
+	printing,
 	protoWriters,
 	raising,
 	registerErrorBuilder,
