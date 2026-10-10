@@ -655,6 +655,41 @@ contextualize(() => {
 		).equals(configureAfterTypeMessage)
 	})
 
+	it("hashes apart a configuration's values wherever they differ", () => {
+		class Custom {
+			x = 1
+		}
+		const shared = { n: 1 }
+		const advanced = /a/g
+		advanced.lastIndex = 3
+		const cyclic: Record<string, unknown> = {}
+		cyclic.self = cyclic
+		const pairs: [object, object][] = [
+			[
+				{ onUndeclaredKey: "delete" },
+				Object.assign(Object.create({ keywords: { string: "text" } }), {
+					onUndeclaredKey: "delete"
+				})
+			],
+			[{ x: 1 }, new Custom()],
+			[
+				{ x: shared, y: shared },
+				{ x: { n: 1 }, y: { n: 1 } }
+			],
+			[/a/g, advanced],
+			[/a/g, /a/i],
+			[{ a: 0 }, { a: -0 }],
+			[{ a: 1 }, { a: 1n }],
+			[{ a: "1" }, { a: 1 }],
+			[new Date(0), new Date(1)],
+			[cyclic, { self: {} }]
+		]
+		attest(
+			pairs.filter(([l, r]) => fingerprintOf(l) === fingerprintOf(r))
+		).equals([])
+		attest(fingerprintOf({ f: () => 1 })).equals(fingerprintOf({ f: () => 2 }))
+	})
+
 	it("throws for a second configure() with other values", async () => {
 		const built = fingerprintOf({ numberAllowsNaN: true })
 		const configured = `runtime.configure({ numberAllowsNaN: true }, "${built}")`

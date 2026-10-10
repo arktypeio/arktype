@@ -236,8 +236,8 @@ const stampOf = source => precompiler.precompile(source, "/config.ts").code
 precompiler.precompile(main, "/main.ts")
 console.log(JSON.stringify([stampOf(config), stampOf('import { configure } from "arktype/config"\\nconfigure({onUndeclaredKey:"reject"})')]))`)
 			).snap([
-				'import { configure } from "arktype/config"\nimport type { Mode } from "./mode.ts"\nconfigure({ onUndeclaredKey: "reject" as Mode }, "x5lmhc1rv7b0k")',
-				'import { configure } from "arktype/config"\nconfigure({onUndeclaredKey:"reject"}, "x5lmhc1rv7b0k")'
+				'import { configure } from "arktype/config"\nimport type { Mode } from "./mode.ts"\nconfigure({ onUndeclaredKey: "reject" as Mode }, "1danzh401cfuyh")',
+				'import { configure } from "arktype/config"\nconfigure({onUndeclaredKey:"reject"}, "1danzh401cfuyh")'
 			])
 		}).timeout(60000)
 

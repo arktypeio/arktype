@@ -181,7 +181,7 @@ export const configure = (
 export const fingerprintOf = (config: object): string =>
 	hashOf(staticTextOf(config, []))
 
-const staticTextOf = (value: unknown, ancestors: object[]): string => {
+const staticTextOf = (value: unknown, seen: object[]): string => {
 	if (typeof value === "function") return "function"
 	if (typeof value !== "object" || value === null) {
 		return (
@@ -191,18 +191,30 @@ const staticTextOf = (value: unknown, ancestors: object[]): string => {
 			: String(value)
 		)
 	}
-	if (ancestors.includes(value)) return "cycle"
+	// an object reached again is named by its first visit, so shared and copied objects hash apart
+	const index = seen.indexOf(value)
+	if (index !== -1) return `#${index}`
+	seen.push(value)
 	const tag = Object.prototype.toString.call(value)
-	const entries = Object.keys(value).map(
-		k =>
-			`${JSON.stringify(k)}:${staticTextOf((value as Record<string, unknown>)[k], [...ancestors, value])}`
-	)
-	return `${tag}${
+	const prototype = Object.getPrototypeOf(value)
+	let entries = ""
+	// arktype merges a configuration's inherited keys too
+	for (const k in value)
+		entries += `${JSON.stringify(k)}:${staticTextOf((value as Record<string, unknown>)[k], seen)},`
+	return `${tag}${builtinPrototypes.includes(prototype) ? "" : "instance"}${
 		tag === "[object Date]" ? Number(value)
-		: tag === "[object RegExp]" ? String(value)
+		: tag === "[object RegExp]" ? `${value}${(value as RegExp).lastIndex}`
 		: ""
 	}{${entries}}`
 }
+
+const builtinPrototypes: unknown[] = [
+	null,
+	Object.prototype,
+	Array.prototype,
+	Date.prototype,
+	RegExp.prototype
+]
 
 export const fixConfig = (
 	...configured: [] | [fingerprint: string, path: string]
