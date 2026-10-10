@@ -360,15 +360,20 @@ $.export()
 
 ### Read a function's arity once
 
-arktype reads a function's `length` once, the first time, so a morph whose `length` changed after a Type referencing it was created is still called as it was then:
+arktype reads a function's `length` once, the first time, so a morph whose `length` changed after a Type referencing it was created is still called as it was then. Previously, it read the `length` again where it compiled or called the morph, so a morph of one parameter was passed `ctx` once its `length` changed:
 
 ```ts
-const double = (data: any) => (typeof data === "number" ? data * 2 : data)
-const T = type(["number % 2", "=>", double])
-Object.defineProperty(double, "length", { value: 2 })
+const count = function (n: number) {
+	return arguments.length
+}
+const T = type({
+	a: ["number", "=>", count],
+	b: ["number", ":", (n, ctx) => true]
+})
+Object.defineProperty(count, "length", { value: 2 })
 
-// previously threw a TypeError, now 0
-T.or("string")(0)
+// previously { a: 2, b: 1 }, now { a: 1, b: 1 }
+T({ a: 1, b: 1 })
 ```
 
 ### Fix `ctx.data` after a morph that reads `ctx`
