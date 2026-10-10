@@ -29,7 +29,8 @@ const runtime = values.runtime
 if (runtime !== undefined && runtime !== "arktype")
 	fail(`--runtime must be arktype (was ${runtime})`)
 
-const failUnder = Number(values["fail-under"] ?? 0)
+const failUnder =
+	values["fail-under"] === undefined ? undefined : Number(values["fail-under"])
 if (Number.isNaN(failUnder))
 	fail(`--fail-under must be a percentage (was ${values["fail-under"]})`)
 
@@ -54,4 +55,8 @@ const report = check(positionals, {
 
 for (const line of report.lines) console.log(line)
 
-if (report.rate < failUnder) process.exit(1)
+if (
+	failUnder !== undefined &&
+	(report.rate < failUnder || report.errorsOutsideSites)
+)
+	process.exit(1)

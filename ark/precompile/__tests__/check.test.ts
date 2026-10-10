@@ -5,12 +5,14 @@ import { spawnSync } from "node:child_process"
 
 const cwd = fromHere("checked")
 
-const cli = (...args: string[]) =>
+const cliIn = (dir: string, ...args: string[]) =>
 	spawnSync(
 		process.execPath,
 		["--conditions", "ark-ts", fromHere("..", "cli.ts"), ...args],
-		{ cwd, encoding: "utf8" }
+		{ cwd: dir, encoding: "utf8" }
 	)
+
+const cli = (...args: string[]) => cliIn(cwd, ...args)
 
 contextualize(() => {
 	it("lists sites", () => {
@@ -67,7 +69,7 @@ contextualize(() => {
 		).snap([
 			"config.ts:3:1  configure({ onUndeclaredKey: process.argv.length > 99 ? \"de… is not static\n  `process` is a global the build does not read\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
 			'main.ts:4:18  type({ a: "string" }) is created under a configuration the build can\'t apply\n  configure({ onUndeclaredKey: process.argv.length > 99 ? "de… is not static (config.ts)\n  `process` is a global the build does not read\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.',
-			"1 site in 2 files: 0 accepted (0.0%)"
+			"1 site in 2 files: 0 accepted (0.0%), 1 error outside a site"
 		])
 	})
 
@@ -84,6 +86,18 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
   With runtime: "arktype", arktype defines this at runtime.
 3 sites in 1 file: 1 accepted (33.3%)
 `)
+	})
+
+	it("fails under any rate on an error outside every site", () => {
+		const dir = fromHere("unconfigured")
+		attest(check([], { cwd: dir }).lines).snap([
+			"config.ts:3:1  configure() is called, but the build has no `config` module\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+			"main.ts:4:21  accepted",
+			'main.ts:6:21  User.json reads json, which a standalone validator lacks\n  `User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+			"1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site"
+		])
+		attest(cliIn(dir, "--check").status).equals(0)
+		attest(cliIn(dir, "--check", "--fail-under", "0").status).equals(1)
 	})
 
 	it("rejects invalid arguments", () => {

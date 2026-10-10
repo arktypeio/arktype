@@ -77,7 +77,7 @@ export interface TransformedModule extends InlineModule {
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
 
 export interface CheckedModule {
-	sites: Pick<Site, "start" | "line" | "column" | "status">[]
+	sites: Pick<Site, "start" | "end" | "line" | "column" | "status">[]
 	diagnostics: Diagnostic[]
 }
 
@@ -139,8 +139,9 @@ const checkedModuleOf = (
 	if (tracked) recordGiven(tracked, source, id)
 	const { sites, diagnostics } = precompiler.precompile(source, id)
 	return {
-		sites: sites.map(({ start, line, column, status }) => ({
+		sites: sites.map(({ start, end, line, column, status }) => ({
 			start,
+			end,
 			line,
 			column,
 			status

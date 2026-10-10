@@ -14,6 +14,8 @@ export interface CheckReport {
 	islands: number
 	// the percentage of sites accepted, of those not left to arktype as runtime islands
 	rate: number
+	// what fails a build whatever the rate, like a configure() it can't place
+	errorsOutsideSites: number
 	files: number
 }
 
@@ -39,6 +41,7 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 		accepted: 0,
 		islands: 0,
 		rate: 100,
+		errorsOutsideSites: 0,
 		files: files.length
 	}
 	try {
@@ -56,6 +59,19 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 					file: relative(cwd, diagnostic.file)
 				})
 			])
+			const rejected = result.sites.filter(site => site.status === "rejected")
+			for (const diagnostic of result.diagnostics) {
+				if (
+					diagnostic.severity === "error" &&
+					!rejected.some(
+						site =>
+							diagnostic.file === file &&
+							diagnostic.start === site.start &&
+							diagnostic.end === site.end
+					)
+				)
+					report.errorsOutsideSites++
+			}
 			for (const site of result.sites) {
 				report.sites++
 				if (site.status === "rejected") continue
@@ -75,7 +91,7 @@ export const check = (patterns: string[], opts?: CheckOptions): CheckReport => {
 	const precompiled = report.sites - report.islands
 	if (precompiled) report.rate = (100 * report.accepted) / precompiled
 	report.lines.push(
-		`${report.sites} ${report.sites === 1 ? "site" : "sites"} in ${report.files} ${report.files === 1 ? "file" : "files"}: ${report.accepted} accepted (${report.rate.toFixed(1)}%)${report.islands ? `, ${report.islands} ${report.islands === 1 ? "runtime island" : "runtime islands"}` : ""}`
+		`${report.sites} ${report.sites === 1 ? "site" : "sites"} in ${report.files} ${report.files === 1 ? "file" : "files"}: ${report.accepted} accepted (${report.rate.toFixed(1)}%)${report.islands ? `, ${report.islands} ${report.islands === 1 ? "runtime island" : "runtime islands"}` : ""}${report.errorsOutsideSites ? `, ${report.errorsOutsideSites} ${report.errorsOutsideSites === 1 ? "error" : "errors"} outside a site` : ""}`
 	)
 	return report
 }
