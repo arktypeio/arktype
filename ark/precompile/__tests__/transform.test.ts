@@ -882,16 +882,12 @@ export const B = $.type({ b: "a" })`,
 			const result = precompile(`import { type } from "arktype"
 export const len = type.fn("string", ":", "number")(s => s.length)
 export const make = () => type.fn("string")(s => s)`)
-			attest(result.diagnostics.map(d => d.reasons)).snap([
-				[
-					'`type.fn("string")(s => s)` creates a new TypedFn each time it runs, though a Type it holds is the same each time'
-				]
-			])
+			attest(result.diagnostics).equals([])
 			attest(
 				result.code.split("\n").filter(line => line.startsWith("export"))
 			).snap([
 				"export const len = /* @__PURE__ */ $arkfogqwaj0g9p34d(s => s.length)",
-				'export const make = () => type.fn("string")(s => s)'
+				"export const make = () => $arkfrfrs4g1hn9fdv(s => s)"
 			])
 		})
 	})

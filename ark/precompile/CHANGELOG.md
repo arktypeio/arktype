@@ -86,7 +86,7 @@ A definition in a function, a loop's body or an instance's field runs each time 
 These definitions are reported rather than precompiled:
 
 - one that could depend on two values imported from other modules being distinct;
-- one arktype creates anew each time it runs, holding a value that is the same each time or that another definition holds too, like `$.export()` in a function when `$` is not;
+- one arktype creates anew each time it runs, holding a value that is the same each time or that another definition holds too, like `$.export()` in a function when `$` is not, unless arktype holds that value once wherever a definition reaches it, as it does the keyword Types of `type.fn("string")`, which each call then reads from where every precompiled module holds them;
 - one that is the same each time its innermost function or loop runs but new each time an enclosing one runs, like `$.type("a")` in a callback when the function calling it creates `$`;
 - one reading a function only through a binding it declares itself, such as a callback's parameter;
 - one throwing a ParseError that reads a binding, or holds or calls a function, itself or through any value it passes to arktype;

@@ -1259,6 +1259,35 @@ contextualize(() => {
 			attest(created.G() === created.G()).equals(false)
 		})
 
+		it("reads each Type arktype holds once from its address at each call", async () => {
+			const length = standIn((s: string) => s.length, "length")
+			const created = await load({
+				P: type(["string"]),
+				F: {
+					type: type.fn("string")(length) as never,
+					params: [{ kind: "function", label: "`length`", value: length }]
+				}
+			})
+			const [f1, f2] = [created.F(length), created.F(length)]
+			attest([
+				f1 === f2,
+				f1.params === f2.params,
+				f1.params === created.P,
+				f1.returns === f2.returns
+			]).equals([false, true, true, true])
+		})
+
+		it("refuses a Type another run or site holds where it can't read it from an address", () => {
+			const M = scope({ a: "string" }).export()
+			attest(() =>
+				precompileStandalone({ M: { type: M, params: [] } }, undefined, {
+					M: { definitions: [], addressed: [M.a] }
+				})
+			).throws(
+				writeUnprecompilableMessage("a Type another run or site holds too")
+			)
+		})
+
 		it("returns the validator it created for the same holes where arktype returns one Type", async () => {
 			const isLong = standIn((s: string) => s.length > 1, "long")
 			const T = type("string").narrow(isLong)

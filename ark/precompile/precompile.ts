@@ -17,6 +17,7 @@ import type { HoleKind } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	holeNamePattern,
+	isAddressed,
 	isTypedFn,
 	keyOf,
 	precompileStandalone,
@@ -146,6 +147,8 @@ export interface Site {
 	isCreatedEachRun: boolean
 	// whether arktype returns the Type it created before for the same holes, as outside a Scope created each run, which a factory then does too
 	isInterned: boolean
+	// each Type another run or site holds too, which arktype holds once and a factory then reads from its address
+	addressed: unknown[]
 	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
 	declarationStart: number | undefined
 }
@@ -1604,6 +1607,7 @@ export class Precompiler {
 			isKeywordRead: false,
 			isCreatedEachRun: false,
 			isInterned: false,
+			addressed: [],
 			declarationStart: declarationStartOf(node)
 		}
 	}
@@ -1729,10 +1733,13 @@ export class Precompiler {
 		// neither a getter nor a factory is the same within one run but new across runs
 		if (again.value === site.value) return true
 		const created = arkObjectsIn(again.value)
-		const kept = [...arkObjectsIn(site.value)].find(value => created.has(value))
-		// e.g. a Module whose Types are the same each run, which a factory, creating them all anew, can't reproduce
-		if (again.error === undefined ? !kept : isFactory) {
+		const kept = [...arkObjectsIn(site.value)].filter(value =>
+			created.has(value)
+		)
+		// e.g. a Module whose Types are the same each run, which a factory creating it anew reads from their addresses
+		if (again.error === undefined ? kept.every(isAddressed) : isFactory) {
 			site.isCreatedEachRun = true
+			site.addressed.push(...kept)
 			return false
 		}
 		const snippet = module.snippetOf(node)
@@ -1742,7 +1749,7 @@ export class Precompiler {
 				module,
 				node,
 				again.error === undefined ?
-					`\`${snippet}\` creates a new ${kindNameOf(site.value)} each time it runs, though a ${kindNameOf(kept)} it holds is the same each time`
+					`\`${snippet}\` creates a new ${kindNameOf(site.value)} each time it runs, though a ${kindNameOf(kept.find(value => !isAddressed(value)))} it holds is the same each time`
 				:	`\`${snippet}\` runs more than once, and the build can't evaluate it again`
 			)
 		)
@@ -1756,7 +1763,12 @@ export class Precompiler {
 		module: SourceModule
 	): void {
 		const holdersByValue = new Map<unknown, Site>()
-		const sharedBySite = new Map<Site, [value: unknown, holder: Site]>()
+		const sharedBySite = new Map<Site, [value: unknown, holder: Site][]>()
+		const share = (site: Site, value: unknown, holder: Site) => {
+			const shared = sharedBySite.get(site)
+			if (shared) shared.push([value, holder])
+			else sharedBySite.set(site, [[value, holder]])
+		}
 		const sites = [...candidatesBySite.keys()]
 		for (const site of sites) {
 			// a site inside another, like one in a Scope's thunk, is part of it
@@ -1789,22 +1801,31 @@ export class Precompiler {
 				const holder = holdersByValue.get(value)
 				if (!holder) holdersByValue.set(value, site)
 				else {
-					sharedBySite.set(site, [value, holder])
-					if (!sharedBySite.has(holder)) sharedBySite.set(holder, [value, site])
+					share(site, value, holder)
+					share(holder, value, site)
 				}
 			}
 		}
-		for (const [site, [value, holder]] of sharedBySite) {
-			if (!site.isCreatedEachRun) continue
-			const node = candidatesBySite.get(site)!.state.node
-			rejectSite(
-				site,
-				new DynamicValue(
-					module,
-					node,
-					`\`${module.snippetOf(node)}\` creates a new ${kindNameOf(site.value)} each time it runs, sharing a ${kindNameOf(value)} with the site at ${module.positionOf(holder)}`
+		for (const [site, shared] of sharedBySite) {
+			for (const [value, holder] of shared) {
+				if (!site.isCreatedEachRun && !holder.isCreatedEachRun) continue
+				// e.g. a keyword's Type, which each factory reads from where every artifact holds it
+				if (isAddressed(value)) {
+					site.addressed.push(value)
+					continue
+				}
+				if (!site.isCreatedEachRun) continue
+				const node = candidatesBySite.get(site)!.state.node
+				rejectSite(
+					site,
+					new DynamicValue(
+						module,
+						node,
+						`\`${module.snippetOf(node)}\` creates a new ${kindNameOf(site.value)} each time it runs, sharing a ${kindNameOf(value)} with the site at ${module.positionOf(holder)}`
+					)
 				)
-			)
+				break
+			}
 		}
 	}
 
@@ -2826,7 +2847,8 @@ const repeatedRegionsOf = (node: Node): Node[] => {
 }
 
 const exportSiteOf = (site: Site): ExportSite => ({
-	definitions: site.parsedDefinitions
+	definitions: site.parsedDefinitions,
+	addressed: site.addressed
 })
 
 // a ParseError is named by its message, so equal sites share a thrower, and anything else by its site, since a cyclic Type's hash holds registry counters

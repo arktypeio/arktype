@@ -1019,7 +1019,7 @@ const D = type("string")(1).toLocaleString(de)`)
 
 		it("what arktype creates anew each run, but shares with its last run or another site", () => {
 			attest(
-				statusesOf(`import { scope } from "arktype"
+				statusesOf(`import { scope, type } from "arktype"
 const $ = scope({ a: "string" })
 const exported = () => $.export()
 const twice = () => {
@@ -1030,7 +1030,8 @@ const isLong = (s: string) => s.length > 1
 const narrowed = () => {
 	const local = scope({ a: "string" })
 	return [local.type("a").narrow(isLong), local.type("a").narrow(isLong)]
-}`)
+}
+const typed = () => [type.fn("string")(s => s), type.fn("string")(s => s)]`)
 			).snap([
 				"2:11 accepted",
 				"3:24 rejected\n  `$.export()` creates a new Module each time it runs, though a Type it holds is the same each time",
@@ -1039,7 +1040,9 @@ const narrowed = () => {
 				'6:27 rejected\n  `local.type("a")` creates a new Type each time it runs, sharing a Type with the site at /main.ts:6:10',
 				"10:16 accepted",
 				'11:10 rejected\n  `local.type("a").narrow(isLong)` creates a new Type each time it runs, sharing a Type with the site at /main.ts:11:42',
-				'11:42 rejected\n  `local.type("a").narrow(isLong)` creates a new Type each time it runs, sharing a Type with the site at /main.ts:11:10'
+				'11:42 rejected\n  `local.type("a").narrow(isLong)` creates a new Type each time it runs, sharing a Type with the site at /main.ts:11:10',
+				"13:22 accepted",
+				"13:49 accepted"
 			])
 		})
 

@@ -139,6 +139,8 @@ export interface HelperParam {
 export interface ExportSite {
 	// each string it passed arktype's type, which arktype's parse cache may hold its Type under
 	definitions: readonly string[]
+	// each Type another run or site holds too, which only an address keeps one object
+	addressed?: readonly unknown[]
 }
 
 export interface ConfiguredModule {
@@ -460,7 +462,6 @@ export class StandaloneArtifact {
 	unitRoots = new Set<BaseRoot>()
 	// the unit holding each root in the first Type reaching it
 	unitsByHead = new Map<BaseRoot, RootUnit>()
-	sharedByUnit = new Map<RootUnit, boolean>()
 	localNamesByUnit = new Map<RootUnit, string>()
 	// the unit whose values are being emitted, which names the nodes they hold
 	unit: RootUnit | undefined
@@ -818,24 +819,17 @@ export class StandaloneArtifact {
 		]
 	}
 
-	isShared(unit: RootUnit): boolean {
-		let shared = this.sharedByUnit.get(unit)
-		if (shared === undefined) {
-			// a unit reading its own roots, as in a cycle, is decided by what else it reads
-			this.sharedByUnit.set(unit, true)
-			const reads = [
-				...Object.values(unit.dependencies).map(([node]) => node),
-				...unit.refs.filter(ref => isNode(ref) && ref.isRoot())
-			] as BaseNode[]
-			// a node a unit refers to directly is its root's shape, rather than a validator
-			shared =
-				!unit.identityNamed.has(unit.roots[0].id) &&
-				!unit.refs.some(ref => !isNode(ref) && holdsLocal(ref)) &&
-				!unit.errorContexts.some(context => holdsLocal(context)) &&
-				reads.every(node => this.isShared(unitOf(node, unit)))
-			this.sharedByUnit.set(unit, shared)
+	// what another run or site holds too is one object only where each artifact reading it reads its address
+	checkAddressed(): void {
+		for (const name in this.exports) {
+			for (const value of this.sitesByName?.[name]?.addressed ?? []) {
+				if (!hasArkKind(value, "root") || !this.validatorAddressOf(value)) {
+					throwParseError(
+						writeUnprecompilableMessage("a Type another run or site holds too")
+					)
+				}
+			}
 		}
-		return shared
 	}
 
 	collectExport(value: unknown, path: string): void {
@@ -875,6 +869,7 @@ export class StandaloneArtifact {
 	}
 
 	writeCreate(index: number, configured: ConfiguredModule | undefined): string {
+		this.checkAddressed()
 		this.writeSharedUnits()
 		const values = Object.values(this.exports).map(value =>
 			this.exportOf(value)
@@ -902,6 +897,7 @@ ${statements.filter(statement => statement).join("\n\n")}
 		configured: ConfiguredModule | undefined,
 		internedBy?: number
 	): string {
+		this.checkAddressed()
 		this.receive(params)
 		this.writeSharedUnits()
 		const exported = this.exports[name]
@@ -938,12 +934,12 @@ export { factory${index} as ${JSON.stringify(name)} }`
 	}
 
 	get localUnits(): RootUnit[] {
-		return this.units.filter(unit => !this.isShared(unit))
+		return this.units.filter(unit => !isSharedUnit(unit))
 	}
 
 	writeSharedUnits(): void {
 		for (const unit of this.units)
-			if (this.isShared(unit)) this.writeShared(unit)
+			if (isSharedUnit(unit)) this.writeShared(unit)
 	}
 
 	// a shared unit is created by a function declaration, which an import cycle can call before its module is evaluated
@@ -1068,7 +1064,7 @@ return [${returned.join(", ")}]
 	readDependency(unit: RootUnit, name: string): string {
 		const dependency = unitOf(unit.dependencies[name][0], unit)
 		const index = dependency.traversals.flat().indexOf(name)
-		return this.isShared(dependency) ?
+		return isSharedUnit(dependency) ?
 				this.read(
 					`~arktype/${dependency.name}`,
 					dependency.name,
@@ -1159,10 +1155,7 @@ return [${returned.join(", ")}]
 	validatorAddressOf(root: BaseRoot): string | undefined {
 		if (
 			this.createdEachRun.has(root) ||
-			!this.isShared(this.unitsByHead.get(root)!) ||
-			keyOf(root)[1].length ||
-			holdsLocal(root.meta) ||
-			holdsLocal(root.description)
+			!isAddressable(root, this.unitsByHead.get(root)!)
 		)
 			return
 		return heldAddressOf(root) ?? this.definitionAddresses.get(root)
@@ -1323,7 +1316,7 @@ return [${returned.join(", ")}]
 		const name = unit.names[node.id]
 		const own = this.writing?.shapesByName[name]
 		if (own) return own
-		if (this.writing && this.isShared(unit)) {
+		if (this.writing && isSharedUnit(unit)) {
 			return this.read(
 				`~arktype/${unit.name}`,
 				`${name}Node`,
@@ -1333,7 +1326,7 @@ return [${returned.join(", ")}]
 		}
 		const declared = this.declarations.namesByValue.get(node)
 		if (declared) return declared
-		if (this.isShared(unit)) {
+		if (isSharedUnit(unit)) {
 			return this.declareConst(
 				node,
 				"shape",
@@ -1723,6 +1716,43 @@ const raisableCodesOf = (root: BaseRoot): RaisableCodes => {
 	return codes
 }
 
+const sharedByUnit = new WeakMap<RootUnit, boolean>()
+
+const isSharedUnit = (unit: RootUnit): boolean => {
+	let shared = sharedByUnit.get(unit)
+	if (shared === undefined) {
+		// a unit reading its own roots, as in a cycle, is decided by what else it reads
+		sharedByUnit.set(unit, true)
+		const reads = [
+			...Object.values(unit.dependencies).map(([node]) => node),
+			...unit.refs.filter(ref => isNode(ref) && ref.isRoot())
+		] as BaseNode[]
+		// a node a unit refers to directly is its root's shape, rather than a validator
+		shared =
+			!unit.identityNamed.has(unit.roots[0].id) &&
+			!unit.refs.some(ref => !isNode(ref) && holdsLocal(ref)) &&
+			!unit.errorContexts.some(context => holdsLocal(context)) &&
+			reads.every(node => isSharedUnit(unitOf(node, unit)))
+		sharedByUnit.set(unit, shared)
+	}
+	return shared
+}
+
+const isAddressable = (root: BaseRoot, unit: RootUnit): boolean =>
+	isSharedUnit(unit) &&
+	!keyOf(root)[1].length &&
+	!holdsLocal(root.meta) &&
+	!holdsLocal(root.description)
+
+// e.g. a keyword's Type, which arktype holds once wherever a definition reaches it, so each run and artifact reads one validator
+export const isAddressed = (value: unknown): boolean =>
+	hasArkKind(value, "root") &&
+	isAddressable(
+		value,
+		rootUnitsOf(value).find(unit => unit.roots.includes(value))!
+	) &&
+	heldAddressOf(value) !== undefined
+
 const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (seen.has(value)) return false
 	seen.add(value)
@@ -1764,6 +1794,21 @@ const maybeHeldAddressOf = (node: BaseNode): string | undefined => {
 	if (key !== undefined) return hashOf(`${$.name}\nkey\n${key}`)
 	for (const name in $.resolutions)
 		if ($.resolutions[name] === node) return hashOf(`${$.name}\nalias\n${name}`)
+	const name = intrinsicNameOf(node)
+	if (name) return hashOf(`${$.name}\nintrinsic\n${name}`)
+}
+
+// e.g. the unknown a TypedFn returns by default, a copy its scope binds once, read without binding the others
+const intrinsicNameOf = (node: BaseNode): string | undefined => {
+	const intrinsic: object | undefined = Object.getOwnPropertyDescriptor(
+		node.$,
+		"intrinsic"
+	)?.value
+	if (!intrinsic) return
+	for (const name in intrinsic) {
+		if (Object.getOwnPropertyDescriptor(intrinsic, name)!.value === node)
+			return name
+	}
 }
 
 const originalOf = (node: BaseNode): BaseNode => {
