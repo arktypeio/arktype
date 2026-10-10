@@ -294,7 +294,7 @@ written.description = "two"`,
 					{ config: "/main.ts" }
 				)
 			).snap([
-				'/main.ts:4:1  configure({ keywords: { string: written, number: shared, bo… is not static\n  `shared` is exported from /shared.ts, so another module can write what the configuration holds\n  `written.description = "two"` (/main.ts:5:1) writes what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+				'/main.ts:4:1  configure({ keywords: { string: written, number: shared, bo… is not static\n  `shared` is exported from /shared.ts, so another module can write what the configuration holds: spread a copy of it into the call instead\n  `written.description = "two"` (/main.ts:5:1) writes what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
 			])
 		})
 
@@ -319,10 +319,10 @@ console.log(JSON.stringify(precompiler.precompile(given, "/config.ts").diagnosti
 				)
 			).snap([
 				[
-					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds: spread a copy of it into the call instead\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 				],
 				[
-					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds: spread a copy of it into the call instead\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 				]
 			])
 		}).timeout(60000)
@@ -344,8 +344,8 @@ ${call}`,
 					)
 				)
 			).snap([
-				"/main.ts:3:1  configure(kw) is not static\n  a namespace import used as a value is not in the static subset\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
-				"/main.ts:3:1  configure({ keywords: kw }) is not static\n  a namespace import used as a value is not in the static subset\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+				"/main.ts:3:1  configure(kw) is not static\n  a namespace import used as a value is not in the static subset: import what it exports by name\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+				"/main.ts:3:1  configure({ keywords: kw }) is not static\n  a namespace import used as a value is not in the static subset: import what it exports by name\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
 				"/main.ts:3:1  configure({ ...kw }) is not static\n  `...kw` spreads a value other than an object literal or Module\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
 		})

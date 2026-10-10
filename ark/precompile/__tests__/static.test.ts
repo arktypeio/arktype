@@ -1220,6 +1220,15 @@ var i=Object.defineProperty;var e=(n,s)=>i(n,"name",{value:s,configurable:!0});
 function r(n){return o({a:o("number").atLeast(n)})}e(r,"field");
 export const a=r(5)`)
 			).snap(["4:16 accepted { a: number >= 5 }"])
+			attest(
+				statusesOf(`import { type as o } from "arktype"
+var i=Object.defineProperty;var e=(n,s)=>i(n,"name",{value:s,configurable:!1});
+function r(n){return o({a:o("number").atLeast(n)})}e(r,"field");
+export const a=r(5)`)
+			).snap([
+				'3:22 rejected\n  `o("number").atLeast(n)` reads the structure of `n`, which is not static\n  `n` is a parameter of r (/main.ts:3:12); its value is known only at runtime',
+				"4:16 accepted { a: number >= 5 }"
+			])
 		})
 
 		it("a helper exported by a clause", () => {

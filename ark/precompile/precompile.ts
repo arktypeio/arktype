@@ -2554,7 +2554,7 @@ export class Precompiler {
 			objects.add(o)
 			if (o instanceof ModuleNamespace) {
 				result.push(
-					"a namespace import used as a value is not in the static subset"
+					"a namespace import used as a value is not in the static subset: import what it exports by name"
 				)
 			}
 			if (!isPlainContainer(o)) return
@@ -2576,9 +2576,7 @@ export class Precompiler {
 		}
 		if (!dynamic) {
 			visit(value.value)
-			result.push(
-				...this.writableObjectsIn(objects, value.trace.reads, modules)
-			)
+			result.push(...this.writeReasonsIn(objects, value.trace.reads, modules))
 		}
 		return {
 			value: value.value,
@@ -2589,7 +2587,7 @@ export class Precompiler {
 	}
 
 	// arktype reads a keyword's meta when the keyword is first created, so a write after configure() can reach the program but not the build
-	private writableObjectsIn(
+	private writeReasonsIn(
 		objects: Set<unknown>,
 		reads: Read[],
 		ids: string[]
@@ -2604,7 +2602,7 @@ export class Precompiler {
 				:	[]
 			if (path && objects.has(value)) {
 				result.add(
-					`\`${name}\` is exported from ${path}, so another module can write what the configuration holds`
+					`\`${name}\` is exported from ${path}, so another module can write what the configuration holds: spread a copy of it into the call instead`
 				)
 			}
 		}
@@ -2893,7 +2891,6 @@ export class Precompiler {
 		return this.writeInto(id, module, isArkObject)
 	}
 
-	// a write through the expression `id` starts, with the object it writes into if `isWritten` holds for it
 	private writeInto(
 		id: Node,
 		module: SourceModule,

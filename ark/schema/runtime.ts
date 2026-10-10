@@ -287,12 +287,12 @@ export const configuredUnlikeBuildMessage =
 export type configuredUnlikeBuildMessage = typeof configuredUnlikeBuildMessage
 
 export const reconfiguredMessage =
-	"configure() is called again with other values, which arktype merges with the first call's but a standalone build can't precompile under"
+	"configure() is called again with other values or functions: a standalone build needs one call, in its config module"
 
 export type reconfiguredMessage = typeof reconfiguredMessage
 
 export const writtenConfigMessage =
-	"what configure() received was written before the first validator was created, so the build's Types, precompiled under its earlier values, can't run under it"
+	"what configure() received was written after the call, so the build precompiled other values: finish writing it before calling configure()"
 
 export type writtenConfigMessage = typeof writtenConfigMessage
 
