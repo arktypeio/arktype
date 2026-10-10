@@ -38,6 +38,7 @@ import {
 	writeCreationMismatchMessage,
 	writeIdentityMismatchMessage,
 	writeRenamedHoleMessage,
+	writeUnbakedMessage,
 	type HoleKind,
 	type IntrospectionMember
 } from "arktype/runtime"
@@ -411,23 +412,52 @@ contextualize(() => {
 		attest(thrownBy(() => validator.toJsonSchema())).equals(message)
 	})
 
-	it("refuses to bake a JSON Schema that calls a default's thunk", () => {
+	it("throws where it's read a JSON Schema that calls a default's thunk", async () => {
 		const empty = standIn(() => [], "empty")
 		const T = type({ tags: ["string[]", "=", empty] })
-		const exports = {
-			T: {
-				type: T,
-				params: [{ kind: "function", label: "empty", value: empty }]
-			}
-		} satisfies Record<string, StandaloneExport>
-		attest(() =>
-			precompileStandalone(exports, { introspection: ["toJsonSchema"] })
-		).throws(
+		const validator = (
+			await loadFactory(
+				T,
+				[["function", "empty", empty]],
+				["json", "toJsonSchema", "~standard.jsonSchema"]
+			)
+		)(empty)
+		const message = writeUnbakedMessage(
 			writeUnprecompilableMessage("a JSON Schema calling a default's thunk")
 		)
+		attest(() => validator.toJsonSchema()).throws(message)
+		attest(() =>
+			validator["~standard"].jsonSchema.output({ target: "draft-07" })
+		).throws(message)
+		attest(validator.json).equals(T.json)
+		attest(validator({})).equals({ tags: [] })
+	})
+
+	it("raises arktype's TypeError printing a symbol in a JSON Schema's error", async () => {
+		const key = Symbol("key")
+		const T = type({ [key]: "string" })
+		const thrown = (write: () => unknown) => {
+			try {
+				write()
+			} catch (e) {
+				return [(e as Error).constructor.name, (e as Error).message]
+			}
+		}
+		const validator = (
+			await loadFactory(T, [["symbol", "key", key]], ["toJsonSchema"])
+		)(key)
+		attest(thrown(() => validator.toJsonSchema())).equals(
+			thrown(() => T.toJsonSchema())
+		)
+		// the engine raising it words its message, so the build doesn't bake its own
 		attest(
-			precompileStandalone(exports, { introspection: ["json"] })
-		).satisfies("string")
+			precompileStandalone(
+				{
+					T: { type: T, params: [{ kind: "symbol", label: "key", value: key }] }
+				},
+				{ introspection: ["toJsonSchema"] }
+			).includes("runtime.serializeSymbol()")
+		).equals(true)
 	})
 
 	it("has none of the members that need arktype", async () => {

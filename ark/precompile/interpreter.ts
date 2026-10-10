@@ -316,6 +316,8 @@ export class Interpreter {
 	private activeCall:
 		| { ctx: Context; isArktype: boolean; isDefining: boolean }
 		| undefined
+	// what the stand-ins arktype calls outside any site read, e.g. a configured fallback writing a validator's JSON Schema
+	private looseTrace: Trace | undefined
 
 	private registerSites: ((module: SourceModule) => unknown) | undefined
 
@@ -2019,6 +2021,16 @@ export class Interpreter {
 		return proxy
 	}
 
+	traceOf<t>(f: () => t): [result: t, trace: Trace] {
+		const previous = this.looseTrace
+		const trace = (this.looseTrace = emptyTrace())
+		try {
+			return [f(), trace]
+		} finally {
+			this.looseTrace = previous
+		}
+	}
+
 	private callStandIn(standIn: StandIn, args: unknown[]): unknown {
 		const active = this.activeCall
 		if (active?.isArktype) standIn.isCalled = true
@@ -2029,7 +2041,10 @@ export class Interpreter {
 					this.notStaticHelper(standIn)
 				:	this.calledAtDefinition(standIn, undefined)
 		}
-		const ctx = active?.ctx ?? rootContext(closure.module, undefined)
+		const ctx = active?.ctx ?? {
+			...rootContext(closure.module, undefined),
+			trace: this.looseTrace ?? emptyTrace()
+		}
 		const params = runtimeParamsOf(closure.node)
 		for (let i = 0; i < args.length; i++) {
 			const param = params[Math.min(i, params.length - 1)] ?? closure.node

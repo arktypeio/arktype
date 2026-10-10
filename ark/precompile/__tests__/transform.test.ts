@@ -90,10 +90,10 @@ export const User = type({ name: "string" })`
 				}
 			)
 			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1gklrie0id3gl7"
-import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/1gklrie0id3gl7"
-import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/1gklrie0id3gl7"
-import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/1gklrie0id3gl7"
+import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1b2nrji1kfgq1f"
+import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/1b2nrji1kfgq1f"
+import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/1b2nrji1kfgq1f"
+import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/1b2nrji1kfgq1f"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { User } from "./user.ts"
 $arkfixConfig()

@@ -47,6 +47,7 @@ import {
 	hasDomain,
 	printable,
 	prototypeOf,
+	serializePrimitive,
 	throwError,
 	throwParseError,
 	type Fn,
@@ -339,6 +340,13 @@ const writeStandardJsonSchema = (
 export const throwJsonSchemaError = (code: string, message: string): never => {
 	throw assign(new Error(message), { name: "ToJsonSchemaError", code })
 }
+
+// e.g. printing a ToJsonSchemaError's context keyed by a symbol, whose TypeError each engine words its own way
+export const serializeSymbol = (): string =>
+	serializePrimitive(Symbol() as never)
+
+export const throwUnbaked = (reason: string): never =>
+	throwError(writeUnbakedMessage(reason))
 
 // arktype's own wrapper, so its name, members and expression are those arktype gives the function the program passes
 export const typedFn = (
@@ -718,3 +726,11 @@ export const bakedJsonSchemaOptionsMessage =
 	"a standalone validator's JSON Schema is written at build under the program's configuration, so it takes no options. Configure them with configure({ toJsonSchema }), or build with runtime: \"arktype\"."
 
 export type bakedJsonSchemaOptionsMessage = typeof bakedJsonSchemaOptionsMessage
+
+export const writeUnbakedMessage = <reason extends string>(
+	reason: reason
+): writeUnbakedMessage<reason> =>
+	`${reason}. Build with runtime: "arktype" to write it where it's read.`
+
+export type writeUnbakedMessage<reason extends string> =
+	`${reason}. Build with runtime: "arktype" to write it where it's read.`

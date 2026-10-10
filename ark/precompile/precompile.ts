@@ -12,7 +12,8 @@ import {
 	ParseError,
 	printable,
 	registeredNameOf,
-	throwError
+	throwError,
+	throwParseError
 } from "@ark/util"
 import { ark, configure } from "arktype"
 import type { HoleKind, IntrospectionMember } from "arktype/internal/runtime.ts"
@@ -27,6 +28,7 @@ import {
 	precompileStandalone,
 	precompileStandaloneModules,
 	writeFixConfig,
+	writeUnprecompilableMessage,
 	type ConfiguredModule,
 	type DefaultCheck,
 	type ExportSite,
@@ -707,6 +709,35 @@ export class Precompiler {
 		return this.configuration?.problem === configurationConflictMessage
 	}
 
+	// what the configured code arktype calls reads, which nothing compares with the program's once the schema is baked
+	private bake<t>(write: () => t): t {
+		let result: [t, { reads: Read[] }]
+		try {
+			result = this.interpreter.traceOf(write)
+		} catch (e) {
+			if (!(e instanceof DynamicValue)) throw e
+			return throwParseError(
+				writeUnprecompilableMessage(
+					"a JSON Schema whose configured writer the build can't evaluate"
+				)
+			)
+		}
+		const [value, { reads }] = result
+		if (reads.length) {
+			const { root, path } = reads[0]
+			const label = path.reduce<string>(
+				(label, key) => appendStringifiedKey(label, key),
+				root.kind === "binding" ? root.binding.name : root.name
+			)
+			throwParseError(
+				writeUnprecompilableMessage(
+					`a JSON Schema whose configured writer reads \`${label}\`, which the program can change,`
+				)
+			)
+		}
+		return value
+	}
+
 	private dependenciesOfArtifact(module: SourceModule): string[] {
 		const modules = [
 			// the graph records an import each time it follows one, so a module it read for an earlier one is here too
@@ -911,7 +942,8 @@ export class Precompiler {
 						configured,
 						sitesByName,
 						keywordReads,
-						introspection: this.introspection
+						introspection: this.introspection,
+						bake: write => this.bake(write)
 					},
 					refusalsByName,
 					this.inline

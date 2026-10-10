@@ -12,6 +12,7 @@ import {
 } from "arktype/internal/standalone.ts"
 import type { IntrospectionMember } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
+import { writeUnbakedMessage } from "arktype/runtime"
 import { DynamicValue } from "@ark/precompile/internal/dynamic.ts"
 import { buildSync } from "esbuild"
 import { mkdtempSync, writeFileSync } from "node:fs"
@@ -299,6 +300,8 @@ const observeAttributes = (t: Validator) => ({
 	meta: t.meta
 })
 
+type Introspection = ReturnType<typeof observeIntrospection>
+
 const observeIntrospection = (t: Validator) => ({
 	json: observe(() => t.json, undefined),
 	isToJsonTheJson: observe(() => t.toJSON() === t.json, undefined),
@@ -308,6 +311,26 @@ const observeIntrospection = (t: Validator) => ({
 		["draft-2020-12", "draft-07", "openapi-3.0"].map(target =>
 			observe(() => t["~standard"].jsonSchema[io]({ target }), undefined)
 		)
+	)
+})
+
+const unbakedSuffix = writeUnbakedMessage("")
+
+const threwUnbaked = (observation: unknown): boolean =>
+	(observation as { threw?: string }).threw?.endsWith(unbakedSuffix) ?? false
+
+// a schema the build can't bake throws why where it's read, so arktype's is left uncompared
+const maskUnbaked = (
+	arktype: Introspection,
+	baked: Introspection
+): Introspection => ({
+	...arktype,
+	jsonSchema:
+		threwUnbaked(baked.jsonSchema) ? baked.jsonSchema : arktype.jsonSchema,
+	standardJsonSchema: arktype.standardJsonSchema.map((observation, i) =>
+		threwUnbaked(baked.standardJsonSchema[i]) ?
+			baked.standardJsonSchema[i]
+		:	observation
 	)
 })
 
@@ -419,6 +442,8 @@ export interface Comparison {
 	harnessLimited: number
 	// whether its introspection was compared, which a refused bake or arktype disagreeing with itself prevents
 	isIntrospected: boolean
+	// whether a schema it bakes throws why the build can't write it
+	isUnbaked: boolean
 	// whether a site reading its introspection was compared, which data printing a function's name prevents
 	isFolded: boolean
 	disagreements: string[]
@@ -432,6 +457,7 @@ export const compare = async (
 	const result: Comparison = {
 		harnessLimited: 0,
 		isIntrospected: false,
+		isUnbaked: false,
 		isFolded: false,
 		disagreements: []
 	}
@@ -446,7 +472,7 @@ export const compare = async (
 			)
 		await compareFolded(node, layout, result, disagree)
 		let artifact: any
-		// introspection the build refuses to bake, like a schema calling a default's thunk, leaves the rest to compare
+		// introspection the build refuses to bake leaves the rest to compare
 		let isBaked = true
 		try {
 			artifact = await loadNamingHoles(
@@ -490,7 +516,10 @@ export const compare = async (
 		if (isBaked && arktype.introspection) {
 			result.isIntrospected = true
 			const baked = observeIntrospection(validator)
-			if (!isEqual(arktype.introspection, baked)) {
+			result.isUnbaked ||=
+				threwUnbaked(baked.jsonSchema) ||
+				baked.standardJsonSchema.some(threwUnbaked)
+			if (!isEqual(maskUnbaked(arktype.introspection, baked), baked)) {
 				disagree("introspection", {
 					arktype: arktype.introspection,
 					precompiled: baked

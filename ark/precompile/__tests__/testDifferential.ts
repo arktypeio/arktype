@@ -54,12 +54,14 @@ const run = async () => {
 	let calls = 0
 	let harnessLimited = 0
 	let introspected = 0
+	let unbaked = 0
 	let folded = 0
 	for (const [i, [node, inputs]] of roots.entries()) {
 		const comparison = await compare(node, inputs, observations[i])
 		disagreements.push(...comparison.disagreements)
 		harnessLimited += comparison.harnessLimited
 		if (comparison.isIntrospected) introspected++
+		if (comparison.isUnbaked) unbaked++
 		if (comparison.isFolded) folded++
 		if (comparison.refusal === undefined) {
 			precompiledRoots++
@@ -85,7 +87,7 @@ const run = async () => {
 	)
 	console.log(disagreements.slice(0, 20).join("\n\n"))
 	console.log(
-		`\n${disagreements.length ? "❌" : "✅"} ${precompiledRoots} of ${roots.length} roots precompiled, ${introspected} with their introspection baked and ${folded} folded where a site reads it, ${calls} calls, each in the ${layouts.join(" and ")} layouts: ${disagreements.length} disagreeing, ${harnessLimited} beyond the harness (${report})`
+		`\n${disagreements.length ? "❌" : "✅"} ${precompiledRoots} of ${roots.length} roots precompiled, ${introspected} with their introspection baked (${unbaked} throwing why a schema can't be) and ${folded} folded where a site reads it, ${calls} calls, each in the ${layouts.join(" and ")} layouts: ${disagreements.length} disagreeing, ${harnessLimited} beyond the harness (${report})`
 	)
 	if (disagreements.length)
 		throw new Error(`${disagreements.length} disagreements with arktype`)

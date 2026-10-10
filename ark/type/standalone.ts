@@ -41,6 +41,7 @@ import {
 	isRegExpObject,
 	isThunk,
 	nameOf,
+	ParseError,
 	printable,
 	prototypeOf,
 	serializePrimitive,
@@ -197,6 +198,13 @@ export interface StandaloneOptions {
 	keywordReads?: ReadonlySet<string> | undefined
 	// what each validator bakes of its Type's introspection, which it otherwise lacks
 	introspection?: readonly IntrospectionMember[] | undefined
+	// runs arktype writing what a validator bakes, refusing with a ParseError where the configured code it calls reads what the program can change
+	bake?: (<t>(write: () => t) => t) | undefined
+}
+
+interface Baking {
+	members: ReadonlySet<IntrospectionMember>
+	write: <t>(write: () => t) => t
 }
 
 export interface StandaloneModules {
@@ -264,7 +272,10 @@ const writeArtifact = (
 	imports: Record<string, string[]>
 ): string[] => {
 	const { configured, sitesByName } = opts
-	const introspection = new Set(opts.introspection)
+	const baking: Baking = {
+		members: new Set(opts.introspection),
+		write: opts.bake ?? (write => write())
+	}
 	const types: Record<string, ExportedValue> = {}
 	const factories: string[] = []
 	const tables = new Set<number>()
@@ -278,7 +289,7 @@ const writeArtifact = (
 				imports,
 				sitesByName,
 				definitionAddresses,
-				introspection,
+				baking,
 				undefined,
 				value.defaultChecks
 			)
@@ -294,7 +305,7 @@ const writeArtifact = (
 				imports,
 				sitesByName,
 				definitionAddresses,
-				introspection,
+				baking,
 				factory
 			)
 			factories.push(artifact.writeFactory(name, factories.length, configured))
@@ -305,7 +316,7 @@ const writeArtifact = (
 			types,
 			opts,
 			definitionAddresses,
-			introspection,
+			baking,
 			shared,
 			imports
 		),
@@ -325,7 +336,7 @@ const writeCreations = (
 	types: Record<string, ExportedValue>,
 	{ configured, sitesByName, keywordReads }: StandaloneOptions,
 	definitionAddresses: ReadonlyMap<unknown, string>,
-	introspection: ReadonlySet<IntrospectionMember>,
+	baking: Baking,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
 ): string[] => {
@@ -337,7 +348,7 @@ const writeCreations = (
 			imports,
 			sitesByName,
 			definitionAddresses,
-			introspection
+			baking
 		)
 	const readsByIndex: Record<number, string> = {}
 	let creations: Creation[] = []
@@ -528,7 +539,7 @@ export class StandaloneArtifact {
 	defaultChecks: readonly DefaultCheck[]
 	// a factory's errors expose the meta of a Type it receives, not a copy
 	receivedMetas = new Map<object, string>()
-	introspection: ReadonlySet<IntrospectionMember>
+	baking: Baking
 	// each JSON Schema a validator bakes, written once however many of its members return it
 	jsonSchemaNamesByText: Record<string, string> = {}
 
@@ -538,12 +549,12 @@ export class StandaloneArtifact {
 		imports: Record<string, string[]>,
 		sitesByName: Record<string, ExportSite> | undefined,
 		definitionAddresses: ReadonlyMap<unknown, string>,
-		introspection: ReadonlySet<IntrospectionMember>,
+		baking: Baking,
 		factory?: StandaloneFactory,
 		defaultChecks = factory?.defaultChecks ?? []
 	) {
 		this.exports = exports
-		this.introspection = introspection
+		this.baking = baking
 		this.factory = factory
 		this.defaultChecks = defaultChecks
 		if (factory?.isCreatedEachRun && hasArkKind(factory.type, "root"))
@@ -972,11 +983,14 @@ ${statements.filter(statement => statement).join("\n\n")}
 		index: number,
 		configured: ConfiguredModule | undefined
 	): string {
-		if (member === "toJsonSchema") assertBakeableJsonSchema(type)
 		this.receive(params)
 		this.writeSharedUnits()
-		let value = this.writeData(data)
-		// arktype returns one object from every read of a Type's json, and writes its JSON Schema anew each call
+		// the program reads it here, so a schema the build can't write refuses the site
+		let value =
+			member === "toJsonSchema" ?
+				this.writeJsonSchema(type, () => data, true)
+			:	this.writeData(data)
+		// arktype returns one object from every read of a Type's json
 		if (member !== "toJsonSchema") {
 			const json = `json${hashOf(value)}`
 			this.sharedModules[`~arktype/${json}`] ??= {
@@ -1292,8 +1306,8 @@ return [${returned.join(", ")}]
 			return
 		const address = heldAddressOf(root) ?? this.definitionAddresses.get(root)
 		// a validator baking introspection has members one built without it lacks, so the two are different values
-		return address && this.introspection.size ?
-				hashOf(`${address}\n${[...this.introspection].sort().join("\n")}`)
+		return address && this.baking.members.size ?
+				hashOf(`${address}\n${[...this.baking.members].sort().join("\n")}`)
 			:	address
 	}
 
@@ -1313,7 +1327,7 @@ return [${returned.join(", ")}]
 	emitIntrospection(root: BaseRoot): string {
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) =>
-			this.introspection.has(member)
+			this.baking.members.has(member)
 		if (bakes("json") || bakes("toJSON")) {
 			// arktype returns one object from every read
 			const json =
@@ -1339,18 +1353,8 @@ return [${returned.join(", ")}]
 	}
 
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
-		assertBakeableJsonSchema(root)
-		let writer: string
-		try {
-			writer = `() => (${this.writeData(write())})`
-		} catch (e) {
-			if (e instanceof ToJsonSchema.Error)
-				writer = `() => runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)})`
-			// e.g. printing a context holding a symbol
-			else if (e instanceof TypeError)
-				writer = `() => { throw new TypeError(${this.emitString(e.message)}) }`
-			else throw e
-		}
+		// arktype writes its JSON Schema anew each call
+		const writer = `() => ${this.writeJsonSchema(root, () => this.baking.write(write), false)}`
 		let name = this.jsonSchemaNamesByText[writer]
 		if (!name) {
 			name = `jsonSchema${Object.keys(this.jsonSchemaNamesByText).length}`
@@ -1358,6 +1362,30 @@ return [${returned.join(", ")}]
 			this.declarations.statements.push(`const ${name} = ${writer}`)
 		}
 		return name
+	}
+
+	// a schema the program reads only through a validator throws why the build can't write it, where it's read
+	writeJsonSchema(
+		root: BaseRoot,
+		write: () => unknown,
+		isRead: boolean
+	): string {
+		try {
+			assertBakeableJsonSchema(root)
+			let schema: unknown
+			try {
+				schema = write()
+			} catch (e) {
+				if (e instanceof ToJsonSchema.Error)
+					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)})`
+				if (isSymbolConversion(e)) return "runtime.serializeSymbol()"
+				throw e
+			}
+			return `(${this.writeData(schema)})`
+		} catch (e) {
+			if (isRead || !(e instanceof ParseError)) throw e
+			return `runtime.throwUnbaked(${JSON.stringify(e.message)})`
+		}
 	}
 
 	writeData(value: unknown): string {
@@ -1895,6 +1923,17 @@ return [${returned.join(", ")}]
 }
 
 const { getTime } = Date.prototype
+
+// the TypeError of a symbol arktype prints, e.g. in a ToJsonSchemaError's context, which the runtime raises again rather than bake the engine's message
+const isSymbolConversion = (e: unknown): boolean => {
+	if (!(e instanceof TypeError)) return false
+	try {
+		serializePrimitive(Symbol() as never)
+	} catch (conversion) {
+		return e.message === (conversion as TypeError).message
+	}
+	return false
+}
 
 // arktype calls a default's thunk again each time it writes a schema holding the default
 const assertBakeableJsonSchema = (root: BaseRoot): void => {

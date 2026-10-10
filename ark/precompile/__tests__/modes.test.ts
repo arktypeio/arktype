@@ -100,6 +100,24 @@ configure({ numberAllowsNaN: true })`,
 			])
 		})
 
+		it("bakes a JSON Schema whose configured writer reads what the program can change as a thrower", () => {
+			attest(
+				printedInFreshThread(`const files = {
+	"/config.ts": 'import { configure } from "arktype/config"\\nexport const shared = { version: 1 }\\nconfigure({ toJsonSchema: { fallback: { predicate: ctx => ({ ...ctx.base, version: shared.version }) } } })'
+}
+const source = 'import { type } from "arktype"\\nconst isEven = (n: number) => n % 2 === 0\\nexport const Even = type("number").narrow(isEven)\\nexport const schema = Even.toJsonSchema()'
+const { code, modules } = precompile(source, files, { config: "/config.ts", introspection: ["toJsonSchema"] })
+console.log(JSON.stringify([
+	// the site compares what the writer read where the program reads the schema
+	code.split("\\n").find(line => line.startsWith("export const schema")).replace(/\\$ark\\w+/g, "$ark"),
+	JSON.parse(Object.values(modules).join("\\n").match(/runtime\\.throwUnbaked\\((".*")\\)/)[1])
+]))`)
+			).snap([
+				"export const schema = /* @__PURE__ */ $ark(Even, $ark)",
+				"a JSON Schema whose configured writer reads `shared.version`, which the program can change, can't be precompiled to a standalone validator"
+			])
+		}).timeout(60000)
+
 		it("configure in a thread where arktype has created a Type", () => {
 			type("string")
 			attest(() =>
