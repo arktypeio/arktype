@@ -32,7 +32,7 @@ import {
 // ARK_PRECOMPILE_PROGRAMS=<count>[:<seed>] checks that many programs from the seed
 
 interface Fragment {
-	// what containers.js exports, which a perturbation can mock or swap where main.js imports it
+	// what containers.ts exports, which a perturbation can mock or swap where main.ts imports it
 	containers: string[]
 	exports: string[]
 	main: string[]
@@ -40,7 +40,7 @@ interface Fragment {
 
 type FragmentOf = (id: string) => Fragment
 
-// a site main.js observes, by what it creates and how that validates the inputs
+// a site main.ts observes, by what it creates and how that validates the inputs
 const observed = (key: string, site: string, inputs: unknown[]) =>
 	`$arkObserve(${JSON.stringify(key)}, () => ${site}, () => [${inputs.map(sourceOf).join(", ")}])`
 
@@ -570,14 +570,14 @@ const programOf = (fragmentsOf: FragmentOf[]): Program => {
 		].join("\n"),
 		main: [
 			`import { generic, match, scope, type } from "arktype"`,
-			`import { ${exported.join(", ")} } from "./containers.js"`,
+			`import { ${exported.join(", ")} } from "./containers.ts"`,
 			...main
 		]
 	}
 }
 
 const sourceOfProgram = (program: Program) =>
-	`// containers.js\n${program.containers}\n\n// main.js\n${program.main.join("\n")}`
+	`// containers.ts\n${program.containers}\n\n// main.ts\n${program.main.join("\n")}`
 
 const programs = fc
 	.array(
@@ -614,7 +614,7 @@ const foldedProgramOf = (
 	const refusedLines = new Set<number>()
 	for (const error of errors) {
 		if (
-			!error.file.endsWith("main.js") ||
+			!error.file.endsWith("main.ts") ||
 			!isObserved(program.main[error.line - 1])
 		)
 			return
@@ -635,9 +635,9 @@ const buildOptions: BuildOptions = {
 
 const write = (program: Program, dir: string) => {
 	mkdirSync(dir, { recursive: true })
-	writeFileSync(join(dir, "containers.js"), program.containers)
-	writeFileSync(join(dir, "main.js"), program.main.join("\n"))
-	return [join(dir, "main.js")]
+	writeFileSync(join(dir, "containers.ts"), program.containers)
+	writeFileSync(join(dir, "main.ts"), program.main.join("\n"))
+	return [join(dir, "main.ts")]
 }
 
 interface Counts {
@@ -742,7 +742,7 @@ const isUnbaked = ({ original, precompiled }: Disagreement) =>
 				))
 	)
 
-// a kind of disagreement counted rather than failing, by the line of main.js observing the site
+// a kind of disagreement counted rather than failing, by the line of main.ts observing the site
 interface Allowance {
 	reason: string
 	matches: (
@@ -770,7 +770,7 @@ const knownFailures: Allowance[] = [
 	},
 	{
 		reason:
-			"factories lane: a Generic's default thunk isn't arity-checked where it's instantiated",
+			"factories lane: a Generic's stand-in decides whether its default is a thunk where it's instantiated, not where arktype decides it",
 		matches: ({ perturbation }, line) =>
 			perturbation === "arity" && /\(\) => G\d+\(/.test(line)
 	}
@@ -801,7 +801,7 @@ const exclusions: Allowance[] = [
 	}
 ]
 
-// a site is labeled by its position in main.js or by the key main.js observes it by
+// a site is labeled by its position in main.ts or by the key main.ts observes it by
 const allowanceOf = (
 	allowances: Allowance[],
 	program: Program,
