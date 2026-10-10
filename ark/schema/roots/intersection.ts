@@ -139,7 +139,11 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 					const sortedRefinementDescriptions = prestructurals
 						.slice()
 						// override alphabetization to describe min before max
-						.sort((l, r) => (l.kind === "min" && r.kind === "max" ? -1 : 0))
+						.sort((l, r) =>
+							l.kind === "min" && r.kind === "max" ? -1
+							: l.kind === "max" && r.kind === "min" ? 1
+							: 0
+						)
 						.map(r => r.description)
 					childDescriptions.push(...sortedRefinementDescriptions)
 				}

@@ -279,6 +279,15 @@ type({ d: [{ a: "string" }, "number = 2"] }).onDeepUndeclaredKey("delete")({
 })
 ```
 
+### Describe a range's minimum first in every engine
+
+Firefox described a range by its maximum first, since the order depended on how the engine sorts:
+
+```ts
+// previously "at most 0.1 and at least 0.000001" in Firefox, now "at least 0.000001 and at most 0.1" as in V8
+type("0.000001 <= number <= 0.1").description
+```
+
 ### Describe an `Hkt` generic by its class
 
 A generic defined with an `Hkt` class and no `description` was described by the class's constructor, `Function`, rather than by the class:
