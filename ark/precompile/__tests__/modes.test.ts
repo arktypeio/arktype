@@ -113,7 +113,7 @@ console.log(JSON.stringify([
 	JSON.parse(Object.values(modules).join("\\n").match(/runtime\\.throwUnbaked\\((".*")\\)/)[1])
 ]))`)
 			).snap([
-				"export const schema = /* @__PURE__ */ $ark(Even, $ark)",
+				"export const schema = /* @__PURE__ */ $ark($ark)",
 				"a JSON Schema whose configured writer reads `shared.version`, which the program can change, can't be precompiled to a standalone validator"
 			])
 		}).timeout(60000)

@@ -218,6 +218,8 @@ export interface Reference {
 	isForeign: boolean
 	// whether it reads, through a binding nothing writes, what the site initializing that binding created, which nothing can replace
 	isFixed: boolean
+	// whether it reads a function or symbol its module creates, through the expression creating it or a binding of it, whose facts nothing changes
+	isOwnHole: boolean
 }
 
 interface SiteFactory {
@@ -1047,8 +1049,8 @@ export class Precompiler {
 				site.declarationStart !== undefined &&
 				!site.parseError &&
 				!site.introspection?.thrown
-			// a keyword Module creates no Type until one of its members is read, and introspection creates none
-			if (isPure && !site.isKeywordRead && !site.introspection)
+			// a keyword Module creates no Type until one of its members is read
+			if (isPure && !site.isKeywordRead)
 				fixedAt = Math.min(fixedAt, site.declarationStart!)
 			// a site becomes a call, so its validator is created, or its ParseError thrown, where arktype would create its Type
 			const call = isPure ? `/* @__PURE__ */ ${local}(` : `${local}(`
@@ -1141,13 +1143,10 @@ export class Precompiler {
 	}
 
 	private isFactory(site: Site, module: SourceModule): boolean {
-		const held =
-			isFoldable(site.value) ? keyOf(site.value)[1]
-			: site.introspection ? []
-			: undefined
+		const created = createdBy(site)
 		return (
-			!!held &&
-			(held.length > 0 ||
+			!!created &&
+			(keyOf(created)[1].length > 0 ||
 				site.inputs.length > 0 ||
 				site.defaultChecks.length > 0 ||
 				this.droppedHolesOf(site).size > 0 ||
@@ -1192,7 +1191,7 @@ export class Precompiler {
 		const held = [
 			...new Set(
 				[
-					...(isFoldable(site.value) ? [site.value] : []),
+					createdBy(site)!,
 					...site.defaultChecks.map(([node]) => node.in as BaseRoot)
 				].flatMap(value => keyOf(value)[1])
 			)
@@ -1307,6 +1306,11 @@ export class Precompiler {
 		const passed = new Set<unknown>()
 		// one value read through two texts is passed through each, since the program can change one but not the other
 		const textsByPassed = new Map<unknown, Set<string>>()
+		// what a site reading a Type's introspection needn't receive, since it creates no validator, nothing the program does changes those checks, and no default check calls them
+		const unchecked = new Set<unknown>()
+		const called = new Set(
+			site.defaultChecks.flatMap(([node]) => keyOf(node.in as BaseRoot)[1])
+		)
 		for (const reference of site.references) {
 			const text = module.snippetOf(reference)
 			const hole = holesByValue.get(reference.value)
@@ -1324,6 +1328,16 @@ export class Precompiler {
 				continue
 			}
 			const holes = hole ? [hole.value] : keyOf(reference.value as Foldable)[1]
+			if (
+				site.introspection &&
+				!holes.some(value => called.has(value)) &&
+				(hole ?
+					reference.isOwnHole
+				:	!this.interpreter.isCheckedAtCreation(reference.value))
+			) {
+				for (const value of holes) unchecked.add(value)
+				continue
+			}
 			// a Type without holes is written into the site's own code rather than received
 			if (holes.length && this.isIslandValue(reference.value, site)) {
 				if (!passed.has(reference.value)) reasons.push(islandValueMessage(text))
@@ -1363,7 +1377,7 @@ export class Precompiler {
 			)
 		}
 		for (const value of held) {
-			if (sourcesByHole.has(value)) continue
+			if (sourcesByHole.has(value) || unchecked.has(value)) continue
 			// a value the build didn't stand in for is arktype's own, which the emitter refuses or writes itself
 			const source = this.interpreter.sourceOf(value)
 			if (!source) continue
@@ -2112,12 +2126,12 @@ export class Precompiler {
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
 				site.inputs.push(input)
 		}
-		// what a site reading an imported Type's introspection returns doesn't depend on the Type at runtime, which only a module mock replaces, unless the Type's creation compares what the program holds, which runs only if the site receives it
+		// what a site reading an imported Type's introspection returns doesn't depend on the Type at runtime, which only a module mock replaces, unless the Type's creation checks what the program can change, which runs only if the site receives it
 		const type = site.introspection?.type
 		if (
 			type &&
 			!this.checkHelpers &&
-			!this.interpreter.comparedAtCreation.has(type)
+			!this.interpreter.isCheckedAtCreation(type)
 		) {
 			site.inputs = site.inputs.filter(
 				input =>
@@ -2184,7 +2198,8 @@ export class Precompiler {
 						this.isCreatedBy(
 							module.scopes.referencesById.get(read)?.binding,
 							value
-						)
+						),
+					isOwnHole: this.interpreter.isOwnHole(node, value, module)
 				})
 			}
 		}
@@ -3538,6 +3553,10 @@ const isFoldable = (value: unknown): value is Foldable =>
 	hasArkKind(value, "scope") ||
 	hasArkKind(value, "generic") ||
 	isTypedFn(value)
+
+// the value whose holes a site's factory receives, which for a site reading a Type's introspection is the Type
+const createdBy = (site: Site): Foldable | undefined =>
+	isFoldable(site.value) ? site.value : site.introspection?.type
 
 // e.g. a Module and each Type it holds, which a program can compare by identity
 const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {

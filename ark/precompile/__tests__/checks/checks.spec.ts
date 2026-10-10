@@ -93,6 +93,15 @@ test("a hole of another kind", async () => {
 	)
 })
 
+test("a hole of another kind in a definition folded to what it throws", async () => {
+	await expect(import("./folds.ts")).rejects.toThrow('code: "morph"')
+	vi.resetModules()
+	mock("./containers.ts", () => ({ double: Symbol("double") }))
+	await expect(import("./folds.ts")).rejects.toThrow(
+		"is Symbol(double), but was precompiled as a function of 1 parameter"
+	)
+})
+
 test("a hole with another prototype", async () => {
 	mock("./morphs.ts", async () => ({
 		...(await original("./morphs.ts")),

@@ -16,7 +16,7 @@ import {
 	sourceOf,
 	type Node
 } from "./grammar.ts"
-import type { Perturbation, World } from "./perturbationWorker.ts"
+import type { World } from "./perturbationWorker.ts"
 import {
 	buildPerturbed,
 	comparable,
@@ -752,22 +752,8 @@ interface Allowance {
 	) => boolean
 }
 
-const isHoleChanged = (perturbation: Perturbation) =>
-	perturbation === "arity" ||
-	perturbation === "mock" ||
-	perturbation === "mockKind"
-
 // a finding not yet fixed, named with the lane fixing it
 const knownFailures: Allowance[] = [
-	{
-		reason:
-			"runtime lane: an introspection site folded to its data or what it throws never checks its definition's holes",
-		matches: ({ perturbation, original, precompiled }, line) =>
-			isHoleChanged(perturbation) &&
-			/\.(?:json|toJSON\(\)|toJsonSchema\(\)), \(\) => \[]\)$/.test(line) &&
-			String(original.threw).startsWith("ParseError") &&
-			!String(precompiled.threw).startsWith("ParseError")
-	},
 	{
 		reason:
 			"factories lane: a Generic's stand-in decides whether its default is a thunk where it's instantiated, not where arktype decides it",

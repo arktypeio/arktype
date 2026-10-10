@@ -800,34 +800,42 @@ console.log(JSON.stringify([fromV.meta === T.meta, fromV.meta === fromW.meta, fr
 	}).timeout(60000)
 
 	it("fixes the configuration where a Type a bundle drops was created", async () => {
-		const root = writeFixture(
-			{
-				"config.ts":
-					'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n',
-				"unread.ts":
-					'import { type } from "arktype"\n\nconst Unread = type({ dropped: "string" })\n',
-				"main.ts": 'import "./unread.ts"\nimport "./config.ts"\n'
-			},
-			fromHere("temp", "dropped")
-		)
-		const stderrOf = (args: string[], input?: string) =>
-			spawnSync(process.execPath, args, { cwd: root, input, encoding: "utf8" })
-				.stderr
-		attest(
-			stderrOf(["--conditions", "ark-ts", "main.ts"]).includes(
-				configureAfterTypeMessage
+		const unread = {
+			validator: 'const Unread = type({ dropped: "string" })',
+			introspection: 'const schema = type({ dropped: "string" }).toJsonSchema()'
+		}
+		for (const [name, statement] of Object.entries(unread)) {
+			const root = writeFixture(
+				{
+					"config.ts":
+						'import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: "delete" })\n',
+					"unread.ts": `import { type } from "arktype"\n\n${statement}\n`,
+					"main.ts": 'import "./unread.ts"\nimport "./config.ts"\n'
+				},
+				fromHere("temp", `dropped${name}`)
 			)
-		).equals(true)
-		const bundle = await bundlers.esbuild(
-			{ cwd: root, config: "config.ts" },
-			root
-		)
-		attest(bundle.includes("dropped")).equals(false)
-		attest(
-			stderrOf(["--input-type=module"], bundle).includes(
-				writeCreatedBeforeConfigureMessage("unread.ts")
+			const stderrOf = (args: string[], input?: string) =>
+				spawnSync(process.execPath, args, {
+					cwd: root,
+					input,
+					encoding: "utf8"
+				}).stderr
+			attest(
+				stderrOf(["--conditions", "ark-ts", "main.ts"]).includes(
+					configureAfterTypeMessage
+				)
+			).equals(true)
+			const bundle = await bundlers.esbuild(
+				{ cwd: root, config: "config.ts" },
+				root
 			)
-		).equals(true)
+			attest(bundle.includes("dropped")).equals(false)
+			attest(
+				stderrOf(["--input-type=module"], bundle).includes(
+					writeCreatedBeforeConfigureMessage("unread.ts")
+				)
+			).equals(true)
+		}
 	}).timeout(60000)
 
 	it("leaves the configuration's check out of a bundle that never configures", async () => {
@@ -976,6 +984,7 @@ try {
 			"pass a mutated plain object",
 			"pass a hole with another arity",
 			"pass a hole of another kind",
+			"pass a hole of another kind in a definition folded to what it throws",
 			"pass a hole with another prototype",
 			"pass a polyfilled builtin"
 		])

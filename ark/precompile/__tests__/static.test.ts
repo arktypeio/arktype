@@ -679,6 +679,19 @@ export const fields = [1, 2].map(makeShortField)`)
 			])
 		})
 
+		it("a Scope a parameter configures", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+
+const make = (jitless: boolean) => {
+	const T = scope({}, { jitless }).type("string")
+	return T
+}`)
+			).snap([
+				'/main.ts:4:12  scope({}, { jitless }).type("string") cannot be precompiled\n  arktype holds `jitless` as a value rather than a definition, so it must be static\n  `jitless` is a parameter of make (/main.ts:3:15); its value is known only at runtime\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			])
+		})
+
 		it("call the build cannot see into", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

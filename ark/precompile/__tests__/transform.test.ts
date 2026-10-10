@@ -90,10 +90,10 @@ export const User = type({ name: "string" })`
 				}
 			)
 			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1bnva9f0jvmnzp"
-import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/1bnva9f0jvmnzp"
-import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/1bnva9f0jvmnzp"
-import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/1bnva9f0jvmnzp"
+import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/es7ckh03qmeud"
+import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/es7ckh03qmeud"
+import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/es7ckh03qmeud"
+import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/es7ckh03qmeud"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { User } from "./user.ts"
 import "./user.ts"
@@ -126,12 +126,52 @@ export const schema = T.toJsonSchema()`)
 const Length = type("string").pipe(s => s.length)
 export const schema = Length.toJsonSchema()`)
 			attest(result.code).snap(`import "arktype"
-import { f2yr47m0y316vp as $arkf2yr47m0y316vp } from "~arktype/su5cqt1yv9pgq"
-import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/su5cqt1yv9pgq"
+import { f2yr47m0y316vp as $arkf2yr47m0y316vp } from "~arktype/1jvz72p0kuinle"
+import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/1jvz72p0kuinle"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 const Length = /* @__PURE__ */ $arkf2yr47m0y316vp(s => s.length)
 export const schema = $arkf14gb4ky1hqquxy()`)
+		})
+
+		it("folds introspection to a call receiving each function another module supplies that the Type's creation checks, and each a default's check calls", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { double } from "./containers.ts"
+import { Doubled } from "./doubled.ts"
+const Length = type("string").pipe(s => s.length)
+const atMost = (n: number) => n <= 10
+export const schemas = [
+	Length.toJsonSchema(),
+	Doubled.toJsonSchema(),
+	type(["'a'", "=>", double]).toJsonSchema(),
+	type({ a: [["number", ":", atMost], "=", 5] }).omit("a").json
+]`,
+				{
+					"/containers.ts": `export const double = (n: number) => n * 2`,
+					"/doubled.ts": `import { type } from "arktype"
+import { double } from "./containers.ts"
+export const Doubled = type("number").pipe(double)`
+				}
+			)
+			attest(result.code).snap(`import "arktype"
+import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/18ntddv1g9lgxv"
+import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/18ntddv1g9lgxv"
+import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/18ntddv1g9lgxv"
+import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/18ntddv1g9lgxv"
+import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/18ntddv1g9lgxv"
+import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+import { double } from "./containers.ts"
+import { Doubled } from "./doubled.ts"
+$arkfixConfig()
+const Length = /* @__PURE__ */ $arkf1hn2e10012161b(s => s.length)
+const atMost = (n: number) => n <= 10
+export const schemas = [
+	$arkf1ltp2ba0zx2cit(),
+	$arkf1nmc1u509jfhaw(Doubled),
+	$arkf1qy79p41wr9kk2(double),
+	$arkf10le7xt0f1alcp(atMost)
+]`)
 		})
 
 		it("loads arktype where it was imported", () => {

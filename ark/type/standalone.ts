@@ -1212,17 +1212,12 @@ ${statements.filter(statement => statement).join("\n\n")}
 			:	this.readJson(type)
 		const defaults = this.writeDefaultChecks(this.defaultChecks)
 		// arktype checked the Type's defaults where it created it, which a site reading its introspection does at each call
-		const checks =
-			defaults.length ?
-				[
-					writeFixConfig(configured),
-					...this.checks,
-					...this.writeCalledBody(index),
-					...defaults.map(({ check }) => check)
-				]
-			:	[...this.checks, ...this.declarations.statements]
 		return this.writeFactoryFunction(index, params, [
-			...checks,
+			writeFixConfig(configured),
+			...this.checks,
+			...(defaults.length ?
+				[...this.writeCalledBody(index), ...defaults.map(({ check }) => check)]
+			:	this.declarations.statements),
 			`return ${value}`
 		])
 	}

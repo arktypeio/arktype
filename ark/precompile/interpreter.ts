@@ -318,6 +318,8 @@ export class Interpreter {
 	private declaredDynamics = new WeakSet<DynamicValue>()
 	// each Type a declaration created comparing what the program holds, which a site reading it receives so the declaration runs
 	comparedAtCreation = new WeakSet<object>()
+	// whether each arktype value a declaration created checks what the program can change where it's created, which a site reading only its introspection receives so the declaration runs
+	private checksByValue = new WeakMap<object, boolean>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	// one stand-in for each site, parameter and count a variant assumes, so evaluating a site again reads the one it read
 	private parameterStandIns = new WeakMap<
@@ -1213,23 +1215,117 @@ export class Interpreter {
 		} catch (e) {
 			result = { value: undefined, trace: ctx.trace, error: e }
 		}
-		this.markDeclared(result)
+		this.markDeclared(
+			result,
+			declaration.type === "VariableDeclarator" ? declaration.init : undefined,
+			module
+		)
 		this.valuesByBinding.set(binding, result)
 		return result
 	}
 
-	private markDeclared({ value, trace }: Evaluated): void {
+	private markDeclared(
+		{ value, trace }: Evaluated,
+		init: Node | null | undefined,
+		module: SourceModule
+	): void {
 		findDynamic(value, dynamic => {
 			this.declaredDynamics.add(dynamic)
 			return false
 		})
-		if (
-			isArkValue(value) &&
-			trace.reads.some(
-				read => read.root.kind === "binding" || !isArkValue(read.value)
-			)
+		if (!isArkValue(value)) return
+		const site =
+			init ?
+				(this.sitesByNode.get(init) ??
+				this.sitesByNode.get(unwrapExpression(init)))
+			:	undefined
+		const compares = trace.reads.some(
+			read => read.root.kind === "binding" || !isArkValue(read.value)
 		)
-			this.comparedAtCreation.add(value as object)
+		if (compares) this.comparedAtCreation.add(value as object)
+		const checks = compares || this.checksHolesOf(value, site, module)
+		const values = [value]
+		// e.g. a Module's Types, which its creation created
+		for (const value of values) {
+			// one value can be declared more than once, as by an alias
+			if (!this.checksByValue.get(value as object))
+				this.checksByValue.set(value as object, checks)
+			if (hasArkKind(value, "module")) values.push(...Object.values(value))
+		}
+	}
+
+	private checksHolesOf(
+		value: unknown,
+		site: SiteState | undefined,
+		module: SourceModule
+	): boolean {
+		try {
+			return [...this.holesIn(value)].some(hole =>
+				this.checksHole(site, hole, module)
+			)
+		} catch (e) {
+			// e.g. a Scope configured by a parameter, which the build can't key, so neither can a site reading it
+			if (e instanceof DynamicValue) return true
+			throw e
+		}
+	}
+
+	// a value whose creation the build didn't see may check anything
+	isCheckedAtCreation(value: unknown): boolean {
+		return this.checksByValue.get(value as object) ?? true
+	}
+
+	// a hole a site's creation checks against what the program can change, unless the site reads it as its module's own or through a Type whose creation checks nothing
+	private checksHole(
+		site: SiteState | undefined,
+		hole: unknown,
+		module: SourceModule
+	): boolean {
+		if (!site) return true
+		const reads = site.readsByValue.get(hole)
+		if (reads) return !reads.every(read => this.isOwnHole(read, hole, module))
+		for (const value of site.readsByValue.keys()) {
+			if (
+				isArkValue(value) &&
+				!this.isCheckedAtCreation(value) &&
+				this.holesIn(value).has(hole)
+			)
+				return false
+		}
+		return true
+	}
+
+	// a function or symbol its module creates, read as the expression creating it or through a binding nothing writes that the expression initializes, which is the same wherever that module runs
+	isOwnHole(read: Node, value: unknown, module: SourceModule): boolean {
+		const [source, origin] = this.sourceOf(value) ?? []
+		if (
+			origin !== module ||
+			!(typeof value === "symbol" ?
+				// e.g. `Symbol("tag")`, whose description no read changes
+				source!.type === "CallExpression" &&
+				source!.arguments.every(
+					arg => arg.type === "Literal" && typeof arg.value === "string"
+				)
+			:	this.standIns.get(value as object)!.kind === "function")
+		)
+			return false
+		const node = unwrapExpression(read)
+		if (node === source) return true
+		const binding =
+			node.type === "Identifier" ?
+				module.scopes.referencesById.get(node)?.binding
+			:	undefined
+		if (!binding || binding.writes.length) return false
+		const { declaration } = binding
+		return binding.kind === "function" ?
+				declaration === source
+			:	(binding.kind === "const" ||
+					binding.kind === "let" ||
+					binding.kind === "var") &&
+					declaration.type === "VariableDeclarator" &&
+					declaration.id === binding.id &&
+					!!declaration.init &&
+					unwrapExpression(declaration.init) === source
 	}
 
 	private nodeValue(node: Node, module: SourceModule): Evaluated {
@@ -1242,7 +1338,7 @@ export class Interpreter {
 		} catch (e) {
 			result = { value: undefined, trace: ctx.trace, error: e }
 		}
-		this.markDeclared(result)
+		this.markDeclared(result, node, module)
 		this.valuesByNode.set(node, result)
 		return result
 	}
