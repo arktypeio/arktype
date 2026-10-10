@@ -71,6 +71,61 @@ jobs:
       - name: Test history independence
         run: pnpm testHistory --jobs 4
 
+  differential:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Compare the suites' roots with their precompiled validators
+        run: pnpm testDifferential
+
+  perturbation:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Change what precompiled sites read
+        run: pnpm testPerturbation
+
+  environments:
+    needs: core
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup repo
+        uses: ./.github/actions/setup
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+
+      # the runner's Chrome is used as installed
+      - name: Setup Firefox
+        id: firefox
+        uses: browser-actions/setup-firefox@v1
+
+      - name: Run a precompiled program across environments
+        run: pnpm testEnvironments
+        env:
+          FIREFOX_BIN: ${{ steps.firefox.outputs.firefox-path }}
+
   tsVersionTasks:
     needs: core
     runs-on: ubuntu-latest
@@ -107,7 +162,7 @@ jobs:
         run: pnpm testTsVersions ${{ matrix.task }}
 
   prChecks:
-    needs: [compatibility, typescript]
+    needs: [compatibility, typescript, differential, perturbation, environments]
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:
