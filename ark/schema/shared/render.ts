@@ -1,8 +1,9 @@
-import { omit, stringifyPath } from "@ark/util"
+import { omit, stringifyPath, throwError } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import {
 	registerLocaleRenderer,
 	suppliedText,
+	unrenderedLocaleMessage,
 	unwrittenError,
 	writeText,
 	type ArkError
@@ -48,7 +49,13 @@ export const configureLocale = (
 	return configured
 }
 
-const select = (): Locale => {
+// a standalone runtime's config holds only en's info as its locale, so its
+// errors are written in en even beside arktype
+const isStandalone = (config: ResolvedConfig): boolean =>
+	!("cite" in config.locale)
+
+const select = (config: ResolvedConfig): Locale => {
+	if (isStandalone(config)) return config.locale
 	if (selector === undefined) return configured
 	try {
 		const locale = selector()
@@ -60,6 +67,10 @@ const select = (): Locale => {
 }
 
 const write = (error: ArkError, config: ResolvedConfig, locale: Locale) => {
+	if (isStandalone(config)) {
+		if (locale !== config.locale) throwError(unrenderedLocaleMessage)
+		return writeText(error, config, locale)
+	}
 	locale = normalizeLocale(locale)
 	if (locale === defaultLocale) return writeText(error, config, locale)
 	const supplied = suppliedText(error, "expected")
@@ -185,7 +196,17 @@ const writeInEn = (
 			writeInEn(e, config, error.code === "union" ? "actual" : "expected")
 	}
 	error.propString ??= stringifyPath(error.path)
-	writeText(error, config, defaultLocale, last)
+	const expected = configOf(error, "expected", config)
+	error.expected ??=
+		typeof expected === "string" ? expected : (
+			expected(error as never, defaultLocale as never)
+		)
+	if (last === "expected") return
+	const actual = configOf(error, "actual", config)
+	error.actual ??=
+		typeof actual === "string" ? actual : (
+			actual(error.data as never, error as never, defaultLocale as never)
+		)
 }
 
 const writeExpected = (

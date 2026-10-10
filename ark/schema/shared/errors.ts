@@ -93,7 +93,7 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		if (this.written) return issues
 		this.written = true
 		const locale = (this.locale ??=
-			rendererOf(this.config)?.select() ?? this.config.locale)
+			renderer?.select(this.config) ?? this.config.locale)
 		for (const error of issues) writeError(error, this.config, locale)
 		return issues
 	}
@@ -232,7 +232,7 @@ export const messageAt = (error: ArkError, path: PropertyKey[]): string => {
 	const config = ErrorSource.configOf(error)
 	const copy = unwrittenError(error)
 	copy.path = path
-	writeError(copy, config, rendererOf(config)?.select() ?? config.locale)
+	writeError(copy, config, renderer?.select(config) ?? config.locale)
 	return copy.message
 }
 
@@ -394,17 +394,14 @@ export const writeError = (
 	if (error.code === "union" || error.code === "intersection")
 		for (const e of error.errors) writeError(e, config, locale)
 	error.propString ??= stringifyPath(error.path)
-	const rendering = rendererOf(config)
-	if (rendering && locale !== rendering.en)
-		rendering.write(error, config, locale)
+	if (renderer && locale !== renderer.en) renderer.write(error, config, locale)
 	else writeText(error, config, locale)
 }
 
 export const writeText = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale,
-	last: "expected" | "actual" | "message" = "message"
+	locale: Locale
 ): void => {
 	const writers = config[error.code]
 	const meta = error.meta
@@ -412,13 +409,11 @@ export const writeText = (
 	const expected = meta?.expected ?? writers.expected
 	error.expected ??=
 		typeof expected === "function" ? expected(error as never, locale) : expected
-	if (last === "expected") return
 	const actual = meta?.actual ?? writers.actual
 	error.actual ??=
 		typeof actual === "function" ?
 			actual(error.data as never, error as never, locale)
 		:	actual
-	if (last === "actual") return
 	const problem = meta?.problem ?? writers.problem
 	error.problem ??=
 		typeof problem === "function" ? problem(error as never, locale) : problem
@@ -432,7 +427,7 @@ export interface LocaleRenderer {
 	/** the locale errors.ts writes itself */
 	en: Locale
 	/** the locale errors are written in when they are first read */
-	select: () => Locale
+	select: (config: ResolvedConfig) => Locale
 	write: (error: ArkError, config: ResolvedConfig, locale: Locale) => void
 }
 
@@ -442,14 +437,9 @@ export const registerLocaleRenderer = (registered: LocaleRenderer): void => {
 	renderer = registered
 }
 
-// a standalone runtime's config holds only en's info as its locale, so its
-// errors are written in en even beside arktype
-const rendererOf = (config: ResolvedConfig): LocaleRenderer | undefined =>
-	"cite" in config.locale ? renderer : undefined
-
 const writtenIn = (error: ArkError, locale: Locale): ArkError => {
 	const config = ErrorSource.configOf(error)
-	if (!rendererOf(config) && locale !== config.locale)
+	if (!renderer && locale !== config.locale)
 		return throwError(unrenderedLocaleMessage)
 	const copy = unwrittenError(error)
 	writeError(copy, config, locale)
