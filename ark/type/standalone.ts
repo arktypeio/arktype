@@ -1106,7 +1106,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		)
 		const moduleDeclarations = [
 			`var ${unit.name}Unit`,
-			`function ${unit.name}() {\n\treturn (${unit.name}Unit ??= (${unitFunction})(${[...dependencyArgs, ...writing.args].join(", ")}))\n}`
+			`function ${unit.name}() {\n${isStrict(unit) ? `\t"use strict"\n` : ""}\treturn (${unit.name}Unit ??= (${unitFunction})(${[...dependencyArgs, ...writing.args].join(", ")}))\n}`
 		]
 		for (const root of unit.roots) {
 			const name = unit.names[root.id]
@@ -1145,7 +1145,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 		epilogue: string[],
 		returned: string[]
 	): string {
-		const directive = isStrict(unit) ? `"use strict"\n` : ""
+		const directive = declaresStrict(unit) ? `"use strict"\n` : ""
 		return `function (${params.join(", ")}) {
 ${directive}${[...prologue, ...unit.members.map(([name, source]) => `const ${name} = ${source}`), ...epilogue].join("\n")}
 return [${returned.join(", ")}]
@@ -1188,7 +1188,7 @@ return [${returned.join(", ")}]
 				isSharedUnit(dependency) ?
 					`${dependency.name}()`
 				:	this.localNamesByUnit.get(dependency)!
-			if (isStrict(unit)) {
+			if (declaresStrict(unit)) {
 				params.push(name)
 				args.push(`${source}[${index}]`)
 			} else {
@@ -2008,6 +2008,10 @@ const sharedByUnit = new WeakMap<RootUnit, boolean>()
 // a Transform member writes to its input, which a bundle's CommonJS or IIFE output leaves sloppy, where writing to a frozen input is ignored rather than throwing
 const isStrict = (unit: RootUnit): boolean =>
 	unit.declared.some(node => node.transforms)
+
+// a shared unit's function is strict as the function declaring the unit is, so only a local unit's declares it, and can't destructure its parameters
+const declaresStrict = (unit: RootUnit): boolean =>
+	isStrict(unit) && !isSharedUnit(unit)
 
 const isSharedUnit = (unit: RootUnit): boolean => {
 	let shared = sharedByUnit.get(unit)
