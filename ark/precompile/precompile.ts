@@ -824,7 +824,8 @@ export class Precompiler {
 				exportsByName[name] = {
 					...site.introspection,
 					data: site.value,
-					params: factory.params
+					params: factory.params,
+					defaultChecks: site.defaultChecks
 				}
 				sitesByName[name] = exportSiteOf(site)
 				replaced.push([site, factory.spans])
@@ -1013,6 +1014,7 @@ export class Precompiler {
 			!!held &&
 			(held.length > 0 ||
 				site.inputs.length > 0 ||
+				site.defaultChecks.length > 0 ||
 				this.mockableHelpersOf(site, module).length > 0)
 		)
 	}
@@ -1024,7 +1026,15 @@ export class Precompiler {
 		prefix: string
 	): SiteFactory | undefined {
 		if (!this.isFactory(site, module)) return
-		const held = isFoldable(site.value) ? keyOf(site.value)[1] : []
+		// a default's check reads the functions of a node the value can drop
+		const held = [
+			...new Set(
+				[
+					...(isFoldable(site.value) ? [site.value] : []),
+					...site.defaultChecks.map(([node]) => node.in as BaseRoot)
+				].flatMap(value => keyOf(value)[1])
+			)
+		]
 		const helpers = this.mockableHelpersOf(site, module)
 		const factory: SiteFactory = {
 			params: [],
@@ -1755,43 +1765,6 @@ export class Precompiler {
 		}
 	}
 
-	// arktype checks a default where it first creates the node holding it, which may be another site's, so each factory creating one checks it after those its site's requests ran
-	private defaultChecksOf(state: SiteState): DefaultCheck[] {
-		const checks = [...state.defaultChecks]
-		for (const root of arkObjectsIn(state.value)) {
-			if (!hasArkKind(root, "root")) continue
-			for (const node of [root, ...root.references]) {
-				const defaults: DefaultCheck[] =
-					node.hasKind("optional") ?
-						"default" in node.inner ?
-							[[node.value, node.inner.default, node.key]]
-						:	[]
-					: node.hasKind("sequence") ?
-						(node.inner.defaultables ?? []).map(([value, defaultValue]) => [
-							value,
-							defaultValue,
-							null
-						])
-					:	[]
-				for (const check of defaults) {
-					if (
-						typeof check[1] === "function" ||
-						!this.interpreter.holdsUncallable(check[0].in as BaseRoot) ||
-						checks.some(
-							([node, value, key]) =>
-								node === check[0] &&
-								Object.is(value, check[1]) &&
-								key === check[2]
-						)
-					)
-						continue
-					checks.push(check)
-				}
-			}
-		}
-		return checks
-	}
-
 	private finalize(candidate: SiteCandidate, module: SourceModule): Site {
 		const { state } = candidate
 		const site = this.siteOf(candidate, module)
@@ -1820,7 +1793,8 @@ export class Precompiler {
 		} else {
 			site.value = state.value
 			site.roots = state.roots
-			site.defaultChecks = this.defaultChecksOf(state)
+			// arktype checks a default where it first creates its node, so a site checks those it creates and those computing what a cache returns it did
+			site.defaultChecks = [...new Set(state.defaultChecks)]
 			// e.g. a Generic aliased `define`, whose instantiation is a Type
 			if (!isFoldable(state.value))
 				site.definition = this.definitionOf(state.node, module)

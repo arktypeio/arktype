@@ -159,7 +159,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			throwParseError(missingSetEngineMessage)
 		if (this.inner.defaultables) {
 			for (const [node, value] of this.inner.defaultables)
-				assertDefaultValueAssignability(node, value, null)
+				assertDefaultValueAssignability(node, value, null, this)
 		}
 		// a function default can fail as it's applied, like a morph
 		this.includesMorph ||= !!this.defaultables?.some(

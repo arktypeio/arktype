@@ -66,8 +66,14 @@ export class OptionalNode extends BaseProp<"optional"> {
 			this.$.resolvedConfig.exactOptionalPropertyTypes === false
 		)
 			throwParseError(missingSetEngineMessage)
-		if ("default" in this.inner)
-			assertDefaultValueAssignability(this.value, this.inner.default, this.key)
+		if ("default" in this.inner) {
+			assertDefaultValueAssignability(
+				this.value,
+				this.inner.default,
+				this.key,
+				this
+			)
+		}
 		// a function default can fail as it's applied, like a morph
 		this.includesMorph ||= typeof this.inner.default === "function"
 		this.includesContextualMorph ||= this.defaultValueMorph?.length === 2
@@ -111,7 +117,8 @@ export const Optional = {
 export const assertDefaultValueAssignability = (
 	node: BaseRoot,
 	value: unknown,
-	key: PropertyKey | null
+	key: PropertyKey | null,
+	owner?: object
 ): unknown => {
 	// a function default is checked each time it's applied
 	if (isThunk(value)) return value
@@ -119,21 +126,23 @@ export const assertDefaultValueAssignability = (
 	if (hasDomain(value, "object"))
 		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
 
-	return assertDefaultAssignability(node, value, key)
+	return assertDefaultAssignability(node, value, key, owner)
 }
 
 // a function default's result can be an object, so it skips the non-primitive check
 export const assertDefaultAssignability = (
 	node: BaseRoot,
 	value: unknown,
-	key: PropertyKey | null
+	key: PropertyKey | null,
+	// the node whose creation checks it, or the function string syntax creates for the default
+	owner?: object
 ): unknown => {
 	if (!isResolutionFinal() && node.includesAlias) {
-		queueUnchecked(() => assertDefaultAssignability(node, value, key))
+		queueUnchecked(() => assertDefaultAssignability(node, value, key, owner))
 		return value
 	}
 
-	if ($ark.deferDefaultCheck?.(node, value, key)) return value
+	if ($ark.deferDefaultCheck?.(node, value, key, owner)) return value
 
 	// if the node has a default value, finalize it and apply JIT optimizations
 	// if applicable to ensure behavior + error logging is externally consistent

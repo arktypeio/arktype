@@ -99,7 +99,8 @@ export const parseObjectLiteral = (
 					assertDefaultAssignability(
 						parsedValue[0],
 						parsedValue[2](),
-						parsedKey.normalized
+						parsedKey.normalized,
+						parsedValue[2]
 					)
 				}
 				appendNamedProp(

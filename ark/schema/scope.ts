@@ -1320,22 +1320,37 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (inProgress.definitions && !isResolvable(pending))
 			return this.node("alias", { reference: pending.id }, { prereduced: true })
 		const ctx = nodesByRegisteredId[pending.id] as BaseParseContext
-		return resolving(() =>
+		const mark = $ark.reached?.mark()
+		const resolution = resolving(() =>
 			this.resolveContext(name, ctx, resolveShallowAliases(pending))
 		)
+		$ark.reached?.store(mark, this.resolutions, name)
+		return resolution
 	}
 
 	maybeResolve(
 		name: string
 	): Exclude<CachedResolution, BaseParseContext> | undefined {
 		const cached = this.resolutions[name]
-		if (cached) {
-			if (!hasArkKind(cached, "context")) {
-				if (hasArkKind(cached, "root") && cached.includesShallowAlias)
-					return this.resolvePending(name, cached)
-				return this.bindReference(cached)
-			}
+		if (cached && !hasArkKind(cached, "context")) {
+			$ark.reached?.cached(this.resolutions, name)
+			if (hasArkKind(cached, "root") && cached.includesShallowAlias)
+				return this.resolvePending(name, cached)
+			return this.bindReference(cached)
+		}
+		const mark = $ark.reached?.mark()
+		const resolution = this.resolveUncached(name, cached, mark)
+		$ark.reached?.store(mark, this.resolutions, name)
+		return resolution
+	}
 
+	private resolveUncached(
+		name: string,
+		cached: BaseParseContext | undefined,
+		// where resolving it began, which each alias its cycle closes reaches from
+		mark: number | undefined
+	): Exclude<CachedResolution, BaseParseContext> | undefined {
+		if (cached) {
 			const v = cached
 			if (v.phase === "resolving" || v.phase === "member") {
 				reach(v)
@@ -1374,6 +1389,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 					for (const member of openMembers.splice(membersStart)) {
 						member.phase = "resolved"
 						member.$.resolveContext(member.alias!, member, member.resolution!)
+						$ark.reached?.store(mark, member.$.resolutions, member.alias)
 						delete member.resolution
 					}
 				}
@@ -1498,6 +1514,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	>
 	export(...names: string[]): SchemaModule {
 		if (!this._exports) {
+			const mark = $ark.reached?.mark()
 			this._exports = {}
 			for (const name of this.exportedNames) {
 				const def = this.aliases[name]
@@ -1530,7 +1547,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 					this.compiledUnit = precompile(uncompiled, this)
 				this.resolved = true
 			}
-		}
+			$ark.reached?.store(mark, this, "export")
+		} else $ark.reached?.cached(this, "export")
 		const namesToExport = names.length ? names : this.exportedNames
 		return new RootModule(
 			flatMorph(namesToExport, (_, name) => [

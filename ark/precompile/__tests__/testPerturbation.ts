@@ -32,7 +32,7 @@ const corpus = globSync(
 	[
 		"ark/{type,schema}/__tests__/**/*.test.ts",
 		"ark/docs/components/snippets/*.ts",
-		"ark/precompile/__tests__/{app,checked,checks,environments,held,islands,swapped}/*.ts"
+		"ark/precompile/__tests__/{app,checked,checks,defaults,environments,held,islands,swapped}/*.ts"
 	],
 	{ cwd: root }
 )

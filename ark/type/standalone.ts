@@ -121,6 +121,7 @@ export interface StandaloneIntrospection {
 	type: BaseRoot
 	data: unknown
 	params: FactoryParam[]
+	defaultChecks?: readonly DefaultCheck[]
 }
 
 export interface StandaloneFactory {
@@ -271,40 +272,26 @@ const writeArtifact = (
 				imports,
 				sitesByName,
 				definitionAddresses,
-				introspection
+				introspection,
+				undefined,
+				value.defaultChecks
 			)
-			factories.push(artifact.writeIntrospection(name, value, factories.length))
+			factories.push(
+				artifact.writeIntrospection(name, value, factories.length, configured)
+			)
 		} else {
-			const {
-				type,
-				params,
-				internedBy,
-				isCreatedEachRun,
-				defaultChecks,
-				distinct
-			} = value as StandaloneFactory
-			if (internedBy !== undefined) tables.add(internedBy)
+			const factory = value as StandaloneFactory
+			if (factory.internedBy !== undefined) tables.add(factory.internedBy)
 			const artifact = new StandaloneArtifact(
-				{ [name]: type },
+				{ [name]: factory.type },
 				shared,
 				imports,
 				sitesByName,
 				definitionAddresses,
 				introspection,
-				defaultChecks
+				factory
 			)
-			if (isCreatedEachRun && hasArkKind(type, "root"))
-				artifact.createdEachRun.add(type)
-			factories.push(
-				artifact.writeFactory(
-					name,
-					params,
-					factories.length,
-					configured,
-					internedBy,
-					distinct
-				)
-			)
+			factories.push(artifact.writeFactory(name, factories.length, configured))
 		}
 	}
 	return [
@@ -529,6 +516,8 @@ export class StandaloneArtifact {
 	comparedRoots: BaseRoot[]
 	// a Type arktype creates anew each time its site runs, which its factory then does too
 	createdEachRun = new Set<BaseRoot>()
+	// what a factory receives and checks, absent for an artifact creating its exports once
+	factory: StandaloneFactory | undefined
 	// each default arktype checks where it defines the Type, which the factory checks once it creates the validators
 	defaultChecks: readonly DefaultCheck[]
 	// a factory's errors expose the meta of a Type it receives, not a copy
@@ -544,11 +533,15 @@ export class StandaloneArtifact {
 		sitesByName: Record<string, ExportSite> | undefined,
 		definitionAddresses: ReadonlyMap<unknown, string>,
 		introspection: ReadonlySet<IntrospectionMember>,
-		defaultChecks: readonly DefaultCheck[] = []
+		factory?: StandaloneFactory,
+		defaultChecks = factory?.defaultChecks ?? []
 	) {
 		this.exports = exports
 		this.introspection = introspection
+		this.factory = factory
 		this.defaultChecks = defaultChecks
+		if (factory?.isCreatedEachRun && hasArkKind(factory.type, "root"))
+			this.createdEachRun.add(factory.type)
 		this.sharedModules = sharedModules
 		this.imports = imports
 		this.sitesByName = sitesByName
@@ -927,12 +920,10 @@ ${statements.filter(statement => statement).join("\n\n")}
 	// each call creates its validator from the holes and inputs it receives, so it declares everything the validator holds
 	writeFactory(
 		name: string,
-		params: FactoryParam[],
 		index: number,
-		configured: ConfiguredModule | undefined,
-		internedBy?: number,
-		distinct: readonly unknown[] = []
+		configured: ConfiguredModule | undefined
 	): string {
+		const { params, internedBy, distinct = [] } = this.factory!
 		this.checkAddressed()
 		this.receive(params)
 		if (distinct.length) {
@@ -944,47 +935,40 @@ ${statements.filter(statement => statement).join("\n\n")}
 		const exported = this.exports[name]
 		// a Module, Scope or Generic declares what it holds, which the body then writes
 		const value = this.exportOf(exported)
+		// written before the body, which declares what they read
+		const defaults = this.writeDefaultChecks()
 		const body = [
-			// each unit is evaluated once, at the first call, which may come before the artifact's body runs
-			...this.writeBody(
-				(unitFunction, i) => `(unit${index}_${i} ??= ${unitFunction})`
-			),
-			...this.defaultChecks.map(
-				([node, defaultValue, key]) =>
-					`runtime.checkDefault(${this.validatorNamesByRoot.get(node.in as BaseRoot)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)})`
-			),
+			...this.writeCalledBody(index),
+			...defaults.map(({ check }) => check),
 			`return ${value}`
 		]
 		const holes =
 			internedBy === undefined ? undefined : (
 				keyOf(exported)[1].map(hole => this.holeExpressions.get(hole)!)
 			)
+		const defaultKeys =
+			defaults.length ? `, [${defaults.map(({ key }) => key).join(", ")}]` : ""
 		const statements = [
 			writeFixConfig(configured),
 			...this.checks,
 			...(holes ?
 				[
-					`return runtime.intern((interned${internedBy} ??= runtime.internTable()), [${holes.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n})`
+					`return runtime.intern((interned${internedBy} ??= runtime.internTable()), [${holes.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
 				]
 			:	body)
 		]
-		const units = this.localUnits.map((_, i) => `var unit${index}_${i}`)
-		return `${units.join("\n")}
-
-function factory${index}(${params.map((_, i) => `p${i}`).join(", ")}) {
-${statements.filter(statement => statement).join("\n\n")}
-}
-
-export { factory${index} as ${JSON.stringify(name)} }`
+		return this.writeFactoryFunction(name, index, params, statements)
 	}
 
 	writeIntrospection(
 		name: string,
 		{ member, type, data, params }: StandaloneIntrospection,
-		index: number
+		index: number,
+		configured: ConfiguredModule | undefined
 	): string {
 		if (member === "toJsonSchema") assertBakeableJsonSchema(type)
 		this.receive(params)
+		this.writeSharedUnits()
 		let value = this.writeData(data)
 		// arktype returns one object from every read of a Type's json, and writes its JSON Schema anew each call
 		if (member !== "toJsonSchema") {
@@ -997,11 +981,57 @@ export { factory${index} as ${JSON.stringify(name)} }`
 			}
 			value = this.read(`~arktype/${json}`, json, json, json)
 		}
-		return `function factory${index}(${params.map((_, i) => `p${i}`).join(", ")}) {
-${[...this.checks, `return ${value}`].join("\n\n")}
+		const defaults = this.writeDefaultChecks()
+		// arktype checked the Type's defaults where it created it, which a site reading its introspection does at each call
+		const checks =
+			defaults.length ?
+				[
+					writeFixConfig(configured),
+					...this.checks,
+					...this.writeCalledBody(index),
+					...defaults.map(({ check }) => check)
+				]
+			:	this.checks
+		return this.writeFactoryFunction(name, index, params, [
+			...checks,
+			`return ${value}`
+		])
+	}
+
+	writeFactoryFunction(
+		name: string,
+		index: number,
+		params: FactoryParam[],
+		statements: string[]
+	): string {
+		const units = this.localUnits.map((_, i) => `var unit${index}_${i}`)
+		return `${units.join("\n")}
+
+function factory${index}(${params.map((_, i) => `p${i}`).join(", ")}) {
+${statements.filter(statement => statement).join("\n\n")}
 }
 
 export { factory${index} as ${JSON.stringify(name)} }`
+	}
+
+	// each unit is evaluated once, at the first call, which may come before the artifact's body runs
+	writeCalledBody(index: number): string[] {
+		return this.writeBody(
+			(unitFunction, i) => `(unit${index}_${i} ??= ${unitFunction})`
+		)
+	}
+
+	writeDefaultChecks(): { check: string; key: string }[] {
+		return this.defaultChecks.map(([node, defaultValue, key]) => {
+			const input = node.in as BaseRoot
+			const config = this.scopeConfigOf(input, raisableCodesOf(input))
+			const [id, held] = keyOf(input)
+			const args = `${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}`
+			return {
+				check: `runtime.checkDefault(${this.validatorNamesByRoot.get(input)}, ${args}${config === "runtime.runtimeConfig" ? "" : `, ${config}`})`,
+				key: `[${JSON.stringify(id)}, ${args}, [${held.map(hole => this.holeExpressions.get(hole)).join(", ")}]]`
+			}
+		})
 	}
 
 	get localUnits(): RootUnit[] {

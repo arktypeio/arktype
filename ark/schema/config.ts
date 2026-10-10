@@ -40,8 +40,24 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	sets?: SetEngine
 	// a standalone build can't call some functions a default's check reaches, so it checks the default where the program creates the Type
 	deferDefaultCheck?:
-		| ((node: BaseRoot, value: unknown, key: PropertyKey | null) => boolean)
+		| ((
+				node: BaseRoot,
+				value: unknown,
+				key: PropertyKey | null,
+				owner: object | undefined
+		  ) => boolean)
 		| undefined
+	reached?: CacheReach | undefined
+}
+
+// a cache returns what another definition computed, so a standalone build learns which deferred checks a definition reaches through it
+export interface CacheReach {
+	// a node the node cache returns, whose creation ran its own checks
+	node: (node: object) => void
+	// an entry another cache returns, which reaches what computing it reached
+	cached: (cache: object, key: unknown) => void
+	mark: () => number | undefined
+	store: (mark: number | undefined, cache: object, key: unknown) => void
 }
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<

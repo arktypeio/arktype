@@ -21,6 +21,7 @@ import {
 import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import { Disjoint } from "./shared/disjoint.ts"
+import { $ark } from "./shared/registry.ts"
 import {
 	inProgress,
 	isResolutionFinal,
@@ -175,7 +176,10 @@ export class GenericRoot<
 				{ prereduced: true }
 			)
 		}
-		if (instantiation) return instantiation
+		if (instantiation) {
+			$ark.reached?.cached(this.instantiations, key)
+			return instantiation
+		}
 		for (let i = 0; i < this.names.length; i++) {
 			const constraint = this.constraints[i]
 			if (constraint.isUnknown()) continue
@@ -212,6 +216,7 @@ export class GenericRoot<
 			)
 		}
 		const id = registerNodeId(this.alias ?? "generic")
+		const mark = $ark.reached?.mark()
 		this.instantiations[key] = id
 		this.openInstantiations = Math.max(open, depth) + 1
 		try {
@@ -221,7 +226,10 @@ export class GenericRoot<
 				:	this.$.parse(this.bodyDef, { args: argNodes, id })
 			if (inProgress.definitions && node.includesShallowAlias)
 				delete this.instantiations[key]
-			else this.instantiations[key] = node
+			else {
+				this.instantiations[key] = node
+				$ark.reached?.store(mark, this.instantiations, key)
+			}
 			return node
 		} catch (e) {
 			delete this.instantiations[key]

@@ -1,4 +1,5 @@
 import {
+	$ark,
 	ArkErrors,
 	constraintInputOf,
 	hasArkKind,
@@ -81,10 +82,17 @@ export const parseInnerDefinition = (
 			scopeCache = Object.create(null) as Record<string, InnerParseResult>
 			parseCache.set(ctx.$, scopeCache)
 		}
-		if (scopeCache[def]) return scopeCache[def]
+		if (scopeCache[def]) {
+			$ark.reached?.cached(scopeCache, def)
+			return scopeCache[def]
+		}
+		const mark = $ark.reached?.mark()
 		const result = parseString(def, ctx)
 		const node = isArray(result) ? result[0] : result
-		if (!inProgress.definitions || !node.includesAlias) scopeCache[def] = result
+		if (!inProgress.definitions || !node.includesAlias) {
+			scopeCache[def] = result
+			$ark.reached?.store(mark, scopeCache, def)
+		}
 		return result
 	}
 	return hasDomain(def, "object") ?

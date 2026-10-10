@@ -187,16 +187,23 @@ const B = type.instanceOf(User)`,
 		const source = `import { type } from "arktype"
 const A = type({ a: ["string[]", "=", () => ${nonStatic}] })
 const B = type({ a: [["string", "=>", s => ${nonStatic}], "=", "a"] })
-const C = type({ a: [["string", ":", s => ${nonStatic}], "=", "a"] })`
+const C = type({ a: [["string", ":", s => ${nonStatic}], "=", "a"] })
+const D = type({ a: [["string", ":", s => s.length > 0], "=", "a"] })`
 		attest(statusesOf(source)).snap([
 			"2:11 accepted { a: string[] = Function($hole_1vu6ogz1nemc20) }",
 			'6:11 accepted { a: (In: string) => Out<unknown> = "a" }',
-			'10:11 accepted { a: string = "a" }'
+			'10:11 accepted { a: string = "a" }',
+			'14:11 accepted { a: string = "a" }'
 		])
 		attest(
 			analyze(source).sites.map(site =>
 				site.holes.map(hole => `${hole.kind} ${hole.isCalledAtDefinition}`)
 			)
-		).snap([["function false"], ["function false"], ["function false"]])
+		).snap([
+			["function false"],
+			["function false"],
+			["function false"],
+			["function false"]
+		])
 	})
 })

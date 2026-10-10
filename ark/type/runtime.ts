@@ -2,6 +2,7 @@ import type {
 	BaseRoot,
 	JsonSchema,
 	Locale,
+	ResolvedConfig,
 	TraversePipe,
 	RootApply,
 	StandardJSONSchemaV1,
@@ -472,18 +473,38 @@ export const checkDistinct = (
 	}
 }
 
-// arktype checks a default on a narrowed Type where it defines it, throwing its errors in en as a ParseError
+// a default, keyed by its checked Type's id and holes as arktype keys a node by its content
+export type DefaultKey = [
+	id: string,
+	value: unknown,
+	key: PropertyKey | null,
+	holes: readonly unknown[]
+]
+
+const checkedDefaultOf = ([id, value, key, holes]: DefaultKey): InternTable => {
+	let table = checkedDefaults.next(id).next(value).next(key)
+	for (const hole of holes) table = table.next(hole)
+	return table
+}
+
+// arktype checks a default on a narrowed Type once, where it creates the node holding it, throwing its errors in en as a ParseError
 export const checkDefault = (
 	validator: Validator,
 	value: unknown,
-	key: PropertyKey | null
+	key: PropertyKey | null,
+	config: ResolvedConfig = runtimeConfig
 ): void => {
+	const [id, holes] = holesByValue.get(validator)!
+	const checked = checkedDefaultOf([id, value, key, holes])
+	if (checked.value) return
 	const out = validator.traverse(value)
-	if (!(out instanceof ArkErrors)) return
-	if (key === null) throwParseError(`Default ${out.summary}`)
-	const atPath = new ArkErrors(runtimeConfig)
-	mergeErrors(atPath, out, [key])
-	throwParseError(`Default for ${atPath.summary}`)
+	if (out instanceof ArkErrors) {
+		if (key === null) throwParseError(`Default ${out.summary}`)
+		const atPath = new ArkErrors(config)
+		mergeErrors(atPath, out, [key])
+		throwParseError(`Default for ${atPath.summary}`)
+	}
+	checked.value = true
 }
 
 export const checkInput = (
@@ -576,6 +597,8 @@ class InternTable {
 
 export const internTable = (): InternTable => new InternTable()
 
+const checkedDefaults = new InternTable()
+
 const valuesByAddress = new Map<string, unknown>()
 
 // arktype holds one object under its address wherever a program reaches it, so every artifact creating it reads the first
@@ -601,9 +624,16 @@ export const addressedMeta = (address: string, meta: object): object => {
 export const intern = <value>(
 	table: InternTable,
 	holes: readonly unknown[],
-	create: () => value
+	create: () => value,
+	// defaults the definition reaches, which a definition creating the Type first may not have checked
+	defaults: readonly DefaultKey[] = []
 ): value => {
 	for (const hole of holes) table = table.next(hole)
+	if (
+		table.value !== undefined &&
+		defaults.some(key => !checkedDefaultOf(key).value)
+	)
+		create()
 	return (table.value ??= create()) as value
 }
 

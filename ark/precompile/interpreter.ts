@@ -4,7 +4,8 @@ import {
 	hasArkKind,
 	isNode,
 	type BaseNode,
-	type BaseRoot
+	type BaseRoot,
+	type CacheReach
 } from "@ark/schema"
 import { hashOf, hasDomain, ParseError } from "@ark/util"
 import { type } from "arktype"
@@ -138,7 +139,7 @@ export interface SiteState {
 	arktypeArguments: unknown[]
 	// each string passed to arktype's type, whose parse cache returns its Type again for it
 	parsedDefinitions: string[]
-	// each default arktype checked against a Type holding a function the build can't call, which its factory checks at creation
+	// each default check arktype deferred, directly or in computing what a cache returned, in the order the site reached them
 	defaultChecks: DefaultCheck[]
 	// each Type a request returned
 	roots: BaseRoot[]
@@ -291,6 +292,10 @@ export class Interpreter {
 	standIns = new WeakMap<object, StandIn>()
 	// the site whose own call into arktype threw each ParseError, which only that site can fold to a thrower
 	parseErrorSites = new WeakMap<ParseError, SiteState>()
+	// each default check deferred by the node whose creation ran it, which a site the node cache returns it to reaches
+	private checksByOwner = new Map<object, DefaultCheck[]>()
+	// the checks computing each cache entry reached, by cache and key
+	private checksByEntry = new WeakMap<object, Map<unknown, DefaultCheck[]>>()
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
 	// what each function, class or symbol expression outside a call evaluated to, which every evaluation of it reuses
 	private standInsByNode = new Map<Node, object>()
@@ -1773,8 +1778,10 @@ export class Interpreter {
 		const opaque = this.opaqueStandInOf([receiver, converted])
 		const previous = this.activeCall
 		const previousDefer = $ark.deferDefaultCheck
+		const previousReached = $ark.reached
 		this.activeCall = { ctx, isArktype: true, isDefining: true }
 		$ark.deferDefaultCheck = this.deferDefaultCheck
+		$ark.reached = this.reached
 		try {
 			const result = this.admit(
 				Reflect.apply(fn, receiver, converted),
@@ -1803,33 +1810,55 @@ export class Interpreter {
 		} finally {
 			this.activeCall = previous
 			$ark.deferDefaultCheck = previousDefer
+			$ark.reached = previousReached
 		}
 	}
 
 	private deferDefaultCheck = (
 		node: BaseRoot,
 		value: unknown,
-		key: PropertyKey | null
+		key: PropertyKey | null,
+		owner: object | undefined
 	): boolean => {
 		const site = this.activeCall?.ctx.site
-		if (!site || !this.holdsUncallable(node.in as BaseRoot)) return false
-		site.defaultChecks.push([node, value, key])
+		if (!site || !this.holdsStandIn(node.in as BaseRoot)) return false
+		const check: DefaultCheck = [node, value, key]
+		site.defaultChecks.push(check)
+		if (owner) {
+			const checks = this.checksByOwner.get(owner)
+			if (checks) checks.push(check)
+			else this.checksByOwner.set(owner, [check])
+		}
 		return true
 	}
 
-	// e.g. a narrow whose body isn't one expression, which a check of a default would call and its error's writers print
-	holdsUncallable(root: BaseRoot): boolean {
+	private reached: CacheReach = {
+		node: node => {
+			const checks = this.checksByOwner.get(node)
+			if (checks) this.activeCall?.ctx.site?.defaultChecks.push(...checks)
+		},
+		cached: (cache, key) => {
+			const checks = this.checksByEntry.get(cache)?.get(key)
+			if (checks) this.activeCall?.ctx.site?.defaultChecks.push(...checks)
+		},
+		mark: () => this.activeCall?.ctx.site?.defaultChecks.length,
+		// an entry computed again, as an alias resolved once its references are, reaches what each computation did
+		store: (mark, cache, key) => {
+			const reached = this.activeCall?.ctx.site?.defaultChecks
+			if (mark === undefined || !reached || reached.length === mark) return
+			let entries = this.checksByEntry.get(cache)
+			if (!entries) this.checksByEntry.set(cache, (entries = new Map()))
+			entries.set(key, [...(entries.get(key) ?? []), ...reached.slice(mark)])
+		}
+	}
+
+	// e.g. a narrow or a writer, which checking a default would call, so the site couldn't pass it to its factory
+	private holdsStandIn(root: BaseRoot): boolean {
 		return [root, ...root.references].some(node =>
 			[
 				...(node.hasKind("predicate") ? [node.predicate] : []),
 				...Object.values(node.meta)
-			].some(value => {
-				const standIn =
-					typeof value === "function" ? this.standIns.get(value) : undefined
-				return (
-					!!standIn && !(standIn.closure && staticBodyOf(standIn.closure.node))
-				)
-			})
+			].some(value => typeof value === "function" && this.standIns.has(value))
 		)
 	}
 

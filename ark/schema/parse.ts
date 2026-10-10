@@ -228,7 +228,10 @@ export const createNode = ({
 
 	if (key) {
 		const cached = $.nodesByKey.get(key)
-		if (cached) return cached
+		if (cached) {
+			$ark.reached?.node(cached)
+			return cached
+		}
 	}
 
 	const attachments: UnknownAttachments = {

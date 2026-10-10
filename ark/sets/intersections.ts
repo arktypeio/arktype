@@ -1,4 +1,5 @@
 import {
+	$ark,
 	Disjoint,
 	isNode,
 	isResolutionFinal,
@@ -68,7 +69,11 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		const cacheByL = cacheByOperator[ctx.pipe ? "|>" : "&"]
 		let cacheByR = cacheByL.get(l)
 		const cached = cacheByR?.get(r)
-		if (cached !== undefined) return cached as never
+		if (cached !== undefined) {
+			$ark.reached?.cached(cacheByR!, r)
+			return cached as never
+		}
+		const mark = $ark.reached?.mark()
 
 		const isPureIntersection =
 			!ctx.pipe || (!l.includesTransform && !r.includesTransform)
@@ -91,6 +96,7 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 
 		if (!cacheByR) cacheByL.set(l, (cacheByR = new WeakMap()))
 		cacheByR.set(r, result)
+		$ark.reached?.store(mark, cacheByR, r)
 		return result as never
 	}) as never
 
