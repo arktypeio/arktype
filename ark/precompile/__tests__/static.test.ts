@@ -1208,6 +1208,15 @@ export const B = list("number")`)
 			).snap(["7:18 accepted string <= 5", "8:18 accepted number[]"])
 		})
 
+		it("a helper exported by a clause", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const field = (n: number) => type(\`string <= \${n}\`)
+export const A = field(5)
+export { field }`)
+			).snap(["3:18 accepted string <= 5"])
+		})
+
 		it("a helper whose keepNames name is passed on", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

@@ -2585,7 +2585,9 @@ export class Precompiler {
 			isFoldedHelper(fn, module) &&
 			bindingOfFunction(fn, module)!.references.every(
 				reference =>
-					isWithin(reference.id, settledRanges) || isNamed(reference.id, module)
+					isWithin(reference.id, settledRanges) ||
+					reference.id.parent?.type === "ExportSpecifier" ||
+					isNamed(reference.id, module)
 			)
 		)
 	}

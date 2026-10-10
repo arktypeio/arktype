@@ -223,6 +223,7 @@ export const isFoldedHelper = (
 			reference =>
 				(reference.id.parent?.type === "CallExpression" &&
 					reference.id.parent.callee === reference.id) ||
+				reference.id.parent?.type === "ExportSpecifier" ||
 				isNamed(reference.id, module)
 		)
 	)
