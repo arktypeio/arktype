@@ -25,4 +25,4 @@ const resolveAll = (module: object): void => {
 
 resolveAll(keywords)
 
-process.stdout.write(writePrecompiledUnits(roots))
+process.stdout.write(JSON.stringify(writePrecompiledUnits(roots)))

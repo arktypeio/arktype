@@ -10,12 +10,11 @@ import type { type } from "arktype"
 
 // imported as a module, so registering evaluates no string under a Content-Security-Policy
 export const registerUnits = async (
-	source: string
+	written: Record<string, string>
 ): Promise<Record<string, PrecompiledUnit>> => {
+	const source = `export default {${Object.entries(written).map(([key, unit]) => `\n${JSON.stringify(key)}: ${unit}`)}\n}`
 	const units = (
-		await import(
-			`data:text/javascript,export default ${encodeURIComponent(source)}`
-		)
+		await import(`data:text/javascript,${encodeURIComponent(source)}`)
 	).default
 	registerPrecompiledUnits(units)
 	return units

@@ -28,12 +28,15 @@ const buildCurrentProject = () =>
 
 // a module that registers keyword units before arktype is imported, so resolving a keyword generates no code
 const writePrecompiledKeywords = () => {
-	const units = getShellOutput(`node ${fromHere("precompileKeywords.ts")}`)
+	const units: Record<string, string> = JSON.parse(
+		getShellOutput(`node ${fromHere("precompileKeywords.ts")}`)
+	)
+	const table = `{${Object.entries(units).map(([key, unit]) => `\n${JSON.stringify(key)}: ${unit}`)}\n}`
 	writeFile(
 		join(outDir, "precompiled.js"),
 		buildKind === "cjs" ?
-			`require("@ark/schema").registerPrecompiledUnits(${units})\n`
-		:	`import { registerPrecompiledUnits } from "@ark/schema"\n\nregisterPrecompiledUnits(${units})\n`
+			`require("@ark/schema").registerPrecompiledUnits(${table})\n`
+		:	`import { registerPrecompiledUnits } from "@ark/schema"\n\nregisterPrecompiledUnits(${table})\n`
 	)
 }
 

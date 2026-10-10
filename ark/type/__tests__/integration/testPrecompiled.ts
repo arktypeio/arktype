@@ -17,14 +17,16 @@ import { cases } from "./util.ts"
 
 // registered before arktype is imported, as the module its build writes is
 const keywordUnits = await registerUnits(
-	execFileSync(
-		"node",
-		[
-			fileURLToPath(
-				new URL("../../../repo/precompileKeywords.ts", import.meta.url)
-			)
-		],
-		{ encoding: "utf8" }
+	JSON.parse(
+		execFileSync(
+			"node",
+			[
+				fileURLToPath(
+					new URL("../../../repo/precompileKeywords.ts", import.meta.url)
+				)
+			],
+			{ encoding: "utf8" }
+		)
 	)
 )
 
@@ -41,7 +43,9 @@ const unboundKeywordsOf = (module: object, path: string): string[] =>
 		: (
 			hasArkKind(resolution, "root") &&
 			!resolution.includesAlias &&
-			!isPrecompiled(keywordUnits, resolution)
+			!isPrecompiled(keywordUnits, resolution) &&
+			// the corpus registers again the units it shares with keywords
+			!isPrecompiled(units, resolution)
 		) ?
 			[`${path}${k}`]
 		:	[]

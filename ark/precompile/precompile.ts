@@ -563,11 +563,12 @@ export class Precompiler {
 			}
 			if (id === this.config) this.stampConfiguration(module, s)
 		} else {
-			const roots = sites.flatMap(site => site.roots)
-			if (roots.length) {
-				const table = `import { registerPrecompiledUnits } from "arktype/internal"\n\nregisterPrecompiledUnits(${writePrecompiledUnits(roots)})\n`
-				const specifier = `~arktype/units/${hashOf(table)}`
-				modules[specifier] = table
+			// a unit is a module of its own, so the modules whose Types call it share it
+			const units = writePrecompiledUnits(sites.flatMap(site => site.roots))
+			for (const key in units) {
+				const specifier = `~arktype/units/${key}`
+				modules[specifier] =
+					`import { registerPrecompiledUnits } from "arktype/internal"\n\nregisterPrecompiledUnits({ ${JSON.stringify(key)}: ${units[key]} })\n`
 				imports[specifier] = {}
 			}
 			if (this.inline) this.importKeywords(module, s)

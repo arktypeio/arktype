@@ -2,13 +2,11 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	isNode,
-	precompileByContent,
+	precompileRootUnits,
 	registeredReference,
-	Traversal,
 	writePrecompiledUnits,
 	type BaseNode,
-	type BaseScope,
-	type NodeId
+	type BaseScope
 } from "@ark/schema"
 import { flatMorph, liftArray } from "@ark/util"
 import { keywords, scope, type } from "arktype"
@@ -39,14 +37,11 @@ contextualize(() => {
 			b: { "a?": "a" }
 		}).export()
 
-	const precompile = (types: ReturnType<typeof define>) =>
-		precompileByContent(Object.values(types).map(t => t.internal))
-
 	const emit = () => {
 		const types = define()
 		const roots = Object.values(types).map(t => t.internal)
 		return {
-			unit: precompile(types),
+			names: precompileRootUnits(types.user.internal)[0].names,
 			units: writePrecompiledUnits(roots),
 			artifact: precompileStandalone({ user: types.user, tree: types.tree })
 		}
@@ -58,10 +53,10 @@ contextualize(() => {
 		type("number").narrow(named("isEven", n => n % 2 === 1))
 		scope({ user: "string", tree: { "next?": "tree" } }).export()
 		const second = emit()
-		attest(
-			Object.keys(second.unit.names)[0] === Object.keys(first.unit.names)[0]
-		).equals(false)
-		attest(second.unit.source).equals(first.unit.source)
+		attest(Object.keys(second.names)[0] === Object.keys(first.names)[0]).equals(
+			false
+		)
+		attest(Object.values(second.names)).equals(Object.values(first.names))
 		attest(second.units).equals(first.units)
 		attest(second.artifact).equals(first.artifact)
 	})
@@ -71,10 +66,12 @@ contextualize(() => {
 		const After = type("Date > d'2000-01-01'")
 		// as a build names them, since a required prop's context holds its value's, which can reach Date before isValidDate
 		const namesOf = (...types: type.Any[]) =>
-			precompileByContent(
-				types.map(t => t.internal),
-				runtimeKeyOf
-			).names
+			Object.assign(
+				{},
+				...types.map(
+					t => precompileRootUnits(t.internal, runtimeKeyOf)[0].names
+				)
+			)
 		const alone = { ...namesOf(Email), ...namesOf(After) }
 		const reached = namesOf(
 			type({ id: "string.uuid", at: "Date > d'1999-01-01'" }),
@@ -93,29 +90,6 @@ contextualize(() => {
 		for (let i = 0; i < 100; i++) data = { value: i, children: [data] }
 		tree(data)
 		attest(precompileStandalone({ tree })).equals(artifact)
-	})
-
-	it("validates with a unit named by content", () => {
-		const types = define()
-		const unit = precompile(types)
-		const traversals = new Function(`return ${unit.source}`)()(
-			[],
-			unit.refs,
-			unit.errorContexts
-		)
-		const declaredNames = [...new Set(Object.values(unit.names))]
-		const apply = (t: { internal: { id: NodeId } }, data: unknown) => {
-			const ctx = new Traversal(data, $ark.resolvedConfig!)
-			traversals[declaredNames.indexOf(unit.names[t.internal.id])][1](data, ctx)
-			return ctx.finalize()
-		}
-		const data: any = { n: "1", b: { a: { n: "x" } } }
-		data.b.a.b = data.b
-		attest(String(apply(types.a, data))).equals(String(types.a(data)))
-		attest(String(apply(types.tree, { value: 1, children: [{}] }))).equals(
-			String(types.tree({ value: 1, children: [{}] }))
-		)
-		attest(String(apply(types.even, 3))).equals(String(types.even(3)))
 	})
 
 	it("passes symbols and object units to compiled code", () => {
