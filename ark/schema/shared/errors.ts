@@ -68,7 +68,7 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	private grouped: ArkError[] = []
 	private groupedCount = 0
 	// errors by the string of their path, once there are enough to index
-	private byPath: Record<string, ArkError> | undefined
+	private index: Record<string, ArkError> | undefined
 	private written = true
 	private locale: Locale | undefined
 	private config: ResolvedConfig
@@ -143,7 +143,7 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		const existing = this.errorAt(error)
 		if (!existing) {
 			this.grouped.push(error)
-			if (this.byPath) this.byPath[pathKeyOf(error)] = error
+			if (this.index) this.index[pathKeyOf(error)] = error
 			return
 		}
 		// If the existing error is an error for a value constrained to "never",
@@ -170,15 +170,15 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 				)
 		const grouped = this.grouped
 		grouped[grouped.indexOf(existing)] = errorIntersection
-		if (this.byPath) this.byPath[pathKeyOf(error)] = errorIntersection
+		if (this.index) this.index[pathKeyOf(error)] = errorIntersection
 	}
 
 	private errorAt(error: ArkError): ArkError | undefined {
 		const { grouped } = this
 		const { path } = error
-		if (this.byPath || grouped.length >= maxScannedLength) {
-			this.byPath ??= indexByPath(grouped)
-			const indexed = this.byPath[pathKeyOf(error)]
+		if (this.index || grouped.length >= maxScannedLength) {
+			this.index ??= indexByPath(grouped)
+			const indexed = this.index[pathKeyOf(error)]
 			// distinct symbols can print alike, so an indexed error may be elsewhere
 			if (!indexed || pathEquals(indexed.path, path)) return indexed
 		}

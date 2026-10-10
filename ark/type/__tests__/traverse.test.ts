@@ -373,6 +373,7 @@ b must be a number (was a string)`)
 		})(1) as ArkErrors
 
 		attest(out.issues.map(e => e.propString)).equals(Object.keys(byPath(out)))
+		attest("byPath" in out).equals(false)
 		attest(flatProblemsByPath(out)).snap({
 			k0: ["must be p0 (was 1)"],
 			k1: ["must be p1 (was 1)"],
