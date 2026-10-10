@@ -164,6 +164,8 @@ const show = (log: Observation[] | undefined, path: string[]) => {
 const skippedUnits: Record<string, string> = {
 	"ark/type/__tests__/facts.test.ts › facts › object units":
 		"its union of object units is ordered by their registration counters, as values with the same name are",
+	"ark/type/__tests__/gc.test.ts › gc › values captured by functions":
+		"whether a value is collected depends on what was compiled before, and memory retention is outside H",
 	"ark/type/__tests__/references.test.ts › references › collected references match copied references":
 		"it calls each node object it reaches, and whether equal nodes are one object is identity, which is unspecified"
 }
