@@ -321,6 +321,24 @@ ${call}`,
 			])
 		})
 
+		it("configure in a declaration or default export at the config module's top level", () => {
+			attest(
+				[
+					"const config = configure({ onFail: errors => errors.throw() })",
+					"export const config = configure({ onFail: errors => errors.throw() }) as {}",
+					"export default configure({ onFail: errors => errors.throw() })",
+					"void configure({ onFail: errors => errors.throw() })"
+				].flatMap(call =>
+					diagnosticsOf(
+						`import { configure } from "arktype/config"
+${call}`,
+						{},
+						{ config: "/main.ts" }
+					)
+				)
+			).snap([])
+		})
+
 		it("configure other than at the config module's top level", () => {
 			const setup = `import { configure } from "arktype/config"
 export const setup = () => configure({ onUndeclaredKey: "reject" })`

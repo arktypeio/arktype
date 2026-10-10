@@ -2527,10 +2527,7 @@ export class Precompiler {
 		modules: string[]
 	): Pick<Configuration, "problem" | "reasons"> & { value: unknown } {
 		// the program may run a call elsewhere later or not at all, though the build applies it before any site
-		if (
-			call.parent?.type !== "ExpressionStatement" ||
-			call.parent.parent !== module.program
-		) {
+		if (!isTopLevelStatement(call)) {
 			return {
 				value: undefined,
 				problem:
@@ -3585,6 +3582,23 @@ const refuse = (site: Site, reasons: string[]): Site => {
 
 const rejectSite = (site: Site, dynamic: DynamicValue): Site =>
 	refuse(site, chainOf(dynamic))
+
+// e.g. `configure(...)`, `export const config = configure(...)` or `export default configure(...)`, which the program runs once as it loads
+const isTopLevelStatement = (call: Node): boolean => {
+	let statement = operatorOf(call)[1]
+	if (statement?.type === "UnaryExpression" && statement.operator === "void")
+		statement = operatorOf(statement)[1]
+	if (statement?.type === "VariableDeclarator") statement = statement.parent
+	if (statement?.parent?.type === "ExportNamedDeclaration")
+		statement = statement.parent
+	return (
+		statement?.parent?.type === "Program" &&
+		(statement.type === "ExpressionStatement" ||
+			statement.type === "VariableDeclaration" ||
+			statement.type === "ExportNamedDeclaration" ||
+			statement.type === "ExportDefaultDeclaration")
+	)
+}
 
 const rejectionOf = (state: SiteState): DynamicValue | undefined =>
 	state.error instanceof DynamicValue ? state.error
