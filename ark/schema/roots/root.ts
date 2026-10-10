@@ -1,6 +1,5 @@
 import {
 	arrayEquals,
-	flatMorph,
 	includes,
 	inferred,
 	omit,
@@ -163,6 +162,7 @@ export abstract class BaseRoot<
 		)
 
 		ctx.useRefs ||= this.isCyclic
+		if (ctx.useRefs) ctx.refs = new Map()
 
 		// ensure $schema is the first key if present
 		const schema: JsonSchema =
@@ -170,12 +170,12 @@ export abstract class BaseRoot<
 
 		Object.assign(schema, this.toJsonSchemaRecurse(ctx))
 
-		if (ctx.useRefs) {
-			const defs = flatMorph(this.references, (i, ref) =>
-				ref.isRoot() && !ref.alwaysExpandJsonSchema ?
-					[ref.id, ref.toResolvedJsonSchema(ctx)]
-				:	[]
-			)
+		if (ctx.refs) {
+			// only resolve referenced roots, since this.references also includes
+			// discriminated union cases that may not be valid on their own
+			const defs: Record<string, JsonSchema> = {}
+			// refs added while resolving a definition are visited by this loop
+			for (const [id, ref] of ctx.refs) defs[id] = ref.toResolvedJsonSchema(ctx)
 			// draft-2020-12 uses $defs, draft-07 uses definitions
 			if (ctx.target === "draft-07")
 				Object.assign(schema, { definitions: defs })
@@ -189,6 +189,7 @@ export abstract class BaseRoot<
 		if (ctx.useRefs && !this.alwaysExpandJsonSchema) {
 			// draft-2020-12 uses $defs, draft-07 uses definitions
 			const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
+			ctx.refs?.set(this.id, this)
 			return { $ref: `#/${defsKey}/${this.id}` } as JsonSchema.Ref
 		}
 
