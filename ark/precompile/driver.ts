@@ -219,7 +219,9 @@ export const createKeyedPrecompiler = (
 						precompiler.localImportsOf(readFileSync(file, "utf8"), file)
 					])[1]
 		})
-		recordGiven(tracked, source, id)
+		// only a module it precompiles is given to the graph, so editing another keeps the precompiler
+		if (precompiler.isTransformed(id) && precompiles(precompiler, source, id))
+			recordGiven(tracked, source, id)
 		const transformed = transformedModuleOf(precompiler, source, id)
 		for (const dependency of transformed?.dependencies ?? [])
 			if (!files.includes(dependency)) files.push(dependency)
