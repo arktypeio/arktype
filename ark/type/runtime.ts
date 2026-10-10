@@ -515,6 +515,39 @@ export const holesOf = (
 	return holes
 }
 
+// a hole is held weakly, as arktype holds a Type it may return again, so a function created for one call doesn't outlive it
+class InternTable {
+	value: unknown = undefined
+	private readonly byObject = new WeakMap<WeakKey, InternTable>()
+	private readonly byValue = new Map<unknown, InternTable>()
+
+	next(hole: unknown): InternTable {
+		const table =
+			(
+				(typeof hole === "object" && hole !== null) ||
+				typeof hole === "function" ||
+				(typeof hole === "symbol" && Symbol.keyFor(hole) === undefined)
+			) ?
+				this.byObject
+			:	this.byValue
+		let next = table.get(hole as never)
+		if (!next) table.set(hole as never, (next = new InternTable()))
+		return next
+	}
+}
+
+export const internTable = (): InternTable => new InternTable()
+
+// arktype returns the Type it created before for one definition and the same holes, so its factory does too
+export const intern = <value>(
+	table: InternTable,
+	holes: readonly unknown[],
+	create: () => value
+): value => {
+	for (const hole of holes) table = table.next(hole)
+	return (table.value ??= create()) as value
+}
+
 const functionNameOfHole = (hole: unknown) =>
 	typeof hole === "function" ? functionNameOf(hole) : undefined
 

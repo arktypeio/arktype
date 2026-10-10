@@ -478,6 +478,17 @@ export const createClient = (token: string) => connect({ url: env.API_URL, token
 			).snap(["3:14 accepted { name: string }", "12:29 accepted"])
 		})
 
+		it("factories returning one Type for the same holes, as arktype does outside a Scope created each run", () => {
+			const { sites } = analyze(`import { scope, type } from "arktype"
+const isLong = (s: string) => s.length > 1
+export const narrowed = () => type("string").narrow(isLong)
+export const scoped = () => scope({ a: "string" }).type("a").narrow(isLong)
+export const A = type("string").narrow(isLong)`)
+			attest(
+				sites.map(site => `${site.line}:${site.column} ${site.isInterned}`)
+			).snap(["3:31 true", "4:29 false", "5:18 true"])
+		})
+
 		it("objects and modules arktype returns", () => {
 			attest(
 				statusesOf(`import { type, scope, declare } from "arktype"

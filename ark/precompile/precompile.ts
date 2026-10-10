@@ -136,6 +136,8 @@ export interface Site {
 	isKeywordRead: boolean
 	// whether arktype creates what it holds anew each time it runs, like a Scope in a function, which a factory then does too
 	isCreatedEachRun: boolean
+	// whether arktype returns the Type it created before for the same holes, as outside a Scope created each run, which a factory then does too
+	isInterned: boolean
 }
 
 export interface Hole {
@@ -678,6 +680,8 @@ export class Precompiler {
 		const exportsByName: Record<string, StandaloneExport> = {}
 		const sitesByName: Record<string, string> = {}
 		const keywordReads = new Set<string>()
+		// sites arktype returned one Type for share a table, as they share it in the program
+		const tablesByValue = new Map<unknown, number>()
 		// a site replaced by its value drops what it was written with, so a site inside it, like one in a thunk defining a Scope's alias, is dropped too
 		const replaced: Site[] = []
 		const folded: Site[] = []
@@ -714,9 +718,13 @@ export class Precompiler {
 				const name = `f${nameOf(site)}`
 				factoriesBySite.set(site, factory)
 				namesBySite.set(site, name)
+				let table = tablesByValue.get(site.value)
+				if (site.isInterned && table === undefined)
+					tablesByValue.set(site.value, (table = tablesByValue.size))
 				exportsByName[name] = {
 					type: site.value as never,
-					params: factory.params
+					params: factory.params,
+					internedBy: site.isInterned ? table : undefined
 				}
 				sitesByName[name] = module.positionOf(site)
 				// a factory passed no function written in the site replaces all of it
@@ -1405,7 +1413,8 @@ export class Precompiler {
 			isKeywordRead:
 				hasArkKind(state.value, "module") &&
 				this.isKeywordRead(state.node, module),
-			isCreatedEachRun: false
+			isCreatedEachRun: false,
+			isInterned: false
 		}
 		if (this.mode === "standalone" && isInIsland(state.node, module)) {
 			site.status = "island"
@@ -1499,11 +1508,17 @@ export class Precompiler {
 		module: SourceModule
 	): void {
 		const node = candidate.state.node
-		const region =
-			site.status === "accepted" &&
-			isFoldable(site.value) &&
-			!this.isFactory(site, module) &&
-			repeatedRegionOf(node)
+		if (site.status !== "accepted" || !isFoldable(site.value)) return
+		if (this.isFactory(site, module)) {
+			site.isInterned =
+				this.interpreter.evaluateAgain(
+					node,
+					module,
+					repeatedRegionOf(node) ?? node
+				).value === site.value
+			return
+		}
+		const region = repeatedRegionOf(node)
 		if (!region) return
 		const again = this.interpreter.evaluateAgain(node, module, region)
 		if (again.value === site.value) return

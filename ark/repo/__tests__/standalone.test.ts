@@ -1160,6 +1160,27 @@ contextualize(() => {
 			attest(created.G() === created.G()).equals(false)
 		})
 
+		it("returns the validator it created for the same holes where arktype returns one Type", async () => {
+			const isLong = standIn((s: string) => s.length > 1, "long")
+			const T = type("string").narrow(isLong)
+			const params = [
+				{ kind: "function" as const, label: "`isLong`", value: isLong }
+			]
+			const created = await load({
+				A: { type: T, params, internedBy: 0 },
+				B: { type: T, params, internedBy: 0 },
+				C: { type: T, params }
+			})
+			const hasTwo = (s: string) => s.length > 1
+			const hasThree = (s: string) => s.length > 2
+			attest([
+				created.A(hasTwo) === created.A(hasTwo),
+				created.A(hasTwo) === created.B(hasTwo),
+				created.A(hasTwo) === created.A(hasThree),
+				created.C(hasTwo) === created.C(hasTwo)
+			]).equals([true, true, false, false])
+		})
+
 		it("checks each helper is the function its module registered", async () => {
 			const { T: create } = await load({
 				T: {

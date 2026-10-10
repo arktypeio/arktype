@@ -95,6 +95,8 @@ export interface StandaloneFactory {
 	// a Type, or a Module, Scope or Generic arktype creates anew each time its site runs
 	type: ExportedValue
 	params: FactoryParam[]
+	// the table of each factory whose Type arktype returns again for the same holes, shared by those returning one Type at build
+	internedBy?: number | undefined
 }
 
 export type FactoryParam = HoleParam | InputParam | HelperParam
@@ -136,20 +138,30 @@ export const precompileStandalone = (
 ): string => {
 	const types: Record<string, ExportedValue> = {}
 	const factories: string[] = []
+	const tables = new Set<number>()
 	for (const [name, value] of Object.entries(exports)) {
 		if (arkKindOf(value) !== undefined) types[name] = value as never
 		else {
-			const { type, params } = value as StandaloneFactory
+			const { type, params, internedBy } = value as StandaloneFactory
+			if (internedBy !== undefined) tables.add(internedBy)
 			factories.push(
 				new StandaloneArtifact({ [name]: type }).writeFactory(
 					name,
 					params,
 					factories.length,
 					configured,
-					sitesByName?.[name]
+					sitesByName?.[name],
+					internedBy
 				)
 			)
 		}
+	}
+	if (tables.size) {
+		factories.unshift(
+			[...tables]
+				.map(table => `const interned${table} = runtime.internTable()`)
+				.join("\n")
+		)
 	}
 	const sections = [
 		`import * as runtime from "arktype/runtime"`,
@@ -602,17 +614,30 @@ ${statements.filter(statement => statement).join("\n\n")}
 		params: FactoryParam[],
 		index: number,
 		configured: ConfiguredModule | undefined,
-		site?: string
+		site?: string,
+		internedBy?: number
 	): string {
 		this.receive(params)
+		const exported = this.exports[name]
 		// a Module, Scope or Generic declares what it holds, which the body then writes
-		const value = this.exportOf(this.exports[name], "", site)
-		const statements = [
-			writeFixConfig(configured),
-			...this.checks,
+		const value = this.exportOf(exported, "", site)
+		const body = [
 			// each unit is evaluated once, at the first call, which may come before the artifact's body runs
 			...this.writeBody((unit, i) => `(unit${index}_${i} ??= ${unit.source})`),
 			`return ${value}`
+		]
+		const keys =
+			internedBy === undefined || !hasArkKind(exported, "root") ?
+				undefined
+			:	keyOf(exported)[1].map(hole => this.holeExpressions.get(hole))
+		const statements = [
+			writeFixConfig(configured),
+			...this.checks,
+			...(keys?.every(key => key !== undefined) ?
+				[
+					`return runtime.intern(interned${internedBy}, [${keys.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n})`
+				]
+			:	body)
 		]
 		const units = [...this.units.keys()].map((_, i) => `var unit${index}_${i}`)
 		return `${units.join("\n")}
