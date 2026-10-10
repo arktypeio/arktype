@@ -167,7 +167,9 @@ export interface Site {
 	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
 	declarationStart: number | undefined
 	// e.g. `User` and "json" for `User.json`, which a standalone build folds to the data arktype returns
-	introspection: Pick<StandaloneIntrospection, "member" | "type"> | undefined
+	introspection:
+		| Pick<StandaloneIntrospection, "member" | "type" | "thrown">
+		| undefined
 }
 
 export interface Hole {
@@ -979,8 +981,11 @@ export class Precompiler {
 			const factory = factoriesBySite.get(site)
 			for (const [specifier, name, local] of factory?.imports ?? [])
 				(inputImports[specifier] ??= {})[name] = local
-			// a bundler can drop a variable's site with the variable when nothing reads it, unless it throws a ParseError
-			const isPure = site.declarationStart !== undefined && !site.parseError
+			// a bundler can drop a variable's site with the variable when nothing reads it, unless it throws
+			const isPure =
+				site.declarationStart !== undefined &&
+				!site.parseError &&
+				!site.introspection?.thrown
 			// a keyword Module creates no Type until one of its members is read, and introspection creates none
 			if (isPure && !site.isKeywordRead && !site.introspection)
 				fixedAt = Math.min(fixedAt, site.declarationStart!)

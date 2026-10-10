@@ -11,6 +11,21 @@ const schemaOf = (t: typeof User) => {
 	return schema
 }
 
+const Length = type("string").pipe(s => s.length)
+const Big = type("bigint")
+// arktype can't write either's JSON Schema, and throws even where nothing reads it
+const thrown: string[] = []
+try {
+	const lengthSchema = Length.toJsonSchema()
+} catch (e) {
+	thrown.push(String(e))
+}
+try {
+	Big.toJsonSchema()
+} catch (e) {
+	thrown.push(String(e))
+}
+
 console.log(
 	JSON.stringify([
 		json,
@@ -20,6 +35,7 @@ console.log(
 		User.toJsonSchema({ target: "draft-07" }),
 		Point.toJSON(),
 		Point.toJsonSchema() === Point.toJsonSchema(),
-		schemaOf(User)
+		schemaOf(User),
+		thrown
 	])
 )

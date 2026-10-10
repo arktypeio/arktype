@@ -14,6 +14,7 @@ import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import {
 	holeNamePattern,
 	holeNamePrefix,
+	isJsonSchemaError,
 	keyOf,
 	type DefaultCheck,
 	type FoldedMember,
@@ -144,7 +145,9 @@ export interface SiteState {
 	// each Type a request returned
 	roots: BaseRoot[]
 	// e.g. `User` and "json" for `User.json`, which a standalone build folds to what arktype returns
-	introspection: Pick<StandaloneIntrospection, "member" | "type"> | undefined
+	introspection:
+		| Pick<StandaloneIntrospection, "member" | "type" | "thrown">
+		| undefined
 	value: unknown
 	error: DynamicValue | ParseError | undefined
 	isEvaluated: boolean
@@ -1826,6 +1829,18 @@ export class Interpreter {
 					`reads the structure of \`${opaque.module.snippetOf(opaque.node)}\`, which is not static`,
 					opaque.dynamic
 				)
+			}
+			const introspection = ctx.site?.node === node && ctx.site.introspection
+			// a site of its own writing a JSON Schema arktype can't throws what arktype does at each call, unless that names a function it doesn't receive
+			if (
+				introspection &&
+				introspection.member === "toJsonSchema" &&
+				this.opts.runtime !== "arktype" &&
+				isJsonSchemaError(e) &&
+				(e as Error).message.search(holeNamePattern) === -1
+			) {
+				introspection.thrown = e
+				return
 			}
 			this.claimParseError(e, ctx)
 			throw this.thrown(e, node, ctx)

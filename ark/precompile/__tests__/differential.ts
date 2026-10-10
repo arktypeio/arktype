@@ -4,6 +4,7 @@ import { noSuggest, ParseError } from "@ark/util"
 import {
 	holeNamePrefix,
 	introspectionMembers,
+	isJsonSchemaError,
 	keyOf,
 	precompileStandalone,
 	precompileStandaloneModules,
@@ -387,13 +388,15 @@ const foldedIntrospectionOf = (
 	const exports: Record<string, StandaloneExport> = {}
 	for (const member of foldedMembers) {
 		let data: unknown
+		let thrown: unknown
 		try {
 			data = member === "json" ? node.json : node[member]()
-		} catch {
-			continue
+		} catch (e) {
+			if (!isJsonSchemaError(e)) continue
+			thrown = e
 		}
-		if (!printsName(data))
-			exports[member] = { member, type: node, data, params: [] }
+		if (!printsName(thrown ? String(thrown) : data))
+			exports[member] = { member, type: node, data, params: [], thrown }
 	}
 	return exports
 }

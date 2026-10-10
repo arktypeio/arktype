@@ -129,6 +129,8 @@ export interface StandaloneIntrospection {
 	data: unknown
 	params: FactoryParam[]
 	defaultChecks?: readonly DefaultCheck[]
+	// what arktype threw writing the site's JSON Schema, which its factory throws at each call
+	thrown?: unknown
 }
 
 export interface StandaloneFactory {
@@ -979,7 +981,7 @@ ${statements.filter(statement => statement).join("\n\n")}
 
 	writeIntrospection(
 		name: string,
-		{ member, type, data, params }: StandaloneIntrospection,
+		{ member, type, data, params, thrown }: StandaloneIntrospection,
 		index: number,
 		configured: ConfiguredModule | undefined
 	): string {
@@ -988,7 +990,14 @@ ${statements.filter(statement => statement).join("\n\n")}
 		// the program reads it here, so a schema the build can't write refuses the site
 		const value =
 			member === "toJsonSchema" ?
-				this.writeJsonSchema(type, () => data, true)
+				this.writeJsonSchema(
+					type,
+					() => {
+						if (thrown) throw thrown
+						return data
+					},
+					true
+				)
 			:	this.readJson(type)
 		const defaults = this.writeDefaultChecks()
 		// arktype checked the Type's defaults where it created it, which a site reading its introspection does at each call
@@ -1947,6 +1956,10 @@ return [${returned.join(", ")}]
 }
 
 const { getTime } = Date.prototype
+
+// what arktype throws writing a JSON Schema it can't, which a standalone validator throws again where it's read
+export const isJsonSchemaError = (e: unknown): boolean =>
+	e instanceof ToJsonSchema.Error || isSymbolConversion(e)
 
 // the TypeError of a symbol arktype prints, e.g. in a ToJsonSchemaError's context, which the runtime raises again rather than bake the engine's message
 const isSymbolConversion = (e: unknown): boolean => {
