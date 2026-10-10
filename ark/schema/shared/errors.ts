@@ -217,8 +217,9 @@ export const mergeErrors = (
 	merged: ArkErrors,
 	prefix: array<PropertyKey>
 ): void => {
+	// a copy is written with the config of the errors holding it, as their summary is
 	for (const error of merged._issues)
-		addError(errors, unwrittenError(error, prefix))
+		addError(errors, unwrittenError(error, prefix, errors["config"]))
 }
 
 /**
@@ -451,7 +452,8 @@ const isLocale = (locale: unknown): locale is Locale =>
 
 export const unwrittenError = (
 	error: ArkError,
-	prefix?: array<PropertyKey>
+	prefix?: array<PropertyKey>,
+	config: ResolvedConfig = ErrorSource.configOf(error)
 ): ArkError => {
 	const input = ErrorSource.inputOf(error)
 	const copy: Record<string, unknown> = {}
@@ -464,8 +466,8 @@ export const unwrittenError = (
 	if (input) assignSymbols(copy, input)
 	copy.path = prefix ? [...prefix, ...error.path] : [...error.path]
 	if (error.code === "union" || error.code === "intersection")
-		copy.errors = error.errors.map(e => unwrittenError(e, prefix))
-	return stampError(copy as never, ErrorSource.configOf(error), input)
+		copy.errors = error.errors.map(e => unwrittenError(e, prefix, config))
+	return stampError(copy as never, config, input)
 }
 
 const writtenKeys = {

@@ -704,6 +704,23 @@ b isn't allowed`)
 				attest(() => messageIn(copy, xx)).throws(copiedErrorMessage)
 		})
 
+		it("toLocaleString and messageIn write a morph's returned errors as its summary", () => {
+			const A = scope(
+				{ inner: { a: "string" } },
+				{ domain: { message: ctx => `A's ${ctx.propString}` } }
+			).export()
+			const B = scope(
+				{ outer: ["unknown", "=>", (d: unknown) => A.inner(d)] },
+				{ domain: { message: ctx => `B's ${ctx.propString}` } }
+			).export()
+			const out = B.outer({ a: 1 }) as ArkErrors
+			attest([
+				out.summary,
+				out.toLocaleString(en),
+				messageIn(out.issues[0], en)
+			]).snap(["B's a", "B's a", "B's a"])
+		})
+
 		it("toLocaleString reaches union and intersection children", () => {
 			const union = type("(string >= 2) | (string <= 0)")("a") as ArkErrors
 			attest(union.toLocaleString(xx)).snap(

@@ -806,6 +806,24 @@ export const Island = type("string")`)
 		)
 	})
 
+	it("writes an island's errors in any locale, with those its morph returns", async () => {
+		const { js } = bundle(`${precompileStandalone({ T: type("string") })}
+import "arktype/internal/island.js"
+import { type } from "arktype"
+export { messageIn } from "arktype"
+export { de } from "arktype/locales/de"
+export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => validate(d))`)
+		const artifact = await importBesideArktype(js)
+		const errors = artifact.Island([1, artifact.T()])
+		attest([
+			errors.toLocaleString(artifact.de),
+			artifact.messageIn(errors.issues[0], artifact.de)
+		]).snap([
+			"muss eine Zeichenkette sein, ist aber eine Zahl",
+			"muss eine Zeichenkette sein, ist aber eine Zahl"
+		])
+	})
+
 	describe("factories", () => {
 		it("creates a validator from the holes it receives", async () => {
 			const trim = (s: string) => s.trim()
