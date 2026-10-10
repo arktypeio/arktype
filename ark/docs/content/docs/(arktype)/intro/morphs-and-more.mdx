@@ -15,7 +15,7 @@ const parseJson = type("string").pipe((s): object => JSON.parse(s))
 // object: { ark: "type" }
 const out = parseJson('{ "ark": "type" }')
 
-// ArkErrors: must be a string (was object)
+// ArkErrors: must be a string (was an object)
 const badOut = parseJson(out)
 ```
 

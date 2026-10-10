@@ -2,6 +2,61 @@
 
 ## Unreleased
 
+### Return errors as plain objects
+
+The errors in an `ArkErrors`' `issues` are plain objects without getters or methods, the same in arktype and in validators precompiled for `arktype/runtime`. Each has the keys its JSON had, in the same order, then `propString`:
+
+```ts
+const out = type({ n: "number % 2" })({ n: 1 })
+
+if (out instanceof type.errors) {
+	// { data: 1, path: ["n"], code: "divisor", description: "even", meta: {}, rule: 2, propString: "n",
+	//   expected: "even", actual: "1", problem: "must be even (was 1)", message: "n must be even (was 1)" }
+	out.issues[0]
+}
+```
+
+An error's prototype is `Object.prototype`, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `arktype` exports `ArkError` only as a type, which comparing `code` narrows as `hasCode` did. `hasCode`, `transform`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, and `messageIn` writes one in a locale:
+
+```ts
+import { messageIn } from "arktype"
+import { de } from "arktype/locales/de"
+
+for (const error of out.issues) {
+	// previously error.hasCode("divisor"), now
+	if (error.code === "divisor") console.log(error.rule)
+	// previously error.toLocaleString(de), now
+	messageIn(error, de)
+}
+```
+
+`path` is a plain array rather than a `ReadonlyPath`. A `propString` passed to `ctx.reject` or `ctx.error` is ignored, since it's written from the path.
+
+`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()`, `toString()` and `toLocaleString(locale)`. `byPath`, `flatByPath`, `flatProblemsByPath` and `byAncestorPath` are functions of an `ArkErrors`, exported by `arktype`, `arktype/runtime` and `@ark/schema`:
+
+```ts
+import { flatProblemsByPath } from "arktype"
+
+// previously out.flatProblemsByPath, now
+flatProblemsByPath(out)
+```
+
+Its `message`, `transform`, `merge`, `add` and `toTraversalError` are gone: read `summary`, and call `throw()`. A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`, and a morph returning another validation's `ArkErrors` adds them at its path. A morph fails by returning an `ArkErrors` or an error its `ctx.error` returned, so an error from another validation that it returns is now its output.
+
+Errors' text is written when they are first read, through `issues`, `summary`, `toString()`, `toJSON()`, `throw()` or Standard Schema's `issues`. That read writes each error's `propString`, `expected`, `actual`, `problem` and `message`, so a configured writer is called once per error, where it was called at each read. A locale function is called once per `ArkErrors`, at that read, and its errors keep the locale it returned. Previously each read called it, so errors read after the language changed were written in the new one.
+
+`toJSON()` includes each error's `propString`, and writes a symbol key in a path as `Symbol(name)` rather than `null`. An object a unit or discriminant check can't accept, since all of its cases are primitive, is printed by its kind, as is a union's own `actual`, which its message doesn't show. An instance of an `Array` subclass is printed by its class's name rather than its elements:
+
+```ts
+// previously must be "a" or "b" (was {"x":1}), now (was an object)
+type("'a' | 'b'")({ x: 1 })
+
+class Items extends Array {}
+
+// previously must be valid according to an anonymous predicate (was [1]), now (was Items)
+type("object").narrow(() => false)(Items.of(1))
+```
+
 ### Write error messages in other languages
 
 Configure a locale to write error messages in another language. ArkType ships two: `en`, the default, and `de`.
@@ -21,7 +76,7 @@ import { type } from "arktype"
 type({ name: "string >= 2" })({ name: "A" })
 ```
 
-`locale` can also be a function, which is called each time a message is read, e.g. to return the locale of the current request. Messages are written when they are read, so validation does no locale work. `ArkErrors` and `ArkError` gain `toLocaleString(locale)`, which writes the summary or message in the locale it is given.
+`locale` can also be a function, e.g. to return the locale of the current request, which is called when an `ArkErrors`' errors are first read. Messages are written then, so validation does no locale work. `ArkErrors` gains `toLocaleString(locale)`, which writes its summary in the locale it is given, and `messageIn(error, locale)` writes one error's message in it.
 
 Any message you configure, through `.describe()`, `.configure()` or errors configured by code, outranks the locale. Every error writer receives the active locale as its last argument, so it can translate its own text:
 
@@ -115,7 +170,7 @@ if (out instanceof type.errors) {
 	// previously { kind: "triangle" }, now "triangle"
 	error.data
 	// ["circle", "square"]
-	if (error.hasCode("discriminant")) error.cases
+	if (error.code === "discriminant") error.cases
 }
 ```
 
@@ -133,13 +188,13 @@ const T = type({ v: Shape }).or({ v: { kind: "string >= 9" } })
 T({ v: { kind: "triangle" } })
 ```
 
-At a key, its `meta` is the union's without `expected` and `actual`, which describe the object around the key rather than its value. Its `toJSON()` also includes `description`, the cases it expected (`"circle" or "square"`).
+At a key, its `meta` is the union's without `expected` and `actual`, which describe the object around the key rather than its value. Its JSON also includes `description`, the cases it expected (`"circle" or "square"`).
 
 ### Pass error writers the error and the locale
 
 Each error writer receives the active locale as its last argument. An `expected` writer receives the error rather than only its context, so it can read `data` and `path` too, and an `actual` writer receives `(data, error, locale)`.
 
-A writer's `ctx` is typed by its code, and no longer has `toJSON` or the parts of the message that could read the one it writes. Its `toString` and `toLocaleString`, which read the message, can no longer be called. `ctx.meta` may be `undefined` in an `expected` writer, as it already could in the others, since an error raised by `ctx.reject` has no meta:
+A writer's `ctx` is typed by its code, without the parts of the message that could read the one it writes. `ctx.meta` may be `undefined` in an `expected` writer, as it already could in the others, since an error raised by `ctx.reject` has no meta:
 
 ```ts
 import { configure } from "arktype/config"
@@ -148,10 +203,6 @@ import { configure } from "arktype/config"
 // now TS18048: 'ctx.meta' is possibly 'undefined'
 configure({ predicate: { expected: ctx => ctx.meta.title! } })
 ```
-
-### Keep supplied text out of an error's own properties
-
-Text supplied when an error is created, as by `ctx.reject({ expected: "positive" })` or `ctx.mustBe("positive")`, was copied onto the error, hiding its `expected`, `actual`, `problem` and `message` getters. It now stays in the error's input, where the getters read it. Reading them and `toJSON()` give what they did, but `Object.keys(error)` and `{ ...error }` no longer include them, and assigning `error.expected` throws. Configure a writer instead of assigning text.
 
 ### Reference the morph that threw in `pipe.try` errors
 
@@ -200,6 +251,8 @@ export const BoxedTree = types.box("tree")
 A call to `define`, which returns its argument, is replaced by the argument.
 
 A validator bakes `expression`, `description` and `meta`, and lacks the members that compose or introspect a Type, so calling one is a TypeError. An artifact freezes what it creates, so a write to one throws in strict mode: its validators and their shared prototype, its Modules, Scopes, Generics, configs and node shapes, and every literal it emits, such as `meta`. A RegExp is only made non-extensible, since its methods write `lastIndex`, and neither a Date's time nor a RegExp's pattern can be frozen. `arktype/runtime`'s `type` is frozen too. The build refuses what the runtime can't reproduce, like a narrow or morph that isn't one of arktype's keywords, naming it. An artifact refuses to load beside `arktype` or on another version of `arktype/runtime`.
+
+A validator's errors are arktype's, written only in en, since writing another locale needs the description writers of arktype's nodes. The build refuses a configured locale and an import of `arktype/locales`, and `toLocaleString` and `messageIn` throw for any other locale.
 
 A program's `configure()` call stays in place and configures `arktype/runtime`, which fixes its configuration at the first validator it creates, as arktype does at the first Type. It throws if `configure()` comes after that, or under a configuration other than the one the validators were built under.
 
@@ -529,7 +582,7 @@ A numeric string that isn't an ISO year like `2025` is always epoch milliseconds
 
 ### Hold `ArkErrors`' errors in `issues` instead of extending `Array`
 
-`ArkErrors` was an `Array` subclass. It is now a plain class whose `issues` is a plain array with one `ArkError` per path, in the order each path first failed. Iterating, `length` and every other `ArkErrors` member work as before. Indexing and array methods move to `issues`:
+`ArkErrors` was an `Array` subclass. It is now a plain class whose `issues` is a plain array with one error per path, in the order each path first failed. Indexing, iteration, `length` and array methods move to `issues`:
 
 ```ts
 const out = T(data)
@@ -539,26 +592,14 @@ if (out instanceof type.errors) {
 	out.issues.map(e => e.message)
 	// previously out[0], now
 	out.issues[0]
-	// unchanged
-	for (const error of out) console.log(error.message)
+	// previously for (const error of out), now
+	for (const error of out.issues) console.log(error.message)
+	// previously out.length, now
+	out.issues.length
 }
 ```
 
-`issues` already returned the errors, so `out.issues.map(...)` works before and after this change. `Array.isArray(out)` is now false, and `arr.concat(out)` nests the errors, so pass `out.issues`. A Standard Schema failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` or `flatProblemsByPath` from the result.
-
-### Build an `ArkError`'s `path` when it is first read
-
-`path` is now a getter, so a failed call that never reads its errors doesn't build it. Like `message`, `problem`, `expected` and `actual`, it is no longer an own property, so `Object.keys` and spreading an error skip it, and it can't be assigned. `toJSON` still includes it:
-
-```ts
-const error = type({ a: "string" })({ a: 1 }).issues[0]
-
-// previously ["a"], now undefined
-;({ ...error }).path
-// unchanged
-error.path
-error.toJSON().path
-```
+`issues` already returned the errors, so `out.issues.map(...)` works before and after this change. `Array.isArray(out)` is now false, and `arr.concat(out)` nests the errors, so pass `out.issues`. A Standard Schema failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` from the `ArkErrors`, or pass it to `flatProblemsByPath`.
 
 ### Throw from `.assert` when a root morph fails
 
@@ -715,7 +756,7 @@ After an alias failed to parse, later references to it returned a type that cras
 
 ### Export the types that inferred types reference
 
-`arktype` exports `Brand`, `Json`, `GenericAst`, `ArkErrorCode` and `Regex` as types. Under pnpm, exporting a type that references one of them (a brand, `string.json.parse`, a scope with a generic, a `regex()` value or `ArkErrors.byPath`) failed declaration emit with TS2883, since the packages they lived in usually can't be resolved from your project:
+`arktype` exports `Brand`, `Json`, `GenericAst`, `ArkErrorCode` and `Regex` as types. Under pnpm, exporting a type that references one of them (a brand, `string.json.parse`, a scope with a generic, a `regex()` value or `byPath(errors)`) failed declaration emit with TS2883, since the packages they lived in usually can't be resolved from your project:
 
 ```ts
 // previously TS2883: The inferred type of 'Gid' cannot be named without a reference to '.pnpm/@ark+util@.../node_modules/@ark/util'

@@ -147,7 +147,7 @@ const User = type({
 const out = User({ name: "Alan", age: "not a number" })
 
 if (out instanceof type.errors) {
-	// ArkErrors — iterable, with .summary and an .issues array
+	// ArkErrors: .summary, and .issues, plain objects with a code, path and message
 	console.error(out.summary)
 } else {
 	// out is typed as { name: string; age?: number }
@@ -164,3 +164,4 @@ if (out instanceof type.errors) {
 | `"Record<string, T>"` with `T` a variable  | Use `type.Record("string", T)` or `{ "[string]": T }`       |
 | Manually re-validating after `type()`      | Trust ArkType's output — it already validated the structure |
 | `type User = typeof Schema.t`              | Use `typeof Schema.infer` for the output type               |
+| `error.hasCode("min")`, `out.flatByPath`   | Compare `error.code`; call `flatByPath(out)` from arktype   |

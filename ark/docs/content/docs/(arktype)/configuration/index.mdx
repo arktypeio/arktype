@@ -245,31 +245,33 @@ mod.isEven(3)
 
 #### ArkErrors
 
-The `ArkErrors` returned on validation failure contains `ArkError` instances that can be discriminated via calls like `.hasCode("divisor")` and contain contextual data specific to that error type as well as getters for each composable error part.
+The `ArkErrors` returned on validation failure holds its errors in `issues`, plain objects that can be discriminated by their `code`, like `error.code === "divisor"`. Each has contextual data specific to its code, and the text written for each composable part of its message.
 
 To write messages in another language, configure a [locale](#locale).
 
 #### Serialization
 
-`ArkErrors` and `ArkError` are JSON stringifiable via `JSON.stringify()` or `.toJSON()`.
+`ArkErrors` is JSON stringifiable via `JSON.stringify()` or `.toJSON()`.
 
-Two additional properties provide structured access to errors grouped by path:
+Two functions `arktype` exports group errors by path:
 
 ```ts
+import { flatByPath, flatProblemsByPath, type } from "arktype"
+
 const T = type({ n: "number % 2 >= 2" })
 
 const out = T({ n: 1 })
 
 if (out instanceof type.errors) {
-	out.flatByPath
+	flatByPath(out)
 	// { n: [{ data: 1, path: ["n"], code: "divisor", ... }, { data: 1, path: ["n"], code: "min", ... }] }
 
-	out.flatProblemsByPath
+	flatProblemsByPath(out)
 	// { n: ["must be even (was 1)", "must be at least 2 (was 1)"] }
 }
 ```
 
-`flatByPath` maps each path string to an array of `ArkError` objects (decomposing union errors into their individual branches). `flatProblemsByPath` maps each path string to an array of human-readable problem strings.
+`flatByPath` maps each path string to an array of errors, splitting the `intersection` of several errors at a path into its individual errors. `flatProblemsByPath` maps each path string to an array of their problem strings.
 
 Unhandled validation errors (e.g. via `.assert()`) throw a `TraversalError`, which extends `Error` with cleaner multi-error formatting and a non-enumerable `arkErrors` property for programmatic access.
 
@@ -293,7 +295,7 @@ import { type } from "arktype"
 const out = type.string(5)
 ```
 
-`locale` can also be a function that returns a locale each time a message is read. See [i18n](/docs/i18n) for both, and for changing or writing a locale.
+`locale` can also be a function that returns a locale when an `ArkErrors`' messages are first read. See [i18n](/docs/i18n) for both, and for changing or writing a locale.
 
 ### Keywords
 

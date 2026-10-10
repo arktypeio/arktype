@@ -51,7 +51,7 @@ const out = Signup({ name: "A" })
 
 ### Switching locales
 
-`locale` can also be a function, which is called whenever a message is read. Messages are written when they are read, not when validation fails, so errors follow your app's language even when it changes after they were created:
+`locale` can also be a function, which is called when an `ArkErrors`' messages are first read. Messages are written then, not when validation fails, so errors are written in your app's language at the time they're read, even when it changed after they were created:
 
 ```ts title="config.ts"
 import type { Locale } from "arktype"
@@ -109,14 +109,14 @@ const handle = (body: unknown) =>
 	})
 ```
 
-A message reads the locale once, so it never mixes languages. If the function returns `undefined` or throws, the message is written in English.
+The function is called once for an `ArkErrors`, whose messages keep the locale it returned, so they never mix languages. If it returns `undefined` or throws, they're written in English.
 
 ### Rendering in a locale
 
-`toLocaleString` writes an `ArkErrors`' summary or an `ArkError`'s message in a locale of your choice, whatever locale is configured:
+An `ArkErrors`' `toLocaleString` writes its summary in a locale of your choice, whatever locale is configured, and `messageIn` writes one error's message:
 
 ```ts
-import { type } from "arktype"
+import { messageIn, type } from "arktype"
 import { de } from "arktype/locales/de"
 
 const out = type({ name: "string" })({ name: 5 })
@@ -124,12 +124,13 @@ const out = type({ name: "string" })({ name: 5 })
 if (out instanceof type.errors) {
 	// name muss eine Zeichenkette sein, ist aber eine Zahl
 	out.toLocaleString(de)
+	messageIn(out.issues[0], de)
 	// name must be a string (was a number)
 	out.issues[0].message
 }
 ```
 
-Called without a locale, it returns the summary or message as configured.
+Called without a locale, `toLocaleString` returns the summary as configured.
 
 ### Your own messages
 
@@ -247,7 +248,7 @@ export const fr: Locale = {
 
 Until you replace them, the parts you spread from `en` are written in English, since most of its writers write English directly rather than from `nouns`, `list` or `date`. Only its `discriminant` and `required` writers and `basis` read `nouns`, and `required` also reads `list`.
 
-Where a locale has no `expected` for a code, an error's `expected`, and so its `toJSON()`, is English. A locale whose unions list their branches' fragments should write every fragment: annotate it with `Locale.Complete` to check that it has one for every code and a phrase for every keyword. A locale without fragments can write its unions from `ctx.errors`, each with its own `problem`.
+Where a locale has no `expected` for a code, an error's `expected`, and so its JSON, is English. A locale whose unions list their branches' fragments should write every fragment: annotate it with `Locale.Complete` to check that it has one for every code and a phrase for every keyword. A locale without fragments can write its unions from `ctx.errors`, each with its own `problem`.
 
 | part                             | writes                                                                                                           |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------- |

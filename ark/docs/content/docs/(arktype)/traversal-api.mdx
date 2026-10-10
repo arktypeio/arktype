@@ -54,30 +54,31 @@ if (out instanceof type.errors) {
 
 ### ArkErrors
 
-The `ArkErrors` returned on validation failure holds `ArkError` instances with structured data. It is iterable and has a `length`, but it isn't an array. Index it or call array methods through `issues`:
+The `ArkErrors` returned on validation failure holds its errors in `issues`, an array with one plain object per path. Each has the `code` of the check that failed, the `data` and `path` it failed at, data specific to its code and the text written for it. `arktype` exports functions that group them by path:
 
 ```ts
+import { flatByPath, flatProblemsByPath, type } from "arktype"
+
 const T = type({ n: "number % 2", m: "number >= 2" })
 
 const out = T({ n: 1, m: 0 })
 
 if (out instanceof type.errors) {
 	// discriminate by error code
-	for (const error of out) {
-		if (error.hasCode("divisor")) {
+	for (const error of out.issues) {
+		if (error.code === "divisor") {
 			console.log(error.rule) // 2
 		}
 	}
 
-	// an array with one ArkError per path
 	out.issues.map(error => error.message) // ["m must be at least 2 (was 0)", "n must be even (was 1)"]
 
 	// structured access by path
-	out.flatByPath // { m: [ArkError], n: [ArkError] }
-	out.flatProblemsByPath // { m: ["must be at least 2 (was 0)"], n: ["must be even (was 1)"] }
+	flatByPath(out) // { m: [{ code: "min", ... }], n: [{ code: "divisor", ... }] }
+	flatProblemsByPath(out) // { m: ["must be at least 2 (was 0)"], n: ["must be even (was 1)"] }
 
 	// JSON serializable
-	JSON.stringify(out) // [{ path: ["m"], code: "min", ... }, { path: ["n"], code: "divisor", ... }]
+	JSON.stringify(out) // [{ data: 0, path: ["m"], code: "min", ... }, { data: 1, path: ["n"], code: "divisor", ... }]
 }
 ```
 
@@ -89,7 +90,7 @@ When `.assert()` fails, it throws a `TraversalError` (extends `Error`) with:
 - A non-enumerable `arkErrors` property for programmatic access
 
 ```ts
-import { type, TraversalError } from "arktype"
+import { flatProblemsByPath, type, TraversalError } from "arktype"
 
 try {
 	type({ a: "string", b: "number" }).assert({ a: 1, b: "x" })
@@ -100,7 +101,7 @@ try {
 		// • b must be a number (was a string)
 
 		// access the underlying ArkErrors for structured data
-		console.log(e.arkErrors.flatProblemsByPath)
+		console.log(flatProblemsByPath(e.arkErrors))
 	}
 }
 ```
