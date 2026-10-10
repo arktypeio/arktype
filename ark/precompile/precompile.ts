@@ -2573,7 +2573,9 @@ export class Precompiler {
 		}
 		if (!dynamic) {
 			visit(value.value)
-			result.push(...this.writableObjectsIn(value.value, modules))
+			result.push(
+				...this.writableObjectsIn(value.value, value.trace.reads, modules)
+			)
 		}
 		return {
 			value: value.value,
@@ -2584,7 +2586,11 @@ export class Precompiler {
 	}
 
 	// arktype reads a keyword's meta when the keyword is first created, so a write after configure() can reach the program but not the build
-	private writableObjectsIn(value: unknown, ids: string[]): string[] {
+	private writableObjectsIn(
+		value: unknown,
+		reads: Read[],
+		ids: string[]
+	): string[] {
 		const objects = new Set<unknown>()
 		const collect = (o: unknown) => {
 			if (typeof o !== "object" || o === null || objects.has(o)) return
@@ -2593,29 +2599,35 @@ export class Precompiler {
 				for (const k of Reflect.ownKeys(o)) collect(Reflect.get(o, k))
 		}
 		collect(value)
-		const result: string[] = []
+		const result = new Set<string>()
+		// read from what the argument read, so no other site's evaluation decides it
+		for (const { root, value } of reads) {
+			const [name, path] =
+				root.kind === "export" ? [root.name, this.graph.pathOf(root.file)]
+				: root.kind === "binding" && root.binding.exportNames.length ?
+					[root.binding.name, root.module.path]
+				:	[]
+			if (path && objects.has(value)) {
+				result.add(
+					`\`${name}\` is exported from ${path}, so another module can write what the configuration holds`
+				)
+			}
+		}
 		for (const id of ids) {
 			const module = this.graph.moduleOf(id)
 			if (!(module instanceof SourceModule)) continue
-			for (const name in module.scopes.exportsByName) {
-				if (objects.has(this.interpreter.evaluatedExportOf(module, name))) {
-					result.push(
-						`\`${name}\` is exported from ${module.path}, so another module can write what the configuration holds`
-					)
-				}
-			}
 			for (const reference of module.scopes.references) {
 				if (!reference.binding || reference.isWrite) continue
 				const [write] =
 					this.writeInto(reference.id, module, o => objects.has(o)) ?? []
 				if (write) {
-					result.push(
+					result.add(
 						`\`${module.snippetOf(write)}\` (${module.positionOf(write)}) writes what the configuration holds`
 					)
 				}
 			}
 		}
-		return result
+		return [...result]
 	}
 
 	// arktype may call any of the configuration's code, like a description writer, while defining a Type

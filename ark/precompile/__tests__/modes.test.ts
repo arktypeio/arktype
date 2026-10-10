@@ -294,9 +294,38 @@ written.description = "two"`,
 					{ config: "/main.ts" }
 				)
 			).snap([
-				'/main.ts:4:1  configure({ keywords: { string: written, number: shared, bo… is not static\n  `written.description = "two"` (/main.ts:5:1) writes what the configuration holds\n  `shared` is exported from /shared.ts, so another module can write what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+				'/main.ts:4:1  configure({ keywords: { string: written, number: shared, bo… is not static\n  `shared` is exported from /shared.ts, so another module can write what the configuration holds\n  `written.description = "two"` (/main.ts:5:1) writes what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
 			])
 		})
+
+		it("configure with an object an export reaches, whichever module the build is given first", () => {
+			const files = {
+				"/mode.ts":
+					'const inner = { description: "one" }\nexport const table = { string: inner }\nexport const alias = inner',
+				"/config.ts":
+					'import { configure } from "arktype/config"\nimport { table } from "./mode.ts"\nconfigure({ keywords: { string: table.string } })',
+				"/main.ts":
+					'import { type } from "arktype"\nimport { alias } from "./mode.ts"\nexport const T = type("string").describe(alias.description)'
+			}
+			attest(
+				[["/main.ts"], []].map(first =>
+					printedInFreshThread(`import { Precompiler } from "@ark/precompile"
+import { memoryHost } from "./utils.ts"
+const files = ${JSON.stringify(files)}
+const precompiler = new Precompiler(memoryHost(files), { config: "/config.ts" })
+for (const path of ${JSON.stringify(first)}) precompiler.precompile(files[path], path)
+const given = files["/config.ts"].replaceAll("\\n", ";\\n")
+console.log(JSON.stringify(precompiler.precompile(given, "/config.ts").diagnostics.map(renderDiagnostic)))`)
+				)
+			).snap([
+				[
+					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				],
+				[
+					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				]
+			])
+		}).timeout(60000)
 
 		it("configure with a namespace import", () => {
 			const files = { "/mode.ts": 'export const onUndeclaredKey = "reject"' }
