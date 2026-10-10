@@ -894,6 +894,7 @@ export class ModuleGraph {
 		if (binding && (binding.exportNames.length || binding.writes.length)) return
 		const result: (CallExpression | NewExpression)[] = []
 		for (const id of binding ? binding.references.map(r => r.id) : [fn]) {
+			if (isNamed(id, module)) continue
 			const [operand, operator] = operatorOf(id)
 			if (
 				(operator?.type !== "CallExpression" &&
@@ -1473,7 +1474,7 @@ export class ModuleGraph {
 		if (callee.type !== "MemberExpression") return
 		const literal = this.literalOf(callee.object, module, kindOfKey)
 		const value = literal && this.valueIn(literal, memberNameOf(callee))
-		const fn = value && normalize(value.node)
+		const fn = value && namedFunctionOf(normalize(value.node), value.module)
 		return fn && isFunctionNode(fn) ? [fn, value.module] : undefined
 	}
 
@@ -1486,10 +1487,12 @@ export class ModuleGraph {
 			if (target.kind === "binding")
 				return this.boundFunctionOf(target.binding, target.module)
 			// e.g. `export default () => A`
-			const fn = target.kind === "expression" && normalize(target.node)
+			const fn =
+				target.kind === "expression" &&
+				namedFunctionOf(normalize(target.node), target.module)
 			return fn && isFunctionNode(fn) ? [fn, target.module] : undefined
 		}
-		const fn = functionOfBinding(binding)
+		const fn = functionOfBinding(binding, module)
 		return fn && [fn, module]
 	}
 
@@ -1514,7 +1517,8 @@ export class ModuleGraph {
 		} else {
 			const node = normalize(target.node)
 			if (isArk(this.kindOf(node, module))) return true
-			if (isFunctionNode(node)) fn = [node, module]
+			const named = namedFunctionOf(node, module)
+			if (isFunctionNode(named)) fn = [named, module]
 		}
 		const returned = fn && returnedOf(fn[0])
 		const literal =
@@ -1649,7 +1653,10 @@ const onlyReturnOf = (fn: FunctionNode): Node | undefined => {
 const isStatic = (fn: FunctionNode): boolean =>
 	!!staticBodyOf(fn) && !readsArguments(fn)
 
-const functionOfBinding = (binding: Binding): FunctionNode | undefined => {
+const functionOfBinding = (
+	binding: Binding,
+	module: SourceModule
+): FunctionNode | undefined => {
 	if (binding.writes.length) return
 	const fn =
 		binding.kind === "function" ? binding.declaration
@@ -1657,10 +1664,64 @@ const functionOfBinding = (binding: Binding): FunctionNode | undefined => {
 			binding.kind === "const" &&
 			binding.declaration.type === "VariableDeclarator"
 		) ?
-			binding.declaration.init && unwrapExpression(binding.declaration.init)
+			binding.declaration.init &&
+			namedFunctionOf(unwrapExpression(binding.declaration.init), module)
 		:	undefined
 	return fn && isFunctionNode(fn) ? fn : undefined
 }
+
+// esbuild's keepNames, as under tsx, names a function `__name(fn, "name")`, whose helper defines the name and returns `fn`
+export const namedFunctionOf = (node: Node, module: SourceModule): Node => {
+	if (
+		node.type !== "CallExpression" ||
+		node.arguments.length !== 2 ||
+		node.arguments[1].type !== "Literal" ||
+		typeof node.arguments[1].value !== "string"
+	)
+		return node
+	const namer = initOf(node.callee, module)
+	if (
+		namer?.type !== "ArrowFunctionExpression" ||
+		namer.body.type !== "CallExpression" ||
+		namer.body.callee.type !== "Identifier"
+	)
+		return node
+	const define = namer.body.callee
+	const defineProperty = initOf(define, module)
+	return (
+			compactTextOf(namer, module) ===
+				`(target,value)=>${define.name}(target,"name",{value,configurable:true})` &&
+				defineProperty?.type === "MemberExpression" &&
+				compactTextOf(defineProperty, module) === "Object.defineProperty" &&
+				!module.scopes.referencesById.get(defineProperty.object)?.binding
+		) ?
+			normalize(node.arguments[0])
+		:	node
+}
+
+// e.g. `f` in the statement `__name(f, "f")` after `function f() {}`, which neither calls `f` nor passes it anywhere
+export const isNamed = (node: Node, module: SourceModule): boolean =>
+	node.parent?.parent?.type === "ExpressionStatement" &&
+	namedFunctionOf(node.parent, module) === node
+
+// what a variable is declared to and never assigned again
+const initOf = (node: Node, module: SourceModule): Node | undefined => {
+	const binding =
+		node.type === "Identifier" ?
+			module.scopes.referencesById.get(node)?.binding
+		:	undefined
+	return (
+			binding &&
+				!binding.writes.length &&
+				binding.declaration.type === "VariableDeclarator" &&
+				binding.declaration.init
+		) ?
+			unwrapExpression(binding.declaration.init)
+		:	undefined
+}
+
+const compactTextOf = (node: Node, module: SourceModule) =>
+	module.textOf(node).replace(/\s/g, "")
 
 // `arguments` aliases each argument, in parameter defaults too, so a parameter does not show where its argument goes
 const readsArguments = (fn: FunctionNode): boolean => {
@@ -1686,6 +1747,8 @@ export const bindingOfFunction = (
 	node: Node,
 	module: SourceModule
 ): Binding | undefined => {
+	if (node.parent && namedFunctionOf(node.parent, module) === node)
+		node = node.parent
 	const id =
 		node.type === "FunctionDeclaration" || node.type === "ClassDeclaration" ?
 			node.id

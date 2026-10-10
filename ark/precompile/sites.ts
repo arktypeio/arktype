@@ -1,6 +1,7 @@
 import type { CallExpression, Node } from "oxc-parser"
 import {
 	bindingOfFunction,
+	isNamed,
 	enclosingFunctionOf,
 	isArk,
 	isOnlyType,
@@ -220,8 +221,9 @@ export const isFoldedHelper = (
 		!!staticBodyOf(fn) &&
 		binding.references.every(
 			reference =>
-				reference.id.parent?.type === "CallExpression" &&
-				reference.id.parent.callee === reference.id
+				(reference.id.parent?.type === "CallExpression" &&
+					reference.id.parent.callee === reference.id) ||
+				isNamed(reference.id, module)
 		)
 	)
 }

@@ -1195,6 +1195,47 @@ export const E = type(__defProp({ a: "string" }, "name", { value: "o", configura
 			])
 		})
 
+		it("static helpers esbuild's keepNames names", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+var __defProp = Object.defineProperty
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true })
+const field = __name((n: number) => type(\`string <= \${n}\`), "field")
+function list(t: string) { return type(\`\${t}[]\`) }
+__name(list, "list")
+export const A = field(5)
+export const B = list("number")`)
+			).snap(["7:18 accepted string <= 5", "8:18 accepted number[]"])
+		})
+
+		it("a helper whose keepNames name is passed on", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+var __defProp = Object.defineProperty
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true })
+function list(t: string) { return type(\`\${t}[]\`) }
+const alias = __name(list, "list")
+export const B = list("number")
+export const make = (t: string) => alias(t)`)
+			).snap([
+				"4:35 rejected\n  `t` is a parameter of list (/main.ts:4:15); its value is known only at runtime",
+				"6:18 accepted number[]"
+			])
+		})
+
+		it("a helper named by other than esbuild's keepNames helper", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+const Object = { defineProperty: (target: any) => () => "string" }
+var __defProp = Object.defineProperty
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true })
+const field = __name((n: number) => type(\`string <= \${n}\`), "field")
+export const A = field(5)`)
+			).snap([
+				"5:37 rejected\n  `n` is a parameter of a function (/main.ts:5:23); its value is known only at runtime"
+			])
+		})
+
 		it("conversions of objects", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

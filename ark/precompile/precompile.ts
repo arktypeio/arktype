@@ -50,6 +50,7 @@ import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
 	bindingOfFunction,
+	isNamed,
 	contains,
 	enclosingFunctionOf,
 	isArk,
@@ -2582,8 +2583,9 @@ export class Precompiler {
 	): boolean {
 		return (
 			isFoldedHelper(fn, module) &&
-			bindingOfFunction(fn, module)!.references.every(reference =>
-				isWithin(reference.id, settledRanges)
+			bindingOfFunction(fn, module)!.references.every(
+				reference =>
+					isWithin(reference.id, settledRanges) || isNamed(reference.id, module)
 			)
 		)
 	}
