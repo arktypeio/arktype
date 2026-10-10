@@ -1798,7 +1798,7 @@ return [${returned.join(", ")}]
 		this.defaultNamesByMorph.set(morph, name)
 		const flags = defaultedNodeKeys.filter(k => value[k]).map(k => `${k}: true`)
 		this.defaults.push(
-			`const ${name} = runtime.computeDefaultValueMorph(${this.emit(key)}, ${this.validatorNamesByRoot.get(value)}, ${this.emit(defaultValue)}, {${flags.length ? ` ${flags.join(", ")} ` : ""}})`
+			`const ${name} = runtime.computeDefaultValueMorph(${this.emit(key)}, ${this.validatorNamesByRoot.get(value)}, ${this.emit(defaultValue)}, {${flags.length ? ` ${flags.join(", ")} ` : ""}}${typeof defaultValue === "function" ? `, ${isThunk(defaultValue)}` : ""})`
 		)
 		return `(data, ctx) => ${name}(data, ctx)`
 	}

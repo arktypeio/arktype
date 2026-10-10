@@ -981,9 +981,11 @@ export const computeDefaultValueMorph = (
 	value: DefaultedValue,
 	defaultInput: unknown,
 	// a validator has no flags of its own, so a standalone build passes its node's
-	node: DefaultedNode = value as never
+	node: DefaultedNode = value as never,
+	// a standalone build passes what arktype decided as it created the node, which the function's parameters changing later doesn't change
+	isThunkInput = isThunk(defaultInput)
 ): Morph<any> => {
-	const thunk = isThunk(defaultInput) ? defaultInput : undefined
+	const thunk = isThunkInput ? (defaultInput as () => unknown) : undefined
 	if (!thunk && !node.includesTransform && !node.includesAlias) {
 		return data => {
 			data[key] = defaultInput
