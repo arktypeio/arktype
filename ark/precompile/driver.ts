@@ -12,6 +12,7 @@ import {
 	Precompiler,
 	renderDiagnostic,
 	type Diagnostic,
+	type PrecompiledModule,
 	type PrecompileOptions,
 	type Site
 } from "./precompile.ts"
@@ -143,19 +144,20 @@ const checkedModuleOf = (
 	id: string,
 	tracked?: TrackedPrecompiler
 ): CheckedModule => {
-	if (!precompiler.isTransformed(id) || !precompiles(precompiler, source, id))
-		return { sites: [], diagnostics: [] }
-	if (tracked) recordGiven(tracked, source, id)
-	const { sites, diagnostics } = precompiler.precompile(source, id)
+	const result =
+		precompiler.isTransformed(id) ?
+			precompiledOf(precompiler, source, id, tracked)
+		:	undefined
 	return {
-		sites: sites.map(({ start, end, line, column, status }) => ({
-			start,
-			end,
-			line,
-			column,
-			status
-		})),
-		diagnostics
+		sites:
+			result?.sites.map(({ start, end, line, column, status }) => ({
+				start,
+				end,
+				line,
+				column,
+				status
+			})) ?? [],
+		diagnostics: result?.diagnostics ?? []
 	}
 }
 
@@ -293,8 +295,16 @@ const keyedModuleOf = (
 	}
 }
 
-const precompiles = (precompiler: Precompiler, source: string, id: string) =>
-	precompiler.checkHelpers || precompiler.importsArk(source, id)
+const precompiledOf = (
+	precompiler: Precompiler,
+	source: string,
+	id: string,
+	tracked: TrackedPrecompiler | undefined
+): PrecompiledModule | undefined => {
+	if (!precompiler.checkHelpers && !precompiler.importsArk(source, id)) return
+	if (tracked) recordGiven(tracked, source, id)
+	return precompiler.precompile(source, id)
+}
 
 const transformedModuleOf = (
 	precompiler: Precompiler,
@@ -303,7 +313,8 @@ const transformedModuleOf = (
 	tracked?: TrackedPrecompiler
 ): TransformedModule | undefined => {
 	if (!precompiler.isTransformed(id)) return
-	if (!precompiles(precompiler, source, id)) {
+	const result = precompiledOf(precompiler, source, id, tracked)
+	if (!result) {
 		return {
 			code: undefined,
 			map: undefined,
@@ -315,8 +326,6 @@ const transformedModuleOf = (
 			warnings: []
 		}
 	}
-	if (tracked) recordGiven(tracked, source, id)
-	const result = precompiler.precompile(source, id)
 	return {
 		code:
 			result.map &&
