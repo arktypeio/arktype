@@ -296,7 +296,7 @@ export class Interpreter {
 		return site
 	}
 
-	// a site as it evaluates the next time it runs, when what its region declares and defines, like a function's locals, is evaluated anew
+	// e.g. with a function's locals evaluated anew, as its next call evaluates them
 	evaluateAgain(node: Node, module: SourceModule, region: Node): SiteState {
 		const isRerun = (node: Node | null | undefined): boolean =>
 			!!node && (node === region || isRerun(node.parent))

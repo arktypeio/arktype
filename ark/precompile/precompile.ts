@@ -887,7 +887,6 @@ export class Precompiler {
 			:	[]
 	}
 
-	// a Type holding functions, reading inputs or calling a helper a mock can replace is created by each call to its factory
 	private isFactory(site: Site, module: SourceModule): boolean {
 		return (
 			hasArkKind(site.value, "root") &&
@@ -2225,7 +2224,7 @@ export class Precompiler {
 		return result
 	}
 
-	// a static helper each call to which is a site, so its body never runs
+	// e.g. `withId` when each `withId(A)` is a site, so its body never runs
 	private isOnlyFolded(
 		fn: FunctionNode,
 		settledRanges: Set<string>,
@@ -2633,7 +2632,7 @@ const isFoldable = (value: unknown) =>
 	hasArkKind(value, "scope") ||
 	hasArkKind(value, "generic")
 
-// a Type, Module, Scope or Generic and what a Module holds, each of which a program can compare
+// e.g. a Module and each Type it holds, which a program can compare by identity
 const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
 	if (!isFoldable(value) || result.has(value)) return result
 	result.add(value)
