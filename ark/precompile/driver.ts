@@ -161,21 +161,26 @@ const createTrackedPrecompiler = (
 	const { host } = precompiler.graph
 	precompiler.graph.host = {
 		resolve: (specifier, importer) => {
-			const id = host.resolve(specifier, importer)
-			// the resolver caches that a file is missing, so creating the one a relative import names changes what it read
-			if (id === undefined && /^\.{0,2}\//.test(specifier)) {
-				const file = resolve(dirname(importer), specifier)
+			const tsconfigs = host.tsconfigsOf?.(importer) ?? []
+			for (const file of [...tsconfigs, ...lookedIn(specifier, importer)])
 				readTimes[file] ??= mtimeOf(file)
-			}
-			return id
+			return host.resolve(specifier, importer)
 		},
 		readFile: file => {
 			// before reading, so a file written meanwhile changes, as does one it couldn't read once it's created
 			readTimes[file] ??= mtimeOf(file)
 			return host.readFile(file)
-		}
+		},
+		tsconfigsOf: importer => host.tsconfigsOf?.(importer) ?? []
 	}
 	return { precompiler, readTimes }
+}
+
+// the resolver caches what each directory holds, so creating a file where a relative import looks, as beside a directory it resolved to, changes what it resolves to
+const lookedIn = (specifier: string, importer: string): string[] => {
+	if (!/^\.{0,2}\//.test(specifier)) return []
+	const target = resolve(dirname(importer), specifier)
+	return [dirname(target), target]
 }
 
 // a module given rather than read stands for its file in each module after it that imports it, so only while it's what the file reads, which one unsaved in an editor isn't

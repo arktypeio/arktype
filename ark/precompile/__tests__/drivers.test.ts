@@ -20,6 +20,7 @@ import { writeCreatedBeforeConfigureMessage } from "@ark/schema/runtime"
 import { writeLibrary } from "./utils.ts"
 
 const app = fromHere("app")
+const tsconfig = fromHere("..", "..", "..", "tsconfig.json")
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts"]
@@ -297,7 +298,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			attest(standalone.run()).satisfies(
 				/^var \$ark\$exports0;\nfunction \$ark\$load0\(\) {/
 			)
-			attest(standalone.dependencies).equals(["ark.ts"])
+			attest(standalone.dependencies).equals(["ark.ts", tsconfig])
 			attest(load("schemas.ts", { runtime: "arktype" }).run()).satisfies(
 				/^;\(\({ "registerPrecompiledUnits": /
 			)
@@ -439,17 +440,61 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 			attest(loadWith("number", new Date()).includes('"number"')).equals(true)
 		}).timeout(60000)
 
-		it("replaces its precompiler when a module an import names is created", () => {
+		it("replaces its precompiler when a module an import resolves to is created", () => {
 			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
 			writeFileSync(
 				join(dir, "main.ts"),
-				'import { type } from "arktype"\nimport { shape } from "./shape.ts"\n\nexport const T = type(shape)\n'
+				'import { type } from "arktype"\nimport { shape } from "./shape.js"\n\nexport const T = type(shape)\n'
 			)
 			attest(loadIn(dir)).satisfies(/cannot be precompiled/)
 			writeFileSync(
 				join(dir, "shape.ts"),
 				'export const shape = { a: "number" } as const\n'
 			)
+			attest(loadIn(dir).includes('"number"')).equals(true)
+		}).timeout(60000)
+
+		it("replaces its precompiler when a module is created beside the directory an import resolved to", () => {
+			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			writeFileSync(
+				join(dir, "main.ts"),
+				'import { type } from "arktype"\nimport { shape } from "./shape"\n\nexport const T = type(shape)\n'
+			)
+			mkdirSync(join(dir, "shape"))
+			writeFileSync(
+				join(dir, "shape", "index.ts"),
+				'export const shape = { a: "string" } as const\n'
+			)
+			attest(loadIn(dir).includes('"number"')).equals(false)
+			writeFileSync(
+				join(dir, "shape.ts"),
+				'export const shape = { a: "number" } as const\n'
+			)
+			attest(loadIn(dir).includes('"number"')).equals(true)
+		}).timeout(60000)
+
+		it("replaces its precompiler when the paths an import resolves through change", () => {
+			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			const writeTsconfig = (target: string) =>
+				writeFileSync(
+					join(dir, "tsconfig.json"),
+					JSON.stringify({ compilerOptions: { paths: { "#shape": [target] } } })
+				)
+			writeFileSync(
+				join(dir, "main.ts"),
+				'import { type } from "arktype"\nimport { shape } from "#shape"\n\nexport const T = type(shape)\n'
+			)
+			writeFileSync(
+				join(dir, "a.ts"),
+				'export const shape = { a: "string" } as const\n'
+			)
+			writeFileSync(
+				join(dir, "b.ts"),
+				'export const shape = { a: "number" } as const\n'
+			)
+			writeTsconfig("./a.ts")
+			attest(loadIn(dir).includes('"number"')).equals(false)
+			writeTsconfig("./b.ts")
 			attest(loadIn(dir).includes('"number"')).equals(true)
 		}).timeout(60000)
 
@@ -478,7 +523,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 			attest(() => roles.run()).throws(
 				'roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: "\'admin\'" … can\'t be precompiled to a standalone validator yet'
 			)
-			attest(roles.dependencies).equals(["schemas.ts", "ark.ts"])
+			attest(roles.dependencies).equals(["schemas.ts", "ark.ts", tsconfig])
 		}).timeout(60000)
 	})
 

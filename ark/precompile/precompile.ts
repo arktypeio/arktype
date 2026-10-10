@@ -261,6 +261,7 @@ export class Precompiler {
 		"@ark/util": {}
 	}
 	private warnedDependencies: Record<string, true> = Object.create(null)
+	private isFileByPath: Record<string, boolean> = Object.create(null)
 
 	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
 		this.graph = new ModuleGraph(host, opts?.cwd)
@@ -607,16 +608,26 @@ export class Precompiler {
 		return configuration
 	}
 
-	// every module the build read for this one, so a host rebuilds it once one changes
+	// what a host watches to rebuild a module, short of the missing files and manifests a dev server can't watch
 	private dependenciesOfArtifact(module: SourceModule): string[] {
-		return [
-			...new Set([
-				// the graph records an import each time it follows one, so a module it read for an earlier one is here too
-				...this.graph.dependenciesOf(module.id),
-				// every site is evaluated under the configuration
-				...this.configuration!.modules
-			])
+		const modules = [
+			// the graph records an import each time it follows one, so a module it read for an earlier one is here too
+			...this.graph.dependenciesOf(module.id),
+			// every site is evaluated under the configuration
+			...this.configuration!.modules
 		]
+		return [
+			...new Set([...modules, ...modules.flatMap(id => this.tsconfigOf(id))])
+		]
+	}
+
+	private tsconfigOf(id: string): string[] {
+		const tsconfigs = this.graph.host.tsconfigsOf?.(id) ?? []
+		const tsconfig = tsconfigs[tsconfigs.length - 1]
+		if (tsconfig === undefined) return []
+		this.isFileByPath[tsconfig] ??=
+			this.graph.host.readFile(tsconfig) !== undefined
+		return this.isFileByPath[tsconfig] ? [tsconfig] : []
 	}
 
 	// arktype takes one configuration per thread, so a build whose configuration changed restarts in a new one

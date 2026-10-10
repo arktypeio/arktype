@@ -47,10 +47,11 @@ import { precompile } from "@ark/precompile/unplugin"
 export default defineConfig({ plugins: [precompile.vite()] })
 ```
 
-In watch mode and in a dev server, a module is rebuilt when any module its definitions were read from changes: each module the build followed from it, including one imported with a comment before its specifier, and the config module with what it imports. These changes don't rebuild it until something else does:
+In watch mode and in a dev server, a module is rebuilt when any module its definitions were read from changes: each module the build followed from it, including one imported with a comment before its specifier, the config module with what it imports, and the `tsconfig.json` whose `paths` resolve their imports. These changes don't rebuild it until something else does:
 
 - creating a file one of its imports names, or one an import would now resolve to;
 - editing a `package.json`, since the packages that opt in are read at startup;
+- editing a tsconfig the nearest `tsconfig.json` extends;
 - for a module left as it is because nothing it imports can reach arktype, a change past its direct imports that makes one of them export a Type.
 
 ### Emit each Type's code once
