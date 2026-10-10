@@ -1,8 +1,20 @@
 import { omit } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
-import type { Locale } from "./locale.ts"
+import {
+	registerLocaleRenderer,
+	suppliedText,
+	unwrittenError,
+	writeError,
+	writeText,
+	type ArkError
+} from "./errors.ts"
+import { keywordWriterOf, writeKeywordExpected, type Locale } from "./locale.ts"
 
 type LocaleSelector = () => Locale | undefined
+
+type ErrorSlot = "expected" | "actual" | "problem" | "message"
+
+type SlotConfig = string | ((...args: never[]) => string)
 
 /** the config of every node kind and error code, once a config has resolved */
 export let defaultConfig: ResolvedConfig
@@ -10,26 +22,15 @@ export let defaultConfig: ResolvedConfig
 /** defaultConfig's locale */
 export let defaultLocale: Locale.Complete
 
-/** defaultLocale, unless a read may render in another locale */
-export let plainLocale: Locale | undefined
-
-/** the locale of the outermost read in progress, which the reads it makes share */
-export let renderLocale: Locale | undefined
-
-// a configured function, which selects the locale of each outermost read
+// a configured function, which selects the locale errors are written in
 let selector: LocaleSelector | undefined
 
 // the configured locale if it isn't a function
 let configured: Locale
 
-const plainLocaleIn = (locale: Locale | undefined): Locale | undefined => {
-	locale ??= selector === undefined ? configured : undefined
-	return locale === defaultLocale ? locale : undefined
-}
-
 /**
- * sets the locale reads render in from the one configure was last passed,
- * returning it if it isn't a function
+ * sets the locale errors are written in from the one configure was last
+ * passed, returning it if it isn't a function
  */
 export const configureLocale = (
 	locale: Locale | LocaleSelector | undefined,
@@ -44,43 +45,156 @@ export const configureLocale = (
 		selector = undefined
 		configured = locale === undefined ? defaultLocale : normalizeLocale(locale)
 	}
-	plainLocale = plainLocaleIn(renderLocale)
+	registerLocaleRenderer({ en: defaultLocale, select, write })
 	return configured
 }
 
-export const selectsLocale = (): boolean =>
-	selector !== undefined && renderLocale === undefined
-
-export const selectLocale = (): Locale => {
+const select = (): Locale => {
+	if (selector === undefined) return configured
 	try {
-		const locale = selector!()
-		return locale === undefined || locale === defaultLocale ?
-				defaultLocale
-			:	normalizeLocale(locale)
+		const locale = selector()
+		return locale === undefined ? defaultLocale : normalizeLocale(locale)
 	} catch {
-		// a throw from a getter would replace the TraversalError assert throws
+		// a throw from a read would replace the TraversalError assert throws
 		return defaultLocale
 	}
 }
 
-/** the locale of an outermost read */
-export const outerLocale = (): Locale =>
-	selector === undefined ? configured : selectLocale()
-
-export const readIn = <self, t>(
-	locale: Locale,
-	self: self,
-	read: (self: self) => t
-): t => {
-	const outer = renderLocale
-	renderLocale = locale
-	plainLocale = plainLocaleIn(locale)
-	try {
-		return read(self)
-	} finally {
-		renderLocale = outer
-		plainLocale = plainLocaleIn(outer)
+const write = (error: ArkError, config: ResolvedConfig, locale: Locale) => {
+	locale = normalizeLocale(locale)
+	if (locale === defaultLocale) return writeText(error, config, locale)
+	const supplied = suppliedText(error, "expected")
+	const expected = supplied ?? configOf(error, "expected", config)
+	const cited = citesDescription(error) ? error.description : undefined
+	// text supplied for expected is cited like any other, so it's written
+	// unless it's no longer what was supplied
+	if (error.expected === supplied) {
+		error.expected =
+			expected === defaultConfig[error.code].expected ?
+				localeExpected(error, cited, config, locale)
+			:	writeSlot(error, "expected", expected, locale)
 	}
+	error.actual ??= render(error, "actual", expected, cited, config, locale)
+	error.problem ??= render(error, "problem", expected, cited, config, locale)
+	error.message ??= render(error, "message", expected, cited, config, locale)
+}
+
+// a slot's text in a locale other than en
+const render = (
+	error: ArkError,
+	slot: Exclude<ErrorSlot, "expected">,
+	expected: SlotConfig,
+	cited: string | undefined,
+	config: ResolvedConfig,
+	locale: Locale
+): string => {
+	const slotConfig = configOf(error, slot, config)
+	return writeSlot(
+		error,
+		slot,
+		slotConfig === defaultConfig[error.code][slot] ?
+			localeWriter(error, slot, expected, cited, locale)
+		:	slotConfig,
+		locale
+	)
+}
+
+const configOf = (
+	error: ArkError,
+	slot: ErrorSlot,
+	config: ResolvedConfig
+): SlotConfig =>
+	error.meta?.[slot] ??
+	config[error.code][slot] ??
+	defaultConfig[error.code][slot]
+
+// a discriminant's description lists its cases, while its meta is its union's
+const citesDescription = (error: ArkError): boolean =>
+	error.code !== "discriminant" &&
+	error.description !== undefined &&
+	!isDefaultDescription(error, error.description)
+
+const writeSlot = (
+	error: ArkError,
+	slot: ErrorSlot,
+	config: SlotConfig,
+	locale: Locale
+): string =>
+	typeof config === "string" ?
+		slot === "expected" ?
+			locale.cite(config)
+		:	config
+	: slot === "actual" ?
+		config(error.data as never, error as never, locale as never)
+	:	config(error as never, locale as never)
+
+// a locale's writer for a slot other than expected
+const localeWriter = (
+	error: ArkError,
+	slot: Exclude<ErrorSlot, "expected">,
+	expected: SlotConfig,
+	cited: string | undefined,
+	locale: Locale
+): SlotConfig => {
+	if (cited !== undefined) {
+		const keywordWriter = keywordWriterOf(error, locale, slot)
+		if (keywordWriter !== undefined) return keywordWriter
+	}
+	const writer = locale[error.code][slot]
+	if (writer === undefined) return locale[slot]
+	// a code's own problem frames the text of its locale's expected writer,
+	// not a keyword's phrase or authored text, while union and intersection
+	// frame their children's
+	if (
+		slot !== "problem" ||
+		error.code === "union" ||
+		error.code === "intersection"
+	)
+		return writer
+	return (
+			cited !== undefined || expected !== defaultConfig[error.code].expected
+		) ?
+			locale.problem
+		:	writer
+}
+
+const localeExpected = (
+	error: ArkError,
+	cited: string | undefined,
+	config: ResolvedConfig,
+	locale: Locale
+): string => {
+	if (cited !== undefined)
+		return writeKeywordExpected(error as never, locale) ?? locale.cite(cited)
+	const expected = locale[error.code].expected
+	if (expected !== undefined) return writeExpected(error, expected, locale)
+	// written whole in en, never as en's frame around the locale's text
+	const inEn = unwrittenError(error)
+	writeError(inEn, config, defaultLocale)
+	return inEn.expected
+}
+
+const writeExpected = (
+	error: ArkError,
+	expected: string | ((error: never, locale: Locale) => string),
+	locale: Locale
+): string =>
+	typeof expected === "string" ? expected : expected(error as never, locale)
+
+// whether a description is what arktype writes for a node without authored
+// text or a keyword. Any scope's writer may have written it, so its text decides
+const isDefaultDescription = (
+	error: ArkError,
+	description: string
+): boolean => {
+	const meta = error.meta
+	return (
+		meta !== undefined &&
+		meta.description === undefined &&
+		meta.keyword === undefined &&
+		description ===
+			writeExpected(error, defaultLocale[error.code].expected, defaultLocale)
+	)
 }
 
 const normalizedLocales = new WeakMap<object, Locale>()

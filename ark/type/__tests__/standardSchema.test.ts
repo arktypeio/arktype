@@ -26,9 +26,9 @@ contextualize(() => {
 
 		attest(badStandardOut).instanceOf(type.errors)
 		attest(Array.isArray(badStandardOut.issues)).equals(true)
-		attest(badStandardOut.issues.toString()).snap(
+		attest(badStandardOut.issues.map(issue => issue.message)).snap([
 			"foo must be a string (was a number)"
-		)
+		])
 	})
 
 	it("nested standard schema issues", () => {

@@ -9,26 +9,31 @@ import {
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import type { BaseErrorContext } from "./declare.ts"
-import { registerCopyCompiler, type NodeContextCopy } from "./errors.ts"
+import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
 import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
 import type { TraversalKind } from "./traversal.ts"
 
-export const writeNodeContextCopy = (context: object): string => {
-	let body = "e.input = input\n"
+export const writeErrorBuilder = (context: object): string => {
+	let body = "return { data, path"
 	for (const k in context) {
 		const key = JSON.stringify(k)
-		body += `e[${key}] = input[${key}]\n`
+		body += `, ${key}: context[${key}]`
 	}
-	return body
+	// the text written when its errors are read has slots from the start
+	for (const k of writtenSlots) if (!(k in context)) body += `, ${k}: undefined`
+	return `${body} }\n`
 }
 
-registerCopyCompiler(
+const writtenSlots = ["propString", "expected", "actual", "problem", "message"]
+
+registerBuilderCompiler(
 	context =>
-		new DynamicFunction<NodeContextCopy>(
-			"e",
-			"input",
-			writeNodeContextCopy(context)
+		new DynamicFunction<ErrorBuilder>(
+			"context",
+			"path",
+			"data",
+			writeErrorBuilder(context)
 		)
 )
 

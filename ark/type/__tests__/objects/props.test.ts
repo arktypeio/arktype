@@ -150,7 +150,7 @@ contextualize(() => {
 	describe("missing", () => {
 		const requiredError = (T: type.Any, data: object = {}) => {
 			const error = (T(data) as type.errors).issues[0]
-			if (!error.hasCode("required")) throw new Error(`${error.code} error`)
+			if (error.code !== "required") throw new Error(`${error.code} error`)
 			return error
 		}
 
@@ -161,7 +161,7 @@ contextualize(() => {
 					name: $.type("string").configure({ title: "Name" })
 				})
 				const error = requiredError(T)
-				attest(error.toString()).snap("name must be a string (was missing)")
+				attest(error.message).snap("name must be a string (was missing)")
 				attest(error.missing).snap({
 					code: "domain",
 					description: "a string",
@@ -266,6 +266,7 @@ contextualize(() => {
 					code: "required",
 					missingValueDescription: "0n or 1n",
 					meta: {},
+					propString: "amount",
 					expected: "0n or 1n",
 					actual: "missing",
 					problem: "must be 0n or 1n (was missing)",

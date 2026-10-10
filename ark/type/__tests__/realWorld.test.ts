@@ -1406,7 +1406,7 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 		if (!(out instanceof type.errors)) throw new AssertionError({})
 
-		attest(out.length).equals(3)
+		attest(out.issues.length).equals(3)
 		attest(out.summary).snap(`date1 must be a parsable date (was "")
 date2 must be a parsable date (was "")
 date3 must be a parsable date (was "")`)

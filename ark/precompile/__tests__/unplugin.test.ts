@@ -454,7 +454,7 @@ const ShortWord = type("string.alphanumeric <= 3")
 const Tagged = type({ n: type("number").configure({ description: "tagged" }) })
 const ScopedTagged = scope({}).type({ n: ["number", "@", { description: "tagged" }] })
 const Local = scope({ Y: "string" }).type({ y: "Y" })
-const metaOf = (out: unknown) => [...(out as Iterable<{ meta: object }>)][0].meta
+const metaOf = (out: unknown) => (out as { issues: { meta: object }[] }).issues[0].meta
 console.log(
 	JSON.stringify([
 		metaOf(Name(5)) === Name.meta,
@@ -589,7 +589,7 @@ export const A = type({ a: "string" })
 export const B = type({ a: type({ "[string]": "number" }).keyof() })
 `
 		}
-		const log = `console.log(JSON.stringify([A === B, A.meta === B.meta, [...(A({ a: 1 }) as any)][0].meta === [...(B({ a: 1 }) as any)][0].meta]))\n`
+		const log = `console.log(JSON.stringify([A === B, A.meta === B.meta, (A({ a: 1 }) as any).issues[0].meta === (B({ a: 1 }) as any).issues[0].meta]))\n`
 		const orders = {
 			stringFirst:
 				'import { A } from "./string.ts"\nimport { B } from "./keyof.ts"\n',
@@ -626,7 +626,7 @@ export const V = type({ w: W, t: T })
 				"main.ts": `import { Other, T, W } from "./a.ts"
 import { V } from "./b.ts"
 
-const first = (out: unknown) => [...(out as Iterable<{ meta: any }>)][0]
+const first = (out: unknown) => (out as { issues: { meta: any }[] }).issues[0]
 const fromW = first(W({ t: 1, list: [] }))
 const fromV = first(V({ w: { t: 1, list: [] }, t: "" }))
 console.log(JSON.stringify([fromV.meta === T.meta, fromV.meta === fromW.meta, fromV.meta.example === Other]))

@@ -220,15 +220,14 @@ contextualize(() => {
 		}
 	})
 
-	it("copies errors' contexts as arktype does", async () => {
+	it("builds errors as arktype does", async () => {
 		const T = type({ a: "string", b: { c: "number > 0" } })
 		const { T: validator } = await load({ T })
 		const input = { b: { c: 0 } }
-		const copiesOf = (errors: any) =>
-			errors.issues.map((e: any) => [
-				Reflect.ownKeys(e),
-				{ ...e.toJSON(), path: [...e.path] }
-			])
+		const copiesOf = (errors: any) => [
+			errors.issues.map((e: object) => Reflect.ownKeys(e)),
+			errors.toJSON()
+		]
 		attest(copiesOf(validator(input))).equals(copiesOf(T(input)))
 	})
 
@@ -571,7 +570,7 @@ contextualize(() => {
 		const { T: validator, M: module } = artifact
 		const prototype = Object.getPrototypeOf(validator)
 		const shape = artifact.Cyclic("x", { pipe: (node: unknown) => node })
-		const config = artifact.Even(1).issues[0].ctx.config
+		const config = artifact.Even(1).config
 		const nodeMeta = artifact.Long("a").issues[0].meta
 		const writes = {
 			property: () => (validator.x = 1),

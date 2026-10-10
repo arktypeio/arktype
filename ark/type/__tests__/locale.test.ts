@@ -2,6 +2,8 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	describeMissing,
+	flatProblemsByPath,
+	messageIn,
 	resolveGlobalConfig,
 	TraversalError,
 	writeInvalidLocaleMessage,
@@ -31,7 +33,7 @@ import { matrixOf } from "./locales/matrix.ts"
 
 // errors described by their own nodes, which union and intersection errors list
 const leavesOf = (error: ArkError): ArkError[] =>
-	error.hasCode("union") || error.hasCode("intersection") ?
+	error.code === "union" || error.code === "intersection" ?
 		error.errors.flatMap(leavesOf)
 	:	[error]
 
@@ -322,7 +324,7 @@ contextualize(() => {
 						codes.add(error.code)
 						attest(enExpected(error)).equals(error.expected)
 						attest(enActual(error)).equals(error.actual)
-						if (error.hasCode("required"))
+						if (error.code === "required")
 							attest(error.expected).equals(error.missingValueDescription)
 						else if (error.description !== undefined)
 							attest(error.expected).equals(error.description)
@@ -352,7 +354,7 @@ contextualize(() => {
 		it("describes a missing value through the locale", () => {
 			const missingOf = (T: type.Any) => {
 				const error = (T({}) as ArkErrors).issues[0]
-				return error.hasCode("required") ? error.missing : undefined!
+				return error.code === "required" ? error.missing : undefined!
 			}
 			const plain: Locale = {
 				...en,
@@ -668,14 +670,13 @@ b isn't allowed`)
 			attest(errors.toLocaleString(xx)).snap(
 				"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
 			)
-			attest(error.toLocaleString(xx)).snap(
+			attest(messageIn(error, xx)).snap(
 				"k ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧"
 			)
 			attest(errors.summary).snap("k must be a string (was a number)")
 			attest(errors.toLocaleString()).equals(errors.summary)
-			attest(error.toLocaleString()).equals(error.message)
 			// Array.prototype.toLocaleString passes each element its tag
-			attest([error].toLocaleString("de")).equals(error.message)
+			attest([errors].toLocaleString("de")).equals(errors.summary)
 		})
 
 		it("toLocaleString reaches union and intersection children", () => {
@@ -716,18 +717,26 @@ b isn't allowed`)
 				},
 				() => {
 					attest($ark.resolvedConfig!.locale).is(en)
-					const errors = type("(string >= 2) | (string <= 0)")("a") as ArkErrors
+					const errorsOf = () =>
+						type("(string >= 2) | (string <= 0)")("a") as ArkErrors
+					const errors = errorsOf()
 					attest(errors.toString()).snap(
 						"must be exactly length 0 or at least length 2 (was 1)"
 					)
 					locale = xx
 					calls = 0
+					// errors keep the locale their first read selected
 					attest(errors.toString()).snap(
+						"must be exactly length 0 or at least length 2 (was 1)"
+					)
+					attest(calls).equals(0)
+					const localized = errorsOf()
+					attest(localized.toString()).snap(
 						" ⟦message⟧ ⟦problem⟧  ⟦exactLength⟧ ⟦actual⟧⟦or⟧ ⟦minLength⟧ ⟦actual⟧ ⟦actual⟧"
 					)
-					// once per outermost read, which its children share
+					// once for the errors, which their children share
 					attest(calls).equals(1)
-					attest(errors.toLocaleString(en)).snap(
+					attest(localized.toLocaleString(en)).snap(
 						"must be exactly length 0 or at least length 2 (was 1)"
 					)
 					attest(calls).equals(1)
@@ -737,17 +746,17 @@ b isn't allowed`)
 
 		it("a locale configured later replaces a function", () => {
 			withConfig({ locale: () => xx }, () => {
-				const errors = type("string")(5) as ArkErrors
-				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
+				const summaryOf = () => type("string")(5).toString()
+				attest(summaryOf()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
 				reconfigure({ locale: en })
-				attest(errors.toString()).snap("must be a string (was a number)")
+				attest(summaryOf()).snap("must be a string (was a number)")
 				reconfigure({ locale: xx })
-				attest(errors.toString()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
+				attest(summaryOf()).snap(" ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧")
 				reconfigure({ locale: { ...en } })
-				attest(errors.toString()).snap("must be a string (was a number)")
+				attest(summaryOf()).snap("must be a string (was a number)")
 				reconfigure({ locale: () => xx })
 				reconfigure({ locale: undefined } as never)
-				attest(errors.toString()).snap("must be a string (was a number)")
+				attest(summaryOf()).snap("must be a string (was a number)")
 			})
 		})
 
@@ -755,24 +764,24 @@ b isn't allowed`)
 			const T = type({ a: type("number").describe("a count") })
 			const error = (T({ a: "x" }) as ArkErrors).issues[0]
 			const keys = Object.keys(error)
-			attest(error.toLocaleString(xx)).snap(
+			attest(messageIn(error, xx)).snap(
 				"a ⟦message⟧ ⟦problem⟧ ⟦cite⟧ a count ⟦actual⟧"
 			)
 			attest(Object.keys(error)).equals(keys)
 		})
 
-		it("a function selects one locale per read", () => {
+		it("a function selects one locale for each errors", () => {
 			let calls = 0
 			withConfig({ locale: () => (calls++ % 2 ? en : xx) }, () => {
 				const T = type({ a: "string", b: "number", c: "boolean" })
 				const errors = T({}) as ArkErrors
-				const read = (f: () => unknown) => {
+				const read = (f: () => unknown, selections = 0) => {
 					calls = 0
 					const result = f()
-					attest(calls).equals(1)
+					attest(calls).equals(selections)
 					return result
 				}
-				attest(read(() => errors.summary))
+				attest(read(() => errors.summary, 1))
 					.snap(`a ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
 b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
 c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
@@ -783,8 +792,8 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 					"b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧",
 					"c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧"
 				])
-				attest(read(() => errors.issues[0].toJSON().actual)).snap("⟦actual⟧")
-				attest(read(() => errors.flatProblemsByPath)).snap({
+				attest(read(() => errors.issues[0].actual)).snap("⟦actual⟧")
+				attest(read(() => flatProblemsByPath(errors))).snap({
 					a: ["⟦problem⟧ ⟦domain⟧ ⟦actual⟧"],
 					b: ["⟦problem⟧ ⟦domain⟧ ⟦actual⟧"],
 					c: ["⟦problem⟧ ⟦boolean⟧ ⟦actual⟧"]
@@ -796,7 +805,7 @@ c ⟦message⟧ ⟦problem⟧ ⟦boolean⟧ ⟦actual⟧`)
 						} catch (e) {
 							return (e as TraversalError).message
 						}
-					})
+					}, 1)
 				).snap(`
   • a ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
   • b ⟦message⟧ ⟦problem⟧ ⟦domain⟧ ⟦actual⟧
@@ -1192,7 +1201,7 @@ m must be a bigint (was 5)`)
 					check(error.actual)
 					check(error.problem)
 					check(error.message)
-					if (error.hasCode("union") || error.hasCode("intersection"))
+					if (error.code === "union" || error.code === "intersection")
 						checkErrors(error.errors)
 				}
 			}

@@ -24,9 +24,9 @@ contextualize(() => {
 		for (const jitless of [false, true]) {
 			const Odd = scope({}, { jitless }).type("number").narrow(isOdd)
 			const error = (Odd(2) as type.errors).issues[0]
-			if (!error.hasCode("predicate")) throw new Error()
+			if (error.code !== "predicate") throw new Error()
 			attest(error.predicate).is(isOdd)
-			attest(error.toString()).snap("must be valid according to isOdd (was 2)")
+			attest(error.message).snap("must be valid according to isOdd (was 2)")
 		}
 	})
 

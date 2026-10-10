@@ -9,7 +9,7 @@ import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { declareNode } from "../shared/declare.ts"
-import { ArkErrors } from "../shared/errors.ts"
+import { ArkErrors, mergeErrors } from "../shared/errors.ts"
 import {
 	implementNode,
 	type nodeImplementationOf
@@ -147,9 +147,8 @@ export const assertDefaultAssignability = (
 			throwParseError(`Default ${out.toLocaleString(en)}`)
 		}
 
-		const atPath = out.transform(e =>
-			e.transform(input => ({ ...input, prefixPath: [key] }) as never)
-		)
+		const atPath = new ArkErrors(node.$.resolvedConfig)
+		mergeErrors(atPath, out, [key])
 
 		// e.g. "Default for bar must be assignable to number (was string)"
 		// e.g. "Default for value at [0] must be assignable to number (was string)"

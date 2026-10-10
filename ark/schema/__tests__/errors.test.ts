@@ -1,9 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	ArkErrors,
-	type ArkError,
+	flatByPath,
+	flatProblemsByPath,
 	rootSchema,
 	schemaScope,
+	type ArkError,
 	type Traversal
 } from "@ark/schema"
 
@@ -126,20 +128,55 @@ contextualize(() => {
 			predicate: (s: string, ctx: Traversal) =>
 				ctx.reject({ expected: "a greeting", actual: "" })
 		})
-		const error = (greeting.traverse("x") as ArkErrors).issues[0]
+		const errors = greeting.traverse("x") as ArkErrors
+		const error = errors.issues[0]
 		attest(error.expected).equals("a greeting")
 		attest(error.actual).equals("")
-		attest(error.toString()).snap("must be a greeting")
-		attest(Object.keys(error).includes("expected")).equals(false)
-		attest(error.toJSON()).snap({
-			data: "x",
-			path: [],
-			code: "predicate",
-			expected: "a greeting",
-			actual: "",
-			problem: "must be a greeting",
-			message: "must be a greeting"
+		attest(error.message).snap("must be a greeting")
+		attest(errors.toJSON()).snap([
+			{
+				data: "x",
+				path: [],
+				expected: "a greeting",
+				actual: "",
+				code: "predicate",
+				propString: "",
+				problem: "must be a greeting",
+				message: "must be a greeting"
+			}
+		])
+	})
+
+	it("an issue is a plain object", () => {
+		const issue = (rootSchema({ domain: "string" })(5) as ArkErrors).issues[0]
+		attest(Object.getPrototypeOf(issue)).equals(Object.prototype)
+		attest(Reflect.ownKeys(issue)).snap([
+			"data",
+			"path",
+			"code",
+			"description",
+			"meta",
+			"domain",
+			"propString",
+			"expected",
+			"actual",
+			"problem",
+			"message"
+		])
+		attest(`${issue}`).equals("[object Object]")
+	})
+
+	it("writes an issue's text when its errors are first read", () => {
+		let calls = 0
+		const T = rootSchema({
+			domain: "string",
+			meta: { message: () => `${++calls}` }
 		})
+		const errors = T(5) as ArkErrors
+		attest(calls).equals(0)
+		attest(errors.summary).equals("1")
+		attest(errors.issues[0].message).equals("1")
+		attest(calls).equals(1)
 	})
 
 	const nEvenAtLeast2 = rootSchema({
@@ -160,8 +197,6 @@ contextualize(() => {
 
 		attest(Array.isArray(errors)).equals(false)
 		attest(Array.isArray(errors.issues)).equals(true)
-		attest(errors.issues).equals([...errors])
-		attest(errors.length).equals(errors.issues.length)
 	})
 
 	it("array members are read from issues", () => {
@@ -176,7 +211,7 @@ contextualize(() => {
 			"Property 'push' does not exist"
 		)
 		// @ts-expect-error
-		attest(() => (errors.length = 0)).type.errors("read-only property")
+		attest(() => errors.length).type.errors("Property 'length' does not exist")
 		// @ts-expect-error
 		attest(() => errors.issues.push(errors.issues[0])).type.errors(
 			"Property 'push' does not exist"
@@ -205,6 +240,7 @@ contextualize(() => {
 						description: "even",
 						meta: {},
 						rule: 2,
+						propString: "n",
 						expected: "even",
 						actual: "1",
 						problem: "must be even (was 1)",
@@ -217,12 +253,14 @@ contextualize(() => {
 						description: "at least 2",
 						meta: {},
 						rule: 2,
+						propString: "n",
 						expected: "at least 2",
 						actual: "1",
 						problem: "must be at least 2 (was 1)",
 						message: "n must be at least 2 (was 1)"
 					}
 				],
+				propString: "n",
 				expected: "  ◦ even\n  ◦ at least 2",
 				actual: "1",
 				problem: "(1) must be...\n  ◦ even\n  ◦ at least 2",
@@ -248,7 +286,7 @@ contextualize(() => {
 	})
 
 	it("flatByPath", () => {
-		attest(errors.flatByPath).snap({
+		attest(flatByPath(errors)).snap({
 			n: [
 				{
 					data: 1,
@@ -257,6 +295,7 @@ contextualize(() => {
 					description: "even",
 					meta: {},
 					rule: 2,
+					propString: "n",
 					expected: "even",
 					actual: "1",
 					problem: "must be even (was 1)",
@@ -269,6 +308,7 @@ contextualize(() => {
 					description: "at least 2",
 					meta: {},
 					rule: 2,
+					propString: "n",
 					expected: "at least 2",
 					actual: "1",
 					problem: "must be at least 2 (was 1)",
@@ -278,15 +318,14 @@ contextualize(() => {
 		})
 	})
 
-	it("message", () => {
-		attest<string>(errors.message).equals(errors.summary)
-		attest(errors.message).snap(`n (1) must be...
+	it("summary", () => {
+		attest(errors.summary).snap(`n (1) must be...
   ◦ even
   ◦ at least 2`)
 	})
 
 	it("flatProblemsByPath", () => {
-		attest(errors.flatProblemsByPath).snap({
+		attest(flatProblemsByPath(errors)).snap({
 			n: ["must be even (was 1)", "must be at least 2 (was 1)"]
 		})
 	})

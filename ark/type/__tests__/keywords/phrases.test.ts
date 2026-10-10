@@ -41,7 +41,7 @@ const nounOf = (alias: KeywordPhraseAlias) => {
 }
 
 const leavesOf = (error: ArkError): ArkError[] =>
-	error.hasCode("union") || error.hasCode("intersection") ?
+	error.code === "union" || error.code === "intersection" ?
 		error.errors.flatMap(leavesOf)
 	:	[error]
 
@@ -76,7 +76,7 @@ contextualize(() => {
 		const error = (parseJson("{") as ArkErrors)
 			.issues[0] as ArkError<"predicate">
 		attest(error.cause).instanceOf(SyntaxError)
-		attest(error.toString()).equals(`must be a JSON string (${error.cause})`)
+		attest(error.message).equals(`must be a JSON string (${error.cause})`)
 	})
 
 	it("only own phrases are a keyword's", () => {
@@ -196,16 +196,20 @@ contextualize(() => {
 		const errorOf = (T: type.Any, data: unknown) =>
 			(T(data) as ArkErrors).issues[0] as ArkError<"predicate">
 
+		const jsonOf = (T: type.Any, data: unknown) =>
+			(T(data) as ArkErrors).toJSON()[0]
+
 		it("integer.parse", () => {
 			const error = errorOf(type("string.integer.parse"), "9007199254740993")
 			attest(error.meta).snap({ keyword: "string.integer.parse" })
-			attest(error.toJSON()).snap({
+			attest(jsonOf(type("string.integer.parse"), "9007199254740993")).snap({
 				data: "9007199254740993",
 				path: [],
 				code: "predicate",
 				description:
 					"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
 				meta: { keyword: "string.integer.parse" },
+				propString: "",
 				expected:
 					"an integer in the range Number.MIN_SAFE_INTEGER to Number.MAX_SAFE_INTEGER",
 				actual: '"9007199254740993"',
@@ -219,14 +223,14 @@ contextualize(() => {
 		it("date.parse", () => {
 			const error = errorOf(type({ d: "string.date.parse" }), { d: "x" })
 			attest(error.meta).snap({ keyword: "string.date.parse" })
-			attest(error.toString()).snap('d must be a parsable date (was "x")')
+			attest(error.message).snap('d must be a parsable date (was "x")')
 		})
 
 		it("url.parse", () => {
 			const error = errorOf(type("string.url.parse"), "x")
 			attest(error.meta).snap({ keyword: "string.url.parse" })
 			attest(error.cause).equals(undefined)
-			attest(error.toString()).snap('must be a URL string (was "x")')
+			attest(error.message).snap('must be a URL string (was "x")')
 		})
 
 		it("json", () => {
@@ -246,12 +250,13 @@ contextualize(() => {
 			attest(error.problem).equals(`must be a JSON string (${error.cause})`)
 			const empty = errorOf(type("string.json.parse"), "")
 			attest(empty.cause).equals(undefined)
-			attest(empty.toJSON()).snap({
+			attest(jsonOf(type("string.json.parse"), "")).snap({
 				data: "",
 				path: [],
 				code: "predicate",
 				description: "a JSON string",
 				meta: { keyword: "string.json.parse" },
+				propString: "",
 				expected: "a JSON string",
 				actual: "empty",
 				problem: "must be a JSON string (was empty)",

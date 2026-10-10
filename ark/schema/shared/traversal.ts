@@ -10,8 +10,12 @@ import type { ResolvedConfig } from "../config.ts"
 import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import {
-	ArkError,
+	addError,
 	ArkErrors,
+	errorOfContext,
+	errorOfNodeContext,
+	mergeErrors,
+	type ArkError,
 	type ArkErrorCode,
 	type ArkErrorContextInput,
 	type ArkErrorInput,
@@ -26,10 +30,11 @@ export type BranchTraversal = {
 	errorCount: number
 }
 
-// avoid sugar methods internally
-export type InternalTraversal = Omit<Traversal, "error" | "mustBe" | "reject">
-
-export class Traversal {
+// a standalone runtime whose validators pass no callback ctx creates these
+// without the methods only callbacks call. Its fields are assigned by its
+// constructor, since V8 creates a subclass's instances more slowly when they
+// are defined by initializers
+export class InternalTraversal {
 	/**
 	 * #### the path being validated or morphed
 	 *
@@ -37,23 +42,14 @@ export class Traversal {
 	 * ⚠️ mutated during traversal - use `path.slice(0)` to snapshot
 	 * 🔗 use {@link propString} for a stringified version
 	 */
-	path: PropertyKey[] = []
+	declare path: PropertyKey[]
 
-	_errors: ArkErrors | undefined
-
-	/**
-	 * #### {@link ArkErrors} that will be part of this traversal's finalized result
-	 *
-	 * ✅ will always be empty for a valid traversal
-	 */
-	get errors(): ArkErrors {
-		return (this._errors ??= new ArkErrors(this))
-	}
+	declare _errors: ArkErrors | undefined
 
 	/**
 	 * #### the original value being traversed
 	 */
-	root: unknown
+	declare root: unknown
 
 	/**
 	 * #### configuration for this traversal
@@ -62,108 +58,63 @@ export class Traversal {
 	 * ✅ defaults < global config < scope config
 	 * ✅ does not include options configured on individual types
 	 */
-	config: ResolvedConfig
+	declare config: ResolvedConfig
 
-	branches: BranchTraversal[] = []
-	seen: { [id in string]?: Map<unknown, ResolutionState> } = {}
+	declare branches: BranchTraversal[]
+	declare seen: { [id in string]?: Map<unknown, ResolutionState> }
 	// a cyclic root's Apply leaves resolutions untracked until its data is deep or broad enough to be cyclic
-	tracksResolutions = true
-	private resolving: ResolvingFrame[] | undefined
-	private resolvingDepth = 0
-	private untrackedVisits = 0
-	private recordedFailure = false
-	private enteredCount = 0
-	private earliestAssumed = Number.POSITIVE_INFINITY
-	private assumed: unknown[] | undefined
-	private reachedInvalid: InvalidResolution | undefined
+	declare tracksResolutions: boolean
+	declare private resolving: ResolvingFrame[] | undefined
+	declare private resolvingDepth: number
+	declare private untrackedVisits: number
+	declare private recordedFailure: boolean
+	declare private enteredCount: number
+	declare private earliestAssumed: number
+	declare private assumed: unknown[] | undefined
+	declare private reachedInvalid: InvalidResolution | undefined
 	// data reaching an object by a shorter path than it first did is applied in order of path length
-	private deferredByLength: DeferredResolution[][] | undefined
-	private applyingLength = 0
+	declare private deferredByLength: DeferredResolution[][] | undefined
+	declare private applyingLength: number
 	// the length of the shortest path an object was deferred at, or -1 once applied
-	private shortestPathLengths:
+	declare private shortestPathLengths:
 		| { [id in string]?: Map<unknown, number> }
 		| undefined
 	// data a root allowed within the bounds is a tree, so each path is transformed
-	tracksTransforms = true
-	transformedByResolutionId:
+	declare tracksTransforms: boolean
+	declare transformedByResolutionId:
 		| { [id in string]?: Map<unknown, unknown> }
 		| undefined
 
 	// data is read from what a morph received, since root is the input
-	private received: unknown
-	private receivedDepth = 0
+	declare protected received: unknown
+	declare protected receivedDepth: number
 	// a piped node is transformed once Apply finds it valid
-	private checksOnly = false
+	declare private checksOnly: boolean
 
 	constructor(root: unknown, config: ResolvedConfig) {
+		this.path = []
+		this._errors = undefined
 		this.root = root
-		this.received = root
 		this.config = config
-	}
-
-	/**
-	 * #### the data being validated or morphed
-	 *
-	 * ✅ the value at {@link path}, as transformed by any morphs that have already run
-	 */
-	get data(): unknown {
-		let result: any = this.received
-		for (let i = this.receivedDepth; i < this.path.length; i++)
-			result = result?.[this.path[i]]
-
-		return result
-	}
-
-	/**
-	 * #### a string representing {@link path}
-	 *
-	 * @propString
-	 */
-	get propString(): string {
-		return stringifyPath(this.path)
-	}
-
-	/**
-	 * #### add an {@link ArkError} and return `false`
-	 *
-	 * ✅ useful for predicates like `.narrow`
-	 */
-	reject(input: ArkErrorInput): false {
-		this.error(input)
-		return false
-	}
-
-	/**
-	 * #### add an {@link ArkError} from a description and return `false`
-	 *
-	 * ✅ useful for predicates like `.narrow`
-	 * 🔗 equivalent to {@link reject}({ expected })
-	 */
-	mustBe(expected: string): false {
-		this.error(expected)
-		return false
-	}
-
-	/**
-	 * #### add and return an {@link ArkError}
-	 *
-	 * ✅ useful for morphs like `.pipe`
-	 */
-	error<input extends ArkErrorInput>(
-		input: input
-	): ArkError<
-		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
-	>
-	error(input: ArkErrorInput): ArkError {
-		// an error reads its text from its input when read, so a caller's
-		// later change to an object it passed must not reach it
-		const errCtx: ArkErrorContextInput =
-			typeof input === "object" ?
-				input.code ?
-					{ ...input }
-				:	{ ...input, code: "predicate" }
-			:	{ code: "predicate", expected: input }
-		return this.errorFromContext(errCtx)
+		this.branches = []
+		this.seen = {}
+		this.tracksResolutions = true
+		this.resolving = undefined
+		this.resolvingDepth = 0
+		this.untrackedVisits = 0
+		this.recordedFailure = false
+		this.enteredCount = 0
+		this.earliestAssumed = Number.POSITIVE_INFINITY
+		this.assumed = undefined
+		this.reachedInvalid = undefined
+		this.deferredByLength = undefined
+		this.applyingLength = 0
+		this.shortestPathLengths = undefined
+		this.tracksTransforms = true
+		this.transformedByResolutionId = undefined
+		this.received = root
+		this.receivedDepth = 0
+		this.checksOnly = false
 	}
 
 	/**
@@ -180,7 +131,7 @@ export class Traversal {
 	}
 
 	finalize(onFail?: ArkErrors.Handler | null): unknown {
-		if (this.hasError()) return onFail ? onFail(this.errors) : this.errors
+		if (this.hasError()) return onFail ? onFail(this._errors!) : this._errors
 
 		return this.root
 	}
@@ -230,10 +181,12 @@ export class Traversal {
 			this.tracksTransforms = tracksTransforms
 			this.received = received
 			this.receivedDepth = receivedDepth
-			return this.currentErrorCount > errorCount ? this.errors : result
+			return this.currentErrorCount > errorCount ?
+					(this._errors ??= new ArkErrors(this.config))
+				:	result
 		}
 		if (!decidedByApply) this.applyPiped(node, data)
-		return this.errors
+		return (this._errors ??= new ArkErrors(this.config))
 	}
 
 	private applyPiped(node: BaseNode, data: unknown): boolean {
@@ -245,7 +198,8 @@ export class Traversal {
 		if (node.includesAlias) {
 			const ctx = new Traversal(data, this.config)
 			ctx.checksOnly = true
-			this.errors.merge(applyCyclic(node, data, ctx).errors)
+			const { _errors } = applyCyclic(node, data, ctx)
+			if (_errors) this.mergeErrors(_errors)
 		} else node.traverseApply(data, this)
 		this.checksOnly = checksOnly
 		this.received = received
@@ -288,9 +242,20 @@ export class Traversal {
 		return this.popBranch()!.errorCount === 0 && allowed
 	}
 
+	// an error ctx.error created was added with it
 	addMorphErrors(result: ArkErrorResult): void {
-		if (result instanceof ArkError) this.errors.add(result)
-		else this.errors.merge(result)
+		if (result instanceof ArkErrors) this.mergeErrors(result)
+	}
+
+	// a morph that returns ctx.errors has already added them
+	private mergeErrors(errors: ArkErrors): void {
+		if (errors !== this._errors) {
+			mergeErrors(
+				(this._errors ??= new ArkErrors(this.config)),
+				errors,
+				this.path
+			)
+		}
 	}
 
 	addTransformErrors(errors: TransformErrors, key?: PropertyKey): void {
@@ -502,8 +467,7 @@ export class Traversal {
 	}
 
 	private invalidResolution(
-		error = this.currentBranch?.error ??
-			this.errors.issues[this.errors.length - 1]
+		error = this.currentBranch?.error ?? lastOf(this._errors!._issues)
 	): InvalidResolution {
 		const branch = this.currentBranch
 		return {
@@ -541,8 +505,8 @@ export class Traversal {
 	 * for cases where the extra methods on the external type are expected, e.g.
 	 * a morph or predicate.
 	 */
-	get external(): this {
-		return this
+	get external(): Traversal {
+		return this as never
 	}
 
 	/**
@@ -553,21 +517,21 @@ export class Traversal {
 		data: unknown
 	): ArkError<input["code"]>
 	errorFromNodeContext(input: NodeErrorContextInput, data: unknown): ArkError {
-		const error = new ArkError(input, this, true)
-		error.data = data
-		return this.addError(error)
+		return this.addError(
+			errorOfNodeContext(input, this.path.slice(), data, this.config)
+		)
 	}
 
 	/**
 	 * @internal
 	 */
 	errorFromContext(errCtx: ArkErrorContextInput): ArkError {
-		return this.addError(new ArkError(errCtx, this))
+		return this.addError(errorOfContext(errCtx, this.path, this.config))
 	}
 
-	private addError(error: ArkError): ArkError {
+	protected addError(error: ArkError): ArkError {
 		if (this.currentBranch) this.failBranch(error)
-		else this.errors.addNew(error)
+		else addError((this._errors ??= new ArkErrors(this.config)), error)
 		return error
 	}
 
@@ -576,6 +540,85 @@ export class Traversal {
 		this.currentBranch!.errorCount++
 	}
 }
+
+export class Traversal extends InternalTraversal {
+	/**
+	 * #### {@link ArkErrors} that will be part of this traversal's finalized result
+	 *
+	 * ✅ will always be empty for a valid traversal
+	 */
+	get errors(): ArkErrors {
+		return (this._errors ??= new ArkErrors(this.config))
+	}
+
+	/**
+	 * #### the data being validated or morphed
+	 *
+	 * ✅ the value at {@link path}, as transformed by any morphs that have already run
+	 */
+	get data(): unknown {
+		let result: any = this.received
+		for (let i = this.receivedDepth; i < this.path.length; i++)
+			result = result?.[this.path[i]]
+
+		return result
+	}
+
+	/**
+	 * #### a string representing {@link path}
+	 *
+	 * @propString
+	 */
+	get propString(): string {
+		return stringifyPath(this.path)
+	}
+
+	/**
+	 * #### add an {@link ArkError} and return `false`
+	 *
+	 * ✅ useful for predicates like `.narrow`
+	 */
+	reject(input: ArkErrorInput): false {
+		this.error(input)
+		return false
+	}
+
+	/**
+	 * #### add an {@link ArkError} from a description and return `false`
+	 *
+	 * ✅ useful for predicates like `.narrow`
+	 * 🔗 equivalent to {@link reject}({ expected })
+	 */
+	mustBe(expected: string): false {
+		this.error(expected)
+		return false
+	}
+
+	/**
+	 * #### add and return an {@link ArkError}
+	 *
+	 * ✅ useful for morphs like `.pipe`
+	 */
+	error<input extends ArkErrorInput>(
+		input: input
+	): ArkError<
+		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
+	>
+	error(input: ArkErrorInput): ArkError {
+		// an error's supplied text is read from its input, so a caller's
+		// later change to an object it passed must not reach it
+		const errCtx: ArkErrorContextInput =
+			typeof input === "object" ?
+				input.code ?
+					{ ...input }
+				:	{ ...input, code: "predicate" }
+			:	{ code: "predicate", expected: input }
+		if (!("data" in errCtx)) errCtx.data = this.data
+		return this.addError(errorOfContext(errCtx, this.path, this.config))
+	}
+}
+
+const lastOf = <t>(array: readonly t[]): t => array[array.length - 1]
 
 const transforming = noSuggest("transforming")
 

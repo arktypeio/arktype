@@ -731,7 +731,7 @@ contextualize(() => {
 				})
 				const errors = T({ k: 3.5 }) as type.errors
 				attest(errors.summary).snap("k must be 1.5 or 2.5 (was 3.5)")
-				attest(errors.issues[0].toJSON()).snap({
+				attest(errors.toJSON()[0]).snap({
 					data: 3.5,
 					path: ["k"],
 					code: "discriminant",
@@ -740,6 +740,7 @@ contextualize(() => {
 					absent: false,
 					description: "1.5 or 2.5",
 					meta: {},
+					propString: "k",
 					expected: "1.5 or 2.5",
 					actual: "3.5",
 					problem: "must be 1.5 or 2.5 (was 3.5)",
@@ -757,7 +758,7 @@ contextualize(() => {
 					"must be a bigint, a number, a string or an object (was a symbol)"
 				)
 				const error = errors.issues[0]
-				if (!error.hasCode("discriminant")) throw new Error()
+				if (error.code !== "discriminant") throw new Error()
 				attest(error.discriminantKind).equals("domain")
 				attest(error.cases).equals(["bigint", "number", "string", "object"])
 				attest((T(true) as type.errors).summary).snap(
@@ -787,7 +788,7 @@ contextualize(() => {
 					'must be 1, {}, Symbol(unitCase), -Infinity, 2n, "a", undefined, null or true (was "z")'
 				)
 				const error = errors.issues[0]
-				if (!error.hasCode("discriminant")) throw new Error()
+				if (error.code !== "discriminant") throw new Error()
 				attest(error.cases).equals([
 					1,
 					o,
@@ -808,7 +809,7 @@ contextualize(() => {
 				const T = scope({}, { jitless }).type("'a' | 'b' | 'c'")
 				const first = (T("d") as type.errors).issues[0]
 				const second = (T("e") as type.errors).issues[0]
-				if (!first.hasCode("discriminant") || !second.hasCode("discriminant"))
+				if (first.code !== "discriminant" || second.code !== "discriminant")
 					throw new Error()
 				attest(first.cases).is(second.cases)
 				attest(Object.isFrozen(first.cases)).equals(true)
@@ -824,8 +825,8 @@ contextualize(() => {
 				})
 				const absent = (data: unknown) => {
 					const error = (T(data) as type.errors).issues[0]
-					if (!error.hasCode("discriminant")) throw new Error()
-					return [error.absent, error.toString()]
+					if (error.code !== "discriminant") throw new Error()
+					return [error.absent, error.message]
 				}
 				attest(absent({})).snap([true, 'k must be "a" or "b" (was undefined)'])
 				attest(absent({ k: undefined })).snap([
@@ -837,7 +838,7 @@ contextualize(() => {
 					.or({ v: { k: "'c'" } })
 				const nestedAbsent = (data: unknown) => {
 					const error = (Nested(data) as type.errors).issues[0]
-					return error.hasCode("discriminant") && error.absent
+					return error.code === "discriminant" && error.absent
 				}
 				attest(nestedAbsent({})).equals(true)
 				attest(nestedAbsent({ v: 5 })).equals(true)
@@ -848,7 +849,7 @@ contextualize(() => {
 					.or({ v: { toString: "'b'", y: "number" } })
 					.or({ v: { toString: "'c'" } })
 				const error = (Proto({}) as type.errors).issues[0]
-				attest(error.hasCode("discriminant") && error.absent).equals(true)
+				attest(error.code === "discriminant" && error.absent).equals(true)
 			}
 		})
 
@@ -861,8 +862,8 @@ contextualize(() => {
 				})
 				const T = $.type({ v: $.type("object").pipe(o => Disc(o)) })
 				const error = (T({ v: { k: "c" } }) as type.errors).issues[0]
-				attest(error.toString()).snap('v.k must be "a" or "b" (was "c")')
-				attest(error.transform(input => input).propString).equals("v.k")
+				attest(error.message).snap('v.k must be "a" or "b" (was "c")')
+				attest(error.propString).equals("v.k")
 			}
 		})
 

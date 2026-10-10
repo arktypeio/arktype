@@ -110,7 +110,7 @@ contextualize(() => {
 			const observer = `import { registerHooks } from "node:module"
 const kinds = new Set()
 registerHooks({ load: (url, context, nextLoad) => {
-	if (url.startsWith("arktype:")) kinds.add(/^arktype:~arktype\\/(entry|copy|expression|alias|domain|intersection|morph|proto|union|unit)?/.exec(url)[1] ?? "validators")
+	if (url.startsWith("arktype:")) kinds.add(/^arktype:~arktype\\/(entry|build|expression|alias|domain|intersection|morph|proto|union|unit)?/.exec(url)[1] ?? "validators")
 	return nextLoad(url, context)
 } })
 process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
@@ -125,7 +125,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			attest(stdout.slice(0, expected.length)).equals(expected)
 			attest(JSON.parse(stdout.slice(expected.length))).snap([
 				"alias",
-				"copy",
+				"build",
 				"domain",
 				"entry",
 				"expression",

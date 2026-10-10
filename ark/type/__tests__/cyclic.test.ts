@@ -2391,7 +2391,7 @@ swap.swap.order[1] must be "on" (was "off")`)
 		for (let i = 0; i < 1200; i++) data = { x: i, n: data }
 		const out = a(data)
 
-		attest(out instanceof type.errors && out.issues[0].hasCode("union")).equals(
+		attest(out instanceof type.errors && out.issues[0].code === "union").equals(
 			true
 		)
 	})

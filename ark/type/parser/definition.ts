@@ -1,8 +1,9 @@
 import {
-	ArkError,
+	ArkErrors,
 	constraintInputOf,
 	hasArkKind,
 	inProgress,
+	messageAt,
 	type BaseParseContext,
 	type BaseRoot,
 	type BaseScope,
@@ -138,8 +139,8 @@ const parseStandardSchema = (
 			const path = issue.path
 			// an ArkError's message starts with its path, which relativePath adds
 			const message =
-				issue instanceof ArkError ?
-					issue.transform(e => ({ ...e, path: [] }) as never).message
+				result instanceof ArkErrors ?
+					messageAt(issue as never, [])
 				:	issue.message
 			if (path) {
 				if (path.length) {

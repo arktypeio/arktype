@@ -171,7 +171,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 						`${js.ref(morph)}(${result})`
 					:	`ctx.callMorph(${js.ref(morph)}, ${result})`
 				js.const(morphed, call).if(
-					`${js.ref(isArkErrorResult)}(${morphed})`,
+					`${js.ref(isArkErrorResult)}(${morphed}${js.requiresContext ? ", ctx._errors" : ""})`,
 					() =>
 						js.requiresContext ?
 							js.line(`ctx.addMorphErrors(${morphed})`).return("data")
@@ -207,7 +207,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				morph.length === 1 ?
 					(morph as Morph.ContextFree)(result as never)
 				:	ctx.callMorph(morph, result)
-			if (isArkErrorResult(morphed)) {
+			if (isArkErrorResult(morphed, ctx._errors)) {
 				ctx.addMorphErrors(morphed)
 				return data
 			}

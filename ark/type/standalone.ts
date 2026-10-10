@@ -20,7 +20,7 @@ import {
 	errorWritersByCode,
 	rootApplyParams,
 	rootApplyRuntime,
-	writeNodeContextCopy,
+	writeErrorBuilder,
 	writeRootApply
 } from "@ark/schema/internal"
 import {
@@ -951,7 +951,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 			(value, i) => `const r${i} = ${this.emit(value)}`
 		)
 		const errorContexts = unit.errorContexts.map(context => this.emit(context))
-		const copies = this.writeCopies(unit.errorContexts, errorContexts)
+		const builders = this.writeBuilders(unit.errorContexts, errorContexts)
 		const returned = unit.traversals.flat()
 		const links = ownRoots.map(root => {
 			const shape = writing.shapesByName[unit.names[root.id]]
@@ -965,7 +965,7 @@ export { factory${index} as ${JSON.stringify(name)} }`
 				...this.declarations.statements,
 				...refs,
 				`const errorContexts = [${errorContexts.join(", ")}]`,
-				...copies
+				...builders
 			],
 			links,
 			returned
@@ -1052,26 +1052,33 @@ return [${returned.join(", ")}]
 			:	`${this.localNamesByUnit.get(dependency)}[${index}]`
 	}
 
-	// contexts with the same keys share a function copying them, in a module of its own
-	writeCopies(contexts: readonly object[], names: string[]): string[] {
-		const namesByCopy: Record<string, string[]> = {}
+	// contexts with the same keys share a function building their errors, in a module of its own
+	writeBuilders(contexts: readonly object[], names: string[]): string[] {
+		const namesByBuilder: Record<string, string[]> = {}
 		for (let i = 0; i < contexts.length; i++) {
-			const copy = writeNodeContextCopy(contexts[i])
-			const copyName = `copy${hashOf(copy)}`
-			this.sharedModules[`~arktype/${copyName}`] ??= {
+			const builder = writeErrorBuilder(contexts[i])
+			const builderName = `build${hashOf(builder)}`
+			this.sharedModules[`~arktype/${builderName}`] ??= {
 				readsRuntime: false,
 				imports: {},
-				declarations: [`function ${copyName}(e, input) {\n${copy}}`],
-				exports: [copyName]
+				declarations: [
+					`function ${builderName}(context, path, data) {\n${builder}}`
+				],
+				exports: [builderName]
 			}
-			const copied = (namesByCopy[
-				this.read(`~arktype/${copyName}`, copyName, copyName, copyName)
+			const built = (namesByBuilder[
+				this.read(
+					`~arktype/${builderName}`,
+					builderName,
+					builderName,
+					builderName
+				)
 			] ??= [])
-			if (!copied.includes(names[i])) copied.push(names[i])
+			if (!built.includes(names[i])) built.push(names[i])
 		}
-		return Object.entries(namesByCopy).map(
-			([copyName, copied]) =>
-				`runtime.copyNodeContexts(${copyName}, [${copied.join(", ")}])`
+		return Object.entries(namesByBuilder).map(
+			([builderName, built]) =>
+				`runtime.registerErrorBuilder(${builderName}, [${built.join(", ")}])`
 		)
 	}
 
@@ -1105,14 +1112,14 @@ return [${returned.join(", ")}]
 			]
 			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
 		})
-		const copies = this.writeCopies(localContexts, localContextNames)
+		const builders = this.writeBuilders(localContexts, localContextNames)
 		const validators = [...this.validatorNamesByRoot].map(([root, name]) => {
 			const address = this.addressOf(root)
 			return `const ${name} = ${address ? `runtime.addressed(${JSON.stringify(address)}, () => ${this.writeValidator(root)})` : this.writeValidator(root)}`
 		})
 		return [
 			this.declarations.statements.join("\n"),
-			copies.join("\n"),
+			builders.join("\n"),
 			traversals.join("\n"),
 			this.links.join("\n"),
 			validators.join("\n\n"),

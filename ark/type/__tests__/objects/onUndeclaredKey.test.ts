@@ -163,11 +163,12 @@ Right: { b: boolean, + (undeclared): delete }`)
 				attest(errors.summary).snap(`b must be removed
 value at [Symbol(rejected)] must be removed`)
 				attest(errors.issues.map(e => e.data)).equals([1, 2])
-				attest(errors.issues[0].toJSON()).snap({
+				attest(errors.toJSON()[0]).snap({
 					data: 1,
 					path: ["b"],
 					code: "undeclared",
 					meta: {},
+					propString: "b",
 					expected: "removed",
 					actual: "",
 					problem: "must be removed",

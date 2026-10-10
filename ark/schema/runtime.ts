@@ -11,7 +11,6 @@ import {
 	type ExpectedWriter
 } from "./shared/errors.ts"
 import type { Locale } from "./shared/locale.ts"
-import { configureLocale, defaultConfig } from "./shared/render.ts"
 
 export { describePredicate } from "./shared/errorWriters.ts"
 export * from "./shared/errors.ts"
@@ -41,9 +40,6 @@ export const runtimeConfig: ResolvedConfig = {
 	onFail: null,
 	locale: runtimeLocale
 } as never
-
-// unless arktype has resolved its config, which sets the locale itself
-if (defaultConfig === undefined) configureLocale(undefined, runtimeConfig)
 
 // a node shape's $, which traversal reads only for its config
 export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({

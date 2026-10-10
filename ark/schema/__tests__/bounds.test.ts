@@ -106,7 +106,7 @@ contextualize(() => {
 			min: { rule: -0, exclusive: true }
 		})
 		const error = (T.traverse(-1) as ArkErrors).issues[0]
-		attest(error.hasCode("min") && Object.is(error.rule, -0)).equals(true)
+		attest(error.code === "min" && Object.is(error.rule, -0)).equals(true)
 	})
 
 	it("stringLimit", () => {

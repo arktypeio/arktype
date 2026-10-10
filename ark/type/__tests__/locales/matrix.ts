@@ -38,7 +38,7 @@ const keywordAliases = Object.keys(
 
 const isKeywordError = (error: ArkError, alias: string): boolean =>
 	error.meta?.keyword === alias ||
-	((error.hasCode("union") || error.hasCode("intersection")) &&
+	((error.code === "union" || error.code === "intersection") &&
 		error.errors.some(child => isKeywordError(child, alias)))
 
 // each failure the locale must render: a label and a type with data it rejects

@@ -123,22 +123,21 @@ type("unknown").narrow((data, ctx) => {
 	return true
 })(0)
 
-const indexedErrors = type("string")(0)
-indexedErrors.byPath
-indexedErrors.byAncestorPath
+const writtenErrors = type("string")(0)
+writtenErrors.summary
 
 const errorResults = [
 	emptyErrors,
 	type("string")(0),
 	type({ a: "string", b: "string", c: "string" })({}),
 	type("number[]")(Array.from({ length: 20 }, String)),
-	indexedErrors
+	writtenErrors
 ]
 
 for (const errors of errorResults) {
 	if (!eval("%HaveSameMap(errorResults[0], errors)"))
 		throw new Error(
-			`⚠️  ArkErrors with ${errors.length} errors has a different map.`
+			`⚠️  ArkErrors with ${errors.count} errors has a different map.`
 		)
 }
 

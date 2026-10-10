@@ -150,11 +150,11 @@ contextualize(() => {
 					.type("string")
 					.pipe.try(parseJson)
 				const error = (ParseJson("{") as type.errors).issues[0]
-				if (!error.hasCode("predicate")) throw new Error()
+				if (error.code !== "predicate") throw new Error()
 				attest(error.morph).is(parseJson)
 				attest(error.cause instanceof SyntaxError).equals(true)
 				attest(error.predicate).equals(undefined)
-				attest(error.toString()).equals(
+				attest(error.message).equals(
 					`must be valid according to parseJson (was aborted due to error:\n    ${error.cause}\n)`
 				)
 			}
@@ -503,7 +503,7 @@ contextualize(() => {
 			const out = Outer({ a: { b: { c: "x" } } }) as ArkErrors
 
 			attest(out.toString()).snap("a.b.c must be a number (was a string)")
-			attest(out.issues[0].toJSON().path).snap(["a", "b", "c"])
+			attest(out.issues[0].path).snap(["a", "b", "c"])
 		}
 	})
 

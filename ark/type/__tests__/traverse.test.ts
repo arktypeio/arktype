@@ -1,7 +1,16 @@
 import { attest, contextualize } from "@ark/attest"
-import { ArkErrors, TraversalError } from "@ark/schema"
+import { ArkErrors, en, TraversalError } from "@ark/schema"
 import { flatMorph, throwError } from "@ark/util"
-import { scope, type, type ArkErrorCode, type Type } from "arktype"
+import {
+	byAncestorPath,
+	byPath,
+	flatByPath,
+	flatProblemsByPath,
+	scope,
+	type,
+	type ArkErrorCode,
+	type Type
+} from "arktype"
 
 contextualize(() => {
 	it("divisible", () => {
@@ -172,7 +181,7 @@ contextualize(() => {
 			name: ["negative", "PI"]
 		})
 		attest(result).instanceOf(ArkErrors)
-		const traversalError = (result as ArkErrors).toTraversalError()
+		const traversalError = new TraversalError(result as ArkErrors)
 		attest(traversalError).instanceOf(TraversalError)
 		attest(traversalError.message).snap(`
   • name must be a string (was an object)
@@ -249,6 +258,35 @@ isAdmin must be false, null or true (was 1)`)
 		attest(out.issues[0].propString).equals("a")
 	})
 
+	it("an error keeps its input's symbol keys at another path", () => {
+		const source = Symbol("source")
+		const sourceOf = (out: unknown) =>
+			Reflect.get((out as ArkErrors).issues[0], source)
+
+		const atB = { expected: "y", relativePath: ["b"], [source]: 1 }
+		const AtB = type({ a: "string" }).narrow((o, ctx) => ctx.reject(atB))
+
+		attest(sourceOf(AtB({ a: "x" }))).equals(1)
+
+		const inner = { expected: "x", [source]: 2 }
+		const Inner = type("string").narrow((s, ctx) => ctx.reject(inner))
+		// a morph's errors are copied to its key
+		const Outer = type({ a: type("string").pipe(s => Inner(s)) })
+
+		attest(sourceOf(Outer({ a: "x" }))).equals(2)
+	})
+
+	it("a supplied propString is ignored in every locale", () => {
+		const T = type({ a: "string" }).narrow((o, ctx) =>
+			ctx.reject({ expected: "x", propString: "b", relativePath: ["a"] })
+		)
+
+		const out = T({ a: "y" }) as ArkErrors
+
+		attest(out.summary).snap('a must be x (was {"a":"y"})')
+		attest(out.toLocaleString(en)).equals(out.summary)
+	})
+
 	it("an error a morph adds and returns is listed once", () => {
 		const T = type({ a: "string" }).pipe((o, ctx) => {
 			ctx.error({ expected: "p", relativePath: ["a"] })
@@ -280,7 +318,7 @@ b must be a number (was a string)`)
 
 	it("byAncestorPath is the same whenever it's read", () => {
 		const expectedByAncestorPath = (errors: ArkErrors) =>
-			flatMorph(errors.byAncestorPath, (k, v) => [k, v.map(e => e.expected)])
+			flatMorph(byAncestorPath(errors), (k, v) => [k, v.map(e => e.expected)])
 
 		let readBetween: Record<string, string[]> | undefined
 		const T = (readsBetween: boolean) =>
@@ -314,15 +352,15 @@ b must be a number (was a string)`)
 	it("a never error replaces the errors at its path", () => {
 		const out = type("unknown").narrow((d, ctx) => {
 			ctx.reject({ expected: "a", path: ["x"] })
-			attest(ctx.errors.byAncestorPath.x.length).equals(1)
+			attest(byAncestorPath(ctx.errors).x.length).equals(1)
 			ctx.error({ code: "union", errors: [], path: ["x"] })
 			ctx.reject({ expected: "b", path: ["x"] })
 			return false
 		})(1) as ArkErrors
 
 		attest(out.count).equals(3)
-		attest<ArkErrorCode[]>(out.flatByPath.x.map(e => e.code)).equals(["union"])
-		attest(out.byAncestorPath.x.map(e => e.code)).equals(["union"])
+		attest<ArkErrorCode[]>(flatByPath(out).x.map(e => e.code)).equals(["union"])
+		attest(byAncestorPath(out).x.map(e => e.code)).equals(["union"])
 	})
 
 	it("errors at more paths than are scanned", () => {
@@ -334,8 +372,8 @@ b must be a number (was a string)`)
 			return false
 		})(1) as ArkErrors
 
-		attest(out.issues.map(e => e.propString)).equals(Object.keys(out.byPath))
-		attest(out.flatProblemsByPath).snap({
+		attest(out.issues.map(e => e.propString)).equals(Object.keys(byPath(out)))
+		attest(flatProblemsByPath(out)).snap({
 			k0: ["must be p0 (was 1)"],
 			k1: ["must be p1 (was 1)"],
 			k2: ["must be p2 (was 1)"],

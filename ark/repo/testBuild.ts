@@ -155,7 +155,6 @@ const errors = type("string")(5) as ArkErrors
 
 if (
 	errors.constructor.name !== "ArkErrors" ||
-	errors.issues[0].constructor.name !== "ArkError" ||
 	(arkSchema.Disjoint as Function).name !== "Disjoint" ||
 	scope({}).constructor.name !== "InternalScope"
 )
