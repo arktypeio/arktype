@@ -912,6 +912,27 @@ const U = D.User.or("null")`)
 			])
 		})
 
+		it("a Type a getter returns", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const schemas = {
+	get User() {
+		return type({ name: "string" })
+	}
+}
+class Forms {
+	static get Admin() {
+		return type({ admin: "true" })
+	}
+}
+export const A = schemas.User.or("null")
+export const B = Forms.Admin.or("null")`)
+			).snap([
+				'/main.ts:12:18  schemas.User.or reads or, which a standalone validator lacks\n  `schemas.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:13:18  Forms.Admin.or reads or, which a standalone validator lacks\n  `Forms.Admin` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
 		it("a Type iterated from an array or returned by an object literal's method", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"

@@ -16,11 +16,13 @@ import type { StringType } from "arktype/internal/variants/string.ts"
 import type {
 	ArrowFunctionExpression,
 	CallExpression,
+	ClassElement,
 	Function,
 	ImportSpecifier,
 	MemberExpression,
 	NewExpression,
-	Node
+	Node,
+	ObjectPropertyKind
 } from "oxc-parser"
 import { dirname, join, relative } from "node:path"
 import { isArkValue } from "./builtins.ts"
@@ -442,6 +444,7 @@ export class ModuleGraph {
 	private bindingKindOfKeys = new WeakSet<KindOfKey>()
 	private applicationsByFn = new Map<FunctionNode, Map<string, Application>>()
 	private resolving = new Set<Node>()
+	private heldKindsByNode = new Map<Node, ArkKind>()
 	private composingByFn = new Map<FunctionNode, boolean>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
@@ -1120,8 +1123,7 @@ export class ModuleGraph {
 			}
 			case "CallExpression": {
 				const fn = this.functionOf(node.callee, module)
-				const body =
-					fn && (isStatic(fn[0]) ? staticBodyOf(fn[0]) : onlyReturnOf(fn[0]))
+				const body = fn && returnedOf(fn[0])
 				return body ?
 						this.literalOf(
 							body,
@@ -1199,11 +1201,7 @@ export class ModuleGraph {
 			const element = node.elements[index]
 			return element ? { ...literal, node: element } : null
 		}
-		const properties =
-			node.type === "ObjectExpression" ? node.properties
-			: node.type === "ClassDeclaration" || node.type === "ClassExpression" ?
-				node.body.body.filter(element => "static" in element && element.static)
-			:	[]
+		const properties = membersOf(node)
 		const key = name === undefined ? undefined : String(name)
 		for (let i = properties.length - 1; i >= 0; i--) {
 			const property = properties[i]
@@ -1222,12 +1220,13 @@ export class ModuleGraph {
 			const propertyKey = keyNameOf(property)
 			if (propertyKey === undefined || key === undefined) return
 			if (String(propertyKey) !== key) continue
-			const isValue =
-				property.type === "PropertyDefinition" ||
-				(property.type === "Property" && property.kind === "init") ||
-				(property.type === "MethodDefinition" && property.kind === "method")
-			if (!isValue) return
-			return property.value ? { ...literal, node: property.value } : null
+			const value = memberValueOf(property)
+			if (accessorKindOf(property) === "get") {
+				const returned = onlyReturnOf(value as FunctionNode)
+				return returned && { ...literal, node: returned }
+			}
+			if (accessorKindOf(property) === "set") return
+			return value ? { ...literal, node: value } : null
 		}
 		if (
 			(node.type === "ClassDeclaration" || node.type === "ClassExpression") &&
@@ -1247,24 +1246,22 @@ export class ModuleGraph {
 	// e.g. what `schemas[key]` or `schemas[key].User` may read
 	private heldKindOf(literal: Located, seen = new Set<Node>()): ArkKind {
 		const { node, module, kindOfKey } = literal
-		let result: ArkKind = 0
+		const isCached = !seen.size && kindOfKey === this.finalKindOfKey
+		let result = isCached ? this.heldKindsByNode.get(node) : undefined
+		if (result !== undefined) return result
+		result = 0
 		if (seen.has(node)) return result
 		seen.add(node)
-		const values =
-			node.type === "ArrayExpression" ? node.elements
-			: node.type === "ObjectExpression" ?
-				node.properties.map(property =>
-					property.type === "Property" ? property.value : property
-				)
-			: node.type === "ClassDeclaration" || node.type === "ClassExpression" ?
-				node.body.body.map(element =>
-					element.type === "PropertyDefinition" && element.static ?
-						element.value
-					:	null
-				)
-			:	[]
-		for (const value of values) {
+		for (const member of node.type === "ArrayExpression" ?
+			node.elements
+		:	membersOf(node)) {
+			if (!member || accessorKindOf(member) === "set") continue
+			const value = memberValueOf(member)
 			if (!value) continue
+			if (accessorKindOf(member) === "get") {
+				result |= kindOfKey(value as FunctionNode, module)
+				continue
+			}
 			const held = value.type === "SpreadElement" ? value.argument : value
 			const nested = this.literalOf(held, module, kindOfKey)
 			result |=
@@ -1272,6 +1269,7 @@ export class ModuleGraph {
 				: held === value ? this.transfer(value, module, kindOfKey)
 				: memberKindOf(this.transfer(held, module, kindOfKey), undefined)
 		}
+		if (isCached) this.heldKindsByNode.set(node, result)
 		return result
 	}
 
@@ -1484,41 +1482,18 @@ export class ModuleGraph {
 			if (isArk(this.kindOf(node, module))) return true
 			if (isFunctionNode(node)) fn = [node, module]
 		}
-		const literal = this.targetLiteralOf(target, this.finalKindOfKey, new Set())
+		const returned = fn && returnedOf(fn[0])
+		const literal =
+			this.targetLiteralOf(target, this.finalKindOfKey, new Set()) ??
+			(fn && returned && this.literalOf(returned, fn[1], this.finalKindOfKey))
+		const held = literal ? this.heldKindOf(literal) : 0
 		return (
-			(!!literal && this.holdsArk(literal)) ||
+			isArk(held) ||
+			isFactory(held) ||
 			(!!fn &&
 				(isArk(this.finalKindOfKey(...fn)) ||
 					(isStatic(fn[0]) && this.composesArk(...fn))))
 		)
-	}
-
-	// e.g. `{ users: { User: type(...) } }`, whose members are sites
-	private holdsArk(literal: Located, seen = new Set<Node>()): boolean {
-		if (seen.has(literal.node)) return false
-		seen.add(literal.node)
-		const { node, module, kindOfKey } = literal
-		const values =
-			node.type === "ArrayExpression" ? node.elements
-			: node.type === "ObjectExpression" ?
-				node.properties.map(property =>
-					property.type === "Property" ? property.value : property.argument
-				)
-			: node.type === "ClassDeclaration" || node.type === "ClassExpression" ?
-				node.body.body.map(element =>
-					element.type === "PropertyDefinition" && element.static ?
-						element.value
-					:	null
-				)
-			:	[]
-		return values.some(value => {
-			if (!value) return false
-			if (value.type === "SpreadElement") value = value.argument
-			const nested = this.literalOf(value, module, kindOfKey)
-			if (nested) return this.holdsArk(nested, seen)
-			const kind = this.transfer(value, module, kindOfKey)
-			return isArk(kind) || isFactory(kind)
-		})
 	}
 
 	// e.g. `t => t.and(A)`, each call to which is a site
@@ -1592,7 +1567,36 @@ export const staticBodyOf = (fn: FunctionNode): Node | undefined => {
 		:	undefined
 }
 
-// e.g. `{ User }` in a function declaring `User` before returning it
+// e.g. `{ User }` for `() => ({ User })`, or for a function declaring `User` before returning it
+const returnedOf = (fn: FunctionNode): Node | undefined =>
+	isStatic(fn) ? staticBodyOf(fn) : onlyReturnOf(fn)
+
+// e.g. `a` and `get b() {}` in `{ a, get b() {} }`, or a class's static fields and getters
+const membersOf = (literal: Node): (ObjectPropertyKind | ClassElement)[] =>
+	literal.type === "ObjectExpression" ? literal.properties
+	: literal.type === "ClassDeclaration" || literal.type === "ClassExpression" ?
+		literal.body.body.filter(element => "static" in element && element.static)
+	:	[]
+
+// e.g. `x` in `{ a: x }` or `static a = x`, or a getter's function
+const memberValueOf = (member: Node): Node | null =>
+	(
+		member.type === "Property" ||
+		member.type === "PropertyDefinition" ||
+		member.type === "AccessorProperty" ||
+		member.type === "MethodDefinition"
+	) ?
+		member.value
+	:	member
+
+const accessorKindOf = (member: Node): "get" | "set" | undefined =>
+	(
+		(member.type === "Property" || member.type === "MethodDefinition") &&
+		(member.kind === "get" || member.kind === "set")
+	) ?
+		member.kind
+	:	undefined
+
 const onlyReturnOf = (fn: FunctionNode): Node | undefined => {
 	if (fn.async || fn.generator || fn.body?.type !== "BlockStatement") return
 	let result: Node | null | undefined

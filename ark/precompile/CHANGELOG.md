@@ -28,11 +28,16 @@ export const Shaped = type(await loadShape())
 
 A definition is the largest expression composing an arktype value, which the build follows from arktype's exports through bindings, imports, namespaces, object literals and arrays (nested, imported, behind a `const` key or returned by a function), the parameters of functions only called in their own module, and what functions return, past casts and optional chains. A call to a static helper composes what the helper composes from its arguments, so `withId(A).partial()` with `withId = t => t.and({ id: "string" })` is one definition. A member a standalone validator has, like `.expression` or `.assert`, ends it, so reading one runs at runtime. In a standalone build, reading one it lacks, like `.and`, `.in` or `.json`, outside any definition the build can precompile fails the build rather than throwing or reading `undefined` at runtime, as does reflecting on a Type there, like `JSON.stringify(T)`, `Object.keys(T)` or `{ ...T }`.
 
-The build fails rather than precompiling where it sees a Type composed but can't fold it: through a class's static field, an immediately called function, an object literal's method, a parameter each call passes a Type, or an array of Types a loop iterates. It doesn't see a Type, which a standalone build then replaces with a validator that throws when composed, in:
+The build fails rather than precompiling where it sees a Type composed but can't fold it: through a class's static field or getter, an object literal's getter or method, an immediately called function, a parameter each call passes a Type, or an array of Types a loop iterates. It doesn't see a Type, which a standalone build then replaces with a validator that throws when composed, in:
 
-- a parameter of a function another module calls, unless the function is a static helper, or one some calls pass something else;
+- a parameter of an exported function or of a method, unless the function is a static helper, or one some calls pass something else;
+- a parameter of a function called through another binding, like `alias(A)` with `const alias = nullable`;
 - a callback's parameter, like `t` in `[A, B].map(t => t.or("null"))`;
-- an object or array passed to a function or iterated, like `o.User` in `const pick = o => o.User.or("null")`;
+- an object or array passed to a function or iterated, like `o.User` in `const pick = o => o.User.or("null")` or `Object.freeze({ User })`;
+- an instance's field or getter, like `new Forms().user`, or what `this` reads;
+- a property assigned or an element added after the literal, like `schemas.User = type(...)` or `list.push(type(...))`;
+- what an array method returns, like `[A].at(0)`;
+- what `await` returns;
 - a key known only at runtime, like `schemas[name].or("null")`.
 
 ```ts

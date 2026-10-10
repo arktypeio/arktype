@@ -893,6 +893,8 @@ export const T = type("string[]")`,
 			"/helpers.ts":
 				'import { type } from "arktype"\nexport const field = (n: number) => type(`string <= ${n}`)',
 			"/all.ts": 'export * from "./schemas.ts"',
+			"/forms.ts":
+				'import { type } from "arktype"\nexport function make() {\n\tconst User = type({ name: "string" })\n\treturn { User }\n}',
 			"/errors.ts": 'export { ArkErrors } from "arktype"',
 			"/check.ts":
 				'import { User } from "./schemas.ts"\nexport const isUser = (data: unknown) => User.allows(data)',
@@ -909,6 +911,7 @@ export const T = type("string[]")`,
 			"/schemas.ts true",
 			"/helpers.ts true",
 			"/all.ts true",
+			"/forms.ts true",
 			"/errors.ts false",
 			"/check.ts false",
 			"/math.ts false"
