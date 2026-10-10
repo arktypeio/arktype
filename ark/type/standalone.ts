@@ -7,6 +7,8 @@ import {
 	LazyGenericRoot,
 	pipeOf,
 	precompileRootUnits,
+	supportedJsonSchemaTargets,
+	ToJsonSchema,
 	type ArkErrorCode,
 	type BaseNode,
 	type BaseRoot,
@@ -51,7 +53,7 @@ import { cachedDefinitionOf } from "./parser/definition.ts"
 import type { Generic } from "./generic.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { Module } from "./module.ts"
-import type { HoleKind } from "./runtime.ts"
+import type { HoleKind, IntrospectionMember } from "./runtime.ts"
 import * as runtime from "./runtimeExports.ts"
 import type { Scope } from "./scope.ts"
 
@@ -64,6 +66,7 @@ type DeclarationRole =
 	| "meta"
 	| "config"
 	| "standIn"
+	| "json"
 
 // constraints a node keeps sorted by hash, which holds the names of the functions they hold
 const sortedConstraintKeys = [
@@ -167,6 +170,15 @@ interface SharedModule {
 	exports: string[]
 }
 
+export interface StandaloneOptions {
+	configured?: ConfiguredModule | undefined
+	sitesByName?: Record<string, ExportSite> | undefined
+	// each Module a site reads off arktype's keywords, which creates a Type only when one of its members is read
+	keywordReads?: ReadonlySet<string> | undefined
+	// what each validator bakes of its Type's introspection, which it otherwise lacks
+	introspection?: readonly IntrospectionMember[] | undefined
+}
+
 export interface StandaloneModules {
 	code: string
 	// each module code imports by a ~arktype/ specifier
@@ -182,20 +194,10 @@ const entryCheck = `runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion
  */
 export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
-	configured?: ConfiguredModule,
-	sitesByName?: Record<string, ExportSite>,
-	// each Module a site reads off arktype's keywords, which creates a Type only when one of its members is read
-	keywordReads?: ReadonlySet<string>
+	opts: StandaloneOptions = {}
 ): string => {
 	const shared: Record<string, SharedModule> = {}
-	const sections = writeArtifact(
-		exports,
-		configured,
-		sitesByName,
-		keywordReads,
-		shared,
-		{}
-	)
+	const sections = writeArtifact(exports, opts, shared, {})
 	return writeSections([
 		runtimeImport,
 		entryCheck,
@@ -207,20 +209,11 @@ export const precompileStandalone = (
 // the units an artifact shares with others are modules of their own, so a bundler keeps one copy of each
 export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
-	configured?: ConfiguredModule,
-	sitesByName?: Record<string, ExportSite>,
-	keywordReads?: ReadonlySet<string>
+	opts: StandaloneOptions = {}
 ): StandaloneModules => {
 	const shared: Record<string, SharedModule> = {}
 	const imports: Record<string, string[]> = {}
-	const sections = writeArtifact(
-		exports,
-		configured,
-		sitesByName,
-		keywordReads,
-		shared,
-		imports
-	)
+	const sections = writeArtifact(exports, opts, shared, imports)
 	// imported first, so the runtime's version is checked before anything is created
 	const entry = writeSections([runtimeImport, entryCheck])
 	const entrySpecifier = `~arktype/entry${hashOf(entry)}`
@@ -246,12 +239,12 @@ export const precompileStandaloneModules = (
 
 const writeArtifact = (
 	exports: Record<string, StandaloneExport>,
-	configured: ConfiguredModule | undefined,
-	sitesByName: Record<string, ExportSite> | undefined,
-	keywordReads: ReadonlySet<string> | undefined,
+	opts: StandaloneOptions,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
 ): string[] => {
+	const { configured, sitesByName } = opts
+	const introspection = new Set(opts.introspection)
 	const types: Record<string, ExportedValue> = {}
 	const factories: string[] = []
 	const tables = new Set<number>()
@@ -274,6 +267,7 @@ const writeArtifact = (
 				imports,
 				sitesByName,
 				definitionAddresses,
+				introspection,
 				defaultChecks
 			)
 			if (isCreatedEachRun && hasArkKind(type, "root"))
@@ -293,10 +287,9 @@ const writeArtifact = (
 	return [
 		...writeCreations(
 			types,
-			configured,
-			sitesByName,
+			opts,
 			definitionAddresses,
-			keywordReads,
+			introspection,
 			shared,
 			imports
 		),
@@ -314,10 +307,9 @@ interface Creation {
 
 const writeCreations = (
 	types: Record<string, ExportedValue>,
-	configured: ConfiguredModule | undefined,
-	sitesByName: Record<string, ExportSite> | undefined,
+	{ configured, sitesByName, keywordReads }: StandaloneOptions,
 	definitionAddresses: ReadonlyMap<unknown, string>,
-	keywordReads: ReadonlySet<string> | undefined,
+	introspection: ReadonlySet<IntrospectionMember>,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
 ): string[] => {
@@ -328,7 +320,8 @@ const writeCreations = (
 			shared,
 			imports,
 			sitesByName,
-			definitionAddresses
+			definitionAddresses,
+			introspection
 		)
 	const readsByIndex: Record<number, string> = {}
 	let creations: Creation[] = []
@@ -454,7 +447,8 @@ const createDeclarations = (): Declarations => ({
 		literal: [],
 		meta: [],
 		config: [],
-		standIn: []
+		standIn: [],
+		json: []
 	}
 })
 
@@ -516,16 +510,21 @@ export class StandaloneArtifact {
 	defaultChecks: readonly DefaultCheck[]
 	// a factory's errors expose the meta of a Type it receives, not a copy
 	receivedMetas = new Map<object, string>()
+	introspection: ReadonlySet<IntrospectionMember>
+	// each JSON Schema a validator bakes, written once however many of its members return it
+	jsonSchemaNamesByText = new Map<string, string>()
 
 	constructor(
 		exports: Record<string, ExportedValue>,
 		sharedModules: Record<string, SharedModule>,
 		imports: Record<string, string[]>,
-		sitesByName?: Record<string, ExportSite>,
-		definitionAddresses: ReadonlyMap<unknown, string> = new Map(),
+		sitesByName: Record<string, ExportSite> | undefined,
+		definitionAddresses: ReadonlyMap<unknown, string>,
+		introspection: ReadonlySet<IntrospectionMember>,
 		defaultChecks: readonly DefaultCheck[] = []
 	) {
 		this.exports = exports
+		this.introspection = introspection
 		this.defaultChecks = defaultChecks
 		this.sharedModules = sharedModules
 		this.imports = imports
@@ -1181,7 +1180,11 @@ return [${returned.join(", ")}]
 			!isAddressable(root, this.unitsByHead.get(root)!)
 		)
 			return
-		return heldAddressOf(root) ?? this.definitionAddresses.get(root)
+		const address = heldAddressOf(root) ?? this.definitionAddresses.get(root)
+		// a validator baking introspection has members one built without it lacks, so the two are different values
+		return address && this.introspection.size ?
+				hashOf(`${address}\n${[...this.introspection].sort().join("\n")}`)
+			:	address
 	}
 
 	writeValidator(root: BaseRoot): string {
@@ -1193,8 +1196,102 @@ return [${returned.join(", ")}]
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
 	${this.emit(pipeOf(root))},
-	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root)}()`}, description: ${this.emitDescription(root)}, meta: ${this.emitMeta(root)} }${key}
+	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root)}()`}, description: ${this.emitDescription(root)}, meta: ${this.emitMeta(root)}${this.emitIntrospection(root)} }${key}
 )`
+	}
+
+	// what the build's introspection option bakes, as arktype writes it for the program's configuration
+	emitIntrospection(root: BaseRoot): string {
+		const members: string[] = []
+		const bakes = (member: IntrospectionMember) =>
+			this.introspection.has(member)
+		if (bakes("json") || bakes("toJSON")) {
+			// arktype returns one object from every read
+			const json =
+				this.declarations.namesByValue.get(root.json) ??
+				this.declareConst(root.json, "json", this.writeData(root.json))
+			if (bakes("json")) members.push(`json: ${json}`)
+			if (bakes("toJSON")) members.push(`toJSON: runtime.freeze(() => ${json})`)
+		}
+		if (bakes("toJsonSchema")) {
+			members.push(
+				`toJsonSchema: runtime.bakedJsonSchema(${this.emitJsonSchema(root, () => root.toJsonSchema())})`
+			)
+		}
+		if (bakes("~standard.jsonSchema")) {
+			const { jsonSchema } = root["~standard"]
+			const writers = (io: "input" | "output") =>
+				`[${supportedJsonSchemaTargets.map(target => this.emitJsonSchema(root, () => jsonSchema[io]({ target }))).join(", ")}]`
+			members.push(
+				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${writers("input")}, ${writers("output")}) }`
+			)
+		}
+		return members.map(member => `, ${member}`).join("")
+	}
+
+	// a function writing the schema anew each call, as arktype does, or throwing the error arktype throws writing it
+	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
+		// arktype calls the thunk again each time it writes the schema
+		if (root.references.some(callsDefaultThunk)) {
+			throwParseError(
+				writeUnprecompilableMessage("a JSON Schema calling a default's thunk")
+			)
+		}
+		let writer: string
+		try {
+			writer = `() => (${this.writeData(write())})`
+		} catch (e) {
+			if (e instanceof ToJsonSchema.Error)
+				writer = `() => runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)})`
+			// e.g. printing a context holding a symbol
+			else if (e instanceof TypeError)
+				writer = `() => { throw new TypeError(${this.emitString(e.message)}) }`
+			else throw e
+		}
+		let name = this.jsonSchemaNamesByText.get(writer)
+		if (!name) {
+			name = `jsonSchema${this.jsonSchemaNamesByText.size}`
+			this.jsonSchemaNamesByText.set(writer, name)
+			this.declarations.statements.push(`const ${name} = ${writer}`)
+		}
+		return name
+	}
+
+	// JSON data as arktype returns it, each object created anew where the text is evaluated
+	writeData(value: unknown): string {
+		if (typeof value === "string") return this.emitString(value)
+		if (value === undefined) return "void 0"
+		if (
+			value === null ||
+			typeof value === "number" ||
+			typeof value === "boolean"
+		)
+			return Object.is(value, -0) ? "-0" : String(value)
+		const prototype = hasDomain(value, "object") && prototypeOf(value)
+		const isArray = prototype === Array.prototype && Array.isArray(value)
+		if (
+			(!isArray && prototype !== Object.prototype && prototype !== null) ||
+			Object.getOwnPropertySymbols(value).length
+		) {
+			return throwParseError(
+				writeUnprecompilableMessage(
+					`introspection holding ${
+						prototype ?
+							`an instance of ${constructorNameOf(value as object) || "an anonymous class"}`
+						:	printable(value)
+					}`
+				)
+			)
+		}
+		if (isArray)
+			return `[${(value as unknown[]).map(v => this.writeData(v)).join(", ")}]`
+		const entries = Object.entries(value as object).map(
+			// a __proto__ key would set an object literal's prototype
+			([k, v]) =>
+				`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v)}`
+		)
+		if (prototype === null) entries.unshift("__proto__: null")
+		return `{ ${entries.join(", ")} }`
 	}
 
 	// a root's apply is passed only what its strategy reads, and a traversal no callback sees lacks the API Traversal adds for them
@@ -1289,16 +1386,19 @@ return [${returned.join(", ")}]
 		for (const match of s.matchAll(printedHoleNamePattern)) {
 			if (match.index > start)
 				parts.push(JSON.stringify(s.slice(start, match.index)))
-			const [, predicate, fn, name] = match
+			const [, registered, predicate, fn, name] = match
+			const placeholder = registered ?? predicate ?? fn ?? name
 			const hole =
-				this.holeExpressions.get(this.holeNamed(predicate ?? fn ?? name)) ??
+				this.holeExpressions.get(this.holeNamed(placeholder)) ??
 				throwParseError(
 					writeUnprecompilableMessage(
-						`the name of ${predicate ?? fn ?? name}, which the validator doesn't receive`
+						`the name of ${placeholder}, which the validator doesn't receive`
 					)
 				)
 			parts.push(
-				predicate ? `runtime.describePredicate({ predicate: ${hole} })`
+				// the registry names a function as arktype's json refers to it
+				registered ? `"$ark." + runtime.baseNameOf(${hole})`
+				: predicate ? `runtime.describePredicate({ predicate: ${hole} })`
 				: fn ? `"Function(" + runtime.baseNameOf(${hole}) + ")"`
 				: `runtime.functionNameOf(${hole})`
 			)
@@ -1693,6 +1793,12 @@ return [${returned.join(", ")}]
 }
 
 const { getTime } = Date.prototype
+
+const callsDefaultThunk = (node: BaseNode): boolean =>
+	node.hasKind("optional") ? typeof node.inner.default === "function"
+	: node.hasKind("sequence") ?
+		!!node.defaultables?.some(([, value]) => typeof value === "function")
+	:	false
 
 const isPlainLiteral = (value: object): boolean => {
 	const prototype = prototypeOf(value)
@@ -2142,7 +2248,7 @@ const holeName = `${holeNamePrefix.replace("$", "\\$")}[\\da-z]+`
 export const holeNamePattern = new RegExp(holeName, "g")
 
 const printedHoleNamePattern = new RegExp(
-	`valid according to (${holeName})|Function\\((${holeName})\\)|(${holeName})`,
+	`\\$ark\\.(${holeName})|valid according to (${holeName})|Function\\((${holeName})\\)|(${holeName})`,
 	"g"
 )
 

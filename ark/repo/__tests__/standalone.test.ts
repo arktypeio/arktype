@@ -5,6 +5,7 @@ import {
 	configureAfterTypeMessage,
 	hasArkKind,
 	type ArkSchemaConfig,
+	writeInvalidJsonSchemaTargetMessage,
 	type Locale,
 	type Traversal
 } from "@ark/schema"
@@ -31,11 +32,13 @@ import {
 	type StandaloneExport
 } from "arktype/internal/standalone.ts"
 import {
+	bakedJsonSchemaOptionsMessage,
 	type as runtimeType,
 	writeCreationMismatchMessage,
 	writeIdentityMismatchMessage,
 	writeRenamedHoleMessage,
-	type HoleKind
+	type HoleKind,
+	type IntrospectionMember
 } from "arktype/runtime"
 import { buildSync } from "esbuild"
 import { spawnSync } from "node:child_process"
@@ -82,14 +85,18 @@ const importBesideArktype = async (js: string): Promise<any> => {
 const load = async (
 	exports: Record<string, StandaloneExport>,
 	configure = "",
-	fingerprint = configure ? "f" : undefined
+	fingerprint = configure ? "f" : undefined,
+	introspection?: IntrospectionMember[]
 ): Promise<Record<string, any>> => {
 	const artifact = await importBesideArktype(
 		bundle(
-			precompileStandalone(
-				exports,
-				fingerprint === undefined ? undefined : { fingerprint, path: "main.ts" }
-			).replace(runtimeImport, `${runtimeImport}\n${configure}`)
+			precompileStandalone(exports, {
+				configured:
+					fingerprint === undefined ? undefined : (
+						{ fingerprint, path: "main.ts" }
+					),
+				introspection
+			}).replace(runtimeImport, `${runtimeImport}\n${configure}`)
 		).js
 	)
 	return flatMorph(exports, (name, value) => [
@@ -107,15 +114,21 @@ const standIn = <fn extends Function>(fn: fn, id: string): fn =>
 // a factory built with each hole's value, as a build passes it in place of its source
 const loadFactory = async (
 	t: type.Any,
-	holes: [kind: HoleKind, label: string, value: unknown][]
+	holes: [kind: HoleKind, label: string, value: unknown][],
+	introspection?: IntrospectionMember[]
 ): Promise<(...holes: unknown[]) => any> =>
 	(
-		await load({
-			T: {
-				type: t,
-				params: holes.map(([kind, label, value]) => ({ kind, label, value }))
-			}
-		})
+		await load(
+			{
+				T: {
+					type: t,
+					params: holes.map(([kind, label, value]) => ({ kind, label, value }))
+				}
+			},
+			undefined,
+			undefined,
+			introspection
+		)
 	).T
 
 const observe = (result: unknown, input: unknown) =>
@@ -306,6 +319,116 @@ contextualize(() => {
 		attest(S("s")).equals("s")
 	})
 
+	it("bakes the introspection its build lists", async () => {
+		const T = type({ name: "string", "tags?": "string[]" })
+		const { T: validator } = await load({ T }, undefined, undefined, [
+			"json",
+			"toJSON",
+			"toJsonSchema",
+			"~standard.jsonSchema"
+		])
+		attest(validator.json).equals(T.json)
+		attest(validator.toJSON()).is(validator.json)
+		attest(JSON.stringify(validator)).equals(JSON.stringify(T))
+		attest(validator.toJsonSchema()).equals(T.toJsonSchema())
+		// a new schema each call, as arktype writes one
+		attest(validator.toJsonSchema() === validator.toJsonSchema()).equals(false)
+		for (const io of ["input", "output"] as const) {
+			for (const target of ["draft-2020-12", "draft-07"] as const) {
+				attest(validator["~standard"].jsonSchema[io]({ target })).equals(
+					T["~standard"].jsonSchema[io]({ target })
+				)
+			}
+		}
+		attest(
+			validator["~standard"].jsonSchema.input({ target: "draft-07" })
+		).snap({
+			$schema: "http://json-schema.org/draft-07/schema#",
+			type: "object",
+			properties: {
+				name: { type: "string" },
+				tags: { type: "array", items: { type: "string" } }
+			},
+			required: ["name"]
+		})
+		attest(() =>
+			validator["~standard"].jsonSchema.input({ target: "openapi-3.0" })
+		).throws(writeInvalidJsonSchemaTargetMessage("openapi-3.0"))
+		attest(() => validator.toJsonSchema({ target: "draft-07" })).throws(
+			bakedJsonSchemaOptionsMessage
+		)
+		attest(() =>
+			validator["~standard"].jsonSchema.output({
+				target: "draft-07",
+				libraryOptions: { useRefs: true }
+			})
+		).throws(bakedJsonSchemaOptionsMessage)
+		attest(Object.isFrozen(validator["~standard"].jsonSchema)).equals(true)
+	})
+
+	it("bakes only the introspection its build lists", async () => {
+		const { T } = await load(
+			{ T: type({ a: "string" }) },
+			undefined,
+			undefined,
+			["toJsonSchema"]
+		)
+		attest(["json", "toJSON", "toJsonSchema"].filter(k => k in T)).equals([
+			"toJsonSchema"
+		])
+		attest("jsonSchema" in T["~standard"]).equals(false)
+	})
+
+	it("bakes introspection printing the functions it receives", async () => {
+		const length = standIn((s: string) => s.length, "length")
+		const T = type("string").pipe(length)
+		const thrownBy = (write: () => unknown) => {
+			try {
+				write()
+			} catch (e) {
+				return String(e)
+			}
+		}
+		const json = T.json
+		const message = thrownBy(() => T.toJsonSchema())
+		const create = await loadFactory(
+			T,
+			[["function", "length", length]],
+			["json", "toJsonSchema"]
+		)
+		Object.defineProperty(length, "name", { value: "introspected" })
+		const validator = create(length)
+		attest(json).snap({ in: "string", morphs: ["$ark.$hole_length"] })
+		attest(validator.json).snap({ in: "string", morphs: ["$ark.introspected"] })
+		attest(message).snap(`ToJsonSchemaError: {
+    code: "morph",
+    base: {
+        type: "string"
+    },
+    out: null
+}`)
+		attest(thrownBy(() => validator.toJsonSchema())).equals(message)
+	})
+
+	it("refuses to bake a JSON Schema that calls a default's thunk", () => {
+		const empty = standIn(() => [], "empty")
+		const T = type({ tags: ["string[]", "=", empty] })
+		const exports = {
+			T: {
+				type: T,
+				params: [{ kind: "function", label: "empty", value: empty }]
+			}
+		} satisfies Record<string, StandaloneExport>
+		attest(() =>
+			precompileStandalone(exports, { introspection: ["toJsonSchema"] })
+		).throws(
+			writeUnprecompilableMessage("a JSON Schema calling a default's thunk")
+		)
+		attest(
+			precompileStandalone(exports, { introspection: ["json"] })
+		).satisfies("string")
+	})
+
 	it("has none of the members that need arktype", async () => {
 		const { T } = await load({ T: type("string") })
 		attest(() => T.and("number")).throws.snap(
@@ -462,7 +585,7 @@ contextualize(() => {
 			bundle(
 				`${precompileStandalone(
 					{ T: type({ a: "string" }) },
-					{ fingerprint: "f", path: "main.ts" }
+					{ configured: { fingerprint: "f", path: "main.ts" } }
 				)}\nexport const configure = runtime.configure`
 			).js
 		)
@@ -485,7 +608,7 @@ contextualize(() => {
 				bundle(
 					`${precompileStandalone(
 						{ [name]: value },
-						{ fingerprint: "f", path: "main.ts" }
+						{ configured: { fingerprint: "f", path: "main.ts" } }
 					)}\nexport const configure = runtime.configure`
 				).js
 			)
@@ -502,9 +625,10 @@ contextualize(() => {
 			bundle(
 				`${precompileStandalone(
 					{ Strings: type.keywords.string },
-					{ fingerprint: "f", path: "main.ts" },
-					undefined,
-					new Set(["Strings"])
+					{
+						configured: { fingerprint: "f", path: "main.ts" },
+						keywordReads: new Set(["Strings"])
+					}
 				)}\nexport const configure = runtime.configure`
 			).js
 		)
@@ -1504,9 +1628,12 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 		it("refuses a Type another run or site holds where it can't read it from an address", () => {
 			const M = scope({ a: "string" }).export()
 			attest(() =>
-				precompileStandalone({ M: { type: M, params: [] } }, undefined, {
-					M: { definitions: [], addressed: [M.a.internal] }
-				})
+				precompileStandalone(
+					{ M: { type: M, params: [] } },
+					{
+						sitesByName: { M: { definitions: [], addressed: [M.a.internal] } }
+					}
+				)
 			).throws(
 				writeUnprecompilableMessage("a Type another run or site holds too")
 			)
@@ -1696,6 +1823,7 @@ export default shared`).js
 			"schema/runtime.ts",
 			"schema/shared/errorWriters.ts",
 			"schema/shared/errors.ts",
+			"schema/shared/jsonSchema.ts",
 			"schema/shared/locale.ts",
 			"schema/shared/registry.ts",
 			"schema/shared/render.ts",

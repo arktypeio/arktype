@@ -8,6 +8,7 @@ import {
 	precompileStandaloneModules,
 	type StandaloneExport
 } from "arktype/internal/standalone.ts"
+import type { IntrospectionMember } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import { DynamicValue } from "@ark/precompile/internal/dynamic.ts"
 import { buildSync } from "esbuild"
@@ -75,12 +76,14 @@ let artifactCount = 0
 
 const loadArtifact = async (
 	exports: Record<string, StandaloneExport>,
-	layout: Layout
+	layout: Layout,
+	introspection: IntrospectionMember[]
 ): Promise<any> => {
 	let code: string
-	if (layout === "inline") code = precompileStandalone(exports)
+	if (layout === "inline")
+		code = precompileStandalone(exports, { introspection })
 	else {
-		const artifact = precompileStandaloneModules(exports)
+		const artifact = precompileStandaloneModules(exports, { introspection })
 		for (const [specifier, module] of Object.entries(artifact.modules)) {
 			const written = modulesBySpecifier[specifier]
 			if (written === undefined) {
@@ -124,7 +127,8 @@ const placeholdersByHole = new Map<unknown, string>()
 const loadNamingHoles = async (
 	node: BaseRoot,
 	holes: unknown[],
-	layout: Layout
+	layout: Layout,
+	introspection: IntrospectionMember[]
 ): Promise<any> => {
 	const descriptors = holes.map(hole =>
 		typeof hole === "function" ?
@@ -144,7 +148,11 @@ const loadNamingHoles = async (
 		})
 	}
 	try {
-		return await loadArtifact({ T: exportOf(node, holes) }, layout)
+		return await loadArtifact(
+			{ T: exportOf(node, holes) },
+			layout,
+			introspection
+		)
 	} finally {
 		for (const [i, hole] of holes.entries()) {
 			if (typeof hole !== "function") continue
@@ -279,11 +287,31 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 
 type Validator = Record<string, any> & ((data: unknown) => unknown)
 
+// every member a build can bake, so each is compared where arktype's can be read
+const introspection: IntrospectionMember[] = [
+	"json",
+	"toJSON",
+	"toJsonSchema",
+	"~standard.jsonSchema"
+]
+
 const observeAttributes = (t: Validator) => ({
 	expression: t.expression,
 	description: t.description,
 	string: t.toString(),
 	meta: t.meta
+})
+
+const observeIntrospection = (t: Validator) => ({
+	json: observe(() => t.json, undefined),
+	isToJsonTheJson: observe(() => t.toJSON() === t.json, undefined),
+	jsonSchema: observe(() => t.toJsonSchema(), undefined),
+	// a target arktype supports, the other and one it rejects
+	standardJsonSchema: (["input", "output"] as const).flatMap(io =>
+		["draft-2020-12", "draft-07", "openapi-3.0"].map(target =>
+			observe(() => t["~standard"].jsonSchema[io]({ target }), undefined)
+		)
+	)
 })
 
 const observeCall = (t: Validator, input: unknown) => {
@@ -319,16 +347,24 @@ const holdsArkValue = (value: unknown, seen = new Set<unknown>()): boolean => {
 
 export interface Observations {
 	attributes: ReturnType<typeof observeAttributes>
+	// undefined where a hole arktype calls writing it makes two reads disagree
+	introspection: ReturnType<typeof observeIntrospection> | undefined
 	// undefined where a hole holding state makes two calls disagree
 	calls: (ReturnType<typeof observeCall> | undefined)[]
 }
 
 // what arktype observes, before a build renames the functions a Type holds
+const observeStably = <t>(observeOnce: () => t): t | undefined => {
+	const observed = observeOnce()
+	return isEqual(observed, observeOnce()) ? observed : undefined
+}
+
 export const observeArktype = (
 	node: BaseRoot,
 	inputs: unknown[]
 ): Observations => ({
 	attributes: observeAttributes(node as never),
+	introspection: observeStably(() => observeIntrospection(node as never)),
 	calls: inputs.map(input => {
 		const call = observeCall(node as never, input)
 		return isEqual(call, observeCall(node as never, input)) ? call : undefined
@@ -338,6 +374,8 @@ export const observeArktype = (
 export interface Comparison {
 	refusal?: string
 	harnessLimited: number
+	// whether its introspection was compared, which a refused bake or arktype disagreeing with itself prevents
+	isIntrospected: boolean
 	disagreements: string[]
 }
 
@@ -346,7 +384,11 @@ export const compare = async (
 	inputs: unknown[],
 	arktype: Observations
 ): Promise<Comparison> => {
-	const result: Comparison = { harnessLimited: 0, disagreements: [] }
+	const result: Comparison = {
+		harnessLimited: 0,
+		isIntrospected: false,
+		disagreements: []
+	}
 	const holes = keyOf(node)[1]
 	for (const layout of layouts) {
 		const disagree = (observation: string, details: object) =>
@@ -357,8 +399,19 @@ export const compare = async (
 				).slice(0, 4000)
 			)
 		let artifact: any
+		// introspection the build refuses to bake, like a schema calling a default's thunk, leaves the rest to compare
+		let isBaked = true
 		try {
-			artifact = await loadNamingHoles(node, holes, layout)
+			artifact = await loadNamingHoles(
+				node,
+				holes,
+				layout,
+				introspection
+			).catch(e => {
+				if (!(e instanceof ParseError)) throw e
+				isBaked = false
+				return loadNamingHoles(node, holes, layout, [])
+			})
 		} catch (e) {
 			const refusal =
 				e instanceof ParseError ? e.message.split("\n")[0]
@@ -386,6 +439,16 @@ export const compare = async (
 				arktype: arktype.attributes,
 				precompiled: attributes
 			})
+		}
+		if (isBaked && arktype.introspection) {
+			result.isIntrospected = true
+			const baked = observeIntrospection(validator)
+			if (!isEqual(arktype.introspection, baked)) {
+				disagree("introspection", {
+					arktype: arktype.introspection,
+					precompiled: baked
+				})
+			}
 		}
 		for (const [i, input] of inputs.entries()) {
 			const expected = arktype.calls[i]

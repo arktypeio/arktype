@@ -9,11 +9,12 @@ import {
 	hashOf,
 	hasDomain,
 	ParseError,
+	printable,
 	registeredNameOf,
 	throwError
 } from "@ark/util"
 import { ark, configure } from "arktype"
-import type { HoleKind } from "arktype/internal/runtime.ts"
+import type { HoleKind, IntrospectionMember } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	holeNamePattern,
@@ -31,7 +32,8 @@ import {
 	type FactoryParam,
 	type Foldable,
 	type StandaloneExport,
-	type StandaloneModules
+	type StandaloneModules,
+	type StandaloneOptions
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
@@ -103,6 +105,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	inline?: boolean | undefined
 	// check at creation that each static helper a factory calls is the one its module exports, which a test runner's module mock can replace
 	checkHelpers?: boolean | undefined
+	// what a standalone validator bakes of its Type's introspection, which it otherwise lacks
+	introspection?: readonly IntrospectionMember[] | undefined
 }
 
 export interface ModuleAnalysis {
@@ -259,6 +263,7 @@ export class Precompiler {
 	config: string | undefined
 	inline: boolean
 	checkHelpers: boolean
+	introspection: readonly IntrospectionMember[]
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
@@ -290,6 +295,11 @@ export class Precompiler {
 		this.config = opts?.config
 		this.inline = !!opts?.inline
 		this.checkHelpers = this.mode === "standalone" && !!opts?.checkHelpers
+		this.introspection = opts?.introspection ?? []
+		for (const member of this.introspection) {
+			if (!(member in introspectionMembers))
+				throwError(writeUnknownIntrospectionMessage(member))
+		}
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
 
@@ -837,10 +847,13 @@ export class Precompiler {
 			Object.keys(exportsByName).length ?
 				writeValidators(
 					exportsByName,
-					sitesByName,
-					keywordReads,
+					{
+						configured,
+						sitesByName,
+						keywordReads,
+						introspection: this.introspection
+					},
 					refusalsByName,
-					configured,
 					this.inline
 				)
 			:	{ code: "", modules: {} }
@@ -2482,7 +2495,10 @@ export class Precompiler {
 		for (const [node, read, object] of unavailable) {
 			// a chain is reported where it first reads one
 			if (
-				unavailable.some(([inner]) => inner !== node && contains(node, inner))
+				unavailable.some(
+					([inner]) => inner !== node && contains(node, inner)
+				) ||
+				this.introspection.includes(read as never)
 			)
 				continue
 			result.push(
@@ -2783,6 +2799,19 @@ export class Precompiler {
 	}
 }
 
+const introspectionMembers: Record<IntrospectionMember, 1> =
+	Object.setPrototypeOf(
+		{ json: 1, toJSON: 1, toJsonSchema: 1, "~standard.jsonSchema": 1 },
+		null
+	)
+
+export const writeUnknownIntrospectionMessage = (member: unknown): string =>
+	`introspection lists ${printable(member)}, which isn't one of ${Object.keys(
+		introspectionMembers
+	)
+		.map(member => JSON.stringify(member))
+		.join(", ")}`
+
 export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 	[
 		`${diagnostic.file}:${diagnostic.line}:${diagnostic.column}  ${diagnostic.message}`,
@@ -3000,10 +3029,8 @@ const nameOf = (site: Site) =>
 // precompileStandalone refuses a whole artifact for one export it can't emit, so each is tried alone to refuse only those
 const writeValidators = (
 	exportsByName: Record<string, StandaloneExport>,
-	sitesByName: Record<string, ExportSite>,
-	keywordReads: ReadonlySet<string>,
+	opts: StandaloneOptions,
 	refusalsByName: Record<string, string[]>,
-	configured: ConfiguredModule | undefined,
 	inline: boolean
 ): StandaloneModules => {
 	// a host without virtual modules places the units an artifact shares in it
@@ -3012,21 +3039,8 @@ const writeValidators = (
 			names.map(name => [name, exportsByName[name]])
 		)
 		return inline ?
-				{
-					code: precompileStandalone(
-						exports,
-						configured,
-						sitesByName,
-						keywordReads
-					),
-					modules: {}
-				}
-			:	precompileStandaloneModules(
-					exports,
-					configured,
-					sitesByName,
-					keywordReads
-				)
+				{ code: precompileStandalone(exports, opts), modules: {} }
+			:	precompileStandaloneModules(exports, opts)
 	}
 	try {
 		return write(Object.keys(exportsByName))

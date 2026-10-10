@@ -1,8 +1,10 @@
 import type {
 	BaseRoot,
+	JsonSchema,
 	Locale,
 	TraversePipe,
 	RootApply,
+	StandardJSONSchemaV1,
 	StandardSchemaV1
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -24,9 +26,11 @@ import {
 	protoWriters,
 	requiredWriters,
 	runtimeConfig,
+	supportedJsonSchemaTargets,
 	undeclaredWriters,
 	unionWriters,
 	unitWriters,
+	validateStandardJsonSchemaTarget,
 	writePredicateActual,
 	writePredicateExpected,
 	writePredicateProblem,
@@ -45,7 +49,8 @@ import {
 	throwError,
 	throwParseError,
 	type Fn,
-	type inferred
+	type inferred,
+	type JsonStructure
 } from "@ark/util"
 import { InternalTypedFn } from "./fn.ts"
 import { raisedErrorPhrases } from "./keywords/functions.ts"
@@ -176,7 +181,19 @@ export interface ValidatorAttributes {
 	expression: string
 	description: string
 	meta: ArkEnv.meta
+	// what a build's introspection option bakes, each absent unless it lists it
+	json?: JsonStructure
+	toJSON?: () => JsonStructure
+	toJsonSchema?: () => JsonSchema
+	"~standard"?: Pick<StandardJSONSchemaV1.Props, "jsonSchema">
 }
+
+/** the members of a Type a build's `introspection` option can bake onto its standalone validators */
+export type IntrospectionMember =
+	| "json"
+	| "toJSON"
+	| "toJsonSchema"
+	| "~standard.jsonSchema"
 
 // captured when the runtime loads, so a program replacing them later can't keep an artifact from freezing what it creates
 export const { assign, defineProperties, freeze, is, preventExtensions } =
@@ -200,9 +217,9 @@ export class Validator extends Callable<
 		onFail?: ArkErrors.Handler | null
 	) => unknown
 > {
-	expression: string
-	description: string
-	meta: ArkEnv.meta
+	expression!: string
+	description!: string
+	meta!: ArkEnv.meta
 	allows: (data: unknown) => boolean
 	"~standard": StandardSchemaV1.Props
 
@@ -225,9 +242,7 @@ export class Validator extends Callable<
 				pipedFromCtx ? pipe(pipedFromCtx, node, data) : rootApply(data, onFail),
 			{ bind: null }
 		)
-		this.expression = attributes.expression
-		this.description = attributes.description
-		this.meta = attributes.meta
+		assign(this, attributes)
 		this.allows = freeze(node.allows)
 		this["~standard"] = freeze({
 			vendor: "arktype",
@@ -235,7 +250,9 @@ export class Validator extends Callable<
 			validate: freeze((input: unknown) => {
 				const out = this(input)
 				return out instanceof ArkErrors ? out : { value: out }
-			})
+			}),
+			// the JSON Schema a build's introspection option bakes
+			...attributes["~standard"]
 		})
 		freeze(this.assert)
 		freeze(this)
@@ -271,13 +288,10 @@ type typeOnlyMember =
 	| "inferIntrospectableOut"
 	| "Symbol"
 
-// introspection a build bakes only when asked, so otherwise absent as on any other validator
-type bakedMember = "json" | "toJSON" | "toJsonSchema"
-
 // what a Type has that a validator lacks, so reading it reads undefined
 export type unavailableMember = Exclude<
 	keyof (ArrayType & DateType & NumberType & ObjectType & StringType),
-	keyof Validator | keyof Function | typeOnlyMember | bakedMember
+	keyof Validator | keyof Function | typeOnlyMember | IntrospectionMember
 >
 
 // every validator shares it, so replacing one of its methods would change them all
@@ -289,6 +303,50 @@ for (const k of Reflect.ownKeys(Validator.prototype)) {
 	if (k !== "constructor") freeze(value ?? get)
 }
 freeze(Validator.prototype)
+
+export const bakedJsonSchemaOptionsMessage =
+	"a standalone validator's JSON Schema is written at build under the program's configuration, so it takes no options. Configure them with configure({ toJsonSchema }), or build with runtime: \"arktype\"."
+
+// toJsonSchema() as the build wrote it, a new schema each call as arktype writes one
+export const bakedJsonSchema = (
+	write: () => JsonSchema
+): ((opts?: unknown) => JsonSchema) =>
+	freeze((opts?: unknown) =>
+		opts === undefined ? write() : throwError(bakedJsonSchemaOptionsMessage)
+	)
+
+// each JSON Schema of the input or output, by the index of its target
+type JsonSchemaWriters = readonly (() => JsonSchema)[]
+
+export const bakedStandardJsonSchema = (
+	input: JsonSchemaWriters,
+	output: JsonSchemaWriters
+): StandardJSONSchemaV1.Converter =>
+	freeze({
+		input: freeze((opts: StandardJSONSchemaV1.Options) =>
+			writeStandardJsonSchema(input, opts)
+		),
+		output: freeze((opts: StandardJSONSchemaV1.Options) =>
+			writeStandardJsonSchema(output, opts)
+		)
+	})
+
+const writeStandardJsonSchema = (
+	writers: JsonSchemaWriters,
+	opts: StandardJSONSchemaV1.Options
+) => {
+	const i = supportedJsonSchemaTargets.indexOf(
+		validateStandardJsonSchemaTarget(opts.target)
+	)
+	if (opts.libraryOptions && Object.keys(opts.libraryOptions).length)
+		throwError(bakedJsonSchemaOptionsMessage)
+	return writers[i]() as Record<string, unknown>
+}
+
+// arktype's ToJsonSchema.Error, thrown where arktype would throw it, without the nodes its context holds
+export const throwJsonSchemaError = (code: string, message: string): never => {
+	throw assign(new Error(message), { name: "ToJsonSchemaError", code })
+}
 
 // arktype's own wrapper, so its name, members and expression are those arktype gives the function the program passes
 export const typedFn = (

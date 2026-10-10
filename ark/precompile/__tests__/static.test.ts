@@ -976,6 +976,31 @@ console.log(T.json, "json" in T, JSON.stringify(T))`)
 			])
 		})
 
+		it("members a build's introspection option bakes", () => {
+			const source = `import { type } from "arktype"
+const T = type({ a: "string" })
+console.log(T.json, "json" in T, JSON.stringify(T), T.toJSON)`
+			attest(
+				diagnosticsOf(source, {}, { introspection: ["json", "toJSON"] })
+			).equals([])
+			attest(
+				diagnosticsOf(source, {}, { introspection: ["toJSON"] }).map(
+					diagnostic => diagnostic.split("\n")[0]
+				)
+			).snap([
+				"/main.ts:3:13  T.json reads json, which a standalone validator lacks",
+				'/main.ts:3:21  "json" in T reads json, which a standalone validator lacks'
+			])
+			attest(
+				() =>
+					new Precompiler(memoryHost({}), {
+						introspection: ["json", "and" as never]
+					})
+			).throws.snap(
+				'Error: introspection lists "and", which isn\'t one of "json", "toJSON", "toJsonSchema", "~standard.jsonSchema"'
+			)
+		})
+
 		it("reflection on a Type outside any site", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"

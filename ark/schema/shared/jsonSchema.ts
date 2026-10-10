@@ -1,10 +1,14 @@
-import type {
-	array,
-	autocomplete,
-	JsonArray,
-	JsonObject,
-	listable
+import {
+	includes,
+	throwParseError,
+	type array,
+	type autocomplete,
+	type JsonArray,
+	type JsonObject,
+	type listable
 } from "@ark/util"
+import type { StandardJSONSchemaV1 } from "./standardSchema.ts"
+import type { ToJsonSchema } from "./toJsonSchema.ts"
 
 export type JsonSchema = JsonSchema.NonBooleanBranch
 export type ListableJsonSchema = listable<JsonSchema>
@@ -153,4 +157,21 @@ export declare namespace JsonSchema {
 	export type LengthBoundable = String | Array
 
 	export type Structure = Object | Array
+}
+
+export const supportedJsonSchemaTargets: ToJsonSchema.Target[] = [
+	"draft-2020-12",
+	"draft-07"
+]
+
+export const writeInvalidJsonSchemaTargetMessage = (target: string): string =>
+	`JSONSchema target '${target}' is not supported (must be ${supportedJsonSchemaTargets.map(t => `"${t}"`).join(" or ")})`
+
+export const validateStandardJsonSchemaTarget = (
+	target: StandardJSONSchemaV1.Target
+): ToJsonSchema.Target => {
+	if (!includes(supportedJsonSchemaTargets, target))
+		throwParseError(writeInvalidJsonSchemaTargetMessage(target))
+
+	return target
 }

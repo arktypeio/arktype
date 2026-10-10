@@ -46,7 +46,10 @@ import {
 	type RootKind,
 	type kindRightOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
+import {
+	validateStandardJsonSchemaTarget,
+	type JsonSchema
+} from "../shared/jsonSchema.ts"
 import { $ark } from "../shared/registry.ts"
 import { sets } from "../shared/sets.ts"
 import type {
@@ -667,23 +670,6 @@ export type UndeclaredKeyConfig = {
 export const emptyBrandNameMessage = `Expected a non-empty brand name after #`
 
 export type emptyBrandNameMessage = typeof emptyBrandNameMessage
-
-const supportedJsonSchemaTargets: ToJsonSchema.Target[] = [
-	"draft-2020-12",
-	"draft-07"
-]
-
-export const writeInvalidJsonSchemaTargetMessage = (target: string): string =>
-	`JSONSchema target '${target}' is not supported (must be ${supportedJsonSchemaTargets.map(t => `"${t}"`).join(" or ")})`
-
-const validateStandardJsonSchemaTarget = (
-	target: StandardJSONSchemaV1.Target
-): ToJsonSchema.Target => {
-	if (!includes(supportedJsonSchemaTargets, target))
-		throwParseError(writeInvalidJsonSchemaTargetMessage(target))
-
-	return target
-}
 
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
 	schema: schema

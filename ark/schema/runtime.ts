@@ -41,6 +41,10 @@ export {
 	writeProblem
 } from "./shared/errorWriters.ts"
 export * from "./shared/errors.ts"
+export {
+	supportedJsonSchemaTargets,
+	validateStandardJsonSchemaTarget
+} from "./shared/jsonSchema.ts"
 export * from "./shared/transform.ts"
 export * from "./shared/traversal.ts"
 export { isAbsent } from "./shared/utils.ts"
