@@ -1642,8 +1642,8 @@ return [${returned.join(", ")}]
 					.map(code => `${code}: runtime.${code}Writers`)
 					.join(", ")} }`
 		let config = `runtime.raising(${this.scopeConfigOf(root, raisable)}, ${writers})`
-		// a callback can raise any code, on data of any kind
-		if (raisable === "any" || declares(root, hasIndexSignature))
+		// a callback of the program's can raise any code, on data of any kind
+		if (declares(root, node => holdsCallback(node) || hasIndexSignature(node)))
 			config = `runtime.printing(${config}, runtime.printCompact)`
 		return declares(root, node => hasMetaWriter(node) || holdsCallback(node)) ?
 				`runtime.inEn(${config})`

@@ -372,6 +372,13 @@ contextualize(() => {
 		attest(precompileStandalone({ T }).includes("runtime.inEn(")).equals(false)
 	})
 
+	it("prints with the runtime's primitive printer where arktype's callbacks raise", () => {
+		const T = type({ url: "string.url", n: "string.integer.parse" })
+		attest(precompileStandalone({ T }).includes("runtime.printing(")).equals(
+			false
+		)
+	})
+
 	it("writes errors with configured strings", async () => {
 		const $ = scope(
 			{ T: { a: "string" } },

@@ -294,11 +294,11 @@ export const make = () => ({
 })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/nebiod10sysdk"
-import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/nebiod10sysdk"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/nebiod10sysdk"
-import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/nebiod10sysdk"
-import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/nebiod10sysdk"
+import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/i6vj4v0gds7jf"
+import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/i6vj4v0gds7jf"
+import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/i6vj4v0gds7jf"
+import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/i6vj4v0gds7jf"
+import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/i6vj4v0gds7jf"
 export const make = () => ({
 	$: $arkf1a6evaf1ilxqcd(),
 	types: $arkf14gb4ky1hqquxy(),
