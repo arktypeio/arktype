@@ -30,7 +30,10 @@ const check = (
 		request = createSyncPrecompiler({ precompilerOptions: opts })
 		precompilersByOptions.set(key, request)
 	}
-	return request("lint", source, id) as CheckedModule
+	return (
+		(request("lint", source, id) as CheckedModule | undefined) ??
+		check(opts, source, id)
+	)
 }
 
 const precompilable: Rule.RuleModule = {

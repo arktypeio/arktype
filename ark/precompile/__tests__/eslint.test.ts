@@ -103,6 +103,42 @@ export const Field = type(\`string <= \${max}\`)`
 		).equals([])
 	})
 
+	it("rereads what an import resolves to once a referenced tsconfig's paths change", () => {
+		const main = fromHere("temp", "referenced", "main.js")
+		mkdirSync(dirname(main), { recursive: true })
+		const writeTsconfig = (target: string) =>
+			writeFileSync(
+				fromHere("temp", "referenced", "tsconfig.app.json"),
+				JSON.stringify({
+					compilerOptions: { allowJs: true, paths: { "#shape": [target] } },
+					include: ["*.js"]
+				})
+			)
+		writeFileSync(
+			fromHere("temp", "referenced", "tsconfig.json"),
+			JSON.stringify({
+				files: [],
+				references: [{ path: "./tsconfig.app.json" }]
+			})
+		)
+		writeFileSync(
+			fromHere("temp", "referenced", "a.js"),
+			'export const shape = { [String(Math.random())]: "string" }\n'
+		)
+		writeFileSync(
+			fromHere("temp", "referenced", "b.js"),
+			'export const shape = { a: "number" }\n'
+		)
+		const code = `import { type } from "arktype"
+import { shape } from "#shape"
+export const T = type(shape)`
+		writeFileSync(main, code)
+		writeTsconfig("./a.js")
+		attest(lint(code, {}, main, fromHere()).length).equals(1)
+		writeTsconfig("./b.js")
+		attest(lint(code, {}, main, fromHere())).equals([])
+	})
+
 	it("reports only the copies of arktype's packages the linted file reaches", () => {
 		const code = `import { type } from "arktype"
 export const Name = type("string")`

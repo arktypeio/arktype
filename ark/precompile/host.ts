@@ -6,8 +6,8 @@ import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 export interface PrecompileHost {
 	resolve(specifier: string, importer: string): string | undefined
 	readFile(path: string): string | undefined
-	// the nearest that exists last, after each nearer one that would replace it once created
-	tsconfigsOf?(importer: string): string[]
+	// a host watches it, since its `paths` change what an import resolves to
+	tsconfigOf?(importer: string): string | undefined
 }
 
 export interface NodeHostOptions {
@@ -46,14 +46,14 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 			:	"auto"
 	})
 	let resolverWithoutTsconfig: ResolverFactory | undefined
-	const tsconfigsByDir: Record<string, string[]> = {}
-	// the resolver applies the nearest, so one created nearer would replace it
-	const tsconfigsIn = (dir: string): string[] => {
+	const tsconfigsByDir: Record<string, string | undefined> = {}
+	const tsconfigIn = (dir: string): string | undefined => {
+		if (dir in tsconfigsByDir) return tsconfigsByDir[dir]
 		const tsconfig = join(dir, "tsconfig.json")
-		return (tsconfigsByDir[dir] ??=
-			existsSync(tsconfig) || dir === dirname(dir) ?
-				[tsconfig]
-			:	[tsconfig, ...tsconfigsIn(dirname(dir))])
+		return (tsconfigsByDir[dir] =
+			existsSync(tsconfig) ? tsconfig
+			: dir === dirname(dir) ? undefined
+			: tsconfigIn(dirname(dir)))
 	}
 	return {
 		resolve: (specifier, importer) => {
@@ -65,10 +65,9 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 			return resolverWithoutTsconfig.resolveFileSync(importer, specifier).path
 		},
 		readFile,
-		tsconfigsOf: importer =>
-			opts?.tsconfig ? [opts.tsconfig]
-			: isAbsolute(importer) ? tsconfigsIn(dirname(importer))
-			: []
+		tsconfigOf: importer =>
+			opts?.tsconfig ??
+			(isAbsolute(importer) ? tsconfigIn(dirname(importer)) : undefined)
 	}
 }
 

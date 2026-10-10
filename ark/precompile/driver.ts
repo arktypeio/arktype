@@ -1,5 +1,5 @@
 import { readFileSync, statSync } from "node:fs"
-import { dirname, isAbsolute, resolve } from "node:path"
+import { resolve } from "node:path"
 import type { SourceMap } from "magic-string"
 import { parentPort, workerData, type MessagePort } from "node:worker_threads"
 import {
@@ -99,28 +99,20 @@ export const answerRequests = (
 			return precompiler.readDependency(request[1])
 		if (request[0] === "transform")
 			return transformedModuleOf(precompiler, request[1], request[2])
-		if (
-			!precompiler.isTransformed(request[2]) ||
-			!precompiles(precompiler, request[1], request[2])
-		)
-			return { sites: [], diagnostics: [] } satisfies CheckedModule
-		if (request[0] === "lint") {
-			recordGiven(tracked, request[1], request[2])
-			precompiler.forgetCopies()
-		}
-		const { sites, diagnostics } = precompiler.precompile(
+		if (request[0] === "check")
+			return checkedModuleOf(precompiler, request[1], request[2])
+		precompiler.forgetCopies()
+		const { isKept } = tracked
+		tracked.isKept = true
+		const checked = checkedModuleOf(
+			precompiler,
 			request[1],
-			request[2]
+			request[2],
+			tracked
 		)
-		return {
-			sites: sites.map(({ start, line, column, status }) => ({
-				start,
-				line,
-				column,
-				status
-			})),
-			diagnostics
-		} satisfies CheckedModule
+		if (!isKept || resolvesAgain(tracked, request[2])) return checked
+		// the rule refreshes and asks again, since a new precompiler's configuration may need a new thread
+		tracked = undefined
 	}
 	port.on("message", (request: PrecompileRequest) => {
 		try {
@@ -136,6 +128,27 @@ export const answerRequests = (
 	})
 }
 
+const checkedModuleOf = (
+	precompiler: Precompiler,
+	source: string,
+	id: string,
+	tracked?: TrackedPrecompiler
+): CheckedModule => {
+	if (!precompiler.isTransformed(id) || !precompiles(precompiler, source, id))
+		return { sites: [], diagnostics: [] }
+	if (tracked) recordGiven(tracked, source, id)
+	const { sites, diagnostics } = precompiler.precompile(source, id)
+	return {
+		sites: sites.map(({ start, line, column, status }) => ({
+			start,
+			line,
+			column,
+			status
+		})),
+		diagnostics
+	}
+}
+
 export interface KeyedModule extends InlineModule {
 	// the module's local import closure, the files its precompilation may read
 	files: string[]
@@ -148,36 +161,59 @@ interface TrackedPrecompiler {
 	precompiler: Precompiler
 	// each file the precompiler read, with its mtime when it was first read
 	readTimes: Record<string, number>
+	resolutions: Map<string, Map<string, string | undefined>>
+	opts: PrecompilePluginOptions
+	isKept: boolean
+	importsByFile: Record<string, [mtimeMs: number, imports: string[]]>
 }
 
 const createTrackedPrecompiler = (
 	opts: PrecompilePluginOptions
 ): TrackedPrecompiler => {
 	const readTimes: Record<string, number> = {}
+	const resolutions = new Map<string, Map<string, string | undefined>>()
 	const precompiler = createPrecompiler(opts)
 	const { host } = precompiler.graph
 	precompiler.graph.host = {
+		...host,
 		resolve: (specifier, importer) => {
-			const tsconfigs = host.tsconfigsOf?.(importer) ?? []
-			for (const file of [...tsconfigs, ...lookedIn(specifier, importer)])
-				readTimes[file] ??= mtimeOf(file)
-			return host.resolve(specifier, importer)
+			let targets = resolutions.get(importer)
+			if (!targets) resolutions.set(importer, (targets = new Map()))
+			if (!targets.has(specifier))
+				targets.set(specifier, host.resolve(specifier, importer))
+			return targets.get(specifier)
 		},
 		readFile: file => {
 			// before reading, so a file written meanwhile changes, as does one it couldn't read once it's created
 			readTimes[file] ??= mtimeOf(file)
 			return host.readFile(file)
-		},
-		tsconfigsOf: importer => host.tsconfigsOf?.(importer) ?? []
+		}
 	}
-	return { precompiler, readTimes }
+	return {
+		precompiler,
+		readTimes,
+		resolutions,
+		opts,
+		isKept: false,
+		importsByFile: {}
+	}
 }
 
-// the resolver caches what each directory holds, so creating a file where a relative import looks, as beside a directory it resolved to, changes what it resolves to
-const lookedIn = (specifier: string, importer: string): string[] => {
-	if (!isAbsolute(importer) || !/^\.{0,2}\//.test(specifier)) return []
-	const target = resolve(dirname(importer), specifier)
-	return [dirname(target), target]
+// a resolver caches what it read, so a kept precompiler's imports are resolved again by a new one before its answer is used
+const resolvesAgain = (
+	{ precompiler, resolutions, opts }: TrackedPrecompiler,
+	id: string
+): boolean => {
+	const host = createNodeHost(opts)
+	const reached = new Set([id])
+	if (precompiler.config) reached.add(precompiler.config)
+	for (const importer of reached) {
+		for (const [specifier, target] of resolutions.get(importer) ?? []) {
+			if (host.resolve(specifier, importer) !== target) return false
+			if (target !== undefined) reached.add(target)
+		}
+	}
+	return true
 }
 
 // a given module stands for its file in later imports, so one unlike its file, as unsaved in an editor, replaces the precompiler
@@ -200,37 +236,48 @@ const isStale = (
 export const createKeyedPrecompiler = (
 	opts: PrecompilePluginOptions
 ): ((source: string, id: string) => KeyedModule) => {
-	const importsByFile: Record<string, [mtimeMs: number, imports: string[]]> = {}
 	let tracked = createTrackedPrecompiler({ ...opts, inline: true })
 	return (source, id) => {
 		const mtimes: Record<string, number> = {}
 		const currentMtimeOf = (file: string) => (mtimes[file] ??= mtimeOf(file))
 		if (isStale(tracked, currentMtimeOf))
 			tracked = createTrackedPrecompiler({ ...opts, inline: true })
-		const { precompiler } = tracked
-		const files = precompiler.localClosureOf(id, file => {
-			if (file === id) return precompiler.localImportsOf(source, id)
-			const cached = importsByFile[file]
-			if (currentMtimeOf(file) === -1) return []
-			return cached?.[0] === currentMtimeOf(file) ?
-					cached[1]
-				:	(importsByFile[file] = [
-						currentMtimeOf(file),
-						precompiler.localImportsOf(readFileSync(file, "utf8"), file)
-					])[1]
-		})
-		// only a module it precompiles is given to the graph, so editing another keeps the precompiler
-		if (precompiler.isTransformed(id) && precompiles(precompiler, source, id))
-			recordGiven(tracked, source, id)
-		const transformed = transformedModuleOf(precompiler, source, id)
-		for (const dependency of transformed?.dependencies ?? [])
-			if (!files.includes(dependency)) files.push(dependency)
-		return {
-			code: transformed?.code,
-			errors: transformed?.errors ?? [],
-			warnings: transformed?.warnings ?? [],
-			files
+		if (tracked.isKept) {
+			const keyed = keyedModuleOf(tracked, source, id, currentMtimeOf)
+			if (resolvesAgain(tracked, id)) return keyed
+			tracked = createTrackedPrecompiler({ ...opts, inline: true })
 		}
+		tracked.isKept = true
+		return keyedModuleOf(tracked, source, id, currentMtimeOf)
+	}
+}
+
+const keyedModuleOf = (
+	tracked: TrackedPrecompiler,
+	source: string,
+	id: string,
+	currentMtimeOf: (file: string) => number
+): KeyedModule => {
+	const { precompiler, importsByFile } = tracked
+	const files = precompiler.localClosureOf(id, file => {
+		if (file === id) return precompiler.localImportsOf(source, id)
+		const cached = importsByFile[file]
+		if (currentMtimeOf(file) === -1) return []
+		return cached?.[0] === currentMtimeOf(file) ?
+				cached[1]
+			:	(importsByFile[file] = [
+					currentMtimeOf(file),
+					precompiler.localImportsOf(readFileSync(file, "utf8"), file)
+				])[1]
+	})
+	const transformed = transformedModuleOf(precompiler, source, id, tracked)
+	for (const dependency of transformed?.dependencies ?? [])
+		if (!files.includes(dependency)) files.push(dependency)
+	return {
+		code: transformed?.code,
+		errors: transformed?.errors ?? [],
+		warnings: transformed?.warnings ?? [],
+		files
 	}
 }
 
@@ -240,7 +287,8 @@ const precompiles = (precompiler: Precompiler, source: string, id: string) =>
 const transformedModuleOf = (
 	precompiler: Precompiler,
 	source: string,
-	id: string
+	id: string,
+	tracked?: TrackedPrecompiler
 ): TransformedModule | undefined => {
 	if (!precompiler.isTransformed(id)) return
 	if (!precompiles(precompiler, source, id)) {
@@ -255,6 +303,7 @@ const transformedModuleOf = (
 			warnings: []
 		}
 	}
+	if (tracked) recordGiven(tracked, source, id)
 	const result = precompiler.precompile(source, id)
 	return {
 		code:

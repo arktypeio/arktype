@@ -498,6 +498,24 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 			attest(loadIn(dir).includes('"number"')).equals(true)
 		}).timeout(60000)
 
+		it("replaces its precompiler when a module an aliased import resolves to is created", () => {
+			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			writeFileSync(
+				join(dir, "tsconfig.json"),
+				JSON.stringify({ compilerOptions: { paths: { "@/*": ["./*"] } } })
+			)
+			writeFileSync(
+				join(dir, "main.ts"),
+				'import { type } from "arktype"\nimport { shape } from "@/shape"\n\nexport const T = type(shape)\n'
+			)
+			attest(loadIn(dir)).satisfies(/cannot be precompiled/)
+			writeFileSync(
+				join(dir, "shape.ts"),
+				'export const shape = { a: "number" } as const\n'
+			)
+			attest(loadIn(dir).includes('"number"')).equals(true)
+		}).timeout(60000)
+
 		it("replaces its precompiler when a module it transformed changes", () => {
 			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
 			writeFileSync(
