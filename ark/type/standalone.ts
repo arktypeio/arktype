@@ -1174,7 +1174,6 @@ return [${returned.join(", ")}]
 		if (!names.includes(name)) names.push(name)
 	}
 
-	// a unit receives the traversals of each unit it reads as one array, which it destructures unless it declares "use strict", which a function destructuring its parameters can't
 	dependencyParamsOf(unit: RootUnit): [params: string[], args: string[]] {
 		const namesBySource: Record<string, string[]> = {}
 		const params: string[] = []
