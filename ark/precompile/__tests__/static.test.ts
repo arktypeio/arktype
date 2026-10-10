@@ -1237,6 +1237,29 @@ export const make = (t: string) => alias(t)`)
 			])
 		})
 
+		it("a helper another module passes on", () => {
+			attest(
+				diagnosticsOf(
+					`import { field, list, double } from "./helpers.ts"
+export const [A] = [5].map(field)
+export const B = [5].map(list)
+export const C = field(5)
+export const D = [5].map(double)
+export { field }`,
+					{
+						"/helpers.ts": `import { type } from "arktype"
+const field = (n: number) => type({ a: type("number").atLeast(n) })
+export const list = (n: number) => type({ a: type("number").atLeast(n) }).array()
+export const double = (n: number) => n * 2
+export { field }`
+					}
+				)
+			).snap([
+				'/main.ts:2:28  `field` is a helper the build folds at each call, so passing it runs its definition at runtime\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:3:26  `list` is a helper the build folds at each call, so passing it runs its definition at runtime\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
 		it("a helper named by other than esbuild's keepNames helper", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

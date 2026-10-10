@@ -2670,9 +2670,25 @@ export class Precompiler {
 			)
 				continue
 			const target = this.graph.importOf(binding, module)
-			if (target.kind !== "arktype" && target.kind !== "arktypeNamespace")
-				continue
 			const id = reference.id
+			if (target.kind !== "arktype" && target.kind !== "arktypeNamespace") {
+				if (
+					this.passesFoldedHelper(id, target, module) &&
+					!isWithin(id, candidateRanges)
+				) {
+					result.push(
+						this.diagnostic(
+							module,
+							id,
+							"R4",
+							"error",
+							`\`${binding.name}\` is a helper the build folds at each call, so passing it runs its definition at runtime`,
+							[]
+						)
+					)
+				}
+				continue
+			}
 			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
 			const parent = read?.parent
 			// a re-export forwards the binding, and each use of it is checked where it occurs
@@ -2788,6 +2804,25 @@ export class Precompiler {
 			}
 		}
 		return result
+	}
+
+	// e.g. `field` in `[5].map(field)`, whose module skips its body as it folds each call to it
+	private passesFoldedHelper(
+		id: Node,
+		target: ImportTarget,
+		module: SourceModule
+	): boolean {
+		if (
+			(target.kind !== "binding" && target.kind !== "expression") ||
+			(id.parent?.type === "CallExpression" && id.parent.callee === id) ||
+			id.parent?.type === "ExportSpecifier" ||
+			isNamed(id, module)
+		)
+			return false
+		const helper = this.graph.helperOf(id, module)
+		return (
+			!!helper && isFoldedHelper(...helper) && this.graph.definesArk(target)
+		)
 	}
 
 	// e.g. `withId` when each `withId(A)` is a site, so its body never runs
