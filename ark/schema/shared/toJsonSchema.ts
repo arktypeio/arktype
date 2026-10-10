@@ -8,6 +8,7 @@ import {
 	type satisfy
 } from "@ark/util"
 import type { Predicate } from "../predicate.ts"
+import type { BaseRoot } from "../roots/root.ts"
 import type { ConstraintKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
 import type { StandardJSONSchemaV1 } from "./standardSchema.ts"
@@ -235,5 +236,7 @@ export declare namespace ToJsonSchema {
 
 	export interface Context extends Required<Options> {
 		fallback: HandlerByCode
+		/** roots referenced via $ref, collected while generating with useRefs */
+		refs?: Map<string, BaseRoot>
 	}
 }
