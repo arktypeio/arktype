@@ -1,9 +1,30 @@
-import type { BaseRoot, RootApply, StandardSchemaV1 } from "@ark/schema"
+import type { BaseRoot, Locale, RootApply, StandardSchemaV1 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
+	afterWriters,
 	ArkErrors,
+	beforeWriters,
+	discriminantWriters,
+	divisorWriters,
+	domainWriters,
+	exactLengthWriters,
+	intersectionWriters,
+	maxLengthWriters,
+	maxWriters,
+	minLengthWriters,
+	minWriters,
+	patternWriters,
+	protoWriters,
+	requiredWriters,
 	runtimeConfig,
-	runtimeLocale,
+	undeclaredWriters,
+	unionWriters,
+	unitWriters,
+	writePredicateActual,
+	writePredicateExpected,
+	writePredicateProblem,
+	writeProblem,
+	type ErrorWritersByCode,
 	type Traversal
 } from "@ark/schema/runtime"
 import {
@@ -27,6 +48,7 @@ import type { StringType } from "./variants/string.ts"
 // a bundle with code splitting drops a star export from another package
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 export {
+	afterWriters,
 	aliasVisits,
 	allowsAcyclic,
 	allowsInContext,
@@ -34,25 +56,43 @@ export {
 	applyCyclic,
 	ArkErrors,
 	arrayIndexMatcher,
+	beforeWriters,
 	byAncestorPath,
 	byPath,
 	computeDefaultValueMorph,
 	configure,
 	copyOf,
 	describePredicate,
+	discriminantWriters,
+	divisorWriters,
+	domainWriters,
+	exactLengthWriters,
 	fixConfig,
 	flatByPath,
+	intersectionWriters,
 	flatProblemsByPath,
 	isAbsent,
 	isArkErrorResult,
+	maxLengthWriters,
+	maxWriters,
 	mergeTransformed,
 	messageIn,
+	minLengthWriters,
+	minWriters,
+	patternWriters,
+	protoWriters,
+	raising,
 	registerErrorBuilder,
+	requiredWriters,
 	runtimeConfig,
 	runtimeScope,
+	scopeConfig,
 	TransformErrors,
 	Traversal,
 	TraversalError,
+	undeclaredWriters,
+	unionWriters,
+	unitWriters,
 	type ArkError
 } from "@ark/schema/runtime"
 export {
@@ -62,13 +102,46 @@ export {
 	jsTypeOfDescriptions,
 	liftArray,
 	ParseError,
-	printable
+	printable,
+	printCompact
 } from "@ark/util"
 export { assertRuntimeVersion, claimEntry } from "./entry.ts"
 export * from "./keywords/functions.ts"
 
-// the predicate writers read a keyword's phrase for an error it raised
-Object.assign(runtimeLocale.keywordPhrases, raisedErrorPhrases)
+// en as predicate's writers read it to write an error a keyword raised through ctx
+const keywordLocale = {
+	keywordPhrases: raisedErrorPhrases,
+	problem: writeProblem
+} as {} as Locale
+
+/** predicate's writers in en, which write an error a keyword raised with its phrase */
+export const predicateWriters: ErrorWritersByCode["predicate"] = {
+	expected: writePredicateExpected,
+	actual: (data, ctx) => writePredicateActual(data, ctx, keywordLocale),
+	problem: ctx => writePredicateProblem(ctx, keywordLocale)
+}
+
+/** en's writers of every code, which a validator with callbacks registers since they can raise any */
+export const allErrorWriters: ErrorWritersByCode = {
+	after: afterWriters,
+	before: beforeWriters,
+	divisor: divisorWriters,
+	domain: domainWriters,
+	exactLength: exactLengthWriters,
+	intersection: intersectionWriters,
+	max: maxWriters,
+	maxLength: maxLengthWriters,
+	min: minWriters,
+	minLength: minLengthWriters,
+	pattern: patternWriters,
+	predicate: predicateWriters,
+	proto: protoWriters,
+	required: requiredWriters,
+	union: unionWriters,
+	unit: unitWriters,
+	undeclared: undeclaredWriters,
+	discriminant: discriminantWriters
+}
 
 export interface ValidatorAttributes {
 	expression: string

@@ -1,7 +1,7 @@
 import { ReadonlyArray, type array } from "./arrays.ts"
 import { throwParseError } from "./errors.ts"
 import type { requireKeys } from "./records.ts"
-import { isDotAccessible, printable, type JsonArray } from "./serialize.ts"
+import { isDotAccessible, printSymbol, type JsonArray } from "./serialize.ts"
 
 export type StringifyPathOptions<stringifiable = PropertyKey> = requireKeys<
 	{
@@ -31,7 +31,7 @@ export const appendStringifiedKey: AppendStringifiedKeyFn = (
 	prop,
 	...[opts]
 ) => {
-	const stringifySymbol = opts?.stringifySymbol ?? printable
+	const stringifySymbol = opts?.stringifySymbol ?? printSymbol
 	let propAccessChain: string = path
 	switch (typeof prop) {
 		case "string":
@@ -52,8 +52,9 @@ export const appendStringifiedKey: AppendStringifiedKeyFn = (
 			if (opts?.stringifyNonKey)
 				propAccessChain = `${path}[${opts.stringifyNonKey(prop as never)}]`
 			else {
+				// printed by its type, so stringifying a path needs no printer
 				throwParseError(
-					`${printable(prop)} must be a PropertyKey or stringifyNonKey must be passed to options`
+					`${typeof prop} must be a PropertyKey or stringifyNonKey must be passed to options`
 				)
 			}
 	}
@@ -84,7 +85,9 @@ export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 		this.cache.json = []
 		for (let i = 0; i < this.length; i++) {
 			this.cache.json.push(
-				typeof this[i] === "symbol" ? printable(this[i]) : (this[i] as never)
+				typeof this[i] === "symbol" ?
+					printSymbol(this[i] as symbol)
+				:	(this[i] as never)
 			)
 		}
 

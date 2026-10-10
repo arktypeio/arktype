@@ -168,9 +168,13 @@ const stringifyUnquoted = (
 	return expressionOf(value) ?? ctorName
 }
 
+/** a symbol as printable prints it */
+export const printSymbol = (symbol: symbol): string =>
+	`Symbol(${baseNameOf(symbol)})`
+
 const printableOpts = {
 	onCycle: () => "(cycle)",
-	onSymbol: v => `Symbol(${baseNameOf(v)})`,
+	onSymbol: printSymbol,
 	onFunction: v => `Function(${baseNameOf(v)})`,
 	// prefix bigints with a marker so printable can strip the quotes
 	// JSON.stringify adds, e.g. [1n] rather than ["1n"]

@@ -313,6 +313,15 @@ contextualize(() => {
 		attest(validator({ a: 1 }).summary).snap("configured")
 	})
 
+	it("writes a scope's configured strings for a code raised before", async () => {
+		const { U, S } = await load({
+			U: type("'b'"),
+			S: scope({}, { unit: { expected: "an a" } }).type("'a'")
+		})
+		attest(U("a").summary).snap('must be "b" (was "a")')
+		attest(S("b").summary).snap('must be an a (was "b")')
+	})
+
 	it("validates with the configuration its program applies", async () => {
 		const config: ArkSchemaConfig = {
 			domain: { message: ctx => `configured ${ctx.problem}` },
@@ -564,7 +573,9 @@ contextualize(() => {
 			config: () => (config.jitless = false),
 			configuredWriters: () => (config.divisor.message = "even"),
 			locale: () => (config.locale.problem = () => "odd"),
-			keywordPhrases: () => (config.locale.keywordPhrases.x = {}),
+			// en's writers of the codes a validator raises, which every config inherits
+			registeredWriters: () =>
+				(Object.getPrototypeOf(Object.getPrototypeOf(config)).divisor = {}),
 			nodeMeta: () => (nodeMeta.message = "long")
 		}
 		const unfrozen = Object.entries(writes).filter(([, write]) => {

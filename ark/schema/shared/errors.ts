@@ -2,7 +2,7 @@ import {
 	appendStringifiedKey,
 	arkKind,
 	conflatenateAll,
-	printable,
+	printSymbol,
 	stringifyPath,
 	throwError,
 	type JsonArray,
@@ -512,7 +512,8 @@ const jsonOf = (error: ArkError): JsonObject => {
 	return json as never
 }
 
-const jsonKeyOf = (k: PropertyKey) => (typeof k === "symbol" ? printable(k) : k)
+const jsonKeyOf = (k: PropertyKey) =>
+	typeof k === "symbol" ? printSymbol(k) : k
 
 const excludedFromJson = {
 	predicate: 1,

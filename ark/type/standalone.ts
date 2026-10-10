@@ -10,7 +10,6 @@ import {
 	type ContentKeyOf,
 	type DefaultedNode,
 	type NodeId,
-	type NodeKind,
 	type Optional,
 	type RootUnit,
 	type Sequence
@@ -1502,9 +1501,22 @@ return [${returned.join(", ")}]
 			:	this.emit(value)
 	}
 
+	// a validator's config, which registers en's writers of each code it can raise
 	configOf(root: BaseRoot): string {
-		const config = root.$.resolvedConfig
 		const raisable = raisableCodesOf(root)
+		const config = this.scopeConfigOf(root, raisable)
+		// a callback can raise any code, on data of any kind
+		if (raisable === "any")
+			return `runtime.raising(${config}, runtime.allErrorWriters, runtime.printCompact)`
+		const writers = Object.keys(raisable).map(
+			code => `${code}: runtime.${code}Writers`
+		)
+		return `runtime.raising(${config}, { ${writers.join(", ")} })`
+	}
+
+	// the config of a scope whose writers differ from the program's
+	scopeConfigOf(root: BaseRoot, raisable: RaisableCodes): string {
+		const config = root.$.resolvedConfig
 		const configuredCodes: string[] = []
 		let code: ArkErrorCode
 		for (code in errorWritersByCode) {
@@ -1523,7 +1535,7 @@ return [${returned.join(", ")}]
 			}
 			if (writers.length) {
 				configuredCodes.push(
-					`${code}: runtime.freeze({ ...runtime.runtimeConfig.${code}, ${writers.join(", ")} })`
+					`${code}: [runtime.${code}Writers, { ${writers.join(", ")} }]`
 				)
 			}
 		}
@@ -1533,7 +1545,7 @@ return [${returned.join(", ")}]
 			this.declareConst(
 				config,
 				"config",
-				`runtime.freeze({ ...runtime.runtimeConfig, ${configuredCodes.join(", ")} })`
+				`runtime.scopeConfig({ ${configuredCodes.join(", ")} })`
 			)
 		)
 	}
@@ -1591,11 +1603,11 @@ const collectDefaults = (
 	}
 }
 
-type RaisableCodes = "any" | { [code in NodeKind | ArkErrorCode]?: true }
+type RaisableCodes = "any" | { [code in ArkErrorCode]?: true }
 
 const raisableCodesByRoot = new WeakMap<BaseRoot, RaisableCodes>()
 
-// what a Type's traversal can raise, so a configured writer it can't emit is refused only for a Type raising its code
+// what a Type's traversal can raise other than an intersection, which grouping errors at a path can always raise
 const raisableCodesOf = (root: BaseRoot): RaisableCodes => {
 	let codes = raisableCodesByRoot.get(root)
 	if (codes) return codes
@@ -1610,16 +1622,18 @@ const raisableCodesOf = (root: BaseRoot): RaisableCodes => {
 	)
 		codes = "any"
 	else {
-		// traversal raises these itself
-		codes = {
-			intersection: true,
-			predicate: true,
-			union: true,
-			discriminant: true,
-			undeclared: true
+		codes = {}
+		for (const unit of units) {
+			for (const context of unit.errorContexts)
+				codes[context.code as ArkErrorCode] = true
+			// traversal raises these itself
+			for (const node of unit.declared) {
+				if (node.hasKind("union"))
+					codes[node.compiledDiscriminant ? "discriminant" : "union"] = true
+				else if (node.hasKind("structure") && node.undeclared === "reject")
+					codes.undeclared = true
+			}
 		}
-		for (const unit of units)
-			for (const context of unit.errorContexts) codes[context.code] = true
 	}
 	raisableCodesByRoot.set(root, codes)
 	return codes
