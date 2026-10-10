@@ -743,6 +743,13 @@ export class StandaloneArtifact {
 			hasArkKind(value, "generic")
 		) {
 			const [id, holes] = keyOf(value)
+			if (incomparable.has(value)) {
+				throwParseError(
+					writeUnprecompilableMessage(
+						`the functions arktype calls defining what ${label} creates`
+					)
+				)
+			}
 			const holesName = `holes${this.checks.length}`
 			this.checks.push(
 				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(label)}, undefined, "${
@@ -1916,12 +1923,13 @@ const rootKeyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 		}
 	}
 	const holes: unknown[] = []
-	// a unit keys a function or object only by where it first reaches it, so the address adds what each is
+	// a unit keys a function or object only by where it first reaches it, so the address adds what each is and where each is reached again
 	const values: string[] = [units[0].names[root.id]]
-	const seen = new Set<unknown>()
+	const seen = new Map<unknown, number>()
 	const collect = (value: unknown): void => {
-		if (seen.has(value)) return
-		seen.add(value)
+		const index = seen.get(value)
+		if (index !== undefined) return void values.push(`seen ${index}`)
+		seen.set(value, seen.size)
 		const defaulted = defaultsByMorph.get(value)
 		const runtimeKey = hasDomain(value, "object") && runtimeKeyOf(value)
 		if (defaulted) {
@@ -1933,11 +1941,10 @@ const rootKeyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 			values.push("hole")
 		}
 		// a meta isn't part of a node's content, though what it holds is printed
-		else if (!hasDomain(value, "object"))
-			values.push(typeof value === "symbol" ? "symbol" : printable(value))
+		else if (!hasDomain(value, "object")) values.push(printablePrimitive(value))
 		else if (isNode(value)) return
 		else if (isDateObject(value)) values.push(`Date ${getTime.call(value)}`)
-		else if (isRegExpObject(value)) values.push(String(value))
+		else if (isRegExpObject(value)) values.push(`${value} ${value.lastIndex}`)
 		else if (isPlainLiteral(value)) {
 			for (const k of Reflect.ownKeys(value)) {
 				collect(k)
@@ -1956,62 +1963,70 @@ const rootKeyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 }
 
 // e.g. a Scope's, whose Types take what they hold from its aliases, so a factory creating a Type in it takes its holes
-const definitionKeyOf = (value: object): [id: string, holes: unknown[]] => {
-	const cached = keysByValue.get(value)
+const definitionKeyOf = (container: object): [id: string, holes: unknown[]] => {
+	const cached = keysByValue.get(container)
 	if (cached) return cached
 	const holes: unknown[] = []
 	const values: string[] = []
-	const seen = new Set<unknown>()
-	const collect = (value: unknown, isDefinition: boolean): void => {
+	const seen = new Map<unknown, number>()
+	const holeIndexOf = (hole: unknown) => {
+		const index = holes.indexOf(hole)
+		return index === -1 ? holes.push(hole) - 1 : index
+	}
+	const collect = (
+		value: unknown,
+		isDefinition: boolean,
+		isConfig = false
+	): void => {
 		if (hasDomain(value, "object")) {
-			if (seen.has(value)) {
-				values.push("seen")
-				return
-			}
-			seen.add(value)
+			const index = seen.get(value)
+			if (index !== undefined) return void values.push(`seen ${index}`)
+			seen.set(value, seen.size)
 		}
 		if (hasArkKind(value, "root")) {
 			const [id, held] = rootKeyOf(value)
-			values.push(`Type ${id}`)
-			for (const hole of held) if (!holes.includes(hole)) holes.push(hole)
+			values.push(`Type ${id} ${held.map(holeIndexOf)}`)
 		} else if (hasArkKind(value, "module")) {
 			values.push("Module")
 			for (const [k, entry] of Object.entries(value)) {
-				values.push(k)
+				values.push(JSON.stringify(k))
 				collect(entry, true)
 			}
 		} else if (hasArkKind(value, "scope")) {
 			// a builtin scope holds only arktype's own functions, named stably
 			if (value.isBuiltin) values.push(`Scope ${value.name}`)
 			else {
-				values.push("Scope", ...value.exportedNames)
+				values.push("Scope", JSON.stringify(value.exportedNames))
+				collect(scopeConfigOf(value), false, true)
+				// a definition rather than what it resolves to, since resolving it here would run its default checks before the site first reading it
 				for (const [k, def] of Object.entries(value.aliases)) {
-					values.push(k)
+					values.push(JSON.stringify(k))
 					collect(def, true)
 				}
 			}
 		} else if (hasArkKind(value, "generic")) {
 			values.push("Generic")
 			collect(value.paramDefs, true)
-			// an hkt's body is wrapped in a function of arktype's, which calls it at each instantiation
-			if (value.hkt) values.push("hkt")
+			// an hkt's body is a function arktype calls with a class, which nothing but identity tells apart from another
+			if (value.hkt) incomparable.add(container)
 			else collect(value.bodyDef, true)
 			collect(value.$, true)
-		} else if (value instanceof LazyGenericRoot) {
-			values.push("Generic")
-			collect(value.bodyDef, true)
 		} else if (isTypedFn(value)) {
 			values.push("TypedFn")
 			collect(value.params, false)
 			collect(value.returns, false)
 			collect(value.raw, false)
+		} else if (value instanceof LazyGenericRoot) {
+			values.push("Generic", JSON.stringify(value.paramsDef))
+			collect(value.bodyDef, true)
 		}
-		// e.g. `() => User` as an alias or a property's definition, which arktype calls rather than holds
-		else if (isDefinition && isThunk(value)) values.push("thunk")
-		else if (isHole(value)) {
-			if (!holes.includes(value)) holes.push(value)
-			values.push("hole")
-		} else if (!hasDomain(value, "object")) values.push(printable(value))
+		// e.g. `() => User` in a Scope or a Generic's body, or a description writer in its config, which arktype calls as it resolves it
+		else if ((isDefinition && isThunk(value)) || (isConfig && isHole(value)))
+			incomparable.add(container)
+		else if (isHole(value)) values.push(`hole ${holeIndexOf(value)}`)
+		else if (!hasDomain(value, "object")) values.push(printablePrimitive(value))
+		else if (isDateObject(value)) values.push(`Date ${getTime.call(value)}`)
+		else if (isRegExpObject(value)) values.push(`${value} ${value.lastIndex}`)
 		else if (isArray(value)) {
 			// e.g. the narrow in `["string", ":", isLong]`, which arktype holds rather than parses
 			const definitions =
@@ -2019,19 +2034,28 @@ const definitionKeyOf = (value: object): [id: string, holes: unknown[]] => {
 				: valueOperators.includes(value[1]) ? 1
 				: value.length
 			for (let i = 0; i < value.length; i++)
-				collect(value[i], isDefinition && i < definitions)
+				collect(value[i], isDefinition && i < definitions, isConfig)
 		} else if (isPlainLiteral(value)) {
 			for (const k of Reflect.ownKeys(value)) {
 				collect(k, false)
-				collect(Reflect.get(value, k), isDefinition)
+				collect(Reflect.get(value, k), isDefinition, isConfig)
 			}
 		} else values.push(printable(value))
 	}
-	collect(value, true)
+	collect(container, true)
 	const key: [string, unknown[]] = [hashOf(values.join("\n")), holes]
-	keysByValue.set(value, key)
+	keysByValue.set(container, key)
 	return key
 }
+
+// a container whose key leaves out what decides what it creates, which a factory can't compare with the build's
+const incomparable = new WeakSet<object>()
+
+const scopeConfigOf = (scope: BaseScope): unknown =>
+	(scope as unknown as { scopeConfig: unknown }).scopeConfig
+
+const printablePrimitive = (value: unknown): string =>
+	Object.is(value, -0) ? "-0" : printable(value)
 
 const valueTupleHeads: unknown[] = ["instanceof", "==="]
 

@@ -288,7 +288,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 					return generic
 				},
-				{ attach: { bodyDef: def } }
+				{ attach: { paramsDef: paramString, bodyDef: def } }
 			)
 		]
 	}

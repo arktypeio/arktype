@@ -18,6 +18,7 @@ export const perturbations = [
 	"detach",
 	"mock",
 	"mockKind",
+	"swap",
 	"define"
 ] as const
 
@@ -34,6 +35,8 @@ export interface Manifest {
 	// each module a file imports, as the build precompiled it
 	precompiledByPath: Record<string, string>
 	exportNamesByPath: Record<string, string[]>
+	// each ark export a mock swaps for another of its kind
+	swapsByPath: Record<string, Record<string, string>>
 	runtimeUrl: string
 	// what a program importing arktype in place of arktype/runtime reads
 	arktypeOnlyNames: string[]
@@ -122,6 +125,26 @@ const run = async (
 							name === "default" ?
 								`export default globalThis.$arkMock(original.default)`
 							:	`export const ${name} = globalThis.$arkMock(original.${name})`
+						)
+						.join("\n")}`
+				}
+			}
+			const swaps = manifest.swapsByPath[path]
+			if (
+				perturbation === "swap" &&
+				!searchParams.has("original") &&
+				swaps &&
+				Object.keys(swaps).length
+			) {
+				const original = JSON.stringify(`${url}&original`)
+				return {
+					format: "module",
+					shortCircuit: true,
+					source: `import * as original from ${original}\nexport * from ${original}\n${Object.entries(
+						swaps
+					)
+						.map(
+							([name, swapped]) => `export const ${name} = original.${swapped}`
 						)
 						.join("\n")}`
 				}
@@ -307,7 +330,8 @@ const run = async (
 		const importsModules = /from "\.\.?\//.test(source)
 		for (const kind of perturbations) {
 			if (
-				kind === "mock" || kind === "mockKind" ? !importsModules
+				kind === "mock" || kind === "mockKind" || kind === "swap" ?
+					!importsModules
 				: kind === "define" ? !source.includes("process.env")
 				: kind !== "none" && !readsBindings
 			)

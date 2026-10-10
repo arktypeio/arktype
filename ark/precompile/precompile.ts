@@ -1323,6 +1323,26 @@ export class Precompiler {
 				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})`
 			)
 		}
+		// a factory compares what it receives by definition, which leaves out what a function arktype calls while resolving one returns
+		const read = new Set([...site.references, ...site.inputs].map(r => r.value))
+		for (const value of read) {
+			if (
+				!hasArkKind(value, "scope") &&
+				!hasArkKind(value, "generic") &&
+				!hasArkKind(value, "module")
+			)
+				continue
+			for (const hole of keyOf(value)[1]) {
+				const standIn =
+					hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
+				if (standIn && (standIn.isCalled || standIn.isCalledIndirectly)) {
+					result.push(
+						`arktype calls ${this.interpreter.labelOf(standIn)} while defining what a ${kindNameOf(value)} the site receives holds, which a factory can't compare`
+					)
+					break
+				}
+			}
+		}
 		if (site.parseError) {
 			const holes = this.interpreter.holesIn(site.arktypeArguments)
 			for (const hole of site.holes) holes.delete(hole.value)

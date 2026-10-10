@@ -14,7 +14,7 @@ import {
 	writeCreatedBeforeConfigureMessage
 } from "@ark/schema/runtime"
 import { arkKindOf, flatMorph, noSuggest } from "@ark/util"
-import { ark, generic, match, scope, type } from "arktype"
+import { ark, generic, match, scope, type, type Scope } from "arktype"
 import {
 	allowIslands,
 	arktypeVersion,
@@ -982,6 +982,56 @@ export const Island = type("string")`)
 			}
 			attest(() => created.B(created.Other)).throws.snap(
 				"Error: `$` is another Scope, but was precompiled as the Scope it was at build"
+			)
+		})
+
+		it("tells a Scope it receives from one differing only in what decides its Types", async () => {
+			const short = standIn((s: string) => s.length < 3, "short")
+			const long = standIn((s: string) => s.length > 3, "long")
+			const holes: FactoryParam[] = [
+				{ kind: "function", label: "`short`", value: short },
+				{ kind: "function", label: "`long`", value: long }
+			]
+			const repeating = (last: Function) =>
+				scope({
+					a: ["string", ":", short],
+					b: ["string", ":", long],
+					s: ["string", ":", last as never]
+				})
+			const pairs: [Scope<any>, Scope<any>][] = [
+				[
+					scope({ s: "string" }, { exactOptionalPropertyTypes: false }),
+					scope({ s: "string" }, { exactOptionalPropertyTypes: true })
+				],
+				[repeating(short), repeating(long)]
+			]
+			for (const [$, other] of pairs) {
+				const created = await load({
+					Other: { type: other, params: holes },
+					B: {
+						type: $.type({ "b?": "s" }),
+						params: [{ kind: "input", label: "$", reads: [[[], $]] }]
+					}
+				})
+				attest(() => created.B(created.Other(short, long))).throws(
+					"`$` is another Scope, but was precompiled as the Scope it was at build"
+				)
+			}
+		})
+
+		it("refuses a Scope it receives whose thunk decides its Types", () => {
+			const $ = scope({ s: () => type("string") })
+			attest(() =>
+				precompileStandalone({
+					B: {
+						type: $.type({ a: "s" }),
+						params: [{ kind: "input", label: "$", reads: [[[], $]] }]
+					}
+				})
+			).throws(
+				writeUnprecompilableMessage(
+					"the functions arktype calls defining what `$` creates"
+				)
 			)
 		})
 

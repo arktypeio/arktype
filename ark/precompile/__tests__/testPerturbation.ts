@@ -1,7 +1,8 @@
 import { fromHere } from "@ark/fs"
 import { createNodeHost, Precompiler } from "@ark/precompile"
 import { hasArkKind } from "@ark/schema"
-import { keyOf } from "arktype/internal/standalone.ts"
+import { arkKindOf } from "@ark/util"
+import { isTypedFn, keyOf } from "arktype/internal/standalone.ts"
 import { bindingOfFunction, isArk } from "@ark/precompile/internal/graph.ts"
 import type { SourceModule } from "@ark/precompile/internal/module.ts"
 import { specifierOf } from "@ark/precompile/internal/precompile.ts"
@@ -31,7 +32,7 @@ const corpus = globSync(
 	[
 		"ark/{type,schema}/__tests__/**/*.test.ts",
 		"ark/docs/components/snippets/*.ts",
-		"ark/precompile/__tests__/{app,checked,checks,environments,held,islands}/*.ts"
+		"ark/precompile/__tests__/{app,checked,checks,environments,held,islands,swapped}/*.ts"
 	],
 	{ cwd: root }
 )
@@ -56,6 +57,7 @@ const files: PerturbedFile[] = []
 const sitesById: Record<number, string> = {}
 const precompiledByPath: Record<string, string> = {}
 const exportNamesByPath: Record<string, string[]> = {}
+const swapsByPath: Record<string, Record<string, string>> = {}
 
 for (const path of corpus) {
 	const source = readFileSync(path, "utf8")
@@ -164,6 +166,7 @@ for (const path of corpus) {
 			).code
 			const graph = targetPrecompiler.graph
 			const targetModule = graph.moduleOf(target) as SourceModule
+			swapsByPath[target] = swapsOf(targetPrecompiler, targetModule)
 			// arktype's own exports and Types are trusted, so a mock leaves them
 			exportNamesByPath[target] = Object.keys(
 				targetModule.scopes.exportsByName
@@ -179,6 +182,37 @@ for (const path of corpus) {
 			})
 		}
 	}
+}
+
+// a mock can export another Type, Scope, Module, Generic or TypedFn in place of one, so each is swapped for the next of its kind
+function swapsOf(
+	precompiler: Precompiler,
+	module: SourceModule
+): Record<string, string> {
+	const namesByKind: Record<string, string[]> = {}
+	for (const name of Object.keys(module.scopes.exportsByName)) {
+		const exported = precompiler.graph.exportOf(module, name)
+		if (!/^[$A-Z_a-z][\w$]*$/.test(name) || exported.kind !== "binding")
+			continue
+		let value: unknown
+		try {
+			value = precompiler.interpreter.valueOfBinding(
+				exported.binding,
+				exported.module
+			)
+		} catch {
+			continue
+		}
+		const kind = isTypedFn(value) ? "fn" : arkKindOf(value)
+		if (typeof kind === "string") (namesByKind[kind] ??= []).push(name)
+	}
+	const swaps: Record<string, string> = {}
+	for (const names of Object.values(namesByKind)) {
+		if (names.length < 2) continue
+		for (let i = 0; i < names.length; i++)
+			swaps[names[i]] = names[(i + 1) % names.length]
+	}
+	return swaps
 }
 
 const evaluate = (code: string) =>
@@ -200,6 +234,7 @@ const manifest: Manifest = {
 	files,
 	precompiledByPath,
 	exportNamesByPath,
+	swapsByPath,
 	runtimeUrl: evaluate(`console.log(import.meta.resolve("arktype/runtime"))`),
 	arktypeOnlyNames: namesOf("arktype").filter(
 		name => !runtimeNames.includes(name)
