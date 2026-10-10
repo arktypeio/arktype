@@ -28,14 +28,8 @@ import type { StandardSchemaV1 } from "./standardSchema.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 
-// a morph fails by returning errors, or an error ctx.error added, which only a morph passed ctx can
-export const isArkErrorResult = (
-	result: unknown,
-	errors?: ArkErrors
-): result is ArkErrorResult =>
-	typeof result === "object" &&
-	(result instanceof ArkErrors ||
-		(errors !== undefined && errors._added.includes(result as never)))
+export const isArkErrorResult = (result: unknown): result is ArkErrorResult =>
+	typeof result === "object" && result instanceof ArkErrors
 
 /**
  * A failed check: its context, the data and path it failed at, and the text

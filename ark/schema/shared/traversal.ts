@@ -74,6 +74,8 @@ export class InternalTraversal {
 	declare receivedDepth: number
 	// a piped node is transformed once Apply finds it valid
 	declare checksOnly: boolean
+	// a morph fails by returning any error ctx.error added during its call
+	declare returnedFrom: number | undefined
 
 	constructor(root: unknown, config: ResolvedConfig) {
 		this.path = []
@@ -87,6 +89,7 @@ export class InternalTraversal {
 		this.received = root
 		this.receivedDepth = 0
 		this.checksOnly = false
+		this.returnedFrom = undefined
 	}
 
 	/**
@@ -206,7 +209,7 @@ export class Traversal extends InternalTraversal {
 	 * ✅ useful for predicates like `.narrow`
 	 */
 	reject(input: ArkErrorInput): false {
-		this.error(input)
+		this.raise(input)
 		return false
 	}
 
@@ -217,7 +220,7 @@ export class Traversal extends InternalTraversal {
 	 * 🔗 equivalent to {@link reject}({ expected })
 	 */
 	mustBe(expected: string): false {
-		this.error(expected)
+		this.raise(expected)
 		return false
 	}
 
@@ -232,6 +235,11 @@ export class Traversal extends InternalTraversal {
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	>
 	error(input: ArkErrorInput): ArkError {
+		this.returnedFrom ??= errorsOf(this)._added.length
+		return this.raise(input)
+	}
+
+	private raise(input: ArkErrorInput): ArkError {
 		// an error's supplied text is read from its input, so a caller's
 		// later change to an object it passed must not reach it
 		const errCtx: ArkErrorContextInput =
@@ -280,11 +288,21 @@ export const callMorph = (
 ): unknown => {
 	const { received, receivedDepth } = ctx
 	receive(ctx, data)
+	ctx.returnedFrom = undefined
 	const result = morph(data as never, ctx as never)
 	ctx.received = received
 	ctx.receivedDepth = receivedDepth
-	return result
+	return ctx.returnedFrom === undefined ? result : returned(ctx, result)
 }
+
+// an error ctx.error added fails the morph that returns it as the errors holding it
+const returned = (ctx: InternalTraversal, result: unknown): unknown =>
+	(
+		typeof result === "object" &&
+		ctx._errors!._added.includes(result as never, ctx.returnedFrom)
+	) ?
+		ctx._errors
+	:	result
 
 export const transform = (
 	ctx: InternalTraversal,

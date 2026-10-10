@@ -474,6 +474,44 @@ contextualize(() => {
 		attest(divide100By(0).toString()).snap("must be non-zero (was 0)")
 	})
 
+	it("stops at a morph returning any error its ctx.error added", () => {
+		let piped = 0
+		const T = type("string").pipe(
+			(s, ctx) => {
+				const first = ctx.error("a letter")
+				ctx.error("a digit")
+				return first
+			},
+			() => piped++
+		)
+		attest(T("x").toString()).snap(`("x") must be...
+  ◦ a letter
+  ◦ a digit`)
+		attest(piped).equals(0)
+	})
+
+	it("checks a result only against the errors its morph added", () => {
+		let reads = 0
+		let counted: object | undefined
+		const T = type({ v: "number" })
+			.pipe((o, ctx) => {
+				// counts each error read in the errors added so far
+				counted ??= ctx.errors._added = new Proxy(ctx.errors._added, {
+					get: (target, k) => {
+						if (typeof k === "string" && /^\d+$/.test(k)) reads++
+						return Reflect.get(target, k)
+					}
+				})
+				return { w: o.v }
+			})
+			.array()
+		const data = Array.from({ length: 1000 }, (_, i) =>
+			i % 2 ? { v: i } : { v: "x" }
+		)
+		attest(T(data).toString().split("\n").length).equals(500)
+		attest(reads < 2 * data.length).equals(true)
+	})
+
 	it("at path", () => {
 		const T = type({ a: ["string", "=>", data => data.length] })
 		attest<{ a: (In: string) => Out<number> }>(T.t)
