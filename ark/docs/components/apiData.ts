@@ -955,29 +955,6 @@ export const apiDocsByGroup: ApiDocsByGroup = {
         },
         {
             "group": "Traversal",
-            "name": "errors",
-            "summary": [
-                {
-                    "kind": "reference",
-                    "value": "ArkErrors"
-                },
-                {
-                    "kind": "text",
-                    "value": "that will be part of this traversal's finalized result"
-                }
-            ],
-            "notes": [
-                [],
-                [
-                    {
-                        "kind": "noteStart",
-                        "value": "✅ will always be empty for a valid traversal"
-                    }
-                ]
-            ]
-        },
-        {
-            "group": "Traversal",
             "name": "root",
             "summary": [
                 {
@@ -1014,6 +991,48 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     {
                         "kind": "noteStart",
                         "value": "✅ does not include options configured on individual types"
+                    }
+                ]
+            ]
+        },
+        {
+            "group": "Traversal",
+            "name": "hasError",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "whether"
+                },
+                {
+                    "kind": "reference",
+                    "value": "currentBranch"
+                },
+                {
+                    "kind": "text",
+                    "value": "(or the traversal root, outside a union) has one or more errors"
+                }
+            ],
+            "notes": []
+        },
+        {
+            "group": "Traversal",
+            "name": "errors",
+            "summary": [
+                {
+                    "kind": "reference",
+                    "value": "ArkErrors"
+                },
+                {
+                    "kind": "text",
+                    "value": "that will be part of this traversal's finalized result"
+                }
+            ],
+            "notes": [
+                [],
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "✅ will always be empty for a valid traversal"
                     }
                 ]
             ]
@@ -1166,25 +1185,6 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                     }
                 ]
             ]
-        },
-        {
-            "group": "Traversal",
-            "name": "hasError",
-            "summary": [
-                {
-                    "kind": "text",
-                    "value": "whether"
-                },
-                {
-                    "kind": "reference",
-                    "value": "currentBranch"
-                },
-                {
-                    "kind": "text",
-                    "value": "(or the traversal root, outside a union) has one or more errors"
-                }
-            ],
-            "notes": []
         }
     ]
 }
