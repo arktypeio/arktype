@@ -1,11 +1,12 @@
+import type { PrecompileMode } from "@ark/precompile"
 import { hasDomain } from "@ark/util"
 import { readFileSync, writeFileSync } from "node:fs"
 import { registerHooks } from "node:module"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { inspect } from "node:util"
 
-// runs each file of a perturbation manifest once per perturbation, as written (P) or precompiled (P'),
-// recording what each folded site creates
+// runs each file of a perturbation manifest once per perturbation, as written (P) or precompiled (P') in standalone
+// or cache mode, recording what each folded site creates
 
 export const perturbations = [
 	"none",
@@ -23,6 +24,8 @@ export const perturbations = [
 ] as const
 
 export type Perturbation = (typeof perturbations)[number]
+
+export type World = "original" | PrecompileMode
 
 export interface PerturbedFile {
 	path: string
@@ -54,11 +57,8 @@ export const isPerturbable = (path: string): boolean =>
 		path
 	)
 
-const run = async (
-	isPrecompiled: boolean,
-	manifest: Manifest,
-	outPath: string
-) => {
+const run = async (world: World, manifest: Manifest, outPath: string) => {
+	const isPrecompiled = world !== "original"
 	const filesByPath: Record<string, PerturbedFile> = {}
 	for (const file of manifest.files) filesByPath[file.path] = file
 	let perturbation: Perturbation = "none"
@@ -68,7 +68,7 @@ const run = async (
 		resolve: (specifier, context, next) => {
 			if (specifier === "@ark/attest")
 				return { url: "perturbation:attest", shortCircuit: true }
-			if (isPrecompiled && specifier === "arktype")
+			if (world === "standalone" && specifier === "arktype")
 				return { url: "perturbation:arktype", shortCircuit: true }
 			const resolved = next(specifier, context)
 			const runId =
@@ -526,7 +526,7 @@ const observe = (value: unknown): Observation => {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
 	const [world, manifestPath, outPath] = process.argv.slice(2)
 	await run(
-		world === "precompiled",
+		world as World,
 		JSON.parse(readFileSync(manifestPath, "utf8")),
 		outPath
 	)
