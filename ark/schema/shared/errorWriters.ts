@@ -4,10 +4,13 @@ import {
 	domainDescriptions,
 	domainOf,
 	functionNameOf,
+	hasDomain,
 	isValidDate,
 	listPattern,
 	objectKindOrDomainOf,
 	printable,
+	printCompact,
+	printKind,
 	type requireKeys
 } from "@ark/util"
 import type { ErrorConfig } from "../config.ts"
@@ -33,7 +36,7 @@ export const errorWriters: {
 	problem: ProblemWriter
 	message: MessageWriter
 } = {
-	actual: data => printable(data),
+	actual: data => printCompact(data),
 	problem: ({ expected, actual }) =>
 		`must be ${expected}${actual ? ` (was ${actual})` : ""}`,
 	message: ctx => {
@@ -101,7 +104,7 @@ export const errorWritersByCode: {
 				actual === undefined ?
 					ctx.morph ?
 						`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
-					:	printable(data)
+					:	printCompact(data)
 				: typeof actual === "string" ? actual
 				: actual(data, ctx, locale)
 			)
@@ -147,11 +150,11 @@ export const errorWritersByCode: {
 
 				const expected = describeBranches(branchesAtPath)
 				// if there are multiple actual descriptions that differ,
-				// just fall back to printable, which is the most specific
+				// just fall back to printing the data, which is the most specific
 				const firstActual = errors[0].actual
 				const actual =
 					errors.every(e => e.actual === firstActual) ? firstActual : (
-						printable(errors[0].data)
+						printCompact(errors[0].data)
 					)
 				return `${path && `${path} `}must be ${expected}${
 					actual && ` (was ${actual})`
@@ -159,6 +162,8 @@ export const errorWritersByCode: {
 			})
 			return describeBranches(pathDescriptions)
 		},
+		// its message doesn't show it, so data that may be large isn't printed
+		actual: printKind,
 		problem: ctx => ctx.expected,
 		message: ({ problem }) => {
 			if (problem[0] === "[") return `value at ${problem}`
@@ -167,6 +172,8 @@ export const errorWritersByCode: {
 		}
 	},
 	unit: {
+		actual: (data, ctx) =>
+			hasDomain(ctx.unit, "object") ? printCompact(data) : printKind(data),
 		problem: ({ expected, actual }) =>
 			`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
 	},
@@ -184,7 +191,7 @@ export const errorWritersByCode: {
 		actual: (data, e) =>
 			e.discriminantKind === "domain" ?
 				domainDescriptions[domainOf(data)]
-			:	printable(data)
+			:	printUnlike(data, e.cases)
 	}
 }
 
@@ -202,6 +209,13 @@ type errorWritersOf<code extends ArkErrorCode> = requireKeys<
 		:	"expected"
 	:	"expected"
 >
+
+/** data a check of units rejected, printed by its kind if no unit is an object */
+export const printUnlike = (data: unknown, units: readonly unknown[]): string =>
+	// a primitive prints the same either way, so only an object reads the units
+	hasDomain(data, "object") && !units.some(unit => hasDomain(unit, "object")) ?
+		printKind(data)
+	:	printCompact(data)
 
 // reads predicate, or for pipe.try the morph that threw
 export const describePredicate = (ctx: {

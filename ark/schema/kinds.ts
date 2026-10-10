@@ -31,7 +31,8 @@ import type { BaseNodeInput } from "./shared/declare.ts"
 import {
 	enInfo,
 	errorWriters,
-	errorWritersByCode
+	errorWritersByCode,
+	printUnlike
 } from "./shared/errorWriters.ts"
 import type { ArkErrorCode, ErrorContextsByCode } from "./shared/errors.ts"
 import type {
@@ -130,7 +131,7 @@ const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
 ) =>
 	e.discriminantKind === "domain" ?
 		locale.nouns[domainOf(data)]
-	:	printable(data)
+	:	printUnlike(data, e.cases)
 
 export const en: Locale.Complete = {
 	...(flatMorph(

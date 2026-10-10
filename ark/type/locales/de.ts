@@ -407,6 +407,11 @@ export const de: Locale.Complete = {
 				"or"
 			)
 		},
+		// its message shows it only for never, so data that may be large isn't printed
+		actual: (data, e, locale) =>
+			typeof data === "function" ? locale.nouns.Function
+			: typeof data !== "object" || data === null ? print(data, locale)
+			: locale.nouns[Array.isArray(data) ? "Array" : "object"],
 		problem: e => (e.errors.length ? e.expected : mustBe(e.expected, e.actual)),
 		message: (e, locale) =>
 			e.errors.length === 0 ? locale.message(e, locale) : e.problem
