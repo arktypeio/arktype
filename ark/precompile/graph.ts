@@ -1700,9 +1700,13 @@ const namedFunctionOf = (node: Node, module: SourceModule): Node => {
 }
 
 // e.g. `f` in the statement `__name(f, "f")` after `function f() {}`, which neither calls `f` nor passes it anywhere
-export const isNamed = (node: Node, module: SourceModule): boolean =>
+const isNamed = (node: Node, module: SourceModule): boolean =>
 	node.parent?.parent?.type === "ExpressionStatement" &&
 	namedFunctionOf(node.parent, module) === node
+
+// e.g. `f` in `export { f }`, whose importers' uses are checked where they occur, or in keepNames' `__name(f, "f")`
+export const isPassiveReference = (id: Node, module: SourceModule): boolean =>
+	id.parent?.type === "ExportSpecifier" || isNamed(id, module)
 
 const initOf = (node: Node, module: SourceModule): Node | undefined => {
 	const binding =

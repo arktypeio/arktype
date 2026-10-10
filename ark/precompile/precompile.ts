@@ -58,12 +58,12 @@ import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
 	bindingOfFunction,
-	isNamed,
 	contains,
 	enclosingFunctionOf,
 	isArk,
 	isArkObject,
 	isFunctionNode,
+	isPassiveReference,
 	memberNameOf,
 	ModuleGraph,
 	readsBindingOf,
@@ -2846,8 +2846,7 @@ export class Precompiler {
 		if (
 			(target.kind !== "binding" && target.kind !== "expression") ||
 			(id.parent?.type === "CallExpression" && id.parent.callee === id) ||
-			id.parent?.type === "ExportSpecifier" ||
-			isNamed(id, module)
+			isPassiveReference(id, module)
 		)
 			return false
 		const helper = this.graph.helperOf(id, module)
@@ -2867,8 +2866,7 @@ export class Precompiler {
 			bindingOfFunction(fn, module)!.references.every(
 				reference =>
 					isWithin(reference.id, settledRanges) ||
-					reference.id.parent?.type === "ExportSpecifier" ||
-					isNamed(reference.id, module)
+					isPassiveReference(reference.id, module)
 			)
 		)
 	}
