@@ -92,6 +92,7 @@ import {
 	TransformErrors
 } from "./shared/transform.ts"
 import {
+	errorFromContext,
 	Traversal,
 	type TraversalKind,
 	type TraverseAllows,
@@ -312,6 +313,7 @@ type CompiledUnit = (
 const unitConstants = {
 	arrayIndexMatcher,
 	copyOf,
+	errorFromContext,
 	isAbsent,
 	isArkErrorResult,
 	isValidDate,

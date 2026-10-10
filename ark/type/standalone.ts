@@ -2,6 +2,7 @@ import {
 	$ark,
 	cachedKeyOf,
 	hasArkKind,
+	InternalTraversal,
 	isNode,
 	precompileRootUnits,
 	type ArkErrorCode,
@@ -1135,12 +1136,20 @@ return [${returned.join(", ")}]
 		const nodeName = this.unitsByHead.get(root)!.names[root.id]
 		const [id, holes] = keyOf(root)
 		const key = `,\n\t${JSON.stringify(id)}${holes.length ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
+		const apply = writeRootApply(root, nodeName)
+		const callbacks = raisableCodesOf(root) === "any"
+		// what the root's apply doesn't read is left out, and a traversal no callback sees lacks the API Traversal adds for them
+		const runtimeArgs = Object.entries(rootApplyRuntime).map(
+			([param, value]) =>
+				!new RegExp(`\\b${param}\\b`).test(apply) ? "undefined"
+				: value === rootApplyRuntime.Traversal && !callbacks ?
+					this.emit(InternalTraversal)
+				:	this.emit(value)
+		)
 		return `new runtime.Validator(
 	(function (${rootApplyParams.join(", ")}) {
-		${writeRootApply(root, nodeName)}
-	})(${shape}, ${this.configOf(root)}, ${Object.values(rootApplyRuntime)
-		.map(value => this.emit(value))
-		.join(", ")}),
+		${apply}
+	})(${shape}, ${this.configOf(root)}, ${runtimeArgs.join(", ")}),
 	${shape},
 	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root.expression)}()`}, description: ${this.emitString(root.description)}, meta: ${this.emitMeta(root)} }${key}
 )`

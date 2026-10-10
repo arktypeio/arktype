@@ -39,6 +39,7 @@ import {
 } from "../shared/transform.ts"
 import {
 	applyValue,
+	errorFromContext,
 	traverseKey,
 	type InternalTraversal,
 	type TraversalKind,
@@ -549,7 +550,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				) {
 					if (traversalKind === "Allows") return false
 
-					ctx.errorFromContext({
+					errorFromContext(ctx, {
 						code: "undeclared",
 						relativePath: [k],
 						data: data[k as never],
@@ -1240,7 +1241,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					js.return(false)
 				:	js
 						.line(
-							`ctx.errorFromContext({ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`
+							`${js.ref(errorFromContext)}(ctx, { code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`
 						)
 						.if("ctx.failFast", () => js.return())
 			const declaresKey = this._compileDeclaresKey(js)

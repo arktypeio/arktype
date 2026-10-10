@@ -196,7 +196,7 @@ export class InternalTraversal {
 		this.checksOnly = true
 		// a morph's output is new data, so a cyclic node tracks it from its own root
 		if (node.includesAlias) {
-			const ctx = new Traversal(data, this.config)
+			const ctx = this.traversalOf(data)
 			ctx.checksOnly = true
 			const { _errors } = applyCyclic(node, data, ctx)
 			if (_errors) this.mergeErrors(_errors)
@@ -222,7 +222,8 @@ export class InternalTraversal {
 		if (!this.transformsValid) return false
 		if (node.includesAlias) {
 			const untracked = allowsAcyclic(node, data)
-			if (!(untracked ?? allowsInContext(node, data, this.config))) return false
+			if (!(untracked ?? allowsInTraversal(node, data, this.traversalOf(data))))
+				return false
 			// as at a root, data allowed within the bounds is a tree, so each path is transformed
 			this.tracksTransforms = untracked === undefined
 			this.transformedByResolutionId = undefined
@@ -499,6 +500,14 @@ export class InternalTraversal {
 		return this.branches.pop()
 	}
 
+	// a traversal of other data, of this one's class, so a callback sees the API it would have
+	traversalOf(data: unknown): this {
+		return new (this.constructor as new (
+			root: unknown,
+			config: ResolvedConfig
+		) => this)(data, this.config)
+	}
+
 	/**
 	 * @internal
 	 * Convenience for casting from InternalTraversal to Traversal
@@ -525,11 +534,7 @@ export class InternalTraversal {
 	/**
 	 * @internal
 	 */
-	errorFromContext(errCtx: ArkErrorContextInput): ArkError {
-		return this.addError(errorOfContext(errCtx, this.path, this.config))
-	}
-
-	protected addError(error: ArkError): ArkError {
+	addError(error: ArkError): ArkError {
 		if (this.currentBranch) this.failBranch(error)
 		else addError((this._errors ??= new ArkErrors(this.config)), error)
 		return error
@@ -614,9 +619,15 @@ export class Traversal extends InternalTraversal {
 				:	{ ...input, code: "predicate" }
 			:	{ code: "predicate", expected: input }
 		if (!("data" in errCtx)) errCtx.data = this.data
-		return this.addError(errorOfContext(errCtx, this.path, this.config))
+		return errorFromContext(this, errCtx)
 	}
 }
+
+/** adds an error a union, a structure or a callback describes, at ctx's path */
+export const errorFromContext = (
+	ctx: InternalTraversal,
+	input: ArkErrorContextInput
+): ArkError => ctx.addError(errorOfContext(input, ctx.path, ctx.config))
 
 const lastOf = <t>(array: readonly t[]): t => array[array.length - 1]
 
@@ -626,7 +637,7 @@ export const maxAliasDepth = 64
 
 export const maxAliasVisits = 1000
 
-let continuation: Traversal | undefined
+let continuation: InternalTraversal | undefined
 let continuationConfig: ResolvedConfig
 
 // shared by every root's Allows, which passes an alias depth in place of ctx
@@ -634,7 +645,7 @@ export const aliasVisits = {
 	count: 0,
 	tracked: false,
 	// data past the depth bound may be cyclic, so every path past it continues one tracked traversal
-	exceed: (data: unknown): Traversal | false => {
+	exceed: (data: unknown): InternalTraversal | false => {
 		// a path past the bound costs the visits it took to reach it, so cyclic data reruns tracked from its root
 		aliasVisits.count += maxAliasDepth
 		if (aliasVisits.count > maxAliasVisits) {
@@ -642,7 +653,8 @@ export const aliasVisits = {
 			return false
 		}
 		aliasVisits.tracked = true
-		return (continuation ??= new Traversal(data, continuationConfig))
+		// an Allows reaching a predicate that reads ctx isn't run untracked, so no callback sees it
+		return (continuation ??= new InternalTraversal(data, continuationConfig))
 	}
 }
 
@@ -651,11 +663,11 @@ const untrackedBound = noSuggest("untrackedBound")
 const reachedByShorterPath = noSuggest("reachedByShorterPath")
 
 // once tracked, a cyclic root is entered as its own resolution, so data reaching it again isn't traversed twice
-export const applyCyclic = (
+export const applyCyclic = <ctx extends InternalTraversal>(
 	node: BaseNode,
 	data: unknown,
-	ctx: Traversal
-): Traversal => {
+	ctx: ctx
+): ctx => {
 	// a rerun would transform each value Apply found valid again
 	if (node.transforms) {
 		ctx.applyByPathLength(node.trackedId, node.traverseApply, data)
@@ -668,14 +680,14 @@ export const applyCyclic = (
 			node.traverseApply(data, ctx)
 		} catch (e) {
 			if (e !== untrackedBound) throw e
-			ctx = new Traversal(data, ctx.config)
+			ctx = ctx.traversalOf(data)
 			applyResolution(node.trackedId, node.traverseApply, data, ctx)
 		}
 		return ctx
 	} catch (e) {
 		if (e !== reachedByShorterPath) throw e
 	}
-	ctx = new Traversal(data, ctx.config)
+	ctx = ctx.traversalOf(data)
 	ctx.applyByPathLength(node.trackedId, node.traverseApply, data)
 	return ctx
 }
@@ -767,15 +779,18 @@ export const allowsAcyclic = (
 	}
 }
 
-// a contextual predicate can add an error and still return true
 export const allowsInContext = (
 	node: BaseNode,
 	data: unknown,
 	config: ResolvedConfig
-): boolean => {
-	const ctx = new Traversal(data, config)
-	return node.traverseAllows(data as never, ctx) && !ctx.hasError()
-}
+): boolean => allowsInTraversal(node, data, new Traversal(data, config))
+
+// a contextual predicate can add an error and still return true
+const allowsInTraversal = (
+	node: BaseNode,
+	data: unknown,
+	ctx: InternalTraversal
+): boolean => node.traverseAllows(data as never, ctx) && !ctx.hasError()
 
 // entered while in progress, then whether it is valid, or why Apply found it invalid
 type ResolutionState = number | boolean | InvalidResolution
