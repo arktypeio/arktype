@@ -92,7 +92,6 @@ export {
 	exactLengthWriters,
 	errorFromContext,
 	exitResolution,
-	fingerprintOf,
 	fixConfig,
 	flatByPath,
 	flatProblemsByPath,

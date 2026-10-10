@@ -87,13 +87,13 @@ export const answerRequests = (
 	data: PrecompilerWorkerData
 ): void => {
 	let tracked: TrackedPrecompiler | undefined
-	let isGivenUnlikeThread = false
+	let conflictsWithThread = false
 	const answer = (request: PrecompileRequest): unknown => {
 		if (request[0] === "close") return
 		if (request[0] === "refresh" && tracked && !isStale(tracked)) return false
 		if (request[0] === "reset" || request[0] === "refresh") {
 			tracked = createTrackedPrecompiler(data.precompilerOptions)
-			return isGivenUnlikeThread || tracked.precompiler.needsNewThread
+			return conflictsWithThread || tracked.precompiler.needsNewThread
 		}
 		tracked ??= createTrackedPrecompiler(data.precompilerOptions)
 		const { precompiler } = tracked
@@ -112,8 +112,7 @@ export const answerRequests = (
 			request[2],
 			tracked
 		)
-		// the config module as edited configures differently than this thread
-		if (precompiler.conflictsWithThread) isGivenUnlikeThread = true
+		if (precompiler.conflictsWithThread) conflictsWithThread = true
 		else if (!hasAnswered || resolvesAsRecorded(tracked, request[2]))
 			return checked
 		// the rule refreshes and asks again, since a new precompiler's configuration may need a new thread

@@ -5,6 +5,8 @@ import {
 	type BaseRoot,
 	type BaseScope
 } from "@ark/schema"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { fingerprintOf } from "@ark/schema/runtime"
 import {
 	appendStringifiedKey,
 	hashOf,
@@ -688,7 +690,7 @@ export class Precompiler {
 			files,
 			fingerprint:
 				evaluated && !problem ?
-					arktypeRuntime.fingerprintOf(evaluated.value ?? {})
+					fingerprintOf(evaluated.value ?? {})
 				:	undefined,
 			problem,
 			reasons: evaluated ? evaluated.reasons : []
@@ -713,7 +715,6 @@ export class Precompiler {
 		return configuration
 	}
 
-	// a module given anew configures other values than arktype in this thread holds, as an unsaved config module in an editor can
 	get conflictsWithThread(): boolean {
 		return this.configuration?.problem === configurationConflictMessage
 	}
@@ -800,7 +801,7 @@ export class Precompiler {
 		}
 	}
 
-	// each module a module's file imports, with its file's path and text, though a host may give any of them otherwise
+	// a host can give the build other text than a file's, as a plugin ahead of arktype's transpiles it
 	private filesOf(id: string): string[] {
 		const sourcesById: Record<string, string | undefined> = {}
 		return this.localClosureOf(id, reached => {

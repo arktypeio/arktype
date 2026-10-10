@@ -1671,7 +1671,7 @@ const functionOfBinding = (
 }
 
 // esbuild's keepNames, as under tsx, names a function `__name(fn, "name")`, whose helper defines the name and returns `fn`
-export const namedFunctionOf = (node: Node, module: SourceModule): Node => {
+const namedFunctionOf = (node: Node, module: SourceModule): Node => {
 	if (
 		node.type !== "CallExpression" ||
 		node.arguments.length !== 2 ||
@@ -1704,7 +1704,6 @@ export const isNamed = (node: Node, module: SourceModule): boolean =>
 	node.parent?.parent?.type === "ExpressionStatement" &&
 	namedFunctionOf(node.parent, module) === node
 
-// what a variable is declared to and never assigned again
 const initOf = (node: Node, module: SourceModule): Node | undefined => {
 	const binding =
 		node.type === "Identifier" ?
