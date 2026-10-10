@@ -3,8 +3,8 @@ import {
 	bindingOfFunction,
 	enclosingFunctionOf,
 	isArk,
-	isOnlyType,
 	isPassiveReference,
+	kinds,
 	memberNameOf,
 	runtimeExports,
 	staticBodyOf,
@@ -161,7 +161,7 @@ const introspectionReadOf = (
 	if (
 		member?.type !== "MemberExpression" ||
 		member.object !== operand ||
-		!isOnlyType(graph.kindOf(node, module))
+		!(graph.kindOf(node, module) & kinds.type)
 	)
 		return
 	const name = memberNameOf(member)

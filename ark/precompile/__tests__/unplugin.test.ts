@@ -802,6 +802,27 @@ ${definition}
 		})
 	}).timeout(60000)
 
+	it("folds the json of a Type a Scope's method creates", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { scope } from "arktype"
+
+const atMost = (n: number) => {
+	const limit = 10
+	return n <= limit
+}
+console.log(JSON.stringify(scope({}).type({ a: [["number", ":", atMost], "=", 5] }).omit("a").json))
+`
+			},
+			fromHere("temp", "scopedJson")
+		)
+		attest(runPlain(root)).snap(`{"domain":"object"}
+`)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
+			runPlain(root)
+		)
+	}).timeout(60000)
+
 	it("shares a Type definitions reach through different copies whichever runs first", async () => {
 		const files = {
 			"string.ts": `import { type } from "arktype"
