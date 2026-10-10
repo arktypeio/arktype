@@ -8,6 +8,7 @@ import {
 	appendStringifiedKey,
 	hashOf,
 	hasDomain,
+	includes,
 	ParseError,
 	printable,
 	registeredNameOf,
@@ -18,6 +19,7 @@ import type { HoleKind, IntrospectionMember } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	holeNamePattern,
+	introspectionMembers,
 	isAddressed,
 	isTypedFn,
 	keyOf,
@@ -302,8 +304,8 @@ export class Precompiler {
 		this.checkHelpers = this.mode === "standalone" && !!opts?.checkHelpers
 		this.introspection = opts?.introspection ?? []
 		for (const member of this.introspection) {
-			if (!(member in introspectionMembers))
-				throwError(writeUnknownIntrospectionMessage(member))
+			if (!includes(introspectionMembers, member))
+				throwError(writeUnknownIntrospectionMessage(printable(member)))
 		}
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
@@ -2863,18 +2865,13 @@ export class Precompiler {
 	}
 }
 
-const introspectionMembers: Record<IntrospectionMember, 1> =
-	Object.setPrototypeOf(
-		{ json: 1, toJSON: 1, toJsonSchema: 1, "~standard.jsonSchema": 1 },
-		null
-	)
+export const writeUnknownIntrospectionMessage = <member extends string>(
+	member: member
+): writeUnknownIntrospectionMessage<member> =>
+	`introspection lists ${member}, which isn't one of ${introspectionMembers.map(member => JSON.stringify(member)).join(", ")}`
 
-export const writeUnknownIntrospectionMessage = (member: unknown): string =>
-	`introspection lists ${printable(member)}, which isn't one of ${Object.keys(
-		introspectionMembers
-	)
-		.map(member => JSON.stringify(member))
-		.join(", ")}`
+export type writeUnknownIntrospectionMessage<member extends string> =
+	`introspection lists ${member}, which isn't one of ${string}`
 
 export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 	[

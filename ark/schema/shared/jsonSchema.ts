@@ -159,7 +159,7 @@ export declare namespace JsonSchema {
 	export type Structure = Object | Array
 }
 
-export const supportedJsonSchemaTargets: ToJsonSchema.Target[] = [
+export const supportedJsonSchemaTargets: readonly ToJsonSchema.Target[] = [
 	"draft-2020-12",
 	"draft-07"
 ]

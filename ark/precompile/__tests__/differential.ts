@@ -3,9 +3,11 @@ import { hasArkKind, type BaseRoot } from "@ark/schema"
 import { noSuggest, ParseError } from "@ark/util"
 import {
 	holeNamePrefix,
+	introspectionMembers,
 	keyOf,
 	precompileStandalone,
 	precompileStandaloneModules,
+	type FoldedMember,
 	type StandaloneExport
 } from "arktype/internal/standalone.ts"
 import type { IntrospectionMember } from "arktype/internal/runtime.ts"
@@ -288,12 +290,7 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 type Validator = Record<string, any> & ((data: unknown) => unknown)
 
 // every member a build can bake, so each is compared where arktype's can be read
-const introspection: IntrospectionMember[] = [
-	"json",
-	"toJSON",
-	"toJsonSchema",
-	"~standard.jsonSchema"
-]
+const introspection = [...introspectionMembers]
 
 const observeAttributes = (t: Validator) => ({
 	expression: t.expression,
@@ -314,9 +311,9 @@ const observeIntrospection = (t: Validator) => ({
 	)
 })
 
-type FoldedMember = "json" | "toJSON" | "toJsonSchema"
-
-const foldedMembers: FoldedMember[] = ["json", "toJSON", "toJsonSchema"]
+const foldedMembers = introspectionMembers.filter(
+	(member): member is FoldedMember => member !== "~standard.jsonSchema"
+)
 
 const printsName = (data: unknown): boolean =>
 	typeof data === "string" ?

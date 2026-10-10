@@ -16,7 +16,7 @@ import {
 	holeNamePrefix,
 	keyOf,
 	type DefaultCheck,
-	type IntrospectedMember,
+	type FoldedMember,
 	type StandaloneIntrospection
 } from "arktype/internal/standalone.ts"
 import type {
@@ -1423,7 +1423,7 @@ export class Interpreter {
 			: undefined
 		if (isIntrospectionRead(object, key, node, ctx.site)) {
 			ctx.site!.introspection = {
-				member: key as IntrospectedMember,
+				member: key as FoldedMember,
 				type: object as BaseRoot
 			}
 		} else if (members) {

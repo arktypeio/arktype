@@ -55,6 +55,7 @@ import {
 } from "@ark/util"
 import { InternalTypedFn } from "./fn.ts"
 import { raisedErrorPhrases } from "./keywords/functions.ts"
+import type { introspectionMembers } from "./standalone.ts"
 import type { ArrayType } from "./variants/array.ts"
 import type { DateType } from "./variants/date.ts"
 import type { NumberType } from "./variants/number.ts"
@@ -190,12 +191,7 @@ export interface ValidatorAttributes {
 	"~standard"?: Pick<StandardJSONSchemaV1.Props, "jsonSchema">
 }
 
-/** the members of a Type a build's `introspection` option can bake onto its standalone validators */
-export type IntrospectionMember =
-	| "json"
-	| "toJSON"
-	| "toJsonSchema"
-	| "~standard.jsonSchema"
+export type IntrospectionMember = (typeof introspectionMembers)[number]
 
 // captured when the runtime loads, so a program replacing them later can't keep an artifact from freezing what it creates
 export const { assign, defineProperties, freeze, is, preventExtensions } =
@@ -219,11 +215,11 @@ export class Validator extends Callable<
 		onFail?: ArkErrors.Handler | null
 	) => unknown
 > {
-	expression!: string
-	description!: string
-	meta!: ArkEnv.meta
-	allows: (data: unknown) => boolean
-	"~standard": StandardSchemaV1.Props
+	declare expression: string
+	declare description: string
+	declare meta: ArkEnv.meta
+	declare allows: (data: unknown) => boolean
+	declare "~standard": StandardSchemaV1.Props
 
 	constructor(
 		rootApply: RootApply,
@@ -253,7 +249,6 @@ export class Validator extends Callable<
 				const out = this(input)
 				return out instanceof ArkErrors ? out : { value: out }
 			}),
-			// the JSON Schema a build's introspection option bakes
 			...attributes["~standard"]
 		})
 		freeze(this.assert)
@@ -306,10 +301,6 @@ for (const k of Reflect.ownKeys(Validator.prototype)) {
 }
 freeze(Validator.prototype)
 
-export const bakedJsonSchemaOptionsMessage =
-	"a standalone validator's JSON Schema is written at build under the program's configuration, so it takes no options. Configure them with configure({ toJsonSchema }), or build with runtime: \"arktype\"."
-
-// toJsonSchema() as the build wrote it, a new schema each call as arktype writes one
 export const bakedJsonSchema = (
 	write: () => JsonSchema
 ): ((opts?: unknown) => JsonSchema) =>
@@ -317,12 +308,11 @@ export const bakedJsonSchema = (
 		opts === undefined ? write() : throwError(bakedJsonSchemaOptionsMessage)
 	)
 
-// each JSON Schema of the input or output, by the index of its target
-type JsonSchemaWriters = readonly (() => JsonSchema)[]
+type JsonSchemaWritersByTarget = readonly (() => JsonSchema)[]
 
 export const bakedStandardJsonSchema = (
-	input: JsonSchemaWriters,
-	output: JsonSchemaWriters
+	input: JsonSchemaWritersByTarget,
+	output: JsonSchemaWritersByTarget
 ): StandardJSONSchemaV1.Converter =>
 	freeze({
 		input: freeze((opts: StandardJSONSchemaV1.Options) =>
@@ -334,7 +324,7 @@ export const bakedStandardJsonSchema = (
 	})
 
 const writeStandardJsonSchema = (
-	writers: JsonSchemaWriters,
+	writers: JsonSchemaWritersByTarget,
 	opts: StandardJSONSchemaV1.Options
 ) => {
 	const i = supportedJsonSchemaTargets.indexOf(
@@ -345,7 +335,7 @@ const writeStandardJsonSchema = (
 	return writers[i]() as Record<string, unknown>
 }
 
-// arktype's ToJsonSchema.Error, thrown where arktype would throw it, without the nodes its context holds
+// without the nodes arktype's context holds
 export const throwJsonSchemaError = (code: string, message: string): never => {
 	throw assign(new Error(message), { name: "ToJsonSchemaError", code })
 }
@@ -723,3 +713,8 @@ export type writeRenamedHoleMessage<
 	name extends string,
 	createdName extends string
 > = `${label}'s hole ${index} is a function named ${name}, but was named ${createdName} when ${label} was created`
+
+export const bakedJsonSchemaOptionsMessage =
+	"a standalone validator's JSON Schema is written at build under the program's configuration, so it takes no options. Configure them with configure({ toJsonSchema }), or build with runtime: \"arktype\"."
+
+export type bakedJsonSchemaOptionsMessage = typeof bakedJsonSchemaOptionsMessage

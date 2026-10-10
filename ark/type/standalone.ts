@@ -113,11 +113,17 @@ export type StandaloneExport =
 	| StandaloneFactory
 	| StandaloneIntrospection
 
-export type IntrospectedMember = "json" | "toJSON" | "toJsonSchema"
+export const introspectionMembers = [
+	"json",
+	"toJSON",
+	"toJsonSchema",
+	"~standard.jsonSchema"
+] as const
 
-// what a site reading a Type's introspection returns, as arktype returned it at build
+export type FoldedMember = Exclude<IntrospectionMember, "~standard.jsonSchema">
+
 export interface StandaloneIntrospection {
-	member: IntrospectedMember
+	member: FoldedMember
 	type: BaseRoot
 	data: unknown
 	params: FactoryParam[]
@@ -524,7 +530,7 @@ export class StandaloneArtifact {
 	receivedMetas = new Map<object, string>()
 	introspection: ReadonlySet<IntrospectionMember>
 	// each JSON Schema a validator bakes, written once however many of its members return it
-	jsonSchemaNamesByText = new Map<string, string>()
+	jsonSchemaNamesByText: Record<string, string> = {}
 
 	constructor(
 		exports: Record<string, ExportedValue>,
@@ -1307,7 +1313,6 @@ return [${returned.join(", ")}]
 )`
 	}
 
-	// what the build's introspection option bakes, as arktype writes it for the program's configuration
 	emitIntrospection(root: BaseRoot): string {
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) =>
@@ -1336,7 +1341,6 @@ return [${returned.join(", ")}]
 		return members.map(member => `, ${member}`).join("")
 	}
 
-	// a function writing the schema anew each call, as arktype does, or throwing the error arktype throws writing it
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
 		assertBakeableJsonSchema(root)
 		let writer: string
@@ -1350,16 +1354,15 @@ return [${returned.join(", ")}]
 				writer = `() => { throw new TypeError(${this.emitString(e.message)}) }`
 			else throw e
 		}
-		let name = this.jsonSchemaNamesByText.get(writer)
+		let name = this.jsonSchemaNamesByText[writer]
 		if (!name) {
-			name = `jsonSchema${this.jsonSchemaNamesByText.size}`
-			this.jsonSchemaNamesByText.set(writer, name)
+			name = `jsonSchema${Object.keys(this.jsonSchemaNamesByText).length}`
+			this.jsonSchemaNamesByText[writer] = name
 			this.declarations.statements.push(`const ${name} = ${writer}`)
 		}
 		return name
 	}
 
-	// JSON data as arktype returns it, each object created anew where the text is evaluated
 	writeData(value: unknown): string {
 		if (typeof value === "string") return this.emitString(value)
 		if (value === undefined) return "void 0"
