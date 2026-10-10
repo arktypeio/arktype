@@ -531,4 +531,23 @@ d must be a number (was a string)`)
 		)
 		attest(path).snap(["stringKey", "Symbol(ctxPathExampleSymbol)", 1])
 	})
+
+	it("serializes an error's own keys, where toJSON() prints a symbol key", () => {
+		const tag = Symbol("tag")
+		const out = type({ [tag]: "string" })({ [tag]: 1 }) as ArkErrors
+		attest(JSON.parse(JSON.stringify(out.issues))[0].path).equals([null])
+		attest(out.toJSON()[0]).snap({
+			data: 1,
+			path: ["Symbol(tag)"],
+			code: "domain",
+			description: "a string",
+			meta: {},
+			domain: "string",
+			propString: "[Symbol(tag)]",
+			expected: "a string",
+			actual: "a number",
+			problem: "must be a string (was a number)",
+			message: "value at [Symbol(tag)] must be a string (was a number)"
+		})
+	})
 })

@@ -4,7 +4,7 @@
 
 ### Return errors as plain objects
 
-The errors in an `ArkErrors`' `issues` are plain objects without getters or methods, the same in arktype and in validators precompiled for `arktype/runtime`. Each has the keys its JSON had, in the same order, then `propString`:
+The errors in an `ArkErrors`' `issues` are plain objects without getters or methods, the same in arktype and in validators precompiled for `arktype/runtime`. Each has the keys its JSON had, in the same order, with `propString` before `expected`:
 
 ```ts
 const out = type({ n: "number % 2" })({ n: 1 })
@@ -47,7 +47,9 @@ Its `message`, `transform`, `merge`, `add` and `toTraversalError` are gone: read
 
 Errors' text is written when they are first read, through `issues`, `summary`, `toString()`, `toJSON()`, `throw()` or Standard Schema's `issues`. That read writes each error's `propString`, `expected`, `actual`, `problem` and `message`, so a configured writer is called once per error, where it was called at each read. A union or intersection whose locale has no `expected` for it is described in en, which writes its errors' `expected` again in en, and a union's errors' `actual`. A locale function is called once per `ArkErrors`, at that read, and its errors keep the locale it returned. Previously each read called it, so errors read after the language changed were written in the new one.
 
-`toJSON()` includes each error's `propString`, and writes a symbol key in a path as `Symbol(name)` rather than `null`. An object a unit or discriminant check can't accept, since all of its cases are primitive, is printed by its kind, as is a union's own `actual`, which its message doesn't show. An instance of an `Array` subclass is printed by its class's name rather than its elements:
+An error has no `toJSON()`, so `JSON.stringify(error)`, or of an `ArkErrors`' or Standard Schema's `issues`, serializes its own keys: a symbol key in its path is `null`, a bigint, like one in a discriminant's `cases`, throws, and `cases`, `cause`, `missing`, `valueMeta`, `predicate` and `morph`, which `toJSON()` leaves out, are included. `out.toJSON()` is the JSON it was, plus each error's `propString`, and its paths are plain arrays holding a symbol key as the string `Symbol(name)`, as a `ReadonlyPath` serialized it.
+
+An object a unit or discriminant check can't accept, since all of its cases are primitive, is printed by its kind, as is a union's own `actual`, which its message doesn't show. An instance of an `Array` subclass is printed by its class's name rather than its elements:
 
 ```ts
 // previously must be "a" or "b" (was {"x":1}), now (was an object)
