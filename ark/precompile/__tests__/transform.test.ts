@@ -1021,7 +1021,7 @@ import { other } from "./other.ts"`)
 				"R1 warning"
 			])
 			attest(Object.values(result.modules)[0].split("\n")[0]).snap(
-				'import { registerPrecompiledUnits } from "arktype/internal"'
+				'import { registerPrecompiledUnits } from "arktype/internal/precompiled.js"'
 			)
 		})
 
@@ -1080,7 +1080,7 @@ export const E = type("strng")`,
 			attest(result.modules).equals({})
 		})
 
-		it("registers the keyword table before arktype loads", () => {
+		it("places the units a module calls in it", () => {
 			const lines = precompile(
 				`import "./config.ts"
 import { type } from "arktype"
@@ -1088,13 +1088,12 @@ export const T = type("string[]")`,
 				{},
 				{ inline: true, runtime: "arktype" }
 			).code.split("\n")
-			attest([lines[0], ...lines.slice(-6)]).snap([
+			attest([lines[0], ...lines.slice(-5)]).snap([
 				';(({ "registerPrecompiledUnits": registerPrecompiledUnits }) => {',
 				"})($ark$0);",
 				'import "./config.ts"',
-				'import "arktype/internal/precompiled.js"',
 				'import { type } from "arktype"',
-				'import * as $ark$0 from "arktype/internal"',
+				'import * as $ark$0 from "arktype/internal/precompiled.js"',
 				'export const T = type("string[]")'
 			])
 		})

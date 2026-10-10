@@ -15,7 +15,7 @@ import {
 } from "./precompiled.ts"
 import { cases } from "./util.ts"
 
-// registered before arktype is imported, as the module its build writes is
+// registered before arktype is imported, so each keyword binds its unit as it's resolved
 const keywordUnits = await registerUnits(
 	JSON.parse(
 		execFileSync(

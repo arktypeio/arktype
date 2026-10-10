@@ -1,8 +1,0 @@
-{
-	"compilerOptions": {
-		"paths": {
-			"arktype": ["./arktype/index.ts"],
-			"arktype/internal/precompiled.js": ["./arktype/precompiled.ts"]
-		}
-	}
-}

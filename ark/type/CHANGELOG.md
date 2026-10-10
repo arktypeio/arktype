@@ -342,18 +342,6 @@ type("string")
 	.toJsonSchema({ dialect: null })
 ```
 
-### Precompile keywords
-
-`arktype/internal/precompiled.js` registers the code compiled for arktype's keywords when it's built. Imported before `arktype`, it lets a keyword bind that code instead of generating it, so keywords resolve faster and validate with compiled code even when `jitless` or under a Content-Security-Policy that blocks `eval`. `object.json` and `object.json.stringify` are cyclic, so they aren't precompiled:
-
-```ts
-import "arktype/internal/precompiled.js"
-import { type } from "arktype"
-
-// previously undefined when jitless, now the code precompiled for string.email
-type("string.email").precompilation
-```
-
 ### Fix `ctx.data` after a morph that reads `ctx`
 
 After a morph taking `ctx` ran, `ctx.data` kept reading from that morph's input, so a narrow picking a later union branch saw the wrong value and valid data could be left untransformed:

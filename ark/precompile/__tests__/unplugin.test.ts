@@ -377,31 +377,6 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		attest(outputFiles[0].text.includes(parserMessage)).equals(false)
 	}).timeout(60000)
 
-	it("registers arktype's keyword table before arktype loads", async () => {
-		// arktype and its keyword table resolve to files that print when they load
-		const root = fromHere("keywordTable")
-		const plugin = { runtime: "arktype" } as const
-		const { outputFiles } = await esbuild({
-			entryPoints: [fromHere("keywordTable", "main.ts")],
-			bundle: true,
-			write: false,
-			format: "esm",
-			logLevel: "silent",
-			plugins: [precompile.esbuild(plugin)]
-		})
-		const [{ output }] = (await viteBuild({
-			root,
-			configFile: false,
-			logLevel: "silent",
-			plugins: [precompile.vite(plugin)],
-			build: { write: false, lib: { entry: "main.ts", formats: ["es"] } }
-		})) as Rolldown.RolldownOutput[]
-		attest([run(outputFiles[0].text), run(output[0].code)]).snap([
-			"config\nkeywords\narktype\nstring\n",
-			"config\nkeywords\narktype\nstring\n"
-		])
-	}).timeout(60000)
-
 	it("warns once for each dependency importing arktype in standalone mode", async () => {
 		attest(await buildDependency("shared.ts")).equals([
 			writeStandaloneDependencyMessage("shared")

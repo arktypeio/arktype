@@ -568,10 +568,9 @@ export class Precompiler {
 			for (const key in units) {
 				const specifier = `~arktype/units/${key}`
 				modules[specifier] =
-					`import { registerPrecompiledUnits } from "arktype/internal"\n\nregisterPrecompiledUnits({ ${JSON.stringify(key)}: ${units[key]} })\n`
+					`import { registerPrecompiledUnits } from "arktype/internal/precompiled.js"\n\nregisterPrecompiledUnits({ ${JSON.stringify(key)}: ${units[key]} })\n`
 				imports[specifier] = {}
 			}
-			if (this.inline) this.importKeywords(module, s)
 		}
 		let inserted = ""
 		const insertImport = (text: string) => {
@@ -728,23 +727,6 @@ export class Precompiler {
 		if (call.arguments.length)
 			s.appendLeft(call.arguments[0].end, `, ${JSON.stringify(fingerprint)}`)
 		else s.appendLeft(call.end - 1, `{}, ${JSON.stringify(fingerprint)}`)
-	}
-
-	// arktype's keyword table registers before its keywords are created, if its build includes one
-	private importKeywords(module: SourceModule, s: MagicString): void {
-		const statement = module.program.body.find(
-			statement =>
-				"source" in statement && statement.source?.value === "arktype"
-		)
-		if (
-			statement &&
-			this.graph.host.resolve("arktype/internal/precompiled.js", module.id)
-		) {
-			s.prependLeft(
-				statement.start,
-				`import "arktype/internal/precompiled.js"\n`
-			)
-		}
 	}
 
 	private foldSites(

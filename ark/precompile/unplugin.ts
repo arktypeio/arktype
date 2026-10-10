@@ -1,4 +1,4 @@
-import { hashOf, throwError } from "@ark/util"
+import { throwError } from "@ark/util"
 import { dirname } from "node:path"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
 import type {
@@ -56,7 +56,7 @@ export const precompile: UnpluginInstance<
 		enforce: "pre",
 		resolveId: {
 			filter: {
-				id: /^arktype(?:\/runtime|\/internal|\/config)?$|^~arktype\//
+				id: /^arktype(?:\/runtime|\/internal(?:\/precompiled\.js)?|\/config)?$|^~arktype\//
 			},
 			async handler(id, importer) {
 				if (id.startsWith("~arktype/")) return `\0${id}`
@@ -70,18 +70,6 @@ export const precompile: UnpluginInstance<
 				// thrown, since esbuild drops an error reported without a resolution
 				if (errors.length) throwError(errors.join("\n"))
 				if (isStandalone) return host.resolve("arktype/runtime", importer)
-				if (id !== "arktype") return
-				// arktype's keyword table registers before its keywords are created, if its build includes one
-				const keywords = host.resolve(
-					"arktype/internal/precompiled.js",
-					importer
-				)
-				const entry = keywords && host.resolve("arktype", importer)
-				if (!entry) return
-				const entryId = `\0~arktype/entry/${hashOf(entry)}`
-				modules[entryId] ??=
-					`import ${JSON.stringify(keywords)}\nexport * from ${JSON.stringify(entry)}\n`
-				return entryId
 			}
 		},
 		load: {
@@ -148,16 +136,12 @@ export const precompile: UnpluginInstance<
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
 			setup: build => {
 				build.onDispose(restart)
-				// the entry arktype resolves to in cache mode imports arktype's files by path
-				build.onResolve({ filter: /^(?:\/|[A-Za-z]:[/\\])/ }, args =>
-					args.namespace === "file" ? undefined : { path: args.path }
-				)
 				build.onResolve(
 					{
 						filter:
 							isStandalone ?
 								/^arktype(?:\/runtime|\/internal|\/config)?$/
-							:	/^arktype\/(?:runtime|internal)$/
+							:	/^arktype\/(?:runtime|internal(?:\/precompiled\.js)?)$/
 					},
 					async args => {
 						if (args.pluginData === esbuildResolution) return

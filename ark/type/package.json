@@ -62,6 +62,7 @@
 			"default": "./out/keywords/ts.js"
 		},
 		"./internal/precompiled.js": {
+			"ark-ts": "./precompiled.ts",
 			"default": "./out/precompiled.js"
 		},
 		"./internal/island.js": {

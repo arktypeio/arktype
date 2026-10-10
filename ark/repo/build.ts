@@ -4,11 +4,9 @@ import { join } from "node:path"
 import {
 	fromCwd,
 	fromHere,
-	getShellOutput,
 	readPackageJson,
 	rmRf,
 	shell,
-	writeFile,
 	writeJson
 } from "../fs/index.ts"
 import { bundle } from "./bundle.ts"
@@ -26,20 +24,6 @@ const buildCurrentProject = () =>
 		`node ${fromHere("node_modules", "typescript", "lib", "tsc.js")} --project tsconfig.build.json`
 	)
 
-// a module that registers keyword units before arktype is imported, so resolving a keyword generates no code
-const writePrecompiledKeywords = () => {
-	const units: Record<string, string> = JSON.parse(
-		getShellOutput(`node ${fromHere("precompileKeywords.ts")}`)
-	)
-	const table = `{${Object.entries(units).map(([key, unit]) => `\n${JSON.stringify(key)}: ${unit}`)}\n}`
-	writeFile(
-		join(outDir, "precompiled.js"),
-		buildKind === "cjs" ?
-			`require("@ark/schema").registerPrecompiledUnits(${table})\n`
-		:	`import { registerPrecompiledUnits } from "@ark/schema"\n\nregisterPrecompiledUnits(${table})\n`
-	)
-}
-
 try {
 	rmRf(outDir)
 	rmRf("tsconfig.build.json")
@@ -48,7 +32,6 @@ try {
 	rmRf("tsconfig.build.json")
 	copyFileSync(`../repo/tsconfig.dts.json`, "tsconfig.build.json")
 	buildCurrentProject()
-	if (packageName === "arktype") writePrecompiledKeywords()
 	if (buildKind === "cjs")
 		writeJson(join(outDir, "package.json"), { type: "commonjs" })
 	else if (
