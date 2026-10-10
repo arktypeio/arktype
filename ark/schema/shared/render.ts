@@ -1,10 +1,9 @@
-import { omit } from "@ark/util"
+import { omit, stringifyPath } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import {
 	registerLocaleRenderer,
 	suppliedText,
 	unwrittenError,
-	writeError,
 	writeText,
 	type ArkError
 } from "./errors.ts"
@@ -170,8 +169,24 @@ const localeExpected = (
 	if (expected !== undefined) return writeExpected(error, expected, locale)
 	// written whole in en, never as en's frame around the locale's text
 	const inEn = unwrittenError(error)
-	writeError(inEn, config, defaultLocale)
+	writeInEn(inEn, config, "expected")
 	return inEn.expected
+}
+
+// an error's text in en as far as its expected reads, so no writer of a slot
+// it doesn't is called again
+const writeInEn = (
+	error: ArkError,
+	config: ResolvedConfig,
+	last: "expected" | "actual"
+): void => {
+	// a union's expected reads its children's actual, an intersection's only their expected
+	if (error.code === "union" || error.code === "intersection") {
+		for (const e of error.errors)
+			writeInEn(e, config, error.code === "union" ? "actual" : "expected")
+	}
+	error.propString ??= stringifyPath(error.path)
+	writeText(error, config, defaultLocale, last)
 }
 
 const writeExpected = (

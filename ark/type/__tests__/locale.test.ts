@@ -16,7 +16,7 @@ import {
 	type MessageWriter,
 	type ProblemContext
 } from "@ark/schema"
-import { flatMorph, type Domain } from "@ark/util"
+import { flatMorph, omit, type Domain } from "@ark/util"
 import {
 	ark,
 	configure,
@@ -417,6 +417,19 @@ contextualize(() => {
 			attest(T(5).toString()).snap("en: en en a string (en domain 5)")
 			attest(locales.length).equals(4)
 			for (const locale of locales) attest(locale).is(en)
+		})
+
+		it("are called once per error in a locale without its code's expected", () => {
+			const calls: string[] = []
+			const T = type("number >= 5").configure({
+				actual: n => (calls.push("actual"), `${n}`),
+				message: ctx => (calls.push("message"), ctx.problem)
+			})
+			const errors = T(1) as ArkErrors
+			attest(
+				errors.toLocaleString({ ...xx, min: omit(xx.min, { expected: 1 }) })
+			).snap("⟦problem⟧ at least 5 1")
+			attest(calls).equals(["actual", "message"])
 		})
 
 		it("expected receives the error", () => {

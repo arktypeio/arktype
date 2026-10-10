@@ -417,11 +417,12 @@ export const writeError = (
 	else writeText(error, config, locale)
 }
 
-/** writes an error's text with its meta's writers or its config's */
+/** writes an error's text with its meta's writers or its config's, in its slots through last */
 export const writeText = (
 	error: ArkError,
 	config: ResolvedConfig,
-	locale: Locale
+	locale: Locale,
+	last: "expected" | "actual" | "message" = "message"
 ): void => {
 	const writers = config[error.code]
 	const meta = error.meta
@@ -429,11 +430,13 @@ export const writeText = (
 	const expected = meta?.expected ?? writers.expected
 	error.expected ??=
 		typeof expected === "function" ? expected(error as never, locale) : expected
+	if (last === "expected") return
 	const actual = meta?.actual ?? writers.actual
 	error.actual ??=
 		typeof actual === "function" ?
 			actual(error.data as never, error as never, locale)
 		:	actual
+	if (last === "actual") return
 	const problem = meta?.problem ?? writers.problem
 	error.problem ??=
 		typeof problem === "function" ? problem(error as never, locale) : problem
