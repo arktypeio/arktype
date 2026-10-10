@@ -112,6 +112,7 @@ export type Foldable = BaseRoot | ExportedValue | BaseScope | GenericRoot
 export type StandaloneExport =
 	| ExportedValue
 	| StandaloneFactory
+	| StandaloneVariants
 	| StandaloneIntrospection
 
 export const introspectionMembers = [
@@ -142,8 +143,19 @@ export interface StandaloneFactory {
 	// whether arktype creates its Type anew each time its site runs, even one it holds under an address
 	isCreatedEachRun?: boolean
 	defaultChecks?: readonly DefaultCheck[]
-	// holes another module supplies through two or more texts, which a mock could make one function, so the factory checks they differ
+	// holes another module supplies through two or more texts, or a parameter holds, which the factory checks are distinct
 	distinct?: readonly unknown[]
+	// holes whose facts selected this variant, which its factory doesn't check again
+	selected?: readonly unknown[] | undefined
+}
+
+// a factory compiled for each value of the facts the build doesn't know, like the parameter count of a function a parameter holds
+export interface StandaloneVariants {
+	variants: StandaloneFactory[]
+	// the params whose parameter counts select a variant
+	selecting: number[]
+	// the variant for each combination of those counts, read as digits 0, 1 and 2 or more, or -1 for one arktype throws for
+	variantsByCounts: number[]
 }
 
 export type FactoryParam = HoleParam | InputParam | HelperParam
@@ -304,9 +316,61 @@ const writeArtifact = (
 			throw e
 		}
 	}
+	// a factory folded into the creations, whose Type's code is written once and copied with what each call receives
+	const writeFolded = (
+		name: string,
+		factory: StandaloneFactory,
+		id: string
+	) => {
+		const { type } = factory
+		if (!hasArkKind(type, "root") || factory.defaultChecks?.length) return
+		const receiving = new StandaloneArtifact(
+			{},
+			shared,
+			imports,
+			sitesByName,
+			definitionAddresses,
+			baking,
+			factory
+		)
+		receiving.receiveAll(factory)
+		// a Type it receives lends its meta to the errors of what the factory creates, which folded code can't
+		if (
+			receiving.receivedMetas.size ||
+			factory.isCreatedEachRun ||
+			!isFolded(name, type)
+		)
+			return
+		if (factory.internedBy !== undefined) tables.add(factory.internedBy)
+		folded.add(name)
+		if (keyOf(type)[1].length) templates.add(type)
+		types[name] = type as never
+		return (reads: Record<string, string>) =>
+			receiving.writeRekeying(id, reads[name])
+	}
+	const writeFactory = (
+		name: string,
+		factory: StandaloneFactory,
+		id: string
+	) => {
+		if (factory.internedBy !== undefined) tables.add(factory.internedBy)
+		return new StandaloneArtifact(
+			{ [name]: factory.type },
+			shared,
+			imports,
+			sitesByName,
+			definitionAddresses,
+			baking,
+			factory
+		).writeFactory(name, id, configured)
+	}
+	let index = 0
 	for (const [name, value] of Object.entries(exports)) {
-		if (arkKindOf(value) !== undefined) types[name] = value as never
-		else if ("member" in value) {
+		if (arkKindOf(value) !== undefined) {
+			types[name] = value as never
+			continue
+		}
+		if ("member" in value) {
 			const artifact = new StandaloneArtifact(
 				{},
 				shared,
@@ -316,51 +380,23 @@ const writeArtifact = (
 				baking,
 				value
 			)
+			factories.push(artifact.writeIntrospection(value, `${index}`, configured))
+		} else if (isVariants(value)) {
 			factories.push(
-				artifact.writeIntrospection(name, value, factories.length, configured)
+				...value.variants.map((variant, i) =>
+					writeFactory(name, variant, `${index}_${i}`)
+				),
+				writeSelector(value, index)
 			)
 		} else {
 			const factory = value as StandaloneFactory
-			if (factory.internedBy !== undefined) tables.add(factory.internedBy)
-			const { type } = factory
-			if (hasArkKind(type, "root") && !factory.defaultChecks?.length) {
-				const receiving = new StandaloneArtifact(
-					{},
-					shared,
-					imports,
-					sitesByName,
-					definitionAddresses,
-					baking,
-					factory
-				)
-				receiving.receiveAll(factory.params, factory.distinct ?? [])
-				// a Type it receives lends its meta to the errors of what the factory creates, which folded code can't
-				if (
-					!receiving.receivedMetas.size &&
-					!factory.isCreatedEachRun &&
-					isFolded(name, type)
-				) {
-					folded.add(name)
-					if (keyOf(type)[1].length) templates.add(type)
-					types[name] = type as never
-					const index = factories.length
-					factories.push(reads =>
-						receiving.writeRekeying(name, index, reads[name])
-					)
-					continue
-				}
-			}
-			const artifact = new StandaloneArtifact(
-				{ [name]: type },
-				shared,
-				imports,
-				sitesByName,
-				definitionAddresses,
-				baking,
-				factory
+			factories.push(
+				writeFolded(name, factory, `${index}`) ??
+					writeFactory(name, factory, `${index}`)
 			)
-			factories.push(artifact.writeFactory(name, factories.length, configured))
 		}
+		factories.push(`export { factory${index} as ${JSON.stringify(name)} }`)
+		index++
 	}
 	const [creations, reads] = writeCreations(
 		types,
@@ -475,6 +511,21 @@ const writeCreations = (
 	]
 }
 
+const isVariants = (value: StandaloneExport): value is StandaloneVariants =>
+	arkKindOf(value) === undefined && "variants" in value
+
+const writeSelector = (
+	{ variants, selecting, variantsByCounts }: StandaloneVariants,
+	index: number
+) => {
+	const { params } = variants[0]
+	const args = params.map((_, i) => `p${i}`).join(", ")
+	const factories = variants.map((_, i) => `factory${index}_${i}`)
+	return `function factory${index}(${args}) {
+	return [${factories.join(", ")}][runtime.selectVariant([${selecting.map(i => `p${i}`).join(", ")}], ${JSON.stringify(variantsByCounts)}, ${JSON.stringify(selecting.map(i => params[i].label))})](${args})
+}`
+}
+
 // arktype's parse cache returns one Type for a definition wherever it's parsed
 const definitionAddressesOf = (
 	exports: Record<string, StandaloneExport>,
@@ -482,20 +533,22 @@ const definitionAddressesOf = (
 ): Map<unknown, string> => {
 	const addresses = new Map<unknown, string>()
 	for (const [name, exported] of Object.entries(exports)) {
-		const value =
-			arkKindOf(exported) === undefined ?
-				(exported as StandaloneFactory).type
-			:	exported
-		if (!hasArkKind(value, "root") || !value.$.isBuiltin) continue
-		for (const definition of sitesByName?.[name]?.definitions ?? []) {
-			if (
-				!addresses.has(value) &&
-				cachedDefinitionOf(value.$, definition) === value
-			) {
-				addresses.set(
-					value,
-					hashOf(`${value.$.name}\ndefinition\n${definition}`)
-				)
+		const values =
+			arkKindOf(exported) !== undefined ? [exported]
+			: isVariants(exported) ? exported.variants.map(variant => variant.type)
+			: [(exported as StandaloneFactory).type]
+		for (const value of values) {
+			if (!hasArkKind(value, "root") || !value.$.isBuiltin) continue
+			for (const definition of sitesByName?.[name]?.definitions ?? []) {
+				if (
+					!addresses.has(value) &&
+					cachedDefinitionOf(value.$, definition) === value
+				) {
+					addresses.set(
+						value,
+						hashOf(`${value.$.name}\ndefinition\n${definition}`)
+					)
+				}
 			}
 		}
 	}
@@ -681,8 +734,8 @@ export class StandaloneArtifact {
 		}
 	}
 
-	receiveAll(params: FactoryParam[], distinct: readonly unknown[]): void {
-		this.receive(params)
+	receiveAll({ params, distinct = [], selected }: StandaloneFactory): void {
+		this.receive(params, selected)
 		if (distinct.length) {
 			this.checks.push(
 				`runtime.checkDistinct([${distinct.map(hole => this.holeExpressions.get(hole)).join(", ")}], ${JSON.stringify(distinct.map(hole => this.labelsByHole.get(hole)))})`
@@ -690,7 +743,7 @@ export class StandaloneArtifact {
 		}
 	}
 
-	receive(params: FactoryParam[]): void {
+	receive(params: FactoryParam[], selected: readonly unknown[] = []): void {
 		const checked: [hole: unknown, kind: HoleKind, expression: string][] = []
 		for (let i = 0; i < params.length; i++) {
 			const param = params[i]
@@ -702,7 +755,8 @@ export class StandaloneArtifact {
 					`runtime.checkHelper(p${i}, ${JSON.stringify(param.file)}, ${JSON.stringify(param.name)}, ${JSON.stringify(param.label)})`
 				)
 			} else if (this.receiveHole(param.value, `p${i}`, param.label)) {
-				checked.push([param.value, param.kind, `p${i}`])
+				if (!selected.includes(param.value))
+					checked.push([param.value, param.kind, `p${i}`])
 				if (param.kind === "class") this.classes.add(param.value)
 			}
 		}
@@ -1015,12 +1069,12 @@ ${statements.filter(statement => statement).join("\n\n")}
 	// each call creates its validator from the holes and inputs it receives, so it declares everything the validator holds
 	writeFactory(
 		name: string,
-		index: number,
+		id: string,
 		configured: ConfiguredModule | undefined
 	): string {
-		const { params, internedBy, distinct = [] } = this.factory!
+		const { params, internedBy } = this.factory!
 		this.checkAddressed()
-		this.receiveAll(params, distinct)
+		this.receiveAll(this.factory!)
 		this.writeSharedUnits()
 		const exported = this.exports[name]
 		// a Module, Scope or Generic declares what it holds, which the body then writes
@@ -1028,7 +1082,7 @@ ${statements.filter(statement => statement).join("\n\n")}
 		// written before the body, which declares what they read
 		const defaults = this.writeDefaultChecks()
 		const body = [
-			...this.writeCalledBody(index),
+			...this.writeCalledBody(id),
 			...defaults.map(({ check }) => check),
 			`return ${value}`
 		]
@@ -1047,16 +1101,16 @@ ${statements.filter(statement => statement).join("\n\n")}
 				]
 			:	body)
 		]
-		return this.writeFactoryFunction(name, index, params, statements)
+		return this.writeFactoryFunction(id, params, statements)
 	}
 
 	// the validator its folded code creates, keyed by the functions the call receives
-	writeRekeying(name: string, index: number, template: string): string {
+	writeRekeying(id: string, template: string): string {
 		const { type, params, internedBy } = this.factory!
 		const keyHoles = keyOf(type as never)[1]
 		const holes = `[${keyHoles.map(hole => this.emit(hole)).join(", ")}]`
 		const copy = `runtime.rekeyed(${template}, ${holes})`
-		return this.writeFactoryFunction(name, index, params, [
+		return this.writeFactoryFunction(id, params, [
 			...this.checks,
 			`return ${
 				!keyHoles.length ? template
@@ -1067,9 +1121,8 @@ ${statements.filter(statement => statement).join("\n\n")}
 	}
 
 	writeIntrospection(
-		name: string,
 		{ member, type, data, params, thrown }: StandaloneIntrospection,
-		index: number,
+		id: string,
 		configured: ConfiguredModule | undefined
 	): string {
 		this.receive(params)
@@ -1093,36 +1146,30 @@ ${statements.filter(statement => statement).join("\n\n")}
 				[
 					writeFixConfig(configured),
 					...this.checks,
-					...this.writeCalledBody(index),
+					...this.writeCalledBody(id),
 					...defaults.map(({ check }) => check)
 				]
 			:	this.checks
-		return this.writeFactoryFunction(name, index, params, [
-			...checks,
-			`return ${value}`
-		])
+		return this.writeFactoryFunction(id, params, [...checks, `return ${value}`])
 	}
 
 	writeFactoryFunction(
-		name: string,
-		index: number,
+		id: string,
 		params: FactoryParam[],
 		statements: string[]
 	): string {
-		const units = this.localUnits.map((_, i) => `var unit${index}_${i}`)
+		const units = this.localUnits.map((_, i) => `var unit${id}_${i}`)
 		return `${units.join("\n")}
 
-function factory${index}(${params.map((_, i) => `p${i}`).join(", ")}) {
+function factory${id}(${params.map((_, i) => `p${i}`).join(", ")}) {
 ${statements.filter(statement => statement).join("\n\n")}
-}
-
-export { factory${index} as ${JSON.stringify(name)} }`
+}`
 	}
 
 	// each unit is evaluated once, at the first call, which may come before the artifact's body runs
-	writeCalledBody(index: number): string[] {
+	writeCalledBody(id: string): string[] {
 		return this.writeBody(
-			(unitFunction, i) => `(unit${index}_${i} ??= ${unitFunction})`
+			(unitFunction, i) => `(unit${id}_${i} ??= ${unitFunction})`
 		)
 	}
 

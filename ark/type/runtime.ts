@@ -522,6 +522,32 @@ export const checkDistinct = (
 	}
 }
 
+// arktype tells a function of 1 parameter from others, so a factory is compiled for each count, 0, 1 or 2 or more, of each function a parameter holds
+export const selectVariant = (
+	holes: readonly unknown[],
+	variantsByCounts: readonly number[],
+	labels: readonly string[]
+): number => {
+	let index = 0
+	for (let i = 0; i < holes.length; i++) {
+		const fact = describeHole(holes[i], "function")
+		const count = countFacts.indexOf(fact)
+		if (count === -1)
+			throwError(writeCreationMismatchMessage(labels[i], fact, "a function"))
+		index = index * 3 + count
+	}
+	// e.g. a function of 1 parameter as a default, which arktype throws a ParseError for
+	return variantsByCounts[index] === -1 ?
+			throwError(writeUncompiledVariantMessage(labels.join(" and ")))
+		:	variantsByCounts[index]
+}
+
+const countFacts = [
+	"a function of no parameters",
+	"a function of 1 parameter",
+	"a function of 2 or more parameters"
+]
+
 // a default's checked Type and value, keyed by their content and the functions they hold
 export type DefaultKey = [id: string, holes: readonly unknown[]]
 
@@ -732,6 +758,14 @@ export type writeCreationMismatchMessage<
 	actual extends string,
 	expected extends string
 > = `${label} is ${actual}, but was precompiled as ${expected}`
+
+export const writeUncompiledVariantMessage = <labels extends string>(
+	labels: labels
+): writeUncompiledVariantMessage<labels> =>
+	`No variant was precompiled for ${labels}, since arktype throws defining a type from them`
+
+export type writeUncompiledVariantMessage<labels extends string> =
+	`No variant was precompiled for ${labels}, since arktype throws defining a type from them`
 
 export const writeIdentityMismatchMessage = <
 	label extends string,

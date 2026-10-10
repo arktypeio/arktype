@@ -33,7 +33,8 @@ import {
 	precompileStandalone,
 	writeUnprecompilableMessage,
 	type FactoryParam,
-	type StandaloneExport
+	type StandaloneExport,
+	type StandaloneFactory
 } from "arktype/internal/standalone.ts"
 import {
 	bakedJsonSchemaOptionsMessage,
@@ -42,6 +43,7 @@ import {
 	writeIdentityMismatchMessage,
 	writeRenamedHoleMessage,
 	writeUnbakedMessage,
+	writeUncompiledVariantMessage,
 	type HoleKind,
 	type IntrospectionMember
 } from "arktype/runtime"
@@ -1717,6 +1719,45 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 					"`Long`'s hole 0",
 					"another value"
 				)
+			)
+		})
+
+		it("selects the factory compiled for the parameter count of a function it receives", async () => {
+			// arktype passes a predicate of other than 1 parameter its context, so each count is a variant
+			const one = standIn((s: string) => s.length > 1, "check")
+			const two = standIn((s: string, ctx: unknown) => !!ctx, "check")
+			const variantOf = (check: Function): StandaloneFactory => ({
+				type: type("string").narrow(check as never),
+				params: [{ kind: "function", label: "`check`", value: check }],
+				selected: [check]
+			})
+			const created = await load({
+				T: {
+					variants: [variantOf(one), variantOf(two)],
+					selecting: [0],
+					variantsByCounts: [1, 0, 1]
+				},
+				Uncompiled: {
+					variants: [variantOf(one)],
+					selecting: [0],
+					variantsByCounts: [-1, 0, -1]
+				}
+			})
+			const isLong = (s: string) => s.length > 1
+			const rejects = (s: string, ctx: any) => ctx.reject("long")
+			attest(created.T(isLong)("a").toString()).snap(
+				'must be valid according to isLong (was "a")'
+			)
+			attest(created.T(rejects)("a").toString()).snap('must be long (was "a")')
+			attest(() => created.T(Date)).throws(
+				writeCreationMismatchMessage(
+					"`check`",
+					"the builtin Date",
+					"a function"
+				)
+			)
+			attest(() => created.Uncompiled(rejects)).throws(
+				writeUncompiledVariantMessage("`check`")
 			)
 		})
 

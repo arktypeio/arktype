@@ -579,7 +579,8 @@ const B = type({ [tag]: "string" })`)
 					arity: undefined,
 					description: "tag",
 					isCalledAtDefinition: false,
-					isDefinition: false
+					isDefinition: false,
+					isParameter: false
 				}
 			])
 		})
@@ -860,6 +861,21 @@ const { c, d = type(c) } = { c: "number" } as { c: string; d?: unknown }`)
 			).snap(["2:15 accepted string", "3:16 accepted number"])
 		})
 
+		it("a site reading a Scope the build refuses", () => {
+			// its Types are created from what configures it, which a parameter holds
+			attest(
+				statusesOf(`import { scope } from "arktype"
+export function make(jitless: boolean) {
+	const $ = scope({}, { jitless })
+	const T = $.type("string")
+	return T
+}`)
+			).snap([
+				"3:12 rejected\n  arktype holds `jitless` as a value rather than a definition, so it must be static\n  `jitless` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
+				"4:12 rejected\n  `$` is the Scope at /main.ts:3:12, which the build refuses"
+			])
+		})
+
 		it("optional chain ended by parentheses", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -884,10 +900,10 @@ export function make(v: unknown, n: number, p: (s: string) => boolean) {
 	return [A, B, C, D, E]
 }`)
 			).snap([
-				"3:12 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
+				'3:12 rejected\n  `type("string").and(type.unit(v))` reads the structure of `v`, which is not static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime',
 				"4:12 rejected\n  `type.string.atMostLength(n)` reads the structure of `n`, which is not static\n  `n` is a parameter of make (/main.ts:2:34); its value is known only at runtime",
-				"5:12 rejected\n  arktype reads `p` while defining the type, so it must be static\n  `p` is a parameter of make (/main.ts:2:45); its value is known only at runtime",
-				"6:12 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
+				"5:12 accepted string",
+				"6:12 rejected\n  arktype holds `v` as a value rather than a definition, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
 				"7:12 accepted { a: (In: unknown) => Out<unknown> }"
 			])
 		})

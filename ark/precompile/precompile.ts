@@ -38,9 +38,11 @@ import {
 	type FactoryParam,
 	type Foldable,
 	type StandaloneExport,
+	type StandaloneFactory,
 	type StandaloneIntrospection,
 	type StandaloneModules,
 	type StandaloneOptions,
+	type StandaloneVariants,
 	type ThunkAlias
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
@@ -79,6 +81,7 @@ import {
 	envReadOf,
 	findDynamic,
 	Interpreter,
+	isDynamic,
 	type InterpreterOptions,
 	ModuleNamespace,
 	type Read,
@@ -117,6 +120,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	checkHelpers?: boolean | undefined
 	// what a standalone validator bakes of its Type's introspection, which it otherwise lacks
 	introspection?: readonly IntrospectionMember[] | undefined
+	// the most factories one site compiles for the facts the build doesn't know, like the parameter count of a function a parameter holds
+	maxVariants?: number | undefined
 }
 
 export interface ModuleAnalysis {
@@ -171,6 +176,8 @@ export interface Site {
 	defaultChecks: DefaultCheck[]
 	// each thunk alias arktype resolves while defining it, directly or in computing what a cache returns
 	thunks: ThunkAlias[]
+	// the site's own variant first, when it holds a function a parameter holds
+	variants: Variant[] | undefined
 	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
 	declarationStart: number | undefined
 	// e.g. `User` and "json" for `User.json`, which a standalone build folds to the data arktype returns
@@ -192,6 +199,15 @@ export interface Hole {
 	isCalledAtDefinition: boolean
 	// an opaque value arktype parsed as a Standard Schema
 	isDefinition: boolean
+	// a function or class a parameter holds, which the build knows nothing of, so its factory checks it differs from every other hole
+	isParameter: boolean
+}
+
+// a factory compiled for the parameter counts of the functions parameters hold, one of which its site's factory selects at creation
+export interface Variant {
+	site: Site
+	// each combination of counts it was compiled for, 0, 1 or 2 for 2 or more
+	counts: ReadonlyMap<Binding, number>[]
 }
 
 export interface Reference {
@@ -280,6 +296,7 @@ export class Precompiler {
 	inline: boolean
 	checkHelpers: boolean
 	introspection: readonly IntrospectionMember[]
+	maxVariants: number
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
@@ -294,6 +311,8 @@ export class Precompiler {
 	// why the configuration the analyses were made under can't be applied, which refuses each site
 	private analyzedProblem: string | undefined
 	private bindingsByInput = new WeakMap<Input, Binding>()
+	// e.g. a Scope configured by a parameter, whose Types a site reading it would create as the build's Scope did
+	private refusedContainers = new Map<unknown, [Node, SourceModule]>()
 	private packagesByEntry: Record<string, [root: string, version: string]> =
 		Object.create(null)
 	private copiesByPackage: Record<ArkPackage, Record<string, PackageCopy>> = {
@@ -318,6 +337,7 @@ export class Precompiler {
 			if (!includes(introspectionMembers, member))
 				throwError(writeUnknownIntrospectionMessage(printable(member)))
 		}
+		this.maxVariants = opts?.maxVariants ?? 8
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
 
@@ -868,6 +888,7 @@ export class Precompiler {
 			}
 			let reasons: string[]
 			let factory: SiteFactory | undefined
+			let variants: SiteFactory[] = []
 			try {
 				reasons = this.unsupportedReasonsOf(site, module)
 				if (!reasons.length && !site.parseError) {
@@ -876,6 +897,15 @@ export class Precompiler {
 						(site.isCreatedEachRun ?
 							{ params: [], spans: [], inputs: [], imports: [], distinct: [] }
 						:	undefined)
+					if (factory && site.variants) {
+						variants = this.variantFactoriesOf(
+							site,
+							factory,
+							module,
+							reasons,
+							prefix
+						)
+					}
 				}
 			} catch (e) {
 				reasons = reasonsOf(e)
@@ -917,14 +947,33 @@ export class Precompiler {
 				let table = tablesByValue.get(site.value)
 				if (site.isInterned && table === undefined)
 					tablesByValue.set(site.value, (table = tablesByValue.size))
-				exportsByName[name] = {
-					type: site.value as never,
+				const exportOf = (
+					factory: SiteFactory,
+					variant: Site
+				): StandaloneFactory => ({
+					type: variant.value as never,
 					params: factory.params,
 					internedBy: site.isInterned ? table : undefined,
 					isCreatedEachRun: site.isCreatedEachRun,
-					defaultChecks: site.defaultChecks,
-					distinct: factory.distinct
-				}
+					defaultChecks: variant.defaultChecks,
+					distinct: factory.distinct,
+					selected:
+						site.variants &&
+						factory.params.flatMap(param =>
+							param.kind === "function" && this.selectsVariant(param.value) ?
+								[param.value]
+							:	[]
+						)
+				})
+				exportsByName[name] =
+					site.variants ?
+						this.variantsExportOf(
+							site.variants,
+							variants.map((factory, i) =>
+								exportOf(factory, site.variants![i].site)
+							)
+						)
+					:	exportOf(factory, site)
 				sitesByName[name] = exportSiteOf(site)
 				replaced.push([site, factory.spans])
 			} else {
@@ -1163,6 +1212,75 @@ export class Precompiler {
 		return factory
 	}
 
+	// each variant's factory receives what the site's does, so the site's call passes each the same values
+	private variantFactoriesOf(
+		site: Site,
+		factory: SiteFactory,
+		module: SourceModule,
+		reasons: string[],
+		prefix: string
+	): SiteFactory[] {
+		const result = [factory]
+		for (const { site: variant } of site.variants!.slice(1)) {
+			reasons.push(...this.unsupportedReasonsOf(variant, module))
+			const variantFactory = this.factoryOf(variant, module, reasons, prefix)
+			if (reasons.length) return []
+			if (
+				!variantFactory ||
+				variantFactory.params.length !== factory.params.length ||
+				variantFactory.params.some(
+					(param, i) =>
+						param.kind !== factory.params[i].kind ||
+						param.label !== factory.params[i].label
+				) ||
+				variantFactory.inputs.join() !== factory.inputs.join()
+			) {
+				reasons.push(
+					`its variants for the parameter counts of the functions parameters hold receive different values`
+				)
+				return []
+			}
+			result.push(variantFactory)
+		}
+		return result
+	}
+
+	private selectsVariant(hole: unknown): boolean {
+		const standIn = this.interpreter.standIns.get(hole as object)
+		return !!standIn?.parameter && !standIn.isDefinition
+	}
+
+	// the factory a site's call reaches selects the variant compiled for the facts of the functions its parameters hold
+	private variantsExportOf(
+		variants: Variant[],
+		factories: StandaloneFactory[]
+	): StandaloneVariants {
+		const selecting: number[] = []
+		const parameters: Binding[] = []
+		const { params } = factories[0]
+		for (let i = 0; i < params.length; i++) {
+			const param = params[i]
+			const parameter =
+				param.kind === "function" &&
+				this.interpreter.standIns.get(param.value as object)?.parameter
+			if (!parameter || parameters.includes(parameter)) continue
+			selecting.push(i)
+			parameters.push(parameter)
+		}
+		const variantsByCounts: number[] = Array(3 ** parameters.length).fill(-1)
+		for (let i = 0; i < variants.length; i++) {
+			for (const counts of variants[i].counts) {
+				variantsByCounts[
+					parameters.reduce(
+						(index, parameter) => index * 3 + counts.get(parameter)!,
+						0
+					)
+				] = i
+			}
+		}
+		return { variants: factories, selecting, variantsByCounts }
+	}
+
 	private receiveReferences(
 		site: Site,
 		module: SourceModule,
@@ -1247,7 +1365,14 @@ export class Precompiler {
 				`arktype holds \`${origin.snippetOf(node)}\` (${origin.positionOf(node)}), which the site ${holesByValue.has(value) ? "reads outside its own source" : "cannot pass to its factory"}`
 			)
 		}
-		factory.distinct = foreignHolesOf(sourcesByHole)
+		const functions = [...sourcesByHole.keys()].filter(
+			hole => typeof hole === "function"
+		)
+		// a parameter may hold any function, even another the site holds, which arktype relates to it by identity
+		factory.distinct =
+			site.holes.some(hole => hole.isParameter) && functions.length > 1 ?
+				functions
+			:	foreignHolesOf(sourcesByHole)
 		return passed
 	}
 
@@ -1668,6 +1793,12 @@ export class Precompiler {
 				}
 				const site = this.finalize(candidate, module)
 				if (
+					site.status === "rejected" &&
+					isFoldable(candidate.state.value) &&
+					!hasArkKind(candidate.state.value, "root")
+				)
+					this.refusedContainers.set(candidate.state.value, [node, module])
+				if (
 					this.mode === "standalone" &&
 					this.checkRuns(site, candidate, module)
 				)
@@ -1898,11 +2029,16 @@ export class Precompiler {
 			defaultChecks: [],
 			thunks: [],
 			declarationStart: declarationStartOf(node),
-			introspection: undefined
+			introspection: undefined,
+			variants: undefined
 		}
 	}
 
-	private finalize(candidate: SiteCandidate, module: SourceModule): Site {
+	private finalize(
+		candidate: SiteCandidate,
+		module: SourceModule,
+		isVariant = false
+	): Site {
 		const { state } = candidate
 		const site = this.siteOf(candidate, module)
 		site.isKeywordRead =
@@ -1942,6 +2078,18 @@ export class Precompiler {
 			if (!isFoldable(state.value))
 				site.definition = this.definitionOf(state.node, module)
 			if (this.mode === "standalone") site.introspection = state.introspection
+		}
+		for (const [value, [read]] of state.readsByValue) {
+			const refused = this.refusedContainers.get(value)
+			if (!refused) continue
+			return rejectSite(
+				site,
+				new DynamicValue(
+					module,
+					read,
+					`\`${module.snippetOf(read)}\` is the ${kindNameOf(value)} at ${refused[1].positionOf(refused[0])}, which the build refuses`
+				)
+			)
 		}
 		for (const read of state.trace.reads) {
 			const input = this.inputOf(read, candidate, module)
@@ -1990,7 +2138,10 @@ export class Precompiler {
 				end: declaration.end
 			})
 		}
-		for (const [value, reads] of state.readsByValue) {
+		for (const [read, reads] of state.readsByValue) {
+			// a parameter's value is the hole arktype held in its place
+			const value = isDynamic(read) ? this.parameterHoleOf(read, site) : read
+			if (value === undefined) continue
 			if (
 				!hasArkKind(value, "root") &&
 				!site.holes.some(hole => hole.value === value) &&
@@ -2019,7 +2170,88 @@ export class Precompiler {
 			}
 		}
 		site.references.sort((l, r) => l.start - r.start)
+		if (this.mode === "standalone" && !isVariant && !site.parseError) {
+			const variants = this.variantsOf(candidate, module, site)
+			if (typeof variants === "string") return refuse(site, [variants])
+			site.variants = variants
+		}
 		return site
+	}
+
+	// arktype tells a function of 1 parameter from others, so a site holding one a parameter holds is compiled for each count
+	private variantsOf(
+		candidate: SiteCandidate,
+		module: SourceModule,
+		site: Site
+	): Variant[] | string | undefined {
+		const parameters = [
+			...new Set(
+				site.holes.flatMap(hole =>
+					hole.isParameter && hole.kind === "function" ?
+						[this.interpreter.standIns.get(hole.value as object)!.parameter!]
+					:	[]
+				)
+			)
+		].filter(
+			parameter => this.readsOfParameter(candidate.state, parameter).length
+		)
+		if (!parameters.length) return
+		const variants: Variant[] = []
+		for (const counts of countsOf(parameters.length)) {
+			const arities = new Map(parameters.map((p, i) => [p, counts[i]]))
+			const state =
+				counts.every(count => count === 1) ?
+					candidate.state
+				:	this.interpreter.evaluateVariant(candidate.state.node, module, arities)
+			const variantSite =
+				state === candidate.state ?
+					site
+				:	this.finalize({ ...candidate, state }, module, true)
+			// e.g. a default of 1 parameter, which arktype throws a ParseError for, so the factory throws for one
+			if (variantSite.status !== "accepted" || variantSite.parseError) continue
+			const held = new Map<Binding, number>()
+			let isConsistent = true
+			for (const hole of variantSite.holes) {
+				const standIn = this.interpreter.standIns.get(hole.value as object)
+				if (!standIn?.parameter || !arities.has(standIn.parameter)) continue
+				// e.g. a Type the site reads holding the function it was created with, which this variant didn't create again
+				if (standIn.arity !== arities.get(standIn.parameter))
+					isConsistent = false
+				held.set(standIn.parameter, standIn.arity!)
+			}
+			if (!isConsistent || held.size !== parameters.length) continue
+			const [id] = keyOf(variantSite.value as Foldable)
+			const existing = variants.find(
+				variant => keyOf(variant.site.value as Foldable)[0] === id
+			)
+			if (existing) existing.counts.push(arities)
+			else if (variants.length === this.maxVariants)
+				return `the parameter counts of the functions ${listTexts(parameters.map(parameter => parameter.name))} hold need more than ${this.maxVariants} variants (maxVariants)`
+			else variants.push({ site: variantSite, counts: [arities] })
+		}
+		return variants
+	}
+
+	private parameterHoleOf(read: DynamicValue, site: Site): unknown {
+		const parameter = this.interpreter.parameterOf(read)
+		return (
+			parameter &&
+			site.holes.find(
+				hole =>
+					hole.isParameter &&
+					this.interpreter.standIns.get(hole.value as object)?.parameter ===
+						parameter
+			)?.value
+		)
+	}
+
+	private readsOfParameter(state: SiteState, parameter: Binding): Node[] {
+		const result: Node[] = []
+		for (const [read, reads] of state.readsByValue) {
+			if (isDynamic(read) && this.interpreter.parameterOf(read) === parameter)
+				result.push(...reads)
+		}
+		return result.sort((l, r) => l.start - r.start)
 	}
 
 	// e.g. `$` in `const $ = scope(…)`, which holds what that site creates however the program runs
@@ -2282,7 +2514,9 @@ export class Precompiler {
 		const { readsByValue } = candidate.state
 		const source =
 			readsByValue.get(value)?.[0] ??
-			(standIn?.dynamic && readsByValue.get(standIn.dynamic)?.[0])
+			(standIn?.dynamic && readsByValue.get(standIn.dynamic)?.[0]) ??
+			(standIn?.parameter &&
+				this.readsOfParameter(candidate.state, standIn.parameter)[0])
 		if (!source && standIn?.closure?.env) {
 			return new DynamicValue(
 				standIn.module,
@@ -2294,7 +2528,11 @@ export class Precompiler {
 			source ? [source, module]
 			: standIn ? [standIn.node, standIn.module]
 			: this.interpreter.sourcesBySymbol.get(value as symbol)!
-		if (standIn?.kind === "opaque" && !standIn.isDefinition) {
+		const parameterKind =
+			standIn?.parameter && !standIn.isDefinition ?
+				parameterKindOf(value, candidate.state.value)
+			:	undefined
+		if (standIn?.kind === "opaque" && !standIn.isDefinition && !parameterKind) {
 			return new DynamicValue(
 				origin,
 				node,
@@ -2307,13 +2545,14 @@ export class Precompiler {
 			start: node.start,
 			end: node.end,
 			value,
-			kind: standIn?.kind ?? "symbol",
+			kind: parameterKind ?? standIn?.kind ?? "symbol",
 			arity: standIn?.arity,
 			description: standIn ? undefined : (value as symbol).description,
 			isCalledAtDefinition: !!(
 				standIn?.isCalled || standIn?.isCalledIndirectly
 			),
-			isDefinition: !!standIn?.isDefinition
+			isDefinition: !!standIn?.isDefinition,
+			isParameter: !!parameterKind
 		}
 	}
 
@@ -3272,6 +3511,49 @@ const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
 		arkObjectsIn(value.returns, result)
 	}
 	return result
+}
+
+// each combination of the counts arktype tells apart, 1 first, since a site evaluated as written assumes it
+const countsOf = (length: number): number[][] =>
+	length === 0 ?
+		[[]]
+	:	countsOf(length - 1).flatMap(counts =>
+			[1, 0, 2].map(count => [...counts, count])
+		)
+
+const listTexts = (texts: readonly string[]) =>
+	texts.length === 1 ?
+		`\`${texts[0]}\``
+	:	`${texts
+			.slice(0, -1)
+			.map(text => `\`${text}\``)
+			.join(", ")} and \`${texts[texts.length - 1]}\``
+
+// a parameter holds a class or function only where arktype holds it as one, rather than as a value it prints, like an example
+const parameterKindOf = (
+	hole: unknown,
+	value: unknown
+): "class" | "function" | undefined => {
+	const nodes = [
+		...arkObjectsIn(value),
+		...(hasArkKind(value, "scope") ? Object.values(value.resolutions) : [])
+	].flatMap(root =>
+		hasArkKind(root, "root") ? [root, ...root.references] : []
+	)
+	if (nodes.some(node => node.hasKind("proto") && node.proto === hole))
+		return "class"
+	if (
+		[...arkObjectsIn(value)].some(fn => isTypedFn(fn) && fn.raw === hole) ||
+		nodes.some(
+			node =>
+				(node.hasKind("predicate") && node.inner.predicate === hole) ||
+				(node.hasKind("morph") && node.inner.morphs.includes(hole as never)) ||
+				(node.hasKind("optional") && node.inner.default === hole) ||
+				(node.hasKind("sequence") &&
+					!!node.inner.defaultables?.some(([, value]) => value === hole))
+		)
+	)
+		return "function"
 }
 
 // e.g. a callback's body and the function calling it, innermost first

@@ -807,6 +807,39 @@ export const Both = type("string").pipe(a, b)`,
 			])
 		})
 
+		it("selects a factory compiled for each parameter count of a function a parameter holds", () => {
+			const result = precompile(`import { type } from "arktype"
+export function both(a: (s: string) => boolean, b: (n: number) => boolean) {
+	const T = type("string").narrow(a).or(type("number").narrow(b))
+	return T
+}`)
+			attest(result.diagnostics).equals([])
+			attest(
+				result.modules[Object.keys(result.modules)[0]].match(
+					/runtime\.(selectVariant|checkDistinct)\(.*?"]\)/g
+				)
+			).snap([
+				'runtime.checkDistinct([p0, p1], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])',
+				'runtime.checkDistinct([p0, p1], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])',
+				'runtime.checkDistinct([p0, p1], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])',
+				'runtime.checkDistinct([p0, p1], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])',
+				'runtime.selectVariant([p0, p1], [3,2,3,1,0,1,3,2,3], ["`a` (/main.ts:3:34)","`b` (/main.ts:3:62)"])'
+			])
+		})
+
+		it("refuses a site needing more variants than maxVariants", () => {
+			const source = `import { type } from "arktype"
+type Check = (s: string) => boolean
+export function all(a: Check, b: Check, c: Check, d: Check) {
+	const T = type("string").narrow(a).narrow(b).narrow(c).narrow(d)
+	return T
+}`
+			attest(precompile(source).diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:4:12  type("string").narrow(a).narrow(b).narrow(c).narrow(d) cannot be precompiled\n  the parameter counts of the functions `a`, `b`, `c` and `d` hold need more than 8 variants (maxVariants)\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			])
+			attest(precompile(source, {}, { maxVariants: 16 }).diagnostics).equals([])
+		})
+
 		it("unsupported sites", () => {
 			const result = precompile(
 				`import { type } from "arktype"

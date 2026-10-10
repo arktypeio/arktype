@@ -83,11 +83,14 @@ A definition calling a static helper (a function whose body is one expression) i
 
 A definition in a function, a loop's body or an instance's field runs each time they do, and arktype creates a new Scope, Module or Generic each time, and a new Type when its Scope is new. Such a definition is precompiled to a factory taking nothing, so each run creates new validators from the same code and its values are distinct where arktype's are. Where arktype instead returns the Type it created before, as it does for the same definition and functions outside a Scope created each run, a factory returns the validator it created for the same functions, shared with each factory in its module whose definition arktype returned that Type for, so `g(isLong) === g(isLong)` with `g = fn => type("string").narrow(fn)` holds in either build.
 
+A function a parameter holds, like `fn` in `function narrowed(fn) { const T = type("string").narrow(fn); return T }` or a callback's parameter, is received the same way, though the build can't know which function it is. arktype calls a predicate or morph of 1 parameter without its context and one of any other count with it, so the build compiles the definition for a function of no parameters, of 1 and of 2 or more, keeping a factory for each distinct result, and the call reaches one that selects among them by the parameter count of the function it receives. A class a parameter holds is compiled as one with no builtin ancestors. The factory throws at creation for a builtin, a Type or anything but a function there, and for a function another value the definition holds is too, since arktype relates the two by identity. A definition needing more factories than `maxVariants`, 8 by default, is reported, naming the parameters.
+
 These definitions are reported rather than precompiled:
 
 - one arktype creates anew each time it runs, holding a value that is the same each time or that another definition holds too, like `$.export()` in a function when `$` is not, unless arktype holds that value once wherever a definition reaches it, as it does the keyword Types of `type.fn("string")`, which each call then reads from where every precompiled module holds them;
 - one that is the same each time its innermost function or loop runs but new each time an enclosing one runs, like `$.type("a")` in a callback when the function calling it creates `$`;
-- one reading a function only through a binding it declares itself, such as a callback's parameter;
+- one holding a parameter's value other than as a function or class, like an example, a unit or a Scope's configuration, or reading a parameter its function assigns;
+- one reading a Scope, Module or Generic whose own definition is reported;
 - one throwing a ParseError that reads a binding, or holds or calls a function, itself or through any value it passes to arktype;
 - one throwing a ParseError another definition threw, such as a runtime island it reads;
 - one whose code sees a function's name in what arktype prints, such as a `where` selector or description writer reading a predicate's `expression`, or a `JSON.stringify` replacer receiving a Type's JSON.
