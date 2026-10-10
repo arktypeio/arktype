@@ -1187,7 +1187,25 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 					scope({ s: "string" }, { exactOptionalPropertyTypes: false }),
 					scope({ s: "string" }, { exactOptionalPropertyTypes: true })
 				],
-				[repeating(short), repeating(long)]
+				[repeating(short), repeating(long)],
+				// where a nested definition ends
+				[
+					scope({ s: "string", o: { a: { b: "s" }, c: "number" } }),
+					scope({ s: "string", o: { a: { b: "s", c: "number" } } })
+				],
+				[
+					scope({ s: "string", o: [["s", "number"]] }),
+					scope({ s: "string", o: ["s", "number"] })
+				],
+				// a Generic alias, which arktype holds as a function it calls
+				[
+					scope({ s: "string", "Box<t>": { v: "t" } }),
+					scope({ s: "string", "Box<t>": { v: "t[]" } })
+				],
+				[
+					scope({ s: "string", Box: generic("t")({ v: "t" }) }),
+					scope({ s: "string", Box: generic("t")({ v: "t[]" }) })
+				]
 			]
 			for (const [$, other] of pairs) {
 				const created = await load({

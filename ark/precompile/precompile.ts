@@ -19,7 +19,6 @@ import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	holeNamePattern,
 	isAddressed,
-	isComparable,
 	isTypedFn,
 	keyOf,
 	kindNameOf,
@@ -1387,13 +1386,22 @@ export class Precompiler {
 				!hasArkKind(value, "module")
 			)
 				continue
-			if (!isComparable(value)) {
+			const [, holes, refusal, thunks] = keyOf(value)
+			if (refusal) {
+				result.push(`\`${text}\` ${refusal}, so a factory can't compare it`)
+				continue
+			}
+			// e.g. `aAndB: () => $.type("a&b")`, the docs' way to use a Type's methods in a Scope, which decides only what holds its result
+			const reached = thunks.find(([scope, alias]) =>
+				reaches(site.value, scope.resolutions[alias])
+			)
+			if (reached) {
 				result.push(
-					`\`${text}\` holds a thunk, an hkt body or a configured function, whose results decide what it creates, so a factory can't compare it`
+					`\`${text}\`'s alias \`${reached[1]}\` is a thunk, whose result the site holds, so a factory can't compare it`
 				)
 				continue
 			}
-			for (const hole of keyOf(value)[1]) {
+			for (const hole of holes) {
 				const standIn =
 					hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
 				if (standIn && (standIn.isCalled || standIn.isCalledIndirectly)) {
@@ -2987,7 +2995,7 @@ export const specifierOf = (importer: string, file: string): string => {
 	return path.startsWith(".") ? path : `./${path}`
 }
 
-// a mock can make holes another module supplies through two texts one function, which the factory checks the build's distinct holes aren't
+// a mock can make two holes another module supplies one function, which the factory checks
 const foreignHolesOf = (
 	sourcesByHole: Map<unknown, Map<string, boolean>>
 ): unknown[] => {
@@ -3025,6 +3033,15 @@ const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
 	}
 	return result
 }
+
+// a resolution is found by content, so another definition equal to it reaches it too
+const reaches = (value: unknown, resolution: unknown): boolean =>
+	hasArkKind(resolution, "root") &&
+	[...arkObjectsIn(value)].some(
+		root =>
+			hasArkKind(root, "root") &&
+			(root === resolution || root.references.includes(resolution))
+	)
 
 // e.g. a callback's body and the function calling it, innermost first
 const repeatedRegionsOf = (node: Node): Node[] => {

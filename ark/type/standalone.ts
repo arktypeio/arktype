@@ -2114,14 +2114,31 @@ const rootUnitsOf = (root: BaseRoot): RootUnit[] => {
 const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
 	reader.unitsById[node.id]
 
-const keysByValue = new WeakMap<object, [id: string, holes: unknown[]]>()
+// a Scope's alias defined by a thunk, keyed only by where it is, so a site holding what the thunk returned is refused
+export type ThunkAlias = [scope: BaseScope, alias: string]
 
-export const keyOf = (value: Foldable): [id: string, holes: unknown[]] =>
-	hasArkKind(value, "root") ? rootKeyOf(value) : definitionKeyOf(value)
+export type Key = [
+	id: string,
+	holes: unknown[],
+	// e.g. "configures `domain.description` with a function, whose results decide what it creates"
+	refusal: string | undefined,
+	thunks: readonly ThunkAlias[]
+]
 
-const rootKeyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
-	const cached = keysByValue.get(root)
-	if (cached) return cached
+const keysByValue = new WeakMap<object, Key>()
+
+export const keyOf = (value: Foldable): Key => {
+	let key = keysByValue.get(value)
+	if (!key) {
+		keysByValue.set(
+			value,
+			(key = hasArkKind(value, "root") ? rootKeyOf(value) : encodeKey(value))
+		)
+	}
+	return key
+}
+
+const rootKeyOf = (root: BaseRoot): Key => {
 	const units = rootUnitsOf(root)
 	const defaultsByMorph = new Map<unknown, Default>()
 	for (const unit of units) {
@@ -2130,59 +2147,37 @@ const rootKeyOf = (root: BaseRoot): [id: string, holes: unknown[]] => {
 				collectDefaults(node, defaultsByMorph)
 		}
 	}
-	const holes: unknown[] = []
-	// a unit keys a function or object only by where it first reaches it, so the address adds what each is and where each is reached again
-	const values: string[] = [units[0].names[root.id]]
-	const seen = new Map<unknown, number>()
-	const collect = (value: unknown): void => {
-		const index = seen.get(value)
-		if (index !== undefined) return void values.push(`seen ${index}`)
-		seen.set(value, seen.size)
-		const defaulted = defaultsByMorph.get(value)
-		const runtimeKey = hasDomain(value, "object") && runtimeKeyOf(value)
-		if (defaulted) {
-			values.push("default")
-			collect(defaulted[2])
-		} else if (runtimeKey) values.push(runtimeKey)
-		else if (isHole(value)) {
-			holes.push(value)
-			values.push("hole")
-		}
-		// a meta isn't part of a node's content, though what it holds is printed
-		else if (!hasDomain(value, "object")) values.push(printablePrimitive(value))
-		else if (isNode(value)) return
-		else if (isDateObject(value)) values.push(`Date ${getTime.call(value)}`)
-		else if (isRegExpObject(value)) values.push(`${value} ${value.lastIndex}`)
-		else if (isPlainLiteral(value)) {
-			for (const k of Reflect.ownKeys(value)) {
-				collect(k)
-				collect(Reflect.get(value, k))
-			}
-		} else values.push(printable(value))
-	}
-	collect([
-		units.map(unit => unit.refs),
-		units.map(unit => unit.errorContexts),
-		root.meta
-	])
-	const key: [string, unknown[]] = [hashOf(values.join("\n")), holes]
-	keysByValue.set(root, key)
-	return key
+	// a unit keys a function or object only by where it first reaches it, so the key adds what each is and where each is reached again
+	return encodeKey(
+		[
+			units[0].names[root.id],
+			units.map(unit => unit.refs),
+			units.map(unit => unit.errorContexts),
+			root.meta
+		],
+		defaultsByMorph
+	)
 }
 
-// e.g. a Scope's, whose Types take what they hold from its aliases, so a factory creating a Type in it takes its holes
-const definitionKeyOf = (container: object): [id: string, holes: unknown[]] => {
-	const cached = keysByValue.get(container)
-	if (cached) return cached
-	const holes: unknown[] = []
+// writes each value's kind and each composite's length, so values differing anywhere but in which functions they hold write different keys
+const encodeKey = (
+	start: unknown,
+	// a root's, whose nodes its units' names key
+	defaultsByMorph?: ReadonlyMap<unknown, Default>
+): Key => {
 	const values: string[] = []
+	const holes: unknown[] = []
 	const seen = new Map<unknown, number>()
+	const thunks: ThunkAlias[] = []
+	let refusal: string | undefined
 	const holeIndexOf = (hole: unknown) => {
 		const index = holes.indexOf(hole)
 		return index === -1 ? holes.push(hole) - 1 : index
 	}
-	const collect = (
+	const at = (path: string) => (path ? ` at \`${path}\`` : "")
+	const write = (
 		value: unknown,
+		path: string,
 		isDefinition: boolean,
 		isConfig = false
 	): void => {
@@ -2191,70 +2186,108 @@ const definitionKeyOf = (container: object): [id: string, holes: unknown[]] => {
 			if (index !== undefined) return void values.push(`seen ${index}`)
 			seen.set(value, seen.size)
 		}
-		if (hasArkKind(value, "root")) {
-			const [id, held] = rootKeyOf(value)
-			values.push(`Type ${id} ${held.map(holeIndexOf)}`)
+		const defaulted = defaultsByMorph?.get(value)
+		const runtimeKey = hasDomain(value, "object") && runtimeKeyOf(value)
+		if (defaulted) {
+			values.push("default")
+			write(defaulted[2], path, false)
+		} else if (runtimeKey) values.push(`runtime ${runtimeKey}`)
+		else if (isNode(value)) {
+			if (defaultsByMorph || !value.isRoot()) values.push("node")
+			else {
+				const [id, held, nested] = keyOf(value)
+				values.push(`Type ${id} ${held.map(holeIndexOf)}`)
+				refusal ??= nested
+			}
 		} else if (hasArkKind(value, "module")) {
-			values.push("Module")
-			for (const [k, entry] of Object.entries(value)) {
+			const entries = Object.entries(value)
+			values.push(`Module ${entries.length}`)
+			for (const [k, entry] of entries) {
 				values.push(JSON.stringify(k))
-				collect(entry, true)
+				write(entry, appendStringifiedKey(path, k), true)
 			}
 		} else if (hasArkKind(value, "scope")) {
 			// a builtin scope holds only arktype's own functions, named stably
 			if (value.isBuiltin) values.push(`Scope ${value.name}`)
 			else {
-				values.push("Scope", JSON.stringify(value.exportedNames))
-				collect(scopeConfigOf(value), false, true)
+				const aliases = Object.entries(value.aliases)
+				values.push(
+					`Scope ${JSON.stringify(value.exportedNames)} ${aliases.length}`
+				)
+				write(value.scopeConfig, "", false, true)
 				// a definition rather than what it resolves to, since resolving it here would run its default checks before the site first reading it
-				for (const [k, def] of Object.entries(value.aliases)) {
+				for (const [k, def] of aliases) {
 					values.push(JSON.stringify(k))
-					collect(def, true)
+					if (isThunkAlias(def)) {
+						values.push("thunk")
+						thunks.push([value, k])
+					} else write(def, appendStringifiedKey(path, k), true)
 				}
 			}
 		} else if (hasArkKind(value, "generic")) {
 			values.push("Generic")
-			collect(value.paramDefs, true)
+			write(value.paramDefs, path, true)
 			// an hkt's body is a function arktype calls with a class, which nothing but identity tells apart from another
-			if (value.hkt) incomparable.add(container)
-			else collect(value.bodyDef, true)
-			collect(value.$, true)
+			if (value.hkt)
+				refusal ??= `has an hkt body${at(path)}, whose results decide what it creates`
+			else write(value.bodyDef, path, true)
+			write(value.$, path, true)
 		} else if (isTypedFn(value)) {
 			values.push("TypedFn")
-			collect(value.params, false)
-			collect(value.returns, false)
-			collect(value.raw, false)
+			write(value.params, path, false)
+			write(value.returns, path, false)
+			write(value.raw, path, false)
 		} else if (value instanceof LazyGenericRoot) {
-			values.push("Generic", JSON.stringify(value.paramsDef))
-			collect(value.bodyDef, true)
-		}
-		// e.g. `() => User` in a Scope or a Generic's body, or a description writer in its config, which arktype calls as it resolves it
-		else if ((isDefinition && isThunk(value)) || (isConfig && isHole(value)))
-			incomparable.add(container)
+			values.push(`Generic ${JSON.stringify(value.paramsDef)}`)
+			write(value.bodyDef, path, true)
+		} else if (isDefinition && isThunk(value))
+			refusal ??= `holds a thunk${at(path)}, whose result decides what it creates`
+		// e.g. a description writer, which arktype calls as it creates each Type
+		else if (isConfig && isHole(value))
+			refusal ??= `configures \`${path}\` with a function, whose results decide what it creates`
 		else if (isHole(value)) values.push(`hole ${holeIndexOf(value)}`)
 		else if (!hasDomain(value, "object")) values.push(printablePrimitive(value))
 		else if (isDateObject(value)) values.push(`Date ${getTime.call(value)}`)
 		else if (isRegExpObject(value)) values.push(`${value} ${value.lastIndex}`)
 		else if (isArray(value)) {
+			values.push(`[${value.length}`)
 			// e.g. the narrow in `["string", ":", isLong]`, which arktype holds rather than parses
 			const definitions =
 				valueTupleHeads.includes(value[0]) ? 0
 				: valueOperators.includes(value[1]) ? 1
 				: value.length
-			for (let i = 0; i < value.length; i++)
-				collect(value[i], isDefinition && i < definitions, isConfig)
-		} else if (isPlainLiteral(value)) {
-			for (const k of Reflect.ownKeys(value)) {
-				collect(k, false)
-				collect(Reflect.get(value, k), isDefinition, isConfig)
+			for (let i = 0; i < value.length; i++) {
+				write(
+					value[i],
+					appendStringifiedKey(path, i),
+					isDefinition && i < definitions,
+					isConfig
+				)
 			}
-		} else values.push(printable(value))
+		} else if (isPlainLiteral(value)) {
+			const keys = Reflect.ownKeys(value)
+			values.push(`{${keys.length}`)
+			for (const k of keys) {
+				write(k, path, false)
+				write(
+					Reflect.get(value, k),
+					typeof k === "symbol" ? path : appendStringifiedKey(path, k),
+					isDefinition,
+					isConfig
+				)
+			}
+		} else
+			refusal ??= `holds ${printable(value)}${at(path)}, which its key can't encode`
 	}
-	collect(container, true)
-	const key: [string, unknown[]] = [hashOf(values.join("\n")), holes]
-	keysByValue.set(container, key)
-	return key
+	write(start, "", !defaultsByMorph)
+	return [hashOf(values.join("\n")), holes, refusal, thunks]
 }
+
+// arktype holds a Generic alias as a function too, which it calls with arguments rather than to resolve it
+const isThunkAlias = (def: unknown): boolean =>
+	isThunk(def) &&
+	!hasArkKind(def, "generic") &&
+	!(def instanceof LazyGenericRoot)
 
 export const isTypedFn = (value: unknown): value is InternalTypedFn =>
 	value instanceof InternalTypedFn
@@ -2265,17 +2298,6 @@ export const kindNameOf = (value: unknown): string =>
 	: hasArkKind(value, "scope") ? "Scope"
 	: hasArkKind(value, "generic") ? "Generic"
 	: "TypedFn"
-
-// a container whose key leaves out what decides what it creates, which a factory can't compare with the build's
-const incomparable = new WeakSet<object>()
-
-export const isComparable = (value: Foldable): boolean => {
-	keyOf(value)
-	return !incomparable.has(value)
-}
-
-const scopeConfigOf = (scope: BaseScope): unknown =>
-	(scope as unknown as { scopeConfig: unknown }).scopeConfig
 
 const printablePrimitive = (value: unknown): string =>
 	Object.is(value, -0) ? "-0" : printable(value)

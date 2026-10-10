@@ -1038,7 +1038,7 @@ const registerParseContext = <ctx extends BaseParseContext>(ctx: ctx): ctx =>
 export abstract class BaseScope<$ extends {} = {}> {
 	readonly name: string
 	readonly isBuiltin: boolean
-	private readonly scopeConfig: ArkSchemaScopeConfig | undefined
+	readonly scopeConfig: ArkSchemaScopeConfig | undefined
 
 	get [arkKind](): "scope" {
 		return "scope"

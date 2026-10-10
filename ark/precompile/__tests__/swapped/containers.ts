@@ -51,5 +51,30 @@ export const BoxOf = type.generic("t")(
 export const shortNames = scope({ name: ["string", ":", isShort] }).export()
 export const longNames = scope({ name: ["string", ":", isLong] }).export()
 
+// each pair differs only in where a nested definition ends
+export const separateNesting = scope({
+	f: ["string", ":", isShort],
+	o: { a: { b: "f" }, c: "number" }
+})
+export const sharedNesting = scope({
+	f: ["string", ":", isShort],
+	o: { a: { b: "f", c: "number" } }
+})
+export const nestedTuple = scope({
+	f: ["string", ":", isShort],
+	o: [["f", "number"]]
+})
+export const flatTuple = scope({
+	f: ["string", ":", isShort],
+	o: ["f", "number"]
+})
+export const separateModule = type.module({
+	a: type.module({ b: ShortString }),
+	c: type("number")
+})
+export const sharedModule = type.module({
+	a: type.module({ b: ShortString, c: type("number") })
+})
+
 export const lengthOf = type.fn("string")(s => s.length)
 export const doubled = type.fn("number")(n => n * 2)
