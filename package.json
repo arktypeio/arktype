@@ -35,6 +35,7 @@
 		"testHistory": "node --conditions ark-ts ./ark/repo/testHistory.ts",
 		"testEnvironments": "node --conditions ark-ts ./ark/precompile/__tests__/testEnvironments.ts",
 		"testPerturbation": "node --conditions ark-ts ./ark/precompile/__tests__/testPerturbation.ts",
+		"testDifferential": "pnpm test --exclude ark/type/__tests__/gc.test.ts --require ./ark/precompile/__tests__/testDifferential.ts",
 		"testTsVersions": "ts ./ark/repo/testTsVersions.ts",
 		"testTsCompat": "tsc --project ark/repo/tsCompat && tsc --project ark/repo/tsCompat/tsconfig.attest.json && tsc --project ark/repo/tsCompat/tsconfig.workers.json",
 		"testTypedLoose": "pnpm testTyped --tsconfig null --compilerOptions \"{ \\\"module\\\": \\\"NodeNext\\\", \\\"moduleResolution\\\": \\\"NodeNext\\\", \\\"strictNullChecks\\\": true, \\\"exactOptionalPropertyTypes\\\": true }\" --skipInlineInstantiations",

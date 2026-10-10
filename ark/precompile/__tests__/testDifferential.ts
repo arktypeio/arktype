@@ -1,0 +1,95 @@
+import { BaseNode, type BaseRoot } from "@ark/schema"
+import { writeFileSync } from "node:fs"
+import { join } from "node:path"
+import {
+	cloneInput,
+	compare,
+	layouts,
+	observeArktype,
+	out
+} from "./differential.ts"
+
+// checks the differential of the precompilation design (design/precompile.md §12): every root arktype's
+// suites call, precompiled in each layout, agrees with arktype on each input the suites passed it:
+// pnpm testDifferential [mocha option...]
+
+const maxInputsPerRoot = 32
+
+const originalsByRoot = new Map<BaseRoot, unknown[]>()
+const inputsByRoot = new Map<BaseRoot, unknown[]>()
+let isRecording = true
+
+const prototype = BaseNode.prototype as any
+const { initRootApply } = prototype
+prototype.initRootApply = function (this: BaseRoot) {
+	const apply = initRootApply.call(this)
+	const recordingApply = (data: unknown, onFail: unknown) => {
+		if (isRecording) {
+			let originals = originalsByRoot.get(this)
+			if (!originals) {
+				originalsByRoot.set(this, (originals = []))
+				inputsByRoot.set(this, [])
+			}
+			// a copy as the suite passed it, before the call morphs it
+			if (originals.length < maxInputsPerRoot && !originals.includes(data)) {
+				originals.push(data)
+				inputsByRoot.get(this)!.push(cloneInput(data))
+			}
+		}
+		return apply(data, onFail)
+	}
+	return (this.cache.rootApply = recordingApply)
+}
+
+const run = async () => {
+	isRecording = false
+	const roots = [...inputsByRoot]
+	// every root is observed before any is built, since a build renames the functions they hold
+	const observations = roots.map(([node, inputs]) =>
+		observeArktype(node, inputs)
+	)
+	const refusalsByReason: Record<string, number> = {}
+	const disagreements: string[] = []
+	let precompiledRoots = 0
+	let calls = 0
+	let harnessLimited = 0
+	for (const [i, [node, inputs]] of roots.entries()) {
+		const comparison = await compare(node, inputs, observations[i])
+		disagreements.push(...comparison.disagreements)
+		harnessLimited += comparison.harnessLimited
+		if (comparison.refusal === undefined) {
+			precompiledRoots++
+			calls += inputs.length
+		} else {
+			refusalsByReason[comparison.refusal] =
+				(refusalsByReason[comparison.refusal] ?? 0) + 1
+		}
+	}
+	const report = join(out, "differential.json")
+	writeFileSync(
+		report,
+		JSON.stringify(
+			{
+				refusalsByReason: Object.fromEntries(
+					Object.entries(refusalsByReason).sort((l, r) => r[1] - l[1])
+				),
+				disagreements
+			},
+			null,
+			2
+		)
+	)
+	console.log(disagreements.slice(0, 20).join("\n\n"))
+	console.log(
+		`\n${disagreements.length ? "❌" : "✅"} ${precompiledRoots} of ${roots.length} roots precompiled, ${calls} calls, each in the ${layouts.join(" and ")} layouts: ${disagreements.length} disagreeing, ${harnessLimited} beyond the harness (${report})`
+	)
+	if (disagreements.length)
+		throw new Error(`${disagreements.length} disagreements with arktype`)
+}
+
+export const mochaHooks = {
+	async afterAll(this: Mocha.Context): Promise<void> {
+		this.timeout(0)
+		await run()
+	}
+}
