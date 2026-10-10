@@ -1,4 +1,5 @@
 import {
+	$ark,
 	arkKind,
 	hasArkKind,
 	isNode,
@@ -12,7 +13,8 @@ import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import {
 	holeNamePattern,
 	holeNamePrefix,
-	keyOf
+	keyOf,
+	type DefaultCheck
 } from "arktype/internal/standalone.ts"
 import type {
 	CallExpression,
@@ -133,6 +135,8 @@ export interface SiteState {
 	arktypeArguments: unknown[]
 	// each string passed to arktype's type, whose parse cache returns its Type again for it
 	parsedDefinitions: string[]
+	// each default arktype checked against a Type holding a function the build can't call, which its factory checks at creation
+	defaultChecks: DefaultCheck[]
 	// each Type a request returned
 	roots: BaseRoot[]
 	value: unknown
@@ -154,6 +158,7 @@ export const createSiteState = (
 	requests: [],
 	arktypeArguments: [],
 	parsedDefinitions: [],
+	defaultChecks: [],
 	roots: [],
 	value: undefined,
 	error: undefined,
@@ -1739,7 +1744,9 @@ export class Interpreter {
 		}
 		const opaque = this.opaqueStandInOf([receiver, converted])
 		const previous = this.activeCall
+		const previousDefer = $ark.deferDefaultCheck
 		this.activeCall = { ctx, isArktype: true, isDefining: true }
+		$ark.deferDefaultCheck = this.deferDefaultCheck
 		try {
 			const result = this.admit(
 				Reflect.apply(fn, receiver, converted),
@@ -1767,7 +1774,35 @@ export class Interpreter {
 			throw this.thrown(e, node, ctx)
 		} finally {
 			this.activeCall = previous
+			$ark.deferDefaultCheck = previousDefer
 		}
+	}
+
+	private deferDefaultCheck = (
+		node: BaseRoot,
+		value: unknown,
+		key: PropertyKey | null
+	): boolean => {
+		const site = this.activeCall?.ctx.site
+		if (!site || !this.holdsUncallable(node.in as BaseRoot)) return false
+		site.defaultChecks.push([node, value, key])
+		return true
+	}
+
+	// e.g. a narrow whose body isn't one expression, which a check of a default would call and its error's writers print
+	holdsUncallable(root: BaseRoot): boolean {
+		return [root, ...root.references].some(node =>
+			[
+				...(node.hasKind("predicate") ? [node.predicate] : []),
+				...Object.values(node.meta)
+			].some(value => {
+				const standIn =
+					typeof value === "function" ? this.standIns.get(value) : undefined
+				return (
+					!!standIn && !(standIn.closure && staticBodyOf(standIn.closure.node))
+				)
+			})
+		)
 	}
 
 	// the opaque value an argument holds, or that arktype built a value from

@@ -113,9 +113,17 @@ export interface StandaloneFactory {
 	internedBy?: number | undefined
 	// whether arktype creates its Type anew each time its site runs, even one it holds under an address
 	isCreatedEachRun?: boolean
+	defaultChecks?: readonly DefaultCheck[]
 }
 
 export type FactoryParam = HoleParam | InputParam | HelperParam
+
+// a default arktype checks against a Type where it defines it, which its factory checks where it creates it
+export type DefaultCheck = [
+	node: BaseRoot,
+	value: unknown,
+	key: PropertyKey | null
+]
 
 export interface HoleParam {
 	kind: HoleKind
@@ -247,7 +255,7 @@ const writeArtifact = (
 	for (const [name, value] of Object.entries(exports)) {
 		if (arkKindOf(value) !== undefined) types[name] = value as never
 		else {
-			const { type, params, internedBy, isCreatedEachRun } =
+			const { type, params, internedBy, isCreatedEachRun, defaultChecks } =
 				value as StandaloneFactory
 			if (internedBy !== undefined) tables.add(internedBy)
 			const artifact = new StandaloneArtifact(
@@ -255,7 +263,8 @@ const writeArtifact = (
 				shared,
 				imports,
 				sitesByName,
-				definitionAddresses
+				definitionAddresses,
+				defaultChecks
 			)
 			if (isCreatedEachRun && hasArkKind(type, "root"))
 				artifact.createdEachRun.add(type)
@@ -488,6 +497,8 @@ export class StandaloneArtifact {
 	comparedRoots: BaseRoot[]
 	// a Type arktype creates anew each time its site runs, which its factory then does too
 	createdEachRun = new Set<BaseRoot>()
+	// each default arktype checks where it defines the Type, which the factory checks once it creates the validators
+	defaultChecks: readonly DefaultCheck[]
 	// a factory's errors expose the meta of a Type it receives, not a copy
 	receivedMetas = new Map<object, string>()
 
@@ -496,9 +507,11 @@ export class StandaloneArtifact {
 		sharedModules: Record<string, SharedModule>,
 		imports: Record<string, string[]>,
 		sitesByName?: Record<string, ExportSite>,
-		definitionAddresses: ReadonlyMap<unknown, string> = new Map()
+		definitionAddresses: ReadonlyMap<unknown, string> = new Map(),
+		defaultChecks: readonly DefaultCheck[] = []
 	) {
 		this.exports = exports
+		this.defaultChecks = defaultChecks
 		this.sharedModules = sharedModules
 		this.imports = imports
 		this.sitesByName = sitesByName
@@ -513,6 +526,7 @@ export class StandaloneArtifact {
 		}
 		for (const [name, value] of Object.entries(exports))
 			this.collectExport(value, appendStringifiedKey("", name))
+		for (const [node] of defaultChecks) this.collectType(node.in as BaseRoot)
 		// the runtime writes only en
 		const locale = $ark.config.locale
 		if (locale !== undefined && locale !== $ark.defaultConfig.locale)
@@ -907,6 +921,10 @@ ${statements.filter(statement => statement).join("\n\n")}
 			// each unit is evaluated once, at the first call, which may come before the artifact's body runs
 			...this.writeBody(
 				(unitFunction, i) => `(unit${index}_${i} ??= ${unitFunction})`
+			),
+			...this.defaultChecks.map(
+				([node, defaultValue, key]) =>
+					`runtime.checkDefault(${this.validatorNamesByRoot.get(node.in as BaseRoot)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)})`
 			),
 			`return ${value}`
 		]

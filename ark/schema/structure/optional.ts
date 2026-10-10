@@ -133,6 +133,8 @@ export const assertDefaultAssignability = (
 		return value
 	}
 
+	if ($ark.deferDefaultCheck?.(node, value, key)) return value
+
 	// if the node has a default value, finalize it and apply JIT optimizations
 	// if applicable to ensure behavior + error logging is externally consistent
 	// (using .in here insead of .rawIn triggers finalization)

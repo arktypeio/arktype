@@ -1144,6 +1144,30 @@ export const Island = type("string")`)
 			)
 		})
 
+		it("checks a default against the functions it receives as it creates the validator", async () => {
+			// in place of a narrow the build can't call, so arktype finds the default valid
+			const isEven = standIn((n: number) => n === n, "iseven")
+			const T = type({ a: [["number", ":", isEven], "=", 3] })
+			const optional = T.internal.references.find(node =>
+				node.hasKind("optional")
+			)!
+			const { T: create } = await load({
+				T: {
+					type: T,
+					params: [{ kind: "function", label: "`isEven`", value: isEven }],
+					defaultChecks: [[optional.value, 3, "a"]]
+				}
+			})
+			attest(create((n: number) => n > 0)({})).equals({ a: 3 })
+			attest(() =>
+				create(function isEven(n: number) {
+					return n % 2 === 0
+				})
+			).throws.snap(
+				"ParseError: Default for a must be valid according to isEven (was 3)"
+			)
+		})
+
 		it("throws for data no case of a matcher asserting its default matches", async () => {
 			const length = standIn((s: string) => s.length, "length")
 			const negate = standIn((n: number) => -n, "negate")

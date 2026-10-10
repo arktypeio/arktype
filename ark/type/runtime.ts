@@ -17,6 +17,7 @@ import {
 	intersectionWriters,
 	maxLengthWriters,
 	maxWriters,
+	mergeErrors,
 	minLengthWriters,
 	minWriters,
 	patternWriters,
@@ -42,6 +43,7 @@ import {
 	printable,
 	prototypeOf,
 	throwError,
+	throwParseError,
 	type Fn,
 	type inferred
 } from "@ark/util"
@@ -396,6 +398,20 @@ export const checkIdentity = (
 ): void => {
 	if (value !== expected)
 		throwError(writeIdentityMismatchMessage(label, expectedLabel))
+}
+
+// arktype checks a default on a narrowed Type where it defines it, throwing its errors in en as a ParseError
+export const checkDefault = (
+	validator: Validator,
+	value: unknown,
+	key: PropertyKey | null
+): void => {
+	const out = validator.traverse(value)
+	if (!(out instanceof ArkErrors)) return
+	if (key === null) throwParseError(`Default ${out.summary}`)
+	const atPath = new ArkErrors(runtimeConfig)
+	mergeErrors(atPath, out, [key])
+	throwParseError(`Default for ${atPath.summary}`)
 }
 
 export const checkInput = (

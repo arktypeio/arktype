@@ -8,6 +8,7 @@ import {
 } from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
+import type { BaseRoot } from "./roots/root.ts"
 import type { TypeMeta } from "./shared/declare.ts"
 import {
 	configureAfterTypeMessage,
@@ -37,6 +38,10 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	resolvedConfig?: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
 	sets?: SetEngine
+	// a standalone build can't call some functions a default's check reaches, so it checks the default where the program creates the Type
+	deferDefaultCheck?:
+		| ((node: BaseRoot, value: unknown, key: PropertyKey | null) => boolean)
+		| undefined
 }
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<

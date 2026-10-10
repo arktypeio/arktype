@@ -24,6 +24,7 @@ import {
 	precompileStandaloneModules,
 	writeFixConfig,
 	type ConfiguredModule,
+	type DefaultCheck,
 	type ExportSite,
 	type FactoryParam,
 	type StandaloneExport,
@@ -149,6 +150,8 @@ export interface Site {
 	isInterned: boolean
 	// each Type another run or site holds too, which arktype holds once and a factory then reads from its address
 	addressed: unknown[]
+	// each default arktype checks while defining what the site creates, which the build can't and its factory does at creation
+	defaultChecks: DefaultCheck[]
 	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
 	declarationStart: number | undefined
 }
@@ -806,7 +809,8 @@ export class Precompiler {
 					type: site.value as never,
 					params: factory.params,
 					internedBy: site.isInterned ? table : undefined,
-					isCreatedEachRun: site.isCreatedEachRun
+					isCreatedEachRun: site.isCreatedEachRun,
+					defaultChecks: site.defaultChecks
 				}
 				sitesByName[name] = exportSiteOf(site)
 				replaced.push([site, factory.spans])
@@ -1635,8 +1639,46 @@ export class Precompiler {
 			isCreatedEachRun: false,
 			isInterned: false,
 			addressed: [],
+			defaultChecks: [],
 			declarationStart: declarationStartOf(node)
 		}
+	}
+
+	// arktype checks a default where it first creates the node holding it, which may be another site's, so each factory creating one checks it after those its site's requests ran
+	private defaultChecksOf(state: SiteState): DefaultCheck[] {
+		const checks = [...state.defaultChecks]
+		for (const root of arkObjectsIn(state.value)) {
+			if (!hasArkKind(root, "root")) continue
+			for (const node of [root, ...root.references]) {
+				const defaults: DefaultCheck[] =
+					node.hasKind("optional") ?
+						"default" in node.inner ?
+							[[node.value, node.inner.default, node.key]]
+						:	[]
+					: node.hasKind("sequence") ?
+						(node.inner.defaultables ?? []).map(([value, defaultValue]) => [
+							value,
+							defaultValue,
+							null
+						])
+					:	[]
+				for (const check of defaults) {
+					if (
+						typeof check[1] === "function" ||
+						!this.interpreter.holdsUncallable(check[0].in as BaseRoot) ||
+						checks.some(
+							([node, value, key]) =>
+								node === check[0] &&
+								Object.is(value, check[1]) &&
+								key === check[2]
+						)
+					)
+						continue
+					checks.push(check)
+				}
+			}
+		}
+		return checks
 	}
 
 	private finalize(candidate: SiteCandidate, module: SourceModule): Site {
@@ -1667,6 +1709,7 @@ export class Precompiler {
 		} else {
 			site.value = state.value
 			site.roots = state.roots
+			site.defaultChecks = this.defaultChecksOf(state)
 			// e.g. a Generic aliased `define`, whose instantiation is a Type
 			if (!isFoldable(state.value))
 				site.definition = this.definitionOf(state.node, module)

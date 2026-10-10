@@ -71,7 +71,7 @@ export const Name = type("string").pipe(trim)
 export const Name = $arkf1j3ffm9dngv(trim)
 ```
 
-A default is applied as arktype applies it, through its value's validator, so a default its value transforms and the `[]` or `{}` a string default parses to are precompiled too.
+A default is applied as arktype applies it, through its value's validator, so a default its value transforms and the `[]` or `{}` a string default parses to are precompiled too. arktype checks a default against a narrowed Type where it defines the Type, and where the narrow is a function the build can't call, the factory runs that check once it creates the validators, in the order the definition's calls ran it, and throws the ParseError arktype would have thrown. A Scope's alias is checked by the factory of the definition that first resolves it, as arktype checks it then.
 
 A matcher is precompiled the same way, receiving its handlers, and one whose default is `"assert"` or `"never"` throws for data no case matches, as arktype's does. So is a `type.fn` TypedFn, receiving its implementation: it is arktype's own wrapper, validating with the validators of its parameters and return, and named for the function it receives.
 

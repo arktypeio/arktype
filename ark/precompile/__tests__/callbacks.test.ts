@@ -191,12 +191,12 @@ const C = type({ a: [["string", ":", s => ${nonStatic}], "=", "a"] })`
 		attest(statusesOf(source)).snap([
 			"2:11 accepted { a: string[] = Function($hole_1vu6ogz1nemc20) }",
 			'6:11 accepted { a: (In: string) => Out<unknown> = "a" }',
-			"10:11 rejected\n  arktype calls a function (/main.ts:10:38) while defining the type, so it must be a static helper\n  a function (/main.ts:10:38) is not a static helper: its body is not one expression or one `return`"
+			'10:11 accepted { a: string = "a" }'
 		])
 		attest(
 			analyze(source).sites.map(site =>
 				site.holes.map(hole => `${hole.kind} ${hole.isCalledAtDefinition}`)
 			)
-		).snap([["function false"], ["function false"], []])
+		).snap([["function false"], ["function false"], ["function false"]])
 	})
 })
