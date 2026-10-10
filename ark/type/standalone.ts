@@ -497,6 +497,10 @@ export class StandaloneArtifact {
 	emitting = new Set<object>()
 	moduleNamesByModule = new Map<object, string>()
 	namesByTypedFn = new Map<InternalTypedFn, string>()
+	stringModuleNamesByRoot: Record<ComposedString, Map<BaseRoot, string>> = {
+		expression: new Map(),
+		description: new Map()
+	}
 	links: string[] = []
 	modules: string[] = []
 	// a literal holding a validator is declared empty and filled once validators exist
@@ -1235,31 +1239,43 @@ return [${returned.join(", ")}]
 
 	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator
 	readExpression(root: BaseRoot): string {
-		const name = this.writeStringModule(root, "expression")
+		const name = this.stringModuleOf(root, "expression")
 		return this.read(`~arktype/${name}`, name, name, name)
 	}
 
 	// a description holding those of the roots it references is composed from their modules, else written where it's read
 	emitDescription(root: BaseRoot): string {
-		if (
-			root.description.includes(holeNamePrefix) ||
-			partsOf(root, "description").every(part => typeof part === "string")
-		)
+		if (root.description.includes(holeNamePrefix))
 			return this.emitString(root.description)
-		const name = this.writeStringModule(root, "description")
+		const parts = partsOf(root, "description")
+		if (parts.every(part => typeof part === "string"))
+			return this.emitString(root.description)
+		const name = this.writeStringModule(root, "description", parts)
 		return `${this.read(`~arktype/${name}`, name, name, name)}()`
 	}
 
+	stringModuleOf(root: BaseRoot, kind: ComposedString): string {
+		return (
+			this.stringModuleNamesByRoot[kind].get(root) ??
+			this.writeStringModule(root, kind, partsOf(root, kind))
+		)
+	}
+
 	// a string is composed from those of the roots it references, so one many Types print is written once
-	writeStringModule(root: BaseRoot, kind: ComposedString): string {
+	writeStringModule(
+		root: BaseRoot,
+		kind: ComposedString,
+		parts: (string | BaseRoot)[]
+	): string {
 		const imports: Record<string, string[]> = {}
-		const parts = partsOf(root, kind).map(part => {
-			if (typeof part === "string") return JSON.stringify(part)
-			const name = this.writeStringModule(part, kind)
-			imports[`~arktype/${name}`] = [name]
-			return `${name}()`
-		})
-		const body = parts.join(" + ")
+		const body = parts
+			.map(part => {
+				if (typeof part === "string") return JSON.stringify(part)
+				const name = this.stringModuleOf(part, kind)
+				imports[`~arktype/${name}`] = [name]
+				return `${name}()`
+			})
+			.join(" + ")
 		const name = `${kind}${hashOf(body)}`
 		this.sharedModules[`~arktype/${name}`] ??= {
 			readsRuntime: false,
@@ -1267,6 +1283,7 @@ return [${returned.join(", ")}]
 			declarations: [`function ${name}() {\n\treturn ${body}\n}`],
 			exports: [name]
 		}
+		this.stringModuleNamesByRoot[kind].set(root, name)
 		return name
 	}
 
