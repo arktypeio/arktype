@@ -16,7 +16,8 @@ import {
 	fingerprintOf,
 	reconfiguredMessage,
 	unrenderedLocaleMessage,
-	writeCreatedBeforeConfigureMessage
+	writeCreatedBeforeConfigureMessage,
+	writtenConfigMessage
 } from "@ark/schema/runtime"
 import { arkKindOf, flatMorph, noSuggest } from "@ark/util"
 import { ark, generic, match, scope, type, type Scope } from "arktype"
@@ -688,6 +689,17 @@ contextualize(() => {
 			pairs.filter(([l, r]) => fingerprintOf(l) === fingerprintOf(r))
 		).equals([])
 		attest(fingerprintOf({ f: () => 1 })).equals(fingerprintOf({ f: () => 2 }))
+	})
+
+	it("throws for a configuration written before its first validator", async () => {
+		attest(
+			await messageOf(
+				`const config = { onUndeclaredKey: "delete" }
+runtime.configure(config)
+config.onUndeclaredKey = "reject"`,
+				fingerprintOf({ onUndeclaredKey: "delete" })
+			)
+		).equals(writtenConfigMessage)
 	})
 
 	it("throws for a second configure() with other values", async () => {

@@ -1055,6 +1055,16 @@ export class Interpreter {
 		)
 	}
 
+	// what an export holds if the build has evaluated it, without evaluating it
+	evaluatedExportOf(module: SourceModule, name: string): unknown {
+		const target = this.graph.exportOf(module, name)
+		const evaluated =
+			target.kind === "binding" ? this.valuesByBinding.get(target.binding)
+			: target.kind === "expression" ? this.valuesByNode.get(target.node)
+			: undefined
+		return typeof evaluated === "object" ? evaluated.value : undefined
+	}
+
 	// a hole in a definition position must not be a Type, so a binding that only ever holds Types cannot be one
 	private holdsTypes(binding: Binding, module: SourceModule): boolean {
 		const declaration = binding.declaration

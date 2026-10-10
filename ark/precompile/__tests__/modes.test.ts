@@ -282,6 +282,22 @@ console.log(JSON.stringify(diagnostics.map(renderDiagnostic)))`)
 			])
 		}).timeout(60000)
 
+		it("configure with an object a module writes or exports", () => {
+			attest(
+				diagnosticsOf(
+					`import { configure } from "arktype/config"
+import { shared } from "./shared.ts"
+const written = { description: "one" }
+configure({ keywords: { string: written, number: shared, boolean: { description: "inline" } } })
+written.description = "two"`,
+					{ "/shared.ts": 'export const shared = { description: "a" }' },
+					{ config: "/main.ts" }
+				)
+			).snap([
+				'/main.ts:4:1  configure({ keywords: { string: written, number: shared, bo… is not static\n  `written.description = "two"` (/main.ts:5:1) writes what the configuration holds\n  `shared` is exported from /shared.ts, so another module can write what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+			])
+		})
+
 		it("configure with values that are not static", () => {
 			attest(
 				diagnosticsOf(

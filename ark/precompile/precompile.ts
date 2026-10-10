@@ -2543,13 +2543,51 @@ export class Precompiler {
 				visit(v)
 			}
 		}
-		if (!dynamic) visit(value.value)
+		if (!dynamic) {
+			visit(value.value)
+			result.push(...this.writableObjectsIn(value.value, modules))
+		}
 		return {
 			value: value.value,
 			problem:
 				result.length ? `${module.snippetOf(call)} is not static` : undefined,
 			reasons: result
 		}
+	}
+
+	// arktype reads a keyword's meta when the keyword is first created, so a write after configure() can reach the program but not the build
+	private writableObjectsIn(value: unknown, ids: string[]): string[] {
+		const objects = new Set<unknown>()
+		const collect = (o: unknown) => {
+			if (typeof o !== "object" || o === null || objects.has(o)) return
+			objects.add(o)
+			if (isPlainContainer(o))
+				for (const k of Reflect.ownKeys(o)) collect(Reflect.get(o, k))
+		}
+		collect(value)
+		const result: string[] = []
+		for (const id of ids) {
+			const module = this.graph.moduleOf(id)
+			if (!(module instanceof SourceModule)) continue
+			for (const name in module.scopes.exportsByName) {
+				if (objects.has(this.interpreter.evaluatedExportOf(module, name))) {
+					result.push(
+						`\`${name}\` is exported from ${module.path}, so another module can write what the configuration holds`
+					)
+				}
+			}
+			for (const reference of module.scopes.references) {
+				if (!reference.binding || reference.isWrite) continue
+				const [write] =
+					this.writeInto(reference.id, module, o => objects.has(o)) ?? []
+				if (write) {
+					result.push(
+						`\`${module.snippetOf(write)}\` (${module.positionOf(write)}) writes what the configuration holds`
+					)
+				}
+			}
+		}
+		return result
 	}
 
 	// arktype may call any of the configuration's code, like a description writer, while defining a Type
@@ -2784,6 +2822,15 @@ export class Precompiler {
 		id: Node,
 		module: SourceModule
 	): [write: Node, value: Node, isDirect: boolean] | undefined {
+		return this.writeInto(id, module, isArkObject)
+	}
+
+	// a write through the expression `id` starts, with the object it writes into if `isWritten` holds for it
+	private writeInto(
+		id: Node,
+		module: SourceModule,
+		isWritten: (value: unknown) => boolean
+	): [write: Node, value: Node, isDirect: boolean] | undefined {
 		// the reads since the last call, each of which may be an arktype value
 		const objects: Node[] = [id]
 		let node = id
@@ -2806,7 +2853,7 @@ export class Precompiler {
 					const state = this.interpreter.evaluateSite(
 						createSiteState(objects[i], module)
 					)
-					if (isArkObject(state.value))
+					if (isWritten(state.value))
 						return [write, objects[i], i === objects.length - 1]
 				}
 				return

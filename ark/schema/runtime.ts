@@ -152,6 +152,7 @@ export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({
 })
 
 let configuredFingerprint: string | undefined
+let configuredValue: object | undefined
 let programConfig: ArkSchemaConfig | undefined
 let configureIslands: ((config: ArkSchemaConfig) => unknown) | undefined
 
@@ -173,6 +174,7 @@ export const configure = (
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
 	;(runtimeConfig as { locale: Locale.Info }).locale = enInfo
 	configuredFingerprint = received
+	configuredValue = config
 	programConfig = config
 	return config
 }
@@ -219,6 +221,13 @@ const builtinPrototypes: unknown[] = [
 export const fixConfig = (
 	...configured: [] | [fingerprint: string, path: string]
 ): void => {
+	// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
+	if (
+		!Object.isFrozen(runtimeConfig) &&
+		configuredValue &&
+		fingerprintOf(configuredValue) !== configuredFingerprint
+	)
+		throwParseError(writtenConfigMessage)
 	Object.freeze(runtimeConfig)
 	const [fingerprint, path] = configured
 	if (fingerprint === configuredFingerprint) return
@@ -246,6 +255,11 @@ export const reconfiguredMessage =
 	"configure() is called again with other values, which arktype merges with the first call's but a standalone build can't precompile under"
 
 export type reconfiguredMessage = typeof reconfiguredMessage
+
+export const writtenConfigMessage =
+	"what configure() received was written before the first validator was created, so the build's Types, precompiled under its earlier values, can't run under it"
+
+export type writtenConfigMessage = typeof writtenConfigMessage
 
 export const configMismatchMessage =
 	"an artifact precompiled under another configuration can't run under this one, so it must be rebuilt"
