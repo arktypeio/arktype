@@ -551,13 +551,13 @@ export class StandaloneArtifact {
 		sitesByName: Record<string, ExportSite> | undefined,
 		definitionAddresses: ReadonlyMap<unknown, string>,
 		baking: Baking,
-		// a site reading a Type's introspection receives only what its default checks read
-		factory?: StandaloneFactory | StandaloneIntrospection
+		// the factory a site calls, or the function returning a Type's introspection, which receives only what its default checks read
+		called?: StandaloneFactory | StandaloneIntrospection
 	) {
 		this.exports = exports
 		this.baking = baking
-		this.factory = factory && "member" in factory ? undefined : factory
-		this.defaultChecks = factory?.defaultChecks ?? []
+		this.factory = called && "member" in called ? undefined : called
+		this.defaultChecks = called?.defaultChecks ?? []
 		if (this.factory?.isCreatedEachRun && hasArkKind(this.factory.type, "root"))
 			this.createdEachRun.add(this.factory.type)
 		this.sharedModules = sharedModules

@@ -10,6 +10,7 @@ import type { intrinsic } from "./intrinsic.ts"
 import type { BaseNode } from "./node.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type { BaseRoot } from "./roots/root.ts"
+import type { BaseScope } from "./scope.ts"
 import type { TypeMeta } from "./shared/declare.ts"
 import {
 	configureAfterTypeMessage,
@@ -54,14 +55,14 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 // a cache returns what another definition computed, so a standalone build learns which deferred checks a definition reaches through it
 export interface CacheReach {
 	// a node the node cache returns, whose creation ran its own checks
-	node: (node: object) => void
+	node: (node: BaseNode) => void
 	// an entry another cache returns, which reaches what computing it reached
 	cached: (cache: object, key: unknown) => void
 	// a Scope's alias defined by a thunk, whose result decides what a definition resolving it creates
-	thunk: (scope: object, alias: string) => void
-	// where computing a cache entry begins, as how much the definition has reached
+	thunk: ($: BaseScope, alias: string) => void
+	// how much the definition has reached when computing an entry begins
 	mark: () => number | undefined
-	// what the definition reached since the mark, which a definition the cache returns the entry to reaches
+	// files what the definition reached since the mark under the entry, for each definition the cache returns it to
 	store: (mark: number | undefined, cache: object, key: unknown) => void
 }
 

@@ -5,7 +5,6 @@ import {
 	isNode,
 	type BaseNode,
 	type BaseRoot,
-	type BaseScope,
 	type CacheReach
 } from "@ark/schema"
 import { hashOf, hasDomain, ParseError } from "@ark/util"
@@ -1882,8 +1881,7 @@ export class Interpreter {
 			const reached = this.reachedByEntry.get(cache)?.get(key)
 			if (reached) this.activeCall?.ctx.site?.reached.push(...reached)
 		},
-		thunk: (scope, alias) =>
-			this.activeCall?.ctx.site?.reached.push([scope as BaseScope, alias]),
+		thunk: ($, alias) => this.activeCall?.ctx.site?.reached.push([$, alias]),
 		mark: () => this.activeCall?.ctx.site?.reached.length,
 		// an entry computed again, as an alias resolved once its references are, reaches what each computation did
 		store: (mark, cache, key) => {

@@ -1352,7 +1352,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	private resolveUncached(
 		name: string,
 		cached: BaseParseContext | undefined,
-		// the start of resolving it, from which each member of a cycle it closes reaches
+		// how much was reached when resolving it began, which each member of a cycle it closes stores
 		mark: number | undefined
 	): Exclude<CachedResolution, BaseParseContext> | undefined {
 		if (cached) {

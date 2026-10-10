@@ -1915,9 +1915,10 @@ export class Precompiler {
 		const dynamic = rejectionOf(state)
 		if (dynamic) return rejectSite(site, dynamic)
 		const checks = new Set<DefaultCheck>()
+		// a thunk alias is a pair, and a check a triple
 		for (const reached of state.reached) {
-			if (!hasArkKind(reached[0], "scope")) checks.add(reached as DefaultCheck)
-			else site.thunks.push(reached as ThunkAlias)
+			if (reached.length === 2) site.thunks.push(reached)
+			else checks.add(reached)
 		}
 		if (state.error instanceof ParseError) {
 			// e.g. an island's or a declaration's, which the site's thrower would throw without checking what it depends on
