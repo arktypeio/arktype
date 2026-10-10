@@ -1202,12 +1202,11 @@ return [${returned.join(", ")}]
 		return [params, args]
 	}
 
-	// contexts with the same keys share a function building their errors, in a module of its own; one building
-	// every context registers `all`, the array already holding them
+	// contexts with the same keys share a function building their errors, in a module of its own
 	writeBuilders(
 		contexts: readonly object[],
 		names: string[],
-		all?: string
+		contextsName?: string
 	): string[] {
 		const namesByBuilder: Record<string, string[]> = {}
 		for (let i = 0; i < contexts.length; i++) {
@@ -1233,7 +1232,7 @@ return [${returned.join(", ")}]
 		}
 		return Object.entries(namesByBuilder).map(
 			([builderName, built]) =>
-				`runtime.registerErrorBuilder(${builderName}, ${all && built.length === names.length ? all : `[${built.join(", ")}]`})`
+				`runtime.registerErrorBuilder(${builderName}, ${contextsName && built.length === names.length ? contextsName : `[${built.join(", ")}]`})`
 		)
 	}
 
