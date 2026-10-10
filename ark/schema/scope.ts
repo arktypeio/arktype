@@ -92,7 +92,16 @@ import {
 	TransformErrors
 } from "./shared/transform.ts"
 import {
+	addMorphErrors,
+	addTransformErrors,
+	allowsInBranch,
+	callMorph,
 	errorFromContext,
+	pipeChecked,
+	pipeTransformed,
+	transformed,
+	transformedInApply,
+	transformsValid,
 	Traversal,
 	type TraversalKind,
 	type TraverseAllows,
@@ -309,7 +318,11 @@ type CompiledUnit = (
 ) => PrecompiledTraversals[]
 
 const unitConstants = {
+	addMorphErrors,
+	addTransformErrors,
+	allowsInBranch,
 	arrayIndexMatcher,
+	callMorph,
 	copyOf,
 	errorFromContext,
 	isAbsent,
@@ -317,7 +330,12 @@ const unitConstants = {
 	isValidDate,
 	jsTypeOfDescriptions,
 	mergeTransformed,
+	pipeChecked,
+	pipeTransformed,
 	printable,
+	transformed,
+	transformedInApply,
+	transformsValid,
 	TransformErrors
 }
 

@@ -11,7 +11,12 @@ import {
 import { $ark, namedReference } from "../shared/registry.ts"
 import { TransformErrors } from "../shared/transform.ts"
 import {
+	addMorphErrors,
 	applyMember,
+	callMorph,
+	pipe,
+	pipeOf,
+	transform,
 	type Traversal,
 	type TraverseAllows,
 	type TraverseApply,
@@ -161,20 +166,24 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			const morph = this.morphs[i]
 			const morphed = `morphed${i}`
 			if (hasArkKind(morph, "root")) {
-				js.const(morphed, `ctx.pipe(${js.ref(morph)}, ${result})`).if(
-					`ctx._errors !== undefined && ${morphed} === ctx._errors`,
-					() => js.return("data")
+				js.const(
+					morphed,
+					`${js.ref(pipeOf(morph))}(ctx, ${js.ref(morph)}, ${result})`
+				).if(`ctx._errors !== undefined && ${morphed} === ctx._errors`, () =>
+					js.return("data")
 				)
 			} else {
 				const call =
 					arityOf(morph) === 1 ?
 						`${js.ref(morph)}(${result})`
-					:	`ctx.callMorph(${js.ref(morph)}, ${result})`
+					:	`${js.ref(callMorph)}(ctx, ${js.ref(morph)}, ${result})`
 				js.const(morphed, call).if(
 					`${js.ref(isArkErrorResult)}(${morphed}${js.requiresContext ? ", ctx._errors" : ""})`,
 					() =>
 						js.requiresContext ?
-							js.line(`ctx.addMorphErrors(${morphed})`).return("data")
+							js
+								.line(`${js.ref(addMorphErrors)}(ctx, ${morphed})`)
+								.return("data")
 						:	js.return(`new ${js.ref(TransformErrors)}(${morphed}, ${result})`)
 				)
 			}
@@ -194,21 +203,21 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		const errorCount = ctx.currentErrorCount
 		let result =
 			this.introspectableIn?.transforms ?
-				ctx.transform(this.introspectableIn, data)
+				transform(ctx, this.introspectableIn, data)
 			:	data
 		if (ctx.currentErrorCount > errorCount) return data
 		for (const morph of this.morphs) {
 			if (hasArkKind(morph, "root")) {
-				result = ctx.pipe(morph, result)
+				result = pipe(ctx, morph, result)
 				if (ctx._errors !== undefined && result === ctx._errors) return data
 				continue
 			}
 			const morphed =
 				morph.length === 1 ?
 					(morph as Morph.ContextFree)(result as never)
-				:	ctx.callMorph(morph, result)
+				:	callMorph(ctx, morph, result)
 			if (isArkErrorResult(morphed, ctx._errors)) {
-				ctx.addMorphErrors(morphed)
+				addMorphErrors(ctx, morphed)
 				return data
 			}
 			result = morphed

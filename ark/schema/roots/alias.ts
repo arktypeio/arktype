@@ -18,8 +18,11 @@ import {
 import {
 	aliasVisits,
 	applyResolution,
+	enterResolution,
+	exitResolution,
 	maxAliasDepth,
 	maxAliasVisits,
+	transformResolution,
 	type TraverseAllows,
 	type TraverseApply,
 	type TraverseTransform
@@ -243,8 +246,8 @@ Resolution: ${printable(resolution)}`)
 			ctx = tracked
 		}
 		return (
-			ctx.enterResolution(this.resolution.id, data) ??
-			ctx.exitResolution(this.resolution.traverseAllows(data, ctx))
+			enterResolution(ctx, this.resolution.id, data) ??
+			exitResolution(ctx, this.resolution.traverseAllows(data, ctx))
 		)
 	}
 
@@ -254,7 +257,8 @@ Resolution: ${printable(resolution)}`)
 	}
 
 	traverseTransform: TraverseTransform = (data, ctx) =>
-		ctx.transformResolution(
+		transformResolution(
+			ctx,
 			this.resolution.id,
 			data,
 			this.resolution.traverseTransform
@@ -265,7 +269,7 @@ Resolution: ${printable(resolution)}`)
 		const id = resolution.id
 		if (js.traversalKind === "Transform") {
 			js.return(
-				`ctx.transformResolution("${js.nameOf(id)}", data, ${js.referenceToId(id, { kind: "Transform" })})`
+				`${js.ref(transformResolution)}(ctx, "${js.nameOf(id)}", data, ${js.referenceToId(id, { kind: "Transform" })})`
 			)
 			return
 		}
@@ -289,9 +293,9 @@ Resolution: ${printable(resolution)}`)
 				.set("ctx", `${visits}.exceed(data)`)
 				.if("!ctx", () => js.return("false"))
 		)
-		js.const("reached", `ctx.enterResolution("${js.nameOf(id)}", data)`)
-		js.if("reached !== undefined", () => js.return("reached"))
-		js.return(`ctx.exitResolution(${traverse})`)
+		js.return(
+			`${js.ref(enterResolution)}(ctx, "${js.nameOf(id)}", data) ?? ${js.ref(exitResolution)}(ctx, ${traverse})`
+		)
 	}
 }
 

@@ -13,10 +13,12 @@ import {
 	type RefinementKind,
 	type StructuralKind
 } from "../shared/implement.ts"
-import type {
-	TraverseAllows,
-	TraverseApply,
-	TraverseTransform
+import {
+	allowsInBranch,
+	transform,
+	type TraverseAllows,
+	type TraverseApply,
+	type TraverseTransform
 } from "../shared/traversal.ts"
 import type { makeRootAndArrayPropertiesMutable } from "../shared/utils.ts"
 import type { Structure } from "../structure/structure.ts"
@@ -231,7 +233,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		if (this.structure) {
 			// Apply transforms what it finds valid, which a predicate could still reject
 			if (this.inner.predicate && this.structure.transforms) {
-				if (!ctx.allows(this.structure, data)) {
+				if (!allowsInBranch(ctx, this.structure, data)) {
 					this.structure.traverseApply(data as never, ctx)
 					return
 				}
@@ -253,7 +255,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	}
 
 	traverseTransform: TraverseTransform = (data, ctx) =>
-		ctx.transform(this.structure!, data)
+		transform(ctx, this.structure!, data)
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {

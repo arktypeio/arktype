@@ -21,6 +21,7 @@ import {
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
+	allowsInBranch,
 	applyValue,
 	traverseKey,
 	type InternalTraversal,
@@ -116,7 +117,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	// a key the signature rejects is undeclared, so an error its predicate adds isn't kept
 	allowsKey: TraverseAllows<PropertyKey> = (k, ctx) =>
 		this.signature.allowsRequiresTraversal ?
-			(ctx as InternalTraversal).allows(this.signature, k)
+			allowsInBranch(ctx as InternalTraversal, this.signature, k)
 		:	this.signature.traverseAllows(k, ctx)
 
 	traverseAllows: TraverseAllows<object> = (data, ctx) =>

@@ -545,14 +545,12 @@ contextualize(() => {
 			pattern: /x/g
 		} as never)
 		const M = scope({ a: "string" }).export()
-		const { n: Cyclic } = scope({ n: { "next?": "n", v: "number" } }).export()
 		const Even = scope({}, { divisor: { message: "odd" } }).type("number % 2")
 		const Long = type("string").atLeastLength(3)
 		const Box = type("<t>", { box: "t" })
-		const artifact = await load({ T, M, Cyclic, Even, Long, $: scope({}), Box })
+		const artifact = await load({ T, M, Even, Long, $: scope({}), Box })
 		const { T: validator, M: module } = artifact
 		const prototype = Object.getPrototypeOf(validator)
-		const shape = artifact.Cyclic("x", { pipe: (node: unknown) => node })
 		const config = artifact.Even(1).config
 		const nodeMeta = artifact.Long("a").issues[0].meta
 		const writes = {
@@ -570,7 +568,6 @@ contextualize(() => {
 			module: () => (module.a = validator),
 			scope: () => (artifact.$.x = 1),
 			generic: () => (artifact.Box.x = 1),
-			shape: () => (shape.traverseApply = () => {}),
 			config: () => (config.jitless = false),
 			configuredWriters: () => (config.divisor.message = "even"),
 			locale: () => (config.locale.problem = () => "odd"),

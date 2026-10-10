@@ -12,7 +12,17 @@ import type { BaseErrorContext } from "./declare.ts"
 import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
 import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
-import type { TraversalKind } from "./traversal.ts"
+import {
+	addTransformErrors,
+	allowsInBranch,
+	enterResolution,
+	exitResolution,
+	transformedInApply,
+	transformIfAllowed,
+	transformResolution,
+	transformsValid,
+	type TraversalKind
+} from "./traversal.ts"
 
 export const writeErrorBuilder = (context: object): string => {
 	let body = "return { data, path"
@@ -246,7 +256,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			return this.allows(node, arg)
 		const reference = this.referenceToId(node.id, opts)
 		if (kind === "Transform" && node.isTransformedById)
-			return `${this.ctx}.transformResolution("${this.nameOf(node.id)}", ${arg}, ${reference})`
+			return `${this.ref(transformResolution)}(${this.ctx}, "${this.nameOf(node.id)}", ${arg}, ${reference})`
 		return this.requiresContextFor(node, kind) ?
 				`${reference}(${arg}, ${this.ctx})`
 			:	`${reference}(${arg})`
@@ -257,7 +267,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		if (!node.allowsRequiresContext)
 			return this.invoke(node, { arg, kind: "Allows" })
 		return node.allowsRequiresTraversal ?
-				`${this.ctx}.allows(${this.ref(node)}, ${arg})`
+				`${this.ref(allowsInBranch)}(${this.ctx}, ${this.ref(node)}, ${arg})`
 			:	`${this.ref(node)}.allows(${arg})`
 	}
 
@@ -274,8 +284,11 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	invokeResolution(node: BaseNode, id: NodeId, arg: string = this.data): this {
 		const apply = this.referenceToId(node.id, { kind: "Apply" })
 		return this.if(
-			`ctx.enterResolution("${this.nameOf(id)}", ${arg}, ${apply}) === undefined`,
-			() => this.line(this.invoke(node, { arg })).line("ctx.exitResolution()")
+			`${this.ref(enterResolution)}(ctx, "${this.nameOf(id)}", ${arg}, ${apply}) === undefined`,
+			() =>
+				this.line(this.invoke(node, { arg })).line(
+					`${this.ref(exitResolution)}(ctx)`
+				)
 		)
 	}
 
@@ -372,15 +385,15 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		else if (!node.transforms) apply()
 		else if (node.includesAlias) {
 			this.if(
-				`!ctx.transformIfAllowed(${this.ref(node)}, ${accessExpression})`,
+				`!${this.ref(transformIfAllowed)}(ctx, ${this.ref(node)}, ${accessExpression})`,
 				apply
 			)
 		} else {
 			this.if(
-				`ctx.transformsValid && ${this.allows(node, accessExpression)}`,
+				`${this.ref(transformsValid)}(ctx) && ${this.allows(node, accessExpression)}`,
 				() =>
 					this.line(
-						`ctx.transformedInApply(${this.invoke(node, { arg: accessExpression, kind: "Transform" })})`
+						`${this.ref(transformedInApply)}(ctx, ${this.invoke(node, { arg: accessExpression, kind: "Transform" })})`
 					)
 			).else(apply)
 		}
@@ -468,7 +481,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		const key = keyExpression === undefined ? "" : `, ${keyExpression}`
 		return this.line(
 			this.requiresContext ?
-				`${this.ctx}.addTransformErrors(${errors}${key})`
+				`${this.ref(addTransformErrors)}(${this.ctx}, ${errors}${key})`
 			:	`failed = ${errors}.addTo(failed${key})`
 		)
 	}

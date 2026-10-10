@@ -77,10 +77,14 @@ import {
 	writeRootApply
 } from "./shared/rootApply.ts"
 import {
+	addMorphErrors,
 	allowsAcyclic,
 	allowsInContext,
 	allowsUntracked,
 	applyCyclic,
+	pipe,
+	transform,
+	transformResolution,
 	Traversal,
 	type TraverseAllows,
 	type TraverseApply,
@@ -154,7 +158,7 @@ export abstract class BaseNode<
 				pipedFromCtx?: Traversal | undefined,
 				onFail: ArkErrors.Handler | null = this.onFail
 			) => {
-				if (pipedFromCtx) return pipedFromCtx.pipe(this, data)
+				if (pipedFromCtx) return pipe(pipedFromCtx, this, data)
 
 				// set once and called apart from its initializer, so V8 can inline it
 				const rootApply = this.cache.rootApply
@@ -475,7 +479,8 @@ export abstract class BaseNode<
 						if (!allowed) return this.applyRoot(data).finalize(onFail)
 						const ctx = new Traversal(data, this.$.resolvedConfig)
 						ctx.tracksTransforms = untracked === undefined
-						const result = ctx.transformResolution(
+						const result = transformResolution(
+							ctx,
 							this.id,
 							data,
 							this.traverseTransform
@@ -496,7 +501,7 @@ export abstract class BaseNode<
 					if (this.hasKind("union") && !this.compiledDiscriminant) {
 						return (data, onFail) => {
 							const ctx = new Traversal(data, this.$.resolvedConfig)
-							const result = ctx.transform(this, data)
+							const result = transform(ctx, this, data)
 							if (result === unset) return this.applyRoot(data).finalize(onFail)
 							return ctx.hasError() ? ctx.finalize(onFail) : result
 						}
@@ -505,7 +510,7 @@ export abstract class BaseNode<
 				return (data, onFail) => {
 					if (!this.allows(data)) return this.applyRoot(data).finalize(onFail)
 					const ctx = new Traversal(data, this.$.resolvedConfig)
-					const result = ctx.transform(this, data)
+					const result = transform(ctx, this, data)
 					return ctx.hasError() ? ctx.finalize(onFail) : result
 				}
 			default:
@@ -531,8 +536,7 @@ export abstract class BaseNode<
 					)
 					if (isArkErrorResult(morphed)) {
 						const ctx = new Traversal(data, this.$.resolvedConfig)
-						ctx.receive(result)
-						ctx.addMorphErrors(morphed)
+						addMorphErrors(ctx, morphed)
 						return ctx.finalize(onFail)
 					}
 					result = morphed

@@ -38,8 +38,12 @@ import {
 	type RegisteredReference
 } from "../shared/registry.ts"
 import {
+	allowsInBranch,
 	applyMember,
 	errorFromContext,
+	transform,
+	transformed,
+	transformResolution,
 	type Traversal,
 	type TraverseAllows,
 	type TraverseApply,
@@ -211,7 +215,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		if (!discriminant) {
 			return this.branches.some(b =>
 				b.allowsRequiresTraversal ?
-					(ctx as Traversal).allows(b, data)
+					allowsInBranch(ctx as Traversal, b, data)
 				:	b.traverseAllows(data, ctx)
 			)
 		}
@@ -266,14 +270,14 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			if (caseNode === true || !caseNode?.transforms) return data
 			const member = discriminant.members?.[k]
 			return member ?
-					ctx.transformResolution(member.id, data, caseNode.traverseTransform)
-				:	ctx.transform(caseNode, data)
+					transformResolution(ctx, member.id, data, caseNode.traverseTransform)
+				:	transform(ctx, caseNode, data)
 		}
 		// Apply also takes the first valid branch
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
-			if (ctx.allows(branch, data))
-				return branch.transforms ? ctx.transform(branch, data) : data
+			if (allowsInBranch(ctx, branch, data))
+				return branch.transforms ? transform(ctx, branch, data) : data
 		}
 		return this.transformRequiresContext ? data : unset
 	}
@@ -374,7 +378,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				// an error a branch's predicate adds through ctx fails only that branch
 				js.if(
 					branch.allowsRequiresTraversal ?
-						`ctx.allows(${js.ref(branch)}, data)`
+						`${js.ref(allowsInBranch)}(ctx, ${js.ref(branch)}, data)`
 					:	js.invoke(branch),
 					() => js.return(true)
 				)
@@ -469,9 +473,9 @@ const invokeTransform = (
 	member?: BaseRoot
 ): string =>
 	member ?
-		`ctx.transformResolution("${js.nameOf(member.id)}", data, ${js.referenceToId(branch.id, { kind: "Transform" })})`
+		`${js.ref(transformResolution)}(ctx, "${js.nameOf(member.id)}", data, ${js.referenceToId(branch.id, { kind: "Transform" })})`
 	: js.requiresContext && returnsTransformErrors(branch) ?
-		`ctx.transform(${js.ref(branch)}, data)`
+		`${js.ref(transformed)}(ctx, ${js.invoke(branch)}, data)`
 	:	js.invoke(branch)
 
 const describeExpressionOptions: DescribeBranchesOptions = {

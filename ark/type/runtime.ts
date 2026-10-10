@@ -1,4 +1,10 @@
-import type { BaseRoot, Locale, RootApply, StandardSchemaV1 } from "@ark/schema"
+import type {
+	BaseRoot,
+	Locale,
+	TraversePipe,
+	RootApply,
+	StandardSchemaV1
+} from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	afterWriters,
@@ -48,9 +54,12 @@ import type { StringType } from "./variants/string.ts"
 // a bundle with code splitting drops a star export from another package
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 export {
+	addMorphErrors,
+	addTransformErrors,
 	afterWriters,
 	aliasVisits,
 	allowsAcyclic,
+	allowsInBranch,
 	allowsInContext,
 	allowsUntracked,
 	applyCyclic,
@@ -59,6 +68,7 @@ export {
 	beforeWriters,
 	byAncestorPath,
 	byPath,
+	callMorph,
 	computeDefaultValueMorph,
 	configure,
 	copyOf,
@@ -66,8 +76,10 @@ export {
 	discriminantWriters,
 	divisorWriters,
 	domainWriters,
+	enterResolution,
 	exactLengthWriters,
 	errorFromContext,
+	exitResolution,
 	fixConfig,
 	flatByPath,
 	flatProblemsByPath,
@@ -82,6 +94,9 @@ export {
 	minLengthWriters,
 	minWriters,
 	patternWriters,
+	pipe,
+	pipeChecked,
+	pipeTransformed,
 	protoWriters,
 	raising,
 	registerErrorBuilder,
@@ -90,6 +105,11 @@ export {
 	runtimeScope,
 	scopeConfig,
 	TransformErrors,
+	transformed,
+	transformedInApply,
+	transformIfAllowed,
+	transformResolution,
+	transformsValid,
 	Traversal,
 	TraversalError,
 	undeclaredWriters,
@@ -182,6 +202,7 @@ export class Validator extends Callable<
 	constructor(
 		rootApply: RootApply,
 		node: BaseRoot,
+		pipe: TraversePipe,
 		attributes: ValidatorAttributes,
 		id: string,
 		holes: readonly unknown[] = []
@@ -194,7 +215,7 @@ export class Validator extends Callable<
 				pipedFromCtx?: Traversal,
 				onFail: ArkErrors.Handler | null = configuredOnFail
 			) =>
-				pipedFromCtx ? pipedFromCtx.pipe(node, data) : rootApply(data, onFail),
+				pipedFromCtx ? pipe(pipedFromCtx, node, data) : rootApply(data, onFail),
 			{ bind: null }
 		)
 		this.expression = attributes.expression

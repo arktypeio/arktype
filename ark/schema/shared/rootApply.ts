@@ -3,18 +3,22 @@ import type { BaseRoot } from "../roots/root.ts"
 import { CompiledFunction } from "./compile.ts"
 import { TransformErrors } from "./transform.ts"
 import {
+	addTransformErrors,
 	allowsAcyclic,
 	allowsInContext,
 	applyCyclic,
+	transformResolution,
 	Traversal
 } from "./traversal.ts"
 
 export const rootApplyRuntime = {
 	Traversal,
 	TransformErrors,
+	addTransformErrors,
 	applyCyclic,
 	allowsAcyclic,
-	allowsInContext
+	allowsInContext,
+	transformResolution
 }
 
 export const rootApplyParams = [
@@ -43,7 +47,7 @@ export const writeRootApply = (node: BaseRoot, name: string): string => {
 				.if("result !== data && result instanceof TransformErrors", () =>
 					js
 						.const("ctx", "new Traversal(data, config)")
-						.line("ctx.addTransformErrors(result)")
+						.line("addTransformErrors(ctx, result)")
 						.return("ctx.finalize(onFail)")
 				)
 				.return("result")
@@ -65,7 +69,7 @@ export const writeRootApply = (node: BaseRoot, name: string): string => {
 				.if("!(untracked ?? allowsInContext(node, data, config))", fallback)
 				.const("ctx", "new Traversal(data, config)")
 				.set("ctx.tracksTransforms", "untracked === undefined")
-				.const("result", `ctx.transformResolution("${name}", data, transform)`)
+				.const("result", `transformResolution(ctx, "${name}", data, transform)`)
 		} else {
 			js.if("!allows(data)", fallback)
 				.const("ctx", "new Traversal(data, config)")

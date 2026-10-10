@@ -64,19 +64,19 @@ export class InternalTraversal {
 	declare seen: { [id in string]?: Map<unknown, ResolutionState> }
 	// a cyclic root's Apply leaves resolutions untracked until its data is deep or broad enough to be cyclic
 	declare tracksResolutions: boolean
-	declare private resolving: ResolvingFrame[] | undefined
-	declare private resolvingDepth: number
-	declare private untrackedVisits: number
-	declare private recordedFailure: boolean
-	declare private enteredCount: number
-	declare private earliestAssumed: number
-	declare private assumed: unknown[] | undefined
-	declare private reachedInvalid: InvalidResolution | undefined
+	declare resolving: ResolvingFrame[] | undefined
+	declare resolvingDepth: number
+	declare untrackedVisits: number
+	declare recordedFailure: boolean
+	declare enteredCount: number
+	declare earliestAssumed: number
+	declare assumed: unknown[] | undefined
+	declare reachedInvalid: InvalidResolution | undefined
 	// data reaching an object by a shorter path than it first did is applied in order of path length
-	declare private deferredByLength: DeferredResolution[][] | undefined
-	declare private applyingLength: number
+	declare deferredByLength: DeferredResolution[][] | undefined
+	declare applyingLength: number
 	// the length of the shortest path an object was deferred at, or -1 once applied
-	declare private shortestPathLengths:
+	declare shortestPathLengths:
 		| { [id in string]?: Map<unknown, number> }
 		| undefined
 	// data a root allowed within the bounds is a tree, so each path is transformed
@@ -86,10 +86,10 @@ export class InternalTraversal {
 		| undefined
 
 	// data is read from what a morph received, since root is the input
-	declare protected received: unknown
-	declare protected receivedDepth: number
+	declare received: unknown
+	declare receivedDepth: number
 	// a piped node is transformed once Apply finds it valid
-	declare private checksOnly: boolean
+	declare checksOnly: boolean
 
 	constructor(root: unknown, config: ResolvedConfig) {
 		this.path = []
@@ -136,348 +136,6 @@ export class InternalTraversal {
 		return this.root
 	}
 
-	receive(data: unknown): void {
-		this.received = data
-		this.receivedDepth = this.path.length
-	}
-
-	// a morph reads data from its input until it returns
-	callMorph(morph: Morph, data: unknown): unknown {
-		const { received, receivedDepth } = this
-		this.receive(data)
-		const result = morph(data as never, this as never)
-		this.received = received
-		this.receivedDepth = receivedDepth
-		return result
-	}
-
-	transform(node: BaseNode, data: unknown): unknown {
-		if (node.isTransformedById)
-			return this.transformResolution(node.id, data, node.traverseTransform)
-		return this.transformed(node.traverseTransform(data, this), data)
-	}
-
-	// a transform that doesn't require ctx returns its errors
-	private transformed(result: unknown, data: unknown): unknown {
-		if (!(result instanceof TransformErrors)) return result
-		this.addTransformErrors(result)
-		return data
-	}
-
-	pipe(node: BaseNode, data: unknown): unknown {
-		// Allows would detach a contextual node's predicates from this path
-		const decidedByApply = node.allowsRequiresContext && !node.includesAlias
-		if (decidedByApply ? this.applyPiped(node, data) : node.allows(data)) {
-			if (!node.transforms) return data
-			const { received, receivedDepth } = this
-			const errorCount = this.currentErrorCount
-			// a piped node transforms a morph's output, which can share objects an earlier pass cached
-			const transformedByResolutionId = this.transformedByResolutionId
-			const tracksTransforms = this.tracksTransforms
-			this.transformedByResolutionId = undefined
-			this.tracksTransforms = true
-			const result = this.transform(node, data)
-			this.transformedByResolutionId = transformedByResolutionId
-			this.tracksTransforms = tracksTransforms
-			this.received = received
-			this.receivedDepth = receivedDepth
-			return this.currentErrorCount > errorCount ?
-					(this._errors ??= new ArkErrors(this.config))
-				:	result
-		}
-		if (!decidedByApply) this.applyPiped(node, data)
-		return (this._errors ??= new ArkErrors(this.config))
-	}
-
-	private applyPiped(node: BaseNode, data: unknown): boolean {
-		const errorCount = this.currentErrorCount
-		const { received, receivedDepth, checksOnly } = this
-		this.receive(data)
-		this.checksOnly = true
-		// a morph's output is new data, so a cyclic node tracks it from its own root
-		if (node.includesAlias) {
-			const ctx = this.traversalOf(data)
-			ctx.checksOnly = true
-			const { _errors } = applyCyclic(node, data, ctx)
-			if (_errors) this.mergeErrors(_errors)
-		} else node.traverseApply(data, this)
-		this.checksOnly = checksOnly
-		this.received = received
-		this.receivedDepth = receivedDepth
-		return this.currentErrorCount === errorCount
-	}
-
-	// Apply transforms each value it finds valid, unless it's checking a union's branch or a piped node
-	get transformsValid(): boolean {
-		return this.branches.length === 0 && !this.checksOnly
-	}
-
-	// a transform Apply runs returns or adds its errors
-	transformedInApply(result: unknown): void {
-		if (result instanceof TransformErrors) this.addTransformErrors(result)
-	}
-
-	// whether data was transformed in place of being applied, which requires node to allow it
-	transformIfAllowed(node: BaseNode, data: unknown): boolean {
-		if (!this.transformsValid) return false
-		if (node.includesAlias) {
-			const untracked = allowsAcyclic(node, data)
-			if (!(untracked ?? allowsInTraversal(node, data, this.traversalOf(data))))
-				return false
-			// as at a root, data allowed within the bounds is a tree, so each path is transformed
-			this.tracksTransforms = untracked === undefined
-			this.transformedByResolutionId = undefined
-		} else if (!this.allows(node, data)) return false
-		this.transformedInApply(this.transform(node, data))
-		return true
-	}
-
-	// a predicate reading ctx sees this path, and an error it adds fails the branch
-	allows(node: BaseNode, data: unknown): boolean {
-		if (!node.allowsRequiresTraversal) return node.allows(data)
-		const pathLength = this.path.length
-		this.pushBranch()
-		const allowed = node.traverseAllows(data, this)
-		// compiled Allows returns false without popping the keys it pushed
-		this.path.length = pathLength
-		return this.popBranch()!.errorCount === 0 && allowed
-	}
-
-	// an error ctx.error created was added with it
-	addMorphErrors(result: ArkErrorResult): void {
-		if (result instanceof ArkErrors) this.mergeErrors(result)
-	}
-
-	// a morph that returns ctx.errors has already added them
-	private mergeErrors(errors: ArkErrors): void {
-		if (errors !== this._errors) {
-			mergeErrors(
-				(this._errors ??= new ArkErrors(this.config)),
-				errors,
-				this.path
-			)
-		}
-	}
-
-	addTransformErrors(errors: TransformErrors, key?: PropertyKey): void {
-		const { path, received, receivedDepth } = this
-		for (const { reversedPath, result, data } of errors.entries) {
-			this.path = [...path]
-			if (key !== undefined) this.path.push(key)
-			for (let i = reversedPath.length - 1; i >= 0; i--)
-				this.path.push(reversedPath[i])
-			this.receive(data)
-			this.addMorphErrors(result)
-		}
-		this.path = path
-		this.received = received
-		this.receivedDepth = receivedDepth
-	}
-
-	transformResolution(
-		id: string,
-		data: unknown,
-		transform: TraverseTransform
-	): unknown {
-		if (!this.tracksTransforms || !hasDomain(data, "object"))
-			return this.transformed(transform(data, this), data)
-		const transformed = ((this.transformedByResolutionId ??= {})[id] ??=
-			new Map())
-		if (transformed.has(data)) {
-			const result = transformed.get(data)
-			if (result !== transforming) return result
-			// a cycle reached data, so its output will fill this placeholder
-			const placeholder = isArray(data) ? [] : {}
-			transformed.set(data, placeholder)
-			return placeholder
-		}
-		transformed.set(data, transforming)
-		const result = this.transformed(transform(data, this), data)
-		const placeholder = transformed.get(data)
-		if (placeholder === transforming || !canFill(placeholder, result)) {
-			transformed.set(data, result)
-			// a key's later step can pass this output back, and a morph never runs on its own output
-			if (hasDomain(result, "object")) transformed.set(result, result)
-			return result
-		}
-		Object.defineProperties(
-			placeholder as object,
-			Object.getOwnPropertyDescriptors(result)
-		)
-		transformed.set(placeholder, placeholder)
-		return Object.setPrototypeOf(placeholder, Object.getPrototypeOf(result))
-	}
-
-	// undefined once entered, else whether data is known or assumed valid
-	enterResolution(
-		id: string,
-		data: unknown,
-		apply?: TraverseApply
-	): boolean | undefined {
-		if (
-			this.deferredByLength &&
-			apply &&
-			!this.currentBranch &&
-			(typeof data === "object" ? data !== null : typeof data === "function")
-		) {
-			const lengths = (this.shortestPathLengths![id] ??= new Map())
-			const length = this.path.length
-			const shortestLength = lengths.get(data)
-			if (shortestLength !== undefined && shortestLength <= length) return true
-			if (length === this.applyingLength) {
-				lengths.set(data, -1)
-				apply(data, this)
-			} else {
-				lengths.set(data, length)
-				;(this.deferredByLength[length] ??= []).push({
-					id,
-					data,
-					apply,
-					path: [...this.path]
-				})
-			}
-			return true
-		}
-		// untracked, every state is a failure, so none is looked up before the first
-		const states =
-			this.tracksResolutions || this.recordedFailure ? this.seen[id] : undefined
-		const state = states?.get(data)
-		if (state !== undefined) {
-			if (typeof state === "number") {
-				if (state < this.earliestAssumed) this.earliestAssumed = state
-				return true
-			}
-			if (typeof state === "boolean") return state
-			if (this.currentBranch) {
-				this.failBranch(state.error)
-				return false
-			}
-			if (state.reported) {
-				// its errors belong at the shorter path, which only applying by path length finds
-				if (this.path.length < state.pathLength) throw reachedByShorterPath
-				this.reachedInvalid ??= state
-				return false
-			}
-			// its errors were discarded with a branch, so it's traversed again
-		}
-		if (
-			!this.tracksResolutions &&
-			(this.resolvingDepth >= maxAliasDepth ||
-				++this.untrackedVisits > maxAliasVisits)
-		)
-			throw untrackedBound
-		// frames are reused by depth, so entering doesn't allocate
-		const frame = ((this.resolving ??= [])[this.resolvingDepth++] ??= {
-			id,
-			data,
-			entered: 0,
-			errorCount: 0,
-			outerReachedInvalid: undefined,
-			outerEarliestAssumed: 0,
-			assumedLength: 0
-		})
-		frame.id = id
-		frame.data = data
-		frame.errorCount = this.currentErrorCount
-		if (!this.tracksResolutions) return
-		;(states ?? (this.seen[id] = new Map())).set(data, ++this.enteredCount)
-		frame.entered = this.enteredCount
-		frame.outerReachedInvalid = this.reachedInvalid
-		this.reachedInvalid = undefined
-		frame.outerEarliestAssumed = this.earliestAssumed
-		frame.assumedLength = (this.assumed ??= []).length
-		this.earliestAssumed = Number.POSITIVE_INFINITY
-		return
-	}
-
-	// whether data is valid, given Allows' result or, in Apply, the errors since it was entered
-	exitResolution(allowed?: boolean): boolean {
-		const frame = this.resolving![--this.resolvingDepth]
-		if (!this.tracksResolutions) return allowed ?? this.exitUntracked(frame)
-		const reachedInvalid = this.reachedInvalid
-		this.reachedInvalid = frame.outerReachedInvalid
-		const valid =
-			allowed ??
-			(reachedInvalid === undefined &&
-				this.currentErrorCount === frame.errorCount)
-		const data = frame.data
-		const states = this.seen[frame.id]!
-		// a primitive has no identity, so each place it's reached reports its own errors
-		if (typeof data === "object" ? data === null : typeof data !== "function") {
-			this.earliestAssumed = frame.outerEarliestAssumed
-			states.delete(data)
-			return valid
-		}
-		const state: ResolutionState =
-			valid || allowed === false ?
-				valid
-			:	this.invalidResolution(reachedInvalid?.error)
-		const earliestAssumed = this.earliestAssumed
-		this.earliestAssumed = frame.outerEarliestAssumed
-		const assumed = this.assumed!
-		if (valid && earliestAssumed < frame.entered) {
-			assumed.push(states, data)
-			if (earliestAssumed < this.earliestAssumed)
-				this.earliestAssumed = earliestAssumed
-			return true
-		}
-		// nothing it assumed is in progress, so each result that assumed it is valid with it, or unknown without it
-		for (let i = frame.assumedLength; i < assumed.length; i += 2) {
-			const assumedStates = assumed[i] as Map<unknown, ResolutionState>
-			if (valid) assumedStates.set(assumed[i + 1], true)
-			else assumedStates.delete(assumed[i + 1])
-		}
-		assumed.length = frame.assumedLength
-		states.set(data, state)
-		if (typeof state === "object" && state.reported)
-			this.reachedInvalid ??= state
-		return valid
-	}
-
-	// untracked, a failed object is recorded so that reaching it again doesn't report it twice
-	private exitUntracked(frame: ResolvingFrame): boolean {
-		if (this.currentErrorCount === frame.errorCount) return true
-		if (!hasDomain(frame.data, "object")) return false
-		;(this.seen[frame.id] ??= new Map()).set(
-			frame.data,
-			this.invalidResolution()
-		)
-		this.recordedFailure = true
-		return false
-	}
-
-	// an object reached at a longer path than the one being applied is deferred, so each is applied once at its shortest path
-	applyByPathLength(id: string, apply: TraverseApply, data: unknown): void {
-		const deferredByLength: DeferredResolution[][] = (this.deferredByLength =
-			[])
-		this.shortestPathLengths = {}
-		this.enterResolution(id, data, apply)
-		for (let length = 1; length < deferredByLength.length; length++) {
-			if (!deferredByLength[length]) continue
-			this.applyingLength = length
-			for (const deferred of deferredByLength[length]) {
-				const lengths = this.shortestPathLengths[deferred.id]!
-				// it was deferred again at a shorter path, so it's been applied there
-				if (lengths.get(deferred.data) !== length) continue
-				lengths.set(deferred.data, -1)
-				this.path = deferred.path
-				deferred.apply(deferred.data, this)
-			}
-		}
-		this.path = []
-	}
-
-	private invalidResolution(
-		error = this.currentBranch?.error ?? lastOf(this._errors!._issues)
-	): InvalidResolution {
-		const branch = this.currentBranch
-		return {
-			error,
-			reported: !branch,
-			pathLength: this.path.length
-		}
-	}
-
 	get currentErrorCount(): number {
 		const branches = this.branches
 		return branches.length === 0 ?
@@ -498,14 +156,6 @@ export class InternalTraversal {
 
 	popBranch(): BranchTraversal | undefined {
 		return this.branches.pop()
-	}
-
-	// a traversal of other data, of this one's class, so a callback sees the API it would have
-	traversalOf(data: unknown): this {
-		return new (this.constructor as new (
-			root: unknown,
-			config: ResolvedConfig
-		) => this)(data, this.config)
 	}
 
 	/**
@@ -536,11 +186,11 @@ export class InternalTraversal {
 	 */
 	addError(error: ArkError): ArkError {
 		if (this.currentBranch) this.failBranch(error)
-		else addError((this._errors ??= new ArkErrors(this.config)), error)
+		else addError(errorsOf(this), error)
 		return error
 	}
 
-	private failBranch(error: ArkError): void {
+	failBranch(error: ArkError): void {
 		this.currentBranch!.error = error
 		this.currentBranch!.errorCount++
 	}
@@ -553,7 +203,7 @@ export class Traversal extends InternalTraversal {
 	 * ✅ will always be empty for a valid traversal
 	 */
 	get errors(): ArkErrors {
-		return (this._errors ??= new ArkErrors(this.config))
+		return errorsOf(this)
 	}
 
 	/**
@@ -623,11 +273,453 @@ export class Traversal extends InternalTraversal {
 	}
 }
 
+const errorsOf = (ctx: InternalTraversal): ArkErrors =>
+	(ctx._errors ??= new ArkErrors(ctx.config))
+
 /** adds an error a union, a structure or a callback describes, at ctx's path */
 export const errorFromContext = (
 	ctx: InternalTraversal,
 	input: ArkErrorContextInput
 ): ArkError => ctx.addError(errorOfContext(input, ctx.path, ctx.config))
+
+const receive = (ctx: InternalTraversal, data: unknown): void => {
+	ctx.received = data
+	ctx.receivedDepth = ctx.path.length
+}
+
+// a morph reads data from its input until it returns
+export const callMorph = (
+	ctx: InternalTraversal,
+	morph: Morph,
+	data: unknown
+): unknown => {
+	const { received, receivedDepth } = ctx
+	receive(ctx, data)
+	const result = morph(data as never, ctx as never)
+	ctx.received = received
+	ctx.receivedDepth = receivedDepth
+	return result
+}
+
+export const transform = (
+	ctx: InternalTraversal,
+	node: BaseNode,
+	data: unknown
+): unknown =>
+	node.isTransformedById ?
+		transformResolution(ctx, node.id, data, node.traverseTransform)
+	:	transformAcyclic(ctx, node, data)
+
+const transformAcyclic = (
+	ctx: InternalTraversal,
+	node: BaseNode,
+	data: unknown
+): unknown => transformed(ctx, node.traverseTransform(data, ctx), data)
+
+// a transform that doesn't require ctx returns its errors
+export const transformed = (
+	ctx: InternalTraversal,
+	result: unknown,
+	data: unknown
+): unknown => {
+	if (!(result instanceof TransformErrors)) return result
+	addTransformErrors(ctx, result)
+	return data
+}
+
+// a validator or morph piping to a node calls only the pipe it can use, so a bundle leaves out the others
+export const pipeOf = (node: BaseNode): TraversePipe =>
+	node.includesAlias ? pipe
+	: node.transforms ? pipeTransformed
+	: pipeChecked
+
+export type TraversePipe = (
+	ctx: InternalTraversal,
+	node: BaseNode,
+	data: unknown
+) => unknown
+
+export const pipeChecked: TraversePipe = (ctx, node, data) =>
+	allowsPiped(ctx, node, data) ? data : errorsOf(ctx)
+
+export const pipeTransformed: TraversePipe = (ctx, node, data) =>
+	allowsPiped(ctx, node, data) ?
+		transformPiped(ctx, node, data, transformAcyclic)
+	:	errorsOf(ctx)
+
+export const pipe: TraversePipe = (ctx, node, data) => {
+	if (!node.includesAlias) return pipeOf(node)(ctx, node, data)
+	if (!node.allows(data)) {
+		applyPipedResolution(ctx, node, data)
+		return errorsOf(ctx)
+	}
+	if (!node.transforms) return data
+	// a piped node transforms a morph's output, which can share objects an earlier pass cached
+	const { transformedByResolutionId, tracksTransforms } = ctx
+	ctx.transformedByResolutionId = undefined
+	ctx.tracksTransforms = true
+	const result = transformPiped(ctx, node, data, transform)
+	ctx.transformedByResolutionId = transformedByResolutionId
+	ctx.tracksTransforms = tracksTransforms
+	return result
+}
+
+const allowsPiped = (
+	ctx: InternalTraversal,
+	node: BaseNode,
+	data: unknown
+): boolean => {
+	// Allows would detach a contextual node's predicates from this path
+	if (node.allowsRequiresContext) return applyPiped(ctx, node, data)
+	if (node.allows(data)) return true
+	applyPiped(ctx, node, data)
+	return false
+}
+
+const transformPiped = (
+	ctx: InternalTraversal,
+	node: BaseNode,
+	data: unknown,
+	transformNode: typeof transform
+): unknown => {
+	const { received, receivedDepth } = ctx
+	const errorCount = ctx.currentErrorCount
+	const result = transformNode(ctx, node, data)
+	ctx.received = received
+	ctx.receivedDepth = receivedDepth
+	return ctx.currentErrorCount > errorCount ? errorsOf(ctx) : result
+}
+
+const applyPiped = (
+	ctx: InternalTraversal,
+	node: BaseNode,
+	data: unknown
+): boolean => {
+	const errorCount = ctx.currentErrorCount
+	const { received, receivedDepth, checksOnly } = ctx
+	receive(ctx, data)
+	ctx.checksOnly = true
+	node.traverseApply(data, ctx)
+	ctx.checksOnly = checksOnly
+	ctx.received = received
+	ctx.receivedDepth = receivedDepth
+	return ctx.currentErrorCount === errorCount
+}
+
+// a morph's output is new data, so a cyclic node tracks it from its own root
+const applyPipedResolution = (
+	ctx: InternalTraversal,
+	node: BaseNode,
+	data: unknown
+): void => {
+	const { received, receivedDepth, checksOnly } = ctx
+	receive(ctx, data)
+	ctx.checksOnly = true
+	const piped = traversalOf(ctx, data)
+	piped.checksOnly = true
+	const { _errors } = applyCyclic(node, data, piped)
+	if (_errors) addErrors(ctx, _errors)
+	ctx.checksOnly = checksOnly
+	ctx.received = received
+	ctx.receivedDepth = receivedDepth
+}
+
+// Apply transforms each value it finds valid, unless it's checking a union's branch or a piped node
+export const transformsValid = (ctx: InternalTraversal): boolean =>
+	ctx.branches.length === 0 && !ctx.checksOnly
+
+// a transform Apply runs returns or adds its errors
+export const transformedInApply = (
+	ctx: InternalTraversal,
+	result: unknown
+): void => {
+	if (result instanceof TransformErrors) addTransformErrors(ctx, result)
+}
+
+// whether data was transformed in place of being applied, which requires node to allow it
+export const transformIfAllowed = (
+	ctx: InternalTraversal,
+	node: BaseNode,
+	data: unknown
+): boolean => {
+	if (!transformsValid(ctx)) return false
+	if (node.includesAlias) {
+		const untracked = allowsAcyclic(node, data)
+		if (!(untracked ?? allowsInTraversal(node, data, traversalOf(ctx, data))))
+			return false
+		// as at a root, data allowed within the bounds is a tree, so each path is transformed
+		ctx.tracksTransforms = untracked === undefined
+		ctx.transformedByResolutionId = undefined
+	} else if (!allowsInBranch(ctx, node, data)) return false
+	transformedInApply(ctx, transform(ctx, node, data))
+	return true
+}
+
+// a predicate reading ctx sees this path, and an error it adds fails the branch
+export const allowsInBranch = (
+	ctx: InternalTraversal,
+	node: BaseNode,
+	data: unknown
+): boolean => {
+	if (!node.allowsRequiresTraversal) return node.allows(data)
+	const pathLength = ctx.path.length
+	ctx.pushBranch()
+	const allowed = node.traverseAllows(data, ctx)
+	// compiled Allows returns false without popping the keys it pushed
+	ctx.path.length = pathLength
+	return ctx.popBranch()!.errorCount === 0 && allowed
+}
+
+// an error ctx.error created was added with it
+export const addMorphErrors = (
+	ctx: InternalTraversal,
+	result: ArkErrorResult
+): void => {
+	if (result instanceof ArkErrors) addErrors(ctx, result)
+}
+
+// a morph that returns ctx.errors has already added them
+const addErrors = (ctx: InternalTraversal, errors: ArkErrors): void => {
+	if (errors !== ctx._errors) mergeErrors(errorsOf(ctx), errors, ctx.path)
+}
+
+export const addTransformErrors = (
+	ctx: InternalTraversal,
+	errors: TransformErrors,
+	key?: PropertyKey
+): void => {
+	const { path, received, receivedDepth } = ctx
+	for (const { reversedPath, result, data } of errors.entries) {
+		ctx.path = [...path]
+		if (key !== undefined) ctx.path.push(key)
+		for (let i = reversedPath.length - 1; i >= 0; i--)
+			ctx.path.push(reversedPath[i])
+		receive(ctx, data)
+		addMorphErrors(ctx, result)
+	}
+	ctx.path = path
+	ctx.received = received
+	ctx.receivedDepth = receivedDepth
+}
+
+export const transformResolution = (
+	ctx: InternalTraversal,
+	id: string,
+	data: unknown,
+	transform: TraverseTransform
+): unknown => {
+	if (!ctx.tracksTransforms || !hasDomain(data, "object"))
+		return transformed(ctx, transform(data, ctx), data)
+	const transformedByData = ((ctx.transformedByResolutionId ??= {})[id] ??=
+		new Map())
+	if (transformedByData.has(data)) {
+		const result = transformedByData.get(data)
+		if (result !== transforming) return result
+		// a cycle reached data, so its output will fill this placeholder
+		const placeholder = isArray(data) ? [] : {}
+		transformedByData.set(data, placeholder)
+		return placeholder
+	}
+	transformedByData.set(data, transforming)
+	const result = transformed(ctx, transform(data, ctx), data)
+	const placeholder = transformedByData.get(data)
+	if (placeholder === transforming || !canFill(placeholder, result)) {
+		transformedByData.set(data, result)
+		// a key's later step can pass this output back, and a morph never runs on its own output
+		if (hasDomain(result, "object")) transformedByData.set(result, result)
+		return result
+	}
+	Object.defineProperties(
+		placeholder as object,
+		Object.getOwnPropertyDescriptors(result)
+	)
+	transformedByData.set(placeholder, placeholder)
+	return Object.setPrototypeOf(placeholder, Object.getPrototypeOf(result))
+}
+
+// undefined once entered, else whether data is known or assumed valid
+export const enterResolution = (
+	ctx: InternalTraversal,
+	id: string,
+	data: unknown,
+	apply?: TraverseApply
+): boolean | undefined => {
+	if (
+		ctx.deferredByLength &&
+		apply &&
+		!ctx.currentBranch &&
+		(typeof data === "object" ? data !== null : typeof data === "function")
+	) {
+		const lengths = (ctx.shortestPathLengths![id] ??= new Map())
+		const length = ctx.path.length
+		const shortestLength = lengths.get(data)
+		if (shortestLength !== undefined && shortestLength <= length) return true
+		if (length === ctx.applyingLength) {
+			lengths.set(data, -1)
+			apply(data, ctx)
+		} else {
+			lengths.set(data, length)
+			;(ctx.deferredByLength[length] ??= []).push({
+				id,
+				data,
+				apply,
+				path: [...ctx.path]
+			})
+		}
+		return true
+	}
+	// untracked, every state is a failure, so none is looked up before the first
+	const states =
+		ctx.tracksResolutions || ctx.recordedFailure ? ctx.seen[id] : undefined
+	const state = states?.get(data)
+	if (state !== undefined) {
+		if (typeof state === "number") {
+			if (state < ctx.earliestAssumed) ctx.earliestAssumed = state
+			return true
+		}
+		if (typeof state === "boolean") return state
+		if (ctx.currentBranch) {
+			ctx.failBranch(state.error)
+			return false
+		}
+		if (state.reported) {
+			// its errors belong at the shorter path, which only applying by path length finds
+			if (ctx.path.length < state.pathLength) throw reachedByShorterPath
+			ctx.reachedInvalid ??= state
+			return false
+		}
+		// its errors were discarded with a branch, so it's traversed again
+	}
+	if (
+		!ctx.tracksResolutions &&
+		(ctx.resolvingDepth >= maxAliasDepth ||
+			++ctx.untrackedVisits > maxAliasVisits)
+	)
+		throw untrackedBound
+	// frames are reused by depth, so entering doesn't allocate
+	const frame = ((ctx.resolving ??= [])[ctx.resolvingDepth++] ??= {
+		id,
+		data,
+		entered: 0,
+		errorCount: 0,
+		outerReachedInvalid: undefined,
+		outerEarliestAssumed: 0,
+		assumedLength: 0
+	})
+	frame.id = id
+	frame.data = data
+	frame.errorCount = ctx.currentErrorCount
+	if (!ctx.tracksResolutions) return
+	;(states ?? (ctx.seen[id] = new Map())).set(data, ++ctx.enteredCount)
+	frame.entered = ctx.enteredCount
+	frame.outerReachedInvalid = ctx.reachedInvalid
+	ctx.reachedInvalid = undefined
+	frame.outerEarliestAssumed = ctx.earliestAssumed
+	frame.assumedLength = (ctx.assumed ??= []).length
+	ctx.earliestAssumed = Number.POSITIVE_INFINITY
+	return
+}
+
+// whether data is valid, given Allows' result or, in Apply, the errors since it was entered
+export const exitResolution = (
+	ctx: InternalTraversal,
+	allowed?: boolean
+): boolean => {
+	const frame = ctx.resolving![--ctx.resolvingDepth]
+	if (!ctx.tracksResolutions) return allowed ?? exitUntracked(ctx, frame)
+	const reachedInvalid = ctx.reachedInvalid
+	ctx.reachedInvalid = frame.outerReachedInvalid
+	const valid =
+		allowed ??
+		(reachedInvalid === undefined && ctx.currentErrorCount === frame.errorCount)
+	const data = frame.data
+	const states = ctx.seen[frame.id]!
+	// a primitive has no identity, so each place it's reached reports its own errors
+	if (typeof data === "object" ? data === null : typeof data !== "function") {
+		ctx.earliestAssumed = frame.outerEarliestAssumed
+		states.delete(data)
+		return valid
+	}
+	const state: ResolutionState =
+		valid || allowed === false ?
+			valid
+		:	invalidResolution(ctx, reachedInvalid?.error)
+	const earliestAssumed = ctx.earliestAssumed
+	ctx.earliestAssumed = frame.outerEarliestAssumed
+	const assumed = ctx.assumed!
+	if (valid && earliestAssumed < frame.entered) {
+		assumed.push(states, data)
+		if (earliestAssumed < ctx.earliestAssumed)
+			ctx.earliestAssumed = earliestAssumed
+		return true
+	}
+	// nothing it assumed is in progress, so each result that assumed it is valid with it, or unknown without it
+	for (let i = frame.assumedLength; i < assumed.length; i += 2) {
+		const assumedStates = assumed[i] as Map<unknown, ResolutionState>
+		if (valid) assumedStates.set(assumed[i + 1], true)
+		else assumedStates.delete(assumed[i + 1])
+	}
+	assumed.length = frame.assumedLength
+	states.set(data, state)
+	if (typeof state === "object" && state.reported) ctx.reachedInvalid ??= state
+	return valid
+}
+
+// untracked, a failed object is recorded so that reaching it again doesn't report it twice
+const exitUntracked = (
+	ctx: InternalTraversal,
+	frame: ResolvingFrame
+): boolean => {
+	if (ctx.currentErrorCount === frame.errorCount) return true
+	if (!hasDomain(frame.data, "object")) return false
+	;(ctx.seen[frame.id] ??= new Map()).set(frame.data, invalidResolution(ctx))
+	ctx.recordedFailure = true
+	return false
+}
+
+// an object reached at a longer path than the one being applied is deferred, so each is applied once at its shortest path
+const applyByPathLength = (
+	ctx: InternalTraversal,
+	id: string,
+	apply: TraverseApply,
+	data: unknown
+): void => {
+	const deferredByLength: DeferredResolution[][] = (ctx.deferredByLength = [])
+	ctx.shortestPathLengths = {}
+	enterResolution(ctx, id, data, apply)
+	for (let length = 1; length < deferredByLength.length; length++) {
+		if (!deferredByLength[length]) continue
+		ctx.applyingLength = length
+		for (const deferred of deferredByLength[length]) {
+			const lengths = ctx.shortestPathLengths[deferred.id]!
+			// it was deferred again at a shorter path, so it's been applied there
+			if (lengths.get(deferred.data) !== length) continue
+			lengths.set(deferred.data, -1)
+			ctx.path = deferred.path
+			deferred.apply(deferred.data, ctx)
+		}
+	}
+	ctx.path = []
+}
+
+const invalidResolution = (
+	ctx: InternalTraversal,
+	error = ctx.currentBranch?.error ?? lastOf(ctx._errors!._issues)
+): InvalidResolution => ({
+	error,
+	reported: !ctx.currentBranch,
+	pathLength: ctx.path.length
+})
+
+// a traversal of other data, of this one's class, so a callback sees the API it would have
+const traversalOf = <ctx extends InternalTraversal>(
+	ctx: ctx,
+	data: unknown
+): ctx =>
+	new (ctx.constructor as new (root: unknown, config: ResolvedConfig) => ctx)(
+		data,
+		ctx.config
+	)
 
 const lastOf = <t>(array: readonly t[]): t => array[array.length - 1]
 
@@ -670,7 +762,7 @@ export const applyCyclic = <ctx extends InternalTraversal>(
 ): ctx => {
 	// a rerun would transform each value Apply found valid again
 	if (node.transforms) {
-		ctx.applyByPathLength(node.trackedId, node.traverseApply, data)
+		applyByPathLength(ctx, node.trackedId, node.traverseApply, data)
 		return ctx
 	}
 	ctx.tracksResolutions = false
@@ -680,15 +772,15 @@ export const applyCyclic = <ctx extends InternalTraversal>(
 			node.traverseApply(data, ctx)
 		} catch (e) {
 			if (e !== untrackedBound) throw e
-			ctx = ctx.traversalOf(data)
+			ctx = traversalOf(ctx, data)
 			applyResolution(node.trackedId, node.traverseApply, data, ctx)
 		}
 		return ctx
 	} catch (e) {
 		if (e !== reachedByShorterPath) throw e
 	}
-	ctx = ctx.traversalOf(data)
-	ctx.applyByPathLength(node.trackedId, node.traverseApply, data)
+	ctx = traversalOf(ctx, data)
+	applyByPathLength(ctx, node.trackedId, node.traverseApply, data)
 	return ctx
 }
 
@@ -698,9 +790,9 @@ export const applyResolution = (
 	data: unknown,
 	ctx: InternalTraversal
 ): void => {
-	if (ctx.enterResolution(id, data, apply) !== undefined) return
+	if (enterResolution(ctx, id, data, apply) !== undefined) return
 	apply(data, ctx)
-	ctx.exitResolution()
+	exitResolution(ctx)
 }
 
 export const applyMember = (
@@ -722,7 +814,9 @@ export const applyValue = (
 ): void => {
 	if (
 		node.transforms &&
-		(transforms ? ctx.transformIfAllowed(node, data) : ctx.allows(node, data))
+		(transforms ?
+			transformIfAllowed(ctx, node, data)
+		:	allowsInBranch(ctx, node, data))
 	)
 		return
 	if (node.entersResolution)

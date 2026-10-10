@@ -4,6 +4,7 @@ import {
 	hasArkKind,
 	InternalTraversal,
 	isNode,
+	pipeOf,
 	precompileRootUnits,
 	type ArkErrorCode,
 	type BaseNode,
@@ -1150,6 +1151,7 @@ return [${returned.join(", ")}]
 		${apply}
 	})(${shape}, ${this.configOf(root)}, ${runtimeArgs.join(", ")}),
 	${shape},
+	${this.emit(pipeOf(root))},
 	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root.expression)}()`}, description: ${this.emitString(root.description)}, meta: ${this.emitMeta(root)} }${key}
 )`
 	}

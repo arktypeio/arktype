@@ -37,6 +37,7 @@ import { copyOf } from "../shared/transform.ts"
 import {
 	applyValue,
 	computeDefaultValueMorph,
+	transform,
 	traverseKey,
 	type TraverseAllows,
 	type TraverseApply,
@@ -335,7 +336,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			const element = data[i]
 			const transformed = traverseKey(
 				i,
-				() => ctx.transform(node, element),
+				() => transform(ctx, node, element),
 				ctx
 			)
 			if (Object.is(transformed, element)) continue
