@@ -1171,6 +1171,30 @@ export const E = type(Object.freeze({ a: "string" }))`)
 			])
 		})
 
+		it("a function's name defined as esbuild's keepNames defines it", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import { isLong } from "./other.ts"
+var __defProp = Object.defineProperty
+var __name = (target, value) => __defProp(target, "name", { value, configurable: true })
+const isShort = __name((s: string) => s.length < 3, "isShort")
+export const A = type("string").narrow(isShort)
+export const B = type("string").narrow(__name(isLong, "isLong"))
+export const C = type("string").narrow(__defProp((s: string) => s.length < 3, "name", { value: "short" }))
+export const D = type("string").narrow(__defProp((s: string) => s.length < 3, "length", { value: 2, configurable: true }))
+export const E = type(__defProp({ a: "string" }, "name", { value: "o", configurable: true }))`,
+					{ "/other.ts": "export const isLong = (s: string) => s.length > 1" }
+				)
+			).snap([
+				"6:18 accepted string",
+				'7:18 rejected\n  `__defProp(target, "name", { value, configurable: true })` defines a property other than the name of a function its module created',
+				'8:18 rejected\n  `__defProp((s: string) => s.length < 3, "name", { value: "sh…` defines a property other than the name of a function its module created',
+				'9:18 rejected\n  `__defProp((s: string) => s.length < 3, "length", { value: 2…` defines a property other than the name of a function its module created',
+				'10:18 rejected\n  `__defProp({ a: "string" }, "name", { value: "o", configurab…` defines a property other than the name of a function its module created'
+			])
+		})
+
 		it("conversions of objects", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

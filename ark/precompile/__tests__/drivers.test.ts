@@ -188,7 +188,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			}
 		}).timeout(60000)
 
-		it("configured by modules a loader registered after it transpiles", () => {
+		it("precompiles a configured program a later loader transpiles as tsx does", () => {
 			for (const runtime of [undefined, "arktype"] as const) {
 				attest(
 					node(

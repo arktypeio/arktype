@@ -1654,6 +1654,9 @@ export class Interpreter {
 	): unknown {
 		const dynamic = findDynamic([receiver, ...args])
 		if (dynamic) return dynamic
+		// as esbuild's keepNames does under tsx, while a standalone artifact receives the function's name at creation anyway
+		if (fn === Object.defineProperty && !isNew && this.isNaming(args, ctx))
+			return args[0]
 		const builtin = (isNew ? pureConstructors : pureBuiltins).get(fn)
 		if (!builtin) {
 			return isNew ?
@@ -1713,6 +1716,23 @@ export class Interpreter {
 		return isApproximate ?
 				this.approximation(node, ctx)
 			:	this.admit(result, node, ctx)
+	}
+
+	private isNaming(
+		[target, key, descriptor]: unknown[],
+		ctx: Context
+	): boolean {
+		const standIn =
+			hasDomain(target, "object") ? this.standIns.get(target) : undefined
+		return (
+			standIn?.kind === "function" &&
+			standIn.module === ctx.module &&
+			key === "name" &&
+			isPlainContainer(descriptor) &&
+			Reflect.ownKeys(descriptor).length === 2 &&
+			typeof Reflect.get(descriptor, "value") === "string" &&
+			Reflect.get(descriptor, "configurable") === true
+		)
 	}
 
 	private conversionOf(

@@ -9,7 +9,8 @@ export const load: LoadHook = (url, context, nextLoad) => {
 	const { code } = transformSync(readFileSync(fileURLToPath(url), "utf8"), {
 		loader: "ts",
 		format: "esm",
-		minifyWhitespace: true
+		minifyWhitespace: true,
+		keepNames: true
 	})
 	return { format: "module", source: code, shortCircuit: true }
 }

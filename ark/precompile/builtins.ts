@@ -165,6 +165,11 @@ definePure(Object, "Object", ["fromEntries"], {
 	check: withPrimitiveKeys
 })
 definePure(Object, "Object", ["freeze"], { objects: ["object"], writes: true })
+// the interpreter evaluates the call naming a function its module created, as esbuild's keepNames emits
+definePure(Object, "Object", ["defineProperty"], {
+	check: () =>
+		"defines a property other than the name of a function its module created"
+})
 definePure(Object, "Object", ["assign"], {
 	objects: ["object"],
 	check: args => withoutArkInternals(args) ?? withoutProtoKeys(args),
