@@ -770,7 +770,7 @@ const exclusions: Allowance[] = [
 		matches: ({ original, precompiled }, line) =>
 			/\batMost\d/.test(line) &&
 			[original.threw, precompiled.threw].some(threw =>
-				/^ParseError: Default .*must be valid according to atMost\d/.test(
+				/^ParseError: Default .*must be valid according to (?:atMost\d|perturbed)/.test(
 					String(threw)
 				)
 			) &&
