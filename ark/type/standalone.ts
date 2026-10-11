@@ -66,13 +66,8 @@ type DeclarationRole =
 	| "standIn"
 	| "json"
 
-// constraints a node keeps sorted by hash, which holds the names of the functions they hold
-const sortedConstraintKeys = [
-	"pattern",
-	"required",
-	"optional",
-	"index"
-] as const
+// constraints a node keeps sorted by hash, which holds the names of the functions they hold, unlike props, which arktype orders by key
+const sortedConstraintKeys = ["pattern", "index"] as const
 
 const runtimePathsByValue = new Map<unknown, string>()
 

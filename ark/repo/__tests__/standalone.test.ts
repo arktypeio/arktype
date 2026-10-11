@@ -2119,6 +2119,27 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 		})
 
+		it("creates props in key order whatever their functions are named", async () => {
+			const now = standIn(() => 1, "a", "now")
+			const later = standIn(() => 2, "b", "later")
+			const { T: create } = await load({
+				T: {
+					type: type({
+						start: ["number", "=", now],
+						end: ["number", "=", later]
+					}),
+					params: [
+						{ kind: "function", label: "`now`", value: now },
+						{ kind: "function", label: "`later`", value: later }
+					]
+				}
+			})
+			// names a minifier gave them, which sort the other way
+			const Ot = () => 1
+			const jt = () => 2
+			attest(JSON.stringify(create(Ot, jt)({}))).equals('{"end":2,"start":1}')
+		})
+
 		it("rejects siblings printing alike whose functions' declared names are equal", () => {
 			const isSmall = standIn((n: number) => n < 10, "a", "fn")
 			const isEven = standIn((n: number) => n % 2 === 0, "b", "fn")

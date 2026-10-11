@@ -1,6 +1,6 @@
 import { type } from "arktype"
 
-// arktype sorts an optional prop by its default before its key, so these sort by their thunks' names, which are equal
+// arktype orders props by key, so their thunks' names don't order them
 export const Settings = type({
 	tags: ["string[]", "=", () => []],
 	ids: ["number[]", "=", () => []]
