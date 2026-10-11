@@ -416,14 +416,14 @@ const bindPrecompiled = (
 	)
 }
 
-// a tuple's defaults nest each thunk in an array of pairs, and a unit's value is the program's, so no deeper
+// a tuple's defaults nest each thunk in an array of pairs
 const forEachElement = (
 	value: unknown,
-	f: (value: unknown) => void,
-	depth = 2
+	depth: number,
+	f: (value: unknown) => void
 ): void => {
 	if (depth && isArray(value))
-		for (const element of value) forEachElement(element, f, depth - 1)
+		for (const element of value) forEachElement(element, depth - 1, f)
 	else f(value)
 }
 
@@ -454,7 +454,8 @@ const keyRegisteredNames = (root: BaseRoot): string => {
 	for (const id in root.referencesById) {
 		const node = root.referencesById[id]
 		for (const k in node.inner) {
-			forEachElement((node.inner as Dict)[k], value => {
+			// a unit's value is the program's, and naming a function in it would shift the names later Types register
+			forEachElement((node.inner as Dict)[k], k === "unit" ? 0 : 2, value => {
 				const constant = constantNames!.get(value)
 				if (constant) kindsByName[nameOf(value as object)] = `$.${constant}`
 				else if (typeof value === "function" && !isNode(value)) {

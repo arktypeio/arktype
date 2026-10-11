@@ -309,6 +309,18 @@ contextualize(() => {
 		attest(T.allows({ k: a })).equals(true)
 	})
 
+	it("keys a unit without naming the functions in its value", async () => {
+		await precompileUnits([type({ k: type.unit({}) })])
+		type({ k: type.unit([named("isInUnitPrecompiled", () => true)]) })
+		const T = type("string").narrow(
+			named("isInUnitPrecompiled", (s: string) => s.length > 1)
+		)
+		attest(T.json).snap({
+			domain: "string",
+			predicate: ["$ark.isInUnitPrecompiled"]
+		})
+	})
+
 	it("misses a unit holding one of arktype's own functions for any other", async () => {
 		const units = await precompileUnits([type("Date").narrow(isValidDate)])
 		const T = type("Date").narrow((d: Date) => d.getUTCFullYear() > 2000)
