@@ -11,7 +11,7 @@ import { arkKindOf } from "@ark/util"
 import type { IntrospectionMember } from "arktype/internal/runtime.ts"
 import { isTypedFn, keyOf, type Foldable } from "arktype/internal/standalone.ts"
 import { bindingOfFunction, isArk } from "@ark/precompile/internal/graph.ts"
-import type { SourceModule } from "@ark/precompile/internal/module.ts"
+import { SourceModule } from "@ark/precompile/internal/module.ts"
 import { specifierOf } from "@ark/precompile/internal/precompile.ts"
 import MagicString from "magic-string"
 import { execFile, spawnSync } from "node:child_process"
@@ -103,14 +103,25 @@ export const buildPerturbed = (
 		)
 		if (!folded.length && !opts.runsUnfolded) continue
 		const module = precompiler.graph.moduleOf(path) as SourceModule
-		// what the arktype values of the modules it imports hold was passed to arktype before any of its own sites runs
-		const loaded = Object.values(module.scopes.root.bindings).flatMap(
-			binding => {
+		// what the arktype values of the modules it imports hold, and what any of their definitions passed arktype though its Type no longer holds it, was passed before any of its own sites runs
+		const loaded = [
+			...Object.values(module.scopes.root.bindings).flatMap(binding => {
 				if (binding.kind !== "import") return []
 				const value = precompiler.interpreter.valueOfBinding(binding, module)
 				return isHolder(value) ? keyOf(value)[1] : []
-			}
-		)
+			}),
+			...precompiler.graph
+				.dependenciesOf(module.id)
+				.slice(1)
+				.flatMap(id => {
+					const imported = precompiler.graph.moduleOf(id)
+					return imported instanceof SourceModule ?
+							precompiler
+								.analyze(imported.source, id)
+								.sites.flatMap(site => site.holes.map(hole => hole.value))
+						:	[]
+				})
+		]
 		const valueOrUndefined = (
 			binding: Parameters<typeof precompiler.interpreter.valueOfBinding>[0]
 		) => {
