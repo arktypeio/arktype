@@ -642,9 +642,9 @@ export const User = type({ name: "string" })`
 			}
 			attest(inputsOf()).equals([])
 			attest(inputsOf({ checkHelpers: true })).equals([["User", []]])
+			// arktype computes it at runtime from the Type a site created
 			attest(statusesOf(source, files, { runtime: "arktype" })).snap([
-				"3:11 accepted { a: string }",
-				"6:11 accepted"
+				"3:11 accepted { a: string }"
 			])
 		})
 	})

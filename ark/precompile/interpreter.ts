@@ -1542,6 +1542,16 @@ export class Interpreter {
 		}
 		if (object instanceof Date || object instanceof RegExp)
 			return this.notOwnData(node, ctx)
+		// a member the standalone value lacks makes the site its own, which the build then refuses if it can't serve the read
+		if (
+			ctx.site &&
+			ctx.module === ctx.site.module &&
+			key in object &&
+			(hasArkKind(object, "root") ?
+				!(key in validatorMembers)
+			:	hasArkKind(object, "scope") || hasArkKind(object, "generic"))
+		)
+			ctx.site.unavailableReads.push(node)
 		const members =
 			isNode(object) ? nodeMembers
 			: hasArkKind(object, "scope") ? scopeMembers
@@ -1570,14 +1580,6 @@ export class Interpreter {
 			!hasArkKind(object, "module")
 		)
 			return this.reject(node, ctx, unstableArkProblem)
-		if (
-			ctx.site &&
-			ctx.module === ctx.site.module &&
-			(hasArkKind(object, "root") ?
-				!(key in validatorMembers)
-			:	hasArkKind(object, "scope") || hasArkKind(object, "generic"))
-		)
-			ctx.site.unavailableReads.push(node)
 		// a getter is a call into arktype, which can throw a ParseError over what the object holds
 		ctx.site?.arktypeArguments.push(object)
 		let read

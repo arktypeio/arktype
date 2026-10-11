@@ -382,7 +382,8 @@ const memberKindOf = (objectKind: ArkKind, name: unknown): ArkKind => {
 		: (
 			name in validatorMembers ||
 			name in runtimeMembers ||
-			name in unstableArkMembers
+			name in unstableArkMembers ||
+			name === "toJsonSchema"
 		) ?
 			kinds.data
 		: objectKind & kinds.otherArk ? anyKind

@@ -4,7 +4,6 @@ import {
 	enclosingFunctionOf,
 	isArk,
 	isPassiveReference,
-	kinds,
 	memberNameOf,
 	runtimeExports,
 	staticBodyOf,
@@ -151,7 +150,7 @@ const arkMemberOf = (
 	}
 }
 
-// e.g. `T.json` or `T.toJSON()`, which arktype computes from the Type alone
+// e.g. `T.json` or `T.toJsonSchema()`, which arktype computes from the Type alone, or `$.json`, which the build refuses rather than read nothing at runtime
 const introspectionReadOf = (
 	node: Node,
 	module: SourceModule,
@@ -161,12 +160,12 @@ const introspectionReadOf = (
 	if (
 		member?.type !== "MemberExpression" ||
 		member.object !== operand ||
-		!(graph.kindOf(node, module) & kinds.type)
+		!isArk(graph.kindOf(node, module))
 	)
 		return
 	const name = memberNameOf(member)
 	if (name === "json") return member
-	if (name !== "toJSON") return
+	if (name !== "toJSON" && name !== "toJsonSchema") return
 	const [callee, call] = operatorOf(member)
 	return call?.type === "CallExpression" && call.callee === callee ?
 			call

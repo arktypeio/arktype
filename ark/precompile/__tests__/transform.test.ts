@@ -112,6 +112,23 @@ export const userJson = /* @__PURE__ */ $arkf17hn9zj1vlnawy()`)
 			])
 		})
 
+		it("reads a member of a folded JSON Schema off what its call returns", () => {
+			const result = precompile(`import { type } from "arktype"
+const A = type({ a: "string" })
+export const properties = A.toJsonSchema().properties
+export const required = A.toJsonSchema()["required"]`)
+			attest(result.diagnostics).equals([])
+			attest(result.code).snap(`import "arktype"
+import { v9tsbfu1su045q as $arkv9tsbfu1su045q } from "~arktype/nsdsqw02t8bit"
+import { fzdl36y1kl4y2z as $arkfzdl36y1kl4y2z } from "~arktype/nsdsqw02t8bit"
+import { f1kkci5112g5ynj as $arkf1kkci5112g5ynj } from "~arktype/nsdsqw02t8bit"
+import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+$arkfixConfig()
+const A = /* @__PURE__ */ $arkv9tsbfu1su045q()
+export const properties = $arkfzdl36y1kl4y2z().properties
+export const required = $arkf1kkci5112g5ynj()["required"]`)
+		})
+
 		it("refuses to fold a JSON Schema calling a default's thunk", () => {
 			const result = precompile(`import { type } from "arktype"
 const T = type({ a: ["number[]", "=", () => []] })
@@ -322,6 +339,18 @@ export const BoxedTree = /* @__PURE__ */ $arkv1tryxgh0tpn3pk()`)
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "yc0zfl03fckbs")',
 				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "1iz1w4711gx6de")',
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "dpg9qw0fjxmwu")'
+			])
+		})
+
+		it("refuses the json of a Scope or Generic, which their empty objects lack", () => {
+			const result = precompile(`import { scope, type } from "arktype"
+const $ = scope({ a: "string" })
+const G = type("<t>", { x: "t" })
+export const json = [$.json, G.json, scope({ "b<t>": { x: "t" } }).export().b.json]`)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:4:22  $.json cannot be precompiled\n  `$.json` is not a documented member its content alone decides, so it can depend on registry names or node ids\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+				'/main.ts:4:30  G.json cannot be precompiled\n  `G.json` is not a documented member its content alone decides, so it can depend on registry names or node ids\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+				'/main.ts:4:38  scope({ "b<t>": { x: "t" } }).export().b.json cannot be precompiled\n  `scope({ "b<t>": { x: "t" } }).export().b.json` is not a documented member its content alone decides, so it can depend on registry names or node ids\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
 			])
 		})
 
