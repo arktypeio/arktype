@@ -9,7 +9,7 @@ import {
 import { hasArkKind } from "@ark/schema"
 import { arkKindOf } from "@ark/util"
 import type { IntrospectionMember } from "arktype/internal/runtime.ts"
-import { isTypedFn, keyOf } from "arktype/internal/standalone.ts"
+import { isTypedFn, keyOf, type Foldable } from "arktype/internal/standalone.ts"
 import { bindingOfFunction, isArk } from "@ark/precompile/internal/graph.ts"
 import type { SourceModule } from "@ark/precompile/internal/module.ts"
 import { specifierOf } from "@ark/precompile/internal/precompile.ts"
@@ -103,6 +103,14 @@ export const buildPerturbed = (
 		)
 		if (!folded.length && !opts.runsUnfolded) continue
 		const module = precompiler.graph.moduleOf(path) as SourceModule
+		// what the arktype values of the modules it imports hold was passed to arktype before any of its own sites runs
+		const loaded = Object.values(module.scopes.root.bindings).flatMap(
+			binding => {
+				if (binding.kind !== "import") return []
+				const value = precompiler.interpreter.valueOfBinding(binding, module)
+				return isHolder(value) ? keyOf(value)[1] : []
+			}
+		)
 		// a comment beside a site survives its transform, so each world wraps the same expression
 		const marked = new MagicString(source)
 		const wrappers: [start: string, end: string, replacement: string][] = []
@@ -131,25 +139,39 @@ export const buildPerturbed = (
 					.filter(value => hasArkKind(value, "root"))
 					.flatMap(root => keyOf(root)[1])
 			)
+			// arktype keeps the name and length it read of a function it already holds, which it may read only once the site runs
+			const passed = new Set([
+				...loaded,
+				...site.references.flatMap(({ value }) =>
+					value !== site.value && isHolder(value) ? keyOf(value)[1] : []
+				)
+			])
+			const passedNames = new Set<string>()
 			for (const value of held) {
 				const [node, declaring] = precompiler.interpreter.sourceOf(value) ?? []
 				const binding = node && bindingOfFunction(node, declaring!)
 				if (!binding || binding.scope.parent) continue
-				if (declaring === module) names.add(binding.name)
-				else if (binding.exportNames.length) {
-					const local = `$arkHeld${heldImports.length}`
+				let name = binding.name
+				if (declaring !== module) {
+					if (!binding.exportNames.length) continue
+					name = `$arkHeld${heldImports.length}`
 					heldImports.push(
-						`import { ${binding.exportNames[0]} as ${local} } from ${JSON.stringify(specifierOf(path, declaring!.id))}`
+						`import { ${binding.exportNames[0]} as ${name} } from ${JSON.stringify(specifierOf(path, declaring!.id))}`
 					)
-					names.add(local)
 				}
+				names.add(name)
+				if (passed.has(value)) passedNames.add(name)
 			}
 			marked.appendLeft(site.start, `/*@${id}(*/`)
 			marked.prependRight(site.end, `/*)@${id}*/`)
 			wrappers.push([
 				`/*@${id}(*/`,
 				`/*)@${id}*/`,
-				`$arkSite(${id}, () => [${[...names].map(name => `() => ${name}`).join(", ")}], () => (`
+				`$arkSite(${id}, () => [${[...names].map(name => `() => ${name}`).join(", ")}], [${[
+					...names
+				]
+					.flatMap((name, i) => (passedNames.has(name) ? [i] : []))
+					.join(", ")}], () => (`
 			])
 		}
 		// the last of each marker, since a factory's labels quote the source of what it receives, and none for a site dropped with one it was written in
@@ -224,6 +246,12 @@ export const buildPerturbed = (
 		errors
 	}
 }
+
+// an arktype value, which holds the functions a definition passed it
+const isHolder = (value: unknown): value is Foldable =>
+	(["root", "module", "scope", "generic"] as const).some(kind =>
+		hasArkKind(value, kind)
+	) || isTypedFn(value)
 
 const errorsOf = (precompiled: PrecompiledModule) =>
 	precompiled.diagnostics.filter(diagnostic => diagnostic.severity === "error")

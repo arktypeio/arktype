@@ -317,16 +317,24 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 		$arkSite: (
 			id: number,
 			readsOf: () => (() => unknown)[],
+			// the reads an arktype value the site reads already holds, whose name and length arktype keeps as it read them
+			passed: number[],
 			create: () => unknown
 		) => {
 			let isPerturbed = false
 			// a binding read before its declaration throws as the site would, so it isn't perturbed
-			for (const value of readsOf().map(valueOrError)) {
+			const values = readsOf().map(valueOrError)
+			const kept =
+				perturbation === "arity" || perturbation === "name" ?
+					new Set(passed.map(i => values[i]))
+				:	new Set()
+			for (const value of values) {
 				if (!hasDomain(value, "object")) continue
 				if (!firstRunOf.has(value)) firstRunOf.set(value, run)
 				// a value an earlier run read is shared by runs, so a write to it would leak into later ones and meet what arktype cached in earlier ones
 				if (
 					firstRunOf.get(value) === run &&
+					!kept.has(value) &&
 					perturbation !== "none" &&
 					perturbation !== "define"
 				)

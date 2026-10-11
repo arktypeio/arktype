@@ -775,18 +775,6 @@ const exclusions: Allowance[] = [
 				)
 			) &&
 			original.threw !== precompiled.threw
-	},
-	{
-		// a standalone build reads a function's name where it runs, as a bundler may rename it, and can't replay when arktype first saw it
-		reason:
-			"a program renames a function after passing it to arktype, whose registry keeps the name it had then",
-		matches: ({ perturbation, original, precompiled }) =>
-			perturbation === "name" &&
-			(["description", "threw"] as const).some(
-				k =>
-					String(precompiled[k]).includes("perturbed") &&
-					!String(original[k]).includes("perturbed")
-			)
 	}
 ]
 
