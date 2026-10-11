@@ -246,8 +246,8 @@ const staticTextOf = (value: unknown, seen: unknown[]): string => {
 	for (const k of new Set([...enumerable, ...Reflect.ownKeys(value)])) {
 		entries += `${enumerable.includes(k) ? "" : "~"}${
 			typeof k === "symbol" ?
-				// a symbol the registry doesn't name is another in each run, so it never matches
-				`@${JSON.stringify(Symbol.keyFor(k) ?? Math.random())}`
+				// a symbol the registry doesn't name prints as `@undefined`, which the build refuses to stamp
+				`@${JSON.stringify(Symbol.keyFor(k))}`
 			:	JSON.stringify(k)
 		}:${staticTextOf((value as Record<PropertyKey, unknown>)[k], seen)},`
 	}

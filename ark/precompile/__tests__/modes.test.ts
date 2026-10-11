@@ -426,6 +426,23 @@ export const A = type({ a: "string" })`,
 			])
 		})
 
+		it("configure with a symbol key the registry doesn't name", () => {
+			attest(
+				diagnosticsOf(
+					`import { configure } from "arktype/config"
+const local = Symbol("local")
+configure({
+	keywords: { string: { custom: { [local]: 1, [Symbol.for("shared")]: 2 } } },
+	domain: { [Symbol.iterator]: 3 }
+} as {})`,
+					{},
+					{ config: "/main.ts" }
+				)
+			).snap([
+				"/main.ts:3:1  configure({ keywords: { string: { custom: { [local]: 1, [Sy… is not static\n  the symbol key Symbol(local) at /main.ts:2:15 must be a string or one Symbol.for() returns, since the runtime can't match another with the build's\n  the symbol key Symbol(Symbol.iterator) at /main.ts:5:13 must be a string or one Symbol.for() returns, since the runtime can't match another with the build's\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+			])
+		})
+
 		it("configure with values that are not static", () => {
 			attest(
 				diagnosticsOf(

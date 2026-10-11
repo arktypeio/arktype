@@ -2754,7 +2754,7 @@ export class Precompiler {
 			)
 		}
 		const objects = new Set<unknown>()
-		// a node kind's meta is copied into what configure() returns, which holds the same writers
+		// a node kind's meta is copied into what configure() returns, which holds the same writers and keys
 		const refuse = (reason: string) =>
 			result.includes(reason) || result.push(reason)
 		const visit = (o: unknown) => {
@@ -2777,6 +2777,16 @@ export class Precompiler {
 				) {
 					refuse(
 						`the description writer at ${standIn.module.positionOf(standIn.node)} must be a static helper, since arktype calls it while defining types`
+					)
+				}
+				// the runtime prints every symbol the registry doesn't name alike, so it can't tell the program's from the build's
+				if (typeof k === "symbol" && Symbol.keyFor(k) === undefined) {
+					const [node, origin] = this.interpreter.sourcesBySymbol.get(k) ?? [
+						call,
+						module
+					]
+					refuse(
+						`the symbol key ${String(k)} at ${origin.positionOf(node)} must be a string or one Symbol.for() returns, since the runtime can't match another with the build's`
 					)
 				}
 				visit(v)
