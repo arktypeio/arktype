@@ -796,13 +796,13 @@ export class StandaloneArtifact {
 			.map(([label, expression]) => `${JSON.stringify(label)}: ${expression}`)
 			.join(", ")} }`
 		for (const [hole, kind, expression] of checked) {
-			const expected = runtime.describeHole(
+			const expected = runtime.factOfHole(
 				hole,
 				kind,
 				classesOf(hole => hole)
 			)
 			this.checks.push(
-				`runtime.checkFacts(runtime.describeHole(${expression}, "${kind}"${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}, ${JSON.stringify(this.labelsByHole.get(hole))})`
+				`runtime.checkFacts(runtime.factOfHole(${expression}, "${kind}"${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}, ${JSON.stringify(this.labelsByHole.get(hole))})`
 			)
 		}
 	}

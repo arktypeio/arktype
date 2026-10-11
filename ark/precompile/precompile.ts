@@ -2376,7 +2376,7 @@ export class Precompiler {
 						this.interpreter.valueOfBinding(binding, module)
 					:	Reflect.get(globalThis, arg.name)
 				if (typeof value !== "function") continue
-				const fact = arktypeRuntime.describeHole(value, "class")
+				const fact = arktypeRuntime.factOfHole(value, "class")
 				if (fact !== "a class")
 					return `\`${parameter.name}\` is passed \`${arg.name}\` (${module.positionOf(arg)}), ${fact}, where its factory is compiled for a class without builtin ancestors`
 			}

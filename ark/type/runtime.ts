@@ -434,23 +434,18 @@ export const lazyModule = (
 
 export type HoleKind = "function" | "class" | "symbol"
 
-export const describeHole = (
+// a function's parameter count, 0, 1 or 2 or more, which arktype tells functions apart by, or what describes another hole
+export type HoleFact = string | number
+
+export const factOfHole = (
 	hole: unknown,
 	kind: HoleKind,
 	classes: Record<string, unknown> = {}
-): string => {
+): HoleFact => {
 	if (kind === "symbol" || typeof hole !== "function" || isValidator(hole))
 		return describeValue(hole)
-	// arktype calls a builtin it's passed as a function like any other, by its length
-	if (kind === "function") {
-		// the length a site's function has now, where arktype keeps the one it read first
-		const arity = hole.length
-		return `a function of ${
-			arity === 0 ? "no parameters"
-			: arity === 1 ? "1 parameter"
-			: "2 or more parameters"
-		}`
-	}
+	// arktype counts a builtin's parameters like any other function's, and keeps the length it read first, where a factory reads it now
+	if (kind === "function") return Math.min(hole.length, 2)
 	const builtinName = getBuiltinNameOfConstructor(hole)
 	if (builtinName) return `the builtin ${builtinName}`
 	const { prototype } = hole
@@ -490,13 +485,29 @@ export const describeShape = (value: unknown): string => {
 }
 
 export const checkFacts = (
-	actual: string,
-	expected: string,
+	actual: HoleFact,
+	expected: HoleFact,
 	label: string
 ): void => {
-	if (actual !== expected)
-		throwError(writeCreationMismatchMessage(label, actual, expected))
+	if (actual !== expected) {
+		throwError(
+			writeCreationMismatchMessage(
+				label,
+				describeFact(actual),
+				describeFact(expected)
+			)
+		)
+	}
 }
+
+const describeFact = (fact: HoleFact) =>
+	typeof fact === "string" ? fact : (
+		`a function of ${
+			fact === 0 ? "no parameters"
+			: fact === 1 ? "1 parameter"
+			: "2 or more parameters"
+		}`
+	)
 
 export const checkIdentity = (
 	value: unknown,
@@ -559,7 +570,7 @@ export const selectVariant = (
 			throwError(
 				writeCreationMismatchMessage(
 					labels[i],
-					describeHole(hole, "function"),
+					describeValue(hole),
 					"a function"
 				)
 			)
