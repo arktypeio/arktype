@@ -559,20 +559,20 @@ export const selectVariant = (
 ): number => {
 	let index = 0
 	for (let i = 0; i < holes.length; i++) {
-		const fact = describeHole(holes[i], "function")
-		const count = countFacts.indexOf(fact)
-		if (count === -1)
-			throwError(writeCreationMismatchMessage(labels[i], fact, "a function"))
-		index = index * 3 + count
+		const hole = holes[i]
+		if (typeof hole !== "function" || isValidator(hole)) {
+			throwError(
+				writeCreationMismatchMessage(
+					labels[i],
+					describeHole(hole, "function"),
+					"a function"
+				)
+			)
+		}
+		index = index * 3 + Math.min(arityOf(hole), 2)
 	}
 	return variantsByCounts[index]
 }
-
-const countFacts = [
-	"a function of no parameters",
-	"a function of 1 parameter",
-	"a function of 2 or more parameters"
-]
 
 // a default's checked Type and value, keyed by their content and the functions they hold
 export type DefaultKey = [id: string, holes: readonly unknown[]]
