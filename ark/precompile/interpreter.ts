@@ -8,7 +8,13 @@ import {
 	type BaseRoot,
 	type CacheReach
 } from "@ark/schema"
-import { hashOf, hasDomain, isDotAccessible, ParseError } from "@ark/util"
+import {
+	hashOf,
+	hasDomain,
+	isDotAccessible,
+	ParseError,
+	printable
+} from "@ark/util"
 import { configure } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
@@ -2336,7 +2342,9 @@ export class Interpreter {
 				k === "length" ? length
 				: k === "name" ? name
 				: answersFact(k) ? Reflect.get(target, k)
-				: this.refuse(standIn),
+				: k === Symbol.hasInstance && this.activeCall?.isArktype ?
+					(data: unknown) => this.refuseInstanceTest(standIn, data)
+				:	this.refuse(standIn),
 			getPrototypeOf: target => Reflect.getPrototypeOf(target),
 			apply: () => {
 				standIn.isCalled = true
@@ -2361,6 +2369,18 @@ export class Interpreter {
 		})
 		if (!ctx.env) this.standInsByNode.set(node, proxy)
 		return proxy
+	}
+
+	// arktype reads Symbol.hasInstance only for instanceof, which calls it with the value tested, and the class a factory receives may have its own
+	private refuseInstanceTest(standIn: StandIn, data: unknown): never {
+		const name =
+			this.declaredNameOf(standIn) ?? standIn.module.snippetOf(standIn.node)
+		throw new DynamicValue(
+			standIn.module,
+			standIn.node,
+			`arktype runs \`${printable(data)} instanceof ${name}\` while defining the type, reading \`${name}[Symbol.hasInstance]\`, so ${this.labelOf(standIn)} must be static`,
+			standIn.dynamic
+		)
 	}
 
 	// e.g. `fn` in `fn => type("string").narrow(fn)`, which holds one value however often the site reads it

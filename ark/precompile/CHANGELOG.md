@@ -92,7 +92,8 @@ These definitions are reported rather than precompiled:
 - one throwing a ParseError that reads a binding, or holds or calls a function, itself or through any value it passes to arktype;
 - one throwing a ParseError another definition threw, such as a runtime island it reads;
 - one whose code sees a function's name in what arktype prints, such as a `where` selector or description writer reading a predicate's `expression`, or a `JSON.stringify` replacer receiving a Type's JSON;
-- one sorting by the name of a function no declaration names, like a parameter's.
+- one sorting by the name of a function no declaration names, like a parameter's;
+- one in which arktype tests a value against a class with `instanceof`, as `null` in `type.instanceOf(Cat).or("null")`, since the class a factory receives may test instances by a `Symbol.hasInstance` of its own.
 
 ### Precompile in Turbopack
 

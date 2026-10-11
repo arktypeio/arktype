@@ -183,6 +183,18 @@ const B = type.instanceOf(User)`,
 		])
 	})
 
+	it("a class arktype tests a value against", () => {
+		attest(
+			statusesOf(`import { type } from "arktype"
+class Cat {}
+const A = type.instanceOf(Cat).or("null")
+const B = type.instanceOf(class {}).or("'x'")`)
+		).snap([
+			"3:11 rejected\n  arktype runs `null instanceof Cat` while defining the type, reading `Cat[Symbol.hasInstance]`, so `Cat` (/main.ts:2:1) must be static",
+			'4:11 rejected\n  arktype runs `"x" instanceof class {}` while defining the type, reading `class {}[Symbol.hasInstance]`, so a class (/main.ts:4:27) must be static'
+		])
+	})
+
 	it("names a function a refusal prints by its source", () => {
 		attest(
 			diagnosticsOf(`import { type } from "arktype"
