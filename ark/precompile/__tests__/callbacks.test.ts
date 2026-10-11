@@ -183,6 +183,16 @@ const B = type.instanceOf(User)`,
 		])
 	})
 
+	it("names a function a refusal prints by its source", () => {
+		attest(
+			diagnosticsOf(`import { type } from "arktype"
+const isEven = (n: number) => n % 2 === 0
+export const schema = type("number").narrow(isEven).toJsonSchema()`)
+		).snap([
+			'/main.ts:3:23  type("number").narrow(isEven).toJsonSchema() cannot be precompiled\n  `type("number").narrow(isEven).toJsonSchema()` throws ToJsonSchemaError: {\n    code: "predicate",\n    base: {\n        type: "number"\n    },\n    predicate: Function(isEven)\n} at build\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+		])
+	})
+
 	it("defaults", () => {
 		const source = `import { type } from "arktype"
 const A = type({ a: ["string[]", "=", () => ${nonStatic}] })

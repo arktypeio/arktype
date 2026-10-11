@@ -2595,7 +2595,7 @@ export class Precompiler {
 					rejection?.hasCode("callback") ? "R2" : "R1",
 					this.rejectionSeverity,
 					`${module.snippetOf(node)} cannot be precompiled`,
-					site.reasons,
+					site.reasons.map(reason => this.sourceNamed(reason, site, module)),
 					this.thunkHintOf(site)
 				)
 			]
