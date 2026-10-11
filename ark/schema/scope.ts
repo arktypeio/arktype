@@ -625,6 +625,7 @@ export interface RootUnit {
 	// each root's traversals, by name
 	traversals: string[][]
 	declared: BaseNode[]
+	declaredTraversals: string[][]
 	members: UnitMember[]
 	refs: unknown[]
 	errorContexts: NodeCompiler.ErrorContexts
@@ -687,13 +688,16 @@ const unitsOf = (
 				linkage.reused.add(node)
 		}
 		const declared = Object.values(declaredByName)
-		const traversals = declared.map(node => declareTraversals(linkage, node))
+		const declaredTraversals = declared.map(node =>
+			declareTraversals(linkage, node)
+		)
 		const unit: RootUnit = {
 			name: s.names[roots[0].id],
 			names: s.names,
 			roots: roots as BaseRoot[],
-			traversals: traversals.slice(0, roots.length),
+			traversals: declaredTraversals.slice(0, roots.length),
 			declared,
+			declaredTraversals,
 			members: linkage.members,
 			refs: [...linkage.refs.keys()],
 			errorContexts: linkage.errorContexts,
@@ -951,12 +955,15 @@ export const writePrecompiledUnits = (
 	roots: readonly BaseRoot[]
 ): Record<string, string> => {
 	const unitsByKey: Record<string, string | undefined> = {}
+	const keysById: Record<NodeId, string> = {}
+	const keyOf = (root: BaseRoot) =>
+		(keysById[root.id] ??= precompiledKeyOf(root))
 	for (const root of roots) {
-		if (root.includesAlias || precompiledKeyOf(root) in unitsByKey) continue
+		if (root.includesAlias || keyOf(root) in unitsByKey) continue
 		for (const unit of precompileRootUnits(root)) {
-			const key = precompiledKeyOf(unit.roots[0])
+			const key = keyOf(unit.roots[0])
 			if (!(key in unitsByKey))
-				unitsByKey[key] = writePrecompiledUnit(unit, unitsByKey)
+				unitsByKey[key] = writePrecompiledUnit(unit, unitsByKey, keyOf)
 		}
 	}
 	const written: Record<string, string> = {}
@@ -967,11 +974,12 @@ export const writePrecompiledUnits = (
 
 const writePrecompiledUnit = (
 	unit: RootUnit,
-	unitsByKey: Record<string, string | undefined>
+	unitsByKey: Record<string, string | undefined>,
+	keyOf: (root: BaseRoot) => string
 ): string | undefined => {
 	const root = unit.roots[0]
 	const dependencies = Object.values(unit.dependencies).map(
-		([node, kind]) => [precompiledKeyOf(node as BaseRoot), kind] as const
+		([node, kind]) => [keyOf(node as BaseRoot), kind] as const
 	)
 	// a unit follows those it calls, so one calling a unit that couldn't be written can't be either
 	if (dependencies.some(([key]) => !unitsByKey[key])) return
@@ -1056,16 +1064,11 @@ const writePrecompiledUnit = (
 		accessorsByValue.get(errorContext)
 	)
 	if (refs.includes(undefined) || errorContexts.includes(undefined)) return
-	const memberNames = new Set(unit.members.map(([name]) => name))
 	const source = writeUnit(
 		Object.keys(unit.dependencies),
 		unit.refs.map((_, i) => `r${i}`),
 		unit.members,
-		unit.declared.map(node =>
-			traversalKinds
-				.map(kind => `${unit.names[node.id]}${kind}`)
-				.filter(name => memberNames.has(name))
-		)
+		unit.declaredTraversals
 	).write("function")
 	const variablesOf = (nodes: BaseNode[]) =>
 		nodes.map(node => variablesById[node.id]).join(", ")
@@ -1073,12 +1076,6 @@ const writePrecompiledUnit = (
 ${statements.map(statement => `\t${statement}\n`).join("")}\treturn [[${variablesOf(unit.declared)}], [${refs.join(", ")}], [${errorContexts.join(", ")}], [${variablesOf(dependencyNodes)}]]
 }, ${source}, ${JSON.stringify(dependencies)}]`
 }
-
-const traversalKinds = [
-	"Allows",
-	"Apply",
-	"Transform"
-] as const satisfies TraversalKind[]
 
 const forEachValue = (
 	o: object,
