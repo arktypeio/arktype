@@ -368,6 +368,39 @@ ${call}`,
 			).snap([])
 		})
 
+		it("configure's value written after the call", () => {
+			attest(
+				diagnosticsOf(
+					`import { configure } from "arktype/config"
+const config = configure({ keywords: { string: { description: "one" } } }) as any
+export const later = () => {
+	config.keywords.string.description = "two"
+	config.keywords.number = "a number"
+}`,
+					{},
+					{ config: "/main.ts" }
+				)
+			).snap([
+				'/main.ts:2:16  configure({ keywords: { string: { description: "one" } } }) is not static\n  `config.keywords.string.description = "two"` (/main.ts:4:2) writes what the configuration holds\n  `config.keywords.number = "a number"` (/main.ts:5:2) writes what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+			])
+		})
+
+		it("configure's value read by another module", () => {
+			attest(
+				printedInFreshThread(`import { Precompiler } from "@ark/precompile"
+import { memoryHost } from "./utils.ts"
+
+const files = {
+	"/config.ts": 'import { configure } from "arktype/config"\\nexport const config = configure({ keywords: { string: "one" } })',
+	"/main.ts": 'import { type } from "arktype"\\nimport { config } from "./config.ts"\\nexport const T = type("number").describe(config.keywords.string.description)'
+}
+const precompiler = new Precompiler(memoryHost(files), { config: "/config.ts" })
+const { diagnostics } = precompiler.precompile(files["/main.ts"], "/main.ts")
+const { sites } = precompiler.analyze(files["/main.ts"], "/main.ts")
+console.log(JSON.stringify([diagnostics.map(renderDiagnostic), sites.map(site => site.value.description)]))`)
+			).snap([[], ["one"]])
+		}).timeout(60000)
+
 		it("configure other than at the config module's top level", () => {
 			const setup = `import { configure } from "arktype/config"
 export const setup = () => configure({ onUndeclaredKey: "reject" })`
@@ -411,12 +444,12 @@ const describe = (n: unknown) => {
 	const text = "a number"
 	return text
 }
-configure({ number: { description: describe } })`,
+configure({ domain: { description: describe } })`,
 					{},
 					{ config: "/main.ts" }
 				)
 			).snap([
-				"/main.ts:6:1  configure({ number: { description: describe } }) is not static\n  the description writer at /main.ts:2:18 must be a static helper, since arktype calls it while defining types\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				"/main.ts:6:1  configure({ domain: { description: describe } }) is not static\n  the description writer at /main.ts:2:18 must be a static helper, since arktype calls it while defining types\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
 			attest(
 				diagnosticsOf(

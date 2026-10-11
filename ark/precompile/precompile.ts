@@ -2754,6 +2754,9 @@ export class Precompiler {
 			)
 		}
 		const objects = new Set<unknown>()
+		// a node kind's meta is copied into what configure() returns, which holds the same writers
+		const refuse = (reason: string) =>
+			result.includes(reason) || result.push(reason)
 		const visit = (o: unknown) => {
 			if (typeof o !== "object" || o === null || objects.has(o)) return
 			objects.add(o)
@@ -2772,7 +2775,7 @@ export class Precompiler {
 					standIn &&
 					!(standIn.closure && staticBodyOf(standIn.closure.node))
 				) {
-					result.push(
+					refuse(
 						`the description writer at ${standIn.module.positionOf(standIn.node)} must be a static helper, since arktype calls it while defining types`
 					)
 				}
@@ -2781,6 +2784,8 @@ export class Precompiler {
 		}
 		if (!dynamic) {
 			visit(value.value)
+			// the program can write through what configure() returns too, which holds what it received
+			visit(this.interpreter.configuredBy(call, value.value))
 			result.push(...this.writeReasonsIn(objects, value.trace.reads, modules))
 		}
 		return {

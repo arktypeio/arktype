@@ -3,12 +3,13 @@ import {
 	arkKind,
 	hasArkKind,
 	isNode,
+	mergeConfigs,
 	type BaseNode,
 	type BaseRoot,
 	type CacheReach
 } from "@ark/schema"
 import { hashOf, hasDomain, ParseError } from "@ark/util"
-import { type } from "arktype"
+import { configure, type } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import {
@@ -305,9 +306,10 @@ export class Interpreter {
 	// what computing each cache entry reached, by cache and key
 	private reachedByEntry = new WeakMap<object, Map<unknown, Reached[]>>()
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
-	// what each function, class or symbol expression outside a call evaluated to, which every evaluation of it reuses
+	// what each function, class or symbol expression or configure() call outside a call evaluated to, which every evaluation of it reuses
 	private standInsByNode = new Map<Node, object>()
 	private symbolsByNode = new Map<Node, symbol>()
+	private configuredByNode = new Map<Node, unknown>()
 	private valuesByBinding = new TreeCache<Binding, Evaluated | "evaluating">(
 		binding => binding.declaration
 	)
@@ -1651,13 +1653,24 @@ export class Interpreter {
 					"validation"
 				)
 			case "arktype":
-				return this.callArktype(fn as Function, args, receiver, node, ctx)
+				return fn === configure ?
+						this.configuredBy(node, args[0], ctx)
+					:	this.callArktype(fn as Function, args, receiver, node, ctx)
 		}
 		return this.reject(
 			node,
 			ctx,
 			"does not call a static helper or pure built-in"
 		)
+	}
+
+	// arktype's configure() returns its configuration, which merges what it receives, where the build applies it before any site instead
+	configuredBy(call: Node, received: unknown, ctx?: Context): unknown {
+		const cached = this.configuredByNode.get(call)
+		if (cached) return cached
+		const result = findDynamic(received) ?? mergeConfigs({}, received as never)
+		if (!ctx?.env) this.configuredByNode.set(call, result)
+		return result
 	}
 
 	// interpreted code reaches native code only here, where each builtin declares where it takes an object rather than converting it
