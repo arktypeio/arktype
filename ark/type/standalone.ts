@@ -299,7 +299,7 @@ const writeArtifact = (
 	const tables = new Set<number>()
 	const definitionAddresses = definitionAddressesOf(exports, sitesByName)
 	// a trial write, adding nothing to the artifact, tells whether a factory's Type has code holding nothing the factory receives
-	const isFolded = (
+	const canFold = (
 		name: string,
 		type: BaseRoot,
 		receivedMetas: Map<object, string>
@@ -342,7 +342,7 @@ const writeArtifact = (
 		receiving.receiveAll()
 		if (
 			factory.isCreatedEachRun ||
-			!isFolded(name, type, receiving.receivedMetas)
+			!canFold(name, type, receiving.receivedMetas)
 		)
 			return
 		folded.add(name)
@@ -1183,15 +1183,15 @@ ${statements.filter(statement => statement).join("\n\n")}
 	}
 
 	// the validator its folded code creates, keyed by the functions the call receives
-	writeRekeying(index: number, template: string): string {
+	writeRekeying(index: number, read: string): string {
 		const [{ type, params, internedBy }] = this.variants
 		const keyHoles = keyOf(type as never)[1]
 		const holes = `[${keyHoles.map(hole => this.emit(hole)).join(", ")}]`
-		const copy = `runtime.rekeyed(${template}, ${holes})`
+		const copy = `runtime.rekeyed(${read}, ${holes})`
 		return this.writeFactoryFunction(index, params, [
 			...this.checks,
 			`return ${
-				!keyHoles.length ? template
+				!keyHoles.length ? read
 				: internedBy === undefined ? copy
 				: `runtime.intern((interned${internedBy} ??= runtime.internTable()), ${holes}, () => ${copy})`
 			}`
