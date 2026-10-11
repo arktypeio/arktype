@@ -293,13 +293,19 @@ export const template = (...parts: TemplateParts): Validator => {
 	return validator
 }
 
-// a factory whose Type's code holds nothing it receives copies the validator written once, keyed by the functions it receives
+const copiesByTemplate = /* @__PURE__ */ new WeakMap<Validator, InternTable>()
+
+// a factory whose Type's code holds nothing it receives copies the validator written once, keyed by the functions it receives, once for each
 export const rekeyed = (
 	template: Validator,
 	holes: readonly unknown[]
 ): Validator => {
-	const [rootApply, node, pipe, attributes, id] = templateParts.get(template)!
-	return new Validator(rootApply, node, pipe, attributes, id, holes)
+	let copies = copiesByTemplate.get(template)
+	if (!copies) copiesByTemplate.set(template, (copies = new InternTable()))
+	return intern(copies, holes, () => {
+		const [rootApply, node, pipe, attributes, id] = templateParts.get(template)!
+		return new Validator(rootApply, node, pipe, attributes, id, holes)
+	})
 }
 
 type typeOnlyMember =

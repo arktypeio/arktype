@@ -371,10 +371,12 @@ const writeArtifact = (
 		} else {
 			const factory = value as StandaloneFactory | StandaloneVariants
 			const variants = isVariants(factory) ? factory.variants : [factory]
-			for (const { internedBy } of variants)
-				if (internedBy !== undefined) tables.add(internedBy)
 			const folding =
 				isVariants(factory) ? undefined : writeFolded(name, factory, index)
+			if (!folding) {
+				for (const { internedBy } of variants)
+					if (internedBy !== undefined) tables.add(internedBy)
+			}
 			factories.push(
 				folding ??
 					new StandaloneArtifact(
@@ -650,6 +652,8 @@ export class StandaloneArtifact {
 	defaultChecks: readonly DefaultCheck[]
 	// a factory's errors expose the meta of a Type it receives, not a copy
 	receivedMetas = new Map<object, string>()
+	// the holes of each value a factory receives, by the name holding them
+	holesByName = new Map<string, readonly unknown[]>()
 	baking: Baking
 	// each JSON Schema a validator bakes, written once however many of its members return it
 	jsonSchemaNamesByText: Record<string, string> = {}
@@ -937,6 +941,7 @@ export class StandaloneArtifact {
 			const isType = hasArkKind(value, "root")
 			if (isType) this.receivedMetas.set(value.meta, `${expression}.meta`)
 			const holesName = `holes${this.checks.length}`
+			if (holes.length) this.holesByName.set(holesName, holes)
 			const expected =
 				!isType ? `, "${kindNameOf(value)}"`
 				: value.expression.includes(holeNamePrefix) ? ""
@@ -1184,16 +1189,20 @@ ${statements.filter(statement => statement).join("\n\n")}
 
 	// the validator its folded code creates, keyed by the functions the call receives
 	writeRekeying(index: number, read: string): string {
-		const [{ type, params, internedBy }] = this.variants
-		const keyHoles = keyOf(type as never)[1]
-		const holes = `[${keyHoles.map(hole => this.emit(hole)).join(", ")}]`
-		const copy = `runtime.rekeyed(${read}, ${holes})`
+		const [{ type, params }] = this.variants
+		const holes = keyOf(type as never)[1]
+		// a Type holding exactly the holes of a value it receives, as one of a Scope does, is keyed by that value's
+		const received = [...this.holesByName].find(
+			([, received]) =>
+				received.length === holes.length &&
+				received.every((hole, i) => hole === holes[i])
+		)?.[0]
 		return this.writeFactoryFunction(index, params, [
 			...this.checks,
 			`return ${
-				!keyHoles.length ? read
-				: internedBy === undefined ? copy
-				: `runtime.intern((interned${internedBy} ??= runtime.internTable()), ${holes}, () => ${copy})`
+				holes.length ?
+					`runtime.rekeyed(${read}, ${received ?? `[${holes.map(hole => this.emit(hole)).join(", ")}]`})`
+				:	read
 			}`
 		])
 	}
