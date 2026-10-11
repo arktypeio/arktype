@@ -782,8 +782,11 @@ const exclusions: Allowance[] = [
 			"a program renames a function after passing it to arktype, whose registry keeps the name it had then",
 		matches: ({ perturbation, original, precompiled }) =>
 			perturbation === "name" &&
-			String(precompiled.description).includes("perturbed") &&
-			!String(original.description).includes("perturbed")
+			(["description", "threw"] as const).some(
+				k =>
+					String(precompiled[k]).includes("perturbed") &&
+					!String(original[k]).includes("perturbed")
+			)
 	}
 ]
 
