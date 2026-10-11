@@ -299,7 +299,11 @@ const writeArtifact = (
 	const tables = new Set<number>()
 	const definitionAddresses = definitionAddressesOf(exports, sitesByName)
 	// a trial write, adding nothing to the artifact, tells whether a factory's Type has code holding nothing the factory receives
-	const isFolded = (name: string, type: BaseRoot) => {
+	const isFolded = (
+		name: string,
+		type: BaseRoot,
+		receivedMetas: Map<object, string>
+	) => {
 		const trial = new StandaloneArtifact(
 			{ [name]: type as never },
 			Object.create(shared),
@@ -309,6 +313,7 @@ const writeArtifact = (
 			baking
 		)
 		trial.templates.add(type)
+		trial.receivedMetas = receivedMetas
 		try {
 			trial.writeCreate(0, configured)
 			return true
@@ -335,11 +340,9 @@ const writeArtifact = (
 			factory
 		)
 		receiving.receiveAll()
-		// a Type it receives lends its meta to the errors of what the factory creates, which folded code can't
 		if (
-			receiving.receivedMetas.size ||
 			factory.isCreatedEachRun ||
-			!isFolded(name, type)
+			!isFolded(name, type, receiving.receivedMetas)
 		)
 			return
 		folded.add(name)
@@ -1715,9 +1718,12 @@ return [${returned.join(", ")}]
 
 	// a node's meta is one object wherever its errors or its validator read it
 	emitMeta(node: BaseNode): string {
-		const declared =
-			this.declarations.namesByValue.get(node.meta) ??
-			(this.writing ? undefined : this.receivedMetas.get(node.meta))
+		const received =
+			this.writing ? undefined : this.receivedMetas.get(node.meta)
+		// a received Type lends its meta to the errors of what a factory creates, which code written once can't
+		if (received && !this.variants.length)
+			throwParseError(writeUnprecompilableMessage("a received meta"))
+		const declared = this.declarations.namesByValue.get(node.meta) ?? received
 		if (declared) return declared
 		const address = metaAddressOf(node)
 		if (address === undefined) return this.emitLiteral(node.meta)

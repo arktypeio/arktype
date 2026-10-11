@@ -1450,6 +1450,42 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			}
 		})
 
+		it("writes once what a factory creates from a Type it receives, unless its errors expose that Type's meta", async () => {
+			const isEven = standIn((n: number) => n % 2 === 0, "even")
+			const $ = scope({ even: ["number", ":", isEven], s: "string" })
+			const U = $.type({ name: "s" })
+			// a domain's errors expose the meta of the root it is
+			const Name = type("string").configure({ description: "a name" })
+			const receives = (label: string, t: type.Any) => [
+				{ kind: "input" as const, label, reads: [[[], t]] as [[], unknown][] }
+			]
+			const exports: Record<string, StandaloneExport> = {
+				$: {
+					type: $,
+					params: [{ kind: "function", label: "`isEven`", value: isEven }]
+				},
+				U: { type: U, params: receives("$", $ as never) },
+				Name,
+				Derived: { type: U.and({ a: "s" }), params: receives("U", U) },
+				Exposing: { type: type({ n: Name }), params: receives("Name", Name) }
+			}
+			attest(
+				precompileStandalone(exports)
+					.split("function factory")
+					.slice(1)
+					.map(factory => factory.includes("runtime.rekeyed"))
+			).equals([false, true, true, false])
+			const created = await load(exports)
+			const holder = created.$(isEven)
+			attest(
+				created.Derived(created.U(holder))({ name: "x", a: 1 }).toString()
+			).snap("a must be a string (was a number)")
+			attest(
+				created.Exposing(created.Name)({ n: 5 }).issues[0].meta ===
+					created.Name.meta
+			).equals(true)
+		})
+
 		it("checks a class's lineage against the classes of the Types it receives", async () => {
 			class Animal {}
 			class Dog extends Animal {}
