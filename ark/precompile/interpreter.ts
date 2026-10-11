@@ -11,6 +11,7 @@ import {
 import {
 	hashOf,
 	hasDomain,
+	isDate,
 	isDotAccessible,
 	ParseError,
 	printable
@@ -2297,7 +2298,7 @@ export class Interpreter {
 		}
 		const converted = this.toArktype(result)
 		if (isDynamic(converted)) {
-			throw converted.hasCode("placeholder") ? converted : (
+			throw converted.hasCode("unsupported") ? converted : (
 					this.calledAtDefinition(standIn, converted)
 				)
 		}
@@ -2397,15 +2398,15 @@ export class Interpreter {
 		return proxy
 	}
 
-	// arktype reads Symbol.hasInstance only for instanceof, which calls it with the value tested, and the class a factory receives may have its own
+	// arktype reads Symbol.hasInstance only for instanceof, which calls it with the value tested, printed here as arktype prints a unit
 	private refuseInstanceTest(standIn: StandIn, data: unknown): never {
-		const name =
-			this.declaredNameOf(standIn) ?? standIn.module.snippetOf(standIn.node)
+		const name = declaredNameOf(standIn.node as Class)
 		throw new DynamicValue(
 			standIn.module,
 			standIn.node,
-			`arktype runs \`${printable(data)} instanceof ${name}\` while defining the type, reading \`${name}[Symbol.hasInstance]\`, so ${this.labelOf(standIn)} must be static`,
-			standIn.dynamic
+			`arktype tests \`${isDate(data) ? `d'${data.toISOString()}'` : printable(data, { ownDataOnly: true })}\` against ${name ? `the class \`${name}\`` : "a class"} (${standIn.module.positionOf(standIn.node)}) with \`instanceof\` while defining the type, reading a \`Symbol.hasInstance\` the class a factory receives may define for itself`,
+			standIn.dynamic,
+			"unsupported"
 		)
 	}
 
@@ -2566,7 +2567,7 @@ export class Interpreter {
 			ctx,
 			`(${ctx.module.positionOf(node)}) ${problemOf(this.labelOf(unstable))}`,
 			undefined,
-			"placeholder"
+			"unsupported"
 		)
 	}
 

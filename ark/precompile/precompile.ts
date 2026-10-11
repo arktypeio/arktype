@@ -2668,7 +2668,7 @@ export class Precompiler {
 		const node = candidate.state.node
 		if (site.status === "rejected") {
 			const rejection = rejectionOf(candidate.state)
-			if (rejection?.hasCode("placeholder"))
+			if (rejection?.hasCode("unsupported"))
 				return [this.unsupported(module, site, site.reasons)]
 			return [
 				this.diagnostic(

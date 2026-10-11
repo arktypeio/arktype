@@ -185,13 +185,15 @@ const B = type.instanceOf(User)`,
 
 	it("a class arktype tests a value against", () => {
 		attest(
-			statusesOf(`import { type } from "arktype"
+			diagnosticsOf(`import { type } from "arktype"
 class Cat {}
 const A = type.instanceOf(Cat).or("null")
-const B = type.instanceOf(class {}).or("'x'")`)
+const B = type.instanceOf(class Dog {}).or(type.unit(new Date(0)))
+const C = type.instanceOf(class {}).or("'x'")`)
 		).snap([
-			"3:11 rejected\n  arktype runs `null instanceof Cat` while defining the type, reading `Cat[Symbol.hasInstance]`, so `Cat` (/main.ts:2:1) must be static",
-			'4:11 rejected\n  arktype runs `"x" instanceof class {}` while defining the type, reading `class {}[Symbol.hasInstance]`, so a class (/main.ts:4:27) must be static'
+			'/main.ts:3:11  type.instanceOf(Cat).or("null") can\'t be precompiled to a standalone validator yet\n  arktype tests `null` against the class `Cat` (/main.ts:2:1) with `instanceof` while defining the type, reading a `Symbol.hasInstance` the class a factory receives may define for itself\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+			"/main.ts:4:11  type.instanceOf(class Dog {}).or(type.unit(new Date(0))) can't be precompiled to a standalone validator yet\n  arktype tests `d'1970-01-01T00:00:00.000Z'` against the class `Dog` (/main.ts:4:27) with `instanceof` while defining the type, reading a `Symbol.hasInstance` the class a factory receives may define for itself\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+			'/main.ts:5:11  type.instanceOf(class {}).or("\'x\'") can\'t be precompiled to a standalone validator yet\n  arktype tests `"x"` against a class (/main.ts:5:27) with `instanceof` while defining the type, reading a `Symbol.hasInstance` the class a factory receives may define for itself\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 		])
 	})
 
