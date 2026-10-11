@@ -1818,14 +1818,20 @@ ${isTemplate ? "]" : ")"}`
 			)
 		}
 		// arktype doesn't promise Types defined apart are distinct, so a node shares json with any whose text is the same
-		const name = `json${hashOf(value)}`
+		return this.readConstant(`json${hashOf(value)}`, value)
+	}
+
+	// created at its first read, which an import cycle can reach before the module runs
+	readConstant(name: string, value: string): string {
 		this.sharedModules[`~arktype/${name}`] ??= {
 			readsRuntime: true,
 			imports: {},
-			declarations: [`const ${name} = ${value}`],
+			declarations: [
+				`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${value})\n}`
+			],
 			exports: [name]
 		}
-		return this.read(`~arktype/${name}`, name, name, name)
+		return this.read(`~arktype/${name}`, name, name, `${name}()`)
 	}
 
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
@@ -2261,15 +2267,7 @@ ${isTemplate ? "]" : ")"}`
 	readMeta(meta: object): string | undefined {
 		if (!Reflect.ownKeys(meta).length) return "runtime.emptyMeta"
 		const literal = this.writeSharedLiteral(meta)
-		if (literal === undefined) return
-		const name = `meta${hashOf(literal)}`
-		this.sharedModules[`~arktype/${name}`] ??= {
-			readsRuntime: true,
-			imports: {},
-			declarations: [`const ${name} = ${literal}`],
-			exports: [name]
-		}
-		return this.read(`~arktype/${name}`, name, name, name)
+		return literal && this.readConstant(`meta${hashOf(literal)}`, literal)
 	}
 
 	// a module can't read what the artifact receives or declares

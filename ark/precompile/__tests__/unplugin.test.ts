@@ -10,6 +10,8 @@ import { spawnSync } from "node:child_process"
 import {
 	mkdirSync,
 	mkdtempSync,
+	readdirSync,
+	readFileSync,
 	realpathSync,
 	rmSync,
 	symlinkSync,
@@ -285,6 +287,36 @@ contextualize(() => {
 		it(`${name} import cycle`, async () => {
 			const cycle = fromHere("cycle")
 			attest(run(await bundle({ cwd: cycle }, cycle))).equals(runPlain(cycle))
+			// a json module the cycle reaches before it runs
+			const files = Object.fromEntries(
+				readdirSync(cycle).map(file => [
+					file,
+					readFileSync(join(cycle, file), "utf8")
+				])
+			)
+			const introspected = writeFixture(
+				{
+					...files,
+					"items.ts": `${files["items.ts"]}
+export function itemJson() {
+	return type({ id: "number" }).json
+}
+`,
+					"checkItem.ts": `import { itemJson } from "./items.ts"
+
+export const checkedItem = JSON.stringify(itemJson())
+`
+				},
+				fromHere("temp", `${name}CycleJson`)
+			)
+			attest(
+				run(
+					await bundle(
+						{ cwd: introspected, introspection: ["json"] },
+						introspected
+					)
+				)
+			).equals(runPlain(introspected))
 		}).timeout(60000)
 
 		it(`${name} static introspection`, async () => {

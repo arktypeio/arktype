@@ -1,8 +1,9 @@
 import { checkedItem } from "./checkItem.ts"
 import { type, type Traversal } from "arktype"
 
+// its prop's meta is a module of its own, which the cycle reaches before it runs
 export function makeItem() {
-	return type({ id: "number" })
+	return type({ id: type("number").describe("an id") })
 }
 
 // a factory, whose intern table the cycle reaches before this module's artifact is evaluated
