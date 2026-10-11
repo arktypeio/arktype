@@ -32,6 +32,21 @@ const keywordUnits = await registerUnits(
 
 const { keywords, scope } = await import("arktype")
 
+// read before any keyword is resolved, since finalizing one binds its unit too
+const unboundBuiltinReferences = [
+	...new Set(
+		Object.values($ark.intrinsic).flatMap(value =>
+			hasArkKind(value, "root") ? [value.$] : []
+		)
+	)
+].flatMap($ =>
+	$.references.flatMap(node =>
+		node.isRoot() && !node.includesAlias && !node.compiledUnit ?
+			[node.expression]
+		:	[]
+	)
+)
+
 const interpreted = corpus.map(([def]) => scope({}).type(def as never))
 
 const units = await precompile(interpreted)
@@ -61,6 +76,9 @@ cases({
 			),
 			[]
 		)
+	},
+	bindsEveryAcyclicRootTheBuiltinScopesReference: () => {
+		deepStrictEqual(unboundBuiltinReferences, [])
 	},
 	matchesTheInterpreter: () => {
 		for (let i = 0; i < corpus.length; i++) {

@@ -4,6 +4,7 @@ import {
 	nodeKinds,
 	registerPrecompiledUnits,
 	writePrecompiledUnits,
+	type BaseNode,
 	type BaseRoot,
 	type PrecompiledUnit
 } from "@ark/schema"
@@ -104,12 +105,13 @@ BaseScope.prototype.finalize = function <node extends BaseRoot>(
 	return node
 }
 
-// a scope's export() binds units for its exported roots
+// a scope's export() binds units for its exported roots and the other roots they reference
 const { export: exportScope } = BaseScope.prototype
 BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 	if (this.resolved || this.resolvedConfig.jitless)
 		return exportScope.apply(this, names)
 	const roots: BaseRoot[] = []
+	const referenced: BaseRoot[] = []
 	let references = this.references
 	// export() sets its references once it has resolved its exports and before it binds them
 	Object.defineProperty(this, "references", {
@@ -128,7 +130,16 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 					)
 						roots.push(resolution)
 				}
-				register(roots)
+				for (const node of value as BaseNode[]) {
+					if (
+						node.isRoot() &&
+						!node.compiledUnit &&
+						!node.includesAlias &&
+						!roots.includes(node)
+					)
+						referenced.push(node)
+				}
+				register([...roots, ...referenced])
 			}
 			references = value
 		}
@@ -142,7 +153,8 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 			enumerable: true,
 			value: references
 		})
-		for (const root of roots) if (root.compiledUnit) checkBound(root)
+		for (const root of [...roots, ...referenced])
+			if (root.compiledUnit) checkBound(root)
 	}
 } as never
 

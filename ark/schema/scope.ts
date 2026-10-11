@@ -375,7 +375,11 @@ const bindRegisteredUnits = (values: readonly unknown[]): void => {
 	const sized: [root: BaseRoot, size: string][] = []
 	for (const value of values) {
 		// a cyclic unit keys its resolutions by node id
-		if (hasArkKind(value, "root") && !value.includesAlias)
+		if (
+			hasArkKind(value, "root") &&
+			!value.compiledUnit &&
+			!value.includesAlias
+		)
 			sized.push([value, sizeOf(value)])
 	}
 	sized.sort((l, r) => +r[1] - +l[1])
@@ -1633,8 +1637,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 				this.references = referencesThroughAliases(this.references)
 				let uncompiled = this.references
 				if (bindPrecompiledUnits) {
-					// an exported root binds the nodes its unit holds, so the scope's unit compiles only the rest
-					bindPrecompiledUnits(Object.values(this._exportedResolutions))
+					// a root a union compiles inline isn't called by any unit, so every root binds, not only those exported
+					bindPrecompiledUnits(uncompiled)
 					uncompiled = uncompiled.filter(node => !node.compiledUnit)
 				}
 				if (uncompiled.length && !this.resolvedConfig.jitless)
