@@ -487,7 +487,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		])
 	}).timeout(60000)
 
-	it("creates anew where it runs again what arktype keeps the same each run, or shares with another site", async () => {
+	it("precompiles a definition that runs again, whether arktype keeps its values the same each run or shares them with another site", async () => {
 		const root = writeFixture(
 			{
 				"main.ts": `import { scope } from "arktype"

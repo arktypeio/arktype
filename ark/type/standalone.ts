@@ -132,10 +132,10 @@ export interface StandaloneIntrospection {
 }
 
 export interface StandaloneFactory {
-	// a Type, or a Module, Scope, Generic or TypedFn arktype creates anew each time its site runs
+	// a Type, Module, Scope, Generic or TypedFn its site creates from what the factory receives
 	type: ExportedValue
 	params: FactoryParam[]
-	// the table of each factory whose Type arktype returns again for the same holes, shared by those returning one Type at build
+	// the table of a factory returning what it created before for the same holes, which those returning one Type at build share
 	internedBy?: number | undefined
 	defaultChecks?: readonly DefaultCheck[]
 	// holes another module supplies through two or more texts, or a parameter holds, which the factory checks are distinct

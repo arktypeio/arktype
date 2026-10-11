@@ -410,11 +410,11 @@ export class Interpreter {
 		return site
 	}
 
-	// e.g. with a function's locals evaluated anew, as its next call evaluates them
-	evaluateAgain(node: Node, module: SourceModule, region: Node): SiteState {
+	// with what the site's own nodes evaluated forgotten, as a variant assuming other parameter counts evaluates them
+	private evaluateAgain(siteNode: Node, module: SourceModule): SiteState {
 		const isRerun = (node: Node | null | undefined): boolean =>
-			!!node && (node === region || isRerun(node.parent))
-		const root = rootOf(region)
+			!!node && (node === siteNode || isRerun(node.parent))
+		const root = rootOf(siteNode)
 		const hide = <key, value>(cache: TreeCache<key, value>) => {
 			const kept = cache
 				.keysIn(root)
@@ -434,7 +434,7 @@ export class Interpreter {
 			hide(this.sitesByNode)
 		]
 		try {
-			return this.evaluateSite(createSiteState(node, module))
+			return this.evaluateSite(createSiteState(siteNode, module))
 		} finally {
 			for (const restore of restores) restore()
 		}
@@ -2346,7 +2346,7 @@ export class Interpreter {
 		const previous = this.aritiesByParameter
 		this.aritiesByParameter = arities
 		try {
-			return this.evaluateAgain(node, module, node)
+			return this.evaluateAgain(node, module)
 		} finally {
 			this.aritiesByParameter = previous
 		}

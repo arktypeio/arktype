@@ -696,7 +696,7 @@ export const internTable = (): InternTable => new InternTable()
 
 const checkedDefaults = new InternTable()
 
-// arktype returns the Type it created before for one definition and the same holes, so its factory does too
+// a factory returns what it created before for the same holes, since creating it at each call is many times slower
 export const intern = <value>(
 	table: InternTable,
 	holes: readonly unknown[],

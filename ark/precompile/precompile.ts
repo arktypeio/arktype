@@ -168,10 +168,6 @@ export interface Site {
 	definition: Node | undefined
 	// a Module like `type.keywords.string`, which creates no Type until one of its members is read
 	isKeywordRead: boolean
-	// whether arktype creates what it holds anew each time it runs, like a Scope in a function, which a factory then does too
-	isCreatedEachRun: boolean
-	// whether arktype returns the Type it created before for the same holes, as outside a Scope created each run, which a factory then does too
-	isInterned: boolean
 	// each default arktype checks while defining what the site creates, which the build can't and its factory does at creation
 	defaultChecks: DefaultCheck[]
 	// each Scope alias arktype resolves while defining it, directly or in computing what a cache returns
@@ -868,7 +864,7 @@ export class Precompiler {
 		const factoriesBySite = new Map<Site, SiteFactory>()
 		const exportsByName: Record<string, StandaloneExport> = {}
 		const keywordReads = new Set<string>()
-		// sites arktype returned one Type for share a table, as they share it in the program
+		// each factory returns what it created before for the same holes, sharing a table with the sites arktype returned one Type for
 		const tablesByValue = new Map<unknown, number>()
 		// e.g. a site in a thunk defining a Scope's alias, dropped with the rest of the text its factory replaces
 		const replaced: [site: Site, spans: readonly Span[]][] = []
@@ -895,11 +891,7 @@ export class Precompiler {
 			try {
 				reasons = this.unsupportedReasonsOf(site, module)
 				if (!reasons.length && !site.parseError) {
-					factory =
-						this.factoryOf(site, module, reasons, prefix) ??
-						(site.isCreatedEachRun ?
-							{ params: [], spans: [], inputs: [], imports: [], distinct: [] }
-						:	undefined)
+					factory = this.factoryOf(site, module, reasons, prefix)
 					if (factory && site.variants) {
 						variants = this.variantFactoriesOf(
 							site,
@@ -947,7 +939,7 @@ export class Precompiler {
 				factoriesBySite.set(site, factory)
 				namesBySite.set(site, name)
 				let table = tablesByValue.get(site.value)
-				if (site.isInterned && table === undefined)
+				if (table === undefined)
 					tablesByValue.set(site.value, (table = tablesByValue.size))
 				const exportOf = (
 					factory: SiteFactory,
@@ -955,7 +947,7 @@ export class Precompiler {
 				): StandaloneFactory => ({
 					type: variant.value as never,
 					params: factory.params,
-					internedBy: site.isInterned ? table : undefined,
+					internedBy: table,
 					defaultChecks: variant.defaultChecks,
 					distinct: factory.distinct,
 					selected:
@@ -1135,6 +1127,13 @@ export class Precompiler {
 		return this.checkHelpers ?
 				site.helpers.filter(helper => helper.file !== module.id)
 			:	[]
+	}
+
+	// a factory receives what the site's value holds, so one the build can't key, like a function read through a property, is refused with what it can't evaluate
+	private keyHeld(site: Site): void {
+		if (site.status !== "accepted" || !isFoldable(site.value)) return
+		keyOf(site.value)
+		for (const [node] of site.defaultChecks) keyOf(node.in as BaseRoot)
 	}
 
 	private isFactory(site: Site, module: SourceModule): boolean {
@@ -1876,7 +1875,7 @@ export class Precompiler {
 					!hasArkKind(candidate.state.value, "root")
 				)
 					this.refusedContainers.set(candidate.state.value, [node, module])
-				if (this.mode === "standalone") this.checkRuns(site, candidate, module)
+				if (this.mode === "standalone") this.keyHeld(site)
 				if (
 					site.status !== "rejected" &&
 					!candidate.fn &&
@@ -2103,8 +2102,6 @@ export class Precompiler {
 			references: [],
 			definition: undefined,
 			isKeywordRead: false,
-			isCreatedEachRun: false,
-			isInterned: false,
 			defaultChecks: [],
 			aliases: [],
 			declarationStart: declarationStartOf(node),
@@ -2404,46 +2401,6 @@ export class Precompiler {
 			!!declaration.init &&
 			this.interpreter.sitesByNode.get(unwrapExpression(declaration.init))
 				?.value === value
-		)
-	}
-
-	// a site in a function or a loop runs again, and creates anew each Scope, Module or Generic, and each Type arktype doesn't intern
-	private checkRuns(
-		site: Site,
-		candidate: SiteCandidate,
-		module: SourceModule
-	): void {
-		const node = candidate.state.node
-		if (site.status !== "accepted" || !isFoldable(site.value)) return
-		const isFactory = this.isFactory(site, module)
-		const regions = repeatedRegionsOf(node)
-		if (!isFactory && !regions.length) return
-		// outermost first, since a callback reads the same Scope each time it runs when the function calling it creates the Scope
-		const outer = this.interpreter.evaluateAgain(
-			node,
-			module,
-			regions[regions.length - 1] ?? node
-		)
-		if (outer.value === site.value) {
-			site.isInterned = isFactory
-			return
-		}
-		if (!regions.length) return
-		const again =
-			regions.length === 1 ?
-				outer
-			:	this.interpreter.evaluateAgain(node, module, regions[0])
-		if (again.error === undefined || isFactory) {
-			site.isCreatedEachRun = true
-			return
-		}
-		rejectSite(
-			site,
-			new DynamicValue(
-				module,
-				node,
-				`\`${module.snippetOf(node)}\` runs more than once, and the build can't evaluate it again`
-			)
 		)
 	}
 
@@ -3641,30 +3598,6 @@ const parameterKindOf = (
 		)
 	)
 		return "function"
-}
-
-// e.g. a callback's body and the function calling it, innermost first
-const repeatedRegionsOf = (node: Node): Node[] => {
-	const result: Node[] = []
-	for (
-		let child = node, parent = node.parent;
-		parent;
-		child = parent, parent = parent.parent
-	) {
-		if (isFunctionNode(parent)) result.push(parent)
-		else if (
-			parent.type === "WhileStatement" ||
-			parent.type === "DoWhileStatement" ||
-			(parent.type === "ForStatement" && child !== parent.init) ||
-			((parent.type === "ForInStatement" || parent.type === "ForOfStatement") &&
-				child !== parent.right) ||
-			(parent.type === "PropertyDefinition" &&
-				!parent.static &&
-				child === parent.value)
-		)
-			result.push(child)
-	}
-	return result
 }
 
 // a ParseError is named by its message, so equal sites share a thrower, and anything else by its site, since a cyclic Type's hash holds registry counters

@@ -456,16 +456,16 @@ const create = () => {
 }`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1bev4io0lhnrds as $arkf1bev4io0lhnrds } from "~arktype/1n9wm0s1mcpokv"
-import { f17s8udm1bx77ds as $arkf17s8udm1bx77ds } from "~arktype/1n9wm0s1mcpokv"
+import { v1bev4io0lhnrds as $arkv1bev4io0lhnrds } from "~arktype/rvd66y18iqo15"
+import { v17s8udm1bx77ds as $arkv17s8udm1bx77ds } from "~arktype/rvd66y18iqo15"
 const create = () => {
-	const $ = $arkf1bev4io0lhnrds()
-	const types = $arkf17s8udm1bx77ds()
+	const $ = $arkv1bev4io0lhnrds()
+	const types = $arkv17s8udm1bx77ds()
 	return types
 }`)
 		})
 
-		it("folds to a factory what arktype creates anew each time a function runs", () => {
+		it("folds to a value what arktype creates anew each time a function runs", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 export const make = () => ({
 	$: scope({ a: "string" }),
@@ -476,43 +476,18 @@ export const make = () => ({
 })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1a6evaf1ilxqcd as $arkf1a6evaf1ilxqcd } from "~arktype/89yh0j0ma0z3s"
-import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/89yh0j0ma0z3s"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/89yh0j0ma0z3s"
-import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/89yh0j0ma0z3s"
-import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/89yh0j0ma0z3s"
+import { v1a6evaf1ilxqcd as $arkv1a6evaf1ilxqcd } from "~arktype/zc7n5a0pgaqel"
+import { v14gb4ky1hqquxy as $arkv14gb4ky1hqquxy } from "~arktype/zc7n5a0pgaqel"
+import { v1fqowp70udipzn as $arkv1fqowp70udipzn } from "~arktype/zc7n5a0pgaqel"
+import { v1isbncu11it64l as $arkv1isbncu11it64l } from "~arktype/zc7n5a0pgaqel"
+import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/zc7n5a0pgaqel"
 export const make = () => ({
-	$: $arkf1a6evaf1ilxqcd(),
-	types: $arkf14gb4ky1hqquxy(),
-	Box: $arkf1fqowp70udipzn(),
-	Trimmed: $arkf1isbncu11it64l(),
+	$: $arkv1a6evaf1ilxqcd(),
+	types: $arkv14gb4ky1hqquxy(),
+	Box: $arkv1fqowp70udipzn(),
+	Trimmed: $arkv1isbncu11it64l(),
 	Text: $arkvr49tao0yiilut()
 })`)
-		})
-
-		it("folds to a factory what arktype creates anew each time a loop's body or an instance's field runs", () => {
-			const result = precompile(`import { scope } from "arktype"
-const made: unknown[] = []
-for (let $ = scope({ a: "string" }), i = 0; i < 2; i++)
-	made.push($.type("a"), scope({ b: "string" }))
-class Holder {
-	static shared = scope({ a: "string" })
-	own = scope({ a: "string" })
-}`)
-			attest(result.diagnostics).equals([])
-			attest(result.code).snap(`import "arktype"
-import { veq2llt0aejyl2 as $arkveq2llt0aejyl2 } from "~arktype/13nj6bg1grn8zn"
-import { v1hn2e10012161b as $arkv1hn2e10012161b } from "~arktype/13nj6bg1grn8zn"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/13nj6bg1grn8zn"
-import { vd4uuz90f9hzi3 as $arkvd4uuz90f9hzi3 } from "~arktype/13nj6bg1grn8zn"
-import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/13nj6bg1grn8zn"
-const made: unknown[] = []
-for (let $ = $arkveq2llt0aejyl2(), i = 0; i < 2; i++)
-	made.push($arkv1hn2e10012161b(), $arkf1fqowp70udipzn())
-class Holder {
-	static shared = $arkvd4uuz90f9hzi3()
-	own = $arkf1ltp2ba0zx2cit()
-}`)
 		})
 
 		it("leaves a define call's argument in its place", () => {
@@ -1083,7 +1058,7 @@ export const T = type("string").narrow(longer(3)).narrow(longer(1))`
 			)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { farwx4t08ya85o as $arkfarwx4t08ya85o } from "~arktype/18vmlyv1ndkbt0"
+import { farwx4t08ya85o as $arkfarwx4t08ya85o } from "~arktype/1vrrcbv0y32466"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 const longer = (n: number) => (s: string) => s.length > n
 $arkfixConfig()
@@ -1114,7 +1089,7 @@ export const fresh = () => scope({ a: "string" }).type("a").narrow(isLong)`)
 				"interned1",
 				"interned2",
 				"interned1",
-				undefined
+				"interned3"
 			])
 		})
 
