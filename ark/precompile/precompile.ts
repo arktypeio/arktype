@@ -752,16 +752,24 @@ export class Precompiler {
 
 	// a baked schema isn't written again, so it would keep the build's value of anything a configured writer reads that the program can change
 	private bake<t>(write: () => t): t {
-		let result: [t, { reads: Read[] }]
+		let result: [{ value: t } | { thrown: unknown }, { reads: Read[] }]
 		try {
-			result = this.interpreter.traceOf(write)
+			// what the writer throws, like arktype's ParseError, is baked only where what it read can't change either
+			result = this.interpreter.traceOf(() => {
+				try {
+					return { value: write() }
+				} catch (e) {
+					if (e instanceof DynamicValue) throw e
+					return { thrown: e }
+				}
+			})
 		} catch (e) {
 			if (!(e instanceof DynamicValue)) throw e
 			return throwParseError(
 				`${writeUnprecompilableMessage("a JSON Schema whose configured writer the build can't evaluate")}: ${chainOf(e).join(": ")}`
 			)
 		}
-		const [value, { reads }] = result
+		const [written, { reads }] = result
 		if (reads.length) {
 			const { root, path } = reads[0]
 			const label = path.reduce<string>(
@@ -774,7 +782,8 @@ export class Precompiler {
 				)
 			)
 		}
-		return value
+		if ("thrown" in written) throw written.thrown
+		return written.value
 	}
 
 	private dependenciesOfArtifact(module: SourceModule): string[] {

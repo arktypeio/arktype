@@ -100,12 +100,12 @@ configure({ numberAllowsNaN: true })`,
 			])
 		})
 
-		it("bakes a JSON Schema whose configured writer reads what the program can change, or can't be evaluated, as a thrower saying why", () => {
+		it("bakes a JSON Schema whose configured writer reads what the program can change, returning or throwing, or can't be evaluated, as a thrower saying why", () => {
 			attest(
 				printedInFreshThread(`const files = {
-	"/config.ts": 'import { configure } from "arktype/config"\\nexport const shared = { version: 1 }\\nconfigure({ toJsonSchema: { fallback: { predicate: ctx => ({ ...ctx.base, version: shared.version }), date: ctx => { const { base } = ctx; return base } } } })'
+	"/config.ts": 'import { configure } from "arktype/config"\\nimport { type } from "arktype"\\nexport const shared = { version: 1 }\\nexport const flags = { strict: true }\\nconfigure({ toJsonSchema: { fallback: { predicate: ctx => ({ ...ctx.base, version: shared.version }), date: ctx => { const { base } = ctx; return base }, unit: ctx => (flags.strict ? type("nope") : ctx.base) } } })'
 }
-const source = 'import { type } from "arktype"\\nconst isEven = (n: number) => n % 2 === 0\\nexport const Even = type("number").narrow(isEven)\\nexport const At = type("Date")\\nexport const schema = Even.toJsonSchema()'
+const source = 'import { type } from "arktype"\\nconst isEven = (n: number) => n % 2 === 0\\nexport const Even = type("number").narrow(isEven)\\nexport const At = type("Date")\\nexport const Big = type("1n")\\nexport const schema = Even.toJsonSchema()'
 const { code, modules } = precompile(source, files, { config: "/config.ts", introspection: ["toJsonSchema"] })
 console.log(JSON.stringify([
 	// the site compares what the writer read where the program reads the schema
@@ -114,7 +114,8 @@ console.log(JSON.stringify([
 ]))`)
 			).snap([
 				"export const schema = $ark($ark)",
-				"a JSON Schema whose configured writer the build can't evaluate can't be precompiled to a standalone validator: arktype calls `date` (/config.ts:3:109) while defining the type, so it must be a static helper: `date` (/config.ts:3:109) is not a static helper: its body is not one expression or one `return`",
+				"a JSON Schema whose configured writer the build can't evaluate can't be precompiled to a standalone validator: arktype calls `date` (/config.ts:5:109) while defining the type, so it must be a static helper: `date` (/config.ts:5:109) is not a static helper: its body is not one expression or one `return`",
+				"a JSON Schema whose configured writer reads `flags.strict`, which the program can change, can't be precompiled to a standalone validator",
 				"a JSON Schema whose configured writer reads `shared.version`, which the program can change, can't be precompiled to a standalone validator"
 			])
 		}).timeout(60000)
