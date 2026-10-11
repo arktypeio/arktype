@@ -2052,11 +2052,7 @@ ${isTemplate ? "]" : ")"}`
 					writeUnprecompilableMessage("a Date with its own properties")
 				)
 			}
-			return this.declareConst(
-				value,
-				"literal",
-				`runtime.frozenDate(${value.getTime()})`
-			)
+			return this.readDate(value.getTime())
 		}
 		if (isRegExpObject(value)) {
 			if (Reflect.ownKeys(value).some(k => k !== "lastIndex")) {
@@ -2080,6 +2076,21 @@ ${isTemplate ? "]" : ")"}`
 			)
 		}
 		return this.emitLiteral(value)
+	}
+
+	// arktype's node holds one Date every reader of the Type reads, so it's created once, by a module every Type holding it shares
+	readDate(time: number): string {
+		const body = `runtime.frozenDate(${time})`
+		const name = `date${hashOf(body)}`
+		this.sharedModules[`~arktype/${name}`] ??= {
+			readsRuntime: true,
+			imports: {},
+			declarations: [
+				`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${body})\n}`
+			],
+			exports: [name]
+		}
+		return this.read(`~arktype/${name}`, name, name, `${name}()`)
 	}
 
 	// the morph arktype creates for a default, called through a function since traversals are created before the validator it applies
