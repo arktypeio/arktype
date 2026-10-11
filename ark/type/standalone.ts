@@ -1272,11 +1272,13 @@ ${statements.filter(statement => statement).join("\n\n")}
 	): { check: string; key: string }[] {
 		return checks.map(([node, defaultValue, key]) => {
 			const input = node.in as BaseRoot
-			const config = this.scopeConfigOf(input, raisableCodesOf(input))
-			// a narrow whose answer never changes answers an equal check alike, so a check is keyed by its node's traversal, its value and the functions they hold
+			const raisable = raisableCodesOf(input)
+			const config = this.scopeConfigOf(input, raisable)
+			// a narrow whose answer never changes answers an equal check alike, so a check is keyed by its node's traversal, the configuration it reads, its value and the functions they hold
 			const [inputId, inputHoles] = traversalKeyOf(input)
 			const [valueId, valueHoles] = encodeKey(defaultValue, undefined, false)
-			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}`))}, [${[...inputHoles, ...valueHoles].map(hole => this.emit(hole)).join(", ")}]]`
+			const writers = configuredWritersOf(input, raisable)
+			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}${writers && ` ${writers}`}`))}, [${[...inputHoles, ...valueHoles].map(hole => this.emit(hole)).join(", ")}]]`
 			return {
 				check: `runtime.checkDefault(${this.validatorNamesByRoot.get(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey}${config === "runtime.runtimeConfig" ? "" : `, ${config}`})`,
 				key: defaultKey
@@ -2183,44 +2185,50 @@ ${isTemplate ? "]" : ")"}`
 
 	// the config of a scope whose writers differ from the program's
 	scopeConfigOf(root: BaseRoot, raisable: RaisableCodes): string {
+		const writers = configuredWritersOf(root, raisable)
+		if (!writers) return "runtime.runtimeConfig"
 		const config = root.$.resolvedConfig
-		const configuredCodes: string[] = []
-		let code: ArkErrorCode
-		for (code in errorWritersByCode) {
-			const writers: string[] = []
-			for (const k of writerKeys) {
-				const writer = config[code][k]
-				// the runtime's config holds the defaults and the writers the program configures
-				if (writer === $ark.resolvedConfig![code][k]) continue
-				if (typeof writer === "string")
-					writers.push(`${k}: ${JSON.stringify(writer)}`)
-				// grouping errors at a path can raise an intersection in any validator
-				else if (
-					raisable === "any" ||
-					raisable[code] ||
-					code === "intersection"
-				) {
-					throwParseError(
-						writeUnprecompilableMessage(`a configured ${code} ${k}`)
-					)
-				}
-			}
-			if (writers.length) {
-				configuredCodes.push(
-					`${code}: [runtime.${code}Writers, { ${writers.join(", ")} }]`
+		return (
+			this.declarations.namesByValue.get(config) ??
+			this.declareConst(config, "config", `runtime.scopeConfig({ ${writers} })`)
+		)
+	}
+}
+
+// the error writers a root's Scope configures beyond the runtime's, which its validator traverses with
+const configuredWritersOf = (
+	root: BaseRoot,
+	raisable: RaisableCodes
+): string => {
+	const config = root.$.resolvedConfig
+	const configuredCodes: string[] = []
+	let code: ArkErrorCode
+	for (code in errorWritersByCode) {
+		const writers: string[] = []
+		for (const k of writerKeys) {
+			const writer = config[code][k]
+			// the runtime's config holds the defaults and the writers the program configures
+			if (writer === $ark.resolvedConfig![code][k]) continue
+			if (typeof writer === "string")
+				writers.push(`${k}: ${JSON.stringify(writer)}`)
+			// grouping errors at a path can raise an intersection in any validator
+			else if (
+				raisable === "any" ||
+				raisable[code] ||
+				code === "intersection"
+			) {
+				throwParseError(
+					writeUnprecompilableMessage(`a configured ${code} ${k}`)
 				)
 			}
 		}
-		if (!configuredCodes.length) return "runtime.runtimeConfig"
-		return (
-			this.declarations.namesByValue.get(config) ??
-			this.declareConst(
-				config,
-				"config",
-				`runtime.scopeConfig({ ${configuredCodes.join(", ")} })`
+		if (writers.length) {
+			configuredCodes.push(
+				`${code}: [runtime.${code}Writers, { ${writers.join(", ")} }]`
 			)
-		)
+		}
 	}
+	return configuredCodes.join(", ")
 }
 
 const { getTime } = Date.prototype
