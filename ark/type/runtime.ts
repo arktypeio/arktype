@@ -86,6 +86,7 @@ export {
 	computeDefaultValueMorph,
 	configure,
 	copyOf,
+	describeBranches,
 	describePredicate,
 	discriminantWriters,
 	divisorWriters,
@@ -536,27 +537,16 @@ export const checkDistinct = (
 }
 
 // arktype sorts siblings alike but for their functions by those functions' names, so a factory binds the functions it receives in that order
-export const sortByName = (
-	holes: readonly Function[],
-	labels: readonly string[]
-): Function[] => {
-	const names = holes.map(baseNameOf)
-	// arktype prints siblings alike but for their names once where the names are equal
-	const i = names.findIndex((name, i) => names.indexOf(name) !== i)
-	if (i !== -1) {
-		throwError(
-			writeCreationMismatchMessage(
-				labels[i],
-				`named ${printable(names[i])}, like ${labels[names.indexOf(names[i])]}`,
-				"named apart from it"
-			)
+export const sortByName = (holes: readonly Function[]): Function[] =>
+	holes
+		.map(hole => [baseNameOf(hole), hole] as const)
+		// siblings whose functions are named alike print alike, so either order writes what arktype's does
+		.sort(([l], [r]) =>
+			l < r ? -1
+			: l > r ? 1
+			: 0
 		)
-	}
-	return holes
-		.map((hole, i) => [names[i], hole] as const)
-		.sort(([l], [r]) => (l < r ? -1 : 1))
 		.map(([, hole]) => hole)
-}
 
 // arktype tells a function of 1 parameter from others, so a factory is compiled for each count, 0, 1 or 2 or more, of each function a parameter holds
 export const selectVariant = (

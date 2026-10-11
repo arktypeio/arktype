@@ -2283,12 +2283,12 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 				(n: number) => n < 10,
 				(n: number) => n % 2 === 0
 			]
-			attest(() => create(unnamedSmall, unnamedEven)).throws(
-				writeCreationMismatchMessage(
-					"`isSmall`",
-					'named "fn", like `isEven`',
-					"named apart from it"
-				)
+			const Unnamed = create(unnamedSmall, unnamedEven)
+			attest(Unnamed.description).snap(
+				"a number and valid according to an anonymous predicate"
+			)
+			attest(Unnamed(11.5).toString()).snap(
+				"must be valid according to an anonymous predicate (was 11.5)"
 			)
 		})
 
@@ -2383,25 +2383,24 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(JSON.stringify(create(Ot, jt)({}))).equals('{"end":2,"start":1}')
 		})
 
-		it("rejects siblings printing alike whose functions' declared names are equal", () => {
+		it("binds siblings whose functions' declared names are equal", async () => {
 			const isSmall = standIn((n: number) => n < 10, "a", "fn")
 			const isEven = standIn((n: number) => n % 2 === 0, "b", "fn")
-			attest(() =>
-				precompileStandalone({
-					T: {
-						type: type("number")
-							.narrow(isSmall)
-							.or(type("number").narrow(isEven)),
-						params: [
-							{ kind: "function", label: "`isSmall`", value: isSmall },
-							{ kind: "function", label: "`isEven`", value: isEven }
-						]
-					}
-				})
-			).throws(
-				writeUnprecompilableMessage(
-					"siblings printing alike but for the name of `isSmall`"
-				)
+			const { T: create } = await load({
+				T: {
+					type: type("number")
+						.narrow(isSmall)
+						.or(type("number").narrow(isEven)),
+					params: [
+						{ kind: "function", label: "`isSmall`", value: isSmall },
+						{ kind: "function", label: "`isEven`", value: isEven }
+					]
+				}
+			})
+			const small = (n: number) => n < 10
+			const even = (n: number) => n % 2 === 0
+			attest(create(small, even).description).snap(
+				"a number and valid according to even or a number and valid according to small"
 			)
 		})
 

@@ -1,5 +1,6 @@
 import {
 	$ark,
+	describeBranches,
 	hasArkKind,
 	InternalTraversal,
 	isNode,
@@ -14,6 +15,7 @@ import {
 	type BaseRoot,
 	type BaseScope,
 	type DefaultedNode,
+	type DescribeBranchesOptions,
 	type GenericRoot,
 	type NodeId,
 	type Optional,
@@ -597,6 +599,12 @@ export class StandaloneArtifact {
 	holeExpressions = new Map<unknown, string>()
 	// the functions each list of siblings arktype sorts by their names holds, in the order the build compiled them
 	sortedHoles: unknown[][] = []
+	// a union's texts whose branches print alike once their functions' names are received, which arktype prints once
+	joinedTexts: [
+		text: string,
+		branches: string[],
+		opts: DescribeBranchesOptions | undefined
+	][] = []
 	labelsByHole = new Map<unknown, string>()
 	classes = new Set<unknown>()
 	checks: string[] = []
@@ -906,6 +914,28 @@ export class StandaloneArtifact {
 				this.sortAtCreation(sorted)
 			}
 		}
+		for (const node of this.declared) {
+			if (!node.hasKind("union")) continue
+			for (const kind of ["expression", "description"] as const) {
+				const branches = node.branches.map(branch =>
+					kind === "description" ? branch.description
+					: branch.hasKind("intersection") ? branch.expression
+					: branch.nestableExpression
+				)
+				const opts = kind === "expression" ? expressionDelimiters : undefined
+				const unnamed = branches.map(text =>
+					text.replace(printedHoleNamePattern, "\0")
+				)
+				if (
+					unnamed.some(
+						(text, i) => text !== branches[i] && unnamed.indexOf(text) !== i
+					) &&
+					node[kind] === describeBranches(branches, opts)
+				)
+					this.joinedTexts.push([node[kind], branches, opts])
+			}
+		}
+		this.joinedTexts.sort(([l], [r]) => r.length - l.length)
 	}
 
 	holeNamed(name: string, read = functionNameOf): unknown {
@@ -1058,16 +1088,6 @@ export class StandaloneArtifact {
 		}
 		if (!this.exportsOnlyTypes()) this.refuseOrder(holes[0])
 		this.checkBoundAlike(holes)
-		for (let i = 1; i < holes.length; i++) {
-			const [l, r] = [holes[i - 1], holes[i]]
-			if (baseOf(l) === baseOf(r)) {
-				throwParseError(
-					writeUnprecompilableMessage(
-						`siblings printing alike but for the name of ${this.labelsByHole.get(l)}`
-					)
-				)
-			}
-		}
 		this.sortedHoles.push(holes)
 	}
 
@@ -1157,7 +1177,7 @@ export class StandaloneArtifact {
 		for (const holes of this.sortedHoles) {
 			const names = holes.map((_, i) => `sorted${this.checks.length}_${i}`)
 			this.checks.push(
-				`const [${names.join(", ")}] = runtime.sortByName([${holes.map(hole => this.holeExpressions.get(hole)).join(", ")}], ${JSON.stringify(holes.map(hole => this.labelsByHole.get(hole)))})`
+				`const [${names.join(", ")}] = runtime.sortByName([${holes.map(hole => this.holeExpressions.get(hole)).join(", ")}])`
 			)
 			for (const [i, hole] of holes.entries())
 				this.holeExpressions.set(hole, names[i])
@@ -1927,6 +1947,17 @@ ${isTemplate ? "]" : ")"}`
 
 	// a hole's name is known only at creation, so a string printing one is completed then with arktype's own printing
 	emitString(s: string): string {
+		const joined = this.joinedTexts.find(([text]) => s.includes(text))
+		if (joined) {
+			const [text, branches, opts] = joined
+			const start = s.indexOf(text)
+			const end = start + text.length
+			return [
+				...(start ? [this.emitString(s.slice(0, start))] : []),
+				`runtime.describeBranches([${branches.map(branch => this.emitString(branch)).join(", ")}]${opts ? `, ${JSON.stringify(opts)}` : ""})`,
+				...(end < s.length ? [this.emitString(s.slice(end))] : [])
+			].join(" + ")
+		}
 		const parts: string[] = []
 		let start = 0
 		for (const match of s.matchAll(printedHoleNamePattern)) {
@@ -2884,6 +2915,12 @@ const partsOf = (
 
 export const holeNameMarker = "$hole_"
 
+// how arktype joins the expressions of a union's branches
+const expressionDelimiters: DescribeBranchesOptions = {
+	delimiter: " | ",
+	finalDelimiter: " | "
+}
+
 // a root keeping, of the siblings that each hold one function of a run, only the one holding the function given
 const isolating = (
 	root: BaseRoot,
@@ -2920,12 +2957,6 @@ const isolating = (
 	} catch {
 		return null
 	}
-}
-
-// the name a function's declaration gives it, which leads its placeholder
-const baseOf = (hole: unknown): string => {
-	const name = functionNameOf(hole as Function)
-	return name.slice(0, name.indexOf(holeNameMarker))
 }
 
 // arktype writes a function in a hash as `"$ark.name"`, so the index two hashes first differ at may fall inside its name

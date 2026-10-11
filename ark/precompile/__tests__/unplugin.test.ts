@@ -5,7 +5,7 @@ import {
 	precompile,
 	type PrecompilePluginOptions
 } from "@ark/precompile/unplugin"
-import { context, build as esbuild, transformSync } from "esbuild"
+import { context, build as esbuild, transformSync, type Plugin } from "esbuild"
 import { spawnSync } from "node:child_process"
 import {
 	mkdirSync,
@@ -891,6 +891,58 @@ console.log(type("number").narrow(isSmall).or(type("number").narrow(isEven))(15)
 		attest(contextual).snap([
 			'contextual.ts:5:13  type("number").narrow(isSmall).or(type("number").narrow(isE… can\'t be precompiled to a standalone validator yet\n  an order that depends on the name of `isEven` (contextual.ts:5:69) can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 		])
+	}).timeout(60000)
+
+	it("prints once the siblings a build minifying its chunks apart names alike", async () => {
+		const root = writeFixture(
+			{
+				"package.json": `{ "type": "module" }`,
+				"even.ts": "export const isEven = (n: number) => n % 2 === 0\n",
+				"odd.ts": "export const isOdd = (n: number) => n % 2 === 1\n",
+				// each imports one of them, so each is a chunk of its own
+				"other1.ts": `import { isEven } from "./even.ts"\nconsole.log(isEven(1))\n`,
+				"other2.ts": `import { isOdd } from "./odd.ts"\nconsole.log(isOdd(1))\n`,
+				"main.ts": `import { type } from "arktype"
+import { isEven } from "./even.ts"
+import { isOdd } from "./odd.ts"
+const Parity = type("number").narrow(isEven).or(type("number").narrow(isOdd))
+console.log(JSON.stringify([isEven.name, isOdd.name, Parity.description, Parity(1.5).toString()]))
+`
+			},
+			fromHere("temp", "chunks")
+		)
+		// Vite minifies each chunk on its own, naming its functions apart from those of other chunks
+		const runChunks = async (outdir: string, plugins: Plugin[]) => {
+			const { outputFiles } = await esbuild({
+				entryPoints: ["main.ts", "other1.ts", "other2.ts"].map(entry =>
+					join(root, entry)
+				),
+				bundle: true,
+				splitting: true,
+				write: false,
+				format: "esm",
+				outdir: join(root, outdir),
+				conditions,
+				logLevel: "silent",
+				plugins
+			})
+			for (const file of outputFiles) {
+				mkdirSync(dirname(file.path), { recursive: true })
+				writeFileSync(
+					file.path,
+					transformSync(file.text, { minify: true, format: "esm" }).code
+				)
+			}
+			return spawnSync(process.execPath, [join(root, outdir, "main.js")], {
+				encoding: "utf8"
+			}).stdout
+		}
+		const precompiled = await runChunks("precompiled", [
+			precompile.esbuild({ cwd: root, conditions })
+		])
+		const [evenName, oddName] = JSON.parse(precompiled)
+		attest(evenName).equals(oddName)
+		attest(precompiled).equals(await runChunks("plain", []))
 	}).timeout(60000)
 
 	it("folds the json of a Type a Scope's method creates", async () => {

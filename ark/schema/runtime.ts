@@ -46,7 +46,7 @@ export {
 } from "./shared/jsonSchema.ts"
 export * from "./shared/transform.ts"
 export * from "./shared/traversal.ts"
-export { isAbsent } from "./shared/utils.ts"
+export { describeBranches, isAbsent } from "./shared/utils.ts"
 export { arrayIndexMatcher } from "./structure/shared.ts"
 
 export type ErrorWritersByCode = {
