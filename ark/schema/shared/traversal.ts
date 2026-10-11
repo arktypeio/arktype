@@ -459,11 +459,20 @@ export const allowsInBranch = (
 	ctx: InternalTraversal,
 	node: BaseNode,
 	data: unknown
+): boolean =>
+	node.allowsRequiresTraversal ?
+		allowsInBranchBy(ctx, node.traverseAllows, data)
+	:	node.allows(data)
+
+// compiled code passes a node's Allows rather than the node, which a precompiled validator doesn't hold
+export const allowsInBranchBy = (
+	ctx: InternalTraversal,
+	allows: TraverseAllows,
+	data: unknown
 ): boolean => {
-	if (!node.allowsRequiresTraversal) return node.allows(data)
 	const pathLength = ctx.path.length
 	ctx.pushBranch()
-	const allowed = node.traverseAllows(data, ctx)
+	const allowed = allows(data, ctx)
 	// compiled Allows returns false without popping the keys it pushed
 	ctx.path.length = pathLength
 	return ctx.popBranch()!.errorCount === 0 && allowed

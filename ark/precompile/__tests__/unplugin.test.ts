@@ -541,6 +541,33 @@ console.log(A({ a: 1 }).toString())
 		attest(bundle.includes("unimported")).equals(false)
 	}).timeout(60000)
 
+	it("precompiles a structure whose predicate reads ctx, which an intersection's Apply checks before its own predicate", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const isFilled = (s: string, ctx: any) => s.length > 0 || ctx.reject("non-empty")
+const double = (s: string) => s + s
+const isEven = (o: object) => Object.keys(o).length % 2 === 0
+const T = type([["string", ":", isFilled], [["string", "=>", double], "?"]]).and(
+	type(["object", ":", isEven])
+)
+// a minifier renames isEven
+for (const data of [["a"], ["a", "b"], [""], ["a", 2]])
+	console.log(T(data).toString().replace(/according to \\w+/, "according to isEven"))
+`
+			},
+			fromHere("temp", "branchAllows")
+		)
+		const expected = `must be valid according to isEven (was ["a"])
+a,bb
+value at [0] must be non-empty (was "")
+value at [1] must be a string (was a number)
+`
+		attest(runPlain(root)).equals(expected)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
+	}).timeout(60000)
+
 	it("drops the validator of a Type read only for its introspection, but not its module", async () => {
 		const root = writeFixture(
 			{

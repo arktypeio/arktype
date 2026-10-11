@@ -73,6 +73,7 @@ export {
 	aliasVisits,
 	allowsAcyclic,
 	allowsInBranch,
+	allowsInBranchBy,
 	allowsInContext,
 	allowsUntracked,
 	applyCyclic,

@@ -14,7 +14,7 @@ import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
 import {
 	addTransformErrors,
-	allowsInBranch,
+	allowsInBranchBy,
 	enterResolution,
 	exitResolution,
 	transformedInApply,
@@ -267,7 +267,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		if (!node.allowsRequiresContext)
 			return this.invoke(node, { arg, kind: "Allows" })
 		return node.allowsRequiresTraversal ?
-				`${this.ref(allowsInBranch)}(${this.ctx}, ${this.ref(node)}, ${arg})`
+				`${this.ref(allowsInBranchBy)}(${this.ctx}, ${this.referenceToId(node.id, { kind: "Allows" })}, ${arg})`
 			:	`${this.ref(node)}.allows(${arg})`
 	}
 
