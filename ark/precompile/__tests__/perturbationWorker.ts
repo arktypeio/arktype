@@ -63,6 +63,8 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 	for (const file of manifest.files) filesByPath[file.path] = file
 	let perturbation: Perturbation = "none"
 	let perturbed = new WeakSet<object>()
+	let run = 0
+	const firstRunOf = new WeakMap<object, number>()
 
 	registerHooks({
 		resolve: (specifier, context, next) => {
@@ -318,10 +320,17 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			create: () => unknown
 		) => {
 			let isPerturbed = false
-			if (perturbation !== "none" && perturbation !== "define") {
-				// a binding read before its declaration throws as the site would, so it isn't perturbed
-				for (const read of readsOf())
-					isPerturbed = perturb(valueOrError(read)) || isPerturbed
+			// a binding read before its declaration throws as the site would, so it isn't perturbed
+			for (const value of readsOf().map(valueOrError)) {
+				if (!hasDomain(value, "object")) continue
+				if (!firstRunOf.has(value)) firstRunOf.set(value, run)
+				// a value an earlier run read is shared by runs, so a write to it would leak into later ones and meet what arktype cached in earlier ones
+				if (
+					firstRunOf.get(value) === run &&
+					perturbation !== "none" &&
+					perturbation !== "define"
+				)
+					isPerturbed = perturb(value) || isPerturbed
 			}
 			try {
 				const value = create()
@@ -350,6 +359,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 				continue
 			perturbation = kind
 			perturbed = new WeakSet()
+			run++
 			process.env.ARK_MODE = kind === "define" ? "strict" : "loose"
 			observations = byPerturbation[kind] = {}
 			occurrencesBySite = {}
