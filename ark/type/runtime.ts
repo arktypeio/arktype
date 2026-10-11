@@ -275,7 +275,7 @@ export class Validator extends Callable<
 	}
 }
 
-type TemplateParts = [
+type ValidatorParts = [
 	rootApply: RootApply,
 	node: BaseRoot,
 	pipe: TraversePipe,
@@ -283,29 +283,16 @@ type TemplateParts = [
 	id: string
 ]
 
-const templateParts = /* @__PURE__ */ new WeakMap<Validator, TemplateParts>()
+const copiesByParts = /* @__PURE__ */ new WeakMap<ValidatorParts, InternTable>()
 
-// a validator written once without its key's functions, so no factory can receive it in place of another
-export const template = (...parts: TemplateParts): Validator => {
-	const [rootApply, node, pipe, attributes] = parts
-	const validator = new Validator(rootApply, node, pipe, attributes, "")
-	templateParts.set(validator, parts)
-	return validator
-}
-
-const copiesByTemplate = /* @__PURE__ */ new WeakMap<Validator, InternTable>()
-
-// a factory whose Type's code holds nothing it receives copies the validator written once, keyed by the functions it receives, once for each
+// a factory whose Type's code holds nothing it receives constructs the validator written once, keyed by the functions it receives, once for each
 export const rekeyed = (
-	template: Validator,
+	parts: ValidatorParts,
 	holes: readonly unknown[]
 ): Validator => {
-	let copies = copiesByTemplate.get(template)
-	if (!copies) copiesByTemplate.set(template, (copies = new InternTable()))
-	return intern(copies, holes, () => {
-		const [rootApply, node, pipe, attributes, id] = templateParts.get(template)!
-		return new Validator(rootApply, node, pipe, attributes, id, holes)
-	})
+	let copies = copiesByParts.get(parts)
+	if (!copies) copiesByParts.set(parts, (copies = new InternTable()))
+	return intern(copies, holes, () => new Validator(...parts, holes))
 }
 
 type typeOnlyMember =

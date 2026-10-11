@@ -1558,14 +1558,15 @@ return [${returned.join(", ")}]
 		const [id, holes] = (this.checkedRoots.has(root) ? traversalKeyOf : keyOf)(
 			root
 		)
+		// a folded factory's Type is written as what constructs its validator, which each call constructs with the functions it receives
 		const isTemplate = this.templates.has(root)
 		const key = `,\n\t${JSON.stringify(id)}${holes.length && !isTemplate ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
-		return `${isTemplate ? "runtime.template" : "new runtime.Validator"}(
+		return `${isTemplate ? "[" : "new runtime.Validator("}
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
 	${this.emit(pipeOf(root))},
 	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root)}()`}, description: ${this.emitDescription(root)}, meta: ${this.emitMeta(root)}${this.emitIntrospection(root)} }${key}
-)`
+${isTemplate ? "]" : ")"}`
 	}
 
 	emitIntrospection(root: BaseRoot): string {
