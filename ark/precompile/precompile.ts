@@ -1325,7 +1325,7 @@ export class Precompiler {
 		const passed = new Set<unknown>()
 		// one value read through two texts is passed through each, since the program can change one but not the other
 		const textsByPassed = new Map<unknown, Set<string>>()
-		// what a site needs only to check, since its validator doesn't hold it or it reads only introspection, and needn't receive where nothing the program does changes that check and no default's check calls or is identified by it
+		// what a site reads only to check, which it needn't receive where nothing the program does changes the check
 		const unchecked = new Set<unknown>()
 		const calledByChecks = new Set(
 			site.defaultChecks.flatMap(([node]) => keyOf(node.in as BaseRoot)[1])
@@ -2194,7 +2194,7 @@ export class Precompiler {
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
 				site.inputs.push(input)
 		}
-		// what a site reading an imported Type's introspection returns doesn't depend on the Type at runtime, which only a module mock replaces, unless the Type's creation checks what the program can change, which runs only if the site receives it
+		// introspection doesn't depend on the Type at runtime, which only a module mock replaces
 		const type = site.introspection?.type
 		if (
 			type &&

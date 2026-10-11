@@ -556,6 +556,11 @@ export const writeFixConfig = (
 ): string =>
 	`runtime.fixConfig(${configured ? `${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)}` : ""})`
 
+interface WriteDataOptions {
+	// a ToJsonSchemaError's context holds the validator's own values, like a predicate or a Date bound, beside its data
+	holdsValues?: boolean
+}
+
 interface Declarations {
 	statements: string[]
 	namesByValue: Map<unknown, string>
@@ -1714,7 +1719,7 @@ ${isTemplate ? "]" : ")"}`
 				schema = write()
 			} catch (e) {
 				if (e instanceof ToJsonSchema.Error)
-					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)}, ${this.writeData(e.context, true)})`
+					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)}, ${this.writeData(e.context, { holdsValues: true })})`
 				if (isSymbolConversion(e)) return "runtime.serializeSymbol()"
 				// any other error, like one a configured writer throws, makes it a schema the build can't bake
 				if (e instanceof ParseError) throw e
@@ -1729,10 +1734,9 @@ ${isTemplate ? "]" : ")"}`
 		}
 	}
 
-	// a ToJsonSchemaError's context holds the validator's own values, like a predicate or a Date bound, beside its data
-	writeData(value: unknown, holdsValues = false): string {
+	writeData(value: unknown, opts: WriteDataOptions = {}): string {
 		if (
-			holdsValues &&
+			opts.holdsValues &&
 			(typeof value === "function" ||
 				typeof value === "symbol" ||
 				typeof value === "bigint" ||
@@ -1764,11 +1768,11 @@ ${isTemplate ? "]" : ")"}`
 			)
 		}
 		if (isArray)
-			return `[${(value as unknown[]).map(v => this.writeData(v, holdsValues)).join(", ")}]`
+			return `[${(value as unknown[]).map(v => this.writeData(v, opts)).join(", ")}]`
 		const entries = Object.entries(value as object).map(
 			// a __proto__ key would set an object literal's prototype
 			([k, v]) =>
-				`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, holdsValues)}`
+				`${k === "__proto__" ? `["__proto__"]` : JSON.stringify(k)}: ${this.writeData(v, opts)}`
 		)
 		if (prototype === null) entries.unshift("__proto__: null")
 		return `{ ${entries.join(", ")} }`

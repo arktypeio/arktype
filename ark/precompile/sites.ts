@@ -150,7 +150,7 @@ const arkMemberOf = (
 	}
 }
 
-// e.g. `T.json` or `T.toJsonSchema()`, which arktype computes from the Type alone, or `$.json`, which the build refuses rather than read nothing at runtime
+// e.g. `T.json` or `T.toJsonSchema()`, or `$.json`, which the build refuses rather than read nothing at runtime
 const introspectionReadOf = (
 	node: Node,
 	module: SourceModule,

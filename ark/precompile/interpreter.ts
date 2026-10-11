@@ -314,9 +314,9 @@ export class Interpreter {
 	private valuesByNode = new TreeCache<Node, Evaluated>(node => node)
 	// unknown values a declaration computes, which it computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
-	// each Type a declaration created comparing what the program holds, which a site reading it receives so the declaration runs
+	// a site reading one receives it, so its declaration runs
 	comparedAtCreation = new WeakSet<object>()
-	// whether each arktype value a declaration created checks what the program can change where it's created, which a site reading only its introspection receives so the declaration runs
+	// a site reading only the introspection of one checked at creation receives it, so its declaration runs
 	private checksByValue = new WeakMap<object, boolean>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	// one stand-in for each site, parameter and count a variant assumes, so evaluating a site again reads the one it read
@@ -1274,7 +1274,7 @@ export class Interpreter {
 		return this.checksByValue.get(value as object) ?? true
 	}
 
-	// a hole a site's creation checks against what the program can change, unless the site reads it as its module's own or through a Type whose creation checks nothing
+	// unless a site reads it as its module's own or through a Type whose creation checks nothing
 	private checksHole(
 		site: SiteState | undefined,
 		hole: unknown,
@@ -1294,7 +1294,7 @@ export class Interpreter {
 		return true
 	}
 
-	// a function or symbol its module creates, read as the expression creating it or through a binding nothing writes that the expression initializes, which is the same wherever that module runs
+	// one its module creates where the site reads it, which is the same wherever that module runs
 	isOwnHole(read: Node, value: unknown, module: SourceModule): boolean {
 		const [source, origin] = this.sourceOf(value) ?? []
 		if (
