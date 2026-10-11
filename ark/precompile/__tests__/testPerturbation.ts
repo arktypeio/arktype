@@ -111,6 +111,15 @@ export const buildPerturbed = (
 				return isHolder(value) ? keyOf(value)[1] : []
 			}
 		)
+		const valueOrUndefined = (
+			binding: Parameters<typeof precompiler.interpreter.valueOfBinding>[0]
+		) => {
+			try {
+				return precompiler.interpreter.valueOfBinding(binding, module)
+			} catch {
+				return undefined
+			}
+		}
 		// a comment beside a site survives its transform, so each world wraps the same expression
 		const marked = new MagicString(source)
 		const wrappers: [start: string, end: string, replacement: string][] = []
@@ -118,6 +127,14 @@ export const buildPerturbed = (
 		for (const site of folded) {
 			const id = Object.keys(sitesById).length
 			sitesById[id] = `${relative(root, path)}:${site.line}:${site.column}`
+			// arktype keeps the name and length it read of a function it already holds, which it may read only once the site runs
+			const passed = new Set([
+				...loaded,
+				...site.references.flatMap(({ value }) =>
+					value !== site.value && isHolder(value) ? keyOf(value)[1] : []
+				)
+			])
+			const passedNames = new Set<string>()
 			const names = new Set<string>()
 			for (const [node, reference] of module.scopes.referencesById) {
 				const binding = reference.binding
@@ -132,6 +149,8 @@ export const buildPerturbed = (
 				)
 					continue
 				names.add(binding.name)
+				// a function the site reads, whose Type may no longer hold it
+				if (passed.has(valueOrUndefined(binding))) passedNames.add(binding.name)
 			}
 			// what a Type the site reads holds can change too, through the binding declaring it, imported if another module exports it
 			const held = new Set(
@@ -139,14 +158,6 @@ export const buildPerturbed = (
 					.filter(value => hasArkKind(value, "root"))
 					.flatMap(root => keyOf(root)[1])
 			)
-			// arktype keeps the name and length it read of a function it already holds, which it may read only once the site runs
-			const passed = new Set([
-				...loaded,
-				...site.references.flatMap(({ value }) =>
-					value !== site.value && isHolder(value) ? keyOf(value)[1] : []
-				)
-			])
-			const passedNames = new Set<string>()
 			for (const value of held) {
 				const [node, declaring] = precompiler.interpreter.sourceOf(value) ?? []
 				const binding = node && bindingOfFunction(node, declaring!)

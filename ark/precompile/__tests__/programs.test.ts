@@ -41,8 +41,13 @@ interface Fragment {
 type FragmentOf = (id: string) => Fragment
 
 // a site main.ts observes, by what it creates and how that validates the inputs
-const observed = (key: string, site: string, inputs: unknown[]) =>
-	`$arkObserve(${JSON.stringify(key)}, () => ${site}, () => [${inputs.map(sourceOf).join(", ")}])`
+const observed = (
+	key: string,
+	site: string,
+	inputs: unknown[],
+	sources: string[] = []
+) =>
+	`$arkObserve(${JSON.stringify(key)}, () => ${site}, () => [${[...inputs.map(sourceOf), ...sources].join(", ")}])`
 
 const inputsOf = (data: fc.Arbitrary<unknown>) =>
 	fc.array(fc.oneof({ weight: 4, arbitrary: data }, noise), {
@@ -72,6 +77,57 @@ const definitions: fc.Arbitrary<FragmentOf> = nodeOf([]).chain(node =>
 			})
 	)
 )
+
+// siblings arktype sorts by the names of the functions or classes they hold, some predicates reading ctx, which a factory sorts by the names it receives
+const sortedSiblings: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		form: fc.constantFrom("narrows", "classes", "keys"),
+		predicates: fc.uniqueArray(
+			fc.constantFrom(
+				...(Object.keys(predicates) as (keyof typeof predicates)[])
+			),
+			{ minLength: 2, maxLength: 3 }
+		),
+		classes: fc.uniqueArray(fc.constantFrom("Ant", "Cat", "Dog"), {
+			minLength: 2,
+			maxLength: 3
+		}),
+		base: fc.constantFrom("number", "string", "unknown"),
+		inputs: inputsOf(
+			fc.constantFrom(0, 2, -3, "", "abcd", { a: 1 }, { abcd: "", "": 0 })
+		)
+	})
+	.map(
+		({ form, predicates, classes, base, inputs }): FragmentOf =>
+			id => {
+				const names = classes.map(name => `${name}${id}`)
+				const siblings =
+					form === "classes" ?
+						names.map(name => `type.instanceOf(${name})`)
+					:	predicates.map(predicate =>
+							form === "narrows" ?
+								`type("${base}").narrow(${predicate})`
+							:	`type.Record(type("string").narrow(${predicate}), "${base}")`
+						)
+				const site = siblings.reduce(
+					(l, r) => `${l}.${form === "keys" ? "and" : "or"}(${r})`
+				)
+				return form === "classes" ?
+						{
+							containers: names.map(name => `export class ${name} {}`),
+							exports: names,
+							main: [
+								observed(
+									id,
+									site,
+									inputs,
+									names.map(name => `new ${name}()`)
+								)
+							]
+						}
+					:	{ containers: [], exports: [], main: [observed(id, site, inputs)] }
+			}
+	)
 
 const holders = {
 	object: (element: string) => `type({ a: ${element} })`,
@@ -589,7 +645,8 @@ const programs = fc
 			generics,
 			derived,
 			bindings,
-			matchers
+			matchers,
+			sortedSiblings
 		),
 		{
 			minLength: 1,
