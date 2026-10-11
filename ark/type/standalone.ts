@@ -636,7 +636,7 @@ export class StandaloneArtifact {
 	// the texts of unions printing a received name, longest first, which arktype joins from their branches' at creation
 	joinedTexts: [
 		text: string,
-		kind: "expression" | "description" | "defaultShortDescription",
+		join: "expressBranches" | "describeBranches",
 		branches: string[]
 	][] = []
 	labelsByHole = new Map<unknown, string>()
@@ -972,11 +972,11 @@ export class StandaloneArtifact {
 	collectJoinedTexts(): void {
 		for (const node of this.declared) {
 			if (!node.hasKind("union")) continue
-			// a required key's error prints its value's short description
-			for (const kind of [
-				"expression",
-				"description",
-				"defaultShortDescription"
+			for (const [kind, join] of [
+				["expression", "expressBranches"],
+				["description", "describeBranches"],
+				// a required key's error prints its value's short description
+				["defaultShortDescription", "describeBranches"]
 			] as const) {
 				const branches = node.branches.map(branch =>
 					kind === "expression" ? expressBranch(branch) : branch[kind]
@@ -985,12 +985,9 @@ export class StandaloneArtifact {
 					node[kind].includes(holeNameMarker) &&
 					// branches printing alike as written print alike at creation
 					branches.some(text => text !== branches[0]) &&
-					node[kind] ===
-						(kind === "expression" ? expressBranches : describeBranches)(
-							branches
-						)
+					node[kind] === { expressBranches, describeBranches }[join](branches)
 				)
-					this.joinedTexts.push([node[kind], kind, branches])
+					this.joinedTexts.push([node[kind], join, branches])
 			}
 		}
 		// a union's text holds those of the unions its branches hold, which emitString matches inside it
@@ -2031,12 +2028,12 @@ ${isTemplate ? "]" : ")"}`
 			([text]) => text.length < within && s.includes(text)
 		)
 		if (joined) {
-			const [text, kind, branches] = joined
+			const [text, join, branches] = joined
 			const start = s.indexOf(text)
 			const end = start + text.length
 			return [
 				...(start ? [this.emitString(s.slice(0, start), within)] : []),
-				`runtime.${kind === "expression" ? "expressBranches" : "describeBranches"}([${branches.map(branch => this.emitString(branch, text.length)).join(", ")}])`,
+				`runtime.${join}([${branches.map(branch => this.emitString(branch, text.length)).join(", ")}])`,
 				...(end < s.length ? [this.emitString(s.slice(end), within)] : [])
 			].join(" + ")
 		}
