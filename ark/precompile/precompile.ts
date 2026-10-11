@@ -3625,7 +3625,6 @@ const isFoldable = (value: unknown): value is Foldable =>
 const createdBy = (site: Site): Foldable | undefined =>
 	isFoldable(site.value) ? site.value : site.introspection?.type
 
-// e.g. a Module and each Type it holds, which a program can compare by identity
 // a Scope's Types are returned by its exports rather than by a call the site makes
 const exportedRootsOf = (value: unknown): BaseRoot[] => {
 	let module = value
@@ -3641,6 +3640,7 @@ const exportedRootsOf = (value: unknown): BaseRoot[] => {
 	return [...arkObjectsIn(module)].filter(member => hasArkKind(member, "root"))
 }
 
+// e.g. a Module and each Type it holds, which a program can compare by identity
 const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
 	if (!isFoldable(value) || result.has(value)) return result
 	result.add(value)
