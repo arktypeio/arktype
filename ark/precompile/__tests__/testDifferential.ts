@@ -6,7 +6,7 @@ import {
 	compare,
 	layouts,
 	observeArktype,
-	out
+	outDir
 } from "./differential.ts"
 
 // checks the differential of the precompilation design (design/precompile.md §12): every root arktype's
@@ -71,7 +71,12 @@ const run = async () => {
 				(refusalsByReason[comparison.refusal] ?? 0) + 1
 		}
 	}
-	const report = join(out, "differential.json")
+	console.log(disagreements.slice(0, 20).join("\n\n"))
+	console.log(
+		`\n${disagreements.length ? "❌" : "✅"} ${precompiledRoots} of ${roots.length} roots precompiled, ${introspected} with their introspection baked (${unbaked} throwing why a schema can't be) and ${folded} folded where a site reads it, ${calls} calls, each in the ${layouts.join(" and ")} layouts: ${disagreements.length} disagreeing, ${harnessLimited} beyond the harness`
+	)
+	if (!disagreements.length) return
+	const report = join(await outDir(), "differential.json")
 	writeFileSync(
 		report,
 		JSON.stringify(
@@ -85,12 +90,9 @@ const run = async () => {
 			2
 		)
 	)
-	console.log(disagreements.slice(0, 20).join("\n\n"))
-	console.log(
-		`\n${disagreements.length ? "❌" : "✅"} ${precompiledRoots} of ${roots.length} roots precompiled, ${introspected} with their introspection baked (${unbaked} throwing why a schema can't be) and ${folded} folded where a site reads it, ${calls} calls, each in the ${layouts.join(" and ")} layouts: ${disagreements.length} disagreeing, ${harnessLimited} beyond the harness (${report})`
+	throw new Error(
+		`${disagreements.length} disagreements with arktype (${report})`
 	)
-	if (disagreements.length)
-		throw new Error(`${disagreements.length} disagreements with arktype`)
 }
 
 export const mochaHooks = {

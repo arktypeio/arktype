@@ -15,7 +15,13 @@ import type { SourceModule } from "@ark/precompile/internal/module.ts"
 import { specifierOf } from "@ark/precompile/internal/precompile.ts"
 import MagicString from "magic-string"
 import { execFile, spawnSync } from "node:child_process"
-import { globSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import {
+	globSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { join, relative } from "node:path"
 import { fileURLToPath } from "node:url"
@@ -398,6 +404,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 		.map(file => join(root, file))
 	const build = buildPerturbed(corpus, { mode: "standalone" })
 	const out = mkdtempSync(join(tmpdir(), "ark-perturbation-"))
+	// a run that fails keeps its worlds for inspection
+	process.once("exit", code => {
+		if (code) console.error(`results: ${out}`)
+		else rmSync(out, { recursive: true, force: true })
+	})
 	const { counts, disagreements, observedSites } = compareWorlds(
 		build,
 		await runWorld("original", build.manifest, out),
@@ -409,8 +420,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 				files: build.manifest.files.length,
 				foldedSites: Object.keys(build.sitesById).length,
 				observedSites: observedSites.size,
-				counts,
-				results: out
+				counts
 			},
 			null,
 			2

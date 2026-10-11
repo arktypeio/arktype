@@ -19,7 +19,7 @@ import {
 } from "arktype/runtime"
 import { DynamicValue } from "@ark/precompile/internal/dynamic.ts"
 import { buildSync } from "esbuild"
-import { mkdtempSync, writeFileSync } from "node:fs"
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
@@ -31,21 +31,13 @@ export type Layout = "inline" | "modules"
 
 export const layouts: Layout[] = ["inline", "modules"]
 
-export const out = mkdtempSync(join(tmpdir(), "ark-differential-"))
+let out: string | undefined
 
-// the artifacts' own copy of the runtime, so they share no state with arktype
-buildSync({
-	stdin: {
-		contents: `export * from "arktype/runtime"`,
-		resolveDir: fromHere(),
-		loader: "js"
-	},
-	bundle: true,
-	format: "esm",
-	platform: "neutral",
-	conditions: ["ark-ts"],
-	outfile: join(out, "runtime.js"),
-	logLevel: "error"
+// a run that fails keeps its artifacts for inspection
+process.once("exit", code => {
+	if (!out) return
+	if (code) console.error(`precompiled artifacts: ${out}`)
+	else rmSync(out, { recursive: true, force: true })
 })
 
 const entryKey = noSuggest("loadedArktypeEntry")
@@ -75,10 +67,30 @@ const pairCopies = (copy: unknown, original: unknown): void => {
 			pairCopies(v, (original as Record<string, unknown>)[k])
 	}
 }
-for (const [name, copy] of Object.entries(
-	await importBesideArktype(join(out, "runtime.js"))
-))
-	pairCopies(copy, (arktypeRuntime as Record<string, unknown>)[name])
+
+// the directory of the artifacts, created when the first is written with their own copy of the runtime, so they share no state with arktype
+export const outDir = async (): Promise<string> => {
+	if (out) return out
+	const dir = (out = mkdtempSync(join(tmpdir(), "ark-differential-")))
+	buildSync({
+		stdin: {
+			contents: `export * from "arktype/runtime"`,
+			resolveDir: fromHere(),
+			loader: "js"
+		},
+		bundle: true,
+		format: "esm",
+		platform: "neutral",
+		conditions: ["ark-ts"],
+		outfile: join(dir, "runtime.js"),
+		logLevel: "error"
+	})
+	for (const [name, copy] of Object.entries(
+		await importBesideArktype(join(dir, "runtime.js"))
+	))
+		pairCopies(copy, (arktypeRuntime as Record<string, unknown>)[name])
+	return dir
+}
 
 const link = (code: string) =>
 	code
@@ -100,6 +112,7 @@ const loadArtifact = async (
 	layout: Layout,
 	introspection: IntrospectionMember[]
 ): Promise<any> => {
+	const dir = await outDir()
 	let code: string
 	if (layout === "inline")
 		code = precompileStandalone(exports, { introspection })
@@ -109,7 +122,7 @@ const loadArtifact = async (
 			const written = modulesBySpecifier[specifier]
 			if (written === undefined) {
 				modulesBySpecifier[specifier] = module
-				writeFileSync(join(out, `${specifier.slice(9)}.js`), link(module))
+				writeFileSync(join(dir, `${specifier.slice(9)}.js`), link(module))
 			} else if (written !== module) {
 				throw new Error(
 					`${specifier} names two modules:\n${written}\n${module}`
@@ -118,7 +131,7 @@ const loadArtifact = async (
 		}
 		code = artifact.code
 	}
-	const path = join(out, `artifact${artifactCount++}.js`)
+	const path = join(dir, `artifact${artifactCount++}.js`)
 	writeFileSync(path, link(code))
 	let reuses = false
 	for (const [, address] of code.matchAll(validatorAddressPattern)) {

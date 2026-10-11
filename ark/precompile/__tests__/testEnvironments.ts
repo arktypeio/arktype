@@ -2,7 +2,13 @@ import { fromHere } from "@ark/fs"
 import { precompile } from "@ark/precompile/unplugin"
 import { build } from "esbuild"
 import { spawnSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs"
+import {
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
@@ -60,6 +66,12 @@ const spawn = (command: string, args: string[], env: object) => {
 }
 
 const out = mkdtempSync(join(tmpdir(), "ark-environments-"))
+
+// a run that fails keeps its bundles for inspection
+process.once("exit", code => {
+	if (code) console.error(`results: ${out}`)
+	else rmSync(out, { recursive: true, force: true })
+})
 
 const buildIn = (mode: Mode | "written", env: object, name: string) => {
 	const path = join(out, `${name}.js`)

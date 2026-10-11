@@ -9,6 +9,7 @@ import {
 	mkdtempSync,
 	readFileSync,
 	realpathSync,
+	rmSync,
 	utimesSync,
 	writeFileSync
 } from "node:fs"
@@ -466,6 +467,18 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 			)
 		}).timeout(60000)
 
+		const tempDirs: string[] = []
+
+		afterEach(() => {
+			for (const dir of tempDirs.splice(0)) rmSync(dir, { recursive: true })
+		})
+
+		const tempDir = () => {
+			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			tempDirs.push(dir)
+			return dir
+		}
+
 		const loadIn = (dir: string, file = "main.ts") => {
 			try {
 				return turbopack.call(
@@ -485,7 +498,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 		}
 
 		it("replaces its precompiler when a module it followed past a comment changes", () => {
-			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			const dir = tempDir()
 			writeFileSync(
 				join(dir, "main.ts"),
 				'import { type } from "arktype"\nimport { shape } from /* shapes */ "./shape.ts"\n\nexport const T = type(shape)\n'
@@ -503,7 +516,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 		}).timeout(60000)
 
 		it("replaces its precompiler when a module an import resolves to is created", () => {
-			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			const dir = tempDir()
 			writeFileSync(
 				join(dir, "main.ts"),
 				'import { type } from "arktype"\nimport { shape } from "./shape.js"\n\nexport const T = type(shape)\n'
@@ -517,7 +530,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 		}).timeout(60000)
 
 		it("replaces its precompiler when a module is created beside the directory an import resolved to", () => {
-			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			const dir = tempDir()
 			writeFileSync(
 				join(dir, "main.ts"),
 				'import { type } from "arktype"\nimport { shape } from "./shape"\n\nexport const T = type(shape)\n'
@@ -536,7 +549,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 		}).timeout(60000)
 
 		it("replaces its precompiler when the paths an import resolves through change", () => {
-			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			const dir = tempDir()
 			const writeTsconfig = (target: string) =>
 				writeFileSync(
 					join(dir, "tsconfig.json"),
@@ -561,7 +574,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 		}).timeout(60000)
 
 		it("replaces its precompiler when a module an aliased import resolves to is created", () => {
-			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			const dir = tempDir()
 			writeFileSync(
 				join(dir, "tsconfig.json"),
 				JSON.stringify({ compilerOptions: { paths: { "@/*": ["./*"] } } })
@@ -579,7 +592,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 		}).timeout(60000)
 
 		it("replaces its precompiler when a module it transformed changes", () => {
-			const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+			const dir = tempDir()
 			writeFileSync(
 				join(dir, "main.ts"),
 				'import { type } from "arktype"\nimport { shape } from "./shape.ts"\n\nexport const T = type(shape)\n'

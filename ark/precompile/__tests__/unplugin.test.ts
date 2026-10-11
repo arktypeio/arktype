@@ -7,7 +7,13 @@ import {
 } from "@ark/precompile/unplugin"
 import { context, build as esbuild, transformSync } from "esbuild"
 import { spawnSync } from "node:child_process"
-import { mkdirSync, mkdtempSync, realpathSync, writeFileSync } from "node:fs"
+import {
+	mkdirSync,
+	mkdtempSync,
+	realpathSync,
+	rmSync,
+	writeFileSync
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { Worker } from "node:worker_threads"
@@ -107,9 +113,17 @@ const thrownBy = (js: string) =>
 		}).stderr
 	)?.[1]
 
+const fixtures: string[] = []
+
+const fixtureDir = () => {
+	const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+	fixtures.push(dir)
+	return dir
+}
+
 const writeFixture = (
 	files: Record<string, string>,
-	root = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
+	root = fixtureDir()
 ): string => {
 	for (const path in files) {
 		mkdirSync(dirname(join(root, path)), { recursive: true })
@@ -135,7 +149,7 @@ const fakePackage = (path: string, name: string, version: string) => ({
 })
 
 // a program whose packages import arktype, one of them from a copy of its own
-const dependencies = writeFixture({
+const dependencyFiles = {
 	...fakePackage("node_modules/arktype", "arktype", "2.2.0"),
 	...fakePackage(
 		"node_modules/arktype/node_modules/@ark/schema",
@@ -162,7 +176,9 @@ const dependencies = writeFixture({
 		'import { type } from "arktype"\nimport { forked } from "forked"\nexport const T = type("string")\nconsole.log(forked)\n',
 	"schema.ts":
 		'import "@ark/schema"\nimport { type } from "arktype"\nexport const T = type("string")\n'
-})
+}
+
+let dependencies: string
 
 const buildDependency = async (
 	entry: string,
@@ -187,6 +203,14 @@ const buildDependency = async (
 const parserMessage = "is unresolvable"
 
 contextualize(() => {
+	before(() => {
+		dependencies = writeFixture(dependencyFiles)
+	})
+
+	after(() => {
+		for (const dir of fixtures.splice(0)) rmSync(dir, { recursive: true })
+	})
+
 	const expected = runPlain(app)
 
 	it("runs without the plugin", () => {
