@@ -1,9 +1,7 @@
 import {
 	appendUnique,
-	domainDescriptions,
 	domainOf,
 	hasDomain,
-	printable,
 	registeredNameOf,
 	serializePrimitive,
 	unset,
@@ -51,6 +49,7 @@ import {
 } from "../shared/traversal.ts"
 import {
 	describeBranches,
+	describeCases,
 	expressBranches,
 	isAbsent,
 	valueAtPath
@@ -425,7 +424,7 @@ const unitKeyOf = (value: unknown): string | undefined => {
 
 const registeredPrefix = `${registryName}.`
 
-type DiscriminantCases = {
+export type DiscriminantCases = {
 	[kind in DiscriminantKind]: Pick<
 		DiscriminantErrorContextOf<kind>,
 		"discriminantKind" | "cases"
@@ -450,13 +449,6 @@ const metaAtDiscriminant = (
 	const { expected, actual, ...rest } = meta
 	return rest
 }
-
-const describeCases = ({ discriminantKind, cases }: DiscriminantCases) =>
-	describeBranches(
-		discriminantKind === "domain" ?
-			cases.map(domain => domainDescriptions[domain])
-		:	cases.map(unit => printable(unit, { ownDataOnly: true }))
-	)
 
 // the inverse of unitKeyOf
 const unitOf = (k: string): unknown =>

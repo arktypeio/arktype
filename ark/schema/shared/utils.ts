@@ -1,7 +1,9 @@
 import {
 	arkKindOf,
+	domainDescriptions,
 	flatMorph,
 	isArray,
+	printable,
 	type array,
 	type mutable,
 	type show,
@@ -13,6 +15,7 @@ import type { InternalModule } from "../module.ts"
 import type { BaseNode } from "../node.ts"
 import type { BaseParseContext } from "../parse.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import type { DiscriminantCases } from "../roots/union.ts"
 import type { BaseScope } from "../scope.ts"
 import type { ArkErrors } from "./errors.ts"
 
@@ -226,3 +229,13 @@ const describeExpressionOptions: DescribeBranchesOptions = {
 
 export const expressBranches = (expressions: readonly string[]): string =>
 	describeBranches(expressions, describeExpressionOptions)
+
+export const describeCases = ({
+	discriminantKind,
+	cases
+}: DiscriminantCases): string =>
+	describeBranches(
+		discriminantKind === "domain" ?
+			cases.map(domain => domainDescriptions[domain])
+		:	cases.map(unit => printable(unit, { ownDataOnly: true }))
+	)

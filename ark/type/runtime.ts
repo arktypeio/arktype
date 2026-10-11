@@ -87,6 +87,7 @@ export {
 	configure,
 	copyOf,
 	describeBranches,
+	describeCases,
 	describePredicate,
 	discriminantWriters,
 	divisorWriters,

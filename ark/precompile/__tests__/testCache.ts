@@ -174,7 +174,8 @@ const expectedMisses = [
 	"{ Symbol(tag): 0 } | { Symbol(tag): 1 }",
 	"{ a: { Symbol(tag): 0 } | { Symbol(tag): 1 } }",
 	"{ Symbol(lobmyS): 0 } | { Symbol(lobmyS): 1 }",
-	'{ k: {"toJSON":"Function(toJSON)"} } | { k: "b", v: number }'
+	'{ k: {"toJSON":"Function(toJSON)"} } | { k: "b", v: number }',
+	"{ at: Function(later$hole_b) } | { at: Function(now$hole_a) }"
 ]
 
 export const mochaHooks = {

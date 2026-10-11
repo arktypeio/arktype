@@ -2383,6 +2383,29 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 		})
 
+		it("prints a discriminant's cases with the names of the functions it receives", async () => {
+			const now = standIn(() => 1, "a", "now")
+			const later = standIn(() => 2, "b", "later")
+			const { T: create } = await load({
+				T: {
+					type: type({ at: type.unit(now) }).or(type({ at: type.unit(later) })),
+					params: [
+						{ kind: "function", label: "`now`", value: now },
+						{ kind: "function", label: "`later`", value: later }
+					]
+				}
+			})
+			const soon = () => 1
+			const then = () => 2
+			attest(create(soon, then)({ at: 1 }).toString()).snap(
+				"at must be Function(soon) or Function(then) (was 1)"
+			)
+			const alike = () => ({ r: () => 1 }).r
+			attest(create(alike(), alike())({ at: 1 }).toString()).snap(
+				"at must be Function(r) (was 1)"
+			)
+		})
+
 		it("rejects an order between siblings differing beyond the functions they hold", () => {
 			const isEven = standIn((n: number) => n % 2 === 0, "a", "isEven")
 			const isSmall = standIn((n: number) => n < 10, "b", "isSmall")

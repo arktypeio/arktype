@@ -2139,9 +2139,10 @@ ${isTemplate ? "]" : ")"}`
 			:	""
 		// a discriminant's miss reads its union's description of the cases
 		const discriminantDescription =
-			node.hasKind("union") && node.compiledDiscriminant ?
-				`,\n\tdiscriminantDescription: ${JSON.stringify(node.discriminantDescription)}`
-			:	""
+			!node.hasKind("union") || !node.compiledDiscriminant ? ""
+			: node.discriminantDescription.includes(holeNameMarker) ?
+				`,\n\tdiscriminantDescription: runtime.describeCases(${this.emit(node.discriminantCases)})`
+			:	`,\n\tdiscriminantDescription: ${JSON.stringify(node.discriminantDescription)}`
 		// a flag that is false, or a traversal the node lacks, is left out, which the runtime reads as undefined
 		const flags = shapeFlags.flatMap(flag =>
 			node[flag] ? [`\n\t${flag}: true,`] : []
