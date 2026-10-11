@@ -2055,7 +2055,7 @@ ${isTemplate ? "]" : ")"}`
 			return this.declareConst(
 				value,
 				"literal",
-				`runtime.freeze(new Date(${value.getTime()}))`
+				`runtime.frozenDate(${value.getTime()})`
 			)
 		}
 		if (isRegExpObject(value)) {

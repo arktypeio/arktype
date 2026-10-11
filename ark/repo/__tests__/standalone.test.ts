@@ -40,6 +40,7 @@ import {
 	type as runtimeType,
 	writeCreationMismatchMessage,
 	writeIdentityMismatchMessage,
+	writeFrozenDateMessage,
 	writeRenamedHoleMessage,
 	writeUnbakedMessage,
 	type HoleKind,
@@ -544,6 +545,30 @@ contextualize(() => {
 				jsonSchemaErrorOf(T)
 			)
 		}
+	})
+
+	it("freezes each Date a validator holds, whose setters throw", async () => {
+		const { Epoch } = await load({
+			Epoch: type.unit(new Date(0)).configure({ examples: [new Date(1)] })
+		})
+		const { unit } = Epoch(new Date(2)).issues[0]
+		const [example] = Epoch.meta.examples
+		attest([
+			unit.getTime(),
+			example.getTime(),
+			Object.getPrototypeOf(unit) === Date.prototype,
+			Object.isFrozen(unit),
+			Object.keys(unit)
+		]).equals([0, 1, true, true, []])
+		// compared as arktype's Date is, by its time and prototype
+		attest(example).equals(new Date(1))
+		attest(() => unit.setTime(1)).throws.snap(
+			"TypeError: setTime can't change a Date a standalone validator holds, since other Types can hold it too"
+		)
+		attest(() => example.setUTCFullYear(2000)).throws(
+			writeFrozenDateMessage("setUTCFullYear")
+		)
+		attest(example.toISOString()).equals(new Date(1).toISOString())
 	})
 
 	it("throws where it's read a JSON Schema that calls a default's thunk", async () => {
