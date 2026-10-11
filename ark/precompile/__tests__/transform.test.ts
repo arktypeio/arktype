@@ -933,6 +933,22 @@ export function listed(fn: (s: string) => boolean) {
 			])
 		})
 
+		it("refuses a site with the reasons it can't be precompiled for a parameter count", () => {
+			attest(
+				precompile(`import { scope } from "arktype"
+export function scoped(fn: (...args: any[]) => boolean) {
+	const $ = scope({ a: ["string", ":", fn] })
+	const B = $.type("a[]")
+	return B
+}`).diagnostics.map(diagnostic => diagnostic.reasons)
+			).snap([
+				[
+					"the definition can't be precompiled for every parameter count of the function `fn` holds: for one of no parameters, arktype holds `fn` as a value rather than a definition, so it must be static; `fn` is a parameter of scoped (/main.ts:2:24); its value is known only at runtime"
+				],
+				["`$` is the Scope at /main.ts:3:12, which the build refuses"]
+			])
+		})
+
 		it("refuses a site whose parameter's class a call passes extends a builtin", () => {
 			attest(
 				precompile(`import { type } from "arktype"

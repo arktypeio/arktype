@@ -2319,20 +2319,33 @@ export class Precompiler {
 				held.set(standIn.parameter, standIn.arity!)
 			}
 			// a factory selects a variant for every count, so one it can't compile, or one holding a function of another count, refuses the site
-			if (
-				variantSite.status !== "accepted" ||
-				variantSite.parseError ||
-				!isConsistent ||
-				held.size !== parameters.length
-			)
-				return `the definition can't be precompiled for every parameter count of the functions ${listTexts(parameters.map(parameter => parameter.name))} hold`
+			const reasons =
+				variantSite.status !== "accepted" ? variantSite.reasons
+				: variantSite.parseError ?
+					[`arktype throws "${variantSite.parseError.message}"`]
+				: !isConsistent ? ["its Type holds a function of another count"]
+				: held.size !== parameters.length ?
+					["its Type doesn't hold each of them"]
+				:	[]
+			if (reasons.length) {
+				const assumed =
+					parameters.length === 1 ?
+						`one of ${countTexts[counts[0]]}`
+					:	parameters
+							.map(
+								(parameter, i) =>
+									`\`${parameter.name}\`'s of ${countTexts[counts[i]]}`
+							)
+							.join(" and ")
+				return `the definition can't be precompiled for every parameter count of ${heldBy(parameters)}: for ${assumed}, ${reasons.join("; ")}`
+			}
 			const [id] = keyOf(variantSite.value as Foldable)
 			const existing = variants.find(
 				variant => keyOf(variant.site.value as Foldable)[0] === id
 			)
 			if (existing) existing.counts.push(arities)
 			else if (variants.length === this.maxVariants)
-				return `the parameter counts of the functions ${listTexts(parameters.map(parameter => parameter.name))} hold need more than ${this.maxVariants} variants (maxVariants)`
+				return `the parameter counts of ${heldBy(parameters)} need more than ${this.maxVariants} variants (maxVariants)`
 			else variants.push({ site: variantSite, counts: [arities] })
 		}
 		return variants
@@ -3568,6 +3581,14 @@ const countsOf = (length: number): number[][] =>
 	:	countsOf(length - 1).flatMap(counts =>
 			[1, 0, 2].map(count => [...counts, count])
 		)
+
+const countTexts = ["no parameters", "1 parameter", "2 or more parameters"]
+
+// the functions some parameters hold
+const heldBy = (parameters: readonly Binding[]) =>
+	parameters.length === 1 ?
+		`the function \`${parameters[0].name}\` holds`
+	:	`the functions ${listTexts(parameters.map(parameter => parameter.name))} hold`
 
 const listTexts = (texts: readonly string[]) =>
 	texts.length === 1 ?
