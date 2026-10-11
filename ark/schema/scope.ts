@@ -360,19 +360,20 @@ const precompiledUnits: Record<string, PrecompiledUnit> = Object.create(null)
 let bindPrecompiledUnits: ((roots: readonly unknown[]) => void) | undefined
 
 // a key starts with its root's number of references, which a root reads without hashing its content
-const registeredSizes = new Set<string>()
+const registeredSizes: Record<number, true> = {}
 
 export const registerPrecompiledUnits = (
 	units: Record<string, PrecompiledUnit>
 ): void => {
 	Object.assign(precompiledUnits, units)
-	for (const key in units) registeredSizes.add(key.slice(0, key.indexOf("_")))
+	for (const key in units)
+		registeredSizes[+key.slice(0, key.indexOf("_"))] = true
 	bindPrecompiledUnits = bindRegisteredUnits
 }
 
 // a bound root binds the roots its unit calls, so the largest are bound first and need the fewest keys
 const bindRegisteredUnits = (values: readonly unknown[]): void => {
-	const sized: [root: BaseRoot, size: string][] = []
+	const sized: [root: BaseRoot, size: number][] = []
 	for (const value of values) {
 		// a cyclic unit keys its resolutions by node id
 		if (
@@ -382,9 +383,9 @@ const bindRegisteredUnits = (values: readonly unknown[]): void => {
 		)
 			sized.push([value, sizeOf(value)])
 	}
-	sized.sort((l, r) => +r[1] - +l[1])
+	sized.sort((l, r) => r[1] - l[1])
 	for (const [root, size] of sized) {
-		if (root.compiledUnit || !registeredSizes.has(size)) continue
+		if (root.compiledUnit || !registeredSizes[size]) continue
 		const precompiled = precompiledUnits[precompiledKeyOf(root)]
 		if (precompiled) bindPrecompiled(root, precompiled)
 	}
@@ -428,8 +429,8 @@ const forEachElement = (
 // built when a root is first keyed, so a bundle that registers no units leaves it out
 let constantNames: Map<unknown, string> | undefined
 
-const sizeOf = (root: BaseRoot): string =>
-	`${Object.keys(root.referencesById).length}`
+const sizeOf = (root: BaseRoot): number =>
+	Object.keys(root.referencesById).length
 
 // compiling reads each function's arity and whether the set engine is installed, neither in the hash
 const precompiledKeyOf = (root: BaseRoot): string => {
