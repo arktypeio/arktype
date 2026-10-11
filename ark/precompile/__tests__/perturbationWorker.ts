@@ -492,11 +492,15 @@ const serialize = (out: unknown): unknown =>
 		{ type: (out as Function & { expression: string }).expression }
 	:	inspect(out, { depth: 4, breakLength: Infinity, maxArrayLength: 10 })
 
-// a precompiled Module is a frozen object of validators, so a Module is compared by its members
+// a precompiled Module is a frozen object of validators, as json is of data, so a Module is told and compared by its members
 const isModule = (value: unknown): value is Record<string, unknown> =>
 	hasDomain(value, "object") &&
 	((value as { " arkKind"?: unknown })[" arkKind"] === "module" ||
-		(isPlain(value) && !Array.isArray(value) && Object.isFrozen(value)))
+		(isPlain(value) &&
+			!Array.isArray(value) &&
+			Object.values(value).every(
+				member => typeof member === "function" || isModule(member)
+			)))
 
 // a precompiled Scope or Generic is an empty object, so either is compared as one
 const isStandIn = (value: unknown): boolean =>

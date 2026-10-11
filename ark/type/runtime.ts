@@ -817,6 +817,13 @@ export const writeUnbakedMessage = <reason extends string>(
 export type writeUnbakedMessage<reason extends string> =
 	`${reason}. Build with runtime: "arktype" to write it where it's read.`
 
+// a node's json is shared by every node whose json prints the same, so it's frozen through
+export const deepFreeze = <t>(value: t): t => {
+	if (value && typeof value === "object")
+		for (const k in freeze(value)) deepFreeze(value[k])
+	return value
+}
+
 export const writeFrozenDateMessage = <name extends string>(
 	name: name
 ): writeFrozenDateMessage<name> =>

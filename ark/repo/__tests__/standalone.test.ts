@@ -547,6 +547,21 @@ contextualize(() => {
 		}
 	})
 
+	it("freezes the json of a validator, which one printing the same can share", async () => {
+		const { A, B } = await load(
+			{ A: type({ a: "string" }), B: scope({}).type({ a: "string" }) },
+			undefined,
+			undefined,
+			["json"]
+		)
+		attest(() => {
+			A.json.required[0].key = "b"
+		}).throws.snap(
+			"TypeError: Cannot assign to read only property 'key' of object '#<Object>'"
+		)
+		attest(B.json).equals(type({ a: "string" }).json)
+	})
+
 	it("freezes each Date a validator holds, whose setters throw", async () => {
 		const { Epoch } = await load({
 			Epoch: type.unit(new Date(0)).configure({ examples: [new Date(1)] })

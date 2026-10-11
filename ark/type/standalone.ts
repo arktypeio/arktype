@@ -1667,7 +1667,7 @@ ${isTemplate ? "]" : ")"}`
 
 	// arktype returns one json object per node, which every validator of it and every site reading it share, unless it prints what the artifact receives
 	readJson(root: BaseRoot): string {
-		const value = this.writeData(root.json)
+		const value = `runtime.deepFreeze(${this.writeData(root.json)})`
 		if (holdsLocal(root.json)) {
 			return (
 				this.declarations.namesByValue.get(root.json) ??
@@ -1677,7 +1677,7 @@ ${isTemplate ? "]" : ")"}`
 		// arktype doesn't promise Types defined apart are distinct, so a node shares json with any whose text is the same
 		const name = `json${hashOf(value)}`
 		this.sharedModules[`~arktype/${name}`] ??= {
-			readsRuntime: false,
+			readsRuntime: true,
 			imports: {},
 			declarations: [`const ${name} = ${value}`],
 			exports: [name]

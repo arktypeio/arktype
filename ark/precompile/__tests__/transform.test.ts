@@ -90,10 +90,10 @@ export const User = type({ name: "string" })`
 				}
 			)
 			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/d69wwe11o8jwj"
-import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/d69wwe11o8jwj"
-import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/d69wwe11o8jwj"
-import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/d69wwe11o8jwj"
+import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1jfnh890exfowm"
+import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/1jfnh890exfowm"
+import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/1jfnh890exfowm"
+import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/1jfnh890exfowm"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { User } from "./user.ts"
 import "./user.ts"
@@ -107,8 +107,8 @@ export const userJson = /* @__PURE__ */ $arkf17hn9zj1vlnawy()`)
 					specifier.includes("json") ? [module] : []
 				)
 			).snap([
-				'const jsonwu0uj30x45irq = { "required": [{ "key": "x", "value": "number" }], "domain": "object" }\n\nexport { jsonwu0uj30x45irq }\n',
-				'const jsonojwwr914i8eh2 = { "required": [{ "key": "name", "value": "string" }], "domain": "object" }\n\nexport { jsonojwwr914i8eh2 }\n'
+				'import * as runtime from "arktype/runtime"\n\nconst jsonemxix50idrkjl = runtime.deepFreeze({ "required": [{ "key": "x", "value": "number" }], "domain": "object" })\n\nexport { jsonemxix50idrkjl }\n',
+				'import * as runtime from "arktype/runtime"\n\nconst jsonf6515516jndbk = runtime.deepFreeze({ "required": [{ "key": "name", "value": "string" }], "domain": "object" })\n\nexport { jsonf6515516jndbk }\n'
 			])
 		})
 
@@ -185,11 +185,11 @@ export const Doubled = type("number").pipe(double)`
 				}
 			)
 			attest(result.code).snap(`import "arktype"
-import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/1mouybc08rm784"
-import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/1mouybc08rm784"
-import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/1mouybc08rm784"
-import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/1mouybc08rm784"
-import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/1mouybc08rm784"
+import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/xji9l70tg06p0"
+import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/xji9l70tg06p0"
+import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/xji9l70tg06p0"
+import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/xji9l70tg06p0"
+import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/xji9l70tg06p0"
 import { double } from "./containers.ts"
 import { Doubled } from "./doubled.ts"
 const Length = $arkf1hn2e10012161b(s => s.length)
