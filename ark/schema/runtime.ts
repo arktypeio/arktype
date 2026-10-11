@@ -232,12 +232,10 @@ const staticTextOf = (value: unknown, seen: unknown[]): string => {
 	for (const k in value) enumerable.push(k)
 	let entries = ""
 	for (const k of new Set([...enumerable, ...Reflect.ownKeys(value)])) {
-		entries += `${enumerable.includes(k) ? "" : "~"}${
-			typeof k === "symbol" ?
-				// a symbol the registry doesn't name prints as `@undefined`, which the build refuses to stamp
-				`@${JSON.stringify(Symbol.keyFor(k))}`
-			:	JSON.stringify(k)
-		}:${staticTextOf((value as Record<PropertyKey, unknown>)[k], seen)},`
+		entries += `${enumerable.includes(k) ? "" : "~"}${JSON.stringify(
+			// a symbol prints as its registered name in an array, or `[null]`, which the build refuses to stamp
+			typeof k === "symbol" ? [Symbol.keyFor(k)] : k
+		)}:${staticTextOf((value as Record<PropertyKey, unknown>)[k], seen)},`
 	}
 	// the prototype, since an own Symbol.toStringTag can give any object a builtin's tag
 	return `${tag}${builtins.indexOf(Object.getPrototypeOf(value))}${

@@ -737,7 +737,7 @@ contextualize(() => {
 			[{ a: "1" }, { a: 1 }],
 			[new Date(0), new Date(1)],
 			[cyclic, { self: {} }],
-			[{}, { [Symbol.for("k")]: 2 }],
+			[{ k: 2 }, { [Symbol.for("k")]: 2 }],
 			[{ [Symbol("k")]: 2 }, { [Symbol.for("undefined")]: 2 }],
 			[{}, Object.defineProperty({}, "x", { value: 2 })],
 			[
