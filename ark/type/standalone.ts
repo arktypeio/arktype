@@ -302,8 +302,8 @@ const writeArtifact = (
 	const canFold = (
 		name: string,
 		factory: StandaloneFactory | StandaloneVariants,
-		receiving: StandaloneArtifact
-	) => {
+		artifact: StandaloneArtifact
+	): factory is StandaloneFactory & { type: type.Any & BaseRoot } => {
 		if (
 			isVariants(factory) ||
 			!hasArkKind(factory.type, "root") ||
@@ -312,7 +312,7 @@ const writeArtifact = (
 		)
 			return false
 		const trial = new StandaloneArtifact(
-			{ [name]: factory.type as never },
+			{ [name]: factory.type },
 			Object.create(shared),
 			{},
 			sitesByName,
@@ -320,7 +320,7 @@ const writeArtifact = (
 			baking
 		)
 		trial.templates.add(factory.type)
-		trial.unwritableMetas = new Set(receiving.receivedMetas.keys())
+		trial.unwritableMetas = new Set(artifact.receivedMetas.keys())
 		try {
 			trial.writeCreate(0, configured)
 			return true
@@ -362,10 +362,10 @@ const writeArtifact = (
 			artifact.receiveAll()
 			// a factory whose Type is written once with the creations, which each call copies with what it receives
 			if (canFold(name, factory, artifact)) {
-				const { type } = factory as StandaloneFactory
+				const { type } = factory
 				folded.add(name)
-				if (keyOf(type)[1].length) templates.add(type as never)
-				types[name] = type as never
+				if (keyOf(type)[1].length) templates.add(type)
+				types[name] = type
 				const at = index
 				factories.push(reads => artifact.writeRekeying(at, reads[name]))
 			} else {
