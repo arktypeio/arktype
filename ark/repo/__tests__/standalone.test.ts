@@ -1840,12 +1840,12 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 				'must be valid according to isLong (was "a")'
 			)
 			attest(created.T(rejects)("a").toString()).snap('must be long (was "a")')
-			attest(() => created.T(Date)).throws(
-				writeCreationMismatchMessage(
-					"`check`",
-					"the builtin Date",
-					"a function"
-				)
+			// a builtin is a function like any other, which arktype passes its context by its length
+			attest(created.T(Boolean)("").toString()).snap(
+				'must be valid according to Boolean (was "")'
+			)
+			attest(() => created.T("isLong" as never)).throws(
+				writeCreationMismatchMessage("`check`", '"isLong"', "a function")
 			)
 			attest(() => created.Uncompiled(rejects)).throws(
 				writeUncompiledVariantMessage("`check`")

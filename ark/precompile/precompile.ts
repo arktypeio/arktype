@@ -96,6 +96,7 @@ import {
 	isWriteTarget,
 	normalize,
 	operatorOf,
+	runtimeParamsOf,
 	unwrapExpression,
 	walk,
 	type Binding,
@@ -2277,6 +2278,8 @@ export class Precompiler {
 		}
 		site.references.sort((l, r) => l.start - r.start)
 		if (this.mode === "standalone" && !isVariant && !site.parseError) {
+			const passed = this.builtinClassPassedOf(site, module)
+			if (passed) return refuse(site, [passed])
 			const variants = this.variantsOf(candidate, module, site)
 			if (typeof variants === "string") return refuse(site, [variants])
 			site.variants = variants
@@ -2336,6 +2339,36 @@ export class Precompiler {
 			else variants.push({ site: variantSite, counts: [arities] })
 		}
 		return variants
+	}
+
+	// a class a parameter holds is compiled as one without builtin ancestors, which a call the build sees can contradict
+	private builtinClassPassedOf(
+		site: Site,
+		module: SourceModule
+	): string | undefined {
+		for (const hole of site.holes) {
+			if (!hole.isParameter || hole.kind !== "class") continue
+			const parameter = this.interpreter.standIns.get(
+				hole.value as object
+			)!.parameter!
+			const fn = parameter.declaration as FunctionNode
+			const index = runtimeParamsOf(fn).findIndex(param =>
+				contains(param, parameter.id)
+			)
+			for (const call of this.graph.callsOf(fn, module) ?? []) {
+				const arg = call.arguments[index]
+				if (arg?.type !== "Identifier") continue
+				const binding = module.scopes.referencesById.get(arg)?.binding
+				const value =
+					binding ?
+						this.interpreter.valueOfBinding(binding, module)
+					:	Reflect.get(globalThis, arg.name)
+				if (typeof value !== "function") continue
+				const fact = arktypeRuntime.describeHole(value, "class")
+				if (fact !== "a class")
+					return `\`${parameter.name}\` is passed \`${arg.name}\` (${module.positionOf(arg)}), ${fact}, where its factory is compiled for a class without builtin ancestors`
+			}
+		}
 	}
 
 	private parameterHoleOf(read: DynamicValue, site: Site): unknown {

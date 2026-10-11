@@ -931,6 +931,22 @@ export function both(a: (s: string) => boolean, b: (n: number) => boolean) {
 			])
 		})
 
+		it("refuses a site whose parameter's class a call passes extends a builtin", () => {
+			attest(
+				precompile(`import { type } from "arktype"
+function instance(C: new () => object) {
+	const T = type.instanceOf(C)
+	return T
+}
+class Plain {}
+class Failure extends Error {}
+export const P = instance(Plain)
+export const F = instance(Failure)`).diagnostics.map(renderDiagnostic)
+			).snap([
+				'/main.ts:3:12  type.instanceOf(C) cannot be precompiled\n  `C` is passed `Failure` (/main.ts:9:27), a class extending Error, where its factory is compiled for a class without builtin ancestors\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			])
+		})
+
 		it("refuses a site needing more variants than maxVariants", () => {
 			const source = `import { type } from "arktype"
 type Check = (s: string) => boolean

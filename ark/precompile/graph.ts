@@ -886,7 +886,7 @@ export class ModuleGraph {
 	}
 
 	// e.g. `f(A)` or `(t => t)(A)`, or undefined if `f` is exported or passed where the build can't see its calls
-	private callsOf(
+	callsOf(
 		fn: FunctionNode,
 		module: SourceModule
 	): (CallExpression | NewExpression)[] | undefined {

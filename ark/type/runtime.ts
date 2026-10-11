@@ -441,8 +441,7 @@ export const describeHole = (
 ): string => {
 	if (kind === "symbol" || typeof hole !== "function" || isValidator(hole))
 		return describeValue(hole)
-	const builtinName = getBuiltinNameOfConstructor(hole)
-	if (builtinName) return `the builtin ${builtinName}`
+	// arktype calls a builtin it's passed as a function like any other, by its length
 	if (kind === "function") {
 		// arktype keeps the length it read first, which a factory reads where the definition did
 		const arity = arityOf(hole)
@@ -452,6 +451,8 @@ export const describeHole = (
 			: "2 or more parameters"
 		}`
 	}
+	const builtinName = getBuiltinNameOfConstructor(hole)
+	if (builtinName) return `the builtin ${builtinName}`
 	const { prototype } = hole
 	if (!hasDomain(prototype, "object")) return "a function without a prototype"
 	// arktype compares a class with the builtins and the other classes a definition holds
