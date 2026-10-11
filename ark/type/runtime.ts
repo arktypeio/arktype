@@ -199,8 +199,7 @@ export interface ValidatorAttributes {
 export type IntrospectionMember = (typeof introspectionMembers)[number]
 
 // captured when the runtime loads, so a program replacing them later can't keep an artifact from freezing what it creates
-export const { assign, defineProperties, freeze, is, preventExtensions } =
-	Object
+export const { assign, defineProperties, freeze, is } = Object
 
 // read only by the factories of what references a validator, Module, Scope or Generic, so kept off what a program can read
 const holesByValue = new WeakMap<

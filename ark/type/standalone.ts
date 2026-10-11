@@ -2247,14 +2247,10 @@ ${isTemplate ? "]" : ")"}`
 				value.lastIndex ?
 					`runtime.assign(${regex}, { lastIndex: ${value.lastIndex} })`
 				:	regex
-			// V8 skips its fast test for a non-extensible RegExp, and no program can reach a pattern's own
-			if (this.patternInstances.has(value))
-				return this.declareConst(value, "literal", initialized)
-			// its methods write lastIndex, so it's kept from growing rather than frozen
-			return this.declareHeld(
-				value,
-				`runtime.preventExtensions(${initialized})`
-			)
+			// no program can reach a pattern's own
+			return this.patternInstances.has(value) ?
+					this.declareConst(value, "literal", initialized)
+				:	this.declareHeld(value, initialized)
 		}
 		return (
 			(this.metas.has(value) && this.readMeta(value)) || this.emitLiteral(value)
