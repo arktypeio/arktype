@@ -186,7 +186,10 @@ export const configure = (
 	configuredReached = reached
 	// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
 	recheck = () =>
-		fingerprintOf(config) !== received && throwParseError(writtenConfigMessage)
+		fingerprintOf(config) === received ?
+			// only once it passes, so a validator after a caught throw checks again
+			(recheck = undefined)
+		:	throwParseError(writtenConfigMessage)
 	// arktype copies a code's writers when configure() is called, so a later write reaches neither
 	const held: Record<string, unknown> = {}
 	for (const k in config) {
@@ -262,7 +265,7 @@ const staticTextOf = (value: unknown, seen: unknown[]): string => {
 export const fixConfig = (
 	...configured: [] | [fingerprint: string, path: string]
 ): void => {
-	if (!Object.isFrozen(runtimeConfig)) recheck?.()
+	recheck?.()
 	Object.freeze(runtimeConfig)
 	const [fingerprint, path] = configured
 	if (fingerprint === configuredFingerprint) return

@@ -703,14 +703,34 @@ contextualize(() => {
 	})
 
 	it("throws for a configuration written before its first validator", async () => {
-		attest(
-			await messageOf(
-				`const config = { onUndeclaredKey: "delete" }
+		const artifact = await importBesideArktype(
+			bundle(
+				precompileStandalone(
+					{ A: type("string"), B: type("number") },
+					{
+						configured: {
+							fingerprint: fingerprintOf({ onUndeclaredKey: "delete" }),
+							path: "main.ts"
+						}
+					}
+				).replace(
+					runtimeImport,
+					`${runtimeImport}
+const config = { onUndeclaredKey: "delete" }
 runtime.configure(config)
-config.onUndeclaredKey = "reject"`,
-				fingerprintOf({ onUndeclaredKey: "delete" })
-			)
-		).equals(writtenConfigMessage)
+config.onUndeclaredKey = "reject"`
+				)
+			).js
+		)
+		attest(
+			[artifact.A, artifact.B].map(create => {
+				try {
+					return create()
+				} catch (e) {
+					return (e as Error).message
+				}
+			})
+		).equals([writtenConfigMessage, writtenConfigMessage])
 	})
 
 	it("writes errors with the writers configure() received", async () => {
