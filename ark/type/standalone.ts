@@ -1,6 +1,5 @@
 import {
 	$ark,
-	cachedKeyOf,
 	hasArkKind,
 	InternalTraversal,
 	isNode,
@@ -14,7 +13,6 @@ import {
 	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
-	type ContentKeyOf,
 	type DefaultedNode,
 	type GenericRoot,
 	type NodeId,
@@ -51,7 +49,6 @@ import {
 } from "@ark/util"
 import { arktypeVersion } from "./entry.ts"
 import { InternalTypedFn, type TypedFn } from "./fn.ts"
-import { cachedDefinitionOf } from "./parser/definition.ts"
 import type { Generic } from "./generic.ts"
 import type { type } from "./keywords/keywords.ts"
 import type { Module } from "./module.ts"
@@ -65,7 +62,6 @@ type DeclarationRole =
 	| "shape"
 	| "keys"
 	| "literal"
-	| "meta"
 	| "config"
 	| "standIn"
 	| "json"
@@ -141,8 +137,6 @@ export interface StandaloneFactory {
 	params: FactoryParam[]
 	// the table of each factory whose Type arktype returns again for the same holes, shared by those returning one Type at build
 	internedBy?: number | undefined
-	// whether arktype creates its Type anew each time its site runs, even one it holds under an address
-	isCreatedEachRun?: boolean
 	defaultChecks?: readonly DefaultCheck[]
 	// holes another module supplies through two or more texts, or a parameter holds, which the factory checks are distinct
 	distinct?: readonly unknown[]
@@ -187,13 +181,6 @@ export interface HelperParam {
 	name: string
 }
 
-export interface ExportSite {
-	// each string it passed arktype's type, which arktype's parse cache may hold its Type under
-	definitions: readonly string[]
-	// each Type another run or site holds too, which only an address keeps one object
-	addressed?: readonly BaseRoot[]
-}
-
 export interface ConfiguredModule {
 	fingerprint: string
 	path: string
@@ -208,7 +195,6 @@ interface SharedModule {
 
 export interface StandaloneOptions {
 	configured?: ConfiguredModule | undefined
-	sitesByName?: Record<string, ExportSite> | undefined
 	// each Module a site reads off arktype's keywords, which creates a Type only when one of its members is read
 	keywordReads?: ReadonlySet<string> | undefined
 	// what each validator bakes of its Type's introspection, which it otherwise lacks
@@ -286,7 +272,7 @@ const writeArtifact = (
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
 ): string[] => {
-	const { configured, sitesByName } = opts
+	const { configured } = opts
 	const baking: Baking = {
 		members: new Set(opts.introspection),
 		write: opts.bake ?? (write => write())
@@ -297,30 +283,24 @@ const writeArtifact = (
 	// a factory whose Type is folded reads it where the creations write it
 	const factories: (string | ((reads: Record<string, string>) => string))[] = []
 	const tables = new Set<number>()
-	const definitionAddresses = definitionAddressesOf(exports, sitesByName)
 	// a trial write, adding nothing to the artifact, tells whether a factory's Type has code holding nothing the factory receives
 	const canFold = (
 		name: string,
-		factory: StandaloneFactory | StandaloneVariants,
-		artifact: StandaloneArtifact
+		factory: StandaloneFactory | StandaloneVariants
 	): factory is StandaloneFactory & { type: type.Any & BaseRoot } => {
 		if (
 			isVariants(factory) ||
 			!hasArkKind(factory.type, "root") ||
-			factory.defaultChecks?.length ||
-			factory.isCreatedEachRun
+			factory.defaultChecks?.length
 		)
 			return false
 		const trial = new StandaloneArtifact(
 			{ [name]: factory.type },
 			Object.create(shared),
 			{},
-			sitesByName,
-			definitionAddresses,
 			baking
 		)
 		trial.templates.add(factory.type)
-		trial.unwritableMetas = new Set(artifact.receivedMetas.keys())
 		try {
 			trial.writeCreate(0, configured)
 			return true
@@ -340,8 +320,6 @@ const writeArtifact = (
 				{},
 				shared,
 				imports,
-				sitesByName,
-				definitionAddresses,
 				baking,
 				value
 			)
@@ -353,15 +331,12 @@ const writeArtifact = (
 				{ [name]: variants[0].type },
 				shared,
 				imports,
-				sitesByName,
-				definitionAddresses,
 				baking,
 				factory
 			)
-			artifact.checkAddressed()
 			artifact.receiveAll()
 			// a factory whose Type is written once with the creations, which each call copies with what it receives
-			if (canFold(name, factory, artifact)) {
+			if (canFold(name, factory)) {
 				const { type } = factory
 				folded.add(name)
 				if (keyOf(type)[1].length) templates.add(type)
@@ -382,7 +357,6 @@ const writeArtifact = (
 		templates,
 		folded,
 		opts,
-		definitionAddresses,
 		baking,
 		shared,
 		imports
@@ -408,8 +382,7 @@ const writeCreations = (
 	templates: ReadonlySet<BaseRoot>,
 	// a factory's Type, which only that factory reads
 	folded: ReadonlySet<string>,
-	{ configured, sitesByName, keywordReads }: StandaloneOptions,
-	definitionAddresses: ReadonlyMap<unknown, string>,
+	{ configured, keywordReads }: StandaloneOptions,
 	baking: Baking,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
@@ -420,8 +393,6 @@ const writeCreations = (
 			Object.fromEntries(indices.map(i => [names[i], types[names[i]]])),
 			shared,
 			imports,
-			sitesByName,
-			definitionAddresses,
 			baking
 		)
 		for (const template of templates) artifact.templates.add(template)
@@ -493,35 +464,6 @@ const writeCreations = (
 const isVariants = (value: StandaloneExport): value is StandaloneVariants =>
 	arkKindOf(value) === undefined && "variants" in value
 
-// arktype's parse cache returns one Type for a definition wherever it's parsed
-const definitionAddressesOf = (
-	exports: Record<string, StandaloneExport>,
-	sitesByName: Record<string, ExportSite> | undefined
-): Map<unknown, string> => {
-	const addresses = new Map<unknown, string>()
-	for (const [name, exported] of Object.entries(exports)) {
-		const values =
-			arkKindOf(exported) !== undefined ? [exported]
-			: isVariants(exported) ? exported.variants.map(variant => variant.type)
-			: [(exported as StandaloneFactory).type]
-		for (const value of values) {
-			if (!hasArkKind(value, "root") || !value.$.isBuiltin) continue
-			for (const definition of sitesByName?.[name]?.definitions ?? []) {
-				if (
-					!addresses.has(value) &&
-					cachedDefinitionOf(value.$, definition) === value
-				) {
-					addresses.set(
-						value,
-						hashOf(`${value.$.name}\ndefinition\n${definition}`)
-					)
-				}
-			}
-		}
-	}
-	return addresses
-}
-
 const writeSections = (sections: string[]) =>
 	`${sections.filter(section => section).join("\n\n")}\n`
 
@@ -558,7 +500,6 @@ const createDeclarations = (): Declarations => ({
 		shape: [],
 		keys: [],
 		literal: [],
-		meta: [],
 		config: [],
 		standIn: [],
 		json: []
@@ -579,8 +520,6 @@ export class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
 	sharedModules: Record<string, SharedModule>
 	imports: Record<string, string[]>
-	sitesByName: Record<string, ExportSite> | undefined
-	definitionAddresses: ReadonlyMap<unknown, string>
 	holeExpressions = new Map<unknown, string>()
 	labelsByHole = new Map<unknown, string>()
 	classes = new Set<unknown>()
@@ -617,8 +556,6 @@ export class StandaloneArtifact {
 	lateNames = new Set<string>()
 	// the Types exported and those their metas hold, rather than a default's
 	comparedRoots: BaseRoot[]
-	// a Type arktype creates anew each time its site runs, which its factory then does too
-	createdEachRun = new Set<BaseRoot>()
 	// a Type written without its key's functions, which each call of its factory copies with those it receives
 	templates = new Set<BaseRoot>()
 	// a default's node, which only its check reads, so its validator is keyed by its traversal
@@ -634,10 +571,6 @@ export class StandaloneArtifact {
 	variantStatements = new Map<BaseRoot, string[]>()
 	// each default arktype checks where it defines the Type, which the factory checks once it creates the validators
 	defaultChecks: readonly DefaultCheck[]
-	// a factory's errors expose the meta of a Type it receives, not a copy
-	receivedMetas = new Map<object, string>()
-	// a received Type lends its meta to the errors of what a factory creates, which a folded Type, written once, can't
-	unwritableMetas: ReadonlySet<object> = new Set()
 	// the holes of each value a factory receives, by the name holding them
 	holesByName = new Map<string, readonly unknown[]>()
 	baking: Baking
@@ -648,8 +581,6 @@ export class StandaloneArtifact {
 		exports: Record<string, ExportedValue>,
 		sharedModules: Record<string, SharedModule>,
 		imports: Record<string, string[]>,
-		sitesByName: Record<string, ExportSite> | undefined,
-		definitionAddresses: ReadonlyMap<unknown, string>,
 		baking: Baking,
 		// the factory a site calls, or its variants, or the function returning a Type's introspection, which receives only what its default checks read
 		called?: StandaloneFactory | StandaloneVariants | StandaloneIntrospection
@@ -665,10 +596,6 @@ export class StandaloneArtifact {
 		this.defaultChecks =
 			introspected?.defaultChecks ??
 			this.variants.flatMap(variant => variant.defaultChecks ?? [])
-		for (const { type, isCreatedEachRun } of this.variants) {
-			if (isCreatedEachRun && hasArkKind(type, "root"))
-				this.createdEachRun.add(type)
-		}
 		const types = this.variants.map(({ type }) => type)
 		this.variantTypes = new Set(types)
 		const selection = this.selection
@@ -681,27 +608,15 @@ export class StandaloneArtifact {
 				])
 			)
 		)
-		// as is its meta, which only the errors of the one variant a call creates read
-		const holdsSelected = (node: BaseNode) =>
-			node.hasKind("predicate") ?
-				selectedKeys.has(node.inner.predicate)
-			:	node.hasKind("morph") &&
-				node.inner.morphs.some(morph => selectedKeys.has(morph))
 		this.jointUnits =
 			selection && types.every(type => hasArkKind(type, "root")) ?
 				precompileJointUnits(
 					types as BaseRoot[],
-					(value, metaOwner) =>
-						selectedKeys.get(value) ??
-						(metaOwner && holdsSelected(metaOwner) ? undefined : (
-							contentKeyOf(value, metaOwner)
-						))
+					value => selectedKeys.get(value) ?? runtimeKeyOf(value)
 				)
 			:	undefined
 		this.sharedModules = sharedModules
 		this.imports = imports
-		this.sitesByName = sitesByName
-		this.definitionAddresses = definitionAddresses
 		for (const name in exports) {
 			// an ES module can't export a name holding an unpaired surrogate
 			if (/\p{Cs}/u.test(name)) {
@@ -961,7 +876,6 @@ export class StandaloneArtifact {
 		) {
 			const [id, holes] = keyOf(value)
 			const isType = hasArkKind(value, "root")
-			if (isType) this.receivedMetas.set(value.meta, `${expression}.meta`)
 			const holesName = `holes${this.checks.length}`
 			if (holes.length) this.holesByName.set(holesName, holes)
 			this.checks.push(
@@ -1090,28 +1004,14 @@ export class StandaloneArtifact {
 			:	rootUnitsOf(root)
 	}
 
-	// a value read through an address is one object without its exports being created together
 	get comparedValues(): unknown[] {
 		return [
-			...this.comparedRoots.filter(root => !this.validatorAddressOf(root)),
+			...this.comparedRoots,
 			...this.moduleNamesByModule.keys(),
 			...this.namesByTypedFn.keys(),
 			...this.declarations.valuesByRole.literal,
 			...this.declarations.valuesByRole.standIn
 		]
-	}
-
-	// what another run or site holds too is one object only where each artifact reading it reads its address
-	checkAddressed(): void {
-		for (const name in this.exports) {
-			for (const value of this.sitesByName?.[name]?.addressed ?? []) {
-				if (!this.validatorAddressOf(value)) {
-					throwParseError(
-						writeUnprecompilableMessage("a Type another run or site holds too")
-					)
-				}
-			}
-		}
 	}
 
 	collectExport(value: unknown, path: string): void {
@@ -1151,7 +1051,6 @@ export class StandaloneArtifact {
 	}
 
 	writeCreate(index: number, configured: ConfiguredModule | undefined): string {
-		this.checkAddressed()
 		this.writeSharedUnits()
 		const values = Object.values(this.exports).map(value =>
 			this.exportOf(value)
@@ -1565,8 +1464,7 @@ return [${returned.join(", ")}]
 			const linked = this.links.length
 			const named = namesByValue.size
 			const late = lateLength()
-			const address = this.validatorAddressOf(root)
-			const validator = `const ${name} = ${address ? `runtime.addressed(${JSON.stringify(address)}, () => ${this.writeValidator(root)})` : this.writeValidator(root)}`
+			const validator = `const ${name} = ${this.writeValidator(root)}`
 			if (!this.isVariantRoot(root) || lateLength() !== late) {
 				validators.push(validator)
 				continue
@@ -1592,20 +1490,6 @@ return [${returned.join(", ")}]
 		]
 	}
 
-	// a Type created anew where its site runs, or holding what its artifact creates, is created by every artifact reading it
-	validatorAddressOf(root: BaseRoot): string | undefined {
-		if (
-			this.createdEachRun.has(root) ||
-			!isAddressable(root, this.unitsByHead.get(root.id)!)
-		)
-			return
-		const address = heldAddressOf(root) ?? this.definitionAddresses.get(root)
-		// a validator baking introspection has members one built without it lacks, so the two are different values
-		return address && this.baking.members.size ?
-				hashOf(`${address}\n${[...this.baking.members].sort().join("\n")}`)
-			:	address
-	}
-
 	writeValidator(root: BaseRoot): string {
 		const shape = this.shapeOf(root)
 		const nodeName = this.unitsByHead.get(root.id)!.names[root.id]
@@ -1619,7 +1503,7 @@ return [${returned.join(", ")}]
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
 	${this.emit(pipeOf(root))},
-	{ expression: ${root.expression.includes(holeNameMarker) ? this.emitString(root.expression) : `${this.readExpression(root)}()`}, description: ${this.emitDescription(root)}, meta: ${this.emitMeta(root)}${this.emitIntrospection(root)} }${key}
+	{ expression: ${root.expression.includes(holeNameMarker) ? this.emitString(root.expression) : `${this.readExpression(root)}()`}, description: ${this.emitDescription(root)}, meta: ${this.emit(root.meta)}${this.emitIntrospection(root)} }${key}
 ${isTemplate ? "]" : ")"}`
 	}
 
@@ -1671,8 +1555,8 @@ ${isTemplate ? "]" : ")"}`
 				this.declareConst(root.json, "json", value)
 			)
 		}
-		// arktype doesn't promise Types defined apart are distinct, so a node without an address shares json with any whose text is the same
-		const name = `json${heldAddressOf(root) ?? hashOf(value)}`
+		// arktype doesn't promise Types defined apart are distinct, so a node shares json with any whose text is the same
+		const name = `json${hashOf(value)}`
 		this.sharedModules[`~arktype/${name}`] ??= {
 			readsRuntime: false,
 			imports: {},
@@ -1785,23 +1669,6 @@ ${isTemplate ? "]" : ")"}`
 		return `(function (node, config${params}) {
 		${apply}
 	})(${shape}, ${config}${args})`
-	}
-
-	// a node's meta is one object wherever its errors or its validator read it
-	emitMeta(node: BaseNode): string {
-		if (!this.writing && this.unwritableMetas.has(node.meta))
-			throwParseError(writeUnprecompilableMessage("a received meta"))
-		const declared =
-			this.declarations.namesByValue.get(node.meta) ??
-			(this.writing ? undefined : this.receivedMetas.get(node.meta))
-		if (declared) return declared
-		const address = metaAddressOf(node)
-		if (address === undefined) return this.emitLiteral(node.meta)
-		return this.declareConst(
-			node.meta,
-			"meta",
-			`runtime.addressedMeta(${JSON.stringify(address)}, ${this.writeLiteral(node.meta)[0]})`
-		)
 	}
 
 	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator
@@ -2020,8 +1887,6 @@ ${isTemplate ? "]" : ")"}`
 		if (runtimePath) return runtimePath
 		const declared = this.declarations.namesByValue.get(value)
 		if (declared) return declared
-		const metaOwner = this.unit?.metaOwners.get(value)
-		if (metaOwner) return this.emitMeta(metaOwner)
 		const defaulted = this.defaultsByMorph.get(value)
 		if (defaulted) return this.emitDefault(value, ...defaulted)
 		// a unit is compared by reference, so a copy wouldn't equal it
@@ -2423,21 +2288,6 @@ const isSharedUnit = (unit: RootUnit): boolean => {
 	return shared
 }
 
-const isAddressable = (root: BaseRoot, unit: RootUnit): boolean =>
-	isSharedUnit(unit) &&
-	!keyOf(root)[1].length &&
-	!holdsLocal(root.meta) &&
-	!holdsLocal(root.description)
-
-// e.g. a keyword's Type, which arktype holds once wherever a definition reaches it, so each run and artifact reads one validator
-export const isAddressed = (value: unknown): value is BaseRoot =>
-	hasArkKind(value, "root") &&
-	isAddressable(
-		value,
-		rootUnitsOf(value).find(unit => unit.roots.includes(value))!
-	) &&
-	heldAddressOf(value) !== undefined
-
 const declares = (
 	root: BaseRoot,
 	predicate: (node: BaseNode) => boolean
@@ -2472,68 +2322,12 @@ const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	})
 }
 
-const addressesByNode = new WeakMap<BaseNode, string | null>()
-
-// a builtin scope's cache or alias holds one node for every definition reaching it, whatever ran first
-const heldAddressOf = (node: BaseNode): string | undefined => {
-	let address = addressesByNode.get(node)
-	if (address === undefined) {
-		address = maybeHeldAddressOf(node) ?? null
-		addressesByNode.set(node, address)
-	}
-	return address ?? undefined
-}
-
-const maybeHeldAddressOf = (node: BaseNode): string | undefined => {
-	const { $ } = node
-	if (!$.isBuiltin) return
-	// a scope keys a child by its id, which a copy another scope binds shares with what it copies
-	const key = cachedKeyOf(node, reference => {
-		const key =
-			isNode(reference) ?
-				heldAddressOf(originalOf(reference))
-			:	runtimeKeyOf(reference)
-		return key && `${isNode(reference) ? "#" : "$"}${key}`
-	})
-	if (key !== undefined) return hashOf(`${$.name}\nkey\n${key}`)
-	for (const name in $.resolutions)
-		if ($.resolutions[name] === node) return hashOf(`${$.name}\nalias\n${name}`)
-	const name = intrinsicNameOf(node)
-	if (name) return hashOf(`${$.name}\nintrinsic\n${name}`)
-}
-
-// e.g. the unknown a TypedFn returns by default, a copy its scope binds once, read without binding the others
-const intrinsicNameOf = (node: BaseNode): string | undefined => {
-	const intrinsic: object | undefined = Object.getOwnPropertyDescriptor(
-		node.$,
-		"intrinsic"
-	)?.value
-	if (!intrinsic) return
-	for (const name in intrinsic) {
-		if (Object.getOwnPropertyDescriptor(intrinsic, name)!.value === node)
-			return name
-	}
-}
-
-const originalOf = (node: BaseNode): BaseNode => {
-	while (node.boundFrom) node = node.boundFrom
-	return node
-}
-
-// a copy holds the meta of what it copies
-const metaAddressOf = (node: BaseNode): string | undefined =>
-	holdsLocal(node.meta) ? undefined : heldAddressOf(originalOf(node))
-
-// a meta is named by its address, so units sharing a name share their metas
-const contentKeyOf: ContentKeyOf = (value, metaOwner) =>
-	runtimeKeyOf(value) ?? (metaOwner && (metaAddressOf(metaOwner) ?? null))
-
 const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()
 
 const rootUnitsOf = (root: BaseRoot): RootUnit[] => {
 	let units = unitsByRoot.get(root)
 	if (!units)
-		unitsByRoot.set(root, (units = precompileRootUnits(root, contentKeyOf)))
+		unitsByRoot.set(root, (units = precompileRootUnits(root, runtimeKeyOf)))
 	return units
 }
 

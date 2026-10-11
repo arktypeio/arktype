@@ -62,11 +62,6 @@ import {
 
 const parseCache = new WeakMap<BaseScope, Record<string, InnerParseResult>>()
 
-export const cachedDefinitionOf = (
-	$: BaseScope,
-	def: string
-): InnerParseResult | undefined => parseCache.get($)?.[def]
-
 export const parseInnerDefinition = (
 	def: unknown,
 	ctx: BaseParseContext

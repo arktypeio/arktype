@@ -58,7 +58,7 @@ In watch mode and in a dev server, a module is rebuilt when any module its defin
 
 Each Type's compiled code is a module named by its content, which every module composing the Type imports, so a bundle holds one copy however many modules reach it, and a factory receiving a Type from another module creates only its own validator. The Node and Bun drivers serve these modules through their hooks in standalone mode; Turbopack, which has no virtual modules, places them in each module that reaches them, as before.
 
-Each Type is created where a site first reads it, so a bundler drops one nothing reads. A Type, or a meta its errors expose, is one object across modules where arktype returns one object for every definition reaching it: a node it caches by content, an alias it resolved, or the Type its parse cache holds for a string definition. `type({ a: "string" })` in two modules is then one validator, also under Turbopack and `inline: true`, since the runtime holds each such value under an address. A Type arktype creates anew each time, like `type("string.trim")`, is created anew. These are one object only within a module: a keyword Module's member like `type.keywords.string.email`, which `type("string.email")` returns too; a generic instantiation another Type holds, like `type({ r: "Record<string, number>" }).get("r")`; a Type composing another a program's scope created; a Type read from another Type created in another module, like `type({ t: Trim }).get("t")`; and a Type whose meta holds an object, like `examples: [{ a: 1 }]`, since arktype names that object by a count its process keeps.
+Each Type is created where a site first reads it, so a bundler drops one nothing reads. Whether two Types, metas or json objects created apart are one object is unspecified, as in arktype, so a module creates its own where arktype might return one it created elsewhere, and two Types whose json is the same share it.
 
 ### Precompile definitions holding functions
 
@@ -87,8 +87,6 @@ A function a parameter holds, like `fn` in `function narrowed(fn) { const T = ty
 
 These definitions are reported rather than precompiled:
 
-- one arktype creates anew each time it runs, holding a value that is the same each time or that another definition holds too, like `$.export()` in a function when `$` is not, unless arktype holds that value once wherever a definition reaches it, as it does the keyword Types of `type.fn("string")`, which each call then reads from where every precompiled module holds them;
-- one that is the same each time its innermost function or loop runs but new each time an enclosing one runs, like `$.type("a")` in a callback when the function calling it creates `$`;
 - one holding a parameter's value other than as a function or class, like an example, a unit or a Scope's configuration, or reading a parameter its function assigns;
 - one reading a Scope, Module or Generic whose own definition is reported;
 - one throwing a ParseError that reads a binding, or holds or calls a function, itself or through any value it passes to arktype;

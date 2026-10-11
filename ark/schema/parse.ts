@@ -1,7 +1,6 @@
 import {
 	entriesOf,
 	flatMorph,
-	hasDomain,
 	includes,
 	isArray,
 	isDate,
@@ -35,7 +34,7 @@ import {
 	type NodeKind,
 	type UnknownAttachments
 } from "./shared/implement.ts"
-import { $ark, reference } from "./shared/registry.ts"
+import { $ark } from "./shared/registry.ts"
 import { composing, hasArkKind, isNode } from "./shared/utils.ts"
 
 export type ContextualArgs = Record<string, BaseRoot | NodeId>
@@ -253,26 +252,17 @@ export const createNode = ({
 	return key ? $.nodesByKey.set(key, node) : node
 }
 
-export type ReferenceKeyOf = (reference: object | symbol) => string | undefined
-
 // a node's children are cached before it, so their ids can stand in for
 // their content
-const keyOfReference: ReferenceKeyOf = v =>
-	isNode(v) ? `#${v.id}` : `$${nameOf(v)}`
-
 const nodeKeyOf = (
 	kind: NodeKind,
 	inner: dict,
 	innerEntries: readonly Entry<string>[],
-	metaJson: dict,
-	keyOf: ReferenceKeyOf = keyOfReference
-): string | undefined => {
+	metaJson: dict
+): string => {
 	let key: string = kind
-	for (const [k, v] of innerEntries) {
-		const valueKey = k === "unit" ? leafKeyOf(v, keyOf) : valueKeyOf(v, keyOf)
-		if (valueKey === undefined) return
-		key += `,${k}:${valueKey}`
-	}
+	for (const [k, v] of innerEntries)
+		key += `,${k}:${k === "unit" ? literalKeyOf(v) : valueKeyOf(v)}`
 	// an alias inlines a reference that has resolved when it's written
 	if (
 		kind === "alias" &&
@@ -282,14 +272,13 @@ const nodeKeyOf = (
 	return isEmptyObject(metaJson) ? key : key + JSON.stringify(metaJson)
 }
 
-const valueKeyOf = (v: unknown, keyOf: ReferenceKeyOf): string | undefined => {
-	if (!isArray(v)) return leafKeyOf(v, keyOf)
-	const keys = v.map(element => valueKeyOf(element, keyOf))
-	return keys.includes(undefined) ? undefined : `[${keys.join()}]`
-}
+const valueKeyOf = (v: unknown): string =>
+	isNode(v) ? `#${v.id}`
+	: isArray(v) ? `[${v.map(valueKeyOf).join()}]`
+	: literalKeyOf(v)
 
 // objects are compared by reference, except dates, which units compare by value
-const leafKeyOf = (v: unknown, keyOf: ReferenceKeyOf): string | undefined =>
+const literalKeyOf = (v: unknown): string =>
 	typeof v === "string" ? JSON.stringify(v)
 	: typeof v === "number" ?
 		Object.is(v, -0) ?
@@ -302,48 +291,8 @@ const leafKeyOf = (v: unknown, keyOf: ReferenceKeyOf): string | undefined =>
 		typeof v === "function" ||
 		typeof v === "symbol"
 	) ?
-		keyOf(v)
+		`$${nameOf(v)}`
 	:	`${v}`
-
-export const cachedKeyOf = (
-	node: BaseNode,
-	keyOf: ReferenceKeyOf
-): string | undefined => {
-	const { kind, innerEntries } = node
-	const inner = node.inner as dict
-	if (
-		!$ark.sets ||
-		kind === "alias" ||
-		node.$.nodesByKey.get(
-			nodeKeyOf(kind, inner, innerEntries, node.metaJson as dict)!
-		) !== node
-	)
-		return
-	const metaJson = metaJsonOf(node.meta, keyOf)
-	return metaJson && nodeKeyOf(kind, inner, innerEntries, metaJson, keyOf)
-}
-
-// a meta names an object it holds by registering it, so the name depends on what ran first
-const metaJsonOf = (meta: dict, keyOf: ReferenceKeyOf): dict | undefined => {
-	const serialize = (v: unknown) => {
-		if (!hasDomain(v, "object") && typeof v !== "symbol")
-			return defaultValueSerializer(v)
-		const key = keyOf(v)
-		return key && reference(key)
-	}
-	const json: dict = {}
-	for (const [k, v] of Object.entries(meta)) {
-		const serialized =
-			k === "examples" ? (v as array).map(serialize) : serialize(v)
-		if (
-			serialized === undefined ||
-			(isArray(serialized) && serialized.includes(undefined))
-		)
-			return
-		json[k] = serialized
-	}
-	return json
-}
 
 // a basis or primitive constraint's error context includes its description,
 // so its writer runs on construction whether or not the node is compiled

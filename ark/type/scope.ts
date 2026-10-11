@@ -398,7 +398,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		InternalScope.scope(def as never, config).export()) as never
 }
 
-// a builtin scope's name addresses its nodes in a precompiled program, so each has its own
+// a precompiled program keys a builtin scope by its name, so each has its own
 export const keywordModule = (
 	def: Dict,
 	config: ArkScopeConfig & { name: string }

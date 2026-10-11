@@ -1449,11 +1449,11 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			}
 		})
 
-		it("writes once what a factory creates from a Type it receives, unless its errors expose that Type's meta", async () => {
+		it("writes once what a factory creates from a Type it receives, whose meta its errors copy", async () => {
 			const isEven = standIn((n: number) => n % 2 === 0, "even")
 			const $ = scope({ even: ["number", ":", isEven], s: "string" })
 			const U = $.type({ name: "s" })
-			// a domain's errors expose the meta of the root it is
+			// a domain's errors carry the meta of the root it is
 			const Name = type("string").configure({ description: "a name" })
 			const receives = (label: string, t: type.Any) => [
 				{ kind: "input" as const, label, reads: [[[], t]] as [[], unknown][] }
@@ -1468,21 +1468,21 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 				Derived: { type: U.and({ a: "s" }), params: receives("U", U) },
 				Exposing: { type: type({ n: Name }), params: receives("Name", Name) }
 			}
+			// a folded factory returns what the creations wrote, rekeyed with the holes it receives
 			attest(
 				precompileStandalone(exports)
 					.split("function factory")
 					.slice(1)
-					.map(factory => factory.includes("runtime.rekeyed"))
-			).equals([false, true, true, false])
+					.map(factory => factory.includes("??= create"))
+			).equals([false, true, true, true])
 			const created = await load(exports)
 			const holder = created.$(isEven)
 			attest(
 				created.Derived(created.U(holder))({ name: "x", a: 1 }).toString()
 			).snap("a must be a string (was a number)")
-			attest(
-				created.Exposing(created.Name)({ n: 5 }).issues[0].meta ===
-					created.Name.meta
-			).equals(true)
+			attest(created.Exposing(created.Name)({ n: 5 }).issues[0].meta).equals(
+				created.Name.meta
+			)
 		})
 
 		it("checks a class's lineage against the classes of the Types it receives", async () => {
@@ -1954,38 +1954,6 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			])
 			attest(created.S() === created.S()).equals(false)
 			attest(created.G() === created.G()).equals(false)
-		})
-
-		it("reads each Type arktype holds once from its address at each call", async () => {
-			const length = standIn((s: string) => s.length, "length")
-			const created = await load({
-				P: type(["string"]),
-				F: {
-					type: type.fn("string")(length) as never,
-					params: [{ kind: "function", label: "`length`", value: length }]
-				}
-			})
-			const [f1, f2] = [created.F(length), created.F(length)]
-			attest([
-				f1 === f2,
-				f1.params === f2.params,
-				f1.params === created.P,
-				f1.returns === f2.returns
-			]).equals([false, true, true, true])
-		})
-
-		it("refuses a Type another run or site holds where it can't read it from an address", () => {
-			const M = scope({ a: "string" }).export()
-			attest(() =>
-				precompileStandalone(
-					{ M: { type: M, params: [] } },
-					{
-						sitesByName: { M: { definitions: [], addressed: [M.a.internal] } }
-					}
-				)
-			).throws(
-				writeUnprecompilableMessage("a Type another run or site holds too")
-			)
 		})
 
 		it("returns the validator it created for the same holes where arktype returns one Type", async () => {

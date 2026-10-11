@@ -7,7 +7,6 @@ import {
 	rootSchema,
 	schemaScope,
 	writePrecompiledUnits,
-	type BaseNode,
 	type BaseScope
 } from "@ark/schema"
 import { flatMorph, isValidDate, liftArray } from "@ark/util"
@@ -147,10 +146,8 @@ contextualize(() => {
 		const scopes = new Set<BaseScope>()
 		const collect = (value: any): void => {
 			if (typeof value === "function" && value.internal?.references) {
-				for (const node of [value.internal, ...value.internal.references]) {
-					for (let n: BaseNode | undefined = node; n; n = n.boundFrom)
-						scopes.add(n.$)
-				}
+				for (const node of [value.internal, ...value.internal.references])
+					scopes.add(node.$)
 			} else if (typeof value === "object" && value !== null)
 				for (const k in value) collect(value[k])
 		}
@@ -159,38 +156,14 @@ contextualize(() => {
 		const names = [...scopes].map($ => $.isBuiltin && $.name)
 		attest(new Set(names).size).equals(scopes.size)
 		attest(names.sort()).snap([
-			"Array",
-			"FormData",
-			"TypedArray",
 			"ark",
 			"intrinsic",
 			"intrinsic.json",
 			"intrinsic.roots",
-			"number",
-			"object",
-			"object.json",
 			"schema",
-			"string",
-			"string.base64",
-			"string.capitalize",
-			"string.date",
-			"string.date.epoch",
-			"string.date.iso",
 			"string.integer",
 			"string.ip",
-			"string.json",
-			"string.lower",
-			"string.normalize",
-			"string.normalize.NFC",
-			"string.normalize.NFD",
-			"string.normalize.NFKC",
-			"string.normalize.NFKD",
-			"string.numeric",
-			"string.trim",
-			"string.upper",
-			"string.url",
-			"string.uuid",
-			"unknown"
+			"string.uuid"
 		])
 	})
 

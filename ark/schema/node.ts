@@ -130,8 +130,6 @@ export abstract class BaseNode<
 	includesContextualMorph: boolean
 	// described by another scope's writers, which a copy bound elsewhere keeps
 	includesKeptDescription: boolean
-	// a copy another scope bound holds its reference's meta
-	boundFrom: BaseNode | undefined
 	readonly cache: { rootApply?: RootApply } = {}
 
 	protected _referencesById: Record<string, BaseNode> | undefined
@@ -201,7 +199,6 @@ export abstract class BaseNode<
 		this.includesAlias = this.isCyclic
 		this.includesShallowAlias = this.isCyclic
 		this.includesKeptDescription = false
-		this.boundFrom = undefined
 		// an alias belongs in a structural value, so one there doesn't make its parent shallow
 		const isStructural = this.isStructural()
 

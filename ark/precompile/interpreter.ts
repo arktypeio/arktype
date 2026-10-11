@@ -9,7 +9,7 @@ import {
 	type CacheReach
 } from "@ark/schema"
 import { hashOf, hasDomain, isDotAccessible, ParseError } from "@ark/util"
-import { configure, type } from "arktype"
+import { configure } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import {
@@ -144,8 +144,6 @@ export interface SiteState {
 	requests: [Node, SourceModule][]
 	// each receiver and argument of those calls, and each object whose getter the site runs, whose holes a ParseError can print
 	arktypeArguments: unknown[]
-	// each string passed to arktype's type, whose parse cache returns its Type again for it
-	parsedDefinitions: string[]
 	// each default check arktype deferred and Scope alias it resolved, directly or in computing what a cache returned, in the order the site reached them
 	reached: Reached[]
 	// each Type a request returned
@@ -172,7 +170,6 @@ export const createSiteState = (
 	interpreted: new Set(),
 	requests: [],
 	arktypeArguments: [],
-	parsedDefinitions: [],
 	reached: [],
 	roots: [],
 	introspection: undefined,
@@ -1932,8 +1929,6 @@ export class Interpreter {
 		if (ctx.site) {
 			collectHoles(converted, ctx.site.holes, this.standIns)
 			ctx.site.arktypeArguments.push(receiver, ...converted)
-			if (fn === type && typeof converted[0] === "string")
-				ctx.site.parsedDefinitions.push(converted[0])
 		}
 		const opaque = this.opaqueStandInOf([receiver, converted])
 		const previous = this.activeCall

@@ -629,11 +629,7 @@ const declareTraversal = (
 	return name
 }
 
-// null keys a value by identity
-export type ContentKeyOf = (
-	value: object | symbol,
-	metaOwner: BaseNode | undefined
-) => string | null | undefined
+export type ContentKeyOf = (value: object | symbol) => string | undefined
 
 export interface RootUnit {
 	// its first root's name, which addresses it
@@ -652,7 +648,6 @@ export interface RootUnit {
 	// the nodes whose names hold a value keyed by identity, which name them only within this pass
 	identityNamed: ReadonlySet<NodeId>
 	unitsById: Record<NodeId, RootUnit>
-	metaOwners: ReadonlyMap<object, BaseNode>
 }
 
 // each root's unit holds the nodes it reaches before another root, so a prop's traversal is shared only by Types sharing the root it belongs to
@@ -722,8 +717,7 @@ const unitsOf = (
 			errorContexts: linkage.errorContexts,
 			dependencies: linkage.dependencies,
 			identityNamed: s.identityNamed,
-			unitsById,
-			metaOwners: s.metaOwners
+			unitsById
 		}
 		units.push(unit)
 		for (const root of roots) unitsById[root.id] = unit
@@ -737,7 +731,6 @@ interface ContentNamingState {
 	stack: ContentReference[]
 	components: BaseNode[][]
 	keyOf: ContentKeyOf | undefined
-	metaOwners: Map<object, BaseNode>
 	valueIndices: Map<unknown, number>
 	names: Record<NodeId, string>
 	inputsByHash: Record<string, string>
@@ -765,7 +758,6 @@ const nameReferences = (
 		stack: [],
 		components: [],
 		keyOf,
-		metaOwners: new Map(),
 		valueIndices: new Map(),
 		names: {},
 		inputsByHash: {},
@@ -857,13 +849,6 @@ const compileContent = (
 		id === node.id ? "$" : `$${(positionsById[id] ??= calleeIds.push(id) - 1)}`
 	const linkage = createLinkage(positionOf)
 	declareTraversals(linkage, node)
-	// a context holds the metas of the nodes compiled with it
-	if (s.keyOf) {
-		for (const reference of [node, ...node.references]) {
-			if (!s.metaOwners.has(reference.meta))
-				s.metaOwners.set(reference.meta, reference)
-		}
-	}
 	const serializing = new Set<object>()
 	let holdsIdentity = false
 	const serialize = (value: unknown): string => {
@@ -873,18 +858,16 @@ const compileContent = (
 		}
 		if (!hasDomain(value, "object") && typeof value !== "symbol")
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
-		const keyed = s.keyOf?.(value, s.metaOwners.get(value as object))
 		const key =
-			keyed !== undefined ? keyed
-			: typeof value === "symbol" ? undefined
+			s.keyOf?.(value) ??
+			(typeof value !== "object" ? undefined
 			: isRegExpObject(value) ? `${value} ${value.lastIndex}`
 			: isDateObject(value) ? `Date ${value.getTime()}`
-			: undefined
-		if (typeof key === "string") return key
+			: undefined)
+		if (key !== undefined) return key
 		const prototype = typeof value === "object" && Object.getPrototypeOf(value)
 		// a value inside itself has no finite content, so like an instance it's keyed by identity
 		if (
-			key === null ||
 			serializing.has(value as object) ||
 			(!isArray(value) && prototype !== Object.prototype && prototype !== null)
 		) {
@@ -1295,7 +1278,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (reference.hasKind("alias")) return reference
 			return composing(() => {
 				const bound = new (reference.constructor as any)(reference, this)
-				bound.boundFrom = reference
 				// a bound node keeps the descriptions of the scope that created it
 				if (
 					reference.includesKeptDescription ||

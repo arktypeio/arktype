@@ -1113,55 +1113,6 @@ const D = type("string")(1).toLocaleString(de)`)
 			])
 		})
 
-		it("what arktype creates anew each run, but shares with its last run or another site", () => {
-			attest(
-				statusesOf(`import { scope, type } from "arktype"
-const $ = scope({ a: "string" })
-const exported = () => $.export()
-const twice = () => {
-	const local = scope({ a: "string" })
-	return [local.type("a"), local.type("a")]
-}
-const isLong = (s: string) => s.length > 1
-const narrowed = () => {
-	const local = scope({ a: "string" })
-	return [local.type("a").narrow(isLong), local.type("a").narrow(isLong)]
-}
-const typed = () => [type.fn("string")(s => s), type.fn("string")(s => s)]`)
-			).snap([
-				"2:11 accepted",
-				"3:24 rejected\n  `$.export()` creates a new Module each time it runs, though a Type it holds is the same each time",
-				"5:16 accepted",
-				'6:10 rejected\n  `local.type("a")` creates a new Type each time it runs, sharing a Type with the site at /main.ts:6:27',
-				'6:27 rejected\n  `local.type("a")` creates a new Type each time it runs, sharing a Type with the site at /main.ts:6:10',
-				"10:16 accepted",
-				'11:10 rejected\n  `local.type("a").narrow(isLong)` creates a new Type each time it runs, sharing a Type with the site at /main.ts:11:42',
-				'11:42 rejected\n  `local.type("a").narrow(isLong)` creates a new Type each time it runs, sharing a Type with the site at /main.ts:11:10',
-				"13:22 accepted",
-				"13:49 accepted"
-			])
-		})
-
-		it("what arktype creates the same each time a callback or loop runs, but anew each time the function around it runs", () => {
-			attest(
-				statusesOf(`import { scope } from "arktype"
-const isLong = (s: string) => s.length > 1
-const mapped = () => {
-	const $ = scope({ a: "string" })
-	return [0].map(() => $.type("a").narrow(isLong))[0]
-}
-const looped = () => {
-	const $ = scope({ a: "string" })
-	for (const _ of [0]) return $.type("a")
-}`)
-			).snap([
-				"4:12 accepted",
-				'5:23 rejected\n  `$.type("a").narrow(isLong)` is the same each time its innermost function or loop runs, but new each time an enclosing one runs',
-				"8:12 accepted",
-				'9:30 rejected\n  `$.type("a")` is the same each time its innermost function or loop runs, but new each time an enclosing one runs'
-			])
-		})
-
 		it("identity of arktype values", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

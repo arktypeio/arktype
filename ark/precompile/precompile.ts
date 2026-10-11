@@ -25,7 +25,6 @@ import {
 	appendPath,
 	holeNamePattern,
 	introspectionMembers,
-	isAddressed,
 	isTypedFn,
 	keyOf,
 	kindNameOf,
@@ -36,7 +35,6 @@ import {
 	writeUnprecompilableMessage,
 	type ConfiguredModule,
 	type DefaultCheck,
-	type ExportSite,
 	type FactoryParam,
 	type Foldable,
 	type StandaloneExport,
@@ -160,7 +158,6 @@ export interface Site {
 	parseError: ParseError | undefined
 	// each receiver and argument the site called arktype with
 	arktypeArguments: unknown[]
-	parsedDefinitions: string[]
 	holes: Hole[]
 	// each function arktype calls while defining what the site creates, which it checks is a function first, as for a narrow on a literal
 	called: Hole[]
@@ -175,8 +172,6 @@ export interface Site {
 	isCreatedEachRun: boolean
 	// whether arktype returns the Type it created before for the same holes, as outside a Scope created each run, which a factory then does too
 	isInterned: boolean
-	// each Type another run or site holds too, which arktype holds once and a factory then reads from its address
-	addressed: Set<BaseRoot>
 	// each default arktype checks while defining what the site creates, which the build can't and its factory does at creation
 	defaultChecks: DefaultCheck[]
 	// each Scope alias arktype resolves while defining it, directly or in computing what a cache returns
@@ -872,7 +867,6 @@ export class Precompiler {
 		const namesBySite = new Map<Site, string>()
 		const factoriesBySite = new Map<Site, SiteFactory>()
 		const exportsByName: Record<string, StandaloneExport> = {}
-		const sitesByName: Record<string, ExportSite> = {}
 		const keywordReads = new Set<string>()
 		// sites arktype returned one Type for share a table, as they share it in the program
 		const tablesByValue = new Map<unknown, number>()
@@ -941,7 +935,6 @@ export class Precompiler {
 					params: factory.params,
 					defaultChecks: site.defaultChecks
 				}
-				sitesByName[name] = exportSiteOf(site)
 				replaced.push([site, factory.spans])
 				continue
 			}
@@ -963,7 +956,6 @@ export class Precompiler {
 					type: variant.value as never,
 					params: factory.params,
 					internedBy: site.isInterned ? table : undefined,
-					isCreatedEachRun: site.isCreatedEachRun,
 					defaultChecks: variant.defaultChecks,
 					distinct: factory.distinct,
 					selected:
@@ -983,13 +975,11 @@ export class Precompiler {
 							)
 						)
 					:	exportOf(factory, site)
-				sitesByName[name] = exportSiteOf(site)
 				replaced.push([site, factory.spans])
 			} else {
 				const name = `v${nameOf(site)}`
 				namesBySite.set(site, name)
 				exportsByName[name] = site.value as never
-				sitesByName[name] = exportSiteOf(site)
 				if (site.isKeywordRead) keywordReads.add(name)
 				replaced.push([site, []])
 			}
@@ -1006,7 +996,6 @@ export class Precompiler {
 					exportsByName,
 					{
 						configured,
-						sitesByName,
 						keywordReads,
 						introspection: this.introspection,
 						bake: write => this.bake(write)
@@ -1860,7 +1849,6 @@ export class Precompiler {
 		const settledRangesByFn = new Map<FunctionNode | undefined, Set<string>>()
 		const sites: Site[] = []
 		const candidatesBySite = new Map<Site, SiteCandidate>()
-		const sameWithinRun = new Set<Site>()
 		const diagnostics: Diagnostic[] = []
 		const helperSites: Node[] = []
 		this.helperSitesByModule.set(module, helperSites)
@@ -1888,11 +1876,7 @@ export class Precompiler {
 					!hasArkKind(candidate.state.value, "root")
 				)
 					this.refusedContainers.set(candidate.state.value, [node, module])
-				if (
-					this.mode === "standalone" &&
-					this.checkRuns(site, candidate, module)
-				)
-					sameWithinRun.add(site)
+				if (this.mode === "standalone") this.checkRuns(site, candidate, module)
 				if (
 					site.status !== "rejected" &&
 					!candidate.fn &&
@@ -1953,8 +1937,6 @@ export class Precompiler {
 				diagnostics.push(this.refuseThrown(module, node, site, e))
 			}
 		}
-		if (this.mode === "standalone")
-			this.checkShared(candidatesBySite, sameWithinRun, module)
 		for (const [site, candidate] of candidatesBySite) {
 			try {
 				diagnostics.push(...this.diagnosticsOf(site, candidate, module))
@@ -2114,7 +2096,6 @@ export class Precompiler {
 			roots: [],
 			parseError: undefined,
 			arktypeArguments: candidate.state.arktypeArguments,
-			parsedDefinitions: candidate.state.parsedDefinitions,
 			holes: [],
 			called: [],
 			inputs: [],
@@ -2124,7 +2105,6 @@ export class Precompiler {
 			isKeywordRead: false,
 			isCreatedEachRun: false,
 			isInterned: false,
-			addressed: new Set(),
 			defaultChecks: [],
 			aliases: [],
 			declarationStart: declarationStartOf(node),
@@ -2432,12 +2412,12 @@ export class Precompiler {
 		site: Site,
 		candidate: SiteCandidate,
 		module: SourceModule
-	): boolean {
+	): void {
 		const node = candidate.state.node
-		if (site.status !== "accepted" || !isFoldable(site.value)) return false
+		if (site.status !== "accepted" || !isFoldable(site.value)) return
 		const isFactory = this.isFactory(site, module)
 		const regions = repeatedRegionsOf(node)
-		if (!isFactory && !regions.length) return false
+		if (!isFactory && !regions.length) return
 		// outermost first, since a callback reads the same Scope each time it runs when the function calling it creates the Scope
 		const outer = this.interpreter.evaluateAgain(
 			node,
@@ -2446,113 +2426,25 @@ export class Precompiler {
 		)
 		if (outer.value === site.value) {
 			site.isInterned = isFactory
-			return false
+			return
 		}
-		if (!regions.length) return false
+		if (!regions.length) return
 		const again =
 			regions.length === 1 ?
 				outer
 			:	this.interpreter.evaluateAgain(node, module, regions[0])
-		// neither a getter nor a factory is the same within one run but new across runs
-		if (again.value === site.value) return true
-		const created = arkObjectsIn(again.value)
-		const kept = [...arkObjectsIn(site.value)].filter(value =>
-			created.has(value)
-		)
-		const addressed = kept.filter(isAddressed)
-		// e.g. a Module whose Types are the same each run, which a factory creating it anew reads from their addresses
-		if (
-			again.error === undefined ? addressed.length === kept.length : isFactory
-		) {
+		if (again.error === undefined || isFactory) {
 			site.isCreatedEachRun = true
-			for (const value of addressed) site.addressed.add(value)
-			return false
+			return
 		}
-		const snippet = module.snippetOf(node)
 		rejectSite(
 			site,
 			new DynamicValue(
 				module,
 				node,
-				again.error === undefined ?
-					`\`${snippet}\` creates a new ${kindNameOf(site.value)} each time it runs, though a ${kindNameOf(kept.find(value => !isAddressed(value)))} it holds is the same each time`
-				:	`\`${snippet}\` runs more than once, and the build can't evaluate it again`
+				`\`${module.snippetOf(node)}\` runs more than once, and the build can't evaluate it again`
 			)
 		)
-		return false
-	}
-
-	// each site arktype recreates is its own factory, so none can share what it creates with another, as two exports of one Scope in a function do
-	private checkShared(
-		candidatesBySite: Map<Site, SiteCandidate>,
-		sameWithinRun: Set<Site>,
-		module: SourceModule
-	): void {
-		const holdersByValue = new Map<unknown, Site>()
-		const sharedBySite = new Map<Site, [value: unknown, holder: Site][]>()
-		const share = (site: Site, value: unknown, holder: Site) => {
-			const shared = sharedBySite.get(site)
-			if (shared) shared.push([value, holder])
-			else sharedBySite.set(site, [[value, holder]])
-		}
-		const sites = [...candidatesBySite.keys()]
-		for (const site of sites) {
-			// a site inside another, like one in a Scope's thunk, is part of it
-			if (
-				sites.some(
-					outer =>
-						outer !== site && outer.start <= site.start && site.end <= outer.end
-				)
-			)
-				continue
-			if (sameWithinRun.has(site)) {
-				const node = candidatesBySite.get(site)!.state.node
-				rejectSite(
-					site,
-					new DynamicValue(
-						module,
-						node,
-						`\`${module.snippetOf(node)}\` is the same each time its innermost function or loop runs, but new each time an enclosing one runs`
-					)
-				)
-			}
-			let values: Set<unknown>
-			try {
-				values = arkObjectsIn(site.value)
-			} catch (e) {
-				refuse(site, reasonsOf(e))
-				continue
-			}
-			for (const value of values) {
-				const holder = holdersByValue.get(value)
-				if (!holder) holdersByValue.set(value, site)
-				else {
-					share(site, value, holder)
-					share(holder, value, site)
-				}
-			}
-		}
-		for (const [site, shared] of sharedBySite) {
-			for (const [value, holder] of shared) {
-				if (!site.isCreatedEachRun && !holder.isCreatedEachRun) continue
-				// e.g. a keyword's Type, which each factory reads from where every artifact holds it
-				if (isAddressed(value)) {
-					site.addressed.add(value)
-					continue
-				}
-				if (!site.isCreatedEachRun) continue
-				const node = candidatesBySite.get(site)!.state.node
-				rejectSite(
-					site,
-					new DynamicValue(
-						module,
-						node,
-						`\`${module.snippetOf(node)}\` creates a new ${kindNameOf(site.value)} each time it runs, sharing a ${kindNameOf(value)} with the site at ${module.positionOf(holder)}`
-					)
-				)
-				break
-			}
-		}
 	}
 
 	private isKeywordRead(node: Node, module: SourceModule): boolean {
@@ -3698,7 +3590,7 @@ const exportedRootsOf = (value: unknown): BaseRoot[] => {
 	return [...arkObjectsIn(module)].filter(member => hasArkKind(member, "root"))
 }
 
-// e.g. a Module and each Type it holds, which a program can compare by identity
+// e.g. a Module and each Type it holds
 const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
 	if (!isFoldable(value) || result.has(value)) return result
 	result.add(value)
@@ -3774,11 +3666,6 @@ const repeatedRegionsOf = (node: Node): Node[] => {
 	}
 	return result
 }
-
-const exportSiteOf = (site: Site): ExportSite => ({
-	definitions: site.parsedDefinitions,
-	addressed: [...site.addressed]
-})
 
 // a ParseError is named by its message, so equal sites share a thrower, and anything else by its site, since a cyclic Type's hash holds registry counters
 const nameOf = (site: Site) =>
