@@ -2050,6 +2050,14 @@ export class Precompiler {
 	}
 
 	private settleOnce(candidate: SiteCandidate): boolean {
+		const type = this.typeEndOf(candidate)
+		if (type) {
+			candidate.state = type
+			candidate.fallbacks = candidate.fallbacks.filter(node =>
+				contains(type.node, node)
+			)
+			this.interpreter.sitesByNode.set(type.node, type)
+		}
 		for (;;) {
 			const state = this.interpreter.evaluateSite(candidate.state)
 			// a call whose every request is in a static helper's own sites reaches them at runtime, and defines nothing itself
@@ -2074,6 +2082,17 @@ export class Precompiler {
 			if (fallback === candidate.root) return false
 			candidate.state = createSiteState(fallback, state.module)
 			this.interpreter.sitesByNode.set(fallback, candidate.state)
+		}
+	}
+
+	// e.g. `$.type("b")` for `$.type("b").assert(data)`, a Type whose member leaves arktype as `T.assert` does
+	private typeEndOf({ ends, state }: SiteCandidate): SiteState | undefined {
+		for (const end of ends) {
+			const evaluated = this.interpreter.evaluateSite(
+				this.interpreter.sitesByNode.get(end) ??
+					createSiteState(end, state.module)
+			)
+			if (hasArkKind(evaluated.value, "root")) return evaluated
 		}
 	}
 

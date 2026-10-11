@@ -114,6 +114,11 @@ export const validatorMembers: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
+// e.g. `assert` or `toString`, which end a site at a Type, as a standalone validator serves them
+export const isValidatorMember = (name: unknown): boolean =>
+	typeof name === "string" &&
+	(name in validatorMembers || name in Function.prototype)
+
 // a node's members its content alone decides: the documented Type API less what prints registry names or node ids, and the node API `.internal` documents
 export const nodeMembers: Record<string, 1> = Object.setPrototypeOf(
 	{
@@ -379,14 +384,13 @@ const exportKindOf = (name: ArkExportName): ArkKind =>
 const memberKindOf = (objectKind: ArkKind, name: unknown): ArkKind => {
 	if (!isArk(objectKind)) return objectKind & kinds.data
 	const kind =
-		// a Module's member is whatever its alias is, whatever its name
+		// a Module's member is whatever its alias is, whatever its name, so a Type's ends its site only once the build has its value
 		typeof name !== "string" || objectKind & kinds.otherArk ? anyKind
 		: (
-			name in validatorMembers ||
+			isValidatorMember(name) ||
 			name in runtimeMembers ||
 			name in unstableArkMembers ||
-			name === "toJsonSchema" ||
-			name in Function.prototype
+			name === "toJsonSchema"
 		) ?
 			kinds.data
 		:	(typeMemberKinds[name] ?? anyKind)
@@ -1392,8 +1396,7 @@ export class ModuleGraph {
 		return (
 				object &&
 					(read === undefined ||
-						(typeof read === "string" &&
-							!(read in validatorMembers || read in Function.prototype)))
+						(typeof read === "string" && !isValidatorMember(read)))
 			) ?
 				[read, object]
 			:	undefined

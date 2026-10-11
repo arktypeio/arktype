@@ -356,6 +356,30 @@ export const json = M.json.json`)
 			])
 		})
 
+		it("folds a Type a call through a Scope, Module or Generic returns, whose validator member is read at runtime", () => {
+			const result = precompile(`import { scope, type } from "arktype"
+const $ = scope({ a: "string", b: { c: "a" } })
+const G = type("<t>", { box: "t" })
+export const asserted = $.type("b").assert({ c: "x" })
+export const allowed = G("string").allows({ box: "x" })
+export const description = $.type("b").description
+export const exported = $.export().b.assert({ c: "x" })
+export const aliased = type.module({ b: "string" }).b.allows("x")
+const validate = $.type("b")["~standard"].validate
+export const validated = validate({ c: "x" })`)
+			attest(result.diagnostics).equals([])
+			attest(
+				result.code.split("\n").filter(line => line.startsWith("export"))
+			).snap([
+				'export const asserted = $arkvmnhzxk0t966u8().assert({ c: "x" })',
+				'export const allowed = $arkv1fvusin0klchoh().allows({ box: "x" })',
+				"export const description = $arkv1tqrh2a0d3gdqe().description",
+				'export const exported = $arkv5wbh1b0r44m8n().assert({ c: "x" })',
+				'export const aliased = $arkv1s7sphd0a1r3kf().allows("x")',
+				'export const validated = validate({ c: "x" })'
+			])
+		})
+
 		it("refuses the json of a Scope or Generic, which their empty objects lack", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 const $ = scope({ a: "string" })

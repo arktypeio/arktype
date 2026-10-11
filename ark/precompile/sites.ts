@@ -4,6 +4,7 @@ import {
 	enclosingFunctionOf,
 	isArk,
 	isPassiveReference,
+	isValidatorMember,
 	memberNameOf,
 	runtimeExports,
 	staticBodyOf,
@@ -30,6 +31,8 @@ export interface SiteCandidate {
 	state: SiteState
 	// the calls the site climbed through, innermost first, as the callee or argument the site can shrink back to
 	fallbacks: Node[]
+	// what the site read a validator's member of, innermost first, where it ends if that's a Type rather than a Module
+	ends: Node[]
 	isSite?: boolean
 }
 
@@ -54,7 +57,8 @@ export const findSites = (
 		if (!found) continue
 		const [kind, root, isOwnSite] = found
 		const fallbacks: Node[] = []
-		const climbed = climb(root, fallbacks, module, graph)
+		const ends: Node[] = []
+		const climbed = climb(root, fallbacks, ends, module, graph)
 		const top =
 			(foldsIntrospection && introspectionReadOf(climbed, module, graph)) ||
 			climbed
@@ -69,7 +73,8 @@ export const findSites = (
 				fn,
 				helper: fn && isFoldedHelper(fn, module) ? fn : undefined,
 				state,
-				fallbacks
+				fallbacks,
+				ends
 			}
 		}
 		reads.push({ reference, kind, root, candidate })
@@ -188,6 +193,7 @@ const helperCallOf = (id: Node): CallExpression | undefined => {
 const climb = (
 	root: Node,
 	fallbacks: Node[],
+	ends: Node[],
 	module: SourceModule,
 	graph: ModuleGraph
 ): Node => {
@@ -195,8 +201,10 @@ const climb = (
 	for (;;) {
 		const [probe, parent] = operatorOf(top)
 		const composer = graph.composerOf(top, module)
-		if (composer?.type === "MemberExpression") top = composer
-		else if (
+		if (composer?.type === "MemberExpression") {
+			if (isValidatorMember(memberNameOf(composer))) ends.push(top)
+			top = composer
+		} else if (
 			composer ||
 			(parent?.type === "CallExpression" &&
 				parent.callee !== probe &&

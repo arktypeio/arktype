@@ -1548,9 +1548,14 @@ export class Interpreter {
 		if (isPlainContainer(object)) {
 			const descriptor = Reflect.getOwnPropertyDescriptor(object, key)
 			if (descriptor) {
-				return "value" in descriptor ?
-						descriptor.value
-					:	this.notOwnData(node, ctx)
+				if (!("value" in descriptor)) return this.notOwnData(node, ctx)
+				// e.g. `validate` off `T["~standard"]`, which validates data at runtime
+				if (
+					this.validators.has(object) &&
+					typeof descriptor.value === "function"
+				)
+					this.validators.add(descriptor.value)
+				return descriptor.value
 			}
 			return key in object ? this.notOwnData(node, ctx) : undefined
 		}
