@@ -1640,7 +1640,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 				this.references = referencesThroughAliases(this.references)
 				let uncompiled = this.references
 				if (bindPrecompiledUnits) {
-					// a root a union compiles inline isn't called by any unit, so every root binds, not only those exported
+					// a union compiles some branches inline, so no unit calls them and each binds on its own
 					bindPrecompiledUnits(uncompiled)
 					uncompiled = uncompiled.filter(node => !node.compiledUnit)
 				}
