@@ -569,6 +569,7 @@ const B = type({ [tag]: "string" })`)
 					description: "tag",
 					isCalledAtDefinition: false,
 					isDefinition: false,
+					isInstanceTested: false,
 					isParameter: false
 				}
 			])

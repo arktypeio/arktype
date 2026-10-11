@@ -168,6 +168,8 @@ export interface HoleParam {
 	kind: HoleKind
 	label: string
 	value: unknown
+	// arktype tested a value against the class while defining the type, which the build answered as instanceof does by default
+	isInstanceTested?: boolean
 }
 
 export interface InputParam {
@@ -831,6 +833,11 @@ export class StandaloneArtifact {
 				if (!selected.includes(param.value))
 					checked.push([param.value, param.kind, `p${i}`])
 				if (param.kind === "class") this.classes.add(param.value)
+				if (param.isInstanceTested) {
+					this.checks.push(
+						`runtime.checkInstanceTest(p${i}, ${JSON.stringify(param.label)})`
+					)
+				}
 			}
 		}
 		// another variant holds its own stand-in for a function selecting it, which the factory receives where it receives the first's

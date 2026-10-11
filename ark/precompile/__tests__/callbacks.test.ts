@@ -183,6 +183,27 @@ const B = type.instanceOf(User)`,
 		])
 	})
 
+	it("a class arktype tests a value against", () => {
+		const source = `import { type } from "arktype"
+class Cat {}
+class Odd {
+	static [Symbol.hasInstance](v: unknown) {
+		return v === null
+	}
+}
+const A = type.instanceOf(Cat).or("null")
+const B = type.instanceOf(Odd).or("null")`
+		attest(statusesOf(source)).snap([
+			"8:11 accepted Cat$hole_ay4njf0zypa8q | null",
+			"9:11 rejected\n  arktype reads `class Odd { static [Symbol.hasInstance](v: unknown) { retur…` while defining the type, so it must be static"
+		])
+		attest(
+			analyze(source).sites[0].holes.map(
+				hole => `${hole.kind} ${hole.isInstanceTested}`
+			)
+		).snap(["class true"])
+	})
+
 	it("names a function a refusal prints by its source", () => {
 		attest(
 			diagnosticsOf(`import { type } from "arktype"

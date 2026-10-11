@@ -504,6 +504,19 @@ export const checkFacts = (
 	}
 }
 
+// arktype tests a value against a class while defining a type, as `null` in `type.instanceOf(Cat).or("null")`, which the build answered by the prototype
+export const checkInstanceTest = (hole: Function, label: string): void => {
+	if (hole[Symbol.hasInstance] !== Function.prototype[Symbol.hasInstance]) {
+		throwError(
+			writeCreationMismatchMessage(
+				label,
+				"a class with its own Symbol.hasInstance",
+				"one testing instances by their prototypes"
+			)
+		)
+	}
+}
+
 export const describeFact = (fact: HoleFact): string =>
 	typeof fact === "string" ? fact : (
 		`a function of ${

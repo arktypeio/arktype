@@ -126,6 +126,8 @@ export interface StandIn {
 	// by code arktype runs while defining a type, like a description writer, whose result the artifact can't bake from a function it receives at runtime
 	isCalledIndirectly: boolean
 	isDefinition: boolean
+	// arktype tested a value against it, as `null` in `type.instanceOf(Cat).or("null")`, which the build answered as instanceof does by default
+	isInstanceTested?: boolean
 }
 
 export type Reached = DefaultCheck | ScopeAlias
@@ -2297,6 +2299,16 @@ export class Interpreter {
 				element.type === "MethodDefinition" && element.kind === "constructor"
 		) as MethodDefinition | undefined
 		const length = constructor ? parameterCount(constructor.value) : 0
+		// a static member keyed by an expression may be Symbol.hasInstance, which instanceof calls rather than reading the prototype
+		const mayTestInstances = node.body.body.some(
+			element =>
+				element.type === "StaticBlock" ||
+				((element.type === "MethodDefinition" ||
+					element.type === "PropertyDefinition" ||
+					element.type === "AccessorProperty") &&
+					element.static &&
+					element.computed)
+		)
 		const name = this.holeNameOf(node, ctx.module, declaredNameOf(node))
 		const standIn: StandIn = {
 			kind: "class",
@@ -2315,7 +2327,9 @@ export class Interpreter {
 				k === "length" ? length
 				: k === "name" ? name
 				: answersFact(k) ? Reflect.get(target, k)
-				: this.refuse(standIn),
+				: k === Symbol.hasInstance && !mayTestInstances ?
+					this.instanceTestOf(standIn, target)
+				:	this.refuse(standIn),
 			getPrototypeOf: target => Reflect.getPrototypeOf(target),
 			apply: () => {
 				standIn.isCalled = true
@@ -2340,6 +2354,14 @@ export class Interpreter {
 		})
 		if (!ctx.env) this.standInsByNode.set(node, proxy)
 		return proxy
+	}
+
+	// a factory checks at creation that the class it receives tests instances by their prototypes too
+	private instanceTestOf(standIn: StandIn, target: Function): unknown {
+		const test = Reflect.get(target, Symbol.hasInstance)
+		if (test !== Function.prototype[Symbol.hasInstance]) this.refuse(standIn)
+		standIn.isInstanceTested = true
+		return test
 	}
 
 	// e.g. `fn` in `fn => type("string").narrow(fn)`, which holds one value however often the site reads it
