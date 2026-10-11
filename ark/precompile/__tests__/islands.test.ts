@@ -101,6 +101,24 @@ ${mark}export const types = $.export()`
 		attest(diagnosticsOfMarked("// @ark-runtime\n")).equals([])
 	})
 
+	it("doesn't suggest marking a Scope whose thunk returns a Type arktype can't compile", () => {
+		attest(
+			precompile(
+				`import { $ } from "./scopes.ts"
+export const T = $.type(["t", "|", "5n"])`,
+				{
+					"/scopes.ts": `import { scope } from "arktype"
+export const $ = scope({
+	b: [["string", "@", "a thing"], "|", "b"],
+	t: () => $.type(["b", "@", "a thing"])
+})`
+				}
+			).diagnostics.map(diagnostic => diagnostic.hint)
+		).snap([
+			'Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+		])
+	})
+
 	it("means nothing in cache mode", () => {
 		const source = `import { type } from "arktype"
 // @ark-runtime

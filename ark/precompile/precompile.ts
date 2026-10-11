@@ -1660,12 +1660,18 @@ export class Precompiler {
 				]
 			:	site.aliases
 		return (
-				aliases.some(
-					([$, alias]) =>
-						isThunk($.aliases[alias]) &&
-						hasArkKind($.resolutions[alias], "root") &&
-						this.interpreter.holesIn($.resolutions[alias]).size
-				)
+				aliases.some(([$, alias]) => {
+					const resolution = $.resolutions[alias]
+					if (!isThunk($.aliases[alias]) || !hasArkKind(resolution, "root"))
+						return false
+					// e.g. one reaching a shallow alias cycle, which throws once compiled
+					try {
+						return this.interpreter.holesIn(resolution).size > 0
+					} catch (e) {
+						if (e instanceof ParseError) return false
+						throw e
+					}
+				})
 			) ?
 				thunkHint
 			:	undefined
