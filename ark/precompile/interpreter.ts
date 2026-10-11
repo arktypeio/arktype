@@ -57,7 +57,9 @@ import {
 	bindingOfFunction,
 	contains,
 	declarationStartOf,
+	enclosingFunctionOf,
 	genericMembers,
+	isCalledFirstByCycle,
 	isArk,
 	nodeMembers,
 	scopeMembers,
@@ -90,7 +92,13 @@ export interface InterpreterOptions {
 
 export type InputRoot =
 	| { kind: "export"; file: string; name: string }
-	| { kind: "binding"; module: SourceModule; binding: Binding }
+	| {
+			kind: "binding"
+			module: SourceModule
+			binding: Binding
+			// the function of the binding's module a site of another calls, which an import cycle can run before the binding is set
+			readFirstBy?: string | undefined
+	  }
 	| { kind: "define"; name: string }
 
 export interface Read {
@@ -931,7 +939,11 @@ export class Interpreter {
 	private consume(lookup: Lookup, ctx: Context): unknown {
 		const { value, read } = lookup
 		if (!read || isDynamic(value)) return value
-		if (!(hasDomain(value, "object") && this.standIns.has(value)))
+		// a function the program declares is read from a binding only where it may not be set yet
+		if (
+			!(hasDomain(value, "object") && this.standIns.has(value)) ||
+			(read.root.kind === "binding" && !read.path.length)
+		)
 			ctx.trace.reads.push(read)
 		else if (read.root.kind === "export" && !read.path.length)
 			ctx.trace.exportedFunctions.push(read)
@@ -1004,11 +1016,25 @@ export class Interpreter {
 				value: new DynamicValue(module, node, `\`${binding.name}\` ${problem}`)
 			}
 		}
-		if (
-			ctx.origin?.module === module &&
+		const isForeign = !!ctx.origin && ctx.origin.module !== module
+		// e.g. through a function another module calls, which runs where that module's site does
+		const readAt =
+			isForeign ? node
+			: ctx.origin && contains(binding.scope.node, ctx.origin.node) ?
+				ctx.origin.node
+			:	undefined
+		const isReadFirst =
+			!!readAt &&
 			binding.kind !== "function" &&
-			contains(binding.scope.node, ctx.origin.node) &&
-			runPointOf(ctx.origin.node, binding.scope.node, module) < setAt(binding)
+			runPointOf(readAt, binding.scope.node, module) < setAt(binding)
+		const reader = isReadFirst && isForeign && enclosingFunctionOf(node)
+		const result = this.bindingValue(binding, module)
+		if (result.error !== undefined) throw result.error
+		// e.g. a helper the site calls, which it checks is a function where it's created
+		if (
+			isReadFirst &&
+			!isArkValue(result.value) &&
+			typeof result.value !== "function"
 		) {
 			return {
 				value: new DynamicValue(
@@ -1018,8 +1044,6 @@ export class Interpreter {
 				)
 			}
 		}
-		const result = this.bindingValue(binding, module)
-		if (result.error !== undefined) throw result.error
 		if (
 			result.value instanceof InternalChainedMatchParser &&
 			(binding.references.length > 1 || binding.exportNames.length)
@@ -1055,11 +1079,20 @@ export class Interpreter {
 			// unless the declaration compares what the program holds, which runs only if a bundler keeps it for the site
 			isReceived = this.comparedAtCreation.has(result.value as object)
 		}
-		return isReceived ?
+		// a site that can read it first throws there, as arktype's would
+		return isReceived || isReadFirst ?
 				{
 					value: result.value,
 					read: {
-						root: { kind: "binding", module, binding },
+						root: {
+							kind: "binding",
+							module,
+							binding,
+							readFirstBy:
+								reader ?
+									inferredNameOf(reader) || module.snippetOf(reader)
+								:	undefined
+						},
 						path: [],
 						value: result.value
 					}
@@ -2745,7 +2778,7 @@ const pushUnique = (
 	if (!helpers.some(([n]) => n === node)) helpers.push([node, module])
 }
 
-// the earliest offset in `scope` at which code at `node` can run: its own, or the first that can call the function holding it
+// the earliest offset in `scope` at which code at `node` can run: its own, the first that can call the function holding it, or the module's start where an import cycle can
 const runPointOf = (
 	node: Node,
 	scope: Node,
@@ -2762,6 +2795,7 @@ const runPointOf = (
 		if (!isFunctionNode(parent)) continue
 		if (seen.has(parent)) return Infinity
 		seen.add(parent)
+		if (isCalledFirstByCycle(parent, module)) return module.program.start
 		const binding = bindingOfFunction(parent, module)
 		if (!binding) return runPointOf(parent, scope, module, seen)
 		let result = Infinity

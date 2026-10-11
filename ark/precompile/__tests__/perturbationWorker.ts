@@ -75,15 +75,21 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			const resolved = next(specifier, context)
 			const runId =
 				context.parentURL && new URL(context.parentURL).searchParams.get("run")
-			// each run imports a graph of its own, so a module evaluates once per run as in a test runner
-			return (
-					runId &&
-						resolved.url.startsWith("file:") &&
-						!resolved.url.includes("?") &&
-						isPerturbable(fileURLToPath(resolved.url))
-				) ?
-					{ ...resolved, url: `${resolved.url}?run=${runId}` }
-				:	resolved
+			if (
+				!runId ||
+				!resolved.url.startsWith("file:") ||
+				resolved.url.includes("?") ||
+				!isPerturbable(fileURLToPath(resolved.url))
+			)
+				return resolved
+			// each run imports a graph of its own, so a module evaluates once per run as in a test runner, and an import cycle reaches the run's file as it was imported
+			const isRoot =
+				filesByPath[fileURLToPath(resolved.url)] ===
+				manifest.files[Number.parseInt(runId)]
+			return {
+				...resolved,
+				url: `${resolved.url}?run=${runId}${isRoot ? "&root" : ""}`
+			}
 		},
 		load: (url, context, next) => {
 			if (url === "perturbation:attest")

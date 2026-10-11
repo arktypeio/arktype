@@ -458,6 +458,33 @@ const throughCalls: fc.Arbitrary<FragmentOf> = fc
 		)
 	)
 
+// a Type containers.ts declares after a function folding it, which an import cycle calls before the declaration runs and main.ts after
+const throughCycle: fc.Arbitrary<FragmentOf> = nodeOf([])
+	// a Type the module declares must be definable for the module to load
+	.filter(node => isDefinable(defOf(node)))
+	.chain(node =>
+		inputsOf(dataOf(node, noAliases)).map(
+			(inputs): FragmentOf =>
+				id => ({
+					containers: [
+						`import { first${id} } from "./main.ts"`,
+						`export function cycled${id}() {`,
+						`\treturn Cycled${id}.or("null")`,
+						"}",
+						`first${id}()`,
+						`const Cycled${id} = type(${sourceOf(defOf(node))})`
+					],
+					exports: [`cycled${id}`],
+					main: [
+						`export function first${id}() {`,
+						observed(`${id}.first`, `cycled${id}()`, inputs),
+						"}",
+						observed(id, `cycled${id}()`, inputs)
+					]
+				})
+		)
+	)
+
 const derivations = {
 	or: (l: string, r: string) => `${l}.or(${r})`,
 	and: (l: string, r: string) => `${l}.and(${r})`,
@@ -697,7 +724,8 @@ const programs = fc
 			bindings,
 			matchers,
 			sortedSiblings,
-			throughCalls
+			throughCalls,
+			throughCycle
 		),
 		{
 			minLength: 1,

@@ -69,6 +69,8 @@ const calledHoles = fromHere("calledHoles")
 
 const cycle = fromHere("cycle")
 
+const cycleFirst = fromHere("cycleFirst")
+
 const library = writeLibrary()
 
 const runPlain = (cwd: string, ...args: string[]) =>
@@ -111,6 +113,9 @@ contextualize(() => {
 
 		it("import cycle", () => {
 			attest(node(["main.ts"], {}, cycle).stdout).equals(runPlain(cycle))
+			attest(
+				node(["main.ts"], { introspection: ["json"] }, cycleFirst).stdout
+			).equals(runPlain(cycleFirst))
 		}).timeout(60000)
 
 		it("serves the modules a standalone module imports", () => {

@@ -1760,6 +1760,38 @@ const readsArguments = (fn: FunctionNode): boolean => {
 	return result
 }
 
+export const arkPackageSpecifier = /^(arktype|@ark\/schema|@ark\/util)(?:\/|$)/
+
+// esbuild and tsc erase an import whose names are only used as types, which the scope analysis gives no reference, and a re-export of only types
+export const isErased = (statement: Node, module: SourceModule): boolean =>
+	statement.type === "ImportDeclaration" ?
+		statement.specifiers.length > 0 &&
+		!statement.specifiers.some(
+			specifier =>
+				module.scopes.bindingsById.get(specifier.local)?.references.length
+		)
+	: statement.type === "ExportNamedDeclaration" ?
+		statement.exportKind === "type" ||
+		(statement.specifiers.length > 0 &&
+			statement.specifiers.every(specifier => specifier.exportKind === "type"))
+	:	statement.type === "ExportAllDeclaration" && statement.exportKind === "type"
+
+// e.g. `function f() {}` exported by a module importing another, which an import cycle can call before the module's body runs
+export const isCalledFirstByCycle = (fn: Node, module: SourceModule): boolean =>
+	fn.type === "FunctionDeclaration" &&
+	(fn.parent?.type === "ExportNamedDeclaration" ||
+		fn.parent?.type === "ExportDefaultDeclaration" ||
+		(fn.parent?.type === "Program" &&
+			!!bindingOfFunction(fn, module)?.exportNames.length)) &&
+	module.program.body.some(statement => {
+		const specifier = "source" in statement && statement.source?.value
+		return (
+			!!specifier &&
+			!arkPackageSpecifier.test(specifier) &&
+			!isErased(statement, module)
+		)
+	})
+
 export const bindingOfFunction = (
 	node: Node,
 	module: SourceModule

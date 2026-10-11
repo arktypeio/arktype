@@ -1078,6 +1078,13 @@ export class StandaloneArtifact {
 			}
 			return
 		}
+		// e.g. a helper the site calls, whose module the factory keeps and which an import cycle can leave unset
+		if (!path.length && typeof value === "function") {
+			this.checks.push(
+				`runtime.checkFunction(${expression}, ${JSON.stringify(label)})`
+			)
+			return
+		}
 		if (!hasDomain(value, "object")) {
 			if (typeof value === "symbol") {
 				throwParseError(

@@ -80,13 +80,17 @@ const bundlers = {
 		})) as Rolldown.RolldownOutput[]
 		return output[0].code
 	},
-	esbuild: async (opts?: PrecompilePluginOptions, root = app) => {
+	esbuild: async (
+		opts?: PrecompilePluginOptions,
+		root = app,
+		minify = true
+	) => {
 		const { outputFiles } = await esbuild({
 			entryPoints: [join(root, "main.ts")],
 			bundle: true,
 			write: false,
 			format: "esm",
-			minify: true,
+			minify,
 			conditions,
 			logLevel: "silent",
 			plugins: opts ? [precompile.esbuild({ ...opts, conditions })] : []
@@ -287,6 +291,11 @@ contextualize(() => {
 		it(`${name} import cycle`, async () => {
 			const cycle = fromHere("cycle")
 			attest(run(await bundle({ cwd: cycle }, cycle))).equals(runPlain(cycle))
+			// a fold the cycle runs before its module declares what it reads, which throws as arktype does where a bundle leaves that undefined
+			const first = fromHere("cycleFirst")
+			attest(
+				run(await bundle({ cwd: first, introspection: ["json"] }, first))
+			).equals(runPlain(first))
 			// a json module the cycle reaches before it runs
 			const files = Object.fromEntries(
 				readdirSync(cycle).map(file => [
@@ -338,6 +347,19 @@ export const checkedItem = JSON.stringify(itemJson())
 			).equals(runPlain(configured))
 		}).timeout(60000)
 	}
+
+	it("esbuild unminified import cycle reaching a fold first", async () => {
+		const first = fromHere("cycleFirst")
+		attest(
+			run(
+				await bundlers.esbuild(
+					{ cwd: first, introspection: ["json"] },
+					first,
+					false
+				)
+			)
+		).equals(runPlain(first))
+	}).timeout(60000)
 
 	it("vite standalone for SSR, bundling Rolldown's runtime module", async () => {
 		const config = viteConfig({})

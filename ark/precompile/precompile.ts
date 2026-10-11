@@ -60,12 +60,14 @@ import type {
 import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
+	arkPackageSpecifier,
 	bindingOfFunction,
 	contains,
 	declarationStartOf,
 	enclosingFunctionOf,
 	isArk,
 	isArkObject,
+	isErased,
 	isFunctionNode,
 	isPassiveReference,
 	memberNameOf,
@@ -2283,6 +2285,16 @@ export class Precompiler {
 				start: declaration.start,
 				end: declaration.end
 			})
+			// under `"sideEffects": false` a bundler drops the helper's module with its last read export, and an import cycle can call the site before the helper is set
+			if (!this.checkHelpers) {
+				site.inputs.push({
+					kind: "import",
+					file: root.file,
+					name: root.name,
+					path: [],
+					value
+				})
+			}
 		}
 		for (const [read, reads] of state.readsByValue) {
 			// a parameter's value is the hole arktype held in its place
@@ -2581,7 +2593,9 @@ export class Precompiler {
 		return new DynamicValue(
 			module,
 			candidate.state.node,
-			`the site reads \`${binding.name}\` (${root.module.positionOf(binding.id)}), which its module cannot import, so the site cannot compare it at creation`
+			root.readFirstBy === undefined ?
+				`the site reads \`${binding.name}\` (${root.module.positionOf(binding.id)}), which its module cannot import, so the site cannot compare it at creation`
+			:	`\`${root.readFirstBy}\` reads \`${binding.name}\` (${root.module.positionOf(binding.id)}), which an import cycle can reach before its declaration runs; export \`${binding.name}\` so the site can receive it`
 		)
 	}
 
@@ -3501,8 +3515,6 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	copies: copiesHint
 }
 
-const arkPackageSpecifier = /^(arktype|@ark\/schema|@ark\/util)(?:\/|$)/
-
 // arktype's locales, which write the errors of arktype's Types
 const localeSpecifier = /^(?:arktype|@ark\/type)\/locales(?:\/|$)/
 
@@ -3512,20 +3524,6 @@ const nodePackageSpecifier =
 
 // arktype's own packages, which read their nodes by design wherever a workspace links their source
 const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
-
-// esbuild and tsc erase an import whose names are only used as types, which the scope analysis gives no reference, and a re-export of only types
-const isErased = (statement: Node, module: SourceModule): boolean =>
-	statement.type === "ImportDeclaration" ?
-		statement.specifiers.length > 0 &&
-		!statement.specifiers.some(
-			specifier =>
-				module.scopes.bindingsById.get(specifier.local)?.references.length
-		)
-	: statement.type === "ExportNamedDeclaration" ?
-		statement.exportKind === "type" ||
-		(statement.specifiers.length > 0 &&
-			statement.specifiers.every(specifier => specifier.exportKind === "type"))
-	:	statement.type === "ExportAllDeclaration" && statement.exportKind === "type"
 
 const arktypeSpecifier =
 	/\b(?:from|import)\s*["'](?:arktype(?:\/config)?|arkregex|@ark\/(?:type|regex))["']/

@@ -300,7 +300,7 @@ const R = Q.or("undefined")`)
 			).snap([
 				"2:11 accepted { a: string }",
 				"3:15 accepted string | { a: string, b: number, d: number }",
-				"5:16 rejected\n  `Q` can be read before its declaration (/main.ts:10:7)",
+				"5:16 accepted { a: string, b: number, c: number, d: number }",
 				"5:41 accepted { a: string, b: number }",
 				"8:9 accepted { a: string, b: number, d: number }",
 				"10:11 accepted { a: string, b: number, d: number } | null",
@@ -856,6 +856,49 @@ export const T = result`)
 const [a, b = type(a)] = ["string"]
 const { c, d = type(c) } = { c: "number" } as { c: string; d?: unknown }`)
 			).snap(["2:15 accepted string", "3:16 accepted number"])
+		})
+
+		it("receives what an import cycle can reach before its declaration", () => {
+			const files = {
+				"/items.ts": `import { type } from "arktype"
+import "./main.ts"
+const M = type.module({ a: "number" })
+export const N = type.module({ a: "string" })
+export function member() { return M.a }
+export function exported() { return N.a }
+export const arrow = () => N.a`
+			}
+			const { sites } = analyze(
+				`import { type } from "arktype"
+import { arrow, exported, member } from "./items.ts"
+export function make() { return T.or("null") }
+const T = type("string")
+export const A = member()
+export const B = exported()
+export const C = arrow()
+export const D = later()
+const later = () => N.a
+import { N } from "./items.ts"`,
+				files
+			)
+			attest(
+				sites.map(site =>
+					[
+						`${site.line}:${site.column} ${site.status}`,
+						...site.reasons,
+						...site.inputs.map(
+							input => `${input.kind} ${[input.name, ...input.path].join(".")}`
+						)
+					].join("\n  ")
+				)
+			).snap([
+				"3:33 accepted\n  local T",
+				"4:11 accepted",
+				"5:18 rejected\n  `member` reads `M` (/items.ts:3:7), which an import cycle can reach before its declaration runs; export `M` so the site can receive it",
+				"6:18 accepted\n  import N.a\n  import exported",
+				"7:18 accepted\n  import arrow",
+				"8:18 accepted\n  local later\n  import N.a"
+			])
 		})
 
 		it("a site reading a Scope the build refuses", () => {

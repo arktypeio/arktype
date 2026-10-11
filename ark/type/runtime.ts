@@ -617,6 +617,14 @@ export const checkInput = (
 	}
 }
 
+export const checkFunction = (value: unknown, label: string): void => {
+	if (typeof value !== "function") {
+		throwError(
+			writeCreationMismatchMessage(label, describeValue(value), "a function")
+		)
+	}
+}
+
 // e.g. a Scope's stand-in, whose holes the factory of each Type defined in it takes
 export const holdHoles = <value extends object>(
 	value: value,
