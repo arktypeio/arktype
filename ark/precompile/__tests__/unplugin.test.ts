@@ -105,8 +105,9 @@ const run = (js: string) =>
 		encoding: "utf8"
 	}).stdout
 
+// a minified class is printed with its error's name, as `ce [ParseError]: `
 const thrownBy = (js: string) =>
-	/^\w*Error: (.*)$/m.exec(
+	/^(?:\w+ \[)?\w*Error]?: (.*)$/m.exec(
 		spawnSync(process.execPath, ["--input-type=module"], {
 			input: js,
 			encoding: "utf8"
@@ -661,6 +662,70 @@ console.log(Admin.description)
 				)
 			)
 		}
+	}).timeout(60000)
+
+	it("checks a default where arktype creates its Type, though nothing reads the Type or a site reads only its introspection", async () => {
+		const definition = `type({ a: type(["number", ":", n => n > limits.min]).default(5) })`
+		const files = {
+			// a schema the build can write without the predicate's name
+			"config.ts": `import { configure } from "arktype/config"
+
+configure({ toJsonSchema: { fallback: { predicate: ctx => ctx.base } } })
+`,
+			"limits.ts": `export const limits = { min: 0 }
+`,
+			"raise.ts": `import { limits } from "./limits.ts"
+
+limits.min = 10
+`,
+			"t.ts": `import { type } from "arktype"
+import { limits } from "./limits.ts"
+
+export const T = ${definition}
+`
+		}
+		const mains = {
+			imported: `import "./config.ts"
+import "./raise.ts"
+import { T } from "./t.ts"
+
+console.log(JSON.stringify(T.toJsonSchema()))
+`,
+			local: `import "./config.ts"
+import "./raise.ts"
+import { type } from "arktype"
+import { limits } from "./limits.ts"
+
+const T = ${definition}
+console.log(JSON.stringify(T.toJsonSchema()))
+`,
+			unread: `import "./config.ts"
+import "./raise.ts"
+import { type } from "arktype"
+import { limits } from "./limits.ts"
+
+const T = ${definition}
+console.log("unread")
+`
+		}
+		const results: Record<string, unknown> = {}
+		for (const [name, main] of Object.entries(mains)) {
+			const root = writeFixture(
+				{ ...files, "main.ts": main },
+				fromHere("temp", `defaultChecked${name}`)
+			)
+			results[name] = thrownBy(
+				await bundlers.esbuild({ cwd: root, config: "config.ts" }, root)
+			)
+		}
+		attest(results).snap({
+			imported:
+				"Default must be valid according to an anonymous predicate (was 5)",
+			local:
+				"Default must be valid according to an anonymous predicate (was 5)",
+			unread:
+				"Default must be valid according to an anonymous predicate (was 5)"
+		})
 	}).timeout(60000)
 
 	it("checks each function a definition reads where arktype would, though its Type drops it or a site reads only its introspection", async () => {

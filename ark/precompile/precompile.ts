@@ -996,7 +996,8 @@ export class Precompiler {
 					refusalsByName,
 					this.inline
 				)
-			:	{ code: "", modules: {}, folds: {} }
+			:	{ code: "", modules: {}, folds: {}, checking: [] }
+		const checking = new Set(validators.checking)
 		const specifier = `~arktype/${hashOf(validators.code)}`
 		const imported = new Set<string>()
 		// the source a site's call keeps, which still reads the bindings it holds
@@ -1034,11 +1035,12 @@ export class Precompiler {
 				(inputImports[specifier] ??= {})[name] = local
 			kept.push(...(factory?.spans ?? []))
 			passed.push(...(factory?.inputs ?? []))
-			// a bundler can drop a variable's site with the variable when nothing reads it, unless it throws
+			// a bundler can drop a variable's site with the variable when nothing reads it, unless it throws or checks
 			const isPure =
 				site.declarationStart !== undefined &&
 				!site.parseError &&
-				!site.introspection?.thrown
+				!site.introspection?.thrown &&
+				!checking.has(name)
 			// a keyword Module creates no Type until one of its members is read
 			if (isPure && !site.isKeywordRead)
 				fixedAt = Math.min(fixedAt, site.declarationStart!)
@@ -3660,7 +3662,7 @@ const writeValidators = (
 		// every export is refused, as under a configured locale
 		return writable.length ?
 				write(writable)
-			:	{ code: "", modules: {}, folds: {} }
+			:	{ code: "", modules: {}, folds: {}, checking: [] }
 	}
 }
 

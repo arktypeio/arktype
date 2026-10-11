@@ -143,9 +143,7 @@ export const schema = Length.toJsonSchema()`)
 			attest(result.code).snap(`import "arktype"
 import { f2yr47m0y316vp as $arkf2yr47m0y316vp } from "~arktype/adl7f20urcdsy"
 import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/adl7f20urcdsy"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
-$arkfixConfig()
-const Length = /* @__PURE__ */ $arkf2yr47m0y316vp(s => s.length)
+const Length = $arkf2yr47m0y316vp(s => s.length)
 export const schema = $arkf14gb4ky1hqquxy()`)
 		})
 
@@ -175,11 +173,9 @@ import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/1mouybc08rm784"
 import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/1mouybc08rm784"
 import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/1mouybc08rm784"
 import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/1mouybc08rm784"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { double } from "./containers.ts"
 import { Doubled } from "./doubled.ts"
-$arkfixConfig()
-const Length = /* @__PURE__ */ $arkf1hn2e10012161b(s => s.length)
+const Length = $arkf1hn2e10012161b(s => s.length)
 const atMost = (n: number) => n <= 10
 export const schemas = [
 	$arkf1ltp2ba0zx2cit(),
@@ -263,9 +259,9 @@ import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
 const field = (n: number) => type(\`string <= \${n}\`)
+export const A = $arkfa7m7wf09pf4az(trim)
+export const B = $arkf1mgbeg1hlx5g1(max)
 $arkfixConfig()
-export const A = /* @__PURE__ */ $arkfa7m7wf09pf4az(trim)
-export const B = /* @__PURE__ */ $arkf1mgbeg1hlx5g1(max)
 export const C = /* @__PURE__ */ $arkv1clwekn1s6e3gq()
 export const D = $ark1sve6ft0pa6e4h()
 export const E = type({ "+": "delete", "[string]": "string", a: "string.date.parse" })
@@ -339,8 +335,8 @@ export const O = $.type.or("s", "number")`)
 			attest(
 				result.code.split("\n").filter(line => line.startsWith("export"))
 			).snap([
-				"export const F = /* @__PURE__ */ $arkfh269dm1h6q2v5($, s => s)",
-				"export const O = /* @__PURE__ */ $arkfe5h3530tuatax($)"
+				"export const F = $arkfh269dm1h6q2v5($, s => s)",
+				"export const O = $arkfe5h3530tuatax($)"
 			])
 		})
 
@@ -605,21 +601,19 @@ import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/hc8dm91tzza3x"
 import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/hc8dm91tzza3x"
 import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/hc8dm91tzza3x"
 import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/hc8dm91tzza3x"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
 class Pet {}
 const petTag = Symbol("petTag")
-$arkfixConfig()
-export const Name = /* @__PURE__ */ $arkf1h9lain030c2md(trim, (s, ctx) => s.length > 0)
-export const User = /* @__PURE__ */ $arkf1uczdsm0f1mhaw(Name, Pet, petTag)
-export const Either = /* @__PURE__ */ $arkfadtawc0az5hrt(trim)
-export const Extended = /* @__PURE__ */ $arkf1xt3f6o16uszem(ext)
-export const Pair = /* @__PURE__ */ $arkf1nojioh0bjqrvh(Name, Either)
-export const Short = /* @__PURE__ */ $arkf1okx6ql1wtv9z7(Name, s => s.length < 9)
-export const Stamped = /* @__PURE__ */ $arkfaot5y01xoc4hs(() => new Date())
+export const Name = $arkf1h9lain030c2md(trim, (s, ctx) => s.length > 0)
+export const User = $arkf1uczdsm0f1mhaw(Name, Pet, petTag)
+export const Either = $arkfadtawc0az5hrt(trim)
+export const Extended = $arkf1xt3f6o16uszem(ext)
+export const Pair = $arkf1nojioh0bjqrvh(Name, Either)
+export const Short = $arkf1okx6ql1wtv9z7(Name, s => s.length < 9)
+export const Stamped = $arkfaot5y01xoc4hs(() => new Date())
 class Kitten extends Pet {}
-export const Kept = /* @__PURE__ */ $arkfuz78vg0xn6j6v(Pet, Kitten)`)
+export const Kept = $arkfuz78vg0xn6j6v(Pet, Kitten)`)
 		})
 
 		it("passes the inputs a site reads after its holes", () => {
@@ -665,7 +659,6 @@ import { fs5mhm20oegtat as $arkfs5mhm20oegtat } from "~arktype/16v9070schg5p"
 import { fwuycaw1jorjbe as $arkfwuycaw1jorjbe } from "~arktype/16v9070schg5p"
 import { f18h70z31d8anaf as $arkf18h70z31d8anaf } from "~arktype/16v9070schg5p"
 import { fhpkoym15zgexb as $arkfhpkoym15zgexb } from "~arktype/16v9070schg5p"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { max } from "./limits.ts"
 import { reboxed } from "./reboxed.ts"
 import { shape } from "./shapes.ts"
@@ -673,12 +666,11 @@ import * as limits from "./limits.ts"
 const trim = (s: string) => s.trim()
 const o = { name: "string", tags: ["string"] }
 const alias = o
-$arkfixConfig()
-export const Local = /* @__PURE__ */ $arkf1pndslh1lfvnd2(trim, o)
-export const Imported = /* @__PURE__ */ $arkfcoobse1hdwpxv(max, o)
-export const Added = /* @__PURE__ */ $arkfs5mhm20oegtat(reboxed)
-export const Defined = /* @__PURE__ */ $arkfwuycaw1jorjbe(process.env.NODE_ENV)
-export const Namespaced = /* @__PURE__ */ $arkf18h70z31d8anaf(limits.boxed)
+export const Local = $arkf1pndslh1lfvnd2(trim, o)
+export const Imported = $arkfcoobse1hdwpxv(max, o)
+export const Added = $arkfs5mhm20oegtat(reboxed)
+export const Defined = $arkfwuycaw1jorjbe(process.env.NODE_ENV)
+export const Namespaced = $arkf18h70z31d8anaf(limits.boxed)
 const box = shape
 export const Imports = ((shape: number) => $arkfhpkoym15zgexb($arki1rnr3cp0ewvqsd, box))(1)
 export const Shadowed = (() => {
@@ -761,7 +753,6 @@ import { f15on17z0md0pi6 as $arkf15on17z0md0pi6 } from "~arktype/1qgxsdy1pu3f6b"
 import { f1rkl43l16h747g as $arkf1rkl43l16h747g } from "~arktype/1qgxsdy1pu3f6b"
 import { fk4dreo1vs7gyk as $arkfk4dreo1vs7gyk } from "~arktype/1qgxsdy1pu3f6b"
 import $arkrhchbs1xkut83 from "~arktype/o94jis1u2oxph"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { extend } from "./extend.ts"
 const isZero = (n: number) => n === 0
 class Cat {}
@@ -772,13 +763,12 @@ export const Anonymous = type("1").narrow(n => n === 0)
 export const Both = type.instanceOf(Dog).and(type.instanceOf(Cat))
 export const Unrelated = $arkhhfme10rgsm2a()
 const isNegative = (n: number) => n < 0
-$arkfixConfig()
-const Negative = /* @__PURE__ */ $arkfi32fv11rij4as(isNegative)
-const DogT = /* @__PURE__ */ $arkfge601l1l8djke(Dog)
-const CatT = /* @__PURE__ */ $arkf15on17z0md0pi6(Cat)
+const Negative = $arkfi32fv11rij4as(isNegative)
+const DogT = $arkfge601l1l8djke(Dog)
+const CatT = $arkf15on17z0md0pi6(Cat)
 const fns = { f: (s: string) => s.length, g: (s: string) => s.trim() }
-const M1 = /* @__PURE__ */ $arkf1rkl43l16h747g(fns.f)
-const M2 = /* @__PURE__ */ $arkfk4dreo1vs7gyk(fns.g)
+const M1 = $arkf1rkl43l16h747g(fns.f)
+const M2 = $arkfk4dreo1vs7gyk(fns.g)
 export const Referenced = type("1").and(Negative)
 export const BothReferenced = DogT.and(CatT)
 export const Morphs = M1.and(M2)
@@ -823,14 +813,12 @@ export default (def: string) => def`,
 import { f13yfk091jb2s9c as $arkf13yfk091jb2s9c } from "~arktype/1shrwip011gg6u"
 import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/1shrwip011gg6u"
 import { f1t2p9ht1hshs19 as $arkf1t2p9ht1hshs19 } from "~arktype/1shrwip011gg6u"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import single, { list } from "./helpers.ts"
 import * as helpers from "./helpers.ts"
 const own = (def: string) => list(def)
-$arkfixConfig()
-export const List = /* @__PURE__ */ $arkf13yfk091jb2s9c(list)
-export const Own = /* @__PURE__ */ $arkf1mgbeg1hlx5g1(list)
-export const Optional = /* @__PURE__ */ $arkf1t2p9ht1hshs19(helpers.optional, $arkinfk34400tx9ll)
+export const List = $arkf13yfk091jb2s9c(list)
+export const Own = $arkf1mgbeg1hlx5g1(list)
+export const Optional = $arkf1t2p9ht1hshs19(helpers.optional, $arkinfk34400tx9ll)
 export const Single = type(single("string"))
 import { suffix as $arkinfk34400tx9ll } from "./suffix.ts"`)
 			attest(build("/helpers.ts", true).code)
@@ -862,15 +850,13 @@ export const Checked = type({ a: type("string").narrow(other.check), b: type("st
 import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/294t6z0c9v38h"
 import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/294t6z0c9v38h"
 import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/294t6z0c9v38h"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { a } from "./a.ts"
 import { alias } from "./b.ts"
 const fns = { check: (s: string) => s.length > 3 }
 const other = { check: fns.check }
-$arkfixConfig()
-const Name = /* @__PURE__ */ $arkf1c4gvm01nuxz5(fns.check)
-export const Aliased = /* @__PURE__ */ $arkfos9smi09rf17b(a, alias)
-export const Checked = /* @__PURE__ */ $arkfel68or0or1ja7(other.check, fns.check, Name)`)
+const Name = $arkf1c4gvm01nuxz5(fns.check)
+export const Aliased = $arkfos9smi09rf17b(a, alias)
+export const Checked = $arkfel68or0or1ja7(other.check, fns.check, Name)`)
 			attest(
 				result.modules[Object.keys(result.modules)[0]].match(
 					/runtime\.checkIdentity\(.*\)/g
@@ -1022,12 +1008,10 @@ export const In = type({ a: T.in })`
 import { f1bg5ghg1udq2qc as $arkf1bg5ghg1udq2qc } from "~arktype/v09qqi0dn6wyc"
 import { fnlxeht0j9hv9h as $arkfnlxeht0j9hv9h } from "~arktype/v09qqi0dn6wyc"
 import { fe5h3530tuatax as $arkfe5h3530tuatax } from "~arktype/v09qqi0dn6wyc"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 const tag = Symbol("tag")
-$arkfixConfig()
-const T = /* @__PURE__ */ $arkf1bg5ghg1udq2qc(tag)
-export const Union = /* @__PURE__ */ $arkfnlxeht0j9hv9h(T)
-export const In = /* @__PURE__ */ $arkfe5h3530tuatax(T)`)
+const T = $arkf1bg5ghg1udq2qc(tag)
+export const Union = $arkfnlxeht0j9hv9h(T)
+export const In = $arkfe5h3530tuatax(T)`)
 		})
 
 		it("passes a read only through a text meaning the same at the site", () => {
@@ -1061,23 +1045,21 @@ import { fue93h80tgxvhc as $arkfue93h80tgxvhc } from "~arktype/1lm9ib60gehewa"
 import { fvuztpd0flqkce as $arkfvuztpd0flqkce } from "~arktype/1lm9ib60gehewa"
 import { f1pp1bhu1wky3z8 as $arkf1pp1bhu1wky3z8 } from "~arktype/1lm9ib60gehewa"
 import { f1vcmva31ng9y85 as $arkf1vcmva31ng9y85 } from "~arktype/1lm9ib60gehewa"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 const isLong = (s: string) => s.length > 1
 const isShort = (s: string) => s.length < 3
 const h = isLong
 const fns = { isLong }
 const shorts = () => [isShort]
-$arkfixConfig()
-const Long = /* @__PURE__ */ $arkfgxncna0e0vtuy(isLong)
-const N = /* @__PURE__ */ $arkfue93h80tgxvhc(isShort)
+const Long = $arkfgxncna0e0vtuy(isLong)
+const N = $arkfue93h80tgxvhc(isShort)
 const longs = () => [Long]
-export const Mapped = /* @__PURE__ */ $arkfvuztpd0flqkce(isLong)
+export const Mapped = $arkfvuztpd0flqkce(isLong)
 export const Shadowed = type([type("string").narrow(h), ...shorts().map(h => type("string").narrow(h))] as never)
 export const Renamed = type(Object.values(fns).map(h => type("string").narrow(h)) as never)
 export const Through = type(longs().map(N => type({ n: N })) as never)
 export const Either = type(shorts().map(h => type("string").narrow(h || isLong)) as never)
-export const Own = /* @__PURE__ */ $arkf1pp1bhu1wky3z8(function (this: unknown, s) { return s.length > 1 && !this })
-export const OwnFirst = /* @__PURE__ */ $arkf1vcmva31ng9y85(function (this: unknown, s) { return this === undefined && s.length > 1 })`)
+export const Own = $arkf1pp1bhu1wky3z8(function (this: unknown, s) { return s.length > 1 && !this })
+export const OwnFirst = $arkf1vcmva31ng9y85(function (this: unknown, s) { return this === undefined && s.length > 1 })`)
 		})
 
 		it("passes each function one expression created", () => {
@@ -1089,10 +1071,8 @@ export const T = type("string").narrow(longer(3)).narrow(longer(1))`
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
 import { farwx4t08ya85o as $arkfarwx4t08ya85o } from "~arktype/1r3dww71oo7yer"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 const longer = (n: number) => (s: string) => s.length > n
-$arkfixConfig()
-export const T = /* @__PURE__ */ $arkfarwx4t08ya85o(longer(3), longer(1))`)
+export const T = $arkfarwx4t08ya85o(longer(3), longer(1))`)
 		})
 
 		it("shares a table between factories arktype returned one Type for", () => {
@@ -1156,7 +1136,7 @@ const trim = (s: string) => s.trim()
 $arkfixConfig()
 const A = /* @__PURE__ */ $arkvq10hui17onwk2()
 const B = /* @__PURE__ */ $arkv1oigsr31najz55()
-const Trimmed = /* @__PURE__ */ $arkfd9jxkn0kakf0g(trim)
+const Trimmed = $arkfd9jxkn0kakf0g(trim)
 const first = () => A
 const second = () => B
 const trimmed = () => Trimmed
@@ -1192,8 +1172,7 @@ export const Team = type({ lead: User })`
 				"~arktype/domainbcg75e01r23h7",
 				"~arktype/domain1e538rs0wc05np",
 				"~arktype/buildhpzrlg0i8pszw",
-				"~arktype/intersectionxf7vnb0owa73y",
-				"~arktype/1c1qm3a0f4lqlh"
+				"~arktype/intersectionxf7vnb0owa73y"
 			])
 		})
 
@@ -1241,10 +1220,10 @@ export const B = $.type({ b: "a" })`,
 			attest(
 				result.code.split("\n").filter(line => line.startsWith("export"))
 			).snap([
-				"export const Held = /* @__PURE__ */ $arkf1k0gu4008rxk37(trim)",
-				"export const Read = /* @__PURE__ */ $arkf31x3lt13lnlin(max)",
-				"export const $ = /* @__PURE__ */ $arkf16tqm51d9mp98(trim)",
-				"export const B = /* @__PURE__ */ $arkf1tiybtv1jozo2t($)"
+				"export const Held = $arkf1k0gu4008rxk37(trim)",
+				"export const Read = $arkf31x3lt13lnlin(max)",
+				"export const $ = $arkf16tqm51d9mp98(trim)",
+				"export const B = $arkf1tiybtv1jozo2t($)"
 			])
 		})
 
@@ -1258,9 +1237,9 @@ export const B = $.type({ b: "s" })`)
 			attest(
 				result.code.split("\n").filter(line => line.startsWith("export"))
 			).snap([
-				"export const $ = /* @__PURE__ */ $arkfum7tro1c6fvs1(trim)",
-				"export const A = /* @__PURE__ */ $arkf1mrbczv1xkyq28(0, $)",
-				"export const B = /* @__PURE__ */ $arkf1mrbczv1xkyq28(1, $)"
+				"export const $ = $arkfum7tro1c6fvs1(trim)",
+				"export const A = $arkf1mrbczv1xkyq28(0, $)",
+				"export const B = $arkf1mrbczv1xkyq28(1, $)"
 			])
 		})
 
@@ -1272,7 +1251,7 @@ export const make = () => type.fn("string")(s => s)`)
 			attest(
 				result.code.split("\n").filter(line => line.startsWith("export"))
 			).snap([
-				"export const len = /* @__PURE__ */ $arkfogqwaj0g9p34d(s => s.length)",
+				"export const len = $arkfogqwaj0g9p34d(s => s.length)",
 				"export const make = () => $arkfrfrs4g1hn9fdv(s => s)"
 			])
 		})

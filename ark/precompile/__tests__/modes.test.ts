@@ -113,7 +113,7 @@ console.log(JSON.stringify([
 	...[...Object.values(modules).join("\\n").matchAll(/runtime\\.throwUnbaked\\((".*?[^\\\\]")\\)/g)].map(([, reason]) => JSON.parse(reason))
 ]))`)
 			).snap([
-				"export const schema = /* @__PURE__ */ $ark($ark)",
+				"export const schema = $ark($ark)",
 				"a JSON Schema whose configured writer the build can't evaluate can't be precompiled to a standalone validator: arktype calls `date` (/config.ts:3:109) while defining the type, so it must be a static helper: `date` (/config.ts:3:109) is not a static helper: its body is not one expression or one `return`",
 				"a JSON Schema whose configured writer reads `shared.version`, which the program can change, can't be precompiled to a standalone validator"
 			])

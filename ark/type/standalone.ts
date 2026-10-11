@@ -209,6 +209,8 @@ export interface StandaloneModules {
 	modules: Record<string, string>
 	// each folded factory whose function others share, as the name that function is exported by and the index a call passes it
 	folds: Record<string, [name: string, index: number]>
+	// each export whose call checks anything as it creates its value, so a bundler mustn't drop it
+	checking: string[]
 }
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
@@ -224,7 +226,8 @@ export const precompileStandalone = (
 ): StandaloneModules => {
 	const shared: Record<string, SharedModule> = {}
 	const folds: StandaloneModules["folds"] = {}
-	const sections = writeArtifact(exports, opts, shared, {}, folds)
+	const checking: string[] = []
+	const sections = writeArtifact(exports, opts, shared, {}, folds, checking)
 	return {
 		code: writeSections([
 			runtimeImport,
@@ -233,7 +236,8 @@ export const precompileStandalone = (
 			...sections
 		]),
 		modules: {},
-		folds
+		folds,
+		checking
 	}
 }
 
@@ -245,7 +249,15 @@ export const precompileStandaloneModules = (
 	const shared: Record<string, SharedModule> = {}
 	const imports: Record<string, string[]> = {}
 	const folds: StandaloneModules["folds"] = {}
-	const sections = writeArtifact(exports, opts, shared, imports, folds)
+	const checking: string[] = []
+	const sections = writeArtifact(
+		exports,
+		opts,
+		shared,
+		imports,
+		folds,
+		checking
+	)
 	// imported first, so the runtime's version is checked before anything is created
 	const entry = writeSections([runtimeImport, entryCheck])
 	const entrySpecifier = `~arktype/entry${hashOf(entry)}`
@@ -266,7 +278,8 @@ export const precompileStandaloneModules = (
 			...sections
 		]),
 		modules,
-		folds
+		folds,
+		checking
 	}
 }
 
@@ -275,7 +288,8 @@ const writeArtifact = (
 	opts: StandaloneOptions,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>,
-	folds: StandaloneModules["folds"]
+	folds: StandaloneModules["folds"],
+	checking: string[]
 ): string[] => {
 	const { configured } = opts
 	const baking: Baking = {
@@ -291,6 +305,7 @@ const writeArtifact = (
 	>()
 	const factories: (string | (() => string))[] = []
 	const tables = new Set<number>()
+	const artifactsByName = new Map<string, StandaloneArtifact>()
 	// a trial write, adding nothing to the artifact, tells whether a factory's Type has code holding nothing the factory receives
 	const canFold = (
 		name: string,
@@ -331,6 +346,7 @@ const writeArtifact = (
 				baking,
 				value
 			)
+			artifactsByName.set(name, artifact)
 			factories.push(
 				artifact.writeIntrospection(value, index, configured),
 				writeExport(name, index)
@@ -345,6 +361,7 @@ const writeArtifact = (
 				baking,
 				factory
 			)
+			artifactsByName.set(name, artifact)
 			artifact.receiveAll()
 			// a factory whose Type is written once with the creations, which each call copies with what it receives
 			if (canFold(name, factory)) {
@@ -399,7 +416,7 @@ ${artifact.writeRekeying(fold ? `${creation}[index]` : readOf(creation, position
 
 ${writeExport(name, index)}`
 	}
-	return [
+	const sections = [
 		...creations,
 		// created at a factory's first call, which an import cycle can reach before the artifact's body runs
 		[...tables].map(table => `var interned${table}`).join("\n"),
@@ -407,6 +424,9 @@ ${writeExport(name, index)}`
 			typeof factory === "string" ? factory : factory()
 		)
 	]
+	for (const [name, artifact] of artifactsByName)
+		if (artifact.checksAtCreation) checking.push(name)
+	return sections
 }
 
 interface Creation {
@@ -724,6 +744,15 @@ export class StandaloneArtifact {
 			)
 				this.objectUnits.add(node.unit)
 		}
+	}
+
+	// a call selecting a variant checks the functions it receives too
+	get checksAtCreation(): boolean {
+		return (
+			this.selection !== undefined ||
+			this.checks.length > 0 ||
+			this.defaultChecks.length > 0
+		)
 	}
 
 	receiveAll(): void {
