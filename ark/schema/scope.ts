@@ -357,22 +357,33 @@ export type PrecompiledUnit = [
 const precompiledUnits: Record<string, PrecompiledUnit> = Object.create(null)
 
 // assigned on registration, so a bundle that registers no units leaves binding them out
-let bindPrecompiledUnit: ((root: BaseRoot) => boolean) | undefined
+let bindPrecompiledUnits: ((roots: readonly unknown[]) => void) | undefined
+
+// a key starts with its root's number of references, which a root reads without hashing its content
+const registeredSizes = new Set<string>()
 
 export const registerPrecompiledUnits = (
 	units: Record<string, PrecompiledUnit>
 ): void => {
 	Object.assign(precompiledUnits, units)
-	bindPrecompiledUnit = bindRegisteredUnit
+	for (const key in units) registeredSizes.add(key.slice(0, key.indexOf("_")))
+	bindPrecompiledUnits = bindRegisteredUnits
 }
 
-const bindRegisteredUnit = (root: BaseRoot): boolean => {
-	// a cyclic unit keys its resolutions by node id
-	const precompiled =
-		root.includesAlias ? undefined : precompiledUnits[precompiledKeyOf(root)]
-	if (!precompiled) return false
-	bindPrecompiled(root, precompiled)
-	return true
+// a bound root binds the roots its unit calls, so the largest are bound first and need the fewest keys
+const bindRegisteredUnits = (values: readonly unknown[]): void => {
+	const sized: [root: BaseRoot, size: string][] = []
+	for (const value of values) {
+		// a cyclic unit keys its resolutions by node id
+		if (hasArkKind(value, "root") && !value.includesAlias)
+			sized.push([value, sizeOf(value)])
+	}
+	sized.sort((l, r) => +r[1] - +l[1])
+	for (const [root, size] of sized) {
+		if (root.compiledUnit || !registeredSizes.has(size)) continue
+		const precompiled = precompiledUnits[precompiledKeyOf(root)]
+		if (precompiled) bindPrecompiled(root, precompiled)
+	}
 }
 
 const bindPrecompiled = (
@@ -408,18 +419,29 @@ const forEachElement = (value: unknown, f: (value: unknown) => void): void => {
 // built when a root is first keyed, so a bundle that registers no units leaves it out
 let constantNames: Map<unknown, string> | undefined
 
+const sizeOf = (root: BaseRoot): string =>
+	`${Object.keys(root.referencesById).length}`
+
 // compiling reads each function's arity and whether the set engine is installed, neither in the hash
 const precompiledKeyOf = (root: BaseRoot): string => {
+	// a child the hash leaves out, like an empty structure, is still compiled and bound
+	let childCounts = ""
+	for (const id in root.referencesById)
+		childCounts += `${root.referencesById[id].children.length},`
+	const content =
+		root.hash.includes(`"$ark.`) ? keyRegisteredNames(root) : root.hash
+	return `${sizeOf(root)}_${hashOf(`${content}\n${childCounts}\n${$ark.sets !== undefined}`)}`
+}
+
+// a registered name's count depends on what was registered before, and a function's name on whether it was minified
+const keyRegisteredNames = (root: BaseRoot): string => {
 	constantNames ??= new Map(
 		Object.entries(unitConstants).map(([name, value]) => [value, name])
 	)
 	// a unit binds a constant it holds as the constant, so only a root holding that constant can share it
 	const kindsByName: Record<string, string> = Object.create(null)
-	// a child the hash leaves out, like an empty structure, is still compiled and bound
-	let childCounts = ""
 	for (const id in root.referencesById) {
 		const node = root.referencesById[id]
-		childCounts += `${node.children.length},`
 		for (const k in node.inner) {
 			forEachElement((node.inner as Dict)[k], value => {
 				const constant = constantNames!.get(value)
@@ -432,15 +454,13 @@ const precompiledKeyOf = (root: BaseRoot): string => {
 			})
 		}
 	}
-	// a registered name's count depends on what was registered before, and a function's name on whether it was minified
 	const keysByName: Record<string, string> = {}
 	let nameCount = 0
-	const content = root.hash.replace(
+	return root.hash.replace(
 		/(?<!\\)"\$ark\.([\w$]+)"/g,
 		(_, name: string) =>
 			`"${(keysByName[name] ??= `${kindsByName[name] ?? name.replace(/\$[1-9]\d*$/, "")}#${nameCount++}`)}"`
 	)
-	return hashOf(`${content}\n${childCounts}\n${$ark.sets !== undefined}`)
 }
 
 const precompileReferences = (
@@ -1607,10 +1627,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 			if (!this.lazyExports) {
 				this.references = referencesThroughAliases(this.references)
 				let uncompiled = this.references
-				if (bindPrecompiledUnit) {
-					// a root a registered unit holds binds it, so the scope's unit compiles only the rest
-					for (const node of uncompiled)
-						if (node.isRoot() && !node.compiledUnit) bindPrecompiledUnit(node)
+				if (bindPrecompiledUnits) {
+					// an exported root binds the nodes its unit holds, so the scope's unit compiles only the rest
+					bindPrecompiledUnits(Object.values(this._exportedResolutions))
 					uncompiled = uncompiled.filter(node => !node.compiledUnit)
 				}
 				if (uncompiled.length && !this.resolvedConfig.jitless)
@@ -1761,13 +1780,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 			node.includesAlias ?
 				referencesThroughAliases(node.references)
 			:	node.references
-		if (
-			!node.compiledUnit &&
-			jit &&
-			!bindPrecompiledUnit?.(node) &&
-			!this.resolvedConfig.jitless
-		)
-			precompile(references)
+		if (!node.compiledUnit && jit) {
+			bindPrecompiledUnits?.([node])
+			if (!node.compiledUnit && !this.resolvedConfig.jitless)
+				precompile(references)
+		}
 		return node
 	}
 
