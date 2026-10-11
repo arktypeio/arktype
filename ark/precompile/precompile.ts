@@ -264,7 +264,7 @@ export interface Diagnostic {
 	column: number
 	message: string
 	reasons: string[]
-	hint: string | undefined
+	hint?: string | undefined
 }
 
 // a package arktype runs on, whose classes and registry a program must load once
@@ -711,7 +711,8 @@ export class Precompiler {
 					fingerprintOf(evaluated.value ?? {})
 				:	undefined,
 			problem,
-			reasons: evaluated ? evaluated.reasons : []
+			reasons: evaluated ? evaluated.reasons : [],
+			hint: evaluated?.hint
 		}
 		if (applied) {
 			// e.g. the config module as a plugin ahead of arktype's transpiled it, which configures what its file does
@@ -1839,7 +1840,15 @@ export class Precompiler {
 						...configuration.reasons
 					]
 					diagnostics.push(
-						this.diagnostic(module, node, "R3", "error", message, refusal)
+						this.diagnostic(
+							module,
+							node,
+							"R3",
+							"error",
+							message,
+							refusal,
+							configuration.hint
+						)
 					)
 					sites.push(refuse(site, [message, ...refusal]))
 					continue
@@ -2701,9 +2710,9 @@ export class Precompiler {
 					`configure() is called outside the config module ${this.graph.pathOf(this.config)}`
 				: i > 0 ? "configure() is called more than once"
 				: undefined
-			const { problem, reasons } =
+			const { problem, reasons, hint } =
 				misplaced ?
-					{ problem: misplaced, reasons: [] }
+					{ problem: misplaced, reasons: [], hint: undefined }
 				:	(this.configuration ??
 					this.evaluateConfiguration(
 						calls[i],
@@ -2718,7 +2727,8 @@ export class Precompiler {
 						"R3",
 						this.rejectionSeverity,
 						problem,
-						reasons
+						reasons,
+						hint
 					)
 				)
 			}
@@ -2730,9 +2740,9 @@ export class Precompiler {
 		call: CallExpression,
 		module: SourceModule,
 		modules: string[]
-	): Pick<Configuration, "problem" | "reasons"> & { value: unknown } {
+	): Pick<Configuration, "problem" | "reasons" | "hint"> & { value: unknown } {
 		// the program may run a call elsewhere later or not at all, though the build applies it before any site
-		if (!isTopLevelStatement(call)) {
+		if (!runsOnceAtLoad(call)) {
 			return {
 				value: undefined,
 				problem:
@@ -2762,7 +2772,7 @@ export class Precompiler {
 			objects.add(o)
 			if (o instanceof ModuleNamespace) {
 				result.push(
-					"a namespace import used as a value is not in the static subset: import what it exports by name"
+					"a namespace import used as a value is not in the static subset: import what it exports by name, or declare an object it exports in the call"
 				)
 			}
 			if (!isPlainContainer(o)) return
@@ -2802,7 +2812,9 @@ export class Precompiler {
 			value: value.value,
 			problem:
 				result.length ? `${module.snippetOf(call)} is not static` : undefined,
-			reasons: result
+			reasons: result,
+			// each reason but an unknown value's or a define's says how to fix it
+			hint: dynamic || define || !result.length ? undefined : ""
 		}
 	}
 
@@ -2822,7 +2834,7 @@ export class Precompiler {
 				:	[]
 			if (path && objects.has(value)) {
 				result.add(
-					`\`${name}\` is exported from ${path}, so another module can write what the configuration holds: spread a copy of it into the call instead`
+					`\`${name}\` is exported from ${path}, so another module can write what the configuration holds: declare it in the call instead`
 				)
 			}
 		}
@@ -2835,7 +2847,7 @@ export class Precompiler {
 					this.writeInto(reference.id, module, o => objects.has(o)) ?? []
 				if (write) {
 					result.add(
-						`\`${module.snippetOf(write)}\` (${module.positionOf(write)}) writes what the configuration holds`
+						`\`${module.snippetOf(write)}\` (${module.positionOf(write)}) writes what the configuration holds: declare the value in the call instead`
 					)
 				}
 			}
@@ -3353,6 +3365,8 @@ interface Configuration {
 	// why the configure() call can't be applied, reported where the config module is precompiled
 	problem: string | undefined
 	reasons: string[]
+	// "" where the reasons say how to fix them, as the rule's hint would
+	hint?: string | undefined
 }
 
 let threadConfiguration: Configuration | undefined
@@ -3851,7 +3865,7 @@ const rejectSite = (site: Site, dynamic: DynamicValue): Site =>
 	refuse(site, chainOf(dynamic))
 
 // e.g. `configure(...)`, `export const config = configure(...)` or `export default configure(...)`, which the program runs once as it loads
-const isTopLevelStatement = (call: Node): boolean => {
+const runsOnceAtLoad = (call: Node): boolean => {
 	let statement = operatorOf(call)[1]
 	if (statement?.type === "UnaryExpression" && statement.operator === "void")
 		statement = operatorOf(statement)[1]

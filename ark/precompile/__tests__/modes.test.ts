@@ -294,7 +294,7 @@ written.description = "two"`,
 					{ config: "/main.ts" }
 				)
 			).snap([
-				'/main.ts:4:1  configure({ keywords: { string: written, number: shared, bo… is not static\n  `shared` is exported from /shared.ts, so another module can write what the configuration holds: spread a copy of it into the call instead\n  `written.description = "two"` (/main.ts:5:1) writes what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+				'/main.ts:4:1  configure({ keywords: { string: written, number: shared, bo… is not static\n  `shared` is exported from /shared.ts, so another module can write what the configuration holds: declare it in the call instead\n  `written.description = "two"` (/main.ts:5:1) writes what the configuration holds: declare the value in the call instead'
 			])
 		})
 
@@ -319,10 +319,10 @@ console.log(JSON.stringify(precompiler.precompile(given, "/config.ts").diagnosti
 				)
 			).snap([
 				[
-					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds: spread a copy of it into the call instead\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds: declare it in the call instead"
 				],
 				[
-					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds: spread a copy of it into the call instead\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+					"/config.ts:3:1  configure({ keywords: { string: table.string } }) is not static\n  `table` is exported from /mode.ts, so another module can write what the configuration holds: declare it in the call instead"
 				]
 			])
 		}).timeout(60000)
@@ -344,8 +344,8 @@ ${call}`,
 					)
 				)
 			).snap([
-				"/main.ts:3:1  configure(kw) is not static\n  a namespace import used as a value is not in the static subset: import what it exports by name\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
-				"/main.ts:3:1  configure({ keywords: kw }) is not static\n  a namespace import used as a value is not in the static subset: import what it exports by name\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+				"/main.ts:3:1  configure(kw) is not static\n  a namespace import used as a value is not in the static subset: import what it exports by name, or declare an object it exports in the call",
+				"/main.ts:3:1  configure({ keywords: kw }) is not static\n  a namespace import used as a value is not in the static subset: import what it exports by name, or declare an object it exports in the call",
 				"/main.ts:3:1  configure({ ...kw }) is not static\n  `...kw` spreads a value other than an object literal or Module\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
 		})
@@ -381,7 +381,7 @@ export const later = () => {
 					{ config: "/main.ts" }
 				)
 			).snap([
-				'/main.ts:2:16  configure({ keywords: { string: { description: "one" } } }) is not static\n  `config.keywords.string.description = "two"` (/main.ts:4:2) writes what the configuration holds\n  `config.keywords.number = "a number"` (/main.ts:5:2) writes what the configuration holds\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+				'/main.ts:2:16  configure({ keywords: { string: { description: "one" } } }) is not static\n  `config.keywords.string.description = "two"` (/main.ts:4:2) writes what the configuration holds: declare the value in the call instead\n  `config.keywords.number = "a number"` (/main.ts:5:2) writes what the configuration holds: declare the value in the call instead'
 			])
 		})
 
@@ -439,7 +439,7 @@ configure({
 					{ config: "/main.ts" }
 				)
 			).snap([
-				"/main.ts:3:1  configure({ keywords: { string: { custom: { [local]: 1, [Sy… is not static\n  the symbol key Symbol(local) at /main.ts:2:15 must be a string or one Symbol.for() returns, since the runtime can't match another with the build's\n  the symbol key Symbol(Symbol.iterator) at /main.ts:5:13 must be a string or one Symbol.for() returns, since the runtime can't match another with the build's\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				"/main.ts:3:1  configure({ keywords: { string: { custom: { [local]: 1, [Sy… is not static\n  the symbol key Symbol(local) at /main.ts:2:15 must be a string or one Symbol.for() returns, since the runtime can't match another with the build's\n  the symbol key Symbol(Symbol.iterator) at /main.ts:5:13 must be a string or one Symbol.for() returns, since the runtime can't match another with the build's"
 			])
 		})
 
@@ -466,7 +466,7 @@ configure({ domain: { description: describe } })`,
 					{ config: "/main.ts" }
 				)
 			).snap([
-				"/main.ts:6:1  configure({ domain: { description: describe } }) is not static\n  the description writer at /main.ts:2:18 must be a static helper, since arktype calls it while defining types\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				"/main.ts:6:1  configure({ domain: { description: describe } }) is not static\n  the description writer at /main.ts:2:18 must be a static helper, since arktype calls it while defining types"
 			])
 			attest(
 				diagnosticsOf(
@@ -481,7 +481,7 @@ configure({ number: meta, bigint: meta })`,
 					{ config: "/main.ts" }
 				)
 			).snap([
-				"/main.ts:7:1  configure({ number: meta, bigint: meta }) is not static\n  the description writer at /main.ts:2:18 must be a static helper, since arktype calls it while defining types\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				"/main.ts:7:1  configure({ number: meta, bigint: meta }) is not static\n  the description writer at /main.ts:2:18 must be a static helper, since arktype calls it while defining types"
 			])
 		})
 

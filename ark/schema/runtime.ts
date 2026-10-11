@@ -272,7 +272,7 @@ export const shareConfig = (
 }
 
 export const configuredUnlikeBuildMessage =
-	"configure() receives other values than its build precompiled under, as when a loader or plugin changes a module the configuration reads, so the build's Types can't run under it"
+	"configure() receives other values than its build precompiled under, as when a loader or plugin changes a module the configuration reads: precompile after it"
 
 export type configuredUnlikeBuildMessage = typeof configuredUnlikeBuildMessage
 
