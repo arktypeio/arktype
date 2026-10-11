@@ -223,6 +223,20 @@ other must be a string (was a bigint)`)
 		}
 	})
 
+	it("checks keys against a signature reading ctx that another Type compiled first", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const K = $.type("string").narrow(
+				(s, ctx) => s.length > 5 || ctx.mustBe("long")
+			)
+			const T = $.type({ a: "number" }).and($.type.Record(K, "string"))
+			attest(T.allows({ a: 1, ab: 2, abcdefg: "x" })).equals(true)
+			attest(T({ a: 1, abcdefg: 2 }).toString()).snap(
+				"abcdefg must be a string (was a number)"
+			)
+		}
+	})
+
 	it("intersction with right required", () => {
 		const T = type({ "a?": "true" }).and({ a: "boolean" })
 		attest<{ a: true }>(T.infer)

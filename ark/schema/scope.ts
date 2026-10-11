@@ -583,17 +583,18 @@ class TraversalCompiler extends NodeCompiler {
 	}
 
 	override invoke(node: BaseNode, opts?: InvokeOptions): string {
-		const reference = this.linkage.referencesById[node.id]
-		if (!reference) {
+		if (!this.linkage.referencesById[node.id]) {
 			this.linkage.referencesById[node.id] = node
 			this.linkage.reached.push(node)
-		} else if (this.linkage.unreached.delete(reference))
-			this.linkage.reached.push(reference)
+		}
 		return super.invoke(node, opts)
 	}
 
+	// a unit declares each node its code names, as by the Allows it passes where it checks the node in a branch, unless it reuses another unit's
 	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		const reference = this.linkage.referencesById[id]
+		if (reference && this.linkage.unreached.delete(reference))
+			this.linkage.reached.push(reference)
 		if (reference && this.linkage.reused.has(reference)) {
 			const kind = opts?.kind ?? this.traversalKind
 			this.linkage.dependencies[`${this.nameOf(id)}${kind}`] = [reference, kind]
