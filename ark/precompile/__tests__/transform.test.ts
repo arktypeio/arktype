@@ -958,7 +958,7 @@ export function scoped(fn: (...args: any[]) => boolean) {
 }`).diagnostics.map(diagnostic => diagnostic.reasons)
 			).snap([
 				[
-					"the definition can't be precompiled for every parameter count of the function `fn` holds: for one of no parameters, arktype holds `fn` as a value rather than a definition, so it must be static; `fn` is a parameter of scoped (/main.ts:2:24); its value is known only at runtime"
+					"the definition can't be precompiled for every parameter count of the function `fn` holds: for one of no parameters, the build can't tell how a Scope holds `fn` before arktype resolves its aliases; `fn` is a parameter of scoped (/main.ts:2:24); its value is known only at runtime"
 				],
 				["`$` is the Scope at /main.ts:3:12, which the build refuses"]
 			])

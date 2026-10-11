@@ -2577,7 +2577,13 @@ export class Precompiler {
 			return new DynamicValue(
 				origin,
 				node,
-				`arktype holds \`${origin.snippetOf(node)}\` as a value rather than a definition, so it must be static`,
+				// a Scope parses an alias only once a definition resolves it
+				(
+					hasArkKind(candidate.state.value, "scope") &&
+					this.interpreter.holesIn(candidate.state.value).has(value)
+				) ?
+					`the build can't tell how a Scope holds \`${origin.snippetOf(node)}\` before arktype resolves its aliases`
+				:	`arktype holds \`${origin.snippetOf(node)}\` as a value rather than a definition, so it must be static`,
 				standIn.dynamic
 			)
 		}
