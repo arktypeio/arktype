@@ -1247,8 +1247,15 @@ export class Interpreter {
 				(this.sitesByNode.get(init) ??
 				this.sitesByNode.get(unwrapExpression(init)))
 			:	undefined
-		if (comparesAtCreation(trace)) this.comparedAtCreation.add(value as object)
-		const checks = this.checksAtCreation({ value, trace }, site, module)
+		const compares = trace.reads.some(
+			read => read.root.kind === "binding" || !isArkValue(read.value)
+		)
+		if (compares) this.comparedAtCreation.add(value as object)
+		// a default's check calls the functions it reads as the value is created, the module's own too, as its factory does
+		const checks =
+			compares ||
+			!!site?.reached.some(reached => reached.length === 3) ||
+			this.checksHolesOf(value, site, module)
 		const isOnce = !!init && declarationStartOf(init) !== undefined
 		const values = [value]
 		// e.g. a Module's Types, which its creation created
@@ -1264,20 +1271,6 @@ export class Interpreter {
 		}
 	}
 
-	// a default's check calls the functions it reads as the value is created, the module's own too, as its factory does
-	checksAtCreation(
-		{ value, trace }: Pick<Evaluated, "value" | "trace">,
-		site: SiteState | undefined,
-		module: SourceModule
-	): boolean {
-		return (
-			comparesAtCreation(trace) ||
-			!!site?.reached.some(reached => reached.length === 3) ||
-			this.checksHolesOf(value, site, module)
-		)
-	}
-
-	// each module declaring the value, whose other creations run where a bundler keeps it
 	modulesDeclaring(value: unknown): readonly SourceModule[] {
 		return this.modulesByValue.get(value as object) ?? []
 	}
@@ -2810,12 +2803,6 @@ const staticProblemOf = (
 	: module.scopes.hasWith ? "is in a module that uses `with`"
 	: isLoopVariable(binding) ? "is a loop variable"
 	: undefined
-
-// e.g. a read of what the program holds, which the creation compares to what it read at build
-const comparesAtCreation = (trace: Trace): boolean =>
-	trace.reads.some(
-		read => read.root.kind === "binding" || !isArkValue(read.value)
-	)
 
 const isLoopVariable = (binding: Binding) => {
 	const declaration = binding.declaration.parent

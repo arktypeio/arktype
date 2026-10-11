@@ -624,33 +624,43 @@ value at [1] must be a string (was a number)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
 	}).timeout(60000)
 
-	it("drops the validator of a Type read only for its introspection, but not its module", async () => {
-		const root = writeFixture(
-			{
-				"user.ts": `import { type } from "arktype"
+	it("drops the validator of a Type its own module reads only for its introspection", async () => {
+		const files = {
+			"user.ts": `import { type } from "arktype"
 
 console.log("user.ts")
 export const User = type({ name: "string", age: "number.integer" })
 `,
-				// TypeScript's defaults, which drop an import nothing reads
-				"tsconfig.json": "{}",
-				"main.ts": `import { User } from "./user.ts"
+			// TypeScript's defaults, which drop an import nothing reads
+			"tsconfig.json": "{}"
+		}
+		const local = writeFixture(
+			{
+				...files,
+				"main.ts": `import { type } from "arktype"
 
+const User = type({ name: "string", age: "number.integer" })
 console.log(JSON.stringify(User.toJsonSchema()))
 `
 			},
 			fromHere("temp", "introspectedOnly")
 		)
-		const bundle = await bundlers.esbuild({ cwd: root }, root)
-		attest(run(bundle)).equals(runPlain(root))
+		const bundle = await bundlers.esbuild({ cwd: local }, local)
+		attest(run(bundle)).equals(runPlain(local))
 		attest(bundle.includes("traverseAllows")).equals(false)
-		// a module mock could replace User, so a build checking helpers compares it
-		const checked = await bundlers.esbuild(
-			{ cwd: root, checkHelpers: true },
-			root
+		const imported = writeFixture(
+			{
+				...files,
+				"main.ts": `import { User } from "./user.ts"
+
+console.log(JSON.stringify(User.toJsonSchema()))
+`
+			},
+			fromHere("temp", "introspectedImport")
 		)
-		attest(run(checked)).equals(runPlain(root))
-		attest(checked.includes("traverseAllows")).equals(true)
+		attest(run(await bundlers.esbuild({ cwd: imported }, imported))).equals(
+			runPlain(imported)
+		)
 	}).timeout(60000)
 
 	it("keeps the module of an import a fold reads beside a local of its name", async () => {
@@ -915,6 +925,30 @@ console.log(configured, raised, JSON.stringify(U.toJsonSchema()))
 				"Default must be valid according to an anonymous predicate (was 5)"
 		})
 	}).timeout(60000)
+
+	it("keeps a module validating as it loads where a fold reads another of its Types in a package with no side effects", async () => {
+		const root = writeFixture(
+			{
+				"a.ts": `import { type } from "arktype"
+
+const Env = type({ PORT: "string.numeric" })
+export const env = Env.assert({ PORT: "x" })
+export const U = type({ b: "string" })
+`,
+				"main.ts": `import { U } from "./a.ts"
+
+console.log(JSON.stringify(U.json))
+`,
+				"package.json": `{ "type": "module", "sideEffects": false }`
+			},
+			fromHere("temp", "validatedAtLoad")
+		)
+		attest(
+			thrownBy(
+				await bundlers.esbuild({ cwd: root, introspection: ["json"] }, root)
+			)
+		).snap('PORT must be a well-formed numeric string (was "x")')
+	})
 
 	it("checks each function a definition reads where arktype would, though its Type drops it or a site reads only its introspection", async () => {
 		const definitions = {

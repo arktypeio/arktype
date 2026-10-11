@@ -632,16 +632,11 @@ export const User = type({ name: "string" })`
 				"6:11 accepted",
 				"7:11 accepted"
 			])
-			// User's json doesn't depend on the validator it imports, so only a build checking helpers against module mocks compares it
-			const inputsOf = (opts?: { checkHelpers: boolean }) => {
-				const { sites } = analyze(source, files, opts)
-				return sites[sites.length - 1].inputs.map(input => [
-					input.name,
-					input.path
-				])
-			}
-			attest(inputsOf()).equals([])
-			attest(inputsOf({ checkHelpers: true })).equals([["User", []]])
+			// a bundler drops User's module with the last export read from it, whatever else the module runs
+			const { sites } = analyze(source, files)
+			attest(
+				sites[sites.length - 1].inputs.map(input => [input.name, input.path])
+			).equals([["User", []]])
 			// arktype computes it at runtime from the Type a site created
 			attest(statusesOf(source, files, { runtime: "arktype" })).snap([
 				"3:11 accepted { a: string }"
