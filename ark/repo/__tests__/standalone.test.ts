@@ -42,7 +42,6 @@ import {
 	writeIdentityMismatchMessage,
 	writeRenamedHoleMessage,
 	writeUnbakedMessage,
-	writeUncompiledVariantMessage,
 	type HoleKind,
 	type IntrospectionMember
 } from "arktype/runtime"
@@ -1827,11 +1826,6 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 					variants: [variantOf(one), variantOf(two)],
 					selecting: [0],
 					variantsByCounts: [1, 0, 1]
-				},
-				Uncompiled: {
-					variants: [variantOf(one)],
-					selecting: [0],
-					variantsByCounts: [-1, 0, -1]
 				}
 			})
 			const isLong = (s: string) => s.length > 1
@@ -1846,9 +1840,6 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 			attest(() => created.T("isLong" as never)).throws(
 				writeCreationMismatchMessage("`check`", '"isLong"', "a function")
-			)
-			attest(() => created.Uncompiled(rejects)).throws(
-				writeUncompiledVariantMessage("`check`")
 			)
 		})
 

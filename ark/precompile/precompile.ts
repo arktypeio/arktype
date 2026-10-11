@@ -1285,7 +1285,7 @@ export class Precompiler {
 			selecting.push(i)
 			parameters.push(parameter)
 		}
-		const variantsByCounts: number[] = Array(3 ** parameters.length).fill(-1)
+		const variantsByCounts: number[] = Array(3 ** parameters.length)
 		for (let i = 0; i < variants.length; i++) {
 			for (const counts of variants[i].counts) {
 				variantsByCounts[
@@ -2331,19 +2331,23 @@ export class Precompiler {
 				state === candidate.state ?
 					site
 				:	this.finalize({ ...candidate, state }, module, true)
-			// e.g. a default of 1 parameter, which arktype throws a ParseError for, so the factory throws for one
-			if (variantSite.status !== "accepted" || variantSite.parseError) continue
 			const held = new Map<Binding, number>()
 			let isConsistent = true
 			for (const hole of variantSite.holes) {
 				const standIn = this.interpreter.standIns.get(hole.value as object)
 				if (!standIn?.parameter || !arities.has(standIn.parameter)) continue
-				// e.g. a Type the site reads holding the function it was created with, which this variant didn't create again
 				if (standIn.arity !== arities.get(standIn.parameter))
 					isConsistent = false
 				held.set(standIn.parameter, standIn.arity!)
 			}
-			if (!isConsistent || held.size !== parameters.length) continue
+			// a factory selects a variant for every count, so one it can't compile, or one holding a function of another count, refuses the site
+			if (
+				variantSite.status !== "accepted" ||
+				variantSite.parseError ||
+				!isConsistent ||
+				held.size !== parameters.length
+			)
+				return `the definition can't be precompiled for every parameter count of the functions ${listTexts(parameters.map(parameter => parameter.name))} hold`
 			const [id] = keyOf(variantSite.value as Foldable)
 			const existing = variants.find(
 				variant => keyOf(variant.site.value as Foldable)[0] === id
@@ -3741,10 +3745,7 @@ const parameterKindOf = (
 		nodes.some(
 			node =>
 				(node.hasKind("predicate") && node.inner.predicate === hole) ||
-				(node.hasKind("morph") && node.inner.morphs.includes(hole as never)) ||
-				(node.hasKind("optional") && node.inner.default === hole) ||
-				(node.hasKind("sequence") &&
-					!!node.inner.defaultables?.some(([, value]) => value === hole))
+				(node.hasKind("morph") && node.inner.morphs.includes(hole as never))
 		)
 	)
 		return "function"

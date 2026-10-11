@@ -155,7 +155,7 @@ export interface StandaloneVariants {
 	variants: StandaloneFactory[]
 	// the params whose parameter counts select a variant
 	selecting: number[]
-	// the variant for each combination of those counts, read as digits 0, 1 and 2 or more, or -1 for one arktype throws for
+	// the variant for each combination of those counts, read as digits 0, 1 and 2 or more
 	variantsByCounts: number[]
 }
 
