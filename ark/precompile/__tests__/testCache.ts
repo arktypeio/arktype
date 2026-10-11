@@ -1,5 +1,6 @@
 import {
 	BaseScope,
+	hasArkKind,
 	nodeKinds,
 	registerPrecompiledUnits,
 	writePrecompiledUnits,
@@ -33,6 +34,8 @@ const codesByKey: Record<string, string> = {}
 const collisions: string[] = []
 const unbound: string[] = []
 let finalized = 0
+// the units a finalized root was written, which it compares its binds with rather than writing them again
+const finalizedUnits = new WeakMap<object, Record<string, string>>()
 
 // a root binding a unit written for another binds what its own unit would
 const checkBind =
@@ -41,7 +44,8 @@ const checkBind =
 		const bound = bind(root, constants)
 		// writing would read what a jitless scope's tests expect unread
 		if (root.$.resolvedConfig.jitless) return bound
-		const own = writePrecompiledUnits([root as BaseRoot])[key]
+		const own = (finalizedUnits.get(root) ??
+			writePrecompiledUnits([root as BaseRoot]))[key]
 		const ownBound = own && evaluate(own)[0](root, constants)
 		if (
 			!ownBound ||
@@ -54,6 +58,31 @@ const checkBind =
 			collisions.push(`${root.expression}: binds another root's values`)
 		return bound
 	}
+
+const register = (roots: BaseRoot[]) => {
+	const units = writePrecompiledUnits(roots)
+	const registered: Record<string, PrecompiledUnit> = {}
+	for (const key in units) {
+		const code = codeOf(units[key])
+		if (codesByKey[key] === undefined) {
+			codesByKey[key] = code
+			const [bind, compiledUnit, dependencies] = evaluate(units[key])
+			registered[key] = [checkBind(key, bind), compiledUnit, dependencies]
+		} else if (codesByKey[key] !== code) {
+			collisions.push(
+				`${roots.map(root => root.expression).join(", ")}\n${codesByKey[key]}\n\n${code}`
+			)
+		}
+	}
+	registerPrecompiledUnits(registered)
+	return units
+}
+
+const checkBound = (root: BaseRoot) => {
+	finalized++
+	if (root.compiledUnit!.toString().startsWith("function anonymous"))
+		unbound.push(root.expression)
+}
 
 const { finalize } = BaseScope.prototype
 BaseScope.prototype.finalize = function <node extends BaseRoot>(
@@ -69,24 +98,53 @@ BaseScope.prototype.finalize = function <node extends BaseRoot>(
 		this.resolvedConfig.jitless
 	)
 		return finalize.call(this, node, jit) as node
-	finalized++
-	const units = writePrecompiledUnits([node])
-	const registered: Record<string, PrecompiledUnit> = {}
-	for (const key in units) {
-		const code = codeOf(units[key])
-		if (codesByKey[key] === undefined) {
-			codesByKey[key] = code
-			const [bind, compiledUnit, dependencies] = evaluate(units[key])
-			registered[key] = [checkBind(key, bind), compiledUnit, dependencies]
-		} else if (codesByKey[key] !== code)
-			collisions.push(`${node.expression}\n${codesByKey[key]}\n\n${code}`)
-	}
-	registerPrecompiledUnits(registered)
+	finalizedUnits.set(node, register([node]))
 	finalize.call(this, node, jit)
-	if (node.compiledUnit!.toString().startsWith("function anonymous"))
-		unbound.push(node.expression)
+	checkBound(node)
 	return node
 }
+
+// a scope's export() binds units for its exported roots
+const { export: exportScope } = BaseScope.prototype
+BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
+	if (this.resolved || this.resolvedConfig.jitless)
+		return exportScope.apply(this, names)
+	const roots: BaseRoot[] = []
+	let references = this.references
+	// export() sets its references once it has resolved its exports and before it binds them
+	Object.defineProperty(this, "references", {
+		configurable: true,
+		get: () => references,
+		set: value => {
+			const resolutions: Record<string, unknown> | undefined = (this as never)[
+				"_exportedResolutions"
+			]
+			if (resolutions && !roots.length) {
+				for (const resolution of Object.values(resolutions)) {
+					if (
+						hasArkKind(resolution, "root") &&
+						!resolution.compiledUnit &&
+						!resolution.includesAlias
+					)
+						roots.push(resolution)
+				}
+				register(roots)
+			}
+			references = value
+		}
+	})
+	try {
+		return exportScope.apply(this, names)
+	} finally {
+		Object.defineProperty(this, "references", {
+			configurable: true,
+			writable: true,
+			enumerable: true,
+			value: references
+		})
+		for (const root of roots) if (root.compiledUnit) checkBound(root)
+	}
+} as never
 
 // a union discriminated by a symbol key or an object unit compiles a value it derives, which a bind can't reach
 const expectedMisses = [
