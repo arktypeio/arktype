@@ -410,8 +410,25 @@ export const types = scope({ code: ["'a' | 'b'", ":", isAllowed], user: { name: 
 			attest(result.diagnostics.map(d => [d.line, ...d.reasons])).snap([
 				[
 					3,
-					"arktype calls `isAllowed` (/handlers.ts:2:19) while defining what `types.user` creates, so a factory can't compare it"
+					"arktype calls `isAllowed` (/handlers.ts:2:19) while defining what `types.user.$` creates, so a factory can't compare it"
 				]
+			])
+		})
+
+		it("names the Scope of a received Type as what its key can't compare", () => {
+			const result = precompile(
+				`import { types } from "./handlers.ts"
+export const Users = types.user.array()`,
+				{
+					"/handlers.ts": `import { scope } from "arktype"
+export const types = scope(
+	{ user: { name: "string" } },
+	{ domain: { message: ctx => \`bad \${ctx.path}\` } }
+).export()`
+				}
+			)
+			attest(result.diagnostics.flatMap(d => d.reasons)).snap([
+				"`types.user.$` configures `domain.message` with a function, whose results decide what it creates, so a factory can't compare it"
 			])
 		})
 

@@ -2478,8 +2478,8 @@ export type ScopeAlias = [scope: BaseScope, alias: string]
 export type Key = [
 	id: string,
 	holes: unknown[],
-	// e.g. "configures `domain.description` with a function, whose results decide what it creates"
-	refusal: string | undefined,
+	// the path to what can't be compared and why, e.g. "configures `domain.description` with a function, whose results decide what it creates"
+	refusal: [path: string, reason: string] | undefined,
 	// with the path from the keyed value to the Scope holding each
 	thunks: readonly [...ScopeAlias, path: string][]
 ]
@@ -2535,7 +2535,8 @@ const encodeKey = (
 	const holes: unknown[] = []
 	const seen = new Map<unknown, number>()
 	const thunks: [...ScopeAlias, path: string][] = []
-	let refusal: string | undefined
+	let refusal: Key[2]
+	const refuse = (reason: string) => void (refusal ??= ["", reason])
 	const holeIndexOf = (hole: unknown) => {
 		const index = holes.indexOf(hole)
 		return index === -1 ? holes.push(hole) - 1 : index
@@ -2543,7 +2544,7 @@ const encodeKey = (
 	const writeKeyOf = (kind: string, value: Foldable, path: string) => {
 		const [id, held, nested, nestedThunks] = keyOf(value)
 		values.push(`${kind} ${id} ${held.map(holeIndexOf)}`)
-		refusal ??= nested
+		if (nested) refusal ??= [appendPath(path, nested[0]), nested[1]]
 		for (const [scope, alias, at] of nestedThunks)
 			thunks.push([scope, alias, appendPath(path, at)])
 	}
@@ -2599,9 +2600,11 @@ const encodeKey = (
 			values.push("Generic")
 			write(value.paramDefs, path, true)
 			// an hkt's body is a function arktype calls with a class, which nothing but identity tells apart from another
-			if (value.hkt)
-				refusal ??= `has an hkt body${at(path)}, whose results decide what it creates`
-			else write(value.bodyDef, path, true)
+			if (value.hkt) {
+				refuse(
+					`has an hkt body${at(path)}, whose results decide what it creates`
+				)
+			} else write(value.bodyDef, path, true)
 			write(value.$, appendStringifiedKey(path, "$"), true)
 			// a Generic bound into another Scope parses its arguments there
 			write(value.arg$, appendStringifiedKey(path, "arg$"), true)
@@ -2614,11 +2617,13 @@ const encodeKey = (
 			values.push(`Generic ${JSON.stringify(value.paramsDef)}`)
 			write(value.bodyDef, path, true)
 		} else if (isDefinition && isThunk(value))
-			refusal ??= `holds a thunk${at(path)}, whose result decides what it creates`
+			refuse(`holds a thunk${at(path)}, whose result decides what it creates`)
 		// e.g. a description writer, which arktype calls as it creates each Type
-		else if (isConfig && isHole(value))
-			refusal ??= `configures \`${path}\` with a function, whose results decide what it creates`
-		else if (isHole(value)) values.push(`hole ${holeIndexOf(value)}`)
+		else if (isConfig && isHole(value)) {
+			refuse(
+				`configures \`${path}\` with a function, whose results decide what it creates`
+			)
+		} else if (isHole(value)) values.push(`hole ${holeIndexOf(value)}`)
 		else if (!hasDomain(value, "object")) values.push(printablePrimitive(value))
 		else if (isDateObject(value)) values.push(`Date ${getTime.call(value)}`)
 		else if (isRegExpObject(value)) values.push(`${value} ${value.lastIndex}`)
@@ -2650,7 +2655,7 @@ const encodeKey = (
 				)
 			}
 		} else
-			refusal ??= `holds ${printable(value)}${at(path)}, which its key can't encode`
+			refuse(`holds ${printable(value)}${at(path)}, which its key can't encode`)
 	}
 	write(start, "", isDefinition)
 	return [hashOf(values.join("\n")), holes, refusal, thunks]

@@ -1670,7 +1670,9 @@ export class Precompiler {
 			if (!isFoldable(value)) continue
 			const [, holes, refusal, thunks] = keyOf(value)
 			if (refusal) {
-				result.push(`\`${text}\` ${refusal}, so a factory can't compare it`)
+				result.push(
+					`\`${appendPath(text, refusal[0])}\` ${refusal[1]}, so a factory can't compare it`
+				)
 				continue
 			}
 			// e.g. `aAndB: () => $.type("a&b")`, the docs' way to use a Type's methods in a Scope, which decides only what a site resolving it creates
@@ -1697,7 +1699,7 @@ export class Precompiler {
 					)
 				) {
 					result.push(
-						`arktype calls ${this.interpreter.labelOf(standIn)} while defining what \`${text}\` creates, so a factory can't compare it`
+						`arktype calls ${this.interpreter.labelOf(standIn)} while defining what \`${hasArkKind(value, "root") ? appendPath(text, "$") : text}\` creates, so a factory can't compare it`
 					)
 					break
 				}
