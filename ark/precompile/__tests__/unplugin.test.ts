@@ -1053,23 +1053,37 @@ console.log(type("number").narrow(isSmall).or(type("number").narrow(isEven))(15)
 	}).timeout(60000)
 
 	it("prints once the siblings a build minifying its chunks apart names alike", async () => {
+		// each module exports the value it is named for
+		const shared: Record<string, string> = {
+			isEven: "export const isEven = (n: number) => n % 2 === 0\n",
+			isOdd: "export const isOdd = (n: number) => n % 2 === 1\n",
+			isRound: "export const isRound = (n: number) => n % 10 === 0\n",
+			Cat: "export class Cat { meow = 1 }\n",
+			Dog: "export class Dog { bark = 1 }\n"
+		}
 		const root = writeFixture(
 			{
 				"package.json": `{ "type": "module" }`,
-				"even.ts": "export const isEven = (n: number) => n % 2 === 0\n",
-				"odd.ts": "export const isOdd = (n: number) => n % 2 === 1\n",
-				"round.ts": "export const isRound = (n: number) => n % 10 === 0\n",
-				// each imports one of them, so each is a chunk of its own
-				"other1.ts": `import { isEven } from "./even.ts"\nconsole.log(isEven(1))\n`,
-				"other2.ts": `import { isOdd } from "./odd.ts"\nconsole.log(isOdd(1))\n`,
-				"other3.ts": `import { isRound } from "./round.ts"\nconsole.log(isRound(1))\n`,
+				...Object.fromEntries(
+					Object.entries(shared).flatMap(([name, source]) => [
+						[`${name}.ts`, source],
+						// an entry of its own imports it too, so it is a chunk of its own
+						[
+							`${name}Entry.ts`,
+							`import { ${name} } from "./${name}.ts"\nconsole.log(${name})\n`
+						]
+					])
+				),
 				"main.ts": `import { type } from "arktype"
-import { isEven } from "./even.ts"
-import { isOdd } from "./odd.ts"
-import { isRound } from "./round.ts"
+import { isEven } from "./isEven.ts"
+import { isOdd } from "./isOdd.ts"
+import { isRound } from "./isRound.ts"
+import { Cat } from "./Cat.ts"
+import { Dog } from "./Dog.ts"
 const Parity = type("number").narrow(isEven).or(type("number").narrow(isOdd))
 const Nested = type({ a: Parity }).or(type({ a: type("number").narrow(isRound) }))
-console.log(JSON.stringify([isEven.name, isOdd.name, isRound.name, Parity.description, Parity(1.5).toString(), Nested.description]))
+const Owner = type({ pet: type.instanceOf(Cat).and({ name: "string" }).or(type.instanceOf(Dog).and({ name: "string" })) })
+console.log(JSON.stringify([isEven.name, isOdd.name, isRound.name, Cat.name, Dog.name, Parity.description, Parity(1.5).toString(), Nested.description, Owner({}).toString()]))
 `
 			},
 			fromHere("temp", "chunks")
@@ -1077,9 +1091,10 @@ console.log(JSON.stringify([isEven.name, isOdd.name, isRound.name, Parity.descri
 		// Vite minifies each chunk on its own, naming its functions apart from those of other chunks
 		const runChunks = async (outdir: string, plugins: Plugin[]) => {
 			const { outputFiles } = await esbuild({
-				entryPoints: ["main.ts", "other1.ts", "other2.ts", "other3.ts"].map(
-					entry => join(root, entry)
-				),
+				entryPoints: [
+					"main",
+					...Object.keys(shared).map(name => `${name}Entry`)
+				].map(entry => join(root, `${entry}.ts`)),
 				bundle: true,
 				splitting: true,
 				write: false,
@@ -1103,8 +1118,9 @@ console.log(JSON.stringify([isEven.name, isOdd.name, isRound.name, Parity.descri
 		const precompiled = await runChunks("precompiled", [
 			precompile.esbuild({ cwd: root, conditions })
 		])
-		const [evenName, oddName, roundName] = JSON.parse(precompiled)
-		attest([oddName, roundName]).equals([evenName, evenName])
+		const [evenName, oddName, roundName, catName, dogName] =
+			JSON.parse(precompiled)
+		attest([oddName, roundName, dogName]).equals([evenName, evenName, catName])
 		attest(precompiled).equals(await runChunks("plain", []))
 	}).timeout(60000)
 

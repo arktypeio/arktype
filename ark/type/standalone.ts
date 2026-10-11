@@ -634,7 +634,7 @@ export class StandaloneArtifact {
 	// the texts of unions printing a received name, longest first, which arktype joins from their branches' at creation
 	joinedTexts: [
 		text: string,
-		kind: "expression" | "description",
+		kind: "expression" | "description" | "defaultShortDescription",
 		branches: string[]
 	][] = []
 	labelsByHole = new Map<unknown, string>()
@@ -970,9 +970,14 @@ export class StandaloneArtifact {
 	collectJoinedTexts(): void {
 		for (const node of this.declared) {
 			if (!node.hasKind("union")) continue
-			for (const kind of ["expression", "description"] as const) {
+			// a required key's error prints its value's short description
+			for (const kind of [
+				"expression",
+				"description",
+				"defaultShortDescription"
+			] as const) {
 				const branches = node.branches.map(branch =>
-					kind === "expression" ? expressBranch(branch) : branch.description
+					kind === "expression" ? expressBranch(branch) : branch[kind]
 				)
 				if (
 					node[kind].includes(holeNameMarker) &&
