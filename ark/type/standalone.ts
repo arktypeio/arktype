@@ -671,9 +671,32 @@ export class StandaloneArtifact {
 		}
 		const types = this.variants.map(({ type }) => type)
 		this.variantTypes = new Set(types)
+		const selection = this.selection
+		// each variant holds its own stand-in for a selecting parameter's function, which a call receives as one, so a node holding it is written once where its code is the same
+		const selectedKeys = new Map(
+			selection?.variants.flatMap(({ params }) =>
+				selection.selecting.map(i => [
+					(params[i] as HoleParam).value,
+					`selected ${i}`
+				])
+			)
+		)
+		// as is its meta, which only the errors of the one variant a call creates read
+		const holdsSelected = (node: BaseNode) =>
+			node.hasKind("predicate") ?
+				selectedKeys.has(node.inner.predicate)
+			:	node.hasKind("morph") &&
+				node.inner.morphs.some(morph => selectedKeys.has(morph))
 		this.jointUnits =
-			this.selection && types.every(type => hasArkKind(type, "root")) ?
-				precompileJointUnits(types as BaseRoot[], contentKeyOf)
+			selection && types.every(type => hasArkKind(type, "root")) ?
+				precompileJointUnits(
+					types as BaseRoot[],
+					(value, metaOwner) =>
+						selectedKeys.get(value) ??
+						(metaOwner && holdsSelected(metaOwner) ? undefined : (
+							contentKeyOf(value, metaOwner)
+						))
+				)
 			:	undefined
 		this.sharedModules = sharedModules
 		this.imports = imports

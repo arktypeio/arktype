@@ -1858,7 +1858,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 					variantsByCounts: [1, 0, 1]
 				}
 			})
-			// each variant's predicate holds a stand-in of its own, so only its structure and prop are written once
+			// each variant's predicate holds a stand-in of its own for the one function a call receives, so only the intersections calling it apart are written twice
 			attest(
 				code.match(
 					/(?<=const )(intersection|structure|predicate|required)(?=\w*Allows = )/g
@@ -1867,7 +1867,6 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 				"intersection",
 				"intersection",
 				"structure",
-				"predicate",
 				"predicate",
 				"required"
 			])
