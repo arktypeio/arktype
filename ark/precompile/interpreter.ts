@@ -309,7 +309,7 @@ export class Interpreter {
 	// what each function, class or symbol expression or configure() call outside a call evaluated to, which every evaluation of it reuses
 	private standInsByNode = new Map<Node, object>()
 	private symbolsByNode = new Map<Node, symbol>()
-	private configuredByNode = new Map<Node, unknown>()
+	private configurationsByNode = new Map<Node, unknown>()
 	private valuesByBinding = new TreeCache<Binding, Evaluated | "evaluating">(
 		binding => binding.declaration
 	)
@@ -1763,7 +1763,7 @@ export class Interpreter {
 				)
 			case "arktype":
 				return fn === configure ?
-						this.configuredBy(node, args[0], ctx)
+						this.configurationOf(node, args[0], ctx)
 					:	this.callArktype(fn as Function, args, receiver, node, ctx)
 		}
 		return this.reject(
@@ -1773,12 +1773,12 @@ export class Interpreter {
 		)
 	}
 
-	// arktype's configure() returns its configuration, which merges what it receives, where the build applies it before any site instead
-	configuredBy(call: Node, received: unknown, ctx?: Context): unknown {
-		const cached = this.configuredByNode.get(call)
+	// what arktype's configure() returns: its configuration, with what it receives merged in
+	configurationOf(call: Node, received: unknown, ctx?: Context): unknown {
+		const cached = !ctx?.env && this.configurationsByNode.get(call)
 		if (cached) return cached
 		const result = findDynamic(received) ?? mergeConfigs({}, received as never)
-		if (!ctx?.env) this.configuredByNode.set(call, result)
+		if (!ctx?.env) this.configurationsByNode.set(call, result)
 		return result
 	}
 

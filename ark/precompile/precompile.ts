@@ -268,7 +268,7 @@ export interface Diagnostic {
 	column: number
 	message: string
 	reasons: string[]
-	hint?: string | undefined
+	hint: string | undefined
 }
 
 // a package arktype runs on, whose classes and registry a program must load once
@@ -2843,7 +2843,7 @@ export class Precompiler {
 		if (!dynamic) {
 			visit(value.value)
 			// the program can write through what configure() returns too, which holds what it received
-			visit(this.interpreter.configuredBy(call, value.value))
+			visit(this.interpreter.configurationOf(call, value.value))
 			result.push(...this.writeReasonsIn(objects, value.trace.reads, modules))
 		}
 		return {

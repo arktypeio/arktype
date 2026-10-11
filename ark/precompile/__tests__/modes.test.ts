@@ -392,7 +392,7 @@ export const later = () => {
 import { memoryHost } from "./utils.ts"
 
 const files = {
-	"/config.ts": 'import { configure } from "arktype/config"\\nexport const config = configure({ keywords: { string: "one" } })',
+	"/config.ts": 'import { configure } from "arktype/config"\\nexport const config = configure({ keywords: { string: { description: "one" } } })',
 	"/main.ts": 'import { type } from "arktype"\\nimport { config } from "./config.ts"\\nexport const T = type("number").describe(config.keywords.string.description)'
 }
 const precompiler = new Precompiler(memoryHost(files), { config: "/config.ts" })
