@@ -441,7 +441,7 @@ export type HoleFact = string | number
 
 export const factOfHole = (
 	hole: unknown,
-	kind: HoleKind,
+	kind: HoleKind = "function",
 	classes: Record<string, unknown> = {}
 ): HoleFact => {
 	if (kind === "symbol" || typeof hole !== "function" || isValidator(hole))
