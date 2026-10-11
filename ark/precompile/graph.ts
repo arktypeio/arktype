@@ -362,7 +362,8 @@ const typeMemberKinds: Record<string, ArkKind> = Object.setPrototypeOf(
 		distribute: anyKind,
 		select: anyKind,
 		props: anyKind,
-		internal: anyKind,
+		// the Type's node, never a Module, so a member of a Type's data is data off it too
+		internal: kinds.type | kinds.data,
 		$: anyKind,
 		precompilation: kinds.data
 	} satisfies Record<unavailableMember, ArkKind>,
@@ -378,17 +379,17 @@ const exportKindOf = (name: ArkExportName): ArkKind =>
 const memberKindOf = (objectKind: ArkKind, name: unknown): ArkKind => {
 	if (!isArk(objectKind)) return objectKind & kinds.data
 	const kind =
-		typeof name !== "string" ? anyKind
+		// a Module's member is whatever its alias is, whatever its name
+		typeof name !== "string" || objectKind & kinds.otherArk ? anyKind
 		: (
 			name in validatorMembers ||
 			name in runtimeMembers ||
 			name in unstableArkMembers ||
-			name === "toJsonSchema"
+			name === "toJsonSchema" ||
+			name in Function.prototype
 		) ?
 			kinds.data
-		: objectKind & kinds.otherArk ? anyKind
-		: name in Function.prototype ? kinds.data
-		: (typeMemberKinds[name] ?? anyKind)
+		:	(typeMemberKinds[name] ?? anyKind)
 	return kind | (objectKind & kinds.data)
 }
 

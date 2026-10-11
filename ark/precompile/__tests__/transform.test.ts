@@ -342,6 +342,20 @@ export const BoxedTree = /* @__PURE__ */ $arkv1tryxgh0tpn3pk()`)
 			])
 		})
 
+		it("folds a Module's alias named like a member a Type has, as the Type it is", () => {
+			const result = precompile(`import { scope } from "arktype"
+const M = scope({ toJsonSchema: "string", json: { a: "number" } }).export()
+export const schema = M.toJsonSchema.toJsonSchema()
+export const json = M.json.json`)
+			attest(result.diagnostics).equals([])
+			attest(
+				result.code.split("\n").filter(line => line.startsWith("export"))
+			).snap([
+				"export const schema = /* @__PURE__ */ $arkf1qq8chi1g5mzo4()",
+				"export const json = /* @__PURE__ */ $arkfe5h3530tuatax()"
+			])
+		})
+
 		it("refuses the json of a Scope or Generic, which their empty objects lack", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 const $ = scope({ a: "string" })
