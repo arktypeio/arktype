@@ -456,10 +456,13 @@ const keyRegisteredNames = (root: BaseRoot): string => {
 	}
 	const keysByName: Record<string, string> = {}
 	let nameCount = 0
+	const keyOfName = (name: string) => {
+		const kind = kindsByName[name] ?? name.replace(/\$[1-9]\d*$/, "")
+		return `${kind}#${nameCount++}`
+	}
 	return root.hash.replace(
 		/(?<!\\)"\$ark\.([\w$]+)"/g,
-		(_, name: string) =>
-			`"${(keysByName[name] ??= `${kindsByName[name] ?? name.replace(/\$[1-9]\d*$/, "")}#${nameCount++}`)}"`
+		(_, name: string) => `"${(keysByName[name] ??= keyOfName(name))}"`
 	)
 }
 

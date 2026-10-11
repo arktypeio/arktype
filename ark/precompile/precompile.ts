@@ -3744,7 +3744,6 @@ const writeParseErrorThrower = (
 const writeConfigFixer = (configured: ConfiguredModule | undefined) =>
 	`import * as runtime from "arktype/runtime"\n\nfunction fixConfig() {\n\t${writeFixConfig(configured)}\n}\n\nexport { fixConfig as default }\n`
 
-// each module runs in a function at the top of its importer, passed its imports and the globals the importer shadows
 const writeUnitTable = (units: Record<string, string>) =>
 	`import { registerPrecompiledUnits } from "arktype/internal/precompiled.js"\n\nregisterPrecompiledUnits({ ${Object.entries(
 		units
@@ -3752,6 +3751,7 @@ const writeUnitTable = (units: Record<string, string>) =>
 		.map(([key, unit]) => `${JSON.stringify(key)}: ${unit}`)
 		.join(", ")} })\n`
 
+// each module runs in a function at the top of its importer, passed its imports and the globals the importer shadows
 const inlineModules = (
 	module: SourceModule,
 	s: MagicString,
