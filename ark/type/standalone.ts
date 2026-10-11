@@ -1306,7 +1306,7 @@ ${statements.filter(statement => statement).join("\n\n")}
 			const input = node.in as BaseRoot
 			const raisable = raisableCodesOf(input)
 			const config = this.scopeConfigOf(input, raisable)
-			// a narrow whose answer never changes answers an equal check alike, so a check is keyed by its node's traversal, the configuration it reads, its value and the functions they hold
+			// a check is answered once per key, its node's traversal, configured writers, value and their functions, as unchanging narrows answer equal checks alike
 			const [inputId, inputHoles] = traversalKeyOf(input)
 			const [valueId, valueHoles] = encodeKey(defaultValue, undefined, false)
 			const writers = configuredWritersOf(input, raisable)
@@ -2196,7 +2196,6 @@ ${isTemplate ? "]" : ")"}`
 	}
 }
 
-// the error writers a root's Scope configures beyond the runtime's, which its validator traverses with
 const configuredWritersOf = (
 	root: BaseRoot,
 	raisable: RaisableCodes
