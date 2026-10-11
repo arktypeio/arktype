@@ -68,6 +68,7 @@ type DeclarationRole =
 	| "config"
 	| "standIn"
 	| "json"
+	| "jsonSchema"
 
 // constraints a node keeps sorted by hash, which holds the names of the functions they hold, unlike props, which arktype orders by key
 const sortedConstraintKeys = ["pattern", "index"] as const
@@ -610,7 +611,8 @@ const createDeclarations = (): Declarations => ({
 		literal: [],
 		config: [],
 		standIn: [],
-		json: []
+		json: [],
+		jsonSchema: []
 	}
 })
 
@@ -694,8 +696,6 @@ export class StandaloneArtifact {
 	baking: Baking
 	// the name of each Date or RegExp a program can write, none where a call creates its own
 	held: Map<object, string> | undefined
-	// each JSON Schema a validator bakes, written once however many of its members return it
-	jsonSchemaNamesByText: Record<string, string> = {}
 
 	constructor(
 		exports: Record<string, ExportedValue>,
@@ -1372,11 +1372,14 @@ ${statements.filter(statement => statement).join("\n\n")}
 				`return ${values[i]}`
 			])
 			// a name a variant declares exists only where a call selects it
-			const shared = body.join("\n")
-			for (const statement of [...this.variantStatements.values()].flat()) {
-				const name = /^const (\w+) =/.exec(statement)?.[1]
-				if (name && new RegExp(`\\b${name}\\b`).test(shared))
-					throwInternalError(`Unexpected read of a variant's ${name}`)
+			const texts = [body, ...created].map(statements => statements.join("\n"))
+			for (const [i, statements] of created.entries()) {
+				for (const statement of statements) {
+					const name = /^const (\w+) =/.exec(statement)?.[1]
+					const reads = new RegExp(`\\b${name}\\b`)
+					if (name && texts.some((text, j) => j !== i + 1 && reads.test(text)))
+						throwInternalError(`Unexpected read of a variant's ${name}`)
+				}
 			}
 			body.push(
 				`switch (variant) {\n${created.map((statements, i) => `case ${i}: {\n${statements.join("\n")}\n}`).join("\n")}\n}`
@@ -1795,11 +1798,11 @@ ${isTemplate ? "]" : ")"}`
 			// a target's schema is returned only where the validator bakes its text anyway, so taking one adds no writer
 			const byTarget = supportedJsonSchemaTargets.map(
 				target =>
-					this.jsonSchemaNamesByText[
+					this.declarations.namesByValue.get(
 						this.writeJsonSchemaWriter(root, () =>
 							root.toJsonSchema({ target })
 						)
-					] ?? 0
+					) ?? 0
 			)
 			members.push(
 				`toJsonSchema: runtime.bakedJsonSchema(${written}, [${byTarget.join(", ")}])`
@@ -1839,15 +1842,13 @@ ${isTemplate ? "]" : ")"}`
 		return this.read(`~arktype/${name}`, name, name, `${name}()`)
 	}
 
+	// a writer is declared by its text, so each JSON Schema a validator bakes is written once however many of its members return it
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
 		const writer = this.writeJsonSchemaWriter(root, write)
-		let name = this.jsonSchemaNamesByText[writer]
-		if (!name) {
-			name = `jsonSchema${Object.keys(this.jsonSchemaNamesByText).length}`
-			this.jsonSchemaNamesByText[writer] = name
-			this.declarations.statements.push(`const ${name} = ${writer}`)
-		}
-		return name
+		return (
+			this.declarations.namesByValue.get(writer) ??
+			this.declareConst(writer, "jsonSchema", writer)
+		)
 	}
 
 	// arktype writes its JSON Schema anew each call
@@ -2103,7 +2104,7 @@ ${isTemplate ? "]" : ")"}`
 	}
 
 	declareConst(
-		value: object,
+		value: unknown,
 		role: DeclarationRole,
 		expression: string
 	): string {
