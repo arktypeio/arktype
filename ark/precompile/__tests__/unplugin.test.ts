@@ -727,6 +727,55 @@ ${definition}
 		})
 	}).timeout(60000)
 
+	it("orders what a minified bundle creates by the names its minifier gave the functions", async () => {
+		const root = writeFixture(
+			{
+				"package.json": `{ "type": "module" }`,
+				"functions.ts": `export const isSmall = (n: number) => n < 10
+export const isEven = (n: number) => n % 2 === 0
+export class Cat {}
+export class Bird {}
+export const now = () => 1
+export const later = () => 2
+`,
+				"main.ts": `import { type } from "arktype"
+import * as functions from "./functions.ts"
+const { isSmall, isEven, Cat, Bird, now, later } = functions
+const SmallOrEven = type("number").narrow(isSmall).or(type("number").narrow(isEven))
+const Pet = type.instanceOf(Cat).or(type.instanceOf(Bird))
+const Times = type({ start: ["number", "=", now], end: ["number", "=", later] })
+console.log(JSON.stringify({
+	names: Object.fromEntries(Object.entries(functions).map(([k, fn]) => [k, fn.name])),
+	smallOrEven: SmallOrEven(15).toString(),
+	pet: Pet.expression,
+	times: Times({})
+}))
+`,
+				// the program as written, its functions given the names the minifier gave them before it defines its Types
+				"renamed.ts": `import * as functions from "./functions.ts"
+const names = JSON.parse(process.env.NAMES!)
+for (const [k, fn] of Object.entries(functions))
+	Object.defineProperty(fn, "name", { value: names[k] })
+await import("./main.ts")
+`
+			},
+			fromHere("temp", "minified")
+		)
+		const precompiled = JSON.parse(
+			run(await bundlers.esbuild({ cwd: root }, root))
+		)
+		const renamed = spawnSync(
+			process.execPath,
+			["--conditions", "ark-ts", "renamed.ts"],
+			{
+				cwd: root,
+				encoding: "utf8",
+				env: { ...process.env, NAMES: JSON.stringify(precompiled.names) }
+			}
+		).stdout
+		attest(precompiled).equals(JSON.parse(renamed))
+	}).timeout(60000)
+
 	it("folds the json of a Type a Scope's method creates", async () => {
 		const root = writeFixture(
 			{

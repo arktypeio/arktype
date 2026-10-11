@@ -523,32 +523,27 @@ export const checkDistinct = (
 	}
 }
 
-// arktype sorts a node's branches and props by the names of the functions they hold, so a factory checks those it receives sort as the build's did
-export const checkOrder = (
-	first: unknown,
-	second: unknown,
-	labels: readonly [string, string],
-	// whether the two print alike but for their names, which arktype then prints once
-	isApart?: true
-): void => {
-	const [l, r] = [first, second].map(value =>
-		typeof value === "string" ? value : baseNameOf(value as Function)
-	)
-	const isFlipped = `${r}"` < `${l}"`
-	if (isFlipped || (isApart && l === r)) {
-		const i = labels[0] ? 0 : 1
+// arktype sorts siblings alike but for their functions by those functions' names, so a factory binds the functions it receives in that order
+export const sortByName = (
+	holes: readonly Function[],
+	labels: readonly string[]
+): Function[] => {
+	const names = holes.map(baseNameOf)
+	// arktype prints siblings alike but for their names once where the names are equal
+	const i = names.findIndex((name, i) => names.indexOf(name) !== i)
+	if (i !== -1) {
 		throwError(
 			writeCreationMismatchMessage(
 				labels[i],
-				`named ${printable(i ? r : l)}, which sorts ${
-					!isFlipped ? "with"
-					: i ? "before"
-					: "after"
-				} ${printable(i ? l : r)}`,
-				`sorting ${i ? "after" : "before"} it`
+				`named ${printable(names[i])}, like ${labels[names.indexOf(names[i])]}`,
+				"named apart from it"
 			)
 		)
 	}
+	return holes
+		.map((hole, i) => [names[i], hole] as const)
+		.sort(([l], [r]) => (l < r ? -1 : 1))
+		.map(([, hole]) => hole)
 }
 
 // arktype tells a function of 1 parameter from others, so a factory is compiled for each count, 0, 1 or 2 or more, of each function a parameter holds

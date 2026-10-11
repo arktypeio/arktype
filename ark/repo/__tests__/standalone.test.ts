@@ -2078,7 +2078,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			}
 		})
 
-		it("checks the functions it receives keep the order arktype sorts their names in", async () => {
+		it("binds the functions it receives in the order arktype sorts their names in", async () => {
 			const isEven = standIn((n: number) => n % 2 === 0, "a", "isEven")
 			const isSmall = standIn((n: number) => n < 10, "b", "isSmall")
 			const { T: create } = await load({
@@ -2092,19 +2092,28 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 					]
 				}
 			})
-			const even = (n: number) => n % 2 === 0
-			const small = (n: number) => n < 10
-			attest(create(small, even)(11).toString()).snap(
-				"must be valid according to even or valid according to small (was 11)"
+			const calls: string[] = []
+			const even = (n: number) => calls.push("even") && n % 2 === 0
+			const small = (n: number) => calls.push("small") && n < 10
+			attest(create(small, even)(11.5).toString()).snap(
+				"must be valid according to even or valid according to small (was 11.5)"
 			)
-			const whole = (n: number) => Number.isInteger(n)
-			attest(() => create(small, whole)).throws(
-				writeCreationMismatchMessage(
-					"`isEven`",
-					'named "whole", which sorts after "small"',
-					"sorting before it"
-				)
+			// renamed so it sorts after the other, unlike the function it was built for
+			const whole = (n: number) => calls.push("whole") && Number.isInteger(n)
+			attest(create(small, whole)(11.5).toString()).snap(
+				"must be valid according to small or valid according to whole (was 11.5)"
 			)
+			// arktype calls each branch's narrow once to tell whether it allows the data and once to write its error
+			attest(calls).equals([
+				"even",
+				"small",
+				"even",
+				"small",
+				"small",
+				"whole",
+				"small",
+				"whole"
+			])
 			// arktype prints branches alike but for their names once where the names are equal
 			const [unnamedSmall, unnamedEven] = [
 				(n: number) => n < 10,
@@ -2112,9 +2121,52 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			]
 			attest(() => create(unnamedSmall, unnamedEven)).throws(
 				writeCreationMismatchMessage(
-					"`isEven`",
-					'named "fn", which sorts with "fn"',
-					"sorting before it"
+					"`isSmall`",
+					'named "fn", like `isEven`',
+					"named apart from it"
+				)
+			)
+		})
+
+		it("binds the classes it receives in the order arktype sorts their names in", async () => {
+			class Bird {}
+			class Cat {}
+			standIn(Bird, "a", "Bird")
+			standIn(Cat, "b", "Cat")
+			const { T: create } = await load({
+				T: {
+					type: type.instanceOf(Cat).or(type.instanceOf(Bird)),
+					params: [
+						{ kind: "class", label: "`Cat`", value: Cat },
+						{ kind: "class", label: "`Bird`", value: Bird }
+					]
+				}
+			})
+			class Ant {}
+			class Zebra {}
+			attest(create(Zebra, Ant).expression).snap("Ant | Zebra")
+		})
+
+		it("rejects an order between siblings differing beyond the functions they hold", () => {
+			const isEven = standIn((n: number) => n % 2 === 0, "a", "isEven")
+			const isSmall = standIn((n: number) => n < 10, "b", "isSmall")
+			const isPositive = standIn((n: number) => n > 0, "c", "isPositive")
+			attest(() =>
+				precompileStandalone({
+					T: {
+						type: type("number")
+							.narrow(isSmall)
+							.or(type("number").narrow(isEven).narrow(isPositive)),
+						params: [
+							{ kind: "function", label: "`isSmall`", value: isSmall },
+							{ kind: "function", label: "`isEven`", value: isEven },
+							{ kind: "function", label: "`isPositive`", value: isPositive }
+						]
+					}
+				})
+			).throws(
+				writeUnprecompilableMessage(
+					"an order that depends on the name of `isEven`"
 				)
 			)
 		})
@@ -2162,29 +2214,23 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 		})
 
-		it("checks a function it receives keeps its order beside a keyword's", async () => {
+		it("rejects an order between a function it receives and a keyword's", () => {
 			const isLong = standIn((s: string) => s.length > 10, "a", "isLong")
-			const { T: create } = await load({
-				T: {
-					type: type
-						.schema({
-							domain: "string",
-							predicate: { predicate: isLong, meta: "long" }
-						})
-						.or("string.date"),
-					params: [{ kind: "function", label: "`isLong`", value: isLong }]
-				}
-			})
-			const hasTen = (s: string) => s.length > 10
-			attest(create(hasTen)("a").toString()).snap(
-				'must be long or a parsable date (was "a")'
-			)
-			const wordy = (s: string) => s.length > 10
-			attest(() => create(wordy)).throws(
-				writeCreationMismatchMessage(
-					"`isLong`",
-					'named "wordy", which sorts after "isParsableDate"',
-					"sorting before it"
+			attest(() =>
+				precompileStandalone({
+					T: {
+						type: type
+							.schema({
+								domain: "string",
+								predicate: { predicate: isLong, meta: "long" }
+							})
+							.or("string.date"),
+						params: [{ kind: "function", label: "`isLong`", value: isLong }]
+					}
+				})
+			).throws(
+				writeUnprecompilableMessage(
+					"an order that depends on the name of `isLong`"
 				)
 			)
 		})
