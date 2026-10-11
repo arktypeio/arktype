@@ -220,6 +220,8 @@ export interface StandaloneModules {
 	folds: Record<string, [name: string, index: number]>
 	// each export whose call checks anything as it creates its value, so a bundler mustn't drop it
 	checking: string[]
+	// whether the code declares a Date or RegExp a program can write, which each module importing the code would share
+	holdsWritable: boolean
 }
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
@@ -236,7 +238,16 @@ export const precompileStandalone = (
 	const shared: Record<string, SharedModule> = {}
 	const folds: StandaloneModules["folds"] = {}
 	const checking: string[] = []
-	const sections = writeArtifact(exports, opts, shared, {}, folds, checking)
+	const held = new Map<object, string>()
+	const sections = writeArtifact(
+		exports,
+		opts,
+		shared,
+		{},
+		folds,
+		checking,
+		held
+	)
 	return {
 		code: writeSections([
 			runtimeImport,
@@ -246,7 +257,8 @@ export const precompileStandalone = (
 		]),
 		modules: {},
 		folds,
-		checking
+		checking,
+		holdsWritable: held.size > 0
 	}
 }
 
@@ -259,13 +271,15 @@ export const precompileStandaloneModules = (
 	const imports: Record<string, string[]> = {}
 	const folds: StandaloneModules["folds"] = {}
 	const checking: string[] = []
+	const held = new Map<object, string>()
 	const sections = writeArtifact(
 		exports,
 		opts,
 		shared,
 		imports,
 		folds,
-		checking
+		checking,
+		held
 	)
 	// imported first, so the runtime's version is checked before anything is created
 	const entry = writeSections([runtimeImport, entryCheck])
@@ -288,7 +302,8 @@ export const precompileStandaloneModules = (
 		]),
 		modules,
 		folds,
-		checking
+		checking,
+		holdsWritable: held.size > 0
 	}
 }
 
@@ -298,14 +313,14 @@ const writeArtifact = (
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>,
 	folds: StandaloneModules["folds"],
-	checking: string[]
+	checking: string[],
+	held: Map<object, string>
 ): string[] => {
 	const { configured } = opts
 	const baking: Baking = {
 		members: new Set(opts.introspection),
 		write: opts.bake ?? (write => write())
 	}
-	const held = new Map<object, string>()
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<BaseRoot>()
 	// each factory whose Type is folded, which reads it where the creations write it

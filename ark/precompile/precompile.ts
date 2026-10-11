@@ -1026,9 +1026,10 @@ export class Precompiler {
 					refusalsByName,
 					this.inline
 				)
-			:	{ code: "", modules: {}, folds: {}, checking: [] }
+			:	noValidators
 		const checking = new Set(validators.checking)
-		const specifier = `~arktype/${hashOf(validators.code)}`
+		// modules writing the same code share it, unless a program can write what it holds
+		const specifier = `~arktype/${hashOf(validators.holdsWritable ? `${module.path}\n${validators.code}` : validators.code)}`
 		const imported = new Set<string>()
 		// the source a site's call keeps, which still reads the bindings it holds
 		const kept: Span[] = []
@@ -3737,6 +3738,14 @@ const parameterKindOf = (
 const nameOf = (site: Site) =>
 	hashOf(site.parseError?.message ?? `${site.start}`)
 
+const noValidators: StandaloneModules = {
+	code: "",
+	modules: {},
+	folds: {},
+	checking: [],
+	holdsWritable: false
+}
+
 // precompileStandalone refuses a whole artifact for one export it can't emit, so each is tried alone to refuse only those
 const writeValidators = (
 	exportsByName: Record<string, StandaloneExport>,
@@ -3767,9 +3776,7 @@ const writeValidators = (
 			}
 		})
 		// every export is refused, as under a configured locale
-		return writable.length ?
-				write(writable)
-			:	{ code: "", modules: {}, folds: {}, checking: [] }
+		return writable.length ? write(writable) : noValidators
 	}
 }
 
