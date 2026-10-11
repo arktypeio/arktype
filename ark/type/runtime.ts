@@ -808,7 +808,6 @@ export const writeUnbakedMessage = <reason extends string>(
 export type writeUnbakedMessage<reason extends string> =
 	`${reason}. Build with runtime: "arktype" to write it where it's read.`
 
-// the meta of every node without one
 export const emptyMeta: ArkEnv.meta = /* @__PURE__ */ freeze({})
 
 // a node's json is shared by every node whose json prints the same, so it's frozen through
