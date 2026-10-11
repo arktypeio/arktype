@@ -50,6 +50,7 @@ import { DynamicValue, type DynamicCode } from "./dynamic.ts"
 import {
 	bindingOfFunction,
 	contains,
+	declarationStartOf,
 	genericMembers,
 	isArk,
 	nodeMembers,
@@ -1244,7 +1245,7 @@ export class Interpreter {
 			:	undefined
 		if (comparesAtCreation(trace)) this.comparedAtCreation.add(value as object)
 		const checks = this.checksAtCreation({ value, trace }, site, module)
-		const isOnce = isTopLevelInit(init)
+		const isOnce = !!init && declarationStartOf(init) !== undefined
 		const values = [value]
 		// e.g. a Module's Types, which its creation created
 		for (const value of values) {
@@ -2817,17 +2818,6 @@ const comparesAtCreation = (trace: Trace): boolean =>
 	trace.reads.some(
 		read => read.root.kind === "binding" || !isArkValue(read.value)
 	)
-
-const isTopLevelInit = (init: Node | null | undefined): boolean => {
-	const declarator = init?.parent
-	if (declarator?.type !== "VariableDeclarator" || declarator.init !== init)
-		return false
-	const statement =
-		declarator.parent?.parent?.type === "ExportNamedDeclaration" ?
-			declarator.parent.parent
-		:	declarator.parent
-	return statement?.parent?.type === "Program"
-}
 
 const isLoopVariable = (binding: Binding) => {
 	const declaration = binding.declaration.parent

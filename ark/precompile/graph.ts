@@ -1800,6 +1800,24 @@ export const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
 		if (isFunctionNode(parent)) return parent
 }
 
+// only a statement's first variable, so nothing the statement runs comes before its site
+export const declarationStartOf = (node: Node): number | undefined => {
+	const declarator = node.parent
+	if (declarator?.type !== "VariableDeclarator" || declarator.init !== node)
+		return
+	const declaration = declarator.parent
+	if (
+		declaration?.type !== "VariableDeclaration" ||
+		declaration.declarations[0] !== declarator
+	)
+		return
+	const statement =
+		declaration.parent?.type === "ExportNamedDeclaration" ?
+			declaration.parent
+		:	declaration
+	return statement.parent?.type === "Program" ? statement.start : undefined
+}
+
 export const contains = (outer: Node, inner: Node): boolean =>
 	outer.start <= inner.start && inner.end <= outer.end
 

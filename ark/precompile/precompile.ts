@@ -62,6 +62,7 @@ import { DynamicValue } from "./dynamic.ts"
 import {
 	bindingOfFunction,
 	contains,
+	declarationStartOf,
 	enclosingFunctionOf,
 	isArk,
 	isArkObject,
@@ -3889,24 +3890,6 @@ const islandValueMessage = (text: string) =>
 
 const isInIsland = (node: Node, module: SourceModule) =>
 	module.islands.some(island => contains(island, node))
-
-// only a statement's first variable, so nothing the statement runs comes before its site
-const declarationStartOf = (node: Node): number | undefined => {
-	const declarator = node.parent
-	if (declarator?.type !== "VariableDeclarator" || declarator.init !== node)
-		return
-	const declaration = declarator.parent
-	if (
-		declaration?.type !== "VariableDeclaration" ||
-		declaration.declarations[0] !== declarator
-	)
-		return
-	const statement =
-		declaration.parent?.type === "ExportNamedDeclaration" ?
-			declaration.parent
-		:	declaration
-	return statement.parent?.type === "Program" ? statement.start : undefined
-}
 
 const declaredBindingKinds = {
 	const: 1,
