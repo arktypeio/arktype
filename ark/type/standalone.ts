@@ -1705,7 +1705,7 @@ ${isTemplate ? "]" : ")"}`
 
 	// arktype writes its JSON Schema anew each call
 	writeJsonSchemaWriter(root: BaseRoot, write: () => unknown): string {
-		return `() => ${this.writeJsonSchema(root, () => this.baking.write(write), false)}`
+		return `() => ${this.writeJsonSchema(root, write, false)}`
 	}
 
 	// a schema the program reads only through a validator throws why the build can't write it, where it's read
@@ -1717,12 +1717,24 @@ ${isTemplate ? "]" : ")"}`
 		try {
 			assertBakeableJsonSchema(root)
 			let schema: unknown
+			// what writing throws, unlike the build refusing to bake what a writer read
+			let thrown: unknown
+			const writeOnce = () => {
+				try {
+					return write()
+				} catch (e) {
+					throw (thrown = e)
+				}
+			}
 			try {
-				schema = write()
+				schema = isRead ? writeOnce() : this.baking.write(writeOnce)
 			} catch (e) {
 				if (e instanceof ToJsonSchema.Error)
 					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)}, ${this.writeData(e.context, { holdsValues: true })})`
 				if (isSymbolConversion(e)) return "runtime.serializeSymbol()"
+				// e.g. arktype's, where a view of the Type intersects what the Type keeps apart, as a defaulted key's output and an index signature
+				if (e === thrown && e instanceof ParseError)
+					return `runtime.throwParseError(${this.emitString(e.message)})`
 				// any other error, like one a configured writer throws, makes it a schema the build can't bake
 				if (e instanceof ParseError) throw e
 				throwParseError(

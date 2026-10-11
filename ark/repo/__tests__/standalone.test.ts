@@ -705,6 +705,29 @@ contextualize(() => {
 		).equals(true)
 	})
 
+	it("throws arktype's ParseError where the view of a Type its JSON Schema writes can't be created", async () => {
+		// the output requires the defaulted key, which the index signature's value excludes
+		const T = type({ a: "string = 'a'" }).and({ "[string]": [] })
+		const { T: validator } = await load({ T }, undefined, undefined, [
+			"~standard.jsonSchema"
+		])
+		const thrown = (t: typeof T) => {
+			try {
+				t["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+			} catch (e) {
+				return [(e as Error).constructor.name, (e as Error).message]
+			}
+		}
+		attest(thrown(T)).snap([
+			"ParseError",
+			"Intersection at a of string and object results in an unsatisfiable type"
+		])
+		attest(thrown(validator as never)).equals(thrown(T))
+		attest(
+			validator["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+		).equals(T["~standard"].jsonSchema.input({ target: "draft-2020-12" }))
+	})
+
 	it("has none of the members that need arktype", async () => {
 		const { T } = await load({ T: type("string") })
 		attest(() => T.and("number")).throws.snap(
