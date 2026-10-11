@@ -715,7 +715,7 @@ console.log(Admin.description)
 		}
 	}).timeout(60000)
 
-	it("checks a default where arktype creates its Type, though nothing reads the Type or a site reads only its introspection", async () => {
+	it("checks a default where arktype creates its Type, though nothing reads the Type, a site reads only its introspection or its package has no side effects", async () => {
 		const definition = `type({ a: type(["number", ":", n => n > limits.min]).default(5) })`
 		const files = {
 			// a schema the build can write without the predicate's name
@@ -769,12 +769,36 @@ console.log("unread")
 				await bundlers.esbuild({ cwd: root, config: "config.ts" }, root)
 			)
 		}
+		// a bundler drops each module of such a package whose exports nothing reads, whatever its statements do
+		const sideEffectFree = writeFixture(
+			{
+				...files,
+				"config.ts": `${files["config.ts"]}export const configured = true\n`,
+				"raise.ts": `${files["raise.ts"]}export const raised = true\n`,
+				"main.ts": `import { configured } from "./config.ts"
+import { raised } from "./raise.ts"
+import { T } from "./t.ts"
+
+console.log(configured, raised, JSON.stringify(T.toJsonSchema()))
+`,
+				"package.json": `{ "type": "module", "sideEffects": false }`
+			},
+			fromHere("temp", "defaultCheckedSideEffectFree")
+		)
+		results.sideEffectFree = thrownBy(
+			await bundlers.esbuild(
+				{ cwd: sideEffectFree, config: "config.ts" },
+				sideEffectFree
+			)
+		)
 		attest(results).snap({
 			imported:
 				"Default must be valid according to an anonymous predicate (was 5)",
 			local:
 				"Default must be valid according to an anonymous predicate (was 5)",
 			unread:
+				"Default must be valid according to an anonymous predicate (was 5)",
+			sideEffectFree:
 				"Default must be valid according to an anonymous predicate (was 5)"
 		})
 	}).timeout(60000)

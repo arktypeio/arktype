@@ -1243,7 +1243,11 @@ export class Interpreter {
 			read => read.root.kind === "binding" || !isArkValue(read.value)
 		)
 		if (compares) this.comparedAtCreation.add(value as object)
-		const checks = compares || this.checksHolesOf(value, site, module)
+		// a default's check calls the functions it reads as the value is created, the module's own too, as its factory does
+		const checks =
+			compares ||
+			!!site?.reached.some(reached => reached.length === 3) ||
+			this.checksHolesOf(value, site, module)
 		const isOnce = isTopLevelInit(init)
 		const values = [value]
 		// e.g. a Module's Types, which its creation created
