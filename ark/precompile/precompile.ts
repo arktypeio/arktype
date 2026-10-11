@@ -996,7 +996,7 @@ export class Precompiler {
 					refusalsByName,
 					this.inline
 				)
-			:	{ code: "", modules: {} }
+			:	{ code: "", modules: {}, folds: {} }
 		const specifier = `~arktype/${hashOf(validators.code)}`
 		const imported = new Set<string>()
 		// the source a site's call keeps, which still reads the bindings it holds
@@ -1008,9 +1008,11 @@ export class Precompiler {
 				diagnostics.push(this.refuseWritten(module, site, refusalsByName[name]))
 				continue
 			}
-			const local = prefix + name
-			if (!imported.has(name)) {
-				imported.add(name)
+			// a folded factory may call a function it shares, passing its index
+			const [exported, index] = validators.folds[name] ?? [name]
+			const local = prefix + exported
+			if (!imported.has(exported)) {
+				imported.add(exported)
 				if (site.parseError) {
 					const thrower = writeParseErrorThrower(
 						site.parseError.message,
@@ -1024,7 +1026,7 @@ export class Precompiler {
 						modules[specifier] = validators.code
 						Object.assign(modules, validators.modules)
 					}
-					;(imports[specifier] ??= {})[name] = local
+					;(imports[specifier] ??= {})[exported] = local
 				}
 			}
 			const factory = factoriesBySite.get(site)
@@ -1041,7 +1043,7 @@ export class Precompiler {
 			if (isPure && !site.isKeywordRead)
 				fixedAt = Math.min(fixedAt, site.declarationStart!)
 			// a site becomes a call, so its validator is created, or its ParseError thrown, where arktype would create its Type
-			const call = isPure ? `/* @__PURE__ */ ${local}(` : `${local}(`
+			const call = `${isPure ? "/* @__PURE__ */ " : ""}${local}(${index ?? ""}`
 			if (!factory?.spans.length && !factory?.inputs.length)
 				s.overwrite(site.start, site.end, `${call})`)
 			else {
@@ -1051,7 +1053,7 @@ export class Precompiler {
 						s.appendLeft(start, text)
 					:	s.overwrite(start, end, text)
 				let start = site.start
-				let separator = call
+				let separator = index === undefined ? call : `${call}, `
 				for (const span of factory.spans) {
 					replace(start, span.start, separator)
 					start = span.end
@@ -3638,9 +3640,10 @@ const writeValidators = (
 		const exports = Object.fromEntries(
 			names.map(name => [name, exportsByName[name]])
 		)
-		return inline ?
-				{ code: precompileStandalone(exports, opts), modules: {} }
-			:	precompileStandaloneModules(exports, opts)
+		return (inline ? precompileStandalone : precompileStandaloneModules)(
+			exports,
+			opts
+		)
 	}
 	try {
 		return write(Object.keys(exportsByName))
@@ -3655,7 +3658,9 @@ const writeValidators = (
 			}
 		})
 		// every export is refused, as under a configured locale
-		return writable.length ? write(writable) : { code: "", modules: {} }
+		return writable.length ?
+				write(writable)
+			:	{ code: "", modules: {}, folds: {} }
 	}
 }
 

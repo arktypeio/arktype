@@ -46,6 +46,7 @@ contextualize(() => {
 			names: precompileRootUnits(types.user.internal)[0].names,
 			units: writePrecompiledUnits(roots),
 			artifact: precompileStandalone({ user: types.user, tree: types.tree })
+				.code
 		}
 	}
 
@@ -87,11 +88,11 @@ contextualize(() => {
 		const { tree } = scope({
 			tree: { value: "number", "children?": "tree[]" }
 		}).export()
-		const artifact = precompileStandalone({ tree })
+		const artifact = precompileStandalone({ tree }).code
 		let data: unknown = { value: 0 }
 		for (let i = 0; i < 100; i++) data = { value: i, children: [data] }
 		tree(data)
-		attest(precompileStandalone({ tree })).equals(artifact)
+		attest(precompileStandalone({ tree }).code).equals(artifact)
 	})
 
 	it("passes symbols and object units to compiled code", () => {

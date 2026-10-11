@@ -52,7 +52,7 @@ writeFileSync(
 		Defaults: Defaults.arktype,
 		Tree: Tree.arktype,
 		...Object.fromEntries(Rotating.map((t, i) => [`Rotating${i}`, t.arktype]))
-	})
+	}).code
 )
 
 // standalone validators refuse to load beside arktype unless its claim is cleared

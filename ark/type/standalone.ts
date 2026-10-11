@@ -207,6 +207,8 @@ export interface StandaloneModules {
 	code: string
 	// each module code imports by a ~arktype/ specifier
 	modules: Record<string, string>
+	// each folded factory whose function others share, as the name that function is exported by and the index a call passes it
+	folds: Record<string, [name: string, index: number]>
 }
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
@@ -214,20 +216,25 @@ const runtimeImport = `import * as runtime from "arktype/runtime"`
 const entryCheck = `runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`
 
 /**
- * #### an ES module exporting a getter for each Type, Module, Scope or Generic, which creates them when one is first read, and a function creating each factory's value
+ * #### an ES module exporting a getter for each Type, Module, Scope or Generic, which creates them when one is first read, and a function creating each factory's value, which folded factories may share
  */
 export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
-): string => {
+): StandaloneModules => {
 	const shared: Record<string, SharedModule> = {}
-	const sections = writeArtifact(exports, opts, shared, {})
-	return writeSections([
-		runtimeImport,
-		entryCheck,
-		...Object.values(shared).map(module => module.declarations.join("\n\n")),
-		...sections
-	])
+	const folds: StandaloneModules["folds"] = {}
+	const sections = writeArtifact(exports, opts, shared, {}, folds)
+	return {
+		code: writeSections([
+			runtimeImport,
+			entryCheck,
+			...Object.values(shared).map(module => module.declarations.join("\n\n")),
+			...sections
+		]),
+		modules: {},
+		folds
+	}
 }
 
 // the units an artifact shares with others are modules of their own, so a bundler keeps one copy of each
@@ -237,7 +244,8 @@ export const precompileStandaloneModules = (
 ): StandaloneModules => {
 	const shared: Record<string, SharedModule> = {}
 	const imports: Record<string, string[]> = {}
-	const sections = writeArtifact(exports, opts, shared, imports)
+	const folds: StandaloneModules["folds"] = {}
+	const sections = writeArtifact(exports, opts, shared, imports, folds)
 	// imported first, so the runtime's version is checked before anything is created
 	const entry = writeSections([runtimeImport, entryCheck])
 	const entrySpecifier = `~arktype/entry${hashOf(entry)}`
@@ -257,7 +265,8 @@ export const precompileStandaloneModules = (
 			`import ${JSON.stringify(entrySpecifier)}\n${runtimeImport}\n${writeImports(imports)}`,
 			...sections
 		]),
-		modules
+		modules,
+		folds
 	}
 }
 
@@ -265,7 +274,8 @@ const writeArtifact = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions,
 	shared: Record<string, SharedModule>,
-	imports: Record<string, string[]>
+	imports: Record<string, string[]>,
+	folds: StandaloneModules["folds"]
 ): string[] => {
 	const { configured } = opts
 	const baking: Baking = {
@@ -274,9 +284,12 @@ const writeArtifact = (
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<BaseRoot>()
-	const folded = new Set<string>()
-	// a factory whose Type is folded reads it where the creations write it
-	const factories: (string | ((reads: Record<string, string>) => string))[] = []
+	// each factory whose Type is folded, which reads it where the creations write it
+	const folded = new Map<
+		string,
+		[index: number, artifact: StandaloneArtifact]
+	>()
+	const factories: (string | (() => string))[] = []
 	const tables = new Set<number>()
 	// a trial write, adding nothing to the artifact, tells whether a factory's Type has code holding nothing the factory receives
 	const canFold = (
@@ -318,7 +331,10 @@ const writeArtifact = (
 				baking,
 				value
 			)
-			factories.push(artifact.writeIntrospection(value, index, configured))
+			factories.push(
+				artifact.writeIntrospection(value, index, configured),
+				writeExport(name, index)
+			)
 		} else {
 			const factory = value as StandaloneFactory | StandaloneVariants
 			const variants = isVariants(factory) ? factory.variants : [factory]
@@ -333,18 +349,19 @@ const writeArtifact = (
 			// a factory whose Type is written once with the creations, which each call copies with what it receives
 			if (canFold(name, factory)) {
 				const { type } = factory
-				folded.add(name)
+				folded.set(name, [index, artifact])
 				if (keyOf(type)[1].length) templates.add(type)
 				types[name] = type
-				const at = index
-				factories.push(reads => artifact.writeRekeying(at, reads[name]))
+				factories.push(() => writeFolded(name))
 			} else {
 				for (const { internedBy } of variants)
 					if (internedBy !== undefined) tables.add(internedBy)
-				factories.push(artifact.writeFactory(name, index, configured))
+				factories.push(
+					artifact.writeFactory(name, index, configured),
+					writeExport(name, index)
+				)
 			}
 		}
-		factories.push(`export { factory${index} as ${JSON.stringify(name)} }`)
 		index++
 	}
 	const [creations, reads] = writeCreations(
@@ -356,12 +373,38 @@ const writeArtifact = (
 		shared,
 		imports
 	)
+	// folded factories alike but for the index their creation holds their Type at share one function, which a call passes that index
+	const sharersByCode = new Map<string, string[]>()
+	for (const [name, [, artifact]] of folded) {
+		const [creation, position] = reads[name]
+		if (position === undefined) continue
+		const code = artifact.writeRekeying(`${creation}[index]`).join("\n")
+		sharersByCode.set(code, [...(sharersByCode.get(code) ?? []), name])
+	}
+	for (const sharers of sharersByCode.values()) {
+		if (sharers.length < 2) continue
+		for (const name of sharers) folds[name] = [sharers[0], reads[name][1]!]
+	}
+	const writeFolded = (name: string) => {
+		const [index, artifact] = folded.get(name)!
+		const [creation, position] = reads[name]
+		const fold = folds[name]
+		// the first factory sharing a function writes it
+		if (fold && fold[0] !== name) return ""
+		const params = artifact.variants[0].params.map((_, i) => `p${i}`)
+		if (fold) params.unshift("index")
+		return `function factory${index}(${params.join(", ")}) {
+${artifact.writeRekeying(fold ? `${creation}[index]` : readOf(creation, position)).join("\n\n")}
+}
+
+${writeExport(name, index)}`
+	}
 	return [
 		...creations,
 		// created at a factory's first call, which an import cycle can reach before the artifact's body runs
 		[...tables].map(table => `var interned${table}`).join("\n"),
 		...factories.map(factory =>
-			typeof factory === "string" ? factory : factory(reads)
+			typeof factory === "string" ? factory : factory()
 		)
 	]
 }
@@ -372,16 +415,25 @@ interface Creation {
 	code: string
 }
 
+// what a creation returns, and the index it holds a value at where it creates more than one
+type CreationRead = [creation: string, position: number | undefined]
+
+const readOf = (...[creation, position]: CreationRead) =>
+	position === undefined ? creation : `${creation}[${position}]`
+
+const writeExport = (name: string, index: number) =>
+	`export { factory${index} as ${JSON.stringify(name)} }`
+
 const writeCreations = (
 	types: Record<string, ExportedValue>,
 	templates: ReadonlySet<BaseRoot>,
 	// a factory's Type, which only that factory reads
-	folded: ReadonlySet<string>,
+	folded: ReadonlyMap<string, unknown>,
 	{ configured, keywordReads }: StandaloneOptions,
 	baking: Baking,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
-): [code: string[], reads: Record<string, string>] => {
+): [code: string[], reads: Record<string, CreationRead>] => {
 	const names = Object.keys(types)
 	const artifactOf = (indices: number[]) => {
 		const artifact = new StandaloneArtifact(
@@ -393,7 +445,7 @@ const writeCreations = (
 		for (const template of templates) artifact.templates.add(template)
 		return artifact
 	}
-	const reads: Record<string, string> = {}
+	const reads: Record<string, CreationRead> = {}
 	let creations: Creation[] = []
 	for (let i = 0; i < names.length; i++) {
 		const artifact = artifactOf([i])
@@ -423,8 +475,10 @@ const writeCreations = (
 			)
 		}
 		for (const [position, i] of creation.indices.entries()) {
-			reads[names[i]] =
-				`(created${index} ??= create${index}())${creation.indices.length > 1 ? `[${position}]` : ""}`
+			reads[names[i]] = [
+				`(created${index} ??= create${index}())`,
+				creation.indices.length > 1 ? position : undefined
+			]
 		}
 	}
 	const lazyNamesByModule = new Map<object, string>()
@@ -433,7 +487,7 @@ const writeCreations = (
 		if (folded.has(name)) return []
 		const value = types[name]
 		let declaration = ""
-		let read = reads[name]
+		let read = readOf(...reads[name])
 		if (keywordReads?.has(name) && hasArkKind(value, "module")) {
 			let lazyName = lazyNamesByModule.get(value)
 			if (!lazyName) {
@@ -1174,8 +1228,8 @@ ${statements.filter(statement => statement).join("\n\n")}
 	}
 
 	// the validator its folded code creates, keyed by the functions the call receives
-	writeRekeying(index: number, read: string): string {
-		const [{ type, params }] = this.variants
+	writeRekeying(read: string): string[] {
+		const [{ type }] = this.variants
 		const holes = keyOf(type as never)[1]
 		// a Type holding exactly the holes of a value it receives, as one of a Scope does, is keyed by that value's
 		const received = [...this.holesByName].find(
@@ -1183,14 +1237,14 @@ ${statements.filter(statement => statement).join("\n\n")}
 				received.length === holes.length &&
 				received.every((hole, i) => hole === holes[i])
 		)?.[0]
-		return this.writeFactoryFunction(index, params, [
+		return [
 			...this.checks,
 			`return ${
 				holes.length ?
 					`runtime.rekeyed(${read}, ${received ?? `[${holes.map(hole => this.emit(hole)).join(", ")}]`})`
 				:	read
 			}`
-		])
+		]
 	}
 
 	writeIntrospection(

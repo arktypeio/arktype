@@ -110,7 +110,7 @@ const loadArtifact = async (
 	const dir = await outDir()
 	let code: string
 	if (layout === "inline")
-		code = precompileStandalone(exports, { introspection })
+		code = precompileStandalone(exports, { introspection }).code
 	else {
 		const artifact = precompileStandaloneModules(exports, { introspection })
 		for (const [specifier, module] of Object.entries(artifact.modules)) {

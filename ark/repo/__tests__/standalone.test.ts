@@ -93,21 +93,24 @@ const load = async (
 	fingerprint?: string,
 	introspection?: IntrospectionMember[]
 ): Promise<Record<string, any>> => {
+	const { code, folds } = precompileStandalone(exports, {
+		configured:
+			fingerprint === undefined ? undefined : { fingerprint, path: "main.ts" },
+		introspection
+	})
 	const artifact = await importBesideArktype(
-		bundle(
-			precompileStandalone(exports, {
-				configured:
-					fingerprint === undefined ? undefined : (
-						{ fingerprint, path: "main.ts" }
-					),
-				introspection
-			}).replace(runtimeImport, `${runtimeImport}\n${configure}`)
-		).js
+		bundle(code.replace(runtimeImport, `${runtimeImport}\n${configure}`)).js
 	)
-	return flatMorph(exports, (name, value) => [
-		name,
-		arkKindOf(value) === undefined ? artifact[name] : artifact[name]()
-	])
+	return flatMorph(exports, (name, value) => {
+		if (arkKindOf(value) !== undefined) return [name, artifact[name]()]
+		const fold = folds[name]
+		return [
+			name,
+			fold ?
+				(...args: unknown[]) => artifact[fold[0]](fold[1], ...args)
+			:	artifact[name]
+		]
+	})
 }
 
 // what creating a validator after the given configure() call throws
@@ -350,7 +353,9 @@ contextualize(() => {
 	})
 
 	it("validates without generating code", async () => {
-		const { js } = bundle(precompileStandalone({ T: type({ a: "string" }) }))
+		const { js } = bundle(
+			precompileStandalone({ T: type({ a: "string" }) }).code
+		)
 		const { Function } = globalThis
 		const bodies: string[] = []
 		globalThis.Function = new Proxy(Function, {
@@ -372,7 +377,7 @@ contextualize(() => {
 		const declarations = precompileStandalone({
 			A: type({ id: "number", a: "string" }),
 			B: type({ id: "number", b: "string" })
-		}).match(/^const required\w+Allows/gm)!
+		}).code.match(/^const required\w+Allows/gm)!
 		attest(declarations.length).equals(4)
 		attest(new Set(declarations).size).equals(3)
 	})
@@ -382,6 +387,7 @@ contextualize(() => {
 		Object.assign(globalThis, { Global })
 		const { js } = bundle(
 			precompileStandalone({ S: type("string"), G: type.instanceOf(Global) })
+				.code
 		)
 		delete (globalThis as { Global?: unknown }).Global
 		const S = (await importBesideArktype(js)).S()
@@ -610,7 +616,7 @@ contextualize(() => {
 					T: { type: T, params: [{ kind: "symbol", label: "key", value: key }] }
 				},
 				{ introspection: ["toJsonSchema"] }
-			).includes("runtime.serializeSymbol()")
+			).code.includes("runtime.serializeSymbol()")
 		).equals(true)
 	})
 
@@ -681,14 +687,16 @@ contextualize(() => {
 
 	it("leaves en's locale out of a validator whose callbacks are all arktype's", () => {
 		const T = type({ url: "string.url", n: "string.integer.parse" })
-		attest(precompileStandalone({ T }).includes("runtime.inEn(")).equals(false)
+		attest(precompileStandalone({ T }).code.includes("runtime.inEn(")).equals(
+			false
+		)
 	})
 
 	it("prints with the runtime's primitive printer where arktype's callbacks raise", () => {
 		const T = type({ url: "string.url", n: "string.integer.parse" })
-		attest(precompileStandalone({ T }).includes("runtime.printing(")).equals(
-			false
-		)
+		attest(
+			precompileStandalone({ T }).code.includes("runtime.printing(")
+		).equals(false)
 	})
 
 	it("writes errors with configured strings", async () => {
@@ -764,7 +772,9 @@ contextualize(() => {
 		attest(await messageOf(`runtime.configure({}, "${built}")`, built)).equals(
 			""
 		)
-		const createdFirst = precompileStandalone({ T: type("string") }).replace(
+		const createdFirst = precompileStandalone({
+			T: type("string")
+		}).code.replace(
 			"runtime.fixConfig()",
 			"runtime.fixConfig()\nruntime.configure({})"
 		)
@@ -830,7 +840,7 @@ contextualize(() => {
 							path: "main.ts"
 						}
 					}
-				).replace(
+				).code.replace(
 					runtimeImport,
 					`${runtimeImport}
 const config = { onUndeclaredKey: "delete" }
@@ -877,12 +887,17 @@ domain.expected = () => "E2"`,
 		const config = { domain: { message: "configured" } }
 		const artifact = await importBesideArktype(
 			bundle(
-				`${precompileStandalone(
-					{ T: type({ a: "string" }) },
-					{
-						configured: { fingerprint: fingerprintOf(config), path: "main.ts" }
-					}
-				)}\nexport const configure = runtime.configure`
+				`${
+					precompileStandalone(
+						{ T: type({ a: "string" }) },
+						{
+							configured: {
+								fingerprint: fingerprintOf(config),
+								path: "main.ts"
+							}
+						}
+					).code
+				}\nexport const configure = runtime.configure`
 			).js
 		)
 		artifact.configure(config, fingerprintOf(config))
@@ -902,10 +917,14 @@ domain.expected = () => "E2"`,
 			// arktype fixes its configuration when it creates any of them
 			const artifact = await importBesideArktype(
 				bundle(
-					`${precompileStandalone(
-						{ [name]: value },
-						{ configured: { fingerprint: fingerprintOf({}), path: "main.ts" } }
-					)}\nexport const configure = runtime.configure`
+					`${
+						precompileStandalone(
+							{ [name]: value },
+							{
+								configured: { fingerprint: fingerprintOf({}), path: "main.ts" }
+							}
+						).code
+					}\nexport const configure = runtime.configure`
 				).js
 			)
 			artifact.configure({}, fingerprintOf({}))
@@ -918,13 +937,18 @@ domain.expected = () => "E2"`,
 		const config = { domain: { message: "configured" } }
 		const artifact = await importBesideArktype(
 			bundle(
-				`${precompileStandalone(
-					{ Strings: type.keywords.string },
-					{
-						configured: { fingerprint: fingerprintOf(config), path: "main.ts" },
-						keywordReads: new Set(["Strings"])
-					}
-				)}\nexport const configure = runtime.configure`
+				`${
+					precompileStandalone(
+						{ Strings: type.keywords.string },
+						{
+							configured: {
+								fingerprint: fingerprintOf(config),
+								path: "main.ts"
+							},
+							keywordReads: new Set(["Strings"])
+						}
+					).code
+				}\nexport const configure = runtime.configure`
 			).js
 		)
 		// arktype creates a keyword's Type when it's first read
@@ -1093,7 +1117,7 @@ domain.expected = () => "E2"`,
 		await import(runtimeUrl)
 		const source = precompileStandalone({
 			M: scope({ a: "string" }).export()
-		}).replace(`"arktype/runtime"`, JSON.stringify(runtimeUrl))
+		}).code.replace(`"arktype/runtime"`, JSON.stringify(runtimeUrl))
 		const { freeze, assign, setPrototypeOf } = Object
 		Object.assign(Object, {
 			freeze: (o: object) => o,
@@ -1133,7 +1157,9 @@ domain.expected = () => "E2"`,
 		const cyclic: Record<string, unknown> = {}
 		cyclic.self = cyclic
 		attest(() =>
-			precompileStandalone({ T: type("string").configure({ cyclic } as never) })
+			precompileStandalone({
+				T: type("string").configure({ cyclic } as never)
+			})
 		).throws(writeUnprecompilableMessage("a cyclic object"))
 		const accessor = {
 			get x() {
@@ -1230,7 +1256,7 @@ domain.expected = () => "E2"`,
 	})
 
 	it("writes errors only in en beside a runtime island", async () => {
-		const { js } = bundle(`${precompileStandalone({ T: type("string") })}
+		const { js } = bundle(`${precompileStandalone({ T: type("string") }).code}
 import "arktype/internal/island.js"
 import { type } from "arktype"
 export { de } from "arktype/locales/de"
@@ -1247,7 +1273,7 @@ export const Island = type("string")`)
 	})
 
 	it("writes an island's errors in any locale, with those its morph returns", async () => {
-		const { js } = bundle(`${precompileStandalone({ T: type("string") })}
+		const { js } = bundle(`${precompileStandalone({ T: type("string") }).code}
 import "arktype/internal/island.js"
 import { type } from "arktype"
 export { messageIn } from "arktype"
@@ -1538,7 +1564,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			// a folded factory returns what the creations wrote, rekeyed with the holes it receives
 			attest(
 				precompileStandalone(exports)
-					.split("function factory")
+					.code.split("function factory")
 					.slice(1)
 					.map(factory => factory.includes("??= create"))
 			).equals([false, true, true, true])
@@ -1549,6 +1575,36 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			).snap("a must be a string (was a number)")
 			attest(created.Exposing(created.Name)({ n: 5 }).issues[0].meta).equals(
 				created.Name.meta
+			)
+		})
+
+		it("shares one function between folded factories alike but for where their creation holds their Type", async () => {
+			const isEven = standIn((n: number) => n % 2 === 0, "even")
+			const $ = scope({ even: ["number", ":", isEven], s: "string" })
+			const receives = (label: string) => [
+				{ kind: "input" as const, label, reads: [[[], $]] as [[], unknown][] }
+			]
+			const exports: Record<string, StandaloneExport> = {
+				$: {
+					type: $,
+					params: [{ kind: "function", label: "`isEven`", value: isEven }]
+				},
+				A: { type: $.type({ a: "s" }), params: receives("$") },
+				B: { type: $.type({ b: "s" }), params: receives("$") },
+				// its check prints another label
+				C: { type: $.type({ c: "s" }), params: receives("other") }
+			}
+			attest(precompileStandalone(exports).folds).equals({
+				A: ["A", 0],
+				B: ["A", 1]
+			})
+			const created = await load(exports)
+			const holder = created.$(isEven)
+			attest(created.B(holder)({ b: 3 }).toString()).snap(
+				"b must be a string (was a number)"
+			)
+			attest(created.C(holder)({ c: 3 }).toString()).snap(
+				"c must be a string (was a number)"
 			)
 		})
 
@@ -1924,7 +1980,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 					selecting: [0],
 					variantsByCounts: [1, 0, 1]
 				}
-			})
+			}).code
 			// each variant's predicate holds a stand-in of its own for the one function a call receives, so only the intersections calling it apart are written twice
 			attest(
 				code.match(
@@ -2278,7 +2334,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 
 	it("checks the runtime's version before reading its exports", async () => {
 		const mismatched = precompileStandalone({ T: type("string") })
-			.replace(
+			.code.replace(
 				`assertRuntimeVersion("${arktypeVersion}")`,
 				`assertRuntimeVersion("0.0.0")`
 			)
@@ -2292,7 +2348,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 	})
 
 	it("refuses to load beside arktype", async () => {
-		const { js } = bundle(precompileStandalone({ T: type("boolean") }))
+		const { js } = bundle(precompileStandalone({ T: type("boolean") }).code)
 		const error = await import(urlOf(js)).catch((e: Error) => e)
 		attest(error.message).equals(
 			writeEntryConflictMessage("arktype/runtime", "arktype")
@@ -2300,7 +2356,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 	})
 
 	it("keeps arktype from loading beside it", () => {
-		const { js } = bundle(precompileStandalone({ T: type("string") }))
+		const { js } = bundle(precompileStandalone({ T: type("string") }).code)
 		const { stderr } = spawnSync(
 			process.execPath,
 			["--conditions=ark-ts", "--input-type=module"],
@@ -2357,7 +2413,7 @@ export default shared`).js
 				T: type({ a: "string.numeric.parse", b: "(number | Date)[]" }).or(
 					"string.json.parse"
 				)
-			})
+			}).code
 		)
 		const runtimeModules = new Set([
 			"<stdin>",

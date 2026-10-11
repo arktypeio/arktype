@@ -253,11 +253,11 @@ export const H = type("string").description`,
 				'/main.ts:11:18  type("string").equals("string") can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/1cnp1wq1rzw67e"
-import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/1cnp1wq1rzw67e"
-import { v1clwekn1s6e3gq as $arkv1clwekn1s6e3gq } from "~arktype/1cnp1wq1rzw67e"
-import { v1hfscsk1nhk1a9 as $arkv1hfscsk1nhk1a9 } from "~arktype/1cnp1wq1rzw67e"
-import { v16rwth51i4aph5 as $arkv16rwth51i4aph5 } from "~arktype/1cnp1wq1rzw67e"
+import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/1hamv2u0wt0gsl"
+import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/1hamv2u0wt0gsl"
+import { v1clwekn1s6e3gq as $arkv1clwekn1s6e3gq } from "~arktype/1hamv2u0wt0gsl"
+import { v1hfscsk1nhk1a9 as $arkv1hfscsk1nhk1a9 } from "~arktype/1hamv2u0wt0gsl"
+import { v16rwth51i4aph5 as $arkv16rwth51i4aph5 } from "~arktype/1hamv2u0wt0gsl"
 import $ark1sve6ft0pa6e4h from "~arktype/xuhdp21syk96k"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { max } from "./limits.ts"
@@ -659,12 +659,12 @@ export const Shadowed = (() => {
 				"/inputs.ts:18:9  type(alias.name) can't be precompiled to a standalone validator yet\n  `o` (/inputs.ts:7:7) is shadowed where the site is written, so its factory can't receive it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { f1pndslh1lfvnd2 as $arkf1pndslh1lfvnd2 } from "~arktype/1kk1ohy03q7g83"
-import { fcoobse1hdwpxv as $arkfcoobse1hdwpxv } from "~arktype/1kk1ohy03q7g83"
-import { fs5mhm20oegtat as $arkfs5mhm20oegtat } from "~arktype/1kk1ohy03q7g83"
-import { fwuycaw1jorjbe as $arkfwuycaw1jorjbe } from "~arktype/1kk1ohy03q7g83"
-import { f18h70z31d8anaf as $arkf18h70z31d8anaf } from "~arktype/1kk1ohy03q7g83"
-import { fhpkoym15zgexb as $arkfhpkoym15zgexb } from "~arktype/1kk1ohy03q7g83"
+import { f1pndslh1lfvnd2 as $arkf1pndslh1lfvnd2 } from "~arktype/15j6nba19ktozs"
+import { fcoobse1hdwpxv as $arkfcoobse1hdwpxv } from "~arktype/15j6nba19ktozs"
+import { fs5mhm20oegtat as $arkfs5mhm20oegtat } from "~arktype/15j6nba19ktozs"
+import { fwuycaw1jorjbe as $arkfwuycaw1jorjbe } from "~arktype/15j6nba19ktozs"
+import { f18h70z31d8anaf as $arkf18h70z31d8anaf } from "~arktype/15j6nba19ktozs"
+import { fhpkoym15zgexb as $arkfhpkoym15zgexb } from "~arktype/15j6nba19ktozs"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { max } from "./limits.ts"
 import { reboxed } from "./reboxed.ts"
@@ -820,9 +820,9 @@ export default (def: string) => def`,
 				"/checked.ts:8:23  type(single(\"string\")) can't be precompiled to a standalone validator yet\n  `default` (/helpers.ts:5:16) is a static helper its module doesn't export through a binding, so a test driver can't register it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(checked.code).snap(`import { type } from "arktype"
-import { f13yfk091jb2s9c as $arkf13yfk091jb2s9c } from "~arktype/1c93jth0myq0hb"
-import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/1c93jth0myq0hb"
-import { f1t2p9ht1hshs19 as $arkf1t2p9ht1hshs19 } from "~arktype/1c93jth0myq0hb"
+import { f13yfk091jb2s9c as $arkf13yfk091jb2s9c } from "~arktype/1shrwip011gg6u"
+import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/1shrwip011gg6u"
+import { f1t2p9ht1hshs19 as $arkf1t2p9ht1hshs19 } from "~arktype/1shrwip011gg6u"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import single, { list } from "./helpers.ts"
 import * as helpers from "./helpers.ts"
@@ -1245,6 +1245,22 @@ export const B = $.type({ b: "a" })`,
 				"export const Read = /* @__PURE__ */ $arkf31x3lt13lnlin(max)",
 				"export const $ = /* @__PURE__ */ $arkf16tqm51d9mp98(trim)",
 				"export const B = /* @__PURE__ */ $arkf1tiybtv1jozo2t($)"
+			])
+		})
+
+		it("folds sites differing only in their Types to calls of one function, passed each Type's index", () => {
+			const result = precompile(`import { scope } from "arktype"
+const trim = (s: string) => s.trim()
+export const $ = scope({ t: ["string", "=>", trim], s: "string" })
+export const A = $.type({ a: "s" })
+export const B = $.type({ b: "s" })`)
+			attest(result.diagnostics).equals([])
+			attest(
+				result.code.split("\n").filter(line => line.startsWith("export"))
+			).snap([
+				"export const $ = /* @__PURE__ */ $arkfum7tro1c6fvs1(trim)",
+				"export const A = /* @__PURE__ */ $arkf1mrbczv1xkyq28(0, $)",
+				"export const B = /* @__PURE__ */ $arkf1mrbczv1xkyq28(1, $)"
 			])
 		})
 
