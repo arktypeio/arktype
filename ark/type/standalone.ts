@@ -2257,7 +2257,7 @@ ${isTemplate ? "]" : ")"}`
 		)
 	}
 
-	// every unit and validator reading a node's meta reads arktype's one object
+	// content-equal metas are frozen, so they share one
 	readMeta(meta: object): string | undefined {
 		if (!Reflect.ownKeys(meta).length) return "runtime.emptyMeta"
 		const literal = this.writeSharedLiteral(meta)

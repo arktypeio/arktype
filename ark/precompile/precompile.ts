@@ -1173,7 +1173,7 @@ export class Precompiler {
 		for (const [node] of site.defaultChecks) keyOf(node.in as BaseRoot)
 	}
 
-	// arktype can create a Date or RegExp a site holds anew each run, so a site that can run more than once creates its own, unless it reads a Type a top-level variable holds
+	// a site that can run more than once creates its own Date or RegExp, as arktype can
 	private createsEachRun(site: Site): boolean {
 		if (site.declarationStart !== undefined) return false
 		const type = site.introspection?.type
