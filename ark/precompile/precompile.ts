@@ -11,6 +11,7 @@ import {
 	hashOf,
 	hasDomain,
 	includes,
+	isThunk,
 	ParseError,
 	printable,
 	registeredNameOf,
@@ -1612,7 +1613,8 @@ export class Precompiler {
 			"unsupported",
 			"error",
 			`${module.snippetOf(site)} can't be precompiled to a standalone validator yet`,
-			reasons.map(reason => this.sourceNamed(reason, site, module))
+			reasons.map(reason => this.sourceNamed(reason, site, module)),
+			this.thunkHintOf(site)
 		)
 	}
 
@@ -1640,8 +1642,33 @@ export class Precompiler {
 			"R1",
 			this.rejectionSeverity,
 			`${module.snippetOf(node)} cannot be precompiled`,
-			site.reasons
+			site.reasons,
+			this.thunkHintOf(site)
 		)
+	}
+
+	// e.g. `d: () => $.type("c").pipe(isZero)`, whose functions arktype holds only once it calls the thunk
+	private thunkHintOf(site: Site): string | undefined {
+		const { value } = site
+		const aliases =
+			hasArkKind(value, "scope") ?
+				[
+					...site.aliases,
+					...Object.keys(value.aliases).map(
+						(alias): ScopeAlias => [value, alias]
+					)
+				]
+			:	site.aliases
+		return (
+				aliases.some(
+					([$, alias]) =>
+						isThunk($.aliases[alias]) &&
+						hasArkKind($.resolutions[alias], "root") &&
+						this.interpreter.holesIn($.resolutions[alias]).size
+				)
+			) ?
+				thunkHint
+			:	undefined
 	}
 
 	// a factory compares a container it receives by definition, which leaves out what a function arktype calls while defining what it creates returns
@@ -2113,14 +2140,14 @@ export class Precompiler {
 			site.status = "island"
 			return site
 		}
-		const dynamic = rejectionOf(state)
-		if (dynamic) return rejectSite(site, dynamic)
 		const checks = new Set<DefaultCheck>()
 		// a thunk alias is a pair, and a check a triple
 		for (const reached of state.reached) {
 			if (reached.length === 2) site.aliases.push(reached)
 			else checks.add(reached)
 		}
+		const dynamic = rejectionOf(state)
+		if (dynamic) return rejectSite(site, dynamic)
 		if (state.error instanceof ParseError) {
 			// e.g. an island's or a declaration's, which the site's thrower would throw without checking what it depends on
 			if (this.interpreter.parseErrorSites.get(state.error) !== state) {
@@ -2647,7 +2674,8 @@ export class Precompiler {
 					rejection?.hasCode("callback") ? "R2" : "R1",
 					this.rejectionSeverity,
 					`${module.snippetOf(node)} cannot be precompiled`,
-					site.reasons
+					site.reasons,
+					this.thunkHintOf(site)
 				)
 			]
 		}
@@ -3869,6 +3897,8 @@ const declaredBindingKinds = {
 	function: 1,
 	class: 1
 } satisfies Partial<Record<BindingKind, 1>>
+
+const thunkHint = `Standalone builds can't precompile a Scope's thunk returning a Type that holds a function or symbol yet. Mark the Scope // @ark-runtime with each definition reading it, or build with runtime: "arktype".`
 
 const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
 

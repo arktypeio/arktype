@@ -88,6 +88,19 @@ export const Imported = type("string")`
 		])
 	})
 
+	it("suggests marking a Scope whose thunk returns a Type holding a function", () => {
+		const writeSource = (mark: string) => `import { scope } from "arktype"
+const isZero = (n: number) => n === 0
+${mark}const $ = scope({ zero: () => $.type("number").narrow(isZero) })
+${mark}export const types = $.export()`
+		const diagnosticsOfMarked = (mark: string) =>
+			precompile(writeSource(mark)).diagnostics.map(renderDiagnostic)
+		attest(diagnosticsOfMarked("")).snap([
+			"/main.ts:4:22  $.export() can't be precompiled to a standalone validator yet\n  arktype holds `(n: number) => n === 0` (/main.ts:2:16), which the site reads outside its own source\n  Standalone builds can't precompile a Scope's thunk returning a Type that holds a function or symbol yet. Mark the Scope // @ark-runtime with each definition reading it, or build with runtime: \"arktype\"."
+		])
+		attest(diagnosticsOfMarked("// @ark-runtime\n")).equals([])
+	})
+
 	it("means nothing in cache mode", () => {
 		const source = `import { type } from "arktype"
 // @ark-runtime
