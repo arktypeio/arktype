@@ -587,8 +587,8 @@ export class StandaloneArtifact {
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
 	unitRoots = new Set<BaseRoot>()
-	// the unit holding each root in the first Type reaching it
-	unitsByHead = new Map<BaseRoot, RootUnit>()
+	// the unit holding each root in the first Type reaching it, by id, as two nodes of one id like `unknown` and `unknown.any` are one root
+	unitsByHead = new Map<string, RootUnit>()
 	localNamesByUnit = new Map<RootUnit, string>()
 	// the unit whose values are being emitted, which names the nodes they hold
 	unit: RootUnit | undefined
@@ -705,8 +705,10 @@ export class StandaloneArtifact {
 				if (this.unitRoots.has(root)) continue
 				this.unitRoots.add(root)
 				for (const unit of this.unitsOf(root)) {
-					for (const head of unit.roots)
-						if (!this.unitsByHead.has(head)) this.unitsByHead.set(head, unit)
+					for (const head of unit.roots) {
+						if (!this.unitsByHead.has(head.id))
+							this.unitsByHead.set(head.id, unit)
+					}
 				}
 			}
 		} while (this.collectMetaTypes())
@@ -1524,7 +1526,7 @@ return [${returned.join(", ")}]
 	validatorAddressOf(root: BaseRoot): string | undefined {
 		if (
 			this.createdEachRun.has(root) ||
-			!isAddressable(root, this.unitsByHead.get(root)!)
+			!isAddressable(root, this.unitsByHead.get(root.id)!)
 		)
 			return
 		const address = heldAddressOf(root) ?? this.definitionAddresses.get(root)
@@ -1536,7 +1538,7 @@ return [${returned.join(", ")}]
 
 	writeValidator(root: BaseRoot): string {
 		const shape = this.shapeOf(root)
-		const nodeName = this.unitsByHead.get(root)!.names[root.id]
+		const nodeName = this.unitsByHead.get(root.id)!.names[root.id]
 		const [id, holes] = (this.checkedRoots.has(root) ? traversalKeyOf : keyOf)(
 			root
 		)
@@ -1870,7 +1872,7 @@ ${isTemplate ? "]" : ")"}`
 
 	shapeOf(node: BaseRoot): string {
 		const unit =
-			this.unit ? unitOf(node, this.unit) : this.unitsByHead.get(node)!
+			this.unit ? unitOf(node, this.unit) : this.unitsByHead.get(node.id)!
 		const name = unit.names[node.id]
 		const own = this.writing?.shapesByName[name]
 		if (own) return own

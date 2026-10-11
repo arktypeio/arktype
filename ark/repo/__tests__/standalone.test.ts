@@ -1562,6 +1562,8 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 				e: typeof empty
 			) => ({
 				Thunk: type({ at: ["Date", "=", n], n: "number = 1" }),
+				// `unknown.any` is another node of the id `unknown` has
+				Any: type({ at: ["unknown", "=", n], n: "unknown.any" }),
 				Invalid: type({ n: ["number", "=", i] }),
 				Element: type(["string", ["Date", "=", n]]),
 				Contextual: type({ s: [type("string").pipe(s), "=", g] }),
@@ -1583,6 +1585,10 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			const created = await load({
 				Thunk: {
 					type: builtTypes.Thunk,
+					params: [{ kind: "function", label: "`now`", value: built[0] }]
+				},
+				Any: {
+					type: builtTypes.Any,
 					params: [{ kind: "function", label: "`now`", value: built[0] }]
 				},
 				Invalid: {
@@ -1609,6 +1615,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			})
 			const validators: Record<string, (data: unknown) => unknown> = {
 				Thunk: created.Thunk(now),
+				Any: created.Any(now),
 				Invalid: created.Invalid(invalid),
 				Element: created.Element(now),
 				Contextual: created.Contextual(shout, greeting),
