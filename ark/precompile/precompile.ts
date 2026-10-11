@@ -2350,11 +2350,11 @@ export class Precompiler {
 			if (reasons.length) {
 				const assumed =
 					parameters.length === 1 ?
-						`one of ${countTexts[counts[0]]}`
+						arktypeRuntime.describeFact(counts[0])
 					:	parameters
 							.map(
 								(parameter, i) =>
-									`\`${parameter.name}\`'s of ${countTexts[counts[i]]}`
+									`\`${parameter.name}\` as ${arktypeRuntime.describeFact(counts[i])}`
 							)
 							.join(" and ")
 				return `the definition can't be precompiled for every parameter count of ${heldBy(parameters)}: for ${assumed}, ${reasons.join("; ")}`
@@ -3607,8 +3607,6 @@ const countsOf = (length: number): number[][] =>
 	:	countsOf(length - 1).flatMap(counts =>
 			[1, 0, 2].map(count => [...counts, count])
 		)
-
-const countTexts = ["no parameters", "1 parameter", "2 or more parameters"]
 
 // the functions some parameters hold
 const heldBy = (parameters: readonly Binding[]) =>

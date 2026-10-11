@@ -446,7 +446,7 @@ export const factOfHole = (
 ): HoleFact => {
 	if (kind === "symbol" || typeof hole !== "function" || isValidator(hole))
 		return describeValue(hole)
-	// arktype counts a builtin's parameters like any other function's, and keeps the length it read first, where a factory reads it now
+	// a builtin's count is read like any other function's
 	if (kind === "function") return Math.min(hole.length, 2)
 	const builtinName = getBuiltinNameOfConstructor(hole)
 	if (builtinName) return `the builtin ${builtinName}`
@@ -502,7 +502,7 @@ export const checkFacts = (
 	}
 }
 
-const describeFact = (fact: HoleFact) =>
+export const describeFact = (fact: HoleFact): string =>
 	typeof fact === "string" ? fact : (
 		`a function of ${
 			fact === 0 ? "no parameters"
