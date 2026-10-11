@@ -35,6 +35,7 @@ const codesByKey: Record<string, string> = {}
 const collisions: string[] = []
 const unbound: string[] = []
 let finalized = 0
+let inlined = 0
 // the units a finalized root was written, which it compares its binds with rather than writing them again
 const finalizedUnits = new WeakMap<object, Record<string, string>>()
 
@@ -105,13 +106,14 @@ BaseScope.prototype.finalize = function <node extends BaseRoot>(
 	return node
 }
 
-// a scope's export() binds units for its exported roots and the other roots they reference
+// a build writes units for a scope's exported roots and those their units call, so a root only a union inlines compiles at export()
 const { export: exportScope } = BaseScope.prototype
 BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 	if (this.resolved || this.resolvedConfig.jitless)
 		return exportScope.apply(this, names)
 	const roots: BaseRoot[] = []
 	const referenced: BaseRoot[] = []
+	let written: Record<string, string> = {}
 	let references = this.references
 	// export() sets its references once it has resolved its exports and before it binds them
 	Object.defineProperty(this, "references", {
@@ -139,7 +141,7 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 					)
 						referenced.push(node)
 				}
-				register([...roots, ...referenced])
+				written = register(roots)
 			}
 			references = value
 		}
@@ -153,8 +155,17 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 			enumerable: true,
 			value: references
 		})
-		for (const root of [...roots, ...referenced])
-			if (root.compiledUnit) checkBound(root)
+		for (const root of roots) if (root.compiledUnit) checkBound(root)
+		for (const root of referenced) {
+			if (!root.compiledUnit) continue
+			// a build writes no unit for a root only a union inlines, so it compiles
+			if (
+				root.compiledUnit.toString().startsWith("function anonymous") &&
+				!Object.keys(writePrecompiledUnits([root])).every(key => key in written)
+			)
+				inlined++
+			else checkBound(root)
+		}
 	}
 } as never
 
@@ -173,7 +184,7 @@ export const mochaHooks = {
 		)
 		console.log(collisions.slice(0, 5).join("\n\n=====\n\n"))
 		console.log(
-			`\n${collisions.length || misses.length ? "❌" : "✅"} ${finalized - unbound.length} of ${finalized} roots bound from ${Object.keys(codesByKey).length} units, ${collisions.length} keys naming two units; unexpectedly unbound: ${misses.slice(0, 20).join(", ")}`
+			`\n${collisions.length || misses.length ? "❌" : "✅"} ${finalized - unbound.length} of ${finalized} roots bound from ${Object.keys(codesByKey).length} units, ${inlined} only a union inlines compiled at export, ${collisions.length} keys naming two units; unexpectedly unbound: ${misses.slice(0, 20).join(", ")}`
 		)
 		if (collisions.length)
 			throw new Error(`${collisions.length} keys name two units`)
