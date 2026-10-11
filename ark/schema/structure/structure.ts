@@ -645,12 +645,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return this.applyStructuralMorph(data, out, ctx)
 	}
 
-	// a key several constraints check is transformed once each of them allows it
+	// a key several constraints check is transformed once each of them allows it, which only a transform that can fail tells apart
 	get sharesTransformedKeys(): boolean {
 		return (
 			this.index !== undefined &&
 			this.transforms &&
-			(this.hasIndexedProp || this.index.length > 1)
+			(this.hasIndexedProp || this.index.length > 1) &&
+			(this.props.some(prop => canFailTransforming(prop.value)) ||
+				this.index.some(index => canFailTransforming(index.value)))
 		)
 	}
 
@@ -1339,6 +1341,10 @@ const compileDefault = (
 // -0 would serialize as 0
 const serializeDefault = (js: NodeCompiler, value: unknown): string =>
 	Object.is(value, -0) ? "-0" : js.serialize(value)
+
+// a morph or a transform reading ctx can add errors, unlike a default or a deleted key
+const canFailTransforming = (node: BaseNode): boolean =>
+	node.includesMorph || node.transformRequiresContext
 
 // only a default on a node that includesMorph can return TransformErrors
 const compileDefaultMorph = (

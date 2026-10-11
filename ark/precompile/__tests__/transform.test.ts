@@ -241,7 +241,7 @@ export const A = type("string").pipe(trim)
 export const B = type(\`string <= \${max}\`)
 export const C = field(5)
 export const D = type("strin")
-export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
+export const E = type({ "+": "delete", "[string]": "string", a: "string.date.parse" })
 export const F = type("number")
 export const G = type("string").equals("string")
 export const H = type("string").description`,
@@ -249,15 +249,15 @@ export const H = type("string").description`,
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/main.ts:8:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
-				'/main.ts:9:18  type({ "+": "delete", "[string]": "string", a: "\'a\'" }) can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: "a", + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:9:18  type({ "+": "delete", "[string]": "string", a: "string.date… can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: (In: string) => Out<Date>, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				'/main.ts:11:18  type("string").equals("string") can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/njsy810ld877h"
-import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/njsy810ld877h"
-import { v1clwekn1s6e3gq as $arkv1clwekn1s6e3gq } from "~arktype/njsy810ld877h"
-import { v1yj8wer0ou42kq as $arkv1yj8wer0ou42kq } from "~arktype/njsy810ld877h"
-import { vzonxq00imvowq as $arkvzonxq00imvowq } from "~arktype/njsy810ld877h"
+import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/1cnp1wq1rzw67e"
+import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/1cnp1wq1rzw67e"
+import { v1clwekn1s6e3gq as $arkv1clwekn1s6e3gq } from "~arktype/1cnp1wq1rzw67e"
+import { v1hfscsk1nhk1a9 as $arkv1hfscsk1nhk1a9 } from "~arktype/1cnp1wq1rzw67e"
+import { v16rwth51i4aph5 as $arkv16rwth51i4aph5 } from "~arktype/1cnp1wq1rzw67e"
 import $ark1sve6ft0pa6e4h from "~arktype/xuhdp21syk96k"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { max } from "./limits.ts"
@@ -268,10 +268,10 @@ export const A = /* @__PURE__ */ $arkfa7m7wf09pf4az(trim)
 export const B = /* @__PURE__ */ $arkf1mgbeg1hlx5g1(max)
 export const C = /* @__PURE__ */ $arkv1clwekn1s6e3gq()
 export const D = $ark1sve6ft0pa6e4h()
-export const E = type({ "+": "delete", "[string]": "string", a: "'a'" })
-export const F = /* @__PURE__ */ $arkv1yj8wer0ou42kq()
+export const E = type({ "+": "delete", "[string]": "string", a: "string.date.parse" })
+export const F = /* @__PURE__ */ $arkv1hfscsk1nhk1a9()
 export const G = type("string").equals("string")
-export const H = $arkvzonxq00imvowq().description`)
+export const H = $arkv16rwth51i4aph5().description`)
 		})
 
 		it("folds Modules", () => {
@@ -952,10 +952,10 @@ export function all(a: Check, b: Check, c: Check, d: Check) {
 			const result = precompile(
 				`import { type } from "arktype"
 class Foo {}
-export const Deleted = type({ "+": "delete", "[string]": "string", a: type.instanceOf(Foo).or("string") })`
+export const Deleted = type({ "+": "delete", "[string]": "string", a: type.instanceOf(Foo).or("string.date.parse") })`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				'/main.ts:3:24  type({ "+": "delete", "[string]": "string", a: type.instanc… can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: string | Foo, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/main.ts:3:24  type({ "+": "delete", "[string]": "string", a: type.instanc… can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: (In: string) => Out<Date> | Foo, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 		})
 

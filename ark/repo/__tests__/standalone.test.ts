@@ -264,6 +264,47 @@ contextualize(() => {
 		}
 	})
 
+	it("validates as arktype does an index signature checking a key a default fills", async () => {
+		const empty = standIn(() => [], "empty")
+		const types = {
+			defaulted: type({
+				"[string]": "number | boolean | string[]",
+				port: "number > 0",
+				open: "boolean = true"
+			}),
+			nested: type({ "[string]": "object", nested: { x: "number = 1" } }),
+			thunked: type({
+				"[/^t/]": "string[]",
+				"[string]": "unknown",
+				tags: ["string[]", "=", empty]
+			})
+		}
+		const validators: Record<string, any> = {
+			...(await load({ defaulted: types.defaulted, nested: types.nested })),
+			thunked: (
+				await loadFactory(types.thunked, [["function", "empty", empty]])
+			)(empty)
+		}
+		const inputs = [
+			{ port: 1 },
+			{ port: 1, open: false, extra: 2 },
+			{ port: 0, open: "yes", extra: "y" },
+			{ nested: {} },
+			{ nested: { x: "1" }, other: 5 },
+			{ tags: ["a"], tooMany: 1 },
+			{ tags: [1], t2: "x" },
+			{}
+		]
+		for (const [name, t] of Object.entries(types)) {
+			for (const input of inputs) {
+				attest(observe(validators[name](input), input)).equals(
+					observe(t(input), input)
+				)
+				attest(validators[name].allows(input)).equals(t.allows(input))
+			}
+		}
+	})
+
 	it("builds errors as arktype does", async () => {
 		const T = type({ a: "string", b: { c: "number > 0" } })
 		const { T: validator } = await load({ T })
