@@ -2121,9 +2121,16 @@ ${isTemplate ? "]" : ")"}`
 		unit: RootUnit,
 		traversals: string[]
 	): string {
-		const trackedName =
-			unit.names[node.trackedId as NodeId] ??
-			throwParseError(writeUnprecompilableMessage(`${node.expression}'s cycle`))
+		// read only by the traversal of a node holding a cycle, as it enters the cycle's resolution
+		const tracked =
+			node.includesAlias ?
+				`\n\ttrackedId: ${JSON.stringify(
+					unit.names[node.trackedId as NodeId] ??
+						throwParseError(
+							writeUnprecompilableMessage(`${node.expression}'s cycle`)
+						)
+				)},`
+			:	""
 		// a discriminant's miss reads its union's description of the cases
 		const discriminantDescription =
 			node.hasKind("union") && node.compiledDiscriminant ?
@@ -2136,8 +2143,7 @@ ${isTemplate ? "]" : ")"}`
 		const transform =
 			traversals[2] ? `\n\ttraverseTransform: ${traversals[2]},` : ""
 		return `{
-	id: ${JSON.stringify(unit.names[node.id])},
-	trackedId: ${JSON.stringify(trackedName)},${flags.join("")}
+	id: ${JSON.stringify(unit.names[node.id])},${tracked}${flags.join("")}
 	traverseAllows: ${traversals[0]},
 	traverseApply: ${traversals[1]},${transform}
 	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]},
