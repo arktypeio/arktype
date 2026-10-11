@@ -506,6 +506,26 @@ export class ModuleGraph {
 		}
 	}
 
+	// each module the module's imports and re-exports run before it does
+	loadedBy(module: SourceModule): SourceModule[] {
+		const result: SourceModule[] = []
+		for (const statement of module.program.body) {
+			const source =
+				statement.type === "ImportDeclaration" ? statement.source.value
+				: (
+					statement.type === "ExportNamedDeclaration" ||
+					statement.type === "ExportAllDeclaration"
+				) ?
+					statement.source?.value
+				:	undefined
+			const loaded =
+				source === undefined ? undefined : this.resolve(source, module)
+			if (loaded instanceof SourceModule && !result.includes(loaded))
+				result.push(loaded)
+		}
+		return result
+	}
+
 	moduleOf(id: string): SourceModule | ImportTarget {
 		return (this.modulesById[id] ??= this.load(id, this.pathOf(id)))
 	}

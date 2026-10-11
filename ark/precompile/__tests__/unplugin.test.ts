@@ -12,6 +12,7 @@ import {
 	mkdtempSync,
 	realpathSync,
 	rmSync,
+	symlinkSync,
 	writeFileSync
 } from "node:fs"
 import { tmpdir } from "node:os"
@@ -715,7 +716,7 @@ console.log(Admin.description)
 		}
 	}).timeout(60000)
 
-	it("checks a default where arktype creates its Type, though nothing reads the Type, a site reads only its introspection or its package has no side effects", async () => {
+	it("checks a default where arktype creates its Type, though nothing reads the Type, a site reads only its introspection or another Type's in a package with no side effects", async () => {
 		const definition = `type({ a: type(["number", ":", n => n > limits.min]).default(5) })`
 		const files = {
 			// a schema the build can write without the predicate's name
@@ -791,6 +792,80 @@ console.log(configured, raised, JSON.stringify(T.toJsonSchema()))
 				sideEffectFree
 			)
 		)
+		// the module's other creations run where a site reads any of its Types, in the package or one a workspace links
+		const siblings = `${files["t.ts"]}export const U = type({ b: "string" })\n`
+		const siblingFree = writeFixture(
+			{
+				...files,
+				"config.ts": `${files["config.ts"]}export const configured = true\n`,
+				"raise.ts": `${files["raise.ts"]}export const raised = true\n`,
+				"t.ts": siblings,
+				"main.ts": `import { configured } from "./config.ts"
+import { raised } from "./raise.ts"
+import { U } from "./t.ts"
+
+console.log(configured, raised, JSON.stringify(U.toJsonSchema()))
+`,
+				"package.json": `{ "type": "module", "sideEffects": false }`
+			},
+			fromHere("temp", "defaultCheckedSiblingSideEffectFree")
+		)
+		results.sibling = thrownBy(
+			await bundlers.esbuild(
+				{ cwd: siblingFree, config: "config.ts" },
+				siblingFree
+			)
+		)
+		const workspace = writeFixture(
+			{
+				"config.ts": `${files["config.ts"]}export const configured = true\n`,
+				"raise.ts": `import { limits } from "pkg/limits"
+
+limits.min = 10
+export const raised = true
+`,
+				"main.ts": `import { configured } from "./config.ts"
+import { raised } from "./raise.ts"
+import { U } from "pkg/t"
+
+console.log(configured, raised, JSON.stringify(U.toJsonSchema()))
+`,
+				"package.json": `{ "type": "module" }`,
+				"packages/pkg/limits.ts": files["limits.ts"],
+				"packages/pkg/t.ts": siblings,
+				"packages/pkg/package.json": `{ "name": "pkg", "type": "module", "sideEffects": false, "exports": { "./t": "./t.ts", "./limits": "./limits.ts" } }`
+			},
+			fromHere("temp", "defaultCheckedWorkspace")
+		)
+		rmSync(join(workspace, "node_modules"), { recursive: true, force: true })
+		mkdirSync(join(workspace, "node_modules"))
+		symlinkSync("../packages/pkg", join(workspace, "node_modules", "pkg"))
+		results.workspace = thrownBy(
+			await bundlers.esbuild({ cwd: workspace, config: "config.ts" }, workspace)
+		)
+		const helped = writeFixture(
+			{
+				...files,
+				"config.ts": `${files["config.ts"]}export const configured = true\n`,
+				"raise.ts": `${files["raise.ts"]}export const raised = true\n`,
+				"t.ts": `${files["t.ts"]}export const make = () => type({ b: "string" })\n`,
+				"u.ts": `import { make } from "./t.ts"
+
+export const U = make()
+`,
+				"main.ts": `import { configured } from "./config.ts"
+import { raised } from "./raise.ts"
+import { U } from "./u.ts"
+
+console.log(configured, raised, JSON.stringify(U.toJsonSchema()))
+`,
+				"package.json": `{ "type": "module", "sideEffects": false }`
+			},
+			fromHere("temp", "defaultCheckedHelped")
+		)
+		results.helped = thrownBy(
+			await bundlers.esbuild({ cwd: helped, config: "config.ts" }, helped)
+		)
 		attest(results).snap({
 			imported:
 				"Default must be valid according to an anonymous predicate (was 5)",
@@ -799,6 +874,12 @@ console.log(configured, raised, JSON.stringify(T.toJsonSchema()))
 			unread:
 				"Default must be valid according to an anonymous predicate (was 5)",
 			sideEffectFree:
+				"Default must be valid according to an anonymous predicate (was 5)",
+			sibling:
+				"Default must be valid according to an anonymous predicate (was 5)",
+			workspace:
+				"Default must be valid according to an anonymous predicate (was 5)",
+			helped:
 				"Default must be valid according to an anonymous predicate (was 5)"
 		})
 	}).timeout(60000)

@@ -315,6 +315,8 @@ export class Precompiler {
 	private readsByModule = new WeakMap<SourceModule, SiteRead[]>()
 	private candidatesByModule = new WeakMap<SourceModule, SiteCandidate[]>()
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
+	private checksAtLoadByModule = new WeakMap<SourceModule, boolean>()
+	private sitesCheckByModule = new WeakMap<SourceModule, boolean>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
@@ -1381,9 +1383,7 @@ export class Precompiler {
 			if (
 				(site.introspection || (hole && dropped.has(hole.value))) &&
 				!holes.some(value => calledByChecks.has(value)) &&
-				(hole ?
-					reference.isOwnHole
-				:	!this.interpreter.isCheckedAtCreation(reference.value))
+				(hole ? reference.isOwnHole : !this.mustRun(reference.value, module))
 			) {
 				for (const value of holes) unchecked.add(value)
 				continue
@@ -2096,6 +2096,48 @@ export class Precompiler {
 		}
 	}
 
+	// under `"sideEffects": false` a bundler drops a module with its last read export, so a fold reading a Type keeps another module whose creations check
+	private mustRun(value: unknown, module: SourceModule): boolean {
+		return (
+			this.interpreter.isCheckedAtCreation(value) ||
+			this.interpreter
+				.modulesDeclaring(value)
+				.some(declaring => declaring !== module && this.checksAtLoad(declaring))
+		)
+	}
+
+	// the module and each it loads, which a bundler drops with it where nothing else reads them
+	private checksAtLoad(module: SourceModule): boolean {
+		let result = this.checksAtLoadByModule.get(module)
+		if (result !== undefined) return result
+		const loaded = [module]
+		result = false
+		for (let i = 0; i < loaded.length && !result; i++) {
+			result = this.sitesCheck(loaded[i])
+			for (const next of this.graph.loadedBy(loaded[i]))
+				if (!loaded.includes(next)) loaded.push(next)
+		}
+		this.checksAtLoadByModule.set(module, result)
+		return result
+	}
+
+	// e.g. a default it checks or a ParseError it throws, as each site outside a function runs when the module loads
+	private sitesCheck(module: SourceModule): boolean {
+		let result = this.sitesCheckByModule.get(module)
+		if (result === undefined) {
+			result = this.candidatesOf(module).some(candidate => {
+				if (candidate.fn || !this.settle(candidate)) return false
+				const { state } = candidate
+				return (
+					state.error !== undefined ||
+					this.interpreter.checksAtCreation(state, state, module)
+				)
+			})
+			this.sitesCheckByModule.set(module, result)
+		}
+		return result
+	}
+
 	private helperSitesOf(module: SourceModule): Node[] {
 		let result = this.helperSitesByModule.get(module)
 		if (result) return result
@@ -2244,11 +2286,7 @@ export class Precompiler {
 		}
 		// introspection doesn't depend on the Type at runtime, which only a module mock replaces
 		const type = site.introspection?.type
-		if (
-			type &&
-			!this.checkHelpers &&
-			!this.interpreter.isCheckedAtCreation(type)
-		) {
+		if (type && !this.checkHelpers && !this.mustRun(type, module)) {
 			site.inputs = site.inputs.filter(
 				input =>
 					input.kind !== "import" ||

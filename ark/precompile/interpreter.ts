@@ -322,6 +322,7 @@ export class Interpreter {
 	private checksByValue = new WeakMap<object, boolean>()
 	// e.g. a Type a top-level variable holds, which the program creates once however often a site reads it
 	private declaredOnce = new WeakSet<object>()
+	private modulesByValue = new WeakMap<object, SourceModule[]>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	// one stand-in for each site, parameter and count a variant assumes, so evaluating a site again reads the one it read
 	private parameterStandIns = new WeakMap<
@@ -1241,15 +1242,8 @@ export class Interpreter {
 				(this.sitesByNode.get(init) ??
 				this.sitesByNode.get(unwrapExpression(init)))
 			:	undefined
-		const compares = trace.reads.some(
-			read => read.root.kind === "binding" || !isArkValue(read.value)
-		)
-		if (compares) this.comparedAtCreation.add(value as object)
-		// a default's check calls the functions it reads as the value is created, the module's own too, as its factory does
-		const checks =
-			compares ||
-			!!site?.reached.some(reached => reached.length === 3) ||
-			this.checksHolesOf(value, site, module)
+		if (comparesAtCreation(trace)) this.comparedAtCreation.add(value as object)
+		const checks = this.checksAtCreation({ value, trace }, site, module)
 		const isOnce = isTopLevelInit(init)
 		const values = [value]
 		// e.g. a Module's Types, which its creation created
@@ -1258,8 +1252,29 @@ export class Interpreter {
 			if (!this.checksByValue.get(value as object))
 				this.checksByValue.set(value as object, checks)
 			if (isOnce) this.declaredOnce.add(value as object)
+			const modules = this.modulesByValue.get(value as object)
+			if (!modules) this.modulesByValue.set(value as object, [module])
+			else if (!modules.includes(module)) modules.push(module)
 			if (hasArkKind(value, "module")) values.push(...Object.values(value))
 		}
+	}
+
+	// a default's check calls the functions it reads as the value is created, the module's own too, as its factory does
+	checksAtCreation(
+		{ value, trace }: Pick<Evaluated, "value" | "trace">,
+		site: SiteState | undefined,
+		module: SourceModule
+	): boolean {
+		return (
+			comparesAtCreation(trace) ||
+			!!site?.reached.some(reached => reached.length === 3) ||
+			this.checksHolesOf(value, site, module)
+		)
+	}
+
+	// each module declaring the value, whose other creations run where a bundler keeps it
+	modulesDeclaring(value: unknown): readonly SourceModule[] {
+		return this.modulesByValue.get(value as object) ?? []
 	}
 
 	private checksHolesOf(
@@ -2796,6 +2811,12 @@ const staticProblemOf = (
 	: module.scopes.hasWith ? "is in a module that uses `with`"
 	: isLoopVariable(binding) ? "is a loop variable"
 	: undefined
+
+// e.g. a read of what the program holds, which the creation compares to what it read at build
+const comparesAtCreation = (trace: Trace): boolean =>
+	trace.reads.some(
+		read => read.root.kind === "binding" || !isArkValue(read.value)
+	)
 
 const isTopLevelInit = (init: Node | null | undefined): boolean => {
 	const declarator = init?.parent
