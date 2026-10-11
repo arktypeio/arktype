@@ -279,9 +279,31 @@ const writeArtifact = (
 		write: opts.bake ?? (write => write())
 	}
 	const types: Record<string, ExportedValue> = {}
-	const factories: string[] = []
+	const templates = new Set<BaseRoot>()
+	const folded = new Set<string>()
+	// a factory whose Type is folded reads it where the creations write it
+	const factories: (string | ((reads: Record<string, string>) => string))[] = []
 	const tables = new Set<number>()
 	const definitionAddresses = definitionAddressesOf(exports, sitesByName)
+	// a trial write, adding nothing to the artifact, tells whether a factory's Type has code holding nothing the factory receives
+	const isFolded = (name: string, type: BaseRoot) => {
+		const trial = new StandaloneArtifact(
+			{ [name]: type as never },
+			Object.create(shared),
+			{},
+			sitesByName,
+			definitionAddresses,
+			baking
+		)
+		trial.templates.add(type)
+		try {
+			trial.writeCreate(0, configured)
+			return true
+		} catch (e) {
+			if (e instanceof ParseError) return false
+			throw e
+		}
+	}
 	for (const [name, value] of Object.entries(exports)) {
 		if (arkKindOf(value) !== undefined) types[name] = value as never
 		else if ("member" in value) {
@@ -300,8 +322,36 @@ const writeArtifact = (
 		} else {
 			const factory = value as StandaloneFactory
 			if (factory.internedBy !== undefined) tables.add(factory.internedBy)
+			const { type } = factory
+			if (hasArkKind(type, "root") && !factory.defaultChecks?.length) {
+				const receiving = new StandaloneArtifact(
+					{},
+					shared,
+					imports,
+					sitesByName,
+					definitionAddresses,
+					baking,
+					factory
+				)
+				receiving.receiveAll(factory.params, factory.distinct ?? [])
+				// a Type it receives lends its meta to the errors of what the factory creates, which folded code can't
+				if (
+					!receiving.receivedMetas.size &&
+					!factory.isCreatedEachRun &&
+					isFolded(name, type)
+				) {
+					folded.add(name)
+					if (keyOf(type)[1].length) templates.add(type)
+					types[name] = type as never
+					const index = factories.length
+					factories.push(reads =>
+						receiving.writeRekeying(name, index, reads[name])
+					)
+					continue
+				}
+			}
 			const artifact = new StandaloneArtifact(
-				{ [name]: factory.type },
+				{ [name]: type },
 				shared,
 				imports,
 				sitesByName,
@@ -312,18 +362,23 @@ const writeArtifact = (
 			factories.push(artifact.writeFactory(name, factories.length, configured))
 		}
 	}
+	const [creations, reads] = writeCreations(
+		types,
+		templates,
+		folded,
+		opts,
+		definitionAddresses,
+		baking,
+		shared,
+		imports
+	)
 	return [
-		...writeCreations(
-			types,
-			opts,
-			definitionAddresses,
-			baking,
-			shared,
-			imports
-		),
+		...creations,
 		// created at a factory's first call, which an import cycle can reach before the artifact's body runs
 		[...tables].map(table => `var interned${table}`).join("\n"),
-		...factories
+		...factories.map(factory =>
+			typeof factory === "string" ? factory : factory(reads)
+		)
 	]
 }
 
@@ -335,15 +390,18 @@ interface Creation {
 
 const writeCreations = (
 	types: Record<string, ExportedValue>,
+	templates: ReadonlySet<BaseRoot>,
+	// a factory's Type, which only that factory reads
+	folded: ReadonlySet<string>,
 	{ configured, sitesByName, keywordReads }: StandaloneOptions,
 	definitionAddresses: ReadonlyMap<unknown, string>,
 	baking: Baking,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
-): string[] => {
+): [code: string[], reads: Record<string, string>] => {
 	const names = Object.keys(types)
-	const artifactOf = (indices: number[]) =>
-		new StandaloneArtifact(
+	const artifactOf = (indices: number[]) => {
+		const artifact = new StandaloneArtifact(
 			Object.fromEntries(indices.map(i => [names[i], types[names[i]]])),
 			shared,
 			imports,
@@ -351,7 +409,10 @@ const writeCreations = (
 			definitionAddresses,
 			baking
 		)
-	const readsByIndex: Record<number, string> = {}
+		for (const template of templates) artifact.templates.add(template)
+		return artifact
+	}
+	const reads: Record<string, string> = {}
 	let creations: Creation[] = []
 	for (let i = 0; i < names.length; i++) {
 		const artifact = artifactOf([i])
@@ -381,16 +442,17 @@ const writeCreations = (
 			)
 		}
 		for (const [position, i] of creation.indices.entries()) {
-			readsByIndex[i] =
+			reads[names[i]] =
 				`(created${index} ??= create${index}())${creation.indices.length > 1 ? `[${position}]` : ""}`
 		}
 	}
 	const lazyNamesByModule = new Map<object, string>()
 	// declared as functions, which a site an import cycle reaches before the artifact is evaluated can call
-	const getters = names.map((name, i) => {
+	const getters = names.flatMap((name, i) => {
+		if (folded.has(name)) return []
 		const value = types[name]
 		let declaration = ""
-		let read = readsByIndex[i]
+		let read = reads[name]
 		if (keywordReads?.has(name) && hasArkKind(value, "module")) {
 			let lazyName = lazyNamesByModule.get(value)
 			if (!lazyName) {
@@ -403,10 +465,13 @@ const writeCreations = (
 		return `${declaration}function get${i}() {\n\treturn ${read}\n}\n\nexport { get${i} as ${JSON.stringify(name)} }`
 	})
 	return [
-		...creations
-			.sort((l, r) => l.indices[0] - r.indices[0])
-			.map(creation => creation.code),
-		getters.join("\n")
+		[
+			...creations
+				.sort((l, r) => l.indices[0] - r.indices[0])
+				.map(creation => creation.code),
+			getters.join("\n")
+		],
+		reads
 	]
 }
 
@@ -534,6 +599,8 @@ export class StandaloneArtifact {
 	comparedRoots: BaseRoot[]
 	// a Type arktype creates anew each time its site runs, which its factory then does too
 	createdEachRun = new Set<BaseRoot>()
+	// a Type written without its key's functions, which each call of its factory copies with those it receives
+	templates = new Set<BaseRoot>()
 	// what a factory receives and checks, absent for an artifact creating its exports once
 	factory: StandaloneFactory | undefined
 	// each default arktype checks where it defines the Type, which the factory checks once it creates the validators
@@ -611,6 +678,15 @@ export class StandaloneArtifact {
 				!isDate(node.unit)
 			)
 				this.objectUnits.add(node.unit)
+		}
+	}
+
+	receiveAll(params: FactoryParam[], distinct: readonly unknown[]): void {
+		this.receive(params)
+		if (distinct.length) {
+			this.checks.push(
+				`runtime.checkDistinct([${distinct.map(hole => this.holeExpressions.get(hole)).join(", ")}], ${JSON.stringify(distinct.map(hole => this.labelsByHole.get(hole)))})`
+			)
 		}
 	}
 
@@ -944,12 +1020,7 @@ ${statements.filter(statement => statement).join("\n\n")}
 	): string {
 		const { params, internedBy, distinct = [] } = this.factory!
 		this.checkAddressed()
-		this.receive(params)
-		if (distinct.length) {
-			this.checks.push(
-				`runtime.checkDistinct([${distinct.map(hole => this.holeExpressions.get(hole)).join(", ")}], ${JSON.stringify(distinct.map(hole => this.labelsByHole.get(hole)))})`
-			)
-		}
+		this.receiveAll(params, distinct)
 		this.writeSharedUnits()
 		const exported = this.exports[name]
 		// a Module, Scope or Generic declares what it holds, which the body then writes
@@ -977,6 +1048,22 @@ ${statements.filter(statement => statement).join("\n\n")}
 			:	body)
 		]
 		return this.writeFactoryFunction(name, index, params, statements)
+	}
+
+	// the validator its folded code creates, keyed by the functions the call receives
+	writeRekeying(name: string, index: number, template: string): string {
+		const { type, params, internedBy } = this.factory!
+		const keyHoles = keyOf(type as never)[1]
+		const holes = `[${keyHoles.map(hole => this.emit(hole)).join(", ")}]`
+		const copy = `runtime.rekeyed(${template}, ${holes})`
+		return this.writeFactoryFunction(name, index, params, [
+			...this.checks,
+			`return ${
+				!keyHoles.length ? template
+				: internedBy === undefined ? copy
+				: `runtime.intern((interned${internedBy} ??= runtime.internTable()), ${holes}, () => ${copy})`
+			}`
+		])
 	}
 
 	writeIntrospection(
@@ -1314,8 +1401,9 @@ return [${returned.join(", ")}]
 		const shape = this.shapeOf(root)
 		const nodeName = this.unitsByHead.get(root)!.names[root.id]
 		const [id, holes] = keyOf(root)
-		const key = `,\n\t${JSON.stringify(id)}${holes.length ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
-		return `new runtime.Validator(
+		const isTemplate = this.templates.has(root)
+		const key = `,\n\t${JSON.stringify(id)}${holes.length && !isTemplate ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
+		return `${isTemplate ? "runtime.template" : "new runtime.Validator"}(
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
 	${this.emit(pipeOf(root))},

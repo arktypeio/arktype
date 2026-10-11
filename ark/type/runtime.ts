@@ -275,6 +275,33 @@ export class Validator extends Callable<
 	}
 }
 
+type TemplateParts = [
+	rootApply: RootApply,
+	node: BaseRoot,
+	pipe: TraversePipe,
+	attributes: ValidatorAttributes,
+	id: string
+]
+
+const templateParts = /* @__PURE__ */ new WeakMap<Validator, TemplateParts>()
+
+// a validator written once without its key's functions, so no factory can receive it in place of another
+export const template = (...parts: TemplateParts): Validator => {
+	const [rootApply, node, pipe, attributes] = parts
+	const validator = new Validator(rootApply, node, pipe, attributes, "")
+	templateParts.set(validator, parts)
+	return validator
+}
+
+// a factory whose Type's code holds nothing it receives copies the validator written once, keyed by the functions it receives
+export const rekeyed = (
+	template: Validator,
+	holes: readonly unknown[]
+): Validator => {
+	const [rootApply, node, pipe, attributes, id] = templateParts.get(template)!
+	return new Validator(rootApply, node, pipe, attributes, id, holes)
+}
+
 type typeOnlyMember =
 	| typeof inferred
 	| "t"
