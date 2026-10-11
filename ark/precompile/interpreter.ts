@@ -8,13 +8,13 @@ import {
 	type BaseRoot,
 	type CacheReach
 } from "@ark/schema"
-import { hashOf, hasDomain, ParseError } from "@ark/util"
+import { hashOf, hasDomain, isDotAccessible, ParseError } from "@ark/util"
 import { configure, type } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import {
 	holeNamePattern,
-	holeNamePrefix,
+	holeNameMarker,
 	isJsonSchemaError,
 	keyOf,
 	type DefaultCheck,
@@ -2142,11 +2142,15 @@ export class Interpreter {
 		return this.callNative(callee as Function, args, undefined, node, ctx, true)
 	}
 
-	// a standalone artifact prints a hole's name at creation, so the build names it by a placeholder it can find in what arktype prints
-	private holeNameOf(node: Node, module: SourceModule): string {
+	// a standalone artifact prints a hole's name at creation, so the build names it by a placeholder it can find in what arktype prints, led by the name its declaration gives it, which arktype sorts by
+	private holeNameOf(node: Node, module: SourceModule, name?: string): string {
 		return this.opts.runtime === "arktype" ?
 				""
-			:	`${holeNamePrefix}${hashOf(`${module.path}:${node.start}`)}`
+			:	`${
+					name === undefined ? ""
+					: isDotAccessible(name) ? name
+					: "fn"
+				}${holeNameMarker}${hashOf(`${module.path}:${node.start}`)}`
 	}
 
 	private functionStandIn(closure: Closure, node: Node): object {
@@ -2154,7 +2158,11 @@ export class Interpreter {
 		const evaluated = !closure.env && this.standInsByNode.get(closure.node)
 		if (evaluated) return evaluated
 		const arity = parameterCount(closure.node)
-		const name = this.holeNameOf(closure.node, closure.module)
+		const name = this.holeNameOf(
+			closure.node,
+			closure.module,
+			declaredNameOf(closure.node)
+		)
 		const standIn: StandIn = {
 			kind: "function",
 			module: closure.module,
@@ -2280,7 +2288,7 @@ export class Interpreter {
 				element.type === "MethodDefinition" && element.kind === "constructor"
 		) as MethodDefinition | undefined
 		const length = constructor ? parameterCount(constructor.value) : 0
-		const name = this.holeNameOf(node, ctx.module)
+		const name = this.holeNameOf(node, ctx.module, declaredNameOf(node))
 		const standIn: StandIn = {
 			kind: "class",
 			module: ctx.module,
@@ -2770,6 +2778,35 @@ const parameterCount = (fn: FunctionNode): number => {
 		count++
 	}
 	return count
+}
+
+// the name JS gives a function or class where its position alone decides it, or none where something else might
+const declaredNameOf = (node: FunctionNode | Class): string | undefined => {
+	if (node.id) return node.id.name
+	const parent = node.parent
+	switch (parent?.type) {
+		case "VariableDeclarator":
+			return parent.init === node && parent.id.type === "Identifier" ?
+					parent.id.name
+				:	undefined
+		case "Property":
+			return (
+					parent.value === node &&
+						parent.kind === "init" &&
+						!parent.computed &&
+						parent.key.type === "Identifier"
+				) ?
+					parent.key.name
+				:	undefined
+		case "ArrayExpression":
+		case "ReturnStatement":
+			return ""
+		case "ArrowFunctionExpression":
+			return parent.body === node ? "" : undefined
+		case "CallExpression":
+		case "NewExpression":
+			return parent.callee === node ? undefined : ""
+	}
 }
 
 const inferredNameOf = (fn: FunctionNode): string => {

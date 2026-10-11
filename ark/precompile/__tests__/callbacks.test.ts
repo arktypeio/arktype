@@ -174,8 +174,8 @@ const B = type.instanceOf(User)`,
 				opts
 			).sites.map(site => (site.value as Type).description)
 		attest(descriptionsOf()).snap([
-			"a number and valid according to $hole_j0i6oq1s1b6p1",
-			"an instance of $hole_hkuzc012jnsq9"
+			"a number and valid according to isPositive$hole_j0i6oq1s1b6p1",
+			"an instance of User$hole_hkuzc012jnsq9"
 		])
 		attest(descriptionsOf({ runtime: "arktype" })).snap([
 			"a number and valid according to an anonymous predicate",
@@ -190,7 +190,7 @@ const B = type({ a: [["string", "=>", s => ${nonStatic}], "=", "a"] })
 const C = type({ a: [["string", ":", s => ${nonStatic}], "=", "a"] })
 const D = type({ a: [["string", ":", s => s.length > 0], "=", "a"] })`
 		attest(statusesOf(source)).snap([
-			"2:11 accepted { a: string[] = Function($hole_1vu6ogz1nemc20) }",
+			"2:11 accepted { a: string[] = Function(fn$hole_1vu6ogz1nemc20) }",
 			'6:11 accepted { a: (In: string) => Out<unknown> = "a" }',
 			'10:11 accepted { a: string = "a" }',
 			'14:11 accepted { a: string = "a" }'

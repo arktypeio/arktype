@@ -823,7 +823,7 @@ export class StandaloneArtifact {
 		for (const hole of this.holeExpressions.keys()) {
 			if (typeof hole !== "function") continue
 			const name = functionNameOf(hole)
-			if (!name.startsWith(holeNamePrefix)) {
+			if (!name.includes(holeNameMarker)) {
 				throwInternalError(
 					`Unexpected function ${this.labelsByHole.get(hole)} not named by a placeholder`
 				)
@@ -861,19 +861,8 @@ export class StandaloneArtifact {
 					)
 			for (const list of lists) {
 				if (!isArray(list)) continue
-				for (let i = 1; i < list.length; i++) {
-					const hole = this.nameOrderingOf(
-						(list[i - 1] as BaseNode).hash,
-						(list[i] as BaseNode).hash
-					)
-					if (hole) {
-						throwParseError(
-							writeUnprecompilableMessage(
-								`an order that depends on the name of ${this.labelsByHole.get(hole)}`
-							)
-						)
-					}
-				}
+				for (let i = 1; i < list.length; i++)
+					this.checkOrder(list[i - 1] as BaseNode, list[i] as BaseNode)
 			}
 		}
 	}
@@ -930,7 +919,7 @@ export class StandaloneArtifact {
 			if (holes.length) this.holesByName.set(holesName, holes)
 			const expected =
 				!isType ? `, "${kindNameOf(value)}"`
-				: value.expression.includes(holeNamePrefix) ? ""
+				: value.expression.includes(holeNameMarker) ? ""
 				: `, ${this.readExpression(value)}`
 			this.checks.push(
 				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(label)}${expected})`
@@ -977,21 +966,57 @@ export class StandaloneArtifact {
 		}
 	}
 
-	nameOrderingOf(l: string, r: string): unknown {
+	// where two siblings' hashes first differ inside the names of what they hold, the factory checks the names it receives sort as the build's did
+	checkOrder(l: BaseNode, r: BaseNode): void {
 		let i = 0
-		while (i < l.length && l[i] === r[i]) i++
-		for (const hole of this.holeExpressions.keys()) {
-			if (typeof hole !== "function") continue
-			const reference = `.${nameOf(hole)}"`
-			for (const hash of [l, r]) {
-				for (
-					let start = hash.indexOf(reference);
-					start !== -1;
-					start = hash.indexOf(reference, start + 1)
-				)
-					if (start < i && i < start + reference.length - 1) return hole
+		while (i < l.hash.length && l.hash[i] === r.hash[i]) i++
+		const sides = [l.hash, r.hash].map(hash => {
+			const name = registeredNameAt(hash, i)
+			if (name === undefined) return
+			const marker = name.indexOf(holeNameMarker)
+			if (marker === -1) {
+				const base = name.replace(/\$\d+$/, "")
+				return { base, expression: JSON.stringify(base), label: "" }
 			}
+			const hole = [...this.holeExpressions.keys()].find(
+				hole => typeof hole === "function" && nameOf(hole) === name
+			)
+			return {
+				base: name.slice(0, marker),
+				expression: this.holeExpressions.get(hole) ?? "",
+				label: this.labelsByHole.get(hole) ?? name
+			}
+		})
+		const [left, right] = sides
+		const holes = sides.filter(side => side?.label)
+		if (!holes.length) return
+		// arktype prints siblings printing alike but for their names once where the names are equal, which text written before the names are known can't
+		const isAlike = (["expression", "description"] as const).every(
+			k =>
+				l[k].replace(holeNamePattern, "") === r[k].replace(holeNamePattern, "")
+		)
+		// a name holding "$" can sort against another by its registration count, as no declaration tells
+		const unordered =
+			holes.find(side => !side!.base || !side!.expression) ??
+			(!left || !right || `${right.base}"` < `${left.base}"` ?
+				holes[0]
+			:	undefined)
+		if (unordered) {
+			throwParseError(
+				writeUnprecompilableMessage(
+					`an order that depends on the name of ${unordered.label}`
+				)
+			)
 		}
+		if (isAlike && left!.base === right!.base) {
+			throwParseError(
+				writeUnprecompilableMessage(
+					`siblings printing alike but for the name of ${holes[0]!.label}`
+				)
+			)
+		}
+		const check = `runtime.checkOrder(${left!.expression}, ${right!.expression}, ${JSON.stringify([left!.label, right!.label])}${isAlike ? ", true" : ""})`
+		if (!this.checks.includes(check)) this.checks.push(check)
 	}
 
 	get roots(): BaseRoot[] {
@@ -1549,7 +1574,7 @@ return [${returned.join(", ")}]
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
 	${this.emit(pipeOf(root))},
-	{ expression: ${root.expression.includes(holeNamePrefix) ? this.emitString(root.expression) : `${this.readExpression(root)}()`}, description: ${this.emitDescription(root)}, meta: ${this.emitMeta(root)}${this.emitIntrospection(root)} }${key}
+	{ expression: ${root.expression.includes(holeNameMarker) ? this.emitString(root.expression) : `${this.readExpression(root)}()`}, description: ${this.emitDescription(root)}, meta: ${this.emitMeta(root)}${this.emitIntrospection(root)} }${key}
 ${isTemplate ? "]" : ")"}`
 	}
 
@@ -1743,7 +1768,7 @@ ${isTemplate ? "]" : ")"}`
 
 	// a description holding those of the roots it references is composed from their modules, else written where it's read
 	emitDescription(root: BaseRoot): string {
-		if (root.description.includes(holeNamePrefix))
+		if (root.description.includes(holeNameMarker))
 			return this.emitString(root.description)
 		const parts = partsOf(root, "description")
 		if (parts.every(part => typeof part === "string"))
@@ -2385,7 +2410,7 @@ const holdsCallback = (node: BaseNode): boolean =>
 const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (seen.has(value)) return false
 	seen.add(value)
-	if (typeof value === "string") return value.includes(holeNamePrefix)
+	if (typeof value === "string") return value.includes(holeNameMarker)
 	if (isHole(value)) return true
 	if (!hasDomain(value, "object") || isNode(value) || !isPlainLiteral(value))
 		return false
@@ -2701,7 +2726,7 @@ const partsOf = (
 		if (
 			part.length >= minComposedLength &&
 			part !== s &&
-			!part.includes(holeNamePrefix)
+			!part.includes(holeNameMarker)
 		)
 			candidates[part] = node
 	}
@@ -2734,9 +2759,19 @@ const partsOf = (
 	return parts
 }
 
-export const holeNamePrefix = "$hole_"
+export const holeNameMarker = "$hole_"
 
-const holeName = `${holeNamePrefix.replace("$", "\\$")}[\\da-z]+`
+// the registered name a hash holds at an index, which arktype writes as `"$ark.name"`
+const registeredNameAt = (hash: string, i: number): string | undefined => {
+	const start = hash.lastIndexOf('"', i - 1) + 1
+	const reference = /^\$ark\d*\.([\w$]+)"/.exec(hash.slice(start))
+	return reference && i > start + reference[0].indexOf(".") ?
+			reference[1]
+		:	undefined
+}
+
+// led by the name the build expects of its function
+const holeName = `[\\w$]*${holeNameMarker.replace("$", "\\$")}[\\da-z]+`
 
 export const holeNamePattern = new RegExp(holeName, "g")
 

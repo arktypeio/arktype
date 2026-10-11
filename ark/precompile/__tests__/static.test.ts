@@ -1359,8 +1359,8 @@ const L = type("Type<Apple>".split(new RegExp(Ap as never)).length === 2 ? "stri
 const replacer = (k: string, v: any) => (k === "" ? { a: Ap } : k === "a" ? v.proto.includes("Apple") : v)
 const M = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number")`)
 			).snap([
-				"5:12 accepted $hole_1c2w4i12760ad",
-				"6:11 accepted $hole_tlxgt0061ywqu",
+				"5:12 accepted Apple$hole_1c2w4i12760ad",
+				"6:11 accepted Zebra$hole_tlxgt0061ywqu",
 				'9:11 rejected\n  arktype calls `where` (/main.ts:9:102) while defining the type, so it must be a static helper\n  `[n].join("")` converts an object to a primitive, which runs its methods',
 				'10:11 rejected\n  `[Ap, Z].join("")` converts an object to a primitive, which runs its methods',
 				'11:11 rejected\n  `"".concat(Ap as never)` converts an object to a primitive, which runs its methods',
@@ -1371,7 +1371,7 @@ const M = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number
 				"16:11 rejected\n  `Ap as never` converts an object to a primitive, which runs its methods",
 				'17:11 rejected\n  `"Type<Apple>".replace(Ap as never, "")` converts an object to a primitive, which runs its methods',
 				"18:11 accepted { a: string, ab: string, xy: string }",
-				"19:11 accepted $hole_1c2w4i12760ad",
+				"19:11 accepted Apple$hole_1c2w4i12760ad",
 				"20:11 rejected\n  `new RegExp(Ap as never)` converts an object to a primitive, which runs its methods",
 				"22:11 rejected\n  `v: any` (/main.ts:21:30) receives the name of `Apple` (/main.ts:3:1), which the build knows only by a placeholder"
 			])

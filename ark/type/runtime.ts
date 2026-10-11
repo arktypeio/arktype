@@ -40,6 +40,7 @@ import {
 	type Traversal
 } from "@ark/schema/runtime"
 import {
+	baseNameOf,
 	Callable,
 	functionNameOf,
 	getBuiltinNameOfConstructor,
@@ -517,6 +518,34 @@ export const checkDistinct = (
 				writeCreationMismatchMessage(labels[i], labels[first], "another value")
 			)
 		}
+	}
+}
+
+// arktype sorts a node's branches and props by the names of the functions they hold, so a factory checks those it receives sort as the build's did
+export const checkOrder = (
+	first: unknown,
+	second: unknown,
+	labels: readonly [string, string],
+	// whether the two print alike but for their names, which arktype then prints once
+	isApart?: true
+): void => {
+	const [l, r] = [first, second].map(value =>
+		typeof value === "string" ? value : baseNameOf(value as Function)
+	)
+	const isFlipped = `${r}"` < `${l}"`
+	if (isFlipped || (isApart && l === r)) {
+		const i = labels[0] ? 0 : 1
+		throwError(
+			writeCreationMismatchMessage(
+				labels[i],
+				`named ${printable(i ? r : l)}, which sorts ${
+					!isFlipped ? "with"
+					: i ? "before"
+					: "after"
+				} ${printable(i ? l : r)}`,
+				`sorting ${i ? "after" : "before"} it`
+			)
+		)
 	}
 }
 

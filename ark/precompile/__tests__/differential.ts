@@ -2,7 +2,7 @@ import { fromHere } from "@ark/fs"
 import { hasArkKind, type BaseRoot } from "@ark/schema"
 import { hasDomain, noSuggest, ParseError } from "@ark/util"
 import {
-	holeNamePrefix,
+	holeNameMarker,
 	introspectionMembers,
 	isJsonSchemaError,
 	keyOf,
@@ -181,7 +181,7 @@ const loadNamingHoles = async (
 		placeholdersByHole.set(
 			hole,
 			placeholdersByHole.get(hole) ??
-				`${holeNamePrefix}${placeholdersByHole.size.toString(36)}`
+				`${holeNameMarker}${placeholdersByHole.size.toString(36)}`
 		)
 		Object.defineProperty(hole, "name", {
 			value: placeholdersByHole.get(hole),
@@ -401,7 +401,7 @@ const foldedMembers = introspectionMembers.filter(
 
 const printsName = (data: unknown): boolean =>
 	typeof data === "string" ?
-		data.includes("$ark.") || data.includes(holeNamePrefix)
+		data.includes("$ark.") || data.includes(holeNameMarker)
 	:	typeof data === "object" &&
 		data !== null &&
 		Object.values(data).some(printsName)

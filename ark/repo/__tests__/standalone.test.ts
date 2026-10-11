@@ -121,8 +121,8 @@ const messageOf = (configure: string, fingerprint?: string) =>
 const runtimeImport = `import * as runtime from "arktype/runtime"`
 
 // the build holds another function in place of each the program will pass, named by a placeholder its factory completes with the received function's name
-const standIn = <fn extends Function>(fn: fn, id: string): fn =>
-	Object.defineProperty(fn, "name", { value: `$hole_${id}` })
+const standIn = <fn extends Function>(fn: fn, id: string, name = ""): fn =>
+	Object.defineProperty(fn, "name", { value: `${name}$hole_${id}` })
 
 // a factory built with each hole's value, as a build passes it in place of its source
 const jsonSchemaErrorOf = (t: { toJsonSchema: () => unknown }) => {
@@ -2053,7 +2053,97 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			}
 		})
 
-		it("rejects an order that depends on a hole's name", () => {
+		it("checks the functions it receives keep the order arktype sorts their names in", async () => {
+			const isEven = standIn((n: number) => n % 2 === 0, "a", "isEven")
+			const isSmall = standIn((n: number) => n < 10, "b", "isSmall")
+			const { T: create } = await load({
+				T: {
+					type: type("number")
+						.narrow(isSmall)
+						.or(type("number").narrow(isEven)),
+					params: [
+						{ kind: "function", label: "`isSmall`", value: isSmall },
+						{ kind: "function", label: "`isEven`", value: isEven }
+					]
+				}
+			})
+			const even = (n: number) => n % 2 === 0
+			const small = (n: number) => n < 10
+			attest(create(small, even)(11).toString()).snap(
+				"must be valid according to even or valid according to small (was 11)"
+			)
+			const whole = (n: number) => Number.isInteger(n)
+			attest(() => create(small, whole)).throws(
+				writeCreationMismatchMessage(
+					"`isEven`",
+					'named "whole", which sorts after "small"',
+					"sorting before it"
+				)
+			)
+			// arktype prints branches alike but for their names once where the names are equal
+			const [unnamedSmall, unnamedEven] = [
+				(n: number) => n < 10,
+				(n: number) => n % 2 === 0
+			]
+			attest(() => create(unnamedSmall, unnamedEven)).throws(
+				writeCreationMismatchMessage(
+					"`isEven`",
+					'named "fn", which sorts with "fn"',
+					"sorting before it"
+				)
+			)
+		})
+
+		it("rejects siblings printing alike whose functions' declared names are equal", () => {
+			const isSmall = standIn((n: number) => n < 10, "a", "fn")
+			const isEven = standIn((n: number) => n % 2 === 0, "b", "fn")
+			attest(() =>
+				precompileStandalone({
+					T: {
+						type: type("number")
+							.narrow(isSmall)
+							.or(type("number").narrow(isEven)),
+						params: [
+							{ kind: "function", label: "`isSmall`", value: isSmall },
+							{ kind: "function", label: "`isEven`", value: isEven }
+						]
+					}
+				})
+			).throws(
+				writeUnprecompilableMessage(
+					"siblings printing alike but for the name of `isSmall`"
+				)
+			)
+		})
+
+		it("checks a function it receives keeps its order beside a keyword's", async () => {
+			const isLong = standIn((s: string) => s.length > 10, "a", "isLong")
+			const { T: create } = await load({
+				T: {
+					type: type
+						.schema({
+							domain: "string",
+							predicate: { predicate: isLong, meta: "long" }
+						})
+						.or("string.date"),
+					params: [{ kind: "function", label: "`isLong`", value: isLong }]
+				}
+			})
+			const hasTen = (s: string) => s.length > 10
+			attest(create(hasTen)("a").toString()).snap(
+				'must be long or a parsable date (was "a")'
+			)
+			const wordy = (s: string) => s.length > 10
+			attest(() => create(wordy)).throws(
+				writeCreationMismatchMessage(
+					"`isLong`",
+					'named "wordy", which sorts after "isParsableDate"',
+					"sorting before it"
+				)
+			)
+		})
+
+		it("rejects an order that depends on the name of a hole it can't name", () => {
 			const isEven = standIn((n: number) => n % 2 === 0, "iseven")
 			const isPositive = standIn((n: number) => n > 0, "ispositive")
 			attest(() =>
