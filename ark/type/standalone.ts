@@ -767,8 +767,13 @@ export class StandaloneArtifact {
 			)
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
+		// a unit writes the error contexts of nodes it doesn't declare too, like a union's branches, and a module shared by artifacts writes each alike
+		for (const unit of this.units) {
+			for (const node of unit.declared) this.metas.add(node.meta)
+			for (const root of unit.roots)
+				for (const node of root.references) this.metas.add(node.meta)
+		}
 		for (const node of this.declared) {
-			this.metas.add(node.meta)
 			if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
 			else if (node.hasKind("pattern")) this.patternInstances.add(node.instance)
 			else if (node.hasKind("optional") || node.hasKind("sequence"))
