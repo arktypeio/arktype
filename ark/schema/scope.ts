@@ -350,10 +350,17 @@ export type PrecompiledUnit = [
 		dependencies: BaseNode[]
 	],
 	compiledUnit: CompiledUnit,
-	// each root the unit calls, by the key of its own unit
-	dependencies: [key: string, kind: TraversalKind][],
+	// each root the unit calls, by the key of its own unit, and the index of its traversal kind
+	dependencies: [key: string, kind: number][],
 	// its root's number of references, which a root reads without hashing its content
 	size: number
+]
+
+// a unit writes the traversal kind it calls a root with as its index here
+const traversalKinds: readonly TraversalKind[] = [
+	"Allows",
+	"Apply",
+	"Transform"
 ]
 
 const precompiledUnits: Record<string, PrecompiledUnit> = Object.create(null)
@@ -406,7 +413,7 @@ const bindPrecompiled = (
 		const dependency = dependencyNodes[i]
 		if (!dependency.compiledUnit)
 			bindPrecompiled(dependency, precompiledUnits[key])
-		traversals.push(dependency[`traverse${kind}`]!)
+		traversals.push(dependency[`traverse${traversalKinds[kind]}`]!)
 	}
 	bindUnit(
 		declared,
@@ -991,7 +998,8 @@ const writePrecompiledUnit = (
 ): string | undefined => {
 	const root = unit.roots[0]
 	const dependencies = Object.values(unit.dependencies).map(
-		([node, kind]) => [keyOf(node as BaseRoot), kind] as const
+		([node, kind]) =>
+			[keyOf(node as BaseRoot), traversalKinds.indexOf(kind)] as const
 	)
 	// a unit follows those it calls, so one calling a unit that couldn't be written can't be either
 	if (dependencies.some(([key]) => !unitsByKey[key])) return
