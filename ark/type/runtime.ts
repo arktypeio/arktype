@@ -40,6 +40,7 @@ import {
 	type Traversal
 } from "@ark/schema/runtime"
 import {
+	arityOf,
 	baseNameOf,
 	Callable,
 	functionNameOf,
@@ -443,8 +444,8 @@ export const describeHole = (
 	const builtinName = getBuiltinNameOfConstructor(hole)
 	if (builtinName) return `the builtin ${builtinName}`
 	if (kind === "function") {
-		// the length a site's function has now, where arktype keeps the one it read first
-		const arity = hole.length
+		// arktype keeps the length it read first, which a factory reads where the definition did
+		const arity = arityOf(hole)
 		return `a function of ${
 			arity === 0 ? "no parameters"
 			: arity === 1 ? "1 parameter"

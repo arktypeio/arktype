@@ -1,6 +1,6 @@
 import { fromHere } from "@ark/fs"
 import { hasArkKind, type BaseRoot } from "@ark/schema"
-import { hasDomain, noSuggest, ParseError } from "@ark/util"
+import { arityOf, hasDomain, noSuggest, ParseError } from "@ark/util"
 import {
 	holeNameMarker,
 	introspectionMembers,
@@ -159,6 +159,25 @@ const exportOf = (node: BaseRoot, holes: unknown[]): StandaloneExport => {
 			label: `hole${i}`,
 			value: hole
 		}))
+	}
+}
+
+// a program's runtime first reads a function's length where arktype did, which the runtime's copy here can only replay
+const createReadingArities = (artifact: any, holes: unknown[]): Validator => {
+	const descriptors = holes.map(hole =>
+		typeof hole === "function" ?
+			Object.getOwnPropertyDescriptor(hole, "length")
+		:	undefined
+	)
+	for (const hole of holes) {
+		if (typeof hole === "function")
+			Object.defineProperty(hole, "length", { value: arityOf(hole) })
+	}
+	try {
+		return artifact.T(...holes)
+	} finally {
+		for (const [i, hole] of holes.entries())
+			if (descriptors[i]) Object.defineProperty(hole, "length", descriptors[i])
 	}
 }
 
@@ -566,7 +585,7 @@ export const compare = async (
 		}
 		let validator: Validator
 		try {
-			validator = artifact.T(...holes)
+			validator = createReadingArities(artifact, holes)
 		} catch (e) {
 			disagree("creation", { threw: String(e) })
 			continue
