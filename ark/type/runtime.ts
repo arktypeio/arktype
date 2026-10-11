@@ -40,7 +40,6 @@ import {
 	type Traversal
 } from "@ark/schema/runtime"
 import {
-	arityOf,
 	baseNameOf,
 	Callable,
 	functionNameOf,
@@ -444,8 +443,8 @@ export const describeHole = (
 		return describeValue(hole)
 	// arktype calls a builtin it's passed as a function like any other, by its length
 	if (kind === "function") {
-		// arktype keeps the length it read first, which a factory reads where the definition did
-		const arity = arityOf(hole)
+		// the length a site's function has now, where arktype keeps the one it read first
+		const arity = hole.length
 		return `a function of ${
 			arity === 0 ? "no parameters"
 			: arity === 1 ? "1 parameter"
@@ -570,7 +569,7 @@ export const selectVariant = (
 				)
 			)
 		}
-		index = index * 3 + Math.min(arityOf(hole), 2)
+		index = index * 3 + Math.min(hole.length, 2)
 	}
 	return variantsByCounts[index]
 }
