@@ -1277,6 +1277,26 @@ export const E = type("strng")`,
 			attest(result.modules).equals({})
 		})
 
+		it("writes units for the Types a Scope exports", () => {
+			const unitsOf = (source: string) =>
+				Object.keys(
+					precompile(
+						`import { scope, type } from "arktype"\n${source}`,
+						{},
+						{ runtime: "arktype" }
+					).modules
+				).filter(specifier => specifier.startsWith("~arktype/units/"))
+			const units = unitsOf(`export const User = type({ name: "string" })`)
+			attest(
+				unitsOf(`export const $ = scope({ user: { name: "string" } })`)
+			).equals(units)
+			attest(
+				unitsOf(
+					`export const types = scope({ user: { name: "string" } }).export()`
+				)
+			).equals(units)
+		})
+
 		it("places the units a module calls in it", () => {
 			const lines = precompile(
 				`import "./config.ts"

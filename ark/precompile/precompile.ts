@@ -605,7 +605,10 @@ export class Precompiler {
 			}
 			if (id === this.config) this.stampConfiguration(module, s)
 		} else {
-			const roots = sites.flatMap(site => site.roots)
+			const roots = sites.flatMap(site => [
+				...site.roots,
+				...exportedRootsOf(site.value)
+			])
 			if (roots.length) {
 				// a program's first Type exports arktype's builtin scopes, whose roots then bind units like its own
 				const intrinsicUnits = (this.intrinsicUnits ??= writePrecompiledUnits(
@@ -3595,6 +3598,21 @@ const createdBy = (site: Site): Foldable | undefined =>
 	isFoldable(site.value) ? site.value : site.introspection?.type
 
 // e.g. a Module and each Type it holds, which a program can compare by identity
+// a Scope's Types are returned by its exports rather than by a call the site makes
+const exportedRootsOf = (value: unknown): BaseRoot[] => {
+	let module = value
+	if (hasArkKind(value, "scope")) {
+		try {
+			module = value.export()
+		} catch {
+			// a scope whose export throws defines no Type
+			return []
+		}
+	}
+	if (!hasArkKind(module, "module")) return []
+	return [...arkObjectsIn(module)].filter(member => hasArkKind(member, "root"))
+}
+
 const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
 	if (!isFoldable(value) || result.has(value)) return result
 	result.add(value)
