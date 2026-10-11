@@ -408,6 +408,56 @@ const generics: fc.Arbitrary<FragmentOf> = fc
 		)
 	})
 
+const typesThroughCalls = {
+	scope: (def: string) => `scope({ a: ${def} }).type("a")`,
+	export: (def: string) => `scope({ a: ${def} }).export().a`,
+	module: (def: string) => `type.module({ a: ${def} }).a`,
+	generic: (def: string) => `type("<t>", { box: "t" })(${def})`
+}
+
+const validatorReads = {
+	description: (t: string) => `${t}.description`,
+	expression: (t: string) => `${t}.expression`,
+	toString: (t: string) => `${t}.toString()`,
+	allows: (t: string) => `${t}.allows`,
+	assert: (t: string) => `${t}.assert`,
+	standard: (t: string) => `${t}["~standard"].validate`
+}
+
+// a validator's member read off a Type a call through a Scope, Module or Generic returns, which only the build tells from a Module's alias
+const throughCalls: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		node: nodeOf([]),
+		through: fc.constantFrom(
+			...(Object.keys(typesThroughCalls) as (keyof typeof typesThroughCalls)[])
+		),
+		read: fc.constantFrom(
+			...(Object.keys(validatorReads) as (keyof typeof validatorReads)[])
+		)
+	})
+	.chain(({ node, through, read }) =>
+		inputsOf(
+			through === "generic" ?
+				dataOf(node, noAliases).map(box => ({ box }))
+			:	dataOf(node, noAliases)
+		).map(
+			(inputs): FragmentOf =>
+				id => ({
+					containers: [],
+					exports: [],
+					main: [
+						observed(
+							id,
+							validatorReads[read](
+								typesThroughCalls[through](sourceOf(defOf(node)))
+							),
+							inputs
+						)
+					]
+				})
+		)
+	)
+
 const derivations = {
 	or: (l: string, r: string) => `${l}.or(${r})`,
 	and: (l: string, r: string) => `${l}.and(${r})`,
@@ -646,7 +696,8 @@ const programs = fc
 			derived,
 			bindings,
 			matchers,
-			sortedSiblings
+			sortedSiblings,
+			throughCalls
 		),
 		{
 			minLength: 1,
@@ -769,6 +820,9 @@ const disagreementsOf = async (
 			return !known
 		})
 	return [
+		...standalone.errors
+			.filter(error => error.reasons.includes(unfoldableValue))
+			.map(error => `standalone refuses ${error.message}`),
 		...reportOf(
 			"cache",
 			unknownOf(program, compareWorlds(cache, original, cached).disagreements)
@@ -785,6 +839,10 @@ const disagreementsOf = async (
 		:	[])
 	]
 }
+
+// a site a program observes is an arktype value or a member of one, so a refusal of its value means the build read past a Type
+const unfoldableValue =
+	"its value is not a Type, Module, Scope, Generic or TypedFn"
 
 const introspectionKeys = ["json", "toJsonSchema", "standardJsonSchema"]
 
