@@ -351,7 +351,9 @@ export type PrecompiledUnit = [
 	],
 	compiledUnit: CompiledUnit,
 	// each root the unit calls, by the key of its own unit
-	dependencies: [key: string, kind: TraversalKind][]
+	dependencies: [key: string, kind: TraversalKind][],
+	// its root's number of references, which a root reads without hashing its content
+	size: number
 ]
 
 const precompiledUnits: Record<string, PrecompiledUnit> = Object.create(null)
@@ -359,15 +361,14 @@ const precompiledUnits: Record<string, PrecompiledUnit> = Object.create(null)
 // assigned on registration, so a bundle that registers no units leaves binding them out
 let bindPrecompiledUnits: ((roots: readonly unknown[]) => void) | undefined
 
-// a key starts with its root's number of references, which a root reads without hashing its content
+// a root of a size no registered unit has misses without being keyed
 const registeredSizes: Record<number, true> = {}
 
 export const registerPrecompiledUnits = (
 	units: Record<string, PrecompiledUnit>
 ): void => {
 	Object.assign(precompiledUnits, units)
-	for (const key in units)
-		registeredSizes[+key.slice(0, key.indexOf("_"))] = true
+	for (const key in units) registeredSizes[units[key][3]] = true
 	bindPrecompiledUnits = bindRegisteredUnits
 }
 
@@ -440,7 +441,7 @@ const precompiledKeyOf = (root: BaseRoot): string => {
 		childCounts += `${root.referencesById[id].children.length},`
 	const content =
 		root.hash.includes(`"$ark.`) ? keyRegisteredNames(root) : root.hash
-	return `${sizeOf(root)}_${hashOf(`${content}\n${childCounts}\n${$ark.sets !== undefined}`)}`
+	return hashOf(`${content}\n${childCounts}\n${$ark.sets !== undefined}`)
 }
 
 // a registered name's count depends on what was registered before, and a function's name on whether it was minified
@@ -1084,7 +1085,7 @@ const writePrecompiledUnit = (
 		nodes.map(node => variablesById[node.id]).join(", ")
 	return `[(n0, $) => {
 ${statements.map(statement => `\t${statement}\n`).join("")}\treturn [[${variablesOf(unit.declared)}], [${refs.join(", ")}], [${errorContexts.join(", ")}], [${variablesOf(dependencyNodes)}]]
-}, ${source}, ${JSON.stringify(dependencies)}]`
+}, ${source}, ${JSON.stringify(dependencies)}, ${sizeOf(root)}]`
 }
 
 const forEachValue = (

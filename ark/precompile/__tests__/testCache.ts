@@ -67,8 +67,8 @@ const register = (roots: BaseRoot[]) => {
 		const code = codeOf(units[key])
 		if (codesByKey[key] === undefined) {
 			codesByKey[key] = code
-			const [bind, compiledUnit, dependencies] = evaluate(units[key])
-			registered[key] = [checkBind(key, bind), compiledUnit, dependencies]
+			const [bind, ...unit] = evaluate(units[key])
+			registered[key] = [checkBind(key, bind), ...unit]
 		} else if (codesByKey[key] !== code) {
 			collisions.push(
 				`${roots.map(root => root.expression).join(", ")}\n${codesByKey[key]}\n\n${code}`
