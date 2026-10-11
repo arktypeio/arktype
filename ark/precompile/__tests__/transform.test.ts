@@ -688,6 +688,20 @@ export const Shadowed = (() => {
 import { shape as $arki1rnr3cp0ewvqsd } from "./shapes.ts"`)
 		})
 
+		it("throws the ParseError of a site holding sites, folding none of them", () => {
+			const result = precompile(`import { type } from "arktype"
+export const M = type.module({
+	a: type("missing").and(type({ b: "string" })),
+	c: ["string", ":", (data: unknown) => type("string").allows(data)]
+})`)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				'/main.ts:2:18  type.module({ a: type("missing").and(type({ b: "string" }))… throws a ParseError\n  \'missing\' is unresolvable\n  The precompiled site throws the same ParseError when it is created.'
+			])
+			attest(result.code).snap(`import "arktype"
+import $arklw742z1ab0dfu from "~arktype/5awdy10agxwhh"
+export const M = $arklw742z1ab0dfu()`)
+		})
+
 		it("reports a ParseError site holding functions", () => {
 			const source = `import { scope, type } from "arktype"
 import { extend } from "./extend.ts"

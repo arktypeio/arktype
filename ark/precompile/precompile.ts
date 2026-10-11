@@ -866,7 +866,7 @@ export class Precompiler {
 		const keywordReads = new Set<string>()
 		// each factory returns what it created before for the same holes, sharing a table with the sites arktype returned one Type for
 		const tablesByValue = new Map<unknown, number>()
-		// e.g. a site in a thunk defining a Scope's alias, dropped with the rest of the text its factory replaces
+		// e.g. a site in a thunk defining a Scope's alias or in a definition throwing a ParseError, dropped with the rest of the text its call replaces
 		const replaced: [site: Site, spans: readonly Span[]][] = []
 		const folded: Site[] = []
 		for (const site of sites) {
@@ -932,6 +932,7 @@ export class Precompiler {
 			}
 			if (site.parseError) {
 				namesBySite.set(site, nameOf(site))
+				replaced.push([site, []])
 				continue
 			}
 			if (factory) {
