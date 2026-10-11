@@ -2,7 +2,6 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import {
 	$ark,
-	configureAfterTypeMessage,
 	hasArkKind,
 	type ArkSchemaConfig,
 	writeInvalidJsonSchemaTargetMessage,
@@ -707,7 +706,7 @@ contextualize(() => {
 			await importBesideArktype(bundle(createdFirst).js)
 				.then(artifact => artifact.T())
 				.catch((e: Error) => e.message)
-		).equals(configureAfterTypeMessage)
+		).equals(reconfiguredMessage)
 	})
 
 	it("hashes apart a configuration's values wherever they differ", () => {
@@ -823,7 +822,7 @@ domain.expected = () => "E2"`,
 		artifact.configure(config, fingerprintOf(config))
 		attest(artifact.T()({ a: 1 }).summary).snap("configured")
 		attest(artifact.T()).is(artifact.T())
-		attest(() => artifact.configure(config)).throws(configureAfterTypeMessage)
+		attest(() => artifact.configure(config)).throws(reconfiguredMessage)
 	})
 
 	it("fixes the configuration where a Scope, Module or Generic is first read", async () => {
@@ -845,7 +844,7 @@ domain.expected = () => "E2"`,
 			)
 			artifact.configure({}, fingerprintOf({}))
 			artifact[name]()
-			attest(() => artifact.configure({})).throws(configureAfterTypeMessage)
+			attest(() => artifact.configure({})).throws(reconfiguredMessage)
 		}
 	})
 
@@ -868,7 +867,7 @@ domain.expected = () => "E2"`,
 		attest(artifact.Strings()).is(strings)
 		artifact.configure(config, fingerprintOf(config))
 		attest(strings.email(1).summary).snap("configured")
-		attest(() => artifact.configure(config)).throws(configureAfterTypeMessage)
+		attest(() => artifact.configure(config)).throws(reconfiguredMessage)
 	})
 
 	it("keeps the descriptions of a type another scope describes", async () => {

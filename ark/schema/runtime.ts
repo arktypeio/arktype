@@ -7,11 +7,10 @@ import {
 	writeProblem,
 	type errorWritersOf
 } from "./shared/errorWriters.ts"
-import {
-	configureAfterTypeMessage,
-	type ActualWriter,
-	type ArkErrorCode,
-	type ExpectedWriter
+import type {
+	ActualWriter,
+	ArkErrorCode,
+	ExpectedWriter
 } from "./shared/errors.ts"
 import type { Locale } from "./shared/locale.ts"
 
@@ -160,15 +159,13 @@ export const configure = (
 	config: ArkSchemaConfig,
 	fingerprint?: string
 ): ArkSchemaConfig => {
-	if (Object.isFrozen(runtimeConfig))
-		return throwParseError(configureAfterTypeMessage)
+	// arktype fixes its configuration at its first Type, and a module the build didn't transform, like a dependency's, can configure it too, which merges what the runtime keeps apart
+	if (Object.isFrozen(runtimeConfig) || configuredFingerprint !== undefined)
+		return throwParseError(reconfiguredMessage)
 	const received = fingerprintOf(config)
 	// a loader or plugin can change a module the configuration reads after the build read it
 	if (fingerprint !== undefined && fingerprint !== received)
 		return throwParseError(configuredUnlikeBuildMessage)
-	// a module the build didn't transform, like a dependency's, can configure arktype too, which merges what the runtime keeps apart
-	if (configuredFingerprint !== undefined)
-		return throwParseError(reconfiguredMessage)
 	configureIslands?.(config)
 	if ("onFail" in config)
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
@@ -278,7 +275,7 @@ export const configuredUnlikeBuildMessage =
 export type configuredUnlikeBuildMessage = typeof configuredUnlikeBuildMessage
 
 export const reconfiguredMessage =
-	"configure() is called again: a standalone build needs one call, in its config module"
+	"a standalone program calls configure() once, in its config module, before any Type is created"
 
 export type reconfiguredMessage = typeof reconfiguredMessage
 
