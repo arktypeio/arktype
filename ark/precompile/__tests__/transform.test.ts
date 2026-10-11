@@ -170,11 +170,11 @@ export const Doubled = type("number").pipe(double)`
 				}
 			)
 			attest(result.code).snap(`import "arktype"
-import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/c3dsr31ny0n7p"
-import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/c3dsr31ny0n7p"
-import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/c3dsr31ny0n7p"
-import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/c3dsr31ny0n7p"
-import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/c3dsr31ny0n7p"
+import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/iteyo61i7z5er"
+import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/iteyo61i7z5er"
+import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/iteyo61i7z5er"
+import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/iteyo61i7z5er"
+import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/iteyo61i7z5er"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { double } from "./containers.ts"
 import { Doubled } from "./doubled.ts"
@@ -622,14 +622,14 @@ export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/f24r2w0x0pt4k"
-import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/f24r2w0x0pt4k"
-import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/f24r2w0x0pt4k"
-import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/f24r2w0x0pt4k"
-import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/f24r2w0x0pt4k"
-import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/f24r2w0x0pt4k"
-import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/f24r2w0x0pt4k"
-import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/f24r2w0x0pt4k"
+import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/d20tmq1oq59uj"
+import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/d20tmq1oq59uj"
+import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/d20tmq1oq59uj"
+import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/d20tmq1oq59uj"
+import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/d20tmq1oq59uj"
+import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/d20tmq1oq59uj"
+import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/d20tmq1oq59uj"
+import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/d20tmq1oq59uj"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
@@ -870,9 +870,9 @@ export const Checked = type({ a: type("string").narrow(other.check), b: type("st
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/1frn2ay15pjl0l"
-import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/1frn2ay15pjl0l"
-import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/1frn2ay15pjl0l"
+import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/yxm44f0xx9f2w"
+import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/yxm44f0xx9f2w"
+import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/yxm44f0xx9f2w"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { a } from "./a.ts"
 import { alias } from "./b.ts"
@@ -955,6 +955,26 @@ export const Deleted = type({ "+": "delete", "[string]": "string", a: type.insta
 			])
 		})
 
+		it("checks a binding each factory receives with one function", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { Id } from "./id.ts"
+export const User = type({ id: Id })
+export const Post = type({ id: Id, author: Id })`,
+				{
+					"/id.ts": `import { type } from "arktype"
+export const Id = type("string").narrow(s => s.length === 8)`
+				}
+			)
+			attest(
+				Object.entries(result.modules).flatMap(([specifier, module]) =>
+					specifier.includes("receive") ? [module] : []
+				)
+			).snap([
+				'import * as runtime from "arktype/runtime"\nimport { expressionl51cl30380gwa } from "~arktype/expressionl51cl30380gwa"\n\nfunction receivenj0m740dywatw(holder) {\n\treturn runtime.holesOf(holder, "2dnsbc0klnk43", "`Id`", expressionl51cl30380gwa)\n}\n\nexport { receivenj0m740dywatw }\n'
+			])
+		})
+
 		it("passes a Type where a site reads a member a standalone validator doesn't have", () => {
 			const result = precompile(
 				`import { type } from "arktype"
@@ -965,9 +985,9 @@ export const In = type({ a: T.in })`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1bg5ghg1udq2qc as $arkf1bg5ghg1udq2qc } from "~arktype/1gts4131q0302f"
-import { fnlxeht0j9hv9h as $arkfnlxeht0j9hv9h } from "~arktype/1gts4131q0302f"
-import { fe5h3530tuatax as $arkfe5h3530tuatax } from "~arktype/1gts4131q0302f"
+import { f1bg5ghg1udq2qc as $arkf1bg5ghg1udq2qc } from "~arktype/1054src0zeyupg"
+import { fnlxeht0j9hv9h as $arkfnlxeht0j9hv9h } from "~arktype/1054src0zeyupg"
+import { fe5h3530tuatax as $arkfe5h3530tuatax } from "~arktype/1054src0zeyupg"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 const tag = Symbol("tag")
 $arkfixConfig()

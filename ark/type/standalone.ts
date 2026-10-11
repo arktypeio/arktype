@@ -890,6 +890,28 @@ export class StandaloneArtifact {
 		return true
 	}
 
+	// each factory receiving a binding checks it with one function, which a bundle holds once
+	receiverOf(value: Foldable, id: string, label: string): string {
+		const imports: Record<string, string[]> = {}
+		let expected = ""
+		if (!hasArkKind(value, "root")) expected = `, "${kindNameOf(value)}"`
+		else if (!value.expression.includes(holeNameMarker)) {
+			const name = this.stringModuleOf(value, "expression")
+			imports[`~arktype/${name}`] = [name]
+			expected = `, ${name}`
+		}
+		const body = `runtime.holesOf(holder, ${JSON.stringify(id)}, ${JSON.stringify(label)}${expected})`
+		const name = `receive${hashOf(body)}`
+		this.sharedModules[`~arktype/${name}`] ??= {
+			readsRuntime: true,
+			imports,
+			declarations: [`function ${name}(holder) {\n\treturn ${body}\n}`],
+			exports: [name]
+		}
+		this.importName(`~arktype/${name}`, name)
+		return name
+	}
+
 	compareInput(
 		param: string,
 		path: PropertyKey[],
@@ -919,12 +941,8 @@ export class StandaloneArtifact {
 			if (isType) this.receivedMetas.set(value.meta, `${expression}.meta`)
 			const holesName = `holes${this.checks.length}`
 			if (holes.length) this.holesByName.set(holesName, holes)
-			const expected =
-				!isType ? `, "${kindNameOf(value)}"`
-				: value.expression.includes(holeNameMarker) ? ""
-				: `, ${this.readExpression(value)}`
 			this.checks.push(
-				`${holes.length ? `const ${holesName} = ` : ""}runtime.holesOf(${expression}, ${JSON.stringify(id)}, ${JSON.stringify(label)}${expected})`
+				`${holes.length ? `const ${holesName} = ` : ""}${this.receiverOf(value, id, label)}(${expression})`
 			)
 			// a class a Module, Scope or Generic holds is related to the others this artifact's Types hold
 			const related = isType ? [value, ...value.references] : this.declared
