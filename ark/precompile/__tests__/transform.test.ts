@@ -660,14 +660,14 @@ export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/1jjkhi90e44688"
-import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/1jjkhi90e44688"
-import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/1jjkhi90e44688"
-import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/1jjkhi90e44688"
-import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/1jjkhi90e44688"
-import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/1jjkhi90e44688"
-import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/1jjkhi90e44688"
-import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/1jjkhi90e44688"
+import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/izpm4c1sywcu6"
+import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/izpm4c1sywcu6"
+import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/izpm4c1sywcu6"
+import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/izpm4c1sywcu6"
+import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/izpm4c1sywcu6"
+import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/izpm4c1sywcu6"
+import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/izpm4c1sywcu6"
+import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/izpm4c1sywcu6"
 import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
 class Pet {}
@@ -914,9 +914,9 @@ export const Checked = type({ a: type("string").narrow(other.check), b: type("st
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/180gbh50yx5jrh"
-import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/180gbh50yx5jrh"
-import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/180gbh50yx5jrh"
+import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/gvf5nz1tricwj"
+import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/gvf5nz1tricwj"
+import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/gvf5nz1tricwj"
 import { a } from "./a.ts"
 import { alias } from "./b.ts"
 const fns = { check: (s: string) => s.length > 3 }

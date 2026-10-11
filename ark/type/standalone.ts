@@ -598,12 +598,14 @@ interface WriteDataOptions {
 interface Declarations {
 	statements: string[]
 	namesByValue: Map<unknown, string>
+	namesByContext: Map<string, string>
 	valuesByRole: Record<DeclarationRole, unknown[]>
 }
 
 const createDeclarations = (): Declarations => ({
 	statements: [],
 	namesByValue: new Map(),
+	namesByContext: new Map(),
 	valuesByRole: {
 		shape: [],
 		keys: [],
@@ -656,6 +658,7 @@ export class StandaloneArtifact {
 	defaultNamesByMorph = new Map<unknown, string>()
 	objectUnits = new Set<unknown>()
 	metas = new Set<object>()
+	contexts = new Set<unknown>()
 	declarations = createDeclarations()
 	emitting = new Set<object>()
 	moduleNamesByModule = new Map<object, string>()
@@ -787,9 +790,13 @@ export class StandaloneArtifact {
 		}
 		// a unit writes the error contexts of nodes it doesn't declare too, like a union's branches, and a module shared by artifacts writes each alike
 		for (const unit of this.units) {
-			for (const node of unit.declared) this.metas.add(node.meta)
-			for (const root of unit.roots)
-				for (const node of root.references) this.metas.add(node.meta)
+			for (const node of [
+				...unit.declared,
+				...unit.roots.flatMap(root => root.references)
+			]) {
+				this.metas.add(node.meta)
+				this.contexts.add(Reflect.get(node, "errorContext"))
+			}
 		}
 		for (const node of this.declared) {
 			if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
@@ -2321,7 +2328,7 @@ ${isTemplate ? "]" : ")"}`
 	emitLiteral(value: object): string {
 		const [literal, elements] = this.writeLiteral(value)
 		if (!elements.some(element => this.lateNames.has(element)))
-			return this.declareConst(value, "literal", `runtime.freeze(${literal})`)
+			return this.declareFrozen(value, `runtime.freeze(${literal})`)
 		const prototype = prototypeOf(value)
 		// assigning a __proto__ key to an object would set its prototype
 		if (
@@ -2341,6 +2348,20 @@ ${isTemplate ? "]" : ")"}`
 		)
 		this.lateNames.add(name)
 		this.fills.push(`runtime.freeze(runtime.assign(${name}, ${literal}))`)
+		return name
+	}
+
+	// content-equal error contexts are frozen, so the code declaring them declares one, as for a required prop of each key
+	declareFrozen(value: object, expression: string): string {
+		if (!this.contexts.has(value))
+			return this.declareConst(value, "literal", expression)
+		const { namesByContext, namesByValue } = this.declarations
+		let name = namesByContext.get(expression)
+		if (name) namesByValue.set(value, name)
+		else {
+			name = this.declareConst(value, "literal", expression)
+			namesByContext.set(expression, name)
+		}
 		return name
 	}
 
