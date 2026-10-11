@@ -291,6 +291,15 @@ contextualize(() => {
 		attest(type(["unknown", "=>", count])(0)).equals(2)
 	})
 
+	it("binds a unit for a tuple default a minifier renamed", async () => {
+		const units = await precompileUnits([
+			type(["string", ["number[]", "=", named("emptyPrecompiled", () => [])]])
+		])
+		const T = type(["string", ["number[]", "=", named("e", () => [])]])
+		attest(isPrecompiled(units, T.internal)).equals(true)
+		attest(T(["a"])).equals(["a", []])
+	})
+
 	it("misses a unit holding one of arktype's own functions for any other", async () => {
 		const units = await precompileUnits([type("Date").narrow(isValidDate)])
 		const T = type("Date").narrow((d: Date) => d.getUTCFullYear() > 2000)

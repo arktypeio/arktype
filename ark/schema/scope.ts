@@ -399,6 +399,12 @@ const bindPrecompiled = (
 	)
 }
 
+// a tuple's defaults nest each thunk in an array of arrays
+const forEachElement = (value: unknown, f: (value: unknown) => void): void => {
+	if (isArray(value)) for (const element of value) forEachElement(element, f)
+	else f(value)
+}
+
 // built when a root is first keyed, so a bundle that registers no units leaves it out
 let constantNames: Map<unknown, string> | undefined
 
@@ -414,15 +420,17 @@ const precompiledKeyOf = (root: BaseRoot): string => {
 	for (const id in root.referencesById) {
 		const node = root.referencesById[id]
 		childCounts += `${node.children.length},`
-		forEachValue(node.inner, value => {
-			const constant = constantNames!.get(value)
-			if (constant) kindsByName[nameOf(value)] = `$.${constant}`
-			else if (typeof value === "function" && !isNode(value)) {
-				// only a predicate's or morph's arity is compiled, and reading another's mustn't record it
-				kindsByName[nameOf(value)] =
-					`fn:${node.hasKind("predicate") || node.hasKind("morph") ? arityOf(value) : value.length}`
-			}
-		})
+		for (const k in node.inner) {
+			forEachElement((node.inner as Dict)[k], value => {
+				const constant = constantNames!.get(value)
+				if (constant) kindsByName[nameOf(value as object)] = `$.${constant}`
+				else if (typeof value === "function" && !isNode(value)) {
+					// only a predicate's or morph's arity is compiled, and reading another's mustn't record it
+					kindsByName[nameOf(value)] =
+						`fn:${node.hasKind("predicate") || node.hasKind("morph") ? arityOf(value) : value.length}`
+				}
+			})
+		}
 	}
 	// a registered name's count depends on what was registered before, and a function's name on whether it was minified
 	const keysByName: Record<string, string> = {}
