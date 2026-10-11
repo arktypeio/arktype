@@ -51,9 +51,9 @@ import {
 } from "../shared/traversal.ts"
 import {
 	describeBranches,
+	expressBranches,
 	isAbsent,
-	valueAtPath,
-	type DescribeBranchesOptions
+	valueAtPath
 } from "../shared/utils.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
@@ -163,11 +163,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		))
 	}
 
-	expression: string = this.distribute(
-		// an intersection binds more tightly than a union, so it never needs parens
-		n => (n.hasKind("intersection") ? n.expression : n.nestableExpression),
-		expressBranches
-	)
+	expression: string = this.distribute(expressBranch, expressBranches)
 
 	discriminate(): Discriminant | null {
 		this.caseNodes.length = 0
@@ -409,6 +405,10 @@ export const Union = {
 	Node: UnionNode
 }
 
+// an intersection binds more tightly than a union, so it never needs parens
+export const expressBranch = (branch: Union.ChildNode): string =>
+	branch.hasKind("intersection") ? branch.expression : branch.nestableExpression
+
 const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {
 	const k =
 		discriminant.kind === "domain" ? `"${domainOf(value)}"` : unitKeyOf(value)
@@ -477,14 +477,6 @@ const invokeTransform = (
 	: js.requiresContext && returnsTransformErrors(branch) ?
 		`${js.ref(transformed)}(ctx, ${js.invoke(branch)}, data)`
 	:	js.invoke(branch)
-
-const describeExpressionOptions: DescribeBranchesOptions = {
-	delimiter: " | ",
-	finalDelimiter: " | "
-}
-
-const expressBranches = (expressions: string[]) =>
-	describeBranches(expressions, describeExpressionOptions)
 
 export type CaseKey<kind extends DiscriminantKind = DiscriminantKind> =
 	DiscriminantKind extends kind ? string : DiscriminantKinds[kind] | "default"

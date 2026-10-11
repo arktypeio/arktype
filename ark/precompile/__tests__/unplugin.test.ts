@@ -945,14 +945,18 @@ console.log(type("number").narrow(isSmall).or(type("number").narrow(isEven))(15)
 				"package.json": `{ "type": "module" }`,
 				"even.ts": "export const isEven = (n: number) => n % 2 === 0\n",
 				"odd.ts": "export const isOdd = (n: number) => n % 2 === 1\n",
+				"round.ts": "export const isRound = (n: number) => n % 10 === 0\n",
 				// each imports one of them, so each is a chunk of its own
 				"other1.ts": `import { isEven } from "./even.ts"\nconsole.log(isEven(1))\n`,
 				"other2.ts": `import { isOdd } from "./odd.ts"\nconsole.log(isOdd(1))\n`,
+				"other3.ts": `import { isRound } from "./round.ts"\nconsole.log(isRound(1))\n`,
 				"main.ts": `import { type } from "arktype"
 import { isEven } from "./even.ts"
 import { isOdd } from "./odd.ts"
+import { isRound } from "./round.ts"
 const Parity = type("number").narrow(isEven).or(type("number").narrow(isOdd))
-console.log(JSON.stringify([isEven.name, isOdd.name, Parity.description, Parity(1.5).toString()]))
+const Nested = type({ a: Parity }).or(type({ a: type("number").narrow(isRound) }))
+console.log(JSON.stringify([isEven.name, isOdd.name, isRound.name, Parity.description, Parity(1.5).toString(), Nested.description]))
 `
 			},
 			fromHere("temp", "chunks")
@@ -960,8 +964,8 @@ console.log(JSON.stringify([isEven.name, isOdd.name, Parity.description, Parity(
 		// Vite minifies each chunk on its own, naming its functions apart from those of other chunks
 		const runChunks = async (outdir: string, plugins: Plugin[]) => {
 			const { outputFiles } = await esbuild({
-				entryPoints: ["main.ts", "other1.ts", "other2.ts"].map(entry =>
-					join(root, entry)
+				entryPoints: ["main.ts", "other1.ts", "other2.ts", "other3.ts"].map(
+					entry => join(root, entry)
 				),
 				bundle: true,
 				splitting: true,
@@ -986,8 +990,8 @@ console.log(JSON.stringify([isEven.name, isOdd.name, Parity.description, Parity(
 		const precompiled = await runChunks("precompiled", [
 			precompile.esbuild({ cwd: root, conditions })
 		])
-		const [evenName, oddName] = JSON.parse(precompiled)
-		attest(evenName).equals(oddName)
+		const [evenName, oddName, roundName] = JSON.parse(precompiled)
+		attest([oddName, roundName]).equals([evenName, evenName])
 		attest(precompiled).equals(await runChunks("plain", []))
 	}).timeout(60000)
 

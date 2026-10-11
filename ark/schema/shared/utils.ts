@@ -218,3 +218,11 @@ export const describeBranches = (
 
 	return `${unique.join(delimiter)}${unique.length ? finalDelimiter : ""}${last}`
 }
+
+const describeExpressionOptions: DescribeBranchesOptions = {
+	delimiter: " | ",
+	finalDelimiter: " | "
+}
+
+export const expressBranches = (expressions: readonly string[]): string =>
+	describeBranches(expressions, describeExpressionOptions)

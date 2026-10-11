@@ -2319,6 +2319,70 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(create(Zebra, Ant).expression).snap("Ant | Zebra")
 		})
 
+		it("prints a union holding another once their branches print alike", async () => {
+			class Bird {}
+			class Cat {}
+			class Dog {}
+			standIn(Bird, "a", "Bird")
+			standIn(Cat, "b", "Cat")
+			standIn(Dog, "c", "Dog")
+			const { T: create } = await load({
+				T: {
+					type: type({ a: type.instanceOf(Cat).or(type.instanceOf(Dog)) }).or(
+						type({ a: type.instanceOf(Bird) })
+					),
+					params: [
+						{ kind: "class", label: "`Cat`", value: Cat },
+						{ kind: "class", label: "`Dog`", value: Dog },
+						{ kind: "class", label: "`Bird`", value: Bird }
+					]
+				}
+			})
+			// a build minifying its chunks apart can name all three alike
+			const alike = () => class r {}
+			const T = create(alike(), alike(), alike())
+			attest(T.expression).snap("{ a: r }")
+			attest(T.description).snap("{ a: an instance of r }")
+		})
+
+		it("prints a union whose branches print alike before their functions are received", async () => {
+			class User {
+				role: string
+				constructor(role: string) {
+					this.role = role
+				}
+			}
+			standIn(User, "a", "User")
+			const isAdmin = standIn((u: User) => u.role === "admin", "b", "isAdmin")
+			const isOwner = standIn((u: User) => u.role === "owner", "c", "isOwner")
+			const { T: create } = await load({
+				T: {
+					type: type
+						.instanceOf(User)
+						.narrow(isAdmin)
+						.or(type.instanceOf(User).narrow(isOwner)),
+					params: [
+						{ kind: "class", label: "`User`", value: User },
+						{ kind: "function", label: "`isAdmin`", value: isAdmin },
+						{ kind: "function", label: "`isOwner`", value: isOwner }
+					]
+				}
+			})
+			class Member {
+				role: string
+				constructor(role: string) {
+					this.role = role
+				}
+			}
+			const admin = (u: Member) => u.role === "admin"
+			const owner = (u: Member) => u.role === "owner"
+			const T = create(Member, admin, owner)
+			attest(T.expression).snap("Member")
+			attest(T(new Member("guest")).toString()).snap(
+				"must be valid according to admin or valid according to owner (was Member)"
+			)
+		})
+
 		it("rejects an order between siblings differing beyond the functions they hold", () => {
 			const isEven = standIn((n: number) => n % 2 === 0, "a", "isEven")
 			const isSmall = standIn((n: number) => n < 10, "b", "isSmall")

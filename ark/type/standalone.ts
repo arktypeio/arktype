@@ -1,6 +1,8 @@
 import {
 	$ark,
 	describeBranches,
+	expressBranch,
+	expressBranches,
 	hasArkKind,
 	InternalTraversal,
 	isNode,
@@ -15,7 +17,6 @@ import {
 	type BaseRoot,
 	type BaseScope,
 	type DefaultedNode,
-	type DescribeBranchesOptions,
 	type GenericRoot,
 	type NodeId,
 	type Optional,
@@ -613,11 +614,11 @@ export class StandaloneArtifact {
 	holeExpressions = new Map<unknown, string>()
 	// the functions each list of siblings arktype sorts by their names holds, in the order the build compiled them
 	sortedHoles: unknown[][] = []
-	// a union's texts whose branches print alike once their functions' names are received, which arktype prints once
+	// the texts of unions printing a received name, longest first, which arktype joins from their branches' at creation
 	joinedTexts: [
 		text: string,
-		branches: string[],
-		opts: DescribeBranchesOptions | undefined
+		kind: "expression" | "description",
+		branches: string[]
 	][] = []
 	labelsByHole = new Map<unknown, string>()
 	classes = new Set<unknown>()
@@ -843,6 +844,7 @@ export class StandaloneArtifact {
 		}
 		this.checkFacts(checked)
 		this.refuseNameDependence()
+		this.collectJoinedTexts()
 	}
 
 	checkFacts(
@@ -940,27 +942,29 @@ export class StandaloneArtifact {
 				this.sortAtCreation(sorted)
 			}
 		}
+	}
+
+	// branches printing alike once their functions' names are received print once, so a union printing one is joined at creation as arktype joins it
+	collectJoinedTexts(): void {
 		for (const node of this.declared) {
 			if (!node.hasKind("union")) continue
 			for (const kind of ["expression", "description"] as const) {
 				const branches = node.branches.map(branch =>
-					kind === "description" ? branch.description
-					: branch.hasKind("intersection") ? branch.expression
-					: branch.nestableExpression
-				)
-				const opts = kind === "expression" ? expressionDelimiters : undefined
-				const unnamed = branches.map(text =>
-					text.replace(printedHoleNamePattern, "\0")
+					kind === "expression" ? expressBranch(branch) : branch.description
 				)
 				if (
-					unnamed.some(
-						(text, i) => text !== branches[i] && unnamed.indexOf(text) !== i
-					) &&
-					node[kind] === describeBranches(branches, opts)
+					node[kind].includes(holeNameMarker) &&
+					// branches printing alike as written print alike at creation
+					branches.some(text => text !== branches[0]) &&
+					node[kind] ===
+						(kind === "expression" ? expressBranches : describeBranches)(
+							branches
+						)
 				)
-					this.joinedTexts.push([node[kind], branches, opts])
+					this.joinedTexts.push([node[kind], kind, branches])
 			}
 		}
+		// a union's text holds those of the unions its branches hold, which emitString matches inside it
 		this.joinedTexts.sort(([l], [r]) => r.length - l.length)
 	}
 
@@ -1972,17 +1976,19 @@ ${isTemplate ? "]" : ")"}`
 		return name
 	}
 
-	// a hole's name is known only at creation, so a string printing one is completed then with arktype's own printing
-	emitString(s: string): string {
-		const joined = this.joinedTexts.find(([text]) => s.includes(text))
+	// a string printing a hole's name is completed at creation with arktype's own printing, joining a union's text from its branches', each shorter than it
+	emitString(s: string, within = Infinity): string {
+		const joined = this.joinedTexts.find(
+			([text]) => text.length < within && s.includes(text)
+		)
 		if (joined) {
-			const [text, branches, opts] = joined
+			const [text, kind, branches] = joined
 			const start = s.indexOf(text)
 			const end = start + text.length
 			return [
-				...(start ? [this.emitString(s.slice(0, start))] : []),
-				`runtime.describeBranches([${branches.map(branch => this.emitString(branch)).join(", ")}]${opts ? `, ${JSON.stringify(opts)}` : ""})`,
-				...(end < s.length ? [this.emitString(s.slice(end))] : [])
+				...(start ? [this.emitString(s.slice(0, start), within)] : []),
+				`runtime.${kind === "expression" ? "expressBranches" : "describeBranches"}([${branches.map(branch => this.emitString(branch, text.length)).join(", ")}])`,
+				...(end < s.length ? [this.emitString(s.slice(end), within)] : [])
 			].join(" + ")
 		}
 		const parts: string[] = []
@@ -2951,12 +2957,6 @@ const partsOf = (
 }
 
 export const holeNameMarker = "$hole_"
-
-// how arktype joins the expressions of a union's branches
-const expressionDelimiters: DescribeBranchesOptions = {
-	delimiter: " | ",
-	finalDelimiter: " | "
-}
 
 // a root keeping, of the siblings that each hold one function of a run, only the one holding the function given
 const isolating = (

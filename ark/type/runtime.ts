@@ -95,6 +95,7 @@ export {
 	exactLengthWriters,
 	errorFromContext,
 	exitResolution,
+	expressBranches,
 	fixConfig,
 	flatByPath,
 	flatProblemsByPath,
