@@ -384,7 +384,7 @@ const exportKindOf = (name: ArkExportName): ArkKind =>
 const memberKindOf = (objectKind: ArkKind, name: unknown): ArkKind => {
 	if (!isArk(objectKind)) return objectKind & kinds.data
 	const kind =
-		// a Module's member is whatever its alias is, whatever its name, so a Type's ends its site only once the build has its value
+		// a Module's member is whatever its alias is, whatever its name, so a validator member read off it ends the site only once the build has its value
 		typeof name !== "string" || objectKind & kinds.otherArk ? anyKind
 		: (
 			isValidatorMember(name) ||
