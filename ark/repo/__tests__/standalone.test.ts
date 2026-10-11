@@ -40,7 +40,6 @@ import {
 	type as runtimeType,
 	writeCreationMismatchMessage,
 	writeIdentityMismatchMessage,
-	writeFrozenDateMessage,
 	writeRenamedHoleMessage,
 	writeUnbakedMessage,
 	type HoleKind,
@@ -562,28 +561,37 @@ contextualize(() => {
 		attest(B.json).equals(type({ a: "string" }).json)
 	})
 
-	it("freezes each Date a validator holds, whose setters throw", async () => {
-		const { Epoch } = await load({
-			Epoch: type.unit(new Date(0)).configure({ examples: [new Date(1)] })
+	it("keeps apart the Dates and RegExps of Types arktype keeps apart, which a program can write", async () => {
+		const { A, B, U } = await load({
+			A: type("string").configure({ examples: [/a/g, new Date(0)] as never }),
+			B: type("string").configure({ examples: [/a/g, new Date(0)] as never }),
+			U: type("d'1970-01-01'")
 		})
-		const { unit } = Epoch(new Date(2)).issues[0]
-		const [example] = Epoch.meta.examples
+		const [regex, date] = A(1).issues[0].meta.examples
+		const [otherRegex, otherDate] = B(1).issues[0].meta.examples
+		regex.exec("aaa")
+		Date.prototype.setTime.call(date, 1)
 		attest([
-			unit.getTime(),
-			example.getTime(),
-			Object.getPrototypeOf(unit) === Date.prototype,
-			Object.isFrozen(unit),
-			Object.keys(unit)
-		]).equals([0, 1, true, true, []])
-		// compared as arktype's Date is, by its time and prototype
-		attest(example).equals(new Date(1))
-		attest(() => unit.setTime(1)).throws.snap(
-			"TypeError: setTime can't change a Date a standalone validator holds, since other Types can hold it too"
-		)
-		attest(() => example.setUTCFullYear(2000)).throws(
-			writeFrozenDateMessage("setUTCFullYear")
-		)
-		attest(example.toISOString()).equals(new Date(1).toISOString())
+			otherRegex.lastIndex,
+			otherDate.getTime(),
+			U(new Date(5)).issues[0].unit.getTime()
+		]).equals([0, 0, 0])
+		// held as arktype holds them, so the Type's meta holds the error's
+		attest([
+			A.meta.examples[0] === regex,
+			Object.isFrozen(date),
+			Object.getOwnPropertyNames(date)
+		]).equals([true, false, []])
+	})
+
+	it("creates a Date anew at each call of a factory whose site can run more than once", async () => {
+		const T = scope({ d: "d'2001-01-01'" }).type({ at: "d" })
+		const { fresh } = await load({
+			fresh: { type: T, params: [], fresh: true }
+		})
+		const unitOf = (validator: any) =>
+			validator({ at: new Date(0) }).issues[0].unit
+		attest(unitOf(fresh()) === unitOf(fresh())).equals(false)
 	})
 
 	it("reads one Date for a Type wherever it reads the Date", async () => {

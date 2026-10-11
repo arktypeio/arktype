@@ -126,6 +126,8 @@ export interface StandaloneIntrospection {
 	defaultChecks?: readonly DefaultCheck[]
 	// what arktype threw writing the site's JSON Schema, which its factory throws at each call
 	thrown?: unknown
+	// each call creates its own of each Date or RegExp the Type holds, as each run can create the Type anew
+	fresh?: boolean
 }
 
 export interface StandaloneFactory {
@@ -139,6 +141,8 @@ export interface StandaloneFactory {
 	distinct?: readonly unknown[]
 	// holes whose facts selected this variant, which its factory doesn't check again
 	selected?: readonly unknown[] | undefined
+	// each call creates its own of each Date or RegExp a program can write, as its site can run more than once
+	fresh?: boolean
 }
 
 // a factory compiled for each value of the facts the build doesn't know, like the parameter count of a function a parameter holds
@@ -298,6 +302,7 @@ const writeArtifact = (
 		members: new Set(opts.introspection),
 		write: opts.bake ?? (write => write())
 	}
+	const held = new Map<object, string>()
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<BaseRoot>()
 	// each factory whose Type is folded, which reads it where the creations write it
@@ -316,14 +321,16 @@ const writeArtifact = (
 		if (
 			isVariants(factory) ||
 			!hasArkKind(factory.type, "root") ||
-			factory.defaultChecks?.length
+			factory.defaultChecks?.length ||
+			factory.fresh
 		)
 			return false
 		const trial = new StandaloneArtifact(
 			{ [name]: factory.type },
 			Object.create(shared),
 			{},
-			baking
+			baking,
+			new Map()
 		)
 		trial.templates.add(factory.type)
 		try {
@@ -346,6 +353,7 @@ const writeArtifact = (
 				shared,
 				imports,
 				baking,
+				held,
 				value
 			)
 			artifactsByName.set(name, artifact)
@@ -361,6 +369,7 @@ const writeArtifact = (
 				shared,
 				imports,
 				baking,
+				held,
 				factory
 			)
 			artifactsByName.set(name, artifact)
@@ -389,6 +398,7 @@ const writeArtifact = (
 		folded,
 		opts,
 		baking,
+		held,
 		shared,
 		imports
 	)
@@ -420,8 +430,10 @@ ${writeExport(name, index)}`
 	}
 	const sections = [
 		...creations,
-		// created at a factory's first call, which an import cycle can reach before the artifact's body runs
-		[...tables].map(table => `var interned${table}`).join("\n"),
+		// created at the first read or a factory's first call, which an import cycle can reach before the artifact's body runs
+		[...held.values(), ...[...tables].map(table => `interned${table}`)]
+			.map(name => `var ${name}`)
+			.join("\n"),
 		...factories.map(factory =>
 			typeof factory === "string" ? factory : factory()
 		)
@@ -453,6 +465,7 @@ const writeCreations = (
 	folded: ReadonlyMap<string, unknown>,
 	{ configured, keywordReads }: StandaloneOptions,
 	baking: Baking,
+	held: Map<object, string>,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
 ): [code: string[], reads: Record<string, CreationRead>] => {
@@ -462,7 +475,8 @@ const writeCreations = (
 			Object.fromEntries(indices.map(i => [names[i], types[names[i]]])),
 			shared,
 			imports,
-			baking
+			baking,
+			held
 		)
 		for (const template of templates) artifact.templates.add(template)
 		return artifact
@@ -659,6 +673,8 @@ export class StandaloneArtifact {
 	// the holes of each value a factory receives, by the name holding them
 	holesByName = new Map<string, readonly unknown[]>()
 	baking: Baking
+	// the name of each Date or RegExp a program can write, none where a call creates its own
+	held: Map<object, string> | undefined
 	// each JSON Schema a validator bakes, written once however many of its members return it
 	jsonSchemaNamesByText: Record<string, string> = {}
 
@@ -667,6 +683,7 @@ export class StandaloneArtifact {
 		sharedModules: Record<string, SharedModule>,
 		imports: Record<string, string[]>,
 		baking: Baking,
+		held: Map<object, string>,
 		// the factory a site calls, or its variants, or the function returning a Type's introspection, which receives only what its default checks read
 		called?: StandaloneFactory | StandaloneVariants | StandaloneIntrospection
 	) {
@@ -678,6 +695,10 @@ export class StandaloneArtifact {
 		this.variants =
 			this.selection?.variants ??
 			(received ? [received as StandaloneFactory] : [])
+		this.held =
+			(introspected?.fresh ?? this.variants.some(variant => variant.fresh)) ?
+				undefined
+			:	held
 		this.defaultChecks =
 			introspected?.defaultChecks ??
 			this.variants.flatMap(variant => variant.defaultChecks ?? [])
@@ -1122,7 +1143,8 @@ export class StandaloneArtifact {
 			{ root: root as never },
 			Object.create(this.sharedModules),
 			{},
-			this.baking
+			this.baking,
+			new Map()
 		)
 		trial.holeExpressions = holeExpressions
 		let written: string
@@ -2028,6 +2050,14 @@ ${isTemplate ? "]" : ")"}`
 		return `runtime.holdHoles(${expression}, ${JSON.stringify(id)}${holes.length ? `, [${holes.map(hole => this.emit(hole)).join(", ")}]` : ""})`
 	}
 
+	// a Type's validator and each site reading its introspection read one, as they read arktype's
+	declareHeld(value: object, expression: string): string {
+		if (!this.held) return this.declareConst(value, "literal", expression)
+		let name = this.held.get(value)
+		if (!name) this.held.set(value, (name = `held${this.held.size}`))
+		return this.declareConst(value, "literal", `(${name} ??= ${expression})`)
+	}
+
 	declareConst(
 		value: object,
 		role: DeclarationRole,
@@ -2164,7 +2194,7 @@ ${isTemplate ? "]" : ")"}`
 					writeUnprecompilableMessage("a Date with its own properties")
 				)
 			}
-			return this.readDate(value.getTime())
+			return this.declareHeld(value, `new Date(${value.getTime()})`)
 		}
 		if (isRegExpObject(value)) {
 			if (Reflect.ownKeys(value).some(k => k !== "lastIndex")) {
@@ -2181,9 +2211,8 @@ ${isTemplate ? "]" : ")"}`
 			if (this.patternInstances.has(value))
 				return this.declareConst(value, "literal", initialized)
 			// its methods write lastIndex, so it's kept from growing rather than frozen
-			return this.declareConst(
+			return this.declareHeld(
 				value,
-				"literal",
 				`runtime.preventExtensions(${initialized})`
 			)
 		}
@@ -2195,13 +2224,12 @@ ${isTemplate ? "]" : ")"}`
 	// a meta of plain data is a module every unit and validator holding its node shares
 	readMeta(meta: object): string | undefined {
 		if (!Reflect.ownKeys(meta).length) return "runtime.emptyMeta"
-		const imports: Record<string, string[]> = {}
-		const literal = this.writeSharedLiteral(meta, imports)
+		const literal = this.writeSharedLiteral(meta)
 		if (literal === undefined) return
 		const name = `meta${hashOf(literal)}`
 		this.sharedModules[`~arktype/${name}`] ??= {
 			readsRuntime: true,
-			imports,
+			imports: {},
 			declarations: [
 				`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${literal})\n}`
 			],
@@ -2211,10 +2239,7 @@ ${isTemplate ? "]" : ")"}`
 	}
 
 	// what a module can create alone, holding nothing the artifact receives or declares
-	writeSharedLiteral(
-		value: unknown,
-		imports: Record<string, string[]>
-	): string | undefined {
+	writeSharedLiteral(value: unknown): string | undefined {
 		if (typeof value === "string")
 			return value.includes(holeNameMarker) ? undefined : JSON.stringify(value)
 		if (!hasDomain(value, "object")) {
@@ -2224,15 +2249,10 @@ ${isTemplate ? "]" : ")"}`
 				: serializePrimitive(value as never)
 			)
 		}
-		if (isDateObject(value)) {
-			if (Reflect.ownKeys(value).length) return
-			const name = this.dateModuleOf(value.getTime())
-			imports[`~arktype/${name}`] = [name]
-			return `${name}()`
-		}
 		if (
 			typeof value === "function" ||
 			isNode(value) ||
+			isDateObject(value) ||
 			isRegExpObject(value) ||
 			this.objectUnits.has(value) ||
 			this.emitting.has(value)
@@ -2241,30 +2261,9 @@ ${isTemplate ? "]" : ")"}`
 		let isShared = true
 		const [literal] = this.writeLiteral(
 			value,
-			element =>
-				this.writeSharedLiteral(element, imports) ?? ((isShared = false), "")
+			element => this.writeSharedLiteral(element) ?? ((isShared = false), "")
 		)
 		return isShared ? `runtime.freeze(${literal})` : undefined
-	}
-
-	// arktype's node holds one Date every reader of the Type reads, so it's created once, by a module every Type holding it shares
-	readDate(time: number): string {
-		const name = this.dateModuleOf(time)
-		return this.read(`~arktype/${name}`, name, name, `${name}()`)
-	}
-
-	dateModuleOf(time: number): string {
-		const body = `runtime.frozenDate(${time})`
-		const name = `date${hashOf(body)}`
-		this.sharedModules[`~arktype/${name}`] ??= {
-			readsRuntime: true,
-			imports: {},
-			declarations: [
-				`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${body})\n}`
-			],
-			exports: [name]
-		}
-		return name
 	}
 
 	// the morph arktype creates for a default, called through a function since traversals are created before the validator it applies
@@ -2630,6 +2629,35 @@ const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 			holdsLocal(k, seen) || (isNode(v) && v.isRoot()) || holdsLocal(v, seen)
 		)
 	})
+}
+
+export const holdsWritable = (
+	value: unknown,
+	seen = new Set<unknown>()
+): boolean => {
+	if (!hasDomain(value, "object") || isHole(value) || seen.has(value))
+		return false
+	seen.add(value)
+	if (isDateObject(value) || isRegExpObject(value)) return true
+	if (hasArkKind(value, "root")) {
+		const units = rootUnitsOf(value)
+		// only traversal reads a pattern's own RegExp
+		for (const unit of units) {
+			for (const node of unit.declared)
+				if (node.hasKind("pattern")) seen.add(node.instance)
+		}
+		return [
+			value.meta,
+			...units.flatMap(unit => [...unit.refs, ...unit.errorContexts])
+		].some(held => holdsWritable(held, seen))
+	}
+	if (isTypedFn(value))
+		return [value.params, value.returns].some(held => holdsWritable(held, seen))
+	return (
+		(hasArkKind(value, "module") ||
+			(!isNode(value) && isPlainLiteral(value))) &&
+		Reflect.ownKeys(value).some(k => holdsWritable(Reflect.get(value, k), seen))
+	)
 }
 
 const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()

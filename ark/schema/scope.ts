@@ -7,8 +7,6 @@ import {
 	hasDomain,
 	includes,
 	isArray,
-	isDateObject,
-	isRegExpObject,
 	isThunk,
 	isValidDate,
 	jsTypeOfDescriptions,
@@ -863,10 +861,10 @@ const compileContent = (
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
 		const key =
 			s.keyOf?.(value) ??
-			(typeof value !== "object" ? undefined
-			: isRegExpObject(value) ? `${value} ${value.lastIndex}`
-			: isDateObject(value) ? `Date ${value.getTime()}`
-			: undefined)
+			// a program can write a Date or another RegExp, so like an instance it's keyed by identity
+			(node.hasKind("pattern") && value === node.instance ?
+				`${value} ${node.instance.lastIndex}`
+			:	undefined)
 		if (key !== undefined) return key
 		const prototype = typeof value === "object" && Object.getPrototypeOf(value)
 		// a value inside itself has no finite content, so like an instance it's keyed by identity

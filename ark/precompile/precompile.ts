@@ -23,6 +23,7 @@ import type { HoleKind, IntrospectionMember } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	appendPath,
+	holdsWritable,
 	holeNamePattern,
 	introspectionMembers,
 	isTypedFn,
@@ -936,7 +937,8 @@ export class Precompiler {
 					...site.introspection,
 					data: site.value,
 					params: factory.params,
-					defaultChecks: site.defaultChecks
+					defaultChecks: site.defaultChecks,
+					fresh: this.createsEachRun(site)
 				}
 				replaced.push([site, factory.spans])
 				continue
@@ -953,13 +955,15 @@ export class Precompiler {
 				let table = tablesByValue.get(site.value)
 				if (table === undefined)
 					tablesByValue.set(site.value, (table = tablesByValue.size))
+				const fresh = this.createsEachRun(site)
 				const exportOf = (
 					factory: SiteFactory,
 					variant: Site
 				): StandaloneFactory => ({
 					type: variant.value as never,
 					params: factory.params,
-					internedBy: table,
+					internedBy: fresh ? undefined : table,
+					fresh,
 					defaultChecks: variant.defaultChecks,
 					distinct: factory.distinct,
 					selected:
@@ -983,7 +987,10 @@ export class Precompiler {
 			} else {
 				const name = `v${nameOf(site)}`
 				namesBySite.set(site, name)
-				exportsByName[name] = site.value as never
+				exportsByName[name] =
+					this.createsEachRun(site) ?
+						{ type: site.value as never, params: [], fresh: true }
+					:	(site.value as never)
 				if (site.isKeywordRead) keywordReads.add(name)
 				replaced.push([site, []])
 			}
@@ -1150,6 +1157,17 @@ export class Precompiler {
 		if (site.status !== "accepted" || !isFoldable(site.value)) return
 		keyOf(site.value)
 		for (const [node] of site.defaultChecks) keyOf(node.in as BaseRoot)
+	}
+
+	// arktype can create a Date or RegExp a site holds anew each run, so a site that can run more than once creates its own, unless it reads a Type a top-level variable holds
+	private createsEachRun(site: Site): boolean {
+		if (site.declarationStart !== undefined) return false
+		const type = site.introspection?.type
+		return type ?
+				holdsWritable(type) && !this.interpreter.isDeclaredOnce(type)
+			:	(site.variants?.map(variant => variant.site) ?? [site]).some(site =>
+					holdsWritable(site.value)
+				)
 	}
 
 	private isFactory(site: Site, module: SourceModule): boolean {

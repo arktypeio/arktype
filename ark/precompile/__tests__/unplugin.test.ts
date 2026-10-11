@@ -520,6 +520,28 @@ must be valid according to isLong (was "x")
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
 	}).timeout(60000)
 
+	it("creates each Date or RegExp a definition that runs again holds anew, as arktype does", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { scope, type } from "arktype"
+
+const dated = () => scope({ d: "d'2001-01-01'" }).type({ at: "d" })
+const exemplified = () => type("string").configure({ examples: [/a/] as never })
+const unitOf = (out: any) => out.issues[0].unit
+Date.prototype.setFullYear.call(unitOf(dated()({ at: 0 })), 1999)
+console.log(unitOf(dated()({ at: 0 })).getUTCFullYear())
+const exampleOf = (out: any) => out.issues[0].meta.examples[0]
+exampleOf(exemplified()(1)).compile("b")
+console.log(exampleOf(exemplified()(1)).source)
+`
+			},
+			fromHere("temp", "writtenEachRun")
+		)
+		const expected = "2001\na\n"
+		attest(runPlain(root)).equals(expected)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
+	}).timeout(60000)
+
 	it("creates only the Types a bundle imports", async () => {
 		const root = writeFixture(
 			{

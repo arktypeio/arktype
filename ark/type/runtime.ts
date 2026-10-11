@@ -817,27 +817,3 @@ export const deepFreeze = <t>(value: t): t => {
 		for (const k in freeze(value)) deepFreeze(value[k])
 	return value
 }
-
-export const writeFrozenDateMessage = <name extends string>(
-	name: name
-): writeFrozenDateMessage<name> =>
-	`${name} can't change a Date a standalone validator holds, since other Types can hold it too`
-
-export type writeFrozenDateMessage<name extends string> =
-	`${name} can't change a Date a standalone validator holds, since other Types can hold it too`
-
-// a Date the runtime holds can be one another Type holds too, so setters of its own throw as a frozen object's writes do, keeping Date's prototype
-export const frozenDate = (time: number): Date =>
-	freeze(
-		Object.defineProperties(
-			new Date(time),
-			Object.fromEntries(
-				Object.getOwnPropertyNames(Date.prototype)
-					.filter(name => name.startsWith("set"))
-					.map(name => [
-						name,
-						{ value: () => throwError(writeFrozenDateMessage(name), TypeError) }
-					])
-			)
-		)
-	)

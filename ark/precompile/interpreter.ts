@@ -318,6 +318,8 @@ export class Interpreter {
 	comparedAtCreation = new WeakSet<object>()
 	// a site reading only the introspection of one checked at creation receives it, so its declaration runs
 	private checksByValue = new WeakMap<object, boolean>()
+	// e.g. a Type a top-level variable holds, which the program creates once however often a site reads it
+	private declaredOnce = new WeakSet<object>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	// one stand-in for each site, parameter and count a variant assumes, so evaluating a site again reads the one it read
 	private parameterStandIns = new WeakMap<
@@ -1242,12 +1244,14 @@ export class Interpreter {
 		)
 		if (compares) this.comparedAtCreation.add(value as object)
 		const checks = compares || this.checksHolesOf(value, site, module)
+		const isOnce = isTopLevelInit(init)
 		const values = [value]
 		// e.g. a Module's Types, which its creation created
 		for (const value of values) {
 			// one value can be declared more than once, as by an alias
 			if (!this.checksByValue.get(value as object))
 				this.checksByValue.set(value as object, checks)
+			if (isOnce) this.declaredOnce.add(value as object)
 			if (hasArkKind(value, "module")) values.push(...Object.values(value))
 		}
 	}
@@ -1272,6 +1276,10 @@ export class Interpreter {
 	// a value whose creation the build didn't see may check anything
 	isCheckedAtCreation(value: unknown): boolean {
 		return this.checksByValue.get(value as object) ?? true
+	}
+
+	isDeclaredOnce(value: unknown): boolean {
+		return this.declaredOnce.has(value as object)
 	}
 
 	// unless a site reads it as its module's own or through a Type whose creation checks nothing
@@ -2757,6 +2765,17 @@ const staticProblemOf = (
 	: module.scopes.hasWith ? "is in a module that uses `with`"
 	: isLoopVariable(binding) ? "is a loop variable"
 	: undefined
+
+const isTopLevelInit = (init: Node | null | undefined): boolean => {
+	const declarator = init?.parent
+	if (declarator?.type !== "VariableDeclarator" || declarator.init !== init)
+		return false
+	const statement =
+		declarator.parent?.parent?.type === "ExportNamedDeclaration" ?
+			declarator.parent.parent
+		:	declarator.parent
+	return statement?.parent?.type === "Program"
+}
 
 const isLoopVariable = (binding: Binding) => {
 	const declaration = binding.declaration.parent
