@@ -520,6 +520,32 @@ contextualize(() => {
 		attest(validator({})).equals({ tags: [] })
 	})
 
+	it("throws where it's read a JSON Schema whose writing throws", async () => {
+		const $ = scope(
+			{},
+			{
+				toJsonSchema: {
+					fallback: {
+						date: () => {
+							throw new Error("no schema")
+						}
+					}
+				}
+			}
+		)
+		const T = $.type("Date > d'2020-01-01'")
+		const { T: validator } = await load({ T }, undefined, undefined, [
+			"toJsonSchema"
+		])
+		attest(() => T.toJsonSchema()).throws("no schema")
+		attest(() => validator.toJsonSchema()).throws(
+			writeUnbakedMessage(
+				`${writeUnprecompilableMessage("a JSON Schema whose writing throws")}: Error: no schema`
+			)
+		)
+		attest(validator(new Date(0)).toString()).equals(T(new Date(0)).toString())
+	})
+
 	it("raises arktype's TypeError printing a symbol in a JSON Schema's error", async () => {
 		const key = Symbol("key")
 		const T = type({ [key]: "string" })

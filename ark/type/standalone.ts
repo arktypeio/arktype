@@ -1597,7 +1597,11 @@ ${isTemplate ? "]" : ")"}`
 				if (e instanceof ToJsonSchema.Error)
 					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)}, ${this.writeData(e.context, true)})`
 				if (isSymbolConversion(e)) return "runtime.serializeSymbol()"
-				throw e
+				// any other error, like one a configured writer throws, makes it a schema the build can't bake
+				if (e instanceof ParseError) throw e
+				throwParseError(
+					`${writeUnprecompilableMessage("a JSON Schema whose writing throws")}: ${String(e)}`
+				)
 			}
 			return `(${this.writeData(schema)})`
 		} catch (e) {
