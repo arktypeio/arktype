@@ -615,6 +615,7 @@ export class StandaloneArtifact {
 	defaultsByMorph = new Map<unknown, Default>()
 	defaultNamesByMorph = new Map<unknown, string>()
 	objectUnits = new Set<unknown>()
+	metas = new Set<object>()
 	declarations = createDeclarations()
 	emitting = new Set<object>()
 	moduleNamesByModule = new Map<object, string>()
@@ -738,6 +739,7 @@ export class StandaloneArtifact {
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
 		for (const node of this.declared) {
+			this.metas.add(node.meta)
 			if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
 			else if (node.hasKind("pattern")) this.patternInstances.add(node.instance)
 			else if (node.hasKind("optional") || node.hasKind("sequence"))
@@ -2079,11 +2081,73 @@ ${isTemplate ? "]" : ")"}`
 				`runtime.preventExtensions(${initialized})`
 			)
 		}
-		return this.emitLiteral(value)
+		return (
+			(this.metas.has(value) && this.readMeta(value)) || this.emitLiteral(value)
+		)
+	}
+
+	// a meta of plain data is a module every unit and validator holding its node shares
+	readMeta(meta: object): string | undefined {
+		if (!Reflect.ownKeys(meta).length) return "runtime.emptyMeta"
+		const imports: Record<string, string[]> = {}
+		const literal = this.writeSharedLiteral(meta, imports)
+		if (literal === undefined) return
+		const name = `meta${hashOf(literal)}`
+		this.sharedModules[`~arktype/${name}`] ??= {
+			readsRuntime: true,
+			imports,
+			declarations: [
+				`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${literal})\n}`
+			],
+			exports: [name]
+		}
+		return this.read(`~arktype/${name}`, name, name, `${name}()`)
+	}
+
+	// what a module can create alone, holding nothing the artifact receives or declares
+	writeSharedLiteral(
+		value: unknown,
+		imports: Record<string, string[]>
+	): string | undefined {
+		if (typeof value === "string")
+			return value.includes(holeNameMarker) ? undefined : JSON.stringify(value)
+		if (!hasDomain(value, "object")) {
+			return (
+				typeof value === "symbol" ? undefined
+				: Object.is(value, -0) ? "-0"
+				: serializePrimitive(value as never)
+			)
+		}
+		if (isDateObject(value)) {
+			if (Reflect.ownKeys(value).length) return
+			const name = this.dateModuleOf(value.getTime())
+			imports[`~arktype/${name}`] = [name]
+			return `${name}()`
+		}
+		if (
+			typeof value === "function" ||
+			isNode(value) ||
+			isRegExpObject(value) ||
+			this.objectUnits.has(value) ||
+			this.emitting.has(value)
+		)
+			return
+		let isShared = true
+		const [literal] = this.writeLiteral(
+			value,
+			element =>
+				this.writeSharedLiteral(element, imports) ?? ((isShared = false), "")
+		)
+		return isShared ? `runtime.freeze(${literal})` : undefined
 	}
 
 	// arktype's node holds one Date every reader of the Type reads, so it's created once, by a module every Type holding it shares
 	readDate(time: number): string {
+		const name = this.dateModuleOf(time)
+		return this.read(`~arktype/${name}`, name, name, `${name}()`)
+	}
+
+	dateModuleOf(time: number): string {
 		const body = `runtime.frozenDate(${time})`
 		const name = `date${hashOf(body)}`
 		this.sharedModules[`~arktype/${name}`] ??= {
@@ -2094,7 +2158,7 @@ ${isTemplate ? "]" : ")"}`
 			],
 			exports: [name]
 		}
-		return this.read(`~arktype/${name}`, name, name, `${name}()`)
+		return name
 	}
 
 	// the morph arktype creates for a default, called through a function since traversals are created before the validator it applies
@@ -2143,7 +2207,10 @@ ${isTemplate ? "]" : ")"}`
 		return name
 	}
 
-	writeLiteral(value: object): [literal: string, elements: string[]] {
+	writeLiteral(
+		value: object,
+		emitElement = (element: unknown) => this.emitElement(element)
+	): [literal: string, elements: string[]] {
 		const prototype = prototypeOf(value)
 		const isArray = prototype === Array.prototype && Array.isArray(value)
 		if (!isArray && prototype !== Object.prototype && prototype !== null) {
@@ -2189,7 +2256,7 @@ ${isTemplate ? "]" : ")"}`
 			}
 		}
 		this.emitting.add(value)
-		const elements = keys.map(k => this.emitElement(descriptors[k].value))
+		const elements = keys.map(k => emitElement(descriptors[k].value))
 		this.emitting.delete(value)
 		const entries = keys.map((k, i) => `[${JSON.stringify(k)}]: ${elements[i]}`)
 		if (prototype === null) entries.unshift("__proto__: null")
