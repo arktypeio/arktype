@@ -173,7 +173,8 @@ export const configure = (
 	if ("onFail" in config)
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
 	;(runtimeConfig as { locale: Locale.Info }).locale = enInfo
-	configuredFingerprint = received
+	// a call the build didn't transform, like a dependency's, can hold other functions under the same values
+	configuredFingerprint = fingerprint ?? ""
 	// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
 	recheck = () =>
 		fingerprintOf(config) === received ?
@@ -287,7 +288,7 @@ export const writtenConfigMessage =
 export type writtenConfigMessage = typeof writtenConfigMessage
 
 export const configMismatchMessage =
-	"an artifact precompiled under another configuration can't run under this one, so it must be rebuilt"
+	"an artifact runs only under its build's configuration, from the configure() call the build transformed"
 
 export type configMismatchMessage = typeof configMismatchMessage
 

@@ -46,10 +46,9 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			if (!runtimeSpecifiers.includes(specifier))
 				return nextResolve(specifier, context)
 			const importer = context.parentURL
-			// a module these hooks never saw wasn't precompiled, so nothing checked what it reads of arktype/runtime, though arktype/config's configure() checks itself
+			// a module these hooks never saw wasn't precompiled, so nothing checked what it reads of arktype/runtime, or stamped its configure() call
 			if (
 				isStandalone &&
-				specifier === "arktype" &&
 				importer?.startsWith("file:") &&
 				!givenUrls.has(importer) &&
 				isTransformed(fileURLToPath(importer))

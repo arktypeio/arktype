@@ -580,7 +580,11 @@ contextualize(() => {
 		}
 		const unconfigured = (await load({ T })).T(write)
 		const configured = (
-			await load({ T }, "runtime.configure({})", fingerprintOf({}))
+			await load(
+				{ T },
+				`runtime.configure({}, "${fingerprintOf({})}")`,
+				fingerprintOf({})
+			)
 		).T(write)
 		const summary = define(write)("x").toString()
 		attest([unconfigured("x").summary, configured("x").summary]).equals([
@@ -665,7 +669,7 @@ contextualize(() => {
 		expected: (ctx, locale) => \`a multiple of \${locale.number(ctx.rule)}\`
 	},
 	onFail: errors => errors.summary
-})`,
+}, "${fingerprintOf(config)}")`,
 			fingerprintOf(config)
 		)
 		const input = { a: 1, b: 3 }
@@ -689,7 +693,12 @@ contextualize(() => {
 		attest(
 			await messageOf(`runtime.configure({ onUndeclaredKey: "delete" })`, built)
 		).equals(configMismatchMessage)
-		attest(await messageOf("runtime.configure({})", built)).equals("")
+		attest(await messageOf("runtime.configure({})", built)).equals(
+			configMismatchMessage
+		)
+		attest(await messageOf(`runtime.configure({}, "${built}")`, built)).equals(
+			""
+		)
 		const createdFirst = precompileStandalone({ T: type("string") }).replace(
 			"runtime.fixConfig()",
 			"runtime.fixConfig()\nruntime.configure({})"
@@ -760,7 +769,7 @@ contextualize(() => {
 					runtimeImport,
 					`${runtimeImport}
 const config = { onUndeclaredKey: "delete" }
-runtime.configure(config)
+runtime.configure(config, "${fingerprintOf({ onUndeclaredKey: "delete" })}")
 config.onUndeclaredKey = "reject"`
 				)
 			).js
@@ -780,7 +789,7 @@ config.onUndeclaredKey = "reject"`
 		const { T } = await load(
 			{ T: type({ a: "string" }) },
 			`const domain = { expected: () => "E1" }
-runtime.configure({ domain })
+runtime.configure({ domain }, "${fingerprintOf({ domain: { expected: () => "" } })}")
 domain.expected = () => "E2"`,
 			fingerprintOf({ domain: { expected: () => "" } })
 		)
@@ -811,7 +820,7 @@ domain.expected = () => "E2"`,
 				)}\nexport const configure = runtime.configure`
 			).js
 		)
-		artifact.configure(config)
+		artifact.configure(config, fingerprintOf(config))
 		attest(artifact.T()({ a: 1 }).summary).snap("configured")
 		attest(artifact.T()).is(artifact.T())
 		attest(() => artifact.configure(config)).throws(configureAfterTypeMessage)
@@ -834,7 +843,7 @@ domain.expected = () => "E2"`,
 					)}\nexport const configure = runtime.configure`
 				).js
 			)
-			artifact.configure({})
+			artifact.configure({}, fingerprintOf({}))
 			artifact[name]()
 			attest(() => artifact.configure({})).throws(configureAfterTypeMessage)
 		}
@@ -857,7 +866,7 @@ domain.expected = () => "E2"`,
 		const strings = artifact.Strings()
 		attest(strings.json).is(strings.json)
 		attest(artifact.Strings()).is(strings)
-		artifact.configure(config)
+		artifact.configure(config, fingerprintOf(config))
 		attest(strings.email(1).summary).snap("configured")
 		attest(() => artifact.configure(config)).throws(configureAfterTypeMessage)
 	})

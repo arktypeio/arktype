@@ -225,7 +225,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			)
 			attest(status).equals(1)
 			attest(
-				stderr.includes(writeTextlessMessage(join(transpiled, "main.ts")))
+				stderr.includes(writeTextlessMessage(join(transpiled, "config.ts")))
 			).equals(true)
 			attest(
 				node(

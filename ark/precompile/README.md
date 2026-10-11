@@ -109,7 +109,7 @@ Bun.plugin(precompile())
 
 The precompiler runs in a worker here too. Bun doesn't ask a runtime plugin to resolve packages, so in standalone mode `arktype` and `arktype/runtime` are replaced by the runtime `cwd` resolves for every importer, including the modules the driver serves, and dependencies aren't checked for copies of arktype. Bun ignores the source map, so stack traces show lines of the transformed module.
 
-Turbopack, as a webpack loader in a rule for each extension your definitions are in:
+Turbopack, as a webpack loader in a rule for each extension your definitions and config module are in:
 
 ```js
 // next.config.js
