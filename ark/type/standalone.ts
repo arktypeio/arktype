@@ -643,6 +643,8 @@ export class StandaloneArtifact {
 	classes = new Set<unknown>()
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
+	// each validator another statement reads, which a variant's case therefore can't declare
+	readValidators = new Set<BaseRoot>()
 	unitRoots = new Set<BaseRoot>()
 	// the unit holding each root in the first Type reaching it, by id, as two nodes of one id like `unknown` and `unknown.any` are one root
 	unitsByHead = new Map<string, RootUnit>()
@@ -1267,7 +1269,7 @@ export class StandaloneArtifact {
 		return (
 			!!this.selection &&
 			this.variantTypes.has(root) &&
-			!this.defaultChecks.some(([node]) => node.in === root)
+			!this.readValidators.has(root)
 		)
 	}
 
@@ -1351,9 +1353,10 @@ ${statements.filter(statement => statement).join("\n\n")}
 	): string {
 		const [{ params, internedBy }] = this.variants
 		this.writeSharedUnits()
-		// a Module, Scope or Generic declares what it holds, which the body then writes
-		const values = this.variants.map(({ type }, i) =>
-			this.exportOf(i ? type : this.exports[name])
+		// a case returns its own validator, which no other statement reads, and a Module, Scope or Generic declares what it holds, which the body then writes
+		const values = this.variants.map(
+			({ type }) =>
+				this.validatorNamesByRoot.get(type as never) ?? this.exportOf(type)
 		)
 		// written before the body, which declares what they read
 		const defaults = this.variants.map(variant =>
@@ -1378,16 +1381,6 @@ ${statements.filter(statement => statement).join("\n\n")}
 				...defaults[i].map(({ check }) => check),
 				`return ${values[i]}`
 			])
-			// a name a variant declares exists only where a call selects it
-			const texts = [body, ...created].map(statements => statements.join("\n"))
-			for (const [i, statements] of created.entries()) {
-				for (const statement of statements) {
-					const name = /^const (\w+) =/.exec(statement)?.[1]
-					const reads = new RegExp(`\\b${name}\\b`)
-					if (name && texts.some((text, j) => j !== i + 1 && reads.test(text)))
-						throwInternalError(`Unexpected read of a variant's ${name}`)
-				}
-			}
 			body.push(
 				`switch (variant) {\n${created.map((statements, i) => `case ${i}: {\n${statements.join("\n")}\n}`).join("\n")}\n}`
 			)
@@ -1499,7 +1492,7 @@ ${statements.filter(statement => statement).join("\n\n")}
 			const writers = configuredWritersOf(input, raisable)
 			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}${writers && ` ${writers}`}`))}, [${[...inputHoles, ...valueHoles].map(hole => this.emit(hole)).join(", ")}]]`
 			return {
-				check: `runtime.checkDefault(${this.validatorNamesByRoot.get(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey}${config === "runtime.runtimeConfig" ? "" : `, ${config}`})`,
+				check: `runtime.checkDefault(${this.readValidator(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey}${config === "runtime.runtimeConfig" ? "" : `, ${config}`})`,
 				key: defaultKey
 			}
 		})
@@ -1732,28 +1725,43 @@ return [${returned.join(", ")}]
 		})
 		const builders = this.writeBuilders(localContexts, localContextNames)
 		const validators: string[] = []
+		const { statements, namesByValue, namesByContext } = this.declarations
+		const cases: [BaseRoot, string[], string[], string][] = []
 		// what depends on every validator, written once they exist
 		const lateLength = () =>
 			this.defaults.length + this.modules.length + this.fills.length
 		for (const [root, name] of this.validatorNamesByRoot) {
-			const { statements, namesByValue } = this.declarations
 			const declared = statements.length
 			const linked = this.links.length
 			const named = namesByValue.size
+			const framed = namesByContext.size
 			const late = lateLength()
 			const validator = `const ${name} = ${this.writeValidator(root)}`
 			if (!this.isVariantRoot(root) || lateLength() !== late) {
 				validators.push(validator)
 				continue
 			}
-			// what only a variant's validator declares, like its shape, is created where a call selects it, and declared again if another reads it
+			// what only a variant's validator declares, like its shape, is named nowhere else, so another reading it declares its own
 			for (const value of [...namesByValue.keys()].slice(named))
 				namesByValue.delete(value)
-			this.variantStatements.set(root, [
-				...statements.splice(declared),
-				...this.links.splice(linked),
+			for (const expression of [...namesByContext.keys()].slice(framed))
+				namesByContext.delete(expression)
+			cases.push([
+				root,
+				statements.splice(declared),
+				this.links.splice(linked),
 				validator
 			])
+		}
+		// a variant's validator is declared where a call selects it, unless a statement written after it read it
+		for (const [root, declared, linked, validator] of cases) {
+			if (!this.readValidators.has(root))
+				this.variantStatements.set(root, [...declared, ...linked, validator])
+			else {
+				statements.push(...declared)
+				this.links.push(...linked)
+				validators.push(validator)
+			}
 		}
 		return [
 			this.declarations.statements.join("\n"),
@@ -2061,7 +2069,7 @@ ${isTemplate ? "]" : ")"}`
 
 	// a Scope or Generic is an empty object, since resolving an alias or instantiating a Generic needs arktype
 	exportOf(value: unknown): string {
-		if (hasArkKind(value, "root")) return this.validatorNamesByRoot.get(value)!
+		if (hasArkKind(value, "root")) return this.readValidator(value)!
 		if (hasArkKind(value, "scope") || hasArkKind(value, "generic")) {
 			const declared = this.declarations.namesByValue.get(value)
 			if (declared) return declared
@@ -2108,6 +2116,11 @@ ${isTemplate ? "]" : ")"}`
 		let name = this.held.get(value)
 		if (!name) this.held.set(value, (name = `held${this.held.size}`))
 		return this.declareConst(value, "literal", `(${name} ??= ${expression})`)
+	}
+
+	readValidator(root: BaseRoot): string | undefined {
+		this.readValidators.add(root)
+		return this.validatorNamesByRoot.get(root)
 	}
 
 	declareConst(
@@ -2326,7 +2339,7 @@ ${isTemplate ? "]" : ")"}`
 		this.defaultNamesByMorph.set(morph, name)
 		const flags = defaultedNodeKeys.filter(k => value[k]).map(k => `${k}: true`)
 		this.defaults.push(
-			`const ${name} = runtime.computeDefaultValueMorph(${this.emit(key)}, ${this.validatorNamesByRoot.get(value)}, ${this.emit(defaultValue)}, {${flags.length ? ` ${flags.join(", ")} ` : ""}}${typeof defaultValue === "function" ? `, ${isThunk(defaultValue)}` : ""})`
+			`const ${name} = runtime.computeDefaultValueMorph(${this.emit(key)}, ${this.readValidator(value)}, ${this.emit(defaultValue)}, {${flags.length ? ` ${flags.join(", ")} ` : ""}}${typeof defaultValue === "function" ? `, ${isThunk(defaultValue)}` : ""})`
 		)
 		return `(data, ctx) => ${name}(data, ctx)`
 	}
@@ -2434,7 +2447,7 @@ ${isTemplate ? "]" : ")"}`
 	// a Type a literal holds is data, so it's emitted as its validator rather than its shape
 	emitElement(value: unknown): string {
 		return isNode(value) && value.isRoot() && !this.objectUnits.has(value) ?
-				(this.validatorNamesByRoot.get(value) ??
+				(this.readValidator(value) ??
 					throwInternalError(
 						`Unexpected Type ${value.expression} outside a meta`
 					))
