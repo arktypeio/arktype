@@ -121,6 +121,21 @@ export const schema = T.toJsonSchema()`)
 			])
 		})
 
+		it("folds introspection over a default a received Type checks", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { Positive } from "./positive.ts"
+export const schema = type({ a: [Positive, "=", 5] }).toJsonSchema({
+	fallback: { predicate: ctx => ctx.base }
+})`,
+				{
+					"/positive.ts": `import { type } from "arktype"
+export const Positive = type("number").narrow(n => n > 0)`
+				}
+			)
+			attest(result.diagnostics).equals([])
+		})
+
 		it("folds a JSON Schema arktype can't write to a call throwing what arktype does, which a bundler keeps", () => {
 			const result = precompile(`import { type } from "arktype"
 const Length = type("string").pipe(s => s.length)

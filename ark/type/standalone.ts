@@ -320,7 +320,7 @@ const writeArtifact = (
 			baking
 		)
 		trial.templates.add(factory.type)
-		trial.receivedMetas = receiving.receivedMetas
+		trial.unwritableMetas = new Set(receiving.receivedMetas.keys())
 		try {
 			trial.writeCreate(0, configured)
 			return true
@@ -636,6 +636,8 @@ export class StandaloneArtifact {
 	defaultChecks: readonly DefaultCheck[]
 	// a factory's errors expose the meta of a Type it receives, not a copy
 	receivedMetas = new Map<object, string>()
+	// a received Type lends its meta to the errors of what a factory creates, which a folded Type, written once, can't
+	unwritableMetas: ReadonlySet<object> = new Set()
 	// the holes of each value a factory receives, by the name holding them
 	holesByName = new Map<string, readonly unknown[]>()
 	baking: Baking
@@ -1746,12 +1748,11 @@ ${isTemplate ? "]" : ")"}`
 
 	// a node's meta is one object wherever its errors or its validator read it
 	emitMeta(node: BaseNode): string {
-		const received =
-			this.writing ? undefined : this.receivedMetas.get(node.meta)
-		// a received Type lends its meta to the errors of what a factory creates, which code written once can't
-		if (received && !this.variants.length)
+		if (!this.writing && this.unwritableMetas.has(node.meta))
 			throwParseError(writeUnprecompilableMessage("a received meta"))
-		const declared = this.declarations.namesByValue.get(node.meta) ?? received
+		const declared =
+			this.declarations.namesByValue.get(node.meta) ??
+			(this.writing ? undefined : this.receivedMetas.get(node.meta))
 		if (declared) return declared
 		const address = metaAddressOf(node)
 		if (address === undefined) return this.emitLiteral(node.meta)
