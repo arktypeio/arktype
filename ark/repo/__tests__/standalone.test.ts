@@ -2335,6 +2335,33 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 		})
 
+		it("rejects an order between siblings whose functions' parameter counts compile apart", () => {
+			const isSmall = standIn((n: number) => n < 10, "a", "isSmall")
+			const isEven = standIn(
+				(n: number, ctx: { mustBe: (s: string) => false }) =>
+					n % 2 === 0 || ctx.mustBe("even"),
+				"b",
+				"isEven"
+			)
+			attest(() =>
+				precompileStandalone({
+					T: {
+						type: type("number")
+							.narrow(isSmall)
+							.or(type("number").narrow(isEven)),
+						params: [
+							{ kind: "function", label: "`isSmall`", value: isSmall },
+							{ kind: "function", label: "`isEven`", value: isEven }
+						]
+					}
+				})
+			).throws(
+				writeUnprecompilableMessage(
+					"an order that depends on the name of `isEven`"
+				)
+			)
+		})
+
 		it("creates props in key order whatever their functions are named", async () => {
 			const now = standIn(() => 1, "a", "now")
 			const later = standIn(() => 2, "b", "later")

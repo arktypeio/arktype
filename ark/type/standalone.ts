@@ -1042,7 +1042,7 @@ export class StandaloneArtifact {
 		return holes as [unknown, unknown]
 	}
 
-	// siblings arktype orders by their functions' names are bound in the order of the names received, where exchanging the functions leaves every Type the same
+	// siblings arktype orders by their functions' names are bound in the order of the names received, where that writes what arktype's order would
 	sortAtCreation(holes: unknown[]): void {
 		if (holes.length < 2) return
 		const existing = this.sortedHoles.find(sorted =>
@@ -1057,10 +1057,9 @@ export class StandaloneArtifact {
 			return
 		}
 		if (!this.exportsOnlyTypes()) this.refuseOrder(holes[0])
+		this.checkBoundAlike(holes)
 		for (let i = 1; i < holes.length; i++) {
 			const [l, r] = [holes[i - 1], holes[i]]
-			if (!this.roots.every(root => exchanged(root, l, r)?.hash === root.hash))
-				this.refuseOrder(l)
 			if (baseOf(l) === baseOf(r)) {
 				throwParseError(
 					writeUnprecompilableMessage(
@@ -1070,6 +1069,70 @@ export class StandaloneArtifact {
 			}
 		}
 		this.sortedHoles.push(holes)
+	}
+
+	// a function may be bound where another sorts, so each sibling, left the only one of its run, must write alike with its function exchanged for the first's
+	checkBoundAlike(holes: unknown[]): void {
+		const expressionOf = (hole: unknown) => this.holeExpressions.get(hole)!
+		for (const root of this.roots) {
+			const held = keyOf(root)[1]
+			if (!holes.some(hole => held.includes(hole))) continue
+			const [first, ...written] = holes.map(hole => {
+				const isolated = isolating(root, hole, holes)
+				return (
+					isolated &&
+					this.writtenOf(
+						isolated,
+						new Map(this.holeExpressions)
+							.set(hole, expressionOf(holes[0]))
+							.set(holes[0], expressionOf(hole))
+					)
+				)
+			})
+			if (!first || written.some(w => w !== first)) this.refuseOrder(holes[0])
+		}
+	}
+
+	// what the artifact writes creating a root, its nodes named by where they first appear
+	writtenOf(
+		root: BaseRoot,
+		holeExpressions: Map<unknown, string>
+	): string | undefined {
+		const trial = new StandaloneArtifact(
+			{ root: root as never },
+			Object.create(this.sharedModules),
+			{},
+			this.baking
+		)
+		trial.holeExpressions = holeExpressions
+		let written: string
+		try {
+			written = [
+				trial.writeCreate(0, undefined),
+				...Object.values(trial.sharedModules).flatMap(
+					module => module.declarations
+				)
+			].join("\n")
+		} catch (e) {
+			if (e instanceof ParseError) return
+			throw e
+		}
+		const ids = [
+			keyOf(root)[0],
+			...trial.units.flatMap(unit => Object.values(unit.names))
+		]
+		const places = new Map<string, string>()
+		return written.replace(
+			new RegExp(
+				[...new Set(ids)]
+					.sort((l, r) => r.length - l.length)
+					// names are identifiers, so only a $ is special
+					.map(id => id.replace(/\$/g, "\\$&"))
+					.join("|"),
+				"g"
+			),
+			id => places.get(id) ?? places.set(id, `$${places.size}`).get(id)!
+		)
 	}
 
 	refuseOrder(hole: unknown): never {
@@ -2821,25 +2884,39 @@ const partsOf = (
 
 export const holeNameMarker = "$hole_"
 
-// what arktype creates holding each of two functions where it held the other, which is the node itself where it holds them alike
-const exchanged = (root: BaseRoot, l: unknown, r: unknown): BaseNode | null => {
-	const exchange = (value: unknown): unknown => {
-		if (value === l) return r
-		if (value === r) return l
-		if (!hasDomain(value, "object") || isNode(value) || !isPlainLiteral(value))
-			return value
-		const entries = Object.entries(value)
-		const results = entries.map(([k, v]) => [k, exchange(v)] as const)
-		return (
-			results.every(([, v], i) => v === entries[i][1]) ? value
-			: isArray(value) ? results.map(([, v]) => v)
-			: Object.fromEntries(results)
-		)
+// a root keeping, of the siblings that each hold one function of a run, only the one holding the function given
+const isolating = (
+	root: BaseRoot,
+	hole: unknown,
+	run: unknown[]
+): BaseRoot | null => {
+	// a node's hash names each function it holds by its placeholder
+	const heldBy = (node: BaseNode) =>
+		run.filter(held => node.hash.includes(functionNameOf(held as Function)))
+	const holdsOnly = (node: BaseNode, held: unknown) => {
+		const holes = heldBy(node)
+		return holes.length === 1 && holes[0] === held
 	}
 	try {
-		return root.transform((_, inner) => exchange(inner) as never, {
-			prereduced: true
-		})
+		return root.transform(
+			(_, inner) => {
+				const result: Record<string, unknown> = { ...inner }
+				for (const k of ["branches", ...sortedConstraintKeys]) {
+					const list = result[k] as BaseNode[] | undefined
+					if (isArray(list) && list.some(node => holdsOnly(node, hole))) {
+						result[k] = list.filter(
+							node => heldBy(node).length !== 1 || holdsOnly(node, hole)
+						)
+					}
+				}
+				return result as never
+			},
+			{
+				prereduced: true,
+				// only what holds more than one is copied
+				shouldTransform: node => heldBy(node).length > 1
+			}
+		) as BaseRoot
 	} catch {
 		return null
 	}

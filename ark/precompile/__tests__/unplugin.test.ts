@@ -851,6 +851,12 @@ const names = JSON.parse(process.env.NAMES!)
 for (const [k, fn] of Object.entries(functions))
 	Object.defineProperty(fn, "name", { value: names[k] })
 await import("./main.ts")
+`,
+				"contextual.ts": `import { type } from "arktype"
+import { isSmall } from "./functions.ts"
+const isEven = (n: number, ctx: { mustBe: (s: string) => false }) =>
+	n % 2 === 0 || ctx.mustBe("even")
+console.log(type("number").narrow(isSmall).or(type("number").narrow(isEven))(15))
 `
 			},
 			fromHere("temp", "minified")
@@ -868,6 +874,23 @@ await import("./main.ts")
 			}
 		).stdout
 		attest(precompiled).equals(JSON.parse(renamed))
+		// arktype passes a context to a predicate of 2 parameters, so whichever name a minifier gives each can't change which branch passes one
+		const contextual = await esbuild({
+			entryPoints: [join(root, "contextual.ts")],
+			bundle: true,
+			write: false,
+			minify: true,
+			logLevel: "silent",
+			conditions,
+			plugins: [precompile.esbuild({ cwd: root, conditions })]
+		}).then(
+			() => [],
+			(e: { errors: { text: string }[] }) =>
+				e.errors.map(error => error.text.split(`${root}/`).join(""))
+		)
+		attest(contextual).snap([
+			'contextual.ts:5:13  type("number").narrow(isSmall).or(type("number").narrow(isE… can\'t be precompiled to a standalone validator yet\n  an order that depends on the name of `isEven` (contextual.ts:5:69) can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+		])
 	}).timeout(60000)
 
 	it("folds the json of a Type a Scope's method creates", async () => {
