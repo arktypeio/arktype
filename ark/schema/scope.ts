@@ -1378,6 +1378,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 		// how much was reached when resolving it began, which each member of a cycle it closes stores
 		mark: number | undefined
 	): Exclude<CachedResolution, BaseParseContext> | undefined {
+		if (Object.prototype.hasOwnProperty.call(this.aliases, name))
+			$ark.reached?.alias(this, name)
 		if (cached) {
 			const v = cached
 			if (v.phase === "resolving" || v.phase === "member") {
@@ -1456,7 +1458,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		// a reference to a thunk's alias while it's called is a cycle, but a generic's declaration is called again
 		if (isScopeAlias && isThunk(def) && !(def instanceof LazyGenericRoot)) {
-			$ark.reached?.thunk(this, name)
 			const preparsed = this.preparseOwnDefinitionFormat(def, { alias: name })
 			const ctx = registerParseContext(
 				this.createParseContext(preparsed as BaseParseContextInput)

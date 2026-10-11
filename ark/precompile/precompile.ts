@@ -44,7 +44,7 @@ import {
 	type StandaloneModules,
 	type StandaloneOptions,
 	type StandaloneVariants,
-	type ThunkAlias
+	type ScopeAlias
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
@@ -177,8 +177,8 @@ export interface Site {
 	addressed: Set<BaseRoot>
 	// each default arktype checks while defining what the site creates, which the build can't and its factory does at creation
 	defaultChecks: DefaultCheck[]
-	// each thunk alias arktype resolves while defining it, directly or in computing what a cache returns
-	thunks: ThunkAlias[]
+	// each Scope alias arktype resolves while defining it, directly or in computing what a cache returns
+	aliases: ScopeAlias[]
 	// the site's own variant first, when it holds a function a parameter holds
 	variants: Variant[] | undefined
 	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
@@ -1675,7 +1675,7 @@ export class Precompiler {
 			}
 			// e.g. `aAndB: () => $.type("a&b")`, the docs' way to use a Type's methods in a Scope, which decides only what a site resolving it creates
 			const resolved = thunks.find(([scope, alias]) =>
-				site.thunks.some(
+				site.aliases.some(
 					([resolvedScope, resolvedAlias]) =>
 						resolvedScope === scope && resolvedAlias === alias
 				)
@@ -1689,7 +1689,13 @@ export class Precompiler {
 			for (const hole of holes) {
 				const standIn =
 					hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
-				if (standIn && (standIn.isCalled || standIn.isCalledIndirectly)) {
+				if (
+					standIn &&
+					(standIn.isCalled || standIn.isCalledIndirectly) &&
+					!(
+						hasArkKind(value, "root") && !this.resolvesCaller(value, hole, site)
+					)
+				) {
 					result.push(
 						`arktype calls ${this.interpreter.labelOf(standIn)} while defining what \`${text}\` creates, so a factory can't compare it`
 					)
@@ -1698,6 +1704,18 @@ export class Precompiler {
 			}
 		}
 		return result
+	}
+
+	// a Type's key compares its own nodes, which hold what arktype's calls decided, so only an alias of its Scope the site resolves can hold a call's result unchecked
+	private resolvesCaller(type: BaseRoot, hole: unknown, site: Site): boolean {
+		if (traversalKeyOf(type)[1].includes(hole)) return false
+		const holders = Object.keys(type.$.aliases).filter(alias =>
+			this.interpreter.holesIn(type.$.aliases[alias]).has(hole)
+		)
+		return (
+			!holders.length ||
+			site.aliases.some(([$, alias]) => $ === type.$ && holders.includes(alias))
+		)
 	}
 
 	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
@@ -2069,7 +2087,7 @@ export class Precompiler {
 			isInterned: false,
 			addressed: new Set(),
 			defaultChecks: [],
-			thunks: [],
+			aliases: [],
 			declarationStart: declarationStartOf(node),
 			introspection: undefined,
 			variants: undefined
@@ -2095,7 +2113,7 @@ export class Precompiler {
 		const checks = new Set<DefaultCheck>()
 		// a thunk alias is a pair, and a check a triple
 		for (const reached of state.reached) {
-			if (reached.length === 2) site.thunks.push(reached)
+			if (reached.length === 2) site.aliases.push(reached)
 			else checks.add(reached)
 		}
 		if (state.error instanceof ParseError) {

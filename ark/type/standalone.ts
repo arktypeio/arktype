@@ -2473,7 +2473,7 @@ const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
 	reader.unitsById[node.id]
 
 // a Scope's alias defined by a thunk, keyed only by where it is, so a site resolving it is refused
-export type ThunkAlias = [scope: BaseScope, alias: string]
+export type ScopeAlias = [scope: BaseScope, alias: string]
 
 export type Key = [
 	id: string,
@@ -2481,7 +2481,7 @@ export type Key = [
 	// e.g. "configures `domain.description` with a function, whose results decide what it creates"
 	refusal: string | undefined,
 	// with the path from the keyed value to the Scope holding each
-	thunks: readonly [...ThunkAlias, path: string][]
+	thunks: readonly [...ScopeAlias, path: string][]
 ]
 
 const keysByValue = new WeakMap<object, Key>()
@@ -2534,7 +2534,7 @@ const encodeKey = (
 	const values: string[] = []
 	const holes: unknown[] = []
 	const seen = new Map<unknown, number>()
-	const thunks: [...ThunkAlias, path: string][] = []
+	const thunks: [...ScopeAlias, path: string][] = []
 	let refusal: string | undefined
 	const holeIndexOf = (hole: unknown) => {
 		const index = holes.indexOf(hole)

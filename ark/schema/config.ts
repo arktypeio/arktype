@@ -58,8 +58,8 @@ export interface CacheReach {
 	node: (node: BaseNode) => void
 	// an entry another cache returns, which reaches what computing it reached
 	cached: (cache: object, key: unknown) => void
-	// a Scope's alias defined by a thunk, whose result decides what a definition resolving it creates
-	thunk: ($: BaseScope, alias: string) => void
+	// a Scope's alias a definition resolves, whose definition, like a thunk or a narrow arktype tests on literals, decides what it creates
+	alias: ($: BaseScope, alias: string) => void
 	// how much the definition has reached when computing an entry begins
 	mark: () => number | undefined
 	// files what the definition reached since the mark under the entry, for each definition the cache returns it to

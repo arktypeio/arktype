@@ -20,7 +20,7 @@ import {
 	type DefaultCheck,
 	type FoldedMember,
 	type StandaloneIntrospection,
-	type ThunkAlias
+	type ScopeAlias
 } from "arktype/internal/standalone.ts"
 import type {
 	CallExpression,
@@ -128,7 +128,7 @@ export interface StandIn {
 	isDefinition: boolean
 }
 
-export type Reached = DefaultCheck | ThunkAlias
+export type Reached = DefaultCheck | ScopeAlias
 
 export interface SiteState {
 	node: Node
@@ -146,7 +146,7 @@ export interface SiteState {
 	arktypeArguments: unknown[]
 	// each string passed to arktype's type, whose parse cache returns its Type again for it
 	parsedDefinitions: string[]
-	// each default check arktype deferred and thunk alias it resolved, directly or in computing what a cache returned, in the order the site reached them
+	// each default check arktype deferred and Scope alias it resolved, directly or in computing what a cache returned, in the order the site reached them
 	reached: Reached[]
 	// each Type a request returned
 	roots: BaseRoot[]
@@ -304,7 +304,8 @@ export class Interpreter {
 	// each default check deferred by the node whose creation ran it, which a site the node cache returns it to reaches
 	private checksByOwner = new Map<object, DefaultCheck[]>()
 	// what computing each cache entry reached, by cache and key
-	private reachedByEntry = new WeakMap<object, Map<unknown, Reached[]>>()
+	private reachedByEntry = new WeakMap<object, Map<unknown, Set<Reached>>>()
+	private aliasesByScope = new WeakMap<object, Map<string, ScopeAlias>>()
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
 	// what each function, class or symbol expression or configure() call outside a call evaluated to, which every evaluation of it reuses
 	private standInsByNode = new Map<Node, object>()
@@ -2009,10 +2010,18 @@ export class Interpreter {
 			if (checks) this.activeCall?.ctx.site?.reached.push(...checks)
 		},
 		cached: (cache, key) => {
-			const reached = this.reachedByEntry.get(cache)?.get(key)
-			if (reached) this.activeCall?.ctx.site?.reached.push(...reached)
+			const site = this.activeCall?.ctx.site
+			for (const reached of this.reachedByEntry.get(cache)?.get(key) ?? [])
+				site?.reached.push(reached)
 		},
-		thunk: ($, alias) => this.activeCall?.ctx.site?.reached.push([$, alias]),
+		alias: ($, alias) => {
+			// one tuple per alias, so an entry computed again stores each alias once
+			let aliases = this.aliasesByScope.get($)
+			if (!aliases) this.aliasesByScope.set($, (aliases = new Map()))
+			let reached = aliases.get(alias)
+			if (!reached) aliases.set(alias, (reached = [$, alias]))
+			this.activeCall?.ctx.site?.reached.push(reached)
+		},
 		mark: () => this.activeCall?.ctx.site?.reached.length,
 		// an entry computed again, as an alias resolved once its references are, reaches what each computation did
 		store: (mark, cache, key) => {
@@ -2021,8 +2030,8 @@ export class Interpreter {
 			let entries = this.reachedByEntry.get(cache)
 			if (!entries) this.reachedByEntry.set(cache, (entries = new Map()))
 			let stored = entries.get(key)
-			if (!stored) entries.set(key, (stored = []))
-			stored.push(...reached.slice(mark))
+			if (!stored) entries.set(key, (stored = new Set()))
+			for (let i = mark; i < reached.length; i++) stored.add(reached[i])
 		}
 	}
 

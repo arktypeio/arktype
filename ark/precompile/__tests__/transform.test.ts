@@ -396,6 +396,25 @@ export const Holder = type({ "p?": $.type("positive") })`
 			attest(result.diagnostics).equals([])
 		})
 
+		it("refuses a Type whose Scope's narrow arktype tested on literals only where the site resolves its alias", () => {
+			const result = precompile(
+				`import { types } from "./handlers.ts"
+export const Aged = types.user.and({ age: "number" })
+export const Coded = types.user.and({ c: "code" })`,
+				{
+					"/handlers.ts": `import { scope } from "arktype"
+const isAllowed = (s: string) => s !== "b"
+export const types = scope({ code: ["'a' | 'b'", ":", isAllowed], user: { name: "string" } }).export()`
+				}
+			)
+			attest(result.diagnostics.map(d => [d.line, ...d.reasons])).snap([
+				[
+					3,
+					"arktype calls `isAllowed` (/handlers.ts:2:19) while defining what `types.user` creates, so a factory can't compare it"
+				]
+			])
+		})
+
 		it("drops a site written inside a Scope it folds", () => {
 			const result = precompile(`import { scope } from "arktype"
 const create = () => {
