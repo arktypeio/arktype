@@ -635,6 +635,8 @@ export class StandaloneArtifact {
 	createdEachRun = new Set<BaseRoot>()
 	// a Type written without its key's functions, which each call of its factory copies with those it receives
 	templates = new Set<BaseRoot>()
+	// a default's node, which only its check reads, so its validator is keyed by its traversal
+	checkedRoots: ReadonlySet<BaseRoot>
 	// what a factory receives and checks for each variant it can create, none for an artifact creating its exports once
 	variants: readonly StandaloneFactory[]
 	variantTypes: ReadonlySet<unknown>
@@ -701,8 +703,10 @@ export class StandaloneArtifact {
 			for (const { type } of this.variants.slice(1))
 				this.collectExport(type, path)
 		}
+		const exported = new Set(this.roots)
 		for (const [node] of this.defaultChecks)
 			this.collectType(node.in as BaseRoot)
+		this.checkedRoots = new Set(this.roots.filter(root => !exported.has(root)))
 		// the runtime writes only en
 		const locale = $ark.config.locale
 		if (locale !== undefined && locale !== $ark.defaultConfig.locale)
@@ -1251,9 +1255,10 @@ ${statements.filter(statement => statement).join("\n\n")}
 		return checks.map(([node, defaultValue, key]) => {
 			const input = node.in as BaseRoot
 			const config = this.scopeConfigOf(input, raisableCodesOf(input))
-			// a narrow whose answer never changes answers an equal check alike, so a check is keyed by its content and the functions it holds
-			const [id, holes] = encodeKey([input, defaultValue], undefined, false)
-			const defaultKey = `[${JSON.stringify(id)}, [${holes.map(hole => this.emit(hole)).join(", ")}]]`
+			// a narrow whose answer never changes answers an equal check alike, so a check is keyed by its node's traversal, its value and the functions they hold
+			const [inputId, inputHoles] = traversalKeyOf(input)
+			const [valueId, valueHoles] = encodeKey(defaultValue, undefined, false)
+			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}`))}, [${[...inputHoles, ...valueHoles].map(hole => this.emit(hole)).join(", ")}]]`
 			return {
 				check: `runtime.checkDefault(${this.validatorNamesByRoot.get(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey}${config === "runtime.runtimeConfig" ? "" : `, ${config}`})`,
 				key: defaultKey
@@ -1541,7 +1546,9 @@ return [${returned.join(", ")}]
 	writeValidator(root: BaseRoot): string {
 		const shape = this.shapeOf(root)
 		const nodeName = this.unitsByHead.get(root)!.names[root.id]
-		const [id, holes] = keyOf(root)
+		const [id, holes] = (this.checkedRoots.has(root) ? traversalKeyOf : keyOf)(
+			root
+		)
 		const isTemplate = this.templates.has(root)
 		const key = `,\n\t${JSON.stringify(id)}${holes.length && !isTemplate ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
 		return `${isTemplate ? "runtime.template" : "new runtime.Validator"}(
@@ -2490,7 +2497,10 @@ export const keyOf = (value: Foldable): Key => {
 	return key
 }
 
-const rootKeyOf = (root: BaseRoot): Key => {
+// a default check reads a node's traversal, which doesn't depend on the Scope its methods parse in
+export const traversalKeyOf = (root: BaseRoot): Key => rootKeyOf(root, false)
+
+const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 	const units = rootUnitsOf(root)
 	const defaultsByMorph = new Map<unknown, Default>()
 	for (const unit of units) {
@@ -2507,7 +2517,7 @@ const rootKeyOf = (root: BaseRoot): Key => {
 			errorContexts: units.map(unit => unit.errorContexts),
 			meta: root.meta,
 			// where its methods, like `and` and `or`, parse their arguments
-			$: root.$
+			...(isScoped && { $: root.$ })
 		},
 		defaultsByMorph
 	)

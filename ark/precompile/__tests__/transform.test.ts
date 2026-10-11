@@ -155,11 +155,11 @@ export const Doubled = type("number").pipe(double)`
 				}
 			)
 			attest(result.code).snap(`import "arktype"
-import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/18ntddv1g9lgxv"
-import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/18ntddv1g9lgxv"
-import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/18ntddv1g9lgxv"
-import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/18ntddv1g9lgxv"
-import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/18ntddv1g9lgxv"
+import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/nvqz9q0ei9kxv"
+import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/nvqz9q0ei9kxv"
+import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/nvqz9q0ei9kxv"
+import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/nvqz9q0ei9kxv"
+import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/nvqz9q0ei9kxv"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { double } from "./containers.ts"
 import { Doubled } from "./doubled.ts"
@@ -379,6 +379,21 @@ export const holder = { T: $.type("bigint"), m: $.export() }`
 				"`holder.T.$`'s alias `t` is a thunk the site resolves, so a factory can't compare what it returns",
 				"`holder.m.G.$`'s alias `t` is a thunk the site resolves, so a factory can't compare what it returns"
 			])
+		})
+
+		it("keys a default's check by its node's traversal, not the rest of the node's Scope", () => {
+			const result = precompile(
+				`import { Holder } from "./holder.ts"
+export const Defaulted = Holder.and({ p: ["number", "=", 5] })`,
+				{
+					"/holder.ts": `import { scope, type } from "arktype"
+const isPositive = (n: number) => n > 0
+const isNonEmpty = (s: string) => s.length > 0
+const $ = scope({ positive: ["number", ":", isPositive], name: ["string", ":", isNonEmpty] })
+export const Holder = type({ "p?": $.type("positive") })`
+				}
+			)
+			attest(result.diagnostics).equals([])
 		})
 
 		it("drops a site written inside a Scope it folds", () => {

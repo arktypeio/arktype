@@ -30,6 +30,7 @@ import {
 	kindNameOf,
 	precompileStandalone,
 	precompileStandaloneModules,
+	traversalKeyOf,
 	writeFixConfig,
 	writeUnprecompilableMessage,
 	type ConfiguredModule,
@@ -1166,9 +1167,11 @@ export class Precompiler {
 		if (!hasArkKind(value, "root") && !hasArkKind(value, "module"))
 			return dropped
 		const held = [
-			value,
-			...site.defaultChecks.map(([node]) => node.in as BaseRoot)
-		].flatMap(value => keyOf(value)[1])
+			...keyOf(value)[1],
+			...site.defaultChecks.flatMap(
+				([node]) => traversalKeyOf(node.in as BaseRoot)[1]
+			)
+		]
 		// a function arktype created can hold one the site read, as `pipe.try` holds its morph
 		if (
 			held.some(
@@ -1193,12 +1196,12 @@ export class Precompiler {
 		if (!this.isFactory(site, module)) return
 		// a default's check reads the functions of a node the value can drop
 		const held = [
-			...new Set(
-				[
-					createdBy(site)!,
-					...site.defaultChecks.map(([node]) => node.in as BaseRoot)
-				].flatMap(value => keyOf(value)[1])
-			)
+			...new Set([
+				...keyOf(createdBy(site)!)[1],
+				...site.defaultChecks.flatMap(
+					([node]) => traversalKeyOf(node.in as BaseRoot)[1]
+				)
+			])
 		]
 		const helpers = this.mockableHelpersOf(site, module)
 		const factory: SiteFactory = {
