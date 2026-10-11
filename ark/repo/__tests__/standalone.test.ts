@@ -2318,34 +2318,6 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(create(Zebra, Ant).expression).snap("Ant | Zebra")
 		})
 
-		it("checks a class arktype tested a value against tests instances by their prototypes", async () => {
-			class Cat {}
-			standIn(Cat, "a", "Cat")
-			const { T: create } = await load({
-				T: {
-					type: type.instanceOf(Cat).or("null"),
-					params: [
-						{
-							kind: "class",
-							label: "`Cat`",
-							value: Cat,
-							isInstanceTested: true
-						}
-					]
-				}
-			})
-			class Dog {}
-			attest(create(Dog)(null)).equals(null)
-			class Odd {
-				static [Symbol.hasInstance](v: unknown) {
-					return v === null
-				}
-			}
-			attest(() => create(Odd)).throws.snap(
-				"Error: `Cat` is a class with its own Symbol.hasInstance, but was precompiled as one testing instances by their prototypes"
-			)
-		})
-
 		it("prints a union holding another once their branches print alike", async () => {
 			class Bird {}
 			class Cat {}

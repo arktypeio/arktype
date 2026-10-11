@@ -197,7 +197,6 @@ export interface Hole {
 	isCalledAtDefinition: boolean
 	// an opaque value arktype parsed as a Standard Schema
 	isDefinition: boolean
-	isInstanceTested: boolean
 	// a function or class a parameter holds, which the build knows nothing of, so its factory checks it differs from every other hole
 	isParameter: boolean
 }
@@ -1423,8 +1422,7 @@ export class Precompiler {
 					{
 						kind: hole.kind as HoleKind,
 						label: `\`${text}\` (${module.positionOf(reference)})`,
-						value: hole.value,
-						isInstanceTested: hole.isInstanceTested
+						value: hole.value
 					}
 				:	{ kind: "input", label: text, reads: [[[], reference.value]] }
 			)
@@ -2687,7 +2685,6 @@ export class Precompiler {
 				standIn?.isCalled || standIn?.isCalledIndirectly
 			),
 			isDefinition: !!standIn?.isDefinition,
-			isInstanceTested: !!standIn?.isInstanceTested,
 			isParameter: !!parameterKind
 		}
 	}
