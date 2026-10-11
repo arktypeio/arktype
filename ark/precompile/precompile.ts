@@ -222,8 +222,18 @@ interface SiteFactory {
 	params: FactoryParam[]
 	spans: Span[]
 	inputs: string[]
+	// the bindings the inputs read, whose imports the call keeps
+	bindings: Binding[]
 	imports: [specifier: string, name: string, local: string][]
 	distinct: unknown[]
+}
+
+interface PassedInput {
+	expression: string
+	label: string
+	binding?: Binding
+	// an import the call adds, where no binding the site sees holds the input
+	imported?: SiteFactory["imports"][0]
 }
 
 export interface Input {
@@ -915,6 +925,7 @@ export class Precompiler {
 					params: [],
 					spans: [],
 					inputs: [],
+					bindings: [],
 					imports: [],
 					distinct: []
 				}
@@ -1002,7 +1013,7 @@ export class Precompiler {
 		const imported = new Set<string>()
 		// the source a site's call keeps, which still reads the bindings it holds
 		const kept: Span[] = []
-		const passed: string[] = []
+		const passed: Binding[] = []
 		let fixedAt = Infinity
 		for (const [site, name] of namesBySite) {
 			if (refusalsByName[name]) {
@@ -1034,7 +1045,7 @@ export class Precompiler {
 			for (const [specifier, name, local] of factory?.imports ?? [])
 				(inputImports[specifier] ??= {})[name] = local
 			kept.push(...(factory?.spans ?? []))
-			passed.push(...(factory?.inputs ?? []))
+			passed.push(...(factory?.bindings ?? []))
 			// a bundler can drop a variable's site with the variable when nothing reads it, unless it throws or checks
 			const isPure =
 				site.declarationStart !== undefined &&
@@ -1206,6 +1217,7 @@ export class Precompiler {
 			params: [],
 			spans: [],
 			inputs: [],
+			bindings: [],
 			imports: [],
 			distinct: []
 		}
@@ -1437,12 +1449,12 @@ export class Precompiler {
 				reasons.push(passedAs)
 				continue
 			}
-			const [expression, label, imported] = passedAs
-			factory.inputs.push(expression)
-			if (imported) factory.imports.push(imported)
+			factory.inputs.push(passedAs.expression)
+			if (passedAs.imported) factory.imports.push(passedAs.imported)
+			if (passedAs.binding) factory.bindings.push(passedAs.binding)
 			factory.params.push({
 				kind: "input",
-				label,
+				label: passedAs.label,
 				reads: reads.map(input => [input.path, input.value])
 			})
 		}
@@ -1480,9 +1492,9 @@ export class Precompiler {
 			reasons.push(passedAs)
 			return
 		}
-		const [expression, , imported] = passedAs
-		factory.inputs.push(expression)
-		if (imported) factory.imports.push(imported)
+		factory.inputs.push(passedAs.expression)
+		if (passedAs.imported) factory.imports.push(passedAs.imported)
+		if (passedAs.binding) factory.bindings.push(passedAs.binding)
 		factory.params.push({
 			kind: "helper",
 			label,
@@ -1558,10 +1570,9 @@ export class Precompiler {
 		site: Site,
 		module: SourceModule,
 		prefix: string
-	):
-		| [expression: string, label: string, imported?: SiteFactory["imports"][0]]
-		| string {
-		if (input.kind === "define") return [input.name, input.name]
+	): PassedInput | string {
+		if (input.kind === "define")
+			return { expression: input.name, label: input.name }
 		const isVisible = (binding: Binding) =>
 			![...module.scopes.bindingsById.values()].some(
 				other =>
@@ -1574,26 +1585,31 @@ export class Precompiler {
 		if (input.kind === "local") {
 			const binding = this.bindingsByInput.get(input)!
 			return isVisible(binding) ?
-					[binding.name, binding.name]
+					{ expression: binding.name, label: binding.name, binding }
 				:	`\`${binding.name}\` (${module.positionOf(binding.id)}) is shadowed where the site is written, so its factory can't receive it`
 		}
-		let namespace: string | undefined
+		let namespace: PassedInput | undefined
 		for (const binding of module.scopes.bindingsById.values()) {
 			if (binding.kind !== "import" || !isVisible(binding)) continue
 			const target = this.graph.importOf(binding, module)
-			if (target.kind === "namespace" && target.module.id === input.file)
-				namespace = appendStringifiedKey(binding.name, input.name)
-			else if (
+			if (target.kind === "namespace" && target.module.id === input.file) {
+				const expression = appendStringifiedKey(binding.name, input.name)
+				namespace = { expression, label: expression, binding }
+			} else if (
 				(target.kind === "binding" || target.kind === "expression") &&
 				target.module.id === input.file &&
 				(target.kind === "binding" ? target.name : "default") === input.name
 			)
-				return [binding.name, binding.name]
+				return { expression: binding.name, label: binding.name, binding }
 		}
-		if (namespace) return [namespace, namespace]
+		if (namespace) return namespace
 		const specifier = specifierOf(module.id, input.file!)
 		const local = `${prefix}i${hashOf(`${specifier} ${input.name}`)}`
-		return [local, input.name, [specifier, input.name, local]]
+		return {
+			expression: local,
+			label: input.name,
+			imported: [specifier, input.name, local]
+		}
 	}
 
 	private unsupported(
@@ -3843,7 +3859,7 @@ const keepImportedModules = (
 	module: SourceModule,
 	folded: Span[],
 	kept: Span[],
-	passed: string[],
+	passed: Binding[],
 	s: MagicString
 ) => {
 	const isWithin = (id: Span, spans: Span[]) =>
@@ -3859,23 +3875,16 @@ const keepImportedModules = (
 			specifier =>
 				specifier.type !== "ImportSpecifier" || specifier.importKind !== "type"
 		)
-		const references = values.flatMap(
-			specifier =>
-				module.scopes.bindingsById.get(specifier.local)?.references ?? []
+		const bindings = values.flatMap(
+			specifier => module.scopes.bindingsById.get(specifier.local) ?? []
 		)
-		const isPassed = ({ local: { name } }: ImportDeclarationSpecifier) =>
-			passed.some(
-				input =>
-					input === name ||
-					input.startsWith(`${name}.`) ||
-					input.startsWith(`${name}[`)
-			)
+		const references = bindings.flatMap(binding => binding.references)
 		if (
 			references.length &&
 			references.every(
 				({ id }) => isWithin(id, folded) && !isWithin(id, kept)
 			) &&
-			!values.some(isPassed)
+			!bindings.some(binding => passed.includes(binding))
 		) {
 			s.appendLeft(
 				statement.end,

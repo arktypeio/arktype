@@ -598,6 +598,35 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		attest(checked.includes("traverseAllows")).equals(true)
 	}).timeout(60000)
 
+	it("keeps the module of an import a fold reads beside a local of its name", async () => {
+		const root = writeFixture(
+			{
+				"user.ts": `import { type } from "arktype"
+
+console.log("user.ts")
+export const User = type({ name: "string" })
+`,
+				"tsconfig.json": "{}",
+				"main.ts": `import { type } from "arktype"
+import { User } from "./user.ts"
+
+console.log(JSON.stringify(User.toJsonSchema()))
+export const relabel = (o: { label: string }) => {
+	o.label = "changed"
+}
+{
+	const User = { label: "a user" }
+	console.log(type("string").describe(User.label).description)
+}
+`
+			},
+			fromHere("temp", "shadowedImport")
+		)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
+			runPlain(root)
+		)
+	}).timeout(60000)
+
 	it("creates a Type read only for its introspection where its creation compares what the program holds", async () => {
 		const files = {
 			"data.ts": `export const settings = { label: "a user" }
