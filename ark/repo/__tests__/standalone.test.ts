@@ -744,39 +744,16 @@ domain.expected = () => "E2"`,
 		attest(T({ a: 1 }).summary).snap("a must be E1 (was a number)")
 	})
 
-	it("throws for a second configure() with other values", async () => {
+	it("throws for a second configure(), even with the same values", async () => {
 		const built = fingerprintOf({ numberAllowsNaN: true })
 		const configured = `runtime.configure({ numberAllowsNaN: true }, "${built}")`
-		attest(
+		attest([
 			await messageOf(
 				`runtime.configure({ onUndeclaredKey: "delete" })\n${configured}`,
 				built
-			)
-		).equals(reconfiguredMessage)
-		attest(
-			await messageOf(
-				`runtime.configure({ numberAllowsNaN: true })\n${configured}`,
-				built
-			)
-		).equals("")
-	})
-
-	it("throws for a second configure() with other functions", async () => {
-		const built = fingerprintOf({ divisor: { description: () => "" } })
-		const configured = (description: string, stamp = "") =>
-			`runtime.configure({ divisor: { description: ${description} } }${stamp && `, "${stamp}"`})`
-		attest(
-			await messageOf(
-				`${configured('() => "one"', built)}\n${configured('() => "two"')}`,
-				built
-			)
-		).equals(reconfiguredMessage)
-		attest(
-			await messageOf(
-				`const describe = () => "one"\n${configured("describe", built)}\n${configured("describe")}`,
-				built
-			)
-		).equals("")
+			),
+			await messageOf(`${configured}\n${configured}`, built)
+		]).equals([reconfiguredMessage, reconfiguredMessage])
 	})
 
 	it("creates its validators where a site first reads them", async () => {

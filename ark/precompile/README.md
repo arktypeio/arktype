@@ -56,7 +56,7 @@ configure({
 precompile.vite({ config: "./config.ts" })
 ```
 
-The build evaluates the argument, which must be static, and precompiles every definition under it, so a `description` writer must be a static helper. Other writers and `onFail` can be any function: the call stays in the program, where it configures `arktype/runtime` and the arktype runtime islands run on. The runtime fixes its configuration when it creates its first validator and throws if `configure()` runs after that, or receives other values than a validator was built under. The build stamps a hash of the argument's values into the call and each validator, counting a function only as a function, so a `description` writer a loader or plugin changes after the build read it isn't caught.
+The build evaluates the argument, which must be static, and precompiles every definition under it, so a `description` writer must be a static helper. Other writers and `onFail` can be any function: the call stays in the program, where it configures `arktype/runtime` and the arktype runtime islands run on. The runtime fixes its configuration when it creates its first validator and throws if `configure()` runs after that or a second time, or receives other values than a validator was built under. The build stamps a hash of the argument's values into the call and each validator, counting a function only as a function, so a `description` writer a loader or plugin changes after the build read it isn't caught.
 
 The precompiler applies the configuration to arktype in its own thread, so each driver runs it in a worker. The Turbopack loader applies it where Turbopack runs the loader, so a change to the configuration applies once the dev server restarts.
 

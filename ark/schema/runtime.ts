@@ -152,7 +152,6 @@ export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({
 })
 
 let configuredFingerprint: string | undefined
-let configuredReached: unknown[]
 let recheck: (() => unknown) | undefined
 let programConfig: ArkSchemaConfig | undefined
 let configureIslands: ((config: ArkSchemaConfig) => unknown) | undefined
@@ -163,27 +162,18 @@ export const configure = (
 ): ArkSchemaConfig => {
 	if (Object.isFrozen(runtimeConfig))
 		return throwParseError(configureAfterTypeMessage)
-	const reached: unknown[] = []
-	const received = fingerprintOf(config, reached)
+	const received = fingerprintOf(config)
 	// a loader or plugin can change a module the configuration reads after the build read it
 	if (fingerprint !== undefined && fingerprint !== received)
 		return throwParseError(configuredUnlikeBuildMessage)
 	// a module the build didn't transform, like a dependency's, can configure arktype too, which merges what the runtime keeps apart
-	if (
-		configuredFingerprint !== undefined &&
-		(configuredFingerprint !== received ||
-			// the same text visits the same places, where the fingerprint counts a function only as one
-			reached.some(
-				(v, i) => typeof v === "function" && v !== configuredReached[i]
-			))
-	)
+	if (configuredFingerprint !== undefined)
 		return throwParseError(reconfiguredMessage)
 	configureIslands?.(config)
 	if ("onFail" in config)
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
 	;(runtimeConfig as { locale: Locale.Info }).locale = enInfo
 	configuredFingerprint = received
-	configuredReached = reached
 	// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
 	recheck = () =>
 		fingerprintOf(config) === received ?
@@ -201,11 +191,8 @@ export const configure = (
 }
 
 // the configuration's values apart from its functions, which the runtime can't compare with the build's
-export const fingerprintOf = (
-	config: object,
-	reached: unknown[] = []
-): string => {
-	const text = staticTextOf(config, reached)
+export const fingerprintOf = (config: object): string => {
+	const text = staticTextOf(config, [])
 	// two 32-bit lanes, since a check for equality needs texts apart in the state but not its bits spread
 	let a = 1
 	let b = 2
@@ -290,7 +277,7 @@ export const configuredUnlikeBuildMessage =
 export type configuredUnlikeBuildMessage = typeof configuredUnlikeBuildMessage
 
 export const reconfiguredMessage =
-	"configure() is called again with other values or functions: a standalone build needs one call, in its config module"
+	"configure() is called again: a standalone build needs one call, in its config module"
 
 export type reconfiguredMessage = typeof reconfiguredMessage
 
