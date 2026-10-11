@@ -2293,6 +2293,21 @@ export class Precompiler {
 		module: SourceModule,
 		site: Site
 	): Variant[] | string | undefined {
+		for (const reference of site.references) {
+			const hole = [...this.interpreter.holesIn(reference.value)].find(
+				hole =>
+					hole !== reference.value &&
+					this.interpreter.standIns.get(hole as object)?.parameter &&
+					parameterKindOf(hole, reference.value) === "function"
+			)
+			// e.g. `A` in `A.array()` with `const A = type("string").narrow(fn)`, which only a site reading `fn` can select by its parameter count
+			if (hole) {
+				const { parameter, module: origin } = this.interpreter.standIns.get(
+					hole as object
+				)!
+				return `\`${module.snippetOf(reference)}\` holds the function the parameter \`${parameter!.name}\` (${origin.positionOf(parameter!.id)}) holds, so it is another Type for each of its parameter counts, which only a site reading \`${parameter!.name}\` selects by`
+			}
+		}
 		const parameters = [
 			...new Set(
 				site.holes.flatMap(hole =>

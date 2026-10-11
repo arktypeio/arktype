@@ -931,6 +931,19 @@ export function both(a: (s: string) => boolean, b: (n: number) => boolean) {
 			])
 		})
 
+		it("refuses a site reading a Type a parameter's function created, which it can't select a variant by", () => {
+			attest(
+				precompile(`import { type } from "arktype"
+export function listed(fn: (s: string) => boolean) {
+	const A = type("string").narrow(fn)
+	const B = A.array()
+	return [A, B] as const
+}`).diagnostics.map(renderDiagnostic)
+			).snap([
+				'/main.ts:4:12  A.array() cannot be precompiled\n  `A` holds the function the parameter `fn` (/main.ts:2:24) holds, so it is another Type for each of its parameter counts, which only a site reading `fn` selects by\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			])
+		})
+
 		it("refuses a site whose parameter's class a call passes extends a builtin", () => {
 			attest(
 				precompile(`import { type } from "arktype"
