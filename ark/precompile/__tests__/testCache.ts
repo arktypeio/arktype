@@ -88,13 +88,25 @@ BaseScope.prototype.finalize = function <node extends BaseRoot>(
 	return node
 }
 
+// a union discriminated by a symbol key or an object unit compiles a value it derives, which a bind can't reach
+const expectedMisses = [
+	"{ Symbol(tag): 0 } | { Symbol(tag): 1 }",
+	"{ a: { Symbol(tag): 0 } | { Symbol(tag): 1 } }",
+	"{ Symbol(lobmyS): 0 } | { Symbol(lobmyS): 1 }",
+	'{ k: {"toJSON":"Function(toJSON)"} } | { k: "b", v: number }'
+]
+
 export const mochaHooks = {
 	afterAll(): void {
+		const misses = unbound.filter(
+			expression => !expectedMisses.includes(expression)
+		)
 		console.log(collisions.slice(0, 5).join("\n\n=====\n\n"))
 		console.log(
-			`\n${collisions.length ? "❌" : "✅"} ${finalized - unbound.length} of ${finalized} roots bound from ${Object.keys(codesByKey).length} units, ${collisions.length} keys naming two units; unbound: ${unbound.join(", ")}`
+			`\n${collisions.length || misses.length ? "❌" : "✅"} ${finalized - unbound.length} of ${finalized} roots bound from ${Object.keys(codesByKey).length} units, ${collisions.length} keys naming two units; unexpectedly unbound: ${misses.slice(0, 20).join(", ")}`
 		)
 		if (collisions.length)
 			throw new Error(`${collisions.length} keys name two units`)
+		if (misses.length) throw new Error(`${misses.length} roots missed`)
 	}
 }

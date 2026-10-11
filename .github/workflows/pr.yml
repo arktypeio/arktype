@@ -181,7 +181,13 @@ jobs:
         run: pnpm testTsVersions ${{ matrix.task }}
 
   prChecks:
-    needs: [compatibility, typescript, differential, perturbation, environments]
+    needs:
+      - compatibility
+      - typescript
+      - differential
+      - perturbation
+      - cache
+      - environments
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:
