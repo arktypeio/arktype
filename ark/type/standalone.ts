@@ -301,19 +301,26 @@ const writeArtifact = (
 	// a trial write, adding nothing to the artifact, tells whether a factory's Type has code holding nothing the factory receives
 	const canFold = (
 		name: string,
-		type: BaseRoot,
-		receivedMetas: Map<object, string>
+		factory: StandaloneFactory | StandaloneVariants,
+		receiving: StandaloneArtifact
 	) => {
+		if (
+			isVariants(factory) ||
+			!hasArkKind(factory.type, "root") ||
+			factory.defaultChecks?.length ||
+			factory.isCreatedEachRun
+		)
+			return false
 		const trial = new StandaloneArtifact(
-			{ [name]: type as never },
+			{ [name]: factory.type as never },
 			Object.create(shared),
 			{},
 			sitesByName,
 			definitionAddresses,
 			baking
 		)
-		trial.templates.add(type)
-		trial.receivedMetas = receivedMetas
+		trial.templates.add(factory.type)
+		trial.receivedMetas = receiving.receivedMetas
 		try {
 			trial.writeCreate(0, configured)
 			return true
@@ -321,35 +328,6 @@ const writeArtifact = (
 			if (e instanceof ParseError) return false
 			throw e
 		}
-	}
-	// a factory folded into the creations, whose Type's code is written once and copied with what each call receives
-	const writeFolded = (
-		name: string,
-		factory: StandaloneFactory,
-		index: number
-	) => {
-		const { type } = factory
-		if (!hasArkKind(type, "root") || factory.defaultChecks?.length) return
-		const receiving = new StandaloneArtifact(
-			{},
-			shared,
-			imports,
-			sitesByName,
-			definitionAddresses,
-			baking,
-			factory
-		)
-		receiving.receiveAll()
-		if (
-			factory.isCreatedEachRun ||
-			!canFold(name, type, receiving.receivedMetas)
-		)
-			return
-		folded.add(name)
-		if (keyOf(type)[1].length) templates.add(type)
-		types[name] = type as never
-		return (reads: Record<string, string>) =>
-			receiving.writeRekeying(index, reads[name])
 	}
 	let index = 0
 	for (const [name, value] of Object.entries(exports)) {
@@ -371,24 +349,30 @@ const writeArtifact = (
 		} else {
 			const factory = value as StandaloneFactory | StandaloneVariants
 			const variants = isVariants(factory) ? factory.variants : [factory]
-			const folding =
-				isVariants(factory) ? undefined : writeFolded(name, factory, index)
-			if (!folding) {
+			const artifact = new StandaloneArtifact(
+				{ [name]: variants[0].type },
+				shared,
+				imports,
+				sitesByName,
+				definitionAddresses,
+				baking,
+				factory
+			)
+			artifact.checkAddressed()
+			artifact.receiveAll()
+			// a factory whose Type is written once with the creations, which each call copies with what it receives
+			if (canFold(name, factory, artifact)) {
+				const { type } = factory as StandaloneFactory
+				folded.add(name)
+				if (keyOf(type)[1].length) templates.add(type as never)
+				types[name] = type as never
+				const at = index
+				factories.push(reads => artifact.writeRekeying(at, reads[name]))
+			} else {
 				for (const { internedBy } of variants)
 					if (internedBy !== undefined) tables.add(internedBy)
+				factories.push(artifact.writeFactory(name, index, configured))
 			}
-			factories.push(
-				folding ??
-					new StandaloneArtifact(
-						{ [name]: variants[0].type },
-						shared,
-						imports,
-						sitesByName,
-						definitionAddresses,
-						baking,
-						factory
-					).writeFactory(name, index, configured)
-			)
 		}
 		factories.push(`export { factory${index} as ${JSON.stringify(name)} }`)
 		index++
@@ -1117,15 +1101,13 @@ ${statements.filter(statement => statement).join("\n\n")}
 }`
 	}
 
-	// each call creates its validator from the holes and inputs it receives, so it declares everything the validator holds
+	// each call creates its validator from the holes and inputs the artifact received, so it declares everything the validator holds
 	writeFactory(
 		name: string,
 		index: number,
 		configured: ConfiguredModule | undefined
 	): string {
 		const [{ params, internedBy }] = this.variants
-		this.checkAddressed()
-		this.receiveAll()
 		this.writeSharedUnits()
 		// a Module, Scope or Generic declares what it holds, which the body then writes
 		const values = this.variants.map(({ type }, i) =>
