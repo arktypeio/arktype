@@ -1611,7 +1611,7 @@ return [${returned.join(", ")}]
 
 	read(specifier: string, name: string, param: string, arg: string): string {
 		this.importName(specifier, name)
-		if (!this.writing) return arg
+		if (!this.writing || param === arg) return arg
 		if (!this.writing.params.includes(param)) {
 			this.writing.params.push(param)
 			this.writing.args.push(arg)
