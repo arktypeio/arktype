@@ -10,7 +10,7 @@ import {
 	type BaseNode,
 	type BaseScope
 } from "@ark/schema"
-import { flatMorph, liftArray } from "@ark/util"
+import { flatMorph, isValidDate, liftArray } from "@ark/util"
 import { keywords, scope, type } from "arktype"
 import * as keywordFunctions from "arktype/internal/keywords/functions.ts"
 import {
@@ -289,6 +289,15 @@ contextualize(() => {
 		type("===", count)
 		Object.defineProperty(count, "length", { value: 2 })
 		attest(type(["unknown", "=>", count])(0)).equals(2)
+	})
+
+	it("misses a unit holding one of arktype's own functions for any other", async () => {
+		const units = await precompileUnits([type("Date").narrow(isValidDate)])
+		const T = type("Date").narrow((d: Date) => d.getUTCFullYear() > 2000)
+		attest(isPrecompiled(units, T.internal)).equals(false)
+		attest(T(new Date("1990-01-01T00:00:00.000Z")).toString()).snap(
+			"must be valid according to an anonymous predicate (was 1990)"
+		)
 	})
 
 	it("misses a unit whose functions are shared differently", async () => {

@@ -399,21 +399,28 @@ const bindPrecompiled = (
 	)
 }
 
+// built when a root is first keyed, so a bundle that registers no units leaves it out
+let constantNames: Map<unknown, string> | undefined
+
 // compiling reads each function's arity and whether the set engine is installed, neither in the hash
 const precompiledKeyOf = (root: BaseRoot): string => {
-	const aritiesByName: Record<string, number> = {}
+	constantNames ??= new Map(
+		Object.entries(unitConstants).map(([name, value]) => [value, name])
+	)
+	// a unit binds a constant it holds as the constant, so only a root holding that constant can share it
+	const kindsByName: Record<string, string> = Object.create(null)
 	// a child the hash leaves out, like an empty structure, is still compiled and bound
 	let childCounts = ""
 	for (const id in root.referencesById) {
 		const node = root.referencesById[id]
 		childCounts += `${node.children.length},`
 		forEachValue(node.inner, value => {
-			if (typeof value === "function" && !isNode(value)) {
+			const constant = constantNames!.get(value)
+			if (constant) kindsByName[nameOf(value)] = `$.${constant}`
+			else if (typeof value === "function" && !isNode(value)) {
 				// only a predicate's or morph's arity is compiled, and reading another's mustn't record it
-				aritiesByName[nameOf(value)] =
-					node.hasKind("predicate") || node.hasKind("morph") ?
-						arityOf(value)
-					:	value.length
+				kindsByName[nameOf(value)] =
+					`fn:${node.hasKind("predicate") || node.hasKind("morph") ? arityOf(value) : value.length}`
 			}
 		})
 	}
@@ -423,7 +430,7 @@ const precompiledKeyOf = (root: BaseRoot): string => {
 	const content = root.hash.replace(
 		/(?<!\\)"\$ark\.([\w$]+)"/g,
 		(_, name: string) =>
-			`"${(keysByName[name] ??= `${name in aritiesByName ? `fn:${aritiesByName[name]}` : name.replace(/\$[1-9]\d*$/, "")}#${nameCount++}`)}"`
+			`"${(keysByName[name] ??= `${kindsByName[name] ?? name.replace(/\$[1-9]\d*$/, "")}#${nameCount++}`)}"`
 	)
 	return hashOf(`${content}\n${childCounts}\n${$ark.sets !== undefined}`)
 }
@@ -970,7 +977,7 @@ const writePrecompiledUnit = (
 			`$.${k}`
 		)
 	}
-	// an inner value is hashed by its name, so a root with the same key holds it wherever it's found
+	// a root with the same key holds the same constant, or a value of the same kind, at each inner path
 	for (const node of nodes) {
 		forEachValue(node.inner, (value, path) => {
 			if (!accessorsByValue.has(value))
