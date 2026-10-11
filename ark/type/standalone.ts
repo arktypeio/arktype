@@ -590,8 +590,8 @@ export const writeFixConfig = (
 	`runtime.fixConfig(${configured ? `${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)}` : ""})`
 
 interface WriteDataOptions {
-	// a ToJsonSchemaError's context holds the validator's own values, like a predicate or a Date bound, beside its data
-	holdsValues?: boolean
+	// a ToJsonSchemaError's context holds the validator's own values, like a predicate or a Date bound, beside its data, which are emitted and listed here
+	values?: unknown[]
 }
 
 interface Declarations {
@@ -662,6 +662,8 @@ export class StandaloneArtifact {
 	metas = new Set<object>()
 	contexts = new Set<unknown>()
 	declarations = createDeclarations()
+	// the JSON Schema writers reading only the runtime and what the factory receives, by their text
+	sharedWriters = new Map<string, string>()
 	emitting = new Set<object>()
 	moduleNamesByModule = new Map<object, string>()
 	namesByTypedFn = new Map<InternalTypedFn, string>()
@@ -1762,6 +1764,9 @@ return [${returned.join(", ")}]
 		}
 		return [
 			this.declarations.statements.join("\n"),
+			[...this.sharedWriters]
+				.map(([writer, name]) => `const ${name} = ${writer}`)
+				.join("\n"),
 			builders.join("\n"),
 			traversals.join("\n"),
 			this.links.join("\n"),
@@ -1810,7 +1815,7 @@ ${isTemplate ? "]" : ")"}`
 			// a target's schema is returned only where the validator bakes its text anyway, so taking one adds no writer
 			const byTarget = supportedJsonSchemaTargets.map(
 				target =>
-					this.declarations.namesByValue.get(
+					this.jsonSchemaNameOf(
 						this.writeJsonSchemaWriter(root, () =>
 							root.toJsonSchema({ target })
 						)
@@ -1856,23 +1861,42 @@ ${isTemplate ? "]" : ")"}`
 
 	// a writer is declared by its text, so each JSON Schema a validator bakes is written once however many of its members return it
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
-		const writer = this.writeJsonSchemaWriter(root, write)
+		const values: unknown[] = []
+		const writer = this.writeJsonSchemaWriter(root, write, values)
+		const declared = this.jsonSchemaNameOf(writer)
+		if (declared) return declared
+		// one reading a value the validator declares, like a Date bound, is declared beside it, and any other where every variant reads it
+		if (!values.every(value => this.holeExpressions.has(value)))
+			return this.declareConst(writer, "jsonSchema", writer)
+		const written = this.declarations.valuesByRole.jsonSchema
+		const name = `jsonSchema${written.length}`
+		written.push(writer)
+		this.sharedWriters.set(writer, name)
+		return name
+	}
+
+	jsonSchemaNameOf(writer: string): string | undefined {
 		return (
-			this.declarations.namesByValue.get(writer) ??
-			this.declareConst(writer, "jsonSchema", writer)
+			this.sharedWriters.get(writer) ??
+			this.declarations.namesByValue.get(writer)
 		)
 	}
 
 	// arktype writes its JSON Schema anew each call
-	writeJsonSchemaWriter(root: BaseRoot, write: () => unknown): string {
-		return `() => ${this.writeJsonSchema(root, write, false)}`
+	writeJsonSchemaWriter(
+		root: BaseRoot,
+		write: () => unknown,
+		values?: unknown[]
+	): string {
+		return `() => ${this.writeJsonSchema(root, write, false, values)}`
 	}
 
 	// a schema the program reads only through a validator throws why the build can't write it, where it's read
 	writeJsonSchema(
 		root: BaseRoot,
 		write: () => unknown,
-		isRead: boolean
+		isRead: boolean,
+		values: unknown[] = []
 	): string {
 		try {
 			assertBakeableJsonSchema(root)
@@ -1890,7 +1914,7 @@ ${isTemplate ? "]" : ")"}`
 				schema = isRead ? writeOnce() : this.baking.write(writeOnce)
 			} catch (e) {
 				if (e instanceof ToJsonSchema.Error)
-					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)}, ${this.writeData(e.context, { holdsValues: true })})`
+					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)}, ${this.writeData(e.context, { values })})`
 				if (isSymbolConversion(e)) return "runtime.serializeSymbol()"
 				// e.g. arktype's, where a view of the Type intersects what the Type keeps apart, as a defaulted key's output and an index signature
 				if (e === thrown && e instanceof ParseError)
@@ -1910,13 +1934,15 @@ ${isTemplate ? "]" : ")"}`
 
 	writeData(value: unknown, opts: WriteDataOptions = {}): string {
 		if (
-			opts.holdsValues &&
+			opts.values &&
 			(typeof value === "function" ||
 				typeof value === "symbol" ||
 				typeof value === "bigint" ||
 				(hasDomain(value, "object") && isDateObject(value)))
-		)
+		) {
+			opts.values.push(value)
 			return this.emit(value)
+		}
 		if (typeof value === "string") return this.emitString(value)
 		if (value === undefined) return "void 0"
 		if (

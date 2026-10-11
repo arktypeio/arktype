@@ -2110,6 +2110,47 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			])
 		})
 
+		it("writes once a JSON Schema its variants bake alike from the functions they receive", async () => {
+			const one = standIn((s: string) => s.length > 1, "check")
+			const two = standIn((s: string, ctx: unknown) => !!ctx, "check")
+			const variantOf = (check: Function): StandaloneFactory => ({
+				type: type("string").narrow(check as never),
+				params: [{ kind: "function", label: "`check`", value: check }],
+				selected: [check]
+			})
+			const T = {
+				variants: [variantOf(one), variantOf(two)],
+				selecting: [0],
+				variantsByCounts: [1, 0, 1]
+			}
+			const { code } = precompileStandalone(
+				{ T },
+				{ introspection: ["toJsonSchema"] }
+			)
+			attest(code.match(/const jsonSchema\d+ = /g)).snap([
+				"const jsonSchema0 = "
+			])
+			const created = await load({ T }, undefined, undefined, ["toJsonSchema"])
+			const isLong = (s: string) => s.length > 1
+			const rejects = (s: string, ctx: any) => ctx.reject("long")
+			attest(() => created.T(isLong).toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: {
+    code: "predicate",
+    base: {
+        type: "string"
+    },
+    predicate: Function(isLong)
+}`)
+			attest(() => created.T(rejects).toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: {
+    code: "predicate",
+    base: {
+        type: "string"
+    },
+    predicate: Function(rejects)
+}`)
+		})
+
 		it("declares where every call reads it a variant's validator another variant's meta holds", async () => {
 			const one = standIn((s: string) => s.length > 1, "check")
 			const two = standIn((s: string, ctx: unknown) => !!ctx, "check")
