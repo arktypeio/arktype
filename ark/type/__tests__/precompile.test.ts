@@ -300,6 +300,15 @@ contextualize(() => {
 		attest(T(["a"])).equals(["a", []])
 	})
 
+	it("binds a unit for an array that holds itself", async () => {
+		const a: unknown[] = []
+		a.push(a)
+		const units = await precompileUnits([scope({}).type({ k: ["===", a] })])
+		const T = scope({}).type({ k: ["===", a] })
+		attest(isPrecompiled(units, T.internal)).equals(true)
+		attest(T.allows({ k: a })).equals(true)
+	})
+
 	it("misses a unit holding one of arktype's own functions for any other", async () => {
 		const units = await precompileUnits([type("Date").narrow(isValidDate)])
 		const T = type("Date").narrow((d: Date) => d.getUTCFullYear() > 2000)

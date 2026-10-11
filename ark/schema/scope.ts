@@ -410,9 +410,14 @@ const bindPrecompiled = (
 	)
 }
 
-// a tuple's defaults nest each thunk in an array of arrays
-const forEachElement = (value: unknown, f: (value: unknown) => void): void => {
-	if (isArray(value)) for (const element of value) forEachElement(element, f)
+// a tuple's defaults nest each thunk in an array of pairs, and a unit's value is the program's, so no deeper
+const forEachElement = (
+	value: unknown,
+	f: (value: unknown) => void,
+	depth = 2
+): void => {
+	if (depth && isArray(value))
+		for (const element of value) forEachElement(element, f, depth - 1)
 	else f(value)
 }
 
