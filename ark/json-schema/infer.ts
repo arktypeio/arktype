@@ -1501,8 +1501,15 @@ export interface ClosedSchema {
 export type indexValue<schema, root> =
 	schema extends PatternPropertiesSchema ?
 		| inferValues<schema["patternProperties"], root>
-		| additionalValue<schema, root>
+		| (schema extends EveryKeyPatternSchema ? never
+		  :	additionalValue<schema, root>)
 	:	additionalValue<schema, root>
+
+/** the empty pattern matches every key, so `additionalProperties` applies
+ * to none (arktype writes a string index beside declared keys this way) */
+export interface EveryKeyPatternSchema {
+	patternProperties: { "": unknown }
+}
 
 export type additionalValue<schema, root> =
 	schema extends AdditionalPropertiesSchema ?
