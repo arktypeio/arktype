@@ -256,23 +256,11 @@ export const BoxedTree = types.box("tree")
 
 A call to `define`, which returns its argument, is replaced by the argument.
 
-A validator bakes `expression`, `description` and `meta`, and lacks the members that compose or introspect a Type, so calling one is a TypeError. An artifact freezes what it creates, so a write to one throws in strict mode: its validators and their shared prototype, its Modules, Scopes, Generics, configs and node shapes, and every literal it emits, such as `meta`. A RegExp is only made non-extensible, since its methods write `lastIndex`, and neither a Date's time nor a RegExp's pattern can be frozen. `arktype/runtime`'s `type` is frozen too. The build refuses what the runtime can't reproduce, like a narrow or morph that isn't one of arktype's keywords, naming it. An artifact refuses to load beside `arktype` or on another version of `arktype/runtime`.
+A validator bakes `expression`, `description` and `meta`, and lacks the members that compose a Type, like `and` or `in`, so calling one is a TypeError. It lacks `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` too, unless the build's `introspection` option lists them, so `JSON.stringify({ User })` writes `{}`. An artifact freezes what it creates, so a write to one throws in strict mode: its validators and their shared prototype, its Modules, Scopes, Generics, configs and node shapes, and every literal it emits, such as `meta`. A Date or RegExp it holds isn't frozen, as arktype's isn't. `arktype/runtime`'s `type` is frozen too. The build refuses what the runtime can't reproduce, like an instance of a class other than Date or RegExp, naming it. An artifact refuses to load beside `arktype`, unless only modules with runtime islands load `arktype`, or on another version of `arktype/runtime`.
 
 A validator's errors are arktype's, written only in en, since writing another locale needs the description writers of arktype's nodes. The build refuses a configured locale and an import of `arktype/locales`, and `toLocaleString(locale)` and `messageIn` throw for any locale but en, even beside a runtime island. The `ctx.config` a narrow or morph receives holds only `jitless: true`, `onFail`, en as its locale and each code's error writers, its Scope's included, so another key a callback reads there, like `onUndeclaredKey`, is `undefined`.
 
-A program's `configure()` call stays in place and configures `arktype/runtime`, which fixes its configuration at the first validator it creates, as arktype does at the first Type. It throws if `configure()` comes after that, or under a configuration other than the one the validators were built under.
-
-### Fix duplicate errors from `string.date.epoch.parse`
-
-An out-of-range timestamp in an object was reported twice, as an intersection of the same error:
-
-```ts
-const T = type({ at: "string.date.epoch.parse" })
-
-// previously "at (100000000000000000000) must be...\n  ◦ a Unix timestamp before 8640000000000000\n  ◦ a Unix timestamp before 8640000000000000"
-// now "at must be a Unix timestamp before 8640000000000000 (was 100000000000000000000)"
-T({ at: "99999999999999999999" }).toString()
-```
+A program's `configure()` call stays in place and configures `arktype/runtime`, which fixes its configuration at the first validator it creates, as arktype does at the first Type. It throws if `configure()` comes after that, or under a configuration other than the one the validators were built under. It returns its argument, where arktype's returns arktype's configuration with the argument merged in, so a keyword configured as a string reads as that string through it.
 
 ### Fix deep transforms through a tuple default
 
@@ -446,7 +434,7 @@ const T = type({
 T({ a: "x", b: "1" }).toString()
 ```
 
-A valid nested object's defaults are applied even after an earlier error, a valid object shared under a cyclic type is transformed at each path reaching it, as when validation succeeds, and a predicate checked beside morphs can run once more. Valid calls are unchanged.
+A valid nested object's defaults are applied even after an earlier error, a valid object shared under a cyclic type is transformed at each path reaching it, as when validation succeeds, and a predicate checked beside morphs can run once more. Where a prop and an index signature check the same key holding an object, a morph beneath the prop doesn't run if only the index signature rejects the object, and runs if both reject it but the index signature rejects only the morph's value. Valid calls are unchanged.
 
 ### Keep a Type's descriptions wherever it's referenced
 
@@ -467,6 +455,8 @@ types.int("x").toString()
 // previously "a must be a number (was a string)", now "a must be a custom number (was a string)"
 type({ a: lib.x })({ a: "x" }).toString()
 ```
+
+Two kinds of node take other writers: a cyclic keyword, like `object.json`, keeps arktype's in a scope that resolves it, and a node a reduction creates anew takes the reducing scope's, as `number` does in `["union", "&", "number"]` where `union` is `type("number").or("string")`.
 
 ### Name keyword morphs and predicates
 
@@ -537,7 +527,7 @@ type.unit(tag)(5).toString()
 type({ [tag]: "string" }).expression
 ```
 
-`json` still names each value uniquely, now counting repeated names as `tag$1` rather than `tag1`.
+`json` still names each value uniquely, now counting repeated names as `tag$1` rather than `tag1`. Two symbol keys described alike print alike, so `byPath`, `flatByPath` and `flatProblemsByPath` keep only the last error of the two.
 
 ### Reject `Infinity` from `number`
 
@@ -882,6 +872,8 @@ const handleRequest = (request: { id: number }) =>
 // previously each call kept its request in memory, now it can be garbage collected
 handleRequest({ id: 1 })
 ```
+
+A function still stays in memory where a cyclic Type holds it, where a generic's instantiation holds it, for as long as the generic does, which for a builtin like `type.Record` is always, and where it's a default's thunk in the first Type to compile the default's keyword, like `object` in `["object", "=", () => o]`.
 
 The `$ark.x` names that functions get in a type's `json` or `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
 

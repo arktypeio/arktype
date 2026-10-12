@@ -34,10 +34,16 @@ export default defineConfig({
 
 By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`, so arktype's parser never ships. A definition the build can't precompile this way fails the build with the reasons why. A dependency that imports arktype gets `arktype/runtime` too, where defining a Type throws, so the build warns once for each such package unless it [opts in](#libraries).
 
-A definition holding functions, like a narrow, a morph, a default's thunk or a class, becomes a call to a factory passing each one where the definition was written. The factory checks at creation that each is what its code was compiled for, like a function's parameter count, and throws if not. arktype sorts some branches by the names of the functions they hold, so the factory sorts the functions it receives by name too, as a minifier renames them, and throws for two named alike in branches arktype then prints once. A function a parameter holds is compiled for each parameter count arktype tells apart, and the factory selects the variant matching the function it receives. A definition needing more variants than `maxVariants`, 8 by default, is reported, as is one resolving a Scope alias a thunk defines whose Type holds a function, which runs on arktype once the Scope and the definitions reading it are marked [`// @ark-runtime`](#runtime-islands).
+A definition holding functions, like a narrow, a morph, a default's thunk or a class, becomes a call to a factory passing each one where the definition was written. The factory checks at creation that each is what its code was compiled for, like a function's parameter count, and throws if not. arktype sorts some branches by the names of the functions they hold, so the factory sorts the functions it receives by name too, as a minifier renames them, and where two are named alike, prints their branches once, as arktype does. A function a parameter holds is compiled for each parameter count arktype tells apart, and the factory selects the variant matching the function it receives. A definition needing more variants than `maxVariants`, 8 by default, is reported, as is one resolving a Scope alias a thunk defines whose Type holds a function, which runs on arktype once the Scope and the definitions reading it are marked [`// @ark-runtime`](#runtime-islands).
 
 ```ts
 precompile.vite({ maxVariants: 16 })
+```
+
+A standalone validator lacks `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` unless the `introspection` option lists them, so reading one the build doesn't see reads `undefined`, and `JSON.stringify` skips the validator. Each one listed is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes no options but a `target`. A read the build sees, like `User.toJsonSchema()`, is replaced by what it returns either way.
+
+```ts
+precompile.vite({ introspection: ["toJsonSchema", "~standard.jsonSchema"] })
 ```
 
 `precompile.vite({ runtime: "arktype" })` ships arktype and leaves definitions as written, registering the code arktype would compile for each one and the keywords it reaches. A definition the build can't precompile is compiled at runtime as usual, so this mode fails a build only for the reason below.
@@ -62,7 +68,7 @@ configure({
 precompile.vite({ config: "./config.ts" })
 ```
 
-The build evaluates the argument, which must be static, and precompiles every definition under it, so a `description` writer must be a static helper. Other writers and `onFail` can be any function: the call stays in the program, where it configures `arktype/runtime` and the arktype runtime islands run on. The runtime fixes its configuration when it creates its first validator and throws if `configure()` runs after that or a second time, or receives other values than a validator was built under. The build stamps a hash of the argument's values into the call and each validator, counting a function only as a function, so a `description` writer a loader or plugin changes after the build read it isn't caught.
+The build evaluates the argument, which must be static, and precompiles every definition under it, so a `description` writer must be a static helper. Other writers and `onFail` can be any function: the call stays in the program, where it configures `arktype/runtime` and the arktype runtime islands run on. The runtime fixes its configuration when it creates its first validator and throws if `configure()` runs after that or a second time, or receives other values than a validator was built under. The build stamps a hash of the argument's values into the call and each validator, counting a function only as a function, so a `description` writer a loader or plugin changes after the build read it isn't caught. In standalone mode, `configure()` returns its argument rather than arktype's configuration with the argument merged in.
 
 The precompiler applies the configuration to arktype in its own thread, so each driver runs it in a worker. The Turbopack loader applies it where Turbopack runs the loader, so a change to the configuration applies once the dev server restarts.
 
