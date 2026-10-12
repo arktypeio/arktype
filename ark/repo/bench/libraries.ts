@@ -21,6 +21,7 @@ export const ajvOf = (opts?: Options): Ajv => {
 		// count string length in UTF-16 code units, as arktype does
 		unicode: false,
 		useDefaults: true,
+		messages: true,
 		...opts
 	})
 	addFormats.default(ajv)

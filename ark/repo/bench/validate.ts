@@ -1,6 +1,5 @@
 // run `pnpm benchTypia` first
 import { noSuggest } from "@ark/util"
-import { type } from "arktype"
 import { precompileStandalone } from "arktype/internal/standalone.ts"
 import { fork, spawnSync } from "node:child_process"
 import { mkdirSync, writeFileSync } from "node:fs"
@@ -71,9 +70,10 @@ const standalone: Record<string, unknown> = Object.fromEntries(
 
 const ajvFirst = ajvOf()
 const ajvAll = ajvOf({ allErrors: true })
+const ajvAllWithoutMessages = ajvOf({ allErrors: true, messages: false })
 const ajvStrip = ajvOf({ removeAdditional: "all" })
 
-type Mode = "parse" | "strip" | "errors" | "first" | "allows"
+type Mode = "parse" | "strip" | "issues" | "errors" | "first" | "allows"
 
 interface ArmSpec {
 	// assigns the result to r, calling the validator through `f`
@@ -109,6 +109,10 @@ interface Validators {
 
 const abortEarly = { abortEarly: true }
 
+const isInvalidMode = (mode: Mode) =>
+	mode === "issues" || mode === "errors" || mode === "first"
+
+// ArkErrors computes its messages when summary is read
 const arkArm = (mode: Mode, validator: unknown): ArmSpec =>
 	mode === "allows" ? { validator, body: f => `r = ${f}.allows(data)` }
 	: mode === "errors" || mode === "first" ?
@@ -122,7 +126,7 @@ const arkArm = (mode: Mode, validator: unknown): ArmSpec =>
 const zodArm = (mode: Mode, validator: unknown): ArmSpec =>
 	mode === "allows" ?
 		{ validator, body: f => `r = ${f}.safeParse(data).success`, nearest: true }
-	: mode === "errors" || mode === "first" ?
+	: isInvalidMode(mode) ?
 		{
 			validator,
 			body: f => `r = ${f}.safeParse(data).error.issues`,
@@ -138,7 +142,7 @@ const zodMiniArm = (mode: Mode, validator: unknown): ArmSpec =>
 			body: f => `r = $(${f}, data).success`,
 			nearest: true
 		}
-	: mode === "errors" || mode === "first" ?
+	: isInvalidMode(mode) ?
 		{
 			validator,
 			$: zm.safeParse,
@@ -149,7 +153,7 @@ const zodMiniArm = (mode: Mode, validator: unknown): ArmSpec =>
 
 const valibotArm = (mode: Mode, validator: unknown): ArmSpec =>
 	mode === "allows" ? { validator, $: v.is, body: f => `r = $(${f}, data)` }
-	: mode === "errors" ?
+	: mode === "issues" || mode === "errors" ?
 		{ validator, $: v.safeParse, body: f => `r = $(${f}, data).issues` }
 	: mode === "first" ?
 		{
@@ -162,14 +166,20 @@ const valibotArm = (mode: Mode, validator: unknown): ArmSpec =>
 
 // typia's validators differ by mode, so each case passes the one it needs
 const typiaArm = (mode: Mode, validator: unknown): ArmSpec =>
-	mode === "errors" ? { validator, body: f => `r = ${f}(data).errors` }
+	mode === "issues" ? { validator, body: f => `r = ${f}(data).errors` }
+	: mode === "errors" ?
+		{
+			validator,
+			body: f => `r = ${f}["~standard"].validate(data).issues`
+		}
 	: mode === "first" ?
 		{ validator, body: f => `try { ${f}(data) } catch (e) { r = e }` }
 	:	{ validator, body: f => `r = ${f}(data)` }
 
 const ajvArm = (mode: Mode, schema: object | object[]): ArmSpec => {
 	const ajv =
-		mode === "errors" ? ajvAll
+		mode === "issues" ? ajvAllWithoutMessages
+		: mode === "errors" ? ajvAll
 		: mode === "strip" ? ajvStrip
 		: ajvFirst
 	return {
@@ -178,9 +188,7 @@ const ajvArm = (mode: Mode, schema: object | object[]): ArmSpec => {
 				schema.map(branch => ajv.compile(branch))
 			:	ajv.compile(schema),
 		body: f =>
-			mode === "errors" || mode === "first" ?
-				`r = ${f}(data) || ${f}.errors`
-			:	`r = ${f}(data)`
+			isInvalidMode(mode) ? `r = ${f}(data) || ${f}.errors` : `r = ${f}(data)`
 	}
 }
 
@@ -189,7 +197,7 @@ const typeboxArm = (
 	validator: unknown,
 	method: "Check" | "Decode" | "Default"
 ): ArmSpec =>
-	mode === "errors" || mode === "first" ?
+	isInvalidMode(mode) ?
 		{
 			validator,
 			body: f => `r = ${f}.Errors(data)`,
@@ -262,38 +270,38 @@ const patterns = (typiaValidator: unknown): Validators => ({
 	typia: typiaValidator
 })
 
-const invalidCases = (mode: "errors" | "first"): Case[] => [
+const invalidCases = (mode: "issues" | "errors" | "first"): Case[] => [
 	caseOf(
 		"moltar",
 		mode,
 		[s.moltarInvalidData],
-		moltar(mode === "errors" ? typia.Moltar : typia.MoltarAssert)
+		moltar(mode === "first" ? typia.MoltarAssert : typia.Moltar)
 	),
 	caseOf(
 		"moltar strict",
 		mode,
 		[s.moltarExtraKeysData],
 		moltarStrict(
-			mode === "errors" ? typia.MoltarStrict : typia.MoltarStrictAssert
+			mode === "first" ? typia.MoltarStrictAssert : typia.MoltarStrict
 		)
 	),
 	caseOf(
 		"product",
 		mode,
 		[s.productInvalidData],
-		product(mode === "errors" ? typia.Product : typia.ProductAssert)
+		product(mode === "first" ? typia.ProductAssert : typia.Product)
 	),
 	caseOf(
 		"items",
 		mode,
 		[s.itemsInvalidData],
-		items(mode === "errors" ? typia.Items : typia.ItemsAssert)
+		items(mode === "first" ? typia.ItemsAssert : typia.Items)
 	),
 	caseOf(
 		"patterns",
 		mode,
 		[s.patternsInvalidData],
-		patterns(mode === "errors" ? typia.Patterns : typia.PatternsAssert)
+		patterns(mode === "first" ? typia.PatternsAssert : typia.Patterns)
 	)
 ]
 
@@ -365,6 +373,7 @@ const cases: Case[] = [
 		standalone: standalone.ProductStrip,
 		typia: typia.ProductStrip
 	}),
+	...invalidCases("issues"),
 	...invalidCases("errors"),
 	...invalidCases("first"),
 	caseOf("moltar", "allows", [s.moltarData], moltar(typia.MoltarIs), {
@@ -450,13 +459,16 @@ const outputOf: Record<Library, (result: any, input: unknown) => unknown> = {
 		result === true ? input
 		: result === false ? failed
 		: result,
-	arktype: result => (result instanceof type.errors ? failed : result),
-	standalone: result =>
-		Array.isArray(result) && "summary" in result ? failed : result
+	arktype: result => (isArkErrors(result) ? failed : result),
+	standalone: result => (isArkErrors(result) ? failed : result)
 }
 
-const hasIssues = (result: unknown) =>
+// arktype's errors are counted rather than an array
+const isArkErrors = (result: any) => result?.constructor?.name === "ArkErrors"
+
+const hasIssues = (result: any) =>
 	result instanceof Error ||
+	(isArkErrors(result) && result.count > 0) ||
 	((typeof result === "string" || Array.isArray(result)) && result.length > 0)
 
 // every arm must agree with arktype before it is timed
@@ -469,14 +481,14 @@ const verify = (c: Case, arms: Arm[]) => {
 				return [
 					arm,
 					c.mode === "allows" ? result
-					: c.mode === "errors" || c.mode === "first" ? hasIssues(result)
+					: isInvalidMode(c.mode) ? hasIssues(result)
 					: outputOf[arm.library](result, input)
 				]
 			})
 		)
 		const expected =
 			c.mode === "allows" ? c.allows
-			: c.mode === "errors" || c.mode === "first" ? true
+			: isInvalidMode(c.mode) ? true
 			: outputs.get(arms.find(arm => arm.library === "arktype")!)
 		if (expected === failed) throw new Error(`arktype rejected ${c.name}`)
 		for (const [arm, output] of outputs) {
@@ -614,8 +626,12 @@ const formatNs = (ns: number) =>
 const modeTitles: Record<Mode, string> = {
 	parse: "valid data, ns per call (median)",
 	strip: "valid data with undeclared keys, stripped",
-	errors: "invalid data, every error collected",
-	first: "invalid data, first error only (* has no such mode: all errors)",
+	issues:
+		"invalid data, every error as the raw result: no message text from arktype, typia or ajv (messages: false); zod, zod/mini, valibot and TypeBox write it regardless",
+	errors:
+		"invalid data, every error with message text: arktype reads summary, typia ~standard.validate, ajv has messages: true",
+	first:
+		"invalid data, first error only, with message text (* has no first-error mode: all-errors path)",
 	allows: "boolean check (* has no boolean API: parse)"
 }
 
