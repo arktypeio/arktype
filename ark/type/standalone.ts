@@ -1810,7 +1810,7 @@ return [${returned.join(", ")}]
 		// a folded factory's Type is written as what constructs its validator, which each call constructs with the functions it receives
 		const isTemplate = this.templates.has(root)
 		const key = `,\n\t${JSON.stringify(id)}${holes.length && !isTemplate ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
-		return `${isTemplate ? "[" : "new runtime.Validator("}
+		return `${isTemplate ? "[" : "runtime.createValidator("}
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
 	${this.emit(pipeOf(root))},

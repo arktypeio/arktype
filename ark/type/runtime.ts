@@ -41,7 +41,6 @@ import {
 } from "@ark/schema/runtime"
 import {
 	baseNameOf,
-	Callable,
 	dateGetTime,
 	functionNameOf,
 	getBuiltinNameOfConstructor,
@@ -205,7 +204,8 @@ export const {
 	defineProperties,
 	freeze,
 	getOwnPropertyDescriptors,
-	is
+	is,
+	setPrototypeOf
 } = Object
 
 // read only by the factories of what references a validator, Module, Scope or Generic, so kept off what a program can read
@@ -219,58 +219,22 @@ const throwOnFail: ArkErrors.Handler = errors => errors.throw()
 /**
  * #### a Type precompiled to validate without arktype, frozen with what it holds
  */
-export class Validator extends Callable<
+export interface Validator {
 	(
 		data: unknown,
 		pipedFromCtx?: Traversal,
 		onFail?: ArkErrors.Handler | null
-	) => unknown
-> {
+	): unknown
+}
+
+// what every validator inherits, as the prototype createValidator gives the function it creates
+export class Validator {
 	declare expression: string
 	declare description: string
 	declare meta: ArkEnv.meta
 	declare allows: (data: unknown) => boolean
+	declare assert: (data: unknown, pipedFromCtx?: Traversal) => unknown
 	declare "~standard": StandardSchemaV1.Props
-
-	constructor(
-		rootApply: RootApply,
-		node: BaseRoot,
-		pipe: TraversePipe,
-		attributes: ValidatorAttributes,
-		id: string,
-		holes: readonly unknown[] = []
-	) {
-		// the configuration is fixed before any validator is created, though a Type's meta can name its own, as a matcher asserting its default does
-		const configuredOnFail = attributes.meta.onFail ?? runtimeConfig.onFail
-		super(
-			(
-				data: unknown,
-				pipedFromCtx?: Traversal,
-				onFail: ArkErrors.Handler | null = configuredOnFail
-			) =>
-				pipedFromCtx ? pipe(pipedFromCtx, node, data) : rootApply(data, onFail),
-			{ bind: null }
-		)
-		// defined rather than assigned, since the shared prototype has only a getter for each
-		defineProperties(this, getOwnPropertyDescriptors(attributes))
-		this.allows = freeze(node.allows)
-		this["~standard"] = freeze({
-			vendor: "arktype",
-			version: 1,
-			validate: freeze((input: unknown) => {
-				const out = this(input)
-				return out instanceof ArkErrors ? out : { value: out }
-			}),
-			...attributes["~standard"]
-		})
-		freeze(this.assert)
-		freeze(this)
-		holdHoles(this, id, holes)
-	}
-
-	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
-	assert = (data: unknown, pipedFromCtx?: Traversal): unknown =>
-		this(data, pipedFromCtx, throwOnFail)
 
 	traverse(
 		data: unknown,
@@ -286,6 +250,44 @@ export class Validator extends Callable<
 	toString(): string {
 		return `Type<${this.expression}>`
 	}
+}
+
+export const createValidator = (
+	rootApply: RootApply,
+	node: BaseRoot,
+	pipe: TraversePipe,
+	attributes: ValidatorAttributes,
+	id: string,
+	holes: readonly unknown[] = []
+): Validator => {
+	// the configuration is fixed before any validator is created, though a Type's meta can name its own, as a matcher asserting its default does
+	const configuredOnFail = attributes.meta.onFail ?? runtimeConfig.onFail
+	const validator: Validator = setPrototypeOf(
+		(
+			data: unknown,
+			pipedFromCtx?: Traversal,
+			onFail: ArkErrors.Handler | null = configuredOnFail
+		) =>
+			pipedFromCtx ? pipe(pipedFromCtx, node, data) : rootApply(data, onFail),
+		Validator.prototype
+	)
+	// an own arrow function, since it is often detached, e.g. when passing to tRPC
+	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
+		validator(data, pipedFromCtx, throwOnFail)
+	)
+	// defined rather than assigned, since the shared prototype has only a getter for each
+	defineProperties(validator, getOwnPropertyDescriptors(attributes))
+	validator.allows = freeze(node.allows)
+	validator["~standard"] = freeze({
+		vendor: "arktype",
+		version: 1,
+		validate: freeze((input: unknown) => {
+			const out = validator(input)
+			return out instanceof ArkErrors ? out : { value: out }
+		}),
+		...attributes["~standard"]
+	})
+	return holdHoles(freeze(validator), id, holes)
 }
 
 type ValidatorParts = [
@@ -305,7 +307,7 @@ export const rekeyed = (
 ): Validator => {
 	let copies = copiesByParts.get(parts)
 	if (!copies) copiesByParts.set(parts, (copies = new InternTable()))
-	return intern(copies, holes, () => new Validator(...parts, holes))
+	return intern(copies, holes, () => createValidator(...parts, holes))
 }
 
 type typeOnlyMember =
