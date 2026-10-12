@@ -1863,8 +1863,8 @@ ${isTemplate ? "]" : ")"}`
 		const writer = this.writeJsonSchemaWriter(root, write, values)
 		const declared = this.jsonSchemaNameOf(writer)
 		if (declared) return declared
-		// one reading a value the validator declares, like a Date bound, is declared beside it, and any other where every variant reads it
-		if (!values.every(value => this.holeExpressions.has(value)))
+		// of its values, only a Date is declared, beside the validator, while a hole, builtin or bigint reads the same in every variant
+		if (values.some(value => typeof value === "object"))
 			return this.declareConst(writer, "jsonSchema", writer)
 		const written = this.declarations.valuesByRole.jsonSchema
 		const name = `jsonSchema${written.length}`
