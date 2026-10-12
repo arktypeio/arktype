@@ -574,6 +574,20 @@ contextualize(() => {
 			attest<Regex<`a\\c`, {}>>(S)
 		})
 
+		it("escaped braces", () => {
+			const S = regex("^a\\{b\\}$")
+			attest<Regex<"a{b}", {}>>(S)
+
+			// `}` must be escaped to be matched literally with `u` or `v` flags
+			const U = regex("^a\\{b\\}$", "u")
+			attest<Regex<"a{b}", { flags: "u" }>>(U)
+		})
+
+		it("escaped forward slash", () => {
+			const S = regex("^a\\/c$")
+			attest<Regex<"a/c", {}>>(S)
+		})
+
 		it("unnecessary escape", () => {
 			// @ts-expect-error
 			attest(() => regex("\\a")).type.errors(writeUnnecessaryEscapeMessage("a"))
