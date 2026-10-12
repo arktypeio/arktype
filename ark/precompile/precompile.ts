@@ -197,7 +197,7 @@ export interface Site {
 	introspection:
 		| Pick<StandaloneIntrospection, "member" | "type" | "thrown">
 		| undefined
-	// e.g. `User.props` for `User.props[0].key`, which a standalone validator lacks, so a standalone build folds the site only to a Type or its introspection
+	// the last member read that a standalone validator lacks, so a standalone build folds the site only to a Type or its introspection, e.g. `User.props` for `User.props[0].key` and `User.in.extends` for `User.in.extends(T)`, as `User.in` alone is a Type
 	unavailableRead: string | undefined
 }
 
@@ -2622,8 +2622,9 @@ export class Precompiler {
 				site.definition = this.definitionOf(state.node, module)
 			if (this.mode === "standalone") {
 				site.introspection = state.introspection
-				if (state.unavailableReads.length)
-					site.unavailableRead = module.snippetOf(state.unavailableReads[0])
+				const reads = state.unavailableReads
+				if (reads.length)
+					site.unavailableRead = module.snippetOf(reads[reads.length - 1])
 			}
 		}
 		for (const [value, [read]] of state.readsByValue) {

@@ -258,14 +258,16 @@ export const E = type({ "+": "delete", "[string]": "string", a: "string.date.par
 export const F = type("number")
 export const G = type("string").equals("string")
 export const H = type("string").description
-export const I = type({ a: "string" }).props[0].key`,
+export const I = type({ a: "string" }).props[0].key
+export const J = type({ a: "string" }).in.extends("object")`,
 				{ "/limits.ts": "export const max = 5" }
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/main.ts:8:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
 				'/main.ts:9:18  type({ "+": "delete", "[string]": "string", a: "string.date… can\'t be precompiled to a standalone validator yet\n  structure { [string]: string, a: (In: string) => Out<Date>, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				'/main.ts:11:18  type("string").equals("string") can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").equals`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:13:18  type({ a: "string" }).props[0].key can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).props`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				'/main.ts:13:18  type({ a: "string" }).props[0].key can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).props`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:14:18  type({ a: "string" }).in.extends("object") can\'t be precompiled to a standalone validator yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).in.extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { type } from "arktype"
 import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/12h8es00boxuw5"
@@ -287,7 +289,8 @@ export const E = type({ "+": "delete", "[string]": "string", a: "string.date.par
 export const F = /* @__PURE__ */ $arkv1hfscsk1nhk1a9()
 export const G = type("string").equals("string")
 export const H = $arkv16rwth51i4aph5().description
-export const I = type({ a: "string" }).props[0].key`)
+export const I = type({ a: "string" }).props[0].key
+export const J = type({ a: "string" }).in.extends("object")`)
 		})
 
 		it("folds Modules", () => {
