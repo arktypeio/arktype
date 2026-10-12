@@ -54,9 +54,10 @@ const pair = (type.module as unknown as (def: object) => { pair: type.Any })({
 
 const strings = (n: number) => Array<"string">(n).fill("string")
 
-// declaration emit of a generated draft-07 document with a recursive
-// definition and a structured const
-export const generatedDraft07 = jsonSchema({
+// a generated draft-07 document with a recursive definition and a structured
+// const (not exported, since TS 7.1 rejects declaration emit for anonymous
+// cyclic types: https://github.com/microsoft/TypeScript/issues/64656)
+const generatedDraft07 = jsonSchema({
 	$schema: "http://json-schema.org/draft-07/schema#",
 	$ref: "#/definitions/Node",
 	definitions: {

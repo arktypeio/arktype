@@ -6,8 +6,10 @@ import {
 } from "@ark/json-schema"
 import type { JsonSchema } from "arktype"
 
-// declaration emit must be able to name the internal aliases of recursive types
-export const tree = jsonSchema({
+// not exported, since TS 7.1 rejects declaration emit for anonymous cyclic
+// types (TS5088) that earlier versions elided to `any`
+// https://github.com/microsoft/TypeScript/issues/64656
+const tree = jsonSchema({
 	type: "object",
 	properties: {
 		value: { type: "number" },

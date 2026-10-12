@@ -9,15 +9,6 @@ const inferred = <const schema, r = jsonSchema.infer<schema>>(
 	schema: jsonSchema.validate<schema>
 ): r extends infer _ ? _ : never => schema as never
 
-// declaration emit must be able to name the internal aliases of recursive types
-export const tree = inferred({
-	type: "object",
-	properties: {
-		value: { type: "number" },
-		children: { type: "array", items: { $ref: "#" } }
-	}
-})
-
 contextualize(() => {
 	describe("objects", () => {
 		it("properties and required", () => {
