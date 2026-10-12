@@ -2090,8 +2090,8 @@ contextualize(() => {
 					// @ts-expect-error
 					$ref: "#/$defs/zz"
 				})
-			).type.errors(
-				/(?=[\S\s]*'"#" \| "#\/\$defs\/a" \|)(?=[\S\s]*"#\/\$defs\/0")(?=[\S\s]*"#\/\$defs\/m~0n")(?=[\S\s]*"#\/\$defs\/x~1y")/
+			).type.errors.snap(
+				'Type \'"#/$defs/zz"\' is not assignable to type \'"#" | "#/$defs/0" | "#/$defs/a" | "#/$defs/m~0n" | "#/$defs/x~1y"\'. Did you mean \'"#/$defs/0"\'?'
 			)
 		})
 
@@ -3803,7 +3803,7 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 				properties: { ...base.properties, b: { type: "number" } },
 				required: ["b"]
 			})
-			attest(extended.infer).type.toString.snap("{ b: number; a?: string }")
+			attest(extended.infer).type.toString.snap("{ a?: string; b: number }")
 		})
 
 		it("a rest without the type keyword", () => {
@@ -3921,8 +3921,10 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 			})
 			const Users = jsonSchema({ type: "array", items: User })
 			attest(Users.infer).type.toString.snap(
-				"{ name: string; friends?: cyclic[] }[]"
+				"{ name: string; friends?: cyclic }[]"
 			)
+			type user = (typeof Users.infer)[number]
+			attest<user, NonNullable<user["friends"]>[number]>()
 		})
 
 		it("boolean values", () => {
@@ -4050,7 +4052,7 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 		street: string
 		city: string
 		zip?: string
-		method?: "ground" | "air"
+		method?: "air" | "ground"
 	}
 }`)
 		})

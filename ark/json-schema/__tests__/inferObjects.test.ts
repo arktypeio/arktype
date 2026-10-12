@@ -201,7 +201,7 @@ contextualize(() => {
 			}>
 			attest<{ a: string; b?: number } | { a: boolean }>(
 				of<T>()
-			).type.toString.snap("{ a: string; b?: number } | { a: boolean }")
+			).type.toString.snap("{ a: boolean } | { a: string; b?: number }")
 		})
 
 		it("union of properties requiring a key one member declares", () => {
@@ -1054,7 +1054,7 @@ contextualize(() => {
 				}
 			})
 			attest<{ a?: { y: number; x: string } }>(T).type.toString.snap(
-				"{ a?: { y: number; x: string } }"
+				"{ a?: { x: string; y: number } }"
 			)
 		})
 
@@ -1678,8 +1678,8 @@ contextualize(() => {
 				.type.toString.snap(`	| string
 	| number
 	| boolean
-	| { a?: string }
 	| number[]
+	| { a?: string }
 	| null`)
 		})
 
@@ -1756,7 +1756,7 @@ contextualize(() => {
 				items: { type: "number" }
 			})
 			attest<{ a?: string } | number[]>(T).type.toString.snap(
-				"{ a?: string } | number[]"
+				"number[] | { a?: string }"
 			)
 		})
 
@@ -1837,7 +1837,7 @@ contextualize(() => {
 			// the missing key is added from the base rather than rejecting the literal
 			attest<{ readonly a: "x" } | { a: string; readonly b: 1 }>(
 				T
-			).type.toString.snap('{ readonly a: "x" } | { a: string; readonly b: 1 }')
+			).type.toString.snap('{ a: string; readonly b: 1 } | { readonly a: "x" }')
 		})
 
 		it("a literal beside optional properties", () => {
@@ -2609,7 +2609,7 @@ contextualize(() => {
 		})
 
 		it("allOf of twelve $refs to if/then/else rules", () => {
-			attest.instantiations([20000, "instantiations"])
+			attest.instantiations([14200, "instantiations"])
 			return inferred({
 				type: "object",
 				$defs: {
@@ -2692,7 +2692,7 @@ contextualize(() => {
 		})
 
 		it("allOf of four allOf groups of three if/then/else rules", () => {
-			attest.instantiations([20000, "instantiations"])
+			attest.instantiations([12700, "instantiations"])
 			return inferred({
 				type: "object",
 				allOf: [
@@ -2788,7 +2788,7 @@ contextualize(() => {
 			})
 			attest<{ id: string; nmae: unknown; name?: string }>(
 				T
-			).type.toString.snap("{ id: string; nmae: unknown; name?: string }")
+			).type.toString.snap("{ id: string; name?: string; nmae: unknown }")
 		})
 
 		it("root required references dependentSchemas properties", () => {
@@ -3292,8 +3292,8 @@ contextualize(() => {
 				| { petType: "cat"; name?: string; lives: number }
 				| { petType: "dog"; name?: string; bark?: boolean }
 			>(T).type.toString
-				.snap(`	| { petType: "cat"; name?: string; lives: number }
-	| { petType: "dog"; name?: string; bark?: boolean }`)
+				.snap(`	| { petType: "dog"; name?: string; bark?: boolean }
+	| { petType: "cat"; name?: string; lives: number }`)
 		})
 
 		it("JSON:API resource", () => {

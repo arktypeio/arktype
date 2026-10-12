@@ -127,7 +127,7 @@ contextualize(() => {
 				enum: ["a", 1, true, null],
 				allOf: [{ type: ["string", "boolean"] }]
 			})
-			attest<"a" | true>(T).type.toString.snap('true | "a"')
+			attest<"a" | true>(T).type.toString.snap('"a" | true')
 		})
 
 		it("base const disjoint from branch", () => {
@@ -530,8 +530,8 @@ contextualize(() => {
 				]
 			})
 			attest<{ id: string; a: number } | { id: string; b?: boolean }>(T).type
-				.toString.snap(`	| { id: string; a: number }
-	| { id: string; b?: boolean }`)
+				.toString.snap(`	| { id: string; b?: boolean }
+	| { id: string; a: number }`)
 		})
 
 		it("required-only branches", () => {
@@ -835,8 +835,8 @@ contextualize(() => {
 				.type.toString.snap(`	| string
 	| number
 	| boolean
-	| { a?: number }
 	| string[]
+	| { a?: number }
 	| null`)
 		})
 
@@ -871,9 +871,9 @@ contextualize(() => {
 			})
 			attest<5 | { readonly a: "x" } | { a: never } | readonly [1]>(T).type
 				.toString.snap(`	| 5
-	| readonly [1]
+	| { a: never }
 	| { readonly a: "x" }
-	| { a: never }`)
+	| readonly [1]`)
 		})
 	})
 
@@ -917,7 +917,7 @@ contextualize(() => {
 			attest<{ readonly a: 1 } | { a: unknown; readonly b: "x" }>(
 				T
 			).type.toString.snap(
-				'{ readonly a: 1 } | { a: unknown; readonly b: "x" }'
+				'{ readonly b: "x"; a: unknown } | { readonly a: 1 }'
 			)
 		})
 
@@ -1234,7 +1234,7 @@ contextualize(() => {
 				enum: [[1], { a: 1 }, "s"]
 			})
 			attest<readonly [1] | { readonly a: 1 }>(T).type.toString.snap(
-				"readonly [1] | { readonly a: 1 }"
+				"{ readonly a: 1 } | readonly [1]"
 			)
 		})
 
@@ -1323,8 +1323,8 @@ contextualize(() => {
 				| { country: "US" | "CA"; zip?: string; postal: string }
 			>(T)
 			attest(T).type.toString
-				.snap(`	| { country: "US" | "CA"; zip: string; postal?: string }
-	| { country: "US" | "CA"; zip?: string; postal: string }`)
+				.snap(`	| { country: "CA" | "US"; zip?: string; postal: string }
+	| { country: "CA" | "US"; zip: string; postal?: string }`)
 		})
 
 		it("nested conditional", () => {
@@ -1349,7 +1349,7 @@ contextualize(() => {
 				then: { const: "a" },
 				else: { type: "number" }
 			})
-			attest<"a" | 1>(T).type.toString.snap('1 | "a"')
+			attest<"a" | 1>(T).type.toString.snap('"a" | 1')
 		})
 
 		it("if: false selects else", () => {
@@ -1710,7 +1710,9 @@ contextualize(() => {
 	})
 
 	describe("composed object display", () => {
-		it("base properties before allOf properties regardless of keyword order", () => {
+		// TS 7 orders an intersection's members by when their types were
+		// created, so keys from different parts can precede the base's
+		it("base and allOf properties merge regardless of keyword order", () => {
 			const T = inferred({
 				type: "object",
 				allOf: [{ properties: { c: { type: "string" } } }],
@@ -1718,7 +1720,7 @@ contextualize(() => {
 				required: ["b"]
 			})
 			attest<{ a?: string; b: number; c?: string }>(T).type.toString.snap(
-				"{ a?: string; b: number; c?: string }"
+				"{ c?: string; a?: string; b: number }"
 			)
 		})
 
@@ -1738,7 +1740,7 @@ contextualize(() => {
 			)
 		})
 
-		it("allOf and conditional properties after base", () => {
+		it("allOf and conditional properties merge with base", () => {
 			const T = inferred({
 				type: "object",
 				properties: { a: { type: "string" } },
@@ -1750,8 +1752,8 @@ contextualize(() => {
 			attest<
 				| { a?: string; m?: number; z: string }
 				| { a?: string; m?: number; y?: string }
-			>(T).type.toString.snap(`	| { a?: string; m?: number; z: string }
-	| { a?: string; m?: number; y?: string }`)
+			>(T).type.toString.snap(`	| { a?: string; y?: string; m?: number }
+	| { a?: string; z: string; m?: number }`)
 		})
 
 		it("anyOf of objects differing only in constraints", () => {
@@ -2214,8 +2216,10 @@ contextualize(() => {
 				items: { $ref: "#/$defs/t" }
 			})
 			attest(S.infer).type.toString.snap(
-				"{ value?: number; children?: cyclic[][] }[]"
+				"{ value?: number; children?: cyclic[] }[]"
 			)
+			type children = NonNullable<(typeof S.infer)[number]["children"]>
+			attest<number | undefined, children[number][number]["value"]>()
 		})
 	})
 
@@ -3097,7 +3101,7 @@ contextualize(() => {
 		})
 
 		it("typed else-if chain with not nested forty deep", () => {
-			// limitation: a typed if/then/else node with `not` or `nullable` costs an extra level per node, so TS2589 (any) from 32 levels (without them, 46 pass)
+			// limitation: a typed if/then/else node with `not` or `nullable` costs an extra level per node, so a circularity error (any) from 32 levels (without them, 46 pass)
 			// prettier-ignore
 			// @ts-ignore
 			type T = jsonSchema.infer<{ type: "object"; if: { properties: { k: { const: 0 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 1 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 2 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 3 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 4 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 5 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 6 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 7 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 8 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 9 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 10 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 11 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 12 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 13 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 14 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 15 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 16 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 17 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 18 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 19 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 20 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 21 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 22 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 23 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 24 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 25 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 26 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 27 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 28 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 29 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 30 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 31 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 32 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 33 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 34 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 35 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 36 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 37 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 38 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; if: { properties: { k: { const: 39 } } }; then: { properties: { v: { type: "string" } }; required: ["v"] }; else: { type: "object"; properties: { z: { type: "string" } }; required: ["z"] }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }; not: { type: "null" } }>
@@ -3203,7 +3207,7 @@ contextualize(() => {
 
 		it("allOf of thirty if/then/else rules", () => {
 			// past three union-producing branches, a branch's then/else are ignored
-			attest.instantiations([37000, "instantiations"])
+			attest.instantiations([29300, "instantiations"])
 			return inferred({
 				type: "object",
 				allOf: [
@@ -3362,7 +3366,7 @@ contextualize(() => {
 		})
 
 		it("allOf of thirty two-branch anyOfs", () => {
-			attest.instantiations([31000, "instantiations"])
+			attest.instantiations([28100, "instantiations"])
 			return inferred({
 				type: "object",
 				allOf: [
@@ -3423,7 +3427,7 @@ contextualize(() => {
 		})
 
 		it("allOf of twelve $ref'd if/then/else rules", () => {
-			attest.instantiations([20000, "instantiations"])
+			attest.instantiations([14200, "instantiations"])
 			return inferred({
 				type: "object",
 				allOf: [
@@ -3506,7 +3510,7 @@ contextualize(() => {
 		})
 
 		it("allOf of four nested allOf groups of three rules", () => {
-			attest.instantiations([20000, "instantiations"])
+			attest.instantiations([12700, "instantiations"])
 			return inferred({
 				type: "object",
 				allOf: [
@@ -3642,7 +3646,7 @@ contextualize(() => {
 
 		it("allOf of three twenty-branch anyOfs", () => {
 			// limitation: intersected unions build every member, 20^3 here (three fifty-branch anyOfs: TS2589)
-			attest.instantiations([1040000, "instantiations"])
+			attest.instantiations([929000, "instantiations"])
 			return inferred({
 				type: "object",
 				allOf: [
@@ -3724,7 +3728,7 @@ contextualize(() => {
 
 		it("anyOf, oneOf and a conditional of ten branches each on one node", () => {
 			// limitation: a node's own anyOf, oneOf and then/else multiply to 2000 members (fifty branches each: TS2589)
-			attest.instantiations([278000, "instantiations"])
+			attest.instantiations([249000, "instantiations"])
 			return inferred({
 				type: "object",
 				anyOf: [
@@ -3825,7 +3829,7 @@ contextualize(() => {
 		})
 
 		it("array exclusion nested five deep over a recursive leaf", () => {
-			attest.instantiations([2600, "instantiations"])
+			attest.instantiations([2340, "instantiations"])
 			// prettier-ignore
 			return inferred({ type: "object", allOf: [{ type: "object", allOf: [{ type: "object", allOf: [{ type: "object", allOf: [{ type: "object", allOf: [{ type: "object", properties: { a: { type: "string" }, r: { $ref: "#" } }, required: ["a"] }], not: { type: "array" } }], not: { type: "array" } }], not: { type: "array" } }], not: { type: "array" } }], not: { type: "array" } })
 		})

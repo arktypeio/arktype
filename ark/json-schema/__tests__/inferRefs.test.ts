@@ -72,7 +72,7 @@ contextualize(() => {
 		it("through items alone", () => {
 			type Nested = Nested[]
 			const T = inferred({ type: "array", items: { $ref: "#" } })
-			attest<Nested>(T).type.toString.snap("any[][][][][][][][][][][]")
+			attest<Nested>(T).type.toString.snap("any[]")
 			attest<Nested, (typeof T)[0][0][0][0][0][0]>()
 		})
 
@@ -1398,7 +1398,7 @@ contextualize(() => {
 				const bad: T = [[[[[[[[[[[[[[[[[[[[1]]]]]]]]]]]]]]]]]]]]
 				return bad
 			}).type.errors.snap(
-				"Type 'number' is not assignable to type 'string | (string | (string | (string | (string | (string | (string | (string | (string | (string | (string | (string | ...)[])[])[])[])[])[])[])[])[])[])[]'."
+				"Type 'number' is not assignable to type 'string | (string | ...)[]'."
 			)
 		})
 
@@ -2135,7 +2135,7 @@ contextualize(() => {
 				required: ["b"]
 			})
 			attest<{ a: string; b: number }>(T).type.toString.snap(
-				"{ b: number; a: string }"
+				"{ a: string; b: number }"
 			)
 		})
 
@@ -2297,7 +2297,7 @@ contextualize(() => {
 				then: { const: "s" },
 				else: { const: 1 }
 			})
-			attest<"s" | 1>(T).type.toString.snap('1 | "s"')
+			attest<"s" | 1>(T).type.toString.snap('"s" | 1')
 		})
 
 		it("additionalProperties", () => {
@@ -2331,7 +2331,7 @@ contextualize(() => {
 				required: ["a"]
 			})
 			attest<{ a: string } | { b?: number; a: unknown }>(T).type.toString.snap(
-				"{ a: string } | { a: unknown; b?: number }"
+				"{ b?: number; a: unknown } | { a: string }"
 			)
 		})
 	})
@@ -2665,13 +2665,10 @@ contextualize(() => {
 					}
 				}
 			}>
-			attest<{ meta?: { updatedAt?: string; createdAt: string } }>(
-				{} as T
-			).type.toString.snap(
-				`{
-	meta?: { updatedAt?: string; createdAt: string }
-}`
-			)
+			attest<{ meta?: { updatedAt?: string; createdAt: string } }>({} as T).type
+				.toString.snap(`{
+	meta?: { createdAt: string; updatedAt?: string }
+}`)
 		})
 
 		it("required key declared by the schema that references the def", () => {
@@ -2704,7 +2701,7 @@ contextualize(() => {
 				allOf: [{ $ref: "#/$defs/nicknamed" }]
 			})
 			attest<{ name: string; nick: string }>(T).type.toString.snap(
-				"{ name: string; nick: string }"
+				"{ nick: string; name: string }"
 			)
 		})
 	})
@@ -2960,7 +2957,7 @@ contextualize(() => {
 				anyOf: [{ $ref: "#/$defs/inner/$defs/wrap" }]
 			})
 			attest<{ s: string; v: { n: number } }>(T).type.toString.snap(
-				"{ s: string; v: { n: number } }"
+				"{ v: { n: number }; s: string }"
 			)
 		})
 

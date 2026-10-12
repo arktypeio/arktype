@@ -113,7 +113,7 @@ contextualize(() => {
 			const T = type.enumerated("x", 0, false)
 			const S = inferred({ enum: ["x", 0, false] })
 			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap('false | 0 | "x"')
+			attest<typeof T.infer>(S).type.toString.snap('"x" | 0 | false')
 		})
 
 		it("mixed literals as anyOf of const", () => {
@@ -122,7 +122,7 @@ contextualize(() => {
 				anyOf: [{ const: "a" }, { const: 1 }, { type: "null" }, { const: true }]
 			})
 			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap('true | 1 | "a" | null')
+			attest<typeof T.infer>(S).type.toString.snap('"a" | 1 | true | null')
 		})
 	})
 
@@ -156,7 +156,7 @@ contextualize(() => {
 				]
 			})
 			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap("{ a: string } | string[]")
+			attest<typeof T.infer>(S).type.toString.snap("string[] | { a: string }")
 		})
 
 		it("discriminated object union", () => {
@@ -218,7 +218,7 @@ contextualize(() => {
 			})
 			assertEmits(T, S)
 			attest<typeof T.infer>(S).type.toString.snap(
-				'1 | "a" | { x: string } | null'
+				'"a" | 1 | { x: string } | null'
 			)
 		})
 	})
@@ -962,70 +962,10 @@ contextualize(() => {
 				}
 			})
 			assertEmits(T, S)
-			attest<typeof T.infer>(S).type.toString.snap(`(
-	| number
-	| (
-			| number
-			| (
-					| number
-					| (
-							| number
-							| (
-									| number
-									| (
-											| number
-											| (
-													| number
-													| (
-															| number
-															| (
-																	| number
-																	| (
-																			| number
-																			| (number | cyclic)[]
-																	  )[]
-															  )[]
-													  )[]
-											  )[]
-									  )[]
-							  )[]
-					  )[]
-			  )[]
-	  )[]
-)[]`)
+			attest<typeof T.infer>(S).type.toString.snap("(number | cyclic)[]")
 			attest<typeof T.infer | number>(S[0])
 			// arktype's own display of the same type, for comparison
-			attest({} as typeof T.infer).type.toString.snap(`(
-	| number
-	| (
-			| number
-			| (
-					| number
-					| (
-							| number
-							| (
-									| number
-									| (
-											| number
-											| (
-													| number
-													| (
-															| number
-															| (
-																	| number
-																	| (
-																			| number
-																			| (number | cyclic)[]
-																	  )[]
-															  )[]
-													  )[]
-											  )[]
-									  )[]
-							  )[]
-					  )[]
-			  )[]
-	  )[]
-)[]`)
+			attest({} as typeof T.infer).type.toString.snap("(number | cyclic)[]")
 		})
 
 		it("self reference in a named key", () => {
@@ -1301,7 +1241,7 @@ contextualize(() => {
 	petId?: number
 	quantity?: number
 	shipDate?: string
-	status?: "approved" | "placed" | "delivered"
+	status?: "approved" | "delivered" | "placed"
 	complete?: boolean
 }`)
 		})
@@ -1794,15 +1734,15 @@ contextualize(() => {
 			attest(S).type.toString.snap(`{
 	name?: string
 	on:
-		| "push"
 		| "pull_request"
-		| "workflow_dispatch"
+		| "push"
 		| "schedule"
+		| "workflow_dispatch"
 		| (
-				| "push"
 				| "pull_request"
-				| "workflow_dispatch"
+				| "push"
 				| "schedule"
+				| "workflow_dispatch"
 		  )[]
 		| {
 				push?: object | null
@@ -1983,15 +1923,15 @@ contextualize(() => {
 						packSize?: number | null
 				  }
 			>(pet).type.toString.snap(`	| {
-			petType: "cat"
-			name?: string | null
-			huntingSkill?: "lazy" | "clueless"
-	  }
-	| {
 			petType: "dog"
 			name?: string | null
-			id?: number
 			packSize?: number | null
+			id?: number
+	  }
+	| {
+			petType: "cat"
+			name?: string | null
+			huntingSkill?: "clueless" | "lazy"
 	  }`)
 		})
 
@@ -2774,7 +2714,7 @@ contextualize(() => {
 			})
 			attest<{ bark: boolean; nmae: unknown; other?: string }>(
 				S
-			).type.toString.snap("{ bark: boolean; nmae: unknown; other?: string }")
+			).type.toString.snap("{ bark: boolean; other?: string; nmae: unknown }")
 		})
 
 		it("component schemas reached through a root $ref are validated", () => {
@@ -2999,8 +2939,8 @@ contextualize(() => {
 			:	nestTuple<n, { type: "array"; prefixItems: [schema] }, [...depth, 0]>
 
 		it("allOf nested 90 deep", () => {
-			// each eager allOf level costs an instantiation depth, so this is
-			// TS2589 from 97 levels (an accepted limit)
+			// each eager allOf level costs an instantiation depth, so this is a
+			// circularity error from 94 levels (97 before TS 7, an accepted limit)
 			attest<object, jsonSchema.infer<nest<90, { type: "object" }>>>()
 		})
 

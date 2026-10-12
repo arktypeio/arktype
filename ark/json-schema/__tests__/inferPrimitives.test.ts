@@ -251,7 +251,7 @@ contextualize(() => {
 				minLength: 1
 			})
 			attest<{ a?: number } | boolean[] | string>(T)
-			attest(T).type.toString.snap("string | { a?: number } | boolean[]")
+			attest(T).type.toString.snap("string | boolean[] | { a?: number }")
 		})
 
 		it("widened list", () => {
@@ -486,7 +486,7 @@ contextualize(() => {
 		it("objects and arrays", () => {
 			const T = inferred({ enum: [{ a: 1 }, [1, 2], "x"] })
 			attest<{ readonly a: 1 } | readonly [1, 2] | "x">(T).type.toString.snap(
-				'"x" | readonly [1, 2] | { readonly a: 1 }'
+				'"x" | { readonly a: 1 } | readonly [1, 2]'
 			)
 		})
 
@@ -1242,7 +1242,7 @@ contextualize(() => {
 				enum: ["a", "b", 1]
 				not: { enum: ["a" | 1, "b"] }
 			}>
-			attest<"a" | 1>(U).type.toString.snap('1 | "a"')
+			attest<"a" | 1>(U).type.toString.snap('"a" | 1')
 		})
 
 		it("tuple consts that aren't a single value", () => {
@@ -1724,7 +1724,7 @@ contextualize(() => {
 					enum: [{ a: 1 }, [1]],
 					anyOf: [{ type: "object" }, { type: "string" }]
 				})
-			).type.toString.snap("readonly [1] | { readonly a: 1 }")
+			).type.toString.snap("{ readonly a: 1 } | readonly [1]")
 			attest<readonly [1]>(
 				inferred({ enum: [{ a: 1 }, [1]], oneOf: [{ type: "array" }] })
 			).type.toString.snap("readonly [1]")
@@ -1751,7 +1751,7 @@ contextualize(() => {
 			).type.toString.snap("object | unknown[]")
 			attest<"a" | object | unknown[]>(
 				{} as jsonSchema.infer<{ enum: (object | "a")[] }>
-			).type.toString.snap('object | "a" | unknown[]')
+			).type.toString.snap('"a" | object | unknown[]')
 		})
 
 		it("widened structured values are filtered by domain", () => {
@@ -1862,7 +1862,7 @@ contextualize(() => {
 				enum: [{ 1: "x" }, { 1: 2 }]
 			})
 			attest<{ readonly 1: "x" } | { 1: never }>(T).type.toString.snap(
-				'{ readonly 1: "x" } | { 1: never }'
+				'{ 1: never } | { readonly 1: "x" }'
 			)
 		})
 	})
@@ -1984,7 +1984,7 @@ contextualize(() => {
 					$defs: { s: { type: "string" } },
 					enum: ["a", 1, null, [1]]
 				})
-			).type.toString.snap('1 | "a" | readonly [1] | null')
+			).type.toString.snap('"a" | 1 | readonly [1] | null')
 			attest<1 | "a">(
 				inferred({
 					$ref: "#/$defs/b",
@@ -2026,15 +2026,13 @@ contextualize(() => {
 		})
 
 		it("not with a const array against items nested thirty-two deep", () => {
-			// limitation: an exact not with a nested array literal raises TS2589 from 24 levels (the inferred type is still right)
+			// limitation: an exact not with a nested array literal raises a circularity error (TS5115) from 23 levels, 24 before TS 7 (the inferred type is still right)
 			attest(() => {
 				// prettier-ignore
 				type T = jsonSchema.infer<{ type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "array"; items: { type: "string" } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } } }; not: { const: [[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[["x"]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]] } }>
 				// @ts-ignore
 				return {} as T
-			}).type.errors(
-				"Type instantiation is excessively deep and possibly infinite"
-			)
+			}).type.errors("appear infinitely circular")
 		})
 	})
 
@@ -2064,7 +2062,7 @@ contextualize(() => {
 
 	describe("compositions beside nullable or not nested forty deep", () => {
 		it("nullable allOf nested forty deep", () => {
-			// limitation: applyModifiers around a two-branch allOf costs extra depth per level, so TS2589 (any) from 31 levels
+			// limitation: applyModifiers around a two-branch allOf costs extra depth per level, so a circularity error (any) from 32 levels (31 before TS 7)
 			// prettier-ignore
 			// @ts-ignore
 			type T = jsonSchema.infer<{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string"; nullable: true; allOf: [{ type: "string" }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }, { minLength: 1 }] }>
@@ -2072,7 +2070,7 @@ contextualize(() => {
 		})
 
 		it("nullable anyOf nested forty deep", () => {
-			// limitation: the same with a two-branch anyOf gives TS2589 (any) from 34 levels (also oneOf, and if/then/else by 36)
+			// limitation: the same with a two-branch anyOf gives a circularity error (any) from 32 levels (also oneOf; before TS 7, 34 and if/then/else 36)
 			// prettier-ignore
 			// @ts-ignore
 			type T = jsonSchema.infer<{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string"; nullable: true; anyOf: [{ type: "string" }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }>
@@ -2080,7 +2078,7 @@ contextualize(() => {
 		})
 
 		it("not beside anyOf nested forty deep", () => {
-			// limitation: an exact not beside a two-branch anyOf gives TS2589 (any) from 32 levels
+			// limitation: an exact not beside a two-branch anyOf gives a circularity error (any) from 32 levels
 			// prettier-ignore
 			// @ts-ignore
 			type T = jsonSchema.infer<{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string"; not: { const: "y" }; anyOf: [{ type: "string" }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }, { const: "x" }] }>

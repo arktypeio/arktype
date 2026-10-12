@@ -585,7 +585,7 @@ contextualize(() => {
 					anyOf: [{ type: "string" }, { type: "number" }],
 					oneOf: [{ const: "a" }, { const: 1 }, { const: true }]
 				})
-			).type.toString.snap('1 | "a"')
+			).type.toString.snap('"a" | 1')
 		})
 
 		it("type list intersected with anyOf", () => {
@@ -605,7 +605,7 @@ contextualize(() => {
 				required: ["a"]
 			})
 			attest<string[] | { a: number } | null>(T).type.toString.snap(
-				"{ a: number } | string[] | null"
+				"string[] | { a: number } | null"
 			)
 		})
 
@@ -771,7 +771,7 @@ contextualize(() => {
 					properties: { name: { type: "string" } },
 					required: ["name"]
 				})
-			).type.toString.snap("{ name: string; id: string }")
+			).type.toString.snap("{ id: string; name: string }")
 		})
 
 		it("enum with nullable", () => {
@@ -1027,7 +1027,7 @@ contextualize(() => {
 		it("not integer on an enum", () => {
 			attest<1.5 | 2>(
 				inferred({ enum: [1.5, 2], not: { type: "integer" } })
-			).type.toString.snap("2 | 1.5")
+			).type.toString.snap("1.5 | 2")
 		})
 
 		it("not object keeps arrays", () => {
@@ -1407,8 +1407,8 @@ contextualize(() => {
 					minItems: 1 | 2
 					items: false
 				}>()
-			).type.toString.snap(`	| [string, number?, boolean?]
-	| [string, number, boolean?]`)
+			).type.toString.snap(`	| [string, number, boolean?]
+	| [string, number?, boolean?]`)
 		})
 
 		it("minItems 100 of 120", () => {
@@ -2192,7 +2192,7 @@ contextualize(() => {
 					properties: { a }
 				})
 			).type.errors.snap(
-				'Type \'{ readonly type: "string"; } | { readonly type: "strin"; }\' is not assignable to type \'StaticallyValidSchema | validateKeywords<{ readonly type: "strin"; }, { readonly type: "object"; readonly properties: { readonly a: { readonly type: "string"; } | { readonly type: "strin"; }; }; }, "subschema">\'.Type \'{ readonly type: "strin"; }\' is not assignable to type \'StaticallyValidSchema | validateKeywords<{ readonly type: "strin"; }, { readonly type: "object"; readonly properties: { readonly a: { readonly type: "string"; } | { readonly type: "strin"; }; }; }, "subschema">\'.Type \'{ readonly type: "strin"; }\' is not assignable to type \'StaticallyValidSchemaObject | validateKeywords<{ readonly type: "strin"; }, { readonly type: "object"; readonly properties: { readonly a: { readonly type: "string"; } | { readonly type: "strin"; }; }; }, "subschema">\'.Type \'{ readonly type: "strin"; }\' is not assignable to type \'validateKeywords<{ readonly type: "strin"; }, { readonly type: "object"; readonly properties: { readonly a: { readonly type: "string"; } | { readonly type: "strin"; }; }; }, "subschema">\'.Types of property \'type\' are incompatible.Type \'"strin"\' is not assignable to type \'TypeName\'. Did you mean \'"string"\'?'
+				'Type \'{ readonly type: "string"; } | { readonly type: "strin"; }\' is not assignable to type \'validateKeywords<{ readonly type: "strin"; }, { readonly type: "object"; readonly properties: { readonly a: { readonly type: "string"; } | { readonly type: "strin"; }; }; }, "subschema"> | StaticallyValidSchema\'.Type \'{ readonly type: "strin"; }\' is not assignable to type \'validateKeywords<{ readonly type: "strin"; }, { readonly type: "object"; readonly properties: { readonly a: { readonly type: "string"; } | { readonly type: "strin"; }; }; }, "subschema"> | StaticallyValidSchema\'.Type \'{ readonly type: "strin"; }\' is not assignable to type \'StaticallyValidSchemaObject | validateKeywords<{ readonly type: "strin"; }, { readonly type: "object"; readonly properties: { readonly a: { readonly type: "string"; } | { readonly type: "strin"; }; }; }, "subschema">\'.Type \'{ readonly type: "strin"; }\' is not assignable to type \'validateKeywords<{ readonly type: "strin"; }, { readonly type: "object"; readonly properties: { readonly a: { readonly type: "string"; } | { readonly type: "strin"; }; }; }, "subschema">\'.Types of property \'type\' are incompatible.Type \'"strin"\' is not assignable to type \'TypeName\'. Did you mean \'"string"\'?'
 			)
 		})
 
@@ -2382,7 +2382,7 @@ contextualize(() => {
 	id: number
 	name: string
 	tag?: string | null
-	huntingSkill: "lazy" | "aggressive"
+	huntingSkill: "aggressive" | "lazy"
 }`)
 		})
 
@@ -2680,7 +2680,7 @@ contextualize(() => {
 			| { [_ in `b${k}`]: string }
 
 		it("allOf of ten refs to if/then/else rules", () => {
-			attest.instantiations([15000, "instantiations"])
+			attest.instantiations([9020, "instantiations"])
 			return inferred({
 				type: "object",
 				properties: { kind: { type: "string" } },
@@ -2752,7 +2752,7 @@ contextualize(() => {
 		})
 
 		it("allOf of twelve refs to anyOf definitions", () => {
-			attest.instantiations([15000, "instantiations"])
+			attest.instantiations([9830, "instantiations"])
 			return inferred({
 				type: "object",
 				$defs: {
@@ -2847,7 +2847,7 @@ contextualize(() => {
 		})
 
 		it("allOf of six nested allOfs of three anyOfs each", () => {
-			attest.instantiations([20000, "instantiations"])
+			attest.instantiations([12400, "instantiations"])
 			const T = inferred({
 				type: "object",
 				allOf: [
@@ -3234,7 +3234,7 @@ contextualize(() => {
 
 		it("ref chain with a rule at each level eleven deep", () => {
 			// limitation: each level's allOf of a $ref and an if/then/else doubles the union (2^n members, TS2589 from 16 levels)
-			attest.instantiations([433000, "instantiations"])
+			attest.instantiations([442000, "instantiations"])
 			return inferred({
 				$defs: {
 					d0: {

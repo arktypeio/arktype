@@ -90,7 +90,9 @@ contextualize(() => {
 			properties: { next: { $ref: "#" } }
 		})
 		const outer = jsonSchema({ type: "array", items: node })
-		attest(outer.infer).type.toString.snap("{ next?: cyclic[] }[]")
+		attest(outer.infer).type.toString.snap("{ next?: cyclic }[]")
+		type next = NonNullable<(typeof outer.infer)[number]["next"]>
+		attest<typeof outer.infer, next>()
 	})
 
 	it("recursive", () => {
@@ -193,7 +195,7 @@ contextualize(() => {
 			required: ["a"]
 		})
 		attest<{ a: string }>(out)
-		attest.instantiations([1000, "instantiations"])
+		attest.instantiations([465, "instantiations"])
 	})
 
 	describe("jsonSchema.validate", () => {
