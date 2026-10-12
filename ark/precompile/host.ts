@@ -83,7 +83,10 @@ export const optsIn = (manifest: string | undefined): boolean =>
 export const dependencyOf = (
 	file: string
 ): [root: string, name: string] | undefined => {
-	const match = /.*\/node_modules\/((?:@[^/]+\/)?[^/]+)/.exec(file)
+	// most files are outside node_modules, where the pattern retries its `.*` from each character
+	const match =
+		file.includes("/node_modules/") &&
+		/.*\/node_modules\/((?:@[^/]+\/)?[^/]+)/.exec(file)
 	return match ? [match[0], match[1]] : undefined
 }
 
