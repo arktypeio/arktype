@@ -73,6 +73,8 @@ const cycleFirst = fromHere("cycleFirst")
 
 const cycleErased = fromHere("cycleErased")
 
+const cycleArrow = fromHere("cycleArrow")
+
 const library = writeLibrary()
 
 const runPlain = (cwd: string, ...args: string[]) =>
@@ -122,6 +124,9 @@ contextualize(() => {
 			attest(node(["main.ts"], {}, cycleErased).stdout).equals(
 				runPlain(cycleErased)
 			)
+			attest(
+				node(["main.ts"], { introspection: ["json"] }, cycleArrow).stdout
+			).equals(runPlain(cycleArrow))
 		}).timeout(60000)
 
 		it("serves the modules a standalone module imports", () => {

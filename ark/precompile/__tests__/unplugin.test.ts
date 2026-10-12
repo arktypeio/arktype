@@ -296,6 +296,10 @@ contextualize(() => {
 			attest(
 				run(await bundle({ cwd: first, introspection: ["json"] }, first))
 			).equals(runPlain(first))
+			const arrow = fromHere("cycleArrow")
+			attest(
+				run(await bundle({ cwd: arrow, introspection: ["json"] }, arrow))
+			).equals(runPlain(arrow))
 			// `verbatimModuleSyntax` keeps an import only a type reads, which closes the cycle
 			const erased = fromHere("cycleErased")
 			const verbatim = writeFixture(
@@ -368,16 +372,18 @@ export const checkedItem = JSON.stringify(itemJson())
 	}
 
 	it("esbuild unminified import cycle reaching a fold first", async () => {
-		const first = fromHere("cycleFirst")
-		attest(
-			run(
-				await bundlers.esbuild(
-					{ cwd: first, introspection: ["json"] },
-					first,
-					false
+		for (const fixture of ["cycleFirst", "cycleArrow"]) {
+			const root = fromHere(fixture)
+			attest(
+				run(
+					await bundlers.esbuild(
+						{ cwd: root, introspection: ["json"] },
+						root,
+						false
+					)
 				)
-			)
-		).equals(runPlain(first))
+			).equals(runPlain(root))
+		}
 	}).timeout(60000)
 
 	it("vite standalone for SSR, bundling Rolldown's runtime module", async () => {

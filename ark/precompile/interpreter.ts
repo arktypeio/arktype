@@ -60,6 +60,7 @@ import {
 	declarationStartOf,
 	enclosingFunctionOf,
 	genericMembers,
+	importsValues,
 	isArk,
 	isCallableBeforeBody,
 	nodeMembers,
@@ -2779,7 +2780,7 @@ const pushUnique = (
 	if (!helpers.some(([n]) => n === node)) helpers.push([node, module])
 }
 
-// the earliest offset in `scope` at which code at `node` can run: its own, the first that can call the function holding it, or the module's start where an import cycle can
+// the earliest offset in `scope` at which code at `node` can run: its own, or the first that can call the function holding it, which an import cycle can from where an export is set
 const runPointOf = (
 	node: Node,
 	scope: Node,
@@ -2799,7 +2800,10 @@ const runPointOf = (
 		if (isCallableBeforeBody(parent, module)) return module.program.start
 		const binding = bindingOfFunction(parent, module)
 		if (!binding) return runPointOf(parent, scope, module, seen)
-		let result = Infinity
+		let result =
+			binding.exportNames.length && importsValues(module) ?
+				setAt(binding)
+			:	Infinity
 		for (const reference of binding.references)
 			result = Math.min(result, runPointOf(reference.id, scope, module, seen))
 		return result
