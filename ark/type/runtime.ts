@@ -856,10 +856,10 @@ export type writeRenamedHoleMessage<
 export const writeUnlistedMemberMessage = <member extends string>(
 	member: member
 ): writeUnlistedMemberMessage<member> =>
-	`${member} isn't baked: list it in the build's introspection option`
+	`${member} isn't in the build's introspection option`
 
 export type writeUnlistedMemberMessage<member extends string> =
-	`${member} isn't baked: list it in the build's introspection option`
+	`${member} isn't in the build's introspection option`
 
 export const bakedJsonSchemaOptionsMessage =
 	"a standalone validator's JSON Schema is written at build under the program's configuration, so it takes no options but a target whose schema it bakes. Configure them with configure({ toJsonSchema }), or build with runtime: \"arktype\"."

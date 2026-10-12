@@ -124,7 +124,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 		it("throws where a library reads a member its validator lacks", () => {
 			attest([shadow.listed, shadow.unbaked]).snap([
 				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at reading array, since its validator lacks it: arktype gives "function", its validator undefined',
-				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at json, since its validator doesn\'t bake it: arktype gives {"out":{"required":[{"key":"name","value":"string"}],"domain":"object"}}, its validator {"threw":"Error: json isn\'t baked: list it in the build\'s introspection option"}'
+				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at json, since its validator doesn\'t bake it: arktype gives {"out":{"required":[{"key":"name","value":"string"}],"domain":"object"}}, its validator {"threw":"Error: json isn\'t in the build\'s introspection option"}'
 			])
 		})
 
