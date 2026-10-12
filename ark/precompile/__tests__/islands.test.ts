@@ -179,6 +179,22 @@ console.log(I.expression)`)
 		).snap([])
 	})
 
+	it("lets an island read what configure() returns", () => {
+		attest(
+			diagnosticsOf(
+				`import { type } from "arktype"
+import { config } from "./config.ts"
+// @ark-runtime
+export const T = type("number").describe(config.keywords.string.description)`,
+				{
+					"/config.ts": `import { configure } from "arktype/config"
+export const config: any = configure({ keywords: { string: { description: "text" } } })`
+				},
+				{ config: "/config.ts" }
+			)
+		).equals([])
+	})
+
 	it("fails for what an island reads that the build precompiles", () => {
 		attest(
 			diagnosticsOf(

@@ -4,9 +4,9 @@ import {
 	enclosingFunctionOf,
 	isArk,
 	isPassiveReference,
+	isRuntimeExport,
 	isValidatorMember,
 	memberNameOf,
-	runtimeExports,
 	staticBodyOf,
 	type FunctionNode,
 	type ModuleGraph
@@ -122,11 +122,7 @@ const rootOf = (
 	const binding = reference.binding
 	if (!binding || reference.isWrite) return
 	const [name, read] = graph.arkExportOf(reference, module) ?? []
-	if (name) {
-		return name in runtimeExports || name === "configure" ?
-				undefined
-			:	[name, read!, false]
-	}
+	if (name) return isRuntimeExport(name) ? undefined : [name, read!, false]
 	if (isArk(graph.bindingKindOf(binding, module)))
 		return ["reference", reference.id, false]
 	const member = arkMemberOf(reference.id, module, graph)

@@ -74,6 +74,10 @@ export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
+// configure() is the runtime's too, but only as a call, which the build rewrites to pass its fingerprint
+export const isRuntimeExport = (name: string): boolean =>
+	name in runtimeExports || name === "configure"
+
 const arkExports = new Set(
 	Object.values(arktypeNamespacesBySpecifier).flatMap(namespace =>
 		Object.entries(namespace).flatMap(([name, value]) =>
@@ -376,7 +380,7 @@ const typeMemberKinds: Record<string, ArkKind> = Object.setPrototypeOf(
 )
 
 const exportKindOf = (name: ArkExportName): ArkKind =>
-	name in runtimeExports ? kinds.data
+	isRuntimeExport(name) ? kinds.data
 	: name === "type" ? kinds.otherArk | kinds.returnsType | kinds.returnsArk
 	: kinds.otherArk | kinds.returnsArk
 

@@ -72,6 +72,7 @@ import {
 	isArkObject,
 	isFunctionNode,
 	isPassiveReference,
+	isRuntimeExport,
 	isSetLast,
 	isTypeOnly,
 	memberNameOf,
@@ -3667,7 +3668,7 @@ export class Precompiler {
 				if (arkRead) {
 					if (
 						!isInIsland(arkRead, origin) &&
-						!(name! in runtimeExports) &&
+						!isRuntimeExport(name!) &&
 						!this.graph.leavesArk(child, origin)
 					) {
 						result.push(
