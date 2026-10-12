@@ -869,6 +869,31 @@ var x = "string"`)
 				"5:25 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
 				"7:12 rejected\n  `y` can be read before its declaration (/main.ts:8:6)"
 			])
+			// a `var` holding a Type is checked where reading it unset throws, as `V.and` does, but not where the program reads past `undefined`
+			attest(
+				statusesOf(`import { type } from "arktype"
+export function make() { return type(V ?? "string") }
+export function make2() { return type(V || "boolean") }
+export function make3() { return V?.or("null") }
+export function make4() { return V.and({ b: "string" }) }
+export const early = [make, make2, make3, make4].map(f => f())
+var V = type({ a: "string" })
+export const F = () => {
+	const T = type(W ?? "string")
+	const U = W.or("null")
+	var W = type("number")
+	return [T, U]
+}`)
+			).snap([
+				"2:33 rejected\n  `V` can be read before its declaration (/main.ts:7:5)",
+				"3:34 rejected\n  `V` can be read before its declaration (/main.ts:7:5)",
+				"4:34 rejected\n  `V` can be read before its declaration (/main.ts:7:5)",
+				"5:34 accepted { a: string, b: string }",
+				"7:9 accepted { a: string }",
+				"9:12 rejected\n  `W` can be read before its declaration (/main.ts:11:6)",
+				"10:12 accepted number | null",
+				"11:10 accepted number"
+			])
 			attest(
 				statusesOf(`import { type } from "arktype"
 let result: any

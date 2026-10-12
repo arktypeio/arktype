@@ -1067,8 +1067,12 @@ export class Interpreter {
 			readsFirst(readAt, binding, module)
 		const result = this.bindingValue(binding, module)
 		if (result.error !== undefined) throw result.error
-		// a `var` holds `undefined` until it's set, which can stand for a definition, as in `x ?? "number"`, but not for a Type
-		if (isReadFirst && binding.kind === "var" && !isArkValue(result.value)) {
+		// a `var` holds `undefined` until it's set, which the program can read past, as in `V ?? "string"`, so the site checks a Type read first only where reading `undefined` throws too
+		if (
+			isReadFirst &&
+			binding.kind === "var" &&
+			!(isArkValue(result.value) && throwsUnset(node))
+		) {
 			return {
 				value: new DynamicValue(
 					module,
@@ -1112,7 +1116,7 @@ export class Interpreter {
 			// unless the declaration compares what the program holds, which runs only if a bundler keeps it for the site
 			isReceived = this.comparedAtCreation.has(result.value as object)
 		}
-		// a binding its step sets before it ends, or one a block or function declares, is received instead, which throws unset where arktype's read does
+		// a binding its step sets before it ends, or one a block or function declares, is received instead, which its factory reads unset and throws, as the program's read does
 		const isChecked =
 			isReadFirst &&
 			binding.scope.node === module.program &&
@@ -2861,6 +2865,19 @@ export const readsFirst = (
 	binding: Binding,
 	module: SourceModule
 ): boolean => runPointOf(node, binding.scope.node, module) < setAt(binding)
+
+// e.g. `V` in `V.and(...)` or `V()`, but not in `V ?? "string"` or `V?.and(...)`, which read `undefined` without throwing
+const throwsUnset = (node: Node): boolean => {
+	const [operand, parent] = operatorOf(node)
+	return (
+		(parent?.type === "MemberExpression" &&
+			parent.object === operand &&
+			!parent.optional) ||
+		(parent?.type === "CallExpression" &&
+			parent.callee === operand &&
+			!parent.optional)
+	)
+}
 
 // a declarator sets each binding once its element of the pattern, default included, has run; a read in the initializer, which runs first, depends on itself
 const setAt = (binding: Binding): number => {
