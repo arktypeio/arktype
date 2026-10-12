@@ -49,6 +49,7 @@ contextualize(() => {
 			jsonSchemaToType({
 				type: "object",
 				properties: { foo: { type: "string" } },
+				// @ts-expect-error
 				required: ["bar"]
 			}).expression
 		).snap("{ bar: unknown, foo?: string }")
@@ -98,15 +99,13 @@ contextualize(() => {
 		attest(tPropertyNames.allows({ abcd: 1 })).equals(false)
 
 		attest(() =>
-			// @ts-expect-error
 			jsonSchemaToType({
 				type: "object",
+				// @ts-expect-error
 				propertyNames: { type: "number" }
 			})
 		).type.errors.snap(
-			`Argument of type '{ type: "object"; propertyNames: { type: "number"; }; }' is not assignable to parameter of type 'JsonSchemaOrBoolean | StringSchema'.` +
-				`The types of 'propertyNames.type' are incompatible between these types.` +
-				`Type '"number"' is not assignable to type '"string"'.`
+			"Type '\"number\"' is not assignable to type '\"string\"'."
 		)
 	})
 

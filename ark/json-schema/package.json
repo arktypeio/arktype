@@ -42,7 +42,8 @@
 	"scripts": {
 		"build": "ts ../repo/build.ts",
 		"test": "ts ../repo/testPackage.ts",
-		"tnt": "ts ../repo/testPackage.ts --skipTypes"
+		"tnt": "ts ../repo/testPackage.ts --skipTypes",
+		"bench": "ts ./__tests__/infer.bench.ts"
 	},
 	"dependencies": {
 		"arksets": "workspace:*",
