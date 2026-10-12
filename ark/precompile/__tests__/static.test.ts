@@ -877,7 +877,9 @@ export function member() { return M.a }
 export function exported() { return N.a }
 export const arrow = () => N.a
 export default (extra: object) => L.and(extra)
-const L = type({ a: "number" })`
+const L = type({ a: "number" })
+export function fromVar(extra: object) { return V.and(extra) }
+var V = type({ a: "bigint" })`
 			}
 			const { sites } = analyze(
 				`import { type } from "arktype"
@@ -893,7 +895,9 @@ import { N } from "./items.ts"
 export function defined() { return type(definition) }
 const definition = "number"
 export const E = extend({ b: "string" })
-import extend from "./items.ts"`,
+import extend from "./items.ts"
+export const F = fromVar({ b: "string" })
+import { fromVar } from "./items.ts"`,
 				files
 			)
 			attest(
@@ -916,7 +920,8 @@ import extend from "./items.ts"`,
 				"7:18 accepted\n  import arrow",
 				"8:18 accepted\n  import N.a\n  progress past later",
 				"11:36 accepted\n  progress past definition",
-				"13:18 rejected\n  `(extra: object) => L.and(extra)` can run before `L` (/items.ts:9:7) is set; export `L` so the site can receive it"
+				"13:18 rejected\n  `(extra: object) => L.and(extra)` can run before `L` (/items.ts:9:7) is set; export `L` so the site can receive it",
+				"15:18 accepted\n  import fromVar, past V"
 			])
 		})
 

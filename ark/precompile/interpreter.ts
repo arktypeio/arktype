@@ -1034,8 +1034,8 @@ export class Interpreter {
 			readsFirst(readAt, binding, module)
 		const result = this.bindingValue(binding, module)
 		if (result.error !== undefined) throw result.error
-		// a `var` holds `undefined` until it's set, which no site can check
-		if (isReadFirst && binding.kind === "var") {
+		// a `var` holds `undefined` until it's set, which can stand for a definition, as in `x ?? "number"`, but not for a Type
+		if (isReadFirst && binding.kind === "var" && !isArkValue(result.value)) {
 			return {
 				value: new DynamicValue(
 					module,

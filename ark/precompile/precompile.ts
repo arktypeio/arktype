@@ -819,7 +819,6 @@ export class Precompiler {
 			const reached = functionsReachedFrom(fn, module, (id, binding) => {
 				if (
 					binding.scope.node === module.program &&
-					binding.kind !== "var" &&
 					binding.kind !== "function" &&
 					binding.kind !== "import" &&
 					isSetLast(binding) &&
