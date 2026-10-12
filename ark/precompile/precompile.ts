@@ -72,6 +72,7 @@ import {
 	isArkObject,
 	isFunctionNode,
 	isPassiveReference,
+	isSetLast,
 	isTypeOnly,
 	memberNameOf,
 	ModuleGraph,
@@ -79,6 +80,7 @@ import {
 	readsBindingOf,
 	runtimeExports,
 	staticBodyOf,
+	stepsOf,
 	type ArkExportName,
 	type FunctionNode,
 	type ImportTarget
@@ -735,18 +737,42 @@ export class Precompiler {
 			firstStatementOf(module.program).start,
 			`var ${prefix}m = 0;\n${register(registered[0])}`
 		)
-		const { body } = module.program
-		// once across statements that can neither throw nor call what reads it, as nothing reads it between them
-		const settled = new Set<number>()
+		const steps = [...stepsOf(module).keys()]
+		const textsAfter = new Map<number, string>()
+		// once across steps that can neither throw nor call what reads it, as nothing reads it between them
 		for (let at of marked) {
-			while (at < body.length && this.isInertStatement(body[at], sites)) at++
-			settled.add(at)
+			while (at < steps.length && this.isInertStep(steps[at], sites)) at++
+			textsAfter.set(at, `${prefix}m = ${at};\n`)
 		}
-		for (const at of settled)
-			s.appendLeft(body[at - 1].end, `\n${prefix}m = ${at};`)
 		for (let at = 1; at < registered.length; at++) {
-			if (registered[at])
-				s.appendLeft(body[at - 1].end, `\n${register(registered[at])}`)
+			if (registered[at]) {
+				textsAfter.set(
+					at,
+					(textsAfter.get(at) ?? "") + register(registered[at])
+				)
+			}
+		}
+		for (const [at, text] of textsAfter) {
+			const step = steps[at - 1]
+			const declaration = step.parent!
+			if (
+				step.type === "VariableDeclarator" &&
+				declaration.type === "VariableDeclaration" &&
+				declaration.declarations[declaration.declarations.length - 1] !== step
+			) {
+				// e.g. `const A = a(), B = b()`, split where A is set, as its declarations run one after another
+				const comma = commaAfter(s.original, step.end)
+				s.overwrite(
+					comma,
+					comma + 1,
+					`;\n${text}${declaration.parent!.type === "ExportNamedDeclaration" ? "export " : ""}${declaration.kind} `
+				)
+			} else {
+				let statement = step
+				while (statement.parent !== module.program)
+					statement = statement.parent!
+				s.appendLeft(statement.end, `\n${text.slice(0, -1)}`)
+			}
 		}
 		if (registered.length) {
 			const registrar = `import { registerProgress } from "arktype/runtime"\n\nexport { registerProgress as default }\n`
@@ -793,6 +819,7 @@ export class Precompiler {
 						binding.kind !== "var" &&
 						binding.kind !== "function" &&
 						binding.kind !== "import" &&
+						isSetLast(binding) &&
 						readsFirst(node, binding, module)
 					)
 						reads.add(binding)
@@ -2350,14 +2377,14 @@ export class Precompiler {
 		if (importsValues(module)) return result
 		const { sites } = this.analysisOf(module)
 		result = module.program.body.every(statement =>
-			this.isInertStatement(statement, sites)
+			this.isInertStep(statement, sites)
 		)
 		this.inertByModule.set(module, result)
 		return result
 	}
 
 	// e.g. `export const User = type(...)`, which declares without running anything that could throw or call the program
-	private isInertStatement(statement: Node, sites: Site[]): boolean {
+	private isInertStep(step: Node, sites: Site[]): boolean {
 		const isInertValue = (node: Node | null | undefined): boolean => {
 			if (!node) return true
 			const value = unwrapExpression(node)
@@ -2378,13 +2405,15 @@ export class Precompiler {
 				)
 			)
 		}
+		if (step.type === "VariableDeclarator")
+			return step.id.type === "Identifier" && isInertValue(step.init)
 		const declaration =
 			(
-				statement.type === "ExportNamedDeclaration" ||
-				statement.type === "ExportDefaultDeclaration"
+				step.type === "ExportNamedDeclaration" ||
+				step.type === "ExportDefaultDeclaration"
 			) ?
-				statement.declaration
-			:	statement
+				step.declaration
+			:	step
 		if (!declaration) return true
 		switch (declaration.type) {
 			case "ImportDeclaration":
@@ -2397,14 +2426,12 @@ export class Precompiler {
 			case "ExpressionStatement":
 				return !!declaration.directive
 			case "VariableDeclaration":
-				return declaration.declarations.every(
-					declarator =>
-						declarator.id.type === "Identifier" && isInertValue(declarator.init)
+				return declaration.declarations.every(declarator =>
+					this.isInertStep(declarator, sites)
 				)
 			default:
 				return (
-					statement.type === "ExportDefaultDeclaration" &&
-					isInertValue(declaration)
+					step.type === "ExportDefaultDeclaration" && isInertValue(declaration)
 				)
 		}
 	}
@@ -4209,6 +4236,15 @@ const inlineModules = (
 		insertImport(
 			`\nimport * as ${namespacesBySource[source]} from ${JSON.stringify(source)}`
 		)
+	}
+}
+
+// a comment between declarators can hold a comma
+const commaAfter = (source: string, from: number): number => {
+	for (let i = from; ; i++) {
+		if (source[i] === ",") return i
+		if (source.startsWith("//", i)) i = source.indexOf("\n", i)
+		else if (source.startsWith("/*", i)) i = source.indexOf("*/", i) + 1
 	}
 }
 

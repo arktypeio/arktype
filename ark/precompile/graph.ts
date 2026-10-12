@@ -1840,11 +1840,58 @@ export const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
 		if (isFunctionNode(parent)) return parent
 }
 
-// a module counts each statement it has run from 1, so a site can check it has set a binding it declares
+const stepsByModule = new WeakMap<SourceModule, Map<Node, number>>()
+
+// e.g. each declarator of `const A = a(), B = b()`, which sets its bindings before the next runs, or another statement
+export const stepsOf = (module: SourceModule): Map<Node, number> => {
+	let result = stepsByModule.get(module)
+	if (!result) {
+		stepsByModule.set(module, (result = new Map()))
+		for (const statement of module.program.body) {
+			const declaration =
+				(
+					(statement.type === "ExportNamedDeclaration" ||
+						statement.type === "ExportDefaultDeclaration") &&
+					statement.declaration
+				) ?
+					statement.declaration
+				:	statement
+			if (declaration.type !== "VariableDeclaration")
+				result.set(statement, result.size + 1)
+			else {
+				for (const declarator of declaration.declarations)
+					result.set(declarator, result.size + 1)
+			}
+		}
+	}
+	return result
+}
+
+// from 1, as a module's progress is 0 until it has run a step
 export const progressOf = (binding: Binding, module: SourceModule): number => {
-	let statement: Node = binding.declaration
-	while (statement.parent !== module.program) statement = statement.parent!
-	return module.program.body.indexOf(statement as never) + 1
+	const steps = stepsOf(module)
+	let node: Node = binding.declaration
+	while (!steps.has(node)) node = node.parent!
+	return steps.get(node)!
+}
+
+// e.g. not `a` in `const { a, b = f() } = x`, which `f` can read before the step setting it ends
+export const isSetLast = (binding: Binding): boolean => {
+	const declarator = binding.declaration
+	if (declarator.type !== "VariableDeclarator") return true
+	for (
+		let node: Node = binding.id;
+		node !== declarator.id;
+		node = node.parent!
+	) {
+		const pattern = node.parent!
+		const entries =
+			pattern.type === "ObjectPattern" ? pattern.properties
+			: pattern.type === "ArrayPattern" ? pattern.elements
+			: undefined
+		if (entries && entries[entries.length - 1] !== node) return false
+	}
+	return true
 }
 
 // only a statement's first variable, so nothing the statement runs comes before its site

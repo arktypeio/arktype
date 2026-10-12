@@ -75,6 +75,8 @@ const cycleErased = fromHere("cycleErased")
 
 const cycleArrow = fromHere("cycleArrow")
 
+const setInStep = fromHere("setInStep")
+
 const library = writeLibrary()
 
 const runPlain = (cwd: string, ...args: string[]) =>
@@ -127,6 +129,10 @@ contextualize(() => {
 			attest(
 				node(["main.ts"], { introspection: ["json"] }, cycleArrow).stdout
 			).equals(runPlain(cycleArrow))
+			// a fold run once what it reads is set, before the statement setting it ends
+			attest(node(["main.ts"], {}, setInStep).stdout).equals(
+				runPlain(setInStep)
+			)
 		}).timeout(60000)
 
 		it("serves the modules a standalone module imports", () => {

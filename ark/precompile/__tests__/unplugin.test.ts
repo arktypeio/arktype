@@ -300,6 +300,10 @@ contextualize(() => {
 			attest(
 				run(await bundle({ cwd: arrow, introspection: ["json"] }, arrow))
 			).equals(runPlain(arrow))
+			const setInStep = fromHere("setInStep")
+			attest(run(await bundle({ cwd: setInStep }, setInStep))).equals(
+				runPlain(setInStep)
+			)
 			// `verbatimModuleSyntax` keeps an import only a type reads, which closes the cycle
 			const erased = fromHere("cycleErased")
 			const verbatim = writeFixture(
@@ -372,7 +376,7 @@ export const checkedItem = JSON.stringify(itemJson())
 	}
 
 	it("esbuild unminified import cycle reaching a fold first", async () => {
-		for (const fixture of ["cycleFirst", "cycleArrow"]) {
+		for (const fixture of ["cycleFirst", "cycleArrow", "setInStep"]) {
 			const root = fromHere(fixture)
 			attest(
 				run(

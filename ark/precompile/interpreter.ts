@@ -63,6 +63,7 @@ import {
 	importsValues,
 	isArk,
 	isCallableBeforeBody,
+	isSetLast,
 	nodeMembers,
 	scopeMembers,
 	isFunctionNode,
@@ -1078,8 +1079,11 @@ export class Interpreter {
 			// unless the declaration compares what the program holds, which runs only if a bundler keeps it for the site
 			isReceived = this.comparedAtCreation.has(result.value as object)
 		}
-		// the site checks the binding's module has set it, or reads one a function declares where arktype would, throwing as it does
-		const isChecked = isReadFirst && binding.scope.node === module.program
+		// a binding its step sets before it ends, or one a block or function declares, is received instead, which throws unset where arktype's read does
+		const isChecked =
+			isReadFirst &&
+			binding.scope.node === module.program &&
+			(isForeign || isSetLast(binding))
 		if (isChecked) {
 			const reader = enclosingFunctionOf(node)
 			ctx.trace.readFirst.push([
