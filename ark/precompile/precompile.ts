@@ -1277,14 +1277,7 @@ export class Precompiler {
 			// a site becomes a call, so its validator is created, or its ParseError thrown, where arktype would create its Type
 			const call = `${isPure ? "/* @__PURE__ */ " : ""}${
 				this.shadow ?
-					this.shadowCallOf(
-						site,
-						module,
-						factory?.spans ?? [],
-						local,
-						index,
-						prefix
-					)
+					this.shadowCallOf(site, module, factory, local, index, prefix)
 				:	`${local}(${index ?? ""}`
 			}`
 			if (!factory?.spans.length && !factory?.inputs.length)
@@ -1324,7 +1317,7 @@ export class Precompiler {
 			// before arktype, so it loads beside the runtime whichever a module imports first
 			s.prependLeft(
 				firstStatementOf(module.program).start,
-				`import "arktype/internal/shadowEntry.js"\nimport { shadow as ${prefix}shadow } from "@ark/precompile/shadow"\n`
+				`import { shadow as ${prefix}shadow } from "@ark/precompile/shadow"\n`
 			)
 		}
 		keepImportedModules(module, folded, kept, passed, s)
@@ -1333,15 +1326,19 @@ export class Precompiler {
 		return inputImports
 	}
 
-	// arktype creates the site from the arguments its factory receives, reading each span through a parameter
+	// each span is read through a parameter, so arktype receives what the factory does, evaluated once
 	private shadowCallOf(
 		site: Site,
 		module: SourceModule,
-		spans: readonly Span[],
+		factory: SiteFactory | undefined,
 		local: string,
 		index: number | undefined,
 		prefix: string
 	): string {
+		const spans = factory?.spans ?? []
+		const callbacks = (factory?.params ?? []).flatMap((param, i) =>
+			param.kind === "function" ? [i] : []
+		)
 		let original = ""
 		let start = site.start
 		for (let i = 0; i < spans.length; i++) {
@@ -1349,10 +1346,17 @@ export class Precompiler {
 			start = spans[i].end
 		}
 		original += module.textOf({ start, end: site.end })
-		const params = spans.map((_, i) => `${prefix}h${i}`).join(", ")
-		const factory =
-			index === undefined ? local : `${local}.bind(null, ${index})`
-		return `${prefix}shadow(${JSON.stringify(`${module.positionOf(site)}  ${module.snippetOf(site)}`)}, ${factory}, (${params}) => (${original})`
+		// an input the site reads by name, like `User`, is a parameter of that name, so arktype composes its own Type
+		const params = spans.map((_, i) => `${prefix}h${i}`)
+		for (const input of factory?.inputs ?? []) {
+			params.push(
+				/^[\w$]+$/.test(input) && !params.includes(input) ?
+					input
+				:	`${prefix}h${params.length}`
+			)
+		}
+		const create = index === undefined ? local : `${local}.bind(null, ${index})`
+		return `${prefix}shadow(${JSON.stringify(`${module.positionOf(site)}  ${module.snippetOf(site)}`)}, ${create}, (${params.join(", ")}) => (${original}), [${callbacks.join(", ")}]`
 	}
 
 	// e.g. `scope` in a static helper whose every call is a site, which keeps its import of an export arktype/runtime lacks

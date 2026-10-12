@@ -53,7 +53,17 @@ precompile.vite({ introspection: ["toJsonSchema", "~standard.jsonSchema"] })
 export default defineConfig({ plugins: [precompile.vite({ shadow: true })] })
 ```
 
-The program then runs on arktype: `arktype` resolves to it for every importer, and only `arktype/config` to `arktype/runtime` (so with Turbopack, alias only `arktype/config`), and each module with a definition imports the comparisons from `@ark/precompile/shadow`. Each Type, Module and `type.fn` it receives compares its validator with arktype's at every use, calling, `allows`, `assert`, `traverse`, `from`, `~standard.validate`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema`, and its `expression`, `description` and `meta` when it's created. Where they agree, it returns what arktype returns or throws what arktype throws. Where they don't, or where the validator throws as it's created and arktype doesn't, it throws an error naming the definition, what was observed and both results. A Type whose morphs can write the input validates a copy for the validator, or the input as arktype left it where it can't be copied, as a class instance can't, saying so if they then disagree. Each function arktype calls defining or validating a Type is called by both, so shadow mode is meant for tests.
+The program then runs on arktype: `arktype` resolves to it for every importer, and only `arktype/config` to `arktype/runtime` (so with Turbopack, alias only `arktype/config`). Each Type, Module and `type.fn` a definition returns compares its validator with arktype's:
+
+- as it's created, by whether it throws, its `expression`, `description` and `meta`
+- validating, through calling it, `allows`, `assert`, `traverse`, `from` and `~standard.validate`, by result, the input each leaves, the objects each shares, and each call to a function the program passed
+- reading `json`, `toJSON()`, `toString()`, `toJsonSchema()` and `~standard.jsonSchema`, and any other member arktype has, which the validator must have too
+
+Where they agree, it returns what arktype returns. Where they don't, it throws an error naming the definition, what was observed and both results.
+
+During a validation, a function the program passed runs once: the validator's calls are answered from arktype's, unless a call wrote an argument or added an error to `ctx`, which then runs again for the validator. It runs for both as a definition is created, and an error writer in `meta` runs for both as their errors are compared.
+
+A morph's input is copied for the validator, except one that can't be copied, like a class instance, which the validator receives as arktype's morphs left it. Comparisons skip private fields and a builtin's internal slots besides a `Date`'s time and a `RegExp`'s or `Error`'s text. Shadow mode is meant for tests.
 
 `precompile.vite({ runtime: "arktype" })` ships arktype and leaves definitions as written, registering the code arktype would compile for each one and the keywords it reaches. A definition the build can't precompile is compiled at runtime as usual, so this mode fails a build only for the reason below.
 

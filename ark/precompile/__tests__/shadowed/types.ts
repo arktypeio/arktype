@@ -12,6 +12,8 @@ export const Trimmed = type("string").pipe(function trim(s: string) {
 	return s.trim()
 })
 
+export const Person = type({ name: "string" })
+
 export const $ = scope({ Id: "string.uuid" })
 
 export const types = scope({

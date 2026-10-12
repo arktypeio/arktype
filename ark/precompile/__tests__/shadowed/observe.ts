@@ -1,6 +1,7 @@
 import { type } from "arktype"
-import { Fresh } from "./diverging.ts"
-import { $, Email, morphs, Name, Trimmed, types } from "./types.ts"
+import { jsonOf, listOf } from "listing"
+import { $, Email, morphs, Name, Person, Trimmed, types } from "./types.ts"
+import { toPerson } from "./helpers.ts"
 
 const fields = { name: Name, email: Email }
 
@@ -22,17 +23,49 @@ class Point {
 
 const Located = type({ x: "number" })
 
-let lengthCalls = 0
+const ParsedPerson = type("string.json.parse").to(Person)
 
-// arktype and its validator each call the implementation, which answers each call otherwise
-const length = type.fn("string", ":", "number")(s => s.length + lengthCalls++)
+const PipedPerson = type("string.json.parse").pipe(Person)
+
+const Revived = toPerson(type("string").pipe(s => JSON.parse(s)))
+
+const DescribedPerson = Person.describe("a person")
+
+const uuid = /^[\da-f]{8}(?:-[\da-f]{4}){3}-[\da-f]{12}$/
+
+// each call answers otherwise, so its validator's must be answered from arktype's
+const Stamped = type({
+	id: ["string", "=", () => crypto.randomUUID()],
+	name: type("string").pipe(s => `${s} ${crypto.randomUUID()}`)
+})
+
+let narrowed = 0
+
+const Counted = type("string").narrow(() => ++narrowed > 0)
+
+const Incremented = type({ n: "number" }).pipe(o => {
+	o.n++
+	return o
+})
+
+const Positive = type("number").narrow(
+	(n, ctx) => n > 0 || ctx.reject({ expected: "positive" })
+)
+
+const HasPerson = type({ person: "unknown" }).narrow(o =>
+	Person.allows(o.person)
+)
+
+const writeLong = () => "long"
+
+const Long = type("string > 3").configure({ expected: writeLong })
 
 class Counter {
 	count = 1
 }
 
-// a copy would lose the class, so arktype's morph writes the instance its validator then receives
-const Incremented = type({ count: "number" }).pipe(counter => ++counter.count)
+// a copy would lose the class, so its validator receives the instance arktype's morph wrote
+const Bumped = type({ count: "number" }).pipe(counter => ++counter.count)
 
 const outcomeOf = (run: () => unknown) => {
 	try {
@@ -45,6 +78,8 @@ const outcomeOf = (run: () => unknown) => {
 // what main.ts prints and shadow.spec.ts compares, called once in a process since its sites hold state
 export const observe = async (): Promise<Record<string, unknown>> => {
 	const point = new Point()
+	const incremented = { n: 1 }
+	const stamped = Stamped({ name: "a" }) as { id: string; name: string }
 	return {
 		trimmed: Trimmed("  a "),
 		standard: Trimmed["~standard"].validate(1),
@@ -60,8 +95,25 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 		errors: Name("") instanceof type.errors,
 		parseError: outcomeOf(() => type("strin" as never)),
 		created: await import("./created.ts").then(() => "created", String),
-		diverged: outcomeOf(() => Fresh({})),
-		length: outcomeOf(() => length("abc")),
-		uncopied: outcomeOf(() => Incremented(new Counter()))
+		introspected: [Person.json, Person.toJsonSchema()],
+		composed: [
+			ParsedPerson('{"name":"a"}'),
+			PipedPerson('{"name":1}').toString(),
+			Revived('{"name":1}').toString(),
+			Revived.expression
+		],
+		described: [DescribedPerson.description, `${Person}`],
+		listed: outcomeOf(() => String(listOf(Person))),
+		unbaked: outcomeOf(() => JSON.stringify(jsonOf(Person))),
+		stamped: [uuid.test(stamped.id), uuid.test(stamped.name.slice(2))],
+		narrowed: [Counted("a"), narrowed],
+		incremented: [Incremented(incremented) === incremented, incremented],
+		positive: Positive(-1).toString(),
+		nested: [
+			HasPerson.allows({ person: { name: "a" } }),
+			HasPerson.allows({ person: {} })
+		],
+		writer: [Long("ab").toString(), Long.meta.expected === writeLong],
+		uncopied: Bumped(new Counter())
 	}
 }
