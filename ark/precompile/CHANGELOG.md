@@ -4,7 +4,7 @@
 
 ### Compare each definition with arktype in tests with `shadow: true`
 
-In shadow mode, a standalone build creates each definition with arktype as well as precompiling it, from the same values evaluated once, and the program runs on arktype. Each validation and each read of what a validator bakes compares the two, returning arktype's result where they agree and throwing an error naming the definition where they don't, as where the validator throws at creation and arktype doesn't. A function a definition holds runs once per validation, the validator's calls answered from arktype's, except where the README lists what runs for each side. It's meant for tests.
+In shadow mode, a standalone build creates each definition with arktype as well as precompiling it, from the same values evaluated once, and the program runs on arktype. Each validation and each read of what a validator bakes compares the two, returning arktype's result where they agree and throwing an error naming the definition where they don't, as where the validator throws at creation and arktype doesn't. A function a definition holds runs once per validation, the validator's calls answered from arktype's, except a call that adds a `ctx` error or writes its arguments other than by setting or deleting plain keys, which runs again and must answer alike, and what the README lists as running for each side. It's meant for tests.
 
 ```ts
 precompile.vite({ shadow: true })

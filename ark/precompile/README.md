@@ -57,16 +57,17 @@ The program then runs on arktype: `arktype` resolves to it for every importer, a
 
 - as it's created, by whether it throws, its `expression`, `description` and `meta`
 - validating, through calling it, `allows`, `assert`, `traverse`, `from` and `~standard.validate`, by result, the input each leaves, the objects each shares, and each call to a function the program passed
-- reading `json`, `toJSON()`, `toString()`, `toJsonSchema()` and `~standard.jsonSchema`, and any other member arktype has, which the validator must have too, as a Scope's, a Generic's and a Module's must
+- reading `json`, `toJSON()`, `toString()`, `toJsonSchema()` and `~standard.jsonSchema`, and reading any other member arktype has or checking for it with `in`, which the validator must have too, as a Scope's, a Generic's, a Module's and a `type.fn`'s must, its `params` and `returns` compared as Types. `typeof` can't be intercepted, so it gives arktype's answer, like `"function"` for a Generic
 
 Where they agree, it returns what arktype returns. Where they don't, it throws an error naming the definition, what was observed and both results, and raises it again where the program can't catch it, so a fallback or `expect(...).toThrow()` can't hide it.
 
-During a validation, a function a definition holds runs once: each of the validator's calls is answered from arktype's, with what it wrote to its arguments written to the validator's. A call that adds an error to `ctx` runs again for the validator, which must answer alike. These run for each side and aren't compared:
+During a validation, a function a definition holds runs once: each of the validator's calls is answered from arktype's, with what it wrote to its arguments written to the validator's. Only plain writes are written that way: adding, setting or deleting an ordinary key of a plain object or array, with the other keys keeping their order. A call that adds an error to `ctx`, or writes its arguments in any other way, like setting a `Date`'s time, adding to a `Map` or `Set`, freezing an object, moving a key or writing something that can't be copied, runs again for the validator, which must answer alike. These run for each side and aren't compared:
 
 - calls made as a definition is created
 - error writers in a `meta` or `configure()`, `onFail` among them, which run as shadow mode compares the validation's errors, fixing their text then
 - getters and Proxy traps on the input
-- a callback's writes to anything but its arguments, like `ctx.root` or what it closes over, which reach only arktype's input
+
+A callback's write to anything but its arguments, like `ctx.root` or what it closes over, reaches only arktype's input, so where the Type transforms, shadow mode reports the input as diverging. So does a later write through a morph's result that can't be copied, like a class instance holding the input, which the validator receives as arktype's morph returned it.
 
 A morph's input is copied for the validator, except one that can't be copied, like a class instance, which the validator receives as arktype's morphs left it. Comparisons skip private fields and a builtin's internal slots besides a `Date`'s time and a `RegExp`'s or `Error`'s text. Shadow mode is meant for tests.
 

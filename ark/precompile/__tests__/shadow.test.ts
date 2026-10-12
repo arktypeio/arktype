@@ -180,7 +180,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 
 		it("calling a function the program passed with another ctx", () => {
 			attest(outcomes.checked).snap(
-				'Error: checked diverges from arktype at call("abc"): arktype gives calls isFirst("abc", ctx {"path":[],"errorCount":0,"data":"abc"}), its validator calls isFirst("abc", ctx {"path":[],"errorCount":1,"data":"abc"})'
+				'Error: checked diverges from arktype at call("abc"): arktype gives calls isFirst("abc", ctx {"path":[],"errorCount":0,"errors":[],"data":"abc","root":"abc"}), its validator calls isFirst("abc", ctx {"path":[],"errorCount":1,"errors":[["predicate"]],"data":"abc","root":"abc"})'
 			)
 		})
 

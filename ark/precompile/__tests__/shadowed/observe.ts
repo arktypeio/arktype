@@ -52,6 +52,20 @@ const Incremented = type({ n: "number" }).pipe(
 	o => Object.assign(o, { id: crypto.randomUUID() })
 )
 
+let listed = 0
+
+// each writes its argument otherwise than Incremented, which its validator's must reproduce
+const Listed = type({ tags: "string[]" }).pipe(o =>
+	Object.assign(o, { tags: new Set(o.tags), listed: ++listed })
+)
+
+const Dated = type({ at: "Date" }).pipe(o => (o.at.setTime(0), o))
+
+const Named = type({ name: "string", tags: "string[]" }).pipe(o => {
+	o.name = o.name.trim()
+	return o
+})
+
 const Positive = type("number").narrow(
 	(n, ctx) => n > 0 || ctx.reject({ expected: "positive" })
 )
@@ -115,6 +129,12 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 			Incremented(incremented) === incremented,
 			incremented.n,
 			uuid.test((incremented as { id?: string }).id!)
+		],
+		written: [
+			[...(Listed({ tags: ["a", "b"] }) as { tags: Set<string> }).tags],
+			listed,
+			Dated({ at: new Date(1) }),
+			Named({ name: " a ", tags: Object.freeze(["x"]) })
 		],
 		positive: Positive(-1).toString(),
 		nested: [

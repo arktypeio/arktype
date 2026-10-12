@@ -158,6 +158,7 @@ const shadowOf = (
 		: isHeld(original) ? heldHandlerOf(pair)
 			// e.g. a TypedFn, whose implementation is a callback
 		: {
+				...heldHandlerOf(pair),
 				apply: (target, self, args) =>
 					arktypeDepth ?
 						Reflect.apply(target as Function, self, args)
@@ -240,6 +241,7 @@ const typeHandlerOf = (
 	return {
 		apply: (target, self, args) =>
 			arktypeDepth ? Reflect.apply(target, self, args) : validator()(args[0]),
+		has: hasOf(pair),
 		get: (target, k) => {
 			if (arktypeDepth) return boundTo(target, Reflect.get(target, k, target))
 			// a getter, read anew
@@ -252,7 +254,6 @@ const typeHandlerOf = (
 	}
 }
 
-// a member arktype has, which the validator must have too
 const checkedMember = (pair: Pair, target: object, k: PropertyKey): unknown => {
 	const value = Reflect.get(target, k, target)
 	const read = outcomeOf(
@@ -270,6 +271,13 @@ const checkedMember = (pair: Pair, target: object, k: PropertyKey): unknown => {
 	return value
 }
 
+const hasOf =
+	(pair: Pair) =>
+	(target: object, k: PropertyKey): boolean => {
+		if (!arktypeDepth) inArktype(() => checkedMember(pair, target, k))
+		return Reflect.has(target, k)
+	}
+
 // e.g. `~standard.jsonSchema.input`, called on the object holding it where args are given
 const readAt = (t: any, path: string[], args?: unknown[]) => {
 	const holder = path.slice(0, -1).reduce((o, k) => o[k], t)
@@ -282,7 +290,9 @@ const boundTo = (target: object, value: unknown) =>
 	(
 		typeof value === "function" &&
 		Object.getPrototypeOf(value) === Function.prototype &&
-		!("prototype" in value)
+		!("prototype" in value) &&
+		// e.g. `call`, which calls the Proxy it's read from
+		Reflect.get(Function.prototype, (value as Function).name) !== value
 	) ?
 		new Proxy(value, {
 			apply: (method, _, args) =>
@@ -305,9 +315,10 @@ const heldHandlerOf = (pair: Pair): ProxyHandler<any> => {
 				() => (pair.counterpart as Record<PropertyKey, unknown>)[k]
 			))
 		},
-		// e.g. a Generic, which a validator may hold as a reference it can't call
+		has: hasOf(pair),
+		// e.g. a Generic, which a validator holds as a reference it can't call
 		apply: (target, self, args) =>
-			arktypeDepth || typeof pair.counterpart === "function" ?
+			arktypeDepth ?
 				inArktype(() => Reflect.apply(target, self, args))
 			:	fail(
 					pair,
@@ -357,20 +368,17 @@ interface Call {
 	args: unknown[]
 	// each argument as arktype passed it, which its validator must pass too
 	copies: unknown[] | undefined
-	// arktype's objects by their copies before the call, then after it
 	copied: Map<object, unknown>
-	after: Map<object, unknown>
-	// each argument the call wrote, as it left it
+	copiedAfter: Map<object, unknown>
 	written: unknown[]
-	ctx: { path: PropertyKey[]; errorCount: number; data: unknown } | undefined
+	ctx: ReturnType<typeof ctxStateOf>
 	outcome: Outcome
 	result: unknown
-	// a call adding an error through its ctx, which the validator's ctx needs too
+	// e.g. a call adding a ctx error or setting a Date's time, which runs again for the validator
 	isRepeated: boolean
 }
 
 interface Validation {
-	// arktype's calls are recorded, then its validator's replayed
 	phase: "record" | "replay"
 	calls: Call[]
 	replayed: number
@@ -427,19 +435,20 @@ const outcomeOfCall = (
 	}
 }
 
-// what a callback can read of its ctx, which a replayed call's must hold too
-const ctxStateOf = (args: unknown[], copied?: Map<object, unknown>) => {
-	const ctx = args.find(
-		(arg): arg is Traversal => arg instanceof InternalTraversal
-	)
-	return (
-		ctx && {
-			path: [...ctx.path],
-			errorCount: ctx.currentErrorCount,
-			data: copied?.get(ctx.data as never) ?? ctx.data
-		}
-	)
-}
+const ctxOf = (args: unknown[]) =>
+	args.find((arg): arg is Traversal => arg instanceof InternalTraversal)
+
+const ctxStateOf = (
+	ctx: Traversal | undefined,
+	copied?: Map<object, unknown>
+) =>
+	ctx && {
+		path: [...ctx.path],
+		errorCount: ctx.currentErrorCount,
+		errors: ctx._errors?._added.map(e => [e.code, ...e.path]) ?? [],
+		data: copied?.get(ctx.data as never) ?? ctx.data,
+		root: copied?.get(ctx.root as never) ?? ctx.root
+	}
 
 const record = (
 	current: Validation,
@@ -450,31 +459,54 @@ const record = (
 	const copied = new Map<object, unknown>()
 	const copies =
 		current.isCopied ? args.map(arg => copyOf(arg, copied)) : undefined
-	const ctx = ctxStateOf(args, copied)
+	const ctx = ctxOf(args)
+	const ctxState = ctxStateOf(ctx, copied)
 	const outcome = outcomeOfCall(callee, receiver, args)
-	const after = new Map<object, unknown>()
+	const copiedAfter = new Map<object, unknown>()
 	const written = (copies ?? []).flatMap((copy, i) =>
 		copy !== uncopyable && !isAlike(copy, args[i], new Map()) ?
-			[copyOf(args[i], after)]
+			[copyOf(args[i], copiedAfter)]
 		:	[]
 	)
-	current.calls.push({
+	const call: Call = {
 		callee,
 		receiver,
 		args,
 		copies,
 		copied,
-		after,
+		copiedAfter,
 		written,
-		ctx,
+		ctx: ctxState,
 		outcome,
 		result:
-			"value" in outcome && copies ? copyOf(outcome.value, after) : uncopyable,
-		isRepeated:
-			ctxStateOf(args)?.errorCount !== ctx?.errorCount ||
-			written.includes(uncopyable)
-	})
+			"value" in outcome && copies ?
+				copyOf(outcome.value, copiedAfter)
+			:	uncopyable,
+		isRepeated: false
+	}
+	call.isRepeated =
+		ctx?.currentErrorCount !== ctxState?.errorCount || !isReplayable(call)
+	current.calls.push(call)
 	return settle(outcome)
+}
+
+// what assignment repeats on a copy of what the call received, unlike a key moved or a Date's time set
+const isReplayable = ({ copies = [], copied, copiedAfter, written }: Call) => {
+	if (!written.length) return true
+	if (written.includes(uncopyable)) return false
+	const counterparts = new Map<object, unknown>()
+	for (const copy of copies) copyOf(copy, counterparts)
+	relate(counterparts, copied)
+	relate(counterparts, copiedAfter)
+	const replayed = outcomeOf(() => {
+		for (const state of written) writeOnto(state as object, counterparts)
+	})
+	return (
+		"value" in replayed &&
+		written.every(state =>
+			isAlike(state, counterparts.get(state as object), new Map())
+		)
+	)
 }
 
 const replay = (
@@ -484,9 +516,9 @@ const replay = (
 	args: unknown[]
 ): unknown => {
 	const call = current.calls[current.replayed++]
-	const ctx = ctxStateOf(args)
+	const ctxState = ctxStateOf(ctxOf(args))
 	const { counterparts } = current
-	relate(counterparts, call?.copied)
+	if (call) relate(counterparts, call.copied)
 	// e.g. an argument's copy, as arktype passed it before the call wrote it
 	const corresponds = (
 		original: unknown,
@@ -503,7 +535,7 @@ const replay = (
 		call.callee !== callee ||
 		!corresponds(call.receiver, receiver) ||
 		call.args.length !== args.length ||
-		!isAlike(call.ctx, ctx, counterparts) ||
+		!isAlike(call.ctx, ctxState, counterparts) ||
 		call.args.some(
 			(arg, i) =>
 				!(arg instanceof InternalTraversal) &&
@@ -512,14 +544,14 @@ const replay = (
 	) {
 		current.mismatch ??= [
 			call ? describeCall(call) : "makes no call",
-			describeCall({ callee, args, ctx })
+			describeCall({ callee, args, ctx: ctxState })
 		]
 		throw mismatched
 	}
 	relate(counterparts, call.copied)
 	if (call.isRepeated) {
 		const outcome = outcomeOfCall(callee, receiver, args)
-		// as the call returned, since arktype's later calls can write what it returned
+		// as the call left it, since arktype's later calls can write what it returned
 		const recorded =
 			"value" in call.outcome && call.result !== uncopyable ?
 				{ value: call.result }
@@ -533,21 +565,20 @@ const replay = (
 		}
 		return settle(outcome)
 	}
-	if ("thrown" in call.outcome) throw call.outcome.thrown
-	relate(counterparts, call.after)
+	relate(counterparts, call.copiedAfter)
 	for (const state of call.written) writeOnto(state as object, counterparts)
+	if ("thrown" in call.outcome) throw call.outcome.thrown
 	const result =
 		call.result === uncopyable ?
 			call.outcome.value
 		:	copyOf(call.result, counterparts)
-	relate(counterparts, call.after)
+	relate(counterparts, call.copiedAfter)
 	return result
 }
 
-// an object arktype holds and each copy of it stand for one the validator holds
 const relate = (
 	counterparts: Map<object, unknown>,
-	copied: Map<object, unknown> = new Map()
+	copied: Map<object, unknown>
 ) => {
 	for (const [original, copy] of copied) {
 		const counterpart =
@@ -558,26 +589,25 @@ const relate = (
 	}
 }
 
-// e.g. an in-place morph's, whose writes land on the validator's counterpart of each object they reach
 const writeOnto = (
 	state: object,
 	counterparts: Map<object, unknown>,
-	written = new Set<object>()
+	visited = new Set<object>()
 ): void => {
-	if (written.has(state)) return
-	written.add(state)
+	if (visited.has(state)) return
+	visited.add(state)
 	const target = counterparts.get(state) as Record<PropertyKey, unknown>
 	for (const k of Reflect.ownKeys(target))
 		if (!Object.prototype.hasOwnProperty.call(state, k)) delete target[k]
 	for (const k of Reflect.ownKeys(state)) {
 		const value = (state as Record<PropertyKey, unknown>)[k]
 		if (counterparts.has(value as object))
-			writeOnto(value as object, counterparts, written)
-		target[k] = copyOf(value, counterparts)
+			writeOnto(value as object, counterparts, visited)
+		const next = copyOf(value, counterparts)
+		if (!Object.is(target[k], next)) target[k] = next
 	}
 }
 
-// each argument as arktype passed it, before the call wrote it
 const describeCall = (
 	call: Pick<Call, "callee" | "args"> & Partial<Pick<Call, "copies" | "ctx">>
 ) =>
@@ -655,21 +685,19 @@ const observe = (outcome: Outcome): Record<string, unknown> => {
 	if ("thrown" in outcome) return { threw: thrownOf(outcome.thrown) }
 	const { value } = outcome
 	if (!hasArkKind(value, "errors")) return { out: value }
-	const issues = value.issues.map(e =>
-		Object.fromEntries(issueKeys.map(k => [k, e[k]]))
-	)
-	return { summary: value.summary, issues }
+	return {
+		summary: value.summary,
+		issues: value.issues.map(e => ({
+			code: e.code,
+			path: [...e.path],
+			data: e.data,
+			expected: e.expected,
+			actual: e.actual,
+			problem: e.problem,
+			message: e.message
+		}))
+	}
 }
-
-const issueKeys = [
-	"code",
-	"path",
-	"data",
-	"expected",
-	"actual",
-	"problem",
-	"message"
-] as const
 
 const compare = (
 	pair: Pair,
@@ -680,7 +708,7 @@ const compare = (
 	reason?: string,
 	counterparts = new Map<object, unknown>()
 ): void => {
-	if (!isAlike(arktype, precompiled, counterparts)) {
+	if (!isAlike(arktype, precompiled, counterparts, new Map())) {
 		fail(
 			pair,
 			typeof observation === "string" ? observation : observation(),
@@ -696,7 +724,6 @@ const fail = (
 	observation: string,
 	arktype: string,
 	precompiled: string,
-	// e.g. where one side shares an object the other copies
 	reason = arktype === precompiled ? "though each prints alike" : undefined
 ): never => {
 	const error = new Error(
@@ -716,32 +743,45 @@ const copiedProtos: unknown[] = [
 	Object.prototype,
 	null,
 	Array.prototype,
-	Date.prototype
+	Date.prototype,
+	Map.prototype,
+	Set.prototype
 ]
 
+// e.g. an object holding a class instance or a Proxy whose trap throws, of which no copy is left half made
 const copyOf = (value: unknown, seen: Map<object, unknown>): unknown => {
-	if (typeof value === "function") return uncopyable
+	const size = seen.size
+	try {
+		return copyInto(value, seen)
+	} catch {
+		if (seen.size > size)
+			for (const k of [...seen.keys()].slice(size)) seen.delete(k)
+		return uncopyable
+	}
+}
+
+const copyInto = (value: unknown, seen: Map<object, unknown>): any => {
+	if (typeof value === "function") throw uncopyable
 	if (typeof value !== "object" || value === null) return value
 	if (seen.has(value)) return seen.get(value)
 	const proto = Object.getPrototypeOf(value)
-	if (!copiedProtos.includes(proto)) return uncopyable
+	if (!copiedProtos.includes(proto)) throw uncopyable
 	const copy =
 		Array.isArray(value) ? []
 		: value instanceof Date ? new Date(value.getTime())
+		: value instanceof Map || value instanceof Set ? new proto.constructor()
 		: Object.create(proto)
 	seen.set(value, copy)
-	if (isIndexed(value)) {
-		for (let i = 0; i < value.length; i++) {
-			const copied = copyOf(value[i], seen)
-			if (copied === uncopyable) return uncopyable
-			copy.push(copied)
-		}
-	} else {
+	if (value instanceof Map)
+		for (const [k, v] of value) copy.set(copyInto(k, seen), copyInto(v, seen))
+	if (value instanceof Set) for (const v of value) copy.add(copyInto(v, seen))
+	if (isIndexed(value))
+		for (let i = 0; i < value.length; i++) copy.push(copyInto(value[i], seen))
+	else {
 		for (const k of Reflect.ownKeys(value)) {
 			const descriptor = Object.getOwnPropertyDescriptor(value, k)!
-			if (!("value" in descriptor)) return uncopyable
-			const copied = copyOf(descriptor.value, seen)
-			if (copied === uncopyable) return uncopyable
+			if (!("value" in descriptor)) throw uncopyable
+			const copied = copyInto(descriptor.value, seen)
 			if (
 				descriptor.writable &&
 				descriptor.enumerable &&
@@ -751,7 +791,9 @@ const copyOf = (value: unknown, seen: Map<object, unknown>): unknown => {
 			else Object.defineProperty(copy, k, { ...descriptor, value: copied })
 		}
 	}
-	return Object.isFrozen(value) ? Object.freeze(copy) : copy
+	if (Object.isFrozen(value)) Object.freeze(copy)
+	else if (!Object.isExtensible(value)) Object.preventExtensions(copy)
+	return copy
 }
 
 // read by index, since listing an array's keys as strings costs more than copying it
@@ -768,8 +810,6 @@ const isIndexed = (value: object): value is unknown[] => {
 
 const comparedProtos: unknown[] = [
 	...copiedProtos,
-	Map.prototype,
-	Set.prototype,
 	RegExp.prototype,
 	Error.prototype
 ]
@@ -779,6 +819,8 @@ const isAlike = (
 	l: unknown,
 	r: unknown,
 	counterparts: Map<object, unknown>,
+	// arktype's object by each validator object, where arktype's side holds no copy, which keeps its source's attributes
+	originals?: Map<object, unknown>,
 	compared = new Set<object>()
 ): boolean => {
 	if (typeof l === "function" || typeof r === "function")
@@ -789,29 +831,31 @@ const isAlike = (
 	if (l === r) return counterpart === undefined || counterpart === r
 	if (counterpart === undefined) counterparts.set(l, r)
 	else if (counterpart !== r) return false
+	if (originals) {
+		if ((originals.get(r) ?? l) !== l) return false
+		originals.set(r, l)
+	}
 	if (compared.has(l)) return true
 	compared.add(l)
+	const alike = (left: unknown, right: unknown) =>
+		isAlike(left, right, counterparts, originals, compared)
 	const proto = Object.getPrototypeOf(l)
-	if (proto !== Object.getPrototypeOf(r)) return false
+	if (
+		proto !== Object.getPrototypeOf(r) ||
+		(!originals && Object.isExtensible(l) !== Object.isExtensible(r))
+	)
+		return false
 	if (l instanceof Date) return Object.is(l.getTime(), (r as Date).getTime())
 	if (l instanceof RegExp || l instanceof Error) return String(l) === String(r)
 	if (!comparedProtos.includes(proto) && String(l) !== String(r)) return false
-	if (l instanceof Map || l instanceof Set) {
-		const rEntries = [...(r as Map<unknown, unknown>)]
-		const lEntries = [...l]
-		if (
-			lEntries.length !== rEntries.length ||
-			lEntries.some(
-				(entry, i) => !isAlike(entry, rEntries[i], counterparts, compared)
-			)
-		)
-			return false
-	}
+	if (
+		(l instanceof Map || l instanceof Set) &&
+		!alike([...l], [...(r as Set<unknown>)])
+	)
+		return false
 	if (isIndexed(l)) {
 		return (
-			isIndexed(r) &&
-			l.length === r.length &&
-			l.every((v, i) => isAlike(v, r[i], counterparts, compared))
+			isIndexed(r) && l.length === r.length && l.every((v, i) => alike(v, r[i]))
 		)
 	}
 	const lKeys = Reflect.ownKeys(l)
@@ -824,9 +868,12 @@ const isAlike = (
 			const rDescriptor = Object.getOwnPropertyDescriptor(r, k)!
 			return (
 				lDescriptor.enumerable === rDescriptor.enumerable &&
+				(originals ||
+					(lDescriptor.writable === rDescriptor.writable &&
+						lDescriptor.configurable === rDescriptor.configurable)) &&
 				"value" in lDescriptor === "value" in rDescriptor &&
 				(!("value" in lDescriptor) ||
-					isAlike(lDescriptor.value, rDescriptor.value, counterparts, compared))
+					alike(lDescriptor.value, rDescriptor.value))
 			)
 		})
 	)
