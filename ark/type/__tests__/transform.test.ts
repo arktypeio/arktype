@@ -877,7 +877,7 @@ u.n must be positive or negative (was 0)`)
 
 				attest(T({ o: { a: "a", n: 0 }, k: "x" }).toString())
 					.snap(`k must be a number (was a string)
-o must be valid according to an anonymous predicate (was {"a":"a","n":0})`)
+o must be valid according to an anonymous predicate (was an object)`)
 				attest(calls).equals([])
 				attest(T({ o: { a: "a", n: "x" }, k: "x" }).toString())
 					.snap(`k must be a number (was a string)

@@ -686,7 +686,7 @@ contextualize(() => {
 
 			attest(T({ a: o })).equals({ a: o })
 			attest(T({ a: {} }).toString()).snap(
-				"a must be 1, {} or Symbol(sym) (was {})"
+				"a must be 1, {} or Symbol(sym) (was an object)"
 			)
 		}
 	})

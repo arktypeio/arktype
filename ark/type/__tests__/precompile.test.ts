@@ -311,7 +311,7 @@ contextualize(() => {
 		const T = type("Date").narrow((d: Date) => d.getUTCFullYear() > 2000)
 		attest(isPrecompiled(units, T.internal)).equals(false)
 		attest(T(new Date("1990-01-01T00:00:00.000Z")).toString()).snap(
-			"must be valid according to an anonymous predicate (was 1990)"
+			"must be valid according to an anonymous predicate (was an object)"
 		)
 	})
 

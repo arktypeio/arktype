@@ -5,6 +5,7 @@ import {
 	flatMorph,
 	objectKindDescriptions,
 	printable,
+	printKind,
 	withAlphabetizedKeys,
 	type array
 } from "@ark/util"
@@ -31,8 +32,7 @@ import type { BaseNodeInput } from "./shared/declare.ts"
 import {
 	enInfo,
 	errorWriters,
-	errorWritersByCode,
-	printUnlike
+	errorWritersByCode
 } from "./shared/errorWriters.ts"
 import type { ArkErrorCode, ErrorContextsByCode } from "./shared/errors.ts"
 import type {
@@ -131,7 +131,7 @@ const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
 ) =>
 	e.discriminantKind === "domain" ?
 		locale.nouns[domainOf(data)]
-	:	printUnlike(data, e.cases)
+	:	printKind(data)
 
 export const en: Locale.Complete = {
 	...(flatMorph(

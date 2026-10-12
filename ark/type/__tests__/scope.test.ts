@@ -419,7 +419,7 @@ contextualize(() => {
 				p => !p.dependencies?.some(d => d.name === p.name)
 			])
 			attest(nonSelfDependent(data).toString()).snap(
-				'must be valid according to an anonymous predicate (was {"name":"arktype","dependencies":[{"name":"typescript"},"(cycle)"],"contributors":[{"email":"david@arktype.io"}]})'
+				"must be valid according to an anonymous predicate (was an object)"
 			)
 		})
 

@@ -668,7 +668,7 @@ for (const data of [["a"], ["a", "b"], [""], ["a", 2]])
 			},
 			fromHere("temp", "branchAllows")
 		)
-		const expected = `must be valid according to isEven (was ["a"])
+		const expected = `must be valid according to isEven (was an array)
 a,bb
 value at [0] must be non-empty (was "")
 value at [1] must be a string (was a number)

@@ -144,7 +144,7 @@ export {
 	liftArray,
 	ParseError,
 	printable,
-	printCompact,
+	printKind,
 	throwParseError
 } from "@ark/util"
 export { assertRuntimeVersion, claimEntry } from "./entry.ts"

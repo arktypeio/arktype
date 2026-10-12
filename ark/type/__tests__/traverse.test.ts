@@ -252,7 +252,7 @@ isAdmin must be false, null or true (was 1)`)
 
 		const out = T({ a: 1 }) as ArkErrors
 
-		attest(out.toString()).snap(`a ({"a":1}) must be...
+		attest(out.toString()).snap(`a (an object) must be...
   ◦ x
   ◦ y`)
 		attest(out.issues[0].propString).equals("a")
@@ -283,7 +283,7 @@ isAdmin must be false, null or true (was 1)`)
 
 		const out = T({ a: "y" }) as ArkErrors
 
-		attest(out.summary).snap('a must be x (was {"a":"y"})')
+		attest(out.summary).snap("a must be x (was an object)")
 		attest(out.toLocaleString(en)).equals(out.summary)
 	})
 
@@ -295,7 +295,7 @@ isAdmin must be false, null or true (was 1)`)
 
 		const out = T({ a: "s" }) as ArkErrors
 
-		attest(out.toString()).snap(`a ({"a":"s"}) must be...
+		attest(out.toString()).snap(`a (an object) must be...
   ◦ p
   ◦ q`)
 		attest(out.count).equals(2)
@@ -434,7 +434,7 @@ age must be more than 18 (was 2)`)
 		attest(T.t).type.toString.snap("{ foo: (In: unknown) => Out<number> }")
 		const out = T({ foo: 1 })
 
-		attest(out.toString()).snap('must be valid (was {"foo":1})')
+		attest(out.toString()).snap("must be valid (was an object)")
 		attest(callCount).equals(0)
 	})
 

@@ -331,7 +331,7 @@ contextualize(() => {
 			summary
 		])
 		attest(summary).snap(
-			'a (["q"]) must be...\n  ◦ at least length 2\n  ◦ exactly length 0'
+			"a (an array) must be...\n  ◦ at least length 2\n  ◦ exactly length 0"
 		)
 	})
 
@@ -2456,7 +2456,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			const T = create(Member, admin, owner)
 			attest(T.expression).snap("Member")
 			attest(T(new Member("guest")).toString()).snap(
-				"must be valid according to admin or valid according to owner (was Member)"
+				"must be valid according to admin or valid according to owner (was an object)"
 			)
 		})
 

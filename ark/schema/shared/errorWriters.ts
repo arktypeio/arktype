@@ -4,12 +4,10 @@ import {
 	domainDescriptions,
 	domainOf,
 	functionNameOf,
-	hasDomain,
 	isValidDate,
 	listPattern,
 	objectKindOrDomainOf,
 	printable,
-	printCompact,
 	printKind,
 	type requireKeys
 } from "@ark/util"
@@ -49,7 +47,7 @@ export const errorWriters: {
 	problem: ProblemWriter
 	message: MessageWriter
 } = {
-	actual: data => printCompact(data),
+	actual: printKind,
 	problem: writeProblem,
 	message: writeMessage
 }
@@ -126,7 +124,7 @@ export const writePredicateActual: ActualWriter<"predicate"> = (
 		actual === undefined ?
 			ctx.morph ?
 				`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
-			:	printCompact(data)
+			:	printKind(data)
 		: typeof actual === "string" ? actual
 		: actual(data, ctx, locale)
 	)
@@ -192,7 +190,7 @@ export const unionWriters: errorWritersOf<"union"> = {
 			const firstActual = errors[0].actual
 			const actual =
 				errors.every(e => e.actual === firstActual) ? firstActual : (
-					printCompact(errors[0].data)
+					printKind(errors[0].data)
 				)
 			return `${path && `${path} `}must be ${expected}${
 				actual && ` (was ${actual})`
@@ -211,8 +209,7 @@ export const unionWriters: errorWritersOf<"union"> = {
 }
 
 export const unitWriters: errorWritersOf<"unit"> = {
-	actual: (data, ctx) =>
-		hasDomain(ctx.unit, "object") ? printCompact(data) : printKind(data),
+	actual: printKind,
 	problem: ({ expected, actual }) =>
 		`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
 }
@@ -235,7 +232,7 @@ export const discriminantWriters: errorWritersOf<"discriminant"> = {
 	actual: (data, e) =>
 		e.discriminantKind === "domain" ?
 			domainDescriptions[domainOf(data)]
-		:	printUnlike(data, e.cases)
+		:	printKind(data)
 }
 
 export const errorWritersByCode: {
@@ -275,12 +272,6 @@ export type errorWritersOf<code extends ArkErrorCode> = requireKeys<
 		:	"expected"
 	:	"expected"
 >
-
-export const printUnlike = (data: unknown, units: readonly unknown[]): string =>
-	// a primitive prints the same either way, so only an object reads the units
-	hasDomain(data, "object") && !units.some(unit => hasDomain(unit, "object")) ?
-		printKind(data)
-	:	printCompact(data)
 
 // reads predicate, or for pipe.try the morph that threw
 export const describePredicate = (ctx: {

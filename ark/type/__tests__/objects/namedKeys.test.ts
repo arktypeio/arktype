@@ -136,11 +136,9 @@ contextualize(() => {
 		})
 	})
 
-	it("serializes to same value but not reference equal", () => {
+	it("prints an object equal to the unit by its kind", () => {
 		const T = type("===", {})
-		attest(T({}).toString()).snap(
-			"must be reference equal to {} (serialized to the same value)"
-		)
+		attest(T({}).toString()).snap("must be {} (was an object)")
 	})
 
 	it("error in obj that has tuple that writes error at proper path", () => {

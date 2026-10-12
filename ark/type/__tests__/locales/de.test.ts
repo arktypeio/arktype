@@ -161,9 +161,9 @@ contextualize(() => {
 			"Date <= May 3, 12:30:05.123 ← 2000-12-31T09:05:00.000Z":
 				"muss spätestens der 3. Mai 2000, 12:30:05,123 UTC sein, ist aber der 31. Dezember 2000, 09:05 UTC",
 			"enumerated Dates ← 2000-05-05T00:00:00.000Z":
-				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein, ist aber der 5. Mai 2000",
+				"muss der 3. Mai 2000 oder der 4. Mai 2000 sein, ist aber ein Objekt",
 			"narrowed Date ← 2000-05-03T00:00:00.000Z":
-				"muss gemäß einem anonymen Prädikat gültig sein, ist aber der 3. Mai 2000",
+				"muss gemäß einem anonymen Prädikat gültig sein, ist aber ein Objekt",
 			"string ← 5": "muss eine Zeichenkette sein, ist aber eine Zahl",
 			'number ← "x"': "muss eine Zahl sein, ist aber eine Zeichenkette",
 			"number ← NaN": "muss eine Zahl sein, ist aber NaN",
@@ -179,8 +179,7 @@ contextualize(() => {
 			"1.5 ← 2.5": "muss 1,5 sein, ist aber 2,5",
 			"5n ← 4n": "muss 5n sein, ist aber 4n",
 			"true ← false": "muss true sein, ist aber false",
-			"unit object ← {}":
-				"muss referenzgleich mit {} sein (wird zum selben Wert serialisiert)",
+			"unit object ← {}": "muss {} sein, ist aber ein Objekt",
 			"unit symbol ← 1": "muss Symbol(s) sein, ist aber 1",
 			"Date ← 1": "muss ein Date-Objekt sein, ist aber eine Zahl",
 			"Date ← Invalid Date":

@@ -512,13 +512,13 @@ contextualize(() => {
 			return o
 		}, $.type("node"))
 		const out = T({ s: "b" }) as ArkErrors
-		attest(out.summary).snap(`s ({"s":"b"}) must be...
+		attest(out.summary).snap(`s (an object) must be...
   ◦ own
   ◦ matched by ^a
   ◦ at least length 5`)
 		attest(flatProblemsByPath(out)).snap({
 			s: [
-				'must be own (was {"s":"b"})',
+				"must be own (was an object)",
 				'must be matched by ^a (was "b")',
 				"must be at least length 5 (was 1)"
 			]

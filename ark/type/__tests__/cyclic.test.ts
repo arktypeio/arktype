@@ -594,7 +594,7 @@ contextualize(() => {
 					})
 					attest(
 						types.box({ inner: '{ "next": { "bad": 1 } }' }).toString()
-					).snap('inner.next must be good (was {"bad":1})')
+					).snap("inner.next must be good (was an object)")
 				})
 
 				it("cyclic default", config => {

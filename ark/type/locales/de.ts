@@ -87,6 +87,12 @@ const print = (value: unknown, locale: Locale.Info): string =>
 			typeof value === "number" ? locale.number(value) : printable(value)
 		)
 
+// errors print an object by its kind, so its contents never reach a message
+const printKind = (data: unknown, locale: Locale): string =>
+	typeof data === "function" ? locale.nouns.Function
+	: typeof data !== "object" || data === null ? print(data, locale)
+	: locale.nouns[Array.isArray(data) ? "Array" : "object"]
+
 const was = (actual: string) => actual && `, ist aber ${actual}`
 
 const mustBe = (expected: string, actual: string) =>
@@ -189,6 +195,7 @@ const dateWriters = (relation: string) => {
 		`${relation} ${theDate(e.rule, locale)}`
 	return {
 		expected,
+		actual: (data, e, locale) => print(data, locale),
 		problem: (e, locale) => mustBe(expected(e, locale), e.actual)
 	} satisfies Locale.CodeWriters<"before" | "after">
 }
@@ -357,7 +364,7 @@ export const de: Locale.Complete = {
 		never: "never"
 	},
 	keywordPhrases,
-	actual: (data, e, locale) => print(data, locale),
+	actual: (data, e, locale) => printKind(data, locale),
 	problem: e => mustBe(e.expected, e.actual),
 	message: (e, locale) =>
 		e.path.length === 0 ?
@@ -398,7 +405,7 @@ export const de: Locale.Complete = {
 						group.propString &&
 						`${subjectOf(group.propString, group.label, locale)} `
 					const expected = locale.list(group.expected, "or")
-					const actual = group.actual ?? print(group.data, locale)
+					const actual = group.actual ?? printKind(group.data, locale)
 					// beside other paths, a comma would blur where each one's text ends
 					return groups.length === 1 ?
 							`${subject}${mustBe(expected, actual)}`
@@ -407,11 +414,7 @@ export const de: Locale.Complete = {
 				"or"
 			)
 		},
-		// its message shows it only for never, so data that may be large isn't printed
-		actual: (data, e, locale) =>
-			typeof data === "function" ? locale.nouns.Function
-			: typeof data !== "object" || data === null ? print(data, locale)
-			: locale.nouns[Array.isArray(data) ? "Array" : "object"],
+		actual: (data, e, locale) => printKind(data, locale),
 		problem: e => (e.errors.length ? e.expected : mustBe(e.expected, e.actual)),
 		message: (e, locale) =>
 			e.errors.length === 0 ? locale.message(e, locale) : e.problem
@@ -442,7 +445,7 @@ export const de: Locale.Complete = {
 		actual: (data, e, locale) =>
 			e.morph ?
 				`wegen eines Fehlers abgebrochen:\n    ${describeCause(e.cause)}`
-			:	print(data, locale),
+			:	printKind(data, locale),
 		problem: (e, locale) => {
 			if (!e.morph) return mustBe(predicateOf(e, locale), e.actual)
 			const name = e.morph.name && `von ${locale.verbatim(e.morph.name)} `
@@ -467,7 +470,7 @@ export const de: Locale.Complete = {
 		actual: (data, e, locale) =>
 			e.absent ? "nicht vorhanden"
 			: e.discriminantKind === "domain" ? locale.nouns[domainOf(data)]
-			: print(data, locale),
+			: printKind(data, locale),
 		problem: (e, locale) =>
 			e.absent ?
 				`fehlt (muss ${casesOf(e, locale)} sein)`

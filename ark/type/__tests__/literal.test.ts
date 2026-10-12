@@ -73,7 +73,7 @@ contextualize(() => {
 			'{"a":1,"b":"(getter)","toJSON":"Function(toJSON)"}'
 		)
 		attest(T({}).toString()).snap(
-			'must be {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"} (was {})'
+			'must be {"a":1,"b":"(getter)","toJSON":"Function(toJSON)"} (was an object)'
 		)
 		const { U } = scope(
 			{ U: [{ k: ["===", o] }, "|", { k: "'b'", v: "number" }] },

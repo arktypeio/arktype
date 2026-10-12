@@ -87,9 +87,9 @@ contextualize(() => {
 			b: number
 		}>(AbEqual.infer)
 		attest(AbEqual({ a: 1, b: 1 })).equals({ a: 1, b: 1 })
-		attest(AbEqual({ a: 1, b: 2 }).toString()).snap(
-			'a must be equal to b (was {"a":1,"b":2})\nb must be equal to a (was {"a":1,"b":2})'
-		)
+		attest(AbEqual({ a: 1, b: 2 }).toString())
+			.snap(`a must be equal to b (was an object)
+b must be equal to a (was an object)`)
 	})
 
 	it("functional predicate", () => {
@@ -290,7 +290,7 @@ contextualize(() => {
 			(v, ctx) => Array.isArray(v) || ctx.reject({ problem: "custom" })
 		)
 		attest(T(function foo() {}).toString()).snap(
-			"must be valid according to an anonymous predicate or an array (was Function(foo))"
+			"must be valid according to an anonymous predicate or an array (was a function)"
 		)
 	})
 
@@ -333,7 +333,7 @@ contextualize(() => {
 		const T = type("bigint[]").narrow(
 			(arr, ctx) => new Set(arr).size === arr.length || ctx.mustBe("unique")
 		)
-		attest(T([1n, 0n, 1n]).toString()).snap("must be unique (was [1n,0n,1n])")
+		attest(T([1n, 0n, 1n]).toString()).snap("must be unique (was an array)")
 	})
 
 	it("calls a predicate once per value", () => {

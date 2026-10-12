@@ -2508,7 +2508,7 @@ ${isTemplate ? "]" : ")"}`
 		let config = `runtime.raising(${this.scopeConfigOf(root, raisable)}, ${writers})`
 		// a callback of the program's can raise any code, on data of any kind
 		if (declares(root, node => holdsCallback(node) || hasIndexSignature(node)))
-			config = `runtime.printing(${config}, runtime.printCompact)`
+			config = `runtime.printing(${config}, runtime.printKind)`
 		return declares(root, node => hasMetaWriter(node) || holdsCallback(node)) ?
 				`runtime.inEn(${config})`
 			:	config

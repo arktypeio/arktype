@@ -98,29 +98,12 @@ export const printable = (data: unknown, opts?: PrintableOptions): string => {
 	}
 }
 
-// printable as errors print data, without its options, so a top-level Array
-// subclass prints by its class rather than its elements
-export const printCompact = (data: unknown): string => {
-	if (typeof data === "function") return printableOpts.onFunction(data)
-	if (typeof data === "symbol") return printableOpts.onSymbol(data)
-	if (typeof data !== "object" || data === null)
-		return serializePrimitive(data as SerializablePrimitive)
-	const ctorName = constructorNameOf(data) ?? "Object"
-	return (
-		ctorName === "Object" || ctorName === "Array" ?
-			JSON.stringify(_serialize(data, printableOpts, [])).replace(
-				quotedBigIntMarker,
-				"$1"
-			)
-		: isDate(data) ? describeCollapsibleDate(data)
-		: (expressionOf(data) ?? ctorName)
-	)
-}
-
-// data a check can't accept as an object, which prints an object by its kind
+// errors print an object by its kind, so its contents never reach a message
 export const printKind = (data: unknown): string =>
 	typeof data === "function" ? "a function"
-	: typeof data !== "object" || data === null ? printCompact(data)
+	: typeof data === "symbol" ? printSymbol(data)
+	: typeof data !== "object" || data === null ?
+		serializePrimitive(data as SerializablePrimitive)
 	: Array.isArray(data) ? "an array"
 	: "an object"
 

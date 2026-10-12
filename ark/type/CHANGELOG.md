@@ -51,17 +51,27 @@ Errors' text is written when they are first read, through `issues`, `summary`, `
 
 An error has no `toJSON()`, so `JSON.stringify(error)`, or of an `ArkErrors`' or Standard Schema's `issues`, serializes its own keys: a symbol key in its path is `null`, a bigint, like one in a discriminant's `cases`, throws, and `cases`, `cause`, `missing`, `valueMeta`, `predicate` and `morph`, which `toJSON()` leaves out, are included. `out.toJSON()` is the JSON it was, plus each error's `propString`, and its paths are plain arrays holding a symbol key as the string `Symbol(name)`, as a `ReadonlyPath` serialized it.
 
-An object a unit or discriminant check can't accept, since all of its cases are primitive, is printed by its kind, as is a union's own `actual`, which its message doesn't show. An instance of an `Array` subclass is printed by its class's name rather than its elements:
+### Print objects in error messages by their kind
+
+An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date, a function as `Function(name)` and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it. Primitives print as before, and `before` and `after` still print the Date they rejected:
 
 ```ts
 // previously must be "a" or "b" (was {"x":1}), now (was an object)
 type("'a' | 'b'")({ x: 1 })
 
-class Items extends Array {}
-
-// previously must be valid according to an anonymous predicate (was [1]), now (was Items)
-type("object").narrow(() => false)(Items.of(1))
+// previously must be valid according to an anonymous predicate (was [1,2]), now (was an array)
+type("number[]").narrow(() => false)([1, 2])
 ```
+
+A `===` unit no longer says an object it rejected serializes like its own:
+
+```ts
+// previously must be reference equal to {} (serialized to the same value)
+// now must be {} (was an object)
+type("===", {})({})
+```
+
+`de` prints them as `ein Objekt`, `ein Array` and `eine Funktion`.
 
 ### Write error messages in other languages
 
