@@ -2,6 +2,36 @@
 
 ## Unreleased
 
+### Infer types from JSON Schema
+
+`jsonSchema` checks a schema as you write it and infers the type it describes, and `jsonSchemaToType` returns a `Type` of that type (#729).
+
+```ts
+import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
+
+const User = jsonSchema({
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		age: { type: "integer", minimum: 0 }
+	},
+	required: ["name"]
+})
+
+// { name: string; age?: number }
+type User = typeof User.infer
+
+// Type<{ name: string; age?: number }>
+const T = jsonSchemaToType(User)
+
+// TypeScript: minLength must be a non-negative integer (was -1)
+jsonSchema({ type: "string", minLength: -1 })
+```
+
+Inference follows `$ref`s, including recursive ones, composition, conditionals and `not`, and resolves `$defs`, `definitions` and OpenAPI `components.schemas`. An inferred type may be wider than the schema, since constraints like `minimum` and `pattern` don't narrow it, but it never rejects a value the schema accepts. At runtime, `jsonSchema` returns its input.
+
+A schema TypeScript can't see as a literal, like one read from a `.json` file, can be cast with `jsonSchema.as<t>()`. `jsonSchema.infer` and `jsonSchema.validate` are the underlying types, for writing your own wrappers.
+
 ### Read JSON Schema as exactly the values a validator accepts
 
 `jsonSchemaToType` accepts exactly what a 2020-12 validator like ajv accepts, and reads draft-07 forms. Schemas that threw now read, and some that read were wrong:
