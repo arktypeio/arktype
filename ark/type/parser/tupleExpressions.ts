@@ -11,10 +11,12 @@ import {
 import {
 	objectKindOrDomainOf,
 	throwParseError,
+	type anyOrNever,
 	type array,
 	type BuiltinObjectKind,
 	type Constructor,
 	type Domain,
+	type ErrorMessage,
 	type show
 } from "@ark/util"
 import { intersectNodesRoot, pipeNodesRoot } from "arksets"
@@ -25,6 +27,7 @@ import type {
 	inferMorphOut,
 	inferPipe,
 	inferPredicate,
+	InferredMorph,
 	Out,
 	withDefault
 } from "../attributes.ts"
@@ -109,7 +112,11 @@ export type validateIndexOneExpression<
 			:	def[1],
 			def[1] extends "|" ? validateDefinition<def[2], $, args>
 			: def[1] extends "&" ? validateDefinition<def[2], $, args>
-			: def[1] extends ":" ? Predicate<type.infer.Out<def[0], $, args>>
+			: def[1] extends ":" ?
+				validatePredicate<
+					inferDefinition<def[0], $, args>,
+					type.infer.Out<def[0], $, args>
+				>
 			: def[1] extends "=>" ? Morph<type.infer.Out<def[0], $, args>>
 			: def[1] extends "|>" ? validateDefinition<def[2], $, args>
 			: def[1] extends "=" ? defaultFor<type.infer.In<def[0], $, args>>
@@ -184,6 +191,15 @@ export type parseMorph<inDef, morph, $, args> =
 			(In: distill.In<inferDefinition<inDef, $, args>>) => Out<out>
 		:	never
 	:	never
+
+// a tuple's predicate constrains the whole root, so it can't follow a morph
+export type validatePredicate<operand, data> =
+	[operand] extends [anyOrNever] ? Predicate<data>
+	: [operand] extends [InferredMorph] ? ErrorMessage<narrowedMorphMessage>
+	: Predicate<data>
+
+export type narrowedMorphMessage =
+	"Predicate operand must be unknown (was a morph)"
 
 export const parseNarrowTuple: IndexOneParser<":"> = (def, ctx) => {
 	if (typeof def[2] !== "function") {

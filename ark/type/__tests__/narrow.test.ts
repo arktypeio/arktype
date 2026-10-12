@@ -157,9 +157,14 @@ contextualize(() => {
 	it("can't narrow a morph in a tuple expression", () => {
 		const toLength = (s: string) => s.length
 		const isEven = (n: number) => n % 2 === 0
-		attest(() => type([["string", "=>", toLength], ":", isEven])).throws.snap(
-			"ParseError: Predicate operand must be unknown (was a morph)"
-		)
+		// @ts-expect-error
+		attest(() => type([["string", "=>", toLength], ":", isEven]))
+			.throws("Predicate operand must be unknown (was a morph)")
+			.type.errors("Predicate operand must be unknown (was a morph)")
+		// @ts-expect-error
+		attest(() => type(["string", "=>", toLength], ":", isEven))
+			.throws("Predicate operand must be unknown (was a morph)")
+			.type.errors("Predicate operand must be unknown (was a morph)")
 		attest(() =>
 			scope({ b: [["b", "=>", toLength], ":", isEven] } as never).export()
 		).throws.snap("ParseError: Predicate operand must be unknown (was a morph)")

@@ -6,7 +6,6 @@ import {
 	type BaseParseOptions,
 	type Morph,
 	type NodeSelector,
-	type Predicate,
 	type RootSchema,
 	type TypeMeta
 } from "@ark/schema"
@@ -40,7 +39,8 @@ import type {
 import type {
 	ArgTwoOperator,
 	IndexZeroOperator,
-	TupleInfixOperator
+	TupleInfixOperator,
+	validatePredicate
 } from "./parser/tupleExpressions.ts"
 import {
 	$arkTypeRegistry,
@@ -111,7 +111,13 @@ export interface TypeParser<$ = {}> extends Ark.boundTypeAttachments<$> {
 		: zero extends "===" ? rest
 		: zero extends "instanceof" ? conform<rest, readonly Constructor[]>
 		: one extends TupleInfixOperator ?
-			one extends ":" ? [Predicate<distill.In<type.infer<zero, $>>>]
+			one extends ":" ?
+				[
+					validatePredicate<
+						type.infer<zero, $>,
+						distill.In<type.infer<zero, $>>
+					>
+				]
 			: one extends "=>" ? [Morph<distill.Out<type.infer<zero, $>>, unknown>]
 			: one extends "|>" ? [type.validate<rest[0], $>]
 			: one extends "@" ? [TypeMeta.MappableInput, NodeSelector?]

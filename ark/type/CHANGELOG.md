@@ -287,6 +287,8 @@ type({ d: [{ a: "string" }, "number = 2"] }).onDeepUndeclaredKey("delete")({
 
 ### Throw a `ParseError` when a tuple expression narrows a morph
 
+A tuple expression's `:` constrains the whole Type, so it can't follow a morph. Its types reject it with the same message, where they accepted it as a narrow of the morph's output:
+
 ```ts
 // previously threw "TypeError: Cannot read properties of null (reading 'description')",
 // now "ParseError: Predicate operand must be unknown (was a morph)"
