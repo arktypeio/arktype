@@ -244,7 +244,7 @@ interface SiteFactory {
 	params: FactoryParam[]
 	spans: Span[]
 	// e.g. `f` in `{ a: narrow(f), b: narrow(f) }`, which shadow mode reads through its first span's parameter
-	repeats: [span: Span, index: number][]
+	repeats: [span: Span, spanIndex: number][]
 	inputs: string[]
 	// the bindings the inputs read, whose imports the call keeps
 	bindings: Binding[]
@@ -1351,7 +1351,7 @@ export class Precompiler {
 		const callbacks = (factory?.params ?? []).flatMap((param, i) =>
 			param.kind === "function" ? [i] : []
 		)
-		const read: [span: Span, index: number][] = [
+		const parameterSpans = [
 			...spans.map((span, i): [Span, number] => [span, i]),
 			...(factory?.repeats ?? []).filter(
 				([repeat]) =>
@@ -1362,7 +1362,7 @@ export class Precompiler {
 		].sort(([l], [r]) => l.start - r.start)
 		let original = ""
 		let start = site.start
-		for (const [span, i] of read) {
+		for (const [span, i] of parameterSpans) {
 			original += `${module.textOf({ start, end: span.start })}${prefix}h${i}`
 			start = span.end
 		}
@@ -1623,7 +1623,7 @@ export class Precompiler {
 		}
 		const passed = new Set<unknown>()
 		// one value read through two texts is passed through each, since the program can change one but not the other
-		const textsByPassed = new Map<unknown, Map<string, number>>()
+		const spanIndexByTextByPassed = new Map<unknown, Map<string, number>>()
 		// what a site reads only to check, which it needn't receive where nothing the program does changes the check
 		const unchecked = new Set<unknown>()
 		const calledByChecks = new Set(
@@ -1672,11 +1672,12 @@ export class Precompiler {
 						this.interpreter.sourceOf(value)?.[1] !== module
 				)
 			}
-			const texts =
-				textsByPassed.get(reference.value) ?? new Map<string, number>()
+			const spanIndexByText =
+				spanIndexByTextByPassed.get(reference.value) ??
+				new Map<string, number>()
 			if (!holes.length) continue
-			if (texts.has(text)) {
-				factory.repeats.push([reference, texts.get(text)!])
+			if (spanIndexByText.has(text)) {
+				factory.repeats.push([reference, spanIndexByText.get(text)!])
 				continue
 			}
 			if (
@@ -1688,7 +1689,10 @@ export class Precompiler {
 				)
 			}
 			passed.add(reference.value)
-			textsByPassed.set(reference.value, texts.set(text, factory.spans.length))
+			spanIndexByTextByPassed.set(
+				reference.value,
+				spanIndexByText.set(text, factory.spans.length)
+			)
 			factory.spans.push(reference)
 			factory.params.push(
 				hole ?

@@ -52,6 +52,20 @@ const Incremented = type({ n: "number" }).pipe(
 	o => Object.assign(o, { id: crypto.randomUUID() })
 )
 
+const Nested = type({
+	user: type({ name: "string" }).pipe((u, ctx) => {
+		u.name = `${u.name.trim()} at ${ctx.propString}`
+		return u
+	})
+})
+
+const Detached = type({ name: "string", tags: "string[]" }).pipe(o => {
+	const { tags } = o
+	delete (o as Partial<typeof o>).tags
+	tags.sort()
+	return { ...o, tags }
+})
+
 const isShort = (s: string) => s.length < 3
 
 // a callback the site reads twice, which arktype receives through one parameter
@@ -142,7 +156,9 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 			[...(Listed({ tags: ["a", "b"] }) as { tags: Set<string> }).tags],
 			listed,
 			Dated({ at: new Date(1) }),
-			Named({ name: " a ", tags: Object.freeze(["x"]) })
+			Named({ name: " a ", tags: Object.freeze(["x"]) }),
+			Nested({ user: { name: " a " } }),
+			Detached({ name: "a", tags: ["b", "a"] })
 		],
 		shorts: Shorts({ a: "x", b: "yyy" }).toString(),
 		positive: Positive(-1).toString(),
