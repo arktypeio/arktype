@@ -155,8 +155,8 @@ export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({
 	resolvedConfig: runtimeConfig
 })
 
-let configuredFingerprint: string | undefined
-let recheck: (() => unknown) | undefined
+// installed by configure(), so a program that never calls it ships no comparison
+let checkConfigured: ((built?: string) => void) | undefined
 let programConfig: ArkSchemaConfig | undefined
 let configureIslands: ((config: ArkSchemaConfig) => unknown) | undefined
 
@@ -165,7 +165,7 @@ export const configure = (
 	fingerprint?: string
 ): ArkSchemaConfig => {
 	// arktype fixes its configuration at its first Type, and a module the build didn't transform, like a dependency's, can configure it too, which merges what the runtime keeps apart
-	if (Object.isFrozen(runtimeConfig) || configuredFingerprint !== undefined)
+	if (Object.isFrozen(runtimeConfig) || checkConfigured)
 		return throwParseError(reconfiguredMessage)
 	const received = fingerprintOf(config)
 	// a loader or plugin can change a module the configuration reads after the build read it
@@ -175,14 +175,17 @@ export const configure = (
 	if ("onFail" in config)
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
 	;(runtimeConfig as { locale: Locale.Info }).locale = enInfo
-	// a call the build didn't transform, like a dependency's, can hold other functions under the same values
-	configuredFingerprint = fingerprint ?? ""
-	// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
-	recheck = () =>
-		fingerprintOf(config) === received ?
-			// only once it passes, so a validator after a caught throw checks again
-			(recheck = undefined)
-		:	throwParseError(writtenConfigMessage)
+	let isRechecked = false
+	checkConfigured = built => {
+		// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
+		if (!isRechecked && fingerprintOf(config) !== received)
+			throwParseError(writtenConfigMessage)
+		// only once it passes, so a validator after a caught throw checks again
+		isRechecked = true
+		// a call the build didn't transform, like a dependency's, can hold other functions under the same values
+		if (fingerprint === undefined || built !== fingerprint)
+			throwParseError(configMismatchMessage)
+	}
 	// arktype copies a code's writers when configure() is called, so a later write reaches neither
 	const held: Record<string, unknown> = {}
 	for (const k in config) {
@@ -250,18 +253,16 @@ const staticTextOf = (value: unknown, seen: unknown[]): string => {
 	}{${entries}}`
 }
 
-export const fixConfig = (
-	...configured: [] | [fingerprint: string, path: string]
-): void => {
-	recheck?.()
+export const fixConfig = (): void => {
 	Object.freeze(runtimeConfig)
-	const [fingerprint, path] = configured
-	if (fingerprint === configuredFingerprint) return
-	throwParseError(
-		path === undefined || configuredFingerprint !== undefined ?
-			configMismatchMessage
-		:	writeCreatedBeforeConfigureMessage(path)
-	)
+	checkConfigured?.()
+}
+
+export const fixConfigured = (fingerprint: string, path: string): void => {
+	Object.freeze(runtimeConfig)
+	if (!checkConfigured)
+		return throwParseError(writeCreatedBeforeConfigureMessage(path))
+	checkConfigured(fingerprint)
 }
 
 // a runtime island's arktype takes the configuration whether its config module runs before or after the island loads

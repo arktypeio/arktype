@@ -592,7 +592,9 @@ const moduleMembersOf = (module: object): runtime.ModuleMembers => {
 export const writeFixConfig = (
 	configured: ConfiguredModule | undefined
 ): string =>
-	`runtime.fixConfig(${configured ? `${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)}` : ""})`
+	configured ?
+		`runtime.fixConfigured(${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)})`
+	:	"runtime.fixConfig()"
 
 interface WriteDataOptions {
 	// a ToJsonSchemaError's context holds the validator's own values, like a predicate or a Date bound, beside its data, which are emitted and listed here

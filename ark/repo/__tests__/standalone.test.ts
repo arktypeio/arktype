@@ -891,6 +891,9 @@ contextualize(() => {
 		attest(await messageOf(`runtime.configure({}, "${built}")`, built)).equals(
 			""
 		)
+		attest(await messageOf("runtime.configure({})")).equals(
+			configMismatchMessage
+		)
 		const createdFirst = precompileStandalone({
 			T: type("string")
 		}).code.replace(

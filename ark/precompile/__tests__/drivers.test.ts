@@ -428,7 +428,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 		it("shares a configuration with the precompiler it replaces", () => {
 			const [before, after] = loadedAcrossReplacement(configured, ["main.ts"])
 			attest(after).equals(before)
-			attest(before[0]).satisfies(/fixConfig\("\w+", "main.ts"\)/)
+			attest(before[0]).satisfies(/fixConfigured\("\w+", "main.ts"\)/)
 		}).timeout(60000)
 
 		it("shares a configured writer's refusal with the precompiler it replaces", () => {

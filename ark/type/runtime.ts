@@ -99,6 +99,7 @@ export {
 	exitResolution,
 	expressBranches,
 	fixConfig,
+	fixConfigured,
 	flatByPath,
 	flatProblemsByPath,
 	inEn,
