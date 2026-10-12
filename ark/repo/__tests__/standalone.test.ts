@@ -1225,6 +1225,8 @@ domain.expected = () => "E2"`,
 			}
 		})
 		attest(unfrozen.map(([name]) => name)).equals([])
+		// shared by every validator, as arktype's by every Type
+		attest(Object.isFrozen(prototype.from)).equals(false)
 		attest(validator.meta.pattern.test("x")).equals(true)
 		attest(validator.meta.pattern.test("x")).equals(false)
 		attest(validator({ a: "x" })).equals({ a: "x" })

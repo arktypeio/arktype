@@ -334,14 +334,7 @@ for (const k of [
 	})
 }
 
-// every validator shares it, so replacing one of its methods would change them all
-for (const k of Reflect.ownKeys(Validator.prototype)) {
-	const { value, get } = Object.getOwnPropertyDescriptor(
-		Validator.prototype,
-		k
-	)!
-	if (k !== "constructor") freeze(value ?? get)
-}
+// arktype's prototypes are per node kind, so a method replaced on the one every validator shares would change Types of other kinds
 freeze(Validator.prototype)
 
 // a target's is 0 where the validator doesn't bake its schema
