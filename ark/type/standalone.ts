@@ -12,6 +12,9 @@ import {
 	precompileRootUnits,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
+	Traversal,
+	FirstIssueTraversal,
+	failureSites,
 	type ArkErrorCode,
 	type BaseNode,
 	type BaseRoot,
@@ -21,14 +24,15 @@ import {
 	type NodeId,
 	type Optional,
 	type RootUnit,
+	type UnitOptions,
 	type Sequence
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	errorWritersByCode,
 	rootApplyRuntime,
-	writeErrorBuilder,
-	writeRootApply
+	writeRootApply,
+	type FailureSite
 } from "@ark/schema/internal"
 import {
 	appendStringifiedKey,
@@ -58,13 +62,13 @@ import type { HoleKind, IntrospectionMember } from "./runtime.ts"
 import * as runtime from "./runtimeExports.ts"
 import type { Scope } from "./scope.ts"
 
-const writerKeys = ["expected", "actual", "problem", "message"] as const
+// what an issue's message is written from, of which a standalone validator bakes only its node's description
+const describingKeys = ["expected", "problem", "message"] as const
 
 type DeclarationRole =
 	| "shape"
 	| "keys"
 	| "literal"
-	| "config"
 	| "standIn"
 	| "json"
 	| "jsonSchema"
@@ -214,11 +218,14 @@ export interface StandaloneOptions {
 	introspection?: readonly IntrospectionMember[] | undefined
 	// runs arktype writing what a validator bakes, refusing with a ParseError where the configured code it calls reads what the program can change
 	bake?: (<t>(write: () => t) => t) | undefined
+	// "first" stops each validation at its first issue, which is then the only one it returns
+	errors?: "all" | "first" | undefined
 }
 
 interface Baking {
 	members: ReadonlySet<IntrospectionMember>
 	write: <t>(write: () => t) => t
+	firstIssue: boolean
 }
 
 export interface StandaloneModules {
@@ -322,7 +329,8 @@ const writeArtifact = (
 	const { configured } = opts
 	const baking: Baking = {
 		members: new Set(opts.introspection),
-		write: opts.bake ?? (write => write())
+		write: opts.bake ?? (write => write()),
+		firstIssue: opts.errors === "first"
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
@@ -604,19 +612,16 @@ interface WriteDataOptions {
 interface Declarations {
 	statements: string[]
 	namesByValue: Map<unknown, string>
-	namesByContext: Map<string, string>
 	valuesByRole: Record<DeclarationRole, unknown[]>
 }
 
 const createDeclarations = (): Declarations => ({
 	statements: [],
 	namesByValue: new Map(),
-	namesByContext: new Map(),
 	valuesByRole: {
 		shape: [],
 		keys: [],
 		literal: [],
-		config: [],
 		standIn: [],
 		json: [],
 		jsonSchema: []
@@ -646,6 +651,8 @@ export class StandaloneArtifact {
 		join: "expressBranches" | "describeBranches",
 		branches: string[]
 	][] = []
+	// a discriminant's description of cases printing a received name, which arktype describes at creation
+	casesByText = new Map<string, unknown>()
 	labelsByHole = new Map<unknown, string>()
 	classes = new Set<unknown>()
 	checks: string[] = []
@@ -667,7 +674,6 @@ export class StandaloneArtifact {
 	defaultNamesByMorph = new Map<unknown, string>()
 	objectUnits = new Set<unknown>()
 	metas = new Set<object>()
-	contexts = new Set<unknown>()
 	declarations = createDeclarations()
 	// the JSON Schema writers reading only the runtime and what the factory receives, by their text
 	sharedWriters = new Map<string, string>()
@@ -750,10 +756,10 @@ export class StandaloneArtifact {
 		)
 		this.jointUnits =
 			selection && types.every(type => hasArkKind(type, "root")) ?
-				precompileJointUnits(
-					types,
-					value => selectedKeys.get(value) ?? runtimeKeyOf(value)
-				)
+				precompileJointUnits(types, {
+					...unitOptions,
+					keyOf: value => selectedKeys.get(value) ?? runtimeKeyOf(value)
+				})
 			:	undefined
 		this.sharedModules = sharedModules
 		this.imports = imports
@@ -801,15 +807,12 @@ export class StandaloneArtifact {
 			)
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
-		// a unit writes the error contexts of nodes it doesn't declare too, like a union's branches, and a module shared by artifacts writes each alike
 		for (const unit of this.units) {
 			for (const node of [
 				...unit.declared,
 				...unit.roots.flatMap(root => root.references)
-			]) {
+			])
 				this.metas.add(node.meta)
-				this.contexts.add(Reflect.get(node, "errorContext"))
-			}
 		}
 		for (const node of this.declared) {
 			if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
@@ -998,6 +1001,15 @@ export class StandaloneArtifact {
 			...(introspected ? [introspected, ...introspected.references] : [])
 		])) {
 			if (!node.hasKind("union")) continue
+			if (
+				node.compiledDiscriminant &&
+				node.discriminantDescription.includes(holeNameMarker)
+			) {
+				this.casesByText.set(
+					node.discriminantDescription,
+					node.discriminantCases
+				)
+			}
 			for (const [kind, join] of [
 				["expression", "expressBranches"],
 				["description", "describeBranches"],
@@ -1509,15 +1521,12 @@ ${statements.filter(statement => statement).join("\n\n")}
 	): { check: string; key: string }[] {
 		return checks.map(([node, defaultValue, key]) => {
 			const input = node.in as BaseRoot
-			const raisable = raisableCodesOf(input)
-			const config = this.scopeConfigOf(input, raisable)
-			// a check is answered once per key, its node's traversal, configured writers, value and their functions, as unchanging narrows answer equal checks alike
+			// a check is answered once per key, its node's traversal, value and their functions, as unchanging narrows answer equal checks alike
 			const [inputId, inputHoles] = traversalKeyOf(input)
 			const [valueId, valueHoles] = encodeKey(defaultValue, undefined, false)
-			const writers = configuredWritersOf(input, raisable)
-			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}${writers && ` ${writers}`}`))}, [${[...inputHoles, ...valueHoles].map(hole => this.emit(hole)).join(", ")}]]`
+			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}`))}, [${[...inputHoles, ...valueHoles].map(hole => this.emit(hole)).join(", ")}]]`
 			return {
-				check: `runtime.checkDefault(${this.readValidator(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey}${config === "runtime.runtimeConfig" ? "" : `, ${config}`})`,
+				check: `runtime.checkDefault(${this.readValidator(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey})`,
 				key: defaultKey
 			}
 		})
@@ -1563,12 +1572,6 @@ ${statements.filter(statement => statement).join("\n\n")}
 		const refs = unit.refs.map(
 			(value, i) => `const r${i} = ${this.emit(value)}`
 		)
-		const errorContexts = unit.errorContexts.map(context => this.emit(context))
-		const builders = this.writeBuilders(
-			unit.errorContexts,
-			errorContexts,
-			"errorContexts"
-		)
 		const returned = unit.traversals.flat()
 		const links = ownRoots.map(root => {
 			const shape = writing.shapesByName[unit.names[root.id]]
@@ -1578,12 +1581,7 @@ ${statements.filter(statement => statement).join("\n\n")}
 		const unitFunction = this.writeUnitFunction(
 			unit,
 			[...dependencyParams, ...writing.params],
-			[
-				...this.declarations.statements,
-				...refs,
-				`const errorContexts = [${errorContexts.join(", ")}]`,
-				...builders
-			],
+			[...this.declarations.statements, ...refs],
 			links,
 			returned
 		)
@@ -1684,73 +1682,27 @@ return [${returned.join(", ")}]
 		return [params, args]
 	}
 
-	// contexts with the same keys share a function building their errors, in a module of its own
-	writeBuilders(
-		contexts: readonly object[],
-		names: string[],
-		contextsName?: string
-	): string[] {
-		const namesByBuilder: Record<string, string[]> = {}
-		for (let i = 0; i < contexts.length; i++) {
-			const builder = writeErrorBuilder(contexts[i])
-			const builderName = `build${hashOf(builder)}`
-			this.sharedModules[`~arktype/${builderName}`] ??= {
-				readsRuntime: false,
-				imports: {},
-				declarations: [
-					`function ${builderName}(context, path, data) {\n${builder}}`
-				],
-				exports: [builderName]
-			}
-			const built = (namesByBuilder[
-				this.read(
-					`~arktype/${builderName}`,
-					builderName,
-					builderName,
-					builderName
-				)
-			] ??= [])
-			if (!built.includes(names[i])) built.push(names[i])
-		}
-		return Object.entries(namesByBuilder).map(
-			([builderName, built]) =>
-				`runtime.registerErrorBuilder(${builderName}, ${contextsName && built.length === names.length ? contextsName : `[${built.join(", ")}]`})`
-		)
-	}
-
 	writeBody(
 		wrapUnitFunction: (unitFunction: string, i: number) => string
 	): string[] {
-		const localContexts: object[] = []
-		const localContextNames: string[] = []
 		const traversals = this.localUnits.map((unit, i) => {
 			this.localNamesByUnit.set(unit, `traversals${i}`)
 			this.unit = unit
 			const refs = unit.refs.map(value => this.emit(value))
-			const errorContexts = unit.errorContexts.map(context =>
-				this.emit(context)
-			)
 			this.unit = undefined
-			localContexts.push(...unit.errorContexts)
-			localContextNames.push(...errorContexts)
 			const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(unit)
 			const unitFunction = this.writeUnitFunction(
 				unit,
-				[...dependencyParams, "refs", "errorContexts"],
+				[...dependencyParams, "refs"],
 				unit.refs.map((_, i) => `const r${i} = refs[${i}]`),
 				[],
 				unit.traversals.flat()
 			)
-			const args = [
-				...dependencyArgs,
-				`[${refs.join(", ")}]`,
-				`[${errorContexts.join(", ")}]`
-			]
+			const args = [...dependencyArgs, `[${refs.join(", ")}]`]
 			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
 		})
-		const builders = this.writeBuilders(localContexts, localContextNames)
 		const validators: string[] = []
-		const { statements, namesByValue, namesByContext } = this.declarations
+		const { statements, namesByValue } = this.declarations
 		// what depends on every validator, written once they exist
 		const lateLength = () =>
 			this.defaults.length + this.modules.length + this.fills.length
@@ -1758,7 +1710,6 @@ return [${returned.join(", ")}]
 			const declared = statements.length
 			const linked = this.links.length
 			const named = namesByValue.size
-			const framed = namesByContext.size
 			const late = lateLength()
 			const validator = `const ${name} = ${this.writeValidator(root)}`
 			if (!this.isVariantRoot(root) || lateLength() !== late) {
@@ -1768,8 +1719,6 @@ return [${returned.join(", ")}]
 			// what only a variant's validator declares, like its shape, is named nowhere else, so another reading it declares its own
 			for (const value of [...namesByValue.keys()].slice(named))
 				namesByValue.delete(value)
-			for (const expression of [...namesByContext.keys()].slice(framed))
-				namesByContext.delete(expression)
 			this.variantStatements.set(root, [
 				...statements.splice(declared),
 				...this.links.splice(linked),
@@ -1791,7 +1740,6 @@ return [${returned.join(", ")}]
 			[...this.sharedWriters]
 				.map(([writer, name]) => `const ${name} = ${writer}`)
 				.join("\n"),
-			builders.join("\n"),
 			traversals.join("\n"),
 			this.links.join("\n"),
 			validators.join("\n\n"),
@@ -1803,6 +1751,8 @@ return [${returned.join(", ")}]
 
 	writeValidator(root: BaseRoot): string {
 		const shape = this.shapeOf(root)
+		// emitted before the key encodes it, so a value the build can't emit is refused for what it is
+		const meta = this.emit(root.meta)
 		const nodeName = this.unitsByHead.get(root.id)!.names[root.id]
 		const [id, holes] = (this.checkedRoots.has(root) ? traversalKeyOf : keyOf)(
 			root
@@ -1814,7 +1764,7 @@ return [${returned.join(", ")}]
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
 	${this.emit(pipeOf(root))},
-	{ meta: ${this.emit(root.meta)}${this.emitIntrospection(root)} }${key}
+	{ meta: ${meta}${this.emitIntrospection(root)} }${key}
 ${isTemplate ? "]" : ")"}`
 	}
 
@@ -2008,8 +1958,11 @@ ${isTemplate ? "]" : ")"}`
 
 	// a root's apply is passed only what its strategy reads, and a traversal no callback sees lacks the API Traversal adds for them
 	emitRootApply(root: BaseRoot, shape: string, nodeName: string): string {
-		const callbacks = raisableCodesOf(root) === "any"
-		const config = this.configOf(root)
+		assertDescribed(root)
+		const callbacks = declares(
+			root,
+			node => node.hasKind("predicate") || node.hasKind("morph")
+		)
 		const apply = writeRootApply(root, nodeName)
 		const read = Object.entries(rootApplyRuntime).filter(([param]) =>
 			new RegExp(`\\b${param}\\b`).test(apply)
@@ -2018,12 +1971,17 @@ ${isTemplate ? "]" : ")"}`
 		const args = read
 			.map(
 				([, value]) =>
-					`, ${this.emit(value === rootApplyRuntime.Traversal && !callbacks ? InternalTraversal : value)}`
+					`, ${this.emit(
+						value !== rootApplyRuntime.Traversal ? value
+						: this.baking.firstIssue ? FirstIssueTraversal
+						: callbacks ? Traversal
+						: InternalTraversal
+					)}`
 			)
 			.join("")
 		return `(function (node, config${params}) {
 		${apply}
-	})(${shape}, ${config}${args})`
+	})(${shape}, runtime.runtimeConfig${args})`
 	}
 
 	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator
@@ -2080,6 +2038,8 @@ ${isTemplate ? "]" : ")"}`
 
 	// a string printing a hole's name is completed at creation with arktype's own printing, joining a union's text from its branches', each shorter than it
 	emitString(s: string, within = Infinity): string {
+		const cases = this.casesByText.get(s)
+		if (cases) return `runtime.describeCases(${this.emit(cases)})`
 		const joined = this.joinedTexts.find(
 			([text]) => text.length < within && s.includes(text)
 		)
@@ -2244,12 +2204,6 @@ ${isTemplate ? "]" : ")"}`
 						)
 				)},`
 			:	""
-		// a discriminant's miss reads its union's description of the cases
-		const discriminantDescription =
-			!node.hasKind("union") || !node.compiledDiscriminant ? ""
-			: node.discriminantDescription.includes(holeNameMarker) ?
-				`,\n\tdiscriminantDescription: runtime.describeCases(${this.emit(node.discriminantCases)})`
-			:	`,\n\tdiscriminantDescription: ${JSON.stringify(node.discriminantDescription)}`
 		// a flag that is false, or a traversal the node lacks, is left out, which the runtime reads as undefined
 		const flags = shapeFlags.flatMap(flag =>
 			node[flag] ? [`\n\t${flag}: true,`] : []
@@ -2261,7 +2215,7 @@ ${isTemplate ? "]" : ")"}`
 	traverseAllows: ${traversals[0]},
 	traverseApply: ${traversals[1]},${transform}
 	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]},
-	$: runtime.runtimeScope${discriminantDescription}
+	$: runtime.runtimeScope
 }`
 	}
 
@@ -2300,6 +2254,7 @@ ${isTemplate ? "]" : ")"}`
 					`globalThis[${JSON.stringify(name)}]`
 				:	throwParseError(writeUnprecompilableMessage(printable(value)))
 		}
+		if (failureSites.has(value)) return this.emitSite(value)
 		// a structure's keys are read only with `in`, so they're emitted without their props
 		if (this.keyLookups.has(value)) {
 			const keys = Reflect.ownKeys(value).map(
@@ -2398,10 +2353,19 @@ ${isTemplate ? "]" : ")"}`
 		return `(data, ctx) => ${name}(data, ctx)`
 	}
 
+	emitSite(site: object): string {
+		return `{ ${Object.entries(site)
+			.map(
+				([k, v]) =>
+					`${k}: ${hasDomain(v, "object") ? this.emitSite(v) : this.emit(v)}`
+			)
+			.join(", ")} }`
+	}
+
 	emitLiteral(value: object): string {
 		const [literal, elements] = this.writeLiteral(value)
 		if (!elements.some(element => this.lateNames.has(element)))
-			return this.declareFrozen(value, `runtime.freeze(${literal})`)
+			return this.declareConst(value, "literal", `runtime.freeze(${literal})`)
 		const prototype = prototypeOf(value)
 		// assigning a __proto__ key to an object would set its prototype
 		if (
@@ -2421,20 +2385,6 @@ ${isTemplate ? "]" : ")"}`
 		)
 		this.lateNames.add(name)
 		this.fills.push(`runtime.freeze(runtime.assign(${name}, ${literal}))`)
-		return name
-	}
-
-	// content-equal error contexts are frozen, so the code declaring them declares one, as for a required prop of each key
-	declareFrozen(value: object, expression: string): string {
-		if (!this.contexts.has(value))
-			return this.declareConst(value, "literal", expression)
-		const { namesByContext, namesByValue } = this.declarations
-		let name = namesByContext.get(expression)
-		if (name) namesByValue.set(value, name)
-		else {
-			name = this.declareConst(value, "literal", expression)
-			namesByContext.set(expression, name)
-		}
 		return name
 	}
 
@@ -2507,70 +2457,64 @@ ${isTemplate ? "]" : ")"}`
 					))
 			:	this.emit(value)
 	}
-
-	// a validator's config, which registers en's writers of each code it can raise
-	configOf(root: BaseRoot): string {
-		const raisable = raisableCodesOf(root)
-		const writers =
-			raisable === "any" ?
-				"runtime.allErrorWriters"
-			:	`{ ${Object.keys(raisable)
-					.map(code => `${code}: runtime.${code}Writers`)
-					.join(", ")} }`
-		let config = `runtime.raising(${this.scopeConfigOf(root, raisable)}, ${writers})`
-		// a callback of the program's can raise any code, on data of any kind
-		if (declares(root, node => holdsCallback(node) || hasIndexSignature(node)))
-			config = `runtime.printing(${config}, runtime.printKind)`
-		return declares(root, node => hasMetaWriter(node) || holdsCallback(node)) ?
-				`runtime.inEn(${config})`
-			:	config
-	}
-
-	// the config of a scope whose writers differ from the program's
-	scopeConfigOf(root: BaseRoot, raisable: RaisableCodes): string {
-		const writers = configuredWritersOf(root, raisable)
-		if (!writers) return "runtime.runtimeConfig"
-		const config = root.$.resolvedConfig
-		return (
-			this.declarations.namesByValue.get(config) ??
-			this.declareConst(config, "config", `runtime.scopeConfig({ ${writers} })`)
-		)
-	}
 }
 
-const configuredWritersOf = (
-	root: BaseRoot,
-	raisable: RaisableCodes
-): string => {
+// a standalone validator's issues are written from what its nodes describe, so other text configured for them can't be precompiled
+const assertDescribed = (root: BaseRoot): void => {
 	const config = root.$.resolvedConfig
-	const configuredCodes: string[] = []
+	const raisable = raisableCodesOf(root)
 	let code: ArkErrorCode
 	for (code in errorWritersByCode) {
-		const writers: string[] = []
-		for (const k of writerKeys) {
-			const writer = config[code][k]
-			// the runtime's config holds the defaults and the writers the program configures
-			if (writer === $ark.resolvedConfig![code][k]) continue
-			if (typeof writer === "string")
-				writers.push(`${k}: ${JSON.stringify(writer)}`)
-			// grouping errors at a path can raise an intersection in any validator
-			else if (
-				raisable === "any" ||
-				raisable[code] ||
-				code === "intersection"
-			) {
+		if (raisable !== "any" && !raisable.has(code)) continue
+		for (const k of describingKeys) {
+			if (config[code][k] !== $ark.defaultConfig[code][k]) {
 				throwParseError(
 					writeUnprecompilableMessage(`a configured ${code} ${k}`)
 				)
 			}
 		}
-		if (writers.length) {
-			configuredCodes.push(
-				`${code}: [runtime.${code}Writers, { ${writers.join(", ")} }]`
-			)
+	}
+	for (const unit of rootUnitsOf(root)) {
+		for (const node of unit.declared) {
+			for (const k of describingKeys) {
+				const writer = node.meta[k]
+				if (
+					k === "expected" ? typeof writer === "function" : writer !== undefined
+				) {
+					throwParseError(
+						writeUnprecompilableMessage(
+							`\`${node.expression}\`'s configured ${k}`
+						)
+					)
+				}
+			}
 		}
 	}
-	return configuredCodes.join(", ")
+}
+
+// a callback can raise any code
+const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
+	if (
+		declares(root, node => node.hasKind("predicate") || node.hasKind("morph"))
+	)
+		return "any"
+	const codes = new Set<ArkErrorCode>()
+	for (const unit of rootUnitsOf(root)) {
+		for (const ref of unit.refs) {
+			if (!failureSites.has(ref as object)) continue
+			const site = ref as FailureSite
+			if (site.value) codes.add(site.value.code)
+			if (site.missing) codes.add(site.missing.code)
+			if (!site.value && !site.missing) codes.add("union")
+		}
+		for (const node of unit.declared) {
+			if (node.hasKind("union") && node.compiledDiscriminant)
+				codes.add("discriminant")
+			else if (node.hasKind("structure") && node.undeclared === "reject")
+				codes.add("undeclared")
+		}
+	}
+	return codes
 }
 
 const { getTime } = Date.prototype
@@ -2662,37 +2606,6 @@ const collectDefaults = (
 	}
 }
 
-type RaisableCodes = "any" | { [code in ArkErrorCode]?: true }
-
-const raisableCodesByRoot = new WeakMap<BaseRoot, RaisableCodes>()
-
-// what a Type's traversal can raise other than an intersection, which grouping errors at a path can always raise
-const raisableCodesOf = (root: BaseRoot): RaisableCodes => {
-	let codes = raisableCodesByRoot.get(root)
-	if (codes) return codes
-	// a predicate or morph can raise any code
-	if (
-		declares(root, node => node.hasKind("predicate") || node.hasKind("morph"))
-	)
-		codes = "any"
-	else {
-		codes = {}
-		for (const unit of rootUnitsOf(root)) {
-			for (const context of unit.errorContexts)
-				codes[context.code as ArkErrorCode] = true
-			// traversal raises these itself
-			for (const node of unit.declared) {
-				if (node.hasKind("union"))
-					codes[node.compiledDiscriminant ? "discriminant" : "union"] = true
-				else if (node.hasKind("structure") && node.undeclared === "reject")
-					codes.undeclared = true
-			}
-		}
-	}
-	raisableCodesByRoot.set(root, codes)
-	return codes
-}
-
 const sharedByUnit = new WeakMap<RootUnit, boolean>()
 
 // a Transform member writes to its input, which a bundle's CommonJS or IIFE output leaves sloppy, where writing to a frozen input is ignored rather than throwing
@@ -2716,7 +2629,6 @@ const isSharedUnit = (unit: RootUnit): boolean => {
 		shared =
 			!unit.identityNamed.has(unit.roots[0].id) &&
 			!unit.refs.some(ref => !isNode(ref) && holdsLocal(ref)) &&
-			!unit.errorContexts.some(context => holdsLocal(context)) &&
 			reads.every(node => isSharedUnit(unitOf(node, unit)))
 		sharedByUnit.set(unit, shared)
 	}
@@ -2727,20 +2639,6 @@ const declares = (
 	root: BaseRoot,
 	predicate: (node: BaseNode) => boolean
 ): boolean => rootUnitsOf(root).some(unit => unit.declared.some(predicate))
-
-// a key an index signature checks may be checked by another prop, whose errors
-// are grouped into an intersection on data of any kind
-const hasIndexSignature = (node: BaseNode): boolean =>
-	node.hasKind("structure") && node.index !== undefined
-
-const hasMetaWriter = (node: BaseNode): boolean =>
-	writerKeys.some(k => typeof node.meta[k] === "function")
-
-// a function arktype doesn't own can raise an error whose meta holds writers
-const holdsCallback = (node: BaseNode): boolean =>
-	node.hasKind("predicate") ?
-		isHole(node.predicate)
-	:	node.hasKind("morph") && node.morphs.some(isHole)
 
 const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (seen.has(value)) return false
@@ -2759,6 +2657,7 @@ const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 
 export const holdsWritable = (
 	value: unknown,
+	writesJsonSchema: boolean,
 	seen = new Set<unknown>()
 ): boolean => {
 	if (!hasDomain(value, "object") || isHole(value) || seen.has(value))
@@ -2766,32 +2665,55 @@ export const holdsWritable = (
 	seen.add(value)
 	if (isDateObject(value) || isRegExpObject(value)) return true
 	if (hasArkKind(value, "root")) {
+		// a JSON Schema arktype can't write throws a context holding the Date a node compares against
+		if (
+			writesJsonSchema &&
+			value.references.some(node => Object.values(node.inner).some(isDate))
+		)
+			return true
 		const units = rootUnitsOf(value)
 		// only traversal reads a pattern's own RegExp
 		for (const unit of units) {
 			for (const node of unit.declared)
 				if (node.hasKind("pattern")) seen.add(node.instance)
 		}
-		return [
-			value.meta,
-			...units.flatMap(unit => [...unit.refs, ...unit.errorContexts])
-		].some(held => holdsWritable(held, seen))
+		return [value.meta, ...units.flatMap(unit => unit.refs)].some(held =>
+			holdsWritable(held, writesJsonSchema, seen)
+		)
 	}
-	if (isTypedFn(value))
-		return [value.params, value.returns].some(held => holdsWritable(held, seen))
+	if (isTypedFn(value)) {
+		return [value.params, value.returns].some(held =>
+			holdsWritable(held, writesJsonSchema, seen)
+		)
+	}
 	return (
 		(hasArkKind(value, "module") ||
 			(!isNode(value) && isPlainLiteral(value))) &&
-		Reflect.ownKeys(value).some(k => holdsWritable(Reflect.get(value, k), seen))
+		Reflect.ownKeys(value).some(k =>
+			holdsWritable(Reflect.get(value, k), writesJsonSchema, seen)
+		)
 	)
+}
+
+// a text printing a hole's name is completed at creation, so a validator's code references it
+const unitOptions: UnitOptions = {
+	raisesIssues: true,
+	referencesText: text => text.includes(holeNameMarker)
 }
 
 const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()
 
 const rootUnitsOf = (root: BaseRoot): RootUnit[] => {
 	let units = unitsByRoot.get(root)
-	if (!units)
-		unitsByRoot.set(root, (units = precompileRootUnits(root, runtimeKeyOf)))
+	if (!units) {
+		unitsByRoot.set(
+			root,
+			(units = precompileRootUnits(root, {
+				...unitOptions,
+				keyOf: runtimeKeyOf
+			}))
+		)
+	}
 	return units
 }
 
@@ -2841,7 +2763,6 @@ const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 		{
 			name: units[0].names[root.id],
 			refs: units.map(unit => unit.refs),
-			errorContexts: units.map(unit => unit.errorContexts),
 			meta: root.meta,
 			// where its methods, like `and` and `or`, parse their arguments
 			...(isScoped && { $: root.$ })

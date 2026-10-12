@@ -54,7 +54,8 @@ import type {
 	attachmentsOf
 } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
-import { ArkErrors } from "./shared/errors.ts"
+import { ArkTraversal, type ArkErrors } from "./shared/errors.ts"
+import { ArkErrors as BaseArkErrors } from "./shared/issues.ts"
 import {
 	basisKinds,
 	constraintKinds,
@@ -85,7 +86,8 @@ import {
 	pipe,
 	transform,
 	transformResolution,
-	Traversal,
+	type Traversal,
+	type FailHandler,
 	type TraverseAllows,
 	type TraverseApply,
 	type TraverseTransform
@@ -474,7 +476,7 @@ export abstract class BaseNode<
 						const allowed =
 							untracked ?? allowsInContext(this, data, this.$.resolvedConfig)
 						if (!allowed) return this.applyRoot(data).finalize(onFail)
-						const ctx = new Traversal(data, this.$.resolvedConfig)
+						const ctx = new ArkTraversal(data, this.$.resolvedConfig)
 						ctx.tracksTransforms = untracked === undefined
 						const result = transformResolution(
 							ctx,
@@ -497,7 +499,7 @@ export abstract class BaseNode<
 						return this.createOptimisticRootApply()
 					if (this.hasKind("union") && !this.compiledDiscriminant) {
 						return (data, onFail) => {
-							const ctx = new Traversal(data, this.$.resolvedConfig)
+							const ctx = new ArkTraversal(data, this.$.resolvedConfig)
 							const result = transform(ctx, this, data)
 							if (result === unset) return this.applyRoot(data).finalize(onFail)
 							return ctx.hasError() ? ctx.finalize(onFail) : result
@@ -506,7 +508,7 @@ export abstract class BaseNode<
 				}
 				return (data, onFail) => {
 					if (!this.allows(data)) return this.applyRoot(data).finalize(onFail)
-					const ctx = new Traversal(data, this.$.resolvedConfig)
+					const ctx = new ArkTraversal(data, this.$.resolvedConfig)
 					const result = transform(ctx, this, data)
 					return ctx.hasError() ? ctx.finalize(onFail) : result
 				}
@@ -531,8 +533,8 @@ export abstract class BaseNode<
 					const morphed = (branch.morphs[j] as Morph.ContextFree)(
 						result as never
 					)
-					if (morphed instanceof ArkErrors) {
-						const ctx = new Traversal(data, this.$.resolvedConfig)
+					if (morphed instanceof BaseArkErrors) {
+						const ctx = new ArkTraversal(data, this.$.resolvedConfig)
 						addErrors(ctx, morphed)
 						return ctx.finalize(onFail)
 					}
@@ -545,7 +547,7 @@ export abstract class BaseNode<
 	}
 
 	private applyRoot(data: unknown): Traversal {
-		const ctx = new Traversal(data, this.$.resolvedConfig)
+		const ctx = new ArkTraversal(data, this.$.resolvedConfig)
 		if (this.includesAlias) return applyCyclic(this, data, ctx)
 		this.traverseApply(data, ctx)
 		return ctx
@@ -1324,10 +1326,7 @@ export type KeyOrKeyNode = Key | BaseRoot
 
 export type GettableKeyOrNode = KeyOrKeyNode | number
 
-export type RootApply = (
-	data: unknown,
-	onFail: ArkErrors.Handler | null
-) => unknown
+export type RootApply = (data: unknown, onFail: FailHandler | null) => unknown
 
 export type RootApplyStrategy =
 	| "allows"

@@ -8,6 +8,7 @@ import {
 import { shareConfig } from "@ark/schema/runtime"
 import { hasDomain, printable } from "@ark/util"
 import { configure } from "arktype/internal/config.js"
+import { keptIssuesOf, thrownIssuesOf } from "./issues.ts"
 
 shareConfig(configure)
 
@@ -139,12 +140,6 @@ const shadowOf = (
 	)
 	if ("thrown" in defined) throw defined.thrown
 	if (isData) return original
-	const nodes =
-		isType ? inArktype(() => [original, ...original.references]) : []
-	for (const value of nodes.flatMap(node => Object.values(node.meta))) {
-		if (typeof value === "function")
-			writers.add(callbackByWrapper.get(value) ?? value)
-	}
 	const byCounterpart = shadowedByPair.get(original as object) ?? new WeakMap()
 	shadowedByPair.set(original as object, byCounterpart)
 	const existing = byCounterpart.get(pair.counterpart as object)
@@ -397,9 +392,6 @@ const wrapperByCallback = new WeakMap<Function, Function>()
 
 const callbackByWrapper = new WeakMap<object, Function>()
 
-// e.g. a meta's `message`, with which each side writes its own errors
-const writers = new WeakSet<Function>()
-
 // one per function, so its facts, like `name`, `length` and identity, are the program's
 const callbackOf = (value: unknown): unknown => {
 	if (typeof value !== "function") return value
@@ -407,8 +399,7 @@ const callbackOf = (value: unknown): unknown => {
 	if (!wrapper) {
 		wrapper = new Proxy(value, {
 			apply: (target, receiver, args) =>
-				!validation || writers.has(target) ?
-					settle(outcomeOfCall(target, receiver, args))
+				!validation ? settle(outcomeOfCall(target, receiver, args))
 				: validation.phase === "record" ?
 					record(validation, target, receiver, args)
 				:	replay(validation, target, receiver, args)
@@ -447,7 +438,7 @@ const ctxStateOf = (
 	ctx && {
 		path: [...ctx.path],
 		errorCount: ctx.currentErrorCount,
-		errors: ctx._errors?._added.map(e => [e.code, ...e.path]) ?? [],
+		errors: ctx._errors?._.map(e => [e.code, ...e.path]) ?? [],
 		data: copied?.get(ctx.data as never) ?? ctx.data
 	}
 
@@ -712,21 +703,16 @@ const validateBoth = (
 }
 
 const observe = (outcome: Outcome): Record<string, unknown> => {
-	if ("thrown" in outcome) return { threw: thrownOf(outcome.thrown) }
-	const { value } = outcome
-	if (!hasArkKind(value, "errors")) return { out: value }
-	return {
-		summary: value.summary,
-		issues: value.issues.map(e => ({
-			code: e.code,
-			path: [...e.path],
-			data: e.data,
-			expected: e.expected,
-			actual: e.actual,
-			problem: e.problem,
-			message: e.message
-		}))
+	if ("thrown" in outcome) {
+		const issues = thrownIssuesOf(outcome.thrown)
+		return issues ?
+				{ threw: "TraversalError", issues }
+			:	{ threw: thrownOf(outcome.thrown) }
 	}
+	const { value } = outcome
+	return hasArkKind(value, "errors") ?
+			{ issues: keptIssuesOf(value) }
+		:	{ out: value }
 }
 
 const compare = (

@@ -4,7 +4,7 @@
 
 ### Return errors as plain objects
 
-The errors in an `ArkErrors`' `issues` are plain objects without getters or methods, the same in arktype and in validators precompiled for `arktype/runtime`. Each has the keys its JSON had, in the same order, with `propString` before `expected`:
+The errors in an `ArkErrors`' `issues` are plain objects without getters or methods. Each has the keys its JSON had, in the same order, with `propString` before `expected`:
 
 ```ts
 const out = type({ n: "number % 2" })({ n: 1 })
@@ -34,7 +34,7 @@ for (const error of out.issues) {
 
 `path` is a plain array rather than a `ReadonlyPath`. A `propString` passed to `ctx.reject` or `ctx.error` is ignored, since it's written from the path.
 
-`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()`, `toString()` and `toLocaleString(locale)`. `byPath`, `flatByPath`, `flatProblemsByPath` and `byAncestorPath` are functions of an `ArkErrors`, exported by `arktype`, `arktype/runtime` and `@ark/schema`:
+`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()`, `toString()` and `toLocaleString(locale)`. `byPath`, `flatByPath`, `flatProblemsByPath` and `byAncestorPath` are functions of an `ArkErrors`, exported by `arktype` and `@ark/schema`:
 
 ```ts
 import { flatProblemsByPath } from "arktype"
@@ -268,7 +268,13 @@ A call to `define`, which returns its argument, is replaced by the argument.
 
 A validator bakes `meta`, and lacks the members that compose a Type, like `and` or `in`, so calling one is a TypeError. It has `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` only where the build's `introspection` option lists them, and reading one it lacks throws an error naming the member and the option, so `String(User)` throws unless `expression` is listed and `JSON.stringify({ User })` unless `toJSON` is. An artifact freezes what it creates, so a write to one throws in strict mode: its validators and their shared prototype, its Modules, Scopes, Generics, configs and node shapes, and every literal it emits, such as `meta`. A Date or RegExp it holds isn't frozen, as arktype's isn't. `arktype/runtime`'s `type` is frozen too. The build refuses what the runtime can't reproduce, like an instance of a class other than Date or RegExp, naming it. Nothing checks that an artifact runs on the version of `arktype/runtime` it was built with, or that `arktype` loads only for runtime islands, so rebuild after upgrading: an artifact on another version can throw a TypeError or validate otherwise.
 
-A validator's errors are arktype's, written only in en, since writing another locale needs the description writers of arktype's nodes. The build refuses a configured locale and an import of `arktype/locales`, and `toLocaleString(locale)` and `messageIn` throw for any locale but en, even beside a runtime island. The `ctx.config` a narrow or morph receives holds only `jitless: true`, `onFail`, en as its locale and each code's error writers, its Scope's included, so another key a callback reads there, like `onUndeclaredKey`, is `undefined`.
+A validator returns errors of its own, which `instanceof type.errors` recognizes. Each of their `issues` is a plain object holding the failed check's `code`, the `path` and `data` it failed at, and `expected`, what the failing node describes, like `"a string"` or `"at least length 8"`, which is `undefined` for a missing or undeclared key. Its `message` is written when the issues are first read, through `issues`, `summary`, `toString()`, `toJSON()`, `throw()` or Standard Schema's `issues`, and reads `name must be a string`, `name is missing`, `name must be removed` or `name is invalid`, its path's keys joined by `.` and its indices written as `[0]`. It doesn't say what the value was. Errors at one path stay apart, where arktype groups them, and a union no branch allows is one issue naming the union's description rather than one per branch. A `ctx.reject`, `ctx.mustBe` or `ctx.error` adds an issue with the text it received. The errors have `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()`, and a `TraversalError`'s message is their summary. `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`, since locales and error writers need arktype's nodes. The build refuses a configured locale, an import of `arktype/locales`, and a configured `expected`, `problem` or `message` for a code the Type can raise, a string among them, as well as a writer in a node's meta other than an `expected` string. The `ctx.config` a narrow or morph receives holds only `jitless: true` and `onFail`, so another key a callback reads there, like `onUndeclaredKey`, is `undefined`.
+
+Build with `errors: "first"` to stop each validation at its first issue, so invalid data costs one check's failure rather than a walk of the rest of it:
+
+```ts
+precompile.vite({ errors: "first" })
+```
 
 A program's `configure()` call stays in place and configures `arktype/runtime`, which fixes its configuration at the first validator it creates, as arktype does at the first Type. It throws if `configure()` comes after that, or under a configuration other than the one the validators were built under. It returns its argument, where arktype's returns arktype's configuration with the argument merged in, so a keyword configured as a string reads as that string through it.
 

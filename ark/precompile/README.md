@@ -48,6 +48,12 @@ A standalone validator has `expression`, `description`, `json`, `toJSON()`, `toJ
 precompile.vite({ introspection: ["toJsonSchema", "~standard.jsonSchema"] })
 ```
 
+A standalone validator returns errors of its own. Each issue holds the failed check's `code`, `path`, `data` and `expected`, what the failing node describes, and a `message` like `name must be a string`, written when the issues are first read. A message doesn't say what the value was, the errors arktype groups at one path stay apart, and a union no branch allows is one issue naming the union's description. `errors: "first"` stops each validation at its first issue:
+
+```ts
+precompile.vite({ errors: "first" })
+```
+
 `shadow: true` makes a test suite tell where a standalone build would behave otherwise than arktype. Each definition is still precompiled, and also created by arktype from the same values, each function it holds evaluated once and passed to both:
 
 ```ts
@@ -66,7 +72,7 @@ Where they agree, it returns what arktype returns. Where they don't, it throws a
 During a validation, a function a definition holds runs once: each of the validator's calls is answered from arktype's, with what it wrote to its arguments, or to an object it took from them and returned, or held in a plain object or array it returned, written to the validator's. Only plain writes are written that way: adding, setting or deleting an ordinary key of a plain object or array, with the other keys keeping their order. A call that adds an error to `ctx`, or writes its arguments in any other way, like setting a `Date`'s time, adding to a `Map` or `Set`, freezing an object, moving a key or writing something that can't be copied, runs again for the validator, which must answer alike. These run for each side and aren't compared:
 
 - calls made as a definition is created
-- error writers in a `meta` or `configure()`, `onFail` among them, which run as shadow mode compares the validation's errors, fixing their text then
+- `onFail`, which each side calls with its own errors
 - getters and Proxy traps on the input
 
 A callback's write to anything but its arguments, like `ctx.root` or what it closes over, reaches only arktype's input, so where the Type transforms, shadow mode reports the input as diverging. So does a later write through a morph's result that can't be copied, like a class instance holding the input, which the validator receives as arktype's morph returned it.
@@ -97,7 +103,7 @@ configure({
 precompile.vite({ config: "./config.ts" })
 ```
 
-The build evaluates the argument, which must be static, and precompiles every definition under it, so a `description` writer must be a static helper. Other writers and `onFail` can be any function: the call stays in the program, where it configures `arktype/runtime` and the arktype runtime islands run on. The runtime fixes its configuration when it creates its first validator and throws if `configure()` runs after that or a second time, or receives other values than a validator was built under. The build stamps a hash of the argument's values into the call and each validator, counting a function only as a function, so a `description` writer a loader or plugin changes after the build read it isn't caught. In standalone mode, `configure()` returns its argument rather than arktype's configuration with the argument merged in.
+The build evaluates the argument, which must be static, and precompiles every definition under it, so a `description` writer must be a static helper. A locale, or an `expected`, `problem` or `message` for a code a precompiled Type can raise, fails the build, since a standalone validator writes its own messages, and an `actual` writer is unused, since they never say what the value was. `onFail` can be any function: the call stays in the program, where it configures `arktype/runtime` and the arktype runtime islands run on. The runtime fixes its configuration when it creates its first validator and throws if `configure()` runs after that or a second time, or receives other values than a validator was built under. The build stamps a hash of the argument's values into the call and each validator, counting a function only as a function, so a `description` writer a loader or plugin changes after the build read it isn't caught. In standalone mode, `configure()` returns its argument rather than arktype's configuration with the argument merged in.
 
 The precompiler applies the configuration to arktype in its own thread, so each driver runs it in a worker. The Turbopack loader applies it where Turbopack runs the loader, so a change to the configuration applies once the dev server restarts.
 

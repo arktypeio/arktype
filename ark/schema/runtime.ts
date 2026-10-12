@@ -1,45 +1,14 @@
-import { serializePrimitive, throwParseError } from "@ark/util"
+import { throwParseError } from "@ark/util"
 import type { ArkSchemaConfig, ResolvedConfig } from "./config.ts"
-import {
-	enInfo,
-	intersectionWriters,
-	writeMessage,
-	writeProblem,
-	type errorWritersOf
-} from "./shared/errorWriters.ts"
-import type {
-	ActualWriter,
-	ArkErrorCode,
-	ExpectedWriter
-} from "./shared/errors.ts"
-import type { Locale } from "./shared/locale.ts"
 
-export {
-	afterWriters,
-	beforeWriters,
-	describePredicate,
-	discriminantWriters,
-	divisorWriters,
-	domainWriters,
-	exactLengthWriters,
-	intersectionWriters,
-	maxLengthWriters,
-	maxWriters,
-	minLengthWriters,
-	minWriters,
-	patternWriters,
-	predicateWriters,
-	protoWriters,
-	requiredWriters,
-	undeclaredWriters,
-	unionWriters,
-	unitWriters,
-	writePredicateActual,
-	writePredicateExpected,
-	writePredicateProblem,
-	writeProblem
-} from "./shared/errorWriters.ts"
-export * from "./shared/errors.ts"
+export type {
+	ArkError,
+	ArkErrorCode,
+	ArkErrorInput,
+	ErrorContextsByCode
+} from "./shared/errors.ts"
+export { describePredicate } from "./shared/errorWriters.ts"
+export * from "./shared/issues.ts"
 export {
 	supportedJsonSchemaTargets,
 	validateStandardJsonSchemaTarget
@@ -54,101 +23,12 @@ export {
 } from "./shared/utils.ts"
 export { arrayIndexMatcher } from "./structure/shared.ts"
 
-export type ErrorWritersByCode = {
-	[code in ArkErrorCode]?: errorWritersOf<code>
-}
-
-// node error contexts carry their descriptions, so expected reads them rather than describing a node
-const writeExpected: ExpectedWriter = ctx => ctx.description!
-
-// data no writer of its code describes is a string or a number, unless printing configured its validator
-const writeActual: ActualWriter = data => serializePrimitive(data as never)
-
-const registered: { [code in ArkErrorCode]?: ResolvedConfig[code] } = {}
-
 // frozen when the first validator is created, as arktype fixes its config when the first Type is
-export const runtimeConfig: ResolvedConfig = Object.assign(
-	Object.create(registered),
-	{
-		// errors are built without generating code, so validation never needs eval
-		jitless: true,
-		onFail: null,
-		// en's writers don't read it, and inEn and configure() give en to writers that may
-		locale: Object.freeze({})
-	}
-)
-
-const resolveWriters = (
-	code: ArkErrorCode,
-	writers: object,
-	configured?: object
-): object =>
-	Object.freeze({
-		expected: writeExpected,
-		actual: writeActual,
-		problem: writeProblem,
-		message: writeMessage,
-		...writers,
-		...programConfig?.[code],
-		...configured
-	})
-
-const register = (code: ArkErrorCode, writers: object): void => {
-	if (!registered[code]) {
-		Object.defineProperty(registered, code, {
-			value: resolveWriters(code, writers),
-			enumerable: true
-		})
-	}
-}
-
-export const raising = (
-	config: ResolvedConfig,
-	writersByCode: ErrorWritersByCode
-): ResolvedConfig => {
-	// errors at one path are grouped into an intersection
-	register("intersection", intersectionWriters)
-	let code: ArkErrorCode
-	for (code in writersByCode) register(code, writersByCode[code]!)
-	return config
-}
-
-export const printing = (
-	config: ResolvedConfig,
-	printer: (data: unknown) => string
-): ResolvedConfig => {
-	const descriptors: PropertyDescriptorMap = {}
-	let code: ArkErrorCode
-	for (code in registered) {
-		const writers = config[code]
-		if (writers.actual === writeActual) {
-			descriptors[code] = {
-				value: Object.freeze({ ...writers, actual: printer }),
-				enumerable: true
-			}
-		}
-	}
-	return Object.freeze(Object.create(config, descriptors))
-}
-
-export const inEn = (config: ResolvedConfig): ResolvedConfig =>
-	Object.freeze(Object.create(config, { locale: { value: enInfo } }))
-
-export const scopeConfig = (overridesByCode: {
-	[code in ArkErrorCode]?: [writers: object, overrides: object]
-}): ResolvedConfig => {
-	const descriptors: PropertyDescriptorMap = {}
-	let code: ArkErrorCode
-	for (code in overridesByCode) {
-		const [writers, overrides] = overridesByCode[code]!
-		// defined, since assigning would fail on the code's writers it inherits
-		descriptors[code] = {
-			value: resolveWriters(code, writers, overrides),
-			enumerable: true
-		}
-	}
-	return Object.freeze(Object.create(runtimeConfig, descriptors))
-}
+export const runtimeConfig: ResolvedConfig = {
+	// validation never generates code, so it never needs eval
+	jitless: true,
+	onFail: null
+} as never
 
 // a node shape's $, which traversal reads only for its config
 export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({
@@ -174,7 +54,6 @@ export const configure = (
 	configureIslands?.(config)
 	if ("onFail" in config)
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
-	;(runtimeConfig as { locale: Locale.Info }).locale = enInfo
 	let isRechecked = false
 	checkConfigured = built => {
 		// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
@@ -186,7 +65,7 @@ export const configure = (
 		if (fingerprint === undefined || built !== fingerprint)
 			throwParseError(configMismatchMessage)
 	}
-	// arktype copies a code's writers when configure() is called, so a later write reaches neither
+	// arktype copies what configure() receives when it's called, so an island's arktype configured later receives that copy
 	const held: Record<string, unknown> = {}
 	for (const k in config) {
 		const v = (config as Record<string, unknown>)[k]

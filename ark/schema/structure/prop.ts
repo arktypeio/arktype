@@ -110,14 +110,12 @@ export abstract class BaseProp<
 
 		if (this.hasKind("required")) {
 			js.else(() =>
-				js.traversalKind === "Apply" ?
-					js
+				js.traversalKind !== "Apply" ? js.return(false)
+				: js.raisesIssues ? js.line(js.error(this.errorContext, key))
+				: js
 						.line(`ctx.path.push(${key})`)
-						.line(
-							`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)}, data)`
-						)
+						.line(js.error(this.errorContext))
 						.line("ctx.path.pop()")
-				:	js.return(false)
 			)
 		}
 

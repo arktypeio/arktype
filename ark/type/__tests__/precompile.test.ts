@@ -72,7 +72,7 @@ contextualize(() => {
 			Object.assign(
 				{},
 				...types.map(
-					t => precompileRootUnits(t.internal, runtimeKeyOf)[0].names
+					t => precompileRootUnits(t.internal, { keyOf: runtimeKeyOf })[0].names
 				)
 			)
 		const alone = { ...namesOf(Email), ...namesOf(After) }

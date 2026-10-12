@@ -155,7 +155,6 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			attest(stdout.slice(0, expected.length)).equals(expected)
 			attest(JSON.parse(stdout.slice(expected.length))).snap([
 				"alias",
-				"build",
 				"domain",
 				"expression",
 				"intersection",

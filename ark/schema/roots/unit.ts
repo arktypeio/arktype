@@ -83,13 +83,7 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			return super.compile(js)
 		const unit = js.ref(this.unit)
 		if (js.traversalKind === "Allows") js.return(`data === ${unit}`)
-		else {
-			js.if(`data !== ${unit}`, () =>
-				js.line(
-					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)}, data)`
-				)
-			)
-		}
+		else js.if(`data !== ${unit}`, () => js.line(js.error(this.errorContext!)))
 	}
 
 	expression: string =

@@ -103,9 +103,7 @@ const HasPerson = type({ person: "unknown" }).narrow(o =>
 	Person.allows(o.person)
 )
 
-const writeLong = () => "long"
-
-const Long = type("string > 3").configure({ expected: writeLong })
+const Long = type("string > 3").configure({ expected: "long" })
 
 class Counter {
 	count = 1
@@ -174,11 +172,7 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 			HasPerson.allows({ person: { name: "a" } }),
 			HasPerson.allows({ person: {} })
 		],
-		writer: [
-			Long("ab").toString(),
-			outcomeOf(() => Long.assert("ab")),
-			Long.meta.expected === writeLong
-		],
+		long: [Long("ab").toString(), outcomeOf(() => Long.assert("ab"))],
 		uncopied: Bumped(new Counter())
 	}
 }

@@ -4,6 +4,12 @@ import { readFileSync, writeFileSync } from "node:fs"
 import { registerHooks } from "node:module"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { inspect } from "node:util"
+import {
+	keptIssuesOf,
+	keptParseMessageOf,
+	thrownIssuesOf,
+	type KeptIssue
+} from "@ark/precompile/internal/issues.ts"
 
 // runs each file of a perturbation manifest once per perturbation, as written (P) or precompiled (P') in standalone
 // or cache mode, recording what each folded site creates
@@ -454,8 +460,22 @@ const settle = (result: unknown) =>
 		])
 	:	result
 
-const messageOf = (e: unknown) =>
-	e instanceof Error ? `${e.constructor.name}: ${e.message}` : String(e)
+const messageOf = (e: unknown) => {
+	const issues = thrownIssuesOf(e)
+	return (
+		issues ? `TraversalError: ${JSON.stringify(serializeIssues(issues))}`
+		: e instanceof Error ?
+			`${e.constructor.name}: ${keptParseMessageOf(e.message)}`
+		:	String(e)
+	)
+}
+
+const serializeIssues = (issues: KeptIssue[]) =>
+	issues.map(({ code, path, data }) => ({
+		code,
+		path: path.map(String),
+		data: serialize(data)
+	}))
 
 const samples = (): unknown[] => [
 	undefined,
@@ -493,7 +513,7 @@ const serialize = (out: unknown): unknown =>
 		hasDomain(out, "object") &&
 		(out as { " arkKind"?: string })[" arkKind"] === "errors"
 	) ?
-		{ errors: (out as { summary: string }).summary }
+		{ errors: serializeIssues(keptIssuesOf(out as never)) }
 	: typeof out === "function" && isArk(out) ?
 		{ type: (out as Function & { expression: string }).expression }
 	:	inspect(out, { depth: 4, breakLength: Infinity, maxArrayLength: 10 })
@@ -532,7 +552,7 @@ const sample = (validate: (data: unknown) => unknown) =>
 		}
 	})
 
-// the result of a call, as design/precompile.md §2 observes it: its output, every field of each error, or what it throws
+// the result of a call, as design/precompile.md §2 observes it: its output, what a standalone validator keeps of each error, or what it throws
 const outcomeOf = (call: () => unknown, input?: unknown): Observation => {
 	try {
 		const out: any = call()
@@ -540,22 +560,13 @@ const outcomeOf = (call: () => unknown, input?: unknown): Observation => {
 				hasDomain(out, "object") &&
 					(out as { " arkKind"?: string })[" arkKind"] === "errors"
 			) ?
-				{
-					summary: out.summary,
-					errors: out.issues.map((e: any) => ({
-						keys: Reflect.ownKeys(e).map(String),
-						code: e.code,
-						path: e.path.map(String),
-						data: serialize(e.data),
-						expected: e.expected,
-						actual: e.actual,
-						problem: e.problem,
-						message: e.message
-					}))
-				}
+				{ errors: serializeIssues(keptIssuesOf(out)) }
 			:	{ out: serialize(out), isInput: out === input }
 	} catch (e) {
-		return { threw: String(e) }
+		const issues = thrownIssuesOf(e)
+		return issues ?
+				{ threw: "TraversalError", errors: serializeIssues(issues) }
+			:	{ threw: String(e) }
 	}
 }
 

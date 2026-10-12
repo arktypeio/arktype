@@ -72,11 +72,6 @@ const arktypeNamespacesBySpecifier: Record<string, object> =
 export const runtimeExports: Record<string, 1> = Object.setPrototypeOf(
 	{
 		ArkErrors: 1,
-		byAncestorPath: 1,
-		byPath: 1,
-		flatByPath: 1,
-		flatProblemsByPath: 1,
-		messageIn: 1,
 		ParseError: 1,
 		Traversal: 1,
 		TraversalError: 1

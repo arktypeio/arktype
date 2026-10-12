@@ -3,11 +3,12 @@ import { After, Before, Epochs, Literal, Stamps } from "./dates.ts"
 import { Formatted, Parsed } from "./local.ts"
 import { Big, Large, Lengths, Small, Stepped } from "./numbers.ts"
 
+// errors print what a standalone validator keeps of arktype's, which writes its text from more
 const observe = (samples: [type.Any, unknown][]) =>
 	samples.map(([T, data]) => {
 		const out = T(data)
 		return out instanceof type.errors ?
-				[out.summary, out.issues.map(e => [e.expected, e.actual, e.problem])]
+				out.issues.map(issue => [issue.code, ...issue.path])
 			:	out
 	})
 

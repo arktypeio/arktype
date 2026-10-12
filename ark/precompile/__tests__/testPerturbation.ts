@@ -7,6 +7,7 @@ import {
 	type PrecompileMode
 } from "@ark/precompile"
 import { hasArkKind } from "@ark/schema"
+import { errorWritersByCode } from "@ark/schema/internal"
 import { arkKindOf } from "@ark/util"
 import type { IntrospectionMember } from "arktype/internal/runtime.ts"
 import { isTypedFn, keyOf, type Foldable } from "arktype/internal/standalone.ts"
@@ -378,6 +379,25 @@ const isCreationCheck = (observation: Observation | undefined) =>
 		observation.threw
 	)
 
+// a disagreement outside the guarantee, counted by why
+const exclusions: [
+	reason: string,
+	matches: (original: string, precompiled: string) => boolean
+][] = [
+	[
+		"reads what arktype/runtime lacks, so the build refuses the module",
+		(_, precompiled) => precompiled.includes(" is not in arktype/runtime")
+	],
+	[
+		"raises a code arktype lacks, whose writers arktype throws reading",
+		(original, precompiled) =>
+			original.includes("TypeError: Cannot read properties of undefined") &&
+			[...precompiled.matchAll(/"code":"([^"]*)"/g)].some(
+				([, code]) => !(code in errorWritersByCode)
+			)
+	]
+]
+
 export interface Disagreement {
 	perturbation: Perturbation
 	site: string
@@ -418,7 +438,9 @@ export const compareWorlds = (
 							"agrees"
 						:	"agrees with the change"
 					: isCreationCheck(actual) ? "throws at creation"
-					: "disagrees"
+					: (exclusions.find(([, matches]) =>
+							matches(comparable(expected), comparable(actual))
+						)?.[0] ?? "disagrees")
 				counts[`${kind}: ${outcome}`] = (counts[`${kind}: ${outcome}`] ?? 0) + 1
 				if (actual) observedSites.add(site)
 				if (outcome === "disagrees") {

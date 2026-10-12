@@ -1,5 +1,6 @@
 import {
 	hasDomain,
+	type array,
 	isArray,
 	isThunk,
 	noSuggest,
@@ -9,29 +10,41 @@ import {
 import type { ResolvedConfig } from "../config.ts"
 import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
-import {
-	addError,
+import type {
+	ArkError,
+	ArkErrorCode,
+	ArkErrorInput,
 	ArkErrors,
-	errorOfContext,
-	errorOfNodeContext,
-	mergeErrors,
-	type ArkError,
-	type ArkErrorCode,
-	type ArkErrorContextInput,
-	type ArkErrorInput,
-	type NodeErrorContextInput
+	NodeErrorContextInput
 } from "./errors.ts"
+import {
+	ArkErrors as BaseArkErrors,
+	failsIn,
+	issueAt,
+	issueWith,
+	mergeIssues,
+	unionIssue,
+	type ArkIssue,
+	type FailureInput,
+	type FailureSite,
+	type FailureContext,
+	type CompactApply,
+	type UnionSite
+} from "./issues.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 
+// arktype's handlers receive its own errors, of which a validator's are a base
+export type FailHandler = (errors: never) => unknown
+
 export type BranchTraversal = {
-	error: ArkError | undefined
+	error: ArkIssue | undefined
 	errorCount: number
 }
 
 // fields are assigned by the constructor, since V8 creates a subclass's
 // instances more slowly from initializers
-export class InternalTraversal {
+export class InternalTraversal implements FailureContext {
 	/**
 	 * #### the path being validated or morphed
 	 *
@@ -41,7 +54,7 @@ export class InternalTraversal {
 	 */
 	declare path: PropertyKey[]
 
-	declare _errors: ArkErrors | undefined
+	declare _errors: BaseArkErrors | undefined
 
 	/**
 	 * #### the original value being traversed
@@ -102,8 +115,9 @@ export class InternalTraversal {
 			:	this.branches[this.branches.length - 1]
 	}
 
-	finalize(onFail?: ArkErrors.Handler | null): unknown {
-		if (this.hasError()) return onFail ? onFail(this._errors!) : this._errors
+	finalize(onFail?: FailHandler | null): unknown {
+		if (this.hasError())
+			return onFail ? onFail(this._errors as never) : this._errors
 
 		return this.root
 	}
@@ -141,28 +155,72 @@ export class InternalTraversal {
 	}
 
 	/**
-	 * @internal
+	 * @internal a node's error, which arktype's traversal writes from its
+	 * context, and this one, checking Allows for arktype, adds as an issue
 	 */
 	errorFromNodeContext<input extends NodeErrorContextInput>(
 		input: input,
 		data: unknown
 	): ArkError<input["code"]>
 	errorFromNodeContext(input: NodeErrorContextInput, data: unknown): ArkError {
-		return this.addError(
-			errorOfNodeContext(input, this.path.slice(), data, this.config)
-		)
+		return this.addError({
+			code: input.code,
+			path: this.path.slice(),
+			data,
+			expected: input.description
+		}) as never
+	}
+
+	/** @internal */
+	failsAt(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
+		this.addError(issueAt(this.path, site, data, key))
+		return this.failFast
+	}
+
+	/** @internal */
+	failsIn(
+		apply: CompactApply,
+		value: unknown,
+		key?: PropertyKey,
+		missing?: FailureSite,
+		data?: unknown
+	): boolean | undefined {
+		return failsIn(this, this.path, apply, value, key, missing, data)
+	}
+
+	/** @internal */
+	failsWith(input: FailureInput): boolean {
+		this.addError(issueWith(this.path, input))
+		return this.failFast
+	}
+
+	/** @internal */
+	failsUnion(
+		branches: readonly CompactApply[],
+		site: UnionSite,
+		data: unknown
+	): boolean {
+		this.addError(unionIssue(this.path, site, data))
+		return this.failFast
 	}
 
 	/**
 	 * @internal
 	 */
-	addError(error: ArkError): ArkError {
+	addError<error extends ArkIssue>(error: error): error {
 		if (this.currentBranch) this.failBranch(error)
-		else addError(errorsOf(this), error)
+		else errorsOf(this)._.push(error)
 		return error
 	}
 
-	failBranch(error: ArkError): void {
+	/**
+	 * @internal
+	 */
+	createErrors(): BaseArkErrors {
+		return new BaseArkErrors()
+	}
+
+	failBranch(error: ArkIssue): void {
 		this.currentBranch!.error = error
 		this.currentBranch!.errorCount++
 	}
@@ -175,7 +233,7 @@ export class Traversal extends InternalTraversal {
 	 * ✅ will always be empty for a valid traversal
 	 */
 	get errors(): ArkErrors {
-		return errorsOf(this)
+		return errorsOf(this) as never
 	}
 
 	/**
@@ -232,38 +290,62 @@ export class Traversal extends InternalTraversal {
 		input extends { code: ArkErrorCode } ? input["code"] : "predicate"
 	>
 	error(input: ArkErrorInput): ArkError {
-		this.returnedFrom ??= errorsOf(this)._added.length
+		this.returnedFrom ??= errorsOf(this).count
 		return this.raise(input)
 	}
 
-	private raise(input: ArkErrorInput): ArkError {
-		// an error's supplied text is read from its input, so a caller's
-		// later change to an object it passed must not reach it
-		const errCtx: ArkErrorContextInput =
-			typeof input === "object" ?
-				input.code ?
-					{ ...input }
-				:	{ ...input, code: "predicate" }
-			:	{ code: "predicate", expected: input }
-		if (!("data" in errCtx)) errCtx.data = this.data
-		return errorFromContext(this, errCtx)
+	protected raise(input: ArkErrorInput): ArkError {
+		const supplied: SuppliedIssue =
+			typeof input === "object" ? (input as never) : { expected: input }
+		const issue: ArkIssue = {
+			code: supplied.code ?? "predicate",
+			path: [
+				...(supplied.prefixPath ?? []),
+				...(supplied.path ?? this.path),
+				...(supplied.relativePath ?? [])
+			],
+			data: "data" in supplied ? supplied.data : this.data,
+			// a keyword raises its errors with the description of what it checks
+			expected: supplied.expected ?? supplied.description
+		}
+		if (supplied.problem !== undefined) issue.problem = supplied.problem
+		if (supplied.message !== undefined) issue.message = supplied.message
+		return this.addError(issue) as never
 	}
 }
 
-const errorsOf = (ctx: InternalTraversal): ArkErrors =>
-	(ctx._errors ??= new ArkErrors(ctx.config))
+// a build asking for each validation's first issue stops there, and drops any a check that doesn't stop added
+export class FirstIssueTraversal extends Traversal {
+	override get failFast(): boolean {
+		return true
+	}
 
-/** adds an error a union, a structure or a callback describes, at ctx's path */
-export const errorFromContext = (
-	ctx: InternalTraversal,
-	input: ArkErrorContextInput
-): ArkError => ctx.addError(errorOfContext(input, ctx.path, ctx.config))
+	override finalize(onFail?: FailHandler | null): unknown {
+		this._errors?._.splice(1)
+		return super.finalize(onFail)
+	}
+}
+
+type SuppliedIssue = {
+	code?: ArkErrorCode
+	path?: array<PropertyKey>
+	relativePath?: array<PropertyKey>
+	prefixPath?: array<PropertyKey>
+	data?: unknown
+	expected?: string
+	description?: string
+	problem?: string
+	message?: string
+}
+
+export const errorsOf = (ctx: InternalTraversal): BaseArkErrors =>
+	(ctx._errors ??= ctx.createErrors())
 
 export const applyRejected = (
 	node: BaseNode,
 	data: unknown,
 	config: ResolvedConfig,
-	onFail: ArkErrors.Handler | null,
+	onFail: FailHandler | null,
 	ctor: typeof InternalTraversal
 ): unknown => {
 	const ctx = new ctor(data, config)
@@ -295,7 +377,7 @@ export const callMorph = (
 const returned = (ctx: InternalTraversal, result: unknown): unknown =>
 	(
 		typeof result === "object" &&
-		ctx._errors!._added.includes(result as never, ctx.returnedFrom)
+		ctx._errors!._.includes(result as never, ctx.returnedFrom)
 	) ?
 		ctx._errors
 	:	result
@@ -479,8 +561,14 @@ export const allowsInBranchBy = (
 }
 
 // a morph that returns ctx.errors has already added them
-export const addErrors = (ctx: InternalTraversal, errors: ArkErrors): void => {
-	if (errors !== ctx._errors) mergeErrors(errorsOf(ctx), errors, ctx.path)
+export const addErrors = (
+	ctx: InternalTraversal,
+	errors: BaseArkErrors
+): void => {
+	if (errors === ctx._errors) return
+	const target = errorsOf(ctx)
+	if (target._merge) target._merge(errors, ctx.path)
+	else mergeIssues(target, errors, ctx.path)
 }
 
 export const addTransformErrors = (
@@ -742,7 +830,8 @@ const applyByPathLength = (
 
 const invalidResolution = (
 	ctx: InternalTraversal,
-	error = ctx.currentBranch?.error ?? lastOf(ctx._errors!._issues)
+	error = ctx.currentBranch?.error ??
+		lastOf(ctx._errors!._issues ?? ctx._errors!._)
 ): InvalidResolution => ({
 	error,
 	reported: !ctx.currentBranch,
@@ -928,7 +1017,7 @@ const allowsInTraversal = (
 type ResolutionState = number | boolean | InvalidResolution
 
 interface InvalidResolution {
-	error: ArkError
+	error: ArkIssue
 	reported: boolean
 	pathLength: number
 }
@@ -1005,7 +1094,7 @@ export const computeDefaultValueMorph = (
 		return data => {
 			const input = thunk ? thunk() : defaultInput
 			const output = value.traverse(input)
-			if (output instanceof ArkErrors)
+			if (output instanceof BaseArkErrors)
 				return new TransformErrors(output, input).addTo(undefined, key)
 			data[key] = output
 			return data

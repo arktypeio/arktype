@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Return errors of a standalone validator's own, and only the first with `errors: "first"`
+
+A standalone validator returns errors of its own rather than arktype's. Each issue holds the failed check's `code`, `path`, `data` and `expected`, and its `message`, like `name must be a string`, is written when the issues are first read, so invalid data creates only those objects and the runtime ships no error writers. A message doesn't say what the value was, the errors arktype groups at one path stay apart, a union no branch allows is one issue naming the union's description, and the build refuses error text configured for a code a Type can raise. `errors: "first"` stops each validation at its first issue:
+
+```ts
+precompile.vite({ errors: "first" })
+```
+
 ### Compare each definition with arktype in tests with `shadow: true`
 
 In shadow mode, a standalone build creates each definition with arktype as well as precompiling it, from the same values evaluated once, and the program runs on arktype. Each validation and each read of what a validator bakes compares the two, returning arktype's result where they agree and throwing an error naming the definition where they don't, as where the validator throws at creation and arktype doesn't. A function a definition holds runs once per validation, the validator's calls answered from arktype's, except a call that adds a `ctx` error or writes its arguments other than by setting or deleting plain keys, which runs again and must answer alike, and what the README lists as running for each side. It's meant for tests.
@@ -23,7 +31,7 @@ A package whose `package.json` has `"arktype": { "precompile": true }` is precom
 
 ### Leave a definition to arktype with `// @ark-runtime`
 
-In a standalone build, a definition after a `// @ark-runtime` comment runs on arktype, which then ships beside the runtime. The build fails if a runtime island reads a precompiled validator other than to validate with it, or reaches arktype outside an island. It also fails where code it keeps reads an export the standalone runtime lacks, like `scope` in a static helper whose every call it precompiles. A package that reads arktype's nodes, like `arksets`, `@ark/schema` or `@ark/json-schema`, must be used in an island too, since a standalone build replaces them with validators. So must a locale from `arktype/locales`, since writing errors in one needs the description writers of arktype's nodes: a standalone validator writes its errors only in en, even beside a runtime island, and `toLocaleString(locale)` and `messageIn` throw for any locale but en. `--check` lists islands and leaves them out of the rate `--fail-under` compares. A marker before a statement holding no definition is ignored without a diagnostic.
+In a standalone build, a definition after a `// @ark-runtime` comment runs on arktype, which then ships beside the runtime. The build fails if a runtime island reads a precompiled validator other than to validate with it, or reaches arktype outside an island. It also fails where code it keeps reads an export the standalone runtime lacks, like `scope` in a static helper whose every call it precompiles. A package that reads arktype's nodes, like `arksets`, `@ark/schema` or `@ark/json-schema`, must be used in an island too, since a standalone build replaces them with validators. So must a locale from `arktype/locales`, since writing errors in one needs the description writers of arktype's nodes: a standalone validator writes its own errors in en, even beside a runtime island. `--check` lists islands and leaves them out of the rate `--fail-under` compares. A marker before a statement holding no definition is ignored without a diagnostic.
 
 ```ts
 // @ark-runtime

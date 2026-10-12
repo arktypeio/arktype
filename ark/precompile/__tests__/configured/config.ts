@@ -6,9 +6,6 @@ configure({
 	exactOptionalPropertyTypes: false,
 	keywords: { "string.email": "an address" },
 	divisor: { description: node => `divisible by ${node.rule}` },
-	domain: {
-		message: ctx =>
-			`${ctx.propString || "data"} is ${ctx.actual}, not ${ctx.expected}`
-	},
-	onFail: errors => `failed: ${errors.summary}`
+	onFail: errors =>
+		`failed: ${errors.issues.map(issue => [issue.code, ...issue.path].join(" "))}`
 })

@@ -95,13 +95,7 @@ export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 				`(${instance}.lastIndex = 0, ${instance}.test(data))`
 			:	`${instance}.test(data)`
 		if (js.traversalKind === "Allows") js.return(condition)
-		else {
-			js.if(`!${condition}`, () =>
-				js.line(
-					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)}, data)`
-				)
-			)
-		}
+		else js.if(`!${condition}`, () => js.line(js.error(this.errorContext)))
 	}
 
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal

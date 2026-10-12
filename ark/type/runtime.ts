@@ -1,8 +1,6 @@
 import type {
 	BaseRoot,
 	JsonSchema,
-	Locale,
-	ResolvedConfig,
 	TraversePipe,
 	RootApply,
 	StandardJSONSchemaV1,
@@ -10,33 +8,12 @@ import type {
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
-	afterWriters,
 	ArkErrors,
-	beforeWriters,
-	discriminantWriters,
-	divisorWriters,
-	domainWriters,
-	exactLengthWriters,
-	intersectionWriters,
-	maxLengthWriters,
-	maxWriters,
-	mergeErrors,
-	minLengthWriters,
-	minWriters,
-	patternWriters,
-	protoWriters,
-	requiredWriters,
+	mergeIssues,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
-	undeclaredWriters,
-	unionWriters,
-	unitWriters,
 	validateStandardJsonSchemaTarget,
-	writePredicateActual,
-	writePredicateExpected,
-	writePredicateProblem,
-	writeProblem,
-	type ErrorWritersByCode,
+	type FailHandler,
 	type Traversal
 } from "@ark/schema/runtime"
 import {
@@ -55,7 +32,6 @@ import {
 	type JsonStructure
 } from "@ark/util"
 import { InternalTypedFn } from "./fn.ts"
-import { raisedErrorPhrases } from "./keywords/functions.ts"
 import type { FoldedMember, introspectionMembers } from "./standalone.ts"
 import type { ArrayType } from "./variants/array.ts"
 import type { DateType } from "./variants/date.ts"
@@ -68,7 +44,6 @@ import type { StringType } from "./variants/string.ts"
 export {
 	addErrors,
 	addTransformErrors,
-	afterWriters,
 	aliasVisits,
 	allowsAcyclic,
 	allowsInBranch,
@@ -79,9 +54,6 @@ export {
 	applyRejected,
 	ArkErrors,
 	arrayIndexMatcher,
-	beforeWriters,
-	byAncestorPath,
-	byPath,
 	callMorph,
 	computeDefaultValueMorph,
 	configure,
@@ -89,40 +61,20 @@ export {
 	describeBranches,
 	describeCases,
 	describePredicate,
-	discriminantWriters,
-	divisorWriters,
-	domainWriters,
 	enterResolution,
-	exactLengthWriters,
-	errorFromContext,
 	exitResolution,
 	expressBranches,
+	FirstIssueTraversal,
 	fixConfig,
 	fixConfigured,
-	flatByPath,
-	flatProblemsByPath,
-	inEn,
 	InternalTraversal,
-	intersectionWriters,
 	isAbsent,
-	maxLengthWriters,
-	maxWriters,
 	mergeTransformed,
-	messageIn,
-	minLengthWriters,
-	minWriters,
-	patternWriters,
 	pipe,
 	pipeChecked,
 	pipeTransformed,
-	printing,
-	protoWriters,
-	raising,
-	registerErrorBuilder,
-	requiredWriters,
 	runtimeConfig,
 	runtimeScope,
-	scopeConfig,
 	throwOnDefault,
 	TransformErrors,
 	transformed,
@@ -132,9 +84,6 @@ export {
 	transformsValid,
 	Traversal,
 	TraversalError,
-	undeclaredWriters,
-	unionWriters,
-	unitWriters,
 	type ArkError
 } from "@ark/schema/runtime"
 export {
@@ -145,45 +94,9 @@ export {
 	liftArray,
 	ParseError,
 	printable,
-	printKind,
 	throwParseError
 } from "@ark/util"
 export * from "./keywords/functions.ts"
-
-// en as predicate's writers read it to write an error a keyword raised through ctx
-const keywordLocale: Locale = {
-	keywordPhrases: raisedErrorPhrases,
-	problem: writeProblem
-} as never
-
-/** predicate's writers in en, which write an error a keyword raised with its phrase */
-export const predicateWriters: ErrorWritersByCode["predicate"] = {
-	expected: writePredicateExpected,
-	actual: (data, ctx) => writePredicateActual(data, ctx, keywordLocale),
-	problem: ctx => writePredicateProblem(ctx, keywordLocale)
-}
-
-/** en's writers of every code, which a validator with callbacks registers since they can raise any */
-export const allErrorWriters: ErrorWritersByCode = {
-	after: afterWriters,
-	before: beforeWriters,
-	divisor: divisorWriters,
-	domain: domainWriters,
-	exactLength: exactLengthWriters,
-	intersection: intersectionWriters,
-	max: maxWriters,
-	maxLength: maxLengthWriters,
-	min: minWriters,
-	minLength: minLengthWriters,
-	pattern: patternWriters,
-	predicate: predicateWriters,
-	proto: protoWriters,
-	required: requiredWriters,
-	union: unionWriters,
-	unit: unitWriters,
-	undeclared: undeclaredWriters,
-	discriminant: discriminantWriters
-}
 
 export interface ValidatorAttributes {
 	meta: ArkEnv.meta
@@ -266,7 +179,7 @@ export const createValidator = (
 		(
 			data: unknown,
 			pipedFromCtx?: Traversal,
-			onFail: ArkErrors.Handler | null = configuredOnFail
+			onFail: FailHandler | null = configuredOnFail
 		) =>
 			pipedFromCtx ? pipe(pipedFromCtx, node, data) : rootApply(data, onFail),
 		Validator.prototype
@@ -602,16 +515,15 @@ export const checkDefault = (
 	validator: Validator,
 	value: unknown,
 	key: PropertyKey | null,
-	defaultKey: DefaultKey,
-	config: ResolvedConfig = runtimeConfig
+	defaultKey: DefaultKey
 ): void => {
 	const checked = checkedDefaultOf(defaultKey)
 	if (checked.value) return
 	const out = validator.traverse(value)
 	if (out instanceof ArkErrors) {
 		if (key === null) throwParseError(`Default ${out.summary}`)
-		const atPath = new ArkErrors(config)
-		mergeErrors(atPath, out, [key])
+		const atPath = new ArkErrors()
+		mergeIssues(atPath, out, [key])
 		throwParseError(`Default for ${atPath.summary}`)
 	}
 	checked.value = true

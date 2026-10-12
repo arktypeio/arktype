@@ -9,7 +9,7 @@ import {
 	type Key
 } from "@ark/util"
 import { arrayIndexMatcher } from "../structure/shared.ts"
-import type { ArkErrors } from "./errors.ts"
+import type { ArkErrors } from "./issues.ts"
 
 export class TransformErrors {
 	entries: TransformErrors.Entry[]

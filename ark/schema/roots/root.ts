@@ -39,7 +39,7 @@ import {
 	Disjoint,
 	writeUnsatisfiableExpressionError
 } from "../shared/disjoint.ts"
-import { ArkErrors } from "../shared/errors.ts"
+import { ArkErrors } from "../shared/issues.ts"
 import {
 	structuralKinds,
 	type NodeKind,

@@ -18,6 +18,10 @@ import {
 	writeUnbakedMessage
 } from "arktype/runtime"
 import { DynamicValue } from "@ark/precompile/internal/dynamic.ts"
+import {
+	keptIssuesOf,
+	thrownIssuesOf
+} from "@ark/precompile/internal/issues.ts"
 import { buildSync } from "esbuild"
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
@@ -284,26 +288,16 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 	try {
 		const result: any = run()
 		return hasArkKind(result, "errors") ?
-				{
-					summary: result.summary,
-					json: result.toJSON(),
-					errors: result.issues.map((e: any) => ({
-						keys: Reflect.ownKeys(e),
-						code: e.code,
-						path: [...e.path],
-						data: e.data,
-						expected: e.expected,
-						actual: e.actual,
-						problem: e.problem,
-						message: e.message
-					}))
-				}
+				{ issues: keptIssuesOf(result) }
 			:	{ out: result, isInput: result === input }
 	} catch (e) {
-		return {
-			threw: String(e),
-			context: (e as { context?: unknown } | undefined)?.context
-		}
+		const issues = thrownIssuesOf(e)
+		return issues ?
+				{ threw: "TraversalError", issues }
+			:	{
+					threw: String(e),
+					context: (e as { context?: unknown } | undefined)?.context
+				}
 	}
 }
 

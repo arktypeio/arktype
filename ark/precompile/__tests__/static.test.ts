@@ -489,7 +489,7 @@ const ada = named({ name: "Ada" })`)
 		it("runtime uses of arktype are not sites", () => {
 			attest(
 				statusesOf(
-					`import { type, regex, byAncestorPath, byPath, flatByPath, flatProblemsByPath, messageIn } from "arktype"
+					`import { type, regex } from "arktype"
 import { createClient } from "./client.ts"
 const User = type({ name: "string" })
 export function isValidationError(x: unknown) {
@@ -512,7 +512,7 @@ export const handler = (token: string) => {
 export const problemsOf = (data: unknown) => {
 	const out = User(data)
 	if (!(out instanceof type.errors)) return
-	return [flatProblemsByPath(out), flatByPath(out), byPath(out), byAncestorPath(out), messageIn(out.issues[0], {} as never)]
+	return out.issues.map(issue => issue.message)
 }`,
 					{
 						"/env.ts": `import { type } from "arktype"

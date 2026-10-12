@@ -2,7 +2,7 @@ import { arityOf, arrayEquals, type array } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
-import { ArkErrors } from "../shared/errors.ts"
+import { ArkErrors } from "../shared/issues.ts"
 import {
 	implementNode,
 	type nodeImplementationOf,

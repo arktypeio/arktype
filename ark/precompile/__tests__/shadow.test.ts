@@ -64,8 +64,8 @@ export const withId = <t extends object>(t: type.Any<t>) => t.and({ id: "string"
 		).snap(`var $arkm = 0;
 import { shadow as $arkshadow } from "@ark/precompile/shadow"
 import { type } from "arktype"
-import { f5gsbk00dbcwma as $arkf5gsbk00dbcwma } from "~arktype/u154qe1ykbtcf"
-import { f16onama10v7ypw as $arkf16onama10v7ypw } from "~arktype/u154qe1ykbtcf"
+import { f5gsbk00dbcwma as $arkf5gsbk00dbcwma } from "~arktype/4bdvwk0ridrrr"
+import { f16onama10v7ypw as $arkf16onama10v7ypw } from "~arktype/4bdvwk0ridrrr"
 import { Name } from "./name.ts"
 import { withId } from "./id.ts"
 export function nullable() {
@@ -168,7 +168,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 
 		it("validating", () => {
 			attest(outcomes.validated).snap(
-				'Error: validated diverges from arktype at call(2): arktype gives {"out":2}, its validator {"summary":"must be valid according to an anonymous predicate (was 2)","issues":[{"code":"predicate","path":[],"data":2,"expected":"valid according to an anonymous predicate","actual":"2","problem":"must be valid according to an anonymous predicate (was 2)","message":"must be valid according to an anonymous predicate (was 2)"}]}'
+				'Error: validated diverges from arktype at call(2): arktype gives {"out":2}, its validator {"issues":[{"code":"predicate","path":[],"data":2}]}'
 			)
 		})
 
@@ -189,7 +189,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			attest(swallowed).equals("fallback")
 			attest(reported.slice(0, -1)).equals(Object.values(thrown))
 			attest(reported[reported.length - 1]).snap(
-				'Error: validated diverges from arktype at assert(2): arktype gives {"out":2}, its validator {"threw":"TraversalError: must be valid according to an anonymous predicate (was 2)"}'
+				'Error: validated diverges from arktype at assert(2): arktype gives {"out":2}, its validator {"threw":"TraversalError","issues":[{"code":"predicate","path":[],"data":2}]}'
 			)
 		})
 

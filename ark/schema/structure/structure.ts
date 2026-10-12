@@ -37,11 +37,11 @@ import {
 	mergeTransformed,
 	TransformErrors
 } from "../shared/transform.ts"
+import { errorFromContext } from "../shared/errors.ts"
 import {
 	addTransformErrors,
 	allowsInBranch,
 	applyValue,
-	errorFromContext,
 	transform,
 	transformedInApply,
 	transformsValid,
@@ -1254,7 +1254,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					js.return(false)
 				:	js
 						.line(
-							`${js.ref(errorFromContext)}(ctx, { code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`
+							js.raisesIssues ?
+								`ctx.failsWith({ code: "undeclared", data: data[k], relativePath: [k] })`
+							:	`${js.ref(errorFromContext)}(ctx, { code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`
 						)
 						.if("ctx.failFast", () => js.return())
 			const declaresKey = this._compileDeclaresKey(js)

@@ -1,10 +1,14 @@
+import { type } from "arktype"
 import { expect, test } from "vitest"
 import { User } from "./schemas.ts"
 
 test("validates", () => {
+	const out = User({ name: "Ada", email: "ada", age: 36, tags: [] })
+	// what a standalone validator's errors keep of arktype's
 	expect(
-		User({ name: "Ada", email: "ada", age: 36, tags: [] }).toString()
-	).toBe('email must be an email address (was "ada")')
+		out instanceof type.errors &&
+			out.issues.map(issue => [issue.code, ...issue.path])
+	).toEqual([["pattern", "email"]])
 })
 
 test("runs through the transform", () => {

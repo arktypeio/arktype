@@ -14,6 +14,8 @@ import type { nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
 import {
 	compileSerializedValue,
+	expectedOf,
+	failureSites,
 	returnsTransformErrors,
 	type NodeCompiler
 } from "../shared/compile.ts"
@@ -22,7 +24,8 @@ import type {
 	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
-import type { ArkError } from "../shared/errors.ts"
+import { errorFromContext, type ArkError } from "../shared/errors.ts"
+import type { UnionSite } from "../shared/issues.ts"
 import {
 	implementNode,
 	type RootKind,
@@ -38,7 +41,6 @@ import {
 import {
 	allowsInBranch,
 	applyMember,
-	errorFromContext,
 	transform,
 	transformed,
 	transformResolution,
@@ -153,6 +155,19 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		))
 	}
 
+	private _unionSite: UnionSite | undefined
+	// a standalone traversal has tried its branches when it fails, so its issue reads only what the union describes
+	get unionSite(): UnionSite {
+		if (!this._unionSite) {
+			failureSites.add(
+				(this._unionSite = {
+					description: expectedOf(this.meta, this.description)
+				})
+			)
+		}
+		return this._unionSite
+	}
+
 	private _discriminantMeta: ArkEnv.meta | undefined
 	// at a key, the union's expected and actual describe the object around it
 	get discriminantMeta(): ArkEnv.meta {
@@ -252,7 +267,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			ctx.pushBranch()
 			applyMember(branch, data, ctx)
 			if (!ctx.hasError()) return ctx.popBranch()
-			errors.push(ctx.popBranch()!.error!)
+			errors.push(ctx.popBranch()!.error as ArkError)
 		}
 		errorFromContext(ctx, { code: "union", errors, meta: this.meta, data })
 	}
@@ -337,6 +352,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 		const serializedPathSegments = discriminant.path.map(k => js.serialize(k))
 
+		if (js.raisesIssues) {
+			js.line(
+				`ctx.failsWith({ code: "discriminant", data: ${value}, description: ${js.text(expectedOf(this.discriminantMeta, this.discriminantDescription))}${serializedPathSegments.length ? `, relativePath: [${serializedPathSegments}]` : ""} })`
+			)
+			return
+		}
+
 		const absent =
 			discriminant.path.length ?
 				`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(discriminant.path)}, data)`
@@ -357,16 +379,22 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	private compileIndiscriminable(js: NodeCompiler): void {
 		if (js.traversalKind === "Apply") {
-			js.const("errors", "[]")
+			if (!js.raisesIssues) js.const("errors", "[]")
 			for (const branch of this.branches) {
 				js.line("ctx.pushBranch()")
 					.invokeMember(branch)
 					.if("!ctx.hasError()", () => js.return("ctx.popBranch()"))
-					.line("errors.push(ctx.popBranch().error)")
+					.line(
+						js.raisesIssues ? "ctx.popBranch()" : (
+							"errors.push(ctx.popBranch().error)"
+						)
+					)
 			}
 
 			js.line(
-				`${js.ref(errorFromContext)}(ctx, { code: "union", errors, meta: ${js.ref(this.meta)}, data })`
+				js.raisesIssues ?
+					`ctx.failsUnion([], ${js.ref(this.unionSite)}, data)`
+				:	`${js.ref(errorFromContext)}(ctx, { code: "union", errors, meta: ${js.ref(this.meta)}, data })`
 			)
 		} else if (js.traversalKind === "Allows") {
 			for (const branch of this.branches) {

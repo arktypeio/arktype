@@ -23,7 +23,10 @@ console.log(
 	JSON.stringify(
 		samples.map(([validate, data]) => {
 			const out = validate(data)
-			return out instanceof type.errors ? out.summary : out
+			// what a standalone validator's errors keep of arktype's
+			return out instanceof type.errors ?
+					out.issues.map(issue => [issue.code, ...issue.path])
+				:	out
 		})
 	)
 )

@@ -230,9 +230,17 @@ contextualize(() => {
 				tags: ["math"],
 				plan: "free"
 			},
-			'age must be an integer (was 36.5)\nemail must be an email address (was "ada")\nname must be non-empty\ntags must be at most length 3 (was 4)',
-			'plan must be "free" or "pro" (was "team")\nrole must be "admin" or "member" (was "owner")',
-			"value at [1].age must be non-negative (was -1)",
+			[
+				["divisor", "age"],
+				["pattern", "email"],
+				["minLength", "name"],
+				["maxLength", "tags"]
+			],
+			[
+				["union", "plan"],
+				["union", "role"]
+			],
+			[["min", 1, "age"]],
 			{
 				kind: "create",
 				user: {
@@ -244,16 +252,16 @@ contextualize(() => {
 				}
 			},
 			{ kind: "delete", id: "c4a760a8-dbcf-4e14-9f39-645a8e933d74" },
-			'id must be a UUID (was "1234")',
-			'kind must be "delete" or "create" (was "update")',
+			[["pattern", "id"]],
+			[["discriminant", "kind"]],
 			"@ada",
 			{ handle: "@ada", joined: 2020 },
-			'handle must be a handle (was "ada")',
-			"next.next.value must be a number (was a string)",
-			"next.value must be positive (was -1)",
-			"children[1].value must be a number (was a string)",
+			[["predicate", "handle"]],
+			[["domain", "next", "next", "value"]],
+			[["predicate", "next", "value"]],
+			[["domain", "children", 1, "value"]],
 			true,
-			"box.children[0].value must be a number (was missing)",
+			[["required", "box", "children", 0, "value"]],
 			null,
 			null
 		])
@@ -537,9 +545,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 			conditions,
 			plugins: [precompile.esbuild({ cwd: app, conditions })]
 		})
-		attest(run(outputFiles[0].text)).equals(
-			'role must be "admin" (was "member")\n'
-		)
+		attest(run(outputFiles[0].text)).equals('role must be "admin"\n')
 		attest(outputFiles[0].text.includes(parserMessage)).equals(false)
 	}).timeout(60000)
 
@@ -600,17 +606,19 @@ const mapped = () => {
 	const local = scope({ a: "string" })
 	return [0].map(() => local.type("a").narrow(isLong))[0]
 }
-console.log(exported().a(1).toString())
+// what a standalone validator's errors keep of arktype's
+const issuesOf = (out: any) =>
+	JSON.stringify(out.issues.map((issue: any) => [issue.code, ...issue.path]))
+console.log(issuesOf(exported().a(1)))
 console.log(twice()[1]("x"))
-// a minifier renames isLong
-console.log(mapped()("x").toString().replace(/according to \\w+/, "according to isLong"))
+console.log(issuesOf(mapped()("x")))
 `
 			},
 			fromHere("temp", "eachRun")
 		)
-		const expected = `must be a string (was a number)
+		const expected = `[["domain"]]
 x
-must be valid according to isLong (was "x")
+[["predicate"]]
 `
 		attest(runPlain(root)).equals(expected)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
@@ -623,19 +631,33 @@ must be valid according to isLong (was "x")
 
 const dated = () => scope({ d: "d'2001-01-01'" }).type({ at: "d" })
 const exemplified = () => type("string").configure({ examples: [/a/] as never })
-const unitOf = (out: any) => out.issues[0].unit
-Date.prototype.setFullYear.call(unitOf(dated()({ at: 0 })), 1999)
-console.log(unitOf(dated()({ at: 0 })).getUTCFullYear())
-const exampleOf = (out: any) => out.issues[0].meta.examples[0]
-exampleOf(exemplified()(1)).compile("b")
-console.log(exampleOf(exemplified()(1)).source)
+// a JSON Schema can't hold a Date, so its error holds the unit
+const unitOf = (T: any) => {
+	try {
+		T.toJsonSchema()
+	} catch (e: any) {
+		return e.context.unit
+	}
+}
+Date.prototype.setFullYear.call(unitOf(dated()), 1999)
+console.log(unitOf(dated()).getUTCFullYear())
+const exampleOf = (T: any) => T.meta.examples[0]
+exampleOf(exemplified()).compile("b")
+console.log(exampleOf(exemplified()).source)
 `
 			},
 			fromHere("temp", "writtenEachRun")
 		)
 		const expected = "2001\na\n"
 		attest(runPlain(root)).equals(expected)
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
+		attest(
+			run(
+				await bundlers.esbuild(
+					{ cwd: root, introspection: ["toJsonSchema"] },
+					root
+				)
+			)
+		).equals(expected)
 	}).timeout(60000)
 
 	it("creates only the Types a bundle imports", async () => {
@@ -648,12 +670,13 @@ export const Unimported = type({ a: "'unimported'" })
 `,
 				"main.ts": `import { A } from "./a.ts"
 
-console.log(A({ a: 1 }).toString())
+// what a standalone validator's errors keep of arktype's
+console.log(JSON.stringify((A({ a: 1 }) as any).issues.map((issue: any) => [issue.code, ...issue.path])))
 `
 			},
 			fromHere("temp", "imported")
 		)
-		const expected = "a must be a string (was a number)\n"
+		const expected = `[["domain","a"]]\n`
 		attest(runPlain(root)).equals(expected)
 		const bundle = await bundlers.esbuild({ cwd: root }, root)
 		attest(run(bundle)).equals(expected)
@@ -671,17 +694,19 @@ const isEven = (o: object) => Object.keys(o).length % 2 === 0
 const T = type([["string", ":", isFilled], [["string", "=>", double], "?"]]).and(
 	type(["object", ":", isEven])
 )
-// a minifier renames isEven
-for (const data of [["a"], ["a", "b"], [""], ["a", 2]])
-	console.log(T(data).toString().replace(/according to \\w+/, "according to isEven"))
+// what a standalone validator's errors keep of arktype's
+for (const data of [["a"], ["a", "b"], [""], ["a", 2]]) {
+	const out = T(data)
+	console.log(out instanceof type.errors ? JSON.stringify(out.issues.map(issue => [issue.code, ...issue.path])) : String(out))
+}
 `
 			},
 			fromHere("temp", "branchAllows")
 		)
-		const expected = `must be valid according to isEven (was an array)
+		const expected = `[["predicate"]]
 a,bb
-value at [0] must be non-empty (was "")
-value at [1] must be a string (was a number)
+[["predicate",0]]
+[["domain",1]]
 `
 		attest(runPlain(root)).equals(expected)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
@@ -972,20 +997,14 @@ console.log(configured, raised, JSON.stringify(U.toJsonSchema()))
 			await bundlers.esbuild({ cwd: helped, config: "config.ts" }, helped)
 		)
 		attest(results).snap({
-			imported:
-				"Default must be valid according to an anonymous predicate (was 5)",
-			local:
-				"Default must be valid according to an anonymous predicate (was 5)",
-			unread:
-				"Default must be valid according to an anonymous predicate (was 5)",
+			imported: "Default must be valid according to an anonymous predicate",
+			local: "Default must be valid according to an anonymous predicate",
+			unread: "Default must be valid according to an anonymous predicate",
 			sideEffectFree:
-				"Default must be valid according to an anonymous predicate (was 5)",
-			sibling:
-				"Default must be valid according to an anonymous predicate (was 5)",
-			workspace:
-				"Default must be valid according to an anonymous predicate (was 5)",
-			helped:
-				"Default must be valid according to an anonymous predicate (was 5)"
+				"Default must be valid according to an anonymous predicate",
+			sibling: "Default must be valid according to an anonymous predicate",
+			workspace: "Default must be valid according to an anonymous predicate",
+			helped: "Default must be valid according to an anonymous predicate"
 		})
 	}).timeout(60000)
 
@@ -1010,7 +1029,7 @@ console.log(JSON.stringify(U.json))
 			thrownBy(
 				await bundlers.esbuild({ cwd: root, introspection: ["json"] }, root)
 			)
-		).snap('PORT must be a well-formed numeric string (was "x")')
+		).snap("PORT must be a well-formed numeric string")
 	})
 
 	it("checks each function a definition reads where arktype would, though its Type drops it or a site reads only its introspection", async () => {
@@ -1096,7 +1115,7 @@ const Pet = type.instanceOf(Cat).or(type.instanceOf(Bird))
 const Times = type({ start: ["number", "=", now], end: ["number", "=", later] })
 console.log(JSON.stringify({
 	names: Object.fromEntries(Object.entries(functions).map(([k, fn]) => [k, fn.name])),
-	smallOrEven: SmallOrEven(15).toString(),
+	smallOrEven: [SmallOrEven.description, (SmallOrEven(15) as any).issues.map((issue: any) => issue.code)],
 	pet: Pet.expression,
 	times: Times({})
 }))
@@ -1180,7 +1199,9 @@ import { Dog } from "./Dog.ts"
 const Parity = type("number").narrow(isEven).or(type("number").narrow(isOdd))
 const Nested = type({ a: Parity }).or(type({ a: type("number").narrow(isRound) }))
 const Owner = type({ pet: type.instanceOf(Cat).and({ name: "string" }).or(type.instanceOf(Dog).and({ name: "string" })) })
-console.log(JSON.stringify([isEven.name, isOdd.name, isRound.name, Cat.name, Dog.name, Parity.description, Parity(1.5).toString(), Nested.description, Owner({}).toString()]))
+// what a standalone validator's errors keep of arktype's
+const issuesOf = (out: any) => out.issues.map((issue: any) => [issue.code, ...issue.path])
+console.log(JSON.stringify([isEven.name, isOdd.name, isRound.name, Cat.name, Dog.name, Parity.description, issuesOf(Parity(1.5)), Nested.description, issuesOf(Owner({}))]))
 `
 			},
 			fromHere("temp", "chunks")

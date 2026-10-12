@@ -1,6 +1,5 @@
 import {
 	appendStringifiedKey,
-	arkKind,
 	conflatenateAll,
 	printSymbol,
 	stringifyPath,
@@ -24,7 +23,19 @@ import type { DiscriminantErrorContext } from "../roots/union.ts"
 import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
 import type { Locale } from "./locale.ts"
-import type { StandardSchemaV1 } from "./standardSchema.ts"
+import { writeMessage } from "./errorWriters.ts"
+import {
+	ArkErrors as BaseArkErrors,
+	messageOf,
+	problemOf,
+	type FailureInput,
+	type FailureSite,
+	type CompactApply,
+	type UnionSite
+} from "./issues.ts"
+import { Traversal, type InternalTraversal } from "./traversal.ts"
+
+export { throwOnDefault, TraversalError } from "./issues.ts"
 
 /**
  * A failed check: its context, the data and path it failed at, and the text
@@ -55,11 +66,9 @@ const maxScannedLength = 8
  * Subsequent errors added at an existing path are merged into an
  * intersection error.
  */
-export class ArkErrors implements StandardSchemaV1.FailureResult {
-	readonly [arkKind] = "errors"
-
+export class ArkErrors extends BaseArkErrors {
 	// errors are grouped by path when read, which a program that only checks for failure never does
-	_added: ArkError[] = []
+	declare _: ArkError[]
 	private grouped: ArkError[] = []
 	private groupedCount = 0
 	// errors by the string of their path, once there are enough to index
@@ -69,21 +78,15 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	private config: ResolvedConfig
 
 	constructor(config: ResolvedConfig) {
+		super()
 		this.config = config
-	}
-
-	/**
-	 * The number of errors added, including those merged at a path.
-	 */
-	get count(): number {
-		return this._added.length
 	}
 
 	/**
 	 * One error per path, in the order each path first failed, each with its
 	 * text written in the locale selected when they were first read.
 	 */
-	get issues(): readonly ArkError[] {
+	override get issues(): readonly ArkError[] {
 		const issues = this._issues
 		if (this.written) return issues
 		this.written = true
@@ -96,23 +99,17 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	/**
 	 * A human-readable summary of all errors.
 	 */
-	get summary(): string {
+	override get summary(): string {
 		return summarize(this.issues)
 	}
 
-	/**
-	 * Throw a TraversalError based on these errors.
-	 */
-	throw(): never {
-		throw new TraversalError(this)
+	/** @internal a thrown error's message, listing each error apart */
+	get _thrown(): string {
+		return writeTraversalMessage(this.issues)
 	}
 
-	toJSON(): JsonArray {
+	override toJSON(): JsonArray {
 		return this.issues.map(jsonOf)
-	}
-
-	toString(): string {
-		return this.summary
 	}
 
 	/**
@@ -124,6 +121,33 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 		return summarize(this._issues.map(error => writtenIn(error, locale)))
 	}
 
+	/** @internal */
+	override _merge(merged: BaseArkErrors, prefix: array<PropertyKey>): void {
+		if (merged instanceof ArkErrors) return mergeErrors(this, merged, prefix)
+		// a standalone validator's issues keep the text it wrote, in any locale
+		for (const issue of merged.issues) {
+			const problem = problemOf(issue)
+			const meta: ArkEnv.meta = {
+				expected: issue.expected ?? problem,
+				actual: "",
+				problem,
+				message:
+					issue.message === messageOf(issue) ? writeMessage : issue.message
+			}
+			this._.push(
+				stampError(
+					{
+						code: issue.code,
+						path: [...prefix, ...issue.path],
+						data: issue.data,
+						meta
+					} as never,
+					this.config
+				)
+			)
+		}
+	}
+
 	/** @internal the config its errors are written with */
 	get _config(): ResolvedConfig {
 		return this.config
@@ -131,7 +155,7 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 
 	/** @internal the errors grouped by path, without their text */
 	get _issues(): ArkError[] {
-		const added = this._added
+		const added = this._
 		if (this.groupedCount === added.length) return this.grouped
 		this.written = false
 		while (this.groupedCount < added.length)
@@ -190,9 +214,6 @@ export class ArkErrors implements StandardSchemaV1.FailureResult {
 	}
 }
 
-// a matcher asserting its default holds it as its onFail, which a standalone validator then reads from its runtime
-export const throwOnDefault: ArkErrors.Handler = errors => errors.throw()
-
 // a path's string is its error's propString, written once
 const pathKeyOf = (error: ArkError): string =>
 	(error.propString ??= stringifyPath(error.path))
@@ -210,10 +231,6 @@ const pathEquals = (l: array<PropertyKey>, r: array<PropertyKey>) => {
 	return true
 }
 
-export const addError = (errors: ArkErrors, error: ArkError): void => {
-	errors._added.push(error)
-}
-
 export const mergeErrors = (
 	errors: ArkErrors,
 	merged: ArkErrors,
@@ -221,8 +238,94 @@ export const mergeErrors = (
 ): void => {
 	// a copy is written with the config of the errors holding it, as their summary is
 	for (const error of merged._issues)
-		addError(errors, unwrittenError(error, prefix, errors._config))
+		errors._.push(unwrittenError(error, prefix, errors._config))
 }
+
+type Keyed = Record<PropertyKey, unknown>
+
+// errors whose text arktype writes from their node's context, in the locale it selects
+export class ArkTraversal extends Traversal {
+	override createErrors(): ArkErrors {
+		return new ArkErrors(this.config)
+	}
+
+	override errorFromNodeContext<input extends NodeErrorContextInput>(
+		input: input,
+		data: unknown
+	): ArkError<input["code"]>
+	override errorFromNodeContext(
+		input: NodeErrorContextInput,
+		data: unknown
+	): ArkError {
+		return this.addError(
+			errorOfNodeContext(input, this.path.slice(), data, this.config)
+		)
+	}
+
+	// a site holds its node's full error context, from which an error is built as a compiled one is
+	override failsAt(
+		site: FailureSite,
+		data: unknown,
+		key?: PropertyKey
+	): boolean {
+		const missing =
+			key !== undefined && site.missing && !(key in (data as object))
+		this.addError(
+			errorOfNodeContext(
+				(missing ? site.missing : site.value) as NodeErrorContextInput,
+				key === undefined ? this.path.slice() : [...this.path, key],
+				key === undefined || missing ? data : (data as Keyed)[key],
+				this.config
+			)
+		)
+		return this.failFast
+	}
+
+	override failsWith(input: FailureInput): boolean {
+		errorFromContext(this, input as ArkErrorContextInput)
+		return this.failFast
+	}
+
+	// each branch stops at its first error, which the union's error lists
+	override failsUnion(
+		branches: readonly CompactApply[],
+		site: UnionSite,
+		data: unknown
+	): boolean {
+		const errors: ArkError[] = []
+		for (const branch of branches) {
+			this.pushBranch()
+			branch(data, this)
+			errors.push(this.popBranch()!.error as ArkError)
+		}
+		errorFromContext(this, {
+			code: "union",
+			errors,
+			meta: site.meta as ArkEnv.meta,
+			data
+		})
+		return this.failFast
+	}
+
+	protected override raise(input: ArkErrorInput): ArkError {
+		// an error's supplied text is read from its input, so a caller's
+		// later change to an object it passed must not reach it
+		const errCtx: ArkErrorContextInput =
+			typeof input === "object" ?
+				input.code ?
+					{ ...input }
+				:	{ ...input, code: "predicate" }
+			:	{ code: "predicate", expected: input }
+		if (!("data" in errCtx)) errCtx.data = this.data
+		return errorFromContext(this, errCtx)
+	}
+}
+
+/** adds an error a union, a structure or a callback describes, at ctx's path */
+export const errorFromContext = (
+	ctx: InternalTraversal,
+	input: ArkErrorContextInput
+): ArkError => ctx.addError(errorOfContext(input, ctx.path, ctx.config))
 
 /**
  * Writes an error's text in `locale`, as its errors would be written if it
@@ -581,20 +684,6 @@ const recordByPath = <v>(
 
 const flat = (error: ArkError): ArkError[] =>
 	error.code === "intersection" ? [...error.errors] : [error]
-
-export class TraversalError extends Error {
-	readonly name = "TraversalError"
-	declare arkErrors: ArkErrors
-
-	constructor(errors: ArkErrors) {
-		super(writeTraversalMessage(errors.issues))
-
-		Object.defineProperty(this, "arkErrors", {
-			value: errors,
-			enumerable: false
-		})
-	}
-}
 
 const writeTraversalMessage = (issues: readonly ArkError[]): string =>
 	issues.length === 1 ?

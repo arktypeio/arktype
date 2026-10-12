@@ -21,9 +21,7 @@ afterEach(() => {
 
 test("creates each validator from what the build read", async () => {
 	const sites = await create()
-	expect(sites.Limited("abcdef").toString()).toBe(
-		"must be at most length 5 (was 6)"
-	)
+	expect(sites.Limited("abcdef").toString()).toBe("must be at most length 5")
 	expect(sites.Optional(undefined)).toBe(undefined)
 	expect(sites.Trimmed(" a ")).toBe("a")
 })

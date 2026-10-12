@@ -135,6 +135,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	checkHelpers?: boolean | undefined
 	// what a standalone validator bakes of its Type's introspection, which it otherwise lacks
 	introspection?: readonly IntrospectionMember[] | undefined
+	// "first" stops each standalone validation at its first issue, which is then the only one it returns
+	errors?: "all" | "first" | undefined
 	// the most factories one site compiles for the facts the build doesn't know, like the parameter count of a function a parameter holds
 	maxVariants?: number | undefined
 	// create each site with arktype too, from the same holes, and throw where its validator observes anything else
@@ -331,6 +333,7 @@ export class Precompiler {
 	checkHelpers: boolean
 	shadow: boolean
 	introspection: readonly IntrospectionMember[]
+	errors: "all" | "first" | undefined
 	maxVariants: number
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
@@ -374,6 +377,7 @@ export class Precompiler {
 		this.checkHelpers = this.mode === "standalone" && !!opts?.checkHelpers
 		this.shadow = this.mode === "standalone" && !!opts?.shadow
 		this.introspection = opts?.introspection ?? []
+		this.errors = opts?.errors
 		for (const member of this.introspection) {
 			if (!includes(introspectionMembers, member))
 				throwError(writeUnknownIntrospectionMessage(printable(member)))
@@ -1239,6 +1243,7 @@ export class Precompiler {
 						configured,
 						keywordReads,
 						introspection: this.introspection,
+						errors: this.errors,
 						bake: write => this.bake(write)
 					},
 					refusalsByName,
@@ -1447,11 +1452,14 @@ export class Precompiler {
 	private createsEachRun(site: Site): boolean {
 		if (site.declarationStart !== undefined) return false
 		const type = site.introspection?.type
-		return type ?
-				holdsWritable(type) && !this.interpreter.isDeclaredOnce(type)
-			:	(site.variants?.map(variant => variant.site) ?? [site]).some(site =>
-					holdsWritable(site.value)
-				)
+		if (type)
+			return holdsWritable(type, true) && !this.interpreter.isDeclaredOnce(type)
+		const writesJsonSchema = this.introspection.some(
+			member => member === "toJsonSchema" || member === "~standard.jsonSchema"
+		)
+		return (site.variants?.map(variant => variant.site) ?? [site]).some(site =>
+			holdsWritable(site.value, writesJsonSchema)
+		)
 	}
 
 	private isFactory(site: Site, module: SourceModule): boolean {

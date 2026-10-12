@@ -79,7 +79,8 @@ import {
 	type InvokeOptions,
 	type ReferenceOptions
 } from "./shared/compile.ts"
-import { ArkErrors } from "./shared/errors.ts"
+import { ArkTraversal, errorFromContext } from "./shared/errors.ts"
+import { ArkErrors } from "./shared/issues.ts"
 import { nodeKinds, type NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
@@ -95,13 +96,12 @@ import {
 	allowsInBranch,
 	allowsInBranchBy,
 	callMorph,
-	errorFromContext,
 	pipeChecked,
 	pipeTransformed,
 	transformed,
 	transformedInApply,
 	transformsValid,
-	Traversal,
+	type Traversal,
 	type TraversalKind,
 	type TraverseAllows,
 	type TraverseApply,
@@ -549,9 +549,13 @@ interface UnitLinkage {
 	errorContexts: NodeCompiler.ErrorContexts
 	members: UnitMember[]
 	nameOf: ((id: NodeId) => string) | undefined
+	opts: UnitOptions
 }
 
-const createLinkage = (nameOf?: (id: NodeId) => string): UnitLinkage => ({
+const createLinkage = (
+	nameOf?: (id: NodeId) => string,
+	opts: UnitOptions = {}
+): UnitLinkage => ({
 	referencesById: {},
 	reused: new Set(),
 	unreached: new Set(),
@@ -560,7 +564,8 @@ const createLinkage = (nameOf?: (id: NodeId) => string): UnitLinkage => ({
 	refs: new Map(),
 	errorContexts: [],
 	members: [],
-	nameOf
+	nameOf,
+	opts
 })
 
 class TraversalCompiler extends NodeCompiler {
@@ -575,7 +580,9 @@ class TraversalCompiler extends NodeCompiler {
 			kind,
 			requiresContext,
 			refs: linkage.refs,
-			errorContexts: linkage.errorContexts
+			errorContexts: linkage.errorContexts,
+			raisesIssues: linkage.opts.raisesIssues,
+			referencesText: linkage.opts.referencesText
 		})
 		this.linkage = linkage
 	}
@@ -654,18 +661,26 @@ export interface RootUnit {
 // each root's unit holds the nodes it reaches before another root, so a prop's traversal is shared only by Types sharing the root it belongs to
 export const precompileRootUnits = (
 	root: BaseRoot,
-	keyOf?: ContentKeyOf
-): RootUnit[] => unitsOf(nameContent([root], keyOf), [])!
+	opts: UnitOptions = {}
+): RootUnit[] => unitsOf(nameContent([root], opts), [], opts)!
 
 // Types compiled together, like a definition's variants, declare the nodes they reach in one unit, unless another unit reads one first
 export const precompileJointUnits = (
 	roots: readonly BaseRoot[],
+	opts: UnitOptions = {}
+): RootUnit[] | undefined => unitsOf(nameContent(roots, opts), roots, opts)
+
+export interface UnitOptions {
 	keyOf?: ContentKeyOf
-): RootUnit[] | undefined => unitsOf(nameContent(roots, keyOf), roots)
+	// a standalone validator raises issues, which hold none of its nodes' error contexts
+	raisesIssues?: boolean
+	referencesText?: (text: string) => boolean
+}
 
 const unitsOf = (
 	s: ContentNamingState,
-	joint: readonly BaseNode[]
+	joint: readonly BaseNode[],
+	opts: UnitOptions
 ): RootUnit[] | undefined => {
 	const units: RootUnit[] = []
 	const unitsById: Record<NodeId, RootUnit> = {}
@@ -696,7 +711,7 @@ const unitsOf = (
 			for (const callee of s.referencesById[node.id].callees)
 				if (!callee.isRoot() || roots.includes(callee)) reached.push(callee)
 		}
-		const linkage = createLinkage(id => s.names[id])
+		const linkage = createLinkage(id => s.names[id], opts)
 		for (const node of s.reached) {
 			linkage.referencesById[node.id] = node
 			if (node.isRoot() && !declaredByName[s.names[node.id]])
@@ -731,7 +746,7 @@ interface ContentNamingState {
 	reached: BaseNode[]
 	stack: ContentReference[]
 	components: BaseNode[][]
-	keyOf: ContentKeyOf | undefined
+	opts: UnitOptions
 	valueIndices: Map<unknown, number>
 	names: Record<NodeId, string>
 	inputsByHash: Record<string, string>
@@ -741,24 +756,24 @@ interface ContentNamingState {
 
 const nameContent = (
 	roots: readonly BaseNode[],
-	keyOf: ContentNamingState["keyOf"]
+	opts: UnitOptions
 ): ContentNamingState => {
-	const s = nameReferences(roots, {}, keyOf)
+	const s = nameReferences(roots, {}, opts)
 	const occurrencesById = occurrencesOfResolutions(s)
-	return occurrencesById ? nameReferences(roots, occurrencesById, keyOf) : s
+	return occurrencesById ? nameReferences(roots, occurrencesById, opts) : s
 }
 
 const nameReferences = (
 	roots: readonly BaseNode[],
 	occurrencesById: Record<NodeId, number>,
-	keyOf: ContentNamingState["keyOf"]
+	opts: UnitOptions
 ): ContentNamingState => {
 	const s: ContentNamingState = {
 		referencesById: {},
 		reached: [],
 		stack: [],
 		components: [],
-		keyOf,
+		opts,
 		valueIndices: new Map(),
 		names: {},
 		inputsByHash: {},
@@ -848,7 +863,7 @@ const compileContent = (
 	const positionsById: Record<NodeId, number> = {}
 	const positionOf = (id: NodeId) =>
 		id === node.id ? "$" : `$${(positionsById[id] ??= calleeIds.push(id) - 1)}`
-	const linkage = createLinkage(positionOf)
+	const linkage = createLinkage(positionOf, s.opts)
 	declareTraversals(linkage, node)
 	const serializing = new Set<object>()
 	let holdsIdentity = false
@@ -860,7 +875,7 @@ const compileContent = (
 		if (!hasDomain(value, "object") && typeof value !== "symbol")
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
 		const key =
-			s.keyOf?.(value) ??
+			s.opts.keyOf?.(value) ??
 			// arktype's own pattern instance is keyed by its source, as no program can write it, unlike any other Date or RegExp
 			(node.hasKind("pattern") && value === node.instance ?
 				`${value}`
@@ -1560,7 +1575,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	traversal(root: unknown): Traversal {
-		return new Traversal(root, this.resolvedConfig)
+		return new ArkTraversal(root, this.resolvedConfig)
 	}
 
 	import(): SchemaModule<{

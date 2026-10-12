@@ -14,7 +14,6 @@ import {
 	configuredUnlikeBuildMessage,
 	fingerprintOf,
 	reconfiguredMessage,
-	unrenderedLocaleMessage,
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
@@ -39,6 +38,7 @@ import {
 	type HoleKind,
 	type IntrospectionMember
 } from "arktype/runtime"
+import { keptIssuesOf } from "@ark/precompile/internal/issues.ts"
 import { buildSync } from "esbuild"
 
 const bundle = (source: string) => {
@@ -111,6 +111,15 @@ const runtimeImport = `import * as runtime from "arktype/runtime"`
 const standIn = <fn extends Function>(fn: fn, id: string, name = ""): fn =>
 	Object.defineProperty(fn, "name", { value: `${name}$hole_${id}` })
 
+// the unit a JSON Schema can't hold, like a Date, which its error's context holds
+const thrownUnitOf = (read: () => unknown): any => {
+	try {
+		read()
+	} catch (e) {
+		return ((e as ToJsonSchema.Error).context as ToJsonSchema.UnitContext).unit
+	}
+}
+
 // a factory built with each hole's value, as a build passes it in place of its source
 const jsonSchemaErrorOf = (t: { toJsonSchema: () => unknown }) => {
 	try {
@@ -147,20 +156,10 @@ const loadFactory = async (
 		)
 	).T
 
+// a validator's errors are compared with arktype's by what they keep, as their text is written from less
 const observe = (result: unknown, input: unknown) =>
 	hasArkKind(result, "errors") ?
-		{
-			summary: result.summary,
-			errors: result.issues.map(e => ({
-				code: e.code,
-				path: [...e.path],
-				data: e.data,
-				expected: e.expected,
-				actual: e.actual,
-				problem: e.problem,
-				message: e.message
-			}))
-		}
+		{ issues: keptIssuesOf(result) }
 	:	{ out: result, isInput: result === input }
 
 class Point {
@@ -293,31 +292,35 @@ contextualize(() => {
 		}
 	})
 
-	it("builds errors as arktype does", async () => {
-		const T = type({ a: "string", b: { c: "number > 0" } })
-		const { T: validator } = await load({ T })
-		const input = { b: { c: 0 } }
-		const copiesOf = (errors: any) => [
-			errors.issues.map((e: object) => Reflect.ownKeys(e)),
-			errors.toJSON()
-		]
-		attest(copiesOf(validator(input))).equals(copiesOf(T(input)))
+	it("builds each issue from its check's code, path and data and what its node describes", async () => {
+		const { T } = await load({
+			T: type({ a: "string", b: { c: "number > 0" } })
+		})
+		const errors = T({ b: { c: 0 } })
+		attest(errors.issues).snap([
+			{
+				code: "required",
+				path: ["a"],
+				data: { b: { c: 0 } },
+				expected: undefined,
+				message: "a is missing"
+			},
+			{
+				code: "min",
+				path: ["b", "c"],
+				data: 0,
+				expected: "positive",
+				message: "b.c must be positive"
+			}
+		])
+		attest(errors.toJSON()).is(errors.issues)
 	})
 
-	it("prints the data of errors at one path whichever validator is created first", async () => {
+	it("keeps apart the issues at one path, which arktype groups", async () => {
 		const T = type({ "[/^a/]": "string[] >= 2", "[/a$/]": "unknown[] <= 0" })
-		const Parsed = type("string.json.parse")
-		const input = { a: ["q"] }
-		const summary = T(input).toString()
-		const alone = await load({ T })
-		const afterCallback = await load({ Parsed, T })
-		attest([alone.T(input).summary, afterCallback.T(input).summary]).equals([
-			summary,
-			summary
-		])
-		attest(summary).snap(
-			"a (an array) must be...\n  ◦ at least length 2\n  ◦ exactly length 0"
-		)
+		const { T: validator } = await load({ T })
+		attest(validator({ a: ["q"] }).summary).snap(`a must be at least length 2
+a must be exactly length 0`)
 	})
 
 	it("bakes introspection", async () => {
@@ -328,9 +331,9 @@ contextualize(() => {
 		attest(validator.meta).equals({ description: "a person" })
 		attest(String(validator)).equals("Type<{ age: number, name: string }>")
 		attest(validator.from({ name: "n", age: 1 })).equals({ name: "n", age: 1 })
-		attest(() => validator.assert({})).throws.snap(`TraversalError: 
-  • age must be a number (was missing)
-  • name must be a string (was missing)`)
+		attest(() => validator.assert({})).throws
+			.snap(`TraversalError: age is missing
+name is missing`)
 		attest(validator["~standard"].validate({ name: "n", age: 1 })).equals({
 			value: { name: "n", age: 1 }
 		})
@@ -351,11 +354,46 @@ contextualize(() => {
 		})
 		try {
 			const T = (await importCode(js)).T()
-			attest(T({ a: 1 }).summary).snap("a must be a string (was a number)")
+			attest(T({ a: 1 }).summary).snap("a must be a string")
 		} finally {
 			globalThis.Function = Function
 		}
 		attest(bodies).equals([])
+	})
+
+	it("returns only each validation's first issue where its build asks", async () => {
+		const isLong = (s: string) => s.length > 3
+		const built = standIn(isLong.bind(null), "long")
+		const exports = {
+			T: type({ a: "string", b: "number", c: ["string", "[]"] }),
+			Narrowed: {
+				type: type({ a: "string", b: type("string").narrow(built) }),
+				params: [{ kind: "function", label: "`isLong`", value: built }]
+			}
+		} satisfies Record<string, StandaloneExport>
+		const artifact = await importCode(
+			bundle(precompileStandalone(exports, { errors: "first" }).code).js
+		)
+		const T = artifact.T()
+		const Narrowed = artifact.Narrowed(isLong)
+		attest([
+			T({ a: 1, b: "b", c: [1] }).summary,
+			Narrowed({ a: 1, b: "b" }).summary,
+			Narrowed({ a: "a", b: "b" }).summary
+		]).snap([
+			"a must be a string",
+			"a must be a string",
+			"b must be valid according to isLong"
+		])
+		attest(
+			type(exports.T)({ a: 1, b: "b", c: [1] })
+				.toString()
+				.split("\n")
+		).snap([
+			"a must be a string (was a number)",
+			"b must be a number (was a string)",
+			"c[0] must be a string (was a number)"
+		])
 	})
 
 	it("gives each Type its own traversal of a prop they share", () => {
@@ -557,26 +595,34 @@ contextualize(() => {
 	})
 
 	it("keeps apart the Dates and RegExps of Types arktype keeps apart, which a program can write", async () => {
-		const { A, B, U } = await load({
-			A: type("string").configure({ examples: [/a/g, new Date(0)] as never }),
-			B: type("string").configure({ examples: [/a/g, new Date(0)] as never }),
-			U: type("d'1970-01-01'")
-		})
-		const [regex, date] = A(1).issues[0].meta.examples
-		const [otherRegex, otherDate] = B(1).issues[0].meta.examples
+		const { A, B, U } = await load(
+			{
+				A: type("string").configure({
+					examples: [/a/g, new Date(0)] as never
+				}),
+				B: type("string").configure({
+					examples: [/a/g, new Date(0)] as never
+				}),
+				U: type("d'1970-01-01'")
+			},
+			undefined,
+			undefined,
+			["toJsonSchema"]
+		)
+		const [regex, date] = A.meta.examples
+		const [otherRegex, otherDate] = B.meta.examples
 		regex.exec("aaa")
 		Date.prototype.setTime.call(date, 1)
 		attest([
 			otherRegex.lastIndex,
 			otherDate.getTime(),
-			U(new Date(5)).issues[0].unit.getTime()
+			thrownUnitOf(() => U.toJsonSchema()).getTime()
 		]).equals([0, 0, 0])
-		// held as arktype holds them, so the Type's meta holds the error's
-		attest([
-			A.meta.examples[0] === regex,
-			Object.isFrozen(date),
-			Object.getOwnPropertyNames(date)
-		]).equals([true, false, []])
+		// held as arktype holds them
+		attest([Object.isFrozen(date), Object.getOwnPropertyNames(date)]).equals([
+			false,
+			[]
+		])
 	})
 
 	it("keeps the lastIndex of a RegExp a program can read", async () => {
@@ -590,11 +636,14 @@ contextualize(() => {
 
 	it("creates a Date anew at each call of a factory whose site can run more than once", async () => {
 		const T = scope({ d: "d'2001-01-01'" }).type({ at: "d" })
-		const { fresh } = await load({
-			fresh: { type: T, params: [], fresh: true }
-		})
+		const { fresh } = await load(
+			{ fresh: { type: T, params: [], fresh: true } },
+			undefined,
+			undefined,
+			["toJsonSchema"]
+		)
 		const unitOf = (validator: any) =>
-			validator({ at: new Date(0) }).issues[0].unit
+			thrownUnitOf(() => validator.toJsonSchema())
 		attest(unitOf(fresh()) === unitOf(fresh())).equals(false)
 	})
 
@@ -621,26 +670,12 @@ contextualize(() => {
 			undefined,
 			["toJsonSchema"]
 		)
-		const thrownUnitOf = (read: () => unknown) => {
-			try {
-				read()
-			} catch (e) {
-				return ((e as ToJsonSchema.Error).context as ToJsonSchema.UnitContext)
-					.unit
-			}
-		}
 		const units = [
-			validator(new Date(0)).issues[0].unit,
 			thrownUnitOf(() => validator.toJsonSchema()),
 			thrownUnitOf(site),
 			thrownUnitOf(site)
 		]
-		attest(units.map(unit => unit === units[0])).equals([
-			true,
-			true,
-			true,
-			true
-		])
+		attest(units.map(unit => unit === units[0])).equals([true, true, true])
 	})
 
 	it("throws where it's read a JSON Schema that calls a default's thunk", async () => {
@@ -687,7 +722,8 @@ contextualize(() => {
 				`${writeUnprecompilableMessage("a JSON Schema whose writing throws")}: Error: no schema`
 			)
 		)
-		attest(validator(new Date(0)).toString()).equals(T(new Date(0)).toString())
+		const early = new Date(0)
+		attest(observe(validator(early), early)).equals(observe(T(early), early))
 	})
 
 	it("raises arktype's TypeError printing a symbol in a JSON Schema's error", async () => {
@@ -752,39 +788,34 @@ contextualize(() => {
 		attest(Reflect.ownKeys(runtimeType)).equals(["errors"])
 	})
 
-	it("passes a writer its meta holds en's locale, configured or not", async () => {
-		const write = (ctx: unknown, locale: Locale.Info) =>
-			[
-				locale.tag,
-				locale.list(["a", "b", "c"], "or"),
-				locale.plural(2),
-				locale.number(1.5),
-				locale.date(new Date(0)),
-				locale.verbatim("v")
-			].join("; ")
-		const define = (w: typeof write) => type("number").configure({ message: w })
-		const built = standIn(write.bind(null), "write")
+	it("refuses a writer or text its meta configures for its errors, other than an expected string", async () => {
+		const write = standIn(() => "written", "write")
 		const T: StandaloneExport = {
-			type: define(built),
-			params: [{ kind: "function", label: "`write`", value: built }]
+			type: type("number").configure({ message: write }),
+			params: [{ kind: "function", label: "`write`", value: write }]
 		}
-		const unconfigured = (await load({ T })).T(write)
-		const configured = (
-			await load(
-				{ T },
-				`runtime.configure({}, "${fingerprintOf({})}")`,
-				fingerprintOf({})
-			)
-		).T(write)
-		const summary = define(write)("x").toString()
-		attest([unconfigured("x").summary, configured("x").summary]).equals([
-			summary,
-			summary
-		])
-		attest(summary).snap("en; a, b or c; other; 1.5; 1970; v")
+		attest(() => precompileStandalone({ T })).throws(
+			writeUnprecompilableMessage("`number`'s configured message")
+		)
+		attest(() =>
+			precompileStandalone({ T: type("number").configure({ problem: "p" }) })
+		).throws(writeUnprecompilableMessage("`number`'s configured problem"))
+		const expect = standIn(() => "even", "expect")
+		attest(() =>
+			precompileStandalone({
+				T: {
+					type: type("number").configure({ expected: expect }),
+					params: [{ kind: "function", label: "`expect`", value: expect }]
+				}
+			})
+		).throws(writeUnprecompilableMessage("`number`'s configured expected"))
+		const { Even } = await load({
+			Even: type("number").configure({ expected: "an even number" })
+		})
+		attest(Even("x").summary).snap("must be an even number")
 	})
 
-	it("passes en's locale to the writers in a callback's error meta", async () => {
+	it("writes a callback's error from the text it supplies, without its meta's writers", async () => {
 		const isLarge = (n: number, ctx: Traversal) =>
 			n > 3 ||
 			ctx.reject({
@@ -799,55 +830,27 @@ contextualize(() => {
 		const create = await loadFactory(type("number").narrow(built), [
 			["function", "`isLarge`", built]
 		])
-		const summary = type("number").narrow(isLarge)(1.5).toString()
-		attest(create(isLarge)(1.5).summary).equals(summary)
-		attest(summary).snap("en: more than 3 (1.5)")
+		attest(create(isLarge)(1.5).summary).snap("must be more than 3")
 	})
 
-	it("leaves en's locale out of a validator whose callbacks are all arktype's", () => {
-		const T = type({ url: "string.url", n: "string.integer.parse" })
-		attest(precompileStandalone({ T }).code.includes("runtime.inEn(")).equals(
-			false
-		)
-	})
-
-	it("prints with the runtime's primitive printer where arktype's callbacks raise", () => {
-		const T = type({ url: "string.url", n: "string.integer.parse" })
-		attest(
-			precompileStandalone({ T }).code.includes("runtime.printing(")
-		).equals(false)
-	})
-
-	it("writes errors with configured strings", async () => {
+	it("refuses error text a scope configures, strings among them", () => {
 		const $ = scope(
 			{ T: { a: "string" } },
-			{
-				domain: { message: "configured" },
-				divisor: { message: ctx => `configured ${ctx.problem}` }
-			}
+			{ domain: { message: "configured" } }
 		)
-		const { T } = $.export()
-		const { T: validator } = await load({ T })
-		attest(validator({ a: 1 }).summary).equals(T({ a: 1 }).toString())
-		attest(validator({ a: 1 }).summary).snap("configured")
-	})
-
-	it("writes a scope's configured strings for a code raised before", async () => {
-		const { U, S } = await load({
-			U: type("'b'"),
-			S: scope({}, { unit: { expected: "an a" } }).type("'a'")
-		})
-		attest(U("a").summary).snap('must be "b" (was "a")')
-		attest(S("b").summary).snap('must be an a (was "b")')
+		attest(() => precompileStandalone({ T: $.export().T })).throws(
+			writeUnprecompilableMessage("a configured domain message")
+		)
+		attest(() =>
+			precompileStandalone({
+				S: scope({}, { unit: { expected: "an a" } }).type("'a'")
+			})
+		).throws(writeUnprecompilableMessage("a configured unit expected"))
 	})
 
 	it("validates with the configuration its program applies", async () => {
 		const config: ArkSchemaConfig = {
-			domain: { message: ctx => `configured ${ctx.problem}` },
-			divisor: {
-				expected: (ctx, locale) => `a multiple of ${locale.number(ctx.rule)}`
-			},
-			onFail: errors => errors.summary
+			onFail: errors => errors.issues.map(issue => issue.code)
 		}
 		const { T } = scope(
 			{ T: { a: "string", b: "number % 2" } },
@@ -856,19 +859,13 @@ contextualize(() => {
 		const { T: validator } = await load(
 			{ T: type({ a: "string", b: "number % 2" }) },
 			`runtime.configure({
-	domain: { message: ctx => \`configured \${ctx.problem}\` },
-	divisor: {
-		expected: (ctx, locale) => \`a multiple of \${locale.number(ctx.rule)}\`
-	},
-	onFail: errors => errors.summary
+	onFail: errors => errors.issues.map(issue => issue.code)
 }, "${fingerprintOf(config)}")`,
 			fingerprintOf(config)
 		)
 		const input = { a: 1, b: 3 }
 		attest(validator(input)).equals(T(input))
-		attest(validator(input)).snap(
-			"configured must be a string (was a number)\nb must be a multiple of 2 (was 3)"
-		)
+		attest(validator(input)).snap(["domain", "divisor"])
 	})
 
 	it("throws for a configuration it wasn't precompiled under", async () => {
@@ -982,17 +979,6 @@ config.onUndeclaredKey = "reject"`
 		).equals([writtenConfigMessage, writtenConfigMessage])
 	})
 
-	it("writes errors with the writers configure() received", async () => {
-		const { T } = await load(
-			{ T: type({ a: "string" }) },
-			`const domain = { expected: () => "E1" }
-runtime.configure({ domain }, "${fingerprintOf({ domain: { expected: () => "" } })}")
-domain.expected = () => "E2"`,
-			fingerprintOf({ domain: { expected: () => "" } })
-		)
-		attest(T({ a: 1 }).summary).snap("a must be E1 (was a number)")
-	})
-
 	it("throws for a second configure(), even with the same values", async () => {
 		const built = fingerprintOf({ numberAllowsNaN: true })
 		const configured = `runtime.configure({ numberAllowsNaN: true }, "${built}")`
@@ -1006,7 +992,7 @@ domain.expected = () => "E2"`,
 	})
 
 	it("creates its validators where a site first reads them", async () => {
-		const config = { domain: { message: "configured" } }
+		const config = { onFail: () => "configured" }
 		const artifact = await importCode(
 			bundle(
 				`${
@@ -1023,7 +1009,7 @@ domain.expected = () => "E2"`,
 			).js
 		)
 		artifact.configure(config, fingerprintOf(config))
-		attest(artifact.T()({ a: 1 }).summary).snap("configured")
+		attest(artifact.T()({ a: 1 })).equals("configured")
 		attest(artifact.T()).is(artifact.T())
 		attest(() => artifact.configure(config)).throws(reconfiguredMessage)
 	})
@@ -1056,7 +1042,7 @@ domain.expected = () => "E2"`,
 	})
 
 	it("fixes the configuration where a keyword Module's Type is first read", async () => {
-		const config = { domain: { message: "configured" } }
+		const config = { onFail: () => "configured" }
 		const artifact = await importCode(
 			bundle(
 				`${
@@ -1078,7 +1064,7 @@ domain.expected = () => "E2"`,
 		attest(strings.json).is(strings.json)
 		attest(artifact.Strings()).is(strings)
 		artifact.configure(config, fingerprintOf(config))
-		attest(strings.email(1).summary).snap("configured")
+		attest(strings.email(1)).equals("configured")
 		attest(() => artifact.configure(config)).throws(reconfiguredMessage)
 	})
 
@@ -1095,13 +1081,14 @@ domain.expected = () => "E2"`,
 		}
 		const validators = await load(types)
 		const input = { a: { v: "s" }, b: { v: "s" } }
-		for (const [name, t] of Object.entries(types))
-			attest(validators[name](input).summary).equals(t(input).toString())
-		attest(validators.ownFirst(input).summary).snap(
-			"a.v must be a number (was a string)"
-		)
+		for (const [name, t] of Object.entries(types)) {
+			attest(observe(validators[name](input), input)).equals(
+				observe(t(input), input)
+			)
+		}
+		attest(validators.ownFirst(input).summary).snap("a.v must be a number")
 		attest(validators.keptAfter(input).summary).snap(
-			"a.v must be a custom number (was a string)"
+			"a.v must be a custom number"
 		)
 	})
 
@@ -1115,10 +1102,10 @@ domain.expected = () => "E2"`,
 		attest(Object.keys(validators.M)).equals(Object.keys(M))
 		attest(validators.M.a).equals(validators.a)
 		attest(validators["\uD83D\uDE00"]).equals(validators.a)
-		attest(validators.M.b({ a: 1 }).summary).equals(M.b({ a: 1 }).toString())
-		attest(validators.M.sub.c("x").summary).snap(
-			"must be a number (was a string)"
+		attest(observe(validators.M.b({ a: 1 }), undefined)).equals(
+			observe(M.b({ a: 1 }), undefined)
 		)
+		attest(validators.M.sub.c("x").summary).snap("must be a number")
 	})
 
 	it("validates cyclic data as a module's types", async () => {
@@ -1179,8 +1166,7 @@ domain.expected = () => "E2"`,
 		attest(validator.meta.list[0].expression).equals("boolean")
 		attest(validator.meta.list[0](true)).equals(true)
 		attest(Object.isFrozen(validator.meta.list)).equals(true)
-		attest(validator(1).issues[0].meta.schema === n).equals(true)
-		attest(union(true).issues[0].meta.schema === n).equals(true)
+		attest(union.meta.schema === n).equals(true)
 	})
 
 	it("freezes what a program reads from it", async () => {
@@ -1189,14 +1175,25 @@ domain.expected = () => "E2"`,
 			pattern: /x/g
 		} as never)
 		const M = scope({ a: "string" }).export()
-		const Even = scope({}, { divisor: { message: "odd" } }).type("number % 2")
-		const Long = type("string").atLeastLength(3)
 		const Box = type("<t>", { box: "t" })
-		const artifact = await load({ T, M, Even, Long, $: scope({}), Box })
+		let config: any
+		const read = standIn((_: unknown, ctx: Traversal) => {
+			config = ctx.config
+			return true
+		}, "read")
+		const artifact = await load({
+			T,
+			M,
+			$: scope({}),
+			Box,
+			Read: {
+				type: type("string").narrow(read),
+				params: [{ kind: "function", label: "`read`", value: read }]
+			}
+		})
+		artifact.Read(read)("a")
 		const { T: validator, M: module } = artifact
 		const prototype = Object.getPrototypeOf(validator)
-		const config = artifact.Even(1).config
-		const nodeMeta = artifact.Long("a").issues[0].meta
 		const writes = {
 			property: () => (validator.x = 1),
 			meta: () => (validator.meta.x = 1),
@@ -1211,13 +1208,7 @@ domain.expected = () => "E2"`,
 			module: () => (module.a = validator),
 			scope: () => (artifact.$.x = 1),
 			generic: () => (artifact.Box.x = 1),
-			config: () => (config.jitless = false),
-			configuredWriters: () => (config.divisor.message = "even"),
-			locale: () => (config.locale.problem = () => "odd"),
-			// en's writers of the codes a validator raises, which every config inherits
-			registeredWriters: () =>
-				(Object.getPrototypeOf(Object.getPrototypeOf(config)).divisor = {}),
-			nodeMeta: () => (nodeMeta.message = "long")
+			config: () => (config.jitless = false)
 		}
 		const unfrozen = Object.entries(writes).filter(([, write]) => {
 			try {
@@ -1346,16 +1337,16 @@ domain.expected = () => "E2"`,
 			loaded.Quiet(5),
 			loaded.Loud(5).summary,
 			loaded.Quiet.meta.shared === loaded.Loud.meta.shared
-		]).equals([5, "must be a string (was a number)", true])
+		]).equals([5, "must be a string", true])
 	})
 
-	it("refuses a configured intersection writer for any Type", () => {
+	it("precompiles a Type under a configured intersection writer, as its issues at a path are kept apart", async () => {
 		const T = scope({}, { intersection: { message: () => "configured" } }).type(
 			"string >= 5 & /^a/"
 		)
-		attest(() => precompileStandalone({ T })).throws(
-			writeUnprecompilableMessage("a configured intersection message")
-		)
+		const { T: validator } = await load({ T })
+		attest(validator("b").summary).snap(`must be matched by ^a
+must be at least length 5`)
 	})
 
 	it("rejects a configured locale", () => {
@@ -1374,8 +1365,7 @@ domain.expected = () => "E2"`,
 	it("writes errors only in en", async () => {
 		const { T } = await load({ T: type("string") })
 		const errors = T(1)
-		attest(() => errors.toLocaleString(de)).throws(unrenderedLocaleMessage)
-		attest(errors.toLocaleString()).equals(errors.summary)
+		attest(errors.toLocaleString(de)).equals(errors.summary)
 	})
 
 	it("writes errors only in en beside a runtime island", async () => {
@@ -1386,10 +1376,8 @@ export { de } from "arktype/locales/de"
 export const Island = type("string")`)
 		const artifact = await importCode(js)
 		const errors = artifact.T()(1)
-		attest(() => errors.toLocaleString(artifact.de)).throws(
-			unrenderedLocaleMessage
-		)
-		attest(errors.summary).snap("must be a string (was a number)")
+		attest(errors.toLocaleString(artifact.de)).equals(errors.summary)
+		attest(errors.summary).snap("must be a string")
 		attest(artifact.Island(1).toLocaleString(artifact.de)).snap(
 			"muss eine Zeichenkette sein, ist aber eine Zahl"
 		)
@@ -1407,10 +1395,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 		attest([
 			errors.toLocaleString(artifact.de),
 			artifact.messageIn(errors.issues[0], artifact.de)
-		]).snap([
-			"muss eine Zeichenkette sein, ist aber eine Zahl",
-			"muss eine Zeichenkette sein, ist aber eine Zahl"
-		])
+		]).snap(["must be a string", "must be a string"])
 	})
 
 	describe("factories", () => {
@@ -1463,7 +1448,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			])
 			const isDivisibleBy2 = (n: number) => n % 2 === 0
 			attest(create(isDivisibleBy2)(1).toString()).snap(
-				"must be valid according to isDivisibleBy2 (was 1)"
+				"must be valid according to isDivisibleBy2"
 			)
 			attest(create(isDivisibleBy2).expression).snap("number")
 			attest(create((n: number) => n % 2 === 0).description).snap(
@@ -1684,11 +1669,10 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			}
 		})
 
-		it("writes once what a factory creates from a Type it receives, whose meta its errors copy", async () => {
+		it("writes once what a factory creates from a Type it receives", async () => {
 			const isEven = standIn((n: number) => n % 2 === 0, "even")
 			const $ = scope({ even: ["number", ":", isEven], s: "string" })
 			const U = $.type({ name: "s" })
-			// a domain's errors carry the meta of the root it is
 			const Name = type("string").configure({ description: "a name" })
 			const receives = (label: string, t: type.Any) => [
 				{ kind: "input" as const, label, reads: [[[], t]] as [[], unknown][] }
@@ -1714,15 +1698,16 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			const holder = created.$(isEven)
 			attest(
 				created.Derived(created.U(holder))({ name: "x", a: 1 }).toString()
-			).snap("a must be a string (was a number)")
-			attest(created.Exposing(created.Name)({ n: 5 }).issues[0].meta).equals(
-				created.Name.meta
+			).snap("a must be a string")
+			attest(created.Exposing(created.Name)({ n: 5 }).summary).snap(
+				"n must be a name"
 			)
 		})
 
 		it("shares one function between folded factories alike but for where their creation holds their Type", async () => {
 			const isEven = standIn((n: number) => n % 2 === 0, "even")
-			const $ = scope({ even: ["number", ":", isEven], s: "string" })
+			// the Types share the pattern's RegExp, so one creation makes them all
+			const $ = scope({ even: ["number", ":", isEven], s: "/^a/" })
 			const receives = (label: string) => [
 				{ kind: "input" as const, label, reads: [[[], $]] as [[], unknown][] }
 			]
@@ -1742,12 +1727,8 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			})
 			const created = await load(exports)
 			const holder = created.$(isEven)
-			attest(created.B(holder)({ b: 3 }).toString()).snap(
-				"b must be a string (was a number)"
-			)
-			attest(created.C(holder)({ c: 3 }).toString()).snap(
-				"c must be a string (was a number)"
-			)
+			attest(created.B(holder)({ b: 3 }).toString()).snap("b must be a string")
+			attest(created.C(holder)({ c: 3 }).toString()).snap("c must be a string")
 		})
 
 		it("checks a class's lineage against the classes of the Types it receives", async () => {
@@ -1936,7 +1917,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 					return n % 2 === 0
 				})
 			).throws.snap(
-				"ParseError: Default for a must be valid according to isEven (was 3)"
+				"ParseError: Default for a must be valid according to isEven"
 			)
 		})
 
@@ -1956,7 +1937,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 			attest([matcher("abc"), matcher(2)]).equals([3, -2])
 			attest(() => matcher(true)).throws.snap(
-				"TraversalError: must be a string or a number (was boolean)"
+				"TraversalError: must be a string or a number"
 			)
 		})
 
@@ -1974,11 +1955,9 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 				"bound typed count",
 				"(string) => number"
 			])
-			attest(() => count(1)).throws.snap(
-				"TraversalError: value at [0] must be a string (was a number)"
-			)
+			attest(() => count(1)).throws.snap("TraversalError: [0] must be a string")
 			attest(() => create((s: string) => s)("b")).throws.snap(
-				"TraversalError: must be a number (was a string)"
+				"TraversalError: must be a number"
 			)
 			const unlisted = await loadFactory(
 				type.fn("string", ":", "number")(length) as never,
@@ -2104,12 +2083,12 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			const isLong = (s: string) => s.length > 1
 			const rejects = (s: string, ctx: any) => ctx.reject("long")
 			attest(created.T(isLong)("a").toString()).snap(
-				'must be valid according to isLong (was "a")'
+				"must be valid according to isLong"
 			)
-			attest(created.T(rejects)("a").toString()).snap('must be long (was "a")')
+			attest(created.T(rejects)("a").toString()).snap("must be long")
 			// a builtin is a function like any other, which arktype passes its context by its length
 			attest(created.T(Boolean)("").toString()).snap(
-				'must be valid according to Boolean (was "")'
+				"must be valid according to Boolean"
 			)
 			attest(() => created.T("isLong" as never)).throws(
 				writeCreationMismatchMessage("`check`", '"isLong"', "a function")
@@ -2371,12 +2350,12 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			const even = (n: number) => calls.push("even") && n % 2 === 0
 			const small = (n: number) => calls.push("small") && n < 10
 			attest(create(small, even)(11.5).toString()).snap(
-				"must be valid according to even or valid according to small (was 11.5)"
+				"must be a number and valid according to even or a number and valid according to small"
 			)
 			// renamed so it sorts after the other, unlike the function it was built for
 			const whole = (n: number) => calls.push("whole") && Number.isInteger(n)
 			attest(create(small, whole)(11.5).toString()).snap(
-				"must be valid according to small or valid according to whole (was 11.5)"
+				"must be a number and valid according to small or a number and valid according to whole"
 			)
 			// arktype calls each branch's narrow once to tell whether it allows the data and once to write its error
 			attest(calls).equals([
@@ -2399,7 +2378,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 				"a number and valid according to an anonymous predicate"
 			)
 			attest(Unnamed(11.5).toString()).snap(
-				"must be valid according to an anonymous predicate (was 11.5)"
+				"must be a number and valid according to an anonymous predicate"
 			)
 		})
 
@@ -2482,7 +2461,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			const T = create(Member, admin, owner)
 			attest(T.expression).snap("Member")
 			attest(T(new Member("guest")).toString()).snap(
-				"must be valid according to admin or valid according to owner (was an object)"
+				"must be an instance of Member and valid according to admin or an instance of Member and valid according to owner"
 			)
 		})
 
@@ -2501,11 +2480,11 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			const soon = () => 1
 			const then = () => 2
 			attest(create(soon, then)({ at: 1 }).toString()).snap(
-				"at must be Function(soon) or Function(then) (was 1)"
+				"at must be Function(soon) or Function(then)"
 			)
 			const alike = () => ({ r: () => 1 }).r
 			attest(create(alike(), alike())({ at: 1 }).toString()).snap(
-				"at must be Function(r) (was 1)"
+				"at must be Function(r)"
 			)
 		})
 
@@ -2693,6 +2672,7 @@ export default shared`).js
 			"<stdin>",
 			"schema/runtime.ts",
 			"schema/shared/errorWriters.ts",
+			"schema/shared/issues.ts",
 			"schema/shared/errors.ts",
 			"schema/shared/jsonSchema.ts",
 			"schema/shared/locale.ts",

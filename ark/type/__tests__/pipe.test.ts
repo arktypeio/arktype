@@ -531,7 +531,7 @@ contextualize(() => {
 		const T = type({ v: "number" })
 			.pipe((o, ctx) => {
 				// counts each error read in the errors added so far
-				counted ??= ctx.errors._added = new Proxy(ctx.errors._added, {
+				counted ??= ctx.errors._ = new Proxy(ctx.errors._, {
 					get: (target, k) => {
 						if (typeof k === "string" && /^\d+$/.test(k)) reads++
 						return Reflect.get(target, k)

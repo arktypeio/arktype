@@ -94,10 +94,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		js.if(
 			// only add the default error if the predicate didn't add one itself
 			`!${condition} && ctx.currentErrorCount === errorCount`,
-			() =>
-				js.line(
-					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)}, data)`
-				)
+			() => js.line(js.error(this.errorContext))
 		)
 	}
 }

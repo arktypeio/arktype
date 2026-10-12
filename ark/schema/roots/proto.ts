@@ -112,13 +112,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 			: this.builtinName ? this.compiledCondition
 			: `data instanceof ${js.ref(this.proto)}`
 		if (js.traversalKind === "Allows") js.return(condition)
-		else {
-			js.if(`!(${condition})`, () =>
-				js.line(
-					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)}, data)`
-				)
-			)
-		}
+		else js.if(`!(${condition})`, () => js.line(js.error(this.errorContext!)))
 	}
 
 	expression: string =

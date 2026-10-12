@@ -32,12 +32,7 @@ export abstract class InternalBasis<
 
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
-		else {
-			js.if(this.compiledNegation, () =>
-				js.line(
-					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)}, data)`
-				)
-			)
-		}
+		else
+			js.if(this.compiledNegation, () => js.line(js.error(this.errorContext!)))
 	}
 }

@@ -9,7 +9,12 @@ import {
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import type { BaseErrorContext } from "./declare.ts"
-import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
+import {
+	registerBuilderCompiler,
+	type ArkErrorCode,
+	type ErrorBuilder
+} from "./errors.ts"
+import type { FailureSite } from "./issues.ts"
 import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
 import {
@@ -215,12 +220,26 @@ export interface TransformStep {
 	signature?: BaseNode
 }
 
+// what an issue says its data must be, as en writes it where nothing else is configured
+export const expectedOf = <description extends string | undefined>(
+	meta: ArkEnv.meta,
+	description: description
+): string | description =>
+	typeof meta.expected === "string" ? meta.expected : description
+
+const sitesByContext = new WeakMap<BaseErrorContext, FailureSite>()
+
+// a site only traversal reads, so a standalone build writes it as it is rather than as a value a program could reach
+export const failureSites = new WeakSet<object>()
+
 export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
 		requiresContext?: boolean
 		refs?: Refs
 		errorContexts?: ErrorContexts
+		raisesIssues?: boolean | undefined
+		referencesText?: ((text: string) => boolean) | undefined
 	}
 
 	export type Refs = Map<object | symbol, string>
@@ -233,6 +252,8 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	requiresContext: boolean
 	readonly refs: NodeCompiler.Refs | undefined
 	readonly errorContexts: NodeCompiler.ErrorContexts | undefined
+	readonly raisesIssues: boolean
+	readonly referencesText: ((text: string) => boolean) | undefined
 	checksTransformErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {
@@ -241,6 +262,8 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		this.requiresContext = ctx.requiresContext ?? true
 		this.refs = ctx.refs
 		this.errorContexts = ctx.errorContexts
+		this.raisesIssues = ctx.raisesIssues ?? false
+		this.referencesText = ctx.referencesText
 	}
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
@@ -315,11 +338,41 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			:	serializePrimitive(value as never)
 	}
 
+	// a text code can't hold, like one printing a function a factory receives, is referenced instead
+	text(value: string): string {
+		return this.referencesText?.(value) ?
+				this.ref(value as never)
+			:	JSON.stringify(value)
+	}
+
 	ref(value: object | symbol): string {
 		if (!this.refs) return registeredReference(value)
 		let name = this.refs.get(value)
 		if (name === undefined) this.refs.set(value, (name = `r${this.refs.size}`))
 		return name
+	}
+
+	// a standalone validator's issue holds what its node describes rather than its context, so its site holds only that
+	error(context: BaseErrorContext, key?: string): string {
+		if (!this.raisesIssues)
+			return `ctx.errorFromNodeContext(${this.errorContext(context)}, data)`
+		let site = sitesByContext.get(context)
+		if (!site) {
+			const code = context.code as ArkErrorCode
+			failureSites.add(
+				(site =
+					code === "required" ?
+						{ missing: { code } }
+					:	{
+							value: {
+								code,
+								description: expectedOf(context.meta, context.description)
+							}
+						})
+			)
+			sitesByContext.set(context, site)
+		}
+		return `ctx.failsAt(${this.ref(site)}, data${key === undefined ? "" : `, ${key}`})`
 	}
 
 	errorContext(errorContext: BaseErrorContext): string {
