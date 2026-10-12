@@ -421,6 +421,17 @@ console.log(JSON.stringify(diagnostics.map(diagnostic => diagnostic.hint)))`)
 			])
 		}).timeout(60000)
 
+		it("leaves a configure() marked // @ark-runtime to the runtime, which configures islands too", () => {
+			attest(
+				printedInFreshThread(`const source = 'import { configure, type } from "arktype"\\n// @ark-runtime\\nconfigure({ onUndeclaredKey: "delete" })\\n// @ark-runtime\\nexport const T = type({ name: process.argv[2] })'
+const { code, diagnostics } = precompile(source, {}, { config: "/main.ts" })
+console.log(JSON.stringify([code, diagnostics.map(renderDiagnostic)]))`)
+			).snap([
+				'import "arktype/internal/island.js"\nimport * as $ark$island from "arktype/internal"\nimport { configure } from "arktype"\n// @ark-runtime\nconfigure({ onUndeclaredKey: "delete" }, "mlgm0u_asdk1h")\n// @ark-runtime\nexport const T = $ark$island.type({ name: process.argv[2] })',
+				[]
+			])
+		}).timeout(60000)
+
 		it("configure other than at the config module's top level", () => {
 			const setup = `import { configure } from "arktype/config"
 export const setup = () => configure({ onUndeclaredKey: "reject" })`

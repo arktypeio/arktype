@@ -1312,9 +1312,14 @@ export class Precompiler {
 			s.appendLeft(fixedAt, `${prefix}fixConfig()\n`)
 		}
 		// in shadow mode arktype creates each site too, reading what the site's text reads
-		if (!this.shadow)
-			pruneArktypeImports(module, [...folded, ...module.islands], s)
-		else if (folded.length) {
+		if (!this.shadow) {
+			// linkIslands leaves configure() to the runtime, which still reads its import
+			const linked = module.islands.filter(
+				island =>
+					!this.configureCallsOf(module).some(call => contains(island, call))
+			)
+			pruneArktypeImports(module, [...folded, ...linked], s)
+		} else if (folded.length) {
 			// before arktype, so it loads beside the runtime whichever a module imports first
 			s.prependLeft(
 				firstStatementOf(module.program).start,
@@ -3787,6 +3792,9 @@ export class Precompiler {
 			)
 				continue
 			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
+			// the runtime's configure() shares the configuration with islands, where arktype's would configure only them
+			if (this.configureCallsOf(module).some(call => call.callee === read))
+				continue
 			const node = read ?? id
 			let linked: string
 			if (read) {
