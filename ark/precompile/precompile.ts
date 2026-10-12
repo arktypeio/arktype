@@ -67,6 +67,7 @@ import {
 	enclosingFunctionOf,
 	functionOfBinding,
 	functionsReachedFrom,
+	importsValues,
 	isArk,
 	isArkObject,
 	isFunctionNode,
@@ -93,6 +94,7 @@ import {
 	ModuleNamespace,
 	type Read,
 	readsFirst,
+	runsBeforeBody,
 	type SiteState
 } from "./interpreter.ts"
 import { SourceModule } from "./module.ts"
@@ -226,6 +228,8 @@ export interface Reference {
 	isFixed: boolean
 	// whether it reads a function or symbol its module creates, through the expression creating it or a binding of it, whose facts nothing changes
 	isOwnHole: boolean
+	// whether it's imported from the module declaring it, which only declares and has run before the site, so a bundler can drop that module with nothing observable
+	isInert: boolean
 }
 
 interface SiteFactory {
@@ -325,6 +329,7 @@ export class Precompiler {
 	private readsByModule = new WeakMap<SourceModule, SiteRead[]>()
 	private candidatesByModule = new WeakMap<SourceModule, SiteCandidate[]>()
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
+	private inertByModule = new WeakMap<SourceModule, boolean>()
 	private progressHelpersByModule = new WeakMap<
 		SourceModule,
 		Map<string, [helper: Binding, reads: Binding[]]>
@@ -1543,7 +1548,7 @@ export class Precompiler {
 			if (
 				(site.introspection || (hole && dropped.has(hole.value))) &&
 				!holes.some(value => calledByChecks.has(value)) &&
-				(hole ? reference.isOwnHole : !this.mustRun(reference.value, module))
+				(hole ? reference.isOwnHole : !this.mustRun(reference, module))
 			) {
 				for (const value of holes) unchecked.add(value)
 				continue
@@ -2258,13 +2263,110 @@ export class Precompiler {
 	}
 
 	// under `"sideEffects": false` a bundler drops a module with its last read export, whatever else the module runs, so a fold receives a Type another module declares
-	private mustRun(value: unknown, module: SourceModule): boolean {
+	private mustRun(reference: Reference, module: SourceModule): boolean {
 		return (
-			this.interpreter.isCheckedAtCreation(value) ||
+			this.interpreter.isCheckedAtCreation(reference.value) ||
+			(!reference.isInert &&
+				this.interpreter
+					.modulesDeclaring(reference.value)
+					.some(declaring => declaring !== module))
+		)
+	}
+
+	// e.g. a Type imported from a module exporting only Types, which has run before the site, and which a bundler can drop with nothing observable
+	private isInertRead(
+		value: unknown,
+		from: SourceModule | undefined,
+		module: SourceModule,
+		runsFirst: boolean
+	): boolean {
+		return (
+			!!from &&
+			!runsFirst &&
 			this.interpreter
 				.modulesDeclaring(value)
-				.some(declaring => declaring !== module)
+				.every(declaring => declaring === module || declaring === from) &&
+			this.isInert(from)
 		)
+	}
+
+	// e.g. one exporting only Types: it imports nothing an import cycle can come back through, and its top level runs only creations that neither check nor throw
+	private isInert(module: SourceModule): boolean {
+		let result = this.inertByModule.get(module)
+		if (result !== undefined) return result
+		this.inertByModule.set(module, (result = false))
+		if (importsValues(module)) return result
+		const { sites } = this.analysisOf(module)
+		const isInertValue = (node: Node | null | undefined): boolean => {
+			if (!node) return true
+			const value = unwrapExpression(node)
+			return (
+				value.type === "Literal" ||
+				(value.type === "TemplateLiteral" && !value.expressions.length) ||
+				isFunctionNode(value) ||
+				sites.some(
+					site =>
+						site.start === value.start &&
+						site.end === value.end &&
+						site.status === "accepted" &&
+						!site.parseError &&
+						!site.progress &&
+						!site.inputs.length &&
+						!site.defaultChecks.length &&
+						!this.interpreter.isCheckedAtCreation(site.value)
+				)
+			)
+		}
+		result = module.program.body.every(statement => {
+			const declaration =
+				(
+					statement.type === "ExportNamedDeclaration" ||
+					statement.type === "ExportDefaultDeclaration"
+				) ?
+					statement.declaration
+				:	statement
+			if (!declaration) return true
+			switch (declaration.type) {
+				case "ImportDeclaration":
+				case "ExportAllDeclaration":
+				case "FunctionDeclaration":
+				case "TSTypeAliasDeclaration":
+				case "TSInterfaceDeclaration":
+				case "TSDeclareFunction":
+					return true
+				case "ExpressionStatement":
+					return !!declaration.directive
+				case "VariableDeclaration":
+					return declaration.declarations.every(
+						declarator =>
+							declarator.id.type === "Identifier" &&
+							isInertValue(declarator.init)
+					)
+				default:
+					return (
+						statement.type === "ExportDefaultDeclaration" &&
+						isInertValue(declaration)
+					)
+			}
+		})
+		this.inertByModule.set(module, result)
+		return result
+	}
+
+	// e.g. `a.ts` for `User` or `a.User` imported from "./a.ts"
+	private importedFromOf(
+		node: Node,
+		module: SourceModule
+	): SourceModule | undefined {
+		node = unwrapExpression(node)
+		while (node.type === "MemberExpression")
+			node = unwrapExpression(node.object)
+		const binding = module.scopes.referencesById.get(node)?.binding
+		const declaration = binding?.kind === "import" && binding.declaration.parent
+		if (declaration && declaration.type === "ImportDeclaration") {
+			const target = this.graph.resolve(declaration.source.value, module)
+			if (target instanceof SourceModule) return target
+		}
 	}
 
 	private helperSitesOf(module: SourceModule): Node[] {
@@ -2413,7 +2515,23 @@ export class Precompiler {
 			const at = progressOf(binding, module)
 			if (at > (site.progress?.[0] ?? 0)) site.progress = [at, binding.name]
 		}
+		// one its module's imports haven't all run before, which reads what they declare as an import cycle leaves it
+		const runsFirst = runsBeforeBody(state.node, module)
+		const importerOf = (root: Read["root"]) =>
+			root.kind === "export" && root.importer === module ?
+				(this.graph.moduleOf(root.file) as SourceModule)
+			:	undefined
+		const introspected = site.introspection?.type
 		for (const read of state.trace.reads) {
+			// introspection doesn't depend on the Type at runtime, which only a module mock replaces
+			if (
+				read.value === introspected &&
+				!read.path.length &&
+				!this.checkHelpers &&
+				!this.interpreter.isCheckedAtCreation(introspected) &&
+				this.isInertRead(introspected, importerOf(read.root), module, runsFirst)
+			)
+				continue
 			const input = this.inputOf(read, candidate, module)
 			if (input instanceof DynamicValue) return rejectSite(site, input)
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
@@ -2453,7 +2571,10 @@ export class Precompiler {
 				end: declaration.end
 			})
 			// under `"sideEffects": false` a bundler drops the helper's module with its last read export, and an import cycle can call the site before the helper is set
-			if (!this.checkHelpers) {
+			if (
+				!this.checkHelpers &&
+				!this.isInertRead(value, importerOf(root), module, runsFirst)
+			) {
 				site.inputs.push({
 					kind: "import",
 					file: root.file,
@@ -2497,7 +2618,13 @@ export class Precompiler {
 							module.scopes.referencesById.get(read)?.binding,
 							value
 						),
-					isOwnHole: this.interpreter.isOwnHole(node, value, module)
+					isOwnHole: this.interpreter.isOwnHole(node, value, module),
+					isInert: this.isInertRead(
+						value,
+						this.importedFromOf(node, module),
+						module,
+						runsFirst
+					)
 				})
 			}
 		}

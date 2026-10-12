@@ -1,4 +1,4 @@
-import { and, extend, json, member, scoped } from "./items.ts"
+import { and, extend, json, leaf, member, scoped } from "./items.ts"
 
 const throws = (f: () => unknown) => {
 	try {
@@ -15,5 +15,6 @@ export const calledFirst = [
 	throws(() => scoped()),
 	throws(() => member()),
 	throws(() => json()),
-	throws(() => extend({ b: "number" }))
+	throws(() => extend({ b: "number" })),
+	throws(() => leaf())
 ]

@@ -93,7 +93,13 @@ export interface InterpreterOptions {
 }
 
 export type InputRoot =
-	| { kind: "export"; file: string; name: string }
+	| {
+			kind: "export"
+			file: string
+			name: string
+			// the module importing it from the module declaring it, rather than through another's re-export
+			importer?: SourceModule | undefined
+	  }
 	| { kind: "binding"; module: SourceModule; binding: Binding }
 	| { kind: "define"; name: string }
 
@@ -1177,13 +1183,18 @@ export class Interpreter {
 			}
 		}
 		if (readsAgain(result.value)) mergeTrace(ctx.trace, result.trace)
+		const declaration = binding.declaration.parent
+		const isDirect =
+			declaration?.type === "ImportDeclaration" &&
+			this.graph.resolve(declaration.source.value, ctx.module) === target.module
 		return {
 			value: result.value,
 			read: {
 				root: {
 					kind: "export",
 					file: target.module.id,
-					name: target.kind === "binding" ? target.name : "default"
+					name: target.kind === "binding" ? target.name : "default",
+					importer: isDirect ? ctx.module : undefined
 				},
 				path: [],
 				value: result.value
@@ -2804,6 +2815,10 @@ const runPointOf = (
 	}
 	return node.start
 }
+
+// e.g. a site in an exported function declaration, which an import cycle can call before the module's imports have run
+export const runsBeforeBody = (node: Node, module: SourceModule): boolean =>
+	runPointOf(node, module.program, module) <= module.program.start
 
 // e.g. `Base` in `export function f() { return Base }` before `const Base = type(...)`, which an import cycle can call first
 export const readsFirst = (

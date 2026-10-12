@@ -632,10 +632,19 @@ export const User = type({ name: "string" })`
 				"6:11 accepted",
 				"7:11 accepted"
 			])
-			// a bundler drops User's module with the last export read from it, whatever else the module runs
-			const { sites } = analyze(source, files)
+			// a bundler drops User's module with the last export read from it, which matters where the module runs more than its declarations
+			const inputsOf = (files: Record<string, string>) => {
+				const { sites } = analyze(source, files)
+				return sites[sites.length - 1].inputs.map(input => [
+					input.name,
+					input.path
+				])
+			}
+			attest(inputsOf(files)).equals([])
 			attest(
-				sites[sites.length - 1].inputs.map(input => [input.name, input.path])
+				inputsOf({
+					"/user.ts": `${files["/user.ts"]}\nconsole.log(User.expression)`
+				})
 			).equals([["User", []]])
 			// arktype computes it at runtime from the Type a site created
 			attest(statusesOf(source, files, { runtime: "arktype" })).snap([

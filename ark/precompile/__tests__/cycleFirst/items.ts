@@ -1,5 +1,7 @@
 import { scope, type } from "arktype"
 import { calledFirst } from "./callFirst.ts"
+// runs after callFirst.ts, which calls leaf() first
+import { Leaf } from "./leaf.ts"
 
 // the cycle calls each before this module's body declares what it reads
 const Base = type({ a: "string" })
@@ -24,6 +26,10 @@ export function member() {
 const E = type({ e: "number" })
 export function json() {
 	return E.json
+}
+
+export function leaf() {
+	return Leaf.json
 }
 
 export const items = calledFirst

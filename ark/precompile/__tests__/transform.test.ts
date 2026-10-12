@@ -90,17 +90,18 @@ export const User = type({ name: "string" })`
 				}
 			)
 			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/qyl94e1cfnr6n"
-import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/qyl94e1cfnr6n"
-import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/qyl94e1cfnr6n"
-import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/qyl94e1cfnr6n"
+import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/bjxg3b1mkblhn"
+import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/bjxg3b1mkblhn"
+import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/bjxg3b1mkblhn"
+import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/bjxg3b1mkblhn"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { User } from "./user.ts"
+import "./user.ts"
 $arkfixConfig()
 const Point = /* @__PURE__ */ $arkvq10hui17onwk2()
 export const json = /* @__PURE__ */ $arkf1uqk4wc118rbng()
 export const schema = /* @__PURE__ */ $arkf1mrbczv1xkyq28()
-export const userJson = $arkf17hn9zj1vlnawy(User)`)
+export const userJson = /* @__PURE__ */ $arkf17hn9zj1vlnawy()`)
 			attest(
 				Object.entries(result.modules).flatMap(([specifier, module]) =>
 					specifier.includes("json") ? [module] : []
