@@ -2789,7 +2789,7 @@ const pushUnique = (
 	if (!helpers.some(([n]) => n === node)) helpers.push([node, module])
 }
 
-// the earliest offset in `scope` at which code at `node` can run: its own, or the first that can call the function holding it, which an import cycle can from where an export is set
+// `node`'s offset, or the earliest that can call the function holding it, as an import cycle can once the function's export is set
 const runPointOf = (
 	node: Node,
 	scope: Node,

@@ -1798,7 +1798,7 @@ export const isTypeOnly = (statement: Node): boolean =>
 
 const importsValuesByModule = new WeakMap<SourceModule, boolean>()
 
-// an import cycle can call what such a module exports before its body runs
+// any import but arktype's or a type-only one, through which a cycle can call what this module exports before its body runs
 export const importsValues = (module: SourceModule): boolean => {
 	let result = importsValuesByModule.get(module)
 	if (result === undefined) {

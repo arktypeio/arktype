@@ -705,7 +705,7 @@ export class Precompiler {
 		}
 	}
 
-	// the module counts the statements it has run where a site can read what one sets before it's set, which throws, and registers each function another module's site folds reading such a binding, so that site can check it too
+	// e.g. `export function f() { return Base.or("null") }`, whose site checks the module has run `const Base = type(...)`, as an import cycle can call `f` first
 	private markProgress(
 		module: SourceModule,
 		sites: Site[],
@@ -719,13 +719,13 @@ export class Precompiler {
 			if (site.status === "accepted" && site.progress)
 				marked.add(site.progress[0])
 		}
-		const registered: string[][] = []
+		const helpersByProgress: string[][] = []
 		if (!this.checkHelpers) {
 			for (const [helper, reads] of this.progressHelpersOf(module)) {
 				for (const binding of reads) marked.add(progressOf(binding, module))
 				// a function declaration can run before the module's body, where nothing it reads is set
 				const at = helper.kind === "function" ? 0 : progressOf(helper, module)
-				;(registered[at] ??= []).push(helper.name)
+				;(helpersByProgress[at] ??= []).push(helper.name)
 			}
 		}
 		if (!marked.size) return
@@ -735,7 +735,7 @@ export class Precompiler {
 			:	""
 		s.prependLeft(
 			firstStatementOf(module.program).start,
-			`var ${prefix}m = 0;\n${register(registered[0])}`
+			`var ${prefix}m = 0;\n${register(helpersByProgress[0])}`
 		)
 		const steps = [...stepsOf(module).keys()]
 		const sitesByRange = rangesOf(sites)
@@ -750,11 +750,11 @@ export class Precompiler {
 		const textsAfter = new Map<number, string>()
 		for (const at of marked)
 			textsAfter.set(runEnds[at], `${prefix}m = ${runEnds[at]};\n`)
-		for (let at = 1; at < registered.length; at++) {
-			if (registered[at]) {
+		for (let at = 1; at < helpersByProgress.length; at++) {
+			if (helpersByProgress[at]) {
 				textsAfter.set(
 					at,
-					(textsAfter.get(at) ?? "") + register(registered[at])
+					(textsAfter.get(at) ?? "") + register(helpersByProgress[at])
 				)
 			}
 		}
@@ -780,7 +780,7 @@ export class Precompiler {
 				s.appendLeft(statement.end, `\n${text.slice(0, -1)}`)
 			}
 		}
-		if (registered.length) {
+		if (helpersByProgress.length) {
 			const registrar = `import { registerProgress } from "arktype/runtime"\n\nexport { registerProgress as default }\n`
 			const specifier = `~arktype/${hashOf(registrar)}`
 			modules[specifier] = registrar
@@ -788,7 +788,7 @@ export class Precompiler {
 		}
 	}
 
-	// e.g. `extend` for `export function extend(t) { return Base.and(t) }`, which another module's site folds where an import cycle can call it before `Base` is set, with what each reads first
+	// e.g. `extend` reading `Base`, for `export function extend(t) { return Base.and(t) }` before `const Base`
 	private progressHelpersOf(module: SourceModule): Map<Binding, Binding[]> {
 		let result = this.progressHelpersByModule.get(module)
 		if (result) return result
@@ -835,7 +835,7 @@ export class Precompiler {
 		return result
 	}
 
-	// a function of another module reading a binding that module declares runs once the module has set it, which the site checks through a helper it receives from there, or by receiving the binding
+	// a fold of `extend` reading `Base` throws where arktype's program would, before `Base` is set
 	private checkReadFirst(
 		site: Site,
 		binding: Binding,
@@ -2606,7 +2606,6 @@ export class Precompiler {
 			const at = progressOf(binding, module)
 			if (at > (site.progress?.[0] ?? 0)) site.progress = [at, binding.name]
 		}
-		// one its module's imports haven't all run before, which reads what they declare as an import cycle leaves it
 		const runsFirst = runsBeforeBody(state.node, module)
 		const importerOf = (root: Read["root"]) =>
 			root.kind === "export" && root.importer === module ?
