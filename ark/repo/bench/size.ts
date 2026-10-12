@@ -2,7 +2,9 @@
 
 import { flatMorph } from "@ark/util"
 import { gzipSync } from "node:zlib"
-import { bundle, libraries, scenarios, type Bundle } from "./bundle.ts"
+import { bundle, scenarios, type Bundle } from "./bundle.ts"
+import { libraries } from "./libraries.ts"
+import { standingOf } from "./stats.ts"
 
 const bytesByOrigin = ({ metafile }: Bundle) => {
 	const result = { runtime: 0, artifacts: 0, app: 0 }
@@ -39,3 +41,23 @@ for (const scenario of scenarios) {
 
 console.table(sizes)
 console.table(standaloneSplit)
+
+console.log("size standings, bytes")
+console.table(
+	Object.fromEntries(
+		scenarios.flatMap(scenario =>
+			(["gzip", "min"] as const).map(metric => [
+				`${scenario} ${metric}`,
+				standingOf(
+					Object.fromEntries(
+						libraries.map(library => [
+							library,
+							[sizes[`${scenario} (${library})`][`${metric} (B)`]]
+						])
+					),
+					String
+				)
+			])
+		)
+	)
+)

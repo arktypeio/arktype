@@ -25,7 +25,9 @@ import {
 	patternsInvalidData,
 	Product,
 	productData,
+	productExtraKeysData,
 	productInvalidData,
+	ProductStrip,
 	Rotating,
 	rotatingData,
 	Tree,
@@ -82,6 +84,7 @@ contextualize(() => {
 		accepts(MoltarStrict, moltarData)
 		accepts(MoltarStrip, moltarExtraKeysData, moltarData)
 		accepts(Product, productData)
+		accepts(ProductStrip, productExtraKeysData, productData)
 		accepts(Items, itemsData)
 		for (const data of discriminatedData) accepts(Discriminated, data)
 		for (const [i, data] of rotatingData.entries()) accepts(Rotating[i], data)

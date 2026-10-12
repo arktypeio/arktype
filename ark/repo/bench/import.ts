@@ -3,15 +3,11 @@
 import { flatMorph } from "@ark/util"
 import { spawnSync } from "node:child_process"
 import { mkdirSync, rmSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
 import { loadavg } from "node:os"
-import {
-	bundle,
-	libraries,
-	scenarios,
-	type Library,
-	type Scenario
-} from "./bundle.ts"
+import { join } from "node:path"
+import { bundle, scenarios, type Scenario } from "./bundle.ts"
+import { libraries, type Library } from "./libraries.ts"
+import { pinned, standingOf, summarize } from "./stats.ts"
 
 const processesPerArm = 20
 
@@ -80,6 +76,10 @@ const parsed: Record<Scenario, [name: string, data: object]> = {
 const isValid: Record<Library, (name: string) => string> = {
 	valibot: name => `m.safeParse(m.${name}, data).success`,
 	zod: name => `m.${name}.safeParse(data).success`,
+	zodMini: name => `m.safeParse(m.${name}, data).success`,
+	typia: name => `m.${name}(data).success`,
+	ajv: name => `m.${name}(data)`,
+	typebox: name => `m.${name}.Check(data)`,
 	arktype: name => `!Array.isArray(m.${name}(data))`,
 	standalone: name => `!Array.isArray(m.${name}(data))`
 }
@@ -120,16 +120,14 @@ rmSync(compileCache, { recursive: true, force: true })
 const warm = { ...cold, NODE_COMPILE_CACHE: compileCache }
 
 const run = (arm: (typeof arms)[number], env: NodeJS.ProcessEnv): Sample => {
-	const result = spawnSync(
+	const [command, ...args] = pinned([
 		process.execPath,
-		[
-			"--expose-gc",
-			"--input-type=module",
-			"--eval",
-			child(arm.path, arm.scenario, arm.library)
-		],
-		{ env, encoding: "utf8" }
-	)
+		"--expose-gc",
+		"--input-type=module",
+		"--eval",
+		child(arm.path, arm.scenario, arm.library)
+	])
+	const result = spawnSync(command, args, { env, encoding: "utf8" })
 	if (result.status !== 0) throw new Error(result.stderr)
 	return JSON.parse(result.stdout)
 }
@@ -151,37 +149,58 @@ for (let i = 0; i < processesPerArm; i++) {
 	}
 }
 
-const quantile = (sorted: number[], q: number) => {
-	const position = (sorted.length - 1) * q
-	const lowerIndex = Math.floor(position)
-	return (
-		sorted[lowerIndex] +
-		(sorted[Math.ceil(position)] - sorted[lowerIndex]) * (position - lowerIndex)
-	)
-}
-
-// the median, then the interquartile range
-const summarize = (values: number[]) => {
-	const sorted = values.sort((l, r) => l - r)
-	const [q1, median, q3] = [0.25, 0.5, 0.75].map(q =>
-		quantile(sorted, q).toFixed(2)
-	)
-	return `${median} (${q1}-${q3})`
-}
+const formatMs = (ms: number) => ms.toFixed(2)
 
 console.table(
 	flatMorph(samples, (name, armSamples) => [
 		name,
 		{
-			"load, cold (ms)": summarize(armSamples.cold.map(s => s.load)),
-			"load, warm (ms)": summarize(armSamples.warm.map(s => s.load)),
-			"first parse, cold (ms)": summarize(
-				armSamples.cold.map(s => s.firstParse)
+			"load, cold (ms)": summarize(
+				armSamples.cold.map(s => s.load),
+				formatMs
 			),
-			"heap (MiB)": summarize(armSamples.cold.map(s => s.heap))
+			"load, warm (ms)": summarize(
+				armSamples.warm.map(s => s.load),
+				formatMs
+			),
+			"first parse, cold (ms)": summarize(
+				armSamples.cold.map(s => s.firstParse),
+				formatMs
+			),
+			"heap (MiB)": summarize(
+				armSamples.cold.map(s => s.heap),
+				formatMs
+			)
 		}
 	])
 )
+
+// load plus first parse, as a program pays them before its first answer
+const startupOf = (sample: Sample) => sample.load + sample.firstParse
+
+console.log(
+	"startup standings, ms to load and parse once (p: sign test against the best other, paired by round)"
+)
+console.table(
+	Object.fromEntries(
+		scenarios.flatMap(scenario =>
+			(["cold", "warm"] as const).map(start => [
+				`${scenario} ${start}`,
+				standingOf(
+					Object.fromEntries(
+						libraries.map(library => [
+							library,
+							samples[`${scenario} (${library})`][start].map(startupOf)
+						])
+					),
+					formatMs
+				)
+			])
+		)
+	)
+)
+
+writeFileSync(join(out, "import.json"), JSON.stringify(samples))
 
 console.log(
 	`1-minute load: ${loadBefore.toFixed(1)} before, ${loadavg()[0].toFixed(1)} after`

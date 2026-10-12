@@ -1,7 +1,10 @@
 import { numericStringMatcher } from "@ark/util"
 import { scope, type, type Type } from "arktype"
+import TypeBox from "typebox"
+import { Compile, type Validator } from "typebox/compile"
 import * as v from "valibot"
 import { z } from "zod"
+import * as zm from "zod/mini"
 
 // https://github.com/moltar/typescript-runtime-type-benchmarks
 export const moltarData = Object.freeze({
@@ -75,10 +78,77 @@ export const moltar = {
 		})
 }
 
+const moltarZodMini = {
+	number: zm.number(),
+	negNumber: zm.number(),
+	maxNumber: zm.number(),
+	string: zm.string(),
+	longString: zm.string(),
+	boolean: zm.boolean()
+}
+
+const moltarDeeplyNestedZodMini = {
+	foo: zm.string(),
+	num: zm.number(),
+	bool: zm.boolean()
+}
+
+// strict objects reject undeclared keys
+const moltarTypeBox = (strict: boolean) =>
+	TypeBox.Object(
+		{
+			number: TypeBox.Number(),
+			negNumber: TypeBox.Number(),
+			maxNumber: TypeBox.Number(),
+			string: TypeBox.String(),
+			longString: TypeBox.String(),
+			boolean: TypeBox.Boolean(),
+			deeplyNested: TypeBox.Object(
+				{
+					foo: TypeBox.String(),
+					num: TypeBox.Number(),
+					bool: TypeBox.Boolean()
+				},
+				strict ? { additionalProperties: false } : {}
+			)
+		},
+		strict ? { additionalProperties: false } : {}
+	)
+
+const moltarAjv = (strict: boolean) => ({
+	type: "object",
+	properties: {
+		number: { type: "number" },
+		negNumber: { type: "number" },
+		maxNumber: { type: "number" },
+		string: { type: "string" },
+		longString: { type: "string" },
+		boolean: { type: "boolean" },
+		deeplyNested: {
+			type: "object",
+			properties: {
+				foo: { type: "string" },
+				num: { type: "number" },
+				bool: { type: "boolean" }
+			},
+			required: ["foo", "num", "bool"],
+			...(strict && { additionalProperties: false })
+		}
+	},
+	required: Object.keys(moltarData),
+	...(strict && { additionalProperties: false })
+})
+
 export const Moltar = {
 	arktype: moltar.arktype(),
 	zod: moltar.zod(),
-	valibot: moltar.valibot()
+	valibot: moltar.valibot(),
+	zodMini: zm.object({
+		...moltarZodMini,
+		deeplyNested: zm.object(moltarDeeplyNestedZodMini)
+	}),
+	typebox: Compile(moltarTypeBox(false)),
+	ajv: moltarAjv(false)
 }
 
 export const MoltarStrict = {
@@ -90,13 +160,23 @@ export const MoltarStrict = {
 	valibot: v.strictObject({
 		...Moltar.valibot.entries,
 		deeplyNested: v.strictObject(Moltar.valibot.entries.deeplyNested.entries)
-	})
+	}),
+	zodMini: zm.strictObject({
+		...moltarZodMini,
+		deeplyNested: zm.strictObject(moltarDeeplyNestedZodMini)
+	}),
+	typebox: Compile(moltarTypeBox(true)),
+	ajv: moltarAjv(true)
 }
 
+// ajv strips with removeAdditional and TypeBox with Clean
 export const MoltarStrip = {
 	arktype: Moltar.arktype.onDeepUndeclaredKey("delete"),
 	zod: Moltar.zod,
-	valibot: Moltar.valibot
+	valibot: Moltar.valibot,
+	zodMini: Moltar.zodMini,
+	typebox: Moltar.typebox,
+	ajv: Moltar.ajv
 }
 
 // https://github.com/open-circle/schema-benchmarks (schemas/src/data.ts)
@@ -186,6 +266,23 @@ export const productInvalidData = {
 	]
 }
 
+export const productExtraKeysData = {
+	...productData,
+	extra: "x",
+	images: [
+		{ ...productData.images[0], extra: "y" },
+		...productData.images.slice(1)
+	],
+	ratings: [productData.ratings[0], { ...productData.ratings[1], extra: "z" }]
+}
+
+const ajvDate = { instanceof: "Date" }
+
+const typeBoxDate = TypeBox.Refine(
+	TypeBox.Unknown(),
+	value => value instanceof Date
+)
+
 const Image = {
 	arktype: type({
 		id: "number",
@@ -210,7 +307,35 @@ const Image = {
 		type: v.picklist(["jpg", "png"]),
 		size: v.number(),
 		url: v.pipe(v.string(), v.url())
-	})
+	}),
+	zodMini: zm.object({
+		id: zm.number(),
+		created: zm.date(),
+		title: zm.string().check(zm.minLength(1), zm.maxLength(100)),
+		type: zm.enum(["jpg", "png"]),
+		size: zm.number(),
+		url: zm.url()
+	}),
+	typebox: TypeBox.Object({
+		id: TypeBox.Number(),
+		created: typeBoxDate,
+		title: TypeBox.String({ minLength: 1, maxLength: 100 }),
+		type: TypeBox.Enum(["jpg", "png"]),
+		size: TypeBox.Number(),
+		url: TypeBox.String({ format: "url" })
+	}),
+	ajv: {
+		type: "object",
+		properties: {
+			id: { type: "number" },
+			created: ajvDate,
+			title: { type: "string", minLength: 1, maxLength: 100 },
+			type: { enum: ["jpg", "png"] },
+			size: { type: "number" },
+			url: { type: "string", format: "uri" }
+		},
+		required: ["id", "created", "title", "type", "size", "url"]
+	}
 }
 
 const Rating = {
@@ -234,7 +359,32 @@ const Rating = {
 		title: v.pipe(v.string(), v.minLength(1), v.maxLength(100)),
 		text: v.pipe(v.string(), v.minLength(1), v.maxLength(1000)),
 		images: v.array(Image.valibot)
-	})
+	}),
+	zodMini: zm.object({
+		id: zm.number(),
+		stars: zm.number().check(zm.minimum(1), zm.maximum(5)),
+		title: zm.string().check(zm.minLength(1), zm.maxLength(100)),
+		text: zm.string().check(zm.minLength(1), zm.maxLength(1000)),
+		images: zm.array(Image.zodMini)
+	}),
+	typebox: TypeBox.Object({
+		id: TypeBox.Number(),
+		stars: TypeBox.Number({ minimum: 1, maximum: 5 }),
+		title: TypeBox.String({ minLength: 1, maxLength: 100 }),
+		text: TypeBox.String({ minLength: 1, maxLength: 1000 }),
+		images: TypeBox.Array(Image.typebox)
+	}),
+	ajv: {
+		type: "object",
+		properties: {
+			id: { type: "number" },
+			stars: { type: "number", minimum: 1, maximum: 5 },
+			title: { type: "string", minLength: 1, maxLength: 100 },
+			text: { type: "string", minLength: 1, maxLength: 1000 },
+			images: { type: "array", items: Image.ajv }
+		},
+		required: ["id", "stars", "title", "text", "images"]
+	}
 }
 
 export const Product = {
@@ -276,7 +426,65 @@ export const Product = {
 		tags: v.array(v.pipe(v.string(), v.minLength(1), v.maxLength(30))),
 		images: v.array(Image.valibot),
 		ratings: v.array(Rating.valibot)
-	})
+	}),
+	zodMini: zm.object({
+		id: zm.number(),
+		created: zm.date(),
+		title: zm.string().check(zm.minLength(1), zm.maxLength(100)),
+		brand: zm.string().check(zm.minLength(1), zm.maxLength(30)),
+		description: zm.string().check(zm.minLength(1), zm.maxLength(500)),
+		price: zm.number().check(zm.minimum(1), zm.maximum(10000)),
+		discount: zm.nullable(zm.number().check(zm.minimum(1), zm.maximum(100))),
+		quantity: zm.number().check(zm.minimum(0), zm.maximum(10)),
+		tags: zm.array(zm.string().check(zm.minLength(1), zm.maxLength(30))),
+		images: zm.array(Image.zodMini),
+		ratings: zm.array(Rating.zodMini)
+	}),
+	typebox: Compile(
+		TypeBox.Object({
+			id: TypeBox.Number(),
+			created: typeBoxDate,
+			title: TypeBox.String({ minLength: 1, maxLength: 100 }),
+			brand: TypeBox.String({ minLength: 1, maxLength: 30 }),
+			description: TypeBox.String({ minLength: 1, maxLength: 500 }),
+			price: TypeBox.Number({ minimum: 1, maximum: 10000 }),
+			discount: TypeBox.Union([
+				TypeBox.Number({ minimum: 1, maximum: 100 }),
+				TypeBox.Null()
+			]),
+			quantity: TypeBox.Number({ minimum: 0, maximum: 10 }),
+			tags: TypeBox.Array(TypeBox.String({ minLength: 1, maxLength: 30 })),
+			images: TypeBox.Array(Image.typebox),
+			ratings: TypeBox.Array(Rating.typebox)
+		})
+	),
+	ajv: {
+		type: "object",
+		properties: {
+			id: { type: "number" },
+			created: ajvDate,
+			title: { type: "string", minLength: 1, maxLength: 100 },
+			brand: { type: "string", minLength: 1, maxLength: 30 },
+			description: { type: "string", minLength: 1, maxLength: 500 },
+			price: { type: "number", minimum: 1, maximum: 10000 },
+			discount: {
+				anyOf: [{ type: "number", minimum: 1, maximum: 100 }, { type: "null" }]
+			},
+			quantity: { type: "number", minimum: 0, maximum: 10 },
+			tags: {
+				type: "array",
+				items: { type: "string", minLength: 1, maxLength: 30 }
+			},
+			images: { type: "array", items: Image.ajv },
+			ratings: { type: "array", items: Rating.ajv }
+		},
+		required: Object.keys(productData)
+	}
+}
+
+export const ProductStrip = {
+	...Product,
+	arktype: Product.arktype.onDeepUndeclaredKey("delete")
 }
 
 export const itemsData = Array.from({ length: 100 }, (_, i) => ({
@@ -292,7 +500,31 @@ export const Items = {
 	),
 	valibot: v.array(
 		v.object({ id: v.number(), name: v.string(), active: v.boolean() })
-	)
+	),
+	zodMini: zm.array(
+		zm.object({ id: zm.number(), name: zm.string(), active: zm.boolean() })
+	),
+	typebox: Compile(
+		TypeBox.Array(
+			TypeBox.Object({
+				id: TypeBox.Number(),
+				name: TypeBox.String(),
+				active: TypeBox.Boolean()
+			})
+		)
+	),
+	ajv: {
+		type: "array",
+		items: {
+			type: "object",
+			properties: {
+				id: { type: "number" },
+				name: { type: "string" },
+				active: { type: "boolean" }
+			},
+			required: ["id", "name", "active"]
+		}
+	}
 }
 
 export const itemsInvalidData = itemsData.map((item, i) =>
@@ -307,7 +539,12 @@ export const patternsInvalidData = ["ab", "ba", `${"ab".repeat(5000)}c`]
 export const Patterns = {
 	arktype: type(abPattern).array(),
 	zod: z.array(z.string().regex(abPattern)),
-	valibot: v.array(v.pipe(v.string(), v.regex(abPattern)))
+	valibot: v.array(v.pipe(v.string(), v.regex(abPattern))),
+	zodMini: zm.array(zm.string().check(zm.regex(abPattern))),
+	typebox: Compile(
+		TypeBox.Array(TypeBox.String({ pattern: abPattern.source }))
+	),
+	ajv: { type: "array", items: { type: "string", pattern: abPattern.source } }
 }
 
 export const discriminatedData = [
@@ -333,7 +570,50 @@ export const Discriminated = {
 		v.object({ kind: v.literal("b"), b: v.number() }),
 		v.object({ kind: v.literal("c"), c: v.boolean() }),
 		v.object({ kind: v.literal("d"), d: v.array(v.string()) })
-	])
+	]),
+	zodMini: zm.discriminatedUnion("kind", [
+		zm.object({ kind: zm.literal("a"), a: zm.string() }),
+		zm.object({ kind: zm.literal("b"), b: zm.number() }),
+		zm.object({ kind: zm.literal("c"), c: zm.boolean() }),
+		zm.object({ kind: zm.literal("d"), d: zm.array(zm.string()) })
+	]),
+	typebox: Compile(
+		TypeBox.Union([
+			TypeBox.Object({ kind: TypeBox.Literal("a"), a: TypeBox.String() }),
+			TypeBox.Object({ kind: TypeBox.Literal("b"), b: TypeBox.Number() }),
+			TypeBox.Object({ kind: TypeBox.Literal("c"), c: TypeBox.Boolean() }),
+			TypeBox.Object({
+				kind: TypeBox.Literal("d"),
+				d: TypeBox.Array(TypeBox.String())
+			})
+		])
+	),
+	ajv: {
+		type: "object",
+		discriminator: { propertyName: "kind" },
+		required: ["kind"],
+		oneOf: [
+			{
+				properties: { kind: { const: "a" }, a: { type: "string" } },
+				required: ["a"]
+			},
+			{
+				properties: { kind: { const: "b" }, b: { type: "number" } },
+				required: ["b"]
+			},
+			{
+				properties: { kind: { const: "c" }, c: { type: "boolean" } },
+				required: ["c"]
+			},
+			{
+				properties: {
+					kind: { const: "d" },
+					d: { type: "array", items: { type: "string" } }
+				},
+				required: ["d"]
+			}
+		]
+	}
 }
 
 export const rotatingData = [
@@ -348,27 +628,61 @@ export const rotatingData = [
 ]
 
 export const Rotating = [
-	{ arktype: type("string"), zod: z.string(), valibot: v.string() },
+	{
+		arktype: type("string"),
+		zod: z.string(),
+		valibot: v.string(),
+		zodMini: zm.string(),
+		typebox: Compile(TypeBox.String()),
+		ajv: { type: "string" }
+	},
 	{
 		arktype: type("string > 0"),
 		zod: z.string().min(1),
-		valibot: v.pipe(v.string(), v.minLength(1))
+		valibot: v.pipe(v.string(), v.minLength(1)),
+		zodMini: zm.string().check(zm.minLength(1)),
+		typebox: Compile(TypeBox.String({ minLength: 1 })),
+		ajv: { type: "string", minLength: 1 }
 	},
 	{
 		arktype: type({ a: "string" }),
 		zod: z.object({ a: z.string() }),
-		valibot: v.object({ a: v.string() })
+		valibot: v.object({ a: v.string() }),
+		zodMini: zm.object({ a: zm.string() }),
+		typebox: Compile(TypeBox.Object({ a: TypeBox.String() })),
+		ajv: {
+			type: "object",
+			properties: { a: { type: "string" } },
+			required: ["a"]
+		}
 	},
-	{ arktype: type("number"), zod: z.number(), valibot: v.number() },
+	{
+		arktype: type("number"),
+		zod: z.number(),
+		valibot: v.number(),
+		zodMini: zm.number(),
+		typebox: Compile(TypeBox.Number()),
+		ajv: { type: "number" }
+	},
 	{
 		arktype: type({ b: "number" }),
 		zod: z.object({ b: z.number() }),
-		valibot: v.object({ b: v.number() })
+		valibot: v.object({ b: v.number() }),
+		zodMini: zm.object({ b: zm.number() }),
+		typebox: Compile(TypeBox.Object({ b: TypeBox.Number() })),
+		ajv: {
+			type: "object",
+			properties: { b: { type: "number" } },
+			required: ["b"]
+		}
 	},
 	{
 		arktype: type("string[]"),
 		zod: z.array(z.string()),
-		valibot: v.array(v.string())
+		valibot: v.array(v.string()),
+		zodMini: zm.array(zm.string()),
+		typebox: Compile(TypeBox.Array(TypeBox.String())),
+		ajv: { type: "array", items: { type: "string" } }
 	},
 	{
 		arktype: type({ c: "boolean" }).or({ d: "number" }),
@@ -376,12 +690,41 @@ export const Rotating = [
 		valibot: v.union([
 			v.object({ c: v.boolean() }),
 			v.object({ d: v.number() })
-		])
+		]),
+		zodMini: zm.union([
+			zm.object({ c: zm.boolean() }),
+			zm.object({ d: zm.number() })
+		]),
+		typebox: Compile(
+			TypeBox.Union([
+				TypeBox.Object({ c: TypeBox.Boolean() }),
+				TypeBox.Object({ d: TypeBox.Number() })
+			])
+		),
+		ajv: {
+			anyOf: [
+				{
+					type: "object",
+					properties: { c: { type: "boolean" } },
+					required: ["c"]
+				},
+				{
+					type: "object",
+					properties: { d: { type: "number" } },
+					required: ["d"]
+				}
+			]
+		}
 	},
 	{
 		arktype: type("0 <= number < 1000000000"),
 		zod: z.number().min(0).lt(1000000000),
-		valibot: v.pipe(v.number(), v.minValue(0), v.ltValue(1000000000))
+		valibot: v.pipe(v.number(), v.minValue(0), v.ltValue(1000000000)),
+		zodMini: zm.number().check(zm.minimum(0), zm.lt(1000000000)),
+		typebox: Compile(
+			TypeBox.Number({ minimum: 0, exclusiveMaximum: 1000000000 })
+		),
+		ajv: { type: "number", minimum: 0, exclusiveMaximum: 1000000000 }
 	}
 ]
 
@@ -417,7 +760,34 @@ export const Constraints = {
 		age: v.pipe(v.number(), v.integer(), v.minValue(0), v.ltValue(150)),
 		ratio: v.pipe(v.number(), v.gtValue(0), v.maxValue(1)),
 		code: v.pipe(v.string(), v.regex(codePattern))
-	})
+	}),
+	zodMini: zm.object({
+		name: zm.string().check(zm.minLength(1), zm.maxLength(50)),
+		email: zm.email(),
+		age: zm.int().check(zm.minimum(0), zm.lt(150)),
+		ratio: zm.number().check(zm.gt(0), zm.maximum(1)),
+		code: zm.string().check(zm.regex(codePattern))
+	}),
+	typebox: Compile(
+		TypeBox.Object({
+			name: TypeBox.String({ minLength: 1, maxLength: 50 }),
+			email: TypeBox.String({ format: "email" }),
+			age: TypeBox.Integer({ minimum: 0, exclusiveMaximum: 150 }),
+			ratio: TypeBox.Number({ exclusiveMinimum: 0, maximum: 1 }),
+			code: TypeBox.String({ pattern: codePattern.source })
+		})
+	),
+	ajv: {
+		type: "object",
+		properties: {
+			name: { type: "string", minLength: 1, maxLength: 50 },
+			email: { type: "string", format: "email" },
+			age: { type: "integer", minimum: 0, exclusiveMaximum: 150 },
+			ratio: { type: "number", exclusiveMinimum: 0, maximum: 1 },
+			code: { type: "string", pattern: codePattern.source }
+		},
+		required: Object.keys(constraintsData)
+	}
 }
 
 export const morphData = "12345"
@@ -429,6 +799,17 @@ export const Morph = {
 		v.string(),
 		v.regex(numericStringMatcher),
 		v.transform(Number)
+	),
+	zodMini: zm.pipe(
+		zm.string().check(zm.regex(numericStringMatcher)),
+		zm.transform(Number)
+	),
+	// TypeBox transforms through Decode, and ajv can't transform
+	typebox: Compile(
+		TypeBox.Decode(
+			TypeBox.String({ pattern: numericStringMatcher.source }),
+			Number
+		)
 	)
 }
 
@@ -455,7 +836,35 @@ export const Defaults = {
 		c: v.optional(v.boolean()),
 		d: v.optional(v.string(), "x"),
 		e: v.optional(v.number())
-	})
+	}),
+	zodMini: zm.object({
+		a: zm.string(),
+		b: zm._default(zm.number(), 5),
+		c: zm.optional(zm.boolean()),
+		d: zm._default(zm.string(), "x"),
+		e: zm.optional(zm.number())
+	}),
+	// ajv adds defaults with useDefaults and TypeBox with Default
+	typebox: Compile(
+		TypeBox.Object({
+			a: TypeBox.String(),
+			b: TypeBox.Optional(TypeBox.Number({ default: 5 })),
+			c: TypeBox.Optional(TypeBox.Boolean()),
+			d: TypeBox.Optional(TypeBox.String({ default: "x" })),
+			e: TypeBox.Optional(TypeBox.Number())
+		})
+	),
+	ajv: {
+		type: "object",
+		properties: {
+			a: { type: "string" },
+			b: { type: "number", default: 5 },
+			c: { type: "boolean" },
+			d: { type: "string", default: "x" },
+			e: { type: "number" }
+		},
+		required: ["a"]
+	}
 }
 
 type TreeNode = { id: number; children: TreeNode[] }
@@ -482,6 +891,25 @@ const valibotNode: v.GenericSchema<TreeNode> = v.object({
 	children: v.array(v.lazy(() => valibotNode))
 })
 
+const zodMiniNode: zm.ZodMiniType<TreeNode> = zm.object({
+	id: zm.number(),
+	get children() {
+		return zm.array(zodMiniNode)
+	}
+})
+
+const typeboxNode: Validator = Compile(
+	TypeBox.Cyclic(
+		{
+			Node: TypeBox.Object({
+				id: TypeBox.Number(),
+				children: TypeBox.Array(TypeBox.Ref("Node"))
+			})
+		},
+		"Node"
+	)
+)
+
 const arktypeNode: Type<TreeNode, any> = scope({
 	node: { id: "number", children: "node[]" }
 }).export().node
@@ -489,5 +917,15 @@ const arktypeNode: Type<TreeNode, any> = scope({
 export const Tree = {
 	arktype: arktypeNode,
 	zod: zodNode,
-	valibot: valibotNode
+	valibot: valibotNode,
+	zodMini: zodMiniNode,
+	typebox: typeboxNode,
+	ajv: {
+		type: "object",
+		properties: {
+			id: { type: "number" },
+			children: { type: "array", items: { $ref: "#" } }
+		},
+		required: ["id", "children"]
+	}
 }
