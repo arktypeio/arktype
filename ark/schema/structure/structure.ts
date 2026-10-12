@@ -86,7 +86,6 @@ export declare namespace Structure {
 		readonly index?: readonly Index.Node[]
 		readonly sequence?: Sequence.Node
 		readonly undeclared?: UndeclaredKeyHandling
-		readonly rejectAllowsSymbolKeys?: boolean
 	}
 
 	export namespace Inner {
@@ -136,13 +135,6 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		applyConfig: (inner, config) => {
 			if ((inner.undeclared as UndeclaredKeyBehavior) === "ignore")
 				return omit(inner, { undeclared: 1 })
-			const undeclared = inner.undeclared ?? config.onUndeclaredKey
-			if (
-				inner.rejectAllowsSymbolKeys === undefined &&
-				undeclared === "reject" &&
-				config.rejectAllowsSymbolKeys
-			)
-				return { ...inner, undeclared, rejectAllowsSymbolKeys: true }
 			if (!inner.undeclared && config.onUndeclaredKey !== "ignore")
 				return { ...inner, undeclared: config.onUndeclaredKey }
 			return inner
@@ -197,8 +189,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					if (ioKind === "in") delete inner.undeclared
 					else inner.undeclared = "reject"
 				}
-			},
-			rejectAllowsSymbolKeys: {}
+			}
 		},
 		defaults: {
 			description: structuralDescription
@@ -208,14 +199,6 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
-		if (
-			this.rejectAllowsSymbolKeys !== undefined &&
-			this.undeclared !== "reject"
-		) {
-			throwParseError(
-				writeBadRejectAllowsSymbolKeysMessage(this.undeclared ?? "ignore")
-			)
-		}
 		// a set engine rejects duplicate keys in order with its other reduce errors
 		if (!$ark.sets) {
 			const seen: Record<Key, true | undefined> = Object.create(null)
@@ -433,9 +416,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (r.sequence) inner.sequence = r.sequence
 		if (r.undeclared) inner.undeclared = r.undeclared
 		else delete inner.undeclared
-		if (r.rejectAllowsSymbolKeys !== undefined)
-			inner.rejectAllowsSymbolKeys = r.rejectAllowsSymbolKeys
-		else delete inner.rejectAllowsSymbolKeys
 		return this.$.node("structure", inner)
 	}
 
@@ -511,10 +491,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.index || this.undeclared === "reject") {
-			const keys =
-				!this.index && this.rejectAllowsSymbolKeys ?
-					Object.keys(data)
-				:	ownKeysOf(data)
+			const keys = this.index ? ownKeysOf(data) : Object.keys(data)
 
 			for (let i = 0; i < keys.length; i++) {
 				const k = keys[i]
@@ -550,7 +527,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 				if (
 					this.undeclared === "reject" &&
-					(typeof k === "string" || !this.rejectAllowsSymbolKeys) &&
+					typeof k === "string" &&
 					!this.declaresKey(k)
 				) {
 					if (traversalKind === "Allows") return false
@@ -890,19 +867,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (js.traversalKind === "Apply") js.returnIfFailFast()
 		}
 
-		if (this.index || this.undeclared === "reject") {
+		if (this.index) {
 			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
 				this.compileExhaustiveEntry(js.const("k", "keys[i]"), "string")
 			)
-			if (
-				(this.undeclared === "reject" && !this.rejectAllowsSymbolKeys) ||
-				this.indexMatchesSymbols
-			) {
+			if (this.indexMatchesSymbols) {
 				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
 					this.compileExhaustiveEntry(js, "symbol")
 				)
 			}
-		}
+		} else if (this.undeclared === "reject")
+			js.forIn("data", () => this.compileExhaustiveEntry(js, "string"))
 
 		if (js.traversalKind === "Allows") return js.return(true)
 	}
@@ -1243,10 +1218,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (
-			this.undeclared === "reject" &&
-			(keyDomain === "string" || !this.rejectAllowsSymbolKeys)
-		) {
+		if (this.undeclared === "reject" && keyDomain === "string") {
 			const props = this.props.filter(prop => typeof prop.key === keyDomain)
 			if (props.length) compileDeclaredKeySwitch(js, props)
 			const reject = () =>
@@ -1260,8 +1232,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 						)
 						.if("ctx.failFast", () => js.return())
 			const declaresKey = this._compileDeclaresKey(js)
-			if (declaresKey === "false") reject()
-			else js.if(`!(${declaresKey})`, reject)
+			const conditions = declaresKey === "false" ? [] : [`!(${declaresKey})`]
+			// for...in also reaches inherited keys, which aren't undeclared
+			if (!this.index)
+				conditions.push("Object.prototype.hasOwnProperty.call(data, k)")
+			if (conditions.length) js.if(conditions.join(" && "), reject)
+			else reject()
 		}
 
 		return js
@@ -1472,8 +1448,3 @@ export const writeDuplicateKeyMessage = <key extends Key>(
 
 export type writeDuplicateKeyMessage<key extends Key> =
 	`Duplicate key '${describe<key>}'`
-
-export const writeBadRejectAllowsSymbolKeysMessage = (
-	actual: Exclude<UndeclaredKeyBehavior, "reject">
-): string =>
-	`rejectAllowsSymbolKeys may only be specified with undeclared "reject" (was ${actual})`

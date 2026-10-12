@@ -180,7 +180,6 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			discriminant: { ...errorWriters, ...errorWritersByCode.discriminant },
 			jitless: $ark.config.jitless ?? envHasCsp(),
 			onUndeclaredKey: "ignore",
-			rejectAllowsSymbolKeys: false,
 			exactOptionalPropertyTypes: true,
 			numberAllowsNaN: false,
 			numberAllowsInfinity: false,

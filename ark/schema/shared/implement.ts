@@ -108,7 +108,7 @@ export const constraintKeys: KeySet<ConstraintKind> = flatMorph(
 )
 
 export const structureKeys: keySetOf<Structure.Inner> = flatMorph(
-	[...structuralKinds, "undeclared", "rejectAllowsSymbolKeys"],
+	[...structuralKinds, "undeclared"],
 	(i, k) => [k, 1] as const
 )
 

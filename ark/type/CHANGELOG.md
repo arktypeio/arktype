@@ -734,32 +734,23 @@ T({ s: "b" }).toString()
 
 `arktype` and `@ark/schema` now each load as a single module, so `configure()` must run before any import of either package, including `./internal/*` deep imports. Only `./config` and `./internal/config.*` load without the rest of the package.
 
-### Add `rejectAllowsSymbolKeys`
+### Check only string keys for `"+": "reject"`
 
-Finding undeclared symbol keys for `"+": "reject"` takes a symbol read per object. If you don't need them rejected, you can allow them, which makes validating a small object that rejects undeclared keys about 2.5x faster and one with 40 keys about 1.15x faster:
+`"+": "reject"` allows undeclared symbol keys. Checking string keys only walks an object's keys in place without reading its symbols, so validating a small object that rejects undeclared keys is about 3.5x faster:
 
-```ts title="config.ts"
-import { configure } from "arktype/config"
-
-configure({ rejectAllowsSymbolKeys: true })
-```
-
-```ts title="app.ts"
-import "./config.ts"
-import { type } from "arktype"
-
+```ts
 const T = type({ "+": "reject", a: "string" })
 
 // valid, instead of ArkErrors: value at [Symbol(s)] must be removed
 T({ a: "x", [Symbol("s")]: 1 })
 ```
 
-With it, reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate:
+Reject types that differ only by a symbol key now overlap, so a union of them with a morph is indeterminate:
 
 ```ts
 const s = Symbol("s")
 
-// throws with rejectAllowsSymbolKeys: An unordered union ... is indeterminate
+// throws: An unordered union ... is indeterminate
 type({ "+": "reject", a: "string.trim" }).or({
 	"+": "reject",
 	a: "string",
@@ -773,7 +764,7 @@ type({ "+": "reject", a: "string.trim" }).or({
 
 ### Return deleting types' keys in the order of their expression
 
-`"+": "delete"` builds its output with required keys, then optional keys, each sorted, followed by keys matching an index signature in input order. It previously deleted from a copy of the input, which kept the input's order:
+`"+": "delete"` builds its output with required keys, then optional keys, each sorted, followed by keys matching an index signature in input order. It previously deleted from a copy of the input, which kept the input's order. The output is always a new object, even when nothing was deleted, while an array is returned as is unless it has an undeclared key to remove:
 
 ```ts
 const T = type({ "+": "delete", b: "string", a: "string", "c?": "number" })

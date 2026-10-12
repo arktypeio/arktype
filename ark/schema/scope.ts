@@ -201,7 +201,6 @@ export type GlobalOnlyConfigOptionName = satisfy<
 	| "numberAllowsInfinity"
 	| "numberAllowsNaN"
 	| "onUndeclaredKey"
-	| "rejectAllowsSymbolKeys"
 	| "keywords"
 	| "locale"
 >

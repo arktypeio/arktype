@@ -246,7 +246,6 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly discriminant?: Readonly<ErrorConfig<"discriminant">>
 	readonly jitless?: boolean
 	readonly onUndeclaredKey?: UndeclaredKeyBehavior
-	readonly rejectAllowsSymbolKeys?: boolean
 	readonly numberAllowsNaN?: boolean
 	readonly numberAllowsInfinity?: boolean
 	readonly dateAllowsInvalid?: boolean

@@ -156,12 +156,11 @@ Right: { b: boolean, + (undeclared): delete }`)
 		})
 
 		it("rejected keys have their own code and their values", () => {
-			const sym = Symbol("rejected")
 			for (const jitless of [false, true]) {
 				const T = scope({}, { jitless }).type({ "+": "reject", a: "string" })
-				const errors = T({ a: "ok", b: 1, [sym]: 2 }) as type.errors
+				const errors = T({ a: "ok", b: 1, c: 2 }) as type.errors
 				attest(errors.summary).snap(`b must be removed
-value at [Symbol(rejected)] must be removed`)
+c must be removed`)
 				attest(errors.issues.map(e => e.data)).equals([1, 2])
 				attest(errors.toJSON()[0]).snap({
 					data: 1,
@@ -224,14 +223,25 @@ value at [Symbol(rejected)] must be removed`)
 			}
 		})
 
-		it("reject symbol key", () => {
+		it("reject allows undeclared symbol keys", () => {
 			const undeclared = Symbol("undeclared")
+			const data = { a: "ok", x: 1, [undeclared]: 1 }
 			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless }).type({ "+": "reject", a: "string" })
-				attest(T({ a: "ok", [undeclared]: 1 }).toString()).snap(
-					"value at [Symbol(undeclared)] must be removed"
-				)
+				const $ = scope({}, { jitless })
+				const T = $.type({ "+": "reject", a: "string", x: "number" })
+				attest(T(data)).equals(data)
+				const Indexed = $.type({
+					"+": "reject",
+					a: "string",
+					"[/^x/]": "number"
+				})
+				attest(Indexed(data)).equals(data)
+				attest(Indexed({ ...data, b: 1 }).toString()).snap("b must be removed")
 			}
+			attest(
+				type({ "+": "reject", a: "string" }).and({ "[symbol]": "string" })
+					.expression
+			).snap("{ [symbol]: string, a: string, + (undeclared): reject }")
 		})
 
 		it("reject array key", () => {

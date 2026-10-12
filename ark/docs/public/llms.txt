@@ -1398,32 +1398,7 @@ const out = UserForm({
 })
 ```
 
-`"reject"` checks symbol keys too, which costs an extra read per object. If you don't need undeclared symbol keys rejected, you can allow them for faster validation:
-
-```ts title="config.ts"
-import { configure } from "arktype/config"
-
-configure({ rejectAllowsSymbolKeys: true })
-```
-
-```ts title="app.ts"
-import "./config.ts"
-// import your config file before arktype
-import { type } from "arktype"
-
-const User = type({
-	"+": "reject",
-	name: "string"
-})
-
-// valid, since undeclared symbol keys are now allowed
-const out = User({
-	name: "Alice",
-	[Symbol("id")]: 1
-})
-```
-
-With it, reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate.
+`"reject"` checks string keys only, so an undeclared symbol key passes. Reject types that differ only by a symbol key therefore overlap, and a union of them with a morph is indeterminate.
 
 ### exactOptionalPropertyTypes
 
@@ -4840,7 +4815,7 @@ However, sometimes the way you're using the object would make undeclared propert
 	<SyntaxTab string>
 
 ```ts
-// fail if any key other than "onlyAllowedKey" is present
+// fail if any string key other than "onlyAllowedKey" is present
 const MyClosedObject = type({
 	"+": "reject",
 	onlyAllowedKey: "string"
@@ -4866,7 +4841,7 @@ const MyOpenObject = type({
     	<SyntaxTab fluent>
 
 ```ts
-// fail if any key other than "onlyAllowedKey" is present
+// fail if any string key other than "onlyAllowedKey" is present
 const MyClosedObject = type({
 	onlyAllowedKey: "string"
 }).onUndeclaredKey("reject")

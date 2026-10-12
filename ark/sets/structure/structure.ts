@@ -43,8 +43,9 @@ const intersectPropsAndIndex = <
 	return null
 }
 
+// "reject" checks string keys only, so it allows any symbol key
 const allowedKeysOf = (node: Structure.Node): BaseRoot =>
-	node.rejectAllowsSymbolKeys ?
+	node.undeclared === "reject" ?
 		node.keyof().rawOr($ark.intrinsic.symbol.internal)
 	:	node.keyof()
 
@@ -133,14 +134,6 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 					l.undeclared === "reject" || r.undeclared === "reject" ?
 						"reject"
 					:	"delete"
-			}
-
-			if (baseInner.undeclared === "reject") {
-				const rejectAllowsSymbolKeys =
-					(l.undeclared !== "reject" || l.rejectAllowsSymbolKeys) &&
-					(r.undeclared !== "reject" || r.rejectAllowsSymbolKeys)
-				if (rejectAllowsSymbolKeys !== undefined)
-					baseInner.rejectAllowsSymbolKeys = rejectAllowsSymbolKeys
 			}
 
 			const childIntersectionResult = intersectConstraints({

@@ -1,9 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	configureAfterTypeMessage,
-	rootSchema,
-	writeBadRejectAllowsSymbolKeysMessage
-} from "@ark/schema"
+import { configureAfterTypeMessage, rootSchema } from "@ark/schema"
 import { configure, scope, type } from "arktype"
 
 contextualize(() => {
@@ -364,17 +360,6 @@ contextualize(() => {
 				"a must be en:string (was a number)"
 			)
 		}
-	})
-
-	it("rejectAllowsSymbolKeys requires reject", () => {
-		attest(() =>
-			rootSchema({
-				domain: "object",
-				required: [{ key: "a", value: "string" }],
-				undeclared: "delete",
-				rejectAllowsSymbolKeys: true
-			})
-		).throws(writeBadRejectAllowsSymbolKeysMessage("delete"))
 	})
 
 	it("configure after a type is created", () => {
