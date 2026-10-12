@@ -832,6 +832,24 @@ export const B = type((N as any).b ?? "boolean")`)
 			])
 		})
 
+		it("a var declared in a block", () => {
+			attest(
+				statusesOf(`import { type } from "arktype"
+if (process.argv.length > 99) {
+	var V = type("string")
+}
+export const A = V.or("number")
+export const make = (flag: boolean) => {
+	if (flag) var def = "string"
+	return type(def)
+}`)
+			).snap([
+				"3:10 accepted string",
+				"5:18 rejected\n  `V` is a `var` declared in a block, which may not run",
+				"8:9 rejected\n  `def` is a `var` declared in a block, which may not run"
+			])
+		})
+
 		it("reads before a declaration", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

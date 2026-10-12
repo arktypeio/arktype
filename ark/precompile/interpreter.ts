@@ -2861,7 +2861,9 @@ const staticProblemOf = (
 	: module.scopes.hasDirectEval ? "is in a module that calls `eval`"
 	: module.scopes.hasWith ? "is in a module that uses `with`"
 	: isLoopVariable(binding) ? "is a loop variable"
-	: undefined
+	: binding.kind === "var" && !isDeclaredInBody(binding) ?
+		"is a `var` declared in a block, which may not run"
+	:	undefined
 
 const isLoopVariable = (binding: Binding) => {
 	const declaration = binding.declaration.parent
@@ -2870,6 +2872,14 @@ const isLoopVariable = (binding: Binding) => {
 		(loop?.type === "ForInStatement" || loop?.type === "ForOfStatement") &&
 		loop.left === declaration
 	)
+}
+
+// e.g. not `V` in `if (flag) { var V = type("string") }`, which leaves `V` unset where the block doesn't run
+const isDeclaredInBody = (binding: Binding): boolean => {
+	let container = binding.declaration.parent?.parent
+	if (container?.type === "ExportNamedDeclaration") container = container.parent
+	const scope = binding.scope.node
+	return container === scope || ("body" in scope && container === scope.body)
 }
 
 const parameterCount = (fn: FunctionNode): number => {
