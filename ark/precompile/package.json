@@ -37,6 +37,10 @@
 			"ark-ts": "./node.ts",
 			"default": "./out/node.js"
 		},
+		"./shadow": {
+			"ark-ts": "./shadow.ts",
+			"default": "./out/shadow.js"
+		},
 		"./turbopack": {
 			"ark-ts": "./turbopack.ts",
 			"default": "./out/turbopack.js"

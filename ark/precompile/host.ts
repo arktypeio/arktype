@@ -2,6 +2,7 @@ import { existsSync, readFileSync, realpathSync } from "node:fs"
 import { dirname, isAbsolute, join } from "node:path"
 import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
+import type { PrecompileOptions } from "./precompile.ts"
 
 export interface PrecompileHost {
 	resolve(specifier: string, importer: string): string | undefined
@@ -142,6 +143,13 @@ export const appendSourceMap = (
 	:	code
 
 export const runtimeSpecifiers = ["arktype", "arktype/config"]
+
+// in shadow mode arktype creates each site beside its validator, so only its configuration resolves to the runtime
+export const resolvesToRuntime = (
+	specifier: string,
+	opts: PrecompileOptions | undefined
+): boolean =>
+	opts?.runtime !== "arktype" && !(opts?.shadow && specifier === "arktype")
 
 // a virtual module, like Rolldown's `\0rolldown/runtime.js`, names no file to read or resolve from
 export const transformedId = /^[^\0].*\.(?:[cm]?[jt]s|[jt]sx)$/

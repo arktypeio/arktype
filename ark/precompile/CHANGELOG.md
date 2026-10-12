@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Compare each definition with arktype in tests with `shadow: true`
+
+In shadow mode, a standalone build creates each definition with arktype as well as precompiling it, from the same values evaluated once, and the program runs on arktype. Each validation and each read of what a validator bakes compares the two, returning arktype's result where they agree and throwing an error naming the definition where they don't, as where the validator throws at creation and arktype doesn't. Functions a definition holds run for both, so it's meant for tests.
+
+```ts
+precompile.vite({ shadow: true })
+```
+
 ### Precompile packages that opt in
 
 A package whose `package.json` has `"arktype": { "precompile": true }` is precompiled with the program that depends on it: the build follows its modules and folds its definitions like the program's, through the bundler plugin, Vite's dev server and Vitest, and the Node and Bun drivers. A dependency that doesn't opt in is left as before.

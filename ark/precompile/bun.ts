@@ -6,6 +6,7 @@ import {
 	appendSourceMap,
 	createNodeHost,
 	optedInPackagesOf,
+	resolvesToRuntime,
 	runtimeSpecifiers,
 	transformedFilterOf
 } from "./host.ts"
@@ -39,6 +40,7 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
 				join(opts?.cwd ?? process.cwd(), "package.json")
 			)
 			for (const specifier of [...runtimeSpecifiers, "arktype/runtime"]) {
+				if (!resolvesToRuntime(specifier, opts)) continue
 				build.module(specifier, () => ({
 					contents: `export * from ${JSON.stringify(runtime)}`,
 					loader: "js"

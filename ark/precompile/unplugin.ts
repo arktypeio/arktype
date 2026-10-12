@@ -9,6 +9,7 @@ import type {
 import {
 	createNodeHost,
 	optedInPackagesOf,
+	resolvesToRuntime,
 	runtimeSpecifiers,
 	transformedFilterOf
 } from "./host.ts"
@@ -69,7 +70,8 @@ export const precompile: UnpluginInstance<
 				for (const warning of warnings) this.warn(warning)
 				// thrown, since esbuild drops an error reported without a resolution
 				if (errors.length) throwError(errors.join("\n"))
-				if (isStandalone) return host.resolve("arktype/runtime", importer)
+				if (resolvesToRuntime(id, opts))
+					return host.resolve("arktype/runtime", importer)
 			}
 		},
 		load: {
@@ -147,7 +149,9 @@ export const precompile: UnpluginInstance<
 						if (args.pluginData === esbuildResolution) return
 						const isRuntime = runtimeSpecifiers.includes(args.path)
 						const result = await build.resolve(
-							isRuntime ? "arktype/runtime" : args.path,
+							isRuntime && resolvesToRuntime(args.path, opts) ?
+								"arktype/runtime"
+							:	args.path,
 							{
 								kind: args.kind,
 								importer: args.importer,

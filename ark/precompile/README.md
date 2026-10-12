@@ -46,6 +46,15 @@ A standalone validator lacks `json`, `toJSON()`, `toJsonSchema()` and `~standard
 precompile.vite({ introspection: ["toJsonSchema", "~standard.jsonSchema"] })
 ```
 
+`shadow: true` makes a test suite tell where a standalone build would behave otherwise than arktype. Each definition is still precompiled, and also created by arktype from the same values, each function it holds evaluated once and passed to both:
+
+```ts
+// vitest.config.ts
+export default defineConfig({ plugins: [precompile.vite({ shadow: true })] })
+```
+
+The program then runs on arktype: `arktype` resolves to it for every importer, and only `arktype/config` to `arktype/runtime` (so with Turbopack, alias only `arktype/config`), and each module with a definition imports the comparisons from `@ark/precompile/shadow`. Each Type, Module and `type.fn` it receives compares its validator with arktype's at every use, calling, `allows`, `assert`, `traverse`, `from`, `~standard.validate`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema`, and its `expression`, `description` and `meta` when it's created. Where they agree, it returns what arktype returns or throws what arktype throws. Where they don't, or where the validator throws as it's created and arktype doesn't, it throws an error naming the definition, what was observed and both results. A Type whose morphs can write the input validates a copy for the validator, or the input as arktype left it where it can't be copied, as a class instance can't, saying so if they then disagree. Each function arktype calls defining or validating a Type is called by both, so shadow mode is meant for tests.
+
 `precompile.vite({ runtime: "arktype" })` ships arktype and leaves definitions as written, registering the code arktype would compile for each one and the keywords it reaches. A definition the build can't precompile is compiled at runtime as usual, so this mode fails a build only for the reason below.
 
 In either mode, the build fails if `arktype`, `@ark/schema` or `@ark/util` resolves to more than one copy across the files it reads, naming each copy's version and path and the file that reached it, since Types and errors from one copy aren't recognized by another.

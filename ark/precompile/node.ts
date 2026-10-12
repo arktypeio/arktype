@@ -5,6 +5,7 @@ import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
 import {
 	appendSourceMap,
 	optedInPackagesOf,
+	resolvesToRuntime,
 	runtimeSpecifiers,
 	transformedFilterOf,
 	writeTextlessMessage
@@ -62,7 +63,10 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				for (const warning of warnings) process.emitWarning(warning)
 				if (errors.length) throwError(errors.join("\n"))
 			}
-			return nextResolve(isStandalone ? "arktype/runtime" : specifier, context)
+			return nextResolve(
+				resolvesToRuntime(specifier, opts) ? "arktype/runtime" : specifier,
+				context
+			)
 		},
 		load: (url, context, nextLoad) => {
 			if (url.startsWith("arktype:")) {

@@ -133,6 +133,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	introspection?: readonly IntrospectionMember[] | undefined
 	// the most factories one site compiles for the facts the build doesn't know, like the parameter count of a function a parameter holds
 	maxVariants?: number | undefined
+	// create each site with arktype too, from the same holes, and throw where its validator observes anything else
+	shadow?: boolean | undefined
 }
 
 export interface ModuleAnalysis {
@@ -319,6 +321,7 @@ export class Precompiler {
 	config: string | undefined
 	inline: boolean
 	checkHelpers: boolean
+	shadow: boolean
 	introspection: readonly IntrospectionMember[]
 	maxVariants: number
 	private configuration: Configuration | undefined
@@ -361,6 +364,7 @@ export class Precompiler {
 		this.config = opts?.config
 		this.inline = !!opts?.inline
 		this.checkHelpers = this.mode === "standalone" && !!opts?.checkHelpers
+		this.shadow = this.mode === "standalone" && !!opts?.shadow
 		this.introspection = opts?.introspection ?? []
 		for (const member of this.introspection) {
 			if (!includes(introspectionMembers, member))
@@ -1237,7 +1241,18 @@ export class Precompiler {
 			if (isPure && !site.isKeywordRead)
 				fixedAt = Math.min(fixedAt, site.declarationStart!)
 			// a site becomes a call, so its validator is created, or its ParseError thrown, where arktype would create its Type
-			const call = `${isPure ? "/* @__PURE__ */ " : ""}${local}(${index ?? ""}`
+			const call = `${isPure ? "/* @__PURE__ */ " : ""}${
+				this.shadow ?
+					this.shadowCallOf(
+						site,
+						module,
+						factory?.spans ?? [],
+						local,
+						index,
+						prefix
+					)
+				:	`${local}(${index ?? ""}`
+			}`
 			if (!factory?.spans.length && !factory?.inputs.length)
 				s.overwrite(site.start, site.end, `${call})`)
 			else {
@@ -1247,7 +1262,7 @@ export class Precompiler {
 						s.appendLeft(start, text)
 					:	s.overwrite(start, end, text)
 				let start = site.start
-				let separator = index === undefined ? call : `${call}, `
+				let separator = index === undefined && !this.shadow ? call : `${call}, `
 				for (const span of factory.spans) {
 					replace(start, span.start, separator)
 					start = span.end
@@ -1268,11 +1283,42 @@ export class Precompiler {
 			imports[fixerSpecifier] = { default: `${prefix}fixConfig` }
 			s.appendLeft(fixedAt, `${prefix}fixConfig()\n`)
 		}
-		pruneArktypeImports(module, [...folded, ...module.islands], s)
+		// in shadow mode arktype creates each site too, reading what the site's text reads
+		if (!this.shadow)
+			pruneArktypeImports(module, [...folded, ...module.islands], s)
+		else if (folded.length) {
+			// before arktype, so it loads beside the runtime whichever a module imports first
+			s.prependLeft(
+				firstStatementOf(module.program).start,
+				`import "arktype/internal/shadowEntry.js"\nimport { shadow as ${prefix}shadow } from "@ark/precompile/shadow"\n`
+			)
+		}
 		keepImportedModules(module, folded, kept, passed, s)
 		diagnostics.push(...this.checkRuntimeImports(module, sites))
 		diagnostics.sort((l, r) => l.start - r.start)
 		return inputImports
+	}
+
+	// arktype creates the site from the arguments its factory receives, reading each span through a parameter
+	private shadowCallOf(
+		site: Site,
+		module: SourceModule,
+		spans: readonly Span[],
+		local: string,
+		index: number | undefined,
+		prefix: string
+	): string {
+		let original = ""
+		let start = site.start
+		for (let i = 0; i < spans.length; i++) {
+			original += `${module.textOf({ start, end: spans[i].start })}${prefix}h${i}`
+			start = spans[i].end
+		}
+		original += module.textOf({ start, end: site.end })
+		const params = spans.map((_, i) => `${prefix}h${i}`).join(", ")
+		const factory =
+			index === undefined ? local : `${local}.bind(null, ${index})`
+		return `${prefix}shadow(${JSON.stringify(`${module.positionOf(site)}  ${module.snippetOf(site)}`)}, ${factory}, (${params}) => (${original})`
 	}
 
 	// e.g. `scope` in a static helper whose every call is a site, which keeps its import of an export arktype/runtime lacks
