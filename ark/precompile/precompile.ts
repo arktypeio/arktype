@@ -337,7 +337,7 @@ export class Precompiler {
 	private inertByModule = new WeakMap<SourceModule, boolean>()
 	private progressHelpersByModule = new WeakMap<
 		SourceModule,
-		Map<string, [helper: Binding, reads: Binding[]]>
+		Map<Binding, Binding[]>
 	>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
@@ -721,7 +721,7 @@ export class Precompiler {
 		}
 		const registered: string[][] = []
 		if (!this.checkHelpers) {
-			for (const [helper, reads] of this.progressHelpersOf(module).values()) {
+			for (const [helper, reads] of this.progressHelpersOf(module)) {
 				for (const binding of reads) marked.add(progressOf(binding, module))
 				// a function declaration can run before the module's body, where nothing it reads is set
 				const at = helper.kind === "function" ? 0 : progressOf(helper, module)
@@ -789,9 +789,7 @@ export class Precompiler {
 	}
 
 	// e.g. `extend` for `export function extend(t) { return Base.and(t) }`, which another module's site folds where an import cycle can call it before `Base` is set, with what each reads first
-	private progressHelpersOf(
-		module: SourceModule
-	): Map<string, [helper: Binding, reads: Binding[]]> {
+	private progressHelpersOf(module: SourceModule): Map<Binding, Binding[]> {
 		let result = this.progressHelpersByModule.get(module)
 		if (result) return result
 		this.progressHelpersByModule.set(module, (result = new Map()))
@@ -808,31 +806,32 @@ export class Precompiler {
 		if (!folded.length) return result
 		const registered = this.registeredHelpersOf(module)
 		for (const [name, entry] of Object.entries(module.scopes.exportsByName)) {
-			if (entry.kind !== "binding" || !(name in registered)) continue
+			// e.g. `export { extend as ext2 }`, a second name for one function
+			if (
+				entry.kind !== "binding" ||
+				!(name in registered) ||
+				entry.binding.exportNames[0] !== name
+			)
+				continue
 			const fn = functionOfBinding(entry.binding, module)
 			if (!fn) continue
-			const reached = functionsReachedFrom(fn, module)
-			if (!folded.some(node => reached.some(fn => contains(fn, node)))) continue
 			const reads = new Set<Binding>()
-			for (const fn of reached) {
-				walk(fn, node => {
-					const binding =
-						node.type === "Identifier" ?
-							module.scopes.referencesById.get(node)?.binding
-						:	undefined
-					if (
-						binding?.scope.node === module.program &&
-						binding.kind !== "var" &&
-						binding.kind !== "function" &&
-						binding.kind !== "import" &&
-						isSetLast(binding) &&
-						readsFirst(node, binding, module)
-					)
-						reads.add(binding)
-					return true
-				})
-			}
-			if (reads.size) result.set(name, [entry.binding, [...reads]])
+			const reached = functionsReachedFrom(fn, module, (id, binding) => {
+				if (
+					binding.scope.node === module.program &&
+					binding.kind !== "var" &&
+					binding.kind !== "function" &&
+					binding.kind !== "import" &&
+					isSetLast(binding) &&
+					readsFirst(id, binding, module)
+				)
+					reads.add(binding)
+			})
+			if (
+				reads.size &&
+				folded.some(node => reached.some(fn => contains(fn, node)))
+			)
+				result.set(entry.binding, [...reads])
 		}
 		return result
 	}
@@ -852,15 +851,18 @@ export class Precompiler {
 			return
 		const helper =
 			!this.checkHelpers &&
-			site.inputs.find(
-				input =>
+			site.inputs.find(input => {
+				const entry = declaring.scopes.exportsByName[input.name]
+				return (
 					input.kind === "import" &&
 					input.file === declaring.id &&
 					!input.path.length &&
+					entry?.kind === "binding" &&
 					this.progressHelpersOf(declaring)
-						.get(input.name)?.[1]
-						.includes(binding)
-			)
+						.get(entry.binding)
+						?.includes(binding)
+				)
+			})
 		const at = progressOf(binding, declaring)
 		if (helper) {
 			if (at > (helper.progress?.[0] ?? 0)) helper.progress = [at, binding.name]

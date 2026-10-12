@@ -1675,10 +1675,11 @@ export const functionOfBinding = (
 	return fn && isFunctionNode(fn) ? fn : undefined
 }
 
-// e.g. `g` for `function f() { return g() }`, as calling a function runs those it calls by name
+// e.g. `g` for `function f() { return g() }`, as calling a function runs those it calls by name, passing `onReference` each reference they make
 export const functionsReachedFrom = (
 	fn: FunctionNode,
-	module: SourceModule
+	module: SourceModule,
+	onReference: (id: Node, binding: Binding) => void
 ): FunctionNode[] => {
 	const result = new Set([fn])
 	for (const reached of result) {
@@ -1687,8 +1688,11 @@ export const functionsReachedFrom = (
 				node.type === "Identifier" ?
 					module.scopes.referencesById.get(node)?.binding
 				:	undefined
-			const called = binding && functionOfBinding(binding, module)
-			if (called) result.add(called)
+			if (binding) {
+				onReference(node, binding)
+				const called = functionOfBinding(binding, module)
+				if (called) result.add(called)
+			}
 			return true
 		})
 	}
