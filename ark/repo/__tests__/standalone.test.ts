@@ -2151,34 +2151,31 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 }`)
 		})
 
-		it("declares where every call reads it a variant's validator another variant's meta holds", async () => {
+		it("refuses a variant's Type another variant's meta holds", () => {
 			const one = standIn((s: string) => s.length > 1, "check")
 			const two = standIn((s: string, ctx: unknown) => !!ctx, "check")
 			const params = (check: Function) => [
 				{ kind: "function" as const, label: "`check`", value: check }
 			]
 			const First = type("string").narrow(one as never)
-			const created = await load({
-				T: {
-					variants: [
-						{ type: First, params: params(one), selected: [one] },
-						{
-							type: type("unknown").configure({ first: First } as never),
-							params: params(two),
-							selected: [two]
-						}
-					],
-					selecting: [0],
-					variantsByCounts: [1, 0, 1]
-				}
-			})
-			const isLong = (s: string) => s.length > 1
-			const rejects = (s: string, ctx: any) => ctx.reject("long")
-			attest(created.T(isLong)("a").toString()).snap(
-				'must be valid according to isLong (was "a")'
-			)
-			attest(created.T(rejects).meta.first(0).toString()).snap(
-				"must be a string (was a number)"
+			// the validator variant 1's meta reads would hold the function a call selecting variant 1 receives, compiled for variant 0's count
+			attest(() =>
+				precompileStandalone({
+					T: {
+						variants: [
+							{ type: First, params: params(one), selected: [one] },
+							{
+								type: type("unknown").configure({ first: First } as never),
+								params: params(two),
+								selected: [two]
+							}
+						],
+						selecting: [0],
+						variantsByCounts: [1, 0, 1]
+					}
+				})
+			).throws.snap(
+				"ParseError: `string`, which a variant creates and another value holds, can't be precompiled to a standalone validator"
 			)
 		})
 

@@ -1725,7 +1725,6 @@ return [${returned.join(", ")}]
 		const builders = this.writeBuilders(localContexts, localContextNames)
 		const validators: string[] = []
 		const { statements, namesByValue, namesByContext } = this.declarations
-		const cases: [BaseRoot, string[], string[], string][] = []
 		// what depends on every validator, written once they exist
 		const lateLength = () =>
 			this.defaults.length + this.modules.length + this.fills.length
@@ -1745,21 +1744,20 @@ return [${returned.join(", ")}]
 				namesByValue.delete(value)
 			for (const expression of [...namesByContext.keys()].slice(framed))
 				namesByContext.delete(expression)
-			cases.push([
-				root,
-				statements.splice(declared),
-				this.links.splice(linked),
+			this.variantStatements.set(root, [
+				...statements.splice(declared),
+				...this.links.splice(linked),
 				validator
 			])
 		}
-		// a variant's validator is declared where a call selects it, unless a statement written after it read it
-		for (const [root, declared, linked, validator] of cases) {
-			if (!this.readValidators.has(root))
-				this.variantStatements.set(root, [...declared, ...linked, validator])
-			else {
-				statements.push(...declared)
-				this.links.push(...linked)
-				validators.push(validator)
+		// a variant's validator holds a function of its own parameter count, so it exists only where a call selects it and no other value can hold it
+		for (const root of this.variantStatements.keys()) {
+			if (this.readValidators.has(root)) {
+				throwParseError(
+					writeUnprecompilableMessage(
+						`\`${root.expression}\`, which a variant creates and another value holds,`
+					)
+				)
 			}
 		}
 		return [
