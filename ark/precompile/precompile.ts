@@ -3681,7 +3681,9 @@ export class Precompiler {
 		prefix: string
 	): void {
 		const namespace = `${prefix}$island`
+		const arktype = `${prefix}$arktype`
 		let isLinked = false
+		let isArktypeLinked = false
 		for (const reference of module.scopes.references) {
 			const id = reference.id
 			if (
@@ -3695,23 +3697,49 @@ export class Precompiler {
 			)
 				continue
 			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
-			if (!read) continue
-			const parent = read.parent
+			const node = read ?? id
+			let linked: string
+			if (read) {
+				linked = `${namespace}.${name}`
+				isLinked = true
+			} else if (
+				!reference.isWrite &&
+				this.isArktypeNamespace(reference.binding, module)
+			) {
+				// e.g. `ark` in `export const lib = ark`, which holds arktype's exports alone, not arktype/internal's
+				linked = arktype
+				isArktypeLinked = true
+			} else continue
+			const parent = node.parent
 			s.overwrite(
-				read.start,
-				read.end,
+				node.start,
+				node.end,
 				parent?.type === "Property" && parent.shorthand ?
-					`${module.textOf(read)}: ${namespace}.${name}`
-				:	`${namespace}.${name}`
+					`${module.textOf(node)}: ${linked}`
+				:	linked
 			)
-			isLinked = true
 		}
-		if (isLinked) {
+		if (isLinked || isArktypeLinked) {
 			s.prependLeft(
 				firstStatementOf(module.program).start,
-				`import "arktype/internal/island.js"\nimport * as ${namespace} from "arktype/internal"\n`
+				`import "arktype/internal/island.js"\n` +
+					(isLinked ?
+						`import * as ${namespace} from "arktype/internal"\n`
+					:	"") +
+					(isArktypeLinked ?
+						`import * as ${arktype} from "arktype/internal/arktype.js"\n`
+					:	"")
 			)
 		}
+	}
+
+	private isArktypeNamespace(
+		binding: Binding | undefined,
+		module: SourceModule
+	): boolean {
+		if (binding?.kind !== "import") return false
+		const target = this.graph.importOf(binding, module)
+		return target.kind === "arktypeNamespace" && target.specifier === "arktype"
 	}
 
 	private diagnostic(

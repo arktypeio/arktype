@@ -69,6 +69,10 @@
 			"ark-ts": "./island.ts",
 			"default": "./out/island.js"
 		},
+		"./internal/arktype.js": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"types": "./out/*.d.ts",

@@ -40,6 +40,24 @@ export const C = process.argv.length > 2 ?
 export const parsers = { type: $ark$island.type }`)
 	})
 
+	it("links an island reading arktype's namespace as a value", () => {
+		attest(
+			precompile(`import * as ark from "arktype"
+// @ark-runtime
+export const lib = { ark, type: ark.type }
+export const A = ark.type("string")`).code
+		).snap(`import "arktype/internal/island.js"
+import * as $ark$island from "arktype/internal"
+import * as $ark$arktype from "arktype/internal/arktype.js"
+import "arktype"
+import { v1k3ai090akbvqv as $arkv1k3ai090akbvqv } from "~arktype/h4msym0l9vuyu"
+import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+// @ark-runtime
+export const lib = { ark: $ark$arktype, type: $ark$island.type }
+$arkfixConfig()
+export const A = /* @__PURE__ */ $arkv1k3ai090akbvqv()`)
+	})
+
 	it("reports a site reading a ParseError it didn't throw itself", () => {
 		attest(
 			diagnosticsOf(`import { generic, type } from "arktype"
