@@ -65,6 +65,7 @@ import {
 	isCallableBeforeBody,
 	isOnlyType,
 	isSetLast,
+	isIntrospectedProperty,
 	isValidatorMember,
 	memberNameOf,
 	nodeMembers,
@@ -305,7 +306,7 @@ const isIntrospectionRead = (
 ): boolean =>
 	hasArkKind(object, "root") &&
 	!!site &&
-	(key === "json" ?
+	(isIntrospectedProperty(key) ?
 		site.node === node
 	:	(key === "toJSON" || key === "toJsonSchema") &&
 		site.node.type === "CallExpression" &&
@@ -950,7 +951,7 @@ export class Interpreter {
 		const [operand, parent] = operatorOf(node)
 		return (
 			(node.type === "MemberExpression" ?
-				memberNameOf(node) === "json"
+				isIntrospectedProperty(memberNameOf(node))
 			:	callee &&
 				callee.type === "MemberExpression" &&
 				(memberNameOf(callee) === "toJSON" ||
@@ -1666,7 +1667,8 @@ export class Interpreter {
 			: hasArkKind(object, "scope") ? scopeMembers
 			: hasArkKind(object, "generic") ? genericMembers
 			: undefined
-		if (isIntrospectionRead(object, key, node, ctx.site)) {
+		const isIntrospected = isIntrospectionRead(object, key, node, ctx.site)
+		if (isIntrospected) {
 			ctx.site!.introspection = {
 				member: key as FoldedMember,
 				type: object as BaseRoot
@@ -1698,7 +1700,9 @@ export class Interpreter {
 			this.claimParseError(e, ctx)
 			throw e
 		}
-		const value = this.admit(read, node, ctx)
+		// a site reading a Type's expression or description folds to a factory printing the names of the functions it receives
+		const value =
+			isIntrospected && key !== "json" ? read : this.admit(read, node, ctx)
 		if (isDynamic(value)) return value
 		if (
 			typeof key === "string" &&

@@ -1,12 +1,17 @@
-import { Callable } from "@ark/util"
+import { Callable, includes } from "@ark/util"
 import * as arkregex from "arkregex"
 import * as arktype from "arktype"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import * as arktypeConfig from "arktype/config"
 import type { BaseRoot, GenericRoot } from "@ark/schema"
 import type { Generic } from "arktype/internal/generic.ts"
-import type { unavailableMember, Validator } from "arktype/internal/runtime.ts"
+import type {
+	IntrospectionMember,
+	unavailableMember,
+	Validator
+} from "arktype/internal/runtime.ts"
 import type { Scope } from "arktype/internal/scope.ts"
+import { introspectionMembers } from "arktype/internal/standalone.ts"
 import type { ArrayType } from "arktype/internal/variants/array.ts"
 import type { BaseType } from "arktype/internal/variants/base.ts"
 import type { DateType } from "arktype/internal/variants/date.ts"
@@ -103,18 +108,19 @@ export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
-// a Type's members a standalone validator has, so reading any other at runtime in a standalone build throws or reads nothing
+// a Type's members a standalone validator has whatever its build's introspection option lists, so reading any other at runtime in a standalone build throws or reads nothing
 export const validatorMembers: Record<string, 1> = Object.setPrototypeOf(
 	{
-		expression: 1,
-		description: 1,
 		meta: 1,
 		allows: 1,
 		assert: 1,
 		traverse: 1,
 		from: 1,
 		"~standard": 1
-	} satisfies Record<Exclude<keyof Validator, keyof globalThis.Function>, 1>,
+	} satisfies Record<
+		Exclude<keyof Validator, keyof globalThis.Function | IntrospectionMember>,
+		1
+	>,
 	null
 )
 
@@ -274,6 +280,10 @@ export const genericMembers: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
+// e.g. `json` for `T.json`, which a standalone build folds where it's read off a Type at a site of its own
+export const isIntrospectedProperty = (name: unknown): boolean =>
+	name === "expression" || name === "description" || name === "json"
+
 // what counts nodes or names registry entries, so differs between a build and the program it builds
 export const unstableArkMembers = {
 	__proto__: null,
@@ -394,7 +404,7 @@ const memberKindOf = (objectKind: ArkKind, name: unknown): ArkKind => {
 			isValidatorMember(name) ||
 			name in runtimeMembers ||
 			name in unstableArkMembers ||
-			name === "toJsonSchema"
+			includes(introspectionMembers, name)
 		) ?
 			kinds.data
 		:	(typeMemberKinds[name] ?? anyKind)
@@ -1457,6 +1467,8 @@ export class ModuleGraph {
 					)
 			}
 		} else [read, objects] = this.reflectionOf(node, module) ?? [undefined, []]
+		// a validator prints its expression as its string
+		if (read === "toString") read = "expression"
 		const object = objects.find(object => isOnlyType(kindOf(object)))
 		return (
 				object &&
@@ -1478,15 +1490,35 @@ export class ModuleGraph {
 		)
 			return [undefined, [node.argument]]
 		if (node.type === "ForInStatement") return [undefined, [node.right]]
+		// e.g. `${T}` or `"" + T`, which convert it to its string
+		if (
+			node.type === "TemplateLiteral" &&
+			node.parent?.type !== "TaggedTemplateExpression"
+		)
+			return ["expression", node.expressions]
+		if (node.type === "BinaryExpression" && node.operator === "+")
+			return ["expression", [node.left, node.right]]
+		if (node.type === "AssignmentExpression" && node.operator === "+=")
+			return ["expression", [node.right]]
 		if (node.type === "BinaryExpression" && node.operator === "in") {
 			const key = node.left.type === "Literal" ? node.left.value : undefined
-			// e.g. `"and" in T`, which a validator answers with the member that throws in its place
-			return typeof key === "string" && key in typeMemberKinds ?
+			// e.g. `"and" in T` or `"json" in T`, which a validator answers with the member that throws in its place
+			return (
+					typeof key === "string" &&
+						(key in typeMemberKinds || includes(introspectionMembers, key))
+				) ?
 					undefined
 				:	[key, [node.right]]
 		}
 		if (node.type !== "CallExpression") return
 		const callee = normalize(node.callee)
+		const args = node.arguments.filter(arg => arg.type !== "SpreadElement")
+		if (
+			callee.type === "Identifier" &&
+			callee.name === "String" &&
+			!module.scopes.referencesById.get(callee)?.binding
+		)
+			return ["expression", args.slice(0, 1)]
 		if (callee.type !== "MemberExpression") return
 		const global = normalize(callee.object)
 		if (
@@ -1495,7 +1527,6 @@ export class ModuleGraph {
 		)
 			return
 		const name = memberNameOf(callee)
-		const args = node.arguments.filter(arg => arg.type !== "SpreadElement")
 		return (
 			global.name === "JSON" && name === "stringify" ?
 				["toJSON", args.slice(0, 1)]

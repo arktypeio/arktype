@@ -280,7 +280,8 @@ const { diagnostics } = precompile(
 )
 console.log(JSON.stringify(diagnostics.map(renderDiagnostic)))`)
 			).snap([
-				"/main.ts:4:1  configure() is called after its argument creates a Type\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				"/main.ts:4:1  configure() is called after its argument creates a Type\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+				"/main.ts:4:44  Email.expression is created under a configuration the build can't apply\n  configure() is called after its argument creates a Type (/main.ts)\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 			])
 		}).timeout(60000)
 

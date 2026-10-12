@@ -64,8 +64,8 @@ export const withId = <t extends object>(t: type.Any<t>) => t.and({ id: "string"
 		).snap(`var $arkm = 0;
 import { shadow as $arkshadow } from "@ark/precompile/shadow"
 import { type } from "arktype"
-import { f5gsbk00dbcwma as $arkf5gsbk00dbcwma } from "~arktype/antd4509j8579"
-import { f16onama10v7ypw as $arkf16onama10v7ypw } from "~arktype/antd4509j8579"
+import { f5gsbk00dbcwma as $arkf5gsbk00dbcwma } from "~arktype/15snqfg0pyx419"
+import { f16onama10v7ypw as $arkf16onama10v7ypw } from "~arktype/15snqfg0pyx419"
 import { Name } from "./name.ts"
 import { withId } from "./id.ts"
 export function nullable() {
@@ -109,7 +109,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 
 		it("throws naming a site whose validator throws at creation", () => {
 			attest(shadow.created).snap(
-				'Error: created.ts:5:21  type("string").narrow(isLong) diverges from arktype at creation: arktype gives {"expression":"string","description":"a string and valid according to isLong","meta":{}}, its validator {"threw":"Error: `isLong` (created.ts:5:43) is a function of 2 or more parameters, but was precompiled as a function of 1 parameter"}'
+				'Error: created.ts:5:21  type("string").narrow(isLong) diverges from arktype at creation: arktype gives {"meta":{}}, its validator {"threw":"Error: `isLong` (created.ts:5:43) is a function of 2 or more parameters, but was precompiled as a function of 1 parameter"}'
 			)
 		})
 
@@ -124,7 +124,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 		it("throws where a library reads a member its validator lacks", () => {
 			attest([shadow.listed, shadow.unbaked]).snap([
 				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at reading array, since its validator lacks it: arktype gives "function", its validator undefined',
-				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at json, since its validator doesn\'t bake it: arktype gives {"out":{"required":[{"key":"name","value":"string"}],"domain":"object"}}, its validator {"out":"undefined"}'
+				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at json, since its validator doesn\'t bake it: arktype gives {"out":{"required":[{"key":"name","value":"string"}],"domain":"object"}}, its validator {"threw":"Error: json isn\'t baked: list it in the build\'s introspection option"}'
 			])
 		})
 

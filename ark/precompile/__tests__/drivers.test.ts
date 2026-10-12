@@ -120,7 +120,8 @@ contextualize(() => {
 		it("import cycle", () => {
 			attest(node(["main.ts"], {}, cycle).stdout).equals(runPlain(cycle))
 			attest(
-				node(["main.ts"], { introspection: ["json"] }, cycleFirst).stdout
+				node(["main.ts"], { introspection: ["expression", "json"] }, cycleFirst)
+					.stdout
 			).equals(runPlain(cycleFirst))
 			// Node's type stripping keeps an import only a type reads, which closes the cycle
 			attest(node(["main.ts"], {}, cycleErased).stdout).equals(
@@ -130,9 +131,9 @@ contextualize(() => {
 				node(["main.ts"], { introspection: ["json"] }, cycleArrow).stdout
 			).equals(runPlain(cycleArrow))
 			// a fold run once what it reads is set, before the statement setting it ends
-			attest(node(["main.ts"], {}, setInStep).stdout).equals(
-				runPlain(setInStep)
-			)
+			attest(
+				node(["main.ts"], { introspection: ["expression"] }, setInStep).stdout
+			).equals(runPlain(setInStep))
 		}).timeout(60000)
 
 		it("serves the modules a standalone module imports", () => {
@@ -335,7 +336,10 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			)
 				.snap(`main.ts:6:21  type("string").narrow(isLong) can't be precompiled yet
   \`node.expression\` (config.ts:5:38) prints the name of \`isLong\` (main.ts:4:16), which the build knows only by a placeholder
-  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
+  Standalone builds can't precompile every definition yet. Build with runtime: "arktype".
+main.ts:8:29  Long.description reads description, which a standalone validator lacks
+  \`Long\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read
+  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".`)
 		}).timeout(60000)
 
 		it("reports a configured writer calling a hole", () => {

@@ -128,7 +128,7 @@ const shadowOf = (
 	const isData = !isHeld(original) && typeof original !== "function"
 	const observeCreation = (outcome: Outcome) =>
 		"thrown" in outcome ? { threw: thrownOf(outcome.thrown) }
-		: isType ? attributesOf(outcome.value)
+		: isType ? { meta: (outcome.value as { meta?: unknown } | undefined)?.meta }
 		: isData ? { value: withoutSuffixes(outcome.value) }
 		: {}
 	compare(
@@ -172,13 +172,6 @@ const shadowOf = (
 
 const thrownOf = (e: unknown) => (e instanceof Error ? String(e) : e)
 
-// e.g. a validator a Module lacks
-const attributesOf = (t: any) => ({
-	expression: t?.expression,
-	description: t?.description,
-	meta: t?.meta
-})
-
 const validatedMembers = ["allows", "assert", "traverse", "from"]
 
 const introspectedMembers = ["toJSON", "toJsonSchema", "toString"]
@@ -208,7 +201,7 @@ const typeHandlerOf = (
 		const counterpart = pair.counterpart as Record<PropertyKey, unknown>
 		if (
 			introspectedMembers.includes(k as never) &&
-			counterpart[k] !== undefined
+			"value" in outcomeOf(() => counterpart[k])
 		)
 			return introspector(k as string)
 		if (k === "meta") {
@@ -242,7 +235,8 @@ const typeHandlerOf = (
 		get: (target, k) => {
 			if (arktypeDepth) return boundTo(target, Reflect.get(target, k, target))
 			// a getter, read anew
-			if (k === "json") return introspect(pair, ["json"])
+			if (k === "json" || k === "expression" || k === "description")
+				return introspect(pair, [k])
 			if (k in membersByKey) return membersByKey[k]
 			const member = inArktype(() => memberOf(target, k))
 			membersByKey[k] = member
@@ -276,7 +270,15 @@ const checkedMember = (
 const hasOf =
 	(pair: Pair) =>
 	(target: object, k: PropertyKey): boolean => {
-		if (!arktypeDepth)
+		// e.g. `"json" in T`, which a validator answers with the getter that throws where its build doesn't list it
+		if (
+			!arktypeDepth &&
+			!(
+				Reflect.has(target, k) &&
+				hasDomain(pair.counterpart, "object") &&
+				k in pair.counterpart
+			)
+		)
 			checkedMember(pair, target, k, `checking for ${String(k)} with in`)
 		return Reflect.has(target, k)
 	}
@@ -350,9 +352,7 @@ const introspect = (pair: Pair, path: string[], args?: unknown[]): unknown => {
 		pair,
 		`${path.join(".")}${args ? "()" : ""}`,
 		observed(arktype),
-		observed(
-			isBaked ? outcomeOf(() => read(pair.counterpart)) : { value: undefined }
-		),
+		observed(isBaked ? outcomeOf(() => read(pair.counterpart)) : member),
 		isBaked ? undefined : "since its validator doesn't bake it"
 	)
 	return settle(arktype)

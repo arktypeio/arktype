@@ -40,7 +40,7 @@ A definition holding functions, like a narrow, a morph, a default's thunk or a c
 precompile.vite({ maxVariants: 16 })
 ```
 
-A standalone validator lacks `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` unless the `introspection` option lists them, so reading one the build doesn't see reads `undefined`, and `JSON.stringify` skips the validator. Each one listed is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes no options but a `target`. A JSON Schema the build can't bake throws where it's read instead: one calling a default's thunk, which arktype calls at each write, or one whose configured writer reads what the program can change or can't be evaluated. A read the build sees, like `User.toJsonSchema()`, is replaced by what it returns either way.
+A standalone validator has `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` only where the `introspection` option lists them. Reading one it lacks throws an error naming the member and the option, and so do converting the validator to a string, which prints its expression, and `JSON.stringify`, which calls its `toJSON()`. The build fails where it sees such a read outside a definition it precompiles, like `String(User)`, `` `${User}` `` or `JSON.stringify(User)`, and a library reading one throws at runtime. Without `~standard.jsonSchema`, `~standard` has no `jsonSchema` key, so libraries that probe for it fall back. Each one listed is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes no options but a `target`. A JSON Schema the build can't bake throws where it's read instead: one calling a default's thunk, which arktype calls at each write, or one whose configured writer reads what the program can change or can't be evaluated. A read the build sees, like `User.expression` or `User.toJsonSchema()`, is replaced by what it returns either way.
 
 ```ts
 precompile.vite({ introspection: ["toJsonSchema", "~standard.jsonSchema"] })
@@ -55,9 +55,9 @@ export default defineConfig({ plugins: [precompile.vite({ shadow: true })] })
 
 The program then runs on arktype: `arktype` resolves to it for every importer, and only `arktype/config` to `arktype/runtime` (so with Turbopack, alias only `arktype/config`). Each Type, Module and `type.fn` a definition returns compares its validator with arktype's:
 
-- as it's created, by whether it throws, its `expression`, `description` and `meta`
+- as it's created, by whether it throws and its `meta`
 - validating, through calling it, `allows`, `assert`, `traverse`, `from` and `~standard.validate`, by result, the input each leaves, the objects each shares, and each call to a function the program passed
-- reading `json`, `toJSON()`, `toString()`, `toJsonSchema()` and `~standard.jsonSchema`, and reading any other member arktype has or checking for it with `in`, which the validator must have too, as a Scope's, a Generic's, a Module's and a `type.fn`'s must, its `params` and `returns` compared as Types. `typeof` can't be intercepted, so it gives arktype's answer, like `"function"` for a Generic. Copying a Type's own keys, as a spread or `Object.assign` does, reads each one, so it throws where the validator lacks one
+- reading `expression`, `description`, `json`, `toJSON()`, `toString()`, `toJsonSchema()` and `~standard.jsonSchema`, and reading any other member arktype has or checking for it with `in`, which the validator must have too, as a Scope's, a Generic's, a Module's and a `type.fn`'s must, its `params` and `returns` compared as Types. `typeof` can't be intercepted, so it gives arktype's answer, like `"function"` for a Generic. Copying a Type's own keys, as a spread or `Object.assign` does, reads each one, so it throws where the validator lacks one
 
 Where they agree, it returns what arktype returns. Where they don't, it throws an error naming the definition, what was observed and both results, and raises it again where the program can't catch it, so a fallback or `expect(...).toThrow()` can't hide it.
 

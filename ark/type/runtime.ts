@@ -56,7 +56,7 @@ import {
 } from "@ark/util"
 import { InternalTypedFn } from "./fn.ts"
 import { raisedErrorPhrases } from "./keywords/functions.ts"
-import type { introspectionMembers } from "./standalone.ts"
+import type { FoldedMember, introspectionMembers } from "./standalone.ts"
 import type { ArrayType } from "./variants/array.ts"
 import type { DateType } from "./variants/date.ts"
 import type { NumberType } from "./variants/number.ts"
@@ -185,10 +185,10 @@ export const allErrorWriters: ErrorWritersByCode = {
 }
 
 export interface ValidatorAttributes {
-	expression: string
-	description: string
 	meta: ArkEnv.meta
-	// what a build's introspection option bakes, each absent unless it lists it
+	// what a build's introspection option bakes, each a getter throwing from the shared prototype unless it lists it
+	expression?: string
+	description?: string
 	json?: JsonStructure
 	toJSON?: () => JsonStructure
 	toJsonSchema?: () => JsonSchema
@@ -198,7 +198,13 @@ export interface ValidatorAttributes {
 export type IntrospectionMember = (typeof introspectionMembers)[number]
 
 // captured when the runtime loads, so a program replacing them later can't keep an artifact from freezing what it creates
-export const { assign, defineProperties, freeze, is } = Object
+export const {
+	assign,
+	defineProperties,
+	freeze,
+	getOwnPropertyDescriptors,
+	is
+} = Object
 
 // read only by the factories of what references a validator, Module, Scope or Generic, so kept off what a program can read
 const holesByValue = new WeakMap<
@@ -243,7 +249,8 @@ export class Validator extends Callable<
 				pipedFromCtx ? pipe(pipedFromCtx, node, data) : rootApply(data, onFail),
 			{ bind: null }
 		)
-		assign(this, attributes)
+		// defined rather than assigned, since the shared prototype has only a getter for each
+		defineProperties(this, getOwnPropertyDescriptors(attributes))
 		this.allows = freeze(node.allows)
 		this["~standard"] = freeze({
 			vendor: "arktype",
@@ -313,6 +320,19 @@ export type unavailableMember = Exclude<
 	keyof (ArrayType & DateType & NumberType & ObjectType & StringType),
 	keyof Validator | keyof Function | typeOnlyMember | IntrospectionMember
 >
+
+// a member the build's introspection option doesn't list throws where it's read, as it can't be written at runtime
+for (const k of [
+	"expression",
+	"description",
+	"json",
+	"toJSON",
+	"toJsonSchema"
+] satisfies FoldedMember[]) {
+	Object.defineProperty(Validator.prototype, k, {
+		get: () => throwError(writeUnlistedMemberMessage(k))
+	})
+}
 
 // every validator shares it, so replacing one of its methods would change them all
 for (const k of Reflect.ownKeys(Validator.prototype)) {
@@ -776,8 +796,11 @@ const { getTime } = Date.prototype
 
 const isValidator = (value: unknown) => value instanceof Validator
 
+// a validator lacking its expression is described by its kind
 const describeValue = (value: unknown) =>
-	isValidator(value) ? String(value) : printable(value)
+	!isValidator(value) ? printable(value)
+	: Reflect.getOwnPropertyDescriptor(value, "expression") ? String(value)
+	: "a Type"
 
 export const writeCreationMismatchMessage = <
 	label extends string,
@@ -829,6 +852,14 @@ export type writeRenamedHoleMessage<
 	name extends string,
 	createdName extends string
 > = `${label}'s hole ${index} is a function named ${name}, but was named ${createdName} when ${label} was created`
+
+export const writeUnlistedMemberMessage = <member extends string>(
+	member: member
+): writeUnlistedMemberMessage<member> =>
+	`${member} isn't baked: list it in the build's introspection option`
+
+export type writeUnlistedMemberMessage<member extends string> =
+	`${member} isn't baked: list it in the build's introspection option`
 
 export const bakedJsonSchemaOptionsMessage =
 	"a standalone validator's JSON Schema is written at build under the program's configuration, so it takes no options but a target whose schema it bakes. Configure them with configure({ toJsonSchema }), or build with runtime: \"arktype\"."

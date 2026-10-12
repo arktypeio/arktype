@@ -452,7 +452,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
 		)
 		.sort()
 		.map(file => join(root, file))
-	const build = buildPerturbed(corpus, { mode: "standalone" })
+	// each world observes a validator's expression and description
+	const build = buildPerturbed(corpus, {
+		mode: "standalone",
+		introspection: ["expression", "description"]
+	})
 	const out = mkdtempSync(join(tmpdir(), "ark-perturbation-"))
 	// a run that fails keeps its worlds for inspection
 	process.once("exit", code => {

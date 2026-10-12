@@ -5,6 +5,7 @@ import {
 	isArk,
 	isPassiveReference,
 	isRuntimeExport,
+	isIntrospectedProperty,
 	isValidatorMember,
 	memberNameOf,
 	staticBodyOf,
@@ -151,7 +152,7 @@ const arkMemberOf = (
 	}
 }
 
-// e.g. `T.json` or `T.toJsonSchema()`, or `$.json`, which the build refuses rather than read nothing at runtime
+// e.g. `T.json`, `T.expression` or `T.toJsonSchema()`, or `$.json`, which the build refuses rather than read nothing at runtime
 const introspectionReadOf = (
 	node: Node,
 	module: SourceModule,
@@ -165,7 +166,7 @@ const introspectionReadOf = (
 	)
 		return
 	const name = memberNameOf(member)
-	if (name === "json") return member
+	if (isIntrospectedProperty(name)) return member
 	if (name !== "toJSON" && name !== "toJsonSchema") return
 	const [callee, call] = operatorOf(member)
 	return call?.type === "CallExpression" && call.callee === callee ?

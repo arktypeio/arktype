@@ -35,6 +35,7 @@ import {
 	writeIdentityMismatchMessage,
 	writeRenamedHoleMessage,
 	writeUnbakedMessage,
+	writeUnlistedMemberMessage,
 	type HoleKind,
 	type IntrospectionMember
 } from "arktype/runtime"
@@ -67,12 +68,15 @@ const urlOf = (js: string) =>
 
 const importCode = (js: string): Promise<any> => import(urlOf(js))
 
+// what most tests compare a validator's strings by
+const printed: IntrospectionMember[] = ["expression", "description"]
+
 // the program's configure call runs before the artifact, as its config module does, and each validator is read as a site reads it
 const load = async (
 	exports: Record<string, StandaloneExport>,
 	configure = "",
 	fingerprint?: string,
-	introspection?: IntrospectionMember[]
+	introspection = printed
 ): Promise<Record<string, any>> => {
 	const { code, folds } = precompileStandalone(exports, {
 		configured:
@@ -449,9 +453,19 @@ contextualize(() => {
 			undefined,
 			["toJsonSchema"]
 		)
-		attest(["json", "toJSON", "toJsonSchema"].filter(k => k in T)).equals([
-			"toJsonSchema"
-		])
+		attest(Object.keys(T.toJsonSchema())).equals(
+			Object.keys(type({ a: "string" }).toJsonSchema())
+		)
+		attest(() => T.json).throws(writeUnlistedMemberMessage("json"))
+		attest(() => T.description).throws(
+			writeUnlistedMemberMessage("description")
+		)
+		attest(() => `${T}`).throws(writeUnlistedMemberMessage("expression"))
+		attest(() => JSON.stringify({ T })).throws(
+			writeUnlistedMemberMessage("toJSON")
+		)
+		// answered as arktype answers it, by the getter that throws in its place
+		attest("json" in T).equals(true)
 		attest("jsonSchema" in T["~standard"]).equals(false)
 	})
 
@@ -731,8 +745,7 @@ contextualize(() => {
 		attest(() => T.and("number")).throws.snap(
 			"TypeError: T.and is not a function"
 		)
-		attest(["and", "in", "json", "toJsonSchema"].filter(k => k in T)).equals([])
-		attest(JSON.stringify({ T })).equals("{}")
+		attest(["and", "in"].filter(k => k in T)).equals([])
 		attest(() => (runtimeType as any)("string")).throws.snap(
 			"TypeError: runtimeType is not a function"
 		)
@@ -1556,6 +1569,25 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 					"Type<(In: string) => Out<unknown>>"
 				)
 			)
+			const unlisted = await load(
+				{
+					User: {
+						type: User,
+						params: [{ kind: "input", label: "Name", reads: [[[], Name]] }]
+					},
+					Text: type("string")
+				},
+				undefined,
+				undefined,
+				[]
+			)
+			attest(() => unlisted.User(unlisted.Text)).throws(
+				writeCreationMismatchMessage(
+					"`Name`",
+					"a Type",
+					"Type<(In: string) => Out<unknown>>"
+				)
+			)
 		})
 
 		it("takes the holes of a Scope it receives", async () => {
@@ -1942,6 +1974,14 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 			attest(() => create((s: string) => s)("b")).throws.snap(
 				"TraversalError: must be a number (was a string)"
+			)
+			const unlisted = await loadFactory(
+				type.fn("string", ":", "number")(length) as never,
+				[["function", "`length`", length]],
+				[]
+			)
+			attest(() => unlisted(count.raw).expression).throws(
+				writeUnlistedMemberMessage("expression")
 			)
 		})
 

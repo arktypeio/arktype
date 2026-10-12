@@ -383,7 +383,12 @@ const printsName = (data: unknown): boolean =>
 		data !== null &&
 		Object.values(data).some(printsName)
 
-// what a site reading the Type's json, toJSON() or toJsonSchema() folds to, which a build refuses where it prints a function's name
+const readFolded = (node: BaseRoot, member: FoldedMember): unknown =>
+	member === "toJSON" || member === "toJsonSchema" ?
+		node[member]()
+	:	node[member]
+
+// what a site reading the Type's expression, description, json, toJSON() or toJsonSchema() folds to, which a build refuses where it prints a function's name
 const foldedIntrospectionOf = (
 	node: BaseRoot
 ): Record<string, StandaloneExport> => {
@@ -392,7 +397,7 @@ const foldedIntrospectionOf = (
 		let data: unknown
 		let thrown: unknown
 		try {
-			data = member === "json" ? node.json : node[member]()
+			data = readFolded(node, member)
 		} catch (e) {
 			if (!isJsonSchemaError(e)) continue
 			thrown = e
@@ -502,7 +507,7 @@ export const compare = async (
 			)
 		await compareFolded(node, layout, result, disagree)
 		let artifact: any
-		// introspection the build refuses to bake leaves the rest to compare
+		// introspection the build refuses to bake leaves the attributes to compare
 		let isBaked = true
 		try {
 			artifact = await loadNamingHoles(
@@ -513,7 +518,10 @@ export const compare = async (
 			).catch(e => {
 				if (!(e instanceof ParseError)) throw e
 				isBaked = false
-				return loadNamingHoles(node, holes, layout, [])
+				return loadNamingHoles(node, holes, layout, [
+					"expression",
+					"description"
+				])
 			})
 		} catch (e) {
 			const refusal =
@@ -591,10 +599,7 @@ const compareFolded = async (
 	}
 	const members = Object.keys(folded)
 	const expected = observeStably(() =>
-		observeFolded(
-			member => (member === "json" ? node.json : node[member]()),
-			members
-		)
+		observeFolded(member => readFolded(node, member), members)
 	)
 	if (!members.length || !expected) return
 	result.isFolded = true

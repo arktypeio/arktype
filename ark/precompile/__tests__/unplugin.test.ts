@@ -296,16 +296,26 @@ contextualize(() => {
 			// a fold the cycle runs before its module declares what it reads, which throws as arktype does where a bundle leaves that undefined
 			const first = fromHere("cycleFirst")
 			attest(
-				run(await bundle({ cwd: first, introspection: ["json"] }, first))
+				run(
+					await bundle(
+						{ cwd: first, introspection: ["expression", "json"] },
+						first
+					)
+				)
 			).equals(runPlain(first))
 			const arrow = fromHere("cycleArrow")
 			attest(
 				run(await bundle({ cwd: arrow, introspection: ["json"] }, arrow))
 			).equals(runPlain(arrow))
 			const setInStep = fromHere("setInStep")
-			attest(run(await bundle({ cwd: setInStep }, setInStep))).equals(
-				runPlain(setInStep)
-			)
+			attest(
+				run(
+					await bundle(
+						{ cwd: setInStep, introspection: ["expression"] },
+						setInStep
+					)
+				)
+			).equals(runPlain(setInStep))
 			// `verbatimModuleSyntax` keeps an import only a type reads, which closes the cycle
 			const erased = fromHere("cycleErased")
 			const verbatim = writeFixture(
@@ -383,7 +393,7 @@ export const checkedItem = JSON.stringify(itemJson())
 			attest(
 				run(
 					await bundlers.esbuild(
-						{ cwd: root, introspection: ["json"] },
+						{ cwd: root, introspection: ["expression", "json"] },
 						root,
 						false
 					)

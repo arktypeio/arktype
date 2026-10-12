@@ -312,12 +312,11 @@ const R = Q.or("undefined")`)
 			attest(
 				statusesOf(`import { type } from "arktype"
 const A = type({ a: "string" })
-const label = () => A.description
-const L = A.description
+const check = () => A.allows
+const M = A.meta
 const make = (k: string) => A.and({ [k]: "number" })
-const upper = label().toUpperCase() + L.toUpperCase()
-const E = make("z").expression
-const S = A.toString()`)
+const valid = check()(1) || A.assert("a")
+const E = make("z").meta`)
 			).snap([
 				"2:11 accepted { a: string }",
 				"7:11 accepted { a: string, z: number }"
@@ -333,7 +332,7 @@ const label = () => T.out.expression`)
 			).snap([
 				"2:11 accepted { a: (In: string) => Out</^\\S.*\\S$|^\\S?$/> }",
 				"3:11 accepted { a: string }",
-				"4:21 accepted { a: /^\\S.*\\S$|^\\S?$/ }"
+				"4:21 accepted"
 			])
 		})
 
@@ -654,7 +653,9 @@ const T = type({ a: "string" })
 const a = T.json
 const b = T.toJSON()
 const c = T.toJsonSchema({ target: "draft-07" })
-const d = User.json`
+const d = T.expression
+const e = () => T.description
+const f = User.json`
 			const files = {
 				"/user.ts": `import { type } from "arktype"
 export const User = type({ name: "string" })`
@@ -664,7 +665,9 @@ export const User = type({ name: "string" })`
 				"4:11 accepted",
 				"5:11 accepted",
 				"6:11 accepted",
-				"7:11 accepted"
+				"7:11 accepted",
+				"8:17 accepted",
+				"9:11 accepted"
 			])
 			// a bundler drops User's module with the last export read from it, which matters where the module runs more than its declarations
 			const inputsOf = (files: Record<string, string>) => {
@@ -1161,11 +1164,15 @@ export const X = forms.make().or("null")`)
 const T = type({ a: "string" })
 const jsonOf = (t: typeof T) => t.json
 console.log(T.expression, T.toString(), Object.is(T, T))
-console.log(jsonOf(T), "json" in T, JSON.stringify(T))`)
+console.log(jsonOf(T), "json" in T, JSON.stringify(T))
+console.log(String(T), \`\${T}\`, "" + T)`)
 			).snap([
 				'/main.ts:3:33  t.json reads json, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:5:24  "json" in T reads json, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:5:37  JSON.stringify(T) reads toJSON, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				'/main.ts:4:27  T.toString reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:5:37  JSON.stringify(T) reads toJSON, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:6:13  String(T) reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:6:24  `${T}` reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:6:32  "" + T reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
 			])
 		})
 
@@ -1173,9 +1180,13 @@ console.log(jsonOf(T), "json" in T, JSON.stringify(T))`)
 			const source = `import { type } from "arktype"
 const T = type({ a: "string" })
 const jsonOf = (t: typeof T) => t.json
-console.log(jsonOf(T), "json" in T, JSON.stringify(T), T.toJSON)`
+console.log(jsonOf(T), "json" in T, JSON.stringify(T), T.toJSON, \`\${T}\`)`
 			attest(
-				diagnosticsOf(source, {}, { introspection: ["json", "toJSON"] })
+				diagnosticsOf(
+					source,
+					{},
+					{ introspection: ["json", "toJSON", "expression"] }
+				)
 			).equals([])
 			attest(
 				diagnosticsOf(source, {}, { introspection: ["toJSON"] }).map(
@@ -1183,7 +1194,7 @@ console.log(jsonOf(T), "json" in T, JSON.stringify(T), T.toJSON)`
 				)
 			).snap([
 				"/main.ts:3:33  t.json reads json, which a standalone validator lacks",
-				'/main.ts:4:24  "json" in T reads json, which a standalone validator lacks'
+				"/main.ts:4:66  `${T}` reads expression, which a standalone validator lacks"
 			])
 			attest(
 				() =>
@@ -1191,7 +1202,7 @@ console.log(jsonOf(T), "json" in T, JSON.stringify(T), T.toJSON)`
 						introspection: ["json", "and" as never]
 					})
 			).throws.snap(
-				'Error: introspection lists "and", which isn\'t one of "json", "toJSON", "toJsonSchema", "~standard.jsonSchema"'
+				'Error: introspection lists "and", which isn\'t one of "expression", "description", "json", "toJSON", "toJsonSchema", "~standard.jsonSchema"'
 			)
 		})
 
@@ -1206,6 +1217,7 @@ for (const k in T) console.log(k)`)
 				'/main.ts:3:13  Object.keys(T) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 				'/main.ts:3:31  ...T reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 				'/main.ts:3:39  T[process.argv[2] as "json"] reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
+				'/main.ts:4:9  description reads description, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 				'/main.ts:4:22  ...rest reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 				'/main.ts:5:1  for (const k in T) console.log(k) reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
 			])

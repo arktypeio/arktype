@@ -149,7 +149,7 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 			Revived('{"name":1}').toString(),
 			Revived.expression
 		],
-		described: [DescribedPerson.description, `${Person}`],
+		described: [DescribedPerson.description, Person.expression],
 		listed: outcomeOf(() => String(listOf(Person))),
 		unbaked: outcomeOf(() => JSON.stringify(jsonOf(Person))),
 		stamped: [uuid.test(stamped.id), uuid.test(stamped.name.slice(2))],

@@ -111,6 +111,8 @@ export type StandaloneExport =
 	| StandaloneIntrospection
 
 export const introspectionMembers = [
+	"expression",
+	"description",
 	"json",
 	"toJSON",
 	"toJsonSchema",
@@ -701,6 +703,8 @@ export class StandaloneArtifact {
 	// the holes of each value a factory receives, by the name holding them
 	holesByName = new Map<string, readonly unknown[]>()
 	baking: Baking
+	// the Type whose introspection the factory returns, which declares no units
+	introspected: BaseRoot | undefined
 	// the name of each Date or RegExp a program can write, none where a call creates its own
 	held: Map<object, string> | undefined
 
@@ -716,6 +720,7 @@ export class StandaloneArtifact {
 		this.exports = exports
 		this.baking = baking
 		const introspected = called && "member" in called ? called : undefined
+		this.introspected = introspected?.type
 		const received = introspected ? undefined : called
 		this.selection = received && isVariants(received) ? received : undefined
 		this.variants =
@@ -985,7 +990,11 @@ export class StandaloneArtifact {
 
 	// branches printing alike once their functions' names are received print once, so a union printing one is joined at creation as arktype joins it
 	collectJoinedTexts(): void {
-		for (const node of this.declared) {
+		const introspected = this.introspected
+		for (const node of new Set([
+			...this.declared,
+			...(introspected ? [introspected, ...introspected.references] : [])
+		])) {
 			if (!node.hasKind("union")) continue
 			for (const [kind, join] of [
 				["expression", "expressBranches"],
@@ -1458,7 +1467,9 @@ ${statements.filter(statement => statement).join("\n\n")}
 					},
 					true
 				)
-			:	this.readJson(type)
+			: member === "expression" ? this.emitExpression(type)
+			: member === "description" ? this.emitDescription(type)
+			: this.readJson(type)
 		const defaults = this.writeDefaultChecks(this.defaultChecks)
 		// arktype checked the Type's defaults where it created it, which a site reading its introspection does at each call
 		return this.writeFactoryFunction(index, params, [
@@ -1801,7 +1812,7 @@ return [${returned.join(", ")}]
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
 	${this.emit(pipeOf(root))},
-	{ expression: ${root.expression.includes(holeNameMarker) ? this.emitString(root.expression) : `${this.readExpression(root)}()`}, description: ${this.emitDescription(root)}, meta: ${this.emit(root.meta)}${this.emitIntrospection(root)} }${key}
+	{ meta: ${this.emit(root.meta)}${this.emitIntrospection(root)} }${key}
 ${isTemplate ? "]" : ")"}`
 	}
 
@@ -1809,6 +1820,10 @@ ${isTemplate ? "]" : ")"}`
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) =>
 			this.baking.members.has(member)
+		if (bakes("expression"))
+			members.push(`expression: ${this.emitExpression(root)}`)
+		if (bakes("description"))
+			members.push(`description: ${this.emitDescription(root)}`)
 		if (bakes("json") || bakes("toJSON")) {
 			const json = this.readJson(root)
 			if (bakes("json")) members.push(`json: ${json}`)
@@ -2010,9 +2025,11 @@ ${isTemplate ? "]" : ")"}`
 	}
 
 	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator
-	readExpression(root: BaseRoot): string {
+	emitExpression(root: BaseRoot): string {
+		if (root.expression.includes(holeNameMarker))
+			return this.emitString(root.expression)
 		const name = this.stringModuleOf(root, "expression")
-		return this.read(`~arktype/${name}`, name, name, name)
+		return `${this.read(`~arktype/${name}`, name, name, name)}()`
 	}
 
 	// a description holding those of the roots it references is composed from their modules, else written where it's read

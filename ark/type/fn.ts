@@ -131,7 +131,6 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 	raw: Fn
 	params: IntersectionNode
 	returns: BaseRoot
-	expression: string
 
 	constructor(raw: Fn, params: IntersectionNode, returns: BaseRoot) {
 		const typedName = `typed ${functionNameOf(raw)}`
@@ -148,8 +147,11 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		this.raw = raw
 		this.params = params
 		this.returns = returns
+	}
 
-		let argsExpression = params.expression
+	// read where it's read, since a standalone validator's expression throws unless its build lists it
+	get expression(): string {
+		let argsExpression = this.params.expression
 		if (
 			argsExpression[0] === "[" &&
 			argsExpression[argsExpression.length - 1] === "]"
@@ -158,7 +160,7 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		else if (argsExpression.endsWith("[]"))
 			argsExpression = `...${argsExpression}`
 
-		this.expression = `(${argsExpression}) => ${returns?.expression ?? "unknown"}`
+		return `(${argsExpression}) => ${this.returns?.expression ?? "unknown"}`
 	}
 }
 

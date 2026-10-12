@@ -765,7 +765,14 @@ const foldedProgramOf = (
 // each mode's build wraps the same sites, so one world as written serves both
 const buildOptions: BuildOptions = {
 	mode: "standalone",
-	introspection: ["json", "toJSON", "toJsonSchema", "~standard.jsonSchema"],
+	introspection: [
+		"expression",
+		"description",
+		"json",
+		"toJSON",
+		"toJsonSchema",
+		"~standard.jsonSchema"
+	],
 	runsUnfolded: true
 }
 
