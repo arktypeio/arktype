@@ -242,6 +242,7 @@ When there's a mismatch, you get a clear error showing exactly what went wrong:
 `ArkErrors` are now JSON stringifiable, making it easy to send validation errors as API responses or store them in logs. Two new properties provide structured access:
 
 ```ts
+// @noErrors
 const NEvenAtLeast2 = type({ n: "number % 2 >= 2" })
 
 const out = NEvenAtLeast2({ n: 1 })

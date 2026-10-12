@@ -593,6 +593,7 @@ When there's a mismatch, you get a clear error showing exactly what went wrong:
 `ArkErrors` are now JSON stringifiable, making it easy to send validation errors as API responses or store them in logs. Two new properties provide structured access:
 
 ```ts
+// @noErrors
 const NEvenAtLeast2 = type({ n: "number % 2 >= 2" })
 
 const out = NEvenAtLeast2({ n: 1 })
@@ -1002,7 +1003,7 @@ const User = type({
 const out = User({ name: "Alan", age: "not a number" })
 
 if (out instanceof type.errors) {
-	// ArkErrors — iterable, with .summary and an .issues array
+	// ArkErrors: .summary, and .issues, plain objects with a code, path and message
 	console.error(out.summary)
 } else {
 	// out is typed as { name: string; age?: number }
@@ -1019,6 +1020,7 @@ if (out instanceof type.errors) {
 | `"Record<string, T>"` with `T` a variable  | Use `type.Record("string", T)` or `{ "[string]": T }`       |
 | Manually re-validating after `type()`      | Trust ArkType's output — it already validated the structure |
 | `type User = typeof Schema.t`              | Use `typeof Schema.infer` for the output type               |
+| `error.hasCode("min")`, `out.flatByPath`   | Compare `error.code`; call `flatByPath(out)` from arktype   |
 
 
 ---
@@ -1052,7 +1054,7 @@ However, it's equally important that when you need different behavior, you can e
     </tr>
     <tr>
       <td>**global**</td>
-      <td>all Types parsed after the config is applied</td>
+      <td>all Types</td>
       <td>
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -1125,16 +1127,12 @@ Some options only apply at specific levels, as reflected in the corresponding in
 
 <Callout
 	type="warn"
-	title='Use the `"arktype/config"` entrypoint in a separate file for global config!'
+	title="Call `configure` in a separate file imported before any Type is created!"
 >
-	If you need your config to apply to built-in keywords (important for options
-	like `jitless`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`),
-	you should import and `configure` from `"arktype/config"` before importing
-	anything else from `"arktype"` or `"@ark/schema"`, including deep imports
-	like `"arktype/internal/*"`.
-
-Otherwise, keywords will have already been parsed by the time your config applies!
-
+	Global config is fixed when the first Type is created, whether by a definition
+	or by referencing a keyword like `type.number`, and calling `configure` after
+	that throws. Importing `"arktype"` first is fine, and `configure` can be
+	imported from either `"arktype"` or `"arktype/config"`.
 </Callout>
 
 ### Errors
@@ -1277,31 +1275,33 @@ mod.isEven(3)
 
 #### ArkErrors
 
-The `ArkErrors` returned on validation failure contains `ArkError` instances that can be discriminated via calls like `.hasCode("divisor")` and contain contextual data specific to that error type as well as getters for each composable error part.
+The `ArkErrors` returned on validation failure holds its errors in `issues`, plain objects that can be discriminated by their `code`, like `error.code === "divisor"`. Each has contextual data specific to its code, and the text written for each composable part of its message.
 
 To write messages in another language, configure a [locale](#locale).
 
 #### Serialization
 
-`ArkErrors` and `ArkError` are JSON stringifiable via `JSON.stringify()` or `.toJSON()`.
+`ArkErrors` is JSON stringifiable via `JSON.stringify()` or `.toJSON()`.
 
-Two additional properties provide structured access to errors grouped by path:
+Two functions `arktype` exports group errors by path:
 
 ```ts
+import { flatByPath, flatProblemsByPath, type } from "arktype"
+
 const T = type({ n: "number % 2 >= 2" })
 
 const out = T({ n: 1 })
 
 if (out instanceof type.errors) {
-	out.flatByPath
+	flatByPath(out)
 	// { n: [{ data: 1, path: ["n"], code: "divisor", ... }, { data: 1, path: ["n"], code: "min", ... }] }
 
-	out.flatProblemsByPath
+	flatProblemsByPath(out)
 	// { n: ["must be even (was 1)", "must be at least 2 (was 1)"] }
 }
 ```
 
-`flatByPath` maps each path string to an array of `ArkError` objects (decomposing union errors into their individual branches). `flatProblemsByPath` maps each path string to an array of human-readable problem strings.
+`flatByPath` maps each path string to an array of errors, splitting the `intersection` of several errors at a path into its individual errors. `flatProblemsByPath` maps each path string to an array of their problem strings.
 
 Unhandled validation errors (e.g. via `.assert()`) throw a `TraversalError`, which extends `Error` with cleaner multi-error formatting and a non-enumerable `arkErrors` property for programmatic access.
 
@@ -1325,7 +1325,7 @@ import { type } from "arktype"
 const out = type.string(5)
 ```
 
-`locale` can also be a function that returns a locale each time a message is read. See [i18n](/docs/i18n) for both, and for changing or writing a locale.
+`locale` can also be a function that returns a locale when an `ArkErrors`' messages are first read. See [i18n](/docs/i18n) for both, and for changing or writing a locale.
 
 ### Keywords
 
@@ -3057,7 +3057,7 @@ const out = Signup({ name: "A" })
 
 ### Switching locales
 
-`locale` can also be a function, which is called whenever a message is read. Messages are written when they are read, not when validation fails, so errors follow your app's language even when it changes after they were created:
+`locale` can also be a function, which is called when an `ArkErrors`' messages are first read. Messages are written then, not when validation fails, so errors are written in your app's language at the time they're read, even when it changed after they were created:
 
 ```ts title="config.ts"
 import type { Locale } from "arktype"
@@ -3115,14 +3115,14 @@ const handle = (body: unknown) =>
 	})
 ```
 
-A message reads the locale once, so it never mixes languages. If the function returns `undefined` or throws, the message is written in English.
+The function is called once for an `ArkErrors`, whose messages keep the locale it returned, so they never mix languages. If it returns `undefined` or throws, they're written in English.
 
 ### Rendering in a locale
 
-`toLocaleString` writes an `ArkErrors`' summary or an `ArkError`'s message in a locale of your choice, whatever locale is configured:
+An `ArkErrors`' `toLocaleString` writes its summary in a locale of your choice, whatever locale is configured, and `messageIn` writes one error's message:
 
 ```ts
-import { type } from "arktype"
+import { messageIn, type } from "arktype"
 import { de } from "arktype/locales/de"
 
 const out = type({ name: "string" })({ name: 5 })
@@ -3130,12 +3130,13 @@ const out = type({ name: "string" })({ name: 5 })
 if (out instanceof type.errors) {
 	// name muss eine Zeichenkette sein, ist aber eine Zahl
 	out.toLocaleString(de)
+	messageIn(out.issues[0], de)
 	// name must be a string (was a number)
 	out.issues[0].message
 }
 ```
 
-Called without a locale, it returns the summary or message as configured.
+Called without a locale, `toLocaleString` returns the summary as configured.
 
 ### Your own messages
 
@@ -3253,7 +3254,7 @@ export const fr: Locale = {
 
 Until you replace them, the parts you spread from `en` are written in English, since most of its writers write English directly rather than from `nouns`, `list` or `date`. Only its `discriminant` and `required` writers and `basis` read `nouns`, and `required` also reads `list`.
 
-Where a locale has no `expected` for a code, an error's `expected`, and so its `toJSON()`, is English. A locale whose unions list their branches' fragments should write every fragment: annotate it with `Locale.Complete` to check that it has one for every code and a phrase for every keyword. A locale without fragments can write its unions from `ctx.errors`, each with its own `problem`.
+Where a locale has no `expected` for a code, an error's `expected`, and so its JSON, is English. A locale whose unions list their branches' fragments should write every fragment: annotate it with `Locale.Complete` to check that it has one for every code and a phrase for every keyword. A locale without fragments can write its unions from `ctx.errors`, each with its own `problem`.
 
 | part                             | writes                                                                                                           |
 | -------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -3926,7 +3927,7 @@ const parseJson = type("string").pipe((s): object => JSON.parse(s))
 // object: { ark: "type" }
 const out = parseJson('{ "ark": "type" }')
 
-// ArkErrors: must be a string (was object)
+// ArkErrors: must be a string (was an object)
 const badOut = parseJson(out)
 ```
 
@@ -5656,10 +5657,12 @@ They're primarily useful in ranges.
 
 ```ts
 const Literals = type({
-	singleQuoted: "d'01-01-1970'",
-	doubleQuoted: 'd"01-01-1970"'
+	singleQuoted: "d'1970-01-01'",
+	doubleQuoted: 'd"1970-01-01T12:00Z"'
 })
 ```
+
+A literal, like a string passed as a date limit, must be the same instant on every machine, so it can be an ISO date like `2025-01-01` (which is UTC), an ISO date-time with `Z` or an offset like `2025-01-01T12:00+01:00`, or a number of epoch milliseconds.
 
 ### ranges [#dates-ranges]
 
@@ -5727,7 +5730,7 @@ const Bounded = type({
 
 </SyntaxTabs>
 
-Dates in descriptions and error messages are written in UTC. A date at UTC or local midnight is written as its calendar date, or just its year on January 1:
+Dates in descriptions and error messages are written in UTC. A date at UTC midnight is written as its calendar date, or just its year on January 1:
 
 ```ts
 // a Date and 2023 or later
@@ -6722,30 +6725,31 @@ if (out instanceof type.errors) {
 
 ### ArkErrors
 
-The `ArkErrors` returned on validation failure holds `ArkError` instances with structured data. It is iterable and has a `length`, but it isn't an array. Index it or call array methods through `issues`:
+The `ArkErrors` returned on validation failure holds its errors in `issues`, an array with one plain object per path. Each has the `code` of the check that failed, the `data` and `path` it failed at, data specific to its code and the text written for it. `arktype` exports functions that group them by path:
 
 ```ts
+import { flatByPath, flatProblemsByPath, type } from "arktype"
+
 const T = type({ n: "number % 2", m: "number >= 2" })
 
 const out = T({ n: 1, m: 0 })
 
 if (out instanceof type.errors) {
 	// discriminate by error code
-	for (const error of out) {
-		if (error.hasCode("divisor")) {
+	for (const error of out.issues) {
+		if (error.code === "divisor") {
 			console.log(error.rule) // 2
 		}
 	}
 
-	// an array with one ArkError per path
 	out.issues.map(error => error.message) // ["m must be at least 2 (was 0)", "n must be even (was 1)"]
 
 	// structured access by path
-	out.flatByPath // { m: [ArkError], n: [ArkError] }
-	out.flatProblemsByPath // { m: ["must be at least 2 (was 0)"], n: ["must be even (was 1)"] }
+	flatByPath(out) // { m: [{ code: "min", ... }], n: [{ code: "divisor", ... }] }
+	flatProblemsByPath(out) // { m: ["must be at least 2 (was 0)"], n: ["must be even (was 1)"] }
 
 	// JSON serializable
-	JSON.stringify(out) // [{ path: ["m"], code: "min", ... }, { path: ["n"], code: "divisor", ... }]
+	JSON.stringify(out) // [{ data: 0, path: ["m"], code: "min", ... }, { data: 1, path: ["n"], code: "divisor", ... }]
 }
 ```
 
@@ -6757,7 +6761,7 @@ When `.assert()` fails, it throws a `TraversalError` (extends `Error`) with:
 - A non-enumerable `arkErrors` property for programmatic access
 
 ```ts
-import { type, TraversalError } from "arktype"
+import { flatProblemsByPath, type, TraversalError } from "arktype"
 
 try {
 	type({ a: "string", b: "number" }).assert({ a: 1, b: "x" })
@@ -6768,7 +6772,7 @@ try {
 		// • b must be a number (was a string)
 
 		// access the underlying ArkErrors for structured data
-		console.log(e.arkErrors.flatProblemsByPath)
+		console.log(flatProblemsByPath(e.arkErrors))
 	}
 }
 ```
