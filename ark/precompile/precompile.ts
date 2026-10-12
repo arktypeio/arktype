@@ -1924,7 +1924,7 @@ export class Precompiler {
 			module,
 			site,
 			"unsupported",
-			"error",
+			this.rejectionSeverity,
 			`${module.snippetOf(site)} can't be precompiled to a standalone validator yet`,
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
 			this.thunkHintOf(site)
