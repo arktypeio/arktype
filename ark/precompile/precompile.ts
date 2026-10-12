@@ -738,12 +738,18 @@ export class Precompiler {
 			`var ${prefix}m = 0;\n${register(registered[0])}`
 		)
 		const steps = [...stepsOf(module).keys()]
-		const textsAfter = new Map<number, string>()
+		const sitesByRange = rangesOf(sites)
 		// once across steps that can neither throw nor call what reads it, as nothing reads it between them
-		for (let at of marked) {
-			while (at < steps.length && this.isInertStep(steps[at], sites)) at++
-			textsAfter.set(at, `${prefix}m = ${at};\n`)
+		const runEnds: number[] = []
+		for (let at = steps.length; at > 0; at--) {
+			runEnds[at] =
+				at < steps.length && this.isInertStep(steps[at], sitesByRange) ?
+					runEnds[at + 1]
+				:	at
 		}
+		const textsAfter = new Map<number, string>()
+		for (const at of marked)
+			textsAfter.set(runEnds[at], `${prefix}m = ${runEnds[at]};\n`)
 		for (let at = 1; at < registered.length; at++) {
 			if (registered[at]) {
 				textsAfter.set(
@@ -2375,16 +2381,16 @@ export class Precompiler {
 		if (result !== undefined) return result
 		this.inertByModule.set(module, (result = false))
 		if (importsValues(module)) return result
-		const { sites } = this.analysisOf(module)
+		const sitesByRange = rangesOf(this.analysisOf(module).sites)
 		result = module.program.body.every(statement =>
-			this.isInertStep(statement, sites)
+			this.isInertStep(statement, sitesByRange)
 		)
 		this.inertByModule.set(module, result)
 		return result
 	}
 
 	// e.g. `export const User = type(...)`, which declares without running anything that could throw or call the program
-	private isInertStep(step: Node, sites: Site[]): boolean {
+	private isInertStep(step: Node, sitesByRange: Map<string, Site>): boolean {
 		const isInertValue = (node: Node | null | undefined): boolean => {
 			if (!node) return true
 			const value = unwrapExpression(node)
@@ -2392,17 +2398,7 @@ export class Precompiler {
 				value.type === "Literal" ||
 				(value.type === "TemplateLiteral" && !value.expressions.length) ||
 				isFunctionNode(value) ||
-				sites.some(
-					site =>
-						site.start === value.start &&
-						site.end === value.end &&
-						site.status === "accepted" &&
-						!site.parseError &&
-						!site.progress &&
-						!site.inputs.length &&
-						!site.defaultChecks.length &&
-						!this.interpreter.isCheckedAtCreation(site.value)
-				)
+				this.isInertSite(sitesByRange.get(`${value.start}:${value.end}`))
 			)
 		}
 		if (step.type === "VariableDeclarator")
@@ -2427,13 +2423,24 @@ export class Precompiler {
 				return !!declaration.directive
 			case "VariableDeclaration":
 				return declaration.declarations.every(declarator =>
-					this.isInertStep(declarator, sites)
+					this.isInertStep(declarator, sitesByRange)
 				)
 			default:
 				return (
 					step.type === "ExportDefaultDeclaration" && isInertValue(declaration)
 				)
 		}
+	}
+
+	private isInertSite(site: Site | undefined): boolean {
+		return (
+			site?.status === "accepted" &&
+			!site.parseError &&
+			!site.progress &&
+			!site.inputs.length &&
+			!site.defaultChecks.length &&
+			!this.interpreter.isCheckedAtCreation(site.value)
+		)
 	}
 
 	// e.g. `a.ts` for `User` or `a.User` imported from "./a.ts"
@@ -4238,6 +4245,9 @@ const inlineModules = (
 		)
 	}
 }
+
+const rangesOf = (sites: Site[]) =>
+	new Map(sites.map(site => [`${site.start}:${site.end}`, site]))
 
 // a comment between declarators can hold a comma
 const commaAfter = (source: string, from: number): number => {
