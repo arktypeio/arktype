@@ -932,16 +932,16 @@ export class ModuleGraph {
 		const isRest = parent.type === "RestElement"
 		const owner = isRest ? parent.parent! : parent
 		// e.g. `type(...)` for `user` in `const { user } = { user: type(...) }`, as for `schemas.user`
-		const literal =
+		const held =
 			source &&
-			(owner.type === "Property" ||
-				owner.type === "ArrayPattern" ||
-				owner.type === "ObjectPattern") &&
-			this.destructuredOf(
+			parent.type !== "AssignmentPattern" &&
+			this.destructuredValueOf(
 				owner.type === "Property" ? owner.parent! : owner,
 				pattern,
 				source
 			)
+		const literal =
+			held && this.literalOf(held.node, held.module, held.kindOfKey)
 		if (literal) {
 			const value =
 				isRest ? undefined : this.valueIn(literal, keyIn(owner, node))
@@ -986,25 +986,25 @@ export class ModuleGraph {
 		}
 	}
 
-	// e.g. `{ user: type(...) }` for `{ user }` in `const { a: { user } } = { a: { user: type(...) } }`
-	private destructuredOf(
+	// e.g. `type(...)` for `user` in `const { a: { user } } = { a: { user: type(...) } }`
+	private destructuredValueOf(
 		node: Node,
 		pattern: Node,
-		source: Located
-	): Located | undefined {
-		if (node === pattern)
-			return this.literalOf(source.node, source.module, source.kindOfKey)
+		source: Located,
+		seen = new Set<Node>()
+	): Located | null | undefined {
+		if (node === pattern) return source
 		const owner = node.parent!
 		if (owner.type !== "Property" && owner.type !== "ArrayPattern") return
-		const literal = this.destructuredOf(
+		const held = this.destructuredValueOf(
 			owner.type === "Property" ? owner.parent! : owner,
 			pattern,
-			source
+			source,
+			seen
 		)
-		const value = literal && this.valueIn(literal, keyIn(owner, node))
-		return value ?
-				this.literalOf(value.node, value.module, value.kindOfKey)
-			:	undefined
+		const literal =
+			held && this.literalOf(held.node, held.module, held.kindOfKey, seen)
+		return literal && this.valueIn(literal, keyIn(owner, node), seen)
 	}
 
 	private returnKindIn(
@@ -1255,13 +1255,21 @@ export class ModuleGraph {
 		if (binding.writes.length) return
 		if (binding.kind === "class")
 			return { node: declaration, module, kindOfKey }
-		return (
-				binding.kind === "const" &&
-					declaration.type === "VariableDeclarator" &&
-					declaration.id === binding.id &&
-					declaration.init
-			) ?
-				this.literalOf(declaration.init, module, kindOfKey, seen)
+		if (
+			binding.kind !== "const" ||
+			declaration.type !== "VariableDeclarator" ||
+			!declaration.init
+		)
+			return
+		// e.g. `{ User }` for `users` in `const { users } = { users: { User } }`
+		const held = this.destructuredValueOf(
+			binding.id,
+			declaration.id,
+			{ node: declaration.init, module, kindOfKey },
+			seen
+		)
+		return held ?
+				this.literalOf(held.node, held.module, held.kindOfKey, seen)
 			:	undefined
 	}
 

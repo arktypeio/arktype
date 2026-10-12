@@ -404,7 +404,9 @@ const A = User.or("null")
 const B = Renamed.array()
 const C = Nested.or("null")
 const D = S.or(rest[0])
-const E = Missing.or("null")`,
+const E = Missing.or("null")
+const { users, list } = local
+const F = users.User.or(list[1])`,
 					{
 						"/schemas.ts": `import { type } from "arktype"\nexport const schemas = { User: type({ id: "string" }), Post: type({ title: "string" }) }`
 					}
@@ -418,7 +420,8 @@ const E = Missing.or("null")`,
 				"8:11 accepted { title: string }[]",
 				"9:11 accepted { name: string } | null",
 				"10:11 accepted number | string",
-				"11:11 accepted false | null | true"
+				"11:11 accepted false | null | true",
+				"13:11 accepted number | { name: string }"
 			])
 		})
 
