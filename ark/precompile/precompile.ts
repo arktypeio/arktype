@@ -1163,6 +1163,18 @@ export class Precompiler {
 			}
 			if (site.parseError) {
 				namesBySite.set(site, nameOf(site))
+				// a site reading what its module may not have set yet checks that before throwing, as a factory does
+				if (site.progress) {
+					factoriesBySite.set(site, {
+						params: [],
+						spans: [],
+						repeats: [],
+						inputs: [`${prefix}m`],
+						bindings: [],
+						imports: [],
+						distinct: []
+					})
+				}
 				replaced.push([site, []])
 				continue
 			}
@@ -1254,7 +1266,8 @@ export class Precompiler {
 				if (site.parseError) {
 					const thrower = writeParseErrorThrower(
 						site.parseError.message,
-						configured
+						configured,
+						site.progress
 					)
 					const throwerSpecifier = `~arktype/${hashOf(thrower)}`
 					modules[throwerSpecifier] = thrower
@@ -4149,9 +4162,13 @@ const parameterKindOf = (
 		return "function"
 }
 
-// a ParseError is named by its message, so equal sites share a thrower, and anything else by its site, since a cyclic Type's hash holds registry counters
+// equal ParseErrors share a thrower unless one checks progress, and anything else is named by its site, since a cyclic Type's hash holds registry counters
 const nameOf = (site: Site) =>
-	hashOf(site.parseError?.message ?? `${site.start}`)
+	hashOf(
+		site.parseError ?
+			[site.parseError.message, ...(site.progress ?? [])].join("\n")
+		:	`${site.start}`
+	)
 
 const noValidators: StandaloneModules = {
 	code: "",
@@ -4198,9 +4215,10 @@ const writeValidators = (
 // a thrower fixes the configuration as arktype's failed definition does
 const writeParseErrorThrower = (
 	message: string,
-	configured: ConfiguredModule | undefined
+	configured: ConfiguredModule | undefined,
+	progress: Site["progress"]
 ) =>
-	`import * as runtime from "arktype/runtime"\n\nfunction throwParseError() {\n\t${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
+	`import * as runtime from "arktype/runtime"\n\nfunction throwParseError(${progress ? "progress" : ""}) {\n\t${progress ? `runtime.checkProgress(progress, ${progress[0]}, ${JSON.stringify(progress[1])})\n\t` : ""}${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
 
 const writeConfigFixer = (configured: ConfiguredModule | undefined) =>
 	`import * as runtime from "arktype/runtime"\n\nfunction fixConfig() {\n\t${writeFixConfig(configured)}\n}\n\nexport { fixConfig as default }\n`

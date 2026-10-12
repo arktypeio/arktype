@@ -17,8 +17,14 @@ export function extend(extra: object) {
 export function extendPatterned(extra: object) {
 	return Patterned.and(extra)
 }
+// throws a ReferenceError before Base is set, rather than the ParseError it throws after
+export function contradict() {
+	return Base.and({ a: "number" })
+}
 
-const Base = type({ a: "string" }),
+const contradictedFirst = r(() => contradict()),
+	Base = type({ a: "string" }),
+	contradicted = r(() => contradict()),
 	made = r(() => make()),
 	arrowed = r(() => arrow()),
 	extended = viaOther()
@@ -32,4 +38,12 @@ export const {
 	patternedOther?: string
 } = {}
 
-export const results = [made, arrowed, extended, patterned, patternedOther]
+export const results = [
+	contradictedFirst,
+	contradicted,
+	made,
+	arrowed,
+	extended,
+	patterned,
+	patternedOther
+]
