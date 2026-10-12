@@ -242,6 +242,8 @@ export interface Reference {
 interface SiteFactory {
 	params: FactoryParam[]
 	spans: Span[]
+	// e.g. `f` in `{ a: narrow(f), b: narrow(f) }`, which shadow mode reads through its first span's parameter
+	repeats: [span: Span, index: number][]
 	inputs: string[]
 	// the bindings the inputs read, whose imports the call keeps
 	bindings: Binding[]
@@ -1139,6 +1141,7 @@ export class Precompiler {
 				factory ??= {
 					params: [],
 					spans: [],
+					repeats: [],
 					inputs: [],
 					bindings: [],
 					imports: [],
@@ -1347,11 +1350,20 @@ export class Precompiler {
 		const callbacks = (factory?.params ?? []).flatMap((param, i) =>
 			param.kind === "function" ? [i] : []
 		)
+		const read: [span: Span, index: number][] = [
+			...spans.map((span, i): [Span, number] => [span, i]),
+			...(factory?.repeats ?? []).filter(
+				([repeat]) =>
+					!spans.some(
+						span => span.start <= repeat.start && repeat.end <= span.end
+					)
+			)
+		].sort(([l], [r]) => l.start - r.start)
 		let original = ""
 		let start = site.start
-		for (let i = 0; i < spans.length; i++) {
-			original += `${module.textOf({ start, end: spans[i].start })}${prefix}h${i}`
-			start = spans[i].end
+		for (const [span, i] of read) {
+			original += `${module.textOf({ start, end: span.start })}${prefix}h${i}`
+			start = span.end
 		}
 		original += module.textOf({ start, end: site.end })
 		const params = spans.map((_, i) => `${prefix}h${i}`)
@@ -1493,6 +1505,7 @@ export class Precompiler {
 		const factory: SiteFactory = {
 			params: [],
 			spans: [],
+			repeats: [],
 			inputs: [],
 			bindings: [],
 			imports: [],
@@ -1609,7 +1622,7 @@ export class Precompiler {
 		}
 		const passed = new Set<unknown>()
 		// one value read through two texts is passed through each, since the program can change one but not the other
-		const textsByPassed = new Map<unknown, Set<string>>()
+		const textsByPassed = new Map<unknown, Map<string, number>>()
 		// what a site reads only to check, which it needn't receive where nothing the program does changes the check
 		const unchecked = new Set<unknown>()
 		const calledByChecks = new Set(
@@ -1658,8 +1671,13 @@ export class Precompiler {
 						this.interpreter.sourceOf(value)?.[1] !== module
 				)
 			}
-			const texts = textsByPassed.get(reference.value) ?? new Set<string>()
-			if (!holes.length || texts.has(text)) continue
+			const texts =
+				textsByPassed.get(reference.value) ?? new Map<string, number>()
+			if (!holes.length) continue
+			if (texts.has(text)) {
+				factory.repeats.push([reference, texts.get(text)!])
+				continue
+			}
 			if (
 				factory.spans.length &&
 				reference.start < factory.spans[factory.spans.length - 1].end
@@ -1669,7 +1687,7 @@ export class Precompiler {
 				)
 			}
 			passed.add(reference.value)
-			textsByPassed.set(reference.value, texts.add(text))
+			textsByPassed.set(reference.value, texts.set(text, factory.spans.length))
 			factory.spans.push(reference)
 			factory.params.push(
 				hole ?

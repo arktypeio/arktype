@@ -52,6 +52,14 @@ const Incremented = type({ n: "number" }).pipe(
 	o => Object.assign(o, { id: crypto.randomUUID() })
 )
 
+const isShort = (s: string) => s.length < 3
+
+// a callback the site reads twice, which arktype receives through one parameter
+const Shorts = type({
+	a: type("string").narrow(isShort),
+	b: type("string").narrow(isShort)
+})
+
 let listed = 0
 
 // each writes its argument otherwise than Incremented, which its validator's must reproduce
@@ -136,6 +144,7 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 			Dated({ at: new Date(1) }),
 			Named({ name: " a ", tags: Object.freeze(["x"]) })
 		],
+		shorts: Shorts({ a: "x", b: "yyy" }).toString(),
 		positive: Positive(-1).toString(),
 		nested: [
 			HasPerson.allows({ person: { name: "a" } }),
