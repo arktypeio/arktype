@@ -303,6 +303,19 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			:	this.discriminant
 	}
 
+	// more branches are checked by a call, which keeps the body that would inline them short
+	compileCondition(js: NodeCompiler, data: string): string | undefined {
+		if (this.isBoolean) return `typeof ${data} === "boolean"`
+		if (this.branches.length > 4) return
+		const conditions: string[] = []
+		for (const branch of this.branches) {
+			const condition = branch.compileCondition?.(js, data)
+			if (condition === undefined) return
+			conditions.push(condition.includes("&&") ? `(${condition})` : condition)
+		}
+		return conditions.join(" || ") || "false"
+	}
+
 	compile(js: NodeCompiler): void {
 		const discriminant = this.compiledDiscriminant
 		if (!discriminant) return this.compileIndiscriminable(js)
@@ -402,15 +415,18 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				js.if(
 					branch.allowsRequiresTraversal ?
 						`${js.ref(allowsInBranch)}(ctx, ${js.ref(branch)}, data)`
-					:	js.invoke(branch),
+					:	(js.conditionOf(branch, "data") ?? js.invoke(branch)),
 					() => js.return(true)
 				)
 			}
 			js.return(false)
 		} else {
 			for (const branch of this.branches) {
-				js.if(js.invoke(branch, { kind: "Allows" }), () =>
-					js.return(branch.transforms ? invokeTransform(js, branch) : "data")
+				js.if(
+					branch.compileCondition?.(js, "data") ??
+						js.invoke(branch, { kind: "Allows" }),
+					() =>
+						js.return(branch.transforms ? invokeTransform(js, branch) : "data")
 				)
 			}
 			// unless it requires ctx, a root checks for unset instead of calling its Allows

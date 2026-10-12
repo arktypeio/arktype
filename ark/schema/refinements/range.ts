@@ -7,6 +7,7 @@ import {
 } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.ts"
 import type { nodeOfKind } from "../kinds.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseNodeDeclaration, BaseNodeInput } from "../shared/declare.ts"
 import type { RangeKind } from "./kinds.ts"
 
@@ -30,10 +31,6 @@ export abstract class BaseRange<
 
 	readonly boundOperandKind: OperandKindsByBoundKind[d["kind"]] =
 		operandKindsByBoundKind[this.kind]
-	readonly compiledActual: string =
-		this.boundOperandKind === "value" ? `data`
-		: this.boundOperandKind === "length" ? `data.length`
-		: `data.valueOf()`
 	readonly comparator: RelativeComparator = compileComparator(
 		this.kind,
 		this.exclusive
@@ -42,12 +39,16 @@ export abstract class BaseRange<
 	readonly expression: string = `${this.comparator} ${
 		this.boundOperandKind === "date" ? `d'${this.stringLimit}'` : this.rule
 	}`
-	readonly compiledCondition: string = `${this.compiledActual} ${this.comparator} ${this.numericLimit}`
-	readonly compiledNegation: string = `${this.compiledActual} ${
-		negatedComparators[this.comparator]
-	} ${this.numericLimit}`
 	readonly limitKind: LimitKind =
 		this.comparator["0"] === "<" ? "upper" : "lower"
+
+	compileCondition(js: NodeCompiler, data: string): string {
+		const actual =
+			this.boundOperandKind === "value" ? data
+			: this.boundOperandKind === "length" ? `${data}.length`
+			: `${data}.valueOf()`
+		return `${actual} ${this.comparator} ${this.numericLimit}`
+	}
 
 	get stringLimit(): string {
 		return this.boundOperandKind === "date" ?
@@ -144,13 +145,6 @@ export type RelativeComparator<kind extends LimitKind = LimitKind> = {
 	lower: ">" | ">="
 	upper: "<" | "<="
 }[kind]
-
-const negatedComparators = {
-	"<": ">=",
-	"<=": ">",
-	">": "<=",
-	">=": "<"
-} as const satisfies Record<RelativeComparator, RelativeComparator>
 
 export const boundKindPairsByLower: BoundKindPairsByLower = {
 	min: "max",

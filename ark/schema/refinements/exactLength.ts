@@ -1,5 +1,6 @@
 import { InternalPrimitiveConstraint } from "../constraint.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNodeInput,
@@ -62,8 +63,10 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
 		data.length === this.rule
 
-	readonly compiledCondition: string = `data.length === ${this.rule}`
-	readonly compiledNegation: string = `data.length !== ${this.rule}`
+	compileCondition(js: NodeCompiler, data: string): string {
+		return `${data}.length === ${this.rule}`
+	}
+
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 	readonly expression: string = `== ${this.rule}`
 }

@@ -4,6 +4,7 @@ import {
 	writeInvalidOperandMessage
 } from "../constraint.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
 	BaseNodeInput,
@@ -68,8 +69,10 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 
 	traverseAllows: TraverseAllows<number> = data => data % this.rule === 0
 
-	readonly compiledCondition: string = `data % ${this.rule} === 0`
-	readonly compiledNegation: string = `data % ${this.rule} !== 0`
+	compileCondition(js: NodeCompiler, data: string): string {
+		return `${data} % ${this.rule} === 0`
+	}
+
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.number.internal
 	readonly expression: string = `% ${this.rule}`
 }

@@ -4,6 +4,7 @@ import {
 	throwParseError,
 	type Domain as _Domain
 } from "@ark/util"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	implementNode,
@@ -92,29 +93,20 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 				data !== Number.NEGATIVE_INFINITY
 		:	data => domainOf(data) === this.domain
 
-	readonly compiledCondition: string =
-		this.domain === "object" ?
-			`((typeof data === "object" && data !== null) || typeof data === "function")`
-		: this.requiresNaNCheck && this.requiresInfinityCheck ?
-			"Number.isFinite(data)"
-		:	`typeof data === "${this.domain}"${
-				this.requiresNaNCheck ? " && !Number.isNaN(data)"
-				: this.requiresInfinityCheck ?
-					" && data !== Infinity && data !== -Infinity"
-				:	""
-			}`
-
-	readonly compiledNegation: string =
-		this.domain === "object" ?
-			`((typeof data !== "object" || data === null) && typeof data !== "function")`
-		: this.requiresNaNCheck && this.requiresInfinityCheck ?
-			"!Number.isFinite(data)"
-		:	`typeof data !== "${this.domain}"${
-				this.requiresNaNCheck ? " || Number.isNaN(data)"
-				: this.requiresInfinityCheck ?
-					" || data === Infinity || data === -Infinity"
-				:	""
-			}`
+	compileCondition(js: NodeCompiler, data: string): string {
+		return (
+			this.domain === "object" ?
+				`(typeof ${data} === "object" && ${data} !== null) || typeof ${data} === "function"`
+			: this.requiresNaNCheck && this.requiresInfinityCheck ?
+				`Number.isFinite(${data})`
+			:	`typeof ${data} === "${this.domain}"${
+					this.requiresNaNCheck ? ` && !Number.isNaN(${data})`
+					: this.requiresInfinityCheck ?
+						` && ${data} !== Infinity && ${data} !== -Infinity`
+					:	""
+				}`
+		)
+	}
 
 	readonly expression: string =
 		this.numberAllowsNaN || this.numberAllowsInfinity ?

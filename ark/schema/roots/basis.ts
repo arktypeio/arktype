@@ -6,8 +6,7 @@ import { BaseRoot, type InternalRootDeclaration } from "./root.ts"
 export abstract class InternalBasis<
 	d extends InternalRootDeclaration = InternalRootDeclaration
 > extends BaseRoot<d> {
-	abstract compiledCondition: string
-	abstract compiledNegation: string
+	abstract override compileCondition(js: NodeCompiler, data: string): string
 	declare structure: undefined
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
@@ -31,8 +30,6 @@ export abstract class InternalBasis<
 	}
 
 	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
-		else
-			js.if(this.compiledNegation, () => js.line(js.error(this.errorContext!)))
+		js.checkLeaf(this)
 	}
 }

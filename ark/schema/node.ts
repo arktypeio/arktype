@@ -558,6 +558,8 @@ export abstract class BaseNode<
 	declare traverseTransform: TraverseTransform<d["prerequisite"]>
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
+	// undefined where checking data takes more than one expression
+	compileCondition?(js: NodeCompiler, data: string): string | undefined
 
 	_description: string | undefined
 	get description(): string {

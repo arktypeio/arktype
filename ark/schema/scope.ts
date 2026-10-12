@@ -876,7 +876,7 @@ const compileContent = (
 		const key =
 			s.opts.keyOf?.(value) ??
 			// arktype's own pattern instance is keyed by its source, as no program can write it, unlike any other Date or RegExp
-			(node.hasKind("pattern") && value === node.instance ?
+			(value instanceof RegExp && isPatternInstanceIn(node, value) ?
 				`${value}`
 			:	undefined)
 		if (key !== undefined) return key
@@ -922,6 +922,16 @@ const compileContent = (
 		index: s.reached.length,
 		lowLink: s.reached.length
 	}
+}
+
+// a parent writing its patterns' checks in its own body holds their instances
+const isPatternInstanceIn = (node: BaseNode, value: RegExp): boolean => {
+	for (const id in node.referencesById) {
+		const reference = node.referencesById[id]
+		if (reference.hasKind("pattern") && reference.instance === value)
+			return true
+	}
+	return false
 }
 
 // a cycle's members are ordered by content, so their names don't depend on which was reached first
@@ -1005,9 +1015,8 @@ const writePrecompiledUnit = (
 	const variablesByNode = new Map<BaseNode, string>([[root, "n0"]])
 	const variablesById: Record<string, string> = { [root.id]: "n0" }
 	const statements: string[] = []
-	// each node is read through the edges referencesById is collected from, up to the roots whose own units bind them
+	// each node is read through the edges referencesById is collected from, including inside roots whose checks a parent writes in its own body
 	for (let i = 0; i < nodes.length; i++) {
-		if (i !== 0 && nodes[i].isRoot()) continue
 		for (const key of ["children", "referencedBesidesChildren"] as const) {
 			const referenced = nodes[i][key]
 			for (let j = 0; j < referenced.length; j++) {

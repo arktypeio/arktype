@@ -157,7 +157,6 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 				"alias",
 				"domain",
 				"intersection",
-				"proto",
 				"union",
 				"unit",
 				"validators"

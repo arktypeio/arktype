@@ -89,8 +89,7 @@ export abstract class InternalPrimitiveConstraint<
 	d extends Constraint.Declaration
 > extends BaseConstraint<d> {
 	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
-	abstract readonly compiledCondition: string
-	abstract readonly compiledNegation: string
+	abstract override compileCondition(js: NodeCompiler, data: string): string
 
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx))
@@ -98,9 +97,7 @@ export abstract class InternalPrimitiveConstraint<
 	}
 
 	compile(js: NodeCompiler): void {
-		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
-		else
-			js.if(this.compiledNegation, () => js.line(js.error(this.errorContext!)))
+		js.checkLeaf(this)
 	}
 
 	private _errorContext: d["errorContext"] | undefined

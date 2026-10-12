@@ -810,7 +810,7 @@ export class StandaloneArtifact {
 					}
 				}
 			}
-		} while (this.collectMetaTypes())
+		} while (this.collectMetaTypes() || this.collectDefaultTypes())
 		this.comparedRoots = this.roots
 		for (const root of this.roots) {
 			// the runtime's own onFail is the one the program configures, which only a validator's meta overrides
@@ -821,23 +821,20 @@ export class StandaloneArtifact {
 				throwParseError(writeUnprecompilableMessage("onFail"))
 		}
 		for (const unit of this.units) {
-			for (const node of [
-				...unit.declared,
-				...unit.roots.flatMap(root => root.references)
-			])
+			for (const node of writtenNodesOf(unit)) {
 				this.metas.add(node.meta)
-		}
-		for (const node of this.declared) {
-			if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
-			else if (node.hasKind("pattern")) this.patternInstances.add(node.instance)
-			else if (node.hasKind("optional") || node.hasKind("sequence"))
-				collectDefaults(node, this.defaultsByMorph)
-			else if (
-				node.hasKind("unit") &&
-				hasDomain(node.unit, "object") &&
-				!isDate(node.unit)
-			)
-				this.objectUnits.add(node.unit)
+				if (node.hasKind("structure")) this.keyLookups.add(node.propsByKey)
+				else if (node.hasKind("pattern"))
+					this.patternInstances.add(node.instance)
+				else if (node.hasKind("optional") || node.hasKind("sequence"))
+					collectDefaults(node, this.defaultsByMorph)
+				else if (
+					node.hasKind("unit") &&
+					hasDomain(node.unit, "object") &&
+					!isDate(node.unit)
+				)
+					this.objectUnits.add(node.unit)
+			}
 		}
 	}
 
@@ -1114,7 +1111,10 @@ export class StandaloneArtifact {
 				`${holes.length ? `const ${holesName} = ` : ""}${this.receiverOf(value, id, label)}(${expression})`
 			)
 			// a class a Module, Scope or Generic holds is related to the others this artifact's Types hold
-			const related = isType ? [value, ...value.references] : this.declared
+			const related =
+				isType ?
+					[value, ...value.references]
+				:	this.units.flatMap(writtenNodesOf)
 			const protos = related.flatMap(node =>
 				node.hasKind("proto") ? [node.proto] : []
 			)
@@ -1364,8 +1364,24 @@ export class StandaloneArtifact {
 			} else if (isPlainLiteral(value))
 				for (const v of Object.values(value)) collect(v)
 		}
-		for (const node of this.declared)
-			for (const v of Object.values(node.meta)) collect(v)
+		for (const unit of this.units) {
+			for (const node of writtenNodesOf(unit))
+				for (const v of Object.values(node.meta)) collect(v)
+		}
+		return this.validatorNamesByRoot.size > typeCount
+	}
+
+	// a default is checked by its value's validator, which a parent checking that value inline doesn't give traversals of its own
+	collectDefaultTypes(): boolean {
+		const typeCount = this.validatorNamesByRoot.size
+		for (const unit of this.units) {
+			for (const node of writtenNodesOf(unit)) {
+				if (node.hasKind("optional") && node.defaultValueMorph)
+					this.collectType(node.value)
+				else if (node.hasKind("sequence"))
+					for (const [value] of node.defaultables ?? []) this.collectType(value)
+			}
+		}
 		return this.validatorNamesByRoot.size > typeCount
 	}
 
@@ -2534,7 +2550,7 @@ const assertDescribed = (root: BaseRoot): void => {
 		}
 	}
 	for (const unit of rootUnitsOf(root)) {
-		for (const node of unit.declared) {
+		for (const node of writtenNodesOf(unit)) {
 			for (const k of describingKeys) {
 				const writer = node.meta[k]
 				if (
@@ -2733,6 +2749,12 @@ const isBuiltAtRead = holdingOf(
 // a RegExp, which an engine lacking its syntax or flags can't create
 const isFallible = holdingOf(isRegExpObject)
 
+// a unit writes the checks of nodes it doesn't declare too, like a leaf its parent checks inline
+const writtenNodesOf = (unit: RootUnit): BaseNode[] => [
+	...unit.declared,
+	...unit.roots.flatMap(root => root.references)
+]
+
 const declares = (
 	root: BaseRoot,
 	predicate: (node: BaseNode) => boolean
@@ -2772,7 +2794,7 @@ export const holdsWritable = (
 		const units = rootUnitsOf(value)
 		// only traversal reads a pattern's own RegExp
 		for (const unit of units) {
-			for (const node of unit.declared)
+			for (const node of writtenNodesOf(unit))
 				if (node.hasKind("pattern")) seen.add(node.instance)
 		}
 		return [value.meta, ...units.flatMap(unit => unit.refs)].some(held =>

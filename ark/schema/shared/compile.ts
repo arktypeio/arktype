@@ -300,7 +300,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		arg: string = this.data
 	): this {
 		if (this.traversalKind !== "Apply" || !member.includesAlias)
-			return this.line(this.invoke(node, { arg }))
+			return this.check(node, { arg })
 		return this.invokeResolution(node, member.id, arg)
 	}
 
@@ -353,9 +353,9 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	// a standalone validator's issue holds what its node describes rather than its context, so its site holds only that
-	error(context: BaseErrorContext, key?: string): string {
+	error(context: BaseErrorContext, key?: string, data = "data"): string {
 		if (!this.raisesIssues)
-			return `ctx.errorFromNodeContext(${this.errorContext(context)}, data)`
+			return `ctx.errorFromNodeContext(${this.errorContext(context)}, ${data})`
 		let site = sitesByContext.get(context)
 		if (!site) {
 			const code = context.code as ArkErrorCode
@@ -372,7 +372,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			)
 			sitesByContext.set(context, site)
 		}
-		return `ctx.failsAt(${this.ref(site)}, data${key === undefined ? "" : `, ${key}`})`
+		return `ctx.failsAt(${this.ref(site)}, ${data}${key === undefined ? "" : `, ${key}`})`
 	}
 
 	errorContext(errorContext: BaseErrorContext): string {
@@ -408,12 +408,25 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		accessExpression: string,
 		node: BaseNode
 	): this {
-		if (
+		const checksAllowsFirst =
 			this.traversalKind === "Apply" &&
 			(this.loopDepth > 0 ||
 				(node.hasKind("union") && !node.compiledDiscriminant)) &&
 			isDecidedByAllows(node)
-		) {
+		const condition =
+			checksAllowsFirst ?
+				node.compileCondition?.(this, accessExpression)
+			:	this.conditionOf(node, accessExpression)
+		if (condition !== undefined) {
+			return this.if(`!(${condition})`, () =>
+				this.traversalKind === "Allows" ?
+					this.return(false)
+				:	this.line(`${this.ctx}.path.push(${keyExpression})`)
+						.fail(node, accessExpression)
+						.line(`${this.ctx}.path.pop()`)
+			)
+		}
+		if (checksAllowsFirst) {
 			return this.if(
 				`!${this.invoke(node, { arg: accessExpression, kind: "Allows" })}`,
 				() =>
@@ -562,9 +575,49 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	check(node: BaseNode, opts?: InvokeOptions): this {
+		const arg = opts?.arg ?? this.data
+		const condition = opts?.kind ? undefined : this.conditionOf(node, arg)
+		if (condition !== undefined) {
+			return this.if(`!(${condition})`, () =>
+				this.traversalKind === "Allows" ?
+					this.return(false)
+				:	this.fail(node, arg)
+			)
+		}
 		return this.traversalKind === "Allows" ?
 				this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
 			:	this.line(this.invoke(node, opts))
+	}
+
+	// a composite's Apply checks its condition again, so Apply writes it only where it would call Allows first
+	conditionOf(node: BaseNode, arg: string): string | undefined {
+		return (
+				this.traversalKind === "Transform" ||
+					(this.traversalKind === "Apply" &&
+						node.hasKindIn("intersection", "union"))
+			) ?
+				undefined
+			:	node.compileCondition?.(this, arg)
+	}
+
+	checkLeaf(node: BaseNode): this {
+		const condition = node.compileCondition!(this, this.data)!
+		return this.traversalKind === "Allows" ?
+				this.return(condition)
+			:	this.if(`!(${condition})`, () => this.fail(node, this.data))
+	}
+
+	// a leaf's condition is its whole check, so it reports its error without checking again
+	fail(node: BaseNode, arg: string): this {
+		return this.line(
+			node.hasKindIn("intersection", "union") ?
+				this.invoke(node, { arg })
+			:	this.error(
+					(node as never as { errorContext: BaseErrorContext }).errorContext,
+					undefined,
+					arg
+				)
+		)
 	}
 }
 

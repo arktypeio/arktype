@@ -88,14 +88,15 @@ export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 	}
 
 	// a ref rather than a literal, so a pattern the engine rejects fails its own definition
-	compile(js: NodeCompiler): void {
+	compileCondition(js: NodeCompiler, data: string): string {
 		const instance = js.ref(this.instance)
-		const condition =
-			this.resetsLastIndex ?
-				`(${instance}.lastIndex = 0, ${instance}.test(data))`
-			:	`${instance}.test(data)`
-		if (js.traversalKind === "Allows") js.return(condition)
-		else js.if(`!${condition}`, () => js.line(js.error(this.errorContext)))
+		return this.resetsLastIndex ?
+				`(${instance}.lastIndex = 0, ${instance}.test(${data}))`
+			:	`${instance}.test(${data})`
+	}
+
+	compile(js: NodeCompiler): void {
+		js.checkLeaf(this)
 	}
 
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.string.internal

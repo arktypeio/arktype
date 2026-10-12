@@ -80,9 +80,6 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	builtinName: BuiltinObjectKind | null = getBuiltinNameOfConstructor(
 		this.proto
 	)
-	serializedConstructor: string =
-		this.builtinName ?? registeredReference(this.proto)
-
 	private readonly requiresInvalidDateCheck =
 		this.proto === Date && !this.dateAllowsInvalid
 
@@ -99,20 +96,13 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 			data => data instanceof (globalThis as never)[this.builtinName!]
 		:	data => data instanceof this.proto
 
-	compiledCondition =
-		this.isArrayProto ? `Array.isArray(data)` : (
-			`data instanceof ${this.serializedConstructor}${this.requiresInvalidDateCheck ? ` && data.toString() !== "Invalid Date"` : ""}`
-		)
-	compiledNegation = `!(${this.compiledCondition})`
-
-	compile(js: NodeCompiler): void {
-		const condition =
+	compileCondition(js: NodeCompiler, data: string): string {
+		return (
 			this.requiresInvalidDateCheck ?
-				`data instanceof Date && ${js.ref(isValidDate)}(data)`
-			: this.builtinName ? this.compiledCondition
-			: `data instanceof ${js.ref(this.proto)}`
-		if (js.traversalKind === "Allows") js.return(condition)
-		else js.if(`!(${condition})`, () => js.line(js.error(this.errorContext!)))
+				`${data} instanceof Date && ${js.ref(isValidDate)}(${data})`
+			: this.isArrayProto ? `Array.isArray(${data})`
+			: `${data} instanceof ${this.builtinName ?? js.ref(this.proto)}`
+		)
 	}
 
 	expression: string =

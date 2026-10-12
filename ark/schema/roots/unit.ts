@@ -65,25 +65,15 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 			JSON.stringify(this.compiledValue)
 		:	compileSerializedValue(this.unit)
 
-	compiledCondition: string = compileEqualityCheck(
-		this.unit,
-		this.serializedValue
-	)
-	compiledNegation: string = compileEqualityCheck(
-		this.unit,
-		this.serializedValue,
-		"negated"
-	)
-
-	compile(js: NodeCompiler): void {
-		if (
-			isDate(this.unit) ||
-			(!hasDomain(this.unit, "object") && typeof this.unit !== "symbol")
+	compileCondition(js: NodeCompiler, data: string): string {
+		return (
+			isDate(this.unit) ?
+				`${data} instanceof Date && ${data}.toISOString() === ${this.serializedValue}`
+			: Number.isNaN(this.unit) ? `Number.isNaN(${data})`
+			: hasDomain(this.unit, "object") || typeof this.unit === "symbol" ?
+				`${data} === ${js.ref(this.unit)}`
+			:	`${data} === ${this.serializedValue}`
 		)
-			return super.compile(js)
-		const unit = js.ref(this.unit)
-		if (js.traversalKind === "Allows") js.return(`data === ${unit}`)
-		else js.if(`data !== ${unit}`, () => js.line(js.error(this.errorContext!)))
 	}
 
 	expression: string =
@@ -108,19 +98,4 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 export const Unit = {
 	implementation,
 	Node: UnitNode
-}
-
-const compileEqualityCheck = (
-	unit: unknown,
-	serializedValue: JsonPrimitive,
-	negated?: "negated"
-) => {
-	if (isDate(unit)) {
-		const condition = `data instanceof Date && data.toISOString() === ${serializedValue}`
-		return negated ? `!(${condition})` : condition
-	}
-
-	if (Number.isNaN(unit)) return `${negated ? "!" : ""}Number.isNaN(data)`
-
-	return `data ${negated ? "!" : "="}== ${serializedValue}`
 }
