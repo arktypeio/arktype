@@ -1,3 +1,8 @@
 import { observe } from "./observe.ts"
 
-console.log(JSON.stringify(await observe(), null, "\t"))
+// each mismatch the program catches, which shadow mode raises again where it can't
+const reported: string[] = []
+process.on("uncaughtException", e => reported.push(String(e)))
+const observed = await observe()
+await new Promise(resolve => setTimeout(resolve))
+console.log(JSON.stringify({ ...observed, reported }, null, "\t"))

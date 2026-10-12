@@ -1354,15 +1354,7 @@ export class Precompiler {
 			start = spans[i].end
 		}
 		original += module.textOf({ start, end: site.end })
-		// an input the site reads by name, like `User`, is a parameter of that name, so arktype composes its own Type
 		const params = spans.map((_, i) => `${prefix}h${i}`)
-		for (const input of factory?.inputs ?? []) {
-			params.push(
-				/^[\w$]+$/.test(input) && !params.includes(input) ?
-					input
-				:	`${prefix}h${params.length}`
-			)
-		}
 		const create = index === undefined ? local : `${local}.bind(null, ${index})`
 		return `${prefix}shadow(${JSON.stringify(`${module.positionOf(site)}  ${module.snippetOf(site)}`)}, ${create}, (${params.join(", ")}) => (${original}), [${callbacks.join(", ")}]`
 	}

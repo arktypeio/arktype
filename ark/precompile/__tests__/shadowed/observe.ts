@@ -43,10 +43,14 @@ let narrowed = 0
 
 const Counted = type("string").narrow(() => ++narrowed > 0)
 
-const Incremented = type({ n: "number" }).pipe(o => {
-	o.n++
-	return o
-})
+// each writes its argument, so its validator's must be written as arktype's left it
+const Incremented = type({ n: "number" }).pipe(
+	o => {
+		o.n++
+		return o
+	},
+	o => Object.assign(o, { id: crypto.randomUUID() })
+)
 
 const Positive = type("number").narrow(
 	(n, ctx) => n > 0 || ctx.reject({ expected: "positive" })
@@ -107,13 +111,21 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 		unbaked: outcomeOf(() => JSON.stringify(jsonOf(Person))),
 		stamped: [uuid.test(stamped.id), uuid.test(stamped.name.slice(2))],
 		narrowed: [Counted("a"), narrowed],
-		incremented: [Incremented(incremented) === incremented, incremented],
+		incremented: [
+			Incremented(incremented) === incremented,
+			incremented.n,
+			uuid.test((incremented as { id?: string }).id!)
+		],
 		positive: Positive(-1).toString(),
 		nested: [
 			HasPerson.allows({ person: { name: "a" } }),
 			HasPerson.allows({ person: {} })
 		],
-		writer: [Long("ab").toString(), Long.meta.expected === writeLong],
+		writer: [
+			Long("ab").toString(),
+			outcomeOf(() => Long.assert("ab")),
+			Long.meta.expected === writeLong
+		],
 		uncopied: Bumped(new Counter())
 	}
 }

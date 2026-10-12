@@ -2,6 +2,10 @@
 import { shadow } from "@ark/precompile/shadow"
 import { type } from "arktype"
 
+// each mismatch, which shadow mode raises again where the program can't catch it
+const reported: string[] = []
+process.on("uncaughtException", e => reported.push(String(e)))
+
 const outcomeOf = (run: () => unknown) => {
 	try {
 		return run()
@@ -31,6 +35,25 @@ const called = shadow(
 	isA
 ) as type.Any
 
+const isFirst = (s: string, ctx: { hasError: () => boolean }) =>
+	!ctx.hasError() && s.length > 0
+
+// a validator whose ctx holds an error where arktype's doesn't as it calls isFirst
+const checked = shadow(
+	"checked",
+	(f: unknown) =>
+		type("string").narrow(
+			(s, ctx) => (
+				ctx.reject("an earlier problem"),
+				(f as typeof isFirst)(s, ctx)
+			)
+		),
+	(f: unknown) =>
+		type("string").narrow((s, ctx) => (f as typeof isFirst)(s, ctx)),
+	[0],
+	isFirst
+) as type.Any
+
 const shared = shadow(
 	"shared",
 	() => type("object").pipe(o => ({ a: o, b: { ...o } })),
@@ -52,12 +75,23 @@ const bumped = shadow(
 	[]
 ) as type.Any
 
-console.log(
-	JSON.stringify({
-		validated: outcomeOf(() => validated(2)),
-		called: outcomeOf(() => called("abc")),
-		shared: outcomeOf(() => shared({})),
-		length: outcomeOf(() => length("abc")),
-		bumped: outcomeOf(() => bumped(new Counter()))
-	})
-)
+const caught = {
+	validated: outcomeOf(() => validated(2)),
+	called: outcomeOf(() => called("abc")),
+	checked: outcomeOf(() => checked("abc")),
+	shared: outcomeOf(() => shared({})),
+	length: outcomeOf(() => length("abc")),
+	bumped: outcomeOf(() => bumped(new Counter())),
+	// as a fallback or `expect(...).toThrow()` would
+	swallowed: (() => {
+		try {
+			return validated.assert(2)
+		} catch {
+			return "fallback"
+		}
+	})()
+}
+
+await new Promise(resolve => setTimeout(resolve))
+
+console.log(JSON.stringify({ ...caught, reported }))

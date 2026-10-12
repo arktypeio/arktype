@@ -1,7 +1,12 @@
-import { hasArkKind, InternalTraversal, type BaseRoot } from "@ark/schema"
+import {
+	hasArkKind,
+	InternalTraversal,
+	type BaseRoot,
+	type Traversal
+} from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { shareConfig } from "@ark/schema/runtime"
-import { hasDomain, noSuggest, printable, throwError } from "@ark/util"
+import { hasDomain, noSuggest, printable } from "@ark/util"
 import { configure } from "arktype/internal/config.js"
 
 // a shadowed module imports this before arktype, so claimEntry lets arktype and the runtime load in either order
@@ -44,7 +49,7 @@ const inArktype = <t>(run: () => t): t => {
 }
 
 // e.g. `type(fields)` with `fields = { name: Name }`, whose factory reads `fields.name`
-const swapped = (
+const swappedOf = (
 	value: unknown,
 	byShadowed: WeakMap<object, unknown>,
 	seen: Map<object, unknown>
@@ -62,7 +67,7 @@ const swapped = (
 	for (const k of Reflect.ownKeys(descriptors)) {
 		const descriptor = descriptors[k as never] as PropertyDescriptor
 		if (!("value" in descriptor)) continue
-		const result = swapped(descriptor.value, byShadowed, seen)
+		const result = swappedOf(descriptor.value, byShadowed, seen)
 		if (result === descriptor.value) continue
 		descriptor.value = result
 		isSwapped = true
@@ -84,28 +89,17 @@ export const shadow = (
 	callbacks: readonly number[],
 	...args: unknown[]
 ): unknown => {
-	const originals = new Map<object, unknown>()
-	const counterparts = new Map<object, unknown>()
+	const passed = args.map((arg, i) =>
+		callbacks.includes(i) ? callbackOf(arg) : arg
+	)
+	const swappedBy = (byShadowed: WeakMap<object, unknown>) => {
+		const seen = new Map<object, unknown>()
+		return passed.map(arg => swappedOf(arg, byShadowed, seen))
+	}
 	return shadowOf(
 		site,
-		() =>
-			inArktype(() =>
-				define(
-					...args.map((arg, i) =>
-						callbacks.includes(i) ?
-							callbackOf(arg)
-						:	swapped(arg, originalByShadowed, originals)
-					)
-				)
-			),
-		() =>
-			precompile(
-				...args.map((arg, i) =>
-					callbacks.includes(i) ?
-						callbackOf(arg)
-					:	swapped(arg, precompiledByShadowed, counterparts)
-				)
-			)
+		() => inArktype(() => define(...swappedBy(originalByShadowed))),
+		() => precompile(...swappedBy(precompiledByShadowed))
 	)
 }
 
@@ -122,18 +116,19 @@ const shadowOf = (
 ): unknown => {
 	const defined = outcomeOf(define)
 	const precompiled = outcomeOf(precompile)
-	const original = "value" in defined ? defined.value : undefined
+	// e.g. `type(User, "|", Num).exclude(Num)`, where arktype returns the Proxy it held
+	const original =
+		"value" in defined ?
+			(originalByShadowed.get(defined.value as never) ?? defined.value)
+		:	undefined
 	const pair: Pair = {
 		site,
 		original,
 		counterpart: "value" in precompiled ? precompiled.value : undefined
 	}
 	const isType = hasArkKind(original, "root")
-	const isHeld =
-		hasArkKind(original, "scope") || hasArkKind(original, "generic")
 	// e.g. what `User.toJsonSchema()` returns, which a build bakes
-	const isData =
-		!isHeld && !hasArkKind(original, "module") && typeof original !== "function"
+	const isData = !isHeld(original) && typeof original !== "function"
 	const observeCreation = (outcome: Outcome) =>
 		"thrown" in outcome ? { threw: thrownOf(outcome.thrown) }
 		: isType ? attributesOf(outcome.value)
@@ -147,10 +142,11 @@ const shadowOf = (
 	)
 	if ("thrown" in defined) throw defined.thrown
 	if (isData) return original
-	// e.g. a Scope, whose validator's factory receives its own
-	if (isHeld) {
-		precompiledByShadowed.set(original as object, pair.counterpart)
-		return original
+	const nodes =
+		isType ? inArktype(() => [original, ...original.references]) : []
+	for (const value of nodes.flatMap(node => Object.values(node.meta))) {
+		if (typeof value === "function")
+			writers.add(callbackByWrapper.get(value) ?? value)
 	}
 	const byCounterpart = shadowedByPair.get(original as object) ?? new WeakMap()
 	shadowedByPair.set(original as object, byCounterpart)
@@ -159,7 +155,7 @@ const shadowOf = (
 	const shadowed = new Proxy(
 		original as object,
 		isType ? typeHandlerOf(pair as Pair & { original: BaseRoot })
-		: hasArkKind(original, "module") ? moduleHandlerOf(pair)
+		: isHeld(original) ? heldHandlerOf(pair)
 			// e.g. a TypedFn, whose implementation is a callback
 		: {
 				apply: (target, self, args) =>
@@ -211,7 +207,11 @@ const typeHandlerOf = (
 			introspect(pair, path, args)
 	const memberOf = (target: BaseRoot, k: PropertyKey): unknown => {
 		if (validatedMembers.includes(k as never)) return validator(k as string)
-		if (introspectedMembers.includes(k as never))
+		const counterpart = pair.counterpart as Record<PropertyKey, unknown>
+		if (
+			introspectedMembers.includes(k as never) &&
+			counterpart[k] !== undefined
+		)
 			return introspector(k as string)
 		if (k === "meta") {
 			// arktype holds the recorder of each function the program passed
@@ -220,33 +220,22 @@ const typeHandlerOf = (
 				meta[k] = callbackByWrapper.get(meta[k] as never) ?? meta[k]
 			return Object.freeze(meta)
 		}
-		const counterpart = pair.counterpart as Record<PropertyKey, unknown>
 		if (k === "~standard") {
-			const standard: Record<string, unknown> = {}
-			for (const key in counterpart["~standard"] as object) {
-				standard[key] =
-					key === "validate" ? validator("~standard", "validate")
-					: key === "jsonSchema" ?
-						{
-							input: introspector("~standard", "jsonSchema", "input"),
-							output: introspector("~standard", "jsonSchema", "output")
-						}
-					:	(target["~standard"] as never)[key]
+			const { validate, jsonSchema, ...standard } = counterpart[
+				"~standard"
+			] as Record<string, unknown>
+			return {
+				...standard,
+				validate: validate && validator("~standard", "validate"),
+				...(jsonSchema !== undefined && {
+					jsonSchema: {
+						input: introspector("~standard", "jsonSchema", "input"),
+						output: introspector("~standard", "jsonSchema", "output")
+					}
+				})
 			}
-			return standard
 		}
-		const value = Reflect.get(target, k, target)
-		const read = outcomeOf(() => counterpart[k])
-		if (value !== undefined && ("thrown" in read || read.value === undefined)) {
-			fail(
-				pair,
-				`reading ${String(k)}`,
-				printable(typeof value),
-				"thrown" in read ? `throws ${thrownOf(read.thrown)}` : "undefined",
-				"since its validator lacks it"
-			)
-		}
-		return boundTo(target, value)
+		return boundTo(target, checkedMember(pair, target, k))
 	}
 	return {
 		apply: (target, self, args) =>
@@ -261,6 +250,24 @@ const typeHandlerOf = (
 			return member
 		}
 	}
+}
+
+// a member arktype has, which the validator must have too
+const checkedMember = (pair: Pair, target: object, k: PropertyKey): unknown => {
+	const value = Reflect.get(target, k, target)
+	const read = outcomeOf(
+		() => (pair.counterpart as Record<PropertyKey, unknown>)[k]
+	)
+	if (value !== undefined && ("thrown" in read || read.value === undefined)) {
+		fail(
+			pair,
+			`reading ${String(k)}`,
+			printable(typeof value),
+			"thrown" in read ? `throws ${thrownOf(read.thrown)}` : "undefined",
+			"since its validator lacks it"
+		)
+	}
+	return value
 }
 
 // e.g. `~standard.jsonSchema.input`, called on the object holding it where args are given
@@ -283,26 +290,41 @@ const boundTo = (target: object, value: unknown) =>
 		})
 	:	value
 
-const moduleHandlerOf = (pair: Pair): ProxyHandler<any> => {
+// e.g. a Module, a Scope or a Generic, whose members arktype's have only where its validator's do
+const heldHandlerOf = (pair: Pair): ProxyHandler<any> => {
 	const membersByKey: Record<PropertyKey, unknown> = Object.create(null)
 	return {
 		get: (target, k) => {
-			const value = Reflect.get(target, k)
-			if (
-				arktypeDepth ||
-				(!hasArkKind(value, "root") && !hasArkKind(value, "module"))
-			)
-				return value
+			if (arktypeDepth) return Reflect.get(target, k)
+			const value = inArktype(() => checkedMember(pair, target, k))
+			if (!hasArkKind(value, "root") && !isHeld(value))
+				return boundTo(target, value)
 			return (membersByKey[k] ??= shadowOf(
 				`${pair.site}.${String(k)}`,
 				() => value,
 				() => (pair.counterpart as Record<PropertyKey, unknown>)[k]
 			))
-		}
+		},
+		// e.g. a Generic, which a validator may hold as a reference it can't call
+		apply: (target, self, args) =>
+			arktypeDepth || typeof pair.counterpart === "function" ?
+				inArktype(() => Reflect.apply(target, self, args))
+			:	fail(
+					pair,
+					"calling it",
+					printable("function"),
+					printable(typeof pair.counterpart),
+					"since its validator can't be called"
+				)
 	}
 }
 
-// a member read without args, like json, or called with them, compared without arktype's suffix for a function registered under a name another already has, which §2 of the plan leaves out
+const isHeld = (value: unknown) =>
+	hasArkKind(value, "module") ||
+	hasArkKind(value, "scope") ||
+	hasArkKind(value, "generic")
+
+// a member read without args, like json, or called with them, compared without arktype's registration suffixes
 const introspect = (pair: Pair, path: string[], args?: unknown[]): unknown => {
 	const read = (t: unknown) => readAt(t, path, args)
 	const observed = (outcome: Outcome) =>
@@ -335,13 +357,16 @@ interface Call {
 	args: unknown[]
 	// each argument as arktype passed it, which its validator must pass too
 	copies: unknown[] | undefined
-	// arktype's objects by their copies, its arguments' before the call and its result's after
+	// arktype's objects by their copies before the call, then after it
 	copied: Map<object, unknown>
-	path: PropertyKey[] | undefined
+	after: Map<object, unknown>
+	// each argument the call wrote, as it left it
+	written: unknown[]
+	ctx: { path: PropertyKey[]; errorCount: number; data: unknown } | undefined
 	outcome: Outcome
-	// a call writing an argument or an error to its ctx, which the validator's own copy and ctx need too
-	isRepeated: boolean
 	result: unknown
+	// a call adding an error through its ctx, which the validator's ctx needs too
+	isRepeated: boolean
 }
 
 interface Validation {
@@ -362,6 +387,9 @@ const wrapperByCallback = new WeakMap<Function, Function>()
 
 const callbackByWrapper = new WeakMap<object, Function>()
 
+// e.g. a meta's `message`, with which each side writes its own errors
+const writers = new WeakSet<Function>()
+
 // one per function, so its facts, like `name`, `length` and identity, are the program's
 const callbackOf = (value: unknown): unknown => {
 	if (typeof value !== "function") return value
@@ -369,7 +397,8 @@ const callbackOf = (value: unknown): unknown => {
 	if (!wrapper) {
 		wrapper = new Proxy(value, {
 			apply: (target, receiver, args) =>
-				!validation ? settle(callOf(target, receiver, args))
+				!validation || writers.has(target) ?
+					settle(outcomeOfCall(target, receiver, args))
 				: validation.phase === "record" ?
 					record(validation, target, receiver, args)
 				:	replay(validation, target, receiver, args)
@@ -381,7 +410,11 @@ const callbackOf = (value: unknown): unknown => {
 }
 
 // the program's code, where a Type it reads compares again and a validation it runs is recorded on its own
-const callOf = (callee: Function, receiver: unknown, args: unknown[]) => {
+const outcomeOfCall = (
+	callee: Function,
+	receiver: unknown,
+	args: unknown[]
+) => {
 	const outerValidation = validation
 	const outerDepth = arktypeDepth
 	validation = undefined
@@ -394,8 +427,19 @@ const callOf = (callee: Function, receiver: unknown, args: unknown[]) => {
 	}
 }
 
-const ctxOf = (args: unknown[]) =>
-	args.find((arg): arg is InternalTraversal => arg instanceof InternalTraversal)
+// what a callback can read of its ctx, which a replayed call's must hold too
+const ctxStateOf = (args: unknown[], copied?: Map<object, unknown>) => {
+	const ctx = args.find(
+		(arg): arg is Traversal => arg instanceof InternalTraversal
+	)
+	return (
+		ctx && {
+			path: [...ctx.path],
+			errorCount: ctx.currentErrorCount,
+			data: copied?.get(ctx.data as never) ?? ctx.data
+		}
+	)
+}
 
 const record = (
 	current: Validation,
@@ -403,30 +447,32 @@ const record = (
 	receiver: unknown,
 	args: unknown[]
 ): unknown => {
-	const ctx = ctxOf(args)
-	const errorCount = ctx?.currentErrorCount
 	const copied = new Map<object, unknown>()
 	const copies =
 		current.isCopied ? args.map(arg => copyOf(arg, copied)) : undefined
-	const outcome = callOf(callee, receiver, args)
-	const isRepeated =
-		ctx?.currentErrorCount !== errorCount ||
-		!!copies?.some(
-			(copy, i) => copy !== uncopyable && !isAlike(copy, args[i], new Map())
-		)
+	const ctx = ctxStateOf(args, copied)
+	const outcome = outcomeOfCall(callee, receiver, args)
+	const after = new Map<object, unknown>()
+	const written = (copies ?? []).flatMap((copy, i) =>
+		copy !== uncopyable && !isAlike(copy, args[i], new Map()) ?
+			[copyOf(args[i], after)]
+		:	[]
+	)
 	current.calls.push({
 		callee,
 		receiver,
 		args,
 		copies,
 		copied,
-		path: ctx && [...ctx.path],
+		after,
+		written,
+		ctx,
 		outcome,
-		isRepeated,
 		result:
-			"value" in outcome && copies && !isRepeated ?
-				copyOf(outcome.value, copied)
-			:	uncopyable
+			"value" in outcome && copies ? copyOf(outcome.value, after) : uncopyable,
+		isRepeated:
+			ctxStateOf(args)?.errorCount !== ctx?.errorCount ||
+			written.includes(uncopyable)
 	})
 	return settle(outcome)
 }
@@ -438,29 +484,26 @@ const replay = (
 	args: unknown[]
 ): unknown => {
 	const call = current.calls[current.replayed++]
-	const ctx = ctxOf(args)
-	// the validator's objects by the copies of arktype's they stand for, like the input reached through an argument
-	const counterpartsByCopy = new Map<object, unknown>()
-	for (const [original, copy] of call?.copied ?? []) {
-		if (current.counterparts.has(original))
-			counterpartsByCopy.set(copy as object, current.counterparts.get(original))
-	}
+	const ctx = ctxStateOf(args)
+	const { counterparts } = current
+	relate(counterparts, call?.copied)
+	// e.g. an argument's copy, as arktype passed it before the call wrote it
 	const corresponds = (
 		original: unknown,
 		counterpart: unknown,
 		copy?: unknown
 	) =>
-		copy === undefined || copy === uncopyable ?
-			isAlike(original, counterpart, current.counterparts)
-		:	isAlike(copy, counterpart, counterpartsByCopy)
-	const describe = (callee: Function, args: unknown[], path?: PropertyKey[]) =>
-		`${callee.name || "a function"}(${args.map(arg => (arg instanceof InternalTraversal ? "ctx" : printable(arg))).join(", ")})${path?.length ? ` at ${printable(path)}` : ""}`
+		isAlike(
+			copy === undefined || copy === uncopyable ? original : copy,
+			counterpart,
+			counterparts
+		)
 	if (
 		!call ||
 		call.callee !== callee ||
 		!corresponds(call.receiver, receiver) ||
 		call.args.length !== args.length ||
-		!isAlike(call.path, ctx && [...ctx.path], new Map()) ||
+		!isAlike(call.ctx, ctx, counterparts) ||
 		call.args.some(
 			(arg, i) =>
 				!(arg instanceof InternalTraversal) &&
@@ -468,37 +511,85 @@ const replay = (
 		)
 	) {
 		current.mismatch ??= [
-			call ?
-				`calls ${describe(call.callee, call.copies ?? call.args, call.path)}`
-			:	"makes no call",
-			`calls ${describe(callee, args, ctx && [...ctx.path])}`
+			call ? describeCall(call) : "makes no call",
+			describeCall({ callee, args, ctx })
 		]
 		throw mismatched
 	}
-	if (!call.isRepeated) {
-		if ("thrown" in call.outcome) throw call.outcome.thrown
-		if (call.result === uncopyable) return call.outcome.value
-		const result = copyOf(call.result, counterpartsByCopy)
-		for (const [original, copy] of call.copied) {
-			if (counterpartsByCopy.has(copy as object)) {
-				current.counterparts.set(
-					original,
-					counterpartsByCopy.get(copy as object)
-				)
-			}
+	relate(counterparts, call.copied)
+	if (call.isRepeated) {
+		const outcome = outcomeOfCall(callee, receiver, args)
+		// as the call returned, since arktype's later calls can write what it returned
+		const recorded =
+			"value" in call.outcome && call.result !== uncopyable ?
+				{ value: call.result }
+			:	call.outcome
+		if (!isAlike(observe(recorded), observe(outcome), new Map())) {
+			current.mismatch ??= [
+				`${describeCall(call)}, which gives ${printable(observe(recorded))}`,
+				`${describeCall({ callee, args })}, which gives ${printable(observe(outcome))}`
+			]
+			throw mismatched
 		}
-		return result
+		return settle(outcome)
 	}
-	const outcome = callOf(callee, receiver, args)
-	if (!isAlike(observe(call.outcome), observe(outcome), current.counterparts)) {
-		current.mismatch ??= [
-			`${describe(callee, call.args)} gives ${printable(observe(call.outcome))}`,
-			`${describe(callee, args)} gives ${printable(observe(outcome))}`
-		]
-		throw mismatched
-	}
-	return settle(outcome)
+	if ("thrown" in call.outcome) throw call.outcome.thrown
+	relate(counterparts, call.after)
+	for (const state of call.written) writeOnto(state as object, counterparts)
+	const result =
+		call.result === uncopyable ?
+			call.outcome.value
+		:	copyOf(call.result, counterparts)
+	relate(counterparts, call.after)
+	return result
 }
+
+// an object arktype holds and each copy of it stand for one the validator holds
+const relate = (
+	counterparts: Map<object, unknown>,
+	copied: Map<object, unknown> = new Map()
+) => {
+	for (const [original, copy] of copied) {
+		const counterpart =
+			counterparts.get(original) ?? counterparts.get(copy as object)
+		if (counterpart === undefined) continue
+		counterparts.set(original, counterpart)
+		counterparts.set(copy as object, counterpart)
+	}
+}
+
+// e.g. an in-place morph's, whose writes land on the validator's counterpart of each object they reach
+const writeOnto = (
+	state: object,
+	counterparts: Map<object, unknown>,
+	written = new Set<object>()
+): void => {
+	if (written.has(state)) return
+	written.add(state)
+	const target = counterparts.get(state) as Record<PropertyKey, unknown>
+	for (const k of Reflect.ownKeys(target))
+		if (!Object.prototype.hasOwnProperty.call(state, k)) delete target[k]
+	for (const k of Reflect.ownKeys(state)) {
+		const value = (state as Record<PropertyKey, unknown>)[k]
+		if (counterparts.has(value as object))
+			writeOnto(value as object, counterparts, written)
+		target[k] = copyOf(value, counterparts)
+	}
+}
+
+// each argument as arktype passed it, before the call wrote it
+const describeCall = (
+	call: Pick<Call, "callee" | "args"> & Partial<Pick<Call, "copies" | "ctx">>
+) =>
+	`calls ${call.callee.name || "a function"}(${call.args
+		.map((arg, i) =>
+			arg instanceof InternalTraversal ?
+				`ctx ${printable(call.ctx)}`
+			:	printable(
+					call.copies?.[i] === uncopyable ? arg : (call.copies?.[i] ?? arg)
+				)
+		)
+		.join(", ")})`
 
 // thrown through the validator, which a mismatch in its calls stops
 const mismatched = Symbol("mismatched")
@@ -535,14 +626,12 @@ const validateBoth = (
 		validation = outer
 	}
 	const unreplayed = current.calls[current.replayed]
-	current.mismatch ??= unreplayed && [
-		`calls ${unreplayed.callee.name || "a function"}`,
-		"makes no call"
-	]
-	const observation = () => `${member}(${printable(data)})`
+	current.mismatch ??= unreplayed && [describeCall(unreplayed), "makes no call"]
+	const observation = () =>
+		`${member}(${printable(data)})${isWritten ? ", the input as arktype's morphs left it" : ""}`
 	const reason =
 		isWritten && !current.isCopied ?
-			"or its validator saw what arktype's morphs wrote to the input, which it can't copy"
+			"which its validator received too, since it can't be copied"
 		:	undefined
 	if (current.mismatch) fail(pair, observation(), ...current.mismatch, reason)
 	const arktypeObserved = inArktype(() => observe(arktype))
@@ -566,19 +655,21 @@ const observe = (outcome: Outcome): Record<string, unknown> => {
 	if ("thrown" in outcome) return { threw: thrownOf(outcome.thrown) }
 	const { value } = outcome
 	if (!hasArkKind(value, "errors")) return { out: value }
-	return {
-		summary: value.summary,
-		issues: value.issues.map(e => ({
-			code: e.code,
-			path: [...e.path],
-			data: e.data,
-			expected: e.expected,
-			actual: e.actual,
-			problem: e.problem,
-			message: e.message
-		}))
-	}
+	const issues = value.issues.map(e =>
+		Object.fromEntries(issueKeys.map(k => [k, e[k]]))
+	)
+	return { summary: value.summary, issues }
 }
+
+const issueKeys = [
+	"code",
+	"path",
+	"data",
+	"expected",
+	"actual",
+	"problem",
+	"message"
+] as const
 
 const compare = (
 	pair: Pair,
@@ -607,16 +698,16 @@ const fail = (
 	precompiled: string,
 	// e.g. where one side shares an object the other copies
 	reason = arktype === precompiled ? "though each prints alike" : undefined
-): never =>
-	throwError(
-		writeShadowMismatchMessage(
-			pair.site,
-			observation,
-			arktype,
-			precompiled,
-			reason ? `, ${reason}` : ""
-		)
+): never => {
+	const error = new Error(
+		`${pair.site} diverges from arktype at ${observation}${reason ? `, ${reason}` : ""}: arktype gives ${arktype}, its validator ${precompiled}`
 	)
+	// raised where the program can't catch it too, as a fallback or `expect(...).toThrow()` would
+	queueMicrotask(() => {
+		throw error
+	})
+	throw error
+}
 
 const uncopyable = Symbol("uncopyable")
 
@@ -663,7 +754,7 @@ const copyOf = (value: unknown, seen: Map<object, unknown>): unknown => {
 	return Object.isFrozen(value) ? Object.freeze(copy) : copy
 }
 
-// an array holding each of its indices and no other key, read by index, since listing its keys as strings costs more than copying them
+// read by index, since listing an array's keys as strings costs more than copying it
 const isIndexed = (value: object): value is unknown[] => {
 	if (
 		!Array.isArray(value) ||
@@ -740,32 +831,3 @@ const isAlike = (
 		})
 	)
 }
-
-export const writeShadowMismatchMessage = <
-	site extends string,
-	observation extends string,
-	arktype extends string,
-	precompiled extends string,
-	reason extends string
->(
-	site: site,
-	observation: observation,
-	arktype: arktype,
-	precompiled: precompiled,
-	reason: reason
-): writeShadowMismatchMessage<
-	site,
-	observation,
-	arktype,
-	precompiled,
-	reason
-> =>
-	`${site} diverges from arktype at ${observation}${reason}: arktype gives ${arktype}, its validator ${precompiled}`
-
-export type writeShadowMismatchMessage<
-	site extends string,
-	observation extends string,
-	arktype extends string,
-	precompiled extends string,
-	reason extends string
-> = `${site} diverges from arktype at ${observation}${reason}: arktype gives ${arktype}, its validator ${precompiled}`

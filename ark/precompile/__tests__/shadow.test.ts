@@ -30,11 +30,11 @@ const run = (opts?: object) =>
 const agreed = (observed: Record<string, unknown>) =>
 	Object.fromEntries(
 		Object.entries(observed).filter(
-			([k]) => !["created", "listed", "unbaked"].includes(k)
+			([k]) => !["created", "listed", "unbaked", "reported"].includes(k)
 		)
 	)
 
-const diverged = (): Record<string, string> =>
+const diverged = (): Record<string, string> & { reported: string[] } =>
 	JSON.parse(
 		spawnSync(process.execPath, ["--conditions", "ark-ts", "diverging.ts"], {
 			cwd: shadowed,
@@ -69,9 +69,9 @@ import { f16onama10v7ypw as $arkf16onama10v7ypw } from "~arktype/gkogmu1l2znr8"
 import { Name } from "./name.ts"
 import { withId } from "./id.ts"
 export function nullable() {
-	return $arkshadow("/main.ts:5:9  User.or(\\"null\\")", $arkf5gsbk00dbcwma, ($arkh0, Name, $arkm) => ($arkh0.or("null")), [], User, Name, $arkm)
+	return $arkshadow("/main.ts:5:9  User.or(\\"null\\")", $arkf5gsbk00dbcwma, ($arkh0) => ($arkh0.or("null")), [], User, Name, $arkm)
 }
-const User = $arkshadow("/main.ts:7:14  withId(type({ name: Name })).pipe(user => user.name)", $arkf16onama10v7ypw, ($arkh0, $arkh1, withId) => (withId(type({ name: $arkh0 })).pipe($arkh1)), [1], Name, user => user.name, withId)
+const User = $arkshadow("/main.ts:7:14  withId(type({ name: Name })).pipe(user => user.name)", $arkf16onama10v7ypw, ($arkh0, $arkh1) => (withId(type({ name: $arkh0 })).pipe($arkh1)), [1], Name, user => user.name, withId)
 $arkm = 5;
 Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/main.ts": { __proto__: null, "nullable": nullable } })`)
 	})
@@ -113,6 +113,14 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			)
 		})
 
+		it("raises each mismatch the program catches where it can't", () => {
+			attest(shadow.reported).equals([
+				shadow.created,
+				shadow.listed,
+				shadow.unbaked
+			])
+		})
+
 		it("throws where a library reads a member its validator lacks", () => {
 			attest([shadow.listed, shadow.unbaked]).snap([
 				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at reading array, since its validator lacks it: arktype gives "function", its validator undefined',
@@ -132,8 +140,10 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			await vitest.close()
 			attest([
 				vitest.state.getCountOfFailedTests(),
-				vitest.state.getFiles().length
-			]).equals([0, 1])
+				vitest.state.getFiles().length,
+				// each mismatch observe() catches, which Vitest reports beside the test
+				vitest.state.getUnhandledErrors().length
+			]).equals([0, 1, 3])
 		}).timeout(60000)
 
 		it("Bun", function () {
@@ -149,7 +159,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 	})
 
 	describe("a validator that diverges", () => {
-		let outcomes: Record<string, string>
+		let outcomes: Record<string, string> & { reported: string[] }
 
 		before(function () {
 			this.timeout(60000)
@@ -168,21 +178,36 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			)
 		})
 
+		it("calling a function the program passed with another ctx", () => {
+			attest(outcomes.checked).snap(
+				'Error: checked diverges from arktype at call("abc"): arktype gives calls isFirst("abc", ctx {"path":[],"errorCount":0,"data":"abc"}), its validator calls isFirst("abc", ctx {"path":[],"errorCount":1,"data":"abc"})'
+			)
+		})
+
+		it("caught by the program, and raised again where it can't be", () => {
+			const { reported, swallowed, ...thrown } = outcomes
+			attest(swallowed).equals("fallback")
+			attest(reported.slice(0, -1)).equals(Object.values(thrown))
+			attest(reported[reported.length - 1]).snap(
+				'Error: validated diverges from arktype at assert(2): arktype gives {"out":2}, its validator {"threw":"TraversalError: must be valid according to an anonymous predicate (was 2)"}'
+			)
+		})
+
 		it("sharing an object arktype's output doesn't", () => {
 			attest(outcomes.shared).snap(
-				'Error: shared diverges from arktype at call({}), though each prints alike: arktype gives {"out":{"a":{},"b":{}},"input":{}}, its validator {"out":{"a":{},"b":{}},"input":{}}'
+				'Error: shared diverges from arktype at call({}), the input as arktype\'s morphs left it, though each prints alike: arktype gives {"out":{"a":{},"b":{}},"input":{}}, its validator {"out":{"a":{},"b":{}},"input":{}}'
 			)
 		})
 
 		it("in a type.fn", () => {
 			attest(outcomes.length).snap(
-				'Error: length diverges from arktype at call(["abc"]): arktype gives {"out":3,"input":["abc"]}, its validator {"out":4,"input":["abc"]}'
+				'Error: length diverges from arktype at call(["abc"]), the input as arktype\'s morphs left it: arktype gives {"out":3,"input":["abc"]}, its validator {"out":4,"input":["abc"]}'
 			)
 		})
 
 		it("after arktype's morph wrote an input it can't copy", () => {
 			attest(outcomes.bumped).snap(
-				'Error: bumped diverges from arktype at call(Counter), or its validator saw what arktype\'s morphs wrote to the input, which it can\'t copy: arktype gives {"out":2}, its validator {"out":4}'
+				'Error: bumped diverges from arktype at call(Counter), the input as arktype\'s morphs left it, which its validator received too, since it can\'t be copied: arktype gives {"out":2}, its validator {"out":4}'
 			)
 		})
 	})

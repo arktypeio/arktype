@@ -57,11 +57,16 @@ The program then runs on arktype: `arktype` resolves to it for every importer, a
 
 - as it's created, by whether it throws, its `expression`, `description` and `meta`
 - validating, through calling it, `allows`, `assert`, `traverse`, `from` and `~standard.validate`, by result, the input each leaves, the objects each shares, and each call to a function the program passed
-- reading `json`, `toJSON()`, `toString()`, `toJsonSchema()` and `~standard.jsonSchema`, and any other member arktype has, which the validator must have too
+- reading `json`, `toJSON()`, `toString()`, `toJsonSchema()` and `~standard.jsonSchema`, and any other member arktype has, which the validator must have too, as a Scope's, a Generic's and a Module's must
 
-Where they agree, it returns what arktype returns. Where they don't, it throws an error naming the definition, what was observed and both results.
+Where they agree, it returns what arktype returns. Where they don't, it throws an error naming the definition, what was observed and both results, and raises it again where the program can't catch it, so a fallback or `expect(...).toThrow()` can't hide it.
 
-During a validation, a function the program passed runs once: the validator's calls are answered from arktype's, unless a call wrote an argument or added an error to `ctx`, which then runs again for the validator. It runs for both as a definition is created, and an error writer in `meta` runs for both as their errors are compared.
+During a validation, a function a definition holds runs once: each of the validator's calls is answered from arktype's, with what it wrote to its arguments written to the validator's. A call that adds an error to `ctx` runs again for the validator, which must answer alike. These run for each side and aren't compared:
+
+- calls made as a definition is created
+- error writers in a `meta` or `configure()`, `onFail` among them, which run as shadow mode compares the validation's errors, fixing their text then
+- getters and Proxy traps on the input
+- a callback's writes to anything but its arguments, like `ctx.root` or what it closes over, which reach only arktype's input
 
 A morph's input is copied for the validator, except one that can't be copied, like a class instance, which the validator receives as arktype's morphs left it. Comparisons skip private fields and a builtin's internal slots besides a `Date`'s time and a `RegExp`'s or `Error`'s text. Shadow mode is meant for tests.
 
