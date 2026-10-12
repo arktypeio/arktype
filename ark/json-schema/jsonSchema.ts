@@ -5,6 +5,7 @@ import type { validateJsonSchema } from "./validate.ts"
 // spread into another can't carry its inferred type along, and the private
 // member keeps a schema with its own `infer` keyword from matching
 export declare class InferredJsonSchema<out t = unknown> {
+	// eslint-disable-next-line no-unused-private-class-members
 	#inferred: t
 	get infer(): t
 }
