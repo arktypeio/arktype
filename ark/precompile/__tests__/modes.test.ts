@@ -403,6 +403,24 @@ console.log(JSON.stringify([diagnostics.map(renderDiagnostic), sites.map(site =>
 			).snap([[], ["one"]])
 		}).timeout(60000)
 
+		it("hints a refusal using a keyword configured to hold a function or symbol as any other", () => {
+			attest(
+				printedInFreshThread(`import { Precompiler } from "@ark/precompile"
+import { memoryHost } from "./utils.ts"
+
+const files = {
+	"/config.ts": 'import { configure } from "arktype/config"\\nconfigure({ keywords: { string: { expected: () => "text" }, number: { custom: Symbol.for("x") } } } as any)',
+	"/main.ts": 'import { type } from "arktype"\\nexport const T = type({ a: "string" }).describe(String(Math.random()))\\nexport const U = type({ a: "number" }).describe(String(Math.random()))\\nexport const V = type({ a: "string" })'
+}
+const { diagnostics } = new Precompiler(memoryHost(files), { config: "/config.ts" }).precompile(files["/main.ts"], "/main.ts")
+console.log(JSON.stringify(diagnostics.map(diagnostic => diagnostic.hint)))`)
+			).snap([
+				'Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+				'Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+				'Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+			])
+		}).timeout(60000)
+
 		it("configure other than at the config module's top level", () => {
 			const setup = `import { configure } from "arktype/config"
 export const setup = () => configure({ onUndeclaredKey: "reject" })`

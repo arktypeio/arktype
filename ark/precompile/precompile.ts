@@ -1958,7 +1958,12 @@ export class Precompiler {
 		return (
 				aliases.some(([$, alias]) => {
 					const resolution = $.resolutions[alias]
-					if (!isThunk($.aliases[alias]) || !hasArkKind(resolution, "root"))
+					// a builtin Scope holds a hole only where the configuration put one, and the program can't mark it
+					if (
+						$.isBuiltin ||
+						!isThunk($.aliases[alias]) ||
+						!hasArkKind(resolution, "root")
+					)
 						return false
 					// e.g. one reaching a shallow alias cycle, which throws once compiled
 					try {
