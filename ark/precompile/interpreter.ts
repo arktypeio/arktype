@@ -63,7 +63,10 @@ import {
 	importsValues,
 	isArk,
 	isCallableBeforeBody,
+	isOnlyType,
 	isSetLast,
+	isValidatorMember,
+	memberNameOf,
 	nodeMembers,
 	scopeMembers,
 	isFunctionNode,
@@ -80,6 +83,7 @@ import type { SourceModule } from "./module.ts"
 import {
 	isTransparent,
 	normalize,
+	operatorOf,
 	runtimeParamsOf,
 	unwrapExpression,
 	walk,
@@ -306,6 +310,12 @@ const isIntrospectionRead = (
 	:	(key === "toJSON" || key === "toJsonSchema") &&
 		site.node.type === "CallExpression" &&
 		normalize(site.node.callee) === node)
+
+// e.g. `in` off a Type, or any member of a Scope or Generic
+const lacksMember = (object: unknown, key: PropertyKey): boolean =>
+	hasArkKind(object, "root") ?
+		!(key in validatorMembers)
+	:	hasArkKind(object, "scope") || hasArkKind(object, "generic")
 
 // an alias's reference is the node id of what it resolves to
 const holdsNodeId = (node: BaseNode, key: string) =>
@@ -920,13 +930,36 @@ export class Interpreter {
 		if (isDynamic(key)) return { value: key }
 		const value = this.readMember(base.value, key, node, ctx)
 		if (!base.read) return { value }
-		// the site compares the Type, as its validator can lack the member
-		if (isIntrospectionRead(base.value, key, node, ctx.site))
+		// the site compares the Type, as its validator can lack the member, and so what the site reads off the member
+		if (
+			base.read.value !== base.value ||
+			(lacksMember(base.value, key) && this.isReadThrough(ctx.site))
+		)
 			return { value, read: base.read }
 		return {
 			value,
 			read: { root: base.read.root, path: [...base.read.path, key], value }
 		}
+	}
+
+	// e.g. `T.in.json` or `T.internal.expression`, but not a bare `T.internal`, off which the program can read unseen what a validator lacks, so its factory checks `T.internal` and throws
+	private isReadThrough(site: SiteState | undefined): boolean {
+		if (!site) return false
+		const { node, module } = site
+		const callee = node.type === "CallExpression" && normalize(node.callee)
+		const [operand, parent] = operatorOf(node)
+		return (
+			(node.type === "MemberExpression" ?
+				memberNameOf(node) === "json"
+			:	callee &&
+				callee.type === "MemberExpression" &&
+				(memberNameOf(callee) === "toJSON" ||
+					memberNameOf(callee) === "toJsonSchema")) ||
+			isOnlyType(this.graph.kindOf(node, module)) ||
+			(parent?.type === "MemberExpression" &&
+				parent.object === operand &&
+				isValidatorMember(memberNameOf(parent)))
+		)
 	}
 
 	private keyOf(
@@ -1621,9 +1654,7 @@ export class Interpreter {
 			ctx.site &&
 			ctx.module === ctx.site.module &&
 			key in object &&
-			(hasArkKind(object, "root") ?
-				!(key in validatorMembers)
-			:	hasArkKind(object, "scope") || hasArkKind(object, "generic"))
+			lacksMember(object, key)
 		)
 			ctx.site.unavailableReads.push(node)
 		const members =

@@ -1,6 +1,6 @@
 import { type } from "arktype"
 import { pair, piped } from "./helpers.ts"
-import { User } from "./user.ts"
+import { Trimmed, User } from "./user.ts"
 
 const Point = type({ x: "number", y: "number" })
 
@@ -38,6 +38,11 @@ console.log(
 		Point.toJsonSchema() === Point.toJsonSchema(),
 		schemaOf(User),
 		thrown,
+		// a validator lacks `in`, `out` and `props`, so the site receives the Type it reads them off
+		Trimmed.in.json,
+		Trimmed.out.toJsonSchema(),
+		User.props[0].value.expression,
+		type({ trimmed: Trimmed.in }).expression,
 		// each call selects the variant compiled for its functions' parameter counts
 		piped(() => 0)("x"),
 		piped(String)("x"),
