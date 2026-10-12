@@ -6,6 +6,10 @@ const Base = type({ a: "string" })
 export function and() {
 	return Base.and({ b: "number" })
 }
+// folded where it's called, in another module
+export function extend(extra: object) {
+	return Base.and(extra)
+}
 
 const $ = scope({ x: "string" })
 export function scoped() {

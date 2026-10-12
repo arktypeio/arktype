@@ -619,13 +619,30 @@ export const checkInput = (
 
 // a module's progress is `undefined` before its body runs
 export const checkProgress = (
-	progress: number,
+	progress: number | undefined,
 	at: number,
 	name: string
 ): void => {
-	if (!(progress >= at))
+	if (progress === undefined || progress < at)
 		throw new ReferenceError(`Cannot access '${name}' before initialization`)
 }
+
+const progressByHelper = new WeakMap<object, () => number>()
+
+// a module registers each function another module's site folds, once the function is set, so that site can check how far the module has run
+export const registerProgress = (
+	progress: () => number,
+	...helpers: object[]
+): void => {
+	for (const helper of helpers) progressByHelper.set(helper, progress)
+}
+
+// a helper its module hasn't registered is one an import cycle calls before the module sets it
+export const checkProgressOf = (
+	helper: unknown,
+	at: number,
+	name: string
+): void => checkProgress(progressByHelper.get(helper as object)?.(), at, name)
 
 export const checkFunction = (value: unknown, label: string): void => {
 	if (typeof value !== "function") {

@@ -65,6 +65,8 @@ import {
 	contains,
 	declarationStartOf,
 	enclosingFunctionOf,
+	functionOfBinding,
+	functionsReachedFrom,
 	isArk,
 	isArkObject,
 	isFunctionNode,
@@ -90,6 +92,7 @@ import {
 	type InterpreterOptions,
 	ModuleNamespace,
 	type Read,
+	readsFirst,
 	type SiteState
 } from "./interpreter.ts"
 import { SourceModule } from "./module.ts"
@@ -250,6 +253,8 @@ export interface Input {
 	name: string
 	path: PropertyKey[]
 	value: unknown
+	// for a helper its module registers, the last statement of the module setting what the site reads through it, counted from 1, and a binding it declares
+	progress?: [at: number, name: string] | undefined
 }
 
 export interface Helper {
@@ -320,6 +325,10 @@ export class Precompiler {
 	private readsByModule = new WeakMap<SourceModule, SiteRead[]>()
 	private candidatesByModule = new WeakMap<SourceModule, SiteCandidate[]>()
 	private helperSitesByModule = new Map<SourceModule, Node[]>()
+	private progressHelpersByModule = new WeakMap<
+		SourceModule,
+		Map<string, [helper: Binding, reads: Binding[]]>
+	>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
@@ -593,7 +602,7 @@ export class Precompiler {
 				diagnostics
 			)
 			this.linkIslands(module, sites, s, prefix)
-			this.markProgress(module, sites, s, prefix)
+			this.markProgress(module, sites, s, prefix, modules, imports)
 			// a module mock replaces what a module exports, so the functions it exports are registered for factories to check
 			if (this.checkHelpers) {
 				const registered = Object.entries(this.registeredHelpersOf(module))
@@ -685,27 +694,141 @@ export class Precompiler {
 		}
 	}
 
-	// the module sets its progress after each statement setting what a site can read before it, as a binding read before then throws, and it's `undefined` before the module's body runs
+	// the module counts the statements it has run where a site can read what one sets before it's set, which throws, and registers each function another module's site folds reading such a binding, so that site can check it too
 	private markProgress(
 		module: SourceModule,
 		sites: Site[],
 		s: MagicString,
-		prefix: string
+		prefix: string,
+		modules: Record<string, string>,
+		imports: Record<string, Record<string, string>>
 	): void {
 		const marked = new Set<number>()
 		for (const site of sites) {
 			if (site.status === "accepted" && site.progress)
 				marked.add(site.progress[0])
 		}
+		const registered: string[][] = []
+		if (!this.checkHelpers) {
+			for (const [helper, reads] of this.progressHelpersOf(module).values()) {
+				for (const binding of reads) marked.add(progressOf(binding, module))
+				// a function declaration can run before the module's body, where nothing it reads is set
+				const at = helper.kind === "function" ? 0 : progressOf(helper, module)
+				;(registered[at] ??= []).push(helper.name)
+			}
+		}
 		if (!marked.size) return
+		const register = (helpers: string[] | undefined) =>
+			helpers ?
+				`${prefix}register(() => ${prefix}m, ${helpers.join(", ")});\n`
+			:	""
+		s.prependLeft(
+			firstStatementOf(module.program).start,
+			`var ${prefix}m = 0;\n${register(registered[0])}`
+		)
 		const { body } = module.program
-		const first = body.find(
-			statement =>
-				statement.type !== "ExpressionStatement" || !statement.directive
-		)!
-		s.prependLeft(first.start, `var ${prefix}m = 0;\n`)
 		for (const at of marked)
 			s.appendLeft(body[at - 1].end, `\n${prefix}m = ${at};`)
+		for (let at = 1; at < registered.length; at++) {
+			if (registered[at])
+				s.appendLeft(body[at - 1].end, `\n${register(registered[at])}`)
+		}
+		if (registered.length) {
+			const registrar = `import { registerProgress } from "arktype/runtime"\n\nexport { registerProgress as default }\n`
+			const specifier = `~arktype/${hashOf(registrar)}`
+			modules[specifier] = registrar
+			imports[specifier] = { default: `${prefix}register` }
+		}
+	}
+
+	// e.g. `extend` for `export function extend(t) { return Base.and(t) }`, which another module's site folds where an import cycle can call it before `Base` is set, with what each reads first
+	private progressHelpersOf(
+		module: SourceModule
+	): Map<string, [helper: Binding, reads: Binding[]]> {
+		let result = this.progressHelpersByModule.get(module)
+		if (result) return result
+		this.progressHelpersByModule.set(module, (result = new Map()))
+		// what another module's site folds, rather than calls as the helper's own site
+		const folded = this.candidatesOf(module).flatMap(candidate =>
+			(
+				candidate.helper &&
+				(!this.settle(candidate) ||
+					readsBindingOf(candidate.helper, candidate.state.node, module))
+			) ?
+				[candidate.state.node]
+			:	[]
+		)
+		if (!folded.length) return result
+		const registered = this.registeredHelpersOf(module)
+		for (const [name, entry] of Object.entries(module.scopes.exportsByName)) {
+			if (entry.kind !== "binding" || !(name in registered)) continue
+			const fn = functionOfBinding(entry.binding, module)
+			if (!fn) continue
+			const reached = functionsReachedFrom(fn, module)
+			if (!folded.some(node => reached.some(fn => contains(fn, node)))) continue
+			const reads = new Set<Binding>()
+			for (const fn of reached) {
+				walk(fn, node => {
+					const binding =
+						node.type === "Identifier" ?
+							module.scopes.referencesById.get(node)?.binding
+						:	undefined
+					if (
+						binding?.scope.node === module.program &&
+						binding.kind !== "var" &&
+						binding.kind !== "function" &&
+						binding.kind !== "import" &&
+						readsFirst(node, binding, module)
+					)
+						reads.add(binding)
+					return true
+				})
+			}
+			if (reads.size) result.set(name, [entry.binding, [...reads]])
+		}
+		return result
+	}
+
+	// a function of another module reading a binding that module declares runs once the module has set it, which the site checks through a helper it receives from there, or by receiving the binding
+	private checkReadFirst(
+		site: Site,
+		binding: Binding,
+		declaring: SourceModule,
+		reader: string
+	): string | undefined {
+		// a test driver registers a module's helpers once the module has run, which the site checks
+		if (
+			this.checkHelpers &&
+			site.helpers.some(helper => helper.file === declaring.id)
+		)
+			return
+		const helper =
+			!this.checkHelpers &&
+			site.inputs.find(
+				input =>
+					input.kind === "import" &&
+					input.file === declaring.id &&
+					!input.path.length &&
+					this.progressHelpersOf(declaring)
+						.get(input.name)?.[1]
+						.includes(binding)
+			)
+		const at = progressOf(binding, declaring)
+		if (helper) {
+			if (at > (helper.progress?.[0] ?? 0)) helper.progress = [at, binding.name]
+			return
+		}
+		if (!binding.exportNames.length)
+			return `\`${reader}\` can run before \`${binding.name}\` (${declaring.positionOf(binding.id)}) is set; export \`${binding.name}\` so the site can receive it`
+		const input: Input = {
+			kind: "import",
+			file: declaring.id,
+			name: binding.exportNames[0],
+			path: [],
+			value: this.interpreter.valueOfBinding(binding, declaring)
+		}
+		if (!site.inputs.some(existing => isCoveredBy(input, existing)))
+			site.inputs.push(input)
 	}
 
 	private arktypeImportOf(module: SourceModule): ImportDeclaration | undefined {
@@ -1517,10 +1640,12 @@ export class Precompiler {
 			factory.inputs.push(passedAs.expression)
 			if (passedAs.imported) factory.imports.push(passedAs.imported)
 			if (passedAs.binding) factory.bindings.push(passedAs.binding)
+			const progress = reads.find(input => input.progress)?.progress
 			factory.params.push({
 				kind: "input",
 				label: passedAs.label,
-				reads: reads.map(input => [input.path, input.value])
+				reads: reads.map(input => [input.path, input.value]),
+				...(progress && { progress })
 			})
 		}
 	}
@@ -2283,7 +2408,8 @@ export class Precompiler {
 				)
 			)
 		}
-		for (const [binding] of state.trace.readFirst) {
+		for (const [binding, declaring] of state.trace.readFirst) {
+			if (declaring !== module) continue
 			const at = progressOf(binding, module)
 			if (at > (site.progress?.[0] ?? 0)) site.progress = [at, binding.name]
 		}
@@ -2336,6 +2462,12 @@ export class Precompiler {
 					value
 				})
 			}
+		}
+		for (const [binding, declaring, reader] of state.trace.readFirst) {
+			if (declaring === module) continue
+			const unchecked = this.checkReadFirst(site, binding, declaring, reader)
+			if (unchecked)
+				return rejectSite(site, new DynamicValue(module, state.node, unchecked))
 		}
 		for (const [read, reads] of state.readsByValue) {
 			// a parameter's value is the hole arktype held in its place
@@ -2634,9 +2766,7 @@ export class Precompiler {
 		return new DynamicValue(
 			module,
 			candidate.state.node,
-			root.readFirstBy === undefined ?
-				`the site reads \`${binding.name}\` (${root.module.positionOf(binding.id)}), which its module cannot import, so the site cannot compare it at creation`
-			:	`\`${root.readFirstBy}\` reads \`${binding.name}\` (${root.module.positionOf(binding.id)}), which an import cycle can reach before its declaration runs; export \`${binding.name}\` so the site can receive it`
+			`the site reads \`${binding.name}\` (${root.module.positionOf(binding.id)}), which its module cannot import, so the site cannot compare it at creation`
 		)
 	}
 

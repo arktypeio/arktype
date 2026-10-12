@@ -1658,7 +1658,7 @@ const onlyReturnOf = (fn: FunctionNode): Node | undefined => {
 const isStatic = (fn: FunctionNode): boolean =>
 	!!staticBodyOf(fn) && !readsArguments(fn)
 
-const functionOfBinding = (
+export const functionOfBinding = (
 	binding: Binding,
 	module: SourceModule
 ): FunctionNode | undefined => {
@@ -1673,6 +1673,26 @@ const functionOfBinding = (
 			namedFunctionOf(unwrapExpression(binding.declaration.init), module)
 		:	undefined
 	return fn && isFunctionNode(fn) ? fn : undefined
+}
+
+// e.g. `g` for `function f() { return g() }`, as calling a function runs those it calls by name
+export const functionsReachedFrom = (
+	fn: FunctionNode,
+	module: SourceModule
+): FunctionNode[] => {
+	const result = new Set([fn])
+	for (const reached of result) {
+		walk(reached, node => {
+			const binding =
+				node.type === "Identifier" ?
+					module.scopes.referencesById.get(node)?.binding
+				:	undefined
+			const called = binding && functionOfBinding(binding, module)
+			if (called) result.add(called)
+			return true
+		})
+	}
+	return [...result]
 }
 
 // esbuild's keepNames, as under tsx, names a function `__name(fn, "name")`, whose helper defines the name and returns `fn`

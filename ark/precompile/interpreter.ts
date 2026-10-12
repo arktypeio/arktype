@@ -94,13 +94,7 @@ export interface InterpreterOptions {
 
 export type InputRoot =
 	| { kind: "export"; file: string; name: string }
-	| {
-			kind: "binding"
-			module: SourceModule
-			binding: Binding
-			// the function of the binding's module a site of another calls, which an import cycle can run before the binding is set
-			readFirstBy?: string | undefined
-	  }
+	| { kind: "binding"; module: SourceModule; binding: Binding }
 	| { kind: "define"; name: string }
 
 export interface Read {
@@ -115,8 +109,8 @@ export interface Trace {
 	helpers: [FunctionNode, SourceModule][]
 	// each function read from another module's export, which a test runner's module mock can replace
 	exportedFunctions: Read[]
-	// each binding of a module's top level the site can read before the module sets it
-	readFirst: [Binding, SourceModule][]
+	// each binding of a module's top level the site can read before the module sets it, and the function reading it
+	readFirst: [binding: Binding, module: SourceModule, reader: string][]
 }
 
 export interface Environment {
@@ -1030,18 +1024,11 @@ export class Interpreter {
 		const isReadFirst =
 			!!readAt &&
 			binding.kind !== "function" &&
-			runPointOf(readAt, binding.scope.node, module) < setAt(binding)
-		const reader = isReadFirst && isForeign && enclosingFunctionOf(node)
+			readsFirst(readAt, binding, module)
 		const result = this.bindingValue(binding, module)
 		if (result.error !== undefined) throw result.error
-		// a `var` holds `undefined` until it's set, and a helper another module's site calls is checked to be a function where it's created
-		if (
-			isReadFirst &&
-			(binding.kind === "var" ||
-				(isForeign &&
-					!isArkValue(result.value) &&
-					typeof result.value !== "function"))
-		) {
+		// a `var` holds `undefined` until it's set, which no site can check
+		if (isReadFirst && binding.kind === "var") {
 			return {
 				value: new DynamicValue(
 					module,
@@ -1085,23 +1072,21 @@ export class Interpreter {
 			// unless the declaration compares what the program holds, which runs only if a bundler keeps it for the site
 			isReceived = this.comparedAtCreation.has(result.value as object)
 		}
-		// the site checks its module has set one the module declares, and reads another where arktype would, throwing as it does
-		const isChecked =
-			isReadFirst && !isForeign && binding.scope.node === module.program
-		if (isChecked) ctx.trace.readFirst.push([binding, module])
+		// the site checks the binding's module has set it, or reads one a function declares where arktype would, throwing as it does
+		const isChecked = isReadFirst && binding.scope.node === module.program
+		if (isChecked) {
+			const reader = enclosingFunctionOf(node)
+			ctx.trace.readFirst.push([
+				binding,
+				module,
+				reader ? inferredNameOf(reader) || module.snippetOf(reader) : ""
+			])
+		}
 		return isReceived || (isReadFirst && !isChecked) ?
 				{
 					value: result.value,
 					read: {
-						root: {
-							kind: "binding",
-							module,
-							binding,
-							readFirstBy:
-								reader ?
-									inferredNameOf(reader) || module.snippetOf(reader)
-								:	undefined
-						},
+						root: { kind: "binding", module, binding },
 						path: [],
 						value: result.value
 					}
@@ -2819,6 +2804,13 @@ const runPointOf = (
 	}
 	return node.start
 }
+
+// e.g. `Base` in `export function f() { return Base }` before `const Base = type(...)`, which an import cycle can call first
+export const readsFirst = (
+	node: Node,
+	binding: Binding,
+	module: SourceModule
+): boolean => runPointOf(node, binding.scope.node, module) < setAt(binding)
 
 // a declarator sets each binding once its element of the pattern, default included, has run; a read in the initializer, which runs first, depends on itself
 const setAt = (binding: Binding): number => {

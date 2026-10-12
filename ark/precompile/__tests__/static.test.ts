@@ -866,7 +866,9 @@ const M = type.module({ a: "number" })
 export const N = type.module({ a: "string" })
 export function member() { return M.a }
 export function exported() { return N.a }
-export const arrow = () => N.a`
+export const arrow = () => N.a
+export default (extra: object) => L.and(extra)
+const L = type({ a: "number" })`
 			}
 			const { sites } = analyze(
 				`import { type } from "arktype"
@@ -880,7 +882,9 @@ export const D = later()
 const later = () => N.a
 import { N } from "./items.ts"
 export function defined() { return type(definition) }
-const definition = "number"`,
+const definition = "number"
+export const E = extend({ b: "string" })
+import extend from "./items.ts"`,
 				files
 			)
 			attest(
@@ -889,7 +893,8 @@ const definition = "number"`,
 						`${site.line}:${site.column} ${site.status}`,
 						...site.reasons,
 						...site.inputs.map(
-							input => `${input.kind} ${[input.name, ...input.path].join(".")}`
+							input =>
+								`${input.kind} ${[input.name, ...input.path].join(".")}${input.progress ? `, past ${input.progress[1]}` : ""}`
 						),
 						...(site.progress ? [`progress past ${site.progress[1]}`] : [])
 					].join("\n  ")
@@ -897,11 +902,12 @@ const definition = "number"`,
 			).snap([
 				"3:33 accepted\n  progress past T",
 				"4:11 accepted",
-				"5:18 rejected\n  `member` reads `M` (/items.ts:3:7), which an import cycle can reach before its declaration runs; export `M` so the site can receive it",
-				"6:18 accepted\n  import N.a\n  import exported",
+				"5:18 accepted\n  import member, past M",
+				"6:18 accepted\n  import exported, past N",
 				"7:18 accepted\n  import arrow",
 				"8:18 accepted\n  import N.a\n  progress past later",
-				"11:36 accepted\n  progress past definition"
+				"11:36 accepted\n  progress past definition",
+				"13:18 rejected\n  `(extra: object) => L.and(extra)` can run before `L` (/items.ts:9:7) is set; export `L` so the site can receive it"
 			])
 		})
 
