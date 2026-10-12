@@ -197,6 +197,8 @@ export interface Site {
 	introspection:
 		| Pick<StandaloneIntrospection, "member" | "type" | "thrown">
 		| undefined
+	// e.g. `User.props` for `User.props[0].key`, which a standalone validator lacks, so a standalone build folds the site only to a Type or its introspection
+	unavailableRead: string | undefined
 }
 
 export interface Hole {
@@ -2067,6 +2069,11 @@ export class Precompiler {
 			site.parseError || isFoldable(site.value) || site.introspection ?
 				[]
 			:	["its value is not a Type, Module, Scope, Generic or TypedFn"]
+		if (result.length && site.unavailableRead) {
+			result.push(
+				`it reads \`${site.unavailableRead}\`, which a standalone validator lacks`
+			)
+		}
 		// a ParseError's thrower checks nothing the site reads, though the error can depend on any of it
 		for (const hole of site.holes) {
 			const isReceived = !hole.isCalledAtDefinition && hole.kind !== "opaque"
@@ -2554,6 +2561,7 @@ export class Precompiler {
 			aliases: [],
 			declarationStart: declarationStartOf(node),
 			introspection: undefined,
+			unavailableRead: undefined,
 			variants: undefined,
 			progress: undefined
 		}
@@ -2602,7 +2610,11 @@ export class Precompiler {
 			// e.g. a Generic aliased `define`, whose instantiation is a Type
 			if (!isFoldable(state.value))
 				site.definition = this.definitionOf(state.node, module)
-			if (this.mode === "standalone") site.introspection = state.introspection
+			if (this.mode === "standalone") {
+				site.introspection = state.introspection
+				if (state.unavailableReads.length)
+					site.unavailableRead = module.snippetOf(state.unavailableReads[0])
+			}
 		}
 		for (const [value, [read]] of state.readsByValue) {
 			const refused = this.refusedContainers.get(value)
