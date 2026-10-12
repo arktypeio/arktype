@@ -71,6 +71,7 @@ import {
 	isArk,
 	isArkObject,
 	isFunctionNode,
+	isOnlyType,
 	isPassiveReference,
 	isRuntimeExport,
 	isSetLast,
@@ -197,7 +198,7 @@ export interface Site {
 	introspection:
 		| Pick<StandaloneIntrospection, "member" | "type" | "thrown">
 		| undefined
-	// the last member read that a standalone validator lacks, so a standalone build folds the site only to a Type or its introspection, e.g. `User.props` for `User.props[0].key` and `User.in.extends` for `User.in.extends(T)`, as `User.in` alone is a Type
+	// the first member read a standalone validator lacks that isn't itself a Type, e.g. `User.extends` for `User.extends(T.in)`
 	unavailableRead: string | undefined
 }
 
@@ -2622,9 +2623,10 @@ export class Precompiler {
 				site.definition = this.definitionOf(state.node, module)
 			if (this.mode === "standalone") {
 				site.introspection = state.introspection
-				const reads = state.unavailableReads
-				if (reads.length)
-					site.unavailableRead = module.snippetOf(reads[reads.length - 1])
+				const read = state.unavailableReads.find(
+					read => !isOnlyType(this.graph.kindOf(read, module))
+				)
+				if (read) site.unavailableRead = module.snippetOf(read)
 			}
 		}
 		for (const [value, [read]] of state.readsByValue) {
