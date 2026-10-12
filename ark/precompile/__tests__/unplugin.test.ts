@@ -1135,7 +1135,7 @@ console.log(type("number").narrow(isSmall).or(type("number").narrow(isEven))(15)
 				e.errors.map(error => error.text.split(`${root}/`).join(""))
 		)
 		attest(contextual).snap([
-			'contextual.ts:5:13  type("number").narrow(isSmall).or(type("number").narrow(isE… can\'t be precompiled to a standalone validator yet\n  an order that depends on the name of `isEven` (contextual.ts:5:69) can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+			'contextual.ts:5:13  type("number").narrow(isSmall).or(type("number").narrow(isE… can\'t be precompiled yet\n  an order that depends on the name of `isEven` (contextual.ts:5:69) can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 		])
 	}).timeout(60000)
 

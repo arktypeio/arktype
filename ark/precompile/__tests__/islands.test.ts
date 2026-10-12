@@ -101,8 +101,8 @@ export const Imported = type("string")`
 				}
 			).diagnostics.map(renderDiagnostic)
 		).snap([
-			"/main.ts:5:18  type({ a: Trimmed }) can't be precompiled to a standalone validator yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-			"/main.ts:6:18  type({ b: Imported }) can't be precompiled to a standalone validator yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			"/main.ts:5:18  type({ a: Trimmed }) can't be precompiled yet\n  `Trimmed` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+			"/main.ts:6:18  type({ b: Imported }) can't be precompiled yet\n  `Imported` is a runtime island's Type, which a precompiled site can't receive\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 		])
 	})
 
@@ -114,7 +114,7 @@ ${mark}export const types = $.export()`
 		const diagnosticsOfMarked = (mark: string) =>
 			precompile(writeSource(mark)).diagnostics.map(renderDiagnostic)
 		attest(diagnosticsOfMarked("")).snap([
-			"/main.ts:4:22  $.export() can't be precompiled to a standalone validator yet\n  arktype holds `(n: number) => n === 0` (/main.ts:2:16), which the site reads outside its own source\n  Standalone builds can't precompile a Scope's thunk returning a Type that holds a function or symbol yet. Mark the Scope // @ark-runtime with each definition reading it, or build with runtime: \"arktype\"."
+			"/main.ts:4:22  $.export() can't be precompiled yet\n  arktype holds `(n: number) => n === 0` (/main.ts:2:16), which the site reads outside its own source\n  Standalone builds can't precompile a Scope's thunk returning a Type that holds a function or symbol yet. Mark the Scope // @ark-runtime with each definition reading it, or build with runtime: \"arktype\"."
 		])
 		attest(diagnosticsOfMarked("// @ark-runtime\n")).equals([])
 	})

@@ -46,7 +46,7 @@ const isLong = s => s.length > 3
 export const Long = type("string").narrow(isLong)`
 		attest(lint(code)).equals([])
 		attest(lint(code, { config: "../writers/config.ts" })).snap([
-			'4:21-4:50 type("string").narrow(isLong) can\'t be precompiled to a standalone validator yet\n`node.expression` (../writers/config.ts:5:38) prints the name of `isLong` (linted.js:3:16), which the build knows only by a placeholder\nStandalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+			'4:21-4:50 type("string").narrow(isLong) can\'t be precompiled yet\n`node.expression` (../writers/config.ts:5:38) prints the name of `isLong` (linted.js:3:16), which the build knows only by a placeholder\nStandalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 		])
 	})
 

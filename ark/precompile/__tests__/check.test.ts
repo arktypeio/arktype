@@ -35,7 +35,7 @@ contextualize(() => {
 		attest(
 			check([], { cwd: fromHere("writers"), config: "config.ts" }).lines
 		).snap([
-			'main.ts:6:21  type("string").narrow(isLong) can\'t be precompiled to a standalone validator yet\n  `node.expression` (config.ts:5:38) prints the name of `isLong` (main.ts:4:16), which the build knows only by a placeholder\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+			'main.ts:6:21  type("string").narrow(isLong) can\'t be precompiled yet\n  `node.expression` (config.ts:5:38) prints the name of `isLong` (main.ts:4:16), which the build knows only by a placeholder\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 			"1 site in 2 files: 0 accepted (0.0%)"
 		])
 	})
@@ -48,7 +48,7 @@ contextualize(() => {
 				define: { "process.env.MODE": "lenient" }
 			}).lines
 		).snap([
-			'main.ts:6:18  type("string").narrow(() => lenient) can\'t be precompiled to a standalone validator yet\n  arktype calls `() => lenient` (main.ts:6:40)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+			'main.ts:6:18  type("string").narrow(() => lenient) can\'t be precompiled yet\n  arktype calls `() => lenient` (main.ts:6:40)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 			"1 site in 2 files: 0 accepted (0.0%)"
 		])
 	})

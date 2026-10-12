@@ -316,8 +316,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 				stderr
 					.slice(stderr.indexOf("Error: ") + 7, stderr.indexOf("\n    at "))
 					.replace(`${localized}/`, "")
-			)
-				.snap(`main.ts:4:18  type("string") can't be precompiled to a standalone validator yet
+			).snap(`main.ts:4:18  type("string") can't be precompiled yet
   a configured locale can't be precompiled to a standalone validator
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		}).timeout(60000)
@@ -335,7 +334,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 					.split(`${writers}/`)
 					.join("")
 			)
-				.snap(`main.ts:6:21  type("string").narrow(isLong) can't be precompiled to a standalone validator yet
+				.snap(`main.ts:6:21  type("string").narrow(isLong) can't be precompiled yet
   \`node.expression\` (config.ts:5:38) prints the name of \`isLong\` (main.ts:4:16), which the build knows only by a placeholder
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		}).timeout(60000)
@@ -353,7 +352,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 					.split(`${calledHoles}/`)
 					.join("")
 			)
-				.snap(`main.ts:6:18  type("string").narrow(() => lenient) can't be precompiled to a standalone validator yet
+				.snap(`main.ts:6:18  type("string").narrow(() => lenient) can't be precompiled yet
   arktype calls \`() => lenient\` (main.ts:6:40)
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 		}).timeout(60000)

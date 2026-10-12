@@ -123,7 +123,7 @@ const F = paginated(type("string").pipe(s => s.length))`
 			"9:11 accepted { items: (In: string) => Out<unknown>[], page: number }"
 		])
 		attest(diagnosticsOf(source)[0])
-			.snap(`/main.ts:4:11  type({ a: type("string").narrow(isLong) }).configure({ desc… can't be precompiled to a standalone validator yet
+			.snap(`/main.ts:4:11  type({ a: type("string").narrow(isLong) }).configure({ desc… can't be precompiled yet
   \`n.expression\` (/main.ts:4:133) prints the name of \`isLong\` (/main.ts:2:16), which the build knows only by a placeholder
   Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`)
 	})
@@ -191,9 +191,9 @@ const A = type.instanceOf(Cat).or("null")
 const B = type.instanceOf(class Dog {}).or(type.unit(new Date(0)))
 const C = type.instanceOf(class {}).or("'x'")`)
 		).snap([
-			'/main.ts:3:11  type.instanceOf(Cat).or("null") can\'t be precompiled to a standalone validator yet\n  arktype tests `null` against the class `Cat` (/main.ts:2:1) with `instanceof` while defining the type, reading a `Symbol.hasInstance` the class a factory receives may define for itself\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-			"/main.ts:4:11  type.instanceOf(class Dog {}).or(type.unit(new Date(0))) can't be precompiled to a standalone validator yet\n  arktype tests `d'1970-01-01T00:00:00.000Z'` against the class `Dog` (/main.ts:4:27) with `instanceof` while defining the type, reading a `Symbol.hasInstance` the class a factory receives may define for itself\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-			'/main.ts:5:11  type.instanceOf(class {}).or("\'x\'") can\'t be precompiled to a standalone validator yet\n  arktype tests `"x"` against a class (/main.ts:5:27) with `instanceof` while defining the type, reading a `Symbol.hasInstance` the class a factory receives may define for itself\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+			'/main.ts:3:11  type.instanceOf(Cat).or("null") can\'t be precompiled yet\n  arktype tests `null` against the class `Cat` (/main.ts:2:1) with `instanceof` while defining the type, reading a `Symbol.hasInstance` the class a factory receives may define for itself\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+			"/main.ts:4:11  type.instanceOf(class Dog {}).or(type.unit(new Date(0))) can't be precompiled yet\n  arktype tests `d'1970-01-01T00:00:00.000Z'` against the class `Dog` (/main.ts:4:27) with `instanceof` while defining the type, reading a `Symbol.hasInstance` the class a factory receives may define for itself\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+			'/main.ts:5:11  type.instanceOf(class {}).or("\'x\'") can\'t be precompiled yet\n  arktype tests `"x"` against a class (/main.ts:5:27) with `instanceof` while defining the type, reading a `Symbol.hasInstance` the class a factory receives may define for itself\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 		])
 	})
 

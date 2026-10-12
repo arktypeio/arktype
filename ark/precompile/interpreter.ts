@@ -930,7 +930,7 @@ export class Interpreter {
 		if (isDynamic(key)) return { value: key }
 		const value = this.readMember(base.value, key, node, ctx)
 		if (!base.read) return { value }
-		// the read stops at a Type whose validator lacks the member, so the site compares the Type, and stays stopped past each later member, where its value is no longer the base's
+		// a read stops at a Type whose validator lacks the member, so the site compares the Type, and later members see `base.read.value !== base.value`
 		if (
 			base.read.value !== base.value ||
 			(lacksMember(base.value, key) && this.isReadThrough(ctx.site))
@@ -1067,7 +1067,7 @@ export class Interpreter {
 			readsFirst(readAt, binding, module)
 		const result = this.bindingValue(binding, module)
 		if (result.error !== undefined) throw result.error
-		// a `var` holds `undefined` until it's set, which the program can read past, as in `V ?? "string"`, so the site checks a Type read first only where reading `undefined` throws too
+		// a `var` is `undefined` until set, which `V ?? "string"` reads past, so a Type read first is checked only where reading `undefined` throws
 		if (
 			isReadFirst &&
 			binding.kind === "var" &&
@@ -1116,7 +1116,7 @@ export class Interpreter {
 			// unless the declaration compares what the program holds, which runs only if a bundler keeps it for the site
 			isReceived = this.comparedAtCreation.has(result.value as object)
 		}
-		// a binding its step sets before it ends, or one a block or function declares, is received instead, which its factory reads unset and throws, as the program's read does
+		// a binding a block or function declares, or its step sets before it ends, is received, whose factory throws reading it unset as the program does
 		const isChecked =
 			isReadFirst &&
 			binding.scope.node === module.program &&
