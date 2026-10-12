@@ -467,8 +467,10 @@ const record = (
 	const ctxState = ctxStateOf(ctx, copied)
 	const outcome = outcomeOfCall(callee, receiver, args)
 	const copiedAfter = new Map<object, unknown>()
+	// e.g. a key set to a new object that prints alike, which assignment repeats too
+	const originalByCopy = new Map([...copied].map(([o, c]) => [c as object, o]))
 	const written = (copies ?? []).flatMap((copy, i) =>
-		copy !== uncopyable && !isAlike(copy, args[i], new Map(), true) ?
+		copy !== uncopyable && !isAlike(copy, args[i], originalByCopy, true) ?
 			[copyOf(args[i], copiedAfter)]
 		:	[]
 	)
@@ -496,10 +498,10 @@ const record = (
 	return settle(outcome)
 }
 
-type Writes = Pick<Call, "copiedAfter" | "written" | "result">
+type Writes = Pick<Call, "copied" | "copiedAfter" | "written" | "result">
 
 // e.g. not a key moved or a Date's time set
-const isReplayable = (call: Writes & Pick<Call, "copies" | "copied">) => {
+const isReplayable = (call: Writes & Pick<Call, "copies">) => {
 	if (!call.written.length) return true
 	if (call.written.includes(uncopyable)) return false
 	const counterparts = new Map<object, unknown>()
@@ -516,9 +518,13 @@ const isReplayable = (call: Writes & Pick<Call, "copies" | "copied">) => {
 // e.g. an in-place morph's, through its arguments or an object it detached from them and returned
 const writeAll = (call: Writes, counterparts: Map<object, unknown>) => {
 	relate(counterparts, call.copiedAfter)
-	const { written, result } = call
-	for (const state of written.length ? [...written, result] : [])
-		writeOnto(state, counterparts)
+	if (!call.written.length) return
+	// e.g. not ctx.root's, which the call reached but didn't receive
+	const received = new Set<unknown>()
+	for (const [o, c] of call.copiedAfter) if (call.copied.has(o)) received.add(c)
+	const visited = new Set<object>()
+	for (const state of [...call.written, call.result])
+		writeOnto(state, counterparts, received, visited)
 }
 
 const replay = (
@@ -533,6 +539,12 @@ const replay = (
 	const { counterparts } = current
 	if (call) relate(counterparts, call.copied)
 	const originals = new Map<object, unknown>()
+	// e.g. a cyclic node's, piped from a parsed string, which no copy holds
+	if (call && hasDomain(call.root, "object") && !counterparts.has(call.root))
+		counterparts.set(call.root, ctx?.root)
+	const isOtherRoot =
+		!!call &&
+		!Object.is(counterparts.get(call.root as never) ?? call.root, ctx?.root)
 	// e.g. an argument's copy, as arktype passed it before the call wrote it
 	const corresponds = (
 		original: unknown,
@@ -549,9 +561,9 @@ const replay = (
 	if (
 		!call ||
 		call.callee !== callee ||
-		!isAlike(call.receiver, receiver, counterparts, true) ||
+		!isAlike(call.receiver, receiver, counterparts, false) ||
 		call.args.length !== args.length ||
-		(counterparts.get(call.root as never) ?? call.root) !== ctx?.root ||
+		isOtherRoot ||
 		!corresponds(call.ctx, ctxState) ||
 		call.args.some(
 			(arg, i) =>
@@ -561,7 +573,7 @@ const replay = (
 	) {
 		current.mismatch ??= [
 			call ? describeCall(call) : "makes no call",
-			describeCall({ callee, args, ctx: ctxState })
+			`${describeCall({ callee, args, ctx: ctxState })}${isOtherRoot ? " with another ctx.root" : ""}`
 		]
 		throw mismatched
 	}
@@ -608,21 +620,22 @@ const relate = (
 const writeOnto = (
 	state: unknown,
 	counterparts: Map<object, unknown>,
+	received: Set<unknown>,
 	visited = new Set<object>()
 ): void => {
 	if (!hasDomain(state, "object") || visited.has(state)) return
 	visited.add(state)
+	const values = state as Record<PropertyKey, unknown>
+	for (const k of Reflect.ownKeys(state))
+		writeOnto(values[k], counterparts, received, visited)
 	// e.g. an object the call created, which holds objects it wrote but stands for none of the validator's
-	const target = counterparts.get(state) as
-		| Record<PropertyKey, unknown>
-		| undefined
-	for (const k of target ? Reflect.ownKeys(target) : [])
-		if (!Object.prototype.hasOwnProperty.call(state, k)) delete target![k]
+	if (!received.has(state)) return
+	const target = counterparts.get(state) as Record<PropertyKey, unknown>
+	for (const k of Reflect.ownKeys(target))
+		if (!Object.prototype.hasOwnProperty.call(state, k)) delete target[k]
 	for (const k of Reflect.ownKeys(state)) {
-		const value = (state as Record<PropertyKey, unknown>)[k]
-		writeOnto(value, counterparts, visited)
-		const next = target && copyOf(value, counterparts)
-		if (target && !Object.is(target[k], next)) target[k] = next
+		const next = copyOf(values[k], counterparts)
+		if (!Object.is(target[k], next)) target[k] = next
 	}
 }
 
@@ -651,6 +664,9 @@ const validateBoth = (
 ): unknown => {
 	const counterparts = new Map<object, unknown>()
 	const copy = isWritten ? copyOf(data, counterparts) : uncopyable
+	// e.g. ctx.root, which both sides share where it isn't copied
+	if (copy === uncopyable && hasDomain(data, "object"))
+		counterparts.set(data, data)
 	const current: Validation = {
 		phase: "record",
 		calls: [],

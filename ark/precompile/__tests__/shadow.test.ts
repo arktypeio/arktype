@@ -205,6 +205,18 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			)
 		})
 
+		it("passing a function the program passed one object where arktype passes two", () => {
+			attest(outcomes.aliased).snap(
+				'Error: aliased diverges from arktype at call({}), the input as arktype\'s morphs left it, though each prints alike: arktype gives calls isSame({"a":{},"b":{}}), its validator calls isSame({"a":{},"b":{}})'
+			)
+		})
+
+		it("calling a function the program passed with another ctx.root", () => {
+			attest(outcomes.rooted).snap(
+				'Error: rooted diverges from arktype at call({"a":"x"}): arktype gives calls isFlagged("x", ctx {"path":["a"],"errorCount":0,"errors":[],"data":"x"}), its validator calls isFlagged("x", ctx {"path":["a"],"errorCount":0,"errors":[],"data":"x"}) with another ctx.root'
+			)
+		})
+
 		it("after arktype's morph wrote an input it can't copy", () => {
 			attest(outcomes.bumped).snap(
 				'Error: bumped diverges from arktype at call(Counter), the input as arktype\'s morphs left it, which its validator received too, since it can\'t be copied: arktype gives {"out":2}, its validator {"out":4}'

@@ -66,6 +66,13 @@ const Detached = type({ name: "string", tags: "string[]" }).pipe(o => {
 	return { ...o, tags }
 })
 
+const Short = type("string").narrow(
+	(s, ctx) => s.length < 3 || ctx.mustBe("short")
+)
+
+// its parameters are validated as an array arktype creates, the root of its own traversal
+const named = type.fn({ name: Short }, ":", "string")(u => u.name)
+
 const isShort = (s: string) => s.length < 3
 
 // a callback the site reads twice, which arktype receives through one parameter
@@ -161,6 +168,7 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 			Detached({ name: "a", tags: ["b", "a"] })
 		],
 		shorts: Shorts({ a: "x", b: "yyy" }).toString(),
+		named: [named({ name: "ab" }), outcomeOf(() => named({ name: "abc" }))],
 		positive: Positive(-1).toString(),
 		nested: [
 			HasPerson.allows({ person: { name: "a" } }),

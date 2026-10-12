@@ -1,6 +1,6 @@
 // run without a driver, pairing each of arktype's Types with another that stands in for its validator and diverges
 import { shadow } from "@ark/precompile/shadow"
-import { type } from "arktype"
+import { type, type Traversal } from "arktype"
 
 // each mismatch, which shadow mode raises again where the program can't catch it
 const reported: string[] = []
@@ -75,6 +75,45 @@ const bumped = shadow(
 	[]
 ) as type.Any
 
+const isSame = (o: { a: object; b: object }) => o.a === o.b
+
+// a validator passing isSame one object where arktype passes two
+const aliased = shadow(
+	"aliased",
+	(f: unknown) =>
+		type("object")
+			.pipe(() => {
+				const o = {}
+				return { a: o, b: o }
+			})
+			.pipe(f as typeof isSame),
+	(f: unknown) =>
+		type("object")
+			.pipe(() => ({ a: {}, b: {} }))
+			.pipe(f as typeof isSame),
+	[0],
+	isSame
+) as type.Any
+
+const isFlagged = (s: string, ctx: Traversal) => "flag" in (ctx.root as object)
+
+// a validator whose ctx holds another root as it calls isFlagged
+const rooted = shadow(
+	"rooted",
+	(f: unknown) =>
+		type({
+			a: type("string").narrow(
+				(s, ctx) => ((ctx.root = { flag: 1 }), (f as typeof isFlagged)(s, ctx))
+			)
+		}),
+	(f: unknown) =>
+		type({
+			a: type("string").narrow((s, ctx) => (f as typeof isFlagged)(s, ctx))
+		}),
+	[0],
+	isFlagged
+) as type.Any
+
 const caught = {
 	validated: outcomeOf(() => validated(2)),
 	called: outcomeOf(() => called("abc")),
@@ -82,6 +121,8 @@ const caught = {
 	shared: outcomeOf(() => shared({})),
 	length: outcomeOf(() => length("abc")),
 	bumped: outcomeOf(() => bumped(new Counter())),
+	aliased: outcomeOf(() => aliased({})),
+	rooted: outcomeOf(() => rooted({ a: "x" })),
 	// as a fallback or `expect(...).toThrow()` would
 	swallowed: (() => {
 		try {
