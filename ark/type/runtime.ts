@@ -147,7 +147,6 @@ export {
 	printKind,
 	throwParseError
 } from "@ark/util"
-export { assertRuntimeVersion, claimEntry } from "./entry.ts"
 export * from "./keywords/functions.ts"
 
 // en as predicate's writers read it to write an error a keyword raised through ctx

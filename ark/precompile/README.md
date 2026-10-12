@@ -75,6 +75,8 @@ A morph's input is copied for the validator, except one that can't be copied, li
 
 In either mode, the build fails if `arktype`, `@ark/schema` or `@ark/util` resolves to more than one copy across the files it reads, naming each copy's version and path and the file that reached it, since Types and errors from one copy aren't recognized by another.
 
+Nothing checks at runtime that a standalone artifact runs on the `arktype/runtime` it was built with, or that `arktype` loads only for runtime islands, so both are requirements. An artifact built with another version calls the runtime as that version did, so it can throw a TypeError or validate otherwise: rebuild it with the installed arktype. A module loading `arktype` outside an island, as one a bundler leaves unresolved can, defines its Types with arktype, under arktype's own configuration unless a runtime island shares the program's.
+
 ## Configuration
 
 A program that calls `configure()` does so once, in a module imported before any that defines a Type, and names it as the build's `config`:

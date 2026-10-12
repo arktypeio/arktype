@@ -12,7 +12,6 @@ import {
 } from "@ark/util"
 import type { distill, InferredMorph, Out, To } from "../attributes.ts"
 import type { DeclarationParser } from "../declare.ts"
-import { claimEntry } from "../entry.ts"
 import type { FnParser } from "../fn.ts"
 import type { GenericParser } from "../generic.ts"
 import type { MatchParser } from "../match.ts"
@@ -80,9 +79,6 @@ export declare namespace Ark {
 	export interface boundTypeAttachments<$>
 		extends Omit<BoundModule<typeAttachments, $>, arkKind> {}
 }
-
-// refuses to load beside a standalone artifact, which claims arktype/runtime
-claimEntry("arktype")
 
 export const ark: Scope<Ark> = new InternalScope(
 	{

@@ -2,7 +2,6 @@
 export * from "./index.ts"
 export * from "./attributes.ts"
 export * from "./declare.ts"
-export * from "./entry.ts"
 export * from "./fn.ts"
 export * from "./generic.ts"
 export * from "./i18n.ts"

@@ -50,7 +50,6 @@ import {
 	throwInternalError,
 	throwParseError
 } from "@ark/util"
-import { arktypeVersion } from "./entry.ts"
 import { InternalTypedFn, type TypedFn } from "./fn.ts"
 import type { Generic } from "./generic.ts"
 import type { type } from "./keywords/keywords.ts"
@@ -234,8 +233,6 @@ export interface StandaloneModules {
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
 
-const entryCheck = `runtime.assertRuntimeVersion(${JSON.stringify(arktypeVersion)})\nruntime.claimEntry("arktype/runtime")`
-
 /**
  * #### an ES module exporting a getter for each Type, Module, Scope or Generic, which creates them when one is first read, and a function creating each factory's value, which folded factories may share
  */
@@ -259,7 +256,6 @@ export const precompileStandalone = (
 	return {
 		code: writeSections([
 			runtimeImport,
-			entryCheck,
 			...Object.values(shared).map(module => module.declarations.join("\n\n")),
 			...sections
 		]),
@@ -289,10 +285,7 @@ export const precompileStandaloneModules = (
 		checking,
 		held
 	)
-	// imported first, so the runtime's version is checked before anything is created
-	const entry = writeSections([runtimeImport, entryCheck])
-	const entrySpecifier = `~arktype/entry${hashOf(entry)}`
-	const modules: Record<string, string> = { [entrySpecifier]: entry }
+	const modules: Record<string, string> = {}
 	for (const specifier in shared) {
 		const { readsRuntime, imports, declarations, exports } = shared[specifier]
 		modules[specifier] = writeSections([
@@ -305,7 +298,7 @@ export const precompileStandaloneModules = (
 	}
 	return {
 		code: writeSections([
-			`import ${JSON.stringify(entrySpecifier)}\n${runtimeImport}\n${writeImports(imports)}`,
+			`${runtimeImport}\n${writeImports(imports)}`,
 			...sections
 		]),
 		modules,

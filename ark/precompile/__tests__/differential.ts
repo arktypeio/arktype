@@ -1,6 +1,6 @@
 import { fromHere } from "@ark/fs"
 import { hasArkKind, type BaseRoot } from "@ark/schema"
-import { hasDomain, noSuggest, ParseError } from "@ark/util"
+import { hasDomain, ParseError } from "@ark/util"
 import {
 	holeNameMarker,
 	introspectionMembers,
@@ -40,18 +40,8 @@ process.once("exit", code => {
 	else rmSync(out, { recursive: true, force: true })
 })
 
-const entryKey = noSuggest("loadedArktypeEntry")
-
-const importBesideArktype = async (path: string): Promise<any> => {
-	const entries = globalThis as Record<string, unknown>
-	const entry = entries[entryKey]
-	delete entries[entryKey]
-	try {
-		return await import(pathToFileURL(path).href)
-	} finally {
-		entries[entryKey] = entry
-	}
-}
+const importFile = (path: string): Promise<any> =>
+	import(pathToFileURL(path).href)
 
 // a function the runtime exports for arktype's nodes to hold, like a matcher's onFail or a keyword's predicate, is its copy's in what an artifact creates
 const counterparts = new Map<unknown, unknown>()
@@ -86,7 +76,7 @@ export const outDir = async (): Promise<string> => {
 		logLevel: "error"
 	})
 	for (const [name, copy] of Object.entries(
-		await importBesideArktype(join(dir, "runtime.js"))
+		await importFile(join(dir, "runtime.js"))
 	))
 		pairCopies(copy, (arktypeRuntime as Record<string, unknown>)[name])
 	return dir
@@ -128,7 +118,7 @@ const loadArtifact = async (
 	}
 	const path = join(dir, `artifact${artifactCount++}.js`)
 	writeFileSync(path, link(code))
-	return importBesideArktype(path)
+	return importFile(path)
 }
 
 // a precompiled Type holding functions or symbols is a factory, passed them as a build passes what its site holds

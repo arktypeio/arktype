@@ -18,15 +18,8 @@ import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
 } from "@ark/schema/runtime"
-import { arkKindOf, flatMorph, noSuggest } from "@ark/util"
+import { arkKindOf, flatMorph } from "@ark/util"
 import { ark, generic, match, scope, type, type Scope } from "arktype"
-import {
-	allowIslands,
-	arktypeVersion,
-	claimEntry,
-	writeEntryConflictMessage,
-	writeRuntimeVersionMismatchMessage
-} from "arktype/internal/entry.ts"
 import { de } from "arktype/locales/de"
 import {
 	precompileStandalone,
@@ -46,7 +39,6 @@ import {
 	type IntrospectionMember
 } from "arktype/runtime"
 import { buildSync } from "esbuild"
-import { spawnSync } from "node:child_process"
 
 const bundle = (source: string) => {
 	const result = buildSync({
@@ -73,18 +65,7 @@ const bundle = (source: string) => {
 const urlOf = (js: string) =>
 	`data:text/javascript;base64,${Buffer.from(js).toString("base64")}`
 
-const entryKey = noSuggest("loadedArktypeEntry")
-
-const importBesideArktype = async (js: string): Promise<any> => {
-	const entries = globalThis as Record<string, unknown>
-	const entry = entries[entryKey]
-	delete entries[entryKey]
-	try {
-		return await import(urlOf(js))
-	} finally {
-		entries[entryKey] = entry
-	}
-}
+const importCode = (js: string): Promise<any> => import(urlOf(js))
 
 // the program's configure call runs before the artifact, as its config module does, and each validator is read as a site reads it
 const load = async (
@@ -98,7 +79,7 @@ const load = async (
 			fingerprint === undefined ? undefined : { fingerprint, path: "main.ts" },
 		introspection
 	})
-	const artifact = await importBesideArktype(
+	const artifact = await importCode(
 		bundle(code.replace(runtimeImport, `${runtimeImport}\n${configure}`)).js
 	)
 	return flatMorph(exports, (name, value) => {
@@ -365,7 +346,7 @@ contextualize(() => {
 			}
 		})
 		try {
-			const T = (await importBesideArktype(js)).T()
+			const T = (await importCode(js)).T()
 			attest(T({ a: 1 }).summary).snap("a must be a string (was a number)")
 		} finally {
 			globalThis.Function = Function
@@ -390,7 +371,7 @@ contextualize(() => {
 				.code
 		)
 		delete (globalThis as { Global?: unknown }).Global
-		const S = (await importBesideArktype(js)).S()
+		const S = (await importCode(js)).S()
 		attest(S("s")).equals("s")
 	})
 
@@ -904,7 +885,7 @@ contextualize(() => {
 			"runtime.fixConfig()\nruntime.configure({})"
 		)
 		attest(
-			await importBesideArktype(bundle(createdFirst).js)
+			await importCode(bundle(createdFirst).js)
 				.then(artifact => artifact.T())
 				.catch((e: Error) => e.message)
 		).equals(reconfiguredMessage)
@@ -955,7 +936,7 @@ contextualize(() => {
 	})
 
 	it("throws for a configuration written before its first validator", async () => {
-		const artifact = await importBesideArktype(
+		const artifact = await importCode(
 			bundle(
 				precompileStandalone(
 					{ A: type("string"), B: type("number") },
@@ -1010,7 +991,7 @@ domain.expected = () => "E2"`,
 
 	it("creates its validators where a site first reads them", async () => {
 		const config = { domain: { message: "configured" } }
-		const artifact = await importBesideArktype(
+		const artifact = await importCode(
 			bundle(
 				`${
 					precompileStandalone(
@@ -1040,7 +1021,7 @@ domain.expected = () => "E2"`,
 		}
 		for (const [name, value] of Object.entries(exports)) {
 			// arktype fixes its configuration when it creates any of them
-			const artifact = await importBesideArktype(
+			const artifact = await importCode(
 				bundle(
 					`${
 						precompileStandalone(
@@ -1060,7 +1041,7 @@ domain.expected = () => "E2"`,
 
 	it("fixes the configuration where a keyword Module's Type is first read", async () => {
 		const config = { domain: { message: "configured" } }
-		const artifact = await importBesideArktype(
+		const artifact = await importCode(
 			bundle(
 				`${
 					precompileStandalone(
@@ -1249,7 +1230,7 @@ domain.expected = () => "E2"`,
 			setPrototypeOf: (o: object) => o
 		})
 		try {
-			const M = (await importBesideArktype(source)).M()
+			const M = (await importCode(source)).M()
 			attest(Object.isFrozen(M)).equals(true)
 			attest(Object.isFrozen(M.a)).equals(true)
 			attest(M.a.from("x")).equals("x")
@@ -1385,7 +1366,7 @@ import "arktype/internal/island.js"
 import { type } from "arktype"
 export { de } from "arktype/locales/de"
 export const Island = type("string")`)
-		const artifact = await importBesideArktype(js)
+		const artifact = await importCode(js)
 		const errors = artifact.T()(1)
 		attest(() => errors.toLocaleString(artifact.de)).throws(
 			unrenderedLocaleMessage
@@ -1403,7 +1384,7 @@ import { type } from "arktype"
 export { messageIn } from "arktype"
 export { de } from "arktype/locales/de"
 export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => validate(d))`)
-		const artifact = await importBesideArktype(js)
+		const artifact = await importCode(js)
 		const errors = artifact.Island([1, artifact.T()])
 		attest([
 			errors.toLocaleString(artifact.de),
@@ -2638,68 +2619,10 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 		})
 	})
 
-	it("checks the runtime's version before reading its exports", async () => {
-		const mismatched = precompileStandalone({ T: type("string") })
-			.code.replace(
-				`assertRuntimeVersion("${arktypeVersion}")`,
-				`assertRuntimeVersion("0.0.0")`
-			)
-			.replace("runtime.Validator", "runtime.NextValidator")
-		const error = await importBesideArktype(bundle(mismatched).js).catch(
-			(e: Error) => e
-		)
-		attest(error.message).equals(
-			writeRuntimeVersionMismatchMessage("0.0.0", arktypeVersion)
-		)
-	})
-
-	it("refuses to load beside arktype", async () => {
-		const { js } = bundle(precompileStandalone({ T: type("boolean") }).code)
-		const error = await import(urlOf(js)).catch((e: Error) => e)
-		attest(error.message).equals(
-			writeEntryConflictMessage("arktype/runtime", "arktype")
-		)
-	})
-
-	it("keeps arktype from loading beside it", () => {
-		const { js } = bundle(precompileStandalone({ T: type("string") }).code)
-		const { stderr } = spawnSync(
-			process.execPath,
-			["--conditions=ark-ts", "--input-type=module"],
-			{
-				cwd: fromHere(),
-				input: `await import(${JSON.stringify(urlOf(js))})\nawait import("arktype")`,
-				encoding: "utf8"
-			}
-		)
-		attest(
-			stderr.includes(writeEntryConflictMessage("arktype", "arktype/runtime"))
-		).equals(true)
-	})
-
-	it("loads beside arktype once a runtime island allows it", () => {
-		const entries = globalThis as Record<string, unknown>
-		const entry = entries[entryKey]
-		try {
-			delete entries[entryKey]
-			claimEntry("arktype/runtime")
-			allowIslands()
-			claimEntry("arktype")
-			claimEntry("arktype/runtime")
-			entries[entryKey] = "arktype"
-			allowIslands()
-			attest(() => claimEntry("arktype/runtime")).throws(
-				writeEntryConflictMessage("arktype/runtime", "arktype")
-			)
-		} finally {
-			entries[entryKey] = entry
-		}
-	})
-
 	it("shares the program's configuration with runtime islands", async () => {
 		const sharedBy = async (program: string): Promise<unknown[]> =>
 			(
-				await importBesideArktype(
+				await importCode(
 					bundle(`import { configure, shareConfig } from "@ark/schema/runtime"
 const shared = []
 ${program}
