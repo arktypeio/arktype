@@ -156,7 +156,7 @@ export interface StandaloneVariants {
 	variantsByCounts: number[]
 }
 
-export type FactoryParam = HoleParam | InputParam | HelperParam
+export type FactoryParam = HoleParam | InputParam | HelperParam | ProgressParam
 
 // a default arktype checks against a Type where it defines it, which its factory checks where it creates it
 export type DefaultCheck = [
@@ -182,6 +182,13 @@ export interface HelperParam {
 	label: string
 	file: string
 	name: string
+}
+
+// how far the site's module has run, which must be past the statement setting what the site reads, as a read before then throws
+export interface ProgressParam {
+	kind: "progress"
+	label: string
+	at: number
 }
 
 export interface ConfiguredModule {
@@ -852,6 +859,10 @@ export class StandaloneArtifact {
 			} else if (param.kind === "helper") {
 				this.checks.push(
 					`runtime.checkHelper(p${i}, ${JSON.stringify(param.file)}, ${JSON.stringify(param.name)}, ${JSON.stringify(param.label)})`
+				)
+			} else if (param.kind === "progress") {
+				this.checks.push(
+					`runtime.checkProgress(p${i}, ${param.at}, ${JSON.stringify(param.label)})`
 				)
 			} else if (this.receiveHole(param.value, `p${i}`, param.label)) {
 				if (!selected.includes(param.value))

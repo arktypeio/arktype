@@ -617,6 +617,16 @@ export const checkInput = (
 	}
 }
 
+// a module's progress is `undefined` before its body runs
+export const checkProgress = (
+	progress: number,
+	at: number,
+	name: string
+): void => {
+	if (!(progress >= at))
+		throw new ReferenceError(`Cannot access '${name}' before initialization`)
+}
+
 export const checkFunction = (value: unknown, label: string): void => {
 	if (typeof value !== "function") {
 		throwError(

@@ -1820,6 +1820,13 @@ export const enclosingFunctionOf = (node: Node): FunctionNode | undefined => {
 		if (isFunctionNode(parent)) return parent
 }
 
+// a module counts each statement it has run from 1, so a site can check it has set a binding it declares
+export const progressOf = (binding: Binding, module: SourceModule): number => {
+	let statement: Node = binding.declaration
+	while (statement.parent !== module.program) statement = statement.parent!
+	return module.program.body.indexOf(statement as never) + 1
+}
+
 // only a statement's first variable, so nothing the statement runs comes before its site
 export const declarationStartOf = (node: Node): number | undefined => {
 	const declarator = node.parent

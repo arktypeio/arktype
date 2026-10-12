@@ -858,7 +858,7 @@ const { c, d = type(c) } = { c: "number" } as { c: string; d?: unknown }`)
 			).snap(["2:15 accepted string", "3:16 accepted number"])
 		})
 
-		it("receives what an import cycle can reach before its declaration", () => {
+		it("reads what an import cycle can reach before its declaration", () => {
 			const files = {
 				"/items.ts": `import { type } from "arktype"
 import "./main.ts"
@@ -878,7 +878,9 @@ export const B = exported()
 export const C = arrow()
 export const D = later()
 const later = () => N.a
-import { N } from "./items.ts"`,
+import { N } from "./items.ts"
+export function defined() { return type(definition) }
+const definition = "number"`,
 				files
 			)
 			attest(
@@ -888,16 +890,18 @@ import { N } from "./items.ts"`,
 						...site.reasons,
 						...site.inputs.map(
 							input => `${input.kind} ${[input.name, ...input.path].join(".")}`
-						)
+						),
+						...(site.progress ? [`progress past ${site.progress[1]}`] : [])
 					].join("\n  ")
 				)
 			).snap([
-				"3:33 accepted\n  local T",
+				"3:33 accepted\n  progress past T",
 				"4:11 accepted",
 				"5:18 rejected\n  `member` reads `M` (/items.ts:3:7), which an import cycle can reach before its declaration runs; export `M` so the site can receive it",
 				"6:18 accepted\n  import N.a\n  import exported",
 				"7:18 accepted\n  import arrow",
-				"8:18 accepted\n  local later\n  import N.a"
+				"8:18 accepted\n  import N.a\n  progress past later",
+				"11:36 accepted\n  progress past definition"
 			])
 		})
 

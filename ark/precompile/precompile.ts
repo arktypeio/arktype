@@ -72,6 +72,7 @@ import {
 	isTypeOnly,
 	memberNameOf,
 	ModuleGraph,
+	progressOf,
 	readsBindingOf,
 	runtimeExports,
 	staticBodyOf,
@@ -178,6 +179,8 @@ export interface Site {
 	aliases: ScopeAlias[]
 	// the site's own variant first, when it holds a function a parameter holds
 	variants: Variant[] | undefined
+	// the last statement of its module setting what the site can read before the module sets it, counted from 1, and a binding it declares
+	progress: [at: number, name: string] | undefined
 	// where the module statement declaring the variable it initializes starts, as a bundler can drop that statement when nothing reads the variable
 	declarationStart: number | undefined
 	// e.g. `User` and "json" for `User.json`, which a standalone build folds to the data arktype returns
@@ -590,6 +593,7 @@ export class Precompiler {
 				diagnostics
 			)
 			this.linkIslands(module, sites, s, prefix)
+			this.markProgress(module, sites, s, prefix)
 			// a module mock replaces what a module exports, so the functions it exports are registered for factories to check
 			if (this.checkHelpers) {
 				const registered = Object.entries(this.registeredHelpersOf(module))
@@ -679,6 +683,29 @@ export class Precompiler {
 			diagnostics,
 			modules: this.inline ? {} : modules
 		}
+	}
+
+	// the module sets its progress after each statement setting what a site can read before it, as a binding read before then throws, and it's `undefined` before the module's body runs
+	private markProgress(
+		module: SourceModule,
+		sites: Site[],
+		s: MagicString,
+		prefix: string
+	): void {
+		const marked = new Set<number>()
+		for (const site of sites) {
+			if (site.status === "accepted" && site.progress)
+				marked.add(site.progress[0])
+		}
+		if (!marked.size) return
+		const { body } = module.program
+		const first = body.find(
+			statement =>
+				statement.type !== "ExpressionStatement" || !statement.directive
+		)!
+		s.prependLeft(first.start, `var ${prefix}m = 0;\n`)
+		for (const at of marked)
+			s.appendLeft(body[at - 1].end, `\n${prefix}m = ${at};`)
 	}
 
 	private arktypeImportOf(module: SourceModule): ImportDeclaration | undefined {
@@ -1191,6 +1218,7 @@ export class Precompiler {
 			keyOf(created)[1].length > 0 ||
 			site.inputs.length > 0 ||
 			site.defaultChecks.length > 0 ||
+			site.progress !== undefined ||
 			// one its module creates and reads in place is the same function however the program runs
 			site.references.some(
 				reference => dropped.has(reference.value) && !reference.isOwnHole
@@ -1263,6 +1291,14 @@ export class Precompiler {
 		this.receiveInputs(site, module, prefix, passed, factory, reasons)
 		for (const helper of helpers)
 			this.receiveHelper(helper, site, module, prefix, factory, reasons)
+		if (site.progress) {
+			factory.inputs.push(`${prefix}m`)
+			factory.params.push({
+				kind: "progress",
+				label: site.progress[1],
+				at: site.progress[0]
+			})
+		}
 		return factory
 	}
 
@@ -2185,7 +2221,8 @@ export class Precompiler {
 			aliases: [],
 			declarationStart: declarationStartOf(node),
 			introspection: undefined,
-			variants: undefined
+			variants: undefined,
+			progress: undefined
 		}
 	}
 
@@ -2245,6 +2282,10 @@ export class Precompiler {
 					`\`${module.snippetOf(read)}\` is the ${kindNameOf(value)} at ${refused[1].positionOf(refused[0])}, which the build refuses`
 				)
 			)
+		}
+		for (const [binding] of state.trace.readFirst) {
+			const at = progressOf(binding, module)
+			if (at > (site.progress?.[0] ?? 0)) site.progress = [at, binding.name]
 		}
 		for (const read of state.trace.reads) {
 			const input = this.inputOf(read, candidate, module)

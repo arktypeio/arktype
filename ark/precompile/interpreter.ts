@@ -115,6 +115,8 @@ export interface Trace {
 	helpers: [FunctionNode, SourceModule][]
 	// each function read from another module's export, which a test runner's module mock can replace
 	exportedFunctions: Read[]
+	// each binding of a module's top level the site can read before the module sets it
+	readFirst: [Binding, SourceModule][]
 }
 
 export interface Environment {
@@ -1032,11 +1034,13 @@ export class Interpreter {
 		const reader = isReadFirst && isForeign && enclosingFunctionOf(node)
 		const result = this.bindingValue(binding, module)
 		if (result.error !== undefined) throw result.error
-		// e.g. a helper the site calls, which it checks is a function where it's created
+		// a `var` holds `undefined` until it's set, and a helper another module's site calls is checked to be a function where it's created
 		if (
 			isReadFirst &&
-			!isArkValue(result.value) &&
-			typeof result.value !== "function"
+			(binding.kind === "var" ||
+				(isForeign &&
+					!isArkValue(result.value) &&
+					typeof result.value !== "function"))
 		) {
 			return {
 				value: new DynamicValue(
@@ -1081,8 +1085,11 @@ export class Interpreter {
 			// unless the declaration compares what the program holds, which runs only if a bundler keeps it for the site
 			isReceived = this.comparedAtCreation.has(result.value as object)
 		}
-		// a site that can read it first throws there, as arktype's would
-		return isReceived || isReadFirst ?
+		// the site checks its module has set one the module declares, and reads another where arktype would, throwing as it does
+		const isChecked =
+			isReadFirst && !isForeign && binding.scope.node === module.program
+		if (isChecked) ctx.trace.readFirst.push([binding, module])
+		return isReceived || (isReadFirst && !isChecked) ?
 				{
 					value: result.value,
 					read: {
@@ -2750,7 +2757,8 @@ const createEnvironment = (parent: Environment | undefined): Environment => ({
 const emptyTrace = (): Trace => ({
 	reads: [],
 	helpers: [],
-	exportedFunctions: []
+	exportedFunctions: [],
+	readFirst: []
 })
 
 const rootContext = (
@@ -2770,6 +2778,7 @@ const mergeTrace = (into: Trace, from: Trace) => {
 	for (const [node, module] of from.helpers)
 		pushUnique(into.helpers, node, module)
 	for (const read of from.exportedFunctions) into.exportedFunctions.push(read)
+	for (const read of from.readFirst) into.readFirst.push(read)
 }
 
 const pushUnique = (
