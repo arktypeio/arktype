@@ -520,24 +520,29 @@ configure({ keywords: { "string.email": \`an address\${suffix}\` } })`
 
 		it("a Type created after the config module loads", () => {
 			const opts = { config: "/config.ts" }
+			const main = `import { type } from "arktype"
+export const Name = type("string")
+export type Name = typeof Name.infer`
+			const configImporting = (typeImport: string) => ({
+				"/config.ts": `import { configure } from "arktype/config"
+${typeImport}
+configure({ onUndeclaredKey: "delete" })`
+			})
+			attest(
+				diagnosticsOf(
+					main,
+					configImporting('import type { Name } from "./main.ts"'),
+					opts
+				)
+			).equals([])
+			// Node's type stripping and `verbatimModuleSyntax` keep an import only a type reads, which runs its module
 			for (const typeImport of [
-				'import type { Name } from "./main.ts"',
 				'import { type Name } from "./main.ts"',
 				'import { Name } from "./main.ts"\nexport const name: Name = "x"'
 			]) {
-				attest(
-					diagnosticsOf(
-						`import { type } from "arktype"
-export const Name = type("string")
-export type Name = typeof Name.infer`,
-						{
-							"/config.ts": `import { configure } from "arktype/config"
-${typeImport}
-configure({ onUndeclaredKey: "delete" })`
-						},
-						opts
-					)
-				).equals([])
+				attest(diagnosticsOf(main, configImporting(typeImport), opts)).snap([
+					'/main.ts:2:21  type("string") is created while the config module loads, before configure() runs\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.'
+				])
 			}
 			const config = {
 				"/config.ts": `import { configure } from "arktype/config"

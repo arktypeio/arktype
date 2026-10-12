@@ -1762,35 +1762,43 @@ const readsArguments = (fn: FunctionNode): boolean => {
 
 export const arkPackageSpecifier = /^(arktype|@ark\/schema|@ark\/util)(?:\/|$)/
 
-// esbuild and tsc erase an import whose names are only used as types, which the scope analysis gives no reference, and a re-export of only types
-export const isErased = (statement: Node, module: SourceModule): boolean =>
-	statement.type === "ImportDeclaration" ?
-		statement.specifiers.length > 0 &&
-		!statement.specifiers.some(
-			specifier =>
-				module.scopes.bindingsById.get(specifier.local)?.references.length
-		)
-	: statement.type === "ExportNamedDeclaration" ?
-		statement.exportKind === "type" ||
-		(statement.specifiers.length > 0 &&
-			statement.specifiers.every(specifier => specifier.exportKind === "type"))
-	:	statement.type === "ExportAllDeclaration" && statement.exportKind === "type"
+// Node's type stripping and `verbatimModuleSyntax` keep an import whose names are only used as types, so only one marked type-only doesn't run its module
+export const isTypeOnly = (statement: Node): boolean =>
+	statement.type === "ImportDeclaration" ? statement.importKind === "type"
+	: (
+		statement.type === "ExportNamedDeclaration" ||
+		statement.type === "ExportAllDeclaration"
+	) ?
+		statement.exportKind === "type"
+	:	false
 
-// e.g. `function f() {}` exported by a module importing another, which an import cycle can call before the module's body runs
-export const isCalledFirstByCycle = (fn: Node, module: SourceModule): boolean =>
+const importsValuesByModule = new WeakMap<SourceModule, boolean>()
+
+// an import cycle can call what such a module exports before its body runs
+export const importsValues = (module: SourceModule): boolean => {
+	let result = importsValuesByModule.get(module)
+	if (result === undefined) {
+		result = module.program.body.some(statement => {
+			const specifier = "source" in statement && statement.source?.value
+			return (
+				!!specifier &&
+				!arkPackageSpecifier.test(specifier) &&
+				!isTypeOnly(statement)
+			)
+		})
+		importsValuesByModule.set(module, result)
+	}
+	return result
+}
+
+// e.g. `export function f() {}`, which is set before the module's body runs
+export const isCallableBeforeBody = (fn: Node, module: SourceModule): boolean =>
 	fn.type === "FunctionDeclaration" &&
 	(fn.parent?.type === "ExportNamedDeclaration" ||
 		fn.parent?.type === "ExportDefaultDeclaration" ||
 		(fn.parent?.type === "Program" &&
 			!!bindingOfFunction(fn, module)?.exportNames.length)) &&
-	module.program.body.some(statement => {
-		const specifier = "source" in statement && statement.source?.value
-		return (
-			!!specifier &&
-			!arkPackageSpecifier.test(specifier) &&
-			!isErased(statement, module)
-		)
-	})
+	importsValues(module)
 
 export const bindingOfFunction = (
 	node: Node,

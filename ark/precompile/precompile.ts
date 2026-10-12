@@ -67,9 +67,9 @@ import {
 	enclosingFunctionOf,
 	isArk,
 	isArkObject,
-	isErased,
 	isFunctionNode,
 	isPassiveReference,
+	isTypeOnly,
 	memberNameOf,
 	ModuleGraph,
 	readsBindingOf,
@@ -2764,7 +2764,7 @@ export class Precompiler {
 			if (!specifier || arkPackageSpecifier.test(specifier)) continue
 			const target = this.graph.host.resolve(specifier, module.id)
 			if (target && this.graph.isFollowed(target))
-				result.push([target, isErased(statement, module)])
+				result.push([target, isTypeOnly(statement)])
 		}
 		return result
 	}

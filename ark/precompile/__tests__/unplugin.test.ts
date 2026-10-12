@@ -296,6 +296,25 @@ contextualize(() => {
 			attest(
 				run(await bundle({ cwd: first, introspection: ["json"] }, first))
 			).equals(runPlain(first))
+			// `verbatimModuleSyntax` keeps an import only a type reads, which closes the cycle
+			const erased = fromHere("cycleErased")
+			const verbatim = writeFixture(
+				{
+					...Object.fromEntries(
+						readdirSync(erased).map(file => [
+							file,
+							readFileSync(join(erased, file), "utf8")
+						])
+					),
+					"tsconfig.json": JSON.stringify({
+						compilerOptions: { verbatimModuleSyntax: true }
+					})
+				},
+				fromHere("temp", `${name}CycleErased`)
+			)
+			attest(run(await bundle({ cwd: verbatim }, verbatim))).equals(
+				runPlain(verbatim)
+			)
 			// a json module the cycle reaches before it runs
 			const files = Object.fromEntries(
 				readdirSync(cycle).map(file => [

@@ -60,8 +60,8 @@ import {
 	declarationStartOf,
 	enclosingFunctionOf,
 	genericMembers,
-	isCalledFirstByCycle,
 	isArk,
+	isCallableBeforeBody,
 	nodeMembers,
 	scopeMembers,
 	isFunctionNode,
@@ -2796,7 +2796,7 @@ const runPointOf = (
 		if (!isFunctionNode(parent)) continue
 		if (seen.has(parent)) return Infinity
 		seen.add(parent)
-		if (isCalledFirstByCycle(parent, module)) return module.program.start
+		if (isCallableBeforeBody(parent, module)) return module.program.start
 		const binding = bindingOfFunction(parent, module)
 		if (!binding) return runPointOf(parent, scope, module, seen)
 		let result = Infinity

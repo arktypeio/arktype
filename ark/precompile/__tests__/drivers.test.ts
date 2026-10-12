@@ -71,6 +71,8 @@ const cycle = fromHere("cycle")
 
 const cycleFirst = fromHere("cycleFirst")
 
+const cycleErased = fromHere("cycleErased")
+
 const library = writeLibrary()
 
 const runPlain = (cwd: string, ...args: string[]) =>
@@ -116,6 +118,10 @@ contextualize(() => {
 			attest(
 				node(["main.ts"], { introspection: ["json"] }, cycleFirst).stdout
 			).equals(runPlain(cycleFirst))
+			// Node's type stripping keeps an import only a type reads, which closes the cycle
+			attest(node(["main.ts"], {}, cycleErased).stdout).equals(
+				runPlain(cycleErased)
+			)
 		}).timeout(60000)
 
 		it("serves the modules a standalone module imports", () => {
