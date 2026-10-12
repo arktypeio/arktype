@@ -8,6 +8,8 @@ const Base = type({ a: "string" })
 export function and() {
 	return Base.and({ b: "number" })
 }
+// runs the fold once what it reads is set
+export const anded = and().expression
 // folded where it's called, in another module
 export function extend(extra: object) {
 	return Base.and(extra)

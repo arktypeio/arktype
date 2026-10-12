@@ -732,7 +732,13 @@ export class Precompiler {
 			`var ${prefix}m = 0;\n${register(registered[0])}`
 		)
 		const { body } = module.program
-		for (const at of marked)
+		// once across statements that can neither throw nor call what reads it, as nothing reads it between them
+		const settled = new Set<number>()
+		for (let at of marked) {
+			while (at < body.length && this.isInertStatement(body[at], sites)) at++
+			settled.add(at)
+		}
+		for (const at of settled)
 			s.appendLeft(body[at - 1].end, `\n${prefix}m = ${at};`)
 		for (let at = 1; at < registered.length; at++) {
 			if (registered[at])
@@ -2297,6 +2303,15 @@ export class Precompiler {
 		this.inertByModule.set(module, (result = false))
 		if (importsValues(module)) return result
 		const { sites } = this.analysisOf(module)
+		result = module.program.body.every(statement =>
+			this.isInertStatement(statement, sites)
+		)
+		this.inertByModule.set(module, result)
+		return result
+	}
+
+	// e.g. `export const User = type(...)`, which declares without running anything that could throw or call the program
+	private isInertStatement(statement: Node, sites: Site[]): boolean {
 		const isInertValue = (node: Node | null | undefined): boolean => {
 			if (!node) return true
 			const value = unwrapExpression(node)
@@ -2317,40 +2332,35 @@ export class Precompiler {
 				)
 			)
 		}
-		result = module.program.body.every(statement => {
-			const declaration =
-				(
-					statement.type === "ExportNamedDeclaration" ||
-					statement.type === "ExportDefaultDeclaration"
-				) ?
-					statement.declaration
-				:	statement
-			if (!declaration) return true
-			switch (declaration.type) {
-				case "ImportDeclaration":
-				case "ExportAllDeclaration":
-				case "FunctionDeclaration":
-				case "TSTypeAliasDeclaration":
-				case "TSInterfaceDeclaration":
-				case "TSDeclareFunction":
-					return true
-				case "ExpressionStatement":
-					return !!declaration.directive
-				case "VariableDeclaration":
-					return declaration.declarations.every(
-						declarator =>
-							declarator.id.type === "Identifier" &&
-							isInertValue(declarator.init)
-					)
-				default:
-					return (
-						statement.type === "ExportDefaultDeclaration" &&
-						isInertValue(declaration)
-					)
-			}
-		})
-		this.inertByModule.set(module, result)
-		return result
+		const declaration =
+			(
+				statement.type === "ExportNamedDeclaration" ||
+				statement.type === "ExportDefaultDeclaration"
+			) ?
+				statement.declaration
+			:	statement
+		if (!declaration) return true
+		switch (declaration.type) {
+			case "ImportDeclaration":
+			case "ExportAllDeclaration":
+			case "FunctionDeclaration":
+			case "TSTypeAliasDeclaration":
+			case "TSInterfaceDeclaration":
+			case "TSDeclareFunction":
+				return true
+			case "ExpressionStatement":
+				return !!declaration.directive
+			case "VariableDeclaration":
+				return declaration.declarations.every(
+					declarator =>
+						declarator.id.type === "Identifier" && isInertValue(declarator.init)
+				)
+			default:
+				return (
+					statement.type === "ExportDefaultDeclaration" &&
+					isInertValue(declaration)
+				)
+		}
 	}
 
 	// e.g. `a.ts` for `User` or `a.User` imported from "./a.ts"

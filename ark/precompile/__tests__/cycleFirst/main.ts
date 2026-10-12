@@ -1,4 +1,4 @@
-import { extend, items } from "./items.ts"
+import { anded, extend, items } from "./items.ts"
 
 console.log(JSON.stringify(items))
-console.log(extend({ c: "number" }).expression)
+console.log(anded, extend({ c: "number" }).expression)
