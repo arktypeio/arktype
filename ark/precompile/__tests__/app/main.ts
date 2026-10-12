@@ -16,6 +16,13 @@ const shapes = scope({
 
 const BoxedTree = shapes.box("tree")
 
+// destructured, as `forms.member` would read it
+const forms = { member: User, lists: [Users] }
+const {
+	member,
+	lists: [list]
+} = forms
+
 const ada = { name: "Ada", email: "ada@example.com", age: 36, tags: ["math"] }
 
 const loop = { value: 1, children: [] as unknown[] }
@@ -40,7 +47,9 @@ const samples: [(data: unknown) => unknown, unknown][] = [
 	[Chain, { value: 1, next: { value: -1 } }],
 	[shapes.tree, { value: 1, children: [{ value: 2 }, { value: "3" }] }],
 	[data => shapes.tree(data) === data, loop],
-	[BoxedTree, { box: { value: 1, children: [{}] } }]
+	[BoxedTree, { box: { value: 1, children: [{}] } }],
+	[member.or("null"), null],
+	[list.or("null"), null]
 ]
 
 console.log(

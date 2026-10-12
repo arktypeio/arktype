@@ -818,7 +818,8 @@ export class ModuleGraph {
 					declaration.id,
 					this.transfer(declaration.init, module, kindOfKey),
 					module,
-					kindOfKey
+					kindOfKey,
+					{ node: declaration.init, module, kindOfKey }
 				)
 			:	this.iteratedKindOf(declaration, binding, module, kindOfKey)
 		for (const write of binding.writes) {
@@ -923,19 +924,49 @@ export class ModuleGraph {
 		pattern: Node,
 		kind: ArkKind,
 		module: SourceModule,
-		kindOfKey: KindOfKey
+		kindOfKey: KindOfKey,
+		source?: Located
 	): ArkKind {
 		if (node === pattern) return kind
 		const parent = node.parent!
+		const isRest = parent.type === "RestElement"
+		const owner = isRest ? parent.parent! : parent
+		// e.g. `type(...)` for `user` in `const { user } = { user: type(...) }`, as for `schemas.user`
+		const literal =
+			source &&
+			(owner.type === "Property" ||
+				owner.type === "ArrayPattern" ||
+				owner.type === "ObjectPattern") &&
+			this.destructuredOf(
+				owner.type === "Property" ? owner.parent! : owner,
+				pattern,
+				source
+			)
+		if (literal) {
+			const value =
+				isRest ? undefined : this.valueIn(literal, keyIn(owner, node))
+			return (
+				value === null ? kinds.data
+				: value ? this.transfer(value.node, value.module, value.kindOfKey)
+				: kinds.data | this.heldKindOf(literal)
+			)
+		}
 		switch (parent.type) {
 			case "Property":
 				return memberKindOf(
-					this.patternKindOf(parent.parent!, pattern, kind, module, kindOfKey),
+					this.patternKindOf(
+						parent.parent!,
+						pattern,
+						kind,
+						module,
+						kindOfKey,
+						source
+					),
 					keyNameOf(parent)
 				)
 			case "AssignmentPattern":
 				return (
-					this.patternKindOf(parent, pattern, kind, module, kindOfKey) |
+					this.patternKindOf(parent, pattern, kind, module, kindOfKey, source) |
 					this.transfer(parent.right, module, kindOfKey)
 				)
 			default:
@@ -947,11 +978,33 @@ export class ModuleGraph {
 						pattern,
 						kind,
 						module,
-						kindOfKey
+						kindOfKey,
+						source
 					),
 					undefined
 				)
 		}
+	}
+
+	// e.g. `{ user: type(...) }` for `{ user }` in `const { a: { user } } = { a: { user: type(...) } }`
+	private destructuredOf(
+		node: Node,
+		pattern: Node,
+		source: Located
+	): Located | undefined {
+		if (node === pattern)
+			return this.literalOf(source.node, source.module, source.kindOfKey)
+		const owner = node.parent!
+		if (owner.type !== "Property" && owner.type !== "ArrayPattern") return
+		const literal = this.destructuredOf(
+			owner.type === "Property" ? owner.parent! : owner,
+			pattern,
+			source
+		)
+		const value = literal && this.valueIn(literal, keyIn(owner, node))
+		return value ?
+				this.literalOf(value.node, value.module, value.kindOfKey)
+			:	undefined
 	}
 
 	private returnKindIn(
@@ -1590,6 +1643,12 @@ const keyNameOf = (property: { key: Node; computed: boolean }): unknown =>
 	property.key.type === "Literal" ? property.key.value
 	: property.computed || property.key.type !== "Identifier" ? undefined
 	: property.key.name
+
+// e.g. `a` for `x` in `{ a: x }`, or 1 in `[, x]`
+const keyIn = (owner: Node, node: Node): unknown =>
+	owner.type === "Property" ? keyNameOf(owner)
+	: owner.type === "ArrayPattern" ? owner.elements.indexOf(node as never)
+	: undefined
 
 const isPatternPart = (node: Node): boolean =>
 	node.type === "ObjectPattern" ||

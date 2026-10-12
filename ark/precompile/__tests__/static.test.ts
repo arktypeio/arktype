@@ -391,6 +391,37 @@ const D = forms().create.or("null")`,
 			])
 		})
 
+		it("Types destructured from object literals and arrays, as their members are read", () => {
+			attest(
+				statusesOf(
+					`import { type } from "arktype"
+import { schemas } from "./schemas.ts"
+const local = { users: { User: type({ name: "string" }) }, list: [type("string"), type("number")] }
+const { User, Post: Renamed } = schemas
+const { users: { User: Nested }, list: [S, ...rest] } = local
+const { Missing = type("boolean") } = schemas as typeof schemas & { Missing?: unknown }
+const A = User.or("null")
+const B = Renamed.array()
+const C = Nested.or("null")
+const D = S.or(rest[0])
+const E = Missing.or("null")`,
+					{
+						"/schemas.ts": `import { type } from "arktype"\nexport const schemas = { User: type({ id: "string" }), Post: type({ title: "string" }) }`
+					}
+				)
+			).snap([
+				"3:32 accepted { name: string }",
+				"3:67 accepted string",
+				"3:83 accepted number",
+				"6:19 accepted boolean",
+				"7:11 accepted { id: string } | null",
+				"8:11 accepted { title: string }[]",
+				"9:11 accepted { name: string } | null",
+				"10:11 accepted number | string",
+				"11:11 accepted false | null | true"
+			])
+		})
+
 		it("a Type passed to a helper the build can't interpret", () => {
 			attest(
 				statusesOf(`import { scope, type } from "arktype"
