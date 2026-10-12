@@ -330,7 +330,7 @@ const writeArtifact = (
 		write: opts.bake ?? (write => write())
 	}
 	const types: Record<string, ExportedValue> = {}
-	const templates = new Set<BaseRoot>()
+	const templates = new Set<unknown>()
 	// each factory whose Type is folded, which reads it where the creations write it
 	const folded = new Map<
 		string,
@@ -343,10 +343,11 @@ const writeArtifact = (
 	const canFold = (
 		name: string,
 		factory: StandaloneFactory | StandaloneVariants
-	): factory is StandaloneFactory & { type: type.Any & BaseRoot } => {
+	): factory is StandaloneFactory => {
 		if (
 			isVariants(factory) ||
-			!hasArkKind(factory.type, "root") ||
+			// as unknown, since narrowing an ExportedValue to BaseRoot compares the Type and node structurally, too deep for TypeScript 6
+			!hasArkKind(factory.type as unknown, "root") ||
 			factory.defaultChecks?.length ||
 			factory.fresh
 		)
@@ -486,7 +487,7 @@ const writeExport = (name: string, index: number) =>
 
 const writeCreations = (
 	types: Record<string, ExportedValue>,
-	templates: ReadonlySet<BaseRoot>,
+	templates: ReadonlySet<unknown>,
 	// a factory's Type, which only that factory reads
 	folded: ReadonlyMap<string, unknown>,
 	{ configured, keywordReads }: StandaloneOptions,
@@ -690,7 +691,7 @@ export class StandaloneArtifact {
 	// the Types exported and those their metas hold, rather than a default's
 	comparedRoots: BaseRoot[]
 	// a Type written without its key's functions, which each call of its factory copies with those it receives
-	templates = new Set<BaseRoot>()
+	templates = new Set<unknown>()
 	// a default's node, which only its check reads, so its validator is keyed by its traversal
 	checkedRoots: ReadonlySet<BaseRoot>
 	// what a factory receives and checks for each variant it can create, none for an artifact creating its exports once
@@ -734,7 +735,8 @@ export class StandaloneArtifact {
 		this.defaultChecks =
 			introspected?.defaultChecks ??
 			this.variants.flatMap(variant => variant.defaultChecks ?? [])
-		const types = this.variants.map(({ type }) => type)
+		// unknown for the same reason as in canFold
+		const types: unknown[] = this.variants.map(({ type }) => type)
 		this.variantTypes = new Set(types)
 		const selection = this.selection
 		// each variant holds its own stand-in for a selecting parameter's function, which a call receives as one, so a node holding it is written once where its code is the same
@@ -749,7 +751,7 @@ export class StandaloneArtifact {
 		this.jointUnits =
 			selection && types.every(type => hasArkKind(type, "root")) ?
 				precompileJointUnits(
-					types as BaseRoot[],
+					types,
 					value => selectedKeys.get(value) ?? runtimeKeyOf(value)
 				)
 			:	undefined
