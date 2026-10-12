@@ -930,7 +930,7 @@ export class Interpreter {
 		if (isDynamic(key)) return { value: key }
 		const value = this.readMember(base.value, key, node, ctx)
 		if (!base.read) return { value }
-		// the site compares the Type, as its validator can lack the member, and so what the site reads off the member
+		// the read stops at a Type whose validator lacks the member, so the site compares the Type, and stays stopped past each later member, where its value is no longer the base's
 		if (
 			base.read.value !== base.value ||
 			(lacksMember(base.value, key) && this.isReadThrough(ctx.site))
@@ -2910,7 +2910,7 @@ const staticProblemOf = (
 	: module.scopes.hasWith ? "is in a module that uses `with`"
 	: isLoopVariable(binding) ? "is a loop variable"
 	: binding.kind === "var" && !isDeclaredInBody(binding) ?
-		"is a `var` declared in a block, which may not run"
+		"is a `var` declared in a nested statement, which may not run"
 	:	undefined
 
 const isLoopVariable = (binding: Binding) => {

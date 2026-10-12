@@ -863,7 +863,7 @@ export const B = type((N as any).b ?? "boolean")`)
 			])
 		})
 
-		it("a var declared in a block", () => {
+		it("a var declared in a nested statement", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
 if (process.argv.length > 99) {
@@ -876,8 +876,8 @@ export const make = (flag: boolean) => {
 }`)
 			).snap([
 				"3:10 accepted string",
-				"5:18 rejected\n  `V` is a `var` declared in a block, which may not run",
-				"8:9 rejected\n  `def` is a `var` declared in a block, which may not run"
+				"5:18 rejected\n  `V` is a `var` declared in a nested statement, which may not run",
+				"8:9 rejected\n  `def` is a `var` declared in a nested statement, which may not run"
 			])
 		})
 
