@@ -47,7 +47,7 @@ const cyclic = scope({
 	expr: { op: "'+'|'-'", args: ["expr | number", "expr | number"] }
 }).export()
 
-// arktype's own inference of a directly recursive tuple is TS2589, so only its runtime Type is used
+// arktype's own inference of a directly recursive tuple hits a depth error, so only its runtime Type is used
 const pair = (type.module as unknown as (def: object) => { pair: type.Any })({
 	pair: ["string", "pair?"]
 }).pair

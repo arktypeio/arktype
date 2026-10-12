@@ -3645,7 +3645,7 @@ contextualize(() => {
 		})
 
 		it("allOf of three twenty-branch anyOfs", () => {
-			// limitation: intersected unions build every member, 20^3 here (three fifty-branch anyOfs: TS2589)
+			// limitation: intersected unions build every member, 20^3 here (three fifty-branch anyOfs: a depth error)
 			attest.instantiations([929000, "instantiations"])
 			return inferred({
 				type: "object",
@@ -3727,7 +3727,7 @@ contextualize(() => {
 		})
 
 		it("anyOf, oneOf and a conditional of ten branches each on one node", () => {
-			// limitation: a node's own anyOf, oneOf and then/else multiply to 2000 members (fifty branches each: TS2589)
+			// limitation: a node's own anyOf, oneOf and then/else multiply to 2000 members (fifty branches each: a depth error)
 			attest.instantiations([249000, "instantiations"])
 			return inferred({
 				type: "object",

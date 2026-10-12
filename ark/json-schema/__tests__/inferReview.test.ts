@@ -3233,7 +3233,7 @@ contextualize(() => {
 		})
 
 		it("ref chain with a rule at each level eleven deep", () => {
-			// limitation: each level's allOf of a $ref and an if/then/else doubles the union (2^n members, TS2589 from 16 levels)
+			// limitation: each level's allOf of a $ref and an if/then/else doubles the union (2^n members, a depth error from 16 levels)
 			attest.instantiations([442000, "instantiations"])
 			return inferred({
 				$defs: {
@@ -3374,7 +3374,7 @@ contextualize(() => {
 		})
 
 		it("nested allOf with an index branch at each level, thirty-two deep", () => {
-			// limitation: reading a key through 24+ levels of allOf merges with an index branch raises TS2589 and gives any
+			// limitation: reading a key through 24+ levels of allOf merges with an index branch raises a depth error and gives any
 			type L0 = { properties: { leaf: { type: "string" } } }
 			type L1 = {
 				type: "object"
@@ -3649,7 +3649,7 @@ contextualize(() => {
 		})
 
 		it("a recursive hand-written union schema type through anyOf", () => {
-			// limitation: TS2589 (any): a recursive hand-written schema union with no all-optional member recurses eagerly through anyOf
+			// limitation: a depth error (any): a recursive hand-written schema union with no all-optional member recurses eagerly through anyOf
 			type Rec = { type: "string" } | { type: "number" } | { anyOf: Rec[] }
 			type T = jsonSchema.infer<{ type: "object"; properties: { a: Rec } }>
 			// @ts-ignore
@@ -3658,7 +3658,7 @@ contextualize(() => {
 		})
 
 		it("const beside a recursive hand-written union schema type", () => {
-			// limitation: TS2589 (any): the same with no $ref member, as containsRef walks the union forever
+			// limitation: a depth error (any): the same with no $ref member, as containsRef walks the union forever
 			type Rec = { type: "string" } | { type: "array"; items: Rec }
 			// @ts-ignore
 			type T = jsonSchema.infer<{ type: "array"; items: Rec; const: [["a"]] }>
