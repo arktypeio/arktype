@@ -39,6 +39,15 @@ export const makeField = limit => {
 		])
 	})
 
+	it("reports a read off a value the build can't tell isn't a Type", () => {
+		const filename = fromHere("unsure", "main.ts")
+		attest(
+			lint(readFileSync(filename, "utf8"), {}, filename, fromHere("unsure"))
+		).snap([
+			"5:44-5:51 form.or reads or, which a standalone validator lacks\nthe build can't tell where `form` comes from, so it may be a Type, which the standalone runtime replaces with a validator\nIf it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+		])
+	})
+
 	it("applies the configuration", () => {
 		const code = `import "../writers/config.ts"
 import { type } from "arktype"

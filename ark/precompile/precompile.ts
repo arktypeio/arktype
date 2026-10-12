@@ -3525,8 +3525,12 @@ export class Precompiler {
 		const settledRanges = new Set(
 			settled.map(candidate => rangeOf(candidate.state.node))
 		)
-		const unavailable: [node: Node, read: string | undefined, object: Node][] =
-			[]
+		const unavailable: [
+			node: Node,
+			read: string | undefined,
+			object: Node,
+			isUnsure?: true
+		][] = []
 		walk(module.program, node => {
 			if (
 				settledRanges.has(rangeOf(node)) ||
@@ -3544,9 +3548,15 @@ export class Precompiler {
 				unavailable.push([node, ...read])
 			return true
 		})
-		for (const [node, read, object] of unavailable) {
-			// a chain is reported where it first reads one
+		// arktype's own packages are the runtime a standalone build ships
+		const isArkPackage = arkPackageName.test(
+			this.graph.packageNameOf(module.id) ?? ""
+		)
+		for (const [node, read, object, isUnsure] of unavailable) {
+			// a chain is reported where it first reads one, and a site whose value the build computed is no longer unsure
 			if (
+				(isUnsure &&
+					(isArkPackage || settledRanges.has(rangeOf(normalize(object))))) ||
 				unavailable.some(
 					([inner]) => inner !== node && contains(node, inner)
 				) ||
@@ -3563,8 +3573,11 @@ export class Precompiler {
 						`${module.snippetOf(node)} reflects on a Type, whose properties a standalone validator doesn't share`
 					:	`${module.snippetOf(node)} reads ${read}, which a standalone validator lacks`,
 					[
-						`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
-					]
+						isUnsure ?
+							`the build can't tell where \`${module.snippetOf(object)}\` comes from, so it may be a Type, which the standalone runtime replaces with a validator`
+						:	`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
+					],
+					isUnsure ? unsureHint : undefined
 				)
 			)
 		}
@@ -3980,6 +3993,8 @@ export type writeStandaloneDependencyMessage<name extends string> =
 
 export const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
+
+const unsureHint = `If it isn't a Type, annotate it with its type. If it is, build with runtime: "arktype".`
 
 const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	R1: `Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`,

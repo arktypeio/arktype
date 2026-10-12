@@ -27,7 +27,12 @@ import type {
 	MemberExpression,
 	NewExpression,
 	Node,
-	ObjectPropertyKind
+	ObjectPropertyKind,
+	TSInterfaceDeclaration,
+	TSSignature,
+	TSType,
+	TSTypeAnnotation,
+	TSTypeAliasDeclaration
 } from "oxc-parser"
 import { dirname, join, relative } from "node:path"
 import { isArkValue } from "./builtins.ts"
@@ -312,7 +317,11 @@ export const kinds = {
 	// a function whose call may return a Type
 	returnsType: 8,
 	// a function whose call may return any arktype value
-	returnsArk: 16
+	returnsArk: 16,
+	// data the build lost track of, which may be a Type
+	unknown: 32,
+	// data whose members the build lost track of, which may hold a Type
+	holder: 64
 } as const
 
 export type ArkKind = number
@@ -325,6 +334,25 @@ const anyKind: ArkKind =
 	kinds.returnsArk
 
 const typeMethod: ArkKind = kinds.otherArk | kinds.returnsType
+
+const unsure: ArkKind = kinds.data | kinds.unknown
+
+// e.g. a literal holding a Type, whose members the build can't follow once a parameter receives it
+const holderOf = (held: ArkKind): ArkKind =>
+	held & ~kinds.data ? kinds.data | kinds.holder : kinds.data
+
+const unsureOf = (kind: ArkKind): ArkKind =>
+	kind & (kinds.unknown | kinds.holder) ? unsure : 0
+
+// what a value may be once the build loses track of it
+const lostOf = (kind: ArkKind): ArkKind =>
+	kind & ~kinds.data ? unsure : kinds.data
+
+// methods by which an array, Map or Set holds what it's passed
+const storingMethods: Record<string, 1> = Object.setPrototypeOf(
+	{ push: 1, unshift: 1, splice: 1, fill: 1, set: 1, add: 1 },
+	null
+)
 
 // the kind of each member of a Type a standalone validator lacks
 const typeMemberKinds: Record<string, ArkKind> = Object.setPrototypeOf(
@@ -396,7 +424,8 @@ const exportKindOf = (name: ArkExportName): ArkKind =>
 
 // e.g. a Type for `T.in`, a method returning one for `T.and`, or a string for `T.expression` or `T.toString()`, which leave arktype
 const memberKindOf = (objectKind: ArkKind, name: unknown): ArkKind => {
-	if (!isArk(objectKind)) return objectKind & kinds.data
+	if (!isArk(objectKind))
+		return (objectKind & kinds.data) | unsureOf(objectKind)
 	const kind =
 		// a Module's member is whatever its alias is, whatever its name, so a validator member read off it ends the site only once the build has its value
 		typeof name !== "string" || objectKind & kinds.otherArk ? anyKind
@@ -408,13 +437,14 @@ const memberKindOf = (objectKind: ArkKind, name: unknown): ArkKind => {
 		) ?
 			kinds.data
 		:	(typeMemberKinds[name] ?? anyKind)
-	return kind | (objectKind & kinds.data)
+	return kind | (objectKind & kinds.data) | unsureOf(objectKind)
 }
 
 const callKindOf = (callee: ArkKind): ArkKind =>
 	(callee & (kinds.type | kinds.data) ? kinds.data : 0) |
 	(callee & kinds.returnsType ? kinds.type : 0) |
-	(callee & kinds.returnsArk ? anyKind : 0)
+	(callee & kinds.returnsArk ? anyKind : 0) |
+	unsureOf(callee)
 
 const functionKindOf = (returned: ArkKind): ArkKind =>
 	kinds.data |
@@ -464,6 +494,7 @@ export class ModuleGraph {
 		Object.create(null)
 	private kindsByKey = new Map<Key, ArkKind>()
 	private kindsByNode = new Map<Node, ArkKind>()
+	private instanceKinds = new Map<Node, ArkKind>()
 	// a helper's parameters as one call passes them, which the kinds cached by node can't hold
 	private bindingKindOfKeys = new WeakSet<KindOfKey>()
 	private applicationsByFn = new Map<FunctionNode, Map<string, Application>>()
@@ -742,7 +773,6 @@ export class ModuleGraph {
 	}
 
 	kindOf(node: Node, module: SourceModule): ArkKind {
-		node = normalize(node)
 		let result = this.kindsByNode.get(node)
 		if (result === undefined) {
 			result = this.transfer(node, module, this.finalKindOfKey)
@@ -821,7 +851,7 @@ export class ModuleGraph {
 		}
 		const declaration = binding.declaration
 		let result =
-			declaration.type !== "VariableDeclarator" ? kinds.data
+			(declaration.type !== "VariableDeclarator" ? kinds.data
 			: declaration.init ?
 				this.patternKindOf(
 					binding.id,
@@ -831,7 +861,8 @@ export class ModuleGraph {
 					kindOfKey,
 					{ node: declaration.init, module, kindOfKey }
 				)
-			:	this.iteratedKindOf(declaration, binding, module, kindOfKey)
+			:	this.iteratedKindOf(declaration, binding, module, kindOfKey)) |
+			this.storedKindOf(binding, module, kindOfKey)
 		for (const write of binding.writes) {
 			const parent = write.parent
 			result |=
@@ -843,9 +874,49 @@ export class ModuleGraph {
 					this.transfer(parent.right, module, kindOfKey)
 				: parent?.type === "VariableDeclarator" && parent.init ?
 					this.transfer(parent.init, module, kindOfKey)
-				:	kinds.data
+				:	this.destructuredWriteOf(write, module, kindOfKey)
 		}
-		return result
+		return annotate(result, this.annotatedKindOf(binding.id, module, kindOfKey))
+	}
+
+	// e.g. a holder for `list` given `list.push(A)`, `schemas.User = A` or `registry.set("user", A)`
+	private storedKindOf(
+		binding: Binding,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		let stored = 0
+		for (const { id } of binding.references) {
+			const [operand, member] = operatorOf(id)
+			if (member?.type !== "MemberExpression" || member.object !== operand)
+				continue
+			const [callee, parent] = operatorOf(member)
+			if (parent?.type === "AssignmentExpression" && parent.left === callee)
+				stored |= this.transfer(parent.right, module, kindOfKey)
+			else if (
+				parent?.type === "CallExpression" &&
+				parent.callee === callee &&
+				(memberNameOf(member) as string) in storingMethods
+			) {
+				for (const arg of parent.arguments)
+					stored |= this.transfer(arg, module, kindOfKey)
+			}
+		}
+		return stored & ~kinds.data ? kinds.holder : 0
+	}
+
+	// e.g. what `assigned` may be after `({ assigned } = { assigned: A })`
+	private destructuredWriteOf(
+		write: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		let root = write
+		while (root.parent && isPatternPart(root.parent)) root = root.parent
+		const parent = root.parent
+		return parent?.type === "AssignmentExpression" && parent.left === root ?
+				lostOf(this.transfer(parent.right, module, kindOfKey))
+			:	kinds.data
 	}
 
 	// e.g. `A | B` for `t` in `for (const t of [A, B])`
@@ -886,24 +957,178 @@ export class ModuleGraph {
 		const params = runtimeParamsOf(fn)
 		const index = params.findIndex(param => contains(param, binding.id))
 		const calls = this.callsOf(fn, module)
-		if (index === -1 || params[index].type === "RestElement" || !calls)
-			return kinds.data
+		if (index === -1 || params[index].type === "RestElement") return kinds.data
+		const param = params[index]
+		const annotated = this.annotatedKindOf(
+			param.type === "AssignmentPattern" ? param.left : param,
+			module,
+			kindOfKey
+		)
 		let result = 0
-		for (const call of calls) {
-			const args = call.arguments
+		for (const call of calls ?? [undefined]) {
+			const args = call?.arguments ?? []
 			const spread = args.findIndex(arg => arg.type === "SpreadElement")
 			const arg = args[index]
 			result |= this.patternKindOf(
 				binding.id,
-				params[index],
-				spread !== -1 && spread <= index ? kinds.data
-				: arg ? this.transfer(arg, module, kindOfKey)
-				: kinds.data,
+				param,
+				annotate(
+					!call ? this.passedKindOf(fn, module, kindOfKey)
+					: spread !== -1 && spread <= index ? kinds.data
+					: arg ? this.transfer(arg, module, kindOfKey)
+					: kinds.data,
+					annotated
+				),
 				module,
 				kindOfKey
 			)
 		}
 		return result
+	}
+
+	// e.g. a Type for `t` in `list.map(t => t.or(B))`, or in `{ col: t => ... }` passed to a function returning Types, where the build can't see the calls
+	private passedKindOf(
+		fn: FunctionNode,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		let [operand, call] = operatorOf(fn)
+		while (
+			call?.type === "ArrayExpression" ||
+			call?.type === "ObjectExpression" ||
+			(call?.type === "Property" && call.value === operand)
+		)
+			[operand, call] = operatorOf(call)
+		if (call?.type !== "CallExpression" || call.callee === operand)
+			return kinds.data
+		const callee = normalize(call.callee)
+		if (callee.type !== "MemberExpression") {
+			return lostOf(
+				this.transfer(callee, module, kindOfKey) &
+					(kinds.returnsType | kinds.returnsArk)
+			)
+		}
+		// arktype passes a morph or narrow the data it validates, but `map` passes what an array holds
+		const receiver = this.transfer(callee.object, module, kindOfKey)
+		return !isArk(receiver) && isContainerMethod(memberNameOf(callee)) ?
+				lostOf(receiver & (kinds.unknown | kinds.holder))
+			:	kinds.data
+	}
+
+	// e.g. unsure for `t: Type` or `t as Type`, data for `s: JsonSchema`, or undefined for `x: any`, which leaves the value to the build
+	private annotatedKindOf(
+		node: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind | undefined {
+		return "typeAnnotation" in node && node.typeAnnotation ?
+				this.typeKindOf(node.typeAnnotation, node, module, kindOfKey)
+			:	undefined
+	}
+
+	// e.g. unsure for `Type<T>` or `type.Any`, a holder for `{ user: Type }[]`, or data for `string` or another package's type
+	private typeKindOf(
+		type: TSType | TSTypeAnnotation,
+		context: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		depth = 0
+	): ArkKind | undefined {
+		const union = (
+			types: (TSType | TSTypeAnnotation | null)[],
+			depth: number
+		) =>
+			types.reduce<ArkKind | undefined>((result, t) => {
+				const kind =
+					t ? this.typeKindOf(t, context, module, kindOfKey, depth) : kinds.data
+				return result === undefined || kind === undefined ?
+						undefined
+					:	result | kind
+			}, kinds.data)
+		const held = (types: (TSType | TSTypeAnnotation | null)[]) => {
+			const kind = union(types, depth + 1)
+			return kind === undefined ? undefined : holderOf(kind)
+		}
+		const membersOf = (members: TSSignature[]) =>
+			held(
+				members.map(member =>
+					"typeAnnotation" in member ? member.typeAnnotation : null
+				)
+			)
+		switch (type.type) {
+			case "TSTypeAnnotation":
+				return this.typeKindOf(
+					type.typeAnnotation,
+					context,
+					module,
+					kindOfKey,
+					depth
+				)
+			// e.g. `Record<string, unknown>`, which leaves the value to the build, though `{ a: Record<string, unknown> }` says `a` is no Type
+			case "TSAnyKeyword":
+			case "TSUnknownKeyword":
+			case "TSObjectKeyword":
+				return depth < 2 ? undefined : kinds.data
+			case "TSUnionType":
+			case "TSIntersectionType":
+				return union(type.types, depth)
+			case "TSArrayType":
+				return held([type.elementType])
+			case "TSTypeLiteral":
+				return membersOf(type.members)
+			case "TSTypeQuery": {
+				const binding =
+					type.exprName.type === "Identifier" &&
+					module.scopes.root.bindings[type.exprName.name]
+				if (!binding) return
+				const kind = kindOfKey(binding, module)
+				return isArk(kind) ? unsure : kind
+			}
+			case "TSTypeReference": {
+				const name = type.typeName
+				const root = name.type === "TSQualifiedName" ? name.left : name
+				if (root.type !== "Identifier") return
+				// e.g. `T` in `<T>(t: T) => ...`, which only the calls decide
+				if (declaresTypeParameter(context, root.name)) return
+				const imported = importedNameOf(module, root.name)
+				if (imported) {
+					const [specifier, importedName] = imported
+					if (localSpecifier.test(specifier)) return
+					return (
+							arktypePackage.test(specifier) &&
+								(name.type === "TSQualifiedName" ?
+									importedName === "*" ?
+										name.right.name in arkTypeNames
+									:	importedName === "type" && name.right.name === "Any"
+								:	importedName in arkTypeNames)
+						) ?
+							unsure
+						:	kinds.data
+				}
+				const local = localTypeOf(module, root.name)
+				if (!local) return held(type.typeArguments?.params ?? [])
+				if (this.resolving.has(local)) return kinds.data
+				this.resolving.add(local)
+				try {
+					return local.type === "TSInterfaceDeclaration" ?
+							membersOf(local.body.body)
+						:	this.typeKindOf(
+								local.typeAnnotation,
+								local,
+								module,
+								kindOfKey,
+								depth
+							)
+				} finally {
+					this.resolving.delete(local)
+				}
+			}
+			case "TSLiteralType":
+			case "TSTemplateLiteralType":
+				return kinds.data
+			default:
+				return type.type.endsWith("Keyword") ? kinds.data : undefined
+		}
 	}
 
 	// e.g. `f(A)` or `(t => t)(A)`, or undefined if `f` is exported or passed where the build can't see its calls
@@ -955,11 +1180,11 @@ export class ModuleGraph {
 		if (literal) {
 			const value =
 				isRest ? undefined : this.valueIn(literal, keyIn(owner, node))
-			return (
-				value === null ? kinds.data
-				: value ? this.transfer(value.node, value.module, value.kindOfKey)
-				: kinds.data | this.heldKindOf(literal)
-			)
+			return value ?
+					this.transfer(value.node, value.module, value.kindOfKey)
+				:	kinds.data |
+						(value === null ? 0 : this.heldKindOf(literal)) |
+						unsureOf(kind)
 		}
 		switch (parent.type) {
 			case "Property":
@@ -1022,7 +1247,13 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): ArkKind {
-		if (fn.async || fn.generator || !fn.body) return kinds.data
+		if (fn.generator || !fn.body) return kinds.data
+		// e.g. a Type from `await load()`, which the build doesn't follow
+		if (fn.async) {
+			return lostOf(
+				this.returnKindIn({ ...fn, async: false }, module, kindOfKey)
+			)
+		}
 		if (fn.body.type !== "BlockStatement")
 			return this.transfer(fn.body, module, kindOfKey)
 		const statements = fn.body.body
@@ -1064,6 +1295,13 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): ArkKind {
+		const cast = castOf(node)
+		if (cast) {
+			return annotate(
+				this.transfer(normalize(node), module, kindOfKey),
+				this.annotatedKindOf(cast, module, kindOfKey)
+			)
+		}
 		node = normalize(node)
 		const cached =
 			this.bindingKindOfKeys.has(kindOfKey) ?
@@ -1089,11 +1327,12 @@ export class ModuleGraph {
 					this.resolving.add(node)
 					try {
 						const value = this.valueIn(literal, name)
-						return (
-							value === null ? kinds.data
-							: value ? this.transfer(value.node, value.module, value.kindOfKey)
-							: kinds.data | this.heldKindOf(literal)
-						)
+						// e.g. `list.at` or `schemas[key]`, which may read what a holder holds
+						return value ?
+								this.transfer(value.node, value.module, value.kindOfKey)
+							:	kinds.data |
+									(value === null ? 0 : this.heldKindOf(literal)) |
+									unsureOf(this.transfer(node.object, module, kindOfKey))
 					} finally {
 						this.resolving.delete(node)
 					}
@@ -1122,7 +1361,14 @@ export class ModuleGraph {
 				const fn =
 					this.functionOf(callee, module) ??
 					this.methodOf(callee, module, kindOfKey)
-				if (!fn) return callKindOf(this.transfer(callee, module, kindOfKey))
+				if (!fn) {
+					return (
+						callKindOf(this.transfer(callee, module, kindOfKey)) |
+						(node.type === "CallExpression" ?
+							this.builtinPassedOf(node, module, kindOfKey)
+						:	0)
+					)
+				}
 				if (
 					node.type !== "CallExpression" ||
 					!isStatic(fn[0]) ||
@@ -1155,9 +1401,88 @@ export class ModuleGraph {
 				return node.operator === "=" ?
 						this.transfer(node.right, module, kindOfKey)
 					:	kinds.data
+			case "ObjectExpression":
+			case "ArrayExpression": {
+				// e.g. `{ a: o.a }`, which holds nothing until it holds something else
+				if (this.resolving.has(node)) return kinds.data
+				this.resolving.add(node)
+				try {
+					return holderOf(this.heldKindOf({ node, module, kindOfKey }))
+				} finally {
+					this.resolving.delete(node)
+				}
+			}
+			case "ThisExpression": {
+				let owner: Node | null | undefined = node.parent
+				while (owner && owner.type !== "ClassBody") owner = owner.parent
+				return owner ?
+						this.instanceKindOf(owner.parent!, module, kindOfKey)
+					:	kinds.data
+			}
+			case "NewExpression": {
+				const literal = this.literalOf(node.callee, module, kindOfKey)
+				return (
+						literal?.node.type === "ClassDeclaration" ||
+							literal?.node.type === "ClassExpression"
+					) ?
+						this.instanceKindOf(literal.node, literal.module, literal.kindOfKey)
+					:	kinds.data
+			}
+			case "AwaitExpression":
+				return this.transfer(node.argument, module, kindOfKey)
 			default:
 				return kinds.data
 		}
+	}
+
+	// e.g. a holder for `Object.freeze({ A })`, as a builtin may return what it's passed
+	private builtinPassedOf(
+		call: CallExpression,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		let root = normalize(call.callee)
+		while (root.type === "MemberExpression") root = normalize(root.object)
+		if (
+			root.type !== "Identifier" ||
+			module.scopes.referencesById.get(root)?.binding
+		)
+			return 0
+		return holderOf(
+			call.arguments.reduce(
+				(kind, arg) => kind | this.transfer(arg, module, kindOfKey),
+				0
+			)
+		)
+	}
+
+	// e.g. a holder for an instance of `class { user = type(...) }`, whose fields the build doesn't follow
+	private instanceKindOf(
+		cls: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		const isFinal = kindOfKey === this.finalKindOfKey
+		const cached = isFinal ? this.instanceKinds.get(cls) : undefined
+		if (cached !== undefined) return cached
+		if (this.resolving.has(cls)) return kinds.data
+		this.resolving.add(cls)
+		let held = 0
+		walk(cls, node => {
+			if (node.type === "PropertyDefinition" && !node.static && node.value)
+				held |= this.transfer(node.value, module, kindOfKey)
+			else if (
+				node.type === "AssignmentExpression" &&
+				node.left.type === "MemberExpression" &&
+				node.left.object.type === "ThisExpression"
+			)
+				held |= this.transfer(node.right, module, kindOfKey)
+			return true
+		})
+		this.resolving.delete(cls)
+		const result = holderOf(held)
+		if (isFinal) this.instanceKinds.set(cls, result)
+		return result
 	}
 
 	private applicationOf(
@@ -1428,11 +1753,11 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. `json` and `T` for `T.json` or `const { json } = T`, or `T` alone for `T[key]`, where `T` can only be a Type
+	// e.g. `json` and `T` for `T.json` or `const { json } = T`, or `T` alone for `T[key]`, where `T` can only be a Type, or may be one for `T.or`
 	unavailableReadOf(
 		node: Node,
 		module: SourceModule
-	): [read: string | undefined, object: Node] | undefined {
+	): [read: string | undefined, object: Node, isUnsure?: true] | undefined {
 		let read: unknown
 		let objects: Node[] = []
 		let kindOf = (object: Node) => this.kindOf(object, module)
@@ -1470,6 +1795,12 @@ export class ModuleGraph {
 		// a validator prints its expression as its string
 		if (read === "toString") read = "expression"
 		const object = objects.find(object => isOnlyType(kindOf(object)))
+		if (
+			!object &&
+			node.type === "MemberExpression" &&
+			isUnsureRead(read, kindOf(node.object))
+		)
+			return [read as string, node.object, true]
 		return (
 				object &&
 					(read === undefined ||
@@ -1688,6 +2019,104 @@ const keyIn = (owner: Node, node: Node): unknown =>
 	owner.type === "Property" ? keyNameOf(owner)
 	: owner.type === "ArrayPattern" ? owner.elements.indexOf(node as never)
 	: undefined
+
+// e.g. `t.or` where `t` may be a Type, though `list.map` where `list` may be an array is left to the runtime
+const isUnsureRead = (read: unknown, kind: ArkKind): boolean =>
+	typeof read === "string" &&
+	read in typeMemberKinds &&
+	(kind & kinds.type ?
+		!isOnlyType(kind)
+	:	!!(kind & kinds.unknown) && !isContainerMethod(read))
+
+const isContainerMethod = (name: unknown): boolean =>
+	typeof name === "string" && (name in Array.prototype || name in Map.prototype)
+
+// an annotation decides what may be data, though only one naming no Type hides what the build knows is arktype's
+const annotate = (kind: ArkKind, annotated: ArkKind | undefined): ArkKind =>
+	(
+		annotated === undefined ||
+		!(kind & kinds.data) ||
+		(isArk(kind) && annotated !== kinds.data)
+	) ?
+		kind
+	:	annotated
+
+// e.g. the function declaring `T` in `<T>(t: T) => t`
+const declaresTypeParameter = (
+	node: Node | null | undefined,
+	name: string
+): boolean =>
+	!!node &&
+	(("typeParameters" in node &&
+		!!node.typeParameters?.params.some(param => param.name.name === name)) ||
+		declaresTypeParameter(node.parent, name))
+
+// e.g. the cast in `(o as Schemas).user`
+const castOf = (node: Node): Node | undefined => {
+	for (; isTransparent(node); node = node.expression) {
+		if (node.type === "TSAsExpression" || node.type === "TSTypeAssertion")
+			return node
+	}
+}
+
+const arktypePackage = /^(?:arktype|@ark\/(?:type|schema))(?:\/|$)/
+
+// e.g. `./schemas` or `~/schemas`, whose types the build doesn't read
+const localSpecifier = /^(?:[#./~]|@\/)/
+
+type LocalType = TSInterfaceDeclaration | TSTypeAliasDeclaration
+
+const localTypesByModule = new WeakMap<
+	SourceModule,
+	Map<string, LocalType | null>
+>()
+
+// e.g. `type Schemas = { user: Type }`, unless the module declares two
+const localTypeOf = (
+	module: SourceModule,
+	name: string
+): LocalType | undefined => {
+	let types = localTypesByModule.get(module)
+	if (!types) {
+		const found = new Map<string, LocalType | null>()
+		walk(module.program, node => {
+			if (
+				node.type === "TSInterfaceDeclaration" ||
+				node.type === "TSTypeAliasDeclaration"
+			)
+				found.set(node.id.name, found.has(node.id.name) ? null : node)
+			return true
+		})
+		localTypesByModule.set(module, (types = found))
+	}
+	return types.get(name) ?? undefined
+}
+
+// the types of what a standalone runtime replaces with a validator or refuses to read
+const arkTypeNames: Record<string, 1> = Object.setPrototypeOf(
+	{ Type: 1, BaseType: 1, Module: 1, Generic: 1, Scope: 1, BaseRoot: 1 },
+	null
+)
+
+// e.g. `["arktype", "Type"]` for `Type` in `import type { Type } from "arktype"`, which binds nothing at runtime
+const importedNameOf = (
+	module: SourceModule,
+	name: string
+): [specifier: string, imported: string] | undefined => {
+	for (const statement of module.program.body) {
+		if (statement.type !== "ImportDeclaration") continue
+		for (const specifier of statement.specifiers) {
+			if (specifier.local.name === name) {
+				return [
+					statement.source.value,
+					specifier.type === "ImportSpecifier" ?
+						exportNameOf(specifier.imported)
+					:	"*"
+				]
+			}
+		}
+	}
+}
 
 const isPatternPart = (node: Node): boolean =>
 	node.type === "ObjectPattern" ||

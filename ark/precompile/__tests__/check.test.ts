@@ -102,6 +102,17 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		attest(cliIn(dir, "--check", "--fail-under", "0").status).equals(1)
 	})
 
+	it("fails under any rate where the build can't tell a value isn't a Type", () => {
+		const dir = fromHere("unsure")
+		attest(check([], { cwd: dir }).lines).snap([
+			"main.ts:3:16  accepted",
+			"main.ts:3:42  accepted",
+			"main.ts:5:44  form.or reads or, which a standalone validator lacks\n  the build can't tell where `form` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+			"2 sites in 1 file: 2 accepted (100.0%), 1 error outside a site"
+		])
+		attest(cliIn(dir, "--check", "--fail-under", "0").status).equals(1)
+	})
+
 	it("rejects invalid arguments", () => {
 		attest(
 			[
