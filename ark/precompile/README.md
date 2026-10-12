@@ -40,7 +40,7 @@ A definition holding functions, like a narrow, a morph, a default's thunk or a c
 precompile.vite({ maxVariants: 16 })
 ```
 
-A standalone validator lacks `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` unless the `introspection` option lists them, so reading one the build doesn't see reads `undefined`, and `JSON.stringify` skips the validator. Each one listed is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes no options but a `target`. A read the build sees, like `User.toJsonSchema()`, is replaced by what it returns either way.
+A standalone validator lacks `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` unless the `introspection` option lists them, so reading one the build doesn't see reads `undefined`, and `JSON.stringify` skips the validator. Each one listed is baked as arktype returns it under the program's configuration, and `toJsonSchema()` then takes no options but a `target`. A JSON Schema the build can't bake throws where it's read instead: one calling a default's thunk, which arktype calls at each write, or one whose configured writer reads what the program can change or can't be evaluated. A read the build sees, like `User.toJsonSchema()`, is replaced by what it returns either way.
 
 ```ts
 precompile.vite({ introspection: ["toJsonSchema", "~standard.jsonSchema"] })
