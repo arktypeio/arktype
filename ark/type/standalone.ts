@@ -2314,14 +2314,15 @@ ${isTemplate ? "]" : ")"}`
 				)
 			}
 			const regex = `new RegExp(${JSON.stringify(value.source)}, ${JSON.stringify(value.flags)})`
-			const initialized =
+			// no program can reach a pattern's own, whose lastIndex arktype resets before each test
+			if (this.patternInstances.has(value))
+				return this.declareConst(value, "literal", regex)
+			return this.declareHeld(
+				value,
 				value.lastIndex ?
 					`runtime.assign(${regex}, { lastIndex: ${value.lastIndex} })`
 				:	regex
-			// no program can reach a pattern's own
-			return this.patternInstances.has(value) ?
-					this.declareConst(value, "literal", initialized)
-				:	this.declareHeld(value, initialized)
+			)
 		}
 		return (
 			(this.metas.has(value) && this.readMeta(value)) || this.emitLiteral(value)

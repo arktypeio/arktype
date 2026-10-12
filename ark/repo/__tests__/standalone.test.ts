@@ -584,6 +584,15 @@ contextualize(() => {
 		]).equals([true, false, []])
 	})
 
+	it("keeps the lastIndex of a RegExp a program can read", async () => {
+		const held = /a/g
+		held.lastIndex = 2
+		const { T } = await load({
+			T: type("string").configure({ examples: [held] as never })
+		})
+		attest(T.meta.examples[0].lastIndex).equals(2)
+	})
+
 	it("creates a Date anew at each call of a factory whose site can run more than once", async () => {
 		const T = scope({ d: "d'2001-01-01'" }).type({ at: "d" })
 		const { fresh } = await load({

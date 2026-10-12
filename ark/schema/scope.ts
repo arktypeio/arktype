@@ -863,7 +863,7 @@ const compileContent = (
 			s.keyOf?.(value) ??
 			// a program can write a Date or another RegExp, so like an instance it's keyed by identity
 			(node.hasKind("pattern") && value === node.instance ?
-				`${value} ${node.instance.lastIndex}`
+				`${value}`
 			:	undefined)
 		if (key !== undefined) return key
 		const prototype = typeof value === "object" && Object.getPrototypeOf(value)

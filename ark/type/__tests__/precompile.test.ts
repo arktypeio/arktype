@@ -95,6 +95,17 @@ contextualize(() => {
 		attest(precompileStandalone({ tree }).code).equals(artifact)
 	})
 
+	it("writes a global pattern the same after it matches", () => {
+		const T = type({ s: /a/g })
+		const write = () => [
+			writePrecompiledUnits([T.internal]),
+			precompileStandalone({ T }).code
+		]
+		const written = write()
+		attest(T({ s: "xa" })).equals({ s: "xa" })
+		attest(write()).equals(written)
+	})
+
 	it("passes symbols and object units to compiled code", () => {
 		const key = Symbol("precompiledKey")
 		const Inner = type({ a: "string" })

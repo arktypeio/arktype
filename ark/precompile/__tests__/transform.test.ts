@@ -227,7 +227,7 @@ $arkfixConfig()
 export const A=/* @__PURE__ */ $arkvq0j6e21xyk07n();`)
 			attest(precompile(source, {}, { runtime: "arktype" }).code)
 				.snap(`import"./polyfill.ts";import{type}from"arktype";
-import "~arktype/units/1g1hh170cge8au"
+import "~arktype/units/j4fll01d1odbl"
 export const A=type("string");`)
 		})
 
@@ -1360,7 +1360,7 @@ import { other } from "./other.ts"`
 				{ runtime: "arktype" }
 			)
 			attest(result.code).snap(`import { type } from "arktype"
-import "~arktype/units/1g1hh170cge8au"
+import "~arktype/units/j4fll01d1odbl"
 import "~arktype/units/nqmgik1kbyfoe"
 let def = "string"
 def = "number"
