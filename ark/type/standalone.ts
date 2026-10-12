@@ -735,7 +735,7 @@ export class StandaloneArtifact {
 		this.defaultChecks =
 			introspected?.defaultChecks ??
 			this.variants.flatMap(variant => variant.defaultChecks ?? [])
-		// unknown for the same reason as in canFold
+		// unknown, as narrowing ExportedValue[] to BaseRoot[] compares Types and nodes structurally, too deep for TypeScript 6
 		const types: unknown[] = this.variants.map(({ type }) => type)
 		this.variantTypes = new Set(types)
 		const selection = this.selection
