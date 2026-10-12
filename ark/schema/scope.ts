@@ -588,7 +588,7 @@ class TraversalCompiler extends NodeCompiler {
 		return super.invoke(node, opts)
 	}
 
-	// a unit declares each node its code names, as by the Allows it passes where it checks the node in a branch, unless it reuses another unit's
+	// code can name a node it doesn't invoke, like the Allows passed to allowsInBranchBy, which the unit then declares or takes from the unit it reuses
 	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		const reference = this.linkage.referencesById[id]
 		if (reference && this.linkage.unreached.delete(reference))
@@ -861,7 +861,7 @@ const compileContent = (
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
 		const key =
 			s.keyOf?.(value) ??
-			// a program can write a Date or another RegExp, so like an instance it's keyed by identity
+			// arktype's own pattern instance is keyed by its source, as no program can write it, unlike any other Date or RegExp
 			(node.hasKind("pattern") && value === node.instance ?
 				`${value}`
 			:	undefined)
