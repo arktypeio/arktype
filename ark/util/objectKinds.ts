@@ -211,12 +211,11 @@ export const hasObjectKind = <kind extends keyof builtinConstructors>(
 ): data is InstanceType<builtinConstructors[kind]> =>
 	objectKindOf(data) === (kind as never)
 
+// reads of builtins run in functions annotated pure, so a bundler can drop those nothing uses
 export const isArray: (data: unknown) => data is readonly unknown[] =
-	Array.isArray
-
-// reads of prototypes run in functions annotated pure, so a bundler can drop those nothing uses
+	/* @__PURE__ */ (() => Array.isArray)()
 const dateToString = /* @__PURE__ */ (() => Date.prototype.toString)()
-const dateGetTime = /* @__PURE__ */ (() => Date.prototype.getTime)()
+export const dateGetTime = /* @__PURE__ */ (() => Date.prototype.getTime)()
 
 export const isValidDate = (date: Date): boolean => {
 	if (date.toString !== dateToString) return date.toString() !== "Invalid Date"

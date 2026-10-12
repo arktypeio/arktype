@@ -42,6 +42,7 @@ import {
 import {
 	baseNameOf,
 	Callable,
+	dateGetTime,
 	functionNameOf,
 	getBuiltinNameOfConstructor,
 	hasDomain,
@@ -490,7 +491,7 @@ export const factOfHole = (
 
 export const describeShape = (value: unknown): string => {
 	if (!hasDomain(value, "object")) return describeValue(value)
-	if (value instanceof Date) return `a Date at ${getTime.call(value)}`
+	if (value instanceof Date) return `a Date at ${dateGetTime.call(value)}`
 	if (value instanceof RegExp) return `the RegExp ${value}`
 	if (Array.isArray(value)) return `an array of length ${value.length}`
 	const prototype = prototypeOf(value)
@@ -738,7 +739,7 @@ class InternTable {
 
 export const internTable = (): InternTable => new InternTable()
 
-const checkedDefaults = new InternTable()
+const checkedDefaults = /* @__PURE__ */ new InternTable()
 
 // a factory returns what it created before for the same holes, since creating it at each call is many times slower
 export const intern = <value>(
@@ -784,8 +785,6 @@ export const checkHelper = (
 		)
 	}
 }
-
-const { getTime } = Date.prototype
 
 const isValidator = (value: unknown) => value instanceof Validator
 

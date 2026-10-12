@@ -18,10 +18,11 @@ const fileName = (): string => {
 
 type ArkKnownEnvVar = "ARK_DEBUG"
 
+// read in a function annotated pure, so a bundler can drop it where nothing reads env
 const env: Record<
 	autocomplete<ArkKnownEnvVar>,
 	string | undefined
-> = (globalThis.process?.env as never) ?? {}
+> = /* @__PURE__ */ (() => (globalThis.process?.env as never) ?? {})()
 
 export const isomorphic = {
 	fileName,
