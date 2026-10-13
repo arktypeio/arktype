@@ -651,7 +651,8 @@ const observe = (value: unknown): Observation => {
 	}
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+// a path to this file through a symlink differs from its URL, which resolves the link
+if (import.meta.main) {
 	const [world, manifestPath, outPath] = process.argv.slice(2)
 	await run(
 		world as World,

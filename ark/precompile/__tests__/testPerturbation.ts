@@ -17,6 +17,7 @@ import { specifierOf } from "@ark/precompile/internal/precompile.ts"
 import MagicString from "magic-string"
 import { execFile, spawnSync } from "node:child_process"
 import {
+	existsSync,
 	globSync,
 	mkdtempSync,
 	readFileSync,
@@ -25,7 +26,6 @@ import {
 } from "node:fs"
 import { tmpdir } from "node:os"
 import { join, relative } from "node:path"
-import { fileURLToPath } from "node:url"
 import { promisify } from "node:util"
 import {
 	isPerturbable,
@@ -346,7 +346,8 @@ export const runWorld = async (
 	const manifestPath = join(out, `${world}.manifest.json`)
 	const resultPath = join(out, `${world}.json`)
 	writeFileSync(manifestPath, JSON.stringify(manifest))
-	await execFileAsync(
+	rmSync(resultPath, { force: true })
+	const { stderr } = await execFileAsync(
 		process.execPath,
 		[
 			"--conditions",
@@ -359,8 +360,16 @@ export const runWorld = async (
 		],
 		{ cwd: root, maxBuffer: 1 << 30 }
 	).catch(e => {
-		throw new Error(`the ${world} world exited with ${e.code}:\n${e.stderr}`)
+		throw new Error(
+			`the ${world} world exited with ${e.signal ?? e.code}: ${e.message}`
+		)
 	})
+	// a world that exits 0 without writing its results failed all the same
+	if (!existsSync(resultPath)) {
+		throw new Error(
+			`the ${world} world exited with 0 without writing ${resultPath}:\n${stderr}`
+		)
+	}
 	return JSON.parse(readFileSync(resultPath, "utf8"))
 }
 
@@ -453,7 +462,7 @@ export const compareWorlds = (
 	return { counts, disagreements, observedSites }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (import.meta.main) {
 	const positionals = process.argv.slice(2)
 	const corpus = globSync(
 		[
