@@ -78,11 +78,18 @@ declare namespace ArkIssues {
  */
 class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	/** @internal each issue in the order it was added */
-	_: ArkIssue[] = []
+	declare _: ArkIssue[]
 	/** @internal the path a fused traversal is at */
-	_path: PropertyKey[] = []
+	declare _path: PropertyKey[]
 	/** @internal set by a build asking for only the first issue */
-	declare failFast?: true
+	declare failFast: true | undefined
+
+	// fields are assigned by the constructor, since V8 creates a subclass's instances more slowly from initializers
+	constructor() {
+		this._ = []
+		this._path = []
+		this.failFast = undefined
+	}
 
 	get [arkKind](): "errors" {
 		return "errors"
