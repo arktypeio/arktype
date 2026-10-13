@@ -114,7 +114,7 @@ jobs:
         run: pnpm testPerturbation
 
       - name: Run generated programs through the build
-        run: pnpm testFiles ark/precompile/__tests__/programs.test.ts --skipTypes
+        run: pnpm testPrograms
         env:
           ARK_PRECOMPILE_PROGRAMS: 300
 

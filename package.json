@@ -34,6 +34,7 @@
 		"testBuild": "node ./ark/repo/testBuild.ts",
 		"testHistory": "node --conditions ark-ts ./ark/repo/testHistory.ts",
 		"testEnvironments": "node --conditions ark-ts ./ark/precompile/__tests__/testEnvironments.ts",
+		"testPrograms": "pnpm testFiles ark/precompile/__tests__/testPrograms.ts --skipTypes",
 		"testPerturbation": "node --conditions ark-ts ./ark/precompile/__tests__/testPerturbation.ts",
 		"testDifferential": "pnpm test --exclude ark/type/__tests__/gc.test.ts --require ./ark/precompile/__tests__/testDifferential.ts",
 		"testCache": "pnpm test --exclude ark/type/__tests__/gc.test.ts --exclude ark/type/__tests__/facts.test.ts --exclude ark/type/__tests__/precompile.test.ts --grep \"^config jitless$\" --invert --require ./ark/precompile/__tests__/testCache.ts",

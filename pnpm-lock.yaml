@@ -334,9 +334,6 @@ importers:
         specifier: 3.4.0
         version: 3.4.0(esbuild@0.25.10)(rolldown@1.2.13)(rollup@4.52.4)(vite@8.3.4(@types/node@24.7.2)(esbuild@0.25.10)(jiti@2.6.1)(tsx@4.20.6))
     devDependencies:
-      '@ark/fast-check':
-        specifier: workspace:*
-        version: link:../fast-check
       '@typescript-eslint/scope-manager':
         specifier: 8.46.1
         version: 8.46.1
