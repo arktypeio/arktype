@@ -1183,6 +1183,59 @@ export const Guest = new Forms().user.or("null")`)
 			])
 		})
 
+		it("Types read through an instance's fields, each on its own", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+import { HttpClient } from "http"
+class Base {
+	user = type({ name: "string" })
+}
+class Forms extends Base {
+	guest = type("null")
+	list = []
+	constructor(private http: HttpClient) {
+		super()
+		this.list.push(type("string"))
+	}
+	get admin() {
+		return type({ role: "string" })
+	}
+	make() {
+		return type("number")
+	}
+	load() {
+		return this.http.get("/guest").pipe(this.guest.assert)
+	}
+}
+const http = new HttpClient()
+console.log(new Forms(http).user.or, new Forms(http).admin.or)
+console.log(new Forms(http).make().or, new Forms(http).list[0].or)`)
+			).snap([
+				"/main.ts:24:13  new Forms(http).user.or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				"/main.ts:24:38  new Forms(http).admin.or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).admin` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				"/main.ts:25:13  new Forms(http).make().or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).make()` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				"/main.ts:25:40  new Forms(http).list[0].or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).list[0]` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+			])
+		})
+
+		it("fields that read each other, each solved once", () => {
+			const fields = Array.from(
+				{ length: 26 },
+				(_, i) => `f${i + 2} = this.f${i + 1} ?? this.f${i}`
+			)
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+class Chain {
+	f0 = type("string")
+	f1 = type("number")
+	${fields.join("\n\t")}
+}
+export const X = new Chain().f27.or("null")`)
+			).snap([
+				"/main.ts:32:18  new Chain().f27.or reads or, which a standalone validator lacks\n  the build can't tell where `new Chain().f27` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+			])
+		})
+
 		it("a Type reaching a value annotated as something else", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"

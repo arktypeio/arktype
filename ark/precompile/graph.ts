@@ -480,7 +480,13 @@ interface Application {
 	args: readonly ArkKind[]
 }
 
-type Key = Binding | FunctionNode | Application
+// e.g. `user` of an instance of `class { user = type(...) }`, solved once like a binding
+interface Member {
+	owner: Node
+	name: unknown
+}
+
+type Key = Binding | FunctionNode | Application | Member
 
 type KindOfKey = (key: Key, module: SourceModule) => ArkKind
 
@@ -509,7 +515,6 @@ export class ModuleGraph {
 		Object.create(null)
 	private kindsByKey = new Map<Key, ArkKind>()
 	private kindsByNode = new Map<Node, ArkKind>()
-	private instanceKinds = new Map<Node, ArkKind>()
 	private localTypesByModule = new WeakMap<
 		SourceModule,
 		Record<string, LocalType | null>
@@ -517,6 +522,7 @@ export class ModuleGraph {
 	// a helper's parameters as one call passes them, which the kinds cached by node can't hold
 	private bindingKindOfKeys = new WeakSet<KindOfKey>()
 	private applicationsByFn = new Map<FunctionNode, Map<string, Application>>()
+	private membersByOwner = new Map<Node, Map<unknown, Member>>()
 	private resolving = new Set<Node>()
 	private heldKindsByNode = new Map<Node, ArkKind>()
 	private composingByFn = new Map<FunctionNode, boolean>()
@@ -860,6 +866,8 @@ export class ModuleGraph {
 			)
 		}
 		if ("type" in key) return this.returnKindIn(key, module, kindOfKey)
+		if ("owner" in key)
+			return this.fieldKindIn(key.owner, key.name, module, kindOfKey)
 		const binding = key
 		switch (binding.kind) {
 			case "import":
@@ -1386,6 +1394,10 @@ export class ModuleGraph {
 						this.resolving.delete(node)
 					}
 				}
+				if (typeof name === "string") {
+					const cls = this.classOf(node.object, module, kindOfKey)
+					if (cls) return kindOfKey(this.memberOf(cls.node, name), cls.module)
+				}
 				// the class of what a Type returns when validation fails
 				if (
 					name === "errors" &&
@@ -1467,21 +1479,10 @@ export class ModuleGraph {
 					this.resolving.delete(node)
 				}
 			}
-			case "ThisExpression": {
-				let owner: Node | null | undefined = node.parent
-				while (owner && owner.type !== "ClassBody") owner = owner.parent
-				return owner ?
-						this.instanceKindOf(owner.parent!, module, kindOfKey)
-					:	kinds.data
-			}
+			case "ThisExpression":
 			case "NewExpression": {
-				const literal = this.literalOf(node.callee, module, kindOfKey)
-				return (
-						literal?.node.type === "ClassDeclaration" ||
-							literal?.node.type === "ClassExpression"
-					) ?
-						this.instanceKindOf(literal.node, literal.module, literal.kindOfKey)
-					:	kinds.data
+				const cls = this.classOf(node, module, kindOfKey)
+				return cls ? this.instanceKindOf(cls, kindOfKey) : kinds.data
 			}
 			case "AwaitExpression":
 				return this.transfer(node.argument, module, kindOfKey)
@@ -1511,33 +1512,70 @@ export class ModuleGraph {
 		)
 	}
 
-	// e.g. a holder for an instance of `class { user = type(...) }`, whose fields the build doesn't follow
-	private instanceKindOf(
+	// e.g. a holder for an instance of `class { user = type(...) }`, whose fields are read one at a time
+	private instanceKindOf(cls: Located, kindOfKey: KindOfKey): ArkKind {
+		let held = 0
+		for (const name in fieldValuesOf(cls.node))
+			held |= kindOfKey(this.memberOf(cls.node, name), cls.module)
+		return holderOf(held)
+	}
+
+	private memberOf(owner: Node, name: unknown): Member {
+		let members = this.membersByOwner.get(owner)
+		if (!members) this.membersByOwner.set(owner, (members = new Map()))
+		let member = members.get(name)
+		if (!member) members.set(name, (member = { owner, name }))
+		return member
+	}
+
+	// e.g. the class of `this` in a method, of `new C()` or of `C` in `extends C`
+	private classOf(
+		node: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): Located | undefined {
+		node = normalize(node)
+		if (node.type === "ThisExpression") {
+			const owner = ownerOf(node)
+			return owner ? { node: owner, module, kindOfKey } : undefined
+		}
+		const literal = this.literalOf(
+			node.type === "NewExpression" ? node.callee : node,
+			module,
+			kindOfKey
+		)
+		return (
+				literal?.node.type === "ClassDeclaration" ||
+					literal?.node.type === "ClassExpression"
+			) ?
+				literal
+			:	undefined
+	}
+
+	// e.g. unsure for `this.user` given `user = type(...)`, as code the build doesn't follow can set it, or data for `this.http` given only `constructor(private http: HttpClient)`
+	private fieldKindIn(
 		cls: Node,
+		name: unknown,
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): ArkKind {
-		const isFinal = kindOfKey === this.finalKindOfKey
-		const cached = isFinal ? this.instanceKinds.get(cls) : undefined
-		if (cached !== undefined) return cached
-		if (this.resolving.has(cls)) return kinds.data
-		this.resolving.add(cls)
 		let held = 0
-		walk(cls, node => {
-			if (node.type === "PropertyDefinition" && !node.static && node.value)
-				held |= this.transfer(node.value, module, kindOfKey)
-			else if (
-				node.type === "AssignmentExpression" &&
-				node.left.type === "MemberExpression" &&
-				node.left.object.type === "ThisExpression"
-			)
-				held |= this.transfer(node.right, module, kindOfKey)
-			return true
-		})
-		this.resolving.delete(cls)
-		const result = holderOf(held)
-		if (isFinal) this.instanceKinds.set(cls, result)
-		return result
+		for (const value of fieldValuesOf(cls)[name as string] ?? []) {
+			held |=
+				(
+					value.parent?.type === "MethodDefinition" &&
+					value.parent.kind === "get"
+				) ?
+					kindOfKey(value as FunctionNode, module)
+				:	this.transfer(value, module, kindOfKey)
+		}
+		const parent =
+			"superClass" in cls &&
+			cls.superClass &&
+			this.classOf(cls.superClass, module, kindOfKey)
+		if (parent)
+			held |= kindOfKey(this.memberOf(parent.node, name), parent.module)
+		return lostOf(held)
 	}
 
 	private applicationOf(
@@ -2092,6 +2130,54 @@ const annotate = (kind: ArkKind, annotated: ArkKind | undefined): ArkKind =>
 	annotated === undefined ? kind : (
 		(kind & arkBits) | (kind & ~arkBits ? annotated : 0)
 	)
+
+// e.g. the class for `this` in a method or field
+const ownerOf = (node: Node): Node | undefined => {
+	for (let owner = node.parent; owner; owner = owner.parent)
+		if (owner.type === "ClassBody") return owner.parent!
+}
+
+const fieldValuesByClass = new WeakMap<Node, Record<string, Node[]>>()
+
+// e.g. `{ user: [type(...)] }` for `class { user = type(...) }`, each value an initializer, a getter or method, or what `this.user =` or `this.user.push` sets
+const fieldValuesOf = (cls: Node): Record<string, Node[]> => {
+	let result = fieldValuesByClass.get(cls)
+	if (result) return result
+	result = Object.create(null) as Record<string, Node[]>
+	walk(cls, node => {
+		if (node.type === "PropertyDefinition" && !node.static && node.value) {
+			const name = keyNameOf(node)
+			if (typeof name === "string") (result![name] ??= []).push(node.value)
+		} else if (
+			node.type === "AssignmentExpression" &&
+			node.left.type === "MemberExpression" &&
+			node.left.object.type === "ThisExpression"
+		) {
+			const name = memberNameOf(node.left)
+			if (typeof name === "string") (result![name] ??= []).push(node.right)
+		} else if (
+			node.type === "MethodDefinition" &&
+			(node.kind === "get" || node.kind === "method") &&
+			!node.static
+		) {
+			const name = keyNameOf(node)
+			if (typeof name === "string") (result![name] ??= []).push(node.value)
+		} else if (
+			node.type === "CallExpression" &&
+			node.callee.type === "MemberExpression" &&
+			node.callee.object.type === "MemberExpression" &&
+			node.callee.object.object.type === "ThisExpression" &&
+			(memberNameOf(node.callee) as never) in storingMethods
+		) {
+			const name = memberNameOf(node.callee.object)
+			if (typeof name === "string")
+				(result![name] ??= []).push(...(node.arguments as Node[]))
+		}
+		return true
+	})
+	fieldValuesByClass.set(cls, result)
+	return result
+}
 
 // e.g. the function declaring `T` in `<T>(t: T) => t`
 const declaresTypeParameter = (
