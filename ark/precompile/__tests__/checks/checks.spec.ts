@@ -34,7 +34,7 @@ test("a mocked module", async () => {
 test("a mocked static helper", async () => {
 	mock("./helpers.ts", () => ({ optional: (def: string) => def }))
 	await expect(create()).rejects.toThrow(
-		"`optional` (helpers.ts:1:14) is Function(optional), but was precompiled as the function helpers.ts exports as `optional`"
+		"`optional` (helpers.ts:1:14) is a function, but was precompiled as the function helpers.ts exports as `optional`"
 	)
 })
 

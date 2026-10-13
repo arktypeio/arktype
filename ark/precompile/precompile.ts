@@ -235,7 +235,6 @@ interface SiteFactory {
 	// the bindings the inputs read, whose imports the call keeps
 	bindings: Binding[]
 	imports: [specifier: string, name: string, local: string][]
-	distinct: unknown[]
 }
 
 interface PassedInput {
@@ -1216,8 +1215,7 @@ export class Precompiler {
 					repeats: [],
 					inputs: [],
 					bindings: [],
-					imports: [],
-					distinct: []
+					imports: []
 				}
 				const name = `f${nameOf(site)}`
 				factoriesBySite.set(site, factory)
@@ -1241,8 +1239,7 @@ export class Precompiler {
 						repeats: [],
 						inputs: [`${prefix}m`],
 						bindings: [],
-						imports: [],
-						distinct: []
+						imports: []
 					})
 				}
 				replaced.push([site, []])
@@ -1259,8 +1256,7 @@ export class Precompiler {
 					type: site.value as never,
 					params: factory.params,
 					internedBy: table,
-					defaultChecks: site.defaultChecks,
-					distinct: factory.distinct
+					defaultChecks: site.defaultChecks
 				} satisfies StandaloneFactory
 				replaced.push([site, factory.spans])
 			} else {
@@ -1559,8 +1555,7 @@ export class Precompiler {
 			repeats: [],
 			inputs: [],
 			bindings: [],
-			imports: [],
-			distinct: []
+			imports: []
 		}
 		const passed = this.receiveReferences(
 			site,
@@ -1595,13 +1590,7 @@ export class Precompiler {
 		const holesByValue = new Map(
 			[...site.holes, ...site.called].map(hole => [hole.value, hole])
 		)
-		// the text each hole is read through, which can evaluate to another value at runtime if another module can replace it
-		const sourcesByHole = new Map<unknown, Map<string, boolean>>()
-		const addSource = (hole: unknown, text: string, isForeign: boolean) => {
-			const sources = sourcesByHole.get(hole) ?? new Map<string, boolean>()
-			sources.set(text, (sources.get(text) ?? false) || isForeign)
-			sourcesByHole.set(hole, sources)
-		}
+		const read = new Set<unknown>()
 		const passed = new Set<unknown>()
 		// one value read through two texts is passed through each, since the program can change one but not the other
 		const spanIndexByTextByPassed = new Map<unknown, Map<string, number>>()
@@ -1642,17 +1631,10 @@ export class Precompiler {
 			if (holes.length && this.isIslandValue(reference.value, site)) {
 				if (!passed.has(reference.value)) reasons.push(islandValueMessage(text))
 				passed.add(reference.value)
-				for (const value of holes) addSource(value, text, false)
+				for (const value of holes) read.add(value)
 				continue
 			}
-			for (const value of holes) {
-				addSource(
-					value,
-					text,
-					reference.isForeign ||
-						this.interpreter.sourceOf(value)?.[1] !== module
-				)
-			}
+			for (const value of holes) read.add(value)
 			const spanIndexByText =
 				spanIndexByTextByPassed.get(reference.value) ??
 				new Map<string, number>()
@@ -1680,13 +1662,14 @@ export class Precompiler {
 					{
 						kind: hole.kind as HoleKind,
 						label: `\`${text}\` (${module.positionOf(reference)})`,
-						value: hole.value
+						value: hole.value,
+						isOwn: reference.isOwnHole
 					}
 				:	{ kind: "input", label: text, reads: [[[], reference.value]] }
 			)
 		}
 		for (const value of held) {
-			if (sourcesByHole.has(value) || unchecked.has(value)) continue
+			if (read.has(value) || unchecked.has(value)) continue
 			// a value the build didn't stand in for is arktype's own, which the emitter refuses or writes itself
 			const source = this.interpreter.sourceOf(value)
 			if (!source) continue
@@ -1695,7 +1678,6 @@ export class Precompiler {
 				`arktype holds \`${origin.snippetOf(node)}\` (${origin.positionOf(node)}), which the site ${holesByValue.has(value) ? "reads outside its own source" : "cannot pass to its factory"}`
 			)
 		}
-		factory.distinct = foreignHolesOf(sourcesByHole)
 		return passed
 	}
 
@@ -3889,22 +3871,6 @@ const isStrict = (program: Program): boolean =>
 export const specifierOf = (importer: string, file: string): string => {
 	const path = relative(dirname(importer), file).split("\\").join("/")
 	return path.startsWith(".") ? path : `./${path}`
-}
-
-// a mock can make two holes another module supplies one function, which the factory checks
-const foreignHolesOf = (
-	sourcesByHole: Map<unknown, Map<string, boolean>>
-): unknown[] => {
-	const foreignTexts = new Set<string>()
-	const holes: unknown[] = []
-	for (const [hole, sources] of sourcesByHole) {
-		const foreign = [...sources].filter(([, isForeign]) => isForeign)
-		if (!foreign.length) continue
-		holes.push(hole)
-		for (const [text] of foreign) foreignTexts.add(text)
-	}
-	// the holes one validator holds are distinct, since the build of its own site proved them so
-	return holes.length > 1 && foreignTexts.size > 1 ? holes : []
 }
 
 const covers = (span: Span, site: Site) =>

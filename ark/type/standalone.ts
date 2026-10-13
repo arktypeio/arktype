@@ -135,8 +135,6 @@ export interface StandaloneFactory {
 	// the table of a factory returning what it created before for the same holes, which those returning one Type at build share
 	internedBy?: number | undefined
 	defaultChecks?: readonly DefaultCheck[]
-	// holes another module supplies through two or more texts, or a parameter holds, which the factory checks are distinct
-	distinct?: readonly unknown[]
 }
 
 export type FactoryParam = HoleParam | InputParam | HelperParam | ProgressParam
@@ -152,6 +150,8 @@ export interface HoleParam {
 	kind: HoleKind
 	label: string
 	value: unknown
+	// a function or symbol its site's module creates, whose facts nothing changes, unlike another module's, which a mock can replace
+	isOwn?: boolean
 }
 
 export interface InputParam {
@@ -371,7 +371,7 @@ const writeArtifact = (
 				factory
 			)
 			artifactsByName.set(name, artifact)
-			artifact.receiveAll()
+			artifact.receive(factory.params)
 			// a factory whose Type is written once with the creations, which each call copies with what it receives
 			if (canFold(name, factory)) {
 				const { type } = factory
@@ -732,16 +732,6 @@ export class StandaloneArtifact {
 		return this.checks.length > 0 || this.defaultChecks.length > 0
 	}
 
-	receiveAll(): void {
-		const { params, distinct = [] } = this.factory!
-		this.receive(params)
-		if (distinct.length) {
-			this.checks.push(
-				`runtime.checkDistinct([${distinct.map(hole => this.holeExpressions.get(hole)).join(", ")}], ${JSON.stringify(distinct.map(hole => this.labelsByHole.get(hole)))})`
-			)
-		}
-	}
-
 	receive(params: FactoryParam[]): void {
 		const checked: [hole: unknown, kind: HoleKind, expression: string][] = []
 		for (let i = 0; i < params.length; i++) {
@@ -763,7 +753,7 @@ export class StandaloneArtifact {
 					`runtime.checkProgress(p${i}, ${param.at}, ${JSON.stringify(param.label)})`
 				)
 			} else if (this.receiveHole(param.value, `p${i}`, param.label)) {
-				checked.push([param.value, param.kind, `p${i}`])
+				if (!param.isOwn) checked.push([param.value, param.kind, `p${i}`])
 				if (param.kind === "class") this.classes.add(param.value)
 			}
 		}

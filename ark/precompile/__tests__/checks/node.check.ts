@@ -11,6 +11,6 @@ test("a mocked static helper", async () => {
 	mock.module("./helpers.ts", { namedExports: { optional } })
 	await assert.rejects(import("./optional.ts"), {
 		message:
-			"`optional` (helpers.ts:1:14) is Function(optional), but was precompiled as the function helpers.ts exports as `optional`"
+			"`optional` (helpers.ts:1:14) is a function, but was precompiled as the function helpers.ts exports as `optional`"
 	})
 })

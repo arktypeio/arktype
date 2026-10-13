@@ -32,7 +32,6 @@ import {
 	type as runtimeType,
 	writeCreationMismatchMessage,
 	writeIdentityMismatchMessage,
-	writeRenamedHoleMessage,
 	writeUnbakedMessage,
 	writeUnlistedMemberMessage,
 	type HoleKind,
@@ -1956,31 +1955,6 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 		})
 
-		it("checks the names of a validator's holes are those it printed", async () => {
-			const isLong = (s: string) => s.length > 3
-			const builtIsLong = standIn(isLong.bind(null), "islong")
-			const Name = type("string").narrow(builtIsLong)
-			const created = await load({
-				Name: {
-					type: Name,
-					params: [{ kind: "function", label: "`isLong`", value: builtIsLong }]
-				},
-				User: {
-					type: type({ name: Name }),
-					params: [{ kind: "input", label: "Name", reads: [[[], Name]] }]
-				}
-			})
-			const name = created.Name(isLong)
-			attest(created.User(name).description).equals(
-				"{ name: a string and valid according to isLong }"
-			)
-			// arktype printed isLong in name's strings when it was created
-			Object.defineProperty(isLong, "name", { value: "renamed" })
-			attest(() => created.User(name)).throws(
-				writeRenamedHoleMessage("`Name`", 0, '"renamed"', '"isLong"')
-			)
-		})
-
 		it("checks a hole it receives twice is one value", async () => {
 			const isLong = (s: string) => s.length > 3
 			const builtIsLong = standIn(isLong.bind(null), "islong")
@@ -2004,50 +1978,6 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 			attest(() => created.User(name, (s: string) => s.length > 100)).throws(
 				writeIdentityMismatchMessage("`fns.check`", "`Name`'s hole 0")
-			)
-		})
-
-		it("checks the holes of Types another module supplies are distinct", async () => {
-			// a mock can make the Types two imports read hold one function, which the build compiled as two
-			const isLong = (s: string) => s.length > 3
-			const isShort = (s: string) => s.length < 3
-			const builtIsLong = standIn(isLong.bind(null), "islong")
-			const builtIsShort = standIn(isShort.bind(null), "isshort")
-			const Long = type("string").narrow(builtIsLong)
-			const Short = type("string").narrow(builtIsShort)
-			const created = await load({
-				Long: {
-					type: Long,
-					params: [{ kind: "function", label: "`isLong`", value: builtIsLong }]
-				},
-				Short: {
-					type: Short,
-					params: [
-						{ kind: "function", label: "`isShort`", value: builtIsShort }
-					]
-				},
-				Pair: {
-					type: type({ long: Long, short: Short }),
-					params: [
-						{ kind: "input", label: "Long", reads: [[[], Long]] },
-						{ kind: "input", label: "Short", reads: [[[], Short]] }
-					],
-					distinct: [builtIsLong, builtIsShort]
-				}
-			})
-			const Pair = created.Pair(created.Long(isLong), created.Short(isShort))
-			attest(Pair({ long: "abcd", short: "a" })).equals({
-				long: "abcd",
-				short: "a"
-			})
-			attest(() =>
-				created.Pair(created.Long(isLong), created.Short(isLong))
-			).throws(
-				writeCreationMismatchMessage(
-					"`Short`'s hole 0",
-					"`Long`'s hole 0",
-					"another value"
-				)
 			)
 		})
 
@@ -2174,7 +2104,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			const expected = "the function helpers.ts exports as `list`"
 			// a module a test runner replaced never registered what it exports
 			attest(() => create(list)).throws(
-				writeCreationMismatchMessage("`list`", "Function(list)", expected)
+				writeCreationMismatchMessage("`list`", "a function", expected)
 			)
 			const registry = Symbol.for("arktype.helpers")
 			Reflect.set(globalThis, registry, {
@@ -2183,7 +2113,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			try {
 				attest(create(list)("a")).equals("a")
 				attest(() => create((def: string) => def)).throws(
-					writeCreationMismatchMessage("`list`", "Function(fn)", expected)
+					writeCreationMismatchMessage("`list`", "a function", expected)
 				)
 			} finally {
 				Reflect.deleteProperty(globalThis, registry)

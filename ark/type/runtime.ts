@@ -20,10 +20,8 @@ import {
 } from "@ark/schema/runtime"
 import {
 	dateGetTime,
-	functionNameOf,
 	getBuiltinNameOfConstructor,
 	hasDomain,
-	printable,
 	prototypeOf,
 	serializePrimitive,
 	throwError,
@@ -124,7 +122,7 @@ export const {
 // read only by the factories of what references a validator, Module, Scope or Generic, so kept off what a program can read
 const holesByValue = new WeakMap<
 	object,
-	[id: string, holes: readonly unknown[], names: readonly unknown[]]
+	[id: string, holes: readonly unknown[]]
 >()
 
 const throwOnFail: ArkErrors.Handler = errors => errors.throw()
@@ -441,7 +439,7 @@ export const describeShape = (value: unknown): string => {
 	if (Array.isArray(value)) return `an array of length ${value.length}`
 	const prototype = prototypeOf(value)
 	return prototype === Object.prototype || prototype === null ?
-			`${prototype ? "an object" : "a null-prototype object"} with keys ${printable(Reflect.ownKeys(value))}`
+			`${prototype ? "an object" : "a null-prototype object"} with keys ${Reflect.ownKeys(value).map(String).join(", ")}`
 		:	describeValue(value)
 }
 
@@ -478,21 +476,6 @@ export const checkIdentity = (
 ): void => {
 	if (value !== expected)
 		throwError(writeIdentityMismatchMessage(label, expectedLabel))
-}
-
-// e.g. the narrows of two Types another module exports, which the build compiled as distinct functions though a mock can make them one
-export const checkDistinct = (
-	holes: readonly unknown[],
-	labels: readonly string[]
-): void => {
-	for (let i = 1; i < holes.length; i++) {
-		const first = holes.indexOf(holes[i])
-		if (first !== i) {
-			throwError(
-				writeCreationMismatchMessage(labels[i], labels[first], "another value")
-			)
-		}
-	}
 }
 
 // a default's checked Type and value, keyed by their content and the functions they hold
@@ -533,7 +516,7 @@ export const checkInput = (
 			writeCreationMismatchMessage(
 				label,
 				describeValue(value),
-				printable(expected)
+				describeValue(expected)
 			)
 		)
 	}
@@ -580,7 +563,7 @@ export const holdHoles = <value extends object>(
 	id: string,
 	holes: readonly unknown[] = []
 ): value => {
-	holesByValue.set(value, [id, freeze(holes), holes.map(functionNameOfHole)])
+	holesByValue.set(value, [id, freeze(holes)])
 	return value
 }
 
@@ -607,22 +590,7 @@ export const holesOf = (
 			writeCreationMismatchMessage(label, actual, `the ${kind} it was at build`)
 		)
 	}
-	// its strings print its holes' names as they were when it was created, which a factory reading them again would miss
-	const [, holes, names] = created
-	for (let i = 0; i < holes.length; i++) {
-		const name = functionNameOfHole(holes[i])
-		if (name !== names[i]) {
-			throwError(
-				writeRenamedHoleMessage(
-					label,
-					i,
-					JSON.stringify(name),
-					JSON.stringify(names[i])
-				)
-			)
-		}
-	}
-	return holes
+	return created[1]
 }
 
 // a hole is held weakly, as arktype holds a Type it may return again, so a function created for one call doesn't outlive it
@@ -662,9 +630,6 @@ export const intern = <value>(
 	return (table.value ??= create()) as value
 }
 
-const functionNameOfHole = (hole: unknown) =>
-	typeof hole === "function" ? functionNameOf(hole) : undefined
-
 const helpersKey = /* @__PURE__ */ Symbol.for("arktype.helpers")
 
 // a mock is another function, and a module a test runner replaced registered nothing, so either fails
@@ -692,11 +657,16 @@ export const checkHelper = (
 
 const isValidator = (value: unknown) => value instanceof Validator
 
-// a validator lacking its expression is described by its kind
+// an object is described by its kind, as printing it would ship a serializer, and so is a validator lacking its expression
 const describeValue = (value: unknown) =>
-	!isValidator(value) ? printable(value)
-	: Reflect.getOwnPropertyDescriptor(value, "expression") ? String(value)
-	: "a Type"
+	isValidator(value) ?
+		Reflect.getOwnPropertyDescriptor(value, "expression") ?
+			String(value)
+		:	"a Type"
+	: typeof value === "string" ? JSON.stringify(value)
+	: typeof value === "function" ? "a function"
+	: value !== null && typeof value === "object" ? "an object"
+	: String(value)
 
 export const writeCreationMismatchMessage = <
 	label extends string,
@@ -728,26 +698,6 @@ export type writeIdentityMismatchMessage<
 	label extends string,
 	expectedLabel extends string
 > = `${label} is not ${expectedLabel}, which it was at build`
-
-export const writeRenamedHoleMessage = <
-	label extends string,
-	index extends number,
-	name extends string,
-	createdName extends string
->(
-	label: label,
-	index: index,
-	name: name,
-	createdName: createdName
-): writeRenamedHoleMessage<label, index, name, createdName> =>
-	`${label}'s hole ${index} is a function named ${name}, but was named ${createdName} when ${label} was created`
-
-export type writeRenamedHoleMessage<
-	label extends string,
-	index extends number,
-	name extends string,
-	createdName extends string
-> = `${label}'s hole ${index} is a function named ${name}, but was named ${createdName} when ${label} was created`
 
 export const writeUnlistedMemberMessage = <member extends string>(
 	member: member

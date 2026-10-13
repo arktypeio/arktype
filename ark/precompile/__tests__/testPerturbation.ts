@@ -139,11 +139,13 @@ export const buildPerturbed = (
 		for (const site of folded) {
 			const id = Object.keys(sitesById).length
 			sitesById[id] = `${relative(root, path)}:${site.line}:${site.column}`
-			// arktype keeps the name and length it read of a function it already holds, which it may read only once the site runs
+			// arktype keeps the name and length it read of a function it already holds, and redefining those of one its module creates is outside the guarantee
 			const passed = new Set([
 				...loaded,
-				...site.references.flatMap(({ value }) =>
-					value !== site.value && isHolder(value) ? keyOf(value)[1] : []
+				...site.references.flatMap(({ value, isOwnHole }) =>
+					isOwnHole ? [value]
+					: value !== site.value && isHolder(value) ? keyOf(value)[1]
+					: []
 				)
 			])
 			const passedNames = new Set<string>()
@@ -372,12 +374,10 @@ export const comparable = (observation: unknown): string =>
 		.replace(/\btype\d+\b/g, "type")
 		.replace(/\$ark\.[\w$&|]+/g, "$ark")
 
-// what a factory's checks throw, a mismatch with what the build read, a hole renamed since its validator was created, or two values where it read one
+// what a factory's checks throw, a mismatch with what the build read or two values where it read one
 const isCreationCheck = (observation: Observation | undefined) =>
 	typeof observation?.threw === "string" &&
-	/ but was (?:precompiled as |named .* when .* was created$)|, which it was at build$/.test(
-		observation.threw
-	)
+	/ but was precompiled as |, which it was at build$/.test(observation.threw)
 
 // a disagreement outside the guarantee, counted by why
 const exclusions: [
