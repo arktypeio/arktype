@@ -340,28 +340,6 @@ export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 	errors: ArkErrors
 })
 
-export type ModuleMembers = { [k: string]: true | ModuleMembers }
-
-// arktype's keyword Modules create each Type when it's first read, so reading the Module fixes no configuration
-export const lazyModule = (
-	members: ModuleMembers,
-	load: () => Record<string, unknown>
-): object => {
-	const descriptors: PropertyDescriptorMap = {}
-	for (const k in members) {
-		const member = members[k]
-		let module: object | undefined
-		descriptors[k] = {
-			enumerable: true,
-			get:
-				member === true ?
-					() => load()[k]
-				:	() => (module ??= lazyModule(member, () => load()[k] as never))
-		}
-	}
-	return freeze(defineProperties({}, descriptors))
-}
-
 // a root whose Apply is compact reports what fails into the errors it returns, so a program whose roots all are loads no Traversal
 export const applyErrors = (
 	node: { traverseApply: CompactApply },

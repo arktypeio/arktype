@@ -996,33 +996,6 @@ config.onUndeclaredKey = "reject"`
 		}
 	})
 
-	it("fixes the configuration where a keyword Module's Type is first read", async () => {
-		const config = { onFail: () => "configured" }
-		const artifact = await importCode(
-			bundle(
-				`${
-					precompileStandalone(
-						{ Strings: type.keywords.string },
-						{
-							configured: {
-								fingerprint: fingerprintOf(config),
-								path: "main.ts"
-							},
-							keywordReads: new Set(["Strings"])
-						}
-					).code
-				}\nexport const configure = runtime.configure`
-			).js
-		)
-		// arktype creates a keyword's Type when it's first read
-		const strings = artifact.Strings()
-		attest(strings.json).is(strings.json)
-		attest(artifact.Strings()).is(strings)
-		artifact.configure(config, fingerprintOf(config))
-		attest(strings.email(1)).equals("configured")
-		attest(() => artifact.configure(config)).throws(reconfiguredMessage)
-	})
-
 	it("keeps the descriptions of a type another scope describes", async () => {
 		const lib = scope(
 			{ y: { v: "number" } },

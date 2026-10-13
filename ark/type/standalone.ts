@@ -190,8 +190,6 @@ interface SharedModule {
 
 export interface StandaloneOptions {
 	configured?: ConfiguredModule | undefined
-	// each Module a site reads off arktype's keywords, which creates a Type only when one of its members is read
-	keywordReads?: ReadonlySet<string> | undefined
 	// what each validator bakes of its Type's introspection, which it otherwise lacks
 	introspection?: readonly IntrospectionMember[] | undefined
 	// runs arktype writing what a validator bakes, refusing with a ParseError where the configured code it calls reads what the program can change
@@ -455,7 +453,7 @@ const writeCreations = (
 	templates: ReadonlySet<unknown>,
 	// a factory's Type, which only that factory reads
 	folded: ReadonlyMap<string, unknown>,
-	{ configured, keywordReads }: StandaloneOptions,
+	{ configured }: StandaloneOptions,
 	baking: Baking,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
@@ -507,23 +505,10 @@ const writeCreations = (
 			]
 		}
 	}
-	const lazyNamesByModule = new Map<object, string>()
 	// declared as functions, which a site an import cycle reaches before the artifact is evaluated can call
 	const getters = names.flatMap((name, i) => {
 		if (folded.has(name)) return []
-		const value = types[name]
-		let declaration = ""
-		let read = readOf(...reads[name])
-		if (keywordReads?.has(name) && hasArkKind(value, "module")) {
-			let lazyName = lazyNamesByModule.get(value)
-			if (!lazyName) {
-				lazyName = `lazy${i}`
-				lazyNamesByModule.set(value, lazyName)
-				declaration = `var ${lazyName}\n\n`
-			}
-			read = `(${lazyName} ??= runtime.lazyModule(${JSON.stringify(moduleMembersOf(value))}, () => ${read}))`
-		}
-		return `${declaration}${writeFunction(baking.hoisted, `get${i}`, "", `\treturn ${read}`)}\n\nexport { get${i} as ${JSON.stringify(name)} }`
+		return `${writeFunction(baking.hoisted, `get${i}`, "", `\treturn ${readOf(...reads[name])}`)}\n\nexport { get${i} as ${JSON.stringify(name)} }`
 	})
 	return [
 		[
@@ -546,13 +531,6 @@ const writeImports = (imports: Record<string, string[]>) =>
 				`import { ${names.join(", ")} } from ${JSON.stringify(specifier)}`
 		)
 		.join("\n")
-
-const moduleMembersOf = (module: object): runtime.ModuleMembers => {
-	const result: runtime.ModuleMembers = {}
-	for (const [k, member] of Object.entries(module))
-		result[k] = hasArkKind(member, "module") ? moduleMembersOf(member) : true
-	return result
-}
 
 export const writeFixConfig = (
 	configured: ConfiguredModule | undefined

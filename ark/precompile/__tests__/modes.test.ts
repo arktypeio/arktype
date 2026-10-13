@@ -590,17 +590,6 @@ export const Name = type("string")`,
 					opts
 				)
 			).equals([])
-			for (const read of ["type.keywords.string", 'type.keywords["string"]']) {
-				attest(
-					diagnosticsOf(
-						`import { type } from "arktype"
-export const suffix = "!"
-export const Strings = ${read}`,
-						config,
-						opts
-					)
-				).equals([])
-			}
 		})
 
 		it("configure with a build define", () => {

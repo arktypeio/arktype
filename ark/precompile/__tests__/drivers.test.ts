@@ -280,9 +280,6 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 
 		it("configured before a Type is created, after the module defining it loads", () => {
 			const opts = { config: "config.ts" }
-			attest(node(["later.ts"], opts, configured).stdout).equals(
-				runPlain(configured, "later.ts")
-			)
 			attest(
 				node(["unconfigured.ts"], opts, configured).stderr.includes(
 					writeCreatedBeforeConfigureMessage("schemas.ts")

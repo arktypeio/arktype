@@ -50,7 +50,6 @@ import type {
 	CallExpression,
 	ImportDeclaration,
 	ImportDeclarationSpecifier,
-	MemberExpression,
 	Node,
 	Program,
 	Span
@@ -74,7 +73,6 @@ import {
 	isRuntimeExport,
 	isSetLast,
 	isTypeOnly,
-	memberNameOf,
 	ModuleGraph,
 	progressOf,
 	readsBindingOf,
@@ -179,8 +177,6 @@ export interface Site {
 	references: Reference[]
 	// the argument of a call to arktype's `define`, which returns it, so a standalone build evaluates it in place of the call
 	definition: Node | undefined
-	// a Module like `type.keywords.string`, which creates no Type until one of its members is read
-	isKeywordRead: boolean
 	// each default arktype checks while defining what the site creates, which the build can't and its factory does at creation
 	defaultChecks: DefaultCheck[]
 	// each Scope alias arktype resolves while defining it, directly or in computing what a cache returns
@@ -1172,7 +1168,6 @@ export class Precompiler {
 		const namesBySite = new Map<Site, string>()
 		const factoriesBySite = new Map<Site, SiteFactory>()
 		const exportsByName: Record<string, StandaloneExport> = {}
-		const keywordReads = new Set<string>()
 		// each factory returns what it created before for the same holes, sharing a table with the sites arktype returned one Type for
 		const tablesByValue = new Map<unknown, number>()
 		// e.g. a site in a thunk defining a Scope's alias or in a definition throwing a ParseError, dropped with the rest of the text its call replaces
@@ -1263,7 +1258,6 @@ export class Precompiler {
 				const name = `v${nameOf(site)}`
 				namesBySite.set(site, name)
 				exportsByName[name] = site.value as never
-				if (site.isKeywordRead) keywordReads.add(name)
 				replaced.push([site, []])
 			}
 		}
@@ -1279,7 +1273,6 @@ export class Precompiler {
 					exportsByName,
 					{
 						configured,
-						keywordReads,
 						introspection: this.introspection,
 						errors: this.errors,
 						bake: write => this.bake(write),
@@ -1335,9 +1328,7 @@ export class Precompiler {
 				!site.parseError &&
 				!site.introspection?.thrown &&
 				!checking.has(name)
-			// a keyword Module creates no Type until one of its members is read
-			if (isPure && !site.isKeywordRead)
-				fixedAt = Math.min(fixedAt, site.declarationStart!)
+			if (isPure) fixedAt = Math.min(fixedAt, site.declarationStart!)
 			// a site becomes a call, so its validator is created, or its ParseError thrown, where arktype would create its Type
 			const call = `${isPure ? "/* @__PURE__ */ " : ""}${
 				this.shadow ?
@@ -2190,7 +2181,6 @@ export class Precompiler {
 				if (
 					site.status !== "rejected" &&
 					!candidate.fn &&
-					!site.isKeywordRead &&
 					site.start < configureStart
 				) {
 					const message = `${module.snippetOf(node)} is created while the config module loads, before configure() runs`
@@ -2543,7 +2533,6 @@ export class Precompiler {
 			helpers: [],
 			references: [],
 			definition: undefined,
-			isKeywordRead: false,
 			defaultChecks: [],
 			aliases: [],
 			declarationStart: declarationStartOf(node),
@@ -2556,9 +2545,6 @@ export class Precompiler {
 	private finalize(candidate: SiteCandidate, module: SourceModule): Site {
 		const { state } = candidate
 		const site = this.siteOf(candidate, module)
-		site.isKeywordRead =
-			hasArkKind(state.value, "module") &&
-			this.isKeywordRead(state.node, module)
 		if (this.mode === "standalone" && isInIsland(state.node, module)) {
 			site.status = "island"
 			return site
@@ -2743,26 +2729,6 @@ export class Precompiler {
 			!!declaration.init &&
 			this.interpreter.sitesByNode.get(unwrapExpression(declaration.init))
 				?.value === value
-		)
-	}
-
-	private isKeywordRead(node: Node, module: SourceModule): boolean {
-		let first: MemberExpression | undefined
-		let second: MemberExpression | undefined
-		node = unwrapExpression(node)
-		while (node.type === "MemberExpression") {
-			second = first
-			first = node
-			node = unwrapExpression(node.object)
-		}
-		const reference = module.scopes.referencesById.get(node)
-		const [name, read] =
-			(reference && this.graph.arkExportOf(reference, module)) ?? []
-		// a namespace import's first member names the export
-		const next = read === node ? first : second
-		return (
-			name === "keywords" ||
-			(name === "type" && !!next && memberNameOf(next) === "keywords")
 		)
 	}
 
