@@ -490,6 +490,10 @@ export class ModuleGraph {
 	private kindsByKey = new Map<Key, ArkKind>()
 	private kindsByNode = new Map<Node, ArkKind>()
 	private instanceKinds = new Map<Node, ArkKind>()
+	private localTypesByModule = new WeakMap<
+		SourceModule,
+		Record<string, LocalType | null>
+	>()
 	// a helper's parameters as one call passes them, which the kinds cached by node can't hold
 	private bindingKindOfKeys = new WeakSet<KindOfKey>()
 	private applicationsByFn = new Map<FunctionNode, Map<string, Application>>()
@@ -891,7 +895,7 @@ export class ModuleGraph {
 			else if (
 				parent?.type === "CallExpression" &&
 				parent.callee === callee &&
-				(memberNameOf(member) as string) in storingMethods
+				(memberNameOf(member) as never) in storingMethods
 			) {
 				for (const arg of parent.arguments)
 					stored |= this.transfer(arg, module, kindOfKey)
@@ -981,7 +985,7 @@ export class ModuleGraph {
 		return result
 	}
 
-	// e.g. a Type for `t` in `list.map(t => t.or(B))`, or in `{ col: t => ... }` passed to a function returning Types, where the build can't see the calls
+	// e.g. a Type for `t` in `list.map(t => t.or(B))`, or in `{ col: t => ... }` passed to a function returning Types
 	private passedKindOf(
 		fn: FunctionNode,
 		module: SourceModule,
@@ -1021,7 +1025,7 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. unsure for `Type<T>` or `type.Any`, a holder for `{ user: Type }[]`, or data for `string` or another package's type
+	// e.g. unsure for `Type<T>`, `type.Any` or `{ user: Type }[]`, or data for `string` or another package's type
 	private typeKindOf(
 		type: TSType | TSTypeAnnotation,
 		context: Node,
@@ -1040,15 +1044,12 @@ export class ModuleGraph {
 						undefined
 					:	result | kind
 			}, kinds.data)
-		const held = (types: (TSType | TSTypeAnnotation | null)[]) => {
-			const kind = union(types, depth + 1)
-			return kind === undefined ? undefined : holderOf(kind)
-		}
-		const membersOf = (members: TSSignature[]) =>
-			held(
-				members.map(member =>
-					"typeAnnotation" in member ? member.typeAnnotation : null
-				)
+		const signaturesKindOf = (signatures: TSSignature[]) =>
+			union(
+				signatures.map(signature =>
+					"typeAnnotation" in signature ? signature.typeAnnotation : null
+				),
+				depth + 1
 			)
 		switch (type.type) {
 			case "TSTypeAnnotation":
@@ -1068,9 +1069,9 @@ export class ModuleGraph {
 			case "TSIntersectionType":
 				return union(type.types, depth)
 			case "TSArrayType":
-				return held([type.elementType])
+				return union([type.elementType], depth + 1)
 			case "TSTypeLiteral":
-				return membersOf(type.members)
+				return signaturesKindOf(type.members)
 			case "TSTypeQuery": {
 				const binding =
 					type.exprName.type === "Identifier" &&
@@ -1100,13 +1101,13 @@ export class ModuleGraph {
 							unsure
 						:	kinds.data
 				}
-				const local = localTypeOf(module, root.name)
-				if (!local) return held(type.typeArguments?.params ?? [])
+				const local = this.localTypeOf(module, root.name)
+				if (!local) return union(type.typeArguments?.params ?? [], depth + 1)
 				if (this.resolving.has(local)) return kinds.data
 				this.resolving.add(local)
 				try {
 					return local.type === "TSInterfaceDeclaration" ?
-							membersOf(local.body.body)
+							signaturesKindOf(local.body.body)
 						:	this.typeKindOf(
 								local.typeAnnotation,
 								local,
@@ -1124,6 +1125,27 @@ export class ModuleGraph {
 			default:
 				return type.type.endsWith("Keyword") ? kinds.data : undefined
 		}
+	}
+
+	// e.g. `type Schemas = { user: Type }`, unless the module declares two
+	private localTypeOf(
+		module: SourceModule,
+		name: string
+	): LocalType | undefined {
+		let types = this.localTypesByModule.get(module)
+		if (!types) {
+			const found: Record<string, LocalType | null> = Object.create(null)
+			walk(module.program, node => {
+				if (
+					node.type === "TSInterfaceDeclaration" ||
+					node.type === "TSTypeAliasDeclaration"
+				)
+					found[node.id.name] = node.id.name in found ? null : node
+				return true
+			})
+			this.localTypesByModule.set(module, (types = found))
+		}
+		return types[name] ?? undefined
 	}
 
 	// e.g. `f(A)` or `(t => t)(A)`, or undefined if `f` is exported or passed where the build can't see its calls
@@ -1244,13 +1266,9 @@ export class ModuleGraph {
 	): ArkKind {
 		if (fn.generator || !fn.body) return kinds.data
 		// e.g. a Type from `await load()`, which the build doesn't follow
-		if (fn.async) {
-			return lostOf(
-				this.returnKindIn({ ...fn, async: false }, module, kindOfKey)
-			)
-		}
+		const settled = (kind: ArkKind) => (fn.async ? lostOf(kind) : kind)
 		if (fn.body.type !== "BlockStatement")
-			return this.transfer(fn.body, module, kindOfKey)
+			return settled(this.transfer(fn.body, module, kindOfKey))
 		const statements = fn.body.body
 		// one that can end without a return statement returns undefined
 		let result =
@@ -1267,7 +1285,7 @@ export class ModuleGraph {
 			}
 			return true
 		})
-		return result
+		return settled(result)
 	}
 
 	private targetKindOf(target: ImportTarget, kindOfKey: KindOfKey): ArkKind {
@@ -1748,7 +1766,7 @@ export class ModuleGraph {
 			:	undefined
 	}
 
-	// e.g. `json` and `T` for `T.json` or `const { json } = T`, or `T` alone for `T[key]`, where `T` can only be a Type, or may be one for `T.or`
+	// e.g. `json` and `T` for `T.json`, or `T` alone for `T[key]`, where `T` is a Type, or for `T.or` where it may be one
 	unavailableReadOf(
 		node: Node,
 		module: SourceModule
@@ -2060,32 +2078,6 @@ const arktypePackage = /^(?:arktype|@ark\/(?:type|schema))(?:\/|$)/
 const localSpecifier = /^(?:[#./~]|@\/)/
 
 type LocalType = TSInterfaceDeclaration | TSTypeAliasDeclaration
-
-const localTypesByModule = new WeakMap<
-	SourceModule,
-	Map<string, LocalType | null>
->()
-
-// e.g. `type Schemas = { user: Type }`, unless the module declares two
-const localTypeOf = (
-	module: SourceModule,
-	name: string
-): LocalType | undefined => {
-	let types = localTypesByModule.get(module)
-	if (!types) {
-		const found = new Map<string, LocalType | null>()
-		walk(module.program, node => {
-			if (
-				node.type === "TSInterfaceDeclaration" ||
-				node.type === "TSTypeAliasDeclaration"
-			)
-				found.set(node.id.name, found.has(node.id.name) ? null : node)
-			return true
-		})
-		localTypesByModule.set(module, (types = found))
-	}
-	return types.get(name) ?? undefined
-}
 
 // the types of what a standalone runtime replaces with a validator or refuses to read
 const arkTypeNames: Record<string, 1> = Object.setPrototypeOf(
