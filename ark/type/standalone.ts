@@ -4,7 +4,6 @@ import {
 	isDecidedByAllows,
 	isNode,
 	LazyGenericRoot,
-	pipeOf,
 	precompileRootUnits,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
@@ -1394,7 +1393,6 @@ return [${returned.join(", ")}]
 		return `${isTemplate ? "[" : "runtime.createValidator("}
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
-	${this.emit(pipeOf(root))},
 	{ meta: ${meta}${this.emitIntrospection(root)} }${key}
 ${isTemplate ? "]" : ")"}`
 	}

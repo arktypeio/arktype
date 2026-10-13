@@ -1,7 +1,6 @@
 import type {
 	BaseRoot,
 	JsonSchema,
-	TraversePipe,
 	RootApply,
 	StandardJSONSchemaV1,
 	StandardSchemaV1
@@ -9,6 +8,7 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	ArkErrors,
+	errorsOf,
 	mergeIssues,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
@@ -165,7 +165,6 @@ export class Validator {
 export const createValidator = (
 	rootApply: RootApply,
 	node: BaseRoot,
-	pipe: TraversePipe,
 	attributes: ValidatorAttributes,
 	id: string,
 	holes: readonly unknown[] = []
@@ -177,8 +176,16 @@ export const createValidator = (
 			data: unknown,
 			pipedFromCtx?: Traversal,
 			onFail: FailHandler | null = configuredOnFail
-		) =>
-			pipedFromCtx ? pipe(pipedFromCtx, node, data) : rootApply(data, onFail),
+		) => {
+			if (!pipedFromCtx) return rootApply(data, onFail)
+			const out = rootApply(data, null)
+			if (!(out instanceof ArkErrors)) return out
+			const errors = errorsOf(pipedFromCtx)
+			// arktype's errors take what it writes as they take a morph's returned errors, even from another copy of arktype, and a validator's traversal merges the errors it returns
+			if (!errors._merge) return out
+			errors._merge(out, pipedFromCtx.path)
+			return errors
+		},
 		Validator.prototype
 	)
 	// an own arrow function, since it is often detached, e.g. when passing to tRPC
@@ -203,7 +210,6 @@ export const createValidator = (
 type ValidatorParts = [
 	rootApply: RootApply,
 	node: BaseRoot,
-	pipe: TraversePipe,
 	attributes: ValidatorAttributes,
 	id: string
 ]

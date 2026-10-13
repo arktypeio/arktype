@@ -322,17 +322,18 @@ contextualize(() => {
 a must be exactly length 0`)
 	})
 
-	it("reports into an arktype traversal a morph passes it, as arktype's own Type would", async () => {
-		const T = type({
-			"+": "reject",
-			shape: type({ dims: { kind: "'circle'" } }).or({
-				dims: { kind: "'square'" }
-			})
+	it("reports the issues it writes into the arktype traversal a morph passes it", async () => {
+		const { T } = await load({
+			T: type({ a: "string", flag: "boolean", n: "string | null" })
 		})
-		const { T: validator } = await load({ T })
-		const input = { shape: { dims: { kind: "triangle" } }, extra: 1 }
-		const piped = type("unknown").pipe((data, ctx) => validator(data, ctx))
-		attest(String(piped(input))).equals(String(type("unknown").pipe(T)(input)))
+		const out = type("unknown").pipe((data, ctx) => T(data, ctx))({
+			flag: 5,
+			n: 5
+		})
+		attest(out instanceof type.errors).equals(true)
+		attest(String(out)).snap(`a is missing
+flag must be boolean
+n must be a string or null`)
 	})
 
 	it("bakes introspection", async () => {
