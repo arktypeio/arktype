@@ -45,7 +45,8 @@ type Session = {
 	/** per root, the wait for its next result with nothing loading */
 	waiting: Map<RootApply, Wait>
 	onSettled: () => void
-	onFailed: (e: unknown) => void
+	/** `awaited` is whether a `settled` promise received the error */
+	onFailed: (e: unknown, awaited: boolean) => void
 	/** created for one direct call and stopped once its result has nothing loading */
 	direct: boolean
 	stopped: boolean
@@ -57,7 +58,7 @@ let settledCount = 0
 
 const createSession = (
 	onSettled: () => void,
-	onFailed: (e: unknown) => void,
+	onFailed: Session["onFailed"],
 	direct: boolean
 ): Session => ({
 	checks: new Map(),
@@ -110,18 +111,22 @@ export interface AsyncCheckTracker {
  *
  * ✅ `onSettled` is called when a check started by `run` settles, so the caller can run again
  * ✅ only the latest check for each value and path is kept, stale results are ignored
+ * ⚠️ without `onFailed`, a check that throws rejects `settled`, or is rethrown if nothing awaited it
  */
 export const trackAsyncChecks = (
 	onSettled: () => void,
-	onFailed: (e: unknown) => void = e => {
-		throw e
-	}
+	onFailed?: (e: unknown) => void
 ): AsyncCheckTracker => {
-	const session = createSession(onSettled, onFailed, false)
+	const session = createSession(onSettled, onFailed ?? rethrowUnawaited, false)
 	return {
 		run: validate => runIn(session, validate),
 		stop: () => stop(session)
 	}
+}
+
+/** an error nobody awaited through `settled` is rethrown so it isn't lost */
+const rethrowUnawaited = (e: unknown, awaited: boolean) => {
+	if (!awaited) throw e
 }
 
 /** wraps the apply of a root that includes `narrowAsync` checks so its errors can be awaited */
@@ -196,9 +201,15 @@ const resultOf = (
 		},
 		e => {
 			if (!isLatest()) return
-			for (const wait of session.waiting.values()) end(wait, { error: e })
+			// the next run with this data starts the check again
+			session.checks.delete(key)
+			let awaited = false
+			for (const wait of session.waiting.values()) {
+				awaited ||= wait.settles.length > 0
+				end(wait, { error: e })
+			}
 			session.waiting.clear()
-			session.onFailed(e)
+			session.onFailed(e, awaited)
 		}
 	)
 	return undefined

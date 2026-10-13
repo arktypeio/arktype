@@ -168,6 +168,51 @@ name is still being checked`)
 		)
 	})
 
+	it("a tracked check that throws runs again on the next run", async () => {
+		let calls = 0
+		let fail = true
+		const T = type("string").narrowAsync(async () => {
+			calls++
+			if (fail) throw new Error("offline")
+			return true
+		})
+		const failures: unknown[] = []
+		const checks = trackAsyncChecks(
+			() => checks.run(() => T("foo")),
+			e => failures.push(e)
+		)
+		checks.run(() => T("foo"))
+		await tick()
+		attest(failures.length).equals(1)
+		fail = false
+		const out = checks.run(() => T("foo")) as type.errors
+		attest(calls).equals(2)
+		attest(await out.settled).equals("foo")
+	})
+
+	it("a tracked check that throws rejects settled without an unhandled rejection", async () => {
+		const unhandled: unknown[] = []
+		const onUnhandled = (e: unknown) => unhandled.push(e)
+		process.prependListener("unhandledRejection", onUnhandled)
+		try {
+			const T = type("string").narrowAsync(async () => {
+				throw new Error("offline")
+			})
+			const checks = trackAsyncChecks(() => {})
+			const out = checks.run(() => T("foo")) as type.errors
+			await out.settled.then(
+				() => {
+					throw new Error("expected a rejection")
+				},
+				(e: Error) => attest(e.message).equals("offline")
+			)
+			await tick()
+			attest(unhandled).equals([])
+		} finally {
+			process.off("unhandledRejection", onUnhandled)
+		}
+	})
+
 	it("standard schema validate resolves once settled", async () => {
 		const T = type("string").narrowAsync(
 			async (s, ctx) => s === "foo" || ctx.mustBe("foo")
