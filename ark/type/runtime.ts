@@ -362,17 +362,6 @@ export const lazyModule = (
 	return freeze(defineProperties({}, descriptors))
 }
 
-// an artifact's unit holding a RegExp, built as its module is evaluated unless that throws
-export const attempt = <t>(build: () => t): (() => t) => {
-	let built: t | undefined
-	try {
-		built = build()
-	} catch {
-		// an engine that can't create the pattern throws at each read instead, at a site as the program does
-	}
-	return () => (built ??= build())
-}
-
 // a root whose Apply is compact reports what fails into the errors it returns, so a program whose roots all are loads no Traversal
 export const applyErrors = (
 	node: { traverseApply: CompactApply },

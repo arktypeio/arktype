@@ -1213,14 +1213,8 @@ ${writeFunction(
 	}
 
 	// a unit nothing can read before its module is evaluated is built as the module is
-	isEager(unit: RootUnit): boolean {
-		return !this.baking.hoisted && !isBuiltAtRead(unit)
-	}
-
 	readUnit(unit: RootUnit): string {
-		return this.isEager(unit) && !isFallible(unit) ?
-				unit.name
-			:	`${unit.name}()`
+		return this.baking.hoisted ? `${unit.name}()` : unit.name
 	}
 
 	writeShared(unit: RootUnit): void {
@@ -1273,17 +1267,13 @@ ${writeFunction(
 				`(function () {\n"use strict"\nreturn ${built}\n})`
 			:	`(() => ${built})`
 		const moduleDeclarations =
-			!this.isEager(unit) ?
+			this.baking.hoisted ?
 				[
 					`var ${unit.name}Unit`,
 					`function ${unit.name}() {\n${isStrict(unit) ? `\t"use strict"\n` : ""}\treturn (${unit.name}Unit ??= ${built})\n}`
 				]
 			:	[
-					`const ${unit.name} = /* @__PURE__ */ ${
-						isFallible(unit) ? `runtime.attempt(${build})`
-						: isStrict(unit) ? `${build}()`
-						: built
-					}`
+					`const ${unit.name} = /* @__PURE__ */ ${isStrict(unit) ? `${build}()` : built}`
 				]
 		for (const root of unit.roots) {
 			const name = unit.names[root.id]
@@ -2314,43 +2304,6 @@ const isSharedUnit = (unit: RootUnit): boolean => {
 	}
 	return shared
 }
-
-// whether a unit holds a value passing the test, itself or in a plain literal, or reads a unit that does as it's built
-const holdingOf = (
-	test: (value: object) => boolean
-): ((unit: RootUnit) => boolean) => {
-	const holdingByUnit = new WeakMap<RootUnit, boolean>()
-	const holds = (value: unknown, seen: Set<unknown>): boolean => {
-		if (!hasDomain(value, "object") || seen.has(value)) return false
-		seen.add(value)
-		return (
-			test(value) ||
-			(isPlainLiteral(value) &&
-				Reflect.ownKeys(value).some(k => holds(Reflect.get(value, k), seen)))
-		)
-	}
-	const isHolding = (unit: RootUnit): boolean => {
-		let holding = holdingByUnit.get(unit)
-		if (holding === undefined) {
-			// a unit reading its own roots, as in a cycle, is decided by what else it reads
-			holdingByUnit.set(unit, false)
-			holding =
-				unit.refs.some(ref => !isNode(ref) && holds(ref, new Set())) ||
-				readUnitsOf(unit).some(isHolding)
-			holdingByUnit.set(unit, holding)
-		}
-		return holding
-	}
-	return isHolding
-}
-
-// a builtin global, which a polyfill or stub can replace before a site runs
-const isBuiltAtRead = holdingOf(
-	value => typeof value === "function" && !runtimePathsByValue.has(value)
-)
-
-// a RegExp, which an engine lacking its syntax or flags can't create
-const isFallible = holdingOf(isRegExpObject)
 
 // a unit writes the checks of nodes it doesn't declare too, like a leaf its parent checks inline
 const writtenNodesOf = (unit: RootUnit): BaseNode[] => [

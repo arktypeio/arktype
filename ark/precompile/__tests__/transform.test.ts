@@ -259,19 +259,6 @@ export const make = () => type("string")`,
 			])
 		})
 
-		it("builds a unit reading a builtin global at its first read", () => {
-			const { modules } = precompile(`import { type } from "arktype"
-export const N = type("string").pipe(Number)`)
-			attest(
-				Object.entries(modules).find(([specifier]) =>
-					specifier.startsWith("~arktype/morph")
-				)
-			).snap([
-				"~arktype/morphsfoxt60rfuj6u",
-				'import * as runtime from "arktype/runtime"\nimport { domain131fpbi0sew247 } from "~arktype/domain131fpbi0sew247"\n\nvar morphsfoxt60rfuj6uUnit\n\nfunction morphsfoxt60rfuj6u() {\n\t"use strict"\n\treturn (morphsfoxt60rfuj6uUnit ??= (function ([domain131fpbi0sew247Allows, domain131fpbi0sew247Apply]) {\nconst r0 = globalThis["Number"]\nconst r1 = runtime.type.errors\nconst r2 = runtime.TransformErrors\nconst morphsfoxt60rfuj6uAllows = function(data, ctx) {     return domain131fpbi0sew247Allows(data)\n }\nconst morphsfoxt60rfuj6uApply = function(data, ctx) {     return domain131fpbi0sew247Apply(data, ctx)\n }\nconst morphsfoxt60rfuj6uTransform = function(data, ctx) {     const morphed0 = r0(data)\n    if (morphed0 instanceof r1) {\n        return new r2(morphed0, data)\n    }\n    return morphed0\n }\nreturn [morphsfoxt60rfuj6uAllows, morphsfoxt60rfuj6uApply, morphsfoxt60rfuj6uTransform]\n})(domain131fpbi0sew247))\n}\n\nvar morphsfoxt60rfuj6uShape\nconst morphsfoxt60rfuj6uNode = (() => {\n\treturn (morphsfoxt60rfuj6uShape ??= runtime.freeze({\n\ttransforms: true,\n\ttraverseApply: morphsfoxt60rfuj6u()[1],\n\ttraverseTransform: morphsfoxt60rfuj6u()[2],\n\tallows: morphsfoxt60rfuj6u()[0]\n}))\n})\n\nexport { morphsfoxt60rfuj6u, morphsfoxt60rfuj6uNode }\n'
-			])
-		})
-
 		it("keeps a minified module's statements apart", () => {
 			const source = `import"./polyfill.ts";import{type}from"arktype";export const A=type("string");`
 			attest(precompile(source).code)

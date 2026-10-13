@@ -416,28 +416,6 @@ name is missing`)
 		attest(S("s")).equals("s")
 	})
 
-	it("loads on an engine that can't create a pattern, throwing where a site creates its validator", async () => {
-		const { js } = bundle(
-			precompileStandalone({ S: type("string"), P: type({ a: /^a(?<=a)/ }) })
-				.code
-		)
-		const message = "Invalid regular expression: /^a(?<=a)/: Invalid group"
-		const NativeRegExp = RegExp
-		globalThis.RegExp = new Proxy(NativeRegExp, {
-			construct: (target, args) => {
-				if (args[0] === "^a(?<=a)") throw new SyntaxError(message)
-				return Reflect.construct(target, args)
-			}
-		})
-		try {
-			const artifact = await importCode(js)
-			attest(artifact.S()("s")).equals("s")
-			attest(() => artifact.P()).throws(message)
-		} finally {
-			globalThis.RegExp = NativeRegExp
-		}
-	})
-
 	it("bakes the introspection its build lists", async () => {
 		const T = type({ name: "string", "tags?": "string[]" })
 		const { T: validator } = await load({ T }, undefined, undefined, [
