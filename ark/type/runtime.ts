@@ -61,6 +61,7 @@ export {
 	enterResolution,
 	exitResolution,
 	exitApplied,
+	FirstIssues,
 	FirstIssueTraversal,
 	fixConfig,
 	fixConfigured,

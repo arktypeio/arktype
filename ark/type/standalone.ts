@@ -1597,17 +1597,32 @@ ${isTemplate ? "]" : ")"}`
 						runtimePathsByValue.has(node.predicate) && node.predicate.length < 2
 					))
 		)
-		// an Apply Allows decides keeps no state but what fails, so it reports into the errors the root returns
+		// an Apply that calls back only into the runtime's keywords keeps no state but what fails, so it reports into the errors the root returns, unless a union applies its branches apart
+		const reportsIssues =
+			!root.includesAlias &&
+			!root.includesTransform &&
+			!callbacks &&
+			!declares(
+				root,
+				node =>
+					node.hasKind("union") &&
+					!node.compiledDiscriminant &&
+					!isDecidedByAllows(node)
+			)
 		const ctx =
-			this.baking.firstIssue ? "FirstIssueTraversal"
-			: !root.includesAlias && isDecidedByAllows(root) ? "ArkErrors"
+			this.baking.firstIssue ?
+				reportsIssues ? "FirstIssues"
+				:	"FirstIssueTraversal"
+			: reportsIssues ? "ArkErrors"
 			: callbacks ? "Traversal"
 			: "InternalTraversal"
 		// a first-issue build's traversal drops the rest as it finalizes, which applyErrors doesn't call
 		const apply = writeRootApply(root, nodeName, param =>
 			param === "Traversal" ? `runtime.${ctx}`
 			: param === "config" ? "runtime.runtimeConfig"
-			: param === "applyRejected" && !this.baking.firstIssue ?
+			: (
+				param === "applyRejected" && (!this.baking.firstIssue || reportsIssues)
+			) ?
 				"runtime.applyErrors"
 			:	this.emit(rootApplyRuntime[param])
 		)

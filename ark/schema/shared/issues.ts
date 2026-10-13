@@ -95,6 +95,11 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		return this._.length
 	}
 
+	/** @internal read by a check telling whether a predicate it ran added an issue */
+	get currentErrorCount(): number {
+		return this._.length
+	}
+
 	/**
 	 * Each issue, its message written when they are first read.
 	 */
@@ -164,6 +169,14 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	): true | undefined {
 		this._.push(unionIssue(this._path, site, data))
 		return this.failFast
+	}
+}
+
+// a build asking for each validation's first issue stops there, as no check its Apply writes continues past one
+export class FirstIssues extends ArkIssues {
+	constructor() {
+		super()
+		this.failFast = true
 	}
 }
 
