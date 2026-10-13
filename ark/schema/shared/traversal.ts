@@ -881,7 +881,7 @@ export const applyMember = (
 		applyResolution(member.id, node.traverseApply, data, ctx)
 	:	node.traverseApply(data, ctx)
 
-// a value Allows accepts is transformed, or left for its structure to transform
+// a value Allows accepts isn't applied, and is transformed where that finds its morphs' errors unless its structure transforms it
 export const applyValue = (
 	node: BaseNode,
 	data: unknown,
@@ -890,7 +890,7 @@ export const applyValue = (
 ): void => {
 	if (
 		node.transforms &&
-		(transforms ?
+		(transforms && (node.includesMorph || node.includesAlias) ?
 			transformIfAllowed(ctx, node, data)
 		:	allowsInBranch(ctx, node, data))
 	)

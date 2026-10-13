@@ -409,7 +409,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	// a value failing at a key stops this Apply only once ctx fails fast
 	private applyKey(key: string, value: string, node: BaseNode): this {
 		// a cyclic value is applied in this body, as each call deeper is one more frame data nested in itself costs
-		if (node.transforms || node.includesAlias) {
+		if (node.includesMorph || node.includesAlias) {
 			const apply =
 				node.entersResolution && node.includesAlias ?
 					`(${this.resolution(node, node.id, value)})`
@@ -417,7 +417,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			const fails = () => this.line("ctx.path.pop()").return(false)
 			this.line(`ctx.path.push(${key})`)
 			// only transforming a value Apply finds valid finds its morphs' errors
-			if (node.transforms && !node.includesAlias) {
+			if (!node.includesAlias) {
 				this.if(
 					`${this.ref(transformsValid)}(ctx) && ${this.allows(node, value)}`,
 					() =>
@@ -435,10 +435,12 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			}
 			return this.line("ctx.path.pop()")
 		}
+		// a value that transforms is checked by Allows first, as one that morphs must be, which also spares a valid one Apply's cost
 		const checksAllowsFirst =
-			(this.loopDepth > 0 ||
+			node.transforms ||
+			((this.loopDepth > 0 ||
 				(node.hasKind("union") && !node.compiledDiscriminant)) &&
-			isDecidedByAllows(node)
+				isDecidedByAllows(node))
 		const condition =
 			node.hasKind("union") && !checksAllowsFirst ?
 				undefined
@@ -450,9 +452,8 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		}
 		const allows =
 			!checksAllowsFirst ? ""
-			: condition === undefined ?
-				`!${this.invoke(node, { arg: value, kind: "Allows" })} && `
-			:	`!(${condition}) && `
+			: condition === undefined ? `!${this.allows(node, value)} && `
+			: `!(${condition}) && `
 		return this.if(
 			`${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${value}, ${key})`,
 			() => this.return(false)
@@ -601,7 +602,7 @@ export const returnsTransformErrors = (node: BaseNode): boolean =>
 	node.includesMorph && !node.transformRequiresContext
 
 export const isDecidedByAllows = (node: BaseNode): boolean => {
-	if (node.includesTransform || node.allowsRequiresContext) return false
+	if (node.includesMorph || node.allowsRequiresContext) return false
 	for (const id in node.referencesById)
 		if (node.referencesById[id].hasKind("predicate")) return false
 	return true

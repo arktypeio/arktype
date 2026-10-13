@@ -432,7 +432,7 @@ const T = type({
 T({ a: "x", b: "1" }).toString()
 ```
 
-A valid nested object's defaults are applied even after an earlier error, a valid object shared under a cyclic type is transformed at each path reaching it, as when validation succeeds, and a predicate checked beside morphs can run once more. Where a prop and an index signature check the same key holding an object, a morph beneath the prop doesn't run if only the index signature rejects the object, and runs if both reject it but the index signature rejects only the morph's value. Valid calls are unchanged.
+A valid nested object's function defaults are called even after an earlier error, a valid object shared under a cyclic type is transformed at each path reaching it, as when validation succeeds, and a predicate checked beside morphs or defaults can run once more. Where a prop and an index signature check the same key holding an object, a morph beneath the prop doesn't run if only the index signature rejects the object, and runs if both reject it but the index signature rejects only the morph's value. Valid calls are unchanged.
 
 ### Keep a Type's descriptions wherever it's referenced
 

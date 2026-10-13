@@ -1600,7 +1600,7 @@ ${isTemplate ? "]" : ")"}`
 		// an Apply that calls back only into the runtime's keywords keeps no state but what fails, so it reports into the errors the root returns, unless a union applies its branches apart
 		const reportsIssues =
 			!root.includesAlias &&
-			!root.includesTransform &&
+			!root.includesMorph &&
 			!callbacks &&
 			!declares(
 				root,
