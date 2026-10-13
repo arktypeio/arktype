@@ -94,7 +94,7 @@ if (ts.version.startsWith("5")) {
 
 ### Instantiations
 
-Snapshot the number of type instantiations contributed by the enclosing test.
+Snapshot the number of type instantiations contributed by the enclosing test, including evaluating the type it returns as fully as displaying it would.
 
 ```ts
 declare const it: (name: string, fn: () => void) => void
@@ -147,6 +147,8 @@ bench("bench runtime and type", () => {
 	// Seems like our type is O(n) with respect to the length of the input- not bad!
 	.types([337, "instantiations"])
 ```
+
+`.types` counts the instantiations of checking a bench and of evaluating the type it returns as fully as displaying it would. TypeScript defers the members of types like mapped types until something reads them, so return the result you want measured.
 
 A runtime bench should return the result it computes and assert its `.median`:
 
