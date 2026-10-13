@@ -1,5 +1,4 @@
 import { type } from "arktype"
-import { pair, piped } from "./helpers.ts"
 import { Trimmed, User } from "./user.ts"
 
 const Point = type({ x: "number", y: "number" })
@@ -42,18 +41,6 @@ console.log(
 		Trimmed.in.json,
 		Trimmed.out.toJsonSchema(),
 		User.props[0].value.expression,
-		type({ trimmed: Trimmed.in }).expression,
-		// each call selects the variant compiled for its functions' parameter counts
-		piped(() => 0)("x"),
-		piped(String)("x"),
-		piped(parseInt)("12"),
-		pair(s => s.length > 1, Math.abs)({ a: "xy", b: -1 }),
-		pair(
-			(s, ctx) => s.length > 1 || ctx.mustBe("long"),
-			() => 0
-		)({
-			a: "xy",
-			b: 1
-		})
+		type({ trimmed: Trimmed.in }).expression
 	])
 )

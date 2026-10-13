@@ -601,8 +601,7 @@ const B = type({ [tag]: "string" })`)
 					arity: undefined,
 					description: "tag",
 					isCalledAtDefinition: false,
-					isDefinition: false,
-					isParameter: false
+					isDefinition: false
 				}
 			])
 		})
@@ -1052,10 +1051,10 @@ export function make(v: unknown, n: number, p: (s: string) => boolean) {
 	return [A, B, C, D, E]
 }`)
 			).snap([
-				'3:12 rejected\n  `type("string").and(type.unit(v))` reads the structure of `v`, which is not static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime',
+				"3:12 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
 				"4:12 rejected\n  `type.string.atMostLength(n)` reads the structure of `n`, which is not static\n  `n` is a parameter of make (/main.ts:2:34); its value is known only at runtime",
-				"5:12 accepted string",
-				"6:12 rejected\n  arktype holds `v` as a value rather than a definition, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
+				"5:12 rejected\n  arktype reads `p` while defining the type, so it must be static\n  `p` is a parameter of make (/main.ts:2:45); its value is known only at runtime",
+				"6:12 rejected\n  arktype reads `v` while defining the type, so it must be static\n  `v` is a parameter of make (/main.ts:2:22); its value is known only at runtime",
 				"7:12 accepted { a: (In: unknown) => Out<unknown> }"
 			])
 		})

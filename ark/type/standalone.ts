@@ -8,7 +8,6 @@ import {
 	isNode,
 	LazyGenericRoot,
 	pipeOf,
-	precompileJointUnits,
 	precompileRootUnits,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
@@ -109,7 +108,6 @@ export type Foldable = BaseRoot | ExportedValue | BaseScope | GenericRoot
 export type StandaloneExport =
 	| ExportedValue
 	| StandaloneFactory
-	| StandaloneVariants
 	| StandaloneIntrospection
 
 export const introspectionMembers = [
@@ -144,19 +142,8 @@ export interface StandaloneFactory {
 	defaultChecks?: readonly DefaultCheck[]
 	// holes another module supplies through two or more texts, or a parameter holds, which the factory checks are distinct
 	distinct?: readonly unknown[]
-	// holes whose facts selected this variant, which its factory doesn't check again
-	selected?: readonly unknown[] | undefined
 	// each call creates its own of each Date or RegExp a program can write, as its site can run more than once
 	fresh?: boolean
-}
-
-// a factory compiled for each value of the facts the build doesn't know, like the parameter count of a function a parameter holds
-export interface StandaloneVariants {
-	variants: StandaloneFactory[]
-	// the params whose parameter counts select a variant
-	selecting: number[]
-	// the variant for each combination of those counts, read as digits 0, 1 and 2 or more
-	variantsByCounts: number[]
 }
 
 export type FactoryParam = HoleParam | InputParam | HelperParam | ProgressParam
@@ -356,12 +343,8 @@ const writeArtifact = (
 	const tables = new Set<number>()
 	const artifactsByName = new Map<string, StandaloneArtifact>()
 	// a trial write, adding nothing to the artifact, tells whether a factory's Type has code holding nothing the factory receives
-	const canFold = (
-		name: string,
-		factory: StandaloneFactory | StandaloneVariants
-	): factory is StandaloneFactory => {
+	const canFold = (name: string, factory: StandaloneFactory): boolean => {
 		if (
-			isVariants(factory) ||
 			// as unknown, since narrowing an ExportedValue to BaseRoot compares the Type and node structurally, too deep for TypeScript 6
 			!hasArkKind(factory.type as unknown, "root") ||
 			factory.defaultChecks?.length ||
@@ -405,10 +388,9 @@ const writeArtifact = (
 				writeExport(name, index)
 			)
 		} else {
-			const factory = value as StandaloneFactory | StandaloneVariants
-			const variants = isVariants(factory) ? factory.variants : [factory]
+			const factory = value as StandaloneFactory
 			const artifact = new StandaloneArtifact(
-				{ [name]: variants[0].type },
+				{ [name]: factory.type },
 				shared,
 				imports,
 				baking,
@@ -425,8 +407,7 @@ const writeArtifact = (
 				types[name] = type
 				factories.push(() => writeFolded(name))
 			} else {
-				for (const { internedBy } of variants)
-					if (internedBy !== undefined) tables.add(internedBy)
+				if (factory.internedBy !== undefined) tables.add(factory.internedBy)
 				factories.push(
 					artifact.writeFactory(name, index, configured),
 					writeExport(name, index)
@@ -463,7 +444,7 @@ const writeArtifact = (
 		const fold = folds[name]
 		// the first factory sharing a function writes it
 		if (fold && fold[0] !== name) return ""
-		const params = artifact.variants[0].params.map((_, i) => `p${i}`)
+		const params = artifact.factory!.params.map((_, i) => `p${i}`)
 		if (fold) params.unshift("index")
 		return `${writeFunction(baking.hoisted, `factory${index}`, params.join(", "), artifact.writeRekeying(fold ? `${creation}[index]` : readOf(creation, position)).join("\n\n"))}
 
@@ -587,9 +568,6 @@ const writeCreations = (
 	]
 }
 
-const isVariants = (value: StandaloneExport): value is StandaloneVariants =>
-	arkKindOf(value) === undefined && "variants" in value
-
 const writeSections = (sections: string[]) =>
 	`${sections.filter(section => section).join("\n\n")}\n`
 
@@ -668,8 +646,6 @@ export class StandaloneArtifact {
 	classes = new Set<unknown>()
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
-	// each validator another statement reads, which a variant's case therefore can't declare
-	readValidators = new Set<BaseRoot>()
 	unitRoots = new Set<BaseRoot>()
 	// the unit holding each root in the first Type reaching it, by id, as two nodes of one id like `unknown` and `unknown.any` are one root
 	unitsByHead = new Map<string, RootUnit>()
@@ -708,15 +684,8 @@ export class StandaloneArtifact {
 	templates = new Set<unknown>()
 	// a default's node, which only its check reads, so its validator is keyed by its traversal
 	checkedRoots: ReadonlySet<BaseRoot>
-	// what a factory receives and checks for each variant it can create, none for an artifact creating its exports once
-	variants: readonly StandaloneFactory[]
-	variantTypes: ReadonlySet<unknown>
-	// how a factory of more than one variant selects the one a call creates
-	selection: StandaloneVariants | undefined
-	// the units of the variants' Types, which declare the nodes they share once
-	jointUnits: RootUnit[] | undefined
-	// what creates each variant's validator, which only a call selecting it runs
-	variantStatements = new Map<BaseRoot, string[]>()
+	// what a factory receives and checks, none for an artifact creating its exports once
+	factory: StandaloneFactory | undefined
 	// each default arktype checks where it defines the Type, which the factory checks once it creates the validators
 	defaultChecks: readonly DefaultCheck[]
 	// the holes of each value a factory receives, by the name holding them
@@ -733,45 +702,16 @@ export class StandaloneArtifact {
 		imports: Record<string, string[]>,
 		baking: Baking,
 		held: Map<object, string>,
-		// the factory a site calls, or its variants, or the function returning a Type's introspection, which receives only what its default checks read
-		called?: StandaloneFactory | StandaloneVariants | StandaloneIntrospection
+		// the factory a site calls, or the function returning a Type's introspection, which receives only what its default checks read
+		called?: StandaloneFactory | StandaloneIntrospection
 	) {
 		this.exports = exports
 		this.baking = baking
 		const introspected = called && "member" in called ? called : undefined
 		this.introspected = introspected?.type
-		const received = introspected ? undefined : called
-		this.selection = received && isVariants(received) ? received : undefined
-		this.variants =
-			this.selection?.variants ??
-			(received ? [received as StandaloneFactory] : [])
-		this.held =
-			(introspected?.fresh ?? this.variants.some(variant => variant.fresh)) ?
-				undefined
-			:	held
-		this.defaultChecks =
-			introspected?.defaultChecks ??
-			this.variants.flatMap(variant => variant.defaultChecks ?? [])
-		// unknown, as narrowing ExportedValue[] to BaseRoot[] compares Types and nodes structurally, too deep for TypeScript 6
-		const types: unknown[] = this.variants.map(({ type }) => type)
-		this.variantTypes = new Set(types)
-		const selection = this.selection
-		// each variant holds its own stand-in for a selecting parameter's function, which a call receives as one, so a node holding it is written once where its code is the same
-		const selectedKeys = new Map(
-			selection?.variants.flatMap(({ params }) =>
-				selection.selecting.map(i => [
-					(params[i] as HoleParam).value,
-					`selected ${i}`
-				])
-			)
-		)
-		this.jointUnits =
-			selection && types.every(type => hasArkKind(type, "root")) ?
-				precompileJointUnits(types, {
-					...unitOptions,
-					keyOf: value => selectedKeys.get(value) ?? runtimeKeyOf(value)
-				})
-			:	undefined
+		this.factory = introspected ? undefined : (called as StandaloneFactory)
+		this.held = (introspected ?? this.factory)?.fresh ? undefined : held
+		this.defaultChecks = (introspected ?? this.factory)?.defaultChecks ?? []
 		this.sharedModules = sharedModules
 		this.imports = imports
 		for (const name in exports) {
@@ -785,8 +725,6 @@ export class StandaloneArtifact {
 		for (const [name, value] of Object.entries(exports)) {
 			const path = appendStringifiedKey("", name)
 			this.collectExport(value, path)
-			for (const { type } of this.variants.slice(1))
-				this.collectExport(type, path)
 		}
 		const exported = new Set(this.roots)
 		for (const [node] of this.defaultChecks)
@@ -801,7 +739,7 @@ export class StandaloneArtifact {
 			for (const root of this.roots) {
 				if (this.unitRoots.has(root)) continue
 				this.unitRoots.add(root)
-				for (const unit of this.unitsOf(root)) {
+				for (const unit of rootUnitsOf(root)) {
 					for (const head of unit.roots) {
 						if (!this.unitsByHead.has(head.id))
 							this.unitsByHead.set(head.id, unit)
@@ -836,22 +774,13 @@ export class StandaloneArtifact {
 		}
 	}
 
-	// a call selecting a variant checks the functions it receives too
 	get checksAtCreation(): boolean {
-		return (
-			this.selection !== undefined ||
-			this.checks.length > 0 ||
-			this.defaultChecks.length > 0
-		)
+		return this.checks.length > 0 || this.defaultChecks.length > 0
 	}
 
 	receiveAll(): void {
-		const [{ params, distinct = [], selected }, ...others] = this.variants
-		this.receive(
-			params,
-			selected,
-			others.map(variant => variant.params)
-		)
+		const { params, distinct = [] } = this.factory!
+		this.receive(params)
 		if (distinct.length) {
 			this.checks.push(
 				`runtime.checkDistinct([${distinct.map(hole => this.holeExpressions.get(hole)).join(", ")}], ${JSON.stringify(distinct.map(hole => this.labelsByHole.get(hole)))})`
@@ -860,11 +789,7 @@ export class StandaloneArtifact {
 		this.bindSorted()
 	}
 
-	receive(
-		params: FactoryParam[],
-		selected: readonly unknown[] = [],
-		variants: readonly FactoryParam[][] = []
-	): void {
+	receive(params: FactoryParam[]): void {
 		const checked: [hole: unknown, kind: HoleKind, expression: string][] = []
 		for (let i = 0; i < params.length; i++) {
 			const param = params[i]
@@ -885,18 +810,8 @@ export class StandaloneArtifact {
 					`runtime.checkProgress(p${i}, ${param.at}, ${JSON.stringify(param.label)})`
 				)
 			} else if (this.receiveHole(param.value, `p${i}`, param.label)) {
-				if (!selected.includes(param.value))
-					checked.push([param.value, param.kind, `p${i}`])
+				checked.push([param.value, param.kind, `p${i}`])
 				if (param.kind === "class") this.classes.add(param.value)
-			}
-		}
-		// another variant holds its own stand-in for a function selecting it, which the factory receives where it receives the first's
-		for (const variant of variants) {
-			for (const [i, param] of variant.entries()) {
-				if ("value" in param && !this.holeExpressions.has(param.value)) {
-					this.holeExpressions.set(param.value, `p${i}`)
-					this.labelsByHole.set(param.value, param.label)
-				}
 			}
 		}
 		this.checkFacts(checked)
@@ -1278,7 +1193,7 @@ export class StandaloneArtifact {
 			hasArkKind(value, "root") ||
 			isTypedFn(value) ||
 			(hasArkKind(value, "module") && Object.values(value).every(isType))
-		return this.variants.every(({ type }) => isType(type))
+		return isType(this.factory!.type)
 	}
 
 	// where the build compiled each function, the factory binds the one it receives that sorts there by name
@@ -1303,22 +1218,7 @@ export class StandaloneArtifact {
 
 	// each Type's units, after those they call
 	get units(): RootUnit[] {
-		return [...new Set([...this.unitRoots].flatMap(root => this.unitsOf(root)))]
-	}
-
-	// a variant's validator, which no other value reads
-	isVariantRoot(root: BaseRoot): boolean {
-		return (
-			!!this.selection &&
-			this.variantTypes.has(root) &&
-			!this.readValidators.has(root)
-		)
-	}
-
-	unitsOf(root: BaseRoot): RootUnit[] {
-		return this.jointUnits && this.variantTypes.has(root) ?
-				this.jointUnits
-			:	rootUnitsOf(root)
+		return [...new Set([...this.unitRoots].flatMap(root => rootUnitsOf(root)))]
 	}
 
 	get comparedValues(): unknown[] {
@@ -1407,51 +1307,22 @@ ${writeFunction(this.baking.hoisted, `create${index}`, "", statements.filter(sta
 		index: number,
 		configured: ConfiguredModule | undefined
 	): string {
-		const [{ params, internedBy }] = this.variants
+		const { type, params, internedBy } = this.factory!
 		this.writeSharedUnits()
-		// a case returns its own validator, which no other statement reads, and a Module, Scope or Generic declares what it holds, which the body then writes
-		const values = this.variants.map(
-			({ type }) =>
-				this.validatorNamesByRoot.get(type as never) ?? this.exportOf(type)
-		)
+		// a Module, Scope or Generic declares what it holds, which the body then writes
+		const value =
+			this.validatorNamesByRoot.get(type as never) ?? this.exportOf(type)
 		// written before the body, which declares what they read
-		const defaults = this.variants.map(variant =>
-			this.writeDefaultChecks(variant.defaultChecks ?? [])
-		)
+		const defaults = this.writeDefaultChecks(this.defaultChecks)
 		const holes =
 			internedBy === undefined ? undefined : (
-				[
-					...new Set(
-						this.variants.flatMap(({ type }) =>
-							keyOf(type)[1].map(hole => this.holeExpressions.get(hole)!)
-						)
-					)
-				]
+				keyOf(type)[1].map(hole => this.holeExpressions.get(hole)!)
 			)
-		const selection = this.selection
 		const body = this.writeCalledBody(index)
-		if (selection) {
-			// a call creates only the variant it selects
-			const created = this.variants.map(({ type }, i) => [
-				...(this.variantStatements.get(type as never) ?? []),
-				...defaults[i].map(({ check }) => check),
-				`return ${values[i]}`
-			])
-			body.push(
-				`switch (variant) {\n${created.map((statements, i) => `case ${i}: {\n${statements.join("\n")}\n}`).join("\n")}\n}`
-			)
-		} else
-			body.push(...defaults[0].map(({ check }) => check), `return ${values[0]}`)
-		const keys = defaults.map(
-			checks => `[${checks.map(({ key }) => key).join(", ")}]`
-		)
+		body.push(...defaults.map(({ check }) => check), `return ${value}`)
 		const defaultKeys =
-			!defaults.some(checks => checks.length) ? ""
-			: selection ? `, [${keys.join(", ")}][variant]`
-			: `, ${keys[0]}`
+			defaults.length ? `, [${defaults.map(({ key }) => key).join(", ")}]` : ""
 		const statements = [
-			selection &&
-				`const variant = runtime.selectVariant([${selection.selecting.map(i => `p${i}`).join(", ")}], ${JSON.stringify(selection.variantsByCounts)}, ${JSON.stringify(selection.selecting.map(i => params[i].label))})`,
 			writeFixConfig(configured),
 			...this.checks,
 			...(holes ?
@@ -1465,7 +1336,7 @@ ${writeFunction(this.baking.hoisted, `create${index}`, "", statements.filter(sta
 
 	// the validator its folded code creates, keyed by the functions the call receives
 	writeRekeying(read: string): string[] {
-		const [{ type }] = this.variants
+		const { type } = this.factory!
 		const holes = keyOf(type as never)[1]
 		// a Type holding exactly the holes of a value it receives, as one of a Scope does, is keyed by that value's
 		const received = [...this.holesByName].find(
@@ -1767,38 +1638,9 @@ return [${returned.join(", ")}]
 			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
 		})
 		const validators: string[] = []
-		const { statements, namesByValue } = this.declarations
-		// what depends on every validator, written once they exist
-		const lateLength = () =>
-			this.defaults.length + this.modules.length + this.fills.length
 		for (const [root, name] of this.validatorNamesByRoot) {
-			const declared = statements.length
-			const linked = this.links.length
-			const named = namesByValue.size
-			const late = lateLength()
 			const validator = `const ${name} = ${this.writeValidator(root)}`
-			if (!this.isVariantRoot(root) || lateLength() !== late) {
-				validators.push(validator)
-				continue
-			}
-			// what only a variant's validator declares, like its shape, is named nowhere else, so another reading it declares its own
-			for (const value of [...namesByValue.keys()].slice(named))
-				namesByValue.delete(value)
-			this.variantStatements.set(root, [
-				...statements.splice(declared),
-				...this.links.splice(linked),
-				validator
-			])
-		}
-		// a variant's validator holds a function of its own parameter count, so it exists only where a call selects it and no other value can hold it
-		for (const root of this.variantStatements.keys()) {
-			if (this.readValidators.has(root)) {
-				throwParseError(
-					writeUnprecompilableMessage(
-						`\`${root.expression}\`, which a variant creates and another value holds,`
-					)
-				)
-			}
+			validators.push(validator)
 		}
 		return [
 			this.declarations.statements.join("\n"),
@@ -1909,7 +1751,7 @@ ${isTemplate ? "]" : ")"}`
 		const writer = this.writeJsonSchemaWriter(root, write, values)
 		const declared = this.jsonSchemaNameOf(writer)
 		if (declared) return declared
-		// of its values, only a Date is declared, beside the validator, while a hole, builtin or bigint reads the same in every variant
+		// of its values, only a Date is declared, beside the validator, while a hole, builtin or bigint reads the same in every call
 		if (values.some(value => typeof value === "object"))
 			return this.declareConst(writer, "jsonSchema", writer)
 		const written = this.declarations.valuesByRole.jsonSchema
@@ -2213,7 +2055,6 @@ ${isTemplate ? "]" : ")"}`
 	}
 
 	readValidator(root: BaseRoot): string | undefined {
-		this.readValidators.add(root)
 		return this.validatorNamesByRoot.get(root)
 	}
 

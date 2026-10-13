@@ -145,8 +145,6 @@ export interface StandIn {
 	dynamic: DynamicValue | undefined
 	// the parameter count arktype reads as `length`, if a declaration gives it
 	arity: number | undefined
-	// a parameter of the function around the site, whose parameter count each variant the build compiles assumes
-	parameter?: Binding | undefined
 	isCalled: boolean
 	// by code arktype runs while defining a type, like a description writer, whose result the artifact can't bake from a function it receives at runtime
 	isCalledIndirectly: boolean
@@ -234,55 +232,6 @@ export class ModuleNamespace {
 
 const shortCircuit = { shortCircuit: true }
 
-const rootsByNode = new WeakMap<Node, Node>()
-
-// memoized, since a tree's parents are fixed once its module is parsed
-const rootOf = (node: Node): Node => {
-	const path: Node[] = []
-	let ancestor = node
-	while (!rootsByNode.has(ancestor) && ancestor.parent) {
-		path.push(ancestor)
-		ancestor = ancestor.parent
-	}
-	const root = rootsByNode.get(ancestor) ?? ancestor
-	for (const node of path) rootsByNode.set(node, root)
-	return root
-}
-
-// so evaluating a site again visits the keys of its own module alone
-class TreeCache<key, value> extends Map<key, value> {
-	nodeOf: (key: key) => Node
-	private keysByRoot = new Map<Node, Set<key>>()
-
-	constructor(nodeOf: (key: key) => Node) {
-		super()
-		this.nodeOf = nodeOf
-	}
-
-	override set(key: key, value: value): this {
-		super.set(key, value)
-		const root = rootOf(this.nodeOf(key))
-		const keys = this.keysByRoot.get(root)
-		if (keys) keys.add(key)
-		else this.keysByRoot.set(root, new Set([key]))
-		return this
-	}
-
-	override delete(key: key): boolean {
-		this.keysByRoot.get(rootOf(this.nodeOf(key)))?.delete(key)
-		return super.delete(key)
-	}
-
-	override clear(): void {
-		this.keysByRoot.clear()
-		super.clear()
-	}
-
-	keysIn(root: Node): key[] {
-		return [...(this.keysByRoot.get(root) ?? [])]
-	}
-}
-
 const maxDepth = 64
 
 const unstableArkProblem =
@@ -325,7 +274,7 @@ const holdsNodeId = (node: BaseNode, key: string) =>
 export class Interpreter {
 	graph: ModuleGraph
 	opts: InterpreterOptions
-	sitesByNode = new TreeCache<Node, SiteState>(node => node)
+	sitesByNode = new Map<Node, SiteState>()
 	standIns = new WeakMap<object, StandIn>()
 	// the site whose own call into arktype threw each ParseError, which only that site can fold to a thrower
 	parseErrorSites = new WeakMap<ParseError, SiteState>()
@@ -339,10 +288,8 @@ export class Interpreter {
 	private standInsByNode = new Map<Node, object>()
 	private symbolsByNode = new Map<Node, symbol>()
 	private configurationsByNode = new Map<Node, unknown>()
-	private valuesByBinding = new TreeCache<Binding, Evaluated | "evaluating">(
-		binding => binding.declaration
-	)
-	private valuesByNode = new TreeCache<Node, Evaluated>(node => node)
+	private valuesByBinding = new Map<Binding, Evaluated | "evaluating">()
+	private valuesByNode = new Map<Node, Evaluated>()
 	// unknown values a declaration computes, which it computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
 	// a site reading one receives it, so its declaration runs
@@ -353,13 +300,6 @@ export class Interpreter {
 	private declaredOnce = new WeakSet<object>()
 	private modulesByValue = new WeakMap<object, SourceModule[]>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
-	// one stand-in for each site, parameter and count a variant assumes, so evaluating a site again reads the one it read
-	private parameterStandIns = new WeakMap<
-		Node,
-		Map<Binding, Map<number, object>>
-	>()
-	// the parameter count of each parameter in the variant being evaluated, 1 for any other
-	private aritiesByParameter: ReadonlyMap<Binding, number> = new Map()
 	private validators = new WeakSet<object>()
 	private arkObjects = new WeakSet<object>()
 	private opaqueStandInsByValue = new WeakMap<object, StandIn>()
@@ -442,36 +382,6 @@ export class Interpreter {
 			site.error = this.thrown(e, site.node, ctx)
 		}
 		return site
-	}
-
-	// with what the site's own nodes evaluated forgotten, as a variant assuming other parameter counts evaluates them
-	private evaluateAgain(siteNode: Node, module: SourceModule): SiteState {
-		const isRerun = (node: Node | null | undefined): boolean =>
-			!!node && (node === siteNode || isRerun(node.parent))
-		const root = rootOf(siteNode)
-		const hide = <key, value>(cache: TreeCache<key, value>) => {
-			const kept = cache
-				.keysIn(root)
-				.filter(key => isRerun(cache.nodeOf(key)))
-				.map(key => [key, cache.get(key)!] as const)
-			for (const [key] of kept) cache.delete(key)
-			// what the run adds is its own
-			return () => {
-				for (const key of cache.keysIn(root))
-					if (isRerun(cache.nodeOf(key))) cache.delete(key)
-				for (const [key, value] of kept) cache.set(key, value)
-			}
-		}
-		const restores = [
-			hide(this.valuesByBinding),
-			hide(this.valuesByNode),
-			hide(this.sitesByNode)
-		]
-		try {
-			return this.evaluateSite(createSiteState(siteNode, module))
-		} finally {
-			for (const restore of restores) restore()
-		}
 	}
 
 	evaluate(node: Node, ctx: Context): unknown {
@@ -2037,7 +1947,7 @@ export class Interpreter {
 		ctx.site?.requests.push([node, ctx.module])
 		const converted: unknown[] = []
 		for (const arg of args) {
-			const value = this.toArktype(arg, ctx.site?.node)
+			const value = this.toArktype(arg)
 			if (isDynamic(value)) return value
 			converted.push(value)
 		}
@@ -2172,12 +2082,9 @@ export class Interpreter {
 		}
 	}
 
-	toArktype(value: unknown, siteNode?: Node): unknown {
+	toArktype(value: unknown): unknown {
 		if (isDynamic(value)) {
 			if (!value.isOpaque) return value
-			const parameter =
-				this.opts.runtime === "arktype" ? undefined : this.parameterOf(value)
-			if (parameter) return this.parameterStandIn(value, parameter, siteNode)
 			let opaque = this.opaqueByDynamic.get(value)
 			if (!opaque) {
 				opaque = this.opaqueStandIn(value)
@@ -2196,7 +2103,7 @@ export class Interpreter {
 		let copy: object | undefined
 		for (const k of Reflect.ownKeys(value)) {
 			const child = Reflect.get(value, k)
-			const converted = this.toArktype(child, siteNode)
+			const converted = this.toArktype(child)
 			if (isDynamic(converted)) return converted
 			if (converted === child) continue
 			copy ??=
@@ -2455,84 +2362,6 @@ export class Interpreter {
 			standIn.dynamic,
 			"unsupported"
 		)
-	}
-
-	// e.g. `fn` in `fn => type("string").narrow(fn)`, which holds one value however often the site reads it
-	parameterOf(dynamic: DynamicValue): Binding | undefined {
-		if (dynamic.code !== "parameter") return
-		const binding = dynamic.module.scopes.referencesById.get(
-			dynamic.node as never
-		)?.binding
-		return binding?.writes.length ? undefined : binding
-	}
-
-	// evaluates the site as if each parameter it reads were a function of the count given, as a variant of its factory assumes
-	evaluateVariant(
-		node: Node,
-		module: SourceModule,
-		arities: ReadonlyMap<Binding, number>
-	): SiteState {
-		const previous = this.aritiesByParameter
-		this.aritiesByParameter = arities
-		try {
-			return this.evaluateAgain(node, module)
-		} finally {
-			this.aritiesByParameter = previous
-		}
-	}
-
-	// a site's own, since what arktype asks of it there decides whether the site holds it as a definition or a function of the count a variant assumes
-	private parameterStandIn(
-		dynamic: DynamicValue,
-		parameter: Binding,
-		siteNode: Node | undefined
-	): object {
-		const arity = this.aritiesByParameter.get(parameter) ?? 1
-		const site = siteNode ?? parameter.id
-		let byParameter = this.parameterStandIns.get(site)
-		if (!byParameter)
-			this.parameterStandIns.set(site, (byParameter = new Map()))
-		let byArity = byParameter.get(parameter)
-		if (!byArity) byParameter.set(parameter, (byArity = new Map()))
-		const existing = byArity.get(arity)
-		if (existing) return existing
-		const standIn: StandIn = {
-			kind: "opaque",
-			module: dynamic.module,
-			node: dynamic.node,
-			closure: undefined,
-			dynamic,
-			arity,
-			parameter,
-			isCalled: false,
-			isCalledIndirectly: false,
-			isDefinition: false
-		}
-		const name = this.holeNameOf(parameter.id, dynamic.module)
-		this.standInsByName.set(name, standIn)
-		const proxy = this.standInProxy(class {}, standIn, {
-			// e.g. its prototype, which is a class's with no ancestors, as a variant assumes of a class a parameter holds
-			get: (target, k) =>
-				k === "length" ? arity
-				: k === "name" ? name
-				: answersFact(k) ? Reflect.get(target, k)
-				: this.refuse(standIn),
-			has: (_, k) => {
-				if (k !== "~standard") this.refuse(standIn)
-				standIn.isDefinition = true
-				return true
-			},
-			getPrototypeOf: () => Object.prototype,
-			apply: () => {
-				standIn.isCalled = true
-				throw this.calledAtDefinition(standIn, undefined)
-			},
-			construct: () => {
-				throw this.calledAtDefinition(standIn, undefined)
-			}
-		})
-		byArity.set(arity, proxy)
-		return proxy
 	}
 
 	private opaqueStandIn(dynamic: DynamicValue): object {

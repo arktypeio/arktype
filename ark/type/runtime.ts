@@ -511,29 +511,6 @@ export const sortByName = (holes: readonly Function[]): Function[] =>
 		)
 		.map(([, hole]) => hole)
 
-// arktype tells a function of 1 parameter from others, so a factory is compiled for each count, 0, 1 or 2 or more, of each function a parameter holds
-export const selectVariant = (
-	holes: readonly unknown[],
-	variantsByCounts: readonly number[],
-	labels: readonly string[]
-): number => {
-	let index = 0
-	for (let i = 0; i < holes.length; i++) {
-		const hole = holes[i]
-		if (typeof hole !== "function" || isValidator(hole)) {
-			throwError(
-				writeCreationMismatchMessage(
-					labels[i],
-					describeValue(hole),
-					"a function"
-				)
-			)
-		}
-		index = index * 3 + Math.min(hole.length, 2)
-	}
-	return variantsByCounts[index]
-}
-
 // a default's checked Type and value, keyed by their content and the functions they hold
 export type DefaultKey = [id: string, holes: readonly unknown[]]
 

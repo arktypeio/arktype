@@ -656,13 +656,7 @@ export interface RootUnit {
 export const precompileRootUnits = (
 	root: BaseRoot,
 	opts: UnitOptions = {}
-): RootUnit[] => unitsOf(nameContent([root], opts), [], opts)!
-
-// Types compiled together, like a definition's variants, declare the nodes they reach in one unit, unless another unit reads one first
-export const precompileJointUnits = (
-	roots: readonly BaseRoot[],
-	opts: UnitOptions = {}
-): RootUnit[] | undefined => unitsOf(nameContent(roots, opts), roots, opts)
+): RootUnit[] => unitsOf(nameContent([root], opts), opts)
 
 export interface UnitOptions {
 	keyOf?: ContentKeyOf
@@ -671,30 +665,12 @@ export interface UnitOptions {
 	referencesText?: (text: string) => boolean
 }
 
-const unitsOf = (
-	s: ContentNamingState,
-	joint: readonly BaseNode[],
-	opts: UnitOptions
-): RootUnit[] | undefined => {
+const unitsOf = (s: ContentNamingState, opts: UnitOptions): RootUnit[] => {
 	const units: RootUnit[] = []
 	const unitsById: Record<NodeId, RootUnit> = {}
-	let pending: BaseNode[] = []
 	// a component is completed after every component it calls
 	for (const component of s.components) {
-		let roots: BaseNode[] = component.filter(node => node.isRoot())
-		if (roots.some(root => joint.includes(root as BaseRoot))) {
-			pending.push(...roots)
-			if (joint.some(root => !pending.includes(root))) continue
-			roots = pending
-			pending = []
-		} else if (
-			component.some(node =>
-				s.referencesById[node.id].callees.some(callee =>
-					pending.includes(callee)
-				)
-			)
-		)
-			return
+		const roots: BaseNode[] = component.filter(node => node.isRoot())
 		roots.sort((l, r) => (s.names[l.id] < s.names[r.id] ? -1 : 1))
 		if (!roots.length) continue
 		const declaredByName: Record<string, BaseNode> = {}
