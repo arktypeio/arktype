@@ -158,8 +158,6 @@ export interface InputParam {
 	kind: "input"
 	label: string
 	reads: [path: PropertyKey[], value: unknown][]
-	// for a helper its module registers, how far the module must have run, which the helper is checked through rather than compared
-	progress?: [at: number, name: string] | undefined
 }
 
 export interface HelperParam {
@@ -707,13 +705,8 @@ export class StandaloneArtifact {
 		for (let i = 0; i < params.length; i++) {
 			const param = params[i]
 			if (param.kind === "input") {
-				for (const [path, value] of param.reads) {
-					if (param.progress && !path.length) {
-						this.checks.push(
-							`runtime.checkProgressOf(p${i}, ${param.progress[0]}, ${JSON.stringify(param.progress[1])})`
-						)
-					} else this.compareInput(`p${i}`, path, value, param.label)
-				}
+				for (const [path, value] of param.reads)
+					this.compareInput(`p${i}`, path, value, param.label)
 			} else if (param.kind === "helper") {
 				this.checks.push(
 					`runtime.checkHelper(p${i}, ${JSON.stringify(param.file)}, ${JSON.stringify(param.name)}, ${JSON.stringify(param.label)})`

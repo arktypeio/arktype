@@ -48,31 +48,27 @@ contextualize(() => {
 			precompile(
 				`import { type } from "arktype"
 import { Name } from "./name.ts"
-import { withId } from "./id.ts"
 export function nullable() {
 	return User.or("null")
 }
-const User = withId(type({ name: Name })).pipe(user => user.name)`,
+const User = type({ name: Name }).pipe(user => user.name)`,
 				{
 					"/name.ts": `import { type } from "arktype"
-export const Name = type("string").pipe(s => s.trim())`,
-					"/id.ts": `import { type } from "arktype"
-export const withId = <t extends object>(t: type.Any<t>) => t.and({ id: "string" })`
+export const Name = type("string").pipe(s => s.trim())`
 				},
 				{ shadow: true, checkHelpers: true }
 			).code
 		).snap(`var $arkm = 0;
 import { shadow as $arkshadow } from "@ark/precompile/shadow"
 import { type } from "arktype"
-import { f5gsbk00dbcwma as $arkf5gsbk00dbcwma } from "~arktype/1xqsace18jansb"
-import { f16onama10v7ypw as $arkf16onama10v7ypw } from "~arktype/1xqsace18jansb"
+import { f1861pne07huehg as $arkf1861pne07huehg } from "~arktype/1xe05of1mn8mo1"
+import { fcq9fbr09xh5h7 as $arkfcq9fbr09xh5h7 } from "~arktype/1xe05of1mn8mo1"
 import { Name } from "./name.ts"
-import { withId } from "./id.ts"
 export function nullable() {
-	return $arkshadow("/main.ts:5:9  User.or(\\"null\\")", $arkf5gsbk00dbcwma, ($arkh0) => ($arkh0.or("null")), [], User, Name, $arkm)
+	return $arkshadow("/main.ts:4:9  User.or(\\"null\\")", $arkf1861pne07huehg, ($arkh0) => ($arkh0.or("null")), [], User, Name, $arkm)
 }
-const User = $arkshadow("/main.ts:7:14  withId(type({ name: Name })).pipe(user => user.name)", $arkf16onama10v7ypw, ($arkh0, $arkh1) => (withId(type({ name: $arkh0 })).pipe($arkh1)), [1], Name, user => user.name, withId)
-$arkm = 5;
+const User = $arkshadow("/main.ts:6:14  type({ name: Name }).pipe(user => user.name)", $arkfcq9fbr09xh5h7, ($arkh0, $arkh1) => (type({ name: $arkh0 }).pipe($arkh1)), [1], Name, user => user.name)
+$arkm = 4;
 Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/main.ts": { __proto__: null, "nullable": nullable } })`)
 	})
 

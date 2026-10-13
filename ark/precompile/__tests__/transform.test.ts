@@ -273,28 +273,13 @@ import "~arktype/units/h6eh021988eyz"
 export const A=type("string");`)
 		})
 
-		it("reports an export arktype/runtime lacks that a kept helper reads", () => {
-			const result = precompile(`import { match, scope } from "arktype"
-const isLong = (s: string) => s.length > 1
-const scoped = (fn: (s: string) => boolean) => scope({ a: "string" }).type("a").narrow(fn)
-const matcher = (fn: (s: string) => string) => match({ string: fn, default: "assert" })
-export const A = scoped(isLong)
-export const M = matcher(s => s)`)
-			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:3:48  `scope` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: \"arktype\".",
-				"/main.ts:4:48  `match` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module\n  Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: \"arktype\"."
-			])
-		})
-
 		it("unsupported sites", () => {
 			const result = precompile(
 				`import { type } from "arktype"
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
-const field = (n: number) => type(\`string <= \${n}\`)
 export const A = type("string").pipe(trim)
 export const B = type(\`string <= \${max}\`)
-export const C = field(5)
 export const D = type("strin")
 export const E = type({ "+": "delete", "[string]": "string", a: "string.date.parse" })
 export const F = type("number")
@@ -306,33 +291,30 @@ export const K = type("string").extends(type("string").in)`,
 				{ "/limits.ts": "export const max = 5" }
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:8:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
-				'/main.ts:9:18  type({ "+": "delete", "[string]": "string", a: "string.date… can\'t be precompiled yet\n  structure { [string]: string, a: (In: string) => Out<Date>, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:11:18  type("string").equals("string") can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").equals`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:13:18  type({ a: "string" }).props[0].key can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).props`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:14:18  type({ a: "string" }).in.extends("object") can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).in.extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
-				'/main.ts:15:18  type("string").extends(type("string").in) can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+				"/main.ts:6:18  type(\"strin\") throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created.",
+				'/main.ts:7:18  type({ "+": "delete", "[string]": "string", a: "string.date… can\'t be precompiled yet\n  structure { [string]: string, a: (In: string) => Out<Date>, + (undeclared): delete } can\'t be precompiled to a standalone validator\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:9:18  type("string").equals("string") can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").equals`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:11:18  type({ a: "string" }).props[0].key can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).props`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:12:18  type({ a: "string" }).in.extends("object") can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).in.extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
+				'/main.ts:13:18  type("string").extends(type("string").in) can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/ih5czs11rqayb"
-import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/ih5czs11rqayb"
-import { v1clwekn1s6e3gq as $arkv1clwekn1s6e3gq } from "~arktype/ih5czs11rqayb"
-import { v1hfscsk1nhk1a9 as $arkv1hfscsk1nhk1a9 } from "~arktype/ih5czs11rqayb"
-import { v16rwth51i4aph5 as $arkv16rwth51i4aph5 } from "~arktype/ih5czs11rqayb"
+import { fm5yoaq0p42dm8 as $arkfm5yoaq0p42dm8 } from "~arktype/1kxtp9s1qkkv1w"
+import { f1nq2k4006yug0x as $arkf1nq2k4006yug0x } from "~arktype/1kxtp9s1qkkv1w"
+import { vvuztpd0flqkce as $arkvvuztpd0flqkce } from "~arktype/1kxtp9s1qkkv1w"
+import { v1txxb8b0hm2cwq as $arkv1txxb8b0hm2cwq } from "~arktype/1kxtp9s1qkkv1w"
 import $ark1sve6ft0pa6e4h from "~arktype/xuhdp21syk96k"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
-const field = (n: number) => type(\`string <= \${n}\`)
 $arkfixConfig()
-export const A = /* @__PURE__ */ $arkfa7m7wf09pf4az(trim)
-export const B = $arkf1mgbeg1hlx5g1(max)
-export const C = /* @__PURE__ */ $arkv1clwekn1s6e3gq()
+export const A = /* @__PURE__ */ $arkfm5yoaq0p42dm8(trim)
+export const B = $arkf1nq2k4006yug0x(max)
 export const D = $ark1sve6ft0pa6e4h()
 export const E = type({ "+": "delete", "[string]": "string", a: "string.date.parse" })
-export const F = /* @__PURE__ */ $arkv1hfscsk1nhk1a9()
+export const F = /* @__PURE__ */ $arkvvuztpd0flqkce()
 export const G = type("string").equals("string")
-export const H = $arkv16rwth51i4aph5().meta
+export const H = $arkv1txxb8b0hm2cwq().meta
 export const I = type({ a: "string" }).props[0].key
 export const J = type({ a: "string" }).in.extends("object")
 export const K = type("string").extends(type("string").in)`)
@@ -797,16 +779,16 @@ import { shape as $arki1rnr3cp0ewvqsd } from "./shapes.ts"`)
 		})
 
 		it("receives an input in a module on an import cycle only through an import the program runs", () => {
-			const helper = (name: string) => `import { type } from "arktype"
-const T = type({ a: "string" })
-export function ${name}(extra: object) { return T.and(extra) }`
-			const source = `import { viaG, viaH, viaK } from "./app.ts"
+			const helper = (name: string) =>
+				`export function ${name}(extra: object) { return { a: "string", ...extra } }`
+			const source = `import { type } from "arktype"
+import { viaG, viaH, viaK } from "./app.ts"
 import { g } from "./g.ts"
 import { h } from "./h.ts"
-export const G = viaG()
-export const H = viaH()
-export const K = viaK()
-export const Direct = h({ c: "number" })
+export const G = type(viaG())
+export const H = type(viaH())
+export const K = type(viaK())
+export const Direct = type(h({ c: "number" }))
 let shape: typeof g`
 			const result = precompileModule(
 				source,
@@ -826,20 +808,21 @@ export function viaK() { return k({ b: "number" }) }`,
 				})
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:4:18  viaG() can't be precompiled yet\n  importing `g` from /g.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
-				"/main.ts:6:18  viaK() can't be precompiled yet\n  importing `k` from /k.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+				"/main.ts:5:18  type(viaG()) can't be precompiled yet\n  importing `g` from /g.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+				"/main.ts:7:18  type(viaK()) can't be precompiled yet\n  importing `k` from /k.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
-			attest(result.code).snap(`import { viaG, viaH, viaK } from "./app.ts"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/cn841f0s68leh"
-import { v31x3lt13lnlin as $arkv31x3lt13lnlin } from "~arktype/cn841f0s68leh"
+			attest(result.code).snap(`import { type } from "arktype"
+import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/dogc8a16a3h46"
+import { vqxba5m0o54dof as $arkvqxba5m0o54dof } from "~arktype/dogc8a16a3h46"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+import { viaG, viaH, viaK } from "./app.ts"
 import { g } from "./g.ts"
 import { h } from "./h.ts"
-export const G = viaG()
-export const H = $arkf1fqowp70udipzn(viaH, h)
-export const K = viaK()
+export const G = type(viaG())
+export const H = $arkf1isbncu11it64l(viaH, h)
+export const K = type(viaK())
 $arkfixConfig()
-export const Direct = /* @__PURE__ */ $arkv31x3lt13lnlin()
+export const Direct = /* @__PURE__ */ $arkvqxba5m0o54dof()
 let shape: typeof g`)
 		})
 
@@ -1170,9 +1153,8 @@ export const T = $arkfarwx4t08ya85o(longer(3), longer(1))`)
 const isLong = (s: string) => s.length > 1
 const $1 = scope({ a: "string" })
 const $2 = scope({ a: "string" })
-const narrowed = (fn: (s: string) => boolean) => type("string").narrow(fn)
-export const A = narrowed(isLong)
-export const B = narrowed(isLong)
+export const A = type("string").narrow(isLong)
+export const B = type("string").narrow(isLong)
 export const C = $1.type("a").narrow(isLong)
 export const D = $2.type("a").narrow(isLong)
 export const E = $1.type("string").narrow(isLong)
@@ -1191,52 +1173,6 @@ export const fresh = () => scope({ a: "string" }).type("a").narrow(isLong)`)
 				"interned1",
 				"interned3"
 			])
-		})
-
-		it("composes a Type a static helper returns", () => {
-			const result = precompile(
-				`import { type } from "arktype"
-const trim = (s: string) => s.trim()
-const A = type({ a: "string" })
-const B = type({ b: "number" })
-const Trimmed = type({ a: type("string").pipe(trim) })
-const first = () => A
-const second = () => B
-const trimmed = () => Trimmed
-export const Both = first().and(second())
-export const Held = trimmed().and(second())
-const X = first().and(second())
-export const Composed = X.or("string")
-export const Asserted = trimmed().assert({ a: " x " })
-export const Called = trimmed()({ a: " y " })
-const loop = (): never => loop().and(B)`
-			)
-			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/main.ts:10:21  trimmed().and(second()) can't be precompiled yet\n  arktype holds `(s: string) => s.trim()` (/main.ts:2:14), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
-			])
-			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1w60a811jy70vs"
-import { v1oigsr31najz55 as $arkv1oigsr31najz55 } from "~arktype/1w60a811jy70vs"
-import { fd9jxkn0kakf0g as $arkfd9jxkn0kakf0g } from "~arktype/1w60a811jy70vs"
-import { v112lir714tv8ze as $arkv112lir714tv8ze } from "~arktype/1w60a811jy70vs"
-import { vrg81gy0tev40w as $arkvrg81gy0tev40w } from "~arktype/1w60a811jy70vs"
-import { vp99ye0097h426 as $arkvp99ye0097h426 } from "~arktype/1w60a811jy70vs"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
-const trim = (s: string) => s.trim()
-$arkfixConfig()
-const A = /* @__PURE__ */ $arkvq10hui17onwk2()
-const B = /* @__PURE__ */ $arkv1oigsr31najz55()
-const Trimmed = /* @__PURE__ */ $arkfd9jxkn0kakf0g(trim)
-const first = () => A
-const second = () => B
-const trimmed = () => Trimmed
-export const Both = /* @__PURE__ */ $arkv112lir714tv8ze()
-export const Held = trimmed().and(second())
-const X = /* @__PURE__ */ $arkvrg81gy0tev40w()
-export const Composed = /* @__PURE__ */ $arkvp99ye0097h426()
-export const Asserted = trimmed().assert({ a: " x " })
-export const Called = trimmed()({ a: " y " })
-const loop = (): never => loop().and(B)`)
 		})
 
 		it("shares a Type's code with each module composing it", () => {

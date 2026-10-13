@@ -1,14 +1,11 @@
-import type { CallExpression, Node } from "oxc-parser"
+import type { Node } from "oxc-parser"
 import {
-	bindingOfFunction,
 	enclosingFunctionOf,
 	isArk,
-	isPassiveReference,
 	isRuntimeExport,
 	isIntrospectedProperty,
 	isValidatorMember,
 	memberNameOf,
-	staticBodyOf,
 	type FunctionNode,
 	type ModuleGraph
 } from "./graph.ts"
@@ -27,8 +24,6 @@ export interface SiteCandidate {
 	root: Node
 	// the nearest enclosing function, which runs the site each time it is called
 	fn: FunctionNode | undefined
-	// a static helper the site is written in, which folds the site into each call that reaches it
-	helper: FunctionNode | undefined
 	state: SiteState
 	// the calls the site climbed through, innermost first, as the callee or argument the site can shrink back to
 	fallbacks: Node[]
@@ -56,7 +51,7 @@ export const findSites = (
 	for (const reference of module.scopes.references) {
 		const found = rootOf(reference, module, graph)
 		if (!found) continue
-		const [kind, root, isOwnSite] = found
+		const [kind, root] = found
 		const fallbacks: Node[] = []
 		const ends: Node[] = []
 		const climbed = climb(root, fallbacks, ends, module, graph)
@@ -64,15 +59,13 @@ export const findSites = (
 			(foldsIntrospection && introspectionReadOf(climbed, module, graph)) ||
 			climbed
 		let candidate: SiteCandidate | undefined
-		if (top !== root || isOwnSite) {
+		if (top !== root) {
 			let state = statesByNode.get(top)
 			if (!state) statesByNode.set(top, (state = createSiteState(top, module)))
-			const fn = enclosingFunctionOf(reference.id)
 			candidate = {
 				kind,
-				root: kind === "helper" ? reference.id : root,
-				fn,
-				helper: fn && isFoldedHelper(fn, module) ? fn : undefined,
+				root,
+				fn: enclosingFunctionOf(reference.id),
 				state,
 				fallbacks,
 				ends
@@ -104,41 +97,30 @@ export const filterSites = (
 			continue
 		if (candidate) candidates.push(candidate)
 	}
-	// a call to a static helper is a site only if the helper's own sites do not cover it, so those settle first
 	return candidates.sort(
 		(l, r) =>
-			settleOrderOf(l) - settleOrderOf(r) ||
 			depthOf(l.fn) - depthOf(r.fn) ||
 			l.state.node.start - r.state.node.start ||
 			r.state.node.end - l.state.node.end
 	)
 }
 
-// e.g. a call to a helper composing a Type, which is a site even where nothing composes it
 const rootOf = (
 	reference: Reference,
 	module: SourceModule,
 	graph: ModuleGraph
-): [kind: SiteKind, root: Node, isOwnSite: boolean] | undefined => {
+): [kind: SiteKind, root: Node] | undefined => {
 	const binding = reference.binding
 	if (!binding || reference.isWrite) return
 	const [name, read] = graph.arkExportOf(reference, module) ?? []
-	if (name) return isRuntimeExport(name) ? undefined : [name, read!, false]
+	if (name) return isRuntimeExport(name) ? undefined : [name, read!]
 	if (isArk(graph.bindingKindOf(binding, module)))
-		return ["reference", reference.id, false]
+		return ["reference", reference.id]
 	const member = arkMemberOf(reference.id, module, graph)
-	if (member) return ["reference", member, false]
-	const call = helperCallOf(reference.id)
-	const helper = call && graph.helperOf(call.callee, module)
-	if (!helper) return
-	const isOwnSite = graph.composesArk(...helper)
-	if (isArk(graph.kindOf(call, module))) return ["helper", call, isOwnSite]
-	const returned = arkMemberOf(call, module, graph)
-	if (returned) return ["reference", returned, false]
-	return isOwnSite ? ["helper", call, isOwnSite] : undefined
+	if (member) return ["reference", member]
 }
 
-// e.g. `schemas.users.User` or `make().User`, with `schemas` a namespace import or an object literal holding Types and `make` a helper returning one
+// e.g. `schemas.users.User`, with `schemas` a namespace import or an object literal holding Types
 const arkMemberOf = (
 	node: Node,
 	module: SourceModule,
@@ -174,19 +156,7 @@ const introspectionReadOf = (
 		:	undefined
 }
 
-const helperCallOf = (id: Node): CallExpression | undefined => {
-	const parent = id.parent
-	const callee =
-		parent?.type === "MemberExpression" && parent.object === id ? parent : id
-	return (
-			callee.parent?.type === "CallExpression" &&
-				callee.parent.callee === callee
-		) ?
-			callee.parent
-		:	undefined
-}
-
-// e.g. `A.and(B).array()` from `A`, or `withId(A)` from `A` with `withId` a static helper
+// e.g. `A.and(B).array()` from `A`
 const climb = (
 	root: Node,
 	fallbacks: Node[],
@@ -196,46 +166,13 @@ const climb = (
 ): Node => {
 	let top = root
 	for (;;) {
-		const [probe, parent] = operatorOf(top)
 		const composer = graph.composerOf(top, module)
-		if (composer?.type === "MemberExpression") {
-			if (isValidatorMember(memberNameOf(composer))) ends.push(top)
-			top = composer
-		} else if (
-			composer ||
-			(parent?.type === "CallExpression" &&
-				parent.callee !== probe &&
-				graph.helperOf(parent.callee, module))
-		) {
-			fallbacks.push(top)
-			top = parent!
-		} else return top
+		if (!composer) return top
+		if (composer.type !== "MemberExpression") fallbacks.push(top)
+		else if (isValidatorMember(memberNameOf(composer))) ends.push(top)
+		top = composer
 	}
 }
-
-// a static helper that is only ever called, so a site in it is its own only if it reads none of the helper's bindings
-export const isFoldedHelper = (
-	fn: FunctionNode,
-	module: SourceModule
-): boolean => {
-	const binding = bindingOfFunction(fn, module)
-	return (
-		!!binding &&
-		!binding.writes.length &&
-		!!staticBodyOf(fn) &&
-		binding.references.every(
-			reference =>
-				(reference.id.parent?.type === "CallExpression" &&
-					reference.id.parent.callee === reference.id) ||
-				isPassiveReference(reference.id, module)
-		)
-	)
-}
-
-const settleOrderOf = (candidate: SiteCandidate) =>
-	!candidate.helper ? 2
-	: candidate.kind === "helper" ? 1
-	: 0
 
 const depthOf = (fn: FunctionNode | undefined) => {
 	let depth = 0

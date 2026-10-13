@@ -1,7 +1,6 @@
 import { type } from "arktype"
 import { jsonOf, listOf } from "listing"
 import { $, Email, morphs, Name, Person, Trimmed, types } from "./types.ts"
-import { toPerson } from "./helpers.ts"
 
 const fields = { name: Name, email: Email }
 
@@ -27,7 +26,9 @@ const ParsedPerson = type("string.json.parse").to(Person)
 
 const PipedPerson = type("string.json.parse").pipe(Person)
 
-const Revived = toPerson(type("string").pipe(s => JSON.parse(s)))
+const Revived = type("string")
+	.pipe(s => JSON.parse(s))
+	.to(Person)
 
 const DescribedPerson = Person.describe("a person")
 

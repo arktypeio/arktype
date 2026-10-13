@@ -526,7 +526,6 @@ export class ModuleGraph {
 	private membersByOwner = new Map<Node | Binding, Map<unknown, Member>>()
 	private resolving = new Set<Node>()
 	private heldKindsByNode = new Map<Node, ArkKind>()
-	private composingByFn = new Map<FunctionNode, boolean>()
 	private importsById: Record<string, string[]> = Object.create(null)
 	private optsInByPackage: Record<string, boolean> = Object.create(null)
 	private packageNamesByDir: Record<string, string | undefined> =
@@ -2129,16 +2128,7 @@ export class ModuleGraph {
 		return fn && [fn, module]
 	}
 
-	helperOf(
-		callee: Node,
-		module: SourceModule
-	): [FunctionNode, SourceModule] | undefined {
-		if (isFunctionNode(normalize(callee))) return
-		const helper = this.functionOf(callee, module)
-		return helper && isStatic(helper[0]) ? helper : undefined
-	}
-
-	// e.g. a Type, an object literal holding one, or a function whose call returns one or, as a static helper, composes one
+	// e.g. a Type, an object literal holding one, or a function whose call returns one
 	definesArk(
 		target: Extract<ImportTarget, { kind: "binding" | "expression" }>
 	): boolean {
@@ -2161,29 +2151,8 @@ export class ModuleGraph {
 		return (
 			isArk(held) ||
 			isFactory(held) ||
-			(!!fn &&
-				(isArk(this.finalKindOfKey(...fn)) ||
-					(isStatic(fn[0]) && this.composesArk(...fn))))
+			(!!fn && isArk(this.finalKindOfKey(...fn)))
 		)
-	}
-
-	// e.g. `t => t.and(A)`, each call to which is a site
-	composesArk(fn: FunctionNode, module: SourceModule): boolean {
-		let result = this.composingByFn.get(fn)
-		if (result !== undefined) return result
-		result = false
-		walk(staticBodyOf(fn)!, node => {
-			if (result || isFunctionNode(node)) return false
-			// e.g. not `T.internal` in `T.internal.precompilation`, which only reads a member that leaves arktype
-			result =
-				!isTransparent(node) &&
-				node.type !== "ChainExpression" &&
-				!!this.composerOf(node, module) &&
-				!this.leavesArk(node, module)
-			return !result
-		})
-		this.composingByFn.set(fn, result)
-		return result
 	}
 }
 
@@ -2451,30 +2420,6 @@ export const functionOfBinding = (
 	return fn && isFunctionNode(fn) ? fn : undefined
 }
 
-// e.g. `g` for `function f() { return g() }`, as calling a function runs those it calls by name, passing `onReference` each reference they make
-export const functionsReachedFrom = (
-	fn: FunctionNode,
-	module: SourceModule,
-	onReference: (id: Node, binding: Binding) => void
-): FunctionNode[] => {
-	const result = new Set([fn])
-	for (const reached of result) {
-		walk(reached, node => {
-			const binding =
-				node.type === "Identifier" ?
-					module.scopes.referencesById.get(node)?.binding
-				:	undefined
-			if (binding) {
-				onReference(node, binding)
-				const called = functionOfBinding(binding, module)
-				if (called) result.add(called)
-			}
-			return true
-		})
-	}
-	return [...result]
-}
-
 // esbuild's keepNames, as under tsx, names a function `__name(fn, "name")`, whose helper defines the name and returns `fn`
 const namedFunctionOf = (node: Node, module: SourceModule): Node => {
 	if (
@@ -2517,10 +2462,6 @@ const namedFunctionOf = (node: Node, module: SourceModule): Node => {
 const isNamed = (node: Node, module: SourceModule): boolean =>
 	node.parent?.parent?.type === "ExpressionStatement" &&
 	namedFunctionOf(node.parent, module) === node
-
-// e.g. `f` in `export { f }`, whose importers' uses are checked where they occur, or in keepNames' `__name(f, "f")`
-export const isPassiveReference = (id: Node, module: SourceModule): boolean =>
-	id.parent?.type === "ExportSpecifier" || isNamed(id, module)
 
 const initOf = (node: Node, module: SourceModule): Node | undefined => {
 	const binding =

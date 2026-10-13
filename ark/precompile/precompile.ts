@@ -57,24 +57,17 @@ import { isPlainContainer } from "./builtins.ts"
 import { DynamicValue } from "./dynamic.ts"
 import {
 	arkPackageSpecifier,
-	bindingOfFunction,
 	contains,
 	declarationStartOf,
-	enclosingFunctionOf,
-	functionOfBinding,
-	functionsReachedFrom,
 	importsValues,
 	isArk,
 	isArkObject,
 	isFunctionNode,
 	isOnlyType,
-	isPassiveReference,
 	isRuntimeExport,
-	isSetLast,
 	isTypeOnly,
 	ModuleGraph,
 	progressOf,
-	readsBindingOf,
 	runtimeExports,
 	staticBodyOf,
 	stepsOf,
@@ -91,7 +84,6 @@ import {
 	type InterpreterOptions,
 	ModuleNamespace,
 	type Read,
-	readsFirst,
 	runsBeforeBody,
 	type SiteState
 } from "./interpreter.ts"
@@ -110,7 +102,6 @@ import {
 import {
 	filterSites,
 	findSites,
-	isFoldedHelper,
 	type SiteCandidate,
 	type SiteRead
 } from "./sites.ts"
@@ -148,8 +139,8 @@ export interface PrecompiledModule extends ModuleAnalysis {
 	modules: Record<string, string>
 }
 
-// the arktype export at the root, or "reference" for a Type, Scope or Generic the program defines, or "helper" for a static helper
-export type SiteKind = ArkExportName | "reference" | "helper"
+// the arktype export at the root, or "reference" for a Type, Scope or Generic the program defines
+export type SiteKind = ArkExportName | "reference"
 
 export interface Site {
 	kind: SiteKind
@@ -246,8 +237,6 @@ export interface Input {
 	name: string
 	path: PropertyKey[]
 	value: unknown
-	// for a helper its module registers, the last statement of the module setting what the site reads through it, counted from 1, and a binding it declares
-	progress?: [at: number, name: string] | undefined
 }
 
 export interface Helper {
@@ -318,12 +307,7 @@ export class Precompiler {
 	private rejectionSeverity: Diagnostic["severity"]
 	private readsByModule = new WeakMap<SourceModule, SiteRead[]>()
 	private candidatesByModule = new WeakMap<SourceModule, SiteCandidate[]>()
-	private helperSitesByModule = new Map<SourceModule, Node[]>()
 	private inertByModule = new WeakMap<SourceModule, boolean>()
-	private progressHelpersByModule = new WeakMap<
-		SourceModule,
-		Map<Binding, Binding[]>
-	>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	// the strongly connected component of each module the build follows, numbered as they're found
 	private componentsById: Record<string, number> = Object.create(null)
@@ -627,7 +611,7 @@ export class Precompiler {
 				diagnostics
 			)
 			this.linkIslands(module, sites, s, prefix)
-			this.markProgress(module, sites, s, prefix, modules, imports)
+			this.markProgress(module, sites, s, prefix)
 			// a module mock replaces what a module exports, so the functions it exports are registered for factories to check
 			if (this.checkHelpers) {
 				const registered = Object.entries(this.registeredHelpersOf(module))
@@ -724,32 +708,17 @@ export class Precompiler {
 		module: SourceModule,
 		sites: Site[],
 		s: MagicString,
-		prefix: string,
-		modules: Record<string, string>,
-		imports: Record<string, Record<string, string>>
+		prefix: string
 	): void {
 		const marked = new Set<number>()
 		for (const site of sites) {
 			if (site.status === "accepted" && site.progress)
 				marked.add(site.progress[0])
 		}
-		const helpersByProgress: string[][] = []
-		if (!this.checkHelpers) {
-			for (const [helper, reads] of this.progressHelpersOf(module)) {
-				for (const binding of reads) marked.add(progressOf(binding, module))
-				// a function declaration can run before the module's body, where nothing it reads is set
-				const at = helper.kind === "function" ? 0 : progressOf(helper, module)
-				;(helpersByProgress[at] ??= []).push(helper.name)
-			}
-		}
 		if (!marked.size) return
-		const register = (helpers: string[] | undefined) =>
-			helpers ?
-				`${prefix}register(() => ${prefix}m, ${helpers.join(", ")});\n`
-			:	""
 		s.prependLeft(
 			firstStatementOf(module.program).start,
-			`var ${prefix}m = 0;\n${register(helpersByProgress[0])}`
+			`var ${prefix}m = 0;\n`
 		)
 		const steps = [...stepsOf(module).keys()]
 		const sitesByRange = rangesOf(sites)
@@ -764,14 +733,6 @@ export class Precompiler {
 		const textsAfter = new Map<number, string>()
 		for (const at of marked)
 			textsAfter.set(runEnds[at], `${prefix}m = ${runEnds[at]};\n`)
-		for (let at = 1; at < helpersByProgress.length; at++) {
-			if (helpersByProgress[at]) {
-				textsAfter.set(
-					at,
-					(textsAfter.get(at) ?? "") + register(helpersByProgress[at])
-				)
-			}
-		}
 		for (const [at, text] of textsAfter) {
 			const step = steps[at - 1]
 			const declaration = step.parent!
@@ -794,59 +755,6 @@ export class Precompiler {
 				s.appendLeft(statement.end, `\n${text.slice(0, -1)}`)
 			}
 		}
-		if (helpersByProgress.length) {
-			const registrar = `import { registerProgress } from "arktype/runtime"\n\nexport { registerProgress as default }\n`
-			const specifier = `~arktype/${hashOf(registrar)}`
-			modules[specifier] = registrar
-			imports[specifier] = { default: `${prefix}register` }
-		}
-	}
-
-	// e.g. `extend` reading `Base`, for `export function extend(t) { return Base.and(t) }` before `const Base`
-	private progressHelpersOf(module: SourceModule): Map<Binding, Binding[]> {
-		let result = this.progressHelpersByModule.get(module)
-		if (result) return result
-		this.progressHelpersByModule.set(module, (result = new Map()))
-		// what another module's site folds, rather than calls as the helper's own site
-		const folded = this.candidatesOf(module).flatMap(candidate =>
-			(
-				candidate.helper &&
-				(!this.settle(candidate) ||
-					readsBindingOf(candidate.helper, candidate.state.node, module))
-			) ?
-				[candidate.state.node]
-			:	[]
-		)
-		if (!folded.length) return result
-		const registered = this.registeredHelpersOf(module)
-		for (const [name, entry] of Object.entries(module.scopes.exportsByName)) {
-			// e.g. `export { extend as ext2 }`, a second name for one function
-			if (
-				entry.kind !== "binding" ||
-				!(name in registered) ||
-				entry.binding.exportNames[0] !== name
-			)
-				continue
-			const fn = functionOfBinding(entry.binding, module)
-			if (!fn) continue
-			const reads = new Set<Binding>()
-			const reached = functionsReachedFrom(fn, module, (id, binding) => {
-				if (
-					binding.scope.node === module.program &&
-					binding.kind !== "function" &&
-					binding.kind !== "import" &&
-					isSetLast(binding) &&
-					readsFirst(id, binding, module)
-				)
-					reads.add(binding)
-			})
-			if (
-				reads.size &&
-				folded.some(node => reached.some(fn => contains(fn, node)))
-			)
-				result.set(entry.binding, [...reads])
-		}
-		return result
 	}
 
 	// a fold of `extend` reading `Base` throws where arktype's program would, before `Base` is set
@@ -862,25 +770,6 @@ export class Precompiler {
 			site.helpers.some(helper => helper.file === declaring.id)
 		)
 			return
-		const helper =
-			!this.checkHelpers &&
-			site.inputs.find(input => {
-				const entry = declaring.scopes.exportsByName[input.name]
-				return (
-					input.kind === "import" &&
-					input.file === declaring.id &&
-					!input.path.length &&
-					entry?.kind === "binding" &&
-					this.progressHelpersOf(declaring)
-						.get(entry.binding)
-						?.includes(binding)
-				)
-			})
-		const at = progressOf(binding, declaring)
-		if (helper) {
-			if (at > (helper.progress?.[0] ?? 0)) helper.progress = [at, binding.name]
-			return
-		}
 		if (!binding.exportNames.length)
 			return `\`${reader}\` can run before \`${binding.name}\` (${declaring.positionOf(binding.id)}) is set; export \`${binding.name}\` so the site can receive it`
 		const input: Input = {
@@ -1418,7 +1307,7 @@ export class Precompiler {
 		return `${prefix}shadow(${JSON.stringify(`${module.positionOf(site)}  ${module.snippetOf(site)}`)}, ${create}, (${params.join(", ")}) => (${original}), [${callbacks.join(", ")}]`
 	}
 
-	// e.g. `scope` in a static helper whose every call is a site, which keeps its import of an export arktype/runtime lacks
+	// a module keeping a read of an export arktype/runtime lacks fails to link when it loads
 	private checkRuntimeImports(
 		module: SourceModule,
 		sites: Site[]
@@ -1703,12 +1592,10 @@ export class Precompiler {
 			factory.inputs.push(passedAs.expression)
 			if (passedAs.imported) factory.imports.push(passedAs.imported)
 			if (passedAs.binding) factory.bindings.push(passedAs.binding)
-			const progress = reads.find(input => input.progress)?.progress
 			factory.params.push({
 				kind: "input",
 				label: passedAs.label,
-				reads: reads.map(input => [input.path, input.value]),
-				...(progress && { progress })
+				reads: reads.map(input => [input.path, input.value])
 			})
 		}
 	}
@@ -2109,8 +1996,6 @@ export class Precompiler {
 		const sites: Site[] = []
 		const candidatesBySite = new Map<Site, SiteCandidate>()
 		const diagnostics: Diagnostic[] = []
-		const helperSites: Node[] = []
-		this.helperSitesByModule.set(module, helperSites)
 		const configureStart = this.configureStartOf(module)
 		for (const candidate of candidates) {
 			let settledRanges = settledRangesByFn.get(candidate.fn)
@@ -2124,10 +2009,6 @@ export class Precompiler {
 				settled.push(candidate)
 				settledRanges.add(rangeOf(node))
 				if (isFolded(candidate, settled, this.interpreter)) continue
-				if (candidate.helper) {
-					if (readsBindingOf(candidate.helper, node, module)) continue
-					helperSites.push(node)
-				}
 				const site = this.finalize(candidate, module)
 				if (
 					site.status === "rejected" &&
@@ -2224,25 +2105,13 @@ export class Precompiler {
 		if (reads) return reads
 		this.readsByModule.set(
 			module,
-			(reads = findSites(module, this.graph, this.mode === "standalone").filter(
-				read => !this.callsConfigure(read.root, module)
-			))
+			(reads = findSites(module, this.graph, this.mode === "standalone"))
 		)
 		for (const { candidate } of reads) {
 			if (candidate)
 				this.interpreter.sitesByNode.set(candidate.state.node, candidate.state)
 		}
 		return reads
-	}
-
-	// e.g. `setup()` with `setup = () => configure(...)`, which is refused where it calls configure()
-	private callsConfigure(node: Node, module: SourceModule): boolean {
-		const helper =
-			node.type === "CallExpression" && this.graph.helperOf(node.callee, module)
-		return (
-			!!helper &&
-			this.configureCallsOf(helper[1]).some(call => contains(helper[0], call))
-		)
 	}
 
 	private candidatesOf(module: SourceModule): SiteCandidate[] {
@@ -2269,14 +2138,6 @@ export class Precompiler {
 		}
 		for (;;) {
 			const state = this.interpreter.evaluateSite(candidate.state)
-			// a call whose every request is in a static helper's own sites reaches them at runtime, and defines nothing itself
-			if (
-				state.requests.length &&
-				state.requests.every(([node, module]) =>
-					this.helperSitesOf(module).some(site => contains(site, node))
-				)
-			)
-				return false
 			// reading a member a standalone value has, like a Module's alias, makes no request, so it is not a site of its own
 			if (
 				candidate.kind === "reference" &&
@@ -2417,22 +2278,7 @@ export class Precompiler {
 		}
 	}
 
-	private helperSitesOf(module: SourceModule): Node[] {
-		let result = this.helperSitesByModule.get(module)
-		if (result) return result
-		this.helperSitesByModule.set(module, (result = []))
-		for (const candidate of this.candidatesOf(module)) {
-			if (
-				candidate.helper &&
-				this.settle(candidate) &&
-				!readsBindingOf(candidate.helper, candidate.state.node, module)
-			)
-				result.push(candidate.state.node)
-		}
-		return result
-	}
-
-	// a rejected validation, or a call to a static helper that makes no request of its own, leaves its callee or argument as the site
+	// a rejected validation leaves its callee or argument as the site
 	private fallbackOf(
 		candidate: SiteCandidate,
 		rejection: DynamicValue
@@ -2449,8 +2295,7 @@ export class Precompiler {
 						return fallbacks.splice(i)[0]
 				}
 			}
-			// e.g. a static helper that only validates its argument
-			return state.requests.length ? undefined : candidate.root
+			return
 		}
 		const call = state.node
 		if (
@@ -2464,10 +2309,6 @@ export class Precompiler {
 			return
 		const fallback = fallbacks[fallbacks.length - 1]
 		if (fallback && !contains(call.callee, fallback)) return fallbacks.pop()
-		// e.g. a helper calling a function the build can't interpret, which leaves sites in its arguments to settle themselves
-		return candidate.kind === "helper" && rejection.isOpaque ?
-				candidate.root
-			:	undefined
 	}
 
 	private siteOf(candidate: SiteCandidate, module: SourceModule): Site {
@@ -3172,24 +3013,8 @@ export class Precompiler {
 				continue
 			const target = this.graph.importOf(binding, module)
 			const id = reference.id
-			if (target.kind !== "arktype" && target.kind !== "arktypeNamespace") {
-				if (
-					this.passesFoldedHelper(id, target, module) &&
-					!isWithin(id, candidateRanges)
-				) {
-					result.push(
-						this.diagnostic(
-							module,
-							id,
-							"R4",
-							"error",
-							`\`${binding.name}\` is a helper the build folds at each call, so passing it runs its definition at runtime`,
-							[]
-						)
-					)
-				}
+			if (target.kind !== "arktype" && target.kind !== "arktypeNamespace")
 				continue
-			}
 			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
 			const parent = read?.parent
 			// a re-export forwards the binding, and each use of it is checked where it occurs
@@ -3205,8 +3030,6 @@ export class Precompiler {
 			)
 				continue
 			if (isWithin(id, candidateRanges)) continue
-			const fn = enclosingFunctionOf(id)
-			if (fn && isFoldedHelper(fn, module)) continue
 			result.push(
 				this.diagnostic(
 					module,
@@ -3232,8 +3055,7 @@ export class Precompiler {
 				settledRanges.has(rangeOf(node)) ||
 				isInIsland(node, module) ||
 				// e.g. `interface A extends B.C {}`, which only types
-				(node.type.startsWith("TS") && !isTransparent(node)) ||
-				(isFunctionNode(node) && this.isOnlyFolded(node, settledRanges, module))
+				(node.type.startsWith("TS") && !isTransparent(node))
 			)
 				return false
 			const read =
@@ -3318,40 +3140,6 @@ export class Precompiler {
 			}
 		}
 		return result
-	}
-
-	// e.g. `field` in `[5].map(field)`, whose module skips its body as it folds each call to it
-	private passesFoldedHelper(
-		id: Node,
-		target: ImportTarget,
-		module: SourceModule
-	): boolean {
-		if (
-			(target.kind !== "binding" && target.kind !== "expression") ||
-			(id.parent?.type === "CallExpression" && id.parent.callee === id) ||
-			isPassiveReference(id, module)
-		)
-			return false
-		const helper = this.graph.helperOf(id, module)
-		return (
-			!!helper && isFoldedHelper(...helper) && this.graph.definesArk(target)
-		)
-	}
-
-	// e.g. `withId` when each `withId(A)` is a site, so its body never runs
-	private isOnlyFolded(
-		fn: FunctionNode,
-		settledRanges: Set<string>,
-		module: SourceModule
-	): boolean {
-		return (
-			isFoldedHelper(fn, module) &&
-			bindingOfFunction(fn, module)!.references.every(
-				reference =>
-					isWithin(reference.id, settledRanges) ||
-					isPassiveReference(reference.id, module)
-			)
-		)
 	}
 
 	// e.g. `T` with `const T = type(...)` marked `// @ark-runtime`, which is arktype's own Type

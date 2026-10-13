@@ -10,10 +10,6 @@ export function and() {
 }
 // runs the fold once what it reads is set
 export const anded = and().expression
-// folded where it's called, in another module
-export function extend(extra: object) {
-	return Base.and(extra)
-}
 
 const $ = scope({ x: "string" })
 export function scoped() {
