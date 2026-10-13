@@ -114,11 +114,12 @@ export declare namespace Scanner {
 		terminator extends string,
 		appendTo extends string = ""
 	> =
-		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
-			lookahead extends terminator ?
-				[appendTo, unscanned]
-			:	shiftUntil<nextUnscanned, terminator, `${appendTo}${lookahead}`>
-		:	[appendTo, ""]
+		unscanned extends `${infer first}${infer second}${infer rest}` ?
+			first extends terminator ? [appendTo, unscanned]
+			: second extends terminator ? [`${appendTo}${first}`, `${second}${rest}`]
+			: shiftUntil<rest, terminator, `${appendTo}${first}${second}`>
+		: unscanned extends terminator ? [appendTo, unscanned]
+		: [`${appendTo}${unscanned}`, ""]
 
 	export type shiftUntilEscapable<
 		unscanned extends string,
