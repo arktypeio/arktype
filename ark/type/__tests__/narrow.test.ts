@@ -47,22 +47,26 @@ contextualize(() => {
 	})
 
 	it("chained narrows", () => {
-		const A = type("number").narrow(
-			(n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2")
-		)
+		for (const jitless of [false, true]) {
+			const A = scope({}, { jitless })
+				.type("number")
+				.narrow((n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2"))
 
-		const b = A.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
+			const b = A.narrow(
+				(n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3")
+			)
 
-		const DivisibleBy30 = b.narrow(
-			(n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5")
-		)
+			const DivisibleBy30 = b.narrow(
+				(n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5")
+			)
 
-		attest<number>(DivisibleBy30.t)
+			attest<number>(DivisibleBy30.t)
 
-		attest(DivisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
-		attest(DivisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
-		attest(DivisibleBy30(6).toString()).snap("must be divisible by 5 (was 6)")
-		attest(DivisibleBy30(30)).equals(30)
+			attest(DivisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
+			attest(DivisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
+			attest(DivisibleBy30(6).toString()).snap("must be divisible by 5 (was 6)")
+			attest(DivisibleBy30(30)).equals(30)
+		}
 	})
 
 	it("problem at path", () => {

@@ -245,7 +245,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		if (this.inner.predicate) {
 			for (let i = 0; i < this.inner.predicate.length - 1; i++) {
 				this.inner.predicate[i].traverseApply(data as never, ctx)
-				if (ctx.failFast && ctx.currentErrorCount > errorCount) return
+				if (ctx.currentErrorCount > errorCount) return
 			}
 			this.inner.predicate[this.inner.predicate.length - 1]!.traverseApply(
 				data as never,

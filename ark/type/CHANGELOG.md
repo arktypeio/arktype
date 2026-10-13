@@ -1036,6 +1036,20 @@ const T = type({ user: { "~standard": User["~standard"] } })
 T({ user: { age: 1.5 } })
 ```
 
+### Stop at the first failed narrow with `jitless`
+
+With `jitless` or in a CSP environment, a Type with chained narrows ran each narrow after the first that failed, on data that narrow had already rejected, and reported every failure. It now stops at the first, as compiled types already did:
+
+```ts
+const T = scope({}, { jitless: true })
+	.type("number")
+	.narrow((n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2"))
+	.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
+
+// previously "(1) must be...\n  ◦ divisible by 2\n  ◦ divisible by 3", now "must be divisible by 2 (was 1)"
+T(1).toString()
+```
+
 ### Check `g` and `y` patterns from the start of the string every time
 
 With `jitless` or in a CSP environment, a pattern with the `g` or `y` flag kept its `lastIndex` between checks, so the same input alternated between valid and invalid. Every check now starts from the beginning of the string, as compiled types already did:
