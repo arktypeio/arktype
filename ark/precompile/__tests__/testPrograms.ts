@@ -78,57 +78,6 @@ const definitions: fc.Arbitrary<FragmentOf> = nodeOf([]).chain(node =>
 	)
 )
 
-// siblings arktype sorts by the names of the functions or classes they hold, some predicates reading ctx, which a factory sorts by the names it receives
-const sortedSiblings: fc.Arbitrary<FragmentOf> = fc
-	.record({
-		form: fc.constantFrom("narrows", "classes", "keys"),
-		predicates: fc.uniqueArray(
-			fc.constantFrom(
-				...(Object.keys(predicates) as (keyof typeof predicates)[])
-			),
-			{ minLength: 2, maxLength: 3 }
-		),
-		classes: fc.uniqueArray(fc.constantFrom("Ant", "Cat", "Dog"), {
-			minLength: 2,
-			maxLength: 3
-		}),
-		base: fc.constantFrom("number", "string", "unknown"),
-		inputs: inputsOf(
-			fc.constantFrom(0, 2, -3, "", "abcd", { a: 1 }, { abcd: "", "": 0 })
-		)
-	})
-	.map(
-		({ form, predicates, classes, base, inputs }): FragmentOf =>
-			id => {
-				const names = classes.map(name => `${name}${id}`)
-				const siblings =
-					form === "classes" ?
-						names.map(name => `type.instanceOf(${name})`)
-					:	predicates.map(predicate =>
-							form === "narrows" ?
-								`type("${base}").narrow(${predicate})`
-							:	`type.Record(type("string").narrow(${predicate}), "${base}")`
-						)
-				const site = siblings.reduce(
-					(l, r) => `${l}.${form === "keys" ? "and" : "or"}(${r})`
-				)
-				return form === "classes" ?
-						{
-							containers: names.map(name => `export class ${name} {}`),
-							exports: names,
-							main: [
-								observed(
-									id,
-									site,
-									inputs,
-									names.map(name => `new ${name}()`)
-								)
-							]
-						}
-					:	{ containers: [], exports: [], main: [observed(id, site, inputs)] }
-			}
-	)
-
 const holders = {
 	object: (element: string) => `type({ a: ${element} })`,
 	tuple: (element: string) => `type([${element}])`,
@@ -723,7 +672,6 @@ const programs = fc
 			derived,
 			bindings,
 			matchers,
-			sortedSiblings,
 			throughCalls,
 			throughCycle
 		),

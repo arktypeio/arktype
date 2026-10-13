@@ -15,12 +15,7 @@ export {
 } from "./shared/jsonSchema.ts"
 export * from "./shared/transform.ts"
 export * from "./shared/traversal.ts"
-export {
-	describeBranches,
-	describeCases,
-	expressBranches,
-	isAbsent
-} from "./shared/utils.ts"
+export { isAbsent } from "./shared/utils.ts"
 export { arrayIndexMatcher } from "./structure/shared.ts"
 
 // frozen when the first validator is created, as arktype fixes its config when the first Type is

@@ -1,8 +1,5 @@
 import {
 	$ark,
-	describeBranches,
-	expressBranch,
-	expressBranches,
 	hasArkKind,
 	isDecidedByAllows,
 	isNode,
@@ -632,16 +629,6 @@ export class StandaloneArtifact {
 	sharedModules: Record<string, SharedModule>
 	imports: Record<string, string[]>
 	holeExpressions = new Map<unknown, string>()
-	// the functions each list of siblings arktype sorts by their names holds, in the order the build compiled them
-	sortedHoles: unknown[][] = []
-	// the texts of unions printing a received name, longest first, which arktype joins from their branches' at creation
-	joinedTexts: [
-		text: string,
-		join: "expressBranches" | "describeBranches",
-		branches: string[]
-	][] = []
-	// a discriminant's description of cases printing a received name, which arktype describes at creation
-	casesByText = new Map<string, unknown>()
 	labelsByHole = new Map<unknown, string>()
 	classes = new Set<unknown>()
 	checks: string[] = []
@@ -786,7 +773,6 @@ export class StandaloneArtifact {
 				`runtime.checkDistinct([${distinct.map(hole => this.holeExpressions.get(hole)).join(", ")}], ${JSON.stringify(distinct.map(hole => this.labelsByHole.get(hole)))})`
 			)
 		}
-		this.bindSorted()
 	}
 
 	receive(params: FactoryParam[]): void {
@@ -816,7 +802,6 @@ export class StandaloneArtifact {
 		}
 		this.checkFacts(checked)
 		this.refuseNameDependence()
-		this.collectJoinedTexts()
 	}
 
 	checkFacts(
@@ -897,62 +882,10 @@ export class StandaloneArtifact {
 					)
 			for (const list of lists) {
 				if (!isArray(list)) continue
-				// a run of siblings, each ordered against the next by the names of the functions they hold
-				let sorted: unknown[] = []
-				for (let i = 1; i < list.length; i++) {
-					const holes = this.holesOrdering(
-						list[i - 1] as BaseNode,
-						list[i] as BaseNode
-					)
-					if (!holes) {
-						this.sortAtCreation(sorted)
-						sorted = []
-					} else if (!sorted.length) sorted = holes
-					else if (sorted[sorted.length - 1] === holes[0]) sorted.push(holes[1])
-					else this.refuseOrder(holes[0])
-				}
-				this.sortAtCreation(sorted)
+				for (let i = 1; i < list.length; i++)
+					this.refuseHoleOrdering(list[i - 1] as BaseNode, list[i] as BaseNode)
 			}
 		}
-	}
-
-	// branches printing alike once their functions' names are received print once, so a union printing one is joined at creation as arktype joins it
-	collectJoinedTexts(): void {
-		const introspected = this.introspected
-		for (const node of new Set([
-			...this.declared,
-			...(introspected ? [introspected, ...introspected.references] : [])
-		])) {
-			if (!node.hasKind("union")) continue
-			if (
-				node.compiledDiscriminant &&
-				node.discriminantDescription.includes(holeNameMarker)
-			) {
-				this.casesByText.set(
-					node.discriminantDescription,
-					node.discriminantCases
-				)
-			}
-			for (const [kind, join] of [
-				["expression", "expressBranches"],
-				["description", "describeBranches"],
-				// a required key's error prints its value's short description
-				["defaultShortDescription", "describeBranches"]
-			] as const) {
-				const branches = node.branches.map(branch =>
-					kind === "expression" ? expressBranch(branch) : branch[kind]
-				)
-				if (
-					node[kind].includes(holeNameMarker) &&
-					// branches printing alike as written print alike at creation
-					branches.some(text => text !== branches[0]) &&
-					node[kind] === { expressBranches, describeBranches }[join](branches)
-				)
-					this.joinedTexts.push([node[kind], join, branches])
-			}
-		}
-		// a union's text holds those of the unions its branches hold, which emitString matches inside it
-		this.joinedTexts.sort(([l], [r]) => r.length - l.length)
 	}
 
 	holeNamed(name: string, read = functionNameOf): unknown {
@@ -1075,137 +1008,19 @@ export class StandaloneArtifact {
 		}
 	}
 
-	// the functions whose names order two siblings, where their hashes first differ inside the names arktype registered them by
-	holesOrdering(l: BaseNode, r: BaseNode): [unknown, unknown] | undefined {
+	// arktype orders two siblings by their hashes, which may first differ inside the name of a function the factory receives
+	refuseHoleOrdering(l: BaseNode, r: BaseNode): void {
 		let i = 0
 		while (i < l.hash.length && l.hash[i] === r.hash[i]) i++
 		const names = [l.hash, r.hash].map(hash => registeredNameAt(hash, i))
-		const isHole = names.map(name => !!name?.includes(holeNameMarker))
-		if (!isHole[0] && !isHole[1]) return
-		const holes = names.map(name => name && this.holeNamed(name, nameOf))
-		// one sorted against a static name or content, or one no declaration names, like a parameter's function
-		if (
-			!holes[0] ||
-			!holes[1] ||
-			names.some(name => name!.startsWith(holeNameMarker))
-		) {
-			const side = isHole.indexOf(true)
-			this.refuseOrder(holes[side] ?? names[side])
-		}
-		return holes as [unknown, unknown]
-	}
-
-	// siblings arktype orders by their functions' names are bound in the order of the names received, where that writes what arktype's order would
-	sortAtCreation(holes: unknown[]): void {
-		if (holes.length < 2) return
-		const existing = this.sortedHoles.find(sorted =>
-			sorted.some(hole => holes.includes(hole))
-		)
-		if (existing) {
-			if (
-				existing.length !== holes.length ||
-				existing.some((hole, i) => hole !== holes[i])
-			)
-				this.refuseOrder(holes[0])
-			return
-		}
-		if (!this.exportsOnlyTypes()) this.refuseOrder(holes[0])
-		this.checkBoundAlike(holes)
-		this.sortedHoles.push(holes)
-	}
-
-	// a function may be bound where another sorts, so each sibling, left the only one of its run, must write alike with its function exchanged for the first's
-	checkBoundAlike(holes: unknown[]): void {
-		const expressionOf = (hole: unknown) => this.holeExpressions.get(hole)!
-		for (const root of this.roots) {
-			const held = keyOf(root)[1]
-			if (!holes.some(hole => held.includes(hole))) continue
-			const [first, ...written] = holes.map(hole => {
-				const isolated = isolating(root, hole, holes)
-				return (
-					isolated &&
-					this.writtenOf(
-						isolated,
-						new Map(this.holeExpressions)
-							.set(hole, expressionOf(holes[0]))
-							.set(holes[0], expressionOf(hole))
-					)
-				)
-			})
-			if (!first || written.some(w => w !== first)) this.refuseOrder(holes[0])
-		}
-	}
-
-	// what the artifact writes creating a root, its nodes named by where they first appear
-	writtenOf(
-		root: BaseRoot,
-		holeExpressions: Map<unknown, string>
-	): string | undefined {
-		const trial = new StandaloneArtifact(
-			{ root: root as never },
-			Object.create(this.sharedModules),
-			{},
-			this.baking,
-			new Map()
-		)
-		trial.holeExpressions = holeExpressions
-		let written: string
-		try {
-			written = [
-				trial.writeCreate(0, undefined),
-				...Object.values(trial.sharedModules).flatMap(
-					module => module.declarations
-				)
-			].join("\n")
-		} catch (e) {
-			if (e instanceof ParseError) return
-			throw e
-		}
-		const ids = [
-			keyOf(root)[0],
-			...trial.units.flatMap(unit => Object.values(unit.names))
-		]
-		const places = new Map<string, string>()
-		return written.replace(
-			new RegExp(
-				[...new Set(ids)]
-					.sort((l, r) => r.length - l.length)
-					// names are identifiers, so only a $ is special
-					.map(id => id.replace(/\$/g, "\\$&"))
-					.join("|"),
-				"g"
-			),
-			id => places.get(id) ?? places.set(id, `$${places.size}`).get(id)!
-		)
-	}
-
-	refuseOrder(hole: unknown): never {
-		return throwParseError(
+		const name = names.find(name => name?.includes(holeNameMarker))
+		if (!name) return
+		const hole = this.holeNamed(name, nameOf) ?? name
+		throwParseError(
 			writeUnprecompilableMessage(
 				`an order that depends on the name of ${this.labelsByHole.get(hole) ?? hole}`
 			)
 		)
-	}
-
-	// a Scope or Generic holds its functions in definitions it creates Types from later, which exchanging them can't compare
-	exportsOnlyTypes(): boolean {
-		const isType = (value: unknown): boolean =>
-			hasArkKind(value, "root") ||
-			isTypedFn(value) ||
-			(hasArkKind(value, "module") && Object.values(value).every(isType))
-		return isType(this.factory!.type)
-	}
-
-	// where the build compiled each function, the factory binds the one it receives that sorts there by name
-	bindSorted(): void {
-		for (const holes of this.sortedHoles) {
-			const names = holes.map((_, i) => `sorted${this.checks.length}_${i}`)
-			this.checks.push(
-				`const [${names.join(", ")}] = runtime.sortByName([${holes.map(hole => this.holeExpressions.get(hole)).join(", ")}])`
-			)
-			for (const [i, hole] of holes.entries())
-				this.holeExpressions.set(hole, names[i])
-		}
 	}
 
 	get roots(): BaseRoot[] {
@@ -1360,7 +1175,6 @@ ${writeFunction(this.baking.hoisted, `create${index}`, "", statements.filter(sta
 		configured: ConfiguredModule | undefined
 	): string {
 		this.receive(params)
-		this.bindSorted()
 		this.writeSharedUnits()
 		// the program reads it here, so a schema the build can't write refuses the site
 		const value =
@@ -1959,23 +1773,8 @@ ${isTemplate ? "]" : ")"}`
 		return name
 	}
 
-	// a string printing a hole's name is completed at creation with arktype's own printing, joining a union's text from its branches', each shorter than it
-	emitString(s: string, within = Infinity): string {
-		const cases = this.casesByText.get(s)
-		if (cases) return `runtime.describeCases(${this.emit(cases)})`
-		const joined = this.joinedTexts.find(
-			([text]) => text.length < within && s.includes(text)
-		)
-		if (joined) {
-			const [text, join, branches] = joined
-			const start = s.indexOf(text)
-			const end = start + text.length
-			return [
-				...(start ? [this.emitString(s.slice(0, start), within)] : []),
-				`runtime.${join}([${branches.map(branch => this.emitString(branch, text.length)).join(", ")}])`,
-				...(end < s.length ? [this.emitString(s.slice(end), within)] : [])
-			].join(" + ")
-		}
+	// a string printing a hole's name is completed at creation with arktype's own printing
+	emitString(s: string): string {
 		const parts: string[] = []
 		let start = 0
 		for (const match of s.matchAll(printedHoleNamePattern)) {
@@ -2963,44 +2762,6 @@ const partsOf = (
 }
 
 export const holeNameMarker = "$hole_"
-
-// a root keeping, of the siblings that each hold one function of a run, only the one holding the function given
-const isolating = (
-	root: BaseRoot,
-	hole: unknown,
-	run: unknown[]
-): BaseRoot | null => {
-	// a node's hash names each function it holds by its placeholder
-	const heldBy = (node: BaseNode) =>
-		run.filter(held => node.hash.includes(functionNameOf(held as Function)))
-	const holdsOnly = (node: BaseNode, held: unknown) => {
-		const holes = heldBy(node)
-		return holes.length === 1 && holes[0] === held
-	}
-	try {
-		return root.transform(
-			(_, inner) => {
-				const result: Record<string, unknown> = { ...inner }
-				for (const k of ["branches", ...sortedConstraintKeys]) {
-					const list = result[k] as BaseNode[] | undefined
-					if (isArray(list) && list.some(node => holdsOnly(node, hole))) {
-						result[k] = list.filter(
-							node => heldBy(node).length !== 1 || holdsOnly(node, hole)
-						)
-					}
-				}
-				return result as never
-			},
-			{
-				prereduced: true,
-				// only what holds more than one is copied
-				shouldTransform: node => heldBy(node).length > 1
-			}
-		) as BaseRoot
-	} catch {
-		return null
-	}
-}
 
 // arktype writes a function in a hash as `"$ark.name"`, so the index two hashes first differ at may fall inside its name
 const registeredNameAt = (hash: string, i: number): string | undefined => {

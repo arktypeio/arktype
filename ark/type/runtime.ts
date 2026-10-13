@@ -19,7 +19,6 @@ import {
 	type Traversal
 } from "@ark/schema/runtime"
 import {
-	baseNameOf,
 	dateGetTime,
 	functionNameOf,
 	getBuiltinNameOfConstructor,
@@ -60,14 +59,11 @@ export {
 	computeDefaultValueMorph,
 	configure,
 	copyOf,
-	describeBranches,
-	describeCases,
 	describePredicate,
 	enterApplied,
 	enterResolution,
 	exitResolution,
 	exitApplied,
-	expressBranches,
 	FirstIssueTraversal,
 	fixConfig,
 	fixConfigured,
@@ -498,18 +494,6 @@ export const checkDistinct = (
 		}
 	}
 }
-
-// arktype sorts siblings alike but for their functions by those functions' names, so a factory binds the functions it receives in that order
-export const sortByName = (holes: readonly Function[]): Function[] =>
-	holes
-		.map(hole => [baseNameOf(hole), hole] as const)
-		// siblings whose functions are named alike print alike, so either order writes what arktype's does
-		.sort(([l], [r]) =>
-			l < r ? -1
-			: l > r ? 1
-			: 0
-		)
-		.map(([, hole]) => hole)
 
 // a default's checked Type and value, keyed by their content and the functions they hold
 export type DefaultKey = [id: string, holes: readonly unknown[]]
