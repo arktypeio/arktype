@@ -1524,10 +1524,9 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 		if (hasArkKind(def, "module")) {
 			if (!def.root) throwParseError(writeMissingSubmoduleAccessMessage(name))
-			return (this.resolutions[name] =
-				isScopeAlias ?
-					this.bindReference(def.root)
-				:	this.bindKeyword(def.root))
+			return (this.resolutions[name] = this.finalize(
+				isScopeAlias ? this.bindReference(def.root) : this.bindKeyword(def.root)
+			))
 		}
 
 		return (this.resolutions[name] =
