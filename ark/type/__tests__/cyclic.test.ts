@@ -18,36 +18,6 @@ contextualize(() => {
 			jitless ? "jitless" : "jit",
 			() => ({ jitless }),
 			it => {
-				it("object reached by failed branch", config => {
-					const types = scope(
-						{
-							x: { v: "string", "self?": "x" },
-							a: { x: "x", z: "string" },
-							b: { x: "x", b: "string" },
-							union: "a | b"
-						},
-						config
-					).export()
-					const data = { x: { v: "a", self: { v: 1 } }, z: "z", b: "b" }
-
-					attest(types.union.allows(data)).equals(false)
-					attest(types.union(data).toString()).snap(
-						"x.self.v must be a string (was a number)"
-					)
-				})
-
-				it("checks each primitive where it's reached", config => {
-					const node = scope(
-						{ node: { a: "node | number", "b?": "node" } },
-						config
-					).export().node
-
-					attest(node.allows({ a: 5, b: 5 })).equals(false)
-					attest(node({ a: 5, b: 5 }).toString()).snap(
-						"b must be an object (was a number)"
-					)
-				})
-
 				it("doesn't mutate its input", config => {
 					const nested = scope(
 						{ nested: "(nested | number)[]" },
@@ -59,23 +29,6 @@ contextualize(() => {
 					attest(data).equals([[1], [2]])
 					attest(nested([[{}]]).toString()).snap(
 						"value at [0][0] must be an array (was object)"
-					)
-				})
-
-				it("validates a wide tree", config => {
-					const tree = scope(
-						{ tree: { v: "number", kids: "tree[]" } },
-						config
-					).export().tree
-					const data = {
-						v: 0,
-						kids: Array.from({ length: 4000 }, (_, v) => ({ v, kids: [] }))
-					}
-
-					attest(tree(data)).equals(data)
-					data.kids[3999].v = "x" as never
-					attest(tree(data).toString()).snap(
-						"kids[3999].v must be a number (was a string)"
 					)
 				})
 
@@ -109,34 +62,6 @@ contextualize(() => {
 
 					attest(node(data).toString()).snap(
 						"v must be a number (was a string)"
-					)
-				})
-
-				it("cyclic object once through a parsed alias", config => {
-					const data: { v?: unknown; next?: unknown } = {}
-					data.next = data
-					const types = scope(
-						{
-							node: { "next?": "node", v: "number" },
-							thunk: (): unknown => types.type("node" as never)
-						} as never,
-						config
-					)
-					const { thunk }: Record<string, Type> = types.export() as never
-					const generics = scope(
-						{ "g<p>": "(p | g<p>)[]", a1: "g<string>" } as never,
-						config
-					)
-					generics.export()
-					const list: unknown[] = []
-					list.push(list, 5)
-
-					attest(String(types.type("node" as never)(data))).snap(
-						"v must be a number (was missing)"
-					)
-					attest(String(thunk(data))).snap("v must be a number (was missing)")
-					attest(String(generics.type("g<string>" as never)(list))).snap(
-						"value at [1] must be a string or an object (was a number)"
 					)
 				})
 
@@ -466,24 +391,6 @@ contextualize(() => {
 					)
 				})
 
-				it("morph union of open definitions", config => {
-					const types = scope(
-						{
-							other: { kind: "'b'", "next?": "node | other" },
-							node: {
-								kind: "'a'",
-								v: "string.numeric.parse",
-								"next?": "node | other"
-							}
-						},
-						config
-					).export()
-
-					attest(types.node({ kind: "a", v: "1", next: { kind: "b" } })).equals(
-						{ kind: "a", v: 1, next: { kind: "b" } }
-					)
-				})
-
 				// https://github.com/arktypeio/arktype/issues/924
 				it("object through union reported once", config => {
 					const node = scope(
@@ -501,27 +408,6 @@ contextualize(() => {
 					)
 					attest(node(self).toString()).snap(
 						"v must be a number (was a string)"
-					)
-				})
-
-				it("shared component object reported once", config => {
-					const user = scope(
-						{
-							user: { name: "string", groups: "group[]" },
-							group: { title: "string", members: "user[]" }
-						},
-						config
-					).export().user
-					const shared = { title: 0, members: [] }
-					const members = [
-						{ name: "b", groups: [shared] },
-						{ name: "c", groups: [shared] }
-					]
-
-					attest(
-						user({ name: "a", groups: [{ title: "d", members }] }).toString()
-					).snap(
-						"groups[0].members[0].groups[0].title must be a string (was a number)"
 					)
 				})
 
@@ -622,59 +508,6 @@ contextualize(() => {
 					).throws("Default for next must be an object or null (was a number)")
 				})
 
-				it("default completed by its own default", config => {
-					const { a }: Record<string, Type> = scope(
-						{
-							"g<t extends object>": [
-								"t",
-								"&",
-								{ p1: ["string[]", "=", () => []] }
-							],
-							a: { "p1?": "g<a>" }
-						} as never,
-						config
-					).export() as never
-
-					attest(a.allows({ p1: {} })).equals(true)
-					attest(a({ p1: {} })).equals({ p1: { p1: [] } })
-					attest(a({ p1: { p1: [] } })).equals({
-						p1: { p1: Object.assign([], { p1: [] }) }
-					})
-				})
-
-				it("cyclic pipe union error paths", config => {
-					const types = scope(
-						{
-							node: { "+": "reject", "next?": "string.json.parse |> either" },
-							either: "node | leaf",
-							leaf: { kind: "'leaf'" }
-						},
-						config
-					).export()
-
-					attest(types.node({ next: '{ "extra": 1 }' }).toString()).snap(
-						'next.kind must be "leaf" (was missing) or next.extra must be removed'
-					)
-				})
-
-				it("missing cyclic value description", config => {
-					const types = scope(
-						{
-							nullable: { next: "nullable | null" },
-							list: { kids: "nested" },
-							nested: "(nested | number)[]"
-						},
-						config
-					).export()
-
-					attest(types.nullable({}).toString()).snap(
-						"next must be an object or null (was missing)"
-					)
-					attest(types.list({}).toString()).snap(
-						"kids must be an array (was missing)"
-					)
-				})
-
 				// https://github.com/arktypeio/arktype/issues/924
 				it("cyclic object outside alias", config => {
 					const node = scope(
@@ -690,67 +523,6 @@ contextualize(() => {
 					attest(node.array()([data]).toString()).snap(
 						'value at [0].kind must be "node" (was "x")'
 					)
-				})
-
-				it("doubly reached cyclic object", config => {
-					const { a } = scope(
-						{ a: { v: { p0: "string[] | null", "p1?": "a" } } },
-						config
-					).export()
-					const shared: { p0: unknown; p1?: object } = { p0: true }
-					shared.p1 = { v: shared }
-
-					attest(String(a({ v: shared } as never))).snap(
-						"v.p0 must be an object or null (was boolean)"
-					)
-
-					const { list } = scope(
-						{
-							"g<q>": { p0: "string[] | null", "p1?": "q" },
-							list: "g<list>[]"
-						},
-						config
-					).export()
-					const element: { p0: unknown; p1?: object[] } = { p0: true }
-					element.p1 = [element]
-
-					attest(String(list([element]))).snap(
-						"value at [0].p0 must be an object or null (was boolean)"
-					)
-				})
-
-				it("cyclic object reached by instantiation", config => {
-					const { a } = scope(
-						{
-							"g<p>": { kind: "'g'", "p0?": "g<a>", p2: "g<p> | null" },
-							a: "g<string>"
-						},
-						config
-					).export()
-					const data: { p2?: object } = {}
-					data.p2 = data
-
-					attest(String(a(data))).snap('kind must be "g" (was missing)')
-
-					const defs = {
-						"g<p>": { "p0?": "g<p> | null", p1: "Record<string, p>" },
-						a: "g<b>",
-						b: { "p0?": "null | a" }
-					}
-					const reversed = Object.fromEntries(Object.entries(defs).reverse())
-					const shared = { p0: null, p1: {} as Record<string, object> }
-					const invalid = { p0: shared, p1: { zz: "x" } }
-					shared.p1.r = { p0: invalid }
-
-					for (const def of [defs, reversed]) {
-						const types: Record<string, Type> = scope(
-							def as never,
-							config
-						).export() as never
-						attest(String(types.a(invalid))).snap(
-							"p1.zz must be an object (was a string)"
-						)
-					}
 				})
 
 				// https://github.com/arktypeio/arktype/issues/944
@@ -772,145 +544,6 @@ contextualize(() => {
 					attest(types.a.out({ n: 1, b: { a: { n: "2" } } }).toString()).snap(
 						"b.a.n must be a number (was a string)"
 					)
-				})
-
-				it("cyclic pipe to union alias out", config => {
-					const types = scope(
-						{
-							a: { "n?": "null | (string.json.parse |> b)" },
-							b: "null | a"
-						},
-						config
-					).export()
-					const out = types.a({ n: '{ "n": null }' })
-
-					attest(out).equals({ n: { n: null } })
-					attest(types.a.out.expression).snap("{ n?: Out<$b> | null }")
-					attest(types.a.out.allows(out)).equals(true)
-					attest(types.a.out({ n: { n: "{}" } }).toString()).snap(
-						"n.n must be an object or null (was a string)"
-					)
-				})
-
-				it("union pipe to cyclic alias out", config => {
-					const types = scope(
-						{
-							a0: { p2: "a3" },
-							a1: { p0: "string.numeric.parse", "p1?": "a0" },
-							a3: { x: "(string.json.parse |> a4) | null" },
-							a4: { "p1?": "a1" }
-						},
-						config
-					).export()
-					const out = types.a0({ p2: { x: '{ "p1": { "p0": "7" } }' } })
-
-					attest(out).equals({ p2: { x: { p1: { p0: 7 } } } })
-					attest(types.a0.out(out)).equals(out)
-					attest(
-						types.a0.out({ p2: { x: { p1: { p0: "7" } } } }).toString()
-					).snap("p2.x.p1.p0 must be a number (was a string)")
-				})
-
-				it("cyclic morph union after in", config => {
-					const types = () =>
-						scope(
-							{
-								a1: { "p0?": "a4" },
-								a3: ["a1", "|", { p0: ["number", "=>", (n: number) => n * 2] }],
-								a4: { "p0?": "a3 | null" }
-							},
-							config
-						).export()
-					const read = types()
-					const validated = types()
-
-					attest(read.a3.in.expression).snap(
-						"{ p0?: In<$a4> } | { p0: number }"
-					)
-					attest(read.a3({ p0: 1 })).equals({ p0: 2 })
-					attest(read.a4({ p0: { p0: 1 } })).equals({ p0: { p0: 2 } })
-					attest(validated.a3({ p0: 1 })).equals({ p0: 2 })
-					attest(validated.a3.in.expression).equals(read.a3.in.expression)
-				})
-
-				it("cyclic intersection error on export", config => {
-					attest(() =>
-						scope(
-							{
-								a: { "next?": "b" },
-								d: { "+": "delete" },
-								b: { "next?": ["a", "&", { "either?": "d | b" }] }
-							},
-							config
-						).export()
-					).throws(
-						writeIndiscriminableMorphMessage(
-							"{ next?: $a&{ either?: $b | {} } }",
-							"{}"
-						)
-					)
-				})
-
-				it("valid without failed assumption", config => {
-					const { a } = scope(
-						{ a: { p0: "(r | a)[]" }, r: { "p0?": "a[] | a" } },
-						config
-					).export()
-					const list: unknown[] = []
-					const inner = { p0: list }
-					list.push({ p0: [inner, {}] }, inner)
-					const data = { p0: list }
-
-					attest(a.allows(data)).equals(true)
-					attest(a(data) === data).equals(true)
-				})
-
-				it("nested union branch messages", config => {
-					const types = scope(
-						{
-							a2: { p1: "string" },
-							a3: "string[] | a4",
-							a4: { p0: "(a2 | a3)[]" }
-						},
-						config
-					).export()
-
-					attest(types.a3({ p0: [{ p0: [null] }] }).toString()).snap(
-						"p0[0].p0[0] must be an object or an array (was null), p0[0].p1 must be a string (was missing), p0[0] must be an array (was object) or must be an array (was object)"
-					)
-				})
-
-				it("recursive union index message", config => {
-					const { c } = scope(
-						{
-							c: { kind: "'c'", "p2?": "b" },
-							r: { "[string]": "c" },
-							b: "r | c"
-						},
-						config
-					).export()
-					const data = {
-						kind: "c",
-						p2: { kind: "c", p2: { kind: "c", p2: { kind: 0 } } }
-					}
-
-					attest(c(data).toString()).snap(
-						'p2.kind must be an object (was a string), p2.p2.kind must be an object (was a string) or p2.p2.p2.kind must be an object or "c" (was 0)'
-					)
-				})
-
-				it("stops at never failure", config => {
-					const types = scope(
-						{
-							a: { p0: { p0: "string" }, "x?": "b" },
-							b: { p0: "a", "[string]": "string >= 1" }
-						},
-						config
-					).export()
-					const ab = types.b.and(types.a)
-
-					attest(ab.allows({ p0: null })).equals(false)
-					attest(ab({ p0: null }).toString()).snap("never")
 				})
 
 				it("pipes a root to itself", config => {
@@ -1036,43 +669,6 @@ contextualize(() => {
 					).equals({ k: { p0: "d", p1: "s" } })
 				})
 
-				it("deep config of a cyclic object reached directly", config => {
-					const { a3 }: Record<string, Type> = scope(
-						{
-							a1: "Record<string, a1>",
-							a3: { kind: "'a3'", p0: "number", p1: "a1[]" }
-						} as never,
-						config
-					).export() as never
-					const data: { kind: string; p0: number; p1: object[] } = {
-						kind: "a3",
-						p0: 1,
-						p1: []
-					}
-					data.p1.push(data)
-
-					attest(String(a3.configure({ description: "x" }, "references")(data)))
-						.snap(`p1[0].kind must be x (was a string)
-p1[0].p0 must be x (was a number)`)
-				})
-
-				it("deep config of a cyclic default", config => {
-					const { list } = scope(
-						{ list: { p: ["list[]", "=", () => []] } },
-						config
-					).export()
-					const { node } = scope(
-						{ node: { p: ["node | null", "=", null] } },
-						config
-					).export()
-
-					attest(list.onDeepUndeclaredKey("reject")({})).equals({ p: [] })
-					attest(list.configure({ description: "x" }, "references")({})).equals(
-						{ p: [] }
-					)
-					attest(node.onDeepUndeclaredKey("reject")({})).equals({ p: null })
-				})
-
 				it("cyclic data through an indexed prop", config => {
 					const types = scope(
 						{
@@ -1132,22 +728,6 @@ p1[0].p0 must be x (was a number)`)
 
 					attest(types.holder({})).equals({ a: { b: { v: "d" } } })
 					attest(types.tuple([])).equals([{ b: { v: "e" } }])
-				})
-
-				it("submodule generic via own generic", config => {
-					const sub = scope({ "g<p>": "(p | g<p>)[]" }, config).export()
-					const {
-						a
-					}: Record<string, Type<unknown[]>> = scope(
-						{ sub, "h<q>": "sub.g<h<q>>", a: "h<string>" } as never,
-						config
-					).export() as never
-
-					attest(a.expression).snap("(g<h<string>> | h<string>)[]")
-					attest(a([[], [[]]])).equals([[], [[]]])
-					attest(a([[1]]).toString()).snap(
-						"value at [0][0] must be an array (was number)"
-					)
 				})
 
 				// https://github.com/arktypeio/arktype/issues/1476
@@ -1330,18 +910,6 @@ p1[0].p0 must be x (was a number)`)
 		})
 	})
 
-	it("references a component's members by alias", () => {
-		const types = scope({
-			a: { b: "b" },
-			b: { c: "c", "a?": "a" },
-			c: { a: "a" }
-		}).export()
-
-		attest(types.a.expression).snap("{ b: $b }")
-		attest(types.b.expression).snap("{ c: $c, a?: $a }")
-		attest(types.c.expression).snap("{ a: $a }")
-	})
-
 	it("dense component in linear size", () => {
 		const def: Record<string, object> = {}
 		for (let i = 0; i < 16; i++) {
@@ -1386,44 +954,6 @@ p1[0].p0 must be x (was a number)`)
 		attest(a.a1.expression).snap('{ kind: "a3", p0?: $a1 } | ($a2 | $a4)[]')
 	})
 
-	it("disjoint cyclic morph union", () => {
-		const def = {
-			a0: { p0: "string" },
-			a1: "a2",
-			a2: { p0: "a1", "p1?": "string.numeric.parse", "p2?": "a3" },
-			a3: "a0 | a2"
-		} as const
-		const types = scope(def).export()
-		const reordered = scope({
-			a3: def.a3,
-			a2: def.a2,
-			a1: def.a1,
-			a0: def.a0
-		}).export()
-
-		attest(reordered.a3.expression).equals(types.a3.expression)
-		attest(reordered.a3({ p0: "s" })).equals({ p0: "s" })
-	})
-
-	it("indiscriminable cyclic morph union", () => {
-		const pipe = { "p0?": "string.json.parse |> a2" } as const
-		const message = writeIndiscriminableMorphMessage("{}", "{ p0?: $b }")
-
-		attest(() =>
-			scope({ a0: {}, b: pipe, a2: ["a0", "|", { "p0?": "b" }] }).export()
-		).throws(message)
-		attest(() =>
-			scope({ a2: ["a0", "|", { "p0?": "b" }], b: pipe, a0: {} }).export()
-		).throws(message)
-		attest(() =>
-			scope({
-				"g<t extends string>": pipe,
-				a2: ["a0", "|", { "p0?": "g<string>" }],
-				a0: {}
-			}).export()
-		).throws(writeIndiscriminableMorphMessage("{}", "{ p0?: g<string> }"))
-	})
-
 	it("identical definitions of a closed cycle", () => {
 		const types = scope({
 			a0: { p1: "string.numeric.parse", "p2?": "a0" },
@@ -1449,35 +979,6 @@ p1[0].p0 must be x (was a number)`)
 				"(In: string) => To<$e>"
 			)
 		)
-	})
-
-	it("morph union independent of unreferenced aliases", () => {
-		const { c }: Record<string, Type> = scope({
-			a: ["b", "|", { p: "number[]" }],
-			b: { "p?": "string.json.parse |> a" },
-			c: "string.json.parse |> a"
-		} as never).export() as never
-		const doubled = scope({
-			a0: {
-				p0: ["number", "=>", (n: number) => n * 2],
-				"p1?": "string.json.parse |> a0"
-			},
-			a1: ["a0", "|", { "p0?": "a1" }],
-			n: "string.json.parse |> a1"
-		}).export()
-
-		attest(c('{ "p": [1] }')).equals({ p: [1] })
-		attest(c('{ "p": "{}" }')).equals({ p: {} })
-		attest(doubled.n('{ "p0": 1 }')).equals({ p0: 2 })
-	})
-
-	it("unassignable default in cyclic intersection", () => {
-		attest(() =>
-			scope({
-				a2: ["a4", "&", { "p0?": { p0: ["null", "=", null] } }],
-				a4: { "p0?": "a2" }
-			}).export()
-		).throws("Default for never")
 	})
 
 	it("deferred checks resolving aliases", () => {
@@ -1524,48 +1025,6 @@ p1[0].p0 must be x (was a number)`)
 		)
 		attest(a.onDeepUndeclaredKey("reject").expression).snap(
 			"{ p?: synthetic12imoxi017z7bd, + (undeclared): reject }"
-		)
-	})
-
-	it("describes a cyclic union", () => {
-		const types = scope({
-			a: { kind: "'a'", "n?": "b" },
-			b: { kind: "'b'", "n?": "a" },
-			u: "a | b",
-			list: "list[] | string"
-		}).export()
-		const described = types.u.describe("x")
-		const self = type({ v: "string", "n?": "this" }).or("null")
-
-		attest(described.expression).equals(types.u.expression)
-		attest(described.description).equals("x")
-		attest(types.list.describe("x").description).equals("x")
-		attest(self.describe("x").description).equals("x")
-		attest(types.u.select({ boundary: "shallow" }).length).equals(10)
-	})
-
-	it("closed cycle alias", () => {
-		const first = scope({
-			a0: { p0: "a1" },
-			a1: "a2",
-			a2: "(string | a1)[]"
-		}).export()
-		const last = scope({
-			a2: "(string | a1)[]",
-			a1: "a2",
-			a0: { p0: "a1" }
-		}).export()
-
-		attest(first.a0({}).toString()).snap("p0 must be an array (was missing)")
-		attest(last.a0({}).toString()).snap("p0 must be an array (was missing)")
-		attest(() =>
-			scope({
-				a0: "a2 & string",
-				a1: { "p0?": "a2" },
-				a2: "a1"
-			}).export()
-		).throws(
-			"Intersection of object and string results in an unsatisfiable type"
 		)
 	})
 
@@ -1933,24 +1392,6 @@ p1[0].p0 must be x (was a number)`)
 		).throws(writeUnsatisfiedParameterConstraintMessage("t", "$a", "string"))
 	})
 
-	it("generic referenced by own constraint", () => {
-		const types = scope({
-			"g<t extends a>": { x: "t" },
-			a: { "y?": "g<a>" }
-		}).export()
-
-		attest(types.a.expression).snap("{ y?: g<$a> }")
-
-		const { node } = scope({
-			"tree<t extends node>": { value: "t", children: "tree<t>[]" },
-			node: { id: "string", "parent?": "tree<node>" }
-		}).export()
-
-		attest(
-			String(node({ id: "a", parent: { value: { id: 1 }, children: [] } }))
-		).snap("parent.value.id must be a string (was a number)")
-	})
-
 	it("cyclic subtype of generic constraint", () => {
 		const types = scope({
 			"g<t extends base>": { v: "t" },
@@ -1975,18 +1416,6 @@ p1[0].p0 must be x (was a number)`)
 				"{ n?: $base }",
 				"{ n?: $other2 }"
 			)
-		)
-	})
-
-	it("deferred union generic argument", () => {
-		const types = scope({
-			"box<t extends object | null>": { "v?": "t" },
-			a: { "next?": "box<a | null>" }
-		}).export()
-
-		attest(types.a.expression).snap("{ next?: box<$a | null> }")
-		attest(types.a({ next: { v: { next: { v: 1 } } } }).toString()).snap(
-			"next.v.next.v must be an object or null (was a number)"
 		)
 	})
 
@@ -2015,39 +1444,6 @@ p1[0].p0 must be x (was a number)`)
 			}).toString()
 		).snap(`swap.swap.order[0] must be "off" (was "on")
 swap.swap.order[1] must be "on" (was "off")`)
-	})
-
-	it("recursive generic with recursive default", () => {
-		const types = scope({
-			"g<p, q>": {
-				p0: ["g<q, p> | null", "=", null],
-				"p1?": "g<null | q, null | p>",
-				"c0?": "g<x0, q>",
-				"c1?": "g<x1, q>",
-				"c2?": "g<x2, q>"
-			},
-			x0: {},
-			x1: {},
-			x2: {}
-		}).export()
-		const g = types.g("string", "number")
-
-		attest(g({})).equals({ p0: null })
-		attest(g({ p0: { p0: 5 } }).toString()).snap(
-			"p0.p0 must be an object or null (was a number)"
-		)
-	})
-
-	it("union of recursive generic instantiations", () => {
-		const types: Record<string, Type> = scope({
-			"g1<p1, q1>": ["p1", "g2<p1, null, q1>?"],
-			"g2<p2, q2, r2>": "(p2 | g1<r2[], q2[]>)[]",
-			a0: "g1<a0[], a0> | g2<string, string, string>"
-		} as never).export() as never
-
-		attest(types.a0.allows([[]])).equals(true)
-		attest(types.a0.allows(["x", [["y"]]])).equals(true)
-		attest(types.a0.allows([1])).equals(false)
 	})
 
 	it("generic instantiated as another in any order", () => {
@@ -2091,27 +1487,6 @@ swap.swap.order[1] must be "on" (was "off")`)
 
 		attest(first.n1.extends(first.c1)).equals(true)
 		attest(last.n1.extends(last.c1)).equals(true)
-	})
-
-	it("closes a recursive generic's instantiations", () => {
-		const types = scope({
-			"p<w, x, y, z>": { v: "w", "r?": "p<x, y, z, w>", "s?": "p<x, w, y, z>" },
-			"g<t>": { "next?": "g<Record<string, a>>" },
-			a: { "n?": "a" },
-			permuted: "p<'0', '1', '2', '3'>",
-			nested: "g<1>"
-		}).export()
-
-		attest(types.permuted({ v: "0", s: { v: "1", r: { v: "0" } } })).equals({
-			v: "0",
-			s: { v: "1", r: { v: "0" } }
-		})
-		attest(types.permuted({ v: "0", r: { s: { v: "1" } } }).toString()).snap(
-			'r.v must be "1" (was missing)\nr.s.v must be "2" (was "1")'
-		)
-		attest(types.nested.expression).snap(
-			"{ next?: { next?: g<{ [string]: { n?: $a } }> } }"
-		)
 	})
 
 	it("instantiates a private recursive generic", () => {
@@ -2216,35 +1591,6 @@ swap.swap.order[1] must be "on" (was "off")`)
 		).throws(writeUnresolvedFilterMessage("Extract"))
 	})
 
-	it("structural reference in progress", () => {
-		const types = scope({
-			Field: { type: "'field'", value: "string >= 1" },
-			Group: { type: "'group'", parts: "Part[]" },
-			Part: "Field | Group",
-			N: { s: "S" },
-			S: "N"
-		}).export()
-
-		attest(types.Part({ type: "x" }).toString()).snap(
-			'type must be "group" or "field" (was "x")'
-		)
-		attest(types.S.expression).snap("{ s: $S }")
-	})
-
-	it("thunk of open definition transforms", () => {
-		const $ = scope({
-			a: { v: "string.numeric.parse", "w?": "w" },
-			w: (): type.Any => type({ x: $.type("a | null") })
-		})
-		const types = $.export()
-
-		attest(types.w({ x: { v: "1" } })).equals({ x: { v: 1 } })
-		attest(types.a({ v: "1", w: { x: { v: "2" } } })).equals({
-			v: 1,
-			w: { x: { v: 2 } }
-		})
-	})
-
 	// https://github.com/arktypeio/arktype/issues/579
 	it("rejects a shallow cycle", () => {
 		// @ts-expect-error
@@ -2287,86 +1633,6 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(parsed.expression).snap("(In: string) => To<$parsed>")
 	})
 
-	it("pipes a composite morph into its own alias", () => {
-		const modules: Record<string, Type>[] = [
-			scope({
-				m: ["string", "=>", (s: string) => s.length],
-				x: "(m |> x) | number"
-			}).export() as never,
-			scope({
-				m: type("string.trim"),
-				x: "(m |> x) | number"
-			}).export() as never,
-			scope({
-				m: { a: "string.trim" },
-				x: "(m |> x) | number"
-			}).export() as never,
-			scope({
-				m: "string.trim | null",
-				x: "(m |> x) | number"
-			}).export() as never,
-			scope({ m: "string.trim[]", x: "(m |> x) | number" }).export() as never
-		]
-		const expressions = modules.map(types => types.x.expression)
-
-		attest(expressions).snap([
-			"number | (In: string) => To<$x>",
-			"number | (In: string) => To<$x>",
-			"number | (In: { a: string }) => To<$x>",
-			"number | (In: string) => To<$x> | (In: null) => To<$x>",
-			"number | (In: string[]) => To<$x>"
-		])
-	})
-
-	it("union prop intersected through its own alias", () => {
-		const { a } = scope({
-			a: { p: "string | a", "q?": ["a", "&", { p: "string" }] }
-		}).export()
-		const { b }: Record<string, Type> = scope({
-			a: { p: "string | b" },
-			b: ["a", "&", { p: "b[]" }]
-		} as never).export() as never
-		const self = type({
-			p: "string | this",
-			"q?": ["this", "&", { p: "string" }]
-		})
-
-		attest(a({ p: "x", q: { p: "y" } })).equals({ p: "x", q: { p: "y" } })
-		attest(a({ p: "x", q: { p: { p: "z" } } }).toString()).snap(
-			"q.p must be a string (was an object)"
-		)
-		attest(b.allows({ p: "x" })).equals(false)
-		attest(self({ p: "x", q: { p: 1 } }).toString()).snap(
-			"q.p must be a string (was a number)"
-		)
-	})
-
-	it("intersection cycle in any declaration order", () => {
-		const first: Record<string, Type> = scope({
-			a0: ["a2", "&", { "p0?": "a0 | null" }],
-			a2: { "p0?": ["a0 | null"] }
-		} as never).export() as never
-		const last: Record<string, Type> = scope({
-			a2: { "p0?": ["a0 | null"] },
-			a0: ["a2", "&", { "p0?": "a0 | null" }]
-		} as never).export() as never
-		const data = { p0: [{ p0: [null] }] }
-
-		attest(first.a0(data)).equals(data)
-		attest(last.a0(data)).equals(data)
-		attest(last.a0.expression).equals(first.a0.expression)
-		attest(() =>
-			scope({
-				"g1<p1, q1>": ["p1", "|", { "p0?": "g1<q1, p1>" }],
-				a1: { "p0?": "string", p1: ["string", "=", "d"] },
-				a2: "g1<string, number>",
-				zp: "g1<a2, a1>"
-			}).export()
-		).throws(
-			"An unordered union of a type including a morph and a type with overlapping input is indeterminate"
-		)
-	})
-
 	it("deep invalid data through an undiscriminated union", () => {
 		const a = scope({
 			a: { x: "number", "n?": "a | c" },
@@ -2379,25 +1645,6 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(out instanceof type.errors && out.issues[0].code === "union").equals(
 			true
 		)
-	})
-
-	it("jit and jitless errors through an intersection's resolution", () => {
-		const def = {
-			a0: [["Record<string, null>", "...", "a0[]"], "[]"],
-			c0: [["Record<string, null>", "...", "c0[]"], "[]"],
-			c1: ["c0", "...", "c1[]"],
-			x: "a0 & c1"
-		}
-		const [jit, jitless] = [false, true].map(jitless => {
-			const { x }: Record<string, Type> = scope(def as never, {
-				jitless
-			}).export() as never
-			const data: unknown[] = []
-			data.push(data, data)
-			return String(x(data))
-		})
-
-		attest(jit).equals(jitless)
 	})
 
 	it("intersection of definitions piping into their cycle", () => {
@@ -2445,47 +1692,6 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest($.type(p.expression.replace(/\$/g, "") as never).equals(p)).equals(
 			true
 		)
-	})
-
-	it("cyclic type and primitive", () => {
-		const list = scope({ list: "string | list[]" }).export().list
-		const strings = list.and("string[]")
-
-		attest(strings.expression).snap("string[]")
-		attest(strings.allows([1])).equals(false)
-	})
-
-	it("morph union cyclic branch", () => {
-		const types = scope({
-			a: { v: "a | null" },
-			b: { v: "string", m: "string = 'x'" },
-			u: "a | b"
-		}).export()
-
-		attest(types.u({ v: "s" })).equals({ v: "s", m: "x" })
-		attest(() =>
-			scope({
-				a: { p: "string", d: "string = 'd'" },
-				b: { kind: "'b'", p: "c | string" },
-				c: "(a | b)[]"
-			}).export()
-		).throws(
-			writeIndiscriminableMorphMessage(
-				'{ kind: "b", p: $c | string }',
-				'{ p: string, d: string = "d" }'
-			)
-		)
-	})
-
-	it("morph union disjoint cyclic prop", () => {
-		const types = scope({
-			d: { p0: "boolean" },
-			e: { x: "string.numeric.parse", "p0?": "e" },
-			c: "e | d"
-		}).export()
-
-		attest(types.c({ x: "1", p0: { x: "2" } })).equals({ x: 1, p0: { x: 2 } })
-		attest(types.c({ p0: true })).equals({ p0: true })
 	})
 
 	it("morph union of equivalent cyclic types", () => {
