@@ -11,7 +11,6 @@ import {
 	hashOf,
 	hasDomain,
 	includes,
-	isThunk,
 	ParseError,
 	printable,
 	registeredNameOf,
@@ -1894,8 +1893,7 @@ export class Precompiler {
 			"unsupported",
 			this.rejectionSeverity,
 			`${module.snippetOf(site)} can't be precompiled yet`,
-			reasons.map(reason => this.sourceNamed(reason, site, module)),
-			this.thunkHintOf(site)
+			reasons.map(reason => this.sourceNamed(reason, site, module))
 		)
 	}
 
@@ -1923,44 +1921,8 @@ export class Precompiler {
 			"R1",
 			this.rejectionSeverity,
 			`${module.snippetOf(node)} cannot be precompiled`,
-			site.reasons,
-			this.thunkHintOf(site)
+			site.reasons
 		)
-	}
-
-	// e.g. `d: () => $.type("c").pipe(isZero)`, whose functions arktype holds only once it calls the thunk
-	private thunkHintOf(site: Site): string | undefined {
-		const { value } = site
-		const aliases =
-			hasArkKind(value, "scope") ?
-				[
-					...site.aliases,
-					...Object.keys(value.aliases).map(
-						(alias): ScopeAlias => [value, alias]
-					)
-				]
-			:	site.aliases
-		return (
-				aliases.some(([$, alias]) => {
-					const resolution = $.resolutions[alias]
-					// a builtin Scope holds a hole only where the configuration put one, and the program can't mark it
-					if (
-						$.isBuiltin ||
-						!isThunk($.aliases[alias]) ||
-						!hasArkKind(resolution, "root")
-					)
-						return false
-					// e.g. one reaching a shallow alias cycle, which throws once compiled
-					try {
-						return this.interpreter.holesIn(resolution).size > 0
-					} catch (e) {
-						if (e instanceof ParseError) return false
-						throw e
-					}
-				})
-			) ?
-				thunkHint
-			:	undefined
 	}
 
 	// a factory compares a container it receives by definition, which leaves out what a function arktype calls while defining what it creates returns
@@ -2888,8 +2850,7 @@ export class Precompiler {
 					rejection?.hasCode("callback") ? "R2" : "R1",
 					this.rejectionSeverity,
 					`${module.snippetOf(node)} cannot be precompiled`,
-					site.reasons.map(reason => this.sourceNamed(reason, site, module)),
-					this.thunkHintOf(site)
+					site.reasons.map(reason => this.sourceNamed(reason, site, module))
 				)
 			]
 		}
@@ -4060,8 +4021,6 @@ const declaredBindingKinds = {
 	function: 1,
 	class: 1
 } satisfies Partial<Record<BindingKind, 1>>
-
-const thunkHint = `Standalone builds can't precompile a Scope's thunk returning a Type that holds a function or symbol yet. Mark the Scope // @ark-runtime with each definition reading it, or build with runtime: "arktype".`
 
 const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
 

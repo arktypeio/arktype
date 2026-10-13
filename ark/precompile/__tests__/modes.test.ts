@@ -770,7 +770,7 @@ export const A = type.instanceOf(Cat).or("null")`
 				analyze(tested, {}, { runtime: "arktype" }).diagnostics.map(
 					d => `${d.rule} ${d.severity}`
 				)
-			).snap(["unsupported warning"])
+			).snap(["R1 warning"])
 		})
 	})
 })

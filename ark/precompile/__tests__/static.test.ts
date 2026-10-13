@@ -1795,19 +1795,6 @@ const A = type(\`number < \${limits.max()}\`)`)
 			])
 		})
 
-		it("type built from a type that is not static", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-let Inner = type("string")
-Inner = type("number")
-const A = type({ inner: Inner })`)
-			).snap([
-				"2:13 accepted string",
-				"3:9 accepted number",
-				"4:11 rejected\n  `Inner` is a Type assigned at /main.ts:3:1, so it is not static"
-			])
-		})
-
 		it("sites over a rejected binding", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"

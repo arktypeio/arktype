@@ -9,14 +9,7 @@ import {
 	type BaseRoot,
 	type CacheReach
 } from "@ark/schema"
-import {
-	hashOf,
-	hasDomain,
-	isDate,
-	isDotAccessible,
-	ParseError,
-	printable
-} from "@ark/util"
+import { hashOf, hasDomain, isDotAccessible, ParseError } from "@ark/util"
 import { configure } from "arktype"
 import { InternalTypedFn } from "arktype/internal/fn.ts"
 import { InternalChainedMatchParser } from "arktype/internal/match.ts"
@@ -60,7 +53,6 @@ import {
 	enclosingFunctionOf,
 	genericMembers,
 	importsValues,
-	isArk,
 	isCallableBeforeBody,
 	isOnlyType,
 	isSetLast,
@@ -909,15 +901,6 @@ export class Interpreter {
 			}
 		}
 		if (binding.kind === "import") return this.readImport(binding, node, ctx)
-		if (binding.writes.length && this.holdsTypes(binding, module)) {
-			return {
-				value: new DynamicValue(
-					module,
-					node,
-					`\`${binding.name}\` is a Type assigned at ${module.positionOf(binding.writes[0])}, so it is not static`
-				)
-			}
-		}
 		const problem = staticProblemOf(binding, module)
 		if (problem) {
 			return {
@@ -1021,24 +1004,6 @@ export class Interpreter {
 			: target.kind === "expression" ? this.exportValue(target).value
 			: target.kind === "arktype" ? target.value
 			: undefined
-		)
-	}
-
-	// a hole in a definition position must not be a Type, so a binding that only ever holds Types cannot be one
-	private holdsTypes(binding: Binding, module: SourceModule): boolean {
-		const declaration = binding.declaration
-		return (
-			declaration.type === "VariableDeclarator" &&
-			!!declaration.init &&
-			isArk(this.graph.kindOf(declaration.init, module)) &&
-			binding.writes.every(write => {
-				const assignment = write.parent
-				return (
-					assignment?.type === "AssignmentExpression" &&
-					assignment.operator === "=" &&
-					isArk(this.graph.kindOf(assignment.right, module))
-				)
-			})
 		)
 	}
 
@@ -2266,9 +2231,7 @@ export class Interpreter {
 				k === "length" ? length
 				: k === "name" ? name
 				: answersFact(k) ? Reflect.get(target, k)
-				: k === Symbol.hasInstance && this.activeCall?.isArktype ?
-					(data: unknown) => this.refuseInstanceTest(standIn, data)
-				:	this.refuse(standIn),
+				: this.refuse(standIn),
 			getPrototypeOf: target => Reflect.getPrototypeOf(target),
 			apply: () => {
 				standIn.isCalled = true
@@ -2293,18 +2256,6 @@ export class Interpreter {
 		})
 		if (!ctx.env) this.standInsByNode.set(node, proxy)
 		return proxy
-	}
-
-	// arktype reads Symbol.hasInstance only for instanceof, which calls it with the value tested, printed here as arktype prints a unit
-	private refuseInstanceTest(standIn: StandIn, data: unknown): never {
-		const name = declaredNameOf(standIn.node as Class)
-		throw new DynamicValue(
-			standIn.module,
-			standIn.node,
-			`arktype tests \`${isDate(data) ? `d'${data.toISOString()}'` : printable(data, { ownDataOnly: true })}\` against ${name ? `the class \`${name}\`` : "a class"} (${standIn.module.positionOf(standIn.node)}) with \`instanceof\` while defining the type, reading a \`Symbol.hasInstance\` the class a factory receives may define for itself`,
-			standIn.dynamic,
-			"unsupported"
-		)
 	}
 
 	private opaqueStandIn(dynamic: DynamicValue): object {
