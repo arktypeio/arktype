@@ -35,22 +35,26 @@ class ToJsonSchemaError<
 	}
 }
 
+const throwFallback = <code extends ToJsonSchema.Code>(
+	ctx: ToJsonSchema.ContextByCode[code]
+): never => ToJsonSchema.throw(ctx.code, ctx)
+
 const defaultConfig: ToJsonSchema.Context = {
 	target: "draft-2020-12",
 	dialect: "https://json-schema.org/draft/2020-12/schema",
 	useRefs: false,
 	fallback: {
-		arrayObject: ctx => ToJsonSchema.throw("arrayObject", ctx),
-		arrayPostfix: ctx => ToJsonSchema.throw("arrayPostfix", ctx),
-		defaultValue: ctx => ToJsonSchema.throw("defaultValue", ctx),
-		domain: ctx => ToJsonSchema.throw("domain", ctx),
-		morph: ctx => ToJsonSchema.throw("morph", ctx),
-		patternIntersection: ctx => ToJsonSchema.throw("patternIntersection", ctx),
-		predicate: ctx => ToJsonSchema.throw("predicate", ctx),
-		proto: ctx => ToJsonSchema.throw("proto", ctx),
-		symbolKey: ctx => ToJsonSchema.throw("symbolKey", ctx),
-		unit: ctx => ToJsonSchema.throw("unit", ctx),
-		date: ctx => ToJsonSchema.throw("date", ctx)
+		arrayObject: throwFallback,
+		arrayPostfix: throwFallback,
+		defaultValue: throwFallback,
+		domain: throwFallback,
+		morph: throwFallback,
+		patternIntersection: throwFallback,
+		predicate: throwFallback,
+		proto: throwFallback,
+		symbolKey: throwFallback,
+		unit: throwFallback,
+		date: throwFallback
 	}
 }
 
