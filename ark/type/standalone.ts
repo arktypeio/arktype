@@ -1584,7 +1584,7 @@ ${isTemplate ? "]" : ")"}`
 		return `{ ${entries.join(", ")} }`
 	}
 
-	// a root's apply is passed only what its strategy reads, and the least ctx its checks report to
+	// a root's apply reads the runtime's exports, with the least ctx its checks report to
 	emitRootApply(root: BaseRoot, shape: string, nodeName: string): string {
 		assertDescribed(root)
 		// a callback can read the API Traversal adds, which none of the runtime's own keywords declaring one parameter does
@@ -1603,26 +1603,17 @@ ${isTemplate ? "]" : ")"}`
 			: !root.includesAlias && isDecidedByAllows(root) ? "ArkErrors"
 			: callbacks ? "Traversal"
 			: "InternalTraversal"
-		const apply = writeRootApply(root, nodeName)
-		const read = Object.entries(rootApplyRuntime).filter(([param]) =>
-			new RegExp(`\\b${param}\\b`).test(apply)
-		)
-		const params = read.map(([param]) => `, ${param}`).join("")
 		// a first-issue build's traversal drops the rest as it finalizes, which applyErrors doesn't call
-		const args = read
-			.map(
-				([param, value]) =>
-					`, ${
-						param === "Traversal" ? `runtime.${ctx}`
-						: param === "applyRejected" && !this.baking.firstIssue ?
-							"runtime.applyErrors"
-						:	this.emit(value)
-					}`
-			)
-			.join("")
-		return `(function (node, config${params}) {
+		const apply = writeRootApply(root, nodeName, param =>
+			param === "Traversal" ? `runtime.${ctx}`
+			: param === "config" ? "runtime.runtimeConfig"
+			: param === "applyRejected" && !this.baking.firstIssue ?
+				"runtime.applyErrors"
+			:	this.emit(rootApplyRuntime[param])
+		)
+		return `(function (node) {
 		${apply}
-	})(${shape}, runtime.runtimeConfig${args})`
+	})(${shape})`
 	}
 
 	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator

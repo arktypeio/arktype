@@ -31,25 +31,38 @@ export const rootApplyParams = [
 	...Object.keys(rootApplyRuntime)
 ] as const
 
+export type RootApplyParam = "config" | keyof typeof rootApplyRuntime
+
 // name keys the root's resolution, so it must be what its unit names it
-export const writeRootApply = (node: BaseRoot, name: string): string => {
+export const writeRootApply = (
+	node: BaseRoot,
+	name: string,
+	// an artifact writing the apply into its own code names what it reads as its module does
+	refOf?: (param: RootApplyParam) => string
+): string => {
+	const ref = refOf ?? ((param: RootApplyParam) => param)
 	const js = new CompiledFunction("data", "onFail").indent()
 	const applyFailed = new CompiledFunction("data", "onFail").indent()
+	const newCtx = `new ${ref("Traversal")}(data, ${ref("config")})`
 	const fallback = (body: typeof js) =>
 		node.includesAlias ?
 			body.return(
-				"applyCyclic(node, data, new Traversal(data, config)).finalize(onFail)"
+				`${ref("applyCyclic")}(node, data, ${newCtx}).finalize(onFail)`
 			)
-		:	body.return("applyRejected(node, data, config, onFail, Traversal)")
+		:	body.return(
+				`${ref("applyRejected")}(node, data, ${ref("config")}, onFail, ${ref("Traversal")})`
+			)
 	// a valid result is often data itself, which is cheaper to compare than instanceof
 	const returnResult = () =>
 		node.includesMorph ?
 			js
-				.if("result !== data && result instanceof TransformErrors", () =>
-					js
-						.const("ctx", "new Traversal(data, config)")
-						.line("addTransformErrors(ctx, result)")
-						.return("ctx.finalize(onFail)")
+				.if(
+					`result !== data && result instanceof ${ref("TransformErrors")}`,
+					() =>
+						js
+							.const("ctx", newCtx)
+							.line(`${ref("addTransformErrors")}(ctx, result)`)
+							.return("ctx.finalize(onFail)")
 				)
 				.return("result")
 		:	js.return("result")
@@ -57,7 +70,7 @@ export const writeRootApply = (node: BaseRoot, name: string): string => {
 	if (node.rootApplyStrategy === "contextual") {
 		// failing in its own function lets V8 inline Allows and remove the ctx it allocates
 		fallback(applyFailed)
-		js.const("ctx", "new Traversal(data, config)")
+		js.const("ctx", newCtx)
 			.if("!traverseAllows(data, ctx) || ctx.hasError()", () =>
 				js.return("applyFailed(data, onFail)")
 			)
@@ -66,17 +79,20 @@ export const writeRootApply = (node: BaseRoot, name: string): string => {
 		js.if("!allows(data)", fallback).return("data")
 	else if (node.rootApplyStrategy === "contextualTransform") {
 		if (node.includesAlias) {
-			js.const("untracked", "allowsAcyclic(node, data)")
-				.if("!(untracked ?? allowsInContext(node, data, config))", fallback)
-				.const("ctx", "new Traversal(data, config)")
+			js.const("untracked", `${ref("allowsAcyclic")}(node, data)`)
+				.if(
+					`!(untracked ?? ${ref("allowsInContext")}(node, data, ${ref("config")}))`,
+					fallback
+				)
+				.const("ctx", newCtx)
 				.set("ctx.tracksTransforms", "untracked === undefined")
 				.const(
 					"result",
-					`transformResolution(ctx, "${name}", data, traverseTransform)`
+					`${ref("transformResolution")}(ctx, "${name}", data, traverseTransform)`
 				)
 		} else {
 			js.if("!allows(data)", fallback)
-				.const("ctx", "new Traversal(data, config)")
+				.const("ctx", newCtx)
 				.const("result", "traverseTransform(data, ctx)")
 		}
 		js.return("ctx.hasError() ? ctx.finalize(onFail) : result")
@@ -98,7 +114,7 @@ export const writeRootApply = (node: BaseRoot, name: string): string => {
 	const read = nodeMembers.filter(member =>
 		new RegExp(`\\b${member}\\b`).test(rootApply)
 	)
-	return `"use strict"
-const ${read.map(member => `${member} = node.${member}`).join(", ")}
+	// a Function's body is sloppy unless it says otherwise, where an artifact's module decides for the code in it
+	return `${refOf ? "" : `"use strict"\n`}const ${read.map(member => `${member} = node.${member}`).join(", ")}
 ${rootApply}`
 }
