@@ -44,9 +44,6 @@ import {
 
 const root = fromHere("..", "..", "..")
 
-// the define the checks fixture's moded.ts is built with, which the worker sets unless it stubs it
-const define = { "process.env.ARK_MODE": "loose" }
-
 export interface BuildOptions {
 	mode: PrecompileMode
 	introspection?: readonly IntrospectionMember[]
@@ -61,7 +58,6 @@ const createPrecompiler = (opts: BuildOptions) =>
 			cwd: root,
 			checkHelpers: true,
 			inline: true,
-			define,
 			runtime: opts.mode === "cache" ? "arktype" : undefined,
 			introspection: opts.introspection
 		}

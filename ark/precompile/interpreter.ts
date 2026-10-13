@@ -83,8 +83,6 @@ import {
 } from "./scope.ts"
 
 export interface InterpreterOptions {
-	// values of bundler `define` constants, keyed by the expression they replace
-	define?: Record<string, unknown> | undefined
 	// ship arktype and precompile only the code it compiles, rather than folding every arktype expression into a validator
 	runtime?: "arktype" | undefined
 }
@@ -98,7 +96,6 @@ export type InputRoot =
 			importer?: SourceModule | undefined
 	  }
 	| { kind: "binding"; module: SourceModule; binding: Binding }
-	| { kind: "define"; name: string }
 
 export interface Read {
 	root: InputRoot
@@ -773,8 +770,6 @@ export class Interpreter {
 			return this.readIdentifier(node as IdentifierReference, ctx)
 		if (node.type !== "MemberExpression")
 			return { value: this.evaluate(node, ctx) }
-		const defined = this.readDefine(node, ctx)
-		if (defined) return defined
 		const base = this.evaluateReference(node.object, ctx)
 		if (base.value === shortCircuit || isDynamic(base.value)) return base
 		// a factory receives the Type, Scope or Generic itself where it can't receive the member read, as `$` in `$.type.or("a", "b")`
@@ -848,22 +843,6 @@ export class Interpreter {
 		else if (read.root.kind === "export" && !read.path.length)
 			ctx.trace.exportedFunctions.push(read)
 		return value
-	}
-
-	private readDefine(node: MemberExpression, ctx: Context): Lookup | undefined {
-		const name = envReadOf(node, ctx.module)
-		if (name === undefined) return
-		if (!this.opts.define || !(name in this.opts.define)) {
-			return {
-				value: new DynamicValue(
-					ctx.module,
-					node,
-					`\`${name}\` is not a build define`
-				)
-			}
-		}
-		const value = this.opts.define[name]
-		return { value, read: { root: { kind: "define", name }, path: [], value } }
 	}
 
 	private readIdentifier(node: IdentifierReference, ctx: Context): Lookup {
@@ -2418,24 +2397,6 @@ export const isValidator = (value: unknown): boolean =>
 // objects other than arktype's, which the program can change after the build reads them, so a site compares what it read from them
 const isChangeable = (value: unknown): value is object =>
 	isPlainContainer(value) || value instanceof Date || value instanceof RegExp
-
-// e.g. `process.env.MODE` or `import.meta.env.MODE`, which a build reads from its `define`s
-export const envReadOf = (
-	node: MemberExpression,
-	module: SourceModule
-): string | undefined => {
-	const object = unwrapExpression(node.object)
-	if (
-		object.type === "MemberExpression" &&
-		!object.computed &&
-		object.property.name === "env" &&
-		(object.object.type === "MetaProperty" ||
-			(object.object.type === "Identifier" &&
-				object.object.name === "process" &&
-				!module.scopes.referencesById.get(object.object)?.binding))
-	)
-		return module.textOf(node)
-}
 
 // a node holds nothing it was made from, but a Generic parses its body at each instantiation and a Scope its aliases when first resolved
 const readsAgain = (value: unknown): boolean =>

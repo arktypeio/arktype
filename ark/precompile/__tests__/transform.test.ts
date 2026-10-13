@@ -748,7 +748,6 @@ const alias = o
 export const Local = type({ name: o.name }).pipe(trim)
 export const Imported = type(\`string <= \${limits.max}\`).or({ tags: o.tags })
 export const Added = type({ ...reboxed })
-export const Defined = type(process.env.NODE_ENV === "production" ? "string" : "number")
 export const Namespaced = type({ ...limits.boxed })
 const box = shape
 export const Imports = ((shape: number) => type({ ...box }))(1)
@@ -766,19 +765,17 @@ export const Shadowed = (() => {
 					"/shapes.ts": 'export const shape = { a: "number" }',
 					"/reboxed.ts":
 						'import { boxed } from "./limits.ts"\nexport const reboxed = boxed'
-				}),
-				{ define: { "process.env.NODE_ENV": "production" } }
+				})
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
-				"/inputs.ts:18:9  type(alias.name) can't be precompiled yet\n  `o` (/inputs.ts:7:7) is shadowed where the site is written, so its factory can't receive it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+				"/inputs.ts:17:9  type(alias.name) can't be precompiled yet\n  `o` (/inputs.ts:7:7) is shadowed where the site is written, so its factory can't receive it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { f1pndslh1lfvnd2 as $arkf1pndslh1lfvnd2 } from "~arktype/fykei91oemoyz"
-import { fcoobse1hdwpxv as $arkfcoobse1hdwpxv } from "~arktype/fykei91oemoyz"
-import { fs5mhm20oegtat as $arkfs5mhm20oegtat } from "~arktype/fykei91oemoyz"
-import { fwuycaw1jorjbe as $arkfwuycaw1jorjbe } from "~arktype/fykei91oemoyz"
-import { f18h70z31d8anaf as $arkf18h70z31d8anaf } from "~arktype/fykei91oemoyz"
-import { fhpkoym15zgexb as $arkfhpkoym15zgexb } from "~arktype/fykei91oemoyz"
+import { f1pndslh1lfvnd2 as $arkf1pndslh1lfvnd2 } from "~arktype/1yevoiq1glv4hb"
+import { fcoobse1hdwpxv as $arkfcoobse1hdwpxv } from "~arktype/1yevoiq1glv4hb"
+import { fs5mhm20oegtat as $arkfs5mhm20oegtat } from "~arktype/1yevoiq1glv4hb"
+import { f1t6pyci0hn14t3 as $arkf1t6pyci0hn14t3 } from "~arktype/1yevoiq1glv4hb"
+import { f17lfebs1h268wu as $arkf17lfebs1h268wu } from "~arktype/1yevoiq1glv4hb"
 import { max } from "./limits.ts"
 import { reboxed } from "./reboxed.ts"
 import { shape } from "./shapes.ts"
@@ -789,10 +786,9 @@ const alias = o
 export const Local = $arkf1pndslh1lfvnd2(trim, o)
 export const Imported = $arkfcoobse1hdwpxv(limits.max, o)
 export const Added = $arkfs5mhm20oegtat(reboxed)
-export const Defined = $arkfwuycaw1jorjbe(process.env.NODE_ENV)
-export const Namespaced = $arkf18h70z31d8anaf(limits.boxed)
+export const Namespaced = $arkf1t6pyci0hn14t3(limits.boxed)
 const box = shape
-export const Imports = ((shape: number) => $arkfhpkoym15zgexb($arki1rnr3cp0ewvqsd, box))(1)
+export const Imports = ((shape: number) => $arkf17lfebs1h268wu($arki1rnr3cp0ewvqsd, box))(1)
 export const Shadowed = (() => {
 	const o = 1
 	return type(alias.name)

@@ -25,8 +25,7 @@ export const perturbations = [
 	"detach",
 	"mock",
 	"mockKind",
-	"swap",
-	"define"
+	"swap"
 ] as const
 
 export type Perturbation = (typeof perturbations)[number]
@@ -347,8 +346,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 				if (
 					firstRunOf.get(value) === run &&
 					!kept.has(value) &&
-					perturbation !== "none" &&
-					perturbation !== "define"
+					perturbation !== "none"
 				)
 					isPerturbed = perturb(value) || isPerturbed
 			}
@@ -373,14 +371,12 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			if (
 				kind === "mock" || kind === "mockKind" || kind === "swap" ?
 					!importsModules
-				: kind === "define" ? !source.includes("process.env")
-				: kind !== "none" && !readsBindings
+				:	kind !== "none" && !readsBindings
 			)
 				continue
 			perturbation = kind
 			perturbed = new WeakSet()
 			run++
-			process.env.ARK_MODE = kind === "define" ? "strict" : "loose"
 			observations = byPerturbation[kind] = {}
 			occurrencesBySite = {}
 			tests = []

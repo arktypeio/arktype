@@ -15,7 +15,6 @@ const create = () => import("./sites.ts")
 
 afterEach(() => {
 	for (const path of mocked.splice(0)) vi.doUnmock(path)
-	vi.unstubAllEnvs()
 	vi.resetModules()
 })
 
@@ -35,15 +34,6 @@ test("a mocked static helper", async () => {
 	mock("./helpers.ts", () => ({ optional: (def: string) => def }))
 	await expect(create()).rejects.toThrow(
 		"`optional` (helpers.ts:1:14) is a function, but was precompiled as the function helpers.ts exports as `optional`"
-	)
-})
-
-test("a stubbed define", async () => {
-	expect((await import("./moded.ts")).Moded("a")).toBe("a")
-	vi.resetModules()
-	vi.stubEnv("ARK_MODE", "strict")
-	await expect(import("./moded.ts")).rejects.toThrow(
-		'`process.env.ARK_MODE` is "strict", but was precompiled as "loose"'
 	)
 })
 

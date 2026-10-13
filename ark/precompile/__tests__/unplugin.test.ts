@@ -1245,13 +1245,9 @@ try {
 				config: false,
 				watch: false,
 				reporters: [],
-				testTimeout: 60000,
-				env: { ARK_MODE: "loose" }
+				testTimeout: 60000
 			},
-			viteConfig(
-				{ cwd: checks, define: { "process.env.ARK_MODE": "loose" } },
-				checks
-			)
+			viteConfig({ cwd: checks }, checks)
 		)
 		await vitest.close()
 		attest(
@@ -1263,7 +1259,6 @@ try {
 			"pass creates each validator from what the build read",
 			"pass a mocked module",
 			"pass a mocked static helper",
-			"pass a stubbed define",
 			"pass a mutated import",
 			"pass a mutated import another site reads elsewhere",
 			"pass a mutated plain object",

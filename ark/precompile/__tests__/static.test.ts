@@ -596,45 +596,6 @@ const B = type({ [tag]: "string" })`)
 			])
 		})
 
-		it("define constants", () => {
-			const result = analyze(
-				`import { type } from "arktype"
-const A = type(process.env.NODE_ENV === "production" ? "string" : "unknown")
-const B = type(\`'\${import.meta.env.MODE}'\`)`,
-				{},
-				{
-					define: {
-						"process.env.NODE_ENV": "production",
-						"import.meta.env.MODE": "dev"
-					}
-				}
-			)
-			attest(result.sites.map(site => site.status)).snap([
-				"accepted",
-				"accepted"
-			])
-			attest(result.sites.map(site => site.inputs)).snap([
-				[
-					{
-						kind: "define",
-						file: undefined,
-						name: "process.env.NODE_ENV",
-						path: [],
-						value: "production"
-					}
-				],
-				[
-					{
-						kind: "define",
-						file: undefined,
-						name: "import.meta.env.MODE",
-						path: [],
-						value: "dev"
-					}
-				]
-			])
-		})
-
 		it("a Type's introspection at a site of its own", () => {
 			const source = `import { type } from "arktype"
 import { User } from "./user.ts"

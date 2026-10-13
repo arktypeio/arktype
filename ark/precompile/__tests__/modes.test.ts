@@ -591,37 +591,6 @@ export const Name = type("string")`,
 				)
 			).equals([])
 		})
-
-		it("configure with a build define", () => {
-			const opts = {
-				config: "/main.ts",
-				define: { "process.env.LANG": "de" }
-			}
-			attest(
-				diagnosticsOf(
-					`import { configure } from "arktype/config"
-configure({ domain: { description: () => process.env.LANG === "de" ? "eine Zahl" : "a number" } })`,
-					{},
-					opts
-				)
-			).snap([
-				"/main.ts:2:1  configure({ domain: { description: () => process.env.LANG =… is not static\n  `process.env.LANG` (/main.ts:2:42) is a build define the configuration reads, and nothing compares its runtime value with the build's\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
-			])
-			attest(
-				diagnosticsOf(
-					`import { configure } from "arktype/config"
-import { describe } from /* writer */ "./locale.ts"
-configure({ domain: { description: describe } })`,
-					{
-						"/locale.ts": `const german = process.env.LANG === "de"
-export const describe = () => (german ? "eine Zahl" : "a number")`
-					},
-					opts
-				)
-			).snap([
-				"/main.ts:3:1  configure({ domain: { description: describe } }) is not static\n  `process.env.LANG` (/locale.ts:1:16) is a build define the configuration reads, and nothing compares its runtime value with the build's\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
-			])
-		})
 	})
 
 	it("syntax errors", () => {

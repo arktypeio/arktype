@@ -85,7 +85,6 @@ import {
 import { dependencyOf, transformedId, type PrecompileHost } from "./host.ts"
 import {
 	createSiteState,
-	envReadOf,
 	findDynamic,
 	Interpreter,
 	isDynamic,
@@ -241,7 +240,7 @@ interface PassedInput {
 }
 
 export interface Input {
-	kind: "import" | "local" | "define"
+	kind: "import" | "local"
 	// for an import, the module that exports it
 	file: string | undefined
 	name: string
@@ -1825,8 +1824,6 @@ export class Precompiler {
 		module: SourceModule,
 		prefix: string
 	): PassedInput | string {
-		if (input.kind === "define")
-			return { expression: input.name, label: input.name }
 		const isVisible = (binding: Binding) =>
 			![...module.scopes.bindingsById.values()].some(
 				other =>
@@ -2056,8 +2053,7 @@ export class Precompiler {
 				`\`${[input.name, ...input.path.map(String)].join(".")}\` is ${
 					input.kind === "import" ?
 						`imported from ${this.graph.pathOf(input.file!)}`
-					: input.kind === "local" ? "declared in a function around the site"
-					: "a define"
+					:	"declared in a function around the site"
 				}`
 			)
 		}
@@ -2744,8 +2740,6 @@ export class Precompiler {
 		module: SourceModule
 	): Input | DynamicValue {
 		const { root, path, value } = read
-		if (root.kind === "define")
-			return { kind: "define", file: undefined, name: root.name, path, value }
 		if (root.kind === "export")
 			return { kind: "import", file: root.file, name: root.name, path, value }
 		const { binding } = root
@@ -3024,12 +3018,6 @@ export class Precompiler {
 		)
 		const dynamic = rejectionOf(value)
 		const result = dynamic ? chainOf(dynamic) : []
-		const define = this.defineReadIn(modules)
-		if (define) {
-			result.push(
-				`${define} is a build define the configuration reads, and nothing compares its runtime value with the build's`
-			)
-		}
 		const objects = new Set<unknown>()
 		// a node kind's meta is copied into what configure() returns, which holds the same writers and keys
 		const refuse = (reason: string) =>
@@ -3080,8 +3068,8 @@ export class Precompiler {
 			problem:
 				result.length ? `${module.snippetOf(call)} is not static` : undefined,
 			reasons: result,
-			// each reason but an unknown value's or a define's says how to fix it
-			hint: dynamic || define || !result.length ? undefined : ""
+			// each reason but an unknown value's says how to fix it
+			hint: dynamic || !result.length ? undefined : ""
 		}
 	}
 
@@ -3120,25 +3108,6 @@ export class Precompiler {
 			}
 		}
 		return [...result]
-	}
-
-	// arktype may call any of the configuration's code, like a description writer, while defining a Type
-	private defineReadIn(ids: string[]): string | undefined {
-		const { define } = this.interpreter.opts
-		if (!define) return
-		for (const id of ids) {
-			const module = this.graph.moduleOf(id)
-			if (!(module instanceof SourceModule)) continue
-			let result: string | undefined
-			walk(module.program, node => {
-				const name =
-					node.type === "MemberExpression" ? envReadOf(node, module) : undefined
-				if (name !== undefined && name in define)
-					result ??= `\`${name}\` (${module.positionOf(node)})`
-				return result === undefined
-			})
-			if (result) return result
-		}
 	}
 
 	private checkStandalone(

@@ -3,7 +3,7 @@ import { parseArgs } from "node:util"
 import { check } from "./check.ts"
 
 const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file>] [--conditions <a,b>] [--tsconfig <file>] [--define <name>=<json>]"
+	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file>] [--conditions <a,b>] [--tsconfig <file>]"
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -18,8 +18,7 @@ const { values, positionals } = parseArgs({
 		runtime: { type: "string" },
 		config: { type: "string" },
 		conditions: { type: "string" },
-		tsconfig: { type: "string" },
-		define: { type: "string", multiple: true }
+		tsconfig: { type: "string" }
 	}
 })
 
@@ -34,23 +33,11 @@ const failUnder =
 if (Number.isNaN(failUnder))
 	fail(`--fail-under must be a percentage (was ${values["fail-under"]})`)
 
-const define: Record<string, unknown> = {}
-for (const entry of values.define ?? []) {
-	const separator = entry.indexOf("=")
-	if (separator < 1) fail(`--define must be <name>=<json> (was ${entry})`)
-	try {
-		define[entry.slice(0, separator)] = JSON.parse(entry.slice(separator + 1))
-	} catch {
-		fail(`--define must be <name>=<json> (was ${entry})`)
-	}
-}
-
 const report = check(positionals, {
 	runtime: runtime as "arktype" | undefined,
 	config: values.config,
 	conditions: values.conditions?.split(","),
-	tsconfig: values.tsconfig,
-	define
+	tsconfig: values.tsconfig
 })
 
 for (const line of report.lines) console.log(line)

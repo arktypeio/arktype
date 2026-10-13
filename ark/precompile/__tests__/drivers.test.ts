@@ -188,7 +188,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 					.replace(`${app}/`, "")
 			)
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
-  \`process.env.ADMIN_ROLE\` is not a build define
+  \`process\` is a global the build does not read
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
 		}).timeout(60000)
 
@@ -349,7 +349,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 		it("reports a configured writer calling a hole", () => {
 			const { status, stderr } = node(
 				["main.ts"],
-				{ config: "config.ts", define: { "process.env.MODE": "lenient" } },
+				{ config: "config.ts" },
 				calledHoles
 			)
 			attest(status).equals(1)
@@ -746,7 +746,7 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 					.replace(`${app}/`, "")
 			)
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
-  \`process.env.ADMIN_ROLE\` is not a build define
+  \`process\` is a global the build does not read
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
 		}).timeout(60000)
 	})

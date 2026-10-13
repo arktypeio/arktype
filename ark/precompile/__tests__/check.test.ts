@@ -45,8 +45,7 @@ contextualize(() => {
 		attest(
 			check([], {
 				cwd: fromHere("calledHoles"),
-				config: "config.ts",
-				define: { "process.env.MODE": "lenient" }
+				config: "config.ts"
 			}).lines
 		).snap([
 			'main.ts:6:18  type("string").narrow(() => lenient) can\'t be precompiled yet\n  arktype calls `() => lenient` (main.ts:6:40)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
@@ -117,18 +116,14 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		attest(
 			[
 				["--runtime", "strict"],
-				["--fail-under", "most"],
-				["--define", "MAX"],
-				["--define", "MAX=five"]
+				["--fail-under", "most"]
 			].map(args => {
 				const result = cli("--check", ...args)
 				return `${result.status} ${result.stderr.split("\n")[0]}`
 			})
 		).snap([
 			"2 --runtime must be arktype (was strict)",
-			"2 --fail-under must be a percentage (was most)",
-			"2 --define must be <name>=<json> (was MAX)",
-			"2 --define must be <name>=<json> (was MAX=five)"
+			"2 --fail-under must be a percentage (was most)"
 		])
 	})
 })

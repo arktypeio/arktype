@@ -1,7 +1,7 @@
 import "./config.ts"
 import { type } from "arktype"
 
-const lenient = process.env.MODE === "lenient"
+const lenient = true
 
 export const T = type("string").narrow(() => lenient)
 
