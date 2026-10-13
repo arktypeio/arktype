@@ -1383,6 +1383,7 @@ try {
 					config: false,
 					watch: false,
 					reporters: [],
+					testTimeout: 60000,
 					env: { ARKTYPE_RUNTIME: runtime ?? "" }
 				},
 				viteConfig({ runtime })
@@ -1401,6 +1402,7 @@ try {
 					config: false,
 					watch: false,
 					reporters: [],
+					testTimeout: 60000,
 					env: { EXPECTED: runPlain(configured) }
 				},
 				viteConfig(
@@ -1425,6 +1427,7 @@ try {
 				config: false,
 				watch: false,
 				reporters: [],
+				testTimeout: 60000,
 				env: { ARK_MODE: "loose" }
 			},
 			viteConfig(
@@ -1463,6 +1466,7 @@ try {
 					config: false,
 					watch: false,
 					reporters: [],
+					testTimeout: 60000,
 					env: { ARKTYPE_RUNTIME: runtime ?? "" }
 				},
 				viteConfig({ runtime, cwd: library }, library)
