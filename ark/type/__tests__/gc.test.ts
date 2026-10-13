@@ -82,6 +82,23 @@ contextualize(() => {
 		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
 	})
 
+	it("values captured by a type compiled with one it references", async () => {
+		const Inner = type({ inner: "string" })
+		const capture = () => {
+			const captured = {}
+			type({ a: Inner, b: ["object", "=", () => captured] })({
+				a: { inner: "" }
+			})
+			return new WeakRef(captured)
+		}
+		const ref = capture()
+		await collectTarget(ref)
+		attest(ref.deref()).equals(undefined)
+		attest(Inner({ inner: 5 }).toString()).snap(
+			"inner must be a string (was a number)"
+		)
+	})
+
 	it("referenced this-cyclic root", async () => {
 		let Root: type.Any | null = type({ name: "string", "next?": "this" })
 		const Extended = Root.and({ "id?": "number" })

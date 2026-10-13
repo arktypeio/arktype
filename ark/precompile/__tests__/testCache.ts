@@ -82,7 +82,7 @@ const register = (roots: BaseRoot[]) => {
 
 const checkBound = (root: BaseRoot) => {
 	finalized++
-	if (root.compiledUnit!.toString().startsWith("function anonymous"))
+	if (root.precompilation!.startsWith("function anonymous"))
 		unbound.push(root.expression)
 }
 

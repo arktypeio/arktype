@@ -245,7 +245,8 @@ const isLeafIn = (
 
 const precompile = (
 	references: readonly BaseNode[],
-	owningScope?: BaseScope
+	owningScope?: BaseScope,
+	unbound?: ReadonlySet<BaseNode>
 ): Fn => {
 	const linkage = createLinkage()
 	for (const node of references) linkage.referencesById[node.id] = node
@@ -273,9 +274,25 @@ const precompile = (
 			[...linkage.refs.keys()]
 		),
 		linkage.referencesById,
-		owningScope
+		owningScope,
+		unbound
 	)
 	return compiledUnit
+}
+
+// a deferred Type binds its own nodes, so they can't hold another Type's unit and the values it references
+const precompileRoot = (
+	root: BaseNode,
+	references: readonly BaseNode[]
+): void => {
+	const unbound = new Set<BaseNode>()
+	for (const reference of references) {
+		if (reference === root || !reference.allowsBeforeJit) continue
+		for (const id in reference.referencesById)
+			unbound.add(reference.referencesById[id])
+	}
+	unbound.delete(root)
+	precompile(references, undefined, unbound)
 }
 
 const bindUnit = (
@@ -283,16 +300,23 @@ const bindUnit = (
 	compiledUnit: CompiledUnit,
 	compiledTraversals: PrecompiledTraversals[],
 	referencesById: Record<string, BaseNode>,
-	owningScope?: BaseScope
+	owningScope?: BaseScope,
+	unbound?: ReadonlySet<BaseNode>
 ): void => {
 	for (let i = 0; i < declared.length; i++) {
 		const node = declared[i]
-		if (node.compiledUnit && (!owningScope || node.$ !== owningScope)) {
+		if (
+			unbound?.has(node) ||
 			// if node has already been bound to another scope or anonymous type, don't rebind it
+			(node.compiledUnit && (!owningScope || node.$ !== owningScope))
+		)
 			continue
-		}
 		const [traverseAllows, traverseApply, traverseTransform] =
 			compiledTraversals[i]
+		if (node.allowsBeforeJit) {
+			node.allows = node.allowsBeforeJit
+			node.allowsBeforeJit = undefined
+		}
 		node.traverseAllows = traverseAllows
 		if (node.isRoot() && !node.allowsRequiresContext) {
 			// if the reference doesn't require context, we can assign over
@@ -1771,16 +1795,19 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 			return node
 
+		// resolving aliases can throw, so a Type including one resolves and compiles them as it's defined
 		const references =
-			node.includesAlias ?
-				referencesThroughAliases(node.references)
-			:	node.references
-		if (!node.compiledUnit && jit) {
-			bindPrecompiledUnits?.([node])
-			if (!node.compiledUnit && !this.resolvedConfig.jitless)
-				precompile(references)
-		}
+			node.includesAlias ? referencesThroughAliases(node.references) : undefined
+		if (node.compiledUnit || !jit) return node
+		bindPrecompiledUnits?.([node])
+		if (node.compiledUnit || this.resolvedConfig.jitless) return node
+		if (references) precompileRoot(node, references)
+		else node.deferJit()
 		return node
+	}
+
+	jit(node: BaseNode): void {
+		precompileRoot(node, node.references)
 	}
 
 	protected abstract preparseOwnDefinitionFormat(

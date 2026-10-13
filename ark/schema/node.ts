@@ -450,7 +450,21 @@ export abstract class BaseNode<
 		this._flatMorphs = flatMorphs
 	}
 
+	// set while a Type defers compiling until it's first used
+	allowsBeforeJit: this["allows"] | undefined
+
+	deferJit(): void {
+		if (this.allowsBeforeJit) return
+		this.allowsBeforeJit = this.allows
+		// a detached reference can call this after compiling
+		this.allows = data => {
+			if (this.allowsBeforeJit) this.$.jit(this)
+			return this.allows(data)
+		}
+	}
+
 	private initRootApply(): RootApply {
+		if (this.allowsBeforeJit) this.$.jit(this)
 		return (this.cache.rootApply =
 			this.compiledUnit && this.isRoot() && !this.$.resolvedConfig.jitless ?
 				compileRootApply(this)
@@ -594,6 +608,7 @@ export abstract class BaseNode<
 	isReusableLeaf = false
 
 	get precompilation(): string | undefined {
+		if (this.allowsBeforeJit) this.$.jit(this)
 		return this.compiledUnit?.toString()
 	}
 

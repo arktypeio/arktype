@@ -290,6 +290,10 @@ precompile.vite({ errors: "first" })
 
 A program's `configure()` call stays in place and configures `arktype/runtime`, which fixes its configuration at the first validator it creates, as arktype does at the first Type. It throws if `configure()` comes after that, or under a configuration other than the one the validators were built under. It returns its argument, where arktype's returns arktype's configuration with the argument merged in, so a keyword configured as a string reads as that string through it.
 
+### Compile a Type when it's first used
+
+A Type is compiled the first time it's called, its `allows` is called or its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled. A Type referencing an alias is still compiled where it's defined, so an error resolving the alias is thrown there.
+
 ### Fix deep transforms through a tuple default
 
 `onDeepUndeclaredKey` and `configure` with `"references"` threw on a tuple with a default:
