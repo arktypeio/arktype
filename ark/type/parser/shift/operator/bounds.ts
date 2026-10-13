@@ -22,6 +22,7 @@ import {
 import type { s, StaticState } from "../../reduce/static.ts"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
 import type { parseOperand } from "../operand/operand.ts"
+import { writeUnexpectedCharacterMessage } from "./operator.ts"
 
 export const parseBound = (
 	s: RootedRuntimeState,
@@ -78,23 +79,25 @@ export type ComparatorStartChar =
 export const comparatorStartChars: KeySet<ComparatorStartChar> = {
 	"<": 1,
 	">": 1,
-	"=": 1
+	"=": 1,
+	"!": 1
 }
 
 const shiftComparator = (
 	s: RuntimeState,
 	start: ComparatorStartChar
 ): Comparator =>
-	s.scanner.lookaheadIs("=") ?
-		`${start}${s.scanner.shift()}`
-	:	(start as OneCharComparator)
+	s.scanner.lookaheadIs("=") ? `${start}${s.scanner.shift()}`
+	: start === "!" ? s.error(writeUnexpectedCharacterMessage(start))
+	: (start as OneCharComparator)
 
 type shiftComparator<
 	start extends ComparatorStartChar,
 	unscanned extends string
 > =
 	unscanned extends `=${infer nextUnscanned}` ? [`${start}=`, nextUnscanned]
-	:	[start & OneCharComparator, unscanned]
+	: start extends OneCharComparator ? [start, unscanned]
+	: s.error<writeUnexpectedCharacterMessage<start>>
 
 export const writeIncompatibleRangeMessage = (
 	l: BoundKind,
@@ -114,7 +117,7 @@ export const getBoundKinds = (
 			)
 		}
 		return (
-			comparator === "==" ? ["min", "max"]
+			comparator === "==" || comparator === "!=" ? ["min", "max"]
 			: comparator[0] === ">" ? ["min"]
 			: ["max"]
 		)
@@ -128,6 +131,11 @@ export const getBoundKinds = (
 		}
 		return (
 			comparator === "==" ? ["exactLength"]
+			: comparator === "!=" ?
+				// no length is less than 0, so string!=0 is string>0
+				limit <= 0 ?
+					["minLength"]
+				:	["minLength", "maxLength"]
 			: comparator[0] === ">" ? ["minLength"]
 			: ["maxLength"]
 		)
@@ -135,7 +143,7 @@ export const getBoundKinds = (
 	if (root.extends($ark.intrinsic.Date)) {
 		// allow either numeric or date limits
 		return (
-			comparator === "==" ? ["after", "before"]
+			comparator === "==" || comparator === "!=" ? ["after", "before"]
 			: comparator[0] === ">" ? ["after"]
 			: ["before"]
 		)
@@ -186,11 +194,20 @@ export const parseRightBound = (
 		"right"
 	)
 
-	for (const kind of boundKinds) {
-		s.constrainRoot(
-			kind,
-			comparator === "==" ? { rule: limit } : { rule: limit, exclusive }
-		)
+	if (comparator === "!=") {
+		// reduce != to a union of exclusive bounds, e.g. number<0 | number>0
+		s.root = boundKinds
+			.map(kind =>
+				previousRoot.constrain(kind, { rule: limit, exclusive: true })
+			)
+			.reduce((l, r) => l.rawOr(r))
+	} else {
+		for (const kind of boundKinds) {
+			s.constrainRoot(
+				kind,
+				comparator === "==" ? { rule: limit } : { rule: limit, exclusive }
+			)
+		}
 	}
 
 	if (!s.branches.leftBound) return

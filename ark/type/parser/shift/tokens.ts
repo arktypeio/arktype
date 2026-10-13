@@ -5,6 +5,7 @@ export const terminatingChars = {
 	"<": 1,
 	">": 1,
 	"=": 1,
+	"!": 1,
 	"|": 1,
 	"&": 1,
 	")": 1,
