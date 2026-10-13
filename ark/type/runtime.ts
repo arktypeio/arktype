@@ -605,28 +605,23 @@ export const holesOf = (
 	holder: unknown,
 	id: string,
 	label: string,
-	// a Type's expression, omitted when it prints a hole's name, which is known only once received
-	expected: (() => string) | "Type" | "Module" | "Scope" | "Generic" = "Type"
+	kind: "Type" | "Module" | "Scope" | "Generic" = "Type"
 ): readonly unknown[] => {
 	const created = holesByValue.get(holder as object)
 	if (created?.[0] !== id) {
-		const kind = typeof expected === "string" ? expected : "Type"
-		// a Module's, Scope's or Generic's stand-in prints as an object, so it's named by its kind
+		// described by its kind rather than printed, so a bundle receiving Types ships no printer; the label names the binding
 		const actual =
-			created && !isValidator(holder) ?
-				`another ${kind}`
-			:	describeValue(holder)
-		const description =
-			typeof expected === "string" ?
-				`the ${kind} it was at build`
-			:	`Type<${expected()}>`
+			isValidator(holder) ?
+				Reflect.getOwnPropertyDescriptor(holder, "expression") ?
+					`another ${holder}`
+				:	"another Type"
+			: created ? `another ${kind}`
+			: holder === null ? "null"
+			: typeof holder === "object" ? "an object"
+			: holder === undefined ? "undefined"
+			: `a ${typeof holder}`
 		return throwError(
-			writeCreationMismatchMessage(
-				label,
-				// a Type's expression leaves out what can differ, like a predicate
-				actual === description ? `another ${actual}` : actual,
-				description
-			)
+			writeCreationMismatchMessage(label, actual, `the ${kind} it was at build`)
 		)
 	}
 	// its strings print its holes' names as they were when it was created, which a factory reading them again would miss

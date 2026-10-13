@@ -1066,20 +1066,13 @@ export class StandaloneArtifact {
 
 	// each factory receiving a binding checks it with one function, which a bundle holds once
 	receiverOf(value: Foldable, id: string, label: string): string {
-		const imports: Record<string, string[]> = {}
-		let expected = ""
-		if (!hasArkKind(value, "root")) expected = `, "${kindNameOf(value)}"`
-		else if (!value.expression.includes(holeNameMarker)) {
-			const name = this.stringModuleOf(value, "expression")
-			imports[this.specifierOf(name)] = [name]
-			expected = `, ${name}`
-		}
-		const body = `runtime.holesOf(holder, ${JSON.stringify(id)}, ${JSON.stringify(label)}${expected})`
+		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
+		const body = `runtime.holesOf(holder, ${JSON.stringify(id)}, ${JSON.stringify(label)}${kind})`
 		const name = `receive${hashOf(body)}`
 		const specifier = this.specifierOf(name)
 		this.sharedModules[specifier] ??= {
 			readsRuntime: true,
-			imports,
+			imports: {},
 			declarations: [
 				writeFunction(this.baking.hoisted, name, "holder", `\treturn ${body}`)
 			],

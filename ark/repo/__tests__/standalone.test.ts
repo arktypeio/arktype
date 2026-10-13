@@ -1570,15 +1570,30 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(() => create(validators.Text)).throws(
 				writeCreationMismatchMessage(
 					"`Name`",
-					"Type<string>",
-					"Type<(In: string) => Out<unknown>>"
+					"another Type<string>",
+					"the Type it was at build"
 				)
 			)
 			attest(() => create(validators.Described(trim))).throws(
 				writeCreationMismatchMessage(
 					"`Name`",
 					"another Type<(In: string) => Out<unknown>>",
-					"Type<(In: string) => Out<unknown>>"
+					"the Type it was at build"
+				)
+			)
+			// e.g. a mock of the module exporting it, described without printing it
+			attest(() => create(undefined)).throws(
+				writeCreationMismatchMessage(
+					"`Name`",
+					"undefined",
+					"the Type it was at build"
+				)
+			)
+			attest(() => create({})).throws(
+				writeCreationMismatchMessage(
+					"`Name`",
+					"an object",
+					"the Type it was at build"
 				)
 			)
 			const unlisted = await load(
@@ -1596,8 +1611,8 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(() => unlisted.User(unlisted.Text)).throws(
 				writeCreationMismatchMessage(
 					"`Name`",
-					"a Type",
-					"Type<(In: string) => Out<unknown>>"
+					"another Type",
+					"the Type it was at build"
 				)
 			)
 		})
@@ -1809,7 +1824,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(() => created.Narrowed(Dog, created.DogT(Dog))).throws(
 				writeCreationMismatchMessage(
 					"`AnimalT`",
-					"Type<Dog>",
+					"another Type<Dog>",
 					"the Type it was at build"
 				)
 			)

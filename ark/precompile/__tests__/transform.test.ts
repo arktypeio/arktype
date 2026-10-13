@@ -178,11 +178,11 @@ export const Doubled = type("number").pipe(double)`
 				}
 			)
 			attest(result.code).snap(`import "arktype"
-import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/1p561rf1t71qcj"
-import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/1p561rf1t71qcj"
-import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/1p561rf1t71qcj"
-import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/1p561rf1t71qcj"
-import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/1p561rf1t71qcj"
+import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/1sd8bna19ntd4h"
+import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/1sd8bna19ntd4h"
+import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/1sd8bna19ntd4h"
+import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/1sd8bna19ntd4h"
+import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/1sd8bna19ntd4h"
 import { double } from "./containers.ts"
 import { Doubled } from "./doubled.ts"
 const Length = $arkf1hn2e10012161b(s => s.length)
@@ -723,14 +723,14 @@ export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/135rtaq0mkbc38"
-import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/135rtaq0mkbc38"
-import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/135rtaq0mkbc38"
-import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/135rtaq0mkbc38"
-import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/135rtaq0mkbc38"
-import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/135rtaq0mkbc38"
-import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/135rtaq0mkbc38"
-import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/135rtaq0mkbc38"
+import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/1qog3wy05h9du9"
+import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/1qog3wy05h9du9"
+import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/1qog3wy05h9du9"
+import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/1qog3wy05h9du9"
+import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/1qog3wy05h9du9"
+import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/1qog3wy05h9du9"
+import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/1qog3wy05h9du9"
+import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/1qog3wy05h9du9"
 import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
 class Pet {}
@@ -977,9 +977,9 @@ export const Checked = type({ a: type("string").narrow(other.check), b: type("st
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/13fnjzy1ka4pqs"
-import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/13fnjzy1ka4pqs"
-import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/13fnjzy1ka4pqs"
+import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/19xxu2t19h91d2"
+import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/19xxu2t19h91d2"
+import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/19xxu2t19h91d2"
 import { a } from "./a.ts"
 import { alias } from "./b.ts"
 const fns = { check: (s: string) => s.length > 3 }
@@ -1121,7 +1121,7 @@ export const Id = type("string").narrow(s => s.length === 8)`
 					specifier.includes("receive") ? [module] : []
 				)
 			).snap([
-				'import * as runtime from "arktype/runtime"\nimport { expressionl51cl30380gwa } from "~arktype/expressionl51cl30380gwa"\n\nconst receivefz56ck18pw66z = ((holder) => {\n\treturn runtime.holesOf(holder, "mu65gl0o951w9", "`Id`", expressionl51cl30380gwa)\n})\n\nexport { receivefz56ck18pw66z }\n'
+				'import * as runtime from "arktype/runtime"\n\nconst receivemr4vu50xt4xr8 = ((holder) => {\n\treturn runtime.holesOf(holder, "mu65gl0o951w9", "`Id`")\n})\n\nexport { receivemr4vu50xt4xr8 }\n'
 			])
 		})
 
@@ -1135,9 +1135,9 @@ export const In = type({ a: T.in })`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1bg5ghg1udq2qc as $arkf1bg5ghg1udq2qc } from "~arktype/bchgjj1f46jgy"
-import { fnlxeht0j9hv9h as $arkfnlxeht0j9hv9h } from "~arktype/bchgjj1f46jgy"
-import { fe5h3530tuatax as $arkfe5h3530tuatax } from "~arktype/bchgjj1f46jgy"
+import { f1bg5ghg1udq2qc as $arkf1bg5ghg1udq2qc } from "~arktype/19cgd5v0jhrzuk"
+import { fnlxeht0j9hv9h as $arkfnlxeht0j9hv9h } from "~arktype/19cgd5v0jhrzuk"
+import { fe5h3530tuatax as $arkfe5h3530tuatax } from "~arktype/19cgd5v0jhrzuk"
 const tag = Symbol("tag")
 const T = $arkf1bg5ghg1udq2qc(tag)
 export const Union = $arkfnlxeht0j9hv9h(T)
