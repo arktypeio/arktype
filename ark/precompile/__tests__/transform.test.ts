@@ -99,8 +99,8 @@ export const userJson = /* @__PURE__ */ $ark#4()`)
 					)
 				)
 			).snap([
-				'import * as runtime from "arktype/runtime"\n\nvar #0Value\nconst #0 = (() => {\n\treturn (#0Value ??= runtime.deepFreeze({ "required": [{ "key": "x", "value": "number" }], "domain": "object" }))\n})\n\nexport { #0 }\n',
-				'import * as runtime from "arktype/runtime"\n\nvar #1Value\nconst #1 = (() => {\n\treturn (#1Value ??= runtime.deepFreeze({ "required": [{ "key": "name", "value": "string" }], "domain": "object" }))\n})\n\nexport { #1 }\n'
+				'import * as runtime from "arktype/runtime"\n\nconst #0 = /* @__PURE__ */ (() => runtime.deepFreeze({ "required": [{ "key": "x", "value": "number" }], "domain": "object" }))()\n\nexport { #0 }\n',
+				'import * as runtime from "arktype/runtime"\n\nconst #1 = /* @__PURE__ */ (() => runtime.deepFreeze({ "required": [{ "key": "name", "value": "string" }], "domain": "object" }))()\n\nexport { #1 }\n'
 			])
 		})
 

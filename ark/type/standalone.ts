@@ -216,6 +216,12 @@ const writeFunction = (
 		`function ${name}(${params}) {\n${body}\n}`
 	:	`const ${name} = ((${params}) => {\n${body}\n})`
 
+// a value built as its module is evaluated, which a bundler drops unread, else at its first read
+const writeValue = (hoisted: boolean, name: string, expression: string) =>
+	hoisted ?
+		`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${expression})\n}`
+	:	`const ${name} = /* @__PURE__ */ (() => ${expression})()`
+
 export interface StandaloneModules {
 	code: string
 	// each module code imports by a ~arktype/ specifier
@@ -1175,9 +1181,9 @@ ${writeFunction(
 		return `~arktype/${this.baking.hoisted ? "hoisted/" : ""}${name}`
 	}
 
-	// a unit nothing can read before its module is evaluated is built as the module is
-	readUnit(unit: RootUnit): string {
-		return this.baking.hoisted ? `${unit.name}()` : unit.name
+	// a unit, shape or constant nothing can read before its module is evaluated is built as the module is
+	readValue(name: string): string {
+		return this.baking.hoisted ? `${name}()` : name
 	}
 
 	writeShared(unit: RootUnit): void {
@@ -1242,27 +1248,21 @@ ${writeFunction(
 			const name = unit.names[root.id]
 			const shape = writing.shapesByName[name]
 			moduleDeclarations.push(
-				shape ?
-					writeFunction(
-						this.baking.hoisted,
-						`${name}Node`,
-						"",
-						`\treturn ${this.readUnit(unit)}[${returned.indexOf(shape)}]`
-					)
-				:	`var ${name}Shape\n${writeFunction(
-						this.baking.hoisted,
-						`${name}Node`,
-						"",
-						`\treturn (${name}Shape ??= runtime.freeze(${this.writeShape(
+				writeValue(
+					this.baking.hoisted,
+					`${name}Node`,
+					shape ?
+						`${this.readValue(unit.name)}[${returned.indexOf(shape)}]`
+					:	`runtime.freeze(${this.writeShape(
 							root,
-							`${name}Node()`,
+							this.readValue(`${name}Node`),
 							unit,
 							this.traversalsOf(root, unit).map(
 								traversal =>
-									`${this.readUnit(unit)}[${returned.indexOf(traversal)}]`
+									`${this.readValue(unit.name)}[${returned.indexOf(traversal)}]`
 							)
-						)}))`
-					)}`
+						)})`
+				)
 			)
 		}
 		this.declarations = declarations
@@ -1327,7 +1327,7 @@ return [${returned.join(", ")}]
 				this.importName(this.specifierOf(dependency.name), dependency.name)
 			const source =
 				isShared ?
-					this.readUnit(dependency)
+					this.readValue(dependency.name)
 				:	this.localNamesByUnit.get(dependency)!
 			if (declaresStrict(unit)) {
 				params.push(name)
@@ -1455,18 +1455,15 @@ ${isTemplate ? "]" : ")"}`
 		return this.readConstant(`json${hashOf(value)}`, value)
 	}
 
-	// created at its first read, which an import cycle can reach before the module runs
 	readConstant(name: string, value: string): string {
 		const specifier = this.specifierOf(name)
 		this.sharedModules[specifier] ??= {
 			readsRuntime: true,
 			imports: {},
-			declarations: [
-				`var ${name}Value\n${writeFunction(this.baking.hoisted, name, "", `\treturn (${name}Value ??= ${value})`)}`
-			],
+			declarations: [writeValue(this.baking.hoisted, name, value)],
 			exports: [name]
 		}
-		return this.read(specifier, name, name, `${name}()`)
+		return this.read(specifier, name, name, this.readValue(name))
 	}
 
 	// a writer is declared by its text, so each JSON Schema a validator bakes is written once however many of its members return it
@@ -1777,28 +1774,21 @@ ${isTemplate ? "]" : ")"}`
 		const name = unit.names[node.id]
 		const own = this.writing?.shapesByName[name]
 		if (own) return own
-		if (this.writing && isSharedUnit(unit)) {
-			return this.read(
+		if (isSharedUnit(unit)) {
+			const shape = this.read(
 				this.specifierOf(unit.name),
 				`${name}Node`,
 				name,
-				`${name}Node()`
+				this.readValue(`${name}Node`)
 			)
+			// a hoisted shape is read through its getter once per creation
+			return this.writing || !this.baking.hoisted ?
+					shape
+				:	(this.declarations.namesByValue.get(node) ??
+						this.declareConst(node, "shape", shape))
 		}
 		const declared = this.declarations.namesByValue.get(node)
 		if (declared) return declared
-		if (isSharedUnit(unit)) {
-			return this.declareConst(
-				node,
-				"shape",
-				this.read(
-					this.specifierOf(unit.name),
-					`${name}Node`,
-					name,
-					`${name}Node()`
-				)
-			)
-		}
 		const shape = this.declareConst(node, "shape", "{}")
 		const traversals = unit.traversals.flat()
 		this.links.push(
