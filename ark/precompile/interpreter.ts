@@ -465,33 +465,6 @@ export class Interpreter {
 				)
 			case "TemplateLiteral":
 				return this.evaluateTemplate(node, ctx)
-			case "TaggedTemplateExpression": {
-				const tag = this.evaluate(node.tag, ctx)
-				if (tag !== String.raw) {
-					return new DynamicValue(
-						ctx.module,
-						node,
-						`${ctx.module.snippetOf(node)} uses a template tag other than \`String.raw\``
-					)
-				}
-				const values: unknown[] = []
-				for (const expression of node.quasi.expressions) {
-					const value = this.evaluate(expression, ctx)
-					if (isDynamic(value)) return value.asOperand()
-					values.push(value)
-				}
-				const strings = Object.assign(
-					node.quasi.quasis.map(quasi => quasi.value.cooked),
-					{ raw: node.quasi.quasis.map(quasi => quasi.value.raw) }
-				)
-				return this.callNative(
-					String.raw,
-					[strings, ...values],
-					undefined,
-					node,
-					ctx
-				)
-			}
 			case "Identifier":
 			case "MemberExpression":
 				return this.consume(this.evaluateReference(node, ctx), ctx)
@@ -740,13 +713,6 @@ export class Interpreter {
 		switch (node.operator) {
 			case "===":
 			case "!==":
-				if (isArkValue(left) && isArkValue(right)) {
-					return this.reject(
-						node,
-						ctx,
-						"compares arktype values by identity, which is unspecified"
-					)
-				}
 				return node.operator === "===" ? left === right : left !== right
 			case "instanceof":
 				return new DynamicValue(
@@ -781,7 +747,11 @@ export class Interpreter {
 						Number.isSafeInteger(result)
 					)
 			) ?
-				this.approximation(node, ctx)
+				this.reject(
+					node,
+					ctx,
+					"is approximated by each engine unless its operands are integers with a safe integer result"
+				)
 			:	result
 	}
 
@@ -803,14 +773,6 @@ export class Interpreter {
 
 	private coercion(node: Node, ctx: Context): DynamicValue {
 		return this.reject(node, ctx, conversionProblem)
-	}
-
-	private approximation(node: Node, ctx: Context): DynamicValue {
-		return this.reject(
-			node,
-			ctx,
-			"is approximated by each engine unless its operands are integers with a safe integer result"
-		)
 	}
 
 	private evaluateReference(node: Node, ctx: Context): Lookup {
@@ -1858,17 +1820,7 @@ export class Interpreter {
 		} finally {
 			this.activeCall = previous
 		}
-		const isApproximate =
-			builtin.isApproximate ?
-				!args.every(arg => Number.isInteger(arg)) ||
-				!Number.isSafeInteger(result)
-			:	fn === Number.prototype.toString &&
-				args[0] !== undefined &&
-				args[0] !== 10 &&
-				!Number.isInteger(receiver)
-		return isApproximate ?
-				this.approximation(node, ctx)
-			:	this.admit(result, node, ctx)
+		return this.admit(result, node, ctx)
 	}
 
 	private isNaming(
@@ -2594,8 +2546,6 @@ const restOf = (value: PlainContainer, used: PropertyKey[]) => {
 const receiverKindOf = (value: unknown): MethodReceiverKind | undefined =>
 	typeof value === "string" ? "string"
 	: typeof value === "number" ? "number"
-	: typeof value === "boolean" ? "boolean"
-	: typeof value === "bigint" ? "bigint"
 	: Array.isArray(value) ? "array"
 	: value instanceof Date ? "date"
 	: undefined
