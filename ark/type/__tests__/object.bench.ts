@@ -43,7 +43,7 @@ bench("object literal with optional keys", () =>
 ).types([2009, "instantiations"])
 
 bench("tuple", () => type(["string[]", "number[]", ["boolean[]"]])).types([
-	2594,
+	2268,
 	"instantiations"
 ])
 
@@ -87,4 +87,4 @@ bench("nested type invocations", () =>
 			})
 			.array()
 	})
-).types([8431, "instantiations"])
+).types([7915, "instantiations"])

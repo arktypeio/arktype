@@ -9,10 +9,10 @@ bench.baseline(() => {
 	type("symbol").narrow(() => true)
 })
 
-bench("array-string", () => type("number[]")).types([758, "instantiations"])
+bench("array-string", () => type("number[]")).types([558, "instantiations"])
 
 bench("array-tuple", () => type(["number", "[]"])).types([
-	735,
+	535,
 	"instantiations"
 ])
 
@@ -73,7 +73,7 @@ bench("group-nested", () => type("string|(number|(boolean))[][]")).types([
 ])
 
 bench("group-deep", () => type("(0|(1|(2|(3|(4|5)[])[])[])[])[]")).types([
-	4254,
+	3724,
 	"instantiations"
 ])
 
