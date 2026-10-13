@@ -187,6 +187,15 @@ other must be a string (was a bigint)`)
 		).snap("{ [string]: object }")
 	})
 
+	it("parses a declared key its index signature also checks", () => {
+		const T = type({ a: "string.numeric.parse", "[string]": "string | number" })
+		attest(T({ a: "1", b: "b" })).equals({ a: 1, b: "b" } as never)
+		attest(T({ a: "one" }).toString()).snap(
+			'a must be a well-formed numeric string (was "one")'
+		)
+		attest(T({ b: "b" }).toString()).snap("a must be a string (was missing)")
+	})
+
 	it("fail-fast index branch", () => {
 		const $ = scope({})
 		const T = $.type({ kind: "'c'", p0: "boolean" }).or({
