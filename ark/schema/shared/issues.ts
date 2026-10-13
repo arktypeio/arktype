@@ -107,7 +107,11 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	 * A human-readable summary of all errors.
 	 */
 	get summary(): string {
-		return this.issues.map(issue => issue.message).join("\n")
+		const issues = this.issues
+		// joined in a loop, as map and join cost more than writing a message
+		let summary = issues.length === 0 ? "" : issues[0].message
+		for (let i = 1; i < issues.length; i++) summary += `\n${issues[i].message}`
+		return summary
 	}
 
 	/**
