@@ -4,7 +4,6 @@ import {
 	expressBranch,
 	expressBranches,
 	hasArkKind,
-	InternalTraversal,
 	isNode,
 	LazyGenericRoot,
 	pipeOf,
@@ -12,8 +11,6 @@ import {
 	precompileRootUnits,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
-	Traversal,
-	FirstIssueTraversal,
 	failureSites,
 	type ArkErrorCode,
 	type BaseNode,
@@ -2024,27 +2021,40 @@ ${isTemplate ? "]" : ")"}`
 		return `{ ${entries.join(", ")} }`
 	}
 
-	// a root's apply is passed only what its strategy reads, and a traversal no callback sees lacks the API Traversal adds for them
+	// a root's apply is passed only what its strategy reads, and the least ctx its checks report to
 	emitRootApply(root: BaseRoot, shape: string, nodeName: string): string {
 		assertDescribed(root)
+		// a callback can read the API Traversal adds, which none of the runtime's own keywords declaring one parameter does
 		const callbacks = declares(
 			root,
-			node => node.hasKind("predicate") || node.hasKind("morph")
+			node =>
+				node.hasKind("morph") ||
+				(node.hasKind("predicate") &&
+					!(
+						runtimePathsByValue.has(node.predicate) && node.predicate.length < 2
+					))
 		)
+		// a compact Apply only reports what fails, so it reports into the errors the root returns
+		const ctx =
+			this.baking.firstIssue ? "FirstIssueTraversal"
+			: root.compactsApply && root.rootApplyStrategy === "allows" ? "ArkErrors"
+			: callbacks ? "Traversal"
+			: "InternalTraversal"
 		const apply = writeRootApply(root, nodeName)
 		const read = Object.entries(rootApplyRuntime).filter(([param]) =>
 			new RegExp(`\\b${param}\\b`).test(apply)
 		)
 		const params = read.map(([param]) => `, ${param}`).join("")
+		// a first-issue build's traversal drops the rest as it finalizes, which applyErrors doesn't call
 		const args = read
 			.map(
-				([, value]) =>
-					`, ${this.emit(
-						value !== rootApplyRuntime.Traversal ? value
-						: this.baking.firstIssue ? FirstIssueTraversal
-						: callbacks ? Traversal
-						: InternalTraversal
-					)}`
+				([param, value]) =>
+					`, ${
+						param === "Traversal" ? `runtime.${ctx}`
+						: param === "applyRejected" && !this.baking.firstIssue ?
+							"runtime.applyErrors"
+						:	this.emit(value)
+					}`
 			)
 			.join("")
 		return `(function (node, config${params}) {

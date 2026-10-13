@@ -13,7 +13,9 @@ import {
 	runtimeConfig,
 	supportedJsonSchemaTargets,
 	validateStandardJsonSchemaTarget,
+	type CompactApply,
 	type FailHandler,
+	type InternalTraversal,
 	type Traversal
 } from "@ark/schema/runtime"
 import {
@@ -373,6 +375,24 @@ export const attempt = <t>(build: () => t): (() => t) => {
 		// an engine that can't create the pattern throws at each read instead, at a site as the program does
 	}
 	return () => (built ??= build())
+}
+
+// a root whose Apply is compact reports what fails into the errors it returns, so a program whose roots all are loads no Traversal
+export const applyErrors = (
+	node: { traverseApply: CompactApply },
+	data: unknown,
+	config: unknown,
+	onFail: ArkErrors.Handler | null,
+	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
+): unknown => {
+	const ctx = new Ctx(data, config)
+	node.traverseApply(data, ctx)
+	const errors = ctx instanceof ArkErrors ? ctx : ctx._errors
+	return (
+		!errors?.count ? data
+		: onFail ? onFail(errors)
+		: errors
+	)
 }
 
 export type HoleKind = "function" | "class" | "symbol"
