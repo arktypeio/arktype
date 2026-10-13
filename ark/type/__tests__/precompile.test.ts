@@ -250,22 +250,6 @@ contextualize(() => {
 		attest(Contextual(-1).toString()).snap("must be positive (was -1)")
 	})
 
-	it("binds a unit by the arity arktype first read, though it changes after", async () => {
-		const units = await precompileUnits([
-			type([
-				"number",
-				"=>",
-				named("doublePrecompiled", (n: number) => n * 2)
-			]).or("string")
-		])
-		const double = named("doublePrecompiled", (n: number) => n * 2)
-		const L = type(["number", "=>", double])
-		Object.defineProperty(double, "length", { value: 2 })
-		const U = L.or("string")
-		attest(isPrecompiled(units, U.internal)).equals(true)
-		attest(U(2)).equals(4)
-	})
-
 	it("keys a unit without reading the arity of a function arktype doesn't call", async () => {
 		await precompileUnits([type({ unrelated: "string" })])
 		const count = function (_: unknown) {

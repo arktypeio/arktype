@@ -214,36 +214,16 @@ export const hasObjectKind = <kind extends keyof builtinConstructors>(
 // reads of builtins run in functions annotated pure, so a bundler can drop those nothing uses
 export const isArray: (data: unknown) => data is readonly unknown[] =
 	/* @__PURE__ */ (() => Array.isArray)()
-const dateToString = /* @__PURE__ */ (() => Date.prototype.toString)()
 export const dateGetTime = /* @__PURE__ */ (() => Date.prototype.getTime)()
 
-export const isValidDate = (date: Date): boolean => {
-	if (date.toString !== dateToString) return date.toString() !== "Invalid Date"
-	try {
-		return !Number.isNaN(dateGetTime.call(date))
-	} catch {
-		return false
-	}
-}
-
-const regExpSource = /* @__PURE__ */ (() =>
-	Object.getOwnPropertyDescriptor(RegExp.prototype, "source")!.get!)()
-
-// an object can have a builtin's prototype without being one, which only the builtin's methods can tell
-const isBrandedBy = (value: object, method: () => unknown): boolean => {
-	try {
-		method.call(value)
-		return true
-	} catch {
-		return false
-	}
-}
+export const isValidDate = (date: Date): boolean =>
+	!Number.isNaN(dateGetTime.call(date))
 
 export const isDateObject = (value: object): value is Date =>
-	prototypeOf(value) === Date.prototype && isBrandedBy(value, dateGetTime)
+	prototypeOf(value) === Date.prototype
 
 export const isRegExpObject = (value: object): value is RegExp =>
-	prototypeOf(value) === RegExp.prototype && isBrandedBy(value, regExpSource)
+	prototypeOf(value) === RegExp.prototype
 
 export const writeInvalidDateMessage = <source extends string>(
 	source: source

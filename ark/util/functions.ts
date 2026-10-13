@@ -68,17 +68,14 @@ export interface Callable<fn extends Fn, attachments extends object>
 	extends fn,
 		attachments {}
 
-// captured when arktype loads, so a program replacing them later can't change what a Callable is
-const { assign, setPrototypeOf } = Object
-
 export class Callable<fn extends Fn, attachments extends object = {}> {
 	constructor(
 		fn: fn,
 		...[opts]: {} extends attachments ? [opts?: CallableOptions<attachments>]
 		:	[opts: CallableOptions<attachments>]
 	) {
-		return assign(
-			setPrototypeOf(
+		return Object.assign(
+			Object.setPrototypeOf(
 				opts?.bind === null ? fn : fn.bind(opts?.bind ?? this),
 				this.constructor.prototype
 			),

@@ -373,24 +373,6 @@ $.export() // throws ParseError: Default for b must be valid according to an ano
 $.export()
 ```
 
-### Read a function's arity once
-
-arktype reads a function's `length` once, the first time, so a morph whose `length` changed after a Type referencing it was created is still called as it was then. Previously, it read the `length` again where it compiled or called the morph, so a morph of one parameter was passed `ctx` once its `length` changed:
-
-```ts
-const count = function (n: number) {
-	return arguments.length
-}
-const T = type({
-	a: ["number", "=>", count],
-	b: ["number", ":", (n, ctx) => true]
-})
-Object.defineProperty(count, "length", { value: 2 })
-
-// previously { a: 2, b: 1 }, now { a: 1, b: 1 }
-T({ a: 1, b: 1 })
-```
-
 ### Fix `ctx.data` after a morph that reads `ctx`
 
 After a morph taking `ctx` ran, `ctx.data` kept reading from that morph's input, so a narrow picking a later union branch saw the wrong value and valid data could be left untransformed:

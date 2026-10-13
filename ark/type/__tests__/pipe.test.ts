@@ -589,17 +589,6 @@ contextualize(() => {
 		}
 	})
 
-	it("calls a morph as arktype first read its arity, though that changes after", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const double = (data: any) => (typeof data === "number" ? data * 2 : data)
-			const L = $.type(["number % 2", "=>", double])
-			Object.defineProperty(double, "length", { value: 2 })
-			const U = L.or($.type("string"))
-			attest([U(0), U(2), U("a")]).equals([0, 4, "a"])
-		}
-	})
-
 	it("array props before elements", () => {
 		for (const jitless of [false, true]) {
 			const $ = scope({}, { jitless })

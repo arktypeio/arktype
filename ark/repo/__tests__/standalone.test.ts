@@ -1317,10 +1317,6 @@ config.onUndeclaredKey = "reject"`
 			}
 		}
 		attest({
-			fakeDate: refusalOf(Object.create(Date.prototype)),
-			fakeRegExp: refusalOf(
-				Object.assign(Object.create(RegExp.prototype), { lastIndex: 0 })
-			),
 			map: refusalOf(new Map()),
 			hole: refusalOf(new Array(1)),
 			extra: refusalOf(Object.assign([1], { x: 1 })),
@@ -1329,8 +1325,6 @@ config.onUndeclaredKey = "reject"`
 			date: refusalOf(Object.assign(new Date(0), { x: 1 })),
 			regex: refusalOf(Object.assign(/x/, { x: 1 }))
 		}).equals({
-			fakeDate: writeUnprecompilableMessage("an instance of Date"),
-			fakeRegExp: writeUnprecompilableMessage("an instance of RegExp"),
 			map: writeUnprecompilableMessage("an instance of Map"),
 			hole: writeUnprecompilableMessage(
 				"an array with holes or other properties"
