@@ -220,13 +220,27 @@ export interface StandaloneOptions {
 	bake?: (<t>(write: () => t) => t) | undefined
 	// "first" stops each validation at its first issue, which is then the only one it returns
 	errors?: "all" | "first" | undefined
+	// declares what a site calls as functions, for a module an import cycle can reach before its artifact is evaluated
+	hoisted?: boolean | undefined
 }
 
 interface Baking {
 	members: ReadonlySet<IntrospectionMember>
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
+	hoisted: boolean
 }
+
+// a function a site calls, declared to be called before its module is evaluated, else parenthesized for V8 to compile with the module
+const writeFunction = (
+	hoisted: boolean,
+	name: string,
+	params: string,
+	body: string
+) =>
+	hoisted ?
+		`function ${name}(${params}) {\n${body}\n}`
+	:	`const ${name} = ((${params}) => {\n${body}\n})`
 
 export interface StandaloneModules {
 	code: string
@@ -330,7 +344,8 @@ const writeArtifact = (
 	const baking: Baking = {
 		members: new Set(opts.introspection),
 		write: opts.bake ?? (write => write()),
-		firstIssue: opts.errors === "first"
+		firstIssue: opts.errors === "first",
+		hoisted: opts.hoisted === true
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
@@ -452,9 +467,7 @@ const writeArtifact = (
 		if (fold && fold[0] !== name) return ""
 		const params = artifact.variants[0].params.map((_, i) => `p${i}`)
 		if (fold) params.unshift("index")
-		return `function factory${index}(${params.join(", ")}) {
-${artifact.writeRekeying(fold ? `${creation}[index]` : readOf(creation, position)).join("\n\n")}
-}
+		return `${writeFunction(baking.hoisted, `factory${index}`, params.join(", "), artifact.writeRekeying(fold ? `${creation}[index]` : readOf(creation, position)).join("\n\n"))}
 
 ${writeExport(name, index)}`
 	}
@@ -563,7 +576,7 @@ const writeCreations = (
 			}
 			read = `(${lazyName} ??= runtime.lazyModule(${JSON.stringify(moduleMembersOf(value))}, () => ${read}))`
 		}
-		return `${declaration}function get${i}() {\n\treturn ${read}\n}\n\nexport { get${i} as ${JSON.stringify(name)} }`
+		return `${declaration}${writeFunction(baking.hoisted, `get${i}`, "", `\treturn ${read}`)}\n\nexport { get${i} as ${JSON.stringify(name)} }`
 	})
 	return [
 		[
@@ -1058,18 +1071,21 @@ export class StandaloneArtifact {
 		if (!hasArkKind(value, "root")) expected = `, "${kindNameOf(value)}"`
 		else if (!value.expression.includes(holeNameMarker)) {
 			const name = this.stringModuleOf(value, "expression")
-			imports[`~arktype/${name}`] = [name]
+			imports[this.specifierOf(name)] = [name]
 			expected = `, ${name}`
 		}
 		const body = `runtime.holesOf(holder, ${JSON.stringify(id)}, ${JSON.stringify(label)}${expected})`
 		const name = `receive${hashOf(body)}`
-		this.sharedModules[`~arktype/${name}`] ??= {
+		const specifier = this.specifierOf(name)
+		this.sharedModules[specifier] ??= {
 			readsRuntime: true,
 			imports,
-			declarations: [`function ${name}(holder) {\n\treturn ${body}\n}`],
+			declarations: [
+				writeFunction(this.baking.hoisted, name, "holder", `\treturn ${body}`)
+			],
 			exports: [name]
 		}
-		this.importName(`~arktype/${name}`, name)
+		this.importName(specifier, name)
 		return name
 	}
 
@@ -1375,9 +1391,7 @@ export class StandaloneArtifact {
 		]
 		return `var created${index}
 
-function create${index}() {
-${statements.filter(statement => statement).join("\n\n")}
-}`
+${writeFunction(this.baking.hoisted, `create${index}`, "", statements.filter(statement => statement).join("\n\n"))}`
 	}
 
 	// each call creates its validator from the holes and inputs the artifact received, so it declares everything the validator holds
@@ -1504,9 +1518,12 @@ ${statements.filter(statement => statement).join("\n\n")}
 		const units = this.localUnits.map((_, i) => `var unit${index}_${i}`)
 		return `${units.join("\n")}
 
-function factory${index}(${params.map((_, i) => `p${i}`).join(", ")}) {
-${statements.filter(statement => statement).join("\n\n")}
-}`
+${writeFunction(
+	this.baking.hoisted,
+	`factory${index}`,
+	params.map((_, i) => `p${i}`).join(", "),
+	statements.filter(statement => statement).join("\n\n")
+)}`
 	}
 
 	// each unit is evaluated once, at the first call, which may come before the artifact's body runs
@@ -1541,9 +1558,22 @@ ${statements.filter(statement => statement).join("\n\n")}
 			if (isSharedUnit(unit)) this.writeShared(unit)
 	}
 
-	// a shared unit is created by a function declaration, which an import cycle can call before its module is evaluated
+	// a hoisted artifact's modules declare what it calls as functions, so they're apart from those other artifacts build as they're evaluated
+	specifierOf(name: string): string {
+		return `~arktype/${this.baking.hoisted ? "hoisted/" : ""}${name}`
+	}
+
+	// a unit nothing can read before its module is evaluated is built as the module is
+	isEager(unit: RootUnit): boolean {
+		return !this.baking.hoisted && !isBuiltAtRead(unit)
+	}
+
+	readUnit(unit: RootUnit): string {
+		return this.isEager(unit) ? unit.name : `${unit.name}()`
+	}
+
 	writeShared(unit: RootUnit): void {
-		const specifier = `~arktype/${unit.name}`
+		const specifier = this.specifierOf(unit.name)
 		if (this.sharedModules[specifier]) return
 		const declarations = this.declarations
 		const writing: SharedUnit = (this.writing = {
@@ -1585,24 +1615,44 @@ ${statements.filter(statement => statement).join("\n\n")}
 			links,
 			returned
 		)
-		const moduleDeclarations = [
-			`var ${unit.name}Unit`,
-			`function ${unit.name}() {\n${isStrict(unit) ? `\t"use strict"\n` : ""}\treturn (${unit.name}Unit ??= (${unitFunction})(${[...dependencyArgs, ...writing.args].join(", ")}))\n}`
-		]
+		const built = `(${unitFunction})(${[...dependencyArgs, ...writing.args].join(", ")})`
+		// a function a parameter destructures can't declare "use strict"
+		const moduleDeclarations =
+			!this.isEager(unit) ?
+				[
+					`var ${unit.name}Unit`,
+					`function ${unit.name}() {\n${isStrict(unit) ? `\t"use strict"\n` : ""}\treturn (${unit.name}Unit ??= ${built})\n}`
+				]
+			: isStrict(unit) ?
+				[
+					`const ${unit.name} = /* @__PURE__ */ (function () {\n"use strict"\nreturn ${built}\n})()`
+				]
+			:	[`const ${unit.name} = /* @__PURE__ */ ${built}`]
 		for (const root of unit.roots) {
 			const name = unit.names[root.id]
 			const shape = writing.shapesByName[name]
 			moduleDeclarations.push(
 				shape ?
-					`function ${name}Node() {\n\treturn ${unit.name}()[${returned.indexOf(shape)}]\n}`
-				:	`var ${name}Shape\nfunction ${name}Node() {\n\treturn (${name}Shape ??= runtime.freeze(${this.writeShape(
-						root,
-						`${name}Node()`,
-						unit,
-						this.traversalsOf(root, unit).map(
-							traversal => `${unit.name}()[${returned.indexOf(traversal)}]`
-						)
-					)}))\n}`
+					writeFunction(
+						this.baking.hoisted,
+						`${name}Node`,
+						"",
+						`\treturn ${this.readUnit(unit)}[${returned.indexOf(shape)}]`
+					)
+				:	`var ${name}Shape\n${writeFunction(
+						this.baking.hoisted,
+						`${name}Node`,
+						"",
+						`\treturn (${name}Shape ??= runtime.freeze(${this.writeShape(
+							root,
+							`${name}Node()`,
+							unit,
+							this.traversalsOf(root, unit).map(
+								traversal =>
+									`${this.readUnit(unit)}[${returned.indexOf(traversal)}]`
+							)
+						)}))`
+					)}`
 			)
 		}
 		this.declarations = declarations
@@ -1664,10 +1714,10 @@ return [${returned.join(", ")}]
 			const index = dependency.traversals.flat().indexOf(name)
 			const isShared = isSharedUnit(dependency)
 			if (isShared)
-				this.importName(`~arktype/${dependency.name}`, dependency.name)
+				this.importName(this.specifierOf(dependency.name), dependency.name)
 			const source =
 				isShared ?
-					`${dependency.name}()`
+					this.readUnit(dependency)
 				:	this.localNamesByUnit.get(dependency)!
 			if (declaresStrict(unit)) {
 				params.push(name)
@@ -1826,15 +1876,16 @@ ${isTemplate ? "]" : ")"}`
 
 	// created at its first read, which an import cycle can reach before the module runs
 	readConstant(name: string, value: string): string {
-		this.sharedModules[`~arktype/${name}`] ??= {
+		const specifier = this.specifierOf(name)
+		this.sharedModules[specifier] ??= {
 			readsRuntime: true,
 			imports: {},
 			declarations: [
-				`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${value})\n}`
+				`var ${name}Value\n${writeFunction(this.baking.hoisted, name, "", `\treturn (${name}Value ??= ${value})`)}`
 			],
 			exports: [name]
 		}
-		return this.read(`~arktype/${name}`, name, name, `${name}()`)
+		return this.read(specifier, name, name, `${name}()`)
 	}
 
 	// a writer is declared by its text, so each JSON Schema a validator bakes is written once however many of its members return it
@@ -1989,7 +2040,7 @@ ${isTemplate ? "]" : ")"}`
 		if (root.expression.includes(holeNameMarker))
 			return this.emitString(root.expression)
 		const name = this.stringModuleOf(root, "expression")
-		return `${this.read(`~arktype/${name}`, name, name, name)}()`
+		return `${this.read(this.specifierOf(name), name, name, name)}()`
 	}
 
 	// a description holding those of the roots it references is composed from their modules, else written where it's read
@@ -2000,7 +2051,7 @@ ${isTemplate ? "]" : ")"}`
 		if (parts.every(part => typeof part === "string"))
 			return this.emitString(root.description)
 		const name = this.writeStringModule(root, "description", parts)
-		return `${this.read(`~arktype/${name}`, name, name, name)}()`
+		return `${this.read(this.specifierOf(name), name, name, name)}()`
 	}
 
 	stringModuleOf(root: BaseRoot, kind: ComposedString): string {
@@ -2021,15 +2072,17 @@ ${isTemplate ? "]" : ")"}`
 			.map(part => {
 				if (typeof part === "string") return JSON.stringify(part)
 				const name = this.stringModuleOf(part, kind)
-				imports[`~arktype/${name}`] = [name]
+				imports[this.specifierOf(name)] = [name]
 				return `${name}()`
 			})
 			.join(" + ")
 		const name = `${kind}${hashOf(body)}`
-		this.sharedModules[`~arktype/${name}`] ??= {
+		this.sharedModules[this.specifierOf(name)] ??= {
 			readsRuntime: false,
 			imports,
-			declarations: [`function ${name}() {\n\treturn ${body}\n}`],
+			declarations: [
+				writeFunction(this.baking.hoisted, name, "", `\treturn ${body}`)
+			],
 			exports: [name]
 		}
 		this.stringModuleNamesByRoot[kind].set(root, name)
@@ -2157,7 +2210,7 @@ ${isTemplate ? "]" : ")"}`
 		if (own) return own
 		if (this.writing && isSharedUnit(unit)) {
 			return this.read(
-				`~arktype/${unit.name}`,
+				this.specifierOf(unit.name),
 				`${name}Node`,
 				name,
 				`${name}Node()`
@@ -2169,7 +2222,12 @@ ${isTemplate ? "]" : ")"}`
 			return this.declareConst(
 				node,
 				"shape",
-				this.read(`~arktype/${unit.name}`, `${name}Node`, name, `${name}Node()`)
+				this.read(
+					this.specifierOf(unit.name),
+					`${name}Node`,
+					name,
+					`${name}Node()`
+				)
 			)
 		}
 		const shape = this.declareConst(node, "shape", "{}")
@@ -2616,23 +2674,55 @@ const isStrict = (unit: RootUnit): boolean =>
 const declaresStrict = (unit: RootUnit): boolean =>
 	isStrict(unit) && !isSharedUnit(unit)
 
+// the units a unit reads as it's built: those whose traversals it calls, and those whose roots it refers to, as shapes rather than validators
+const readUnitsOf = (unit: RootUnit): RootUnit[] =>
+	[
+		...Object.values(unit.dependencies).map(([node]) => node),
+		...unit.refs.filter(ref => isNode(ref) && ref.isRoot())
+	].map(node => unitOf(node as BaseNode, unit))
+
 const isSharedUnit = (unit: RootUnit): boolean => {
 	let shared = sharedByUnit.get(unit)
 	if (shared === undefined) {
 		// a unit reading its own roots, as in a cycle, is decided by what else it reads
 		sharedByUnit.set(unit, true)
-		const reads = [
-			...Object.values(unit.dependencies).map(([node]) => node),
-			...unit.refs.filter(ref => isNode(ref) && ref.isRoot())
-		] as BaseNode[]
-		// a node a unit refers to directly is its root's shape, rather than a validator
 		shared =
 			!unit.identityNamed.has(unit.roots[0].id) &&
 			!unit.refs.some(ref => !isNode(ref) && holdsLocal(ref)) &&
-			reads.every(node => isSharedUnit(unitOf(node, unit)))
+			readUnitsOf(unit).every(isSharedUnit)
 		sharedByUnit.set(unit, shared)
 	}
 	return shared
+}
+
+const builtAtReadByUnit = new WeakMap<RootUnit, boolean>()
+
+// a unit holding what a program reads as a site creates its validator, or reading a unit that does, is built where the program reads it
+const isBuiltAtRead = (unit: RootUnit): boolean => {
+	let built = builtAtReadByUnit.get(unit)
+	if (built === undefined) {
+		builtAtReadByUnit.set(unit, false)
+		built =
+			unit.refs.some(ref => !isNode(ref) && readsAtCreation(ref)) ||
+			readUnitsOf(unit).some(isBuiltAtRead)
+		builtAtReadByUnit.set(unit, built)
+	}
+	return built
+}
+
+// a builtin global, which a polyfill or stub can replace before a site runs, or a RegExp with a flag an engine may not compile
+const readsAtCreation = (
+	value: unknown,
+	seen = new Set<unknown>()
+): boolean => {
+	if (typeof value === "function") return !runtimePathsByValue.has(value)
+	if (!hasDomain(value, "object") || seen.has(value)) return false
+	if (isRegExpObject(value)) return /[^dgimsuy]/.test(value.flags)
+	if (!isPlainLiteral(value)) return false
+	seen.add(value)
+	return Reflect.ownKeys(value).some(k =>
+		readsAtCreation(Reflect.get(value, k), seen)
+	)
 }
 
 const declares = (

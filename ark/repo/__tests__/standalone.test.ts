@@ -1690,7 +1690,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			// a folded factory returns what the creations wrote, rekeyed with the holes it receives
 			attest(
 				precompileStandalone(exports)
-					.code.split("function factory")
+					.code.split("const factory")
 					.slice(1)
 					.map(factory => factory.includes("??= create"))
 			).equals([false, true, true, true])

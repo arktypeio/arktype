@@ -24,8 +24,8 @@ export const parsers = { type }`
 		attest(precompile(source).code).snap(`import "arktype/internal/island.js"
 import * as $ark$island from "arktype/internal"
 import "arktype"
-import { v113ua4m0cbyo2f as $arkv113ua4m0cbyo2f } from "~arktype/1b9ail18tgtij"
-import { v16tqm51d9mp98 as $arkv16tqm51d9mp98 } from "~arktype/1b9ail18tgtij"
+import { v113ua4m0cbyo2f as $arkv113ua4m0cbyo2f } from "~arktype/nemaqb02zssio"
+import { v16tqm51d9mp98 as $arkv16tqm51d9mp98 } from "~arktype/nemaqb02zssio"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import "arktype"
 $arkfixConfig()
@@ -50,7 +50,7 @@ export const A = ark.type("string")`).code
 import * as $ark$island from "arktype/internal"
 import * as $ark$arktype from "arktype/internal/arktype.js"
 import "arktype"
-import { v1k3ai090akbvqv as $arkv1k3ai090akbvqv } from "~arktype/1rveg4b1td3crs"
+import { v1k3ai090akbvqv as $arkv1k3ai090akbvqv } from "~arktype/sgmfpw09ye5ay"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 // @ark-runtime
 export const lib = { ark: $ark$arktype, type: $ark$island.type }

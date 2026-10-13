@@ -349,6 +349,8 @@ export class Precompiler {
 		Map<Binding, Binding[]>
 	>()
 	private namesArkById: Record<string, boolean> = Object.create(null)
+	// the strongly connected component of each module the build follows, numbered as they're found
+	private componentsById: Record<string, number> = Object.create(null)
 	private exportsArkByModule = new Map<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
 	// why the configuration the analyses were made under can't be applied, which refuses each site
@@ -890,6 +892,73 @@ export class Precompiler {
 			site.inputs.push(input)
 	}
 
+	// whether an import evaluated before the module's artifact can reach the module, so a cycle can call its sites first
+	private isReachedEarly(module: SourceModule): boolean {
+		const arktypeImport = this.arktypeImportOf(module)
+		return module.program.body.some(statement => {
+			if (arktypeImport && statement.start > arktypeImport.start) return false
+			const specifier =
+				statement.type === "ImportDeclaration" ?
+					statement.importKind !== "type" && statement.source.value
+				: (
+					statement.type === "ExportAllDeclaration" ||
+					statement.type === "ExportNamedDeclaration"
+				) ?
+					statement.source?.value
+				:	undefined
+			if (!specifier || arkPackageSpecifier.test(specifier)) return false
+			const targetId = this.graph.host.resolve(specifier, module.id)
+			return (
+				!!targetId &&
+				this.graph.isFollowed(targetId) &&
+				this.componentOf(targetId) === this.componentOf(module.id)
+			)
+		})
+	}
+
+	// Tarjan's algorithm, iteratively, from a module not yet in a component, so each module's imports are read once a build
+	private componentOf(root: string): number {
+		const components = this.componentsById
+		if (root in components) return components[root]
+		// a number past every component found before, as there are no more of them than modules
+		let found = Object.keys(components).length
+		let visited = 0
+		const indices: Record<string, number> = Object.create(null)
+		const lows: Record<string, number> = Object.create(null)
+		const stack: string[] = []
+		const frames: [id: string, targets: string[]][] = []
+		const visit = (id: string) => {
+			indices[id] = lows[id] = visited++
+			stack.push(id)
+			frames.push([
+				id,
+				this.localImportsOf(this.graph.host.readFile(id) ?? "", id)
+			])
+		}
+		visit(root)
+		while (frames.length) {
+			const [id, targets] = frames[frames.length - 1]
+			const target = targets.pop()
+			if (target !== undefined) {
+				if (target in components) continue
+				if (target in indices) lows[id] = Math.min(lows[id], indices[target])
+				else visit(target)
+				continue
+			}
+			frames.pop()
+			if (frames.length) {
+				const parent = frames[frames.length - 1][0]
+				lows[parent] = Math.min(lows[parent], lows[id])
+			}
+			if (lows[id] !== indices[id]) continue
+			let member: string
+			do components[(member = stack.pop()!)] = found
+			while (member !== id)
+			found++
+		}
+		return components[root]
+	}
+
 	private arktypeImportOf(module: SourceModule): ImportDeclaration | undefined {
 		return module.program.body.find(
 			(statement): statement is ImportDeclaration =>
@@ -1244,7 +1313,8 @@ export class Precompiler {
 						keywordReads,
 						introspection: this.introspection,
 						errors: this.errors,
-						bake: write => this.bake(write)
+						bake: write => this.bake(write),
+						hoisted: this.isReachedEarly(module)
 					},
 					refusalsByName,
 					this.inline
