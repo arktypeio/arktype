@@ -17,14 +17,6 @@ contextualize(() => {
 		attest(Object.getOwnPropertyDescriptor(o, "k")?.value).equals(1)
 	})
 
-	it("assign before read", () => {
-		const o = {} as { k: number }
-		const computed = lazyCount(o)
-		o.k = 5
-		attest(o.k).equals(5)
-		attest(computed()).equals(0)
-	})
-
 	it("frozen before read", () => {
 		const o = {} as { k: number }
 		const computed = lazyCount(o)

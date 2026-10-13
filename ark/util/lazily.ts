@@ -31,9 +31,6 @@ export const defineLazily = (
 				defineValue(this, k, result)
 			return result
 		},
-		set(value) {
-			defineValue(this, k, value)
-		},
 		enumerable: true,
 		configurable: true
 	})
