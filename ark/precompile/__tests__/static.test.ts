@@ -1288,6 +1288,30 @@ Promise.resolve(A).then(t => t.or("null"))`)
 			])
 		})
 
+		it("annotations that leave a value to the build or say it may be a Type", () => {
+			attest(
+				diagnosticsOf(`import { type, type Submodule, type Type } from "arktype"
+const A = type("string")
+const forms = [A] as const
+const load = async () => ({ forms: { user: A } })
+const loaded: { forms: Record<string, any> } = await load()
+console.log(forms.map(f => f.or), loaded.forms.user.or)
+export function constrained<t extends Type>(t: t, u: type.Any, m: Submodule<{ user: string }>) {
+	console.log(t.or, u.or, m.user.or)
+}
+export function constrainedAny<t extends type.Any>(t: t) {
+	console.log(t.or)
+}`)
+			).snap([
+				"/main.ts:6:28  f.or reads or, which a standalone validator lacks\n  the build can't tell where `f` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				"/main.ts:6:35  loaded.forms.user.or reads or, which a standalone validator lacks\n  the build can't tell where `loaded.forms.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				"/main.ts:8:14  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				"/main.ts:8:20  u.or reads or, which a standalone validator lacks\n  the build can't tell where `u` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				"/main.ts:8:26  m.user.or reads or, which a standalone validator lacks\n  the build can't tell where `m.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				"/main.ts:11:14  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+			])
+		})
+
 		it("a Type reaching a value annotated as something else", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"

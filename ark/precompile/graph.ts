@@ -33,6 +33,7 @@ import type {
 	TSSignature,
 	TSType,
 	TSTypeAnnotation,
+	TSTypeParameter,
 	TSTypeAliasDeclaration
 } from "oxc-parser"
 import { dirname, join, relative } from "node:path"
@@ -1112,8 +1113,9 @@ export class ModuleGraph {
 					kindOfKey,
 					depth
 				)
-			// e.g. `Record<string, unknown>`, which leaves the value to the build, though `{ a: Record<string, unknown> }` says `a` is no Type
 			case "TSAnyKeyword":
+				return
+			// e.g. `Record<string, unknown>`, which leaves the value to the build, though `{ a: Record<string, unknown> }` says `a` is no Type
 			case "TSUnknownKeyword":
 			case "TSObjectKeyword":
 				return depth < 2 ? undefined : kinds.data
@@ -1136,8 +1138,19 @@ export class ModuleGraph {
 				const name = type.typeName
 				const root = name.type === "TSQualifiedName" ? name.left : name
 				if (root.type !== "Identifier") return
-				// e.g. `T` in `<T>(t: T) => ...`, which only the calls decide
-				if (declaresTypeParameter(context, root.name)) return
+				// e.g. `T` in `<T extends Type>(t: T) => ...`, which only its constraint or the calls decide
+				const parameter = typeParameterOf(context, root.name)
+				if (parameter) {
+					return parameter.constraint ?
+							this.typeKindOf(
+								parameter.constraint,
+								context,
+								module,
+								kindOfKey,
+								depth
+							)
+						:	undefined
+				}
 				const imported = importedNameOf(module, root.name)
 				if (imported) {
 					const [specifier, importedName] = imported
@@ -2280,23 +2293,33 @@ const fieldValuesOf = (cls: Node): Record<string, Node[]> => {
 	return result
 }
 
-// e.g. the function declaring `T` in `<T>(t: T) => t`
-const declaresTypeParameter = (
+// e.g. `T extends Type` for `T` in `<T extends Type>(t: T) => t`
+const typeParameterOf = (
 	node: Node | null | undefined,
 	name: string
-): boolean =>
-	!!node &&
-	(("typeParameters" in node &&
-		!!node.typeParameters?.params.some(param => param.name.name === name)) ||
-		declaresTypeParameter(node.parent, name))
+): TSTypeParameter | undefined =>
+	!node ? undefined : (
+		("typeParameters" in node &&
+			node.typeParameters?.params.find(param => param.name.name === name)) ||
+		typeParameterOf(node.parent, name)
+	)
 
 // e.g. the cast in `(o as Schemas).user`
 const castOf = (node: Node): Node | undefined => {
 	for (; isTransparent(node); node = node.expression) {
-		if (node.type === "TSAsExpression" || node.type === "TSTypeAssertion")
+		if (
+			(node.type === "TSAsExpression" || node.type === "TSTypeAssertion") &&
+			!isConstReference(node.typeAnnotation)
+		)
 			return node
 	}
 }
+
+// `const` in `[A, B] as const`, which makes the literal readonly rather than naming a type
+const isConstReference = (type: TSType): boolean =>
+	type.type === "TSTypeReference" &&
+	type.typeName.type === "Identifier" &&
+	type.typeName.name === "const"
 
 const arktypePackage = /^(?:arktype|@ark\/(?:type|schema))(?:\/|$)/
 
@@ -2307,7 +2330,16 @@ type LocalType = TSInterfaceDeclaration | TSTypeAliasDeclaration
 
 // the types of what a standalone runtime replaces with a validator or refuses to read
 const arkTypeNames: Record<string, 1> = Object.setPrototypeOf(
-	{ Type: 1, BaseType: 1, Module: 1, Generic: 1, Scope: 1, BaseRoot: 1 },
+	{
+		Type: 1,
+		BaseType: 1,
+		Module: 1,
+		Generic: 1,
+		Scope: 1,
+		BaseRoot: 1,
+		Submodule: 1,
+		BoundModule: 1
+	},
 	null
 )
 
