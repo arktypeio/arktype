@@ -26,6 +26,8 @@ bench("bench runtime and type", () => {
 	.types([337, "instantiations"])
 ```
 
+`.types` counts the instantiations of checking a bench and of evaluating the type it returns as fully as displaying it would. TypeScript defers the members of types like mapped types until something reads them, so return the result you want measured.
+
 A runtime bench should return the result it computes and assert its `.median`:
 
 - Each bench runs in a loop compiled for it alone, so V8 can inline it and drop any work whose result is unused. attest warns if a bench returns `undefined`.

@@ -94,7 +94,7 @@ if (ts.version.startsWith("5")) {
 
 ### Instantiations
 
-Snapshot the number of type instantiations contributed by the enclosing test.
+Snapshot the number of type instantiations contributed by the enclosing test, including evaluating the type it returns as fully as displaying it would.
 
 ```ts
 declare const it: (name: string, fn: () => void) => void
