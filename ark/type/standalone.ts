@@ -2280,27 +2280,29 @@ ${isTemplate ? "]" : ")"}`
 		traversals: string[]
 	): string {
 		// read only by the traversal of a node holding a cycle, as it enters the cycle's resolution
-		const tracked =
+		const ids =
 			node.includesAlias ?
-				`\n\ttrackedId: ${JSON.stringify(
+				`\n\tid: ${JSON.stringify(unit.names[node.id])},\n\ttrackedId: ${JSON.stringify(
 					unit.names[node.trackedId as NodeId] ??
 						throwParseError(
 							writeUnprecompilableMessage(`${node.expression}'s cycle`)
 						)
 				)},`
 			:	""
-		// a flag that is false, or a traversal the node lacks, is left out, which the runtime reads as undefined
+		// a flag that is false, or a member nothing reads, is left out, which the runtime reads as undefined
 		const flags = shapeFlags.flatMap(flag =>
 			node[flag] ? [`\n\t${flag}: true,`] : []
 		)
+		// Allows and the scope holding config are read only past allows, by a cycle's resolution or a predicate reading ctx
+		const traverses =
+			node.includesAlias ||
+			node.allowsRequiresContext ||
+			node.allowsRequiresTraversal
 		const transform =
 			traversals[2] ? `\n\ttraverseTransform: ${traversals[2]},` : ""
-		return `{
-	id: ${JSON.stringify(unit.names[node.id])},${tracked}${flags.join("")}
-	traverseAllows: ${traversals[0]},
+		return `{${ids}${flags.join("")}${traverses ? `\n\ttraverseAllows: ${traversals[0]},` : ""}
 	traverseApply: ${traversals[1]},${transform}
-	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]},
-	$: runtime.runtimeScope
+	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]}${traverses ? ",\n\t$: runtime.runtimeScope" : ""}
 }`
 	}
 

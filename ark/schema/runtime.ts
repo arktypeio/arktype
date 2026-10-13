@@ -31,9 +31,10 @@ export const runtimeConfig: ResolvedConfig = {
 } as never
 
 // a node shape's $, which traversal reads only for its config
-export const runtimeScope: { resolvedConfig: ResolvedConfig } = Object.freeze({
-	resolvedConfig: runtimeConfig
-})
+export const runtimeScope: { resolvedConfig: ResolvedConfig } =
+	/* @__PURE__ */ Object.freeze({
+		resolvedConfig: runtimeConfig
+	})
 
 // installed by configure(), so a program that never calls it ships no comparison
 let checkConfigured: ((built?: string) => void) | undefined

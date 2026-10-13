@@ -64,8 +64,8 @@ export const withId = <t extends object>(t: type.Any<t>) => t.and({ id: "string"
 		).snap(`var $arkm = 0;
 import { shadow as $arkshadow } from "@ark/precompile/shadow"
 import { type } from "arktype"
-import { f5gsbk00dbcwma as $arkf5gsbk00dbcwma } from "~arktype/1lf3b481352ldi"
-import { f16onama10v7ypw as $arkf16onama10v7ypw } from "~arktype/1lf3b481352ldi"
+import { f5gsbk00dbcwma as $arkf5gsbk00dbcwma } from "~arktype/1jc34be0zgyihc"
+import { f16onama10v7ypw as $arkf16onama10v7ypw } from "~arktype/1jc34be0zgyihc"
 import { Name } from "./name.ts"
 import { withId } from "./id.ts"
 export function nullable() {
