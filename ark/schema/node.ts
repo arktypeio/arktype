@@ -55,7 +55,12 @@ import type {
 } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import { ArkTraversal, type ArkErrors } from "./shared/errors.ts"
-import { ArkErrors as BaseArkErrors } from "./shared/issues.ts"
+import {
+	ArkErrors as BaseArkErrors,
+	type FailureSite,
+	type SiteContext,
+	type UnionSite
+} from "./shared/issues.ts"
 import {
 	basisKinds,
 	constraintKinds,
@@ -560,6 +565,14 @@ export abstract class BaseNode<
 	abstract compile(js: NodeCompiler): void
 	// undefined where checking data takes more than one expression
 	compileCondition?(js: NodeCompiler, data: string): string | undefined
+
+	protected _failureSite: FailureSite | UnionSite | undefined
+	// what a compiled check reports when this node fails, holding the context arktype writes its error from
+	get failureSite(): FailureSite | UnionSite {
+		return (this._failureSite ??= {
+			value: (this as never as { errorContext: SiteContext }).errorContext
+		})
+	}
 
 	_description: string | undefined
 	get description(): string {

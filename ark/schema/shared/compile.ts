@@ -9,12 +9,8 @@ import {
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import type { BaseErrorContext } from "./declare.ts"
-import {
-	registerBuilderCompiler,
-	type ArkErrorCode,
-	type ErrorBuilder
-} from "./errors.ts"
-import type { FailureSite } from "./issues.ts"
+import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
+import type { FailureSite, UnionSite } from "./issues.ts"
 import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
 import {
@@ -227,10 +223,37 @@ export const expectedOf = <description extends string | undefined>(
 ): string | description =>
 	typeof meta.expected === "string" ? meta.expected : description
 
-const sitesByContext = new WeakMap<BaseErrorContext, FailureSite>()
-
 // a site only traversal reads, so a standalone build writes it as it is rather than as a value a program could reach
 export const failureSites = new WeakSet<object>()
+
+const issueSitesByContext = new WeakMap<object, object>()
+
+const requiredIssue = { code: "required" } as const
+
+// a standalone issue holds only the code and description of what failed, so the sites agreeing on those share one
+const issueSiteOf = (site: FailureSite | UnionSite): object => {
+	const { value, missing } = site as {
+		value?: BaseErrorContext
+		missing?: BaseErrorContext
+	}
+	const context = value ?? (missing ? requiredIssue : site)
+	let issueSite = issueSitesByContext.get(context)
+	if (!issueSite) {
+		issueSite =
+			value ?
+				{
+					value: {
+						code: value.code,
+						description: expectedOf(value.meta, value.description)
+					}
+				}
+			: missing ? { missing: requiredIssue }
+			: { description: (site as UnionSite).description }
+		failureSites.add(issueSite)
+		issueSitesByContext.set(context, issueSite)
+	}
+	return issueSite
+}
 
 export declare namespace NodeCompiler {
 	export interface Context {
@@ -352,27 +375,17 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return name
 	}
 
-	// a standalone validator's issue holds what its node describes rather than its context, so its site holds only that
-	error(context: BaseErrorContext, key?: string, data = "data"): string {
-		if (!this.raisesIssues)
-			return `ctx.errorFromNodeContext(${this.errorContext(context)}, ${data})`
-		let site = sitesByContext.get(context)
-		if (!site) {
-			const code = context.code as ArkErrorCode
-			failureSites.add(
-				(site =
-					code === "required" ?
-						{ missing: { code } }
-					:	{
-							value: {
-								code,
-								description: expectedOf(context.meta, context.description)
-							}
-						})
-			)
-			sitesByContext.set(context, site)
-		}
-		return `ctx.failsAt(${this.ref(site)}, ${data}${key === undefined ? "" : `, ${key}`})`
+	// a standalone validator's site holds only what its issue reads
+	site(node: BaseNode): string {
+		return this.ref(
+			this.raisesIssues ? issueSiteOf(node.failureSite) : node.failureSite
+		)
+	}
+
+	error(node: BaseNode, key?: string, data = "data"): string {
+		return this.raisesIssues ?
+				`ctx.failsAt(${this.site(node)}, ${data}${key === undefined ? "" : `, ${key}`})`
+			:	`ctx.errorFromNodeContext(${this.errorContext((node as never as { errorContext: BaseErrorContext }).errorContext)}, ${data})`
 	}
 
 	errorContext(errorContext: BaseErrorContext): string {
@@ -612,11 +625,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return this.line(
 			node.hasKindIn("intersection", "union") ?
 				this.invoke(node, { arg })
-			:	this.error(
-					(node as never as { errorContext: BaseErrorContext }).errorContext,
-					undefined,
-					arg
-				)
+			:	this.error(node, undefined, arg)
 		)
 	}
 }

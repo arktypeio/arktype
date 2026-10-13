@@ -15,7 +15,6 @@ import type { BaseNode } from "../node.ts"
 import {
 	compileSerializedValue,
 	expectedOf,
-	failureSites,
 	returnsTransformErrors,
 	type NodeCompiler
 } from "../shared/compile.ts"
@@ -155,17 +154,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		))
 	}
 
-	private _unionSite: UnionSite | undefined
-	// a standalone traversal has tried its branches when it fails, so its issue reads only what the union describes
-	get unionSite(): UnionSite {
-		if (!this._unionSite) {
-			failureSites.add(
-				(this._unionSite = {
-					description: expectedOf(this.meta, this.description)
-				})
-			)
-		}
-		return this._unionSite
+	// arktype's error lists each branch's, where a standalone issue reads only what the union describes
+	override get failureSite(): UnionSite {
+		return (this._failureSite ??= {
+			meta: this.meta,
+			description: expectedOf(this.meta, this.description)
+		}) as UnionSite
 	}
 
 	private _discriminantMeta: ArkEnv.meta | undefined
@@ -406,7 +400,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 			js.line(
 				js.raisesIssues ?
-					`ctx.failsUnion([], ${js.ref(this.unionSite)}, data)`
+					`ctx.failsUnion([], ${js.site(this)}, data)`
 				:	`${js.ref(errorFromContext)}(ctx, { code: "union", errors, meta: ${js.ref(this.meta)}, data })`
 			)
 		} else if (js.traversalKind === "Allows") {

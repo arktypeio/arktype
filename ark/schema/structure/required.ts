@@ -2,6 +2,7 @@ import type { errorContext, nodeOfKind } from "../kinds.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import type { NodeErrorContextInput } from "../shared/errors.ts"
+import type { FailureSite } from "../shared/issues.ts"
 import {
 	implementNode,
 	type BasisKind,
@@ -74,6 +75,10 @@ export class RequiredNode extends BaseProp<"required"> {
 			valueMeta: this.value.meta,
 			meta: this.meta
 		}))
+	}
+
+	override get failureSite(): FailureSite {
+		return (this._failureSite ??= { missing: this.errorContext }) as FailureSite
 	}
 }
 

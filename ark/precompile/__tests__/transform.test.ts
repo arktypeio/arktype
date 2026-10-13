@@ -378,11 +378,11 @@ export const Box = type("<t>", { box: "t" })
 export const BoxedTree = Box(types.tree)`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/1d5qiai0xx3i42"
-import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/1d5qiai0xx3i42"
-import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/1d5qiai0xx3i42"
-import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/1d5qiai0xx3i42"
-import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/1d5qiai0xx3i42"
+import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/huqc8k14ijyej"
+import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/huqc8k14ijyej"
+import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/huqc8k14ijyej"
+import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/huqc8k14ijyej"
+import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/huqc8k14ijyej"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 const $ = /* @__PURE__ */ $arkvq7pa6c00qqwz6()
@@ -720,14 +720,14 @@ export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/13wwwrd0qkz6kk"
-import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/13wwwrd0qkz6kk"
-import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/13wwwrd0qkz6kk"
-import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/13wwwrd0qkz6kk"
-import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/13wwwrd0qkz6kk"
-import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/13wwwrd0qkz6kk"
-import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/13wwwrd0qkz6kk"
-import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/13wwwrd0qkz6kk"
+import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/1lo7wp80m2yt5u"
+import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/1lo7wp80m2yt5u"
+import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/1lo7wp80m2yt5u"
+import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/1lo7wp80m2yt5u"
+import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/1lo7wp80m2yt5u"
+import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/1lo7wp80m2yt5u"
+import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/1lo7wp80m2yt5u"
+import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/1lo7wp80m2yt5u"
 import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
 class Pet {}
@@ -974,9 +974,9 @@ export const Checked = type({ a: type("string").narrow(other.check), b: type("st
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/e1h0xq0rg13mo"
-import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/e1h0xq0rg13mo"
-import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/e1h0xq0rg13mo"
+import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/1v5xplo1iok5t0"
+import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/1v5xplo1iok5t0"
+import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/1v5xplo1iok5t0"
 import { a } from "./a.ts"
 import { alias } from "./b.ts"
 const fns = { check: (s: string) => s.length > 3 }
@@ -1252,12 +1252,12 @@ const loop = (): never => loop().and(B)`
 				"/main.ts:10:21  trimmed().and(second()) can't be precompiled yet\n  arktype holds `(s: string) => s.trim()` (/main.ts:2:14), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1urkf11a4ajs5"
-import { v1oigsr31najz55 as $arkv1oigsr31najz55 } from "~arktype/1urkf11a4ajs5"
-import { fd9jxkn0kakf0g as $arkfd9jxkn0kakf0g } from "~arktype/1urkf11a4ajs5"
-import { v112lir714tv8ze as $arkv112lir714tv8ze } from "~arktype/1urkf11a4ajs5"
-import { vrg81gy0tev40w as $arkvrg81gy0tev40w } from "~arktype/1urkf11a4ajs5"
-import { vp99ye0097h426 as $arkvp99ye0097h426 } from "~arktype/1urkf11a4ajs5"
+import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1bmj1ac0xpe08k"
+import { v1oigsr31najz55 as $arkv1oigsr31najz55 } from "~arktype/1bmj1ac0xpe08k"
+import { fd9jxkn0kakf0g as $arkfd9jxkn0kakf0g } from "~arktype/1bmj1ac0xpe08k"
+import { v112lir714tv8ze as $arkv112lir714tv8ze } from "~arktype/1bmj1ac0xpe08k"
+import { vrg81gy0tev40w as $arkvrg81gy0tev40w } from "~arktype/1bmj1ac0xpe08k"
+import { vp99ye0097h426 as $arkvp99ye0097h426 } from "~arktype/1bmj1ac0xpe08k"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 const trim = (s: string) => s.trim()
 $arkfixConfig()
