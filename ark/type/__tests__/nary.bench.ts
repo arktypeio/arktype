@@ -167,11 +167,11 @@ bench("merge-chained(10)", () => {
 
 bench("pipe(2)", () => {
 	type.pipe(type.unit("a"), s => `${s}b` as const)
-}).types([2422, "instantiations"])
+}).types([2347, "instantiations"])
 
 bench("pipe-chained(2)", () => {
 	type.unit("a").pipe(s => `${s}b` as const)
-}).types([245, "instantiations"])
+}).types([229, "instantiations"])
 
 bench("pipe(5)", () => {
 	type.pipe(
@@ -181,7 +181,7 @@ bench("pipe(5)", () => {
 		s => `${s}d` as const,
 		s => `${s}e` as const
 	)
-}).types([2817, "instantiations"])
+}).types([2718, "instantiations"])
 
 bench("pipe-chained(5)", () => {
 	type
@@ -190,7 +190,7 @@ bench("pipe-chained(5)", () => {
 		.pipe(s => `${s}c` as const)
 		.pipe(s => `${s}d` as const)
 		.pipe(s => `${s}e` as const)
-}).types([1413, "instantiations"])
+}).types([1386, "instantiations"])
 
 bench("pipe(10)", () => {
 	type.pipe(
@@ -205,7 +205,7 @@ bench("pipe(10)", () => {
 		s => `${s}i` as const,
 		s => `${s}j` as const
 	)
-}).types([3592, "instantiations"])
+}).types([3433, "instantiations"])
 
 bench("pipe-chained(10)", () => {
 	type
@@ -219,19 +219,19 @@ bench("pipe-chained(10)", () => {
 		.pipe(s => `${s}h` as const)
 		.pipe(s => `${s}i` as const)
 		.pipe(s => `${s}j` as const)
-}).types([3958, "instantiations"])
+}).types([3886, "instantiations"])
 
 bench("fun(0)", () => {
 	type.fn(":", { a1: "1" })(() => ({ a1: 1 }))
-}).types([1127, "instantiations"])
+}).types([917, "instantiations"])
 
 bench("fun(1, implicit)", () => {
 	type.fn({ a1: "1" })(a => a)
-}).types([1201, "instantiations"])
+}).types([1016, "instantiations"])
 
 bench("fun(1, explicit)", () => {
 	type.fn({ a1: "1" }, ":", { a2: "2" })(a => ({ ...a, a2: 2 }))
-}).types([2155, "instantiations"])
+}).types([1800, "instantiations"])
 
 bench("fun(2)", () => {
 	type.fn({ a1: "1" }, { a2: "2" }, ":", { a3: "3" })((a, b) => ({
@@ -239,7 +239,7 @@ bench("fun(2)", () => {
 		...b,
 		a3: 3
 	}))
-}).types([3266, "instantiations"])
+}).types([2744, "instantiations"])
 
 bench("fun(5)", () => {
 	type.fn(
@@ -251,7 +251,7 @@ bench("fun(5)", () => {
 		":",
 		{ a6: "6" }
 	)((a, b, c, d, e) => ({ ...a, ...b, ...c, ...d, ...e, a6: 6 }))
-}).types([6980, "instantiations"])
+}).types([5690, "instantiations"])
 
 bench("fun(10)", () => {
 	type.fn(
@@ -280,4 +280,4 @@ bench("fun(10)", () => {
 		...j,
 		a11: 11
 	}))
-}).types([14556, "instantiations"])
+}).types([11146, "instantiations"])

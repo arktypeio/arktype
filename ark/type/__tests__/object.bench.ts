@@ -65,7 +65,7 @@ bench("inline reference", () =>
 	type({
 		a: type("string")
 	})
-).types([804, "instantiations"])
+).types([795, "instantiations"])
 
 bench("nested type invocations", () =>
 	type({
@@ -87,4 +87,4 @@ bench("nested type invocations", () =>
 			})
 			.array()
 	})
-).types([8429, "instantiations"])
+).types([8431, "instantiations"])
