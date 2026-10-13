@@ -566,18 +566,6 @@ export abstract class BaseNode<
 	// undefined where checking data takes more than one expression
 	compileCondition?(js: NodeCompiler, data: string): string | undefined
 
-	private _compactsApply: boolean | undefined
-	// a compact Apply may run a child's Allows before its Apply, calling a predicate twice, and keeps no state to resolve an alias or transform
-	get compactsApply(): boolean {
-		if (this._compactsApply !== undefined) return this._compactsApply
-		let compacts = !this.includesAlias && !this.includesTransform
-		for (const id in this.referencesById) {
-			if (!compacts) break
-			compacts = !this.referencesById[id].hasKind("predicate")
-		}
-		return (this._compactsApply = compacts)
-	}
-
 	protected _failureSite: FailureSite | UnionSite | undefined
 	// what a compiled check reports when this node fails, holding the context arktype writes its error from
 	get failureSite(): FailureSite | UnionSite {

@@ -16,8 +16,8 @@ import { mergeTransformed, TransformErrors } from "./transform.ts"
 import {
 	addTransformErrors,
 	allowsInBranchBy,
-	enterResolution,
-	exitResolution,
+	enterApplied,
+	exitApplied,
 	transformedInApply,
 	transformIfAllowed,
 	transformResolution,
@@ -263,25 +263,18 @@ export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
 		requiresContext?: boolean
-		compacts?: boolean
 		refs?: Refs
-		errorContexts?: ErrorContexts
 		raisesIssues?: boolean | undefined
 		referencesText?: ((text: string) => boolean) | undefined
 	}
 
 	export type Refs = Map<object | symbol, string>
-
-	export type ErrorContexts = BaseErrorContext[]
 }
 
 export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
 	requiresContext: boolean
-	// an Apply reporting each failure through ctx's failure methods and returning false once traversal stops
-	readonly compacts: boolean
 	readonly refs: NodeCompiler.Refs | undefined
-	readonly errorContexts: NodeCompiler.ErrorContexts | undefined
 	readonly raisesIssues: boolean
 	readonly referencesText: ((text: string) => boolean) | undefined
 	checksTransformErrors = false
@@ -290,9 +283,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		super("data", "ctx")
 		this.traversalKind = ctx.kind
 		this.requiresContext = ctx.requiresContext ?? true
-		this.compacts = ctx.compacts ?? false
 		this.refs = ctx.refs
-		this.errorContexts = ctx.errorContexts
 		this.raisesIssues = ctx.raisesIssues ?? false
 		this.referencesText = ctx.referencesText
 	}
@@ -325,25 +316,16 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			:	`${this.ref(node)}.allows(${arg})`
 	}
 
-	invokeMember(
-		node: BaseNode,
-		member: BaseNode = node,
-		arg: string = this.data
-	): this {
-		if (this.traversalKind !== "Apply" || !member.includesAlias)
-			return this.check(node, { arg })
-		return this.invokeResolution(node, member.id, arg)
+	applyMember(node: BaseNode, member: BaseNode = node): string {
+		return member.includesAlias ?
+				this.resolution(node, member.id)
+			:	this.invoke(node)
 	}
 
-	invokeResolution(node: BaseNode, id: NodeId, arg: string = this.data): this {
-		const apply = this.referenceToId(node.id, { kind: "Apply" })
-		return this.if(
-			`${this.ref(enterResolution)}(ctx, "${this.nameOf(id)}", ${arg}, ${apply}) === undefined`,
-			() =>
-				this.line(this.invoke(node, { arg })).line(
-					`${this.ref(exitResolution)}(ctx)`
-				)
-		)
+	// a cycle's member is entered as its resolution, so data reaching it again isn't applied twice
+	resolution(node: BaseNode, id: NodeId, arg: string = this.data): string {
+		const apply = this.traversal(node, "Apply")
+		return `${this.ref(enterApplied)}(ctx, "${this.nameOf(id)}", ${arg}, ${apply}) ?? ${this.ref(exitApplied)}(ctx, ${apply}(${arg}, ctx))`
 	}
 
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
@@ -391,14 +373,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	error(node: BaseNode, key?: string, data = "data"): string {
-		return this.raisesIssues || this.compacts ?
-				`ctx.failsAt(${this.site(node)}, ${data}${key === undefined ? "" : `, ${key}`})`
-			:	`ctx.errorFromNodeContext(${this.errorContext((node as never as { errorContext: BaseErrorContext }).errorContext)}, ${data})`
-	}
-
-	errorContext(errorContext: BaseErrorContext): string {
-		if (!this.errorContexts) return registeredReference(errorContext)
-		return `errorContexts[${this.errorContexts.push(errorContext) - 1}]`
+		return `ctx.failsAt(${this.site(node)}, ${data}${key === undefined ? "" : `, ${key}`})`
 	}
 
 	requiresContextFor(node: BaseNode, kind = this.traversalKind): boolean {
@@ -411,29 +386,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	initializeErrorCount(): this {
-		return this.compacts ? this : (
-				this.const("errorCount", "ctx.currentErrorCount")
-			)
-	}
-
-	returnIfFail(): this {
-		return this.if("ctx.currentErrorCount > errorCount", () => this.return())
-	}
-
-	// a compact check returns false itself once traversal stops
-	returnIfFailFast(): this {
-		return this.compacts ? this : (
-				this.if("ctx.failFast && ctx.currentErrorCount > errorCount", () =>
-					this.return()
-				)
-			)
-	}
-
-	// Allows and a compact Apply return whether what they checked lets traversal continue
-	returnContinues(): this {
-		return this.traversalKind === "Allows" || this.compacts ?
-				this.return(true)
-			:	this
+		return this.const("errorCount", "ctx.currentErrorCount")
 	}
 
 	traverseKey(
@@ -441,85 +394,69 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		accessExpression: string,
 		node: BaseNode
 	): this {
+		if (this.traversalKind === "Apply")
+			return this.applyKey(keyExpression, accessExpression, node)
+		const condition = node.compileCondition?.(this, accessExpression)
+		if (condition !== undefined)
+			return this.if(`!(${condition})`, () => this.return(false))
+		const pushesPath =
+			node.allowsRequiresContext && node.allowsRequiresTraversal
+		if (pushesPath) this.line(`${this.ctx}.path.push(${keyExpression})`)
+		this.check(node, { arg: accessExpression })
+		return pushesPath ? this.line(`${this.ctx}.path.pop()`) : this
+	}
+
+	// a value failing at a key stops this Apply only once ctx fails fast
+	private applyKey(key: string, value: string, node: BaseNode): this {
+		// a cyclic value is applied in this body, as each call deeper is one more frame data nested in itself costs
+		if (node.transforms || node.includesAlias) {
+			const apply =
+				node.entersResolution && node.includesAlias ?
+					`(${this.resolution(node, node.id, value)})`
+				:	this.invoke(node, { arg: value })
+			const fails = () => this.line("ctx.path.pop()").return(false)
+			this.line(`ctx.path.push(${key})`)
+			// only transforming a value Apply finds valid finds its morphs' errors
+			if (node.transforms && !node.includesAlias) {
+				this.if(
+					`${this.ref(transformsValid)}(ctx) && ${this.allows(node, value)}`,
+					() =>
+						this.line(
+							`${this.ref(transformedInApply)}(ctx, ${this.invoke(node, { arg: value, kind: "Transform" })})`
+						)
+				).elseIf(`!${apply}`, fails)
+			} else {
+				this.if(
+					node.transforms ?
+						`!(${this.ref(transformIfAllowed)}(ctx, ${this.ref(node)}, ${value}) || ${apply})`
+					:	`!${apply}`,
+					fails
+				)
+			}
+			return this.line("ctx.path.pop()")
+		}
 		const checksAllowsFirst =
-			this.traversalKind === "Apply" &&
 			(this.loopDepth > 0 ||
 				(node.hasKind("union") && !node.compiledDiscriminant)) &&
 			isDecidedByAllows(node)
-		if (this.compacts) {
-			const condition =
-				node.hasKind("union") && !checksAllowsFirst ?
-					undefined
-				:	node.compileCondition?.(this, accessExpression)
-			if (condition !== undefined && !node.hasKind("union")) {
-				return this.if(
-					`!(${condition}) && ${this.error(node, keyExpression)}`,
-					() => this.return(false)
-				)
-			}
-			const allows =
-				!checksAllowsFirst ? ""
-				: condition === undefined ?
-					`!${this.invoke(node, { arg: accessExpression, kind: "Allows" })} && `
-				:	`!(${condition}) && `
-			return this.if(
-				`${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${accessExpression}, ${keyExpression})`,
-				() => this.return(false)
-			)
-		}
 		const condition =
-			checksAllowsFirst ?
-				node.compileCondition?.(this, accessExpression)
-			:	this.conditionOf(node, accessExpression)
-		if (condition !== undefined) {
-			return this.if(`!(${condition})`, () =>
-				this.traversalKind === "Allows" ?
-					this.return(false)
-				:	this.line(`${this.ctx}.path.push(${keyExpression})`)
-						.fail(node, accessExpression)
-						.line(`${this.ctx}.path.pop()`)
+			node.hasKind("union") && !checksAllowsFirst ?
+				undefined
+			:	node.compileCondition?.(this, value)
+		if (condition !== undefined && !node.hasKind("union")) {
+			return this.if(`!(${condition}) && ${this.error(node, key)}`, () =>
+				this.return(false)
 			)
 		}
-		if (checksAllowsFirst) {
-			return this.if(
-				`!${this.invoke(node, { arg: accessExpression, kind: "Allows" })}`,
-				() =>
-					this.line(`${this.ctx}.path.push(${keyExpression})`)
-						.check(node, { arg: accessExpression })
-						.line(`${this.ctx}.path.pop()`)
-			)
-		}
-
-		const pushesPath =
-			this.traversalKind === "Allows" ?
-				node.allowsRequiresContext && node.allowsRequiresTraversal
-			:	this.requiresContextFor(node)
-		if (pushesPath) this.line(`${this.ctx}.path.push(${keyExpression})`)
-
-		const apply = () =>
-			node.entersResolution ?
-				this.invokeMember(node, node, accessExpression)
-			:	this.check(node, { arg: accessExpression })
-		if (this.traversalKind !== "Apply")
-			this.check(node, { arg: accessExpression })
-		else if (!node.transforms) apply()
-		else if (node.includesAlias) {
-			this.if(
-				`!${this.ref(transformIfAllowed)}(ctx, ${this.ref(node)}, ${accessExpression})`,
-				apply
-			)
-		} else {
-			this.if(
-				`${this.ref(transformsValid)}(ctx) && ${this.allows(node, accessExpression)}`,
-				() =>
-					this.line(
-						`${this.ref(transformedInApply)}(ctx, ${this.invoke(node, { arg: accessExpression, kind: "Transform" })})`
-					)
-			).else(apply)
-		}
-		if (pushesPath) this.line(`${this.ctx}.path.pop()`)
-
-		return this
+		const allows =
+			!checksAllowsFirst ? ""
+			: condition === undefined ?
+				`!${this.invoke(node, { arg: value, kind: "Allows" })} && `
+			:	`!(${condition}) && `
+		return this.if(
+			`${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${value}, ${key})`,
+			() => this.return(false)
+		)
 	}
 
 	initializeTransform(transformedChildren: readonly BaseNode[]): this {
@@ -628,48 +565,29 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			:	this.if("failed", () => this.return("failed"))
 	}
 
+	// Apply reports a failed condition at its site, and stops once ctx fails fast
 	check(node: BaseNode, opts?: InvokeOptions): this {
 		const arg = opts?.arg ?? this.data
-		if (this.compacts && !opts?.kind) {
-			const condition =
-				node.hasKind("union") ? undefined : node.compileCondition?.(this, arg)
-			return this.if(
-				condition === undefined ?
-					`!${this.invoke(node, opts)}`
-				:	`!(${condition}) && ${this.error(node, undefined, arg)}`,
-				() => this.return(false)
-			)
-		}
-		const condition = opts?.kind ? undefined : this.conditionOf(node, arg)
-		if (condition !== undefined) {
-			return this.if(`!(${condition})`, () =>
-				this.traversalKind === "Allows" ?
-					this.return(false)
-				:	this.fail(node, arg)
-			)
-		}
-		return this.traversalKind === "Allows" ?
-				this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
-			:	this.line(this.invoke(node, opts))
-	}
-
-	// a composite's Apply checks its condition again, so Apply writes it only where it would call Allows first
-	conditionOf(node: BaseNode, arg: string): string | undefined {
-		return (
-				this.traversalKind === "Transform" ||
-					(this.traversalKind === "Apply" &&
-						node.hasKindIn("intersection", "union"))
-			) ?
+		const condition =
+			opts?.kind || (this.traversalKind === "Apply" && node.hasKind("union")) ?
 				undefined
 			:	node.compileCondition?.(this, arg)
+		if (condition === undefined)
+			return this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
+		return this.if(
+			this.traversalKind === "Allows" ?
+				`!(${condition})`
+			:	`!(${condition}) && ${this.error(node, undefined, arg)}`,
+			() => this.return(false)
+		)
 	}
 
 	checkLeaf(node: BaseNode): this {
 		const condition = node.compileCondition!(this, this.data)!
-		return (
-			this.traversalKind === "Allows" ? this.return(condition)
-			: this.compacts ? this.return(`${condition} || !${this.error(node)}`)
-			: this.if(`!(${condition})`, () => this.fail(node, this.data))
+		return this.return(
+			this.traversalKind === "Allows" ?
+				condition
+			:	`${condition} || !${this.error(node)}`
 		)
 	}
 
@@ -677,21 +595,12 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversal(node: BaseNode, kind: TraversalKind): string {
 		return this.referenceToId(node.id, { kind })
 	}
-
-	// a leaf's condition is its whole check, so it reports its error without checking again
-	fail(node: BaseNode, arg: string): this {
-		return this.line(
-			node.hasKindIn("intersection", "union") ?
-				this.invoke(node, { arg })
-			:	this.error(node, undefined, arg)
-		)
-	}
 }
 
 export const returnsTransformErrors = (node: BaseNode): boolean =>
 	node.includesMorph && !node.transformRequiresContext
 
-const isDecidedByAllows = (node: BaseNode): boolean => {
+export const isDecidedByAllows = (node: BaseNode): boolean => {
 	if (node.includesTransform || node.allowsRequiresContext) return false
 	for (const id in node.referencesById)
 		if (node.referencesById[id].hasKind("predicate")) return false

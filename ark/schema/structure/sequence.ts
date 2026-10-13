@@ -353,14 +353,11 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		// (e.g. inside a union branch) so we don't traverse an element whose
 		// basis has already failed - see
 		// https://github.com/arktypeio/arktype/issues/1458
-		if (js.traversalKind === "Apply") js.initializeErrorCount()
-
-		this.compileElements(js, (keyExpression, node) => {
+		this.compileElements(js, (keyExpression, node) =>
 			js.traverseKey(keyExpression, `data[${keyExpression}]`, node)
-			return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
-		})
+		)
 
-		js.returnContinues()
+		js.return(true)
 	}
 
 	private compileTransform(js: NodeCompiler): void {
@@ -407,11 +404,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				}
 				continue
 			}
-			js.if(`${dataIndex} >= data.length`, () =>
-				js.traversalKind === "Allows" || js.compacts ?
-					js.return(true)
-				:	js.return()
-			)
+			js.if(`${dataIndex} >= data.length`, () => js.return(true))
 			compileElement(dataIndex, node)
 		}
 

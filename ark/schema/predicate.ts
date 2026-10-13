@@ -94,8 +94,9 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		js.if(
 			// only add the default error if the predicate didn't add one itself
 			`!${condition} && ctx.currentErrorCount === errorCount`,
-			() => js.line(js.error(this))
+			() => js.return(`!${js.error(this)}`)
 		)
+		js.return("!ctx.failFast || ctx.currentErrorCount === errorCount")
 	}
 }
 

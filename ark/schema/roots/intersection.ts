@@ -257,6 +257,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	traverseTransform: TraverseTransform = (data, ctx) =>
 		transform(ctx, this.structure!, data)
 
+	// a failed basis, or prestructural before a structure or predicate, stops Apply, though its parent continues unless ctx fails fast
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
 			for (const child of this.children) js.check(child)
@@ -269,47 +270,8 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			return
 		}
 
-		if (js.compacts) return this.compileCompactApply(js)
-
-		js.initializeErrorCount()
-
-		if (this.basis) {
-			js.check(this.basis)
-			// we only have to return conditionally if this is not the last check
-			if (this.children.length > 1) js.returnIfFail()
-		}
-		if (this.prestructurals.length) {
-			for (let i = 0; i < this.prestructurals.length - 1; i++) {
-				js.check(this.prestructurals[i])
-				js.returnIfFailFast()
-			}
-			js.check(this.prestructurals[this.prestructurals.length - 1]!)
-			if (this.structure || this.inner.predicate) js.returnIfFail()
-		}
-		if (this.structure) {
-			const structure = this.structure
-			// Apply transforms what it finds valid, which a predicate could still reject
-			if (this.inner.predicate && structure.transforms)
-				js.if(`!${js.allows(structure)}`, () => js.check(structure).return())
-			else {
-				js.check(structure)
-				if (this.inner.predicate) js.returnIfFail()
-			}
-		}
-		if (this.inner.predicate) {
-			for (let i = 0; i < this.inner.predicate.length - 1; i++) {
-				js.check(this.inner.predicate[i])
-				// since predicates can be chained, we have to fail immediately
-				// if one fails
-				js.returnIfFail()
-			}
-			js.check(this.inner.predicate[this.inner.predicate.length - 1]!)
-		}
-	}
-
-	// a failed basis, or prestructural before a structure, stops this node, though its parent continues unless ctx fails fast
-	private compileCompactApply(js: NodeCompiler): void {
 		const { basis, prestructurals, structure } = this
+		const predicates = this.inner.predicate
 		if (basis) {
 			const condition = basis.compileCondition(js, "data")
 			if (this.children.length === 1) {
@@ -318,7 +280,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			}
 			js.if(`!(${condition})`, () => js.return(`!${js.error(basis)}`))
 		}
-		if (!structure) {
+		if (!structure && !predicates) {
 			for (const node of prestructurals) js.check(node)
 			js.return(true)
 			return
@@ -337,7 +299,30 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 				)
 			)
 		}
-		js.return(js.invoke(structure))
+		if (!predicates) {
+			js.return(js.invoke(structure!))
+			return
+		}
+		js.initializeErrorCount()
+		if (structure) {
+			// Apply transforms what it finds valid, which a predicate could still reject
+			if (structure.transforms)
+				js.if(`!${js.allows(structure)}`, () => js.return(js.invoke(structure)))
+			else {
+				js.if(`!${js.invoke(structure)}`, () => js.return(false)).if(
+					"ctx.currentErrorCount > errorCount",
+					() => js.return(true)
+				)
+			}
+		}
+		// since predicates can be chained, the first to fail stops this node
+		for (const predicate of predicates.slice(0, -1)) {
+			js.if(`!${js.invoke(predicate)}`, () => js.return(false)).if(
+				"ctx.currentErrorCount > errorCount",
+				() => js.return(true)
+			)
+		}
+		js.return(js.invoke(predicates[predicates.length - 1]))
 	}
 }
 

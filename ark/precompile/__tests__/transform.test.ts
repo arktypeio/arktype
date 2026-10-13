@@ -46,9 +46,9 @@ export const Same = type({ name: "string <= 64" })
 export const Users = User.array()
 export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.code).snap(`import { ArkErrors } from "arktype"
-import { v1grlzk90j47l5r as $arkv1grlzk90j47l5r } from "~arktype/1yowdlt03p1i6c"
-import { vcq9fbr09xh5h7 as $arkvcq9fbr09xh5h7 } from "~arktype/1yowdlt03p1i6c"
-import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/1yowdlt03p1i6c"
+import { v1grlzk90j47l5r as $arkv1grlzk90j47l5r } from "~arktype/1dz9z6a115l6fk"
+import { vcq9fbr09xh5h7 as $arkvcq9fbr09xh5h7 } from "~arktype/1dz9z6a115l6fk"
+import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/1dz9z6a115l6fk"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 const max = 64
 $arkfixConfig()
@@ -57,10 +57,10 @@ export const Same = /* @__PURE__ */ $arkvcq9fbr09xh5h7()
 export const Users = /* @__PURE__ */ $arkvcbtdhu09o4jaz()
 export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(Object.keys(result.modules)).snap([
-				"~arktype/1yowdlt03p1i6c",
-				"~arktype/intersection1ohlbuv065oflv",
-				"~arktype/intersection1mdba3d0uivrl8",
-				"~arktype/intersectionha0h611609cn0",
+				"~arktype/1dz9z6a115l6fk",
+				"~arktype/intersectionp5cga70ta8lc1",
+				"~arktype/intersectionved5ro0j1bec4",
+				"~arktype/intersection1cpjlhr0bp90lz",
 				"~arktype/1c1qm3a0f4lqlh"
 			])
 			attest(result.map?.sources).equals(["/main.ts"])
@@ -80,10 +80,10 @@ export const User = type({ name: "string" })`
 				}
 			)
 			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1ytee8505arrs2"
-import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/1ytee8505arrs2"
-import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/1ytee8505arrs2"
-import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/1ytee8505arrs2"
+import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/dl83gg02pj552"
+import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/dl83gg02pj552"
+import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/dl83gg02pj552"
+import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/dl83gg02pj552"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { User } from "./user.ts"
 import "./user.ts"
@@ -109,9 +109,9 @@ export const properties = A.toJsonSchema().properties
 export const required = A.toJsonSchema()["required"]`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { v9tsbfu1su045q as $arkv9tsbfu1su045q } from "~arktype/2wi98k1w8tgf8"
-import { fzdl36y1kl4y2z as $arkfzdl36y1kl4y2z } from "~arktype/2wi98k1w8tgf8"
-import { f1kkci5112g5ynj as $arkf1kkci5112g5ynj } from "~arktype/2wi98k1w8tgf8"
+import { v9tsbfu1su045q as $arkv9tsbfu1su045q } from "~arktype/lt4yub18wu53c"
+import { fzdl36y1kl4y2z as $arkfzdl36y1kl4y2z } from "~arktype/lt4yub18wu53c"
+import { f1kkci5112g5ynj as $arkf1kkci5112g5ynj } from "~arktype/lt4yub18wu53c"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 const A = /* @__PURE__ */ $arkv9tsbfu1su045q()
@@ -148,8 +148,8 @@ export const Positive = type("number").narrow(n => n > 0)`
 const Length = type("string").pipe(s => s.length)
 export const schema = Length.toJsonSchema()`)
 			attest(result.code).snap(`import "arktype"
-import { f2yr47m0y316vp as $arkf2yr47m0y316vp } from "~arktype/1vd53bx0hhd5jz"
-import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/1vd53bx0hhd5jz"
+import { f2yr47m0y316vp as $arkf2yr47m0y316vp } from "~arktype/4rkqu31ltlvko"
+import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/4rkqu31ltlvko"
 const Length = $arkf2yr47m0y316vp(s => s.length)
 export const schema = $arkf14gb4ky1hqquxy()`)
 		})
@@ -175,11 +175,11 @@ export const Doubled = type("number").pipe(double)`
 				}
 			)
 			attest(result.code).snap(`import "arktype"
-import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/mz93h805pg53t"
-import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/mz93h805pg53t"
-import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/mz93h805pg53t"
-import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/mz93h805pg53t"
-import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/mz93h805pg53t"
+import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/16emsfu13j76mj"
+import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/16emsfu13j76mj"
+import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/16emsfu13j76mj"
+import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/16emsfu13j76mj"
+import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/16emsfu13j76mj"
 import { double } from "./containers.ts"
 import { Doubled } from "./doubled.ts"
 const Length = $arkf1hn2e10012161b(s => s.length)
@@ -200,7 +200,7 @@ import * as config from "./config.ts"
 export const A = type("string")`).code
 			).snap(`import "./polyfill.ts"
 import "arktype"
-import { v62gs0h1rkzfa4 as $arkv62gs0h1rkzfa4 } from "~arktype/1cf9r67134ausx"
+import { v62gs0h1rkzfa4 as $arkv62gs0h1rkzfa4 } from "~arktype/1yvqvci1whv1a6"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import * as config from "./config.ts"
 $arkfixConfig()
@@ -215,8 +215,8 @@ export const A = type("string")`)
 					specifier.startsWith("~arktype/domain")
 				)
 			).snap([
-				"~arktype/domainihh1hs0o5r511",
-				'import * as runtime from "arktype/runtime"\n\nconst domainihh1hs0o5r511 = /* @__PURE__ */ (function () {\nconst r0 = { value: { code: "domain", description: "a string" } }\nconst domainihh1hs0o5r511Allows = function(data, ctx) {     return typeof data === "string"\n }\nconst domainihh1hs0o5r511Apply = function(data, ctx) {     return typeof data === "string" || !ctx.failsAt(r0, data)\n }\nreturn [domainihh1hs0o5r511Allows, domainihh1hs0o5r511Apply]\n})()\n\nvar domainihh1hs0o5r511Shape\nconst domainihh1hs0o5r511Node = (() => {\n\treturn (domainihh1hs0o5r511Shape ??= runtime.freeze({\n\ttraverseApply: domainihh1hs0o5r511[1],\n\tallows: domainihh1hs0o5r511[0]\n}))\n})\n\nexport { domainihh1hs0o5r511, domainihh1hs0o5r511Node }\n'
+				"~arktype/domain131fpbi0sew247",
+				'import * as runtime from "arktype/runtime"\n\nconst domain131fpbi0sew247 = /* @__PURE__ */ (function () {\nconst r0 = { value: { code: "domain", description: "a string" } }\nconst domain131fpbi0sew247Allows = function(data, ctx) {     return typeof data === "string"\n }\nconst domain131fpbi0sew247Apply = function(data, ctx) {     return typeof data === "string" || !ctx.failsAt(r0, data)\n }\nreturn [domain131fpbi0sew247Allows, domain131fpbi0sew247Apply]\n})()\n\nvar domain131fpbi0sew247Shape\nconst domain131fpbi0sew247Node = (() => {\n\treturn (domain131fpbi0sew247Shape ??= runtime.freeze({\n\ttraverseApply: domain131fpbi0sew247[1],\n\tallows: domain131fpbi0sew247[0]\n}))\n})\n\nexport { domain131fpbi0sew247, domain131fpbi0sew247Node }\n'
 			])
 		})
 
@@ -231,16 +231,16 @@ export const make = () => type("string")`,
 				files
 			)
 			attest(Object.keys(early.modules)).snap([
-				"~arktype/z10rmo17lq1fz",
-				"~arktype/hoisted/domainihh1hs0o5r511"
+				"~arktype/godspv0ygxh2n",
+				"~arktype/hoisted/domain131fpbi0sew247"
 			])
 			attest(
 				Object.entries(early.modules).find(([specifier]) =>
 					specifier.startsWith("~arktype/hoisted/domain")
 				)
 			).snap([
-				"~arktype/hoisted/domainihh1hs0o5r511",
-				'import * as runtime from "arktype/runtime"\n\nvar domainihh1hs0o5r511Unit\n\nfunction domainihh1hs0o5r511() {\n\treturn (domainihh1hs0o5r511Unit ??= (function () {\nconst r0 = { value: { code: "domain", description: "a string" } }\nconst domainihh1hs0o5r511Allows = function(data, ctx) {     return typeof data === "string"\n }\nconst domainihh1hs0o5r511Apply = function(data, ctx) {     return typeof data === "string" || !ctx.failsAt(r0, data)\n }\nreturn [domainihh1hs0o5r511Allows, domainihh1hs0o5r511Apply]\n})())\n}\n\nvar domainihh1hs0o5r511Shape\nfunction domainihh1hs0o5r511Node() {\n\treturn (domainihh1hs0o5r511Shape ??= runtime.freeze({\n\ttraverseApply: domainihh1hs0o5r511()[1],\n\tallows: domainihh1hs0o5r511()[0]\n}))\n}\n\nexport { domainihh1hs0o5r511, domainihh1hs0o5r511Node }\n'
+				"~arktype/hoisted/domain131fpbi0sew247",
+				'import * as runtime from "arktype/runtime"\n\nvar domain131fpbi0sew247Unit\n\nfunction domain131fpbi0sew247() {\n\treturn (domain131fpbi0sew247Unit ??= (function () {\nconst r0 = { value: { code: "domain", description: "a string" } }\nconst domain131fpbi0sew247Allows = function(data, ctx) {     return typeof data === "string"\n }\nconst domain131fpbi0sew247Apply = function(data, ctx) {     return typeof data === "string" || !ctx.failsAt(r0, data)\n }\nreturn [domain131fpbi0sew247Allows, domain131fpbi0sew247Apply]\n})())\n}\n\nvar domain131fpbi0sew247Shape\nfunction domain131fpbi0sew247Node() {\n\treturn (domain131fpbi0sew247Shape ??= runtime.freeze({\n\ttraverseApply: domain131fpbi0sew247()[1],\n\tallows: domain131fpbi0sew247()[0]\n}))\n}\n\nexport { domain131fpbi0sew247, domain131fpbi0sew247Node }\n'
 			])
 			// imported after arktype, the cycle reaches the module once its artifact is evaluated
 			const late = precompile(
@@ -250,8 +250,8 @@ export const make = () => type("string")`,
 				files
 			)
 			attest(Object.keys(late.modules)).snap([
-				"~arktype/11z3a320c0pfn0",
-				"~arktype/domainihh1hs0o5r511"
+				"~arktype/e42ig708l51pk",
+				"~arktype/domain131fpbi0sew247"
 			])
 		})
 
@@ -263,8 +263,8 @@ export const N = type("string").pipe(Number)`)
 					specifier.startsWith("~arktype/morph")
 				)
 			).snap([
-				"~arktype/morph1n03lx61bvi1p2",
-				'import * as runtime from "arktype/runtime"\nimport { domainihh1hs0o5r511 } from "~arktype/domainihh1hs0o5r511"\n\nvar morph1n03lx61bvi1p2Unit\n\nfunction morph1n03lx61bvi1p2() {\n\t"use strict"\n\treturn (morph1n03lx61bvi1p2Unit ??= (function ([domainihh1hs0o5r511Allows]) {\nconst r0 = { value: { code: "domain", description: "a string" } }\nconst r1 = globalThis["Number"]\nconst r2 = runtime.type.errors\nconst r3 = runtime.TransformErrors\nconst morph1n03lx61bvi1p2Allows = function(data, ctx) {     return domainihh1hs0o5r511Allows(data)\n }\nconst morph1n03lx61bvi1p2Apply = function(data, ctx) {     if (!(typeof data === "string")) {\n        ctx.failsAt(r0, data)\n    }\n }\nconst morph1n03lx61bvi1p2Transform = function(data, ctx) {     const morphed0 = r1(data)\n    if (morphed0 instanceof r2) {\n        return new r3(morphed0, data)\n    }\n    return morphed0\n }\nreturn [morph1n03lx61bvi1p2Allows, morph1n03lx61bvi1p2Apply, morph1n03lx61bvi1p2Transform]\n})(domainihh1hs0o5r511))\n}\n\nvar morph1n03lx61bvi1p2Shape\nconst morph1n03lx61bvi1p2Node = (() => {\n\treturn (morph1n03lx61bvi1p2Shape ??= runtime.freeze({\n\ttransforms: true,\n\ttraverseApply: morph1n03lx61bvi1p2()[1],\n\ttraverseTransform: morph1n03lx61bvi1p2()[2],\n\tallows: morph1n03lx61bvi1p2()[0]\n}))\n})\n\nexport { morph1n03lx61bvi1p2, morph1n03lx61bvi1p2Node }\n'
+				"~arktype/morphsfoxt60rfuj6u",
+				'import * as runtime from "arktype/runtime"\nimport { domain131fpbi0sew247 } from "~arktype/domain131fpbi0sew247"\n\nvar morphsfoxt60rfuj6uUnit\n\nfunction morphsfoxt60rfuj6u() {\n\t"use strict"\n\treturn (morphsfoxt60rfuj6uUnit ??= (function ([domain131fpbi0sew247Allows, domain131fpbi0sew247Apply]) {\nconst r0 = globalThis["Number"]\nconst r1 = runtime.type.errors\nconst r2 = runtime.TransformErrors\nconst morphsfoxt60rfuj6uAllows = function(data, ctx) {     return domain131fpbi0sew247Allows(data)\n }\nconst morphsfoxt60rfuj6uApply = function(data, ctx) {     return domain131fpbi0sew247Apply(data, ctx)\n }\nconst morphsfoxt60rfuj6uTransform = function(data, ctx) {     const morphed0 = r0(data)\n    if (morphed0 instanceof r1) {\n        return new r2(morphed0, data)\n    }\n    return morphed0\n }\nreturn [morphsfoxt60rfuj6uAllows, morphsfoxt60rfuj6uApply, morphsfoxt60rfuj6uTransform]\n})(domain131fpbi0sew247))\n}\n\nvar morphsfoxt60rfuj6uShape\nconst morphsfoxt60rfuj6uNode = (() => {\n\treturn (morphsfoxt60rfuj6uShape ??= runtime.freeze({\n\ttransforms: true,\n\ttraverseApply: morphsfoxt60rfuj6u()[1],\n\ttraverseTransform: morphsfoxt60rfuj6u()[2],\n\tallows: morphsfoxt60rfuj6u()[0]\n}))\n})\n\nexport { morphsfoxt60rfuj6u, morphsfoxt60rfuj6uNode }\n'
 			])
 		})
 
@@ -272,13 +272,13 @@ export const N = type("string").pipe(Number)`)
 			const source = `import"./polyfill.ts";import{type}from"arktype";export const A=type("string");`
 			attest(precompile(source).code)
 				.snap(`import"./polyfill.ts";import "arktype";
-import { vq0j6e21xyk07n as $arkvq0j6e21xyk07n } from "~arktype/1l3stlc1ngsnd8"
+import { vq0j6e21xyk07n as $arkvq0j6e21xyk07n } from "~arktype/16nvqu80bhkx0i"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 export const A=/* @__PURE__ */ $arkvq0j6e21xyk07n();`)
 			attest(precompile(source, {}, { runtime: "arktype" }).code)
 				.snap(`import"./polyfill.ts";import{type}from"arktype";
-import "~arktype/units/1dvz1mo0a4sm12"
+import "~arktype/units/h6eh021988eyz"
 export const A=type("string");`)
 		})
 
@@ -323,11 +323,11 @@ export const K = type("string").extends(type("string").in)`,
 				'/main.ts:15:18  type("string").extends(type("string").in) can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/1as04881cc8dbb"
-import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/1as04881cc8dbb"
-import { v1clwekn1s6e3gq as $arkv1clwekn1s6e3gq } from "~arktype/1as04881cc8dbb"
-import { v1hfscsk1nhk1a9 as $arkv1hfscsk1nhk1a9 } from "~arktype/1as04881cc8dbb"
-import { v16rwth51i4aph5 as $arkv16rwth51i4aph5 } from "~arktype/1as04881cc8dbb"
+import { fa7m7wf09pf4az as $arkfa7m7wf09pf4az } from "~arktype/wlf2on1o09zs2"
+import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/wlf2on1o09zs2"
+import { v1clwekn1s6e3gq as $arkv1clwekn1s6e3gq } from "~arktype/wlf2on1o09zs2"
+import { v1hfscsk1nhk1a9 as $arkv1hfscsk1nhk1a9 } from "~arktype/wlf2on1o09zs2"
+import { v16rwth51i4aph5 as $arkv16rwth51i4aph5 } from "~arktype/wlf2on1o09zs2"
 import $ark1sve6ft0pa6e4h from "~arktype/xuhdp21syk96k"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { max } from "./limits.ts"
@@ -353,8 +353,8 @@ export const types = scope({ tree: { value: "number", "children?": "tree[]" } })
 export const M = type.module({ a: "string", b: { c: "a" } })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vsjkdln005ypg0 as $arkvsjkdln005ypg0 } from "~arktype/tk65ma1m68r7o"
-import { vuorrac1fkpkl6 as $arkvuorrac1fkpkl6 } from "~arktype/tk65ma1m68r7o"
+import { vsjkdln005ypg0 as $arkvsjkdln005ypg0 } from "~arktype/fnz7d505g596j"
+import { vuorrac1fkpkl6 as $arkvuorrac1fkpkl6 } from "~arktype/fnz7d505g596j"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 export const types = /* @__PURE__ */ $arkvsjkdln005ypg0()
@@ -364,8 +364,8 @@ export const M = /* @__PURE__ */ $arkvuorrac1fkpkl6()`)
 					.split("\n")
 					.filter(line => /^const module\d/.test(line))
 			).snap([
-				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0 }), "1vozk750fo1zc6")',
-				'const module0 = runtime.holdHoles(runtime.freeze({ ["a"]: validator0, ["b"]: validator1 }), "18iisfp1ow7vfo")'
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0 }), "vkn9y610lu7h6")',
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["a"]: validator0, ["b"]: validator1 }), "ks4x4m0jqkjvt")'
 			])
 		})
 
@@ -378,11 +378,11 @@ export const Box = type("<t>", { box: "t" })
 export const BoxedTree = Box(types.tree)`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/1aulmgf1t5k9do"
-import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/1aulmgf1t5k9do"
-import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/1aulmgf1t5k9do"
-import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/1aulmgf1t5k9do"
-import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/1aulmgf1t5k9do"
+import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/19q7sr907aq6tv"
+import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/19q7sr907aq6tv"
+import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/19q7sr907aq6tv"
+import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/19q7sr907aq6tv"
+import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/19q7sr907aq6tv"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 const $ = /* @__PURE__ */ $arkvq7pa6c00qqwz6()
@@ -397,7 +397,7 @@ export const BoxedTree = /* @__PURE__ */ $arkv1tryxgh0tpn3pk()`)
 			).snap([
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "2ug25d0g2fmpu")',
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "yc0zfl03fckbs")',
-				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "1n4rjgp1vc1eo1")',
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "1do1a331sjxmgi")',
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "dpg9qw0fjxmwu")'
 			])
 		})
@@ -579,8 +579,8 @@ const create = () => {
 }`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { v1bev4io0lhnrds as $arkv1bev4io0lhnrds } from "~arktype/1upqy8v1bsyk0n"
-import { v17s8udm1bx77ds as $arkv17s8udm1bx77ds } from "~arktype/1upqy8v1bsyk0n"
+import { v1bev4io0lhnrds as $arkv1bev4io0lhnrds } from "~arktype/1oezjdl0fpu1s5"
+import { v17s8udm1bx77ds as $arkv17s8udm1bx77ds } from "~arktype/1oezjdl0fpu1s5"
 const create = () => {
 	const $ = $arkv1bev4io0lhnrds()
 	const types = $arkv17s8udm1bx77ds()
@@ -599,11 +599,11 @@ export const make = () => ({
 })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { v1a6evaf1ilxqcd as $arkv1a6evaf1ilxqcd } from "~arktype/qf6wxe0541mqn"
-import { v14gb4ky1hqquxy as $arkv14gb4ky1hqquxy } from "~arktype/qf6wxe0541mqn"
-import { v1fqowp70udipzn as $arkv1fqowp70udipzn } from "~arktype/qf6wxe0541mqn"
-import { v1isbncu11it64l as $arkv1isbncu11it64l } from "~arktype/qf6wxe0541mqn"
-import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/qf6wxe0541mqn"
+import { v1a6evaf1ilxqcd as $arkv1a6evaf1ilxqcd } from "~arktype/p7qsnf1qjci61"
+import { v14gb4ky1hqquxy as $arkv14gb4ky1hqquxy } from "~arktype/p7qsnf1qjci61"
+import { v1fqowp70udipzn as $arkv1fqowp70udipzn } from "~arktype/p7qsnf1qjci61"
+import { v1isbncu11it64l as $arkv1isbncu11it64l } from "~arktype/p7qsnf1qjci61"
+import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/p7qsnf1qjci61"
 export const make = () => ({
 	$: $arkv1a6evaf1ilxqcd(),
 	types: $arkv14gb4ky1hqquxy(),
@@ -720,14 +720,14 @@ export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/hzs8g70w3ef9q"
-import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/hzs8g70w3ef9q"
-import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/hzs8g70w3ef9q"
-import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/hzs8g70w3ef9q"
-import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/hzs8g70w3ef9q"
-import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/hzs8g70w3ef9q"
-import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/hzs8g70w3ef9q"
-import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/hzs8g70w3ef9q"
+import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/129cx760e9rxw6"
+import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/129cx760e9rxw6"
+import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/129cx760e9rxw6"
+import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/129cx760e9rxw6"
+import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/129cx760e9rxw6"
+import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/129cx760e9rxw6"
+import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/129cx760e9rxw6"
+import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/129cx760e9rxw6"
 import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
 class Pet {}
@@ -780,12 +780,12 @@ export const Shadowed = (() => {
 				"/inputs.ts:18:9  type(alias.name) can't be precompiled yet\n  `o` (/inputs.ts:7:7) is shadowed where the site is written, so its factory can't receive it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { f1pndslh1lfvnd2 as $arkf1pndslh1lfvnd2 } from "~arktype/5h4d5y1c7shrl"
-import { fcoobse1hdwpxv as $arkfcoobse1hdwpxv } from "~arktype/5h4d5y1c7shrl"
-import { fs5mhm20oegtat as $arkfs5mhm20oegtat } from "~arktype/5h4d5y1c7shrl"
-import { fwuycaw1jorjbe as $arkfwuycaw1jorjbe } from "~arktype/5h4d5y1c7shrl"
-import { f18h70z31d8anaf as $arkf18h70z31d8anaf } from "~arktype/5h4d5y1c7shrl"
-import { fhpkoym15zgexb as $arkfhpkoym15zgexb } from "~arktype/5h4d5y1c7shrl"
+import { f1pndslh1lfvnd2 as $arkf1pndslh1lfvnd2 } from "~arktype/vfb6z20x1xpir"
+import { fcoobse1hdwpxv as $arkfcoobse1hdwpxv } from "~arktype/vfb6z20x1xpir"
+import { fs5mhm20oegtat as $arkfs5mhm20oegtat } from "~arktype/vfb6z20x1xpir"
+import { fwuycaw1jorjbe as $arkfwuycaw1jorjbe } from "~arktype/vfb6z20x1xpir"
+import { f18h70z31d8anaf as $arkf18h70z31d8anaf } from "~arktype/vfb6z20x1xpir"
+import { fhpkoym15zgexb as $arkfhpkoym15zgexb } from "~arktype/vfb6z20x1xpir"
 import { max } from "./limits.ts"
 import { reboxed } from "./reboxed.ts"
 import { shape } from "./shapes.ts"
@@ -841,8 +841,8 @@ export function viaK() { return k({ b: "number" }) }`,
 				"/main.ts:6:18  viaK() can't be precompiled yet\n  importing `k` from /k.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import { viaG, viaH, viaK } from "./app.ts"
-import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/15k5bx507lm0fu"
-import { v31x3lt13lnlin as $arkv31x3lt13lnlin } from "~arktype/15k5bx507lm0fu"
+import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/nnysv30ay7nac"
+import { v31x3lt13lnlin as $arkv31x3lt13lnlin } from "~arktype/nnysv30ay7nac"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 import { g } from "./g.ts"
 import { h } from "./h.ts"
@@ -921,11 +921,11 @@ export const NarrowedProps = type("number").narrow(isNegative).props`
 			])
 			attest(result.code).snap(`import { scope, type } from "arktype"
 import $arkhhfme10rgsm2a from "~arktype/in37f40k9qr2u"
-import { fi32fv11rij4as as $arkfi32fv11rij4as } from "~arktype/1nzhd8b1a8i80g"
-import { fge601l1l8djke as $arkfge601l1l8djke } from "~arktype/1nzhd8b1a8i80g"
-import { f15on17z0md0pi6 as $arkf15on17z0md0pi6 } from "~arktype/1nzhd8b1a8i80g"
-import { f1rkl43l16h747g as $arkf1rkl43l16h747g } from "~arktype/1nzhd8b1a8i80g"
-import { fk4dreo1vs7gyk as $arkfk4dreo1vs7gyk } from "~arktype/1nzhd8b1a8i80g"
+import { fi32fv11rij4as as $arkfi32fv11rij4as } from "~arktype/d0587u154nah3"
+import { fge601l1l8djke as $arkfge601l1l8djke } from "~arktype/d0587u154nah3"
+import { f15on17z0md0pi6 as $arkf15on17z0md0pi6 } from "~arktype/d0587u154nah3"
+import { f1rkl43l16h747g as $arkf1rkl43l16h747g } from "~arktype/d0587u154nah3"
+import { fk4dreo1vs7gyk as $arkfk4dreo1vs7gyk } from "~arktype/d0587u154nah3"
 import $arkrhchbs1xkut83 from "~arktype/o94jis1u2oxph"
 import { extend } from "./extend.ts"
 const isZero = (n: number) => n === 0
@@ -984,9 +984,9 @@ export default (def: string) => def`,
 				"/checked.ts:8:23  type(single(\"string\")) can't be precompiled yet\n  `default` (/helpers.ts:5:16) is a static helper its module doesn't export through a binding, so a test driver can't register it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(checked.code).snap(`import { type } from "arktype"
-import { f13yfk091jb2s9c as $arkf13yfk091jb2s9c } from "~arktype/ypjw5n10y9n5g"
-import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/ypjw5n10y9n5g"
-import { f1t2p9ht1hshs19 as $arkf1t2p9ht1hshs19 } from "~arktype/ypjw5n10y9n5g"
+import { f13yfk091jb2s9c as $arkf13yfk091jb2s9c } from "~arktype/2vtkme143nwog"
+import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/2vtkme143nwog"
+import { f1t2p9ht1hshs19 as $arkf1t2p9ht1hshs19 } from "~arktype/2vtkme143nwog"
 import single, { list } from "./helpers.ts"
 import * as helpers from "./helpers.ts"
 const own = (def: string) => list(def)
@@ -1021,9 +1021,9 @@ export const Checked = type({ a: type("string").narrow(other.check), b: type("st
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/19gso00dzo5qb"
-import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/19gso00dzo5qb"
-import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/19gso00dzo5qb"
+import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/1l4m9161b99c5x"
+import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/1l4m9161b99c5x"
+import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/1l4m9161b99c5x"
 import { a } from "./a.ts"
 import { alias } from "./b.ts"
 const fns = { check: (s: string) => s.length > 3 }
@@ -1165,7 +1165,7 @@ export const Id = type("string").narrow(s => s.length === 8)`
 					specifier.includes("receive") ? [module] : []
 				)
 			).snap([
-				'import * as runtime from "arktype/runtime"\n\nconst receive1dmbht0w6mh1c = ((holder) => {\n\treturn runtime.holesOf(holder, "se6t5d14xcpuw", "`Id`")\n})\n\nexport { receive1dmbht0w6mh1c }\n'
+				'import * as runtime from "arktype/runtime"\n\nconst receive14elk3g1h9owl9 = ((holder) => {\n\treturn runtime.holesOf(holder, "1pzsli11cbnwzw", "`Id`")\n})\n\nexport { receive14elk3g1h9owl9 }\n'
 			])
 		})
 
@@ -1179,9 +1179,9 @@ export const In = type({ a: T.in })`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
 			attest(result.code).snap(`import "arktype"
-import { f1bg5ghg1udq2qc as $arkf1bg5ghg1udq2qc } from "~arktype/ul92ag1kj9nvq"
-import { fnlxeht0j9hv9h as $arkfnlxeht0j9hv9h } from "~arktype/ul92ag1kj9nvq"
-import { fe5h3530tuatax as $arkfe5h3530tuatax } from "~arktype/ul92ag1kj9nvq"
+import { f1bg5ghg1udq2qc as $arkf1bg5ghg1udq2qc } from "~arktype/12p6dy401xxyhy"
+import { fnlxeht0j9hv9h as $arkfnlxeht0j9hv9h } from "~arktype/12p6dy401xxyhy"
+import { fe5h3530tuatax as $arkfe5h3530tuatax } from "~arktype/12p6dy401xxyhy"
 const tag = Symbol("tag")
 const T = $arkf1bg5ghg1udq2qc(tag)
 export const Union = $arkfnlxeht0j9hv9h(T)
@@ -1214,11 +1214,11 @@ export const OwnFirst = type("string").narrow(function (this: unknown, s) { retu
 				'/main.ts:14:23  type(shorts().map(h => type("string").narrow(h || isLong)) … can\'t be precompiled yet\n  arktype holds `(s: string) => s.length < 3` (/main.ts:3:17), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { fgxncna0e0vtuy as $arkfgxncna0e0vtuy } from "~arktype/m8mw9q0c6ih8a"
-import { fue93h80tgxvhc as $arkfue93h80tgxvhc } from "~arktype/m8mw9q0c6ih8a"
-import { fvuztpd0flqkce as $arkfvuztpd0flqkce } from "~arktype/m8mw9q0c6ih8a"
-import { f1pp1bhu1wky3z8 as $arkf1pp1bhu1wky3z8 } from "~arktype/m8mw9q0c6ih8a"
-import { f1vcmva31ng9y85 as $arkf1vcmva31ng9y85 } from "~arktype/m8mw9q0c6ih8a"
+import { fgxncna0e0vtuy as $arkfgxncna0e0vtuy } from "~arktype/9391pq18vjf21"
+import { fue93h80tgxvhc as $arkfue93h80tgxvhc } from "~arktype/9391pq18vjf21"
+import { fvuztpd0flqkce as $arkfvuztpd0flqkce } from "~arktype/9391pq18vjf21"
+import { f1pp1bhu1wky3z8 as $arkf1pp1bhu1wky3z8 } from "~arktype/9391pq18vjf21"
+import { f1vcmva31ng9y85 as $arkf1vcmva31ng9y85 } from "~arktype/9391pq18vjf21"
 const isLong = (s: string) => s.length > 1
 const isShort = (s: string) => s.length < 3
 const h = isLong
@@ -1244,7 +1244,7 @@ export const T = type("string").narrow(longer(3)).narrow(longer(1))`
 			)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { farwx4t08ya85o as $arkfarwx4t08ya85o } from "~arktype/cfhg0h1now47w"
+import { farwx4t08ya85o as $arkfarwx4t08ya85o } from "~arktype/11reco80886a6a"
 const longer = (n: number) => (s: string) => s.length > n
 export const T = $arkfarwx4t08ya85o(longer(3), longer(1))`)
 		})
@@ -1299,12 +1299,12 @@ const loop = (): never => loop().and(B)`
 				"/main.ts:10:21  trimmed().and(second()) can't be precompiled yet\n  arktype holds `(s: string) => s.trim()` (/main.ts:2:14), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1seybss118a9ep"
-import { v1oigsr31najz55 as $arkv1oigsr31najz55 } from "~arktype/1seybss118a9ep"
-import { fd9jxkn0kakf0g as $arkfd9jxkn0kakf0g } from "~arktype/1seybss118a9ep"
-import { v112lir714tv8ze as $arkv112lir714tv8ze } from "~arktype/1seybss118a9ep"
-import { vrg81gy0tev40w as $arkvrg81gy0tev40w } from "~arktype/1seybss118a9ep"
-import { vp99ye0097h426 as $arkvp99ye0097h426 } from "~arktype/1seybss118a9ep"
+import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/1golphw10igh2n"
+import { v1oigsr31najz55 as $arkv1oigsr31najz55 } from "~arktype/1golphw10igh2n"
+import { fd9jxkn0kakf0g as $arkfd9jxkn0kakf0g } from "~arktype/1golphw10igh2n"
+import { v112lir714tv8ze as $arkv112lir714tv8ze } from "~arktype/1golphw10igh2n"
+import { vrg81gy0tev40w as $arkvrg81gy0tev40w } from "~arktype/1golphw10igh2n"
+import { vp99ye0097h426 as $arkvp99ye0097h426 } from "~arktype/1golphw10igh2n"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 const trim = (s: string) => s.trim()
 $arkfixConfig()
@@ -1339,7 +1339,7 @@ export const Team = type({ lead: User })`
 			)
 			for (const specifier of shared)
 				attest(team.modules[specifier]).equals(user.modules[specifier])
-			attest(shared).snap(["~arktype/intersectionnl8nzd1qixka3"])
+			attest(shared).snap(["~arktype/intersectionxi302f1yfau5a"])
 		})
 
 		it("shares the code two modules write alike only where nothing it holds can be written", () => {
@@ -1462,7 +1462,7 @@ import { other } from "./other.ts"`
 				{ runtime: "arktype" }
 			)
 			attest(result.code).snap(`import { type } from "arktype"
-import "~arktype/units/1dvz1mo0a4sm12"
+import "~arktype/units/h6eh021988eyz"
 import "~arktype/units/nqmgik1kbyfoe"
 let def = "string"
 def = "number"

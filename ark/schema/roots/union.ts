@@ -15,6 +15,7 @@ import type { BaseNode } from "../node.ts"
 import {
 	compileSerializedValue,
 	expectedOf,
+	isDecidedByAllows,
 	returnsTransformErrors,
 	type NodeCompiler
 } from "../shared/compile.ts"
@@ -332,16 +333,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						`case ${js.ref($ark[k.slice(registeredPrefix.length)] as never)}`
 					:	`case ${k}`
 				const member = discriminant.members?.[k]
-				if (member && v !== true && js.traversalKind === "Apply") {
-					js.line(`${caseCondition}:`).invokeMember(v, member).return()
-					continue
-				}
 				const caseResult =
 					js.traversalKind === "Transform" ?
 						v !== true && v.transforms ?
 							invokeTransform(js, v, member)
 						:	"data"
 					: v === true ? "true"
+					: member && js.traversalKind === "Apply" ? js.applyMember(v, member)
 					: js.invoke(v)
 				js.line(`${caseCondition}: return ${caseResult}`)
 			}
@@ -376,13 +374,15 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	data: ${value},
 	meta: ${js.ref(this.discriminantMeta)}
 }`
-		if (js.compacts) js.return(`!ctx.failsWith(${input})`)
-		else if (js.raisesIssues) js.line(`ctx.failsWith(${input})`)
-		else js.line(`${js.ref(errorFromContext)}(ctx, ${input})`)
+		js.return(`!ctx.failsWith(${input})`)
 	}
 
 	private compileIndiscriminable(js: NodeCompiler): void {
-		if (js.compacts) {
+		if (
+			js.traversalKind === "Apply" &&
+			!this.includesAlias &&
+			isDecidedByAllows(this)
+		) {
 			for (const branch of this.branches) {
 				js.if(
 					branch.compileCondition?.(js, "data") ??
@@ -399,30 +399,32 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				`!ctx.failsUnion([${branches.join(", ")}], ${js.site(this)}, data)`
 			)
 		} else if (js.traversalKind === "Apply") {
+			// Allows would call a branch's predicates again and can't enter its resolution, so each branch is applied once
 			if (!js.raisesIssues) js.const("errors", "[]")
 			for (const branch of this.branches) {
 				js.line("ctx.pushBranch()")
-					.invokeMember(branch)
-					.if("!ctx.hasError()", () => js.return("ctx.popBranch()"))
+					.line(js.applyMember(branch))
+					.if("!ctx.hasError()", () => js.line("ctx.popBranch()").return(true))
 					.line(
 						js.raisesIssues ? "ctx.popBranch()" : (
 							"errors.push(ctx.popBranch().error)"
 						)
 					)
 			}
-
-			js.line(
-				js.raisesIssues ?
-					`ctx.failsUnion([], ${js.site(this)}, data)`
-				:	`${js.ref(errorFromContext)}(ctx, { code: "union", errors, meta: ${js.ref(this.meta)}, data })`
-			)
+			if (js.raisesIssues)
+				js.return(`!ctx.failsUnion([], ${js.site(this)}, data)`)
+			else {
+				js.line(
+					`${js.ref(errorFromContext)}(ctx, { code: "union", errors, meta: ${js.ref(this.meta)}, data })`
+				).return("!ctx.failFast")
+			}
 		} else if (js.traversalKind === "Allows") {
 			for (const branch of this.branches) {
 				// an error a branch's predicate adds through ctx fails only that branch
 				js.if(
 					branch.allowsRequiresTraversal ?
 						`${js.ref(allowsInBranch)}(ctx, ${js.ref(branch)}, data)`
-					:	(js.conditionOf(branch, "data") ?? js.invoke(branch)),
+					:	(branch.compileCondition?.(js, "data") ?? js.invoke(branch)),
 					() => js.return(true)
 				)
 			}

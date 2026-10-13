@@ -633,12 +633,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
-	applySharedKeys(data: object, ctx: InternalTraversal): void {
+	// whether traversal continues, as a compiled Apply returns
+	applySharedKeys(data: object, ctx: InternalTraversal): boolean {
+		const errorCount = ctx.currentErrorCount
 		this._traverse("Apply", data, ctx, false)
 		for (const prop of this.props)
 			if (prop.key in data) this.transformSharedKey(data, prop.key, ctx)
 		for (const k of ownKeysOf(data))
 			if (!(k in this.propsByKey)) this.transformSharedKey(data, k, ctx)
+		return !ctx.failFast || ctx.currentErrorCount === errorCount
 	}
 
 	private transformSharedKey(
@@ -848,17 +851,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	compile(js: NodeCompiler): unknown {
 		if (js.traversalKind === "Transform") return this.compileTransform(js)
-		if (js.traversalKind === "Apply") {
-			if (this.sharesTransformedKeys) {
-				js.if(`${js.ref(transformsValid)}(ctx)`, () =>
-					js.return(`${js.ref(this)}.applySharedKeys(data, ctx)`)
-				)
-			}
-			js.initializeErrorCount()
+		if (js.traversalKind === "Apply" && this.sharesTransformedKeys) {
+			js.if(`${js.ref(transformsValid)}(ctx)`, () =>
+				js.return(`${js.ref(this)}.applySharedKeys(data, ctx)`)
+			)
 		}
 
-		// with nothing to loop over, a compact Apply continues only while each child does
-		if (js.compacts && !this.index && this.undeclared !== "reject") {
+		// with nothing to loop over, Apply continues only while each child does
+		if (
+			js.traversalKind === "Apply" &&
+			!this.index &&
+			this.undeclared !== "reject"
+		) {
 			const children = [
 				...this.props,
 				...(this.sequence ? [this.sequence] : [])
@@ -868,15 +872,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 
-		for (const prop of this.props) {
-			js.check(prop)
-			if (js.traversalKind === "Apply") js.returnIfFailFast()
-		}
+		for (const prop of this.props) js.check(prop)
 
-		if (this.sequence) {
-			js.check(this.sequence)
-			if (js.traversalKind === "Apply") js.returnIfFailFast()
-		}
+		if (this.sequence) js.check(this.sequence)
 
 		if (this.index) {
 			js.const("keys", "Object.keys(data)").for("i < keys.length", () =>
@@ -890,7 +888,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		} else if (this.undeclared === "reject")
 			js.forIn("data", () => this.compileExhaustiveEntry(js, "string"))
 
-		return js.returnContinues()
+		return js.return(true)
 	}
 
 	private compileTransform(js: NodeCompiler): void {
@@ -1222,10 +1220,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	): NodeCompiler {
 		if (this.index) {
 			for (const node of this.index) {
-				js.if(js.allows(node.signature, "k"), () => {
+				js.if(js.allows(node.signature, "k"), () =>
 					js.traverseKey("k", "data[k]", node.value)
-					return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
-				})
+				)
 			}
 		}
 
@@ -1237,15 +1234,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					`{ code: "undeclared", data: data[k], relativePath: [k] }`
 				:	`{ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} }`
 			const reject = () =>
-				js.traversalKind === "Allows" ? js.return(false)
-				: js.compacts ? js.if(`ctx.failsWith(${input})`, () => js.return(false))
-				: js
-						.line(
-							js.raisesIssues ?
-								`ctx.failsWith(${input})`
-							:	`${js.ref(errorFromContext)}(ctx, ${input})`
-						)
-						.if("ctx.failFast", () => js.return())
+				js.traversalKind === "Allows" ?
+					js.return(false)
+				:	js.if(`ctx.failsWith(${input})`, () => js.return(false))
 			const declaresKey = this._compileDeclaresKey(js)
 			const conditions = declaresKey === "false" ? [] : [`!(${declaresKey})`]
 			// for...in also reaches inherited keys, which aren't undeclared

@@ -149,7 +149,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			return
 		}
 		if (js.traversalKind === "Transform") return this.compileTransform(js)
-		if (this.introspectableIn) js.invokeMember(this.introspectableIn)
+		js.return(
+			this.introspectableIn ? js.applyMember(this.introspectableIn) : true
+		)
 	}
 
 	private compileTransform(js: NodeCompiler): void {

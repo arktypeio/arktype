@@ -107,8 +107,10 @@ export abstract class BaseProp<
 		const value = `data${js.prop(this.key)}`
 		// a missing key reads undefined, which fails a value whose every branch has a basis other than undefined, so its key is checked only to report it
 		if (
-			js.compacts &&
+			js.traversalKind === "Apply" &&
 			this.hasKind("required") &&
+			!this.value.transforms &&
+			!this.value.entersResolution &&
 			this.value.branches.every(branch => {
 				const basis = branch.hasKind("intersection") ? branch.basis : branch
 				return (
@@ -129,16 +131,12 @@ export abstract class BaseProp<
 
 		if (this.hasKind("required")) {
 			js.else(() =>
-				js.traversalKind !== "Apply" ? js.return(false)
-				: js.compacts ? js.if(js.error(this, key), () => js.return(false))
-				: js.raisesIssues ? js.line(js.error(this, key))
-				: js
-						.line(`ctx.path.push(${key})`)
-						.line(js.error(this))
-						.line("ctx.path.pop()")
+				js.traversalKind === "Apply" ?
+					js.if(js.error(this, key), () => js.return(false))
+				:	js.return(false)
 			)
 		}
 
-		js.returnContinues()
+		js.return(true)
 	}
 }

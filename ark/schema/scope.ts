@@ -265,8 +265,7 @@ const precompile = (
 			Object.values(linkage.dependencies).map(
 				([node, kind]) => node[`traverse${kind}`]
 			),
-			[...linkage.refs.keys()],
-			linkage.errorContexts
+			[...linkage.refs.keys()]
 		),
 		linkage.referencesById,
 		owningScope
@@ -311,8 +310,7 @@ type PrecompiledTraversals = [
 
 type CompiledUnit = (
 	dependencies: Fn[],
-	refs: unknown[],
-	errorContexts: NodeCompiler.ErrorContexts
+	refs: unknown[]
 ) => PrecompiledTraversals[]
 
 const unitConstants = {
@@ -342,12 +340,7 @@ export type PrecompiledUnit = [
 	bind: (
 		root: BaseNode,
 		constants: typeof unitConstants
-	) => [
-		declared: BaseNode[],
-		refs: unknown[],
-		errorContexts: NodeCompiler.ErrorContexts,
-		dependencies: BaseNode[]
-	],
+	) => [declared: BaseNode[], refs: unknown[], dependencies: BaseNode[]],
 	compiledUnit: CompiledUnit,
 	// each root the unit calls, by the key of its own unit, and the index of its traversal kind
 	dependencies: [key: string, kind: number][],
@@ -402,10 +395,7 @@ const bindPrecompiled = (
 	root: BaseNode,
 	[bind, compiledUnit, dependencies]: PrecompiledUnit
 ): void => {
-	const [declared, refs, errorContexts, dependencyNodes] = bind(
-		root,
-		unitConstants
-	)
+	const [declared, refs, dependencyNodes] = bind(root, unitConstants)
 	const traversals: Fn[] = []
 	for (let i = 0; i < dependencies.length; i++) {
 		const [key, kind] = dependencies[i]
@@ -417,7 +407,7 @@ const bindPrecompiled = (
 	bindUnit(
 		declared,
 		compiledUnit,
-		compiledUnit(traversals, refs, errorContexts),
+		compiledUnit(traversals, refs),
 		root.referencesById
 	)
 }
@@ -506,10 +496,10 @@ const writeUnit = (
 	traversals: string[][]
 ) => {
 	// passed as arrays, as V8 can't call a function with tens of thousands of arguments
-	const unit = new CompiledFunction<
-		CompiledUnit,
-		["dependencies", "refs", "errorContexts"]
-	>("dependencies", "refs", "errorContexts")
+	const unit = new CompiledFunction<CompiledUnit, ["dependencies", "refs"]>(
+		"dependencies",
+		"refs"
+	)
 	// strict as a module is, so writing to a frozen input copyOf left uncopied throws
 	unit.line(`"use strict"`)
 	for (let i = 0; i < dependencyNames.length; i++)
@@ -545,7 +535,6 @@ interface UnitLinkage {
 	// each traversal of a reused node the unit calls, by the name it calls
 	dependencies: Record<string, UnitDependency>
 	refs: NodeCompiler.Refs
-	errorContexts: NodeCompiler.ErrorContexts
 	members: UnitMember[]
 	nameOf: ((id: NodeId) => string) | undefined
 	opts: UnitOptions
@@ -561,7 +550,6 @@ const createLinkage = (
 	reached: [],
 	dependencies: {},
 	refs: new Map(),
-	errorContexts: [],
 	members: [],
 	nameOf,
 	opts
@@ -573,15 +561,12 @@ class TraversalCompiler extends NodeCompiler {
 	constructor(
 		kind: TraversalKind,
 		linkage: UnitLinkage,
-		requiresContext: boolean,
-		compacts: boolean
+		requiresContext: boolean
 	) {
 		super({
 			kind,
 			requiresContext,
-			compacts,
 			refs: linkage.refs,
-			errorContexts: linkage.errorContexts,
 			raisesIssues: linkage.opts.raisesIssues,
 			referencesText: linkage.opts.referencesText
 		})
@@ -639,8 +624,7 @@ const declareTraversal = (
 	const js = new TraversalCompiler(
 		kind,
 		linkage,
-		kind !== "Transform" || node.transformRequiresContext,
-		kind === "Apply" && node.compactsApply
+		kind !== "Transform" || node.transformRequiresContext
 	).indent()
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })
@@ -662,7 +646,6 @@ export interface RootUnit {
 	declaredTraversals: string[][]
 	members: UnitMember[]
 	refs: unknown[]
-	errorContexts: NodeCompiler.ErrorContexts
 	dependencies: Record<string, UnitDependency>
 	// the nodes whose names hold a value keyed by identity, which name them only within this pass
 	identityNamed: ReadonlySet<NodeId>
@@ -741,7 +724,6 @@ const unitsOf = (
 			declaredTraversals,
 			members: linkage.members,
 			refs: [...linkage.refs.keys()],
-			errorContexts: linkage.errorContexts,
 			dependencies: linkage.dependencies,
 			identityNamed: s.identityNamed,
 			unitsById
@@ -918,7 +900,6 @@ const compileContent = (
 		...(node.$.isBuiltin ? [] : [serialize(node.$)]),
 		...linkage.members.map(([name, source]) => `${name} = ${source}`),
 		[...linkage.refs.keys()].map(serialize).join(),
-		linkage.errorContexts.map(serialize).join(),
 		...(occurrence === undefined ? [] : [`#${occurrence}`])
 	].join("\n")
 	return {
@@ -1076,12 +1057,6 @@ const writePrecompiledUnit = (
 		})
 	}
 	for (const node of nodes) {
-		if ("errorContext" in node) {
-			accessorsByValue.set(
-				node.errorContext,
-				`${variablesByNode.get(node)}.errorContext`
-			)
-		}
 		if ("errorContext" in node || node.hasKind("union")) {
 			accessorsByValue.set(
 				node.failureSite,
@@ -1106,10 +1081,7 @@ const writePrecompiledUnit = (
 		}
 	}
 	const refs = unit.refs.map(value => accessorsByValue.get(value))
-	const errorContexts = unit.errorContexts.map(errorContext =>
-		accessorsByValue.get(errorContext)
-	)
-	if (refs.includes(undefined) || errorContexts.includes(undefined)) return
+	if (refs.includes(undefined)) return
 	const source = writeUnit(
 		Object.keys(unit.dependencies),
 		unit.refs.map((_, i) => `r${i}`),
@@ -1119,7 +1091,7 @@ const writePrecompiledUnit = (
 	const variablesOf = (nodes: BaseNode[]) =>
 		nodes.map(node => variablesById[node.id]).join(", ")
 	return `[(n0, $) => {
-${statements.map(statement => `\t${statement}\n`).join("")}\treturn [[${variablesOf(unit.declared)}], [${refs.join(", ")}], [${errorContexts.join(", ")}], [${variablesOf(dependencyNodes)}]]
+${statements.map(statement => `\t${statement}\n`).join("")}\treturn [[${variablesOf(unit.declared)}], [${refs.join(", ")}], [${variablesOf(dependencyNodes)}]]
 }, ${source}, ${JSON.stringify(dependencies)}, ${sizeOf(root)}]`
 }
 

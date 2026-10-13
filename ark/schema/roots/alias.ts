@@ -274,7 +274,7 @@ Resolution: ${printable(resolution)}`)
 			return
 		}
 		if (js.traversalKind === "Apply") {
-			js.invokeResolution(resolution, id)
+			js.return(js.resolution(resolution, id))
 			return
 		}
 		const traverse = js.invoke(resolution)

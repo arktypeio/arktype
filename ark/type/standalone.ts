@@ -4,6 +4,7 @@ import {
 	expressBranch,
 	expressBranches,
 	hasArkKind,
+	isDecidedByAllows,
 	isNode,
 	LazyGenericRoot,
 	pipeOf,
@@ -2034,10 +2035,10 @@ ${isTemplate ? "]" : ")"}`
 						runtimePathsByValue.has(node.predicate) && node.predicate.length < 2
 					))
 		)
-		// a compact Apply only reports what fails, so it reports into the errors the root returns
+		// an Apply Allows decides keeps no state but what fails, so it reports into the errors the root returns
 		const ctx =
 			this.baking.firstIssue ? "FirstIssueTraversal"
-			: root.compactsApply && root.rootApplyStrategy === "allows" ? "ArkErrors"
+			: !root.includesAlias && isDecidedByAllows(root) ? "ArkErrors"
 			: callbacks ? "Traversal"
 			: "InternalTraversal"
 		const apply = writeRootApply(root, nodeName)

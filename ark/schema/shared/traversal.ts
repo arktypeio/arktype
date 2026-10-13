@@ -922,6 +922,26 @@ export const applyResolution = (
 	exitResolution(ctx)
 }
 
+// undefined once a compiled Apply enters the resolution, else whether traversal continues past data it already knows
+export const enterApplied = (
+	ctx: InternalTraversal,
+	id: string,
+	data: unknown,
+	apply: TraverseApply
+): boolean | undefined => {
+	const entered = enterResolution(ctx, id, data, apply)
+	return entered === undefined ? undefined : entered || !ctx.failFast
+}
+
+// a compiled Apply exits the resolution it entered once its member returns whether traversal continues
+export const exitApplied = (
+	ctx: InternalTraversal,
+	continues: boolean
+): boolean => {
+	exitResolution(ctx)
+	return continues
+}
+
 export const applyMember = (
 	node: BaseNode,
 	data: unknown,
