@@ -1,4 +1,3 @@
-import { isomorphic } from "./isomorphic.ts"
 import { FileConstructor } from "./objectKinds.ts"
 import { baseNameOf } from "./serialize.ts"
 
@@ -11,7 +10,6 @@ export const arkUtilVersion = "0.56.7"
 
 export const initialRegistryContents = {
 	version: arkUtilVersion,
-	filename: /* @__PURE__ */ isomorphic.fileName(),
 	FileConstructor
 }
 

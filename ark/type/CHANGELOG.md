@@ -558,6 +558,10 @@ T(input).b === input.b
 
 A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config.
 
+### Drop `filename` from the global registry
+
+`$ark.filename`, the file arktype's registry was created in, is gone, since computing it read a stack trace each time arktype was imported. `$ark.version` still names the `@ark/util` version that created the registry.
+
 ### Annotate what JSON Schema can't express
 
 Pass `annotatingFallback` as `toJsonSchema()`'s `fallback` to write each constraint JSON Schema can't express as an `x-arktype-*` keyword instead of throwing:
