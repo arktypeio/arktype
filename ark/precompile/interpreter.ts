@@ -4,6 +4,7 @@ import {
 	hasArkKind,
 	isNode,
 	mergeConfigs,
+	ToJsonSchema,
 	type BaseNode,
 	type BaseRoot,
 	type CacheReach
@@ -22,7 +23,6 @@ import { InternalChainedMatchParser } from "arktype/internal/match.ts"
 import {
 	holeNamePattern,
 	holeNameMarker,
-	isJsonSchemaError,
 	keyOf,
 	type DefaultCheck,
 	type FoldedMember,
@@ -1982,8 +1982,8 @@ export class Interpreter {
 				introspection &&
 				introspection.member === "toJsonSchema" &&
 				this.opts.runtime !== "arktype" &&
-				isJsonSchemaError(e) &&
-				(e as Error).message.search(holeNamePattern) === -1
+				e instanceof ToJsonSchema.Error &&
+				e.message.search(holeNamePattern) === -1
 			) {
 				introspection.thrown = e
 				return

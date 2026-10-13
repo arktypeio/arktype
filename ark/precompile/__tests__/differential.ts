@@ -1,10 +1,9 @@
 import { fromHere } from "@ark/fs"
-import { hasArkKind, type BaseRoot } from "@ark/schema"
+import { hasArkKind, ToJsonSchema, type BaseRoot } from "@ark/schema"
 import { hasDomain, ParseError } from "@ark/util"
 import {
 	holeNameMarker,
 	introspectionMembers,
-	isJsonSchemaError,
 	keyOf,
 	precompileStandalone,
 	precompileStandaloneModules,
@@ -393,7 +392,7 @@ const foldedIntrospectionOf = (
 		try {
 			data = readFolded(node, member)
 		} catch (e) {
-			if (!isJsonSchemaError(e)) continue
+			if (!(e instanceof ToJsonSchema.Error)) continue
 			thrown = e
 		}
 		if (!printsName(thrown ? String(thrown) : data))

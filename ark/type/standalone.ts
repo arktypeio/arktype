@@ -646,14 +646,6 @@ export class StandaloneArtifact {
 		this.defaultChecks = (introspected ?? this.factory)?.defaultChecks ?? []
 		this.sharedModules = sharedModules
 		this.imports = imports
-		for (const name in exports) {
-			// an ES module can't export a name holding an unpaired surrogate
-			if (/\p{Cs}/u.test(name)) {
-				throwParseError(
-					writeUnprecompilableMessage(`the export name ${JSON.stringify(name)}`)
-				)
-			}
-		}
 		for (const [name, value] of Object.entries(exports)) {
 			const path = appendStringifiedKey("", name)
 			this.collectExport(value, path)
@@ -1540,7 +1532,6 @@ ${isTemplate ? "]" : ")"}`
 			} catch (e) {
 				if (e instanceof ToJsonSchema.Error)
 					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)}, ${this.writeData(e.context, { values })})`
-				if (isSymbolConversion(e)) return "runtime.serializeSymbol()"
 				// e.g. arktype's, where a view of the Type intersects what the Type keeps apart, as a defaulted key's output and an index signature
 				if (e === thrown && e instanceof ParseError)
 					return `runtime.throwParseError(${this.emitString(e.message)})`
@@ -2164,20 +2155,6 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 }
 
 const { getTime } = Date.prototype
-
-export const isJsonSchemaError = (e: unknown): boolean =>
-	e instanceof ToJsonSchema.Error || isSymbolConversion(e)
-
-// each engine words the TypeError of printing a symbol its own way, so the runtime raises it again rather than bake the build's
-const isSymbolConversion = (e: unknown): boolean => {
-	if (!(e instanceof TypeError)) return false
-	try {
-		serializePrimitive(Symbol() as never)
-	} catch (conversion) {
-		return e.message === (conversion as TypeError).message
-	}
-	return false
-}
 
 // arktype calls a default's thunk again each time it writes a schema holding the default
 const assertBakeableJsonSchema = (root: BaseRoot): void => {

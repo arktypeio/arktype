@@ -23,7 +23,6 @@ import {
 	getBuiltinNameOfConstructor,
 	hasDomain,
 	prototypeOf,
-	serializePrimitive,
 	throwError,
 	throwParseError,
 	type Fn,
@@ -319,10 +318,6 @@ export const throwJsonSchemaError = (
 ): never => {
 	throw new ToJsonSchemaError(code, message, context)
 }
-
-// e.g. printing a ToJsonSchemaError's context keyed by a symbol, whose TypeError each engine words its own way
-export const serializeSymbol = (): string =>
-	serializePrimitive(Symbol() as never)
 
 export const throwUnbaked = (reason: string): never =>
 	throwError(writeUnbakedMessage(reason))

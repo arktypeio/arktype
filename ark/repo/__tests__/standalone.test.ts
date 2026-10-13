@@ -681,33 +681,6 @@ name is missing`)
 		attest(observe(validator(early), early)).equals(observe(T(early), early))
 	})
 
-	it("raises arktype's TypeError printing a symbol in a JSON Schema's error", async () => {
-		const key = Symbol("key")
-		const T = type({ [key]: "string" })
-		const thrown = (write: () => unknown) => {
-			try {
-				write()
-			} catch (e) {
-				return [(e as Error).constructor.name, (e as Error).message]
-			}
-		}
-		const validator = (
-			await loadFactory(T, [["symbol", "key", key]], ["toJsonSchema"])
-		)(key)
-		attest(thrown(() => validator.toJsonSchema())).equals(
-			thrown(() => T.toJsonSchema())
-		)
-		// the engine raising it words its message, so the build doesn't bake its own
-		attest(
-			precompileStandalone(
-				{
-					T: { type: T, params: [{ kind: "symbol", label: "key", value: key }] }
-				},
-				{ introspection: ["toJsonSchema"] }
-			).code.includes("runtime.serializeSymbol()")
-		).equals(true)
-	})
-
 	it("throws arktype's ParseError where the view of a Type its JSON Schema writes can't be created", async () => {
 		// the output requires the defaulted key, which the index signature's value excludes
 		const T = type({ a: "string = 'a'" }).and({ "[string]": [] })
@@ -1187,9 +1160,6 @@ config.onUndeclaredKey = "reject"`
 		attest(() =>
 			precompileStandalone({ T: type.enumerated(type({ a: "string" })) })
 		).throws(writeUnprecompilableMessage("the unit Type<{ a: string }>"))
-		attest(() => precompileStandalone({ "\uD800": type("string") })).throws(
-			writeUnprecompilableMessage('the export name "\\ud800"')
-		)
 		const T = scope({}, { domain: { message: () => "configured" } }).type(
 			"string"
 		)
