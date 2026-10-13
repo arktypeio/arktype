@@ -8,6 +8,7 @@ import {
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
+import type { IntersectionNode } from "../roots/intersection.ts"
 import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
 import type { FailureSite, SiteContext, UnionSite } from "./issues.ts"
 import { registeredReference } from "./registry.ts"
@@ -424,6 +425,13 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			!checksAllowsFirst ? ""
 			: condition === undefined ? `!${this.allows(node, value)} && `
 			: `!(${condition}) && `
+		// a refined basis Allows rejects failed its refinement unless its basis failed, so the refinement isn't checked again
+		if (checksAllowsFirst && isRefinedBasis(node)) {
+			return this.if(
+				`${allows}ctx.failsAt(${node.basis!.compileCondition(this, value)} ? ${this.site(node.prestructurals[0])} : ${this.site(node.basis!)}, data, ${key})`,
+				() => this.return(false)
+			)
+		}
 		return this.if(
 			`${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${value}, ${key})`,
 			() => this.return(false)
@@ -577,3 +585,10 @@ export const isDecidedByAllows = (node: BaseNode): boolean => {
 		if (node.referencesById[id].hasKind("predicate")) return false
 	return true
 }
+
+// a basis with one refinement, whose failing child Apply reports where a parent checks it inline
+export const isRefinedBasis = (node: BaseNode): node is IntersectionNode =>
+	node.hasKind("intersection") &&
+	node.basis !== null &&
+	node.children.length === 2 &&
+	node.prestructurals.length === 1

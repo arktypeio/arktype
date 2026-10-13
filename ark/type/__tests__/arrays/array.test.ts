@@ -347,6 +347,15 @@ value at [1] must be a number (was boolean)`)
 value at [1] must be a string (was a number)`)
 	})
 
+	it("reports each element of a pattern's array at the check it failed", () => {
+		const Patterns = type(/^a+$/).array()
+		// a Type is compiled when it's used again
+		Patterns([])
+		attest(Patterns([1, "b", "a"]).toString())
+			.snap(`value at [0] must be a string (was a number)
+value at [1] must be matched by ^a+$ (was "b")`)
+	})
+
 	it("accepts arrays from another realm", () => {
 		const foreign = runInContext("[1, 2, 3]", createContext())
 		// Same value identity check would fail: foreign instanceof Array === false

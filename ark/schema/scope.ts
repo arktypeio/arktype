@@ -76,6 +76,7 @@ import type { Union } from "./roots/union.ts"
 import type { Unit } from "./roots/unit.ts"
 import {
 	CompiledFunction,
+	isRefinedBasis,
 	NodeCompiler,
 	type InvokeOptions,
 	type IssueSiteOf,
@@ -1018,7 +1019,13 @@ const writePrecompiledUnit = (
 	const statements: [from: number, statement: string][] = []
 	// each node is read through the edges referencesById is collected from, up to the roots no parent checks inline, whose own units bind them
 	for (let i = 0; i < nodes.length; i++) {
-		if (i !== 0 && nodes[i].isRoot() && !nodes[i].compileCondition) continue
+		if (
+			i !== 0 &&
+			nodes[i].isRoot() &&
+			!nodes[i].compileCondition &&
+			!isRefinedBasis(nodes[i])
+		)
+			continue
 		for (const key of ["children", "referencedBesidesChildren"] as const) {
 			const referenced = nodes[i][key]
 			for (let j = 0; j < referenced.length; j++) {
