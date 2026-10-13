@@ -857,6 +857,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			js.initializeErrorCount()
 		}
 
+		// with nothing to loop over, a compact Apply continues only while each child does
+		if (js.compacts && !this.index && this.undeclared !== "reject") {
+			const children = [
+				...this.props,
+				...(this.sequence ? [this.sequence] : [])
+			]
+			return js.return(
+				children.map(child => js.invoke(child)).join(" && ") || "true"
+			)
+		}
+
 		for (const prop of this.props) {
 			js.check(prop)
 			if (js.traversalKind === "Apply") js.returnIfFailFast()
@@ -879,7 +890,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		} else if (this.undeclared === "reject")
 			js.forIn("data", () => this.compileExhaustiveEntry(js, "string"))
 
-		if (js.traversalKind === "Allows") return js.return(true)
+		return js.returnContinues()
 	}
 
 	private compileTransform(js: NodeCompiler): void {
@@ -1221,14 +1232,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.undeclared === "reject" && keyDomain === "string") {
 			const props = this.props.filter(prop => typeof prop.key === keyDomain)
 			if (props.length) compileDeclaredKeySwitch(js, props)
+			const input =
+				js.raisesIssues ?
+					`{ code: "undeclared", data: data[k], relativePath: [k] }`
+				:	`{ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} }`
 			const reject = () =>
-				js.traversalKind === "Allows" ?
-					js.return(false)
-				:	js
+				js.traversalKind === "Allows" ? js.return(false)
+				: js.compacts ? js.if(`ctx.failsWith(${input})`, () => js.return(false))
+				: js
 						.line(
 							js.raisesIssues ?
-								`ctx.failsWith({ code: "undeclared", data: data[k], relativePath: [k] })`
-							:	`${js.ref(errorFromContext)}(ctx, { code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`
+								`ctx.failsWith(${input})`
+							:	`${js.ref(errorFromContext)}(ctx, ${input})`
 						)
 						.if("ctx.failFast", () => js.return())
 			const declaresKey = this._compileDeclaresKey(js)

@@ -573,11 +573,13 @@ class TraversalCompiler extends NodeCompiler {
 	constructor(
 		kind: TraversalKind,
 		linkage: UnitLinkage,
-		requiresContext: boolean
+		requiresContext: boolean,
+		compacts: boolean
 	) {
 		super({
 			kind,
 			requiresContext,
+			compacts,
 			refs: linkage.refs,
 			errorContexts: linkage.errorContexts,
 			raisesIssues: linkage.opts.raisesIssues,
@@ -587,11 +589,20 @@ class TraversalCompiler extends NodeCompiler {
 	}
 
 	override invoke(node: BaseNode, opts?: InvokeOptions): string {
+		this.reach(node)
+		return super.invoke(node, opts)
+	}
+
+	override traversal(node: BaseNode, kind: TraversalKind): string {
+		this.reach(node)
+		return super.traversal(node, kind)
+	}
+
+	reach(node: BaseNode): void {
 		if (!this.linkage.referencesById[node.id]) {
 			this.linkage.referencesById[node.id] = node
 			this.linkage.reached.push(node)
 		}
-		return super.invoke(node, opts)
 	}
 
 	// code can name a node it doesn't invoke, like the Allows passed to allowsInBranchBy, which the unit then declares or takes from the unit it reuses
@@ -628,7 +639,8 @@ const declareTraversal = (
 	const js = new TraversalCompiler(
 		kind,
 		linkage,
-		kind !== "Transform" || node.transformRequiresContext
+		kind !== "Transform" || node.transformRequiresContext,
+		kind === "Apply" && node.compactsApply
 	).indent()
 	node.compile(js)
 	const name = js.referenceToId(node.id, { kind })
@@ -1067,6 +1079,12 @@ const writePrecompiledUnit = (
 			accessorsByValue.set(
 				node.errorContext,
 				`${variablesByNode.get(node)}.errorContext`
+			)
+		}
+		if ("errorContext" in node || node.hasKind("union")) {
+			accessorsByValue.set(
+				node.failureSite,
+				`${variablesByNode.get(node)}.failureSite`
 			)
 		}
 		// a discriminant miss reads what the union's getters derive

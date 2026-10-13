@@ -358,34 +358,47 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		}
 
 		const serializedPathSegments = discriminant.path.map(k => js.serialize(k))
-
-		if (js.raisesIssues) {
-			js.line(
-				`ctx.failsWith({ code: "discriminant", data: ${value}, description: ${js.text(expectedOf(this.discriminantMeta, this.discriminantDescription))}${serializedPathSegments.length ? `, relativePath: [${serializedPathSegments}]` : ""} })`
-			)
-			return
-		}
-
-		const absent =
+		const absent = () =>
 			discriminant.path.length ?
 				`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(discriminant.path)}, data)`
 			:	"false"
-
-		js.line(`${js.ref(errorFromContext)}(ctx, {
+		const input =
+			js.raisesIssues ?
+				`{ code: "discriminant", data: ${value}, description: ${js.text(expectedOf(this.discriminantMeta, this.discriminantDescription))}${serializedPathSegments.length ? `, relativePath: [${serializedPathSegments}]` : ""} }`
+			:	`{
 	code: "discriminant",
 	discriminantKind: "${discriminant.kind}",
 	cases: ${js.ref(this.discriminantCases.cases)},
 	onKey: ${discriminant.path.length !== 0},
-	absent: ${absent},
+	absent: ${absent()},
 	description: ${js.ref(this)}.discriminantDescription,
 	relativePath: [${serializedPathSegments}],
 	data: ${value},
 	meta: ${js.ref(this.discriminantMeta)}
-})`)
+}`
+		if (js.compacts) js.return(`!ctx.failsWith(${input})`)
+		else if (js.raisesIssues) js.line(`ctx.failsWith(${input})`)
+		else js.line(`${js.ref(errorFromContext)}(ctx, ${input})`)
 	}
 
 	private compileIndiscriminable(js: NodeCompiler): void {
-		if (js.traversalKind === "Apply") {
+		if (js.compacts) {
+			for (const branch of this.branches) {
+				js.if(
+					branch.compileCondition?.(js, "data") ??
+						js.invoke(branch, { kind: "Allows" }),
+					() => js.return(true)
+				)
+			}
+			// a standalone union's issue reads only what the union describes, so its branches aren't run again
+			const branches =
+				js.raisesIssues ?
+					[]
+				:	this.branches.map(branch => js.traversal(branch, "Apply"))
+			js.return(
+				`!ctx.failsUnion([${branches.join(", ")}], ${js.site(this)}, data)`
+			)
+		} else if (js.traversalKind === "Apply") {
 			if (!js.raisesIssues) js.const("errors", "[]")
 			for (const branch of this.branches) {
 				js.line("ctx.pushBranch()")

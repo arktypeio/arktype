@@ -360,7 +360,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			return js.traversalKind === "Apply" ? js.returnIfFailFast() : js
 		})
 
-		if (js.traversalKind === "Allows") js.return(true)
+		js.returnContinues()
 	}
 
 	private compileTransform(js: NodeCompiler): void {
@@ -408,7 +408,9 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				continue
 			}
 			js.if(`${dataIndex} >= data.length`, () =>
-				js.traversalKind === "Allows" ? js.return(true) : js.return()
+				js.traversalKind === "Allows" || js.compacts ?
+					js.return(true)
+				:	js.return()
 			)
 			compileElement(dataIndex, node)
 		}

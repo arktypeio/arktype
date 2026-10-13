@@ -226,7 +226,10 @@ export const expectedOf = <description extends string | undefined>(
 // a site only traversal reads, so a standalone build writes it as it is rather than as a value a program could reach
 export const failureSites = new WeakSet<object>()
 
-const issueSitesByContext = new WeakMap<object, object>()
+const issueSitesByContext = new WeakMap<
+	object,
+	{ alone?: object; required?: object }
+>()
 
 const requiredIssue = { code: "required" } as const
 
@@ -237,28 +240,30 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 		missing?: BaseErrorContext
 	}
 	const context = value ?? (missing ? requiredIssue : site)
-	let issueSite = issueSitesByContext.get(context)
-	if (!issueSite) {
-		issueSite =
-			value ?
-				{
-					value: {
-						code: value.code,
-						description: expectedOf(value.meta, value.description)
-					}
-				}
-			: missing ? { missing: requiredIssue }
-			: { description: (site as UnionSite).description }
-		failureSites.add(issueSite)
-		issueSitesByContext.set(context, issueSite)
-	}
-	return issueSite
+	const variants = issueSitesByContext.get(context) ?? {}
+	issueSitesByContext.set(context, variants)
+	const variant = missing ? "required" : "alone"
+	if (variants[variant]) return variants[variant]
+	const issueSite =
+		value ?
+			{
+				value: {
+					code: value.code,
+					description: expectedOf(value.meta, value.description)
+				},
+				...(missing && { missing: requiredIssue })
+			}
+		: missing ? { missing: requiredIssue }
+		: { description: (site as UnionSite).description }
+	failureSites.add(issueSite)
+	return (variants[variant] = issueSite)
 }
 
 export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
 		requiresContext?: boolean
+		compacts?: boolean
 		refs?: Refs
 		errorContexts?: ErrorContexts
 		raisesIssues?: boolean | undefined
@@ -273,6 +278,8 @@ export declare namespace NodeCompiler {
 export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
 	requiresContext: boolean
+	// an Apply reporting each failure through ctx's failure methods and returning false once traversal stops
+	readonly compacts: boolean
 	readonly refs: NodeCompiler.Refs | undefined
 	readonly errorContexts: NodeCompiler.ErrorContexts | undefined
 	readonly raisesIssues: boolean
@@ -283,6 +290,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		super("data", "ctx")
 		this.traversalKind = ctx.kind
 		this.requiresContext = ctx.requiresContext ?? true
+		this.compacts = ctx.compacts ?? false
 		this.refs = ctx.refs
 		this.errorContexts = ctx.errorContexts
 		this.raisesIssues = ctx.raisesIssues ?? false
@@ -383,7 +391,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	error(node: BaseNode, key?: string, data = "data"): string {
-		return this.raisesIssues ?
+		return this.raisesIssues || this.compacts ?
 				`ctx.failsAt(${this.site(node)}, ${data}${key === undefined ? "" : `, ${key}`})`
 			:	`ctx.errorFromNodeContext(${this.errorContext((node as never as { errorContext: BaseErrorContext }).errorContext)}, ${data})`
 	}
@@ -403,17 +411,29 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	initializeErrorCount(): this {
-		return this.const("errorCount", "ctx.currentErrorCount")
+		return this.compacts ? this : (
+				this.const("errorCount", "ctx.currentErrorCount")
+			)
 	}
 
 	returnIfFail(): this {
 		return this.if("ctx.currentErrorCount > errorCount", () => this.return())
 	}
 
+	// a compact check returns false itself once traversal stops
 	returnIfFailFast(): this {
-		return this.if("ctx.failFast && ctx.currentErrorCount > errorCount", () =>
-			this.return()
-		)
+		return this.compacts ? this : (
+				this.if("ctx.failFast && ctx.currentErrorCount > errorCount", () =>
+					this.return()
+				)
+			)
+	}
+
+	// Allows and a compact Apply return whether what they checked lets traversal continue
+	returnContinues(): this {
+		return this.traversalKind === "Allows" || this.compacts ?
+				this.return(true)
+			:	this
 	}
 
 	traverseKey(
@@ -426,6 +446,27 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			(this.loopDepth > 0 ||
 				(node.hasKind("union") && !node.compiledDiscriminant)) &&
 			isDecidedByAllows(node)
+		if (this.compacts) {
+			const condition =
+				node.hasKind("union") && !checksAllowsFirst ?
+					undefined
+				:	node.compileCondition?.(this, accessExpression)
+			if (condition !== undefined && !node.hasKind("union")) {
+				return this.if(
+					`!(${condition}) && ${this.error(node, keyExpression)}`,
+					() => this.return(false)
+				)
+			}
+			const allows =
+				!checksAllowsFirst ? ""
+				: condition === undefined ?
+					`!${this.invoke(node, { arg: accessExpression, kind: "Allows" })} && `
+				:	`!(${condition}) && `
+			return this.if(
+				`${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${accessExpression}, ${keyExpression})`,
+				() => this.return(false)
+			)
+		}
 		const condition =
 			checksAllowsFirst ?
 				node.compileCondition?.(this, accessExpression)
@@ -589,6 +630,16 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 
 	check(node: BaseNode, opts?: InvokeOptions): this {
 		const arg = opts?.arg ?? this.data
+		if (this.compacts && !opts?.kind) {
+			const condition =
+				node.hasKind("union") ? undefined : node.compileCondition?.(this, arg)
+			return this.if(
+				condition === undefined ?
+					`!${this.invoke(node, opts)}`
+				:	`!(${condition}) && ${this.error(node, undefined, arg)}`,
+				() => this.return(false)
+			)
+		}
 		const condition = opts?.kind ? undefined : this.conditionOf(node, arg)
 		if (condition !== undefined) {
 			return this.if(`!(${condition})`, () =>
@@ -615,9 +666,16 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 
 	checkLeaf(node: BaseNode): this {
 		const condition = node.compileCondition!(this, this.data)!
-		return this.traversalKind === "Allows" ?
-				this.return(condition)
-			:	this.if(`!(${condition})`, () => this.fail(node, this.data))
+		return (
+			this.traversalKind === "Allows" ? this.return(condition)
+			: this.compacts ? this.return(`${condition} || !${this.error(node)}`)
+			: this.if(`!(${condition})`, () => this.fail(node, this.data))
+		)
+	}
+
+	// a traversal passed as a value rather than called
+	traversal(node: BaseNode, kind: TraversalKind): string {
+		return this.referenceToId(node.id, { kind })
 	}
 
 	// a leaf's condition is its whole check, so it reports its error without checking again

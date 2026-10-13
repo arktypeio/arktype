@@ -104,13 +104,33 @@ export abstract class BaseProp<
 
 	compile(js: NodeCompiler): void {
 		const key = js.serialize(this.key)
-		js.if(`${key} in data`, () =>
-			js.traverseKey(key, `data${js.prop(this.key)}`, this.value)
-		)
+		const value = `data${js.prop(this.key)}`
+		// a missing key reads undefined, which fails a value whose every branch has a basis other than undefined, so its key is checked only to report it
+		if (
+			js.compacts &&
+			this.hasKind("required") &&
+			this.value.branches.every(branch => {
+				const basis = branch.hasKind("intersection") ? branch.basis : branch
+				return (
+					!!basis?.isBasis() &&
+					!(basis.hasKind("unit") && basis.unit === undefined)
+				)
+			})
+		) {
+			js.return(
+				this.value.isBasis() ?
+					`${this.value.compileCondition(js, value)} || !${js.error(this, key)}`
+				:	`!ctx.failsIn(${js.traversal(this.value, "Apply")}, ${value}, ${key}, ${js.site(this)}, data)`
+			)
+			return
+		}
+
+		js.if(`${key} in data`, () => js.traverseKey(key, value, this.value))
 
 		if (this.hasKind("required")) {
 			js.else(() =>
 				js.traversalKind !== "Apply" ? js.return(false)
+				: js.compacts ? js.if(js.error(this, key), () => js.return(false))
 				: js.raisesIssues ? js.line(js.error(this, key))
 				: js
 						.line(`ctx.path.push(${key})`)
@@ -119,6 +139,6 @@ export abstract class BaseProp<
 			)
 		}
 
-		if (js.traversalKind === "Allows") js.return(true)
+		js.returnContinues()
 	}
 }

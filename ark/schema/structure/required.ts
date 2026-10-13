@@ -77,8 +77,12 @@ export class RequiredNode extends BaseProp<"required"> {
 		}))
 	}
 
+	// a missing key reads undefined, which fails a basis too, so where one is its value, its failure shares the key's site
 	override get failureSite(): FailureSite {
-		return (this._failureSite ??= { missing: this.errorContext }) as FailureSite
+		return (this._failureSite ??=
+			this.value.isBasis() ?
+				{ value: this.value.errorContext, missing: this.errorContext }
+			:	{ missing: this.errorContext }) as FailureSite
 	}
 }
 

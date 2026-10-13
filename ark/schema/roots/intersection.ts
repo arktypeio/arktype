@@ -269,6 +269,8 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			return
 		}
 
+		if (js.compacts) return this.compileCompactApply(js)
+
 		js.initializeErrorCount()
 
 		if (this.basis) {
@@ -303,6 +305,39 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			}
 			js.check(this.inner.predicate[this.inner.predicate.length - 1]!)
 		}
+	}
+
+	// a failed basis, or prestructural before a structure, stops this node, though its parent continues unless ctx fails fast
+	private compileCompactApply(js: NodeCompiler): void {
+		const { basis, prestructurals, structure } = this
+		if (basis) {
+			const condition = basis.compileCondition(js, "data")
+			if (this.children.length === 1) {
+				js.return(`${condition} || !${js.error(basis)}`)
+				return
+			}
+			js.if(`!(${condition})`, () => js.return(`!${js.error(basis)}`))
+		}
+		if (!structure) {
+			for (const node of prestructurals) js.check(node)
+			js.return(true)
+			return
+		}
+		const conditions = prestructurals.map(node =>
+			node.compileCondition(js, "data")
+		)
+		if (conditions.length === 1) {
+			js.if(`!(${conditions[0]})`, () =>
+				js.return(`!${js.error(prestructurals[0])}`)
+			)
+		} else if (conditions.length) {
+			js.if(`!(${conditions.map(c => `(${c})`).join(" && ")})`, () =>
+				js.return(
+					`!(${conditions.map((c, i) => `(!(${c}) && ${js.error(prestructurals[i])})`).join(" || ")})`
+				)
+			)
+		}
+		js.return(js.invoke(structure))
 	}
 }
 
