@@ -4,25 +4,25 @@ import { type } from "arktype"
 bench.baseline(() => type("never"))
 
 bench("single-quoted", () => type("'nineteen characters'")).types([
-	590,
+	588,
 	"instantiations"
 ])
 
 bench("double-quoted", () => type('"nineteen characters"')).types([
-	590,
+	588,
 	"instantiations"
 ])
 
 bench("regex literal", () => type("/nineteen characters/")).types([
-	1854,
+	1852,
 	"instantiations"
 ])
 
-bench("keyword", () => type("string")).types([443, "instantiations"])
+bench("keyword", () => type("string")).types([441, "instantiations"])
 
-bench("number", () => type("-98765.4321")).types([457, "instantiations"])
+bench("number", () => type("-98765.4321")).types([455, "instantiations"])
 
-bench("bigint", () => type("-987654321n")).types([529, "instantiations"])
+bench("bigint", () => type("-987654321n")).types([527, "instantiations"])
 
 bench("object", () => type({ foo: "string" })).types([717, "instantiations"])
 
@@ -39,4 +39,4 @@ bench("union", () =>
 		.or({
 			kind: "'pleb'"
 		})
-).types([3641, "instantiations"])
+).types([3574, "instantiations"])
