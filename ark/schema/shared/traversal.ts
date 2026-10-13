@@ -413,7 +413,8 @@ export const transformed = (
 export const pipeOf = (node: BaseNode): TraversePipe =>
 	node.includesAlias ? pipe
 	: node.transforms ? pipeTransformed
-	: pipeChecked
+	: node.allowsRequiresContext ? pipeChecked
+	: pipeApplied
 
 export type TraversePipe = (
 	ctx: InternalTraversal,
@@ -423,6 +424,13 @@ export type TraversePipe = (
 
 export const pipeChecked: TraversePipe = (ctx, node, data) =>
 	allowsPiped(ctx, node, data) ? data : errorsOf(ctx)
+
+// a node that transforms nothing and passes ctx to no predicate reads nothing a pipe sets on the traversal
+export const pipeApplied: TraversePipe = (ctx, node, data) => {
+	if (node.allows(data)) return data
+	node.traverseApply(data, ctx)
+	return errorsOf(ctx)
+}
 
 export const pipeTransformed: TraversePipe = (ctx, node, data) =>
 	allowsPiped(ctx, node, data) ?

@@ -69,6 +69,7 @@ export {
 	isAbsent,
 	mergeTransformed,
 	pipe,
+	pipeApplied,
 	pipeChecked,
 	pipeTransformed,
 	runtimeConfig,
