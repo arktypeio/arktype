@@ -33,40 +33,46 @@ const typia = (await import(
 	join(out, "typia", "typiaScenarios.js")
 )) as typeof typiaScenarios
 
-const standalonePath = join(out, "scoreboard.standalone.js")
+const standaloneExports = {
+	Moltar: s.Moltar.arktype,
+	MoltarStrict: s.MoltarStrict.arktype,
+	MoltarStrip: s.MoltarStrip.arktype,
+	Product: s.Product.arktype,
+	ProductStrip: s.ProductStrip.arktype,
+	Items: s.Items.arktype,
+	Patterns: s.Patterns.arktype,
+	Discriminated: s.Discriminated.arktype,
+	Constraints: s.Constraints.arktype,
+	Morph: s.Morph.arktype,
+	Defaults: s.Defaults.arktype,
+	Tree: s.Tree.arktype,
+	...Object.fromEntries(s.Rotating.map((t, i) => [`Rotating${i}`, t.arktype]))
+}
 
-if (!process.env.BENCH_LIBRARY) {
-	writeFileSync(
-		standalonePath,
-		precompileStandalone({
-			Moltar: s.Moltar.arktype,
-			MoltarStrict: s.MoltarStrict.arktype,
-			MoltarStrip: s.MoltarStrip.arktype,
-			Product: s.Product.arktype,
-			ProductStrip: s.ProductStrip.arktype,
-			Items: s.Items.arktype,
-			Patterns: s.Patterns.arktype,
-			Discriminated: s.Discriminated.arktype,
-			Constraints: s.Constraints.arktype,
-			Morph: s.Morph.arktype,
-			Defaults: s.Defaults.arktype,
-			Tree: s.Tree.arktype,
-			...Object.fromEntries(
-				s.Rotating.map((t, i) => [`Rotating${i}`, t.arktype])
-			)
-		}).code
+const standaloneOf = async (errors: "all" | "first") => {
+	const path = join(out, `scoreboard.standalone.${errors}.js`)
+	if (!process.env.BENCH_LIBRARY) {
+		writeFileSync(
+			path,
+			precompileStandalone(standaloneExports, { errors }).code
+		)
+	}
+	// standalone validators refuse to load beside arktype unless its claim is cleared
+	delete (globalThis as Record<string, unknown>)[
+		noSuggest("loadedArktypeEntry")
+	]
+	// each export is a getter, creating the artifact's validators at its first call
+	return Object.fromEntries(
+		Object.entries((await import(path)) as Record<string, () => unknown>).map(
+			([name, get]) => [name, get()]
+		)
 	)
 }
 
-// standalone validators refuse to load beside arktype unless its claim is cleared
-delete (globalThis as Record<string, unknown>)[noSuggest("loadedArktypeEntry")]
+const standalone = await standaloneOf("all")
 
-// each export is a getter, creating the artifact's validators at its first call
-const standalone: Record<string, unknown> = Object.fromEntries(
-	Object.entries(
-		(await import(standalonePath)) as Record<string, () => unknown>
-	).map(([name, get]) => [name, get()])
-)
+// built with errors: "first", which stops at the first issue
+const standaloneFirst = await standaloneOf("first")
 
 const ajvFirst = ajvOf()
 const ajvAll = ajvOf({ allErrors: true })
@@ -113,13 +119,18 @@ const isInvalidMode = (mode: Mode) =>
 	mode === "issues" || mode === "errors" || mode === "first"
 
 // ArkErrors computes its messages when summary is read
-const arkArm = (mode: Mode, validator: unknown): ArmSpec =>
+// the JIT has no first-error mode
+const arkArm = (
+	mode: Mode,
+	validator: unknown,
+	hasFirstMode: boolean
+): ArmSpec =>
 	mode === "allows" ? { validator, body: f => `r = ${f}.allows(data)` }
 	: mode === "errors" || mode === "first" ?
 		{
 			validator,
 			body: f => `r = ${f}(data).summary`,
-			nearest: mode === "first"
+			nearest: mode === "first" && !hasFirstMode
 		}
 	:	{ validator, body: f => `r = ${f}(data)` }
 
@@ -235,75 +246,97 @@ const caseOf = (
 			validators.typebox === undefined ?
 				undefined
 			:	typeboxArm(mode, validators.typebox, opts?.typeboxMethod ?? "Check"),
-		arktype: arkArm(mode, validators.arktype),
-		standalone: arkArm(mode, validators.standalone)
+		arktype: arkArm(mode, validators.arktype, false),
+		standalone: arkArm(mode, validators.standalone, true)
 	}
 })
 
-const moltar = (typiaValidator: unknown): Validators => ({
+const moltar = (
+	typiaValidator: unknown,
+	standaloneExports = standalone
+): Validators => ({
 	...s.Moltar,
-	standalone: standalone.Moltar,
+	standalone: standaloneExports.Moltar,
 	typia: typiaValidator
 })
 
-const moltarStrict = (typiaValidator: unknown): Validators => ({
+const moltarStrict = (
+	typiaValidator: unknown,
+	standaloneExports = standalone
+): Validators => ({
 	...s.MoltarStrict,
-	standalone: standalone.MoltarStrict,
+	standalone: standaloneExports.MoltarStrict,
 	typia: typiaValidator
 })
 
-const product = (typiaValidator: unknown): Validators => ({
+const product = (
+	typiaValidator: unknown,
+	standaloneExports = standalone
+): Validators => ({
 	...s.Product,
-	standalone: standalone.Product,
+	standalone: standaloneExports.Product,
 	typia: typiaValidator
 })
 
-const items = (typiaValidator: unknown): Validators => ({
+const items = (
+	typiaValidator: unknown,
+	standaloneExports = standalone
+): Validators => ({
 	...s.Items,
-	standalone: standalone.Items,
+	standalone: standaloneExports.Items,
 	typia: typiaValidator
 })
 
-const patterns = (typiaValidator: unknown): Validators => ({
+const patterns = (
+	typiaValidator: unknown,
+	standaloneExports = standalone
+): Validators => ({
 	...s.Patterns,
-	standalone: standalone.Patterns,
+	standalone: standaloneExports.Patterns,
 	typia: typiaValidator
 })
 
-const invalidCases = (mode: "issues" | "errors" | "first"): Case[] => [
-	caseOf(
-		"moltar",
-		mode,
-		[s.moltarInvalidData],
-		moltar(mode === "first" ? typia.MoltarAssert : typia.Moltar)
-	),
-	caseOf(
-		"moltar strict",
-		mode,
-		[s.moltarExtraKeysData],
-		moltarStrict(
-			mode === "first" ? typia.MoltarStrictAssert : typia.MoltarStrict
+const invalidCases = (mode: "issues" | "errors" | "first"): Case[] => {
+	const exports = mode === "first" ? standaloneFirst : standalone
+	return [
+		caseOf(
+			"moltar",
+			mode,
+			[s.moltarInvalidData],
+			moltar(mode === "first" ? typia.MoltarAssert : typia.Moltar, exports)
+		),
+		caseOf(
+			"moltar strict",
+			mode,
+			[s.moltarExtraKeysData],
+			moltarStrict(
+				mode === "first" ? typia.MoltarStrictAssert : typia.MoltarStrict,
+				exports
+			)
+		),
+		caseOf(
+			"product",
+			mode,
+			[s.productInvalidData],
+			product(mode === "first" ? typia.ProductAssert : typia.Product, exports)
+		),
+		caseOf(
+			"items",
+			mode,
+			[s.itemsInvalidData],
+			items(mode === "first" ? typia.ItemsAssert : typia.Items, exports)
+		),
+		caseOf(
+			"patterns",
+			mode,
+			[s.patternsInvalidData],
+			patterns(
+				mode === "first" ? typia.PatternsAssert : typia.Patterns,
+				exports
+			)
 		)
-	),
-	caseOf(
-		"product",
-		mode,
-		[s.productInvalidData],
-		product(mode === "first" ? typia.ProductAssert : typia.Product)
-	),
-	caseOf(
-		"items",
-		mode,
-		[s.itemsInvalidData],
-		items(mode === "first" ? typia.ItemsAssert : typia.Items)
-	),
-	caseOf(
-		"patterns",
-		mode,
-		[s.patternsInvalidData],
-		patterns(mode === "first" ? typia.PatternsAssert : typia.Patterns)
-	)
-]
+	]
+}
 
 const byLibrary = (entries: readonly object[], library: Library) =>
 	entries.map(entry => entry[library as never] as unknown)
@@ -463,8 +496,9 @@ const outputOf: Record<Library, (result: any, input: unknown) => unknown> = {
 	standalone: result => (isArkErrors(result) ? failed : result)
 }
 
-// arktype's errors are counted rather than an array
-const isArkErrors = (result: any) => result?.constructor?.name === "ArkErrors"
+// arktype's errors, and a standalone build's, are counted rather than an array
+const isArkErrors = (result: any) =>
+	typeof result?.count === "number" && "summary" in result
 
 const hasIssues = (result: any) =>
 	result instanceof Error ||
@@ -631,7 +665,7 @@ const modeTitles: Record<Mode, string> = {
 	errors:
 		"invalid data, every error with message text: arktype reads summary, typia ~standard.validate, ajv has messages: true",
 	first:
-		"invalid data, first error only, with message text (* has no first-error mode: all-errors path)",
+		'invalid data, first error only, with message text: standalone built with errors: "first" (* has no first-error mode: all-errors path)',
 	allows: "boolean check (* has no boolean API: parse)"
 }
 

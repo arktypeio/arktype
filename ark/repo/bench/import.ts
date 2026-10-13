@@ -72,7 +72,7 @@ const parsed: Record<Scenario, [name: string, data: object]> = {
 	]
 }
 
-// a Type returns ArkErrors, an array, for invalid data
+// a Type returns errors with a count for invalid data
 const isValid: Record<Library, (name: string) => string> = {
 	valibot: name => `m.safeParse(m.${name}, data).success`,
 	zod: name => `m.${name}.safeParse(data).success`,
@@ -80,8 +80,8 @@ const isValid: Record<Library, (name: string) => string> = {
 	typia: name => `m.${name}(data).success`,
 	ajv: name => `m.${name}(data)`,
 	typebox: name => `m.${name}.Check(data)`,
-	arktype: name => `!Array.isArray(m.${name}(data))`,
-	standalone: name => `!Array.isArray(m.${name}(data))`
+	arktype: name => `typeof m.${name}(data)?.count !== "number"`,
+	standalone: name => `typeof m.${name}(data)?.count !== "number"`
 }
 
 const child = (path: string, scenario: Scenario, library: Library) => `
