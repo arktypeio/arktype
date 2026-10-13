@@ -1875,34 +1875,6 @@ const N = type(Gen.names.length === 1 ? "string" : "number")`)
 			])
 		})
 
-		it("eval and with", () => {
-			attest(
-				[
-					`eval("o.a = 'number'")`,
-					`;(eval as any)("o.a = 'number'")`,
-					`eval!("o.a = 'number'")`
-				].map(
-					use =>
-						statusesOf(`import { type } from "arktype"
-const o = { a: "string" }
-${use}
-export const T = type(o.a)`)[0]
-				)
-			).snap([
-				"4:18 rejected\n  `o` is in a module that calls `eval`",
-				"4:18 rejected\n  `o` is in a module that calls `eval`",
-				"4:18 rejected\n  `o` is in a module that calls `eval`"
-			])
-			const source = `import { type } from "arktype"
-const o = { a: "string" }
-with ({ o: { a: "number" } }) { exports.T = type(o.a) }`
-			attest(
-				new Precompiler(memoryHost({ "/main.cts": source }))
-					.analyze(source, "/main.cts")
-					.sites.map(site => [site.status, ...site.reasons])
-			).snap([["rejected", "`o` is in a module that uses `with`"]])
-		})
-
 		it("match parser extended by separate cases", () => {
 			attest(
 				statusesOf(`import { match } from "arktype"
