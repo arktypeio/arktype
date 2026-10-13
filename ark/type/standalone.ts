@@ -836,7 +836,7 @@ export class StandaloneArtifact {
 	// each factory receiving a binding checks it with one function, which a bundle holds once
 	receiverOf(value: Foldable, id: string, label: string): string {
 		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
-		const body = `runtime.holesOf(holder, ${JSON.stringify(id)}, ${JSON.stringify(label)}${kind})`
+		const body = `runtime.holesOf(holder, ${writeId(id)}, ${JSON.stringify(label)}${kind})`
 		const name = `receive${hashOf(body)}`
 		const specifier = this.specifierOf(name)
 		this.sharedModules[specifier] ??= {
@@ -1390,7 +1390,7 @@ return [${returned.join(", ")}]
 		)
 		// a folded factory's Type is written as what constructs its validator, which each call constructs with the functions it receives
 		const isTemplate = this.templates.has(root)
-		const key = `,\n\t${JSON.stringify(id)}${holes.length && !isTemplate ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
+		const key = `,\n\t${writeId(id)}${holes.length && !isTemplate ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
 		return `${isTemplate ? "[" : "runtime.createValidator("}
 	${this.emitRootApply(root, shape, nodeName)},
 	${shape},
@@ -1748,7 +1748,7 @@ ${isTemplate ? "]" : ")"}`
 	// a factory reading a Module, Scope or Generic compares it with the build's and takes the holes it holds
 	withHoles(value: Foldable, expression: string): string {
 		const [id, holes] = keyOf(value)
-		return `runtime.holdHoles(${expression}, ${JSON.stringify(id)}${holes.length ? `, [${holes.map(hole => this.emit(hole)).join(", ")}]` : ""})`
+		return `runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${holes.map(hole => this.emit(hole)).join(", ")}]` : ""})`
 	}
 
 	readValidator(root: BaseRoot): string | undefined {
@@ -2319,6 +2319,9 @@ export const keyOf = (value: Foldable): Key => {
 	}
 	return key
 }
+
+// an id only tells the value a factory receives from another it could be given, for which 8 of its hash's characters, about 41 bits, are enough
+const writeId = (id: string): string => JSON.stringify(id.slice(0, 8))
 
 // a default check reads a node's traversal, which doesn't depend on the Scope its methods parse in
 export const traversalKeyOf = (root: BaseRoot): Key => rootKeyOf(root, false)

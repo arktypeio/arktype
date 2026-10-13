@@ -80,9 +80,9 @@ export const inputsOf = (
 			))
 	])
 
-// a hash may follow `$ark`, the prefix of each name the precompiler imports
+// a hash may follow `$ark`, the prefix of each name the precompiler imports, and an id is a quoted hash's first 8 characters
 const hashPattern =
-	/(?<![\da-z])(\$ark\$*)?(?=[\da-z]*\d)([\da-z]{12,})(?![\da-z])/g
+	/(?<![\da-z])(\$ark\$*)?(?=[\da-z]*\d)([\da-z]{12,}|(?<=")[\da-z]{8}(?="))(?![\da-z])/g
 
 // content hashes change with the runtime's source, so snapshots number them by first appearance
 export const normalized = <code extends string | string[]>(
