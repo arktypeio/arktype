@@ -1183,6 +1183,22 @@ export const Guest = new Forms().user.or("null")`)
 			])
 		})
 
+		it("a Type reaching a value annotated as something else", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+interface Nullable {
+	or(def: string): unknown
+}
+const fallback = { or: (def: string) => def }
+console.log(fallback.or("a"))
+let x: Nullable = type("string")
+export const X = x.or("null")
+if (Math.random() > 2) x = fallback`)
+			).snap([
+				'/main.ts:8:18  x.or("null") cannot be precompiled\n  `x` is assigned at /main.ts:9:24, so its value at the site is not known\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			])
+		})
+
 		it("a Type read from a container the build can't resolve", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"

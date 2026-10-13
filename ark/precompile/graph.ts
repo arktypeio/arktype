@@ -11,6 +11,7 @@ import type {
 	Validator
 } from "arktype/internal/runtime.ts"
 import type { Scope } from "arktype/internal/scope.ts"
+import type { TypeParser } from "arktype/internal/type.ts"
 import { introspectionMembers } from "arktype/internal/standalone.ts"
 import type { ArrayType } from "arktype/internal/variants/array.ts"
 import type { BaseType } from "arktype/internal/variants/base.ts"
@@ -329,6 +330,25 @@ const anyKind: ArkKind =
 	kinds.returnsArk
 
 const typeMethod: ArkKind = kinds.otherArk | kinds.returnsType
+
+// what `type` holds that creates a Type, e.g. `type.or`
+const typeParserTypes: Record<string, 1> = Object.setPrototypeOf(
+	{
+		raw: 1,
+		unit: 1,
+		enumerated: 1,
+		valueOf: 1,
+		instanceOf: 1,
+		or: 1,
+		and: 1,
+		merge: 1,
+		pipe: 1
+	} satisfies Partial<Record<keyof TypeParser, 1>>,
+	null
+)
+
+const arkBits: ArkKind =
+	kinds.type | kinds.otherArk | kinds.returnsType | kinds.returnsArk
 
 const unsure: ArkKind = kinds.data | kinds.unknown
 
@@ -789,33 +809,42 @@ export class ModuleGraph {
 
 	// iterated from none, re-deciding a key only when one it read grew, so the result is least and doesn't depend on which was asked first
 	private solve(key: Key, module: SourceModule): ArkKind {
-		const assumed = new Map<Key, [ArkKind, SourceModule]>([[key, [0, module]]])
-		const readersByKey = new Map<Key, Set<Key>>()
-		const pending: Key[] = [key]
-		let reader = key
-		const kindOfKey: KindOfKey = (read, origin) => {
-			const final = this.kindsByKey.get(read)
-			if (final !== undefined) return final
-			let entry = assumed.get(read)
-			if (!entry) {
-				assumed.set(read, (entry = [0, origin]))
-				pending.push(read)
+		// e.g. `o` asked while reading `{ a: A, self: () => o }` would otherwise find its own literal cut, so its kind would depend on what was read first
+		const resolving = this.resolving
+		this.resolving = new Set()
+		try {
+			const assumed = new Map<Key, [ArkKind, SourceModule]>([
+				[key, [0, module]]
+			])
+			const readersByKey = new Map<Key, Set<Key>>()
+			const pending: Key[] = [key]
+			let reader = key
+			const kindOfKey: KindOfKey = (read, origin) => {
+				const final = this.kindsByKey.get(read)
+				if (final !== undefined) return final
+				let entry = assumed.get(read)
+				if (!entry) {
+					assumed.set(read, (entry = [0, origin]))
+					pending.push(read)
+				}
+				let readers = readersByKey.get(read)
+				if (!readers) readersByKey.set(read, (readers = new Set()))
+				readers.add(reader)
+				return entry[0]
 			}
-			let readers = readersByKey.get(read)
-			if (!readers) readersByKey.set(read, (readers = new Set()))
-			readers.add(reader)
-			return entry[0]
+			while (pending.length) {
+				reader = pending.pop()!
+				const entry = assumed.get(reader)!
+				const kind = entry[0] | this.keyKindOf(reader, entry[1], kindOfKey)
+				if (kind === entry[0]) continue
+				entry[0] = kind
+				pending.push(...(readersByKey.get(reader) ?? []))
+			}
+			for (const [key, [kind]] of assumed) this.kindsByKey.set(key, kind)
+			return assumed.get(key)![0]
+		} finally {
+			this.resolving = resolving
 		}
-		while (pending.length) {
-			reader = pending.pop()!
-			const entry = assumed.get(reader)!
-			const kind = entry[0] | this.keyKindOf(reader, entry[1], kindOfKey)
-			if (kind === entry[0]) continue
-			entry[0] = kind
-			pending.push(...(readersByKey.get(reader) ?? []))
-		}
-		for (const [key, [kind]] of assumed) this.kindsByKey.set(key, kind)
-		return assumed.get(key)![0]
 	}
 
 	private keyKindOf(
@@ -1007,10 +1036,12 @@ export class ModuleGraph {
 					(kinds.returnsType | kinds.returnsArk)
 			)
 		}
-		// arktype passes a morph or narrow the data it validates, but `map` passes what an array holds
-		const receiver = this.transfer(callee.object, module, kindOfKey)
-		return !isArk(receiver) && isContainerMethod(memberNameOf(callee)) ?
-				lostOf(receiver & (kinds.unknown | kinds.holder))
+		// e.g. what `list.map` passes, which the receiver may hold, though a morph or narrow gets the data a Type validates
+		return isContainerMethod(memberNameOf(callee)) ?
+				lostOf(
+					this.transfer(callee.object, module, kindOfKey) &
+						(kinds.unknown | kinds.holder)
+				)
 			:	kinds.data
 	}
 
@@ -1078,7 +1109,7 @@ export class ModuleGraph {
 					module.scopes.root.bindings[type.exprName.name]
 				if (!binding) return
 				const kind = kindOfKey(binding, module)
-				return isArk(kind) ? unsure : kind
+				return (kind & ~arkBits) | (isArk(kind) ? unsure : 0)
 			}
 			case "TSTypeReference": {
 				const name = type.typeName
@@ -1310,6 +1341,11 @@ export class ModuleGraph {
 	): ArkKind {
 		const cast = castOf(node)
 		if (cast) {
+			// e.g. `endpoints[method] as Endpoint`, data whatever the build saw reach it, with each `typeof` read as unknown so the kinds only grow
+			if (
+				this.annotatedKindOf(cast, module, () => kinds.unknown) === kinds.data
+			)
+				return kinds.data
 			return annotate(
 				this.transfer(normalize(node), module, kindOfKey),
 				this.annotatedKindOf(cast, module, kindOfKey)
@@ -1369,6 +1405,12 @@ export class ModuleGraph {
 					node.arguments.length === 1 &&
 					node.arguments[0].type !== "SpreadElement" &&
 					this.arkExportNameOf(callee, module) === "type"
+				)
+					return kinds.type
+				if (
+					callee.type === "MemberExpression" &&
+					(memberNameOf(callee) as never) in typeParserTypes &&
+					this.arkExportNameOf(callee.object, module) === "type"
 				)
 					return kinds.type
 				const fn =
@@ -1700,7 +1742,8 @@ export class ModuleGraph {
 	// e.g. what `schemas[key]` or `schemas[key].User` may read
 	private heldKindOf(literal: Located, seen = new Set<Node>()): ArkKind {
 		const { node, module, kindOfKey } = literal
-		const isCached = !seen.size && kindOfKey === this.finalKindOfKey
+		const isCached =
+			!seen.size && !this.resolving.size && kindOfKey === this.finalKindOfKey
 		let result = isCached ? this.heldKindsByNode.get(node) : undefined
 		if (result !== undefined) return result
 		result = 0
@@ -2044,15 +2087,11 @@ const isUnsureRead = (read: unknown, kind: ArkKind): boolean =>
 const isContainerMethod = (name: unknown): boolean =>
 	typeof name === "string" && (name in Array.prototype || name in Map.prototype)
 
-// an annotation decides what may be data, though only one naming no Type hides what the build knows is arktype's
+// an annotation decides what a value the build may have lost track of is, never removing what it knows, so the kinds still only grow
 const annotate = (kind: ArkKind, annotated: ArkKind | undefined): ArkKind =>
-	(
-		annotated === undefined ||
-		!(kind & kinds.data) ||
-		(isArk(kind) && annotated !== kinds.data)
-	) ?
-		kind
-	:	annotated
+	annotated === undefined ? kind : (
+		(kind & arkBits) | (kind & ~arkBits ? annotated : 0)
+	)
 
 // e.g. the function declaring `T` in `<T>(t: T) => t`
 const declaresTypeParameter = (
