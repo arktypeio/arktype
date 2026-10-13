@@ -1,6 +1,5 @@
 import { bench } from "@ark/attest"
 import { jsonSchema, jsonSchemaToType } from "@ark/json-schema"
-import type { array } from "@ark/util"
 import type { inferJsonSchema } from "@ark/json-schema/internal/infer.ts"
 import {
 	allOf30,
@@ -24,13 +23,6 @@ import {
 	s3Event,
 	tamasfeOneOf
 } from "./generated/schemas.ts"
-
-// resolves every property type of an inferred object so lazily computed
-// mapped types are counted
-type force<t> =
-	t extends array<infer element> ? force<element>
-	: t extends object ? { [k in keyof t]: force<t[k]> }[keyof t]
-	: t
 
 bench.baseline(() => {
 	jsonSchemaToType({
@@ -97,24 +89,7 @@ bench("object literal", () =>
 		},
 		required: ["a", "b", "c"]
 	})
-).types([312, "instantiations"])
-
-bench("object literal (forced)", () => {
-	const T = jsonSchemaToType({
-		type: "object",
-		properties: {
-			a: { type: "array", items: { type: "string" } },
-			b: { type: "array", items: { type: "number" } },
-			c: {
-				type: "object",
-				properties: { nested: { type: "array", items: { type: "boolean" } } },
-				required: ["nested"]
-			}
-		},
-		required: ["a", "b", "c"]
-	})
-	type _ = force<typeof T.infer>
-}).types([857, "instantiations"])
+).types([500, "instantiations"])
 
 // equivalent to type({ "a?": "string[]", "b?": "number[]", "c?": { "nested?": "boolean[]" } })
 bench("object literal with optional keys", () =>
@@ -129,7 +104,7 @@ bench("object literal with optional keys", () =>
 			}
 		}
 	})
-).types([107, "instantiations"])
+).types([274, "instantiations"])
 
 bench("additionalProperties", () =>
 	jsonSchemaToType({
@@ -138,7 +113,7 @@ bench("additionalProperties", () =>
 		required: ["a"],
 		additionalProperties: { type: ["string", "number"] }
 	})
-).types([336, "instantiations"])
+).types([352, "instantiations"])
 
 // equivalent to type(["string[]", "number[]", ["boolean[]"]])
 bench("tuple", () =>
@@ -157,26 +132,7 @@ bench("tuple", () =>
 		minItems: 3,
 		items: false
 	})
-).types([824, "instantiations"])
-
-bench("tuple (forced)", () => {
-	const T = jsonSchemaToType({
-		type: "array",
-		prefixItems: [
-			{ type: "array", items: { type: "string" } },
-			{ type: "array", items: { type: "number" } },
-			{
-				type: "array",
-				prefixItems: [{ type: "array", items: { type: "boolean" } }],
-				minItems: 1,
-				items: false
-			}
-		],
-		minItems: 3,
-		items: false
-	})
-	type _ = force<typeof T.infer>
-}).types([1176, "instantiations"])
+).types([834, "instantiations"])
 
 bench("anyOf(2)", () =>
 	jsonSchemaToType({ anyOf: [{ type: "string" }, { type: "number" }] })
@@ -197,7 +153,7 @@ bench("allOf(2) objects", () =>
 			}
 		]
 	})
-).types([552, "instantiations"])
+).types([593, "instantiations"])
 
 bench("if/then/else", () =>
 	jsonSchemaToType({
@@ -208,15 +164,15 @@ bench("if/then/else", () =>
 		then: { properties: { a: { type: "string" } }, required: ["a"] },
 		else: { properties: { b: { type: "number" } }, required: ["b"] }
 	})
-).types([766, "instantiations"])
+).types([881, "instantiations"])
 
 bench("else-if chain(10)", () => jsonSchemaToType(elseIfChain10)).types([
-	3122,
+	3417,
 	"instantiations"
 ])
 
 bench("allOf(30) objects", () => jsonSchemaToType(allOf30)).types([
-	22258,
+	24240,
 	"instantiations"
 ])
 
@@ -232,7 +188,7 @@ bench("$ref", () =>
 		properties: { first: { $ref: "#/$defs/name" } },
 		required: ["first"]
 	})
-).types([282, "instantiations"])
+).types([318, "instantiations"])
 
 bench("$ref cyclic", () =>
 	jsonSchemaToType({
@@ -243,35 +199,25 @@ bench("$ref cyclic", () =>
 		},
 		required: ["value"]
 	})
-).types([310, "instantiations"])
+).types([440, "instantiations"])
 
 bench("properties(50)", () => jsonSchemaToType(properties50)).types([
-	540,
+	1853,
 	"instantiations"
 ])
 
-bench("properties(50) (forced)", () => {
-	const T = jsonSchemaToType(properties50)
-	type _ = force<typeof T.infer>
-}).types([3428, "instantiations"])
-
 bench("properties(200)", () => jsonSchemaToType(properties200)).types([
-	1440,
+	6753,
 	"instantiations"
 ])
 
 bench("depth(10)", () => jsonSchemaToType(depth10)).types([
-	735,
+	1587,
 	"instantiations"
 ])
 
-bench("depth(10) (forced)", () => {
-	const T = jsonSchemaToType(depth10)
-	type _ = force<typeof T.infer>
-}).types([2192, "instantiations"])
-
 bench("depth(40)", () => jsonSchemaToType(depth40)).types([
-	2385,
+	3383,
 	"instantiations"
 ])
 
@@ -281,53 +227,43 @@ bench("prefixItems(100)", () => jsonSchemaToType(prefixItems100)).types([
 ])
 
 bench("properties(100) refs", () => jsonSchemaToType(refProperties100)).types([
-	7020,
+	11577,
 	"instantiations"
 ])
 
 bench("oneOf(10)", () => jsonSchemaToType(oneOf10)).types([
-	1767,
+	3604,
 	"instantiations"
 ])
 
-bench("oneOf(10) (forced)", () => {
-	const T = jsonSchemaToType(oneOf10)
-	type _ = force<typeof T.infer>
-}).types([5842, "instantiations"])
-
 bench("oneOf(50)", () => jsonSchemaToType(oneOf50)).types([
-	7967,
+	16964,
 	"instantiations"
 ])
 
 bench("oneOf(50) refs", () => jsonSchemaToType(oneOfRef50)).types([
-	11996,
+	20993,
 	"instantiations"
 ])
 
 bench("draft-06 meta-schema", () => jsonSchemaToType(draft06MetaSchema)).types([
-	1528,
+	4022,
 	"instantiations"
 ])
 
 bench("real-world oneOf", () => jsonSchemaToType(tamasfeOneOf)).types([
-	1920,
+	6285,
 	"instantiations"
 ])
 
-bench("real-world oneOf (forced)", () => {
-	const T = jsonSchemaToType(tamasfeOneOf)
-	type _ = force<typeof T.infer>
-}).types([11399, "instantiations"])
-
 bench("s3 event", () => jsonSchemaToType(s3Event)).types([
-	754,
+	1442,
 	"instantiations"
 ])
 
 // each definition is reached through two allOf paths
 bench("allOf ref DAG(20)", () => jsonSchemaToType(allOfRefDag20)).types([
-	26441,
+	32838,
 	"instantiations"
 ])
 
@@ -337,12 +273,12 @@ bench("allOf refs to rules(10)", () => jsonSchemaToType(allOfRefRules10)).types(
 
 bench("nested allOf unions(6)", () =>
 	jsonSchemaToType(nestedAllOfUnions6)
-).types([9903, "instantiations"])
+).types([10260, "instantiations"])
 
 // OpenAPI inheritance: a base oneOf its subtypes, each allOf the base
 bench("inheritance oneOf(20)", () =>
 	jsonSchemaToType(inheritanceOneOf20)
-).types([11026, "instantiations"])
+).types([11455, "instantiations"])
 
 bench("jsonSchema", () =>
 	jsonSchema({
@@ -350,10 +286,10 @@ bench("jsonSchema", () =>
 		properties: { a: { type: "string" }, b: { type: "number" } },
 		required: ["a"]
 	})
-).types([218, "instantiations"])
+).types([254, "instantiations"])
 
 bench("jsonSchema properties(50)", () => jsonSchema(properties50)).types([
-	519,
+	1835,
 	"instantiations"
 ])
 
@@ -393,4 +329,4 @@ bench("draft-07 $ref siblings", () =>
 		},
 		required: ["name", "tags"]
 	})
-).types([1367, "instantiations"])
+).types([1969, "instantiations"])

@@ -3646,7 +3646,7 @@ contextualize(() => {
 
 		it("allOf of three twenty-branch anyOfs", () => {
 			// limitation: intersected unions build every member, 20^3 here (three fifty-branch anyOfs: a depth error)
-			attest.instantiations([929000, "instantiations"])
+			attest.instantiations([1180000, "instantiations"])
 			return inferred({
 				type: "object",
 				allOf: [
@@ -3728,7 +3728,7 @@ contextualize(() => {
 
 		it("anyOf, oneOf and a conditional of ten branches each on one node", () => {
 			// limitation: a node's own anyOf, oneOf and then/else multiply to 2000 members (fifty branches each: a depth error)
-			attest.instantiations([249000, "instantiations"])
+			attest.instantiations([314000, "instantiations"])
 			return inferred({
 				type: "object",
 				anyOf: [
@@ -3829,7 +3829,7 @@ contextualize(() => {
 		})
 
 		it("array exclusion nested five deep over a recursive leaf", () => {
-			attest.instantiations([2340, "instantiations"])
+			attest.instantiations([3130, "instantiations"])
 			// prettier-ignore
 			return inferred({ type: "object", allOf: [{ type: "object", allOf: [{ type: "object", allOf: [{ type: "object", allOf: [{ type: "object", allOf: [{ type: "object", properties: { a: { type: "string" }, r: { $ref: "#" } }, required: ["a"] }], not: { type: "array" } }], not: { type: "array" } }], not: { type: "array" } }], not: { type: "array" } }], not: { type: "array" } })
 		})
