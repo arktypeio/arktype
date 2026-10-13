@@ -107,10 +107,9 @@ export abstract class BaseProp<
 		const value = `data${js.prop(this.key)}`
 		// a missing key reads undefined, which fails a value whose every branch has a basis other than undefined, so its key is checked only to report it
 		if (
-			js.traversalKind === "Apply" &&
 			this.hasKind("required") &&
-			!this.value.transforms &&
-			!this.value.entersResolution &&
+			(js.traversalKind === "Allows" ||
+				(!this.value.transforms && !this.value.entersResolution)) &&
 			this.value.branches.every(branch => {
 				const basis = branch.hasKind("intersection") ? branch.basis : branch
 				return (
@@ -119,11 +118,26 @@ export abstract class BaseProp<
 				)
 			})
 		) {
-			js.return(
-				this.value.isBasis() ?
-					`${this.value.compileCondition(js, value)} || !${js.error(this, key)}`
-				:	`!ctx.failsIn(${js.traversal(this.value, "Apply")}, ${value}, ${key}, ${js.site(this)}, data)`
+			if (js.traversalKind === "Apply") {
+				js.return(
+					this.value.isBasis() ?
+						`${this.value.compileCondition(js, value)} || !${js.error(this, key)}`
+					:	`!ctx.failsIn(${js.traversal(this.value, "Apply")}, ${value}, ${key}, ${js.site(this)}, data)`
+				)
+				return
+			}
+			// a value whose predicates read ctx is checked at its key's path
+			if (
+				this.value.allowsRequiresContext &&
+				this.value.allowsRequiresTraversal
 			)
+				js.traverseKey(key, value, this.value).return(true)
+			else {
+				js.return(
+					this.value.compileCondition?.(js, value) ??
+						js.invoke(this.value, { arg: value })
+				)
+			}
 			return
 		}
 
