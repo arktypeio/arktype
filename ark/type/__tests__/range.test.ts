@@ -8,7 +8,7 @@ import {
 	writeUnsatisfiableExpressionError
 } from "@ark/schema"
 import { writeMalformedNumericLiteralMessage } from "@ark/util"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { writeDoubleRightBoundMessage } from "arktype/internal/parser/ast/bounds.ts"
 import {
 	writeMultipleLeftBoundsMessage,
@@ -365,6 +365,32 @@ contextualize(() => {
 			attest(type("number").extends(type("number!=0"))).equals(false)
 		})
 
+		it("drops a side ruled out by an existing bound", () => {
+			const $ = scope({
+				nonNegative: "number>=0",
+				nonPositive: "number<=0",
+				atLeast3: "string>=3",
+				A: "nonNegative!=0",
+				B: "nonPositive!=0",
+				C: "atLeast3!=3"
+			}).export()
+			attest<number>($.A.infer)
+			attest($.A.json).equals(type("number>0").json)
+			attest($.B.json).equals(type("number<0").json)
+			attest($.C.json).equals(type("string>3").json)
+		})
+
+		it("both sides ruled out", () => {
+			attest(() =>
+				scope({ three: "string==3", T: "three!=3" }).export()
+			).throws("Intersection of == 3 and >= 4 results in an unsatisfiable type")
+		})
+
+		it("alias with !", () => {
+			const $ = scope({ "a!b": "number", T: "a!b!=0" })
+			attest($.export().T.json).equals(type("number<0|number>0").json)
+		})
+
 		it("excluded unit", () => {
 			attest(() => type("number!=0").and("0")).throws(
 				writeUnsatisfiableExpressionError("")
@@ -397,7 +423,7 @@ contextualize(() => {
 
 		it("missing =", () => {
 			// @ts-expect-error
-			attest(() => type("number!0")).throwsAndHasTypeError(
+			attest(() => type("(number)!0")).throwsAndHasTypeError(
 				writeUnexpectedCharacterMessage("!")
 			)
 		})

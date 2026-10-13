@@ -1,5 +1,6 @@
 import {
 	$ark,
+	Disjoint,
 	writeUnboundableMessage,
 	type BaseRoot,
 	type BoundKind,
@@ -195,12 +196,22 @@ export const parseRightBound = (
 	)
 
 	if (comparator === "!=") {
-		// reduce != to a union of exclusive bounds, e.g. number<0 | number>0
-		s.root = boundKinds
-			.map(kind =>
-				previousRoot.constrain(kind, { rule: limit, exclusive: true })
+		// reduce != to a union of exclusive bounds, e.g. number<0 | number>0,
+		// dropping any side an existing bound rules out, e.g. nonNegative!=0
+		const branches = boundKinds.map(kind =>
+			previousRoot.intersect(
+				previousRoot.$.node("intersection", {
+					[kind]: { rule: limit, exclusive: true }
+				})
 			)
-			.reduce((l, r) => l.rawOr(r))
+		)
+		const satisfiable = branches.filter(
+			(branch): branch is BaseRoot => !(branch instanceof Disjoint)
+		)
+		s.root =
+			satisfiable.length ?
+				satisfiable.reduce((l, r) => l.rawOr(r))
+			:	(branches[0] as Disjoint).throw()
 	} else {
 		for (const kind of boundKinds) {
 			s.constrainRoot(
