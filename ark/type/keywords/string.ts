@@ -792,6 +792,8 @@ export declare namespace url {
 	}
 }
 
+const uuidVersions = [1, 2, 3, 4, 5, 6, 7, 8] as const
+
 // based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 export const uuid: uuid.module = keywordModule(
 	{
@@ -806,46 +808,16 @@ export const uuid: uuid.module = keywordModule(
 		"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
 		"#versioned":
 			/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-		v1: () =>
-			regexStringNode(
-				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-1[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"string.uuid.v1"
-			),
-		v2: () =>
-			regexStringNode(
-				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-2[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"string.uuid.v2"
-			),
-		v3: () =>
-			regexStringNode(
-				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-3[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"string.uuid.v3"
-			),
-		v4: () =>
-			regexStringNode(
-				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-4[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"string.uuid.v4"
-			),
-		v5: () =>
-			regexStringNode(
-				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-5[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"string.uuid.v5"
-			),
-		v6: () =>
-			regexStringNode(
-				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-6[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"string.uuid.v6"
-			),
-		v7: () =>
-			regexStringNode(
-				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-7[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"string.uuid.v7"
-			),
-		v8: () =>
-			regexStringNode(
-				/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-8[\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
-				"string.uuid.v8"
-			)
+		...flatMorph(uuidVersions, (i, version) => [
+			`v${version}`,
+			() =>
+				regexStringNode(
+					new RegExp(
+						`^[\\dA-Fa-f]{8}-[\\dA-Fa-f]{4}-${version}[\\dA-Fa-f]{3}-[89ABab][\\dA-Fa-f]{3}-[\\dA-Fa-f]{12}$`
+					),
+					`string.uuid.v${version}`
+				)
+		])
 	},
 	{
 		name: "string.uuid"
