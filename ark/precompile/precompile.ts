@@ -2957,21 +2957,6 @@ export class Precompiler {
 		settled: SiteCandidate[]
 	): Diagnostic[] {
 		const result: Diagnostic[] = []
-		if (candidates.length && !isStrict(module.program)) {
-			result.push(
-				this.diagnostic(
-					module,
-					module.program.body[0] ?? module.program,
-					"R4",
-					"error",
-					`${module.path} is not strict mode code`,
-					[
-						"the standalone runtime freezes arktype values, and outside strict mode a write to a frozen value is ignored rather than throwing"
-					],
-					strictHint
-				)
-			)
-		}
 		const written = new Set<Node>()
 		const writes = new Set<Node>()
 		for (const reference of module.scopes.references) {
@@ -3540,17 +3525,6 @@ const writeOf = (target: Node): Node => {
 	}
 	return writeOf(parent)
 }
-
-const strictHint = `Add "use strict" at the top of the module, or make it an ES module.`
-
-// an ES module is strict, and a script or CommonJS module only with a "use strict" directive
-const isStrict = (program: Program): boolean =>
-	program.sourceType === "module" ||
-	program.body.some(
-		statement =>
-			statement.type === "ExpressionStatement" &&
-			statement.directive === "use strict"
-	)
 
 export const specifierOf = (importer: string, file: string): string => {
 	const path = relative(dirname(importer), file).split("\\").join("/")

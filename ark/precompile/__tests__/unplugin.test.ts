@@ -1166,9 +1166,7 @@ try {
 	it("reports what the standalone runtime's frozen values reject", async () => {
 		const root = writeFixture({
 			"write.ts":
-				'import { type } from "arktype"\nexport const T = type("string")\n;(T as any).note = 1\n',
-			"sloppy.cts":
-				'import { type } from "arktype"\nexport const T = type("string")\n'
+				'import { type } from "arktype"\nexport const T = type("string")\n;(T as any).note = 1\n'
 		})
 		const errorsOf = (entry: string) =>
 			esbuild({
@@ -1182,13 +1180,8 @@ try {
 				(e: { errors: { text: string }[] }) =>
 					e.errors.map(error => error.text.split(`${root}/`).join(""))
 			)
-		attest([await errorsOf("write.ts"), await errorsOf("sloppy.cts")]).snap([
-			[
-				'write.ts:3:2  (T as any).note = 1 writes to an arktype value, which throws at runtime\n  `T` is an arktype value, which the standalone runtime freezes with what it holds\n  Keep what you attach in an object of your own, or build with runtime: "arktype".'
-			],
-			[
-				'sloppy.cts:1:1  sloppy.cts is not strict mode code\n  the standalone runtime freezes arktype values, and outside strict mode a write to a frozen value is ignored rather than throwing\n  Add "use strict" at the top of the module, or make it an ES module.'
-			]
+		attest(await errorsOf("write.ts")).snap([
+			'write.ts:3:2  (T as any).note = 1 writes to an arktype value, which throws at runtime\n  `T` is an arktype value, which the standalone runtime freezes with what it holds\n  Keep what you attach in an object of your own, or build with runtime: "arktype".'
 		])
 	}).timeout(60000)
 

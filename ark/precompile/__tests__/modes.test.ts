@@ -640,30 +640,6 @@ export const make = (def: string) => {
 			])
 		})
 
-		it("modules that are not strict mode", () => {
-			const diagnosticsAt = (id: string, source: string, runtime?: "arktype") =>
-				precompileModule(source, id, memoryHost({ [id]: source }), {
-					runtime
-				}).diagnostics.map(renderDiagnostic)
-			const body = `import { type } from "arktype"
-export const T = type("string")`
-			attest([
-				diagnosticsAt("/main.cts", body),
-				diagnosticsAt("/main.cts", `"use strict"\n${body}`),
-				diagnosticsAt("/main.cts", body, "arktype"),
-				diagnosticsAt("/main.ts", body),
-				diagnosticsAt("/main.cjs", `module.exports = {}`)
-			]).snap([
-				[
-					'/main.cts:1:1  /main.cts is not strict mode code\n  the standalone runtime freezes arktype values, and outside strict mode a write to a frozen value is ignored rather than throwing\n  Add "use strict" at the top of the module, or make it an ES module.'
-				],
-				[],
-				[],
-				[],
-				[]
-			])
-		})
-
 		it("writes to arktype values", () => {
 			const source = `import { type, scope } from "arktype"
 const T = type({ a: "string" })
