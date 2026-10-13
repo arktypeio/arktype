@@ -19,7 +19,11 @@ import type { BaseNode, GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
-import type { NodeCompiler, TransformStep } from "../shared/compile.ts"
+import {
+	undeclaredSite,
+	type NodeCompiler,
+	type TransformStep
+} from "../shared/compile.ts"
 import type {
 	attachmentsOf,
 	BaseErrorContext,
@@ -1229,14 +1233,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (this.undeclared === "reject" && keyDomain === "string") {
 			const props = this.props.filter(prop => typeof prop.key === keyDomain)
 			if (props.length) compileDeclaredKeySwitch(js, props)
-			const input =
-				js.raisesIssues ?
-					`{ code: "undeclared", data: data[k], relativePath: [k] }`
-				:	`{ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} }`
 			const reject = () =>
-				js.traversalKind === "Allows" ?
-					js.return(false)
-				:	js.if(`ctx.failsWith(${input})`, () => js.return(false))
+				js.traversalKind === "Allows" ? js.return(false)
+				: js.raisesIssues ?
+					js.if(`ctx.failsAt(${js.ref(undeclaredSite)}, data, k)`, () =>
+						js.return(false)
+					)
+				:	js.if(
+						`ctx.failsWith({ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`,
+						() => js.return(false)
+					)
 			const declaresKey = this._compileDeclaresKey(js)
 			const conditions = declaresKey === "false" ? [] : [`!(${declaresKey})`]
 			// for...in also reaches inherited keys, which aren't undeclared

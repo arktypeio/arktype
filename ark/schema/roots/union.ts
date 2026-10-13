@@ -16,6 +16,7 @@ import {
 	compileSerializedValue,
 	expectedOf,
 	isDecidedByAllows,
+	issueSite,
 	returnsTransformErrors,
 	type NodeCompiler
 } from "../shared/compile.ts"
@@ -355,15 +356,26 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			return
 		}
 
+		if (js.raisesIssues) {
+			const site = issueSite(
+				{
+					code: "discriminant",
+					description: expectedOf(
+						this.discriminantMeta,
+						this.discriminantDescription
+					)
+				},
+				discriminant.path
+			)
+			js.return(`!ctx.failsAt(${js.ref(site)}, ${value})`)
+			return
+		}
 		const serializedPathSegments = discriminant.path.map(k => js.serialize(k))
 		const absent = () =>
 			discriminant.path.length ?
 				`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(discriminant.path)}, data)`
 			:	"false"
-		const input =
-			js.raisesIssues ?
-				`{ code: "discriminant", data: ${value}, description: ${js.text(expectedOf(this.discriminantMeta, this.discriminantDescription))}${serializedPathSegments.length ? `, relativePath: [${serializedPathSegments}]` : ""} }`
-			:	`{
+		const input = `{
 	code: "discriminant",
 	discriminantKind: "${discriminant.kind}",
 	cases: ${js.ref(this.discriminantCases.cases)},
@@ -391,12 +403,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				)
 			}
 			// a standalone union's issue reads only what the union describes, so its branches aren't run again
-			const branches =
-				js.raisesIssues ?
-					[]
-				:	this.branches.map(branch => js.traversal(branch, "Apply"))
 			js.return(
-				`!ctx.failsUnion([${branches.join(", ")}], ${js.site(this)}, data)`
+				js.raisesIssues ?
+					`!${js.error(this)}`
+				:	`!ctx.failsUnion([${this.branches.map(branch => js.traversal(branch, "Apply")).join(", ")}], ${js.site(this)}, data)`
 			)
 		} else if (js.traversalKind === "Apply") {
 			// Allows would call a branch's predicates again and can't enter its resolution, so each branch is applied once
@@ -411,8 +421,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 						)
 					)
 			}
-			if (js.raisesIssues)
-				js.return(`!ctx.failsUnion([], ${js.site(this)}, data)`)
+			if (js.raisesIssues) js.return(`!${js.error(this)}`)
 			else {
 				js.line(
 					`${js.ref(errorFromContext)}(ctx, { code: "union", errors, meta: ${js.ref(this.meta)}, data })`

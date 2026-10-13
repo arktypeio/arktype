@@ -322,6 +322,19 @@ contextualize(() => {
 a must be exactly length 0`)
 	})
 
+	it("reports into an arktype traversal a morph passes it, as arktype's own Type would", async () => {
+		const T = type({
+			"+": "reject",
+			shape: type({ dims: { kind: "'circle'" } }).or({
+				dims: { kind: "'square'" }
+			})
+		})
+		const { T: validator } = await load({ T })
+		const input = { shape: { dims: { kind: "triangle" } }, extra: 1 }
+		const piped = type("unknown").pipe((data, ctx) => validator(data, ctx))
+		attest(String(piped(input))).equals(String(type("unknown").pipe(T)(input)))
+	})
+
 	it("bakes introspection", async () => {
 		const T = type({ name: "string", age: "number" }).describe("a person")
 		const { T: validator } = await load({ T })

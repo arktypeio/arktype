@@ -100,34 +100,25 @@ contextualize(() => {
 		attest([user({ name: 1 }, errors), errors.count]).equals([false, 1])
 	})
 
-	it("names a union's description rather than running its branches", () => {
+	it("adds a discriminant's issue at the path its site holds", () => {
 		const errors = new ArkErrors()
-		const branch: CompactApply = () => {
-			throw new Error("ran")
-		}
-		errors.failsUnion([branch], { description: "a string or a number" }, true)
+		errors._path.push("item")
+		errors.failsAt(
+			{
+				value: { code: "discriminant", description: '"a" or "b"' },
+				path: ["kind"]
+			},
+			"c"
+		)
 		attest(errors.issues).snap([
 			{
-				code: "union",
-				path: [],
-				data: true,
-				expected: "a string or a number",
-				message: "must be a string or a number"
+				code: "discriminant",
+				path: ["item", "kind"],
+				data: "c",
+				expected: '"a" or "b"',
+				message: 'item.kind must be "a" or "b"'
 			}
 		])
-	})
-
-	it("adds an input's issue at its relative path", () => {
-		const errors = new ArkErrors()
-		errors.failsWith({ code: "undeclared", data: 1, relativePath: ["extra"] })
-		errors.failsWith({
-			code: "discriminant",
-			data: "c",
-			description: '"a" or "b"',
-			relativePath: ["kind"]
-		})
-		attest(errors.summary).snap(`extra must be removed
-kind must be "a" or "b"`)
 	})
 
 	it("writes a path's keys apart with dots, and its indices in brackets", () => {
@@ -178,7 +169,7 @@ supplied`)
 		const merged = new ArkErrors()
 		user({ name: 1 }, merged)
 		user({}, merged)
-		merged.failsWith({ code: "undeclared", data: 1, relativePath: ["extra"] })
+		merged.failsAt({ value: { code: "undeclared" } }, { extra: 1 }, "extra")
 		errors._merge!(merged, ["owner"])
 		attest(errors.summary).snap(`owner.name (1) must be...
   ◦ a string

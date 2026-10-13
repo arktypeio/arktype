@@ -188,6 +188,7 @@ export class InternalTraversal implements FailureContext {
 		return failsIn(this, this.path, apply, value, key, missing, data)
 	}
 
+	// only arktype's own checks report through this and failsUnion, which a validator's traversal reaches piping into an arktype Type
 	/** @internal */
 	failsWith(input: FailureInput): boolean {
 		this.addError(issueWith(this.path, input))

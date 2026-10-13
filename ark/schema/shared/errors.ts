@@ -268,12 +268,19 @@ export class ArkTraversal extends Traversal {
 		data: unknown,
 		key?: PropertyKey
 	): boolean {
+		// a standalone union's site holds only what it describes, from which arktype writes no union error
+		if (site.value?.code === "union")
+			return this.failsUnion([], site.value as never, data)
 		const missing =
 			key !== undefined && site.missing && !(key in (data as object))
 		this.addError(
 			errorOfNodeContext(
 				(missing ? site.missing : site.value) as NodeErrorContextInput,
-				key === undefined ? this.path.slice() : [...this.path, key],
+				key === undefined ?
+					site.path ?
+						[...this.path, ...site.path]
+					:	this.path.slice()
+				:	[...this.path, key],
 				key === undefined || missing ? data : (data as Keyed)[key],
 				this.config
 			)

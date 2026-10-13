@@ -10,7 +10,7 @@ import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import type { BaseErrorContext } from "./declare.ts"
 import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
-import type { FailureSite, UnionSite } from "./issues.ts"
+import type { FailureSite, SiteContext, UnionSite } from "./issues.ts"
 import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
 import {
@@ -254,10 +254,22 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 				...(missing && { missing: requiredIssue })
 			}
 		: missing ? { missing: requiredIssue }
-		: { description: (site as UnionSite).description }
+		: { value: { code: "union", description: (site as UnionSite).description } }
 	failureSites.add(issueSite)
 	return (variants[variant] = issueSite)
 }
+
+// a standalone check reporting what its node's site doesn't hold, at the path below the node where it reads
+export const issueSite = (
+	value: SiteContext,
+	path: PropertyKey[] = []
+): FailureSite => {
+	const site: FailureSite = path.length ? { value, path } : { value }
+	failureSites.add(site)
+	return site
+}
+
+export const undeclaredSite: FailureSite = issueSite({ code: "undeclared" })
 
 export declare namespace NodeCompiler {
 	export interface Context {

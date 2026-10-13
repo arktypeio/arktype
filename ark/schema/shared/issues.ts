@@ -23,10 +23,11 @@ export interface SiteContext {
 	description?: string | undefined
 }
 
-/** a check's site: its node's context, and a required key's when the key is missing */
+/** a check's site: its node's context, a required key's when the key is missing, and where below the node a discriminant is read */
 export interface FailureSite {
 	value?: SiteContext
 	missing?: SiteContext
+	path?: PropertyKey[]
 }
 
 export interface UnionSite {
@@ -57,12 +58,6 @@ export interface FailureContext {
 		key?: PropertyKey,
 		missing?: FailureSite,
 		data?: unknown
-	): boolean | undefined
-	failsWith(input: FailureInput): boolean | undefined
-	failsUnion(
-		branches: readonly CompactApply[],
-		site: UnionSite,
-		data: unknown
 	): boolean | undefined
 }
 
@@ -161,22 +156,6 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	): boolean | undefined {
 		return failsIn(this, this._path, apply, value, key, missing, data)
 	}
-
-	/** @internal */
-	failsWith(input: FailureInput): true | undefined {
-		this._.push(issueWith(this._path, input))
-		return this.failFast
-	}
-
-	/** @internal */
-	failsUnion(
-		branches: readonly CompactApply[],
-		site: UnionSite,
-		data: unknown
-	): true | undefined {
-		this._.push(unionIssue(this._path, site, data))
-		return this.failFast
-	}
 }
 
 // a build asking for each validation's first issue stops there, as no check its Apply writes continues past one
@@ -198,14 +177,19 @@ interface ArkIssues {
 
 type Keyed = Record<PropertyKey, unknown>
 
-// a key's site reports the object missing it, or the value at it
+// a key's site reports the object missing it, or the value at it, and a discriminant's the value at its path
 export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,
 	data: unknown,
 	key: PropertyKey | undefined
 ): ArkIssue =>
-	key === undefined ? issueOf(site.value!, path.slice(), data)
+	key === undefined ?
+		issueOf(
+			site.value!,
+			site.path ? [...path, ...site.path] : path.slice(),
+			data
+		)
 	: site.missing && !(key in (data as object)) ?
 		issueOf(site.missing, [...path, key], data)
 	:	issueOf(site.value!, [...path, key], (data as Keyed)[key])

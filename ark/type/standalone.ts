@@ -1980,6 +1980,9 @@ ${isTemplate ? "]" : ")"}`
 	}
 
 	emitSite(site: object): string {
+		// a discriminant's site holds the path it's read at
+		if (Array.isArray(site))
+			return `[${site.map(k => this.emit(k)).join(", ")}]`
 		return `{ ${Object.entries(site)
 			.map(
 				([k, v]) =>
@@ -2131,7 +2134,6 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 			const site = ref as FailureSite
 			if (site.value) codes.add(site.value.code)
 			if (site.missing) codes.add(site.missing.code)
-			if (!site.value && !site.missing) codes.add("union")
 		}
 		for (const node of unit.declared) {
 			if (node.hasKind("union") && node.compiledDiscriminant)
