@@ -58,12 +58,10 @@ const o = {}
 const sym = Symbol("parity")
 
 // every leaf code and context variant, each with data that fails it
-const corpusOf = (jitless: boolean): [type.Any, unknown][] => {
-	const $ = scope({}, { jitless })
-	const node = scope(
-		{ node: { next: "node | null", v: "string" } },
-		{ jitless }
-	).export().node
+const corpusOf = (): [type.Any, unknown][] => {
+	const $ = scope({})
+	const node = scope({ node: { next: "node | null", v: "string" } }).export()
+		.node
 	return [
 		[$.type("string"), 5],
 		[$.type("number"), "x"],
@@ -319,17 +317,15 @@ contextualize(() => {
 
 		it("a leaf error's expected and actual text come from its fields", () => {
 			const codes = new Set<string>()
-			for (const jitless of [false, true]) {
-				for (const [T, data] of corpusOf(jitless)) {
-					for (const error of (T(data) as ArkErrors).issues.flatMap(leavesOf)) {
-						codes.add(error.code)
-						attest(enExpected(error)).equals(error.expected)
-						attest(enActual(error)).equals(error.actual)
-						if (error.code === "required")
-							attest(error.expected).equals(error.missingValueDescription)
-						else if (error.description !== undefined)
-							attest(error.expected).equals(error.description)
-					}
+			for (const [T, data] of corpusOf()) {
+				for (const error of (T(data) as ArkErrors).issues.flatMap(leavesOf)) {
+					codes.add(error.code)
+					attest(enExpected(error)).equals(error.expected)
+					attest(enActual(error)).equals(error.actual)
+					if (error.code === "required")
+						attest(error.expected).equals(error.missingValueDescription)
+					else if (error.description !== undefined)
+						attest(error.expected).equals(error.description)
 				}
 			}
 			attest([...codes].sort()).snap([
@@ -1126,8 +1122,8 @@ m must be a bigint (was 5)`)
 			})
 
 		// every code and its variants, keyed by j and k
-		const leakCorpusOf = (jitless: boolean): [type.Any, unknown][] => {
-			const $ = scope({}, { jitless })
+		const leakCorpusOf = (): [type.Any, unknown][] => {
+			const $ = scope({})
 			return [
 				[$.type("string"), 5],
 				[$.type("'a'"), "b"],
@@ -1167,7 +1163,7 @@ m must be a bigint (was 5)`)
 				[$.type("string | number | bigint").or({ k: "1" }), true],
 				// a node another scope described in English
 				[
-					scope({}, { jitless, min: { description: () => mark("min") } }).type({
+					scope({}, { min: { description: () => mark("min") } }).type({
 						k: type("number > 8")
 					}),
 					{ k: 1 }
@@ -1213,8 +1209,7 @@ m must be a bigint (was 5)`)
 				"9007199254740993"
 			]
 			withConfig({ locale: () => xx }, () => {
-				for (const jitless of [false, true])
-					for (const [T, data] of leakCorpusOf(jitless)) checkResult(T(data))
+				for (const [T, data] of leakCorpusOf()) checkResult(T(data))
 				for (const T of keywordsOf("", ark.export()))
 					for (const data of inputs) checkResult(T(data))
 			})

@@ -492,27 +492,23 @@ contextualize(() => {
 	})
 
 	it("tuple element case includes overlapping tuples", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type(["'x'", "string"])
-				.or(["unknown", "undefined"])
-				.or(["1", "object"])
+		const $ = scope({})
+		const T = $.type(["'x'", "string"])
+			.or(["unknown", "undefined"])
+			.or(["1", "object"])
 
-			attest(T.allows(["x", undefined])).equals(true)
-			attest(T(["x", undefined])).equals(["x", undefined])
-		}
+		attest(T.allows(["x", undefined])).equals(true)
+		attest(T(["x", undefined])).equals(["x", undefined])
 	})
 
 	it("keeps a union at the discriminant path of an overlapping branch", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ a: "string | number", b: "1 | 2" })
-				.or({ a: "1", b: "string" })
-				.or({ a: "string", b: "string" })
+		const $ = scope({})
+		const T = $.type({ a: "string | number", b: "1 | 2" })
+			.or({ a: "1", b: "string" })
+			.or({ a: "string", b: "string" })
 
-			attest(T.allows({ a: "x", b: 1 })).equals(true)
-			attest(T({ a: "x", b: 1 })).equals({ a: "x", b: 1 })
-		}
+		attest(T.allows({ a: "x", b: 1 })).equals(true)
+		attest(T({ a: "x", b: 1 })).equals({ a: "x", b: 1 })
 	})
 
 	it("dimscrinate literal undefined value", () => {
@@ -523,172 +519,153 @@ contextualize(() => {
 
 	// https://github.com/arktypeio/arktype/issues/1547
 	it("discriminates cyclic union on nested path", () => {
-		for (const jitless of [false, true]) {
-			const s = scope(
-				{
-					AChild: { type: "'AChild'", children: "(AParent)[] > 0" },
-					AParent: { type: "'AParent'", children: "(AChild)[] > 0" },
-					BChild: { type: "'BChild'", children: "unknown[]" },
-					BParent: {
-						type: "'BParent'",
-						layout: "number[]",
-						children: "(BChild)[] > 0"
-					}
-				},
-				{ jitless }
-			)
+		const s = scope({
+			AChild: { type: "'AChild'", children: "(AParent)[] > 0" },
+			AParent: { type: "'AParent'", children: "(AChild)[] > 0" },
+			BChild: { type: "'BChild'", children: "unknown[]" },
+			BParent: {
+				type: "'BParent'",
+				layout: "number[]",
+				children: "(BChild)[] > 0"
+			}
+		})
 
-			const Thing = s.type("AParent | BParent")
+		const Thing = s.type("AParent | BParent")
 
-			attest(discriminantJsonOf(Thing.internal.assertHasKind("union"))).equals({
-				kind: "unit",
-				path: ["type"],
-				cases: {
-					'"BParent"': {
-						required: [
-							{
-								key: "children",
-								value: {
-									sequence: {
-										required: [
-											{ key: "children", value: "Array" },
-											{ key: "type", value: { unit: "BChild" } }
-										],
-										domain: "object"
-									},
-									proto: "Array",
-									minLength: 1
-								}
-							},
-							{ key: "layout", value: { sequence: "number", proto: "Array" } }
-						]
-					},
-					'"AParent"': {
-						required: [
-							{
-								key: "children",
-								value: {
-									sequence: `$ark.${s.export().AChild.internal.id}`,
-									proto: "Array",
-									minLength: 1
-								}
+		attest(discriminantJsonOf(Thing.internal.assertHasKind("union"))).equals({
+			kind: "unit",
+			path: ["type"],
+			cases: {
+				'"BParent"': {
+					required: [
+						{
+							key: "children",
+							value: {
+								sequence: {
+									required: [
+										{ key: "children", value: "Array" },
+										{ key: "type", value: { unit: "BChild" } }
+									],
+									domain: "object"
+								},
+								proto: "Array",
+								minLength: 1
 							}
-						]
-					}
+						},
+						{ key: "layout", value: { sequence: "number", proto: "Array" } }
+					]
+				},
+				'"AParent"': {
+					required: [
+						{
+							key: "children",
+							value: {
+								sequence: `$ark.${s.export().AChild.internal.id}`,
+								proto: "Array",
+								minLength: 1
+							}
+						}
+					]
 				}
-			})
+			}
+		})
 
-			attest(
-				Thing({
-					type: "BParent",
-					layout: "",
-					children: [{ type: "BChild", children: [] }]
-				}).toString()
-			).snap("layout must be an array (was string)")
-		}
+		attest(
+			Thing({
+				type: "BParent",
+				layout: "",
+				children: [{ type: "BChild", children: [] }]
+			}).toString()
+		).snap("layout must be an array (was string)")
 	})
 
 	it("discriminates neither a date nor NaN", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ a: $.enumerated(new Date(0), Number.NaN, 1, 2) })
-			const epoch = { a: new Date(0) }
+		const $ = scope({})
+		const T = $.type({ a: $.enumerated(new Date(0), Number.NaN, 1, 2) })
+		const epoch = { a: new Date(0) }
 
-			attest(T(epoch)).equals(epoch)
-			attest(T({ a: Number.NaN })).equals({ a: Number.NaN })
-			attest(T({ a: new Date(0).toISOString() }).toString()).snap(
-				'a must be 1970, NaN, 1 or 2 (was "1970-01-01T00:00:00.000Z")'
-			)
-			attest($.type.enumerated(Number.NaN, "a", true)("c").toString()).snap(
-				'must be NaN, "a" or true (was "c")'
-			)
-		}
+		attest(T(epoch)).equals(epoch)
+		attest(T({ a: Number.NaN })).equals({ a: Number.NaN })
+		attest(T({ a: new Date(0).toISOString() }).toString()).snap(
+			'a must be 1970, NaN, 1 or 2 (was "1970-01-01T00:00:00.000Z")'
+		)
+		attest($.type.enumerated(Number.NaN, "a", true)("c").toString()).snap(
+			'must be NaN, "a" or true (was "c")'
+		)
 	})
 
 	it("case relates a unit to an object whose basis was pruned", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ a: "string" })
-				.or({ a: "1 | object", b: "1" })
-				.or({ a: { c: "number" }, b: "2" })
+		const $ = scope({})
+		const T = $.type({ a: "string" })
+			.or({ a: "1 | object", b: "1" })
+			.or({ a: { c: "number" }, b: "2" })
 
-			attest(T.allows({ a: 1, b: 1 })).equals(true)
-			attest(T.allows({ a: { c: 0 }, b: 2 })).equals(true)
-			attest(T.allows({ a: { c: 0 }, b: 3 })).equals(false)
-		}
+		attest(T.allows({ a: 1, b: 1 })).equals(true)
+		attest(T.allows({ a: { c: 0 }, b: 2 })).equals(true)
+		attest(T.allows({ a: { c: 0 }, b: 3 })).equals(false)
 	})
 
 	it("number case includes NaN and Infinity", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ a: "number.NaN | number.Infinity | 'x'" })
-				.or({ a: "object" })
-				.or({ a: "3" })
+		const $ = scope({})
+		const T = $.type({ a: "number.NaN | number.Infinity | 'x'" })
+			.or({ a: "object" })
+			.or({ a: "3" })
 
-			attest(T.allows({ a: Number.NaN })).equals(true)
-			attest(T.allows({ a: Number.POSITIVE_INFINITY })).equals(true)
-			attest(T.allows({ a: 4 })).equals(false)
-		}
+		attest(T.allows({ a: Number.NaN })).equals(true)
+		attest(T.allows({ a: Number.POSITIVE_INFINITY })).equals(true)
+		attest(T.allows({ a: 4 })).equals(false)
 	})
 
 	it("tuple element case includes a string at a key", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ a: ["'a'"] })
-				.or({ a: ["'b'"] })
-				.or({ a: "string | null" })
-			const U = $.type({ a: ["'a'"] })
-				.or({ a: ["'b'"] })
-				.or({ "a?": "string" })
+		const $ = scope({})
+		const T = $.type({ a: ["'a'"] })
+			.or({ a: ["'b'"] })
+			.or({ a: "string | null" })
+		const U = $.type({ a: ["'a'"] })
+			.or({ a: ["'b'"] })
+			.or({ "a?": "string" })
 
-			attest(T.allows({ a: "a" })).equals(true)
-			attest(T.allows({ a: ["c"] })).equals(false)
-			attest(U.allows({ a: "a" })).equals(true)
-			attest(U.allows({ a: ["c"] })).equals(false)
-		}
+		attest(T.allows({ a: "a" })).equals(true)
+		attest(T.allows({ a: ["c"] })).equals(false)
+		attest(U.allows({ a: "a" })).equals(true)
+		attest(U.allows({ a: ["c"] })).equals(false)
 	})
 
 	it("doesn't discriminate undefined at a path", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ kind: "'c'", v: "undefined" }).or({
-				kind: "'c'",
-				v: "2"
-			})
+		const $ = scope({})
+		const T = $.type({ kind: "'c'", v: "undefined" }).or({
+			kind: "'c'",
+			v: "2"
+		})
 
-			attest(T({ kind: "c", v: undefined })).equals({ kind: "c", v: undefined })
-			attest(T({ kind: "c" }).toString()).snap(
-				"v must be undefined or 2 (was missing)"
-			)
-			attest(T(0).toString()).snap("must be an object (was a number)")
-		}
+		attest(T({ kind: "c", v: undefined })).equals({ kind: "c", v: undefined })
+		attest(T({ kind: "c" }).toString()).snap(
+			"v must be undefined or 2 (was missing)"
+		)
+		attest(T(0).toString()).snap("must be an object (was a number)")
 	})
 
 	it("primitive with discriminant key", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ length: "3", x: "string" }).or({
-				length: "4",
-				y: "number"
-			})
+		const $ = scope({})
+		const T = $.type({ length: "3", x: "string" }).or({
+			length: "4",
+			y: "number"
+		})
 
-			attest(T({ length: 3, x: "" })).equals({ length: 3, x: "" })
-			attest(T("abc").toString()).snap("must be an object (was a string)")
-		}
+		attest(T({ length: 3, x: "" })).equals({ length: 3, x: "" })
+		attest(T("abc").toString()).snap("must be an object (was a string)")
 	})
 
 	it("object and symbol cases", () => {
 		const o = {}
 		const sym = Symbol("sym")
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ a: $.enumerated(o, sym, 1) })
+		const $ = scope({})
+		const T = $.type({ a: $.enumerated(o, sym, 1) })
 
-			attest(T({ a: o })).equals({ a: o })
-			attest(T({ a: {} }).toString()).snap(
-				"a must be 1, {} or Symbol(sym) (was an object)"
-			)
-		}
+		attest(T({ a: o })).equals({ a: o })
+		attest(T({ a: {} }).toString()).snap(
+			"a must be 1, {} or Symbol(sym) (was an object)"
+		)
 	})
 
 	it("rejected prop reads", () => {
@@ -723,161 +700,145 @@ contextualize(() => {
 
 	describe("misses", () => {
 		it("have their own code and the discriminant's value", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const T = $.type({ k: "1.5", a: "string" }).or({
-					k: "2.5",
-					b: "number"
-				})
-				const errors = T({ k: 3.5 }) as type.errors
-				attest(errors.summary).snap("k must be 1.5 or 2.5 (was 3.5)")
-				attest(errors.toJSON()[0]).snap({
-					data: 3.5,
-					path: ["k"],
-					code: "discriminant",
-					discriminantKind: "unit",
-					onKey: true,
-					absent: false,
-					description: "1.5 or 2.5",
-					meta: {},
-					propString: "k",
-					expected: "1.5 or 2.5",
-					actual: "3.5",
-					problem: "must be 1.5 or 2.5 (was 3.5)",
-					message: "k must be 1.5 or 2.5 (was 3.5)"
-				})
-			}
+			const $ = scope({})
+			const T = $.type({ k: "1.5", a: "string" }).or({
+				k: "2.5",
+				b: "number"
+			})
+			const errors = T({ k: 3.5 }) as type.errors
+			attest(errors.summary).snap("k must be 1.5 or 2.5 (was 3.5)")
+			attest(errors.toJSON()[0]).snap({
+				data: 3.5,
+				path: ["k"],
+				code: "discriminant",
+				discriminantKind: "unit",
+				onKey: true,
+				absent: false,
+				description: "1.5 or 2.5",
+				meta: {},
+				propString: "k",
+				expected: "1.5 or 2.5",
+				actual: "3.5",
+				problem: "must be 1.5 or 2.5 (was 3.5)",
+				message: "k must be 1.5 or 2.5 (was 3.5)"
+			})
 		})
 
 		it("domain cases", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const T = $.type("string | number | bigint").or({ a: "1" })
-				const errors = T(Symbol("domainCase")) as type.errors
-				attest(errors.summary).snap(
-					"must be a bigint, a number, a string or an object (was a symbol)"
-				)
-				const error = errors.issues[0]
-				if (error.code !== "discriminant") throw new Error()
-				attest(error.discriminantKind).equals("domain")
-				attest(error.cases).equals(["bigint", "number", "string", "object"])
-				attest((T(true) as type.errors).summary).snap(
-					"must be a bigint, a number, a string or an object (was boolean)"
-				)
-			}
+			const $ = scope({})
+			const T = $.type("string | number | bigint").or({ a: "1" })
+			const errors = T(Symbol("domainCase")) as type.errors
+			attest(errors.summary).snap(
+				"must be a bigint, a number, a string or an object (was a symbol)"
+			)
+			const error = errors.issues[0]
+			if (error.code !== "discriminant") throw new Error()
+			attest(error.discriminantKind).equals("domain")
+			attest(error.cases).equals(["bigint", "number", "string", "object"])
+			attest((T(true) as type.errors).summary).snap(
+				"must be a bigint, a number, a string or an object (was boolean)"
+			)
 		})
 
 		it("unit cases are the units themselves", () => {
 			const o = {}
 			const sym = Symbol("unitCase")
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const T = $.type.enumerated(
-					o,
-					sym,
-					"a",
-					1,
-					2n,
-					-Infinity,
-					true,
-					null,
-					undefined
-				)
-				const errors = T("z") as type.errors
-				attest(errors.summary).snap(
-					'must be 1, {}, Symbol(unitCase), -Infinity, 2n, "a", undefined, null or true (was "z")'
-				)
-				const error = errors.issues[0]
-				if (error.code !== "discriminant") throw new Error()
-				attest(error.cases).equals([
-					1,
-					o,
-					sym,
-					-Infinity,
-					2n,
-					"a",
-					undefined,
-					null,
-					true
-				])
-				attest(error.cases[1]).is(o)
-			}
+			const $ = scope({})
+			const T = $.type.enumerated(
+				o,
+				sym,
+				"a",
+				1,
+				2n,
+				-Infinity,
+				true,
+				null,
+				undefined
+			)
+			const errors = T("z") as type.errors
+			attest(errors.summary).snap(
+				'must be 1, {}, Symbol(unitCase), -Infinity, 2n, "a", undefined, null or true (was "z")'
+			)
+			const error = errors.issues[0]
+			if (error.code !== "discriminant") throw new Error()
+			attest(error.cases).equals([
+				1,
+				o,
+				sym,
+				-Infinity,
+				2n,
+				"a",
+				undefined,
+				null,
+				true
+			])
+			attest(error.cases[1]).is(o)
 		})
 
 		it("an absent key", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const T = $.type({ k: "'a'", x: "string" }).or({
-					k: "'b'",
-					y: "number"
-				})
-				const absent = (data: unknown) => {
-					const error = (T(data) as type.errors).issues[0]
-					if (error.code !== "discriminant") throw new Error()
-					return [error.absent, error.message]
-				}
-				attest(absent({})).snap([true, 'k must be "a" or "b" (was undefined)'])
-				attest(absent({ k: undefined })).snap([
-					false,
-					'k must be "a" or "b" (was undefined)'
-				])
-				const Nested = $.type({ v: { k: "'a'", x: "string" } })
-					.or({ v: { k: "'b'", y: "number" } })
-					.or({ v: { k: "'c'" } })
-				const nestedAbsent = (data: unknown) => {
-					const error = (Nested(data) as type.errors).issues[0]
-					return error.code === "discriminant" && error.absent
-				}
-				attest(nestedAbsent({})).equals(true)
-				attest(nestedAbsent({ v: 5 })).equals(true)
-				attest(nestedAbsent({ v: "abc" })).equals(true)
-				attest(nestedAbsent({ v: { k: "d" } })).equals(false)
-				// a key on Object.prototype is still absent below a missing parent
-				const Proto = $.type({ v: { toString: "'a'", x: "string" } })
-					.or({ v: { toString: "'b'", y: "number" } })
-					.or({ v: { toString: "'c'" } })
-				const error = (Proto({}) as type.errors).issues[0]
-				attest(error.code === "discriminant" && error.absent).equals(true)
+			const $ = scope({})
+			const T = $.type({ k: "'a'", x: "string" }).or({
+				k: "'b'",
+				y: "number"
+			})
+			const absent = (data: unknown) => {
+				const error = (T(data) as type.errors).issues[0]
+				if (error.code !== "discriminant") throw new Error()
+				return [error.absent, error.message]
 			}
+			attest(absent({})).snap([true, 'k must be "a" or "b" (was undefined)'])
+			attest(absent({ k: undefined })).snap([
+				false,
+				'k must be "a" or "b" (was undefined)'
+			])
+			const Nested = $.type({ v: { k: "'a'", x: "string" } })
+				.or({ v: { k: "'b'", y: "number" } })
+				.or({ v: { k: "'c'" } })
+			const nestedAbsent = (data: unknown) => {
+				const error = (Nested(data) as type.errors).issues[0]
+				return error.code === "discriminant" && error.absent
+			}
+			attest(nestedAbsent({})).equals(true)
+			attest(nestedAbsent({ v: 5 })).equals(true)
+			attest(nestedAbsent({ v: "abc" })).equals(true)
+			attest(nestedAbsent({ v: { k: "d" } })).equals(false)
+			// a key on Object.prototype is still absent below a missing parent
+			const Proto = $.type({ v: { toString: "'a'", x: "string" } })
+				.or({ v: { toString: "'b'", y: "number" } })
+				.or({ v: { toString: "'c'" } })
+			const error = (Proto({}) as type.errors).issues[0]
+			attest(error.code === "discriminant" && error.absent).equals(true)
 		})
 
 		it("keep their path when merged", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const Disc = $.type({ k: "'a'", x: "string" }).or({
-					k: "'b'",
-					y: "number"
-				})
-				const T = $.type({ v: $.type("object").pipe(o => Disc(o)) })
-				const error = (T({ v: { k: "c" } }) as type.errors).issues[0]
-				attest(error.message).snap('v.k must be "a" or "b" (was "c")')
-				attest(error.propString).equals("v.k")
-			}
+			const $ = scope({})
+			const Disc = $.type({ k: "'a'", x: "string" }).or({
+				k: "'b'",
+				y: "number"
+			})
+			const T = $.type({ v: $.type("object").pipe(o => Disc(o)) })
+			const error = (T({ v: { k: "c" } }) as type.errors).issues[0]
+			attest(error.message).snap('v.k must be "a" or "b" (was "c")')
+			attest(error.propString).equals("v.k")
 		})
 
 		it("serialize with bigint cases", () => {
-			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless })
-					.type({ k: "1n", a: "string" })
-					.or({ k: "2n", b: "number" })
-				attest(JSON.parse(JSON.stringify(T({ k: "x" })))[0].message).snap(
-					'k must be 1n or 2n (was "x")'
-				)
-			}
+			const T = type({ k: "1n", a: "string" }).or({ k: "2n", b: "number" })
+			attest(JSON.parse(JSON.stringify(T({ k: "x" })))[0].message).snap(
+				'k must be 1n or 2n (was "x")'
+			)
 		})
 
 		it("in an outer union, print the value at their path", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const Disc = $.type({ k: "'a'", x: "string" }).or({
-					k: "'b'",
-					y: "number"
-				})
-				const T = $.type({ v: Disc }).or({ v: { k: "string >= 5" } })
-				attest(T({ v: { k: "c" } }).toString()).snap(
-					'v.k must be "a" or "b" or at least length 5 (was "c")'
-				)
-			}
+			const $ = scope({})
+			const Disc = $.type({ k: "'a'", x: "string" }).or({
+				k: "'b'",
+				y: "number"
+			})
+			const T = $.type({ v: Disc }).or({ v: { k: "string >= 5" } })
+			attest(T({ v: { k: "c" } }).toString()).snap(
+				'v.k must be "a" or "b" or at least length 5 (was "c")'
+			)
 		})
 
 		it("configured text", () => {
@@ -885,85 +846,73 @@ contextualize(() => {
 				scope({}, config)
 					.type({ kind: "'a'", x: "string" })
 					.or({ kind: "'b'", y: "number" })
-			for (const jitless of [false, true]) {
-				const Configured = define({
-					jitless,
-					discriminant: {
-						problem: ctx => `isn't one of ${ctx.cases.length}`
-					}
-				})
-				attest(Configured({ kind: "c" }).toString()).snap("kind isn't one of 2")
-				// the union's expected and actual describe the object, not its key
-				const Described = define({ jitless }).configure({
-					expected: "a known kind"
-				})
-				attest(Described({ kind: "c" }).toString()).snap(
-					'kind must be "a" or "b" (was "c")'
-				)
-				const Actual = define({ jitless }).configure({
-					actual: data => `<${Object.keys(data as object).length} keys>`
-				})
-				attest(Actual({ kind: "c" }).toString()).snap(
-					'kind must be "a" or "b" (was "c")'
-				)
-				const Letter = scope({}, { jitless })
-					.type("'a' | 'b' | 'c'")
-					.configure({ expected: "a letter" })
-				attest(Letter("d").toString()).snap('must be a letter (was "d")')
-				const Predicate = define({
-					jitless,
-					predicate: { problem: "isn't valid" }
-				})
-				attest(Predicate({ kind: "c" }).toString()).snap(
-					'kind must be "a" or "b" (was "c")'
-				)
-			}
+			const Configured = define({
+				discriminant: {
+					problem: ctx => `isn't one of ${ctx.cases.length}`
+				}
+			})
+			attest(Configured({ kind: "c" }).toString()).snap("kind isn't one of 2")
+			// the union's expected and actual describe the object, not its key
+			const Described = define({}).configure({
+				expected: "a known kind"
+			})
+			attest(Described({ kind: "c" }).toString()).snap(
+				'kind must be "a" or "b" (was "c")'
+			)
+			const Actual = define({}).configure({
+				actual: data => `<${Object.keys(data as object).length} keys>`
+			})
+			attest(Actual({ kind: "c" }).toString()).snap(
+				'kind must be "a" or "b" (was "c")'
+			)
+			const Letter = type("'a' | 'b' | 'c'").configure({ expected: "a letter" })
+			attest(Letter("d").toString()).snap('must be a letter (was "d")')
+			const Predicate = define({
+				predicate: { problem: "isn't valid" }
+			})
+			attest(Predicate({ kind: "c" }).toString()).snap(
+				'kind must be "a" or "b" (was "c")'
+			)
 		})
 	})
 
 	it("jitless describes cases as compiled", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const StringOrFile = $.type("string | File")
-			attest(StringOrFile(5).toString()).snap(
-				"must be a string or an object (was a number)"
-			)
-			attest(StringOrFile({}).toString()).snap(
-				"must be a File instance (was object)"
-			)
-			attest($.type("'b' | 1 | 'a'")(2).toString()).snap(
-				'must be 1, "a" or "b" (was 2)'
-			)
-			const Tagged = $.type({ kind: "'a'", a: "string" }).or({
-				kind: "'b'",
-				b: "number"
-			})
-			attest(Tagged({ kind: "a", a: 5 }).toString()).snap(
-				"a must be a string (was a number)"
-			)
-			attest(Tagged(5).toString()).snap(
-				'kind must be "a" or "b" (was undefined)'
-			)
-		}
+		const $ = scope({})
+		const StringOrFile = $.type("string | File")
+		attest(StringOrFile(5).toString()).snap(
+			"must be a string or an object (was a number)"
+		)
+		attest(StringOrFile({}).toString()).snap(
+			"must be a File instance (was object)"
+		)
+		attest($.type("'b' | 1 | 'a'")(2).toString()).snap(
+			'must be 1, "a" or "b" (was 2)'
+		)
+		const Tagged = $.type({ kind: "'a'", a: "string" }).or({
+			kind: "'b'",
+			b: "number"
+		})
+		attest(Tagged({ kind: "a", a: 5 }).toString()).snap(
+			"a must be a string (was a number)"
+		)
+		attest(Tagged(5).toString()).snap('kind must be "a" or "b" (was undefined)')
 	})
 
 	it("describes a unit case once", () => {
-		for (const jitless of [false, true]) {
-			let calls = 0
-			const unit = {
-				toJSON: () => {
-					calls++
-					return { tag: "u" }
-				}
+		let calls = 0
+		const unit = {
+			toJSON: () => {
+				calls++
+				return { tag: "u" }
 			}
-			const $ = scope({}, { jitless })
-			const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })
-			attest(T({ k: "c" }).toString()).snap(
-				'k must be {"toJSON":"Function(toJSON)"} or "b" (was "c")'
-			)
-			const callsOnFirstMiss = calls
-			T({ k: "c" })
-			attest(calls).equals(callsOnFirstMiss)
 		}
+		const $ = scope({})
+		const T = $.type({ k: $.type.unit(unit) }).or({ k: "'b'", v: "number" })
+		attest(T({ k: "c" }).toString()).snap(
+			'k must be {"toJSON":"Function(toJSON)"} or "b" (was "c")'
+		)
+		const callsOnFirstMiss = calls
+		T({ k: "c" })
+		attest(calls).equals(callsOnFirstMiss)
 	})
 })

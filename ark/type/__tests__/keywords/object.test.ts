@@ -19,14 +19,12 @@ contextualize(() => {
 				return Number.NaN
 			}
 		}
-		for (const jitless of [false, true]) {
-			const { D } = scope({ D: "Date" }, { jitless }).export()
-			attest(D.allows(new Date(0))).equals(true)
-			attest(D(new Date(Number.NaN)).toString()).equals(
-				"must be a Date (was an invalid Date)"
-			)
-			attest(D.allows(new NaNTime(0))).equals(true)
-		}
+		const { D } = scope({ D: "Date" }).export()
+		attest(D.allows(new Date(0))).equals(true)
+		attest(D(new Date(Number.NaN)).toString()).equals(
+			"must be a Date (was an invalid Date)"
+		)
+		attest(D.allows(new NaNTime(0))).equals(true)
 	})
 
 	describe("json", () => {

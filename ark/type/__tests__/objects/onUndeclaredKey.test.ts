@@ -156,88 +156,74 @@ Right: { b: boolean, + (undeclared): delete }`)
 		})
 
 		it("rejected keys have their own code and their values", () => {
-			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless }).type({ "+": "reject", a: "string" })
-				const errors = T({ a: "ok", b: 1, c: 2 }) as type.errors
-				attest(errors.summary).snap(`b must be removed
+			const T = type({ "+": "reject", a: "string" })
+			const errors = T({ a: "ok", b: 1, c: 2 }) as type.errors
+			attest(errors.summary).snap(`b must be removed
 c must be removed`)
-				attest(errors.issues.map(e => e.data)).equals([1, 2])
-				attest(errors.toJSON()[0]).snap({
-					data: 1,
-					path: ["b"],
-					code: "undeclared",
-					meta: {},
-					propString: "b",
-					expected: "removed",
-					actual: "",
-					problem: "must be removed",
-					message: "b must be removed"
-				})
-			}
+			attest(errors.issues.map(e => e.data)).equals([1, 2])
+			attest(errors.toJSON()[0]).snap({
+				data: 1,
+				path: ["b"],
+				code: "undeclared",
+				meta: {},
+				propString: "b",
+				expected: "removed",
+				actual: "",
+				problem: "must be removed",
+				message: "b must be removed"
+			})
 		})
 
 		it("rejected key beside another failure at its path", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const T = $.type.schema({
-					branches: [
-						$.type({ "+": "reject", a: "string" }).internal,
-						$.type({ a: "string", b: "number" }).internal
-					],
-					ordered: true
-				} as never)
-				attest((T({ a: "x", b: "y" }) as type.errors).summary).snap(
-					'b must be removed or a number (was "y")'
-				)
-			}
+			const $ = scope({})
+			const T = $.type.schema({
+				branches: [
+					$.type({ "+": "reject", a: "string" }).internal,
+					$.type({ a: "string", b: "number" }).internal
+				],
+				ordered: true
+			} as never)
+			attest((T({ a: "x", b: "y" }) as type.errors).summary).snap(
+				'b must be removed or a number (was "y")'
+			)
 		})
 
 		it("configured text reaches a rejected key", () => {
-			for (const jitless of [false, true]) {
-				const Configured = scope(
-					{},
-					{ jitless, undeclared: { problem: "isn't allowed" } }
-				).type({ "+": "reject", a: "string" })
-				attest(Configured({ a: "ok", b: 1 }).toString()).snap("b isn't allowed")
-				const Predicate = scope(
-					{},
-					{ jitless, predicate: { problem: "isn't valid" } }
-				).type({ "+": "reject", a: "string" })
-				attest(Predicate({ a: "ok", b: 1 }).toString()).snap(
-					"b must be removed"
-				)
-			}
+			const Configured = scope(
+				{},
+				{ undeclared: { problem: "isn't allowed" } }
+			).type({ "+": "reject", a: "string" })
+			attest(Configured({ a: "ok", b: 1 }).toString()).snap("b isn't allowed")
+			const Predicate = scope(
+				{},
+				{ predicate: { problem: "isn't valid" } }
+			).type({ "+": "reject", a: "string" })
+			attest(Predicate({ a: "ok", b: 1 }).toString()).snap("b must be removed")
 		})
 
 		it("structure meta reaches a rejected key", () => {
-			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless })
-					.type({ "+": "reject", a: "string" })
-					.configure(
-						{ expected: "declared", actual: data => `<${data}>` },
-						{ kind: "structure" }
-					)
-				attest(T({ a: "ok", b: 1 }).toString()).snap(
-					"b must be declared (was <1>)"
-				)
-			}
+			const T = type({ "+": "reject", a: "string" }).configure(
+				{ expected: "declared", actual: data => `<${data}>` },
+				{ kind: "structure" }
+			)
+			attest(T({ a: "ok", b: 1 }).toString()).snap(
+				"b must be declared (was <1>)"
+			)
 		})
 
 		it("reject allows undeclared symbol keys", () => {
 			const undeclared = Symbol("undeclared")
 			const data = { a: "ok", x: 1, [undeclared]: 1 }
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const T = $.type({ "+": "reject", a: "string", x: "number" })
-				attest(T(data)).equals(data)
-				const Indexed = $.type({
-					"+": "reject",
-					a: "string",
-					"[/^x/]": "number"
-				})
-				attest(Indexed(data)).equals(data)
-				attest(Indexed({ ...data, b: 1 }).toString()).snap("b must be removed")
-			}
+			const $ = scope({})
+			const T = $.type({ "+": "reject", a: "string", x: "number" })
+			attest(T(data)).equals(data)
+			const Indexed = $.type({
+				"+": "reject",
+				a: "string",
+				"[/^x/]": "number"
+			})
+			attest(Indexed(data)).equals(data)
+			attest(Indexed({ ...data, b: 1 }).toString()).snap("b must be removed")
 			attest(
 				type({ "+": "reject", a: "string" }).and({ "[symbol]": "string" })
 					.expression
@@ -278,15 +264,13 @@ b must be removed`)
 		})
 
 		it("delete keeps declared __proto__", () => {
-			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless }).type({
-					["__proto__?"]: "object",
-					"+": "delete"
-				})
-				const out = T.assert(JSON.parse('{"__proto__":{"x":1},"z":2}'))
-				attest(Object.keys(out)).equals(["__proto__"])
-				attest(Object.getPrototypeOf(out) === Object.prototype).equals(true)
-			}
+			const T = type({
+				["__proto__?"]: "object",
+				"+": "delete"
+			})
+			const out = T.assert(JSON.parse('{"__proto__":{"x":1},"z":2}'))
+			attest(Object.keys(out)).equals(["__proto__"])
+			attest(Object.getPrototypeOf(out) === Object.prototype).equals(true)
 		})
 
 		it("reject key from union", () => {

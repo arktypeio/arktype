@@ -114,46 +114,29 @@ contextualize(() => {
 	})
 
 	it("non-finite checks are consistent without jit", () => {
-		for (const jitless of [false, true]) {
-			const $ = schemaScope(
-				{
-					finite: "number",
-					nanable: { domain: "number", numberAllowsNaN: true },
-					infinitable: { domain: "number", numberAllowsInfinity: true },
-					nonFinite: {
-						domain: "number",
-						numberAllowsNaN: true,
-						numberAllowsInfinity: true
-					}
-				},
-				{ jitless }
-			).export()
-			const allowed = (data: unknown) =>
-				[$.finite, $.nanable, $.infinitable, $.nonFinite].map(T =>
-					T.allows(data)
-				)
-			attest(allowed(0)).equals([true, true, true, true])
-			attest(allowed(Number.NaN)).equals([false, true, false, true])
-			attest(allowed(Number.POSITIVE_INFINITY)).equals([
-				false,
-				false,
-				true,
-				true
-			])
-			attest(allowed(Number.NEGATIVE_INFINITY)).equals([
-				false,
-				false,
-				true,
-				true
-			])
-			attest(allowed("0")).equals([false, false, false, false])
-			attest($.infinitable.traverse(Number.NaN)?.toString()).equals(
-				"must be a number (was NaN)"
-			)
-			attest($.nanable.traverse(Number.POSITIVE_INFINITY)?.toString()).equals(
-				"must be a number (was Infinity)"
-			)
-		}
+		const $ = schemaScope({
+			finite: "number",
+			nanable: { domain: "number", numberAllowsNaN: true },
+			infinitable: { domain: "number", numberAllowsInfinity: true },
+			nonFinite: {
+				domain: "number",
+				numberAllowsNaN: true,
+				numberAllowsInfinity: true
+			}
+		}).export()
+		const allowed = (data: unknown) =>
+			[$.finite, $.nanable, $.infinitable, $.nonFinite].map(T => T.allows(data))
+		attest(allowed(0)).equals([true, true, true, true])
+		attest(allowed(Number.NaN)).equals([false, true, false, true])
+		attest(allowed(Number.POSITIVE_INFINITY)).equals([false, false, true, true])
+		attest(allowed(Number.NEGATIVE_INFINITY)).equals([false, false, true, true])
+		attest(allowed("0")).equals([false, false, false, false])
+		attest($.infinitable.traverse(Number.NaN)?.toString()).equals(
+			"must be a number (was NaN)"
+		)
+		attest($.nanable.traverse(Number.POSITIVE_INFINITY)?.toString()).equals(
+			"must be a number (was Infinity)"
+		)
 	})
 
 	it("NaN", () => {

@@ -104,38 +104,30 @@ contextualize(() => {
 	})
 
 	it("node writer config on union", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const Discriminated = $.type([{ k: "'a'" }, "|", { k: "'b'" }], "@", {
-				message: ctx => `custom message ${ctx.problem}`
-			})
-			attest(Discriminated({ k: "c" }).toString()).snap(
-				'custom message must be "a" or "b" (was "c")'
-			)
-			const Indiscriminable = $.type(
-				[{ a: "string" }, "|", { b: "number" }],
-				"@",
-				{ message: ctx => `custom message ${ctx.problem}` }
-			)
-			attest<{ a: string } | { b: number }>(Indiscriminable.infer)
-			attest(Indiscriminable({}).toString()).snap(
-				"custom message a must be a string (was missing) or b must be a number (was missing)"
-			)
-		}
+		const $ = scope({})
+		const Discriminated = $.type([{ k: "'a'" }, "|", { k: "'b'" }], "@", {
+			message: ctx => `custom message ${ctx.problem}`
+		})
+		attest(Discriminated({ k: "c" }).toString()).snap(
+			'custom message must be "a" or "b" (was "c")'
+		)
+		const Indiscriminable = $.type(
+			[{ a: "string" }, "|", { b: "number" }],
+			"@",
+			{ message: ctx => `custom message ${ctx.problem}` }
+		)
+		attest<{ a: string } | { b: number }>(Indiscriminable.infer)
+		attest(Indiscriminable({}).toString()).snap(
+			"custom message a must be a string (was missing) or b must be a number (was missing)"
+		)
 	})
 
 	it("node writer config on undeclared key", () => {
-		for (const jitless of [false, true]) {
-			const T = scope({}, { jitless })
-				.type({ "+": "reject", a: "string" })
-				.configure(
-					{ message: ctx => `custom message ${ctx.problem}` },
-					"structure"
-				)
-			attest(T({ a: "", b: 1 }).toString()).snap(
-				"custom message must be removed"
-			)
-		}
+		const T = type({ "+": "reject", a: "string" }).configure(
+			{ message: ctx => `custom message ${ctx.problem}` },
+			"structure"
+		)
+		attest(T({ a: "", b: 1 }).toString()).snap("custom message must be removed")
 	})
 
 	it("applies config to shallow descendants", () => {
@@ -220,68 +212,64 @@ contextualize(() => {
 	it("leaf with scope description writer", () => {
 		const A = type({ a: "number > 1234" })
 		attest(A({ a: "x" }).toString()).snap("a must be a number (was a string)")
-		for (const jitless of [false, true]) {
-			const types = scope(
-				{ b: "number", o: { a: A, b: "b" } },
-				{ jitless, domain: { description: () => "a custom number" } }
-			).export()
-			attest(types.o({ a: { a: "x" }, b: "x" }).toString()).equals(
-				"a.a must be a number (was a string)\nb must be a custom number (was a string)"
-			)
-		}
+		const types = scope(
+			{ b: "number", o: { a: A, b: "b" } },
+			{ domain: { description: () => "a custom number" } }
+		).export()
+		attest(types.o({ a: { a: "x" }, b: "x" }).toString()).equals(
+			"a.a must be a number (was a string)\nb must be a custom number (was a string)"
+		)
 	})
 
 	it("referenced types keep their descriptions", () => {
 		const custom = { domain: { description: () => "a custom number" } }
 		const plain = scope({ x: "number" }).export()
-		for (const jitless of [false, true]) {
-			const lib = scope(
-				{ x: "number", y: { v: "number" } },
-				{ jitless, ...custom }
-			).export()
-			const types = scope(
-				{
-					plain,
-					...plain,
-					ref: type("number"),
-					o: type({ a: "number" }),
-					b: "number",
-					int: "number.integer",
-					gt: "number > 5",
-					described: type("number").describe("my number"),
-					imported: "plain.x"
-				},
-				{ jitless, ...custom }
-			).export()
-			attest({
-				ref: types.ref("s").toString(),
-				o: types.o({ a: "s" }).toString(),
-				b: types.b("s").toString(),
-				int: types.int("s").toString(),
-				gt: types.gt("s").toString(),
-				described: types.described("s").toString(),
-				imported: types.imported("s").toString(),
-				spread: types.x("s").toString(),
-				x: type({ a: lib.x })({ a: "s" }).toString(),
-				y: type({ a: lib.y })({ a: { v: "s" } }).toString(),
-				rebound: scope({ x: type(lib.x) })
-					.export()
-					.x("s")
-					.toString()
-			}).equals({
-				ref: "must be a number (was a string)",
-				o: "a must be a number (was a string)",
-				b: "must be a custom number (was a string)",
-				int: "must be a custom number (was a string)",
-				gt: "must be a custom number (was a string)",
-				described: "must be my number (was a string)",
-				imported: "must be a number (was a string)",
-				spread: "must be a number (was a string)",
-				x: "a must be a custom number (was a string)",
-				y: "a.v must be a custom number (was a string)",
-				rebound: "must be a custom number (was a string)"
-			})
-		}
+		const lib = scope(
+			{ x: "number", y: { v: "number" } },
+			{ ...custom }
+		).export()
+		const types = scope(
+			{
+				plain,
+				...plain,
+				ref: type("number"),
+				o: type({ a: "number" }),
+				b: "number",
+				int: "number.integer",
+				gt: "number > 5",
+				described: type("number").describe("my number"),
+				imported: "plain.x"
+			},
+			{ ...custom }
+		).export()
+		attest({
+			ref: types.ref("s").toString(),
+			o: types.o({ a: "s" }).toString(),
+			b: types.b("s").toString(),
+			int: types.int("s").toString(),
+			gt: types.gt("s").toString(),
+			described: types.described("s").toString(),
+			imported: types.imported("s").toString(),
+			spread: types.x("s").toString(),
+			x: type({ a: lib.x })({ a: "s" }).toString(),
+			y: type({ a: lib.y })({ a: { v: "s" } }).toString(),
+			rebound: scope({ x: type(lib.x) })
+				.export()
+				.x("s")
+				.toString()
+		}).equals({
+			ref: "must be a number (was a string)",
+			o: "a must be a number (was a string)",
+			b: "must be a custom number (was a string)",
+			int: "must be a custom number (was a string)",
+			gt: "must be a custom number (was a string)",
+			described: "must be my number (was a string)",
+			imported: "must be a number (was a string)",
+			spread: "must be a number (was a string)",
+			x: "a must be a custom number (was a string)",
+			y: "a.v must be a custom number (was a string)",
+			rebound: "must be a custom number (was a string)"
+		})
 	})
 
 	it("referenced cyclic and discriminated types keep their descriptions", () => {
@@ -290,39 +278,37 @@ contextualize(() => {
 		const Configured = type("number").configure({
 			description: "a configured number"
 		})
-		for (const jitless of [false, true]) {
-			const types = scope(
-				{
-					b: "number",
-					cyclic: Cyclic,
-					o: { cyclic: Cyclic, discriminated: Discriminated, b: "b" },
-					configured: { a: Configured, b: "b" }
-				},
-				{ jitless, domain: { description: () => "a custom number" } }
-			).export()
-			attest(
-				types
-					.o({
-						cyclic: { a: 1, next: { a: "x" } },
-						discriminated: { kind: "a", n: "x" },
-						b: 1
-					})
-					.toString()
-			).equals(
-				"cyclic.next.a must be a number (was a string)\ndiscriminated.n must be a number (was a string)"
-			)
-			attest(
-				types
-					.o({ cyclic: { a: 1 }, discriminated: { kind: "c" }, b: 1 })
-					.toString()
-			).equals('discriminated.kind must be "a" or "b" (was "c")')
-			attest(types.configured({ a: "x", b: "x" }).toString()).equals(
-				"a must be a configured number (was a string)\nb must be a custom number (was a string)"
-			)
-			attest(types.cyclic.description).equals(
-				scope({ Cyclic }).export().Cyclic.description
-			)
-		}
+		const types = scope(
+			{
+				b: "number",
+				cyclic: Cyclic,
+				o: { cyclic: Cyclic, discriminated: Discriminated, b: "b" },
+				configured: { a: Configured, b: "b" }
+			},
+			{ domain: { description: () => "a custom number" } }
+		).export()
+		attest(
+			types
+				.o({
+					cyclic: { a: 1, next: { a: "x" } },
+					discriminated: { kind: "a", n: "x" },
+					b: 1
+				})
+				.toString()
+		).equals(
+			"cyclic.next.a must be a number (was a string)\ndiscriminated.n must be a number (was a string)"
+		)
+		attest(
+			types
+				.o({ cyclic: { a: 1 }, discriminated: { kind: "c" }, b: 1 })
+				.toString()
+		).equals('discriminated.kind must be "a" or "b" (was "c")')
+		attest(types.configured({ a: "x", b: "x" }).toString()).equals(
+			"a must be a configured number (was a string)\nb must be a custom number (was a string)"
+		)
+		attest(types.cyclic.description).equals(
+			scope({ Cyclic }).export().Cyclic.description
+		)
 	})
 
 	it("a type equal to a referenced type keeps its own descriptions", () => {
@@ -349,17 +335,13 @@ contextualize(() => {
 	})
 
 	it("description writer runs on definition", () => {
-		for (const jitless of [false, true]) {
-			let lang = "en"
-			const T = scope(
-				{},
-				{ jitless, domain: { description: node => `${lang}:${node.domain}` } }
-			).type({ a: "string" })
-			lang = "de"
-			attest(T({ a: 5 }).toString()).equals(
-				"a must be en:string (was a number)"
-			)
-		}
+		let lang = "en"
+		const T = scope(
+			{},
+			{ domain: { description: node => `${lang}:${node.domain}` } }
+		).type({ a: "string" })
+		lang = "de"
+		attest(T({ a: 5 }).toString()).equals("a must be en:string (was a number)")
 	})
 
 	it("configure after a type is created", () => {

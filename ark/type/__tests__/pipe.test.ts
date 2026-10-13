@@ -147,19 +147,15 @@ contextualize(() => {
 
 		it("errors carry the morph and what it threw", () => {
 			const parseJson = (s: string): unknown => JSON.parse(s)
-			for (const jitless of [false, true]) {
-				const ParseJson = scope({}, { jitless })
-					.type("string")
-					.pipe.try(parseJson)
-				const error = (ParseJson("{") as type.errors).issues[0]
-				if (error.code !== "predicate") throw new Error()
-				attest(error.morph).is(parseJson)
-				attest(error.cause instanceof SyntaxError).equals(true)
-				attest(error.predicate).equals(undefined)
-				attest(error.message).equals(
-					`must be valid according to parseJson (was aborted due to error:\n    ${error.cause}\n)`
-				)
-			}
+			const ParseJson = type("string").pipe.try(parseJson)
+			const error = (ParseJson("{") as type.errors).issues[0]
+			if (error.code !== "predicate") throw new Error()
+			attest(error.morph).is(parseJson)
+			attest(error.cause instanceof SyntaxError).equals(true)
+			attest(error.predicate).equals(undefined)
+			attest(error.message).equals(
+				`must be valid according to parseJson (was aborted due to error:\n    ${error.cause}\n)`
+			)
 		})
 
 		it("try errors print any thrown value", () => {
@@ -568,41 +564,35 @@ contextualize(() => {
 	})
 
 	it("nested morph error paths", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const Inner = $.type({ c: "number" })
-			const Middle = $.type({ b: ["object", "=>", o => Inner(o)] })
-			const Outer = $.type({ a: ["object", "=>", o => Middle(o)] })
-			const out = Outer({ a: { b: { c: "x" } } }) as ArkErrors
+		const $ = scope({})
+		const Inner = $.type({ c: "number" })
+		const Middle = $.type({ b: ["object", "=>", o => Inner(o)] })
+		const Outer = $.type({ a: ["object", "=>", o => Middle(o)] })
+		const out = Outer({ a: { b: { c: "x" } } }) as ArkErrors
 
-			attest(out.toString()).snap("a.b.c must be a number (was a string)")
-			attest(out.issues[0].path).snap(["a", "b", "c"])
-		}
+		attest(out.toString()).snap("a.b.c must be a number (was a string)")
+		attest(out.issues[0].path).snap(["a", "b", "c"])
 	})
 
 	it("unary morph arity", () => {
-		for (const jitless of [false, true]) {
-			const T = scope({}, { jitless }).type({
-				a: ["string", "=>", (s: string, ...rest: unknown[]) => rest.length]
-			})
-			attest(T.assert({ a: "x" }).a).equals(0)
-		}
+		const T = type({
+			a: ["string", "=>", (s: string, ...rest: unknown[]) => rest.length]
+		})
+		attest(T.assert({ a: "x" }).a).equals(0)
 	})
 
 	it("array props before elements", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const calls: string[] = []
-			const Trimmed = $.type("string").pipe(s => {
-				calls.push(s)
-				return s.trim()
-			})
-			const T = $.type(Trimmed.array()).and({ foo: Trimmed })
-			const out = T.assert(Object.assign([" a"], { foo: " f" }))
-			attest(calls).equals([" f", " a"])
-			attest(out.foo).equals("f")
-			attest([...out]).equals(["a"])
-		}
+		const $ = scope({})
+		const calls: string[] = []
+		const Trimmed = $.type("string").pipe(s => {
+			calls.push(s)
+			return s.trim()
+		})
+		const T = $.type(Trimmed.array()).and({ foo: Trimmed })
+		const out = T.assert(Object.assign([" a"], { foo: " f" }))
+		attest(calls).equals([" f", " a"])
+		attest(out.foo).equals("f")
+		attest([...out]).equals(["a"])
 	})
 
 	it("doesn't pipe on error", () => {
@@ -1351,14 +1341,12 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
 
 	it("assert with root morph errors", () => {
 		const N = type("number")
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type("string").pipe(s => N(s))
-			attest(() => T.assert("x")).throws("must be a number (was a string)")
-			attest(() => T.or("boolean").assert("x")).throws(
-				"must be a number (was a string)"
-			)
-		}
+		const $ = scope({})
+		const T = $.type("string").pipe(s => N(s))
+		attest(() => T.assert("x")).throws("must be a number (was a string)")
+		attest(() => T.or("boolean").assert("x")).throws(
+			"must be a number (was a string)"
+		)
 	})
 
 	// https://github.com/arktypeio/arktype/pull/1464

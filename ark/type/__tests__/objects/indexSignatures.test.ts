@@ -188,53 +188,48 @@ other must be a string (was a bigint)`)
 	})
 
 	it("fail-fast index branch", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ kind: "'c'", p0: "boolean" }).or({
-				"[string]": { p2: "object" }
-			})
+		const $ = scope({})
+		const T = $.type({ kind: "'c'", p0: "boolean" }).or({
+			"[string]": { p2: "object" }
+		})
 
-			attest(T({ kind: { bogus: true }, p0: true }).toString()).snap(
-				'kind.p2 must be an object (was missing) or kind must be "c" (was an object)'
-			)
-		}
+		attest(T({ kind: { bogus: true }, p0: true }).toString()).snap(
+			'kind.p2 must be an object (was missing) or kind must be "c" (was an object)'
+		)
 	})
 
 	it("keeps no error from a signature rejecting a key", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const K = $.type("string").narrow(
-				(s, ctx) => s.startsWith("a") || ctx.mustBe("prefixed with a")
-			)
-			const T = $.type.Record(K, "number")
-			const data = { ab: 1, x: 2 }
-			attest(T(data)).equals(data)
-			attest(T.allows(data)).equals(true)
-			attest(T({ ab: "1", x: 2 }).toString()).snap(
-				"ab must be a number (was a string)"
-			)
-			attest(T.onUndeclaredKey("reject")(data).toString()).snap(
-				"x must be removed"
-			)
-			attest(T.onUndeclaredKey("delete")(data)).equals({ ab: 1 })
-			attest(
-				$.type.Record(K, "string.numeric.parse")({ ab: "1", x: 2 })
-			).equals({ ab: 1, x: 2 })
-		}
+		const $ = scope({})
+		const K = $.type("string").narrow(
+			(s, ctx) => s.startsWith("a") || ctx.mustBe("prefixed with a")
+		)
+		const T = $.type.Record(K, "number")
+		const data = { ab: 1, x: 2 }
+		attest(T(data)).equals(data)
+		attest(T.allows(data)).equals(true)
+		attest(T({ ab: "1", x: 2 }).toString()).snap(
+			"ab must be a number (was a string)"
+		)
+		attest(T.onUndeclaredKey("reject")(data).toString()).snap(
+			"x must be removed"
+		)
+		attest(T.onUndeclaredKey("delete")(data)).equals({ ab: 1 })
+		attest($.type.Record(K, "string.numeric.parse")({ ab: "1", x: 2 })).equals({
+			ab: 1,
+			x: 2
+		})
 	})
 
 	it("checks keys against a signature reading ctx that another Type compiled first", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const K = $.type("string").narrow(
-				(s, ctx) => s.length > 5 || ctx.mustBe("long")
-			)
-			const T = $.type({ a: "number" }).and($.type.Record(K, "string"))
-			attest(T.allows({ a: 1, ab: 2, abcdefg: "x" })).equals(true)
-			attest(T({ a: 1, abcdefg: 2 }).toString()).snap(
-				"abcdefg must be a string (was a number)"
-			)
-		}
+		const $ = scope({})
+		const K = $.type("string").narrow(
+			(s, ctx) => s.length > 5 || ctx.mustBe("long")
+		)
+		const T = $.type({ a: "number" }).and($.type.Record(K, "string"))
+		attest(T.allows({ a: 1, ab: 2, abcdefg: "x" })).equals(true)
+		attest(T({ a: 1, abcdefg: 2 }).toString()).snap(
+			"abcdefg must be a string (was a number)"
+		)
 	})
 
 	it("intersction with right required", () => {

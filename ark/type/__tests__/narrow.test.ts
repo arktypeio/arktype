@@ -21,13 +21,11 @@ contextualize(() => {
 
 	it("error references its predicate", () => {
 		const isOdd = (n: number) => n % 2 === 1
-		for (const jitless of [false, true]) {
-			const Odd = scope({}, { jitless }).type("number").narrow(isOdd)
-			const error = (Odd(2) as type.errors).issues[0]
-			if (error.code !== "predicate") throw new Error()
-			attest(error.predicate).is(isOdd)
-			attest(error.message).snap("must be valid according to isOdd (was 2)")
-		}
+		const Odd = type("number").narrow(isOdd)
+		const error = (Odd(2) as type.errors).issues[0]
+		if (error.code !== "predicate") throw new Error()
+		attest(error.predicate).is(isOdd)
+		attest(error.message).snap("must be valid according to isOdd (was 2)")
 	})
 
 	it("implicit problem anonymous", () => {
@@ -47,26 +45,22 @@ contextualize(() => {
 	})
 
 	it("chained narrows", () => {
-		for (const jitless of [false, true]) {
-			const A = scope({}, { jitless })
-				.type("number")
-				.narrow((n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2"))
+		const A = type("number").narrow(
+			(n, ctx) => n % 2 === 0 || ctx.reject("divisible by 2")
+		)
 
-			const b = A.narrow(
-				(n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3")
-			)
+		const b = A.narrow((n, ctx) => n % 3 === 0 || ctx.reject("divisible by 3"))
 
-			const DivisibleBy30 = b.narrow(
-				(n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5")
-			)
+		const DivisibleBy30 = b.narrow(
+			(n, ctx) => n % 5 === 0 || ctx.reject("divisible by 5")
+		)
 
-			attest<number>(DivisibleBy30.t)
+		attest<number>(DivisibleBy30.t)
 
-			attest(DivisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
-			attest(DivisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
-			attest(DivisibleBy30(6).toString()).snap("must be divisible by 5 (was 6)")
-			attest(DivisibleBy30(30)).equals(30)
-		}
+		attest(DivisibleBy30(1).toString()).snap("must be divisible by 2 (was 1)")
+		attest(DivisibleBy30(2).toString()).snap("must be divisible by 3 (was 2)")
+		attest(DivisibleBy30(6).toString()).snap("must be divisible by 5 (was 6)")
+		attest(DivisibleBy30(30)).equals(30)
 	})
 
 	it("problem at path", () => {
@@ -358,24 +352,22 @@ b must be equal to a (was an object)`)
 	})
 
 	it("checks data before applying a predicate reading ctx", () => {
-		for (const jitless of [false, true]) {
-			const calls: string[] = []
-			const $ = scope({}, { jitless })
-			const T = $.type({
-				a: "string",
-				b: $.type("string").narrow((s, ctx) => {
-					calls.push(ctx.path.join("."))
-					return s.length < 3 || ctx.mustBe("short")
-				})
+		const calls: string[] = []
+		const $ = scope({})
+		const T = $.type({
+			a: "string",
+			b: $.type("string").narrow((s, ctx) => {
+				calls.push(ctx.path.join("."))
+				return s.length < 3 || ctx.mustBe("short")
 			})
-			const data = { a: "a", b: "b" }
-			attest(T(data) === data).equals(true)
-			attest(calls.splice(0)).equals(["b"])
-			attest(T({ a: "a", b: "long" }).toString()).snap(
-				'b must be short (was "long")'
-			)
-			attest(calls).equals(["b", "b"])
-		}
+		})
+		const data = { a: "a", b: "b" }
+		attest(T(data) === data).equals(true)
+		attest(calls.splice(0)).equals(["b"])
+		attest(T({ a: "a", b: "long" }).toString()).snap(
+			'b must be short (was "long")'
+		)
+		attest(calls).equals(["b", "b"])
 	})
 
 	it("union after failed branch predicate", () => {
@@ -386,34 +378,27 @@ b must be equal to a (was an object)`)
 
 		attest(T.allows(data)).equals(true)
 		attest(T(data)).equals(data)
-		for (const jitless of [false, true]) {
-			const types = scope(
-				{
-					c: [{ "p?": "c" }, ":", notBad],
-					u: [{ x: "c" }, "|", { y: "string" }]
-				},
-				{ jitless }
-			).export()
-			attest(types.u.allows(data)).equals(true)
-		}
+		const types = scope({
+			c: [{ "p?": "c" }, ":", notBad],
+			u: [{ x: "c" }, "|", { y: "string" }]
+		}).export()
+		attest(types.u.allows(data)).equals(true)
 	})
 
 	it("failed branch predicate leaves its key off ctx.path", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const Positive = $.type("number").narrow(
-				(n, ctx) => n > 0 || ctx.mustBe("positive")
-			)
-			const T = $.type({ a: Positive, z: "string > 3" }).or({
-				b: $.type("string").pipe((s, ctx) =>
-					s === "bad" ? ctx.error("good") : s
-				),
-				z: "string < 2"
-			})
-			attest(T({ a: -1, b: "bad", z: "q" }).toString()).snap(
-				'b must be good (was "bad")'
-			)
-		}
+		const $ = scope({})
+		const Positive = $.type("number").narrow(
+			(n, ctx) => n > 0 || ctx.mustBe("positive")
+		)
+		const T = $.type({ a: Positive, z: "string > 3" }).or({
+			b: $.type("string").pipe((s, ctx) =>
+				s === "bad" ? ctx.error("good") : s
+			),
+			z: "string < 2"
+		})
+		attest(T({ a: -1, b: "bad", z: "q" }).toString()).snap(
+			'b must be good (was "bad")'
+		)
 	})
 
 	it("names a narrow that rejects every literal", () => {

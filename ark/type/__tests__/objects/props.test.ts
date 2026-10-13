@@ -155,23 +155,21 @@ contextualize(() => {
 		}
 
 		it("has what the value should have been and its meta", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const T = $.type({
-					name: $.type("string").configure({ title: "Name" })
-				})
-				const error = requiredError(T)
-				attest(error.message).snap("name must be a string (was missing)")
-				attest(error.missing).snap({
-					code: "domain",
-					description: "a string",
-					meta: { title: "Name" },
-					domain: "string"
-				})
-				attest(error.valueMeta).equals({ title: "Name" })
-				attest(Object.isFrozen(error.missing)).equals(true)
-				attest(requiredError(T).missing).is(error.missing)
-			}
+			const $ = scope({})
+			const T = $.type({
+				name: $.type("string").configure({ title: "Name" })
+			})
+			const error = requiredError(T)
+			attest(error.message).snap("name must be a string (was missing)")
+			attest(error.missing).snap({
+				code: "domain",
+				description: "a string",
+				meta: { title: "Name" },
+				domain: "string"
+			})
+			attest(error.valueMeta).equals({ title: "Name" })
+			attest(Object.isFrozen(error.missing)).equals(true)
+			attest(requiredError(T).missing).is(error.missing)
 		})
 
 		it("keeps the branches and bases of the value", () => {

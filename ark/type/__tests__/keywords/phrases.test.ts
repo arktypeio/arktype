@@ -125,18 +125,16 @@ contextualize(() => {
 
 	it("a keyword error's phrase is its description in en", () => {
 		const inputs = ["", "x", "(", "{", "1.5", "9007199254740993", -1, 1.5, 9e15]
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			for (const [alias] of keywordTypes) {
-				const T = $.type(alias as never) as type.Any
-				for (const data of [...inputs, -9e15]) {
-					const out = T(data)
-					if (!(out instanceof type.errors)) continue
-					for (const error of (out as ArkErrors).issues.flatMap(leavesOf)) {
-						if (error.meta?.keyword === undefined) continue
-						const expected = writeKeywordExpected(error as never, en)
-						attest(expected).equals(error.description ?? error.expected)
-					}
+		const $ = scope({})
+		for (const [alias] of keywordTypes) {
+			const T = $.type(alias as never) as type.Any
+			for (const data of [...inputs, -9e15]) {
+				const out = T(data)
+				if (!(out instanceof type.errors)) continue
+				for (const error of (out as ArkErrors).issues.flatMap(leavesOf)) {
+					if (error.meta?.keyword === undefined) continue
+					const expected = writeKeywordExpected(error as never, en)
+					attest(expected).equals(error.description ?? error.expected)
 				}
 			}
 		}

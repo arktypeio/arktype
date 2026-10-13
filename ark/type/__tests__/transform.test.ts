@@ -97,92 +97,78 @@ contextualize(() => {
 	})
 
 	it("prop and index morphs in turn", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ a: "string.trim" }).and({ "[string]": "string.lower" })
-			const anded = T({ a: " AB ", b: " Q " })
-			attest(anded).unknown.snap({ a: "ab", b: " q " })
+		const $ = scope({})
+		const T = $.type({ a: "string.trim" }).and({ "[string]": "string.lower" })
+		const anded = T({ a: " AB ", b: " Q " })
+		attest(anded).unknown.snap({ a: "ab", b: " q " })
 
-			const U = $.type({ "[string]": "string.trim", "[/^a/]": "string.lower" })
-			attest(U({ ab: " X ", b: " Y " })).snap({ ab: "x", b: "Y" })
+		const U = $.type({ "[string]": "string.trim", "[/^a/]": "string.lower" })
+		attest(U({ ab: " X ", b: " Y " })).snap({ ab: "x", b: "Y" })
 
-			const types = scope(
-				{
-					node: {
-						"a?": "node",
-						"v?": "string.trim",
-						"[/^a/]": $.type({ "v?": "string" }).pipe(o => ({
-							...o,
-							tagged: true
-						}))
-					}
-				},
-				{ jitless }
-			).export()
-			const out = types.node({ v: " x ", a: { v: " y " } })
-			attest(out).unknown.snap({
-				v: "x",
-				a: { v: "y", tagged: true }
-			})
-		}
+		const types = scope({
+			node: {
+				"a?": "node",
+				"v?": "string.trim",
+				"[/^a/]": $.type({ "v?": "string" }).pipe(o => ({
+					...o,
+					tagged: true
+				}))
+			}
+		}).export()
+		const out = types.node({ v: " x ", a: { v: " y " } })
+		attest(out).unknown.snap({
+			v: "x",
+			a: { v: "y", tagged: true }
+		})
 	})
 
 	it("contextual index on declared key", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const Listed = $.type("string").narrow((k, ctx) =>
-				(ctx.root as { trimmed: string[] }).trimmed.includes(k)
-			)
-			const T = $.type({ trimmed: "string[]", a: "string.lower" }).and(
-				$.type.Record(Listed, "string.trim")
-			)
-			const out = T({ trimmed: ["a"], a: " X " })
-			attest(out).unknown.snap({ trimmed: ["a"], a: "x" })
-		}
+		const $ = scope({})
+		const Listed = $.type("string").narrow((k, ctx) =>
+			(ctx.root as { trimmed: string[] }).trimmed.includes(k)
+		)
+		const T = $.type({ trimmed: "string[]", a: "string.lower" }).and(
+			$.type.Record(Listed, "string.trim")
+		)
+		const out = T({ trimmed: ["a"], a: " X " })
+		attest(out).unknown.snap({ trimmed: ["a"], a: "x" })
 	})
 
 	it("index transform of a prop with a default", () => {
-		for (const jitless of [false, true]) {
-			const T = scope({}, { jitless }).type({
-				"p?": ["object", ["string", "=", "d"]],
-				"[string]": { "[string]": { x: "string.numeric.parse" } }
-			})
-			const types = scope(
-				{ a: { "p?": ["object", ["string", "=", "d"]], "[string]": "a" } },
-				{ jitless }
-			).export()
+		const T = type({
+			"p?": ["object", ["string", "=", "d"]],
+			"[string]": { "[string]": { x: "string.numeric.parse" } }
+		})
+		const types = scope({
+			a: { "p?": ["object", ["string", "=", "d"]], "[string]": "a" }
+		}).export()
 
-			const out = T({ p: [{ x: "1" }] })
-			const cyclicOut = types.a({ p: [{}] })
-			attest(out).unknown.equals({ p: [{ x: 1 }, "d"] })
-			attest(cyclicOut).unknown.equals({ p: [{}, "d"] })
-		}
+		const out = T({ p: [{ x: "1" }] })
+		const cyclicOut = types.a({ p: [{}] })
+		attest(out).unknown.equals({ p: [{ x: 1 }, "d"] })
+		attest(cyclicOut).unknown.equals({ p: [{}, "d"] })
 	})
 
 	it("index transform deleting an inherited key name", () => {
-		for (const jitless of [false, true]) {
-			const T = scope({}, { jitless }).type({
-				"p?": ["object", ["string", "=", "d"]],
-				"[string]": { "+": "delete", "[/^\\d+$/]": "object" }
-			})
-			const out = T.assert({ p: Object.assign([{}], { toString: 1 }) })
-			attest(Object.keys(out.p as object)).equals(["0", "1"])
-		}
+		const T = type({
+			"p?": ["object", ["string", "=", "d"]],
+			"[string]": { "+": "delete", "[/^\\d+$/]": "object" }
+		})
+		const out = T.assert({ p: Object.assign([{}], { toString: 1 }) })
+		attest(Object.keys(out.p as object)).equals(["0", "1"])
 	})
 
 	it("failed key transform", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const A = $.type("string").pipe((s, ctx) => ctx.error("A"))
-			const B = $.type("string").pipe((s, ctx) => ctx.error("B"))
+		const $ = scope({})
+		const A = $.type("string").pipe((s, ctx) => ctx.error("A"))
+		const B = $.type("string").pipe((s, ctx) => ctx.error("B"))
 
-			const T = $.type({ "[string]": A, "[/^a/]": B })
-			attest(T({ ab: "x", b: "y" }).toString()).snap(`ab must be A (was "x")
+		const T = $.type({ "[string]": A, "[/^a/]": B })
+		attest(T({ ab: "x", b: "y" }).toString()).snap(`ab must be A (was "x")
 b must be A (was "y")`)
 
-			const U = $.type({ a: A }).and({ "[string]": B })
-			attest(U({ a: "x" }).toString()).snap('a must be A (was "x")')
-		}
+		const U = $.type({ a: A }).and({ "[string]": B })
+		attest(U({ a: "x" }).toString()).snap('a must be A (was "x")')
 	})
 
 	it("transforms a frozen input", () => {
@@ -319,58 +305,52 @@ b must be A (was "y")`)
 	})
 
 	it("non-enumerable declared key", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({ e: "string", d: "string = 'd'" })
-			const original = Object.defineProperty({}, "e", { value: "e" })
-			const out = T.assert(original)
-			attest(out).equals({ e: "e", d: "d" })
-			attest(T(out)).equals(out)
+		const $ = scope({})
+		const T = $.type({ e: "string", d: "string = 'd'" })
+		const original = Object.defineProperty({}, "e", { value: "e" })
+		const out = T.assert(original)
+		attest(out).equals({ e: "e", d: "d" })
+		attest(T(out)).equals(out)
 
-			const U = $.type({ toString: "number", d: "string = 'd'" })
-			const inherited = U.assert(
-				Object.defineProperty({}, "toString", { value: 5 })
-			)
-			attest(inherited.toString).equals(5)
-		}
+		const U = $.type({ toString: "number", d: "string = 'd'" })
+		const inherited = U.assert(
+			Object.defineProperty({}, "toString", { value: 5 })
+		)
+		attest(inherited.toString).equals(5)
 	})
 
 	it("non-enumerable key with failing sibling", () => {
-		for (const jitless of [false, true]) {
-			const T = scope({}, { jitless }).type({
-				a: "string.trim",
-				c: { d: "string.date.parse" },
-				b: "string"
-			})
-			const original = Object.defineProperties(
-				{ b: 1 },
-				{ a: { value: " a " }, c: { value: { d: "2020-01-01" } } }
-			)
-			attest(T(original).toString()).snap("b must be a string (was a number)")
-		}
+		const T = type({
+			a: "string.trim",
+			c: { d: "string.date.parse" },
+			b: "string"
+		})
+		const original = Object.defineProperties(
+			{ b: 1 },
+			{ a: { value: " a " }, c: { value: { d: "2020-01-01" } } }
+		)
+		attest(T(original).toString()).snap("b must be a string (was a number)")
 	})
 
 	it("hidden props and accessors", () => {
-		for (const jitless of [false, true]) {
-			const T = scope({}, { jitless }).type({ a: "string.trim" })
-			const original = Object.defineProperties(
-				{ a: " a " },
-				{
-					hidden: { value: 1 },
-					computed: { get: () => 2, enumerable: true }
-				}
-			)
-			const out = T.assert(original)
-			attest(Object.getOwnPropertyDescriptors(out)).equals({
-				a: { value: "a", writable: true, enumerable: true, configurable: true },
-				computed: {
-					value: 2,
-					writable: true,
-					enumerable: true,
-					configurable: true
-				}
-			})
-		}
+		const T = type({ a: "string.trim" })
+		const original = Object.defineProperties(
+			{ a: " a " },
+			{
+				hidden: { value: 1 },
+				computed: { get: () => 2, enumerable: true }
+			}
+		)
+		const out = T.assert(original)
+		attest(Object.getOwnPropertyDescriptors(out)).equals({
+			a: { value: "a", writable: true, enumerable: true, configurable: true },
+			computed: {
+				value: 2,
+				writable: true,
+				enumerable: true,
+				configurable: true
+			}
+		})
 	})
 
 	it("array with declared props", () => {
@@ -393,76 +373,70 @@ b must be A (was "y")`)
 	})
 
 	it("array with undeclared props", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const s = Symbol("s")
-			const original = Object.assign([" a "], {
-				extra: 1,
-				4294967295: 0,
-				[s]: 2
-			})
-			attest($.type("string.trim[]").assert(original)).equals(
-				Object.assign(["a"], { extra: 1, 4294967295: 0, [s]: 2 })
+		const $ = scope({})
+		const s = Symbol("s")
+		const original = Object.assign([" a "], {
+			extra: 1,
+			4294967295: 0,
+			[s]: 2
+		})
+		attest($.type("string.trim[]").assert(original)).equals(
+			Object.assign(["a"], { extra: 1, 4294967295: 0, [s]: 2 })
+		)
+		attest(
+			$.type(["string", "string = 'd'"]).assert(
+				Object.assign(["a"], { extra: 1 })
 			)
-			attest(
-				$.type(["string", "string = 'd'"]).assert(
-					Object.assign(["a"], { extra: 1 })
-				)
-			).equals(Object.assign(["a", "d"], { extra: 1 }) as never)
-			attest(
-				$.type(["string = 'd'"]).assert(Object.assign([], { "-1": 1 }))
-			).equals(Object.assign(["d"], { "-1": 1 }) as never)
-			attest(
-				$.type("(string.trim | undefined)[]").assert(
-					Object.assign([], { 1: " a ", 4294967295: 0 })
-				)
-			).equals(Object.assign([], { 1: "a", 4294967295: 0 }))
-			attest(
-				$.type("string.trim[]").assert(
-					Object.assign([" a ", "b"], {
-						constructor: 1,
-						[Symbol.isConcatSpreadable]: false
-					})
-				)
-			).equals(
-				Object.assign(["a", "b"], {
+		).equals(Object.assign(["a", "d"], { extra: 1 }) as never)
+		attest(
+			$.type(["string = 'd'"]).assert(Object.assign([], { "-1": 1 }))
+		).equals(Object.assign(["d"], { "-1": 1 }) as never)
+		attest(
+			$.type("(string.trim | undefined)[]").assert(
+				Object.assign([], { 1: " a ", 4294967295: 0 })
+			)
+		).equals(Object.assign([], { 1: "a", 4294967295: 0 }))
+		attest(
+			$.type("string.trim[]").assert(
+				Object.assign([" a ", "b"], {
 					constructor: 1,
 					[Symbol.isConcatSpreadable]: false
 				})
 			)
-			attest(
-				$.type("string.trim[]").assert(Object.assign([" a "], { slice: 1 }))
-			).equals(Object.assign(["a"], { slice: 1 }))
-		}
+		).equals(
+			Object.assign(["a", "b"], {
+				constructor: 1,
+				[Symbol.isConcatSpreadable]: false
+			})
+		)
+		attest(
+			$.type("string.trim[]").assert(Object.assign([" a "], { slice: 1 }))
+		).equals(Object.assign(["a"], { slice: 1 }))
 	})
 
 	it("RegExp with transformed props", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const original = Object.assign(/a/g, { x: " a " })
-			original.lastIndex = 1
-			const out = $.type({ x: "string.trim" }).assert(original) as RegExp & {
-				x: string
-			}
-			attest(out instanceof RegExp).equals(true)
-			attest(out.x).equals("a")
-			attest(out.lastIndex).equals(1)
-			attest(original.x).equals(" a ")
+		const $ = scope({})
+		const original = Object.assign(/a/g, { x: " a " })
+		original.lastIndex = 1
+		const out = $.type({ x: "string.trim" }).assert(original) as RegExp & {
+			x: string
 		}
+		attest(out instanceof RegExp).equals(true)
+		attest(out.x).equals("a")
+		attest(out.lastIndex).equals(1)
+		attest(original.x).equals(" a ")
 	})
 
 	it("array props with shared defaults", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const T = $.type({
-				x: $.type({ a: "number = 5", b: "string" })
-					.and("string[]")
-					.pipe((arr, ctx) => (arr.b === "kept" ? arr : ctx.error("kept"))),
-				y: "number"
-			})
-			const out = T({ x: Object.assign(["s"], { b: "kept" }), y: "bad" })
-			attest(out.toString()).snap("y must be a number (was a string)")
-		}
+		const $ = scope({})
+		const T = $.type({
+			x: $.type({ a: "number = 5", b: "string" })
+				.and("string[]")
+				.pipe((arr, ctx) => (arr.b === "kept" ? arr : ctx.error("kept"))),
+			y: "number"
+		})
+		const out = T({ x: Object.assign(["s"], { b: "kept" }), y: "bad" })
+		attest(out.toString()).snap("y must be a number (was a string)")
 	})
 
 	it("union of array props with shared defaults", () => {
@@ -476,128 +450,109 @@ b must be A (was "y")`)
 	})
 
 	it("non-enumerable key with shared defaults", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			$.type({ a: "number = 5", b: "string" })
-			const T = $.type({
-				x: $.type({ a: "number = 5", c: "string" }).pipe((o, ctx) =>
-					o.c === "s" ? o : ctx.error("c kept")
-				),
-				y: "number"
-			})
-			const out = T({
-				x: Object.defineProperty({}, "c", { value: "s" }),
-				y: "bad"
-			})
-			attest(out.toString()).snap("y must be a number (was a string)")
-		}
+		const $ = scope({})
+		$.type({ a: "number = 5", b: "string" })
+		const T = $.type({
+			x: $.type({ a: "number = 5", c: "string" }).pipe((o, ctx) =>
+				o.c === "s" ? o : ctx.error("c kept")
+			),
+			y: "number"
+		})
+		const out = T({
+			x: Object.defineProperty({}, "c", { value: "s" }),
+			y: "bad"
+		})
+		attest(out.toString()).snap("y must be a number (was a string)")
 	})
 
 	it("branch morph errors with ctx", () => {
 		const N = type("number")
-		for (const jitless of [false, true]) {
-			const types = scope(
-				{
-					parsed: ["string", "=>", s => N(s)],
-					signed: [
-						"number",
-						"=>",
-						(n, ctx) => (n < 0 ? ctx.error("signed") : n)
-					],
-					tree: { "child?": "tree" },
-					contextual: "parsed | signed",
-					cyclic: { a: "parsed | tree" }
-				},
-				{ jitless }
-			).export()
+		const types = scope({
+			parsed: ["string", "=>", s => N(s)],
+			signed: ["number", "=>", (n, ctx) => (n < 0 ? ctx.error("signed") : n)],
+			tree: { "child?": "tree" },
+			contextual: "parsed | signed",
+			cyclic: { a: "parsed | tree" }
+		}).export()
 
-			attest(types.contextual("x").toString()).snap(
-				"must be a number (was a string)"
-			)
-			attest(types.contextual.array()(["x"]).toString()).snap(
-				"value at [0] must be a number (was a string)"
-			)
-			attest(types.cyclic({ a: "x" }).toString()).snap(
-				"a must be a number (was a string)"
-			)
-		}
+		attest(types.contextual("x").toString()).snap(
+			"must be a number (was a string)"
+		)
+		attest(types.contextual.array()(["x"]).toString()).snap(
+			"value at [0] must be a number (was a string)"
+		)
+		attest(types.cyclic({ a: "x" }).toString()).snap(
+			"a must be a number (was a string)"
+		)
 	})
 
 	it("piped contextual node", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const paths: PropertyKey[][] = []
-			const T = $.type({
-				password: "string",
-				confirm: $.type("string.trim").narrow(
-					(s, ctx) => s === (ctx.root as { password: string }).password
-				),
-				length: $.type("string")
-					.pipe(s => s.length)
-					.narrow((n, ctx) => {
-						paths.push([...ctx.path])
-						return n > 0
-					})
-			})
+		const $ = scope({})
+		const paths: PropertyKey[][] = []
+		const T = $.type({
+			password: "string",
+			confirm: $.type("string.trim").narrow(
+				(s, ctx) => s === (ctx.root as { password: string }).password
+			),
+			length: $.type("string")
+				.pipe(s => s.length)
+				.narrow((n, ctx) => {
+					paths.push([...ctx.path])
+					return n > 0
+				})
+		})
 
-			attest(T({ password: "pw", confirm: " pw ", length: "a" })).equals({
-				password: "pw",
-				confirm: "pw",
-				length: 1
-			})
-			attest(T({ password: "pw", confirm: "pw", length: "" }).toString()).snap(
-				"length must be valid according to an anonymous predicate (was 0)"
-			)
-			attest(paths).equals([["length"], ["length"]])
-		}
+		attest(T({ password: "pw", confirm: " pw ", length: "a" })).equals({
+			password: "pw",
+			confirm: "pw",
+			length: 1
+		})
+		attest(T({ password: "pw", confirm: "pw", length: "" }).toString()).snap(
+			"length must be valid according to an anonymous predicate (was 0)"
+		)
+		attest(paths).equals([["length"], ["length"]])
 	})
 
 	it("branch predicate reading ctx", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const Long = $.type([
-				"string > 5",
-				":",
-				(s, ctx) => (ctx.root as { allowLong: boolean }).allowLong
-			]).pipe(s => s.length)
-			const T = $.type({ v: Long.or("string < 3"), allowLong: "boolean" })
+		const $ = scope({})
+		const Long = $.type([
+			"string > 5",
+			":",
+			(s, ctx) => (ctx.root as { allowLong: boolean }).allowLong
+		]).pipe(s => s.length)
+		const T = $.type({ v: Long.or("string < 3"), allowLong: "boolean" })
 
-			attest(T({ v: "abcdefg", allowLong: true })).equals({
-				v: 7,
-				allowLong: true
-			})
-		}
+		attest(T({ v: "abcdefg", allowLong: true })).equals({
+			v: 7,
+			allowLong: true
+		})
 	})
 
 	it("branch predicate reading data after a contextual morph", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const Long = $.type(["string > 5", ":", (s, ctx) => ctx.data === s]).pipe(
-				s => s.length
-			)
-			const T = $.type({
-				k: $.type("string").pipe((s, ctx) => s.trim()),
-				v: Long.or("string < 3")
-			})
+		const $ = scope({})
+		const Long = $.type(["string > 5", ":", (s, ctx) => ctx.data === s]).pipe(
+			s => s.length
+		)
+		const T = $.type({
+			k: $.type("string").pipe((s, ctx) => s.trim()),
+			v: Long.or("string < 3")
+		})
 
-			attest(T({ k: " k ", v: "abcdefg" })).equals({ k: "k", v: 7 })
-		}
+		attest(T({ k: " k ", v: "abcdefg" })).equals({ k: "k", v: 7 })
 	})
 
 	it("predicate error returning true", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			const Positive = $.type("number").narrow((n, ctx) => {
-				if (n <= 0) ctx.error("positive")
-				return true
-			})
-			const T = $.type({ n: Positive, s: "string.trim" })
+		const $ = scope({})
+		const Positive = $.type("number").narrow((n, ctx) => {
+			if (n <= 0) ctx.error("positive")
+			return true
+		})
+		const T = $.type({ n: Positive, s: "string.trim" })
 
-			attest(T({ n: -1, s: " x " }).toString()).snap(
-				"n must be positive (was -1)"
-			)
-			attest(Positive.allows(-1)).equals(false)
-		}
+		attest(T({ n: -1, s: " x " }).toString()).snap(
+			"n must be positive (was -1)"
+		)
+		attest(Positive.allows(-1)).equals(false)
 	})
 
 	it("ArkError-shaped morph output", () => {
@@ -702,23 +657,21 @@ b must be A (was "y")`)
 	})
 
 	it("discriminated case checked once", () => {
-		for (const jitless of [false, true]) {
-			const $ = scope({}, { jitless })
-			let callCount = 0
-			const T = $.type([
-				"string",
-				":",
-				s => {
-					callCount++
-					return s.length > 0
-				}
-			]).or({
-				a: "string.trim"
-			})
+		const $ = scope({})
+		let callCount = 0
+		const T = $.type([
+			"string",
+			":",
+			s => {
+				callCount++
+				return s.length > 0
+			}
+		]).or({
+			a: "string.trim"
+		})
 
-			attest(T("x")).equals("x")
-			attest(callCount).equals(1)
-		}
+		attest(T("x")).equals("x")
+		attest(callCount).equals(1)
 	})
 
 	it("cyclic data", () => {
@@ -807,117 +760,107 @@ b must be A (was "y")`)
 
 	describe("failed calls", () => {
 		it("transform valid keys in traversal order", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const counts: number[] = []
-				const T = $.type({
-					a: "number",
-					b: $.type("string").pipe((s, ctx) => {
-						counts.push(ctx.errors.count)
-						return ctx.error("short")
-					}),
-					c: "number"
-				})
+			const $ = scope({})
+			const counts: number[] = []
+			const T = $.type({
+				a: "number",
+				b: $.type("string").pipe((s, ctx) => {
+					counts.push(ctx.errors.count)
+					return ctx.error("short")
+				}),
+				c: "number"
+			})
 
-				attest(T({ a: "x", b: "b", c: "y" }).toString())
-					.snap(`a must be a number (was a string)
+			attest(T({ a: "x", b: "b", c: "y" }).toString())
+				.snap(`a must be a number (was a string)
 b must be short (was "b")
 c must be a number (was a string)`)
-				attest(counts).equals([1])
-			}
+			attest(counts).equals([1])
 		})
 
 		it("transform nothing a branch or pipe only checks", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const calls: string[] = []
-				const Logged = $.type("string").pipe(s => {
-					calls.push(s)
-					return s
-				})
-				const T = $.type({
-					u: $.type({ a: Logged, n: "number > 0" }).or({
-						b: Logged,
-						n: "number < 0"
-					}),
-					p: $.type("string").pipe(
-						s => JSON.parse(s),
-						$.type({ c: Logged, n: "number" })
-					),
-					k: "number"
-				})
+			const $ = scope({})
+			const calls: string[] = []
+			const Logged = $.type("string").pipe(s => {
+				calls.push(s)
+				return s
+			})
+			const T = $.type({
+				u: $.type({ a: Logged, n: "number > 0" }).or({
+					b: Logged,
+					n: "number < 0"
+				}),
+				p: $.type("string").pipe(
+					s => JSON.parse(s),
+					$.type({ c: Logged, n: "number" })
+				),
+				k: "number"
+			})
 
-				attest(
-					T({
-						u: { a: "a", b: "b", n: 0 },
-						p: '{"c":"c","n":"x"}',
-						k: "x"
-					}).toString()
-				).snap(`k must be a number (was a string)
+			attest(
+				T({
+					u: { a: "a", b: "b", n: 0 },
+					p: '{"c":"c","n":"x"}',
+					k: "x"
+				}).toString()
+			).snap(`k must be a number (was a string)
 p.n must be a number (was a string)
 u.n must be positive or negative (was 0)`)
-				attest(calls).equals([])
-			}
+			attest(calls).equals([])
 		})
 
 		it("transform a structure after its predicates pass", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const calls: string[] = []
-				const T = $.type({
-					o: $.type({
-						a: $.type("string").pipe(s => {
-							calls.push(s)
-							return s
-						}),
-						n: "number"
-					}).and($.type("object").narrow(o => (o as { n: number }).n > 0)),
-					k: "number"
-				})
-
-				attest(T({ o: { a: "a", n: 0 }, k: "x" }).toString())
-					.snap(`k must be a number (was a string)
-o must be valid according to an anonymous predicate (was an object)`)
-				attest(calls).equals([])
-				attest(T({ o: { a: "a", n: "x" }, k: "x" }).toString())
-					.snap(`k must be a number (was a string)
-o.n must be a number (was a string)`)
-				attest(calls).equals(["a"])
-			}
-		})
-
-		it("transform a key once each constraint allows it", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				const calls: string[] = []
-				const T = $.type({
-					"[string]": $.type("string").pipe(s => {
+			const $ = scope({})
+			const calls: string[] = []
+			const T = $.type({
+				o: $.type({
+					a: $.type("string").pipe(s => {
 						calls.push(s)
 						return s
 					}),
-					"[/^x/]": "string < 3"
-				})
+					n: "number"
+				}).and($.type("object").narrow(o => (o as { n: number }).n > 0)),
+				k: "number"
+			})
 
-				attest(T({ xa: "long", b: "b" }).toString()).snap(
-					"xa must be at most length 2 (was 4)"
-				)
-				attest(calls).equals(["b"])
-			}
+			attest(T({ o: { a: "a", n: 0 }, k: "x" }).toString())
+				.snap(`k must be a number (was a string)
+o must be valid according to an anonymous predicate (was an object)`)
+			attest(calls).equals([])
+			attest(T({ o: { a: "a", n: "x" }, k: "x" }).toString())
+				.snap(`k must be a number (was a string)
+o.n must be a number (was a string)`)
+			attest(calls).equals(["a"])
+		})
+
+		it("transform a key once each constraint allows it", () => {
+			const $ = scope({})
+			const calls: string[] = []
+			const T = $.type({
+				"[string]": $.type("string").pipe(s => {
+					calls.push(s)
+					return s
+				}),
+				"[/^x/]": "string < 3"
+			})
+
+			attest(T({ xa: "long", b: "b" }).toString()).snap(
+				"xa must be at most length 2 (was 4)"
+			)
+			attest(calls).equals(["b"])
 		})
 
 		it("apply a valid nested object's defaults", () => {
-			for (const jitless of [false, true]) {
-				let calls = 0
-				const T = scope({}, { jitless }).type({
-					a: "number",
-					o: { d: ["string", "=", () => `${++calls}`] }
-				})
+			let calls = 0
+			const T = type({
+				a: "number",
+				o: { d: ["string", "=", () => `${++calls}`] }
+			})
 
-				attest(T({ a: "x", o: {} }).toString()).snap(
-					"a must be a number (was a string)"
-				)
-				attest(calls).equals(1)
-			}
+			attest(T({ a: "x", o: {} }).toString()).snap(
+				"a must be a number (was a string)"
+			)
+			attest(calls).equals(1)
 		})
 	})
 
@@ -944,40 +887,31 @@ o.n must be a number (was a string)`)
 		})
 
 		it("inherited Object.prototype key", () => {
-			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless }).type({
-					"+": "delete",
-					a: "string",
-					"toString?": "unknown"
-				})
-				attest(Object.keys(T.assert({ a: "a", z: 1 }))).equals(["a"])
-				attest(Object.keys(T.assert({ a: "a", toString: 1, z: 1 }))).equals([
-					"a",
-					"toString"
-				])
-			}
+			const T = type({
+				"+": "delete",
+				a: "string",
+				"toString?": "unknown"
+			})
+			attest(Object.keys(T.assert({ a: "a", z: 1 }))).equals(["a"])
+			attest(Object.keys(T.assert({ a: "a", toString: 1, z: 1 }))).equals([
+				"a",
+				"toString"
+			])
 		})
 
 		it("transformed inherited key", () => {
-			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless }).type({
-					"+": "delete",
-					a: "string",
-					"toString?": ["unknown", "=>", v => v]
-				})
-				attest(Object.keys(T.assert({ a: "a", z: 1 }))).equals([
-					"a",
-					"toString"
-				])
-			}
+			const T = type({
+				"+": "delete",
+				a: "string",
+				"toString?": ["unknown", "=>", v => v]
+			})
+			attest(Object.keys(T.assert({ a: "a", z: 1 }))).equals(["a", "toString"])
 		})
 
 		it("deletes symbols", () => {
-			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless }).type({ "+": "delete", a: "string" })
-				const out = T.assert({ a: "a", [Symbol("s")]: 1 })
-				attest(Reflect.ownKeys(out)).equals(["a"])
-			}
+			const T = type({ "+": "delete", a: "string" })
+			const out = T.assert({ a: "a", [Symbol("s")]: 1 })
+			attest(Reflect.ownKeys(out)).equals(["a"])
 		})
 
 		// process.env is an exotic object- ensure it is correctly copied

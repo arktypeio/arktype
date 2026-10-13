@@ -79,12 +79,10 @@ contextualize(() => {
 		})
 
 		it("-0", () => {
-			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless }).type({
-					negativeZero: ["number", "=", -0]
-				})
-				attest(Object.is(T.assert({}).negativeZero, -0)).equals(true)
-			}
+			const T = type({
+				negativeZero: ["number", "=", -0]
+			})
+			attest(Object.is(T.assert({}).negativeZero, -0)).equals(true)
 		})
 
 		it("unions are defaultable", () => {
@@ -350,15 +348,13 @@ contextualize(() => {
 		})
 
 		it("primitive morph output is not shared", () => {
-			for (const jitless of [false, true]) {
-				let calls = 0
-				const T = scope({}, { jitless }).type({
-					at: [type("number").pipe(n => n || ++calls), "=", 0]
-				})
-				attest(T({})).equals({ at: 1 })
-				attest(T({})).equals({ at: 2 })
-				attest(T({ at: 0 })).equals({ at: 3 })
-			}
+			let calls = 0
+			const T = type({
+				at: [type("number").pipe(n => n || ++calls), "=", 0]
+			})
+			attest(T({})).equals({ at: 1 })
+			attest(T({})).equals({ at: 2 })
+			attest(T({ at: 0 })).equals({ at: 3 })
 		})
 
 		it("narrowed default is checked when defined", () => {
@@ -1042,44 +1038,40 @@ contextualize(() => {
 		})
 
 		it("calls the factory each time the default is applied", () => {
-			for (const jitless of [false, true]) {
-				let calls = 0
-				const T = scope({}, { jitless }).type({
-					date: [
-						"Date",
-						"=",
-						() => {
-							calls++
-							return new Date(0)
-						}
-					]
-				})
-				attest(calls).equals(0)
-				attest(T({})).equals({ date: new Date(0) })
-				attest(T({})).equals({ date: new Date(0) })
-				attest(calls).equals(2)
-			}
+			let calls = 0
+			const T = type({
+				date: [
+					"Date",
+					"=",
+					() => {
+						calls++
+						return new Date(0)
+					}
+				]
+			})
+			attest(calls).equals(0)
+			attest(T({})).equals({ date: new Date(0) })
+			attest(T({})).equals({ date: new Date(0) })
+			attest(calls).equals(2)
 		})
 
 		it("validates each result of the factory", () => {
-			for (const jitless of [false, true]) {
-				const $ = scope({}, { jitless })
-				let calls = 0
-				const factory = () => (calls++ ? "x" : 1) as never
-				const T = $.type({ a: ["number", "=", factory] })
-				attest(T({})).equals({ a: 1 })
-				attest(T({}).toString()).snap("a must be a number (was a string)")
+			const $ = scope({})
+			let calls = 0
+			const factory = () => (calls++ ? "x" : 1) as never
+			const T = $.type({ a: ["number", "=", factory] })
+			attest(T({})).equals({ a: 1 })
+			attest(T({}).toString()).snap("a must be a number (was a string)")
 
-				const Deleting = $.type({ "+": "delete", a: ["number", "=", factory] })
-				attest(Deleting({ b: 1 }).toString()).snap(
-					"a must be a number (was a string)"
-				)
+			const Deleting = $.type({ "+": "delete", a: ["number", "=", factory] })
+			attest(Deleting({ b: 1 }).toString()).snap(
+				"a must be a number (was a string)"
+			)
 
-				const Tuple = $.type([["number", "=", factory]])
-				attest(Tuple([]).toString()).snap(
-					"value at [0] must be a number (was a string)"
-				)
-			}
+			const Tuple = $.type([["number", "=", factory]])
+			attest(Tuple([]).toString()).snap(
+				"value at [0] must be a number (was a string)"
+			)
 		})
 
 		it("morphs the returned value", () => {

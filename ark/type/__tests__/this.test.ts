@@ -197,20 +197,18 @@ contextualize(() => {
 	})
 
 	it("prop piped to this", () => {
-		for (const jitless of [false, true]) {
-			const T = scope({}, { jitless }).type({
-				name: "string",
-				"next?": "string.json.parse |> this"
-			})
+		const T = type({
+			name: "string",
+			"next?": "string.json.parse |> this"
+		})
 
-			attest(T({ name: "a", next: '{"name":"b"}' })).equals({
-				name: "a",
-				next: { name: "b" }
-			})
-			attest(T({ name: "a", next: '{"name":1}' }).toString()).snap(
-				"next.name must be a string (was a number)"
-			)
-		}
+		attest(T({ name: "a", next: '{"name":"b"}' })).equals({
+			name: "a",
+			next: { name: "b" }
+		})
+		attest(T({ name: "a", next: '{"name":1}' }).toString()).snap(
+			"next.name must be a string (was a number)"
+		)
 	})
 
 	it("prints this at the top of its own type", () => {

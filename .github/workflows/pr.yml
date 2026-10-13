@@ -24,6 +24,9 @@ jobs:
       - name: prChecks
         run: pnpm prChecks
 
+      - name: Test jitless
+        run: pnpm testJitless
+
   compatibility:
     needs: core
     timeout-minutes: 20
