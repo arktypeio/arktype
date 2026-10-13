@@ -76,14 +76,11 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	declare _: ArkIssue[]
 	/** @internal the path a fused traversal is at */
 	declare _path: PropertyKey[]
-	/** @internal set by a build asking for only the first issue */
-	declare failFast: true | undefined
 
 	// fields are assigned by the constructor, since V8 creates a subclass's instances more slowly from initializers
 	constructor() {
 		this._ = []
 		this._path = []
-		this.failFast = undefined
 	}
 
 	get [arkKind](): "errors" {
@@ -160,13 +157,15 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 
 // a build asking for each validation's first issue stops there, as no check its Apply writes continues past one
 export class FirstIssues extends ArkIssues {
-	constructor() {
-		super()
-		this.failFast = true
+	// read from the prototype, so no errors object lists it among its own keys
+	override get failFast(): true {
+		return true
 	}
 }
 
 interface ArkIssues {
+	/** @internal set by a build asking for only the first issue */
+	failFast?: true
 	/** @internal arktype's errors, which copy their contexts when merged */
 	_merge?(merged: ArkIssues, prefix: array<PropertyKey>): void
 	/** @internal arktype's errors, grouped by path */

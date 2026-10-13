@@ -7,6 +7,7 @@ import {
 } from "@ark/schema"
 import {
 	ArkErrors,
+	FirstIssues,
 	InternalTraversal,
 	mergeIssues,
 	type CompactApply,
@@ -95,9 +96,15 @@ contextualize(() => {
 	})
 
 	it("stops at its first issue where its build asks for only that one", () => {
-		const errors = new ArkErrors()
-		errors.failFast = true
+		const errors = new FirstIssues()
 		attest([user({ name: 1 }, errors), errors.count]).equals([false, 1])
+	})
+
+	it("enumerates only its issues and the path it's at, whichever build it's from", () => {
+		const keys: string[] = []
+		for (const k in new ArkErrors()) keys.push(k)
+		for (const k in new FirstIssues()) keys.push(k)
+		attest(keys).equals(["_", "_path", "_", "_path"])
 	})
 
 	it("adds a discriminant's issue at the path its site holds", () => {
