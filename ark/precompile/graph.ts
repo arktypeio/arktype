@@ -480,9 +480,9 @@ interface Application {
 	args: readonly ArkKind[]
 }
 
-// e.g. `user` of an instance of `class { user = type(...) }`, solved once like a binding
+// e.g. `user` of an instance of `class { user = type(...) }`, or of `opts` in `opts => opts.user`, solved once like a binding
 interface Member {
-	owner: Node
+	owner: Node | Binding
 	name: unknown
 }
 
@@ -522,7 +522,7 @@ export class ModuleGraph {
 	// a helper's parameters as one call passes them, which the kinds cached by node can't hold
 	private bindingKindOfKeys = new WeakSet<KindOfKey>()
 	private applicationsByFn = new Map<FunctionNode, Map<string, Application>>()
-	private membersByOwner = new Map<Node, Map<unknown, Member>>()
+	private membersByOwner = new Map<Node | Binding, Map<unknown, Member>>()
 	private resolving = new Set<Node>()
 	private heldKindsByNode = new Map<Node, ArkKind>()
 	private composingByFn = new Map<FunctionNode, boolean>()
@@ -866,8 +866,11 @@ export class ModuleGraph {
 			)
 		}
 		if ("type" in key) return this.returnKindIn(key, module, kindOfKey)
-		if ("owner" in key)
-			return this.fieldKindIn(key.owner, key.name, module, kindOfKey)
+		if ("owner" in key) {
+			return "type" in key.owner ?
+					this.fieldKindIn(key.owner, key.name, module, kindOfKey)
+				:	this.passedMemberKindIn(key.owner, key.name, module, kindOfKey)
+		}
 		const binding = key
 		switch (binding.kind) {
 			case "import":
@@ -1398,6 +1401,8 @@ export class ModuleGraph {
 					const cls = this.classOf(node.object, module, kindOfKey)
 					if (cls) return kindOfKey(this.memberOf(cls.node, name), cls.module)
 				}
+				const passed = this.passedMemberKindOf(node, module, kindOfKey)
+				if (passed !== undefined) return passed
 				// the class of what a Type returns when validation fails
 				if (
 					name === "errors" &&
@@ -1520,7 +1525,7 @@ export class ModuleGraph {
 		return holderOf(held)
 	}
 
-	private memberOf(owner: Node, name: unknown): Member {
+	private memberOf(owner: Node | Binding, name: unknown): Member {
 		let members = this.membersByOwner.get(owner)
 		if (!members) this.membersByOwner.set(owner, (members = new Map()))
 		let member = members.get(name)
@@ -1576,6 +1581,57 @@ export class ModuleGraph {
 		if (parent)
 			held |= kindOfKey(this.memberOf(parent.node, name), parent.module)
 		return lostOf(held)
+	}
+
+	// e.g. data for `opts.db` given `route({ db, input: type(...) })`, read in each call's argument
+	private passedMemberKindOf(
+		member: MemberExpression,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind | undefined {
+		const object = normalize(member.object)
+		const binding =
+			object.type === "Identifier" ?
+				module.scopes.referencesById.get(object)?.binding
+			:	undefined
+		if (binding?.kind !== "param" || binding.id.parent?.type === "RestElement")
+			return
+		const fn = binding.declaration as FunctionNode
+		if (
+			!runtimeParamsOf(fn).includes(binding.id as never) ||
+			!this.callsOf(fn, module) ||
+			binding.writes.length ||
+			this.annotatedKindOf(binding.id, module, kindOfKey) !== undefined
+		)
+			return
+		return kindOfKey(this.memberOf(binding, memberNameOf(member)), module)
+	}
+
+	private passedMemberKindIn(
+		param: Binding,
+		name: unknown,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): ArkKind {
+		const fn = param.declaration as FunctionNode
+		const index = runtimeParamsOf(fn).indexOf(param.id as never)
+		let result = 0
+		for (const call of this.callsOf(fn, module)!) {
+			const args = call.arguments
+			const spread = args.findIndex(arg => arg.type === "SpreadElement")
+			const arg = args[index]
+			if (!arg || (spread !== -1 && spread <= index)) {
+				result |= kinds.data
+				continue
+			}
+			const literal = this.literalOf(arg, module, kindOfKey)
+			const value = literal && this.valueIn(literal, name)
+			result |=
+				value ? this.transfer(value.node, value.module, value.kindOfKey)
+				: value === null ? kinds.data
+				: memberKindOf(this.transfer(arg, module, kindOfKey), name)
+		}
+		return result
 	}
 
 	private applicationOf(

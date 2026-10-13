@@ -1236,6 +1236,35 @@ export const X = new Chain().f27.or("null")`)
 			])
 		})
 
+		it("an options object holding a Type, passed to a helper whose calls the build sees", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+import { db } from "db"
+const route = (opts: { db: typeof db; input: unknown }) => opts.db.select()
+const log = opts => {
+	console.log(opts.db.select(), opts.input.or)
+}
+route({ db, input: type({ name: "string" }) })
+log({ db, input: type({ name: "string" }) })`)
+			).snap([
+				'/main.ts:5:32  opts.input.or reads or, which a standalone validator lacks\n  `opts.input` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a helper passing its parameter's members back to itself, each solved once", () => {
+			const writes = Array.from({ length: 9 }, (_, i) => `write(value.m${i})`)
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+function write(value) {
+	${writes.join("\n\t")}
+	console.log(value.m0.or)
+}
+write({ m0: type("string") })`)
+			).snap([
+				"/main.ts:12:14  value.m0.or reads or, which a standalone validator lacks\n  the build can't tell where `value.m0` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+			])
+		})
+
 		it("a Type reaching a value annotated as something else", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
