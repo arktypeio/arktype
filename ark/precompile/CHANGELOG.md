@@ -100,6 +100,7 @@ These definitions are reported rather than precompiled:
 - one whose code sees a function's name in what arktype prints, such as a `where` selector or description writer reading a predicate's `expression`, or a `JSON.stringify` replacer receiving a Type's JSON;
 - one sorting by the name of a function no declaration names, like a parameter's;
 - one calling another module's function that an import cycle can run before a binding of that module it reads is set, where the build can't check how far the module has run, as for an arrow exported as `export default`, reported as "`f` can run before `B` (file:line:column) is set; export `B` so the site can receive it", which exporting `B` fixes;
+- one in a module on an import cycle that receives a value, like one a helper it calls reads, from a module it doesn't import or imports only for types, as importing it there could run that module earlier than the program does;
 - one in which arktype tests a value against a class with `instanceof`, as `null` in `type.instanceOf(Cat).or("null")`, since the class a factory receives may test instances by a `Symbol.hasInstance` of its own.
 
 ### Precompile in Turbopack

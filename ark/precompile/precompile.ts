@@ -451,6 +451,33 @@ export class Precompiler {
 		return result
 	}
 
+	// whether a module reaches itself through imports, read from modules' text, so one only types read counts too
+	private isOnCycle(module: SourceModule): boolean {
+		let isOnCycle = false
+		this.localClosureOf(module.id, id => {
+			const imports = this.localImportsOf(
+				id === module.id ? module.source : (this.graph.host.readFile(id) ?? ""),
+				id
+			)
+			isOnCycle ||= imports.includes(module.id)
+			return imports
+		})
+		return isOnCycle
+	}
+
+	// e.g. `import { extend } from "./items.ts"` with `extend` read as a value, which no transpiler drops, unlike an import only types read
+	private isKept(node: Node, module: SourceModule): node is ImportDeclaration {
+		return (
+			node.type === "ImportDeclaration" &&
+			node.importKind !== "type" &&
+			(!node.specifiers.length ||
+				node.specifiers.some(
+					specifier =>
+						!!module.scopes.bindingsById.get(specifier.local)?.references.length
+				))
+		)
+	}
+
 	// whether a module's text imports arktype or a module that does, so a module that can't reach it is never parsed
 	private namesArk(id: string): boolean {
 		if (id in this.namesArkById) return this.namesArkById[id]
@@ -1989,7 +2016,12 @@ export class Precompiler {
 		}
 		let namespace: PassedInput | undefined
 		for (const binding of module.scopes.bindingsById.values()) {
-			if (binding.kind !== "import" || !isVisible(binding)) continue
+			if (
+				binding.kind !== "import" ||
+				!isVisible(binding) ||
+				!this.isKept(binding.declaration.parent!, module)
+			)
+				continue
 			const target = this.graph.importOf(binding, module)
 			if (target.kind === "namespace" && target.module.id === input.file) {
 				const expression = appendStringifiedKey(binding.name, input.name)
@@ -2002,6 +2034,17 @@ export class Precompiler {
 				return { expression: binding.name, label: binding.name, binding }
 		}
 		if (namespace) return namespace
+		// e.g. `h` for a site calling `viaH` in a module an import cycle can run before h.ts, which the program runs later
+		if (
+			!module.program.body.some(
+				statement =>
+					this.isKept(statement, module) &&
+					this.graph.host.resolve(statement.source.value, module.id) ===
+						input.file
+			) &&
+			this.isOnCycle(module)
+		)
+			return `importing \`${input.name}\` from ${this.graph.pathOf(input.file!)} here could run it earlier than the program does, as ${module.path} is on an import cycle`
 		const specifier = specifierOf(module.id, input.file!)
 		const local = `${prefix}i${hashOf(`${specifier} ${input.name}`)}`
 		return {

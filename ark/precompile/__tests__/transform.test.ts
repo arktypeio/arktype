@@ -780,12 +780,12 @@ export const Shadowed = (() => {
 				"/inputs.ts:18:9  type(alias.name) can't be precompiled yet\n  `o` (/inputs.ts:7:7) is shadowed where the site is written, so its factory can't receive it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
 			attest(result.code).snap(`import { type } from "arktype"
-import { f1pndslh1lfvnd2 as $arkf1pndslh1lfvnd2 } from "~arktype/f5dhoc0366nb7"
-import { fcoobse1hdwpxv as $arkfcoobse1hdwpxv } from "~arktype/f5dhoc0366nb7"
-import { fs5mhm20oegtat as $arkfs5mhm20oegtat } from "~arktype/f5dhoc0366nb7"
-import { fwuycaw1jorjbe as $arkfwuycaw1jorjbe } from "~arktype/f5dhoc0366nb7"
-import { f18h70z31d8anaf as $arkf18h70z31d8anaf } from "~arktype/f5dhoc0366nb7"
-import { fhpkoym15zgexb as $arkfhpkoym15zgexb } from "~arktype/f5dhoc0366nb7"
+import { f1pndslh1lfvnd2 as $arkf1pndslh1lfvnd2 } from "~arktype/5h4d5y1c7shrl"
+import { fcoobse1hdwpxv as $arkfcoobse1hdwpxv } from "~arktype/5h4d5y1c7shrl"
+import { fs5mhm20oegtat as $arkfs5mhm20oegtat } from "~arktype/5h4d5y1c7shrl"
+import { fwuycaw1jorjbe as $arkfwuycaw1jorjbe } from "~arktype/5h4d5y1c7shrl"
+import { f18h70z31d8anaf as $arkf18h70z31d8anaf } from "~arktype/5h4d5y1c7shrl"
+import { fhpkoym15zgexb as $arkfhpkoym15zgexb } from "~arktype/5h4d5y1c7shrl"
 import { max } from "./limits.ts"
 import { reboxed } from "./reboxed.ts"
 import { shape } from "./shapes.ts"
@@ -794,7 +794,7 @@ const trim = (s: string) => s.trim()
 const o = { name: "string", tags: ["string"] }
 const alias = o
 export const Local = $arkf1pndslh1lfvnd2(trim, o)
-export const Imported = $arkfcoobse1hdwpxv(max, o)
+export const Imported = $arkfcoobse1hdwpxv(limits.max, o)
 export const Added = $arkfs5mhm20oegtat(reboxed)
 export const Defined = $arkfwuycaw1jorjbe(process.env.NODE_ENV)
 export const Namespaced = $arkf18h70z31d8anaf(limits.boxed)
@@ -805,6 +805,53 @@ export const Shadowed = (() => {
 	return type(alias.name)
 })()
 import { shape as $arki1rnr3cp0ewvqsd } from "./shapes.ts"`)
+		})
+
+		it("receives an input in a module on an import cycle only through an import the program runs", () => {
+			const helper = (name: string) => `import { type } from "arktype"
+const T = type({ a: "string" })
+export function ${name}(extra: object) { return T.and(extra) }`
+			const source = `import { viaG, viaH, viaK } from "./app.ts"
+import { g } from "./g.ts"
+import { h } from "./h.ts"
+export const G = viaG()
+export const H = viaH()
+export const K = viaK()
+export const Direct = h({ c: "number" })
+let shape: typeof g`
+			const result = precompileModule(
+				source,
+				"/main.ts",
+				memoryHost({
+					"/main.ts": source,
+					"/app.ts": `import "./main.ts"
+import { g } from "./g.ts"
+import { h } from "./h.ts"
+import { k } from "./k.ts"
+export function viaG() { return g({ b: "number" }) }
+export function viaH() { return h({ b: "number" }) }
+export function viaK() { return k({ b: "number" }) }`,
+					"/g.ts": helper("g"),
+					"/h.ts": helper("h"),
+					"/k.ts": helper("k")
+				})
+			)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				"/main.ts:4:18  viaG() can't be precompiled yet\n  importing `g` from /g.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
+				"/main.ts:6:18  viaK() can't be precompiled yet\n  importing `k` from /k.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
+			])
+			attest(result.code).snap(`import { viaG, viaH, viaK } from "./app.ts"
+import { f1fqowp70udipzn as $arkf1fqowp70udipzn } from "~arktype/15k5bx507lm0fu"
+import { v31x3lt13lnlin as $arkv31x3lt13lnlin } from "~arktype/15k5bx507lm0fu"
+import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+import { g } from "./g.ts"
+import { h } from "./h.ts"
+export const G = viaG()
+export const H = $arkf1fqowp70udipzn(viaH, h)
+export const K = viaK()
+$arkfixConfig()
+export const Direct = /* @__PURE__ */ $arkv31x3lt13lnlin()
+let shape: typeof g`)
 		})
 
 		it("throws the ParseError of a site holding sites, folding none of them", () => {

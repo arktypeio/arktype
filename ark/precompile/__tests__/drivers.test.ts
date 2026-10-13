@@ -79,6 +79,8 @@ const cycleErased = fromHere("cycleErased")
 
 const cycleArrow = fromHere("cycleArrow")
 
+const cycleOrder = fromHere("cycleOrder")
+
 const setInStep = fromHere("setInStep")
 
 const library = writeLibrary()
@@ -134,6 +136,10 @@ contextualize(() => {
 			attest(
 				node(["main.ts"], { introspection: ["json"] }, cycleArrow).stdout
 			).equals(runPlain(cycleArrow))
+			// each module logs as it runs, so an import the build adds can't run one earlier unseen
+			attest(
+				node(["main.ts"], { introspection: ["expression"] }, cycleOrder).stdout
+			).equals(runPlain(cycleOrder))
 			// a fold run once what it reads is set, before the statement setting it ends
 			attest(
 				node(["main.ts"], { introspection: ["expression"] }, setInStep).stdout
