@@ -453,14 +453,7 @@ contextualize(() => {
 
 	it("JSON.parse as out", () => {
 		const T = type({ parse: type("string").pipe(() => JSON.parse) })
-		attest(T.infer).type.toString.snap(`{
-	parse: (
-		text: string,
-		reviver?:
-			| ((this: any, key: string, value: any) => any)
-			| undefined
-	) => any
-}`)
+		attest<{ parse: typeof JSON.parse }>(T.infer)
 	})
 
 	it("never as out", () => {
