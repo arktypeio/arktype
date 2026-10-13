@@ -1027,8 +1027,9 @@ const writePrecompiledUnit = (
 	const variablesByNode = new Map<BaseNode, string>([[root, "n0"]])
 	const variablesById: Record<string, string> = { [root.id]: "n0" }
 	const statements: string[] = []
-	// each node is read through the edges referencesById is collected from, including inside roots whose checks a parent writes in its own body
+	// each node is read through the edges referencesById is collected from, up to the roots no parent checks inline, whose own units bind them
 	for (let i = 0; i < nodes.length; i++) {
+		if (i !== 0 && nodes[i].isRoot() && !nodes[i].compileCondition) continue
 		for (const key of ["children", "referencedBesidesChildren"] as const) {
 			const referenced = nodes[i][key]
 			for (let j = 0; j < referenced.length; j++) {
