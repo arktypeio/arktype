@@ -1569,7 +1569,9 @@ ${writeFunction(
 	}
 
 	readUnit(unit: RootUnit): string {
-		return this.isEager(unit) ? unit.name : `${unit.name}()`
+		return this.isEager(unit) && !isFallible(unit) ?
+				unit.name
+			:	`${unit.name}()`
 	}
 
 	writeShared(unit: RootUnit): void {
@@ -1617,17 +1619,23 @@ ${writeFunction(
 		)
 		const built = `(${unitFunction})(${[...dependencyArgs, ...writing.args].join(", ")})`
 		// a function a parameter destructures can't declare "use strict"
+		const build =
+			isStrict(unit) ?
+				`(function () {\n"use strict"\nreturn ${built}\n})`
+			:	`(() => ${built})`
 		const moduleDeclarations =
 			!this.isEager(unit) ?
 				[
 					`var ${unit.name}Unit`,
 					`function ${unit.name}() {\n${isStrict(unit) ? `\t"use strict"\n` : ""}\treturn (${unit.name}Unit ??= ${built})\n}`
 				]
-			: isStrict(unit) ?
-				[
-					`const ${unit.name} = /* @__PURE__ */ (function () {\n"use strict"\nreturn ${built}\n})()`
+			:	[
+					`const ${unit.name} = /* @__PURE__ */ ${
+						isFallible(unit) ? `runtime.attempt(${build})`
+						: isStrict(unit) ? `${build}()`
+						: built
+					}`
 				]
-			:	[`const ${unit.name} = /* @__PURE__ */ ${built}`]
 		for (const root of unit.roots) {
 			const name = unit.names[root.id]
 			const shape = writing.shapesByName[name]
@@ -2695,35 +2703,42 @@ const isSharedUnit = (unit: RootUnit): boolean => {
 	return shared
 }
 
-const builtAtReadByUnit = new WeakMap<RootUnit, boolean>()
-
-// a unit holding what a program reads as a site creates its validator, or reading a unit that does, is built where the program reads it
-const isBuiltAtRead = (unit: RootUnit): boolean => {
-	let built = builtAtReadByUnit.get(unit)
-	if (built === undefined) {
-		builtAtReadByUnit.set(unit, false)
-		built =
-			unit.refs.some(ref => !isNode(ref) && readsAtCreation(ref)) ||
-			readUnitsOf(unit).some(isBuiltAtRead)
-		builtAtReadByUnit.set(unit, built)
+// whether a unit holds a value passing the test, itself or in a plain literal, or reads a unit that does as it's built
+const holdingOf = (
+	test: (value: object) => boolean
+): ((unit: RootUnit) => boolean) => {
+	const holdingByUnit = new WeakMap<RootUnit, boolean>()
+	const holds = (value: unknown, seen: Set<unknown>): boolean => {
+		if (!hasDomain(value, "object") || seen.has(value)) return false
+		seen.add(value)
+		return (
+			test(value) ||
+			(isPlainLiteral(value) &&
+				Reflect.ownKeys(value).some(k => holds(Reflect.get(value, k), seen)))
+		)
 	}
-	return built
+	const isHolding = (unit: RootUnit): boolean => {
+		let holding = holdingByUnit.get(unit)
+		if (holding === undefined) {
+			// a unit reading its own roots, as in a cycle, is decided by what else it reads
+			holdingByUnit.set(unit, false)
+			holding =
+				unit.refs.some(ref => !isNode(ref) && holds(ref, new Set())) ||
+				readUnitsOf(unit).some(isHolding)
+			holdingByUnit.set(unit, holding)
+		}
+		return holding
+	}
+	return isHolding
 }
 
-// a builtin global, which a polyfill or stub can replace before a site runs, or a RegExp with a flag an engine may not compile
-const readsAtCreation = (
-	value: unknown,
-	seen = new Set<unknown>()
-): boolean => {
-	if (typeof value === "function") return !runtimePathsByValue.has(value)
-	if (!hasDomain(value, "object") || seen.has(value)) return false
-	if (isRegExpObject(value)) return /[^dgimsuy]/.test(value.flags)
-	if (!isPlainLiteral(value)) return false
-	seen.add(value)
-	return Reflect.ownKeys(value).some(k =>
-		readsAtCreation(Reflect.get(value, k), seen)
-	)
-}
+// a builtin global, which a polyfill or stub can replace before a site runs
+const isBuiltAtRead = holdingOf(
+	value => typeof value === "function" && !runtimePathsByValue.has(value)
+)
+
+// a RegExp, which an engine lacking its syntax or flags can't create
+const isFallible = holdingOf(isRegExpObject)
 
 const declares = (
 	root: BaseRoot,

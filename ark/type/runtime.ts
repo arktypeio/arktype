@@ -364,6 +364,17 @@ export const lazyModule = (
 	return freeze(defineProperties({}, descriptors))
 }
 
+// an artifact's unit holding a RegExp, built as its module is evaluated unless that throws
+export const attempt = <t>(build: () => t): (() => t) => {
+	let built: t | undefined
+	try {
+		built = build()
+	} catch {
+		// an engine that can't create the pattern throws at each read instead, at a site as the program does
+	}
+	return () => (built ??= build())
+}
+
 export type HoleKind = "function" | "class" | "symbol"
 
 // a function's parameter count, 0, 1 or 2 or more, which arktype tells functions apart by, or what describes another hole
