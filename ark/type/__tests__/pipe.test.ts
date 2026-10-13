@@ -1025,6 +1025,38 @@ contextualize(() => {
 		)
 	})
 
+	it("undiscriminated morph at an element", () => {
+		const Trimmed = ["string", "=>", (s: string) => s.trim()] as const
+		const Measured = ["string", "=>", (s: string) => s.length] as const
+		attest(() =>
+			type({ a: [Trimmed] }).or({ a: [Measured], b: "string" })
+		).throws(
+			writeIndiscriminableMorphMessage(
+				"{ a: [(In: string) => Out<unknown>] }",
+				"{ a: [(In: string) => Out<unknown>], b: string }"
+			)
+		)
+		attest(() =>
+			type({ a: [{ b: Trimmed }] }).or({ a: [{ b: Measured }], c: "string" })
+		).throws(
+			writeIndiscriminableMorphMessage(
+				"{ a: [{ b: (In: string) => Out<unknown> }] }",
+				"{ a: [{ b: (In: string) => Out<unknown> }], c: string }"
+			)
+		)
+		attest(() =>
+			type({ a: [{ b: Trimmed }, "[]"] }).or({
+				a: [{ b: Measured }, "[]"],
+				c: "string"
+			})
+		).throws(
+			writeIndiscriminableMorphMessage(
+				"{ a: { b: (In: string) => Out<unknown> }[] }",
+				"{ a: { b: (In: string) => Out<unknown> }[], c: string }"
+			)
+		)
+	})
+
 	it("helper morph intersection", () => {
 		attest(() =>
 			type("string")
