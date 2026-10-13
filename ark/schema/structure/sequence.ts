@@ -535,7 +535,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				if (el.kind === "defaultables") {
 					const value =
 						typeof el.default === "function" ? el.default() : el.default
-					valueSchema.default =
+					const jsonDefault =
 						$ark.intrinsic.jsonData.allows(value) ?
 							value
 						:	ctx.fallback.defaultValue({
@@ -543,6 +543,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 								base: valueSchema,
 								value
 							})
+					if (jsonDefault !== undefined) valueSchema.default = jsonDefault
 				}
 				return valueSchema
 			})

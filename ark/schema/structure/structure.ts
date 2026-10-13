@@ -839,7 +839,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (prop.hasDefault()) {
 					const value =
 						typeof prop.default === "function" ? prop.default() : prop.default
-					valueSchema.default =
+					const jsonDefault =
 						$ark.intrinsic.jsonData.allows(value) ?
 							value
 						:	ctx.fallback.defaultValue({
@@ -847,6 +847,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 								base: valueSchema,
 								value
 							})
+					if (jsonDefault !== undefined) valueSchema.default = jsonDefault
 				}
 
 				schema.properties![prop.key] = valueSchema
