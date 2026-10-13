@@ -19,13 +19,17 @@ contextualize(() => {
 		const T = type("string").narrowAsync(() => check.promise)
 		attest<string>(T.t)
 
-		const out = T("foo") as type.errors
+		const result = T("foo")
+		attest<string | type.errors<string>>(result)
+		const out = result as type.errors<string>
 		attest(out.isLoading).equals(true)
 		attest(out[0].isLoading).equals(true)
 		attest(out.summary).snap("is still being checked")
 
 		check.resolve(true)
-		attest(await out.settled).equals("foo")
+		const settled = await out.settled
+		attest<string | type.errors<string>>(settled)
+		attest(settled).equals("foo")
 	})
 
 	it("settled resolves final errors", async () => {
@@ -59,7 +63,12 @@ contextualize(() => {
 			name: type("string").narrowAsync(() => check.promise),
 			age: "number"
 		})
-		const out = T({ name: "foo", age: "5" }) as type.errors
+		const result = T({ name: "foo", age: "5" })
+		attest<
+			{ name: string; age: number } | type.errors<{ name: string; age: number }>
+		>(result)
+		const out = result as type.errors<typeof T.infer>
+		attest<Promise<typeof T.infer | type.errors<typeof T.infer>>>(out.settled)
 		attest(out.isLoading).equals(true)
 		attest(out.summary).snap(`age must be a number (was a string)
 name is still being checked`)

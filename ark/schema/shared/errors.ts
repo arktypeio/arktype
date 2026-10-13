@@ -174,7 +174,7 @@ export declare namespace ArkErrors {
  * Subsequent errors added at an existing path are merged into an
  * ArkError intersection.
  */
-export class ArkErrors
+export class ArkErrors<output = unknown>
 	extends ReadonlyArray<ArkError>
 	implements StandardSchemaV1.FailureResult
 {
@@ -247,8 +247,9 @@ export class ArkErrors
 	 * `ArkErrors` with nothing loading. Resolves these errors if nothing is
 	 * loading, and rejects if a check throws.
 	 */
-	get settled(): Promise<unknown> {
-		return awaitSettledByErrors.get(this)?.() ?? Promise.resolve(this)
+	get settled(): Promise<output | ArkErrors<output>> {
+		return (awaitSettledByErrors.get(this)?.() ??
+			Promise.resolve(this)) as never
 	}
 
 	/**

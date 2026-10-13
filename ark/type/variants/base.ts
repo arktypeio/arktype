@@ -1,4 +1,5 @@
 import type {
+	ArkErrors,
 	BaseNode,
 	BaseRoot,
 	Disjoint,
@@ -490,9 +491,15 @@ export interface Inferred<out t = unknown, $ = {}> {
 	select: BaseNode["select"]
 }
 
+/** the configured `onFail` result, with `ArkErrors` typed by the output `settled` resolves */
+type onFailOf<out, onFail = ArkEnv.onFail> =
+	onFail extends ArkErrors ? ArkErrors<out> : onFail
+
 /** @ts-ignore cast variance */
 interface Type<out t = unknown, $ = {}>
-	extends Callable<(data: unknown) => distill.Out<t> | ArkEnv.onFail>,
+	extends Callable<
+			(data: unknown) => distill.Out<t> | onFailOf<distill.Out<t>>
+		>,
 		Inferred<t, $> {
 	/**
 	 * #### cast the way this is inferred

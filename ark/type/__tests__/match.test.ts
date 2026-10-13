@@ -743,7 +743,7 @@ contextualize(() => {
 		attest(exclaimFoo).type.toString.snap(`Match<
 	{ foo: string },
 	[
-		(In: unknown) => ArkErrors,
+		(In: unknown) => ArkErrors<unknown>,
 		(o: { foo: string }) => \`\${string}!\`
 	]
 >`)
