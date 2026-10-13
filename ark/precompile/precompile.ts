@@ -23,7 +23,6 @@ import type { HoleKind, IntrospectionMember } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	appendPath,
-	holdsWritable,
 	holeNamePattern,
 	introspectionMembers,
 	isTypedFn,
@@ -1227,8 +1226,7 @@ export class Precompiler {
 					...site.introspection,
 					data: site.value,
 					params: factory.params,
-					defaultChecks: site.defaultChecks,
-					fresh: this.createsEachRun(site)
+					defaultChecks: site.defaultChecks
 				}
 				replaced.push([site, factory.spans])
 				continue
@@ -1257,12 +1255,10 @@ export class Precompiler {
 				let table = tablesByValue.get(site.value)
 				if (table === undefined)
 					tablesByValue.set(site.value, (table = tablesByValue.size))
-				const fresh = this.createsEachRun(site)
 				exportsByName[name] = {
 					type: site.value as never,
 					params: factory.params,
-					internedBy: fresh ? undefined : table,
-					fresh,
+					internedBy: table,
 					defaultChecks: site.defaultChecks,
 					distinct: factory.distinct
 				} satisfies StandaloneFactory
@@ -1270,10 +1266,7 @@ export class Precompiler {
 			} else {
 				const name = `v${nameOf(site)}`
 				namesBySite.set(site, name)
-				exportsByName[name] =
-					this.createsEachRun(site) ?
-						{ type: site.value as never, params: [], fresh: true }
-					:	(site.value as never)
+				exportsByName[name] = site.value as never
 				if (site.isKeywordRead) keywordReads.add(name)
 				replaced.push([site, []])
 			}
@@ -1301,8 +1294,8 @@ export class Precompiler {
 				)
 			:	noValidators
 		const checking = new Set(validators.checking)
-		// modules writing the same code share it, unless a program can write what it holds
-		const specifier = `~arktype/${hashOf(validators.holdsWritable ? `${module.path}\n${validators.code}` : validators.code)}`
+		// modules writing the same code share it
+		const specifier = `~arktype/${hashOf(validators.code)}`
 		const imported = new Set<string>()
 		// the source a site's call keeps, which still reads the bindings it holds
 		const kept: Span[] = []
@@ -1496,18 +1489,6 @@ export class Precompiler {
 		if (site.status !== "accepted" || !isFoldable(site.value)) return
 		keyOf(site.value)
 		for (const [node] of site.defaultChecks) keyOf(node.in as BaseRoot)
-	}
-
-	// a site that can run more than once creates its own Date or RegExp, as arktype can
-	private createsEachRun(site: Site): boolean {
-		if (site.declarationStart !== undefined) return false
-		const type = site.introspection?.type
-		if (type)
-			return holdsWritable(type, true) && !this.interpreter.isDeclaredOnce(type)
-		const writesJsonSchema = this.introspection.some(
-			member => member === "toJsonSchema" || member === "~standard.jsonSchema"
-		)
-		return holdsWritable(site.value, writesJsonSchema)
 	}
 
 	private isFactory(site: Site, module: SourceModule): boolean {
@@ -3980,8 +3961,7 @@ const noValidators: StandaloneModules = {
 	code: "",
 	modules: {},
 	folds: {},
-	checking: [],
-	holdsWritable: false
+	checking: []
 }
 
 // precompileStandalone refuses a whole artifact for one export it can't emit, so each is tried alone to refuse only those

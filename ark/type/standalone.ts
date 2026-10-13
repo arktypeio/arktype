@@ -126,8 +126,6 @@ export interface StandaloneIntrospection {
 	defaultChecks?: readonly DefaultCheck[]
 	// what arktype threw writing the site's JSON Schema, which its factory throws at each call
 	thrown?: unknown
-	// each call creates its own of each Date or RegExp the Type holds, as each run can create the Type anew
-	fresh?: boolean
 }
 
 export interface StandaloneFactory {
@@ -139,8 +137,6 @@ export interface StandaloneFactory {
 	defaultChecks?: readonly DefaultCheck[]
 	// holes another module supplies through two or more texts, or a parameter holds, which the factory checks are distinct
 	distinct?: readonly unknown[]
-	// each call creates its own of each Date or RegExp a program can write, as its site can run more than once
-	fresh?: boolean
 }
 
 export type FactoryParam = HoleParam | InputParam | HelperParam | ProgressParam
@@ -232,8 +228,6 @@ export interface StandaloneModules {
 	folds: Record<string, [name: string, index: number]>
 	// each export whose call checks anything as it creates its value, so a bundler mustn't drop it
 	checking: string[]
-	// whether the code declares a Date or RegExp a program can write, which each module importing the code would share
-	holdsWritable: boolean
 }
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
@@ -248,16 +242,7 @@ export const precompileStandalone = (
 	const shared: Record<string, SharedModule> = {}
 	const folds: StandaloneModules["folds"] = {}
 	const checking: string[] = []
-	const held = new Map<object, string>()
-	const sections = writeArtifact(
-		exports,
-		opts,
-		shared,
-		{},
-		folds,
-		checking,
-		held
-	)
+	const sections = writeArtifact(exports, opts, shared, {}, folds, checking)
 	return {
 		code: writeSections([
 			runtimeImport,
@@ -266,8 +251,7 @@ export const precompileStandalone = (
 		]),
 		modules: {},
 		folds,
-		checking,
-		holdsWritable: held.size > 0
+		checking
 	}
 }
 
@@ -280,15 +264,13 @@ export const precompileStandaloneModules = (
 	const imports: Record<string, string[]> = {}
 	const folds: StandaloneModules["folds"] = {}
 	const checking: string[] = []
-	const held = new Map<object, string>()
 	const sections = writeArtifact(
 		exports,
 		opts,
 		shared,
 		imports,
 		folds,
-		checking,
-		held
+		checking
 	)
 	const modules: Record<string, string> = {}
 	for (const specifier in shared) {
@@ -308,8 +290,7 @@ export const precompileStandaloneModules = (
 		]),
 		modules,
 		folds,
-		checking,
-		holdsWritable: held.size > 0
+		checking
 	}
 }
 
@@ -319,8 +300,7 @@ const writeArtifact = (
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>,
 	folds: StandaloneModules["folds"],
-	checking: string[],
-	held: Map<object, string>
+	checking: string[]
 ): string[] => {
 	const { configured } = opts
 	const baking: Baking = {
@@ -344,16 +324,14 @@ const writeArtifact = (
 		if (
 			// as unknown, since narrowing an ExportedValue to BaseRoot compares the Type and node structurally, too deep for TypeScript 6
 			!hasArkKind(factory.type as unknown, "root") ||
-			factory.defaultChecks?.length ||
-			factory.fresh
+			factory.defaultChecks?.length
 		)
 			return false
 		const trial = new StandaloneArtifact(
 			{ [name]: factory.type },
 			Object.create(shared),
 			{},
-			baking,
-			new Map()
+			baking
 		)
 		trial.templates.add(factory.type)
 		try {
@@ -376,7 +354,6 @@ const writeArtifact = (
 				shared,
 				imports,
 				baking,
-				held,
 				value
 			)
 			artifactsByName.set(name, artifact)
@@ -391,7 +368,6 @@ const writeArtifact = (
 				shared,
 				imports,
 				baking,
-				held,
 				factory
 			)
 			artifactsByName.set(name, artifact)
@@ -419,7 +395,6 @@ const writeArtifact = (
 		folded,
 		opts,
 		baking,
-		held,
 		shared,
 		imports
 	)
@@ -450,9 +425,7 @@ ${writeExport(name, index)}`
 	const sections = [
 		...creations,
 		// created at the first read or a factory's first call, which an import cycle can reach before the artifact's body runs
-		[...held.values(), ...[...tables].map(table => `interned${table}`)]
-			.map(name => `var ${name}`)
-			.join("\n"),
+		[...tables].map(table => `var interned${table}`).join("\n"),
 		...factories.map(factory =>
 			typeof factory === "string" ? factory : factory()
 		)
@@ -484,7 +457,6 @@ const writeCreations = (
 	folded: ReadonlyMap<string, unknown>,
 	{ configured, keywordReads }: StandaloneOptions,
 	baking: Baking,
-	held: Map<object, string>,
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>
 ): [code: string[], reads: Record<string, CreationRead>] => {
@@ -494,8 +466,7 @@ const writeCreations = (
 			Object.fromEntries(indices.map(i => [names[i], types[names[i]]])),
 			shared,
 			imports,
-			baking,
-			held
+			baking
 		)
 		for (const template of templates) artifact.templates.add(template)
 		return artifact
@@ -680,15 +651,12 @@ export class StandaloneArtifact {
 	baking: Baking
 	// the Type whose introspection the factory returns, which declares no units
 	introspected: BaseRoot | undefined
-	// the name of each Date or RegExp a program can write, none where a call creates its own
-	held: Map<object, string> | undefined
 
 	constructor(
 		exports: Record<string, ExportedValue>,
 		sharedModules: Record<string, SharedModule>,
 		imports: Record<string, string[]>,
 		baking: Baking,
-		held: Map<object, string>,
 		// the factory a site calls, or the function returning a Type's introspection, which receives only what its default checks read
 		called?: StandaloneFactory | StandaloneIntrospection
 	) {
@@ -697,7 +665,6 @@ export class StandaloneArtifact {
 		const introspected = called && "member" in called ? called : undefined
 		this.introspected = introspected?.type
 		this.factory = introspected ? undefined : (called as StandaloneFactory)
-		this.held = (introspected ?? this.factory)?.fresh ? undefined : held
 		this.defaultChecks = (introspected ?? this.factory)?.defaultChecks ?? []
 		this.sharedModules = sharedModules
 		this.imports = imports
@@ -1845,14 +1812,6 @@ ${isTemplate ? "]" : ")"}`
 		return `runtime.holdHoles(${expression}, ${JSON.stringify(id)}${holes.length ? `, [${holes.map(hole => this.emit(hole)).join(", ")}]` : ""})`
 	}
 
-	// a Type's validator and each site reading its introspection read one, as they read arktype's
-	declareHeld(value: object, expression: string): string {
-		if (!this.held) return this.declareConst(value, "literal", expression)
-		let name = this.held.get(value)
-		if (!name) this.held.set(value, (name = `held${this.held.size}`))
-		return this.declareConst(value, "literal", `(${name} ??= ${expression})`)
-	}
-
 	readValidator(root: BaseRoot): string | undefined {
 		return this.validatorNamesByRoot.get(root)
 	}
@@ -2002,7 +1961,7 @@ ${isTemplate ? "]" : ")"}`
 					writeUnprecompilableMessage("a Date with its own properties")
 				)
 			}
-			return this.declareHeld(value, `new Date(${value.getTime()})`)
+			return this.declareConst(value, "literal", `new Date(${value.getTime()})`)
 		}
 		if (isRegExpObject(value)) {
 			if (Reflect.ownKeys(value).some(k => k !== "lastIndex")) {
@@ -2014,8 +1973,9 @@ ${isTemplate ? "]" : ")"}`
 			// no program can reach a pattern's own, whose lastIndex arktype resets before each test
 			if (this.patternInstances.has(value))
 				return this.declareConst(value, "literal", regex)
-			return this.declareHeld(
+			return this.declareConst(
 				value,
+				"literal",
 				value.lastIndex ?
 					`runtime.assign(${regex}, { lastIndex: ${value.lastIndex} })`
 				:	regex
@@ -2426,46 +2386,6 @@ const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 			holdsLocal(k, seen) || (isNode(v) && v.isRoot()) || holdsLocal(v, seen)
 		)
 	})
-}
-
-export const holdsWritable = (
-	value: unknown,
-	writesJsonSchema: boolean,
-	seen = new Set<unknown>()
-): boolean => {
-	if (!hasDomain(value, "object") || isHole(value) || seen.has(value))
-		return false
-	seen.add(value)
-	if (isDateObject(value) || isRegExpObject(value)) return true
-	if (hasArkKind(value, "root")) {
-		// a JSON Schema arktype can't write throws a context holding the Date a node compares against
-		if (
-			writesJsonSchema &&
-			value.references.some(node => Object.values(node.inner).some(isDate))
-		)
-			return true
-		const units = rootUnitsOf(value)
-		// only traversal reads a pattern's own RegExp
-		for (const unit of units) {
-			for (const node of writtenNodesOf(unit))
-				if (node.hasKind("pattern")) seen.add(node.instance)
-		}
-		return [value.meta, ...units.flatMap(unit => unit.refs)].some(held =>
-			holdsWritable(held, writesJsonSchema, seen)
-		)
-	}
-	if (isTypedFn(value)) {
-		return [value.params, value.returns].some(held =>
-			holdsWritable(held, writesJsonSchema, seen)
-		)
-	}
-	return (
-		(hasArkKind(value, "module") ||
-			(!isNode(value) && isPlainLiteral(value))) &&
-		Reflect.ownKeys(value).some(k =>
-			holdsWritable(Reflect.get(value, k), writesJsonSchema, seen)
-		)
-	)
 }
 
 // a text printing a hole's name is completed at creation, so a validator's code references it

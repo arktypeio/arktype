@@ -57,7 +57,6 @@ import { DynamicValue, type DynamicCode } from "./dynamic.ts"
 import {
 	bindingOfFunction,
 	contains,
-	declarationStartOf,
 	enclosingFunctionOf,
 	genericMembers,
 	importsValues,
@@ -296,8 +295,6 @@ export class Interpreter {
 	comparedAtCreation = new WeakSet<object>()
 	// a site reading only the introspection of one checked at creation receives it, so its declaration runs
 	private checksByValue = new WeakMap<object, boolean>()
-	// e.g. a Type a top-level variable holds, which the program creates once however often a site reads it
-	private declaredOnce = new WeakSet<object>()
 	private modulesByValue = new WeakMap<object, SourceModule[]>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
 	private validators = new WeakSet<object>()
@@ -1246,14 +1243,12 @@ export class Interpreter {
 			compares ||
 			!!site?.reached.some(reached => reached.length === 3) ||
 			this.checksHolesOf(value, site, module)
-		const isOnce = !!init && declarationStartOf(init) !== undefined
 		const values = [value]
 		// e.g. a Module's Types, which its creation created
 		for (const value of values) {
 			// one value can be declared more than once, as by an alias
 			if (!this.checksByValue.get(value as object))
 				this.checksByValue.set(value as object, checks)
-			if (isOnce) this.declaredOnce.add(value as object)
 			const modules = this.modulesByValue.get(value as object)
 			if (!modules) this.modulesByValue.set(value as object, [module])
 			else if (!modules.includes(module)) modules.push(module)
@@ -1285,10 +1280,6 @@ export class Interpreter {
 	// a value whose creation the build didn't see may check anything
 	isCheckedAtCreation(value: unknown): boolean {
 		return this.checksByValue.get(value as object) ?? true
-	}
-
-	isDeclaredOnce(value: unknown): boolean {
-		return this.declaredOnce.has(value as object)
 	}
 
 	// unless a site reads it as its module's own or through a Type whose creation checks nothing

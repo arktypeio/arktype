@@ -1267,28 +1267,6 @@ export const Team = type({ lead: User })`
 			attest(shared).snap(["~arktype/intersection1cumioo1kp2ufo"])
 		})
 
-		it("shares the code two modules write alike only where nothing it holds can be written", () => {
-			const definitions = {
-				frozen: `type({ at: "string" }).configure({ examples: [{ at: "x" }] })`,
-				written: `type({ at: "string" }).configure({ examples: [/a/g, new Date(0)] })`
-			}
-			const specifiers: Record<string, boolean> = {}
-			for (const [name, definition] of Object.entries(definitions)) {
-				const source = `import { type } from "arktype"
-export const T = ${definition}`
-				const files = { "/a.ts": source, "/b.ts": source }
-				const precompiler = new Precompiler(memoryHost(files))
-				const [a, b] = (["/a.ts", "/b.ts"] as const).map(
-					id =>
-						/from "(~arktype\/\w+)"/.exec(
-							precompiler.precompile(files[id], id).code
-						)![1]
-				)
-				specifiers[name] = a === b
-			}
-			attest(specifiers).equals({ frozen: true, written: false })
-		})
-
 		it("composes a Type's strings from those of the Types it references", () => {
 			const files = {
 				"/user.ts": `import { type } from "arktype"

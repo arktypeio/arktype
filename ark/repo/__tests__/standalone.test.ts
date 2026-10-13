@@ -656,50 +656,6 @@ name is missing`)
 		attest(T.meta.examples[0].lastIndex).equals(2)
 	})
 
-	it("creates a Date anew at each call of a factory whose site can run more than once", async () => {
-		const T = scope({ d: "d'2001-01-01'" }).type({ at: "d" })
-		const { fresh } = await load(
-			{ fresh: { type: T, params: [], fresh: true } },
-			undefined,
-			undefined,
-			["toJsonSchema"]
-		)
-		const unitOf = (validator: any) =>
-			thrownUnitOf(() => validator.toJsonSchema())
-		attest(unitOf(fresh()) === unitOf(fresh())).equals(false)
-	})
-
-	it("reads one Date for a Type wherever it reads the Date", async () => {
-		const T = type("d'2001-01-01'")
-		let thrown: unknown
-		try {
-			T.toJsonSchema()
-		} catch (e) {
-			thrown = e
-		}
-		const { validator, site } = await load(
-			{
-				validator: T,
-				site: {
-					member: "toJsonSchema",
-					type: T.internal,
-					data: undefined,
-					params: [],
-					thrown
-				}
-			},
-			undefined,
-			undefined,
-			["toJsonSchema"]
-		)
-		const units = [
-			thrownUnitOf(() => validator.toJsonSchema()),
-			thrownUnitOf(site),
-			thrownUnitOf(site)
-		]
-		attest(units.map(unit => unit === units[0])).equals([true, true, true])
-	})
-
 	it("throws where it's read a JSON Schema that calls a default's thunk", async () => {
 		const empty = standIn(() => [], "empty")
 		const T = type({ tags: ["string[]", "=", empty] })

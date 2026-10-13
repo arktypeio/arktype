@@ -624,42 +624,6 @@ x
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
 	}).timeout(60000)
 
-	it("creates each Date or RegExp a definition that runs again holds anew, as arktype does", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { scope, type } from "arktype"
-
-const dated = () => scope({ d: "d'2001-01-01'" }).type({ at: "d" })
-const exemplified = () => type("string").configure({ examples: [/a/] as never })
-// a JSON Schema can't hold a Date, so its error holds the unit
-const unitOf = (T: any) => {
-	try {
-		T.toJsonSchema()
-	} catch (e: any) {
-		return e.context.unit
-	}
-}
-Date.prototype.setFullYear.call(unitOf(dated()), 1999)
-console.log(unitOf(dated()).getUTCFullYear())
-const exampleOf = (T: any) => T.meta.examples[0]
-exampleOf(exemplified()).compile("b")
-console.log(exampleOf(exemplified()).source)
-`
-			},
-			fromHere("temp", "writtenEachRun")
-		)
-		const expected = "2001\na\n"
-		attest(runPlain(root)).equals(expected)
-		attest(
-			run(
-				await bundlers.esbuild(
-					{ cwd: root, introspection: ["toJsonSchema"] },
-					root
-				)
-			)
-		).equals(expected)
-	}).timeout(60000)
-
 	it("creates only the Types a bundle imports", async () => {
 		const root = writeFixture(
 			{
