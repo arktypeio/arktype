@@ -17,7 +17,7 @@
 	"scripts": {
 		"test": "pnpm testTyped --skipTypes",
 		"testTyped": "mocha --exclude \"ark/attest/**/*.test.*\"",
-		"testFiles": "mocha --no-package --node-option conditions=ark-ts --require ./ark/repo/mocha.globalSetup.ts --timeout 10000",
+		"testFiles": "mocha --onlyNamedTestFiles --no-package --node-option conditions=ark-ts --require ./ark/repo/mocha.globalSetup.ts --timeout 10000",
 		"prChecks": "pnpm lint && pnpm buildRepo && pnpm testRepoWithBenches",
 		"attest": "ts ./ark/attest/cli/cli.ts",
 		"build": "pnpm -r --filter !\"@ark/docs\" build",
@@ -27,7 +27,7 @@
 		"rmBuild": "pnpm -r exec rm -rf out",
 		"ts": "node ./ark/repo/ts.js",
 		"testRepoWithBenches": "pnpm typecheckRepo && pnpm testRepo && pnpm bench && pnpm testTypedLoose && pnpm testTsCompat && pnpm testTsVersions",
-		"typecheckRepo": "pnpm tsc --incremental",
+		"typecheckRepo": "tsc --incremental",
 		"testRepo": "pnpm test && pnpm testV8 && pnpm testBuild && pnpm testIntegration && pnpm -r --filter \"@ark/attest\" test",
 		"testIntegration": "pnpm -r --filter \"arktype\" testIntegration",
 		"testV8": "node --allow-natives-syntax ./ark/repo/testV8.js",

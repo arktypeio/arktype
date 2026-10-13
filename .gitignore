@@ -14,3 +14,5 @@ tmp
 .attest
 tsconfig.build.json
 coverage
+# generated per-page Markdown, see ark/docs/lib/writeMarkdown.ts
+ark/docs/public/docs/**/*.md

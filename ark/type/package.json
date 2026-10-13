@@ -69,7 +69,8 @@
 		}
 	},
 	"files": [
-		"out"
+		"out",
+		"skills"
 	],
 	"scripts": {
 		"build": "ts ../repo/build.ts",

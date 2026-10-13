@@ -14,6 +14,8 @@ type BaseAttestConfig = {
 	failOnMissingSnapshots: boolean
 	skipTypes: boolean
 	skipInlineInstantiations: boolean
+	/** analyze only the test files named on the command line */
+	onlyNamedTestFiles: boolean
 	attestAliases: string[]
 	benchPercentThreshold: number
 	benchErrorOnThresholdExceeded: BenchErrorConfig
@@ -45,6 +47,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	updateSnapshots: false,
 	skipTypes: false,
 	skipInlineInstantiations: false,
+	onlyNamedTestFiles: false,
 	benchPercentThreshold: 20,
 	benchErrorOnThresholdExceeded: true,
 	filter: undefined,

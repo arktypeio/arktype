@@ -3,7 +3,7 @@ import type { NextConfig } from "next"
 import { mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
-import { writeLlmsTxt } from "./lib/writeLlmsTxt.ts"
+import { writeMarkdown } from "./lib/writeMarkdown.ts"
 import { updateSnippetsEntrypoint } from "./lib/writeSnippetsEntrypoint.ts"
 
 // workaround for a bug in Node 25 that creates localStorage as an empty proxy,
@@ -22,7 +22,7 @@ const tmpDir = mkdtempSync(join(tmpdir(), "ark-localstorage-"))
 process.env.NODE_OPTIONS = `${process.env.NODE_OPTIONS} --localstorage-file=${join(tmpDir, "localstorage")}`
 
 updateSnippetsEntrypoint()
-writeLlmsTxt()
+writeMarkdown()
 
 const config = {
 	reactStrictMode: true,
