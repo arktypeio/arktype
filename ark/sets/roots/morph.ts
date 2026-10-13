@@ -1,9 +1,4 @@
-import {
-	Disjoint,
-	isResolutionFinal,
-	queueUnchecked,
-	type Morph
-} from "@ark/schema"
+import { Disjoint, type Morph } from "@ark/schema"
 import { throwParseError, type mutable } from "@ark/util"
 import {
 	defineRightwardIntersections,
@@ -63,11 +58,7 @@ export const morph: setImplementationOf<Morph.Declaration> = {
 }
 
 const assertEqualMorphs = (l: Morph.Node, r: Morph.Node): void => {
-	if (l.hasEqualMorphs(r)) return
-	// whether morphs piping to an alias are equal is known once its definition closes
-	if (!isResolutionFinal() && (l.includesAlias || r.includesAlias))
-		queueUnchecked(() => assertEqualMorphs(l, r), `${l.id}&${r.id}`)
-	else
+	if (!l.hasEqualMorphs(r))
 		throwParseError(writeMorphIntersectionMessage(l.expression, r.expression))
 }
 

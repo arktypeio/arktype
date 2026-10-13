@@ -9,6 +9,7 @@ import {
 	writeMorphIntersectionMessage
 } from "arksets"
 import { scope, type, type Type } from "arktype"
+import { writeUnresolvedFilterMessage } from "arktype/internal/keywords/ts.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
 
 contextualize(() => {
@@ -1424,21 +1425,12 @@ p1[0].p0 must be x (was a number)`)
 	})
 
 	it("identical definitions of a closed cycle", () => {
-		const { x } = scope({
-			x: { "y?": ["c", "&", "d"] },
-			b: { "n?": "c" },
-			c: { "p?": "string.json.parse |> b" },
-			d: { "p?": "string.json.parse |> b" }
-		}).export()
 		const types = scope({
 			a0: { p1: "string.numeric.parse", "p2?": "a0" },
 			n2: { p1: "string.numeric.parse", "p2?": "a0" },
 			a1: "a0 | n2"
 		}).export()
 
-		attest(x({ y: { p: '{ "n": { "p": "{}" } }' } })).equals({
-			y: { p: { n: { p: {} } } }
-		})
 		attest(types.a1({ p1: "1", p2: { p1: "2" } })).equals({
 			p1: 1,
 			p2: { p1: 2 }
@@ -2217,18 +2209,11 @@ swap.swap.order[1] must be "on" (was "off")`)
 
 	// https://github.com/arktypeio/arktype/issues/1026
 	it("filtered open definition", () => {
-		const types = scope({
-			a: { v: "number", "n?": "Extract<a | string, object>" },
-			b: { "a?": "Exclude<a | string, object>" }
-		}).export()
-
-		attest(types.a.expression).snap(
-			"{ v: number, n?: Extract<$a | string, object> }"
-		)
-		attest(types.a.allows({ v: 1, n: { v: 2 } })).equals(true)
-		attest(types.a.allows({ v: 1, n: "s" })).equals(false)
-		attest(types.b.allows({ a: "s" })).equals(true)
-		attest(types.b.allows({ a: { v: 1 } })).equals(false)
+		attest(() =>
+			scope({
+				a: { v: "number", "n?": "Extract<a | string, object>" }
+			}).export()
+		).throws(writeUnresolvedFilterMessage("Extract"))
 	})
 
 	it("structural reference in progress", () => {

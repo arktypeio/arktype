@@ -1,15 +1,14 @@
 import {
 	genericNode,
-	identityOf,
 	intrinsic,
 	isResolvable,
 	node,
-	resolveShallowAliases,
 	type BaseRoot
 } from "@ark/schema"
 import {
 	cached,
 	Hkt,
+	throwParseError,
 	type Json,
 	type Key,
 	type omit,
@@ -204,21 +203,16 @@ class ExcludeHkt extends Hkt<[unknown, unknown]> {
 	description = 'exclude branches of a union like `Exclude("boolean", "true")`'
 }
 
+// a branch still being defined can't be related yet
 const filterBranches = (
 	operator: "Exclude" | "Extract",
 	t: BaseRoot,
 	u: BaseRoot
-): BaseRoot => {
-	const filter = (t: BaseRoot, u: BaseRoot) =>
-		operator === "Exclude" ? t.exclude(u) : t.extract(u)
-	if (isResolvable(t) && isResolvable(u)) return filter(t, u)
-	return t.$.lazilyResolve(
-		() => filter(resolveShallowAliases(t), resolveShallowAliases(u)),
-		`${operator}<${identityOf(t)},${identityOf(u)}>`,
-		operator,
-		[t, u]
-	)
-}
+): BaseRoot =>
+	!isResolvable(t) || !isResolvable(u) ?
+		throwParseError(writeUnresolvedFilterMessage(operator))
+	: operator === "Exclude" ? t.exclude(u)
+	: t.extract(u)
 
 const Exclude = cached(() =>
 	genericNode("T", "U")(
@@ -271,3 +265,11 @@ export declare namespace arkTsGenerics {
 		Required: ReturnType<typeof Required>["t"]
 	}
 }
+
+export const writeUnresolvedFilterMessage = <operator extends string>(
+	operator: operator
+): writeUnresolvedFilterMessage<operator> =>
+	`${operator} can't filter a type still being defined`
+
+export type writeUnresolvedFilterMessage<operator extends string> =
+	`${operator} can't filter a type still being defined`

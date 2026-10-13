@@ -2,7 +2,6 @@ import {
 	$ark,
 	Disjoint,
 	isNode,
-	isResolutionFinal,
 	rootKinds,
 	type BaseNode,
 	type BaseScope,
@@ -27,7 +26,6 @@ type IntersectionCache = WeakMap<
 
 // a result belongs to the scope that parsed it
 const intersectionCache: IntersectionCache = new WeakMap()
-let pendingIntersectionCache: IntersectionCache | undefined
 
 export const intersectNodesRoot: InternalNodeIntersection<BaseScope> = (
 	l,
@@ -53,15 +51,9 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		r: BaseNode,
 		ctx: IntersectionContext
 	): BaseNode | Disjoint | null => {
-		let cache = intersectionCache
-		if (l.includesAlias || r.includesAlias) {
-			// a result involving an alias can change until resolution is final
-			if (isResolutionFinal()) pendingIntersectionCache = undefined
-			else cache = pendingIntersectionCache ??= new WeakMap()
-		}
-		let cacheByOperator = cache.get(ctx.$)
+		let cacheByOperator = intersectionCache.get(ctx.$)
 		if (!cacheByOperator) {
-			cache.set(
+			intersectionCache.set(
 				ctx.$,
 				(cacheByOperator = { "&": new WeakMap(), "|>": new WeakMap() })
 			)
