@@ -7,8 +7,10 @@ import {
 	precompileRootUnits,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
+	expectedOf,
 	failureSites,
 	type ArkErrorCode,
+	type BaseErrorContext,
 	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
@@ -25,7 +27,8 @@ import {
 	errorWritersByCode,
 	rootApplyRuntime,
 	writeRootApply,
-	type FailureSite
+	type FailureSite,
+	type UnionSite
 } from "@ark/schema/internal"
 import {
 	appendStringifiedKey,
@@ -2275,11 +2278,40 @@ const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	})
 }
 
-// a text printing a hole's name is completed at creation, so a validator's code references it
-const unitOptions: UnitOptions = {
-	raisesIssues: true,
-	referencesText: text => text.includes(holeNameMarker)
+const issueSitesByContext = new WeakMap<
+	object,
+	{ alone?: object; required?: object }
+>()
+
+const requiredIssue = { code: "required" } as const
+
+// a standalone issue holds only the code and description of what failed, so the sites agreeing on those share one
+const issueSiteOf = (site: FailureSite | UnionSite): object => {
+	const { value, missing } = site as {
+		value?: BaseErrorContext
+		missing?: BaseErrorContext
+	}
+	const context = value ?? (missing ? requiredIssue : site)
+	const variants = issueSitesByContext.get(context) ?? {}
+	issueSitesByContext.set(context, variants)
+	const variant = missing ? "required" : "alone"
+	if (variants[variant]) return variants[variant]
+	const issueSite =
+		value ?
+			{
+				value: {
+					code: value.code,
+					description: expectedOf(value.meta, value.description)
+				},
+				...(missing && { missing: requiredIssue })
+			}
+		: missing ? { missing: requiredIssue }
+		: { value: { code: "union", description: (site as UnionSite).description } }
+	failureSites.add(issueSite)
+	return (variants[variant] = issueSite)
 }
+
+const unitOptions: UnitOptions = { issueSiteOf }
 
 const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()
 

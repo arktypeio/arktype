@@ -8,7 +8,6 @@ import {
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
-import type { BaseErrorContext } from "./declare.ts"
 import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
 import type { FailureSite, SiteContext, UnionSite } from "./issues.ts"
 import { registeredReference } from "./registry.ts"
@@ -226,39 +225,6 @@ export const expectedOf = <description extends string | undefined>(
 // a site only traversal reads, so a standalone build writes it as it is rather than as a value a program could reach
 export const failureSites = new WeakSet<object>()
 
-const issueSitesByContext = new WeakMap<
-	object,
-	{ alone?: object; required?: object }
->()
-
-const requiredIssue = { code: "required" } as const
-
-// a standalone issue holds only the code and description of what failed, so the sites agreeing on those share one
-const issueSiteOf = (site: FailureSite | UnionSite): object => {
-	const { value, missing } = site as {
-		value?: BaseErrorContext
-		missing?: BaseErrorContext
-	}
-	const context = value ?? (missing ? requiredIssue : site)
-	const variants = issueSitesByContext.get(context) ?? {}
-	issueSitesByContext.set(context, variants)
-	const variant = missing ? "required" : "alone"
-	if (variants[variant]) return variants[variant]
-	const issueSite =
-		value ?
-			{
-				value: {
-					code: value.code,
-					description: expectedOf(value.meta, value.description)
-				},
-				...(missing && { missing: requiredIssue })
-			}
-		: missing ? { missing: requiredIssue }
-		: { value: { code: "union", description: (site as UnionSite).description } }
-	failureSites.add(issueSite)
-	return (variants[variant] = issueSite)
-}
-
 // a standalone check reporting what its node's site doesn't hold, at the path below the node where it reads
 export const issueSite = (
 	value: SiteContext,
@@ -271,13 +237,15 @@ export const issueSite = (
 
 export const undeclaredSite: FailureSite = issueSite({ code: "undeclared" })
 
+export type IssueSiteOf = (site: FailureSite | UnionSite) => object
+
 export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
 		requiresContext?: boolean
 		refs?: Refs
-		raisesIssues?: boolean | undefined
-		referencesText?: ((text: string) => boolean) | undefined
+		// a standalone validator raises issues, which hold none of its nodes' error contexts
+		issueSiteOf?: IssueSiteOf | undefined
 	}
 
 	export type Refs = Map<object | symbol, string>
@@ -287,8 +255,8 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
 	requiresContext: boolean
 	readonly refs: NodeCompiler.Refs | undefined
+	readonly issueSiteOf: IssueSiteOf | undefined
 	readonly raisesIssues: boolean
-	readonly referencesText: ((text: string) => boolean) | undefined
 	checksTransformErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {
@@ -296,8 +264,8 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		this.traversalKind = ctx.kind
 		this.requiresContext = ctx.requiresContext ?? true
 		this.refs = ctx.refs
-		this.raisesIssues = ctx.raisesIssues ?? false
-		this.referencesText = ctx.referencesText
+		this.issueSiteOf = ctx.issueSiteOf
+		this.raisesIssues = ctx.issueSiteOf !== undefined
 	}
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
@@ -363,13 +331,6 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			:	serializePrimitive(value as never)
 	}
 
-	// a text code can't hold, like one printing a function a factory receives, is referenced instead
-	text(value: string): string {
-		return this.referencesText?.(value) ?
-				this.ref(value as never)
-			:	JSON.stringify(value)
-	}
-
 	ref(value: object | symbol): string {
 		if (!this.refs) return registeredReference(value)
 		let name = this.refs.get(value)
@@ -377,11 +338,8 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		return name
 	}
 
-	// a standalone validator's site holds only what its issue reads
 	site(node: BaseNode): string {
-		return this.ref(
-			this.raisesIssues ? issueSiteOf(node.failureSite) : node.failureSite
-		)
+		return this.ref(this.issueSiteOf?.(node.failureSite) ?? node.failureSite)
 	}
 
 	error(node: BaseNode, key?: string, data = "data"): string {

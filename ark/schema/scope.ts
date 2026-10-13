@@ -77,6 +77,7 @@ import {
 	CompiledFunction,
 	NodeCompiler,
 	type InvokeOptions,
+	type IssueSiteOf,
 	type ReferenceOptions
 } from "./shared/compile.ts"
 import { ArkTraversal, errorFromContext } from "./shared/errors.ts"
@@ -572,8 +573,7 @@ class TraversalCompiler extends NodeCompiler {
 			kind,
 			requiresContext,
 			refs: linkage.refs,
-			raisesIssues: linkage.opts.raisesIssues,
-			referencesText: linkage.opts.referencesText
+			issueSiteOf: linkage.opts.issueSiteOf
 		})
 		this.linkage = linkage
 	}
@@ -665,9 +665,7 @@ export const precompileRootUnits = (
 
 export interface UnitOptions {
 	keyOf?: ContentKeyOf
-	// a standalone validator raises issues, which hold none of its nodes' error contexts
-	raisesIssues?: boolean
-	referencesText?: (text: string) => boolean
+	issueSiteOf?: IssueSiteOf
 }
 
 const unitsOf = (s: ContentNamingState, opts: UnitOptions): RootUnit[] => {
