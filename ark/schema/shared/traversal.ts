@@ -638,12 +638,6 @@ class Resolutions {
 	earliestAssumed = Number.POSITIVE_INFINITY
 	assumed: unknown[] | undefined = undefined
 	reachedInvalid: InvalidResolution | undefined = undefined
-	// data reaching an object by a shorter path than it first did is applied in order of path length
-	deferredByLength: DeferredResolution[][] | undefined = undefined
-	applyingLength = 0
-	// the length of the shortest path an object was deferred at, or -1 once applied
-	shortestPathLengths: { [id in string]?: Map<unknown, number> } | undefined =
-		undefined
 }
 
 const resolutionsOf = (ctx: InternalTraversal): Resolutions =>
@@ -653,34 +647,9 @@ const resolutionsOf = (ctx: InternalTraversal): Resolutions =>
 export const enterResolution = (
 	ctx: InternalTraversal,
 	id: string,
-	data: unknown,
-	apply?: TraverseApply
+	data: unknown
 ): boolean | undefined => {
 	const resolutions = resolutionsOf(ctx)
-	if (
-		resolutions.deferredByLength &&
-		apply &&
-		!ctx.currentBranch &&
-		(typeof data === "object" ? data !== null : typeof data === "function")
-	) {
-		const lengths = (resolutions.shortestPathLengths![id] ??= new Map())
-		const length = ctx.path.length
-		const shortestLength = lengths.get(data)
-		if (shortestLength !== undefined && shortestLength <= length) return true
-		if (length === resolutions.applyingLength) {
-			lengths.set(data, -1)
-			apply(data, ctx)
-		} else {
-			lengths.set(data, length)
-			;(resolutions.deferredByLength[length] ??= []).push({
-				id,
-				data,
-				apply,
-				path: [...ctx.path]
-			})
-		}
-		return true
-	}
 	// untracked, every state is a failure, so none is looked up before the first
 	const states =
 		resolutions.tracked || resolutions.recordedFailure ?
@@ -699,8 +668,6 @@ export const enterResolution = (
 			return false
 		}
 		if (state.reported) {
-			// its errors belong at the shorter path, which only applying by path length finds
-			if (ctx.path.length < state.pathLength) throw reachedByShorterPath
 			resolutions.reachedInvalid ??= state
 			return false
 		}
@@ -801,41 +768,13 @@ const exitUntracked = (
 	return false
 }
 
-// an object reached at a longer path than the one being applied is deferred, so each is applied once at its shortest path
-const applyByPathLength = (
-	ctx: InternalTraversal,
-	id: string,
-	apply: TraverseApply,
-	data: unknown
-): void => {
-	const resolutions = resolutionsOf(ctx)
-	const deferredByLength: DeferredResolution[][] =
-		(resolutions.deferredByLength = [])
-	resolutions.shortestPathLengths = {}
-	enterResolution(ctx, id, data, apply)
-	for (let length = 1; length < deferredByLength.length; length++) {
-		if (!deferredByLength[length]) continue
-		resolutions.applyingLength = length
-		for (const deferred of deferredByLength[length]) {
-			const lengths = resolutions.shortestPathLengths[deferred.id]!
-			// it was deferred again at a shorter path, so it's been applied there
-			if (lengths.get(deferred.data) !== length) continue
-			lengths.set(deferred.data, -1)
-			ctx.path = deferred.path
-			deferred.apply(deferred.data, ctx)
-		}
-	}
-	ctx.path = []
-}
-
 const invalidResolution = (
 	ctx: InternalTraversal,
 	error = ctx.currentBranch?.error ??
 		lastOf(ctx._errors!._issues ?? ctx._errors!._)
 ): InvalidResolution => ({
 	error,
-	reported: !ctx.currentBranch,
-	pathLength: ctx.path.length
+	reported: !ctx.currentBranch
 })
 
 // a traversal of other data, of this one's class, so a callback sees the API it would have
@@ -879,8 +818,6 @@ export const aliasVisits = {
 
 const untrackedBound = /* @__PURE__ */ noSuggest("untrackedBound")
 
-const reachedByShorterPath = /* @__PURE__ */ noSuggest("reachedByShorterPath")
-
 // once tracked, a cyclic root is entered as its own resolution, so data reaching it again isn't traversed twice
 export const applyCyclic = <ctx extends InternalTraversal>(
 	node: BaseNode,
@@ -889,25 +826,18 @@ export const applyCyclic = <ctx extends InternalTraversal>(
 ): ctx => {
 	// a rerun would transform each value Apply found valid again
 	if (node.transforms) {
-		applyByPathLength(ctx, node.trackedId, node.traverseApply, data)
+		applyResolution(node.trackedId, node.traverseApply, data, ctx)
 		return ctx
 	}
 	resolutionsOf(ctx).tracked = false
 	try {
-		try {
-			// data reaching its root again is cyclic, so untracked it exceeds the bounds
-			node.traverseApply(data, ctx)
-		} catch (e) {
-			if (e !== untrackedBound) throw e
-			ctx = traversalOf(ctx, data)
-			applyResolution(node.trackedId, node.traverseApply, data, ctx)
-		}
-		return ctx
+		// data reaching its root again is cyclic, so untracked it exceeds the bounds
+		node.traverseApply(data, ctx)
 	} catch (e) {
-		if (e !== reachedByShorterPath) throw e
+		if (e !== untrackedBound) throw e
+		ctx = traversalOf(ctx, data)
+		applyResolution(node.trackedId, node.traverseApply, data, ctx)
 	}
-	ctx = traversalOf(ctx, data)
-	applyByPathLength(ctx, node.trackedId, node.traverseApply, data)
 	return ctx
 }
 
@@ -917,7 +847,7 @@ export const applyResolution = (
 	data: unknown,
 	ctx: InternalTraversal
 ): void => {
-	if (enterResolution(ctx, id, data, apply) !== undefined) return
+	if (enterResolution(ctx, id, data) !== undefined) return
 	apply(data, ctx)
 	exitResolution(ctx)
 }
@@ -926,10 +856,9 @@ export const applyResolution = (
 export const enterApplied = (
 	ctx: InternalTraversal,
 	id: string,
-	data: unknown,
-	apply: TraverseApply
+	data: unknown
 ): boolean | undefined => {
-	const entered = enterResolution(ctx, id, data, apply)
+	const entered = enterResolution(ctx, id, data)
 	return entered === undefined ? undefined : entered || !ctx.failFast
 }
 
@@ -1039,14 +968,6 @@ type ResolutionState = number | boolean | InvalidResolution
 interface InvalidResolution {
 	error: ArkIssue
 	reported: boolean
-	pathLength: number
-}
-
-interface DeferredResolution {
-	id: string
-	data: unknown
-	apply: TraverseApply
-	path: PropertyKey[]
 }
 
 interface ResolvingFrame {

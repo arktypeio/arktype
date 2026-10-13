@@ -326,8 +326,8 @@ export const types = scope({ tree: { value: "number", "children?": "tree[]" } })
 export const M = type.module({ a: "string", b: { c: "a" } })`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vsjkdln005ypg0 as $arkvsjkdln005ypg0 } from "~arktype/mvs05m0ub2cla"
-import { vuorrac1fkpkl6 as $arkvuorrac1fkpkl6 } from "~arktype/mvs05m0ub2cla"
+import { vsjkdln005ypg0 as $arkvsjkdln005ypg0 } from "~arktype/197x63h0rjqmkp"
+import { vuorrac1fkpkl6 as $arkvuorrac1fkpkl6 } from "~arktype/197x63h0rjqmkp"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 export const types = /* @__PURE__ */ $arkvsjkdln005ypg0()
@@ -337,7 +337,7 @@ export const M = /* @__PURE__ */ $arkvuorrac1fkpkl6()`)
 					.split("\n")
 					.filter(line => /^const module\d/.test(line))
 			).snap([
-				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0 }), "1r9tghn1bsk9qz")',
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0 }), "1q713b31ce6xqh")',
 				'const module0 = runtime.holdHoles(runtime.freeze({ ["a"]: validator0, ["b"]: validator1 }), "1y03dsd0lnbk50")'
 			])
 		})
@@ -351,11 +351,11 @@ export const Box = type("<t>", { box: "t" })
 export const BoxedTree = Box(types.tree)`)
 			attest(result.diagnostics).equals([])
 			attest(result.code).snap(`import "arktype"
-import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/tkg5e61snvicu"
-import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/tkg5e61snvicu"
-import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/tkg5e61snvicu"
-import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/tkg5e61snvicu"
-import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/tkg5e61snvicu"
+import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/z61kim1mc2qth"
+import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/z61kim1mc2qth"
+import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/z61kim1mc2qth"
+import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/z61kim1mc2qth"
+import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/z61kim1mc2qth"
 import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
 $arkfixConfig()
 const $ = /* @__PURE__ */ $arkvq7pa6c00qqwz6()
@@ -370,7 +370,7 @@ export const BoxedTree = /* @__PURE__ */ $arkv1tryxgh0tpn3pk()`)
 			).snap([
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "2ug25d0g2fmpu")',
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "yc0zfl03fckbs")',
-				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "djnt2s1y9gthf")',
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "cyy1mn1xiyugo")',
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "dpg9qw0fjxmwu")'
 			])
 		})

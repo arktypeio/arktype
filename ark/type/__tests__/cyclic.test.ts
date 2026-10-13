@@ -75,8 +75,7 @@ contextualize(() => {
 		attest(String(u(r))).snap("v must be a number (was a string)")
 	})
 
-	// https://github.com/arktypeio/arktype/issues/924
-	it("invalid object at shortest path", () => {
+	it("invalid object reached by more than one path", () => {
 		const types = scope({
 			package: {
 				name: "string",
@@ -87,7 +86,9 @@ contextualize(() => {
 				email: "string.email",
 				"packages?": "package[]"
 			},
-			tree: { id: "number", children: "tree[]" }
+			tree: { id: "number", children: "tree[]" },
+			node: { v: "number", "e0?": "node[]", "next?": "node | null" },
+			transformed: { v: "string.trim", "n?": "number", "e?": "transformed[]" }
 		}).export()
 		const shared = {
 			name: "shared",
@@ -98,43 +99,16 @@ contextualize(() => {
 			dependencies: [{ name: "a", dependencies: [shared] }, shared]
 		}
 		Object.assign(shared, { dependencies: [root] })
-
-		attest(types.package(root).toString()).snap(
-			'dependencies[1].contributors[0].email must be an email address (was "david@sharktypeio")'
-		)
-
-		const dag = {
-			name: "dag",
-			dependencies: [
-				{
-					name: "a",
-					dependencies: [{ name: "b", dependencies: [shared] }]
-				},
-				{ name: "c", dependencies: [shared] }
-			]
-		}
-
-		attest(types.package(dag).toString()).snap(
-			'dependencies[1].dependencies[0].contributors[0].email must be an email address (was "david@sharktypeio")'
-		)
-
 		const ring = [0, 1, 2].map(id => ({
 			id,
 			children: [] as object[]
 		}))
 		for (const node of ring) node.children.push(...ring)
 		ring[2].id = "x" as never
-
-		attest(types.tree(ring[0]).toString()).snap(
-			"children[2].id must be a number (was a string)"
+		const graph = Array.from(
+			{ length: 9 },
+			(_, v): typeof types.node.infer => ({ v })
 		)
-	})
-
-	it("cyclic graph at shortest path", () => {
-		const node = scope({ node: { v: "number", "e0?": "node[]" } }).export().node
-		const graph = Array.from({ length: 9 }, (_, v): typeof node.infer => ({
-			v
-		}))
 		graph[8].v = "x" as never
 		for (const [from, to] of [
 			[0, 1],
@@ -151,48 +125,29 @@ contextualize(() => {
 			[6, 7]
 		])
 			(graph[from].e0 ??= []).push(graph[to])
-
-		attest(node(graph[0]).toString()).snap(
-			"e0[0].e0[1].e0[0].e0[1].v must be a number (was a string)"
+		const dag = Array.from(
+			{ length: 200 },
+			(_, v): typeof types.node.infer => ({ v })
 		)
-
-		const dag = Array.from({ length: 400 }, (_, v): typeof node.infer => ({
-			v
-		}))
 		for (let i = 0; i < dag.length; i++) dag[i].e0 = dag.slice(i + 1, i + 3)
-		dag[399].v = "x" as never
+		dag[199].v = "x" as never
+		const unionShared = { v: "x" }
+		const self: { v: string; next?: object } = { v: "x" }
+		self.next = self
+		const invalid = { v: "invalid", e: [{ v: "bad", n: "x" }] }
 
-		attest(node(dag[0]).toString()).equals(
-			`e0[0].${"e0[1].".repeat(199)}v must be a number (was a string)`
-		)
-	})
-
-	it("transforming root applies each object once", () => {
-		const calls: string[] = []
-		const node = scope({
-			node: {
-				v: [
-					"string",
-					"=>",
-					s => {
-						calls.push(s)
-						return s
-					}
-				],
-				"n?": "number",
-				"e?": "node[]"
-			}
-		}).export().node
-		const valid = { v: "valid" }
-		const invalid = { v: "invalid", e: [{ v: "bad", n: "x" as never }] }
-
+		const cases: [type.Any, unknown][] = [
+			[types.package, root],
+			[types.tree, ring[0]],
+			[types.node, graph[0]],
+			[types.node, dag[0]],
+			[types.node, { v: 1, e0: [unionShared], next: unionShared }],
+			[types.node, self],
+			[types.transformed, { v: "root", e: [{ v: "a", e: [invalid] }, invalid] }]
+		]
 		attest(
-			node({
-				v: "root",
-				e: [{ v: "a", e: [valid, invalid] }, valid, invalid]
-			}).toString()
-		).snap("e[2].e[0].n must be a number (was a string)")
-		attest(calls).equals(["root", "valid", "a", "valid", "invalid", "bad"])
+			cases.map(([t, data]) => [t.allows(data), t(data) instanceof type.errors])
+		).equals(cases.map(() => [false, true]))
 	})
 
 	it("depth and width bounds", () => {
@@ -333,21 +288,6 @@ contextualize(() => {
 		attest(api.Part({ type: "field", value: "" }).toString()).snap(
 			"value must be non-empty"
 		)
-	})
-
-	// https://github.com/arktypeio/arktype/issues/924
-	it("object through union reported once", () => {
-		const node = scope({
-			node: { v: "number", "kids?": "node[]", "next?": "node | null" }
-		}).export().node
-		const shared = { v: "x" }
-		const self: { v: string; next?: object } = { v: "x" }
-		self.next = self
-
-		attest(node({ v: 1, kids: [shared], next: shared }).toString()).snap(
-			"next.v must be a number (was a string)"
-		)
-		attest(node(self).toString()).snap("v must be a number (was a string)")
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1237

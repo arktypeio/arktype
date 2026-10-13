@@ -7,11 +7,11 @@ This audit covers the 223 issues open on arktypeio/arktype on 2026-10-07. Every 
 | [Fix tracker](#fix-tracker)                                                            | 15 fixed, 0 awaiting a decision, 0 in review | post the comments on fixed issues       |
 | [Easy-win bugs](#easy-win-bugs)                                                        | 15                                           | fix on featherduster                    |
 | [Clear bugs](#clear-bugs)                                                              | 28                                           | schedule; 16 need a decision first      |
-| [Fixed on featherduster](#fixed-on-featherduster)                                      | 22                                           | close when featherduster ships          |
+| [Fixed on featherduster](#fixed-on-featherduster)                                      | 21                                           | close when featherduster ships          |
 | [Probably close: out of date](#probably-close-out-of-date)                             | 22                                           | close now                               |
 | [Probably close: out of scope or incorrect](#probably-close-out-of-scope-or-incorrect) | 22                                           | close, with the note where there is one |
 | [Needs info](#needs-info)                                                              | 2                                            | ask the reporter                        |
-| [Relevant features](#relevant-features)                                                | 77                                           | keep; 62 need a design decision         |
+| [Relevant features](#relevant-features)                                                | 78                                           | keep; 63 need a design decision         |
 | [Docs](#docs)                                                                          | 14                                           | keep                                    |
 | [Internal](#internal)                                                                  | 21                                           | keep or close at your discretion        |
 
@@ -918,10 +918,6 @@ Each of these reproduces on 2.2.8 and is fixed on the featherduster branch. They
 
   On 2.2.8 both examples type-check and accept every value (`a(5)` returns 5, expressions `$a` and `$a | undefined`). On the featherduster tip both are type errors ("Alias 'a' has a shallow resolution cycle: a->a", "a->b->a" / "b->a->b") and throw that message at runtime. Landed in 74a4df18b "fix(type): check shallow cycles statically" (on the public featherduster branch), CHANGELOG "Reject shallow cycles".
 
-- **[#924](https://github.com/arktypeio/arktype/issues/924) Use the result with the shortest path when finalizing errors for a cyclic value** (`schema` · 1 reaction · [note](#note-924)). For cyclic data validated by a cyclic type, report each error only at the shortest path the invalid object is reached at, instead of duplicates or the first (longer) path.
-
-  On 2.2.8 the scopes docs example reports the error twice (contributors[0].email and dependencies[0].dependencies[0].contributors[0].email); when the object is reached first at a longer path, only the longer path is reported (kids[0].x instead of other.x). On the featherduster tip every variant reports only the shortest path, via 62dc7f1ce and 009f43a74 (`applyByPathLength` in `ark/schema/shared/traversal.ts:470`).
-
 - **[#928](https://github.com/arktypeio/arktype/issues/928) Reduce equivalent cyclic types** (`schema` · [note](#note-928)). Structurally equivalent cyclic types (same shape, different alias names) should be recognized as equal and reduced.
 
   The issue's literal example already holds on 2.2.8 (admin references user[], so types.user === types.admin), but alpha-equivalent cycles don't: `admin2: { friends: "admin2[]" }` is not equal to user, `user | admin2` stays a 2-branch union, and `listPos.extends(list)` is false. On the featherduster tip equals/extends are true and unions/intersections reduce (`user | admin2` -> one branch) via bisimulation (8d423cdbe, 8325a9794). Caveat for the maintainer: on featherduster exported equivalent aliases are no longer the same node (types.user !== types.admin; admin's expression unrolls one level), so the issue's literal `attest(types.user).equals(types.admin)` (reference equality for functions) passes on 2.2.8 but would fail on featherduster. Not a correctness issue.
@@ -1413,6 +1409,10 @@ These are the requests worth keeping. They are grouped by package and ordered by
 - **[#1538](https://github.com/arktypeio/arktype/issues/1538) Globally configure format of error messages.** (`schema` · effort small · 1 reaction · [note](#note-1538)). Request a single top-level `configure({ actual: ... })` (and presumably expected/problem/message) that applies to every error kind, e.g. to drop `(was ...)` project-wide.
 
   _Decision:_ Should a top-level error config (expected/actual/problem/message) apply as a default across all error codes, with per-kind config taking precedence?
+
+- **[#924](https://github.com/arktypeio/arktype/issues/924) Use the result with the shortest path when finalizing errors for a cyclic value** (`schema` · effort medium · 1 reaction · [note](#note-924)). For cyclic data validated by a cyclic type, report each error only at the shortest path the invalid object is reached at, instead of the first (longer) path.
+
+  _Decision:_ Is the shortest path worth a second traversal in order of path length? featherduster had one (62dc7f1ce, 009f43a74) and removed it, since only shared or cyclic data, which JSON can't express, reaches it.
 
 - **[#751](https://github.com/arktypeio/arktype/issues/751) Collapse common parts of union** (`schema` · effort medium · possibly breaking · [note](#note-751)). Reduce unions of structures that differ in exactly one key ({ a: string } | { a: number } -> { a: string | number }) and adjacent ranges (1&lt;n&lt;10 | 10&lt;=n&lt;100 -> 1&lt;n&lt;100).
 
@@ -2015,7 +2015,7 @@ dependencies[0].dependencies[0].contributors[0].email must be an email address (
 
 When the object is reached first at a longer path, only that path is reported: `scope({ N: { "kids?": "N[]", "x?": "number", "other?": "N" } })` with `inner = { x: "bad", kids: [s] }`, `s.kids = [inner]`, `s.other = inner` gives `kids[0].x must be a number (was a string)`.
 
-Doesn't reproduce on the `featherduster` branch (#1685, commits 62dc7f1ce and 009f43a74): these report only `contributors[0].email` and `other.x`.
+On the `featherduster` branch each invalid object is reported once, at the first path a depth-first traversal reaches it by. The docs example reports only `contributors[0].email`, but the second example still reports `kids[0].x`. Commits 62dc7f1ce and 009f43a74 reported it at `other.x`, the shortest path, and were removed to cut the code.
 
 ### <a id="note-928"></a>[#928](https://github.com/arktypeio/arktype/issues/928) Reduce equivalent cyclic types
 

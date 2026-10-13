@@ -325,7 +325,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	// a cycle's member is entered as its resolution, so data reaching it again isn't applied twice
 	resolution(node: BaseNode, id: NodeId, arg: string = this.data): string {
 		const apply = this.traversal(node, "Apply")
-		return `${this.ref(enterApplied)}(ctx, "${this.nameOf(id)}", ${arg}, ${apply}) ?? ${this.ref(exitApplied)}(ctx, ${apply}(${arg}, ctx))`
+		return `${this.ref(enterApplied)}(ctx, "${this.nameOf(id)}", ${arg}) ?? ${this.ref(exitApplied)}(ctx, ${apply}(${arg}, ctx))`
 	}
 
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
