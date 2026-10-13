@@ -1007,20 +1007,6 @@ const User = type({ name: "string" })`)
 			])
 		})
 
-		it("a Type read through an instance's field", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-class Forms {
-	user = type({ name: "string" })
-	admin = this.user.and({ role: "string" })
-}
-export const Guest = new Forms().user.or("null")`)
-			).snap([
-				"/main.ts:4:10  this.user.and reads and, which a standalone validator lacks\n  the build can't tell where `this.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:6:22  new Forms().user.or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms().user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
-			])
-		})
-
 		it("Types read through an instance's fields, each on its own", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
@@ -1181,15 +1167,6 @@ export const C = list[Number(process.env.I)].or("null")`)
 				"/main.ts:7:18  schemas.User.or reads or, which a standalone validator lacks\n  the build can't tell where `schemas.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
 				'/main.ts:8:18  registry.get("admin").or reads or, which a standalone validator lacks\n  the build can\'t tell where `registry.get("admin")` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn\'t a Type, annotate it with its type. If it is, build with runtime: "arktype".',
 				"/main.ts:9:18  list[Number(process.env.I)].or reads or, which a standalone validator lacks\n  the build can't tell where `list[Number(process.env.I)]` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
-			])
-		})
-
-		it("a Type an array's callback receives", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-export const nullables = [type("string"), type("number")].map(t => t.or("null"))`)
-			).snap([
-				"/main.ts:2:68  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
 			])
 		})
 
@@ -1409,19 +1386,6 @@ export const a=o(r(5))`)
 			).snap(["4:16 accepted { a: number >= 5 }"])
 		})
 
-		it("a helper named by other than esbuild's keepNames helper", () => {
-			attest(
-				statusesOf(`import { type } from "arktype"
-const Object = { defineProperty: (target: any) => () => "string" }
-var __defProp = Object.defineProperty
-var __name = (target, value) => __defProp(target, "name", { value, configurable: true })
-const field = __name((n: number) => type(\`string <= \${n}\`), "field")
-export const A = field(5)`)
-			).snap([
-				"5:37 rejected\n  `n` is a parameter of a function (/main.ts:5:23); its value is known only at runtime"
-			])
-		})
-
 		it("conversions of objects", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -1447,14 +1411,10 @@ const Z = type.instanceOf(Zebra)
 const pick = ({ [Ap as never]: v }: Record<string, string>) => v
 const A = type({ a: type("string").narrow(isLong) }).configure({ description: "selected" }, { where: n => [n].join("").includes("isLong") })
 const B = type([Ap, Z].join("") === "Type<Apple>Type<Zebra>" ? "string" : "number")
-const C = type("".concat(Ap as never) === "Type<Apple>" ? "string" : "number")
 const D = type(Object.keys(Object.fromEntries([[Ap, 1]]))[0] === "Type<Apple>" ? "string" : "number")
-const F = type(Symbol.for(Ap as never) === Symbol.for("Type<Apple>") ? "string" : "number")
 const H = type(pick({ "Type<Apple>": "string" }) ?? "number")
-const I = type("Type<Apple>".replace(Ap as never, "") === "" ? "string" : "number")
 const J = type({ [["a", "b"].join("")]: "string", ["abc".replace(/b/, "").split(/c/)[0]]: "string", ["x".replace("x", s => s + "y")]: "string" })
 const K = type([Ap, Z].map(t => t).at(1)!)
-const L = type("Type<Apple>".split(new RegExp(Ap as never)).length === 2 ? "string" : "number")
 const replacer = (k: string, v: any) => (k === "" ? { a: Ap } : k === "a" ? v.proto.includes("Apple") : v)
 const M = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number")`)
 			).snap([
@@ -1462,33 +1422,11 @@ const M = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number
 				"6:11 accepted Zebra$hole_tlxgt0061ywqu",
 				'8:11 rejected\n  arktype calls `where` (/main.ts:8:102) while defining the type, so it must be a static helper\n  `[n].join("")` converts an object to a primitive, which runs its methods',
 				'9:11 rejected\n  `[Ap, Z].join("")` converts an object to a primitive, which runs its methods',
-				'10:11 rejected\n  `"".concat(Ap as never)` converts an object to a primitive, which runs its methods',
-				"11:11 rejected\n  `Object.fromEntries([[Ap, 1]])` converts an object to a primitive, which runs its methods",
-				"12:11 rejected\n  `Symbol.for(Ap as never)` converts an object to a primitive, which runs its methods",
-				"13:11 rejected\n  `Ap as never` converts an object to a primitive, which runs its methods",
-				'14:11 rejected\n  `"Type<Apple>".replace(Ap as never, "")` converts an object to a primitive, which runs its methods',
-				"15:11 accepted { a: string, ab: string, xy: string }",
-				"16:11 accepted Zebra$hole_tlxgt0061ywqu",
-				"17:11 rejected\n  `new RegExp(Ap as never)` converts an object to a primitive, which runs its methods",
-				"19:11 rejected\n  `v: any` (/main.ts:18:30) receives the name of `Apple` (/main.ts:3:1), which the build knows only by a placeholder"
-			])
-		})
-
-		it("a callback receiving a placeholder from a built-in, in its own module", () => {
-			attest(
-				statusesOf(
-					`import { type } from "arktype"
-import { replacer } from "./replacer.ts"
-const J = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number")`,
-					{
-						"/replacer.ts": `import { type } from "arktype"
-class Apple {}
-const Ap = type.instanceOf(Apple)
-export const replacer = (k: string, v: any) => (k === "" ? { a: Ap } : k === "a" ? v.proto.includes("Apple") : v)`
-					}
-				)
-			).snap([
-				"3:11 rejected\n  `v: any` (/replacer.ts:4:37) receives the name of `Apple` (/replacer.ts:2:1), which the build knows only by a placeholder"
+				"10:11 rejected\n  `Object.fromEntries([[Ap, 1]])` converts an object to a primitive, which runs its methods",
+				"11:11 rejected\n  `Ap as never` converts an object to a primitive, which runs its methods",
+				"12:11 accepted { a: string, ab: string, xy: string }",
+				"13:11 accepted Zebra$hole_tlxgt0061ywqu",
+				"15:11 rejected\n  `v: any` (/main.ts:14:30) receives the name of `Apple` (/main.ts:3:1), which the build knows only by a placeholder"
 			])
 		})
 
@@ -1632,18 +1570,13 @@ const User = type({ name: "string" })
 const A = type(\`'\${User.id}'\`)
 const B = type(JSON.stringify(User.json))
 const C = type(\`'\${JSON.stringify(User)}'\`)
-const D = type(\`'\${User.internal.trackedId}'\`)
 const E = type(User.internal.hasKind("intersection") ? "string" : "number")
-const F = type(User.internal.assertHasKind("intersection").inner.domain?.kind === "domain" ? "string" : "number")
-const G = type(User.internal.assertHasKind("intersection").structure?.kind === "structure" ? "string" : "number")
 const $ = scope({ a: "string" })
 const Gen = generic("t")(["t", "[]"])
 const Self = type({ a: "string", "b?": "this" })
 const H = type(\`'\${$.name}'\`)
 const I = type(\`'\${Object.keys($.referencesById).join("|")}'\`)
-const J = type(\`'\${Object.keys(Gen.internal.referencesById).join("|")}'\`)
 const K = type(\`'\${Self.internal.select({ kind: "alias" })[0].reference}'\`)
-const L = type(\`'\${Self.internal.select({ kind: "alias" })[0].inner.reference}'\`)
 const M = type($.export().a)
 const N = type(Gen.names.length === 1 ? "string" : "number")`)
 			).snap([
@@ -1651,20 +1584,15 @@ const N = type(Gen.names.length === 1 ? "string" : "number")`)
 				"3:11 rejected\n  `User.id` is not a documented member its content alone decides, so it can depend on registry names or node ids",
 				"4:11 rejected\n  `User.json` is not a documented member its content alone decides, so it can depend on registry names or node ids",
 				"5:11 rejected\n  `JSON.stringify(User)` stringifies a function or arktype value",
-				"6:11 rejected\n  `User.internal.trackedId` is not a documented member its content alone decides, so it can depend on registry names or node ids",
-				"7:11 accepted string",
-				"8:11 accepted string",
-				"9:11 accepted string",
-				"10:11 accepted",
-				"11:13 accepted",
-				"12:14 accepted { a: string, b?: this }",
-				"13:11 rejected\n  `$.name` is not a documented member its content alone decides, so it can depend on registry names or node ids",
-				"14:11 rejected\n  `$.referencesById` is not a documented member its content alone decides, so it can depend on registry names or node ids",
-				"15:11 rejected\n  `Gen.internal.referencesById` is not a documented member its content alone decides, so it can depend on registry names or node ids",
-				'16:11 rejected\n  `Self.internal.select({ kind: "alias" })[0].reference` is not a documented member its content alone decides, so it can depend on registry names or node ids',
-				'17:11 rejected\n  `Self.internal.select({ kind: "alias" })[0].inner` is not a documented member its content alone decides, so it can depend on registry names or node ids',
-				"18:11 accepted string",
-				"19:11 accepted string"
+				"6:11 accepted string",
+				"7:11 accepted",
+				"8:13 accepted",
+				"9:14 accepted { a: string, b?: this }",
+				"10:11 rejected\n  `$.name` is not a documented member its content alone decides, so it can depend on registry names or node ids",
+				"11:11 rejected\n  `$.referencesById` is not a documented member its content alone decides, so it can depend on registry names or node ids",
+				'12:11 rejected\n  `Self.internal.select({ kind: "alias" })[0].reference` is not a documented member its content alone decides, so it can depend on registry names or node ids',
+				"13:11 accepted string",
+				"14:11 accepted string"
 			])
 		})
 

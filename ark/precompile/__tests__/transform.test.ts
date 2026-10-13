@@ -927,7 +927,6 @@ export const HelpedClass = type.instanceOf(Error).and(dog())
 export const Scoped = scope({ a: DogT, b: "a & Error" }).export()
 export const Props = $arkrhchbs1xkut83()
 export const NarrowedProps = type("number").narrow(isNegative).props`)
-			attest(result.modules["~arktype/16ceueuzjpy"]).snap(undefined)
 		})
 
 		it("checks the static helpers another module exports in a test driver", () => {

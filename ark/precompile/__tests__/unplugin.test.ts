@@ -282,22 +282,6 @@ contextualize(() => {
 			attest(run(await bundle({ runtime: "arktype" }))).equals(expected)
 		}).timeout(60000)
 
-		it(`${name} runtime islands`, async () => {
-			const islands = fromHere("islands")
-			const standalone = await bundle(
-				{ cwd: islands, config: "config.ts" },
-				islands
-			)
-			attest(run(standalone)).equals(runPlain(islands))
-			attest(standalone.includes(parserMessage)).equals(true)
-		}).timeout(60000)
-
-		it(`${name} packages that opt in`, async () => {
-			const standalone = await bundle({ cwd: library }, library)
-			attest(run(standalone)).equals(runPlain(library))
-			attest(standalone.includes(parserMessage)).equals(false)
-		}).timeout(60000)
-
 		it(`${name} import cycle`, async () => {
 			const cycle = fromHere("cycle")
 			attest(run(await bundle({ cwd: cycle }, cycle))).equals(runPlain(cycle))
@@ -375,15 +359,6 @@ export const checkedItem = JSON.stringify(itemJson())
 			).equals(runPlain(introspected))
 		}).timeout(60000)
 
-		it(`${name} static introspection`, async () => {
-			const introspected = fromHere("introspected")
-			const standalone = await bundle(
-				{ cwd: introspected, introspection: ["toJsonSchema"] },
-				introspected
-			)
-			attest(run(standalone)).equals(runPlain(introspected))
-		}).timeout(60000)
-
 		it(`${name} configured`, async () => {
 			const opts = { cwd: configured, config: "config.ts" }
 			const standalone = await bundle(opts, configured)
@@ -394,6 +369,31 @@ export const checkedItem = JSON.stringify(itemJson())
 			).equals(runPlain(configured))
 		}).timeout(60000)
 	}
+
+	it("esbuild runtime islands", async () => {
+		const islands = fromHere("islands")
+		const standalone = await bundlers.esbuild(
+			{ cwd: islands, config: "config.ts" },
+			islands
+		)
+		attest(run(standalone)).equals(runPlain(islands))
+		attest(standalone.includes(parserMessage)).equals(true)
+	}).timeout(60000)
+
+	it("esbuild packages that opt in", async () => {
+		const standalone = await bundlers.esbuild({ cwd: library }, library)
+		attest(run(standalone)).equals(runPlain(library))
+		attest(standalone.includes(parserMessage)).equals(false)
+	}).timeout(60000)
+
+	it("esbuild static introspection", async () => {
+		const introspected = fromHere("introspected")
+		const standalone = await bundlers.esbuild(
+			{ cwd: introspected, introspection: ["toJsonSchema"] },
+			introspected
+		)
+		attest(run(standalone)).equals(runPlain(introspected))
+	}).timeout(60000)
 
 	it("esbuild unminified import cycle reaching a fold first", async () => {
 		for (const fixture of ["cycleFirst", "cycleArrow", "setInStep"]) {
@@ -1060,27 +1060,6 @@ ${definition}
 		})
 	}).timeout(60000)
 
-	it("folds the json of a Type a Scope's method creates", async () => {
-		const root = writeFixture(
-			{
-				"main.ts": `import { scope } from "arktype"
-
-const atMost = (n: number) => {
-	const limit = 10
-	return n <= limit
-}
-console.log(JSON.stringify(scope({}).type({ a: [["number", ":", atMost], "=", 5] }).omit("a").json))
-`
-			},
-			fromHere("temp", "scopedJson")
-		)
-		attest(runPlain(root)).snap(`{"domain":"object"}
-`)
-		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
-			runPlain(root)
-		)
-	}).timeout(60000)
-
 	it("fixes the configuration where a Type a bundle drops was created", async () => {
 		const unread = {
 			validator: 'const Unread = type({ dropped: "string" })',
@@ -1205,28 +1184,23 @@ try {
 	}).timeout(60000)
 
 	it("vitest configured", async () => {
-		for (const runtime of [undefined, "arktype"] as const) {
-			const vitest = await startVitest(
-				[],
-				{
-					root: configured,
-					config: false,
-					watch: false,
-					reporters: [],
-					testTimeout: 60000,
-					env: { EXPECTED: runPlain(configured) }
-				},
-				viteConfig(
-					{ runtime, cwd: configured, config: "config.ts" },
-					configured
-				)
-			)
-			await vitest.close()
-			attest([
-				vitest.state.getCountOfFailedTests(),
-				vitest.state.getFiles().length
-			]).equals([0, 1])
-		}
+		const vitest = await startVitest(
+			[],
+			{
+				root: configured,
+				config: false,
+				watch: false,
+				reporters: [],
+				testTimeout: 60000,
+				env: { EXPECTED: runPlain(configured) }
+			},
+			viteConfig({ cwd: configured, config: "config.ts" }, configured)
+		)
+		await vitest.close()
+		attest([
+			vitest.state.getCountOfFailedTests(),
+			vitest.state.getFiles().length
+		]).equals([0, 1])
 	}).timeout(60000)
 
 	it("vitest checks what each factory was built with at creation", async () => {

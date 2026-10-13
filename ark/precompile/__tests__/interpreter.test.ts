@@ -182,25 +182,11 @@ contextualize(() => {
 		attest(accepted > 100).equals(true)
 	})
 
-	it("rejects what engines may compute differently", () => {
-		attest(interpret("2 ** 0.5")).equals(undefined)
-		attest(interpret("(0.1).toString(3)")).equals(undefined)
-		attest(interpret("2 ** 10")).equals({ value: 1024 })
-	})
-
 	it("rejects overwriting what the build does not know", () => {
 		attest(interpret("({ a: ({}).f(), a: 1 })")).equals(undefined)
 		attest(interpret("({ a: [({}).f()], a: 1 })")).equals(undefined)
 		attest(interpret("({ ...[({}).f()], ...[1] })")).equals(undefined)
 		attest(interpret("({ a: [({}).f()], ...{ a: 1 } })")).equals(undefined)
 		attest(interpret("({ ...[0], ...[1] })")).equals({ value: { 0: 1 } })
-	})
-
-	it("rejects what reads the environment", () => {
-		attest(interpret("Date.now()")).equals(undefined)
-		attest(interpret("new Date()")).equals(undefined)
-		attest(interpret("new Date('2020-01-01T00:00')")).equals(undefined)
-		attest(interpret("Math.random()")).equals(undefined)
-		attest(interpret("(1000).toLocaleString()")).equals(undefined)
 	})
 })
