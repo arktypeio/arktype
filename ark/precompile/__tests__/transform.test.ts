@@ -9,7 +9,7 @@ import {
 import { scope, type } from "arktype"
 import { spawnSync } from "node:child_process"
 import { readFileSync } from "node:fs"
-import { memoryHost, precompile } from "./utils.ts"
+import { memoryHost, normalized, precompile } from "./utils.ts"
 
 const buildInProcess = (
 	files: Record<string, string>,
@@ -45,23 +45,23 @@ export const User = type({ name: \`string <= \${max}\` })
 export const Same = type({ name: "string <= 64" })
 export const Users = User.array()
 export const isError = (data: unknown) => data instanceof ArkErrors`)
-			attest(result.code).snap(`import { ArkErrors } from "arktype"
-import { v1grlzk90j47l5r as $arkv1grlzk90j47l5r } from "~arktype/1oajxqi1ghnkbg"
-import { vcq9fbr09xh5h7 as $arkvcq9fbr09xh5h7 } from "~arktype/1oajxqi1ghnkbg"
-import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/1oajxqi1ghnkbg"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import { ArkErrors } from "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#4"
 const max = 64
 $arkfixConfig()
-export const User = /* @__PURE__ */ $arkv1grlzk90j47l5r()
-export const Same = /* @__PURE__ */ $arkvcq9fbr09xh5h7()
-export const Users = /* @__PURE__ */ $arkvcbtdhu09o4jaz()
+export const User = /* @__PURE__ */ $ark#0()
+export const Same = /* @__PURE__ */ $ark#2()
+export const Users = /* @__PURE__ */ $ark#3()
 export const isError = (data: unknown) => data instanceof ArkErrors`)
-			attest(Object.keys(result.modules)).snap([
-				"~arktype/1oajxqi1ghnkbg",
-				"~arktype/intersectionp5cga70ta8lc1",
-				"~arktype/intersection1924cq516cwsjx",
-				"~arktype/intersection115aeqj1708qa6",
-				"~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(Object.keys(result.modules))).snap([
+				"~arktype/#0",
+				"~arktype/#1",
+				"~arktype/#2",
+				"~arktype/#3",
+				"~arktype/#4"
 			])
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
@@ -79,26 +79,28 @@ export const userJson = User.toJSON()`,
 export const User = type({ name: "string" })`
 				}
 			)
-			attest(result.code).snap(`import "arktype"
-import { vq10hui17onwk2 as $arkvq10hui17onwk2 } from "~arktype/12e9nnj1o377yg"
-import { f1uqk4wc118rbng as $arkf1uqk4wc118rbng } from "~arktype/12e9nnj1o377yg"
-import { f1mrbczv1xkyq28 as $arkf1mrbczv1xkyq28 } from "~arktype/12e9nnj1o377yg"
-import { f17hn9zj1vlnawy as $arkf17hn9zj1vlnawy } from "~arktype/12e9nnj1o377yg"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import { #4 as $ark#4 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#5"
 import { User } from "./user.ts"
 import "./user.ts"
 $arkfixConfig()
-const Point = /* @__PURE__ */ $arkvq10hui17onwk2()
-export const json = /* @__PURE__ */ $arkf1uqk4wc118rbng()
-export const schema = /* @__PURE__ */ $arkf1mrbczv1xkyq28()
-export const userJson = /* @__PURE__ */ $arkf17hn9zj1vlnawy()`)
+const Point = /* @__PURE__ */ $ark#0()
+export const json = /* @__PURE__ */ $ark#2()
+export const schema = /* @__PURE__ */ $ark#3()
+export const userJson = /* @__PURE__ */ $ark#4()`)
 			attest(
-				Object.entries(result.modules).flatMap(([specifier, module]) =>
-					specifier.includes("json") ? [module] : []
+				normalized(
+					Object.entries(result.modules).flatMap(([specifier, module]) =>
+						specifier.includes("json") ? [module] : []
+					)
 				)
 			).snap([
-				'import * as runtime from "arktype/runtime"\n\nvar jsonemxix50idrkjlValue\nconst jsonemxix50idrkjl = (() => {\n\treturn (jsonemxix50idrkjlValue ??= runtime.deepFreeze({ "required": [{ "key": "x", "value": "number" }], "domain": "object" }))\n})\n\nexport { jsonemxix50idrkjl }\n',
-				'import * as runtime from "arktype/runtime"\n\nvar jsonf6515516jndbkValue\nconst jsonf6515516jndbk = (() => {\n\treturn (jsonf6515516jndbkValue ??= runtime.deepFreeze({ "required": [{ "key": "name", "value": "string" }], "domain": "object" }))\n})\n\nexport { jsonf6515516jndbk }\n'
+				'import * as runtime from "arktype/runtime"\n\nvar #0Value\nconst #0 = (() => {\n\treturn (#0Value ??= runtime.deepFreeze({ "required": [{ "key": "x", "value": "number" }], "domain": "object" }))\n})\n\nexport { #0 }\n',
+				'import * as runtime from "arktype/runtime"\n\nvar #1Value\nconst #1 = (() => {\n\treturn (#1Value ??= runtime.deepFreeze({ "required": [{ "key": "name", "value": "string" }], "domain": "object" }))\n})\n\nexport { #1 }\n'
 			])
 		})
 
@@ -108,15 +110,15 @@ const A = type({ a: "string" })
 export const properties = A.toJsonSchema().properties
 export const required = A.toJsonSchema()["required"]`)
 			attest(result.diagnostics).equals([])
-			attest(result.code).snap(`import "arktype"
-import { v9tsbfu1su045q as $arkv9tsbfu1su045q } from "~arktype/1lm0rga1da016b"
-import { fzdl36y1kl4y2z as $arkfzdl36y1kl4y2z } from "~arktype/1lm0rga1da016b"
-import { f1kkci5112g5ynj as $arkf1kkci5112g5ynj } from "~arktype/1lm0rga1da016b"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#4"
 $arkfixConfig()
-const A = /* @__PURE__ */ $arkv9tsbfu1su045q()
-export const properties = $arkfzdl36y1kl4y2z().properties
-export const required = $arkf1kkci5112g5ynj()["required"]`)
+const A = /* @__PURE__ */ $ark#0()
+export const properties = $ark#2().properties
+export const required = $ark#3()["required"]`)
 		})
 
 		it("refuses to fold a JSON Schema calling a default's thunk", () => {
@@ -147,13 +149,13 @@ export const Positive = type("number").narrow(n => n > 0)`
 			const result = precompile(`import { type } from "arktype"
 const Length = type("string").pipe(s => s.length)
 export const schema = Length.toJsonSchema()`)
-			attest(result.code).snap(`import "arktype"
-import { f2yr47m0y316vp as $arkf2yr47m0y316vp } from "~arktype/18guxv50zubn16"
-import { f14gb4ky1hqquxy as $arkf14gb4ky1hqquxy } from "~arktype/18guxv50zubn16"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#3"
 $arkfixConfig()
-const Length = /* @__PURE__ */ $arkf2yr47m0y316vp(s => s.length)
-export const schema = $arkf14gb4ky1hqquxy()`)
+const Length = /* @__PURE__ */ $ark#0(s => s.length)
+export const schema = $ark#2()`)
 		})
 
 		it("folds introspection to a call receiving each function another module supplies that the Type's creation checks, and each a default's check calls", () => {
@@ -176,52 +178,52 @@ import { double } from "./containers.ts"
 export const Doubled = type("number").pipe(double)`
 				}
 			)
-			attest(result.code).snap(`import "arktype"
-import { f1hn2e10012161b as $arkf1hn2e10012161b } from "~arktype/5iixkd0rm6br0"
-import { f1ltp2ba0zx2cit as $arkf1ltp2ba0zx2cit } from "~arktype/5iixkd0rm6br0"
-import { f1nmc1u509jfhaw as $arkf1nmc1u509jfhaw } from "~arktype/5iixkd0rm6br0"
-import { f1qy79p41wr9kk2 as $arkf1qy79p41wr9kk2 } from "~arktype/5iixkd0rm6br0"
-import { f10le7xt0f1alcp as $arkf10le7xt0f1alcp } from "~arktype/5iixkd0rm6br0"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import { #4 as $ark#4 } from "~arktype/#1"
+import { #5 as $ark#5 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#6"
 import { double } from "./containers.ts"
 import { Doubled } from "./doubled.ts"
 $arkfixConfig()
-const Length = /* @__PURE__ */ $arkf1hn2e10012161b(s => s.length)
+const Length = /* @__PURE__ */ $ark#0(s => s.length)
 const atMost = (n: number) => n <= 10
 export const schemas = [
-	$arkf1ltp2ba0zx2cit(),
-	$arkf1nmc1u509jfhaw(Doubled),
-	$arkf1qy79p41wr9kk2(double),
-	$arkf10le7xt0f1alcp(atMost)
+	$ark#2(),
+	$ark#3(Doubled),
+	$ark#4(double),
+	$ark#5(atMost)
 ]`)
 		})
 
 		it("loads arktype where it was imported", () => {
 			attest(
-				precompile(`import "./polyfill.ts"
+				normalized(
+					precompile(`import "./polyfill.ts"
 import { type, scope as $ } from "arktype"
 import * as config from "./config.ts"
 export const A = type("string")`).code
+				)
 			).snap(`import "./polyfill.ts"
 import "arktype"
-import { v62gs0h1rkzfa4 as $arkv62gs0h1rkzfa4 } from "~arktype/1yvqvci1whv1a6"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+import { #0 as $ark#0 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#2"
 import * as config from "./config.ts"
 $arkfixConfig()
-export const A = /* @__PURE__ */ $arkv62gs0h1rkzfa4()`)
+export const A = /* @__PURE__ */ $ark#0()`)
 		})
 
 		it("builds a shared unit as its module is evaluated", () => {
 			const { modules } = precompile(`import { type } from "arktype"
 export const A = type("string")`)
-			attest(
-				Object.entries(modules).find(([specifier]) =>
-					specifier.startsWith("~arktype/domain")
-				)
-			).snap([
-				"~arktype/domain131fpbi0sew247",
-				'import * as runtime from "arktype/runtime"\n\nconst domain131fpbi0sew247 = /* @__PURE__ */ (function () {\nconst r0 = { value: { code: "domain", description: "a string" } }\nconst domain131fpbi0sew247Allows = function(data, ctx) {     return typeof data === "string"\n }\nconst domain131fpbi0sew247Apply = function(data, ctx) {     return typeof data === "string" || !ctx.failsAt(r0, data)\n }\nreturn [domain131fpbi0sew247Allows, domain131fpbi0sew247Apply]\n})()\n\nvar domain131fpbi0sew247Shape\nconst domain131fpbi0sew247Node = (() => {\n\treturn (domain131fpbi0sew247Shape ??= runtime.freeze({\n\ttraverseApply: domain131fpbi0sew247[1],\n\tallows: domain131fpbi0sew247[0]\n}))\n})\n\nexport { domain131fpbi0sew247, domain131fpbi0sew247Node }\n'
-			])
+			const [, unit] = Object.entries(modules).find(([specifier]) =>
+				specifier.startsWith("~arktype/domain")
+			)!
+			attest(normalized(unit.match(/^const \w+ = .*/m)![0])).snap(
+				"const #0 = /* @__PURE__ */ (function () {"
+			)
 		})
 
 		it("hoists what a site calls where an import before arktype's reaches the module", () => {
@@ -234,18 +236,16 @@ import { type } from "arktype"
 export const make = () => type("string")`,
 				files
 			)
-			attest(Object.keys(early.modules)).snap([
-				"~arktype/godspv0ygxh2n",
-				"~arktype/hoisted/domain131fpbi0sew247"
+			attest(normalized(Object.keys(early.modules))).snap([
+				"~arktype/#0",
+				"~arktype/hoisted/#1"
 			])
-			attest(
-				Object.entries(early.modules).find(([specifier]) =>
-					specifier.startsWith("~arktype/hoisted/domain")
-				)
-			).snap([
-				"~arktype/hoisted/domain131fpbi0sew247",
-				'import * as runtime from "arktype/runtime"\n\nvar domain131fpbi0sew247Unit\n\nfunction domain131fpbi0sew247() {\n\treturn (domain131fpbi0sew247Unit ??= (function () {\nconst r0 = { value: { code: "domain", description: "a string" } }\nconst domain131fpbi0sew247Allows = function(data, ctx) {     return typeof data === "string"\n }\nconst domain131fpbi0sew247Apply = function(data, ctx) {     return typeof data === "string" || !ctx.failsAt(r0, data)\n }\nreturn [domain131fpbi0sew247Allows, domain131fpbi0sew247Apply]\n})())\n}\n\nvar domain131fpbi0sew247Shape\nfunction domain131fpbi0sew247Node() {\n\treturn (domain131fpbi0sew247Shape ??= runtime.freeze({\n\ttraverseApply: domain131fpbi0sew247()[1],\n\tallows: domain131fpbi0sew247()[0]\n}))\n}\n\nexport { domain131fpbi0sew247, domain131fpbi0sew247Node }\n'
-			])
+			const [, unit] = Object.entries(early.modules).find(([specifier]) =>
+				specifier.startsWith("~arktype/hoisted/")
+			)!
+			attest(normalized(unit.match(/^function \w+\(\) {\n.*/m)![0]))
+				.snap(`function #0() {
+	return (#0Unit ??= (function () {`)
 			// imported after arktype, the cycle reaches the module once its artifact is evaluated
 			const late = precompile(
 				`import { type } from "arktype"
@@ -253,23 +253,23 @@ import { made } from "./early.ts"
 export const make = () => type("string")`,
 				files
 			)
-			attest(Object.keys(late.modules)).snap([
-				"~arktype/e42ig708l51pk",
-				"~arktype/domain131fpbi0sew247"
+			attest(normalized(Object.keys(late.modules))).snap([
+				"~arktype/#0",
+				"~arktype/#1"
 			])
 		})
 
 		it("keeps a minified module's statements apart", () => {
 			const source = `import"./polyfill.ts";import{type}from"arktype";export const A=type("string");`
-			attest(precompile(source).code)
+			attest(normalized(precompile(source).code))
 				.snap(`import"./polyfill.ts";import "arktype";
-import { vq0j6e21xyk07n as $arkvq0j6e21xyk07n } from "~arktype/16nvqu80bhkx0i"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+import { #0 as $ark#0 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#2"
 $arkfixConfig()
-export const A=/* @__PURE__ */ $arkvq0j6e21xyk07n();`)
-			attest(precompile(source, {}, { runtime: "arktype" }).code)
+export const A=/* @__PURE__ */ $ark#0();`)
+			attest(normalized(precompile(source, {}, { runtime: "arktype" }).code))
 				.snap(`import"./polyfill.ts";import{type}from"arktype";
-import "~arktype/units/h6eh021988eyz"
+import "~arktype/units/#0"
 export const A=type("string");`)
 		})
 
@@ -298,23 +298,23 @@ export const K = type("string").extends(type("string").in)`,
 				'/main.ts:12:18  type({ a: "string" }).in.extends("object") can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type({ a: "string" }).in.extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".',
 				'/main.ts:13:18  type("string").extends(type("string").in) can\'t be precompiled yet\n  its value is not a Type, Module, Scope, Generic or TypedFn\n  it reads `type("string").extends`, which a standalone validator lacks\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
-			attest(result.code).snap(`import { type } from "arktype"
-import { fm5yoaq0p42dm8 as $arkfm5yoaq0p42dm8 } from "~arktype/1kxtp9s1qkkv1w"
-import { f1nq2k4006yug0x as $arkf1nq2k4006yug0x } from "~arktype/1kxtp9s1qkkv1w"
-import { vvuztpd0flqkce as $arkvvuztpd0flqkce } from "~arktype/1kxtp9s1qkkv1w"
-import { v1txxb8b0hm2cwq as $arkv1txxb8b0hm2cwq } from "~arktype/1kxtp9s1qkkv1w"
-import $ark1sve6ft0pa6e4h from "~arktype/xuhdp21syk96k"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import { type } from "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import { #4 as $ark#4 } from "~arktype/#1"
+import $ark#5 from "~arktype/#6"
+import $arkfixConfig from "~arktype/#7"
 import { max } from "./limits.ts"
 const trim = (s: string) => s.trim()
 $arkfixConfig()
-export const A = /* @__PURE__ */ $arkfm5yoaq0p42dm8(trim)
-export const B = $arkf1nq2k4006yug0x(max)
-export const D = $ark1sve6ft0pa6e4h()
+export const A = /* @__PURE__ */ $ark#0(trim)
+export const B = $ark#2(max)
+export const D = $ark#5()
 export const E = type({ "+": "delete", "[string]": "string", a: "string.date.parse" })
-export const F = /* @__PURE__ */ $arkvvuztpd0flqkce()
+export const F = /* @__PURE__ */ $ark#3()
 export const G = type("string").equals("string")
-export const H = $arkv1txxb8b0hm2cwq().meta
+export const H = $ark#4().meta
 export const I = type({ a: "string" }).props[0].key
 export const J = type({ a: "string" }).in.extends("object")
 export const K = type("string").extends(type("string").in)`)
@@ -325,20 +325,22 @@ export const K = type("string").extends(type("string").in)`)
 export const types = scope({ tree: { value: "number", "children?": "tree[]" } }).export()
 export const M = type.module({ a: "string", b: { c: "a" } })`)
 			attest(result.diagnostics).equals([])
-			attest(result.code).snap(`import "arktype"
-import { vsjkdln005ypg0 as $arkvsjkdln005ypg0 } from "~arktype/197x63h0rjqmkp"
-import { vuorrac1fkpkl6 as $arkvuorrac1fkpkl6 } from "~arktype/197x63h0rjqmkp"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#3"
 $arkfixConfig()
-export const types = /* @__PURE__ */ $arkvsjkdln005ypg0()
-export const M = /* @__PURE__ */ $arkvuorrac1fkpkl6()`)
+export const types = /* @__PURE__ */ $ark#0()
+export const M = /* @__PURE__ */ $ark#2()`)
 			attest(
-				Object.values(result.modules)[0]
-					.split("\n")
-					.filter(line => /^const module\d/.test(line))
+				normalized(
+					Object.values(result.modules)[0]
+						.split("\n")
+						.filter(line => /^const module\d/.test(line))
+				)
 			).snap([
-				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0 }), "1q713b31ce6xqh")',
-				'const module0 = runtime.holdHoles(runtime.freeze({ ["a"]: validator0, ["b"]: validator1 }), "1y03dsd0lnbk50")'
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0 }), "#0")',
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["a"]: validator0, ["b"]: validator1 }), "#1")'
 			])
 		})
 
@@ -350,28 +352,30 @@ export const Tree = $.type("tree")
 export const Box = type("<t>", { box: "t" })
 export const BoxedTree = Box(types.tree)`)
 			attest(result.diagnostics).equals([])
-			attest(result.code).snap(`import "arktype"
-import { vq7pa6c00qqwz6 as $arkvq7pa6c00qqwz6 } from "~arktype/z61kim1mc2qth"
-import { v1mrbczv1xkyq28 as $arkv1mrbczv1xkyq28 } from "~arktype/z61kim1mc2qth"
-import { vcbtdhu09o4jaz as $arkvcbtdhu09o4jaz } from "~arktype/z61kim1mc2qth"
-import { vb8723u0smnev1 as $arkvb8723u0smnev1 } from "~arktype/z61kim1mc2qth"
-import { v1tryxgh0tpn3pk as $arkv1tryxgh0tpn3pk } from "~arktype/z61kim1mc2qth"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import { #4 as $ark#4 } from "~arktype/#1"
+import { #5 as $ark#5 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#6"
 $arkfixConfig()
-const $ = /* @__PURE__ */ $arkvq7pa6c00qqwz6()
-export const types = /* @__PURE__ */ $arkv1mrbczv1xkyq28()
-export const Tree = /* @__PURE__ */ $arkvcbtdhu09o4jaz()
-export const Box = /* @__PURE__ */ $arkvb8723u0smnev1()
-export const BoxedTree = /* @__PURE__ */ $arkv1tryxgh0tpn3pk()`)
+const $ = /* @__PURE__ */ $ark#0()
+export const types = /* @__PURE__ */ $ark#2()
+export const Tree = /* @__PURE__ */ $ark#3()
+export const Box = /* @__PURE__ */ $ark#4()
+export const BoxedTree = /* @__PURE__ */ $ark#5()`)
 			attest(
-				Object.values(result.modules)[0]
-					.split("\n")
-					.filter(line => /^const (standIn|module)\d/.test(line))
+				normalized(
+					Object.values(result.modules)[0]
+						.split("\n")
+						.filter(line => /^const (standIn|module)\d/.test(line))
+				)
 			).snap([
-				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "2ug25d0g2fmpu")',
-				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "yc0zfl03fckbs")',
-				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "cyy1mn1xiyugo")',
-				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "dpg9qw0fjxmwu")'
+				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "#0")',
+				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "#1")',
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "#2")',
+				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "#3")'
 			])
 		})
 
@@ -382,10 +386,12 @@ export const schema = M.toJsonSchema.toJsonSchema()
 export const json = M.json.json`)
 			attest(result.diagnostics).equals([])
 			attest(
-				result.code.split("\n").filter(line => line.startsWith("export"))
+				normalized(
+					result.code.split("\n").filter(line => line.startsWith("export"))
+				)
 			).snap([
-				"export const schema = /* @__PURE__ */ $arkf1qq8chi1g5mzo4()",
-				"export const json = /* @__PURE__ */ $arkfe5h3530tuatax()"
+				"export const schema = /* @__PURE__ */ $ark#0()",
+				"export const json = /* @__PURE__ */ $ark#1()"
 			])
 		})
 
@@ -402,13 +408,15 @@ const validate = $.type("b")["~standard"].validate
 export const validated = validate({ c: "x" })`)
 			attest(result.diagnostics).equals([])
 			attest(
-				result.code.split("\n").filter(line => line.startsWith("export"))
+				normalized(
+					result.code.split("\n").filter(line => line.startsWith("export"))
+				)
 			).snap([
-				'export const asserted = $arkvmnhzxk0t966u8().assert({ c: "x" })',
-				'export const allowed = $arkv1fvusin0klchoh().allows({ box: "x" })',
-				"export const meta = $arkvxhw4ll1hdjksu().meta",
-				'export const exported = $arkv1s4lre1cs5rzj().assert({ c: "x" })',
-				'export const aliased = $arkv14p7bhk136e9yx().allows("x")',
+				'export const asserted = $ark#0().assert({ c: "x" })',
+				'export const allowed = $ark#1().allows({ box: "x" })',
+				"export const meta = $ark#2().meta",
+				'export const exported = $ark#3().assert({ c: "x" })',
+				'export const aliased = $ark#4().allows("x")',
 				'export const validated = validate({ c: "x" })'
 			])
 		})
@@ -433,10 +441,12 @@ export const F = $.type.fn("s")(s => s)
 export const O = $.type.or("s", "number")`)
 			attest(result.diagnostics).equals([])
 			attest(
-				result.code.split("\n").filter(line => line.startsWith("export"))
+				normalized(
+					result.code.split("\n").filter(line => line.startsWith("export"))
+				)
 			).snap([
-				"export const F = $arkfh269dm1h6q2v5($, s => s)",
-				"export const O = $arkfe5h3530tuatax($)"
+				"export const F = $ark#0($, s => s)",
+				"export const O = $ark#1($)"
 			])
 		})
 
@@ -551,12 +561,12 @@ const create = () => {
 	return types
 }`)
 			attest(result.diagnostics).equals([])
-			attest(result.code).snap(`import "arktype"
-import { v1bev4io0lhnrds as $arkv1bev4io0lhnrds } from "~arktype/1oezjdl0fpu1s5"
-import { v17s8udm1bx77ds as $arkv17s8udm1bx77ds } from "~arktype/1oezjdl0fpu1s5"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
 const create = () => {
-	const $ = $arkv1bev4io0lhnrds()
-	const types = $arkv17s8udm1bx77ds()
+	const $ = $ark#0()
+	const types = $ark#2()
 	return types
 }`)
 		})
@@ -571,18 +581,18 @@ export const make = () => ({
 	Text: type("string")
 })`)
 			attest(result.diagnostics).equals([])
-			attest(result.code).snap(`import "arktype"
-import { v1a6evaf1ilxqcd as $arkv1a6evaf1ilxqcd } from "~arktype/p7qsnf1qjci61"
-import { v14gb4ky1hqquxy as $arkv14gb4ky1hqquxy } from "~arktype/p7qsnf1qjci61"
-import { v1fqowp70udipzn as $arkv1fqowp70udipzn } from "~arktype/p7qsnf1qjci61"
-import { v1isbncu11it64l as $arkv1isbncu11it64l } from "~arktype/p7qsnf1qjci61"
-import { vr49tao0yiilut as $arkvr49tao0yiilut } from "~arktype/p7qsnf1qjci61"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import { #4 as $ark#4 } from "~arktype/#1"
+import { #5 as $ark#5 } from "~arktype/#1"
 export const make = () => ({
-	$: $arkv1a6evaf1ilxqcd(),
-	types: $arkv14gb4ky1hqquxy(),
-	Box: $arkv1fqowp70udipzn(),
-	Trimmed: $arkv1isbncu11it64l(),
-	Text: $arkvr49tao0yiilut()
+	$: $ark#0(),
+	types: $ark#2(),
+	Box: $ark#3(),
+	Trimmed: $ark#4(),
+	Text: $ark#5()
 })`)
 		})
 
@@ -692,30 +702,30 @@ export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
 				})
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
-			attest(result.code).snap(`import "arktype"
-import { f1h9lain030c2md as $arkf1h9lain030c2md } from "~arktype/1jpmj2p0du59k3"
-import { f1uczdsm0f1mhaw as $arkf1uczdsm0f1mhaw } from "~arktype/1jpmj2p0du59k3"
-import { fadtawc0az5hrt as $arkfadtawc0az5hrt } from "~arktype/1jpmj2p0du59k3"
-import { f1xt3f6o16uszem as $arkf1xt3f6o16uszem } from "~arktype/1jpmj2p0du59k3"
-import { f1nojioh0bjqrvh as $arkf1nojioh0bjqrvh } from "~arktype/1jpmj2p0du59k3"
-import { f1okx6ql1wtv9z7 as $arkf1okx6ql1wtv9z7 } from "~arktype/1jpmj2p0du59k3"
-import { faot5y01xoc4hs as $arkfaot5y01xoc4hs } from "~arktype/1jpmj2p0du59k3"
-import { fuz78vg0xn6j6v as $arkfuz78vg0xn6j6v } from "~arktype/1jpmj2p0du59k3"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import { #4 as $ark#4 } from "~arktype/#1"
+import { #5 as $ark#5 } from "~arktype/#1"
+import { #6 as $ark#6 } from "~arktype/#1"
+import { #7 as $ark#7 } from "~arktype/#1"
+import { #8 as $ark#8 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#9"
 import { ext } from "./ext.ts"
 const trim = (s: string) => s.trim()
 class Pet {}
 const petTag = Symbol("petTag")
 $arkfixConfig()
-export const Name = /* @__PURE__ */ $arkf1h9lain030c2md(trim, (s, ctx) => s.length > 0)
-export const User = $arkf1uczdsm0f1mhaw(Name, Pet, petTag)
-export const Either = /* @__PURE__ */ $arkfadtawc0az5hrt(trim)
-export const Extended = $arkf1xt3f6o16uszem(ext)
-export const Pair = $arkf1nojioh0bjqrvh(Name, Either)
-export const Short = $arkf1okx6ql1wtv9z7(Name, s => s.length < 9)
-export const Stamped = /* @__PURE__ */ $arkfaot5y01xoc4hs(() => new Date())
+export const Name = /* @__PURE__ */ $ark#0(trim, (s, ctx) => s.length > 0)
+export const User = $ark#2(Name, Pet, petTag)
+export const Either = /* @__PURE__ */ $ark#3(trim)
+export const Extended = $ark#4(ext)
+export const Pair = $ark#5(Name, Either)
+export const Short = $ark#6(Name, s => s.length < 9)
+export const Stamped = /* @__PURE__ */ $ark#7(() => new Date())
 class Kitten extends Pet {}
-export const Kept = $arkfuz78vg0xn6j6v(Pet, Kitten)`)
+export const Kept = $ark#8(Pet, Kitten)`)
 		})
 
 		it("passes the inputs a site reads after its holes", () => {
@@ -752,12 +762,12 @@ export const Shadowed = (() => {
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				"/inputs.ts:17:9  type(alias.name) can't be precompiled yet\n  `o` (/inputs.ts:7:7) is shadowed where the site is written, so its factory can't receive it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
-			attest(result.code).snap(`import { type } from "arktype"
-import { f1pndslh1lfvnd2 as $arkf1pndslh1lfvnd2 } from "~arktype/1yevoiq1glv4hb"
-import { fcoobse1hdwpxv as $arkfcoobse1hdwpxv } from "~arktype/1yevoiq1glv4hb"
-import { fs5mhm20oegtat as $arkfs5mhm20oegtat } from "~arktype/1yevoiq1glv4hb"
-import { f1t6pyci0hn14t3 as $arkf1t6pyci0hn14t3 } from "~arktype/1yevoiq1glv4hb"
-import { f17lfebs1h268wu as $arkf17lfebs1h268wu } from "~arktype/1yevoiq1glv4hb"
+			attest(normalized(result.code)).snap(`import { type } from "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import { #4 as $ark#4 } from "~arktype/#1"
+import { #5 as $ark#5 } from "~arktype/#1"
 import { max } from "./limits.ts"
 import { reboxed } from "./reboxed.ts"
 import { shape } from "./shapes.ts"
@@ -765,17 +775,17 @@ import * as limits from "./limits.ts"
 const trim = (s: string) => s.trim()
 const o = { name: "string", tags: ["string"] }
 const alias = o
-export const Local = $arkf1pndslh1lfvnd2(trim, o)
-export const Imported = $arkfcoobse1hdwpxv(limits.max, o)
-export const Added = $arkfs5mhm20oegtat(reboxed)
-export const Namespaced = $arkf1t6pyci0hn14t3(limits.boxed)
+export const Local = $ark#0(trim, o)
+export const Imported = $ark#2(limits.max, o)
+export const Added = $ark#3(reboxed)
+export const Namespaced = $ark#4(limits.boxed)
 const box = shape
-export const Imports = ((shape: number) => $arkf17lfebs1h268wu($arki1rnr3cp0ewvqsd, box))(1)
+export const Imports = ((shape: number) => $ark#5($ark#6, box))(1)
 export const Shadowed = (() => {
 	const o = 1
 	return type(alias.name)
 })()
-import { shape as $arki1rnr3cp0ewvqsd } from "./shapes.ts"`)
+import { shape as $ark#6 } from "./shapes.ts"`)
 		})
 
 		it("receives an input in a module on an import cycle only through an import the program runs", () => {
@@ -811,18 +821,18 @@ export function viaK() { return k({ b: "number" }) }`,
 				"/main.ts:5:18  type(viaG()) can't be precompiled yet\n  importing `g` from /g.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				"/main.ts:7:18  type(viaK()) can't be precompiled yet\n  importing `k` from /k.ts here could run it earlier than the program does, as /main.ts is on an import cycle\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
-			attest(result.code).snap(`import { type } from "arktype"
-import { f1isbncu11it64l as $arkf1isbncu11it64l } from "~arktype/dogc8a16a3h46"
-import { vqxba5m0o54dof as $arkvqxba5m0o54dof } from "~arktype/dogc8a16a3h46"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import { type } from "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#3"
 import { viaG, viaH, viaK } from "./app.ts"
 import { g } from "./g.ts"
 import { h } from "./h.ts"
 export const G = type(viaG())
-export const H = $arkf1isbncu11it64l(viaH, h)
+export const H = $ark#0(viaH, h)
 export const K = type(viaK())
 $arkfixConfig()
-export const Direct = /* @__PURE__ */ $arkvqxba5m0o54dof()
+export const Direct = /* @__PURE__ */ $ark#2()
 let shape: typeof g`)
 		})
 
@@ -835,9 +845,9 @@ export const M = type.module({
 			attest(result.diagnostics.map(renderDiagnostic)).snap([
 				'/main.ts:2:18  type.module({ a: type("missing").and(type({ b: "string" }))… throws a ParseError\n  \'missing\' is unresolvable\n  The precompiled site throws the same ParseError when it is created.'
 			])
-			attest(result.code).snap(`import "arktype"
-import $arklw742z1ab0dfu from "~arktype/5awdy10agxwhh"
-export const M = $arklw742z1ab0dfu()`)
+			attest(normalized(result.code)).snap(`import "arktype"
+import $ark#0 from "~arktype/#1"
+export const M = $ark#0()`)
 		})
 
 		it("reports a ParseError site holding functions", () => {
@@ -891,42 +901,6 @@ export const NarrowedProps = type("number").narrow(isNegative).props`
 				'/thrower.ts:26:22  type("number").props throws a ParseError\n  props operand must be an object (was number)\n  The precompiled site throws the same ParseError when it is created.',
 				'/thrower.ts:27:30  type("number").narrow(isNegative).props can\'t be precompiled yet\n  arktype calls `isNegative` (/thrower.ts:27:52)\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
-			attest(result.code).snap(`import { scope, type } from "arktype"
-import $arkhhfme10rgsm2a from "~arktype/in37f40k9qr2u"
-import { fi32fv11rij4as as $arkfi32fv11rij4as } from "~arktype/vrugj20qjps7m"
-import { fge601l1l8djke as $arkfge601l1l8djke } from "~arktype/vrugj20qjps7m"
-import { f15on17z0md0pi6 as $arkf15on17z0md0pi6 } from "~arktype/vrugj20qjps7m"
-import { f1rkl43l16h747g as $arkf1rkl43l16h747g } from "~arktype/vrugj20qjps7m"
-import { fk4dreo1vs7gyk as $arkfk4dreo1vs7gyk } from "~arktype/vrugj20qjps7m"
-import $arkrhchbs1xkut83 from "~arktype/o94jis1u2oxph"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
-import { extend } from "./extend.ts"
-const isZero = (n: number) => n === 0
-class Cat {}
-class Dog {}
-extend(Dog, Cat)
-export const Narrowed = type("1").narrow(isZero)
-export const Anonymous = type("1").narrow(n => n === 0)
-export const Both = type.instanceOf(Dog).and(type.instanceOf(Cat))
-export const Unrelated = $arkhhfme10rgsm2a()
-const isNegative = (n: number) => n < 0
-$arkfixConfig()
-const Negative = /* @__PURE__ */ $arkfi32fv11rij4as(isNegative)
-const DogT = $arkfge601l1l8djke(Dog)
-const CatT = $arkf15on17z0md0pi6(Cat)
-const fns = { f: (s: string) => s.length, g: (s: string) => s.trim() }
-const M1 = $arkf1rkl43l16h747g(fns.f)
-const M2 = $arkfk4dreo1vs7gyk(fns.g)
-export const Referenced = type("1").and(Negative)
-export const BothReferenced = DogT.and(CatT)
-export const Morphs = M1.and(M2)
-const negative = () => Negative
-const dog = () => DogT
-export const Helped = type("1").and(negative())
-export const HelpedClass = type.instanceOf(Error).and(dog())
-export const Scoped = scope({ a: DogT, b: "a & Error" }).export()
-export const Props = $arkrhchbs1xkut83()
-export const NarrowedProps = type("number").narrow(isNegative).props`)
 		})
 
 		it("checks the static helpers another module exports in a test driver", () => {
@@ -956,18 +930,18 @@ export default (def: string) => def`,
 			attest(checked.diagnostics.map(renderDiagnostic)).snap([
 				"/checked.ts:8:23  type(single(\"string\")) can't be precompiled yet\n  `default` (/helpers.ts:5:16) is a static helper its module doesn't export through a binding, so a test driver can't register it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
-			attest(checked.code).snap(`import { type } from "arktype"
-import { f13yfk091jb2s9c as $arkf13yfk091jb2s9c } from "~arktype/2vtkme143nwog"
-import { f1mgbeg1hlx5g1 as $arkf1mgbeg1hlx5g1 } from "~arktype/2vtkme143nwog"
-import { f1t2p9ht1hshs19 as $arkf1t2p9ht1hshs19 } from "~arktype/2vtkme143nwog"
+			attest(normalized(checked.code)).snap(`import { type } from "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
 import single, { list } from "./helpers.ts"
 import * as helpers from "./helpers.ts"
 const own = (def: string) => list(def)
-export const List = $arkf13yfk091jb2s9c(list)
-export const Own = $arkf1mgbeg1hlx5g1(list)
-export const Optional = $arkf1t2p9ht1hshs19(helpers.optional, $arkinfk34400tx9ll)
+export const List = $ark#0(list)
+export const Own = $ark#2(list)
+export const Optional = $ark#3(helpers.optional, $ark#4)
 export const Single = type(single("string"))
-import { suffix as $arkinfk34400tx9ll } from "./suffix.ts"`)
+import { suffix as $ark#4 } from "./suffix.ts"`)
 			attest(build("/helpers.ts", true).code)
 				.snap(`import { suffix } from "./suffix.ts"
 const base = (def: string) => \`\${def}[]\`
@@ -1010,17 +984,17 @@ export const Checked = type({ a: type("string").narrow(other.check), b: type("st
 				}
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
-			attest(result.code).snap(`import "arktype"
-import { f1c4gvm01nuxz5 as $arkf1c4gvm01nuxz5 } from "~arktype/3g7prs048uvc9"
-import { fos9smi09rf17b as $arkfos9smi09rf17b } from "~arktype/3g7prs048uvc9"
-import { fel68or0or1ja7 as $arkfel68or0or1ja7 } from "~arktype/3g7prs048uvc9"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
 import { a } from "./a.ts"
 import { alias } from "./b.ts"
 const fns = { check: (s: string) => s.length > 3 }
 const other = { check: fns.check }
-const Name = $arkf1c4gvm01nuxz5(fns.check)
-export const Aliased = $arkfos9smi09rf17b(a, alias)
-export const Checked = $arkfel68or0or1ja7(other.check, fns.check, Name)`)
+const Name = $ark#0(fns.check)
+export const Aliased = $ark#2(a, alias)
+export const Checked = $ark#3(other.check, fns.check, Name)`)
 			attest(
 				result.modules[Object.keys(result.modules)[0]].match(
 					/runtime\.checkIdentity\(.*\)/g
@@ -1055,11 +1029,13 @@ export const Id = type("string").narrow(s => s.length === 8)`
 				}
 			)
 			attest(
-				Object.entries(result.modules).flatMap(([specifier, module]) =>
-					specifier.includes("receive") ? [module] : []
+				normalized(
+					Object.entries(result.modules).flatMap(([specifier, module]) =>
+						specifier.includes("receive") ? [module] : []
+					)
 				)
 			).snap([
-				'import * as runtime from "arktype/runtime"\n\nconst receive14elk3g1h9owl9 = ((holder) => {\n\treturn runtime.holesOf(holder, "1pzsli11cbnwzw", "`Id`")\n})\n\nexport { receive14elk3g1h9owl9 }\n'
+				'import * as runtime from "arktype/runtime"\n\nconst #0 = ((holder) => {\n\treturn runtime.holesOf(holder, "#1", "`Id`")\n})\n\nexport { #0 }\n'
 			])
 		})
 
@@ -1072,16 +1048,16 @@ export const Union = T.internal.assertHasKind("union")
 export const In = type({ a: T.in })`
 			)
 			attest(result.diagnostics.map(renderDiagnostic)).equals([])
-			attest(result.code).snap(`import "arktype"
-import { f1bg5ghg1udq2qc as $arkf1bg5ghg1udq2qc } from "~arktype/17w7hto0vvl6fg"
-import { fnlxeht0j9hv9h as $arkfnlxeht0j9hv9h } from "~arktype/17w7hto0vvl6fg"
-import { fe5h3530tuatax as $arkfe5h3530tuatax } from "~arktype/17w7hto0vvl6fg"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#4"
 const tag = Symbol("tag")
 $arkfixConfig()
-const T = /* @__PURE__ */ $arkf1bg5ghg1udq2qc(tag)
-export const Union = $arkfnlxeht0j9hv9h(T)
-export const In = $arkfe5h3530tuatax(T)`)
+const T = /* @__PURE__ */ $ark#0(tag)
+export const Union = $ark#2(T)
+export const In = $ark#3(T)`)
 		})
 
 		it("passes a read only through a text meaning the same at the site", () => {
@@ -1109,29 +1085,29 @@ export const OwnFirst = type("string").narrow(function (this: unknown, s) { retu
 				"/main.ts:13:24  type(longs().map(N => type({ n: N })) as never) can't be precompiled yet\n  arktype holds `(s: string) => s.length > 1` (/main.ts:2:16), which the site cannot pass to its factory\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\".",
 				'/main.ts:14:23  type(shorts().map(h => type("string").narrow(h || isLong)) … can\'t be precompiled yet\n  arktype holds `(s: string) => s.length < 3` (/main.ts:3:17), which the site reads outside its own source\n  Standalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
 			])
-			attest(result.code).snap(`import { type } from "arktype"
-import { fgxncna0e0vtuy as $arkfgxncna0e0vtuy } from "~arktype/j5yilo1o18t2q"
-import { fue93h80tgxvhc as $arkfue93h80tgxvhc } from "~arktype/j5yilo1o18t2q"
-import { fvuztpd0flqkce as $arkfvuztpd0flqkce } from "~arktype/j5yilo1o18t2q"
-import { f1pp1bhu1wky3z8 as $arkf1pp1bhu1wky3z8 } from "~arktype/j5yilo1o18t2q"
-import { f1vcmva31ng9y85 as $arkf1vcmva31ng9y85 } from "~arktype/j5yilo1o18t2q"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+			attest(normalized(result.code)).snap(`import { type } from "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import { #4 as $ark#4 } from "~arktype/#1"
+import { #5 as $ark#5 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#6"
 const isLong = (s: string) => s.length > 1
 const isShort = (s: string) => s.length < 3
 const h = isLong
 const fns = { isLong }
 const shorts = () => [isShort]
 $arkfixConfig()
-const Long = /* @__PURE__ */ $arkfgxncna0e0vtuy(isLong)
-const N = /* @__PURE__ */ $arkfue93h80tgxvhc(isShort)
+const Long = /* @__PURE__ */ $ark#0(isLong)
+const N = /* @__PURE__ */ $ark#2(isShort)
 const longs = () => [Long]
-export const Mapped = /* @__PURE__ */ $arkfvuztpd0flqkce(isLong)
+export const Mapped = /* @__PURE__ */ $ark#3(isLong)
 export const Shadowed = type([type("string").narrow(h), ...shorts().map(h => type("string").narrow(h))] as never)
 export const Renamed = type(Object.values(fns).map(h => type("string").narrow(h)) as never)
 export const Through = type(longs().map(N => type({ n: N })) as never)
 export const Either = type(shorts().map(h => type("string").narrow(h || isLong)) as never)
-export const Own = /* @__PURE__ */ $arkf1pp1bhu1wky3z8(function (this: unknown, s) { return s.length > 1 && !this })
-export const OwnFirst = /* @__PURE__ */ $arkf1vcmva31ng9y85(function (this: unknown, s) { return this === undefined && s.length > 1 })`)
+export const Own = /* @__PURE__ */ $ark#4(function (this: unknown, s) { return s.length > 1 && !this })
+export const OwnFirst = /* @__PURE__ */ $ark#5(function (this: unknown, s) { return this === undefined && s.length > 1 })`)
 		})
 
 		it("passes each function one expression created", () => {
@@ -1141,10 +1117,10 @@ const longer = (n: number) => (s: string) => s.length > n
 export const T = type("string").narrow(longer(3)).narrow(longer(1))`
 			)
 			attest(result.diagnostics).equals([])
-			attest(result.code).snap(`import "arktype"
-import { farwx4t08ya85o as $arkfarwx4t08ya85o } from "~arktype/11reco80886a6a"
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
 const longer = (n: number) => (s: string) => s.length > n
-export const T = $arkfarwx4t08ya85o(longer(3), longer(1))`)
+export const T = $ark#0(longer(3), longer(1))`)
 		})
 
 		it("shares a table between factories arktype returned one Type for", () => {
@@ -1190,7 +1166,7 @@ export const Team = type({ lead: User })`
 			)
 			for (const specifier of shared)
 				attest(team.modules[specifier]).equals(user.modules[specifier])
-			attest(shared).snap(["~arktype/intersection1cumioo1kp2ufo"])
+			attest(normalized(shared)).snap(["~arktype/#0"])
 		})
 
 		it("composes a Type's strings from those of the Types it references", () => {
@@ -1215,12 +1191,12 @@ export const Team = type({ lead: User, members: User.array() })`
 						[code]
 					:	[]
 			)
-			attest(composed).snap([
-				'import { expressionf96s4u0t43kts } from "~arktype/expressionf96s4u0t43kts"\n\nconst expression14o1jvk02fucdy = (() => {\n\treturn expressionf96s4u0t43kts() + "[]"\n})\n\nexport { expression14o1jvk02fucdy }\n',
-				'import { expressionf96s4u0t43kts } from "~arktype/expressionf96s4u0t43kts"\nimport { expression14o1jvk02fucdy } from "~arktype/expression14o1jvk02fucdy"\n\nconst expressiongql45f0mnq5l2 = (() => {\n\treturn "{ lead: " + expressionf96s4u0t43kts() + ", members: " + expression14o1jvk02fucdy() + " }"\n})\n\nexport { expressiongql45f0mnq5l2 }\n',
-				'const descriptioncy3zye0b14cgn = (() => {\n\treturn "{ age: an integer and non-negative, name: a string, nickname: a string or undefined }"\n})\n\nexport { descriptioncy3zye0b14cgn }\n',
-				'const description162hhmx06ndoqk = (() => {\n\treturn "{ age: number % 1 & >= 0, name: string, nickname: string | undefined }[]"\n})\n\nexport { description162hhmx06ndoqk }\n',
-				'import { descriptioncy3zye0b14cgn } from "~arktype/descriptioncy3zye0b14cgn"\nimport { description162hhmx06ndoqk } from "~arktype/description162hhmx06ndoqk"\n\nconst description9qmd8h0zlr276 = (() => {\n\treturn "{ lead: " + descriptioncy3zye0b14cgn() + ", members: " + description162hhmx06ndoqk() + " }"\n})\n\nexport { description9qmd8h0zlr276 }\n'
+			attest(
+				normalized(composed.join("\n").match(/^\treturn .* \+ .*/gm)!)
+			).snap([
+				'\treturn #0() + "[]"',
+				'\treturn "{ lead: " + #0() + ", members: " + #1() + " }"',
+				'\treturn "{ lead: " + #2() + ", members: " + #3() + " }"'
 			])
 		})
 
@@ -1237,12 +1213,14 @@ export const B = $.type({ b: "a" })`,
 			)
 			attest(result.diagnostics).equals([])
 			attest(
-				result.code.split("\n").filter(line => line.startsWith("export"))
+				normalized(
+					result.code.split("\n").filter(line => line.startsWith("export"))
+				)
 			).snap([
-				"export const Held = /* @__PURE__ */ $arkf1k0gu4008rxk37(trim)",
-				"export const Read = $arkf31x3lt13lnlin(max)",
-				"export const $ = /* @__PURE__ */ $arkf16tqm51d9mp98(trim)",
-				"export const B = $arkf1tiybtv1jozo2t($)"
+				"export const Held = /* @__PURE__ */ $ark#0(trim)",
+				"export const Read = $ark#1(max)",
+				"export const $ = /* @__PURE__ */ $ark#2(trim)",
+				"export const B = $ark#3($)"
 			])
 		})
 
@@ -1255,11 +1233,13 @@ export const A = $.type({ a: "s" })
 export const B = $.type({ b: "s" })`)
 			attest(result.diagnostics).equals([])
 			attest(
-				result.code.split("\n").filter(line => line.startsWith("export"))
+				normalized(
+					result.code.split("\n").filter(line => line.startsWith("export"))
+				)
 			).snap([
-				"export const $ = /* @__PURE__ */ $arkfum7tro1c6fvs1(trim)",
-				"export const A = $arkf1x4etxi1pkfw5z(0, $)",
-				"export const B = $arkf1x4etxi1pkfw5z(1, $)"
+				"export const $ = /* @__PURE__ */ $ark#0(trim)",
+				"export const A = $ark#1(0, $)",
+				"export const B = $ark#1(1, $)"
 			])
 		})
 
@@ -1269,10 +1249,12 @@ export const len = type.fn("string", ":", "number")(s => s.length)
 export const make = () => type.fn("string")(s => s)`)
 			attest(result.diagnostics).equals([])
 			attest(
-				result.code.split("\n").filter(line => line.startsWith("export"))
+				normalized(
+					result.code.split("\n").filter(line => line.startsWith("export"))
+				)
 			).snap([
-				"export const len = /* @__PURE__ */ $arkfogqwaj0g9p34d(s => s.length)",
-				"export const make = () => $arkfrfrs4g1hn9fdv(s => s)"
+				"export const len = /* @__PURE__ */ $ark#0(s => s.length)",
+				"export const make = () => $ark#1(s => s)"
 			])
 		})
 	})
@@ -1290,9 +1272,9 @@ import { other } from "./other.ts"`
 				{ "/other.ts": "export const other = 1" },
 				{ runtime: "arktype" }
 			)
-			attest(result.code).snap(`import { type } from "arktype"
-import "~arktype/units/h6eh021988eyz"
-import "~arktype/units/nqmgik1kbyfoe"
+			attest(normalized(result.code)).snap(`import { type } from "arktype"
+import "~arktype/units/#0"
+import "~arktype/units/#1"
 let def = "string"
 def = "number"
 export const Trimmed = type("string").pipe(s => s.trim())
@@ -1343,7 +1325,7 @@ export const E = type("strng")`,
 				{ inline: true }
 			)
 			const lines = result.code.split("\n")
-			attest([lines[0], ...lines.slice(-12)]).snap([
+			attest(normalized([lines[0], ...lines.slice(-12)])).snap([
 				"var $ark$exports0;",
 				"})($ark$0))",
 				"}",
@@ -1355,8 +1337,8 @@ export const E = type("strng")`,
 				'import * as $ark$0 from "arktype/runtime"',
 				'const Array = "shadowed"',
 				"$arkfixConfig()",
-				"export const T = /* @__PURE__ */ $arkvezobkc1ju5l1x()",
-				"export const E = $arkd7m1yy1v6q065()"
+				"export const T = /* @__PURE__ */ $ark#0()",
+				"export const E = $ark#1()"
 			])
 			attest(result.modules).equals({})
 		})

@@ -5,7 +5,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { startVitest } from "vitest/node"
-import { precompile } from "./utils.ts"
+import { normalized, precompile } from "./utils.ts"
 
 const shadowed = fromHere("shadowed")
 
@@ -45,29 +45,31 @@ const diverged = (): Record<string, string> & { reported: string[] } =>
 contextualize(() => {
 	it("passes each hole once to arktype, and to its factory with what it checks", () => {
 		attest(
-			precompile(
-				`import { type } from "arktype"
+			normalized(
+				precompile(
+					`import { type } from "arktype"
 import { Name } from "./name.ts"
 export function nullable() {
 	return User.or("null")
 }
 const User = type({ name: Name }).pipe(user => user.name)`,
-				{
-					"/name.ts": `import { type } from "arktype"
+					{
+						"/name.ts": `import { type } from "arktype"
 export const Name = type("string").pipe(s => s.trim())`
-				},
-				{ shadow: true, checkHelpers: true }
-			).code
+					},
+					{ shadow: true, checkHelpers: true }
+				).code
+			)
 		).snap(`var $arkm = 0;
 import { shadow as $arkshadow } from "@ark/precompile/shadow"
 import { type } from "arktype"
-import { f1861pne07huehg as $arkf1861pne07huehg } from "~arktype/1xe05of1mn8mo1"
-import { fcq9fbr09xh5h7 as $arkfcq9fbr09xh5h7 } from "~arktype/1xe05of1mn8mo1"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
 import { Name } from "./name.ts"
 export function nullable() {
-	return $arkshadow("/main.ts:4:9  User.or(\\"null\\")", $arkf1861pne07huehg, ($arkh0) => ($arkh0.or("null")), [], User, Name, $arkm)
+	return $arkshadow("/main.ts:4:9  User.or(\\"null\\")", $ark#0, ($arkh0) => ($arkh0.or("null")), [], User, Name, $arkm)
 }
-const User = $arkshadow("/main.ts:6:14  type({ name: Name }).pipe(user => user.name)", $arkfcq9fbr09xh5h7, ($arkh0, $arkh1) => (type({ name: $arkh0 }).pipe($arkh1)), [1], Name, user => user.name)
+const User = $arkshadow("/main.ts:6:14  type({ name: Name }).pipe(user => user.name)", $ark#2, ($arkh0, $arkh1) => (type({ name: $arkh0 }).pipe($arkh1)), [1], Name, user => user.name)
 $arkm = 4;
 Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }), { "/main.ts": { __proto__: null, "nullable": nullable } })`)
 	})

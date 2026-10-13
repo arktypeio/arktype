@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { renderDiagnostic } from "@ark/precompile"
-import { diagnosticsOf, precompile, statusesOf } from "./utils.ts"
+import { diagnosticsOf, normalized, precompile, statusesOf } from "./utils.ts"
 
 contextualize(() => {
 	it("leaves a marked site to arktype", () => {
@@ -21,41 +21,44 @@ export const parsers = { type }`
 			"8:2 island",
 			"9:3 accepted number"
 		])
-		attest(precompile(source).code).snap(`import "arktype/internal/island.js"
+		attest(normalized(precompile(source).code))
+			.snap(`import "arktype/internal/island.js"
 import * as $ark$island from "arktype/internal"
 import "arktype"
-import { v113ua4m0cbyo2f as $arkv113ua4m0cbyo2f } from "~arktype/r92huo0pyyhua"
-import { v16tqm51d9mp98 as $arkv16tqm51d9mp98 } from "~arktype/r92huo0pyyhua"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#3"
 import "arktype"
 $arkfixConfig()
-export const A = /* @__PURE__ */ $arkv113ua4m0cbyo2f()
+export const A = /* @__PURE__ */ $ark#0()
 // @ark-runtime
 export const B = $ark$island.type({ name: process.argv[2] })
 export const C = process.argv.length > 2 ?
 	// @ark-runtime
 	$ark$island.type(process.argv[2])
-:	$arkv16tqm51d9mp98()
+:	$ark#2()
 // @ark-runtime
 export const parsers = { type: $ark$island.type }`)
 	})
 
 	it("links an island reading arktype's namespace as a value", () => {
 		attest(
-			precompile(`import * as ark from "arktype"
+			normalized(
+				precompile(`import * as ark from "arktype"
 // @ark-runtime
 export const lib = { ark, type: ark.type }
 export const A = ark.type("string")`).code
+			)
 		).snap(`import "arktype/internal/island.js"
 import * as $ark$island from "arktype/internal"
 import * as $ark$arktype from "arktype/internal/arktype.js"
 import "arktype"
-import { v1k3ai090akbvqv as $arkv1k3ai090akbvqv } from "~arktype/8y795r0xjhl58"
-import $arkfixConfig from "~arktype/1c1qm3a0f4lqlh"
+import { #0 as $ark#0 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#2"
 // @ark-runtime
 export const lib = { ark: $ark$arktype, type: $ark$island.type }
 $arkfixConfig()
-export const A = /* @__PURE__ */ $arkv1k3ai090akbvqv()`)
+export const A = /* @__PURE__ */ $ark#0()`)
 	})
 
 	it("reports a site reading a ParseError it didn't throw itself", () => {
