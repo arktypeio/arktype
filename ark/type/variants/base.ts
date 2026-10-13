@@ -442,6 +442,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 	 * ✅ consecutive `narrowAsync` checks run in parallel, and `.narrow` after them still runs
 	 * ✅ errors are listed in the order they became known
 	 * ⚠️ until it settles, data fails with an error whose `isLoading` is `true`
+	 * ✅ `.configure` sets the messages of that error and of a `false` without an error
 	 * 🔗 await `errors.settled`, {@link assertAsync} or {@link allowsAsync} for the final result
 	 *
 	 * @example

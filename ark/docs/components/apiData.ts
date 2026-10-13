@@ -576,6 +576,12 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
+                        "value": "✅ `.configure` sets the messages of that error and of a `false` without an error"
+                    }
+                ],
+                [
+                    {
+                        "kind": "noteStart",
                         "value": "🔗 await `errors.settled`,"
                     },
                     {

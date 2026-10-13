@@ -218,13 +218,20 @@ const resultOf = (
 /** adds a predicate's default error if it returned `false` without adding one */
 const failWith = (
 	ctx: Traversal,
+	meta: ArkEnv.meta,
 	predicate: Function,
 	valid: boolean,
 	errorCount: number
 ): boolean => {
 	if (ctx.currentErrorCount !== errorCount) return true
 	if (valid) return false
-	ctx.mustBe(`valid according to ${predicate.name || "an anonymous predicate"}`)
+	ctx.errorFromNodeContext({
+		code: "predicate",
+		description:
+			meta.description ??
+			`valid according to ${predicate.name || "an anonymous predicate"}`,
+		meta
+	})
 	return true
 }
 
@@ -262,7 +269,11 @@ export const chainCheck = (
 			{ id: nextCheckId++, check: check as AsyncPredicate }
 		:	(check as Predicate)
 	]
-	const predicate = (data: unknown, ctx: Traversal): boolean => {
+	const predicate = (
+		data: unknown,
+		ctx: Traversal,
+		meta: ArkEnv.meta = {}
+	): boolean => {
 		const session = current
 		if (!session) {
 			// e.g. `.allows`, which has no root call to run again: the data isn't known to pass yet
@@ -277,7 +288,8 @@ export const chainCheck = (
 		for (const check of checks) {
 			if (typeof check === "function") {
 				const errorCount = ctx.currentErrorCount
-				failed = failWith(ctx, check, check(data, ctx), errorCount) || failed
+				failed =
+					failWith(ctx, meta, check, check(data, ctx), errorCount) || failed
 				continue
 			}
 			asyncCount++
@@ -288,17 +300,23 @@ export const chainCheck = (
 		for (const { check, result } of settled) {
 			const errorCount = ctx.currentErrorCount
 			for (const error of result.errors) ctx.error(error)
-			failed = failWith(ctx, check.check, result.valid, errorCount) || failed
+			failed =
+				failWith(ctx, meta, check.check, result.valid, errorCount) || failed
 		}
 		const running = settled.length < asyncCount
 		if (running) ctx.isLoading = true
 		if (failed) return false
 		if (running) {
-			return ctx.reject({
-				expected: "checked",
-				problem: "is still being checked",
-				meta: { [loadingKey]: true } as {}
+			ctx.errorFromNodeContext({
+				code: "predicate",
+				description: "checked",
+				meta: {
+					problem: "is still being checked",
+					...meta,
+					[loadingKey]: true
+				} as ArkEnv.meta
 			})
+			return false
 		}
 		return true
 	}

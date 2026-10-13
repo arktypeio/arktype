@@ -3924,6 +3924,8 @@ apply an async predicate function to output
 
 ⚠️ until it settles, data fails with an error whose `isLoading` is `true`
 
+✅ `.configure` sets the messages of that error and of a `false` without an error
+
 🔗 await `errors.settled`, `assertAsync` or `allowsAsync` for the final result
 
 ```ts

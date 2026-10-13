@@ -283,6 +283,36 @@ b is still being checked`)
 		attest((formB.run(() => Name("y")) as type.errors).isLoading).equals(true)
 	})
 
+	it("configure sets the default failure message", async () => {
+		const T = type("number")
+			.narrowAsync(async function isEven(n) {
+				return n % 2 === 0
+			})
+			.configure({ expected: "even" })
+		const settled = await (T(1) as type.errors).settled
+		attest(String(settled)).snap("must be even (was 1)")
+	})
+
+	it("configure sets the loading message", async () => {
+		const T = type("string")
+			.narrowAsync(async () => false)
+			.configure({ message: e => (e.isLoading ? "checking" : "taken") })
+		const out = T("foo") as type.errors
+		attest(String(out)).snap("checking")
+		attest(out.isLoading).equals(true)
+		attest(String(await out.settled)).snap("taken")
+	})
+
+	it("configure applies to narrow after narrowAsync", () => {
+		const T = type("string")
+			.narrowAsync(async () => true)
+			.narrow(function isLong(s) {
+				return s.length > 1
+			})
+			.configure({ message: "too short" })
+		attest(String(T("a"))).snap("too short")
+	})
+
 	it("narrow before narrowAsync is unchanged", () => {
 		const T = type("string")
 			.narrow((s, ctx) => s.length > 1 || ctx.mustBe("long"))
