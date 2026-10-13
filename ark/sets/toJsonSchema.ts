@@ -82,7 +82,7 @@ const toResolvedJsonSchema = (
 		// metaJson serializes non-primitives like [5] to references like
 		// "$ark.array1", so prefer the original value when it is valid JSON
 		// (jsonData's object domain also allows functions, so exclude them)
-		result[k] =
+		const jsonValue =
 			typeof v !== "function" && $ark.intrinsic.jsonData.allows(v) ? v
 			: k === "default" ?
 				ctx.fallback.defaultValue({
@@ -91,6 +91,7 @@ const toResolvedJsonSchema = (
 					value: v as never
 				})
 			:	(node.metaJson as dict)[k]
+		if (jsonValue !== undefined) result[k] = jsonValue
 	}
 
 	return result
@@ -240,7 +241,7 @@ const reduceObjectJsonSchema = (
 			if (prop.hasDefault()) {
 				const value =
 					typeof prop.default === "function" ? prop.default() : prop.default
-				valueSchema.default =
+				const jsonDefault =
 					$ark.intrinsic.jsonData.allows(value) ?
 						value
 					:	ctx.fallback.defaultValue({
@@ -248,6 +249,7 @@ const reduceObjectJsonSchema = (
 							base: valueSchema,
 							value
 						})
+				if (jsonDefault !== undefined) valueSchema.default = jsonDefault
 			}
 
 			schema.properties![prop.key] = valueSchema
@@ -364,7 +366,7 @@ const reduceSequenceJsonSchema = (
 			if (el.kind === "defaultables") {
 				const value =
 					typeof el.default === "function" ? el.default() : el.default
-				valueSchema.default =
+				const jsonDefault =
 					$ark.intrinsic.jsonData.allows(value) ?
 						value
 					:	ctx.fallback.defaultValue({
@@ -372,6 +374,7 @@ const reduceSequenceJsonSchema = (
 							base: valueSchema,
 							value
 						})
+				if (jsonDefault !== undefined) valueSchema.default = jsonDefault
 			}
 			return valueSchema
 		})

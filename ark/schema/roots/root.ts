@@ -1,5 +1,6 @@
 import {
 	arrayEquals,
+	flatMorph,
 	includes,
 	inferred,
 	omit,
@@ -8,6 +9,7 @@ import {
 	type Fn,
 	type array
 } from "@ark/util"
+import { mergeToJsonSchemaConfigs } from "../config.ts"
 import {
 	constraintInputOf,
 	throwInvalidOperandError,
@@ -52,7 +54,7 @@ import type {
 	StandardJSONSchemaV1,
 	StandardSchemaV1
 } from "../shared/standardSchema.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
+import { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -107,16 +109,8 @@ export abstract class BaseRoot<
 				return { value: out }
 			},
 			jsonSchema: {
-				input: opts =>
-					this.rawIn.toJsonSchema({
-						target: validateStandardJsonSchemaTarget(opts.target),
-						...opts.libraryOptions
-					}) as never,
-				output: opts =>
-					this.rawOut.toJsonSchema({
-						target: validateStandardJsonSchemaTarget(opts.target),
-						...opts.libraryOptions
-					}) as never
+				input: opts => toStandardJsonSchema(this.rawIn, opts),
+				output: opts => toStandardJsonSchema(this.rawOut, opts)
 			}
 		})
 	}
@@ -681,6 +675,23 @@ const validateStandardJsonSchemaTarget = (
 		throwParseError(writeInvalidJsonSchemaTargetMessage(target))
 
 	return target
+}
+
+const toStandardJsonSchema = (
+	node: BaseRoot,
+	opts: StandardJSONSchemaV1.Options
+): Record<string, unknown> => {
+	const ctx = mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, {
+		target: validateStandardJsonSchemaTarget(opts.target),
+		...opts.libraryOptions
+	})
+	const fallback = flatMorph(ctx.fallback, (code, handler) => [
+		code,
+		handler === ToJsonSchema.defaultConfig.fallback[code] ?
+			ToJsonSchema.standardFallback[code]
+		:	handler
+	]) as ToJsonSchema.HandlerByCode
+	return node.toJsonSchema({ ...ctx, fallback }) as never
 }
 
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
