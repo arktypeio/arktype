@@ -37,6 +37,7 @@ import type { BaseRoot } from "./roots/root.ts"
 import type { UnionNode } from "./roots/union.ts"
 import type { Unit } from "./roots/unit.ts"
 import type { BaseScope } from "./scope.ts"
+import { createAsyncRootApply, isAsyncPredicate } from "./shared/async.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
@@ -85,6 +86,7 @@ export abstract class BaseNode<
 	includesTransform: boolean
 
 	includesContextualPredicate: boolean
+	includesAsyncPredicate: boolean
 	isCyclic: boolean
 	allowsRequiresContext: boolean
 	rootApplyStrategy:
@@ -138,6 +140,9 @@ export abstract class BaseNode<
 		this.includesContextualPredicate =
 			this.hasKind("predicate") && this.inner.predicate.length !== 1
 
+		this.includesAsyncPredicate =
+			this.hasKind("predicate") && isAsyncPredicate(this.inner.predicate)
+
 		this.isCyclic = this.kind === "alias"
 		this.referencesById = { [this.id]: this }
 
@@ -158,6 +163,7 @@ export abstract class BaseNode<
 			this.includesTransform ||= this.children[i].includesTransform
 			this.includesContextualPredicate ||=
 				this.children[i].includesContextualPredicate
+			this.includesAsyncPredicate ||= this.children[i].includesAsyncPredicate
 			this.isCyclic ||= this.children[i].isCyclic
 
 			if (!isStructural) {
@@ -219,7 +225,10 @@ export abstract class BaseNode<
 				:	"contextual"
 			:	"contextual"
 
-		this.rootApply = this.createRootApply()
+		this.rootApply =
+			this.includesAsyncPredicate ?
+				createAsyncRootApply(this.createRootApply())
+			:	this.createRootApply()
 		this.allows =
 			this.allowsRequiresContext ?
 				data =>
