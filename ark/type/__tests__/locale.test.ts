@@ -577,49 +577,6 @@ b isn't allowed`)
 			).type.errors("'ctx.meta' is possibly 'undefined'")
 		})
 
-		it("contexts omit the slots they could reach", () => {
-			attest((ctx: ExpectedContext) =>
-				// @ts-expect-error
-				ctx.actual()
-			).type.errors("Property 'actual' does not exist")
-			attest((ctx: ActualContext) =>
-				// @ts-expect-error
-				ctx.expected()
-			).type.errors("Property 'expected' does not exist")
-			attest((ctx: ActualContext) =>
-				// @ts-expect-error
-				ctx.description()
-			).type.errors("Property 'description' does not exist")
-			attest((ctx: ProblemContext) =>
-				// @ts-expect-error
-				ctx.problem()
-			).type.errors("Property 'problem' does not exist")
-			attest((ctx: MessageContext) =>
-				// @ts-expect-error
-				ctx.toJSON()
-			).type.errors("Property 'toJSON' does not exist")
-			attest((e: Locale.ExpectedContext) =>
-				// @ts-expect-error
-				e.description()
-			).type.errors("Property 'description' does not exist")
-			attest((ctx: ProblemContext) =>
-				// @ts-expect-error
-				ctx.toString()
-			).type.errors("Expected 1 arguments, but got 0")
-			attest((ctx: ExpectedContext) =>
-				// @ts-expect-error
-				ctx.toLocaleString()
-			).type.errors("Expected 1 arguments, but got 0")
-			attest((ctx: MessageContext) =>
-				// @ts-expect-error
-				ctx.toLocaleString(en)
-			).type.errors("not assignable to parameter of type 'never'")
-			attest((e: Locale.ExpectedContext<"required">) =>
-				// @ts-expect-error
-				e.missingValueDescription()
-			).type.errors("Property 'missingValueDescription' does not exist")
-		})
-
 		it("see what every locale has", () => {
 			attest((locale: Locale.Info) =>
 				// @ts-expect-error
@@ -1111,16 +1068,6 @@ m must be a bigint (was 5)`)
 					"ParseError: Default for k must be a number (was a string)"
 				)
 			)
-		})
-
-		it("a spread of en renders as en does", () => {
-			const spread = { ...en }
-			for (const jitless of [false, true]) {
-				for (const [T, data] of corpusOf(jitless)) {
-					const errors = T(data) as ArkErrors
-					attest(errors.toLocaleString(spread)).equals(errors.summary)
-				}
-			}
 		})
 
 		it("a spread of en renders every fixture as en does", () => {

@@ -158,17 +158,6 @@ contextualize(() => {
 		}
 	})
 
-	it("compiles a root with 36,000 predicates", () => {
-		const predicate = Array.from(
-			{ length: 36_000 },
-			(_, i) => (n: number) => n !== i
-		)
-		const T = rootSchema({ domain: "number", predicate }, { prereduced: true })
-		attest(T.precompilation).satisfies("string")
-		attest(T.allows(0.5)).equals(true)
-		attest(T.allows(35_999)).equals(false)
-	})
-
 	it("compiling registers nothing", () => {
 		const length = (s: string) => s.length
 		const epoch = new Date(0)

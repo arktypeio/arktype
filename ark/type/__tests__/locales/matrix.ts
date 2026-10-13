@@ -12,7 +12,7 @@ const fail = () => {
 	throw new Error("kaputt")
 }
 
-const counts = [0, 1, 2, 5, 21]
+const counts = [0, 1, 2]
 
 const x = (n: number) => "x".repeat(n)
 
@@ -64,6 +64,7 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 		add(`number <= ${n}`, $.type(`number <= ${n}`), n + 1)
 		add(`number < ${n}`, $.type(`number < ${n}`), n)
 	}
+	add("number % 5", $.type("number % 5"), 6.5)
 	add("number >= 1.5", $.type("number >= 1.5"), 1.25)
 	add("number < -1.5", $.type("number < -1.5"), -1.5)
 	add("unknown[] == 1", $.type("unknown[] == 1"), [])

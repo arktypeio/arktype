@@ -22,32 +22,35 @@ const collectTarget = async (ref: WeakRef<object>) => {
 }
 
 contextualize(() => {
-	it("unreferenced type", async () => {
-		const ref = new WeakRef(type({ collected: "string", n: "number > 5" }))
-		await collectTarget(ref)
-		attest(ref.deref()).equals(undefined)
+	it("collects unreferenced types, scopes and schemas", async () => {
+		const refs = [
+			new WeakRef(type({ collected: "string", n: "number > 5" })),
+			new WeakRef(
+				scope({
+					a: { collectedDefault: "string = 'gc'" },
+					b: ["string", "number = 1234"]
+				}).export().a
+			),
+			new WeakRef(scope({ a: { collected: "string" } })),
+			new WeakRef(
+				rootSchema({
+					domain: "object",
+					required: [{ key: "collectedSchema", value: "string" }]
+				})
+			)
+		]
+		for (const ref of refs) await collectTarget(ref)
+		attest(refs.map(ref => ref.deref())).equals([
+			undefined,
+			undefined,
+			undefined,
+			undefined
+		])
 		const T = type({ collected: "string", n: "number > 5" })
 		attest(T({ collected: "a", n: 6 })).equals({ collected: "a", n: 6 })
 		attest(T({ collected: "a", n: 5 }).toString()).snap(
 			"n must be more than 5 (was 5)"
 		)
-	})
-
-	it("scope with defaults", async () => {
-		const ref = new WeakRef(
-			scope({
-				a: { collectedDefault: "string = 'gc'" },
-				b: ["string", "number = 1234"]
-			}).export().a
-		)
-		await collectTarget(ref)
-		attest(ref.deref()).equals(undefined)
-	})
-
-	it("unexported scope", async () => {
-		const ref = new WeakRef(scope({ a: { collected: "string" } }))
-		await collectTarget(ref)
-		attest(ref.deref() === undefined).equals(true)
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1676
@@ -77,17 +80,6 @@ contextualize(() => {
 		}
 		for (const ref of Object.values(refs)) await collectTarget(ref)
 		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
-	})
-
-	it("unreferenced schema", async () => {
-		const ref = new WeakRef(
-			rootSchema({
-				domain: "object",
-				required: [{ key: "collectedSchema", value: "string" }]
-			})
-		)
-		await collectTarget(ref)
-		attest(ref.deref()).equals(undefined)
 	})
 
 	it("referenced this-cyclic root", async () => {

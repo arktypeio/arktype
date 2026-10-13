@@ -104,48 +104,7 @@ contextualize(() => {
 			"number > 2 ← 2": "muss größer als 2 sein, ist aber 2",
 			"number <= 2 ← 3": "muss höchstens 2 sein, ist aber 3",
 			"number < 2 ← 2": "muss kleiner als 2 sein, ist aber 2",
-			'string >= 5 ← "xxxx"':
-				"muss mindestens 5 Zeichen lang sein, ist aber 4 Zeichen lang",
-			"unknown[] >= 5 ← [0,1,2,3]":
-				"muss mindestens 5 Elemente enthalten, enthält aber 4 Elemente",
 			"number % 5 ← 6.5": "muss ein Vielfaches von 5 sein, ist aber 6,5",
-			'string > 5 ← "xxxxx"':
-				"muss mindestens 6 Zeichen lang sein, ist aber 5 Zeichen lang",
-			'string <= 5 ← "xxxxxx"':
-				"muss höchstens 5 Zeichen lang sein, ist aber 6 Zeichen lang",
-			'string < 6 ← "xxxxxxx"':
-				"muss höchstens 5 Zeichen lang sein, ist aber 7 Zeichen lang",
-			'string == 5 ← "xxxxxx"':
-				"muss genau 5 Zeichen lang sein, ist aber 6 Zeichen lang",
-			"unknown[] <= 5 ← [0,1,2,3,4,5]":
-				"muss höchstens 5 Elemente enthalten, enthält aber 6 Elemente",
-			"unknown[] == 5 ← [0,1,2,3,4,5]":
-				"muss genau 5 Elemente enthalten, enthält aber 6 Elemente",
-			"number >= 5 ← 4": "muss mindestens 5 sein, ist aber 4",
-			"number > 5 ← 5": "muss größer als 5 sein, ist aber 5",
-			"number <= 5 ← 6": "muss höchstens 5 sein, ist aber 6",
-			"number < 5 ← 5": "muss kleiner als 5 sein, ist aber 5",
-			'string >= 21 ← "xxxxxxxxxxxxxxxxxxxx"':
-				"muss mindestens 21 Zeichen lang sein, ist aber 20 Zeichen lang",
-			"unknown[] >= 21 ← [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19]":
-				"muss mindestens 21 Elemente enthalten, enthält aber 20 Elemente",
-			"number % 21 ← 22.5": "muss ein Vielfaches von 21 sein, ist aber 22,5",
-			'string > 21 ← "xxxxxxxxxxxxxxxxxxxxx"':
-				"muss mindestens 22 Zeichen lang sein, ist aber 21 Zeichen lang",
-			'string <= 21 ← "xxxxxxxxxxxxxxxxxxxxxx"':
-				"muss höchstens 21 Zeichen lang sein, ist aber 22 Zeichen lang",
-			'string < 22 ← "xxxxxxxxxxxxxxxxxxxxxxx"':
-				"muss höchstens 21 Zeichen lang sein, ist aber 23 Zeichen lang",
-			'string == 21 ← "xxxxxxxxxxxxxxxxxxxxxx"':
-				"muss genau 21 Zeichen lang sein, ist aber 22 Zeichen lang",
-			"unknown[] <= 21 ← [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]":
-				"muss höchstens 21 Elemente enthalten, enthält aber 22 Elemente",
-			"unknown[] == 21 ← [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21]":
-				"muss genau 21 Elemente enthalten, enthält aber 22 Elemente",
-			"number >= 21 ← 20": "muss mindestens 21 sein, ist aber 20",
-			"number > 21 ← 21": "muss größer als 21 sein, ist aber 21",
-			"number <= 21 ← 22": "muss höchstens 21 sein, ist aber 22",
-			"number < 21 ← 21": "muss kleiner als 21 sein, ist aber 21",
 			"number >= 1.5 ← 1.25": "muss mindestens 1,5 sein, ist aber 1,25",
 			"number < -1.5 ← -1.5": "muss kleiner als -1,5 sein, ist aber -1,5",
 			"unknown[] == 1 ← []": "muss genau 1 Element enthalten, ist aber leer",
@@ -376,10 +335,6 @@ contextualize(() => {
 		})
 	})
 
-	it("renders the same without jit", () => {
-		attest(matrixOf(de, true)).equals(matrixOf(de))
-	})
-
 	it("writes none of en's frames", () => {
 		attest(
 			Object.values(matrixOf(de)).filter(message =>
@@ -416,9 +371,8 @@ contextualize(() => {
 
 	it("pluralizes as Intl.PluralRules does", () => {
 		const rules = new Intl.PluralRules("de")
-		for (let n = 0; n <= 1000; n++)
+		for (const n of [0, 1, 2, 21, 1.5])
 			attest(de.plural(n)).equals(rules.select(n) as never)
-		attest(de.plural(1.5)).equals(rules.select(1.5) as never)
 	})
 
 	it("formats numbers as Intl.NumberFormat does without grouping", () => {

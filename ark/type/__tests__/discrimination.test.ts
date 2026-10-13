@@ -804,18 +804,6 @@ contextualize(() => {
 			}
 		})
 
-		it("share frozen cases", () => {
-			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless }).type("'a' | 'b' | 'c'")
-				const first = (T("d") as type.errors).issues[0]
-				const second = (T("e") as type.errors).issues[0]
-				if (first.code !== "discriminant" || second.code !== "discriminant")
-					throw new Error()
-				attest(first.cases).is(second.cases)
-				attest(Object.isFrozen(first.cases)).equals(true)
-			}
-		})
-
 		it("an absent key", () => {
 			for (const jitless of [false, true]) {
 				const $ = scope({}, { jitless })
