@@ -918,7 +918,7 @@ export class ModuleGraph {
 		return annotate(result, this.annotatedKindOf(binding.id, module, kindOfKey))
 	}
 
-	// e.g. a holder for `list` given `list.push(A)`, `schemas.User = A` or `registry.set("user", A)`
+	// e.g. a holder for `list` given `list.push(A)`, `schemas.User = A`, `registry.set("user", A)` or `Object.assign(schemas, { A })`
 	private storedKindOf(
 		binding: Binding,
 		module: SourceModule,
@@ -927,6 +927,15 @@ export class ModuleGraph {
 		let stored = 0
 		for (const { id } of binding.references) {
 			const [operand, member] = operatorOf(id)
+			if (
+				member?.type === "CallExpression" &&
+				member.arguments[0] === operand &&
+				this.isGlobalMember(member.callee, module, "Object", "assign")
+			) {
+				for (const arg of member.arguments.slice(1))
+					stored |= this.transfer(arg, module, kindOfKey)
+				continue
+			}
 			if (member?.type !== "MemberExpression" || member.object !== operand)
 				continue
 			const [callee, parent] = operatorOf(member)
@@ -1047,8 +1056,9 @@ export class ModuleGraph {
 					(kinds.returnsType | kinds.returnsArk)
 			)
 		}
-		// e.g. what `list.map` passes, which the receiver may hold, though a morph or narrow gets the data a Type validates
-		return isContainerMethod(memberNameOf(callee)) ?
+		// e.g. what `list.map` or `loaded.then` passes, which the receiver may hold, though a morph or narrow gets the data a Type validates
+		const name = memberNameOf(callee)
+		return isContainerMethod(name) || name === "then" ?
 				lostOf(
 					this.transfer(callee.object, module, kindOfKey) &
 						(kinds.unknown | kinds.holder)
@@ -1486,8 +1496,16 @@ export class ModuleGraph {
 			}
 			case "ThisExpression":
 			case "NewExpression": {
+				const owner = node.type === "ThisExpression" && ownerOf(node)
+				if (owner && owner.type === "ObjectExpression")
+					return this.transfer(owner, module, kindOfKey)
 				const cls = this.classOf(node, module, kindOfKey)
-				return cls ? this.instanceKindOf(cls, kindOfKey) : kinds.data
+				return (
+					cls ? this.instanceKindOf(cls, kindOfKey)
+					: node.type === "NewExpression" ?
+						this.builtinPassedOf(node, module, kindOfKey)
+					:	kinds.data
+				)
 			}
 			case "AwaitExpression":
 				return this.transfer(node.argument, module, kindOfKey)
@@ -1498,7 +1516,7 @@ export class ModuleGraph {
 
 	// e.g. a holder for `Object.freeze({ A })`, as a builtin may return what it's passed
 	private builtinPassedOf(
-		call: CallExpression,
+		call: CallExpression | NewExpression,
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): ArkKind {
@@ -1533,6 +1551,24 @@ export class ModuleGraph {
 		return member
 	}
 
+	// e.g. `Object.assign`, unless the module binds `Object`
+	private isGlobalMember(
+		node: Node,
+		module: SourceModule,
+		global: string,
+		name: string
+	): boolean {
+		node = normalize(node)
+		if (node.type !== "MemberExpression" || memberNameOf(node) !== name)
+			return false
+		const object = normalize(node.object)
+		return (
+			object.type === "Identifier" &&
+			object.name === global &&
+			!module.scopes.referencesById.get(object)?.binding
+		)
+	}
+
 	// e.g. the class of `this` in a method, of `new C()` or of `C` in `extends C`
 	private classOf(
 		node: Node,
@@ -1542,7 +1578,9 @@ export class ModuleGraph {
 		node = normalize(node)
 		if (node.type === "ThisExpression") {
 			const owner = ownerOf(node)
-			return owner ? { node: owner, module, kindOfKey } : undefined
+			return owner && owner.type !== "ObjectExpression" ?
+					{ node: owner, module, kindOfKey }
+				:	undefined
 		}
 		const literal = this.literalOf(
 			node.type === "NewExpression" ? node.callee : node,
@@ -2187,10 +2225,17 @@ const annotate = (kind: ArkKind, annotated: ArkKind | undefined): ArkKind =>
 		(kind & arkBits) | (kind & ~arkBits ? annotated : 0)
 	)
 
-// e.g. the class for `this` in a method or field
+// e.g. the class for `this` in a method or field, or the literal for `this` in `{ user, admin() { return this.user } }`
 const ownerOf = (node: Node): Node | undefined => {
-	for (let owner = node.parent; owner; owner = owner.parent)
+	for (let owner = node.parent; owner; owner = owner.parent) {
 		if (owner.type === "ClassBody") return owner.parent!
+		if (
+			owner.type === "FunctionExpression" &&
+			owner.parent?.type === "Property" &&
+			owner.parent.parent?.type === "ObjectExpression"
+		)
+			return owner.parent.parent
+	}
 }
 
 const fieldValuesByClass = new WeakMap<Node, Record<string, Node[]>>()

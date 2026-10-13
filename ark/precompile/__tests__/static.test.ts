@@ -1265,6 +1265,29 @@ write({ m0: type("string") })`)
 			])
 		})
 
+		it("Types the build sees stored or passed through built-ins", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const A = type("string")
+const schemas = {}
+Object.assign(schemas, { A })
+const forms = {
+	user: A,
+	nullable() {
+		return this.user.or("null")
+	}
+}
+console.log(new Map([["a", A]]).get("a").or, new Set([A]).values().next().value.or, schemas.A.or)
+Promise.resolve(A).then(t => t.or("null"))`)
+			).snap([
+				"/main.ts:8:10  this.user.or reads or, which a standalone validator lacks\n  the build can't tell where `this.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				'/main.ts:11:13  new Map([["a", A]]).get("a").or reads or, which a standalone validator lacks\n  the build can\'t tell where `new Map([["a", A]]).get("a")` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn\'t a Type, annotate it with its type. If it is, build with runtime: "arktype".',
+				"/main.ts:11:46  new Set([A]).values().next().value.or reads or, which a standalone validator lacks\n  the build can't tell where `new Set([A]).values().next().value` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				"/main.ts:11:85  schemas.A.or reads or, which a standalone validator lacks\n  the build can't tell where `schemas.A` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
+				"/main.ts:12:30  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+			])
+		})
+
 		it("a Type reaching a value annotated as something else", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
