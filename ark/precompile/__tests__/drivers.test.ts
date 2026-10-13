@@ -29,6 +29,9 @@ const tsconfig = fromHere("..", "..", "..", "tsconfig.json")
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts"]
 
+// a test's own timeout can't stop a synchronous child, so an analysis that doesn't end fails here instead
+const timeout = 60_000
+
 const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
 	spawnSync(
 		process.execPath,
@@ -39,7 +42,7 @@ const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
 			`data:text/javascript,import { register } from "${pathToFileURL(fromHere("..", "node.ts"))}"; register(${JSON.stringify({ ...opts, conditions, cwd })})`,
 			...args
 		],
-		{ cwd, encoding: "utf8" }
+		{ cwd, encoding: "utf8", timeout }
 	)
 
 // options reach the plugin in app/preload.ts through the environment
@@ -49,6 +52,7 @@ const bun = (args: string[], runtime?: "arktype", cwd = app, config = "") => {
 	return spawnSync("bun", args, {
 		cwd,
 		encoding: "utf8",
+		timeout,
 		env: { ...env, ARKTYPE_RUNTIME: runtime ?? "", ARKTYPE_CONFIG: config }
 	})
 }
