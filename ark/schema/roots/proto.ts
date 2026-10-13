@@ -87,14 +87,11 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	// windows/vm contexts (https://github.com/arktypeio/arktype/issues/1597).
 	private readonly isArrayProto = this.proto === Array
 
-	// a builtin is read from the global at call time, as compiled code reads it by name
 	traverseAllows: TraverseAllows =
 		this.requiresInvalidDateCheck ?
 			data => data instanceof Date && isValidDate(data)
 		: this.isArrayProto ? data => Array.isArray(data)
-		: this.builtinName ?
-			data => data instanceof (globalThis as never)[this.builtinName!]
-		:	data => data instanceof this.proto
+		: data => data instanceof this.proto
 
 	compileCondition(js: NodeCompiler, data: string): string {
 		return (

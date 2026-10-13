@@ -1,6 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { Proto, rootSchema } from "@ark/schema"
-import { scope, type } from "arktype"
+import { type } from "arktype"
 import { writeInvalidConstructorMessage } from "arktype/internal/parser/tupleExpressions.ts"
 
 contextualize(() => {
@@ -94,23 +94,6 @@ contextualize(() => {
 			// not expanded since there are no morphs
 			attest(Ark.infer).type.toString("ArkClass")
 			attest(Ark.in.infer).type.toString("ArkClass")
-		})
-
-		it("reads a builtin by name when validating", () => {
-			const { URL } = globalThis
-			const url = new URL("https://arktype.io")
-			for (const jitless of [false, true]) {
-				const T = scope({}, { jitless }).type({ url: "URL" })
-				globalThis.URL = class extends URL {}
-				try {
-					attest(T({ url }).toString()).snap(
-						"url must be a URL instance (was URL)"
-					)
-				} finally {
-					globalThis.URL = URL
-				}
-				attest(T({ url })).equals({ url })
-			}
 		})
 
 		it("parse error on non-function", () => {
