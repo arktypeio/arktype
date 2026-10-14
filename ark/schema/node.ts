@@ -606,6 +606,8 @@ export abstract class BaseNode<
 	abstract compile(js: NodeCompiler): void
 	// undefined where checking data takes more than one expression
 	compileCondition?(js: NodeCompiler, data: string): string | undefined
+	// what its traversal of data returns, where one expression computes it, so a parent writes it rather than calling it
+	compileExpression?(js: NodeCompiler): string | undefined
 
 	protected _failureSite: FailureSite | UnionSite | undefined
 	// what a compiled check reports when this node fails, holding the context arktype writes its error from

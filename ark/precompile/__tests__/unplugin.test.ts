@@ -112,9 +112,9 @@ const run = (js: string) =>
 		encoding: "utf8"
 	}).stdout
 
-// a minified class is printed with its error's name, as `ce [ParseError]: `
+// a minified class is printed with its error's name, as `ce [ParseError]: ` or `$ [ParseError]: `
 const thrownBy = (js: string) =>
-	/^(?:\w+ \[)?\w*Error]?: (.*)$/m.exec(
+	/^(?:[\w$]+ \[)?\w*Error]?: (.*)$/m.exec(
 		spawnSync(process.execPath, ["--input-type=module"], {
 			input: js,
 			encoding: "utf8"

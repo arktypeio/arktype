@@ -418,12 +418,25 @@ name is missing`)
 	})
 
 	it("gives each Type its own traversal of a prop they share", () => {
+		// a prop that morphs is applied by a traversal of its own, not in its structure's
 		const declarations = precompileStandalone({
-			A: type({ id: "number", a: "string" }),
-			B: type({ id: "number", b: "string" })
-		}).code.match(/^const required\w+Allows/gm)!
-		attest(declarations.length).equals(4)
-		attest(new Set(declarations).size).equals(3)
+			A: type({ id: "string.trim", a: "string" }),
+			B: type({ id: "string.trim", b: "string" })
+		}).code.match(/^const required\w+Apply/gm)!
+		attest(declarations.length).equals(2)
+		attest(new Set(declarations).size).equals(1)
+	})
+
+	it("checks a structure and its props in their parent's traversal, but for what transforms", () => {
+		const { code } = precompileStandalone({
+			T: type({ a: "string", "b?": "number", c: "string.trim" })
+		})
+		const declared = [
+			...code.matchAll(
+				/^const (required|optional|structure)\w*?(Allows|Apply|Transform) /gm
+			)
+		].map(([, kind, traversal]) => kind + traversal)
+		attest(declared).equals(["requiredApply", "structureTransform"])
 	})
 
 	it("loads without a global one of its validators reads", async () => {

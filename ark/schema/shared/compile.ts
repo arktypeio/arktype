@@ -276,6 +276,12 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		if (typeof node === "string")
 			return `${this.referenceToId(node, opts)}(${arg}, ${this.ctx})`
 		const kind = opts?.kind ?? this.traversalKind
+		// a standalone build writes a node checked by one expression in the body that would call it, where the JIT, which compiles each node's own traversal anyway, would only grow its unit
+		const expression =
+			this.raisesIssues && kind === this.traversalKind && arg === this.data ?
+				node.compileExpression?.(this)
+			:	undefined
+		if (expression !== undefined) return `(${expression})`
 		if (
 			this.traversalKind === "Transform" &&
 			kind === "Allows" &&
@@ -367,11 +373,10 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		accessExpression: string,
 		node: BaseNode
 	): this {
+		const fails = this.keyFails(keyExpression, accessExpression, node)
+		if (fails !== undefined) return this.if(fails, () => this.return(false))
 		if (this.traversalKind === "Apply")
 			return this.applyKey(keyExpression, accessExpression, node)
-		const condition = node.compileCondition?.(this, accessExpression)
-		if (condition !== undefined)
-			return this.if(`!(${condition})`, () => this.return(false))
 		// read once, so the string remembered is the one its pattern rejected
 		if (this.loopDepth > 0 && isRefinedPattern(node)) {
 			const allows = this.traversal(node, "Allows")
@@ -379,42 +384,25 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 				this.return(`${this.ref(rejected)}(${allows}, value)`)
 			)
 		}
-		const pushesPath =
-			node.allowsRequiresContext && node.allowsRequiresTraversal
-		if (pushesPath) this.line(`${this.ctx}.path.push(${keyExpression})`)
+		// a value whose predicates read ctx is checked at its key's path
+		this.line(`${this.ctx}.path.push(${keyExpression})`)
 		this.check(node, { arg: accessExpression })
-		return pushesPath ? this.line(`${this.ctx}.path.pop()`) : this
+		return this.line(`${this.ctx}.path.pop()`)
 	}
 
-	// a value failing at a key stops this Apply only once ctx fails fast
-	private applyKey(key: string, value: string, node: BaseNode): this {
-		// a cyclic value is applied in this body, as each call deeper is one more frame data nested in itself costs
-		if (node.includesMorph || node.includesAlias) {
-			const apply =
-				node.entersResolution && node.includesAlias ?
-					`(${this.resolution(node, node.id, value)})`
-				:	this.invoke(node, { arg: value })
-			const fails = () => this.line("ctx.path.pop()").return(false)
-			this.line(`ctx.path.push(${key})`)
-			// only transforming a value Apply finds valid finds its morphs' errors
-			if (!node.includesAlias) {
-				this.if(
-					`${this.ref(transformsValid)}(ctx) && ${this.allows(node, value)}`,
-					() =>
-						this.line(
-							`${this.ref(transformedInApply)}(ctx, ${this.invoke(node, { arg: value, kind: "Transform" })})`
-						)
-				).elseIf(`!${apply}`, fails)
-			} else {
-				this.if(
-					node.transforms ?
-						`!(${this.ref(transformIfAllowed)}(ctx, ${this.ref(node)}, ${value}) || ${apply})`
-					:	`!${apply}`,
-					fails
-				)
-			}
-			return this.line("ctx.path.pop()")
+	// what fails a value at a key where one expression checks it, in Apply only once ctx fails fast
+	keyFails(key: string, value: string, node: BaseNode): string | undefined {
+		if (this.traversalKind !== "Apply") {
+			const condition = node.compileCondition?.(this, value)
+			if (condition !== undefined) return `!(${condition})`
+			if (
+				(this.loopDepth > 0 && isRefinedPattern(node)) ||
+				(node.allowsRequiresContext && node.allowsRequiresTraversal)
+			)
+				return
+			return `!${this.invoke(node, { arg: value })}`
 		}
+		if (node.includesMorph || node.includesAlias) return
 		// a value that transforms is checked by Allows first, as one that morphs must be, which also spares a valid one Apply's cost
 		const checksAllowsFirst =
 			node.transforms ||
@@ -425,11 +413,8 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			node.hasKind("union") && !checksAllowsFirst ?
 				undefined
 			:	node.compileCondition?.(this, value)
-		if (condition !== undefined && !node.hasKind("union")) {
-			return this.if(`!(${condition}) && ${this.error(node, key)}`, () =>
-				this.return(false)
-			)
-		}
+		if (condition !== undefined && !node.hasKind("union"))
+			return `!(${condition}) && ${this.error(node, key)}`
 		const allows =
 			!checksAllowsFirst ? ""
 			: isRefinedPattern(node) ?
@@ -437,16 +422,37 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 			: condition === undefined ? `!${this.allows(node, value)} && `
 			: `!(${condition}) && `
 		// a refined basis Allows rejects failed its refinement unless its basis failed, so the refinement isn't checked again
-		if (checksAllowsFirst && isRefinedBasis(node)) {
-			return this.if(
-				`${allows}ctx.failsAt(${node.basis!.compileCondition(this, value)} ? ${this.site(node.prestructurals[0])} : ${this.site(node.basis!)}, data, ${key})`,
-				() => this.return(false)
+		if (checksAllowsFirst && isRefinedBasis(node))
+			return `${allows}ctx.failsAt(${node.basis!.compileCondition(this, value)} ? ${this.site(node.prestructurals[0])} : ${this.site(node.basis!)}, data, ${key})`
+		return `${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${value}, ${key})`
+	}
+
+	// a cyclic value is applied in this body, as each call deeper is one more frame data nested in itself costs
+	private applyKey(key: string, value: string, node: BaseNode): this {
+		const apply =
+			node.entersResolution && node.includesAlias ?
+				`(${this.resolution(node, node.id, value)})`
+			:	this.invoke(node, { arg: value })
+		const fails = () => this.line("ctx.path.pop()").return(false)
+		this.line(`ctx.path.push(${key})`)
+		// only transforming a value Apply finds valid finds its morphs' errors
+		if (!node.includesAlias) {
+			this.if(
+				`${this.ref(transformsValid)}(ctx) && ${this.allows(node, value)}`,
+				() =>
+					this.line(
+						`${this.ref(transformedInApply)}(ctx, ${this.invoke(node, { arg: value, kind: "Transform" })})`
+					)
+			).elseIf(`!${apply}`, fails)
+		} else {
+			this.if(
+				node.transforms ?
+					`!(${this.ref(transformIfAllowed)}(ctx, ${this.ref(node)}, ${value}) || ${apply})`
+				:	`!${apply}`,
+				fails
 			)
 		}
-		return this.if(
-			`${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${value}, ${key})`,
-			() => this.return(false)
-		)
+		return this.line("ctx.path.pop()")
 	}
 
 	initializeTransform(transformedChildren: readonly BaseNode[]): this {

@@ -19,6 +19,7 @@ import {
 	type NodeId,
 	type Optional,
 	type RootUnit,
+	type UnitMember,
 	type UnitOptions,
 	type Sequence
 } from "@ark/schema"
@@ -1289,8 +1290,13 @@ ${writeFunction(
 		returned: string[]
 	): string {
 		const directive = declaresStrict(unit) ? `"use strict"\n` : ""
+		const members = calledMembersOf(unit.members, [
+			...prologue,
+			...epilogue,
+			...returned
+		])
 		return `function (${params.join(", ")}) {
-${directive}${[...prologue, ...unit.members.map(([name, source]) => `const ${name} = ${source}`), ...epilogue].join("\n")}
+${directive}${[...prologue, ...members.map(([name, source]) => `const ${name} = ${source}`), ...epilogue].join("\n")}
 return [${returned.join(", ")}]
 }`
 	}
@@ -2222,6 +2228,24 @@ const collectDefaults = (
 	}
 }
 
+// a unit keeps only the traversals something calls, as a parent can check a node in its own body
+const calledMembersOf = (
+	members: readonly UnitMember[],
+	readers: readonly string[]
+): UnitMember[] => {
+	const sourcesByName = new Map(members)
+	const called = new Set<string>()
+	const read = (text: string) => {
+		for (const name of text.match(/[\w$]+/g) ?? []) {
+			if (called.has(name) || !sourcesByName.has(name)) continue
+			called.add(name)
+			read(sourcesByName.get(name)!)
+		}
+	}
+	for (const reader of readers) read(reader)
+	return members.filter(([name]) => called.has(name))
+}
+
 const sharedByUnit = new WeakMap<RootUnit, boolean>()
 
 let collectedKeywordMetas: Set<object> | undefined
@@ -2384,8 +2408,9 @@ export const traversalKeyOf = (root: BaseRoot): Key => rootKeyOf(root, false)
 const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 	const units = rootUnitsOf(root)
 	const defaultsByMorph = new Map<unknown, Default>()
+	// a parent can check a prop in its own body, so the unit declares no node holding its default
 	for (const unit of units) {
-		for (const node of unit.declared) {
+		for (const node of writtenNodesOf(unit)) {
 			if (node.hasKind("optional") || node.hasKind("sequence"))
 				collectDefaults(node, defaultsByMorph)
 		}

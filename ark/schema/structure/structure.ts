@@ -856,20 +856,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 
-		// with nothing to loop over, Apply continues only while each child does
-		if (
-			js.traversalKind === "Apply" &&
-			!this.index &&
-			this.undeclared !== "reject"
-		) {
-			const children = [
-				...this.props,
-				...(this.sequence ? [this.sequence] : [])
-			]
-			return js.return(
-				children.map(child => js.invoke(child)).join(" && ") || "true"
-			)
-		}
+		// Allows checks each child in an if of its own, which runs fewer instructions than returning their conjunction
+		const conjunction =
+			js.traversalKind === "Apply" ? this.compileConjunction(js) : undefined
+		if (conjunction !== undefined) return js.return(conjunction)
 
 		for (const prop of this.props) js.check(prop)
 
@@ -888,6 +878,24 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			js.forIn("data", () => this.compileExhaustiveEntry(js, "string"))
 
 		return js.return(true)
+	}
+
+	compileExpression(js: NodeCompiler): string | undefined {
+		return js.traversalKind === "Apply" && this.sharesTransformedKeys ?
+				undefined
+			:	this.compileConjunction(js)
+	}
+
+	// a structure with nothing to loop over holds only while each child does
+	private compileConjunction(js: NodeCompiler): string | undefined {
+		if (
+			js.traversalKind === "Transform" ||
+			this.index ||
+			this.undeclared === "reject"
+		)
+			return
+		const children = [...this.props, ...(this.sequence ? [this.sequence] : [])]
+		return children.map(child => js.invoke(child)).join(" && ") || "true"
 	}
 
 	private compileTransform(js: NodeCompiler): void {
