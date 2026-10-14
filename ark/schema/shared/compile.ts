@@ -9,8 +9,8 @@ import {
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import type { IntersectionNode } from "../roots/intersection.ts"
+import type { UnionNode } from "../roots/union.ts"
 import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
-import type { FailureSite, SiteContext, UnionSite } from "./issues.ts"
 import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
 import {
@@ -225,30 +225,11 @@ export const expectedOf = <description extends string | undefined>(
 ): string | description =>
 	typeof meta.expected === "string" ? meta.expected : description
 
-// a site only traversal reads, so a standalone build writes it as it is rather than as a value a program could reach
-export const failureSites = new WeakSet<object>()
-
-// a standalone check reporting what its node's site doesn't hold, at the path below the node where it reads
-export const issueSite = (
-	value: SiteContext,
-	path: PropertyKey[] = []
-): FailureSite => {
-	const site: FailureSite = path.length ? { value, path } : value
-	failureSites.add(site)
-	return site
-}
-
-export const undeclaredSite: FailureSite = issueSite({ code: "undeclared" })
-
-export type IssueSiteOf = (site: FailureSite | UnionSite) => object
-
 export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
 		requiresContext?: boolean
 		refs?: Refs
-		// a standalone validator raises issues, which hold none of its nodes' error contexts
-		issueSiteOf?: IssueSiteOf | undefined
 	}
 
 	export type Refs = Map<object | symbol, string>
@@ -258,8 +239,6 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
 	requiresContext: boolean
 	readonly refs: NodeCompiler.Refs | undefined
-	readonly issueSiteOf: IssueSiteOf | undefined
-	readonly raisesIssues: boolean
 	checksTransformErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {
@@ -267,21 +246,17 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		this.traversalKind = ctx.kind
 		this.requiresContext = ctx.requiresContext ?? true
 		this.refs = ctx.refs
-		this.issueSiteOf = ctx.issueSiteOf
-		this.raisesIssues = ctx.issueSiteOf !== undefined
 	}
+
+	// a standalone build's compiler writes what a union returns failing and what fails an undeclared key, as its validators raise issues holding none of their nodes' error contexts
+	unionFails?(node: UnionNode, value?: string, path?: PropertyKey[]): string
+	undeclaredFails?(): string
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data
 		if (typeof node === "string")
 			return `${this.referenceToId(node, opts)}(${arg}, ${this.ctx})`
 		const kind = opts?.kind ?? this.traversalKind
-		// a standalone build writes a node checked by one expression in the body that would call it, where the JIT, which compiles each node's own traversal anyway, would only grow its unit
-		const expression =
-			this.raisesIssues && kind === this.traversalKind && arg === this.data ?
-				node.compileExpression?.(this)
-			:	undefined
-		if (expression !== undefined) return `(${expression})`
 		if (
 			this.traversalKind === "Transform" &&
 			kind === "Allows" &&
@@ -348,7 +323,7 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	}
 
 	site(node: BaseNode): string {
-		return this.ref(this.issueSiteOf?.(node.failureSite) ?? node.failureSite)
+		return this.ref(node.failureSite)
 	}
 
 	error(node: BaseNode, key?: string, data = "data"): string {

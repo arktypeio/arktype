@@ -16,7 +16,6 @@ import {
 	compileSerializedValue,
 	expectedOf,
 	isDecidedByAllows,
-	issueSite,
 	returnsTransformErrors,
 	type NodeCompiler
 } from "../shared/compile.ts"
@@ -374,18 +373,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			return
 		}
 
-		if (js.raisesIssues) {
-			const site = issueSite(
-				{
-					code: "discriminant",
-					description: expectedOf(
-						this.discriminantMeta,
-						this.discriminantDescription
-					)
-				},
-				discriminant.path
-			)
-			js.return(`!ctx.failsAt(${js.ref(site)}, ${value})`)
+		const fails = js.unionFails?.(this, value, discriminant.path)
+		if (fails) {
+			js.return(fails)
 			return
 		}
 		const serializedPathSegments = discriminant.path.map(k => js.serialize(k))
@@ -420,31 +410,28 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					() => js.return(true)
 				)
 			}
-			// a standalone union's issue reads only what the union describes, so its branches aren't run again
 			js.return(
-				js.raisesIssues ?
-					`!${js.error(this)}`
-				:	`!ctx.failsUnion([${this.branches.map(branch => js.traversal(branch, "Apply")).join(", ")}], ${js.site(this)}, data)`
+				js.unionFails?.(this) ??
+					`!ctx.failsUnion([${this.branches.map(branch => js.traversal(branch, "Apply")).join(", ")}], ${js.site(this)}, data)`
 			)
 		} else if (js.traversalKind === "Apply") {
 			// Allows would call a branch's predicates again and can't enter its resolution, so each branch is applied once
-			if (!js.raisesIssues) js.const("errors", "[]")
+			// a compiler writing what a union returns failing reads no branch's error
+			const collects = !js.unionFails
+			if (collects) js.const("errors", "[]")
 			for (const branch of this.branches) {
 				js.line("ctx.pushBranch()")
 					.line(js.applyMember(branch))
 					.if("!ctx.hasError()", () => js.line("ctx.popBranch()").return(true))
 					.line(
-						js.raisesIssues ? "ctx.popBranch()" : (
-							"errors.push(ctx.popBranch().error)"
-						)
+						collects ? "errors.push(ctx.popBranch().error)" : "ctx.popBranch()"
 					)
 			}
-			if (js.raisesIssues) js.return(`!${js.error(this)}`)
-			else {
+			if (collects) {
 				js.line(
 					`${js.ref(errorFromUnion)}(ctx, errors, ${js.ref(this.meta)}, data)`
 				).return("!ctx.failFast")
-			}
+			} else js.return(js.unionFails!(this))
 		} else if (js.traversalKind === "Allows") {
 			for (const branch of this.branches) {
 				// an error a branch's predicate adds through ctx fails only that branch

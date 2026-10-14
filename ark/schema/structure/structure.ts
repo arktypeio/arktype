@@ -20,11 +20,7 @@ import type { BaseNode, GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
-import {
-	undeclaredSite,
-	type NodeCompiler,
-	type TransformStep
-} from "../shared/compile.ts"
+import type { NodeCompiler, TransformStep } from "../shared/compile.ts"
 import type {
 	attachmentsOf,
 	BaseErrorContext,
@@ -881,14 +877,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js.return(true)
 	}
 
-	compileExpression(js: NodeCompiler): string | undefined {
-		return js.traversalKind === "Apply" && this.sharesTransformedKeys ?
-				undefined
-			:	this.compileConjunction(js)
-	}
-
 	// a structure with nothing to loop over holds only while each child does
-	private compileConjunction(js: NodeCompiler): string | undefined {
+	compileConjunction(js: NodeCompiler): string | undefined {
 		if (
 			js.traversalKind === "Transform" ||
 			this.index ||
@@ -1221,13 +1211,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			const props = this.props.filter(prop => typeof prop.key === keyDomain)
 			if (props.length) compileDeclaredKeySwitch(js, props)
 			const reject = () =>
-				js.traversalKind === "Allows" ? js.return(false)
-				: js.raisesIssues ?
-					js.if(`ctx.failsAt(${js.ref(undeclaredSite)}, data, k)`, () =>
-						js.return(false)
-					)
+				js.traversalKind === "Allows" ?
+					js.return(false)
 				:	js.if(
-						`ctx.failsWith({ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`,
+						js.undeclaredFails?.() ??
+							`ctx.failsWith({ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`,
 						() => js.return(false)
 					)
 			const declaresKey = this._compileDeclaresKey(js)

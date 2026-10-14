@@ -79,7 +79,6 @@ import {
 	isRefinedBasis,
 	NodeCompiler,
 	type InvokeOptions,
-	type IssueSiteOf,
 	type ReferenceOptions
 } from "./shared/compile.ts"
 import { ArkTraversal, errorFromUnion } from "./shared/errors.ts"
@@ -596,7 +595,7 @@ const createLinkage = (
 	opts
 })
 
-class TraversalCompiler extends NodeCompiler {
+export class TraversalCompiler extends NodeCompiler {
 	readonly linkage: UnitLinkage
 
 	constructor(
@@ -607,8 +606,7 @@ class TraversalCompiler extends NodeCompiler {
 		super({
 			kind,
 			requiresContext,
-			refs: linkage.refs,
-			issueSiteOf: linkage.opts.issueSiteOf
+			refs: linkage.refs
 		})
 		this.linkage = linkage
 	}
@@ -661,7 +659,7 @@ const declareTraversal = (
 	node: BaseNode,
 	kind: TraversalKind
 ): string => {
-	const js = new TraversalCompiler(
+	const js = new (linkage.opts.compiler ?? TraversalCompiler)(
 		kind,
 		linkage,
 		kind !== "Transform" || node.transformRequiresContext
@@ -700,7 +698,8 @@ export const precompileRootUnits = (
 
 export interface UnitOptions {
 	keyOf?: ContentKeyOf
-	issueSiteOf?: IssueSiteOf
+	// a standalone build's, whose validators raise issues holding none of their nodes' error contexts
+	compiler?: typeof TraversalCompiler
 }
 
 const unitsOf = (s: ContentNamingState, opts: UnitOptions): RootUnit[] => {

@@ -8,7 +8,7 @@ import {
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
 	expectedOf,
-	failureSites,
+	TraversalCompiler,
 	type ArkErrorCode,
 	type BaseErrorContext,
 	type BaseNode,
@@ -16,9 +16,11 @@ import {
 	type BaseScope,
 	type DefaultedNode,
 	type GenericRoot,
+	type InvokeOptions,
 	type NodeId,
 	type Optional,
 	type RootUnit,
+	type UnionNode,
 	type UnitMember,
 	type UnitOptions,
 	type Sequence
@@ -2340,6 +2342,16 @@ const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	})
 }
 
+// a site only traversal reads, so a standalone build writes it as it is rather than as a value a program could reach
+const failureSites = new WeakSet<object>()
+
+const issueSite = <site extends object>(site: site): site => {
+	failureSites.add(site)
+	return site
+}
+
+const undeclaredSite = issueSite({ code: "undeclared" })
+
 const issueSitesByContext = new WeakMap<
 	object,
 	{ alone?: object; required?: object }
@@ -2362,7 +2374,7 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 		code: value.code,
 		description: expectedOf(value.meta, value.description)
 	}
-	const issueSite =
+	return (variants[variant] = issueSite(
 		missing ?
 			issueContext ? { value: issueContext, missing: requiredIssue }
 			:	runtime.requiredSite
@@ -2370,11 +2382,59 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 				code: "union",
 				description: (site as UnionSite).description
 			})
-	failureSites.add(issueSite)
-	return (variants[variant] = issueSite)
+	))
 }
 
-const unitOptions: UnitOptions = { issueSiteOf }
+// a standalone validator raises issues, which hold none of its nodes' error contexts
+class StandaloneCompiler extends TraversalCompiler {
+	// a node checked by one expression is written in the body that would call it, where the JIT, which compiles each node's own traversal anyway, would only grow its unit
+	override invoke(node: BaseNode, opts?: InvokeOptions): string {
+		this.reach(node)
+		const expression =
+			(
+				(opts?.kind ?? this.traversalKind) !== this.traversalKind ||
+				(opts?.arg ?? this.data) !== this.data
+			) ?
+				undefined
+			: node.hasKind("structure") ?
+				// a structure sharing transformed keys applies them in a call of its own
+				this.traversalKind === "Apply" && node.sharesTransformedKeys ?
+					undefined
+				:	node.compileConjunction(this)
+			:	node.compileExpression?.(this)
+		return expression === undefined ?
+				super.invoke(node, opts)
+			:	`(${expression})`
+	}
+
+	override site(node: BaseNode): string {
+		return this.ref(issueSiteOf(node.failureSite))
+	}
+
+	// a union's issue reads only what the union describes, at its discriminant where it has one, so its branches aren't run again
+	override unionFails(
+		node: UnionNode,
+		value?: string,
+		path?: PropertyKey[]
+	): string {
+		if (!path) return `!${this.error(node)}`
+		const context: SiteContext = {
+			code: "discriminant",
+			description: expectedOf(
+				node.discriminantMeta,
+				node.discriminantDescription
+			)
+		}
+		const site = issueSite(path.length ? { value: context, path } : context)
+		return `!ctx.failsAt(${this.ref(site)}, ${value})`
+	}
+
+	override undeclaredFails(): string {
+		return `ctx.failsAt(${this.ref(undeclaredSite)}, data, k)`
+	}
+}
+
+const unitOptions: UnitOptions = { compiler: StandaloneCompiler }
 
 const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()
 
