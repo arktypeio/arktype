@@ -113,8 +113,10 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	get summary(): string {
 		let summary = ""
 		// joined in a loop, as map and join cost more than writing a message
-		for (const issue of this.issues)
-			summary += (summary && "\n") + issue.message
+		for (const issue of this.issues) {
+			if (summary) summary += "\n"
+			summary += issue.message
+		}
 		return summary
 	}
 
@@ -271,11 +273,13 @@ export const mergeIssues = (
 
 export const messageOf = (issue: ArkIssue): string => {
 	let path = ""
+	// a key and its separator are appended apart, as joining them first writes one more string
 	for (const k of issue.path) {
-		path +=
-			typeof k === "number" ?
-				`[${k}]`
-			:	(path && ".") + (typeof k === "string" ? k : String(k))
+		if (typeof k === "number") path += `[${k}]`
+		else {
+			if (path) path += "."
+			path += typeof k === "string" ? k : String(k)
+		}
 	}
 	return path ? `${path} ${problemOf(issue)}` : problemOf(issue)
 }
