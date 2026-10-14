@@ -1014,7 +1014,8 @@ const writePrecompiledUnit = (
 	const nodes: BaseNode[] = [root]
 	const variablesByNode = new Map<BaseNode, string>([[root, "n0"]])
 	const variablesById: Record<string, string> = { [root.id]: "n0" }
-	const statements: string[] = []
+	// each node after the root, by the index of the node it's read from
+	const statements: [from: number, statement: string][] = []
 	// each node is read through the edges referencesById is collected from, up to the roots no parent checks inline, whose own units bind them
 	for (let i = 0; i < nodes.length; i++) {
 		if (i !== 0 && nodes[i].isRoot() && !nodes[i].compileCondition) continue
@@ -1025,9 +1026,10 @@ const writePrecompiledUnit = (
 				const variable = `n${nodes.push(referenced[j]) - 1}`
 				variablesByNode.set(referenced[j], variable)
 				variablesById[referenced[j].id] ??= variable
-				statements.push(
+				statements.push([
+					i,
 					`const ${variable} = ${variablesByNode.get(nodes[i])}.${key}[${j}]`
-				)
+				])
 			}
 		}
 	}
@@ -1097,8 +1099,14 @@ const writePrecompiledUnit = (
 	).write("function")
 	const variablesOf = (nodes: BaseNode[]) =>
 		nodes.map(node => variablesById[node.id]).join(", ")
+	const returned = `return [[${variablesOf(unit.declared)}], [${refs.join(", ")}], [${variablesOf(dependencyNodes)}]]`
+	// a node is declared only if something the unit returns is read from it
+	const read = nodes.map(() => false)
+	for (const [, i] of returned.matchAll(/\bn(\d+)\b/g)) read[+i] = true
+	for (let i = statements.length; i > 0; i--)
+		if (read[i]) read[statements[i - 1][0]] = true
 	return `[(n0, $) => {
-${statements.map(statement => `\t${statement}\n`).join("")}\treturn [[${variablesOf(unit.declared)}], [${refs.join(", ")}], [${variablesOf(dependencyNodes)}]]
+${statements.map(([, statement], i) => (read[i + 1] ? `\t${statement}\n` : "")).join("")}\t${returned}
 }, ${source}, ${JSON.stringify(dependencies)}, ${sizeOf(root)}]`
 }
 
