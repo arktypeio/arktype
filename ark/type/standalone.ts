@@ -1632,6 +1632,7 @@ ${isTemplate ? "]" : ")"}`
 		const refOf = (param: RootApplyParam) =>
 			param === "Traversal" ? `runtime.${ctx}`
 			: param === "config" ? "runtime.runtimeConfig"
+			: param === "TransformErrors" ? param
 			: (
 				param === "applyRejected" && (!this.baking.firstIssue || reportsIssues)
 			) ?
@@ -1652,8 +1653,14 @@ ${isTemplate ? "]" : ")"}`
 		// each validator writes its own, as one validators shared calls every node's Allows from one site, which V8 can't inline where a site calls several validators
 		if (valid)
 			return `((node) => (data, onFail) => node.allows(data) ? ${valid} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")}))(${shape})`
+		const body = writeRootApply(root, nodeName, refOf)
+		// the class a valid result is checked against is captured, as V8 folds what a closure captures but not what it reads from the runtime's module
+		const captured =
+			/\bTransformErrors\b/.test(body) ?
+				`const TransformErrors = ${this.emit(rootApplyRuntime.TransformErrors)}\n\t\t`
+			:	""
 		return `(function (node) {
-		${writeRootApply(root, nodeName, refOf)}
+		${captured}${body}
 	})(${shape})`
 	}
 
