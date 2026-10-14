@@ -7,7 +7,7 @@ import {
 	schemaScope,
 	writeDuplicateKeyMessage
 } from "@ark/schema"
-import { setEngine } from "arksets"
+import { setEngine } from "arksets/internal"
 
 contextualize(() => {
 	// bootstrap with the engine installed, as when arksets is imported first

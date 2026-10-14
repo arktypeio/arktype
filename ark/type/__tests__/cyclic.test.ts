@@ -7,7 +7,7 @@ import {
 import {
 	writeIndiscriminableMorphMessage,
 	writeMorphIntersectionMessage
-} from "arksets"
+} from "arksets/internal"
 import { scope, type, type Type } from "arktype"
 import { writeUnresolvedFilterMessage } from "arktype/internal/keywords/ts.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"

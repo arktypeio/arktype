@@ -1,6 +1,6 @@
 {
 	"name": "arksets",
-	"description": "Set algebra for arktype schemas: intersection, reduction, discrimination and JSON Schema generation",
+	"description": "Set algebra for schemas in any format: relate, combine and convert arktype Types, Standard JSON Schemas and JSON Schemas",
 	"version": "0.0.1",
 	"license": "MIT",
 	"author": {
@@ -22,18 +22,18 @@
 			"default": "./out/index.js"
 		},
 		"./internal": {
-			"ark-ts": "./index.ts",
-			"default": "./out/index.js"
+			"ark-ts": "./internal.ts",
+			"default": "./out/internal.js"
 		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
 			"types": "./out/*.d.ts",
-			"default": "./out/index.js"
+			"default": "./out/internal.js"
 		},
 		"./internal/*.js": {
 			"ark-ts": "./*.ts",
 			"types": "./out/*.d.ts",
-			"default": "./out/index.js"
+			"default": "./out/internal.js"
 		}
 	},
 	"files": [

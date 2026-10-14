@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { registeredReference } from "@ark/schema"
 import { scope, type, type ArkConfig } from "arktype"
-import { discriminantJsonOf } from "arksets"
+import { discriminantJsonOf } from "arksets/internal"
 
 contextualize(() => {
 	it("2 literal branches", () => {

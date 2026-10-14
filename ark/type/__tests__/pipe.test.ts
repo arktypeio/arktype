@@ -12,7 +12,7 @@ import {
 	discriminantJsonOf,
 	writeIndiscriminableMorphMessage,
 	writeMorphIntersectionMessage
-} from "arksets"
+} from "arksets/internal"
 import { keywords, scope, type, type Type } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"

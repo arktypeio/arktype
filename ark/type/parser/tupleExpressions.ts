@@ -20,7 +20,7 @@ import {
 	type ErrorMessage,
 	type show
 } from "@ark/util"
-import { intersectNodesRoot, pipeNodesRoot } from "arksets"
+import { intersectNodesRoot, pipeNodesRoot } from "arksets/internal"
 import type {
 	defaultFor,
 	distill,

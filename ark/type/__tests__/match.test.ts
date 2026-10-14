@@ -9,7 +9,7 @@ import {
 import { match, scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 import { doubleAtMessage, type Match } from "arktype/internal/match.ts"
-import { discriminantJsonOf } from "arksets"
+import { discriminantJsonOf } from "arksets/internal"
 
 const throwDefaultRef = registeredReference(throwOnDefault)
 

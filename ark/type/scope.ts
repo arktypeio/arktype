@@ -49,7 +49,7 @@ import {
 	type array,
 	type noSuggest
 } from "@ark/util"
-import { setEngine } from "arksets"
+import { setEngine } from "arksets/internal"
 import type { InferredMorph } from "./attributes.ts"
 import type { DeclarationParser } from "./declare.ts"
 import { InternalFnParser, type FnParser } from "./fn.ts"
