@@ -216,8 +216,11 @@ export const isArray: (data: unknown) => data is readonly unknown[] =
 	/* @__PURE__ */ (() => Array.isArray)()
 export const dateGetTime = /* @__PURE__ */ (() => Date.prototype.getTime)()
 
+// called as a method when it is Date's own, which V8 compiles to a read of the time value
 export const isValidDate = (date: Date): boolean =>
-	!Number.isNaN(dateGetTime.call(date))
+	!Number.isNaN(
+		date.getTime === dateGetTime ? date.getTime() : dateGetTime.call(date)
+	)
 
 export const isDateObject = (value: object): value is Date =>
 	prototypeOf(value) === Date.prototype

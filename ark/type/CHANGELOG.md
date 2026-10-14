@@ -306,6 +306,10 @@ Checking a default as it's defined no longer counts as a use of the Type it's ch
 
 An `@ark/schema` scope's `references` and `referencesById` are collected when first read rather than as it exports, unless it binds precompiled units or includes an alias, so `type` no longer walks every builtin node as arktype starts.
 
+### Read a `Date`'s `getTime` when checking it
+
+Checking that a `Date` is valid reads its `getTime` and calls it as a method when it's `Date.prototype.getTime`, which is faster than calling that function on the `Date`. A getter or a `Proxy` trap for `getTime` on a `Date` now runs as it's checked.
+
 ### Call narrows and morphs without a receiver when jitless
 
 A narrow's predicate was called with its node as `this` when jitless, and a Type whose morphs need no `ctx` called them with its morphs array as `this`. Both are now called as compiled code calls them, with `this` undefined.
