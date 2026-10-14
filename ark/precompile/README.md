@@ -127,6 +127,56 @@ export const Shaped = type(await loadShape())
 
 The marker applies to the statement or expression that starts after it. arktype then ships beside `arktype/runtime`, and each module with an island imports it for its islands alone, so `arktype` still resolves to the runtime everywhere else. The build fails if an island reads a precompiled validator other than to validate with it, as in `User(data)` or `User.assert(data)`, or reaches arktype outside an island, e.g. through a helper in another module, whose definition must then be marked too. `--check` lists islands apart from the sites it precompiles and leaves them out of the rate `--fail-under` compares. With `runtime: "arktype"`, the marker means nothing.
 
+## Declarations
+
+A package whose types other packages read can declare its Types once, so its consumers don't infer arktype definitions:
+
+```sh
+npx arktype-precompile --declare
+```
+
+This writes what `tsc --emitDeclarationOnly` would for the nearest `tsconfig.json`, or the one `--tsconfig` names, laid out as tsc lays it out. The difference is that each Type, Scope and Module is declared through its shape in one `~arktype.d.ts` at the root of the declarations (`declarationDir`, `outDir`, `rootDir` or the tsconfig's directory), named once and referenced wherever another shape holds it:
+
+<!-- prettier-ignore -->
+```ts
+// users.d.ts
+export declare const User: import("arktype").Type<import("./~arktype.js").User>;
+
+// ~arktype.d.ts
+export type User = {
+    id: string;
+    role: import("arktype").Default<Role, "member">;
+    address?: Address | undefined;
+};
+```
+
+A shape is named for the const that defines it, and a cycle for the key that first reached it, with a `$` before a name a type couldn't take, like `$string`. An enum is named rather than its values, and `exactOptionalPropertyTypes` is honored. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+
+The bundler plugin emits the same files beside the bundle of a build that neither watches nor serves, with Rollup, Rolldown, Vite, webpack, Rspack and Rsbuild:
+
+```ts
+precompile.vite({ declare: true })
+```
+
+esbuild, Bun and Farm don't tell a plugin whether a build watches, so `declare: true` throws there, as it does for the Bun, Node and Turbopack drivers, and `arktype-precompile --declare` runs after their build instead. A Vite app declares once for all its environments, and its build fails where a module is declared outside the root, which the bundle can't hold.
+
+Everything but a Type's declared type is TypeScript's own emit, so `types`, `exports` and subpath imports work as they do with tsc, a const with an annotation is declared as annotated, and a declaration bundler like rollup-plugin-dts rolls the files into one with the shapes still shared. A class or interface is named where a consumer resolves it: through `globalThis` for a global like `Buffer`, the module declaring it, like `import("events").EventEmitter`, or for a module augmentation, the declarations of the module it augments. A shape holding one it can't name that way, like a class its module doesn't export, is left to TypeScript's own declaration. A cyclic scope is declared exactly, where TypeScript 6 writes `any` in the cycle and TypeScript 7 refuses to declare it, unless the cycle holds such a value, which leaves it to TypeScript. Development keeps reading the source, so editors check definitions as they're written and nothing generated goes stale.
+
+Declarations read the compiler API of TypeScript 5.5 to 6 from `typescript`, an optional peer whose range TypeScript 7 also satisfies, so a project that doesn't declare installs nothing more. TypeScript 7 has no compiler API, so a project on it that declares installs TypeScript 6 beside it under an alias:
+
+```sh
+npm i -D typescript-6@npm:typescript@6
+```
+
+A module that reads the declarations type checks within 2.5x of zod's cost, and below it for the largest app. For one importing each Type of a bench app and assigning its output, with TypeScript 7:
+
+| instantiations (check ms) | login     | moltar    | shop       |
+| ------------------------- | --------- | --------- | ---------- |
+| source                    | 3384 (16) | 3437 (15) | 31132 (66) |
+| tsc's declarations        | 596 (7)   | 724 (7)   | 10797 (24) |
+| `--declare`               | 633 (7)   | 761 (7)   | 4403 (18)  |
+| zod's source              | 256 (4)   | 668 (5)   | 5958 (19)  |
+
 ## Test runners and runtimes
 
 In standalone mode, the Node and Bun drivers serve the `~arktype/` modules a module shares with others, as the plugin does. Where there are no virtual modules, as with Turbopack, `inline: true` and cache mode, the validators or units a module needs are placed at the top of the module itself. Each driver takes the plugin's options, fails on the same errors and resolves `arktype` to `arktype/runtime` in standalone mode where its host allows.

@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+### Emit declarations whose Types share one file of shapes
+
+`arktype-precompile --declare` writes what `tsc --emitDeclarationOnly` would for the tsconfig's program, except that each Type, Scope and Module is declared through its shape in one `~arktype.d.ts`, named once and referenced wherever another shape holds it. A package whose types others read can ship them, so its consumers don't infer its definitions: a module importing each of a 23-Type app's Types checks with 4403 instantiations rather than 31132 from source or 10797 from tsc's declarations. The bundler plugin emits them with a Rollup, Rolldown, Vite, webpack, Rspack or Rsbuild build that neither watches nor serves, and throws with esbuild, Bun and Farm, which don't say whether a build watches, as the Bun, Node and Turbopack drivers do:
+
+```ts
+precompile.vite({ declare: true })
+```
+
+It needs the compiler API of TypeScript 5.5 to 6 from the optional `typescript` peer, which a TypeScript 7 project installs as `typescript-6`.
+
 ### Return errors of a standalone validator's own, and only the first with `errors: "first"`
 
 A standalone validator returns errors of its own rather than arktype's. Each issue holds the failed check's `code`, `path`, `data` and `expected`, and its `message`, like `name must be a string`, is written when the issues are first read, so invalid data creates only those objects and the runtime ships no error writers. A message doesn't say what the value was, the errors arktype groups at one path stay apart, a union no branch allows is one issue naming the union's description, and the build refuses error text configured for a code a Type can raise. `errors: "first"` stops each validation at its first issue:
