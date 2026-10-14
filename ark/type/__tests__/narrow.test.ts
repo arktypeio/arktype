@@ -28,6 +28,14 @@ contextualize(() => {
 		attest(error.message).snap("must be valid according to isOdd (was 2)")
 	})
 
+	it("calls a predicate without a receiver", () => {
+		const T = type("number").narrow(function (this: unknown) {
+			return this === undefined
+		})
+		attest(T(1)).equals(1)
+		attest(T.allows(1)).equals(true)
+	})
+
 	it("implicit problem anonymous", () => {
 		const Even = type("number", ":", n => n % 2 === 0)
 		attest(Even(1).toString()).snap(

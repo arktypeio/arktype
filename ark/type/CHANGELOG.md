@@ -294,6 +294,10 @@ A program's `configure()` call stays in place and configures `arktype/runtime`, 
 
 A Type is compiled the first time it's called, its `allows` is called or its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled. A Type referencing an alias is still compiled where it's defined, so an error resolving the alias is thrown there.
 
+### Call narrows and morphs without a receiver when jitless
+
+A narrow's predicate was called with its node as `this` when jitless, and a Type whose morphs need no `ctx` called them with its morphs array as `this`. Both are now called as compiled code calls them, with `this` undefined.
+
 ### Fix deep transforms through a tuple default
 
 `onDeepUndeclaredKey` and `configure` with `"references"` threw on a tuple with a default:

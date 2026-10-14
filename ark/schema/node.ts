@@ -549,9 +549,9 @@ export abstract class BaseNode<
 				if (!branch.hasKind("morph")) return data
 				let result = data
 				for (let j = 0; j < branch.morphs.length; j++) {
-					const morphed = (branch.morphs[j] as Morph.ContextFree)(
-						result as never
-					)
+					// called detached, as compiled code calls it
+					const morph = branch.morphs[j] as Morph.ContextFree
+					const morphed = morph(result as never)
 					if (morphed instanceof BaseArkErrors) {
 						const ctx = new ArkTraversal(data, this.$.resolvedConfig)
 						addErrors(ctx, morphed)

@@ -29,6 +29,13 @@ contextualize(() => {
 		attest(result.toString()).snap("must be a number (was a string)")
 	})
 
+	it("calls a morph without a receiver", () => {
+		const T = type("number").pipe(function (this: unknown) {
+			return this === undefined
+		})
+		attest(T(1)).equals(true)
+	})
+
 	it("disjoint", () => {
 		attest(() => type("number>5").pipe(type("number<3"))).throws.snap(
 			"ParseError: Intersection of > 5 and < 3 results in an unsatisfiable type"

@@ -65,7 +65,11 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	impliedBasis = null
 
 	expression: string = baseNameOf(this.predicate)
-	traverseAllows: TraverseAllows = this.predicate as never
+	// called detached, as compiled code calls it
+	traverseAllows: TraverseAllows = (data, ctx) => {
+		const predicate = this.predicate
+		return predicate(data, ctx as never)
+	}
 
 	errorContext: Predicate.ErrorContext = {
 		code: "predicate",
@@ -76,10 +80,8 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		const errorCount = ctx.currentErrorCount
-		if (
-			!this.predicate(data, ctx.external) &&
-			ctx.currentErrorCount === errorCount
-		)
+		const predicate = this.predicate
+		if (!predicate(data, ctx.external) && ctx.currentErrorCount === errorCount)
 			ctx.errorFromNodeContext(this.errorContext, data)
 	}
 
