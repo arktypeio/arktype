@@ -13,9 +13,12 @@ import {
 	runtimeConfig,
 	supportedJsonSchemaTargets,
 	validateStandardJsonSchemaTarget,
+	type ArkErrorCode,
 	type CompactApply,
 	type FailHandler,
+	type FailureSite,
 	type InternalTraversal,
+	type SiteContext,
 	type Traversal
 } from "@ark/schema/runtime"
 import {
@@ -327,6 +330,15 @@ export const typedFn = (
 export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 	errors: ArkErrors
 })
+
+// a site as its unit is created, which a call writes in fewer bytes than its literal
+export const siteOf = (
+	code: ArkErrorCode,
+	description?: string
+): SiteContext => ({ code, description })
+
+// what every required key reports when it's missing
+export const requiredSite: FailureSite = { missing: { code: "required" } }
 
 // a root whose Apply is compact reports what fails into the errors it returns, so a program whose roots all are loads no Traversal
 export const applyErrors = (

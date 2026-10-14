@@ -1438,9 +1438,9 @@ export const T = type("string[]")`,
 		const { modules } = precompile(`import { scope } from "arktype"
 export const Custom = scope({}, { domain: { description: () => "custom" } }).type({ x: "string" })
 export const Default = scope({}).type({ x: "string" })`)
-		attest(Object.values(modules)[0].includes('description: "custom"')).equals(
-			true
-		)
+		attest(
+			Object.values(modules)[0].includes('runtime.siteOf("domain", "custom")')
+		).equals(true)
 	})
 
 	it("writes the same modules in any order after unrelated work", () => {

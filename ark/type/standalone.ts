@@ -30,6 +30,7 @@ import {
 	writeRootApply,
 	type FailureSite,
 	type RootApplyParam,
+	type SiteContext,
 	type UnionSite
 } from "@ark/schema/internal"
 import {
@@ -2006,6 +2007,10 @@ ${isTemplate ? "]" : ")"}`
 		// a discriminant's site holds the path it's read at
 		if (Array.isArray(site))
 			return `[${site.map(k => this.emit(k)).join(", ")}]`
+		if ("code" in site) {
+			const { code, description } = site as SiteContext
+			return `runtime.siteOf(${this.emit(code)}${description === undefined ? "" : `, ${this.emit(description)}`})`
+		}
 		return `{ ${Object.entries(site)
 			.map(
 				([k, v]) =>
@@ -2359,7 +2364,8 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 	}
 	const issueSite =
 		missing ?
-			{ ...(issueContext && { value: issueContext }), missing: requiredIssue }
+			issueContext ? { value: issueContext, missing: requiredIssue }
+			:	runtime.requiredSite
 		:	(issueContext ?? {
 				code: "union",
 				description: (site as UnionSite).description
