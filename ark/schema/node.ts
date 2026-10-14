@@ -1041,9 +1041,7 @@ export abstract class BaseNode<
 			return null
 
 		if (
-			(this.kind === "required" ||
-				this.kind === "optional" ||
-				this.kind === "index") &&
+			this.hasKindIn("required", "optional", "index") &&
 			!("value" in transformedInner)
 		) {
 			if (!ctx.undeclaredKeyHandling) return null
