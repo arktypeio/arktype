@@ -1566,13 +1566,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 		input: input
 	): input & AttachedParseContext {
 		bootstrap()
-		const id = input.id ?? registerNodeId(input.prefix)
-		return Object.assign(input, {
-			[arkKind]: "context" as const,
-			$: this as never,
-			id,
-			phase: "unresolved" as const
-		})
+		const ctx = input as input & AttachedParseContext
+		ctx[arkKind] = "context"
+		ctx.$ = this as never
+		ctx.id = input.id ?? registerNodeId(input.prefix)
+		ctx.phase = "unresolved"
+		return ctx
 	}
 
 	traversal(root: unknown): Traversal {
