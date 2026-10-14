@@ -173,7 +173,7 @@ bench("base object", () =>
 		filter: "'filter'",
 		narrow: "'narrow'"
 	})
-).types([10980, "instantiations"])
+).types([10255, "instantiations"])
 
 type Expected = {
 	readonly: "readonly"
@@ -225,4 +225,4 @@ bench("base object", () =>
 		filter: "'filter'",
 		narrow: "'narrow'"
 	})
-).types([13362, "instantiations"])
+).types([13077, "instantiations"])

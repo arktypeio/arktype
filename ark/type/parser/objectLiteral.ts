@@ -335,7 +335,14 @@ export type preparseKey<k> =
 				kind: "optional"
 				normalized: inner
 			}>
-	: k extends "+" ? { kind: "undeclared" }
+	: k extends `${"+" | "." | Backslash | "["}${string}` ? preparseSpecialKey<k>
+	: PreparsedKey.from<{
+			kind: "required"
+			normalized: k extends Key ? k : `${k & number}`
+		}>
+
+type preparseSpecialKey<k> =
+	k extends "+" ? { kind: "undeclared" }
 	: k extends "..." ? { kind: "spread" }
 	: k extends `${Backslash}${infer escapedMeta extends MetaKey}` ?
 		PreparsedKey.from<{ kind: "required"; normalized: escapedMeta }>
