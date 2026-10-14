@@ -1,10 +1,11 @@
-import { defineValue } from "@ark/util"
+import { cached, defineLazily, defineValue } from "@ark/util"
 import {
 	bootstrapRootScope,
 	node,
 	SchemaScope,
 	type SchemaScopeParser
 } from "./scope.ts"
+import type { BaseRoot } from "./roots/root.ts"
 import { $ark } from "./shared/registry.ts"
 import { arrayIndexSource } from "./structure/shared.ts"
 
@@ -51,38 +52,47 @@ const bootstrapIntrinsic = () => {
 	// needed to parse index signatures for JSON
 	Object.assign($ark.intrinsic, intrinsicRoots)
 
-	const intrinsicJson = builtinScope(
-		{
-			jsonPrimitive: [
-				"string",
-				"number",
-				{ unit: true },
-				{ unit: false },
-				{ unit: null }
-			],
-			jsonObject: {
-				domain: "object",
-				index: {
-					signature: "string",
-					value: "$jsonData"
-				}
+	const intrinsic = { ...intrinsicBases, ...intrinsicRoots }
+
+	// only JSON keywords read these, so most programs never parse them
+	const exportJson = cached(() =>
+		builtinScope(
+			{
+				jsonPrimitive: [
+					"string",
+					"number",
+					{ unit: true },
+					{ unit: false },
+					{ unit: null }
+				],
+				jsonObject: {
+					domain: "object",
+					index: {
+						signature: "string",
+						value: "$jsonData"
+					}
+				},
+				jsonData: ["$jsonPrimitive", "$jsonObject"]
 			},
-			jsonData: ["$jsonPrimitive", "$jsonObject"]
-		},
-		{ prereducedAliases: true, name: "intrinsic.json" }
-	).export()
+			{ prereducedAliases: true, name: "intrinsic.json" }
+		).export()
+	)
+	for (const k of jsonIntrinsicNames)
+		defineLazily(intrinsic, k, () => exportJson()[k])
 
-	const intrinsic = {
-		...intrinsicBases,
-		...intrinsicRoots,
-		...intrinsicJson,
+	// assigned after JSON's keys, so it still enumerates last
+	const result = Object.assign(intrinsic as typeof intrinsic & IntrinsicJson, {
 		emptyStructure: node("structure", {}, { prereduced: true })
-	}
+	})
 
-	$ark.intrinsic = { ...intrinsic } as never
+	$ark.intrinsic = result as never
 
-	return intrinsic
+	return result
 }
+
+const jsonIntrinsicNames = ["jsonPrimitive", "jsonObject", "jsonData"] as const
+
+type IntrinsicJson = Record<(typeof jsonIntrinsicNames)[number], BaseRoot>
 
 let bootstrapped = false
 let bootstrappedWithEngine = false
@@ -108,7 +118,10 @@ export const bootstrap = (): void => {
 	defineValue($ark, "intrinsic", undefined)
 	try {
 		bootstrapRootScope()
-		Object.assign(intrinsicTarget, bootstrapIntrinsic())
+		Object.defineProperties(
+			intrinsicTarget,
+			Object.getOwnPropertyDescriptors(bootstrapIntrinsic())
+		)
 	} catch (e) {
 		bootstrapped = false
 		bootstrapOnRead()
