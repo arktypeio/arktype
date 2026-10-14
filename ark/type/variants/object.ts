@@ -26,7 +26,8 @@ import type { BaseType } from "./base.ts"
 import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
-interface Type<out t extends object = object, $ = {}> extends BaseType<t, $> {
+interface Type<out t extends object = object, in out $ = {}>
+	extends BaseType<t, $> {
 	readonly(): t extends array ? ArrayType<{ readonly [i in keyof t]: t[i] }, $>
 	:	Type<{ readonly [k in keyof t]: t[k] }, $>
 

@@ -36,7 +36,7 @@ import type { ArrayType } from "./array.ts"
 import type { instantiateType } from "./instantiate.ts"
 
 /** @ts-ignore cast variance */
-export interface Inferred<out t = unknown, $ = {}> {
+export interface Inferred<out t = unknown, in out $ = {}> {
 	internal: BaseRoot
 	[inferred]: t
 
@@ -451,7 +451,7 @@ export interface Inferred<out t = unknown, $ = {}> {
 }
 
 /** @ts-ignore cast variance */
-interface Type<out t = unknown, $ = {}>
+interface Type<out t = unknown, in out $ = {}>
 	extends Callable<(data: unknown) => distill.Out<t> | ArkEnv.onFail>,
 		Inferred<t, $> {
 	/**

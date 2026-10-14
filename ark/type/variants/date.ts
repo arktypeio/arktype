@@ -5,7 +5,7 @@ import type {
 import type { ObjectType } from "./object.ts"
 
 /** @ts-ignore cast variance */
-interface Type<out t extends globalThis.Date = globalThis.Date, $ = {}>
+interface Type<out t extends globalThis.Date = globalThis.Date, in out $ = {}>
 	extends ObjectType<t, $> {
 	atOrAfter(schema: InclusiveDateRangeSchema): this
 
