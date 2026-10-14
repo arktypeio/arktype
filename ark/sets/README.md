@@ -3,20 +3,24 @@
 Set algebra for schemas in any format. arksets reads an arktype Type, a Standard JSON Schema (zod, valibot, ...) or a JSON Schema as the set of values it accepts, relates and combines those sets with arktype's algebra, and writes them back out as JSON Schema.
 
 ```ts
-import { isSubset, isEqual, isDisjoint, intersect, toJsonSchema } from "arksets"
-import { type } from "arktype"
+import { discriminate, intersect, isSubset, toJsonSchema } from "arksets"
 import { z } from "zod"
 
-const User = type({ name: "string", age: "number.integer >= 0" })
-const ZodUser = z.object({ name: z.string(), age: z.number() })
+const v1 = z.object({ id: z.string(), age: z.number().int().min(0) })
+const v2 = z.object({ id: z.string(), age: z.number().optional() })
 
-isSubset(User.toJsonSchema(), ZodUser) // true
-isSubset(ZodUser, User) // false: zod allows an age of -1.5
-isSubset(User, ZodUser) // false: an arktype object can be an array, a JSON Schema object can't
+// v2 is backwards compatible: it accepts everything v1 did
+isSubset(v1, v2) // true
+isSubset(v2, v1) // false: v2 accepts { id: "a" }
 
-isDisjoint({ type: "string" }, { type: "array" }) // true
-intersect({ type: "string" }, { maxLength: 3 }).expression // "string <= 3"
-toJsonSchema(ZodUser) // { type: "object", properties: { ... }, required: ["age", "name"] }
+intersect(v2, { properties: { age: { maximum: 120 } } }).expression // "{ id: string, age?: number <= 120 }"
+toJsonSchema(v2) // { type: "object", properties: { id: { type: "string" }, age: { type: "number" } }, required: ["id"] }
+
+const Event = z.discriminatedUnion("kind", [
+	z.object({ kind: z.literal("click"), x: z.number() }),
+	z.object({ kind: z.literal("key"), key: z.string() })
+])
+discriminate(Event) // { path: ["kind"], kind: "unit", cases: [{ value: "key", branches }, { value: "click", branches }], default: null }
 ```
 
 Relations are sound: `true` is a proof, and `false` means it couldn't be proven, e.g. through `not` or `uniqueItems`.
@@ -40,15 +44,19 @@ Roots validate (`root(data)`, `root.allows(data)`), print (`root.expression`) an
 
 `parse` reads a schema's input by default, or its output with `{ io: "out" }`. A JSON Schema's `#/...` refs resolve against the schema itself, or against `{ root: document }`, e.g. an OpenAPI document.
 
+## Comparing arktype Types with JSON Schema
+
+An arktype object can also be an array, and a JSON Schema object can't, so an arktype Type is compared by its own semantics. Compare its `.toJsonSchema()` to use JSON's:
+
 ```ts
-discriminate({
-	type: "object",
-	anyOf: [
-		{ properties: { kind: { const: "a" } }, required: ["kind"] },
-		{ properties: { kind: { const: "b" } }, required: ["kind"] }
-	]
-})
-// { path: ["kind"], kind: "unit", cases: [{ value: "a", branches }, { value: "b", branches }], default: null }
+import { type } from "arktype"
+
+const User = type({ name: "string" })
+const ZodUser = z.object({ name: z.string() })
+
+isSubset(ZodUser, User) // true
+isSubset(User, ZodUser) // false: User allows Object.assign([], { name: "" })
+isSubset(User.toJsonSchema(), ZodUser) // true
 ```
 
 ## JSON Schema
