@@ -30,7 +30,7 @@ import {
 	type JsonStructure
 } from "@ark/util"
 import { InternalTypedFn } from "./fn.ts"
-import type { FoldedMember, introspectionMembers } from "./standalone.ts"
+import type { introspectionMembers } from "./standalone.ts"
 import type { ArrayType } from "./variants/array.ts"
 import type { DateType } from "./variants/date.ts"
 import type { NumberType } from "./variants/number.ts"
@@ -99,7 +99,7 @@ export * from "./keywords/functions.ts"
 
 export interface ValidatorAttributes {
 	meta: ArkEnv.meta
-	// what a build's introspection option bakes, each a getter throwing from the shared prototype unless it lists it
+	// what a build's introspection option bakes, which a validator built without it doesn't have
 	expression?: string
 	description?: string
 	json?: JsonStructure
@@ -112,9 +112,7 @@ export type IntrospectionMember = (typeof introspectionMembers)[number]
 
 // captured when the runtime loads, so a program replacing them later can't keep an artifact from freezing what it creates, each declared alone since a bundle keeps every name a destructuring declares
 export const assign = Object.assign
-export const defineProperties = Object.defineProperties
 export const freeze = Object.freeze
-export const getOwnPropertyDescriptors = Object.getOwnPropertyDescriptors
 export const is = Object.is
 export const setPrototypeOf = Object.setPrototypeOf
 
@@ -192,8 +190,7 @@ export const createValidator = (
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
 		validator(data, pipedFromCtx, throwOnFail)
 	)
-	// defined rather than assigned, since the shared prototype has only a getter for each
-	defineProperties(validator, getOwnPropertyDescriptors(attributes))
+	assign(validator, attributes)
 	validator.allows = freeze(node.allows)
 	validator["~standard"] = freeze({
 		vendor: "arktype",
@@ -240,19 +237,6 @@ export type unavailableMember = Exclude<
 	keyof (ArrayType & DateType & NumberType & ObjectType & StringType),
 	keyof Validator | keyof Function | typeOnlyMember | IntrospectionMember
 >
-
-// a member the build's introspection option doesn't list throws where it's read, as it can't be written at runtime
-for (const k of [
-	"expression",
-	"description",
-	"json",
-	"toJSON",
-	"toJsonSchema"
-] satisfies FoldedMember[]) {
-	Object.defineProperty(Validator.prototype, k, {
-		get: () => throwError(writeUnlistedMemberMessage(k))
-	})
-}
 
 // arktype's prototypes are per node kind, so a method replaced on the one every validator shares would change Types of other kinds
 freeze(Validator.prototype)
@@ -649,14 +633,6 @@ export type writeIdentityMismatchMessage<
 	label extends string,
 	expectedLabel extends string
 > = `${label} is not ${expectedLabel}, which it was at build`
-
-export const writeUnlistedMemberMessage = <member extends string>(
-	member: member
-): writeUnlistedMemberMessage<member> =>
-	`${member} isn't in the build's introspection option`
-
-export type writeUnlistedMemberMessage<member extends string> =
-	`${member} isn't in the build's introspection option`
 
 export const bakedJsonSchemaOptionsMessage =
 	"a standalone validator's JSON Schema is written at build under the program's configuration, so it takes no options but a target whose schema it bakes. Configure them with configure({ toJsonSchema }), or build with runtime: \"arktype\"."

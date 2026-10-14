@@ -265,7 +265,7 @@ const checkedMember = (
 const hasOf =
 	(pair: Pair) =>
 	(target: object, k: PropertyKey): boolean => {
-		// e.g. `"json" in T`, which a validator answers with the getter that throws where its build doesn't list it
+		// e.g. `"json" in T`, which a validator answers false where its build doesn't list it
 		if (
 			!arktypeDepth &&
 			!(

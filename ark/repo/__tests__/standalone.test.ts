@@ -33,7 +33,6 @@ import {
 	writeCreationMismatchMessage,
 	writeIdentityMismatchMessage,
 	writeUnbakedMessage,
-	writeUnlistedMemberMessage,
 	type HoleKind,
 	type IntrospectionMember
 } from "arktype/runtime"
@@ -507,16 +506,13 @@ name is missing`)
 		attest(Object.keys(T.toJsonSchema())).equals(
 			Object.keys(type({ a: "string" }).toJsonSchema())
 		)
-		attest(() => T.json).throws(writeUnlistedMemberMessage("json"))
-		attest(() => T.description).throws(
-			writeUnlistedMemberMessage("description")
-		)
-		attest(() => `${T}`).throws(writeUnlistedMemberMessage("expression"))
-		attest(() => JSON.stringify({ T })).throws(
-			writeUnlistedMemberMessage("toJSON")
-		)
-		// answered as arktype answers it, by the getter that throws in its place
-		attest("json" in T).equals(true)
+		attest([T.json, T.description, T.expression, T.toJSON]).equals([
+			undefined,
+			undefined,
+			undefined,
+			undefined
+		])
+		attest(JSON.stringify({ T })).equals("{}")
 		attest("jsonSchema" in T["~standard"]).equals(false)
 	})
 
@@ -1885,9 +1881,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 				[["function", "`length`", length]],
 				[]
 			)
-			attest(() => unlisted(count.raw).expression).throws(
-				writeUnlistedMemberMessage("expression")
-			)
+			attest(unlisted(count.raw).expression).equals(undefined)
 		})
 
 		it("checks a hole it receives twice is one value", async () => {
