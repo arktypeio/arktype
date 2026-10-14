@@ -231,7 +231,12 @@ export const raisedErrorPhrases = {
 	}
 } as const satisfies Record<string, Locale.KeywordWriters>
 
-export const isParsableUrl = (s: string): boolean => URL.canParse(s)
+// an http(s) URL whose host labels are letters and digits joined by single hyphens, the last all letters, and port under 10000 always parses
+const plainUrl =
+	/^https?:\/\/(?:[\da-z]+(?:-[\da-z]+)*\.)*[a-z]+(?::\d{1,4})?(?:[#/?][!-~]*)?$/i
+
+export const isParsableUrl = (s: string): boolean =>
+	plainUrl.test(s) || URL.canParse(s)
 
 const urlParseError = /* @__PURE__ */ keywordError(
 	"string.url.parse",

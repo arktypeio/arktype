@@ -13,6 +13,15 @@ contextualize(() => {
 		)
 	})
 
+	it("rejects what the parser rejects, even shaped like a plain URL", () => {
+		const Url = type("string.url")
+		attest(Url.allows("https://xn--a.com")).equals(false)
+		attest(Url.allows("https://a.123")).equals(false)
+		attest(Url.allows("https://a.0x1f")).equals(false)
+		attest(Url.allows("http://localhost:65536")).equals(false)
+		attest(Url.allows("HTTP://my-site.example.com:3000/a?b#c")).equals(true)
+	})
+
 	it("parse", () => {
 		const parseUrl = type("string.url.parse")
 
