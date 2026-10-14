@@ -26,46 +26,41 @@ export type AppendStringifiedKeyFn = <stringifiable>(
 	:	NoInfer<[opts: StringifyPathOptions<stringifiable>]>
 ) => string
 
-export const appendStringifiedKey: AppendStringifiedKeyFn = (
-	path,
-	prop,
-	...[opts]
+export const appendStringifiedKey: AppendStringifiedKeyFn = ((
+	path: string,
+	prop: unknown,
+	opts?: StringifyPathOptions<unknown>
 ) => {
-	const stringifySymbol = opts?.stringifySymbol ?? printSymbol
-	let propAccessChain: string = path
 	switch (typeof prop) {
 		case "string":
-			propAccessChain =
+			return (
 				isDotAccessible(prop) ?
 					path === "" ?
 						prop
 					:	`${path}.${prop}`
 				:	`${path}[${JSON.stringify(prop)}]`
-			break
+			)
 		case "number":
-			propAccessChain = `${path}[${prop}]`
-			break
+			return `${path}[${prop}]`
 		case "symbol":
-			propAccessChain = `${path}[${stringifySymbol(prop)}]`
-			break
-		default:
-			if (opts?.stringifyNonKey)
-				propAccessChain = `${path}[${opts.stringifyNonKey(prop as never)}]`
-			else {
-				// printed by its type, so stringifying a path needs no printer
-				throwParseError(
-					`${typeof prop} must be a PropertyKey or stringifyNonKey must be passed to options`
-				)
-			}
+			return `${path}[${(opts?.stringifySymbol ?? printSymbol)(prop)}]`
 	}
-	return propAccessChain
-}
+	// printed by its type, so stringifying a path needs no printer
+	return opts?.stringifyNonKey ?
+			`${path}[${opts.stringifyNonKey(prop)}]`
+		:	throwParseError(
+				`${typeof prop} must be a PropertyKey or stringifyNonKey must be passed to options`
+			)
+}) as never
 
-export const stringifyPath: StringifyPathFn = (path, ...opts) =>
-	path.reduce<string>(
-		(s, k) => appendStringifiedKey(s, k, ...(opts as any)),
-		""
-	)
+export const stringifyPath: StringifyPathFn = ((
+	path: array<unknown>,
+	opts?: StringifyPathOptions<unknown>
+) => {
+	let s = ""
+	for (const k of path) s = appendStringifiedKey(s, k, opts as never)
+	return s
+}) as never
 
 export class ReadonlyPath extends ReadonlyArray<PropertyKey> {
 	// alternate strategy for caching since the base object is frozen
