@@ -777,8 +777,19 @@ contextualize(() => {
 		).throws(writeIndiscriminableMorphMessage("$a3[]", "($x | $a3[])[]"))
 		attest(() =>
 			scope({
+				i1: [{ p2: ["a1", "=", () => ({})] }, "|", "a1"],
+				a1: { "p0?": "null | i1", "p2?": "null" }
+			}).export()
+		).throws(
+			writeIndiscriminableMorphMessage(
+				"{ p2: $a1 = Function(fn) }",
+				"{ p0?: $i1 | null, p2?: null }"
+			)
+		)
+		attest(() =>
+			scope({
 				// @ts-expect-error
-				i1: [{ p2: ["a1", "=", null] }, "|", "a1"],
+				i1: { p2: ["a1", "=", null] },
 				a1: { "p0?": "null | i1", "p2?": "null" }
 			}).export()
 		).throws("Default for p2 must be an object (was null)")

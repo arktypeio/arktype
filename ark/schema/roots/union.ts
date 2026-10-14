@@ -140,9 +140,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	// every case node discriminate creates, even for a discriminant it abandons
 	readonly caseNodes: BaseRoot[] = []
 
-	// discriminated on construction, since relating branches can throw a ParseError,
-	// e.g. for an index signature and a prop with disjoint values
-	discriminant = this.discriminate()
+	private _discriminant: Discriminant | null | undefined
+	// discriminated when first read, e.g. to compile, describe a miss or collect references
+	get discriminant(): Discriminant | null {
+		if (this._discriminant === undefined) {
+			// null while discriminating, which can read this union's references
+			this._discriminant = null
+			this._discriminant = this.discriminate()
+		}
+		return this._discriminant
+	}
 
 	private _discriminantCases: DiscriminantCases | undefined
 	get discriminantCases(): DiscriminantCases {
@@ -188,6 +195,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	override get referencedBesidesChildren(): readonly BaseNode[] {
+		// discriminating creates the case nodes
+		void this.discriminant
 		return this.caseNodes
 	}
 

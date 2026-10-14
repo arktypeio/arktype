@@ -294,6 +294,10 @@ A program's `configure()` call stays in place and configures `arktype/runtime`, 
 
 A Type is compiled the second time it's called or its `allows` is called, or when its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled and one it checks once is checked without compiling. A Type whose narrows or morphs read `ctx` is compiled the first time instead. A scope's exports are compiled the same way, so `@ark/schema`'s scope `precompilation` is undefined unless the scope is cyclic. A Type referencing an alias is still compiled where it's defined, so an error resolving the alias is thrown there.
 
+### Discriminate a union when it's first used
+
+A union finds its discriminant when it's compiled, checks data, describes a miss or has its references read, rather than when it's created, so unions a program defines but never uses don't pay for it. Where a scope has several definition errors, which is thrown first can change, and can differ between JIT and jitless, e.g. an indeterminate union of morphs before an invalid default it includes.
+
 ### Call narrows and morphs without a receiver when jitless
 
 A narrow's predicate was called with its node as `this` when jitless, and a Type whose morphs need no `ctx` called them with its morphs array as `this`. Both are now called as compiled code calls them, with `this` undefined.
