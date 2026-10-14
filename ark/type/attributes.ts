@@ -211,15 +211,15 @@ type distillArrayFromPostfix<
 		distillArrayFromPostfix<init, side, [_distill<last, side>, ...postfix]>
 	:	[...{ [i in keyof t]: _distill<t[i], side> }, ...postfix]
 
-type BuiltinTerminalObjectKind = Exclude<
-	arkPrototypes.NonDegenerateName,
-	"Array" | "Function"
->
-
 /** Objects we don't want to expand during inference like Date or Promise */
-type TerminallyInferredObject =
-	| arkPrototypes.instanceOf<BuiltinTerminalObjectKind>
-	| ArkEnv.prototypes
+type TerminallyInferredObject = BuiltinTerminalObject | ArkEnv.prototypes
+
+// one pass over the prototypes rather than filtering their names, then indexing them
+type BuiltinTerminalObject = {
+	[k in keyof arkPrototypes.instances]: k extends "Array" | "Function" ? never
+	: {} extends arkPrototypes.instances[k] ? never
+	: arkPrototypes.instances[k]
+}[keyof arkPrototypes.instances]
 
 export type inferPredicate<t, predicate> =
 	predicate extends (data: any, ...args: any[]) => data is infer narrowed ?
