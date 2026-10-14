@@ -82,8 +82,11 @@ export const intersectOrPipeNodes: InternalNodeIntersection<IntersectionContext>
 		if (isNode(result)) {
 			// if the result equals one of the operands, preserve its metadata by
 			// returning the original reference
-			if (l.equals(result)) result = l
-			else if (r.equals(result)) result = r
+			result =
+				$ark.sets!.disjointOf?.(result) ??
+				(l.equals(result) ? l
+				: r.equals(result) ? r
+				: result)
 		}
 
 		if (!cacheByR) cacheByL.set(l, (cacheByR = new WeakMap()))

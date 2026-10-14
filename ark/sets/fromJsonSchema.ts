@@ -6,6 +6,7 @@ import {
 	node,
 	rootSchema,
 	rootSchemaScope,
+	type BaseNode,
 	type BaseRoot,
 	type JsonSchema,
 	type NodeSchema,
@@ -24,7 +25,7 @@ import {
 // installs the engine, which reduces nodes as they're parsed
 import "./engine.ts"
 import { intersectNodesRoot } from "./intersections.ts"
-import { isNonArray } from "./roots/intersection.ts"
+import { isNonArray } from "./toJsonSchema.ts"
 
 interface ReadContext {
 	document: unknown
@@ -461,12 +462,24 @@ const basisOf = {
 } as const
 
 // pure, so a bundle that only installs the engine drops the reader
-const notArray = /* @__PURE__ */ cached(() =>
-	node("predicate", {
+const notArray = /* @__PURE__ */ cached(() => {
+	// no node can carry the predicate before this, so arktype's bundle needn't carry the rule
+	$ark.sets!.disjointOf = disjointFromArray
+	return node("predicate", {
 		predicate: isNonArray,
 		meta: { description: "not an array" }
 	})
-)
+})
+
+// sound only because an Array basis checks Array.isArray, so no value it allows is also not an array
+const disjointFromArray = (node: BaseNode): Disjoint | undefined => {
+	if (!node.hasKind("intersection")) return
+	const { proto, predicate } = node.inner
+	const nonArray = predicate?.find(node => node.predicate === isNonArray)
+	return proto?.proto === Array && nonArray ?
+			Disjoint.init("assignability", proto, nonArray)
+		:	undefined
+}
 
 const typeRoots = /* @__PURE__ */ cached(
 	(): Record<JsonSchema.TypeName, BaseRoot> => ({

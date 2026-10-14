@@ -23,6 +23,8 @@ export interface SetEngine {
 	discriminate(node: Union.Node): Discriminant | null
 	toJsonSchema(node: BaseRoot, opts: ToJsonSchema.Options): JsonSchema
 	toJsonSchemaRecurse(node: BaseRoot, ctx: ToJsonSchema.Context): JsonSchema
+	// proves an intersection empty where its constraints alone can't, installed by the reader whose nodes need it
+	disjointOf?(node: BaseNode): Disjoint | undefined
 }
 
 export type InternalNodeIntersection<ctx> = <

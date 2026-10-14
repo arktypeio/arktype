@@ -12,7 +12,9 @@ import {
 	type nodeOfKind
 } from "@ark/schema"
 import { flatMorph, hasKey, throwInternalError, type dict } from "@ark/util"
-import { isNonArray } from "./roots/intersection.ts"
+
+// JSON Schema's object type, which excludes exactly what an Array basis checks with Array.isArray
+export const isNonArray = (data: object): boolean => !Array.isArray(data)
 
 interface JsonSchemaContext extends ToJsonSchema.Context {
 	refs: BaseRoot[]

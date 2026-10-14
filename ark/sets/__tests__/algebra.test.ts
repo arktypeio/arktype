@@ -6,6 +6,7 @@ import {
 	isDisjoint,
 	isEqual,
 	isSubset,
+	parse,
 	union
 } from "arksets"
 
@@ -97,6 +98,13 @@ contextualize(() => {
 			)
 		).equals(true)
 		attest(isDisjoint({ minimum: 5 }, { maximum: 1 })).equals(false)
+		// a Root's own methods agree
+		const JsonObject = parse({ type: "object" })
+		attest(JsonObject.overlaps(rootSchema({ proto: Array }))).equals(false)
+		attest(JsonObject.overlaps(rootSchema({ proto: Date }))).equals(true)
+		attest(() => JsonObject.and(rootSchema({ proto: Array }))).throws.snap(
+			"ParseError: Intersection of Array and isNonArray results in an unsatisfiable type"
+		)
 	})
 
 	it("intersects to never if disjoint and unknown if empty", () => {
