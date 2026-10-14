@@ -566,7 +566,7 @@ A type whose range already excluded an infinite value, like `number.safe`, now r
 
 ### Remove the `clone` option
 
-Transforming no longer clones the input first, and never writes to it, except to a builtin arktype doesn't copy (e.g. a function, Promise, WeakMap, FormData, Blob or boxed primitive), which is transformed in place as before. A transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
+Transforming no longer clones the input first, and writes to it only to transform a builtin like a Date, Map or function, which is transformed in place. Any other transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
 
 ```ts
 const T = type({ a: "string.trim", b: { c: "string" } })

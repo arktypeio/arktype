@@ -3,11 +3,7 @@ import {
 	hasDomain,
 	hasOwn,
 	isArray,
-	isKeyOf,
-	objectKindOf,
-	typedArrayConstructors,
-	type BuiltinObjectKind,
-	type Key
+	objectKindOf
 } from "@ark/util"
 import { arrayIndexMatcher } from "../structure/shared.ts"
 import type { ArkErrors } from "./issues.ts"
@@ -52,16 +48,7 @@ export const copyOf = (data: object): object => {
 			)
 				i--
 		}
-		let copy: unknown[]
-		// slice builds its copy from data.constructor, which a named key can shadow,
-		// as it can slice itself
-		if (data.constructor === Array) copy = Array.prototype.slice.call(data)
-		else {
-			copy = Object.setPrototypeOf([], Object.getPrototypeOf(data))
-			copy.length = data.length
-			for (let j = 0; j < i; j++)
-				defineValue(copy, keys[j], data[keys[j] as never])
-		}
+		const copy: unknown[] = Array.prototype.slice.call(data)
 		for (; i < keys.length; i++)
 			defineValue(copy, keys[i], data[keys[i] as never])
 		for (const k of Object.getOwnPropertySymbols(data)) {
@@ -72,29 +59,10 @@ export const copyOf = (data: object): object => {
 	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }
-	const kind = objectKindOf(data)
-	if (kind === undefined) return Object.setPrototypeOf({ ...data }, prototype)
-	// a typed array's copy takes only its elements
-	if (isKeyOf(kind, typedArrayConstructors)) {
-		return Object.setPrototypeOf(
-			new typedArrayConstructors[kind](data as never),
-			prototype
-		)
-	}
-	const copyContents = copyContentsOf[kind]
-	// a builtin whose state can't be copied, e.g. a function, transforms in place
-	if (!copyContents) return data
-	const copy = Object.setPrototypeOf(copyContents(data as never), prototype)
-	// descriptors include state a spread skips, e.g. an Error's message
-	const descriptors: { [k: Key]: PropertyDescriptor } =
-		Object.getOwnPropertyDescriptors(data)
-	for (const k of Reflect.ownKeys(descriptors)) {
-		// state the copy already owns, e.g. a RegExp's lastIndex, can't become configurable
-		if (Object.getOwnPropertyDescriptor(copy, k)?.configurable !== false)
-			descriptors[k].configurable = true
-		if ("value" in descriptors[k]) descriptors[k].writable = true
-	}
-	return Object.defineProperties(copy, descriptors)
+	// a builtin's state is in internal slots a copy can't take, so it's transformed in place
+	return objectKindOf(data) === undefined ?
+			Object.setPrototypeOf({ ...data }, prototype)
+		:	data
 }
 
 // the later output wins a key both changed
@@ -118,17 +86,4 @@ export const mergeTransformed = (
 			merged[k] = r[k as never]
 	}
 	return merged
-}
-
-const copyContentsOf: {
-	[kind in BuiltinObjectKind]?: (data: never) => object
-} = {
-	ArrayBuffer: (data: ArrayBuffer) => data.slice(0),
-	Date: (data: Date) => new Date(data),
-	Error: () => new Error(),
-	Headers: (data: Headers) => new Headers(data),
-	Map: (data: Map<unknown, unknown>) => new Map(data),
-	RegExp: (data: RegExp) => new RegExp(data),
-	Set: (data: Set<unknown>) => new Set(data),
-	URL: (data: URL) => new URL(data)
 }

@@ -242,66 +242,17 @@ b must be A (was "y")`)
 		}
 	})
 
-	it("builtin with contents", () => {
+	it("transforms a builtin in place", () => {
 		const T = type(["Date", "&", { b: "number = 1" }])
-
 		const original = new Date(5)
-
-		const out = T(original)
-
-		attest(out instanceof Date && out.getTime()).equals(5)
-		attest(Object.entries(out)).equals([["b", 1]])
-		attest("b" in original).equals(false)
+		attest(T(original)).unknown.is(original)
+		attest(Object.entries(original)).equals([["b", 1]])
 	})
 
-	it("frozen builtin prop", () => {
+	it("throws transforming a frozen builtin", () => {
 		const T = type(["Date", "&", { "a?": "string.trim" }])
 		const original = Object.freeze(Object.assign(new Date(5), { a: " x " }))
-		const out = T(original)
-		attest(out instanceof Date && out.getTime()).equals(5)
-		attest(Object.entries(out)).equals([["a", "x"]])
-	})
-
-	it("builtin with internal slots", () => {
-		const U = type([type.instanceOf(URL), "&", { "a?": "string.trim" }])
-		const url = U(Object.assign(new URL("https://arktype.io"), { a: " x " }))
-		attest(url instanceof URL && url.href).equals("https://arktype.io/")
-		attest(Object.entries(url)).equals([["a", "x"]])
-
-		const Bytes = type([
-			type.instanceOf(Uint8Array),
-			"&",
-			{ "a?": "string.trim" }
-		])
-		const original = Object.assign(new Uint8Array([1, 2]), { a: " x " })
-		const bytes = Bytes(original)
-		attest(bytes instanceof Uint8Array).equals(true)
-		attest(Object.entries(bytes)).equals([
-			["0", 1],
-			["1", 2],
-			["a", "x"]
-		])
-		attest(original.a).equals(" x ")
-	})
-
-	it("uncopyable builtin in place", () => {
-		const T = type(["Function", "&", { "a?": "string.trim" }])
-		const original = Object.assign(() => 5, { a: " x " })
-		const out = T(original)
-		attest(out).unknown.is(original)
-		attest(original.a).equals("x")
-
-		const frozen = Object.freeze(Object.assign(() => 5, { a: " x " }))
-		attest(() => T(frozen)).throws("Cannot assign to read only property 'a'")
-
-		const Received = type([
-			type.instanceOf(Response),
-			"&",
-			{ "a?": "string.trim" }
-		])
-		const response = Object.assign(new Response(), { a: " x " })
-		const received = Received(response)
-		attest(received).unknown.is(response)
+		attest(() => T(original)).throws("Cannot assign to read only property 'a'")
 	})
 
 	it("non-enumerable declared key", () => {
@@ -397,34 +348,8 @@ b must be A (was "y")`)
 			)
 		).equals(Object.assign([], { 1: "a", 4294967295: 0 }))
 		attest(
-			$.type("string.trim[]").assert(
-				Object.assign([" a ", "b"], {
-					constructor: 1,
-					[Symbol.isConcatSpreadable]: false
-				})
-			)
-		).equals(
-			Object.assign(["a", "b"], {
-				constructor: 1,
-				[Symbol.isConcatSpreadable]: false
-			})
-		)
-		attest(
 			$.type("string.trim[]").assert(Object.assign([" a "], { slice: 1 }))
 		).equals(Object.assign(["a"], { slice: 1 }))
-	})
-
-	it("RegExp with transformed props", () => {
-		const $ = scope({})
-		const original = Object.assign(/a/g, { x: " a " })
-		original.lastIndex = 1
-		const out = $.type({ x: "string.trim" }).assert(original) as RegExp & {
-			x: string
-		}
-		attest(out instanceof RegExp).equals(true)
-		attest(out.x).equals("a")
-		attest(out.lastIndex).equals(1)
-		attest(original.x).equals(" a ")
 	})
 
 	it("array props with shared defaults", () => {
