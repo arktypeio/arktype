@@ -225,8 +225,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
+	// checking data uncompiled doesn't discriminate, as a union checked once needn't be
+	private get foundDiscriminant(): Discriminant | null {
+		return this._discriminant === undefined ? null : this.compiledDiscriminant
+	}
+
 	traverseAllows: TraverseAllows = (data, ctx) => {
-		const discriminant = this.compiledDiscriminant
+		const discriminant = this.foundDiscriminant
 		if (!discriminant) {
 			return this.branches.some(b =>
 				b.allowsRequiresTraversal ?
@@ -278,7 +283,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	traverseTransform: TraverseTransform = (data, ctx) => {
-		const discriminant = this.compiledDiscriminant
+		const discriminant = this.foundDiscriminant
 		if (discriminant) {
 			const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
 			const caseNode = discriminant.cases[k]
