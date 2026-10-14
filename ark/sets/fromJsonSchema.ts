@@ -22,6 +22,7 @@ import {
 	type dict
 } from "@ark/util"
 import { intersectNodesRoot } from "./intersections.ts"
+import { isNonArray } from "./roots/intersection.ts"
 
 interface ReadContext {
 	document: unknown
@@ -106,18 +107,8 @@ const resolveRef = (ref: string, ctx: ReadContext): unknown =>
 				:	throwParseError(writeUnresolvableRefMessage(ref))
 		}, ctx.document)
 
-// the algebra can't prove an array isn't a JSON Schema object, so their intersections are dropped
-export const intersectRoots = (l: BaseRoot, r: BaseRoot): BaseRoot => {
-	const result = intersectNodesRoot(l, r, rootSchemaScope).toNeverIfDisjoint()
-	return result.branches.some(isArrayObject) ?
-			unionOf(result.branches.filter(branch => !isArrayObject(branch)))
-		:	result
-}
-
-const isArrayObject = (branch: BaseRoot) =>
-	branch.hasKind("intersection") &&
-	branch.inner.proto?.proto === Array &&
-	branch.inner.predicate?.includes(notArray()) === true
+const intersectRoots = (l: BaseRoot, r: BaseRoot): BaseRoot =>
+	intersectNodesRoot(l, r, rootSchemaScope).toNeverIfDisjoint()
 
 const keywordReaders: KeywordReader[] = [
 	(o, pointer, ctx) =>
@@ -467,7 +458,7 @@ const basisOf = {
 
 const notArray = cached(() =>
 	node("predicate", {
-		predicate: (data: object) => !Array.isArray(data),
+		predicate: isNonArray,
 		meta: { description: "not an array" }
 	})
 )

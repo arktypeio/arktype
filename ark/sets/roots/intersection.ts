@@ -1,5 +1,7 @@
 import {
 	Disjoint,
+	type BaseNode,
+	type Proto,
 	type BaseRoot,
 	type Intersection,
 	type IntersectionContext,
@@ -50,11 +52,12 @@ export const intersection: setImplementationOf<Intersection.Declaration> = {
 					l
 					// given we've already precluded l being unknown, the result must
 					// be an intersection with the new basis result integrated
-				:	l.$.node(
+				:	(arrayDisjointOf(basis, l.inner) ??
+					l.$.node(
 						"intersection",
 						{ ...lInnerConstraints, [basis.kind]: basis },
 						{ prereduced: true }
-					)
+					))
 			)
 		})
 	}
@@ -81,6 +84,10 @@ const intersectIntersections = (
 		:	rBasis
 	if (basisResult instanceof Disjoint) return basisResult
 
+	const disjoint =
+		arrayDisjointOf(basisResult, l) ?? arrayDisjointOf(basisResult, r)
+	if (disjoint) return disjoint
+
 	if (basisResult) baseInner[basisResult.kind] = basisResult as never
 
 	return intersectConstraints({
@@ -91,4 +98,16 @@ const intersectIntersections = (
 		roots: [],
 		ctx
 	})
+}
+
+// JSON Schema's object type, which excludes exactly what an Array basis checks with Array.isArray
+export const isNonArray = (data: object): boolean => !Array.isArray(data)
+
+const arrayDisjointOf = (
+	basis: BaseNode | undefined,
+	inner: Intersection.Inner
+): Disjoint | undefined => {
+	if ((basis as Proto.Node | undefined)?.proto !== Array) return
+	const nonArray = inner.predicate?.find(node => node.predicate === isNonArray)
+	return nonArray && Disjoint.init("assignability", basis!, nonArray)
 }

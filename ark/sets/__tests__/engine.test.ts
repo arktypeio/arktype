@@ -7,7 +7,7 @@ import {
 	schemaScope,
 	writeDuplicateKeyMessage
 } from "@ark/schema"
-import { setEngine } from "arksets/internal"
+import { isNonArray, setEngine } from "arksets/internal"
 
 contextualize(() => {
 	// bootstrap with the engine installed, as when arksets is imported first
@@ -21,6 +21,16 @@ contextualize(() => {
 			$ark.sets = setEngine
 		}
 	}
+
+	it("proves a non-array object disjoint from Array", () => {
+		const NonArray = rootSchema({ domain: "object", predicate: [isNonArray] })
+		attest(NonArray.overlaps({ proto: Array })).equals(false)
+		attest(NonArray.overlaps({ proto: Array, minLength: 1 })).equals(false)
+		attest(() => rootSchema({ proto: Array, predicate: [isNonArray] })).throws(
+			"Intersection of Array and isNonArray results in an unsatisfiable type"
+		)
+		attest(NonArray.overlaps({ proto: Date })).equals(true)
+	})
 
 	it("installed on import", () => {
 		attest($ark.sets === setEngine).equals(true)
