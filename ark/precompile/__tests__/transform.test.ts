@@ -1420,7 +1420,7 @@ export const T = type("string[]")`,
 		const cached = new Precompiler(memoryHost({}), { runtime: "arktype" })
 		attest(
 			[
-				'import { discriminantJsonOf } from "arksets"',
+				'import { discriminate } from "arksets"',
 				'import { hasArkKind } from "@ark/schema"',
 				'import { ArkErrors } from "@ark/schema/runtime"'
 			].map(
@@ -1428,7 +1428,7 @@ export const T = type("string[]")`,
 					`${source} ${standalone.importsArk(source, "/helpers.ts")} ${cached.importsArk(source, "/helpers.ts")}`
 			)
 		).snap([
-			'import { discriminantJsonOf } from "arksets" true false',
+			'import { discriminate } from "arksets" true false',
 			'import { hasArkKind } from "@ark/schema" true false',
 			'import { ArkErrors } from "@ark/schema/runtime" false false'
 		])

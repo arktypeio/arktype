@@ -5,13 +5,13 @@ import {
 	type ToJsonSchema
 } from "@ark/schema"
 import { printable, throwParseError } from "@ark/util"
-// installs the engine, which nodes need to be reduced as they're parsed
-import "./engine.ts"
 import { isPlainObject, readJsonSchema } from "./fromJsonSchema.ts"
 
-export type { BaseRoot as Root }
+/** a set of values as an @ark/schema node, which every arktype Type is */
+export type Root = BaseRoot
 
-export type Schema = BaseRoot | StandardJSONSchemaV1 | JsonSchema.Input
+/** a Root (e.g. an arktype Type), a Standard JSON Schema (e.g. a zod schema) or a JSON Schema */
+export type Schema = Root | StandardJSONSchemaV1 | JsonSchema.Input
 
 export interface ParseOptions {
 	/** which side of a schema with morphs to read, its input by default */
@@ -25,7 +25,8 @@ const rootsByIo = {
 	out: new WeakMap<object, BaseRoot>()
 }
 
-export const parse = (schema: Schema, options?: ParseOptions): BaseRoot => {
+/** the Root a schema's values make up */
+export const parse = (schema: Schema, options?: ParseOptions): Root => {
 	const io = options?.io ?? "in"
 	if (schema instanceof BaseRoot)
 		return io === "in" ? schema.rawIn : schema.rawOut
@@ -36,6 +37,7 @@ export const parse = (schema: Schema, options?: ParseOptions): BaseRoot => {
 	return root
 }
 
+/** the JSON Schema of a schema's values */
 export const toJsonSchema = (
 	schema: Schema,
 	options?: ToJsonSchema.Options

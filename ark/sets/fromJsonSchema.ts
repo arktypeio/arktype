@@ -21,6 +21,8 @@ import {
 	type array,
 	type dict
 } from "@ark/util"
+// installs the engine, which reduces nodes as they're parsed
+import "./engine.ts"
 import { intersectNodesRoot } from "./intersections.ts"
 import { isNonArray } from "./roots/intersection.ts"
 

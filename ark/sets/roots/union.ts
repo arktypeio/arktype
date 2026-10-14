@@ -436,7 +436,7 @@ const viableOrderedCandidates = (
 	return viableCandidates
 }
 
-const discriminantCaseToNode = (
+export const discriminantCaseToNode = (
 	caseDiscriminant: CaseDiscriminant,
 	path: PropertyKey[],
 	$: BaseScope,

@@ -1293,18 +1293,18 @@ for (const k in T) console.log(k)`)
 
 		it("packages that read arktype's nodes outside a runtime island", () => {
 			attest(
-				diagnosticsOf(`import { discriminantJsonOf } from "arksets"
+				diagnosticsOf(`import { discriminate } from "arksets"
 import { ArkErrors, hasArkKind } from "@ark/schema"
 import { type } from "arktype"
 const T = type({ a: "0" }).or({ a: "1" })
 const check = (f: () => void) => f()
-check(() => console.log(discriminantJsonOf(T as never), hasArkKind(T, "root")))
+check(() => console.log(discriminate(T as never), hasArkKind(T, "root")))
 console.log(T({}) instanceof ArkErrors)
 // @ark-runtime
-const D = discriminantJsonOf(type({ a: "0" }).or({ a: "1" }).internal as never)`)
+const D = discriminate(type({ a: "0" }).or({ a: "1" }).internal as never)`)
 			).snap([
-				'/main.ts:6:25  `discriminantJsonOf` is used outside a runtime island\n  arksets reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
-				'/main.ts:6:57  `hasArkKind` is used outside a runtime island\n  @ark/schema reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".'
+				'/main.ts:6:25  `discriminate` is used outside a runtime island\n  arksets reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
+				'/main.ts:6:51  `hasArkKind` is used outside a runtime island\n  @ark/schema reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".'
 			])
 		})
 
