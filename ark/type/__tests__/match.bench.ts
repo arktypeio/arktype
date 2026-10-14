@@ -84,7 +84,7 @@ bench("record.in<t> define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([3378, "instantiations"])
+}).types([3386, "instantiations"])
 
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)

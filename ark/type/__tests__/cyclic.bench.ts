@@ -7,7 +7,7 @@ bench.baseline(() => type("never"))
 bench(
 	"cyclic 10 intersection",
 	() => scope(cyclic10).type("user&user2").infer
-).types([12448, "instantiations"])
+).types([12472, "instantiations"])
 
 bench("cyclic(10)", () => scope(cyclic10).export()).types([
 	6060,

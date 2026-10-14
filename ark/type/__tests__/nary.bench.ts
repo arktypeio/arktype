@@ -223,15 +223,15 @@ bench("pipe-chained(10)", () => {
 
 bench("fun(0)", () => {
 	type.fn(":", { a1: "1" })(() => ({ a1: 1 }))
-}).types([881, "instantiations"])
+}).types([885, "instantiations"])
 
 bench("fun(1, implicit)", () => {
 	type.fn({ a1: "1" })(a => a)
-}).types([980, "instantiations"])
+}).types([984, "instantiations"])
 
 bench("fun(1, explicit)", () => {
 	type.fn({ a1: "1" }, ":", { a2: "2" })(a => ({ ...a, a2: 2 }))
-}).types([1728, "instantiations"])
+}).types([1736, "instantiations"])
 
 bench("fun(2)", () => {
 	type.fn({ a1: "1" }, { a2: "2" }, ":", { a3: "3" })((a, b) => ({
@@ -239,7 +239,7 @@ bench("fun(2)", () => {
 		...b,
 		a3: 3
 	}))
-}).types([2636, "instantiations"])
+}).types([2648, "instantiations"])
 
 bench("fun(5)", () => {
 	type.fn(
@@ -251,7 +251,7 @@ bench("fun(5)", () => {
 		":",
 		{ a6: "6" }
 	)((a, b, c, d, e) => ({ ...a, ...b, ...c, ...d, ...e, a6: 6 }))
-}).types([5474, "instantiations"])
+}).types([5498, "instantiations"])
 
 bench("fun(10)", () => {
 	type.fn(
@@ -280,4 +280,4 @@ bench("fun(10)", () => {
 		...j,
 		a11: 11
 	}))
-}).types([10760, "instantiations"])
+}).types([10804, "instantiations"])

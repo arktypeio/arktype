@@ -68,8 +68,18 @@ type distilledSidesOf<t> =
 			{ [i: number]: distilledSidesOf<t[number]> }
 		:	{ [k in number | Exclude<keyof t, ArrayKey>]: distilledSidesOf<t[k]> }
 	: isSafelyMappable<t> extends true ?
-		{ [k in keyof t]-?: distilledSidesOf<t[k]> }
+		string extends keyof t ? indexedSidesOf<t>
+		: symbol extends keyof t ? indexedSidesOf<t>
+		: { [k in keyof t]-?: distilledSidesOf<t[k]> }
 	:	never
+
+// TypeScript relates a string or symbol index signature to the target's
+// without checking the keys it covers, so those are mapped to a named key
+type indexedSidesOf<t> = {
+	[k in keyof t as string extends k ? ""
+	: symbol extends k ? ""
+	: k]-?: distilledSidesOf<t[k]>
+}
 
 type ArrayKey = keyof unknown[] | `${number}`
 
@@ -127,15 +137,27 @@ type unwrapInput<t> =
 	:	t
 
 type inferredDefaultKeyOf<o> =
-	keyof o extends infer k ?
+	string extends keyof o ? keyof indexedDefaults<o>
+	: symbol extends keyof o ? keyof indexedDefaults<o>
+	: keyof o extends infer k ?
 		k extends keyof o ?
-			unwrapInput<o[k]> extends Default<infer t> ?
-				[t] extends [anyOrNever] ?
-					never
-				:	k
+			isInferredDefault<o[k]> extends true ?
+				k
 			:	never
 		:	never
 	:	never
+
+// mapped over o's keys, since keyof o absorbs the keys an index signature covers
+type indexedDefaults<o> = {
+	[k in keyof o as isInferredDefault<o[k]> extends true ? k : never]: 0
+}
+
+type isInferredDefault<v> =
+	unwrapInput<v> extends Default<infer t> ?
+		[t] extends [anyOrNever] ?
+			false
+		:	true
+	:	false
 
 type distillArray<t extends array, side extends distill.Side> =
 	// fast path for non-tuple arrays with no extra props

@@ -189,11 +189,29 @@ other must be a string (was a bigint)`)
 
 	it("parses a declared key its index signature also checks", () => {
 		const T = type({ a: "string.numeric.parse", "[string]": "string | number" })
-		attest(T({ a: "1", b: "b" })).equals({ a: 1, b: "b" } as never)
+		attest<{ [x: string]: string | number; a: string }>(T.inferIn)
+		attest<{ [x: string]: string | number; a: number }>(T.infer)
+		attest(T({ a: "1", b: "b" })).equals({ a: 1, b: "b" })
 		attest(T({ a: "one" }).toString()).snap(
 			'a must be a well-formed numeric string (was "one")'
 		)
 		attest(T({ b: "b" }).toString()).snap("a must be a string (was missing)")
+	})
+
+	it("defaults a declared key its index signature also checks", () => {
+		const T = type({ a: "number = 5", "[string]": "number" })
+		attest<{ [x: string]: number; a?: number }>(T.inferIn)
+		attest<{ [x: string]: number; a: number }>(T.infer)
+		attest(T({ b: 1 })).snap({ b: 1, a: 5 })
+	})
+
+	it("parses a symbol key its index signature also checks", () => {
+		const s = Symbol()
+		const T = type({
+			[s]: "string.numeric.parse",
+			"[symbol]": "string | number"
+		})
+		attest<{ [x: symbol]: string | number; [s]: number }>(T.infer)
 	})
 
 	it("fail-fast index branch", () => {
