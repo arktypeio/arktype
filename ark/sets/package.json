@@ -48,6 +48,9 @@
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*"
 	},
+	"devDependencies": {
+		"ajv": "8.20.0"
+	},
 	"publishConfig": {
 		"access": "public"
 	}

@@ -443,6 +443,10 @@ importers:
       '@ark/util':
         specifier: workspace:*
         version: link:../util
+    devDependencies:
+      ajv:
+        specifier: 8.20.0
+        version: 8.20.0
 
   ark/themes:
     devDependencies:

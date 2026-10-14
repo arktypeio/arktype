@@ -72,6 +72,9 @@ export declare namespace JsonSchema {
 
 	export type Branch = boolean | JsonSchema
 
+	// any JSON Schema document, so the schemas other libraries type more loosely fit
+	export type Input = Branch | object
+
 	export type RefString = `#/$defs/${string}`
 
 	// extending Meta and including "type" as an optional prop are important for
