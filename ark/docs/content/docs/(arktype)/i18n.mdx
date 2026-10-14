@@ -34,6 +34,8 @@ if (out instanceof type.errors) {
 
 Unlike other [global config](/docs/configuration#levels), a locale also applies to Types parsed before it is configured.
 
+ArkType writes errors only in `en` unless its renderer of other locales is installed, so a bundle that doesn't need it leaves it out. Importing a shipped locale like `arktype/locales/de` installs it. A locale you write yourself, or a [function](#switching-locales), needs `import "arktype/i18n"` alongside it, unless a shipped locale is imported too. Without it, creating a Type with that locale configured throws, as does `toLocaleString` or `messageIn` with that locale.
+
 Only an error's message and its parts, `expected`, `actual` and `problem`, are localized. A Type's `description` and `expression`, JSON Schema, an error's `description` and `ParseError`s stay in English.
 
 ### Labels
@@ -77,6 +79,7 @@ On a server, the function can read the locale of the current request:
 // ---cut---
 import type { Locale } from "arktype"
 import { configure } from "arktype/config"
+import "arktype/i18n"
 import { AsyncLocalStorage } from "node:async_hooks"
 
 export const requestLocale = new AsyncLocalStorage<Locale>()

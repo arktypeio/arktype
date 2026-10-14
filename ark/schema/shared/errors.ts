@@ -13,7 +13,7 @@ import {
 	type propwiseXor,
 	type show
 } from "@ark/util"
-import type { ResolvedConfig } from "../config.ts"
+import type { ArkSchemaConfig, ResolvedConfig } from "../config.ts"
 import type {
 	NodeErrorContextsByKind,
 	Prerequisite,
@@ -530,10 +530,12 @@ export const writeText = (
 		typeof message === "function" ? message(error as never, locale) : message
 }
 
-// registered by arktype, so a standalone runtime ships without its locales
+// registered by arktype/i18n, so arktype's errors are written only in en unless it's imported
 export interface LocaleRenderer {
 	/** the locale errors.ts writes itself */
-	en: Locale
+	readonly en: Locale
+	/** the locale a configured locale resolves to, en if it's a function */
+	configure: (locale: ArkSchemaConfig["locale"], base: ResolvedConfig) => Locale
 	/** the locale errors are written in when they are first read */
 	select: (config: ResolvedConfig) => Locale
 	write: (error: ArkError, config: ResolvedConfig, locale: Locale) => void
@@ -543,6 +545,21 @@ let renderer: LocaleRenderer | undefined
 
 export const registerLocaleRenderer = (registered: LocaleRenderer): void => {
 	renderer = registered
+}
+
+/** the config of every node kind and error code, once a config has resolved */
+export let defaultConfig: ResolvedConfig
+
+export const configureLocale = (
+	locale: ArkSchemaConfig["locale"],
+	base: ResolvedConfig
+): Locale => {
+	defaultConfig = base
+	return (
+		renderer ? renderer.configure(locale, base)
+		: locale === undefined || locale === base.locale ? base.locale
+		: throwError(unrenderedLocaleMessage)
+	)
 }
 
 const writtenIn = (error: ArkError, locale: Locale): ArkError => {
@@ -816,7 +833,7 @@ export const configureAfterTypeMessage =
 export type configureAfterTypeMessage = typeof configureAfterTypeMessage
 
 export const unrenderedLocaleMessage =
-	"a standalone validator's errors can only be written in en, since writing another locale requires arktype"
+	'errors can be written in a locale other than en only by arktype, after import "arktype/i18n"'
 
 export type unrenderedLocaleMessage = typeof unrenderedLocaleMessage
 

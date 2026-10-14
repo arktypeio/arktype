@@ -7,18 +7,16 @@ import {
 	printable
 } from "@ark/util"
 import type { MissingBasis, MissingValue } from "../structure/required.ts"
-import type {
-	ActualContext,
-	ArkError,
-	ArkErrorCode,
-	ExpectedContext,
-	getAssociatedDataForError,
-	MessageContext,
-	ProblemContext
+import {
+	defaultConfig,
+	type ActualContext,
+	type ArkError,
+	type ArkErrorCode,
+	type ExpectedContext,
+	type getAssociatedDataForError,
+	type MessageContext,
+	type ProblemContext
 } from "./errors.ts"
-import { defaultConfig } from "./render.ts"
-
-export { normalizeLocale } from "./render.ts"
 
 export type PluralCategory = "zero" | "one" | "two" | "few" | "many" | "other"
 

@@ -109,6 +109,18 @@ Errors carry what a locale writes from: a `required` error's `missing` and `valu
 
 Descriptions, expressions, JSON Schema and `ParseError`s stay in English.
 
+`arktype` writes errors only in `en` unless its renderer of other locales is installed, which keeps it out of a bundle that doesn't need it. Importing `arktype/locales/de`, `arktype/locales/en` or `arktype/i18n` installs it. A locale you write yourself, or a function, needs one of them:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import "arktype/i18n"
+import { fr } from "./fr.ts"
+
+configure({ locale: fr })
+```
+
+Without it, creating a Type with that locale configured throws, as does `toLocaleString` or `messageIn` with that locale.
+
 https://github.com/arktypeio/arktype/issues/1498
 
 ### Give undeclared keys the `undeclared` code

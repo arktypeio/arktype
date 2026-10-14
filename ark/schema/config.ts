@@ -14,6 +14,7 @@ import type { BaseScope } from "./scope.ts"
 import type { TypeMeta } from "./shared/declare.ts"
 import {
 	configureAfterTypeMessage,
+	configureLocale,
 	type ActualConfig,
 	type ArkErrorCode,
 	type ArkErrors,
@@ -28,7 +29,6 @@ import {
 } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
-import { configureLocale } from "./shared/render.ts"
 import type { SetEngine } from "./shared/sets.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"

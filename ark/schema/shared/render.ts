@@ -1,6 +1,7 @@
 import { omit, stringifyPath, throwError } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import {
+	defaultConfig,
 	registerLocaleRenderer,
 	suppliedText,
 	unrenderedLocaleMessage,
@@ -9,15 +10,13 @@ import {
 	type ArkError
 } from "./errors.ts"
 import { keywordWriterOf, writeKeywordExpected, type Locale } from "./locale.ts"
+import { $ark } from "./registry.ts"
 
 type LocaleSelector = () => Locale | undefined
 
 type ErrorSlot = "expected" | "actual" | "problem" | "message"
 
 type SlotConfig = string | ((...args: never[]) => string)
-
-/** the config of every node kind and error code, once a config has resolved */
-export let defaultConfig: ResolvedConfig
 
 /** defaultConfig's locale */
 export let defaultLocale: Locale.Complete
@@ -32,11 +31,10 @@ let configured: Locale
  * sets the locale errors are written in from the one configure was last
  * passed, returning it if it isn't a function
  */
-export const configureLocale = (
+const configureLocale = (
 	locale: Locale | LocaleSelector | undefined,
 	base: ResolvedConfig
 ): Locale => {
-	defaultConfig = base
 	defaultLocale = base.locale as Locale.Complete
 	if (typeof locale === "function") {
 		selector = locale
@@ -45,7 +43,6 @@ export const configureLocale = (
 		selector = undefined
 		configured = locale === undefined ? defaultLocale : normalizeLocale(locale)
 	}
-	registerLocaleRenderer({ en: defaultLocale, select, write })
 	return configured
 }
 
@@ -274,3 +271,15 @@ const completeFrom = (en: Locale, locale: Locale): Locale => {
 	}
 	return (completed as Locale | undefined) ?? locale
 }
+
+registerLocaleRenderer({
+	get en() {
+		return defaultLocale
+	},
+	configure: configureLocale,
+	select,
+	write
+})
+
+// arktype resolves its config when its first Type is created, which can precede this module
+if ($ark.resolvedConfig) configureLocale($ark.config.locale, $ark.defaultConfig)
