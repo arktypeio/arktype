@@ -518,9 +518,14 @@ export const writeError = (
 	config: ResolvedConfig,
 	locale: Locale
 ): void => {
-	if (error.code === "union" || error.code === "intersection")
-		for (const e of error.errors) writeError(e, config, locale)
 	error.propString ??= stringifyPath(error.path)
+	if (error.code === "union" || error.code === "intersection") {
+		for (const e of error.errors) {
+			// its errors usually fail at its own path, whose string is then written once
+			if (pathEquals(e.path, error.path)) e.propString ??= error.propString
+			writeError(e, config, locale)
+		}
+	}
 	if (renderer && locale !== renderer.en) renderer.write(error, config, locale)
 	else writeText(error, config, locale)
 }
