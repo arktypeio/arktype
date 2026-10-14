@@ -99,16 +99,19 @@ A validator and its members are frozen, so a program writing to one throws in st
 
 `config: false` says the program never calls `configure()`, so the build fails wherever it does, and a validator neither fixes the configuration as it's created nor reads the configured `onFail`. A library calling `configure()` as the program runs is then neither caught nor applied.
 
+`lazy: false` creates each validator as the module defining it loads, where it imports arktype, rather than where a site first reads it. An error creating one then throws on import, as one created before `configure()` runs does where the module imports arktype before the config module. A module an import cycle can reach before it loads still creates them as they're read.
+
 What each option saves of the bundles arktype benchmarks, minified and gzipped, in bytes:
 
-| option                            | gives up                                | login    | moltar   | shop     |
-| --------------------------------- | --------------------------------------- | -------- | -------- | -------- |
-| `members: { assert: false }`      | `assert`                                | 57 / 19  | 57 / 18  | 51 / 19  |
-| `members: { meta: false }`        | `meta`                                  | 75 / 31  | 75 / 29  | 271 / 38 |
-| `members: { "~standard": false }` | `~standard`                             | 123 / 53 | 123 / 56 | 115 / 49 |
-| `members: { methods: false }`     | `traverse()`, `from()` and `toString()` | 235 / 88 | 235 / 93 | 63 / -14 |
-| `freeze: false`                   | validators and their members frozen     | 29 / 8   | 29 / 9   | 21 / 2   |
-| `config: false`                   | calling `configure()`                   | 98 / 36  | 98 / 38  | 195 / 51 |
+| option                            | gives up                                   | login    | moltar   | shop     |
+| --------------------------------- | ------------------------------------------ | -------- | -------- | -------- |
+| `members: { assert: false }`      | `assert`                                   | 57 / 19  | 57 / 18  | 51 / 19  |
+| `members: { meta: false }`        | `meta`                                     | 75 / 31  | 75 / 29  | 271 / 38 |
+| `members: { "~standard": false }` | `~standard`                                | 123 / 53 | 123 / 56 | 115 / 49 |
+| `members: { methods: false }`     | `traverse()`, `from()` and `toString()`    | 235 / 88 | 235 / 93 | 63 / -14 |
+| `freeze: false`                   | validators and their members frozen        | 29 / 8   | 29 / 9   | 21 / 2   |
+| `config: false`                   | calling `configure()`                      | 98 / 36  | 98 / 38  | 195 / 51 |
+| `lazy: false`                     | creating a validator where it's first read | 16 / 9   | 16 / 8   | 292 / 96 |
 
 ## Configuration
 

@@ -220,6 +220,8 @@ export interface StandaloneOptions {
 	errors?: "all" | "first" | undefined
 	// false leaves each validator and its members unfrozen
 	freeze?: boolean | undefined
+	// false creates each validator as its module is evaluated, rather than at its first read
+	lazy?: boolean | undefined
 	// declares what a site calls as functions, for a module an import cycle can reach before its artifact is evaluated
 	hoisted?: boolean | undefined
 }
@@ -230,6 +232,8 @@ interface Baking {
 	firstIssue: boolean
 	freezes: boolean
 	readsConfig: boolean
+	// a module an import cycle can reach before it's evaluated creates at the first read either way
+	createsLazily: boolean
 	hoisted: boolean
 	// writes the shortest forms rather than those V8 compiles and runs fastest as the artifact loads
 	shortest: boolean
@@ -353,6 +357,7 @@ const writeArtifact = (
 		firstIssue: opts.errors === "first",
 		freezes: opts.freeze !== false,
 		readsConfig: configured !== false,
+		createsLazily: opts.lazy !== false || opts.hoisted === true,
 		hoisted: opts.hoisted === true,
 		shortest: false
 	}
@@ -552,7 +557,9 @@ const writeCreations = (
 		}
 		for (const [position, i] of creation.indices.entries()) {
 			reads[names[i]] = [
-				`(created${index} ??= create${index}())`,
+				baking.createsLazily ?
+					`(created${index} ??= create${index}())`
+				:	`created${index}`,
 				creation.indices.length > 1 ? position : undefined
 			]
 		}
@@ -1093,9 +1100,12 @@ export class StandaloneArtifact {
 			:	[this.declarations.statements.join("\n"), this.modules.join("\n")]),
 			`return ${values.length === 1 ? values[0] : `[${values.join(", ")}]`}`
 		]
-		return `var created${index}
+		const body = statements.filter(statement => statement).join("\n\n")
+		return this.baking.createsLazily ?
+				`var created${index}
 
-${writeFunction(this.baking.hoisted, `create${index}`, "", statements.filter(statement => statement).join("\n\n"))}`
+${writeFunction(this.baking.hoisted, `create${index}`, "", body)}`
+			:	`const created${index} = /* @__PURE__ */ (() => {\n${body}\n})()`
 	}
 
 	// each call creates its validator from the holes and inputs the artifact received, so it declares everything the validator holds

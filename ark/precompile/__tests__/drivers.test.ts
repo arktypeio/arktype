@@ -156,30 +156,38 @@ contextualize(() => {
 		}).timeout(60000)
 
 		it("import cycle", () => {
-			attest(node(["main.ts"], {}, cycle).stdout).equals(runPlain(cycle))
-			attest(
-				node(
-					["main.ts"],
-					{ members: { expression: true, json: true } },
-					cycleFirst
-				).stdout
-			).equals(runPlain(cycleFirst))
-			// Node's type stripping keeps an import only a type reads, which closes the cycle
-			attest(node(["main.ts"], {}, cycleErased).stdout).equals(
-				runPlain(cycleErased)
-			)
-			attest(
-				node(["main.ts"], { members: { json: true } }, cycleArrow).stdout
-			).equals(runPlain(cycleArrow))
-			// each module logs as it runs, so an import the build adds can't run one earlier unseen
-			attest(
-				node(["main.ts"], { members: { expression: true } }, cycleOrder).stdout
-			).equals(runPlain(cycleOrder))
-			// a fold run once what it reads is set, before the statement setting it ends
-			attest(
-				node(["main.ts"], { members: { expression: true } }, setInStep).stdout
-			).equals(runPlain(setInStep))
-		}).timeout(60000)
+			// a module the cycle reaches before it loads creates its validators as they're read, even where the build isn't lazy
+			for (const lazy of [undefined, false]) {
+				attest(node(["main.ts"], { lazy }, cycle).stdout).equals(
+					runPlain(cycle)
+				)
+				attest(
+					node(
+						["main.ts"],
+						{ members: { expression: true, json: true }, lazy },
+						cycleFirst
+					).stdout
+				).equals(runPlain(cycleFirst))
+				// Node's type stripping keeps an import only a type reads, which closes the cycle
+				attest(node(["main.ts"], { lazy }, cycleErased).stdout).equals(
+					runPlain(cycleErased)
+				)
+				attest(
+					node(["main.ts"], { members: { json: true }, lazy }, cycleArrow)
+						.stdout
+				).equals(runPlain(cycleArrow))
+				// each module logs as it runs, so an import the build adds can't run one earlier unseen
+				attest(
+					node(["main.ts"], { members: { expression: true }, lazy }, cycleOrder)
+						.stdout
+				).equals(runPlain(cycleOrder))
+				// a fold run once what it reads is set, before the statement setting it ends
+				attest(
+					node(["main.ts"], { members: { expression: true }, lazy }, setInStep)
+						.stdout
+				).equals(runPlain(setInStep))
+			}
+		}).timeout(120000)
 
 		it("serves the modules a standalone module imports", () => {
 			const observer = `import { registerHooks } from "node:module"

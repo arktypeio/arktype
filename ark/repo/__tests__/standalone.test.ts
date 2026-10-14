@@ -1286,6 +1286,25 @@ config.onUndeclaredKey = "reject"`
 		attest(() => artifact.configure(config)).throws(reconfiguredMessage)
 	})
 
+	it("creates its validators as it loads where its build isn't lazy", async () => {
+		attest(
+			await importCode(
+				bundle(
+					precompileStandalone(
+						{ T: type("string") },
+						{
+							configured: { fingerprint: fingerprintOf({}), path: "main.ts" },
+							lazy: false
+						}
+					).code
+				).js
+			).then(
+				() => "",
+				(e: Error) => e.message
+			)
+		).equals(writeCreatedBeforeConfigureMessage("main.ts"))
+	})
+
 	it("fixes the configuration where a Scope, Module or Generic is first read", async () => {
 		const exports = {
 			S: scope({ a: "string" }),

@@ -1385,6 +1385,16 @@ console.log(values.map(v => (v as any).from))`,
 					"config: false with runtime: arktype",
 					{ runtime: "arktype", config: false },
 					writeArktypeRuntimeOptionMessage("config: false")
+				],
+				[
+					"lazy that isn't a boolean",
+					{ lazy: "no" as never },
+					writeOptionValueMessage("lazy", '"no"', "a boolean")
+				],
+				[
+					"lazy with runtime: arktype, though it's the default",
+					{ runtime: "arktype", lazy: true },
+					writeArktypeRuntimeOptionMessage("lazy")
 				]
 			]
 			for (const [name, opts, message] of refused) {

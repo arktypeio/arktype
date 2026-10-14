@@ -129,6 +129,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	errors?: "all" | "first" | undefined
 	// false leaves standalone validators and their members unfrozen
 	freeze?: boolean | undefined
+	// false creates standalone validators as their modules load
+	lazy?: boolean | undefined
 	// create each site with arktype too, from the same holes, and throw where its validator observes anything else
 	shadow?: boolean | undefined
 }
@@ -315,6 +317,7 @@ export class Precompiler {
 	lackedMembers: ReadonlySet<string>
 	errors: "all" | "first" | undefined
 	freeze: boolean
+	lazy: boolean
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
@@ -357,6 +360,7 @@ export class Precompiler {
 		this.members = opts?.members ?? {}
 		this.errors = opts?.errors
 		this.freeze = opts?.freeze !== false
+		this.lazy = opts?.lazy !== false
 		if (
 			opts?.members !== undefined &&
 			objectKindOrDomainOf(opts.members) !== "object"
@@ -1244,6 +1248,7 @@ export class Precompiler {
 						members: this.members,
 						errors: this.errors,
 						freeze: this.freeze,
+						lazy: this.lazy,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module)
 					},
@@ -3531,7 +3536,7 @@ export const writeUnknownMemberMessage = <member extends string>(
 export type writeUnknownMemberMessage<member extends string> =
 	`members has ${member}, which isn't one of ${string}`
 
-const booleanOptions = ["freeze"] as const
+const booleanOptions = ["freeze", "lazy"] as const
 
 // the options choosing what a standalone build writes, which runtime: "arktype" doesn't take
 const standaloneOptions = ["members", ...booleanOptions] as const

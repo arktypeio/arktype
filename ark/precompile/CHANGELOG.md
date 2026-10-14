@@ -16,6 +16,14 @@ precompile.vite({ declare: true })
 
 It needs the compiler API of TypeScript 5.5 to 6 from the optional `typescript` peer, which a TypeScript 7 project installs as `typescript-6`.
 
+### Create standalone validators as their modules load with `lazy: false`
+
+A standalone validator is created where a site first reads it. `lazy: false` creates each as the module defining it loads, so an error creating one throws on import.
+
+```ts
+precompile.vite({ lazy: false })
+```
+
 ### Say the program never configures arktype with `config: false`
 
 `config: false` says the program never calls `configure()`, so the build fails wherever it does, and a standalone validator neither fixes the configuration as it's created nor reads the configured `onFail`.
