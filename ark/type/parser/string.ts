@@ -1,4 +1,5 @@
 import type {
+	arkKind,
 	BaseParseContext,
 	GenericAst,
 	resolvableReferenceIn
@@ -58,11 +59,49 @@ export type parseString<def extends string, $, args> =
 					writeInvalidGenericArgCountMessage<def, $[def]["names"], []>
 				>
 		:	resolutionToAst<def, $[def]>
+	: resolveAmbient<def, $> extends [unknown] ?
+		parseAmbientReference<def, def, resolveAmbient<def, $>[0], $, args>
 	: def extends `${infer child}[]` ?
-		child extends keyof $ ?
-			[resolutionToAst<child, $[child]>, "[]"]
+		child extends keyof $ ? [resolutionToAst<child, $[child]>, "[]"]
+		: resolveAmbient<child, $> extends [unknown] ?
+			parseAmbientReference<def, child, resolveAmbient<child, $>[0], $, args>
 		:	fullStringParse<s.initialize<def>, $, args>
 	:	fullStringParse<s.initialize<def>, $, args>
+
+// wrapping the lookup keeps a generic def from being narrowed to each keyword
+type resolveAmbient<reference, $> =
+	[reference] extends [keyof ArkAmbient.$] ? [ArkAmbient.$[reference]]
+	: reference extends `${string}.${string}` ?
+		reference extends `${infer submodule}.${infer name}` ?
+			[submodule] extends [keyof $] ? null
+			: [submodule] extends [keyof ArkAmbient.$] ?
+				resolveSubmodule<ArkAmbient.$[submodule], name>
+			:	null
+		:	null
+	:	null
+
+type resolveSubmodule<submodule, reference> =
+	submodule extends { [arkKind]: "module" } ?
+		[reference] extends [keyof submodule] ? [submodule[reference]]
+		: reference extends `${infer nested}.${infer name}` ?
+			[nested] extends [keyof submodule] ?
+				resolveSubmodule<submodule[nested], name>
+			:	null
+		:	null
+	:	null
+
+type parseAmbientReference<
+	def extends string,
+	reference extends string,
+	resolution,
+	$,
+	args
+> =
+	[reference] extends [keyof args] ? fullStringParse<s.initialize<def>, $, args>
+	: [resolution] extends [GenericAst] ?
+		fullStringParse<s.initialize<def>, $, args>
+	: def extends reference ? resolutionToAst<reference, resolution>
+	: [resolutionToAst<reference, resolution>, "[]"]
 
 export type inferString<def extends string, $, args> = inferAstRoot<
 	parseString<def, $, args>,
