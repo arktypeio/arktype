@@ -24,7 +24,7 @@ bench("number", () => type("-98765.4321")).types([240, "instantiations"])
 
 bench("bigint", () => type("-987654321n")).types([230, "instantiations"])
 
-bench("object", () => type({ foo: "string" })).types([409, "instantiations"])
+bench("object", () => type({ foo: "string" })).types([341, "instantiations"])
 
 bench("union", () =>
 	// Union is automatically discriminated using shallow or deep keys
@@ -39,4 +39,4 @@ bench("union", () =>
 		.or({
 			kind: "'pleb'"
 		})
-).types([2424, "instantiations"])
+).types([2366, "instantiations"])

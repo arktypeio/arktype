@@ -16,15 +16,15 @@ bench.baseline(() => {
 
 bench("or(2)", () => {
 	type.or({ a1: "1" }, { a2: "2" })
-}).types([726, "instantiations"])
+}).types([604, "instantiations"])
 
 bench("or-chained(2)", () => {
 	type.or({ a1: "1" }).or({ a2: "2" })
-}).types([1389, "instantiations"])
+}).types([1243, "instantiations"])
 
 bench("or(5)", () => {
 	type.or({ a1: "1" }, { a2: "2" }, { a3: "3" }, { a4: "4" }, { a5: "5" })
-}).types([3136, "instantiations"])
+}).types([2837, "instantiations"])
 
 bench("or-chained(5)", () => {
 	type
@@ -33,7 +33,7 @@ bench("or-chained(5)", () => {
 		.or({ a3: "3" })
 		.or({ a4: "4" })
 		.or({ a5: "5" })
-}).types([3858, "instantiations"])
+}).types([3319, "instantiations"])
 
 bench("or(10)", () => {
 	type.or(
@@ -48,7 +48,7 @@ bench("or(10)", () => {
 		{ a9: "9" },
 		{ a10: "10" }
 	)
-}).types([6231, "instantiations"])
+}).types([5637, "instantiations"])
 
 bench("or-chained(10)", () => {
 	type
@@ -62,19 +62,19 @@ bench("or-chained(10)", () => {
 		.or({ a8: "8" })
 		.or({ a9: "9" })
 		.or({ a10: "10" })
-}).types([8933, "instantiations"])
+}).types([7259, "instantiations"])
 
 bench("and(2)", () => {
 	type.and({ a1: "1" }, { a2: "2" })
-}).types([948, "instantiations"])
+}).types([768, "instantiations"])
 
 bench("and-chained(2)", () => {
 	type.and({ a1: "1" }).and({ a2: "2" })
-}).types([1688, "instantiations"])
+}).types([1481, "instantiations"])
 
 bench("and(5)", () => {
 	type.and({ a1: "1" }, { a2: "2" }, { a3: "3" }, { a4: "4" }, { a5: "5" })
-}).types([5081, "instantiations"])
+}).types([4373, "instantiations"])
 
 bench("and-chained(5)", () => {
 	type
@@ -83,7 +83,7 @@ bench("and-chained(5)", () => {
 		.and({ a3: "3" })
 		.and({ a4: "4" })
 		.and({ a5: "5" })
-}).types([5564, "instantiations"])
+}).types([4628, "instantiations"])
 
 bench("and(10)", () => {
 	const t = type.and(
@@ -99,7 +99,7 @@ bench("and(10)", () => {
 		{ a10: "10" }
 	)
 	// ⛳ Result: 17760 instantiations (under baseline by 98.90%)!
-}).types([12366, "instantiations"])
+}).types([10263, "instantiations"])
 
 bench("and-chained(10)", () => {
 	type
@@ -113,19 +113,19 @@ bench("and-chained(10)", () => {
 		.and({ a8: "8" })
 		.and({ a9: "9" })
 		.and({ a10: "10" })
-}).types([14744, "instantiations"])
+}).types([11573, "instantiations"])
 
 bench("merge(2)", () => {
 	type.merge({ a1: "1" }, { a2: "2" })
-}).types([799, "instantiations"])
+}).types([661, "instantiations"])
 
 bench("merge-chained(2)", () => {
 	type.merge({ a1: "1" }).merge({ a2: "2" })
-}).types([1414, "instantiations"])
+}).types([1273, "instantiations"])
 
 bench("merge(5)", () => {
 	type.merge({ a1: "1" }, { a2: "2" }, { a3: "3" }, { a4: "4" }, { a5: "5" })
-}).types([3594, "instantiations"])
+}).types([3249, "instantiations"])
 
 bench("merge-chained(5)", () => {
 	type
@@ -134,7 +134,7 @@ bench("merge-chained(5)", () => {
 		.merge({ a3: "3" })
 		.merge({ a4: "4" })
 		.merge({ a5: "5" })
-}).types([3832, "instantiations"])
+}).types([3376, "instantiations"])
 
 bench("merge(10)", () => {
 	type.merge(
@@ -149,7 +149,7 @@ bench("merge(10)", () => {
 		{ a9: "9" },
 		{ a10: "10" }
 	)
-}).types([7364, "instantiations"])
+}).types([6674, "instantiations"])
 
 bench("merge-chained(10)", () => {
 	type
@@ -163,7 +163,7 @@ bench("merge-chained(10)", () => {
 		.merge({ a8: "8" })
 		.merge({ a9: "9" })
 		.merge({ a10: "10" })
-}).types([8662, "instantiations"])
+}).types([7381, "instantiations"])
 
 bench("pipe(2)", () => {
 	type.pipe(type.unit("a"), s => `${s}b` as const)
@@ -223,15 +223,15 @@ bench("pipe-chained(10)", () => {
 
 bench("fun(0)", () => {
 	type.fn(":", { a1: "1" })(() => ({ a1: 1 }))
-}).types([718, "instantiations"])
+}).types([630, "instantiations"])
 
 bench("fun(1, implicit)", () => {
 	type.fn({ a1: "1" })(a => a)
-}).types([820, "instantiations"])
+}).types([721, "instantiations"])
 
 bench("fun(1, explicit)", () => {
 	type.fn({ a1: "1" }, ":", { a2: "2" })(a => ({ ...a, a2: 2 }))
-}).types([1397, "instantiations"])
+}).types([1207, "instantiations"])
 
 bench("fun(2)", () => {
 	type.fn({ a1: "1" }, { a2: "2" }, ":", { a3: "3" })((a, b) => ({
@@ -239,7 +239,7 @@ bench("fun(2)", () => {
 		...b,
 		a3: 3
 	}))
-}).types([2137, "instantiations"])
+}).types([1830, "instantiations"])
 
 bench("fun(5)", () => {
 	type.fn(
@@ -251,7 +251,7 @@ bench("fun(5)", () => {
 		":",
 		{ a6: "6" }
 	)((a, b, c, d, e) => ({ ...a, ...b, ...c, ...d, ...e, a6: 6 }))
-}).types([4471, "instantiations"])
+}).types([3795, "instantiations"])
 
 bench("fun(10)", () => {
 	type.fn(
@@ -280,4 +280,4 @@ bench("fun(10)", () => {
 		...j,
 		a11: 11
 	}))
-}).types([8881, "instantiations"])
+}).types([7470, "instantiations"])

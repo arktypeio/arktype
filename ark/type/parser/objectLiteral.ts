@@ -180,22 +180,17 @@ const appendNamedProp = <kind extends Prop.Kind>(
 	) as never
 }
 
-export type inferObjectLiteral<def extends object, $, args> = show<
+export type inferObjectLiteral<def extends object, $, args> =
 	"..." extends keyof def ?
-		merge<
-			inferDefinition<def["..."], $, args>,
-			_inferObjectLiteral<def, $, args>
+		show<
+			merge<
+				inferDefinition<def["..."], $, args>,
+				inferKeyedObjectLiteral<def, $, args>
+			>
 		>
-	:	_inferObjectLiteral<def, $, args>
->
-
-/**
- * Infers the contents of an object literal, ignoring a spread definition
- */
-type _inferObjectLiteral<def extends object, $, args> =
-	[keyof def & PreparsedKeyPattern] extends [never] ?
+	: [keyof def & PreparsedKeyPattern] extends [never] ?
 		inferUnparsedKeys<def, optionalKeyOf<def>, $, args>
-	:	inferKeyedObjectLiteral<def, $, args>
+	:	show<inferKeyedObjectLiteral<def, $, args>>
 
 // keys whose kind or name only preparseKey can determine
 type PreparsedKeyPattern =
@@ -211,8 +206,14 @@ type optionalKeyOf<def> = {
 	: never
 }[keyof def]
 
+// a single mapped type needs no show, which keeps the result cheap to instantiate
+type inferUnparsedKeys<def, optionalKey, $, args> =
+	[optionalKey] extends [never] ?
+		{ -readonly [k in keyof def]: inferDefinition<def[k], $, args> }
+	:	show<inferUnparsedProps<def, optionalKey, $, args>>
+
 // naming optional keys through optionalKeyFromEntry keeps show's properties in definition order
-type inferUnparsedKeys<def, optionalKey, $, args> = {
+type inferUnparsedProps<def, optionalKey, $, args> = {
 	-readonly [k in keyof def as k extends optionalKey ? never
 	:	k]: inferDefinition<def[k], $, args>
 } & {
