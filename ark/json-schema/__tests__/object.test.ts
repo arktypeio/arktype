@@ -1,31 +1,18 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	jsonSchemaToType,
-	writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage,
-	writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage
-} from "@ark/json-schema"
-import { registeredReference, writeDuplicateKeyMessage } from "@ark/schema"
+import { jsonSchemaToType } from "@ark/json-schema"
 
 contextualize(() => {
 	it("type object", () => {
 		const t = jsonSchemaToType({ type: "object" })
-		attest(t.expression).snap("{}")
-		attest(t.allows({ foo: 3 }))
+		attest(t.expression).snap("object")
+		attest(t.allows({ foo: 3 })).equals(true)
+		attest(t.allows([])).equals(false)
 	})
 
 	it("maxProperties", () => {
 		const tMaxProperties = jsonSchemaToType({
 			type: "object",
 			maxProperties: 1
-		})
-		const { predicate } = tMaxProperties.select({
-			kind: "predicate",
-			method: "assertFind"
-		})
-		attest(predicate.name).equals("jsonSchemaObjectMaxPropertiesValidator")
-		attest(tMaxProperties.json).snap({
-			domain: "object",
-			predicate: [registeredReference(predicate)]
 		})
 		attest(tMaxProperties.allows({})).equals(true)
 		attest(tMaxProperties.allows({ foo: 1 })).equals(true)
@@ -37,15 +24,6 @@ contextualize(() => {
 		const tMinProperties = jsonSchemaToType({
 			type: "object",
 			minProperties: 2
-		})
-		const { predicate } = tMinProperties.select({
-			kind: "predicate",
-			method: "assertFind"
-		})
-		attest(predicate.name).equals("jsonSchemaObjectMinPropertiesValidator")
-		attest(tMinProperties.json).snap({
-			domain: "object",
-			predicate: [registeredReference(predicate)]
 		})
 		attest(tMinProperties.allows({})).equals(false)
 		attest(tMinProperties.allows({ foo: 1 })).equals(false)
@@ -64,27 +42,25 @@ contextualize(() => {
 		})
 		attest(tRequired.expression).snap("{ foo: string, bar?: number }")
 
-		attest(() =>
-			jsonSchemaToType({ type: "object", required: ["foo"] })
-		).throws(
-			"TraversalError: must be a valid object JSON Schema (was an object JSON Schema with 'required' array but no 'properties' object)"
-		)
-		attest(() =>
+		attest(
+			jsonSchemaToType({ type: "object", required: ["foo"] }).expression
+		).snap("{ foo: unknown }")
+		attest(
 			jsonSchemaToType({
 				type: "object",
 				properties: { foo: { type: "string" } },
 				required: ["bar"]
-			})
-		).throws(
-			`TraversalError: required must be a key from the 'properties' object, i.e. foo (was bar)`
-		)
+			}).expression
+		).snap("{ bar: unknown, foo?: string }")
 		attest(() =>
 			jsonSchemaToType({
 				type: "object",
 				properties: { foo: { type: "string" } },
 				required: ["foo", "foo"]
 			})
-		).throws(writeDuplicateKeyMessage("foo"))
+		).throws.snap(
+			'ParseError: #/required must be an array of unique strings (was ["foo","foo"])'
+		)
 	})
 
 	it("additionalProperties", () => {
@@ -92,18 +68,6 @@ contextualize(() => {
 			type: "object",
 			additionalProperties: { type: "number" },
 			properties: { bar: { type: "string" } }
-		})
-		const { predicate } = tAdditionalProperties.select({
-			kind: "predicate",
-			method: "assertFind"
-		})
-		attest(predicate.name).equals(
-			"jsonSchemaObjectAdditionalPropertiesValidator"
-		)
-		attest(tAdditionalProperties.json).snap({
-			domain: "object",
-			optional: [{ key: "bar", value: "string" }],
-			predicate: [registeredReference(predicate)]
 		})
 		attest(tAdditionalProperties.allows({})).equals(true)
 		attest(tAdditionalProperties.allows({ foo: 1 })).equals(true)
@@ -130,9 +94,8 @@ contextualize(() => {
 			type: "object",
 			propertyNames: { type: "string", minLength: 5 }
 		})
-		attest(tPropertyNames.expression).snap(
-			"{ [string >= 5]: unknown, + (undeclared): reject }"
-		)
+		attest(tPropertyNames.allows({ abcde: 1 })).equals(true)
+		attest(tPropertyNames.allows({ abcd: 1 })).equals(false)
 
 		attest(() =>
 			// @ts-expect-error
@@ -153,8 +116,11 @@ contextualize(() => {
 			propertyNames: { type: "string", minLength: 3 },
 			additionalProperties: true
 		})
-		attest(tPropertyNamesAndAdditionalProperties.expression).snap(
-			"{ [string >= 3]: unknown, + (undeclared): reject }"
+		attest(tPropertyNamesAndAdditionalProperties.allows({ abc: 1 })).equals(
+			true
+		)
+		attest(tPropertyNamesAndAdditionalProperties.allows({ ab: 1 })).equals(
+			false
 		)
 	})
 
@@ -164,22 +130,23 @@ contextualize(() => {
 			patternProperties: { foo: { type: "number" } },
 			propertyNames: { type: "string", pattern: "foo" }
 		})
-		attest(tPropertyNamesAndPatternPropertiesValid.expression).snap(
-			"{ [/foo/]: number, [/foo/]: unknown, + (undeclared): reject }"
+		attest(
+			tPropertyNamesAndPatternPropertiesValid.allows({ foo: 1, afoo: 2 })
+		).equals(true)
+		attest(tPropertyNamesAndPatternPropertiesValid.allows({ bar: 1 })).equals(
+			false
+		)
+		attest(tPropertyNamesAndPatternPropertiesValid.allows({ foo: "1" })).equals(
+			false
 		)
 
-		attest(() => {
-			jsonSchemaToType({
-				type: "object",
-				propertyNames: { type: "string", minLength: 3 },
-				patternProperties: { "^abcd": { type: "number" } }
-			})
-		}).throws(
-			writeJsonSchemaObjectNonConformingPatternAndPropertyNamesMessage(
-				"/^abcd/",
-				"string >= 3"
-			)
-		)
+		const tShorterPattern = jsonSchemaToType({
+			type: "object",
+			propertyNames: { type: "string", minLength: 3 },
+			patternProperties: { "^abcd": { type: "number" } }
+		})
+		attest(tShorterPattern.allows({ abcde: 1, xyz: true })).equals(true)
+		attest(tShorterPattern.allows({ ab: 1 })).equals(false)
 	})
 
 	it("propertyNames & properties", () => {
@@ -192,9 +159,8 @@ contextualize(() => {
 			}
 		})
 
-		attest(tPropertyNamesAndProperties.expression).snap(
-			"{ [string >= 3]: unknown, a?: never, abc?: number, + (undeclared): reject }"
-		)
+		attest(tPropertyNamesAndProperties.allows({ abc: 1 })).equals(true)
+		attest(tPropertyNamesAndProperties.allows({ a: true })).equals(false)
 	})
 
 	it("propertyNames & properties & required", () => {
@@ -204,22 +170,17 @@ contextualize(() => {
 			properties: { abc: { type: "number" } },
 			required: ["abc"]
 		})
-		attest(tPropertyNamesAndRequiredValid.expression).snap(
-			"{ [string >= 3]: unknown, abc: number, + (undeclared): reject }"
+		attest(tPropertyNamesAndRequiredValid.allows({ abc: 1 })).equals(true)
+		attest(tPropertyNamesAndRequiredValid.allows({ abc: 1, ab: 1 })).equals(
+			false
 		)
 
-		attest(() =>
-			jsonSchemaToType({
-				type: "object",
-				propertyNames: { type: "string", minLength: 3 },
-				properties: { a: { type: "boolean" } },
-				required: ["a"]
-			})
-		).throws(
-			writeJsonSchemaObjectNonConformingKeyAndPropertyNamesMessage(
-				"a",
-				"string >= 3"
-			)
-		)
+		const tUnsatisfiable = jsonSchemaToType({
+			type: "object",
+			propertyNames: { type: "string", minLength: 3 },
+			properties: { a: { type: "boolean" } },
+			required: ["a"]
+		})
+		attest(tUnsatisfiable.allows({ a: true })).equals(false)
 	})
 })

@@ -23,8 +23,8 @@ contextualize(() => {
 				type: "string",
 				maxLength
 			})
-		).throws(
-			`TraversalError: maxLength must be non-negative (was ${maxLength})`
+		).throws.snap(
+			"ParseError: #/maxLength must be a non-negative integer (was -5)"
 		)
 	})
 
@@ -43,8 +43,8 @@ contextualize(() => {
 				type: "string",
 				minLength
 			})
-		).throws(
-			`TraversalError: minLength must be non-negative (was ${minLength})`
+		).throws.snap(
+			"ParseError: #/minLength must be a non-negative integer (was -1)"
 		)
 	})
 

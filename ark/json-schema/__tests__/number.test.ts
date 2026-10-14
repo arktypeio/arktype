@@ -1,9 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import {
-	jsonSchemaToType,
-	writeJsonSchemaNumberMaximumAndExclusiveMaximumMessage,
-	writeJsonSchemaNumberMinimumAndExclusiveMinimumMessage
-} from "@ark/json-schema"
+import { jsonSchemaToType } from "@ark/json-schema"
 
 contextualize(() => {
 	it("type number", () => {
@@ -35,13 +31,13 @@ contextualize(() => {
 	})
 
 	it("maximum & exclusiveMaximum", () => {
-		attest(() =>
+		attest(
 			jsonSchemaToType({
 				type: "number",
 				maximum: 5,
 				exclusiveMaximum: 5
-			})
-		).throws(writeJsonSchemaNumberMaximumAndExclusiveMaximumMessage())
+			}).expression
+		).snap("number < 5")
 	})
 
 	it("minimum", () => {
@@ -58,13 +54,13 @@ contextualize(() => {
 	})
 
 	it("minimum & exclusiveMinimum", () => {
-		attest(() =>
+		attest(
 			jsonSchemaToType({
 				type: "number",
 				minimum: 5,
 				exclusiveMinimum: 5
-			})
-		).throws(writeJsonSchemaNumberMinimumAndExclusiveMinimumMessage())
+			}).expression
+		).snap("number > 5")
 	})
 
 	it("multipleOf", () => {

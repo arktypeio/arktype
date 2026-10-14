@@ -303,6 +303,9 @@ importers:
       '@ark/util':
         specifier: workspace:*
         version: link:../util
+      arksets:
+        specifier: workspace:*
+        version: link:../sets
       arktype:
         specifier: workspace:*
         version: link:../type

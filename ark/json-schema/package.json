@@ -45,6 +45,7 @@
 		"tnt": "ts ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
+		"arksets": "workspace:*",
 		"arktype": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*"

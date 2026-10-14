@@ -255,7 +255,7 @@ const readArray = (
 	if (o.uniqueItems === true) {
 		constraints.push({
 			predicate: [
-				opaque(["uniqueItems"], "unique items", (data: array) =>
+				opaque(["uniqueItems"], "an array of unique items", (data: array) =>
 					data.every((item, i) =>
 						data.slice(i + 1).every(other => !jsonEquals(item, other))
 					)
@@ -271,7 +271,7 @@ const readArray = (
 			predicate: [
 				opaque(
 					["contains", contained.id, min, max],
-					`containing ${contained.description}`,
+					`an array containing ${contained.description}`,
 					(data: array) => {
 						const count = data.filter(item => contained.allows(item)).length
 						return count >= min && count <= max
@@ -349,7 +349,7 @@ const readObject = (
 						Object.keys(properties),
 						patterns.map(p => p.schema)
 					],
-					`additional properties ${additional.description}`,
+					`an object whose other properties are ${additional.description}`,
 					(data: dict) =>
 						Object.keys(data).every(
 							k => isDeclared(k) || additional.allows(data[k])
@@ -363,7 +363,7 @@ const readObject = (
 		structure.predicate.push(
 			opaque(
 				["propertyNames", names.id],
-				`keys ${names.description}`,
+				`an object whose keys are ${names.description}`,
 				(data: dict) => Object.keys(data).every(k => names.allows(k))
 			)
 		)
@@ -374,9 +374,11 @@ const readObject = (
 		structure.predicate.push(
 			opaque(
 				["properties", min, max],
-				o.maxProperties === undefined ? `at least ${min} properties`
-				: o.minProperties === undefined ? `at most ${max} properties`
-				: `${min} to ${max} properties`,
+				o.maxProperties === undefined ?
+					`an object with at least ${min} properties`
+				: o.minProperties === undefined ?
+					`an object with at most ${max} properties`
+				:	`an object with ${min} to ${max} properties`,
 				(data: dict) => {
 					const count = Object.keys(data).length
 					return count >= min && count <= max
@@ -395,7 +397,7 @@ const readObject = (
 			structure.predicate.push(
 				opaque(
 					["dependentRequired", key, dependency],
-					`${dependency.join(", ")} if it has ${key}`,
+					`an object with ${dependency.join(", ")} if it has ${key}`,
 					(data: dict) =>
 						!hasOwn(data, key) ||
 						dependency.every(k => hasOwn(data, k as string))
@@ -658,6 +660,11 @@ const keywordValues = {
 	],
 	string: ["a string", isString],
 	strings: ["an array of strings", v => isEvery(v, isString)],
+	keys: [
+		"an array of unique strings",
+		v =>
+			isEvery(v, isString) && new Set(v as array).size === (v as array).length
+	],
 	boolean: ["a boolean", v => typeof v === "boolean"],
 	array: ["an array", isArray],
 	schema: ["a schema", isSchema],
@@ -709,7 +716,7 @@ const keywordValueKinds: Record<string, keyof typeof keywordValues> = {
 	minContains: "count",
 	maxContains: "count",
 	properties: "schemasByKey",
-	required: "strings",
+	required: "keys",
 	patternProperties: "schemasByKey",
 	additionalProperties: "schema",
 	propertyNames: "schema",

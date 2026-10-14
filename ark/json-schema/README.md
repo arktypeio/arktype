@@ -54,8 +54,6 @@ const stringSchema: StringSchema = {
 }
 ```
 
-## Limitations
+## How it reads JSON Schema
 
-- No `dependencies` support
-- No `if`/`else`/`then` support
-- `multipleOf` only supports integers
+`jsonSchemaToType` reads a schema with [`arksets`](https://github.com/arktypeio/arktype/tree/main/ark/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts (draft-07 forms are read too). `format` is an annotation, as the spec defaults to. Keywords that can't be read exactly, like a remote `$ref` or `unevaluatedProperties`, throw with their JSON Pointer.
