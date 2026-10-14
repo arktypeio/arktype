@@ -1,5 +1,4 @@
-import { cached } from "./functions.ts"
-import { defineValue } from "./records.ts"
+import { defineValue, unset } from "./records.ts"
 
 export const lazily = <t extends object>(thunk: () => t): t => {
 	let cached: any
@@ -23,10 +22,10 @@ export const defineLazily = (
 	k: PropertyKey,
 	thunk: () => unknown
 ): void => {
-	const resolve = cached(thunk)
+	let result: unknown = unset
 	Object.defineProperty(o, k, {
 		get() {
-			const result = resolve()
+			if (result === unset) result = thunk()
 			if (Object.getOwnPropertyDescriptor(this, k)?.configurable)
 				defineValue(this, k, result)
 			return result
