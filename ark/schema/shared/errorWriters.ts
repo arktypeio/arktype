@@ -1,5 +1,4 @@
 import {
-	appendUnique,
 	describeCollapsibleDate,
 	domainDescriptions,
 	domainOf,
@@ -181,8 +180,10 @@ export const unionWriters: errorWritersOf<"union"> = {
 		const pathDescriptions = errorsAtPaths.map(errors => {
 			const path = errors[0].propString
 			const branchesAtPath: string[] = []
-			for (const errorAtPath of errors)
-				appendUnique(branchesAtPath, errorAtPath.expected)
+			for (const e of errors) {
+				if (!branchesAtPath.includes(e.expected))
+					branchesAtPath.push(e.expected)
+			}
 
 			const expected = describeBranches(branchesAtPath)
 			// if there are multiple actual descriptions that differ,
