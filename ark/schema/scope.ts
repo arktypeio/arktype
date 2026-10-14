@@ -1174,7 +1174,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 	readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
 	} = Object.create(null)
-	private readonly boundGenerics = new Map<GenericRoot, GenericRoot>()
+	private readonly boundReferences = new WeakMap<
+		BaseNode | GenericRoot,
+		BaseNode | GenericRoot
+	>()
 
 	exportedNames: string[] = []
 	readonly aliases: Record<string, unknown> = {}
@@ -1331,35 +1334,37 @@ export abstract class BaseScope<$ extends {} = {}> {
 	bindReference<reference extends BaseNode | GenericRoot>(
 		reference: reference
 	): reference {
-		if (reference.$ === this) return reference
-
-		if (isNode(reference)) {
-			if (reference.hasKind("alias")) return reference
-			return composing(() => {
-				const bound = new (reference.constructor as any)(reference, this)
-				// a bound node keeps the descriptions of the scope that created it
-				if (
-					reference.includesKeptDescription ||
-					!this.describesLike(reference.$)
-				) {
-					bound.includesKeptDescription = true
-					bound._description = reference.description
-				}
-				return resolveDescription(bound)
-			})
-		}
-
-		let bound = this.boundGenerics.get(reference)
+		if (
+			reference.$ === this ||
+			(isNode(reference) && reference.hasKind("alias"))
+		)
+			return reference
+		// bound once per scope, since a bound node is as immutable as the node it copies
+		let bound = this.boundReferences.get(reference)
 		if (!bound) {
-			bound = new GenericRoot(
-				reference.params as never,
-				reference.bodyDef,
-				reference.$,
-				this as never,
-				reference.hkt,
-				reference.alias
-			)
-			this.boundGenerics.set(reference, bound)
+			bound =
+				isNode(reference) ?
+					composing(() => {
+						const copy = new (reference.constructor as any)(reference, this)
+						// a bound node keeps the descriptions of the scope that created it
+						if (
+							reference.includesKeptDescription ||
+							!this.describesLike(reference.$)
+						) {
+							copy.includesKeptDescription = true
+							copy._description = reference.description
+						}
+						return resolveDescription(copy as BaseNode)
+					})
+				:	new GenericRoot(
+						reference.params as never,
+						reference.bodyDef,
+						reference.$,
+						this as never,
+						reference.hkt,
+						reference.alias
+					)
+			this.boundReferences.set(reference, bound)
 		}
 		return bound as never
 	}
