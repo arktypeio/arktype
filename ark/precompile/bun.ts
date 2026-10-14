@@ -57,7 +57,11 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 					// a standalone module imports what it shares with others, which the plugin serves
 					inline: !isStandalone,
 					// set by `bun test`
-					checkHelpers: opts?.checkHelpers ?? process.env.NODE_ENV === "test"
+					checks:
+						opts?.checks ??
+						(isStandalone && process.env.NODE_ENV === "test" ?
+							"helpers"
+						:	undefined)
 				}
 			})
 			const { include, exclude } = transformedFilterOf(

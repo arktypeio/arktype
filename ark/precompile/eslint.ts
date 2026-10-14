@@ -65,6 +65,7 @@ const precompilable: Rule.RuleModule = {
 						},
 						additionalProperties: false
 					},
+					checks: { enum: ["types", "helpers", "none"] },
 					conditions: { type: "array", items: { type: "string" } },
 					tsconfig: { type: "string" },
 					freeze: { type: "boolean" },

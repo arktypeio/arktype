@@ -1,5 +1,6 @@
 import {
 	$ark,
+	describeBranches,
 	hasArkKind,
 	writePrecompiledUnits,
 	type BaseRoot
@@ -9,9 +10,11 @@ import * as arkSchema from "@ark/schema"
 import { fingerprintOf } from "@ark/schema/runtime"
 import {
 	appendStringifiedKey,
+	entriesOf,
 	hashOf,
 	hasDomain,
 	includes,
+	keysOf,
 	objectKindOrDomainOf,
 	ParseError,
 	printable,
@@ -35,6 +38,7 @@ import {
 	traversalKeyOf,
 	writeFixConfig,
 	writeUnprecompilableMessage,
+	type Checks,
 	type Configured,
 	type ValidatorMember,
 	type ValidatorMembers,
@@ -121,8 +125,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	config?: string | false | undefined
 	// place what the module imports from virtual modules in the module itself, for hosts without them
 	inline?: boolean | undefined
-	// check at creation that each static helper a factory calls is the one its module exports, which a test runner's module mock can replace
-	checkHelpers?: boolean | undefined
+	// what a standalone factory checks at creation of what the build read
+	checks?: Checks | undefined
 	// what a standalone validator has besides validating
 	members?: ValidatorMembers | undefined
 	// "first" stops each standalone validation at its first issue, which is then the only one it returns
@@ -308,6 +312,7 @@ export class Precompiler {
 	// false where the build's `config` is, so the program calling configure() fails the build
 	configures: boolean
 	inline: boolean
+	checks: Checks
 	checkHelpers: boolean
 	shadow: boolean
 	// e.g. `{"members":{"meta":false}}`, under which shadow mode doesn't compare a validator's meta
@@ -355,7 +360,8 @@ export class Precompiler {
 		this.config = opts?.config || undefined
 		this.configures = opts?.config !== false
 		this.inline = !!opts?.inline
-		this.checkHelpers = this.mode === "standalone" && !!opts?.checkHelpers
+		this.checks = opts?.checks ?? "types"
+		this.checkHelpers = this.mode === "standalone" && this.checks === "helpers"
 		this.shadow = this.mode === "standalone" && !!opts?.shadow
 		this.members = opts?.members ?? {}
 		this.errors = opts?.errors
@@ -398,6 +404,18 @@ export class Precompiler {
 					"a module path or false"
 				)
 			)
+		}
+		for (const [option, values] of entriesOf(enumOptions)) {
+			const value = opts?.[option]
+			if (value !== undefined && !includes(values, value)) {
+				throwError(
+					writeOptionValueMessage(
+						option,
+						printable(value),
+						describeBranches(values.map(value => JSON.stringify(value)))
+					)
+				)
+			}
 		}
 		for (const option of booleanOptions) {
 			if (opts?.[option] !== undefined && typeof opts[option] !== "boolean") {
@@ -1249,6 +1267,7 @@ export class Precompiler {
 						errors: this.errors,
 						freeze: this.freeze,
 						lazy: this.lazy,
+						checks: this.checks,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module)
 					},
@@ -3538,8 +3557,16 @@ export type writeUnknownMemberMessage<member extends string> =
 
 const booleanOptions = ["freeze", "lazy"] as const
 
+const enumOptions = {
+	checks: ["types", "helpers", "none"]
+} as const
+
 // the options choosing what a standalone build writes, which runtime: "arktype" doesn't take
-const standaloneOptions = ["members", ...booleanOptions] as const
+const standaloneOptions = [
+	"members",
+	...booleanOptions,
+	...keysOf(enumOptions)
+] as const
 
 export const writeOptionValueMessage = <
 	option extends string,

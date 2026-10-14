@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
+import { writeArktypeRuntimeOptionMessage } from "@ark/precompile"
 import { check } from "@ark/precompile/internal/check.ts"
 import { spawnSync } from "node:child_process"
 
@@ -131,6 +132,21 @@ main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator la
   Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".
 1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site
 `)
+	})
+
+	it("refuses an option choosing what a standalone build writes with --runtime arktype", () => {
+		const { status, stderr } = cliIn(
+			fromHere("members"),
+			"--check",
+			"--runtime",
+			"arktype",
+			"--checks",
+			"types"
+		)
+		attest([status, stderr.match(/^Error: (.*)$/m)?.[1]]).equals([
+			1,
+			writeArktypeRuntimeOptionMessage("checks")
+		])
 	})
 
 	it("rejects invalid arguments", () => {

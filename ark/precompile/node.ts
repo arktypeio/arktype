@@ -24,10 +24,15 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			// a standalone module imports what it shares with others, which the hooks serve
 			inline: !isStandalone,
 			// `node --test` marks each file's process, or runs the files in its own
-			checkHelpers:
-				opts?.checkHelpers ??
-				(process.env.NODE_TEST_CONTEXT !== undefined ||
-					process.execArgv.includes("--test"))
+			checks:
+				opts?.checks ??
+				((
+					isStandalone &&
+					(process.env.NODE_TEST_CONTEXT !== undefined ||
+						process.execArgv.includes("--test"))
+				) ?
+					"helpers"
+				:	undefined)
 		}
 	})
 	const filter = transformedFilterOf(

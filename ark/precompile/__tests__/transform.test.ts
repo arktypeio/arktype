@@ -922,11 +922,11 @@ export default (def: string) => def`,
 				"/suffix.ts":
 					"export const suffix = (def: string, s: string) => def + s"
 			}
-			const build = (id: keyof typeof files, checkHelpers: boolean) =>
-				precompileModule(files[id], id, memoryHost(files), { checkHelpers })
+			const build = (id: keyof typeof files, checks?: "helpers") =>
+				precompileModule(files[id], id, memoryHost(files), { checks })
 			// a bundle runs the helpers the build read
-			attest(build("/checked.ts", false).diagnostics).equals([])
-			const checked = build("/checked.ts", true)
+			attest(build("/checked.ts").diagnostics).equals([])
+			const checked = build("/checked.ts", "helpers")
 			attest(checked.diagnostics.map(renderDiagnostic)).snap([
 				"/checked.ts:8:23  type(single(\"string\")) can't be precompiled yet\n  `default` (/helpers.ts:5:16) is a static helper its module doesn't export through a binding, so a test driver can't register it\n  Standalone builds can't precompile every definition yet. Build with runtime: \"arktype\"."
 			])
@@ -942,7 +942,7 @@ export const Own = $ark#2(list)
 export const Optional = $ark#3(helpers.optional, $ark#4)
 export const Single = type(single("string"))
 import { suffix as $ark#4 } from "./suffix.ts"`)
-			attest(build("/helpers.ts", true).code)
+			attest(build("/helpers.ts", "helpers").code)
 				.snap(`import { suffix } from "./suffix.ts"
 const base = (def: string) => \`\${def}[]\`
 export const list = (def: string) => base(def)

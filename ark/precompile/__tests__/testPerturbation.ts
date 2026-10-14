@@ -57,9 +57,10 @@ const createPrecompiler = (opts: BuildOptions) =>
 		createNodeHost({ conditions: ["ark-ts", "import", "default"] }),
 		{
 			cwd: root,
-			checkHelpers: true,
 			inline: true,
-			...(opts.mode === "cache" ? { runtime: "arktype" } : opts.standalone)
+			...(opts.mode === "cache" ?
+				{ runtime: "arktype" }
+			:	{ checks: "helpers", ...opts.standalone })
 		}
 	)
 
@@ -81,6 +82,15 @@ export const buildPerturbed = (
 	const exportNamesByPath: Record<string, string[]> = {}
 	const swapsByPath: Record<string, Record<string, string>> = {}
 	const errors: Diagnostic[] = []
+	// a standalone factory takes what it doesn't check as the build read it, so no mock or swap replaces that: a helper unless it checks helpers, and a Type where it checks none. A cache build leaves the same, as the world as written runs on its manifest
+	const checks = opts.standalone?.checks ?? "helpers"
+	const helpers = new Set<string>()
+	const collectHelpers = (precompiled: PrecompiledModule) => {
+		for (const site of precompiled.sites) {
+			for (const helper of site.helpers)
+				helpers.add(`${helper.file}:${helper.name}`)
+		}
+	}
 
 	for (const path of corpus) {
 		const source = readFileSync(path, "utf8")
@@ -215,6 +225,7 @@ export const buildPerturbed = (
 			path
 		)
 		errors.push(...errorsOf(precompiled))
+		collectHelpers(precompiled)
 		files.push({
 			path,
 			original: wrap(marked.toString()),
@@ -235,10 +246,12 @@ export const buildPerturbed = (
 					target
 				)
 				errors.push(...errorsOf(targetPrecompiled))
+				collectHelpers(targetPrecompiled)
 				precompiledByPath[target] = targetPrecompiled.code
 				const graph = targetPrecompiler.graph
 				const targetModule = graph.moduleOf(target) as SourceModule
-				swapsByPath[target] = swapsOf(targetPrecompiler, targetModule)
+				swapsByPath[target] =
+					checks === "none" ? {} : swapsOf(targetPrecompiler, targetModule)
 				// arktype's own exports and Types are trusted, so a mock leaves them
 				exportNamesByPath[target] = Object.keys(
 					targetModule.scopes.exportsByName
@@ -253,6 +266,13 @@ export const buildPerturbed = (
 					)
 				})
 			}
+		}
+	}
+	if (checks !== "helpers") {
+		for (const path in exportNamesByPath) {
+			exportNamesByPath[path] = exportNamesByPath[path].filter(
+				name => !helpers.has(`${path}:${name}`)
+			)
 		}
 	}
 	return {

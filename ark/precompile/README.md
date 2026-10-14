@@ -101,17 +101,20 @@ A validator and its members are frozen, so a program writing to one throws in st
 
 `lazy: false` creates each validator as the module defining it loads, where it imports arktype, rather than where a site first reads it. An error creating one then throws on import, as one created before `configure()` runs does where the module imports arktype before the config module. A module an import cycle can reach before it loads still creates them as they're read.
 
+A factory checks that each Type, Module, Scope and Generic it receives is the one the build read, and that each static helper it calls is too where `checks` is `"helpers"`, as under a test runner's driver. `checks: "none"` checks only those holding functions, which it takes from them, so a module mock replacing any other goes unnoticed.
+
 What each option saves of the bundles arktype benchmarks, minified and gzipped, in bytes:
 
-| option                            | gives up                                   | login    | moltar   | shop     |
-| --------------------------------- | ------------------------------------------ | -------- | -------- | -------- |
-| `members: { assert: false }`      | `assert`                                   | 57 / 19  | 57 / 18  | 51 / 19  |
-| `members: { meta: false }`        | `meta`                                     | 75 / 31  | 75 / 29  | 271 / 38 |
-| `members: { "~standard": false }` | `~standard`                                | 123 / 53 | 123 / 56 | 115 / 49 |
-| `members: { methods: false }`     | `traverse()`, `from()` and `toString()`    | 235 / 88 | 235 / 93 | 63 / -14 |
-| `freeze: false`                   | validators and their members frozen        | 29 / 8   | 29 / 9   | 21 / 2   |
-| `config: false`                   | calling `configure()`                      | 98 / 36  | 98 / 38  | 195 / 51 |
-| `lazy: false`                     | creating a validator where it's first read | 16 / 9   | 16 / 8   | 292 / 96 |
+| option                            | gives up                                   | login    | moltar   | shop       |
+| --------------------------------- | ------------------------------------------ | -------- | -------- | ---------- |
+| `members: { assert: false }`      | `assert`                                   | 57 / 19  | 57 / 18  | 51 / 19    |
+| `members: { meta: false }`        | `meta`                                     | 75 / 31  | 75 / 29  | 271 / 38   |
+| `members: { "~standard": false }` | `~standard`                                | 123 / 53 | 123 / 56 | 115 / 49   |
+| `members: { methods: false }`     | `traverse()`, `from()` and `toString()`    | 235 / 88 | 235 / 93 | 63 / -14   |
+| `freeze: false`                   | validators and their members frozen        | 29 / 8   | 29 / 9   | 21 / 2     |
+| `config: false`                   | calling `configure()`                      | 98 / 36  | 98 / 38  | 195 / 51   |
+| `lazy: false`                     | creating a validator where it's first read | 16 / 9   | 16 / 8   | 292 / 96   |
+| `checks: "none"`                  | checking the Types a factory receives      | 97 / 50  | 97 / 49  | 1581 / 734 |
 
 ## Configuration
 

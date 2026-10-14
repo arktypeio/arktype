@@ -198,6 +198,9 @@ export interface ProgressParam {
 // false where the program never calls configure(), so a validator neither checks the configuration nor reads it
 export type Configured = ConfiguredModule | false | undefined
 
+// what a factory checks is what the build read: each Type, Module, Scope and Generic it receives, each static helper it calls too, or neither
+export type Checks = "types" | "helpers" | "none"
+
 export interface ConfiguredModule {
 	fingerprint: string
 	path: string
@@ -222,6 +225,8 @@ export interface StandaloneOptions {
 	freeze?: boolean | undefined
 	// false creates each validator as its module is evaluated, rather than at its first read
 	lazy?: boolean | undefined
+	// "none" has a factory take each Type, Module, Scope and Generic it receives as the build read it
+	checks?: Checks | undefined
 	// declares what a site calls as functions, for a module an import cycle can reach before its artifact is evaluated
 	hoisted?: boolean | undefined
 }
@@ -234,6 +239,8 @@ interface Baking {
 	readsConfig: boolean
 	// a module an import cycle can reach before it's evaluated creates at the first read either way
 	createsLazily: boolean
+	// else a value is held by its id only where it holds functions a factory takes from it
+	checksTypes: boolean
 	hoisted: boolean
 	// writes the shortest forms rather than those V8 compiles and runs fastest as the artifact loads
 	shortest: boolean
@@ -256,6 +263,7 @@ const isCreatedByRuntime = (
 ) =>
 	baking.freezes &&
 	baking.readsConfig &&
+	baking.checksTypes &&
 	defaultMembers.every(member => members.has(member))
 
 // a value built as its module is evaluated, which a bundler drops unread, else at its first read
@@ -358,6 +366,7 @@ const writeArtifact = (
 		freezes: opts.freeze !== false,
 		readsConfig: configured !== false,
 		createsLazily: opts.lazy !== false || opts.hoisted === true,
+		checksTypes: opts.checks !== "none",
 		hoisted: opts.hoisted === true,
 		shortest: false
 	}
@@ -938,9 +947,11 @@ export class StandaloneArtifact {
 			const isType = hasArkKind(value, "root")
 			const holesName = `holes${this.checks.length}`
 			if (holes.length) this.holesByName.set(holesName, holes)
-			this.checks.push(
-				`${holes.length ? `const ${holesName} = ` : ""}${this.receiverOf(value, id, label)}(${expression})`
-			)
+			if (this.baking.checksTypes || holes.length) {
+				this.checks.push(
+					`${holes.length ? `const ${holesName} = ` : ""}${this.receiverOf(value, id, label)}(${expression})`
+				)
+			}
 			// a class a Module, Scope or Generic holds is related to the others this artifact's Types hold
 			const related =
 				isType ?
@@ -1509,19 +1520,22 @@ return [${returned.join(", ")}]
 				["runtime.callingRootApply", `[${allows}, ${rootApply}]`]
 			:	[rootApply, allows]),
 			...(attributes.length ? [`{ ${attributes.join(", ")} }`] : []),
-			writeId(id),
-			...(held ? [held]
-			: onFail ? ["undefined"]
-			: []),
+			...(!this.baking.checksTypes ? []
+			: held ? [writeId(id), held]
+			: onFail ? [writeId(id), "undefined"]
+			: [writeId(id)]),
 			...(onFail ? [onFail] : [])
 		]
-		return `${
+		const created = `${
 			isTemplate ? "["
 			: !isCreatedByRuntime(members, this.baking) ?
 				`${this.creatorOf(members, ownsValidator)}(`
 			: ownsValidator ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
+		return held && !this.baking.checksTypes ?
+				`runtime.holdHoles(${created}, ${writeId(id)}, ${held})`
+			:	created
 	}
 
 	// written for what a build's validators keep, as the runtime's creators taking it would grow every build keeping it all
@@ -1558,7 +1572,9 @@ return [${returned.join(", ")}]
 		}`)}${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
 	}`)}`
 			:	"",
-			`return runtime.holdHoles(${this.frozen("validator")}, id, holes)`
+			this.baking.checksTypes ?
+				`return runtime.holdHoles(${this.frozen("validator")}, id, holes)`
+			:	`return ${this.frozen("validator")}`
 		]
 			.filter(statement => statement)
 			.map(statement => `\t${statement}`)
@@ -1566,8 +1582,7 @@ return [${returned.join(", ")}]
 		const params = [
 			...(ownsValidator ? ["make", "parts"] : ["rootApply", "allows"]),
 			...(hasAttributes ? ["attributes"] : []),
-			"id",
-			"holes = []",
+			...(this.baking.checksTypes ? ["id", "holes = []"] : []),
 			...(keepsMeta ? []
 			: this.baking.readsConfig ?
 				["configuredOnFail = runtime.runtimeConfig.onFail"]
@@ -2017,6 +2032,7 @@ return [${returned.join(", ")}]
 	// a factory reading a Module, Scope or Generic compares it with the build's and takes the holes it holds
 	withHoles(value: Foldable, expression: string): string {
 		const [id, holes] = keyOf(value)
+		if (!this.baking.checksTypes && !holes.length) return expression
 		return `runtime.holdHoles(${expression}, ${writeId(id)}${holes.length ? `, [${holes.map(hole => this.emit(hole)).join(", ")}]` : ""})`
 	}
 

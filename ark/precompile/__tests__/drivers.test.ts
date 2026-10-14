@@ -253,6 +253,12 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 			])
 		}).timeout(60000)
 
+		it("leaves checks to standalone mode under node --test", () => {
+			attest(node(["--test", "main.ts"], { runtime: "arktype" }).status).equals(
+				0
+			)
+		}).timeout(60000)
+
 		it("packages that opt in", () => {
 			attest(node(["main.ts"], {}, library).stdout).equals(runPlain(library))
 		}).timeout(60000)

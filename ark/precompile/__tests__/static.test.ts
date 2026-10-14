@@ -1395,6 +1395,20 @@ console.log(values.map(v => (v as any).from))`,
 					"lazy with runtime: arktype, though it's the default",
 					{ runtime: "arktype", lazy: true },
 					writeArktypeRuntimeOptionMessage("lazy")
+				],
+				[
+					"checks that isn't one",
+					{ checks: "all" as never },
+					writeOptionValueMessage(
+						"checks",
+						'"all"',
+						'"types", "helpers" or "none"'
+					)
+				],
+				[
+					"checks with runtime: arktype, though it's the default",
+					{ runtime: "arktype", checks: "types" },
+					writeArktypeRuntimeOptionMessage("checks")
 				]
 			]
 			for (const [name, opts, message] of refused) {

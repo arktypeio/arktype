@@ -150,12 +150,13 @@ export const precompile: UnpluginInstance<
 			configResolved: config => {
 				isServing = config.command === "serve"
 				if (
-					opts?.checkHelpers !== undefined ||
+					opts?.checks !== undefined ||
+					opts?.runtime === "arktype" ||
 					!process.env.VITEST ||
 					config.mode !== "test"
 				)
 					return
-				options = { ...opts, checkHelpers: true }
+				options = { ...opts, checks: "helpers" }
 				restart()
 			}
 		},

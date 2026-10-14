@@ -1850,6 +1850,52 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			)
 		})
 
+		it("takes each Type it receives as the build read it where its build checks none", async () => {
+			const trim = (s: string) => s.trim()
+			const builtTrim = standIn(trim.bind(null), "trim")
+			const Name = type("string").pipe(builtTrim)
+			const Text = type("string")
+			const exports: Record<string, StandaloneExport> = {
+				Name: {
+					type: Name,
+					params: [{ kind: "function", label: "`trim`", value: builtTrim }]
+				},
+				User: {
+					type: type({ name: Name }),
+					params: [{ kind: "input", label: "Name", reads: [[[], Name]] }]
+				},
+				Tagged: {
+					type: type({ tag: Text }),
+					params: [{ kind: "input", label: "Text", reads: [[[], Text]] }]
+				},
+				Other: type("number")
+			}
+			const checked = await load(exports)
+			attest(() => checked.Tagged(checked.Other)).throws(
+				writeCreationMismatchMessage(
+					"`Text`",
+					"another Type<number>",
+					"the Type it was at build"
+				)
+			)
+			const trusting = await load(exports, undefined, undefined, printed, {
+				checks: "none"
+			})
+			// a mock replacing a Type goes unnoticed
+			attest(trusting.Tagged(trusting.Other)({ tag: "a" })).equals({ tag: "a" })
+			// but one holding functions is checked, as the factory takes them from it
+			attest(trusting.User(trusting.Name(trim))({ name: " a " })).equals({
+				name: "a"
+			})
+			attest(() => trusting.User(trusting.Other)).throws(
+				writeCreationMismatchMessage(
+					"`Name`",
+					"another Type<number>",
+					"the Type it was at build"
+				)
+			)
+		})
+
 		it("takes the holes of a Scope it receives", async () => {
 			const isLong = (s: string) => s.length > 1
 			const define = (fn: typeof isLong) => {

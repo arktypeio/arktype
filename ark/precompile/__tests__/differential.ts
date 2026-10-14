@@ -130,6 +130,7 @@ const loadArtifact = async (
 		members,
 		freeze: testedOptions.freeze,
 		lazy: testedOptions.lazy,
+		checks: testedOptions.checks,
 		configured: testedOptions.config === false ? (false as const) : undefined
 	}
 	let code: string
