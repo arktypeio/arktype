@@ -102,9 +102,7 @@ type parseExpression<def extends string, $, args> =
 		fullStringParse<s.initialize<def>, $, args>
 	: def extends `${string} | ${string}` ? parseSpacedUnion<def, def, $, args>
 	: def extends `${string}|${string}` ? parseOperandUnion<def, def, $, args>
-	: def extends `${string} ${Comparator} ${string}` ?
-		parseBoundedOperand<def, $, args>
-	:	fullStringParse<s.initialize<def>, $, args>
+	: parseBoundedOperand<def, $, args>
 
 // wrapping the lookup keeps a generic def from being narrowed to each keyword
 type resolveAmbient<reference, $> =
@@ -251,8 +249,8 @@ type parseBoundedOperand<def extends string, $, args> =
 type parseRightBound<operand extends string, limit extends string, $, args> =
 	parseOperandToken<operand, $, args> extends infer ast ?
 		null extends ast ? null
-		: [ast] extends [InferredAst<Date | number, `${number | DateLiteral}`>] ?
-			null
+		: // parseOperandToken never resolves a date literal
+		[ast] extends [InferredAst<Date | number, `${number}`>] ? null
 		: [parseOperandToken<limit, $, args>] extends (
 			[InferredAst<unknown, `${infer value extends number | DateLiteral}`>]
 		) ?
