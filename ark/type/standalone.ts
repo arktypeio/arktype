@@ -1304,7 +1304,7 @@ ${writeFunction(
 			([name, source]) =>
 				`const ${name} = ${source.replace(/^function(\([^)]*\))/, "$1 =>")}`
 		)
-		return `function (${params.join(", ")}) {
+		return `(${params.join(", ")}) => {
 ${directive}${[...prologue, ...declarations, ...epilogue].join("\n")}
 return [${returned.join(", ")}]
 }`

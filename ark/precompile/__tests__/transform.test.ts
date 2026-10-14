@@ -222,7 +222,7 @@ export const A = type("string")`)
 				specifier.startsWith("~arktype/domain")
 			)!
 			attest(normalized(unit.match(/^const \w+ = .*/m)![0])).snap(
-				"const #0 = /* @__PURE__ */ (function () {"
+				"const #0 = /* @__PURE__ */ (() => {"
 			)
 		})
 
@@ -245,7 +245,7 @@ export const make = () => type("string")`,
 			)!
 			attest(normalized(unit.match(/^function \w+\(\) {\n.*/m)![0]))
 				.snap(`function #0() {
-	return (#0Unit ??= (function () {`)
+	return (#0Unit ??= (() => {`)
 			// imported after arktype, the cycle reaches the module once its artifact is evaluated
 			const late = precompile(
 				`import { type } from "arktype"
