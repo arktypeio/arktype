@@ -139,7 +139,10 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		data: unknown,
 		key?: PropertyKey
 	): true | undefined {
-		this._.push(issueAt(this._path, site, data, key))
+		const issue = issueAt(this._path, site, data, key)
+		// the first issue is held in an array of its own size, which pushing to an empty one would allocate larger
+		if (this._.length) this._.push(issue)
+		else this._ = [issue]
 		return this.failFast
 	}
 
