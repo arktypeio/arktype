@@ -1975,7 +1975,8 @@ ${isTemplate ? "]" : ")"}`
 					writeUnprecompilableMessage("a RegExp with its own properties")
 				)
 			}
-			const regex = `new RegExp(${JSON.stringify(value.source)}, ${JSON.stringify(value.flags)})`
+			// a RegExp's source is escaped to be written as a literal, which creates one RegExp each time it's evaluated as the constructor would
+			const regex = `/${value.source}/${value.flags}`
 			// no program can reach a pattern's own, whose lastIndex arktype resets before each test
 			if (this.patternInstances.has(value))
 				return this.declareConst(value, "literal", regex)
