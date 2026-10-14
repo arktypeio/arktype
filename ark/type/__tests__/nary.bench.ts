@@ -20,11 +20,11 @@ bench("or(2)", () => {
 
 bench("or-chained(2)", () => {
 	type.or({ a1: "1" }).or({ a2: "2" })
-}).types([1713, "instantiations"])
+}).types([1709, "instantiations"])
 
 bench("or(5)", () => {
 	type.or({ a1: "1" }, { a2: "2" }, { a3: "3" }, { a4: "4" }, { a5: "5" })
-}).types([3946, "instantiations"])
+}).types([3936, "instantiations"])
 
 bench("or-chained(5)", () => {
 	type
@@ -33,7 +33,7 @@ bench("or-chained(5)", () => {
 		.or({ a3: "3" })
 		.or({ a4: "4" })
 		.or({ a5: "5" })
-}).types([4668, "instantiations"])
+}).types([4658, "instantiations"])
 
 bench("or(10)", () => {
 	type.or(
@@ -48,7 +48,7 @@ bench("or(10)", () => {
 		{ a9: "9" },
 		{ a10: "10" }
 	)
-}).types([7869, "instantiations"])
+}).types([7849, "instantiations"])
 
 bench("or-chained(10)", () => {
 	type
@@ -62,7 +62,7 @@ bench("or-chained(10)", () => {
 		.or({ a8: "8" })
 		.or({ a9: "9" })
 		.or({ a10: "10" })
-}).types([10571, "instantiations"])
+}).types([10551, "instantiations"])
 
 bench("and(2)", () => {
 	type.and({ a1: "1" }, { a2: "2" })
@@ -70,11 +70,11 @@ bench("and(2)", () => {
 
 bench("and-chained(2)", () => {
 	type.and({ a1: "1" }).and({ a2: "2" })
-}).types([2020, "instantiations"])
+}).types([2016, "instantiations"])
 
 bench("and(5)", () => {
 	type.and({ a1: "1" }, { a2: "2" }, { a3: "3" }, { a4: "4" }, { a5: "5" })
-}).types([5923, "instantiations"])
+}).types([5913, "instantiations"])
 
 bench("and-chained(5)", () => {
 	type
@@ -83,7 +83,7 @@ bench("and-chained(5)", () => {
 		.and({ a3: "3" })
 		.and({ a4: "4" })
 		.and({ a5: "5" })
-}).types([6406, "instantiations"])
+}).types([6396, "instantiations"])
 
 bench("and(10)", () => {
 	const t = type.and(
@@ -99,7 +99,7 @@ bench("and(10)", () => {
 		{ a10: "10" }
 	)
 	// ⛳ Result: 17760 instantiations (under baseline by 98.90%)!
-}).types([14076, "instantiations"])
+}).types([14056, "instantiations"])
 
 bench("and-chained(10)", () => {
 	type
@@ -113,7 +113,7 @@ bench("and-chained(10)", () => {
 		.and({ a8: "8" })
 		.and({ a9: "9" })
 		.and({ a10: "10" })
-}).types([16454, "instantiations"])
+}).types([16434, "instantiations"])
 
 bench("merge(2)", () => {
 	type.merge({ a1: "1" }, { a2: "2" })
@@ -121,11 +121,11 @@ bench("merge(2)", () => {
 
 bench("merge-chained(2)", () => {
 	type.merge({ a1: "1" }).merge({ a2: "2" })
-}).types([1746, "instantiations"])
+}).types([1742, "instantiations"])
 
 bench("merge(5)", () => {
 	type.merge({ a1: "1" }, { a2: "2" }, { a3: "3" }, { a4: "4" }, { a5: "5" })
-}).types([4436, "instantiations"])
+}).types([4426, "instantiations"])
 
 bench("merge-chained(5)", () => {
 	type
@@ -134,7 +134,7 @@ bench("merge-chained(5)", () => {
 		.merge({ a3: "3" })
 		.merge({ a4: "4" })
 		.merge({ a5: "5" })
-}).types([4674, "instantiations"])
+}).types([4664, "instantiations"])
 
 bench("merge(10)", () => {
 	type.merge(
@@ -149,7 +149,7 @@ bench("merge(10)", () => {
 		{ a9: "9" },
 		{ a10: "10" }
 	)
-}).types([9074, "instantiations"])
+}).types([9054, "instantiations"])
 
 bench("merge-chained(10)", () => {
 	type
@@ -163,7 +163,7 @@ bench("merge-chained(10)", () => {
 		.merge({ a8: "8" })
 		.merge({ a9: "9" })
 		.merge({ a10: "10" })
-}).types([10372, "instantiations"])
+}).types([10352, "instantiations"])
 
 bench("pipe(2)", () => {
 	type.pipe(type.unit("a"), s => `${s}b` as const)

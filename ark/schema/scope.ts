@@ -125,15 +125,18 @@ export type InternalResolutions = Record<string, InternalResolution | undefined>
 
 export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
-export type resolvableReferenceIn<$> = {
-	[k in keyof $]: k extends string ?
-		k extends PrivateDeclaration<infer alias> ? alias
-		: // technically, root subtypes are resolvable, but there's never a good
-		// reason to use them over the base alias
-		k extends noSuggest | "root" ? never
-		: k
-	:	never
-}[keyof $]
+export type resolvableReferenceIn<$> =
+	[keyof $] extends [never] ? never
+	:	| Exclude<
+				keyof $ & string,
+				// technically, root subtypes are resolvable, but there's never a good
+				// reason to use them over the base alias
+				PrivateDeclaration | noSuggest | "root"
+		  >
+		| privateAliasOf<Extract<keyof $, PrivateDeclaration>>
+
+type privateAliasOf<k> =
+	k extends PrivateDeclaration<infer alias> ? alias : never
 
 export type resolveReference<reference extends resolvableReferenceIn<$>, $> =
 	reference extends keyof $ ? $[reference] : $[`#${reference}` & keyof $]

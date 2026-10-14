@@ -32,7 +32,7 @@ bench("union-tuple", () => type(["number", "|", "string"])).types([
 ])
 
 bench("union-chain", () => type("number").or("string")).types([
-	1129,
+	1127,
 	"instantiations"
 ])
 
@@ -52,7 +52,7 @@ bench("intersection-tuple", () => type(["number", "&", "0"])).types([
 ])
 
 bench("intersection-chain", () => type("number").and("0")).types([
-	1184,
+	1182,
 	"instantiations"
 ])
 
@@ -138,7 +138,7 @@ bench("to-string", () => type("string.numeric.parse |> number.integer")).types([
 
 bench("to-chain", () =>
 	type("string.numeric.parse").to("number.integer")
-).types([1750, "instantiations"])
+).types([1748, "instantiations"])
 
 bench("to-tuple", () =>
 	type(["string.numeric.parse", "|>", "number.integer"])
@@ -146,7 +146,7 @@ bench("to-tuple", () =>
 
 bench("to-args", () =>
 	type("string.numeric.parse", "|>", "number.integer")
-).types([3197, "instantiations"])
+).types([3189, "instantiations"])
 
 bench("base object", () =>
 	type({
@@ -225,4 +225,4 @@ bench("base object", () =>
 		filter: "'filter'",
 		narrow: "'narrow'"
 	})
-).types([13077, "instantiations"])
+).types([13075, "instantiations"])

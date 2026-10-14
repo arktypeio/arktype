@@ -16,7 +16,7 @@ bench("case(3, define)", () =>
 		.case("-2", n => `${n}` as const)
 		.case("-3", n => `${n}` as const)
 		.default("assert")
-).types([1943, "instantiations"])
+).types([1939, "instantiations"])
 
 bench("case(10, define)", () =>
 	match
@@ -31,7 +31,7 @@ bench("case(10, define)", () =>
 		.case("8", n => `${n}` as const)
 		.case("9", n => `${n}` as const)
 		.default("assert")
-).types([6978, "instantiations"])
+).types([6960, "instantiations"])
 
 bench("match.in<t> cases define and invoke", () => {
 	const matcher = match
@@ -45,7 +45,7 @@ bench("match.in<t> cases define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([2525, "instantiations"])
+}).types([2519, "instantiations"])
 
 bench("record(3, define)", () =>
 	match({
@@ -54,7 +54,7 @@ bench("record(3, define)", () =>
 		"22": n => `${n}` as const,
 		default: "assert"
 	})
-).types([2392, "instantiations"])
+).types([2378, "instantiations"])
 
 bench("record(10, define)", () =>
 	match({
@@ -70,7 +70,7 @@ bench("record(10, define)", () =>
 		"-9n": n => `${n}` as const,
 		default: "assert"
 	})
-).types([6731, "instantiations"])
+).types([6717, "instantiations"])
 
 bench("record.in<t> define and invoke", () => {
 	const matcher = match.in<string | number | boolean>().match({
@@ -84,7 +84,7 @@ bench("record.in<t> define and invoke", () => {
 	const one = matcher(4)
 	const two = matcher(true)
 	return [zero, one, two]
-}).types([3400, "instantiations"])
+}).types([3378, "instantiations"])
 
 const invokedCases3 = match
 	.case("31", n => `${n}` as const)

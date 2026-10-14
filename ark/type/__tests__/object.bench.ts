@@ -32,7 +32,7 @@ bench("declared object literal", () => {
 			b: "number[]",
 			c: { nested: "boolean[]" }
 		})
-}).types([3529, "instantiations"])
+}).types([3527, "instantiations"])
 
 bench("object literal with optional keys", () =>
 	type({
@@ -87,4 +87,4 @@ bench("nested type invocations", () =>
 			})
 			.array()
 	})
-).types([7408, "instantiations"])
+).types([7404, "instantiations"])
