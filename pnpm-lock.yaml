@@ -333,6 +333,9 @@ importers:
       oxc-resolver:
         specifier: 11.24.2
         version: 11.24.2
+      typescript:
+        specifier: '>=5.5'
+        version: 6.0.3
       unplugin:
         specifier: 3.4.0
         version: 3.4.0(esbuild@0.25.10)(rolldown@1.2.13)(rollup@4.52.4)(vite@8.3.4(@types/node@24.7.2)(esbuild@0.25.10)(jiti@2.6.1)(tsx@4.20.6))
@@ -349,6 +352,9 @@ importers:
       fast-check:
         specifier: 3.23.2
         version: 3.23.2
+      typescript-6:
+        specifier: npm:typescript@6.0.3
+        version: typescript@6.0.3
       vite:
         specifier: 8.3.4
         version: 8.3.4(@types/node@24.7.2)(esbuild@0.25.10)(jiti@2.6.1)(tsx@4.20.6)

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Export `Default` and `To` as types
+
+`arktype` exports the `Default` and `To` types an inferred Type holds, so a declaration can name them as `import("arktype").Default`, like `Out` and `Brand`.
+
 ### Return errors as plain objects
 
 The errors in an `ArkErrors`' `issues` are plain objects without getters or methods. Each has the keys its JSON had, in the same order, with `propString` before `expected`:

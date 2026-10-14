@@ -1,9 +1,12 @@
 #!/usr/bin/env node
+import { mkdirSync, writeFileSync } from "node:fs"
+import { dirname, relative } from "node:path"
 import { parseArgs } from "node:util"
 import { check } from "./check.ts"
+import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
 
 const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file>] [--conditions <a,b>] [--tsconfig <file>]"
+	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -14,6 +17,7 @@ const { values, positionals } = parseArgs({
 	allowPositionals: true,
 	options: {
 		check: { type: "boolean" },
+		declare: { type: "boolean" },
 		"fail-under": { type: "string" },
 		runtime: { type: "string" },
 		config: { type: "string" },
@@ -22,7 +26,25 @@ const { values, positionals } = parseArgs({
 	}
 })
 
-if (!values.check) fail("--check is required")
+if (values.declare) {
+	if (values.check || positionals.length) {
+		fail(
+			"--declare emits the tsconfig's program and takes no other mode or files"
+		)
+	}
+	const declarations = emitDeclarations({ tsconfig: values.tsconfig })
+	for (const path in declarations.files) {
+		mkdirSync(dirname(path), { recursive: true })
+		writeFileSync(path, declarations.files[path])
+	}
+	if (declarations.diagnostics) console.error(declarations.diagnostics)
+	console.log(
+		`${Object.keys(declarations.files).length} declaration files in ${relative(process.cwd(), declarations.root) || "."}, with ${declarations.shapes} ${declarations.shapes === 1 ? "shape" : "shapes"} in ${sharedDeclarationFile}`
+	)
+	process.exit(declarations.errors ? 1 : 0)
+}
+
+if (!values.check) fail("--check or --declare is required")
 
 const runtime = values.runtime
 if (runtime !== undefined && runtime !== "arktype")

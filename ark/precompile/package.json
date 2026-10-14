@@ -75,10 +75,14 @@
 	},
 	"peerDependencies": {
 		"arktype": "workspace:*",
-		"eslint": ">=9"
+		"eslint": ">=9",
+		"typescript": ">=5.5"
 	},
 	"peerDependenciesMeta": {
 		"eslint": {
+			"optional": true
+		},
+		"typescript": {
 			"optional": true
 		}
 	},
@@ -90,6 +94,7 @@
 		"arktype": "workspace:*",
 		"esbuild": "0.25.10",
 		"fast-check": "3.23.2",
+		"typescript-6": "npm:typescript@6.0.3",
 		"vite": "8.3.4",
 		"vitest": "5.0.3"
 	}
