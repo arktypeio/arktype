@@ -460,14 +460,15 @@ const basisOf = {
 	object: { domain: "object" }
 } as const
 
-const notArray = cached(() =>
+// pure, so a bundle that only installs the engine drops the reader
+const notArray = /* @__PURE__ */ cached(() =>
 	node("predicate", {
 		predicate: isNonArray,
 		meta: { description: "not an array" }
 	})
 )
 
-const typeRoots = cached(
+const typeRoots = /* @__PURE__ */ cached(
 	(): Record<JsonSchema.TypeName, BaseRoot> => ({
 		string: $ark.intrinsic.string,
 		number: $ark.intrinsic.number,
@@ -488,15 +489,17 @@ const otherThan = (...branches: BaseRoot[]) =>
 	])
 
 // a type's keywords constrain only that type, e.g. { minimum: 5 } allows "foo"
-const unconstrainedBy = cached((): Record<ConstrainedType, BaseRoot> => {
-	const { number, string, array, object } = typeRoots()
-	return {
-		number: otherThan(string, array, object),
-		string: otherThan(number, array, object),
-		array: otherThan(number, string, object),
-		object: otherThan(number, string, array)
+const unconstrainedBy = /* @__PURE__ */ cached(
+	(): Record<ConstrainedType, BaseRoot> => {
+		const { number, string, array, object } = typeRoots()
+		return {
+			number: otherThan(string, array, object),
+			string: otherThan(number, array, object),
+			array: otherThan(number, string, object),
+			object: otherThan(number, string, array)
+		}
 	}
-})
+)
 
 const constRoot = (value: unknown): BaseRoot =>
 	isArray(value) ?
@@ -641,15 +644,15 @@ const isString = (v: unknown) => typeof v === "string"
 const isNumber = (v: unknown): v is number =>
 	typeof v === "number" && Number.isFinite(v)
 
-const typeNames = Object.keys({
-	string: 1,
-	number: 1,
-	integer: 1,
-	boolean: 1,
-	null: 1,
-	array: 1,
-	object: 1
-} satisfies Record<JsonSchema.TypeName, 1>)
+const typeNames: readonly unknown[] = [
+	"string",
+	"number",
+	"integer",
+	"boolean",
+	"null",
+	"array",
+	"object"
+] satisfies JsonSchema.TypeName[]
 
 const keywordValues = {
 	number: ["a number", isNumber],
@@ -688,8 +691,7 @@ const keywordValues = {
 	],
 	type: [
 		"a type name or an array of type names",
-		v =>
-			isEvery(isArray(v) ? v : [v], name => typeNames.includes(name as string))
+		v => isEvery(isArray(v) ? v : [v], name => typeNames.includes(name))
 	]
 } satisfies Record<string, [expected: string, allows: (v: unknown) => boolean]>
 

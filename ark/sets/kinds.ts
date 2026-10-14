@@ -17,7 +17,7 @@ import { domain } from "./roots/domain.ts"
 import { intersection } from "./roots/intersection.ts"
 import { morph } from "./roots/morph.ts"
 import { proto } from "./roots/proto.ts"
-import { union } from "./roots/union.ts"
+import { unionImplementation } from "./roots/union.ts"
 import { unit } from "./roots/unit.ts"
 import { index } from "./structure/index.ts"
 import { optional, required } from "./structure/prop.ts"
@@ -39,7 +39,7 @@ export const setImplementationsByKind: Record<
 	domain,
 	unit,
 	proto,
-	union,
+	union: unionImplementation,
 	morph,
 	intersection,
 	divisor,

@@ -20,7 +20,7 @@ interface JsonSchemaContext extends ToJsonSchema.Context {
 	refCountsByPrefix: Record<string, number>
 }
 
-export const toJsonSchema = (
+export const rootToJsonSchema = (
 	node: BaseRoot,
 	opts: ToJsonSchema.Options
 ): JsonSchema => {

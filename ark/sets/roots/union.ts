@@ -40,7 +40,7 @@ import {
 import { sortSiblings } from "../constraint.ts"
 import { intersectNodesRoot, intersectOrPipeNodes } from "../intersections.ts"
 
-export const union: setImplementationOf<Union.Declaration> = {
+export const unionImplementation: setImplementationOf<Union.Declaration> = {
 	sort: inner => {
 		if (!inner.ordered) inner.branches = sortSiblings(inner.branches)
 	},
@@ -112,7 +112,7 @@ const isCaseUnit = (node: Unit.Node): boolean =>
 
 const isUndefinedCase = (k: string) => k === "undefined" || k === '"undefined"'
 
-export const discriminate = (node: Union.Node): Discriminant | null => {
+export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 	if (node.branches.length < 2) return null
 	if (node.unitBranches.length === node.branches.length) {
 		// a union of units lists each of them if any can't be a case

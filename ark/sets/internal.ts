@@ -1,5 +1,8 @@
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+export * from "./index.ts"
 export * from "./constraint.ts"
 export * from "./engine.ts"
+export * from "./fromJsonSchema.ts"
 export * from "./implement.ts"
 export * from "./intersections.ts"
 export * from "./kinds.ts"
