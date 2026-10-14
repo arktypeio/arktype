@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { rootSchema, type StandardJSONSchemaV1 } from "@ark/schema"
-import { parse, toJsonSchema, writeUnparsableSchemaMessage } from "arksets"
+import { parse, toJsonSchema } from "arksets"
+import { writeUnparsableSchemaMessage } from "arksets/internal"
 
 // stands in for a zod schema, which reads its JSON Schema the same way
 const standardSchema = (

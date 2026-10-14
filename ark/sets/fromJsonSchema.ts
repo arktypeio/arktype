@@ -755,6 +755,9 @@ const checkKeyword = (o: dict, k: string, pointer: string): void => {
 	}
 }
 
+export const writeUnparsableSchemaMessage = (actual: string): string =>
+	`Schema must be a Root, a Standard JSON Schema or a JSON Schema (was ${actual})`
+
 export const writeInvalidJsonSchemaMessage = (
 	pointer: string,
 	actual: unknown

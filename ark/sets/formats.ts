@@ -5,7 +5,11 @@ import {
 	type ToJsonSchema
 } from "@ark/schema"
 import { printable, throwParseError } from "@ark/util"
-import { isPlainObject, readJsonSchema } from "./fromJsonSchema.ts"
+import {
+	isPlainObject,
+	readJsonSchema,
+	writeUnparsableSchemaMessage
+} from "./fromJsonSchema.ts"
 
 /** a set of values as an @ark/schema node, which every arktype Type is */
 export type Root = BaseRoot
@@ -60,6 +64,3 @@ const parseObject = (schema: object, io: "in" | "out"): BaseRoot => {
 			readJsonSchema(schema)
 		:	throwParseError(writeUnparsableSchemaMessage(printable(schema)))
 }
-
-export const writeUnparsableSchemaMessage = (actual: string): string =>
-	`Schema must be a Root, a Standard JSON Schema or a JSON Schema (was ${actual})`
