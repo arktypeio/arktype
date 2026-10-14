@@ -279,15 +279,14 @@ export class InternalTypeParser extends Callable<
 		)
 		// also won't be defined during bootstrapping
 		const typeAttachments = $arkTypeRegistry.typeAttachments
-		for (const k in typeAttachments) {
-			defineLazily(this, k, () => {
-				const bound = $.bindKeyword(
-					typeAttachments[k as never] as BaseRoot | GenericRoot
-				)
-				// a resolved scope has already compiled the nodes bound before it
-				return $.resolved ? finalizeExport($, bound) : bound
-			})
+		const resolve = (k: string) => {
+			const bound = $.bindKeyword(
+				typeAttachments![k as never] as BaseRoot | GenericRoot
+			)
+			// a resolved scope has already compiled the nodes bound before it
+			return $.resolved ? finalizeExport($, bound) : bound
 		}
+		for (const k in typeAttachments) defineLazily(this, k, resolve)
 	}
 }
 

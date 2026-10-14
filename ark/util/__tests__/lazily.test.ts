@@ -35,4 +35,12 @@ contextualize(() => {
 		attest(computed()).equals(1)
 		attest(Object.keys(o)).equals([])
 	})
+
+	it("resolves each key with one thunk", () => {
+		const o = {} as { a: string; b: string }
+		const resolve = (k: string) => k.toUpperCase()
+		defineLazily(o, "a", resolve)
+		defineLazily(o, "b", resolve)
+		attest([o.a, o.b]).equals(["A", "B"])
+	})
 })

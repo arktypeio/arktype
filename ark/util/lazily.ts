@@ -17,15 +17,15 @@ export const lazily = <t extends object>(thunk: () => t): t => {
 	})
 }
 
-export const defineLazily = (
+export const defineLazily = <k extends PropertyKey>(
 	o: object,
-	k: PropertyKey,
-	thunk: () => unknown
+	k: k,
+	thunk: (k: k) => unknown
 ): void => {
 	let result: unknown = unset
 	Object.defineProperty(o, k, {
 		get() {
-			if (result === unset) result = thunk()
+			if (result === unset) result = thunk(k)
 			if (Object.getOwnPropertyDescriptor(this, k)?.configurable)
 				defineValue(this, k, result)
 			return result

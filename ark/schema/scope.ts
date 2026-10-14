@@ -1730,14 +1730,14 @@ export abstract class BaseScope<$ extends {} = {}> {
 	exportLazily(): SchemaModule<{ [k in exportedNameOf<$>]: $[k] }> {
 		if (!this.lazyExports) {
 			const exports = new RootModule({})
-			for (const name of this.exportedNames) {
-				defineLazily(exports, name, () => {
-					const def = this.aliases[name]
-					return hasArkKind(def, "module") ?
-							bindModuleLazily(def, this)
-						:	finalizeExport(this, this.maybeResolve(name)!)
-				})
+			const resolve = (name: string) => {
+				const def = this.aliases[name]
+				return hasArkKind(def, "module") ?
+						bindModuleLazily(def, this)
+					:	finalizeExport(this, this.maybeResolve(name)!)
 			}
+			for (const name of this.exportedNames)
+				defineLazily(exports, name, resolve)
 			this.lazyExports = exports as never
 			this.resolved = true
 		}
@@ -1906,17 +1906,13 @@ const bindModuleLazily = (
 	$: BaseScope
 ): InternalModule => {
 	const bound = new RootModule({})
-	for (const k in module) {
-		defineLazily(bound, k, () => {
-			const resolution = module[k]
-			return hasArkKind(resolution, "module") ?
-					bindModuleLazily(resolution, $)
-				:	finalizeExport(
-						$,
-						$.bindReference(resolution as BaseRoot | GenericRoot)
-					)
-		})
+	const resolve = (k: string) => {
+		const resolution = module[k]
+		return hasArkKind(resolution, "module") ?
+				bindModuleLazily(resolution, $)
+			:	finalizeExport($, $.bindReference(resolution as BaseRoot | GenericRoot))
 	}
+	for (const k in module) defineLazily(bound, k, resolve)
 	return bound as never
 }
 

@@ -404,17 +404,12 @@ export const keywordModule = (
 ): RootModule => {
 	const module = new RootModule({})
 	let exports: RootModule | undefined
-	for (const name in def) {
-		if (name[0] === "#") continue
-		defineLazily(
-			module,
-			name,
-			() =>
-				(exports ??= new InternalScope(def, config, true).exportLazily())[
-					name as never
-				]
-		)
-	}
+	const resolve = (name: string) =>
+		(exports ??= new InternalScope(def, config, true).exportLazily())[
+			name as never
+		]
+	for (const name in def)
+		if (name[0] !== "#") defineLazily(module, name, resolve)
 	return module
 }
 
