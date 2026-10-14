@@ -82,7 +82,7 @@ import {
 	type IssueSiteOf,
 	type ReferenceOptions
 } from "./shared/compile.ts"
-import { ArkTraversal, errorFromContext } from "./shared/errors.ts"
+import { ArkTraversal, errorFromUnion } from "./shared/errors.ts"
 import { ArkErrors } from "./shared/issues.ts"
 import { nodeKinds, type NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
@@ -356,7 +356,7 @@ const unitConstants = {
 	arrayIndexMatcher,
 	callMorph,
 	copyOf,
-	errorFromContext,
+	errorFromUnion,
 	isAbsent,
 	isValidDate,
 	jsTypeOfDescriptions,

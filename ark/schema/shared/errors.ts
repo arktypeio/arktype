@@ -294,18 +294,12 @@ export class ArkTraversal extends Traversal {
 		site: UnionSite,
 		data: unknown
 	): boolean {
-		const errors: ArkError[] = []
-		for (const branch of branches) {
+		const errors = branches.map(branch => {
 			this.pushBranch()
 			branch(data, this)
-			errors.push(this.popBranch()!.error as ArkError)
-		}
-		errorFromContext(this, {
-			code: "union",
-			errors,
-			meta: site.meta as ArkEnv.meta,
-			data
+			return this.popBranch()!.error as ArkError
 		})
+		errorFromUnion(this, errors, site.meta as ArkEnv.meta, data)
 		return this.failFast
 	}
 
@@ -328,6 +322,26 @@ export const errorFromContext = (
 	ctx: InternalTraversal,
 	input: ArkErrorContextInput
 ): ArkError => ctx.addError(errorOfContext(input, ctx.path, ctx.config))
+
+/** adds the error of data no branch of a union allowed, from the error each branch stopped at */
+export const errorFromUnion = (
+	ctx: InternalTraversal,
+	errors: readonly ArkError[],
+	meta: ArkEnv.meta,
+	data: unknown
+): ArkError =>
+	ctx.addError(
+		stampError(
+			{
+				data,
+				path: ctx.path.slice(),
+				code: "union",
+				errors: flattenUnion(errors),
+				meta
+			} as never,
+			ctx.config
+		)
+	)
 
 /**
  * Writes an error's text in `locale`, as its errors would be written if it
@@ -368,12 +382,7 @@ export const errorOfContext = (
 		assignSymbols(error, input)
 	}
 	if (input.code === "union") {
-		// flatten union errors to avoid repeating context like "foo must be foo must be"...
-		const flat: ArkError[] = []
-		for (const inner of input.errors) {
-			if (inner.code !== "union") appendError(flat, inner)
-			else for (const e of inner.errors) appendError(flat, e)
-		}
+		const flat = flattenUnion(input.errors)
 		error.errors =
 			!prefixPath && !relativePath ?
 				flat
@@ -390,6 +399,16 @@ export const errorOfContext = (
 const assignSymbols = (target: object, source: object) => {
 	for (const k of Object.getOwnPropertySymbols(source))
 		target[k as never] = source[k as never]
+}
+
+// flatten union errors to avoid repeating context like "foo must be foo must be"...
+const flattenUnion = (errors: readonly ArkError[]): ArkError[] => {
+	const flat: ArkError[] = []
+	for (const inner of errors) {
+		if (inner.code !== "union") appendError(flat, inner)
+		else for (const e of inner.errors) appendError(flat, e)
+	}
+	return flat
 }
 
 const appendError = (errors: ArkError[], error: ArkError) => {

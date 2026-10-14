@@ -25,7 +25,11 @@ import type {
 	BaseNodeInput,
 	declareNode
 } from "../shared/declare.ts"
-import { errorFromContext, type ArkError } from "../shared/errors.ts"
+import {
+	errorFromContext,
+	errorFromUnion,
+	type ArkError
+} from "../shared/errors.ts"
 import type { UnionSite } from "../shared/issues.ts"
 import {
 	implementNode,
@@ -279,7 +283,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			if (!ctx.hasError()) return ctx.popBranch()
 			errors.push(ctx.popBranch()!.error as ArkError)
 		}
-		errorFromContext(ctx, { code: "union", errors, meta: this.meta, data })
+		errorFromUnion(ctx, errors, this.meta, data)
 	}
 
 	traverseTransform: TraverseTransform = (data, ctx) => {
@@ -438,7 +442,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			if (js.raisesIssues) js.return(`!${js.error(this)}`)
 			else {
 				js.line(
-					`${js.ref(errorFromContext)}(ctx, { code: "union", errors, meta: ${js.ref(this.meta)}, data })`
+					`${js.ref(errorFromUnion)}(ctx, errors, ${js.ref(this.meta)}, data)`
 				).return("!ctx.failFast")
 			}
 		} else if (js.traversalKind === "Allows") {
