@@ -1,6 +1,13 @@
-import { throwError } from "@ark/util"
+import { throwError, type KeySet } from "@ark/util"
 import { dirname } from "node:path"
+import { relative } from "node:path/posix"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
+import {
+	emitDeclarations,
+	refuseDeclare,
+	writeDeclaredOutsideMessage,
+	type Declarations
+} from "./declare.ts"
 import type {
 	PrecompilePluginOptions,
 	PrecompileRequest,
@@ -17,10 +24,17 @@ import { createAsyncPrecompiler } from "./worker.ts"
 
 export type { PrecompilePluginOptions } from "./driver.ts"
 
+export interface PrecompileUnpluginOptions extends PrecompilePluginOptions {
+	// emit the tsconfig's declarations with the bundle of a build that neither watches nor serves
+	declare?: boolean | undefined
+}
+
 export const precompile: UnpluginInstance<
-	PrecompilePluginOptions | undefined,
+	PrecompileUnpluginOptions | undefined,
 	false
-> = createUnplugin(opts => {
+> = createUnplugin((opts, meta) => {
+	if (!(meta.framework in declaringFrameworks))
+		refuseDeclare(opts, meta.framework)
 	let options = opts
 	// arktype in a worker of its own takes the program's configuration, and shares no state with the bundler's
 	const create = () =>
@@ -52,6 +66,26 @@ export const precompile: UnpluginInstance<
 	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
+	let isServing = false
+	// a Vite app's environments share the declarations of the app's build
+	const declarationsByApp = new WeakMap<object, Declarations>()
+	let app: { environments: Record<string, object> } | undefined
+	const declare = (environment: { name: string } | undefined) => {
+		const key =
+			environment && app?.environments[environment.name] === environment ?
+				app
+			:	undefined
+		const cached = key && declarationsByApp.get(key)
+		if (cached) return cached
+		const declarations = emitDeclarations({
+			cwd: opts?.cwd,
+			tsconfig: opts?.tsconfig
+		})
+		// a build context can't warn here, and a bundler doesn't fail on TypeScript's errors
+		if (declarations.diagnostics) console.warn(declarations.diagnostics)
+		if (key) declarationsByApp.set(key, declarations)
+		return declarations
+	}
 	return {
 		name: "arktype",
 		enforce: "pre",
@@ -100,6 +134,9 @@ export const precompile: UnpluginInstance<
 			}
 		},
 		vite: {
+			buildApp: async builder => {
+				app = builder
+			},
 			// Vite and Vitest leave dependencies to Node or to their prebundling unless told otherwise
 			config: () =>
 				packages.length ?
@@ -111,6 +148,7 @@ export const precompile: UnpluginInstance<
 				:	undefined,
 			// Vitest's module mocks replace what a module exports, which a factory checks its static helpers against
 			configResolved: config => {
+				isServing = config.command === "serve"
 				if (
 					opts?.checkHelpers !== undefined ||
 					!process.env.VITEST ||
@@ -131,6 +169,20 @@ export const precompile: UnpluginInstance<
 					native.compiler.watchMode
 				:	(this as { meta?: { watchMode?: boolean } }).meta?.watchMode
 			if (isWatching === false) restart()
+			if (!opts?.declare || isWatching || isServing) return
+			const declarations = declare(
+				(this as { environment?: { name: string } }).environment
+			)
+			for (const path in declarations.files) {
+				const fileName = relative(declarations.root, path)
+				if (fileName.startsWith("../"))
+					throwError(writeDeclaredOutsideMessage(path, declarations.root))
+				this.emitFile({
+					type: "asset",
+					fileName,
+					source: declarations.files[path]
+				})
+			}
 		},
 		watchChange: reset,
 		esbuild: {
@@ -181,3 +233,13 @@ export const precompile: UnpluginInstance<
 })
 
 const esbuildResolution = "arktype"
+
+// each says whether a build watches, which esbuild, Bun and Farm don't
+const declaringFrameworks = {
+	rollup: 1,
+	rolldown: 1,
+	vite: 1,
+	webpack: 1,
+	rspack: 1,
+	rsbuild: 1
+} as const satisfies KeySet

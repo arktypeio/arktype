@@ -2,8 +2,13 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { writeStandaloneDependencyMessage } from "@ark/precompile"
 import {
+	emitDeclarations,
+	writeDeclareFrameworkMessage,
+	writeDeclaredOutsideMessage
+} from "@ark/precompile/internal/declare.ts"
+import {
 	precompile,
-	type PrecompilePluginOptions
+	type PrecompileUnpluginOptions
 } from "@ark/precompile/unplugin"
 import { context, build as esbuild, transformSync, type Plugin } from "esbuild"
 import { spawnSync } from "node:child_process"
@@ -21,6 +26,8 @@ import { tmpdir } from "node:os"
 import { dirname, join } from "node:path"
 import { Worker } from "node:worker_threads"
 import {
+	createBuilder,
+	createServer,
 	build as viteBuild,
 	defaultClientConditions,
 	defaultServerConditions,
@@ -52,7 +59,7 @@ const runPlain = (root: string) =>
 const conditions = ["ark-ts"]
 
 const viteConfig = (
-	opts?: PrecompilePluginOptions,
+	opts?: PrecompileUnpluginOptions,
 	root = app
 ): InlineConfig => ({
 	root,
@@ -69,7 +76,7 @@ const viteConfig = (
 })
 
 const bundlers = {
-	vite: async (opts?: PrecompilePluginOptions, root = app) => {
+	vite: async (opts?: PrecompileUnpluginOptions, root = app) => {
 		const [{ output }] = (await viteBuild({
 			...viteConfig(opts, root),
 			build: {
@@ -81,7 +88,7 @@ const bundlers = {
 		return output[0].code
 	},
 	esbuild: async (
-		opts?: PrecompilePluginOptions,
+		opts?: PrecompileUnpluginOptions,
 		root = app,
 		minify = true
 	) => {
@@ -190,7 +197,7 @@ let dependencies: string
 
 const buildDependency = async (
 	entry: string,
-	opts: PrecompilePluginOptions = {}
+	opts: PrecompileUnpluginOptions = {}
 ) => {
 	const result = await esbuild({
 		entryPoints: [join(dependencies, entry)],
@@ -419,6 +426,133 @@ export const checkedItem = JSON.stringify(itemJson())
 		})) as Rolldown.RolldownOutput
 		attest(run(output[0].code)).equals(expected)
 	}).timeout(60000)
+
+	it("vite emits the tsconfig's declarations with a build", async () => {
+		const declared = fromHere("declared")
+		const [{ output }] = (await viteBuild({
+			...viteConfig({ cwd: declared, declare: true }, declared),
+			build: {
+				write: false,
+				lib: { entry: "src/index.ts", formats: ["es"] }
+			}
+		})) as Rolldown.RolldownOutput[]
+		const assets = output.filter(file => file.type === "asset")
+		attest(assets.map(file => file.fileName).sort()).snap([
+			"aliases.d.ts",
+			"common.d.ts",
+			"cycles.d.ts",
+			"enums.d.ts",
+			"index.d.ts",
+			"nested/augments.d.ts",
+			"nested/base.d.ts",
+			"node.d.ts",
+			"scoped.d.ts",
+			"shapes.d.ts",
+			"users.d.ts",
+			"~arktype.d.ts"
+		])
+		attest(
+			assets.find(file => file.fileName === "~arktype.d.ts")?.source
+		).equals(
+			emitDeclarations({ cwd: declared }).files[
+				join(declared, "out", "~arktype.d.ts")
+			]
+		)
+	}).timeout(60000)
+
+	// TypeScript's diagnostics for this tsconfig are warned wherever declarations are emitted
+	const warnedDeclaring = async (
+		declare: (config: InlineConfig) => unknown
+	) => {
+		const layouts = fromHere("declaredLayouts")
+		const config = viteConfig(
+			{ cwd: layouts, declare: true, tsconfig: "tsconfig.broken.json" },
+			layouts
+		)
+		const warnings: unknown[] = []
+		const { warn } = console
+		console.warn = (...args: unknown[]) => warnings.push(args)
+		try {
+			await declare(config)
+		} finally {
+			console.warn = warn
+		}
+		return warnings
+	}
+
+	it("vite emits no declarations while serving", async () => {
+		attest(
+			await warnedDeclaring(async config =>
+				(await createServer(config)).close()
+			)
+		).equals([])
+	}).timeout(60000)
+
+	it("vite emits no declarations from a build that watches", async () => {
+		attest(
+			await warnedDeclaring(async config => {
+				const watcher = (await viteBuild({
+					...config,
+					build: {
+						write: false,
+						watch: {},
+						lib: { entry: "src/index.ts", formats: ["es"] }
+					}
+				})) as Rolldown.RolldownWatcher
+				await new Promise(resolve =>
+					watcher.on("event", event => {
+						if (event.code === "END" || event.code === "ERROR") resolve(event)
+					})
+				)
+				await watcher.close()
+			})
+		).equals([])
+	}).timeout(60000)
+
+	it("vite declares once for an app's environments", async () => {
+		const warnings = await warnedDeclaring(async config => {
+			const builder = await createBuilder({
+				...config,
+				environments: {
+					client: {
+						build: { write: false, rollupOptions: { input: "src/index.ts" } }
+					},
+					ssr: { build: { write: false, ssr: "src/index.ts" } }
+				},
+				builder: {}
+			})
+			await builder.buildApp()
+		})
+		attest(warnings.length).equals(1)
+	}).timeout(60000)
+
+	it("vite refuses declarations it can't place in the bundle", async () => {
+		const layouts = fromHere("declaredLayouts")
+		const message = await viteBuild({
+			...viteConfig(
+				{ cwd: layouts, declare: true, tsconfig: "tsconfig.outside.json" },
+				layouts
+			),
+			build: { write: false, lib: { entry: "src/index.ts", formats: ["es"] } }
+		}).then(
+			() => "",
+			(e: Error) => e.message
+		)
+		attest(
+			message.includes(
+				writeDeclaredOutsideMessage(
+					join(layouts, "src", "index.d.ts"),
+					join(layouts, "out")
+				)
+			)
+		).equals(true)
+	}).timeout(60000)
+
+	it("esbuild refuses declare, since it can't say whether it's watching", () => {
+		attest(() => precompile.esbuild({ declare: true })).throws(
+			writeDeclareFrameworkMessage("esbuild")
+		)
+	})
 
 	it("vite configured, with a plugin ahead of arktype's transpiling the config module", async () => {
 		const config = viteConfig(

@@ -10,9 +10,11 @@ import {
 	transformedFilterOf,
 	writeTextlessMessage
 } from "./host.ts"
+import { refuseDeclare } from "./declare.ts"
 import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
 
 export const register = (opts?: PrecompilePluginOptions): void => {
+	refuseDeclare(opts, "Node")
 	// the worker inherits the flags that registered these hooks
 	if (isPrecompilerWorker) return
 	const isStandalone = opts?.runtime !== "arktype"

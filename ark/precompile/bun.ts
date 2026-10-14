@@ -10,6 +10,7 @@ import {
 	runtimeSpecifiers,
 	transformedFilterOf
 } from "./host.ts"
+import { refuseDeclare } from "./declare.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
 // declared here, since bun-types declares globals beside @types/node's
@@ -29,56 +30,60 @@ export interface BunPlugin {
 	setup(build: BunPluginBuilder): void
 }
 
-export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => ({
-	name: "arktype",
-	setup: build => {
-		const isStandalone = opts?.runtime !== "arktype"
-		if (isStandalone) {
-			// a runtime plugin isn't asked to resolve a package, so arktype is replaced for every importer
-			const runtime = createNodeHost(opts).resolve(
-				"arktype/runtime",
-				join(opts?.cwd ?? process.cwd(), "package.json")
+export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
+	refuseDeclare(opts, "Bun")
+	return {
+		name: "arktype",
+		setup: build => {
+			const isStandalone = opts?.runtime !== "arktype"
+			if (isStandalone) {
+				// a runtime plugin isn't asked to resolve a package, so arktype is replaced for every importer
+				const runtime = createNodeHost(opts).resolve(
+					"arktype/runtime",
+					join(opts?.cwd ?? process.cwd(), "package.json")
+				)
+				for (const specifier of [...runtimeSpecifiers, "arktype/runtime"]) {
+					if (!resolvesToRuntime(specifier, opts)) continue
+					build.module(specifier, () => ({
+						contents: `export * from ${JSON.stringify(runtime)}`,
+						loader: "js"
+					}))
+				}
+			}
+			const modules: Record<string, string> = {}
+			const request = createAsyncPrecompiler({
+				precompilerOptions: {
+					...opts,
+					// a standalone module imports what it shares with others, which the plugin serves
+					inline: !isStandalone,
+					// set by `bun test`
+					checkHelpers: opts?.checkHelpers ?? process.env.NODE_ENV === "test"
+				}
+			})
+			const { include, exclude } = transformedFilterOf(
+				optedInPackagesOf(opts?.cwd ?? process.cwd())
 			)
-			for (const specifier of [...runtimeSpecifiers, "arktype/runtime"]) {
-				if (!resolvesToRuntime(specifier, opts)) continue
-				build.module(specifier, () => ({
-					contents: `export * from ${JSON.stringify(runtime)}`,
-					loader: "js"
-				}))
-			}
+			// a runtime plugin's onLoad must return a module, so the filter excludes what isn't transformed
+			const filter = new RegExp(`^(?!.*${exclude.source}).*${include.source}`)
+			build.onLoad({ filter }, async ({ path }) => {
+				const source = readFileSync(path, "utf8")
+				const transformed = (await request("transform", source, path)) as
+					| TransformedModule
+					| undefined
+				for (const warning of transformed?.warnings ?? []) console.warn(warning)
+				if (transformed?.errors.length)
+					throwError(transformed.errors.join("\n"))
+				if (!transformed?.code) return { contents: source }
+				for (const specifier in transformed.modules) {
+					if (modules[specifier] !== undefined) continue
+					modules[specifier] = transformed.modules[specifier]
+					build.module(specifier, () => ({
+						contents: modules[specifier],
+						loader: "js"
+					}))
+				}
+				return { contents: appendSourceMap(transformed.code, transformed.map) }
+			})
 		}
-		const modules: Record<string, string> = {}
-		const request = createAsyncPrecompiler({
-			precompilerOptions: {
-				...opts,
-				// a standalone module imports what it shares with others, which the plugin serves
-				inline: !isStandalone,
-				// set by `bun test`
-				checkHelpers: opts?.checkHelpers ?? process.env.NODE_ENV === "test"
-			}
-		})
-		const { include, exclude } = transformedFilterOf(
-			optedInPackagesOf(opts?.cwd ?? process.cwd())
-		)
-		// a runtime plugin's onLoad must return a module, so the filter excludes what isn't transformed
-		const filter = new RegExp(`^(?!.*${exclude.source}).*${include.source}`)
-		build.onLoad({ filter }, async ({ path }) => {
-			const source = readFileSync(path, "utf8")
-			const transformed = (await request("transform", source, path)) as
-				| TransformedModule
-				| undefined
-			for (const warning of transformed?.warnings ?? []) console.warn(warning)
-			if (transformed?.errors.length) throwError(transformed.errors.join("\n"))
-			if (!transformed?.code) return { contents: source }
-			for (const specifier in transformed.modules) {
-				if (modules[specifier] !== undefined) continue
-				modules[specifier] = transformed.modules[specifier]
-				build.module(specifier, () => ({
-					contents: modules[specifier],
-					loader: "js"
-				}))
-			}
-			return { contents: appendSourceMap(transformed.code, transformed.map) }
-		})
 	}
-})
+}

@@ -4,6 +4,7 @@ import {
 	type KeyedModule,
 	type PrecompilePluginOptions
 } from "./driver.ts"
+import { refuseDeclare } from "./declare.ts"
 
 export interface TurbopackLoaderContext {
 	resourcePath: string
@@ -20,6 +21,7 @@ const precompilersByOptions: Record<
 // a webpack loader is its module's default export, called with its context as `this`
 export default function (this: TurbopackLoaderContext, source: string): string {
 	const opts = this.getOptions()
+	refuseDeclare(opts, "Turbopack")
 	const precompile = (precompilersByOptions[JSON.stringify(opts)] ??=
 		createKeyedPrecompiler(opts))
 	const { code, errors, warnings, files } = precompile(

@@ -1,6 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { configuredThreadMessage, writeTextlessMessage } from "@ark/precompile"
+import { precompile as bunPlugin } from "@ark/precompile/bun"
+import { writeDeclareFrameworkMessage } from "@ark/precompile/internal/declare.ts"
+import { register } from "@ark/precompile/node"
 import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
@@ -112,6 +115,24 @@ contextualize(() => {
 			["register"],
 			["__esModule", "default"]
 		])
+	})
+
+	it("refuses declare, since no build tells it a build from a rebuild", () => {
+		// @ts-expect-error
+		attest(() => bunPlugin({ declare: true })).throws(
+			writeDeclareFrameworkMessage("Bun")
+		)
+		// @ts-expect-error
+		attest(() => register({ declare: true })).throws(
+			writeDeclareFrameworkMessage("Node")
+		)
+		const loader = {
+			getOptions: () => ({ declare: true }),
+			resourcePath: "a.ts"
+		}
+		attest(() => turbopack.call(loader as never, "")).throws(
+			writeDeclareFrameworkMessage("Turbopack")
+		)
 	})
 
 	describe("node", () => {

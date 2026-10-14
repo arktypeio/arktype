@@ -81,6 +81,21 @@ export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 export const writeSharedCollisionMessage = (file: string): string =>
 	`${file} would be declared at ${sharedDeclarationFile}, which holds the shapes of the build's Types`
 
+// a driver that can't tell a build from a rebuild has nowhere to emit declarations once
+export const refuseDeclare = (opts: object | undefined, name: string): void => {
+	if (opts && "declare" in opts && opts.declare)
+		throwError(writeDeclareFrameworkMessage(name))
+}
+
+export const writeDeclareFrameworkMessage = (name: string): string =>
+	`declare: true needs a bundler that tells a plugin whether its build watches or serves, which ${name} doesn't, so run arktype-precompile --declare after building instead`
+
+export const writeDeclaredOutsideMessage = (
+	path: string,
+	root: string
+): string =>
+	`${path} is declared outside ${root}, where the bundle can't hold it, so set rootDir to a directory holding every module the tsconfig emits`
+
 type TypeScript = typeof ts & {
 	getCheckFlags: (symbol: ts.Symbol) => number
 }
