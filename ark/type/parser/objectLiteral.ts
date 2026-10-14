@@ -33,6 +33,7 @@ import {
 	invalidOptionalKeyKindMessage,
 	parseProperty,
 	type OptionalPropertyDefinition,
+	type OptionalPropertyString,
 	type validateProperty
 } from "./property.ts"
 
@@ -191,7 +192,38 @@ export type inferObjectLiteral<def extends object, $, args> = show<
 /**
  * Infers the contents of an object literal, ignoring a spread definition
  */
-type _inferObjectLiteral<def extends object, $, args> = {
+type _inferObjectLiteral<def extends object, $, args> =
+	[keyof def & PreparsedKeyPattern] extends [never] ?
+		inferUnparsedKeys<def, optionalKeyOf<def>, $, args>
+	:	inferKeyedObjectLiteral<def, $, args>
+
+// keys whose kind or name only preparseKey can determine
+type PreparsedKeyPattern =
+	| number
+	| MetaKey
+	| IndexKey
+	| `${string}${Backslash}${string}`
+
+type optionalKeyOf<def> = {
+	[k in keyof def]: k extends OptionalPropertyString ? k
+	: [def[k]] extends [anyOrNever] ? never
+	: def[k] extends OptionalPropertyDefinition ? k
+	: never
+}[keyof def]
+
+// naming optional keys through optionalKeyFromEntry keeps show's properties in definition order
+type inferUnparsedKeys<def, optionalKey, $, args> = {
+	-readonly [k in keyof def as k extends optionalKey ? never
+	:	k]: inferDefinition<def[k], $, args>
+} & {
+	-readonly [k in keyof def as k extends optionalKey ?
+		optionalKeyFromEntry<k, def[k]>
+	:	never]?: def[k] extends OptionalPropertyDefinition<infer baseDef> ?
+		inferDefinition<baseDef, $, args>
+	:	inferDefinition<def[k], $, args>
+}
+
+type inferKeyedObjectLiteral<def extends object, $, args> = {
 	// since def is a const parameter, we remove the readonly modifier here
 	// support for built-in readonly tracked here:
 	// https://github.com/arktypeio/arktype/issues/808
@@ -211,9 +243,18 @@ type _inferObjectLiteral<def extends object, $, args> = {
 }
 
 export type validateObjectLiteral<def, $, args> = {
-	[k in keyof def]: preparseKey<k> extends (
-		infer parsedKey extends PreparsedKey
-	) ?
+	[k in keyof def]: k extends PreparsedKeyPattern ?
+		validatePreparsedEntry<k, def[k], $, args>
+	:	validateProperty<
+			def[k],
+			k extends OptionalPropertyString ? "optional" : "required",
+			$,
+			args
+		>
+}
+
+type validatePreparsedEntry<k, v, $, args> =
+	preparseKey<k> extends infer parsedKey extends PreparsedKey ?
 		parsedKey extends PreparsedEntryKey<"index"> ?
 			validateString<parsedKey["normalized"], $, args> extends (
 				ErrorMessage<infer message>
@@ -223,11 +264,10 @@ export type validateObjectLiteral<def, $, args> = {
 			: inferDefinition<parsedKey["normalized"], $, args> extends Key ?
 				// if the index def is syntactically and semantically valid,
 				// move on to the validating the value definition
-				validateProperty<def[k], parsedKey["kind"], $, args>
+				validateProperty<v, parsedKey["kind"], $, args>
 			:	ErrorMessage<writeInvalidPropertyKeyMessage<parsedKey["normalized"]>>
-		:	validateProperty<def[k], parsedKey["kind"], $, args>
+		:	validateProperty<v, parsedKey["kind"], $, args>
 	:	never
-}
 
 type nonOptionalKeyFromEntry<k extends PropertyKey, v, $, args> =
 	// inferring into parsedKey with no extends check seems to
