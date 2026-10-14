@@ -29,6 +29,7 @@ import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { inspect } from "node:util"
 import {
+	freezes,
 	hasMember,
 	lackedMembers,
 	lacks,
@@ -125,11 +126,11 @@ const loadArtifact = async (
 	members: ValidatorMembers
 ): Promise<any> => {
 	const dir = await outDir()
+	const opts = { members, freeze: testedOptions.freeze }
 	let code: string
-	if (layout === "inline")
-		code = precompileStandalone(exports, { members }).code
+	if (layout === "inline") code = precompileStandalone(exports, opts).code
 	else {
-		const artifact = precompileStandaloneModules(exports, { members })
+		const artifact = precompileStandaloneModules(exports, opts)
 		for (const [specifier, module] of Object.entries(artifact.modules)) {
 			const written = modulesBySpecifier[specifier]
 			if (written === undefined) {
@@ -590,6 +591,8 @@ export const compare = async (
 			hasMember(validator, member)
 		)
 		if (unlacked.length) disagree("members", { unlacked })
+		if (Object.isFrozen(validator) !== freezes)
+			disagree("frozen", { frozen: Object.isFrozen(validator) })
 		const attributes = observeAttributes(validator)
 		if (!isEqual(arktype.attributes, attributes)) {
 			disagree("attributes", {

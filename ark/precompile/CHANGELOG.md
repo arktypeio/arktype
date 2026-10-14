@@ -16,6 +16,14 @@ precompile.vite({ declare: true })
 
 It needs the compiler API of TypeScript 5.5 to 6 from the optional `typescript` peer, which a TypeScript 7 project installs as `typescript-6`.
 
+### Leave standalone validators unfrozen with `freeze: false`
+
+A standalone validator and its members, like `assert`, `allows` and `~standard`, are frozen, so a program writing to one throws in strict mode code. `freeze: false` leaves them unfrozen, for a program that doesn't rely on that.
+
+```ts
+precompile.vite({ freeze: false })
+```
+
 ### Leave out what a standalone validator has with `members`
 
 `members` sets which members a standalone validator has: those it bakes of its Type's introspection where true, and `assert`, `meta`, `~standard` and the methods it inherits, `traverse()`, `from()` and `toString()`, unless false. The build fails where a program reads one it drops, and a validator the runtime reads keeps every member, as a default's value or a `type.fn`'s parameters. A validator without its methods declares a traversal and an `onFail` after its data, so its `length` stays 2, as a Type piping to a function of `length` 1 passes it its traversal only where the function inherits `traverse()`.

@@ -26,6 +26,7 @@ import {
 	type FactoryParam,
 	type StandaloneExport,
 	type StandaloneFactory,
+	type StandaloneOptions,
 	type ValidatorMembers
 } from "arktype/internal/standalone.ts"
 import {
@@ -74,9 +75,11 @@ const load = async (
 	exports: Record<string, StandaloneExport>,
 	configure = "",
 	fingerprint?: string,
-	members = printed
+	members = printed,
+	opts?: StandaloneOptions
 ): Promise<Record<string, any>> => {
 	const { code, folds } = precompileStandalone(exports, {
+		...opts,
 		configured:
 			fingerprint === undefined ? undefined : { fingerprint, path: "main.ts" },
 		members
@@ -591,6 +594,37 @@ export const piping = validator => type("unknown").pipe(validator)`)
 				"must be a well-formed numeric string"
 			)
 		}
+	})
+
+	it("takes writes where its build doesn't freeze it", async () => {
+		const T = type({ name: "string" })
+		const { T: frozen } = await load({ T })
+		const { T: validator } = await load(
+			{ T },
+			undefined,
+			undefined,
+			{
+				toJSON: true
+			},
+			{ freeze: false }
+		)
+		const writable = (o: object) => !Object.isFrozen(o)
+		attest(
+			[frozen, frozen.assert, frozen.allows, frozen["~standard"]].map(writable)
+		).equals([false, false, false, false])
+		attest(
+			[
+				validator,
+				validator.assert,
+				validator.allows,
+				validator.toJSON,
+				validator["~standard"],
+				validator["~standard"].validate
+			].map(writable)
+		).equals([true, true, true, true, true, true])
+		validator.label = "user"
+		attest(validator.label).equals("user")
+		attest(validator({ name: 1 }).summary).equals(frozen({ name: 1 }).summary)
 	})
 
 	it("bakes introspection", async () => {

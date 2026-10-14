@@ -215,6 +215,8 @@ export interface StandaloneOptions {
 	bake?: (<t>(write: () => t) => t) | undefined
 	// "first" stops each validation at its first issue, which is then the only one it returns
 	errors?: "all" | "first" | undefined
+	// false leaves each validator and its members unfrozen
+	freeze?: boolean | undefined
 	// declares what a site calls as functions, for a module an import cycle can reach before its artifact is evaluated
 	hoisted?: boolean | undefined
 }
@@ -223,6 +225,7 @@ interface Baking {
 	members: ReadonlySet<ValidatorMember>
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
+	freezes: boolean
 	hoisted: boolean
 	// writes the shortest forms rather than those V8 compiles and runs fastest as the artifact loads
 	shortest: boolean
@@ -239,8 +242,10 @@ const writeFunction = (
 		`function ${name}(${params}) {\n${body}\n}`
 	:	`const ${name} = ((${params}) => {\n${body}\n})`
 
-const keepsDefaultMembers = (members: ReadonlySet<ValidatorMember>) =>
-	defaultMembers.every(member => members.has(member))
+const isCreatedByRuntime = (
+	members: ReadonlySet<ValidatorMember>,
+	freezes: boolean
+) => freezes && defaultMembers.every(member => members.has(member))
 
 // a value built as its module is evaluated, which a bundler drops unread, else at its first read
 const writeValue = (hoisted: boolean, name: string, expression: string) =>
@@ -339,6 +344,7 @@ const writeArtifact = (
 		]),
 		write: opts.bake ?? (write => write()),
 		firstIssue: opts.errors === "first",
+		freezes: opts.freeze !== false,
 		hoisted: opts.hoisted === true,
 		shortest: false
 	}
@@ -358,8 +364,9 @@ const writeArtifact = (
 			// as unknown, since narrowing an ExportedValue to BaseRoot compares the Type and node structurally, too deep for TypeScript 6
 			!hasArkKind(factory.type as unknown, "root") ||
 			factory.defaultChecks?.length ||
-			// runtime.rekeyed creates a template's copies with every member
-			(!keepsDefaultMembers(baking.members) && keyOf(factory.type)[1].length)
+			// runtime.rekeyed creates a template's copies with runtime.createValidator
+			(!isCreatedByRuntime(baking.members, baking.freezes) &&
+				keyOf(factory.type)[1].length)
 		)
 			return false
 		const trial = new StandaloneArtifact(
@@ -1497,14 +1504,14 @@ return [${returned.join(", ")}]
 		]
 		return `${
 			isTemplate ? "["
-			: !keepsDefaultMembers(members) ?
+			: !isCreatedByRuntime(members, this.baking.freezes) ?
 				`${this.creatorOf(members, ownsValidator)}(`
 			: ownsValidator ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
 	}
 
-	// written for what a build's validators keep, as runtime.createValidator taking it would grow every build keeping each member
+	// written for what a build's validators keep, as the runtime's creators taking it would grow every build keeping it all
 	creatorOf(
 		members: ReadonlySet<ValidatorMember>,
 		ownsValidator: boolean
@@ -1523,21 +1530,21 @@ return [${returned.join(", ")}]
 			:	"",
 			`const validator = ${members.has("methods") ? `runtime.setPrototypeOf(${call}, runtime.freeze(runtime.Validator.prototype))` : call}`,
 			members.has("assert") ?
-				"validator.assert = runtime.freeze((data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault))"
+				`validator.assert = ${this.frozen("(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)")}`
 			:	"",
 			hasAttributes ? "runtime.assign(validator, attributes)" : "",
-			`validator.allows = runtime.freeze(${ownsValidator ? "parts[0]" : "allows"})`,
+			`validator.allows = ${this.frozen(ownsValidator ? "parts[0]" : "allows")}`,
 			members.has("~standard") ?
-				`validator["~standard"] = runtime.freeze({
+				`validator["~standard"] = ${this.frozen(`{
 		vendor: "arktype",
 		version: 1,
-		validate: runtime.freeze(input => {
+		validate: ${this.frozen(`input => {
 			const out = validator(input)
 			return out instanceof runtime.ArkErrors ? out : { value: out }
-		})${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
-	})`
+		}`)}${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
+	}`)}`
 			:	"",
-			"return runtime.holdHoles(runtime.freeze(validator), id, holes)"
+			`return runtime.holdHoles(${this.frozen("validator")}, id, holes)`
 		]
 			.filter(statement => statement)
 			.map(statement => `\t${statement}`)
@@ -1563,6 +1570,10 @@ return [${returned.join(", ")}]
 		return name
 	}
 
+	frozen(expression: string): string {
+		return this.baking.freezes ? `runtime.freeze(${expression})` : expression
+	}
+
 	emitIntrospection(root: BaseRoot): string[] {
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) =>
@@ -1574,7 +1585,8 @@ return [${returned.join(", ")}]
 		if (bakes("json") || bakes("toJSON")) {
 			const json = this.readJson(root)
 			if (bakes("json")) members.push(`json: ${json}`)
-			if (bakes("toJSON")) members.push(`toJSON: runtime.freeze(() => ${json})`)
+			if (bakes("toJSON"))
+				members.push(`toJSON: ${this.frozen(`() => ${json}`)}`)
 		}
 		// written first, so toJsonSchema can return one for the target the program passes
 		const standard =

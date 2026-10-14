@@ -66,7 +66,8 @@ const precompilable: Rule.RuleModule = {
 						additionalProperties: false
 					},
 					conditions: { type: "array", items: { type: "string" } },
-					tsconfig: { type: "string" }
+					tsconfig: { type: "string" },
+					freeze: { type: "boolean" }
 				},
 				additionalProperties: false
 			}

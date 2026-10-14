@@ -1360,6 +1360,16 @@ console.log(values.map(v => (v as any).from))`,
 					"members with runtime: arktype, though it keeps each",
 					{ runtime: "arktype", members: {} },
 					writeArktypeRuntimeOptionMessage("members")
+				],
+				[
+					"freeze that isn't a boolean",
+					{ freeze: 0 as never },
+					writeOptionValueMessage("freeze", "0", "a boolean")
+				],
+				[
+					"freeze with runtime: arktype, though it's the default",
+					{ runtime: "arktype", freeze: true },
+					writeArktypeRuntimeOptionMessage("freeze")
 				]
 			]
 			for (const [name, opts, message] of refused) {

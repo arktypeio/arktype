@@ -127,6 +127,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	members?: ValidatorMembers | undefined
 	// "first" stops each standalone validation at its first issue, which is then the only one it returns
 	errors?: "all" | "first" | undefined
+	// false leaves standalone validators and their members unfrozen
+	freeze?: boolean | undefined
 	// create each site with arktype too, from the same holes, and throw where its validator observes anything else
 	shadow?: boolean | undefined
 }
@@ -310,6 +312,7 @@ export class Precompiler {
 	// e.g. traverse, from and toString where members.methods is false
 	lackedMembers: ReadonlySet<string>
 	errors: "all" | "first" | undefined
+	freeze: boolean
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
@@ -350,6 +353,7 @@ export class Precompiler {
 		this.shadow = this.mode === "standalone" && !!opts?.shadow
 		this.members = opts?.members ?? {}
 		this.errors = opts?.errors
+		this.freeze = opts?.freeze !== false
 		if (
 			opts?.members !== undefined &&
 			objectKindOrDomainOf(opts.members) !== "object"
@@ -372,6 +376,13 @@ export class Precompiler {
 						printable(kept),
 						"a boolean"
 					)
+				)
+			}
+		}
+		for (const option of booleanOptions) {
+			if (opts?.[option] !== undefined && typeof opts[option] !== "boolean") {
+				throwError(
+					writeOptionValueMessage(option, printable(opts[option]), "a boolean")
 				)
 			}
 		}
@@ -1214,6 +1225,7 @@ export class Precompiler {
 						configured,
 						members: this.members,
 						errors: this.errors,
+						freeze: this.freeze,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module)
 					},
@@ -3492,8 +3504,10 @@ export const writeUnknownMemberMessage = <member extends string>(
 export type writeUnknownMemberMessage<member extends string> =
 	`members has ${member}, which isn't one of ${string}`
 
+const booleanOptions = ["freeze"] as const
+
 // the options choosing what a standalone build writes, which runtime: "arktype" doesn't take
-const standaloneOptions = ["members"] as const
+const standaloneOptions = ["members", ...booleanOptions] as const
 
 export const writeOptionValueMessage = <
 	option extends string,

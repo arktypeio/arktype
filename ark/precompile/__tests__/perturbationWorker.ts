@@ -10,7 +10,13 @@ import {
 	thrownIssuesOf,
 	type KeptIssue
 } from "@ark/precompile/internal/issues.ts"
-import { hasMember, lackedMembers, lacks, traverse } from "./contract.ts"
+import {
+	freezes,
+	hasMember,
+	lackedMembers,
+	lacks,
+	traverse
+} from "./contract.ts"
 
 // runs each file of a perturbation manifest once per perturbation, as written (P) or precompiled (P') in standalone
 // or cache mode, recording what each folded site creates
@@ -623,6 +629,7 @@ const observeValidation = (
 		...(!lacks("~standard") && {
 			standard: calls((fn, input) => fn["~standard"].validate(input))
 		}),
+		frozen: world === "standalone" ? Object.isFrozen(t) : freezes,
 		// what a standalone build's options drop, which arktype's Type has
 		...(lackedMembers.length && {
 			unlacked:

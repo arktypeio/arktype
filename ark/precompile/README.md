@@ -95,6 +95,8 @@ precompile.vite({
 })
 ```
 
+A validator and its members are frozen, so a program writing to one throws in strict mode code, unless `freeze` is false.
+
 What each option saves of the bundles arktype benchmarks, minified and gzipped, in bytes:
 
 | option                            | gives up                                | login    | moltar   | shop     |
@@ -103,6 +105,7 @@ What each option saves of the bundles arktype benchmarks, minified and gzipped, 
 | `members: { meta: false }`        | `meta`                                  | 75 / 31  | 75 / 29  | 271 / 38 |
 | `members: { "~standard": false }` | `~standard`                             | 123 / 53 | 123 / 56 | 115 / 49 |
 | `members: { methods: false }`     | `traverse()`, `from()` and `toString()` | 235 / 88 | 235 / 93 | 63 / -14 |
+| `freeze: false`                   | validators and their members frozen     | 29 / 8   | 29 / 9   | 21 / 2   |
 
 ## Configuration
 

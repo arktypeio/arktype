@@ -19,3 +19,6 @@ export const hasMember = (validator: object, member: string): boolean =>
 // what a validation returns with onFail null, as traverse() calls it, which a validator without methods is called for
 export const traverse = (t: any, data: unknown): unknown =>
 	lacks("methods") ? t(data, undefined, null) : t.traverse(data)
+
+// whether a validator is frozen, which arktype's Types aren't, so it's observed against what the options promise
+export const freezes: boolean = testedOptions.freeze !== false
