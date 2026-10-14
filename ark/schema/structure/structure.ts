@@ -1254,7 +1254,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 const defaultableMorphsCache = new WeakCache<Morph>()
 
 type PartiallyInitializedStructure = attachmentsOf<Structure.Declaration> &
-	Pick<Structure.Node, "defaultable" | "declaresKey">
+	Pick<Structure.Node, "defaultable" | "declaresKey" | "props">
 
 const constructStructuralMorphCacheKey = (
 	node: PartiallyInitializedStructure
@@ -1270,10 +1270,7 @@ const constructStructuralMorphCacheKey = (
 
 	if (node.undeclared === "delete") {
 		cacheKey += "delete !("
-		if (node.required)
-			for (const n of node.required) cacheKey += n.serializedKey + " | "
-		if (node.optional)
-			for (const n of node.optional) cacheKey += n.serializedKey + " | "
+		for (const n of node.props) cacheKey += n.serializedKey + " | "
 		if (node.index)
 			for (const index of node.index) cacheKey += index.signature.id + " | "
 		if (node.sequence) {
