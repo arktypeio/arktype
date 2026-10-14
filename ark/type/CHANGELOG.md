@@ -298,6 +298,10 @@ A Type is compiled the second time it's called or its `allows` is called, or whe
 
 A union finds its discriminant when it's compiled, checks data, describes a miss or has its references read, rather than when it's created, so unions a program defines but never uses don't pay for it. Where a scope has several definition errors, which is thrown first can change, and can differ between JIT and jitless, e.g. an indeterminate union of morphs before an invalid default it includes.
 
+### Collect a scope's references when they're read
+
+An `@ark/schema` scope's `references` and `referencesById` are collected when first read rather than as it exports, unless it binds precompiled units or includes an alias, so `type` no longer walks every builtin node as arktype starts.
+
 ### Call narrows and morphs without a receiver when jitless
 
 A narrow's predicate was called with its node as `this` when jitless, and a Type whose morphs need no `ctx` called them with its morphs array as `this`. Both are now called as compiled code calls them, with `this` undefined.

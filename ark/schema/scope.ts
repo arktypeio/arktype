@@ -1147,8 +1147,30 @@ export abstract class BaseScope<$ extends {} = {}> {
 		return "scope"
 	}
 
-	readonly referencesById: { [id: string]: BaseNode } = {}
-	references: readonly BaseNode[] = []
+	private _referencesById: { [id: string]: BaseNode } | undefined
+	// collected when first read, since a scope exports without them unless it binds precompiled units or includes an alias
+	get referencesById(): { [id: string]: BaseNode } {
+		if (!this._referencesById && this._exportedResolutions) {
+			this._referencesById = {}
+			for (const name in this._exportedResolutions) {
+				const resolution = this._exportedResolutions[name]
+				if (isNode(resolution))
+					addReferences(this._referencesById, resolution.referencesById)
+			}
+		}
+		return this._referencesById ?? {}
+	}
+
+	private _references: readonly BaseNode[] | undefined
+	get references(): readonly BaseNode[] {
+		if (!this._references && this._exportedResolutions) {
+			const references = Object.values(this.referencesById)
+			this._references =
+				this.lazyExports ? references : referencesThroughAliases(references)
+		}
+		return this._references ?? []
+	}
+
 	readonly resolutions: {
 		[alias: string]: CachedResolution | undefined
 	} = Object.create(null)
@@ -1650,15 +1672,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 
 			Object.assign(this.resolutions, this._exportedResolutions)
 
-			for (const name in this._exportedResolutions) {
-				const resolution = this._exportedResolutions[name]
-				if (isNode(resolution))
-					addReferences(this.referencesById, resolution.referencesById)
-			}
-			this.references = Object.values(this.referencesById)
 			if (!this.lazyExports) {
-				this.references = referencesThroughAliases(this.references)
-				let uncompiled = this.references
+				const includesAlias = Object.values(this._exportedResolutions).some(
+					resolution => isNode(resolution) && resolution.includesAlias
+				)
+				let uncompiled =
+					includesAlias || bindPrecompiledUnits ? this.references : []
 				if (bindPrecompiledUnits) {
 					// a union compiles some branches inline, so no unit calls them and each binds on its own
 					bindPrecompiledUnits(uncompiled)

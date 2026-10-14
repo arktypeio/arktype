@@ -108,18 +108,23 @@ BaseScope.prototype.finalize = function <node extends BaseRoot>(
 
 // a build writes units for a scope's exported roots and those their units call, so a root only a union inlines compiles at export()
 const { export: exportScope } = BaseScope.prototype
+// a scope binding precompiled units reads its references as it exports, which registers its roots' units
+registerPrecompiledUnits({})
 BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 	if (this.resolved || this.resolvedConfig.jitless)
 		return exportScope.apply(this, names)
 	const roots: BaseRoot[] = []
 	const referenced: BaseRoot[] = []
 	let written: Record<string, string> = {}
-	let references = this.references
-	// export() sets its references once it has resolved its exports and before it binds them
+	const references = Object.getOwnPropertyDescriptor(
+		BaseScope.prototype,
+		"references"
+	)!.get!
+	// export() reads its references once it has resolved its exports and before it binds them
 	Object.defineProperty(this, "references", {
 		configurable: true,
-		get: () => references,
-		set: value => {
+		get: () => {
+			const value: readonly BaseNode[] = references.call(this)
 			const resolutions: Record<string, unknown> | undefined = (this as never)[
 				"_exportedResolutions"
 			]
@@ -132,7 +137,7 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 					)
 						roots.push(resolution)
 				}
-				for (const node of value as BaseNode[]) {
+				for (const node of value) {
 					if (
 						node.isRoot() &&
 						!node.compiledUnit &&
@@ -143,18 +148,16 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 				}
 				written = register(roots)
 			}
-			references = value
+			return value
 		}
 	})
 	try {
-		return exportScope.apply(this, names)
+		const exported = exportScope.apply(this, names)
+		// a scope exporting lazily reads no references as it exports
+		void this.references
+		return exported
 	} finally {
-		Object.defineProperty(this, "references", {
-			configurable: true,
-			writable: true,
-			enumerable: true,
-			value: references
-		})
+		delete (this as { references?: unknown }).references
 		for (const root of roots) if (root.compiledUnit) checkBound(root)
 		for (const root of referenced) {
 			if (!root.compiledUnit) continue
