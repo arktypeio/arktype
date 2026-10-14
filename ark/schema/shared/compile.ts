@@ -233,7 +233,7 @@ export const issueSite = (
 	value: SiteContext,
 	path: PropertyKey[] = []
 ): FailureSite => {
-	const site: FailureSite = path.length ? { value, path } : { value }
+	const site: FailureSite = path.length ? { value, path } : value
 	failureSites.add(site)
 	return site
 }

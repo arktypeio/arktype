@@ -2155,6 +2155,7 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 		for (const ref of unit.refs) {
 			if (!failureSites.has(ref as object)) continue
 			const site = ref as FailureSite
+			if (site.code) codes.add(site.code)
 			if (site.value) codes.add(site.value.code)
 			if (site.missing) codes.add(site.missing.code)
 		}
@@ -2352,17 +2353,17 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 	issueSitesByContext.set(context, variants)
 	const variant = missing ? "required" : "alone"
 	if (variants[variant]) return variants[variant]
+	const issueContext = value && {
+		code: value.code,
+		description: expectedOf(value.meta, value.description)
+	}
 	const issueSite =
-		value ?
-			{
-				value: {
-					code: value.code,
-					description: expectedOf(value.meta, value.description)
-				},
-				...(missing && { missing: requiredIssue })
-			}
-		: missing ? { missing: requiredIssue }
-		: { value: { code: "union", description: (site as UnionSite).description } }
+		missing ?
+			{ ...(issueContext && { value: issueContext }), missing: requiredIssue }
+		:	(issueContext ?? {
+				code: "union",
+				description: (site as UnionSite).description
+			})
 	failureSites.add(issueSite)
 	return (variants[variant] = issueSite)
 }

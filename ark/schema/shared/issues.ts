@@ -23,8 +23,8 @@ export interface SiteContext {
 	description?: string | undefined
 }
 
-/** a check's site: its node's context, a required key's when the key is missing, and where below the node a discriminant is read */
-export interface FailureSite {
+/** a check's site: its node's context, a required key's when the key is missing, and where below the node a discriminant is read, or else its node's context alone */
+export interface FailureSite extends Partial<SiteContext> {
 	value?: SiteContext
 	missing?: SiteContext
 	path?: PropertyKey[]
@@ -190,13 +190,17 @@ export const issueAt = (
 ): ArkIssue =>
 	key === undefined ?
 		issueOf(
-			site.value!,
+			site.value ?? (site as SiteContext),
 			site.path ? [...path, ...site.path] : path.slice(),
 			data
 		)
 	: site.missing && !(key in (data as object)) ?
 		issueOf(site.missing, [...path, key], data)
-	:	issueOf(site.value!, [...path, key], (data as Keyed)[key])
+	:	issueOf(
+			site.value ?? (site as SiteContext),
+			[...path, key],
+			(data as Keyed)[key]
+		)
 
 const issueOf = (
 	context: SiteContext,
