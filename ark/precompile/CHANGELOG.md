@@ -14,7 +14,7 @@ It needs the compiler API of TypeScript 5.5 to 6 from the optional `typescript` 
 
 ### Return errors of a standalone validator's own, and only the first with `errors: "first"`
 
-A standalone validator returns errors of its own rather than arktype's. Each issue holds the failed check's `code`, `path`, `data` and `expected`, and its `message`, like `name must be a string`, is written when the issues are first read, so invalid data creates only those objects and the runtime ships no error writers. A message doesn't say what the value was, the errors arktype groups at one path stay apart, a union no branch allows is one issue naming the union's description, and the build refuses error text configured for a code a Type can raise. `errors: "first"` stops each validation at its first issue:
+A standalone validator returns errors of its own rather than arktype's. Each issue holds the failed check's `code`, `path`, `data` and `expected`, and its `message`, like `name must be a string`, is written when the issues are first read, so invalid data creates only those objects and the runtime ships no error writers. A message doesn't say what the value was, the errors arktype groups at one path stay apart, a union no branch allows is one issue naming the union's description, and the build refuses error text configured for a code a Type can raise. The errors are instances of `type.errors` and of `ArkErrors` from `arktype`, but not of `@ark/schema`'s `ArkErrors`, arktype's own subclass, so the build fails where a module imports that one. `errors: "first"` stops each validation at its first issue:
 
 ```ts
 precompile.vite({ errors: "first" })

@@ -781,6 +781,23 @@ console.log(JSON.stringify((A({ a: 1 }) as any).issues.map((issue: any) => [issu
 		attest(bundle.includes("unimported")).equals(false)
 	}).timeout(60000)
 
+	it("returns errors that are instances of arktype's ArkErrors", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { ArkErrors, type } from "arktype"
+
+const T = type("string")
+console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
+`
+			},
+			fromHere("temp", "arkErrors")
+		)
+		attest(runPlain(root)).equals("true true\n")
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
+			"true true\n"
+		)
+	}).timeout(60000)
+
 	it("precompiles a structure whose predicate reads ctx, which an intersection's Apply checks before its own predicate", async () => {
 		const root = writeFixture(
 			{

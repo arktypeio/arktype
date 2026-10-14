@@ -4,6 +4,7 @@ import {
 	writePrecompiledUnits,
 	type BaseRoot
 } from "@ark/schema"
+import * as arkSchema from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { fingerprintOf } from "@ark/schema/runtime"
 import {
@@ -3094,32 +3095,43 @@ export class Precompiler {
 			const isLocale = localeSpecifier.test(source)
 			if (!isLocale && !nodePackageSpecifier.test(source)) continue
 			for (const specifier of statement.specifiers) {
-				// e.g. `ArkErrors`, which the standalone runtime shares
-				if (
-					source === "@ark/schema" &&
-					specifier.type === "ImportSpecifier" &&
-					exportNameOf(specifier.imported) in runtimeExports
-				)
-					continue
+				const name =
+					source === "@ark/schema" && specifier.type === "ImportSpecifier" ?
+						exportNameOf(specifier.imported)
+					:	undefined
+				// e.g. `Traversal`, which the standalone runtime shares
+				if (name !== undefined && sharedSchemaExports.includes(name)) continue
 				const binding = module.scopes.bindingsById.get(specifier.local)
 				for (const reference of binding?.references ?? []) {
 					if (isInIsland(reference.id, module)) continue
 					result.push(
-						this.diagnostic(
-							module,
-							reference.id,
-							"R4",
-							"error",
-							`\`${binding!.name}\` is used outside a runtime island`,
-							isLocale ?
+						name !== undefined && name in runtimeExports ?
+							this.diagnostic(
+								module,
+								reference.id,
+								"R4",
+								"error",
+								`\`${binding!.name}\` is @ark/schema's, not the standalone runtime's`,
 								[
-									`${source} writes arktype's errors in a locale, which needs the description writers of arktype's nodes, so a standalone validator writes its errors only in en`
-								]
-							:	[
-									`${source} reads the nodes arktype creates, which a standalone build replaces with validators`
+									`what a standalone validator creates isn't an instance of @ark/schema's ${name}`
 								],
-							isLocale ? localeHint : nodePackageHint
-						)
+								writeSchemaExportHint(name)
+							)
+						:	this.diagnostic(
+								module,
+								reference.id,
+								"R4",
+								"error",
+								`\`${binding!.name}\` is used outside a runtime island`,
+								isLocale ?
+									[
+										`${source} writes arktype's errors in a locale, which needs the description writers of arktype's nodes, so a standalone validator writes its errors only in en`
+									]
+								:	[
+										`${source} reads the nodes arktype creates, which a standalone build replaces with validators`
+									],
+								isLocale ? localeHint : nodePackageHint
+							)
 					)
 				}
 			}
@@ -3482,6 +3494,13 @@ const localeSpecifier = /^(?:arktype|@ark\/type)\/locales(?:\/|$)/
 const nodePackageSpecifier =
 	/^(?:(?:arksets|@ark\/(?:json-schema|fast-check)|(?:arktype|@ark\/(?:type|schema))\/internal)(?:\/|$)|@ark\/schema$)/
 
+// what @ark/schema exports as the runtime does, unlike ArkErrors, whose @ark/schema export is arktype's subclass of the runtime's
+const sharedSchemaExports = Object.keys(runtimeExports).filter(
+	name =>
+		(arkSchema as Record<string, unknown>)[name] ===
+		(arktypeRuntime as Record<string, unknown>)[name]
+)
+
 // arktype's own packages, which read their nodes by design wherever a workspace links their source
 const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 
@@ -3758,6 +3777,9 @@ const islandHint = `A runtime island runs on arktype, as must what it reads. Mar
 const runtimeImportHint = `Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: "arktype".`
 
 const nodePackageHint = `Read arktype's nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".`
+
+const writeSchemaExportHint = (name: string) =>
+	`Import ${name} from arktype, which a standalone build resolves to its runtime${name === "ArkErrors" ? ", or read type.errors" : ""}.`
 
 const localeHint = `Write errors in a locale in a definition marked // @ark-runtime, or build with runtime: "arktype".`
 
