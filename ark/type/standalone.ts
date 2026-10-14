@@ -593,6 +593,9 @@ export class StandaloneArtifact {
 	classes = new Set<unknown>()
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
+	// a default's value is collected for the validator its morph reads, so that validator is written only if read, as a traversal writing the default inline reads none
+	defaultValues = new Set<BaseRoot>()
+	readRoots = new Set<BaseRoot>()
 	unitRoots = new Set<BaseRoot>()
 	// the unit holding each root in the first Type reaching it, by id, as two nodes of one id like `unknown` and `unknown.any` are one root
 	unitsByHead = new Map<string, RootUnit>()
@@ -1020,12 +1023,16 @@ export class StandaloneArtifact {
 	// a default is checked by its value's validator, which a parent checking that value inline doesn't give traversals of its own
 	collectDefaultTypes(): boolean {
 		const typeCount = this.validatorNamesByRoot.size
+		const collect = (value: BaseRoot) => {
+			if (!this.validatorNamesByRoot.has(value)) this.defaultValues.add(value)
+			this.collectType(value)
+		}
 		for (const unit of this.units) {
 			for (const node of writtenNodesOf(unit)) {
 				if (node.hasKind("optional") && node.defaultValueMorph)
-					this.collectType(node.value)
+					collect(node.value)
 				else if (node.hasKind("sequence"))
-					for (const [value] of node.defaultables ?? []) this.collectType(value)
+					for (const [value] of node.defaultables ?? []) collect(value)
 			}
 		}
 		return this.validatorNamesByRoot.size > typeCount
@@ -1378,11 +1385,11 @@ return [${returned.join(", ")}]
 			const args = [...dependencyArgs, `[${refs.join(", ")}]`]
 			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
 		})
-		const validators: string[] = []
-		for (const [root, name] of this.validatorNamesByRoot) {
-			const validator = `const ${name} = ${this.writeValidator(root)}`
-			validators.push(validator)
-		}
+		// each is written before any is dropped, as a meta can read one written after it
+		const validators = [...this.validatorNamesByRoot].map(
+			([root, name]) =>
+				[root, `const ${name} = ${this.writeValidator(root)}`] as const
+		)
 		return [
 			this.declarations.statements.join("\n"),
 			[...this.sharedWriters]
@@ -1390,7 +1397,12 @@ return [${returned.join(", ")}]
 				.join("\n"),
 			traversals.join("\n"),
 			this.links.join("\n"),
-			validators.join("\n\n"),
+			validators
+				.filter(
+					([root]) => !this.defaultValues.has(root) || this.readRoots.has(root)
+				)
+				.map(([, validator]) => validator)
+				.join("\n\n"),
 			this.defaults.join("\n"),
 			this.modules.join("\n"),
 			this.fills.join("\n")
@@ -1826,6 +1838,7 @@ ${isTemplate ? "]" : ")"}`
 	}
 
 	readValidator(root: BaseRoot): string | undefined {
+		this.readRoots.add(root)
 		return this.validatorNamesByRoot.get(root)
 	}
 
