@@ -1393,20 +1393,20 @@ return [${returned.join(", ")}]
 	}
 
 	writeValidator(root: BaseRoot): string {
-		const shape = this.shapeOf(root)
+		const [rootApply, allows] = this.emitRootApply(root)
 		// emitted before the key encodes it, so a value the build can't emit is refused for what it is
 		const meta =
 			keywordMetas().has(root.meta) ? "runtime.emptyMeta" : this.emit(root.meta)
-		const nodeName = this.unitsByHead.get(root.id)!.names[root.id]
 		const [id, holes] = (this.checkedRoots.has(root) ? traversalKeyOf : keyOf)(
 			root
 		)
+		assertDescribed(root)
 		// a folded factory's Type is written as what constructs its validator, which each call constructs with the functions it receives
 		const isTemplate = this.templates.has(root)
 		const key = `,\n\t${writeId(id)}${holes.length && !isTemplate ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
 		return `${isTemplate ? "[" : "runtime.createValidator("}
-	${this.emitRootApply(root, shape, nodeName)},
-	${shape},
+	${rootApply},
+	${allows},
 	{ meta: ${meta}${this.emitIntrospection(root)} }${key}
 ${isTemplate ? "]" : ")"}`
 	}
@@ -1596,9 +1596,8 @@ ${isTemplate ? "]" : ")"}`
 		return `{ ${entries.join(", ")} }`
 	}
 
-	// a root's apply reads the runtime's exports, with the least ctx its checks report to
-	emitRootApply(root: BaseRoot, shape: string, nodeName: string): string {
-		assertDescribed(root)
+	// what a validator calls and the Allows it holds, its apply reading the runtime's exports with the least ctx its checks report to
+	emitRootApply(root: BaseRoot): [rootApply: string, allows: string] {
 		// a callback can read the API Traversal adds, which none of the runtime's own keywords declaring one parameter does
 		const callbacks = declares(
 			root,
@@ -1629,39 +1628,70 @@ ${isTemplate ? "]" : ")"}`
 			: callbacks ? "Traversal"
 			: "InternalTraversal"
 		// a first-issue build's traversal drops the rest as it finalizes, which applyErrors doesn't call
+		const appliesErrors = !this.baking.firstIssue || reportsIssues
 		const refOf = (param: RootApplyParam) =>
 			param === "Traversal" ? `runtime.${ctx}`
 			: param === "config" ? "runtime.runtimeConfig"
 			: param === "TransformErrors" ? param
-			: (
-				param === "applyRejected" && (!this.baking.firstIssue || reportsIssues)
-			) ?
-				"runtime.applyErrors"
-			:	this.emit(rootApplyRuntime[param])
+			: param === "applyRejected" && appliesErrors ? "runtime.applyNodeErrors"
+			: this.emit(rootApplyRuntime[param])
 		const strategy = root.rootApplyStrategy
 		// most root applies are one arrow, half the length of the function writeRootApply names for the JIT
-		const valid =
-			root.includesAlias ? undefined
-			: strategy === "allows" ? "data"
-			: (
-				strategy === "transform" &&
-				!root.includesMorph &&
-				!(root.hasKind("union") && !root.compiledDiscriminant)
-			) ?
-				"node.traverseTransform(data)"
+		const isArrow =
+			!root.includesAlias &&
+			(strategy === "allows" ||
+				(strategy === "transform" &&
+					!root.includesMorph &&
+					!(root.hasKind("union") && !root.compiledDiscriminant)))
+		const transforms = strategy === "transform"
+		const traversals =
+			isArrow && appliesErrors && !root.allowsRequiresContext ?
+				this.compactTraversalsOf(root)
 			:	undefined
 		// each validator writes its own, as one validators shared calls every node's Allows from one site, which V8 can't inline where a site calls several validators
-		if (valid)
-			return `((node) => (data, onFail) => node.allows(data) ? ${valid} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")}))(${shape})`
-		const body = writeRootApply(root, nodeName, refOf)
+		if (traversals) {
+			return [
+				`(([allows, apply${transforms ? ", transform" : ""}]) => (data, onFail) => allows(data) ? ${transforms ? "transform(data)" : "data"} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")}))(${traversals})`,
+				`${traversals}[0]`
+			]
+		}
+		const shape = this.shapeOf(root)
+		if (isArrow) {
+			return [
+				`((node) => (data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")}))(${shape})`,
+				`${shape}.allows`
+			]
+		}
+		const body = writeRootApply(
+			root,
+			this.unitsByHead.get(root.id)!.names[root.id],
+			refOf
+		)
 		// the class a valid result is checked against is captured, as V8 folds what a closure captures but not what it reads from the runtime's module
 		const captured =
 			/\bTransformErrors\b/.test(body) ?
 				`const TransformErrors = ${this.emit(rootApplyRuntime.TransformErrors)}\n\t\t`
 			:	""
-		return `(function (node) {
+		return [
+			`(function (node) {
 		${captured}${body}
-	})(${shape})`
+	})(${shape})`,
+			`${shape}.allows`
+		]
+	}
+
+	// a root apply that is one arrow reads its root's traversals from its unit, where they come first, so its validator needs no shape
+	compactTraversalsOf(root: BaseRoot): string | undefined {
+		const unit = this.unitsByHead.get(root.id)!
+		if (unit.traversals.flat()[0] !== this.traversalsOf(root, unit)[0]) return
+		return isSharedUnit(unit) ?
+				this.read(
+					this.specifierOf(unit.name),
+					unit.name,
+					unit.name,
+					this.readValue(unit.name)
+				)
+			:	this.localNamesByUnit.get(unit)
 	}
 
 	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator

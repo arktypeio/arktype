@@ -1,5 +1,4 @@
 import type {
-	BaseRoot,
 	JsonSchema,
 	RootApply,
 	StandardJSONSchemaV1,
@@ -168,7 +167,7 @@ export class Validator {
 
 export const createValidator = (
 	rootApply: RootApply,
-	node: BaseRoot,
+	allows: (data: unknown) => boolean,
 	attributes: ValidatorAttributes,
 	id: string,
 	holes: readonly unknown[] = []
@@ -197,7 +196,7 @@ export const createValidator = (
 		validator(data, pipedFromCtx, throwOnFail)
 	)
 	assign(validator, attributes)
-	validator.allows = freeze(node.allows)
+	validator.allows = freeze(allows)
 	validator["~standard"] = freeze({
 		vendor: "arktype",
 		version: 1,
@@ -212,7 +211,7 @@ export const createValidator = (
 
 type ValidatorParts = [
 	rootApply: RootApply,
-	node: BaseRoot,
+	allows: (data: unknown) => boolean,
 	attributes: ValidatorAttributes,
 	id: string
 ]
@@ -342,14 +341,14 @@ export const requiredSite: FailureSite = { missing: { code: "required" } }
 
 // a root whose Apply is compact reports what fails into the errors it returns, so a program whose roots all are loads no Traversal
 export const applyErrors = (
-	node: { traverseApply: CompactApply },
+	apply: CompactApply,
 	data: unknown,
 	config: unknown,
 	onFail: ArkErrors.Handler | null,
 	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
 ): unknown => {
 	const ctx = new Ctx(data, config)
-	node.traverseApply(data, ctx)
+	apply(data, ctx)
 	const errors = ctx instanceof ArkErrors ? ctx : ctx._errors
 	return (
 		!errors?.count ? data
@@ -357,6 +356,15 @@ export const applyErrors = (
 		: errors
 	)
 }
+
+// what a root apply reading its node calls in applyErrors' place
+export const applyNodeErrors = (
+	node: { traverseApply: CompactApply },
+	data: unknown,
+	config: unknown,
+	onFail: ArkErrors.Handler | null,
+	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
+): unknown => applyErrors(node.traverseApply, data, config, onFail, Ctx)
 
 export type HoleKind = "function" | "class" | "symbol"
 
