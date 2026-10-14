@@ -13,7 +13,6 @@ import {
 	type array,
 	type Brand,
 	type dict,
-	type Entry,
 	type listable,
 	type PartialRecord
 } from "@ark/util"
@@ -196,20 +195,6 @@ export const createNode = ({
 	$,
 	ignoreCache
 }: CreateNodeInput): BaseNode => {
-	const impl = nodeImplementationsByKind[kind]
-	const innerEntries = entriesOf(inner)
-	const children: BaseNode[] = []
-
-	for (const [k, v] of innerEntries) {
-		const keyImpl = impl.keys[k]
-		if (keyImpl.child === true) {
-			const listableNode = v as listable<BaseNode>
-			if (isArray(listableNode)) children.push(...listableNode)
-			else children.push(listableNode)
-		} else if (typeof keyImpl.child === "function")
-			children.push(...keyImpl.child(v as never))
-	}
-
 	const metaJson: dict =
 		isEmptyObject(meta) ?
 			{}
@@ -222,9 +207,7 @@ export const createNode = ({
 
 	// nodes are only cached with a set engine, which reduces them first
 	const key =
-		ignoreCache || !$ark.sets ?
-			undefined
-		:	nodeKeyOf(kind, inner, innerEntries, metaJson)
+		ignoreCache || !$ark.sets ? undefined : nodeKeyOf(kind, inner, metaJson)
 
 	if (key) {
 		const cached = $.nodesByKey.get(key)
@@ -232,6 +215,20 @@ export const createNode = ({
 			$ark.reached?.node(cached)
 			return cached
 		}
+	}
+
+	const impl = nodeImplementationsByKind[kind]
+	const innerEntries = entriesOf(inner)
+	const children: BaseNode[] = []
+
+	for (const [k, v] of innerEntries) {
+		const keyImpl = impl.keys[k]
+		if (keyImpl.child === true) {
+			const listableNode = v as listable<BaseNode>
+			if (isArray(listableNode)) children.push(...listableNode)
+			else children.push(listableNode)
+		} else if (typeof keyImpl.child === "function")
+			children.push(...keyImpl.child(v as never))
 	}
 
 	const attachments: UnknownAttachments = {
@@ -254,15 +251,10 @@ export const createNode = ({
 
 // a node's children are cached before it, so their ids can stand in for
 // their content
-const nodeKeyOf = (
-	kind: NodeKind,
-	inner: dict,
-	innerEntries: readonly Entry<string>[],
-	metaJson: dict
-): string => {
+const nodeKeyOf = (kind: NodeKind, inner: dict, metaJson: dict): string => {
 	let key: string = kind
-	for (const [k, v] of innerEntries)
-		key += `,${k}:${k === "unit" ? literalKeyOf(v) : valueKeyOf(v)}`
+	for (const k in inner)
+		key += `,${k}:${k === "unit" ? literalKeyOf(inner[k]) : valueKeyOf(inner[k])}`
 	// an alias inlines a reference that has resolved when it's written
 	if (
 		kind === "alias" &&
