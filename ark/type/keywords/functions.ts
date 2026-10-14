@@ -1,5 +1,5 @@
 import type { ArkError, Locale, Traversal } from "@ark/schema"
-import { FileConstructor, printable, type Json } from "@ark/util"
+import { FileConstructor, hasOwn, printable, type Json } from "@ark/util"
 import type {
 	EmptyCollectionLiteral,
 	inferDefaultLiteral
@@ -255,7 +255,7 @@ export const parseFormData = (data: FormData): ParsedFormData => {
 	// lack of a `File` type.
 	type FormDataEntries = [string, FormDataValue][]
 	for (const [k, v] of data as {} as FormDataEntries) {
-		if (Object.prototype.hasOwnProperty.call(result, k)) {
+		if (hasOwn(result, k)) {
 			const existing = result[k]
 			if (typeof existing === "string" || existing instanceof FileConstructor)
 				result[k] = [existing, v]

@@ -1,6 +1,7 @@
 import {
 	defineValue,
 	hasDomain,
+	hasOwn,
 	isArray,
 	isKeyOf,
 	objectKindOf,
@@ -111,8 +112,7 @@ export const mergeTransformed = (
 	)
 		return r
 	const merged: any = copyOf(l)
-	for (const k in input)
-		if (!Object.prototype.hasOwnProperty.call(r, k)) delete merged[k]
+	for (const k in input) if (!hasOwn(r, k)) delete merged[k]
 	for (const k in r) {
 		if (!(k in input) || !Object.is(r[k as never], input[k as never]))
 			merged[k] = r[k as never]

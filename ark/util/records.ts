@@ -136,6 +136,9 @@ export type extractKeyed<o extends object, k extends unionKeyOf<o>> = Extract<
 	{ [_ in k]?: unknown }
 >
 
+export const hasOwn = (o: object, k: PropertyKey): boolean =>
+	Object.prototype.hasOwnProperty.call(o, k)
+
 export const hasKey = <o extends object, k extends unionKeyOf<o>>(
 	o: o,
 	k: k

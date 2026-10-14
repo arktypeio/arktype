@@ -5,6 +5,7 @@ import {
 	flatMorph,
 	hashOf,
 	hasDomain,
+	hasOwn,
 	includes,
 	isArray,
 	isThunk,
@@ -1159,11 +1160,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 			let name = k
 			if (k[0] === "#") {
 				name = k.slice(1)
-				if (Object.prototype.hasOwnProperty.call(this.aliases, name))
+				if (hasOwn(this.aliases, name))
 					throwParseError(writeDuplicateAliasError(name))
 				this.aliases[name] = v
 			} else {
-				if (Object.prototype.hasOwnProperty.call(this.aliases, name))
+				if (hasOwn(this.aliases, name))
 					throwParseError(writeDuplicateAliasError(k))
 				this.aliases[name] = v
 				this.exportedNames.push(name)
@@ -1433,8 +1434,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		// how much was reached when resolving it began, which each member of a cycle it closes stores
 		mark: number | undefined
 	): Exclude<CachedResolution, BaseParseContext> | undefined {
-		if (Object.prototype.hasOwnProperty.call(this.aliases, name))
-			$ark.reached?.alias(this, name)
+		if (hasOwn(this.aliases, name)) $ark.reached?.alias(this, name)
 		if (cached) {
 			const v = cached
 			if (v.phase === "resolving" || v.phase === "member") {
@@ -1499,15 +1499,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 				throw e
 			}
 		}
-		const isScopeAlias = Object.prototype.hasOwnProperty.call(
-			this.aliases,
-			name
-		)
+		const isScopeAlias = hasOwn(this.aliases, name)
 		let def: unknown =
 			isScopeAlias ? this.aliases[name]
-			: Object.prototype.hasOwnProperty.call(this.ambient, name) ?
-				this.ambient[name]
-			:	undefined
+			: hasOwn(this.ambient, name) ? this.ambient[name]
+			: undefined
 
 		if (!def) return this.maybeResolveSubalias(name)
 
@@ -1931,16 +1927,14 @@ const maybeResolveSubalias = (
 	const dotPrefix = name.slice(0, dotIndex)
 	// if the name includes ".", but the prefix is not an alias, it
 	// might be something like a decimal literal, so just fall through to return
-	if (!Object.prototype.hasOwnProperty.call(base, dotPrefix)) return
+	if (!hasOwn(base, dotPrefix)) return
 	const prefixSchema = base[dotPrefix]
 	if (!hasArkKind(prefixSchema, "module"))
 		return throwParseError(writeNonSubmoduleDotMessage(dotPrefix))
 
 	const subalias = name.slice(dotIndex + 1)
 	const resolution =
-		Object.prototype.hasOwnProperty.call(prefixSchema, subalias) ?
-			prefixSchema[subalias]
-		:	undefined
+		hasOwn(prefixSchema, subalias) ? prefixSchema[subalias] : undefined
 
 	if (resolution === undefined)
 		return maybeResolveSubalias(prefixSchema, subalias)

@@ -9,6 +9,7 @@ import {
 	type unwrapDefault
 } from "@ark/schema"
 import {
+	hasOwn,
 	objectKindOrDomainOf,
 	throwParseError,
 	type anyOrNever,
@@ -306,8 +307,7 @@ const isIndexZeroExpression = (def: array): def is IndexZeroExpression =>
 
 // a non-string element could run user code if coerced to a property key
 const isOperatorOf = (element: unknown, parsers: object) =>
-	typeof element === "string" &&
-	Object.prototype.hasOwnProperty.call(parsers, element)
+	typeof element === "string" && hasOwn(parsers, element)
 
 export const writeInvalidConstructorMessage = <
 	actual extends Domain | BuiltinObjectKind

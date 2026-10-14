@@ -2,6 +2,7 @@ import {
 	append,
 	conflatenate,
 	flatMorph,
+	hasOwn,
 	nameOf,
 	omit,
 	printable,
@@ -741,10 +742,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					out[prop.key as never] = data[prop.key as never]
 			}
 			for (const prop of this.inheritableProps) {
-				if (
-					!Object.prototype.hasOwnProperty.call(out, prop.key) &&
-					Object.prototype.hasOwnProperty.call(data, prop.key)
-				)
+				if (!hasOwn(out, prop.key) && hasOwn(data, prop.key))
 					out[prop.key as never] = data[prop.key as never]
 			}
 		}
@@ -752,7 +750,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		// assigning "__proto__" to a built result would set its prototype
 		if (
 			Object.getPrototypeOf(out) !== Object.prototype ||
-			Object.prototype.hasOwnProperty.call(out, "__proto__")
+			hasOwn(out, "__proto__")
 		) {
 			const undeclaredKeys = ownKeysOf(data).filter(k => !this.declaresKey(k))
 			if (!undeclaredKeys.length) return out
@@ -764,10 +762,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (const prop of this.props)
 			if (prop.key in out) result[prop.key] = out[prop.key as never]
 		for (const prop of this.inheritableProps) {
-			if (
-				!this.transformsOf(prop).length &&
-				!Object.prototype.hasOwnProperty.call(data, prop.key)
-			)
+			if (!this.transformsOf(prop).length && !hasOwn(data, prop.key))
 				delete result[prop.key]
 		}
 		if (this.index) {

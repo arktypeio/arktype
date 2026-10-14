@@ -36,6 +36,7 @@ import {
 	defineLazily,
 	enumValues,
 	flatMorph,
+	hasOwn,
 	isArray,
 	isThunk,
 	throwParseError,
@@ -225,9 +226,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 	private keywordConfigOf(qualifiedName: string): TypeMeta | undefined {
 		const { keywords } = this.resolvedConfig
-		return Object.prototype.hasOwnProperty.call(keywords, qualifiedName) ?
-				keywords[qualifiedName]
-			:	undefined
+		return hasOwn(keywords, qualifiedName) ? keywords[qualifiedName] : undefined
 	}
 
 	protected preparseOwnAliasEntry(alias: string, def: unknown): AliasDefEntry {

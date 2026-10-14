@@ -1,5 +1,6 @@
 import {
 	appendUnique,
+	hasOwn,
 	type BuiltinObjectKind,
 	type Domain,
 	type ListType,
@@ -134,10 +135,7 @@ const keywordPhraseOf = (
 ): Locale.KeywordPhrase | undefined => {
 	const keyword = error.meta?.keyword
 	// meta.keyword is any string, so it may name an Object.prototype key
-	return (
-			keyword === undefined ||
-				!Object.prototype.hasOwnProperty.call(locale.keywordPhrases, keyword)
-		) ?
+	return keyword === undefined || !hasOwn(locale.keywordPhrases, keyword) ?
 			undefined
 		:	locale.keywordPhrases[keyword]
 }
