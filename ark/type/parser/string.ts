@@ -15,11 +15,17 @@ import {
 	type NumberLiteral,
 	type WhitespaceChar
 } from "@ark/util"
+import type { DateLiteral } from "../attributes.ts"
 import type { ArkAmbient } from "../config.ts"
 import type { InnerParseResult, resolutionToAst } from "../scope.ts"
 import type { InferredAst, inferAstRoot } from "./ast/infer.ts"
 import { RuntimeState, type RootedRuntimeState } from "./reduce/dynamic.ts"
-import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
+import type {
+	Comparator,
+	InvertedComparators,
+	MaxComparator,
+	StringifiablePrefixOperator
+} from "./reduce/shared.ts"
 import type { s, StaticState } from "./reduce/static.ts"
 import type { EnclosingQuote } from "./shift/operand/enclosed.ts"
 import type { writeInvalidGenericArgCountMessage } from "./shift/operand/genericArgs.ts"
@@ -95,7 +101,9 @@ type parseExpression<def extends string, $, args> =
 	def extends `${string}${"(" | "|>"}${string}` | `/${string}` ?
 		fullStringParse<s.initialize<def>, $, args>
 	: def extends `${string}|${string}` ? parseOperandUnion<def, def, $, args>
-	: fullStringParse<s.initialize<def>, $, args>
+	: def extends `${string} ${Comparator} ${string}` ?
+		parseBoundedOperand<def, $, args>
+	:	fullStringParse<s.initialize<def>, $, args>
 
 // wrapping the lookup keeps a generic def from being narrowed to each keyword
 type resolveAmbient<reference, $> =
@@ -189,6 +197,41 @@ type parseQuotedToken<token extends string> =
 			null
 		:	InferredAst<content, token>
 	:	null
+
+// only number literal limits separated from their operand by single spaces
+type parseBoundedOperand<def extends string, $, args> =
+	def extends `${infer l} ${infer comparator extends Comparator} ${infer r}` ?
+		[parseOperandToken<l, $, args>] extends (
+			[InferredAst<Date | number, `${infer min extends number | DateLiteral}`>]
+		) ?
+			[comparator, r] extends (
+				[
+					"<" | "<=",
+					`${infer operand} ${infer maxComparator extends MaxComparator} ${infer max}`
+				]
+			) ?
+				parseRightBound<operand, max, $, args> extends (
+					[infer ast, infer maxLimit]
+				) ?
+					[min, InvertedComparators[comparator], [ast, maxComparator, maxLimit]]
+				:	fullStringParse<s.initialize<def>, $, args>
+			:	fullStringParse<s.initialize<def>, $, args>
+		: parseRightBound<l, r, $, args> extends [infer ast, infer limit] ?
+			[ast, comparator, limit]
+		:	fullStringParse<s.initialize<def>, $, args>
+	:	fullStringParse<s.initialize<def>, $, args>
+
+type parseRightBound<operand extends string, limit extends string, $, args> =
+	parseOperandToken<operand, $, args> extends infer ast ?
+		null extends ast ? null
+		: [ast] extends [InferredAst<Date | number, `${number | DateLiteral}`>] ?
+			null
+		: [parseOperandToken<limit, $, args>] extends (
+			[InferredAst<unknown, `${infer value extends number | DateLiteral}`>]
+		) ?
+			[ast, value]
+		:	null
+	:	never
 
 type referenceToAst<reference extends string, resolution> =
 	resolutionToAst<reference, resolution> extends infer ast ?
