@@ -302,6 +302,17 @@ A union finds its discriminant when it's compiled, checks data, describes a miss
 
 A narrow's predicate was called with its node as `this` when jitless, and a Type whose morphs need no `ctx` called them with its morphs array as `this`. Both are now called as compiled code calls them, with `this` undefined.
 
+### Relate Types regardless of their meta
+
+`.extends` and `.subsumes` compared a Type with its intersection including the meta of every node in it, so a union described with `.describe` didn't extend itself:
+
+```ts
+// previously false, now true
+type("string | number").describe("a key").extends("string | number")
+```
+
+`.equals` still compares meta.
+
 ### Fix deep transforms through a tuple default
 
 `onDeepUndeclaredKey` and `configure` with `"references"` threw on a tuple with a default:

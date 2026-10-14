@@ -156,4 +156,14 @@ contextualize(() => {
 
 		attest(MyType.internal.subsumes(type.never)).equals(true)
 	})
+
+	it("relates described unions by their values", () => {
+		const Described = type("string | number").describe("a key")
+		attest(Described.extends("string | number")).equals(true)
+		attest(type("string | number").extends(Described)).equals(true)
+		attest(type({ k: Described }).extends({ k: "string | number" })).equals(
+			true
+		)
+		attest(Described.extends("string")).equals(false)
+	})
 })

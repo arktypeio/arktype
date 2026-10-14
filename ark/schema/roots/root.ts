@@ -18,6 +18,7 @@ import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import {
 	BaseNode,
 	flatMorphsAreEqual,
+	isMutuallySimulated,
 	type GettableKeyOrNode,
 	type KeyOrKeyNode,
 	type NodeSelector
@@ -379,8 +380,13 @@ export abstract class BaseRoot<
 		if (this.isNever()) return true
 
 		const intersection = this.intersect(r, false)
+		if (intersection instanceof Disjoint) return false
+		// meta like a description doesn't change the values a node allows
 		return (
-			!(intersection instanceof Disjoint) && this.equals(intersection as never)
+			this.equals(intersection) ||
+			(!this.includesAlias &&
+				!intersection.includesAlias &&
+				isMutuallySimulated(this, intersection))
 		)
 	}
 
