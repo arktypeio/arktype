@@ -7,7 +7,7 @@ import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
 import type { PrecompileOptions } from "./precompile.ts"
 
 const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file>] [--members <json>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"
+	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -22,6 +22,7 @@ const { values, positionals } = parseArgs({
 		"fail-under": { type: "string" },
 		runtime: { type: "string" },
 		config: { type: "string" },
+		"no-config": { type: "boolean" },
 		members: { type: "string" },
 		conditions: { type: "string" },
 		tsconfig: { type: "string" }
@@ -57,6 +58,12 @@ const failUnder =
 if (Number.isNaN(failUnder))
 	fail(`--fail-under must be a percentage (was ${values["fail-under"]})`)
 
+if (values.config !== undefined && values["no-config"]) {
+	fail(
+		"--config names the module calling configure(), which --no-config says none does"
+	)
+}
+
 let members: PrecompileOptions["members"]
 if (values.members !== undefined) {
 	try {
@@ -68,7 +75,7 @@ if (values.members !== undefined) {
 
 const report = check(positionals, {
 	runtime: runtime as "arktype" | undefined,
-	config: values.config,
+	config: values["no-config"] ? false : values.config,
 	members,
 	conditions: values.conditions?.split(","),
 	tsconfig: values.tsconfig

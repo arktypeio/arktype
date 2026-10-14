@@ -35,7 +35,7 @@ import {
 	traversalKeyOf,
 	writeFixConfig,
 	writeUnprecompilableMessage,
-	type ConfiguredModule,
+	type Configured,
 	type ValidatorMember,
 	type ValidatorMembers,
 	type DefaultCheck,
@@ -117,8 +117,8 @@ export type PrecompileMode = "standalone" | "cache"
 export interface PrecompileOptions extends InterpreterOptions {
 	// the directory paths in messages are relative to
 	cwd?: string | undefined
-	// the module whose `configure()` call sets the configuration
-	config?: string | undefined
+	// the module whose `configure()` call sets the configuration, or false where none does
+	config?: string | false | undefined
 	// place what the module imports from virtual modules in the module itself, for hosts without them
 	inline?: boolean | undefined
 	// check at creation that each static helper a factory calls is the one its module exports, which a test runner's module mock can replace
@@ -303,6 +303,8 @@ export class Precompiler {
 	interpreter: Interpreter
 	mode: PrecompileMode
 	config: string | undefined
+	// false where the build's `config` is, so the program calling configure() fails the build
+	configures: boolean
 	inline: boolean
 	checkHelpers: boolean
 	shadow: boolean
@@ -347,7 +349,8 @@ export class Precompiler {
 			this.readsOf(module)
 		)
 		this.mode = opts?.runtime === "arktype" ? "cache" : "standalone"
-		this.config = opts?.config
+		this.config = opts?.config || undefined
+		this.configures = opts?.config !== false
 		this.inline = !!opts?.inline
 		this.checkHelpers = this.mode === "standalone" && !!opts?.checkHelpers
 		this.shadow = this.mode === "standalone" && !!opts?.shadow
@@ -379,6 +382,19 @@ export class Precompiler {
 				)
 			}
 		}
+		if (
+			opts?.config !== undefined &&
+			opts.config !== false &&
+			(typeof opts.config !== "string" || !opts.config)
+		) {
+			throwError(
+				writeOptionValueMessage(
+					"config",
+					printable(opts.config),
+					"a module path or false"
+				)
+			)
+		}
 		for (const option of booleanOptions) {
 			if (opts?.[option] !== undefined && typeof opts[option] !== "boolean") {
 				throwError(
@@ -396,6 +412,8 @@ export class Precompiler {
 			standaloneOptions.find(option => opts?.[option] !== undefined)
 		if (standaloneOption)
 			throwError(writeArktypeRuntimeOptionMessage(standaloneOption))
+		if (this.mode === "cache" && !this.configures)
+			throwError(writeArktypeRuntimeOptionMessage("config: false"))
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
 				this.members[member] !== false ? []
@@ -1214,9 +1232,9 @@ export class Precompiler {
 		const refusalsByName: Record<string, string[]> = {}
 		const { fingerprint, problem } = this.configuration!
 		const configured =
-			fingerprint === undefined || problem ?
-				undefined
-			:	{ fingerprint, path: module.path }
+			!this.configures ? false
+			: fingerprint === undefined || problem ? undefined
+			: { fingerprint, path: module.path }
 		const validators =
 			Object.keys(exportsByName).length ?
 				writeValidators(
@@ -1309,7 +1327,7 @@ export class Precompiler {
 			folded.push(site)
 		}
 		// the configuration is fixed where the first site a bundler can drop would fix it, as arktype fixes it creating the first Type
-		if (fixedAt !== Infinity) {
+		if (fixedAt !== Infinity && configured !== false) {
 			const fixer = writeConfigFixer(configured)
 			const fixerSpecifier = `~arktype/${hashOf(fixer)}`
 			modules[fixerSpecifier] = fixer
@@ -2872,7 +2890,9 @@ export class Precompiler {
 		const calls = this.configureCallsOf(module)
 		for (let i = 0; i < calls.length; i++) {
 			const misplaced =
-				this.config === undefined ?
+				!this.configures ?
+					"configure() is called, but the build's `config` is false"
+				: this.config === undefined ?
 					"configure() is called, but the build has no `config` module"
 				: this.config !== module.id ?
 					`configure() is called outside the config module ${this.graph.pathOf(this.config)}`
@@ -2880,7 +2900,14 @@ export class Precompiler {
 				: undefined
 			const { problem, reasons, hint } =
 				misplaced ?
-					{ problem: misplaced, reasons: [], hint: undefined }
+					{
+						problem: misplaced,
+						reasons: [],
+						hint:
+							this.configures ? undefined : (
+								"Remove the call, or name its module as the build's `config`."
+							)
+					}
 				:	(this.configuration ??
 					this.evaluateConfiguration(
 						calls[i],
@@ -3773,12 +3800,12 @@ const writeValidators = (
 // a thrower fixes the configuration as arktype's failed definition does
 const writeParseErrorThrower = (
 	message: string,
-	configured: ConfiguredModule | undefined,
+	configured: Configured,
 	progress: Site["progress"]
 ) =>
 	`import * as runtime from "arktype/runtime"\n\nfunction throwParseError(${progress ? "progress" : ""}) {\n\t${progress ? `runtime.checkProgress(progress, ${progress[0]}, ${JSON.stringify(progress[1])})\n\t` : ""}${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
 
-const writeConfigFixer = (configured: ConfiguredModule | undefined) =>
+const writeConfigFixer = (configured: Configured) =>
 	`import * as runtime from "arktype/runtime"\n\nfunction fixConfig() {\n\t${writeFixConfig(configured)}\n}\n\nexport { fixConfig as default }\n`
 
 const writeUnitTable = (units: Record<string, string>) =>

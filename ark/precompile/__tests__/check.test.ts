@@ -122,6 +122,15 @@ main.ts:5:46  User.assert reads assert, which a standalone validator lacks
   Leave members["assert"] unset if the program reads it.
 1 site in 1 file: 1 accepted (100.0%), 1 error outside a site
 `)
+		attest(cliIn(fromHere("unconfigured"), "--check", "--no-config").stdout)
+			.snap(`config.ts:3:1  configure() is called, but the build's \`config\` is false
+  Remove the call, or name its module as the build's \`config\`.
+main.ts:4:21  accepted
+main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator lacks
+  \`User\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read
+  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".
+1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site
+`)
 	})
 
 	it("rejects invalid arguments", () => {
@@ -129,7 +138,8 @@ main.ts:5:46  User.assert reads assert, which a standalone validator lacks
 			[
 				["--runtime", "strict"],
 				["--fail-under", "most"],
-				["--members", "assert"]
+				["--members", "assert"],
+				["--config", "config.ts", "--no-config"]
 			].map(args => {
 				const result = cli("--check", ...args)
 				return `${result.status} ${result.stderr.split("\n")[0]}`
@@ -137,7 +147,8 @@ main.ts:5:46  User.assert reads assert, which a standalone validator lacks
 		).snap([
 			"2 --runtime must be arktype (was strict)",
 			"2 --fail-under must be a percentage (was most)",
-			"2 --members must be JSON (was assert)"
+			"2 --members must be JSON (was assert)",
+			"2 --config names the module calling configure(), which --no-config says none does"
 		])
 	})
 })

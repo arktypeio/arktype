@@ -195,6 +195,9 @@ export interface ProgressParam {
 	at: number
 }
 
+// false where the program never calls configure(), so a validator neither checks the configuration nor reads it
+export type Configured = ConfiguredModule | false | undefined
+
 export interface ConfiguredModule {
 	fingerprint: string
 	path: string
@@ -208,7 +211,7 @@ interface SharedModule {
 }
 
 export interface StandaloneOptions {
-	configured?: ConfiguredModule | undefined
+	configured?: Configured
 	// each member a validator has, the default ones unless false and those it bakes of its Type's introspection if true
 	members?: ValidatorMembers | undefined
 	// runs arktype writing what a validator bakes, refusing with a ParseError where the configured code it calls reads what the program can change
@@ -226,6 +229,7 @@ interface Baking {
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
 	freezes: boolean
+	readsConfig: boolean
 	hoisted: boolean
 	// writes the shortest forms rather than those V8 compiles and runs fastest as the artifact loads
 	shortest: boolean
@@ -244,8 +248,11 @@ const writeFunction = (
 
 const isCreatedByRuntime = (
 	members: ReadonlySet<ValidatorMember>,
-	freezes: boolean
-) => freezes && defaultMembers.every(member => members.has(member))
+	baking: Baking
+) =>
+	baking.freezes &&
+	baking.readsConfig &&
+	defaultMembers.every(member => members.has(member))
 
 // a value built as its module is evaluated, which a bundler drops unread, else at its first read
 const writeValue = (hoisted: boolean, name: string, expression: string) =>
@@ -345,6 +352,7 @@ const writeArtifact = (
 		write: opts.bake ?? (write => write()),
 		firstIssue: opts.errors === "first",
 		freezes: opts.freeze !== false,
+		readsConfig: configured !== false,
 		hoisted: opts.hoisted === true,
 		shortest: false
 	}
@@ -365,7 +373,7 @@ const writeArtifact = (
 			!hasArkKind(factory.type as unknown, "root") ||
 			factory.defaultChecks?.length ||
 			// runtime.rekeyed creates a template's copies with runtime.createValidator
-			(!isCreatedByRuntime(baking.members, baking.freezes) &&
+			(!isCreatedByRuntime(baking.members, baking) &&
 				keyOf(factory.type)[1].length)
 		)
 			return false
@@ -576,10 +584,9 @@ const writeImports = (imports: Record<string, string[]>) =>
 		)
 		.join("\n")
 
-export const writeFixConfig = (
-	configured: ConfiguredModule | undefined
-): string =>
-	configured ?
+export const writeFixConfig = (configured: Configured): string =>
+	configured === false ? ""
+	: configured ?
 		`runtime.fixConfigured(${JSON.stringify(configured.fingerprint)}, ${JSON.stringify(configured.path)})`
 	:	"runtime.fixConfig()"
 
@@ -1073,7 +1080,7 @@ export class StandaloneArtifact {
 		return this.validatorNamesByRoot.size > typeCount
 	}
 
-	writeCreate(index: number, configured: ConfiguredModule | undefined): string {
+	writeCreate(index: number, configured: Configured): string {
 		this.writeSharedUnits()
 		const values = Object.values(this.exports).map(value =>
 			this.exportOf(value)
@@ -1092,11 +1099,7 @@ ${writeFunction(this.baking.hoisted, `create${index}`, "", statements.filter(sta
 	}
 
 	// each call creates its validator from the holes and inputs the artifact received, so it declares everything the validator holds
-	writeFactory(
-		name: string,
-		index: number,
-		configured: ConfiguredModule | undefined
-	): string {
+	writeFactory(name: string, index: number, configured: Configured): string {
 		const { type, params, internedBy } = this.factory!
 		this.writeSharedUnits()
 		// a Module, Scope or Generic declares what it holds, which the body then writes
@@ -1147,7 +1150,7 @@ ${writeFunction(this.baking.hoisted, `create${index}`, "", statements.filter(sta
 	writeIntrospection(
 		{ member, type, data, params, thrown }: StandaloneIntrospection,
 		index: number,
-		configured: ConfiguredModule | undefined
+		configured: Configured
 	): string {
 		this.receive(params)
 		this.writeSharedUnits()
@@ -1504,7 +1507,7 @@ return [${returned.join(", ")}]
 		]
 		return `${
 			isTemplate ? "["
-			: !isCreatedByRuntime(members, this.baking.freezes) ?
+			: !isCreatedByRuntime(members, this.baking) ?
 				`${this.creatorOf(members, ownsValidator)}(`
 			: ownsValidator ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
@@ -1525,9 +1528,10 @@ return [${returned.join(", ")}]
 				"make(parts, configuredOnFail)"
 			:	"(data, pipedFromCtx, onFail = configuredOnFail) => pipedFromCtx ? runtime.pipedInto(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)"
 		const body = [
-			keepsMeta ?
+			!keepsMeta ? ""
+			: this.baking.readsConfig ?
 				"const configuredOnFail = attributes.meta.onFail ?? runtime.runtimeConfig.onFail"
-			:	"",
+			:	"const configuredOnFail = attributes.meta.onFail",
 			`const validator = ${members.has("methods") ? `runtime.setPrototypeOf(${call}, runtime.freeze(runtime.Validator.prototype))` : call}`,
 			members.has("assert") ?
 				`validator.assert = ${this.frozen("(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)")}`
@@ -1554,7 +1558,10 @@ return [${returned.join(", ")}]
 			...(hasAttributes ? ["attributes"] : []),
 			"id",
 			"holes = []",
-			...(keepsMeta ? [] : ["configuredOnFail = runtime.runtimeConfig.onFail"])
+			...(keepsMeta ? []
+			: this.baking.readsConfig ?
+				["configuredOnFail = runtime.runtimeConfig.onFail"]
+			:	["configuredOnFail"])
 		]
 		const name = `create${hashOf(body)}`
 		const specifier = this.specifierOf(name)

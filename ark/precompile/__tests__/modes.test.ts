@@ -86,6 +86,19 @@ configure({ exactOptionalPropertyTypes: false })`)
 			])
 		})
 
+		it("configure where the build's config is false", () => {
+			attest(
+				diagnosticsOf(
+					`import { configure } from "arktype/config"
+configure({ exactOptionalPropertyTypes: false })`,
+					{},
+					{ config: false }
+				)
+			).snap([
+				"/main.ts:2:1  configure() is called, but the build's `config` is false\n  Remove the call, or name its module as the build's `config`."
+			])
+		})
+
 		it("configure more than once", () => {
 			attest(
 				diagnosticsOf(

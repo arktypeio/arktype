@@ -126,7 +126,11 @@ const loadArtifact = async (
 	members: ValidatorMembers
 ): Promise<any> => {
 	const dir = await outDir()
-	const opts = { members, freeze: testedOptions.freeze }
+	const opts = {
+		members,
+		freeze: testedOptions.freeze,
+		configured: testedOptions.config === false ? (false as const) : undefined
+	}
 	let code: string
 	if (layout === "inline") code = precompileStandalone(exports, opts).code
 	else {

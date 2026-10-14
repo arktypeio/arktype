@@ -81,7 +81,10 @@ const load = async (
 	const { code, folds } = precompileStandalone(exports, {
 		...opts,
 		configured:
-			fingerprint === undefined ? undefined : { fingerprint, path: "main.ts" },
+			opts?.configured ??
+			(fingerprint === undefined ? undefined : (
+				{ fingerprint, path: "main.ts" }
+			)),
 		members
 	})
 	const artifact = await importCode(
@@ -1121,6 +1124,20 @@ name is missing`)
 		const input = { a: 1, b: 3 }
 		attest(validator(input)).equals(T(input))
 		attest(validator(input)).snap(["domain", "divisor"])
+	})
+
+	it("neither checks nor reads the configuration where its build says the program never configures it", async () => {
+		const { T } = await load(
+			{ T: type("string") },
+			`runtime.configure({ onFail: errors => errors.issues.map(issue => issue.code) })`,
+			undefined,
+			printed,
+			{ configured: false }
+		)
+		attest(T(1).summary).equals("must be a string")
+		attest(await messageOf("runtime.configure({})")).equals(
+			configMismatchMessage
+		)
 	})
 
 	it("throws for a configuration it wasn't precompiled under", async () => {

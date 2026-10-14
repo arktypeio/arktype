@@ -28,7 +28,10 @@ export const createPrecompiler = (
 	return new Precompiler(createNodeHost(opts), {
 		...opts,
 		cwd,
-		config: opts?.config && resolve(cwd, opts.config)
+		config:
+			typeof opts?.config === "string" ?
+				resolve(cwd, opts.config)
+			:	opts?.config
 	})
 }
 

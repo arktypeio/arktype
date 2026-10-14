@@ -1370,6 +1370,21 @@ console.log(values.map(v => (v as any).from))`,
 					"freeze with runtime: arktype, though it's the default",
 					{ runtime: "arktype", freeze: true },
 					writeArktypeRuntimeOptionMessage("freeze")
+				],
+				[
+					"config that isn't a module path",
+					{ config: true as never },
+					writeOptionValueMessage("config", "true", "a module path or false")
+				],
+				[
+					"config that's empty",
+					{ config: "" },
+					writeOptionValueMessage("config", '""', "a module path or false")
+				],
+				[
+					"config: false with runtime: arktype",
+					{ runtime: "arktype", config: false },
+					writeArktypeRuntimeOptionMessage("config: false")
 				]
 			]
 			for (const [name, opts, message] of refused) {

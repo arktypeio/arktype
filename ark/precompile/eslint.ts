@@ -48,7 +48,7 @@ const precompilable: Rule.RuleModule = {
 				type: "object",
 				properties: {
 					runtime: { enum: ["arktype"] },
-					config: { type: "string" },
+					config: { anyOf: [{ type: "string" }, { const: false }] },
 					members: {
 						type: "object",
 						properties: {

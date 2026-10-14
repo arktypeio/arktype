@@ -1,8 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { configuredThreadMessage, writeTextlessMessage } from "@ark/precompile"
+import {
+	configuredThreadMessage,
+	writeOptionValueMessage,
+	writeTextlessMessage
+} from "@ark/precompile"
 import { precompile as bunPlugin } from "@ark/precompile/bun"
 import { writeDeclareFrameworkMessage } from "@ark/precompile/internal/declare.ts"
+import { createPrecompiler } from "@ark/precompile/internal/driver.ts"
 import { register } from "@ark/precompile/node"
 import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
@@ -132,6 +137,12 @@ contextualize(() => {
 		}
 		attest(() => turbopack.call(loader as never, "")).throws(
 			writeDeclareFrameworkMessage("Turbopack")
+		)
+	})
+
+	it("refuses a config that isn't a module path or false, rather than resolve it", () => {
+		attest(() => createPrecompiler({ config: true as never })).throws(
+			writeOptionValueMessage("config", "true", "a module path or false")
 		)
 	})
 
