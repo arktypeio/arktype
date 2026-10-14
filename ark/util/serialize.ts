@@ -9,7 +9,7 @@ import {
 	ownEntriesOf,
 	toJsonMethodOf
 } from "./facts.ts"
-import { objectKindOf } from "./objectKinds.ts"
+import { isArray, objectKindOf } from "./objectKinds.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
 import type { dict } from "./records.ts"
 
@@ -104,7 +104,7 @@ export const printKind = (data: unknown): string =>
 	: typeof data === "symbol" ? printSymbol(data)
 	: typeof data !== "object" || data === null ?
 		serializePrimitive(data as SerializablePrimitive)
-	: Array.isArray(data) ? "an array"
+	: isArray(data) ? "an array"
 	: "an object"
 
 const stringifyUnquoted = (
@@ -119,7 +119,7 @@ const stringifyUnquoted = (
 
 	const nextIndent = currentIndent + " ".repeat(indent)
 
-	if (Array.isArray(value)) {
+	if (isArray(value)) {
 		if (value.length === 0) return "[]"
 		const items = value
 			.map(item => stringifyUnquoted(item, indent, nextIndent, opts))
@@ -190,8 +190,7 @@ const _serialize = (
 			if (seen.includes(o)) return "(cycle)"
 
 			const nextSeen = [...seen, o]
-			if (Array.isArray(o))
-				return o.map(item => _serialize(item, opts, nextSeen))
+			if (isArray(o)) return o.map(item => _serialize(item, opts, nextSeen))
 
 			if (isDate(o)) return o.toDateString()
 

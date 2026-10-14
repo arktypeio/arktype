@@ -1643,7 +1643,7 @@ const possiblyCollapse = <allowPrimitive extends boolean>(
 			// if the collapsed value is still an object
 			hasDomain(collapsed, "object") &&
 			// and the JSON did not include any implied keys
-			(Object.keys(collapsed).length === 1 || Array.isArray(collapsed))
+			(Object.keys(collapsed).length === 1 || isArray(collapsed))
 		) {
 			// we can replace it with its collapsed value
 			return collapsed as never

@@ -1,4 +1,4 @@
-import { arityOf, arrayEquals, type array } from "@ark/util"
+import { arityOf, arrayEquals, isArray, type array } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
@@ -104,7 +104,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	get shallowMorphs(): array<Morph> {
 		// if the morph input is a union, it should not contain any other shallow morphs
-		return Array.isArray(this.inner.in?.shallowMorphs) ?
+		return isArray(this.inner.in?.shallowMorphs) ?
 				[...this.inner.in.shallowMorphs, ...this.morphs]
 			:	this.morphs
 	}

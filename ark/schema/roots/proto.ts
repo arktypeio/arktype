@@ -2,6 +2,7 @@ import {
 	domainOf,
 	functionNameOf,
 	getBuiltinNameOfConstructor,
+	isArray,
 	isValidDate,
 	objectKindDescriptions,
 	throwParseError,
@@ -90,7 +91,7 @@ export class ProtoNode extends InternalBasis<Proto.Declaration> {
 	traverseAllows: TraverseAllows =
 		this.requiresInvalidDateCheck ?
 			data => data instanceof Date && isValidDate(data)
-		: this.isArrayProto ? data => Array.isArray(data)
+		: this.isArrayProto ? data => isArray(data)
 		: data => data instanceof this.proto
 
 	compileCondition(js: NodeCompiler, data: string): string {
