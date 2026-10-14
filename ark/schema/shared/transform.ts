@@ -35,6 +35,16 @@ export declare namespace TransformErrors {
 	}
 }
 
+// an array's own keys list its indices first, so it holds no others if its last is the index before its length
+export const holdsOnlyIndices = (data: unknown[]): boolean => {
+	const keys = Object.keys(data)
+	return (
+		keys.length === data.length &&
+		(!keys.length || keys[keys.length - 1] === `${keys.length - 1}`) &&
+		!Object.getOwnPropertySymbols(data).length
+	)
+}
+
 export const copyOf = (data: object): object => {
 	if (isArray(data)) {
 		const keys = Object.keys(data)

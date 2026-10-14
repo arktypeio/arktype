@@ -65,6 +65,7 @@ export {
 	FirstIssueTraversal,
 	fixConfig,
 	fixConfigured,
+	holdsOnlyIndices,
 	InternalTraversal,
 	isAbsent,
 	mergeTransformed,

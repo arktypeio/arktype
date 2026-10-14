@@ -39,6 +39,7 @@ import {
 import { $ark } from "../shared/registry.ts"
 import {
 	copyOf,
+	holdsOnlyIndices,
 	mergeTransformed,
 	TransformErrors
 } from "../shared/transform.ts"
@@ -1093,24 +1094,29 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 			this.compileDefaults(js)
 			this.compileCopiedDeclaredKeys(js)
-				.const("dataKeys", "Object.keys(data)")
-				.const("dataSymbols", "Object.getOwnPropertySymbols(data)")
-				.if("dataSymbols.length", () =>
-					js.line("dataKeys.push(...dataSymbols)")
-				)
-				.for("i < dataKeys.length", () =>
-					js
-						.const("k", "dataKeys[i]")
-						.if(
-							`!(k in ${js.ref(this.propsByKey)}) && !(${this._compileDeclaresKey(js)})`,
-							() => this.compileCopy(js).line("delete out[k]")
-						)
-				)
+			const deletes = () =>
+				js
+					.const("dataKeys", "Object.keys(data)")
+					.const("dataSymbols", "Object.getOwnPropertySymbols(data)")
+					.if("dataSymbols.length", () =>
+						js.line("dataKeys.push(...dataSymbols)")
+					)
+					.for("i < dataKeys.length", () =>
+						js
+							.const("k", "dataKeys[i]")
+							.if(
+								`!(k in ${js.ref(this.propsByKey)}) && !(${this._compileDeclaresKey(js)})`,
+								() => this.compileCopy(js).line("delete out[k]")
+							)
+					)
+			if (this.sequence) js.if("!indexed", deletes)
+			else deletes()
 			return js.return("out")
 		}
 		if (this.sequence) {
-			// an array is scanned either way, so it's returned as is if nothing is undeclared
-			const unchanged: string[] = []
+			// an array holding keys other than its indices is the only one scanned for undeclared keys
+			js.const("indexed", `${js.ref(holdsOnlyIndices)}(data)`)
+			const unchanged = ["indexed"]
 			if (outMayBeCopied) unchanged.push("out === data")
 			for (let i = 0; i < transformedProps.length; i++) {
 				unchanged.push(
@@ -1129,29 +1135,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
 				)
 			}
-			const breakIfUndeclared = (props: Prop.Node[]) => {
-				if (props.length) compileDeclaredKeySwitch(js, props)
-				return js.if(`!(${this._compileDeclaresKey(js)})`, () =>
-					js.line("break undeclared")
-				)
-			}
-			const label =
-				unchanged.length ?
-					`undeclared: if (${unchanged.join(" && ")})`
-				:	"undeclared:"
-			js.block(label, () => {
-				js.forIn("data", () =>
-					breakIfUndeclared(
-						this.props.filter(prop => typeof prop.key === "string")
-					)
-				)
-				js.loop("for (const k of Object.getOwnPropertySymbols(data))", () =>
-					breakIfUndeclared(
-						this.props.filter(prop => typeof prop.key === "symbol")
-					)
-				)
-				return js.return("data")
-			})
+			js.if(unchanged.join(" && "), () => js.return("data"))
 			deleteFromCopy()
 			return
 		}

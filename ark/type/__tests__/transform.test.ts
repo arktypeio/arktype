@@ -839,6 +839,21 @@ o.n must be a number (was a string)`)
 			attest(Reflect.ownKeys(out)).equals(["a"])
 		})
 
+		it("deletes an array's keys past its indices", () => {
+			const T = type("(string | undefined)[]").onUndeclaredKey("delete")
+			const indexed = ["a"]
+			attest(T(indexed) === indexed).equals(true)
+			const holey = new Array(2).fill("a", 1)
+			attest(T(holey) === holey).equals(true)
+			const hidden = Object.defineProperty(["a"], "hidden", { value: 1 })
+			attest(T(hidden) === hidden).equals(true)
+			const extra = Object.assign(new Array(2).fill("a", 1), {
+				extra: 1,
+				[Symbol("s")]: 2
+			})
+			attest(Reflect.ownKeys(T(extra))).equals(["1", "length"])
+		})
+
 		// process.env is an exotic object- ensure it is correctly copied
 		// https://discord.com/channels/957797212103016458/1116551844710330458
 		it("deletes them from process.env", () => {

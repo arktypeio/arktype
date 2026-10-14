@@ -90,6 +90,7 @@ import { $ark } from "./shared/registry.ts"
 import { missingSetEngineMessage } from "./shared/sets.ts"
 import {
 	copyOf,
+	holdsOnlyIndices,
 	mergeTransformed,
 	TransformErrors
 } from "./shared/transform.ts"
@@ -359,6 +360,7 @@ const unitConstants = {
 	callMorph,
 	copyOf,
 	errorFromUnion,
+	holdsOnlyIndices,
 	isAbsent,
 	isValidDate,
 	jsTypeOfDescriptions,
