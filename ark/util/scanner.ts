@@ -127,28 +127,23 @@ export declare namespace Scanner {
 		escapeEscape extends Backslash | "",
 		appendTo extends string = ""
 	> =
-		unscanned extends shift<infer lookahead, infer nextUnscanned> ?
-			lookahead extends terminator ? [appendTo, unscanned]
-			: lookahead extends Backslash ?
-				nextUnscanned extends (
-					shift<infer nextLookahead, infer postEscapedUnscanned>
-				) ?
-					shiftUntilEscapable<
-						postEscapedUnscanned,
-						terminator,
-						escapeEscape,
-						`${appendTo}${nextLookahead extends terminator ? ""
-						: nextLookahead extends Backslash ? escapeEscape
-						: Backslash}${nextLookahead}`
-					>
-				:	[`${appendTo}${Backslash}`, ""]
-			:	shiftUntilEscapable<
+		// skip ahead to the first backslash, then the first terminator before it
+		unscanned extends `${infer head}${Backslash}${infer escaped}` ?
+			head extends `${infer scanned}${terminator}${infer rest}` ?
+				[`${appendTo}${scanned}`, `${terminator}${rest}${Backslash}${escaped}`]
+			: escaped extends shift<infer lookahead, infer nextUnscanned> ?
+				shiftUntilEscapable<
 					nextUnscanned,
 					terminator,
 					escapeEscape,
-					`${appendTo}${lookahead}`
+					`${appendTo}${head}${lookahead extends terminator ? ""
+					: lookahead extends Backslash ? escapeEscape
+					: Backslash}${lookahead}`
 				>
-		:	[appendTo, ""]
+			:	[`${appendTo}${head}${Backslash}`, ""]
+		: unscanned extends `${infer scanned}${terminator}${infer rest}` ?
+			[`${appendTo}${scanned}`, `${terminator}${rest}`]
+		:	[`${appendTo}${unscanned}`, ""]
 
 	export type shiftUntilNot<
 		unscanned extends string,
