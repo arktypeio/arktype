@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import type { Diagnostic } from "@ark/precompile"
 import { type } from "arktype"
+import { keywordMetas } from "arktype/internal/standalone.ts"
 import fc from "fast-check"
 import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
@@ -16,7 +17,7 @@ import {
 	sourceOf,
 	type Node
 } from "./grammar.ts"
-import type { World } from "./perturbationWorker.ts"
+import { serialize, type World } from "./perturbationWorker.ts"
 import {
 	buildPerturbed,
 	comparable,
@@ -860,6 +861,9 @@ const knownFailures: Allowance[] = [
 	}
 ]
 
+// how a world observes a keyword's meta
+const keywordMetaObservations = new Set([...keywordMetas()].map(serialize))
+
 // a disagreement outside the guarantee (design/precompile.md §2)
 const exclusions: Allowance[] = [
 	{
@@ -873,6 +877,17 @@ const exclusions: Allowance[] = [
 				)
 			) &&
 			original.threw !== precompiled.threw
+	},
+	{
+		reason: "a keyword Type's meta, which its validator doesn't bake",
+		matches: ({ original, precompiled }) =>
+			Object.keys({ ...original, ...precompiled }).every(
+				k =>
+					comparable(original[k]) === comparable(precompiled[k]) ||
+					(k === "meta" &&
+						precompiled.meta === serialize({}) &&
+						keywordMetaObservations.has(original.meta))
+			)
 	}
 ]
 

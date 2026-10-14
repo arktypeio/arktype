@@ -1,5 +1,5 @@
 import { type } from "arktype"
-import { jsonOf, listOf } from "listing"
+import { jsonOf, listOf, metaOf } from "listing"
 import { $, Email, morphs, Name, Person, Trimmed, types } from "./types.ts"
 
 const fields = { name: Name, email: Email }
@@ -151,6 +151,7 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 		described: [DescribedPerson.description, Person.expression],
 		listed: outcomeOf(() => String(listOf(Person))),
 		unbaked: outcomeOf(() => JSON.stringify(jsonOf(Person))),
+		keywordMeta: outcomeOf(() => metaOf(Email)),
 		stamped: [uuid.test(stamped.id), uuid.test(stamped.name.slice(2))],
 		narrowed: [Counted("a"), narrowed],
 		incremented: [

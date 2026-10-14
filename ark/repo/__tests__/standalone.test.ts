@@ -352,6 +352,15 @@ name is missing`)
 		attest("jsonSchema" in validator["~standard"]).equals(false)
 	})
 
+	it("bakes none of a keyword's meta, but a Type's the program configures", async () => {
+		const { Id, Described } = await load({
+			Id: type("string.uuid"),
+			Described: type("string.uuid").describe("an id")
+		})
+		attest(Id.meta).equals({})
+		attest(Described.meta).equals({ description: "an id", format: "uuid" })
+	})
+
 	it("validates without generating code", async () => {
 		const { js } = bundle(
 			precompileStandalone({ T: type({ a: "string" }) }).code

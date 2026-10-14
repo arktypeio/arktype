@@ -30,7 +30,8 @@ const run = (opts?: object) =>
 const agreed = (observed: Record<string, unknown>) =>
 	Object.fromEntries(
 		Object.entries(observed).filter(
-			([k]) => !["created", "listed", "unbaked", "reported"].includes(k)
+			([k]) =>
+				!["created", "listed", "unbaked", "keywordMeta", "reported"].includes(k)
 		)
 	)
 
@@ -94,7 +95,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			)
 			writeFileSync(
 				join(shadowed, "node_modules", "listing", "index.js"),
-				"export const listOf = t => t.array()\nexport const jsonOf = t => t.json\n"
+				"export const listOf = t => t.array()\nexport const jsonOf = t => t.json\nexport const metaOf = t => t.meta\n"
 			)
 			plain = JSON.parse(run())
 			printed = run({ shadow: true })
@@ -115,7 +116,8 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			attest(shadow.reported).equals([
 				shadow.created,
 				shadow.listed,
-				shadow.unbaked
+				shadow.unbaked,
+				shadow.keywordMeta
 			])
 		})
 
@@ -124,6 +126,12 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at reading array, since its validator lacks it: arktype gives "function", its validator undefined',
 				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at json, since its validator doesn\'t bake it: arktype gives {"out":{"required":[{"key":"name","value":"string"}],"domain":"object"}}, its validator {"out":"undefined"}'
 			])
+		})
+
+		it("throws where a library reads a keyword Type's meta, which its validator doesn't bake", () => {
+			attest(shadow.keywordMeta).snap(
+				'Error: types.ts:5:22  type("string.email") diverges from arktype at meta, since its validator doesn\'t bake a keyword\'s: arktype gives {"format":"email"}, its validator {}'
+			)
 		})
 
 		it("Vitest, configured as the README shows", async () => {
@@ -141,7 +149,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 				vitest.state.getFiles().length,
 				// each mismatch observe() catches, which Vitest reports beside the test
 				vitest.state.getUnhandledErrors().length
-			]).equals([0, 1, 3])
+			]).equals([0, 1, 4])
 		}).timeout(60000)
 
 		it("Bun", function () {

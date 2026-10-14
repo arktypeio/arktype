@@ -52,7 +52,7 @@ import {
 } from "@ark/util"
 import { InternalTypedFn, type TypedFn } from "./fn.ts"
 import type { Generic } from "./generic.ts"
-import type { type } from "./keywords/keywords.ts"
+import { keywords, type type } from "./keywords/keywords.ts"
 import type { Module } from "./module.ts"
 import type { HoleKind, IntrospectionMember } from "./runtime.ts"
 import * as runtime from "./runtimeExports.ts"
@@ -1385,7 +1385,8 @@ return [${returned.join(", ")}]
 	writeValidator(root: BaseRoot): string {
 		const shape = this.shapeOf(root)
 		// emitted before the key encodes it, so a value the build can't emit is refused for what it is
-		const meta = this.emit(root.meta)
+		const meta =
+			keywordMetas().has(root.meta) ? "runtime.emptyMeta" : this.emit(root.meta)
 		const nodeName = this.unitsByHead.get(root.id)!.names[root.id]
 		const [id, holes] = (this.checkedRoots.has(root) ? traversalKeyOf : keyOf)(
 			root
@@ -2222,6 +2223,22 @@ const collectDefaults = (
 }
 
 const sharedByUnit = new WeakMap<RootUnit, boolean>()
+
+let collectedKeywordMetas: Set<object> | undefined
+
+// a keyword Type's validator bakes none of the keyword's meta
+export const keywordMetas = (): Set<object> => {
+	if (collectedKeywordMetas) return collectedKeywordMetas
+	const metas = new Set<object>()
+	const collect = (module: object): void => {
+		for (const value of Object.values(module)) {
+			if (hasArkKind(value, "module")) collect(value)
+			else if (hasArkKind(value, "root")) metas.add(value.meta)
+		}
+	}
+	collect(keywords)
+	return (collectedKeywordMetas = metas)
+}
 
 // a Transform member writes to its input, which a bundle's CommonJS or IIFE output leaves sloppy, where writing to a frozen input is ignored rather than throwing
 const isStrict = (unit: RootUnit): boolean =>

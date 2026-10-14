@@ -59,7 +59,7 @@ export default defineConfig({ plugins: [precompile.vite({ shadow: true })] })
 
 The program then runs on arktype: `arktype` resolves to it for every importer, and only `arktype/config` to `arktype/runtime` (so with Turbopack, alias only `arktype/config`). Each Type, Module and `type.fn` a definition returns compares its validator with arktype's:
 
-- as it's created, by whether it throws and its `meta`
+- as it's created, by whether it throws and its `meta`, but for a keyword's, which its validator doesn't bake, so reading it throws
 - validating, through calling it, `allows`, `assert`, `traverse`, `from` and `~standard.validate`, by result, the input each leaves, the objects each shares, and each call to a function the program passed
 - reading `expression`, `description`, `json`, `toJSON()`, `toString()`, `toJsonSchema()` and `~standard.jsonSchema`, and reading any other member arktype has or checking for it with `in`, which the validator must have too, as a Scope's, a Generic's, a Module's and a `type.fn`'s must, its `params` and `returns` compared as Types. `typeof` can't be intercepted, so it gives arktype's answer, like `"function"` for a Generic. Copying a Type's own keys, as a spread or `Object.assign` does, reads each one, so it throws where the validator lacks one
 

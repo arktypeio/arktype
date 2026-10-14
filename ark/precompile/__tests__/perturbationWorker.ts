@@ -504,7 +504,7 @@ const samples = (): unknown[] => [
 ]
 
 // a Type a morph returns is compared by its expression, since a precompiled program's is a validator
-const serialize = (out: unknown): unknown =>
+export const serialize = (out: unknown): unknown =>
 	(
 		hasDomain(out, "object") &&
 		(out as { " arkKind"?: string })[" arkKind"] === "errors"

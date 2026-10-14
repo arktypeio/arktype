@@ -8,6 +8,7 @@ import {
 import { shareConfig } from "@ark/schema/runtime"
 import { hasDomain, printable } from "@ark/util"
 import { configure } from "arktype/internal/config.js"
+import { keywordMetas } from "arktype/internal/standalone.ts"
 import { keptIssuesOf, thrownIssuesOf } from "./issues.ts"
 
 shareConfig(configure)
@@ -129,7 +130,7 @@ const shadowOf = (
 	const isData = !isHeld(original) && typeof original !== "function"
 	const observeCreation = (outcome: Outcome) =>
 		"thrown" in outcome ? { threw: thrownOf(outcome.thrown) }
-		: isType ? { meta: (outcome.value as { meta?: unknown } | undefined)?.meta }
+		: isType ? { meta: bakedMetaOf(outcome.value) }
 		: isData ? { value: withoutSuffixes(outcome.value) }
 		: {}
 	compare(
@@ -167,6 +168,12 @@ const shadowOf = (
 
 const thrownOf = (e: unknown) => (e instanceof Error ? String(e) : e)
 
+// a validator bakes a Type's meta, but not a keyword's
+const bakedMetaOf = (t: unknown) => {
+	const meta = (t as { meta?: object } | undefined)?.meta
+	return meta && keywordMetas().has(meta) ? {} : meta
+}
+
 const validatedMembers = ["allows", "assert", "traverse", "from"]
 
 const introspectedMembers = ["toJSON", "toJsonSchema", "toString"]
@@ -200,6 +207,15 @@ const typeHandlerOf = (
 		)
 			return introspector(k as string)
 		if (k === "meta") {
+			if (keywordMetas().has(target.meta)) {
+				compare(
+					pair,
+					"meta",
+					target.meta,
+					counterpart.meta,
+					"since its validator doesn't bake a keyword's"
+				)
+			}
 			// arktype holds the recorder of each function the program passed
 			const meta: Record<PropertyKey, unknown> = { ...target.meta }
 			for (const k in meta)

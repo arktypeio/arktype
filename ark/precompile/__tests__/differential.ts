@@ -5,6 +5,7 @@ import {
 	holeNameMarker,
 	introspectionMembers,
 	keyOf,
+	keywordMetas,
 	precompileStandalone,
 	precompileStandaloneModules,
 	type FoldedMember,
@@ -457,7 +458,11 @@ export const observeArktype = (
 	node: BaseRoot,
 	inputs: unknown[]
 ): Observations => ({
-	attributes: observeAttributes(node as never),
+	attributes: {
+		...observeAttributes(node as never),
+		// a validator bakes a Type's meta, but not a keyword's
+		meta: keywordMetas().has(node.meta) ? {} : node.meta
+	},
 	introspection: observeStably(() => observeIntrospection(node as never)),
 	calls: inputs.map(input => {
 		const call = observeCall(node as never, input)
