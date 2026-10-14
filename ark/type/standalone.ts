@@ -29,6 +29,7 @@ import {
 	rootApplyRuntime,
 	writeRootApply,
 	type FailureSite,
+	type RootApplyParam,
 	type UnionSite
 } from "@ark/schema/internal"
 import {
@@ -1625,7 +1626,7 @@ ${isTemplate ? "]" : ")"}`
 			: callbacks ? "Traversal"
 			: "InternalTraversal"
 		// a first-issue build's traversal drops the rest as it finalizes, which applyErrors doesn't call
-		const apply = writeRootApply(root, nodeName, param =>
+		const refOf = (param: RootApplyParam) =>
 			param === "Traversal" ? `runtime.${ctx}`
 			: param === "config" ? "runtime.runtimeConfig"
 			: (
@@ -1633,9 +1634,23 @@ ${isTemplate ? "]" : ")"}`
 			) ?
 				"runtime.applyErrors"
 			:	this.emit(rootApplyRuntime[param])
-		)
+		const strategy = root.rootApplyStrategy
+		// most root applies are one arrow, half the length of the function writeRootApply names for the JIT
+		const valid =
+			root.includesAlias ? undefined
+			: strategy === "allows" ? "data"
+			: (
+				strategy === "transform" &&
+				!root.includesMorph &&
+				!(root.hasKind("union") && !root.compiledDiscriminant)
+			) ?
+				"node.traverseTransform(data)"
+			:	undefined
+		// each validator writes its own, as one validators shared calls every node's Allows from one site, which V8 can't inline where a site calls several validators
+		if (valid)
+			return `((node) => (data, onFail) => node.allows(data) ? ${valid} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")}))(${shape})`
 		return `(function (node) {
-		${apply}
+		${writeRootApply(root, nodeName, refOf)}
 	})(${shape})`
 	}
 
