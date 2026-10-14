@@ -18,6 +18,8 @@ import {
 	allowsInBranchBy,
 	enterApplied,
 	exitApplied,
+	rejected,
+	rejects,
 	transformedInApply,
 	transformIfAllowed,
 	transformResolution,
@@ -370,6 +372,13 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		const condition = node.compileCondition?.(this, accessExpression)
 		if (condition !== undefined)
 			return this.if(`!(${condition})`, () => this.return(false))
+		// read once, so the string remembered is the one its pattern rejected
+		if (this.loopDepth > 0 && isRefinedPattern(node)) {
+			const allows = this.traversal(node, "Allows")
+			return this.const("value", accessExpression).if(`!${allows}(value)`, () =>
+				this.return(`${this.ref(rejected)}(${allows}, value)`)
+			)
+		}
 		const pushesPath =
 			node.allowsRequiresContext && node.allowsRequiresTraversal
 		if (pushesPath) this.line(`${this.ctx}.path.push(${keyExpression})`)
@@ -423,6 +432,8 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		}
 		const allows =
 			!checksAllowsFirst ? ""
+			: isRefinedPattern(node) ?
+				`${this.ref(rejects)}(${this.traversal(node, "Allows")}, ${value}) && `
 			: condition === undefined ? `!${this.allows(node, value)} && `
 			: `!(${condition}) && `
 		// a refined basis Allows rejects failed its refinement unless its basis failed, so the refinement isn't checked again
@@ -592,3 +603,7 @@ export const isRefinedBasis = (node: BaseNode): node is IntersectionNode =>
 	node.basis !== null &&
 	node.children.length === 2 &&
 	node.prestructurals.length === 1
+
+// a pattern's verdict on a string never changes, so a loop's Apply can reuse the one its Allows reached
+const isRefinedPattern = (node: BaseNode): node is IntersectionNode =>
+	isRefinedBasis(node) && node.prestructurals[0].hasKind("pattern")

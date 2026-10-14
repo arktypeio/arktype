@@ -356,6 +356,20 @@ value at [1] must be a string (was a number)`)
 value at [1] must be matched by ^a+$ (was "b")`)
 	})
 
+	it("remembers the string a pattern rejected, not one read after it", () => {
+		const Patterns = type(/^a+$/).array()
+		Patterns([])
+		let reads = 0
+		const shifting = Object.defineProperty([], 0, {
+			get: () => (reads++ ? "a" : "b"),
+			enumerable: true
+		})
+		attest(Patterns.allows(shifting)).equals(false)
+		attest(Patterns(["a", 5]).toString()).snap(
+			"value at [1] must be a string (was a number)"
+		)
+	})
+
 	it("accepts arrays from another realm", () => {
 		const foreign = runInContext("[1, 2, 3]", createContext())
 		// Same value identity check would fail: foreign instanceof Array === false

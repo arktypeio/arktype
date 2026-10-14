@@ -72,6 +72,8 @@ export {
 	pipeApplied,
 	pipeChecked,
 	pipeTransformed,
+	rejected,
+	rejects,
 	runtimeConfig,
 	runtimeScope,
 	throwOnDefault,

@@ -569,6 +569,31 @@ export const allowsInBranchBy = (
 	return ctx.popBranch()!.errorCount === 0 && allowed
 }
 
+// the last string a loop's Allows found its pattern rejecting, which Apply then reports without matching it again
+let rejectedBy: unknown
+let rejectedValue: unknown
+
+// only a string is remembered, since anything else fails its typeof check cheaply and an object shouldn't outlive its call
+export const rejected = (
+	allows: (data: unknown) => boolean,
+	value: unknown
+): false => {
+	if (typeof value === "string") {
+		rejectedBy = allows
+		rejectedValue = value
+	}
+	return false
+}
+
+export const rejects = (
+	allows: (data: unknown) => boolean,
+	value: unknown
+): boolean => {
+	if (value !== rejectedValue || allows !== rejectedBy) return !allows(value)
+	rejectedBy = rejectedValue = undefined
+	return true
+}
+
 // a morph that returns ctx.errors has already added them
 export const addErrors = (
 	ctx: InternalTraversal,
