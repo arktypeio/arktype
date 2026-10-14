@@ -22,7 +22,7 @@ bench("array-chain", () => type("number").array()).types([
 ])
 
 bench("union-string", () => type("number|string")).types([
-	531,
+	533,
 	"instantiations"
 ])
 
@@ -37,7 +37,7 @@ bench("union-chain", () => type("number").or("string")).types([
 ])
 
 bench("union-10-ary", () => type("0|1|2|3|4|5|6|7|8|9")).types([
-	1884,
+	1886,
 	"instantiations"
 ])
 

@@ -100,6 +100,7 @@ type parseNonReference<def extends string, $, args> =
 type parseExpression<def extends string, $, args> =
 	def extends `${string}${"(" | "|>"}${string}` | `/${string}` ?
 		fullStringParse<s.initialize<def>, $, args>
+	: def extends `${string} | ${string}` ? parseSpacedUnion<def, def, $, args>
 	: def extends `${string}|${string}` ? parseOperandUnion<def, def, $, args>
 	: def extends `${string} ${Comparator} ${string}` ?
 		parseBoundedOperand<def, $, args>
@@ -161,6 +162,32 @@ type parseOperandUnion<
 				>
 		:	never
 	: parseOperandToken<trimSpaces<unscanned>, $, args> extends infer ast ?
+		null extends ast ?
+			fullStringParse<s.initialize<def>, $, args>
+		:	[union, "|", ast]
+	:	never
+
+// like parseOperandUnion, but splitting on " | " leaves no spaces to trim
+type parseSpacedUnion<
+	def extends string,
+	unscanned extends string,
+	$,
+	args,
+	union = undefined
+> =
+	unscanned extends `${infer head} | ${infer tail}` ?
+		parseOperandToken<head, $, args> extends infer ast ?
+			null extends ast ?
+				fullStringParse<s.initialize<def>, $, args>
+			:	parseSpacedUnion<
+					def,
+					tail,
+					$,
+					args,
+					[union] extends [undefined] ? ast : [union, "|", ast]
+				>
+		:	never
+	: parseOperandToken<unscanned, $, args> extends infer ast ?
 		null extends ast ?
 			fullStringParse<s.initialize<def>, $, args>
 		:	[union, "|", ast]
