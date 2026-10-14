@@ -4,12 +4,12 @@ import {
 	Precompiler,
 	type Diagnostic,
 	type PrecompiledModule,
-	type PrecompileMode
+	type PrecompileMode,
+	type PrecompileOptions
 } from "@ark/precompile"
 import { hasArkKind } from "@ark/schema"
 import { errorWritersByCode } from "@ark/schema/internal"
 import { arkKindOf } from "@ark/util"
-import type { IntrospectionMember } from "arktype/internal/runtime.ts"
 import { isTypedFn, keyOf, type Foldable } from "arktype/internal/standalone.ts"
 import { bindingOfFunction, isArk } from "@ark/precompile/internal/graph.ts"
 import { SourceModule } from "@ark/precompile/internal/module.ts"
@@ -46,7 +46,8 @@ const root = fromHere("..", "..", "..")
 
 export interface BuildOptions {
 	mode: PrecompileMode
-	introspection?: readonly IntrospectionMember[]
+	// what a standalone build takes, which cache mode, writing arktype's own Types, doesn't
+	standalone?: PrecompileOptions
 	// run a file where no site folds, as for a program that records its own observations
 	runsUnfolded?: boolean
 }
@@ -58,8 +59,7 @@ const createPrecompiler = (opts: BuildOptions) =>
 			cwd: root,
 			checkHelpers: true,
 			inline: true,
-			runtime: opts.mode === "cache" ? "arktype" : undefined,
-			introspection: opts.introspection
+			...(opts.mode === "cache" ? { runtime: "arktype" } : opts.standalone)
 		}
 	)
 
@@ -482,7 +482,7 @@ if (import.meta.main) {
 	// each world observes a validator's expression and description
 	const build = buildPerturbed(corpus, {
 		mode: "standalone",
-		introspection: ["expression", "description"]
+		standalone: { members: { expression: true, description: true } }
 	})
 	const out = mkdtempSync(join(tmpdir(), "ark-perturbation-"))
 	// a run that fails keeps its worlds for inspection

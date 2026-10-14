@@ -5,6 +5,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { startVitest } from "vitest/node"
+import { lacks, testedOptions } from "./contract.ts"
 import { normalized, precompile } from "./utils.ts"
 
 const shadowed = fromHere("shadowed")
@@ -26,12 +27,28 @@ const run = (opts?: object) =>
 		{ cwd: shadowed, encoding: "utf8" }
 	).stdout
 
+// what observe.ts reads through a library by the member it reads, which a validator lacks where the build's members option drops it
+const libraryReads = {
+	standard: "~standard",
+	keywordMeta: "meta",
+	asserted: "assert"
+}
+
+// what the program reads past its validator, in the order it reads it, which it catches and shadow mode raises again
+const divergent = [
+	...(lacks("~standard") ? ["standard"] : []),
+	"created",
+	"listed",
+	"unbaked",
+	"keywordMeta",
+	...(lacks("assert") ? ["asserted"] : [])
+]
+
 // what each driver observes alike, where no site diverges
 const agreed = (observed: Record<string, unknown>) =>
 	Object.fromEntries(
 		Object.entries(observed).filter(
-			([k]) =>
-				!["created", "listed", "unbaked", "keywordMeta", "reported"].includes(k)
+			([k]) => !divergent.includes(k) && k !== "reported"
 		)
 	)
 
@@ -95,10 +112,10 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			)
 			writeFileSync(
 				join(shadowed, "node_modules", "listing", "index.js"),
-				"export const listOf = t => t.array()\nexport const jsonOf = t => t.json\nexport const metaOf = t => t.meta\n"
+				'export const listOf = t => t.array()\nexport const jsonOf = t => t.json\nexport const metaOf = t => t.meta\nexport const assertOf = (t, data) => t.assert(data)\nexport const standardOf = (t, data) => t["~standard"].validate(data)\n'
 			)
 			plain = JSON.parse(run())
-			printed = run({ shadow: true })
+			printed = run({ ...testedOptions, shadow: true })
 			shadow = JSON.parse(printed)
 		})
 
@@ -107,18 +124,14 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 		})
 
 		it("throws naming a site whose validator throws at creation", () => {
-			attest(shadow.created).snap(
-				'Error: created.ts:5:21  type("string").narrow(isLong) diverges from arktype at creation: arktype gives {"meta":{}}, its validator {"threw":"Error: `isLong` (created.ts:5:43) is a function of 2 or more parameters, but was precompiled as a function of 1 parameter"}'
+			// what arktype creates is compared by its meta, unless the validator lacks it
+			attest(shadow.created).equals(
+				`Error: created.ts:5:21  type("string").narrow(isLong) diverges from arktype at creation: arktype gives ${lacks("meta") ? "{}" : '{"meta":{}}'}, its validator {"threw":"Error: \`isLong\` (created.ts:5:43) is a function of 2 or more parameters, but was precompiled as a function of 1 parameter"}`
 			)
 		})
 
 		it("raises each mismatch the program catches where it can't", () => {
-			attest(shadow.reported).equals([
-				shadow.created,
-				shadow.listed,
-				shadow.unbaked,
-				shadow.keywordMeta
-			])
+			attest(shadow.reported).equals(divergent.map(k => shadow[k]))
 		})
 
 		it("throws where a library reads a member its validator lacks", () => {
@@ -128,10 +141,21 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			])
 		})
 
-		it("throws where a library reads a keyword Type's meta, which its validator doesn't bake", () => {
+		it("throws where a library reads a keyword Type's meta, which its validator doesn't bake", function () {
+			if (lacks("meta")) this.skip()
 			attest(shadow.keywordMeta).snap(
 				'Error: types.ts:5:22  type("string.email") diverges from arktype at meta, since its validator doesn\'t bake a keyword\'s: arktype gives {"format":"email"}, its validator {}'
 			)
+		})
+
+		it("throws where a library reads a member the build's options drop", () => {
+			for (const [k, member] of Object.entries(libraryReads)) {
+				attest(
+					String(shadow[k]).includes(
+						`at reading ${member}, since its validator lacks it`
+					)
+				).equals(lacks(member))
+			}
 		})
 
 		it("Vitest, configured as the README shows", async () => {
@@ -149,7 +173,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 				vitest.state.getFiles().length,
 				// each mismatch observe() catches, which Vitest reports beside the test
 				vitest.state.getUnhandledErrors().length
-			]).equals([0, 1, 4])
+			]).equals([0, 1, divergent.length])
 		}).timeout(60000)
 
 		it("Bun", function () {

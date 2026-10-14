@@ -80,7 +80,21 @@ const swappedOf = (
 	return Object.isFrozen(value) ? Object.freeze(copy) : copy
 }
 
+// e.g. members.meta false, under which a validator's meta isn't compared at creation
+export interface ShadowContract {
+	members?: { meta?: boolean }
+}
+
 export const shadow = (
+	site: string,
+	precompile: (...args: unknown[]) => unknown,
+	define: (...args: unknown[]) => unknown,
+	callbacks: readonly number[],
+	...args: unknown[]
+): unknown => shadowUnder({}, site, precompile, define, callbacks, ...args)
+
+export const shadowUnder = (
+	contract: ShadowContract,
 	site: string,
 	precompile: (...args: unknown[]) => unknown,
 	define: (...args: unknown[]) => unknown,
@@ -96,6 +110,7 @@ export const shadow = (
 		return passed.map(arg => swappedOf(arg, byShadowed, seen))
 	}
 	return shadowOf(
+		contract,
 		site,
 		() => inArktype(() => define(...swappedBy(originalByShadowed))),
 		() => precompile(...swappedBy(precompiledByShadowed))
@@ -103,12 +118,14 @@ export const shadow = (
 }
 
 interface Pair {
+	contract: ShadowContract
 	site: string
 	original: unknown
 	counterpart: unknown
 }
 
 const shadowOf = (
+	contract: ShadowContract,
 	site: string,
 	define: () => unknown,
 	precompile: () => unknown
@@ -121,6 +138,7 @@ const shadowOf = (
 			(originalByShadowed.get(defined.value as never) ?? defined.value)
 		:	undefined
 	const pair: Pair = {
+		contract,
 		site,
 		original,
 		counterpart: "value" in precompiled ? precompiled.value : undefined
@@ -130,7 +148,8 @@ const shadowOf = (
 	const isData = !isHeld(original) && typeof original !== "function"
 	const observeCreation = (outcome: Outcome) =>
 		"thrown" in outcome ? { threw: thrownOf(outcome.thrown) }
-		: isType ? { meta: bakedMetaOf(outcome.value) }
+		: isType && contract.members?.meta !== false ?
+			{ meta: bakedMetaOf(outcome.value) }
 		: isData ? { value: withoutSuffixes(outcome.value) }
 		: {}
 	compare(
@@ -178,6 +197,8 @@ const validatedMembers = ["allows", "assert", "traverse", "from"]
 
 const introspectedMembers = ["toJSON", "toJsonSchema", "toString"]
 
+const droppableMembers = ["assert", "traverse", "from", "meta", "~standard"]
+
 const typeHandlerOf = (
 	pair: Pair & { original: BaseRoot }
 ): ProxyHandler<any> => {
@@ -199,8 +220,11 @@ const typeHandlerOf = (
 		(...args: unknown[]) =>
 			introspect(pair, path, args)
 	const memberOf = (target: BaseRoot, k: PropertyKey): unknown => {
-		if (validatedMembers.includes(k as never)) return validator(k as string)
 		const counterpart = pair.counterpart as Record<PropertyKey, unknown>
+		// e.g. assert, which a build's members option can drop
+		if (droppableMembers.includes(k as never) && !(k in counterpart))
+			return boundTo(target, checkedMember(pair, target, k))
+		if (validatedMembers.includes(k as never)) return validator(k as string)
 		if (
 			introspectedMembers.includes(k as never) &&
 			"value" in outcomeOf(() => counterpart[k])
@@ -324,6 +348,7 @@ const heldHandlerOf = (pair: Pair): ProxyHandler<any> => {
 			if (!hasArkKind(value, "root") && !isHeld(value))
 				return boundTo(target, value)
 			return (membersByKey[k] ??= shadowOf(
+				pair.contract,
 				`${pair.site}.${String(k)}`,
 				() => value,
 				() => (pair.counterpart as Record<PropertyKey, unknown>)[k]

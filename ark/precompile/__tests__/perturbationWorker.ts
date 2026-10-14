@@ -10,6 +10,7 @@ import {
 	thrownIssuesOf,
 	type KeptIssue
 } from "@ark/precompile/internal/issues.ts"
+import { hasMember, lackedMembers, lacks, traverse } from "./contract.ts"
 
 // runs each file of a perturbation manifest once per perturbation, as written (P) or precompiled (P') in standalone
 // or cache mode, recording what each folded site creates
@@ -320,7 +321,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			inputsOf: () => unknown[]
 		) => {
 			try {
-				observations[key] = observeValidation(create(), inputsOf)
+				observations[key] = observeValidation(create(), inputsOf, world)
 			} catch (e) {
 				observations[key] = { threw: messageOf(e) }
 			}
@@ -569,7 +570,8 @@ const outcomeOf = (call: () => unknown, input?: unknown): Observation => {
 // each call gets its own copy of an input, so what one mutates the next doesn't see
 const observeValidation = (
 	value: unknown,
-	inputsOf: () => unknown[]
+	inputsOf: () => unknown[],
+	world: World
 ): Observation => {
 	if (isStandIn(value)) return { module: {} }
 	if (isModule(value)) {
@@ -577,7 +579,7 @@ const observeValidation = (
 			module: Object.fromEntries(
 				Object.entries(value).map(([k, v]) => [
 					k,
-					observeValidation(v, inputsOf)
+					observeValidation(v, inputsOf, world)
 				])
 			)
 		}
@@ -598,25 +600,36 @@ const observeValidation = (
 	return {
 		expression: t.expression,
 		description: t.description,
-		string: String(t),
-		meta: serialize(t.meta),
+		...(!lacks("methods") && { string: String(t) }),
+		...(!lacks("meta") && { meta: serialize(t.meta) }),
 		json: outcomeOf(() => t.json),
 		toJsonSchema: outcomeOf(() => t.toJsonSchema()),
-		standardJsonSchema: (["input", "output"] as const).map(io =>
-			outcomeOf(() =>
-				t["~standard"].jsonSchema[io]({ target: "draft-2020-12" })
+		...(!lacks("~standard") && {
+			standardJsonSchema: (["input", "output"] as const).map(io =>
+				outcomeOf(() =>
+					t["~standard"].jsonSchema[io]({ target: "draft-2020-12" })
+				)
 			)
-		),
+		}),
 		traverse: inputsOf().map((_, i) => {
 			const input = inputsOf()[i]
 			return {
-				...outcomeOf(() => t.traverse(input), input),
+				...outcomeOf(() => traverse(t, input), input),
 				mutated: serialize(input)
 			}
 		}),
 		allows: calls((fn, input) => fn.allows(input)),
-		assert: calls((fn, input) => fn.assert(input)),
-		standard: calls((fn, input) => fn["~standard"].validate(input))
+		...(!lacks("assert") && { assert: calls((fn, input) => fn.assert(input)) }),
+		...(!lacks("~standard") && {
+			standard: calls((fn, input) => fn["~standard"].validate(input))
+		}),
+		// what a standalone build's options drop, which arktype's Type has
+		...(lackedMembers.length && {
+			unlacked:
+				world === "standalone" ?
+					lackedMembers.filter(member => hasMember(t, member))
+				:	[]
+		})
 	}
 }
 

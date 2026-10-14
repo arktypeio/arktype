@@ -147,23 +147,26 @@ contextualize(() => {
 		it("import cycle", () => {
 			attest(node(["main.ts"], {}, cycle).stdout).equals(runPlain(cycle))
 			attest(
-				node(["main.ts"], { introspection: ["expression", "json"] }, cycleFirst)
-					.stdout
+				node(
+					["main.ts"],
+					{ members: { expression: true, json: true } },
+					cycleFirst
+				).stdout
 			).equals(runPlain(cycleFirst))
 			// Node's type stripping keeps an import only a type reads, which closes the cycle
 			attest(node(["main.ts"], {}, cycleErased).stdout).equals(
 				runPlain(cycleErased)
 			)
 			attest(
-				node(["main.ts"], { introspection: ["json"] }, cycleArrow).stdout
+				node(["main.ts"], { members: { json: true } }, cycleArrow).stdout
 			).equals(runPlain(cycleArrow))
 			// each module logs as it runs, so an import the build adds can't run one earlier unseen
 			attest(
-				node(["main.ts"], { introspection: ["expression"] }, cycleOrder).stdout
+				node(["main.ts"], { members: { expression: true } }, cycleOrder).stdout
 			).equals(runPlain(cycleOrder))
 			// a fold run once what it reads is set, before the statement setting it ends
 			attest(
-				node(["main.ts"], { introspection: ["expression"] }, setInStep).stdout
+				node(["main.ts"], { members: { expression: true } }, setInStep).stdout
 			).equals(runPlain(setInStep))
 		}).timeout(60000)
 

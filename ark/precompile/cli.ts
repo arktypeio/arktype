@@ -4,9 +4,10 @@ import { dirname, relative } from "node:path"
 import { parseArgs } from "node:util"
 import { check } from "./check.ts"
 import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
+import type { PrecompileOptions } from "./precompile.ts"
 
 const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"
+	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file>] [--members <json>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -21,6 +22,7 @@ const { values, positionals } = parseArgs({
 		"fail-under": { type: "string" },
 		runtime: { type: "string" },
 		config: { type: "string" },
+		members: { type: "string" },
 		conditions: { type: "string" },
 		tsconfig: { type: "string" }
 	}
@@ -55,9 +57,19 @@ const failUnder =
 if (Number.isNaN(failUnder))
 	fail(`--fail-under must be a percentage (was ${values["fail-under"]})`)
 
+let members: PrecompileOptions["members"]
+if (values.members !== undefined) {
+	try {
+		members = JSON.parse(values.members)
+	} catch {
+		fail(`--members must be JSON (was ${values.members})`)
+	}
+}
+
 const report = check(positionals, {
 	runtime: runtime as "arktype" | undefined,
 	config: values.config,
+	members,
 	conditions: values.conditions?.split(","),
 	tsconfig: values.tsconfig
 })

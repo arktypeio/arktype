@@ -48,6 +48,21 @@ export const makeField = limit => {
 		])
 	})
 
+	it("applies the members a build drops", () => {
+		const code = `import { type } from "arktype"
+export const User = type({ name: "string" })
+export const check = data => User.assert(data)`
+		attest(lint(code)).equals([])
+		attest(lint(code, { members: { assert: false } })).snap([
+			'3:30-3:41 User.assert reads assert, which a standalone validator lacks\nthe build\'s `members` option sets "assert" false, so no validator has assert\nLeave members["assert"] unset if the program reads it.'
+		])
+		attest(() => lint(code, { members: { asserts: false } })).throws
+			.snap(`Error: Key "rules": Key "@ark/precompile/precompilable":
+	Value {"asserts":false} should NOT have additional properties.
+		Unexpected property "asserts". Expected properties: "assert", "meta", "~standard", "methods", "expression", "description", "json", "toJSON", "toJsonSchema", "~standard.jsonSchema".
+`)
+	})
+
 	it("applies the configuration", () => {
 		const code = `import "../writers/config.ts"
 import { type } from "arktype"

@@ -297,20 +297,20 @@ contextualize(() => {
 			attest(
 				run(
 					await bundle(
-						{ cwd: first, introspection: ["expression", "json"] },
+						{ cwd: first, members: { expression: true, json: true } },
 						first
 					)
 				)
 			).equals(runPlain(first))
 			const arrow = fromHere("cycleArrow")
 			attest(
-				run(await bundle({ cwd: arrow, introspection: ["json"] }, arrow))
+				run(await bundle({ cwd: arrow, members: { json: true } }, arrow))
 			).equals(runPlain(arrow))
 			const setInStep = fromHere("setInStep")
 			attest(
 				run(
 					await bundle(
-						{ cwd: setInStep, introspection: ["expression"] },
+						{ cwd: setInStep, members: { expression: true } },
 						setInStep
 					)
 				)
@@ -359,7 +359,7 @@ export const checkedItem = JSON.stringify(itemJson())
 			attest(
 				run(
 					await bundle(
-						{ cwd: introspected, introspection: ["json"] },
+						{ cwd: introspected, members: { json: true } },
 						introspected
 					)
 				)
@@ -387,6 +387,36 @@ export const checkedItem = JSON.stringify(itemJson())
 		attest(standalone.includes(parserMessage)).equals(true)
 	}).timeout(60000)
 
+	it("esbuild a runtime island piping into a validator without methods", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+
+// called as arktype calls a morph, with the Traversal it pipes from
+const validate: (data: unknown, ctx: unknown) => unknown = User
+
+// @ark-runtime
+const Parsed = type("string.json.parse").pipe((data, ctx) => validate(data, ctx))
+
+const out = Parsed('{"name":5}')
+console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => [issue.code, ...issue.path]) : out))
+`
+			},
+			fromHere("temp", "pipedInto")
+		)
+		const plain = runPlain(root)
+		attest(plain).snap(`[["domain","name"]]
+`)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(plain)
+		attest(
+			run(
+				await bundlers.esbuild({ cwd: root, members: { methods: false } }, root)
+			)
+		).equals(plain)
+	}).timeout(60000)
+
 	it("esbuild packages that opt in", async () => {
 		const standalone = await bundlers.esbuild({ cwd: library }, library)
 		attest(run(standalone)).equals(runPlain(library))
@@ -396,7 +426,7 @@ export const checkedItem = JSON.stringify(itemJson())
 	it("esbuild static introspection", async () => {
 		const introspected = fromHere("introspected")
 		const standalone = await bundlers.esbuild(
-			{ cwd: introspected, introspection: ["toJsonSchema"] },
+			{ cwd: introspected, members: { toJsonSchema: true } },
 			introspected
 		)
 		attest(run(standalone)).equals(runPlain(introspected))
@@ -408,7 +438,7 @@ export const checkedItem = JSON.stringify(itemJson())
 			attest(
 				run(
 					await bundlers.esbuild(
-						{ cwd: root, introspection: ["expression", "json"] },
+						{ cwd: root, members: { expression: true, json: true } },
 						root,
 						false
 					)
@@ -1142,7 +1172,7 @@ console.log(JSON.stringify(U.json))
 		)
 		attest(
 			thrownBy(
-				await bundlers.esbuild({ cwd: root, introspection: ["json"] }, root)
+				await bundlers.esbuild({ cwd: root, members: { json: true } }, root)
 			)
 		).snap("PORT must be a well-formed numeric string")
 	})

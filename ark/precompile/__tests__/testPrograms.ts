@@ -17,6 +17,7 @@ import {
 	sourceOf,
 	type Node
 } from "./grammar.ts"
+import { lacks, testedOptions } from "./contract.ts"
 import { serialize, type World } from "./perturbationWorker.ts"
 import {
 	buildPerturbed,
@@ -714,14 +715,18 @@ const foldedProgramOf = (
 // each mode's build wraps the same sites, so one world as written serves both
 const buildOptions: BuildOptions = {
 	mode: "standalone",
-	introspection: [
-		"expression",
-		"description",
-		"json",
-		"toJSON",
-		"toJsonSchema",
-		"~standard.jsonSchema"
-	],
+	standalone: {
+		...testedOptions,
+		members: {
+			expression: true,
+			description: true,
+			json: true,
+			toJSON: true,
+			toJsonSchema: true,
+			"~standard.jsonSchema": !lacks("~standard"),
+			...testedOptions.members
+		}
+	},
 	runsUnfolded: true
 }
 

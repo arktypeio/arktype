@@ -12,6 +12,7 @@ import {
 	hashOf,
 	hasDomain,
 	includes,
+	objectKindOrDomainOf,
 	ParseError,
 	printable,
 	registeredNameOf,
@@ -19,10 +20,11 @@ import {
 	throwParseError
 } from "@ark/util"
 import { ark, configure } from "arktype"
-import type { HoleKind, IntrospectionMember } from "arktype/internal/runtime.ts"
+import type { HoleKind } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	appendPath,
+	defaultMembers,
 	holeNamePattern,
 	introspectionMembers,
 	isTypedFn,
@@ -34,6 +36,8 @@ import {
 	writeFixConfig,
 	writeUnprecompilableMessage,
 	type ConfiguredModule,
+	type ValidatorMember,
+	type ValidatorMembers,
 	type DefaultCheck,
 	type FactoryParam,
 	type Foldable,
@@ -100,6 +104,7 @@ import {
 	type Binding,
 	type BindingKind
 } from "./scope.ts"
+import type { ShadowContract } from "./shadow.ts"
 import {
 	filterSites,
 	findSites,
@@ -118,8 +123,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	inline?: boolean | undefined
 	// check at creation that each static helper a factory calls is the one its module exports, which a test runner's module mock can replace
 	checkHelpers?: boolean | undefined
-	// what a standalone validator bakes of its Type's introspection, which it otherwise lacks
-	introspection?: readonly IntrospectionMember[] | undefined
+	// what a standalone validator has besides validating
+	members?: ValidatorMembers | undefined
 	// "first" stops each standalone validation at its first issue, which is then the only one it returns
 	errors?: "all" | "first" | undefined
 	// create each site with arktype too, from the same holes, and throw where its validator observes anything else
@@ -299,7 +304,11 @@ export class Precompiler {
 	inline: boolean
 	checkHelpers: boolean
 	shadow: boolean
-	introspection: readonly IntrospectionMember[]
+	// e.g. `{"members":{"meta":false}}`, under which shadow mode doesn't compare a validator's meta
+	shadowContract: string | undefined
+	members: ValidatorMembers
+	// e.g. traverse, from and toString where members.methods is false
+	lackedMembers: ReadonlySet<string>
 	errors: "all" | "first" | undefined
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
@@ -339,12 +348,54 @@ export class Precompiler {
 		this.inline = !!opts?.inline
 		this.checkHelpers = this.mode === "standalone" && !!opts?.checkHelpers
 		this.shadow = this.mode === "standalone" && !!opts?.shadow
-		this.introspection = opts?.introspection ?? []
+		this.members = opts?.members ?? {}
 		this.errors = opts?.errors
-		for (const member of this.introspection) {
-			if (!includes(introspectionMembers, member))
-				throwError(writeUnknownIntrospectionMessage(printable(member)))
+		if (
+			opts?.members !== undefined &&
+			objectKindOrDomainOf(opts.members) !== "object"
+		) {
+			throwError(
+				writeOptionValueMessage("members", printable(opts.members), "an object")
+			)
 		}
+		for (const member in this.members) {
+			if (
+				!includes(defaultMembers, member) &&
+				!includes(introspectionMembers, member)
+			)
+				throwError(writeUnknownMemberMessage(printable(member)))
+			const kept = this.members[member as ValidatorMember]
+			if (kept !== undefined && typeof kept !== "boolean") {
+				throwError(
+					writeOptionValueMessage(
+						`members[${JSON.stringify(member)}]`,
+						printable(kept),
+						"a boolean"
+					)
+				)
+			}
+		}
+		if (
+			this.members["~standard.jsonSchema"] &&
+			this.members["~standard"] === false
+		)
+			throwError(standardJsonSchemaWithoutStandardMessage)
+		const standaloneOption =
+			this.mode === "cache" &&
+			standaloneOptions.find(option => opts?.[option] !== undefined)
+		if (standaloneOption)
+			throwError(writeArktypeRuntimeOptionMessage(standaloneOption))
+		this.lackedMembers = new Set(
+			defaultMembers.flatMap(member =>
+				this.members[member] !== false ? []
+				: member === "methods" ? ["traverse", "from", "toString"]
+				: [member]
+			)
+		)
+		const contract: ShadowContract = {}
+		if (this.members.meta === false) contract.members = { meta: false }
+		this.shadowContract =
+			Object.keys(contract).length ? JSON.stringify(contract) : undefined
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
 
@@ -1161,7 +1212,7 @@ export class Precompiler {
 					exportsByName,
 					{
 						configured,
-						introspection: this.introspection,
+						members: this.members,
 						errors: this.errors,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module)
@@ -1265,7 +1316,9 @@ export class Precompiler {
 			// before arktype, so it loads beside the runtime whichever a module imports first
 			s.prependLeft(
 				firstStatementOf(module.program).start,
-				`import { shadow as ${prefix}shadow } from "@ark/precompile/shadow"\n`
+				this.shadowContract ?
+					`import { shadowUnder as ${prefix}shadowUnder } from "@ark/precompile/shadow"\nfunction ${prefix}shadow(...args) { return ${prefix}shadowUnder(${this.shadowContract}, ...args) }\n`
+				:	`import { shadow as ${prefix}shadow } from "@ark/precompile/shadow"\n`
 			)
 		}
 		keepImportedModules(module, folded, kept, passed, s)
@@ -3027,8 +3080,11 @@ export class Precompiler {
 				)
 			)
 		}
-		const settledRanges = new Set(
-			settled.map(candidate => rangeOf(candidate.state.node))
+		const settledValues = new Map(
+			settled.map(candidate => [
+				rangeOf(candidate.state.node),
+				candidate.state.value
+			])
 		)
 		const unavailable: [
 			node: Node,
@@ -3038,7 +3094,7 @@ export class Precompiler {
 		][] = []
 		walk(module.program, node => {
 			if (
-				settledRanges.has(rangeOf(node)) ||
+				settledValues.has(rangeOf(node)) ||
 				isInIsland(node, module) ||
 				// e.g. `interface A extends B.C {}`, which only types
 				(node.type.startsWith("TS") && !isTransparent(node))
@@ -3047,7 +3103,7 @@ export class Precompiler {
 			const read =
 				!(node.type === "MemberExpression" && isWriteTarget(node)) &&
 				!writes.has(node) &&
-				this.graph.unavailableReadOf(node, module)
+				this.graph.unavailableReadOf(node, module, this.lackedMembers)
 			if (read && !this.isDeclaredInIsland(read[1], module))
 				unavailable.push([node, ...read])
 			return true
@@ -3056,17 +3112,31 @@ export class Precompiler {
 		const isArkPackage = arkPackageName.test(
 			this.graph.packageNameOf(module.id) ?? ""
 		)
-		for (const [node, read, object, isUnsure] of unavailable) {
-			// a chain is reported where it first reads one, and a site whose value the build computed is no longer unsure
+		for (const [node, read, object, isMaybeType] of unavailable) {
+			const settledValue = settledValues.get(rangeOf(normalize(object)))
+			// a site whose value the build computed is no longer unsure, so a member the build's options drop is read off a Type there
+			const isUnsure =
+				isMaybeType &&
+				!(
+					hasArkKind(settledValue, "root") &&
+					read !== undefined &&
+					this.lackedMembers.has(read)
+				)
+			// a chain is reported where it first reads one
 			if (
 				(isUnsure &&
-					(isArkPackage || settledRanges.has(rangeOf(normalize(object))))) ||
+					(isArkPackage || settledValues.has(rangeOf(normalize(object))))) ||
 				unavailable.some(
 					([inner]) => inner !== node && contains(node, inner)
 				) ||
-				this.introspection.includes(read as never)
+				this.members[read as ValidatorMember] === true
 			)
 				continue
+			const dropped =
+				read === undefined || !this.lackedMembers.has(read) ? undefined
+				: read === "traverse" || read === "from" || read === "toString" ?
+					"methods"
+				:	read
 			result.push(
 				this.diagnostic(
 					module,
@@ -3079,9 +3149,19 @@ export class Precompiler {
 					[
 						isUnsure ?
 							`the build can't tell where \`${module.snippetOf(object)}\` comes from, so it may be a Type, which the standalone runtime replaces with a validator`
+						: dropped ?
+							`the build's \`members\` option sets ${JSON.stringify(dropped)} false, so no validator has ${read}`
 						:	`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
 					],
-					isUnsure ? unsureHint : undefined
+					isUnsure ?
+						writeUnsureHint(
+							dropped ?
+								`leave members[${JSON.stringify(dropped)}] unset`
+							:	'build with runtime: "arktype"'
+						)
+					: dropped ?
+						`Leave members[${JSON.stringify(dropped)}] unset if the program reads it.`
+					:	undefined
 				)
 			)
 		}
@@ -3404,13 +3484,47 @@ export class Precompiler {
 	}
 }
 
-export const writeUnknownIntrospectionMessage = <member extends string>(
+export const writeUnknownMemberMessage = <member extends string>(
 	member: member
-): writeUnknownIntrospectionMessage<member> =>
-	`introspection lists ${member}, which isn't one of ${introspectionMembers.map(member => JSON.stringify(member)).join(", ")}`
+): writeUnknownMemberMessage<member> =>
+	`members has ${member}, which isn't one of ${[...defaultMembers, ...introspectionMembers].map(member => JSON.stringify(member)).join(", ")}`
 
-export type writeUnknownIntrospectionMessage<member extends string> =
-	`introspection lists ${member}, which isn't one of ${string}`
+export type writeUnknownMemberMessage<member extends string> =
+	`members has ${member}, which isn't one of ${string}`
+
+// the options choosing what a standalone build writes, which runtime: "arktype" doesn't take
+const standaloneOptions = ["members"] as const
+
+export const writeOptionValueMessage = <
+	option extends string,
+	value extends string,
+	expected extends string
+>(
+	option: option,
+	value: value,
+	expected: expected
+): writeOptionValueMessage<option, value, expected> =>
+	`${option} is ${value}, which isn't ${expected}`
+
+export type writeOptionValueMessage<
+	option extends string,
+	value extends string,
+	expected extends string
+> = `${option} is ${value}, which isn't ${expected}`
+
+export const standardJsonSchemaWithoutStandardMessage =
+	'members bakes "~standard.jsonSchema" into "~standard", which it sets false'
+
+export type standardJsonSchemaWithoutStandardMessage =
+	typeof standardJsonSchemaWithoutStandardMessage
+
+export const writeArktypeRuntimeOptionMessage = <option extends string>(
+	option: option
+): writeArktypeRuntimeOptionMessage<option> =>
+	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't`
+
+export type writeArktypeRuntimeOptionMessage<option extends string> =
+	`${option} chooses what a standalone build writes, which runtime: "arktype" doesn't`
 
 export const renderDiagnostic = (diagnostic: Diagnostic): string =>
 	[
@@ -3475,7 +3589,8 @@ export type writeStandaloneDependencyMessage<name extends string> =
 export const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
 
-const unsureHint = `If it isn't a Type, annotate it with its type. If it is, build with runtime: "arktype".`
+const writeUnsureHint = (fix: string) =>
+	`If it isn't a Type, annotate it with its type. If it is, ${fix}.`
 
 const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	R1: `Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`,

@@ -49,6 +49,22 @@ const precompilable: Rule.RuleModule = {
 				properties: {
 					runtime: { enum: ["arktype"] },
 					config: { type: "string" },
+					members: {
+						type: "object",
+						properties: {
+							assert: { type: "boolean" },
+							meta: { type: "boolean" },
+							"~standard": { type: "boolean" },
+							methods: { type: "boolean" },
+							expression: { type: "boolean" },
+							description: { type: "boolean" },
+							json: { type: "boolean" },
+							toJSON: { type: "boolean" },
+							toJsonSchema: { type: "boolean" },
+							"~standard.jsonSchema": { type: "boolean" }
+						},
+						additionalProperties: false
+					},
 					conditions: { type: "array", items: { type: "string" } },
 					tsconfig: { type: "string" }
 				},

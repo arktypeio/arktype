@@ -105,7 +105,7 @@ export * from "./keywords/functions.ts"
 
 export interface ValidatorAttributes {
 	meta: ArkEnv.meta
-	// what a build's introspection option bakes, which a validator built without it doesn't have
+	// what a build's members option bakes, which a validator built without it doesn't have
 	expression?: string
 	description?: string
 	json?: JsonStructure
@@ -243,7 +243,7 @@ type ValidatorArgs = [
 ]
 
 // added where they're piped, as a Type adds them, so a morph returning them in another value still fails
-const pipedInto = (pipedFromCtx: Traversal, out: unknown): unknown => {
+export const pipedInto = (pipedFromCtx: Traversal, out: unknown): unknown => {
 	if (!(out instanceof ArkErrors)) return out
 	const errors = errorsOf(pipedFromCtx)
 	if (errors._merge) errors._merge(out, pipedFromCtx.path)

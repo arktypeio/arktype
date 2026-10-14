@@ -1178,7 +1178,7 @@ import { User } from "./user.ts"
 export const Team = type({ lead: User, members: User.array() })`
 			}
 			const precompiler = new Precompiler(memoryHost(files), {
-				introspection: ["expression", "description"]
+				members: { expression: true, description: true }
 			})
 			const user = precompiler.precompile(files["/user.ts"], "/user.ts")
 			const team = precompiler.precompile(files["/team.ts"], "/team.ts")

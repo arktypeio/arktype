@@ -1,5 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
-import { precompileModule, Precompiler } from "@ark/precompile"
+import {
+	precompileModule,
+	Precompiler,
+	standardJsonSchemaWithoutStandardMessage,
+	writeArktypeRuntimeOptionMessage,
+	writeOptionValueMessage,
+	writeUnknownMemberMessage,
+	type PrecompileOptions
+} from "@ark/precompile"
 import { analyze, diagnosticsOf, memoryHost, statusesOf } from "./utils.ts"
 
 contextualize(() => {
@@ -1244,7 +1252,7 @@ console.log(String(T), \`\${T}\`, "" + T)`)
 			])
 		})
 
-		it("members a build's introspection option bakes", () => {
+		it("members a build bakes", () => {
 			const source = `import { type } from "arktype"
 const T = type({ a: "string" })
 const jsonOf = (t: typeof T) => t.json
@@ -1253,25 +1261,112 @@ console.log(jsonOf(T), "json" in T, JSON.stringify(T), T.toJSON, \`\${T}\`)`
 				diagnosticsOf(
 					source,
 					{},
-					{ introspection: ["json", "toJSON", "expression"] }
+					{ members: { json: true, toJSON: true, expression: true } }
 				)
 			).equals([])
 			attest(
-				diagnosticsOf(source, {}, { introspection: ["toJSON"] }).map(
+				diagnosticsOf(source, {}, { members: { toJSON: true } }).map(
 					diagnostic => diagnostic.split("\n")[0]
 				)
 			).snap([
 				"/main.ts:3:33  t.json reads json, which a standalone validator lacks",
 				"/main.ts:4:66  `${T}` reads expression, which a standalone validator lacks"
 			])
+		})
+
+		it("members a build drops", () => {
+			const source = `import { scope, type } from "arktype"
+const T = type({ a: "string" })
+console.log(T.allows(1), T.assert({ a: "" }), T.meta, T["~standard"])
+console.log(T.traverse(1), T.from({ a: "" }), String(T))
+console.log(scope({ a: "string" }).type("a").assert(""))`
+			attest(diagnosticsOf(source).map(d => d.split("\n")[0])).snap([
+				"/main.ts:4:47  String(T) reads expression, which a standalone validator lacks"
+			])
 			attest(
-				() =>
-					new Precompiler(memoryHost({}), {
-						introspection: ["json", "and" as never]
-					})
-			).throws.snap(
-				'Error: introspection lists "and", which isn\'t one of "expression", "description", "json", "toJSON", "toJsonSchema", "~standard.jsonSchema"'
-			)
+				diagnosticsOf(
+					source,
+					{},
+					{
+						members: {
+							assert: false,
+							meta: false,
+							"~standard": false,
+							methods: false
+						}
+					}
+				).map(d => d.split("\n")[0])
+			).snap([
+				"/main.ts:3:26  T.assert reads assert, which a standalone validator lacks",
+				"/main.ts:3:47  T.meta reads meta, which a standalone validator lacks",
+				'/main.ts:3:55  T["~standard"] reads ~standard, which a standalone validator lacks',
+				"/main.ts:4:13  T.traverse reads traverse, which a standalone validator lacks",
+				"/main.ts:4:28  T.from reads from, which a standalone validator lacks",
+				"/main.ts:4:47  String(T) reads toString, which a standalone validator lacks",
+				'/main.ts:5:13  scope({ a: "string" }).type("a").assert reads assert, which a standalone validator lacks'
+			])
+			// a validator prints its expression through the toString() it inherits
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+const T = type({ a: "string" })
+console.log(String(T), T.expression)`,
+					{},
+					{ members: { expression: true, methods: false } }
+				).map(d => d.split("\n")[0])
+			).snap([
+				"/main.ts:3:13  String(T) reads toString, which a standalone validator lacks"
+			])
+			attest(
+				diagnosticsOf(
+					`import { type } from "arktype"
+const values: unknown[] = [1, type("string")]
+console.log(values.map(v => (v as any).from))`,
+					{},
+					{ members: { methods: false } }
+				)
+			).snap([
+				"/main.ts:3:29  (v as any).from reads from, which a standalone validator lacks\n  the build can't tell where `v as any` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, leave members[\"methods\"] unset."
+			])
+		})
+
+		describe("options a build can't take", () => {
+			const refused: [
+				name: string,
+				opts: PrecompileOptions,
+				message: string
+			][] = [
+				[
+					"members that isn't an object",
+					{ members: true as never },
+					writeOptionValueMessage("members", "true", "an object")
+				],
+				[
+					"a member that isn't one",
+					{ members: { json: true, and: true } as never },
+					writeUnknownMemberMessage('"and"')
+				],
+				[
+					"a member that isn't a boolean",
+					{ members: { assert: 0 } as never },
+					writeOptionValueMessage('members["assert"]', "0", "a boolean")
+				],
+				[
+					"~standard.jsonSchema without ~standard",
+					{ members: { "~standard": false, "~standard.jsonSchema": true } },
+					standardJsonSchemaWithoutStandardMessage
+				],
+				[
+					"members with runtime: arktype, though it keeps each",
+					{ runtime: "arktype", members: {} },
+					writeArktypeRuntimeOptionMessage("members")
+				]
+			]
+			for (const [name, opts, message] of refused) {
+				it(name, () => {
+					attest(() => new Precompiler(memoryHost({}), opts)).throws(message)
+				})
+			}
 		})
 
 		it("reflection on a Type outside any site", () => {

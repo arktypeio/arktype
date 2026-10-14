@@ -1,5 +1,5 @@
 import { type } from "arktype"
-import { jsonOf, listOf, metaOf } from "listing"
+import { assertOf, jsonOf, listOf, metaOf, standardOf } from "listing"
 import { $, Email, morphs, Name, Person, Trimmed, types } from "./types.ts"
 
 const fields = { name: Name, email: Email }
@@ -128,7 +128,7 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 	const stamped = Stamped({ name: "a" }) as { id: string; name: string }
 	return {
 		trimmed: Trimmed("  a "),
-		standard: Trimmed["~standard"].validate(1),
+		standard: outcomeOf(() => standardOf(Trimmed, 1)),
 		morphs: morphs.size,
 		contact: Contact({ name: "", email: "a@b.c" }).toString(),
 		ids: Ids(["x"]).toString(),
@@ -174,7 +174,8 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 			HasPerson.allows({ person: { name: "a" } }),
 			HasPerson.allows({ person: {} })
 		],
-		long: [Long("ab").toString(), outcomeOf(() => Long.assert("ab"))],
+		long: Long("ab").toString(),
+		asserted: outcomeOf(() => assertOf(Long, "ab")),
 		uncopied: Bumped(new Counter())
 	}
 }

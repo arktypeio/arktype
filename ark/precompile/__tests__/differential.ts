@@ -9,9 +9,9 @@ import {
 	precompileStandalone,
 	precompileStandaloneModules,
 	type FoldedMember,
-	type StandaloneExport
+	type StandaloneExport,
+	type ValidatorMembers
 } from "arktype/internal/standalone.ts"
-import type { IntrospectionMember } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	bakedJsonSchemaOptionsMessage,
@@ -28,6 +28,13 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { inspect } from "node:util"
+import {
+	hasMember,
+	lackedMembers,
+	lacks,
+	testedOptions,
+	traverse
+} from "./contract.ts"
 
 // compares a Type with the validators it precompiles to on what design/precompile.md §2 observes of a call
 
@@ -79,11 +86,27 @@ export const outDir = async (): Promise<string> => {
 		outfile: join(dir, "runtime.js"),
 		logLevel: "error"
 	})
-	for (const [name, copy] of Object.entries(
-		await importFile(join(dir, "runtime.js"))
-	))
+	const runtime = await importFile(join(dir, "runtime.js"))
+	artifactErrors = runtime.type.errors
+	for (const [name, copy] of Object.entries(runtime))
 		pairCopies(copy, (arktypeRuntime as Record<string, unknown>)[name])
 	return dir
+}
+
+// the errors the artifacts' runtime writes, which errors another copy wrote aren't
+let artifactErrors: Function | undefined
+
+// a hole calling a validator built with another copy of the runtime, as a test can, returns errors this copy doesn't recognize
+const returnsForeignErrors = (
+	validator: (data: unknown) => unknown,
+	input: unknown
+): boolean => {
+	try {
+		const out = validator(cloneInput(input))
+		return hasArkKind(out, "errors") && !(out instanceof artifactErrors!)
+	} catch {
+		return false
+	}
 }
 
 const link = (code: string) =>
@@ -99,14 +122,14 @@ let artifactCount = 0
 const loadArtifact = async (
 	exports: Record<string, StandaloneExport>,
 	layout: Layout,
-	introspection: IntrospectionMember[]
+	members: ValidatorMembers
 ): Promise<any> => {
 	const dir = await outDir()
 	let code: string
 	if (layout === "inline")
-		code = precompileStandalone(exports, { introspection }).code
+		code = precompileStandalone(exports, { members }).code
 	else {
-		const artifact = precompileStandaloneModules(exports, { introspection })
+		const artifact = precompileStandaloneModules(exports, { members })
 		for (const [specifier, module] of Object.entries(artifact.modules)) {
 			const written = modulesBySpecifier[specifier]
 			if (written === undefined) {
@@ -151,7 +174,7 @@ const loadNamingHoles = async (
 	node: BaseRoot,
 	holes: unknown[],
 	layout: Layout,
-	introspection: IntrospectionMember[]
+	members: ValidatorMembers
 ): Promise<any> => {
 	const descriptors = holes.map(hole =>
 		typeof hole === "function" ?
@@ -171,11 +194,7 @@ const loadNamingHoles = async (
 		})
 	}
 	try {
-		return await loadArtifact(
-			{ T: exportOf(node, holes) },
-			layout,
-			introspection
-		)
+		return await loadArtifact({ T: exportOf(node, holes) }, layout, members)
 	} finally {
 		for (const [i, hole] of holes.entries()) {
 			if (typeof hole !== "function") continue
@@ -311,14 +330,28 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 
 type Validator = Record<string, any> & ((data: unknown) => unknown)
 
-// every member a build can bake, so each is compared where arktype's can be read
-const introspection = [...introspectionMembers]
+// every member a build can bake, so each is compared where arktype's can be read, but what ~standard holds where the tested options drop it
+const bakesEvery: ValidatorMembers = {
+	...Object.fromEntries(
+		introspectionMembers.map(member => [
+			member,
+			member !== "~standard.jsonSchema" || !lacks("~standard")
+		])
+	),
+	...testedOptions.members
+}
+
+const printed: ValidatorMembers = {
+	expression: true,
+	description: true,
+	...testedOptions.members
+}
 
 const observeAttributes = (t: Validator) => ({
 	expression: t.expression,
 	description: t.description,
-	string: t.toString(),
-	meta: t.meta
+	...(!lacks("methods") && { string: t.toString() }),
+	...(!lacks("meta") && { meta: t.meta })
 })
 
 type Introspection = ReturnType<typeof observeIntrospection>
@@ -333,11 +366,14 @@ const observeIntrospection = (t: Validator) => ({
 		{ target: "draft-07" }
 	].map(opts => observe(() => t.toJsonSchema(opts), undefined)),
 	// a target arktype supports, the other and one it rejects
-	standardJsonSchema: (["input", "output"] as const).flatMap(io =>
-		["draft-2020-12", "draft-07", "openapi-3.0"].map(target =>
-			observe(() => t["~standard"].jsonSchema[io]({ target }), undefined)
-		)
-	)
+	standardJsonSchema:
+		lacks("~standard") ?
+			[]
+		:	(["input", "output"] as const).flatMap(io =>
+				["draft-2020-12", "draft-07", "openapi-3.0"].map(target =>
+					observe(() => t["~standard"].jsonSchema[io]({ target }), undefined)
+				)
+			)
 })
 
 const unbakedSuffix = writeUnbakedMessage("")
@@ -420,14 +456,18 @@ const observeFolded = (
 const observeCall = (t: Validator, input: unknown) => {
 	const traversed = cloneInput(input)
 	return {
-		traverse: observe(() => t.traverse(traversed), traversed),
+		traverse: observe(() => traverse(t, traversed), traversed),
 		mutated: traversed,
 		allows: observe(() => t.allows(cloneInput(input)), undefined),
-		assert: observe(() => t.assert(cloneInput(input)), undefined),
-		standard: observe(
-			() => t["~standard"].validate(cloneInput(input)),
-			undefined
-		)
+		...(!lacks("assert") && {
+			assert: observe(() => t.assert(cloneInput(input)), undefined)
+		}),
+		...(!lacks("~standard") && {
+			standard: observe(
+				() => t["~standard"].validate(cloneInput(input)),
+				undefined
+			)
+		})
 	}
 }
 
@@ -469,7 +509,9 @@ export const observeArktype = (
 	attributes: {
 		...observeAttributes(node as never),
 		// a validator bakes a Type's meta, but not a keyword's
-		meta: keywordMetas().has(node.meta) ? {} : node.meta
+		...(!lacks("meta") && {
+			meta: keywordMetas().has(node.meta) ? {} : node.meta
+		})
 	},
 	introspection: observeStably(() => observeIntrospection(node as never)),
 	calls: inputs.map(input => {
@@ -516,19 +558,13 @@ export const compare = async (
 		// introspection the build refuses to bake leaves the attributes to compare
 		let isBaked = true
 		try {
-			artifact = await loadNamingHoles(
-				node,
-				holes,
-				layout,
-				introspection
-			).catch(e => {
-				if (!(e instanceof ParseError)) throw e
-				isBaked = false
-				return loadNamingHoles(node, holes, layout, [
-					"expression",
-					"description"
-				])
-			})
+			artifact = await loadNamingHoles(node, holes, layout, bakesEvery).catch(
+				e => {
+					if (!(e instanceof ParseError)) throw e
+					isBaked = false
+					return loadNamingHoles(node, holes, layout, printed)
+				}
+			)
 		} catch (e) {
 			const refusal =
 				e instanceof ParseError ? e.message.split("\n")[0]
@@ -550,6 +586,10 @@ export const compare = async (
 			disagree("creation", { threw: String(e) })
 			continue
 		}
+		const unlacked = lackedMembers.filter(member =>
+			hasMember(validator, member)
+		)
+		if (unlacked.length) disagree("members", { unlacked })
 		const attributes = observeAttributes(validator)
 		if (!isEqual(arktype.attributes, attributes)) {
 			disagree("attributes", {
@@ -574,7 +614,11 @@ export const compare = async (
 			const expected = arktype.calls[i]
 			const actual = observeCall(validator, input)
 			if (expected && isEqual(expected, actual)) continue
-			if (!expected || holdsArkValue(actual)) {
+			if (
+				!expected ||
+				holdsArkValue(actual) ||
+				returnsForeignErrors(validator, input)
+			) {
 				if (layout === layouts[0]) result.harnessLimited++
 			} else disagree("call", { input, arktype: expected, precompiled: actual })
 		}
@@ -592,11 +636,11 @@ const compareFolded = async (
 	if (!Object.keys(folded).length) return
 	let artifact: any
 	try {
-		artifact = await loadArtifact(folded, layout, []).catch(e => {
+		artifact = await loadArtifact(folded, layout, {}).catch(e => {
 			// e.g. a schema calling a default's thunk, which arktype calls each time it writes one
 			if (!(e instanceof ParseError) || !folded.toJsonSchema) throw e
 			delete folded.toJsonSchema
-			return loadArtifact(folded, layout, [])
+			return loadArtifact(folded, layout, {})
 		})
 	} catch (e) {
 		if (!(e instanceof ParseError))

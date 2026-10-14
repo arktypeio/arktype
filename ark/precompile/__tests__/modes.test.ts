@@ -106,7 +106,7 @@ configure({ numberAllowsNaN: true })`,
 	"/config.ts": 'import { configure } from "arktype/config"\\nimport { type } from "arktype"\\nexport const shared = { version: 1 }\\nexport const flags = { strict: true }\\nconfigure({ toJsonSchema: { fallback: { predicate: ctx => ({ ...ctx.base, version: shared.version }), date: ctx => { const { base } = ctx; return base }, unit: ctx => (flags.strict ? type("nope") : ctx.base) } } })'
 }
 const source = 'import { type } from "arktype"\\nconst isEven = (n: number) => n % 2 === 0\\nexport const Even = type("number").narrow(isEven)\\nexport const At = type("Date")\\nexport const Big = type("1n")\\nexport const schema = Even.toJsonSchema()'
-const { code, modules } = precompile(source, files, { config: "/config.ts", introspection: ["toJsonSchema"] })
+const { code, modules } = precompile(source, files, { config: "/config.ts", members: { toJsonSchema: true } })
 console.log(JSON.stringify([
 	// the site compares what the writer read where the program reads the schema
 	code.split("\\n").find(line => line.startsWith("export const schema")).replace(/\\$ark\\w+/g, "$ark"),

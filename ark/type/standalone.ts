@@ -125,6 +125,20 @@ export const introspectionMembers = [
 
 export type FoldedMember = Exclude<IntrospectionMember, "~standard.jsonSchema">
 
+// `methods` is what a validator inherits: traverse(), from() and toString()
+export const defaultMembers = [
+	"assert",
+	"meta",
+	"~standard",
+	"methods"
+] as const
+
+export type ValidatorMember =
+	| (typeof defaultMembers)[number]
+	| IntrospectionMember
+
+export type ValidatorMembers = { [member in ValidatorMember]?: boolean }
+
 export interface StandaloneIntrospection {
 	member: FoldedMember
 	type: BaseRoot
@@ -195,8 +209,8 @@ interface SharedModule {
 
 export interface StandaloneOptions {
 	configured?: ConfiguredModule | undefined
-	// what each validator bakes of its Type's introspection, which it otherwise lacks
-	introspection?: readonly IntrospectionMember[] | undefined
+	// each member a validator has, the default ones unless false and those it bakes of its Type's introspection if true
+	members?: ValidatorMembers | undefined
 	// runs arktype writing what a validator bakes, refusing with a ParseError where the configured code it calls reads what the program can change
 	bake?: (<t>(write: () => t) => t) | undefined
 	// "first" stops each validation at its first issue, which is then the only one it returns
@@ -206,7 +220,7 @@ export interface StandaloneOptions {
 }
 
 interface Baking {
-	members: ReadonlySet<IntrospectionMember>
+	members: ReadonlySet<ValidatorMember>
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
 	hoisted: boolean
@@ -224,6 +238,9 @@ const writeFunction = (
 	hoisted ?
 		`function ${name}(${params}) {\n${body}\n}`
 	:	`const ${name} = ((${params}) => {\n${body}\n})`
+
+const keepsDefaultMembers = (members: ReadonlySet<ValidatorMember>) =>
+	defaultMembers.every(member => members.has(member))
 
 // a value built as its module is evaluated, which a bundler drops unread, else at its first read
 const writeValue = (hoisted: boolean, name: string, expression: string) =>
@@ -314,8 +331,12 @@ const writeArtifact = (
 	checking: string[]
 ): string[] => {
 	const { configured } = opts
+	const members = opts.members ?? {}
 	const baking: Baking = {
-		members: new Set(opts.introspection),
+		members: new Set([
+			...defaultMembers.filter(member => members[member] !== false),
+			...introspectionMembers.filter(member => members[member])
+		]),
 		write: opts.bake ?? (write => write()),
 		firstIssue: opts.errors === "first",
 		hoisted: opts.hoisted === true,
@@ -336,7 +357,9 @@ const writeArtifact = (
 		if (
 			// as unknown, since narrowing an ExportedValue to BaseRoot compares the Type and node structurally, too deep for TypeScript 6
 			!hasArkKind(factory.type as unknown, "root") ||
-			factory.defaultChecks?.length
+			factory.defaultChecks?.length ||
+			// runtime.rekeyed creates a template's copies with every member
+			(!keepsDefaultMembers(baking.members) && keyOf(factory.type)[1].length)
 		)
 			return false
 		const trial = new StandaloneArtifact(
@@ -599,6 +622,8 @@ export class StandaloneArtifact {
 	// a default's value is collected for the validator its morph reads, so that validator is written only if read, as a traversal writing the default inline reads none
 	defaultValues = new Set<BaseRoot>()
 	readRoots = new Set<BaseRoot>()
+	// e.g. a default's value its morph traverses, or a typed function's parameters it asserts with
+	runtimeReadRoots = new Set<BaseRoot>()
 	unitRoots = new Set<BaseRoot>()
 	// the unit holding each root in the first Type reaching it, by id, as two nodes of one id like `unknown` and `unknown.any` are one root
 	unitsByHead = new Map<string, RootUnit>()
@@ -1178,7 +1203,7 @@ ${writeFunction(
 			const [valueId, valueHoles] = encodeKey(defaultValue, undefined, false)
 			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}`))}, [${[...inputHoles, ...valueHoles].map(hole => this.emit(hole)).join(", ")}]]`
 			return {
-				check: `runtime.checkDefault(${this.readValidator(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey})`,
+				check: `runtime.checkDefault(${this.readByRuntime(input)}, ${this.emit(defaultValue)}, ${key === null ? "null" : this.emit(key)}, ${defaultKey})`,
 				key: defaultKey
 			}
 		})
@@ -1427,35 +1452,118 @@ return [${returned.join(", ")}]
 	writeValidator(root: BaseRoot): string {
 		// a folded factory's Type is written as what constructs its validator, which each call constructs with the functions it receives
 		const isTemplate = this.templates.has(root)
-		// beyond the shortest forms, a validator is made from what the build writes, a compact root apply's being the validator itself
-		const ownsValidator = !isTemplate && !this.baking.shortest
+		const members =
+			this.runtimeReadRoots.has(root) ?
+				new Set([...this.baking.members, ...defaultMembers])
+			:	this.baking.members
+		const keepsMeta = members.has("meta")
+		// beyond the shortest forms, a validator is made from what the build writes, a compact root apply's being the validator itself, and only one inheriting traverse is passed a Type's traversal though its length is 1
+		const ownsValidator =
+			!isTemplate && !this.baking.shortest && members.has("methods")
 		const [rootApply, allows, isCompact] = this.emitRootApply(
 			root,
 			ownsValidator
 		)
 		// emitted before the key encodes it, so a value the build can't emit is refused for what it is
 		const meta =
-			keywordMetas().has(root.meta) ? "runtime.emptyMeta" : this.emit(root.meta)
+			!keepsMeta ? undefined
+			: keywordMetas().has(root.meta) ? "runtime.emptyMeta"
+			: this.emit(root.meta)
 		const [id, holes] = (this.checkedRoots.has(root) ? traversalKeyOf : keyOf)(
 			root
 		)
 		assertDescribed(root)
-		const key = `,\n\t${writeId(id)}${holes.length && !isTemplate ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
+		const held =
+			holes.length && !isTemplate ?
+				`[${holes.map(hole => this.emit(hole)).join(", ")}]`
+			:	undefined
+		const attributes = [
+			...(keepsMeta ? [`meta: ${meta}`] : []),
+			...this.emitIntrospection(root)
+		]
+		// a validator without its meta still fails as the meta's onFail does, as a matcher asserting its default does
+		const onFail =
+			!keepsMeta && root.meta.onFail ? this.emit(root.meta.onFail) : undefined
+		const args = [
+			...(ownsValidator && !isCompact ?
+				["runtime.callingRootApply", `[${allows}, ${rootApply}]`]
+			:	[rootApply, allows]),
+			...(attributes.length ? [`{ ${attributes.join(", ")} }`] : []),
+			writeId(id),
+			...(held ? [held]
+			: onFail ? ["undefined"]
+			: []),
+			...(onFail ? [onFail] : [])
+		]
 		return `${
 			isTemplate ? "["
+			: !keepsDefaultMembers(members) ?
+				`${this.creatorOf(members, ownsValidator)}(`
 			: ownsValidator ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
-		}
-	${
-		ownsValidator && !isCompact ?
-			`runtime.callingRootApply,\n\t[${allows}, ${rootApply}]`
-		:	`${rootApply},\n\t${allows}`
-	},
-	{ meta: ${meta}${this.emitIntrospection(root)} }${key}
-${isTemplate ? "]" : ")"}`
+		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
 	}
 
-	emitIntrospection(root: BaseRoot): string {
+	// written for what a build's validators keep, as runtime.createValidator taking it would grow every build keeping each member
+	creatorOf(
+		members: ReadonlySet<ValidatorMember>,
+		ownsValidator: boolean
+	): string {
+		const keepsMeta = members.has("meta")
+		const hasAttributes =
+			keepsMeta || introspectionMembers.some(member => members.has(member))
+		// as runtime.createValidatorWith and runtime.createValidator make it
+		const call =
+			ownsValidator ?
+				"make(parts, configuredOnFail)"
+			:	"(data, pipedFromCtx, onFail = configuredOnFail) => pipedFromCtx ? runtime.pipedInto(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)"
+		const body = [
+			keepsMeta ?
+				"const configuredOnFail = attributes.meta.onFail ?? runtime.runtimeConfig.onFail"
+			:	"",
+			`const validator = ${members.has("methods") ? `runtime.setPrototypeOf(${call}, runtime.freeze(runtime.Validator.prototype))` : call}`,
+			members.has("assert") ?
+				"validator.assert = runtime.freeze((data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault))"
+			:	"",
+			hasAttributes ? "runtime.assign(validator, attributes)" : "",
+			`validator.allows = runtime.freeze(${ownsValidator ? "parts[0]" : "allows"})`,
+			members.has("~standard") ?
+				`validator["~standard"] = runtime.freeze({
+		vendor: "arktype",
+		version: 1,
+		validate: runtime.freeze(input => {
+			const out = validator(input)
+			return out instanceof runtime.ArkErrors ? out : { value: out }
+		})${members.has("~standard.jsonSchema") ? `,\n\t\t...attributes["~standard"]` : ""}
+	})`
+			:	"",
+			"return runtime.holdHoles(runtime.freeze(validator), id, holes)"
+		]
+			.filter(statement => statement)
+			.map(statement => `\t${statement}`)
+			.join("\n")
+		const params = [
+			...(ownsValidator ? ["make", "parts"] : ["rootApply", "allows"]),
+			...(hasAttributes ? ["attributes"] : []),
+			"id",
+			"holes = []",
+			...(keepsMeta ? [] : ["configuredOnFail = runtime.runtimeConfig.onFail"])
+		]
+		const name = `create${hashOf(body)}`
+		const specifier = this.specifierOf(name)
+		this.sharedModules[specifier] ??= {
+			readsRuntime: true,
+			imports: {},
+			declarations: [
+				writeFunction(this.baking.hoisted, name, params.join(", "), body)
+			],
+			exports: [name]
+		}
+		this.importName(specifier, name)
+		return name
+	}
+
+	emitIntrospection(root: BaseRoot): string[] {
 		const members: string[] = []
 		const bakes = (member: IntrospectionMember) =>
 			this.baking.members.has(member)
@@ -1495,7 +1603,7 @@ ${isTemplate ? "]" : ")"}`
 				`"~standard": { jsonSchema: runtime.bakedStandardJsonSchema(${standard.join(", ")}) }`
 			)
 		}
-		return members.map(member => `, ${member}`).join("")
+		return members
 	}
 
 	// arktype returns one json object per node, which every validator of it and every site reading it share, unless it prints what the artifact receives
@@ -1858,7 +1966,7 @@ ${isTemplate ? "]" : ")"}`
 			name = `typedFn${this.namesByTypedFn.size}`
 			this.namesByTypedFn.set(value, name)
 			this.modules.push(
-				`const ${name} = runtime.typedFn(${this.emit(value.raw)}, ${this.exportOf(value.params)}, ${this.exportOf(value.returns)})`
+				`const ${name} = runtime.typedFn(${this.emit(value.raw)}, ${this.readByRuntime(value.params)}, ${this.readByRuntime(value.returns)})`
 			)
 			return name
 		}
@@ -1886,6 +1994,11 @@ ${isTemplate ? "]" : ")"}`
 	readValidator(root: BaseRoot): string | undefined {
 		this.readRoots.add(root)
 		return this.validatorNamesByRoot.get(root)
+	}
+
+	readByRuntime(root: BaseRoot): string | undefined {
+		this.runtimeReadRoots.add(root)
+		return this.readValidator(root)
 	}
 
 	declareConst(
@@ -2101,8 +2214,15 @@ ${isTemplate ? "]" : ")"}`
 		name = `default${this.defaults.length}`
 		this.defaultNamesByMorph.set(morph, name)
 		const flags = defaultedNodeKeys.filter(k => value[k]).map(k => `${k}: true`)
+		const isThunkInput =
+			typeof defaultValue === "function" && isThunk(defaultValue)
+		// the morph traverses the value only to transform what it writes
+		const validator =
+			isThunkInput || value.includesTransform || value.includesAlias ?
+				this.readByRuntime(value)
+			:	this.readValidator(value)
 		this.defaults.push(
-			`const ${name} = runtime.computeDefaultValueMorph(${this.emit(key)}, ${this.readValidator(value)}, ${this.emit(defaultValue)}, {${flags.length ? ` ${flags.join(", ")} ` : ""}}${typeof defaultValue === "function" ? `, ${isThunk(defaultValue)}` : ""})`
+			`const ${name} = runtime.computeDefaultValueMorph(${this.emit(key)}, ${validator}, ${this.emit(defaultValue)}, {${flags.length ? ` ${flags.join(", ")} ` : ""}}${typeof defaultValue === "function" ? `, ${isThunkInput}` : ""})`
 		)
 		return `(data, ctx) => ${name}(data, ctx)`
 	}

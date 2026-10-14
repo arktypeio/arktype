@@ -110,7 +110,7 @@ export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
-// a Type's members a standalone validator has whatever its build's introspection option lists, so reading any other at runtime in a standalone build reads undefined
+// a Type's members a standalone validator has whatever its build's members option sets, so reading any other at runtime in a standalone build reads undefined
 export const validatorMembers: Record<string, 1> = Object.setPrototypeOf(
 	{
 		meta: 1,
@@ -1954,9 +1954,11 @@ export class ModuleGraph {
 	}
 
 	// e.g. `json` and `T` for `T.json`, or `T` alone for `T[key]`, where `T` is a Type, or for `T.or` where it may be one
+	// e.g. assert in lacked, where the build's members option sets it false
 	unavailableReadOf(
 		node: Node,
-		module: SourceModule
+		module: SourceModule,
+		lacked: ReadonlySet<string>
 	): [read: string | undefined, object: Node, isUnsure?: true] | undefined {
 		let read: unknown
 		let objects: Node[] = []
@@ -1993,18 +1995,19 @@ export class ModuleGraph {
 			}
 		} else [read, objects] = this.reflectionOf(node, module) ?? [undefined, []]
 		// a validator prints its expression as its string
-		if (read === "toString") read = "expression"
+		if (read === "toString" && !lacked.has(read)) read = "expression"
 		const object = objects.find(object => isOnlyType(kindOf(object)))
 		if (
 			!object &&
 			node.type === "MemberExpression" &&
-			isUnsureRead(read, kindOf(node.object))
+			isUnsureRead(read, kindOf(node.object), lacked)
 		)
 			return [read as string, node.object, true]
 		return (
 				object &&
 					(read === undefined ||
-						(typeof read === "string" && !isValidatorMember(read)))
+						(typeof read === "string" &&
+							(!isValidatorMember(read) || lacked.has(read))))
 			) ?
 				[read, object]
 			:	undefined
@@ -2026,11 +2029,11 @@ export class ModuleGraph {
 			node.type === "TemplateLiteral" &&
 			node.parent?.type !== "TaggedTemplateExpression"
 		)
-			return ["expression", node.expressions]
+			return ["toString", node.expressions]
 		if (node.type === "BinaryExpression" && node.operator === "+")
-			return ["expression", [node.left, node.right]]
+			return ["toString", [node.left, node.right]]
 		if (node.type === "AssignmentExpression" && node.operator === "+=")
-			return ["expression", [node.right]]
+			return ["toString", [node.right]]
 		if (node.type === "BinaryExpression" && node.operator === "in") {
 			const key = node.left.type === "Literal" ? node.left.value : undefined
 			// e.g. `"and" in T` or `"json" in T`, which a validator answers with the member that throws in its place
@@ -2049,7 +2052,7 @@ export class ModuleGraph {
 			callee.name === "String" &&
 			!module.scopes.referencesById.get(callee)?.binding
 		)
-			return ["expression", args.slice(0, 1)]
+			return ["toString", args.slice(0, 1)]
 		if (callee.type !== "MemberExpression") return
 		const global = normalize(callee.object)
 		if (
@@ -2191,9 +2194,13 @@ const keyIn = (owner: Node, node: Node): unknown =>
 	: undefined
 
 // e.g. `t.or` where `t` may be a Type, though `list.map` where `list` may be an array is left to the runtime
-const isUnsureRead = (read: unknown, kind: ArkKind): boolean =>
+const isUnsureRead = (
+	read: unknown,
+	kind: ArkKind,
+	lacked: ReadonlySet<string>
+): boolean =>
 	typeof read === "string" &&
-	read in typeMemberKinds &&
+	(read in typeMemberKinds || lacked.has(read)) &&
 	(kind & kinds.type ?
 		!isOnlyType(kind)
 	:	!!(kind & kinds.unknown) && !isContainerMethod(read))

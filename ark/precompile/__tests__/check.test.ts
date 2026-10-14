@@ -112,18 +112,32 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		attest(cliIn(dir, "--check", "--fail-under", "0").status).equals(1)
 	})
 
+	it("builds under the options that change what a build refuses", () => {
+		attest(
+			cliIn(fromHere("members"), "--check", "--members", '{"assert":false}')
+				.stdout
+		).snap(`main.ts:3:21  accepted
+main.ts:5:46  User.assert reads assert, which a standalone validator lacks
+  the build's \`members\` option sets "assert" false, so no validator has assert
+  Leave members["assert"] unset if the program reads it.
+1 site in 1 file: 1 accepted (100.0%), 1 error outside a site
+`)
+	})
+
 	it("rejects invalid arguments", () => {
 		attest(
 			[
 				["--runtime", "strict"],
-				["--fail-under", "most"]
+				["--fail-under", "most"],
+				["--members", "assert"]
 			].map(args => {
 				const result = cli("--check", ...args)
 				return `${result.status} ${result.stderr.split("\n")[0]}`
 			})
 		).snap([
 			"2 --runtime must be arktype (was strict)",
-			"2 --fail-under must be a percentage (was most)"
+			"2 --fail-under must be a percentage (was most)",
+			"2 --members must be JSON (was assert)"
 		])
 	})
 })
