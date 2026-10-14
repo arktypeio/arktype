@@ -9,14 +9,19 @@ import {
 	throwInternalError,
 	throwParseError,
 	type anyOrNever,
-	type ErrorMessage
+	type Backslash,
+	type BigintLiteral,
+	type ErrorMessage,
+	type NumberLiteral,
+	type WhitespaceChar
 } from "@ark/util"
 import type { ArkAmbient } from "../config.ts"
 import type { InnerParseResult, resolutionToAst } from "../scope.ts"
-import type { inferAstRoot } from "./ast/infer.ts"
+import type { InferredAst, inferAstRoot } from "./ast/infer.ts"
 import { RuntimeState, type RootedRuntimeState } from "./reduce/dynamic.ts"
 import type { StringifiablePrefixOperator } from "./reduce/shared.ts"
 import type { s, StaticState } from "./reduce/static.ts"
+import type { EnclosingQuote } from "./shift/operand/enclosed.ts"
 import type { writeInvalidGenericArgCountMessage } from "./shift/operand/genericArgs.ts"
 import type { parseOperand } from "./shift/operand/operand.ts"
 import { parseDefault } from "./shift/operator/default.ts"
@@ -59,14 +64,38 @@ export type parseString<def extends string, $, args> =
 					writeInvalidGenericArgCountMessage<def, $[def]["names"], []>
 				>
 		:	resolutionToAst<def, $[def]>
+	: def extends `${string}[]` ?
+		def extends `${infer child}[]` ?
+			child extends keyof $ ? [resolutionToAst<child, $[child]>, "[]"]
+			: resolveAmbient<child, $> extends [unknown] ?
+				parseAmbientReference<def, child, resolveAmbient<child, $>[0], $, args>
+			:	parseNonReference<def, $, args>
+		:	never
 	: resolveAmbient<def, $> extends [unknown] ?
 		parseAmbientReference<def, def, resolveAmbient<def, $>[0], $, args>
-	: def extends `${infer child}[]` ?
-		child extends keyof $ ? [resolutionToAst<child, $[child]>, "[]"]
-		: resolveAmbient<child, $> extends [unknown] ?
-			parseAmbientReference<def, child, resolveAmbient<child, $>[0], $, args>
-		:	fullStringParse<s.initialize<def>, $, args>
+	:	parseNonReference<def, $, args>
+
+type parseNonReference<def extends string, $, args> =
+	def extends `${EnclosingQuote}${string}` ?
+		parseQuotedToken<def> extends infer ast ?
+			null extends ast ?
+				parseExpression<def, $, args>
+			:	ast
+		:	never
+	: def extends `${string}${" " | "|"}${string}` ? parseExpression<def, $, args>
+	: def extends NumberLiteral | BigintLiteral ?
+		parseOperandToken<def, $, args> extends infer ast ?
+			null extends ast ?
+				fullStringParse<s.initialize<def>, $, args>
+			:	ast
+		:	never
 	:	fullStringParse<s.initialize<def>, $, args>
+
+type parseExpression<def extends string, $, args> =
+	def extends `${string}${"(" | "|>"}${string}` | `/${string}` ?
+		fullStringParse<s.initialize<def>, $, args>
+	: def extends `${string}|${string}` ? parseOperandUnion<def, def, $, args>
+	: fullStringParse<s.initialize<def>, $, args>
 
 // wrapping the lookup keeps a generic def from being narrowed to each keyword
 type resolveAmbient<reference, $> =
@@ -102,6 +131,76 @@ type parseAmbientReference<
 		fullStringParse<s.initialize<def>, $, args>
 	: def extends reference ? resolutionToAst<reference, resolution>
 	: [resolutionToAst<reference, resolution>, "[]"]
+
+// a union of plain operands is split on "|", and anything else is scanned
+type parseOperandUnion<
+	def extends string,
+	unscanned extends string,
+	$,
+	args,
+	union = undefined
+> =
+	unscanned extends `${infer head}|${infer tail}` ?
+		parseOperandToken<trimSpaces<head>, $, args> extends infer ast ?
+			null extends ast ?
+				fullStringParse<s.initialize<def>, $, args>
+			:	parseOperandUnion<
+					def,
+					tail,
+					$,
+					args,
+					[union] extends [undefined] ? ast : [union, "|", ast]
+				>
+		:	never
+	: parseOperandToken<trimSpaces<unscanned>, $, args> extends infer ast ?
+		null extends ast ?
+			fullStringParse<s.initialize<def>, $, args>
+		:	[union, "|", ast]
+	:	never
+
+// null unless token is a quoted string, number or reference tryResolve would resolve directly
+type parseOperandToken<token extends string, $, args> =
+	token extends `${string}[]` ?
+		token extends `${infer child}[]` ?
+			parseOperandToken<child, $, args> extends infer ast ?
+				null extends ast ?
+					null
+				:	[ast, "[]"]
+			:	never
+		:	never
+	: token extends `${EnclosingQuote}${string}` ? parseQuotedToken<token>
+	: [token] extends [keyof args] ? null
+	: token extends keyof $ ? referenceToAst<token, $[token]>
+	: resolveAmbient<token, $> extends [unknown] ?
+		referenceToAst<token, resolveAmbient<token, $>[0]>
+	: `#${token}` extends keyof $ ? null
+	: token extends `${string}${WhitespaceChar}${string}` ? null
+	: token extends NumberLiteral<infer n> ? InferredAst<n, token>
+	: token extends BigintLiteral<infer b> ? InferredAst<b, token>
+	: null
+
+type parseQuotedToken<token extends string> =
+	token extends `'${infer content}'` ?
+		content extends `${string}${"'" | Backslash}${string}` ?
+			null
+		:	InferredAst<content, token>
+	: token extends `"${infer content}"` ?
+		content extends `${string}${'"' | Backslash}${string}` ?
+			null
+		:	InferredAst<content, token>
+	:	null
+
+type referenceToAst<reference extends string, resolution> =
+	resolutionToAst<reference, resolution> extends infer ast ?
+		ast extends GenericAst ?
+			null
+		:	ast
+	:	never
+
+type trimSpaces<token extends string> =
+	token extends ` ${infer rest}` ? trimSpaces<rest>
+	: token extends `${infer rest} ` ? trimSpaces<rest>
+	: token
 
 export type inferString<def extends string, $, args> = inferAstRoot<
 	parseString<def, $, args>,
