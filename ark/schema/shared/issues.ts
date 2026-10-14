@@ -273,9 +273,9 @@ export const messageOf = (issue: ArkIssue): string => {
 	let path = ""
 	for (const k of issue.path) {
 		path +=
-			typeof k === "number" ? `[${k}]`
-			: path ? `.${String(k)}`
-			: String(k)
+			typeof k === "number" ?
+				`[${k}]`
+			:	(path && ".") + (typeof k === "string" ? k : String(k))
 	}
 	return path ? `${path} ${problemOf(issue)}` : problemOf(issue)
 }
