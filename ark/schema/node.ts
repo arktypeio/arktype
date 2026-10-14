@@ -651,6 +651,14 @@ export abstract class BaseNode<
 		return this(data, pipedFromCtx, null)
 	}
 
+	// checks data where it's defined, e.g. a default, without the use that compiles a Type
+	traverseUnused(data: d["prerequisite"]): ArkErrors | {} | null | undefined {
+		const isUsedBeforeJit = this.isUsedBeforeJit
+		const out = this.traverse(data)
+		this.isUsedBeforeJit = isUsedBeforeJit
+		return out
+	}
+
 	private _in: unknown;
 	/** rawIn should be used internally instead */
 	get in(): unknown {

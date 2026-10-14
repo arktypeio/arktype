@@ -147,7 +147,7 @@ export const assertDefaultAssignability = (
 	// if the node has a default value, finalize it and apply JIT optimizations
 	// if applicable to ensure behavior + error logging is externally consistent
 	// (using .in here insead of .rawIn triggers finalization)
-	const out = (node.in as BaseRoot).traverse(value)
+	const out = (node.in as BaseRoot).traverseUnused(value)
 
 	if (out instanceof ArkErrors) {
 		// a ParseError is for the developer, so it renders in English

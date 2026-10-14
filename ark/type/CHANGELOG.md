@@ -298,6 +298,10 @@ A Type is compiled the second time it's called or its `allows` is called, or whe
 
 A union finds its discriminant when it's compiled, checks data, describes a miss or has its references read, rather than when it's created, so unions a program defines but never uses don't pay for it. Where a scope has several definition errors, which is thrown first can change, and can differ between JIT and jitless, e.g. an indeterminate union of morphs before an invalid default it includes.
 
+### Check a default without compiling its Type
+
+Checking a default as it's defined no longer counts as a use of the Type it's checked against, so a Type used by several defaults isn't compiled until data is checked against it, and that first check runs uncompiled.
+
 ### Collect a scope's references when they're read
 
 An `@ark/schema` scope's `references` and `referencesById` are collected when first read rather than as it exports, unless it binds precompiled units or includes an alias, so `type` no longer walks every builtin node as arktype starts.
