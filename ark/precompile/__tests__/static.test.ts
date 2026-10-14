@@ -1409,6 +1409,16 @@ console.log(values.map(v => (v as any).from))`,
 					"checks with runtime: arktype, though it's the default",
 					{ runtime: "arktype", checks: "types" },
 					writeArktypeRuntimeOptionMessage("checks")
+				],
+				[
+					"mutatesInput that isn't a boolean",
+					{ mutatesInput: 1 as never },
+					writeOptionValueMessage("mutatesInput", "1", "a boolean")
+				],
+				[
+					"mutatesInput with runtime: arktype, though false is the default",
+					{ runtime: "arktype", mutatesInput: false },
+					writeArktypeRuntimeOptionMessage("mutatesInput")
 				]
 			]
 			for (const [name, opts, message] of refused) {

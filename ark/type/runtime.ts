@@ -10,8 +10,11 @@ import {
 	errorsOf,
 	mergeIssues,
 	messageOf,
+	pipe,
+	pipeTransformed,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
+	transformResolution,
 	validateStandardJsonSchemaTarget,
 	type ArkErrorCode,
 	type CompactApply,
@@ -448,6 +451,159 @@ export const applyCallErrors = (
 	}
 	return onFail ? onFail(errors) : errors
 }
+
+// the input of a call writing what it transforms in place, and what each place transforming an object took it for and left it with, as a place reaching an object another transformed would read what the other wrote
+let inPlaceRoot: unknown
+let takenInPlace: Map<object, unknown> | undefined
+let leftInPlace: Map<object, unknown> | undefined
+
+// what structures a cycle can reach again are writing
+const writingInPlace = /* @__PURE__ */ new Set<object>()
+
+export const transformedInPlaceTwiceMessage =
+	"mutatesInput can't validate an input that holds an object at two places"
+
+export type transformedInPlaceTwiceMessage =
+	typeof transformedInPlaceTwiceMessage
+
+const throwTransformedTwice = (): never =>
+	throwError(transformedInPlaceTwiceMessage)
+
+// each call transforms what it reaches anew, as does a Type piped a morph's output, which can hold what the morph received
+const inPlaceCall = (
+	root: unknown,
+	f: Fn,
+	a: unknown,
+	b?: unknown,
+	c?: unknown
+): unknown => {
+	const outerRoot = inPlaceRoot
+	const outerTaken = takenInPlace
+	const outerLeft = leftInPlace
+	inPlaceRoot = root
+	takenInPlace = leftInPlace = undefined
+	try {
+		return f(a, b, c)
+	} finally {
+		inPlaceRoot = outerRoot
+		takenInPlace = outerTaken
+		leftInPlace = outerLeft
+	}
+}
+
+const taken = {}
+const retaken = {}
+
+// the output a place transforming data alike left it with, else whether this place transforms it, as one inside it can only through a cycle a resolution takes apart
+const placeOf = (
+	data: object,
+	transform: unknown,
+	cycles: boolean | undefined
+): unknown => {
+	if (data === inPlaceRoot) return cycles ? retaken : throwTransformedTwice()
+	const transforms = (takenInPlace ??= new Map())
+	const taker = transforms.get(data)
+	if (taker === undefined) {
+		transforms.set(data, transform)
+		leftInPlace ??= new Map()
+		return taken
+	}
+	if (!leftInPlace!.has(data)) return cycles ? retaken : throwTransformedTwice()
+	return taker === transform ? leftInPlace!.get(data) : throwTransformedTwice()
+}
+
+const leave = (place: unknown, data: object, out: unknown): unknown => {
+	if (place === taken) leftInPlace!.set(data, out)
+	return out
+}
+
+// a transform of a value its parent holds
+export const transformOnce = (
+	transform: Fn,
+	data: unknown,
+	ctx?: unknown,
+	cycles?: boolean
+): unknown => {
+	if (typeof data !== "object" || data === null) return transform(data, ctx)
+	const place = placeOf(data, transform, cycles)
+	return place === taken || place === retaken ?
+			leave(place, data, transform(data, ctx))
+		:	place
+}
+
+// a transform of a value its parent holds that a resolution transforms
+export const transformResolutionOnce = (
+	ctx: InternalTraversal,
+	id: string,
+	data: unknown,
+	transform: Fn
+): unknown => {
+	if (typeof data !== "object" || data === null)
+		return transformResolution(ctx, id, data, transform as never)
+	const place = placeOf(data, id, true)
+	return place === taken || place === retaken ?
+			leave(place, data, transformResolution(ctx, id, data, transform as never))
+		:	place
+}
+
+// a structure a cycle can reach again, which would then read it half written
+export const writesInPlace = (
+	transform: Fn,
+	data: object,
+	ctx?: unknown
+): unknown => {
+	if (writingInPlace.has(data)) throwTransformedTwice()
+	writingInPlace.add(data)
+	try {
+		return transform(data, ctx)
+	} finally {
+		writingInPlace.delete(data)
+	}
+}
+
+// a check finds what it would have where no transform wrote into what it reads, so Apply finds an issue wherever Allows did
+const appliesInPlace =
+	(apply: Fn): Fn =>
+	(data: unknown, ctx: ArkErrors | InternalTraversal) => {
+		inPlaceCall(data, apply, data, ctx)
+		if (!(ctx instanceof ArkErrors ? ctx : ctx._errors)?.count)
+			throwTransformedTwice()
+	}
+
+const transformsInPlace =
+	(transform: Fn): Fn =>
+	(data: unknown, ctx: unknown) =>
+		inPlaceCall(data, transform, data, ctx)
+
+// the traversals of a root that writes what it transforms into its input
+export const inPlaceParts = ([
+	allows,
+	apply,
+	transform
+]: readonly Fn[]): Fn[] => [
+	allows,
+	appliesInPlace(apply),
+	transformsInPlace(transform)
+]
+
+export const inPlaceNode = <
+	node extends { traverseApply: Fn; traverseTransform: Fn }
+>(
+	node: node
+): node =>
+	setPrototypeOf(
+		{
+			traverseApply: appliesInPlace(node.traverseApply),
+			traverseTransform: transformsInPlace(node.traverseTransform)
+		},
+		node
+	)
+
+export const pipeInPlace: Fn = (ctx, node, data) =>
+	inPlaceCall(data, pipe, ctx, node, data)
+
+export const pipeTransformedInPlace: Fn = (ctx, node, data) =>
+	inPlaceCall(data, pipeTransformed, ctx, node, data)
 
 export type HoleKind = "function" | "class" | "symbol"
 

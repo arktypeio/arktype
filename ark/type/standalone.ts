@@ -20,9 +20,10 @@ import {
 	type NodeId,
 	type Optional,
 	type RootUnit,
+	type TransformKeyOptions,
+	type TransformStep,
 	type UnionNode,
 	type UnitMember,
-	type UnitOptions,
 	type Sequence
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -227,6 +228,8 @@ export interface StandaloneOptions {
 	lazy?: boolean | undefined
 	// "none" has a factory take each Type, Module, Scope and Generic it receives as the build read it
 	checks?: Checks | undefined
+	// true writes what a validation transforms into its input, which it returns
+	mutatesInput?: boolean | undefined
 	// declares what a site calls as functions, for a module an import cycle can reach before its artifact is evaluated
 	hoisted?: boolean | undefined
 }
@@ -241,6 +244,7 @@ interface Baking {
 	createsLazily: boolean
 	// else a value is held by its id only where it holds functions a factory takes from it
 	checksTypes: boolean
+	mutatesInput: boolean
 	hoisted: boolean
 	// writes the shortest forms rather than those V8 compiles and runs fastest as the artifact loads
 	shortest: boolean
@@ -367,6 +371,7 @@ const writeArtifact = (
 		readsConfig: configured !== false,
 		createsLazily: opts.lazy !== false || opts.hoisted === true,
 		checksTypes: opts.checks !== "none",
+		mutatesInput: opts.mutatesInput === true,
 		hoisted: opts.hoisted === true,
 		shortest: false
 	}
@@ -735,7 +740,7 @@ export class StandaloneArtifact {
 			for (const root of this.roots) {
 				if (this.unitRoots.has(root)) continue
 				this.unitRoots.add(root)
-				for (const unit of rootUnitsOf(root)) {
+				for (const unit of rootUnitsOf(root, this.baking.mutatesInput)) {
 					for (const head of unit.roots) {
 						if (!this.unitsByHead.has(head.id))
 							this.unitsByHead.set(head.id, unit)
@@ -1029,7 +1034,13 @@ export class StandaloneArtifact {
 
 	// each Type's units, after those they call
 	get units(): RootUnit[] {
-		return [...new Set([...this.unitRoots].flatMap(root => rootUnitsOf(root)))]
+		return [
+			...new Set(
+				[...this.unitRoots].flatMap(root =>
+					rootUnitsOf(root, this.baking.mutatesInput)
+				)
+			)
+		]
 	}
 
 	get comparedValues(): unknown[] {
@@ -1834,6 +1845,8 @@ return [${returned.join(", ")}]
 			: param === "TransformErrors" ? param
 			: param === "applyRejected" && appliesErrors ? "runtime.applyNodeErrors"
 			: this.emit(rootApplyRuntime[param])
+		// each call writing what it transforms into its input transforms an object at one place, and fails where a check does
+		const inPlace = this.baking.mutatesInput && root.transforms
 		const strategy = root.rootApplyStrategy
 		// most root applies are one arrow, half the length of the function writeRootApply names for the JIT
 		const isArrow =
@@ -1854,24 +1867,26 @@ return [${returned.join(", ")}]
 					`[allows, apply${transforms ? ", transform" : ""}]`
 				:	`{ 0: allows, 1: apply${transforms ? ", 2: transform" : ""} }`
 			const valid = transforms ? "transform(data)" : "data"
+			const parts = inPlace ? `runtime.inPlaceParts(${traversals})` : traversals
 			// the validator itself, declaring data alone so a call passing only data pads no parameters
 			if (asValidator) {
 				return [
 					`((${pattern}, onFail) => ${this.compiledOnLoad(`(data, ...args) => allows(data) ? ${valid} : runtime.applyCallErrors(apply, data, args, onFail, ${refOf("Traversal")})`)})`,
-					traversals,
+					parts,
 					true
 				]
 			}
 			return [
-				`((${pattern}) => ${this.compiledOnLoad(`(data, onFail) => allows(data) ? ${valid} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${traversals})`,
+				`((${pattern}) => ${this.compiledOnLoad(`(data, onFail) => allows(data) ? ${valid} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${parts})`,
 				`${traversals}[0]`,
 				false
 			]
 		}
 		const shape = this.shapeOf(root)
+		const node = inPlace ? `runtime.inPlaceNode(${shape})` : shape
 		if (isArrow) {
 			return [
-				`((node) => ${this.compiledOnLoad(`(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${shape})`,
+				`((node) => ${this.compiledOnLoad(`(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${node})`,
 				`${shape}.allows`,
 				false
 			]
@@ -1889,7 +1904,7 @@ return [${returned.join(", ")}]
 		return [
 			`(function (node) {
 		${captured}${body}
-	})(${shape})`,
+	})(${node})`,
 			`${shape}.allows`,
 			false
 		]
@@ -2701,17 +2716,95 @@ class StandaloneCompiler extends TraversalCompiler {
 	}
 }
 
-const unitOptions: UnitOptions = { compiler: StandaloneCompiler }
+// a transform writing its input in place returns it, so a place reaching an object another place transformed, or is writing, reuses its output or throws
+class MutatingCompiler extends StandaloneCompiler {
+	// whether the next transform invoked is of a value data holds
+	private entersValue = false
 
-const unitsByRoot = new WeakMap<BaseRoot, RootUnit[]>()
+	// the output is the input, which is neither copied nor given what a copy dropped
+	override if(condition: string, then: (self: this) => this): this {
+		return condition === "out === data" || condition === "out !== data" ?
+				this
+			:	super.if(condition, then)
+	}
 
-const rootUnitsOf = (root: BaseRoot): RootUnit[] => {
-	let units = unitsByRoot.get(root)
+	override ref(value: object | symbol): string {
+		// a sequence names its copy before it writes, which never happens in place
+		if (value === runtime.copyOf) return "copyOf"
+		// a Type piped a morph's output transforms what it holds anew
+		if (value === runtime.pipe) return super.ref(runtime.pipeInPlace)
+		if (value === runtime.pipeTransformed)
+			return super.ref(runtime.pipeTransformedInPlace)
+		return super.ref(value)
+	}
+
+	override invoke(node: BaseNode, opts?: InvokeOptions): string {
+		if ((opts?.kind ?? this.traversalKind) !== "Transform")
+			return super.invoke(node, opts)
+		// a value that can't be an object can't be held twice
+		const isValue =
+			this.entersValue &&
+			(node.includesAlias ||
+				(node.rawIn as BaseRoot).overlaps($ark.intrinsic.object.internal))
+		this.entersValue = false
+		// a structure a cycle can reach again throws where it does
+		const isWritten = node.hasKind("structure") && node.includesAlias
+		if (!isValue && !isWritten) return super.invoke(node, opts)
+		this.reach(node)
+		const arg = opts?.arg ?? this.data
+		const reference = this.referenceToId(node.id, opts)
+		const ctx =
+			this.requiresContextFor(node, "Transform") ? `, ${this.ctx}` : ""
+		if (isWritten)
+			return `${this.ref(runtime.writesInPlace)}(${reference}, ${arg}${ctx})`
+		if (node.isTransformedById)
+			return `${this.ref(runtime.transformResolutionOnce)}(${this.ctx}, "${this.nameOf(node.id)}", ${arg}, ${reference})`
+		return `${this.ref(runtime.transformOnce)}(${reference}, ${arg}${node.includesAlias ? `${ctx}, true` : ctx})`
+	}
+
+	// a key's next transform reads the previous one's output, or the value as received where it rejects that, which a transform writing in place has changed
+	override transformKey(
+		name: string,
+		input: string,
+		steps: readonly TransformStep[],
+		opts?: TransformKeyOptions
+	): this {
+		if (
+			steps
+				.slice(0, -1)
+				.some(({ node }) =>
+					node.references.some(
+						reference =>
+							(reference.hasKind("structure") ||
+								reference.hasKind("sequence") ||
+								reference.hasKind("alias")) &&
+							reference.transforms
+					)
+				)
+		)
+			throwParseError(inPlaceKeyMessage)
+		// its first step enters the value, and each after it transforms that one's output, or the value again
+		this.entersValue = input !== this.data
+		super.transformKey(name, input, steps, opts)
+		this.entersValue = false
+		return this
+	}
+}
+
+// a build writing what it transforms into its input writes units of its own, which differ only in their code
+const unitsByRoot = [
+	new WeakMap<BaseRoot, RootUnit[]>(),
+	new WeakMap<BaseRoot, RootUnit[]>()
+]
+
+const rootUnitsOf = (root: BaseRoot, mutatesInput = false): RootUnit[] => {
+	const cached = unitsByRoot[+mutatesInput]
+	let units = cached.get(root)
 	if (!units) {
-		unitsByRoot.set(
+		cached.set(
 			root,
 			(units = precompileRootUnits(root, {
-				...unitOptions,
+				compiler: mutatesInput ? MutatingCompiler : StandaloneCompiler,
 				keyOf: runtimeKeyOf
 			}))
 		)
@@ -3022,3 +3115,7 @@ export const writeUnprecompilableMessage = <value extends string>(
 
 export type writeUnprecompilableMessage<value extends string> =
 	`${value} can't be precompiled to a standalone validator`
+
+export const inPlaceKeyMessage = writeUnprecompilableMessage(
+	"with mutatesInput, a key transformed in place before another constraint transforms it"
+)

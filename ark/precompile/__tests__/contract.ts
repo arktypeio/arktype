@@ -22,3 +22,10 @@ export const traverse = (t: any, data: unknown): unknown =>
 
 // whether a validator is frozen, which arktype's Types aren't, so it's observed against what the options promise
 export const freezes: boolean = testedOptions.freeze !== false
+
+// a validator writing what it transforms into its input returns that input, keeping what a copy wouldn't, like its keys' order, accessors and the keys it inherits, so neither which object it returns, what it leaves of the input nor how its output holds a key is compared
+export const mutatesInput: boolean = testedOptions.mutatesInput === true
+
+// what an issue holds of an object, which a validator writing its input can have written to before the validation failed
+export const comparedDataOf = (data: unknown): unknown =>
+	mutatesInput && typeof data === "object" && data !== null ? "object" : data

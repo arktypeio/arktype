@@ -103,6 +103,10 @@ A validator and its members are frozen, so a program writing to one throws in st
 
 A factory checks that each Type, Module, Scope and Generic it receives is the one the build read, and that each static helper it calls is too where `checks` is `"helpers"`, as under a test runner's driver. `checks: "none"` checks only those holding functions, which it takes from them, so a module mock replacing any other goes unnoticed.
 
+`mutatesInput: true` writes what a validation transforms into its input, its defaults and its morphed values, and returns the input rather than a copy. The output keeps what a copy wouldn't, like the order of its keys, its accessors and the keys it inherits, and writing an input that can't be written, like a frozen object, throws a TypeError. A Type deleting undeclared keys from a plain object still returns a new one holding its declared keys, which V8 reads faster than one keys were deleted from. A validation that fails can leave some of its writes. A key one constraint transforms in place before another transforms it, like a property whose defaults an index signature then transforms, fails the build, as the second must read the value as the first received it where it rejects what the first wrote.
+
+An object the input holds at two places that one Type transforms is transformed once, and both places hold its output. Where different Types transform it, or it holds itself outside a cyclic Scope, the validation throws rather than read what another place wrote. One holding itself through a cyclic Scope is output as a new object holding its keys, which its cycle then reaches. A validation that fails can instead return an issue another place's transform caused, or miss one it hid, but throws rather than return none. A place that doesn't transform the object, like a morph receiving a value that holds it, still reads what another place wrote.
+
 What each option saves of the bundles arktype benchmarks, minified and gzipped, in bytes:
 
 | option                            | gives up                                   | login    | moltar   | shop       |
@@ -115,6 +119,7 @@ What each option saves of the bundles arktype benchmarks, minified and gzipped, 
 | `config: false`                   | calling `configure()`                      | 98 / 36  | 98 / 38  | 195 / 51   |
 | `lazy: false`                     | creating a validator where it's first read | 16 / 9   | 16 / 8   | 292 / 96   |
 | `checks: "none"`                  | checking the Types a factory receives      | 97 / 50  | 97 / 49  | 1581 / 734 |
+| `mutatesInput: true`              | the input left as it was                   | 0 / 0    | 0 / 0    | 2883 / 881 |
 
 ## Configuration
 

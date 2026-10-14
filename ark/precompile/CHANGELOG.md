@@ -16,6 +16,14 @@ precompile.vite({ declare: true })
 
 It needs the compiler API of TypeScript 5.5 to 6 from the optional `typescript` peer, which a TypeScript 7 project installs as `typescript-6`.
 
+### Write what a standalone validator transforms into its input with `mutatesInput: true`
+
+A standalone validator transforms a copy of its input, as arktype does. `mutatesInput: true` writes its defaults and morphed values into the input, which it returns, so it copies no object but one it deletes undeclared keys from or one holding itself through a cyclic Scope. Writing an input that can't be written, like a frozen object, then throws, a validation that fails can leave some of its writes, and a key one constraint transforms in place before another transforms it fails the build. An object the input holds at two places is transformed once where one Type transforms it at both, and the validation throws where different Types do rather than read what another place wrote. A place that doesn't transform it still reads what another wrote, as can a validation that fails.
+
+```ts
+precompile.vite({ mutatesInput: true })
+```
+
 ### Trust the Types a standalone factory receives with `checks: "none"`
 
 A factory checks that each Type, Module, Scope and Generic it receives is the one the build read, so a module mock replacing one throws as the factory creates its validator. `checks: "none"` checks only those holding functions, which the factory takes from them, and a validator holds no id to be checked by otherwise.

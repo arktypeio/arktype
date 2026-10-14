@@ -63,6 +63,18 @@ export const check = data => User.assert(data)`
 `)
 	})
 
+	it("applies a build's writing what it transforms into its input", () => {
+		const code = `import { type } from "arktype"
+export const Tagged = type({
+	"tags?": ["object", ["string", "=", "none"]],
+	"[string]": { "[string]": { label: ["string", "=", "none"] } }
+})`
+		attest(lint(code)).equals([])
+		attest(lint(code, { mutatesInput: true })).snap([
+			'2:23-5:3 type({ "tags?": ["object", ["string", "=", "none"]], "[stri… can\'t be precompiled yet\nwith mutatesInput, a key transformed in place before another constraint transforms it can\'t be precompiled to a standalone validator\nBuild without mutatesInput to precompile it.'
+		])
+	})
+
 	it("applies the configuration", () => {
 		const code = `import "../writers/config.ts"
 import { type } from "arktype"

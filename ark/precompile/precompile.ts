@@ -29,6 +29,7 @@ import {
 	appendPath,
 	defaultMembers,
 	holeNamePattern,
+	inPlaceKeyMessage,
 	introspectionMembers,
 	isTypedFn,
 	keyOf,
@@ -135,6 +136,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	freeze?: boolean | undefined
 	// false creates standalone validators as their modules load
 	lazy?: boolean | undefined
+	// true writes what a standalone validation transforms into its input, which it returns
+	mutatesInput?: boolean | undefined
 	// create each site with arktype too, from the same holes, and throw where its validator observes anything else
 	shadow?: boolean | undefined
 }
@@ -323,6 +326,7 @@ export class Precompiler {
 	errors: "all" | "first" | undefined
 	freeze: boolean
 	lazy: boolean
+	mutatesInput: boolean
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
@@ -367,6 +371,7 @@ export class Precompiler {
 		this.errors = opts?.errors
 		this.freeze = opts?.freeze !== false
 		this.lazy = opts?.lazy !== false
+		this.mutatesInput = opts?.mutatesInput === true
 		if (
 			opts?.members !== undefined &&
 			objectKindOrDomainOf(opts.members) !== "object"
@@ -445,6 +450,7 @@ export class Precompiler {
 		)
 		const contract: ShadowContract = {}
 		if (this.members.meta === false) contract.members = { meta: false }
+		if (this.mutatesInput) contract.mutatesInput = true
 		this.shadowContract =
 			Object.keys(contract).length ? JSON.stringify(contract) : undefined
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
@@ -1268,6 +1274,7 @@ export class Precompiler {
 						freeze: this.freeze,
 						lazy: this.lazy,
 						checks: this.checks,
+						mutatesInput: this.mutatesInput,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module)
 					},
@@ -1885,7 +1892,8 @@ export class Precompiler {
 			"unsupported",
 			this.rejectionSeverity,
 			`${module.snippetOf(site)} can't be precompiled yet`,
-			reasons.map(reason => this.sourceNamed(reason, site, module))
+			reasons.map(reason => this.sourceNamed(reason, site, module)),
+			reasons.includes(inPlaceKeyMessage) ? inPlaceKeyHint : undefined
 		)
 	}
 
@@ -3555,7 +3563,7 @@ export const writeUnknownMemberMessage = <member extends string>(
 export type writeUnknownMemberMessage<member extends string> =
 	`members has ${member}, which isn't one of ${string}`
 
-const booleanOptions = ["freeze", "lazy"] as const
+const booleanOptions = ["freeze", "lazy", "mutatesInput"] as const
 
 const enumOptions = {
 	checks: ["types", "helpers", "none"]
@@ -3661,6 +3669,9 @@ export type writeStandaloneDependencyMessage<name extends string> =
 
 export const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
+
+// runtime: "arktype" takes no mutatesInput
+const inPlaceKeyHint = "Build without mutatesInput to precompile it."
 
 const writeUnsureHint = (fix: string) =>
 	`If it isn't a Type, annotate it with its type. If it is, ${fix}.`

@@ -132,6 +132,12 @@ main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator la
   Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".
 1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site
 `)
+		attest(cliIn(fromHere("inPlace"), "--check", "--mutates-input").stdout)
+			.snap(`main.ts:3:23  type({ "tags?": ["object", ["string", "=", "none"]], "[stri… can't be precompiled yet
+  with mutatesInput, a key transformed in place before another constraint transforms it can't be precompiled to a standalone validator
+  Build without mutatesInput to precompile it.
+1 site in 1 file: 0 accepted (0.0%)
+`)
 	})
 
 	it("refuses an option choosing what a standalone build writes with --runtime arktype", () => {

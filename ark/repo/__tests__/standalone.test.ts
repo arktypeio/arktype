@@ -21,6 +21,7 @@ import { arkKindOf, flatMorph } from "@ark/util"
 import { ark, generic, match, scope, type, type Scope } from "arktype"
 import { de } from "arktype/locales/de"
 import {
+	inPlaceKeyMessage,
 	precompileStandalone,
 	writeUnprecompilableMessage,
 	type FactoryParam,
@@ -31,6 +32,7 @@ import {
 } from "arktype/internal/standalone.ts"
 import {
 	bakedJsonSchemaOptionsMessage,
+	transformedInPlaceTwiceMessage,
 	type as runtimeType,
 	writeCreationMismatchMessage,
 	writeIdentityMismatchMessage,
@@ -101,6 +103,9 @@ const load = async (
 		]
 	})
 }
+
+const loadMutating = (exports: Record<string, StandaloneExport>) =>
+	load(exports, undefined, undefined, printed, { mutatesInput: true })
 
 // what creating a validator after the given configure() call throws
 const messageOf = (configure: string, fingerprint?: string) =>
@@ -1124,6 +1129,145 @@ name is missing`)
 		const input = { a: 1, b: 3 }
 		attest(validator(input)).equals(T(input))
 		attest(validator(input)).snap(["domain", "divisor"])
+	})
+
+	it("writes what it transforms into its input, which it returns, where its build mutates input", async () => {
+		const User = type({
+			name: "string.trim",
+			tags: "string.trim[]",
+			role: "string = 'user'"
+		})
+		const copied = { name: " a ", tags: [" b "] }
+		attest((await load({ User })).User(copied)).equals({
+			name: "a",
+			tags: ["b"],
+			role: "user"
+		})
+		attest(copied).equals({ name: " a ", tags: [" b "] })
+		const mutating = (await loadMutating({ User })).User
+		const tags = [" b "]
+		const written: Record<string, unknown> = { name: " a ", tags }
+		attest(mutating(written)).is(written)
+		attest(written).equals({ name: "a", tags: ["b"], role: "user" })
+		attest(written.tags).is(tags)
+		attest(() =>
+			mutating(Object.freeze({ name: " a ", tags: [], role: "admin" }))
+		).throws("Cannot assign to read only property 'name'")
+	})
+
+	it("returns a new object holding the declared keys of one it deletes undeclared keys from, though its build mutates input", async () => {
+		const { Strict } = await loadMutating({
+			Strict: type({
+				"+": "delete",
+				name: "string.trim",
+				inner: { v: "string.trim" }
+			})
+		})
+		const inner = { v: " v " }
+		const input = { name: " a ", inner, extra: 1 }
+		const out = Strict(input)
+		attest(out).equals({ name: "a", inner: { v: "v" } })
+		attest(out.inner).is(inner)
+		attest(input).equals({ name: " a ", inner: { v: "v" }, extra: 1 })
+	})
+
+	it("transforms an object its input holds at two places once where one Type transforms it at each, where its build mutates input", async () => {
+		const J = type({ j: "string.json.parse" })
+		const { Pair, List } = await loadMutating({
+			Pair: type({ a: J, b: J }),
+			List: J.array()
+		})
+		const shared = { j: '{"x":1}' }
+		const out = Pair({ a: shared, b: shared })
+		attest(out).equals({ a: { j: { x: 1 } }, b: { j: { x: 1 } } })
+		attest(out.b).is(out.a)
+		const element = { j: "[1]" }
+		attest(List([element, element])).equals([{ j: [1] }, { j: [1] }])
+	})
+
+	it("throws where its input holds an object two Types transform, or a check reads after a transform wrote it, where its build mutates input", async () => {
+		const { Parsed, Checked } = await loadMutating({
+			Parsed: type({
+				a: { n: "string.numeric.parse" },
+				b: { n: "string.json.parse" }
+			}),
+			Checked: type({ a: { n: "string.numeric.parse" }, b: { n: "number" } })
+		})
+		const parsed = { n: "1" }
+		attest(() => Parsed({ a: parsed, b: parsed })).throws(
+			transformedInPlaceTwiceMessage
+		)
+		// arktype rejects it, as b.n is a string before a's transform writes it
+		const checked = { n: "1" }
+		attest(() => Checked({ a: checked, b: checked })).throws(
+			transformedInPlaceTwiceMessage
+		)
+	})
+
+	it("transforms an object its input holds inside itself only through a cyclic Scope, where its build mutates input", async () => {
+		const $ = scope({
+			node: { value: "string.trim", "next?": "node | null" }
+		}).export()
+		const { Node, Unrolled, Wrapped } = await loadMutating({
+			Node: $.node,
+			Unrolled: type({ value: "string.trim", next: { value: "string.trim" } }),
+			Wrapped: type({ value: "string.trim", next: $.node })
+		})
+		const cyclic: Record<string, unknown> = { value: " c " }
+		cyclic.next = cyclic
+		const out = Node(cyclic)
+		attest(out.value).equals("c")
+		attest(out.next).is(out)
+		attest(cyclic.next).is(out)
+		const inner: Record<string, unknown> = { value: " i " }
+		inner.next = inner
+		const outer = Node({ value: " o ", next: inner })
+		attest(outer.next.next).is(outer.next)
+		const unrolled: Record<string, unknown> = { value: " u " }
+		unrolled.next = unrolled
+		attest(() => Unrolled(unrolled)).throws(transformedInPlaceTwiceMessage)
+		const wrapped: Record<string, unknown> = { value: " w " }
+		wrapped.next = wrapped
+		attest(() => Wrapped(wrapped)).throws(transformedInPlaceTwiceMessage)
+	})
+
+	it("transforms anew what a Type piped a morph's output receives, and resumes after it, where its build mutates input", async () => {
+		const Defaulted = type({ n: "string.trim" }).to({
+			n: "string",
+			m: "string = 'x'"
+		})
+		const J = type({ j: "string.json.parse" })
+		const $ = scope({
+			node: { value: "string.trim", "next?": "node | null" }
+		}).export()
+		const { Staged, Linked, Around } = await loadMutating({
+			Staged: type({ inner: { n: "string.trim" } }).to({
+				inner: { n: "string", m: "string = 'x'" }
+			}),
+			Linked: type({ next: { value: "string.trim" } }).to($.node),
+			Around: type({ a: J, b: Defaulted, c: J })
+		})
+		attest(Staged({ inner: { n: " a " } })).equals({
+			inner: { n: "a", m: "x" }
+		})
+		attest(Linked({ value: " a ", next: { value: " b " } })).equals({
+			value: "a",
+			next: { value: "b" }
+		})
+		const shared = { j: "1" }
+		const out = Around({ a: shared, b: { n: " b " }, c: shared })
+		attest(out).equals({ a: { j: 1 }, b: { n: "b", m: "x" }, c: { j: 1 } })
+		attest(out.c).is(out.a)
+	})
+
+	it("rejects a key it transforms in place before another constraint transforms it where its build mutates input", () => {
+		const T = type({
+			"p?": ["object", ["string", "=", "d"]],
+			"[string]": { "[string]": { x: ["string", "=", "y"] } }
+		})
+		attest(() => precompileStandalone({ T }, { mutatesInput: true })).throws(
+			inPlaceKeyMessage
+		)
 	})
 
 	it("neither checks nor reads the configuration where its build says the program never configures it", async () => {

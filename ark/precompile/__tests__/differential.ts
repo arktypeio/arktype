@@ -15,12 +15,14 @@ import {
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	bakedJsonSchemaOptionsMessage,
+	transformedInPlaceTwiceMessage,
 	writeUnbakedMessage
 } from "arktype/runtime"
 import { DynamicValue } from "@ark/precompile/internal/dynamic.ts"
 import {
 	keptIssuesOf,
-	thrownIssuesOf
+	thrownIssuesOf,
+	type KeptIssue
 } from "@ark/precompile/internal/issues.ts"
 import { buildSync } from "esbuild"
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
@@ -29,10 +31,12 @@ import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { inspect } from "node:util"
 import {
+	comparedDataOf,
 	freezes,
 	hasMember,
 	lackedMembers,
 	lacks,
+	mutatesInput,
 	testedOptions,
 	traverse
 } from "./contract.ts"
@@ -110,6 +114,43 @@ const returnsForeignErrors = (
 	}
 }
 
+// a validator writing its input throws writing one it can't, and one holding an object twice either throws saying so or accepts it where arktype does, though what it returns and which issues it finds can differ
+const writesUnlikeCopy = (
+	input: unknown,
+	expected: { traverse: unknown },
+	observed: { traverse: unknown }
+): boolean => {
+	const threw = (observed.traverse as { threw?: string }).threw
+	if (
+		threw &&
+		/^TypeError: Cannot (assign to read only|add|delete) property|object is not extensible/.test(
+			threw
+		)
+	)
+		return true
+	if (!holdsTwice(input)) return false
+	return threw === undefined ?
+			!("threw" in (expected.traverse as object)) &&
+				"out" in (expected.traverse as object) ===
+					"out" in (observed.traverse as object)
+		:	threw === `Error: ${transformedInPlaceTwiceMessage}`
+}
+
+const holdsTwice = (value: unknown, seen = new Set<object>()): boolean => {
+	if (typeof value !== "object" || value === null) return false
+	if (seen.has(value)) return true
+	seen.add(value)
+	return Reflect.ownKeys(value).some(k => {
+		const descriptor = Object.getOwnPropertyDescriptor(value, k)!
+		return "value" in descriptor && holdsTwice(descriptor.value, seen)
+	})
+}
+
+const enumerableKeysOf = (o: object): PropertyKey[] =>
+	Reflect.ownKeys(o).filter(k =>
+		Object.prototype.propertyIsEnumerable.call(o, k)
+	)
+
 const link = (code: string) =>
 	code
 		.replace(/from "arktype\/runtime"/g, `from "./runtime.js"`)
@@ -131,6 +172,7 @@ const loadArtifact = async (
 		freeze: testedOptions.freeze,
 		lazy: testedOptions.lazy,
 		checks: testedOptions.checks,
+		mutatesInput: testedOptions.mutatesInput,
 		configured: testedOptions.config === false ? (false as const) : undefined
 	}
 	let code: string
@@ -292,6 +334,10 @@ const isEqual = (l: unknown, r: unknown): boolean => {
 				return false
 		}
 		if (tag === "[object Error]" && String(l) !== String(r)) return false
+		if (mutatesInput) {
+			const keys = new Set([...enumerableKeysOf(l), ...enumerableKeysOf(r)])
+			return [...keys].every(k => equals(l[k], r[k]))
+		}
 		const lKeys = Reflect.ownKeys(l)
 		const rKeys = Reflect.ownKeys(r)
 		if (lKeys.length !== rKeys.length) return false
@@ -318,16 +364,22 @@ const isEqual = (l: unknown, r: unknown): boolean => {
 	}
 }
 
+const comparedIssuesOf = (issues: KeptIssue[]) =>
+	issues.map(issue => ({ ...issue, data: comparedDataOf(issue.data) }))
+
 const observe = (run: () => unknown, input: unknown): unknown => {
 	try {
 		const result: any = run()
-		return hasArkKind(result, "errors") ?
-				{ issues: keptIssuesOf(result) }
-			:	{ out: result, isInput: result === input }
+		return (
+			hasArkKind(result, "errors") ?
+				{ issues: comparedIssuesOf(keptIssuesOf(result)) }
+			: mutatesInput ? { out: result }
+			: { out: result, isInput: result === input }
+		)
 	} catch (e) {
 		const issues = thrownIssuesOf(e)
 		return issues ?
-				{ threw: "TraversalError", issues }
+				{ threw: "TraversalError", issues: comparedIssuesOf(issues) }
 			:	{
 					threw: String(e),
 					context: (e as { context?: unknown } | undefined)?.context
@@ -464,7 +516,7 @@ const observeCall = (t: Validator, input: unknown) => {
 	const traversed = cloneInput(input)
 	return {
 		traverse: observe(() => traverse(t, traversed), traversed),
-		mutated: traversed,
+		...(!mutatesInput && { mutated: traversed }),
 		allows: observe(() => t.allows(cloneInput(input)), undefined),
 		...(!lacks("assert") && {
 			assert: observe(() => t.assert(cloneInput(input)), undefined)
@@ -626,7 +678,8 @@ export const compare = async (
 			if (
 				!expected ||
 				holdsArkValue(actual) ||
-				returnsForeignErrors(validator, input)
+				returnsForeignErrors(validator, input) ||
+				(mutatesInput && writesUnlikeCopy(input, expected, actual))
 			) {
 				if (layout === layouts[0]) result.harnessLimited++
 			} else disagree("call", { input, arktype: expected, precompiled: actual })

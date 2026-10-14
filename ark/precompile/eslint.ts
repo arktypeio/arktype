@@ -69,7 +69,8 @@ const precompilable: Rule.RuleModule = {
 					conditions: { type: "array", items: { type: "string" } },
 					tsconfig: { type: "string" },
 					freeze: { type: "boolean" },
-					lazy: { type: "boolean" }
+					lazy: { type: "boolean" },
+					mutatesInput: { type: "boolean" }
 				},
 				additionalProperties: false
 			}

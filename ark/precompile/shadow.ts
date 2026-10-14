@@ -9,7 +9,7 @@ import { shareConfig } from "@ark/schema/runtime"
 import { hasDomain, printable } from "@ark/util"
 import { configure } from "arktype/internal/config.js"
 import { keywordMetas } from "arktype/internal/standalone.ts"
-import { keptIssuesOf, thrownIssuesOf } from "./issues.ts"
+import { keptIssuesOf, thrownIssuesOf, type KeptIssue } from "./issues.ts"
 
 shareConfig(configure)
 
@@ -83,6 +83,7 @@ const swappedOf = (
 // e.g. members.meta false, under which a validator's meta isn't compared at creation
 export interface ShadowContract {
 	members?: { meta?: boolean }
+	mutatesInput?: boolean
 }
 
 export const shadow = (
@@ -726,9 +727,11 @@ const validateBoth = (
 			"which its validator received too, since it can't be copied"
 		:	undefined
 	if (current.mismatch) fail(pair, observation(), ...current.mismatch, reason)
-	const arktypeObserved = inArktype(() => observe(arktype))
-	const precompiledObserved = observe(precompiled)
-	if (current.isCopied) {
+	const writesInput = pair.contract.mutatesInput === true
+	const arktypeObserved = inArktype(() => observe(arktype, writesInput))
+	const precompiledObserved = observe(precompiled, writesInput)
+	// a validator writing what it transforms into its input leaves it unlike arktype's
+	if (current.isCopied && !pair.contract.mutatesInput) {
 		arktypeObserved.input = data
 		precompiledObserved.input = copy
 	}
@@ -743,18 +746,29 @@ const validateBoth = (
 	return settle(arktype)
 }
 
-const observe = (outcome: Outcome): Record<string, unknown> => {
+const observe = (
+	outcome: Outcome,
+	writesInput = false
+): Record<string, unknown> => {
 	if ("thrown" in outcome) {
 		const issues = thrownIssuesOf(outcome.thrown)
 		return issues ?
-				{ threw: "TraversalError", issues }
+				{ threw: "TraversalError", issues: comparedOf(issues, writesInput) }
 			:	{ threw: thrownOf(outcome.thrown) }
 	}
 	const { value } = outcome
 	return hasArkKind(value, "errors") ?
-			{ issues: keptIssuesOf(value) }
+			{ issues: comparedOf(keptIssuesOf(value), writesInput) }
 		:	{ out: value }
 }
+
+// a validator writing its input can write to an object an issue holds before the validation fails
+const comparedOf = (issues: KeptIssue[], writesInput: boolean) =>
+	writesInput ?
+		issues.map(issue =>
+			hasDomain(issue.data, "object") ? { ...issue, data: undefined } : issue
+		)
+	:	issues
 
 const compare = (
 	pair: Pair,

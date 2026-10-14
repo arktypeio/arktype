@@ -14,7 +14,9 @@ import {
 	freezes,
 	hasMember,
 	lackedMembers,
+	comparedDataOf,
 	lacks,
+	mutatesInput,
 	traverse
 } from "./contract.ts"
 
@@ -477,7 +479,7 @@ const serializeIssues = (issues: KeptIssue[]) =>
 	issues.map(({ code, path, data }) => ({
 		code,
 		path: path.map(String),
-		data: serialize(data)
+		data: serialize(comparedDataOf(data))
 	}))
 
 const samples = (): unknown[] => [
@@ -519,7 +521,12 @@ export const serialize = (out: unknown): unknown =>
 		{ errors: serializeIssues(keptIssuesOf(out as never)) }
 	: typeof out === "function" && isArk(out) ?
 		{ type: (out as Function & { expression: string }).expression }
-	:	inspect(out, { depth: 4, breakLength: Infinity, maxArrayLength: 10 })
+	:	inspect(out, {
+			depth: 4,
+			breakLength: Infinity,
+			maxArrayLength: 10,
+			sorted: mutatesInput
+		})
 
 // a precompiled Module is a frozen object of validators, as json is of data, so a Module is told and compared by its members
 const isModule = (value: unknown): value is Record<string, unknown> =>
@@ -560,11 +567,14 @@ const outcomeOf = (call: () => unknown, input?: unknown): Observation => {
 	try {
 		const out: any = call()
 		return (
+			(
 				hasDomain(out, "object") &&
 					(out as { " arkKind"?: string })[" arkKind"] === "errors"
 			) ?
 				{ errors: serializeIssues(keptIssuesOf(out)) }
-			:	{ out: serialize(out), isInput: out === input }
+			: mutatesInput ? { out: serialize(out) }
+			: { out: serialize(out), isInput: out === input }
+		)
 	} catch (e) {
 		const issues = thrownIssuesOf(e)
 		return issues ?
@@ -621,7 +631,7 @@ const observeValidation = (
 			const input = inputsOf()[i]
 			return {
 				...outcomeOf(() => traverse(t, input), input),
-				mutated: serialize(input)
+				...(!mutatesInput && { mutated: serialize(input) })
 			}
 		}),
 		allows: calls((fn, input) => fn.allows(input)),
