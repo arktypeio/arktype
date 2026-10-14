@@ -129,6 +129,9 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type resolvableReferenceIn<$> =
 	[keyof $] extends [never] ? never
+	: // most scopes have no key to filter, which this checks without distributing over keyof $
+	[keyof $ & (PrivateDeclaration | noSuggest | "root")] extends [never] ?
+		keyof $ & string
 	:	| Exclude<
 				keyof $ & string,
 				// technically, root subtypes are resolvable, but there's never a good
