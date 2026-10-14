@@ -450,21 +450,48 @@ export abstract class BaseNode<
 		this._flatMorphs = flatMorphs
 	}
 
-	// set while a Type defers compiling until it's first used
+	// set while a Type defers compiling until it's used
 	allowsBeforeJit: this["allows"] | undefined
+	private isUsedBeforeJit = false
+
+	// a Type whose callbacks can't read ctx checks its first data uncompiled, so one used once is never compiled
+	private get checksUncompiled(): boolean {
+		return (
+			!this.isUsedBeforeJit &&
+			!this.includesContextualPredicate &&
+			!this.includesContextualMorph
+		)
+	}
 
 	deferJit(): void {
 		if (this.allowsBeforeJit) return
-		this.allowsBeforeJit = this.allows
+		const allows = (this.allowsBeforeJit = this.allows)
 		// a detached reference can call this after compiling
 		this.allows = data => {
-			if (this.allowsBeforeJit) this.$.jit(this)
+			if (this.allowsBeforeJit) {
+				if (this.checksUncompiled) {
+					this.isUsedBeforeJit = true
+					return allows(data)
+				}
+				this.$.jit(this)
+			}
 			return this.allows(data)
 		}
 	}
 
 	private initRootApply(): RootApply {
-		if (this.allowsBeforeJit) this.$.jit(this)
+		if (this.allowsBeforeJit) {
+			if (this.checksUncompiled) {
+				const rootApply = this.createRootApply()
+				// marked used once it returns, so an allows it calls doesn't compile
+				return (data, onFail) => {
+					const result = rootApply(data, onFail)
+					this.isUsedBeforeJit = true
+					return result
+				}
+			}
+			this.$.jit(this)
+		}
 		return (this.cache.rootApply =
 			this.compiledUnit && this.isRoot() && !this.$.resolvedConfig.jitless ?
 				compileRootApply(this)
