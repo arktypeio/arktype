@@ -12,6 +12,7 @@ import {
 	type nodeOfKind
 } from "@ark/schema"
 import { flatMorph, hasKey, throwInternalError, type dict } from "@ark/util"
+import { isNonArray } from "./roots/intersection.ts"
 
 interface JsonSchemaContext extends ToJsonSchema.Context {
 	refs: BaseRoot[]
@@ -561,9 +562,12 @@ const reduceJsonSchemaByKind: {
 		}
 	},
 	predicate: (node, base, ctx) =>
-		ctx.fallback.predicate({
-			code: "predicate",
-			base,
-			predicate: node.predicate
-		})
+		// JSON Schema's object type already excludes arrays
+		node.predicate === isNonArray ?
+			base
+		:	ctx.fallback.predicate({
+				code: "predicate",
+				base,
+				predicate: node.predicate
+			})
 }

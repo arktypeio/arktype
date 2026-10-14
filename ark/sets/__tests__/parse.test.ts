@@ -122,6 +122,12 @@ contextualize(() => {
 			type: "integer",
 			minimum: 1
 		})
+		attest(toJsonSchema({ type: "object", required: ["a"] })).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "object",
+			properties: { a: {} },
+			required: ["a"]
+		})
 	})
 
 	it("throws on anything but a schema", () => {
