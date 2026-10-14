@@ -1299,8 +1299,13 @@ ${writeFunction(
 			...epilogue,
 			...returned
 		])
+		// a traversal reads neither `this` nor `arguments`, so it's written as the shorter arrow
+		const declarations = members.map(
+			([name, source]) =>
+				`const ${name} = ${source.replace(/^function(\([^)]*\))/, "$1 =>")}`
+		)
 		return `function (${params.join(", ")}) {
-${directive}${[...prologue, ...members.map(([name, source]) => `const ${name} = ${source}`), ...epilogue].join("\n")}
+${directive}${[...prologue, ...declarations, ...epilogue].join("\n")}
 return [${returned.join(", ")}]
 }`
 	}
