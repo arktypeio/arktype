@@ -1650,8 +1650,18 @@ export abstract class BaseScope<$ extends {} = {}> {
 					bindPrecompiledUnits(uncompiled)
 					uncompiled = uncompiled.filter(node => !node.compiledUnit)
 				}
-				if (uncompiled.length && !this.resolvedConfig.jitless)
-					this.compiledUnit = precompile(uncompiled, this)
+				if (!this.resolvedConfig.jitless) {
+					// resolving aliases can throw, so a scope including one compiles as it's exported
+					if (uncompiled.some(node => node.includesAlias))
+						this.compiledUnit = precompile(uncompiled, this)
+					else {
+						for (const name in this._exportedResolutions) {
+							const resolution = this._exportedResolutions[name]
+							if (hasArkKind(resolution, "root") && !resolution.compiledUnit)
+								resolution.deferJit()
+						}
+					}
+				}
 				this.resolved = true
 			}
 			$ark.reached?.store(mark, this, "export")

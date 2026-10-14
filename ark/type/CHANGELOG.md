@@ -292,7 +292,7 @@ A program's `configure()` call stays in place and configures `arktype/runtime`, 
 
 ### Compile a Type when it's used again
 
-A Type is compiled the second time it's called or its `allows` is called, or when its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled and one it checks once is checked without compiling. A Type whose narrows or morphs read `ctx` is compiled the first time instead. A Type referencing an alias is still compiled where it's defined, so an error resolving the alias is thrown there.
+A Type is compiled the second time it's called or its `allows` is called, or when its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled and one it checks once is checked without compiling. A Type whose narrows or morphs read `ctx` is compiled the first time instead. A scope's exports are compiled the same way, so `@ark/schema`'s scope `precompilation` is undefined unless the scope is cyclic. A Type referencing an alias is still compiled where it's defined, so an error resolving the alias is thrown there.
 
 ### Call narrows and morphs without a receiver when jitless
 
