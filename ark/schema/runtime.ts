@@ -1,4 +1,4 @@
-import { throwParseError } from "@ark/util"
+import { throwParseError, type Fn } from "@ark/util"
 import type { ArkSchemaConfig, ResolvedConfig } from "./config.ts"
 
 export type {
@@ -128,10 +128,11 @@ const staticTextOf = (value: unknown, seen: unknown[]): string => {
 	}{${entries}}`
 }
 
-export const fixConfig = (): void => {
+// V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
+export const fixConfig = ((): void => {
 	Object.freeze(runtimeConfig)
 	checkConfigured?.()
-}
+}) satisfies Fn
 
 export const fixConfigured = (fingerprint: string, path: string): void => {
 	Object.freeze(runtimeConfig)

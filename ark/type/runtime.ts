@@ -165,7 +165,8 @@ export class Validator {
 	}
 }
 
-export const createValidator = (
+// V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
+export const createValidator = ((
 	rootApply: RootApply,
 	allows: (data: unknown) => boolean,
 	attributes: ValidatorAttributes,
@@ -175,7 +176,7 @@ export const createValidator = (
 	// the configuration is fixed before any validator is created, though a Type's meta can name its own, as a matcher asserting its default does
 	const configuredOnFail = attributes.meta.onFail ?? runtimeConfig.onFail
 	const validator: Validator = setPrototypeOf(
-		(
+		((
 			data: unknown,
 			pipedFromCtx?: Traversal,
 			onFail: FailHandler | null = configuredOnFail
@@ -188,7 +189,7 @@ export const createValidator = (
 			if (!errors._merge) return out
 			errors._merge(out, pipedFromCtx.path)
 			return errors
-		},
+		}) satisfies Fn,
 		Validator.prototype
 	)
 	// an own arrow function, since it is often detached, e.g. when passing to tRPC
@@ -207,7 +208,7 @@ export const createValidator = (
 		...attributes["~standard"]
 	})
 	return holdHoles(freeze(validator), id, holes)
-}
+}) satisfies Fn
 
 type ValidatorParts = [
 	rootApply: RootApply,
@@ -331,10 +332,10 @@ export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 })
 
 // a site as its unit is created, which a call writes in fewer bytes than its literal
-export const siteOf = (
+export const siteOf = ((
 	code: ArkErrorCode,
 	description?: string
-): SiteContext => ({ code, description })
+): SiteContext => ({ code, description })) satisfies Fn
 
 // what every required key reports when it's missing
 export const requiredSite: FailureSite = { missing: { code: "required" } }
@@ -516,16 +517,16 @@ export const checkFunction = (value: unknown, label: string): void => {
 }
 
 // e.g. a Scope's stand-in, whose holes the factory of each Type defined in it takes
-export const holdHoles = <value extends object>(
+export const holdHoles = (<value extends object>(
 	value: value,
 	id: string,
 	holes: readonly unknown[] = []
 ): value => {
 	holesByValue.set(value, [id, freeze(holes)])
 	return value
-}
+}) satisfies Fn
 
-export const holesOf = (
+export const holesOf = ((
 	holder: unknown,
 	id: string,
 	label: string,
@@ -549,7 +550,7 @@ export const holesOf = (
 		)
 	}
 	return created[1]
-}
+}) satisfies Fn
 
 // a hole is held weakly, as arktype holds a Type it may return again, so a function created for one call doesn't outlive it
 class InternTable {

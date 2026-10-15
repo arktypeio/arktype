@@ -1,5 +1,11 @@
 import type { ArkError, Locale, Traversal } from "@ark/schema"
-import { FileConstructor, hasOwn, printable, type Json } from "@ark/util"
+import {
+	FileConstructor,
+	hasOwn,
+	printable,
+	type Fn,
+	type Json
+} from "@ark/util"
 import type {
 	EmptyCollectionLiteral,
 	inferDefaultLiteral
@@ -235,8 +241,9 @@ export const raisedErrorPhrases = {
 const plainUrl =
 	/^https?:\/\/(?:[\da-z]+(?:-[\da-z]+)*\.)*[a-z]+(?::\d{1,4})?(?:[#/?][!-~]*)?$/i
 
-export const isParsableUrl = (s: string): boolean =>
-	plainUrl.test(s) || URL.canParse(s)
+// V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
+export const isParsableUrl = ((s: string): boolean =>
+	plainUrl.test(s) || URL.canParse(s)) satisfies Fn
 
 const urlParseError = /* @__PURE__ */ keywordError(
 	"string.url.parse",

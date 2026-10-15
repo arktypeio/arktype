@@ -294,15 +294,16 @@ export const stringAndSymbolicEntriesOf = (o: object): Entry<Key>[] => [
 ]
 
 /** Like Object.assign, but it will preserve getters instead of evaluating them. */
+// V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
 export const defineProperties: <base extends object, merged extends object>(
 	base: base,
 	merged: merged
-) => merge<base, merged> = (base, merged) =>
+) => merge<base, merged> = ((base: object, merged: object) =>
 	// declared like this to avoid https://github.com/microsoft/TypeScript/issues/55049
 	Object.defineProperties(
 		base,
 		Object.getOwnPropertyDescriptors(merged)
-	) as never
+	) as never) satisfies Fn
 
 export const defineValue = (
 	o: object,
