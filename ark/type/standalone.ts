@@ -1370,9 +1370,31 @@ ${writeFunction(
 				"{}"
 			)
 		}
-		const refs = unit.refs.flatMap((value, i) =>
-			read && !read.has(`r${i}`) ? [] : [`const r${i} = ${this.emit(value)}`]
-		)
+		const refs = unit.refs.flatMap((value, i) => {
+			if (read && !read.has(`r${i}`)) return []
+			const { statements } = this.declarations
+			const declared = statements.length
+			const emitted = this.emit(value)
+			if (!this.baking.flattens) return [`const r${i} = ${emitted}`]
+			// a flat module reads what the runtime exports by the ref's name
+			const exported = /^runtime\.([\w$]+)$/.exec(emitted)?.[1]
+			if (exported) {
+				this.importName("arktype/runtime", `${exported} as r${i}`)
+				return []
+			}
+			// as it does a pattern the ref declares
+			if (
+				hasDomain(value, "object") &&
+				isRegExpObject(value) &&
+				statements.length === declared + 1
+			) {
+				statements[declared] =
+					`const r${i}${statements[declared].slice(`const ${emitted}`.length)}`
+				this.declarations.namesByValue.set(value, `r${i}`)
+				return []
+			}
+			return [`const r${i} = ${emitted}`]
+		})
 		const links = ownRoots.map(root => {
 			const shape = writing.shapesByName[unit.names[root.id]]
 			returned.push(shape)
