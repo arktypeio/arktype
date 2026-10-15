@@ -329,6 +329,10 @@ An `@ark/schema` node's `traverseAllows`, `traverseApply` and `traverseTransform
 
 `@ark/schema`'s `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context with options parsing a node never read.
 
+### List fewer of a node's own keys
+
+An `@ark/schema` node's own enumerable keys no longer list what it derives from its kind and inner, nor what it memoizes as it's read, which is kept on its `cache`: the `includes*` flags, `isCyclic`, `allowsRequiresContext`, `innerEntries`, `metaJson` and `precedence`; `traverseApply` and `traverseTransform` until it's compiled, and `traverseAllows` too, except on `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes; a range's `boundOperandKind`, `comparator`, `numericLimit` and `limitKind`; and a prop's `required`, `optional`, `serializedKey` and `compiledKey`. Each reads as it did, by the same name, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
+
 ### Read a `Date`'s `getTime` when checking it
 
 Checking that a `Date` is valid reads its `getTime` and calls it as a method when it's `Date.prototype.getTime`, which is faster than calling that function on the `Date`. A getter or a `Proxy` trap for `getTime` on a `Date` now runs as it's checked.
