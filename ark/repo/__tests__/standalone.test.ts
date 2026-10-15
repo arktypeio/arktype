@@ -290,6 +290,43 @@ contextualize(() => {
 		}
 	})
 
+	it("declares an array's indices through the greatest, as arktype does", async () => {
+		const types = {
+			rejected: type("string[]").onUndeclaredKey("reject"),
+			deleted: type("string[]").onUndeclaredKey("delete")
+		}
+		const validators = await load(types)
+		// an array holding index 4294967294 is 4294967295 long, too long to check, so a Proxy lists the key on a short one
+		const listing = (key: string) =>
+			new Proxy(["a"], {
+				ownKeys: target => [...Reflect.ownKeys(target), key],
+				getOwnPropertyDescriptor: (target, k) =>
+					k === key ?
+						{ value: "b", enumerable: true, configurable: true }
+					:	Reflect.getOwnPropertyDescriptor(target, k)
+			})
+		const [greatest, past, named] = [
+			listing("4294967294"),
+			listing("4294967295"),
+			Object.assign(["a"], { 4294967295: "b" })
+		]
+		for (const [name, t] of Object.entries(types)) {
+			for (const input of [greatest, past, named]) {
+				attest(observe(validators[name](input), input)).equals(
+					observe(t(input), input)
+				)
+				attest(validators[name].allows(input)).equals(t.allows(input))
+			}
+		}
+		attest(validators.rejected.allows(greatest)).equals(true)
+		attest(validators.rejected.allows(past)).equals(false)
+		attest(Object.keys(validators.deleted(greatest))).equals([
+			"0",
+			"4294967294"
+		])
+		attest(validators.deleted(named)).equals(["a"])
+	})
+
 	it("builds each issue from its check's code, path and data and what its node describes", async () => {
 		const { T } = await load({
 			T: type({ a: "string", b: { c: "number > 0" } })

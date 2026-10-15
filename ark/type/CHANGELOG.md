@@ -814,6 +814,17 @@ const T = type({ "+": "delete", b: "string", a: "string", "c?": "number" })
 T({ a: "1", z: 0, c: 1, b: "2" })
 ```
 
+### Treat integer keys past an array's greatest index as undeclared
+
+An array's length is at most 4294967295, so an integer key from 4294967295 up is one of its named properties rather than an index. `"+": "reject"` now rejects such a key and `"+": "delete"` deletes it, as they do any other undeclared key, where every integer string was declared before:
+
+```ts
+const T = type("string[]").onUndeclaredKey("reject")
+
+// previously valid, now ArkErrors: value at ["4294967295"] must be removed
+T(Object.assign(["a"], { 4294967295: "b" }))
+```
+
 ### Look for an array's undeclared keys only when it has keys besides its indices
 
 `"+": "delete"` reads an array's keys once to tell whether it holds any besides its indices, and looks for undeclared keys only when it does, so deleting from an array without them is about 20% faster. An array lists its indices before its other keys, so a `Proxy` whose `ownKeys` trap lists a named key before an array's indices can keep that key.

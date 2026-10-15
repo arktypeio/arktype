@@ -241,6 +241,35 @@ c must be removed`)
 b must be removed`)
 		})
 
+		it("declares an array's indices through the greatest", () => {
+			const Rejected = type("string[]").onUndeclaredKey("reject")
+			const Deleted = type("string[]").onUndeclaredKey("delete")
+			// an array holding index 4294967294 is 4294967295 long, too long to check, so a Proxy lists the key on a short one
+			const listing = (key: string) =>
+				new Proxy(["a"], {
+					ownKeys: target => [...Reflect.ownKeys(target), key],
+					getOwnPropertyDescriptor: (target, k) =>
+						k === key ?
+							{ value: "b", enumerable: true, configurable: true }
+						:	Reflect.getOwnPropertyDescriptor(target, k)
+				})
+			const greatest = listing("4294967294")
+			attest(Rejected.allows(greatest)).equals(true)
+			attest(Rejected(greatest)).equals(greatest)
+			attest(Object.keys(Deleted(greatest))).equals(["0", "4294967294"])
+			const past = listing("4294967295")
+			attest(Rejected.allows(past)).equals(false)
+			attest(Rejected(past).toString()).snap(
+				'value at ["4294967295"] must be removed'
+			)
+			attest(Deleted(past)).equals(["a"])
+			const named = Object.assign(["a"], { 4294967295: "b" })
+			attest(Rejected(named).toString()).snap(
+				'value at ["4294967295"] must be removed'
+			)
+			attest(Deleted(named)).equals(["a"])
+		})
+
 		it("doesn't declare keys Object.prototype has", () => {
 			const Deleted = type({ "+": "delete", a: "string", "b?": "number" })
 			attest(Deleted({ a: "x", toString: 1, constructor: 2, z: 3 })).snap({

@@ -218,6 +218,14 @@ export const cloneInput = (
 			descriptor.value = cloneInput(descriptor.value, seen)
 		Object.defineProperty(copy, k, descriptor)
 	}
+	// a Proxy can list an index past its array's length, which lengthens a copy to it, so it's read as is, like a value the harness can't copy
+	if (
+		tag === "[object Array]" &&
+		(copy as unknown[]).length !== (value as unknown[]).length
+	) {
+		seen.set(value, value)
+		return value
+	}
 	if (Object.isFrozen(value)) Object.freeze(copy)
 	else if (Object.isSealed(value)) Object.seal(copy)
 	else if (!Object.isExtensible(value)) Object.preventExtensions(copy)

@@ -65,7 +65,7 @@ import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
 import type { Required, RequiredNode } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
-import { arrayIndexMatcher } from "./shared.ts"
+import { arrayIndexMatcher, maxArrayLength } from "./shared.ts"
 
 /**
  * - `"ignore"` (default) - allow and preserve extra properties
@@ -823,7 +823,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.index?.some(n => n.signature.allows(k)) ||
 		(this.sequence !== undefined &&
 			typeof k === "string" &&
-			arrayIndexMatcher.test(k))
+			arrayIndexMatcher.test(k) &&
+			+k < maxArrayLength)
 
 	_compileDeclaresKey(js: NodeCompiler): string {
 		const parts: string[] = []
@@ -834,7 +835,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 		if (this.sequence) {
 			parts.push(
-				`typeof k === "string" && ${js.ref(arrayIndexMatcher)}.test(k)`
+				`typeof k === "string" && ${js.ref(arrayIndexMatcher)}.test(k) && +k < ${maxArrayLength}`
 			)
 		}
 
