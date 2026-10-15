@@ -113,7 +113,7 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 		attest(cliIn(dir, "--check", "--fail-under", "0").status).equals(1)
 	})
 
-	it("builds under the options that change what a build refuses", () => {
+	it("builds under --members, reporting a read of a member it leaves out", () => {
 		attest(
 			cliIn(fromHere("members"), "--check", "--members", '{"assert":false}')
 				.stdout
@@ -123,6 +123,9 @@ main.ts:5:46  User.assert reads assert, which a standalone validator lacks
   Leave members["assert"] unset if the program reads it.
 1 site in 1 file: 1 accepted (100.0%), 1 error outside a site
 `)
+	})
+
+	it("builds under --no-config, reporting a configure() call", () => {
 		attest(cliIn(fromHere("unconfigured"), "--check", "--no-config").stdout)
 			.snap(`config.ts:3:1  configure() is called, but the build's \`config\` is false
   Remove the call, or name its module as the build's \`config\`.
@@ -132,6 +135,9 @@ main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator la
   Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".
 1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site
 `)
+	})
+
+	it("builds under --mutates-input, refusing what it can't write in place", () => {
 		attest(cliIn(fromHere("inPlace"), "--check", "--mutates-input").stdout)
 			.snap(`main.ts:3:23  type({ "tags?": ["object", ["string", "=", "none"]], "[stri… can't be precompiled yet
   with mutatesInput, a key transformed in place before another constraint transforms it can't be precompiled to a standalone validator
@@ -141,6 +147,9 @@ main.ts:8:23  type({ a: { n: "string.numeric.parse" }, b: type({ inner: {… can
   Build without mutatesInput to precompile it.
 2 sites in 1 file: 0 accepted (0.0%)
 `)
+	})
+
+	it("builds under --errors none, reporting a runtime island", () => {
 		attest(cli("--check", "--errors", "none").stdout)
 			.snap(`forms.ts:4:21  accepted
 forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
@@ -175,9 +184,6 @@ forms.ts:16:16  island
 				["--runtime", "strict"],
 				["--fail-under", "most"],
 				["--members", "assert"],
-				["--members", "[1]"],
-				["--checks", "bogus"],
-				["--errors", "bogus"],
 				["--config", "config.ts", "--no-config"]
 			].map(args => {
 				const result = cli("--check", ...args)
@@ -187,10 +193,24 @@ forms.ts:16:16  island
 			"2 --runtime must be arktype (was strict)",
 			"2 --fail-under must be a percentage (was most)",
 			"2 --members must be JSON (was assert)",
+			"2 --config names the module calling configure(), which --no-config says none does"
+		])
+	})
+
+	it("rejects an option the build can't take", () => {
+		attest(
+			[
+				["--members", "[1]"],
+				["--checks", "bogus"],
+				["--errors", "bogus"]
+			].map(args => {
+				const result = cli("--check", ...args)
+				return `${result.status} ${result.stderr.split("\n")[0]}`
+			})
+		).snap([
 			"2 members is [1], which isn't an object",
 			'2 checks is "bogus", which isn\'t "types", "helpers" or "none"',
-			'2 errors is "bogus", which isn\'t "all", "first" or "none"',
-			"2 --config names the module calling configure(), which --no-config says none does"
+			'2 errors is "bogus", which isn\'t "all", "first" or "none"'
 		])
 	})
 })
