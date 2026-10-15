@@ -185,7 +185,8 @@ export const createValidator = ((
 			if (!pipedFromCtx) return rootApply(data, onFail)
 			return pipedInto(pipedFromCtx, rootApply(data, null))
 		}) satisfies Fn,
-		Validator.prototype
+		// arktype's prototypes are per node kind, so a method replaced on the one every validator shares would change Types of other kinds
+		freeze(Validator.prototype)
 	)
 	// an own arrow function, since it is often detached, e.g. when passing to tRPC
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
@@ -215,7 +216,7 @@ export const createValidatorWith = ((
 ): Validator => {
 	const validator: Validator = setPrototypeOf(
 		make(parts, attributes.meta.onFail ?? runtimeConfig.onFail),
-		Validator.prototype
+		freeze(Validator.prototype)
 	)
 	// an own arrow function, since it is often detached, e.g. when passing to tRPC
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
@@ -308,9 +309,6 @@ export type unavailableMember = Exclude<
 	keyof (ArrayType & DateType & NumberType & ObjectType & StringType),
 	keyof Validator | keyof Function | typeOnlyMember | IntrospectionMember
 >
-
-// arktype's prototypes are per node kind, so a method replaced on the one every validator shares would change Types of other kinds
-freeze(Validator.prototype)
 
 // a target's is 0 where the validator doesn't bake its schema
 export const bakedJsonSchema = (
