@@ -1099,7 +1099,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 			this.compileDefaults(js)
-			this.compileCopiedDeclaredKeys(js)
+			// out can differ from data only after a transform or a default
+			if (outMayBeCopied || transformedProps.length || this.defaultable.length)
+				this.compileCopiedDeclaredKeys(js)
 			const deletes = () =>
 				js
 					.const("dataKeys", "Object.keys(data)")
