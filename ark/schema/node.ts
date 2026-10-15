@@ -125,7 +125,6 @@ export abstract class BaseNode<
 	attachmentsOf<d>
 > {
 	$: BaseScope
-	onFail: ArkErrors.Handler | null
 	includesTransform: boolean
 	includesMorph: boolean
 
@@ -137,7 +136,10 @@ export abstract class BaseNode<
 	includesContextualMorph: boolean
 	// described by another scope's writers, which a copy bound elsewhere keeps
 	includesKeptDescription: boolean
-	readonly cache: { rootApply?: RootApply } = {}
+	declare readonly cache: {
+		onFail: ArkErrors.Handler | null
+		rootApply?: RootApply
+	}
 
 	protected _referencesById: Record<string, BaseNode> | undefined
 	private hasReplacedReferences = false
@@ -156,23 +158,33 @@ export abstract class BaseNode<
 		return []
 	}
 
+	// kept on the cache, which the node's call reads through its closure
+	get onFail(): ArkErrors.Handler | null {
+		return this.cache.onFail
+	}
+
 	constructor(attachments: UnknownAttachments, $: BaseScope) {
+		// read by the node's call through its closure, as every cache shares one V8 map where each kind of node has its own
+		const cache = {} as BaseNode["cache"]
+		// an empty object has room for both properties, each added by a store V8 keeps constant, so a site calling one node inlines its apply
+		cache.onFail = attachments.meta.onFail ?? $.resolvedConfig.onFail
 		super(
 			(
 				data: any,
 				pipedFromCtx?: Traversal | undefined,
-				onFail: ArkErrors.Handler | null = this.onFail
+				onFail: ArkErrors.Handler | null = cache.onFail
 			) => {
 				if (pipedFromCtx) return pipe(pipedFromCtx, this, data)
 
-				// set once and called apart from its initializer, so V8 can inline it
-				const rootApply = this.cache.rootApply
-				return rootApply ?
-						rootApply(data, onFail)
-					:	this.initRootApply()(data, onFail)
+				// set once and called apart from its initializer, so V8 can inline it, and compared with undefined, a single check where truthiness takes several
+				const rootApply = cache.rootApply
+				return rootApply === undefined ?
+						this.initRootApply()(data, onFail)
+					:	rootApply(data, onFail)
 			},
 			{ attach: attachedInnerOf(attachments) as never, bind: null }
 		)
+		this.cache = cache
 		// assigned one at a time, so every node of a kind shares a V8 map
 		const self: mutable<UnknownAttachments> = this
 		self.id = attachments.id
@@ -185,7 +197,6 @@ export abstract class BaseNode<
 		self.children = attachments.children
 		this.precedence = precedenceOfKind(this.kind)
 		this.$ = $
-		this.onFail = this.meta.onFail ?? this.$.resolvedConfig.onFail
 
 		this.includesMorph = this.hasKind("morph")
 		this.includesTransform =
