@@ -3,6 +3,7 @@ import {
 	DynamicFunction,
 	appendUnique,
 	arityOf,
+	entriesOf,
 	flatMorph,
 	hasDomain,
 	hashOf,
@@ -18,6 +19,7 @@ import {
 	throwInternalError,
 	unset,
 	type Dict,
+	type Entry,
 	type Fn,
 	type GuardablePredicate,
 	type Json,
@@ -65,6 +67,7 @@ import {
 	basisKinds,
 	constraintKinds,
 	defaultValueSerializer,
+	metaJsonOf,
 	precedenceOfKind,
 	refinementKinds,
 	rootKinds,
@@ -74,7 +77,8 @@ import {
 	type OpenNodeKind,
 	type RefinementKind,
 	type StructuralKind,
-	type UnknownAttachments
+	type UnknownAttachments,
+	type UnknownAttachmentsInput
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import {
@@ -111,6 +115,8 @@ const noReferences: readonly BaseNode[] = []
 
 // memos, kept apart from the node so every cache shares a shape
 class NodeCache {
+	innerEntries: readonly Entry<string>[] | undefined
+	metaJson: object | undefined
 	referencesById: Record<string, BaseNode> | undefined
 	hasReplacedReferences: boolean | undefined
 	shallowReferences: BaseNode[] | undefined
@@ -171,14 +177,23 @@ export abstract class BaseNode<
 		return []
 	}
 
+	get innerEntries(): readonly Entry<string>[] {
+		return (this.cache.innerEntries ??= entriesOf(this.inner) as never)
+	}
+
+	get metaJson(): object {
+		return (this.cache.metaJson ??= metaJsonOf(this.meta))
+	}
+
 	// kept on the cache, which the node's call reads through its closure
 	get onFail(): ArkErrors.Handler | null {
 		return this.cache.onFail
 	}
 
-	constructor(attachments: UnknownAttachments, $: BaseScope) {
+	constructor(attachments: UnknownAttachmentsInput, $: BaseScope) {
 		// read by the node's call through its closure, as every cache shares one V8 map where each kind of node has its own
 		const cache = new NodeCache()
+		cache.metaJson = attachments.metaJson
 		// set after the slots, so a site calling one node can inline its apply
 		cache.onFail = attachments.meta.onFail ?? $.resolvedConfig.onFail
 		super(
@@ -204,9 +219,7 @@ export abstract class BaseNode<
 		self.kind = attachments.kind
 		self.impl = attachments.impl
 		self.inner = attachments.inner
-		self.innerEntries = attachments.innerEntries
 		self.meta = attachments.meta
-		self.metaJson = attachments.metaJson
 		self.children = attachments.children
 		this.precedence = precedenceOfKind(this.kind)
 		this.$ = $
@@ -1573,7 +1586,9 @@ export declare namespace NodeSelector {
 			t[]
 }
 
-const attachedInnerOf = (attachments: UnknownAttachments): dict | undefined => {
+const attachedInnerOf = (
+	attachments: UnknownAttachmentsInput
+): dict | undefined => {
 	if (attachments.kind === "intersection") return
 	const attached: dict = {}
 	for (const k in attachments.impl.keys)

@@ -39,7 +39,7 @@ import type {
 	ConstraintKind,
 	NodeKind,
 	OpenNodeKind,
-	UnknownAttachments,
+	UnknownAttachmentsInput,
 	UnknownNodeImplementation
 } from "./shared/implement.ts"
 import { describeMissing, type Locale } from "./shared/locale.ts"
@@ -194,7 +194,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 
 export const nodeClassesByKind: Record<
 	NodeKind,
-	new (attachments: UnknownAttachments, $: BaseScope) => BaseNode
+	new (attachments: UnknownAttachmentsInput, $: BaseScope) => BaseNode
 > = {
 	...boundClassesByKind,
 	alias: Alias.Node,

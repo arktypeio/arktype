@@ -6,6 +6,7 @@ import {
 	throwParseError,
 	type Entry,
 	type Json,
+	type JsonObject,
 	type JsonStructure,
 	type KeySet,
 	type arrayIndexOf,
@@ -263,6 +264,14 @@ export const defaultValueSerializer = (v: unknown): Json => {
 		:	serializePrimitive(v as never)
 }
 
+export const metaJsonOf = (meta: ArkEnv.meta): JsonObject =>
+	flatMorph(meta, (k, v) => [
+		k,
+		k === "examples" ?
+			(v as unknown[]).map(defaultValueSerializer)
+		:	defaultValueSerializer(v)
+	])
+
 export type NodeKeyImplementation<
 	d extends BaseNodeDeclaration,
 	k extends keyof d["inner"],
@@ -339,6 +348,12 @@ export interface UnknownAttachments {
 	readonly metaJson: object
 
 	readonly children: BaseNode[]
+}
+
+// what createNode passes a node, which computes the rest when it's read
+export interface UnknownAttachmentsInput
+	extends Omit<UnknownAttachments, "innerEntries" | "metaJson"> {
+	readonly metaJson: object | undefined
 }
 
 export interface NarrowedAttachments<d extends BaseNodeDeclaration>

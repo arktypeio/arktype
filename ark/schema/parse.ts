@@ -1,6 +1,4 @@
 import {
-	entriesOf,
-	flatMorph,
 	includes,
 	isArray,
 	isDate,
@@ -10,9 +8,9 @@ import {
 	throwInternalError,
 	throwParseError,
 	type arkKind,
-	type array,
 	type Brand,
 	type dict,
+	type JsonObject,
 	type listable,
 	type PartialRecord
 } from "@ark/util"
@@ -26,12 +24,12 @@ import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
-	defaultValueSerializer,
+	metaJsonOf,
 	isNodeKind,
 	precedenceOfKind,
 	prestructuralKinds,
 	type NodeKind,
-	type UnknownAttachments
+	type UnknownAttachmentsInput
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import { composing, hasArkKind, isNode } from "./shared/utils.ts"
@@ -203,15 +201,8 @@ export const createNode = ({
 	$,
 	ignoreCache
 }: CreateNodeInput): BaseNode => {
-	const metaJson: dict =
-		isEmptyObject(meta) ?
-			{}
-		:	flatMorph(meta, (k, v) => [
-				k,
-				k === "examples" ?
-					(v as array).map(defaultValueSerializer)
-				:	defaultValueSerializer(v)
-			])
+	// serialized as the node is created, so meta that can't be throws here
+	const metaJson = isEmptyObject(meta) ? undefined : metaJsonOf(meta)
 
 	// nodes are only cached with a set engine, which reduces them first
 	const key =
@@ -226,32 +217,30 @@ export const createNode = ({
 	}
 
 	const impl = nodeImplementationsByKind[kind]
-	const innerEntries = entriesOf(inner)
 	const children: BaseNode[] = []
 
-	for (const [k, v] of innerEntries) {
+	for (const k in inner) {
 		const keyImpl = impl.keys[k]
 		if (keyImpl.child === true) {
-			const listableNode = v as listable<BaseNode>
+			const listableNode = inner[k] as listable<BaseNode>
 			if (isArray(listableNode)) children.push(...listableNode)
 			else children.push(listableNode)
 		} else if (typeof keyImpl.child === "function")
-			children.push(...keyImpl.child(v as never))
+			children.push(...keyImpl.child(inner[k] as never))
 	}
 
-	const attachments: UnknownAttachments = {
+	const attachments: UnknownAttachmentsInput = {
 		id,
 		kind,
 		impl,
 		inner,
-		innerEntries,
 		meta,
 		metaJson,
 		children
 	}
 
 	const node = composing(() =>
-		resolveDescription(new nodeClassesByKind[kind](attachments as never, $))
+		resolveDescription(new nodeClassesByKind[kind](attachments, $))
 	)
 
 	return key ? $.nodesByKey.set(key, node) : node
@@ -259,7 +248,11 @@ export const createNode = ({
 
 // a node's children are cached before it, so their ids can stand in for
 // their content
-const nodeKeyOf = (kind: NodeKind, inner: dict, metaJson: dict): string => {
+const nodeKeyOf = (
+	kind: NodeKind,
+	inner: dict,
+	metaJson: JsonObject | undefined
+): string => {
 	let key: string = kind
 	for (const k in inner)
 		key += `,${k}:${k === "unit" ? literalKeyOf(inner[k]) : valueKeyOf(inner[k])}`
@@ -269,7 +262,7 @@ const nodeKeyOf = (kind: NodeKind, inner: dict, metaJson: dict): string => {
 		hasArkKind(nodesByRegisteredId[inner.reference as NodeId], "root")
 	)
 		key += "!"
-	return isEmptyObject(metaJson) ? key : key + JSON.stringify(metaJson)
+	return metaJson ? key + JSON.stringify(metaJson) : key
 }
 
 const valueKeyOf = (v: unknown): string =>
