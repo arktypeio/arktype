@@ -9,6 +9,7 @@ tmp
 *.tsbuildinfo
 .DS_Store
 .next
+next-env.d.ts
 .source
 .cache-loader
 .attest
