@@ -23,12 +23,19 @@ jobs:
       - name: Setup repo
         uses: ./.github/actions/setup
 
+      # twoslash results (see ark/docs/lib/content/twoslash.ts), keyed by what
+      # every result depends on, so a change there starts a fresh cache
+      - name: Cache docs twoslash results
+        uses: actions/cache@v4
+        with:
+          path: ark/docs/node_modules/.cache/ark-docs
+          key: docs-twoslash-${{ hashFiles('ark/*/out/**/*.d.ts', 'ark/docs/lib/shiki.ts', 'ark/docs/package.json') }}
+
       - name: Build docs
         run: pnpm buildDocs
         env:
           NEXT_PUBLIC_POSTHOG_KEY: phc_vKr7tmA1TyRlKm9zm5TWVmrTWAybJ2fCk66FtZG49Om
           NEXT_PUBLIC_POSTHOG_HOST: https://us.i.posthog.com
-          ORAMA_PRIVATE_API_KEY: ${{ secrets.ORAMA_PRIVATE_API_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

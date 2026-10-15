@@ -16,3 +16,5 @@ tsconfig.build.json
 coverage
 # generated per-page Markdown, see ark/docs/lib/writeMarkdown.ts
 ark/docs/public/docs/**/*.md
+# bundled from ark/docs/components/home/ark.worker.ts, see ark/docs/lib/writeLiveWorker.ts
+ark/docs/public/live

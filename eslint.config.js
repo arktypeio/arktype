@@ -24,7 +24,6 @@ export default tseslint.config(
 			"**/*js",
 			"**/*.astro",
 			"**/.next/**/*",
-			"**/.source/**/*",
 			"**/*scratch.ts",
 			"**/scratch/**/*",
 			"**/examples/**/*"

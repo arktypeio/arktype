@@ -1,11 +1,11 @@
 import { existsSync } from "node:fs"
 import { join } from "node:path"
 import {
+	Node,
 	Project,
 	SyntaxKind,
 	type JSDoc,
 	type JSDocableNode,
-	type Node,
 	type SourceFile
 } from "ts-morph"
 import { bootstrapFs, bootstrapUtil, repoDirs } from "./shared.ts"
@@ -21,12 +21,13 @@ const noteEmoji = ["✅", "🥸", "⚠️", "🔗"]
 
 const noteEmojiUnicode = noteEmoji.map(emojiToUnicode)
 const noteDelimiterRegex = new RegExp(`(?=\\n\\s*[-${noteEmojiUnicode}])`, "u")
+const noteMarkerRegex = new RegExp(`^(?:-|${noteEmoji.join("|")})\\s*`, "u")
 
 const replacedDecorators = {
 	"@typeonly": "🥸 inference-only property that will be `undefined` at runtime",
-	"@typenoop": "🥸 inference-only function that does nothing runtime",
+	"@typenoop": "🥸 inference-only function that does nothing at runtime",
 	"@chainedDefinition":
-		"⚠️ unlike most other methods, this creates a definition rather than a Type (read why)",
+		"⚠️ unlike most other methods, this creates a definition rather than a Type",
 	"@predicateCast":
 		"🥸 {@link https://www.typescriptlang.org/docs/handbook/2/narrowing.html#using-type-predicates | Type predicates} can be used as casts",
 	"@ignoresMeta":
@@ -37,6 +38,145 @@ const replacedDecorators = {
 const path = ["key1", Symbol("key2"), "key3", 4, "~key5"]
 const propString = 'key1[Symbol(key2)].key3[4]["~key5"]'`
 } as const
+
+/**
+ * Each section of the Type API page renders one of these groups, in this
+ * order. Every member of a Type must be listed here or in
+ * {@link typeMembersInProse}, so a new member can't silently go undocumented.
+ */
+const typeApiGroups = {
+	Validation: ["assert", "allows", "from"],
+	Inference: [
+		"infer",
+		"inferIn",
+		"inferOut",
+		"inferIntrospectableOut",
+		"t",
+		"as",
+		"brand"
+	],
+	Metadata: ["description", "expression", "meta", "configure", "describe"],
+	Composition: ["and", "or", "intersect", "array", "optional", "default"],
+	Morphs: ["narrow", "filter", "pipe", "to", "in", "out"],
+	Comparison: [
+		"equals",
+		"ifEquals",
+		"extends",
+		"ifExtends",
+		"overlaps",
+		"extract",
+		"exclude"
+	],
+	Objects: [
+		"get",
+		"pick",
+		"omit",
+		"merge",
+		"required",
+		"partial",
+		"map",
+		"props",
+		"onUndeclaredKey",
+		"onDeepUndeclaredKey"
+	],
+	Serialization: ["json", "toJSON", "toJsonSchema", "~standard"],
+	Introspection: ["$", "precompilation", "select"]
+} as const satisfies Record<string, readonly string[]>
+
+/** members with no JSDoc, or that need more than a row, written in type-api/index.mdx */
+const typeMembersInProse = [
+	"distribute",
+	"readonly",
+	"keyof",
+	"internal",
+	"matching",
+	"atLeastLength",
+	"atMostLength",
+	"moreThanLength",
+	"lessThanLength",
+	"exactlyLength",
+	"divisibleBy",
+	"atLeast",
+	"atMost",
+	"moreThan",
+	"lessThan",
+	"atOrAfter",
+	"atOrBefore",
+	"laterThan",
+	"earlierThan"
+]
+
+type TypeApiGroup = keyof typeof typeApiGroups
+
+const typeApiGroupByMember: Record<string, TypeApiGroup> = flatMorph(
+	typeApiGroups,
+	(group, names) => names.map(name => [name, group] as const)
+)
+
+/**
+ * Corrections to JSDoc examples that are wrong in source. Each `[find,
+ * replace]` throws once `find` is gone, so a fix is removed when the source is.
+ */
+const exampleFixes: Record<string, [find: string, replace: string][]> = {
+	inferOut: [["typeof parseNumber.infer ", "typeof parseNumber.inferOut "]],
+	configure: [['(was "two")', "(was a string)"]],
+	from: [
+		[
+			"// TypeScript: foo must be a string (was 5)",
+			"// TypeScript: Type 'number' is not assignable to type 'string'"
+		]
+	],
+	out: [["const baseOut = base.out", "const Out = T.out"]],
+	narrow: [
+		["PalindromicEmail", "ThisYear"],
+		["=== 2025", "=== new Date().getFullYear()"],
+		["=> /\\.tsx?$/.test(s)", '=> s.endsWith(".tsx")']
+	],
+	pipe: [
+		[
+			'// parse a string and validate that the result as a user\nconst parseUser = type("string").pipe(s => JSON.parse(s), user)',
+			'// parse a string and validate the result as a User\nconst parseUser = type("string").pipe(s => JSON.parse(s), User)'
+		]
+	],
+	to: [
+		[
+			"// parse a string and validate that the result as a user",
+			"// parse a string and validate the result as a user"
+		]
+	],
+	intersect: [
+		[
+			'// Type<{ foo: number; bar: string }>\nconst T = type({ foo: "number" }).intersect',
+			'import { Type } from "arktype"\n\n// Type<{ foo: number; bar: string }> | Disjoint\nconst T = type({ foo: "number" }).intersect'
+		],
+		[
+			"if (Bad instanceof Disjoint) console.log(`${bad.summary}`)",
+			"if (!(Bad instanceof Type)) console.log(Bad.summary)"
+		]
+	],
+	ifExtends: [["// Type<true> | undefined", "// Type<boolean> | undefined"]],
+	partial: [
+		[
+			': const T = type({ foo: "string" }).optional()',
+			'const T = type({ foo: "string" }).partial()'
+		]
+	],
+	merge: [["// Type<{ a: 1, b: 3, c: 4 }>", "// Type<{ a: 1; b: 3; c: 4 }>"]],
+	props: [
+		[
+			'type({ foo: "string = "" }).props // [{ kind: "required", key: "foo", value: Type<string>, default: "" }]',
+			'type({ foo: "string = \'x\'" }).props // [{ kind: "optional", key: "foo", value: Type<string>, default: "x" }]'
+		]
+	]
+}
+
+/** links for {@link} references to names that have no row on their page */
+const referenceUrls: Record<string, string> = {
+	Scope: "https://arktype.io/docs/scopes",
+	"type.errors": "https://arktype.io/docs/errors",
+	ArkErrors: "https://arktype.io/docs/errors",
+	ArkError: "https://arktype.io/docs/errors"
+}
 
 const typeBuildDir = join(repoDirs.arkDir, "type", "out")
 const typeBuildGlob = `${typeBuildDir}/**/*.d.ts`
@@ -63,13 +203,44 @@ export const jsDocGen = () => {
 
 	const docs = getAllJsDoc(project)
 
-	apiDocsByGroup = flatMorph(docs, (i, doc) => {
-		const block = parseBlock(doc)
+	const blocks = docs.flatMap(doc => parseBlock(doc) ?? [])
 
-		if (!block) return []
+	assertTypeMembersCovered(project, blocks)
 
-		return [{ group: block.group }, block]
-	})
+	for (const name of Object.keys(exampleFixes)) {
+		if (!blocks.some(block => block.name === name && block.example)) {
+			throw new Error(
+				`jsDocGen has an example fix for ${name}, which has no example`
+			)
+		}
+	}
+
+	const traversalNames = blocks
+		.filter(block => block.group === "Traversal")
+		.map(block => block.name)
+	const typeApiNames = [
+		...Object.keys(typeApiGroupByMember),
+		...typeMembersInProse
+	]
+
+	for (const block of blocks) {
+		const pageNames =
+			block.group === "Traversal" ? traversalNames : typeApiNames
+		block.summary = block.summary.map(part => resolveReference(part, pageNames))
+		block.notes = block.notes.map(note =>
+			note.map(part => resolveReference(part, pageNames))
+		)
+	}
+
+	// Type rows follow typeApiGroups, Traversal rows their source order
+	blocks.sort(
+		(l, r) => typeApiNames.indexOf(l.name) - typeApiNames.indexOf(r.name)
+	)
+
+	apiDocsByGroup = flatMorph(blocks, (i, block) => [
+		{ group: block.group },
+		block
+	])
 
 	writeApiDataFile()
 
@@ -98,7 +269,7 @@ export const getAllJsDoc = (project: Project) => {
 	)
 }
 
-export type ApiGroup = "Type" | "Traversal"
+export type ApiGroup = TypeApiGroup | "Traversal"
 
 export type JsDocComment = ReturnType<JSDoc["getComment"]>
 
@@ -109,7 +280,7 @@ export type RawJsDocPart = Extract<
 
 export type ParsedJsDocPart =
 	| { kind: "text"; value: string }
-	| { kind: "noteStart"; value: string }
+	| { kind: "noteStart"; value: string; warning?: true }
 	| { kind: "reference"; value: string }
 	| { kind: "link"; value: string; url: string }
 
@@ -120,6 +291,8 @@ export type ApiDocsByGroup = {
 export type ParsedJsDocBlock = {
 	group: ApiGroup
 	name: string
+	/** a method's parameter names; absent for properties */
+	params?: string[]
 	summary: ParsedJsDocPart[]
 	notes: ParsedJsDocPart[][]
 	example?: string
@@ -146,22 +319,83 @@ const assertBuildDirExists = (path: string) => {
 	}
 }
 
+const isTypeVariantFile = (file: SourceFile) =>
+	file.getFilePath().includes("/type/out/variants/")
+
+const memberName = (node: Node | undefined): string | undefined =>
+	(
+		Node.isPropertySignature(node) ||
+		Node.isMethodSignature(node) ||
+		Node.isGetAccessorDeclaration(node)
+	) ?
+		node
+			.getNameNode()
+			.getText()
+			.replace(/^"(.*)"$/, "$1")
+	:	undefined
+
 const extractNameAndGroup = (
 	doc: JSDoc
 ): { name: string; group: ApiGroup } | undefined => {
+	if (isTypeVariantFile(doc.getSourceFile())) {
+		const name = memberName(doc.getParent())
+		if (!name || !(name in typeApiGroupByMember)) return
+		return { name, group: typeApiGroupByMember[name] }
+	}
+
+	if (!doc.getSourceFile().getFilePath().endsWith("traversal.d.ts")) return
+
 	const name =
 		doc.getNextSiblingIfKind(SyntaxKind.Identifier)?.getText() ??
 		doc.getParentIfKind(SyntaxKind.GetAccessor)?.getName()
-	if (!name) return undefined
 
-	const filePath = doc.getSourceFile().getFilePath()
-	let group: ApiGroup
-	if (filePath.includes("variants")) group = "Type"
-	else if (filePath.endsWith("traversal.d.ts")) group = "Traversal"
-	else return undefined
+	// the Traversal table lists only members whose JSDoc opens with a heading
+	if (!name || !doc.getInnerText().trim().startsWith("#")) return
 
-	return { name, group }
+	return { name, group: "Traversal" }
 }
+
+const assertTypeMembersCovered = (
+	project: Project,
+	blocks: ParsedJsDocBlock[]
+) => {
+	const generated = new Set(blocks.map(block => block.name))
+	const members = new Set(
+		project
+			.getSourceFiles()
+			.filter(isTypeVariantFile)
+			.flatMap(file => file.getInterfaces())
+			.filter(i => i.getName() === "Type" || i.getName() === "Inferred")
+			.flatMap(i => i.getMembers())
+			.filter(member => !member.getJsDocs().some(isDeprecated))
+			.flatMap(member => memberName(member) ?? [])
+			// a computed key like [inferred] has no name to document
+			.filter(name => !name.startsWith("["))
+	)
+
+	const problems = [
+		...[...members]
+			.filter(
+				name => !generated.has(name) && !typeMembersInProse.includes(name)
+			)
+			.map(
+				name =>
+					`${name} is a member of Type but is in neither typeApiGroups nor typeMembersInProse`
+			),
+		...Object.keys(typeApiGroupByMember)
+			.filter(name => !generated.has(name))
+			.map(name => `${name} is in typeApiGroups but has no JSDoc to generate`)
+	]
+
+	if (problems.length) {
+		throw new Error(
+			`jsDocGen can't document every Type member:\n${problems.join("\n")}`
+		)
+	}
+}
+
+const isDeprecated = (doc: JSDoc) =>
+	doc.getTags().some(tag => tag.getTagName() === "deprecated")
 
 const organizeDocParts = (
 	allParts: ParsedJsDocPart[]
@@ -173,7 +407,7 @@ const organizeDocParts = (
 	const notes: ParsedJsDocPart[][] = []
 
 	if (allParts[0]?.kind === "text") {
-		allParts[0].value = allParts[0].value.replace(/^#+\s*/, "")
+		allParts[0].value = allParts[0].value.replace(/^\s*#+\s*/, "")
 		if (allParts[0].value === "") allParts.shift()
 	}
 
@@ -184,7 +418,35 @@ const organizeDocParts = (
 		else summary.push(part)
 	}
 
-	return { summary, notes }
+	return {
+		summary: trimParts(summary),
+		notes: notes.map(trimParts).filter(note => note.length)
+	}
+}
+
+/**
+ * Parts keep the whitespace between them, so text around a {@link} reads
+ * as written; only the ends of a summary or note are trimmed.
+ */
+const trimParts = (parts: ParsedJsDocPart[]): ParsedJsDocPart[] => {
+	const trimmed = parts.map((part, i) => ({
+		...part,
+		value:
+			i === 0 && i === parts.length - 1 ? part.value.trim()
+			: i === 0 ? part.value.trimStart()
+			: i === parts.length - 1 ? part.value.trimEnd()
+			: part.value
+	}))
+	while (trimmed[0]?.value === "") trimmed.shift()
+	while (trimmed[trimmed.length - 1]?.value === "") trimmed.pop()
+	return trimmed
+}
+
+const parametersOf = (doc: JSDoc): string[] | undefined => {
+	const parent = doc.getParent()
+	return Node.isMethodSignature(parent) || Node.isMethodDeclaration(parent) ?
+			parent.getParameters().map(param => param.getName())
+		:	undefined
 }
 
 const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
@@ -192,8 +454,6 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 	if (!nameAndGroup) return undefined
 
 	const { name, group } = nameAndGroup
-
-	if (!doc.getInnerText().trim().startsWith("#")) return undefined
 
 	const tags = doc.getTags()
 	const rootComment = doc.getComment()
@@ -207,6 +467,21 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 		:	rootComment.filter(_ => !!_).flatMap(parseJsDocPart)
 
 	const { summary, notes } = organizeDocParts(allParts)
+	for (const note of notes) unmarkNote(note)
+
+	for (const tag of tags) {
+		if (tag.getTagName() !== "throws") continue
+		const thrown = /^@throws\s*{([^}]+)}([^*]*)/.exec(tag.getText())
+		if (thrown) {
+			notes.push([
+				{
+					kind: "noteStart",
+					value: `throws \`${thrown[1]}\` ${thrown[2].trim()}`.trim(),
+					warning: true
+				}
+			])
+		}
+	}
 
 	const result: ParsedJsDocBlock = {
 		group,
@@ -215,15 +490,57 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 		notes
 	}
 
+	const params = parametersOf(doc)
+	if (params) result.params = params
+
 	const example = tags.find(t => t.getTagName() === "example")?.getCommentText()
-	if (example) result.example = example
+	if (example) result.example = fixExample(name, example)
 
 	const experimentalTag = tags.find(t => t.getTagName() === "experimental")
-	if (experimentalTag)
-		result.experimental = parseJsDocText(experimentalTag.getCommentText())
+	if (experimentalTag) {
+		result.experimental = trimParts(
+			parseJsDocText(experimentalTag.getCommentText())
+		)
+	}
 
 	return result
 }
+
+/**
+ * The docs show notes without the emoji that delimit them in source:
+ * a ⚠️ note is labeled as a warning, and other markers are dropped.
+ */
+const unmarkNote = (note: ParsedJsDocPart[]) => {
+	const start = note[0]
+	if (start?.kind !== "noteStart") return
+	const marker = noteMarkerRegex.exec(start.value)?.[0] ?? ""
+	start.value = start.value.slice(marker.length)
+	if (marker.startsWith("⚠️")) start.warning = true
+}
+
+/**
+ * A reference to a name documented on the same page stays an in-page anchor.
+ * Any other becomes a link if we know where it's documented, or else code.
+ */
+const resolveReference = (
+	part: ParsedJsDocPart,
+	pageNames: readonly string[]
+): ParsedJsDocPart => {
+	if (part.kind !== "reference" || pageNames.includes(part.value)) return part
+	const url = referenceUrls[part.value]
+	if (url) return { kind: "link", url, value: part.value }
+	return { kind: "text", value: `\`${part.value}\`` }
+}
+
+const fixExample = (name: string, example: string) =>
+	(exampleFixes[name] ?? []).reduce((fixed, [find, replace]) => {
+		if (!fixed.includes(find)) {
+			throw new Error(
+				`jsDocGen's example fix for ${name} no longer matches its JSDoc. If the source example was fixed, remove the fix.\nExpected to find: ${find}`
+			)
+		}
+		return fixed.replace(find, replace)
+	}, example)
 
 const parseJsDocPart = (part: RawJsDocPart): ParsedJsDocPart[] => {
 	switch (part.getKindName()) {
@@ -241,10 +558,12 @@ const parseJsDocPart = (part: RawJsDocPart): ParsedJsDocPart[] => {
 const parseJsDocText = (text: string | undefined): ParsedJsDocPart[] => {
 	if (!text) return []
 	const sections = text.split(noteDelimiterRegex)
-	return sections.map((sectionText, i) => ({
-		kind: i === 0 ? "text" : "noteStart",
-		value: sectionText.trim()
-	}))
+	// split can't break at index 0, so text after a {@link} may open with a note
+	return sections.map((sectionText, i) =>
+		i === 0 && !noteDelimiterRegex.test(sectionText) ?
+			{ kind: "text", value: sectionText }
+		:	{ kind: "noteStart", value: sectionText.trimStart() }
+	)
 }
 
 const describedLinkRegex = /{@link\s+(https?:\/\/[^\s|}]+)(?:\s*\|\s*([^}]*))?}/

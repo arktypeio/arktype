@@ -1,0 +1,537 @@
+# JSON Schema
+
+> Convert Types to JSON Schema and back
+
+# Overview
+
+> Generate JSON Schema from a Type with arktype, or build a Type from JSON Schema with @ark/json-schema.
+
+ArkType converts in both directions, with one package for each.
+
+| direction | package | API |
+| - | - | - |
+| Type → JSON Schema | `arktype` | `T.toJsonSchema()`, `T["~standard"].jsonSchema` |
+| JSON Schema → Type | `@ark/json-schema` | `jsonSchemaToType(schema)` |
+
+## Type to JSON Schema
+
+Every Type has a `toJsonSchema()` method. Nothing else to install:
+
+```ts
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
+
+const schema = User.toJsonSchema()
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"name": { "type": "string" },
+		"age": { "type": "integer", "minimum": 0 }
+	},
+	"required": ["name"]
+}
+```
+
+Some things a Type can check, like a `Date`, a `bigint` or a custom `narrow`, have no JSON Schema equivalent. `toJsonSchema()` throws on those unless you tell it what to write instead. See [To JSON Schema](https://arktype.io/docs/json-schema/to-json-schema).
+
+Libraries that accept any [Standard JSON Schema](https://standardschema.dev/json-schema) read it from `T["~standard"].jsonSchema`, which never throws for those parts. See [Standard JSON Schema](https://arktype.io/docs/json-schema/to-json-schema#standard-json-schema).
+
+## JSON Schema to Type
+
+`@ark/json-schema` parses a JSON Schema into a Type:
+
+```bash
+npm install @ark/json-schema
+```
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const User = jsonSchemaToType({
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		age: { type: "integer", minimum: 0 }
+	},
+	required: ["name"]
+})
+
+User.expression // "{ name: string, age?: number % 1 & >= 0 }"
+// ArkErrors: age must be an integer (was 1.5)
+User({ name: "Ada", age: 1.5 })
+```
+
+The schema is a runtime value, so the result is a `Type<unknown>`. See [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema) to give it a static type, and [Keyword support](https://arktype.io/docs/json-schema/support) for which keywords it understands.
+
+# To JSON Schema
+
+> Generate a JSON Schema from any Type, pick a draft, and decide what to write for what JSON Schema can't express.
+
+Every Type has a `toJsonSchema()` method:
+
+```ts
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
+
+const schema = User.toJsonSchema()
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"name": { "type": "string" },
+		"age": { "type": "integer", "minimum": 0 }
+	},
+	"required": ["name"]
+}
+```
+
+## Options
+
+| option | default | effect |
+| - | - | - |
+| `target` | `"draft-2020-12"` | the draft to write, `"draft-2020-12"` or `"draft-07"` |
+| `dialect` | the target's URL | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL |
+| `useRefs` | `false` | write each part once under `$defs` and point to it with `$ref`. Cyclic Types always do |
+| `fallback` | throws | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks) |
+
+### target
+
+The drafts differ in how they write tuples and where they put definitions:
+
+```ts
+const Pair = type(["string", "number"])
+
+Pair.toJsonSchema()
+// {
+// 	$schema: "https://json-schema.org/draft/2020-12/schema",
+// 	type: "array",
+// 	minItems: 2,
+// 	prefixItems: [{ type: "string" }, { type: "number" }],
+// 	items: false
+// }
+
+Pair.toJsonSchema({ target: "draft-07" })
+// {
+// 	$schema: "http://json-schema.org/draft-07/schema#",
+// 	type: "array",
+// 	minItems: 2,
+// 	items: [{ type: "string" }, { type: "number" }],
+// 	additionalItems: false
+// }
+```
+
+`draft-07` writes `definitions` where `draft-2020-12` writes `$defs`.
+
+### dialect
+
+```ts
+type("string").toJsonSchema({ dialect: null }) // { type: "string" }
+```
+
+### Cyclic types
+
+A cyclic Type is written as a `$ref` to its definition. The definition's name, like `Node1` below, is generated from the alias, so don't rely on it staying the same:
+
+```ts
+const types = scope({ Node: { value: "number", "next?": "Node" } }).export()
+
+const schema = types.Node.toJsonSchema()
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$ref": "#/$defs/Node1",
+	"$defs": {
+		"Node1": {
+			"type": "object",
+			"properties": {
+				"value": { "type": "number" },
+				"next": { "$ref": "#/$defs/Node1" }
+			},
+			"required": ["value"]
+		}
+	}
+}
+```
+
+## How Types map
+
+| ArkType | JSON Schema |
+| - | - |
+| `"string"`, `"number"`, `"boolean"`, `"null"` | `type` |
+| `"number.integer"`, `"number % 2"` | `type: "integer"`, plus `multipleOf: 2` |
+| `"0 < number <= 1"` | `exclusiveMinimum: 0`, `maximum: 1` |
+| `"string >= 1"`, `"string == 2"` | `minLength`, or `minLength` and `maxLength` |
+| `"string[] > 0"` | `items`, `minItems: 1` |
+| `["string", "number?"]` | `prefixItems`, `minItems: 1`, `items: false` |
+| `/^a/` | `pattern: "^a"` |
+| `"string.email"` | `pattern`, `format: "email"` |
+| `"'a' \| 'b'"` | `enum: ["a", "b"]` |
+| `"string \| null"` | `anyOf` |
+| `{ "name?": "string" }` | `properties`, with only required keys in `required` |
+| `{ "+": "reject", ... }` | `additionalProperties: false` |
+| `"Record<string, number>"` | `additionalProperties: {...}` |
+| `{ id: "string", "[string]": "string" }` | `patternProperties: { "": {...} }` |
+| `{ "[/^x-/]": "string" }` | `patternProperties: { "^x-": {...} }` |
+| `{ role: "string = 'user'" }` | `default: "user"` on `role` |
+| `.describe("...")`, `.configure({ title, examples })` | `description`, `title`, `examples` |
+
+An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
+
+## Fallbacks
+
+Some things a Type checks have no JSON Schema equivalent: a `Date`, a `bigint`, a morph, a `narrow`. By default, `toJsonSchema()` throws a `ToJsonSchemaError` for them:
+
+```ts
+type({ at: "Date" }).toJsonSchema() // throws ToJsonSchemaError (code "date")
+```
+
+Pass a handler for its [code](#fallback-codes) to write something instead. The handler receives the schema written so far as `ctx.base`, plus fields for its code, and returns the schema to use:
+
+```ts
+const Event = type({ name: "string", at: "Date" })
+
+const schema = Event.toJsonSchema({
+	fallback: {
+		date: ctx => ({ ...ctx.base, type: "string", format: "date-time" })
+	}
+})
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"at": { "type": "string", "format": "date-time" },
+		"name": { "type": "string" }
+	},
+	"required": ["at", "name"]
+}
+```
+
+A `default` handler covers every code you don't list. Passing a function instead of an object is the same as passing it as `default`. Return `ctx.base` to leave out what JSON Schema can't express:
+
+```ts
+// properties.at is now {}
+Event.toJsonSchema({ fallback: ctx => ctx.base })
+```
+
+Leaving something out makes the schema accept values the Type rejects.
+
+For `defaultValue`, `base` is the property's own schema, so returning it makes the schema contain itself. Return `undefined` to drop the default instead, e.g. `{ defaultValue: () => undefined, default: ctx => ctx.base }`.
+
+### Morphs
+
+A morph has a different input and output, so there is no single schema for it. Convert one side with `.in` or `.out`:
+
+```ts
+const Tags = type("string")
+	.pipe(s => s.split(","))
+	.to("string[]")
+
+Tags.in.toJsonSchema() // { $schema: "...", type: "string" }
+Tags.out.toJsonSchema() // { $schema: "...", type: "array", items: { type: "string" } }
+```
+
+### annotatingFallback
+
+To keep what JSON Schema can't express rather than drop it, pass `annotatingFallback`. It writes each such constraint as an `x-arktype-*` keyword, naming a function, class or symbol by its `$ark` name as a Type's `.json` does:
+
+```ts
+import { annotatingFallback, type } from "arktype"
+
+const schema = type({
+	id: "bigint",
+	createdAt: "Date"
+}).toJsonSchema({ fallback: annotatingFallback })
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"createdAt": { "x-arktype-proto": "Date" },
+		"id": { "x-arktype-domain": "bigint" }
+	},
+	"required": ["createdAt", "id"]
+}
+```
+
+Validators ignore those keywords, so the schema still accepts values the Type rejects.
+
+### Fallback codes
+
+Every reason `toJsonSchema()` can throw, with the fields its handler receives besides `code` and `base`:
+
+| code | raised for | example | fields |
+| - | - | - | - |
+| `arrayObject` | an array with named properties | `type("string[]").and({ n: "number" })` | `object` |
+| `arrayPostfix` | elements after a variadic element | `type(["...", "string[]", "number"])` | `elements` |
+| `date` | a `Date`, with its bounds | `type("Date")` | `before`, `after` |
+| `defaultValue` | a default that isn't JSON. Return `undefined` to omit it | `type({ n: "bigint = 5n" })`, after `domain` | `value` |
+| `domain` | `bigint` or `symbol` | `type("bigint")` | `domain` |
+| `morph` | a morph | `type("string.trim")` | `out`, the output schema or `null` |
+| `patternIntersection` | a second regex on the same string | `type(/^a/).and(/b$/)` | `pattern` |
+| `predicate` | a `narrow` | `type("number").narrow(n => n > 0)` | `predicate` |
+| `proto` | an `instanceof` other than `Array` or `Date` | `type("Map")` | `proto` |
+| `symbolKey` | a symbol key or index signature | `type({ "[symbol]": "string" })` | `key` (`null` for an index), `value`, `optional` |
+| `unit` | a literal that isn't JSON | `type("undefined")` | `unit` |
+
+A `Date` is reported as `date`, never `proto`.
+
+## Configuration
+
+`toJsonSchema` options can also be set [globally or on a scope](https://arktype.io/docs/configuration#levels). Options passed to `toJsonSchema()` are merged over them:
+
+```ts
+import { configure } from "arktype/config"
+
+configure({
+	toJsonSchema: {
+		target: "draft-07",
+		fallback: {
+			date: ctx => ({ ...ctx.base, type: "string", format: "date-time" })
+		}
+	}
+})
+```
+
+```ts
+// import your config file before arktype
+import "./config.ts"
+import { type } from "arktype"
+
+// $schema is draft-07's, and at is { type: "string", format: "date-time" }
+type({ at: "Date" }).toJsonSchema()
+```
+
+A handler passed to `toJsonSchema()` replaces the configured one for its code. A `default` passed there replaces every configured handler.
+
+## Standard JSON Schema
+
+Libraries that accept any [Standard JSON Schema](https://standardschema.dev/json-schema) read a Type's schema from `~standard.jsonSchema`. `input` describes what the Type accepts, `output` what it returns after its morphs:
+
+```ts
+const Form = type({
+	tags: type("string")
+		.pipe(s => s.split(","))
+		.to("string[]"),
+	"id?": "bigint"
+})
+
+// properties: { tags: { type: "string" }, id: {} }
+Form["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+
+// properties: { tags: { type: "array", items: { type: "string" } }, id: {} }
+Form["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+```
+
+Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express. They write as much of it as JSON Schema can describe, or `{}` if nothing, so `id` above accepts any value.
+
+- `target` must be `"draft-2020-12"` or `"draft-07"`. Anything else throws.
+- `libraryOptions` are passed to `toJsonSchema()` as options, e.g. `{ dialect: null }`.
+- Fallback handlers you configure or pass in `libraryOptions` still apply. Only the default throwing handlers are replaced.
+
+# From JSON Schema
+
+> Parse a JSON Schema into a Type with @ark/json-schema and give the result a static type.
+
+```bash
+npm install @ark/json-schema
+```
+
+`@ark/json-schema` depends on a fixed `arktype` version, not a peer range. If your `arktype` version differs, your package manager installs a second copy.
+
+`jsonSchemaToType` parses a JSON Schema into a Type:
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const User = jsonSchemaToType({
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		age: { type: "integer", minimum: 0 }
+	},
+	required: ["name"]
+})
+
+User.expression // "{ name: string, age?: number % 1 & >= 0 }"
+User({ name: "Ada" }) // { name: "Ada" }
+// ArkErrors: age must be an integer (was 1.5)
+User({ name: "Ada", age: 1.5 })
+```
+
+`true` parses to `unknown` and `false` to `never`.
+
+## Giving it a type
+
+The schema is a value, so its shape isn't inferred. `jsonSchemaToType` returns a `Type<unknown>`. If you know the shape, cast it with `.as`:
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const User = jsonSchemaToType({
+	type: "object",
+	properties: { name: { type: "string" } },
+	required: ["name"]
+}).as<{ name: string }>()
+
+// { name: string }
+const user = User.assert({ name: "Ada" })
+```
+
+`.as` is not checked against the schema, so keep the two in sync yourself.
+
+## Invalid schemas
+
+`jsonSchemaToType` throws if the schema is malformed or uses a keyword it can't convert:
+
+```ts
+// TraversalError: minLength must be non-negative (was -1)
+jsonSchemaToType({ type: "string", minLength: -1 })
+
+// ParseError: divisor must be an integer (was 0.5)
+jsonSchemaToType({ type: "number", multipleOf: 0.5 })
+```
+
+[Keyword support](https://arktype.io/docs/json-schema/support) lists what throws and what is ignored.
+
+## Typing a schema
+
+A schema written inline in the call is checked against the `JsonSchema` type. To check one you declare separately, use `JsonSchema` from `arktype`:
+
+```ts
+import type { JsonSchema } from "arktype"
+
+const Age = {
+	type: "integer",
+	minimum: 0
+} satisfies JsonSchema.Numeric
+```
+
+## JsonSchemaScope
+
+`JsonSchemaScope` is the [module](https://arktype.io/docs/scopes) `jsonSchemaToType` validates its input with. Its `ArraySchema`, `NumberSchema`, `ObjectSchema` and `StringSchema` Types check a schema of that kind without converting it:
+
+```ts
+import { JsonSchemaScope } from "@ark/json-schema"
+
+// ArkErrors: minimum must be a number (was a string)
+JsonSchemaScope.NumberSchema({ type: "number", minimum: "0" })
+```
+
+## Back to JSON Schema
+
+A Type from `jsonSchemaToType` has [`toJsonSchema()`](https://arktype.io/docs/json-schema/to-json-schema) like any other. Keywords it checks with a `narrow`, like `uniqueItems`, `contains`, `oneOf` and `not`, come back as [`predicate` fallbacks](https://arktype.io/docs/json-schema/to-json-schema#fallback-codes), so `toJsonSchema()` throws for them unless you handle that code.
+
+# Keyword support
+
+> Which JSON Schema keywords @ark/json-schema converts, which throw, and which it ignores.
+
+`jsonSchemaToType` handles each keyword in one of three ways:
+
+- **supported**: the Type checks it.
+- **throws**: `jsonSchemaToType` throws a `ParseError` or `TraversalError`.
+- **ignored**: the keyword has no effect, so the Type accepts values the schema rejects.
+
+Some ignored keywords, like `if`, `dependentRequired` and `minContains`, are type errors in a schema written inline, since arktype's `JsonSchema` type doesn't include them. A schema loaded at runtime gets no such check.
+
+## Core
+
+| keyword | support | notes |
+| - | - | - |
+| `true`, `false` | supported | `unknown` and `never` |
+| `type` | supported | a single name or an array of names |
+| `const`, `enum` | supported | together, they throw. An object or array value is compared by reference, so no parsed value matches it |
+| `$ref`, `$dynamicRef` | **throws** | not resolved. Alone, the schema throws. Next to `type`, they are ignored |
+| `$defs`, `definitions` | **ignored** | nothing can refer to them |
+| `title`, `description`, `default`, `examples`, `deprecated`, `readOnly`, `writeOnly` | **ignored** | not validation keywords. `default` is not applied either |
+| `$schema`, `$id`, `$anchor`, `$comment` | **ignored** | |
+| `contentEncoding`, `contentMediaType` | **ignored** | |
+| `nullable` (OpenAPI) | **ignored** | write `type: ["string", "null"]` instead |
+
+Every schema needs at least one of `type`, `const`, `enum`, `allOf`, `anyOf`, `oneOf` or `not`. Without one it throws, which includes `{}` and subschemas like `{ minimum: 0 }` inside `allOf`.
+
+With an array of names in `type`, keywords for a single type are ignored. `{ type: ["string", "number"], minLength: 2 }` accepts `"a"`. `integer` is the exception: `{ type: ["integer", "null"] }` rejects `1.5`.
+
+## Composition
+
+| keyword | support | notes |
+| - | - | - |
+| `allOf`, `anyOf` | supported | |
+| `oneOf`, `not` | supported | checked with a `narrow` |
+| `if`, `then`, `else` | **ignored** | |
+
+Only one composition keyword per schema is used. If a schema has more than one, the first in the order `allOf`, `anyOf`, `not`, `oneOf` is used and the rest are ignored. Nest them in `allOf` to combine them:
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const T = jsonSchemaToType({
+	allOf: [
+		{ anyOf: [{ type: "string" }, { type: "number" }] },
+		{ not: { const: 0 } }
+	]
+})
+
+// ArkErrors: must be not: 0 (was 0)
+T(0)
+```
+
+## Strings
+
+| keyword | support | notes |
+| - | - | - |
+| `minLength`, `maxLength` | supported | |
+| `pattern` | supported | |
+| `format` | **ignored** | |
+
+## Numbers
+
+| keyword | support | notes |
+| - | - | - |
+| `minimum`, `maximum` | supported | with `exclusiveMinimum` or `exclusiveMaximum` on the same side, throws |
+| `exclusiveMinimum`, `exclusiveMaximum` | supported | a number. Draft 4's boolean form throws |
+| `multipleOf` | supported | integers only. `0.5` throws |
+
+## Arrays
+
+| keyword | support | notes |
+| - | - | - |
+| `items` | supported | a schema, a boolean, or an array of schemas (draft 7 tuples) |
+| `prefixItems` | supported | with `items`, `items` is the rest. With `items` and `additionalItems`, throws |
+| `additionalItems` | supported | after an array of `items`. After a single `items` schema, throws. Alone, it applies to every item, though JSON Schema ignores it there |
+| `minItems`, `maxItems` | supported | |
+| `uniqueItems` | supported | checked with a `narrow` |
+| `contains` | supported | checked with a `narrow` |
+| `minContains`, `maxContains` | **ignored** | |
+| `unevaluatedItems` | **ignored** | |
+
+## Objects
+
+| keyword | support | notes |
+| - | - | - |
+| `properties`, `required` | supported | `required` without `properties`, or naming a key not in it, throws |
+| `additionalProperties` | supported | `false` rejects other keys. A schema is checked with a `narrow` |
+| `patternProperties` | supported | |
+| `propertyNames` | supported | keys that don't match are rejected. A `required` key that doesn't match throws |
+| `minProperties`, `maxProperties` | supported | checked with a `narrow` |
+| `dependentRequired`, `dependentSchemas`, `dependencies` | **ignored** | |
+| `unevaluatedProperties` | **ignored** | |
+
+Keywords checked with a `narrow` don't appear in the Type's `expression` and can't be [converted back](https://arktype.io/docs/json-schema/from-json-schema#back-to-json-schema) without a fallback.

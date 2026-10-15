@@ -1,34 +1,35 @@
 import type { Metadata } from "next"
 
+export const siteUrl = "https://arktype.io"
+
+export const tagline =
+	"TypeScript's 1:1 validator, optimized from editor to runtime"
+
 export type MetadataOptions = {
+	/** the page's own title; the root layout's template adds " · ArkType" */
 	title?: string
+	description?: string
 	ogImage?: string
+	/** the page's path, for og:url, e.g. "/playground" */
+	url?: string
 }
 
 export const defineMetadata = ({
-	title = "ArkType",
-	ogImage = "og.png"
+	title,
+	description = tagline,
+	ogImage = "og.png",
+	url = ""
 }: MetadataOptions): Metadata => ({
-	title: `${title}: TypeScript's 1:1 validator, optimized from editor to runtime`,
-	description: "TypeScript's 1:1 validator, optimized from editor to runtime",
-	keywords: [
-		"ArkType",
-		"TypeScript",
-		"JavaScript",
-		"runtime validation",
-		"schema",
-		"type-safe",
-		"validator",
-		"syntax"
-	],
+	...(title && { title }),
+	description,
 	openGraph: {
-		title,
-		description: "TypeScript's 1:1 validator, optimized from editor to runtime",
-		url: "https://arktype.io/",
+		title: title ?? "ArkType",
+		description,
+		url: `${siteUrl}${url}`,
 		siteName: "ArkType",
 		images: [
 			{
-				url: `https://arktype.io/image/${ogImage}`,
+				url: `${siteUrl}/image/${ogImage}`,
 				width: 1200,
 				height: 600
 			}
@@ -37,8 +38,5 @@ export const defineMetadata = ({
 	},
 	twitter: {
 		card: "summary_large_image"
-	},
-	icons: {
-		icon: "/image/favicon.svg"
 	}
 })

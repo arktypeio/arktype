@@ -1,6 +1,7 @@
-import type { omit, unionToPropwiseXor } from "@ark/util"
-import { Tab, Tabs, type TabsProps } from "fumadocs-ui/components/tabs"
-import { Children, isValidElement, type FC } from "react"
+import type { unionToPropwiseXor } from "@ark/util"
+import { Children, isValidElement, type ReactNode } from "react"
+import { TabGroup } from "./mdx/TabGroup.tsx"
+import { tabPanelsOf } from "./mdx/Tabs.tsx"
 
 export const syntaxKinds = [
 	"string",
@@ -8,33 +9,9 @@ export const syntaxKinds = [
 	"tuple",
 	"args",
 	"generic"
-	// don't infer as readonly since Fumadocs (incorrectly) doesn't support that
-] as const satisfies string[]
+] as const
 
 export type SyntaxKind = (typeof syntaxKinds)[number]
-
-export const SyntaxTabs: React.FC<omit<TabsProps, "items">> = ({
-	children,
-	...rest
-}) => {
-	const usedKinds = Children.toArray(children as never).flatMap(child => {
-		if (!isValidElement(child)) return []
-		if (!child.props) return []
-
-		const props = child.props as SyntaxTabProps
-
-		const matchingKind = syntaxKinds.find(k => props[k])
-		if (!matchingKind) return []
-
-		return matchingKind
-	})
-
-	return (
-		<Tabs {...rest} items={usedKinds}>
-			{children}
-		</Tabs>
-	)
-}
 
 type DiscriminatedSyntaxKindProps = unionToPropwiseXor<
 	{
@@ -42,10 +19,40 @@ type DiscriminatedSyntaxKindProps = unionToPropwiseXor<
 	}[SyntaxKind]
 >
 
-type SyntaxTabProps = DiscriminatedSyntaxKindProps & {
-	children: React.ReactNode
+export type SyntaxTabProps = DiscriminatedSyntaxKindProps & {
+	children: ReactNode
 }
 
-export const SyntaxTab: FC<SyntaxTabProps> = props => (
-	<Tab value={syntaxKinds.find(k => props[k])!}>{props.children}</Tab>
-)
+/** one way of writing a definition, only meaningful inside SyntaxTabs */
+export const SyntaxTab = (props: SyntaxTabProps) => <>{props.children}</>
+
+const kindOf = (props: Partial<Record<SyntaxKind, unknown>>) =>
+	syntaxKinds.find(kind => props[kind])
+
+/**
+ * The same definition in each syntax it can be written in, in a fixed
+ * order. The reader's choice applies to every SyntaxTabs on the site and
+ * is remembered; a group without it shows its first syntax.
+ */
+export const SyntaxTabs = ({ children }: { children: ReactNode }) => {
+	const contentByKind = new Map<SyntaxKind, ReactNode>()
+	for (const child of Children.toArray(children)) {
+		if (!isValidElement<SyntaxTabProps>(child)) continue
+		const kind = kindOf(child.props)
+		if (kind) contentByKind.set(kind, child.props.children)
+	}
+	const kinds = syntaxKinds.filter(kind => contentByKind.has(kind))
+	const { code, panels } = tabPanelsOf(
+		kinds.map(kind => contentByKind.get(kind))
+	)
+	return (
+		<TabGroup
+			labels={kinds}
+			groupId="syntax"
+			persist
+			code={code}
+			label="Syntax"
+			panels={panels}
+		/>
+	)
+}

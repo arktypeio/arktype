@@ -43,7 +43,8 @@
 	"search.exclude": {
 		"**/out": true,
 		"**/.next": true,
-		"**/.source": true,
+		"ark/docs/public/docs": true,
+		"ark/docs/public/llms*.txt": true,
 		"**/components/dts": true,
 		"**/apiData.ts": true
 	},
