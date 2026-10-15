@@ -11,7 +11,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import type { TraverseApply } from "../shared/traversal.ts"
+import type { InternalTraversal } from "../shared/traversal.ts"
 
 export declare namespace Pattern {
 	export interface ExpandedSchema extends BaseNodeInput {
@@ -72,7 +72,7 @@ export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 			}
 		:	this.instance.test.bind(this.instance)
 
-	traverseApply: TraverseApply<string> = (data, ctx) => {
+	traverseApply(data: string, ctx: InternalTraversal): void {
 		if (!this.traverseAllows(data))
 			ctx.errorFromNodeContext(this.errorContext, data)
 	}

@@ -16,9 +16,8 @@ import {
 import {
 	allowsInBranch,
 	transform,
-	type TraverseAllows,
-	type TraverseApply,
-	type TraverseTransform
+	type InternalTraversal,
+	type AliasDepth
 } from "../shared/traversal.ts"
 import type { makeRootAndArrayPropertiesMutable } from "../shared/utils.ts"
 import type { Structure } from "../structure/structure.ts"
@@ -210,10 +209,13 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		return this.basis?.defaultShortDescription ?? "present"
 	}
 
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		this.children.every(child => child.traverseAllows(data as never, ctx))
+	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+		return this.children.every(child =>
+			child.traverseAllows(data as never, ctx)
+		)
+	}
 
-	traverseApply: TraverseApply = (data, ctx) => {
+	traverseApply(data: unknown, ctx: InternalTraversal): void {
 		const errorCount = ctx.currentErrorCount
 		if (this.basis) {
 			this.basis.traverseApply(data, ctx)
@@ -254,8 +256,9 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		}
 	}
 
-	traverseTransform: TraverseTransform = (data, ctx) =>
-		transform(ctx, this.structure!, data)
+	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
+		return transform(ctx, this.structure!, data)
+	}
 
 	// a failed basis, or prestructural before a structure or predicate, stops Apply, though its parent continues unless ctx fails fast
 	compile(js: NodeCompiler): void {

@@ -31,7 +31,7 @@ import {
 	type kindLeftOf
 } from "./shared/implement.ts"
 import { sets } from "./shared/sets.ts"
-import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
+import type { InternalTraversal, AliasDepth } from "./shared/traversal.ts"
 
 export declare namespace Constraint {
 	export interface Declaration extends BaseNodeDeclaration {
@@ -88,10 +88,13 @@ export abstract class BaseConstraint<
 export abstract class InternalPrimitiveConstraint<
 	d extends Constraint.Declaration
 > extends BaseConstraint<d> {
-	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
+	abstract traverseAllows(
+		data: d["prerequisite"],
+		ctx: InternalTraversal | AliasDepth
+	): boolean
 	abstract override compileCondition(js: NodeCompiler, data: string): string
 
-	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
+	traverseApply(data: d["prerequisite"], ctx: InternalTraversal): void {
 		if (!this.traverseAllows(data, ctx))
 			ctx.errorFromNodeContext(this.errorContext as never, data)
 	}

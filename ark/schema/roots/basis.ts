@@ -1,6 +1,6 @@
 import type { NodeCompiler } from "../shared/compile.ts"
 import { compileObjectLiteral } from "../shared/implement.ts"
-import type { TraverseApply } from "../shared/traversal.ts"
+import type { InternalTraversal } from "../shared/traversal.ts"
 import { BaseRoot, type InternalRootDeclaration } from "./root.ts"
 
 export abstract class InternalBasis<
@@ -9,7 +9,7 @@ export abstract class InternalBasis<
 	abstract override compileCondition(js: NodeCompiler, data: string): string
 	declare structure: undefined
 
-	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
+	traverseApply(data: d["prerequisite"], ctx: InternalTraversal): void {
 		if (!this.traverseAllows(data, ctx))
 			ctx.errorFromNodeContext(this.errorContext as never, data)
 	}

@@ -40,9 +40,7 @@ import {
 	transform,
 	traverseKey,
 	type InternalTraversal,
-	type TraverseAllows,
-	type TraverseApply,
-	type TraverseTransform
+	type AliasDepth
 } from "../shared/traversal.ts"
 import { assertDefaultValueAssignability } from "./optional.ts"
 
@@ -297,7 +295,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	}
 
 	// minLength/maxLength should be checked by Intersection before either traversal
-	traverseAllows: TraverseAllows<array> = (data, ctx) => {
+	traverseAllows(data: array, ctx: InternalTraversal | AliasDepth): boolean {
 		for (let i = 0; i < data.length; i++) {
 			if (!this.elementAtIndex(data, i).node.traverseAllows(data[i], ctx))
 				return false
@@ -306,7 +304,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		return true
 	}
 
-	traverseApply: TraverseApply<array> = (data, ctx) => {
+	traverseApply(data: array, ctx: InternalTraversal): void {
 		const errorCount = ctx.currentErrorCount
 		let i = 0
 		for (; i < data.length; i++) {
@@ -329,8 +327,9 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}))
 	}
 
-	traverseTransform: TraverseTransform<array> = (data, ctx) =>
-		this.transformElements(data, ctx, false)
+	traverseTransform(data: array, ctx: InternalTraversal): unknown {
+		return this.transformElements(data, ctx, false)
+	}
 
 	transformElements(
 		data: array,

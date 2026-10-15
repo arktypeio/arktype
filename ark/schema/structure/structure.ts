@@ -50,9 +50,7 @@ import {
 	traverseKey,
 	type InternalTraversal,
 	type TraversalKind,
-	type TraverseAllows,
-	type TraverseApply,
-	type TraverseTransform
+	type AliasDepth
 } from "../shared/traversal.ts"
 import {
 	hasArkKind,
@@ -444,20 +442,22 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return result
 	}
 
-	traverseAllows: TraverseAllows<object> = (data, ctx) =>
-		this._traverse("Allows", data, ctx as never)
+	traverseAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
+		return this._traverse("Allows", data, ctx as never)
+	}
 
-	traverseApply: TraverseApply<object> = (data, ctx) =>
-		this.sharesTransformedKeys && transformsValid(ctx) ?
+	traverseApply(data: object, ctx: InternalTraversal): void {
+		if (this.sharesTransformedKeys && transformsValid(ctx))
 			this.applySharedKeys(data, ctx)
-		:	this._traverse("Apply", data, ctx)
+		else this._traverse("Apply", data, ctx)
+	}
 
-	protected _traverse = (
+	protected _traverse(
 		traversalKind: TraversalKind,
 		data: object,
 		ctx: InternalTraversal,
 		transformsKeys = true
-	): boolean => {
+	): boolean {
 		const errorCount = ctx?.currentErrorCount ?? 0
 		for (let i = 0; i < this.props.length; i++) {
 			const prop = this.props[i]
@@ -549,7 +549,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return true
 	}
 
-	traverseTransform: TraverseTransform<object> = (data, ctx) => {
+	traverseTransform(data: object, ctx: InternalTraversal): unknown {
 		const errorCount = ctx.currentErrorCount
 		let out: any = data
 		const transformKey = (

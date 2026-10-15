@@ -18,9 +18,8 @@ import {
 	pipeOf,
 	transform,
 	type Traversal,
-	type TraverseAllows,
-	type TraverseApply,
-	type TraverseTransform
+	type InternalTraversal,
+	type AliasDepth
 } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"
@@ -196,14 +195,17 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 		js.return(result)
 	}
 
-	traverseAllows: TraverseAllows = (data, ctx) =>
-		!this.introspectableIn || this.introspectableIn.traverseAllows(data, ctx)
+	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+		return (
+			!this.introspectableIn || this.introspectableIn.traverseAllows(data, ctx)
+		)
+	}
 
-	traverseApply: TraverseApply = (data, ctx) => {
+	traverseApply(data: unknown, ctx: InternalTraversal): void {
 		if (this.introspectableIn) applyMember(this.introspectableIn, data, ctx)
 	}
 
-	traverseTransform: TraverseTransform = (data, ctx) => {
+	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
 		const errorCount = ctx.currentErrorCount
 		let result =
 			this.introspectableIn?.transforms ?

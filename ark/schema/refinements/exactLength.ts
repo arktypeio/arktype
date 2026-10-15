@@ -11,7 +11,6 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import type { TraverseAllows } from "../shared/traversal.ts"
 import { assertLengthRule, type LengthBoundableData } from "./range.ts"
 
 export declare namespace ExactLength {
@@ -60,8 +59,9 @@ export class ExactLengthNode extends InternalPrimitiveConstraint<ExactLength.Dec
 		assertLengthRule("exactLength", this.rule)
 	}
 
-	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
-		data.length === this.rule
+	traverseAllows(data: LengthBoundableData): boolean {
+		return data.length === this.rule
+	}
 
 	compileCondition(js: NodeCompiler, data: string): string {
 		return `${data}.length === ${this.rule}`

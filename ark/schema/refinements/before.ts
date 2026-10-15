@@ -6,7 +6,6 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
 	type BaseRangeInner,
@@ -56,7 +55,9 @@ const implementation: nodeImplementationOf<Before.Declaration> =
 export class BeforeNode extends BaseRange<Before.Declaration> {
 	collapsibleLimitString = describeCollapsibleDate(this.rule)
 
-	traverseAllows: TraverseAllows<Date> = data => data <= this.rule
+	traverseAllows(data: Date): boolean {
+		return data <= this.rule
+	}
 
 	impliedBasis: BaseRoot = $ark.intrinsic.Date.internal
 }

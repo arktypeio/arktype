@@ -275,9 +275,11 @@ const precompile = (
 		declared,
 		compiledUnit,
 		compiledUnit(
-			Object.values(linkage.dependencies).map(
-				([node, kind]) => node[`traverse${kind}`]
-			),
+			Object.values(linkage.dependencies).map(([node, kind]) => {
+				const traverse: Fn = node[`traverse${kind}`]!
+				// an uncompiled node's traversal is its method, which reads the node
+				return hasOwn(node, `traverse${kind}`) ? traverse : traverse.bind(node)
+			}),
 			[...linkage.refs.keys()]
 		),
 		linkage.referencesById,

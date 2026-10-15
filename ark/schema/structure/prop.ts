@@ -14,8 +14,8 @@ import { $ark } from "../shared/registry.ts"
 import {
 	applyValue,
 	traverseKey,
-	type TraverseAllows,
-	type TraverseApply
+	type InternalTraversal,
+	type AliasDepth
 } from "../shared/traversal.ts"
 import type { Optional } from "./optional.ts"
 import type { Required } from "./required.ts"
@@ -74,7 +74,7 @@ export abstract class BaseProp<
 		return "default" in this.inner
 	}
 
-	traverseAllows: TraverseAllows<object> = (data, ctx) => {
+	traverseAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
 		if (this.key in data) {
 			// ctx will be undefined if this node isn't context-dependent
 			return traverseKey(
@@ -86,7 +86,7 @@ export abstract class BaseProp<
 		return this.optional
 	}
 
-	traverseApply: TraverseApply<object> = (data, ctx) => {
+	traverseApply(data: object, ctx: InternalTraversal): void {
 		if (this.key in data) {
 			traverseKey(
 				this.key,

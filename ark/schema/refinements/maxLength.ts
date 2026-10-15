@@ -5,7 +5,6 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import type { TraverseAllows } from "../shared/traversal.ts"
 import {
 	BaseRange,
 	type BaseRangeInner,
@@ -54,8 +53,9 @@ const implementation: nodeImplementationOf<MaxLength.Declaration> =
 export class MaxLengthNode extends BaseRange<MaxLength.Declaration> {
 	readonly impliedBasis: BaseRoot = $ark.intrinsic.lengthBoundable.internal
 
-	traverseAllows: TraverseAllows<LengthBoundableData> = data =>
-		data.length <= this.rule
+	traverseAllows(data: LengthBoundableData): boolean {
+		return data.length <= this.rule
+	}
 }
 
 export const MaxLength = {

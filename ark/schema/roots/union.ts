@@ -49,9 +49,8 @@ import {
 	transformed,
 	transformResolution,
 	type Traversal,
-	type TraverseAllows,
-	type TraverseApply,
-	type TraverseTransform
+	type InternalTraversal,
+	type AliasDepth
 } from "../shared/traversal.ts"
 import {
 	describeBranches,
@@ -233,7 +232,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return this._discriminant === undefined ? null : this.compiledDiscriminant
 	}
 
-	traverseAllows: TraverseAllows = (data, ctx) => {
+	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
 		const discriminant = this.foundDiscriminant
 		if (!discriminant) {
 			return this.branches.some(b =>
@@ -249,7 +248,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return caseNode === true || !!caseNode?.traverseAllows(data, ctx)
 	}
 
-	traverseApply: TraverseApply = (data, ctx) => {
+	traverseApply(data: unknown, ctx: InternalTraversal): void {
 		const discriminant = this.compiledDiscriminant
 		if (discriminant) {
 			const value = valueAtPath(discriminant.path, data)
@@ -279,13 +278,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const branch = this.branches[i]
 			ctx.pushBranch()
 			applyMember(branch, data, ctx)
-			if (!ctx.hasError()) return ctx.popBranch()
+			if (!ctx.hasError()) {
+				ctx.popBranch()
+				return
+			}
 			errors.push(ctx.popBranch()!.error as ArkError)
 		}
 		errorFromUnion(ctx, errors, this.meta, data)
 	}
 
-	traverseTransform: TraverseTransform = (data, ctx) => {
+	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
 		const discriminant = this.foundDiscriminant
 		if (discriminant) {
 			const k = caseKeyOf(discriminant, valueAtPath(discriminant.path, data))
@@ -293,7 +295,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			if (caseNode === true || !caseNode?.transforms) return data
 			const member = discriminant.members?.[k]
 			return member ?
-					transformResolution(ctx, member.id, data, caseNode.traverseTransform)
+					transformResolution(
+						ctx,
+						member.id,
+						data,
+						caseNode.traverseTransform!,
+						caseNode
+					)
 				:	transform(ctx, caseNode, data)
 		}
 		// Apply also takes the first valid branch

@@ -15,7 +15,6 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import type { TraverseAllows } from "../shared/traversal.ts"
 
 export declare namespace Divisor {
 	export interface Inner {
@@ -67,7 +66,9 @@ export class DivisorNode extends InternalPrimitiveConstraint<Divisor.Declaration
 			throwParseError(writeNonIntegerDivisorMessage(this.rule))
 	}
 
-	traverseAllows: TraverseAllows<number> = data => data % this.rule === 0
+	traverseAllows(data: number): boolean {
+		return data % this.rule === 0
+	}
 
 	compileCondition(js: NodeCompiler, data: string): string {
 		return `${data} % ${this.rule} === 0`

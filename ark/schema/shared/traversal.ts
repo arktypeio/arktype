@@ -389,14 +389,14 @@ export const transform = (
 	data: unknown
 ): unknown =>
 	node.isTransformedById ?
-		transformResolution(ctx, node.id, data, node.traverseTransform)
+		transformResolution(ctx, node.id, data, node.traverseTransform!, node)
 	:	transformAcyclic(ctx, node, data)
 
 const transformAcyclic = (
 	ctx: InternalTraversal,
 	node: BaseNode,
 	data: unknown
-): unknown => transformed(ctx, node.traverseTransform(data, ctx), data)
+): unknown => transformed(ctx, node.traverseTransform!(data, ctx), data)
 
 // a transform that doesn't require ctx returns its errors
 export const transformed = (
@@ -552,18 +552,19 @@ export const allowsInBranch = (
 	data: unknown
 ): boolean =>
 	node.allowsRequiresTraversal ?
-		allowsInBranchBy(ctx, node.traverseAllows, data)
+		allowsInBranchBy(ctx, node.traverseAllows, data, node)
 	:	node.allows(data)
 
 // compiled code passes a node's Allows rather than the node, which a precompiled validator doesn't hold
 export const allowsInBranchBy = (
 	ctx: InternalTraversal,
 	allows: TraverseAllows,
-	data: unknown
+	data: unknown,
+	node?: BaseNode
 ): boolean => {
 	const pathLength = ctx.path.length
 	ctx.pushBranch()
-	const allowed = allows(data, ctx)
+	const allowed = allows.call(node, data, ctx)
 	// compiled Allows returns false without popping the keys it pushed
 	ctx.path.length = pathLength
 	return ctx.popBranch()!.errorCount === 0 && allowed
@@ -628,10 +629,11 @@ export const transformResolution = (
 	ctx: InternalTraversal,
 	id: string,
 	data: unknown,
-	transform: TraverseTransform
+	transform: TraverseTransform,
+	node?: BaseNode
 ): unknown => {
 	if (!ctx.tracksTransforms || !hasDomain(data, "object"))
-		return transformed(ctx, transform(data, ctx), data)
+		return transformed(ctx, transform.call(node, data, ctx), data)
 	const transformedByData = ((ctx.transformedByResolutionId ??= {})[id] ??=
 		new Map())
 	if (transformedByData.has(data)) {
@@ -643,7 +645,7 @@ export const transformResolution = (
 		return placeholder
 	}
 	transformedByData.set(data, transforming)
-	const result = transformed(ctx, transform(data, ctx), data)
+	const result = transformed(ctx, transform.call(node, data, ctx), data)
 	const placeholder = transformedByData.get(data)
 	if (placeholder === transforming || !canFill(placeholder, result)) {
 		transformedByData.set(data, result)
@@ -860,7 +862,7 @@ export const applyCyclic = <ctx extends InternalTraversal>(
 ): ctx => {
 	// a rerun would transform each value Apply found valid again
 	if (node.transforms) {
-		applyResolution(node.trackedId, node.traverseApply, data, ctx)
+		applyResolution(node.trackedId, node, data, ctx)
 		return ctx
 	}
 	resolutionsOf(ctx).tracked = false
@@ -870,19 +872,19 @@ export const applyCyclic = <ctx extends InternalTraversal>(
 	} catch (e) {
 		if (e !== untrackedBound) throw e
 		ctx = traversalOf(ctx, data)
-		applyResolution(node.trackedId, node.traverseApply, data, ctx)
+		applyResolution(node.trackedId, node, data, ctx)
 	}
 	return ctx
 }
 
 export const applyResolution = (
 	id: string,
-	apply: TraverseApply,
+	node: BaseNode,
 	data: unknown,
 	ctx: InternalTraversal
 ): void => {
 	if (enterResolution(ctx, id, data) !== undefined) return
-	apply(data, ctx)
+	node.traverseApply(data, ctx)
 	exitResolution(ctx)
 }
 
@@ -912,7 +914,7 @@ export const applyMember = (
 	member: BaseNode = node
 ): void =>
 	member.includesAlias ?
-		applyResolution(member.id, node.traverseApply, data, ctx)
+		applyResolution(member.id, node, data, ctx)
 	:	node.traverseApply(data, ctx)
 
 // a value Allows accepts isn't applied, and is transformed where that finds its morphs' errors unless its structure transforms it
@@ -929,8 +931,7 @@ export const applyValue = (
 		:	allowsInBranch(ctx, node, data))
 	)
 		return
-	if (node.entersResolution)
-		applyResolution(node.id, node.traverseApply, data, ctx)
+	if (node.entersResolution) applyResolution(node.id, node, data, ctx)
 	else node.traverseApply(data, ctx)
 }
 

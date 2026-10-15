@@ -93,9 +93,8 @@ import {
 	transformResolution,
 	type Traversal,
 	type FailHandler,
-	type TraverseAllows,
-	type TraverseApply,
-	type TraverseTransform
+	type InternalTraversal,
+	type AliasDepth
 } from "./shared/traversal.ts"
 import {
 	composing,
@@ -539,7 +538,8 @@ export abstract class BaseNode<
 							ctx,
 							this.id,
 							data,
-							this.traverseTransform
+							this.traverseTransform!,
+							this
 						)
 						return ctx.hasError() ? ctx.finalize(onFail) : result
 					}
@@ -610,9 +610,13 @@ export abstract class BaseNode<
 		return ctx
 	}
 
-	abstract traverseAllows: TraverseAllows<d["prerequisite"]>
-	abstract traverseApply: TraverseApply<d["prerequisite"]>
-	declare traverseTransform: TraverseTransform<d["prerequisite"]>
+	abstract traverseAllows(
+		data: d["prerequisite"],
+		ctx: InternalTraversal | AliasDepth
+	): boolean
+	abstract traverseApply(data: d["prerequisite"], ctx: InternalTraversal): void
+	traverseTransform?(data: d["prerequisite"], ctx: InternalTraversal): unknown
+
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
 	// undefined where checking data takes more than one expression

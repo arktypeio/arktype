@@ -26,7 +26,7 @@ import {
 	traverseKey,
 	type InternalTraversal,
 	type TraverseAllows,
-	type TraverseApply
+	type AliasDepth
 } from "../shared/traversal.ts"
 
 export declare namespace Index {
@@ -120,8 +120,8 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 			allowsInBranch(ctx as InternalTraversal, this.signature, k)
 		:	this.signature.traverseAllows(k, ctx)
 
-	traverseAllows: TraverseAllows<object> = (data, ctx) =>
-		stringAndSymbolicEntriesOf(data).every(entry => {
+	traverseAllows(data: object, ctx: InternalTraversal | AliasDepth): boolean {
+		return stringAndSymbolicEntriesOf(data).every(entry => {
 			if (this.allowsKey(entry[0], ctx)) {
 				return traverseKey(
 					entry[0],
@@ -131,8 +131,9 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 			}
 			return true
 		})
+	}
 
-	traverseApply: TraverseApply<object> = (data, ctx) => {
+	traverseApply(data: object, ctx: InternalTraversal): void {
 		for (const entry of stringAndSymbolicEntriesOf(data)) {
 			if (this.allowsKey(entry[0], ctx))
 				traverseKey(entry[0], () => applyValue(this.value, entry[1], ctx), ctx)

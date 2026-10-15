@@ -23,9 +23,8 @@ import {
 	maxAliasDepth,
 	maxAliasVisits,
 	transformResolution,
-	type TraverseAllows,
-	type TraverseApply,
-	type TraverseTransform
+	type InternalTraversal,
+	type AliasDepth
 } from "../shared/traversal.ts"
 import { $ark } from "../shared/registry.ts"
 import {
@@ -236,7 +235,7 @@ Resolution: ${printable(resolution)}`)
 			:	this.expression
 	}
 
-	traverseAllows: TraverseAllows = (data, ctx) => {
+	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
 		if (!this.closesCycle) return this.resolution.traverseAllows(data, ctx)
 		if (typeof ctx === "number") {
 			if (ctx < maxAliasDepth && ++aliasVisits.count <= maxAliasVisits)
@@ -251,18 +250,20 @@ Resolution: ${printable(resolution)}`)
 		)
 	}
 
-	traverseApply: TraverseApply = (data, ctx) => {
+	traverseApply(data: unknown, ctx: InternalTraversal): void {
 		const resolution = this.resolution
-		applyResolution(resolution.id, resolution.traverseApply, data, ctx)
+		applyResolution(resolution.id, resolution, data, ctx)
 	}
 
-	traverseTransform: TraverseTransform = (data, ctx) =>
-		transformResolution(
+	traverseTransform(data: unknown, ctx: InternalTraversal): unknown {
+		return transformResolution(
 			ctx,
 			this.resolution.id,
 			data,
-			this.resolution.traverseTransform
+			this.resolution.traverseTransform!,
+			this.resolution
 		)
+	}
 
 	compile(js: NodeCompiler): void {
 		const resolution = this.resolution

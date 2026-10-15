@@ -11,8 +11,8 @@ import { describePredicate } from "./shared/errorWriters.ts"
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
 import type {
 	Traversal,
-	TraverseAllows,
-	TraverseApply
+	InternalTraversal,
+	AliasDepth
 } from "./shared/traversal.ts"
 
 export declare namespace Predicate {
@@ -66,7 +66,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 
 	expression: string = baseNameOf(this.predicate)
 	// called detached, as compiled code calls it
-	traverseAllows: TraverseAllows = (data, ctx) => {
+	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
 		const predicate = this.predicate
 		return predicate(data, ctx as never)
 	}
@@ -78,7 +78,7 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 		meta: this.meta
 	}
 
-	traverseApply: TraverseApply = (data, ctx) => {
+	traverseApply(data: unknown, ctx: InternalTraversal): void {
 		const errorCount = ctx.currentErrorCount
 		const predicate = this.predicate
 		if (!predicate(data, ctx.external) && ctx.currentErrorCount === errorCount)
