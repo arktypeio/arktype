@@ -84,7 +84,7 @@ const swappedOf = (
 export interface ShadowContract {
 	members?: { meta?: boolean }
 	mutatesInput?: boolean
-	errors?: "none"
+	errors?: "first" | "none"
 }
 
 export const shadow = (
@@ -722,19 +722,19 @@ const validateBoth = (
 	try {
 		arktype = inArktype(() => outcomeOf(() => run(pair.original, data)))
 		current.phase = "replay"
-		current.skipsApply =
-			pair.contract.errors === "none" &&
-			("thrown" in arktype ?
-				thrownIssuesOf(arktype.thrown) !== undefined
-			:	hasArkKind(arktype.value, "errors"))
+		current.skipsApply = pair.contract.errors === "none" && fails(arktype)
 		precompiled = outcomeOf(() =>
 			run(pair.counterpart, current.isCopied ? copy : data)
 		)
 	} finally {
 		validation = outer
 	}
+	// errors "first" stops at an issue, before calls arktype makes after it
+	const stopsEarly = pair.contract.errors === "first" && fails(arktype)
 	const unreplayed =
-		current.skipsApply ? undefined : current.calls[current.replayed]
+		current.skipsApply || stopsEarly ?
+			undefined
+		:	current.calls[current.replayed]
 	current.mismatch ??= unreplayed && [describeCall(unreplayed), "makes no call"]
 	const observation = () =>
 		`${member}(${printable(data)})${isWritten ? ", the input as arktype's morphs left it" : ""}`
@@ -757,6 +757,15 @@ const validateBoth = (
 			}))
 		}
 	}
+	if (stopsEarly) {
+		const { issues } = precompiledObserved as { issues?: KeptIssue[] }
+		const { issues: all } = inArktype(() =>
+			observe(arktype, writesInput, false)
+		)
+		const found =
+			issues && firstIssueOf(issues, all as KeptIssue[], counterparts)
+		if (found) arktypeObserved.issues = found
+	}
 	// a validator writing what it transforms into its input leaves it unlike arktype's
 	if (current.isCopied && !pair.contract.mutatesInput && !current.skipsApply) {
 		arktypeObserved.input = data
@@ -773,19 +782,46 @@ const validateBoth = (
 	return settle(arktype)
 }
 
+const fails = (outcome: Outcome) =>
+	"thrown" in outcome ?
+		thrownIssuesOf(outcome.thrown) !== undefined
+	:	hasArkKind(outcome.value, "errors")
+
+// arktype's issues alike a first-issue validator's, all at one path
+const firstIssueOf = (
+	found: KeptIssue[],
+	issues: KeptIssue[],
+	counterparts: Map<object, unknown>
+): KeptIssue[] | undefined => {
+	const unmatched = [...issues]
+	const pathOf = (issue: KeptIssue) => issue.path.map(String).join("\0")
+	const matched: KeptIssue[] = []
+	for (const issue of found) {
+		const i = unmatched.findIndex(
+			candidate =>
+				pathOf(candidate) === pathOf(found[0]) &&
+				isAlike(candidate, issue, new Map(counterparts), false)
+		)
+		if (i === -1) return
+		matched.push(...unmatched.splice(i, 1))
+	}
+	return matched.length ? matched : undefined
+}
+
 const observe = (
 	outcome: Outcome,
-	writesInput = false
+	writesInput = false,
+	grouped = true
 ): Record<string, unknown> => {
 	if ("thrown" in outcome) {
-		const issues = thrownIssuesOf(outcome.thrown)
+		const issues = thrownIssuesOf(outcome.thrown, grouped)
 		return issues ?
 				{ threw: "TraversalError", issues: comparedOf(issues, writesInput) }
 			:	{ threw: thrownOf(outcome.thrown) }
 	}
 	const { value } = outcome
 	return hasArkKind(value, "errors") ?
-			{ issues: comparedOf(keptIssuesOf(value), writesInput) }
+			{ issues: comparedOf(keptIssuesOf(value, grouped), writesInput) }
 		:	{ out: value }
 }
 

@@ -134,6 +134,14 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			attest(shadow.reported).equals(divergent.map(k => shadow[k]))
 		})
 
+		it("compares a first-issue validator by the one issue it returns", () => {
+			const first = JSON.parse(
+				run({ ...testedOptions, errors: "first", shadow: true })
+			)
+			attest(agreed(first)).equals(agreed(plain))
+			attest(first.reported).equals(divergent.map(k => first[k]))
+		}).timeout(60000)
+
 		it("throws where a library reads a member its validator lacks", () => {
 			attest([shadow.listed, shadow.unbaked]).snap([
 				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at reading array, since its validator lacks it: arktype gives "function", its validator undefined',

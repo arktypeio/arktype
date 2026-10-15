@@ -461,7 +461,7 @@ export class Precompiler {
 		const contract: ShadowContract = {}
 		if (this.members.meta === false) contract.members = { meta: false }
 		if (this.mutatesInput) contract.mutatesInput = true
-		if (this.errors === "none") contract.errors = "none"
+		if (this.errors && this.errors !== "all") contract.errors = this.errors
 		this.shadowContract =
 			Object.keys(contract).length ? JSON.stringify(contract) : undefined
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"

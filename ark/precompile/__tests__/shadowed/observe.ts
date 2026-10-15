@@ -168,6 +168,8 @@ export const observe = async (): Promise<Record<string, unknown>> => {
 			Detached({ name: "a", tags: ["b", "a"] })
 		],
 		shorts: Shorts({ a: "x", b: "yyy" }).toString(),
+		// failing twice, where a first-issue validator stops at a
+		shortsTwice: Shorts({ a: "xxx", b: "yyy" }).toString(),
 		named: [named({ name: "ab" }), outcomeOf(() => named({ name: "abc" }))],
 		positive: Positive(-1).toString(),
 		nested: [

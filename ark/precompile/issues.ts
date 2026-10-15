@@ -9,8 +9,13 @@ export interface KeptIssue {
 }
 
 // what a standalone validator's errors keep of arktype's: each failed check's code, path and data, which arktype groups by path and orders as each path first failed
-export const keptIssuesOf = (errors: ArkErrors): KeptIssue[] => {
-	const issues = errors.issues.flatMap((issue): readonly ArkIssue[] =>
+export const keptIssuesOf = (
+	errors: ArkErrors,
+	// false reads every issue added, which a first-issue validator keeps one of
+	grouped = true
+): KeptIssue[] => {
+	const added: readonly ArkIssue[] = grouped ? errors.issues : errors._
+	const issues = added.flatMap((issue): readonly ArkIssue[] =>
 		issue.code === "intersection" ?
 			(issue as ArkError<"intersection">).errors
 		:	[issue]
@@ -24,6 +29,7 @@ export const keptIssuesOf = (errors: ArkErrors): KeptIssue[] => {
 	return issues
 		.filter(
 			issue =>
+				!grouped ||
 				(neverByPath.get(issue.path.map(String).join("\0")) ?? issue) === issue
 		)
 		.map(({ code, path, data }) => ({ code, path: [...path], data }))
@@ -45,9 +51,12 @@ export const thrownErrorsOf = (thrown: unknown): ArkErrors | undefined =>
 		((thrown as { cause?: unknown }).cause as ArkErrors)
 	:	undefined
 
-export const thrownIssuesOf = (thrown: unknown): KeptIssue[] | undefined => {
+export const thrownIssuesOf = (
+	thrown: unknown,
+	grouped = true
+): KeptIssue[] | undefined => {
 	const errors = thrownErrorsOf(thrown)
-	return errors && keptIssuesOf(errors)
+	return errors && keptIssuesOf(errors, grouped)
 }
 
 const sortKeyOf = (issue: KeptIssue) =>
