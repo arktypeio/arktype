@@ -306,6 +306,17 @@ A union finds its discriminant when it's compiled, checks data, describes a miss
 
 Checking a default as it's defined no longer counts as a use of the Type it's checked against, so a Type used by several defaults isn't compiled until data is checked against it, and that first check runs uncompiled.
 
+### Order keys by code unit
+
+Keys are ordered by code unit, where they were ordered as `JSON.stringify` writes them, so only keys that first differ where JSON escapes a character, or where one ends and the other continues, can change places. Keys now order differently when they first differ:
+
+- where one key ends and the other continues with a space or `!`: `"a"` now precedes `"a b"` and `"a!"`
+- at a control character, against a space, `!`, `"`, a backslash, a character from `#` to `[`, or some other control characters
+- at `"`, against a character from `#` to `[`
+- at a lone surrogate, against a character from U+005D to U+D7FF: `"ab"` now precedes `"a\uD800"`
+
+Other keys that first differ at a space, `!`, `"` or a backslash keep their order. That order is the order of keys in a Type's `expression` and `json`, its JSON Schema's `properties` and `required`, the errors it reports, and the outputs it rebuilds, e.g. adding defaults or deleting undeclared keys.
+
 ### Collect a scope's references when they're read
 
 An `@ark/schema` scope's `references` and `referencesById` are collected when first read rather than as it exports, unless it binds precompiled units or includes an alias, so `type` no longer walks every builtin node as arktype starts.

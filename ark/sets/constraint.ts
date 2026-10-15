@@ -121,7 +121,7 @@ export const sortSiblings = <node extends BaseNode>(
 	return nodes
 }
 
-// props are ordered by key, which orders them as their hashes would without
+// props are ordered by key, so equal structures list them alike without
 // writing their values
 const compareSiblings = (l: BaseNode, r: BaseNode): number =>
 	l.hasKind("required") || l.hasKind("optional") ?
@@ -136,7 +136,7 @@ const compareKeys = (l: Key, r: Key): number =>
 		:	1
 	: typeof r === "symbol" ? -1
 	: l === r ? 0
-	: JSON.stringify(l) < JSON.stringify(r) ? -1
+	: l < r ? -1
 	: 1
 
 type FlatIntersectionInner = Intersection.Inner & Structure.Inner

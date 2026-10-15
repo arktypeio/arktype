@@ -65,6 +65,25 @@ contextualize(() => {
 		])
 	})
 
+	it("orders keys by code unit", () => {
+		// a key precedes another it prefixes, even one continuing with a space
+		const T = type({ "a b": "string", a: "number" })
+
+		attest(T.expression).snap("{ a: number, a b: string }")
+		attest(T({}).toString()).snap(
+			'a must be a number (was missing)\nvalue at ["a b"] must be a string (was missing)'
+		)
+		// where JSON escapes a character, its order and the code units' differ
+		const keys = type({
+			"a\uD800": "1",
+			ab: "1",
+			"a b": "1",
+			"a\t": "1",
+			a: "1"
+		}).props.map(prop => prop.key)
+		attest(keys).equals(["a", "a\t", "a b", "ab", "a\uD800"])
+	})
+
 	it("union", () => {
 		const T = type({ foo: "string" }).or({ bar: "number" })
 		attest(() => T.props).throws(writeLiteralUnionEntriesMessage(T.expression))
