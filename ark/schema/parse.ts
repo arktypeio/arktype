@@ -76,10 +76,12 @@ export interface NodeParseContextInput<kind extends NodeKind = NodeKind>
 	def: NodeInput<kind>
 }
 
-export interface NodeParseContext<kind extends NodeKind = NodeKind>
-	extends NodeParseContextInput<kind>,
-		AttachedParseContext {
+export interface NodeParseContext<kind extends NodeKind = NodeKind> {
+	kind: kind
+	def: NodeInput<kind>
+	$: BaseScope
 	id: NodeId
+	prereduced: boolean | undefined
 }
 
 export const writeInvalidSchemaMessage = (schema: unknown): string =>

@@ -1801,14 +1801,16 @@ export abstract class BaseScope<$ extends {} = {}> {
 		if (kind === "unit" && Object.is((input as Unit.Inner).unit, -0))
 			input = { ...input, unit: 0 } as never
 
-		const ctx = this.createParseContext({
-			...opts,
-			kind,
-			def: input as NodeInput,
-			prefix: opts.alias ?? kind
-		})
-
-		return this.bindReference(parseNode(ctx)) as never
+		bootstrap()
+		return this.bindReference(
+			parseNode({
+				kind,
+				def: input as NodeInput,
+				$: this,
+				id: opts.id ?? registerNodeId(opts.alias ?? kind),
+				prereduced: opts.prereduced
+			})
+		) as never
 	}
 
 	parse = (def: unknown, opts: BaseParseOptions = {}): BaseRoot =>

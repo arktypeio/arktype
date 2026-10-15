@@ -325,6 +325,10 @@ An `@ark/schema` scope's `references` and `referencesById` are collected when fi
 
 An `@ark/schema` node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, where each node held them as functions of its own, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`. A node the JIT compiles holds compiled `traverseAllows` and `traverseApply` of its own, which run detached, and a compiled `traverseTransform` only if it transforms; a jitless scope's nodes hold none. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
 
+### Parse a node from a context of its own shape
+
+`@ark/schema`'s `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context with options parsing a node never read.
+
 ### Read a `Date`'s `getTime` when checking it
 
 Checking that a `Date` is valid reads its `getTime` and calls it as a method when it's `Date.prototype.getTime`, which is faster than calling that function on the `Date`. A getter or a `Proxy` trap for `getTime` on a `Date` now runs as it's checked.
