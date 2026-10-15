@@ -311,6 +311,77 @@ export const precompileModule = (
 	opts?: PrecompileOptions
 ): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
 
+// the CLI checks options before it reads a module, as the constructor does
+export const assertPrecompileOptions = (opts?: PrecompileOptions): void => {
+	const members = opts?.members ?? {}
+	const cache = opts?.runtime === "arktype"
+	if (
+		opts?.members !== undefined &&
+		objectKindOrDomainOf(opts.members) !== "object"
+	) {
+		throwError(
+			writeOptionValueMessage("members", printable(opts.members), "an object")
+		)
+	}
+	for (const member in members) {
+		if (
+			!includes(defaultMembers, member) &&
+			!includes(introspectionMembers, member)
+		)
+			throwError(writeUnknownMemberMessage(printable(member)))
+		const kept = members[member as ValidatorMember]
+		if (kept !== undefined && typeof kept !== "boolean") {
+			throwError(
+				writeOptionValueMessage(
+					`members[${JSON.stringify(member)}]`,
+					printable(kept),
+					"a boolean"
+				)
+			)
+		}
+	}
+	if (
+		opts?.config !== undefined &&
+		opts.config !== false &&
+		(typeof opts.config !== "string" || !opts.config)
+	) {
+		throwError(
+			writeOptionValueMessage(
+				"config",
+				printable(opts.config),
+				"a module path or false"
+			)
+		)
+	}
+	for (const [option, values] of entriesOf(enumOptions)) {
+		const value = opts?.[option]
+		if (value !== undefined && !includes(values, value)) {
+			throwError(
+				writeOptionValueMessage(
+					option,
+					printable(value),
+					describeBranches(values.map(value => JSON.stringify(value)))
+				)
+			)
+		}
+	}
+	for (const option of booleanOptions) {
+		if (opts?.[option] !== undefined && typeof opts[option] !== "boolean") {
+			throwError(
+				writeOptionValueMessage(option, printable(opts[option]), "a boolean")
+			)
+		}
+	}
+	if (members["~standard.jsonSchema"] && members["~standard"] === false)
+		throwError(standardJsonSchemaWithoutStandardMessage)
+	const standaloneOption =
+		cache && standaloneOptions.find(option => opts?.[option] !== undefined)
+	if (standaloneOption)
+		throwError(writeArktypeRuntimeOptionMessage(standaloneOption))
+	if (cache && opts?.config === false)
+		throwError(writeArktypeRuntimeOptionMessage("config: false"))
+}
+
 export class Precompiler {
 	graph: ModuleGraph
 	interpreter: Interpreter
@@ -378,75 +449,7 @@ export class Precompiler {
 		this.lazy = opts?.lazy !== false
 		this.mutatesInput = opts?.mutatesInput === true
 		this.optimize = opts?.optimize ?? "speed"
-		if (
-			opts?.members !== undefined &&
-			objectKindOrDomainOf(opts.members) !== "object"
-		) {
-			throwError(
-				writeOptionValueMessage("members", printable(opts.members), "an object")
-			)
-		}
-		for (const member in this.members) {
-			if (
-				!includes(defaultMembers, member) &&
-				!includes(introspectionMembers, member)
-			)
-				throwError(writeUnknownMemberMessage(printable(member)))
-			const kept = this.members[member as ValidatorMember]
-			if (kept !== undefined && typeof kept !== "boolean") {
-				throwError(
-					writeOptionValueMessage(
-						`members[${JSON.stringify(member)}]`,
-						printable(kept),
-						"a boolean"
-					)
-				)
-			}
-		}
-		if (
-			opts?.config !== undefined &&
-			opts.config !== false &&
-			(typeof opts.config !== "string" || !opts.config)
-		) {
-			throwError(
-				writeOptionValueMessage(
-					"config",
-					printable(opts.config),
-					"a module path or false"
-				)
-			)
-		}
-		for (const [option, values] of entriesOf(enumOptions)) {
-			const value = opts?.[option]
-			if (value !== undefined && !includes(values, value)) {
-				throwError(
-					writeOptionValueMessage(
-						option,
-						printable(value),
-						describeBranches(values.map(value => JSON.stringify(value)))
-					)
-				)
-			}
-		}
-		for (const option of booleanOptions) {
-			if (opts?.[option] !== undefined && typeof opts[option] !== "boolean") {
-				throwError(
-					writeOptionValueMessage(option, printable(opts[option]), "a boolean")
-				)
-			}
-		}
-		if (
-			this.members["~standard.jsonSchema"] &&
-			this.members["~standard"] === false
-		)
-			throwError(standardJsonSchemaWithoutStandardMessage)
-		const standaloneOption =
-			this.mode === "cache" &&
-			standaloneOptions.find(option => opts?.[option] !== undefined)
-		if (standaloneOption)
-			throwError(writeArktypeRuntimeOptionMessage(standaloneOption))
-		if (this.mode === "cache" && !this.configures)
-			throwError(writeArktypeRuntimeOptionMessage("config: false"))
+		assertPrecompileOptions(opts)
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
 				this.members[member] !== false ? []

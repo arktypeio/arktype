@@ -160,8 +160,8 @@ forms.ts:16:16  island
 			"--checks",
 			"types"
 		)
-		attest([status, stderr.match(/^Error: (.*)$/m)?.[1]]).equals([
-			1,
+		attest([status, stderr.split("\n")[0]]).equals([
+			2,
 			writeArktypeRuntimeOptionMessage("checks")
 		])
 	})
@@ -172,6 +172,9 @@ forms.ts:16:16  island
 				["--runtime", "strict"],
 				["--fail-under", "most"],
 				["--members", "assert"],
+				["--members", "[1]"],
+				["--checks", "bogus"],
+				["--errors", "bogus"],
 				["--config", "config.ts", "--no-config"]
 			].map(args => {
 				const result = cli("--check", ...args)
@@ -181,6 +184,9 @@ forms.ts:16:16  island
 			"2 --runtime must be arktype (was strict)",
 			"2 --fail-under must be a percentage (was most)",
 			"2 --members must be JSON (was assert)",
+			"2 members is [1], which isn't an object",
+			'2 checks is "bogus", which isn\'t "types", "helpers" or "none"',
+			'2 errors is "bogus", which isn\'t "all", "first" or "none"',
 			"2 --config names the module calling configure(), which --no-config says none does"
 		])
 	})
