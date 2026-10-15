@@ -1692,8 +1692,24 @@ return [${returned.join(", ")}]
 			) ?
 				applied
 			:	undefined
+		// else a creator the build writes makes a compact root apply itself
+		const made =
+			(
+				!fused &&
+				!ownsValidator &&
+				!isTemplate &&
+				typeof applied === "object" &&
+				// a unit wrapped to write in place still leads with its Allows
+				allows ===
+					`${applied.args.replace(/^runtime\.inPlace(?:Parts|Transforms)\((.+)\)$/, "$1")}[0]` &&
+				!isCreatedByRuntime(members, this.baking)
+			) ?
+				applied
+			:	undefined
 		const args = [
 			...(fused ? [fused.args]
+			: made ?
+				[this.emitApplier(made.params, made.apply, made.failure), made.args]
 			: ownsValidator && !isCompact ?
 				["runtime.callingRootApply", `[${allows}, ${rootApply()}]`]
 			:	[rootApply(), allows]),
@@ -1707,7 +1723,7 @@ return [${returned.join(", ")}]
 		const created = `${
 			isTemplate ? "["
 			: !isCreatedByRuntime(members, this.baking) ?
-				`${this.creatorOf(members, ownsValidator, fused)}(`
+				`${this.creatorOf(members, ownsValidator, fused, !!made)}(`
 			: ownsValidator ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
@@ -1720,7 +1736,8 @@ return [${returned.join(", ")}]
 	creatorOf(
 		members: ReadonlySet<ValidatorMember>,
 		ownsValidator: boolean,
-		applier?: RootApplier
+		applier?: RootApplier,
+		makes = false
 	): string {
 		const keepsMeta = members.has("meta")
 		const hasAttributes =
@@ -1731,7 +1748,9 @@ return [${returned.join(", ")}]
 				"make(parts, configuredOnFail)"
 			:	`(data, pipedFromCtx, onFail = configuredOnFail) => pipedFromCtx ? runtime.${this.baking.detailsErrors ? "pipedInto" : "pipedIntoUndetailed"}(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
 		const body = [
-			applier ? `const rootApply = ${applier.apply}` : "",
+			applier ? `const rootApply = ${applier.apply}`
+			: makes ? "const rootApply = make(parts)"
+			: "",
 			!keepsMeta ? ""
 			: this.baking.readsConfig ?
 				"const configuredOnFail = attributes.meta.onFail ?? runtime.runtimeConfig.onFail"
@@ -1741,7 +1760,7 @@ return [${returned.join(", ")}]
 				`validator.assert = ${this.frozen("(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)")}`
 			:	"",
 			hasAttributes ? "runtime.assign(validator, attributes)" : "",
-			`validator.allows = ${this.frozen(ownsValidator ? "parts[0]" : "allows")}`,
+			`validator.allows = ${this.frozen(ownsValidator || makes ? "parts[0]" : "allows")}`,
 			members.has("~standard") ?
 				`validator["~standard"] = ${this.frozen(`{
 		vendor: "arktype",
@@ -1760,7 +1779,7 @@ return [${returned.join(", ")}]
 			.map(statement => `\t${statement}`)
 			.join("\n")
 		const params = [
-			...(ownsValidator ? ["make", "parts"]
+			...(ownsValidator || makes ? ["make", "parts"]
 			: applier ? [applier.params]
 			: ["rootApply", "allows"]),
 			...(hasAttributes ? ["attributes"] : []),
