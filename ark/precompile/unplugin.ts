@@ -101,23 +101,27 @@ export const precompile: UnpluginInstance<
 				)
 			},
 			async handler(id, importer) {
+				// webpack awaits this unguarded, so it reports an error rather than crash
+				const refuse = (message: string): undefined => {
+					if (meta.framework !== "webpack") throwError(message)
+					this.error(message)
+				}
 				if (id.startsWith("~arktype/")) return `\0${id}`
 				if (!importer) return
 				// a virtual module has no directory of its own, so arktype resolves from the module it was written for
 				if (importer.startsWith("\0~arktype/"))
 					return host.resolve(id, importersById[importer])
 				if (isUndetailed && schemaSpecifier.test(id)) {
-					return host.resolve(
-						undetailedSpecifierOf(id) ??
-							throwError(writeUndetailedImportMessage(importer, id)),
-						importer
-					)
+					const undetailed = undetailedSpecifierOf(id)
+					return undetailed ?
+							host.resolve(undetailed, importer)
+						:	refuse(writeUndetailedImportMessage(importer, id))
 				}
 				if (!runtimeSpecifiers.includes(id)) return
 				const { errors, warnings } = await readDependency(importer)
 				for (const warning of warnings) this.warn(warning)
-				// thrown, since esbuild drops an error reported without a resolution
-				if (errors.length) throwError(errors.join("\n"))
+				// thrown elsewhere, as esbuild drops an error reported unresolved
+				if (errors.length) return refuse(errors.join("\n"))
 				if (resolvesToRuntime(id, opts))
 					return host.resolve("arktype/runtime", importer)
 			}

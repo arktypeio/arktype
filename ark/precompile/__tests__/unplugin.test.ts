@@ -876,6 +876,24 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		).snap(["ark/schema/runtime.ts", "ark/schema/runtimeNone.ts"])
 	}).timeout(60000)
 
+	it("reports a module it refuses to webpack rather than throw, as webpack awaits its resolution unguarded", async () => {
+		const importer = join(undetailed, "node_modules", "reads", "index.js")
+		const { resolveId } = precompile.raw(
+			{ cwd: join(undetailed, "reads"), errors: "none" },
+			{ framework: "webpack", webpack: { compiler: {} as never }, versions: {} }
+		) as { resolveId: { handler: (...args: unknown[]) => Promise<unknown> } }
+		const reported: string[] = []
+		const resolved = await resolveId.handler.call(
+			{ error: (message: string) => reported.push(message) },
+			"@ark/schema",
+			importer
+		)
+		attest(resolved).equals(undefined)
+		attest(reported).equals([
+			writeUndetailedImportMessage(importer, "@ark/schema")
+		])
+	})
+
 	it("precompiles a structure whose predicate reads ctx, which an intersection's Apply checks before its own predicate", async () => {
 		const root = writeFixture(
 			{
