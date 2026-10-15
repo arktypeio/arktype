@@ -80,6 +80,10 @@ export const pageUrl = (contentDir: string, path: string): string => {
 	return ["/docs", ...segments].join("/")
 }
 
+/** a file's path under the content directory, with "/" on every platform */
+const contentPath = (contentDir: string, path: string) =>
+	relative(contentDir, path).split(sep).join("/")
+
 const readMeta = (dir: string): MetaJson | undefined => {
 	const path = join(dir, "meta.json")
 	return existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : undefined
@@ -105,7 +109,7 @@ export const buildPageTree = (contentDir: string): PageTree => {
 		if (existing) return existing
 		const parsed = parseMdx(readFileSync(path, "utf8"))
 		if (parsed.problem)
-			errors.push(`${relative(contentDir, path)}: ${parsed.problem}`)
+			errors.push(`${contentPath(contentDir, path)}: ${parsed.problem}`)
 		const url = pageUrl(contentDir, path)
 		const page: Page = {
 			url,
@@ -149,7 +153,7 @@ export const buildPageTree = (contentDir: string): PageTree => {
 			if (isDir(path)) return [resolveFolder(path, section)]
 
 			warnings.push(
-				`${relative(contentDir, join(dir, "meta.json"))} lists "${entry}", which doesn't exist`
+				`${contentPath(contentDir, join(dir, "meta.json"))} lists "${entry}", which doesn't exist`
 			)
 			return []
 		})
@@ -242,7 +246,7 @@ export const buildPageTree = (contentDir: string): PageTree => {
 		const duplicate = pageByUrl.get(page.url)
 		if (duplicate) {
 			errors.push(
-				`${relative(contentDir, page.path)} and ${relative(contentDir, duplicate.path)} both have the url ${page.url}`
+				`${contentPath(contentDir, page.path)} and ${contentPath(contentDir, duplicate.path)} both have the url ${page.url}`
 			)
 		} else pageByUrl.set(page.url, page)
 	}

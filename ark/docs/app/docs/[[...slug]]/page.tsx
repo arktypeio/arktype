@@ -1,7 +1,7 @@
 import type { Metadata } from "next"
 import { notFound } from "next/navigation"
 import { readFileSync } from "node:fs"
-import { relative } from "node:path"
+import { relative, sep } from "node:path"
 import { mdxComponents } from "../../../components/mdx/components.tsx"
 import { DocsShell } from "../../../components/shell/DocsShell.tsx"
 import { HashRedirect } from "../../../components/shell/HashRedirect.tsx"
@@ -98,7 +98,7 @@ export default async function DocsPage({ params }: Props) {
 	const { Content, toc } = await compileMdx(body)
 	const entries = page.frontmatter.toc === false ? [] : toc
 	const markdownUrl = `${page.url}.md`
-	const editUrl = `https://github.com/arktypeio/arktype/edit/main/${relative(`${repoArkDir}/..`, page.path)}`
+	const editUrl = `https://github.com/arktypeio/arktype/edit/main/${relative(`${repoArkDir}/..`, page.path).split(sep).join("/")}`
 	// a post's last commit would read as when it was written
 	const isPost = section.id === "blog" && page.url !== section.url
 
