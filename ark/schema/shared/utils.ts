@@ -61,8 +61,10 @@ export const hasArkKind = <kind extends ArkKind>(
 	kind: kind
 ): value is ArkKinds[kind] => arkKindOf(value) === kind
 
-export const isNode = (value: unknown): value is BaseNode =>
-	hasArkKind(value, "root") || hasArkKind(value, "constraint")
+export const isNode = (value: unknown): value is BaseNode => {
+	const kind = arkKindOf(value)
+	return kind === "root" || kind === "constraint"
+}
 
 export const inProgress: {
 	definitions: number
