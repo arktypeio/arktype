@@ -115,28 +115,28 @@ resolveAlias: { "@ark/schema/runtime": "@ark/schema/runtime/none" }
 
 `optimize: "size"` writes validators for size rather than speed. Their functions compile as they're first called rather than as their module loads, validators whose root applies are written alike share one, which each validator calls from a closure of `length` 2, a traversal leaves out a `ctx` it doesn't read, and in the modules the plugin and drivers write, a unit's traversals are declared at the top level of its module rather than returned by a function. A validation returns the same, running more instructions, as the benchmarks count them:
 
-- a site calling several validators in turn, 49% more, as V8 can't inline what the closure and root apply they share call
-- bundled by esbuild, which turns `const` at a module's top level into `var`, which V8 optimizes less, up to 9% more where data is valid and 22% where it isn't. Rolldown keeps `const`, as Rollup does, so every other call runs within 5% of `"speed"`
-- loaded unbundled, as the Node driver loads them, where a traversal another module declares is read through its import, up to 36% more
-- loading and a first call, up to 30% more with Node's compile cache, which then holds less, and from 6% fewer to 2% more without it
+- a site calling several validators in turn, 46 to 48% more, as V8 can't inline what the closure and root apply they share call
+- bundled by esbuild, which turns `const` at a module's top level into `var`, which V8 optimizes less, up to 10% more where data is valid and 31% where it isn't. Rolldown keeps `const`, as Rollup does, so every other call runs within 3% of `"speed"` where data is valid and 6% where it isn't, as a failing call reads runtime functions through their imports where the bundle leaves `arktype/runtime` external
+- loaded unbundled, as the Node driver loads them, where a traversal another module declares and each runtime function are read through their imports, up to 37% more
+- loading and a first call, up to 28% more with Node's compile cache, which then holds less, and from 9% fewer to 2% more without it
 
 What each option saves of the bundles arktype benchmarks, minified and gzipped, in bytes:
 
 | option                            | gives up                                   | login      | moltar     | shop         |
 | --------------------------------- | ------------------------------------------ | ---------- | ---------- | ------------ |
-| `errors: "none"`                  | what each issue says of what failed        | 1564 / 613 | 2110 / 690 | 12854 / 2941 |
-| `members: { assert: false }`      | `assert`                                   | 57 / 19    | 57 / 18    | 51 / 19      |
-| `members: { meta: false }`        | `meta`                                     | 75 / 31    | 75 / 29    | 271 / 38     |
-| `members: { "~standard": false }` | `~standard`                                | 123 / 53   | 123 / 56   | 115 / 49     |
-| `members: { methods: false }`     | `traverse()`, `from()` and `toString()`    | 235 / 88   | 235 / 93   | 63 / -14     |
-| `freeze: false`                   | validators and their members frozen        | 29 / 8     | 29 / 9     | 21 / 2       |
-| `config: false`                   | calling `configure()`                      | 98 / 36    | 98 / 38    | 195 / 51     |
-| `lazy: false`                     | creating a validator where it's first read | 16 / 9     | 16 / 8     | 292 / 96     |
-| `checks: "none"`                  | checking the Types a factory receives      | 97 / 50    | 97 / 49    | 1581 / 734   |
-| `mutatesInput: true`              | the input left as it was                   | 0 / 0      | 0 / 0      | 2883 / 881   |
-| `optimize: "size"`                | validating and loading as fast             | 107 / 42   | 133 / 67   | 2793 / 528   |
+| `errors: "none"`                  | what each issue says of what failed        | 1740 / 695 | 2286 / 770 | 13034 / 3019 |
+| `members: { assert: false }`      | `assert`                                   | 57 / 21    | 57 / 18    | 51 / 22      |
+| `members: { meta: false }`        | `meta`                                     | 75 / 34    | 75 / 34    | 271 / 32     |
+| `members: { "~standard": false }` | `~standard`                                | 123 / 57   | 123 / 58   | 115 / 54     |
+| `members: { methods: false }`     | `traverse()`, `from()` and `toString()`    | 227 / 91   | 229 / 91   | 208 / 30     |
+| `freeze: false`                   | validators and their members frozen        | 29 / 10    | 29 / 11    | 21 / 7       |
+| `config: false`                   | calling `configure()`                      | 98 / 40    | 98 / 40    | 195 / 56     |
+| `lazy: false`                     | creating a validator where it's first read | 16 / 10    | 16 / 7     | 292 / 98     |
+| `checks: "none"`                  | checking the Types a factory receives      | 97 / 52    | 97 / 52    | 1581 / 742   |
+| `mutatesInput: true`              | the input left as it was                   | 0 / 0      | 0 / 0      | 3098 / 956   |
+| `optimize: "size"`                | validating and loading as fast             | 133 / 66   | 159 / 86   | 3349 / 987   |
 
-Every option together leaves them 1219 / 687, 1370 / 678 and 9917 / 3650 bytes, from 3550 / 1701, 4219 / 1772 and 30827 / 8954.
+Every option together leaves them 1027 / 589, 1184 / 584 and 9182 / 3242 bytes, from 3550 / 1702, 4219 / 1771 and 30827 / 8953.
 
 ## Configuration
 

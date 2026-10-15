@@ -18,7 +18,7 @@ It needs the compiler API of TypeScript 5.5 to 6 from the optional `typescript` 
 
 ### Write standalone validators for size with `optimize: "size"`
 
-`optimize: "size"` writes validators for size rather than speed: their functions compile as they're first called, validators whose root applies are written alike share one, and a unit's traversals are declared at the top level of its module. The benchmarked login, moltar and shop apps lose 42, 67 and 528 bytes gzipped, and 44, 35 and 451 with every other option. A site calling several validators in turn runs 49% more instructions per call, and a validation bundled by esbuild or loaded unbundled up to 22% or 36% more, as the README details.
+`optimize: "size"` writes validators for size rather than speed: their functions compile as they're first called, validators whose root applies are written alike share one, and a unit's traversals are declared at the top level of its module. The benchmarked login, moltar and shop apps lose 66, 86 and 987 bytes gzipped, and 63, 51 and 632 with every other option. A site calling several validators in turn runs 46 to 48% more instructions per call, and a validation bundled by esbuild or loaded unbundled up to 31% or 37% more, as the README details.
 
 ```ts
 precompile.vite({ optimize: "size" })
@@ -26,7 +26,7 @@ precompile.vite({ optimize: "size" })
 
 ### Return one issue saying only that data is invalid with `errors: "none"`
 
-A failed standalone validation returns errors holding one issue at the root, whose message is `is invalid`, as is that of an issue a callback reads below it, so no check's description, message or reporting pass ships: the benchmarked login, moltar and shop apps lose 613, 690 and 2941 bytes gzipped. Those errors have no `throw()`: `assert` throws a plain `Error` saying `is invalid` whose `cause` is the errors, so no `TraversalError` ships, and an `onFail` calling `errors.throw()` fails. The validators run on `@ark/schema/runtime/none`, a copy of the runtime whose errors are a class of its own, which the plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to, failing a module that imports `@ark/schema`, whose errors aren't the copy's, and a runtime island.
+A failed standalone validation returns errors holding one issue at the root, whose message is `is invalid`, as is that of an issue a callback reads below it, so no check's description, message or reporting pass ships: the benchmarked login, moltar and shop apps lose 695, 770 and 3019 bytes gzipped. Those errors have no `throw()`: `assert` throws a plain `Error` saying `is invalid` whose `cause` is the errors, so no `TraversalError` ships, and an `onFail` calling `errors.throw()` fails. The validators run on `@ark/schema/runtime/none`, a copy of the runtime whose errors are a class of its own, which the plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to, failing a module that imports `@ark/schema`, whose errors aren't the copy's, and a runtime island.
 
 ```ts
 precompile.vite({ errors: "none" })
