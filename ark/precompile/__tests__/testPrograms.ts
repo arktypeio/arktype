@@ -888,6 +888,22 @@ const exclusions: Allowance[] = [
 						precompiled.meta === serialize({}) &&
 						keywordMetaObservations.has(original.meta))
 			)
+	},
+	{
+		reason:
+			"a function's name the program redefines after arktype first read it",
+		matches: ({ perturbation, original, precompiled }) =>
+			perturbation === "name" &&
+			Object.keys({ ...original, ...precompiled }).every(k => {
+				const read = comparable(original[k])
+				const reread = comparable(precompiled[k])
+				return (
+					read === reread ||
+					new RegExp(
+						`^${reread.replace(/[$()*+.?[\\\]^{|}]/g, "\\$&").replace(/perturbed/g, "\\w+")}$`
+					).test(read)
+				)
+			})
 	}
 ]
 
