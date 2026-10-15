@@ -39,7 +39,10 @@ const entry = async (scenario: Scenario, library: Library) =>
 	: library === "typia" ?
 		`export * from "../out/typia/apps/${scenario}/typia.js"`
 	: library === "ajv" ? await ajvModule(scenario)
-	: `export * from "./${scenario}/${library}.ts"`
+	: library === "zodCompiled" ?
+		// zod's global mode compiles each schema at its first parse
+		`import "zod/compile"\nexport * from "./${scenario}/zod.ts"`
+	:	`export * from "./${scenario}/${library}.ts"`
 
 export interface Bundle {
 	js: string

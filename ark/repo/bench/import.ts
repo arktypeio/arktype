@@ -5,6 +5,7 @@ import { spawnSync } from "node:child_process"
 import { mkdirSync, rmSync, writeFileSync } from "node:fs"
 import { loadavg } from "node:os"
 import { join } from "node:path"
+import { isDeepStrictEqual } from "node:util"
 import { bundle, scenarios, type Scenario } from "./bundle.ts"
 import { libraries, type Library } from "./libraries.ts"
 import { pinned, standingOf, summarize } from "./stats.ts"
@@ -76,6 +77,7 @@ const parsed: Record<Scenario, [name: string, data: object]> = {
 const isValid: Record<Library, (name: string) => string> = {
 	valibot: name => `m.safeParse(m.${name}, data).success`,
 	zod: name => `m.${name}.safeParse(data).success`,
+	zodCompiled: name => `m.${name}.safeParse(data).success`,
 	zodMini: name => `m.safeParse(m.${name}, data).success`,
 	typia: name => `m.${name}(data).success`,
 	ajv: name => `m.${name}(data)`,
@@ -108,6 +110,31 @@ const arms = scenarios.flatMap(scenario =>
 
 for (const arm of arms)
 	writeFileSync(arm.path, (await bundle(arm.scenario, arm.library)).js)
+
+// each bundle has its own copy of zod, so results compare by their parts
+const zodResultOf = (result: any) => [
+	result.success,
+	result.data,
+	result.error?.issues
+]
+
+// compiled zod must answer as zod does, and compile rather than fall back to zod's runtime
+for (const scenario of scenarios) {
+	const [name, data] = parsed[scenario]
+	const zod = await import(join(out, `${scenario}.zod.js`))
+	const compiled = await import(join(out, `${scenario}.zodCompiled.js`))
+	for (const input of [data, {}]) {
+		if (
+			!isDeepStrictEqual(
+				zodResultOf(compiled[name].safeParse(input)),
+				zodResultOf(zod[name].safeParse(input))
+			)
+		)
+			throw new Error(`zodCompiled disagrees with zod on ${scenario}`)
+	}
+	if (!compiled[name]._zod.bag.validator)
+		throw new Error(`zod/compile left ${scenario} on zod's runtime parser`)
+}
 
 const cold = { ...process.env }
 // the repo's ts runner resolves arktype to its sources through NODE_OPTIONS

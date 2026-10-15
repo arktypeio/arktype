@@ -7,6 +7,7 @@ import { join } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 import { Settings } from "typebox/system"
 import * as v from "valibot"
+import { z } from "zod"
 import * as zm from "zod/mini"
 import { ajvOf, libraries, type Library } from "./libraries.ts"
 import * as s from "./scenarios.ts"
@@ -88,7 +89,7 @@ interface ArmSpec {
 	$?: unknown
 	config?: unknown
 	before?: () => void
-	// the library has no API for this mode, so the arm uses its closest one
+	// the library has no API for this mode, or can't compile the schema, so the arm uses its closest path
 	nearest?: boolean
 }
 
@@ -135,8 +136,7 @@ const arkArm = (
 	:	{ validator, body: f => `r = ${f}(data)` }
 
 const zodArm = (mode: Mode, validator: unknown): ArmSpec =>
-	mode === "allows" ?
-		{ validator, body: f => `r = ${f}.safeParse(data).success`, nearest: true }
+	mode === "allows" ? { validator, body: f => `r = ${f}.validate(data)` }
 	: isInvalidMode(mode) ?
 		{
 			validator,
@@ -145,14 +145,26 @@ const zodArm = (mode: Mode, validator: unknown): ArmSpec =>
 		}
 	:	{ validator, body: f => `r = ${f}.safeParse(data)` }
 
+// z.compile hands back a schema it can't compile, like a recursive one, on zod's runtime parser
+const zodCompiledOf = (schema: unknown): unknown =>
+	Array.isArray(schema) ?
+		schema.map(zodCompiledOf)
+	:	z.compile(schema as z.ZodType)
+
+const isZodCompiled = (validator: any): boolean =>
+	Array.isArray(validator) ?
+		validator.every(isZodCompiled)
+	:	validator._zod.bag.validator !== undefined
+
+const zodCompiledArm = (mode: Mode, schema: unknown): ArmSpec => {
+	const validator = zodCompiledOf(schema)
+	const arm = zodArm(mode, validator)
+	return isZodCompiled(validator) ? arm : { ...arm, nearest: true }
+}
+
 const zodMiniArm = (mode: Mode, validator: unknown): ArmSpec =>
 	mode === "allows" ?
-		{
-			validator,
-			$: zm.safeParse,
-			body: f => `r = $(${f}, data).success`,
-			nearest: true
-		}
+		{ validator, $: zm.validate, body: f => `r = $(${f}, data)` }
 	: isInvalidMode(mode) ?
 		{
 			validator,
@@ -236,6 +248,7 @@ const caseOf = (
 	arms: {
 		valibot: valibotArm(mode, validators.valibot),
 		zod: zodArm(mode, validators.zod),
+		zodCompiled: zodCompiledArm(mode, validators.zod),
 		zodMini: zodMiniArm(mode, validators.zodMini),
 		typia:
 			validators.typia === undefined ?
@@ -485,6 +498,7 @@ const failed = Symbol("failed")
 const outputOf: Record<Library, (result: any, input: unknown) => unknown> = {
 	valibot: result => (result.success ? result.output : failed),
 	zod: result => (result.success ? result.data : failed),
+	zodCompiled: result => (result.success ? result.data : failed),
 	zodMini: result => (result.success ? result.data : failed),
 	typia: result => (result.success ? result.data : failed),
 	ajv: (result, input) => (result === true ? input : failed),
@@ -532,6 +546,33 @@ const verify = (c: Case, arms: Arm[]) => {
 				)
 			}
 		}
+	}
+	verifyZodCompiled(c, arms)
+}
+
+// marked on a parse context when compiled zod hands its input to zod's runtime
+const zodFallback = Symbol.for("zod.compile.fallback")
+
+// compiled zod must return what zod does, output or issues, and valid data must stay on its compiled path
+const verifyZodCompiled = (c: Case, arms: Arm[]) => {
+	const zod = arms.find(arm => arm.library === "zod")!
+	const compiled = arms.find(arm => arm.library === "zodCompiled")!
+	const valid = c.mode === "parse" || c.mode === "strip" || c.allows === true
+	for (let i = 0; i < c.inputs.length; i++) {
+		if (
+			!isDeepStrictEqual(
+				callOnce(compiled, copy(c.inputs[i]), i),
+				callOnce(zod, copy(c.inputs[i]), i)
+			)
+		)
+			throw new Error(`zodCompiled disagrees with zod on ${c.mode} ${c.name}`)
+		const schema: any =
+			c.rotating ? (compiled.validator as unknown[])[i % 8] : compiled.validator
+		if (!isZodCompiled(schema)) continue
+		const ctx: Record<symbol, unknown> = {}
+		schema._zod.run({ value: copy(c.inputs[i]), issues: [] }, ctx)
+		if ((ctx[zodFallback] !== true) !== valid)
+			throw new Error(`zodCompiled took the wrong path on ${c.mode} ${c.name}`)
 	}
 }
 
@@ -658,7 +699,8 @@ const formatNs = (ns: number) =>
 	: `${(ns / 1e6).toFixed(2)}ms`
 
 const modeTitles: Record<Mode, string> = {
-	parse: "valid data, ns per call (median)",
+	parse:
+		"valid data, ns per call (median); zodCompiled* is a recursive schema z.compile refuses, parsed by zod's runtime",
 	strip: "valid data with undeclared keys, stripped",
 	issues:
 		"invalid data, every error as the raw result: no message text from arktype, typia or ajv (messages: false); zod, zod/mini, valibot and TypeBox write it regardless",
@@ -666,7 +708,7 @@ const modeTitles: Record<Mode, string> = {
 		"invalid data, every error with message text: arktype reads summary, typia ~standard.validate, ajv has messages: true",
 	first:
 		'invalid data, first error only, with message text: standalone built with errors: "first" (* has no first-error mode: all-errors path)',
-	allows: "boolean check (* has no boolean API: parse)"
+	allows: "boolean check"
 }
 
 for (const mode of Object.keys(modeTitles) as Mode[]) {

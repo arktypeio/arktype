@@ -5,6 +5,7 @@ import ajvKeywords from "ajv-keywords"
 export const libraries = [
 	"valibot",
 	"zod",
+	"zodCompiled",
 	"zodMini",
 	"typia",
 	"ajv",
