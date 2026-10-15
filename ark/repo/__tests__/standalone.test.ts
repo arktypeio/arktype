@@ -404,6 +404,55 @@ n must be a string or null`)
 		attest(String(created.Defaulted(isLong, next)({}))).snap("a must be long")
 	})
 
+	it("adds its issues after those its traversal holds at the same path", async () => {
+		let Str: (data: unknown, ctx: Traversal) => unknown = () => {}
+		let Num: (data: unknown, ctx: Traversal) => unknown = () => {}
+		const both = standIn(
+			(data: unknown, ctx: Traversal) => [Str(data, ctx), Num(data, ctx)],
+			"both"
+		)
+		const created = await load({
+			Str: type("string"),
+			Num: type("number"),
+			Both: {
+				type: type({ a: type("unknown").pipe(both) }),
+				params: [{ kind: "function", label: "`both`", value: both }]
+			}
+		})
+		Str = created.Str
+		Num = created.Num
+		attest(String(created.Both(both)({ a: true }))).snap(`a must be a string
+a must be a number`)
+	})
+
+	it("writes an issue it adds again at its path, though a callback read it", async () => {
+		let Inner: (data: unknown, ctx: Traversal) => unknown = () => {}
+		const readsErrors = standIn(
+			(_: unknown, ctx: Traversal) => String(ctx.errors) !== "",
+			"readserrors"
+		)
+		const wrap = standIn(
+			(data: unknown, ctx: Traversal) => Inner(data, ctx),
+			"wrap"
+		)
+		const created = await load({
+			Inner: {
+				type: type({ a: "string", b: type("unknown").narrow(readsErrors) }),
+				params: [
+					{ kind: "function", label: "`readsErrors`", value: readsErrors }
+				]
+			},
+			Wrapping: {
+				type: type({ x: type("unknown").pipe(wrap) }),
+				params: [{ kind: "function", label: "`wrap`", value: wrap }]
+			}
+		})
+		Inner = created.Inner(readsErrors)
+		attest(String(created.Wrapping(wrap)({ x: { a: 1, b: 0 } }))).snap(
+			"x.a must be a string"
+		)
+	})
+
 	it("adds its errors to a runtime island's Type piping to it under a throwing onFail", async () => {
 		const config: ArkSchemaConfig = { onFail: errors => errors.throw() }
 		const fingerprint = fingerprintOf(config)

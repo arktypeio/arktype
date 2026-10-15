@@ -6,10 +6,10 @@ import type {
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
-	addErrors,
 	ArkErrors,
 	errorsOf,
 	mergeIssues,
+	messageOf,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
 	validateStandardJsonSchemaTarget,
@@ -183,11 +183,7 @@ export const createValidator = ((
 			onFail: FailHandler | null = configuredOnFail
 		) => {
 			if (!pipedFromCtx) return rootApply(data, onFail)
-			const out = rootApply(data, null)
-			if (!(out instanceof ArkErrors)) return out
-			// added where they're piped, as a Type adds them, so a morph returning them in another value still fails
-			addErrors(pipedFromCtx, out)
-			return errorsOf(pipedFromCtx)
+			return pipedInto(pipedFromCtx, rootApply(data, null))
 		}) satisfies Fn,
 		Validator.prototype
 	)
@@ -248,8 +244,22 @@ type ValidatorArgs = [
 // added where they're piped, as a Type adds them, so a morph returning them in another value still fails
 const pipedInto = (pipedFromCtx: Traversal, out: unknown): unknown => {
 	if (!(out instanceof ArkErrors)) return out
-	addErrors(pipedFromCtx, out)
-	return errorsOf(pipedFromCtx)
+	const errors = errorsOf(pipedFromCtx)
+	if (errors._merge) errors._merge(out, pipedFromCtx.path)
+	else {
+		for (const issue of out._) {
+			errors._.push({
+				...issue,
+				path: [...pipedFromCtx.path, ...issue.path],
+				// a callback reading the errors wrote it at the old path, so it's written again unless it was supplied
+				message:
+					issue.message && issue.message === messageOf(issue) ?
+						undefined
+					:	issue.message
+			})
+		}
+	}
+	return errors
 }
 
 // what makes the validator of a root apply that isn't compact, declaring data alone so a call passing only data pads no parameters
