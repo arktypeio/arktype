@@ -751,8 +751,8 @@ name is missing`)
 	})
 
 	it("throws arktype's ParseError where the view of a Type its JSON Schema writes can't be created", async () => {
-		// the output requires the defaulted key, which the index signature's value excludes
-		const T = type({ a: "string = 'a'" }).and({ "[string]": [] })
+		// the output requires the defaulted element, which the index signature's value excludes
+		const T = type({ a: ["string = 'a'"], "[string]": "number[]" })
 		const { T: validator } = await load({ T }, undefined, undefined, [
 			"~standard.jsonSchema"
 		])
@@ -765,7 +765,7 @@ name is missing`)
 		}
 		attest(thrown(T)).snap([
 			"ParseError",
-			"Intersection at a of string and object results in an unsatisfiable type"
+			"Intersection at a[0] of string and number results in an unsatisfiable type"
 		])
 		attest(thrown(validator as never)).equals(thrown(T))
 		attest(

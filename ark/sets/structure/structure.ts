@@ -31,7 +31,11 @@ const intersectPropsAndIndex = <
 	if (r.signature.allowsRequiresContext || !r.signature.allows(l.key))
 		return null
 
-	const value = intersectNodesRoot(l.value, r.value, $)
+	// a key's transforms apply in turn once each value allows its input
+	const value =
+		l.value.includesTransform && r.value.includesTransform ?
+			intersectNodesRoot(l.value.rawIn, r.value.rawIn, $)
+		:	intersectNodesRoot(l.value, r.value, $)
 	if (value instanceof Disjoint) {
 		return kind === "optional" ?
 				($.node("optional", {
@@ -153,12 +157,8 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 
 			if (disjointResult.length) return disjointResult
 
-			// a transform applies each prop and index signature to the key in turn
-			if (
-				!l.includesTransform &&
-				!r.includesTransform &&
-				((l.index && r.props.length) || (r.index && l.props.length))
-			) {
+			// a prop meets the other side's index signatures as in one literal
+			if ((l.index && r.props.length) || (r.index && l.props.length)) {
 				return (
 					structure.reduce!(
 						(childIntersectionResult as Structure.Node).inner,

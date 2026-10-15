@@ -180,6 +180,11 @@ other must be a string (was a bigint)`)
 		attest(() => type({ kind: "'b'" }).and({ "[string]": "object" })).throws(
 			"Intersection at kind of string and object results in an unsatisfiable type"
 		)
+		attest(() =>
+			type({ a: "string.numeric.parse" }).and({ "[string]": "number" })
+		).throws(
+			"Intersection at a of string and number results in an unsatisfiable type"
+		)
 		attest(
 			type({ kind: "'b'" })
 				.or({ "[string]": "object" })

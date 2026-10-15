@@ -476,6 +476,25 @@ const types = scope({
 types.t({ listed: ["a"], a: 1 })
 ```
 
+### Check a prop against the other side's index signatures in an intersection
+
+`.and` checks each prop against the other side's index signatures as an object literal checks its own, so a prop they exclude throws a `ParseError` where it's required, and becomes `never` where it's optional, dropping its default. Previously the intersection kept both, and a union of it threw that `ParseError` when first used:
+
+```ts
+// previously { [string]: number, a: string }, now ParseError: Intersection at a of string and number results in an unsatisfiable type
+type({ a: "string" }).and({ "[string]": "number" })
+```
+
+A prop and an index signature that both transform a key transform it in turn, as they did in an intersection, now in an object literal or a union too, where they threw:
+
+```ts
+// previously ParseError: The intersection of distinct morphs at a single path is indeterminate
+const T = type({ a: "string.trim", "[string]": "string.lower" })
+
+// { a: "ab", b: " q " }
+T({ a: " AB ", b: " Q " })
+```
+
 ### Check data first when a narrow reads `ctx`
 
 A Type without morphs that has a narrow taking `ctx` checks data before collecting errors, as other Types do, so valid data is accepted faster. Errors are collected by a second pass, so on invalid data its narrows can run twice, as they can in other Types:

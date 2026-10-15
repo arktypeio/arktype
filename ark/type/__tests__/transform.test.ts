@@ -101,6 +101,8 @@ contextualize(() => {
 		const T = $.type({ a: "string.trim" }).and({ "[string]": "string.lower" })
 		const anded = T({ a: " AB ", b: " Q " })
 		attest(anded).unknown.snap({ a: "ab", b: " q " })
+		const Literal = $.type({ a: "string.trim", "[string]": "string.lower" })
+		attest(Literal({ a: " AB ", b: " Q " })).equals(anded)
 
 		const U = $.type({ "[string]": "string.trim", "[/^a/]": "string.lower" })
 		attest(U({ ab: " X ", b: " Y " })).snap({ ab: "x", b: "Y" })
@@ -120,6 +122,13 @@ contextualize(() => {
 			v: "x",
 			a: { v: "y", tagged: true }
 		})
+	})
+
+	it("discriminates a branch whose prop and index morphs apply in turn", () => {
+		const T = type({ a: "string.trim" }).and({ "[string]": "string.lower" })
+		const U = type("string").or(T)
+		attest(U(" X ")).equals(" X ")
+		attest(U({ a: " AB " })).unknown.snap({ a: "ab" })
 	})
 
 	it("contextual index on declared key", () => {
