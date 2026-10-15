@@ -8,11 +8,12 @@ const runTypeBenchWithErrorConfig = (benchErrorOnThresholdExceeded: string) =>
 		["--conditions=ark-ts", fromHere("benchThresholdTemplate.ts")],
 		{
 			cwd: dirName(),
+			// before the ATTEST_CONFIG setup() exports, where Windows sorts it
 			env: {
-				...process.env,
 				ATTEST_benchErrorOnThresholdExceeded: JSON.stringify(
 					benchErrorOnThresholdExceeded
-				)
+				),
+				...process.env
 			}
 		}
 	).status
