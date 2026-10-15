@@ -226,8 +226,8 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 			)
 		)
 
-		this._flatRefs = flatRefs
-		this._flatMorphs = []
+		this.cache.flatRefs = flatRefs
+		this.cache.flatMorphs = []
 	}
 
 	isVariadicOnly: boolean = this.prevariadic.length + this.postfixLength === 0

@@ -51,13 +51,13 @@ export abstract class BaseProp<
 		typeof this.key === "string" ? this.key : printable(this.key)
 
 	protected override initializeFlatRefs(): void {
-		this._flatRefs = append(
+		this.cache.flatRefs = append(
 			this.value.flatRefs.map(ref =>
 				flatRef([this.key, ...ref.path], ref.node)
 			),
 			flatRef([this.key], this.value)
 		)
-		this._flatMorphs = []
+		this.cache.flatMorphs = []
 	}
 
 	protected override _transform(

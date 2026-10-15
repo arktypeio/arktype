@@ -167,7 +167,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	// arktype's error lists each branch's, where a standalone issue reads only what the union describes
 	override get failureSite(): UnionSite {
-		return (this._failureSite ??= {
+		return (this.cache.failureSite ??= {
 			meta: this.meta,
 			description: expectedOf(this.meta, this.description)
 		}) as UnionSite
@@ -189,9 +189,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		// an alias branch is replaced by its resolution before the union is used
 		if (this.includesShallowAlias) return null
 		const discriminant = $ark.sets?.discriminate(this) ?? null
-		if (this._referencesById) {
+		if (this.cache.referencesById) {
 			for (const node of this.caseNodes)
-				Object.assign(this._referencesById, node.referencesById)
+				Object.assign(this.cache.referencesById, node.referencesById)
 		}
 		return discriminant
 	}

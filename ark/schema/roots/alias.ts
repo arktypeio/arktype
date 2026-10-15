@@ -4,8 +4,7 @@ import {
 	throwInternalError,
 	throwParseError,
 	type array,
-	type join,
-	type JsonObject
+	type join
 } from "@ark/util"
 import { writeInnerJson, type BaseNode } from "../node.ts"
 import { nodesByRegisteredId, type NodeId } from "../parse.ts"
@@ -82,12 +81,13 @@ const implementation: nodeImplementationOf<Alias.Declaration> =
 	})
 
 export class AliasNode extends BaseRoot<Alias.Declaration> {
-	// written when created, so a definition that resolves afterward stays a reference
-	protected override _uncollapsedInnerJson: JsonObject = writeInnerJson(this)
-	readonly expression: string = expressionOf(this)
+	readonly expression: string
 
 	constructor(...args: ConstructorParameters<typeof BaseRoot>) {
 		super(...args)
+		// written when created, so a definition that resolves afterward stays a reference
+		this.cache.uncollapsedInnerJson = writeInnerJson(this)
+		this.expression = expressionOf(this)
 		const referenced = nodesByRegisteredId[this.reference as NodeId]
 		if (hasArkKind(referenced, "context")) {
 			referenced.isReferencedById = true

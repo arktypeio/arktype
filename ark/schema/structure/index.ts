@@ -105,13 +105,13 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 	}
 
 	protected override initializeFlatRefs(): void {
-		this._flatRefs = append(
+		this.cache.flatRefs = append(
 			this.value.flatRefs.map(ref =>
 				flatRef([this.signature, ...ref.path], ref.node)
 			),
 			flatRef([this.signature], this.value)
 		)
-		this._flatMorphs = []
+		this.cache.flatMorphs = []
 	}
 
 	// a key the signature rejects is undeclared, so an error its predicate adds isn't kept
