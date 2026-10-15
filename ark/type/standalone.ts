@@ -1425,7 +1425,14 @@ return [${returned.join(", ")}]
 	}
 
 	writeValidator(root: BaseRoot): string {
-		const [rootApply, allows] = this.emitRootApply(root)
+		// a folded factory's Type is written as what constructs its validator, which each call constructs with the functions it receives
+		const isTemplate = this.templates.has(root)
+		// beyond the shortest forms, a validator is made from what the build writes, a compact root apply's being the validator itself
+		const ownsValidator = !isTemplate && !this.baking.shortest
+		const [rootApply, allows, isCompact] = this.emitRootApply(
+			root,
+			ownsValidator
+		)
 		// emitted before the key encodes it, so a value the build can't emit is refused for what it is
 		const meta =
 			keywordMetas().has(root.meta) ? "runtime.emptyMeta" : this.emit(root.meta)
@@ -1433,12 +1440,17 @@ return [${returned.join(", ")}]
 			root
 		)
 		assertDescribed(root)
-		// a folded factory's Type is written as what constructs its validator, which each call constructs with the functions it receives
-		const isTemplate = this.templates.has(root)
 		const key = `,\n\t${writeId(id)}${holes.length && !isTemplate ? `,\n\t[${holes.map(hole => this.emit(hole)).join(", ")}]` : ""}`
-		return `${isTemplate ? "[" : "runtime.createValidator("}
-	${rootApply},
-	${allows},
+		return `${
+			isTemplate ? "["
+			: ownsValidator ? "runtime.createValidatorWith("
+			: "runtime.createValidator("
+		}
+	${
+		ownsValidator && !isCompact ?
+			`runtime.callingRootApply,\n\t[${allows}, ${rootApply}]`
+		:	`${rootApply},\n\t${allows}`
+	},
 	{ meta: ${meta}${this.emitIntrospection(root)} }${key}
 ${isTemplate ? "]" : ")"}`
 	}
@@ -1629,7 +1641,10 @@ ${isTemplate ? "]" : ")"}`
 	}
 
 	// what a validator calls and the Allows it holds, its apply reading the runtime's exports with the least ctx its checks report to
-	emitRootApply(root: BaseRoot): [rootApply: string, allows: string] {
+	emitRootApply(
+		root: BaseRoot,
+		asValidator: boolean
+	): [rootApply: string, allows: string, isCompact: boolean] {
 		// a callback can read the API Traversal adds, which none of the runtime's own keywords declaring one parameter does
 		const callbacks = declares(
 			root,
@@ -1686,16 +1701,27 @@ ${isTemplate ? "]" : ")"}`
 				this.baking.shortest ?
 					`[allows, apply${transforms ? ", transform" : ""}]`
 				:	`{ 0: allows, 1: apply${transforms ? ", 2: transform" : ""} }`
+			const valid = transforms ? "transform(data)" : "data"
+			// the validator itself, declaring data alone so a call passing only data pads no parameters
+			if (asValidator) {
+				return [
+					`((${pattern}, onFail) => ${this.compiledOnLoad(`(data, ...args) => allows(data) ? ${valid} : runtime.applyCallErrors(apply, data, args, onFail, ${refOf("Traversal")})`)})`,
+					traversals,
+					true
+				]
+			}
 			return [
-				`((${pattern}) => ${this.compiledOnLoad(`(data, onFail) => allows(data) ? ${transforms ? "transform(data)" : "data"} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${traversals})`,
-				`${traversals}[0]`
+				`((${pattern}) => ${this.compiledOnLoad(`(data, onFail) => allows(data) ? ${valid} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${traversals})`,
+				`${traversals}[0]`,
+				false
 			]
 		}
 		const shape = this.shapeOf(root)
 		if (isArrow) {
 			return [
 				`((node) => ${this.compiledOnLoad(`(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${shape})`,
-				`${shape}.allows`
+				`${shape}.allows`,
+				false
 			]
 		}
 		const body = writeRootApply(
@@ -1712,7 +1738,8 @@ ${isTemplate ? "]" : ")"}`
 			`(function (node) {
 		${captured}${body}
 	})(${shape})`,
-			`${shape}.allows`
+			`${shape}.allows`,
+			false
 		]
 	}
 

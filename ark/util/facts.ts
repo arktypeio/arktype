@@ -20,7 +20,14 @@ export const isDate = (value: unknown): value is Date => value instanceof Date
 export const prototypeOf = (o: object): object | null =>
 	Object.getPrototypeOf(o)
 
-export const arityOf = (fn: Function): number => fn.length
+// a standalone validator declares only its data yet reads the traversal a Type pipes to it, as the traverse its prototype owns does
+export const arityOf = (fn: Function): number => {
+	// builtins, as the arities a scope reads would otherwise change how V8 compiles the prototypeOf and hasOwn that validation calls
+	const proto = Object.getPrototypeOf(fn)
+	return proto && Object.prototype.hasOwnProperty.call(proto, "traverse") ?
+			2
+		:	fn.length
+}
 
 export const functionNameOf = (fn: Function): string => fn.name
 

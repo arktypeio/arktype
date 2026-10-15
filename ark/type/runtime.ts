@@ -209,6 +209,62 @@ export const createValidator = ((
 	return holdHoles(freeze(validator), id, holes)
 }) satisfies Fn
 
+// the validator is the function make returns, so a site calling many compact validators calls each rather than one closure they share
+export const createValidatorWith = ((
+	make: (parts: readonly Fn[], onFail: FailHandler | null) => Fn,
+	parts: readonly Fn[],
+	attributes: ValidatorAttributes,
+	id: string,
+	holes: readonly unknown[] = []
+): Validator => {
+	const validator: Validator = setPrototypeOf(
+		make(parts, attributes.meta.onFail ?? runtimeConfig.onFail),
+		Validator.prototype
+	)
+	// an own arrow function, since it is often detached, e.g. when passing to tRPC
+	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
+		validator(data, pipedFromCtx, throwOnFail)
+	)
+	assign(validator, attributes)
+	validator.allows = freeze(parts[0] as never)
+	validator["~standard"] = freeze({
+		vendor: "arktype",
+		version: 1,
+		validate: freeze((input: unknown) => {
+			const out = validator(input)
+			return out instanceof ArkErrors ? out : { value: out }
+		}),
+		...attributes["~standard"]
+	})
+	return holdHoles(freeze(validator), id, holes)
+}) satisfies Fn
+
+// what a validator receives after its data
+type ValidatorArgs = [
+	pipedFromCtx?: Traversal | undefined,
+	onFail?: FailHandler | null | undefined
+]
+
+// added where they're piped, as a Type adds them, so a morph returning them in another value still fails
+const pipedInto = (pipedFromCtx: Traversal, out: unknown): unknown => {
+	if (!(out instanceof ArkErrors)) return out
+	addErrors(pipedFromCtx, out)
+	return errorsOf(pipedFromCtx)
+}
+
+// what makes the validator of a root apply that isn't compact, declaring data alone so a call passing only data pads no parameters
+export const callingRootApply = ((
+	[, rootApply]: readonly Fn[],
+	configuredOnFail: FailHandler | null
+): Fn =>
+	((data: unknown, ...args: ValidatorArgs) =>
+		!args.length ? rootApply(data, configuredOnFail)
+		: args[0] ? pipedInto(args[0], rootApply(data, null))
+		: rootApply(
+				data,
+				args[1] === undefined ? configuredOnFail : args[1]
+			)) satisfies Fn) satisfies Fn
+
 type ValidatorParts = [
 	rootApply: RootApply,
 	allows: (data: unknown) => boolean,
@@ -365,6 +421,25 @@ export const applyNodeErrors = (
 	onFail: ArkErrors.Handler | null,
 	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
 ): unknown => applyErrors(node.traverseApply, data, config, onFail, Ctx)
+
+// what a compact validator returns where its data fails, given what else the call passes
+export const applyCallErrors = (
+	apply: CompactApply,
+	data: unknown,
+	args: ValidatorArgs,
+	onFail: ArkErrors.Handler | null,
+	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
+): unknown => {
+	const ctx = new Ctx(data, runtimeConfig)
+	apply(data, ctx)
+	const errors = ctx instanceof ArkErrors ? ctx : ctx._errors
+	if (!errors?.count) return data
+	if (args.length) {
+		if (args[0]) return pipedInto(args[0], errors)
+		if (args[1] !== undefined) onFail = args[1] as never
+	}
+	return onFail ? onFail(errors) : errors
+}
 
 export type HoleKind = "function" | "class" | "symbol"
 

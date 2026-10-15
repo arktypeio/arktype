@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### A standalone validator's `length` is 1
+
+A standalone validator declares only its data, so its `length` is 1 where a Type's is 2, and a call passing only data, as most do, pads no parameters. A copy a factory keys with a Scope's functions still declares a traversal and an `onFail`, so its `length` stays 2. Every validator reads a traversal and an `onFail` passed after its data as before, and a Type piping to it still passes it the Type's traversal, which takes its errors rather than letting a throwing `onFail` throw them.
+
 ### Emit declarations whose Types share one file of shapes
 
 `arktype-precompile --declare` writes what `tsc --emitDeclarationOnly` would for the tsconfig's program, except that each Type, Scope and Module is declared through its shape in one `~arktype.d.ts`, named once and referenced wherever another shape holds it. A package whose types others read can ship them, so its consumers don't infer its definitions: a module importing each of a 23-Type app's Types checks with 4403 instantiations rather than 31132 from source or 10797 from tsc's declarations. The bundler plugin emits them with a Rollup, Rolldown, Vite, webpack, Rspack or Rsbuild build that neither watches nor serves, and throws with esbuild, Bun and Farm, which don't say whether a build watches, as the Bun, Node and Turbopack drivers do:

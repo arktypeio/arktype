@@ -404,6 +404,31 @@ n must be a string or null`)
 		attest(String(created.Defaulted(isLong, next)({}))).snap("a must be long")
 	})
 
+	it("adds its errors to a runtime island's Type piping to it under a throwing onFail", async () => {
+		const config: ArkSchemaConfig = { onFail: errors => errors.throw() }
+		const fingerprint = fingerprintOf(config)
+		const { code } = precompileStandalone(
+			{ T: type("string"), Parsed: type("string.numeric.parse") },
+			{ configured: { fingerprint, path: "main.ts" } }
+		)
+		const { js } = bundle(`${code.replace(
+			runtimeImport,
+			`${runtimeImport}\nruntime.configure({ onFail: errors => errors.throw() }, "${fingerprint}")`
+		)}
+import "arktype/internal/island.js"
+import { type } from "arktype"
+export const piping = validator => type("unknown").pipe(validator)`)
+		const artifact = await importCode(js)
+		const T = artifact.T()
+		const Parsed = artifact.Parsed()
+		// a call passing only data pads no parameters
+		attest([T.length, Parsed.length]).equals([1, 1])
+		attest(String(artifact.piping(T).traverse(1))).snap("must be a string")
+		attest(String(artifact.piping(Parsed).traverse("x"))).snap(
+			"must be a well-formed numeric string"
+		)
+	})
+
 	it("bakes introspection", async () => {
 		const T = type({ name: "string", age: "number" }).describe("a person")
 		const { T: validator } = await load({ T })
