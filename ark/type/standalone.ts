@@ -3075,7 +3075,7 @@ class MutatingCompiler extends StandaloneCompiler {
 			return `${this.ref(runtime.writesInPlace)}(${reference}, ${arg}${ctx})`
 		if (node.isTransformedById)
 			return `${this.ref(runtime.transformResolutionOnce)}(${this.ctx}, "${this.nameOf(node.id)}", ${arg}, ${reference})`
-		return `${this.ref(runtime.transformOnce)}(${reference}, ${arg}${node.includesAlias ? `${ctx}, true` : ctx})`
+		return `${this.ref(node.includesAlias ? runtime.transformCyclicOnce : runtime.transformOnce)}(${reference}, ${arg}${ctx})`
 	}
 
 	// a key's next transform reads the previous one's output, or the value as received where it rejects that, which a transform writing in place has changed

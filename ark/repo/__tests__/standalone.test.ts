@@ -1372,28 +1372,46 @@ name is missing`)
 		attest(input).equals({ name: " a ", inner: { v: "v" }, extra: 1 })
 	})
 
-	it("transforms an object its input holds at two places once where one Type transforms it at each, where its build mutates input", async () => {
+	it("throws where its input holds an object at two places it transforms, or a check reads after a transform wrote it, where its build mutates input", async () => {
 		const J = type({ j: "string.json.parse" })
-		const { Pair, List } = await loadMutating({
-			Pair: type({ a: J, b: J }),
-			List: J.array()
-		})
+		const $ = scope({
+			trimmed: { value: "string.trim", "next?": "trimmed" },
+			parsed: { value: "string.json.parse", "next?": "parsed" }
+		}).export()
+		const { Pair, List, Mixed, Reversed, Crossed, Parsed, Checked } =
+			await loadMutating({
+				Pair: type({ a: J, b: J }),
+				List: J.array(),
+				Mixed: type({ a: { value: "string.trim" }, b: $.trimmed }),
+				Reversed: type({ a: $.trimmed, b: { value: "string.trim" } }),
+				Crossed: type({ a: $.trimmed, b: $.parsed }),
+				Parsed: type({
+					a: { n: "string.numeric.parse" },
+					b: { n: "string.json.parse" }
+				}),
+				Checked: type({ a: { n: "string.numeric.parse" }, b: { n: "number" } })
+			})
 		const shared = { j: '{"x":1}' }
-		const out = Pair({ a: shared, b: shared })
-		attest(out).equals({ a: { j: { x: 1 } }, b: { j: { x: 1 } } })
-		attest(out.b).is(out.a)
+		attest(() => Pair({ a: shared, b: shared })).throws(
+			transformedInPlaceTwiceMessage
+		)
 		const element = { j: "[1]" }
-		attest(List([element, element])).equals([{ j: [1] }, { j: [1] }])
-	})
-
-	it("throws where its input holds an object two Types transform, or a check reads after a transform wrote it, where its build mutates input", async () => {
-		const { Parsed, Checked } = await loadMutating({
-			Parsed: type({
-				a: { n: "string.numeric.parse" },
-				b: { n: "string.json.parse" }
-			}),
-			Checked: type({ a: { n: "string.numeric.parse" }, b: { n: "number" } })
-		})
+		attest(() => List([element, element])).throws(
+			transformedInPlaceTwiceMessage
+		)
+		// a place a cycle can reach finds what any other place transformed
+		const mixed = { value: " 1 " }
+		attest(() => Mixed({ a: mixed, b: mixed })).throws(
+			transformedInPlaceTwiceMessage
+		)
+		const reversed = { value: " 1 " }
+		attest(() => Reversed({ a: reversed, b: reversed })).throws(
+			transformedInPlaceTwiceMessage
+		)
+		const crossed = { value: " 1 " }
+		attest(() => Crossed({ a: crossed, b: crossed })).throws(
+			transformedInPlaceTwiceMessage
+		)
 		const parsed = { n: "1" }
 		attest(() => Parsed({ a: parsed, b: parsed })).throws(
 			transformedInPlaceTwiceMessage
@@ -1405,14 +1423,15 @@ name is missing`)
 		)
 	})
 
-	it("transforms an object its input holds inside itself only through a cyclic Scope, where its build mutates input", async () => {
+	it("transforms an object its input holds inside itself or at two places only through a cyclic Scope, where its build mutates input", async () => {
 		const $ = scope({
 			node: { value: "string.trim", "next?": "node | null" }
 		}).export()
-		const { Node, Unrolled, Wrapped } = await loadMutating({
+		const { Node, Unrolled, Wrapped, Twice } = await loadMutating({
 			Node: $.node,
 			Unrolled: type({ value: "string.trim", next: { value: "string.trim" } }),
-			Wrapped: type({ value: "string.trim", next: $.node })
+			Wrapped: type({ value: "string.trim", next: $.node }),
+			Twice: type({ a: $.node, b: $.node })
 		})
 		const cyclic: Record<string, unknown> = { value: " c " }
 		cyclic.next = cyclic
@@ -1430,16 +1449,19 @@ name is missing`)
 		const wrapped: Record<string, unknown> = { value: " w " }
 		wrapped.next = wrapped
 		attest(() => Wrapped(wrapped)).throws(transformedInPlaceTwiceMessage)
+		const shared = { value: " s " }
+		const twice = Twice({ a: shared, b: shared })
+		attest(twice.a).equals({ value: "s" })
+		attest(twice.b).is(twice.a)
 	})
 
 	it("transforms through a morph or union reading nothing a transform before it may have written, where its build mutates input", async () => {
 		const wrap = standIn((o: object) => ({ inner: o }), "wrap")
-		const twice = standIn((o: object) => ({ a: o, b: o }), "twice")
 		const J = type({ j: "string.json.parse" })
 		const $ = scope({
 			node: { j: "string.json.parse", "next?": "node" }
 		}).export()
-		const { Wrapping, First, Twice, Parsed, Picked } = await load(
+		const { Wrapping, Cyclic, First, Parsed, Picked } = await load(
 			{
 				Wrapping: {
 					type: type({ n: "string" })
@@ -1451,11 +1473,11 @@ name is missing`)
 					type: type({ a: type({ n: "string" }).pipe(wrap), b: J }),
 					params: [{ kind: "function", label: "`wrap`", value: wrap }]
 				},
-				Twice: {
+				Cyclic: {
 					type: type({ j: "string" })
-						.pipe(twice)
-						.to({ a: J, b: J, "c?": $.node }),
-					params: [{ kind: "function", label: "`twice`", value: twice }]
+						.pipe(wrap)
+						.to({ inner: J, "next?": $.node }),
+					params: [{ kind: "function", label: "`wrap`", value: wrap }]
 				},
 				Parsed: type({ a: J, b: type("string.json.parse").to(J), c: J }),
 				Picked: type({
@@ -1479,14 +1501,19 @@ name is missing`)
 			b: { j: 1 }
 		})
 		const held = { j: '{ "x": 1 }' }
-		const doubled = Twice(twice)(held)
-		attest(doubled).equals({ a: { j: { x: 1 } }, b: { j: { x: 1 } } })
-		attest(doubled.b).is(held)
-		attest(doubled.a).is(held)
+		const cyclic = Cyclic(wrap)(held)
+		attest(cyclic).equals({ inner: { j: { x: 1 } } })
+		attest(cyclic.inner).is(held)
+		attest(Parsed({ a: { j: "1" }, b: '{ "j": "2" }', c: { j: "3" } })).equals({
+			a: { j: 1 },
+			b: { j: 2 },
+			c: { j: 3 }
+		})
+		// what a transformed before the stage it pipes b through is still written
 		const shared = { j: "1" }
-		const out = Parsed({ a: shared, b: '{ "j": "2" }', c: shared })
-		attest(out).equals({ a: { j: 1 }, b: { j: 2 }, c: { j: 1 } })
-		attest(out.c).is(out.a)
+		attest(() => Parsed({ a: shared, b: '{ "j": "2" }', c: shared })).throws(
+			transformedInPlaceTwiceMessage
+		)
 		attest(Picked({ a: { j: "1" }, b: { k: "x", j: "2" } })).equals({
 			a: { j: 1 },
 			b: { k: "x", j: 2 }

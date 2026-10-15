@@ -452,10 +452,11 @@ export const applyCallErrors = (
 	return onFail ? onFail(errors) : errors
 }
 
-// the input of a call writing what it transforms in place, and what each place transforming an object took it for and left it with, as a place reaching an object another transformed would read what the other wrote
+// a call's input and what it wrote, which another place mustn't read
 let inPlaceRoot: unknown
-let takenInPlace: Map<object, unknown> | undefined
-let leftInPlace: Map<object, unknown> | undefined
+let writtenInPlace: WeakSet<object> | undefined
+// how a place a cycle can reach took each object, and then what it left
+let cyclicPlaces: Map<object, [key: unknown, out?: unknown]> | undefined
 
 // what structures a cycle can reach again are writing
 const writingInPlace = /* @__PURE__ */ new Set<object>()
@@ -478,56 +479,70 @@ const inPlaceCall = (
 	c?: unknown
 ): unknown => {
 	const outerRoot = inPlaceRoot
-	const outerTaken = takenInPlace
-	const outerLeft = leftInPlace
+	const outerWritten = writtenInPlace
+	const outerCyclic = cyclicPlaces
 	inPlaceRoot = root
-	takenInPlace = leftInPlace = undefined
+	writtenInPlace = cyclicPlaces = undefined
 	try {
 		return f(a, b, c)
 	} finally {
 		inPlaceRoot = outerRoot
-		takenInPlace = outerTaken
-		leftInPlace = outerLeft
+		writtenInPlace = outerWritten
+		cyclicPlaces = outerCyclic
 	}
+}
+
+// a transform of a value its parent holds, which no cycle reaches
+export const transformOnce = (
+	transform: Fn,
+	data: unknown,
+	ctx?: unknown
+): unknown => {
+	if (typeof data === "object" && data !== null) {
+		if (data === inPlaceRoot || writtenInPlace?.has(data))
+			throwTransformedTwice()
+		;(writtenInPlace ??= new WeakSet()).add(data)
+	}
+	return transform(data, ctx)
 }
 
 const taken = {}
 const retaken = {}
 
-// the output a place transforming data alike left it with, else whether this place transforms it, as one inside it can only through a cycle a resolution takes apart
-const placeOf = (
-	data: object,
-	transform: unknown,
-	cycles: boolean | undefined
-): unknown => {
-	if (data === inPlaceRoot) return cycles ? retaken : throwTransformedTwice()
-	const transforms = (takenInPlace ??= new Map())
-	const taker = transforms.get(data)
-	if (taker === undefined) {
-		transforms.set(data, transform)
-		leftInPlace ??= new Map()
+// what a place took alike left data as, else how this place takes it
+const placeOf = (data: object, key: unknown): unknown => {
+	if (data === inPlaceRoot) return retaken
+	const place = cyclicPlaces?.get(data)
+	if (place === undefined) {
+		if (writtenInPlace?.has(data)) throwTransformedTwice()
+		;(writtenInPlace ??= new WeakSet()).add(data)
+		;(cyclicPlaces ??= new Map()).set(data, [key])
 		return taken
 	}
-	if (!leftInPlace!.has(data)) return cycles ? retaken : throwTransformedTwice()
-	return taker === transform ? leftInPlace!.get(data) : throwTransformedTwice()
+	if (place.length === 1) return retaken
+	return place[0] === key ? place[1] : throwTransformedTwice()
 }
 
-const leave = (place: unknown, data: object, out: unknown): unknown => {
-	if (place === taken) leftInPlace!.set(data, out)
+const leave = (
+	place: unknown,
+	data: object,
+	key: unknown,
+	out: unknown
+): unknown => {
+	if (place === taken) cyclicPlaces!.set(data, [key, out])
 	return out
 }
 
-// a transform of a value its parent holds
-export const transformOnce = (
+// a transform of a value its parent holds, which a cycle can reach
+export const transformCyclicOnce = (
 	transform: Fn,
 	data: unknown,
-	ctx?: unknown,
-	cycles?: boolean
+	ctx?: unknown
 ): unknown => {
 	if (typeof data !== "object" || data === null) return transform(data, ctx)
-	const place = placeOf(data, transform, cycles)
+	const place = placeOf(data, transform)
 	return place === taken || place === retaken ?
-			leave(place, data, transform(data, ctx))
+			leave(place, data, transform, transform(data, ctx))
 		:	place
 }
 
@@ -540,9 +555,14 @@ export const transformResolutionOnce = (
 ): unknown => {
 	if (typeof data !== "object" || data === null)
 		return transformResolution(ctx, id, data, transform as never)
-	const place = placeOf(data, id, true)
+	const place = placeOf(data, id)
 	return place === taken || place === retaken ?
-			leave(place, data, transformResolution(ctx, id, data, transform as never))
+			leave(
+				place,
+				data,
+				id,
+				transformResolution(ctx, id, data, transform as never)
+			)
 		:	place
 }
 
