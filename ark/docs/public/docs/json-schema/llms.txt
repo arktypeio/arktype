@@ -185,10 +185,15 @@ const schema = types.Node.toJsonSchema()
 | `"Record<string, number>"` | `additionalProperties: {...}` |
 | `{ id: "string", "[string]": "string" }` | `patternProperties: { "": {...} }` |
 | `{ "[/^x-/]": "string" }` | `patternProperties: { "^x-": {...} }` |
+| `{ "[string <= 3]": "number", "+": "reject" }` | `propertyNames`, `additionalProperties: {...}` |
 | `{ role: "string = 'user'" }` | `default: "user"` on `role` |
 | `.describe("...")`, `.configure({ title, examples })` | `description`, `title`, `examples` |
 
+JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matches, so they're left out, as is `u` for draft 2020-12, whose patterns are read with it. Any other flag, like `i` in `/^a/i`, goes to the [`patternFlags`](#fallback-codes) fallback.
+
 An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
+
+A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
 
 ## Fallbacks
 
@@ -284,7 +289,9 @@ Every reason `toJsonSchema()` can throw, with the fields its handler receives be
 | `date` | a `Date`, with its bounds | `type("Date")` | `before`, `after` |
 | `defaultValue` | a default that isn't JSON. Return `undefined` to omit it | `type({ n: "bigint = 5n" })`, after `domain` | `value` |
 | `domain` | `bigint` or `symbol` | `type("bigint")` | `domain` |
+| `indexKey` | an index signature key `propertyNames` can't express | `type({ "[string <= 3]": "number" })` | `key` and `value`, as schemas |
 | `morph` | a morph | `type("string.trim")` | `out`, the output schema or `null` |
+| `patternFlags` | a regex flag other than `d`, `g` or, for draft 2020-12, `u` | `type(/^a/i)` | `pattern`, `flags` |
 | `patternIntersection` | a second regex on the same string | `type(/^a/).and(/b$/)` | `pattern` |
 | `predicate` | a `narrow` | `type("number").narrow(n => n > 0)` | `predicate` |
 | `proto` | an `instanceof` other than `Array` or `Date` | `type("Map")` | `proto` |
@@ -340,7 +347,7 @@ Form["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 Form["~standard"].jsonSchema.output({ target: "draft-2020-12" })
 ```
 
-Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express. They write as much of it as JSON Schema can describe, or `{}` if nothing, so `id` above accepts any value.
+Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express. They write as much of it as JSON Schema can describe, or `{}` if nothing, so `id` above accepts any value. A regex with flags is left out too, and so is an index signature `propertyNames` can't express, along with the `additionalProperties: false` that would reject the keys it allows.
 
 - `target` must be `"draft-2020-12"` or `"draft-07"`. Anything else throws.
 - `libraryOptions` are passed to `toJsonSchema()` as options, e.g. `{ dialect: null }`.
