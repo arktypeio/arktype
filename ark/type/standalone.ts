@@ -210,6 +210,8 @@ interface Baking {
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
 	hoisted: boolean
+	// writes the shortest forms rather than those V8 compiles and runs fastest as the artifact loads
+	shortest: boolean
 }
 
 // a function a site calls, declared to be called before its module is evaluated, else parenthesized for V8 to compile with the module
@@ -316,7 +318,8 @@ const writeArtifact = (
 		members: new Set(opts.introspection),
 		write: opts.bake ?? (write => write()),
 		firstIssue: opts.errors === "first",
-		hoisted: opts.hoisted === true
+		hoisted: opts.hoisted === true,
+		shortest: false
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
@@ -1358,9 +1361,16 @@ return [${returned.join(", ")}]
 				args.push(`${source}[${index}]`)
 			} else (namesBySource[source] ??= [])[index] = name
 		}
-		// a traversal the unit doesn't read is a hole, which join writes as ""
+		// V8 compiles an array pattern, whose holes are the traversals a unit doesn't read, to the iterator protocol, slower to build than reading by index
 		for (const source in namesBySource) {
-			params.push(`[${namesBySource[source].join(", ")}]`)
+			const names = namesBySource[source]
+			params.push(
+				this.baking.shortest ?
+					`[${names.join(", ")}]`
+				:	`{ ${Object.entries(names)
+						.map(([index, name]) => `${index}: ${name}`)
+						.join(", ")} }`
+			)
 			args.push(source)
 		}
 		return [params, args]
@@ -1667,8 +1677,12 @@ ${isTemplate ? "]" : ")"}`
 			:	undefined
 		// each validator writes its own, as one validators shared calls every node's Allows from one site, which V8 can't inline where a site calls several validators
 		if (traversals) {
+			const pattern =
+				this.baking.shortest ?
+					`[allows, apply${transforms ? ", transform" : ""}]`
+				:	`{ 0: allows, 1: apply${transforms ? ", 2: transform" : ""} }`
 			return [
-				`(([allows, apply${transforms ? ", transform" : ""}]) => (data, onFail) => allows(data) ? ${transforms ? "transform(data)" : "data"} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")}))(${traversals})`,
+				`((${pattern}) => (data, onFail) => allows(data) ? ${transforms ? "transform(data)" : "data"} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")}))(${traversals})`,
 				`${traversals}[0]`
 			]
 		}
