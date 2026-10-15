@@ -1452,26 +1452,8 @@
 	.site-foot {
 		margin-top: 96px;
 	}
-	.boat-lane {
-		position: absolute;
-		left: 0;
-		right: 0;
-		top: -14px;
-		height: 24px;
-		pointer-events: none;
-		container-type: inline-size;
-		overflow: hidden;
-	}
-	.boat {
-		position: absolute;
-		left: 0;
-		line-height: 1;
-		animation:
-			boat-float 150s linear -62s infinite,
-			boat-bob 2s ease-in-out infinite;
-	}
-	.boat-lane:not([data-on]) .boat {
-		animation-play-state: paused;
+	.closer > .boat-lane {
+		bottom: 100%;
 	}
 }
 
@@ -1481,26 +1463,6 @@
 		background: var(--nav-solid);
 		backdrop-filter: blur(12px);
 		border-bottom-color: var(--rule-soft);
-	}
-}
-@keyframes boat-float {
-	0% {
-		transform: translateX(-3cqw);
-		opacity: 0;
-	}
-	2%,
-	98% {
-		opacity: 1;
-	}
-	100% {
-		transform: translateX(100cqw);
-		opacity: 0;
-	}
-}
-@keyframes boat-bob {
-	50% {
-		translate: 0 -2px;
-		rotate: -2deg;
 	}
 }
 @keyframes rise {
@@ -1586,9 +1548,6 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.home {
-		.boat-lane {
-			display: none;
-		}
 		.row::before,
 		.swap > * {
 			transition: none;

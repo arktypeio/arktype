@@ -68,11 +68,3 @@ export const CheckIcon = () => (
 		<path d="M5 12.5l4.5 4.5L19 7.5" />
 	</svg>
 )
-
-export const BoatIcon = () => (
-	<svg width="26" height="22" viewBox="0 0 26 22" aria-hidden>
-		<path d="M12 1v14H3z" fill="#f5cf8f" />
-		<path d="M14 4v11h7z" fill="#ba7e41" />
-		<path d="M1 16.5h24l-3.5 4.5h-17z" fill="#085b92" />
-	</svg>
-)

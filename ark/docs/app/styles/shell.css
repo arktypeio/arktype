@@ -110,12 +110,68 @@
 	padding: 0 24px;
 }
 
-.tb-boat {
+.boat-lane {
 	position: absolute;
-	inset: 0;
-	z-index: -1;
+	left: 0;
+	right: 0;
+	height: 18px;
 	overflow: hidden;
+	container-type: inline-size;
 	pointer-events: none;
+	opacity: 0;
+	transition: opacity 0.6s;
+}
+
+.boat-lane[data-on] {
+	opacity: 1;
+}
+
+/* the lane's bottom edge is the waterline */
+.boat {
+	position: absolute;
+	bottom: -6px;
+	left: 0;
+	animation:
+		boat-float 150s linear var(--boat-at, 0s) infinite,
+		boat-bob 2s ease-in-out infinite;
+	animation-play-state: paused;
+}
+
+.boat-lane[data-on] .boat {
+	animation-play-state: running;
+}
+
+.boat svg {
+	display: block;
+	width: auto;
+	height: 22px;
+}
+
+@keyframes boat-float {
+	from {
+		transform: translateX(-100%);
+	}
+	to {
+		transform: translateX(100cqw);
+	}
+}
+
+@keyframes boat-bob {
+	50% {
+		translate: 0 -2px;
+		rotate: -2deg;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.boat-lane {
+		display: none;
+	}
+}
+
+.tb-boat {
+	bottom: 0;
+	z-index: -1;
 }
 
 .brand {

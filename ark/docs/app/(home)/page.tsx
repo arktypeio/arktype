@@ -8,9 +8,9 @@ import {
 import { evaluate } from "../../components/home/evaluate.ts"
 import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
-import { BoatIcon } from "../../components/home/icons.tsx"
 import { LiveType } from "../../components/home/LiveType.tsx"
 import { BenchmarkChart } from "../../components/mdx/BenchmarkChart.tsx"
+import { BoatLane } from "../../components/shell/BoatLane.tsx"
 import { SiteFooter } from "../../components/shell/SiteFooter.tsx"
 import {
 	benchFacts,
@@ -760,11 +760,7 @@ export default function HomePage() {
 			</div>
 
 			<footer className="closer">
-				<div className="boat-lane" aria-hidden>
-					<span className="boat">
-						<BoatIcon />
-					</span>
-				</div>
+				<BoatLane />
 				<div className="wrap">
 					<h2>Start with your first type.</h2>
 					<div className="ctas">

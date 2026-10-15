@@ -1,7 +1,7 @@
 import { SiGithub } from "@icons-pack/react-simple-icons"
 import Link from "next/link"
 import { getPageTree } from "../../lib/content/docs.ts"
-import { FloatYourBoat } from "../FloatYourBoat.tsx"
+import { BoatLane } from "./BoatLane.tsx"
 import { Brand } from "./Brand.tsx"
 import { MenuButton } from "./MobileNav.tsx"
 import { SearchButton, SearchIconButton } from "./SearchTrigger.tsx"
@@ -23,20 +23,15 @@ export type TopNavProps = {
 	active?: "docs" | "playground" | "blog"
 	/** whether the page has a drawer for the menu button to open */
 	drawer?: boolean
-	boat?: boolean
 }
 
 /** the docs top bar: brand, section tabs, search and site links */
-export const TopNav = ({ section, url, active, drawer, boat }: TopNavProps) => (
+export const TopNav = ({ section, url, active, drawer }: TopNavProps) => (
 	<header className="topbar" data-drawer={drawer || undefined}>
+		<BoatLane className="tb-boat" />
 		<div className="tb-in">
 			{drawer && <MenuButton />}
 			<Brand />
-			{boat && (
-				<div className="tb-boat" aria-hidden>
-					<FloatYourBoat />
-				</div>
-			)}
 			<nav className="sections" aria-label="Sections">
 				{docsSectionsOf(getPageTree()).map(s => (
 					<Link

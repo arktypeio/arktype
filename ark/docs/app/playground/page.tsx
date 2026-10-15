@@ -11,7 +11,7 @@ export const metadata = defineMetadata({
 export default function PlaygroundPage() {
 	return (
 		<>
-			<TopNav active="playground" boat />
+			<TopNav active="playground" />
 			<main id="main" className="playground-page">
 				<h1 className="visually-hidden">Playground</h1>
 				<div className="playground-frame">

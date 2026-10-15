@@ -131,22 +131,10 @@ const wireTranscript = () => {
 	}
 }
 
-/** the footer boat only floats while it's on screen */
-const wireBoat = () => {
-	const lane = document.querySelector<HTMLElement>(".boat-lane")
-	if (!lane) return
-	const observer = new IntersectionObserver(([entry]) => {
-		if (entry.isIntersecting) lane.dataset.on = ""
-		else delete lane.dataset.on
-	})
-	observer.observe(lane)
-	return () => observer.disconnect()
-}
-
 /** the homepage's small behaviors, as delegated listeners over server markup */
 export const HomeEffects = () => {
 	useEffect(() => {
-		const cleanups = [wireCopy(), wireReveal(), wireTranscript(), wireBoat()]
+		const cleanups = [wireCopy(), wireReveal(), wireTranscript()]
 		return () => {
 			for (const cleanup of cleanups) cleanup?.()
 		}
