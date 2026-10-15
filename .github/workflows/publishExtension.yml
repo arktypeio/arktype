@@ -1,0 +1,35 @@
+name: publishExtension
+
+on:
+  push:
+    branches: [main]
+    paths: [ark/extension/package.json]
+
+  workflow_dispatch:
+
+jobs:
+  marketplace:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Marketplace trusted publishing: vsce exchanges the GitHub OIDC token for a
+    # short-lived Marketplace credential, so no PAT secret is needed. Requires a
+    # trusted publishing policy for this repo and workflow on the arktypeio
+    # publisher. Global Azure DevOps PATs stop working 2026-12-01.
+    permissions:
+      contents: read
+      id-token: write
+    defaults:
+      run:
+        working-directory: ark/extension
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # --skip-duplicate makes pushes that don't bump the version a no-op
+      - name: Publish to VS Code Marketplace
+        run: npx @vscode/vsce@4.0.0 publish --oidc --no-dependencies --skip-duplicate
