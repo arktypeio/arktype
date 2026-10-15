@@ -582,7 +582,7 @@ export const writesInPlace = (
 }
 
 // a check finds what it would have where no transform wrote into what it reads, so Apply finds an issue wherever Allows did
-const appliesInPlace =
+export const appliesInPlace =
 	(apply: Fn): Fn =>
 	(data: unknown, ctx: ArkErrors | InternalTraversal) => {
 		inPlaceCall(data, apply, data, ctx)
@@ -590,7 +590,7 @@ const appliesInPlace =
 			throwTransformedTwice()
 	}
 
-const transformsInPlace =
+export const transformsInPlace =
 	(transform: Fn): Fn =>
 	(data: unknown, ctx: unknown) =>
 		inPlaceCall(data, transform, data, ctx)

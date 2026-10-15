@@ -1664,7 +1664,7 @@ return [${returned.join(", ")}]
 			(
 				this.baking.shortest &&
 				typeof applied === "object" &&
-				applied.params.startsWith("[allows") &&
+				/^\[?allows\b/.test(applied.params) &&
 				!isTemplate &&
 				!isCreatedByRuntime(members, this.baking)
 			) ?
@@ -1748,7 +1748,8 @@ return [${returned.join(", ")}]
 				["configuredOnFail = runtime.runtimeConfig.onFail"]
 			:	["configuredOnFail"])
 		]
-		const name = `create${hashOf(body)}`
+		// a flat build's creator takes each traversal, another's their array
+		const name = `create${hashOf(`${params.join(", ")}\n${body}`)}`
 		const specifier = this.specifierOf(name)
 		this.sharedModules[specifier] ??= {
 			readsRuntime: true,
@@ -2029,17 +2030,34 @@ return [${returned.join(", ")}]
 					!root.includesMorph &&
 					!(root.hasKind("union") && !root.compiledDiscriminant)))
 		const transforms = strategy === "transform"
-		const traversals =
-			isArrow && appliesErrors && !root.allowsRequiresContext ?
-				this.compactTraversalsOf(root)
+		const isCompact = isArrow && appliesErrors && !root.allowsRequiresContext
+		const flat =
+			isCompact && !asValidator ?
+				this.flatTraversalsOf(root, transforms ? [0, 1, 2] : [0, 1])
 			:	undefined
+		const traversals =
+			flat ? flat[0]
+			: isCompact ? this.compactTraversalsOf(root)
+			: undefined
 		if (traversals) {
 			const pattern =
-				this.baking.shortest ?
+				flat ? `allows, apply${transforms ? ", transform" : ""}`
+				: this.baking.shortest ?
 					`[allows, apply${transforms ? ", transform" : ""}]`
 				:	`{ 0: allows, 1: apply${transforms ? ", 2: transform" : ""} }`
 			const valid = transforms ? "transform(data)" : "data"
-			const parts = inPlace ? `runtime.inPlaceParts(${traversals})` : traversals
+			const parts =
+				flat ?
+					(inPlace ?
+						[
+							flat[0],
+							`runtime.appliesInPlace(${flat[1]})`,
+							`runtime.transformsInPlace(${flat[2]})`
+						]
+					:	flat
+					).join(", ")
+				: inPlace ? `runtime.inPlaceParts(${traversals})`
+				: traversals
 			// the validator itself, declaring data alone so a call passing only data pads no parameters
 			if (asValidator) {
 				return [
@@ -2054,7 +2072,7 @@ return [${returned.join(", ")}]
 					apply: `(data, onFail) => allows(data) ? ${valid} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`,
 					args: parts
 				},
-				`${traversals}[0]`,
+				flat ? flat[0] : `${traversals}[0]`,
 				false
 			]
 		}
@@ -2109,10 +2127,15 @@ return [${returned.join(", ")}]
 		const captures = strategy === "transform" && root.includesMorph
 		// a transform through a cycle, which the runtime resolves from the root's shape
 		const resolves = strategy === "contextualTransform" && root.includesAlias
+		const isCompact = !root.allowsRequiresContext && !resolves
+		const flat =
+			isCompact && !asValidator ?
+				this.flatTraversalsOf(root, transforms ? [0, 2] : [0])
+			:	undefined
 		const traversals =
-			root.allowsRequiresContext || resolves ?
-				undefined
-			:	this.compactTraversalsOf(root)
+			flat ? flat[0]
+			: isCompact ? this.compactTraversalsOf(root)
+			: undefined
 		const shape = traversals ? undefined : this.shapeOf(root)
 		const allows = traversals ? "allows" : "node.allows"
 		const transform = traversals ? "transform" : "node.traverseTransform"
@@ -2149,6 +2172,11 @@ return [${returned.join(", ")}]
 			:	undefined
 		const params =
 			!traversals ? "node"
+			: flat ?
+				[
+					...(selects ? [] : ["allows"]),
+					...(transforms ? ["transform"] : [])
+				].join(", ")
 			: this.baking.shortest ?
 				`[${selects ? "" : "allows"}${transforms ? ", , transform" : ""}]`
 			:	`{ ${[...(selects ? [] : ["0: allows"]), ...(transforms ? ["2: transform"] : [])].join(", ")} }`
@@ -2157,6 +2185,13 @@ return [${returned.join(", ")}]
 		const inPlace = this.baking.mutatesInput && transforms
 		const parts =
 			!traversals ? undefined
+			: flat ?
+				[
+					...(selects ? [] : [flat[0]]),
+					...(transforms ?
+						[inPlace ? `runtime.transformsInPlace(${flat[1]})` : flat[1]]
+					:	[])
+				].join(", ")
 			: inPlace ? `runtime.inPlaceTransforms(${traversals})`
 			: traversals
 		// the validator itself, as a detailed build's compact root apply is
@@ -2180,7 +2215,9 @@ return [${returned.join(", ")}]
 				args: `${node}${captures ? `, ${this.emit(rootApplyRuntime.TransformErrors)}` : ""}`,
 				failure: "invalid"
 			},
-			traversals ? `${traversals}[0]` : `${shape}.allows`,
+			flat ? flat[0]
+			: traversals ? `${traversals}[0]`
+			: `${shape}.allows`,
 			false
 		]
 	}
@@ -2203,6 +2240,17 @@ return [${returned.join(", ")}]
 			exports: [name]
 		}
 		return this.read(specifier, name, name, name)
+	}
+
+	// a flat build passes a root apply the traversals its unit exports
+	flatTraversalsOf(root: BaseRoot, indices: number[]): string[] | undefined {
+		const unit = this.unitsByHead.get(root.id)!
+		if (!this.baking.flattens || !isSharedUnit(unit)) return
+		const specifier = this.specifierOf(unit.name)
+		const traversals = this.traversalsOf(root, unit)
+		return indices.map(i =>
+			this.read(specifier, traversals[i], traversals[i], traversals[i])
+		)
 	}
 
 	// a root apply that is one arrow reads its root's traversals from its unit, where they come first, so its validator needs no shape
