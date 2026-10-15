@@ -266,6 +266,21 @@ export const pipedInto = (pipedFromCtx: Traversal, out: unknown): unknown => {
 	return errors
 }
 
+// as pipedInto, where errors don't detail what failed, so no message moves
+export const pipedIntoUndetailed = (
+	pipedFromCtx: Traversal,
+	out: unknown
+): unknown => {
+	if (!(out instanceof ArkErrors)) return out
+	const errors = errorsOf(pipedFromCtx)
+	if (errors._merge) errors._merge(out, pipedFromCtx.path)
+	else {
+		for (const issue of out._)
+			errors._.push({ ...issue, path: [...pipedFromCtx.path, ...issue.path] })
+	}
+	return errors
+}
+
 // what makes the validator of a root apply that isn't compact, declaring data alone so a call passing only data pads no parameters
 export const callingRootApply = ((
 	[, rootApply]: readonly Fn[],

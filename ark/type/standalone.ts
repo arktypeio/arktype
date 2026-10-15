@@ -312,7 +312,7 @@ const failureSources = {
 		`\tconst errors = new runtime.ArkErrors()
 	errors._.push({ code: "predicate", path: [], data })
 	if (args.length) {
-		if (args[0]) return runtime.pipedInto(args[0], errors)
+		if (args[0]) return runtime.pipedIntoUndetailed(args[0], errors)
 		if (args[1] !== undefined) onFail = args[1]
 	}
 	return onFail ? onFail(errors) : errors`
@@ -1729,7 +1729,7 @@ return [${returned.join(", ")}]
 		const call =
 			ownsValidator ?
 				"make(parts, configuredOnFail)"
-			:	"(data, pipedFromCtx, onFail = configuredOnFail) => pipedFromCtx ? runtime.pipedInto(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)"
+			:	`(data, pipedFromCtx, onFail = configuredOnFail) => pipedFromCtx ? runtime.${this.baking.detailsErrors ? "pipedInto" : "pipedIntoUndetailed"}(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
 		const body = [
 			applier ? `const rootApply = ${applier.apply}` : "",
 			!keepsMeta ? ""
