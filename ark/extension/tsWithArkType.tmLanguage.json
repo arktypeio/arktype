@@ -147,32 +147,63 @@
 			]
 		},
 		"arkRegexFunction": {
-			"contentName": "meta.embedded.arktype.regex",
-			"begin": "\\b(regex)(\\()(['\"`])",
+			"begin": "\\b(regex)(\\()",
 			"beginCaptures": {
 				"1": {
 					"name": "entity.name.function.ts"
 				},
 				"2": {
 					"name": "meta.brace.round.ts"
-				},
-				"3": {
-					"name": "string.quoted.ts punctuation.definition.string.begin.ts"
 				}
 			},
-			"end": "(\\3)(?:(\\)|(,)))",
+			"end": "\\)",
 			"endCaptures": {
-				"1": {
-					"name": "string.quoted.ts punctuation.definition.string.end.ts"
-				},
-				"2": {
+				"0": {
 					"name": "meta.brace.round.ts"
-				},
-				"3": {
-					"name": "punctuation.separator.comma.ts"
 				}
 			},
 			"patterns": [
+				{
+					"include": "#arkRegexString"
+				},
+				{
+					"begin": ",",
+					"beginCaptures": {
+						"0": {
+							"name": "punctuation.separator.comma.ts"
+						}
+					},
+					"end": "(?=\\))",
+					"patterns": [
+						{
+							"include": "source.ts"
+						}
+					]
+				},
+				{
+					"include": "source.ts"
+				}
+			]
+		},
+		"arkRegexString": {
+			"contentName": "meta.embedded.arktype.regex",
+			"begin": "(['\"`])",
+			"beginCaptures": {
+				"1": {
+					"name": "string.quoted.ts punctuation.definition.string.begin.ts"
+				}
+			},
+			"end": "\\1",
+			"endCaptures": {
+				"0": {
+					"name": "string.quoted.ts punctuation.definition.string.end.ts"
+				}
+			},
+			"patterns": [
+				{
+					"name": "keyword.operator",
+					"match": "\\\\[\\\\'\"`]"
+				},
 				{
 					"include": "#arkRegexSource"
 				}
@@ -535,6 +566,9 @@
 				},
 				{
 					"include": "#arkChained"
+				},
+				{
+					"include": "#arkRegexFunction"
 				},
 				{
 					"include": "#string"
