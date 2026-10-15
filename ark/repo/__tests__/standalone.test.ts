@@ -23,6 +23,7 @@ import { de } from "arktype/locales/de"
 import {
 	inPlaceKeyMessage,
 	precompileStandalone,
+	precompileStandaloneModules,
 	writeUnprecompilableMessage,
 	type FactoryParam,
 	type StandaloneExport,
@@ -203,7 +204,7 @@ class Point {
 }
 
 contextualize(() => {
-	it("validates as the types it was precompiled from", async () => {
+	it("validates as the types it was precompiled from, optimized for speed or size", async () => {
 		const $ = scope({
 			tree: { value: "number", "children?": "tree[]" },
 			user: {
@@ -242,7 +243,44 @@ contextualize(() => {
 			dates: type({ at: "string.date.iso.parse" }).array(),
 			typeError: type.instanceOf(TypeError)
 		}
-		const validators = await load(types)
+		// optimized for size, a build declares its units in modules a bundle shares, and its validators share their root apply where the runtime creates them, or hold it where its own creator does
+		const sized = async (members: ValidatorMembers) => {
+			const { code, modules } = precompileStandaloneModules(types, {
+				members,
+				optimize: "size"
+			})
+			const { outputFiles } = await build({
+				...optionsOf(code),
+				plugins: [
+					{
+						name: "modules",
+						setup: pluginBuild => {
+							pluginBuild.onResolve({ filter: /^~arktype\// }, args => ({
+								path: args.path,
+								namespace: "modules"
+							}))
+							pluginBuild.onLoad(
+								{ filter: /.*/, namespace: "modules" },
+								args => ({
+									contents: modules[args.path],
+									resolveDir: fromHere(),
+									loader: "js"
+								})
+							)
+						}
+					}
+				]
+			})
+			const artifact = await importCode(outputFiles[0].text)
+			return Object.fromEntries(
+				Object.keys(types).map(name => [name, artifact[name]()])
+			)
+		}
+		const builds = [
+			await load(types),
+			await sized(printed),
+			await sized({ ...printed, assert: false })
+		]
 		const cyclic: any = { value: 1, children: [] }
 		cyclic.children.push(cyclic)
 		const node: any = { value: 1 }
@@ -276,12 +314,14 @@ contextualize(() => {
 			{ k: { kind: "a2", p1: null, p0: { j: { p1: "x", z: 1 } }, z: 1 } },
 			null
 		]
-		for (const [name, t] of Object.entries(types)) {
-			for (const input of inputs) {
-				attest(observe(validators[name](input), input)).equals(
-					observe(t(input), input)
-				)
-				attest(validators[name].allows(input)).equals(t.allows(input))
+		for (const validators of builds) {
+			for (const [name, t] of Object.entries(types)) {
+				for (const input of inputs) {
+					attest(observe(validators[name](input), input)).equals(
+						observe(t(input), input)
+					)
+					attest(validators[name].allows(input)).equals(t.allows(input))
+				}
 			}
 		}
 	})

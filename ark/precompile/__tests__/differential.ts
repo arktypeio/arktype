@@ -189,6 +189,7 @@ const loadArtifact = async (
 		lazy: testedOptions.lazy,
 		checks: testedOptions.checks,
 		mutatesInput: testedOptions.mutatesInput,
+		optimize: testedOptions.optimize,
 		configured: testedOptions.config === false ? (false as const) : undefined
 	}
 	let code: string

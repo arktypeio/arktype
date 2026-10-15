@@ -113,6 +113,13 @@ An object the input holds at two places that one Type transforms is transformed 
 resolveAlias: { "@ark/schema/runtime": "@ark/schema/runtime/none" }
 ```
 
+`optimize: "size"` writes validators for size rather than speed. Their functions compile as they're first called rather than as their module loads, validators whose root applies are written alike share one, which each validator calls from a closure of `length` 2, a traversal leaves out a `ctx` it doesn't read, and in the modules the plugin and drivers write, a unit's traversals are declared at the top level of its module rather than returned by a function. A validation returns the same, running more instructions, as the benchmarks count them:
+
+- a site calling several validators in turn, 49% more, as V8 can't inline what the closure and root apply they share call
+- bundled by esbuild, which turns `const` at a module's top level into `var`, which V8 optimizes less, up to 9% more where data is valid and 22% where it isn't. Rolldown keeps `const`, as Rollup does, so every other call runs within 5% of `"speed"`
+- loaded unbundled, as the Node driver loads them, where a traversal another module declares is read through its import, up to 36% more
+- loading and a first call, up to 30% more with Node's compile cache, which then holds less, and from 6% fewer to 2% more without it
+
 What each option saves of the bundles arktype benchmarks, minified and gzipped, in bytes:
 
 | option                            | gives up                                   | login      | moltar     | shop         |
@@ -127,6 +134,9 @@ What each option saves of the bundles arktype benchmarks, minified and gzipped, 
 | `lazy: false`                     | creating a validator where it's first read | 16 / 9     | 16 / 8     | 292 / 96     |
 | `checks: "none"`                  | checking the Types a factory receives      | 97 / 50    | 97 / 49    | 1581 / 734   |
 | `mutatesInput: true`              | the input left as it was                   | 0 / 0      | 0 / 0      | 2883 / 881   |
+| `optimize: "size"`                | validating and loading as fast             | 107 / 42   | 133 / 67   | 2793 / 528   |
+
+Every option together leaves them 1219 / 687, 1370 / 678 and 9917 / 3650 bytes, from 3550 / 1701, 4219 / 1772 and 30827 / 8954.
 
 ## Configuration
 

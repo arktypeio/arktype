@@ -1354,21 +1354,24 @@ try {
 			},
 			fromHere("temp", "commonjs")
 		)
-		const { outputFiles } = await esbuild({
-			entryPoints: [join(root, "main.ts")],
-			bundle: true,
-			write: false,
-			format: "cjs",
-			logLevel: "silent",
-			conditions,
-			plugins: [precompile.esbuild({ cwd: root, conditions })]
-		})
-		attest(
-			spawnSync(process.execPath, ["--input-type=commonjs"], {
-				input: outputFiles[0].text,
-				encoding: "utf8"
-			}).stdout
-		).equals("TypeError\n")
+		// a build optimized for size declares its traversals in their modules, so each transforming one is strict itself
+		for (const optimize of ["speed", "size"] as const) {
+			const { outputFiles } = await esbuild({
+				entryPoints: [join(root, "main.ts")],
+				bundle: true,
+				write: false,
+				format: "cjs",
+				logLevel: "silent",
+				conditions,
+				plugins: [precompile.esbuild({ cwd: root, conditions, optimize })]
+			})
+			attest(
+				spawnSync(process.execPath, ["--input-type=commonjs"], {
+					input: outputFiles[0].text,
+					encoding: "utf8"
+				}).stdout
+			).equals("TypeError\n")
+		}
 	}).timeout(60000)
 
 	it("reports what the standalone runtime's frozen values reject", async () => {

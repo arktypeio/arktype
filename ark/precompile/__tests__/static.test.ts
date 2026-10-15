@@ -1433,6 +1433,16 @@ console.log(values.map(v => (v as any).from))`,
 					"errors with runtime: arktype, though it's the default",
 					{ runtime: "arktype", errors: "all" },
 					writeArktypeRuntimeOptionMessage("errors")
+				],
+				[
+					"optimize that isn't one",
+					{ optimize: "time" as never },
+					writeOptionValueMessage("optimize", '"time"', '"speed" or "size"')
+				],
+				[
+					"optimize with runtime: arktype, though it's the default",
+					{ runtime: "arktype", optimize: "speed" },
+					writeArktypeRuntimeOptionMessage("optimize")
 				]
 			]
 			for (const [name, opts, message] of refused) {

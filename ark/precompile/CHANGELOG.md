@@ -4,7 +4,7 @@
 
 ### A standalone validator's `length` is 1
 
-A standalone validator declares only its data, so its `length` is 1 where a Type's is 2, and a call passing only data, as most do, pads no parameters. A copy a factory keys with a Scope's functions still declares a traversal and an `onFail`, so its `length` stays 2. Every validator reads a traversal and an `onFail` passed after its data as before, and a Type piping to it still passes it the Type's traversal, which takes its errors rather than letting a throwing `onFail` throw them.
+A standalone validator declares only its data, so its `length` is 1 where a Type's is 2, and a call passing only data, as most do, pads no parameters. A copy a factory keys with a Scope's functions, and a validator built with `optimize: "size"`, which shares the closure calling its root apply, still declares a traversal and an `onFail`, so its `length` stays 2. Every validator reads a traversal and an `onFail` passed after its data as before, and a Type piping to it still passes it the Type's traversal, which takes its errors rather than letting a throwing `onFail` throw them.
 
 ### Emit declarations whose Types share one file of shapes
 
@@ -15,6 +15,14 @@ precompile.vite({ declare: true })
 ```
 
 It needs the compiler API of TypeScript 5.5 to 6 from the optional `typescript` peer, which a TypeScript 7 project installs as `typescript-6`.
+
+### Write standalone validators for size with `optimize: "size"`
+
+`optimize: "size"` writes validators for size rather than speed: their functions compile as they're first called, validators whose root applies are written alike share one, and a unit's traversals are declared at the top level of its module. The benchmarked login, moltar and shop apps lose 42, 67 and 528 bytes gzipped, and 44, 35 and 451 with every other option. A site calling several validators in turn runs 49% more instructions per call, and a validation bundled by esbuild or loaded unbundled up to 22% or 36% more, as the README details.
+
+```ts
+precompile.vite({ optimize: "size" })
+```
 
 ### Return one issue saying only that data is invalid with `errors: "none"`
 

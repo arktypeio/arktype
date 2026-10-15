@@ -42,6 +42,7 @@ import {
 	type Checks,
 	type Configured,
 	type ErrorDetail,
+	type Optimization,
 	type ValidatorMember,
 	type ValidatorMembers,
 	type DefaultCheck,
@@ -139,6 +140,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	lazy?: boolean | undefined
 	// true writes what a standalone validation transforms into its input, which it returns
 	mutatesInput?: boolean | undefined
+	// "size" writes standalone validators in their shortest forms rather than those V8 runs fastest
+	optimize?: Optimization | undefined
 	// create each site with arktype too, from the same holes, and throw where its validator observes anything else
 	shadow?: boolean | undefined
 }
@@ -328,6 +331,7 @@ export class Precompiler {
 	freeze: boolean
 	lazy: boolean
 	mutatesInput: boolean
+	optimize: Optimization
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
@@ -373,6 +377,7 @@ export class Precompiler {
 		this.freeze = opts?.freeze !== false
 		this.lazy = opts?.lazy !== false
 		this.mutatesInput = opts?.mutatesInput === true
+		this.optimize = opts?.optimize ?? "speed"
 		if (
 			opts?.members !== undefined &&
 			objectKindOrDomainOf(opts.members) !== "object"
@@ -1277,6 +1282,7 @@ export class Precompiler {
 						lazy: this.lazy,
 						checks: this.checks,
 						mutatesInput: this.mutatesInput,
+						optimize: this.optimize,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module)
 					},
@@ -3589,7 +3595,8 @@ const booleanOptions = ["freeze", "lazy", "mutatesInput"] as const
 
 const enumOptions = {
 	checks: ["types", "helpers", "none"],
-	errors: ["all", "first", "none"]
+	errors: ["all", "first", "none"],
+	optimize: ["speed", "size"]
 } as const
 
 // the options choosing what a standalone build writes, which runtime: "arktype" doesn't take

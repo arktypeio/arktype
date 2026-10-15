@@ -206,6 +206,8 @@ export type Checks = "types" | "helpers" | "none"
 // what a failed validation returns: each issue, the first one, or one at the root saying only that data is invalid
 export type ErrorDetail = "all" | "first" | "none"
 
+export type Optimization = "speed" | "size"
+
 export interface ConfiguredModule {
 	fingerprint: string
 	path: string
@@ -234,6 +236,8 @@ export interface StandaloneOptions {
 	checks?: Checks | undefined
 	// true writes what a validation transforms into its input, which it returns
 	mutatesInput?: boolean | undefined
+	// "size" writes the shortest forms of what V8 would compile as the artifact loads, and has validators share the root applies they write alike
+	optimize?: Optimization | undefined
 	// declares what a site calls as functions, for a module an import cycle can reach before its artifact is evaluated
 	hoisted?: boolean | undefined
 }
@@ -254,18 +258,28 @@ interface Baking {
 	hoisted: boolean
 	// writes the shortest forms rather than those V8 compiles and runs fastest as the artifact loads
 	shortest: boolean
+	// declares a shared unit's traversals in its module, which V8 calls slower than the constants of a function building them
+	flattens: boolean
 }
 
-// a function a site calls, declared to be called before its module is evaluated, else parenthesized for V8 to compile with the module
+// a root apply as what a function of its unit's traversals or its shape returns
+interface RootApplier {
+	params: string
+	apply: string
+	args: string
+	failure?: keyof typeof failureSources
+}
+
+// a function a site calls, declared to be called before its module is evaluated, else parenthesized for V8 to compile with the module unless the build is optimized for size
 const writeFunction = (
-	hoisted: boolean,
+	baking: Baking,
 	name: string,
 	params: string,
 	body: string
 ) =>
-	hoisted ?
-		`function ${name}(${params}) {\n${body}\n}`
-	:	`const ${name} = ((${params}) => {\n${body}\n})`
+	baking.hoisted ? `function ${name}(${params}) {\n${body}\n}`
+	: baking.shortest ? `const ${name} = (${params}) => {\n${body}\n}`
+	: `const ${name} = ((${params}) => {\n${body}\n})`
 
 const isCreatedByRuntime = (
 	members: ReadonlySet<ValidatorMember>,
@@ -342,7 +356,15 @@ export const precompileStandalone = (
 	const shared: Record<string, SharedModule> = {}
 	const folds: StandaloneModules["folds"] = {}
 	const checking: string[] = []
-	const sections = writeArtifact(exports, opts, shared, {}, folds, checking)
+	const sections = writeArtifact(
+		exports,
+		opts,
+		shared,
+		{},
+		folds,
+		checking,
+		false
+	)
 	return {
 		code: writeSections([
 			runtimeImport,
@@ -370,7 +392,8 @@ export const precompileStandaloneModules = (
 		shared,
 		imports,
 		folds,
-		checking
+		checking,
+		true
 	)
 	const modules: Record<string, string> = {}
 	for (const specifier in shared) {
@@ -400,7 +423,9 @@ const writeArtifact = (
 	shared: Record<string, SharedModule>,
 	imports: Record<string, string[]>,
 	folds: StandaloneModules["folds"],
-	checking: string[]
+	checking: string[],
+	// whether each shared unit is a module of its own, rather than declared in one scope with the others
+	isModular: boolean
 ): string[] => {
 	const { configured } = opts
 	const members = opts.members ?? {}
@@ -418,7 +443,8 @@ const writeArtifact = (
 		checksTypes: opts.checks !== "none",
 		mutatesInput: opts.mutatesInput === true,
 		hoisted: opts.hoisted === true,
-		shortest: false
+		shortest: opts.optimize === "size",
+		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
@@ -532,7 +558,7 @@ const writeArtifact = (
 		if (fold && fold[0] !== name) return ""
 		const params = artifact.factory!.params.map((_, i) => `p${i}`)
 		if (fold) params.unshift("index")
-		return `${writeFunction(baking.hoisted, `factory${index}`, params.join(", "), artifact.writeRekeying(fold ? `${creation}[index]` : readOf(creation, position)).join("\n\n"))}
+		return `${writeFunction(baking, `factory${index}`, params.join(", "), artifact.writeRekeying(fold ? `${creation}[index]` : readOf(creation, position)).join("\n\n"))}
 
 ${writeExport(name, index)}`
 	}
@@ -626,7 +652,7 @@ const writeCreations = (
 	// declared as functions, which a site an import cycle reaches before the artifact is evaluated can call
 	const getters = names.flatMap((name, i) => {
 		if (folded.has(name)) return []
-		return `${writeFunction(baking.hoisted, `get${i}`, "", `\treturn ${readOf(...reads[name])}`)}\n\nexport { get${i} as ${JSON.stringify(name)} }`
+		return `${writeFunction(baking, `get${i}`, "", `\treturn ${readOf(...reads[name])}`)}\n\nexport { get${i} as ${JSON.stringify(name)} }`
 	})
 	return [
 		[
@@ -961,7 +987,7 @@ export class StandaloneArtifact {
 			readsRuntime: true,
 			imports: {},
 			declarations: [
-				writeFunction(this.baking.hoisted, name, "holder", `\treturn ${body}`)
+				writeFunction(this.baking, name, "holder", `\treturn ${body}`)
 			],
 			exports: [name]
 		}
@@ -1171,7 +1197,7 @@ export class StandaloneArtifact {
 		return this.baking.createsLazily ?
 				`var created${index}
 
-${writeFunction(this.baking.hoisted, `create${index}`, "", body)}`
+${writeFunction(this.baking, `create${index}`, "", body)}`
 			:	`const created${index} = /* @__PURE__ */ (() => {\n${body}\n})()`
 	}
 
@@ -1266,7 +1292,7 @@ ${writeFunction(this.baking.hoisted, `create${index}`, "", body)}`
 		return `${units.join("\n")}
 
 ${writeFunction(
-	this.baking.hoisted,
+	this.baking,
 	`factory${index}`,
 	params.map((_, i) => `p${i}`).join(", "),
 	statements.filter(statement => statement).join("\n\n")
@@ -1331,10 +1357,6 @@ ${writeFunction(
 		const returned = returnedOf(unit, this.baking)
 		const read =
 			this.baking.detailsErrors ? undefined : namesReadBy(unit, returned)
-		const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(
-			unit,
-			read
-		)
 		// a root its own traversals read, as in a cycle, is created with them
 		const ownRoots = unit.roots.filter(root =>
 			unit.refs.some(
@@ -1356,28 +1378,57 @@ ${writeFunction(
 			returned.push(shape)
 			return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(root, shape, unit, this.traversalsOf(root, unit))}))`
 		})
-		const unitFunction = this.writeUnitFunction(
-			unit,
-			[...dependencyParams, ...writing.params],
-			[...this.declarations.statements, ...refs],
-			links,
-			returned
-		)
-		const built = `(${unitFunction})(${[...dependencyArgs, ...writing.args].join(", ")})`
-		// a function a parameter destructures can't declare "use strict"
-		const build =
-			isStrict(unit) ?
-				`(function () {\n"use strict"\nreturn ${built}\n})`
-			:	`(() => ${built})`
-		const moduleDeclarations =
-			this.baking.hoisted ?
-				[
-					`var ${unit.name}Unit`,
-					`function ${unit.name}() {\n${isStrict(unit) ? `\t"use strict"\n` : ""}\treturn (${unit.name}Unit ??= ${built})\n}`
-				]
-			:	[
-					`const ${unit.name} = /* @__PURE__ */ ${isStrict(unit) ? `${build}()` : built}`
-				]
+		const moduleDeclarations: string[] = []
+		// a unit importing another's traversals by name, so neither is built by a function
+		if (this.baking.flattens) {
+			for (const name in unit.dependencies) {
+				if (read && !read.has(name)) continue
+				const dependency = unitOf(unit.dependencies[name][0], unit)
+				this.importName(this.specifierOf(dependency.name), name)
+			}
+			moduleDeclarations.push(
+				...writing.params.map(
+					(param, i) => `const ${param} = ${writing.args[i]}`
+				),
+				...this.declarations.statements,
+				...refs,
+				...this.declareMembers(
+					unit,
+					[...this.declarations.statements, ...refs, ...links, ...returned],
+					isStrict(unit)
+				),
+				...links,
+				`const ${unit.name} = [${returned.join(", ")}]`
+			)
+		} else {
+			const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(
+				unit,
+				read
+			)
+			const unitFunction = this.writeUnitFunction(
+				unit,
+				[...dependencyParams, ...writing.params],
+				[...this.declarations.statements, ...refs],
+				links,
+				returned
+			)
+			const built = `(${unitFunction})(${[...dependencyArgs, ...writing.args].join(", ")})`
+			// a function a parameter destructures can't declare "use strict"
+			const build =
+				isStrict(unit) ?
+					`(function () {\n"use strict"\nreturn ${built}\n})`
+				:	`(() => ${built})`
+			moduleDeclarations.push(
+				...(this.baking.hoisted ?
+					[
+						`var ${unit.name}Unit`,
+						`function ${unit.name}() {\n${isStrict(unit) ? `\t"use strict"\n` : ""}\treturn (${unit.name}Unit ??= ${built})\n}`
+					]
+				:	[
+						`const ${unit.name} = /* @__PURE__ */ ${isStrict(unit) ? `${build}()` : built}`
+					])
+			)
+		}
 		for (const root of unit.roots) {
 			const name = unit.names[root.id]
 			const shape = writing.shapesByName[name]
@@ -1408,7 +1459,10 @@ ${writeFunction(
 			declarations: moduleDeclarations,
 			exports: [
 				unit.name,
-				...unit.roots.map(root => `${unit.names[root.id]}Node`)
+				...unit.roots.map(root => `${unit.names[root.id]}Node`),
+				...(this.baking.flattens ?
+					returnedOf(unit, this.baking).filter(name => name)
+				:	[])
 			]
 		}
 	}
@@ -1421,20 +1475,35 @@ ${writeFunction(
 		returned: string[]
 	): string {
 		const directive = declaresStrict(unit) ? `"use strict"\n` : ""
-		const members = calledMembersOf(unit.members, [
+		const declarations = this.declareMembers(unit, [
 			...prologue,
 			...epilogue,
 			...returned
 		])
-		// no traversal reads `this` or `arguments`; only Apply and Copy run rarely
-		const declarations = members.map(([name, source]) => {
-			const arrow = source.replace(/^function(\([^)]*\))/, "$1 =>")
-			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? arrow : this.compiledOnLoad(arrow)}`
-		})
 		return `(${params.join(", ")}) => {
 ${directive}${[...prologue, ...declarations, ...epilogue].join("\n")}
 return [${returned.join(", ")}]
 }`
+	}
+
+	// no traversal reads `this` or `arguments`; only Apply and Copy run rarely
+	declareMembers(
+		unit: RootUnit,
+		readers: string[],
+		isStrict = false
+	): string[] {
+		return calledMembersOf(unit.members, readers).map(([name, source]) => {
+			// its parameters are plain names, and size drops a trailing unread ctx
+			const arrow = source.replace(
+				/^function\(([^)]*)\) {/,
+				(signature, params: string) =>
+					`(${this.baking.shortest && !/\bctx\b/.test(source.slice(signature.length)) ? params.replace(/, ctx$/, "") : params}) => {${
+						// declared in a module, a traversal that writes is strict even where a bundle's format isn't
+						isStrict && !name.endsWith("Allows") ? `\n"use strict"\n` : ""
+					}`
+			)
+			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? arrow : this.compiledOnLoad(arrow)}`
+		})
 	}
 
 	// V8 compiles a parenthesized function with its module, which Node's compile cache then holds, rather than parsing it again where it's first called
@@ -1565,10 +1634,7 @@ return [${returned.join(", ")}]
 		// beyond the shortest forms, a validator is made from what the build writes, a compact root apply's being the validator itself, and only one inheriting traverse is passed a Type's traversal though its length is 1
 		const ownsValidator =
 			!isTemplate && !this.baking.shortest && members.has("methods")
-		const [rootApply, allows, isCompact] = this.emitRootApply(
-			root,
-			ownsValidator
-		)
+		const [applied, allows, isCompact] = this.emitRootApply(root, ownsValidator)
 		// emitted before the key encodes it, so a value the build can't emit is refused for what it is
 		const meta =
 			!keepsMeta ? undefined
@@ -1589,10 +1655,26 @@ return [${returned.join(", ")}]
 		// a validator without its meta still fails as the meta's onFail does, as a matcher asserting its default does
 		const onFail =
 			!keepsMeta && root.meta.onFail ? this.emit(root.meta.onFail) : undefined
+		const rootApply = () =>
+			typeof applied === "string" ? applied : (
+				`${this.emitApplier(applied.params, applied.apply, applied.failure)}(${applied.args})`
+			)
+		// a build optimized for size has a validator whose root apply reads only its unit's traversals created from the unit, by a creator holding the apply
+		const fused =
+			(
+				this.baking.shortest &&
+				typeof applied === "object" &&
+				applied.params.startsWith("[allows") &&
+				!isTemplate &&
+				!isCreatedByRuntime(members, this.baking)
+			) ?
+				applied
+			:	undefined
 		const args = [
-			...(ownsValidator && !isCompact ?
-				["runtime.callingRootApply", `[${allows}, ${rootApply}]`]
-			:	[rootApply, allows]),
+			...(fused ? [fused.args]
+			: ownsValidator && !isCompact ?
+				["runtime.callingRootApply", `[${allows}, ${rootApply()}]`]
+			:	[rootApply(), allows]),
 			...(attributes.length ? [`{ ${attributes.join(", ")} }`] : []),
 			...(!this.baking.checksTypes ? []
 			: held ? [writeId(id), held]
@@ -1603,7 +1685,7 @@ return [${returned.join(", ")}]
 		const created = `${
 			isTemplate ? "["
 			: !isCreatedByRuntime(members, this.baking) ?
-				`${this.creatorOf(members, ownsValidator)}(`
+				`${this.creatorOf(members, ownsValidator, fused)}(`
 			: ownsValidator ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
@@ -1615,7 +1697,8 @@ return [${returned.join(", ")}]
 	// written for what a build's validators keep, as the runtime's creators taking it would grow every build keeping it all
 	creatorOf(
 		members: ReadonlySet<ValidatorMember>,
-		ownsValidator: boolean
+		ownsValidator: boolean,
+		applier?: RootApplier
 	): string {
 		const keepsMeta = members.has("meta")
 		const hasAttributes =
@@ -1626,6 +1709,7 @@ return [${returned.join(", ")}]
 				"make(parts, configuredOnFail)"
 			:	"(data, pipedFromCtx, onFail = configuredOnFail) => pipedFromCtx ? runtime.pipedInto(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)"
 		const body = [
+			applier ? `const rootApply = ${applier.apply}` : "",
 			!keepsMeta ? ""
 			: this.baking.readsConfig ?
 				"const configuredOnFail = attributes.meta.onFail ?? runtime.runtimeConfig.onFail"
@@ -1654,7 +1738,9 @@ return [${returned.join(", ")}]
 			.map(statement => `\t${statement}`)
 			.join("\n")
 		const params = [
-			...(ownsValidator ? ["make", "parts"] : ["rootApply", "allows"]),
+			...(ownsValidator ? ["make", "parts"]
+			: applier ? [applier.params]
+			: ["rootApply", "allows"]),
 			...(hasAttributes ? ["attributes"] : []),
 			...(this.baking.checksTypes ? ["id", "holes = []"] : []),
 			...(keepsMeta ? []
@@ -1666,10 +1752,11 @@ return [${returned.join(", ")}]
 		const specifier = this.specifierOf(name)
 		this.sharedModules[specifier] ??= {
 			readsRuntime: true,
-			imports: {},
-			declarations: [
-				writeFunction(this.baking.hoisted, name, params.join(", "), body)
-			],
+			imports:
+				applier?.failure ?
+					{ [this.declareFailure(applier.failure)]: [applier.failure] }
+				:	{},
+			declarations: [writeFunction(this.baking, name, params.join(", "), body)],
 			exports: [name]
 		}
 		this.importName(specifier, name)
@@ -1749,15 +1836,19 @@ return [${returned.join(", ")}]
 	}
 
 	readFailure(name: keyof typeof failureSources): string {
+		return this.read(this.declareFailure(name), name, name, name)
+	}
+
+	declareFailure(name: keyof typeof failureSources): string {
 		const specifier = this.specifierOf(name)
 		const [params, body] = failureSources[name]
 		this.sharedModules[specifier] ??= {
 			readsRuntime: name === "invalid" || name === "invalidCall",
 			imports: {},
-			declarations: [writeFunction(this.baking.hoisted, name, params, body)],
+			declarations: [writeFunction(this.baking, name, params, body)],
 			exports: [name]
 		}
-		return this.read(specifier, name, name, name)
+		return specifier
 	}
 
 	// a writer is declared by its text, so each JSON Schema a validator bakes is written once however many of its members return it
@@ -1882,7 +1973,7 @@ return [${returned.join(", ")}]
 	emitRootApply(
 		root: BaseRoot,
 		asValidator: boolean
-	): [rootApply: string, allows: string, isCompact: boolean] {
+	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		// a callback can read the API Traversal adds, which none of the runtime's own keywords declaring one parameter does
 		const callbacks = declares(
 			root,
@@ -1942,7 +2033,6 @@ return [${returned.join(", ")}]
 			isArrow && appliesErrors && !root.allowsRequiresContext ?
 				this.compactTraversalsOf(root)
 			:	undefined
-		// each validator writes its own, as one validators shared calls every node's Allows from one site, which V8 can't inline where a site calls several validators
 		if (traversals) {
 			const pattern =
 				this.baking.shortest ?
@@ -1959,7 +2049,11 @@ return [${returned.join(", ")}]
 				]
 			}
 			return [
-				`((${pattern}) => ${this.compiledOnLoad(`(data, onFail) => allows(data) ? ${valid} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${parts})`,
+				{
+					params: pattern,
+					apply: `(data, onFail) => allows(data) ? ${valid} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`,
+					args: parts
+				},
 				`${traversals}[0]`,
 				false
 			]
@@ -1968,7 +2062,11 @@ return [${returned.join(", ")}]
 		const node = inPlace ? `runtime.inPlaceNode(${shape})` : shape
 		if (isArrow) {
 			return [
-				`((node) => ${this.compiledOnLoad(`(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${node})`,
+				{
+					params: "node",
+					apply: `(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`,
+					args: node
+				},
 				`${shape}.allows`,
 				false
 			]
@@ -1997,9 +2095,11 @@ return [${returned.join(", ")}]
 		root: BaseRoot,
 		ctx: string,
 		asValidator: boolean
-	): [rootApply: string, allows: string, isCompact: boolean] {
+	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const strategy = root.rootApplyStrategy
-		const invalid = () => `${this.readFailure("invalid")}(data, onFail)`
+		// optimized for size, the module holding the apply imports it
+		const invalid = () =>
+			`${this.baking.shortest ? "invalid" : this.readFailure("invalid")}(data, onFail)`
 		const transforms = root.transforms
 		// a union without a discriminant transforms what a branch allows, returning unset where none does
 		const selects =
@@ -2074,10 +2174,35 @@ return [${returned.join(", ")}]
 		const node =
 			parts ?? (inPlace ? `runtime.inPlaceTransformNode(${shape})` : shape)
 		return [
-			`((${params}${captures ? ", TransformErrors" : ""}) => ${this.compiledOnLoad(apply)})(${node}${captures ? `, ${this.emit(rootApplyRuntime.TransformErrors)}` : ""})`,
+			{
+				params: `${params}${captures ? ", TransformErrors" : ""}`,
+				apply,
+				args: `${node}${captures ? `, ${this.emit(rootApplyRuntime.TransformErrors)}` : ""}`,
+				failure: "invalid"
+			},
 			traversals ? `${traversals}[0]` : `${shape}.allows`,
 			false
 		]
+	}
+
+	// what creates a root apply, which each validator writes as its own, as one validators shared would call every node's Allows from one site, which V8 can't inline where a site calls several, unless the build is optimized for size
+	emitApplier(
+		params: string,
+		apply: string,
+		failure?: keyof typeof failureSources
+	): string {
+		if (!this.baking.shortest)
+			return `((${params}) => ${this.compiledOnLoad(apply)})`
+		const body = `\treturn ${apply}`
+		const name = `apply${hashOf(`${params}\n${body}`)}`
+		const specifier = this.specifierOf(name)
+		this.sharedModules[specifier] ??= {
+			readsRuntime: true,
+			imports: failure ? { [this.declareFailure(failure)]: [failure] } : {},
+			declarations: [writeFunction(this.baking, name, params, body)],
+			exports: [name]
+		}
+		return this.read(specifier, name, name, name)
 	}
 
 	// a root apply that is one arrow reads its root's traversals from its unit, where they come first, so its validator needs no shape
@@ -2139,9 +2264,7 @@ return [${returned.join(", ")}]
 		this.sharedModules[this.specifierOf(name)] ??= {
 			readsRuntime: false,
 			imports,
-			declarations: [
-				writeFunction(this.baking.hoisted, name, "", `\treturn ${body}`)
-			],
+			declarations: [writeFunction(this.baking, name, "", `\treturn ${body}`)],
 			exports: [name]
 		}
 		this.stringModuleNamesByRoot[kind].set(root, name)
