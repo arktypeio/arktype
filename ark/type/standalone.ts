@@ -3107,6 +3107,84 @@ class MutatingCompiler extends StandaloneCompiler {
 	}
 }
 
+const canBeObject = (node: BaseRoot): boolean =>
+	node.overlaps($ark.intrinsic.object.internal)
+
+// whether checking a value reads into an object it holds
+const readsHeld = (branch: BaseRoot): boolean => {
+	const checked = branch.rawIn
+	return (
+		checked.includesAlias ||
+		(checked.hasKind("intersection") &&
+			checked.inner.predicate !== undefined) ||
+		checked.flatRefs.some(
+			({ path, node }) =>
+				path.length > 1 ||
+				(canBeObject(node) && !node.branches.every(b => b.isBasis()))
+		)
+	)
+}
+
+// whether a union picks the branch it transforms by reading into an object
+const selectsByHeld = (node: UnionNode): boolean => {
+	const discriminant = node.compiledDiscriminant
+	if (!discriminant) return node.branches.some(readsHeld)
+	return (
+		discriminant.path.length > 1 ||
+		Object.values(discriminant.cases).some(
+			v => v !== true && v.transforms && v.hasKind("union") && selectsByHeld(v)
+		)
+	)
+}
+
+// no morph or union may read into an object a place before it can write
+const assertReadsUnwritten = (root: BaseRoot): void => {
+	const scanned = new Map<BaseNode, boolean>()
+	const scan = (node: BaseNode, unwritten: boolean): void => {
+		const previous = scanned.get(node)
+		if (!node.transforms || previous === false || previous === unwritten) return
+		scanned.set(node, unwritten)
+		if (node.hasKind("alias")) return scan(node.resolution, unwritten)
+		if (node.hasKind("union")) {
+			if (!unwritten && selectsByHeld(node)) throwParseError(inPlaceReadMessage)
+			for (const branch of node.branches) scan(branch, unwritten)
+			return
+		}
+		if (node.hasKind("structure")) {
+			// a structure writes nothing before the first prop it transforms
+			const first =
+				node.index?.some(index => index.value.transforms) ?
+					undefined
+				:	node.props.find(prop => prop.value.transforms)
+			for (const child of node.children) {
+				if (child === first) scan(first.value, unwritten)
+				else scan(child, false)
+			}
+			return
+		}
+		if (!node.hasKind("morph")) {
+			for (const child of node.children)
+				scan(child, unwritten && node.hasKind("intersection"))
+			return
+		}
+		const input = node.inner.in
+		if (input) scan(input, unwritten)
+		// a morph from a value that can't be an object returns a new one
+		let received =
+			(unwritten && !input?.transforms) ||
+			!canBeObject(input ? input.rawOut : node.rawIn)
+		for (const morph of node.morphs) {
+			const isType = hasArkKind(morph, "root")
+			if (!received && (!isType || canBeObject(morph.rawIn)))
+				throwParseError(inPlaceReadMessage)
+			if (!isType) continue
+			scan(morph, received)
+			received = (received && !morph.transforms) || !canBeObject(morph.rawOut)
+		}
+	}
+	scan(root, true)
+}
+
 // a build writing what it transforms into its input writes units of its own, which differ only in their code
 const unitsByRoot = [
 	new WeakMap<BaseRoot, RootUnit[]>(),
@@ -3117,6 +3195,7 @@ const rootUnitsOf = (root: BaseRoot, mutatesInput = false): RootUnit[] => {
 	const cached = unitsByRoot[+mutatesInput]
 	let units = cached.get(root)
 	if (!units) {
+		if (mutatesInput) assertReadsUnwritten(root)
 		cached.set(
 			root,
 			(units = precompileRootUnits(root, {
@@ -3434,4 +3513,8 @@ export type writeUnprecompilableMessage<value extends string> =
 
 export const inPlaceKeyMessage = writeUnprecompilableMessage(
 	"with mutatesInput, a key transformed in place before another constraint transforms it"
+)
+
+export const inPlaceReadMessage = writeUnprecompilableMessage(
+	"with mutatesInput, a morph or union reading an object a transform before it may have written"
 )

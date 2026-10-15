@@ -136,7 +136,10 @@ main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator la
 			.snap(`main.ts:3:23  type({ "tags?": ["object", ["string", "=", "none"]], "[stri… can't be precompiled yet
   with mutatesInput, a key transformed in place before another constraint transforms it can't be precompiled to a standalone validator
   Build without mutatesInput to precompile it.
-1 site in 1 file: 0 accepted (0.0%)
+main.ts:8:23  type({ a: { n: "string.numeric.parse" }, b: type({ inner: {… can't be precompiled yet
+  with mutatesInput, a morph or union reading an object a transform before it may have written can't be precompiled to a standalone validator
+  Build without mutatesInput to precompile it.
+2 sites in 1 file: 0 accepted (0.0%)
 `)
 		attest(cli("--check", "--errors", "none").stdout)
 			.snap(`forms.ts:4:21  accepted

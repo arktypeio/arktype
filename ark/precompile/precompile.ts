@@ -30,6 +30,7 @@ import {
 	defaultMembers,
 	holeNamePattern,
 	inPlaceKeyMessage,
+	inPlaceReadMessage,
 	introspectionMembers,
 	isTypedFn,
 	keyOf,
@@ -1904,7 +1905,12 @@ export class Precompiler {
 			this.rejectionSeverity,
 			`${module.snippetOf(site)} can't be precompiled yet`,
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
-			reasons.includes(inPlaceKeyMessage) ? inPlaceKeyHint : undefined
+			(
+				reasons.includes(inPlaceKeyMessage) ||
+					reasons.includes(inPlaceReadMessage)
+			) ?
+				inPlaceHint
+			:	undefined
 		)
 	}
 
@@ -3704,7 +3710,7 @@ export const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
 
 // runtime: "arktype" takes no mutatesInput
-const inPlaceKeyHint = "Build without mutatesInput to precompile it."
+const inPlaceHint = "Build without mutatesInput to precompile it."
 
 const writeUnsureHint = (fix: string) =>
 	`If it isn't a Type, annotate it with its type. If it is, ${fix}.`

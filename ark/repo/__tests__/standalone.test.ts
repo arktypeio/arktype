@@ -22,6 +22,7 @@ import { ark, generic, match, scope, type, type Scope } from "arktype"
 import { de } from "arktype/locales/de"
 import {
 	inPlaceKeyMessage,
+	inPlaceReadMessage,
 	precompileStandalone,
 	precompileStandaloneModules,
 	writeUnprecompilableMessage,
@@ -1401,33 +1402,120 @@ name is missing`)
 		attest(() => Wrapped(wrapped)).throws(transformedInPlaceTwiceMessage)
 	})
 
-	it("transforms anew what a Type piped a morph's output receives, and resumes after it, where its build mutates input", async () => {
-		const Defaulted = type({ n: "string.trim" }).to({
-			n: "string",
-			m: "string = 'x'"
-		})
+	it("transforms through a morph or union reading nothing a transform before it may have written, where its build mutates input", async () => {
+		const wrap = standIn((o: object) => ({ inner: o }), "wrap")
+		const twice = standIn((o: object) => ({ a: o, b: o }), "twice")
 		const J = type({ j: "string.json.parse" })
 		const $ = scope({
-			node: { value: "string.trim", "next?": "node | null" }
+			node: { j: "string.json.parse", "next?": "node" }
 		}).export()
-		const { Staged, Linked, Around } = await loadMutating({
-			Staged: type({ inner: { n: "string.trim" } }).to({
-				inner: { n: "string", m: "string = 'x'" }
-			}),
-			Linked: type({ next: { value: "string.trim" } }).to($.node),
-			Around: type({ a: J, b: Defaulted, c: J })
+		const { Wrapping, First, Twice, Parsed, Picked } = await load(
+			{
+				Wrapping: {
+					type: type({ n: "string" })
+						.pipe(wrap)
+						.to({ inner: { n: "string.trim" } }),
+					params: [{ kind: "function", label: "`wrap`", value: wrap }]
+				},
+				First: {
+					type: type({ a: type({ n: "string" }).pipe(wrap), b: J }),
+					params: [{ kind: "function", label: "`wrap`", value: wrap }]
+				},
+				Twice: {
+					type: type({ j: "string" })
+						.pipe(twice)
+						.to({ a: J, b: J, "c?": $.node }),
+					params: [{ kind: "function", label: "`twice`", value: twice }]
+				},
+				Parsed: type({ a: J, b: type("string.json.parse").to(J), c: J }),
+				Picked: type({
+					a: J,
+					b: type({ k: "'x'", j: "string.json.parse" }).or({
+						k: "'y'",
+						j: "string"
+					})
+				})
+			},
+			undefined,
+			undefined,
+			printed,
+			{ mutatesInput: true }
+		)
+		const wrapped = { n: " a " }
+		attest(Wrapping(wrap)(wrapped)).equals({ inner: { n: "a" } })
+		attest(wrapped).equals({ n: "a" })
+		attest(First(wrap)({ a: { n: "x" }, b: { j: "1" } })).equals({
+			a: { inner: { n: "x" } },
+			b: { j: 1 }
 		})
-		attest(Staged({ inner: { n: " a " } })).equals({
-			inner: { n: "a", m: "x" }
-		})
-		attest(Linked({ value: " a ", next: { value: " b " } })).equals({
-			value: "a",
-			next: { value: "b" }
-		})
+		const held = { j: '{ "x": 1 }' }
+		const doubled = Twice(twice)(held)
+		attest(doubled).equals({ a: { j: { x: 1 } }, b: { j: { x: 1 } } })
+		attest(doubled.b).is(held)
+		attest(doubled.a).is(held)
 		const shared = { j: "1" }
-		const out = Around({ a: shared, b: { n: " b " }, c: shared })
-		attest(out).equals({ a: { j: 1 }, b: { n: "b", m: "x" }, c: { j: 1 } })
+		const out = Parsed({ a: shared, b: '{ "j": "2" }', c: shared })
+		attest(out).equals({ a: { j: 1 }, b: { j: 2 }, c: { j: 1 } })
 		attest(out.c).is(out.a)
+		attest(Picked({ a: { j: "1" }, b: { k: "x", j: "2" } })).equals({
+			a: { j: 1 },
+			b: { k: "x", j: 2 }
+		})
+	})
+
+	it("rejects a morph or union that would read an object a transform before it may have written, where its build mutates input", () => {
+		const N = type({ n: "string.numeric.parse" })
+		const inner = standIn((o: { inner: { n: unknown } }) => o.inner.n, "inner")
+		const read = standIn((o: { j: unknown }) => o.j, "read")
+		const build = (T: StandaloneExport) => () =>
+			precompileStandalone({ T }, { mutatesInput: true })
+		// arktype rejects { a: s, b: { inner: s } } for s = { n: "8" }, as b reads s before a parses it
+		attest(
+			build({
+				type: type({
+					a: N,
+					b: type({ inner: "object" }).pipe(inner).to("number")
+				}),
+				params: [{ kind: "function", label: "`inner`", value: inner }]
+			})
+		).throws(inPlaceReadMessage)
+		attest(
+			build(
+				type({ inner: { n: "string.trim" } }).to({
+					inner: { n: "string", m: "string = 'x'" }
+				})
+			)
+		).throws(inPlaceReadMessage)
+		attest(
+			build({
+				type: type("string.json.parse")
+					.to({ j: "string.json.parse" })
+					.pipe(read),
+				params: [{ kind: "function", label: "`read`", value: read }]
+			})
+		).throws(inPlaceReadMessage)
+		attest(
+			build(
+				type({
+					a: N,
+					b: type({ inner: { n: "number < 5" }, j: "string.json.parse" }).or({
+						inner: { n: "number >= 5" },
+						j: "string"
+					})
+				})
+			)
+		).throws(inPlaceReadMessage)
+		attest(
+			build(
+				type({
+					a: N,
+					b: type({ inner: { k: "'x'" }, j: "string.json.parse" }).or({
+						inner: { k: "'y'" },
+						j: "string"
+					})
+				})
+			)
+		).throws(inPlaceReadMessage)
 	})
 
 	it("transforms anew each call where its build mutates input, though its errors say only that data is invalid", async () => {
