@@ -122,3 +122,54 @@ export const writeLibrary = (): string => {
 	)
 	return root
 }
+
+// a program built without error detail, and in reads/ one importing a package that imports @ark/schema, which that build can't load
+export const writeUndetailed = (): string => {
+	const root = fromHere("temp", "undetailed")
+	const reads = join(root, "node_modules", "reads")
+	mkdirSync(reads, { recursive: true })
+	mkdirSync(join(root, "reads"), { recursive: true })
+	writeFileSync(
+		join(root, "main.ts"),
+		`import { type } from "arktype"
+
+const T = type({ a: "string", b: "string.json.parse" })
+const errors = T({ a: 1, b: "[" })
+console.log(errors instanceof type.errors, String(errors))
+console.log(JSON.stringify(T({ a: "a", b: "[1]" })))
+try {
+	T.assert({ a: 1 })
+} catch (e) {
+	console.log(String(e), (e as { cause?: unknown }).cause instanceof type.errors)
+}
+`
+	)
+	writeFileSync(
+		join(root, "reads", "main.ts"),
+		'import { reads } from "reads"\n\nconsole.log(reads)\n'
+	)
+	writeFileSync(
+		join(reads, "package.json"),
+		JSON.stringify({
+			name: "reads",
+			version: "1.0.0",
+			type: "module",
+			exports: "./index.js"
+		})
+	)
+	writeFileSync(
+		join(reads, "index.js"),
+		'import { hasArkKind } from "@ark/schema"\n\nexport const reads = typeof hasArkKind\n'
+	)
+	writeFileSync(
+		join(reads, "index.d.ts"),
+		"export declare const reads: string\n"
+	)
+	return root
+}
+
+// what that program logs, its errors saying only that data is invalid
+export const undetailedOutput = `true is invalid
+{"a":"a","b":[1]}
+Error: is invalid true
+`

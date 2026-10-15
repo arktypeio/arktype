@@ -586,6 +586,21 @@ export const inPlaceParts = ([
 	transformsInPlace(transform)
 ]
 
+// as a build whose errors say only that data is invalid, which runs no Apply, wraps them
+export const inPlaceTransforms = ([
+	allows,
+	apply,
+	transform
+]: readonly Fn[]): Fn[] => [allows, apply, transformsInPlace(transform)]
+
+export const inPlaceTransformNode = <node extends { traverseTransform: Fn }>(
+	node: node
+): node =>
+	setPrototypeOf(
+		{ traverseTransform: transformsInPlace(node.traverseTransform) },
+		node
+	)
+
 export const inPlaceNode = <
 	node extends { traverseApply: Fn; traverseTransform: Fn }
 >(

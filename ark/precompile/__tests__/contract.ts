@@ -29,3 +29,6 @@ export const mutatesInput: boolean = testedOptions.mutatesInput === true
 // what an issue holds of an object, which a validator writing its input can have written to before the validation failed
 export const comparedDataOf = (data: unknown): unknown =>
 	mutatesInput && typeof data === "object" && data !== null ? "object" : data
+
+// a build whose errors say only that data is invalid fails with one issue at the root, and without the Apply that can run morphs writing what they receive
+export const detailsErrors: boolean = testedOptions.errors !== "none"

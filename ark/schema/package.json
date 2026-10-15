@@ -32,6 +32,10 @@
 			"ark-ts": "./runtime.ts",
 			"default": "./out/runtime.js"
 		},
+		"./runtime/none": {
+			"ark-ts": "./runtimeNone.ts",
+			"default": "./out/runtimeNone.js"
+		},
 		"./internal": {
 			"ark-ts": "./internal.ts",
 			"default": "./out/internal.js"

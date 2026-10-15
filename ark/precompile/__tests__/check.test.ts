@@ -138,6 +138,17 @@ main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator la
   Build without mutatesInput to precompile it.
 1 site in 1 file: 0 accepted (0.0%)
 `)
+		attest(cli("--check", "--errors", "none").stdout)
+			.snap(`forms.ts:4:21  accepted
+forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
+  \`limit\` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime
+  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
+forms.ts:16:2  a runtime island returns arktype's errors, which aren't instances of type.errors under errors: "none"
+  a build whose errors say only that data is invalid gives its validators a runtime of their own
+  Precompile the definition, or build without errors: "none".
+forms.ts:16:16  island
+3 sites in 2 files: 1 accepted (50.0%), 1 runtime island, 1 error outside a site
+`)
 	})
 
 	it("refuses an option choosing what a standalone build writes with --runtime arktype", () => {

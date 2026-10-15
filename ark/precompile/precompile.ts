@@ -41,6 +41,7 @@ import {
 	writeUnprecompilableMessage,
 	type Checks,
 	type Configured,
+	type ErrorDetail,
 	type ValidatorMember,
 	type ValidatorMembers,
 	type DefaultCheck,
@@ -130,8 +131,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	checks?: Checks | undefined
 	// what a standalone validator has besides validating
 	members?: ValidatorMembers | undefined
-	// "first" stops each standalone validation at its first issue, which is then the only one it returns
-	errors?: "all" | "first" | undefined
+	// "first" stops a standalone validation at its first issue, and "none" returns one saying only that data is invalid
+	errors?: ErrorDetail | undefined
 	// false leaves standalone validators and their members unfrozen
 	freeze?: boolean | undefined
 	// false creates standalone validators as their modules load
@@ -323,7 +324,7 @@ export class Precompiler {
 	members: ValidatorMembers
 	// e.g. traverse, from and toString where members.methods is false
 	lackedMembers: ReadonlySet<string>
-	errors: "all" | "first" | undefined
+	errors: ErrorDetail | undefined
 	freeze: boolean
 	lazy: boolean
 	mutatesInput: boolean
@@ -451,6 +452,7 @@ export class Precompiler {
 		const contract: ShadowContract = {}
 		if (this.members.meta === false) contract.members = { meta: false }
 		if (this.mutatesInput) contract.mutatesInput = true
+		if (this.errors === "none") contract.errors = "none"
 		this.shadowContract =
 			Object.keys(contract).length ? JSON.stringify(contract) : undefined
 		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
@@ -3250,8 +3252,13 @@ export class Precompiler {
 					source === "@ark/schema" && specifier.type === "ImportSpecifier" ?
 						exportNameOf(specifier.imported)
 					:	undefined
-				// e.g. `Traversal`, which the standalone runtime shares
-				if (name !== undefined && sharedSchemaExports.includes(name)) continue
+				// e.g. `Traversal`, which the standalone runtime shares unless errors are "none", whose runtime is a copy of its own
+				if (
+					name !== undefined &&
+					this.errors !== "none" &&
+					sharedSchemaExports.includes(name)
+				)
+					continue
 				const binding = module.scopes.bindingsById.get(specifier.local)
 				for (const reference of binding?.references ?? []) {
 					if (isInIsland(reference.id, module)) continue
@@ -3346,6 +3353,21 @@ export class Precompiler {
 
 	// a runtime island runs on arktype, as must every definition it reaches, which the build would otherwise precompile
 	private checkIslands(module: SourceModule): Diagnostic[] {
+		if (this.errors === "none") {
+			return module.islands.map(island =>
+				this.diagnostic(
+					module,
+					island,
+					"R4",
+					"error",
+					`a runtime island returns arktype's errors, which aren't instances of type.errors under errors: "none"`,
+					[
+						"a build whose errors say only that data is invalid gives its validators a runtime of their own"
+					],
+					`Precompile the definition, or build without errors: "none".`
+				)
+			)
+		}
 		const result: Diagnostic[] = []
 		const visited = new Set<Node>()
 		const visit = (node: Node, origin: SourceModule, reasons: string[]) =>
@@ -3566,7 +3588,8 @@ export type writeUnknownMemberMessage<member extends string> =
 const booleanOptions = ["freeze", "lazy", "mutatesInput"] as const
 
 const enumOptions = {
-	checks: ["types", "helpers", "none"]
+	checks: ["types", "helpers", "none"],
+	errors: ["all", "first", "none"]
 } as const
 
 // the options choosing what a standalone build writes, which runtime: "arktype" doesn't take

@@ -3,7 +3,8 @@ import { fromHere } from "@ark/fs"
 import {
 	configuredThreadMessage,
 	writeOptionValueMessage,
-	writeTextlessMessage
+	writeTextlessMessage,
+	writeUndetailedImportMessage
 } from "@ark/precompile"
 import { precompile as bunPlugin } from "@ark/precompile/bun"
 import { writeDeclareFrameworkMessage } from "@ark/precompile/internal/declare.ts"
@@ -29,7 +30,7 @@ import {
 	configuredUnlikeBuildMessage,
 	writeCreatedBeforeConfigureMessage
 } from "@ark/schema/runtime"
-import { writeLibrary } from "./utils.ts"
+import { undetailedOutput, writeLibrary, writeUndetailed } from "./utils.ts"
 
 const app = fromHere("app")
 const tsconfig = fromHere("..", "..", "..", "tsconfig.json")
@@ -54,14 +55,25 @@ const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
 	)
 
 // options reach the plugin in app/preload.ts through the environment
-const bun = (args: string[], runtime?: "arktype", cwd = app, config = "") => {
+const bun = (
+	args: string[],
+	runtime?: "arktype",
+	cwd = app,
+	config = "",
+	errors = ""
+) => {
 	// `bun test` sets NODE_ENV only if it isn't set, as a bundler run earlier in this process may have set it
 	const { NODE_ENV, ...env } = process.env
 	return spawnSync("bun", args, {
 		cwd,
 		encoding: "utf8",
 		timeout,
-		env: { ...env, ARKTYPE_RUNTIME: runtime ?? "", ARKTYPE_CONFIG: config }
+		env: {
+			...env,
+			ARKTYPE_RUNTIME: runtime ?? "",
+			ARKTYPE_CONFIG: config,
+			ARKTYPE_ERRORS: errors
+		}
 	})
 }
 
@@ -92,6 +104,8 @@ const cycleOrder = fromHere("cycleOrder")
 const setInStep = fromHere("setInStep")
 
 const library = writeLibrary()
+
+const undetailed = writeUndetailed()
 
 const runPlain = (cwd: string, ...args: string[]) =>
 	spawnSync(
@@ -261,6 +275,27 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 
 		it("packages that opt in", () => {
 			attest(node(["main.ts"], {}, library).stdout).equals(runPlain(library))
+		}).timeout(60000)
+
+		it("runs a program without error detail on a runtime of its own, which no other entry of @ark/schema loads beside", () => {
+			attest(node(["main.ts"], { errors: "none" }, undetailed).stdout).equals(
+				undetailedOutput
+			)
+			const { status, stderr } = node(
+				["main.ts"],
+				{ errors: "none" },
+				join(undetailed, "reads")
+			)
+			attest(status).equals(1)
+			attest(
+				stderr.includes(
+					writeUndetailedImportMessage(
+						pathToFileURL(join(undetailed, "node_modules", "reads", "index.js"))
+							.href,
+						"@ark/schema"
+					)
+				)
+			).equals(true)
 		}).timeout(60000)
 
 		it("configured", () => {
@@ -784,6 +819,23 @@ console.log(JSON.stringify([before, ${JSON.stringify(files)}.map(load)]))`
 			attest(
 				bun([...preload, "main.ts"], undefined, islands, "config.ts").stdout
 			).equals(runPlain(islands))
+		}).timeout(60000)
+
+		it("runs a program without error detail on a runtime of its own, which @ark/schema doesn't load beside", () => {
+			attest(
+				bun([...preload, "main.ts"], undefined, undetailed, "", "none").stdout
+			).equals(undetailedOutput)
+			const { status, stderr } = bun(
+				[...preload, "main.ts"],
+				undefined,
+				join(undetailed, "reads"),
+				"",
+				"none"
+			)
+			attest(status).equals(1)
+			attest(
+				stderr.includes(writeUndetailedImportMessage("a module", "@ark/schema"))
+			).equals(true)
 		}).timeout(60000)
 
 		it("fails a module with a rejected site", () => {

@@ -1,6 +1,9 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
-import { writeStandaloneDependencyMessage } from "@ark/precompile"
+import {
+	writeStandaloneDependencyMessage,
+	writeUndetailedImportMessage
+} from "@ark/precompile"
 import {
 	emitDeclarations,
 	writeDeclareFrameworkMessage,
@@ -41,11 +44,13 @@ import {
 	writtenConfigMessage
 } from "@ark/schema/runtime"
 import { writeCreationMismatchMessage } from "arktype/runtime"
-import { writeLibrary } from "./utils.ts"
+import { undetailedOutput, writeLibrary, writeUndetailed } from "./utils.ts"
 
 const app = fromHere("app")
 
 const library = writeLibrary()
+
+const undetailed = writeUndetailed()
 
 const configured = fromHere("configured")
 
@@ -826,6 +831,49 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
 			"true true\n"
 		)
+	}).timeout(60000)
+
+	it("bundles a program without error detail with a runtime of its own, which no other entry of @ark/schema loads beside", async () => {
+		const reads = join(undetailed, "reads")
+		const message = writeUndetailedImportMessage(
+			join(undetailed, "node_modules", "reads", "index.js"),
+			"@ark/schema"
+		)
+		for (const bundler of ["esbuild", "vite"] as const) {
+			attest(
+				run(
+					await bundlers[bundler](
+						{ cwd: undetailed, errors: "none" },
+						undetailed
+					)
+				)
+			).equals(undetailedOutput)
+			const failed = await bundlers[bundler](
+				{ cwd: reads, errors: "none" },
+				reads
+			).then(
+				() => "",
+				(e: Error) => e.message
+			)
+			attest(failed.includes(message)).equals(true)
+		}
+		// in this repo the runtime it loads in place of @ark/schema's re-exports it
+		const { metafile } = await esbuild({
+			entryPoints: [join(undetailed, "main.ts")],
+			bundle: true,
+			write: false,
+			metafile: true,
+			conditions,
+			logLevel: "silent",
+			plugins: [
+				precompile.esbuild({ cwd: undetailed, errors: "none", conditions })
+			]
+		})
+		attest(
+			Object.keys(metafile.inputs).filter(path =>
+				path.includes("schema/runtime")
+			)
+		).snap(["ark/schema/runtime.ts", "ark/schema/runtimeNone.ts"])
 	}).timeout(60000)
 
 	it("precompiles a structure whose predicate reads ctx, which an intersection's Apply checks before its own predicate", async () => {

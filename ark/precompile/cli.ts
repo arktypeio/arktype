@@ -7,7 +7,7 @@ import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
 import type { PrecompileOptions } from "./precompile.ts"
 
 const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"
+	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -26,6 +26,7 @@ const { values, positionals } = parseArgs({
 		members: { type: "string" },
 		checks: { type: "string" },
 		"mutates-input": { type: "boolean" },
+		errors: { type: "string" },
 		conditions: { type: "string" },
 		tsconfig: { type: "string" }
 	}
@@ -81,6 +82,7 @@ const report = check(positionals, {
 	members,
 	checks: values.checks as PrecompileOptions["checks"],
 	mutatesInput: values["mutates-input"],
+	errors: values.errors as PrecompileOptions["errors"],
 	conditions: values.conditions?.split(","),
 	tsconfig: values.tsconfig
 })

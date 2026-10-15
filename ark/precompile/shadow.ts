@@ -84,6 +84,7 @@ const swappedOf = (
 export interface ShadowContract {
 	members?: { meta?: boolean }
 	mutatesInput?: boolean
+	errors?: "none"
 }
 
 export const shadow = (
@@ -418,7 +419,10 @@ interface Call {
 }
 
 interface Validation {
-	phase: "record" | "replay"
+	// "run" once a validator whose errors say only that data is invalid passes where arktype's Apply began, as its calls from there are its own
+	phase: "record" | "replay" | "run"
+	// whether arktype's side failed under errors "none", where the validator skips the Apply arktype then ran
+	skipsApply: boolean
 	calls: Call[]
 	replayed: number
 	// each object arktype's side holds, by the one the validator's side holds in its place
@@ -441,7 +445,8 @@ const callbackOf = (value: unknown): unknown => {
 	if (!wrapper) {
 		wrapper = new Proxy(value, {
 			apply: (target, receiver, args) =>
-				!validation ? settle(outcomeOfCall(target, receiver, args))
+				!validation || validation.phase === "run" ?
+					settle(outcomeOfCall(target, receiver, args))
 				: validation.phase === "record" ?
 					record(validation, target, receiver, args)
 				:	replay(validation, target, receiver, args)
@@ -601,6 +606,10 @@ const replay = (
 				!corresponds(arg, args[i], call.copies?.[i])
 		)
 	) {
+		if (current.skipsApply) {
+			current.phase = "run"
+			return settle(outcomeOfCall(callee, receiver, args))
+		}
 		current.mismatch ??= [
 			call ? describeCall(call) : "makes no call",
 			`${describeCall({ callee, args, ctx: ctxState })}${isOtherRoot ? " with another ctx.root" : ""}`
@@ -699,6 +708,7 @@ const validateBoth = (
 		counterparts.set(data, data)
 	const current: Validation = {
 		phase: "record",
+		skipsApply: false,
 		calls: [],
 		replayed: 0,
 		counterparts,
@@ -712,13 +722,19 @@ const validateBoth = (
 	try {
 		arktype = inArktype(() => outcomeOf(() => run(pair.original, data)))
 		current.phase = "replay"
+		current.skipsApply =
+			pair.contract.errors === "none" &&
+			("thrown" in arktype ?
+				thrownIssuesOf(arktype.thrown) !== undefined
+			:	hasArkKind(arktype.value, "errors"))
 		precompiled = outcomeOf(() =>
 			run(pair.counterpart, current.isCopied ? copy : data)
 		)
 	} finally {
 		validation = outer
 	}
-	const unreplayed = current.calls[current.replayed]
+	const unreplayed =
+		current.skipsApply ? undefined : current.calls[current.replayed]
 	current.mismatch ??= unreplayed && [describeCall(unreplayed), "makes no call"]
 	const observation = () =>
 		`${member}(${printable(data)})${isWritten ? ", the input as arktype's morphs left it" : ""}`
@@ -730,8 +746,19 @@ const validateBoth = (
 	const writesInput = pair.contract.mutatesInput === true
 	const arktypeObserved = inArktype(() => observe(arktype, writesInput))
 	const precompiledObserved = observe(precompiled, writesInput)
+	// a validator without error detail fails with one issue at the root, compared without its data, which a type.fn's validator receives as an array arktype's doesn't share
+	if (current.skipsApply) {
+		arktypeObserved.issues = [{ code: "predicate", path: [] }]
+		const { issues } = precompiledObserved as { issues?: KeptIssue[] }
+		if (issues) {
+			precompiledObserved.issues = issues.map(({ code, path }) => ({
+				code,
+				path
+			}))
+		}
+	}
 	// a validator writing what it transforms into its input leaves it unlike arktype's
-	if (current.isCopied && !pair.contract.mutatesInput) {
+	if (current.isCopied && !pair.contract.mutatesInput && !current.skipsApply) {
 		arktypeObserved.input = data
 		precompiledObserved.input = copy
 	}

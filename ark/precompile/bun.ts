@@ -7,8 +7,10 @@ import {
 	createNodeHost,
 	optedInPackagesOf,
 	resolvesToRuntime,
+	resolvesUndetailed,
 	runtimeSpecifiers,
-	transformedFilterOf
+	transformedFilterOf,
+	writeUndetailedImportMessage
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
@@ -38,7 +40,8 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 			const isStandalone = opts?.runtime !== "arktype"
 			if (isStandalone) {
 				// a runtime plugin isn't asked to resolve a package, so arktype is replaced for every importer
-				const runtime = createNodeHost(opts).resolve(
+				const host = createNodeHost(opts)
+				const runtime = host.resolve(
 					"arktype/runtime",
 					join(opts?.cwd ?? process.cwd(), "package.json")
 				)
@@ -46,6 +49,17 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 					if (!resolvesToRuntime(specifier, opts)) continue
 					build.module(specifier, () => ({
 						contents: `export * from ${JSON.stringify(runtime)}`,
+						loader: "js"
+					}))
+				}
+				if (resolvesUndetailed(opts)) {
+					build.module("@ark/schema/runtime", () => ({
+						contents: `export * from ${JSON.stringify(host.resolve("@ark/schema/runtime/none", runtime!))}`,
+						loader: "js"
+					}))
+					// re-exported, as a module importing it links to its exports before this throws, and Bun names no importer to a runtime plugin
+					build.module("@ark/schema", () => ({
+						contents: `export * from ${JSON.stringify(host.resolve("@ark/schema", runtime!))}\nthrow new Error(${JSON.stringify(writeUndetailedImportMessage("a module", "@ark/schema"))})`,
 						loader: "js"
 					}))
 				}

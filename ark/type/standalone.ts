@@ -54,7 +54,8 @@ import {
 	prototypeOf,
 	serializePrimitive,
 	throwInternalError,
-	throwParseError
+	throwParseError,
+	unset
 } from "@ark/util"
 import { InternalTypedFn, type TypedFn } from "./fn.ts"
 import type { Generic } from "./generic.ts"
@@ -202,6 +203,9 @@ export type Configured = ConfiguredModule | false | undefined
 // what a factory checks is what the build read: each Type, Module, Scope and Generic it receives, each static helper it calls too, or neither
 export type Checks = "types" | "helpers" | "none"
 
+// what a failed validation returns: each issue, the first one, or one at the root saying only that data is invalid
+export type ErrorDetail = "all" | "first" | "none"
+
 export interface ConfiguredModule {
 	fingerprint: string
 	path: string
@@ -220,8 +224,8 @@ export interface StandaloneOptions {
 	members?: ValidatorMembers | undefined
 	// runs arktype writing what a validator bakes, refusing with a ParseError where the configured code it calls reads what the program can change
 	bake?: (<t>(write: () => t) => t) | undefined
-	// "first" stops each validation at its first issue, which is then the only one it returns
-	errors?: "all" | "first" | undefined
+	// "first" stops each validation at its first issue, which is then the only one it returns, and "none" returns one issue at the root saying only that data is invalid
+	errors?: ErrorDetail | undefined
 	// false leaves each validator and its members unfrozen
 	freeze?: boolean | undefined
 	// false creates each validator as its module is evaluated, rather than at its first read
@@ -238,6 +242,8 @@ interface Baking {
 	members: ReadonlySet<ValidatorMember>
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
+	// else a failed validation returns one issue at the root, so no unit returns an Apply
+	detailsErrors: boolean
 	freezes: boolean
 	readsConfig: boolean
 	// a module an import cycle can reach before it's evaluated creates at the first read either way
@@ -265,6 +271,8 @@ const isCreatedByRuntime = (
 	members: ReadonlySet<ValidatorMember>,
 	baking: Baking
 ) =>
+	// runtime.createValidator's assert calls errors.throw(), which errors without detail lack
+	baking.detailsErrors &&
 	baking.freezes &&
 	baking.readsConfig &&
 	baking.checksTypes &&
@@ -275,6 +283,42 @@ const writeValue = (hoisted: boolean, name: string, expression: string) =>
 	hoisted ?
 		`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${expression})\n}`
 	:	`const ${name} = /* @__PURE__ */ (() => ${expression})()`
+
+// what a build whose errors say only that data is invalid fails through, as each function's parameters and body
+const failureSources = {
+	invalid: [
+		"data, onFail",
+		`\tconst errors = new runtime.ArkErrors()
+	errors._.push({ code: "predicate", path: [], data })
+	return onFail ? onFail(errors) : errors`
+	],
+	// what a validator that is its root apply returns given what else its call passes, as applyCallErrors does
+	invalidCall: [
+		"data, args, onFail",
+		`\tconst errors = new runtime.ArkErrors()
+	errors._.push({ code: "predicate", path: [], data })
+	if (args.length) {
+		if (args[0]) return runtime.pipedInto(args[0], errors)
+		if (args[1] !== undefined) onFail = args[1]
+	}
+	return onFail ? onFail(errors) : errors`
+	],
+	// a pipe applies a node once its Allows rejects data, where any issue fails it
+	applyInvalid: [
+		"data, ctx",
+		`\tctx.addError({ code: "predicate", path: ctx.path.slice(), data })`
+	],
+	// a pipe tells whether a node whose predicates read ctx allows data by whether its Apply adds an issue
+	applyBy: [
+		"allows",
+		`\treturn (data, ctx) => {
+		const depth = ctx.path.length
+		if (allows(data, ctx)) return
+		ctx.path.length = depth
+		ctx.addError({ code: "predicate", path: ctx.path.slice(), data })
+	}`
+	]
+} as const
 
 export interface StandaloneModules {
 	code: string
@@ -367,6 +411,7 @@ const writeArtifact = (
 		]),
 		write: opts.bake ?? (write => write()),
 		firstIssue: opts.errors === "first",
+		detailsErrors: opts.errors !== "none",
 		freezes: opts.freeze !== false,
 		readsConfig: configured !== false,
 		createsLazily: opts.lazy !== false || opts.hoisted === true,
@@ -1283,7 +1328,13 @@ ${writeFunction(
 		})
 		this.declarations = createDeclarations()
 		this.unit = unit
-		const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(unit)
+		const returned = returnedOf(unit, this.baking)
+		const read =
+			this.baking.detailsErrors ? undefined : namesReadBy(unit, returned)
+		const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(
+			unit,
+			read
+		)
 		// a root its own traversals read, as in a cycle, is created with them
 		const ownRoots = unit.roots.filter(root =>
 			unit.refs.some(
@@ -1297,10 +1348,9 @@ ${writeFunction(
 				"{}"
 			)
 		}
-		const refs = unit.refs.map(
-			(value, i) => `const r${i} = ${this.emit(value)}`
+		const refs = unit.refs.flatMap((value, i) =>
+			read && !read.has(`r${i}`) ? [] : [`const r${i} = ${this.emit(value)}`]
 		)
-		const returned = unit.traversals.flat()
 		const links = ownRoots.map(root => {
 			const shape = writing.shapesByName[unit.names[root.id]]
 			returned.push(shape)
@@ -1414,11 +1464,15 @@ return [${returned.join(", ")}]
 		if (!names.includes(name)) names.push(name)
 	}
 
-	dependencyParamsOf(unit: RootUnit): [params: string[], args: string[]] {
+	dependencyParamsOf(
+		unit: RootUnit,
+		read?: ReadonlySet<string>
+	): [params: string[], args: string[]] {
 		const namesBySource: Record<string, string[]> = {}
 		const params: string[] = []
 		const args: string[] = []
 		for (const name in unit.dependencies) {
+			if (read && !read.has(name)) continue
 			const dependency = unitOf(unit.dependencies[name][0], unit)
 			const index = dependency.traversals.flat().indexOf(name)
 			const isShared = isSharedUnit(dependency)
@@ -1453,16 +1507,25 @@ return [${returned.join(", ")}]
 	): string[] {
 		const traversals = this.localUnits.map((unit, i) => {
 			this.localNamesByUnit.set(unit, `traversals${i}`)
+			const returned = returnedOf(unit, this.baking)
+			const read =
+				this.baking.detailsErrors ? undefined : namesReadBy(unit, returned)
+			const declared = unit.refs.flatMap((_, i) =>
+				read && !read.has(`r${i}`) ? [] : [i]
+			)
 			this.unit = unit
-			const refs = unit.refs.map(value => this.emit(value))
+			const refs = declared.map(i => this.emit(unit.refs[i]))
 			this.unit = undefined
-			const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(unit)
+			const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(
+				unit,
+				read
+			)
 			const unitFunction = this.writeUnitFunction(
 				unit,
 				[...dependencyParams, "refs"],
-				unit.refs.map((_, i) => `const r${i} = refs[${i}]`),
+				declared.map((i, position) => `const r${i} = refs[${position}]`),
 				[],
-				unit.traversals.flat()
+				returned
 			)
 			const args = [...dependencyArgs, `[${refs.join(", ")}]`]
 			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
@@ -1685,6 +1748,18 @@ return [${returned.join(", ")}]
 		return this.read(specifier, name, name, this.readValue(name))
 	}
 
+	readFailure(name: keyof typeof failureSources): string {
+		const specifier = this.specifierOf(name)
+		const [params, body] = failureSources[name]
+		this.sharedModules[specifier] ??= {
+			readsRuntime: name === "invalid" || name === "invalidCall",
+			imports: {},
+			declarations: [writeFunction(this.baking.hoisted, name, params, body)],
+			exports: [name]
+		}
+		return this.read(specifier, name, name, name)
+	}
+
 	// a writer is declared by its text, so each JSON Schema a validator bakes is written once however many of its members return it
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
 		const values: unknown[] = []
@@ -1818,6 +1893,13 @@ return [${returned.join(", ")}]
 						runtimePathsByValue.has(node.predicate) && node.predicate.length < 2
 					))
 		)
+		if (!this.baking.detailsErrors) {
+			return this.emitUndetailedApply(
+				root,
+				callbacks ? "Traversal" : "InternalTraversal",
+				asValidator
+			)
+		}
 		// an Apply that calls back only into the runtime's keywords keeps no state but what fails, so it reports into the errors the root returns, unless a union applies its branches apart
 		const reportsIssues =
 			!root.includesAlias &&
@@ -1906,6 +1988,94 @@ return [${returned.join(", ")}]
 		${captured}${body}
 	})(${node})`,
 			`${shape}.allows`,
+			false
+		]
+	}
+
+	// where arktype's root apply would report what fails, this one returns its one issue
+	emitUndetailedApply(
+		root: BaseRoot,
+		ctx: string,
+		asValidator: boolean
+	): [rootApply: string, allows: string, isCompact: boolean] {
+		const strategy = root.rootApplyStrategy
+		const invalid = () => `${this.readFailure("invalid")}(data, onFail)`
+		const transforms = root.transforms
+		// a union without a discriminant transforms what a branch allows, returning unset where none does
+		const selects =
+			strategy === "transform" &&
+			root.hasKind("union") &&
+			!root.compiledDiscriminant
+		const captures = strategy === "transform" && root.includesMorph
+		// a transform through a cycle, which the runtime resolves from the root's shape
+		const resolves = strategy === "contextualTransform" && root.includesAlias
+		const traversals =
+			root.allowsRequiresContext || resolves ?
+				undefined
+			:	this.compactTraversalsOf(root)
+		const shape = traversals ? undefined : this.shapeOf(root)
+		const allows = traversals ? "allows" : "node.allows"
+		const transform = traversals ? "transform" : "node.traverseTransform"
+		const fails = [
+			...(selects ? [`result === ${JSON.stringify(unset)}`] : []),
+			...(captures ?
+				["result !== data && result instanceof TransformErrors"]
+			:	[])
+		]
+		const body =
+			strategy === "contextualTransform" ?
+				[
+					...(resolves ?
+						[
+							"const untracked = runtime.allowsAcyclic(node, data)",
+							`if (!(untracked ?? runtime.allowsInContext(node, data, runtime.runtimeConfig))) return ${invalid()}`,
+							`const ctx = new runtime.${ctx}(data, runtime.runtimeConfig)`,
+							"ctx.tracksTransforms = untracked === undefined",
+							`const result = runtime.transformResolution(ctx, ${JSON.stringify(this.unitsByHead.get(root.id)!.names[root.id])}, data, node.traverseTransform)`
+						]
+					:	[
+							`if (!${allows}(data)) return ${invalid()}`,
+							`const ctx = new runtime.${ctx}(data, runtime.runtimeConfig)`,
+							`const result = ${transform}(data, ctx)`
+						]),
+					`return ctx.hasError() ? ${invalid()} : result`
+				]
+			: fails.length ?
+				[
+					...(selects ? [] : [`if (!${allows}(data)) return ${invalid()}`]),
+					`const result = ${transform}(data)`,
+					`return ${fails.join(" || ")} ? ${invalid()} : result`
+				]
+			:	undefined
+		const params =
+			!traversals ? "node"
+			: this.baking.shortest ?
+				`[${selects ? "" : "allows"}${transforms ? ", , transform" : ""}]`
+			:	`{ ${[...(selects ? [] : ["0: allows"]), ...(transforms ? ["2: transform"] : [])].join(", ")} }`
+		const valid = transforms ? `${transform}(data)` : "data"
+		// as a detailed build's, each call writing what it transforms into its input transforms an object at one place
+		const inPlace = this.baking.mutatesInput && transforms
+		const parts =
+			!traversals ? undefined
+			: inPlace ? `runtime.inPlaceTransforms(${traversals})`
+			: traversals
+		// the validator itself, as a detailed build's compact root apply is
+		if (asValidator && parts && !body) {
+			return [
+				`((${params}, onFail) => ${this.compiledOnLoad(`(data, ...args) => ${allows}(data) ? ${valid} : ${this.readFailure("invalidCall")}(data, args, onFail)`)})`,
+				parts,
+				true
+			]
+		}
+		const apply =
+			body ?
+				`(data, onFail) => {\n\t\t${body.join("\n\t\t")}\n\t}`
+			:	`(data, onFail) => ${allows}(data) ? ${valid} : ${invalid()}`
+		const node =
+			parts ?? (inPlace ? `runtime.inPlaceTransformNode(${shape})` : shape)
+		return [
+			`((${params}${captures ? ", TransformErrors" : ""}) => ${this.compiledOnLoad(apply)})(${node}${captures ? `, ${this.emit(rootApplyRuntime.TransformErrors)}` : ""})`,
+			traversals ? `${traversals}[0]` : `${shape}.allows`,
 			false
 		]
 	}
@@ -2138,8 +2308,13 @@ return [${returned.join(", ")}]
 			node.allowsRequiresTraversal
 		const transform =
 			traversals[2] ? `\n\ttraverseTransform: ${traversals[2]},` : ""
+		const apply =
+			this.baking.detailsErrors ? traversals[1]
+			: node.allowsRequiresContext && !node.includesAlias ?
+				`${this.readFailure("applyBy")}(${traversals[0]})`
+			:	this.readFailure("applyInvalid")
 		return `{${ids}${flags.join("")}${traverses ? `\n\ttraverseAllows: ${traversals[0]},` : ""}
-	traverseApply: ${traversals[1]},${transform}
+	traverseApply: ${apply},${transform}
 	allows: ${node.allowsRequiresContext ? `data => runtime.allowsUntracked(${shape}, data) ?? runtime.allowsInContext(${shape}, data, runtime.runtimeConfig)` : traversals[0]}${traverses ? ",\n\t$: runtime.runtimeScope" : ""}
 }`
 	}
@@ -2550,6 +2725,24 @@ const calledMembersOf = (
 	for (const reader of readers) read(reader)
 	return members.filter(([name]) => called.has(name))
 }
+
+// a unit returns each root's Allows, Apply and Transform, but no Apply where errors don't detail what fails, as nothing calls one
+const returnedOf = (unit: RootUnit, baking: Baking): string[] =>
+	baking.detailsErrors ?
+		unit.traversals.flat()
+	:	unit.traversals.flatMap(([allows, , ...transform]) => [
+			allows,
+			"",
+			...transform
+		])
+
+// the refs and dependencies a unit declares where it returns no Apply, which reads the others
+const namesReadBy = (unit: RootUnit, returned: string[]): Set<string> =>
+	new Set(
+		calledMembersOf(unit.members, returned).flatMap(
+			([, source]) => source.match(/[\w$]+/g) ?? []
+		)
+	)
 
 const sharedByUnit = new WeakMap<RootUnit, boolean>()
 

@@ -40,10 +40,11 @@ import {
 	type HoleKind
 } from "arktype/runtime"
 import { keptIssuesOf } from "@ark/precompile/internal/issues.ts"
-import { buildSync } from "esbuild"
+import { build, buildSync, type BuildOptions } from "esbuild"
+import { join } from "node:path"
 
-const bundle = (source: string) => {
-	const result = buildSync({
+const optionsOf = (source: string) =>
+	({
 		stdin: {
 			contents: source,
 			resolveDir: fromHere(),
@@ -57,11 +58,35 @@ const bundle = (source: string) => {
 		write: false,
 		metafile: true,
 		logLevel: "error"
-	})
+	}) satisfies BuildOptions
+
+const bundle = (source: string) => {
+	const result = buildSync(optionsOf(source))
 	return {
 		js: result.outputFiles[0].text,
 		modules: Object.keys(result.metafile.inputs)
 	}
+}
+
+const issuesPath = fromHere("..", "..", "schema", "shared", "issues.ts")
+
+// as @ark/schema/runtime/none bundles the runtime, with issuesNone.ts in place of issues.ts, for a build whose errors say only that data is invalid
+const bundleUndetailed = async (source: string): Promise<string> => {
+	const { outputFiles } = await build({
+		...optionsOf(source),
+		plugins: [
+			{
+				name: "issuesNone",
+				setup: pluginBuild =>
+					pluginBuild.onResolve({ filter: /\/issues\.ts$/ }, args =>
+						join(args.resolveDir, args.path) === issuesPath ?
+							{ path: join(issuesPath, "..", "issuesNone.ts") }
+						:	undefined
+					)
+			}
+		]
+	})
+	return outputFiles[0].text
 }
 
 const urlOf = (js: string) =>
@@ -89,8 +114,9 @@ const load = async (
 			)),
 		members
 	})
+	const source = code.replace(runtimeImport, `${runtimeImport}\n${configure}`)
 	const artifact = await importCode(
-		bundle(code.replace(runtimeImport, `${runtimeImport}\n${configure}`)).js
+		opts?.errors === "none" ? await bundleUndetailed(source) : bundle(source).js
 	)
 	return flatMorph(exports, (name, value) => {
 		if (arkKindOf(value) !== undefined) return [name, artifact[name]()]
@@ -423,6 +449,23 @@ n must be a string or null`)
 				"a must be long"
 			)
 		}
+		const undetailed = await load(
+			{
+				Inner: type({ n: "number" }),
+				Wrapping: {
+					type: type({ a: "unknown" }).pipe(wrap),
+					params: [{ kind: "function", label: "`wrap`", value: wrap }]
+				}
+			},
+			undefined,
+			undefined,
+			printed,
+			{ errors: "none" }
+		)
+		Inner = undetailed.Inner
+		attest(String(undetailed.Wrapping(wrap)({ a: { n: "x" } }))).equals(
+			"is invalid"
+		)
 	})
 
 	it("lacks each member its build sets false", async () => {
@@ -715,6 +758,93 @@ name is missing`)
 			"b must be a number (was a string)",
 			"c[0] must be a string (was a number)"
 		])
+	})
+
+	it("returns one issue at the root saying only that data is invalid where its build doesn't detail errors", async () => {
+		const exports = {
+			Object: type({ a: "string", b: { c: "number[]" } }),
+			Trimmed: type({ a: "string.trim" }),
+			Parsed: type({ b: "string.json.parse" }),
+			Union: type({ a: "string.trim", b: "string > 5" }).or({
+				b: "string < 3"
+			}),
+			Piped: type("string.trim").to("string.json"),
+			Cyclic: scope({ node: { value: "number", "next?": "node" } }).export()
+				.node,
+			CyclicTrimmed: scope({
+				node: { value: "string.trim", "next?": "node" }
+			}).export().node,
+			ParsedCyclic: type("string.json.parse").to(
+				scope({ node: { value: "number", "next?": "node" } }).type("node")
+			)
+		}
+		const validators = await load(exports, undefined, undefined, printed, {
+			errors: "none"
+		})
+		// a root's apply differs for each: one checking, transforming, transforming with ctx, selecting a branch, piping into a node whose predicates read ctx, and each through a cycle
+		const inputs: { [name in keyof typeof exports]: [valid: {}, invalid: {}] } =
+			{
+				Object: [
+					{ a: "a", b: { c: [1] } },
+					{ a: 1, b: { c: ["c"] } }
+				],
+				Trimmed: [{ a: " a " }, { a: 1 }],
+				Parsed: [{ b: "[1]" }, { b: "[" }],
+				Union: [{ a: " a ", b: "bbbbbb" }, { b: "bbbb" }],
+				Piped: [" {} ", " { "],
+				Cyclic: [
+					{ value: 1, next: { value: 2 } },
+					{ value: 1, next: { value: "2" } }
+				],
+				CyclicTrimmed: [
+					{ value: " a ", next: { value: " b " } },
+					{ value: " a ", next: { value: 2 } }
+				],
+				ParsedCyclic: [
+					'{ "value": 1, "next": { "value": 2 } }',
+					'{ "value": "1" }'
+				]
+			}
+		for (const [name, [valid, invalid]] of Object.entries(inputs)) {
+			attest(validators[name](valid)).equals(
+				exports[name as keyof typeof exports](valid)
+			)
+			attest(validators[name](invalid).issues).equals([
+				{ code: "predicate", path: [], data: invalid, message: "is invalid" }
+			])
+		}
+	})
+
+	it("throws an Error whose cause is its errors where it asserts without error detail, whose errors can't throw", async () => {
+		const { T } = await load(
+			{ T: type({ a: "string" }) },
+			undefined,
+			undefined,
+			printed,
+			{ errors: "none" }
+		)
+		let thrown: any
+		try {
+			T.assert({ a: 1 })
+		} catch (e) {
+			thrown = e
+		}
+		attest(thrown.constructor).is(Error)
+		attest(String(thrown)).equals("Error: is invalid")
+		attest(thrown.cause.issues).equals([
+			{ code: "predicate", path: [], data: { a: 1 }, message: "is invalid" }
+		])
+		const config: ArkSchemaConfig = { onFail: errors => errors.throw() }
+		const { Configured } = await load(
+			{ Configured: type({ a: "string" }) },
+			`runtime.configure({ onFail: errors => errors.throw() }, "${fingerprintOf(config)}")`,
+			fingerprintOf(config),
+			printed,
+			{ errors: "none" }
+		)
+		attest(() => Configured({ a: 1 })).throws.snap(
+			"TypeError: errors.throw is not a function"
+		)
 	})
 
 	it("gives each Type its own traversal of a prop they share", () => {
@@ -1258,6 +1388,29 @@ name is missing`)
 		const out = Around({ a: shared, b: { n: " b " }, c: shared })
 		attest(out).equals({ a: { j: 1 }, b: { n: "b", m: "x" }, c: { j: 1 } })
 		attest(out.c).is(out.a)
+	})
+
+	it("transforms anew each call where its build mutates input, though its errors say only that data is invalid", async () => {
+		const { List, Node } = await load(
+			{
+				List: type({ j: "string.json.parse" }).array(),
+				Node: scope({
+					node: { value: "string.trim", "next?": "node" }
+				}).export().node
+			},
+			undefined,
+			undefined,
+			printed,
+			{ mutatesInput: true, errors: "none" }
+		)
+		const element = { j: "1" }
+		attest(List([element])).equals([{ j: 1 }])
+		element.j = "2"
+		attest(List([element])).equals([{ j: 2 }])
+		const next = { value: " b " }
+		attest(Node({ value: " a ", next }).next.value).equals("b")
+		next.value = " c "
+		attest(Node({ value: " a ", next }).next.value).equals("c")
 	})
 
 	it("rejects a key it transforms in place before another constraint transforms it where its build mutates input", () => {
@@ -2379,6 +2532,32 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			).throws.snap(
 				"ParseError: Default for a must be valid according to isEven"
 			)
+		})
+
+		it("checks a default without error detail, saying only at which key it is invalid", async () => {
+			const isEven = standIn((n: number) => n === n, "iseven")
+			const T = type({ a: [["number", ":", isEven], "=", 3] })
+			const optional = T.internal.references.find(node =>
+				node.hasKind("optional")
+			)!
+			const { T: create } = await load(
+				{
+					T: {
+						type: T,
+						params: [{ kind: "function", label: "`isEven`", value: isEven }],
+						defaultChecks: [[optional.value, 3, "a"]]
+					}
+				},
+				undefined,
+				undefined,
+				printed,
+				{ errors: "none" }
+			)
+			attest(() =>
+				create(function isEven(n: number) {
+					return n % 2 === 0
+				})
+			).throws.snap("ParseError: Default for a is invalid")
 		})
 
 		it("throws for data no case of a matcher asserting its default matches", async () => {

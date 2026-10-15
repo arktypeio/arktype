@@ -1,4 +1,4 @@
-import type { ArkError, ArkErrors } from "@ark/schema"
+import { hasArkKind, type ArkError, type ArkErrors } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import type { ArkIssue } from "@ark/schema/runtime"
 
@@ -37,11 +37,18 @@ const isNever = (issue: ArkIssue) =>
 		(issue as ArkError<"union">).errors.length === 0
 	:	issue.expected === "never" || issue.expected === undefined)
 
-// a TraversalError's, by the errors it holds, which another copy of the runtime threw too
-export const thrownIssuesOf = (thrown: unknown): KeptIssue[] | undefined =>
-	thrown instanceof Error && "arkErrors" in thrown ?
-		keptIssuesOf(thrown.arkErrors as ArkErrors)
+// what a TraversalError holds, as one another copy of the runtime threw does, or a plain Error a validator without error detail throws holds as its cause
+export const thrownErrorsOf = (thrown: unknown): ArkErrors | undefined =>
+	!(thrown instanceof Error) ? undefined
+	: "arkErrors" in thrown ? (thrown.arkErrors as ArkErrors)
+	: hasArkKind((thrown as { cause?: unknown }).cause, "errors") ?
+		((thrown as { cause?: unknown }).cause as ArkErrors)
 	:	undefined
+
+export const thrownIssuesOf = (thrown: unknown): KeptIssue[] | undefined => {
+	const errors = thrownErrorsOf(thrown)
+	return errors && keptIssuesOf(errors)
+}
 
 const sortKeyOf = (issue: KeptIssue) =>
 	[...issue.path.map(String), issue.code].join("\0")

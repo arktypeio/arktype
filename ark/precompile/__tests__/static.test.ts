@@ -1419,6 +1419,20 @@ console.log(values.map(v => (v as any).from))`,
 					"mutatesInput with runtime: arktype, though false is the default",
 					{ runtime: "arktype", mutatesInput: false },
 					writeArktypeRuntimeOptionMessage("mutatesInput")
+				],
+				[
+					"errors that isn't one",
+					{ errors: "some" as never },
+					writeOptionValueMessage(
+						"errors",
+						'"some"',
+						'"all", "first" or "none"'
+					)
+				],
+				[
+					"errors with runtime: arktype, though it's the default",
+					{ runtime: "arktype", errors: "all" },
+					writeArktypeRuntimeOptionMessage("errors")
 				]
 			]
 			for (const [name, opts, message] of refused) {
@@ -1460,6 +1474,23 @@ const D = discriminate(type({ a: "0" }).or({ a: "1" }).internal as never)`)
 				'/main.ts:6:25  `discriminate` is used outside a runtime island\n  arksets reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
 				'/main.ts:6:51  `hasArkKind` is used outside a runtime island\n  @ark/schema reads the nodes arktype creates, which a standalone build replaces with validators\n  Read arktype\'s nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".',
 				"/main.ts:7:30  `ArkErrors` is @ark/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of @ark/schema's ArkErrors\n  Import ArkErrors from arktype, which a standalone build resolves to its runtime, or read type.errors."
+			])
+		})
+
+		it("@ark/schema's exports or a runtime island in a build without error detail", () => {
+			attest(
+				diagnosticsOf(
+					`import { Traversal } from "@ark/schema"
+import { type } from "arktype"
+console.log(Traversal.name)
+// @ark-runtime
+const T = type("string")`,
+					{},
+					{ errors: "none" }
+				)
+			).snap([
+				"/main.ts:3:13  `Traversal` is @ark/schema's, not the standalone runtime's\n  what a standalone validator creates isn't an instance of @ark/schema's Traversal\n  Import Traversal from arktype, which a standalone build resolves to its runtime.",
+				'/main.ts:5:1  a runtime island returns arktype\'s errors, which aren\'t instances of type.errors under errors: "none"\n  a build whose errors say only that data is invalid gives its validators a runtime of their own\n  Precompile the definition, or build without errors: "none".'
 			])
 		})
 

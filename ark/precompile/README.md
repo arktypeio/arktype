@@ -107,19 +107,26 @@ A factory checks that each Type, Module, Scope and Generic it receives is the on
 
 An object the input holds at two places that one Type transforms is transformed once, and both places hold its output. Where different Types transform it, or it holds itself outside a cyclic Scope, the validation throws rather than read what another place wrote. One holding itself through a cyclic Scope is output as a new object holding its keys, which its cycle then reaches. A validation that fails can instead return an issue another place's transform caused, or miss one it hid, but throws rather than return none. A place that doesn't transform the object, like a morph receiving a value that holds it, still reads what another place wrote.
 
+`errors: "none"` makes a failed validation return errors holding one issue, at the root, with the code `"predicate"`, the data and the message `is invalid`, so a validator ships no check's description or message, and a function a definition holds isn't called again to find what failed, as arktype calls it. Those errors have no `throw()`, so an `onFail` calling it fails, and `assert` throws a plain `Error` saying `is invalid` whose `cause` is the errors, so nothing a validator throws is a `TraversalError`. The validators run on `@ark/schema/runtime/none`, a copy of `@ark/schema`'s runtime whose errors are a class of its own, which the plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to for every importer. A module importing any other entry of `@ark/schema`, whose errors the copy's aren't instances of, fails the build, as does a runtime island, whose errors are arktype's. Bun, which names no importer to a runtime plugin, fails only a module importing `@ark/schema` itself, as it loads. Shadow mode, a dev server prebundling dependencies without the plugin, and Turbopack without the alias below keep `@ark/schema`'s runtime, whose errors hold the same issue and have `throw()`, so `assert` throws a `TraversalError`. Turbopack fails no module importing another entry:
+
+```js
+resolveAlias: { "@ark/schema/runtime": "@ark/schema/runtime/none" }
+```
+
 What each option saves of the bundles arktype benchmarks, minified and gzipped, in bytes:
 
-| option                            | gives up                                   | login    | moltar   | shop       |
-| --------------------------------- | ------------------------------------------ | -------- | -------- | ---------- |
-| `members: { assert: false }`      | `assert`                                   | 57 / 19  | 57 / 18  | 51 / 19    |
-| `members: { meta: false }`        | `meta`                                     | 75 / 31  | 75 / 29  | 271 / 38   |
-| `members: { "~standard": false }` | `~standard`                                | 123 / 53 | 123 / 56 | 115 / 49   |
-| `members: { methods: false }`     | `traverse()`, `from()` and `toString()`    | 235 / 88 | 235 / 93 | 63 / -14   |
-| `freeze: false`                   | validators and their members frozen        | 29 / 8   | 29 / 9   | 21 / 2     |
-| `config: false`                   | calling `configure()`                      | 98 / 36  | 98 / 38  | 195 / 51   |
-| `lazy: false`                     | creating a validator where it's first read | 16 / 9   | 16 / 8   | 292 / 96   |
-| `checks: "none"`                  | checking the Types a factory receives      | 97 / 50  | 97 / 49  | 1581 / 734 |
-| `mutatesInput: true`              | the input left as it was                   | 0 / 0    | 0 / 0    | 2883 / 881 |
+| option                            | gives up                                   | login      | moltar     | shop         |
+| --------------------------------- | ------------------------------------------ | ---------- | ---------- | ------------ |
+| `errors: "none"`                  | what each issue says of what failed        | 1564 / 613 | 2110 / 690 | 12854 / 2941 |
+| `members: { assert: false }`      | `assert`                                   | 57 / 19    | 57 / 18    | 51 / 19      |
+| `members: { meta: false }`        | `meta`                                     | 75 / 31    | 75 / 29    | 271 / 38     |
+| `members: { "~standard": false }` | `~standard`                                | 123 / 53   | 123 / 56   | 115 / 49     |
+| `members: { methods: false }`     | `traverse()`, `from()` and `toString()`    | 235 / 88   | 235 / 93   | 63 / -14     |
+| `freeze: false`                   | validators and their members frozen        | 29 / 8     | 29 / 9     | 21 / 2       |
+| `config: false`                   | calling `configure()`                      | 98 / 36    | 98 / 38    | 195 / 51     |
+| `lazy: false`                     | creating a validator where it's first read | 16 / 9     | 16 / 8     | 292 / 96     |
+| `checks: "none"`                  | checking the Types a factory receives      | 97 / 50    | 97 / 49    | 1581 / 734   |
+| `mutatesInput: true`              | the input left as it was                   | 0 / 0      | 0 / 0      | 2883 / 881   |
 
 ## Configuration
 

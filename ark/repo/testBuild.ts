@@ -1,6 +1,7 @@
 import type { ArkErrors } from "arktype"
-import { buildSync } from "esbuild"
-import { readdirSync, readFileSync } from "node:fs"
+import { build, buildSync } from "esbuild"
+import { spawnSync } from "node:child_process"
+import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs"
 import { createRequire, registerHooks } from "node:module"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { ts } from "ts-morph"
@@ -151,6 +152,21 @@ for (const pkg of packages) {
 if ("$ark2" in globalThis)
 	throw new Error("⚠️  A deep import installed a registry of its own.")
 
+// what a build whose errors say only that data is invalid loads in place of @ark/schema/runtime
+const undetailedRuntime = await importBuilt("@ark/schema/runtime/none")
+
+if (
+	Object.keys(undetailedRuntime).join() !==
+	Object.keys(await importBuilt("@ark/schema/runtime")).join()
+) {
+	throw new Error(
+		"⚠️  @ark/schema/runtime/none exports other names than @ark/schema/runtime."
+	)
+}
+
+if ("failsAt" in (undetailedRuntime.ArkErrors as Function).prototype)
+	throw new Error("⚠️  @ark/schema/runtime/none bundles shared/issues.ts.")
+
 const errors = type("string")(5) as ArkErrors
 
 if (
@@ -197,6 +213,47 @@ const runtimeBundle = buildSync({
 for (const marker of ["__export(", "initialRegistryContents"]) {
 	if (runtimeBundle.includes(marker))
 		throw new Error(`⚠️  Bundling arktype/runtime keeps ${marker}.`)
+}
+
+// a program built without error detail runs on that runtime as published, whose errors have no throw()
+const undetailed = fileURLToPath(new URL("temp/undetailed/", import.meta.url))
+mkdirSync(undetailed, { recursive: true })
+writeFileSync(
+	`${undetailed}main.ts`,
+	`import { type } from "arktype"
+
+const T = type({ a: "string" })
+const errors = T({ a: 1 })
+console.log(errors instanceof type.errors, String(errors), typeof (errors as any).throw)
+try {
+	T.assert({ a: 1 })
+} catch (e) {
+	console.log(String(e), (e as any).cause instanceof type.errors)
+}
+`
+)
+const { precompile } = await import("@ark/precompile/unplugin")
+const undetailedOutput = spawnSync(process.execPath, ["--input-type=module"], {
+	input: (
+		await build({
+			entryPoints: [`${undetailed}main.ts`],
+			bundle: true,
+			write: false,
+			format: "esm",
+			platform: "node",
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ cwd: undetailed, errors: "none" })]
+		})
+	).outputFiles[0].text,
+	encoding: "utf8"
+}).stdout
+
+if (
+	undetailedOutput !== "true is invalid undefined\nError: is invalid true\n"
+) {
+	throw new Error(
+		`⚠️  A program built with errors: "none" logs ${JSON.stringify(undetailedOutput)}.`
+	)
 }
 
 console.log("🧩 Every entry shares its package's modules and registry!")

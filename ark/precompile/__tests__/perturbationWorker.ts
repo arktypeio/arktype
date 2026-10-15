@@ -1,4 +1,5 @@
 import type { PrecompileMode } from "@ark/precompile"
+import type { ArkErrors } from "@ark/schema/runtime"
 import { hasDomain } from "@ark/util"
 import { readFileSync, writeFileSync } from "node:fs"
 import { registerHooks } from "node:module"
@@ -7,7 +8,7 @@ import { inspect } from "node:util"
 import {
 	keptIssuesOf,
 	keptParseMessageOf,
-	thrownIssuesOf,
+	thrownErrorsOf,
 	type KeptIssue
 } from "@ark/precompile/internal/issues.ts"
 import {
@@ -15,6 +16,7 @@ import {
 	hasMember,
 	lackedMembers,
 	comparedDataOf,
+	detailsErrors,
 	lacks,
 	mutatesInput,
 	traverse
@@ -87,6 +89,17 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			if (world === "standalone" && specifier === "arktype")
 				return { url: "perturbation:arktype", shortCircuit: true }
 			const resolved = next(specifier, context)
+			// what @ark/schema/runtime/none bundles in place of issues.ts, which its source re-exports as is
+			if (
+				world === "standalone" &&
+				!detailsErrors &&
+				resolved.url.endsWith("/ark/schema/shared/issues.ts")
+			) {
+				return {
+					...resolved,
+					url: resolved.url.replace(/issues\.ts$/, "issuesNone.ts")
+				}
+			}
 			const runId =
 				context.parentURL && new URL(context.parentURL).searchParams.get("run")
 			if (
@@ -465,21 +478,40 @@ const settle = (result: unknown) =>
 		])
 	:	result
 
+// a build without error detail returns one issue at the root where arktype's errors hold their own, which don't hold its data
+const keptOf = (errors: ArkErrors): KeptIssue[] =>
+	!detailsErrors && errors._merge ?
+		[{ code: "predicate", path: [], data: undefined }]
+	:	keptIssuesOf(errors as never)
+
+const thrownKeptOf = (e: unknown): KeptIssue[] | undefined => {
+	const errors = thrownErrorsOf(e)
+	return errors && keptOf(errors)
+}
+
 const messageOf = (e: unknown) => {
-	const issues = thrownIssuesOf(e)
+	const issues = thrownKeptOf(e)
 	return (
 		issues ? `TraversalError: ${JSON.stringify(serializeIssues(issues))}`
 		: e instanceof Error ?
-			`${e.constructor.name}: ${keptParseMessageOf(e.message)}`
+			`${e.constructor.name}: ${detailsErrors ? keptParseMessageOf(e.message) : undetailedDefaultOf(e.message)}`
 		:	String(e)
 	)
 }
+
+// a default's ParseError, which a build without error detail writes from one issue at its key, as arktype's "value at [0]" is "[0]"
+const undetailedDefaultOf = (message: string) =>
+	message.replace(
+		/^Default (?:for (?:value at )?(\[\d+]|[^\s.[]+)|(?=must |is ))[^]*$/,
+		(_, key: string | undefined) =>
+			`Default ${key ? `for ${key} ` : ""}is invalid`
+	)
 
 const serializeIssues = (issues: KeptIssue[]) =>
 	issues.map(({ code, path, data }) => ({
 		code,
 		path: path.map(String),
-		data: serialize(comparedDataOf(data))
+		...(detailsErrors && { data: serialize(comparedDataOf(data)) })
 	}))
 
 const samples = (): unknown[] => [
@@ -518,7 +550,7 @@ export const serialize = (out: unknown): unknown =>
 		hasDomain(out, "object") &&
 		(out as { " arkKind"?: string })[" arkKind"] === "errors"
 	) ?
-		{ errors: serializeIssues(keptIssuesOf(out as never)) }
+		{ errors: serializeIssues(keptOf(out as never)) }
 	: typeof out === "function" && isArk(out) ?
 		{ type: (out as Function & { expression: string }).expression }
 	:	inspect(out, {
@@ -571,12 +603,12 @@ const outcomeOf = (call: () => unknown, input?: unknown): Observation => {
 				hasDomain(out, "object") &&
 					(out as { " arkKind"?: string })[" arkKind"] === "errors"
 			) ?
-				{ errors: serializeIssues(keptIssuesOf(out)) }
+				{ errors: serializeIssues(keptOf(out)) }
 			: mutatesInput ? { out: serialize(out) }
 			: { out: serialize(out), isInput: out === input }
 		)
 	} catch (e) {
-		const issues = thrownIssuesOf(e)
+		const issues = thrownKeptOf(e)
 		return issues ?
 				{ threw: "TraversalError", errors: serializeIssues(issues) }
 			:	{ threw: String(e) }
@@ -629,9 +661,11 @@ const observeValidation = (
 		}),
 		traverse: inputsOf().map((_, i) => {
 			const input = inputsOf()[i]
+			const outcome = outcomeOf(() => traverse(t, input), input)
 			return {
-				...outcomeOf(() => traverse(t, input), input),
-				...(!mutatesInput && { mutated: serialize(input) })
+				...outcome,
+				...(!mutatesInput &&
+					(detailsErrors || !outcome.errors) && { mutated: serialize(input) })
 			}
 		}),
 		allows: calls((fn, input) => fn.allows(input)),

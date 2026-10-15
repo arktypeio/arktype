@@ -24,7 +24,7 @@ import {
 	thrownIssuesOf,
 	type KeptIssue
 } from "@ark/precompile/internal/issues.ts"
-import { buildSync } from "esbuild"
+import { build, type Plugin } from "esbuild"
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -32,6 +32,7 @@ import { pathToFileURL } from "node:url"
 import { inspect } from "node:util"
 import {
 	comparedDataOf,
+	detailsErrors,
 	freezes,
 	hasMember,
 	lackedMembers,
@@ -74,11 +75,24 @@ const pairCopies = (copy: unknown, original: unknown): void => {
 	}
 }
 
+const issuesPath = fromHere("..", "..", "schema", "shared", "issues.ts")
+
+// what @ark/schema/runtime/none bundles in place of issues.ts, which its source re-exports as is
+const undetailedIssues: Plugin = {
+	name: "issuesNone",
+	setup: pluginBuild =>
+		pluginBuild.onResolve({ filter: /\/issues\.ts$/ }, args =>
+			join(args.resolveDir, args.path) === issuesPath ?
+				{ path: join(issuesPath, "..", "issuesNone.ts") }
+			:	undefined
+		)
+}
+
 // the directory of the artifacts, created when the first is written with their own copy of the runtime, so they share no state with arktype
 export const outDir = async (): Promise<string> => {
 	if (out) return out
 	const dir = (out = mkdtempSync(join(tmpdir(), "ark-differential-")))
-	buildSync({
+	await build({
 		stdin: {
 			contents: `export * from "arktype/runtime"`,
 			resolveDir: fromHere(),
@@ -89,7 +103,8 @@ export const outDir = async (): Promise<string> => {
 		platform: "neutral",
 		conditions: ["ark-ts"],
 		outfile: join(dir, "runtime.js"),
-		logLevel: "error"
+		logLevel: "error",
+		plugins: detailsErrors ? [] : [undetailedIssues]
 	})
 	const runtime = await importFile(join(dir, "runtime.js"))
 	artifactErrors = runtime.type.errors
@@ -169,6 +184,7 @@ const loadArtifact = async (
 	const dir = await outDir()
 	const opts = {
 		members,
+		errors: testedOptions.errors,
 		freeze: testedOptions.freeze,
 		lazy: testedOptions.lazy,
 		checks: testedOptions.checks,
@@ -424,16 +440,18 @@ const observeIntrospection = (t: Validator) => ({
 		{ target: "draft-2020-12" },
 		{ target: "draft-07" }
 	].map(opts => observe(() => t.toJsonSchema(opts), undefined)),
-	// a target arktype supports, the other and one it rejects
 	standardJsonSchema:
 		lacks("~standard") ?
 			[]
 		:	(["input", "output"] as const).flatMap(io =>
-				["draft-2020-12", "draft-07", "openapi-3.0"].map(target =>
+				standardTargets.map(target =>
 					observe(() => t["~standard"].jsonSchema[io]({ target }), undefined)
 				)
 			)
 })
+
+// a target arktype supports, the other and one it rejects
+const standardTargets = ["draft-2020-12", "draft-07", "openapi-3.0"]
 
 const unbakedSuffix = writeUnbakedMessage("")
 
@@ -462,11 +480,17 @@ const maskUnbaked = (
 			baked.jsonSchemaByOptions[i]
 		:	observation
 	),
-	standardJsonSchema: arktype.standardJsonSchema.map((observation, i) =>
-		threwUnbaked(baked.standardJsonSchema[i]) ?
-			baked.standardJsonSchema[i]
-		:	observation
-	)
+	standardJsonSchema: arktype.standardJsonSchema.map((observation, i) => {
+		const first = i - (i % standardTargets.length)
+		return (
+				threwUnbaked(baked.standardJsonSchema[i]) ||
+					// arktype reads the Type's input or output before it checks the target, so where reading it throws, as the build found writing it, it throws alike for any target
+					(threwUnbaked(baked.standardJsonSchema[first]) &&
+						isEqual(observation, arktype.standardJsonSchema[first]))
+			) ?
+				baked.standardJsonSchema[i]
+			:	observation
+	})
 })
 
 const foldedMembers = introspectionMembers.filter(
@@ -514,9 +538,11 @@ const observeFolded = (
 
 const observeCall = (t: Validator, input: unknown) => {
 	const traversed = cloneInput(input)
+	const traversal = observe(() => traverse(t, traversed), traversed)
 	return {
-		traverse: observe(() => traverse(t, traversed), traversed),
-		...(!mutatesInput && { mutated: traversed }),
+		traverse: traversal,
+		...(!mutatesInput &&
+			(detailsErrors || !fails(traversal)) && { mutated: traversed }),
 		allows: observe(() => t.allows(cloneInput(input)), undefined),
 		...(!lacks("assert") && {
 			assert: observe(() => t.assert(cloneInput(input)), undefined)
@@ -528,6 +554,31 @@ const observeCall = (t: Validator, input: unknown) => {
 			)
 		})
 	}
+}
+
+const hasIssues = (observation: unknown): boolean =>
+	hasDomain(observation, "object") && "issues" in observation
+
+// whether a validation returned its errors, as traverse does unless a callback throws
+const fails = (observation: unknown): boolean =>
+	hasIssues(observation) && !("threw" in (observation as object))
+
+// what a build without error detail returns in place of arktype's issues where its root fails
+const undetailedOf = (
+	call: ReturnType<typeof observeCall>,
+	input: unknown
+): ReturnType<typeof observeCall> => {
+	if (!fails(call.traverse)) return call
+	const result = { ...call }
+	for (const k of ["traverse", "assert", "standard"] as const) {
+		if (hasIssues(result[k])) {
+			result[k] = {
+				...(result[k] as object),
+				issues: comparedIssuesOf([{ code: "predicate", path: [], data: input }])
+			}
+		}
+	}
+	return result
 }
 
 // a hole returning arktype's own errors or nodes, which a validator's runtime doesn't recognize
@@ -575,7 +626,8 @@ export const observeArktype = (
 	introspection: observeStably(() => observeIntrospection(node as never)),
 	calls: inputs.map(input => {
 		const call = observeCall(node as never, input)
-		return isEqual(call, observeCall(node as never, input)) ? call : undefined
+		if (!isEqual(call, observeCall(node as never, input))) return
+		return detailsErrors ? call : undetailedOf(call, input)
 	})
 })
 

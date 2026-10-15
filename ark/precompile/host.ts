@@ -154,6 +154,34 @@ export const resolvesToRuntime = (
 ): boolean =>
 	opts?.runtime !== "arktype" && !(opts?.shadow && specifier === "arktype")
 
+// a standalone build whose errors say only that data is invalid runs on a runtime of its own, which shadow mode, running on arktype, doesn't
+export const resolvesUndetailed = (
+	opts: PrecompileOptions | undefined
+): boolean =>
+	opts?.errors === "none" && opts.runtime !== "arktype" && !opts.shadow
+
+export const schemaSpecifier = /^@ark\/schema(?:\/|$)/
+
+// none but @ark/schema's runtime, as any other entry loads the class of errors that runtime replaces
+export const undetailedSpecifierOf = (specifier: string): string | undefined =>
+	specifier === "@ark/schema/runtime" ? "@ark/schema/runtime/none"
+	: specifier === "@ark/schema/runtime/none" ? specifier
+	: undefined
+
+export const writeUndetailedImportMessage = <
+	importer extends string,
+	specifier extends string
+>(
+	importer: importer,
+	specifier: specifier
+): writeUndetailedImportMessage<importer, specifier> =>
+	`${importer} imports ${specifier}, which a build with errors: "none" can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own`
+
+export type writeUndetailedImportMessage<
+	importer extends string,
+	specifier extends string
+> = `${importer} imports ${specifier}, which a build with errors: "none" can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own`
+
 // a virtual module, like Rolldown's `\0rolldown/runtime.js`, names no file to read or resolve from
 export const transformedId = /^[^\0].*\.(?:[cm]?[jt]s|[jt]sx)$/
 

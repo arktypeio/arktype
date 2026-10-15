@@ -1,4 +1,4 @@
-import { buildSync } from "esbuild"
+import { buildSync, type BuildOptions } from "esbuild"
 import { join } from "node:path"
 import { ts } from "ts-morph"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -14,12 +14,10 @@ export const bundle = (): void => {
 	const modulePaths = walkPaths(fromCwd("out"), {
 		include: path => path.endsWith(".js")
 	})
-	// a module several entries import evaluates once only if they share one build
-	const { outputFiles } = buildSync({
-		entryPoints: publicEntryPoints(process.cwd()),
-		outdir: fromCwd("out"),
+	const entryPoints = publicEntryPoints(process.cwd())
+	const undetailedRuntime = fromCwd("out", "runtimeNone.js")
+	const opts = {
 		bundle: true,
-		splitting: true,
 		format: "esm",
 		platform: "neutral",
 		packages: "external",
@@ -27,7 +25,28 @@ export const bundle = (): void => {
 		absWorkingDir: process.cwd(),
 		write: false,
 		logLevel: "warning"
+	} satisfies BuildOptions
+	// a module several entries import evaluates once only if they share one build
+	const { outputFiles } = buildSync({
+		...opts,
+		entryPoints: entryPoints.filter(path => path !== undetailedRuntime),
+		outdir: fromCwd("out"),
+		splitting: true
 	})
+	// @ark/schema's runtime for a build whose errors say only that data is invalid, bundled apart once issues.js, removed with the other modules, re-exports issuesNone.js, which runtimeNone.js also imports
+	if (entryPoints.includes(undetailedRuntime)) {
+		writeFile(
+			fromCwd("out", "shared", "issues.js"),
+			'export * from "./issuesNone.js"\n'
+		)
+		outputFiles.push(
+			...buildSync({
+				...opts,
+				entryPoints: [undetailedRuntime],
+				outfile: undetailedRuntime
+			}).outputFiles
+		)
+	}
 	for (const path of modulePaths) rmRf(path)
 	for (const file of outputFiles)
 		writeFile(file.path, nameSelfReferencingClasses(file.text))

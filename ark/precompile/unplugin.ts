@@ -17,8 +17,12 @@ import {
 	createNodeHost,
 	optedInPackagesOf,
 	resolvesToRuntime,
+	resolvesUndetailed,
 	runtimeSpecifiers,
-	transformedFilterOf
+	schemaSpecifier,
+	transformedFilterOf,
+	undetailedSpecifierOf,
+	writeUndetailedImportMessage
 } from "./host.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
@@ -63,6 +67,7 @@ export const precompile: UnpluginInstance<
 		}>
 	const host = createNodeHost(opts)
 	const isStandalone = opts?.runtime !== "arktype"
+	const isUndetailed = resolvesUndetailed(opts)
 	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
@@ -91,7 +96,9 @@ export const precompile: UnpluginInstance<
 		enforce: "pre",
 		resolveId: {
 			filter: {
-				id: /^arktype(?:\/runtime|\/internal(?:\/precompiled\.js)?|\/config)?$|^~arktype\//
+				id: new RegExp(
+					`${resolvedSpecifier.source}${isUndetailed ? `|${schemaSpecifier.source}` : ""}`
+				)
 			},
 			async handler(id, importer) {
 				if (id.startsWith("~arktype/")) return `\0${id}`
@@ -99,6 +106,13 @@ export const precompile: UnpluginInstance<
 				// a virtual module has no directory of its own, so arktype resolves from the module it was written for
 				if (importer.startsWith("\0~arktype/"))
 					return host.resolve(id, importersById[importer])
+				if (isUndetailed && schemaSpecifier.test(id)) {
+					return host.resolve(
+						undetailedSpecifierOf(id) ??
+							throwError(writeUndetailedImportMessage(importer, id)),
+						importer
+					)
+				}
 				if (!runtimeSpecifiers.includes(id)) return
 				const { errors, warnings } = await readDependency(importer)
 				for (const warning of warnings) this.warn(warning)
@@ -191,6 +205,29 @@ export const precompile: UnpluginInstance<
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
 			setup: build => {
 				build.onDispose(restart)
+				if (isUndetailed) {
+					build.onResolve({ filter: schemaSpecifier }, args => {
+						if (args.pluginData === esbuildResolution) return
+						const specifier = undetailedSpecifierOf(args.path)
+						return specifier ?
+								build.resolve(specifier, {
+									kind: args.kind,
+									importer: args.importer,
+									resolveDir: args.resolveDir,
+									pluginData: esbuildResolution
+								})
+							:	{
+									errors: [
+										{
+											text: writeUndetailedImportMessage(
+												args.importer,
+												args.path
+											)
+										}
+									]
+								}
+					})
+				}
 				build.onResolve(
 					{
 						filter:
@@ -234,6 +271,9 @@ export const precompile: UnpluginInstance<
 })
 
 const esbuildResolution = "arktype"
+
+const resolvedSpecifier =
+	/^arktype(?:\/runtime|\/internal(?:\/precompiled\.js)?|\/config)?$|^~arktype\//
 
 // each says whether a build watches, which esbuild, Bun and Farm don't
 const declaringFrameworks = {

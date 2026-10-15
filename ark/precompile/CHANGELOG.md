@@ -16,6 +16,14 @@ precompile.vite({ declare: true })
 
 It needs the compiler API of TypeScript 5.5 to 6 from the optional `typescript` peer, which a TypeScript 7 project installs as `typescript-6`.
 
+### Return one issue saying only that data is invalid with `errors: "none"`
+
+A failed standalone validation returns errors holding one issue at the root, whose message is `is invalid`, so no check's description, message or reporting pass ships: the benchmarked login, moltar and shop apps lose 613, 690 and 2941 bytes gzipped. Those errors have no `throw()`: `assert` throws a plain `Error` saying `is invalid` whose `cause` is the errors, so no `TraversalError` ships, and an `onFail` calling `errors.throw()` fails. The validators run on `@ark/schema/runtime/none`, a copy of the runtime whose errors are a class of its own, which the plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to, failing a module that imports `@ark/schema`, whose errors aren't the copy's, and a runtime island.
+
+```ts
+precompile.vite({ errors: "none" })
+```
+
 ### Write what a standalone validator transforms into its input with `mutatesInput: true`
 
 A standalone validator transforms a copy of its input, as arktype does. `mutatesInput: true` writes its defaults and morphed values into the input, which it returns, so it copies no object but one it deletes undeclared keys from or one holding itself through a cyclic Scope. Writing an input that can't be written, like a frozen object, then throws, a validation that fails can leave some of its writes, and a key one constraint transforms in place before another transforms it fails the build. An object the input holds at two places is transformed once where one Type transforms it at both, and the validation throws where different Types do rather than read what another place wrote. A place that doesn't transform it still reads what another wrote, as can a validation that fails.

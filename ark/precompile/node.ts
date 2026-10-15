@@ -6,9 +6,13 @@ import {
 	appendSourceMap,
 	optedInPackagesOf,
 	resolvesToRuntime,
+	resolvesUndetailed,
 	runtimeSpecifiers,
+	schemaSpecifier,
 	transformedFilterOf,
-	writeTextlessMessage
+	undetailedSpecifierOf,
+	writeTextlessMessage,
+	writeUndetailedImportMessage
 } from "./host.ts"
 import { refuseDeclare } from "./declare.ts"
 import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
@@ -18,6 +22,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	// the worker inherits the flags that registered these hooks
 	if (isPrecompilerWorker) return
 	const isStandalone = opts?.runtime !== "arktype"
+	const isUndetailed = resolvesUndetailed(opts)
 	const request = createSyncPrecompiler({
 		precompilerOptions: {
 			...opts,
@@ -51,6 +56,18 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			// a precompiled module has no directory of its own, so it resolves from the module it was written for
 			if (context.parentURL?.startsWith("arktype:"))
 				context = { ...context, parentURL: importersByUrl[context.parentURL] }
+			if (isUndetailed && schemaSpecifier.test(specifier)) {
+				return nextResolve(
+					undetailedSpecifierOf(specifier) ??
+						throwError(
+							writeUndetailedImportMessage(
+								context.parentURL ?? "a module",
+								specifier
+							)
+						),
+					context
+				)
+			}
 			if (!runtimeSpecifiers.includes(specifier))
 				return nextResolve(specifier, context)
 			const importer = context.parentURL
