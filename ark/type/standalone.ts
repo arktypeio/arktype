@@ -1309,15 +1309,20 @@ ${writeFunction(
 			...epilogue,
 			...returned
 		])
-		// a traversal reads neither `this` nor `arguments`, so it's written as the shorter arrow
-		const declarations = members.map(
-			([name, source]) =>
-				`const ${name} = ${source.replace(/^function(\([^)]*\))/, "$1 =>")}`
-		)
+		// a traversal reads neither `this` nor `arguments`, so it's written as the shorter arrow, compiled with the unit unless it runs only on invalid data
+		const declarations = members.map(([name, source]) => {
+			const arrow = source.replace(/^function(\([^)]*\))/, "$1 =>")
+			return `const ${name} = ${name.endsWith("Apply") ? arrow : this.compiledOnLoad(arrow)}`
+		})
 		return `(${params.join(", ")}) => {
 ${directive}${[...prologue, ...declarations, ...epilogue].join("\n")}
 return [${returned.join(", ")}]
 }`
+	}
+
+	// V8 compiles a parenthesized function with its module, which Node's compile cache then holds, rather than parsing it again where it's first called
+	compiledOnLoad(fn: string): string {
+		return this.baking.shortest ? fn : `(${fn})`
 	}
 
 	traversalsOf(root: BaseRoot, unit: RootUnit): string[] {
@@ -1682,14 +1687,14 @@ ${isTemplate ? "]" : ")"}`
 					`[allows, apply${transforms ? ", transform" : ""}]`
 				:	`{ 0: allows, 1: apply${transforms ? ", 2: transform" : ""} }`
 			return [
-				`((${pattern}) => (data, onFail) => allows(data) ? ${transforms ? "transform(data)" : "data"} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")}))(${traversals})`,
+				`((${pattern}) => ${this.compiledOnLoad(`(data, onFail) => allows(data) ? ${transforms ? "transform(data)" : "data"} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${traversals})`,
 				`${traversals}[0]`
 			]
 		}
 		const shape = this.shapeOf(root)
 		if (isArrow) {
 			return [
-				`((node) => (data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")}))(${shape})`,
+				`((node) => ${this.compiledOnLoad(`(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`)})(${shape})`,
 				`${shape}.allows`
 			]
 		}
