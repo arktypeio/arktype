@@ -28,8 +28,9 @@ export const createPrecompiler = (
 	return new Precompiler(createNodeHost(opts), {
 		...opts,
 		cwd,
+		// "" is left for the precompiler to refuse, as resolving it reads cwd
 		config:
-			typeof opts?.config === "string" ?
+			typeof opts?.config === "string" && opts.config ?
 				resolve(cwd, opts.config)
 			:	opts?.config
 	})

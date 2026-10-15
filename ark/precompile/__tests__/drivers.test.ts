@@ -158,7 +158,12 @@ contextualize(() => {
 		attest(() => createPrecompiler({ config: true as never })).throws(
 			writeOptionValueMessage("config", "true", "a module path or false")
 		)
-	})
+		attest(
+			node(["main.ts"], { config: "" }).stderr.includes(
+				writeOptionValueMessage("config", '""', "a module path or false")
+			)
+		).equals(true)
+	}).timeout(timeout)
 
 	describe("node", () => {
 		it("standalone", () => {
