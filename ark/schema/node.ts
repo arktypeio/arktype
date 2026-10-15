@@ -210,8 +210,14 @@ export abstract class BaseNode<
 						this.initRootApply()(data, onFail)
 					:	rootApply(data, onFail)
 			},
-			{ attach: attachedInnerOf(attachments) as never, bind: null }
+			{ bind: null }
 		)
+		if (attachments.kind !== "intersection") {
+			for (const k in attachments.impl.keys) {
+				if (k !== "in" && k !== "out")
+					(this as {} as dict)[k] = attachments.inner[k]
+			}
+		}
 		this.cache = cache
 		// assigned one at a time, so every node of a kind shares a V8 map
 		const self: mutable<UnknownAttachments> = this
@@ -1586,16 +1592,6 @@ export declare namespace NodeSelector {
 			: never
 		:	// default is "filter"
 			t[]
-}
-
-const attachedInnerOf = (
-	attachments: UnknownAttachmentsInput
-): dict | undefined => {
-	if (attachments.kind === "intersection") return
-	const attached: dict = {}
-	for (const k in attachments.impl.keys)
-		if (k !== "in" && k !== "out") attached[k] = attachments.inner[k]
-	return attached
 }
 
 export const typePathToPropString = (path: array<KeyOrKeyNode>): string =>
