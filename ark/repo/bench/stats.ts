@@ -42,19 +42,25 @@ export const signTest = (
 	return Math.min(1, (2 * tail) / 2 ** n)
 }
 
-// where the standalone build stands against the best other library, by median
+const lowestOf = (entries: [string, readonly number[]][]) =>
+	entries.reduce((l, r) => (median(r[1]) < median(l[1]) ? r : l))
+
+// where the faster standalone build stands against the best other library, by median
 export const standingOf = (
 	samplesByLibrary: Record<string, readonly number[]>,
 	format: (value: number) => string
 ): Record<string, string> => {
-	const ours = samplesByLibrary.standalone
-	const [best, bestSamples] = Object.entries(samplesByLibrary)
-		.filter(([library]) => library !== "standalone")
-		.reduce((l, r) => (median(r[1]) < median(l[1]) ? r : l))
+	const entries = Object.entries(samplesByLibrary)
+	const [build, ours] = lowestOf(
+		entries.filter(([library]) => library.startsWith("standalone"))
+	)
+	const [best, bestSamples] = lowestOf(
+		entries.filter(([library]) => !library.startsWith("standalone"))
+	)
 	const gap = median(ours) / median(bestSamples)
 	const p = ours.length > 1 ? signTest(ours, bestSamples) : 0
 	return {
-		standalone: format(median(ours)),
+		standalone: `${format(median(ours))} (${build})`,
 		"best other": `${format(median(bestSamples))} (${best})`,
 		gap: `${gap.toFixed(2)}x`,
 		p: ours.length > 1 ? p.toFixed(3) : "exact",

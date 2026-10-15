@@ -11,7 +11,8 @@ export const libraries = [
 	"ajv",
 	"typebox",
 	"arktype",
-	"standalone"
+	"standalone",
+	"standaloneFirst"
 ] as const
 
 export type Library = (typeof libraries)[number]

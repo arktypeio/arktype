@@ -83,7 +83,8 @@ const isValid: Record<Library, (name: string) => string> = {
 	ajv: name => `m.${name}(data)`,
 	typebox: name => `m.${name}.Check(data)`,
 	arktype: name => `typeof m.${name}(data)?.count !== "number"`,
-	standalone: name => `typeof m.${name}(data)?.count !== "number"`
+	standalone: name => `typeof m.${name}(data)?.count !== "number"`,
+	standaloneFirst: name => `typeof m.${name}(data)?.count !== "number"`
 }
 
 const child = (path: string, scenario: Scenario, library: Library) => `

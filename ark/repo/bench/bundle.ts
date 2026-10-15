@@ -31,7 +31,8 @@ const ajvModule = async (scenario: Scenario) => {
 }
 
 const entry = async (scenario: Scenario, library: Library) =>
-	library === "standalone" ? `export * from "./${scenario}/arktype.ts"`
+	library === "standalone" || library === "standaloneFirst" ?
+		`export * from "./${scenario}/arktype.ts"`
 	: library === "valibot" ?
 		`export * from "./${scenario}/valibot.ts"\nexport { safeParse } from "valibot"`
 	: library === "zodMini" ?
@@ -67,7 +68,11 @@ export const bundle = async (
 		write: false,
 		metafile: true,
 		logLevel: "error",
-		plugins: library === "standalone" ? [precompile.esbuild({ cwd: apps })] : []
+		plugins:
+			library === "standalone" ? [precompile.esbuild({ cwd: apps })]
+			: library === "standaloneFirst" ?
+				[precompile.esbuild({ cwd: apps, errors: "first" })]
+			:	[]
 	})
 	return { js: outputFiles[0].text, metafile }
 }
