@@ -26,7 +26,7 @@ precompile.vite({ optimize: "size" })
 
 ### Return one issue saying only that data is invalid with `errors: "none"`
 
-A failed standalone validation returns errors holding one issue at the root, whose message is `is invalid`, so no check's description, message or reporting pass ships: the benchmarked login, moltar and shop apps lose 613, 690 and 2941 bytes gzipped. Those errors have no `throw()`: `assert` throws a plain `Error` saying `is invalid` whose `cause` is the errors, so no `TraversalError` ships, and an `onFail` calling `errors.throw()` fails. The validators run on `@ark/schema/runtime/none`, a copy of the runtime whose errors are a class of its own, which the plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to, failing a module that imports `@ark/schema`, whose errors aren't the copy's, and a runtime island.
+A failed standalone validation returns errors holding one issue at the root, whose message is `is invalid`, as is that of an issue a callback reads below it, so no check's description, message or reporting pass ships: the benchmarked login, moltar and shop apps lose 613, 690 and 2941 bytes gzipped. Those errors have no `throw()`: `assert` throws a plain `Error` saying `is invalid` whose `cause` is the errors, so no `TraversalError` ships, and an `onFail` calling `errors.throw()` fails. The validators run on `@ark/schema/runtime/none`, a copy of the runtime whose errors are a class of its own, which the plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to, failing a module that imports `@ark/schema`, whose errors aren't the copy's, and a runtime island.
 
 ```ts
 precompile.vite({ errors: "none" })

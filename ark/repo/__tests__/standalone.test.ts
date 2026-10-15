@@ -509,6 +509,36 @@ n must be a string or null`)
 		)
 	})
 
+	it("says only that data is invalid of an issue a callback reads below the root, where its build doesn't detail errors", async () => {
+		let Inner: (data: unknown, ctx: Traversal) => unknown = () => {}
+		let read: unknown
+		const check = standIn((o: { n: unknown }, ctx: Traversal) => {
+			Inner(o.n, ctx)
+			read = ctx.errors.issues
+			return o
+		}, "check")
+		const created = await load(
+			{
+				Inner: type("number"),
+				Nested: {
+					type: type({ a: type({ n: "unknown" }).pipe(check) }),
+					params: [{ kind: "function", label: "`check`", value: check }]
+				}
+			},
+			undefined,
+			undefined,
+			printed,
+			{ errors: "none" }
+		)
+		Inner = created.Inner
+		attest(String(created.Nested(check)({ a: { n: "x" } }))).equals(
+			"is invalid"
+		)
+		attest(read).equals([
+			{ code: "predicate", path: ["a"], data: "x", message: "is invalid" }
+		])
+	})
+
 	it("lacks each member its build sets false", async () => {
 		const T = type({ name: "string" })
 		const membersOf = (validator: object) => ({

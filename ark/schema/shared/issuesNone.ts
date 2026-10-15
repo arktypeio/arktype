@@ -23,7 +23,7 @@ export class ArkErrors {
 	}
 
 	get issues(): readonly ArkIssue[] {
-		for (const issue of this._) issue.message ??= messageOf(issue)
+		for (const issue of this._) issue.message ??= messageOf()
 		return this._
 	}
 
@@ -63,33 +63,33 @@ export const throwOnDefault = (errors: ArkErrors): never => {
 	) => Error)("is invalid", { cause: errors })
 }
 
-// a merged issue's message is written again at its path, unless it was supplied
+// a merged issue names its path, as a default's check reports the key
 export const mergeIssues = (
 	errors: ArkErrors,
 	merged: ArkErrors,
 	prefix: array<PropertyKey>
 ): void => {
-	for (const issue of merged.issues) {
-		errors._.push({
-			...issue,
-			path: [...prefix, ...issue.path],
-			message: issue.message === messageOf(issue) ? undefined : issue.message
-		})
+	for (const issue of merged._) {
+		const path = [...prefix, ...issue.path]
+		errors._.push({ ...issue, path, message: placedMessageOf(path) })
 	}
 }
 
-export const messageOf = (issue: ArkIssue): string => {
-	let path = ""
-	for (const k of issue.path) {
-		path +=
+const placedMessageOf = (path: PropertyKey[]): string => {
+	let at = ""
+	for (const k of path) {
+		at +=
 			typeof k === "number" ? `[${k}]`
-			: path ? `.${String(k)}`
+			: at ? `.${String(k)}`
 			: String(k)
 	}
-	return path ? `${path} ${problemOf()}` : problemOf()
+	return at ? `${at} is invalid` : "is invalid"
 }
 
-export const problemOf = (): string => "is invalid"
+// wherever an issue is, it says only that data is invalid
+export const messageOf = (): string => "is invalid"
+
+export { messageOf as problemOf }
 
 // what arktype's own Apply reports, piped a validator's ctx by a callback, which the issue at the validation's root replaces
 const issueOf = (path: PropertyKey[]): ArkIssue => ({
