@@ -44,7 +44,9 @@ const defaultConfig: ToJsonSchema.Context = {
 		arrayPostfix: ctx => ToJsonSchema.throw("arrayPostfix", ctx),
 		defaultValue: ctx => ToJsonSchema.throw("defaultValue", ctx),
 		domain: ctx => ToJsonSchema.throw("domain", ctx),
+		indexKey: ctx => ToJsonSchema.throw("indexKey", ctx),
 		morph: ctx => ToJsonSchema.throw("morph", ctx),
+		patternFlags: ctx => ToJsonSchema.throw("patternFlags", ctx),
 		patternIntersection: ctx => ToJsonSchema.throw("patternIntersection", ctx),
 		predicate: ctx => ToJsonSchema.throw("predicate", ctx),
 		proto: ctx => ToJsonSchema.throw("proto", ctx),
@@ -80,7 +82,14 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 	// written as the default itself
 	defaultValue: ctx => defaultValueSerializer(ctx.value) as never,
 	domain: ctx => annotate(ctx.base, "domain", ctx.domain),
+	indexKey: ctx =>
+		appendAnnotation(ctx.base, "index", { key: ctx.key, value: ctx.value }),
 	morph: ctx => annotate(ctx.base, "out", ctx.out),
+	patternFlags: ctx =>
+		appendAnnotation(ctx.base, "patterns", {
+			rule: ctx.pattern,
+			flags: ctx.flags
+		}),
 	patternIntersection: ctx => {
 		const { allOf = [] } = ctx.base as { allOf?: readonly JsonSchema[] }
 		return { ...ctx.base, allOf: [...allOf, { pattern: ctx.pattern }] } as never
@@ -125,7 +134,13 @@ const standardFallback: ToJsonSchema.HandlerByCode = {
 		(Array.isArray(items) ? { ...base, items } : base) as never,
 	defaultValue: () => undefined,
 	domain: ctx => ctx.base,
+	// rejecting undeclared keys would reject those the index allows
+	indexKey: ({ base }) => {
+		const { additionalProperties, ...rest } = base
+		return additionalProperties === false ? rest : base
+	},
 	morph: ctx => ctx.base,
+	patternFlags: ctx => ctx.base,
 	patternIntersection: ctx => ctx.base,
 	predicate: ctx => ctx.base,
 	proto: ctx => ctx.base,
@@ -182,8 +197,20 @@ export declare namespace ToJsonSchema {
 		domain: satisfy<Domain, "symbol" | "bigint" | "undefined">
 	}
 
+	export interface IndexKeyContext
+		extends BaseContext<"indexKey", JsonSchema.Object> {
+		key: JsonSchema.String
+		value: JsonSchema
+	}
+
 	export interface MorphContext extends BaseContext<"morph", JsonSchema> {
 		out: JsonSchema | null
+	}
+
+	export interface PatternFlagsContext
+		extends BaseContext<"patternFlags", JsonSchema.String> {
+		pattern: string
+		flags: string
 	}
 
 	export interface PatternIntersectionContext
@@ -241,7 +268,9 @@ export declare namespace ToJsonSchema {
 		arrayPostfix: ArrayPostfixContext
 		defaultValue: DefaultValueContext
 		domain: DomainContext
+		indexKey: IndexKeyContext
 		morph: MorphContext
+		patternFlags: PatternFlagsContext
 		patternIntersection: PatternIntersectionContext
 		predicate: PredicateContext
 		proto: ProtoContext
@@ -262,7 +291,9 @@ export declare namespace ToJsonSchema {
 			// undefined omits the default
 			defaultValue: (ctx: DefaultValueContext) => JsonSchema | undefined
 			domain: (ctx: DomainContext) => JsonSchema
+			indexKey: (ctx: IndexKeyContext) => JsonSchema.Object
 			morph: (ctx: MorphContext) => JsonSchema
+			patternFlags: (ctx: PatternFlagsContext) => JsonSchema.String
 			patternIntersection: (
 				ctx: PatternIntersectionContext
 			) => JsonSchema.String

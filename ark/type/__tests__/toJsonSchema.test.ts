@@ -147,6 +147,45 @@ contextualize(() => {
 		)
 	})
 
+	it("regex flags", () => {
+		attest(() => type(/^a/i).toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+    code: "patternFlags",
+    base: {
+        type: "string"
+    },
+    pattern: "^a",
+    flags: "i"
+}`)
+	})
+
+	it("constrained index key", () => {
+		attest(() => type({ "[string <= 3]": "number" }).toJsonSchema()).throws
+			.snap(`ToJsonSchemaError: {
+    code: "indexKey",
+    base: {
+        type: "object"
+    },
+    key: {
+        type: "string",
+        maxLength: 3
+    },
+    value: {
+        type: "number"
+    }
+}`)
+	})
+
+	it("constrained index key with undeclared keys rejected", () => {
+		const T = type({ ab: "number", "[string <= 3]": "number", "+": "reject" })
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: { ab: { type: "number" } },
+			required: ["ab"],
+			propertyNames: { type: "string", maxLength: 3 },
+			additionalProperties: { type: "number" }
+		})
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1612
 	it("refs to a structure in a union", () => {
 		const Thing = type({ a: "string" }).or("null")

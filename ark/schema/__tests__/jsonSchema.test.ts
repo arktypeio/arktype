@@ -156,6 +156,27 @@ contextualize(() => {
 		).snap({ type: "object", additionalProperties: { type: "number" } })
 	})
 
+	it("pattern flags that don't change what it matches", () => {
+		const node = rootSchema({
+			domain: "string",
+			pattern: [{ rule: "^.$", flags: "gu" }]
+		})
+		attest(toJsonSchema(node)).snap({ type: "string", pattern: "^.$" })
+	})
+
+	it("constrained index key with undeclared keys rejected", () => {
+		const node = rootSchema({
+			domain: "object",
+			index: { signature: { domain: "string", maxLength: 3 }, value: "number" },
+			undeclared: "reject"
+		})
+		attest(toJsonSchema(node)).snap({
+			type: "object",
+			propertyNames: { type: "string", maxLength: 3 },
+			additionalProperties: { type: "number" }
+		})
+	})
+
 	it("variadic array", () => {
 		const node = rootSchema({
 			proto: Array,
@@ -595,6 +616,41 @@ contextualize(() => {
 }`)
 		})
 
+		it("indexKey", () => {
+			const T = rootSchema({
+				domain: "object",
+				required: [{ key: "abcd", value: "string" }],
+				index: {
+					signature: { domain: "string", maxLength: 3 },
+					value: "number"
+				},
+				undeclared: "reject"
+			})
+
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+    code: "indexKey",
+    base: {
+        type: "object",
+        properties: {
+            abcd: {
+                type: "string"
+            }
+        },
+        required: [
+            "abcd"
+        ],
+        additionalProperties: false
+    },
+    key: {
+        type: "string",
+        maxLength: 3
+    },
+    value: {
+        type: "number"
+    }
+}`)
+		})
+
 		it("patternIntersection", () => {
 			const T = rootSchema({
 				domain: "string",
@@ -608,6 +664,39 @@ contextualize(() => {
         pattern: "^a"
     },
     pattern: "z$"
+}`)
+		})
+
+		it("patternFlags", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: [{ rule: "^a", flags: "i" }]
+			})
+
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+    code: "patternFlags",
+    base: {
+        type: "string"
+    },
+    pattern: "^a",
+    flags: "i"
+}`)
+		})
+
+		it("patternFlags with u in draft-07", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: [{ rule: "^.$", flags: "u" }]
+			})
+
+			attest(() => T.toJsonSchema({ target: "draft-07" })).throws
+				.snap(`ToJsonSchemaError: {
+    code: "patternFlags",
+    base: {
+        type: "string"
+    },
+    pattern: "^.$",
+    flags: "u"
 }`)
 		})
 
@@ -753,6 +842,36 @@ contextualize(() => {
 				type: "string",
 				pattern: "^a",
 				allOf: [{ pattern: "m" }, { pattern: "z$" }]
+			})
+		})
+
+		it("pattern flags", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: ["z$", { rule: "^a", flags: "i" }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "string",
+				"x-arktype-patterns": [{ rule: "^a", flags: "i" }],
+				pattern: "z$"
+			})
+		})
+
+		it("index key", () => {
+			const T = rootSchema({
+				domain: "object",
+				index: {
+					signature: { domain: "string", maxLength: 3 },
+					value: "number"
+				}
+			})
+
+			attest(annotated(T)).snap({
+				type: "object",
+				"x-arktype-index": [
+					{ key: { type: "string", maxLength: 3 }, value: { type: "number" } }
+				]
 			})
 		})
 

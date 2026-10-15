@@ -176,6 +176,23 @@ contextualize(() => {
 			})
 		})
 
+		it("drops a flagged pattern and a key JSON Schema can't express", () => {
+			const T = type({
+				name: /^a/i,
+				"[string <= 3]": "number",
+				"+": "reject"
+			})
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { name: { type: "string" } },
+				required: ["name"]
+			})
+		})
+
 		it("uses configured fallbacks", () => {
 			const T = type("bigint")
 			const standard: StandardJSONSchemaV1 = T

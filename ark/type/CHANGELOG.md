@@ -211,6 +211,19 @@ A function, class or symbol is written as its `$ark` name, as in the type's `.js
 
 A `symbolKey` fallback's result for a symbol-keyed property is now used instead of discarded.
 
+### Fall back for regex flags and constrained keys in JSON Schema
+
+JSON Schema's `pattern` has no flags, so `toJsonSchema()` wrote `/^a/i` as `"^a"`, which rejects `"A"`. A flag that changes what a pattern matches now goes to the new `patternFlags` fallback. `d` and `g` are ignored, as is `u` for draft-2020-12, whose patterns are built with it.
+
+An index signature whose key is constrained beyond one pattern, like `[string <= 3]`, was left out. It now goes to the new `indexKey` fallback, or, if undeclared keys are rejected and every declared key matches it, is written with `propertyNames`:
+
+```ts
+// { type: "object", propertyNames: { type: "string", maxLength: 3 }, additionalProperties: { type: "number" } }
+type({ "[string <= 3]": "number", "+": "reject" }).toJsonSchema()
+```
+
+`~standard.jsonSchema` leaves out either one, along with an `additionalProperties: false` that would reject keys the index allows.
+
 ### Reject shallow cycles
 
 An alias that resolved to itself without passing through an object, array or morph accepted every value. It now throws a ParseError:
