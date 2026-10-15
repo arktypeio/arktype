@@ -1410,8 +1410,12 @@ export declare namespace NodeSelector {
 const attachedInnerOf = (attachments: UnknownAttachments): dict | undefined => {
 	if (attachments.kind === "intersection") return
 	const attached: dict = {}
-	for (const k in attachments.impl.keys)
-		if (k !== "in" && k !== "out") attached[k] = attachments.inner[k]
+	for (const k in attachments.impl.keys) {
+		if (k === "in" || k === "out") continue
+		// props are spread and checked for a default, so attach it only if present
+		if (k === "default" && !(k in attachments.inner)) continue
+		attached[k] = attachments.inner[k]
+	}
 	return attached
 }
 

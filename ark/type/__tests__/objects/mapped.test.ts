@@ -342,6 +342,20 @@ contextualize(() => {
 		attest(T.expression).equals(Expected.expression)
 	})
 
+	it("spread props", () => {
+		const Original = type({
+			name: "string",
+			"age?": "number",
+			role: "'admin' | 'user' = 'user'"
+		})
+
+		const T = Original.map(prop => ({ ...prop, value: prop.value.or("null") }))
+
+		attest(T.expression).snap(
+			'{ name: string | null, age?: number | null, role: "admin" | "user" | null = "user" }'
+		)
+	})
+
 	it("modify default", () => {
 		const Original = type({
 			foo: "string = 'foo'",

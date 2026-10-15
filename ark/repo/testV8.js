@@ -28,10 +28,17 @@ console.log("🏎️  Type instance has fast properties!\n")
 console.log("⏱️  Checking that every node of a kind has one V8 map...\n")
 
 // each checked kind occurs with and without some inner key, e.g. a pattern's flags
+// an optional's default is attached only if present, so optionals have one map
+// with a default and one without
 const definitions = [
 	T,
 	{ name: "string", "nickname?": "string", "+": "reject" },
-	{ id: "string", count: ["number", "=", 0], "flags?": "string[]" },
+	{
+		id: "string",
+		count: ["number", "=", 0],
+		label: "string = ''",
+		"flags?": "string[]"
+	},
 	{ "[string]": "number" },
 	{ "[string]": "string", "[symbol]": "number" },
 	["string", "number?", "boolean?"],
@@ -53,6 +60,7 @@ const checkedKinds = [
 	"structure",
 	"required",
 	"optional",
+	"optional with default",
 	"index",
 	"sequence",
 	"union",
@@ -71,7 +79,11 @@ const checkedKinds = [
 const nodesByKind = {}
 for (const def of definitions) {
 	for (const node of type(def).internal.references)
-		(nodesByKind[node.kind] ??= new Set()).add(node)
+		(nodesByKind[
+			node.hasKind("optional") && node.hasDefault() ?
+				"optional with default"
+			:	node.kind
+		] ??= new Set()).add(node)
 }
 
 for (const kind of checkedKinds) {
