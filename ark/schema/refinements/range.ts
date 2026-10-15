@@ -29,18 +29,25 @@ export abstract class BaseRange<
 			assertLengthRule(this.kind as LengthBoundKind, this.rule as number)
 	}
 
-	readonly boundOperandKind: OperandKindsByBoundKind[d["kind"]] =
-		operandKindsByBoundKind[this.kind]
-	readonly comparator: RelativeComparator = compileComparator(
-		this.kind,
-		this.exclusive
-	)
-	readonly numericLimit: number = this.rule.valueOf()
+	get boundOperandKind(): OperandKindsByBoundKind[d["kind"]] {
+		return operandKindsByBoundKind[this.kind]
+	}
+
+	get comparator(): RelativeComparator {
+		return compileComparator(this.kind, this.exclusive)
+	}
+
+	get numericLimit(): number {
+		return this.rule.valueOf()
+	}
+
 	readonly expression: string = `${this.comparator} ${
 		this.boundOperandKind === "date" ? `d'${this.stringLimit}'` : this.rule
 	}`
-	readonly limitKind: LimitKind =
-		this.comparator["0"] === "<" ? "upper" : "lower"
+
+	get limitKind(): LimitKind {
+		return this.comparator["0"] === "<" ? "upper" : "lower"
+	}
 
 	compileCondition(js: NodeCompiler, data: string): string {
 		const actual =

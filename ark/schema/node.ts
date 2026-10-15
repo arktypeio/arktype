@@ -221,7 +221,6 @@ export abstract class BaseNode<
 		self.inner = attachments.inner
 		self.meta = attachments.meta
 		self.children = attachments.children
-		this.precedence = precedenceOfKind(this.kind)
 		this.$ = $
 
 		let bits = 0
@@ -664,7 +663,10 @@ export abstract class BaseNode<
 		return Object.values(this.referencesById)
 	}
 
-	declare readonly precedence: number
+	get precedence(): number {
+		return precedenceOfKind(this.kind)
+	}
+
 	compiledUnit: Fn | undefined
 	isReusableLeaf = false
 

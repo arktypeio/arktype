@@ -43,12 +43,23 @@ export abstract class BaseProp<
 > extends BaseConstraint<
 	kind extends "required" ? Required.Declaration : Optional.Declaration
 > {
-	required: boolean = this.kind === "required"
-	optional: boolean = this.kind === "optional"
+	get required(): boolean {
+		return this.kind === "required"
+	}
+
+	get optional(): boolean {
+		return this.kind === "optional"
+	}
+
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
-	serializedKey: string = compileSerializedValue(this.key)
-	compiledKey: string =
-		typeof this.key === "string" ? this.key : printable(this.key)
+
+	get serializedKey(): string {
+		return compileSerializedValue(this.key)
+	}
+
+	get compiledKey(): string {
+		return typeof this.key === "string" ? this.key : printable(this.key)
+	}
 
 	protected override initializeFlatRefs(): void {
 		this.cache.flatRefs = append(
