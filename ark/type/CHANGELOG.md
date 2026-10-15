@@ -597,6 +597,30 @@ T.expression // '{ bar?: number, foo: string = "foo" }'
 
 Symbol keys follow string keys.
 
+### Throw when an embedded Standard Schema validates asynchronously
+
+A Standard Schema whose `validate` returned a Promise, like a Zod schema with an async refinement, gave `undefined` for any input. ArkType validates synchronously, so it now throws:
+
+```ts
+const T = type({ name: z.string().refine(async s => s.length > 1) })
+
+// previously { name: undefined }
+// now throws: Standard Schema definitions must validate synchronously (zod returned a Promise)
+T({ name: "x" })
+```
+
+### Keep the path of an embedded Standard Schema's issues
+
+An issue with an empty or missing path, as for any non-object Zod or Valibot schema, lost the path it was found at:
+
+```ts
+const T = type({ age: z.number() })
+
+// previously "Invalid input: expected number, received string"
+// now "age invalid input: expected number, received string"
+T({ age: "x" }).toString()
+```
+
 ## 2.2.8
 
 ### Add `string.base58`
