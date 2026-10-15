@@ -143,4 +143,4 @@ ArkType can't see inside another library's schema, so it treats one as a morph f
 - `User.expression` shows `(In: unknown) => Out<unknown>` for it.
 - `toJsonSchema()` throws on it, and `~standard.jsonSchema` writes `{}`.
 - It can't be a branch of a union, because its input overlaps every other branch.
-- Only synchronous validators work. ArkType doesn't await the result, so an async check like a Zod `refine` with an async callback can't be used. ArkType doesn't detect this yet: the value becomes `undefined`.
+- Only synchronous validators work. ArkType doesn't await the result, so a schema that returns a `Promise`, like a Zod `refine` with an async callback, throws `Standard Schema definitions must validate synchronously (zod returned a Promise)` when validation reaches it.
