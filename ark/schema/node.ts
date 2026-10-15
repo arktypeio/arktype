@@ -151,17 +151,18 @@ export abstract class BaseNode<
 	attachmentsOf<d>
 > {
 	$: BaseScope
-	includesTransform: boolean
-	includesMorph: boolean
-
-	includesContextualPredicate: boolean
-	isCyclic: boolean
-	includesAlias: boolean
-	includesShallowAlias: boolean
-	allowsRequiresContext: boolean
-	includesContextualMorph: boolean
+	// a bit for each of what follows, read through flagBits' accessors
+	bits: number
+	declare includesTransform: boolean
+	declare includesMorph: boolean
+	declare includesContextualPredicate: boolean
+	declare isCyclic: boolean
+	declare includesAlias: boolean
+	declare includesShallowAlias: boolean
+	declare allowsRequiresContext: boolean
+	declare includesContextualMorph: boolean
 	// described by another scope's writers, which a copy bound elsewhere keeps
-	includesKeptDescription: boolean
+	declare includesKeptDescription: boolean
 	declare readonly cache: NodeCache
 
 	allows: (data: d["prerequisite"]) => boolean
@@ -210,43 +211,37 @@ export abstract class BaseNode<
 		this.precedence = precedenceOfKind(this.kind)
 		this.$ = $
 
-		this.includesMorph = this.hasKind("morph")
-		this.includesTransform =
-			this.includesMorph ||
-			(this.hasKind("sequence") && this.inner.defaultables !== undefined)
-
-		// if a predicate accepts exactly one arg, we can safely skip passing context
-		// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
-		// that would break here, but it feels like a pathological case and is better to let people optimize
-		this.includesContextualPredicate =
-			this.hasKind("predicate") && arityOf(this.inner.predicate) !== 1
-
-		this.includesContextualMorph =
-			this.hasKind("morph") &&
-			this.inner.morphs.some(morph => isNode(morph) || arityOf(morph) !== 1)
-
-		this.isCyclic = this.kind === "alias"
-		this.includesAlias = this.isCyclic
-		this.includesShallowAlias = this.isCyclic
-		this.includesKeptDescription = false
-		// an alias belongs in a structural value, so one there doesn't make its parent shallow
-		const isStructural = this.isStructural()
-
-		for (let i = 0; i < this.children.length; i++) {
-			this.includesTransform ||= this.children[i].includesTransform
-			this.includesMorph ||= this.children[i].includesMorph
-			this.includesContextualPredicate ||=
-				this.children[i].includesContextualPredicate
-			this.includesContextualMorph ||= this.children[i].includesContextualMorph
-			this.isCyclic ||= this.children[i].isCyclic
-			this.includesAlias ||= this.children[i].includesAlias
-			this.includesKeptDescription ||= this.children[i].includesKeptDescription
-			if (!isStructural)
-				this.includesShallowAlias ||= this.children[i].includesShallowAlias
+		let bits = 0
+		if (this.hasKind("morph")) {
+			bits = flagBits.includesMorph | flagBits.includesTransform
+			if (
+				this.inner.morphs.some(morph => isNode(morph) || arityOf(morph) !== 1)
+			)
+				bits |= flagBits.includesContextualMorph
+		} else if (this.hasKind("sequence")) {
+			if (this.inner.defaultables !== undefined)
+				bits = flagBits.includesTransform
+		} else if (this.hasKind("predicate")) {
+			// if a predicate accepts exactly one arg, we can safely skip passing context
+			// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
+			// that would break here, but it feels like a pathological case and is better to let people optimize
+			if (arityOf(this.inner.predicate) !== 1)
+				bits = flagBits.includesContextualPredicate
+		} else if (this.hasKind("alias")) {
+			bits =
+				flagBits.isCyclic |
+				flagBits.includesAlias |
+				flagBits.includesShallowAlias
 		}
 
-		this.allowsRequiresContext =
-			this.includesContextualPredicate || this.isCyclic
+		// an alias belongs in a structural value, so one there doesn't make its parent shallow
+		const inherited = this.isStructural() ? ~flagBits.includesShallowAlias : ~0
+		for (let i = 0; i < this.children.length; i++)
+			bits |= this.children[i].bits & inherited
+		if (bits & (flagBits.includesContextualPredicate | flagBits.isCyclic))
+			bits |= flagBits.allowsRequiresContext
+		this.bits = bits
+
 		this.allows =
 			this.allowsRequiresContext ?
 				data =>
@@ -1145,6 +1140,30 @@ export abstract class BaseNode<
 			}) as never
 		)
 	}
+}
+
+const flagBits = {
+	includesTransform: 1,
+	includesMorph: 2,
+	includesContextualPredicate: 4,
+	isCyclic: 8,
+	includesAlias: 16,
+	includesShallowAlias: 32,
+	allowsRequiresContext: 64,
+	includesContextualMorph: 128,
+	includesKeptDescription: 256
+}
+
+for (const name in flagBits) {
+	const bit = flagBits[name as keyof typeof flagBits]
+	Object.defineProperty(BaseNode.prototype, name, {
+		get(this: BaseNode) {
+			return (this.bits & bit) !== 0
+		},
+		set(this: BaseNode, value: boolean) {
+			this.bits = value ? this.bits | bit : this.bits & ~bit
+		}
+	})
 }
 
 interface SimulationState {
