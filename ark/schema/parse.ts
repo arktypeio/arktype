@@ -108,29 +108,27 @@ export const registerNodeId = (prefix: string): NodeId => {
 
 export const parseNode = (ctx: NodeParseContext): BaseNode => {
 	const impl = nodeImplementationsByKind[ctx.kind]
-	const { meta: metaInput, ...input } = (impl.applyConfig?.(
-		ctx.def,
-		ctx.$.resolvedConfig
-	) ?? ctx.def) as dict & { meta?: ArkEnv.meta | string }
+	const input = (impl.applyConfig?.(ctx.def, ctx.$.resolvedConfig) ??
+		ctx.def) as dict & { meta?: ArkEnv.meta | string }
 
+	const metaInput = input.meta
 	const meta: ArkEnv.meta =
 		metaInput === undefined ? {}
 		: typeof metaInput === "string" ? { description: metaInput }
 		: metaInput
 
-	// keys are ordered so equal inners share a key and json, with children
-	// after other values in order of precedence
-	const keys = Object.keys(input).sort((l, r) =>
-		isNodeKind(l) ?
-			isNodeKind(r) ? precedenceOfKind(l) - precedenceOfKind(r)
-			:	1
-		: isNodeKind(r) ? -1
-		: l < r ? -1
-		: 1
-	)
+	const keys = Object.keys(input)
+	// most schemas list their keys in order already
+	for (let i = 1; i < keys.length; i++) {
+		if (compareInnerKeys(keys[i - 1], keys[i]) > 0) {
+			keys.sort(compareInnerKeys)
+			break
+		}
+	}
 
 	const inner: dict = {}
 	for (const k of keys) {
+		if (k === "meta") continue
 		const keyImpl = impl.keys[k]
 		if (!keyImpl)
 			return throwParseError(`Key ${k} is not valid on ${ctx.kind} schema`)
@@ -165,6 +163,16 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 	return node
 }
+
+// keys are ordered so equal inners share a key and json, with children
+// after other values in order of precedence
+const compareInnerKeys = (l: string, r: string) =>
+	isNodeKind(l) ?
+		isNodeKind(r) ? precedenceOfKind(l) - precedenceOfKind(r)
+		:	1
+	: isNodeKind(r) ? -1
+	: l < r ? -1
+	: 1
 
 // an alias belongs in a structural value, so a value holding one elsewhere is
 // deferred to an alias of its own
