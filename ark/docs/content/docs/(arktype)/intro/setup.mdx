@@ -1,51 +1,47 @@
 ---
 title: Setup
+description: Install ArkType and configure TypeScript to infer your types correctly.
 ---
 
 ## Installation
 
 <InstallationTabs />
 
-You'll also need...
+```ts
+import { type } from "arktype"
 
-- TypeScript version `>=5.1`.
-- A `package.json` with `"type": "module"` (or an environment that supports ESM imports)
-- A `tsconfig.json` with...
-  - [`strict`](https://www.typescriptlang.org/tsconfig#strict) or [`strictNullChecks`](https://www.typescriptlang.org/tsconfig#strictNullChecks) (**required**)
-  - [`skipLibCheck`](https://www.typescriptlang.org/tsconfig#skipLibCheck) (strongly recommended, see [FAQ](/docs/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules))
-  - [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) (recommended)
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
 
-## VSCode
-
-### Settings
-
-To take advantage of all of ArkType's autocomplete capabilities, you'll need to add the following to your workspace settings at `.vscode/settings.json`:
-
-```json
-// allow autocomplete for ArkType expressions like "string | num"
-"editor.quickSuggestions": {
-	"strings": "on"
-},
-// prioritize ArkType's "type" for autoimports
-"typescript.preferences.autoImportSpecifierExcludeRegexes": [
-	"^(node:)?os$"
-],
+// ArkErrors: age must be non-negative (was -1)
+const out = User({ name: "Alan", age: -1 })
 ```
 
-### Extension (optional)
+## Requirements
 
-[ArkDark](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) provides the embedded syntax highlighting you'll see throughout the docs.
+- TypeScript `>=5.1`, including TypeScript 7.
+- An ESM project. ArkType is ESM-only, but a CommonJS project can `require` it on runtimes that support `require(esm)`, like Node `>=20.19` or `>=22.12`.
 
-Without it, your definitions can still feel like a natural extension of the language.
+```json title="tsconfig.json"
+{
+	"compilerOptions": {
+		"strict": true,
+		"skipLibCheck": true,
+		"exactOptionalPropertyTypes": true
+	}
+}
+```
 
-With it, you'll forget there was ever a boundary in the first place.
+- [`strict`](https://www.typescriptlang.org/tsconfig#strict), or at least [`strictNullChecks`](https://www.typescriptlang.org/tsconfig#strictNullChecks), is required for inference to work.
+- [`skipLibCheck`](https://www.typescriptlang.org/tsconfig#skipLibCheck) is recommended. It avoids harmless errors from differences between your config and ours (see [FAQ](/docs/faq#why-do-i-see-type-errors-in-an-arktype-package-in-node_modules)) and speeds up your editor.
+- [`exactOptionalPropertyTypes`](https://www.typescriptlang.org/tsconfig#exactOptionalPropertyTypes) is recommended. It makes your inferred types match runtime behavior. ArkType rejects `undefined` for an optional key unless its value allows it, so without this flag, `typeof User.infer` accepts `{ age: undefined }` while `User` rejects it.
 
-## JetBrains IDEs
+ArkType runs in Node, Deno, Bun, browsers and edge runtimes. Under a strict Content-Security-Policy, enable [`jitless`](/docs/configuration#jitless) so it never tries `new Function`.
 
-### Extension (optional)
+If you configure ArkType globally, your config has to load before anything imports `arktype`. See [Configuration](/docs/configuration).
 
-[ArkType](https://plugins.jetbrains.com/plugin/27099-arktype) provides the embedded syntax highlighting you are familiar with for typescript types.
+The other packages ArkType publishes, and what to import from each entrypoint, are listed in [Packages](/docs/packages). If you're upgrading an existing project, [Upgrading](/docs/upgrading) lists the changes that can break your code.
 
-## Other editors
-
-If you're using a different editor, we'd love [help adding support](https://github.com/arktypeio/arktype/issues/989). In the meantime, don't worry- ArkType still offers best-in-class DX anywhere TypeScript is supported.
+Next, set up [your editor](/docs/editor) or start with [your first type](/docs/intro/your-first-type).

@@ -1,6 +1,7 @@
 ---
 title: Announcing ArkType 2.2
 description: Type-safe regex, validated functions, and native Standard Schema definitions
+date: 2026-03-04
 ---
 
 As of today, 2.2.0 is generally available 🎉
@@ -32,7 +33,7 @@ const User = type({ name: "string", age: v.number() })
 
 Below are the full notes for the 2.2.0 release. We can't wait to hear what you think! 🚀
 
-### `type.fn` - Validated functions
+## `type.fn` - Validated functions
 
 Define functions with runtime-validated parameters and return types, all using the same syntax you already know. The result is a callable with `.expression`, `.params`, and `.returns` for introspection.
 
@@ -73,7 +74,7 @@ const join = type.fn(
 join.expression // "(...string[]) => string"
 ```
 
-### Type-safe regex
+## Type-safe regex
 
 ArkType 2.2 integrates [arkregex](/docs/blog/arkregex), a type-safe wrapper for `new RegExp()`. Regex literals in your definitions now carry full type inference:
 
@@ -85,7 +86,7 @@ const Semver = type("/^(\\d+)\\.(\\d+)\\.(\\d+)$/")
 //    Type<`${number}.${number}.${number}`>
 ```
 
-#### e(x)ec mode
+### e(x)ec mode
 
 Prefix a regex literal with `x` to parse capture groups at runtime, fully typed via arkregex:
 
@@ -104,7 +105,7 @@ data.birthday.groups.year // "1993"
 
 For the standalone package (no ArkType required), see the full [arkregex announcement](/docs/blog/arkregex).
 
-### `@ark/json-schema` - Bidirectional JSON Schema
+## `@ark/json-schema` - Bidirectional JSON Schema
 
 The new `@ark/json-schema` package allows you to parse JSON Schema directly into ArkType Types, complementing the existing `toJsonSchema()` method on every Type. Together, they provide full bidirectional conversion.
 
@@ -125,7 +126,7 @@ const User = jsonSchemaToType({
 // Type<{ name: string; age?: number }>
 ```
 
-### Configurable `toJsonSchema`
+## Configurable `toJsonSchema`
 
 Some ArkType features don't have JSON Schema equivalents. By default, `toJsonSchema()` throws in these cases. The new fallback config lets you handle incompatibilities granularly:
 
@@ -154,7 +155,7 @@ ArkType also implements the [Standard JSON Schema](https://standardschema.dev) i
 
 Full documentation including the complete table of fallback codes is available in the [configuration docs](/docs/configuration#tojsonschema).
 
-### Standard Schema as definitions
+## Standard Schema as definitions
 
 Any [Standard Schema](https://standardschema.dev) compliant validator can now be passed directly to `type`, either at the top level or nested inside a structural definition, and will be fully inferred and validated.
 
@@ -180,7 +181,7 @@ const User = type({
 
 This makes ArkType a universal composition layer- mix and match validators from any ecosystem in a single definition.
 
-### `select` - Deep reference introspection
+## `select` - Deep reference introspection
 
 The new `select` method lets you query the internal structure of a type. Every Type is built from a tree of nodes (domains, constraints, morphs, etc.), and `select` extracts references by kind and predicate:
 
@@ -204,7 +205,7 @@ configured.get("name").description // "a special string"
 configured.get("age").description // "a special string"
 ```
 
-### Improved `type.declare`
+## Improved `type.declare`
 
 `type.declare` now supports morph-aware declarations via a `side` context, and optionality can be expressed via property values in addition to keys:
 
@@ -237,7 +238,7 @@ When there's a mismatch, you get a clear error showing exactly what went wrong:
 // TypeScript: declared: string; inferred: 1
 ```
 
-### Serializable `ArkErrors`
+## Serializable `ArkErrors`
 
 `ArkErrors` are now JSON stringifiable, making it easy to send validation errors as API responses or store them in logs. Two new properties provide structured access:
 
@@ -257,7 +258,7 @@ if (out instanceof type.errors) {
 
 Unhandled validation errors now throw a `TraversalError` (instead of `AggregateError`) with cleaner multi-error formatting (thanks @LukeAbby).
 
-### N-ary operators
+## N-ary operators
 
 `type.or`, `type.and`, `type.merge`, and `type.pipe` are standalone functions that accept variadic definitions, avoiding the need to chain or compose binary expressions:
 
@@ -282,7 +283,7 @@ const TrimToNonEmpty = type.pipe(
 )
 ```
 
-### String-embeddable `|>` pipe operator
+## String-embeddable `|>` pipe operator
 
 The `to` operator (`|>`) can now be used directly inside string definitions:
 
@@ -293,7 +294,7 @@ const TrimToNonEmpty = type("string.trim |> string > 0")
 const Equivalent = type("string.trim").to("string > 0")
 ```
 
-### `type.valueOf`
+## `type.valueOf`
 
 Create a Type from a TypeScript `enum` or enum-like object:
 
@@ -308,7 +309,7 @@ enum Color {
 const ColorType = type.valueOf(Color)
 ```
 
-### New keywords
+## New keywords
 
 Two new built-in string keywords:
 
@@ -323,7 +324,7 @@ Pattern.allows("^[a-z]+$") // true
 Pattern.allows("[invalid") // false
 ```
 
-### `exactOptionalPropertyTypes` config
+## `exactOptionalPropertyTypes` config
 
 ArkType now supports a global config for `exactOptionalPropertyTypes`, matching TypeScript's compiler option:
 
@@ -344,7 +345,7 @@ const MyObj = type({ "key?": "number" })
 MyObj({ key: undefined })
 ```
 
-### Additional improvements
+## Additional improvements
 
 - **`Type#distribute`**: Map and optionally reduce over union branches e.g. `T.distribute(branch => branch.expression)`. See [Type API docs](/docs/type-api#distribute).
 - **ES2020 / Hermes compatibility**: Removed usages of newer prototype methods like `.at()` to support legacy browsers and React Native's Hermes engine

@@ -1,14 +1,15 @@
 ---
 title: Ecosystem
+description: Community projects built on ArkType, for environment variables, Drizzle codegen and binary serialization.
 ---
 
-### ArkEnv
+These projects are maintained by their authors, not the ArkType team. For libraries that accept a Type directly, see [Integrations](/docs/integrations).
 
-[ArkEnv](https://arkenv.js.org) brings the power of ArkType to your environment variables.
+## ArkEnv
 
-Define an ArkType schema, pull values from your environment or config source, validate them, apply type conversions and transformations, and end up with a fully typesafe, ready-to-use `env` object.
+[ArkEnv](https://arkenv.js.org) validates your environment variables with an ArkType definition and gives you a typed `env` object, with strings like `"3000"` already parsed into the types you declared.
 
-Inspired by tools like [T3 Env](https://env.t3.gg) but tailored specifically for ArkType, ArkEnv also adds keywords like `string.host` and `number.port` for env-specific use cases.
+It works like [T3 Env](https://env.t3.gg), built around ArkType definitions, and adds keywords for common variables like `string.host` and `number.port`.
 
 Scaffold with `npx arkenv init` and import from `@arkenv/core` (`arkenv` on npm is the CLI).
 
@@ -22,16 +23,15 @@ const env = arkenv({
 	NODE_ENV: "'development' | 'production' | 'test' = 'development'"
 })
 
-// Automatically validate and parse process.env
-// TypeScript knows the ✨exact✨ types!
-console.log(env.HOST) // (property) HOST: string
-console.log(env.PORT) // (property) PORT: number
-console.log(env.NODE_ENV) // (property) NODE_ENV: "development" | "production" | "test"
+// process.env is validated and parsed when this runs
+env.HOST // string
+env.PORT // number
+env.NODE_ENV // "development" | "production" | "test"
 ```
 
-### DRZL
+## DRZL
 
-[DRZL](https://use-drzl.github.io/drzl) is zero-friction codegen for Drizzle ORM, tailored for ArkType developers. It analyzes your Drizzle schemas and generates ArkType validation schemas, services, and routers—eliminating boilerplate and ensuring seamless type safety between your database and application layers.
+[DRZL](https://use-drzl.github.io/drzl) generates code from your Drizzle ORM schemas: ArkType validators, typed services and routers that reuse them.
 
 ```ts
 // @noErrors
@@ -72,7 +72,7 @@ export default defineConfig({
 
 > For more details, see the [Getting Started guide](https://use-drzl.github.io/drzl/guide/getting-started.html).
 
-### shorn
+## shorn
 
 [shorn](https://shorn.dev) turns an ArkType type into compact binary serialization. Field names and type tags stay out of the payload because the type already provides them, so there is no schema language to learn and nothing to generate.
 

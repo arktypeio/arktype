@@ -1,6 +1,7 @@
 ---
 title: Announcing ArkType 2.1
 description: Optimized pattern matching from type syntax
+date: 2025-02-27
 ---
 
 As of today, 2.1.0 is generally available 🎉
@@ -59,11 +60,11 @@ We're actually huge fans of [Gabriel Vergnaud](https://github.com/gvergnaud) and
 
 Below are the full notes for the 2.1.0 release. We can't wait to hear what you think! 🚀
 
-### `match`
+## `match`
 
 The `match` function provides a powerful way to handle different types of input and return corresponding outputs based on the input type, like a type-safe `switch` statement.
 
-#### Case Record API
+### Case Record API
 
 The simplest way to define a matcher is with ArkType definition strings as keys with corresponding handlers as values:
 
@@ -98,7 +99,7 @@ In this example, `sizeOf` is a matcher that takes a string, array, number, or bi
 
 Cases will be checked in the order they are specified, either as object literal keys or via chained methods.
 
-#### Fluent API
+### Fluent API
 
 The `match` function also provides a fluent API. This can be convenient for non-string-embeddable definitions:
 
@@ -119,7 +120,7 @@ sizeOf({ name: "David", length: 5 }) // 5
 sizeOf(null) // 0
 ```
 
-#### Narrowing input with `in`, property matching with `at`
+### Narrowing input with `in`, property matching with `at`
 
 ```ts
 // @errors: 2345
@@ -151,7 +152,7 @@ discriminateValue({ oneValue: 3 })
 
 Special thanks to [@thetayloredman](https://github.com/thetayloredman) who did a mind-blowingly good job helping us iterate toward the current type-level pattern-matching implementation🙇
 
-### Built-in keywords can now be globally configured
+## Built-in keywords can now be globally configured
 
 This can be very helpful for customizing error messages without needing to create your own aliases or wrappers.
 
@@ -187,7 +188,7 @@ const out = User({
 
 The options you can provide here are identical to those used to [configure a Type directly](https://arktype.io/docs/expressions#meta), and can also be [extended at a type-level to include custom metadata](https://arktype.io/docs/configuration#metadata).
 
-### Tuple and args expressions for `.to`
+## Tuple and args expressions for `.to`
 
 If a morph returns an `ArkErrors` instance, validation will fail with that result instead of it being treated as a value. This is especially useful for using other Types as morphs to validate output or chain transformations.
 
@@ -205,7 +206,7 @@ const NowSoDoesTuple = type({
 const AndSpreadArgs = type("string.numeric.parse", "|>", "number % 2")
 ```
 
-### Error configurations now accept a string directly
+## Error configurations now accept a string directly
 
 ```ts
 const CustomOne = type("1", "@", {
@@ -221,7 +222,7 @@ Keep in mind, [as mentioned in the docs](https://arktype.io/docs/configuration#e
 
 Though generally, returning a string based on context is the best option, in situations where you always want the same static message, it's now easier to get that!
 
-### Type.toString() now wraps its syntactic representation in `Type<..>`
+## Type.toString() now wraps its syntactic representation in `Type<..>`
 
 Previously, `Type.toString()` just returned `Type.expression`. However, in contexts where the source of a message isn't always a `Type`, it could be confusing:
 
@@ -233,7 +234,7 @@ console.log(`(was ${type.string})`)
 
 Hopefully if you interpolate a Type, you'll be less confused by the result from now on!
 
-### Improve how Type instances are inferred when wrapped in external generics
+## Improve how Type instances are inferred when wrapped in external generics
 
 Previously, we used `NoInfer` in some Type method returns. After migrating those to inlined conditionals, we get the same benefit and external inference for cases like this is more reliable:
 
@@ -255,7 +256,7 @@ const arkRes = fn({
 })
 ```
 
-### Fix an issue causing some discriminated unions to incorrectly reject default cases
+## Fix an issue causing some discriminated unions to incorrectly reject default cases
 
 ```ts
 const Discriminated = type({

@@ -20,11 +20,11 @@ _Note: This package is still in alpha! Your feedback will help us iterate toward
 
 See [arktype.io/docs/attest](https://arktype.io/docs/attest) for:
 
-- [Setup](https://arktype.io/docs/attest) with Vitest, Mocha and other test runners
+- [Getting started](https://arktype.io/docs/attest) with Vitest, Mocha, Jest and Bun
 - [Assertions](https://arktype.io/docs/attest/assertions) for types, values, errors, completions and JSDoc
 - [Benches](https://arktype.io/docs/attest/benches) measuring type instantiations and runtime
 - [Options](https://arktype.io/docs/attest/options) like `skipTypes` and `typeToStringFormat`
 - The [CLI](https://arktype.io/docs/attest/cli) for type performance stats and traces
-- [Integrating](https://arktype.io/docs/attest/integration) attest's type data into your own assertions
+- [Custom assertions](https://arktype.io/docs/attest/integration) built on the type data attest collects
 
 Please don't hesitate to open a GitHub [issue](https://github.com/arktypeio/arktype/issues/new/choose) or [discussion](https://github.com/arktypeio/arktype/discussions/new/choose) or reach out on [ArkType's Discord](https://arktype.io/discord) if you have any questions or feedback- we'd love to hear from you! ⛵

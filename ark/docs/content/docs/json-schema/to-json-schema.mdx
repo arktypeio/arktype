@@ -1,0 +1,279 @@
+---
+title: To JSON Schema
+description: Generate a JSON Schema from any Type, pick a draft, and decide what to write for what JSON Schema can't express.
+---
+
+Every Type has a `toJsonSchema()` method:
+
+```ts
+const User = type({
+	name: "string",
+	"age?": "number.integer >= 0"
+})
+
+const schema = User.toJsonSchema()
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"name": { "type": "string" },
+		"age": { "type": "integer", "minimum": 0 }
+	},
+	"required": ["name"]
+}
+```
+
+## Options
+
+| option     | default           | effect                                                                                 |
+| ---------- | ----------------- | -------------------------------------------------------------------------------------- |
+| `target`   | `"draft-2020-12"` | the draft to write, `"draft-2020-12"` or `"draft-07"`                                  |
+| `dialect`  | the target's URL  | the `$schema` value. `null` omits it. Takes precedence over `target`'s URL             |
+| `useRefs`  | `false`           | write each part once under `$defs` and point to it with `$ref`. Cyclic Types always do |
+| `fallback` | throws            | what to write for a part JSON Schema can't express. See [Fallbacks](#fallbacks)        |
+
+### target
+
+The drafts differ in how they write tuples and where they put definitions:
+
+```ts
+const Pair = type(["string", "number"])
+
+Pair.toJsonSchema()
+// {
+// 	$schema: "https://json-schema.org/draft/2020-12/schema",
+// 	type: "array",
+// 	minItems: 2,
+// 	prefixItems: [{ type: "string" }, { type: "number" }],
+// 	items: false
+// }
+
+Pair.toJsonSchema({ target: "draft-07" })
+// {
+// 	$schema: "http://json-schema.org/draft-07/schema#",
+// 	type: "array",
+// 	minItems: 2,
+// 	items: [{ type: "string" }, { type: "number" }],
+// 	additionalItems: false
+// }
+```
+
+`draft-07` writes `definitions` where `draft-2020-12` writes `$defs`.
+
+### dialect
+
+```ts
+type("string").toJsonSchema({ dialect: null }) // { type: "string" }
+```
+
+### Cyclic types
+
+A cyclic Type is written as a `$ref` to its definition. The definition's name, like `Node1` below, is generated from the alias, so don't rely on it staying the same:
+
+```ts
+const types = scope({ Node: { value: "number", "next?": "Node" } }).export()
+
+const schema = types.Node.toJsonSchema()
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"$ref": "#/$defs/Node1",
+	"$defs": {
+		"Node1": {
+			"type": "object",
+			"properties": {
+				"value": { "type": "number" },
+				"next": { "$ref": "#/$defs/Node1" }
+			},
+			"required": ["value"]
+		}
+	}
+}
+```
+
+## How Types map
+
+| ArkType                                               | JSON Schema                                         |
+| ----------------------------------------------------- | --------------------------------------------------- |
+| `"string"`, `"number"`, `"boolean"`, `"null"`         | `type`                                              |
+| `"number.integer"`, `"number % 2"`                    | `type: "integer"`, plus `multipleOf: 2`             |
+| `"0 < number <= 1"`                                   | `exclusiveMinimum: 0`, `maximum: 1`                 |
+| `"string >= 1"`, `"string == 2"`                      | `minLength`, or `minLength` and `maxLength`         |
+| `"string[] > 0"`                                      | `items`, `minItems: 1`                              |
+| `["string", "number?"]`                               | `prefixItems`, `minItems: 1`, `items: false`        |
+| `/^a/`                                                | `pattern: "^a"`                                     |
+| `"string.email"`                                      | `pattern`, `format: "email"`                        |
+| `"'a' \| 'b'"`                                        | `enum: ["a", "b"]`                                  |
+| `"string \| null"`                                    | `anyOf`                                             |
+| `{ "name?": "string" }`                               | `properties`, with only required keys in `required` |
+| `{ "+": "reject", ... }`                              | `additionalProperties: false`                       |
+| `"Record<string, number>"`                            | `additionalProperties: {...}`                       |
+| `{ id: "string", "[string]": "string" }`              | `patternProperties: { "": {...} }`                  |
+| `{ "[/^x-/]": "string" }`                             | `patternProperties: { "^x-": {...} }`               |
+| `{ role: "string = 'user'" }`                         | `default: "user"` on `role`                         |
+| `.describe("...")`, `.configure({ title, examples })` | `description`, `title`, `examples`                  |
+
+An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
+
+## Fallbacks
+
+Some things a Type checks have no JSON Schema equivalent: a `Date`, a `bigint`, a morph, a `narrow`. By default, `toJsonSchema()` throws a `ToJsonSchemaError` for them:
+
+```ts
+type({ at: "Date" }).toJsonSchema() // throws ToJsonSchemaError (code "date")
+```
+
+Pass a handler for its [code](#fallback-codes) to write something instead. The handler receives the schema written so far as `ctx.base`, plus fields for its code, and returns the schema to use:
+
+```ts
+const Event = type({ name: "string", at: "Date" })
+
+const schema = Event.toJsonSchema({
+	fallback: {
+		date: ctx => ({ ...ctx.base, type: "string", format: "date-time" })
+	}
+})
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"at": { "type": "string", "format": "date-time" },
+		"name": { "type": "string" }
+	},
+	"required": ["at", "name"]
+}
+```
+
+A `default` handler covers every code you don't list. Passing a function instead of an object is the same as passing it as `default`. Return `ctx.base` to leave out what JSON Schema can't express:
+
+```ts
+const Event = type({ name: "string", at: "Date" })
+// ---cut---
+// properties.at is now {}
+Event.toJsonSchema({ fallback: ctx => ctx.base })
+```
+
+Leaving something out makes the schema accept values the Type rejects.
+
+For `defaultValue`, `base` is the property's own schema, so returning it makes the schema contain itself. Return `undefined` to drop the default instead, e.g. `{ defaultValue: () => undefined, default: ctx => ctx.base }`.
+
+### Morphs
+
+A morph has a different input and output, so there is no single schema for it. Convert one side with `.in` or `.out`:
+
+```ts
+const Tags = type("string")
+	.pipe(s => s.split(","))
+	.to("string[]")
+
+Tags.in.toJsonSchema() // { $schema: "...", type: "string" }
+Tags.out.toJsonSchema() // { $schema: "...", type: "array", items: { type: "string" } }
+```
+
+### annotatingFallback
+
+To keep what JSON Schema can't express rather than drop it, pass `annotatingFallback`. It writes each such constraint as an `x-arktype-*` keyword, naming a function, class or symbol by its `$ark` name as a Type's `.json` does:
+
+```ts
+import { annotatingFallback, type } from "arktype"
+
+const schema = type({
+	id: "bigint",
+	createdAt: "Date"
+}).toJsonSchema({ fallback: annotatingFallback })
+```
+
+```json
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"createdAt": { "x-arktype-proto": "Date" },
+		"id": { "x-arktype-domain": "bigint" }
+	},
+	"required": ["createdAt", "id"]
+}
+```
+
+Validators ignore those keywords, so the schema still accepts values the Type rejects.
+
+### Fallback codes
+
+Every reason `toJsonSchema()` can throw, with the fields its handler receives besides `code` and `base`:
+
+| code                  | raised for                                               | example                                      | fields                                           |
+| --------------------- | -------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------ |
+| `arrayObject`         | an array with named properties                           | `type("string[]").and({ n: "number" })`      | `object`                                         |
+| `arrayPostfix`        | elements after a variadic element                        | `type(["...", "string[]", "number"])`        | `elements`                                       |
+| `date`                | a `Date`, with its bounds                                | `type("Date")`                               | `before`, `after`                                |
+| `defaultValue`        | a default that isn't JSON. Return `undefined` to omit it | `type({ n: "bigint = 5n" })`, after `domain` | `value`                                          |
+| `domain`              | `bigint` or `symbol`                                     | `type("bigint")`                             | `domain`                                         |
+| `morph`               | a morph                                                  | `type("string.trim")`                        | `out`, the output schema or `null`               |
+| `patternIntersection` | a second regex on the same string                        | `type(/^a/).and(/b$/)`                       | `pattern`                                        |
+| `predicate`           | a `narrow`                                               | `type("number").narrow(n => n > 0)`          | `predicate`                                      |
+| `proto`               | an `instanceof` other than `Array` or `Date`             | `type("Map")`                                | `proto`                                          |
+| `symbolKey`           | a symbol key or index signature                          | `type({ "[symbol]": "string" })`             | `key` (`null` for an index), `value`, `optional` |
+| `unit`                | a literal that isn't JSON                                | `type("undefined")`                          | `unit`                                           |
+
+A `Date` is reported as `date`, never `proto`.
+
+## Configuration
+
+`toJsonSchema` options can also be set [globally or on a scope](/docs/configuration#levels). Options passed to `toJsonSchema()` are merged over them:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({
+	toJsonSchema: {
+		target: "draft-07",
+		fallback: {
+			date: ctx => ({ ...ctx.base, type: "string", format: "date-time" })
+		}
+	}
+})
+```
+
+```ts title="app.ts"
+// import your config file before arktype
+import "./config.ts"
+import { type } from "arktype"
+
+// $schema is draft-07's, and at is { type: "string", format: "date-time" }
+type({ at: "Date" }).toJsonSchema()
+```
+
+A handler passed to `toJsonSchema()` replaces the configured one for its code. A `default` passed there replaces every configured handler.
+
+## Standard JSON Schema
+
+Libraries that accept any [Standard JSON Schema](https://standardschema.dev/json-schema) read a Type's schema from `~standard.jsonSchema`. `input` describes what the Type accepts, `output` what it returns after its morphs:
+
+```ts
+const Form = type({
+	tags: type("string")
+		.pipe(s => s.split(","))
+		.to("string[]"),
+	"id?": "bigint"
+})
+
+// properties: { tags: { type: "string" }, id: {} }
+Form["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+
+// properties: { tags: { type: "array", items: { type: "string" } }, id: {} }
+Form["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+```
+
+Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express. They write as much of it as JSON Schema can describe, or `{}` if nothing, so `id` above accepts any value.
+
+- `target` must be `"draft-2020-12"` or `"draft-07"`. Anything else throws.
+- `libraryOptions` are passed to `toJsonSchema()` as options, e.g. `{ dialect: null }`.
+- Fallback handlers you configure or pass in `libraryOptions` still apply. Only the default throwing handlers are replaced.

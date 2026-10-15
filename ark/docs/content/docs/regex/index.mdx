@@ -1,43 +1,62 @@
 ---
-title: Setup
+title: Overview
+description: Install ArkRegex and see what it infers from the strings you already pass to new RegExp().
 ---
 
-ArkRegex is a drop-in replacement for `new RegExp()` with types.
-
-The `regex` function creates a `Regex` instance with types for `.test()`, `.exec()` and more, statically parsed from native JS syntax:
+`regex` takes the same arguments as `new RegExp()` and returns a `RegExp` typed with the strings it matches, its captures and its flags:
 
 ```ts
 import { regex } from "arkregex"
 
 const ok = regex("^ok$", "i")
-//    ^?
+//    ^? Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
 
 const semver = regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
-//    ^?
-
-const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
-//    ^?
+//    ^? Regex<`${number}.${number}.${number}`, { captures: [`${number}`, `${number}`, `${number}`] }>
 ```
 
-At runtime, `regex(src, flags)` is just `new RegExp(src, flags)`, so it adds nothing to your bundle beyond a single function.
+`.exec()` returns typed captures:
+
+```ts
+import { regex } from "arkregex"
+
+const date = regex("^(?<year>\\d{4})-(?<month>\\d{2})$")
+
+const match = date.exec("2026-10")
+
+if (match) {
+	const month = match.groups.month
+	//    ^? `${number}`
+}
+```
+
+At runtime, `regex(src, flags)` is `new RegExp(src, flags)`. The result is a plain `RegExp`, and `Regex` exists only in your types, so the package adds one function to your bundle.
 
 ## Installation
 
 <InstallationTabs pkg="arkregex" />
 
-Performs best with TypeScript 5.9+.
+Performs best with TypeScript 5.9 or later, including TypeScript 7.
+
+If you're upgrading, [Upgrading](/docs/upgrading#arkregex) lists what changed in inference.
 
 ## Features
 
-- **Types**: Infers string types for your existing regular expressions, including positional and named captures
-- **Parity**: Supports 100% of [features](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Regular_expressions) allowed by `new RegExp()`
-- **Safety**: Syntax errors like referencing a group that doesn't exist are now [type errors](/docs/regex/errors)
-- **Zero Runtime**: Improves your type safety without impacting your bundle size
+- **Types**: infers the strings an expression matches, its positional and named captures and its flags. See [Inference](/docs/regex/inference).
+- **Syntax**: parses the syntax `new RegExp()` accepts, including named groups, lookarounds, backreferences, modifiers and Unicode properties. A few valid patterns are rejected and a few invalid ones aren't caught; see [what isn't checked](/docs/regex/errors#what-isnt-checked).
+- **Errors**: mistakes like an unclosed group or a reference to a group that doesn't exist are [type errors](/docs/regex/errors).
+- **No runtime cost**: the only code that runs is `new RegExp()`.
 
 ## Syntax highlighting
 
-The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) adds syntax highlighting to `regex` calls.
+The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) highlights the expression inside `regex` calls.
 
 ## ArkType
 
-ArkType uses ArkRegex to infer its own regex literals, so `type("/^\\d+$/")` is already typed. See [ArkType integration](/docs/regex/arktype).
+`arktype` re-exports `regex` and the `Regex` type, so if you use ArkType you don't need to install `arkregex` separately:
+
+```ts
+import { regex, type Regex } from "arktype"
+```
+
+ArkType also uses ArkRegex to infer its own regex literals, so `type("/^\\d+$/")` infers ``Type<`${number}`>``. See [ArkType](/docs/regex/arktype).
