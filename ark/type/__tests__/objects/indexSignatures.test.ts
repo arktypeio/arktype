@@ -259,6 +259,34 @@ other must be a string (was a bigint)`)
 		)
 	})
 
+	it("checks a declared key against a signature reading ctx's root", () => {
+		const types = scope({
+			listed: [
+				"string",
+				":",
+				(k, ctx) => (ctx.root as { listed: string[] }).listed.includes(k)
+			],
+			t: { listed: "string[]", a: "string | number", "[listed]": "string" }
+		}).export()
+		const T = type({ listed: "string[]", a: "string | number" }).and(
+			type.Record(types.listed, "string")
+		)
+		const data = { listed: [], a: 1 }
+		attest(types.t(data)).unknown.equals(data)
+		attest(T(data)).unknown.equals(data)
+		attest(types.t({ listed: ["a"], a: 1 }).toString()).snap(
+			"a must be a string (was a number)"
+		)
+		attest(T({ listed: ["a"], a: 1 }).toString()).snap(
+			"a must be a string (was a number)"
+		)
+		attest(
+			type("string")
+				.or(T)({ listed: ["a"], a: 1 })
+				.toString()
+		).snap("a must be a string (was a number)")
+	})
+
 	it("intersction with right required", () => {
 		const T = type({ "a?": "true" }).and({ a: "boolean" })
 		attest<{ a: true }>(T.infer)

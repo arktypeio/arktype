@@ -458,6 +458,24 @@ const K = type("string").narrow(
 type.Record(K, "number")({ ab: 1, x: 2 })
 ```
 
+### Call an index signature's key narrow that reads `ctx` only while validating
+
+Such a narrow was called on each declared key as its Type was parsed, outside any validation, so one reading `ctx.root` threw. It now decides whether its signature checks a declared key only while validating, as it does for other keys:
+
+```ts
+const types = scope({
+	listed: [
+		"string",
+		":",
+		(k, ctx) => (ctx.root as { listed: string[] }).listed.includes(k)
+	],
+	t: { listed: "string[]", a: "string | number", "[listed]": "string" }
+}).export()
+
+// previously parsing t threw a TypeError, now "a must be a string (was a number)"
+types.t({ listed: ["a"], a: 1 })
+```
+
 ### Check data first when a narrow reads `ctx`
 
 A Type without morphs that has a narrow taking `ctx` checks data before collecting errors, as other Types do, so valid data is accepted faster. Errors are collected by a second pass, so on invalid data its narrows can run twice, as they can in other Types:

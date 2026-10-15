@@ -27,7 +27,9 @@ const intersectPropsAndIndex = <
 ): l | Disjoint | null => {
 	const kind = l.required ? "required" : "optional"
 
-	if (!r.signature.allows(l.key)) return null
+	// a signature reading ctx can only decide a key it's traversing
+	if (r.signature.allowsRequiresContext || !r.signature.allows(l.key))
+		return null
 
 	const value = intersectNodesRoot(l.value, r.value, $)
 	if (value instanceof Disjoint) {
