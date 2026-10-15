@@ -80,7 +80,7 @@ const swappedOf = (
 	return Object.isFrozen(value) ? Object.freeze(copy) : copy
 }
 
-// e.g. members.meta false, under which a validator's meta isn't compared at creation
+// e.g. members.meta false, so a validator's meta isn't compared
 export interface ShadowContract {
 	members?: { meta?: boolean }
 	mutatesInput?: boolean
@@ -419,9 +419,9 @@ interface Call {
 }
 
 interface Validation {
-	// "run" once a validator whose errors say only that data is invalid passes where arktype's Apply began, as its calls from there are its own
+	// "run" once an errors "none" validator passes where arktype's Apply began
 	phase: "record" | "replay" | "run"
-	// whether arktype's side failed under errors "none", where the validator skips the Apply arktype then ran
+	// whether arktype failed under errors "none", whose validator runs no Apply
 	skipsApply: boolean
 	calls: Call[]
 	replayed: number
@@ -746,7 +746,7 @@ const validateBoth = (
 	const writesInput = pair.contract.mutatesInput === true
 	const arktypeObserved = inArktype(() => observe(arktype, writesInput))
 	const precompiledObserved = observe(precompiled, writesInput)
-	// a validator without error detail fails with one issue at the root, compared without its data, which a type.fn's validator receives as an array arktype's doesn't share
+	// errors "none" fails with one root issue, compared without its data
 	if (current.skipsApply) {
 		arktypeObserved.issues = [{ code: "predicate", path: [] }]
 		const { issues } = precompiledObserved as { issues?: KeptIssue[] }
@@ -766,7 +766,7 @@ const validateBoth = (
 			issues && firstIssueOf(issues, all as KeptIssue[], counterparts)
 		if (found) arktypeObserved.issues = found
 	}
-	// a validator writing what it transforms into its input leaves it unlike arktype's
+	// a validator writing its input in place leaves it unlike arktype's
 	if (current.isCopied && !pair.contract.mutatesInput && !current.skipsApply) {
 		arktypeObserved.input = data
 		precompiledObserved.input = copy
@@ -825,7 +825,7 @@ const observe = (
 		:	{ out: value }
 }
 
-// a validator writing its input can write to an object an issue holds before the validation fails
+// writing its input, a validator can change data an issue holds
 const comparedOf = (issues: KeptIssue[], writesInput: boolean) =>
 	writesInput ?
 		issues.map(issue =>

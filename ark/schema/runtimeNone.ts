@@ -1,4 +1,4 @@
-// what a build whose errors say only that data is invalid resolves @ark/schema/runtime to, which the published package bundles with issuesNone.ts in place of issues.ts
+// @ark/schema/runtime under errors "none", published with issuesNone.ts
 export * from "./runtime.ts"
-// so an assertion throws as the published package's does where arktype's source is read without that bundle
+// so an assertion throws as published where the source is read unbundled
 export { throwOnDefault } from "./shared/issuesNone.ts"

@@ -78,7 +78,7 @@ const pairCopies = (copy: unknown, original: unknown): void => {
 
 const issuesPath = fromHere("..", "..", "schema", "shared", "issues.ts")
 
-// what @ark/schema/runtime/none bundles in place of issues.ts, which its source re-exports as is
+// issuesNone.ts for issues.ts, as @ark/schema/runtime/none bundles them
 const undetailedIssues: Plugin = {
 	name: "issuesNone",
 	setup: pluginBuild =>
@@ -114,10 +114,10 @@ export const outDir = async (): Promise<string> => {
 	return dir
 }
 
-// the errors the artifacts' runtime writes, which errors another copy wrote aren't
+// the artifacts' runtime's ArkErrors, unlike those another copy wrote
 let artifactErrors: Function | undefined
 
-// a hole calling a validator built with another copy of the runtime, as a test can, returns errors this copy doesn't recognize
+// a hole calling another runtime copy's validator returns foreign errors
 const returnsForeignErrors = (
 	validator: (data: unknown) => unknown,
 	input: unknown
@@ -130,7 +130,7 @@ const returnsForeignErrors = (
 	}
 }
 
-// a validator writing its input throws writing one it can't, and one holding an object twice either throws saying so or accepts it where arktype does, though what it returns and which issues it finds can differ
+// in place, an unwritable input throws, and an aliased one can differ
 const writesUnlikeCopy = (
 	input: unknown,
 	expected: { traverse: unknown },
@@ -407,7 +407,7 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 
 type Validator = Record<string, any> & ((data: unknown) => unknown)
 
-// every member a build can bake, so each is compared where arktype's can be read, but what ~standard holds where the tested options drop it
+// every member a build can bake, but ~standard's where the options drop it
 const bakesEvery: ValidatorMembers = {
 	...Object.fromEntries(
 		introspectionMembers.map(member => [
@@ -486,7 +486,7 @@ const maskUnbaked = (
 		const first = i - (i % standardTargets.length)
 		return (
 				threwUnbaked(baked.standardJsonSchema[i]) ||
-					// arktype reads the Type's input or output before it checks the target, so where reading it throws, as the build found writing it, it throws alike for any target
+					// arktype reads in or out before checking the target, so any target throws
 					(threwUnbaked(baked.standardJsonSchema[first]) &&
 						isEqual(observation, arktype.standardJsonSchema[first]))
 			) ?
@@ -563,11 +563,11 @@ const observeCall = (t: Validator, input: unknown) => {
 const hasIssues = (observation: unknown): boolean =>
 	hasDomain(observation, "object") && "issues" in observation
 
-// whether a validation returned its errors, as traverse does unless a callback throws
+// whether a validation returned its errors, unless a callback threw
 const fails = (observation: unknown): boolean =>
 	hasIssues(observation) && !("threw" in (observation as object))
 
-// what a build without error detail returns in place of arktype's issues where its root fails
+// what errors "none" returns for arktype's issues where its root fails
 const undetailedOf = (
 	call: ReturnType<typeof observeCall>,
 	input: unknown
@@ -585,7 +585,7 @@ const undetailedOf = (
 	return result
 }
 
-// arktype's call, failing with the issue a first-issue build found of its own
+// arktype's call, failing with the one issue a first-issue build found
 const firstIssueOf = (
 	expected: ReturnType<typeof observeCall>,
 	actual: ReturnType<typeof observeCall>

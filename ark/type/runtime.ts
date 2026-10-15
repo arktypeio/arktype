@@ -108,7 +108,7 @@ export * from "./keywords/functions.ts"
 
 export interface ValidatorAttributes {
 	meta: ArkEnv.meta
-	// what a build's members option bakes, which a validator built without it doesn't have
+	// what members bakes, which a validator otherwise lacks
 	expression?: string
 	description?: string
 	json?: JsonStructure
@@ -188,7 +188,7 @@ export const createValidator = ((
 			if (!pipedFromCtx) return rootApply(data, onFail)
 			return pipedInto(pipedFromCtx, rootApply(data, null))
 		}) satisfies Fn,
-		// arktype's prototypes are per node kind, so a method replaced on the one every validator shares would change Types of other kinds
+		// shared by every validator, where arktype's are per node kind
 		freeze(Validator.prototype)
 	)
 	// an own arrow function, since it is often detached, e.g. when passing to tRPC
@@ -255,7 +255,7 @@ export const pipedInto = (pipedFromCtx: Traversal, out: unknown): unknown => {
 			errors._.push({
 				...issue,
 				path: [...pipedFromCtx.path, ...issue.path],
-				// a callback reading the errors wrote it at the old path, so it's written again unless it was supplied
+				// read by a callback at the old path, so rewritten unless supplied
 				message:
 					issue.message && issue.message === messageOf(issue) ?
 						undefined
@@ -485,7 +485,7 @@ export type transformedInPlaceTwiceMessage =
 const throwTransformedTwice = (): never =>
 	throwError(transformedInPlaceTwiceMessage)
 
-// each call transforms what it reaches anew, as does a Type piped a morph's output, which can hold what the morph received
+// each call, and each Type piped a morph's output, transforms anew
 const inPlaceCall = (
 	root: unknown,
 	f: Fn,
@@ -581,7 +581,7 @@ export const transformResolutionOnce = (
 		:	place
 }
 
-// a structure a cycle can reach again, which would then read it half written
+// a structure a cycle can reach again would read it half written
 export const writesInPlace = (
 	transform: Fn,
 	data: object,
@@ -596,7 +596,7 @@ export const writesInPlace = (
 	}
 }
 
-// a check finds what it would have where no transform wrote into what it reads, so Apply finds an issue wherever Allows did
+// Apply must find an issue where Allows did, else a write hid it
 export const appliesInPlace =
 	(apply: Fn): Fn =>
 	(data: unknown, ctx: ArkErrors | InternalTraversal) => {
@@ -621,7 +621,7 @@ export const inPlaceParts = ([
 	transformsInPlace(transform)
 ]
 
-// as a build whose errors say only that data is invalid, which runs no Apply, wraps them
+// as errors "none" wraps them, which runs no Apply
 export const inPlaceTransforms = ([
 	allows,
 	apply,

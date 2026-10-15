@@ -1,6 +1,6 @@
 import type { PrecompileOptions } from "@ark/precompile"
 
-// the options ARK_PRECOMPILE_OPTIONS sets as JSON, which the differential, the generated programs and shadow mode build with, each comparing a validator with arktype as far as they let the two differ
+// what the differential, generated programs and shadow mode build with
 export const testedOptions: PrecompileOptions = JSON.parse(
 	process.env.ARK_PRECOMPILE_OPTIONS ?? "{}"
 )
@@ -12,25 +12,25 @@ export const lackedMembers: string[] = Object.entries(
 
 export const lacks = (member: string): boolean => lackedMembers.includes(member)
 
-// `methods` is what a validator inherits, which every function has a toString of
+// `methods` is inherited, read as traverse since functions have toString
 export const hasMember = (validator: object, member: string): boolean =>
 	member === "methods" ? "traverse" in validator : member in validator
 
-// what a validation returns with onFail null, as traverse() calls it, which a validator without methods is called for
+// as traverse() validates, with onFail null, where methods are dropped
 export const traverse = (t: any, data: unknown): unknown =>
 	lacks("methods") ? t(data, undefined, null) : t.traverse(data)
 
-// whether a validator is frozen, which arktype's Types aren't, so it's observed against what the options promise
+// whether a validator is frozen, which arktype's Types aren't
 export const freezes: boolean = testedOptions.freeze !== false
 
-// a validator writing what it transforms into its input returns that input, keeping what a copy wouldn't, like its keys' order, accessors and the keys it inherits, so neither which object it returns, what it leaves of the input nor how its output holds a key is compared
+// the output is the input, so its identity, keys and input aren't compared
 export const mutatesInput: boolean = testedOptions.mutatesInput === true
 
-// what an issue holds of an object, which a validator writing its input can have written to before the validation failed
+// an issue's object, which writing in place can change before it fails
 export const comparedDataOf = (data: unknown): unknown =>
 	mutatesInput && typeof data === "object" && data !== null ? "object" : data
 
-// a build whose errors say only that data is invalid fails with one issue at the root, and without the Apply that can run morphs writing what they receive
+// errors "none" fails with one root issue and runs no Apply's morphs
 export const detailsErrors: boolean = testedOptions.errors !== "none"
 
 // a first-issue build returns one of arktype's issues

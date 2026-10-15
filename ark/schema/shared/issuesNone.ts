@@ -6,7 +6,7 @@ import type {
 	FailureSite
 } from "./issues.ts"
 
-// @ark/schema/runtime/none bundles this in place of issues.ts, so a build whose errors say only that data is invalid ships nothing writing an issue's detail
+// in place of issues.ts, so errors "none" ships nothing writing detail
 export class ArkErrors {
 	declare _: ArkIssue[]
 
@@ -55,7 +55,7 @@ export class TraversalError extends Error {
 	}
 }
 
-// errors without detail have no throw(), so an assertion throws a plain Error holding them as its cause, an ES2022 option the ES2020 lib arktype is checked against doesn't declare
+// a plain Error holds them as its cause, which the ES2020 lib lacks
 export const throwOnDefault = (errors: ArkErrors): never => {
 	throw new (Error as new (
 		message: string,
@@ -91,7 +91,7 @@ export const messageOf = (): string => "is invalid"
 
 export { messageOf as problemOf }
 
-// what arktype's own Apply reports, piped a validator's ctx by a callback, which the issue at the validation's root replaces
+// what arktype's Apply reports into a piped ctx, replaced by the root issue
 const issueOf = (path: PropertyKey[]): ArkIssue => ({
 	code: "predicate",
 	path: path.slice(),
@@ -101,7 +101,7 @@ const issueOf = (path: PropertyKey[]): ArkIssue => ({
 
 export { issueOf as issueAt, issueOf as issueWith, issueOf as unionIssue }
 
-// as issues.ts's, which this module replaces, for arktype's own Apply applying a key's value
+// as issues.ts's, for arktype's own Apply applying a key's value
 export const failsIn = (
 	ctx: FailureContext,
 	path: PropertyKey[],

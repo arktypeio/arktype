@@ -123,7 +123,7 @@ export const writeLibrary = (): string => {
 	return root
 }
 
-// a program built without error detail, and in reads/ one importing a package that imports @ark/schema, which that build can't load
+// errors "none" programs, reads/ importing a package importing @ark/schema
 export const writeUndetailed = (): string => {
 	const root = fromHere("temp", "undetailed")
 	const reads = join(root, "node_modules", "reads")

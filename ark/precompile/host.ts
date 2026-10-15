@@ -154,7 +154,7 @@ export const resolvesToRuntime = (
 ): boolean =>
 	opts?.runtime !== "arktype" && !(opts?.shadow && specifier === "arktype")
 
-// a standalone build whose errors say only that data is invalid runs on a runtime of its own, which shadow mode, running on arktype, doesn't
+// errors "none" runs on a runtime of its own, but not in shadow mode
 export const resolvesUndetailed = (
 	opts: PrecompileOptions | undefined
 ): boolean =>
@@ -162,7 +162,7 @@ export const resolvesUndetailed = (
 
 export const schemaSpecifier = /^@ark\/schema(?:\/|$)/
 
-// none but @ark/schema's runtime, as any other entry loads the class of errors that runtime replaces
+// only the runtime has a copy, as other entries load the errors it replaces
 export const undetailedSpecifierOf = (specifier: string): string | undefined =>
 	specifier === "@ark/schema/runtime" ? "@ark/schema/runtime/none"
 	: specifier === "@ark/schema/runtime/none" ? specifier

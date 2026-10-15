@@ -72,7 +72,7 @@ const bundle = (source: string) => {
 
 const issuesPath = fromHere("..", "..", "schema", "shared", "issues.ts")
 
-// as @ark/schema/runtime/none bundles the runtime, with issuesNone.ts in place of issues.ts, for a build whose errors say only that data is invalid
+// as @ark/schema/runtime/none bundles it, issuesNone.ts for issues.ts
 const bundleUndetailed = async (source: string): Promise<string> => {
 	const { outputFiles } = await build({
 		...optionsOf(source),
@@ -244,7 +244,7 @@ contextualize(() => {
 			dates: type({ at: "string.date.iso.parse" }).array(),
 			typeError: type.instanceOf(TypeError)
 		}
-		// optimized for size, a build declares its units in modules a bundle shares, and its validators share their root apply where the runtime creates them, or hold it where its own creator does
+		// for size, units are shared modules and validators share root applies
 		const sized = async (members: ValidatorMembers) => {
 			const { code, modules } = precompileStandaloneModules(types, {
 				members,
@@ -461,7 +461,7 @@ n must be a string or null`)
 			(s: string, ctx: Traversal) => s.length > 1 || ctx.mustBe("long"),
 			"islong"
 		)
-		// written by the runtime's createValidator, then by a creator the build writes
+		// by the runtime's createValidator, then by a creator the build writes
 		for (const members of [{}, { methods: false }]) {
 			const created = await load(
 				{
@@ -689,7 +689,7 @@ a must be a number`)
 	it("adds its errors to a runtime island's Type piping to it under a throwing onFail", async () => {
 		const config: ArkSchemaConfig = { onFail: errors => errors.throw() }
 		const fingerprint = fingerprintOf(config)
-		// written by createValidatorWith, then by creators the build writes, with and without the traverse a Type reads
+		// by createValidatorWith, then built creators, with and without traverse
 		for (const [members, length] of [
 			[{}, 1],
 			[{ assert: false }, 1],
@@ -852,7 +852,7 @@ name is missing`)
 		const validators = await load(exports, undefined, undefined, printed, {
 			errors: "none"
 		})
-		// a root's apply differs for each: one checking, transforming, transforming with ctx, selecting a branch, piping into a node whose predicates read ctx, and each through a cycle
+		// one root apply of each kind, and each through a cycle
 		const inputs: { [name in keyof typeof exports]: [valid: {}, invalid: {}] } =
 			{
 				Object: [
@@ -1526,7 +1526,7 @@ name is missing`)
 		const read = standIn((o: { j: unknown }) => o.j, "read")
 		const build = (T: StandaloneExport) => () =>
 			precompileStandalone({ T }, { mutatesInput: true })
-		// arktype rejects { a: s, b: { inner: s } } for s = { n: "8" }, as b reads s before a parses it
+		// arktype rejects { a: s, b: { inner: s } }: b reads s before a parses it
 		attest(
 			build({
 				type: type({

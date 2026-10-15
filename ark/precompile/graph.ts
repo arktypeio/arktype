@@ -110,7 +110,7 @@ export const runtimeMembers: Record<string, 1> = Object.setPrototypeOf(
 	null
 )
 
-// a Type's members a standalone validator has whatever its build's members option sets, so reading any other at runtime in a standalone build reads undefined
+// the Type members a validator can have, as any other reads undefined
 export const validatorMembers: Record<string, 1> = Object.setPrototypeOf(
 	{
 		meta: 1,

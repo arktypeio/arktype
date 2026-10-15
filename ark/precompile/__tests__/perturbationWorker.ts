@@ -90,7 +90,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			if (world === "standalone" && specifier === "arktype")
 				return { url: "perturbation:arktype", shortCircuit: true }
 			const resolved = next(specifier, context)
-			// what @ark/schema/runtime/none bundles in place of issues.ts, which its source re-exports as is
+			// issuesNone.ts for issues.ts, as @ark/schema/runtime/none bundles them
 			if (
 				world === "standalone" &&
 				!detailsErrors &&
@@ -479,7 +479,7 @@ const settle = (result: unknown) =>
 		])
 	:	result
 
-// a build without error detail returns one issue at the root where arktype's errors hold their own, which don't hold its data
+// errors "none" has one root issue for arktype's, compared without data
 const keptOf = (errors: ArkErrors): KeptIssue[] =>
 	!detailsErrors && errors._merge ?
 		[{ code: "predicate", path: [], data: undefined }]
@@ -509,7 +509,7 @@ const messageOf = (e: unknown) => {
 	)
 }
 
-// a default's ParseError, which a build without error detail writes from one issue at its key, as arktype's "value at [0]" is "[0]"
+// a default's ParseError under errors "none", "value at [0]" being "[0]"
 const undetailedDefaultOf = (message: string) =>
 	message.replace(
 		/^Default (?:for (?:value at )?(\[\d+]|[^\s.[]+)|(?=must |is ))[^]*$/,

@@ -46,7 +46,7 @@ const root = fromHere("..", "..", "..")
 
 export interface BuildOptions {
 	mode: PrecompileMode
-	// what a standalone build takes, which cache mode, writing arktype's own Types, doesn't
+	// a standalone build's options, which cache mode doesn't take
 	standalone?: PrecompileOptions
 	// run a file where no site folds, as for a program that records its own observations
 	runsUnfolded?: boolean
@@ -82,7 +82,7 @@ export const buildPerturbed = (
 	const exportNamesByPath: Record<string, string[]> = {}
 	const swapsByPath: Record<string, Record<string, string>> = {}
 	const errors: Diagnostic[] = []
-	// a standalone factory takes what it doesn't check as the build read it, so no mock or swap replaces that: a helper unless it checks helpers, and a Type where it checks none. A cache build leaves the same, as the world as written runs on its manifest
+	// nothing swaps what a factory doesn't check, as it's what the build read
 	const checks = opts.standalone?.checks ?? "helpers"
 	const helpers = new Set<string>()
 	const collectHelpers = (precompiled: PrecompiledModule) => {

@@ -125,7 +125,7 @@ export type PrecompileMode = "standalone" | "cache"
 export interface PrecompileOptions extends InterpreterOptions {
 	// the directory paths in messages are relative to
 	cwd?: string | undefined
-	// the module whose `configure()` call sets the configuration, or false where none does
+	// the module calling `configure()`, or false where none does
 	config?: string | false | undefined
 	// place what the module imports from virtual modules in the module itself, for hosts without them
 	inline?: boolean | undefined
@@ -133,15 +133,15 @@ export interface PrecompileOptions extends InterpreterOptions {
 	checks?: Checks | undefined
 	// what a standalone validator has besides validating
 	members?: ValidatorMembers | undefined
-	// "first" stops a standalone validation at its first issue, and "none" returns one saying only that data is invalid
+	// "first" stops at the first issue, and "none" reports only "is invalid"
 	errors?: ErrorDetail | undefined
 	// false leaves standalone validators and their members unfrozen
 	freeze?: boolean | undefined
 	// false creates standalone validators as their modules load
 	lazy?: boolean | undefined
-	// true writes what a standalone validation transforms into its input, which it returns
+	// true writes what a validation transforms into its input and returns it
 	mutatesInput?: boolean | undefined
-	// "size" writes standalone validators in their shortest forms rather than those V8 runs fastest
+	// "size" writes each validator in its shortest form
 	optimize?: Optimization | undefined
 	// create each site with arktype too, from the same holes, and throw where its validator observes anything else
 	shadow?: boolean | undefined
@@ -388,13 +388,13 @@ export class Precompiler {
 	interpreter: Interpreter
 	mode: PrecompileMode
 	config: string | undefined
-	// false where the build's `config` is, so the program calling configure() fails the build
+	// false where `config` is, so a configure() call fails the build
 	configures: boolean
 	inline: boolean
 	checks: Checks
 	checkHelpers: boolean
 	shadow: boolean
-	// e.g. `{"members":{"meta":false}}`, under which shadow mode doesn't compare a validator's meta
+	// e.g. `{"members":{"meta":false}}`, so shadow mode skips the meta
 	shadowContract: string | undefined
 	members: ValidatorMembers
 	// e.g. traverse, from and toString where members.methods is false
@@ -3202,7 +3202,7 @@ export class Precompiler {
 		)
 		for (const [node, read, object, isMaybeType] of unavailable) {
 			const settledValue = settledValues.get(rangeOf(normalize(object)))
-			// a site whose value the build computed is no longer unsure, so a member the build's options drop is read off a Type there
+			// a computed site is sure, so a member the options drop is read off a Type
 			const isUnsure =
 				isMaybeType &&
 				!(
@@ -3267,7 +3267,7 @@ export class Precompiler {
 					source === "@ark/schema" && specifier.type === "ImportSpecifier" ?
 						exportNameOf(specifier.imported)
 					:	undefined
-				// e.g. `Traversal`, which the standalone runtime shares unless errors are "none", whose runtime is a copy of its own
+				// e.g. `Traversal`, shared unless errors "none" copies the runtime
 				if (
 					name !== undefined &&
 					this.errors !== "none" &&
@@ -3608,7 +3608,7 @@ const enumOptions = {
 	optimize: ["speed", "size"]
 } as const
 
-// the options choosing what a standalone build writes, which runtime: "arktype" doesn't take
+// what a standalone build writes, which runtime: "arktype" doesn't take
 const standaloneOptions = [
 	"members",
 	...booleanOptions,

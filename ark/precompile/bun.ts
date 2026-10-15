@@ -57,7 +57,7 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 						contents: `export * from ${JSON.stringify(host.resolve("@ark/schema/runtime/none", runtime!))}`,
 						loader: "js"
 					}))
-					// re-exported, as a module importing it links to its exports before this throws, and Bun names no importer to a runtime plugin
+					// its importer links to its exports before it throws, unnamed under Bun
 					build.module("@ark/schema", () => ({
 						contents: `export * from ${JSON.stringify(host.resolve("@ark/schema", runtime!))}\nthrow new Error(${JSON.stringify(writeUndetailedImportMessage("a module", "@ark/schema"))})`,
 						loader: "js"

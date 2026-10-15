@@ -175,7 +175,7 @@ contextualize(() => {
 		}).timeout(60000)
 
 		it("import cycle", () => {
-			// a module the cycle reaches before it loads creates its validators as they're read, even where the build isn't lazy
+			// a module reached before it loads creates lazily, even with lazy false
 			for (const lazy of [undefined, false]) {
 				attest(node(["main.ts"], { lazy }, cycle).stdout).equals(
 					runPlain(cycle)
@@ -187,7 +187,7 @@ contextualize(() => {
 						cycleFirst
 					).stdout
 				).equals(runPlain(cycleFirst))
-				// Node's type stripping keeps an import only a type reads, which closes the cycle
+				// type stripping keeps an import only a type reads, closing the cycle
 				attest(node(["main.ts"], { lazy }, cycleErased).stdout).equals(
 					runPlain(cycleErased)
 				)
@@ -195,7 +195,7 @@ contextualize(() => {
 					node(["main.ts"], { members: { json: true }, lazy }, cycleArrow)
 						.stdout
 				).equals(runPlain(cycleArrow))
-				// each module logs as it runs, so an import the build adds can't run one earlier unseen
+				// each module logs as it runs, so no added import runs one early unseen
 				attest(
 					node(["main.ts"], { members: { expression: true }, lazy }, cycleOrder)
 						.stdout

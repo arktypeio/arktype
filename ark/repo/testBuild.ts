@@ -152,7 +152,7 @@ for (const pkg of packages) {
 if ("$ark2" in globalThis)
 	throw new Error("⚠️  A deep import installed a registry of its own.")
 
-// what a build whose errors say only that data is invalid loads in place of @ark/schema/runtime
+// what errors "none" loads in place of @ark/schema/runtime
 const undetailedRuntime = await importBuilt("@ark/schema/runtime/none")
 
 if (
@@ -215,7 +215,7 @@ for (const marker of ["__export(", "initialRegistryContents"]) {
 		throw new Error(`⚠️  Bundling arktype/runtime keeps ${marker}.`)
 }
 
-// a program built without error detail runs on that runtime as published, whose errors have no throw()
+// errors "none" runs on it as published, where errors have no throw()
 const undetailed = fileURLToPath(new URL("temp/undetailed/", import.meta.url))
 mkdirSync(undetailed, { recursive: true })
 writeFileSync(

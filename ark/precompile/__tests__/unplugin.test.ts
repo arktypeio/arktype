@@ -1372,7 +1372,7 @@ try {
 			},
 			fromHere("temp", "commonjs")
 		)
-		// a build optimized for size declares its traversals in their modules, so each transforming one is strict itself
+		// for size, a transforming traversal in its module is strict itself
 		for (const optimize of ["speed", "size"] as const) {
 			const { outputFiles } = await esbuild({
 				entryPoints: [join(root, "main.ts")],

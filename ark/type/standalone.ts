@@ -197,13 +197,13 @@ export interface ProgressParam {
 	at: number
 }
 
-// false where the program never calls configure(), so a validator neither checks the configuration nor reads it
+// false where nothing calls configure(), which validators then don't read
 export type Configured = ConfiguredModule | false | undefined
 
-// what a factory checks is what the build read: each Type, Module, Scope and Generic it receives, each static helper it calls too, or neither
+// what a factory checks is as built: what it receives, helpers too, or none
 export type Checks = "types" | "helpers" | "none"
 
-// what a failed validation returns: each issue, the first one, or one at the root saying only that data is invalid
+// a failure's issues: each, the first, or one at the root, "is invalid"
 export type ErrorDetail = "all" | "first" | "none"
 
 export type Optimization = "speed" | "size"
@@ -222,21 +222,21 @@ interface SharedModule {
 
 export interface StandaloneOptions {
 	configured?: Configured
-	// each member a validator has, the default ones unless false and those it bakes of its Type's introspection if true
+	// a validator's members: the defaults unless false, introspection if true
 	members?: ValidatorMembers | undefined
 	// runs arktype writing what a validator bakes, refusing with a ParseError where the configured code it calls reads what the program can change
 	bake?: (<t>(write: () => t) => t) | undefined
-	// "first" stops each validation at its first issue, which is then the only one it returns, and "none" returns one issue at the root saying only that data is invalid
+	// "first" returns only the first issue, "none" one root issue, "is invalid"
 	errors?: ErrorDetail | undefined
 	// false leaves each validator and its members unfrozen
 	freeze?: boolean | undefined
-	// false creates each validator as its module is evaluated, rather than at its first read
+	// false creates each validator as its module loads, not at its first read
 	lazy?: boolean | undefined
-	// "none" has a factory take each Type, Module, Scope and Generic it receives as the build read it
+	// "none" has a factory trust the Types it receives are those built
 	checks?: Checks | undefined
 	// true writes what a validation transforms into its input, which it returns
 	mutatesInput?: boolean | undefined
-	// "size" writes the shortest forms of what V8 would compile as the artifact loads, and has validators share the root applies they write alike
+	// "size" writes the shortest forms and shares root applies written alike
 	optimize?: Optimization | undefined
 	// declares what a site calls as functions, for a module an import cycle can reach before its artifact is evaluated
 	hoisted?: boolean | undefined
@@ -246,23 +246,23 @@ interface Baking {
 	members: ReadonlySet<ValidatorMember>
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
-	// else a failed validation returns one issue at the root, so no unit returns an Apply
+	// else a failure is one issue at the root, so no unit returns an Apply
 	detailsErrors: boolean
 	freezes: boolean
 	readsConfig: boolean
-	// a module an import cycle can reach before it's evaluated creates at the first read either way
+	// a module an import cycle reaches early creates at the first read anyway
 	createsLazily: boolean
-	// else a value is held by its id only where it holds functions a factory takes from it
+	// else held by id only where a factory takes functions from it
 	checksTypes: boolean
 	mutatesInput: boolean
 	hoisted: boolean
 	// writes the shortest forms rather than those V8 compiles and runs fastest as the artifact loads
 	shortest: boolean
-	// declares a shared unit's traversals in its module, which V8 calls slower than the constants of a function building them
+	// declares a unit's traversals at the top level of its module
 	flattens: boolean
 }
 
-// a root apply as what a function of its unit's traversals or its shape returns
+// a root apply, as a function of its unit's traversals or shape returns it
 interface RootApplier {
 	params: string
 	apply: string
@@ -270,7 +270,7 @@ interface RootApplier {
 	failure?: keyof typeof failureSources
 }
 
-// a function a site calls, declared to be called before its module is evaluated, else parenthesized for V8 to compile with the module unless the build is optimized for size
+// hoisted for early calls, else parenthesized unless optimized for size
 const writeFunction = (
 	baking: Baking,
 	name: string,
@@ -285,7 +285,7 @@ const isCreatedByRuntime = (
 	members: ReadonlySet<ValidatorMember>,
 	baking: Baking
 ) =>
-	// runtime.createValidator's assert calls errors.throw(), which errors without detail lack
+	// its assert calls errors.throw(), which errors "none" lacks
 	baking.detailsErrors &&
 	baking.freezes &&
 	baking.readsConfig &&
@@ -298,7 +298,7 @@ const writeValue = (hoisted: boolean, name: string, expression: string) =>
 		`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${expression})\n}`
 	:	`const ${name} = /* @__PURE__ */ (() => ${expression})()`
 
-// what a build whose errors say only that data is invalid fails through, as each function's parameters and body
+// how errors "none" fails, as each function's parameters and body
 const failureSources = {
 	invalid: [
 		"data, onFail",
@@ -306,7 +306,7 @@ const failureSources = {
 	errors._.push({ code: "predicate", path: [], data })
 	return onFail ? onFail(errors) : errors`
 	],
-	// what a validator that is its root apply returns given what else its call passes, as applyCallErrors does
+	// a compact validator's failure, given what else its call passes
 	invalidCall: [
 		"data, args, onFail",
 		`\tconst errors = new runtime.ArkErrors()
@@ -317,12 +317,12 @@ const failureSources = {
 	}
 	return onFail ? onFail(errors) : errors`
 	],
-	// a pipe applies a node once its Allows rejects data, where any issue fails it
+	// a pipe applies a node its Allows rejected, where any issue fails it
 	applyInvalid: [
 		"data, ctx",
 		`\tctx.addError({ code: "predicate", path: ctx.path.slice(), data })`
 	],
-	// a pipe tells whether a node whose predicates read ctx allows data by whether its Apply adds an issue
+	// whether a node reading ctx allows data, by whether Apply adds an issue
 	applyBy: [
 		"allows",
 		`\treturn (data, ctx) => {
@@ -424,7 +424,7 @@ const writeArtifact = (
 	imports: Record<string, string[]>,
 	folds: StandaloneModules["folds"],
 	checking: string[],
-	// whether each shared unit is a module of its own, rather than declared in one scope with the others
+	// whether each shared unit is a module, not declared in one scope
 	isModular: boolean
 ): string[] => {
 	const { configured } = opts
@@ -728,7 +728,7 @@ export class StandaloneArtifact {
 	// a default's value is collected for the validator its morph reads, so that validator is written only if read, as a traversal writing the default inline reads none
 	defaultValues = new Set<BaseRoot>()
 	readRoots = new Set<BaseRoot>()
-	// e.g. a default's value its morph traverses, or a typed function's parameters it asserts with
+	// e.g. a default's value its morph checks, or a typed function's parameters
 	runtimeReadRoots = new Set<BaseRoot>()
 	unitRoots = new Set<BaseRoot>()
 	// the unit holding each root in the first Type reaching it, by id, as two nodes of one id like `unknown` and `unknown.any` are one root
@@ -1401,7 +1401,7 @@ ${writeFunction(
 			return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(root, shape, unit, this.traversalsOf(root, unit))}))`
 		})
 		const moduleDeclarations: string[] = []
-		// a unit importing another's traversals by name, so neither is built by a function
+		// a unit imports another's traversals by name, so no function builds them
 		if (this.baking.flattens) {
 			for (const name in unit.dependencies) {
 				if (read && !read.has(name)) continue
@@ -1520,7 +1520,7 @@ return [${returned.join(", ")}]
 				/^function\(([^)]*)\) {/,
 				(signature, params: string) =>
 					`(${this.baking.shortest && !/\bctx\b/.test(source.slice(signature.length)) ? params.replace(/, ctx$/, "") : params}) => {${
-						// declared in a module, a traversal that writes is strict even where a bundle's format isn't
+						// a writing traversal is strict even where a bundle's format isn't
 						isStrict && !name.endsWith("Allows") ? `\n"use strict"\n` : ""
 					}`
 			)
@@ -1653,7 +1653,7 @@ return [${returned.join(", ")}]
 				new Set([...this.baking.members, ...defaultMembers])
 			:	this.baking.members
 		const keepsMeta = members.has("meta")
-		// beyond the shortest forms, a validator is made from what the build writes, a compact root apply's being the validator itself, and only one inheriting traverse is passed a Type's traversal though its length is 1
+		// beyond the shortest forms, a validator is made from what the build writes
 		const ownsValidator =
 			!isTemplate && !this.baking.shortest && members.has("methods")
 		const [applied, allows, isCompact] = this.emitRootApply(root, ownsValidator)
@@ -1674,14 +1674,14 @@ return [${returned.join(", ")}]
 			...(keepsMeta ? [`meta: ${meta}`] : []),
 			...this.emitIntrospection(root)
 		]
-		// a validator without its meta still fails as the meta's onFail does, as a matcher asserting its default does
+		// without its meta, a validator still fails as the meta's onFail does
 		const onFail =
 			!keepsMeta && root.meta.onFail ? this.emit(root.meta.onFail) : undefined
 		const rootApply = () =>
 			typeof applied === "string" ? applied : (
 				`${this.emitApplier(applied.params, applied.apply, applied.failure)}(${applied.args})`
 			)
-		// a build optimized for size has a validator whose root apply reads only its unit's traversals created from the unit, by a creator holding the apply
+		// for size, a creator holding the root apply takes the unit's traversals
 		const fused =
 			(
 				this.baking.shortest &&
@@ -1732,7 +1732,7 @@ return [${returned.join(", ")}]
 			:	created
 	}
 
-	// written for what a build's validators keep, as the runtime's creators taking it would grow every build keeping it all
+	// written for what validators keep, as the runtime's grow other builds
 	creatorOf(
 		members: ReadonlySet<ValidatorMember>,
 		ownsValidator: boolean,
@@ -2060,7 +2060,7 @@ return [${returned.join(", ")}]
 			: param === "TransformErrors" ? param
 			: param === "applyRejected" && appliesErrors ? "runtime.applyNodeErrors"
 			: this.emit(rootApplyRuntime[param])
-		// each call writing what it transforms into its input transforms an object at one place, and fails where a check does
+		// in place, a call transforms an object once, failing where a check does
 		const inPlace = this.baking.mutatesInput && root.transforms
 		const strategy = root.rootApplyStrategy
 		// most root applies are one arrow, half the length of the function writeRootApply names for the JIT
@@ -2149,7 +2149,7 @@ return [${returned.join(", ")}]
 		]
 	}
 
-	// where arktype's root apply would report what fails, this one returns its one issue
+	// where arktype's root apply reports what fails, this returns one issue
 	emitUndetailedApply(
 		root: BaseRoot,
 		ctx: string,
@@ -2160,13 +2160,13 @@ return [${returned.join(", ")}]
 		const invalid = () =>
 			`${this.baking.shortest ? "invalid" : this.readFailure("invalid")}(data, onFail)`
 		const transforms = root.transforms
-		// a union without a discriminant transforms what a branch allows, returning unset where none does
+		// an undiscriminated union transforms what a branch allows, else unset
 		const selects =
 			strategy === "transform" &&
 			root.hasKind("union") &&
 			!root.compiledDiscriminant
 		const captures = strategy === "transform" && root.includesMorph
-		// a transform through a cycle, which the runtime resolves from the root's shape
+		// a transform through a cycle, resolved from the root's shape
 		const resolves = strategy === "contextualTransform" && root.includesAlias
 		const isCompact = !root.allowsRequiresContext && !resolves
 		const flat =
@@ -2222,7 +2222,7 @@ return [${returned.join(", ")}]
 				`[${selects ? "" : "allows"}${transforms ? ", , transform" : ""}]`
 			:	`{ ${[...(selects ? [] : ["0: allows"]), ...(transforms ? ["2: transform"] : [])].join(", ")} }`
 		const valid = transforms ? `${transform}(data)` : "data"
-		// as a detailed build's, each call writing what it transforms into its input transforms an object at one place
+		// as in a detailed build, a call writing in place transforms an object once
 		const inPlace = this.baking.mutatesInput && transforms
 		const parts =
 			!traversals ? undefined
@@ -2263,7 +2263,7 @@ return [${returned.join(", ")}]
 		]
 	}
 
-	// what creates a root apply, which each validator writes as its own, as one validators shared would call every node's Allows from one site, which V8 can't inline where a site calls several, unless the build is optimized for size
+	// a validator's own root apply, or for size one shared by those alike
 	emitApplier(
 		params: string,
 		apply: string,
@@ -2938,7 +2938,7 @@ const calledMembersOf = (
 	return members.filter(([name]) => called.has(name))
 }
 
-// a unit returns each root's Allows, Apply and Transform, but no Apply where errors don't detail what fails, as nothing calls one
+// each root's Allows, Apply and Transform, but no Apply for errors "none"
 const returnedOf = (unit: RootUnit, baking: Baking): string[] =>
 	baking.detailsErrors ?
 		unit.traversals.flat()
@@ -2948,7 +2948,7 @@ const returnedOf = (unit: RootUnit, baking: Baking): string[] =>
 			...transform
 		])
 
-// the refs and dependencies a unit declares where it returns no Apply, which reads the others
+// what a unit returning no Apply declares, as the Apply read the rest
 const namesReadBy = (unit: RootUnit, returned: string[]): Set<string> =>
 	new Set(
 		calledMembersOf(unit.members, returned).flatMap(
@@ -3121,12 +3121,12 @@ class StandaloneCompiler extends TraversalCompiler {
 	}
 }
 
-// a transform writing its input in place returns it, so a place reaching an object another place transformed, or is writing, reuses its output or throws
+// writing in place, a place reaching a written object reuses or throws
 class MutatingCompiler extends StandaloneCompiler {
 	// whether the next transform invoked is of a value data holds
 	private entersValue = false
 
-	// the output is the input, which is neither copied nor given what a copy dropped
+	// the output is the input, neither copied nor given what a copy dropped
 	override if(condition: string, then: (self: this) => this): this {
 		return condition === "out === data" || condition === "out !== data" ?
 				this
@@ -3167,7 +3167,7 @@ class MutatingCompiler extends StandaloneCompiler {
 		return `${this.ref(node.includesAlias ? runtime.transformCyclicOnce : runtime.transformOnce)}(${reference}, ${arg}${ctx})`
 	}
 
-	// a key's next transform reads the previous one's output, or the value as received where it rejects that, which a transform writing in place has changed
+	// a step rejecting the last output reads the value, which a write changed
 	override transformKey(
 		name: string,
 		input: string,
@@ -3188,7 +3188,7 @@ class MutatingCompiler extends StandaloneCompiler {
 				)
 		)
 			throwParseError(inPlaceKeyMessage)
-		// its first step enters the value, and each after it transforms that one's output, or the value again
+		// its first step enters the value, each next the last output or the value
 		this.entersValue = input !== this.data
 		super.transformKey(name, input, steps, opts)
 		this.entersValue = false
@@ -3274,7 +3274,7 @@ const assertReadsUnwritten = (root: BaseRoot): void => {
 	scan(root, true)
 }
 
-// a build writing what it transforms into its input writes units of its own, which differ only in their code
+// a build writing in place has units of its own, differing only in code
 const unitsByRoot = [
 	new WeakMap<BaseRoot, RootUnit[]>(),
 	new WeakMap<BaseRoot, RootUnit[]>()

@@ -33,7 +33,7 @@ export const bundle = (): void => {
 		outdir: fromCwd("out"),
 		splitting: true
 	})
-	// @ark/schema's runtime for a build whose errors say only that data is invalid, bundled apart once issues.js, removed with the other modules, re-exports issuesNone.js, which runtimeNone.js also imports
+	// errors "none" runtime, bundled once issues.js re-exports issuesNone.js
 	if (entryPoints.includes(undetailedRuntime)) {
 		writeFile(
 			fromCwd("out", "shared", "issues.js"),

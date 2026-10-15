@@ -43,7 +43,7 @@ const isNever = (issue: ArkIssue) =>
 		(issue as ArkError<"union">).errors.length === 0
 	:	issue.expected === "never" || issue.expected === undefined)
 
-// what a TraversalError holds, as one another copy of the runtime threw does, or a plain Error a validator without error detail throws holds as its cause
+// a TraversalError's errors, or the cause of an errors "none" assertion
 export const thrownErrorsOf = (thrown: unknown): ArkErrors | undefined =>
 	!(thrown instanceof Error) ? undefined
 	: "arkErrors" in thrown ? (thrown.arkErrors as ArkErrors)

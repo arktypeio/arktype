@@ -27,14 +27,14 @@ const run = (opts?: object) =>
 		{ cwd: shadowed, encoding: "utf8" }
 	).stdout
 
-// what observe.ts reads through a library by the member it reads, which a validator lacks where the build's members option drops it
+// each library read in observe.ts by the member a build can drop
 const libraryReads = {
 	standard: "~standard",
 	keywordMeta: "meta",
 	asserted: "assert"
 }
 
-// what the program reads past its validator, in the order it reads it, which it catches and shadow mode raises again
+// what the program reads past its validator, in order, for shadow to raise
 const divergent = [
 	...(lacks("~standard") ? ["standard"] : []),
 	"created",
@@ -124,7 +124,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 		})
 
 		it("throws naming a site whose validator throws at creation", () => {
-			// what arktype creates is compared by its meta, unless the validator lacks it
+			// what arktype creates is compared by meta, unless the validator lacks it
 			attest(shadow.created).equals(
 				`Error: created.ts:5:21  type("string").narrow(isLong) diverges from arktype at creation: arktype gives ${lacks("meta") ? "{}" : '{"meta":{}}'}, its validator {"threw":"Error: \`isLong\` (created.ts:5:43) is a function of 2 or more parameters, but was precompiled as a function of 1 parameter"}`
 			)
