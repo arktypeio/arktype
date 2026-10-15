@@ -615,8 +615,9 @@ const rounds = Number(process.env.BENCH_ROUNDS ?? 30)
 
 const benchedLibrary = process.env.BENCH_LIBRARY as Library | undefined
 
-// for count.ts: BENCH_COUNT=k warms the arm of BENCH_LIBRARY for BENCH_CASE ("<mode> <name>"), then calls it
-// k * n times, printing n, while `perf stat -D -1 --control fifo:$PERF_CTL,$PERF_ACK` counts only those calls
+// for count.ts: BENCH_COUNT=k warms the arm of BENCH_LIBRARY for BENCH_CASE ("<mode> <name>"), then copies
+// its inputs for 2n calls and calls it on k * n of them, printing n, while
+// `perf stat -D -1 --control fifo:$PERF_CTL,$PERF_ACK` counts only the copies and calls
 if (process.env.BENCH_COUNT) {
 	if (!process.env.BENCH_CASE) {
 		console.log(JSON.stringify(cases.map(c => `${c.mode} ${c.name}`)))
@@ -630,7 +631,7 @@ if (process.env.BENCH_COUNT) {
 	}
 	const size = JSON.stringify(c.inputs).length
 	// enough calls that one-off work, like a stray collection, washes out
-	const n = Math.min(1_000_000, Math.max(20_000, Math.round(2e8 / size)))
+	const n = Math.min(8_000_000, Math.max(20_000, Math.round(1.6e9 / size)))
 	// a second of CPU, rather than of the wall clock, optimizes the arm however loaded the machine is
 	arm.batchSize = maxPoolSize
 	const warmFrom = process.cpuUsage().user
@@ -642,40 +643,25 @@ if (process.env.BENCH_COUNT) {
 		readSync(ack, Buffer.alloc(5))
 	}
 	const calls = Number(process.env.BENCH_COUNT) * n
-	// each pool costs ~40k instructions to switch counting on and off, under 1 per call at 65,536 calls
-	const poolSize = Math.min(65_536, Math.max(2_000, Math.round(2e8 / size)))
-	// the last output for each input lives through the next pool's collection, as outputs do in a running
-	// program; a collection that frees every object of a map frees the map, and the optimized code embedding it
-	const live: unknown[] = []
-	for (let done = 0; done < calls; done += poolSize) {
-		const inputs = inputsOf(c, Math.min(poolSize, calls - done))
-		const firstLive = Math.max(0, inputs.length - c.inputs.length)
+	// calls run as timeBatch times them, in pools of fresh copies with no forced collection: a gc() before
+	// each pool, or more copies live at once, multiplied the count of paths that allocate (errors moltar's
+	// standalone build: 1.46k instructions here, 4.8k in pools of 65,536 copies with a gc() before each).
+	// Both counts make the copies for 2n calls, so the count over n calls, subtracted from the one over 2n,
+	// leaves n calls with the collections they cause, and counting needn't switch off around each pool's copies
+	perf("enable")
+	for (let done = 0; done < 2 * n; done += maxPoolSize) {
+		const inputs = inputsOf(c, Math.min(maxPoolSize, 2 * n - done))
 		arm.before?.()
-		// copies collected now, not while counting, charge their collection to no arm
-		;(globalThis as { gc?: () => void }).gc?.()
-		perf("enable")
-		for (let i = 0; i < firstLive; i += maxPoolSize) {
-			arm.loop(
-				arm.validator,
-				arm.$,
-				arm.config,
-				inputs,
-				i,
-				Math.min(i + maxPoolSize, firstLive)
-			)
-		}
-		for (let i = firstLive; i < inputs.length; i++) {
-			live[i - firstLive] = arm.loop(
-				arm.validator,
-				arm.$,
-				arm.config,
-				inputs,
-				i,
-				i + 1
-			)
-		}
-		perf("disable")
+		arm.loop(
+			arm.validator,
+			arm.$,
+			arm.config,
+			inputs,
+			0,
+			Math.max(0, Math.min(inputs.length, calls - done))
+		)
 	}
+	perf("disable")
 	console.log(JSON.stringify({ n }))
 	process.exit()
 }

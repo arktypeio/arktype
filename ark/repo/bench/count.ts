@@ -10,7 +10,6 @@ import { median } from "./stats.ts"
 // no background thread or timer-driven collection runs while perf counts, and an old space that starts
 // large keeps major collections, whose timing shifts with as little as the length of a path, out of the count
 const nodeArgs = [
-	"--expose-gc",
 	"--single-threaded",
 	"--no-memory-reducer",
 	"--initial-old-space-size=2048",
