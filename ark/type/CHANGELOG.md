@@ -314,6 +314,10 @@ An `@ark/schema` scope's `references` and `referencesById` are collected when fi
 
 Checking that a `Date` is valid reads its `getTime` and calls it as a method when it's `Date.prototype.getTime`, which is faster than calling that function on the `Date`. A getter or a `Proxy` trap for `getTime` on a `Date` now runs as it's checked.
 
+### Capture only what `string.date.iso`'s pattern backreferences
+
+Every group of `string.date.iso`'s pattern but the two its backreferences read is non-capturing, which more than halves what testing a string costs and makes its first test, which compiles it, cheaper too. It accepts the same strings, but its source is new, and with it the `expression`, `json` and JSON Schema `pattern` of `string.date.iso` and `string.date.iso.parse`'s input.
+
 ### Call narrows and morphs without a receiver when jitless
 
 A narrow's predicate was called with its node as `this` when jitless, and a Type whose morphs need no `ctx` called them with its morphs array as `this`. Both are now called as compiled code calls them, with `this` undefined.
