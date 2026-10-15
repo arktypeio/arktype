@@ -17,6 +17,7 @@ import {
 	lackedMembers,
 	comparedDataOf,
 	detailsErrors,
+	firstIssue,
 	lacks,
 	mutatesInput,
 	traverse
@@ -482,7 +483,16 @@ const settle = (result: unknown) =>
 const keptOf = (errors: ArkErrors): KeptIssue[] =>
 	!detailsErrors && errors._merge ?
 		[{ code: "predicate", path: [], data: undefined }]
-	:	keptIssuesOf(errors as never)
+	: firstIssue ? firstKeptOf(errors)
+	: keptIssuesOf(errors as never)
+
+// the first check of the first issue, where a first-issue build stops
+const firstKeptOf = (errors: ArkErrors): KeptIssue[] => {
+	const issue: any = errors.issues[0]
+	const { code, path, data } =
+		issue.code === "intersection" ? issue.errors[0] : issue
+	return [{ code, path: [...path], data }]
+}
 
 const thrownKeptOf = (e: unknown): KeptIssue[] | undefined => {
 	const errors = thrownErrorsOf(e)
@@ -665,7 +675,9 @@ const observeValidation = (
 			return {
 				...outcome,
 				...(!mutatesInput &&
-					(detailsErrors || !outcome.errors) && { mutated: serialize(input) })
+					((detailsErrors && !firstIssue) || !outcome.errors) && {
+						mutated: serialize(input)
+					})
 			}
 		}),
 		allows: calls((fn, input) => fn.allows(input)),

@@ -32,3 +32,6 @@ export const comparedDataOf = (data: unknown): unknown =>
 
 // a build whose errors say only that data is invalid fails with one issue at the root, and without the Apply that can run morphs writing what they receive
 export const detailsErrors: boolean = testedOptions.errors !== "none"
+
+// a first-issue build returns one of arktype's issues
+export const firstIssue: boolean = testedOptions.errors === "first"

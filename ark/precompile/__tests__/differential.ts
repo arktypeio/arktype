@@ -33,6 +33,7 @@ import { inspect } from "node:util"
 import {
 	comparedDataOf,
 	detailsErrors,
+	firstIssue,
 	freezes,
 	hasMember,
 	lackedMembers,
@@ -389,12 +390,12 @@ const observe = (run: () => unknown, input: unknown): unknown => {
 		const result: any = run()
 		return (
 			hasArkKind(result, "errors") ?
-				{ issues: comparedIssuesOf(keptIssuesOf(result)) }
+				{ issues: comparedIssuesOf(keptIssuesOf(result, !firstIssue)) }
 			: mutatesInput ? { out: result }
 			: { out: result, isInput: result === input }
 		)
 	} catch (e) {
-		const issues = thrownIssuesOf(e)
+		const issues = thrownIssuesOf(e, !firstIssue)
 		return issues ?
 				{ threw: "TraversalError", issues: comparedIssuesOf(issues) }
 			:	{
@@ -543,7 +544,9 @@ const observeCall = (t: Validator, input: unknown) => {
 	return {
 		traverse: traversal,
 		...(!mutatesInput &&
-			(detailsErrors || !fails(traversal)) && { mutated: traversed }),
+			((detailsErrors && !firstIssue) || !fails(traversal)) && {
+				mutated: traversed
+			}),
 		allows: observe(() => t.allows(cloneInput(input)), undefined),
 		...(!lacks("assert") && {
 			assert: observe(() => t.assert(cloneInput(input)), undefined)
@@ -580,6 +583,38 @@ const undetailedOf = (
 		}
 	}
 	return result
+}
+
+// arktype's call, failing with the issue a first-issue build found of its own
+const firstIssueOf = (
+	expected: ReturnType<typeof observeCall>,
+	actual: ReturnType<typeof observeCall>
+): ReturnType<typeof observeCall> => {
+	const result = { ...expected }
+	for (const k of ["traverse", "assert", "standard"] as const) {
+		const found = (actual[k] as { issues?: KeptIssue[] } | undefined)?.issues
+		if (hasIssues(result[k]) && found && isOneOf(found, issuesOf(result[k])))
+			result[k] = { ...(result[k] as object), issues: found }
+	}
+	return result
+}
+
+const issuesOf = (observation: unknown) =>
+	(observation as { issues: KeptIssue[] }).issues
+
+// one issue, whose checks at its path are each one arktype found failing
+const isOneOf = (found: KeptIssue[], issues: KeptIssue[]): boolean => {
+	const unmatched = [...issues]
+	const pathOf = (issue: KeptIssue) => issue.path.map(String).join("\0")
+	return (
+		found.length !== 0 &&
+		found.every(issue => {
+			const i = unmatched.findIndex(candidate => isEqual(candidate, issue))
+			if (i === -1 || pathOf(issue) !== pathOf(found[0])) return false
+			unmatched.splice(i, 1)
+			return true
+		})
+	)
 }
 
 // a hole returning arktype's own errors or nodes, which a validator's runtime doesn't recognize
@@ -727,7 +762,9 @@ export const compare = async (
 		for (const [i, input] of inputs.entries()) {
 			const expected = arktype.calls[i]
 			const actual = observeCall(validator, input)
-			if (expected && isEqual(expected, actual)) continue
+			const compared =
+				expected && firstIssue ? firstIssueOf(expected, actual) : expected
+			if (compared && isEqual(compared, actual)) continue
 			if (
 				!expected ||
 				holdsArkValue(actual) ||
