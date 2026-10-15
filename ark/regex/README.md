@@ -12,7 +12,7 @@ import { regex } from "arkregex"
 const ok = regex("^ok$", "i")
 // Regex<"ok" | "oK" | "Ok" | "OK", { flags: "i" }>
 
-const semver = regex("^(\\d*)\\.(\\d*)\\.(\\d*)$")
+const semver = regex("^(\\d+)\\.(\\d+)\\.(\\d+)$")
 // Regex<`${number}.${number}.${number}`, { captures: [`${number}`, `${number}`, `${number}`] }>
 
 const email = regex("^(?<name>\\w+)@(?<domain>\\w+\\.\\w+)$")
@@ -30,32 +30,12 @@ Performs best with TS 5.9+
 - **Safety**: Syntax errors like referencing a group that doesn't exist are now type errors
 - **Zero Runtime**: Improves your type safety without impacting your bundle size
 
-### FAQ
+## Docs
 
-#### Why aren't some patterns like `[a-Z]` inferred more precisely?
+See [arktype.io/docs/regex](https://arktype.io/docs/regex) for:
 
-Constructing string literal types for these sorts of expressions is combinatorial and will explode very quickly if we infer character ranges like this as literal characters.
-
-We've tried to strike a balance between performance and precision while guaranteeing that the inferred types are at worst imprecise and never incorrect.
-
-#### Why doesn't it work with my massive RegExp?
-
-If your expression is especially long or complex, TypeScript won't be able to infer it.
-
-If your types start to slow down or you see the dreaded `Type is excessively deep...`, you can manually type your expression using `regex.as`:
-
-```ts
-const complexPattern = regex.as<`pattern-${string}`, { captures: [string] }>(
-	"very-long-complex-expression-here"
-)
-```
-
-#### Is it robust?
-
-`arkregex` types are [extensively tested](https://github.com/arktypeio/arktype/tree/main/ark/regex/__tests__/regex.test.ts) and [benchmarked](https://github.com/arktypeio/arktype/tree/main/ark/regex/__tests__/regex.bench.ts) using [attest](https://github.com/arktypeio/arktype/tree/main/ark/attest#readme).
-
-If anything not covered by the other FAQs is not behaving how you'd expect, please don't hesitate to [create an issue](https://github.com/arktypeio/arktype/issues/new).
-
-#### How can I get syntax highlighting for `regex`?
-
-The [ArkType extension](https://marketplace.visualstudio.com/items?itemName=arktypeio.arkdark) can be installed to add syntax highlighting to `regex` calls.
+- [Inference](https://arktype.io/docs/regex/inference) of patterns, captures and flags
+- [Errors](https://arktype.io/docs/regex/errors) reported for invalid syntax
+- [Types](https://arktype.io/docs/regex/types) like `Regex`, `regex.infer` and `regex.as`
+- [ArkType](https://arktype.io/docs/regex/arktype) integration
+- [FAQ](https://arktype.io/docs/regex/faq)

@@ -5,7 +5,7 @@ import {
 	writeNonStructuralOperandMessage
 } from "@ark/schema"
 import { Hkt, register, type array } from "@ark/util"
-import { generic, type } from "arktype"
+import { generic, scope, type } from "arktype"
 import type { BaseTypeProp } from "arktype/internal/variants/object.ts"
 
 // by default because of the toJSON method, it wouldn't be clear
@@ -61,10 +61,10 @@ contextualize(() => {
 		}>(T.infer)
 
 		attest(snapshottableProps(T.props)).snap([
-			{ kind: "required", key: `Symbol(${sReference})`, value: "1" },
 			{ kind: "required", key: "foo", value: "3" },
-			{ kind: "optional", key: `Symbol(${s2Reference})`, value: "2" },
-			{ kind: "optional", key: "foo2", value: "4" }
+			{ kind: "required", key: `Symbol(${sReference})`, value: "1" },
+			{ kind: "optional", key: "foo2", value: "4" },
+			{ kind: "optional", key: `Symbol(${s2Reference})`, value: "2" }
 		])
 	})
 
@@ -122,6 +122,18 @@ contextualize(() => {
 		).throws(writeDuplicateKeyMessage("a"))
 	})
 
+	it("optional key with disjoint index", () => {
+		attest(() =>
+			type({
+				"a?": "string",
+				a: "string",
+				"[string]": "number"
+			})
+		).throws(
+			"Intersection at a of string and number results in an unsatisfiable type"
+		)
+	})
+
 	it("allows prototype method names as keys", () => {
 		// constructor, hasOwnProperty, toString, etc. are valid object keys
 		// and should not be incorrectly flagged as duplicates
@@ -136,5 +148,133 @@ contextualize(() => {
 			hasOwnProperty: number
 			toString: boolean
 		}>(T.t)
+	})
+
+	describe("missing", () => {
+		const requiredError = (T: type.Any, data: object = {}) => {
+			const error = (T(data) as type.errors).issues[0]
+			if (!error.hasCode("required")) throw new Error(`${error.code} error`)
+			return error
+		}
+
+		it("has what the value should have been and its meta", () => {
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const T = $.type({
+					name: $.type("string").configure({ title: "Name" })
+				})
+				const error = requiredError(T)
+				attest(error.toString()).snap("name must be a string (was missing)")
+				attest(error.missing).snap({
+					code: "domain",
+					description: "a string",
+					meta: { title: "Name" },
+					domain: "string"
+				})
+				attest(error.valueMeta).equals({ title: "Name" })
+				attest(Object.isFrozen(error.missing)).equals(true)
+				attest(requiredError(T).missing).is(error.missing)
+			}
+		})
+
+		it("keeps the branches and bases of the value", () => {
+			const o = {}
+			const missing = (value: unknown) =>
+				requiredError(type({ a: value as never })).missing
+			attest(missing("never")).snap({ code: "union", branches: [] })
+			attest(missing("unknown")).snap({ code: "intersection" })
+			attest(
+				missing(
+					type("unknown")
+						.narrow(() => true)
+						.or("string")
+				)
+			).snap({
+				code: "union",
+				branches: [
+					{
+						code: "domain",
+						description: "a string",
+						meta: {},
+						domain: "string"
+					},
+					{ code: "intersection" }
+				]
+			})
+			attest(missing("boolean")).snap({
+				code: "union",
+				branches: [
+					{ code: "unit", description: "false", meta: {}, unit: false },
+					{ code: "unit", description: "true", meta: {}, unit: true }
+				]
+			})
+			attest(missing("string > 3")).snap({
+				code: "domain",
+				description: "a string",
+				meta: {},
+				domain: "string"
+			})
+			attest(missing("Date")).snap({
+				code: "proto",
+				description: "a Date",
+				meta: {},
+				proto: "Function(Date)"
+			})
+			attest(missing(type.unit(o))).snap({
+				code: "domain",
+				description: "an object",
+				meta: {},
+				domain: "object"
+			})
+			attest(missing(type("'x'").describe("an x"))).snap({
+				code: "unit",
+				description: "an x",
+				meta: { description: "an x" },
+				unit: "x"
+			})
+			attest(missing(type("string").pipe(s => s.length))).snap({
+				code: "domain",
+				description: "a string",
+				meta: {},
+				domain: "string"
+			})
+			attest(
+				missing(
+					type("string")
+						.describe("text")
+						.pipe(s => s.length)
+				)
+			).snap({ code: "morph", meta: { description: "text" } })
+			const Node = scope({ node: { next: "node | null" } }).export().node
+			attest(requiredError(Node).missing).snap({
+				code: "union",
+				branches: [
+					{
+						code: "domain",
+						description: "an object",
+						meta: {},
+						domain: "object"
+					},
+					{ code: "unit", description: "null", meta: {}, unit: null }
+				]
+			})
+		})
+
+		it("serializes without its tree", () => {
+			const T = type({ amount: "0n | 1n" })
+			attest(JSON.parse(JSON.stringify(T({})))).snap([
+				{
+					data: {},
+					path: ["amount"],
+					code: "required",
+					missingValueDescription: "0n or 1n",
+					meta: {},
+					expected: "0n or 1n",
+					actual: "missing",
+					problem: "must be 0n or 1n (was missing)",
+					message: "amount must be 0n or 1n (was missing)"
+				}
+			])
+		})
 	})
 })

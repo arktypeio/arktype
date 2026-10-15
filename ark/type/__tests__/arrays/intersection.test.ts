@@ -134,6 +134,47 @@ contextualize(() => {
 		attest(T.json).equals(Expected.json)
 	})
 
+	it("length narrowing two others", () => {
+		const T = type("unknown[] >= 1").and("unknown[] <= 2").and("unknown[] <= 1")
+		attest(T.json).equals(type("unknown[] == 1").json)
+	})
+
+	it("length narrowing two others to one held", () => {
+		const L = type(["null", "null?"])
+		const R = type(["null"])
+
+		attest(L.and(R).json).equals(R.json)
+		attest(R.and(L).json).equals(R.json)
+	})
+
+	it("never optional element keeps length", () => {
+		const T = type("string[]").and(["string", "number?"])
+		attest(T.json).equals(type(["string"]).json)
+		attest(T.allows(["a", 5])).equals(false)
+	})
+
+	it("disjoint arrays", () => {
+		const T = type("string[] & number[]")
+		attest(T.json).equals(type([]).json)
+		attest(T.allows([])).equals(true)
+		attest(T.allows([1])).equals(false)
+	})
+
+	it("disjoint arrays with props", () => {
+		const WithProp = type("string[]").and({ "p0?": "string" })
+		const T = type("number[]").and(WithProp)
+
+		attest(T.json).equals(type([]).and({ "p0?": "string" }).json)
+		attest(T.allows(Object.assign([], { p0: 5 }))).equals(false)
+		attest(type("number[]").or(WithProp).expression).snap(
+			"{ p0?: string } & string[] | number[]"
+		)
+		attest(WithProp.extends("number[]")).equals(false)
+		attest(type(["number[]", "&", { "x?": "1" }]).and("string[]").json).equals(
+			type([]).and({ "x?": "1" }).json
+		)
+	})
+
 	it("array with props", () => {
 		const T = type("Array").and({ name: "string" })
 

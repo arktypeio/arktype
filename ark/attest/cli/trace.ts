@@ -1,4 +1,4 @@
-import { ensureDir, getShellOutput, readJson, writeFile } from "@ark/fs"
+import { ensureDir, readJson, writeFile } from "@ark/fs"
 import type { ExecException } from "node:child_process"
 import { existsSync } from "node:fs"
 import { basename, join, relative, resolve } from "node:path"
@@ -18,7 +18,7 @@ import {
 } from "../ts7/server.ts"
 import { nearestBoundingCallExpression as nearestBoundingCallExpressionTs7 } from "../ts7/snapshots.ts"
 import { isTs7 } from "../utils.ts"
-import { baseDiagnosticTscCmd } from "./shared.ts"
+import { getDiagnosticTscOutput } from "./shared.ts"
 
 interface TraceEntry {
 	pid: number
@@ -317,9 +317,9 @@ const generateTraceData = (
 	packageDir: string
 ): string => {
 	try {
-		const output = getShellOutput(
-			`${baseDiagnosticTscCmd} --project ${tsconfigPath} --generateTrace ${traceDir}`,
-			{ cwd: packageDir }
+		const output = getDiagnosticTscOutput(
+			packageDir,
+			`--project ${tsconfigPath} --generateTrace ${traceDir}`
 		)
 		process.stdout.write(output) // Display tsc output directly
 		return output

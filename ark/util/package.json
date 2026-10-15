@@ -15,19 +15,26 @@
 	"type": "module",
 	"main": "./out/index.js",
 	"types": "./out/index.d.ts",
+	"sideEffects": false,
 	"exports": {
 		".": {
 			"ark-ts": "./index.ts",
 			"default": "./out/index.js"
 		},
 		"./tsconfig.base.json": "./tsconfig.base.json",
+		"./internal": {
+			"ark-ts": "./internal.ts",
+			"default": "./out/internal.js"
+		},
 		"./internal/*.ts": {
 			"ark-ts": "./*.ts",
-			"default": "./out/*.js"
+			"types": "./out/*.d.ts",
+			"default": "./out/internal.js"
 		},
 		"./internal/*.js": {
 			"ark-ts": "./*.ts",
-			"default": "./out/*.js"
+			"types": "./out/*.d.ts",
+			"default": "./out/internal.js"
 		}
 	},
 	"files": [

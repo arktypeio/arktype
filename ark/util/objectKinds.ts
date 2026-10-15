@@ -1,8 +1,8 @@
 import type { DescribeOptions } from "./describe.ts"
 import { type domainDescriptions, domainOf } from "./domain.ts"
 import type { Fn } from "./functions.ts"
-import type { satisfy } from "./generics.ts"
-import { isKeyOf } from "./records.ts"
+import type { anyOrNever, satisfy } from "./generics.ts"
+import { defineProperties, isKeyOf } from "./records.ts"
 
 // ECMAScript Objects
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
@@ -45,7 +45,7 @@ export type EcmascriptObjects = satisfy<
 >
 
 /** Node18 */
-export const FileConstructor = globalThis.File ?? Blob
+export const FileConstructor = globalThis.File ?? globalThis.Blob
 
 // need to type these explicitly due to a resolution issue
 export type platformConstructors = {
@@ -64,13 +64,22 @@ export type platformConstructors = {
 // Must be implemented in Node etc. as well as the browser to include here
 export const platformConstructors: platformConstructors = {
 	ArrayBuffer,
-	Blob,
+	Blob: globalThis.Blob,
 	File: FileConstructor,
-	FormData,
-	Headers,
-	Request,
-	Response,
-	URL
+	// Node loads undici on the first read of any of these
+	get FormData() {
+		return globalThis.FormData
+	},
+	get Headers() {
+		return globalThis.Headers
+	},
+	get Request() {
+		return globalThis.Request
+	},
+	get Response() {
+		return globalThis.Response
+	},
+	URL: globalThis.URL
 }
 
 export type PlatformObjects = instantiateConstructors<
@@ -97,18 +106,16 @@ export type TypedArrayObjects = instantiateConstructors<
 	keyof typedArrayConstructors
 >
 
+export type builtinConstructors = ecmascriptConstructors &
+	platformConstructors &
+	typedArrayConstructors
+
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const builtinConstructors = {
-	...ecmascriptConstructors,
-	...platformConstructors,
-	...typedArrayConstructors,
-	String,
-	Number,
-	Boolean
-}
-
-export type builtinConstructors = typeof builtinConstructors
+export const builtinConstructors: builtinConstructors = defineProperties(
+	defineProperties({ ...ecmascriptConstructors }, platformConstructors),
+	typedArrayConstructors
+)
 
 export type BuiltinObjectKind = keyof builtinConstructors
 
@@ -122,7 +129,8 @@ type instantiateConstructors<kind extends BuiltinObjectKind> = {
 	[k in kind]: k extends GlobalName ? InstanceType<(typeof globalThis)[k]>
 	: `${k}Constructor` extends GlobalName ?
 		InstanceType<(typeof globalThis)[`${k}Constructor`]>
-	:	never
+	: [builtinConstructors[k]] extends [anyOrNever] ? never
+	: InstanceType<builtinConstructors[k]>
 }
 
 export type BuiltinObjects = instantiateConstructors<BuiltinObjectKind>
@@ -163,7 +171,7 @@ export const objectKindOf = <data extends object>(
 	while (
 		prototype?.constructor &&
 		(!isKeyOf(prototype.constructor.name, builtinConstructors) ||
-			!(data instanceof builtinConstructors[prototype.constructor.name]))
+			builtinConstructors[prototype.constructor.name]?.prototype !== prototype)
 	)
 		prototype = Object.getPrototypeOf(prototype)
 
@@ -195,6 +203,18 @@ export const hasObjectKind = <kind extends keyof builtinConstructors>(
 
 export const isArray: (data: unknown) => data is readonly unknown[] =
 	Array.isArray
+
+const dateToString = Date.prototype.toString
+const dateGetTime = Date.prototype.getTime
+
+export const isValidDate = (date: Date): boolean => {
+	if (date.toString !== dateToString) return date.toString() !== "Invalid Date"
+	try {
+		return !Number.isNaN(dateGetTime.call(date))
+	} catch {
+		return false
+	}
+}
 
 export const ecmascriptDescriptions = {
 	Array: "an array",

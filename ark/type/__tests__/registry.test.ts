@@ -52,7 +52,7 @@ contextualize(() => {
 		const Box = type({ box: "this | undefined" })
 		attest(Box({ box: { box: undefined } })).snap({ box: { box: undefined } })
 		attest(Box({ box: { box: 5 } }).toString()).snap(
-			'box.box must be an object or undefined (was 5) or box must be undefined (was {"box":5})'
+			"box.box must be an object or undefined (was a number)"
 		)
 	})
 })

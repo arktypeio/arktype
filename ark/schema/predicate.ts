@@ -1,21 +1,15 @@
+import { printable } from "@ark/util"
 import { BaseConstraint } from "./constraint.ts"
+import type { Morph } from "./roots/morph.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseErrorContext,
-	BaseNormalizedSchema,
+	BaseNodeInput,
 	declareNode
 } from "./shared/declare.ts"
-import {
-	compileObjectLiteral,
-	implementNode,
-	type nodeImplementationOf
-} from "./shared/implement.ts"
-import type { JsonSchema } from "./shared/jsonSchema.ts"
-import {
-	type RegisteredReference,
-	registeredReference
-} from "./shared/registry.ts"
-import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
+import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
+import { describeCause, keywordWriterOf, type Locale } from "./shared/locale.ts"
+import { namedReference, type RegisteredReference } from "./shared/registry.ts"
 import type {
 	Traversal,
 	TraverseAllows,
@@ -24,11 +18,11 @@ import type {
 
 export declare namespace Predicate {
 	export type Schema<predicate extends Predicate = Predicate> =
-		| NormalizedSchema<predicate>
+		| ExpandedSchema<predicate>
 		| predicate
 
-	export interface NormalizedSchema<predicate extends Predicate = Predicate>
-		extends BaseNormalizedSchema {
+	export interface ExpandedSchema<predicate extends Predicate = Predicate>
+		extends BaseNodeInput {
 		readonly predicate: predicate
 	}
 
@@ -38,13 +32,14 @@ export declare namespace Predicate {
 
 	export interface ErrorContext extends BaseErrorContext<"predicate"> {
 		readonly predicate?: Predicate
+		/** the morph that threw, for pipe.try */
+		readonly morph?: Morph
+		readonly cause?: unknown
 	}
 
 	export interface Declaration
 		extends declareNode<{
 			kind: "predicate"
-			schema: Schema
-			normalizedSchema: NormalizedSchema
 			inner: Inner
 			intersectionIsOpen: true
 			errorContext: ErrorContext
@@ -53,8 +48,9 @@ export declare namespace Predicate {
 	export type Node = PredicateNode
 }
 
-const describePredicate = (predicate: Predicate | undefined) =>
-	`valid according to ${predicate?.name || "an anonymous predicate"}`
+// reads predicate, or for pipe.try the morph that threw
+const describePredicate = (ctx: { predicate?: Predicate; morph?: Morph }) =>
+	`valid according to ${(ctx.predicate ?? ctx.morph)?.name || "an anonymous predicate"}`
 
 const implementation: nodeImplementationOf<Predicate.Declaration> =
 	implementNode<Predicate.Declaration>({
@@ -64,26 +60,46 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 		keys: {
 			predicate: {}
 		},
-		normalize: schema =>
-			typeof schema === "function" ? { predicate: schema } : schema,
 		defaults: {
-			description: node => describePredicate(node.predicate),
+			description: describePredicate,
 			// error contexts from ctx.reject have neither a description nor a predicate
-			expected: ctx => ctx.description ?? describePredicate(ctx.predicate)
+			expected: ctx => ctx.description ?? describePredicate(ctx),
+			// a keyword's nodes describe their errors through meta, so its phrase
+			// writes only errors it raises through ctx: their actual, and the
+			// problem of one that carries what the keyword caught
+			actual: (data, ctx, info) => {
+				const locale = info as Locale
+				const actual =
+					ctx.predicate === undefined ?
+						keywordWriterOf(ctx, locale, "actual")
+					:	undefined
+				return (
+					actual === undefined ?
+						ctx.morph ?
+							`aborted due to error:\n    ${describeCause(ctx.cause)}\n`
+						:	printable(data)
+					: typeof actual === "string" ? actual
+					: actual(data, ctx, locale)
+				)
+			},
+			problem: (ctx, info) => {
+				const locale = info as Locale
+				const problem =
+					ctx.cause === undefined ?
+						undefined
+					:	keywordWriterOf(ctx, locale, "problem")
+				return (
+					problem === undefined ? locale.problem(ctx, locale)
+					: typeof problem === "string" ? problem
+					: problem(ctx, locale)
+				)
+			}
 		},
-		intersectionIsOpen: true,
-		intersections: {
-			// as long as the narrows in l and r are individually safe to check
-			// in the order they're specified, checking them in the order
-			// resulting from this intersection should also be safe.
-			predicate: () => null
-		}
+		intersectionIsOpen: true
 	})
 
 export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
-	serializedPredicate: RegisteredReference = registeredReference(this.predicate)
-	compiledCondition = `${this.serializedPredicate}(data, ctx)`
-	compiledNegation = `!${this.compiledCondition}`
+	serializedPredicate: RegisteredReference = namedReference(this.predicate)
 
 	impliedBasis = null
 
@@ -93,10 +109,9 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	errorContext: Predicate.ErrorContext = {
 		code: "predicate",
 		description: this.description,
+		predicate: this.predicate,
 		meta: this.meta
 	}
-
-	compiledErrorContext = compileObjectLiteral(this.errorContext)
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		const errorCount = ctx.currentErrorCount
@@ -108,28 +123,21 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	}
 
 	compile(js: NodeCompiler): void {
+		const condition = `${js.ref(this.predicate)}(data, ctx)`
 		if (js.traversalKind === "Allows") {
-			js.return(this.compiledCondition)
+			js.return(condition)
 			return
 		}
 
 		js.initializeErrorCount()
 		js.if(
 			// only add the default error if the predicate didn't add one itself
-			`${this.compiledNegation} && ctx.currentErrorCount === errorCount`,
-			() => js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+			`!${condition} && ctx.currentErrorCount === errorCount`,
+			() =>
+				js.line(
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext)})`
+				)
 		)
-	}
-
-	reduceJsonSchema(
-		base: JsonSchema.Constrainable,
-		ctx: ToJsonSchema.Context
-	): JsonSchema {
-		return ctx.fallback.predicate({
-			code: "predicate",
-			base,
-			predicate: this.predicate
-		})
 	}
 }
 

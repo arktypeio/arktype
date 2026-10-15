@@ -9,6 +9,7 @@ import {
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import { registeredReference } from "./registry.ts"
+import { mergeTransformed, TransformErrors } from "./transform.ts"
 import type { TraversalKind } from "./traversal.ts"
 
 export type CoercibleValue = string | number | boolean | null | undefined
@@ -20,7 +21,11 @@ export class CompiledFunction<
 	[k in args[number]]: k
 }> {
 	readonly argNames: args
-	readonly body = ""
+	private readonly lines: string[] = []
+
+	get body(): string {
+		return this.lines.join("")
+	}
 
 	constructor(...args: args) {
 		super()
@@ -55,7 +60,7 @@ export class CompiledFunction<
 	}
 
 	line(statement: string): this {
-		;(this.body as any) += `${" ".repeat(this.indentation)}${statement}\n`
+		this.lines.push(`${" ".repeat(this.indentation)}${statement}\n`)
 		return this
 	}
 
@@ -90,12 +95,20 @@ export class CompiledFunction<
 		body: (self: this) => this,
 		initialValue: CoercibleValue = 0
 	): this {
-		return this.block(`for (let i = ${initialValue}; ${until}; i++)`, body)
+		return this.loop(`for (let i = ${initialValue}; ${until}; i++)`, body)
 	}
 
 	/** Current key is "k" */
 	forIn(object: string, body: (self: this) => this): this {
-		return this.block(`for (const k in ${object})`, body)
+		return this.loop(`for (const k in ${object})`, body)
+	}
+
+	loopDepth = 0
+	loop(prefix: string, body: (self: this) => this): this {
+		this.loopDepth++
+		this.block(prefix, body)
+		this.loopDepth--
+		return this
 	}
 
 	block(prefix: string, contents: (self: this) => this, suffix = ""): this {
@@ -156,42 +169,111 @@ export interface ReferenceOptions {
 	bind?: string
 }
 
+export interface TransformKeyOptions {
+	keyExpression?: string
+	condition?: string
+	onChange?: () => unknown
+}
+
+export interface TransformStep {
+	node: BaseNode
+	signature?: BaseNode
+}
+
 export declare namespace NodeCompiler {
 	export interface Context {
 		kind: TraversalKind
-		optimistic?: true
+		requiresContext?: boolean
+		refs?: Refs
+		errorContexts?: ErrorContexts
 	}
+
+	export type Refs = Map<object | symbol, string>
+
+	export type ErrorContexts = object[]
 }
 
 export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	traversalKind: TraversalKind
-	optimistic: boolean
+	requiresContext: boolean
+	readonly refs: NodeCompiler.Refs | undefined
+	readonly errorContexts: NodeCompiler.ErrorContexts | undefined
+	checksTransformErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {
 		super("data", "ctx")
 		this.traversalKind = ctx.kind
-		this.optimistic = ctx.optimistic === true
+		this.requiresContext = ctx.requiresContext ?? true
+		this.refs = ctx.refs
+		this.errorContexts = ctx.errorContexts
 	}
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data
-		const requiresContext =
-			typeof node === "string" ? true : this.requiresContextFor(node)
-		const id = typeof node === "string" ? node : node.id
-		if (requiresContext)
-			return `${this.referenceToId(id, opts)}(${arg}, ${this.ctx})`
+		if (typeof node === "string")
+			return `${this.referenceToId(node, opts)}(${arg}, ${this.ctx})`
+		const kind = opts?.kind ?? this.traversalKind
+		// Allows adds no errors to ctx, so a predicate reading it runs in a branch
+		if (
+			this.traversalKind === "Transform" &&
+			kind === "Allows" &&
+			node.allowsRequiresContext
+		) {
+			return node.allowsRequiresTraversal ?
+					`${this.ctx}.allows(${this.ref(node)}, ${arg})`
+				:	`${this.ref(node)}.allows(${arg})`
+		}
+		const reference = this.referenceToId(node.id, opts)
+		if (kind === "Transform" && node.isTransformedById)
+			return `${this.ctx}.transformResolution("${node.id}", ${arg}, ${reference})`
+		return this.requiresContextFor(node, kind) ?
+				`${reference}(${arg}, ${this.ctx})`
+			:	`${reference}(${arg})`
+	}
 
-		return `${this.referenceToId(id, opts)}(${arg})`
+	invokeMember(
+		node: BaseNode,
+		member: BaseNode = node,
+		arg: string = this.data
+	): this {
+		if (this.traversalKind !== "Apply" || !member.includesAlias)
+			return this.line(this.invoke(node, { arg }))
+		return this.invokeResolution(node, member.id, arg)
+	}
+
+	invokeResolution(node: BaseNode, id: string, arg: string = this.data): this {
+		const apply = this.referenceToId(node.id, { kind: "Apply" })
+		return this.if(
+			`ctx.enterResolution("${id}", ${arg}, ${apply}) === undefined`,
+			() => this.line(this.invoke(node, { arg })).line("ctx.exitResolution()")
+		)
 	}
 
 	referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		const invokedKind = opts?.kind ?? this.traversalKind
-		const base = `this.${id}${invokedKind}`
+		const base = `${id}${invokedKind}`
 		return opts?.bind ? `${base}.bind(${opts?.bind})` : base
 	}
 
-	requiresContextFor(node: BaseNode): boolean {
-		return this.traversalKind === "Apply" || node.allowsRequiresContext
+	ref(value: object | symbol): string {
+		if (!this.refs) return registeredReference(value)
+		let name = this.refs.get(value)
+		if (name === undefined) this.refs.set(value, (name = `r${this.refs.size}`))
+		return name
+	}
+
+	errorContext(errorContext: object): string {
+		if (!this.errorContexts) return registeredReference(errorContext)
+		return `errorContexts[${this.errorContexts.push(errorContext) - 1}]`
+	}
+
+	requiresContextFor(node: BaseNode, kind = this.traversalKind): boolean {
+		return (
+			this.traversalKind === "Apply" ||
+			(kind === "Transform" ?
+				node.transformRequiresContext
+			:	node.allowsRequiresContext)
+		)
 	}
 
 	initializeErrorCount(): this {
@@ -213,15 +295,135 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 		accessExpression: string,
 		node: BaseNode
 	): this {
-		const requiresContext = this.requiresContextFor(node)
-		if (requiresContext) this.line(`${this.ctx}.path.push(${keyExpression})`)
+		if (
+			this.traversalKind === "Apply" &&
+			(this.loopDepth > 0 ||
+				(node.hasKind("union") && !node.compiledDiscriminant)) &&
+			isDecidedByAllows(node)
+		) {
+			return this.if(
+				`!${this.invoke(node, { arg: accessExpression, kind: "Allows" })}`,
+				() =>
+					this.line(`${this.ctx}.path.push(${keyExpression})`)
+						.check(node, { arg: accessExpression })
+						.line(`${this.ctx}.path.pop()`)
+			)
+		}
 
-		this.check(node, {
-			arg: accessExpression
-		})
-		if (requiresContext) this.line(`${this.ctx}.path.pop()`)
+		const pushesPath =
+			this.traversalKind === "Allows" ?
+				node.allowsRequiresContext && node.allowsRequiresTraversal
+			:	this.requiresContextFor(node)
+		if (pushesPath) this.line(`${this.ctx}.path.push(${keyExpression})`)
+
+		if (this.traversalKind === "Apply" && node.entersResolution)
+			this.invokeMember(node, node, accessExpression)
+		else this.check(node, { arg: accessExpression })
+		if (pushesPath) this.line(`${this.ctx}.path.pop()`)
 
 		return this
+	}
+
+	initializeTransform(transformedChildren: readonly BaseNode[]): this {
+		this.checksTransformErrors = transformedChildren.some(
+			child => child.includesMorph || child.transformRequiresContext
+		)
+		if (!this.checksTransformErrors) return this
+		return this.requiresContext ?
+				this.initializeErrorCount()
+			:	this.line("let failed")
+	}
+
+	transformKey(
+		name: string,
+		input: string,
+		steps: readonly TransformStep[],
+		opts?: TransformKeyOptions
+	): this {
+		const nodes = steps.map(step => step.node)
+		const keyExpression = opts?.keyExpression
+		const assign = (assignee: string, node: BaseNode, arg: string) => {
+			const pushesKey =
+				keyExpression !== undefined && node.transformRequiresContext
+			if (pushesKey) this.line(`${this.ctx}.path.push(${keyExpression})`)
+			// a step rejecting an earlier step's output transforms the input instead
+			const transformed =
+				arg === input ?
+					this.invoke(node, { arg })
+				:	`${arg} === ${input} || ${this.ref(node)}.allows(${arg}) ? ${this.invoke(node, { arg })} : ${this.ref(mergeTransformed)}(${input}, ${arg}, ${this.invoke(node, { arg: input })})`
+			this.line(`${assignee} = ${transformed}`)
+			return pushesKey ? this.line(`${this.ctx}.path.pop()`) : this
+		}
+		const isTransformErrors = () =>
+			`typeof ${name} === "object" && ${name} instanceof ${this.ref(TransformErrors)}`
+		const assignSteps = () => {
+			const errorCount = `${name}ErrorCount`
+			if (nodes.slice(0, -1).some(node => node.transformRequiresContext))
+				this.const(errorCount, `${this.ctx}.currentErrorCount`)
+			for (let i = 0; i < steps.length; i++) {
+				const { node, signature } = steps[i]
+				const previous = nodes.slice(0, i)
+				const conditions =
+					signature ?
+						[this.invoke(signature, { arg: keyExpression!, kind: "Allows" })]
+					:	[]
+				if (previous.some(returnsTransformErrors))
+					conditions.push(`!(${isTransformErrors()})`)
+				if (previous.some(node => node.transformRequiresContext))
+					conditions.push(`${this.ctx}.currentErrorCount === ${errorCount}`)
+				const assignStep = () => assign(name, node, i === 0 ? input : name)
+				if (conditions.length) this.if(conditions.join(" && "), assignStep)
+				else assignStep()
+			}
+			return this
+		}
+		if (steps.length === 1 && !steps[0].signature && !opts?.condition)
+			assign(`const ${name}`, steps[0].node, input)
+		else {
+			this.let(name, input)
+			if (opts?.condition) this.if(opts.condition, assignSteps)
+			else assignSteps()
+		}
+		const onChange = (): this => {
+			opts?.onChange?.()
+			return this
+		}
+		const checksErrors = nodes.some(returnsTransformErrors)
+		if (!checksErrors && !opts?.onChange) return this
+		return this.if(this.compareTransformed(steps, name, "!==", input), () => {
+			if (!checksErrors) return onChange()
+			const key = keyExpression === undefined ? "" : `, ${keyExpression}`
+			this.if(isTransformErrors(), () =>
+				this.line(
+					this.requiresContext ?
+						`${this.ctx}.addTransformErrors(${name}${key})`
+					:	`failed = ${name}.addTo(failed${key})`
+				)
+			)
+			return opts?.onChange ? this.else(onChange) : this
+		})
+	}
+
+	compareTransformed(
+		steps: readonly TransformStep[],
+		transformed: string,
+		operator: "===" | "!==",
+		input: string
+	): string {
+		const canChangeSignOfZero = steps.some(
+			({ node }) =>
+				node.isRoot() && node.branches.some(n => !n.hasKind("intersection"))
+		)
+		return canChangeSignOfZero ?
+				`${operator === "===" ? "" : "!"}Object.is(${transformed}, ${input})`
+			:	`${transformed} ${operator} ${input}`
+	}
+
+	returnIfTransformFailed(): this {
+		if (!this.checksTransformErrors) return this
+		return this.requiresContext ?
+				this.if("ctx.currentErrorCount > errorCount", () => this.return("data"))
+			:	this.if("failed", () => this.return("failed"))
 	}
 
 	check(node: BaseNode, opts?: InvokeOptions): this {
@@ -229,4 +431,14 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 				this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
 			:	this.line(this.invoke(node, opts))
 	}
+}
+
+export const returnsTransformErrors = (node: BaseNode): boolean =>
+	node.includesMorph && !node.transformRequiresContext
+
+const isDecidedByAllows = (node: BaseNode): boolean => {
+	if (node.includesTransform || node.allowsRequiresContext) return false
+	for (const id in node.referencesById)
+		if (node.referencesById[id].hasKind("predicate")) return false
+	return true
 }

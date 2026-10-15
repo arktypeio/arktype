@@ -1,7 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
-import { registeredReference } from "@ark/schema"
+import {
+	registeredReference,
+	writeUnsatisfiableExpressionError,
+	type Traversal
+} from "@ark/schema"
 import type { equals } from "@ark/util"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
@@ -13,6 +17,17 @@ contextualize(() => {
 		attest(Odd.json).equals({ domain: "number", predicate: [isOddRef] })
 		attest(Odd(1)).equals(1)
 		attest(Odd(2).toString()).snap("must be valid according to isOdd (was 2)")
+	})
+
+	it("error references its predicate", () => {
+		const isOdd = (n: number) => n % 2 === 1
+		for (const jitless of [false, true]) {
+			const Odd = scope({}, { jitless }).type("number").narrow(isOdd)
+			const error = (Odd(2) as type.errors).issues[0]
+			if (!error.hasCode("predicate")) throw new Error()
+			attest(error.predicate).is(isOdd)
+			attest(error.toString()).snap("must be valid according to isOdd (was 2)")
+		}
 	})
 
 	it("implicit problem anonymous", () => {
@@ -265,6 +280,16 @@ contextualize(() => {
 		)
 	})
 
+	it("reject keeps the text it was given", () => {
+		const input = { code: "predicate" as const, expected: "odd" }
+		const Odd = type("number").narrow(
+			(n, ctx) => n % 2 === 1 || ctx.reject(input)
+		)
+		const out = Odd(2)
+		input.expected = "even"
+		attest(out.toString()).snap("must be odd (was 2)")
+	})
+
 	it("unknown is narrowable", () => {
 		const unknownPredicate854 = () => true
 		const T = type("unknown").narrow(unknownPredicate854)
@@ -293,5 +318,62 @@ contextualize(() => {
 			(arr, ctx) => new Set(arr).size === arr.length || ctx.mustBe("unique")
 		)
 		attest(T([1n, 0n, 1n]).toString()).snap("must be unique (was [1n,0n,1n])")
+	})
+
+	it("calls a predicate once per value", () => {
+		let callCount = 0
+		const Positive = type("number").narrow(n => {
+			callCount++
+			return n > 0
+		})
+		const T = type({
+			values: Positive.array(),
+			other: type("number").narrow((n, ctx) => n > 0 || ctx.mustBe("positive"))
+		})
+		attest(T({ values: [1, -1, 2], other: 5 }).toString()).snap(
+			"values[1] must be valid according to an anonymous predicate (was -1)"
+		)
+		attest(callCount).equals(3)
+	})
+
+	it("union after failed branch predicate", () => {
+		const notBad = (o: object, ctx: Traversal) =>
+			!("bad" in o) || ctx.mustBe("not bad")
+		const data = { x: { bad: 1 }, y: "s" }
+		const T = type({ x: type("object").narrow(notBad) }).or({ y: "string" })
+
+		attest(T.allows(data)).equals(true)
+		attest(T(data)).equals(data)
+		for (const jitless of [false, true]) {
+			const types = scope(
+				{
+					c: [{ "p?": "c" }, ":", notBad],
+					u: [{ x: "c" }, "|", { y: "string" }]
+				},
+				{ jitless }
+			).export()
+			attest(types.u.allows(data)).equals(true)
+		}
+	})
+
+	it("names a narrow that rejects every literal", () => {
+		const _isNarrowedC = (s: string) => s === "c"
+		attest(() => type("'a' | 'b'").narrow(_isNarrowedC)).throws(
+			writeUnsatisfiableExpressionError(
+				'Intersection of "a" | "b" and $ark._isNarrowedC'
+			)
+		)
+		attest(() =>
+			type("'a' | 'b'").and(type("string").narrow(_isNarrowedC))
+		).throws(
+			writeUnsatisfiableExpressionError(
+				'Intersection of "a" | "b" and string & $ark._isNarrowedC'
+			)
+		)
+		attest(() => type("'b'").narrow(_isNarrowedC)).throws(
+			writeUnsatisfiableExpressionError(
+				'Intersection of "b" and $ark._isNarrowedC'
+			)
+		)
 	})
 })

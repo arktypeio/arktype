@@ -1,6 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import type { Brand, Json } from "@ark/util"
-import { type } from "arktype"
+import { type, type Brand, type Json } from "arktype"
 
 contextualize(() => {
 	it("fluent", () => {

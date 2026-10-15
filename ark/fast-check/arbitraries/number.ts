@@ -8,7 +8,8 @@ export const buildNumberArbitrary = (
 ): fc.Arbitrary<number> => {
 	if (node.hasKind("domain")) {
 		return fc.double({
-			noNaN: !node.numberAllowsNaN
+			noNaN: !node.numberAllowsNaN,
+			noDefaultInfinity: !node.numberAllowsInfinity
 		})
 	}
 	const numberConstraints = getFastCheckNumberConstraints(node)
@@ -75,7 +76,8 @@ const getFastCheckNumberConstraints = (node: IntersectionNode) => {
 	const numberConstraints: fc.DoubleConstraints & {
 		divisor?: number
 	} = {
-		noNaN: !node.inner.domain?.numberAllowsNaN
+		noNaN: !node.inner.domain?.numberAllowsNaN,
+		noDefaultInfinity: !node.inner.domain?.numberAllowsInfinity
 	}
 
 	for (const refinement of node.prestructurals) {

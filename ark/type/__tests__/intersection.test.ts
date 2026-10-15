@@ -67,6 +67,33 @@ contextualize(() => {
 		attest<{ a: number; b: boolean[]; c: "hello" }>(T.infer)
 	})
 
+	it("proto with props", () => {
+		const T = type("Date").and({ foo: "string" })
+		attest(T.expression).snap("{ foo: string } & Date")
+		attest(T.description).snap("{ foo: a string } & a Date")
+	})
+
+	it("bounded proto with props", () => {
+		const T = type("Date >= d'2023-01-01'").and({ foo: "string" })
+		attest(T.description).snap("{ foo: a string } & a Date and 2023 or later")
+		attest(type("Array > 2").and({ foo: "string" }).expression).snap(
+			"{ foo: string } & Array >= 3"
+		)
+	})
+
+	it("empty tuple with props", () => {
+		const T = type([]).and({ foo: "string" })
+		attest(T.expression).snap("{ foo: string } & []")
+	})
+
+	it("nested", () => {
+		attest(type("string > 1").array().expression).snap("(string >= 2)[]")
+		attest(type("Date").and({ foo: "string" }).array().expression).snap(
+			"({ foo: string } & Date)[]"
+		)
+		attest(type("string > 1 | number").expression).snap("number | string >= 2")
+	})
+
 	it("bad reference", () => {
 		// @ts-expect-error
 		attest(() => type("boolean&tru"))

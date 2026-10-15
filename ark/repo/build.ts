@@ -9,6 +9,7 @@ import {
 	shell,
 	writeJson
 } from "../fs/index.ts"
+import { bundle } from "./bundle.ts"
 import { dtsGen } from "./dtsGen.ts"
 import { jsDocGen } from "./jsdocGen.ts"
 import { packagesByScope } from "./shared.ts"
@@ -33,6 +34,11 @@ try {
 	buildCurrentProject()
 	if (buildKind === "cjs")
 		writeJson(join(outDir, "package.json"), { type: "commonjs" })
+	else if (
+		packageName === "arktype" ||
+		packageName in packagesByScope.type.json.dependencies!
+	)
+		bundle()
 	if (packageName === "arktype") {
 		jsDocGen()
 		dtsGen()

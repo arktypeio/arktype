@@ -1,7 +1,7 @@
 import { getShellOutput, rewriteJson, shell } from "@ark/fs"
 import { packages, type ArkPackage } from "./shared.ts"
 
-const tagsToPublish: string[] = []
+const releasesToCreate: string[] = []
 
 const existingTags = getShellOutput("git tag").split("\n")
 
@@ -11,9 +11,12 @@ const publishPackage = (pkg: ArkPackage, alias?: string) => {
 	if (!existingTags.includes(tagName)) {
 		if (alias) rewritePackageJsonName(pkg.packageJsonPath, alias)
 
+		const distTag = distTagOf(pkg.version)
 		shell(`git tag ${tagName}`)
-		tagsToPublish.push(tagName)
-		shell("pnpm publish --no-git-checks", { cwd: pkg.path })
+		releasesToCreate.push(
+			`${tagName} ${distTag === "latest" ? "--latest" : "--prerelease"}`
+		)
+		shell(`pnpm publish --no-git-checks --tag ${distTag}`, { cwd: pkg.path })
 
 		if (alias) rewritePackageJsonName(pkg.packageJsonPath, pkg.name)
 	}
@@ -22,13 +25,18 @@ const publishPackage = (pkg: ArkPackage, alias?: string) => {
 const rewritePackageJsonName = (path: string, alias: string) =>
 	rewriteJson(path, data => ({ ...data, name: alias }))
 
+// npm rejects a prerelease published without a dist-tag
+const distTagOf = (version: string) =>
+	/-([a-z]+)/.exec(version)?.[1] ?? "latest"
+
 for (const pkg of packages) {
-	// primary name (either arktype, arkregex or @ark/*)
+	// primary name (either arktype, arkregex, arksets or @ark/*)
 	publishPackage(pkg)
 
 	// scoped alias for primary entry point
 	if (pkg.scope === "type") publishPackage(pkg, "@ark/type")
 	if (pkg.scope === "regex") publishPackage(pkg, "@ark/regex")
+	if (pkg.scope === "sets") publishPackage(pkg, "@ark/sets")
 
 	// alias for original @arktype/ scope
 	publishPackage(pkg, `@arktype/${pkg.scope}`)
@@ -36,5 +44,4 @@ for (const pkg of packages) {
 
 shell("git push --tags")
 
-for (const tagName of tagsToPublish)
-	shell(`gh release create ${tagName} --latest`)
+for (const release of releasesToCreate) shell(`gh release create ${release}`)

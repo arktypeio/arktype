@@ -1,11 +1,13 @@
 import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
+	annotatingFallback,
 	intrinsic,
 	rootSchema,
 	rootSchemaScope,
 	schemaScope,
 	type BaseRoot,
+	type JsonSchema,
 	type ToJsonSchema
 } from "@ark/schema"
 import type { omit } from "@ark/util"
@@ -114,13 +116,15 @@ contextualize(() => {
 				baz: { const: 1 }
 			},
 			required: ["bar", "foo"],
-			additionalProperties: {
-				anyOf: [
-					{ type: "number" },
-					{ type: "string" },
-					{ type: "boolean" },
-					{ type: "null" }
-				]
+			patternProperties: {
+				"": {
+					anyOf: [
+						{ type: "number" },
+						{ type: "string" },
+						{ type: "boolean" },
+						{ type: "null" }
+					]
+				}
 			}
 		})
 	})
@@ -139,6 +143,37 @@ contextualize(() => {
 		attest(toJsonSchema(node)).snap({
 			type: "object",
 			patternProperties: { ".*": { type: "number" } }
+		})
+	})
+
+	it("string or symbol index", () => {
+		const node = rootSchema({
+			domain: "object",
+			index: { signature: ["string", "symbol"], value: "number" }
+		})
+		attest(
+			toJsonSchema(node, { fallback: { symbolKey: ctx => ctx.base } })
+		).snap({ type: "object", additionalProperties: { type: "number" } })
+	})
+
+	it("pattern flags that don't change what it matches", () => {
+		const node = rootSchema({
+			domain: "string",
+			pattern: [{ rule: "^.$", flags: "gu" }]
+		})
+		attest(toJsonSchema(node)).snap({ type: "string", pattern: "^.$" })
+	})
+
+	it("constrained index key with undeclared keys rejected", () => {
+		const node = rootSchema({
+			domain: "object",
+			index: { signature: { domain: "string", maxLength: 3 }, value: "number" },
+			undeclared: "reject"
+		})
+		attest(toJsonSchema(node)).snap({
+			type: "object",
+			propertyNames: { type: "string", maxLength: 3 },
+			additionalProperties: { type: "number" }
 		})
 	})
 
@@ -236,26 +271,79 @@ contextualize(() => {
 		const schema = toJsonSchema($ark.intrinsic.jsonObject)
 
 		attest(schema).snap({
-			$ref: "#/$defs/intersection11",
+			$ref: "#/$defs/jsonObject1",
 			$defs: {
-				intersection11: {
+				jsonObject1: {
 					type: "object",
 					additionalProperties: { $ref: "#/$defs/jsonData1" }
 				},
 				jsonData1: {
 					anyOf: [
-						{ $ref: "#/$defs/intersection11" },
 						{ type: "number" },
 						{ type: "string" },
+						{ $ref: "#/$defs/jsonObject1" },
 						{ type: "boolean" },
 						{ type: "null" }
 					]
-				},
-				union7: {
-					anyOf: [{ $ref: "#/$defs/intersection11" }, { type: "boolean" }]
 				}
 			}
 		})
+	})
+
+	it("toJsonSchemaRecurse", () => {
+		const node = rootSchema({
+			domain: "object",
+			required: [{ key: "a", value: "string" }]
+		})
+		const ctx = node.$.resolvedConfig.toJsonSchema
+		attest(node.toJsonSchemaRecurse(ctx)).snap({
+			type: "object",
+			properties: { a: { type: "string" } },
+			required: ["a"]
+		})
+		attest(node.toJsonSchemaRecurse({ ...ctx, useRefs: true })).equals({
+			$ref: `#/$defs/${node.id}`
+		})
+		attest(
+			rootSchema("string").toJsonSchemaRecurse({ ...ctx, useRefs: true })
+		).equals({ type: "string" })
+	})
+
+	it("$defs in reference order", () => {
+		const node = rootSchema([
+			{
+				domain: "object",
+				required: [
+					{ key: "k", value: { unit: "a" } },
+					{
+						key: "a",
+						value: {
+							domain: "object",
+							required: [{ key: "x", value: "string" }]
+						}
+					}
+				]
+			},
+			{
+				domain: "object",
+				required: [
+					{ key: "k", value: { unit: "b" } },
+					{
+						key: "b",
+						value: {
+							domain: "object",
+							required: [{ key: "y", value: "number" }]
+						}
+					}
+				]
+			}
+		])
+		const defs = toJsonSchema(node, { useRefs: true }).$defs!
+		attest(
+			Object.values(defs).map(def =>
+				Object.keys((def as JsonSchema.Object).properties ?? def)
+			)
+		).snap([["anyOf"], ["a", "k"], ["x"], ["b", "k"], ["y"]])
 	})
 
 	it("unions of literal values as enums", () => {
@@ -528,6 +616,41 @@ contextualize(() => {
 }`)
 		})
 
+		it("indexKey", () => {
+			const T = rootSchema({
+				domain: "object",
+				required: [{ key: "abcd", value: "string" }],
+				index: {
+					signature: { domain: "string", maxLength: 3 },
+					value: "number"
+				},
+				undeclared: "reject"
+			})
+
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+    code: "indexKey",
+    base: {
+        type: "object",
+        properties: {
+            abcd: {
+                type: "string"
+            }
+        },
+        required: [
+            "abcd"
+        ],
+        additionalProperties: false
+    },
+    key: {
+        type: "string",
+        maxLength: 3
+    },
+    value: {
+        type: "number"
+    }
+}`)
+		})
+
 		it("patternIntersection", () => {
 			const T = rootSchema({
 				domain: "string",
@@ -541,6 +664,39 @@ contextualize(() => {
         pattern: "^a"
     },
     pattern: "z$"
+}`)
+		})
+
+		it("patternFlags", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: [{ rule: "^a", flags: "i" }]
+			})
+
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+    code: "patternFlags",
+    base: {
+        type: "string"
+    },
+    pattern: "^a",
+    flags: "i"
+}`)
+		})
+
+		it("patternFlags with u in draft-07", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: [{ rule: "^.$", flags: "u" }]
+			})
+
+			attest(() => T.toJsonSchema({ target: "draft-07" })).throws
+				.snap(`ToJsonSchemaError: {
+    code: "patternFlags",
+    base: {
+        type: "string"
+    },
+    pattern: "^.$",
+    flags: "u"
 }`)
 		})
 
@@ -631,6 +787,166 @@ contextualize(() => {
 		})
 	})
 
+	describe("annotatingFallback", () => {
+		// x-arktype-* keywords aren't part of the JsonSchema type
+		const annotated = (T: BaseRoot): object =>
+			toJsonSchema(T, { fallback: annotatingFallback })
+
+		it("predicates", () => {
+			const T = rootSchema({
+				domain: "number",
+				predicate: [
+					function _isEven(n: number) {
+						return n % 2 === 0
+					},
+					function _isPositive(n: number) {
+						return n > 0
+					}
+				]
+			})
+
+			attest(annotated(T)).snap({
+				type: "number",
+				"x-arktype-predicates": ["$ark._isEven", "$ark._isPositive"]
+			})
+		})
+
+		it("bigint, undefined and Map", () => {
+			attest(annotated(rootSchema("bigint"))).snap({
+				"x-arktype-domain": "bigint"
+			})
+			attest(annotated(rootSchema({ unit: undefined }))).snap({
+				"x-arktype-unit": "undefined"
+			})
+			attest(annotated(rootSchema({ proto: Map }))).snap({
+				"x-arktype-proto": "Map"
+			})
+		})
+
+		it("morph", () => {
+			const T = rootSchema({
+				in: "string",
+				morphs: [(s: string) => Number.parseInt(s)]
+			})
+
+			attest(annotated(T)).snap({ type: "string", "x-arktype-out": null })
+		})
+
+		it("patterns", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: ["^a", "z$", "m"]
+			})
+
+			attest(annotated(T)).snap({
+				type: "string",
+				pattern: "^a",
+				allOf: [{ pattern: "m" }, { pattern: "z$" }]
+			})
+		})
+
+		it("pattern flags", () => {
+			const T = rootSchema({
+				domain: "string",
+				pattern: ["z$", { rule: "^a", flags: "i" }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "string",
+				"x-arktype-patterns": [{ rule: "^a", flags: "i" }],
+				pattern: "z$"
+			})
+		})
+
+		it("index key", () => {
+			const T = rootSchema({
+				domain: "object",
+				index: {
+					signature: { domain: "string", maxLength: 3 },
+					value: "number"
+				}
+			})
+
+			attest(annotated(T)).snap({
+				type: "object",
+				"x-arktype-index": [
+					{ key: { type: "string", maxLength: 3 }, value: { type: "number" } }
+				]
+			})
+		})
+
+		it("symbol keys", () => {
+			const zildjian = Symbol("zildjian")
+			const T = rootSchema({
+				domain: "object",
+				required: [
+					{ key: "name", value: "string" },
+					{ key: zildjian, value: "number" }
+				],
+				index: [{ signature: "symbol", value: "number" }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "object",
+				properties: { name: { type: "string" } },
+				"x-arktype-symbolKeys": [
+					{ key: "$ark.zildjian1", value: { type: "number" }, optional: false },
+					{ key: null, value: { type: "number" }, optional: false }
+				],
+				required: ["name"]
+			})
+		})
+
+		it("date range", () => {
+			const T = rootSchema({
+				proto: "Date",
+				after: new Date("2000-01-01T00:00:00.000Z"),
+				before: new Date("2000-06-01T00:00:00.000Z")
+			})
+
+			attest(annotated(T)).snap({
+				"x-arktype-proto": "Date",
+				"x-arktype-before": "2000-06-01T00:00:00.000Z",
+				"x-arktype-after": "2000-01-01T00:00:00.000Z"
+			})
+		})
+
+		it("postfix and array props", () => {
+			const T = rootSchema({
+				proto: "Array",
+				sequence: {
+					variadic: "number",
+					postfix: ["string"]
+				},
+				required: [{ key: "extra", value: "string" }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "array",
+				minItems: 1,
+				items: { type: "number" },
+				"x-arktype-postfix": [{ type: "string" }],
+				"x-arktype-object": {
+					type: "object",
+					properties: { extra: { type: "string" } },
+					required: ["extra"]
+				}
+			})
+		})
+
+		it("default", () => {
+			const T = rootSchema({
+				domain: "object",
+				optional: [{ key: "foo", value: {}, default: 0n }]
+			})
+
+			attest(annotated(T)).snap({
+				type: "object",
+				properties: { foo: { default: "0n" } }
+			})
+		})
+	})
+
 	describe("fallbacks", () => {
 		it("morph falls back to in", () => {
 			const T = rootSchema({
@@ -663,6 +979,47 @@ contextualize(() => {
 				type: "number",
 				_testIn: { type: "string" }
 			})
+		})
+
+		it("morph index key", () => {
+			const T = rootSchema({
+				domain: "object",
+				index: [
+					{
+						signature: {
+							in: { domain: "string", pattern: "^\\d+$" },
+							morphs: [(s: string) => Number.parseInt(s)]
+						},
+						value: "string"
+					},
+					{
+						signature: {
+							in: { domain: "string", meta: "a key" },
+							morphs: [(s: string) => s.trim()]
+						},
+						value: "number"
+					}
+				]
+			})
+
+			const expected: JsonSchema = {
+				type: "object",
+				patternProperties: {
+					"": { type: "number" },
+					"^\\d+$": { type: "string" }
+				}
+			}
+
+			attest(toJsonSchema(T, { fallback: { morph: ctx => ctx.base } })).equals(
+				expected
+			)
+			attest(
+				toJsonSchema(T, { fallback: { morph: ctx => ctx.out ?? ctx.base } })
+			).equals(expected)
+			attest(
+				toJsonSchema(T, { useRefs: true, fallback: { morph: ctx => ctx.base } })
+					.$defs![T.id]
+			).equals(expected)
 		})
 
 		it("date supercedes proto", () => {

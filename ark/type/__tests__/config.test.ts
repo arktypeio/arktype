@@ -3,12 +3,14 @@ import {
 	$ark,
 	rootSchema,
 	schemaScope,
+	writeBadRejectAllowsSymbolKeysMessage,
 	type ArkSchemaConfig
 } from "@ark/schema"
 import { configure, scope, type } from "arktype"
 
 const withConfig = (config: ArkSchemaConfig, fn: () => void) => {
-	const originalConfig = $ark.config
+	// configure assigns to $ark.config in place, so restore from a copy
+	const originalConfig = { ...$ark.config }
 	const originalResolvedConfig = $ark.resolvedConfig
 	configure(config)
 	fn()
@@ -117,6 +119,41 @@ contextualize(() => {
 		)
 	})
 
+	it("node writer config on union", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Discriminated = $.type([{ k: "'a'" }, "|", { k: "'b'" }], "@", {
+				message: ctx => `custom message ${ctx.problem}`
+			})
+			attest(Discriminated({ k: "c" }).toString()).snap(
+				'custom message must be "a" or "b" (was "c")'
+			)
+			const Indiscriminable = $.type(
+				[{ a: "string" }, "|", { b: "number" }],
+				"@",
+				{ message: ctx => `custom message ${ctx.problem}` }
+			)
+			attest<{ a: string } | { b: number }>(Indiscriminable.infer)
+			attest(Indiscriminable({}).toString()).snap(
+				"custom message a must be a string (was missing) or b must be a number (was missing)"
+			)
+		}
+	})
+
+	it("node writer config on undeclared key", () => {
+		for (const jitless of [false, true]) {
+			const T = scope({}, { jitless })
+				.type({ "+": "reject", a: "string" })
+				.configure(
+					{ message: ctx => `custom message ${ctx.problem}` },
+					"structure"
+				)
+			attest(T({ a: "", b: 1 }).toString()).snap(
+				"custom message must be removed"
+			)
+		}
+	})
+
 	it("applies config to shallow descendants", () => {
 		const User = type({
 			name: "string",
@@ -136,14 +173,22 @@ contextualize(() => {
 	})
 
 	it("jitless", () => {
-		const types = scope(
+		const $ = scope(
 			{
 				fast: "false"
 			},
 			{ jitless: true }
-		).export()
+		)
+		const types = $.export()
 
 		attest(types.fast.precompilation).equals(undefined)
+		attest($.type.Record("string", "boolean").precompilation).equals(undefined)
+	})
+
+	it("prereducedAliases", () => {
+		const $ = scope({ a: "string" }, { prereducedAliases: true })
+		attest($.config.prereducedAliases).equals(true)
+		attest(type.$.config.prereducedAliases).equals(true)
 	})
 
 	it("jit by default", () => {
@@ -157,6 +202,11 @@ contextualize(() => {
 
 		const Sub = type("string.normalize.NFC.preformatted")
 		attest(Sub.precompilation).satisfies("string")
+	})
+
+	it("invoked generics jit by default", () => {
+		const T = type.Record("string", "boolean")
+		attest(T.precompilation).satisfies("string")
 	})
 
 	it("jit by default in scope", () => {
@@ -183,6 +233,23 @@ contextualize(() => {
 		attest(types.inner.foo.precompilation).satisfies("string")
 	})
 
+	it("leaf with scope description writer", () => {
+		const A = type({ a: "number > 1234" })
+		attest(A({ a: "x" }).toString()).snap("a must be a number (was a string)")
+		for (const jitless of [false, true]) {
+			const types = scope(
+				{ b: "number", o: { a: A, b: "b" } },
+				{ jitless, domain: { description: () => "a custom number" } }
+			).export()
+			// ideally JIT would keep the description A was parsed with
+			attest(types.o({ a: { a: "x" }, b: 1 }).toString()).equals(
+				jitless ?
+					"a.a must be a number (was a string)"
+				:	"a.a must be a custom number (was a string)"
+			)
+		}
+	})
+
 	it("numberAllowsNaN", () => {
 		withConfig({ numberAllowsNaN: true }, () => {
 			const { nanable } = schemaScope({
@@ -196,6 +263,24 @@ contextualize(() => {
 			})
 
 			attest(nonNanable.allows(Number.NaN)).equals(false)
+		})
+	})
+
+	it("numberAllowsInfinity", () => {
+		withConfig({ numberAllowsInfinity: true }, () => {
+			const { infinitable } = schemaScope({
+				infinitable: "number"
+			}).export()
+
+			attest(infinitable.allows(Number.POSITIVE_INFINITY)).equals(true)
+			attest(infinitable.allows(Number.NEGATIVE_INFINITY)).equals(true)
+			attest(infinitable.allows(Number.NaN)).equals(false)
+
+			const { nonInfinitable } = type.module({
+				nonInfinitable: "number"
+			})
+
+			attest(nonInfinitable.allows(Number.POSITIVE_INFINITY)).equals(false)
 		})
 	})
 
@@ -215,24 +300,35 @@ contextualize(() => {
 		})
 	})
 
-	it("clone", () => {
-		withConfig({ clone: false }, () => {
-			const { userForm } = type.module({
-				userForm: {
-					age: "string.numeric.parse"
-				}
-			})
-
-			const formData = {
-				age: "42"
+	it("rejectAllowsSymbolKeys", () => {
+		withConfig({ rejectAllowsSymbolKeys: true }, () => {
+			const undeclared = Symbol("undeclared")
+			const data = { a: "ok", x: 1, [undeclared]: 1 }
+			for (const jitless of [false, true]) {
+				const $ = scope({}, { jitless })
+				const T = $.type({ "+": "reject", a: "string", x: "number" })
+				attest(T(data)).equals(data)
+				const Indexed = $.type({
+					"+": "reject",
+					a: "string",
+					"[/^x/]": "number"
+				})
+				attest(Indexed(data)).equals(data)
+				attest(Indexed({ ...data, b: 1 }).toString()).snap("b must be removed")
 			}
-
-			const out = userForm(formData)
-
-			// the original object's age key is now a number
-			attest(formData.age).unknown.equals(42)
-			attest(formData).unknown.equals(out)
+			const L = scope({}).type({ "+": "reject", a: "string" })
+			attest(L.and({ "[symbol]": "number" }).expression).snap(
+				"{ [symbol]: number, a: string, + (undeclared): reject }"
+			)
 		})
+		attest(() =>
+			rootSchema({
+				domain: "object",
+				required: [{ key: "a", value: "string" }],
+				undeclared: "delete",
+				rejectAllowsSymbolKeys: true
+			})
+		).throws(writeBadRejectAllowsSymbolKeysMessage("delete"))
 	})
 
 	it("docs actual example", () => {

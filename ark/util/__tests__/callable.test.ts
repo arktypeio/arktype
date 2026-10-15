@@ -105,4 +105,10 @@ contextualize(() => {
 
 		attest(f.name).snap("bound originalName")
 	})
+
+	it("can skip binding", () => {
+		const f = new Callable(function originalName() {}, { bind: null })
+
+		attest(f.name).snap("originalName")
+	})
 })

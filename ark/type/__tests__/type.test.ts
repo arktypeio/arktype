@@ -165,6 +165,13 @@ contextualize(() => {
 		attest<number>(type.number.t)
 	})
 
+	it("assign attached type", () => {
+		const $ = scope({})
+		const T = type("string")
+		$.type.string = T
+		attest($.type.string).is(T)
+	})
+
 	it("ark attached", () => {
 		attest<string>(type.keywords.number.integer.expression).snap("number % 1")
 	})
@@ -231,6 +238,10 @@ contextualize(() => {
 		attest(() => assert(5)).throws.snap(
 			"TraversalError: must be a string (was a number)"
 		)
+	})
+
+	it("is unbound", () => {
+		attest(type("string").name).equals("")
 	})
 
 	it("toString()", () => {

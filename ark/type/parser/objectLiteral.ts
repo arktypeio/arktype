@@ -3,8 +3,7 @@ import {
 	normalizeIndex,
 	type BaseParseContext,
 	type BaseRoot,
-	type Inner,
-	type NodeSchema,
+	type NodeInput,
 	type Prop,
 	type Structure,
 	type writeInvalidPropertyKeyMessage
@@ -36,7 +35,7 @@ import {
 	type validateProperty
 } from "./property.ts"
 
-type MutableStructureSchema = mutable<NodeSchema<"structure">, 2>
+type MutableStructureSchema = mutable<NodeInput<"structure">, 2>
 
 export const parseObjectLiteral = (
 	def: Dict,
@@ -152,8 +151,8 @@ export const parseObjectLiteral = (
 
 	const structureNode = ctx.$.node("structure", structure)
 
-	return ctx.$.parseSchema({
-		domain: "object",
+	return ctx.$.node("intersection", {
+		domain: ctx.$.node("domain", { domain: "object" }),
 		structure: spread?.merge(structureNode) ?? structureNode
 	})
 }
@@ -161,14 +160,14 @@ export const parseObjectLiteral = (
 const appendNamedProp = <kind extends Prop.Kind>(
 	structure: MutableStructureSchema,
 	kind: kind,
-	inner: Inner<kind>,
+	input: NodeInput<kind>,
 	ctx: BaseParseContext
 ) => {
 	structure[kind] = append(
 		// doesn't seem like this cast should be necessary
 		structure[kind] as MutableStructureSchema[Prop.Kind],
-		ctx.$.node(kind, inner)
-	)
+		ctx.$.node(kind, input)
+	) as never
 }
 
 export type inferObjectLiteral<def extends object, $, args> = show<

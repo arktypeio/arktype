@@ -1,5 +1,639 @@
 # arktype
 
+## Unreleased
+
+### Write error messages in other languages
+
+Configure a locale to write error messages in another language. ArkType ships two: `en`, the default, and `de`.
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import { de } from "arktype/locales/de"
+
+configure({ locale: de })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+
+// ArkErrors: name muss mindestens 2 Zeichen lang sein, ist aber 1 Zeichen lang
+type({ name: "string >= 2" })({ name: "A" })
+```
+
+`locale` can also be a function, which is called each time a message is read, e.g. to return the locale of the current request. Messages are written when they are read, so validation does no locale work. `ArkErrors` and `ArkError` gain `toLocaleString(locale)`, which writes the summary or message in the locale it is given.
+
+Any message you configure, through `.describe()`, `.configure()` or errors configured by code, outranks the locale. Every error writer receives the active locale as its last argument, so it can translate its own text:
+
+```ts
+const Password = type("string >= 8").configure({
+	expected: (ctx, locale) =>
+		locale.tag === "de" ? "ein sicheres Passwort" : "a secure password"
+})
+```
+
+A locale is an object typed by `Locale`, which `arktype` exports, so you can spread one to change part of it or write your own. It writes a whole sentence for each error code and may give a code a fragment, like `eine Zeichenkette`, for unions and intersections to list. `de` cites a string you wrote, like a description, since it may be in any language: `muss ein Wert gemäß der Beschreibung „a secure password“ sein`. A locale's writers can also call an i18n library like i18next or Paraglide. See [the docs](https://arktype.io/docs/i18n).
+
+Errors carry what a locale writes from: a `required` error's `missing` and `valueMeta` describe the missing value, a narrow's error references its `predicate`, and built-in keywords with their own text, like `string.email`, set `meta.keyword` to their name. `arktype/i18n` exports `listPattern`, `isolate` and the other helpers `de` is written with, which come from `@ark/util` and `@ark/schema/i18n`. `@ark/schema` exports `en` and the `Locale` types.
+
+Descriptions, expressions, JSON Schema and `ParseError`s stay in English.
+
+https://github.com/arktypeio/arktype/issues/1498
+
+### Give undeclared keys the `undeclared` code
+
+A key that `"+": "reject"` disallows was a `predicate` error. It now has the code `undeclared`, and its `data` is the key's value rather than the object around it, as every other error's `data` is the value at its path:
+
+```ts
+const T = type({ "+": "reject", a: "string" })
+
+const out = T({ a: "x", b: 1 })
+
+if (out instanceof type.errors) {
+	// previously "predicate", now "undeclared"
+	out.issues[0].code
+	// previously { a: "x", b: 1 }, now 1
+	out.issues[0].data
+}
+```
+
+Configure its text with `undeclared` instead of `predicate`, e.g. `configure({ undeclared: { problem: "isn't allowed" } })`. The object is the input at `path.slice(0, -1)`. Rejecting a key now reads its value, so a getter or a `Proxy`'s `get` trap runs for it, as it already did for declared keys.
+
+Its message is unchanged, except that meta configured on the object's structure now reaches it:
+
+```ts
+// previously b must be removed, now b must be declared
+T.configure({ expected: "declared" }, { kind: "structure" })({ a: "x", b: 1 })
+```
+
+In an ordered union, like one `match` checks, whose branches fail at the key with different `actual` text, it prints the key's value rather than the object around it:
+
+```ts
+const m = match
+	.case({ "+": "reject", a: "string" }, o => o.a)
+	.case({ a: "string", b: "number" }, o => o.b)
+	.default("reject")
+
+// previously b must be removed or a number (was {"a":"x","b":"y"})
+// now b must be removed or a number (was "y")
+m({ a: "x", b: "y" })
+```
+
+An exhaustive `switch` over `ArkErrorCode` must now handle `undeclared` and `discriminant`.
+
+https://github.com/arktypeio/arktype/issues/1403
+
+### Give misses of `number | null` and discriminated unions the `discriminant` code
+
+A value that matched none of the cases of a union ArkType checks by switching on a domain or a literal value was a `predicate` error with English `expected` and `actual`. That includes most unions, not only objects with a discriminant key: any whose branches have different domains, like `number | null`, `string | undefined` or `string | number`, and any of three or more literal values, like `"a" | "b" | undefined`. It now has the code `discriminant`, so `predicate` config, at a scope or globally, no longer reaches it:
+
+```ts
+configure({ predicate: { problem: "is invalid" } })
+
+const out = type("number | null")("x")
+
+if (out instanceof type.errors) {
+	// previously "predicate", now "discriminant"
+	out.issues[0].code
+	// previously is invalid, now must be a number or null (was a string)
+	out.summary
+}
+```
+
+Its `data` is the discriminant's value. It carries `discriminantKind`, `cases` (the case values, or domains like `"string"` when `discriminantKind` is `"domain"`), `onKey` (whether the discriminant is at a key) and `absent` (whether the key was missing):
+
+```ts
+const Shape = type({ kind: "'circle'", r: "number" }).or({
+	kind: "'square'",
+	side: "number"
+})
+
+const out = Shape({ kind: "triangle" })
+
+if (out instanceof type.errors) {
+	const error = out.issues[0]
+	// previously { kind: "triangle" }, now "triangle"
+	error.data
+	// ["circle", "square"]
+	if (error.hasCode("discriminant")) error.cases
+}
+```
+
+Configure its text with `discriminant` instead of `predicate`. Its message is unchanged, except that `.configure({ expected, actual })` on a union whose discriminant is the value itself now applies, and that inside an outer union, it prints the discriminant's value rather than the object around it:
+
+```ts
+// previously must be "a", "b" or "c" (was "d")
+// now must be a letter (was "d")
+type("'a' | 'b' | 'c'").configure({ expected: "a letter" })("d")
+
+const T = type({ v: Shape }).or({ v: { kind: "string >= 9" } })
+
+// previously (was {"kind":"triangle"})
+// now v.kind must be "circle" or "square" or at least length 9 (was "triangle")
+T({ v: { kind: "triangle" } })
+```
+
+At a key, its `meta` is the union's without `expected` and `actual`, which describe the object around the key rather than its value. Its `toJSON()` also includes `description`, the cases it expected (`"circle" or "square"`).
+
+### Pass error writers the error and the locale
+
+Each error writer receives the active locale as its last argument. An `expected` writer receives the error rather than only its context, so it can read `data` and `path` too, and an `actual` writer receives `(data, error, locale)`.
+
+A writer's `ctx` is typed by its code, and no longer has `toJSON` or the parts of the message that could read the one it writes. Its `toString` and `toLocaleString`, which read the message, can no longer be called. `ctx.meta` may be `undefined` in an `expected` writer, as it already could in the others, since an error raised by `ctx.reject` has no meta:
+
+```ts
+import { configure } from "arktype/config"
+
+// previously type-checked and threw for an error from ctx.reject
+// now TS18048: 'ctx.meta' is possibly 'undefined'
+configure({ predicate: { expected: ctx => ctx.meta.title! } })
+```
+
+### Keep supplied text out of an error's own properties
+
+Text supplied when an error is created, as by `ctx.reject({ expected: "positive" })` or `ctx.mustBe("positive")`, was copied onto the error, hiding its `expected`, `actual`, `problem` and `message` getters. It now stays in the error's input, where the getters read it. Reading them and `toJSON()` give what they did, but `Object.keys(error)` and `{ ...error }` no longer include them, and assigning `error.expected` throws. Configure a writer instead of assigning text.
+
+### Reference the morph that threw in `pipe.try` errors
+
+A `pipe.try` error referenced the function that threw as `predicate` and wrote what it threw into its own `actual`. It now references the function as `morph`, with what it threw as `cause`, and writes its `actual` when read. Its message is unchanged, and an `actual` configured for `predicate` now reaches it.
+
+### Raise keyword parse errors as data
+
+The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`, `string.json`, `string.json.parse` and `string.regex` raise while parsing carried their own English `expected` text, and some their own `problem`. They now carry `meta.keyword`, a `description`, and what was thrown, if anything, as `cause`. Their messages are unchanged, and `predicate` config now reaches the text their own hid.
+
+### Reserve `meta.keyword`
+
+Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
+
+### Reject `Infinity` from `number`
+
+`number` rejects `Infinity` and `-Infinity` by default, as it already rejects `NaN`:
+
+```ts
+// previously Infinity, now ArkErrors: must be a number (was Infinity)
+type.number(Infinity)
+```
+
+Allow them everywhere with `configure({ numberAllowsInfinity: true })`, or in one type with the `number.Infinity` and `number.NegativeInfinity` keywords:
+
+```ts
+const T = type("number | number.Infinity | number.NegativeInfinity")
+```
+
+A type whose range already excluded an infinite value, like `number.safe`, now reports `must be a number (was Infinity)` instead of its range error.
+
+### Remove the `clone` option
+
+Transforming no longer clones the input first, and never writes to it, except to a builtin arktype doesn't copy (e.g. a function, Promise, WeakMap, FormData, Blob or boxed primitive), which is transformed in place as before. A transformed object is a new object sharing every untransformed value with the input, and input that nothing transforms is returned as is:
+
+```ts
+const T = type({ a: "string.trim", b: { c: "string" } })
+const input = { a: " x ", b: { c: "y" } }
+
+// previously false, now true
+T(input).b === input.b
+```
+
+A morph receives the validated value itself, so a morph that mutates its argument mutates the caller's data. Remove `clone` from your config.
+
+### Annotate what JSON Schema can't express
+
+Pass `annotatingFallback` as `toJsonSchema()`'s `fallback` to write each constraint JSON Schema can't express as an `x-arktype-*` keyword instead of throwing:
+
+```ts
+import { annotatingFallback, type } from "arktype"
+
+// { $schema: "...", "x-arktype-domain": "bigint" }
+type("bigint").toJsonSchema({ fallback: annotatingFallback })
+```
+
+A function, class or symbol is written as its `$ark` name, as in the type's `.json`. Validators ignore those keywords, so the schema accepts values the type rejects.
+
+A `symbolKey` fallback's result for a symbol-keyed property is now used instead of discarded.
+
+### Fall back for regex flags and constrained keys in JSON Schema
+
+JSON Schema's `pattern` has no flags, so `toJsonSchema()` wrote `/^a/i` as `"^a"`, which rejects `"A"`. A flag that changes what a pattern matches now goes to the new `patternFlags` fallback. `d` and `g` are ignored, as is `u` for draft-2020-12, whose patterns are built with it.
+
+An index signature whose key is constrained beyond one pattern, like `[string <= 3]`, was left out. It now goes to the new `indexKey` fallback, or, if undeclared keys are rejected and every declared key matches it, is written with `propertyNames`:
+
+```ts
+// { type: "object", propertyNames: { type: "string", maxLength: 3 }, additionalProperties: { type: "number" } }
+type({ "[string <= 3]": "number", "+": "reject" }).toJsonSchema()
+```
+
+`~standard.jsonSchema` leaves out either one, along with an `additionalProperties: false` that would reject keys the index allows.
+
+### Reject shallow cycles
+
+An alias that resolved to itself without passing through an object, array or morph accepted every value. It now throws a ParseError:
+
+```ts
+// previously accepted every value, now throws: Alias 'a' has a shallow resolution cycle: a->a
+scope({ a: "a" }).export()
+```
+
+### Describe dates in UTC
+
+Dates in descriptions and error messages are written in UTC instead of local time, except that a date at UTC or local midnight is written as its calendar date, collapsing to its year on January 1:
+
+```ts
+const T = type("Date < d'2000-01-01T12:30:00Z'")
+
+// previously "must be 7:29:59.999 AM, January 1, 2000 or earlier" in New York
+// now "must be January 1, 2000, 12:29:59.999 PM UTC or earlier"
+T(new Date("2001-06-01"))
+```
+
+### Hold `ArkErrors`' errors in `issues` instead of extending `Array`
+
+`ArkErrors` was an `Array` subclass. It is now a plain class whose `issues` is a plain array with one `ArkError` per path, in the order each path first failed. Iterating, `length` and every other `ArkErrors` member work as before. Indexing and array methods move to `issues`:
+
+```ts
+const out = T(data)
+
+if (out instanceof type.errors) {
+	// previously out.map(e => e.message), now
+	out.issues.map(e => e.message)
+	// previously out[0], now
+	out.issues[0]
+	// unchanged
+	for (const error of out) console.log(error.message)
+}
+```
+
+`issues` already returned the errors, so `out.issues.map(...)` works before and after this change. `Array.isArray(out)` is now false, and `arr.concat(out)` nests the errors, so pass `out.issues`. A Standard Schema failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` or `flatProblemsByPath` from the result.
+
+### Throw from `.assert` when a root morph fails
+
+When a type's root was a morph (or a union of morphs) that returned `ArkErrors`, `.assert` returned the errors instead of throwing, and a configured `onFail` was not called. A root morph's errors are now handled like any others, as they already were for a morph at a key:
+
+```ts
+const N = type("number")
+const T = type("string").pipe(s => N(s))
+
+// previously returned ArkErrors, now throws TraversalError: must be a number (was a string)
+T.assert("x")
+```
+
+### Return a type's output when it is called with `ctx` in a morph
+
+Calling a type with the morph's `ctx` returned the morph's own input rather than the type's output, and threw if the type transformed its input:
+
+```ts
+const T = type("string").pipe((s, ctx) =>
+	type({ a: "string.trim" })(JSON.parse(s), ctx)
+)
+
+// previously threw a TypeError, now { a: "x" }
+T('{"a":" x "}')
+```
+
+### Fix errors repeated or added at another path
+
+Errors added more than once at a path other than the current one, as by `ctx.reject({ relativePath })`, were merged into an error without that path, and a morph that returned an error it had already added listed it twice:
+
+```ts
+const T = type({ a: "string" }).pipe((o, ctx) => {
+	ctx.error({ expected: "p", relativePath: ["a"] })
+	return ctx.error({ expected: "q", relativePath: ["a"] })
+})
+
+// previously ({"a":"s"}) must be... ◦ p ◦ q ◦ q
+// now a ({"a":"s"}) must be... ◦ p ◦ q
+T({ a: "s" }).toString()
+```
+
+A morph that returned `ctx.errors` listed each of its errors twice, or added errors until it ran out of memory when the morph was at a key:
+
+```ts
+const T = type({
+	a: type("string").pipe((s, ctx) => (ctx.error("not ok"), ctx.errors))
+})
+
+// previously ran out of memory, now a must be not ok (was "x")
+T({ a: "x" }).toString()
+```
+
+### Configure before importing anything else
+
+`arktype` and `@ark/schema` now each load as a single module, so `configure()` must run before any import of either package, including `./internal/*` deep imports. Only `./config` and `./internal/config.*` load without the rest of the package.
+
+### Add `rejectAllowsSymbolKeys`
+
+Finding undeclared symbol keys for `"+": "reject"` takes a symbol read per object. If you don't need them rejected, you can allow them, which makes validating a small object that rejects undeclared keys about 2.5x faster and one with 40 keys about 1.15x faster:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+
+configure({ rejectAllowsSymbolKeys: true })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+
+const T = type({ "+": "reject", a: "string" })
+
+// valid, instead of ArkErrors: value at [Symbol(s)] must be removed
+T({ a: "x", [Symbol("s")]: 1 })
+```
+
+With it, reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate:
+
+```ts
+const s = Symbol("s")
+
+// throws with rejectAllowsSymbolKeys: An unordered union ... is indeterminate
+type({ "+": "reject", a: "string.trim" }).or({
+	"+": "reject",
+	a: "string",
+	[s]: "1"
+})
+```
+
+### Delete undeclared symbol keys
+
+`"+": "delete"` removes undeclared symbol keys, which it previously kept.
+
+### Return deleting types' keys in the order of their expression
+
+`"+": "delete"` builds its output with required keys, then optional keys, each sorted, followed by keys matching an index signature in input order. It previously deleted from a copy of the input, which kept the input's order:
+
+```ts
+const T = type({ "+": "delete", b: "string", a: "string", "c?": "number" })
+
+// previously { a: "1", c: 1, b: "2" }, now { a: "1", b: "2", c: 1 }
+T({ a: "1", z: 0, c: 1, b: "2" })
+```
+
+### Import internals from `arktype/internal`
+
+`arktype/internal` exports the names of every arktype module, and `@ark/schema`, `@ark/util`, `arkregex` and `arksets` each have an `./internal` entry like it. A deep import like `arktype/internal/parser/string.ts` keeps its module's types and loads that entry at runtime.
+
+### Resolve names that match `Object.prototype` members
+
+Aliases, generic parameters, keyword lookups and `FormData` fields named like an `Object.prototype` member (e.g. `toString`, `constructor`, `valueOf`) no longer resolve to the inherited member:
+
+```ts
+// previously threw: #toString duplicates public alias toString
+scope({ toString: "string" }).export()
+
+// previously threw an internal TypeError, now 'toString' is unresolvable
+type("toString")
+```
+
+https://github.com/arktypeio/arktype/issues/1121
+
+### Skip the CSP probe when `jitless` is configured
+
+Configuring `jitless` through `arktype/config` before importing arktype no longer runs the `new Function` check for JIT support, so a page with a strict Content-Security-Policy no longer logs an eval violation.
+
+https://github.com/arktypeio/arktype/issues/1473
+
+### Emit `enum` for a configured union of literals
+
+```ts
+// previously { anyOf: [{ const: "a", title: "Letter" }, { const: "b", title: "Letter" }], title: "Letter" }
+// now { enum: ["a", "b"], title: "Letter" }
+type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()
+```
+
+https://github.com/arktypeio/arktype/issues/1470
+
+### Import in runtimes without web platform globals
+
+Importing arktype no longer throws in runtimes that lack `Blob`, `URL`, `FormData`, `Headers`, `Request` or `Response`, such as WeChat mini programs, AudioWorklets or an embedded V8 or QuickJS. A keyword whose global is missing throws when used, e.g. `'Blob' is unresolvable`.
+
+https://github.com/arktypeio/arktype/issues/1555
+
+### Infer platform keywords whose globals are declared as classes
+
+With declarations like `@cloudflare/workers-types`, which declare `Blob`, `File`, `Headers` and `URL` as classes, those keywords infer their instance types instead of `never`.
+
+https://github.com/arktypeio/arktype/issues/1548
+
+### Throw a scope alias's parse error on every reference
+
+After an alias failed to parse, later references to it returned a type that crashed when validating, or reported a false cycle. Each reference now throws the original error.
+
+### Export the types that inferred types reference
+
+`arktype` exports `Brand`, `Json`, `GenericAst`, `ArkErrorCode` and `Regex` as types. Under pnpm, exporting a type that references one of them (a brand, `string.json.parse`, a scope with a generic, a `regex()` value or `ArkErrors.byPath`) failed declaration emit with TS2883, since the packages they lived in usually can't be resolved from your project:
+
+```ts
+// previously TS2883: The inferred type of 'Gid' cannot be named without a reference to '.pnpm/@ark+util@.../node_modules/@ark/util'
+// now emits import("arktype").Brand<string, "GID">
+export const Gid = type("string#GID")
+```
+
+https://github.com/arktypeio/arktype/issues/1577
+
+### Write length bounds and protos alongside a structure
+
+An expression or description with props or an array element dropped the length bounds and the proto beside it, so distinct types printed the same:
+
+```ts
+// previously number[], now number[] >= 2
+type("number[] > 1").expression
+
+// previously { foo: string }, now { foo: string } & Date
+type("Date").and({ foo: "string" }).expression
+
+// previously string >= 2[], now (string >= 2)[]
+type("(string > 1)[]").expression
+```
+
+https://github.com/arktypeio/arktype/issues/1430
+
+### Parse an invoked builtin generic in the invoking scope
+
+A type created by calling a builtin generic directly, like `type.Record(...)`, belonged to an internal schema scope, so methods that take a definition (`.to`, `.or`, `.and`, ...) parsed it as a schema:
+
+```ts
+// previously threw ParseError: instanceOf operand must be a function (was undefined)
+type
+	.Record("string", "boolean")
+	.pipe(o => Object.keys(o))
+	.to("string[]")
+```
+
+It now belongs to the scope it was invoked from and follows its config, so `$.type.Record(...)` invoked from a `jitless` scope is no longer compiled, and the scope's `onFail` applies to it.
+
+https://github.com/arktypeio/arktype/issues/1600
+
+### Release functions passed to `narrow`, `pipe`, `match` and defaults
+
+A type built from a new function, such as one created per request, kept that function and everything it captured in memory forever. Such functions are now released along with the type, and so is a `scope()` whose aliases are never resolved:
+
+```ts
+const handleRequest = (request: { id: number }) =>
+	type({ id: "number" }).narrow(v => v.id === request.id)
+
+// previously each call kept its request in memory, now it can be garbage collected
+handleRequest({ id: 1 })
+```
+
+The `$ark.x` names that functions get in a type's `json` or `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
+
+https://github.com/arktypeio/arktype/issues/1676
+
+### Define a matcher whose cases a reordering would separate
+
+A matcher whose cases get grouped out of order, like tuples discriminated by an element, threw at definition even though no input could reach two of the cases:
+
+```ts
+const Dir = type({ "[string]": "unknown" })
+
+// previously ParseError: The intersection of distinct morphs at a single path is indeterminate
+match
+	.case(["string", Dir], () => -1)
+	.case([Dir, "string"], () => 1)
+	.case(["string", "string"], ([a, b]) => a.localeCompare(b))
+	.default(() => 0)
+```
+
+https://github.com/arktypeio/arktype/issues/1445
+
+### Check every case that accepts a discriminated tuple element
+
+A case discriminated at a tuple element required every element to match it, so a later case that accepted the input was skipped, and a string, whose characters are read at an index, skipped a branch that accepts strings:
+
+```ts
+const m = match
+	.case(["unknown", "null"], () => 0)
+	.case(["string", "unknown"], () => 1)
+	.case(["true", "string | number"], () => 2)
+	.default(() => null)
+
+// previously 1, now 0
+m(["x", null])
+
+// previously 3, now 2
+match
+	.case(["'a'"], () => 0)
+	.case(["'b'"], () => 1)
+	.case("string | null", () => 2)
+	.default(() => 3)("a")
+```
+
+### Accept `NaN` at a discriminated key where a branch allows it
+
+```ts
+// previously false, now true
+type({ a: "number.NaN | 'x'" })
+	.or({ a: "object" })
+	.or({ a: "3" })
+	.allows({ a: NaN })
+```
+
+### Parse a union whose case relates a literal to a refined or nested check
+
+```ts
+// previously TypeError: Cannot use 'in' operator to search for 'c' in 1
+type({ a: "string" })
+	.or({ a: "1 | object", b: "1" })
+	.or({ a: { c: "number" }, b: "2" })
+
+// previously TypeError: Cannot read properties of null (reading 'length'), now 2
+match
+	.case("string > 1", () => 0)
+	.case("number", () => 1)
+	.case("null | 'x'", () => 2)
+	.default(() => 3)(null)
+```
+
+### Infer required keys from `.required()` on defaulted properties
+
+`.required()` and the `Required` generic made a defaulted key required at runtime, but its inferred type kept the default, so `inferIn` still treated the key as optional. This also applied to defaulted morphs and tuple elements:
+
+```ts
+const T = type({ foo: "string = 'bar'" }).required()
+
+// previously { foo?: string }, now { foo: string }
+type In = typeof T.inferIn
+```
+
+https://github.com/arktypeio/arktype/issues/1160
+
+### Infer the output of morphs that return `any`
+
+A morph whose output was `any`, or a function returning `any`, was left in the inferred type as the morph itself:
+
+```ts
+const T = type({ a: ["string", "=>", s => JSON.parse(s)] })
+
+// previously { a: (In: string) => Out<any> }, now { a: any }
+type Out = typeof T.infer
+```
+
+Inferred types that contain no morphs, defaults or brands still keep their names, like interfaces passed to `.as`.
+
+https://github.com/arktypeio/arktype/issues/1023
+
+### Name the narrow in an unsatisfiable intersection error
+
+When a narrow rejected every branch of a union it was intersected with, the error described the narrow by its expression, which omits predicates:
+
+```ts
+const isC = (s: string) => s === "c"
+
+// previously ParseError: Intersection of "a" | "b" and unknown results in an unsatisfiable type
+// now ParseError: Intersection of "a" | "b" and $ark.isC results in an unsatisfiable type
+type("'a' | 'b'").narrow(isC)
+```
+
+### Check declared keys against a string index signature in JSON Schema
+
+An index signature applies to every key, declared or not, but `toJsonSchema()` wrote a string index beside declared keys as `additionalProperties`, which JSON Schema doesn't apply to them. It now writes `patternProperties` with a pattern every key matches:
+
+```ts
+const T = type({ a: "unknown", "[string]": "string" })
+
+// previously { ..., additionalProperties: { type: "string" } }
+// now { ..., patternProperties: { "": { type: "string" } } }
+T.toJsonSchema()
+```
+
+A string index on an object with no other keys is still written as `additionalProperties`.
+
+### List optional keys by name
+
+An object's expression and JSON list its optional keys by name. A key with a default used to come before those without one:
+
+```ts
+const T = type({ "bar?": "number", foo: "string = 'foo'" })
+
+// previously '{ foo: string = "foo", bar?: number }'
+T.expression // '{ bar?: number, foo: string = "foo" }'
+```
+
+Symbol keys follow string keys.
+
+### Throw when an embedded Standard Schema validates asynchronously
+
+A Standard Schema whose `validate` returned a Promise, like a Zod schema with an async refinement, gave `undefined` for any input. ArkType validates synchronously, so it now throws:
+
+```ts
+const T = type({ name: z.string().refine(async s => s.length > 1) })
+
+// previously { name: undefined }
+// now throws: Standard Schema definitions must validate synchronously (zod returned a Promise)
+T({ name: "x" })
+```
+
+### Keep the path of an embedded Standard Schema's issues
+
+An issue with an empty or missing path, as for any non-object Zod or Valibot schema, lost the path it was found at:
+
+```ts
+const T = type({ age: z.number() })
+
+// previously "Invalid input: expected number, received string"
+// now "age invalid input: expected number, received string"
+T({ age: "x" }).toString()
+```
+
 ## 2.2.8
 
 ### Add `string.base58`

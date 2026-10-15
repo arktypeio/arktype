@@ -1,4 +1,11 @@
-import type { ArkRegistry, requireKeys, show } from "@ark/util"
+import {
+	hasDomain,
+	printable,
+	throwParseError,
+	type ArkRegistry,
+	type requireKeys,
+	type show
+} from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type { TypeMeta } from "./shared/declare.ts"
@@ -15,7 +22,10 @@ import {
 	type DescriptionWriter,
 	type NodeKind
 } from "./shared/implement.ts"
+import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
+import { configureLocale } from "./shared/render.ts"
+import type { SetEngine } from "./shared/sets.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
@@ -25,22 +35,23 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	defaultConfig: ResolvedConfig
 	resolvedConfig: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
+	sets?: SetEngine
 }
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<
 	show<
 		{
 			description?: DescriptionWriter<kind>
-		} & (kind extends ArkErrorCode ?
-			{
-				expected?: ExpectedConfig<kind>
-				actual?: ActualConfig<kind>
-				problem?: ProblemConfig<kind>
-				message?: MessageConfig<kind>
-			}
-		:	{})
+		} & (kind extends ArkErrorCode ? ErrorConfig<kind> : {})
 	>
 >
+
+export type ErrorConfig<code extends ArkErrorCode = ArkErrorCode> = {
+	expected?: ExpectedConfig<code>
+	actual?: ActualConfig<code>
+	problem?: ProblemConfig<code>
+	message?: MessageConfig<code>
+}
 
 type NodeConfigsByKind = {
 	[kind in NodeKind]: nodeConfigForKind<kind>
@@ -70,20 +81,34 @@ export type ResolvedUnknownNodeConfig = requireKeys<
 $ark.config ??= {}
 
 export const configureSchema = (config: ArkSchemaConfig): ArkSchemaConfig => {
+	if (config.locale !== undefined && !hasDomain(config.locale, "object"))
+		throwParseError(writeInvalidLocaleMessage(config.locale))
+
 	const result = Object.assign($ark.config, mergeConfigs($ark.config, config))
 
 	if ($ark.resolvedConfig)
-		$ark.resolvedConfig = mergeConfigs($ark.resolvedConfig, result)
+		$ark.resolvedConfig = resolveGlobalConfig($ark.resolvedConfig)
 
 	return result
 }
+
+/** $ark.config merged over base, with its static locale */
+export const resolveGlobalConfig = (base: ResolvedConfig): ResolvedConfig => {
+	const resolved = mergeConfigs(base, $ark.config)
+	// a locale function selects a locale per read, which is en if it returns none
+	;(resolved as { locale: Locale }).locale = configureLocale($ark.config.locale)
+	return resolved
+}
+
+export const writeInvalidLocaleMessage = (locale: unknown): string =>
+	`locale must be a Locale or a function returning one (was ${printable(locale)})`
 
 export const mergeConfigs = <base extends ArkSchemaConfig>(
 	base: base,
 	merged: ArkSchemaConfig | undefined
 ): base => {
 	if (!merged) return base
-	const result: any = { ...base }
+	const result: any = { ...base, ...merged }
 	let k: keyof ArkSchemaConfig
 	for (k in merged) {
 		const keywords = { ...base.keywords }
@@ -99,7 +124,7 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 				base.toJsonSchema,
 				merged.toJsonSchema
 			)
-		} else if (isNodeKind(k)) {
+		} else if (isNodeKind(k) || k === "undeclared" || k === "discriminant") {
 			result[k] =
 				// not casting this makes TS compute a very inefficient
 				// type that is not needed
@@ -107,7 +132,7 @@ export const mergeConfigs = <base extends ArkSchemaConfig>(
 					...base[k],
 					...merged[k]
 				} as never
-		} else result[k] = merged[k]
+		}
 	}
 	return result
 }
@@ -190,28 +215,29 @@ const normalizeFallback = (
 ): ToJsonSchema.FallbackObject =>
 	typeof fallback === "function" ? { default: fallback } : (fallback ?? {})
 
-export type CloneImplementation = <original extends object>(
-	original: original
-) => original
-
 export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
+	readonly undeclared?: Readonly<ErrorConfig<"undeclared">>
+	readonly discriminant?: Readonly<ErrorConfig<"discriminant">>
 	readonly jitless?: boolean
-	readonly clone?: boolean | CloneImplementation
 	readonly onUndeclaredKey?: UndeclaredKeyBehavior
+	readonly rejectAllowsSymbolKeys?: boolean
 	readonly numberAllowsNaN?: boolean
+	readonly numberAllowsInfinity?: boolean
 	readonly dateAllowsInvalid?: boolean
 	readonly exactOptionalPropertyTypes?: boolean
 	readonly onFail?: ArkErrors.Handler | null
 	readonly keywords?: Record<string, TypeMeta.Collapsible | undefined>
 	readonly toJsonSchema?: ToJsonSchema.Options
+	readonly locale?: Locale | (() => Locale | undefined)
 }
 
 export type resolveConfig<config extends ArkSchemaConfig> = show<
 	{
-		[k in keyof ArkSchemaConfig]-?: k extends NodeKind ? Required<config[k]>
-		: k extends "clone" ? CloneImplementation | false
+		[k in keyof ArkSchemaConfig]-?: k extends NodeKind | ArkErrorCode ?
+			Required<config[k]>
 		: k extends "keywords" ? Record<string, TypeMeta | undefined>
 		: k extends "toJsonSchema" ? ToJsonSchema.Context
+		: k extends "locale" ? Locale
 		: config[k]
 	} & Omit<config, keyof ArkSchemaConfig>
 >

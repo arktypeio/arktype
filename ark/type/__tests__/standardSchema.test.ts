@@ -24,7 +24,8 @@ contextualize(() => {
 			foo: 5
 		}) as StandardSchemaV1.FailureResult
 
-		attest(badStandardOut.issues).instanceOf(type.errors)
+		attest(badStandardOut).instanceOf(type.errors)
+		attest(Array.isArray(badStandardOut.issues)).equals(true)
 		attest(badStandardOut.issues.toString()).snap(
 			"foo must be a string (was a number)"
 		)
@@ -172,6 +173,23 @@ contextualize(() => {
 				type: "array",
 				minItems: 2,
 				items: [{ type: "string" }]
+			})
+		})
+
+		it("drops a flagged pattern and a key JSON Schema can't express", () => {
+			const T = type({
+				name: /^a/i,
+				"[string <= 3]": "number",
+				"+": "reject"
+			})
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { name: { type: "string" } },
+				required: ["name"]
 			})
 		})
 

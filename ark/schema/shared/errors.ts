@@ -1,85 +1,153 @@
 import {
 	CastableBase,
-	ReadonlyArray,
 	ReadonlyPath,
 	append,
+	appendUnique,
 	conflatenateAll,
-	defineProperties,
+	defineValue,
 	flatMorph,
-	stringifyPath,
 	type JsonArray,
 	type JsonObject,
 	type array,
 	type merge,
+	type omit,
 	type propwiseXor,
 	type show
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
-import type { Prerequisite, errorContext } from "../kinds.ts"
+import type {
+	NodeErrorContextsByKind,
+	Prerequisite,
+	errorContext
+} from "../kinds.ts"
+import type { DiscriminantErrorContext } from "../roots/union.ts"
+import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
+import {
+	keywordWriterOf,
+	normalizeLocale,
+	writeKeywordExpected,
+	type Locale
+} from "./locale.ts"
+import { $ark } from "./registry.ts"
+import {
+	defaultLocale,
+	outerLocale,
+	plainLocale,
+	readIn,
+	renderLocale,
+	selectLocale,
+	selectsLocale
+} from "./render.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 import type { Traversal } from "./traversal.ts"
 import { arkKind } from "./utils.ts"
 
 export type ArkErrorResult = ArkError | ArkErrors
 
+export const isArkErrorResult = (result: unknown): result is ArkErrorResult =>
+	typeof result === "object" &&
+	(result instanceof ArkError || result instanceof ArkErrors)
+
+type ErrorSlot = "expected" | "actual" | "problem" | "message"
+
+type SlotConfig = string | ((...args: never[]) => string)
+
+const readSlot = {
+	expected: (e: ArkError) => e.expected,
+	actual: (e: ArkError) => e.actual,
+	problem: (e: ArkError) => e.problem,
+	message: (e: ArkError) => e.message
+}
+
+const readErrorJson = (e: ArkError) => e.toJSON()
+
+const readErrorsJson = (e: ArkErrors) => e.toJSON()
+
+const readSummary = (e: ArkErrors) => e.toString()
+
+const readFlatProblems = (e: ArkErrors) => e.flatProblemsByPath
+
+// Array.prototype.toLocaleString passes each element its own arguments, a tag
+const isLocale = (locale: unknown): locale is Locale =>
+	typeof locale === "object" && locale !== null
+
 export class ArkError<
 	code extends ArkErrorCode = ArkErrorCode
 > extends CastableBase<ArkErrorContextInput<code>> {
 	readonly [arkKind] = "error"
 	path: ReadonlyPath
-	data: Prerequisite<code>
+	data: getAssociatedDataForError<code>
 	private nodeConfig: ResolvedConfig[code]
 	protected input: ArkErrorContextInput<code>
 	protected ctx: Traversal
 
 	constructor(input: ArkErrorContextInput<code>, ctx: Traversal)
 	// TS gets confused by <code>, so internally we just use the base type for input
-	constructor(
-		{ prefixPath, relativePath, ...input }: ArkErrorContextInput,
-		ctx: Traversal
-	) {
+	constructor(input: ArkErrorContextInput, ctx: Traversal) {
 		super()
+		let prefixPath: array<PropertyKey> | undefined
+		let relativePath: array<PropertyKey> | undefined
+		if (input.code === "union") {
+			prefixPath = input.prefixPath
+			relativePath = input.relativePath
+			// flatten union errors to avoid repeating context like "foo must be foo must be"...
+			let flat: ArkError[] = []
+			for (const innerError of input.errors) {
+				const innerFlat =
+					innerError.hasCode("union") ? innerError.errors : [innerError]
+				flat = flat.length ? appendUnique(flat, innerFlat) : [...innerFlat]
+			}
+			input = {
+				...input,
+				errors:
+					!prefixPath && !relativePath ?
+						flat
+					:	flat.map(e =>
+							e.transform(
+								e =>
+									({
+										...e,
+										path: conflatenateAll(prefixPath, e.path, relativePath)
+									}) as never
+							)
+						)
+			}
+		}
 		this.input = input as never
 		this.ctx = ctx
-		defineProperties(this, input)
-		const data = ctx.data
-		if (input.code === "union") {
-			input.errors = input.errors.flatMap(innerError => {
-				// flatten union errors to avoid repeating context like "foo must be foo must be"...
-				const flat =
-					innerError.hasCode("union") ? innerError.errors : [innerError]
-
-				if (!prefixPath && !relativePath) return flat
-
-				return flat.map(e =>
-					e.transform(
-						e =>
-							({
-								...e,
-								path: conflatenateAll(prefixPath, e.path, relativePath)
-							}) as never
-					)
-				)
-			})
+		// assigning defines the same property unless this has or inherits k, e.g. propString
+		for (const k in input) {
+			if (k === "relativePath") relativePath = input.relativePath
+			else if (k === "prefixPath") prefixPath = input.prefixPath
+			else if (!(k in this)) (this as any)[k] = input[k as never]
+			// path and data are assigned below, and text supplied for a slot
+			// stays in input, where its getter reads it
+			else if (k !== "path" && k !== "data" && !isSlot(k))
+				defineValue(this, k, input[k as never])
 		}
+		for (const k of Object.getOwnPropertySymbols(input))
+			defineValue(this, k, input[k as never])
+		const data = ctx.data
 		this.nodeConfig = ctx.config[this.code] as never
 		const basePath = [...(input.path ?? ctx.path)]
 		if (relativePath) basePath.push(...relativePath)
 		if (prefixPath) basePath.unshift(...prefixPath)
 		this.path = new ReadonlyPath(...basePath)
-		this.data = "data" in input ? input.data : data
+		this.data = ("data" in input ? input.data : data) as never
 	}
 
 	transform(
 		f: (input: ArkErrorContextInput<code>) => ArkErrorContextInput
 	): ArkError {
+		// input's paths are already in this.path
+		const { path, relativePath, prefixPath, ...input } = this.input
 		return new ArkError(
 			f({
 				data: this.data,
 				path: this.path,
-				...this.input
-			}),
+				...input
+			} as never),
 			this.ctx
 		) as never
 	}
@@ -89,39 +157,102 @@ export class ArkError<
 	}
 
 	get propString(): string {
-		return stringifyPath(this.path)
+		return this.path.stringify()
 	}
 
 	get expected(): string {
-		if (this.input.expected) return this.input.expected
+		const locale = plainLocale
+		if (locale === undefined) return this.render("expected")
+		const text = this.input.expected
+		if (text !== undefined) return text
 
 		const config = this.meta?.expected ?? this.nodeConfig.expected
 
-		return typeof config === "function" ? config(this.input as never) : config
+		return typeof config === "function" ? config(this as never, locale) : config
 	}
 
 	get actual(): string {
-		if (this.input.actual) return this.input.actual
+		const locale = plainLocale
+		if (locale === undefined) return this.render("actual")
+		const text = this.input.actual
+		if (text !== undefined) return text
 
 		const config = this.meta?.actual ?? this.nodeConfig.actual
 
-		return typeof config === "function" ? config(this.data as never) : config
+		return typeof config === "function" ?
+				config(this.data as never, this as never, locale)
+			:	config
 	}
 
 	get problem(): string {
-		if (this.input.problem) return this.input.problem
+		const locale = plainLocale
+		if (locale === undefined) return this.render("problem")
+		const text = this.input.problem
+		if (text !== undefined) return text
 
 		const config = this.meta?.problem ?? this.nodeConfig.problem
 
-		return typeof config === "function" ? config(this as never) : config
+		return typeof config === "function" ? config(this as never, locale) : config
 	}
 
 	get message(): string {
-		if (this.input.message) return this.input.message
+		const locale = plainLocale
+		if (locale === undefined) return this.render("message")
+		const text = this.input.message
+		if (text !== undefined) return text
 
 		const config = this.meta?.message ?? this.nodeConfig.message
 
-		return typeof config === "function" ? config(this as never) : config
+		return typeof config === "function" ? config(this as never, locale) : config
+	}
+
+	/**
+	 * The message in `locale`, or in the locale a read selects without one.
+	 */
+	toLocaleString(locale?: Locale): string {
+		return isLocale(locale) ?
+				readIn(normalizeLocale(locale), this as never, readSlot.message)
+			:	this.message
+	}
+
+	// selects the locale of an outermost read, or writes a slot in a locale
+	// other than en
+	private render(slot: ErrorSlot): string {
+		const error: ArkError = this as never
+		if (renderLocale === undefined)
+			return readIn(outerLocale(), error, readSlot[slot])
+		const config = this.configOf(slot)
+		if (config !== $ark.defaultConfig[this.code][slot])
+			return writeSlot(error, slot, config, renderLocale)
+		const cited = this.citesDescription ? this.description : undefined
+		if (slot === "expected") return localeExpected(error, cited, renderLocale)
+		const writer = localeWriter(
+			error,
+			slot,
+			this.configOf("expected"),
+			cited,
+			renderLocale
+		)
+		return writeSlot(error, slot, writer, renderLocale)
+	}
+
+	// a discriminant's description lists its cases, while its meta is its union's
+	private get citesDescription(): boolean {
+		const value =
+			this.code !== "discriminant" &&
+			this.description !== undefined &&
+			!isDefaultDescription(this as never, this.description)
+		Object.defineProperty(this, "citesDescription", { value })
+		return value
+	}
+
+	private configOf(slot: ErrorSlot): SlotConfig {
+		return (
+			this.input[slot] ??
+			this.meta?.[slot] ??
+			this.nodeConfig[slot] ??
+			$ark.defaultConfig[this.code][slot]
+		)
 	}
 
 	get flat(): ArkError[] {
@@ -129,15 +260,16 @@ export class ArkError<
 	}
 
 	toJSON(): JsonObject {
-		return {
-			data: this.data,
-			path: this.path,
-			...this.input,
-			expected: this.expected,
-			actual: this.actual,
-			problem: this.problem,
-			message: this.message
-		} as never
+		if (selectsLocale())
+			return readIn(selectLocale(), this as never, readErrorJson)
+		const json: Record<string, unknown> = { data: this.data, path: this.path }
+		for (const k in this.input)
+			if (!(k in excludedFromJson)) json[k] = this.input[k as never]
+		json.expected = this.expected
+		json.actual = this.actual
+		json.problem = this.problem
+		json.message = this.message
+		return json as never
 	}
 
 	toString(): string {
@@ -149,42 +281,137 @@ export class ArkError<
 	}
 }
 
+const writeSlot = (
+	error: ArkError,
+	slot: ErrorSlot,
+	config: SlotConfig,
+	locale: Locale
+): string =>
+	typeof config === "string" ?
+		slot === "expected" ?
+			locale.cite(config)
+		:	config
+	: slot === "actual" ?
+		config(error.data as never, error as never, locale as never)
+	:	config(error as never, locale as never)
+
+// a locale's writer for a slot other than expected
+const localeWriter = (
+	error: ArkError,
+	slot: Exclude<ErrorSlot, "expected">,
+	expected: SlotConfig,
+	cited: string | undefined,
+	locale: Locale
+): SlotConfig => {
+	if (cited !== undefined) {
+		const keywordWriter = keywordWriterOf(error, locale, slot)
+		if (keywordWriter !== undefined) return keywordWriter
+	}
+	const writer = locale[error.code][slot]
+	if (writer === undefined) return locale[slot]
+	// a code's own problem frames the text of its locale's expected writer,
+	// not a keyword's phrase or authored text, while union and intersection
+	// frame their children's
+	if (
+		slot !== "problem" ||
+		error.code === "union" ||
+		error.code === "intersection"
+	)
+		return writer
+	return (
+			cited !== undefined ||
+				expected !== $ark.defaultConfig[error.code].expected
+		) ?
+			locale.problem
+		:	writer
+}
+
+const localeExpected = (
+	error: ArkError,
+	cited: string | undefined,
+	locale: Locale
+): string => {
+	if (cited !== undefined)
+		return writeKeywordExpected(error as never, locale) ?? locale.cite(cited)
+	const expected = locale[error.code].expected
+	// read whole in en, never as en's frame around the locale's text
+	return expected === undefined ?
+			readIn(defaultLocale, error, readSlot.expected)
+		:	writeExpected(error, expected, locale)
+}
+
+const writeExpected = (
+	error: ArkError,
+	expected: string | ((error: never, locale: Locale) => string),
+	locale: Locale
+): string =>
+	typeof expected === "string" ? expected : expected(error as never, locale)
+
+// whether a description is what arktype writes for a node without authored
+// text or a keyword. Any scope's writer may have written it, so its text decides
+const isDefaultDescription = (
+	error: ArkError,
+	description: string
+): boolean => {
+	const meta = error.meta
+	return (
+		meta !== undefined &&
+		meta.description === undefined &&
+		meta.keyword === undefined &&
+		description ===
+			writeExpected(error, defaultLocale[error.code].expected, defaultLocale)
+	)
+}
+
+// this.path includes the input's paths, and the rest reference values,
+// which may not serialize
+const excludedFromJson = {
+	path: 1,
+	relativePath: 1,
+	prefixPath: 1,
+	predicate: 1,
+	morph: 1,
+	cause: 1,
+	missing: 1,
+	valueMeta: 1,
+	cases: 1
+}
+
+const isSlot = (k: string) =>
+	k === "expected" || k === "actual" || k === "problem" || k === "message"
+
 export declare namespace ArkErrors {
 	export type Handler<returns = unknown> = (errors: ArkErrors) => returns
 }
 
+// below this many paths, comparing propStrings is faster than indexing them
+const maxScannedLength = 8
+
 /**
- * A ReadonlyArray of `ArkError`s returned by a Type on invalid input.
+ * The `ArkError`s returned by a Type on invalid input.
  *
  * Subsequent errors added at an existing path are merged into an
  * ArkError intersection.
  */
-export class ArkErrors
-	extends ReadonlyArray<ArkError>
-	implements StandardSchemaV1.FailureResult
-{
+export class ArkErrors implements StandardSchemaV1.FailureResult {
 	readonly [arkKind] = "errors"
-
-	/**
-	 * Inherited array methods (`map`, `filter`, `slice`, …) return a plain
-	 * `Array`, not another `ArkErrors`, so callbacks that return primitives
-	 * (e.g. `issues.map(i => i.message)`) cannot populate a new `ArkErrors` instance.
-	 */
-	static get [Symbol.species](): ArrayConstructor {
-		return Array
-	}
 
 	protected ctx: Traversal
 
 	constructor(ctx: Traversal) {
-		super()
 		this.ctx = ctx
 	}
 
+	private _byPath: Record<string, ArkError> | undefined
 	/**
 	 * Errors by a pathString representing their location.
 	 */
-	byPath: Record<string, ArkError> = Object.create(null)
+	get byPath(): Record<string, ArkError> {
+		if (this._byPath) return this._byPath
+		const byPath: Record<string, ArkError> = Object.create(null)
+		for (const error of this.issues) byPath[error.propString] = error
+		return (this._byPath = byPath)
+	}
 
 	/**
 	 * {@link byPath} flattened so that each value is an array of ArkError instances at that path.
@@ -200,17 +427,23 @@ export class ArkErrors
 	 * {@link byPath} flattened so that each value is an array of problem strings at that path.
 	 */
 	get flatProblemsByPath(): Record<string, string[]> {
+		if (selectsLocale()) return readIn(selectLocale(), this, readFlatProblems)
 		return flatMorph(this.byPath, (k, v) => [k, v.flat.map(e => e.problem)])
 	}
 
+	private _byAncestorPath: Record<string, ArkError[]> | undefined
 	/**
 	 * All pathStrings at which errors are present mapped to the errors occuring
 	 * at that path or any nested path within it.
 	 */
-	byAncestorPath: Record<string, ArkError[]> = Object.create(null)
+	get byAncestorPath(): Record<string, ArkError[]> {
+		if (this._byAncestorPath) return this._byAncestorPath
+		this._byAncestorPath = Object.create(null)
+		for (const error of this.issues) this.addAncestorPaths(error)
+		return this._byAncestorPath!
+	}
 
 	count = 0
-	private mutable: ArkError[] = this as never
 
 	/**
 	 * Throw a TraversalError based on these errors.
@@ -228,16 +461,24 @@ export class ArkErrors
 	}
 
 	/**
-	 * Append an ArkError to this array, ignoring duplicates.
+	 * Add an ArkError, ignoring duplicates.
 	 */
 	add(error: ArkError): void {
-		const existing = this.byPath[error.propString]
+		const existing = this.errorAtPath(error)
 		if (existing) {
 			// only add if it's not already in the errors collection
-			if (error === existing) return
+			if (
+				error === existing ||
+				(existing.hasCode("intersection") && existing.errors.includes(error))
+			)
+				return
 			// If the existing error is an error for a value constrained to "never",
 			// then we don't want to intersect the error messages.
-			if (existing.hasCode("union") && existing.errors.length === 0) return
+			if (existing.hasCode("union") && existing.errors.length === 0) {
+				// the error is still a failure, so traversal of the value it checked stops
+				this.count++
+				return
+			}
 
 			// If the new error is an error for a value constrained to "never",
 			// then we want to override any existing errors.
@@ -250,31 +491,30 @@ export class ArkErrors
 							errors:
 								existing.hasCode("intersection") ?
 									[...existing.errors, error]
-								:	[existing, error]
+								:	[existing, error],
+							// an error added with its own path isn't at ctx.path
+							path: existing.path,
+							data: existing.data
 						},
 						this.ctx
 					)
 
-			const existingIndex = this.indexOf(existing)
-			this.mutable[existingIndex === -1 ? this.length : existingIndex] =
-				errorIntersection
-
-			this.byPath[error.propString] = errorIntersection
-			// add the original error here rather than the intersection
-			// since the intersection is reflected by the array of errors at
-			// this path
-			this.addAncestorPaths(error)
+			const issues = this.issues as ArkError[]
+			issues[issues.indexOf(existing)] = errorIntersection
+			if (this._byPath) this._byPath[error.propString] = errorIntersection
+			// ancestors list errors in issue order, which appending here would break
+			this._byAncestorPath = undefined
 		} else {
-			this.byPath[error.propString] = error
-			this.addAncestorPaths(error)
-			this.mutable.push(error)
+			;(this.issues as ArkError[]).push(error)
+			if (this._byPath) this._byPath[error.propString] = error
+			if (this._byAncestorPath) this.addAncestorPaths(error)
 		}
 		this.count++
 	}
 
 	transform(f: (e: ArkError) => ArkError): ArkErrors {
 		const result = new ArkErrors(this.ctx)
-		for (const e of this) result.add(f(e))
+		for (const e of this.issues) result.add(f(e))
 		return result
 	}
 
@@ -283,11 +523,12 @@ export class ArkErrors
 	 * prefixing their paths with that of the current Traversal.
 	 */
 	merge(errors: ArkErrors): void {
-		for (const e of errors) {
+		// a morph that returns ctx.errors has already added them
+		if (errors === this) return
+		for (const e of errors.issues) {
 			this.add(
-				new ArkError(
-					{ ...e, path: [...this.ctx.path, ...e.path] } as never,
-					this.ctx
+				e.transform(
+					input => ({ ...input, prefixPath: [...this.ctx.path] }) as never
 				)
 			)
 		}
@@ -324,26 +565,59 @@ export class ArkErrors
 	}
 
 	/**
-	 * Alias of this ArkErrors instance for StandardSchema compatibility.
+	 * The summary in `locale`, or in the locale a read selects without one.
 	 */
-	get issues(): this {
-		return this
+	toLocaleString(locale?: Locale): string {
+		return isLocale(locale) ?
+				readIn(normalizeLocale(locale), this, readSummary)
+			:	this.summary
+	}
+
+	/**
+	 * One ArkError per path with errors, in the order each path first failed.
+	 */
+	readonly issues: readonly ArkError[] = []
+
+	get length(): number {
+		return this.issues.length
+	}
+
+	[Symbol.iterator](): IterableIterator<ArkError> {
+		return this.issues.values()
 	}
 
 	toJSON(): JsonArray {
-		return [...this.map(e => e.toJSON())]
+		if (selectsLocale()) return readIn(selectLocale(), this, readErrorsJson)
+		return this.issues.map(e => e.toJSON())
 	}
 
 	toString(): string {
-		return this.join("\n")
+		if (selectsLocale()) return readIn(selectLocale(), this, readSummary)
+		const issues = this.issues
+		// join would convert each error through V8's slower generic ToPrimitive
+		let result = issues.length === 0 ? "" : issues[0].toString()
+		for (let i = 1; i < issues.length; i++)
+			result += `\n${issues[i].toString()}`
+		return result
+	}
+
+	private errorAtPath(error: ArkError): ArkError | undefined {
+		const issues = this.issues
+		if (issues.length === 0) return undefined
+		const propString = error.propString
+		if (this._byPath || issues.length >= maxScannedLength)
+			return this.byPath[propString]
+		// an error at an existing path usually follows the last one added
+		for (let i = issues.length - 1; i >= 0; i--)
+			if (issues[i].propString === propString) return issues[i]
 	}
 
 	private addAncestorPaths(error: ArkError): void {
+		const byAncestorPath = this._byAncestorPath!
+		const flat = error.flat
 		for (const propString of error.path.stringifyAncestors()) {
-			this.byAncestorPath[propString] = append(
-				this.byAncestorPath[propString],
-				error
-			)
+			for (const e of flat)
+				byAncestorPath[propString] = append(byAncestorPath[propString], e)
 		}
 	}
 }
@@ -353,8 +627,7 @@ export class TraversalError extends Error {
 	declare arkErrors: ArkErrors
 
 	constructor(errors: ArkErrors) {
-		if (errors.length === 1) super(errors.summary)
-		else super("\n" + errors.map(error => `  • ${indent(error)}`).join("\n"))
+		super(writeTraversalMessage(errors))
 
 		Object.defineProperty(this, "arkErrors", {
 			value: errors,
@@ -362,6 +635,11 @@ export class TraversalError extends Error {
 		})
 	}
 }
+
+const writeTraversalMessage = (errors: ArkErrors): string =>
+	selectsLocale() ? readIn(selectLocale(), errors, writeTraversalMessage)
+	: errors.length === 1 ? errors.summary
+	: "\n" + errors.issues.map(e => `  • ${indent(e)}`).join("\n")
 
 const indent = (error: ArkError): string =>
 	error.toString().split("\n").join("\n  ")
@@ -373,7 +651,7 @@ export interface DerivableErrorContext<
 	actual: string
 	problem: string
 	message: string
-	data: Prerequisite<code>
+	data: getAssociatedDataForError<code>
 	path: array<PropertyKey>
 	propString: string
 }
@@ -386,9 +664,12 @@ export type DerivableErrorContextInput<
 		{ relativePath?: array<PropertyKey>; prefixPath?: array<PropertyKey> }
 	>
 
-export type ArkErrorCode = {
-	[kind in NodeKind]: errorContext<kind> extends null ? never : kind
-}[NodeKind]
+export interface ErrorContextsByCode extends NodeErrorContextsByKind {
+	undeclared: UndeclaredErrorContext
+	discriminant: DiscriminantErrorContext
+}
+
+export type ArkErrorCode = keyof ErrorContextsByCode
 
 type ArkErrorContextInputsByCode = {
 	[code in ArkErrorCode]: errorContext<code> & DerivableErrorContextInput<code>
@@ -400,15 +681,33 @@ export type ArkErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
 export type NodeErrorContextInput<code extends ArkErrorCode = ArkErrorCode> =
 	ArkErrorContextInputsByCode[code] & { meta: ArkEnv.meta }
 
-export type MessageContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
-	ArkError<code>,
-	"message"
->
+// meta comes from the error, since an error a narrow adds has none.
+// no context reaches the slot its writer computes or one that could read it
+export type MessageContext<code extends ArkErrorCode = ArkErrorCode> =
+	code extends unknown ?
+		omit<errorContext<code>, "meta"> &
+			omit<
+				ArkError<code>,
+				"message" | "toString" | "toLocaleString" | "toJSON"
+			> &
+			unstringifiable
+	:	never
 
-export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> = Omit<
-	MessageContext<code>,
-	"problem"
->
+// shadows Object's toString and toLocaleString, which read the message
+type unstringifiable = {
+	toString(never: never): string
+	toLocaleString(never: never): string
+}
+
+export type ProblemContext<code extends ArkErrorCode = ArkErrorCode> =
+	code extends unknown ?
+		omit<errorContext<code>, "meta"> &
+			omit<
+				ArkError<code>,
+				"problem" | "message" | "toString" | "toLocaleString" | "toJSON"
+			> &
+			unstringifiable
+	:	never
 
 export type CustomErrorInput = show<
 	// ensure a custom error can be discriminated on the lack of a code
@@ -424,7 +723,8 @@ export type ProblemConfig<code extends ArkErrorCode = ArkErrorCode> =
 	| ProblemWriter<code>
 
 export type ProblemWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	context: ProblemContext<code>
+	error: ProblemContext<code>,
+	locale: Locale.Info
 ) => string
 
 export type MessageConfig<code extends ArkErrorCode = ArkErrorCode> =
@@ -432,7 +732,8 @@ export type MessageConfig<code extends ArkErrorCode = ArkErrorCode> =
 	| MessageWriter<code>
 
 export type MessageWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	context: MessageContext<code>
+	error: MessageContext<code>,
+	locale: Locale.Info
 ) => string
 
 export type getAssociatedDataForError<code extends ArkErrorCode> =
@@ -442,14 +743,50 @@ export type ExpectedConfig<code extends ArkErrorCode = ArkErrorCode> =
 	| string
 	| ExpectedWriter<code>
 
+export type ExpectedContext<code extends ArkErrorCode = ArkErrorCode> =
+	code extends unknown ?
+		omit<errorContext<code>, "meta"> &
+			omit<
+				ArkError<code>,
+				| "expected"
+				| "actual"
+				| "problem"
+				| "message"
+				| "toString"
+				| "toLocaleString"
+				| "toJSON"
+			> &
+			unstringifiable
+	:	never
+
 export type ExpectedWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	source: errorContext<code>
+	error: ExpectedContext<code>,
+	locale: Locale.Info
 ) => string
 
 export type ActualConfig<code extends ArkErrorCode = ArkErrorCode> =
 	| string
 	| ActualWriter<code>
 
+export type ActualContext<code extends ArkErrorCode = ArkErrorCode> =
+	code extends unknown ?
+		omit<errorContext<code>, "description" | "meta"> &
+			omit<
+				ArkError<code>,
+				| "expected"
+				| "description"
+				| "actual"
+				| "problem"
+				| "message"
+				| "toString"
+				| "toLocaleString"
+				| "toJSON"
+			> &
+			unstringifiable
+	:	never
+
 export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
-	data: getAssociatedDataForError<code>
+	data: getAssociatedDataForError<code>,
+	error: ActualContext<code>,
+	locale: Locale.Info
 ) => string

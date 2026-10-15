@@ -4,7 +4,6 @@ import {
 	type anyOrNever,
 	type array,
 	type Brand,
-	type equals,
 	type Hkt,
 	type intersectArrays,
 	type isSafelyMappable,
@@ -35,10 +34,9 @@ export type normalizeLimit<limit> =
 	: limit extends number | string ? limit
 	: never
 
-export type distill<t, side extends distill.Side> = finalizeDistillation<
-	t,
-	_distill<t, side>
->
+export type distill<t, side extends distill.Side> =
+	// returning t as is when nothing changes preserves names like interfaces
+	[distilledSidesOf<t>] extends [undistilledOn<side>] ? t : _distill<t, side>
 
 export declare namespace distill {
 	export type Side = "in" | "out" | "introspectableOut"
@@ -52,8 +50,32 @@ export declare namespace distill {
 	}
 }
 
-type finalizeDistillation<t, distilled> =
-	equals<t, distilled> extends true ? t : distilled
+// keep in sync with _distill: each part it changes maps to the sides it changes on
+type distilledSidesOf<t> =
+	t extends undefined ? never
+	: [t] extends [anyOrNever] ? never
+	: unknown extends t ? never
+	: t extends Brand ? "in"
+	: t extends TerminallyInferredObject | Primitive ? never
+	: t extends Function ?
+		t extends (...args: never) => anyOrNever ? never
+		: t extends InferredMorph ? distill.Side
+		: never
+	: t extends Default ? distill.Side
+	: t extends array ?
+		// an index signature rather than an array defers recursive arrays like JSON
+		keyof t extends ArrayKey ?
+			{ [i: number]: distilledSidesOf<t[number]> }
+		:	{ [k in number | Exclude<keyof t, ArrayKey>]: distilledSidesOf<t[k]> }
+	: isSafelyMappable<t> extends true ?
+		{ [k in keyof t]-?: distilledSidesOf<t[k]> }
+	:	never
+
+type ArrayKey = keyof unknown[] | `${number}`
+
+type undistilledOn<side extends distill.Side> =
+	| Exclude<distill.Side, side>
+	| { readonly [k: PropertyKey]: undistilledOn<side> }
 
 type _distill<t, side extends distill.Side> =
 	// ensure optional keys don't prevent extracting defaults
@@ -277,6 +299,16 @@ export type Default<t = unknown, v = unknown> = { [defaultsToKey]: [t, v] }
 export type withDefault<t, v, undistributed = t> =
 	t extends InferredMorph ? addDefaultToMorph<t, v>
 	:	Default<Exclude<undistributed, InferredMorph>, v>
+
+export type required<t> = { [k in keyof t]-?: withoutDefault<t[k]> }
+
+type withoutDefault<t> =
+	t extends Default<infer constraint> ? constraint
+	: t extends InferredMorph<infer i, infer o> ?
+		[i] extends [anyOrNever] ? t
+		: [i] extends [Default<infer constraint>] ? (In: constraint) => o
+		: t
+	:	t
 
 type addDefaultToMorph<t extends InferredMorph, v> =
 	[normalizeMorphDistribution<t>] extends [InferredMorph<infer i, infer o>] ?

@@ -1,34 +1,22 @@
 import {
 	domainDescriptions,
 	domainOf,
+	hasDomain,
 	printable,
 	type Domain,
 	type JsonPrimitive
 } from "@ark/util"
-import type {
-	BaseErrorContext,
-	BaseNormalizedSchema,
-	declareNode
-} from "../shared/declare.ts"
-import { Disjoint } from "../shared/disjoint.ts"
+import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import {
 	defaultValueSerializer,
 	implementNode,
 	type nodeImplementationOf
 } from "../shared/implement.ts"
-import type { JsonSchema } from "../shared/jsonSchema.ts"
-import { $ark } from "../shared/registry.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
+import { registeredReference } from "../shared/registry.ts"
 import type { TraverseAllows } from "../shared/traversal.ts"
 import { InternalBasis } from "./basis.ts"
-import type { DomainNode } from "./domain.ts"
-import { defineRightwardIntersections } from "./utils.ts"
 
 export declare namespace Unit {
-	export interface Schema<value = unknown> extends BaseNormalizedSchema {
-		readonly unit: value
-	}
-
 	export interface Inner<value = unknown> {
 		readonly unit: value
 	}
@@ -40,14 +28,18 @@ export declare namespace Unit {
 	export interface Declaration
 		extends declareNode<{
 			kind: "unit"
-			schema: Schema
-			normalizedSchema: Schema
 			inner: Inner
 			errorContext: ErrorContext
 		}> {}
 
 	export type Node = UnitNode
 }
+
+const serializeUnit = (unit: unknown): JsonPrimitive =>
+	unit instanceof Date ? unit.toISOString()
+	: hasDomain(unit, "object") || typeof unit === "symbol" ?
+		registeredReference(unit)
+	:	(defaultValueSerializer(unit) as JsonPrimitive)
 
 const implementation: nodeImplementationOf<Unit.Declaration> =
 	implementNode<Unit.Declaration>({
@@ -56,60 +48,18 @@ const implementation: nodeImplementationOf<Unit.Declaration> =
 		keys: {
 			unit: {
 				preserveUndefined: true,
-				serialize: schema =>
-					schema instanceof Date ?
-						schema.toISOString()
-					:	defaultValueSerializer(schema)
+				serialize: serializeUnit
 			}
 		},
-		normalize: schema => schema,
 		defaults: {
 			description: node => printable(node.unit),
 			problem: ({ expected, actual }) =>
 				`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
-		},
-		intersections: {
-			unit: (l, r) => Disjoint.init("unit", l, r),
-			...defineRightwardIntersections("unit", (l, r) => {
-				if (r.allows(l.unit)) return l
-
-				// will always be a disjoint at this point, but we try to use
-				// a domain Disjoint if possible since it's better for discrimination
-
-				const rBasis = r.hasKind("intersection") ? r.basis : r
-				if (rBasis) {
-					const rDomain =
-						rBasis.hasKind("domain") ? rBasis : (
-							($ark.intrinsic.object as DomainNode)
-						)
-					if (l.domain !== rDomain.domain) {
-						const lDomainDisjointValue =
-							(
-								l.domain === "undefined" ||
-								l.domain === "null" ||
-								l.domain === "boolean"
-							) ?
-								l.domain
-							:	($ark.intrinsic[l.domain] as DomainNode)
-						return Disjoint.init("domain", lDomainDisjointValue, rDomain)
-					}
-				}
-
-				return Disjoint.init(
-					"assignability",
-					l,
-					r.hasKind("intersection") ?
-						r.children.find(
-							rConstraint => !rConstraint.allows(l.unit as never)
-						)!
-					:	r
-				)
-			})
 		}
 	})
 
 export class UnitNode extends InternalBasis<Unit.Declaration> {
-	compiledValue: JsonPrimitive = (this.json as any).unit
+	compiledValue: JsonPrimitive = serializeUnit(this.unit)
 	serializedValue: string =
 		typeof this.unit === "string" || this.unit instanceof Date ?
 			JSON.stringify(this.compiledValue)
@@ -131,15 +81,6 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 		return this.domain === "object" ?
 				domainDescriptions.object
 			:	this.description
-	}
-
-	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
-		return (
-			// this is the more standard JSON schema representation, especially for Open API
-			this.unit === null ? { type: "null" }
-			: $ark.intrinsic.jsonPrimitive.allows(this.unit) ? { const: this.unit }
-			: ctx.fallback.unit({ code: "unit", base: {}, unit: this.unit })
-		)
 	}
 
 	traverseAllows: TraverseAllows =

@@ -94,7 +94,7 @@ contextualize(() => {
 		attest(T({ a: "foo" })).snap({ a: "foo" })
 		attest(T({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
 		attest(T({ b: { b: {} } }).toString()).snap(
-			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
+			"a must be a string (was missing), b.a must be a string (was missing), b.b.a must be a string (was missing) or b.b.b must be an object (was missing)"
 		)
 	})
 
@@ -106,7 +106,7 @@ contextualize(() => {
 		attest(T({ a: "foo" })).snap({ a: "foo" })
 		attest(T({ b: { a: "bar" } })).snap({ b: { a: "bar" } })
 		attest(T({ b: { b: {} } }).toString()).snap(
-			"a must be a string (was missing), b.a must be a string (was missing) or b.b must be b.b.a must be a string (was missing) or b.b.b must be an object (was missing) (was {})"
+			"a must be a string (was missing), b.a must be a string (was missing), b.b.a must be a string (was missing) or b.b.b must be an object (was missing)"
 		)
 	})
 
@@ -194,5 +194,22 @@ contextualize(() => {
 		attest(T({ name: "a", child: { name: 5 } }).toString()).snap(
 			"child.name must be a string (was a number)"
 		)
+	})
+
+	it("prop piped to this", () => {
+		for (const jitless of [false, true]) {
+			const T = scope({}, { jitless }).type({
+				name: "string",
+				"next?": "string.json.parse |> this"
+			})
+
+			attest(T({ name: "a", next: '{"name":"b"}' })).equals({
+				name: "a",
+				next: { name: "b" }
+			})
+			attest(T({ name: "a", next: '{"name":1}' }).toString()).snap(
+				"next.name must be a string (was a number)"
+			)
+		}
 	})
 })

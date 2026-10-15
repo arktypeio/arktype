@@ -66,5 +66,77 @@ export const hasArkKind = <kind extends ArkKind>(
 export const isNode = (value: unknown): value is BaseNode =>
 	hasArkKind(value, "root") || hasArkKind(value, "constraint")
 
+export const inProgress: {
+	definitions: number
+	resolutions: number
+	ioReads: number
+} = {
+	definitions: 0,
+	resolutions: 0,
+	ioReads: 0
+}
+
+export const isResolutionFinal = (): boolean =>
+	!inProgress.definitions && !inProgress.resolutions
+
+export const isIoFinal = (): boolean =>
+	!inProgress.definitions && inProgress.resolutions === inProgress.ioReads
+
+const uncheckedAssertions: (() => void)[] = []
+
+let uncheckedKeys: Record<string, true> = {}
+
+// a check can resolve the alias whose union queued it, so a keyed check is queued once until the queue drains
+export const queueUnchecked = (assert: () => void, key?: string): void => {
+	if (key !== undefined) {
+		if (uncheckedKeys[key]) return
+		uncheckedKeys[key] = true
+	}
+	uncheckedAssertions.push(assert)
+}
+
+let assertingUnchecked = false
+
+export const assertUnchecked = (): void => {
+	// an assertion can resolve an alias, which asserts again, so what it queues runs in the outer loop
+	if (!isResolutionFinal() || assertingUnchecked) return
+	assertingUnchecked = true
+	try {
+		for (let i = 0; i < uncheckedAssertions.length; i++)
+			uncheckedAssertions[i]()
+	} finally {
+		assertingUnchecked = false
+		discardUnchecked()
+	}
+}
+
+const discardUnchecked = (): void => {
+	uncheckedAssertions.length = 0
+	uncheckedKeys = {}
+}
+
+export const resolving = <t>(resolve: () => t): t => {
+	inProgress.resolutions++
+	let result: t
+	try {
+		result = resolve()
+	} finally {
+		inProgress.resolutions--
+	}
+	assertUnchecked()
+	return result
+}
+
+// a check left from a parse that threw would read its unresolved aliases
+export const defining = <t>(define: () => t): t => {
+	if (isResolutionFinal()) discardUnchecked()
+	inProgress.definitions++
+	try {
+		return define()
+	} finally {
+		inProgress.definitions--
+	}
+}
+
 export type unwrapDefault<thunkableValue> =
 	thunkableValue extends Thunk<infer returnValue> ? returnValue : thunkableValue

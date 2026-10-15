@@ -38,6 +38,7 @@ export const packageScopes = [
 	"json-schema",
 	"regex",
 	"schema",
+	"sets",
 	"type",
 	"util"
 ] as const

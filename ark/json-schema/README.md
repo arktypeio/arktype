@@ -54,8 +54,10 @@ const stringSchema: StringSchema = {
 }
 ```
 
-## Limitations
+## Docs
 
-- No `dependencies` support
-- No `if`/`else`/`then` support
-- `multipleOf` only supports integers
+See [arktype.io/docs/json-schema](https://arktype.io/docs/json-schema) for:
+
+- [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema): `jsonSchemaToType`, typing its result and `JsonSchemaScope`
+- [Keyword support](https://arktype.io/docs/json-schema/support): which keywords are checked, which throw and which are ignored
+- [To JSON Schema](https://arktype.io/docs/json-schema/to-json-schema): `toJsonSchema()` and its options

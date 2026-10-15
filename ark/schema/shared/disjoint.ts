@@ -125,9 +125,20 @@ const describeReasons = (l: unknown, r: unknown): string =>
 	`${describeReason(l)} and ${describeReason(r)}`
 
 const describeReason = (value: unknown): string =>
-	isNode(value) ? value.expression
+	isNode(value) ? describeNode(value)
 	: isArray(value) ? value.map(describeReason).join(" | ") || "never"
 	: String(value)
+
+// an intersection's expression omits its predicates, which may be what made it unsatisfiable
+const describeNode = (node: BaseNode): string => {
+	if (!node.hasKind("intersection") || !node.inner.predicate)
+		return node.expression
+
+	const predicates = node.inner.predicate.map(p => p.expression).join(" & ")
+	return node.expression === "unknown" ?
+			predicates
+		:	`${node.expression} & ${predicates}`
+}
 
 export const writeUnsatisfiableExpressionError = <expression extends string>(
 	expression: expression

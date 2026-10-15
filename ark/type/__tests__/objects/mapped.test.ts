@@ -342,6 +342,20 @@ contextualize(() => {
 		attest(T.expression).equals(Expected.expression)
 	})
 
+	it("spread props", () => {
+		const Original = type({
+			name: "string",
+			"age?": "number",
+			role: "'admin' | 'user' = 'user'"
+		})
+
+		const T = Original.map(prop => ({ ...prop, value: prop.value.or("null") }))
+
+		attest(T.expression).snap(
+			'{ name: string | null, age?: number | null, role: "admin" | "user" | null = "user" }'
+		)
+	})
+
 	it("modify default", () => {
 		const Original = type({
 			foo: "string = 'foo'",
@@ -352,7 +366,7 @@ contextualize(() => {
 			foo: Default<string, "foo">
 			bar?: number
 		}>(Original.t)
-		attest(Original.expression).snap('{ foo: string = "foo", bar?: number }')
+		attest(Original.expression).snap('{ bar?: number, foo: string = "foo" }')
 
 		const T = Original.map(prop => {
 			if (prop.key === "foo") {
@@ -368,6 +382,6 @@ contextualize(() => {
 			bar?: number
 			foo: Default<string, "foot">
 		}>(T.t)
-		attest(T.expression).snap('{ foo: string = "foot", bar?: number }')
+		attest(T.expression).snap('{ bar?: number, foo: string = "foot" }')
 	})
 })

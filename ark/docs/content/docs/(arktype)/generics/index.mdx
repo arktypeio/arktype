@@ -1,91 +1,89 @@
 ---
 title: Generics
+description: Declare definitions with parameters and instantiate them like TypeScript generics.
 ---
 
-### Keywords
+A generic is a definition with parameters. Instantiating it with a definition for each parameter returns a `Type`.
 
-This table includes all generic keywords available in default `type` API.
+## Keywords
+
+Like TypeScript's utility types, these generics are available in any definition:
 
 <GenericKeywordTable />
 
-### Syntax
-
-Generics can be declared and instantiated in one of three ways.
-
-#### Definition
+Instantiate one in a string, or call it from `type.keywords`:
 
 ```ts
-import { type } from "arktype"
-
-const boxOf = type("<t>", { box: "t" })
-
-// hover me!
-const schrodingersBox = boxOf({ cat: { isAlive: "boolean" } })
-```
-
-#### Constrained Parameters
-
-All syntax in parameters definitions and all references to generic args are fully-type safe and autocompleted like any built-in keyword. Constraints can be used just like TS to limit what can be passed to a generic and allow that arg to be used with operators like `>`.
-
-```ts
-import { type } from "arktype"
-
-const nonEmpty = type("<arr extends unknown[]>", "arr > 0")
-
-const nonEmptyNumberArray = nonEmpty("number[]")
-```
-
-#### Scoped
-
-There is a special syntax for specifying generics in a scope:
-
-```ts
-import { scope } from "arktype"
-
-const types = scope({
-	"box<t, u>": {
-		box: "t | u"
-	},
-	bitBox: "box<0, 1>"
-}).export()
-
-const out = types.bitBox({ box: 0 })
-```
-
-#### Invocation
-
-```ts
-import { type } from "arktype"
-
 const One = type("Extract<0 | 1, 1>")
-```
-
-##### Chained
-
-```ts
-import { type } from "arktype"
-
-const User = type({
-	name: "string",
-	"age?": "number",
-	isAdmin: "boolean"
-})
-
-// hover me!
-const BasicUser = User.pick("name", "age")
-```
-
-#### Invoked
-
-```ts
-import { type } from "arktype"
 
 const Unfalse = type.keywords.Exclude("boolean", "false")
 ```
 
-### HKT
+`Record` is also available as `type.Record`. Generics like `Pick` and `Partial` have [method equivalents](/docs/objects#properties-pick-omit) on object Types, such as `User.pick("name")`.
 
-Our new generics have been built using a new method for integrating arbitrary external types as native ArkType generics! This opens up tons of possibilities for external integrations that would otherwise not be possible. As a preview, here's what the implementation of `Partial` looks like internally:
+## Syntax
+
+### Definition
+
+Pass a string of parameter names in angle brackets, then a definition that references them:
+
+```ts
+const BoxOf = type("<t>", { box: "t" })
+
+// Type<{ box: string }>
+const StringBox = BoxOf("string")
+```
+
+`type.generic("t")({ box: "t" })` is equivalent.
+
+### Constraints
+
+Constrain a parameter with `extends`. Arguments must satisfy the constraint, and the definition can use the parameter wherever its constraint is allowed, like with the `>` operator here:
+
+```ts
+// @errors: 2345
+const NonEmpty = type("<arr extends unknown[]>", "arr > 0")
+
+// Type<number[]>
+const NonEmptyNumbers = NonEmpty("number[]")
+
+// ParseError: arr must be assignable to Array (was string)
+NonEmpty("string")
+```
+
+With `type.generic`, pass a `[name, constraint]` tuple: `type.generic(["arr", "unknown[]"])("arr > 0")`.
+
+### Scoped
+
+In a [scope](/docs/scopes), declare parameters in the alias name:
+
+```ts
+const types = scope({
+	"Box<t, u>": { box: "t | u" },
+	BitBox: "Box<0, 1>"
+}).export()
+
+// ArkErrors: box must be 0 or 1 (was 2)
+types.BitBox({ box: 2 })
+```
+
+### Recursive
+
+A scoped generic can reference itself:
+
+```ts
+const types = scope({
+	"Tree<t>": { value: "t", "children?": "Tree<t>[]" },
+	NumberTree: "Tree<number>"
+}).export()
+
+// ArkErrors: children[0].value must be a number (was a string)
+types.NumberTree({ value: 1, children: [{ value: "2" }] })
+```
+
+## HKT
+
+`generic()` with an `Hkt` class wraps a type-level TypeScript function as an ArkType generic. The function transforms the arguments at runtime, and the class's `body` describes the result at the type level. This is how `Partial` is implemented:
 
 ```ts
 import { generic, Hkt } from "arktype"
@@ -96,15 +94,16 @@ const Partial = generic(["T", "object"])(
 		declare body: Partial<this[0]>
 	}
 )
+
+// Type<{ a?: string }>
+const PartialA = Partial({ a: "string" })
 ```
 
-Recursive and cyclic generics are also currently unavailable and will be added soon.
+For more examples, see the [generic tests](https://github.com/arktypeio/arktype/blob/HEAD/ark/type/__tests__/generic.test.ts).
 
-For more usage examples, check out the unit tests for generics [here](https://github.com/arktypeio/arktype/blob/main/ark/type/__tests__/generic.test.ts).
+## External
 
-### External
-
-The most basic pattern for wrapping a Type looks something like this:
+To write a TypeScript function that accepts and returns Types, constrain a parameter with `type.Any`:
 
 ```ts
 const createBox = <t extends string>(of: type.Any<t>) =>
@@ -119,12 +118,12 @@ createBox(type("number"))
 const BoxType = createBox(type("string"))
 ```
 
-For a deeper integration, you may wish to parse a definition directly:
+To accept a definition instead, validate it with `type.validate` and infer the result with `type.instantiate`:
 
 ```ts
 const createBox = <const def>(
 	of: type.validate<def>
-): type.instantiate<{ of: def }> =>
+): type.instantiate<{ box: def }> =>
 	type.raw({
 		box: of
 	}) as never
@@ -133,4 +132,4 @@ const createBox = <const def>(
 const BoxType = createBox("string")
 ```
 
-The sky's the limit when it comes to this sort of integration, but be warned- TypeScript generics are notoriously finicky and [you may find APIs like these difficult to write if you're not used to it](/docs/faq#why-isnt-my-wrapper-generic-working).
+TypeScript generics like these can be hard to get right. If yours isn't inferring as expected, see [the FAQ](/docs/faq#why-isnt-my-wrapper-generic-working).

@@ -1,8 +1,13 @@
-import { genericNode, intrinsic } from "@ark/schema"
+import {
+	genericNode,
+	intrinsic,
+	type BaseRoot,
+	type GenericRoot
+} from "@ark/schema"
 import type * as util from "@ark/util"
-import { Hkt, type Key } from "@ark/util"
+import { cached, Hkt, type Key, type Thunk } from "@ark/util"
 import type { Module, Submodule } from "../module.ts"
-import { Scope } from "../scope.ts"
+import { keywordModule } from "../scope.ts"
 
 class MergeHkt extends Hkt<[base: object, props: object]> {
 	declare body: util.merge<this[0], this[1]>
@@ -11,15 +16,24 @@ class MergeHkt extends Hkt<[base: object, props: object]> {
 		'merge an object\'s properties onto another like `Merge(User, { isAdmin: "true" })`'
 }
 
-const Merge = genericNode(
-	["base", intrinsic.object],
-	["props", intrinsic.object]
-)(args => args.base.merge(args.props), MergeHkt)
+const Merge = cached(() =>
+	genericNode(["base", intrinsic.object], ["props", intrinsic.object])(
+		args => args.base.merge(args.props),
+		MergeHkt
+	)
+)
 
-export const arkBuiltins: arkBuiltins = Scope.module({
-	Key: intrinsic.key,
+export const builtinDefinitions: Record<
+	keyof arkBuiltins.$,
+	Thunk<BaseRoot | GenericRoot>
+> = {
+	Key: () => intrinsic.key,
 	Merge
-}) as never
+}
+
+export const arkBuiltins: arkBuiltins = keywordModule(
+	builtinDefinitions
+) as never
 
 export type arkBuiltins = Module<arkBuiltins.$>
 
@@ -28,6 +42,6 @@ export declare namespace arkBuiltins {
 
 	export type $ = {
 		Key: Key
-		Merge: typeof Merge.t
+		Merge: ReturnType<typeof Merge>["t"]
 	}
 }

@@ -1,143 +1,221 @@
 ---
 title: Type API
+description: Every member of a Type and of the type function.
 ---
 
-<ApiTable group="Type" />
+Every `Type` has the members below. Types of objects, strings, numbers, arrays and Dates add the ones under [Objects](#objects) and [Constraints](#constraints).
 
-The methods below are available on every `Type` instance. For validation and traversal methods (`assert`, `allows`, direct invocation), see the [Traversal API](/docs/traversal-api). For composition methods (`pipe`, `to`, `narrow`, `filter`, `and`, `or`), see [Expressions](/docs/expressions). For object-specific methods (`pick`, `omit`, `required`, `partial`, `merge`, `keyof`, `get`, `readonly`, `map`, `props`), see [Objects](/docs/objects).
+## Validation
 
-### from
-
-`from` is a typed-input variant of `assert`. It accepts an input matching `inferIn` and returns `inferOut`, providing type safety on both sides. Like `assert`, it throws a `TraversalError` on invalid input:
+A Type is a function. Call it with any data to get the validated output or [`ArkErrors`](/docs/errors):
 
 ```ts
-// @errors: 2345
-const StringToNumber = type("string.numeric.parse")
+const User = type({ name: "string" })
 
-// TypeScript knows the input must be a string
-const result = StringToNumber.from("42") // 42
+const out = User({ name: 5 })
 
-StringToNumber.from(42)
+if (out instanceof type.errors) {
+	// name must be a string (was a number)
+	console.error(out.summary)
+} else {
+	console.log(out.name)
+}
 ```
 
-### in / out
+`allows` checks only the input side of a morph, so a value can be allowed and still fail when the Type is called. See [Validation](/docs/validation) for more.
 
-The `in` and `out` getters extract the input or output Type from a morphed Type, stripping transformations:
+<ApiTable group="Validation" />
+
+## Inference
+
+<ApiTable group="Inference" />
+
+## Metadata
+
+<ApiTable group="Metadata" />
+
+## Composition
+
+<ApiTable group="Composition" />
+
+## Narrows and morphs
+
+<AnchorAliases in--out />
+
+<ApiTable group="Morphs" />
+
+### pipe.try
+
+Like `pipe`, but a morph that throws adds an error instead of throwing:
 
 ```ts
-const ParsedUser = type({
-	name: "string",
-	age: "string.numeric.parse"
-})
+const ParseJson = type("string").pipe.try(s => JSON.parse(s))
 
-// Type<{ name: string; age: string }>
-const UserInput = ParsedUser.in
-
-// Type<{ name: string; age: number }>
-const UserOutput = ParsedUser.out
+ParseJson('{"a": 1}') // { a: 1 }
+// ArkErrors: must be valid according to an anonymous predicate (was aborted due to error: SyntaxError: ...)
+ParseJson("{")
 ```
 
-### extends
+## Comparison
 
-Check if a Type is a subtype of another:
+<AnchorAliases extract--exclude />
 
-```ts
-const T = type("string")
-
-T.extends("unknown") // true
-T.extends("number") // false
-
-// ifExtends returns the Type itself if true, undefined otherwise
-const result = T.ifExtends("string | number") // Type<string | number> | undefined
-```
-
-### equals
-
-Check if two Types are structurally identical:
-
-```ts
-const A = type({ name: "string" })
-const B = type({ name: "string" })
-const C = type({ name: "number" })
-
-A.equals(B) // true
-A.equals(C) // false
-
-// ifEquals returns the Type if equal, undefined otherwise
-const result = A.ifEquals(B) // Type<{ name: string }> | undefined
-```
-
-### overlaps
-
-Check if any value could satisfy both Types:
-
-```ts
-const A = type("string | number")
-const B = type("number | boolean")
-const C = type("string")
-
-A.overlaps(B) // true (number satisfies both)
-C.overlaps(type("number")) // false
-```
-
-### extract / exclude
-
-Extract or exclude union branches based on a Type:
-
-```ts
-const T = type("string | number | boolean")
-
-// Type<string | boolean>
-const Extracted = T.extract("string | boolean")
-
-// Type<number>
-const Excluded = T.exclude("string | boolean")
-```
+<ApiTable group="Comparison" />
 
 ### distribute
 
-Map and optionally reduce over union branches:
+Map each branch of a union, and optionally reduce the results. A Type that isn't a union is a single branch. This method is experimental.
 
 ```ts
 const T = type("string | number | bigint")
 
-// ["bigint", "number", "string"]
-const expressions = T.distribute(branch => branch.expression)
+T.distribute(branch => branch.expression) // ["bigint", "number", "string"]
 
-// with a reducer
-const count = T.distribute(
-	branch => branch,
-	branches => branches.length
-) // 3
+T.distribute(
+	branch => branch.expression,
+	expressions => expressions.join(" or ")
+) // "bigint or number or string"
 ```
 
-### toJsonSchema
+## Objects
 
-Each `Type` instance exposes a `toJsonSchema()` method that can be used to generate a corresponding JSON Schema.
+These are available on a Type whose output is an object. See [Objects](/docs/objects#properties-structural) for how each one handles arrays, index signatures and defaults.
+
+<ApiTable group="Objects" />
+
+### readonly
+
+Mark every property `readonly` in the inferred type. Validation is unchanged.
 
 ```ts
-const User = type({
-	name: "string",
-	email: "string.email",
-	"age?": "number >= 18"
-})
-
-const schema = User.toJsonSchema()
-
-const result = {
-	$schema: "https://json-schema.org/draft/2020-12/schema",
-	type: "object",
-	properties: {
-		name: { type: "string" },
-		email: {
-			type: "string",
-			format: "email",
-			pattern: "^[\w%+.-]+@[\d.A-Za-z-]+\.[A-Za-z]{2,}$"
-		},
-		age: { type: "number", minimum: 18 }
-	},
-	required: ["email", "name"]
-}
+// Type<{ readonly id: number }>
+const Frozen = type({ id: "number" }).readonly()
 ```
 
-Options can be passed to change the behavior including how incompatibilities are handled. See [the associated config docs](/docs/configuration#tojsonschema) for more details.
+### keyof
+
+A Type of this object's keys.
+
+```ts
+// Type<"id" | "name">
+const Key = type({ id: "number", name: "string" }).keyof()
+```
+
+## Constraints
+
+Each method adds a constraint you could also write in a [string definition](/docs/intro/adding-constraints), and returns a Type of the same kind. A Date bound can be a `Date`, a number of milliseconds or a string `new Date()` accepts.
+
+| Method           | Available on  | Constraint                                          |
+| ---------------- | ------------- | --------------------------------------------------- |
+| `matching`       | string        | matches a [regex](/docs/primitives#string-patterns) |
+| `atLeastLength`  | string, array | length `>= n`                                       |
+| `atMostLength`   | string, array | length `<= n`                                       |
+| `moreThanLength` | string, array | length `> n`                                        |
+| `lessThanLength` | string, array | length `< n`                                        |
+| `exactlyLength`  | string, array | length `== n`                                       |
+| `atLeast`        | number        | `>= n`                                              |
+| `atMost`         | number        | `<= n`                                              |
+| `moreThan`       | number        | `> n`                                               |
+| `lessThan`       | number        | `< n`                                               |
+| `divisibleBy`    | number        | `% n`                                               |
+| `atOrAfter`      | Date          | `>= date`                                           |
+| `atOrBefore`     | Date          | `<= date`                                           |
+| `laterThan`      | Date          | `> date`                                            |
+| `earlierThan`    | Date          | `< date`                                            |
+
+```ts
+const Username = type.string.matching("^[a-z]+$").atMostLength(16)
+
+// ArkErrors: must be matched by ^[a-z]+$ (was "ArkType")
+Username("ArkType")
+
+// Type<`a${string}z`>, inferred from the pattern
+const AToZ = type.string.matching("^a.*z$")
+
+const Even = type.number.divisibleBy(2)
+
+// ArkErrors: must be even (was 3)
+Even(3)
+```
+
+## Serialization
+
+[To JSON Schema](/docs/json-schema/to-json-schema) covers `toJsonSchema()` and `~standard.jsonSchema`: their options, what they can't represent, and the fallbacks. [Standard Schema](/docs/standard-schema) covers `~standard.validate`.
+
+<ApiTable group="Serialization" />
+
+## Introspection
+
+<ApiTable group="Introspection" />
+
+### internal
+
+The node from `@ark/schema` that a Type is built from. Its API is not semver-stable. See [Nodes](/docs/internals/nodes).
+
+```ts
+type("string").internal.kind // "domain"
+```
+
+## Members of type
+
+The `type` function has members of its own. Each returns a `Type` unless noted.
+
+| Member             | What it does                                                          |
+| ------------------ | --------------------------------------------------------------------- |
+| `type.unit`        | a Type of exactly one value                                           |
+| `type.enumerated`  | a Type of any of the values passed                                    |
+| `type.valueOf`     | a Type of an object's values, e.g. a TypeScript `enum`                |
+| `type.instanceOf`  | a Type of instances of a class                                        |
+| `type.or`          | a union of every definition passed                                    |
+| `type.and`         | an intersection of every definition passed                            |
+| `type.merge`       | object definitions merged, later keys winning                         |
+| `type.pipe`        | a pipe through each morph or Type passed                              |
+| `type.fn`          | a [validated function](/docs/expressions#fn)                          |
+| `type.match`       | a [matcher](/docs/match)                                              |
+| `type.generic`     | a [generic](/docs/generics)                                           |
+| `type.declare`     | a Type checked against a TypeScript type you [declare](/docs/declare) |
+| `type.define`      | your definition, unchanged, type-checked as `type` would check it     |
+| `type.raw`         | `type` without type-level parsing, for dynamic definitions            |
+| `type.schema`      | a Type from an `@ark/schema` [schema](/docs/internals/schemas)        |
+| `type.scope`       | a [scope](/docs/scopes), the same as `scope`                          |
+| `type.module`      | a [module](/docs/scopes#modules), the scope's exported aliases        |
+| `type.keywords`    | every [keyword](/docs/keywords), e.g. `type.keywords.string.email`    |
+| `type.errors`      | the `ArkErrors` class, for `out instanceof type.errors`               |
+| `type.hkt`         | the `Hkt` class for [higher-kinded generics](/docs/generics#hkt)      |
+| `type.$`           | the scope `type` parses definitions in                                |
+| `type.string`, ... | root keywords like `string`, `Date` and `Record` as Types or generics |
+
+```ts
+// Type<"foo">
+const Foo = type.unit("foo")
+
+// Type<"a" | 1 | null>
+const Some = type.enumerated("a", 1, null)
+
+// Type<string | number>
+const StringOrNumber = type.or("string", "number")
+
+// Type<{ a: 3; b: 2; c: 4 }>
+const Merged = type.merge({ a: "1", b: "2" }, { a: "3", c: "4" })
+
+// Type<Map<unknown, unknown>>
+const AnyMap = type.instanceOf(Map)
+
+// Type<any>, since the definition is only parsed at runtime
+const Dynamic = type.raw("number")
+
+// { name: "string" }, checked like a definition passed to type
+const userDef = type.define({ name: "string" })
+```
+
+`type.valueOf` skips the reverse mappings TypeScript adds to a numeric `enum`:
+
+```ts
+enum Color {
+	Red,
+	Green = "green"
+}
+
+// Type<Color>, allowing 0 and "green" but not "Red"
+const AnyColor = type.valueOf(Color)
+```

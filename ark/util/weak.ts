@@ -1,0 +1,32 @@
+/// <reference lib="es2021.weakref" />
+
+const holdsWeakly =
+	typeof WeakRef === "function" && typeof FinalizationRegistry === "function"
+
+export class WeakCache<v extends object> {
+	// a Map is faster here than a null-prototype record
+	private readonly refs = new Map<string, { deref(): v | undefined }>()
+	private readonly cleanup =
+		holdsWeakly ?
+			new FinalizationRegistry<string>(key => {
+				// the key may have been set again before its old value was collected
+				if (!this.refs.get(key)?.deref()) this.refs.delete(key)
+			})
+		:	undefined
+
+	get(key: string): v | undefined {
+		return this.refs.get(key)?.deref()
+	}
+
+	set(key: string, value: v): v {
+		if (!this.cleanup) return this.pin(key, value)
+		this.refs.set(key, new WeakRef(value))
+		this.cleanup.register(value, key)
+		return value
+	}
+
+	pin(key: string, value: v): v {
+		this.refs.set(key, { deref: () => value })
+		return value
+	}
+}

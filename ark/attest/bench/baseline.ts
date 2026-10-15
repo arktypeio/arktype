@@ -67,7 +67,9 @@ const handlePositiveDelta = (formattedDelta: string, ctx: BenchContext) => {
 	const message = `'${ctx.qualifiedName}' exceeded baseline by ${formattedDelta} (threshold is ${ctx.cfg.benchPercentThreshold}%).`
 	console.error(`📈 ${message}`)
 	const benchErrorConfig = ctx.cfg.benchErrorOnThresholdExceeded
-	const isTypeBench = ctx.lastSnapFunctionName === "instantiations"
+	const isTypeBench =
+		ctx.lastSnapFunctionName === "types" ||
+		ctx.lastSnapFunctionName === "instantiations"
 	const shouldError =
 		benchErrorConfig === true ||
 		(isTypeBench ?

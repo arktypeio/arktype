@@ -1,5 +1,7 @@
 import {
+	constraintInputOf,
 	hasArkKind,
+	inProgress,
 	type BaseParseContext,
 	type BaseRoot,
 	type BaseScope,
@@ -8,9 +10,11 @@ import {
 import {
 	domainOf,
 	hasDomain,
+	isArray,
 	isThunk,
 	objectKindOf,
 	printable,
+	throwError,
 	throwParseError,
 	uncapitalize,
 	type anyOrNever,
@@ -67,10 +71,14 @@ export const parseInnerDefinition = (
 		}
 		let scopeCache = parseCache.get(ctx.$)
 		if (!scopeCache) {
-			scopeCache = {}
+			scopeCache = Object.create(null) as Record<string, InnerParseResult>
 			parseCache.set(ctx.$, scopeCache)
 		}
-		return (scopeCache[def] ??= parseString(def, ctx))
+		if (scopeCache[def]) return scopeCache[def]
+		const result = parseString(def, ctx)
+		const node = isArray(result) ? result[0] : result
+		if (!inProgress.definitions || !node.includesAlias) scopeCache[def] = result
+		return result
 	}
 	return hasDomain(def, "object") ?
 			parseObject(def, ctx)
@@ -90,8 +98,10 @@ export const parseObject = (def: object, ctx: BaseParseContext): BaseRoot => {
 			return ctx.$.node(
 				"intersection",
 				{
-					domain: "string",
-					pattern: def as RegExp
+					domain: ctx.$.node("domain", { domain: "string" }),
+					pattern: [
+						ctx.$.node("pattern", constraintInputOf("pattern", def as RegExp))
+					]
 				},
 				{ prereduced: true }
 			)
@@ -112,31 +122,26 @@ const parseStandardSchema = (
 	ctx: BaseParseContext
 ): BaseRoot =>
 	ctx.$.intrinsic.unknown.pipe((v, ctx) => {
-		const result = def["~standard"].validate(
-			v
-		) as StandardSchemaV1.Result<unknown>
+		const result = def["~standard"].validate(v)
+
+		if (result instanceof Promise) {
+			return throwError(
+				writeAsyncStandardSchemaMessage(def["~standard"].vendor)
+			)
+		}
 
 		if (!result.issues) return result.value
 
-		for (const { message, path } of result.issues) {
-			if (path) {
-				if (path.length) {
-					ctx.error({
-						problem: uncapitalize(message),
-						relativePath: path.map(k => (typeof k === "object" ? k.key : k))
-					})
-				} else {
-					ctx.error({
-						message
-					})
-				}
-			} else {
-				ctx.error({
-					message
-				})
-			}
+		for (const { message, path = [] } of result.issues) {
+			ctx.error({
+				problem: uncapitalize(message),
+				relativePath: path.map(k => (typeof k === "object" ? k.key : k))
+			})
 		}
 	})
+
+export const writeAsyncStandardSchemaMessage = (vendor: string): string =>
+	`Standard Schema definitions must validate synchronously (${vendor} returned a Promise)`
 
 export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def

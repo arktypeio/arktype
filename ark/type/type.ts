@@ -1,6 +1,7 @@
 import {
 	ArkErrors,
 	BaseRoot,
+	finalizeExport,
 	GenericRoot,
 	type BaseParseOptions,
 	type Morph,
@@ -11,6 +12,7 @@ import {
 } from "@ark/schema"
 import {
 	Callable,
+	defineLazily,
 	Hkt,
 	type Constructor,
 	type array,
@@ -40,11 +42,12 @@ import type {
 	IndexZeroOperator,
 	TupleInfixOperator
 } from "./parser/tupleExpressions.ts"
-import type {
-	InternalScope,
-	ModuleParser,
-	Scope,
-	ScopeParser
+import {
+	$arkTypeRegistry,
+	type InternalScope,
+	type ModuleParser,
+	type Scope,
+	type ScopeParser
 } from "./scope.ts"
 import type { BaseType } from "./variants/base.ts"
 import type { instantiateType } from "./variants/instantiate.ts"
@@ -212,34 +215,30 @@ export class InternalTypeParser extends Callable<
 	TypeParserAttachments
 > {
 	constructor($: InternalScope) {
-		const attach: TypeParserAttachments = Object.assign(
-			{
-				errors: ArkErrors,
-				hkt: Hkt,
-				$: $ as never,
-				raw: $.parse as never,
-				module: $.constructor.module,
-				scope: $.constructor.scope,
-				declare: $.declare as never,
-				define: $.define as never,
-				match: $.match as never,
-				generic: $.generic as never,
-				schema: $.schema as never,
-				// this won't be defined during bootstrapping, but externally always will be
-				keywords: $.ambient as never,
-				unit: $.unit,
-				enumerated: $.enumerated,
-				instanceOf: $.instanceOf,
-				valueOf: $.valueOf,
-				or: $.or,
-				and: $.and,
-				merge: $.merge,
-				pipe: $.pipe,
-				fn: $.fn as never
-			} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>,
-			// also won't be defined during bootstrapping
-			$.ambientAttachments!
-		)
+		const attach = {
+			errors: ArkErrors,
+			hkt: Hkt,
+			$: $ as never,
+			raw: $.parse as never,
+			module: $.constructor.module,
+			scope: $.constructor.scope,
+			declare: $.declare as never,
+			define: $.define as never,
+			match: $.match as never,
+			generic: $.generic as never,
+			schema: $.schema as never,
+			// this won't be defined during bootstrapping, but externally always will be
+			keywords: $.ambient as never,
+			unit: $.unit,
+			enumerated: $.enumerated,
+			instanceOf: $.instanceOf,
+			valueOf: $.valueOf,
+			or: $.or,
+			and: $.and,
+			merge: $.merge,
+			pipe: $.pipe,
+			fn: $.fn as never
+		} satisfies Omit<TypeParserAttachments, keyof Ark.typeAttachments>
 		super(
 			(...args) => {
 				if (args.length === 1) {
@@ -270,10 +269,19 @@ export class InternalTypeParser extends Callable<
 				// part of the API as specified by the associated types
 				return $.parse(args)
 			},
-			{
-				attach
-			}
+			{ attach: attach as never }
 		)
+		// also won't be defined during bootstrapping
+		const typeAttachments = $arkTypeRegistry.typeAttachments
+		for (const k in typeAttachments) {
+			defineLazily(this, k, () => {
+				const bound = $.bindReference(
+					typeAttachments[k as never] as BaseRoot | GenericRoot
+				)
+				// a resolved scope has already compiled the nodes bound before it
+				return $.resolved ? finalizeExport($, bound) : bound
+			})
+		}
 	}
 }
 

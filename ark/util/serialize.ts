@@ -2,7 +2,7 @@ import type { array } from "./arrays.ts"
 import { domainOf, type Primitive } from "./domain.ts"
 import { serializePrimitive, type SerializablePrimitive } from "./primitive.ts"
 import { stringAndSymbolicEntriesOf, type dict } from "./records.ts"
-import { isDotAccessible, register } from "./registry.ts"
+import { isDotAccessible, nameOf } from "./registry.ts"
 
 export type SerializationOptions = {
 	onCycle?: (value: object) => string
@@ -131,8 +131,8 @@ const stringifyUnquoted = (
 
 const printableOpts = {
 	onCycle: () => "(cycle)",
-	onSymbol: v => `Symbol(${register(v)})`,
-	onFunction: v => `Function(${register(v)})`,
+	onSymbol: v => `Symbol(${nameOf(v)})`,
+	onFunction: v => `Function(${nameOf(v)})`,
 	// prefix bigints with a marker so printable can strip the quotes
 	// JSON.stringify adds, e.g. [1n] rather than ["1n"]
 	onBigInt: n => `${bigIntMarker}${n}n`
@@ -192,28 +192,29 @@ const _serialize = (
  * Converts a Date instance to a human-readable description relative to its precision
  */
 export const describeCollapsibleDate = (date: Date): string => {
-	const year = date.getFullYear()
-	const month = date.getMonth()
-	const dayOfMonth = date.getDate()
-	const hours = date.getHours()
-	const minutes = date.getMinutes()
-	const seconds = date.getSeconds()
-	const milliseconds = date.getMilliseconds()
-
-	if (
-		month === 0 &&
-		dayOfMonth === 1 &&
-		hours === 0 &&
-		minutes === 0 &&
-		seconds === 0 &&
-		milliseconds === 0
-	)
-		return `${year}`
-
-	const datePortion = `${months[month]} ${dayOfMonth}, ${year}`
+	const year = date.getUTCFullYear()
+	const month = date.getUTCMonth()
+	const dayOfMonth = date.getUTCDate()
+	const hours = date.getUTCHours()
+	const minutes = date.getUTCMinutes()
+	const seconds = date.getUTCSeconds()
+	const milliseconds = date.getUTCMilliseconds()
 
 	if (hours === 0 && minutes === 0 && seconds === 0 && milliseconds === 0)
-		return datePortion
+		return describeCalendarDate(year, month, dayOfMonth)
+
+	if (
+		date.getHours() === 0 &&
+		date.getMinutes() === 0 &&
+		date.getSeconds() === 0 &&
+		date.getMilliseconds() === 0
+	) {
+		return describeCalendarDate(
+			date.getFullYear(),
+			date.getMonth(),
+			date.getDate()
+		)
+	}
 
 	const h = hours % 12 || 12
 	const suffix = hours < 12 ? " AM" : " PM"
@@ -225,8 +226,17 @@ export const describeCollapsibleDate = (date: Date): string => {
 
 	if (milliseconds) timePortion += `.${pad(milliseconds, 3)}`
 
-	return `${timePortion + suffix}, ${datePortion}`
+	return `${months[month]} ${dayOfMonth}, ${year}, ${timePortion + suffix} UTC`
 }
+
+const describeCalendarDate = (
+	year: number,
+	month: number,
+	dayOfMonth: number
+) =>
+	month === 0 && dayOfMonth === 1 ?
+		`${year}`
+	:	`${months[month]} ${dayOfMonth}, ${year}`
 
 const months = [
 	"January",

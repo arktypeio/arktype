@@ -2,11 +2,14 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	assertNodeKind,
 	intrinsic,
-	writeIndiscriminableMorphMessage,
 	writeInvalidOperandMessage,
-	writeMorphIntersectionMessage,
 	type ArkErrors
 } from "@ark/schema"
+import {
+	discriminantJsonOf,
+	writeIndiscriminableMorphMessage,
+	writeMorphIntersectionMessage
+} from "arksets"
 import { keywords, scope, type, type Type } from "arktype"
 import type { Out, To } from "arktype/internal/attributes.ts"
 import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
@@ -139,6 +142,61 @@ contextualize(() => {
 			)
 		})
 
+		it("errors carry the morph and what it threw", () => {
+			const parseJson = (s: string): unknown => JSON.parse(s)
+			for (const jitless of [false, true]) {
+				const ParseJson = scope({}, { jitless })
+					.type("string")
+					.pipe.try(parseJson)
+				const error = (ParseJson("{") as type.errors).issues[0]
+				if (!error.hasCode("predicate")) throw new Error()
+				attest(error.morph).is(parseJson)
+				attest(error.cause instanceof SyntaxError).equals(true)
+				attest(error.predicate).equals(undefined)
+				attest(error.toString()).equals(
+					`must be valid according to parseJson (was aborted due to error:\n    ${error.cause}\n)`
+				)
+			}
+		})
+
+		it("try errors print any thrown value", () => {
+			const throwing = (thrown: unknown) =>
+				type("string").pipe.try(() => {
+					throw thrown
+				})("x") as type.errors
+			attest(throwing(Symbol("thrown")).issues[0].actual).snap(
+				"aborted due to error:\n    Symbol(thrown)\n"
+			)
+			attest(throwing(Object.create(null)).issues[0].actual).snap(
+				"aborted due to error:\n    {}\n"
+			)
+			const cyclic: any = new Error("cyclic")
+			cyclic.self = cyclic
+			attest(JSON.parse(JSON.stringify(throwing(cyclic)))[0].actual).snap(
+				"aborted due to error:\n    Error: cyclic\n"
+			)
+			attest(JSON.parse(JSON.stringify(throwing(5n)))[0].actual).snap(
+				"aborted due to error:\n    5\n"
+			)
+		})
+
+		it("configured text reaches try errors", () => {
+			const ParseJson = scope(
+				{},
+				{
+					predicate: {
+						actual: (data, ctx) =>
+							`${data}, which threw ${(ctx.cause as Error).name}`
+					}
+				}
+			)
+				.type("string")
+				.pipe.try(s => JSON.parse(s))
+			attest(ParseJson("{").toString()).snap(
+				"must be valid according to an anonymous predicate (was {, which threw SyntaxError)"
+			)
+		})
+
 		it("preserves validated out", () => {
 			const T = type("string").pipe.try(
 				s => JSON.parse(s),
@@ -191,8 +249,9 @@ contextualize(() => {
 		attest<(In: 0 | 1 | 2) => Out<number>>(T.t)
 
 		attest(
-			T.internal.select({ method: "assertFind", kind: "union" })
-				.discriminantJson
+			discriminantJsonOf(
+				T.internal.select({ method: "assertFind", kind: "union" })
+			)
 		).snap({
 			kind: "unit",
 			path: [],
@@ -310,11 +369,91 @@ contextualize(() => {
 		)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1023
 	it("any as out", () => {
 		const T = type("string", "=>", s => s as any)
 		attest<string>(T.in.infer)
-		// https://github.com/arktypeio/arktype/issues/1023
-		// attest<any>(T.infer)
+		attest<any>(T.infer)
+	})
+
+	it("any as out in a prop", () => {
+		const T = type({ a: ["string", "=>", s => s as any] })
+		attest(T.infer).type.toString.snap("{ a: any }")
+		attest(T.inferIn).type.toString.snap("{ a: string }")
+	})
+
+	it("any as out beside other props", () => {
+		const BesidePlain = type({
+			a: ["string", "=>", s => s as any],
+			b: "number"
+		})
+		attest(BesidePlain.infer).type.toString.snap("{ a: any; b: number }")
+		attest(BesidePlain.inferIn).type.toString.snap("{ a: string; b: number }")
+
+		const BesideMorph = type({
+			a: ["string", "=>", s => s as any],
+			n: "string.numeric.parse"
+		})
+		attest(BesideMorph.infer).type.toString.snap("{ a: any; n: number }")
+		attest(BesideMorph.inferIn).type.toString.snap("{ a: string; n: string }")
+	})
+
+	it("any as out in an array, tuple or union", () => {
+		const MorphAny = type("string", "=>", s => s as any)
+		const List = MorphAny.array()
+		attest(List.infer).type.toString.snap("any[]")
+		attest(List.inferIn).type.toString.snap("string[]")
+		const Tuple = type([MorphAny, "number"])
+		attest(Tuple.infer).type.toString.snap("[any, number]")
+		attest(Tuple.inferIn).type.toString.snap("[string, number]")
+		const Union = type({ a: MorphAny }).or("string")
+		attest(Union.infer).type.toString.snap("string | { a: any }")
+		attest(Union.inferIn).type.toString.snap("string | { a: string }")
+	})
+
+	it("any as out in a cyclic scope", () => {
+		const types = scope({
+			node: { a: ["string", "=>", s => s as any], "next?": "node" }
+		}).export()
+		attest(types.node.infer).type.toString.snap("{ a: any; next?: any }")
+	})
+
+	it("any as out beside a named type", () => {
+		interface User {
+			name: string
+		}
+		const T = type({
+			user: type({ name: "string" }).as<User>(),
+			a: ["string", "=>", s => s as any]
+		})
+		attest(T.infer).type.toString.snap("{ user: { name: string }; a: any }")
+		attest(T.inferIn).type.toString.snap(
+			"{ user: { name: string }; a: string }"
+		)
+	})
+
+	it("function returning any as out", () => {
+		const MorphFnAny = type("string").pipe(
+			s => (x: string) => JSON.parse(s + x)
+		)
+		attest(MorphFnAny.infer).type.toString.snap("(x: string) => any")
+		attest(type({ f: MorphFnAny }).infer).type.toString.snap(
+			"{ f: (x: string) => any }"
+		)
+		attest(MorphFnAny.array().infer).type.toString.snap(
+			"((x: string) => any)[]"
+		)
+		attest(type([MorphFnAny, "number"]).infer).type.toString.snap(
+			"[(x: string) => any, number]"
+		)
+		attest(MorphFnAny.or("number").infer).type.toString.snap(
+			"number | ((x: string) => any)"
+		)
+	})
+
+	it("JSON.parse as out", () => {
+		const T = type({ parse: type("string").pipe(() => JSON.parse) })
+		attest<{ parse: typeof JSON.parse }>(T.infer)
 	})
 
 	it("never as out", () => {
@@ -341,6 +480,53 @@ contextualize(() => {
 		const out = T(input)
 
 		attest<{ a: number } | type.errors>(out).equals({ a: 4 })
+	})
+
+	it("morph union error paths", () => {
+		const Either = type({ a: "string" }).or({ b: "string" })
+		const T = type({ v: ["string", "=>", () => Either({})] })
+
+		attest(T({ v: "x" }).toString()).snap(
+			"v.a must be a string (was missing) or v.b must be a string (was missing)"
+		)
+	})
+
+	it("nested morph error paths", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const Inner = $.type({ c: "number" })
+			const Middle = $.type({ b: ["object", "=>", o => Inner(o)] })
+			const Outer = $.type({ a: ["object", "=>", o => Middle(o)] })
+			const out = Outer({ a: { b: { c: "x" } } }) as ArkErrors
+
+			attest(out.toString()).snap("a.b.c must be a number (was a string)")
+			attest(out.issues[0].toJSON().path).snap(["a", "b", "c"])
+		}
+	})
+
+	it("unary morph arity", () => {
+		for (const jitless of [false, true]) {
+			const T = scope({}, { jitless }).type({
+				a: ["string", "=>", (s: string, ...rest: unknown[]) => rest.length]
+			})
+			attest(T.assert({ a: "x" }).a).equals(0)
+		}
+	})
+
+	it("array props before elements", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const calls: string[] = []
+			const Trimmed = $.type("string").pipe(s => {
+				calls.push(s)
+				return s.trim()
+			})
+			const T = $.type(Trimmed.array()).and({ foo: Trimmed })
+			const out = T.assert(Object.assign([" a"], { foo: " f" }))
+			attest(calls).equals([" f", " a"])
+			attest(out.foo).equals("f")
+			attest([...out]).equals(["a"])
+		}
 	})
 
 	it("doesn't pipe on error", () => {
@@ -615,7 +801,7 @@ contextualize(() => {
 
 		attest<[number] | ((In: [string]) => Out<string[]>)>(types.c.t)
 
-		attest(types.c.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(types.c.internal.assertHasKind("union"))).snap({
 			kind: "domain",
 			path: ["0"],
 			cases: {
@@ -896,7 +1082,7 @@ contextualize(() => {
 		attest(indiscriminable).throws
 			.snap(`ParseError: An unordered union of a type including a morph and a type with overlapping input is indeterminate:
 Left: { foo: (In: string) => Out<Date> | false | true }
-Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | false | null | true }> | false | true }`)
+Right: { foo: (In: string) => Out<{ [string]: $jsonData }> | false | true }`)
 	})
 
 	it("multiple chained pipes", () => {
@@ -1123,6 +1309,18 @@ Right: { foo: (In: string) => Out<{ [string]: $jsonObject | number | string | fa
 
 		const out = Thing.assert(typeA)
 		attest(out).instanceOf(TypeB)
+	})
+
+	it("assert with root morph errors", () => {
+		const N = type("number")
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type("string").pipe(s => N(s))
+			attest(() => T.assert("x")).throws("must be a number (was a string)")
+			attest(() => T.or("boolean").assert("x")).throws(
+				"must be a number (was a string)"
+			)
+		}
 	})
 
 	// https://github.com/arktypeio/arktype/pull/1464

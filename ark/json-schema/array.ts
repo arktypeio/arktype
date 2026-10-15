@@ -1,7 +1,8 @@
 import {
 	describeBranches,
-	rootSchema,
+	node,
 	type Intersection,
+	type mutableInnerOfKind,
 	type Predicate,
 	type Traversal
 } from "@ark/schema"
@@ -66,9 +67,10 @@ export const parseArrayJsonSchema: Type<
 	(In: JsonSchema.Array) => Out<Type<unknown[], {}>>,
 	any
 > = JsonSchemaScope.ArraySchema.pipe(jsonSchema => {
-	const arktypeArraySchema: Intersection.Schema<Array<unknown>> = {
-		proto: "Array"
+	const arktypeArraySchema: Intersection.Inner = {
+		proto: node("proto", { proto: Array })
 	}
+	let sequence: mutableInnerOfKind<"sequence"> | undefined
 
 	let itemsIsPrefixItems = false
 	if ("prefixItems" in jsonSchema) {
@@ -85,45 +87,51 @@ export const parseArrayJsonSchema: Type<
 
 	if ("items" in jsonSchema) {
 		if (Array.isArray(jsonSchema.items)) {
-			arktypeArraySchema.sequence = {
+			sequence = {
 				prefix: jsonSchema.items.map(item => jsonSchemaToType(item).internal)
 			}
 
 			if ("additionalItems" in jsonSchema) {
 				if (jsonSchema.additionalItems !== false) {
-					arktypeArraySchema.sequence = {
-						...arktypeArraySchema.sequence,
-						variadic: jsonSchemaToType(jsonSchema.additionalItems).internal
-					}
+					sequence.variadic = jsonSchemaToType(
+						jsonSchema.additionalItems
+					).internal
 				}
-			} else if (itemsIsPrefixItems) {
-				arktypeArraySchema.sequence = {
-					...arktypeArraySchema.sequence,
-					variadic: type.unknown.internal
-				}
-			}
+			} else if (itemsIsPrefixItems) sequence.variadic = type.unknown.internal
 		} else {
 			if ("additionalItems" in jsonSchema) {
 				throwParseError(
 					writeJsonSchemaArrayNonArrayItemsAndAdditionalItemsMessage()
 				)
 			}
-			arktypeArraySchema.sequence = {
+			sequence = {
 				variadic: jsonSchemaToType(jsonSchema.items).internal
 			}
 		}
 	} else if ("additionalItems" in jsonSchema) {
-		arktypeArraySchema.sequence = {
+		sequence = {
 			variadic: jsonSchemaToType(jsonSchema.additionalItems).internal
 		}
 	}
 
-	if ("maxItems" in jsonSchema)
-		arktypeArraySchema.maxLength = jsonSchema.maxItems
-	if ("minItems" in jsonSchema)
-		arktypeArraySchema.minLength = jsonSchema.minItems
+	if (sequence) {
+		arktypeArraySchema.structure = node("structure", {
+			sequence: node("sequence", sequence)
+		})
+	}
 
-	const predicates: Predicate.Schema[] = []
+	if ("maxItems" in jsonSchema) {
+		arktypeArraySchema.maxLength = node("maxLength", {
+			rule: jsonSchema.maxItems
+		}) as never
+	}
+	if ("minItems" in jsonSchema) {
+		const minLength = node("minLength", { rule: jsonSchema.minItems })
+		// a minimum length of 0 reduces to unknown
+		if (minLength.hasKind("minLength")) arktypeArraySchema.minLength = minLength
+	}
+
+	const predicates: Predicate[] = []
 	if ("uniqueItems" in jsonSchema && jsonSchema.uniqueItems === true)
 		predicates.push(jsonSchemaArrayUniqueItemsValidator)
 
@@ -132,7 +140,15 @@ export const parseArrayJsonSchema: Type<
 		predicates.push(arrayContainsItemMatchingSchema(parsedContainsJsonSchema))
 	}
 
-	if (predicates.length > 0) arktypeArraySchema.predicate = predicates
+	if (predicates.length > 0) {
+		arktypeArraySchema.predicate = predicates.map(predicate =>
+			node("predicate", { predicate })
+		)
+	}
 
-	return rootSchema(arktypeArraySchema) as never
+	// an unconstrained array is its proto
+	return (
+		Object.keys(arktypeArraySchema).length === 1 ?
+			arktypeArraySchema.proto
+		:	node("intersection", arktypeArraySchema)) as never
 })

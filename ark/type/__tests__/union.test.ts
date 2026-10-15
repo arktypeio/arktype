@@ -291,4 +291,11 @@ contextualize(() => {
 			meta: "My custom type"
 		})
 	})
+
+	it("branches described like Object.prototype members", () => {
+		const T = type("string")
+			.describe("constructor")
+			.or(type("number").describe("valueOf"))
+		attest(T.description).snap("valueOf or constructor")
+	})
 })

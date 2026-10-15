@@ -1,7 +1,7 @@
 import type { Module, Submodule } from "../module.ts"
-import { Scope } from "../scope.ts"
+import { keywordModule } from "../scope.ts"
 
-export const TypedArray: TypedArray.module = Scope.module(
+export const TypedArray: TypedArray.module = keywordModule(
 	{
 		Int8: ["instanceof", Int8Array],
 		Uint8: ["instanceof", Uint8Array],

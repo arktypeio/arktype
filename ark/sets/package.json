@@ -1,0 +1,54 @@
+{
+	"name": "arksets",
+	"description": "Set algebra for arktype schemas: intersection, reduction, discrimination and JSON Schema generation",
+	"version": "0.0.1",
+	"license": "MIT",
+	"author": {
+		"name": "David Blass",
+		"email": "david@arktype.io",
+		"url": "https://arktype.io"
+	},
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/arktypeio/arktype.git",
+		"directory": "ark/sets"
+	},
+	"type": "module",
+	"main": "./out/index.js",
+	"types": "./out/index.d.ts",
+	"exports": {
+		".": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./internal": {
+			"ark-ts": "./index.ts",
+			"default": "./out/index.js"
+		},
+		"./internal/*.ts": {
+			"ark-ts": "./*.ts",
+			"types": "./out/*.d.ts",
+			"default": "./out/index.js"
+		},
+		"./internal/*.js": {
+			"ark-ts": "./*.ts",
+			"types": "./out/*.d.ts",
+			"default": "./out/index.js"
+		}
+	},
+	"files": [
+		"out"
+	],
+	"scripts": {
+		"build": "ts ../repo/build.ts",
+		"test": "ts ../repo/testPackage.ts",
+		"tnt": "ts ../repo/testPackage.ts --skipTypes"
+	},
+	"dependencies": {
+		"@ark/schema": "workspace:*",
+		"@ark/util": "workspace:*"
+	},
+	"publishConfig": {
+		"access": "public"
+	}
+}

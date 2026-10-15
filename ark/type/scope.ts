@@ -2,7 +2,10 @@ import {
 	$ark,
 	BaseScope,
 	hasArkKind,
+	LazyGenericRoot,
 	parseGeneric,
+	RootModule,
+	withFixedGlobalConfig,
 	type AliasDefEntry,
 	type ArkSchemaRegistry,
 	type ArkSchemaScopeConfig,
@@ -14,23 +17,23 @@ import {
 	type GenericAst,
 	type GenericParamAst,
 	type GenericParamDef,
-	type GenericRoot,
 	type Morph,
+	type NodeInput,
 	type NodeKind,
-	type NodeSchema,
 	type PreparsedNodeResolution,
 	type PrivateDeclaration,
-	type RootKind,
 	type RootSchema,
 	type arkKind,
 	type exportedNameOf,
 	type nodeOfKind,
 	type reducibleKindOf,
 	type toInternalScope,
-	type writeDuplicateAliasError
+	type writeDuplicateAliasError,
+	type writeShallowCycleErrorMessage
 } from "@ark/schema"
 import {
 	Scanner,
+	defineLazily,
 	enumValues,
 	flatMorph,
 	isArray,
@@ -38,13 +41,15 @@ import {
 	throwParseError,
 	type Brand,
 	type Dict,
+	type ErrorMessage,
 	type ErrorType,
 	type JsonStructure,
 	type anyOrNever,
 	type array,
-	type flattenListable,
 	type noSuggest
 } from "@ark/util"
+import { setEngine } from "arksets"
+import type { InferredMorph } from "./attributes.ts"
 import type { DeclarationParser } from "./declare.ts"
 import { InternalFnParser, type FnParser } from "./fn.ts"
 import {
@@ -71,6 +76,7 @@ import type {
 	NaryPipeParser,
 	NaryUnionParser
 } from "./nary.ts"
+import type { GenericInstantiationAst } from "./parser/ast/generic.ts"
 import type { DefAst, InferredAst } from "./parser/ast/infer.ts"
 import {
 	shallowDefaultableMessage,
@@ -81,7 +87,9 @@ import {
 	type inferDefinition
 } from "./parser/definition.ts"
 import type { ParsedOptionalProperty } from "./parser/property.ts"
+import type { BranchOperator } from "./parser/reduce/shared.ts"
 import type { ParsedDefaultableProperty } from "./parser/shift/operator/default.ts"
+import type { parseString } from "./parser/string.ts"
 import type { TupleExpression } from "./parser/tupleExpressions.ts"
 import {
 	InternalTypeParser,
@@ -93,6 +101,10 @@ import {
 	type UnitTypeParser,
 	type ValueOfTypeParser
 } from "./type.ts"
+
+// installed where keyword modules build scopes, since a bundler
+// trusting sideEffects drops a bare import
+$ark.sets ??= setEngine
 
 /** The convenience properties attached to `scope` */
 export type ScopeParserAttachments =
@@ -204,9 +216,9 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		if (!$arkTypeRegistry.typeAttachments) return
 		return this.cacheGetter(
 			"ambientAttachments",
-			flatMorph($arkTypeRegistry.typeAttachments, (k, v) => [
+			flatMorph(Object.keys($arkTypeRegistry.typeAttachments), (_, k) => [
 				k,
-				this.bindReference(v as {} as BaseRoot | GenericRoot)
+				this.type[k as never]
 			]) as never
 		)
 	}
@@ -222,9 +234,23 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 				: alias === "root" ? this.name
 				: `${this.name}.${alias}`
 
-			const config = this.resolvedConfig.keywords?.[qualifiedName]
+			const { keywords } = this.resolvedConfig
+			const config =
+				Object.prototype.hasOwnProperty.call(keywords, qualifiedName) ?
+					keywords[qualifiedName]
+				:	undefined
 
-			if (config) def = [def, "@", config] satisfies TupleExpression
+			if (config) {
+				if (isThunk(def)) {
+					const thunk = def
+					def = () => {
+						const resolution = thunk()
+						return hasArkKind(resolution, "generic") ? resolution : (
+								([resolution, "@", config] satisfies TupleExpression)
+							)
+					}
+				} else def = [def, "@", config] satisfies TupleExpression
+			}
 
 			return [alias, def]
 		}
@@ -237,18 +263,21 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 
 		const name = alias.slice(0, firstParamIndex)
 		const paramString = alias.slice(firstParamIndex + 1, -1)
+		const genericName = name[0] === "#" ? name.slice(1) : name
 
 		return [
 			name,
 			// use a thunk definition for the generic so that we can parse
 			// constraints within the current scope
-			() => {
-				const params = this.parseGenericParams(paramString, { alias: name })
+			new LazyGenericRoot(() => {
+				const params = this.parseGenericParams(paramString, {
+					alias: genericName
+				})
 
-				const generic = parseGeneric(params, def, this as never)
+				const generic = parseGeneric(params, def, this as never, genericName)
 
 				return generic
-			}
+			})
 		]
 	}
 
@@ -316,7 +345,11 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		this.node("proto", { proto: ctor }, { prereduced: true }) as never
 
 	or: NaryUnionParser<$> = (...defs: unknown[]) =>
-		this.schema(defs.map(def => this.parse(def))) as never
+		this.finalize(
+			this.node("union", {
+				branches: defs.map(def => this.parse(def))
+			})
+		) as never
 
 	and: NaryIntersectionParser<$> = (...defs: unknown[]) =>
 		defs.reduce<BaseRoot>(
@@ -353,6 +386,26 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		InternalScope.scope(def as never, config).export()) as never
 }
 
+export const keywordModule = (
+	def: Dict,
+	config: ArkScopeConfig = {}
+): RootModule => {
+	const module = new RootModule({})
+	let exports: RootModule | undefined
+	for (const name in def) {
+		if (name[0] === "#") continue
+		defineLazily(
+			module,
+			name,
+			() =>
+				(exports ??= withFixedGlobalConfig(() =>
+					new InternalScope(def, config).exportLazily()
+				))[name as never]
+		)
+	}
+	return module
+}
+
 export const scope: ScopeParser = Object.assign(InternalScope.scope, {
 	define: (def: unknown) => def as never
 } satisfies ScopeParserAttachments)
@@ -373,7 +426,8 @@ export declare namespace scope {
 						PrivateDeclaration<infer name extends keyof def & string>
 					) ?
 						ErrorType<writeDuplicateAliasError<name>>
-					:	type.validate<def[k], bootstrapAliases<def>, {}>
+					:	// inferring def through the shallow cycle check would expand it for every key
+						NoInfer<validateAlias<k, def[k], bootstrapAliases<def>>>
 				:	type.validate<
 						def[k],
 						bootstrapAliases<def>,
@@ -386,6 +440,102 @@ export declare namespace scope {
 
 	export type infer<def> = inferBootstrapped<bootstrapAliases<def>>
 }
+
+type validateAlias<k, def, $> =
+	shallowCycleMessageOf<k, def, $> extends infer message extends string ?
+		ErrorMessage<message>
+	:	type.validate<def, $, {}>
+
+type shallowCycleMessageOf<k, def, $> =
+	def extends string ?
+		aliasNameOf<k> extends infer name extends string ?
+			name extends (
+				shallowClosure<shallowReferencesOf<parseString<def, $, {}>, $>, $>
+			) ?
+				shallowCycleOf<name, parseString<def, $, {}>, $, [name]> extends (
+					infer cycle extends string[]
+				) ?
+					writeShallowCycleErrorMessage<name, cycle>
+				:	never
+			:	undefined
+		:	never
+	:	undefined
+
+type aliasNameOf<k> = k extends PrivateDeclaration<infer name> ? name : k
+
+type aliasAstOf<name, $> =
+	name extends string ?
+		(
+			name extends keyof $ ?
+				$[name]
+			:	$[PrivateDeclaration<name> & keyof $]
+		) extends Def<infer def extends string> ?
+			parseString<def, $, {}>
+		:	undefined
+	:	never
+
+type shallowReferencesOf<ast, $> =
+	ast extends readonly [infer l, infer operator, infer r] ?
+		operator extends "def" ? r
+		: operator extends ShallowOperator ?
+			| shallowReferencesOf<l, $>
+			| (pipesFromMorph<l, operator, $> extends true ? never
+			  :	shallowReferencesOf<r, $>)
+		:	never
+	:	never
+
+type ShallowOperator = BranchOperator | "#"
+
+// what a morph pipes to is a structural position, not a shallow reference
+type pipesFromMorph<l, operator, $> =
+	operator extends "|>" ? includesMorphAst<l, $, never> : false
+
+type includesMorphAst<ast, $, seen> =
+	ast extends InferredAst<infer t> ?
+		[Extract<t, InferredMorph>] extends [never] ?
+			false
+		:	true
+	: ast extends DefAst<infer def, infer alias> ?
+		def extends string ?
+			alias extends seen ?
+				false
+			:	includesMorphAst<aliasAstOf<alias, $>, $, seen | alias>
+		:	// assume a tuple, object or Type definition may hold a morph
+			true
+	: ast extends GenericInstantiationAst ? true
+	: ast extends readonly unknown[] ?
+		true extends includesMorphAst<ast[number], $, seen> ?
+			true
+		:	false
+	:	false
+
+type shallowClosure<frontier, $, reached = never> =
+	[frontier] extends [never] ? reached
+	:	shallowClosure<
+			Exclude<
+				shallowReferencesOf<aliasAstOf<frontier, $>, $>,
+				frontier | reached
+			>,
+			$,
+			frontier | reached
+		>
+
+type shallowCycleOf<name, ast, $, path extends unknown[]> =
+	ast extends readonly [infer l, infer operator, infer r] ?
+		operator extends "def" ?
+			r extends name ? path
+			: r extends path[number] ? never
+			: name extends shallowClosure<r, $, Exclude<path[number], name>> ?
+				shallowCycleOf<name, aliasAstOf<r, $>, $, [...path, r]>
+			:	never
+		: operator extends ShallowOperator ?
+			[shallowCycleOf<name, l, $, path>] extends [never] ?
+				pipesFromMorph<l, operator, $> extends true ?
+					never
+				:	shallowCycleOf<name, r, $, path>
+			:	shallowCycleOf<name, l, $, path>
+		:	never
+	:	never
 
 export interface Scope<$ = {}> {
 	t: $
@@ -402,11 +552,11 @@ export interface Scope<$ = {}> {
 
 	defineSchema<const def extends RootSchema>(schema: def): def
 
-	node<kinds extends NodeKind | array<RootKind>>(
-		kinds: kinds,
-		schema: NodeSchema<flattenListable<kinds>>,
+	node<kind extends NodeKind>(
+		kind: kind,
+		input: NodeInput<kind>,
 		opts?: BaseParseOptions
-	): nodeOfKind<reducibleKindOf<flattenListable<kinds>>>
+	): nodeOfKind<reducibleKindOf<kind>>
 
 	unit: UnitTypeParser<$>
 	enumerated: EnumeratedTypeParser<$>

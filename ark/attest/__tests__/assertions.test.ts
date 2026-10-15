@@ -184,7 +184,7 @@ Actual: Function(${actualRef})`)
 			.throws
 			.snap(`AssertionError [ERR_ASSERTION]: Objects did not have the same constructor:
 Expected: {"a":"five"}
-Actual: [ArkError]`)
+Actual: ArkErrors`)
 	})
 
 	it("jsdoc ", () => {

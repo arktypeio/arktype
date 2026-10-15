@@ -1,50 +1,36 @@
 import {
-	append,
-	appendUnique,
 	capitalize,
-	isArray,
-	throwInternalError,
 	throwParseError,
 	type array,
 	type describe,
-	type listable,
-	type satisfy
+	type dict
 } from "@ark/util"
-import type {
-	NodeSchema,
-	Prerequisite,
-	innerAttachedAs,
-	nodeOfKind
-} from "./kinds.ts"
+import type { NodeInput, Prerequisite, nodeOfKind } from "./kinds.ts"
 import { BaseNode } from "./node.ts"
-import type { NodeParseContext } from "./parse.ts"
+import type { Predicate } from "./predicate.ts"
+import type { After } from "./refinements/after.ts"
+import type { Before } from "./refinements/before.ts"
+import type { Divisor } from "./refinements/divisor.ts"
+import type { ExactLength } from "./refinements/exactLength.ts"
+import type { Max } from "./refinements/max.ts"
+import type { MaxLength } from "./refinements/maxLength.ts"
+import type { Min } from "./refinements/min.ts"
+import type { MinLength } from "./refinements/minLength.ts"
+import type { Pattern } from "./refinements/pattern.ts"
 import type { Intersection } from "./roots/intersection.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type { BaseNodeDeclaration } from "./shared/declare.ts"
-import { Disjoint } from "./shared/disjoint.ts"
+import type { Disjoint } from "./shared/disjoint.ts"
 import {
 	compileObjectLiteral,
-	constraintKeys,
 	type ConstraintKind,
-	type IntersectionContext,
-	type NodeKind,
-	type RootKind,
 	type StructuralKind,
-	type UnknownAttachments,
 	type kindLeftOf
 } from "./shared/implement.ts"
-import {
-	intersectNodesRoot,
-	intersectOrPipeNodes
-} from "./shared/intersections.ts"
-import type { JsonSchema } from "./shared/jsonSchema.ts"
-import { $ark } from "./shared/registry.ts"
-import type { ToJsonSchema } from "./shared/toJsonSchema.ts"
+import { sets } from "./shared/sets.ts"
 import type { TraverseAllows, TraverseApply } from "./shared/traversal.ts"
 import { arkKind } from "./shared/utils.ts"
-import type { Structure } from "./structure/structure.ts"
 
 export declare namespace Constraint {
 	export interface Declaration extends BaseNodeDeclaration {
@@ -59,6 +45,23 @@ export declare namespace Constraint {
 	}
 
 	export type PrimitiveKind = Exclude<ConstraintKind, StructuralKind>
+
+	export type Schema<kind extends PrimitiveKind = PrimitiveKind> =
+		SchemasByKind[kind]
+
+	interface SchemasByKind {
+		pattern: Pattern.Schema
+		divisor: Divisor.Schema
+		exactLength: ExactLength.Schema
+		max: Max.Schema
+		min: Min.Schema
+		maxLength: MaxLength.Schema
+		minLength: MinLength.Schema
+		before: Before.Schema
+		after: After.Schema
+		structure: NodeInput<"structure">
+		predicate: Predicate.Schema
+	}
 }
 
 export abstract class BaseConstraint<
@@ -66,15 +69,9 @@ export abstract class BaseConstraint<
 	/** @ts-ignore allow instantiation assignment to the base type */
 	out d extends Constraint.Declaration = Constraint.Declaration
 > extends BaseNode<d> {
-	declare readonly [arkKind]: "constraint"
-
-	constructor(attachments: UnknownAttachments, $: BaseScope) {
-		super(attachments, $)
-		// define as a getter to avoid it being enumerable/spreadable
-		Object.defineProperty(this, arkKind, {
-			value: "constraint",
-			enumerable: false
-		})
+	// define as a getter to avoid it being enumerable/spreadable
+	get [arkKind](): "constraint" {
+		return "constraint"
 	}
 
 	abstract readonly impliedBasis: BaseRoot | null
@@ -83,7 +80,7 @@ export abstract class BaseConstraint<
 	intersect<r extends BaseConstraint>(
 		r: r
 	): intersectConstraintKinds<d["kind"], r["kind"]> {
-		return intersectNodesRoot(this, r, this.$) as never
+		return sets().intersect(this, r, this.$) as never
 	}
 }
 
@@ -94,11 +91,6 @@ export abstract class InternalPrimitiveConstraint<
 	abstract readonly compiledCondition: string
 	abstract readonly compiledNegation: string
 
-	abstract reduceJsonSchema(
-		base: JsonSchema.Constrainable,
-		ctx: ToJsonSchema.Context
-	): JsonSchema.Constrainable
-
 	traverseApply: TraverseApply<d["prerequisite"]> = (data, ctx) => {
 		if (!this.traverseAllows(data, ctx))
 			ctx.errorFromNodeContext(this.errorContext as never)
@@ -108,7 +100,9 @@ export abstract class InternalPrimitiveConstraint<
 		if (js.traversalKind === "Allows") js.return(this.compiledCondition)
 		else {
 			js.if(this.compiledNegation, () =>
-				js.line(`ctx.errorFromNodeContext(${this.compiledErrorContext})`)
+				js.line(
+					`ctx.errorFromNodeContext(${js.errorContext(this.errorContext!)})`
+				)
 			)
 		}
 	}
@@ -127,137 +121,35 @@ export abstract class InternalPrimitiveConstraint<
 	}
 }
 
-export const constraintKeyParser =
-	<kind extends ConstraintKind>(kind: kind) =>
-	(
-		schema: listable<NodeSchema<kind>>,
-		ctx: NodeParseContext
-	): innerAttachedAs<kind> | undefined => {
-		if (isArray(schema)) {
-			if (schema.length === 0) {
-				// Omit empty lists as input
-				return
-			}
-			const nodes = schema.map(schema => ctx.$.node(kind, schema as never))
-			// predicate order must be preserved to ensure inputs are narrowed
-			// and checked in the correct order
-			if (kind === "predicate") return nodes as never
-			return nodes.sort((l, r) => (l.hash < r.hash ? -1 : 1)) as never
-		}
-		const child = ctx.$.node(kind, schema)
-		// If the constraint was reduced to a root node (like unknown for minLength: 0),
-		// omit it from the schema since it's trivially satisfied
-		if (child.isRoot()) return
-		return (child.hasOpenIntersection() ? [child] : child) as never
+// the inner of a constraint from what constrain takes, a rule alone or with
+// its options, e.g. 5 or { rule: 5, exclusive: true }
+export const constraintInputOf = <kind extends Constraint.PrimitiveKind>(
+	kind: kind,
+	schema: Constraint.Schema<kind>
+): NodeInput<kind> => {
+	if (typeof schema === "function") return { predicate: schema } as never
+	if (schema instanceof RegExp) {
+		return (
+			schema.flags ?
+				{ rule: schema.source, flags: schema.flags }
+			:	{ rule: schema.source }) as never
 	}
-
-type ConstraintGroupKind = satisfy<NodeKind, "intersection" | "structure">
-
-interface ConstraintIntersectionState<
-	kind extends ConstraintGroupKind = ConstraintGroupKind
-> {
-	kind: kind
-	baseInner: Record<string, unknown>
-	l: BaseConstraint[]
-	r: BaseConstraint[]
-	roots: BaseRoot[]
-	ctx: IntersectionContext
-}
-
-export const intersectConstraints = <kind extends ConstraintGroupKind>(
-	s: ConstraintIntersectionState<kind>
-): nodeOfKind<RootKind | Extract<kind, "structure">> | Disjoint => {
-	const head = s.r.shift()
-	if (!head) {
-		let result: BaseNode | Disjoint =
-			s.l.length === 0 && s.kind === "structure" ?
-				$ark.intrinsic.unknown.internal
-			:	s.ctx.$.node(
-					s.kind,
-					Object.assign(s.baseInner, unflattenConstraints(s.l)),
-					{ prereduced: true }
-				)
-
-		for (const root of s.roots) {
-			if (result instanceof Disjoint) return result
-
-			result = intersectOrPipeNodes(root, result, s.ctx)!
-		}
-
-		return result as never
+	const { exclusive, ...input } = (
+		typeof schema === "object" && !(schema instanceof Date) ?
+			schema
+		:	{ rule: schema }) as dict & { rule: any }
+	if (kind === "after" || kind === "before") {
+		const limit = new Date(input.rule)
+		// an exclusive date limit is the closest inclusive one
+		if (exclusive) limit.setTime(limit.valueOf() + (kind === "after" ? 1 : -1))
+		return { ...input, rule: limit } as never
 	}
-	let matched = false
-	for (let i = 0; i < s.l.length; i++) {
-		const result = intersectOrPipeNodes(s.l[i], head, s.ctx)
-		if (result === null) continue
-		if (result instanceof Disjoint) return result
-
-		if (result.isRoot()) {
-			s.roots.push(result)
-			s.l.splice(i)
-			return intersectConstraints(s)
-		}
-
-		if (!matched) {
-			s.l[i] = result as BaseConstraint
-			matched = true
-		} else if (!s.l.includes(result as never)) {
-			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for refinement ${head}`
-			)
-		}
-	}
-	if (!matched) s.l.push(head)
-
-	if (s.kind === "intersection") {
-		if (head.impliedSiblings)
-			for (const node of head.impliedSiblings) appendUnique(s.r, node)
-	}
-	return intersectConstraints(s)
-}
-
-export const flattenConstraints = (inner: object): BaseConstraint[] => {
-	const result = Object.entries(inner)
-		.flatMap(([k, v]) =>
-			k in constraintKeys ? (v as listable<BaseConstraint>) : []
-		)
-		.sort((l, r) =>
-			l.precedence < r.precedence ? -1
-			: l.precedence > r.precedence ? 1
-				// preserve order for predicates
-			: l.kind === "predicate" && r.kind === "predicate" ? 0
-			: l.hash < r.hash ? -1
-			: 1
-		)
-
-	return result
-}
-
-type FlatIntersectionInner = Intersection.Inner & Structure.Inner
-
-type MutableFlatIntersectionInner = Intersection.Inner.mutable &
-	Structure.Inner.mutable
-
-export const unflattenConstraints = (
-	constraints: array<BaseConstraint>
-): FlatIntersectionInner => {
-	const inner: MutableFlatIntersectionInner = {}
-	for (const constraint of constraints) {
-		if (constraint.hasOpenIntersection()) {
-			inner[constraint.kind] = append(
-				inner[constraint.kind],
-				constraint
-			) as never
-		} else {
-			if (inner[constraint.kind]) {
-				return throwInternalError(
-					`Unexpected intersection of closed refinements of kind ${constraint.kind}`
-				)
-			}
-			inner[constraint.kind] = constraint as never
-		}
-	}
-	return inner
+	if (kind === "pattern" && !input.flags) delete input.flags
+	if (!exclusive) return input as never
+	return (
+		kind === "minLength" ? { ...input, rule: input.rule + 1 }
+		: kind === "maxLength" ? { ...input, rule: input.rule - 1 }
+		: { ...input, exclusive }) as never
 }
 
 export type constraintKindLeftOf<kind extends ConstraintKind> = ConstraintKind &

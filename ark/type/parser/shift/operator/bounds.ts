@@ -3,7 +3,7 @@ import {
 	writeUnboundableMessage,
 	type BaseRoot,
 	type BoundKind,
-	type NodeSchema
+	type Constraint
 } from "@ark/schema"
 import { isKeyOf, throwParseError, type KeySet, type Scanner } from "@ark/util"
 import type { DateLiteral } from "../../../attributes.ts"
@@ -145,7 +145,7 @@ export const getBoundKinds = (
 
 const openLeftBoundToRoot = (
 	leftBound: OpenLeftBound
-): NodeSchema<BoundKind> => ({
+): Constraint.Schema<BoundKind> => ({
 	rule:
 		isDateLiteral(leftBound.limit) ?
 			extractDateLiteralSource(leftBound.limit)

@@ -1,6 +1,8 @@
 import {
 	flatMorph,
+	hasDomain,
 	printable,
+	serializePrimitive,
 	throwParseError,
 	type Entry,
 	type Json,
@@ -14,9 +16,9 @@ import {
 	type show
 } from "@ark/util"
 import type { NodeConfig, ResolvedUnknownNodeConfig } from "../config.ts"
-import type { Declaration, Inner, errorContext, nodeOfKind } from "../kinds.ts"
+import type { Declaration, Inner, nodeOfKind } from "../kinds.ts"
 import type { BaseNode } from "../node.ts"
-import type { NodeId, NodeParseContext } from "../parse.ts"
+import type { NodeId } from "../parse.ts"
 import type {
 	BaseRoot,
 	schemaKindOrRightOf,
@@ -25,12 +27,10 @@ import type {
 import type { BaseScope, ResolvedScopeConfig } from "../scope.ts"
 import type { Structure } from "../structure/structure.ts"
 import { compileSerializedValue } from "./compile.ts"
-import type {
-	BaseErrorContext,
-	BaseNodeDeclaration,
-	BaseNormalizedSchema
-} from "./declare.ts"
+import type { BaseErrorContext, BaseNodeDeclaration } from "./declare.ts"
 import type { Disjoint } from "./disjoint.ts"
+import type { ActualWriter, MessageWriter, ProblemWriter } from "./errors.ts"
+import { namedReference } from "./registry.ts"
 import { isNode, type makeRootAndArrayPropertiesMutable } from "./utils.ts"
 
 export const basisKinds = ["unit", "proto", "domain"] as const
@@ -108,7 +108,7 @@ export const constraintKeys: KeySet<ConstraintKind> = flatMorph(
 )
 
 export const structureKeys: keySetOf<Structure.Inner> = flatMorph(
-	[...structuralKinds, "undeclared"],
+	[...structuralKinds, "undeclared", "rejectAllowsSymbolKeys"],
 	(i, k) => [k, 1] as const
 )
 
@@ -236,14 +236,9 @@ export const morphChildKinds = [
 
 export type MorphChildKind = (typeof morphChildKinds)[number]
 
-export type keySchemaDefinitions<d extends BaseNodeDeclaration> = {
-	[k in keyRequiringSchemaDefinition<d>]: NodeKeyImplementation<d, k>
+export type keyImplementationsOf<d extends BaseNodeDeclaration> = {
+	[k in keyof d["inner"]]-?: NodeKeyImplementation<d, k>
 }
-
-type keyRequiringSchemaDefinition<d extends BaseNodeDeclaration> = Exclude<
-	keyof d["normalizedSchema"],
-	keyof BaseNormalizedSchema
->
 
 export const defaultValueSerializer = (v: unknown): Json => {
 	if (typeof v === "string" || typeof v === "boolean" || v === null) return v
@@ -255,54 +250,43 @@ export const defaultValueSerializer = (v: unknown): Json => {
 		return v
 	}
 
-	return compileSerializedValue(v)
+	// registering would keep the value alive, so only values compiled code reads are registered
+	return hasDomain(v, "object") || typeof v === "symbol" ?
+			namedReference(v)
+		:	serializePrimitive(v as never)
 }
 
 export type NodeKeyImplementation<
 	d extends BaseNodeDeclaration,
-	k extends keyof d["normalizedSchema"],
-	instantiated = k extends keyof d["inner"] ? Exclude<d["inner"][k], undefined>
-	:	never
+	k extends keyof d["inner"],
+	instantiated = Exclude<d["inner"][k], undefined>
 > = requireKeys<
 	{
 		preserveUndefined?: true
 		child?: boolean | ((value: instantiated) => BaseNode[])
 		serialize?: (schema: instantiated) => Json
+		// a structural value defers an alias it holds elsewhere to an alias of its own
+		structural?: true
 		reduceIo?: (
 			ioKind: "in" | "out",
 			inner: makeRootAndArrayPropertiesMutable<d["inner"]>,
 			value: d["inner"][k]
 		) => void
-		parse?: (
-			schema: Exclude<d["normalizedSchema"][k], undefined>,
-			ctx: NodeParseContext<d["kind"]>
-		) => instantiated | undefined
 	},
-	// require parse if we can't guarantee the schema value will be valid on inner
-	| (d["normalizedSchema"][k] extends instantiated | undefined ? never
-	  :	"parse")
 	// require keys containing children specify it, although it can be false in cases like
 	// declaredOut where we don't want to treat the node as a child
-	| ([instantiated] extends [listable<BaseNode>] ? "child" : never)
+	[instantiated] extends [listable<BaseNode>] ? "child" : never
 >
 
 interface CommonNodeImplementationInput<d extends BaseNodeDeclaration> {
 	kind: d["kind"]
-	keys: keySchemaDefinitions<d>
-	normalize: (schema: d["schema"], $: BaseScope) => d["normalizedSchema"]
-	applyConfig?: (
-		schema: d["normalizedSchema"],
-		config: ResolvedScopeConfig
-	) => d["normalizedSchema"]
+	keys: keyImplementationsOf<d>
+	applyConfig?: (inner: d["inner"], config: ResolvedScopeConfig) => d["inner"]
 	hasAssociatedError: d["errorContext"] extends null ? false : true
 	finalizeInnerJson?: (json: {
 		[k in keyof d["inner"]]: Json
 	}) => JsonStructure
 	collapsibleKey?: keyof d["inner"]
-	reduce?: (
-		inner: d["inner"],
-		$: BaseScope
-	) => nodeOfKind<d["reducibleTo"]> | Disjoint | undefined
 	obviatesBasisDescription?: d["kind"] extends RefinementKind ? true : never
 	obviatesBasisExpression?: d["kind"] extends RefinementKind ? true : never
 }
@@ -311,7 +295,6 @@ export interface UnknownNodeImplementation
 	extends CommonNodeImplementationInput<BaseNodeDeclaration> {
 	defaults: ResolvedUnknownNodeConfig
 	intersectionIsOpen: boolean
-	intersections: UnknownIntersectionMap
 	keys: Record<string, NodeKeyImplementation<any, any>>
 }
 
@@ -324,20 +307,14 @@ export const compileObjectLiteral = (ctx: object): string => {
 
 export type nodeImplementationOf<d extends BaseNodeDeclaration> =
 	nodeImplementationInputOf<d> & {
-		intersections: IntersectionMap<d["kind"]>
 		intersectionIsOpen: d["intersectionIsOpen"]
 		defaults: Required<NodeConfig<d["kind"]>>
 	}
 
 export type nodeImplementationInputOf<d extends BaseNodeDeclaration> =
 	CommonNodeImplementationInput<d> & {
-		intersections: IntersectionMap<d["kind"]>
 		defaults: nodeSchemaaultsImplementationInputFor<d["kind"]>
-	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true }
-		:	{}) &
-		// if the node is declared as reducible to a kind other than its own,
-		// there must be a reduce implementation
-		(d["reducibleTo"] extends d["kind"] ? {} : { reduce: {} })
+	} & (d["intersectionIsOpen"] extends true ? { intersectionIsOpen: true } : {})
 
 type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	NodeConfig<kind>,
@@ -346,7 +323,10 @@ type nodeSchemaaultsImplementationInputFor<kind extends NodeKind> = requireKeys<
 	// this occurs for nodes like `union` where the error that occurs is not 1:1 with the existing node,
 	// but rather a single failed condition for each branch.
 	| (Inner<kind> extends (
-			Omit<errorContext<kind>, keyof BaseErrorContext | "description">
+			Omit<
+				Declaration<kind>["errorContext"],
+				keyof BaseErrorContext | "description"
+			>
 	  ) ?
 			never
 	  :	"expected" & keyof NodeConfig<kind>)
@@ -363,15 +343,10 @@ export interface UnknownAttachments {
 
 	readonly inner: Record<string, any>
 	readonly innerEntries: readonly Entry<string>[]
-	readonly innerJson: object
-	readonly innerHash: string
 
 	readonly meta: ArkEnv.meta
 	readonly metaJson: object
 
-	readonly json: object
-	readonly hash: string
-	readonly collapsibleJson: Json
 	readonly children: BaseNode[]
 }
 
@@ -379,10 +354,24 @@ export interface NarrowedAttachments<d extends BaseNodeDeclaration>
 	extends UnknownAttachments {
 	kind: d["kind"]
 	inner: d["inner"]
-	json: JsonStructure
-	innerJson: JsonStructure
-	collapsibleJson: Json
 	children: nodeOfKind<d["childKind"]>[]
+}
+
+// one writer per slot for each kind that doesn't write its own, so en can tell
+// which are its kind's
+const writeActual: ActualWriter = data => printable(data)
+
+const writeProblem: ProblemWriter = ({ expected, actual }) =>
+	`must be ${expected}${actual ? ` (was ${actual})` : ""}`
+
+const writeMessage: MessageWriter = ctx => {
+	if (ctx.path.length === 0) return ctx.problem
+	const problemWithLocation = `${ctx.propString} ${ctx.problem}`
+	if (problemWithLocation[0] === "[") {
+		// clarify paths like [1], [0][1], and ["key!"] that could be confusing
+		return `value at ${problemWithLocation}`
+	}
+	return problemWithLocation
 }
 
 export const implementNode = <d extends BaseNodeDeclaration = never>(
@@ -394,18 +383,9 @@ export const implementNode = <d extends BaseNodeDeclaration = never>(
 			"description" in ctx ?
 				(ctx.description as string)
 			:	implementation.defaults.description(ctx as never)
-		implementation.defaults.actual ??= data => printable(data)
-		implementation.defaults.problem ??= ctx =>
-			`must be ${ctx.expected}${ctx.actual ? ` (was ${ctx.actual})` : ""}`
-		implementation.defaults.message ??= ctx => {
-			if (ctx.path.length === 0) return ctx.problem
-			const problemWithLocation = `${ctx.propString} ${ctx.problem}`
-			if (problemWithLocation[0] === "[") {
-				// clarify paths like [1], [0][1], and ["key!"] that could be confusing
-				return `value at ${problemWithLocation}`
-			}
-			return problemWithLocation
-		}
+		implementation.defaults.actual ??= writeActual
+		implementation.defaults.problem ??= writeProblem
+		implementation.defaults.message ??= writeMessage
 	}
 	return implementation as never
 }

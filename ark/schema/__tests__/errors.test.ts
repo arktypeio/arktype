@@ -2,9 +2,11 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	ArkErrors,
+	type ArkError,
 	configureSchema,
 	rootSchema,
-	schemaScope
+	schemaScope,
+	type Traversal
 } from "@ark/schema"
 
 contextualize(() => {
@@ -120,20 +122,42 @@ contextualize(() => {
 		)
 	})
 
+	it("reads supplied text through its slot", () => {
+		const greeting = rootSchema({
+			domain: "string",
+			predicate: (s: string, ctx: Traversal) =>
+				ctx.reject({ expected: "a greeting", actual: "" })
+		})
+		const error = (greeting.traverse("x") as ArkErrors).issues[0]
+		attest(error.expected).equals("a greeting")
+		attest(error.actual).equals("")
+		attest(error.toString()).snap("must be a greeting")
+		attest(Object.keys(error).includes("expected")).equals(false)
+		attest(error.toJSON()).snap({
+			data: "x",
+			path: [],
+			code: "predicate",
+			expected: "a greeting",
+			actual: "",
+			problem: "must be a greeting",
+			message: "must be a greeting"
+		})
+	})
+
 	it("can apply a global config", () => {
 		configureSchema({
 			domain: {
 				description: inner => `my special ${inner.domain}`
 			}
 		})
-		const mySpecialSymbol = schemaScope({}).parseSchema("symbol")
+		const mySpecialSymbol = schemaScope({}).node("domain", { domain: "symbol" })
 		attest(mySpecialSymbol.traverse("foo")?.toString()).snap(
 			"must be my special symbol (was a string)"
 		)
 		configureSchema({
 			domain: $ark.defaultConfig.domain
 		})
-		const myBoringSymbol = schemaScope({}).parseSchema("symbol")
+		const myBoringSymbol = schemaScope({}).node("domain", { domain: "symbol" })
 		attest(myBoringSymbol.traverse("foo")?.toString()).snap(
 			"must be a symbol (was a string)"
 		)
@@ -149,18 +173,43 @@ contextualize(() => {
 
 	const errors = nEvenAtLeast2({ n: 1 }) as ArkErrors
 
-	it("Array methods allocate plain Array (Symbol.species), not ArkErrors", () => {
+	it("issues is a plain array", () => {
 		const messages = errors.issues.map(e => e.message)
 		attest(messages instanceof Array).equals(true)
 		attest(messages.constructor).equals(Array)
 		attest(messages instanceof ArkErrors).equals(false)
 
-		const mapped = errors.map(() => 1)
-		attest(mapped.constructor).equals(Array)
-		attest(mapped instanceof ArkErrors).equals(false)
+		attest(Array.isArray(errors)).equals(false)
+		attest(Array.isArray(errors.issues)).equals(true)
+		attest(errors.issues).equals([...errors])
+		attest(errors.length).equals(errors.issues.length)
+	})
 
-		attest(errors.filter(() => true).constructor).equals(Array)
-		attest(errors.slice().constructor).equals(Array)
+	it("array members are read from issues", () => {
+		// @ts-expect-error
+		attest(() => errors[0]).type.errors("Property '0' does not exist")
+		// @ts-expect-error
+		attest(() => errors.map(e => e)).type.errors(
+			"Property 'map' does not exist"
+		)
+		// @ts-expect-error
+		attest(() => errors.push(errors.issues[0])).type.errors(
+			"Property 'push' does not exist"
+		)
+		// @ts-expect-error
+		attest(() => (errors.length = 0)).type.errors("read-only property")
+		// @ts-expect-error
+		attest(() => errors.issues.push(errors.issues[0])).type.errors(
+			"Property 'push' does not exist"
+		)
+		// @ts-expect-error
+		attest((): readonly ArkError[] => errors).type.errors(
+			"is missing the following properties"
+		)
+		// @ts-expect-error
+		attest(() => ([] as ArkError[]).concat(errors)).type.errors(
+			"No overload matches this call"
+		)
 	})
 
 	it("serialization", () => {

@@ -11,6 +11,7 @@ import {
 	throwOnDefault,
 	type Match
 } from "arktype/internal/match.ts"
+import { discriminantJsonOf } from "arksets"
 
 const throwDefaultRef = registeredReference(throwOnDefault)
 
@@ -574,7 +575,7 @@ contextualize(() => {
 			)
 			.default("assert")
 
-		attest(m.internal.assertHasKind("union").discriminantJson).snap({
+		attest(discriminantJsonOf(m.internal.assertHasKind("union"))).snap({
 			kind: "domain",
 			path: ["id"],
 			cases: {
@@ -584,20 +585,17 @@ contextualize(() => {
 					path: ["kind"],
 					cases: {
 						'"string"': {
-							branches: [
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination2"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
-							],
-							ordered: true
+							in: {},
+							morphs: ["$ark._matchOrderedDiscrimination2"]
 						},
 						'"number"': {
-							branches: [
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination3"] },
-								{ in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
-							],
-							ordered: true
+							in: {},
+							morphs: ["$ark._matchOrderedDiscrimination3"]
 						},
-						default: { in: {}, morphs: ["$ark._matchOrderedDiscrimination4"] }
+						default: {
+							in: { required: [{ key: "id", value: "number" }] },
+							morphs: ["$ark._matchOrderedDiscrimination4"]
+						}
 					}
 				},
 				default: {
@@ -625,6 +623,76 @@ contextualize(() => {
 		(In: { id: number }) => number
 	]
 >`)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1445
+	it("discriminates reordered cases with disjoint inputs", () => {
+		const Dir = type({ "[string]": "unknown" })
+
+		const m = match
+			.case(["string", Dir], () => -1)
+			.case([Dir, "string"], () => 1)
+			.case(["string", "string"], () => 2)
+			.case([Dir, Dir], () => 0)
+			.default(() => null)
+
+		attest(m(["a", {}])).equals(-1)
+		attest(m([{}, "a"])).equals(1)
+		attest(m(["b", "a"])).equals(2)
+		attest(m([{}, {}])).equals(0)
+		attest(m([0, 0])).equals(null)
+	})
+
+	it("discriminated tuple element case includes overlapping tuples", () => {
+		const m = match
+			.case(["unknown", "null"], () => 0)
+			.case(["string", "unknown"], () => 1)
+			.case(["true", "string | number"], () => 2)
+			.default(() => null)
+
+		attest(m(["x", null])).equals(0)
+		attest(m(["x", 5])).equals(1)
+		attest(m([true, null])).equals(0)
+		attest(m([true, 5])).equals(2)
+	})
+
+	it("discriminated tuple element case includes a string", () => {
+		const m = match
+			.case(["'a'"], () => 0)
+			.case(["'b'"], () => 1)
+			.case("string | null", () => 2)
+			.default(() => 3)
+
+		attest(m(["a"])).equals(0)
+		attest(m("a")).equals(2)
+		attest(m("b")).equals(2)
+		attest(m(["c"])).equals(3)
+	})
+
+	it("keeps a union at the discriminant path of an overlapping case", () => {
+		const m = match
+			.case({ a: "unknown", b: "1" }, () => 0)
+			.case({ a: "unknown", b: "true" }, () => 1)
+			.case({ a: "'x' | 1", b: "string | number" }, () => 2)
+			.case({ a: "unknown", b: "string" }, () => 3)
+			.default(() => null)
+
+		attest(m({ a: "x", b: "x" })).equals(2)
+		attest(m({ a: "y", b: "x" })).equals(3)
+		attest(m({ a: 1, b: 5 })).equals(2)
+	})
+
+	it("case relates a unit to a refinement whose basis was pruned", () => {
+		const m = match
+			.case("string > 1", () => 0)
+			.case("number", () => 1)
+			.case("null | 'x'", () => 2)
+			.default(() => 3)
+
+		attest(m("xy")).equals(0)
+		attest(m("x")).equals(2)
+		attest(m(null)).equals(2)
+		attest(m("y")).equals(3)
 	})
 
 	it("allows number keys", () => {
@@ -790,14 +858,11 @@ contextualize(() => {
 			c: o => o.kind,
 			default: "assert"
 		})
-		attest(discriminate).type.toString.snap(`Match<
-	unknown,
-	[
-		(In: { kind: "a" }) => "a",
-		(In: { kind: "b" }) => "b",
-		(In: { kind: "c" }) => "c"
-	]
->`)
+		attest<
+			(
+				In: { kind: "a" } | { kind: "b" } | { kind: "c" }
+			) => Out<"a" | "b" | "c">
+		>(discriminate.t)
 
 		const a = discriminate({ kind: "a", value: "a" })
 		const b = discriminate({ kind: "b", value: "b" })

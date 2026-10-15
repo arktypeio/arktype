@@ -7,7 +7,7 @@ description: Write, review or debug runtime validation with ArkType (the `arktyp
 
 ArkType definitions are TypeScript type syntax, written as strings and objects, that also validate at runtime. If you know the TypeScript type, write that.
 
-Full docs as Markdown: https://arktype.io/llms.txt. Any docs page is also available as Markdown by adding `.md` to its URL, e.g. https://arktype.io/docs/objects.md.
+Docs index: https://arktype.io/llms.txt, which links each page's Markdown. Any docs page is available as Markdown by adding `.md` to its URL, e.g. https://arktype.io/docs/objects.md. Every page in one file: https://arktype.io/llms-full.txt.
 
 ## Define, infer, validate
 
@@ -25,6 +25,9 @@ const User = type({
 // the TypeScript type, derived from the definition
 type User = typeof User.infer
 
+// e.g. a request body
+declare const body: string
+
 const out = User(JSON.parse(body))
 
 if (out instanceof type.errors) {
@@ -37,9 +40,10 @@ if (out instanceof type.errors) {
 ```
 
 - Calling a type returns the validated data or an `ArkErrors` instance. It does not throw, so check with `instanceof type.errors` rather than wrapping it in `try`/`catch`.
+- `ArkErrors` is not an array. Read individual errors from `out.issues`, e.g. `out.issues[0]` or `out.issues.map(e => e.message)`, each with a `path`, `code` and `message`. Iterating `out` and `out.length` also work.
 - `User.assert(data)` throws instead, for places where invalid data is a bug.
 - Name types in PascalCase (`User`). Name types that transform their input in camelCase (`parseUser`), since they behave like functions.
-- `typeof User.infer` is the output type. `typeof User.inferIn` is the input type, which differs once a type transforms its input.
+- `typeof User.infer` is the output type. `typeof User.inferIn` is the input type, which differs once a type transforms its input or has defaults.
 
 ## Syntax
 
@@ -85,7 +89,7 @@ Never interpolate a type into a string, as in ``type(`${Address}[]`)``. Use `Add
 
 ## Parsing and transforming
 
-Keywords ending in `.parse` transform their input. `.to()` validates the parsed result, and `.pipe()` runs your own function.
+Keywords ending in `.parse` transform their input. `.to()` validates the parsed result, and `.pipe()` runs your own function. A morph receives the caller's value itself, not a copy, so return a new value instead of mutating its argument.
 
 ```ts
 // "8080" -> 8080, then checked as a port
@@ -157,12 +161,14 @@ const Stripped = type({ "+": "delete", name: "string" })
 ## Integrations
 
 - ArkType types are [Standard Schema](https://standardschema.dev), so they work directly with tRPC, oRPC, Hono and other libraries that accept one. react-hook-form takes them through `arktypeResolver` from `@hookform/resolvers/arktype`.
-- `User.toJsonSchema()` returns the equivalent JSON Schema.
-- Global configuration (error messages, `onUndeclaredKey`, and so on) goes in a file imported from `arktype/config` before anything imports `arktype`. See https://arktype.io/docs/configuration.md.
+- `User.toJsonSchema()` returns the equivalent JSON Schema. It throws for what JSON Schema can't express, like `Date`, `bigint`, a morph or a `.narrow()`. Handle those with a `fallback` keyed by the error's `code`, e.g. `{ fallback: { date: ctx => ({ ...ctx.base, type: "string", format: "date-time" }) } }`, or pass `{ fallback: annotatingFallback }` (exported from `arktype`) to write them as `x-arktype-*` keywords instead.
+- Global configuration (error messages, `onUndeclaredKey`, `numberAllowsInfinity`, and so on) goes through `configure` from `arktype/config`, in its own file that is imported before anything imports `arktype` or `@ark/schema`, including deep imports like `arktype/internal/*`. Configuring later doesn't throw, but `type` and built-in keywords like `number` ignore it. See https://arktype.io/docs/configuration.md.
 
 ## Mistakes to avoid
 
 - Defaults like `"number = 0"` only work as object values or tuple elements, not as a standalone `type("number = 0")`.
+- `number` rejects `NaN`, `Infinity` and `-Infinity`. Allow them in one type with `"number | number.Infinity | number.NegativeInfinity"` (or `number.NaN`), or everywhere with `configure({ numberAllowsInfinity: true })`.
+- Don't mutate the argument of a `.pipe()` callback. It's the caller's data; the `clone` option that used to copy it no longer exists.
 - An optional key can be missing, but not present with the value `undefined`, mirroring TypeScript's `exactOptionalPropertyTypes`. Write `"key?": "string | undefined"` to allow both.
 - A string literal needs its own quotes inside the definition: `"'a' | 'b'"`. A bare `"a"` is read as the name of a type, and fails to resolve.
 - Don't hand-write a TypeScript interface next to the type. Derive it with `typeof T.infer`, so the two can't drift.

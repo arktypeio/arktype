@@ -2,13 +2,9 @@ import type { merge, show } from "@ark/util"
 import type { UnknownErrorConfigs } from "../config.ts"
 import type { nodeOfKind, reducibleKindOf } from "../kinds.ts"
 import type { Disjoint } from "./disjoint.ts"
-import type { ArkErrors } from "./errors.ts"
+import type { ArkErrorCode, ArkErrors } from "./errors.ts"
 import type { NarrowedAttachments, NodeKind } from "./implement.ts"
 import type { JsonSchema } from "./jsonSchema.ts"
-
-type withMetaPrefixedKeys<o> = {
-	[k in keyof o as k extends string ? `meta.${k}` : never]: o[k]
-}
 
 export interface DefaultArkEnv {
 	meta(): {}
@@ -17,6 +13,8 @@ export interface DefaultArkEnv {
 
 interface NodeMeta extends JsonSchema.UniversalMeta, UnknownErrorConfigs {
 	alias?: string
+	/** the flat alias of the builtin keyword whose phrase describes this node */
+	keyword?: string
 	onFail?: ArkErrors.Handler
 }
 
@@ -48,14 +46,12 @@ export declare namespace TypeMeta {
 	}
 }
 
-export interface BaseNormalizedSchema extends withMetaPrefixedKeys<TypeMeta> {
+export interface BaseNodeInput {
 	readonly meta?: ArkEnv.meta | string
 }
 
 interface DeclarationInput {
 	kind: NodeKind
-	schema: unknown
-	normalizedSchema: BaseNormalizedSchema
 	inner: object
 	errorContext?: BaseErrorContext
 	reducibleTo?: NodeKind
@@ -64,9 +60,11 @@ interface DeclarationInput {
 	childKind?: NodeKind
 }
 
-export interface BaseErrorContext<kind extends NodeKind = NodeKind> {
+export interface BaseErrorContext<
+	code extends NodeKind | ArkErrorCode = NodeKind
+> {
 	readonly description?: string
-	readonly code: kind
+	readonly code: code
 	readonly meta: ArkEnv.meta
 }
 
@@ -103,8 +101,6 @@ type attachedInner<d extends BaseNodeDeclaration> =
 
 export interface BaseNodeDeclaration {
 	kind: NodeKind
-	schema: unknown
-	normalizedSchema: BaseNormalizedSchema
 	inner: {}
 	reducibleTo: NodeKind
 	prerequisite: any

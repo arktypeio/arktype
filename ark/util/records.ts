@@ -301,6 +301,18 @@ export const defineProperties: <base extends object, merged extends object>(
 		Object.getOwnPropertyDescriptors(merged)
 	) as never
 
+export const defineValue = (
+	o: object,
+	k: PropertyKey,
+	value: unknown
+): object =>
+	Object.defineProperty(o, k, {
+		value,
+		writable: true,
+		enumerable: true,
+		configurable: true
+	})
+
 /** Copies enumerable keys of o to a new object in alphabetical order */
 export const withAlphabetizedKeys: <o extends object>(o: o) => o = (o: any) => {
 	const keys = Object.keys(o).sort()

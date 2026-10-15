@@ -1,5 +1,6 @@
 import { attest, contextualize } from "@ark/attest"
 import { scope, type } from "arktype"
+import type { Out, To } from "arktype/internal/attributes.ts"
 
 contextualize(() => {
 	it("parsed", () => {
@@ -43,10 +44,55 @@ contextualize(() => {
 			foo: "string"
 		})
 
-		// https://github.com/arktypeio/arktype/issues/1160
-		// attest<typeof Expected.t, typeof T.t>();
-
+		attest<typeof Expected.t, typeof T.t>()
+		attest<{ foo: string }>(T.inferIn)
 		attest(T.expression).equals(Expected.expression)
+	})
+
+	it("with defaulted morph", () => {
+		const T = type({
+			foo: ["string.numeric.parse", "=", "1"]
+		}).required()
+
+		attest<{ foo: (In: string) => To<number> }>(T.t)
+		attest<{ foo: string }>(T.inferIn)
+		attest(T({}).toString()).snap("foo must be a string (was missing)")
+	})
+
+	it("with morph", () => {
+		const T = type({ foo: ["object", "=>", o => o] }).required()
+
+		attest<{ foo: (In: object) => Out<object> }>(T.t)
+	})
+
+	it("with any input morph", () => {
+		const T = type({ foo: ["unknown.any", "=>", () => 5] }).required()
+
+		attest(T.t).type.toString.snap("{ foo: (In: any) => Out<number> }")
+	})
+
+	it("with never input morph", () => {
+		const T = type({ foo: ["never", "=>", () => 5] }).required()
+
+		attest<{ foo: (In: never) => Out<number> }>(T.t)
+	})
+
+	it("Required generic with default", () => {
+		const types = scope({
+			user: {
+				name: "string = 'anonymous'",
+				"age?": "number"
+			},
+			actual: "Required<user>",
+			expected: {
+				name: "string",
+				age: "number"
+			}
+		}).export()
+
+		attest<typeof types.expected.t>(types.actual.t)
+		attest<typeof types.expected.inferIn>(types.actual.inferIn)
+		attest(types.actual.expression).equals(types.expected.expression)
 	})
 
 	it("tuple", () => {
@@ -67,6 +113,8 @@ contextualize(() => {
 	it("tuple with defaultable", () => {
 		const T = type(["string", "number = 5"]).required()
 
+		attest<[string, number]>(T.t)
+		attest<[string, number]>(T.inferIn)
 		attest(T.expression).snap("[string, number]")
 	})
 
