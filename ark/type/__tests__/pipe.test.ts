@@ -588,6 +588,15 @@ contextualize(() => {
 		attest(T.assert({ a: "x" }).a).equals(0)
 	})
 
+	it("calls a morph as it was parsed after its length changes", () => {
+		const double = (n: number) => n * 2
+		type(["number", "=>", double])
+		Object.defineProperty(double, "length", { value: 2 })
+		const T = type(["number", "=>", double])
+		// compiled once it's used again
+		attest([T(1), T(1)]).equals([2, 2])
+	})
+
 	it("array props before elements", () => {
 		const $ = scope({})
 		const calls: string[] = []

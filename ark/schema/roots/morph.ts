@@ -89,6 +89,10 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	lastMorphIfNode: BaseRoot | undefined =
 		hasArkKind(this.lastMorph, "root") ? this.lastMorph : undefined
 	introspectableIn: BaseRoot | undefined = this.inner.in
+	// read with includesContextualMorph, which decides whether there's a ctx to pass, even if a length changes later
+	contextFree: boolean[] = this.morphs.map(
+		morph => !hasArkKind(morph, "root") && arityOf(morph) === 1
+	)
 	introspectableOut: BaseRoot | undefined =
 		this.lastMorphIfNode && this.includePiped(this.lastMorphIfNode).rawOut
 
@@ -176,7 +180,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				)
 			} else {
 				const call =
-					arityOf(morph) === 1 ?
+					this.contextFree[i] ?
 						`${js.ref(morph)}(${result})`
 					:	`${js.ref(callMorph)}(ctx, ${js.ref(morph)}, ${result})`
 				js.const(morphed, call).if(
@@ -206,14 +210,15 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				transform(ctx, this.introspectableIn, data)
 			:	data
 		if (ctx.currentErrorCount > errorCount) return data
-		for (const morph of this.morphs) {
+		for (let i = 0; i < this.morphs.length; i++) {
+			const morph = this.morphs[i]
 			if (hasArkKind(morph, "root")) {
 				result = pipe(ctx, morph, result)
 				if (ctx._errors !== undefined && result === ctx._errors) return data
 				continue
 			}
 			const morphed =
-				arityOf(morph) === 1 ?
+				this.contextFree[i] ?
 					(morph as Morph.ContextFree)(result as never)
 				:	callMorph(ctx, morph, result)
 			if (morphed instanceof ArkErrors) {
