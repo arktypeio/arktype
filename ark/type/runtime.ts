@@ -6,6 +6,7 @@ import type {
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
+	addErrors,
 	ArkErrors,
 	errorsOf,
 	mergeIssues,
@@ -184,11 +185,9 @@ export const createValidator = ((
 			if (!pipedFromCtx) return rootApply(data, onFail)
 			const out = rootApply(data, null)
 			if (!(out instanceof ArkErrors)) return out
-			const errors = errorsOf(pipedFromCtx)
-			// arktype's errors take what it writes as they take a morph's returned errors, even from another copy of arktype, and a validator's traversal merges the errors it returns
-			if (!errors._merge) return out
-			errors._merge(out, pipedFromCtx.path)
-			return errors
+			// added where they're piped, as a Type adds them, so a morph returning them in another value still fails
+			addErrors(pipedFromCtx, out)
+			return errorsOf(pipedFromCtx)
 		}) satisfies Fn,
 		Validator.prototype
 	)

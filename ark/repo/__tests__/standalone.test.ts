@@ -372,6 +372,38 @@ flag must be boolean
 n must be a string or null`)
 	})
 
+	it("adds its issues to the traversal of a validator whose morph passes it ctx", async () => {
+		let Inner: (data: unknown, ctx: Traversal) => unknown = () => {}
+		const wrap = standIn(
+			(o: { a: unknown }, ctx: Traversal) => ({ inner: Inner(o.a, ctx) }),
+			"wrap"
+		)
+		const next = standIn(() => "x", "next")
+		const isLong = standIn(
+			(s: string, ctx: Traversal) => s.length > 1 || ctx.mustBe("long"),
+			"islong"
+		)
+		const created = await load({
+			Inner: type({ n: "number" }),
+			Wrapping: {
+				type: type({ a: "unknown" }).pipe(wrap),
+				params: [{ kind: "function", label: "`wrap`", value: wrap }]
+			},
+			Defaulted: {
+				type: type({ a: [type("string").narrow(isLong), "=", next] }),
+				params: [
+					{ kind: "function", label: "`isLong`", value: isLong },
+					{ kind: "function", label: "`next`", value: next }
+				]
+			}
+		})
+		Inner = created.Inner
+		attest(String(created.Wrapping(wrap)({ a: { n: "x" } }))).snap(
+			"n must be a number"
+		)
+		attest(String(created.Defaulted(isLong, next)({}))).snap("a must be long")
+	})
+
 	it("bakes introspection", async () => {
 		const T = type({ name: "string", age: "number" }).describe("a person")
 		const { T: validator } = await load({ T })
