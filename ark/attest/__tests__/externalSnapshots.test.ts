@@ -58,6 +58,14 @@ contextualize(() => {
 		})
 	})
 
+	it("create file", () => {
+		rmSync(defaultSnapPath)
+		attest(o).snap.toFile("toFile")
+		attest(readJson(defaultSnapPath)).equals({
+			[testFile]: { toFile: o }
+		})
+	})
+
 	it("update existing", () => {
 		attestInternal(
 			{ re: "dew" },

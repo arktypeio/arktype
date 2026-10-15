@@ -11,6 +11,8 @@ Runtime benches now run in a loop compiled for each bench, after a warmup of 500
 - A bench that returns a Promise is awaited whether or not it is an `async` function.
 - Sample times are sorted numerically. They were sorted as strings, which misordered times like 9.5 and 10.2 and skewed `.median`.
 - Instantiation counts include evaluating the type a bench (or a test with `attest.instantiations`) returns as fully as displaying it would. TypeScript defers members of types like mapped types until something reads them, so a result that was never used went partly uncounted. Benches whose results were already fully evaluated measure the same; re-record the rest.
+- `benchErrorOnThresholdExceeded: "types"` fails a `.types()` bench that exceeds its baseline, and `"runtime"` no longer does. Only `attest.instantiations` counted as a type bench, so `.types()` regressions were reported without failing.
+- `.snap.toFile` creates its snapshot file if it doesn't exist. It threw ENOENT unless the file was already there.
 - `attest trace` and `attest stats` check projects with `composite: true`. They passed tsc `--incremental false`, which such a project rejects (TS6379), so since TypeScript 5.6 they skipped type checking and reported 0 instantiations ([#1306](https://github.com/arktypeio/arktype/issues/1306)).
 
 ## 0.57.0
