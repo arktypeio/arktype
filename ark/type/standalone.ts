@@ -1309,10 +1309,10 @@ ${writeFunction(
 			...epilogue,
 			...returned
 		])
-		// a traversal reads neither `this` nor `arguments`, so it's written as the shorter arrow, compiled with the unit unless it runs only on invalid data
+		// no traversal reads `this` or `arguments`; only Apply and Copy run rarely
 		const declarations = members.map(([name, source]) => {
 			const arrow = source.replace(/^function(\([^)]*\))/, "$1 =>")
-			return `const ${name} = ${name.endsWith("Apply") ? arrow : this.compiledOnLoad(arrow)}`
+			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? arrow : this.compiledOnLoad(arrow)}`
 		})
 		return `(${params.join(", ")}) => {
 ${directive}${[...prologue, ...declarations, ...epilogue].join("\n")}

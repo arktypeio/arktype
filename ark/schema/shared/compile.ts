@@ -235,7 +235,10 @@ export declare namespace NodeCompiler {
 	export type Refs = Map<object | symbol, string>
 }
 
-export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
+export abstract class NodeCompiler extends CompiledFunction<
+	Fn,
+	["data", "ctx"]
+> {
 	traversalKind: TraversalKind
 	requiresContext: boolean
 	readonly refs: NodeCompiler.Refs | undefined
@@ -251,6 +254,13 @@ export class NodeCompiler extends CompiledFunction<Fn, ["data", "ctx"]> {
 	// a standalone build's compiler writes what a union returns failing and what fails an undeclared key, as its validators raise issues holding none of their nodes' error contexts
 	unionFails?(node: UnionNode, value?: string, path?: PropertyKey[]): string
 	undeclaredFails?(): string
+
+	// returns the call of a function its unit declares for a rare path
+	abstract outline(
+		name: string,
+		args: readonly string[],
+		body: (js: NodeCompiler) => unknown
+	): this
 
 	invoke(node: BaseNode | NodeId, opts?: InvokeOptions): string {
 		const arg = opts?.arg ?? this.data

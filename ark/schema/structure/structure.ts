@@ -1085,7 +1085,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformedProps: Prop.Node[],
 		outMayBeCopied: boolean
 	): void {
-		const deleteFromCopy = () => {
+		const deleteFromCopy = (js: NodeCompiler) => {
 			for (let i = 0; i < transformedProps.length; i++) {
 				const prop = transformedProps[i]
 				const changed = js.compareTransformed(
@@ -1145,7 +1145,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 			js.if(unchanged.join(" && "), () => js.return("data"))
-			deleteFromCopy()
+			deleteFromCopy(js)
 			return
 		}
 		const outputOf = (prop: Prop.Node) => {
@@ -1163,7 +1163,19 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				`Object.getPrototypeOf(data) !== Object.prototype || Object.prototype.hasOwnProperty.call(data, "__proto__")`
 			:	"Object.getPrototypeOf(data) !== Object.prototype"
 		// checked after the literal's reads, from which V8 can infer data's prototype
-		js.if(copies, deleteFromCopy)
+		js.if(copies, () =>
+			js.outline(
+				`${js.nameOf(this.id)}Copy`,
+				[
+					"out",
+					...transformedProps.flatMap((_, i) => [
+						`value${i}`,
+						`transformed${i}`
+					])
+				],
+				deleteFromCopy
+			)
+		)
 		if (this.optional) {
 			for (const prop of this.optional) {
 				js.if(`${js.serialize(prop.key)} in data`, () =>

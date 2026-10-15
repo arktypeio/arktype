@@ -643,6 +643,27 @@ export class TraversalCompiler extends NodeCompiler {
 	override nameOf(id: NodeId): string {
 		return this.linkage.nameOf?.(id) ?? super.nameOf(id)
 	}
+
+	override outline(
+		name: string,
+		args: readonly string[],
+		body: (js: NodeCompiler) => unknown
+	): this {
+		const js = new (this.linkage.opts.compiler ?? TraversalCompiler)(
+			this.traversalKind,
+			this.linkage,
+			this.requiresContext
+		).indent()
+		js.checksTransformErrors = this.checksTransformErrors
+		body(js)
+		const params = [this.data, this.ctx, ...args]
+		// the variable initializeTransform declares
+		if (this.checksTransformErrors)
+			params.push(this.requiresContext ? "errorCount" : "failed")
+		const list = params.join(", ")
+		this.linkage.members.push([name, `function(${list}) { ${js.body} }`])
+		return this.return(`${name}(${list})`)
+	}
 }
 
 const transformedKinds = [
