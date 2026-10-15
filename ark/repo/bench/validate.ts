@@ -1,8 +1,14 @@
-// run `pnpm benchTypia` first
+// run `pnpm benchTypia` first; `pnpm benchCount` counts these arms' instructions instead of timing them
 import { noSuggest } from "@ark/util"
 import { precompileStandalone } from "arktype/internal/standalone.ts"
 import { fork, spawnSync } from "node:child_process"
-import { mkdirSync, writeFileSync } from "node:fs"
+import {
+	mkdirSync,
+	openSync,
+	readSync,
+	writeFileSync,
+	writeSync
+} from "node:fs"
 import { join } from "node:path"
 import { isDeepStrictEqual } from "node:util"
 import { Settings } from "typebox/system"
@@ -608,6 +614,71 @@ const calibrate = (c: Case, arm: Arm) => {
 const rounds = Number(process.env.BENCH_ROUNDS ?? 30)
 
 const benchedLibrary = process.env.BENCH_LIBRARY as Library | undefined
+
+// for count.ts: BENCH_COUNT=k warms the arm of BENCH_LIBRARY for BENCH_CASE ("<mode> <name>"), then calls it
+// k * n times, printing n, while `perf stat -D -1 --control fifo:$PERF_CTL,$PERF_ACK` counts only those calls
+if (process.env.BENCH_COUNT) {
+	if (!process.env.BENCH_CASE) {
+		console.log(JSON.stringify(cases.map(c => `${c.mode} ${c.name}`)))
+		process.exit()
+	}
+	const c = cases.find(c => `${c.mode} ${c.name}` === process.env.BENCH_CASE)!
+	const arm = armsOf(c).find(arm => arm.library === benchedLibrary)
+	if (!arm) {
+		console.log(JSON.stringify({ n: 0 }))
+		process.exit()
+	}
+	const size = JSON.stringify(c.inputs).length
+	// enough calls that one-off work, like a stray collection, washes out
+	const n = Math.min(1_000_000, Math.max(20_000, Math.round(2e8 / size)))
+	// a second of CPU, rather than of the wall clock, optimizes the arm however loaded the machine is
+	arm.batchSize = maxPoolSize
+	const warmFrom = process.cpuUsage().user
+	while (process.cpuUsage().user - warmFrom < 1e6) timeBatch(c, arm)
+	const ctl = openSync(process.env.PERF_CTL!, "w")
+	const ack = openSync(process.env.PERF_ACK!, "r")
+	const perf = (command: string) => {
+		writeSync(ctl, `${command}\n`)
+		readSync(ack, Buffer.alloc(5))
+	}
+	const calls = Number(process.env.BENCH_COUNT) * n
+	// each pool costs ~40k instructions to switch counting on and off, under 1 per call at 65,536 calls
+	const poolSize = Math.min(65_536, Math.max(2_000, Math.round(2e8 / size)))
+	// the last output for each input lives through the next pool's collection, as outputs do in a running
+	// program; a collection that frees every object of a map frees the map, and the optimized code embedding it
+	const live: unknown[] = []
+	for (let done = 0; done < calls; done += poolSize) {
+		const inputs = inputsOf(c, Math.min(poolSize, calls - done))
+		const firstLive = Math.max(0, inputs.length - c.inputs.length)
+		arm.before?.()
+		// copies collected now, not while counting, charge their collection to no arm
+		;(globalThis as { gc?: () => void }).gc?.()
+		perf("enable")
+		for (let i = 0; i < firstLive; i += maxPoolSize) {
+			arm.loop(
+				arm.validator,
+				arm.$,
+				arm.config,
+				inputs,
+				i,
+				Math.min(i + maxPoolSize, firstLive)
+			)
+		}
+		for (let i = firstLive; i < inputs.length; i++) {
+			live[i - firstLive] = arm.loop(
+				arm.validator,
+				arm.$,
+				arm.config,
+				inputs,
+				i,
+				i + 1
+			)
+		}
+		perf("disable")
+	}
+	console.log(JSON.stringify({ n }))
+	process.exit()
+}
 
 // each library runs in its own process, so no library's JIT feedback or garbage reaches another's
 if (benchedLibrary) {
