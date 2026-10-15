@@ -854,6 +854,45 @@ o.n must be a number (was a string)`)
 			attest(Reflect.ownKeys(T(extra))).equals(["1", "length"])
 		})
 
+		it("copies an array whose elements change by slice", () => {
+			const T = type("(string.trim | undefined)[]").onUndeclaredKey("delete")
+			let constructed = 0
+			class Tags extends Array {
+				constructor(...args: any[]) {
+					super(...args)
+					constructed++
+				}
+			}
+			const tags = Tags.from([" a ", "b"])
+			constructed = 0
+			const copied = T.assert(tags)
+			attest(copied instanceof Tags).equals(true)
+			attest(constructed).equals(1)
+			attest([...copied]).equals(["a", "b"])
+			const sparse = new Array(3)
+			sparse[0] = " a "
+			sparse[2] = "b"
+			const sliced = T.assert(sparse)
+			attest(1 in sliced).equals(false)
+			attest(sliced.length).equals(3)
+			let reads = 0
+			const read = Object.defineProperty([" a "], "extra", {
+				get: () => reads++,
+				enumerable: true
+			})
+			attest(Reflect.ownKeys(T.assert(read))).equals(["0", "length"])
+			attest(reads).equals(0)
+		})
+
+		it("copies the keys besides its indices an array declares in its order", () => {
+			const T = type("string.trim[]")
+				.and({ a: "string", "b?": "string" })
+				.onUndeclaredKey("delete")
+			const out = T.assert(Object.assign([" x "], { b: "2", z: 0, a: "1" }))
+			attest([...out]).equals(["x"])
+			attest(Object.keys(out)).equals(["0", "b", "a"])
+		})
+
 		// process.env is an exotic object- ensure it is correctly copied
 		// https://discord.com/channels/957797212103016458/1116551844710330458
 		it("deletes them from process.env", () => {

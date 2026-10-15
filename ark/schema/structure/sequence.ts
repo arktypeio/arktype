@@ -39,6 +39,7 @@ import {
 	computeDefaultValueMorph,
 	transform,
 	traverseKey,
+	type InternalTraversal,
 	type TraverseAllows,
 	type TraverseApply,
 	type TraverseTransform
@@ -328,7 +329,14 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 		}))
 	}
 
-	traverseTransform: TraverseTransform<array> = (data, ctx) => {
+	traverseTransform: TraverseTransform<array> = (data, ctx) =>
+		this.transformElements(data, ctx, false)
+
+	transformElements(
+		data: array,
+		ctx: InternalTraversal,
+		slices: boolean
+	): array {
 		let out = data as unknown[]
 		for (let i = 0; i < data.length; i++) {
 			const node = this.elementAtIndex(data, i).node
@@ -340,7 +348,10 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				ctx
 			)
 			if (Object.is(transformed, element)) continue
-			if (out === data) out = copyOf(data) as never
+			if (out === data) {
+				out =
+					slices ? Array.prototype.slice.call(data) : (copyOf(data) as never)
+			}
 			out[i] = transformed
 		}
 		return out
@@ -362,6 +373,13 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 
 	private compileTransform(js: NodeCompiler): void {
 		js.initializeTransform(this.children).let("out", "data")
+		this.compileElementTransforms(js, false)
+		js.returnIfTransformFailed().return("out")
+	}
+
+	compileElementTransforms(js: NodeCompiler, slices: boolean): NodeCompiler {
+		const copy =
+			slices ? "Array.prototype.slice.call(data)" : `${js.ref(copyOf)}(data)`
 		let i = 0
 		this.compileElements(js, (keyExpression, node) => {
 			const element = `element${i}`
@@ -372,13 +390,11 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 					keyExpression,
 					onChange: () =>
 						js
-							.if("out === data", () =>
-								js.set("out", `${js.ref(copyOf)}(data)`)
-							)
+							.if("out === data", () => js.set("out", copy))
 							.line(`out[${keyExpression}] = ${transformed}`)
 				})
 		})
-		js.returnIfTransformFailed().return("out")
+		return js
 	}
 
 	private compileElements(

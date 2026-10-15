@@ -591,7 +591,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 		}
-		if (this.sequence?.transforms) {
+		if (this.slicesSequence)
+			out = this.sequence!.transformElements(data as array, ctx, true)
+		else if (this.sequence?.transforms) {
 			const transformedSequence = transform(ctx, this.sequence, data)
 			if (transformedSequence !== data)
 				out = this.copy(out, transformedSequence as object)
@@ -695,6 +697,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		out: object,
 		ctx: InternalTraversal | undefined
 	): object | TransformErrors {
+		const sliced = out !== data && this.slicesSequence
 		let failed: TransformErrors | undefined
 		for (let i = 0; i < this.defaultable.length; i++) {
 			if (!(this.defaultable[i].key in data)) {
@@ -743,7 +746,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					out[prop.key as never] = data[prop.key as never]
 			}
 		}
-		if (this.undeclared !== "delete") return out
+		if (this.undeclared !== "delete" || sliced) return out
 		// assigning "__proto__" to a built result would set its prototype
 		if (
 			Object.getPrototypeOf(out) !== Object.prototype ||
@@ -844,6 +847,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return parts.join(" || ") || "false"
 	}
 
+	// a stripping structure declaring only its indices copies a changed array by slice, which takes just those, unless an alias's cycle runs through its sequence
+	get slicesSequence(): boolean {
+		return (
+			this.undeclared === "delete" &&
+			!this.props.length &&
+			!this.index &&
+			!!this.sequence?.transforms &&
+			!this.sequence.includesAlias
+		)
+	}
+
 	readonly structuralMorph: Morph | undefined = getPossibleMorph(this)
 
 	compile(js: NodeCompiler): unknown {
@@ -921,7 +935,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				}
 			)
 		}
-		if (this.sequence?.transforms) {
+		if (this.slicesSequence) this.sequence!.compileElementTransforms(js, true)
+		else if (this.sequence?.transforms) {
 			js.transformKey(
 				"transformedSequence",
 				"data",
@@ -1105,8 +1120,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			return js.return("out")
 		}
 		if (this.sequence) {
-			// an array holding keys other than its indices is the only one scanned for undeclared keys
-			js.const("indexed", `${js.ref(holdsOnlyIndices)}(data)`)
+			// an array holding keys other than its indices is the only one scanned for undeclared keys, and a slice holds none
+			js.const(
+				"indexed",
+				`${this.slicesSequence ? "out !== data || " : ""}${js.ref(holdsOnlyIndices)}(data)`
+			)
 			const unchanged = ["indexed"]
 			if (outMayBeCopied) unchanged.push("out === data")
 			for (let i = 0; i < transformedProps.length; i++) {

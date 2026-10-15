@@ -829,6 +829,10 @@ T(Object.assign(["a"], { 4294967295: "b" }))
 
 `"+": "delete"` reads an array's keys once to tell whether it holds any besides its indices, and looks for undeclared keys only when it does, so deleting from an array without them is about 20% faster. An array lists its indices before its other keys, so a `Proxy` whose `ownKeys` trap lists a named key before an array's indices can keep that key.
 
+### Copy an array whose elements change by `slice` when deleting its undeclared keys
+
+When `"+": "delete"` transforms an array's elements and declares no keys besides its indices, it copies the array with `slice`, which takes just those, rather than copying its other keys only to delete them. It no longer reads an undeclared key of such an array, so the key's getter doesn't run, nor does a `Proxy`'s `ownKeys` or `getOwnPropertyDescriptor` trap. As a stripped object is always a new one, every array of objects is copied, and stripping the benchmark's product data now runs 2.2x fewer instructions.
+
 ### Import internals from `arktype/internal`
 
 `arktype/internal` exports the names of every arktype module, and `@ark/schema`, `@ark/util`, `arkregex` and `arksets` each have an `./internal` entry like it. A deep import like `arktype/internal/parser/string.ts` keeps its module's types and loads that entry at runtime.
