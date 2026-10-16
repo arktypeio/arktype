@@ -124,7 +124,7 @@ What each option saves of the bundles arktype benchmarks, minified and gzipped, 
 
 | option                            | gives up                                                   | login      | moltar     | shop         |
 | --------------------------------- | ---------------------------------------------------------- | ---------- | ---------- | ------------ |
-| `errors: "none"`                  | what each issue says of what failed                        | 1740 / 695 | 2286 / 770 | 13034 / 3020 |
+| `errors: "none"`                  | what each issue says of what failed                        | 1749 / 701 | 2295 / 776 | 13045 / 3030 |
 | `members: { assert: false }`      | `assert`                                                   | 57 / 20    | 57 / 18    | 51 / 23      |
 | `members: { meta: false }`        | `meta`                                                     | 75 / 34    | 75 / 34    | 271 / 33     |
 | `members: { "~standard": false }` | `~standard`                                                | 123 / 57   | 123 / 58   | 115 / 54     |
@@ -136,7 +136,7 @@ What each option saves of the bundles arktype benchmarks, minified and gzipped, 
 | `mutatesInput: true`              | the input left as it was, and Types reading what it writes | 0 / 0      | 0 / 0      | 3101 / 954   |
 | `optimize: "size"`                | validating and loading as fast                             | 133 / 66   | 159 / 86   | 3349 / 988   |
 
-Every option together leaves them 1027 / 589, 1184 / 584 and 9179 / 3238 bytes, from 3550 / 1702, 4219 / 1771 and 30827 / 8954.
+Every option together leaves them 1018 / 581, 1175 / 578 and 9168 / 3236 bytes, from 3550 / 1702, 4219 / 1771 and 30827 / 8954.
 
 ## Configuration
 
