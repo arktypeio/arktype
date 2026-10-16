@@ -1370,20 +1370,51 @@ name is missing`)
 		).equals(false)
 	})
 
-	it("returns a new object holding the declared keys of one it deletes undeclared keys from, though its build mutates input", async () => {
-		const { Strict } = await loadMutating({
+	it("copies an object it deletes undeclared keys from, though its build mutates input", async () => {
+		const exports = {
 			Strict: type({
 				"+": "delete",
 				name: "string.trim",
 				inner: { v: "string.trim" }
-			})
-		})
+			}),
+			Pair: type({
+				a: { v: "string" },
+				b: { v: "string", "w?": "string" }
+			}).onDeepUndeclaredKey("delete"),
+			List: type({ v: "string.trim" }).array().onDeepUndeclaredKey("delete")
+		}
+		const { Strict, Pair, List } = await loadMutating(exports)
 		const inner = { v: " v " }
 		const input = { name: " a ", inner, extra: 1 }
 		const out = Strict(input)
 		attest(out).equals({ name: "a", inner: { v: "v" } })
 		attest(out.inner).is(inner)
 		attest(input).equals({ name: " a ", inner: { v: "v" }, extra: 1 })
+		class Named {
+			name = " n "
+			inner = { v: "w" }
+			extra = 1
+		}
+		const named = new Named()
+		const copied = Strict(named)
+		attest(Object.getPrototypeOf(copied)).is(Named.prototype)
+		attest({ ...copied }).equals({ name: "n", inner: { v: "w" } })
+		attest({ ...named }).equals({ name: " n ", inner: { v: "w" }, extra: 1 })
+		const shared = { v: "x", w: "y", extra: 1 }
+		attest(Pair({ a: shared, b: shared })).equals({
+			a: { v: "x" },
+			b: { v: "x", w: "y" }
+		})
+		const list = [{ v: " x ", extra: 1 }]
+		attest(List(list)).equals([{ v: "x" }])
+		attest(list).equals([{ v: " x ", extra: 1 }])
+		// nothing a strip writes can reach another place, so no call tracks it
+		const { Pair: P, List: L } = exports
+		attest(
+			/inPlace|Once\(/.test(
+				precompileStandalone({ P, L }, { mutatesInput: true }).code
+			)
+		).equals(false)
 	})
 
 	it("throws where its input holds an object at two places it transforms, or a check reads after a transform wrote it, where its build mutates input", async () => {
@@ -1589,7 +1620,7 @@ name is missing`)
 		).throws(inPlaceReadMessage)
 	})
 
-	it("rejects a check of an object a transform at another place may write, where its build mutates input", async () => {
+	it("rejects a check or copy of an object a transform at another place may write, where its build mutates input", async () => {
 		const N = type({ n: "string.numeric.parse" })
 		const build = (T: StandaloneExport) => () =>
 			precompileStandalone({ T }, { mutatesInput: true })
@@ -1601,14 +1632,10 @@ name is missing`)
 		attest(
 			build(type({ a: { y: "string = 'w'" }, b: { "y?": "undefined" } }))
 		).throws(inPlaceCheckMessage)
-		attest(
-			build(
-				type({
-					a: { "+": "delete", n: "number" },
-					b: { k: "string", n: "number" }
-				})
-			)
-		).throws(inPlaceCheckMessage)
+		// a strip reads what it copies
+		attest(build(type({ a: N, b: { "+": "delete", n: "string" } }))).throws(
+			inPlaceCheckMessage
+		)
 		// the input can hold itself, as s = { n: "1", self: s }
 		attest(
 			build(type({ n: "string.numeric.parse", self: { n: "string" } }))

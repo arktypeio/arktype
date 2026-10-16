@@ -2062,7 +2062,8 @@ return [${returned.join(", ")}]
 			: param === "applyRejected" && appliesErrors ? "runtime.applyNodeErrors"
 			: this.emit(rootApplyRuntime[param])
 		// in place, a call transforms an object once, failing where a check does
-		const inPlace = this.baking.mutatesInput && root.transforms
+		const inPlace =
+			this.baking.mutatesInput && root.transforms && tracksWrites(root)
 		const strategy = root.rootApplyStrategy
 		// most root applies are one arrow, half the length of the function writeRootApply names for the JIT
 		const isArrow =
@@ -2224,7 +2225,7 @@ return [${returned.join(", ")}]
 			:	`{ ${[...(selects ? [] : ["0: allows"]), ...(transforms ? ["2: transform"] : [])].join(", ")} }`
 		const valid = transforms ? `${transform}(data)` : "data"
 		// as in a detailed build, a call writing in place transforms an object once
-		const inPlace = this.baking.mutatesInput && transforms
+		const inPlace = this.baking.mutatesInput && transforms && tracksWrites(root)
 		const parts =
 			!traversals ? undefined
 			: flat ?
@@ -3122,21 +3123,55 @@ class StandaloneCompiler extends TraversalCompiler {
 	}
 }
 
+// the node each unit last wrote a traversal of
+const lastWritten = new WeakMap<object, NodeId>()
+
 // writing in place, a place reaching a written object reuses or throws
 class MutatingCompiler extends StandaloneCompiler {
 	// whether the next transform invoked is of a value data holds
 	private entersValue = false
+	private referenced: NodeId | undefined
+	// a Transform's node, whose Apply its unit wrote just before
+	private readonly node: BaseNode | undefined
+	// a strip copies what it writes, as a build without mutatesInput does
+	private readonly copies: boolean
+
+	constructor(...args: ConstructorParameters<typeof StandaloneCompiler>) {
+		super(...args)
+		const id =
+			this.traversalKind === "Transform" ?
+				lastWritten.get(this.linkage)
+			:	undefined
+		this.node = id === undefined ? undefined : this.linkage.referencesById[id]
+		this.copies = !!this.node && copiesWrites(this.node)
+	}
+
+	override referenceToId(id: NodeId, opts?: InvokeOptions): string {
+		this.referenced = id
+		return super.referenceToId(id, opts)
+	}
+
+	// a unit names the node it declares last, just before writing it
+	override write(name?: string, indent?: number): string {
+		if (this.node && this.node.id !== this.referenced)
+			throwInternalError(`Unexpected traversal of ${this.referenced}`)
+		lastWritten.set(this.linkage, this.referenced!)
+		return super.write(name, indent)
+	}
 
 	// the output is the input, neither copied nor given what a copy dropped
 	override if(condition: string, then: (self: this) => this): this {
-		return condition === "out === data" || condition === "out !== data" ?
+		return (
+				!this.copies &&
+					(condition === "out === data" || condition === "out !== data")
+			) ?
 				this
 			:	super.if(condition, then)
 	}
 
 	override ref(value: object | symbol): string {
 		// a sequence names its copy before it writes, which never happens in place
-		if (value === runtime.copyOf) return "copyOf"
+		if (value === runtime.copyOf && !this.copies) return "copyOf"
 		// a Type piped a morph's output transforms what it holds anew
 		if (value === runtime.pipe) return super.ref(runtime.pipeInPlace)
 		if (value === runtime.pipeTransformed)
@@ -3147,11 +3182,12 @@ class MutatingCompiler extends StandaloneCompiler {
 	override invoke(node: BaseNode, opts?: InvokeOptions): string {
 		if ((opts?.kind ?? this.traversalKind) !== "Transform")
 			return super.invoke(node, opts)
-		// a value that can't be an object can't be held twice
+		// a value that can't be an object, or one a strip copies, isn't written
 		const isValue =
 			this.entersValue &&
 			(node.includesAlias ||
-				(node.rawIn as BaseRoot).overlaps($ark.intrinsic.object.internal))
+				((node.rawIn as BaseRoot).overlaps($ark.intrinsic.object.internal) &&
+					!copiesWrites(node)))
 		this.entersValue = false
 		// a structure a cycle can reach again throws where it does
 		const isWritten = node.hasKind("structure") && node.includesAlias
@@ -3195,6 +3231,18 @@ class MutatingCompiler extends StandaloneCompiler {
 		this.entersValue = false
 		return this
 	}
+}
+
+// a strip copies an object it writes, but for elements its sequence writes
+const copiesWrites = (node: BaseNode): boolean => {
+	const structure =
+		node.hasKind("intersection") ? node.structure
+		: node.hasKind("structure") ? node
+		: undefined
+	return (
+		structure?.undeclared === "delete" &&
+		!(structure.sequence?.transforms && !structure.slicesSequence)
+	)
 }
 
 const canBeObject = (node: BaseRoot): boolean =>
@@ -3305,7 +3353,8 @@ const keysAt = (
 	// a predicate can read any key
 	if (!writes && node.inner.predicate) keys.add(everyKey)
 	const structure = node.structure
-	if (!structure) return keys
+	// a strip writes only a copy
+	if (!structure || (writes && copiesWrites(node))) return keys
 	for (const prop of structure.props) {
 		if (!writes || prop.value.transforms || prop.hasDefault())
 			keys.add(prop.key)
@@ -3372,27 +3421,33 @@ const placesOf = (root: BaseRoot): Set<BaseRoot> => {
 	return places
 }
 
-// no place only checking an object may hold one another place writes
+type PlaceKeys = [place: BaseRoot, input: BaseRoot, keys: Set<PropertyKey>]
+
+// no place only checking or copying an object may hold one another writes
 const assertChecksUnwritten = (root: BaseRoot): void => {
-	const places = placesOf(root)
-	const checks: [checked: BaseRoot, read: Set<PropertyKey>][] = []
-	for (const place of places) {
-		if (place.transforms || !canBeObject(place)) continue
-		const read = keysAt(place, false)
-		if (read.size) checks.push([place, read])
-	}
-	if (!checks.length) return
-	for (const place of places) {
-		if (!place.transforms) continue
+	const reads: PlaceKeys[] = []
+	const writes: PlaceKeys[] = []
+	for (const place of placesOf(root)) {
+		if (!place.transforms) {
+			if (canBeObject(place)) reads.push([place, place, keysAt(place, false)])
+			continue
+		}
 		const resolved = place.hasKind("alias") ? place.resolution : place
 		for (const branch of resolved.branches) {
-			const written = keysAt(branch, true)
+			if (copiesWrites(branch))
+				reads.push([place, branch.rawIn, keysAt(branch, false)])
+			else writes.push([place, branch.rawIn, keysAt(branch, true)])
+		}
+	}
+	// a place transforms what it receives by one branch
+	for (const [writer, written, writtenKeys] of writes) {
+		if (!writtenKeys.size) continue
+		for (const [reader, read, readKeys] of reads) {
 			if (
-				written.size &&
-				checks.some(
-					([checked, read]) =>
-						writesRead(written, read) && branch.rawIn.overlaps(checked)
-				)
+				reader !== writer &&
+				readKeys.size &&
+				writesRead(writtenKeys, readKeys) &&
+				written.overlaps(read)
 			)
 				throwParseError(inPlaceCheckMessage)
 		}
@@ -3423,6 +3478,20 @@ const rootUnitsOf = (root: BaseRoot, mutatesInput = false): RootUnit[] => {
 	}
 	return units
 }
+
+// what a call records of its writes, which each call starts anew
+const recordsWrites: readonly unknown[] = [
+	runtime.transformOnce,
+	runtime.transformCyclicOnce,
+	runtime.transformResolutionOnce,
+	runtime.writesInPlace
+]
+
+// a call records its writes where a place can reach what another wrote
+const tracksWrites = (root: BaseRoot): boolean =>
+	rootUnitsOf(root, true).some(unit =>
+		unit.refs.some(ref => recordsWrites.includes(ref))
+	)
 
 // a pass can reach content-equal roots, which share a name but not a unit
 const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
@@ -3737,5 +3806,5 @@ export const inPlaceReadMessage = writeUnprecompilableMessage(
 )
 
 export const inPlaceCheckMessage = writeUnprecompilableMessage(
-	"with mutatesInput, a check of an object a transform at another place may write"
+	"with mutatesInput, a check or copy of an object a transform at another place may write"
 )

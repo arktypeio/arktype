@@ -18,7 +18,7 @@ It needs the compiler API of TypeScript 5.5 to 6 from the optional `typescript` 
 
 ### Write standalone validators for size with `optimize: "size"`
 
-`optimize: "size"` writes validators for size rather than speed: their functions compile as they're first called, validators whose root applies are written alike share one, and a unit's traversals are declared at the top level of its module. The benchmarked login, moltar and shop apps lose 66, 86 and 987 bytes gzipped, and 63, 51 and 632 with every other option. A site calling several validators in turn runs 46 to 48% more instructions per call, and a validation bundled by esbuild or loaded unbundled up to 31% or 37% more, as the README details.
+`optimize: "size"` writes validators for size rather than speed: their functions compile as they're first called, validators whose root applies are written alike share one, and a unit's traversals are declared at the top level of its module. The benchmarked login, moltar and shop apps lose 66, 86 and 987 bytes gzipped, and 63, 51 and 637 with every other option. A site calling several validators in turn runs 46 to 48% more instructions per call, and a validation bundled by esbuild or loaded unbundled up to 31% or 37% more, as the README details.
 
 ```ts
 precompile.vite({ optimize: "size" })
@@ -34,7 +34,7 @@ precompile.vite({ errors: "none" })
 
 ### Write what a standalone validator transforms into its input with `mutatesInput: true`
 
-A standalone validator transforms a copy of its input, as arktype does. `mutatesInput: true` writes its defaults and morphed values into the input, which it returns, so it copies no object but one it deletes undeclared keys from or one holding itself through a cyclic Scope. Writing an input that can't be written, like a frozen object, then throws, a validation that fails can leave some of its writes, and a key one constraint transforms in place before another transforms it fails the build. An object the input holds at two places it transforms is transformed once where one cyclic Type transforms it at both, and the validation throws anywhere else rather than read what another place wrote. A morph, piped Type or union that would read into an object after a transform may have written it fails the build, as does a place only checking an object a transform at another place may write a key of that it checks, and a validation that fails can still read what another place wrote.
+A standalone validator transforms a copy of its input, as arktype does. `mutatesInput: true` writes its defaults and morphed values into the input, which it returns, so it copies no object but one it deletes undeclared keys from or one holding itself through a cyclic Scope. Writing an input that can't be written, like a frozen object, then throws, a validation that fails can leave some of its writes, and a key one constraint transforms in place before another transforms it fails the build. An object the input holds at two places it transforms in place is transformed once where one cyclic Type transforms it at both, and the validation throws anywhere else rather than read what another place wrote, which it records only where a place can reach an object another writes. A morph, piped Type or union that would read into an object after a transform may have written it fails the build, as does a place only checking or copying an object a transform at another place may write a key of that it reads, and a validation that fails can still read what another place wrote.
 
 ```ts
 precompile.vite({ mutatesInput: true })
