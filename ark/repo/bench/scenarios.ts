@@ -929,3 +929,183 @@ export const Tree = {
 		required: ["id", "children"]
 	}
 }
+
+// transforms below the root, where a library copies what it changes or writes it into its input
+export const itemsMorphData = Array.from({ length: 100 }, (_, i) => ({
+	id: i,
+	name: `item${i}`,
+	count: `${i}`
+}))
+
+export const ItemsMorph = {
+	arktype: type({
+		id: "number",
+		name: "string",
+		count: "string.numeric.parse"
+	}).array(),
+	zod: z.array(
+		z.object({
+			id: z.number(),
+			name: z.string(),
+			count: z.string().regex(numericStringMatcher).transform(Number)
+		})
+	),
+	valibot: v.array(
+		v.object({
+			id: v.number(),
+			name: v.string(),
+			count: v.pipe(
+				v.string(),
+				v.regex(numericStringMatcher),
+				v.transform(Number)
+			)
+		})
+	),
+	zodMini: zm.array(
+		zm.object({
+			id: zm.number(),
+			name: zm.string(),
+			count: zm.pipe(
+				zm.string().check(zm.regex(numericStringMatcher)),
+				zm.transform(Number)
+			)
+		})
+	),
+	typebox: Compile(
+		TypeBox.Array(
+			TypeBox.Object({
+				id: TypeBox.Number(),
+				name: TypeBox.String(),
+				count: TypeBox.Decode(
+					TypeBox.String({ pattern: numericStringMatcher.source }),
+					Number
+				)
+			})
+		)
+	)
+}
+
+export const itemsDefaultsData = Array.from({ length: 100 }, (_, i) => ({
+	id: i,
+	name: `item${i}`
+}))
+
+export const ItemsDefaults = {
+	arktype: type({
+		id: "number",
+		name: "string",
+		active: "boolean = false"
+	}).array(),
+	zod: z.array(
+		z.object({
+			id: z.number(),
+			name: z.string(),
+			active: z.boolean().default(false)
+		})
+	),
+	valibot: v.array(
+		v.object({
+			id: v.number(),
+			name: v.string(),
+			active: v.optional(v.boolean(), false)
+		})
+	),
+	zodMini: zm.array(
+		zm.object({
+			id: zm.number(),
+			name: zm.string(),
+			active: zm._default(zm.boolean(), false)
+		})
+	),
+	typebox: Compile(
+		TypeBox.Array(
+			TypeBox.Object({
+				id: TypeBox.Number(),
+				name: TypeBox.String(),
+				active: TypeBox.Optional(TypeBox.Boolean({ default: false }))
+			})
+		)
+	),
+	ajv: {
+		type: "array",
+		items: {
+			type: "object",
+			properties: {
+				id: { type: "number" },
+				name: { type: "string" },
+				active: { type: "boolean", default: false }
+			},
+			required: ["id", "name"]
+		}
+	}
+}
+
+export const moltarMorphData = {
+	...moltarData,
+	deeplyNested: { ...moltarData.deeplyNested, num: "1" }
+}
+
+export const MoltarMorph = {
+	arktype: type({
+		number: "number",
+		negNumber: "number",
+		maxNumber: "number",
+		string: "string",
+		longString: "string",
+		boolean: "boolean",
+		deeplyNested: {
+			foo: "string",
+			num: "string.numeric.parse",
+			bool: "boolean"
+		}
+	}),
+	zod: z.object({
+		...Moltar.zod.shape,
+		deeplyNested: z.object({
+			foo: z.string(),
+			num: z.string().regex(numericStringMatcher).transform(Number),
+			bool: z.boolean()
+		})
+	}),
+	valibot: v.object({
+		...Moltar.valibot.entries,
+		deeplyNested: v.object({
+			foo: v.string(),
+			num: v.pipe(
+				v.string(),
+				v.regex(numericStringMatcher),
+				v.transform(Number)
+			),
+			bool: v.boolean()
+		})
+	}),
+	zodMini: zm.object({
+		...moltarZodMini,
+		deeplyNested: zm.object({
+			foo: zm.string(),
+			num: zm.pipe(
+				zm.string().check(zm.regex(numericStringMatcher)),
+				zm.transform(Number)
+			),
+			bool: zm.boolean()
+		})
+	}),
+	typebox: Compile(
+		TypeBox.Object({
+			number: TypeBox.Number(),
+			negNumber: TypeBox.Number(),
+			maxNumber: TypeBox.Number(),
+			string: TypeBox.String(),
+			longString: TypeBox.String(),
+			boolean: TypeBox.Boolean(),
+			deeplyNested: TypeBox.Object({
+				foo: TypeBox.String(),
+				num: TypeBox.Decode(
+					TypeBox.String({ pattern: numericStringMatcher.source }),
+					Number
+				),
+				bool: TypeBox.Boolean()
+			})
+		})
+	)
+}

@@ -1,4 +1,5 @@
 // run `pnpm benchTypia` first; `pnpm benchCount` counts these arms' instructions instead of timing them
+import { arktypeConfigJson } from "./arktypeConfig.ts"
 import { noSuggest } from "@ark/util"
 import {
 	precompileStandalone,
@@ -58,17 +59,27 @@ const standaloneExports = {
 	Constraints: s.Constraints.arktype,
 	Morph: s.Morph.arktype,
 	Defaults: s.Defaults.arktype,
+	ItemsMorph: s.ItemsMorph.arktype,
+	ItemsDefaults: s.ItemsDefaults.arktype,
+	MoltarMorph: s.MoltarMorph.arktype,
 	Tree: s.Tree.arktype,
 	...Object.fromEntries(s.Rotating.map((t, i) => [`Rotating${i}`, t.arktype]))
 }
 
 // e.g. BENCH_STANDALONE_OPTIONS='{"errors":"none"}' builds the standalone arm with those options, into artifacts of
-// their own, so runs with other options can share out/
+// their own, so runs with other options can share out/. arktype's configuration changes the Types they're built from
 const optionsJson = process.env.BENCH_STANDALONE_OPTIONS
-const standaloneOptions: StandaloneOptions = JSON.parse(optionsJson ?? "{}")
+const standaloneOptions: StandaloneOptions = {
+	// the standalone arm writes in place only as its options say
+	mutatesInput: false,
+	...JSON.parse(optionsJson ?? "{}")
+}
 const artifactSuffix =
-	optionsJson ?
-		`.${createHash("sha1").update(optionsJson).digest("hex").slice(0, 8)}`
+	optionsJson || arktypeConfigJson ?
+		`.${createHash("sha1")
+			.update(`${optionsJson}\n${arktypeConfigJson}`)
+			.digest("hex")
+			.slice(0, 8)}`
 	:	""
 
 const copiedPackageUrls = ["type", "schema"].map(
@@ -101,7 +112,9 @@ const loadUndetailedRuntime = () =>
 
 const standaloneOf = async (errors: "all" | "first") => {
 	const opts: StandaloneOptions =
-		errors === "all" ? { errors, ...standaloneOptions } : { errors }
+		errors === "all" ?
+			{ errors, ...standaloneOptions }
+		:	{ errors, mutatesInput: false }
 	const path = join(out, `scoreboard.standalone.${errors}${artifactSuffix}.js`)
 	if (!process.env.BENCH_LIBRARY)
 		writeFileSync(path, precompileStandalone(standaloneExports, opts).code)
@@ -445,6 +458,27 @@ const cases: Case[] = [
 		[s.defaultsData],
 		{ ...s.Defaults, ...arkOf("Defaults") },
 		{ typeboxMethod: "Default" }
+	),
+	caseOf(
+		"items morph",
+		"parse",
+		[s.itemsMorphData],
+		{ ...s.ItemsMorph, ...arkOf("ItemsMorph") },
+		{ typeboxMethod: "Decode" }
+	),
+	caseOf(
+		"items defaults",
+		"parse",
+		[s.itemsDefaultsData],
+		{ ...s.ItemsDefaults, ...arkOf("ItemsDefaults") },
+		{ typeboxMethod: "Default" }
+	),
+	caseOf(
+		"moltar morph",
+		"parse",
+		[s.moltarMorphData],
+		{ ...s.MoltarMorph, ...arkOf("MoltarMorph") },
+		{ typeboxMethod: "Decode" }
 	),
 	caseOf("tree", "parse", [s.treeData], {
 		...s.Tree,
