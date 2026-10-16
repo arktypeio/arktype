@@ -31,8 +31,10 @@ const listed = spawnSync(process.execPath, nodeArgs, {
 })
 if (listed.status !== 0) throw new Error(listed.stderr)
 
+const prefixes = (process.env.BENCH_CASES ?? "").split(",")
+
 const cases = (JSON.parse(listed.stdout) as string[]).filter(name =>
-	name.startsWith(process.env.BENCH_CASES ?? "")
+	prefixes.some(prefix => name.startsWith(prefix))
 )
 
 const benchedLibraries =

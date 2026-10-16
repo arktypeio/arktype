@@ -1,7 +1,11 @@
 // run `pnpm benchTypia` first; `pnpm benchCount` counts these arms' instructions instead of timing them
 import { noSuggest } from "@ark/util"
-import { precompileStandalone } from "arktype/internal/standalone.ts"
+import {
+	precompileStandalone,
+	type StandaloneOptions
+} from "arktype/internal/standalone.ts"
 import { fork, spawnSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import {
 	mkdirSync,
 	openSync,
@@ -9,7 +13,9 @@ import {
 	writeFileSync,
 	writeSync
 } from "node:fs"
+import { registerHooks } from "node:module"
 import { join } from "node:path"
+import { pathToFileURL } from "node:url"
 import { isDeepStrictEqual } from "node:util"
 import { Settings } from "typebox/system"
 import * as v from "valibot"
@@ -56,23 +62,61 @@ const standaloneExports = {
 	...Object.fromEntries(s.Rotating.map((t, i) => [`Rotating${i}`, t.arktype]))
 }
 
+// e.g. BENCH_STANDALONE_OPTIONS='{"errors":"none"}' builds the standalone arm with those options, into artifacts of
+// their own, so runs with other options can share out/
+const optionsJson = process.env.BENCH_STANDALONE_OPTIONS
+const standaloneOptions: StandaloneOptions = JSON.parse(optionsJson ?? "{}")
+const artifactSuffix =
+	optionsJson ?
+		`.${createHash("sha1").update(optionsJson).digest("hex").slice(0, 8)}`
+	:	""
+
+const copiedPackageUrls = ["type", "schema"].map(
+	name => `${pathToFileURL(join(import.meta.dirname, "..", "..", name)).href}/`
+)
+
+// the plugin resolves @ark/schema/runtime to @ark/schema/runtime/none for an errors "none" build, which is
+// published with issuesNone.ts in place of issues.ts, so that build's artifact gets copies of arktype/runtime and
+// @ark/schema's runtime written that way, and every other arm keeps the runtime it shares with arktype
+const loadUndetailedRuntime = () =>
+	registerHooks({
+		resolve: (specifier, context, nextResolve) => {
+			if (!context.parentURL?.endsWith("?none"))
+				return nextResolve(specifier, context)
+			const resolved = nextResolve(
+				specifier === "@ark/schema/runtime" ?
+					"@ark/schema/runtime/none"
+				:	specifier,
+				context
+			)
+			if (!copiedPackageUrls.some(url => resolved.url.startsWith(url)))
+				return resolved
+			const url = resolved.url.replace(
+				/\/schema\/shared\/issues\.ts$/,
+				"/schema/shared/issuesNone.ts"
+			)
+			return { ...resolved, url: `${url}?none` }
+		}
+	})
+
 const standaloneOf = async (errors: "all" | "first") => {
-	const path = join(out, `scoreboard.standalone.${errors}.js`)
-	if (!process.env.BENCH_LIBRARY) {
-		writeFileSync(
-			path,
-			precompileStandalone(standaloneExports, { errors }).code
-		)
-	}
+	const opts: StandaloneOptions =
+		errors === "all" ? { errors, ...standaloneOptions } : { errors }
+	const path = join(out, `scoreboard.standalone.${errors}${artifactSuffix}.js`)
+	if (!process.env.BENCH_LIBRARY)
+		writeFileSync(path, precompileStandalone(standaloneExports, opts).code)
 	// standalone validators refuse to load beside arktype unless its claim is cleared
 	delete (globalThis as Record<string, unknown>)[
 		noSuggest("loadedArktypeEntry")
 	]
+	const isUndetailed = opts.errors === "none"
+	if (isUndetailed) loadUndetailedRuntime()
 	// each export is a getter, creating the artifact's validators at its first call
+	const artifact: Record<string, () => unknown> = await import(
+		`${pathToFileURL(path).href}${isUndetailed ? "?none" : ""}`
+	)
 	return Object.fromEntries(
-		Object.entries((await import(path)) as Record<string, () => unknown>).map(
-			([name, get]) => [name, get()]
-		)
+		Object.entries(artifact).map(([name, get]) => [name, get()])
 	)
 }
 
@@ -717,8 +761,10 @@ const sample = (library: Library, caseIndex: number) => {
 const results: Record<string, Record<string, number[]>> = {}
 
 for (const [caseIndex, c] of cases.entries()) {
-	// e.g. BENCH_CASES="parse moltar"
-	if (!`${c.mode} ${c.name}`.startsWith(process.env.BENCH_CASES ?? "")) continue
+	// e.g. BENCH_CASES="parse moltar", or "issues ,errors " for the cases starting with either
+	const prefixes = (process.env.BENCH_CASES ?? "").split(",")
+	if (!prefixes.some(prefix => `${c.mode} ${c.name}`.startsWith(prefix)))
+		continue
 	const allArms = armsOf(c)
 	verify(c, allArms)
 	const arms = allArms.filter(arm => benchedLibraries.includes(arm.library))

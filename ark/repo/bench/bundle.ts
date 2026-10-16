@@ -1,4 +1,7 @@
-import { precompile } from "@ark/precompile/unplugin"
+import {
+	precompile,
+	type PrecompileUnpluginOptions
+} from "@ark/precompile/unplugin"
 import standaloneCode from "ajv/dist/standalone/index.js"
 import { _ } from "ajv/dist/compile/codegen/index.js"
 import { build, type Metafile } from "esbuild"
@@ -10,6 +13,11 @@ export const scenarios = ["login", "moltar", "shop"] as const
 export type Scenario = (typeof scenarios)[number]
 
 const apps = join(import.meta.dirname, "apps")
+
+// e.g. BENCH_STANDALONE_OPTIONS='{"errors":"none"}' builds the standalone bundles with those options
+const standaloneOptions: PrecompileUnpluginOptions = JSON.parse(
+	process.env.BENCH_STANDALONE_OPTIONS ?? "{}"
+)
 
 // ajv's standalone code, which needs no compiler at runtime
 const ajvModule = async (scenario: Scenario) => {
@@ -69,7 +77,8 @@ export const bundle = async (
 		metafile: true,
 		logLevel: "error",
 		plugins:
-			library === "standalone" ? [precompile.esbuild({ cwd: apps })]
+			library === "standalone" ?
+				[precompile.esbuild({ cwd: apps, ...standaloneOptions })]
 			: library === "standaloneFirst" ?
 				[precompile.esbuild({ cwd: apps, errors: "first" })]
 			:	[]
