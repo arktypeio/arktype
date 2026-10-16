@@ -305,14 +305,14 @@ const failureSources = {
 	invalid: [
 		"data, onFail",
 		`\tconst errors = new runtime.ArkErrors()
-	errors._.push({ code: "predicate", path: [], data })
+	errors._ = [{ code: "predicate", path: [], data }]
 	return onFail ? onFail(errors) : errors`
 	],
 	// a compact validator's failure, given what else its call passes
 	invalidCall: [
 		"data, args, onFail",
 		`\tconst errors = new runtime.ArkErrors()
-	errors._.push({ code: "predicate", path: [], data })
+	errors._ = [{ code: "predicate", path: [], data }]
 	if (args.length) {
 		if (args[0]) return runtime.pipedIntoUndetailed(args[0], errors)
 		if (args[1] !== undefined) onFail = args[1]
