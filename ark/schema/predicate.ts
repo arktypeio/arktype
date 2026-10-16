@@ -1,4 +1,5 @@
 import { BaseConstraint } from "./constraint.ts"
+import { isAsyncPredicate } from "./shared/async.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseErrorContext,
@@ -82,7 +83,13 @@ const implementation: nodeImplementationOf<Predicate.Declaration> =
 
 export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	serializedPredicate: RegisteredReference = registeredReference(this.predicate)
-	compiledCondition = `${this.serializedPredicate}(data, ctx)`
+	// a `narrowAsync` chain adds its own errors, so it gets the meta `.configure` set
+	chainMeta: ArkEnv.meta | undefined =
+		isAsyncPredicate(this.predicate) ? this.meta : undefined
+	compiledCondition =
+		this.chainMeta ?
+			`${this.serializedPredicate}(data, ctx, ${registeredReference(this.chainMeta)})`
+		:	`${this.serializedPredicate}(data, ctx)`
 	compiledNegation = `!${this.compiledCondition}`
 
 	impliedBasis = null
@@ -100,10 +107,11 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 
 	traverseApply: TraverseApply = (data, ctx) => {
 		const errorCount = ctx.currentErrorCount
-		if (
-			!this.predicate(data, ctx.external) &&
-			ctx.currentErrorCount === errorCount
-		)
+		const valid =
+			this.chainMeta ?
+				(this.predicate as Function)(data, ctx.external, this.chainMeta)
+			:	this.predicate(data, ctx.external)
+		if (!valid && ctx.currentErrorCount === errorCount)
 			ctx.errorFromNodeContext(this.errorContext)
 	}
 
