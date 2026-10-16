@@ -8,11 +8,7 @@ import type {
 
 // in place of issues.ts, so errors "none" ships nothing writing detail
 export class ArkErrors {
-	declare _: ArkIssue[]
-
-	constructor() {
-		this._ = []
-	}
+	_: ArkIssue[] = []
 
 	get [arkKind](): "errors" {
 		return "errors"
@@ -23,12 +19,18 @@ export class ArkErrors {
 	}
 
 	get issues(): readonly ArkIssue[] {
-		for (const issue of this._) issue.message ??= messageOf()
-		return this._
+		return this._.reduce(
+			(issues, issue) => ((issue.message ??= "is invalid"), issues),
+			this._
+		)
 	}
 
 	get summary(): string {
-		return this.issues.map(issue => issue.message).join("\n")
+		return this._.reduce(
+			(summary, issue) =>
+				summary + (summary && "\n") + (issue.message ?? "is invalid"),
+			""
+		)
 	}
 
 	toJSON(): readonly ArkIssue[] {
