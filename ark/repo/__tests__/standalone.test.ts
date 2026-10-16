@@ -1356,6 +1356,19 @@ name is missing`)
 		).throws("Cannot assign to read only property 'name'")
 	})
 
+	it("copies nothing it transforms where its build mutates input", () => {
+		const exports = {
+			Props: type({ name: "string.trim", role: "string = 'user'" }),
+			Index: type({ "[string]": "string.trim" }),
+			Tuple: type(["string.trim", "string = 'x'"])
+		}
+		const copies = /out [!=]== data|{ \.\.\.data }|copyOf/
+		attest(copies.test(precompileStandalone(exports).code)).equals(true)
+		attest(
+			copies.test(precompileStandalone(exports, { mutatesInput: true }).code)
+		).equals(false)
+	})
+
 	it("returns a new object holding the declared keys of one it deletes undeclared keys from, though its build mutates input", async () => {
 		const { Strict } = await loadMutating({
 			Strict: type({
