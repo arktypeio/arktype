@@ -228,6 +228,11 @@ export abstract class BaseNode<
 		self.meta = attachments.meta
 		self.children = attachments.children
 		this.$ = $
+		// own, so compiled traversals bound later replace them in place
+		const { traverseAllows, traverseApply, traverseTransform } = this
+		this.traverseAllows = traverseAllows
+		this.traverseApply = traverseApply
+		if (traverseTransform) this.traverseTransform = traverseTransform
 
 		let bits = 0
 		if (this.hasKind("morph")) {

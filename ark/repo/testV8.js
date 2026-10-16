@@ -41,6 +41,7 @@ const definitions = [
 	"0 < number <= 100",
 	"number >= 1 | bigint",
 	"string <= 5",
+	"string < 10",
 	"/^a/ | Date | Map",
 	/^b/i,
 	type("'x'").describe("an x"),
@@ -110,6 +111,34 @@ for (const nodes of Object.values(nodesByKind)) {
 }
 
 assertOneMapPerKind("after reading cached getters")
+
+// a Type is compiled when it's called again, binding its nodes' traversals
+for (const [i, def] of definitions.entries()) {
+	if (i % 2 === 0) continue
+	const t = type(def)
+	t(undefined)
+	t(undefined)
+}
+
+// these Types compile their divisor and pattern nodes inline, binding none
+for (const kind of checkedKinds) {
+	if (kind === "divisor" || kind === "pattern") continue
+	const bound = [...nodesByKind[kind]].filter(node => node.compiledUnit)
+	if (!bound.length || bound.length === nodesByKind[kind].size)
+		throw new Error(`Expected both bound and unbound ${kind} nodes to compare.`)
+}
+
+assertOneMapPerKind("after binding some of them")
+
+const uncalledCaches = Object.values(nodesByKind).flatMap(nodes =>
+	[...nodes]
+		.filter(node => !("rootApply" in node.cache))
+		.map(node => node.cache)
+)
+for (const cache of uncalledCaches) {
+	if (!eval("%HaveSameMap(uncalledCaches[0], cache)"))
+		throw new Error("⚠️  Bound and unbound nodes' caches have different maps.")
+}
 
 console.log(
 	`🏎️  ${Object.keys(nodesByKind).length} node kinds each have one map!`

@@ -323,7 +323,7 @@ An `@ark/schema` scope's `references` and `referencesById` are collected when fi
 
 ### Call a node's traversals as methods
 
-An `@ark/schema` node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, where each node held them as functions of its own, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`. A node the JIT compiles holds compiled `traverseAllows` and `traverseApply` of its own, which run detached, and a compiled `traverseTransform` only if it transforms; a jitless scope's nodes hold none. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
+An `@ark/schema` node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, where each node created functions of its own, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`. A node holds its class's methods until the JIT compiles it, which replaces `traverseAllows` and `traverseApply` with compiled functions that run detached, and `traverseTransform` too if the node transforms; a jitless scope's nodes keep the methods. `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `traverseAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
 
 ### Parse a node from a context of its own shape
 
@@ -331,7 +331,7 @@ An `@ark/schema` node's `traverseAllows`, `traverseApply` and `traverseTransform
 
 ### List fewer of a node's own keys
 
-An `@ark/schema` node's own enumerable keys no longer list what it derives from its kind and inner, nor what it memoizes as it's read, which is kept on its `cache`: the `includes*` flags, `isCyclic`, `allowsRequiresContext`, `innerEntries`, `metaJson` and `precedence`; `traverseApply` and `traverseTransform` until it's compiled, and `traverseAllows` too, except on `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes; a range's `boundOperandKind`, `comparator`, `numericLimit` and `limitKind`; and a prop's `required`, `optional`, `serializedKey` and `compiledKey`. Each reads as it did, by the same name, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
+An `@ark/schema` node's own enumerable keys no longer list what it derives from its kind and inner, nor what it memoizes as it's read, which is kept on its `cache`: the `includes*` flags, `isCyclic`, `allowsRequiresContext`, `innerEntries`, `metaJson` and `precedence`; a range's `boundOperandKind`, `comparator`, `numericLimit` and `limitKind`; and a prop's `required`, `optional`, `serializedKey` and `compiledKey`. Each reads as it did, by the same name, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
 
 ### Read a `Date`'s `getTime` when checking it
 
