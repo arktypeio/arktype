@@ -17,6 +17,7 @@ import {
 	type DefaultedNode,
 	type GenericRoot,
 	type InvokeOptions,
+	type MorphNode,
 	type NodeId,
 	type Optional,
 	type RootUnit,
@@ -3383,7 +3384,10 @@ const writesRead = (
 	[...written].some(key => read.has(key))
 
 // each node checking a place the input can hold an object at
-const placesOf = (root: BaseRoot): Set<BaseRoot> => {
+const placesOf = (
+	root: BaseRoot,
+	pipes: [morph: MorphNode, piped: BaseRoot][] = []
+): Set<BaseRoot> => {
 	const places = new Set<BaseRoot>()
 	const visited = new Set<BaseNode>()
 	const enter = (node: BaseRoot): void => {
@@ -3401,12 +3405,26 @@ const placesOf = (root: BaseRoot): Set<BaseRoot> => {
 		}
 		if (node.hasKind("morph")) {
 			if (node.inner.in) visit(node.inner.in)
+			let received = node.inner.in
 			let returned = false
+			let created = false
 			for (const morph of node.inner.morphs) {
-				if (!hasArkKind(morph, "root")) returned = true
+				if (!hasArkKind(morph, "root")) {
+					// arktype's function receiving no object returns a new one
+					created =
+						runtimePathsByValue.has(morph) &&
+						(created || (!!received && !canBeObject(received.rawOut)))
+					returned = true
+					received = undefined
+					continue
+				}
+				received = morph
 				// a function can return any object the input holds
-				else if (returned) enter(morph)
-				else visit(morph)
+				if (!returned) visit(morph)
+				else {
+					if (!created) pipes.push([node, morph])
+					enter(morph)
+				}
 			}
 			return
 		}
@@ -3427,7 +3445,8 @@ type PlaceKeys = [place: BaseRoot, input: BaseRoot, keys: Set<PropertyKey>]
 const assertChecksUnwritten = (root: BaseRoot): void => {
 	const reads: PlaceKeys[] = []
 	const writes: PlaceKeys[] = []
-	for (const place of placesOf(root)) {
+	const pipes: [MorphNode, BaseRoot][] = []
+	for (const place of placesOf(root, pipes)) {
 		if (!place.transforms) {
 			if (canBeObject(place)) reads.push([place, place, keysAt(place, false)])
 			continue
@@ -3451,6 +3470,16 @@ const assertChecksUnwritten = (root: BaseRoot): void => {
 			)
 				throwParseError(inPlaceCheckMessage)
 		}
+	}
+	// a Type piped after a function records anew, so writes once, at the root
+	for (const [morph, piped] of pipes) {
+		const nested: [MorphNode, BaseRoot][] = []
+		const inner = placesOf(piped, nested)
+		if (
+			writes.some(([place, , keys]) => keys.size && inner.has(place)) &&
+			(!root.branches.includes(morph) || nested.some(([m]) => m === morph))
+		)
+			throwParseError(inPlacePipeMessage)
 	}
 }
 
@@ -3807,4 +3836,8 @@ export const inPlaceReadMessage = writeUnprecompilableMessage(
 
 export const inPlaceCheckMessage = writeUnprecompilableMessage(
 	"with mutatesInput, a check or copy of an object a transform at another place may write"
+)
+
+export const inPlacePipeMessage = writeUnprecompilableMessage(
+	"with mutatesInput, a Type piped after a function transforming an object beside another transform"
 )

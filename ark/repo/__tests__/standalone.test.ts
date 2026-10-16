@@ -23,6 +23,7 @@ import { de } from "arktype/locales/de"
 import {
 	inPlaceCheckMessage,
 	inPlaceKeyMessage,
+	inPlacePipeMessage,
 	inPlaceReadMessage,
 	precompileStandalone,
 	precompileStandaloneModules,
@@ -1656,6 +1657,47 @@ name is missing`)
 			a: { n: 1, m: "x" },
 			b: { n: 1, m: "x" }
 		})
+	})
+
+	it("rejects a Type piped after a function that transforms an object beside another transform, where its build mutates input", async () => {
+		const L = type({ n: "string.numeric.parse" })
+		const inner = standIn((o: { inner: object }) => o.inner, "inner")
+		const boxed = standIn((s: string) => ({ n: s }), "boxed")
+		const paramsOf = (fn: Function): FactoryParam[] => [
+			{ kind: "function", label: "`fn`", value: fn }
+		]
+		const build = (T: type.Any, fn: Function) => () =>
+			precompileStandalone(
+				{ T: { type: T, params: paramsOf(fn) } },
+				{ mutatesInput: true }
+			)
+		const Held = type({ inner: "object" })
+		// arktype parses s at both places of { a: { inner: s }, b: s }
+		attest(build(type({ a: Held.pipe(inner).to(L), b: L }), inner)).throws(
+			inPlacePipeMessage
+		)
+		attest(
+			build(type({ a: Held.pipe(inner).to({ n: "string.trim" }), b: L }), inner)
+		).throws(inPlacePipeMessage)
+		// each call can return what one before it wrote, as a closure can
+		attest(build(type("string").pipe(boxed).to(L).array(), boxed)).throws(
+			inPlacePipeMessage
+		)
+		const Cyclic = scope({
+			c: [
+				["string", "=>", boxed],
+				"|>",
+				{ n: "string.numeric.parse", "next?": "c" }
+			]
+		}).export().c
+		attest(build(Cyclic, boxed)).throws(inPlacePipeMessage)
+		// a Type piped at the root writes alone
+		const { Root } = await loadMutating({
+			Root: { type: Held.pipe(inner).to({ m: L }), params: paramsOf(inner) }
+		})
+		const held: { m: { n: unknown } } = { m: { n: "1" } }
+		attest(Root(inner)({ inner: held })).is(held)
+		attest(held).equals({ m: { n: 1 } })
 	})
 
 	it("transforms anew each call where its build mutates input, though its errors say only that data is invalid", async () => {

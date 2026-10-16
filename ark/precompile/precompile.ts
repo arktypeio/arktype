@@ -31,6 +31,7 @@ import {
 	holeNamePattern,
 	inPlaceCheckMessage,
 	inPlaceKeyMessage,
+	inPlacePipeMessage,
 	inPlaceReadMessage,
 	introspectionMembers,
 	isTypedFn,
@@ -1909,7 +1910,8 @@ export class Precompiler {
 			(
 				reasons.includes(inPlaceKeyMessage) ||
 					reasons.includes(inPlaceReadMessage) ||
-					reasons.includes(inPlaceCheckMessage)
+					reasons.includes(inPlaceCheckMessage) ||
+					reasons.includes(inPlacePipeMessage)
 			) ?
 				inPlaceHint
 			:	undefined
