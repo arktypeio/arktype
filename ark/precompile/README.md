@@ -124,19 +124,19 @@ What each option saves of the bundles arktype benchmarks, minified and gzipped, 
 
 | option                            | gives up                                                   | login      | moltar     | shop         |
 | --------------------------------- | ---------------------------------------------------------- | ---------- | ---------- | ------------ |
-| `errors: "none"`                  | what each issue says of what failed                        | 1740 / 695 | 2286 / 770 | 13034 / 3019 |
-| `members: { assert: false }`      | `assert`                                                   | 57 / 21    | 57 / 18    | 51 / 22      |
-| `members: { meta: false }`        | `meta`                                                     | 75 / 34    | 75 / 34    | 271 / 32     |
+| `errors: "none"`                  | what each issue says of what failed                        | 1740 / 695 | 2286 / 770 | 13034 / 3020 |
+| `members: { assert: false }`      | `assert`                                                   | 57 / 20    | 57 / 18    | 51 / 23      |
+| `members: { meta: false }`        | `meta`                                                     | 75 / 34    | 75 / 34    | 271 / 33     |
 | `members: { "~standard": false }` | `~standard`                                                | 123 / 57   | 123 / 58   | 115 / 54     |
-| `members: { methods: false }`     | `traverse()`, `from()` and `toString()`                    | 227 / 91   | 229 / 91   | 208 / 30     |
-| `freeze: false`                   | validators and their members frozen                        | 29 / 10    | 29 / 11    | 21 / 7       |
-| `config: false`                   | calling `configure()`                                      | 98 / 40    | 98 / 40    | 195 / 56     |
-| `lazy: false`                     | creating a validator where it's first read                 | 16 / 10    | 16 / 7     | 292 / 98     |
-| `checks: "none"`                  | checking the Types a factory receives                      | 97 / 52    | 97 / 52    | 1581 / 742   |
+| `members: { methods: false }`     | `traverse()`, `from()` and `toString()`                    | 227 / 91   | 229 / 91   | 208 / 31     |
+| `freeze: false`                   | validators and their members frozen                        | 29 / 10    | 29 / 11    | 21 / 8       |
+| `config: false`                   | calling `configure()`                                      | 98 / 40    | 98 / 40    | 195 / 57     |
+| `lazy: false`                     | creating a validator where it's first read                 | 16 / 10    | 16 / 7     | 292 / 99     |
+| `checks: "none"`                  | checking the Types a factory receives                      | 97 / 53    | 97 / 52    | 1581 / 743   |
 | `mutatesInput: true`              | the input left as it was, and Types reading what it writes | 0 / 0      | 0 / 0      | 3101 / 954   |
-| `optimize: "size"`                | validating and loading as fast                             | 133 / 66   | 159 / 86   | 3349 / 987   |
+| `optimize: "size"`                | validating and loading as fast                             | 133 / 66   | 159 / 86   | 3349 / 988   |
 
-Every option together leaves them 1027 / 589, 1184 / 584 and 9179 / 3238 bytes, from 3550 / 1702, 4219 / 1771 and 30827 / 8953.
+Every option together leaves them 1027 / 589, 1184 / 584 and 9179 / 3238 bytes, from 3550 / 1702, 4219 / 1771 and 30827 / 8954.
 
 ## Configuration
 
