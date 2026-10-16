@@ -21,6 +21,7 @@ import { arkKindOf, flatMorph } from "@ark/util"
 import { ark, generic, match, scope, type, type Scope } from "arktype"
 import { de } from "arktype/locales/de"
 import {
+	inPlaceCheckMessage,
 	inPlaceKeyMessage,
 	inPlaceReadMessage,
 	precompileStandalone,
@@ -1586,6 +1587,48 @@ name is missing`)
 				})
 			)
 		).throws(inPlaceReadMessage)
+	})
+
+	it("rejects a check of an object a transform at another place may write, where its build mutates input", async () => {
+		const N = type({ n: "string.numeric.parse" })
+		const build = (T: StandaloneExport) => () =>
+			precompileStandalone({ T }, { mutatesInput: true })
+		// arktype returns { a: s, b: s }'s b as s was, before a's transform
+		attest(build(type({ a: N, b: { n: "string" } }))).throws(
+			inPlaceCheckMessage
+		)
+		attest(build(type([N, { n: "string" }]))).throws(inPlaceCheckMessage)
+		attest(
+			build(type({ a: { y: "string = 'w'" }, b: { "y?": "undefined" } }))
+		).throws(inPlaceCheckMessage)
+		attest(
+			build(
+				type({
+					a: { "+": "delete", n: "number" },
+					b: { k: "string", n: "number" }
+				})
+			)
+		).throws(inPlaceCheckMessage)
+		// the input can hold itself, as s = { n: "1", self: s }
+		attest(
+			build(type({ n: "string.numeric.parse", self: { n: "string" } }))
+		).throws(inPlaceCheckMessage)
+		// b can't hold what a writes, or reads no key a writes
+		const { Disjoint, Unread } = await loadMutating({
+			Disjoint: type({
+				a: { kind: "'a'", n: "string.numeric.parse" },
+				b: { kind: "'b'", n: "string" }
+			}),
+			Unread: type({ a: N, b: { m: "string" } })
+		})
+		attest(
+			Disjoint({ a: { kind: "a", n: "1" }, b: { kind: "b", n: "2" } })
+		).equals({ a: { kind: "a", n: 1 }, b: { kind: "b", n: "2" } })
+		const shared = { n: "1", m: "x" }
+		attest(Unread({ a: shared, b: shared })).equals({
+			a: { n: 1, m: "x" },
+			b: { n: 1, m: "x" }
+		})
 	})
 
 	it("transforms anew each call where its build mutates input, though its errors say only that data is invalid", async () => {

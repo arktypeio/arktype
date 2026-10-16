@@ -29,6 +29,7 @@ import {
 	appendPath,
 	defaultMembers,
 	holeNamePattern,
+	inPlaceCheckMessage,
 	inPlaceKeyMessage,
 	inPlaceReadMessage,
 	introspectionMembers,
@@ -1907,7 +1908,8 @@ export class Precompiler {
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
 			(
 				reasons.includes(inPlaceKeyMessage) ||
-					reasons.includes(inPlaceReadMessage)
+					reasons.includes(inPlaceReadMessage) ||
+					reasons.includes(inPlaceCheckMessage)
 			) ?
 				inPlaceHint
 			:	undefined

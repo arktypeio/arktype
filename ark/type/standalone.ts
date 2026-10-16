@@ -28,6 +28,7 @@ import {
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
+	arrayIndexMatcher,
 	errorWritersByCode,
 	rootApplyRuntime,
 	writeRootApply,
@@ -3274,6 +3275,130 @@ const assertReadsUnwritten = (root: BaseRoot): void => {
 	scan(root, true)
 }
 
+const everyKey = Symbol("every key")
+const everyIndex = Symbol("every index")
+
+// the keys of the object at a place that a node there writes or checks
+const keysAt = (
+	node: BaseNode,
+	writes: boolean,
+	keys = new Set<PropertyKey>(),
+	seen = new Set<BaseNode>()
+): Set<PropertyKey> => {
+	if (seen.has(node)) return keys
+	seen.add(node)
+	if (node.hasKind("alias")) return keysAt(node.resolution, writes, keys, seen)
+	if (node.hasKind("union")) {
+		for (const branch of node.branches) keysAt(branch, writes, keys, seen)
+		return keys
+	}
+	if (node.hasKind("morph")) {
+		if (node.inner.in) keysAt(node.inner.in, writes, keys, seen)
+		// a Type piped before any function receives the same object
+		for (const morph of node.inner.morphs) {
+			if (!hasArkKind(morph, "root")) break
+			keysAt(morph, writes, keys, seen)
+		}
+		return keys
+	}
+	if (!node.hasKind("intersection")) return keys
+	// a predicate can read any key
+	if (!writes && node.inner.predicate) keys.add(everyKey)
+	const structure = node.structure
+	if (!structure) return keys
+	for (const prop of structure.props) {
+		if (!writes || prop.value.transforms || prop.hasDefault())
+			keys.add(prop.key)
+	}
+	if (structure.index?.some(index => !writes || index.value.transforms))
+		keys.add(everyKey)
+	if (structure.sequence && (!writes || structure.sequence.transforms))
+		keys.add(everyIndex)
+	if (structure.undeclared === (writes ? "delete" : "reject"))
+		keys.add(everyKey)
+	return keys
+}
+
+const isIndex = (key: PropertyKey): boolean =>
+	key === "length" || (typeof key === "string" && arrayIndexMatcher.test(key))
+
+const writesRead = (
+	written: Set<PropertyKey>,
+	read: Set<PropertyKey>
+): boolean =>
+	written.has(everyKey) ||
+	read.has(everyKey) ||
+	(written.has(everyIndex) &&
+		(read.has(everyIndex) || [...read].some(isIndex))) ||
+	(read.has(everyIndex) && [...written].some(isIndex)) ||
+	[...written].some(key => read.has(key))
+
+// each node checking a place the input can hold an object at
+const placesOf = (root: BaseRoot): Set<BaseRoot> => {
+	const places = new Set<BaseRoot>()
+	const visited = new Set<BaseNode>()
+	const enter = (node: BaseRoot): void => {
+		if (places.has(node)) return
+		places.add(node)
+		visit(node)
+	}
+	const visit = (node: BaseNode): void => {
+		if (visited.has(node)) return
+		visited.add(node)
+		if (node.hasKind("alias")) return visit(node.resolution)
+		if (node.hasKind("union")) {
+			for (const branch of node.branches) visit(branch)
+			return
+		}
+		if (node.hasKind("morph")) {
+			if (node.inner.in) visit(node.inner.in)
+			let returned = false
+			for (const morph of node.inner.morphs) {
+				if (!hasArkKind(morph, "root")) returned = true
+				// a function can return any object the input holds
+				else if (returned) enter(morph)
+				else visit(morph)
+			}
+			return
+		}
+		if (!node.hasKind("intersection") || !node.structure) return
+		const { props, index, sequence } = node.structure
+		for (const prop of props) enter(prop.value)
+		for (const signature of index ?? []) enter(signature.value)
+		for (const element of sequence?.prevariadic ?? []) enter(element.node)
+		for (const element of sequence?.variadicOrPostfix ?? []) enter(element)
+	}
+	enter(root)
+	return places
+}
+
+// no place only checking an object may hold one another place writes
+const assertChecksUnwritten = (root: BaseRoot): void => {
+	const places = placesOf(root)
+	const checks: [checked: BaseRoot, read: Set<PropertyKey>][] = []
+	for (const place of places) {
+		if (place.transforms || !canBeObject(place)) continue
+		const read = keysAt(place, false)
+		if (read.size) checks.push([place, read])
+	}
+	if (!checks.length) return
+	for (const place of places) {
+		if (!place.transforms) continue
+		const resolved = place.hasKind("alias") ? place.resolution : place
+		for (const branch of resolved.branches) {
+			const written = keysAt(branch, true)
+			if (
+				written.size &&
+				checks.some(
+					([checked, read]) =>
+						writesRead(written, read) && branch.rawIn.overlaps(checked)
+				)
+			)
+				throwParseError(inPlaceCheckMessage)
+		}
+	}
+}
+
 // a build writing in place has units of its own, differing only in code
 const unitsByRoot = [
 	new WeakMap<BaseRoot, RootUnit[]>(),
@@ -3284,7 +3409,10 @@ const rootUnitsOf = (root: BaseRoot, mutatesInput = false): RootUnit[] => {
 	const cached = unitsByRoot[+mutatesInput]
 	let units = cached.get(root)
 	if (!units) {
-		if (mutatesInput) assertReadsUnwritten(root)
+		if (mutatesInput) {
+			assertReadsUnwritten(root)
+			assertChecksUnwritten(root)
+		}
 		cached.set(
 			root,
 			(units = precompileRootUnits(root, {
@@ -3606,4 +3734,8 @@ export const inPlaceKeyMessage = writeUnprecompilableMessage(
 
 export const inPlaceReadMessage = writeUnprecompilableMessage(
 	"with mutatesInput, a morph or union reading an object a transform before it may have written"
+)
+
+export const inPlaceCheckMessage = writeUnprecompilableMessage(
+	"with mutatesInput, a check of an object a transform at another place may write"
 )
