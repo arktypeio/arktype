@@ -167,6 +167,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 		})
 
 		it("Vitest, configured as the README shows", async () => {
+			const { exitCode } = process
 			const vitest = await startVitest([], {
 				root: shadowed,
 				// Node imports the config, as it imports the plugin's source in this repo
@@ -176,6 +177,8 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 				env: { EXPECTED: printed }
 			})
 			await vitest.close()
+			// Vitest fails the process for the unhandled errors expected here
+			process.exitCode = exitCode
 			attest([
 				vitest.state.getCountOfFailedTests(),
 				vitest.state.getFiles().length,
