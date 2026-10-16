@@ -3278,15 +3278,21 @@ const selectsByHeld = (node: UnionNode): boolean => {
 
 // no morph or union may read into an object a place before it can write
 const assertReadsUnwritten = (root: BaseRoot): void => {
-	const scanned = new Map<BaseNode, boolean>()
-	const scan = (node: BaseNode, unwritten: boolean): void => {
+	const scanned = new Map<BaseNode, number>()
+	// clean where nothing in the call can have been written yet
+	const scan = (node: BaseNode, unwritten: boolean, clean: boolean): void => {
+		const state =
+			clean ? 2
+			: unwritten ? 1
+			: 0
 		const previous = scanned.get(node)
-		if (!node.transforms || previous === false || previous === unwritten) return
-		scanned.set(node, unwritten)
-		if (node.hasKind("alias")) return scan(node.resolution, unwritten)
+		if (!node.transforms || (previous !== undefined && previous <= state))
+			return
+		scanned.set(node, state)
+		if (node.hasKind("alias")) return scan(node.resolution, unwritten, clean)
 		if (node.hasKind("union")) {
 			if (!unwritten && selectsByHeld(node)) throwParseError(inPlaceReadMessage)
-			for (const branch of node.branches) scan(branch, unwritten)
+			for (const branch of node.branches) scan(branch, unwritten, clean)
 			return
 		}
 		if (node.hasKind("structure")) {
@@ -3296,32 +3302,38 @@ const assertReadsUnwritten = (root: BaseRoot): void => {
 					undefined
 				:	node.props.find(prop => prop.value.transforms)
 			for (const child of node.children) {
-				if (child === first) scan(first.value, unwritten)
-				else scan(child, false)
+				if (child === first) scan(first.value, unwritten, clean)
+				else scan(child, false, false)
 			}
 			return
 		}
 		if (!node.hasKind("morph")) {
+			const isIntersection = node.hasKind("intersection")
 			for (const child of node.children)
-				scan(child, unwritten && node.hasKind("intersection"))
+				scan(child, unwritten && isIntersection, clean && isIntersection)
 			return
 		}
 		const input = node.inner.in
-		if (input) scan(input, unwritten)
-		// a morph from a value that can't be an object returns a new one
+		if (input) scan(input, unwritten, clean)
 		let received =
 			(unwritten && !input?.transforms) ||
 			!canBeObject(input ? input.rawOut : node.rawIn)
+		clean &&= !input?.transforms
 		for (const morph of node.morphs) {
 			const isType = hasArkKind(morph, "root")
 			if (!received && (!isType || canBeObject(morph.rawIn)))
 				throwParseError(inPlaceReadMessage)
-			if (!isType) continue
-			scan(morph, received)
+			if (!isType) {
+				// a program's function can return any object its closure holds
+				if (!runtimePathsByValue.has(morph)) received = clean
+				continue
+			}
+			scan(morph, received, clean)
 			received = (received && !morph.transforms) || !canBeObject(morph.rawOut)
+			clean &&= !morph.transforms
 		}
 	}
-	scan(root, true)
+	scan(root, true, true)
 }
 
 const everyKey = Symbol("every key")

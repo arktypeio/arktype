@@ -1621,6 +1621,65 @@ name is missing`)
 		).throws(inPlaceReadMessage)
 	})
 
+	it("rejects a morph or union reading what a function of the program's returned after a transform, where its build mutates input", async () => {
+		const N = type({ n: "string.numeric.parse" })
+		const held = { n: "1" }
+		const closure = standIn(() => held, "closure")
+		const read = standIn((o: { n: unknown }) => o.n, "read")
+		const paramsOf = (...fns: Function[]) =>
+			fns.map(
+				(value, i): FactoryParam => ({
+					kind: "function",
+					label: `\`f${i}\``,
+					value
+				})
+			)
+		const build =
+			(T: type.Any, ...fns: Function[]) =>
+			() =>
+				precompileStandalone(
+					{ T: { type: T, params: paramsOf(...fns) } },
+					{ mutatesInput: true }
+				)
+		const Read = type("string").pipe(closure).pipe(read)
+		// arktype reads "1" from { a: held, b: "x" }, as a parsed a copy
+		attest(build(type({ a: N, b: Read }), closure, read)).throws(
+			inPlaceReadMessage
+		)
+		// an element's closure can return what one before it wrote
+		attest(build(type("string").pipe(closure).to(N).array(), closure)).throws(
+			inPlaceReadMessage
+		)
+		const isNumber = standIn(() => "number", "isNumber")
+		const isString = standIn(() => "string", "isString")
+		// arktype picks b's string branch
+		attest(
+			build(
+				type({
+					a: N,
+					b: type("string")
+						.pipe(closure)
+						.to(
+							type({ n: "number" })
+								.pipe(isNumber)
+								.or(type({ n: "string" }).pipe(isString))
+						)
+				}),
+				closure,
+				isNumber,
+				isString
+			)
+		).throws(inPlaceReadMessage)
+		// nothing is written before a
+		const { First } = await loadMutating({
+			First: { type: type({ a: Read, b: N }), params: paramsOf(closure, read) }
+		})
+		attest(First(closure, read)({ a: "x", b: held })).equals({
+			a: "1",
+			b: { n: 1 }
+		})
+	})
+
 	it("rejects a check or copy of an object a transform at another place may write, where its build mutates input", async () => {
 		const N = type({ n: "string.numeric.parse" })
 		const build = (T: StandaloneExport) => () =>
@@ -1680,15 +1739,8 @@ name is missing`)
 			build(type({ a: Held.pipe(inner).to({ n: "string.trim" }), b: L }), inner)
 		).throws(inPlacePipeMessage)
 		// each call can return what one before it wrote, as a closure can
-		attest(build(type("string").pipe(boxed).to(L).array(), boxed)).throws(
-			inPlacePipeMessage
-		)
 		const Cyclic = scope({
-			c: [
-				["string", "=>", boxed],
-				"|>",
-				{ n: "string.numeric.parse", "next?": "c" }
-			]
+			c: [["string", "=>", boxed], "|>", { "next?": "c" }]
 		}).export().c
 		attest(build(Cyclic, boxed)).throws(inPlacePipeMessage)
 		// a Type piped at the root writes alone
