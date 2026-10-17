@@ -19,6 +19,7 @@ import type {
 } from "./errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
+	failsIn,
 	issueAt,
 	issueWith,
 	mergeIssues,
@@ -30,7 +31,6 @@ import {
 	type FailureSite,
 	type UnionSite
 } from "./issues.ts"
-import { failsIn } from "./failsIn.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 

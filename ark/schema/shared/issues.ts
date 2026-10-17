@@ -1,6 +1,5 @@
 import { arkKind, type array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
-import { failsIn } from "./failsIn.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 
 /**
@@ -246,6 +245,24 @@ export const unionIssue = (
 	data,
 	expected: site.description
 })
+
+export const failsIn = (
+	ctx: FailureContext,
+	path: PropertyKey[],
+	apply: CompactApply,
+	value: unknown,
+	key: PropertyKey | undefined,
+	missing: FailureSite | undefined,
+	data: unknown
+): boolean | undefined => {
+	if (key === undefined) return !apply(value, ctx)
+	if (missing && value === undefined && !(key in (data as object)))
+		return ctx.failsAt(missing, data, key)
+	path.push(key)
+	const continues = apply(value, ctx)
+	path.pop()
+	return !continues
+}
 
 // a default's onFail, read from a standalone runtime
 export const throwOnDefault: ArkIssues.Handler = errors => errors.throw()
