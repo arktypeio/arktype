@@ -236,7 +236,7 @@ interface SiteFactory {
 	inputs: string[]
 	// the bindings the inputs read, whose imports the call keeps
 	bindings: Binding[]
-	imports: [specifier: string, name: string, local: string][]
+	imports: FactoryImport[]
 }
 
 const emptyFactory = (): SiteFactory => ({
@@ -259,12 +259,14 @@ const receive = (
 	factory.params.push(param)
 }
 
+type FactoryImport = [specifier: string, name: string, local: string]
+
 interface PassedInput {
 	expression: string
 	label: string
 	binding?: Binding
 	// an import the call adds, where no binding the site sees holds the input
-	imported?: SiteFactory["imports"][0]
+	imported?: FactoryImport
 }
 
 export interface Input {
@@ -376,7 +378,7 @@ export const assertPrecompileOptions = (opts: PrecompileOptions = {}): void => {
 				writeOptionValueMessage(
 					option,
 					printable(value),
-					describeBranches(values.map(value => JSON.stringify(value)))
+					describeBranches(values.map(v => JSON.stringify(v)))
 				)
 			)
 		}
@@ -513,7 +515,7 @@ export class Precompiler {
 					return true
 			}
 		}
-		for (const targetId of this.localImportsOf(source, id)) {
+		for (const targetId of this.textImportsOf(source, id)) {
 			if (!this.namesArk(targetId)) continue
 			const target = this.graph.moduleOf(targetId)
 			if (target instanceof SourceModule && this.exportsArk(target)) return true
@@ -522,7 +524,7 @@ export class Precompiler {
 	}
 
 	// the modules the build follows a module's text to, other than arktype's packages
-	localImportsOf(source: string, id: string): string[] {
+	textImportsOf(source: string, id: string): string[] {
 		const result: string[] = []
 		for (const [, specifier] of source.matchAll(importSpecifier)) {
 			if (arkPackageSpecifier.test(specifier)) continue
@@ -532,10 +534,10 @@ export class Precompiler {
 		return result
 	}
 
-	localClosureOf(
+	textClosureOf(
 		id: string,
 		importsOf = (id: string) =>
-			this.localImportsOf(this.graph.host.readFile(id) ?? "", id)
+			this.textImportsOf(this.graph.host.readFile(id) ?? "", id)
 	): string[] {
 		const result = [id]
 		for (let i = 0; i < result.length; i++) {
@@ -548,8 +550,8 @@ export class Precompiler {
 	// whether a module reaches itself through imports, read from modules' text, so one only types read counts too
 	private isOnCycle(module: SourceModule): boolean {
 		let isOnCycle = false
-		this.localClosureOf(module.id, id => {
-			const imports = this.localImportsOf(
+		this.textClosureOf(module.id, id => {
+			const imports = this.textImportsOf(
 				id === module.id ? module.source : (this.graph.host.readFile(id) ?? ""),
 				id
 			)
@@ -580,7 +582,7 @@ export class Precompiler {
 			const source = this.graph.host.readFile(reached[i])
 			if (source === undefined) continue
 			if (arktypeSpecifier.test(source)) return (this.namesArkById[id] = true)
-			for (const targetId of this.localImportsOf(source, reached[i])) {
+			for (const targetId of this.textImportsOf(source, reached[i])) {
 				if (this.namesArkById[targetId]) return (this.namesArkById[id] = true)
 				if (!(targetId in this.namesArkById) && !reached.includes(targetId))
 					reached.push(targetId)
@@ -893,7 +895,7 @@ export class Precompiler {
 	}
 
 	// a fold of `extend` reading `Base` throws where arktype's program would, before `Base` is set
-	private checkReadFirst(
+	private receiveReadFirst(
 		site: Site,
 		binding: Binding,
 		declaring: SourceModule,
@@ -958,7 +960,7 @@ export class Precompiler {
 			stack.push(id)
 			frames.push([
 				id,
-				this.localImportsOf(this.graph.host.readFile(id) ?? "", id)
+				this.textImportsOf(this.graph.host.readFile(id) ?? "", id)
 			])
 		}
 		visit(root)
@@ -1150,7 +1152,7 @@ export class Precompiler {
 	// a host can give the build other text than a file's, as a plugin ahead of arktype's transpiles it
 	private filesOf(id: string): string[] {
 		const sourcesById: Record<string, string | undefined> = {}
-		return this.localClosureOf(id, reached => {
+		return this.textClosureOf(id, reached => {
 			const source = (sourcesById[reached] = this.graph.host.readFile(reached))
 			if (source === undefined) return []
 			const module = new SourceModule(
@@ -1475,7 +1477,7 @@ export class Precompiler {
 	}
 
 	// a factory receives what the site's value holds, so one the build can't key, like a function read through a property, is refused with what it can't evaluate
-	private keyHeld(site: Site): void {
+	private assertKeyable(site: Site): void {
 		if (site.status !== "accepted" || !isFoldable(site.value)) return
 		keyOf(site.value)
 		for (const [node] of site.defaultChecks) keyOf(node.in as BaseRoot)
@@ -1578,7 +1580,7 @@ export class Precompiler {
 		const read = new Set<unknown>()
 		const passed = new Set<unknown>()
 		// one value read through two texts is passed through each, since the program can change one but not the other
-		const spanIndexByTextByPassed = new Map<unknown, Map<string, number>>()
+		const spansByValue = new Map<unknown, Map<string, number>>()
 		// what a site reads only to check, which it needn't receive where nothing the program does changes the check
 		const unchecked = new Set<unknown>()
 		const calledByChecks = new Set(
@@ -1621,11 +1623,10 @@ export class Precompiler {
 			}
 			for (const value of holes) read.add(value)
 			if (!holes.length) continue
-			const spanIndexByText =
-				spanIndexByTextByPassed.get(reference.value) ??
-				new Map<string, number>()
-			if (spanIndexByText.has(text)) {
-				factory.repeats.push([reference, spanIndexByText.get(text)!])
+			const spanByText =
+				spansByValue.get(reference.value) ?? new Map<string, number>()
+			if (spanByText.has(text)) {
+				factory.repeats.push([reference, spanByText.get(text)!])
 				continue
 			}
 			if (
@@ -1637,9 +1638,9 @@ export class Precompiler {
 				)
 			}
 			passed.add(reference.value)
-			spanIndexByTextByPassed.set(
+			spansByValue.set(
 				reference.value,
-				spanIndexByText.set(text, factory.spans.length)
+				spanByText.set(text, factory.spans.length)
 			)
 			factory.spans.push(reference)
 			factory.params.push(
@@ -2125,7 +2126,7 @@ export class Precompiler {
 					!hasArkKind(candidate.state.value, "root")
 				)
 					this.refusedContainers.set(candidate.state.value, [node, module])
-				if (this.mode === "standalone") this.keyHeld(site)
+				if (this.mode === "standalone") this.assertKeyable(site)
 				if (
 					site.status !== "rejected" &&
 					!candidate.fn &&
@@ -2566,7 +2567,7 @@ export class Precompiler {
 		}
 		for (const [binding, declaring, reader] of state.trace.readFirst) {
 			if (declaring === module) continue
-			const unchecked = this.checkReadFirst(site, binding, declaring, reader)
+			const unchecked = this.receiveReadFirst(site, binding, declaring, reader)
 			if (unchecked) {
 				return refuseDynamic(
 					site,
@@ -2821,9 +2822,8 @@ export class Precompiler {
 		return result
 	}
 
-	// parsed, unlike localClosureOf, so it holds every module the interpreter can follow
 	private importClosureOf(id: string): string[] {
-		return this.localClosureOf(id, reached =>
+		return this.textClosureOf(id, reached =>
 			this.importsOf(reached).map(([target]) => target)
 		)
 	}
@@ -2867,7 +2867,7 @@ export class Precompiler {
 		const result: string[] = []
 		for (const target of loadedImportsOf(id)) {
 			if (!this.importClosureOf(target).includes(id))
-				result.push(...this.localClosureOf(target, loadedImportsOf))
+				result.push(...this.textClosureOf(target, loadedImportsOf))
 		}
 		return result
 	}
@@ -2933,7 +2933,7 @@ export class Precompiler {
 		const result = dynamic ? chainOf(dynamic) : []
 		const objects = new Set<unknown>()
 		// a node kind's meta is copied into what configure() returns, which holds the same writers and keys
-		const refuse = (reason: string) =>
+		const addReason = (reason: string) =>
 			result.includes(reason) || result.push(reason)
 		const visit = (o: unknown) => {
 			if (typeof o !== "object" || o === null || objects.has(o)) return
@@ -2952,7 +2952,7 @@ export class Precompiler {
 					standIn &&
 					!(standIn.closure && staticBodyOf(standIn.closure.node))
 				) {
-					refuse(
+					addReason(
 						`the description writer at ${standIn.module.positionOf(standIn.node)} must be a static helper, since arktype calls it while defining types`
 					)
 				}
@@ -2962,7 +2962,7 @@ export class Precompiler {
 						call,
 						module
 					]
-					refuse(
+					addReason(
 						`the symbol key ${String(k)} at ${origin.positionOf(node)} must be a string or one Symbol.for() returns, since the runtime can't match another with the build's`
 					)
 				}
@@ -3051,7 +3051,7 @@ export class Precompiler {
 					[
 						`\`${module.snippetOf(value!)}\` is an arktype value, which the standalone runtime freezes with what it holds`
 					],
-					writeHint
+					frozenHint
 				)
 			)
 		}
@@ -3104,7 +3104,7 @@ export class Precompiler {
 			node: Node,
 			read: string | undefined,
 			object: Node,
-			isUnsure?: true
+			isUnsureRead?: true
 		][] = []
 		walk(module.program, node => {
 			if (
@@ -3126,12 +3126,12 @@ export class Precompiler {
 		const isArkPackage = arkPackageName.test(
 			this.graph.packageNameOf(module.id) ?? ""
 		)
-		for (const [node, read, object, isMaybeType] of unavailable) {
+		for (const [node, read, object, isUnsureRead] of unavailable) {
 			const objectRange = rangeOf(normalize(object))
 			const settledValue = settledValues.get(objectRange)
 			// a computed site is sure, so a member the options drop is read off a Type
 			const isUnsure =
-				isMaybeType &&
+				isUnsureRead &&
 				!(
 					hasArkKind(settledValue, "root") &&
 					read !== undefined &&
@@ -3502,7 +3502,7 @@ export class Precompiler {
 export const writeUnknownMemberMessage = <member extends string>(
 	member: member
 ): writeUnknownMemberMessage<member> =>
-	`members has ${member}, which isn't one of ${[...defaultMembers, ...introspectionMembers].map(member => JSON.stringify(member)).join(", ")}`
+	`members has ${member}, which isn't one of ${[...defaultMembers, ...introspectionMembers].map(name => JSON.stringify(name)).join(", ")}`
 
 export type writeUnknownMemberMessage<member extends string> =
 	`members has ${member}, which isn't one of ${string}`
@@ -3649,7 +3649,7 @@ const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
 
 const cacheHint = 'With runtime: "arktype", arktype defines this at runtime.'
 
-const writeHint = `Keep what you attach in an object of your own, or build with runtime: "arktype".`
+const frozenHint = `Keep what you attach in an object of your own, or build with runtime: "arktype".`
 
 const writersByGlobal: Record<string, string[]> = {
 	Object: ["assign", "defineProperty", "defineProperties", "setPrototypeOf"],

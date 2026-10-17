@@ -271,15 +271,15 @@ const keyedModuleOf = (
 	currentMtimeOf: (file: string) => number
 ): KeyedModule => {
 	const { precompiler, importsByFile } = tracked
-	const files = precompiler.localClosureOf(id, file => {
-		if (file === id) return precompiler.localImportsOf(source, id)
+	const files = precompiler.textClosureOf(id, file => {
+		if (file === id) return precompiler.textImportsOf(source, id)
 		const cached = importsByFile[file]
 		if (currentMtimeOf(file) === -1) return []
 		return cached?.[0] === currentMtimeOf(file) ?
 				cached[1]
 			:	(importsByFile[file] = [
 					currentMtimeOf(file),
-					precompiler.localImportsOf(readFileSync(file, "utf8"), file)
+					precompiler.textImportsOf(readFileSync(file, "utf8"), file)
 				])[1]
 	})
 	const transformed = transformedModuleOf(precompiler, source, id, tracked)
@@ -318,7 +318,7 @@ const transformedModuleOf = (
 			map: undefined,
 			// a module it imports may come to export a Type, which only the bundler plugin watches for here
 			dependencies:
-				precompiler.inline ? [] : precompiler.localImportsOf(source, id),
+				precompiler.inline ? [] : precompiler.textImportsOf(source, id),
 			modules: {},
 			errors: [],
 			warnings: []

@@ -233,7 +233,7 @@ export const buildPerturbed = (
 		})
 		const reached = [path]
 		for (const importer of reached) {
-			for (const target of precompiler.localImportsOf(
+			for (const target of precompiler.textImportsOf(
 				importer === path ? marked.toString() : readFileSync(importer, "utf8"),
 				importer
 			)) {
