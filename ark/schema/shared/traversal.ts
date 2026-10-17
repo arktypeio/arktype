@@ -19,7 +19,6 @@ import type {
 } from "./errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
-	failsIn,
 	issueAt,
 	issueWith,
 	mergeIssues,
@@ -31,6 +30,7 @@ import {
 	type FailureSite,
 	type UnionSite
 } from "./issues.ts"
+import { failsIn } from "./failsIn.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 
@@ -321,7 +321,7 @@ export class Traversal extends InternalTraversal {
 	}
 }
 
-// a build asking for each validation's first issue stops there, and drops any a check that doesn't stop added
+// stops at the first issue, dropping any added after it
 export class FirstIssueTraversal extends Traversal {
 	override get failFast(): boolean {
 		return true

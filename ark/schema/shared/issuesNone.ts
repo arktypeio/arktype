@@ -1,10 +1,5 @@
 import { arkKind, type array } from "@ark/util"
-import type {
-	ArkIssue,
-	CompactApply,
-	FailureContext,
-	FailureSite
-} from "./issues.ts"
+import type { ArkIssue } from "./issues.ts"
 
 // in place of issues.ts, so errors "none" ships nothing writing detail
 export class ArkErrors {
@@ -19,18 +14,12 @@ export class ArkErrors {
 	}
 
 	get issues(): readonly ArkIssue[] {
-		return this._.reduce(
-			(issues, issue) => ((issue.message ??= "is invalid"), issues),
-			this._
-		)
+		for (const issue of this._) issue.message ??= "is invalid"
+		return this._
 	}
 
 	get summary(): string {
-		return this._.reduce(
-			(summary, issue) =>
-				summary + (summary && "\n") + (issue.message ?? "is invalid"),
-			""
-		)
+		return this.issues.map(issue => issue.message).join("\n")
 	}
 
 	toJSON(): readonly ArkIssue[] {
@@ -44,10 +33,8 @@ export class ArkErrors {
 
 export { ArkErrors as FirstIssues }
 
-// as issues.ts's, though these errors hold no path
 export const releasePath = (errors: ArkErrors): ArkErrors => errors
 
-// exported as issues.ts's is, though nothing throws it
 export class TraversalError extends Error {
 	readonly name = "TraversalError"
 	declare arkErrors: ArkErrors
@@ -76,11 +63,11 @@ export const mergeIssues = (
 ): void => {
 	for (const issue of merged._) {
 		const path = [...prefix, ...issue.path]
-		errors._.push({ ...issue, path, message: placedMessageOf(path) })
+		errors._.push({ ...issue, path, message: messageAt(path) })
 	}
 }
 
-const placedMessageOf = (path: PropertyKey[]): string => {
+const messageAt = (path: PropertyKey[]): string => {
 	let at = ""
 	for (const k of path) {
 		at +=
@@ -105,22 +92,3 @@ const issueOf = (path: PropertyKey[]): ArkIssue => ({
 })
 
 export { issueOf as issueAt, issueOf as issueWith, issueOf as unionIssue }
-
-// as issues.ts's, for arktype's own Apply applying a key's value
-export const failsIn = (
-	ctx: FailureContext,
-	path: PropertyKey[],
-	apply: CompactApply,
-	value: unknown,
-	key: PropertyKey | undefined,
-	missing: FailureSite | undefined,
-	data: unknown
-): boolean | undefined => {
-	if (key === undefined) return !apply(value, ctx)
-	if (missing && value === undefined && !(key in (data as object)))
-		return ctx.failsAt(missing, data, key)
-	path.push(key)
-	const continues = apply(value, ctx)
-	path.pop()
-	return !continues
-}

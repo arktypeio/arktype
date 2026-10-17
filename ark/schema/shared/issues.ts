@@ -1,5 +1,6 @@
 import { arkKind, type array } from "@ark/util"
 import type { ArkErrorCode } from "./errors.ts"
+import { failsIn } from "./failsIn.ts"
 import type { StandardSchemaV1 } from "./standardSchema.ts"
 
 /**
@@ -17,13 +18,13 @@ export interface ArkIssue {
 
 type WrittenIssue = ArkIssue & { message: string }
 
-/** what a site reports of a check, which a standalone validator reduces to its code and description */
+/** what a site reports: its code and description */
 export interface SiteContext {
 	code: ArkErrorCode
 	description?: string | undefined
 }
 
-/** a check's site: its node's context, a required key's when the key is missing, and where below the node a discriminant is read, or else its node's context alone */
+/** a check's site: its node's context, or a key's value and missing ones */
 export interface FailureSite extends Partial<SiteContext> {
 	value?: SiteContext
 	missing?: SiteContext
@@ -68,10 +69,10 @@ export { ArkIssues as ArkErrors }
 let releasedPath: PropertyKey[] | undefined
 
 /** @internal once their Apply returns, errors pass their path on */
-export const releasePath = (errors: ArkIssues): ArkIssues => (
-	(releasedPath = errors._path),
-	errors
-)
+export const releasePath = (errors: ArkIssues): ArkIssues => {
+	releasedPath = errors._path
+	return errors
+}
 
 declare namespace ArkIssues {
 	export type Handler<returns = unknown> = (errors: ArkIssues) => returns
@@ -86,7 +87,6 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	/** @internal the path a fused traversal is at */
 	declare _path: PropertyKey[]
 
-	// fields are assigned by the constructor, since V8 creates a subclass's instances more slowly from initializers
 	constructor() {
 		this._ = []
 		this._path = releasedPath ?? []
@@ -104,7 +104,7 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		return this._.length
 	}
 
-	/** @internal read by a check telling whether a predicate it ran added an issue */
+	/** @internal alias of count, read by compiled checks */
 	get currentErrorCount(): number {
 		return this._.length
 	}
@@ -122,7 +122,6 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	 */
 	get summary(): string {
 		let summary = ""
-		// joined in a loop, as map and join cost more than writing a message
 		for (const issue of this.issues) {
 			if (summary) summary += "\n"
 			summary += issue.message
@@ -152,7 +151,6 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		key?: PropertyKey
 	): true | undefined {
 		const issue = issueAt(this._path, site, data, key)
-		// the first issue is held in an array of its own size, which pushing to an empty one would allocate larger
 		if (this._.length) this._.push(issue)
 		else this._ = [issue]
 		return this.failFast
@@ -170,7 +168,7 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	}
 }
 
-// a build asking for each validation's first issue stops there, as no check its Apply writes continues past one
+// stops at the first issue
 export class FirstIssues extends ArkIssues {
 	// read from the prototype, so no errors object lists it among its own keys
 	override get failFast(): true {
@@ -191,7 +189,7 @@ interface ArkIssues {
 
 type Keyed = Record<PropertyKey, unknown>
 
-// a key's site reports the object missing it, or the value at it, and a discriminant's the value at its path
+// a key's site reports the missing key or its value
 export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,
@@ -204,7 +202,6 @@ export const issueAt = (
 		if (site.missing && !(key in (data as object))) context = site.missing
 		else data = (data as Keyed)[key]
 	}
-	// a path two keys long is copied as a literal
 	const issue = issueOf(
 		context,
 		site.path ? path.concat(site.path)
@@ -233,12 +230,12 @@ export const issueWith = (
 	input: FailureInput
 ): ArkIssue => ({
 	code: input.code,
-	path: input.relativePath ? [...path, ...input.relativePath] : path.slice(),
+	path: input.relativePath ? path.concat(input.relativePath) : path.slice(),
 	data: input.data,
 	expected: input.description
 })
 
-// a standalone validator's union issue names what the union describes rather than each branch's error
+// reports the union's description, not each branch
 export const unionIssue = (
 	path: PropertyKey[],
 	site: UnionSite,
@@ -250,26 +247,7 @@ export const unionIssue = (
 	expected: site.description
 })
 
-// a child's value is passed rather than read at its key, which a method every Apply shares would make megamorphic
-export const failsIn = (
-	ctx: FailureContext,
-	path: PropertyKey[],
-	apply: CompactApply,
-	value: unknown,
-	key: PropertyKey | undefined,
-	missing: FailureSite | undefined,
-	data: unknown
-): boolean | undefined => {
-	if (key === undefined) return !apply(value, ctx)
-	if (missing && value === undefined && !(key in (data as object)))
-		return ctx.failsAt(missing, data, key)
-	path.push(key)
-	const continues = apply(value, ctx)
-	path.pop()
-	return !continues
-}
-
-// a matcher asserting its default holds it as its onFail, which a standalone validator then reads from its runtime
+// a default's onFail, read from a standalone runtime
 export const throwOnDefault: ArkIssues.Handler = errors => errors.throw()
 
 // a merged issue's message is written again at its path, unless it was supplied
@@ -295,7 +273,6 @@ const indexSegments: string[] = []
 
 export const messageOf = (issue: ArkIssue): string => {
 	let path = ""
-	// a key and its separator are appended apart, as joining them first writes one more string
 	for (const k of issue.path) {
 		if (typeof k === "number")
 			path += k < 256 ? (indexSegments[k] ??= `[${k}]`) : `[${k}]`
@@ -305,7 +282,6 @@ export const messageOf = (issue: ArkIssue): string => {
 		}
 	}
 	if (!path) return problemOf(issue)
-	// " must be " is appended as one string
 	return issue.problem === undefined && issue.expected !== undefined ?
 			path + " must be " + issue.expected
 		:	path + " " + problemOf(issue)
