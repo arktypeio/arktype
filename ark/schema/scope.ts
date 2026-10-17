@@ -622,9 +622,24 @@ export class TraversalCompiler extends NodeCompiler {
 		this.linkage = linkage
 	}
 
+	// a node checked by one expression is written in the body that would call it
 	override invoke(node: BaseNode, opts?: InvokeOptions): string {
 		this.reach(node)
-		return super.invoke(node, opts)
+		const expression =
+			(
+				(opts?.kind ?? this.traversalKind) !== this.traversalKind ||
+				(opts?.arg ?? this.data) !== this.data
+			) ?
+				undefined
+			: node.hasKind("structure") ?
+				// a structure sharing transformed keys applies them in a call of its own
+				this.traversalKind === "Apply" && node.sharesTransformedKeys ?
+					undefined
+				:	node.compileConjunction(this)
+			:	node.compileExpression?.(this)
+		return expression === undefined ?
+				super.invoke(node, opts)
+			:	`(${expression})`
 	}
 
 	override traversal(node: BaseNode, kind: TraversalKind): string {

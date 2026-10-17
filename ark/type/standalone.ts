@@ -3077,26 +3077,6 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 
 // a standalone validator raises issues, which hold none of its nodes' error contexts
 class StandaloneCompiler extends TraversalCompiler {
-	// a node checked by one expression is written in the body that would call it, where the JIT, which compiles each node's own traversal anyway, would only grow its unit
-	override invoke(node: BaseNode, opts?: InvokeOptions): string {
-		this.reach(node)
-		const expression =
-			(
-				(opts?.kind ?? this.traversalKind) !== this.traversalKind ||
-				(opts?.arg ?? this.data) !== this.data
-			) ?
-				undefined
-			: node.hasKind("structure") ?
-				// a structure sharing transformed keys applies them in a call of its own
-				this.traversalKind === "Apply" && node.sharesTransformedKeys ?
-					undefined
-				:	node.compileConjunction(this)
-			:	node.compileExpression?.(this)
-		return expression === undefined ?
-				super.invoke(node, opts)
-			:	`(${expression})`
-	}
-
 	override site(node: BaseNode): string {
 		return this.ref(issueSiteOf(node.failureSite))
 	}
