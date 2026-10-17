@@ -61,6 +61,7 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 		 * ```
 		 */
 		def
+	: keyKind extends "required" ? validateInnerDefinition<def, $, args>
 	: keyKind extends "spread" ?
 		def extends validateInnerDefinition<def, $, args> ?
 			inferDefinition<def, $, args> extends object ?
@@ -72,7 +73,6 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 				>
 		:	validateInnerDefinition<def, $, args>
 	: keyKind extends "undeclared" ? UndeclaredKeyBehavior
-	: keyKind extends "required" ? validateInnerDefinition<def, $, args>
 	: // check to ensure we don't have an optional or defaultable value on
 	// an already optional or index key
 	def extends OptionalPropertyDefinition ?

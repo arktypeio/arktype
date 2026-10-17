@@ -201,9 +201,11 @@ type PreparsedKeyPattern =
 
 type optionalKeyOf<def> = {
 	[k in keyof def]: k extends OptionalPropertyString ? k
-	: [def[k]] extends [anyOrNever] ? never
-	: def[k] extends OptionalPropertyDefinition ? k
-	: never
+	: def[k] extends OptionalPropertyDefinition ?
+		[def[k]] extends [anyOrNever] ?
+			never
+		:	k
+	:	never
 }[keyof def]
 
 // a single mapped type needs no show, which keeps the result cheap to instantiate
