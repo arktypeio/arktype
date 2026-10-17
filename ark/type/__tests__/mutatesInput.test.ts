@@ -99,6 +99,55 @@ contextualize(() => {
 		attest(inner as object).snap({ n: 3 })
 	})
 
+	it("checks its first data before it has compiled code, as a Type copying does", () => {
+		const Item = always.type({ id: "string.numeric.parse" })
+		const Pair = always.type({ kind: "'pair'", items: [Item, Item] })
+		const Event = Pair.or({ kind: "'item'", item: Item })
+		const items = [{ id: "1" }, { id: "2" }]
+		attest(Event({ kind: "pair", items }) as object).snap({
+			kind: "pair",
+			items: [{ id: 1 }, { id: 2 }]
+		})
+		attest([Event, Pair, Item].map(T => T.internal.compiledUnit)).equals([
+			undefined,
+			undefined,
+			undefined
+		])
+		const item = { id: "3" }
+		Event({ kind: "item", item })
+		attest(item as object).snap({ id: 3 })
+		attest(typeof Event.internal.compiledUnit).equals("function")
+	})
+
+	it("compiles no transform it reads while checking its first data uncompiled", () => {
+		const Item = always.type({ kind: "'a'", n: "string.numeric.parse" })
+		Item({ kind: "a", n: "0" })
+		const List = always.type([Item, "|", { kind: "'b'" }]).array()
+		const input = [
+			{ kind: "a", n: "1" },
+			{ kind: "a", n: "2" }
+		]
+		attest(List(input) as object).is(input)
+		attest(input as object).snap([
+			{ kind: "a", n: 1 },
+			{ kind: "a", n: 2 }
+		])
+		attest(Item.internal.compiledUnit).equals(undefined)
+	})
+
+	it("binds no compiled code to a transform it reads while checking its first data uncompiled", () => {
+		const Held = always.type({ x: { count: "string.numeric.parse" } })
+		Held({ x: { count: "0" } })
+		const T = always.type({
+			a: ["string", "=>", s => (Held({ x: { count: s } }), s)],
+			b: { count: "string.numeric.parse" }
+		})
+		const b = { count: "1" }
+		attest(T.assert({ a: "2", b }).b as object).is(b)
+		attest(b as object).snap({ count: 1 })
+		attest(typeof Held.internal.compiledUnit).equals("function")
+	})
+
 	it("finds each issue of an input it rejects, as copying does", () => {
 		const T = always
 			.type({ v: "number" })

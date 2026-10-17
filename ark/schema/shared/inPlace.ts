@@ -322,8 +322,55 @@ const inPlaceRuntimeOf = (
 const writesInPlaceAsConfigured = (root: BaseRoot) =>
 	writesInPlace(root, root.$.resolvedConfig.mutatesInput)
 
+const isWriter = (node: BaseNode): boolean =>
+	(node.hasKind("structure") || node.hasKind("sequence")) && node.transforms
+
+// a compiled transform copies what it writes, unless it reaches no writer
+const copiesCompiled = (node: BaseNode): boolean =>
+	node.transforms &&
+	node.compiledUnit !== undefined &&
+	(node.includesAlias || isWriter(node) || node.references.some(isWriter))
+
+// the transforms a root's traversal can call, read without discriminating
+// a union, as its references would
+const transformsCalledBy = (root: BaseRoot): BaseNode[] => {
+	const called: BaseNode[] = []
+	const call = (node: BaseNode) => {
+		const structure = node.hasKind("intersection") ? node.structure : undefined
+		for (const reached of [node, structure, structure?.sequence])
+			if (reached?.transforms) called.push(reached)
+	}
+	for (const { node } of placesOf(root).values()) {
+		call(node)
+		if (node.hasKind("union"))
+			for (const caseNode of node.caseNodes) call(caseNode)
+	}
+	return called
+}
+
+// the transforms applies writing in place reach as they check data
+// uncompiled, of which none compiles until they return
+let checking: Set<BaseNode> | undefined
+
 $ark.inPlace = {
-	writes: writesInPlaceAsConfigured,
+	checksUncompiled: root => checking?.has(root) || !root.cache.isUsedBeforeJit,
+	checkedUncompiled: (root, apply) => {
+		if (!writesInPlaceAsConfigured(root)) return apply
+		const called = transformsCalledBy(root)
+		if (called.some(copiesCompiled)) return
+		return (data, onFail) => {
+			const outer = checking
+			checking = new Set([...(outer ?? []), ...called])
+			try {
+				return apply(data, onFail)
+			} finally {
+				checking = outer
+			}
+		}
+	},
+	get checking() {
+		return checking
+	},
 	applied: root => {
 		if (!writesInPlaceAsConfigured(root)) return root
 		if (!root.cache.applyInPlace) precompileInPlace(root)

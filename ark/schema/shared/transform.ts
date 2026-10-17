@@ -5,6 +5,7 @@ import {
 	isArray,
 	objectKindOf
 } from "@ark/util"
+import type { BaseNode, RootApply } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { arrayIndexMatcher } from "../structure/shared.ts"
 import type { ArkErrors } from "./issues.ts"
@@ -12,8 +13,14 @@ import type { rootApplyRuntime } from "./rootApply.ts"
 
 // installed by arktype/mutatesInput, so a bundle without it only copies
 export interface InPlaceTransforms {
-	// whether a valid input's transforms write into it, as its Scope configures
-	writes(root: BaseRoot): boolean
+	// whether a root checks data uncompiled, as every transform does while
+	// an apply writing in place that reaches it checks its own uncompiled
+	checksUncompiled(root: BaseRoot): boolean
+	// a root's apply checking data uncompiled, unless it writes in place
+	// and reaches a transform compiled to copy
+	checkedUncompiled(root: BaseRoot, apply: RootApply): RootApply | undefined
+	// what those applies reach, which no root compiling meanwhile binds
+	readonly checking: ReadonlySet<BaseNode> | undefined
 	// the root a compiled apply reads, transforming in place where its Scope can
 	applied(root: BaseRoot): BaseRoot
 	// what a jitless apply reads, transforming in place where its Scope can

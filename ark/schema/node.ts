@@ -501,11 +501,10 @@ export abstract class BaseNode<
 	// a Type whose callbacks can't read ctx checks its first data uncompiled, so one used once is never compiled
 	private get checksUncompiled(): boolean {
 		return (
-			!this.cache.isUsedBeforeJit &&
 			!this.includesContextualPredicate &&
 			!this.includesContextualMorph &&
-			// a node it shares may be compiled, transforming by copying
-			!$ark.inPlace?.writes(this as never)
+			($ark.inPlace?.checksUncompiled(this as never) ??
+				!this.cache.isUsedBeforeJit)
 		)
 	}
 
@@ -530,11 +529,16 @@ export abstract class BaseNode<
 			if (this.checksUncompiled) {
 				const rootApply = this.createRootApply()
 				// marked used once it returns, so an allows it calls doesn't compile
-				return (data, onFail) => {
+				const apply: RootApply = (data, onFail) => {
 					const result = rootApply(data, onFail)
 					this.cache.isUsedBeforeJit = true
 					return result
 				}
+				const checked =
+					$ark.inPlace ?
+						$ark.inPlace.checkedUncompiled(this as never, apply)
+					:	apply
+				if (checked) return checked
 			}
 			this.$.jit(this)
 		}

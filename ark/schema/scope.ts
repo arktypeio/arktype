@@ -321,6 +321,8 @@ const precompileRoot = (
 		for (const id in reference.referencesById)
 			unbound.add(reference.referencesById[id])
 	}
+	// an apply checking data uncompiled to write in place reads no copy
+	for (const node of $ark.inPlace?.checking ?? []) unbound.add(node)
 	unbound.delete(root)
 	precompile(references, undefined, unbound)
 }
