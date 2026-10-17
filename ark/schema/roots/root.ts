@@ -551,10 +551,15 @@ export abstract class BaseRoot<
 			)
 		}
 
-		// a constraint alone has nothing to reduce
+		// a basis has no constraint for this one to meet, so their intersection
+		// is the result, and a constraint alone has nothing to reduce
+		const meetsBasis =
+			io === "root" && this.hasKindIn("domain", "proto") && kind !== "predicate"
+
 		const partialIntersection = this.$.node(
 			"intersection",
 			{
+				...(meetsBasis && { [this.kind]: this }),
 				// important this is constraint.kind instead of kind in case
 				// the node was reduced during parsing
 				[constraint.kind]:
@@ -562,6 +567,8 @@ export abstract class BaseRoot<
 			},
 			{ prereduced: true }
 		)
+
+		if (meetsBasis) return partialIntersection
 
 		const result =
 			io === "out" ?
