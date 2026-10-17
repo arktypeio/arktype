@@ -6,7 +6,7 @@ export function makeItem() {
 	return type({ id: type("number").describe("an id") })
 }
 
-// a factory, whose intern table the cycle reaches before this module's artifact is evaluated
+// a factory whose intern table the cycle reaches before its artifact runs
 export function makePositiveItem() {
 	return type({ id: "number" }).narrow(isPositive)
 }

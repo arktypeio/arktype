@@ -29,7 +29,7 @@ const specifiersByLayout = (tsconfig: string) => {
 	return { errors: declarations.errors, specifiersByFile }
 }
 
-// each export whose declaration a consumer reads as a different type than its source's, by TypeScript's errors
+// each export a consumer reads as another type than its source's
 const inexactExportsOf = (fixture: string, checks: Record<string, string>) => {
 	const lines = [
 		"type eq<l, r> = (<_>() => _ extends l ? 1 : 2) extends <_>() => _ extends r ? 1 : 2 ? true : false",
@@ -414,7 +414,7 @@ export type Elements = [string, number?];
 	})
 
 	it("CLI declarations read as their sources", () => {
-		// an enum's declaration is a different enum than its source, and a cycle TypeScript declares is elided to any
+		// a declared enum differs from its source, and TypeScript elides cycles to any
 		attest(
 			inexactExportsOf(declared, {
 				"enums.Colors of the declared enum":

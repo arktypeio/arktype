@@ -3,7 +3,7 @@ import { After, Before, Epochs, Literal, Stamps } from "./dates.ts"
 import { Formatted, Parsed } from "./local.ts"
 import { Big, Large, Lengths, Small, Stepped } from "./numbers.ts"
 
-// errors print what a standalone validator keeps of arktype's, which writes its text from more
+// errors print what a standalone validator keeps of arktype's
 const observe = (samples: [type.Any, unknown][]) =>
 	samples.map(([T, data]) => {
 		const out = T(data)

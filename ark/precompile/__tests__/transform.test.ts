@@ -244,7 +244,7 @@ export const make = () => type("string")`,
 			attest(normalized(unit.match(/^function \w+\(\) {\n.*/m)![0]))
 				.snap(`function #0() {
 	return (#0Unit ??= (() => {`)
-			// imported after arktype, the cycle reaches the module once its artifact is evaluated
+			// imported after arktype, the cycle reaches the module after its artifact
 			const late = precompile(
 				`import { type } from "arktype"
 import { made } from "./early.ts"
@@ -668,7 +668,7 @@ export const Short = Name.narrow(s => s.length < 9)
 export const Stamped = type({ at: ["Date", "=", () => new Date()] })
 class Kitten extends Pet {}
 export const Kept = type.instanceOf(Pet).and(type.instanceOf(Kitten))`
-			// a hole is registered by a name from its module and position, which no other test shares
+			// a hole's name comes from its module and position, unique to this test
 			const result = precompileModule(
 				source,
 				"/factories.ts",

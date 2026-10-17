@@ -5,7 +5,7 @@ const isEven = (n: number) => {
 	return remainder === 0
 }
 
-// a site reading a Type's json checks the default arktype checked as it created the Type, whose json lacks it
+// reading json checks the default arktype checked creating the Type
 export const json = type({ a: [["number", ":", isEven], "=", 3] }).omit(
 	"a"
 ).json

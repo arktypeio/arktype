@@ -532,7 +532,7 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 		)
 	})
 
-	// TypeScript's diagnostics for this tsconfig are warned wherever declarations are emitted
+	// TypeScript's diagnostics for this tsconfig, warned where declarations emit
 	const warnedDeclaring = async (
 		declare: (config: InlineConfig) => unknown
 	) => {

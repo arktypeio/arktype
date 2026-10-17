@@ -37,7 +37,7 @@ console.log(
 		Point.toJsonSchema() === Point.toJsonSchema(),
 		schemaOf(User),
 		thrown,
-		// a validator lacks `in`, `out` and `props`, so the site receives the Type it reads them off
+		// a validator lacks `in`, `out` and `props`, so the site receives the Type
 		Trimmed.in.json,
 		Trimmed.out.toJsonSchema(),
 		User.props[0].value.expression,

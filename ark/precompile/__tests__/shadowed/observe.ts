@@ -84,7 +84,7 @@ const Shorts = type({
 
 let listed = 0
 
-// each writes its argument otherwise than Incremented, which its validator's must reproduce
+// each writes its argument unlike Incremented, which its validator must match
 const Listed = type({ tags: "string[]" }).pipe(o =>
 	Object.assign(o, { tags: new Set(o.tags), listed: ++listed })
 )
@@ -121,7 +121,7 @@ const outcomeOf = (run: () => unknown) => {
 	}
 }
 
-// what main.ts prints and shadow.spec.ts compares, called once in a process since its sites hold state
+// what main.ts prints and shadow.spec.ts compares, once per process
 export const observe = async (): Promise<Record<string, unknown>> => {
 	const point = new Point()
 	const incremented = { n: 1 }

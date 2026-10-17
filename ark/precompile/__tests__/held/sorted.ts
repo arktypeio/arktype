@@ -6,10 +6,10 @@ const Small = type("number").narrow(function isSmall(n: number) {
 	return n < 10
 })
 
-// arktype sorts the branches by their predicates' names, which the factory sorts the functions it receives by too
+// branches sort by predicate name, as the factory sorts what it receives
 export const SmallOrEven = Small.or(type("number").narrow(isEven))
 
-// a predicate of 2 parameters is passed a context where one of 1 isn't, so the build won't bind either in place of the other
+// a 2-parameter predicate gets a context a 1-parameter one doesn't
 export const SmallOrContextual = Small.or(
 	type("number").narrow((n: number, ctx) => n % 2 === 0 || ctx.mustBe("even"))
 )

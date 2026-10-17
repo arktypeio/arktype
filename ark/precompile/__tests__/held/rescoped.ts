@@ -1,4 +1,4 @@
 import { Named } from "./scoped.ts"
 
-// `truthy` resolves in Named's Scope, so the factory takes its narrow from the validator it receives
+// `truthy` resolves in Named's Scope, so its narrow comes from the validator
 export const Flagged = Named.and({ flag: "truthy" })

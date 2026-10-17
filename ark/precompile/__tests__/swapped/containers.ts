@@ -8,7 +8,7 @@ const isB = (s: string) => s === "b"
 
 type Box<t> = { v: t }
 
-// each pair differs only in what decides the Types it creates, so a factory receiving one in place of the other must tell them apart
+// each pair differs only in what decides its Types, which factories tell apart
 export const undefinedOptional = scope(
 	{ s: "string" },
 	{ exactOptionalPropertyTypes: false }
@@ -35,7 +35,7 @@ export const keepsB = scope({ c: ["'a' | 'b'", ":", isB] })
 export const holdsShort = scope({ a: ShortString, c: ["string", ":", isShort] })
 export const holdsLong = scope({ a: ShortString, c: ["string", ":", isLong] })
 
-// each pair differs only in what its thunks return, which a site can flatten, intersect, key or instantiate without holding, so each is annotated
+// each pair differs only in what its thunks return, so each is annotated
 export const thunksReturningX: Scope<any> = scope({
 	f: "string",
 	t: () => thunksReturningX.type("f | number"),
@@ -101,7 +101,7 @@ export const sharedModule = type.module({
 	a: type.module({ b: ShortString, c: type("number") })
 })
 
-// each pair differs only in the Scope where the methods of the Types it holds parse their arguments
+// each pair differs only in the Scope its Types' methods parse arguments in
 const stringF = scope({ f: "string" })
 const numberF = scope({ f: "number" })
 export const BigintOfStringF = stringF.type("bigint")

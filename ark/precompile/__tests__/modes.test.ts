@@ -702,7 +702,7 @@ configure({ onUndeclaredKey: "delete" })`
 					opts
 				)
 			).equals([])
-			// Node's type stripping and `verbatimModuleSyntax` keep an import only a type reads, which runs its module
+			// type stripping and `verbatimModuleSyntax` keep type-only imports
 			for (const typeImport of [
 				'import { type Name } from "./main.ts"',
 				'import { Name } from "./main.ts"\nexport const name: Name = "x"'
@@ -716,7 +716,7 @@ configure({ onUndeclaredKey: "delete" })`
 import { suffix } from "./main.ts"
 configure({ keywords: { "string.email": \`an address\${suffix}\` } })`
 			}
-			// the program's entry decides whether this module or the config module it imports runs first
+			// the entry decides whether this module or the config module runs first
 			attest(
 				diagnosticsOf(
 					`import "./config.ts"
@@ -844,7 +844,7 @@ export const field = (limit: number) => {
 			attest(diagnosticsOf(source, {}, { runtime: "arktype" })).snap([
 				'/main.ts:4:16  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of field (/main.ts:3:23); its value is known only at runtime\n  With runtime: "arktype", arktype defines this at runtime.'
 			])
-			// arktype tests `null` against `Cat` while defining the type, which a standalone factory can't
+			// arktype tests `null` against `Cat` as it defines the type
 			const tested = `import { type } from "arktype"
 class Cat {}
 export const A = type.instanceOf(Cat).or("null")`

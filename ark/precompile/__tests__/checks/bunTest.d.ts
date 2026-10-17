@@ -1,4 +1,4 @@
-// bun-types declares globals beside @types/node's, so this declares only what bun.check.ts uses
+// only what bun.check.ts uses, as bun-types clashes with @types/node
 declare module "bun:test" {
 	export const test: (name: string, run: () => Promise<void>) => void
 	export const expect: (actual: unknown) => {

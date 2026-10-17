@@ -299,7 +299,7 @@ const B = type("string")("data")`)
 			).snap(["3:5 accepted number", "4:11 accepted string"])
 		})
 
-		it("members a standalone validator has are read at runtime", () => {
+		it("members validators have", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
 const A = type({ a: "string" })
@@ -309,7 +309,7 @@ const valid = check()(1) || A.assert("a")`)
 			).snap(["2:11 accepted { a: string }"])
 		})
 
-		it("members a standalone validator lacks are sites", () => {
+		it("members validators lack", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
 const T = type({ a: "string.trim" })
@@ -322,7 +322,7 @@ const label = () => T.out.expression`)
 			])
 		})
 
-		it("Types read through namespaces, object literals and default exports", () => {
+		it("namespaces, literals and default exports", () => {
 			attest(
 				statusesOf(
 					`import { type } from "arktype"
@@ -345,7 +345,7 @@ const C = Default.or("null")`,
 			])
 		})
 
-		it("Types held in object literals and arrays, read however the build can", () => {
+		it("Types held in literals", () => {
 			attest(
 				statusesOf(
 					`import { type } from "arktype"
@@ -368,7 +368,7 @@ const C = local.list[0].array()`,
 			])
 		})
 
-		it("Types destructured from object literals and arrays, as their members are read", () => {
+		it("destructured Types", () => {
 			attest(
 				statusesOf(
 					`import { type } from "arktype"
@@ -402,7 +402,7 @@ const F = users.User.or(list[1])`,
 			])
 		})
 
-		it("a Type passed to a helper the build can't interpret", () => {
+		it("a Type passed to an opaque helper", () => {
 			attest(
 				statusesOf(`import { scope, type } from "arktype"
 const $ = scope({ a: "string" }).export()
@@ -417,7 +417,7 @@ describe($.a)`)
 			).snap(["2:11 accepted", "9:10 accepted number"])
 		})
 
-		it("each Type passed to one call of a helper the build can't interpret", () => {
+		it("Types passed to one opaque call", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
 import { router } from "some-router"
@@ -574,7 +574,7 @@ export const User = type({ name: "string" })`
 			])
 		})
 
-		it("an annotation naming arktype's types, on a value the build knows is arktype's", () => {
+		it("arktype's types as annotations", () => {
 			attest(
 				statusesOf(`import { scope, type Scope } from "arktype"
 export const $: Scope = scope({ a: "string" })
@@ -799,7 +799,7 @@ var x = "string"`)
 				"5:25 rejected\n  `x` can be read before its declaration (/main.ts:11:5)",
 				"7:12 rejected\n  `y` can be read before its declaration (/main.ts:8:6)"
 			])
-			// a `var` holding a Type is checked where reading it unset throws, as `V.and` does, but not where the program reads past `undefined`
+			// a `var` Type is checked where reading it unset throws, not past `undefined`
 			attest(
 				statusesOf(`import { type } from "arktype"
 export function make() { return type(V ?? "string") }
@@ -840,7 +840,7 @@ const { c, d = type(c) } = { c: "number" } as { c: string; d?: unknown }`)
 			).snap(["2:15 accepted string", "3:16 accepted number"])
 		})
 
-		it("reads what an import cycle can reach before its declaration", () => {
+		it("reads an import cycle reaches early", () => {
 			const files = {
 				"/items.ts": `import "./main.ts"`
 			}
@@ -950,7 +950,7 @@ const { in: I } = T`)
 			])
 		})
 
-		it("a Type passed to a function that isn't a static helper", () => {
+		it("a Type passed to a non-helper", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 const T = type({ a: "string" })
@@ -964,7 +964,7 @@ export const X = nullable(T)`)
 			])
 		})
 
-		it("Types read through a computed key, a parameter's default or a superclass", () => {
+		it("computed keys, defaults and superclasses", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 const T = type({ a: "string" })
@@ -1005,7 +1005,7 @@ export const B = Forms.Admin.or("null")`)
 			])
 		})
 
-		it("a Type read through a parameter the build can't see called", () => {
+		it("a parameter the build can't see called", () => {
 			attest(
 				diagnosticsOf(`import { type, type Type } from "arktype"
 export function nullable(t: Type) {
@@ -1024,7 +1024,7 @@ const User = type({ name: "string" })`)
 			])
 		})
 
-		it("Types read through an instance's fields, each on its own", () => {
+		it("instance fields", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 import { HttpClient } from "http"
@@ -1077,7 +1077,7 @@ export const X = new Chain().f27.or("null")`)
 			])
 		})
 
-		it("an options object holding a Type, passed to a helper whose calls the build sees", () => {
+		it("a Type in an options object", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 import { db } from "db"
@@ -1092,7 +1092,7 @@ log({ db, input: type({ name: "string" }) })`)
 			])
 		})
 
-		it("a helper passing its parameter's members back to itself, each solved once", () => {
+		it("recursive helper calls, each solved once", () => {
 			const writes = Array.from({ length: 9 }, (_, i) => `write(value.m${i})`)
 			attest(
 				unhinted(`import { type } from "arktype"
@@ -1106,7 +1106,7 @@ write({ m0: type("string") })`)
 			])
 		})
 
-		it("Types the build sees stored or passed through built-ins", () => {
+		it("Types through built-ins", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 const A = type("string")
@@ -1129,7 +1129,7 @@ Promise.resolve(A).then(t => t.or("null"))`)
 			])
 		})
 
-		it("annotations that leave a value to the build or say it may be a Type", () => {
+		it("annotations that may be Types", () => {
 			attest(
 				unhinted(`import { type, type Submodule, type Type } from "arktype"
 const A = type("string")
@@ -1153,7 +1153,7 @@ export function constrainedAny<t extends type.Any>(t: t) {
 			])
 		})
 
-		it("a Type reaching a value annotated as something else", () => {
+		it("a Type annotated as something else", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 interface Nullable {
@@ -1187,7 +1187,7 @@ export const C = list[Number(process.env.I)].or("null")`)
 			])
 		})
 
-		it("a callback's parameter, where the call can't pass it a Type", () => {
+		it("a callback's parameter", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 import { builder, defineEvent } from "events"
@@ -1220,7 +1220,7 @@ console.log(list.map(t => t), list.filter(Boolean), list.or)`)
 			])
 		})
 
-		it("a Type iterated from an array or returned by an object literal's method", () => {
+		it("iterated and returned Types", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 const forms = {
@@ -1236,7 +1236,7 @@ export const X = forms.make().or("null")`)
 			])
 		})
 
-		it("members a standalone validator lacks, read outside any site", () => {
+		it("members validators lack, outside sites", () => {
 			attest(
 				unhinted(`import { type } from "arktype"
 const T = type({ a: "string" })
@@ -1417,7 +1417,7 @@ for (const k in T) console.log(k)`)
 			])
 		})
 
-		it("packages that read arktype's nodes outside a runtime island", () => {
+		it("packages reading arktype's nodes", () => {
 			attest(
 				diagnosticsOf(`import { discriminate } from "arksets"
 import { ArkErrors, hasArkKind, Traversal } from "@ark/schema"
@@ -1435,7 +1435,7 @@ const D = discriminate(type({ a: "0" }).or({ a: "1" }).internal as never)`)
 			])
 		})
 
-		it("@ark/schema's exports or a runtime island in a build without error detail", () => {
+		it("@ark/schema or islands without error detail", () => {
 			attest(
 				diagnosticsOf(
 					`import { Traversal } from "@ark/schema"
@@ -1484,7 +1484,7 @@ export const E = type(Object.freeze({ a: "string" }))`)
 			])
 		})
 
-		it("a function's name defined as esbuild's keepNames defines it", () => {
+		it("esbuild's keepNames", () => {
 			attest(
 				statusesOf(
 					`import { type } from "arktype"

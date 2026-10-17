@@ -1,6 +1,6 @@
 import { type } from "arktype"
 
-// arktype passes a predicate or morph its context unless it has 1 parameter, so each count is a variant its factory selects
+// a callback of 1 parameter gets no context, so each count is a variant
 function narrowed(fn: (...args: any[]) => boolean) {
 	const T = type("string").narrow(fn)
 	return T

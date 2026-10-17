@@ -10,7 +10,7 @@ const mock = (path: string, factory: () => object) => {
 const original = async (path: string) =>
 	(await vi.importActual(path)) as Record<string, unknown>
 
-// each validator is created when the module is imported, so a check that fails rejects the import
+// validators are created on import, so a failing check rejects the import
 const create = () => import("./sites.ts")
 
 afterEach(() => {

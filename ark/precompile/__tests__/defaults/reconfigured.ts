@@ -1,6 +1,6 @@
 import { scope } from "arktype"
 
-// its answer never changes for one configuration, but reads the one its validator traverses with
+// its answer is fixed per configuration, read from the traversal's
 const isLoose = (
 	n: number,
 	ctx: { config: { domain: { expected: unknown } } }

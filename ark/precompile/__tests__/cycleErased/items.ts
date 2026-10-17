@@ -1,5 +1,5 @@
 import { type } from "arktype"
-// only a type reads it, but the import still runs callFirst.ts before this module's body
+// only a type reads it, but the import runs callFirst.ts before this body
 // eslint-disable-next-line @typescript-eslint/consistent-type-imports
 import { calledFirst } from "./callFirst.ts"
 

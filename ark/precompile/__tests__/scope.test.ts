@@ -39,7 +39,7 @@ const typeRangesOf = (node: Node, ranges: [number, number][] = []) => {
 	return ranges
 }
 
-// where each value reference resolves and whether each binding is assigned, as positions, by both implementations
+// where each reference resolves and whether each binding is assigned
 const differencesOf = (file: string, source: string): string[] => {
 	const scopes = new ModuleScopes(parse(file, source))
 	const program = parse(file, source)

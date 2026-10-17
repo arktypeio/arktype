@@ -9,7 +9,7 @@ export const arrow = () => Base.and({ c: "number" })
 export function fromPattern() {
 	return Patterned.and({ d: "number" })
 }
-// throws a ReferenceError before Base is set, rather than the ParseError it throws after
+// throws a ReferenceError before Base is set, a ParseError after
 export function contradict() {
 	return Base.and({ a: "number" })
 }

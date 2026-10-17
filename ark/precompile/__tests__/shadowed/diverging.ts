@@ -1,8 +1,8 @@
-// run without a driver, pairing each of arktype's Types with another that stands in for its validator and diverges
+// run without a driver, pairing each Type with a diverging stand-in
 import { shadow } from "@ark/precompile/shadow"
 import { type, type Traversal } from "arktype"
 
-// each mismatch, which shadow mode raises again where the program can't catch it
+// each mismatch, which shadow mode raises again where it can't be caught
 const reported: string[] = []
 process.on("uncaughtException", e => reported.push(String(e)))
 

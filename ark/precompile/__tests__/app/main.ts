@@ -52,7 +52,7 @@ const samples: [(data: unknown) => unknown, unknown][] = [
 	[list.or("null"), null]
 ]
 
-// errors print what a standalone validator keeps of arktype's, which writes its text from more
+// errors print what a standalone validator keeps of arktype's
 console.log(
 	JSON.stringify(
 		samples.map(([validate, data]) => {

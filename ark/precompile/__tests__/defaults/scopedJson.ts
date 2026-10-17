@@ -5,7 +5,7 @@ const atMost = (n: number) => {
 	return n <= limit
 }
 
-// a Scope's member could be any arktype value, so the build folds this json where it finds a Type
+// a Scope's member could be any arktype value, so this json folds late
 export const Json = scope({})
 	.type({ a: [["number", ":", atMost], "=", 5] })
 	.omit("a").json
