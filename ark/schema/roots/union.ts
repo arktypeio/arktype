@@ -353,6 +353,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		js.block(`switch(${condition})`, () => {
 			for (const k in cases) {
 				const v = cases[k]
+				// a case transforming nothing returns data as the switch's end does
+				if (
+					js.traversalKind === "Transform" &&
+					(v === true || !v.transforms) &&
+					!("default" in cases)
+				)
+					continue
 				const caseCondition =
 					k === "default" ? k
 					: k.startsWith(registeredPrefix) ?
