@@ -239,6 +239,26 @@ interface SiteFactory {
 	imports: [specifier: string, name: string, local: string][]
 }
 
+const emptyFactory = (): SiteFactory => ({
+	params: [],
+	spans: [],
+	repeats: [],
+	inputs: [],
+	bindings: [],
+	imports: []
+})
+
+const receive = (
+	factory: SiteFactory,
+	passedAs: PassedInput,
+	param: FactoryParam
+) => {
+	factory.inputs.push(passedAs.expression)
+	if (passedAs.imported) factory.imports.push(passedAs.imported)
+	if (passedAs.binding) factory.bindings.push(passedAs.binding)
+	factory.params.push(param)
+}
+
 interface PassedInput {
 	expression: string
 	label: string
@@ -405,7 +425,7 @@ export class Precompiler {
 	private namesArkById: Record<string, boolean> = Object.create(null)
 	// the strongly connected component of each module the build follows, numbered as they're found
 	private componentsById: Record<string, number> = Object.create(null)
-	private exportsArkByModule = new Map<SourceModule, boolean>()
+	private exportsArkByModule = new WeakMap<SourceModule, boolean>()
 	private analysesByModule = new WeakMap<SourceModule, ModuleAnalysis>()
 	// why the configuration the analyses were made under can't be applied, which refuses each site
 	private analyzedProblem: string | undefined
@@ -419,7 +439,7 @@ export class Precompiler {
 		"@ark/schema": {},
 		"@ark/util": {}
 	}
-	private warnedDependencies: Record<string, true> = Object.create(null)
+	private warnedDependencies = new Set<string>()
 	private intrinsicUnits: Record<string, string> | undefined
 
 	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
@@ -450,7 +470,7 @@ export class Precompiler {
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
 				this.members[member] !== false ? []
-				: member === "methods" ? ["traverse", "from", "toString"]
+				: member === "methods" ? methodMembers
 				: [member]
 			)
 		)
@@ -646,8 +666,11 @@ export class Precompiler {
 			].join("\n")
 		)
 		const warnings: string[] = []
-		if (this.mode === "standalone" && !this.warnedDependencies[dependency]) {
-			this.warnedDependencies[dependency] = true
+		if (
+			this.mode === "standalone" &&
+			!this.warnedDependencies.has(dependency)
+		) {
+			this.warnedDependencies.add(dependency)
 			warnings.push(writeStandaloneDependencyMessage(dependency))
 		}
 		return { errors, warnings }
@@ -774,21 +797,17 @@ export class Precompiler {
 			}
 		}
 		let inserted = ""
-		const insertImport = (text: string) => {
-			inserted += text
-		}
 		if (this.inline)
-			inlineModules(module, s, prefix, modules, imports, insertImport)
+			inserted = inlineModules(module, s, prefix, modules, imports)
 		else {
 			for (const specifier in imports) {
 				const locals = imports[specifier]
-				if (!Object.keys(locals).length) insertImport(`\nimport "${specifier}"`)
+				if (!Object.keys(locals).length) inserted += `\nimport "${specifier}"`
 				for (const name in locals) {
-					insertImport(
+					inserted +=
 						name === "default" ?
 							`\nimport ${locals[name]} from "${specifier}"`
 						:	`\nimport { ${name} as ${locals[name]} } from "${specifier}"`
-					)
 				}
 			}
 		}
@@ -844,11 +863,9 @@ export class Precompiler {
 					runEnds[at + 1]
 				:	at
 		}
-		const textsAfter = new Map<number, string>()
-		for (const at of marked)
-			textsAfter.set(runEnds[at], `${prefix}m = ${runEnds[at]};\n`)
-		for (const [at, text] of textsAfter) {
-			const step = steps[at - 1]
+		for (const end of new Set([...marked].map(at => runEnds[at]))) {
+			const text = `${prefix}m = ${end};`
+			const step = steps[end - 1]
 			const declaration = step.parent!
 			if (
 				step.type === "VariableDeclarator" &&
@@ -860,13 +877,13 @@ export class Precompiler {
 				s.overwrite(
 					comma,
 					comma + 1,
-					`;\n${text}${declaration.parent!.type === "ExportNamedDeclaration" ? "export " : ""}${declaration.kind} `
+					`;\n${text}\n${declaration.parent!.type === "ExportNamedDeclaration" ? "export " : ""}${declaration.kind} `
 				)
 			} else {
 				let statement = step
 				while (statement.parent !== module.program)
 					statement = statement.parent!
-				s.appendLeft(statement.end, `\n${text.slice(0, -1)}`)
+				s.appendLeft(statement.end, `\n${text}`)
 			}
 		}
 	}
@@ -964,6 +981,15 @@ export class Precompiler {
 		return components[root]
 	}
 
+	private definesArk(binding: Binding, module: SourceModule): boolean {
+		return this.graph.definesArk({
+			kind: "binding",
+			module,
+			binding,
+			name: binding.name
+		})
+	}
+
 	private arktypeImportOf(module: SourceModule): ImportDeclaration | undefined {
 		return module.program.body.find(
 			(statement): statement is ImportDeclaration =>
@@ -972,15 +998,7 @@ export class Precompiler {
 				(statement.source.value === "arktype" ||
 					statement.specifiers.some(specifier => {
 						const binding = module.scopes.bindingsById.get(specifier.local)
-						return (
-							!!binding &&
-							this.graph.definesArk({
-								kind: "binding",
-								module,
-								binding,
-								name: binding.name
-							})
-						)
+						return !!binding && this.definesArk(binding, module)
 					}))
 		)
 	}
@@ -1179,7 +1197,7 @@ export class Precompiler {
 				site.status !== "accepted" ||
 				replaced.some(
 					([outer, spans]) =>
-						covers(outer, site) && !spans.some(span => covers(span, site))
+						contains(outer, site) && !spans.some(span => contains(span, site))
 				)
 			)
 				continue
@@ -1203,39 +1221,15 @@ export class Precompiler {
 				diagnostics.push(this.refuseWritten(module, site, reasons))
 				continue
 			}
-			if (site.introspection) {
-				// a site reading what another module exports checks it at each call, as a factory does
-				factory ??= {
-					params: [],
-					spans: [],
-					repeats: [],
-					inputs: [],
-					bindings: [],
-					imports: []
-				}
-				const name = `f${nameOf(site)}`
-				factoriesBySite.set(site, factory)
-				namesBySite.set(site, name)
-				exportsByName[name] = {
-					...site.introspection,
-					data: site.value,
-					params: factory.params,
-					defaultChecks: site.defaultChecks
-				}
-				replaced.push([site, factory.spans])
-				continue
-			}
-			if (site.parseError) {
+			// a site reading what another module exports checks it at each call, as a factory does
+			if (site.introspection) factory ??= emptyFactory()
+			else if (site.parseError) {
 				namesBySite.set(site, nameOf(site))
 				// a site reading what its module may not have set yet checks that before throwing, as a factory does
 				if (site.progress) {
 					factoriesBySite.set(site, {
-						params: [],
-						spans: [],
-						repeats: [],
-						inputs: [`${prefix}m`],
-						bindings: [],
-						imports: []
+						...emptyFactory(),
+						inputs: [`${prefix}m`]
 					})
 				}
 				replaced.push([site, []])
@@ -1245,6 +1239,16 @@ export class Precompiler {
 				const name = `f${nameOf(site)}`
 				factoriesBySite.set(site, factory)
 				namesBySite.set(site, name)
+				replaced.push([site, factory.spans])
+				if (site.introspection) {
+					exportsByName[name] = {
+						...site.introspection,
+						data: site.value,
+						params: factory.params,
+						defaultChecks: site.defaultChecks
+					}
+					continue
+				}
 				let table = tablesByValue.get(site.value)
 				if (table === undefined)
 					tablesByValue.set(site.value, (table = tablesByValue.size))
@@ -1254,7 +1258,6 @@ export class Precompiler {
 					internedBy: table,
 					defaultChecks: site.defaultChecks
 				} satisfies StandaloneFactory
-				replaced.push([site, factory.spans])
 			} else {
 				const name = `v${nameOf(site)}`
 				namesBySite.set(site, name)
@@ -1404,10 +1407,7 @@ export class Precompiler {
 		const parameterSpans = [
 			...spans.map((span, i): [Span, number] => [span, i]),
 			...(factory?.repeats ?? []).filter(
-				([repeat]) =>
-					!spans.some(
-						span => span.start <= repeat.start && repeat.end <= span.end
-					)
+				([repeat]) => !spans.some(span => contains(span, repeat))
 			)
 		].sort(([l], [r]) => l.start - r.start)
 		let original = ""
@@ -1445,10 +1445,7 @@ export class Precompiler {
 					continue
 				const read = module.scopes.bindingsById
 					.get(specifier.local)
-					?.references.find(
-						({ id }) =>
-							!spans.some(span => span.start <= id.start && id.end <= span.end)
-					)
+					?.references.find(({ id }) => !spans.some(span => contains(span, id)))
 				if (!read) continue
 				result.push(
 					this.diagnostic(
@@ -1477,23 +1474,6 @@ export class Precompiler {
 		if (site.status !== "accepted" || !isFoldable(site.value)) return
 		keyOf(site.value)
 		for (const [node] of site.defaultChecks) keyOf(node.in as BaseRoot)
-	}
-
-	private isFactory(site: Site, module: SourceModule): boolean {
-		const created = createdBy(site)
-		if (!created) return false
-		const dropped = this.droppedHolesOf(site)
-		return (
-			keyOf(created)[1].length > 0 ||
-			site.inputs.length > 0 ||
-			site.defaultChecks.length > 0 ||
-			site.progress !== undefined ||
-			// one its module creates and reads in place is the same function however the program runs
-			site.references.some(
-				reference => dropped.has(reference.value) && !reference.isOwnHole
-			) ||
-			this.mockableHelpersOf(site, module).length > 0
-		)
 	}
 
 	// e.g. a narrow or a default's thunk an intersection reduced to `never` drops, whose kind and parameters arktype checked as it parsed them
@@ -1530,30 +1510,38 @@ export class Precompiler {
 		reasons: string[],
 		prefix: string
 	): SiteFactory | undefined {
-		if (!this.isFactory(site, module)) return
+		const created = createdBy(site)
+		if (!created) return
+		const [, holes] = keyOf(created)
+		const dropped = this.droppedHolesOf(site)
+		const helpers = this.mockableHelpersOf(site, module)
+		if (
+			!holes.length &&
+			!site.inputs.length &&
+			!site.defaultChecks.length &&
+			!site.progress &&
+			// one its module creates and reads in place is the same function however the program runs
+			!site.references.some(
+				reference => dropped.has(reference.value) && !reference.isOwnHole
+			) &&
+			!helpers.length
+		)
+			return
 		// a default's check reads the functions of a node the value can drop
 		const held = [
 			...new Set([
-				...keyOf(createdBy(site)!)[1],
+				...holes,
 				...site.defaultChecks.flatMap(
 					([node]) => traversalKeyOf(node.in as BaseRoot)[1]
 				)
 			])
 		]
-		const helpers = this.mockableHelpersOf(site, module)
-		const factory: SiteFactory = {
-			params: [],
-			spans: [],
-			repeats: [],
-			inputs: [],
-			bindings: [],
-			imports: []
-		}
+		const factory = emptyFactory()
 		const passed = this.receiveReferences(
 			site,
 			module,
 			held,
-			this.droppedHolesOf(site),
+			dropped,
 			factory,
 			reasons
 		)
@@ -1606,7 +1594,7 @@ export class Precompiler {
 			) {
 				// e.g. `pipe.try`'s morph, which arktype calls from a function of its own
 				reasons.push(
-					`arktype holds \`${text}\` (${module.positionOf(reference)}) in a function of its own, which a standalone validator can't create yet`
+					`arktype holds ${labelOf(module, reference)} in a function of its own, which a standalone validator can't create yet`
 				)
 				continue
 			}
@@ -1627,10 +1615,10 @@ export class Precompiler {
 				continue
 			}
 			for (const value of holes) read.add(value)
+			if (!holes.length) continue
 			const spanIndexByText =
 				spanIndexByTextByPassed.get(reference.value) ??
 				new Map<string, number>()
-			if (!holes.length) continue
 			if (spanIndexByText.has(text)) {
 				factory.repeats.push([reference, spanIndexByText.get(text)!])
 				continue
@@ -1653,7 +1641,7 @@ export class Precompiler {
 				hole ?
 					{
 						kind: hole.kind as HoleKind,
-						label: `\`${text}\` (${module.positionOf(reference)})`,
+						label: labelOf(module, reference),
 						value: hole.value,
 						isOwn: reference.isOwnHole
 					}
@@ -1667,7 +1655,7 @@ export class Precompiler {
 			if (!source) continue
 			const [node, origin] = source
 			reasons.push(
-				`arktype holds \`${origin.snippetOf(node)}\` (${origin.positionOf(node)}), which the site ${holesByValue.has(value) ? "reads outside its own source" : "cannot pass to its factory"}`
+				`arktype holds ${labelOf(origin, node)}, which the site ${holesByValue.has(value) ? "reads outside its own source" : "cannot pass to its factory"}`
 			)
 		}
 		return passed
@@ -1691,11 +1679,7 @@ export class Precompiler {
 		for (const reads of readsByRoot.values()) {
 			const island = reads.find(input => this.isIslandValue(input.value, site))
 			if (island) {
-				reasons.push(
-					islandValueMessage(
-						[island.name, ...island.path.map(String)].join(".")
-					)
-				)
+				reasons.push(islandValueMessage(textOfInput(island)))
 				continue
 			}
 			const passedAs = this.inputExpressionOf(reads[0], site, module, prefix)
@@ -1703,10 +1687,7 @@ export class Precompiler {
 				reasons.push(passedAs)
 				continue
 			}
-			factory.inputs.push(passedAs.expression)
-			if (passedAs.imported) factory.imports.push(passedAs.imported)
-			if (passedAs.binding) factory.bindings.push(passedAs.binding)
-			factory.params.push({
+			receive(factory, passedAs, {
 				kind: "input",
 				label: passedAs.label,
 				reads: reads.map(input => [input.path, input.value])
@@ -1746,10 +1727,7 @@ export class Precompiler {
 			reasons.push(passedAs)
 			return
 		}
-		factory.inputs.push(passedAs.expression)
-		if (passedAs.imported) factory.imports.push(passedAs.imported)
-		if (passedAs.binding) factory.bindings.push(passedAs.binding)
-		factory.params.push({
+		receive(factory, passedAs, {
 			kind: "helper",
 			label,
 			file: exporter.path,
@@ -1767,13 +1745,16 @@ export class Precompiler {
 			)
 				continue
 			const value = this.interpreter.valueOfBinding(entry.binding, module)
-			if (
-				hasDomain(value, "object") &&
-				this.interpreter.standIns.get(value)?.kind === "function"
-			)
+			if (this.standInOf(value)?.kind === "function")
 				result[name] = entry.binding.name
 		}
 		return result
+	}
+
+	private standInOf(value: unknown) {
+		return hasDomain(value, "object") ?
+				this.interpreter.standIns.get(value)
+			:	undefined
 	}
 
 	// a function only a Type the site references holds has no text in the site, so it's named by its declaration
@@ -1786,9 +1767,7 @@ export class Precompiler {
 			const standIn = this.interpreter.standInsByName.get(name)
 			if (!standIn) return name
 			const reference = site.references.find(
-				reference =>
-					hasDomain(reference.value, "object") &&
-					this.interpreter.standIns.get(reference.value) === standIn
+				reference => this.standInOf(reference.value) === standIn
 			)
 			return reference ?
 					module.snippetOf(reference)
@@ -1830,8 +1809,7 @@ export class Precompiler {
 				other =>
 					other !== binding &&
 					other.name === binding.name &&
-					other.scope.node.start <= site.start &&
-					site.end <= other.scope.node.end &&
+					contains(other.scope.node, site) &&
 					contains(binding.scope.node, other.scope.node)
 			)
 		if (input.kind === "local") {
@@ -1932,10 +1910,7 @@ export class Precompiler {
 						input.path.length ||
 						!this.isCreatedBy(this.bindingsByInput.get(input), input.value)
 				)
-				.map((input): [unknown, string] => [
-					input.value,
-					[input.name, ...input.path.map(String)].join(".")
-				])
+				.map((input): [unknown, string] => [input.value, textOfInput(input)])
 		]
 		const result: string[] = []
 		const seen = new Set<unknown>()
@@ -1964,8 +1939,7 @@ export class Precompiler {
 				continue
 			}
 			for (const hole of holes) {
-				const standIn =
-					hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
+				const standIn = this.standInOf(hole)
 				if (
 					standIn &&
 					(standIn.isCalled || standIn.isCalledIndirectly) &&
@@ -2000,9 +1974,7 @@ export class Precompiler {
 		const value = createdBy(site)
 		if (this.mode !== "standalone" || !value) return []
 		const roots =
-			hasArkKind(value, "scope") ?
-				exportedRootsOf(value)
-			:	[...arkObjectsIn(value)].filter(member => hasArkKind(member, "root"))
+			hasArkKind(value, "scope") ? exportedRootsOf(value) : rootsIn(value)
 		// where the program configures neither, the build's own options decide
 		const builtErrors = this.errors ?? "all"
 		const errors = roots
@@ -2015,12 +1987,14 @@ export class Precompiler {
 				mutatesInput =>
 					mutatesInput !== undefined && mutatesInput !== builtMutatesInput
 			)
-		return [
-			...(errors ? [writeErrorsMismatchMessage(errors, builtErrors)] : []),
-			...(mutatesInput === undefined ?
-				[]
-			:	[writeMutatesInputMismatchMessage(mutatesInput, builtMutatesInput)])
-		]
+		const result: string[] = []
+		if (errors) result.push(writeErrorsMismatchMessage(errors, builtErrors))
+		if (mutatesInput !== undefined) {
+			result.push(
+				writeMutatesInputMismatchMessage(mutatesInput, builtMutatesInput)
+			)
+		}
+		return result
 	}
 
 	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
@@ -2039,7 +2013,7 @@ export class Precompiler {
 			if (isReceived && !site.parseError) continue
 			const holeModule = this.graph.moduleOf(hole.file) as SourceModule
 			result.push(
-				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} \`${holeModule.snippetOf(hole)}\` (${holeModule.positionOf(hole)})`
+				`arktype ${hole.isCalledAtDefinition ? "calls" : "holds"} ${labelOf(holeModule, hole)}`
 			)
 		}
 		result.push(...this.incomparableReasonsOf(site, module))
@@ -2048,15 +2022,13 @@ export class Precompiler {
 			const holes = this.interpreter.holesIn(site.arktypeArguments)
 			for (const hole of site.holes) holes.delete(hole.value)
 			for (const hole of holes) {
-				const standIn =
-					hasDomain(hole, "object") && this.interpreter.standIns.get(hole)
+				const standIn = this.standInOf(hole)
 				const source = this.interpreter.sourceOf(hole)
 				result.push(
 					`arktype is passed a value holding ${
 						standIn ? this.interpreter.labelOf(standIn)
-						: source ?
-							`\`${source[1].snippetOf(source[0])}\` (${source[1].positionOf(source[0])})`
-						:	`\`${String(hole)}\``
+						: source ? labelOf(source[1], source[0])
+						: `\`${String(hole)}\``
 					}`
 				)
 			}
@@ -2073,7 +2045,7 @@ export class Precompiler {
 		}
 		for (const input of site.parseError ? site.inputs : []) {
 			result.push(
-				`\`${[input.name, ...input.path.map(String)].join(".")}\` is ${
+				`\`${textOfInput(input)}\` is ${
 					input.kind === "import" ?
 						`imported from ${this.graph.pathOf(input.file!)}`
 					:	"declared in a function around the site"
@@ -2137,7 +2109,7 @@ export class Precompiler {
 				settledRangesByFn.set(candidate.fn, (settledRanges = new Set()))
 			if (isWithin(candidate.state.node, settledRanges)) continue
 			try {
-				if (!this.settle(candidate)) continue
+				if (!(candidate.isSite ??= this.settle(candidate))) continue
 				// settling can move the candidate to a fallback inside it
 				const node = candidate.state.node
 				settled.push(candidate)
@@ -2246,10 +2218,6 @@ export class Precompiler {
 	}
 
 	private settle(candidate: SiteCandidate): boolean {
-		return (candidate.isSite ??= this.settleOnce(candidate))
-	}
-
-	private settleOnce(candidate: SiteCandidate): boolean {
 		const type = this.typeEndOf(candidate)
 		if (type) {
 			candidate.state = type
@@ -2339,7 +2307,7 @@ export class Precompiler {
 				value.type === "Literal" ||
 				(value.type === "TemplateLiteral" && !value.expressions.length) ||
 				isFunctionNode(value) ||
-				this.isInertSite(sitesByRange.get(`${value.start}:${value.end}`))
+				this.isInertSite(sitesByRange.get(rangeOf(value)))
 			)
 		}
 		if (step.type === "VariableDeclarator")
@@ -2679,14 +2647,7 @@ export class Precompiler {
 				child.type === "Identifier" ?
 					module.scopes.referencesById.get(child)?.binding
 				:	undefined
-			readsArk ||=
-				!!binding &&
-				this.graph.definesArk({
-					kind: "binding",
-					module,
-					binding,
-					name: binding.name
-				})
+			readsArk ||= !!binding && this.definesArk(binding, module)
 			return !readsArk
 		})
 		return readsArk ? undefined : definition
@@ -2818,10 +2779,7 @@ export class Precompiler {
 		}
 		if (this.mode !== "standalone") return result
 		for (const value of candidate.state.holes) {
-			const standIn =
-				hasDomain(value, "object") ?
-					this.interpreter.standIns.get(value)
-				:	undefined
+			const standIn = this.standInOf(value)
 			if (!standIn?.isDefinition || !standIn.dynamic) continue
 			const source = candidate.state.readsByValue.get(standIn.dynamic)?.[0]
 			const [node, origin] =
@@ -2984,8 +2942,7 @@ export class Precompiler {
 			if (!isPlainContainer(o)) return
 			for (const k of Reflect.ownKeys(o)) {
 				const v = Reflect.get(o, k)
-				const standIn =
-					hasDomain(v, "object") ? this.interpreter.standIns.get(v) : undefined
+				const standIn = this.standInOf(v)
 				if (
 					k === "description" &&
 					standIn &&
@@ -3053,7 +3010,7 @@ export class Precompiler {
 					this.writeInto(reference.id, module, o => objects.has(o)) ?? []
 				if (write) {
 					result.add(
-						`\`${module.snippetOf(write)}\` (${module.positionOf(write)}) writes what the configuration holds: declare the value in the call instead`
+						`${labelOf(module, write)} writes what the configuration holds: declare the value in the call instead`
 					)
 				}
 			}
@@ -3077,7 +3034,7 @@ export class Precompiler {
 			)
 				continue
 			const [write, value, isDirect] =
-				this.arkWriteOf(reference.id, module) ?? []
+				this.writeInto(reference.id, module, isArkObject) ?? []
 			if (!write) continue
 			written.add(reference.id)
 			writes.add(write)
@@ -3166,7 +3123,8 @@ export class Precompiler {
 			this.graph.packageNameOf(module.id) ?? ""
 		)
 		for (const [node, read, object, isMaybeType] of unavailable) {
-			const settledValue = settledValues.get(rangeOf(normalize(object)))
+			const objectRange = rangeOf(normalize(object))
+			const settledValue = settledValues.get(objectRange)
 			// a computed site is sure, so a member the options drop is read off a Type
 			const isUnsure =
 				isMaybeType &&
@@ -3177,8 +3135,7 @@ export class Precompiler {
 				)
 			// a chain is reported where it first reads one
 			if (
-				(isUnsure &&
-					(isArkPackage || settledValues.has(rangeOf(normalize(object))))) ||
+				(isUnsure && (isArkPackage || settledValues.has(objectRange))) ||
 				unavailable.some(
 					([inner]) => inner !== node && contains(node, inner)
 				) ||
@@ -3187,9 +3144,8 @@ export class Precompiler {
 				continue
 			const dropped =
 				read === undefined || !this.lackedMembers.has(read) ? undefined
-				: read === "traverse" || read === "from" || read === "toString" ?
-					"methods"
-				:	read
+				: includes(methodMembers, read) ? "methods"
+				: read
 			result.push(
 				this.diagnostic(
 					module,
@@ -3218,11 +3174,7 @@ export class Precompiler {
 			)
 		}
 		for (const statement of module.program.body) {
-			if (
-				statement.type !== "ImportDeclaration" ||
-				arkPackageName.test(this.graph.packageNameOf(module.id) ?? "")
-			)
-				continue
+			if (statement.type !== "ImportDeclaration" || isArkPackage) continue
 			const source = statement.source.value
 			const isLocale = localeSpecifier.test(source)
 			if (!isLocale && !nodePackageSpecifier.test(source)) continue
@@ -3282,14 +3234,6 @@ export class Precompiler {
 				module.scopes.referencesById.get(node)?.binding
 			:	undefined
 		return !!binding && isInIsland(binding.declaration, module)
-	}
-
-	// a write a reference starts, and the arktype value it writes to or through, e.g. to its `meta`
-	private arkWriteOf(
-		id: Node,
-		module: SourceModule
-	): [write: Node, value: Node, isDirect: boolean] | undefined {
-		return this.writeInto(id, module, isArkObject)
 	}
 
 	private writeInto(
@@ -3466,12 +3410,7 @@ export class Precompiler {
 			const id = reference.id
 			if (
 				!isInIsland(id, module) ||
-				sites.some(
-					site =>
-						site.status === "accepted" &&
-						site.start <= id.start &&
-						id.end <= site.end
-				)
+				sites.some(site => site.status === "accepted" && contains(site, id))
 			)
 				continue
 			const [name, read] = this.graph.arkExportOf(reference, module) ?? []
@@ -3563,6 +3502,8 @@ export const writeUnknownMemberMessage = <member extends string>(
 
 export type writeUnknownMemberMessage<member extends string> =
 	`members has ${member}, which isn't one of ${string}`
+
+const methodMembers = ["traverse", "from", "toString"] as const
 
 const booleanOptions = ["freeze", "lazy"] as const
 
@@ -3743,9 +3684,6 @@ export const specifierOf = (importer: string, file: string): string => {
 	return path.startsWith(".") ? path : `./${path}`
 }
 
-const covers = (span: Span, site: Site) =>
-	span.start <= site.start && site.end <= span.end
-
 const writeErrorsMismatchMessage = (
 	configured: ErrorDetail,
 	built: ErrorDetail
@@ -3790,9 +3728,11 @@ const exportedRootsOf = (value: unknown): BaseRoot[] => {
 			return []
 		}
 	}
-	if (!hasArkKind(module, "module")) return []
-	return [...arkObjectsIn(module)].filter(member => hasArkKind(member, "root"))
+	return hasArkKind(module, "module") ? rootsIn(module) : []
 }
+
+const rootsIn = (value: unknown): BaseRoot[] =>
+	[...arkObjectsIn(value)].filter(member => hasArkKind(member, "root"))
 
 // e.g. a Module and each Type it holds
 const arkObjectsIn = (value: unknown, result = new Set<unknown>()) => {
@@ -3883,9 +3823,8 @@ const inlineModules = (
 	s: MagicString,
 	prefix: string,
 	modules: Record<string, string>,
-	imports: Record<string, Record<string, string>>,
-	insertImport: (text: string) => void
-) => {
+	imports: Record<string, Record<string, string>>
+): string => {
 	const namespacesBySource: Record<string, string> = {}
 	let declarations = ""
 	let loaders = 0
@@ -3932,9 +3871,7 @@ const inlineModules = (
 		}
 		const locals = imports[specifier]
 		const names = Object.keys(locals)
-		const objectOf = (valueOf: (name: string) => string) =>
-			`{ ${names.map(name => `${JSON.stringify(name)}: ${valueOf(name)}`).join(", ")} }`
-		const call = `((${params.join(", ")}) => {\n${body.toString().trim()}\n${names.length ? `return ${objectOf(name => localsByName[name])}\n` : ""}})(${args.join(", ")})`
+		const call = `((${params.join(", ")}) => {\n${body.toString().trim()}\n${names.length ? `return { ${names.map(name => `${JSON.stringify(name)}: ${localsByName[name]}`).join(", ")} }\n` : ""}})(${args.join(", ")})`
 		if (!names.length) {
 			declarations += `;${call};\n`
 			continue
@@ -3949,17 +3886,18 @@ const inlineModules = (
 			)
 			.join("")}${load}();\n`
 	}
-	if (!declarations) return
+	if (!declarations) return ""
 	s.prependLeft(firstStatementOf(module.program).start, declarations)
-	for (const source in namespacesBySource) {
-		insertImport(
-			`\nimport * as ${namespacesBySource[source]} from ${JSON.stringify(source)}`
+	return Object.entries(namespacesBySource)
+		.map(
+			([source, namespace]) =>
+				`\nimport * as ${namespace} from ${JSON.stringify(source)}`
 		)
-	}
+		.join("")
 }
 
 const rangesOf = (sites: Site[]) =>
-	new Map(sites.map(site => [`${site.start}:${site.end}`, site]))
+	new Map(sites.map(site => [rangeOf(site), site]))
 
 // a comment between declarators can hold a comma
 const commaAfter = (source: string, from: number): number => {
@@ -4035,8 +3973,6 @@ const keepImportedModules = (
 	passed: Binding[],
 	s: MagicString
 ) => {
-	const isWithin = (id: Span, spans: Span[]) =>
-		spans.some(span => span.start <= id.start && id.end <= span.end)
 	for (const statement of module.program.body) {
 		if (
 			statement.type !== "ImportDeclaration" ||
@@ -4055,7 +3991,9 @@ const keepImportedModules = (
 		if (
 			references.length &&
 			references.every(
-				({ id }) => isWithin(id, folded) && !isWithin(id, kept)
+				({ id }) =>
+					folded.some(span => contains(span, id)) &&
+					!kept.some(span => contains(span, id))
 			) &&
 			!bindings.some(binding => passed.includes(binding))
 		) {
@@ -4074,10 +4012,7 @@ const isReadOutside = (
 ) =>
 	!!module.scopes.bindingsById
 		.get(specifier.local)
-		?.references.some(
-			({ id }) =>
-				!sites.some(site => site.start <= id.start && id.end <= site.end)
-		)
+		?.references.some(({ id }) => !sites.some(site => contains(site, id)))
 
 const writeImport = (
 	specifiers: ImportDeclarationSpecifier[],
@@ -4154,7 +4089,7 @@ const isMemberRead = (node: Node, root: Node): boolean => {
 	return true
 }
 
-const rangeOf = (node: Node) => `${node.start}:${node.end}`
+const rangeOf = (span: Span) => `${span.start}:${span.end}`
 
 // AST nodes nest, so a node is within a range exactly when it or an ancestor spans it
 const isWithin = (node: Node, ranges: Set<string>): boolean => {
@@ -4162,6 +4097,12 @@ const isWithin = (node: Node, ranges: Set<string>): boolean => {
 		if (ranges.has(rangeOf(n))) return true
 	return false
 }
+
+const textOfInput = (input: Input) =>
+	[input.name, ...input.path.map(String)].join(".")
+
+const labelOf = (module: SourceModule, span: Span) =>
+	`\`${module.snippetOf(span)}\` (${module.positionOf(span)})`
 
 const isCoveredBy = (input: Input, existing: Input) =>
 	input.kind === existing.kind &&

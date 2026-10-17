@@ -34,7 +34,8 @@ import type {
 	TSType,
 	TSTypeAnnotation,
 	TSTypeParameter,
-	TSTypeAliasDeclaration
+	TSTypeAliasDeclaration,
+	Span
 } from "oxc-parser"
 import { dirname, join, relative } from "node:path"
 import { isArkValue } from "./builtins.ts"
@@ -2640,7 +2641,7 @@ export const declarationStartOf = (node: Node): number | undefined => {
 	return statement.parent?.type === "Program" ? statement.start : undefined
 }
 
-export const contains = (outer: Node, inner: Node): boolean =>
+export const contains = (outer: Span, inner: Span): boolean =>
 	outer.start <= inner.start && inner.end <= outer.end
 
 // e.g. `id` in `(id: string) => type({ id: "string" }).pipe(o => o.id === id)`
