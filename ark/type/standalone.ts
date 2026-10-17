@@ -477,7 +477,7 @@ const writeArtifact = (
 		)
 		trial.templates.add(factory.type)
 		try {
-			trial.writeCreate(0, configured)
+			trial.writeCreateBody(configured)
 			return true
 		} catch (e) {
 			if (e instanceof ParseError) return false
@@ -580,8 +580,13 @@ ${writeExport(name, index)}`
 interface Creation {
 	indices: number[]
 	values: Set<unknown>
-	code: string
+	body: string
 }
+
+const writeCreation = (baking: Baking, index: number, body: string) =>
+	baking.createsLazily ?
+		`var created${index}\n\n${writeFunction(baking, `create${index}`, "", body)}`
+	:	`const created${index} = /* @__PURE__ */ (() => {\n${body}\n})()`
 
 // what a creation returns, and the index it holds a value at where it creates more than one
 type CreationRead = [creation: string, position: number | undefined]
@@ -617,7 +622,7 @@ const writeCreations = (
 	let creations: Creation[] = []
 	for (let i = 0; i < names.length; i++) {
 		const artifact = artifactOf([i])
-		const code = artifact.writeCreate(i, configured)
+		const body = artifact.writeCreateBody(configured)
 		const values = artifact.comparedValues
 		const joined = creations.filter(creation =>
 			values.some(value => creation.values.has(value))
@@ -631,23 +636,30 @@ const writeCreations = (
 				...joined.flatMap(creation => [...creation.values]),
 				...values
 			]),
-			code
+			body
 		})
 	}
-	for (const creation of creations) {
+	const code: string[] = []
+	for (const creation of creations.sort(
+		(l, r) => l.indices[0] - r.indices[0]
+	)) {
 		const [index] = creation.indices
-		if (creation.indices.length > 1) {
-			creation.code = artifactOf(creation.indices).writeCreate(
-				index,
-				configured
-			)
-		}
+		const isShared = creation.indices.length > 1
+		const body =
+			isShared ?
+				artifactOf(creation.indices).writeCreateBody(configured)
+			:	creation.body
+		// a creation only its own getter or factory reads is written there
+		const isInlined = baking.createsLazily && !isShared
+		code.push(
+			isInlined ? `var created${index}` : writeCreation(baking, index, body)
+		)
 		for (const [position, i] of creation.indices.entries()) {
 			reads[names[i]] = [
-				baking.createsLazily ?
-					`(created${index} ??= create${index}())`
-				:	`created${index}`,
-				creation.indices.length > 1 ? position : undefined
+				isInlined ? `(created${index} ??= (() => {\n${body}\n})())`
+				: baking.createsLazily ? `(created${index} ??= create${index}())`
+				: `created${index}`,
+				isShared ? position : undefined
 			]
 		}
 	}
@@ -656,15 +668,7 @@ const writeCreations = (
 		if (folded.has(name)) return []
 		return `${writeFunction(baking, `get${i}`, "", `\treturn ${readOf(...reads[name])}`)}\n\nexport { get${i} as ${JSON.stringify(name)} }`
 	})
-	return [
-		[
-			...creations
-				.sort((l, r) => l.indices[0] - r.indices[0])
-				.map(creation => creation.code),
-			getters.join("\n")
-		],
-		reads
-	]
+	return [[...code, getters.join("\n")], reads]
 }
 
 const writeSections = (sections: string[]) =>
@@ -1182,7 +1186,7 @@ export class StandaloneArtifact {
 		return this.validatorNamesByRoot.size > typeCount
 	}
 
-	writeCreate(index: number, configured: Configured): string {
+	writeCreateBody(configured: Configured): string {
 		this.writeSharedUnits()
 		const values = Object.values(this.exports).map(value =>
 			this.exportOf(value)
@@ -1195,12 +1199,7 @@ export class StandaloneArtifact {
 			:	[this.declarations.statements.join("\n"), this.modules.join("\n")]),
 			`return ${values.length === 1 ? values[0] : `[${values.join(", ")}]`}`
 		]
-		const body = statements.filter(statement => statement).join("\n\n")
-		return this.baking.createsLazily ?
-				`var created${index}
-
-${writeFunction(this.baking, `create${index}`, "", body)}`
-			:	`const created${index} = /* @__PURE__ */ (() => {\n${body}\n})()`
+		return statements.filter(statement => statement).join("\n\n")
 	}
 
 	// each call creates its validator from the holes and inputs the artifact received, so it declares everything the validator holds

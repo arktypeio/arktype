@@ -373,8 +373,8 @@ export const BoxedTree = /* @__PURE__ */ $ark#5()`)
 				)
 			).snap([
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "#0")',
-				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "#1")',
-				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "#2")',
+				'const module0 = runtime.holdHoles(runtime.freeze({ ["tree"]: validator0, ["box"]: standIn0 }), "#1")',
+				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "#2")',
 				'const standIn0 = runtime.holdHoles(runtime.freeze({}), "#3")'
 			])
 		})

@@ -2667,7 +2667,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 				precompileStandalone(exports)
 					.code.split("const factory")
 					.slice(1)
-					.map(factory => factory.includes("??= create"))
+					.map(factory => /\(created\d+ \?\?= /.test(factory))
 			).equals([false, true, true, true])
 			const created = await load(exports)
 			const holder = created.$(isEven)
