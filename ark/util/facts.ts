@@ -1,4 +1,4 @@
-import { noSuggest } from "./errors.ts"
+import type { noSuggest } from "./errors.ts"
 import type { Key } from "./keys.ts"
 import type { Constructor } from "./objectKinds.ts"
 import type { Entry } from "./records.ts"
@@ -6,7 +6,8 @@ import type { SerializationOptions } from "./serialize.ts"
 
 // arktype reads a value a user passes it only through these, since a precompiled build answers them for values it cannot evaluate
 
-export const arkKind = noSuggest("arkKind")
+// noSuggest("arkKind") written out, so a bundle holds no call to evaluate
+export const arkKind: noSuggest<"arkKind"> = " arkKind"
 
 export type arkKind = typeof arkKind
 
