@@ -86,7 +86,7 @@ const withoutArkInternals = (args: unknown[]) =>
 
 // case mapping and whitespace vary by engine outside ASCII
 const asciiOnly = (_: unknown[], self: unknown) =>
-	/[^\x00-\x7f]/.test(self as string) ?
+	/[\u0080-\uffff]/.test(self as string) ?
 		"maps characters by the engine's Unicode version, which varies outside ASCII"
 	:	undefined
 

@@ -924,15 +924,16 @@ const copyOrThrow = (value: unknown, seen: Map<object, unknown>): any => {
 		: value instanceof Map || value instanceof Set ? new proto.constructor()
 		: Object.create(proto)
 	seen.set(value, copy)
-	if (value instanceof Map)
+	if (value instanceof Map) {
 		for (const [k, v] of value)
 			copy.set(copyOrThrow(k, seen), copyOrThrow(v, seen))
+	}
 	if (value instanceof Set)
 		for (const v of value) copy.add(copyOrThrow(v, seen))
-	if (isIndexed(value))
+	if (isIndexed(value)) {
 		for (let i = 0; i < value.length; i++)
 			copy.push(copyOrThrow(value[i], seen))
-	else {
+	} else {
 		for (const k of Reflect.ownKeys(value)) {
 			const descriptor = Object.getOwnPropertyDescriptor(value, k)!
 			if (!("value" in descriptor)) throw uncopyable

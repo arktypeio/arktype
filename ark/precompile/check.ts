@@ -94,10 +94,11 @@ export const check = (
 		`${countOf(report.sites, "site")} in ${countOf(report.files, "file")}: ${report.accepted} accepted (${report.rate.toFixed(1)}%)`
 	]
 	if (report.islands) summary.push(countOf(report.islands, "runtime island"))
-	if (report.errorsOutsideSites)
+	if (report.errorsOutsideSites) {
 		summary.push(
 			`${countOf(report.errorsOutsideSites, "error")} outside a site`
 		)
+	}
 	report.lines.push(summary.join(", "))
 	return report
 }
