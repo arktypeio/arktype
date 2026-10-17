@@ -391,6 +391,10 @@ Every group of `string.date.iso`'s pattern but the two its backreferences read i
 
 `string.numeric` and `string.integer`, and the inputs of their `parse` morphs, check a string by reading its characters rather than testing it against their patterns, which accepts the same strings with about a third of the instructions, so parsing the benchmark's array of 100 objects with a `string.numeric.parse` property runs 1.5x fewer instructions. Their patterns are unchanged, as are their `expression`, `json` and JSON Schema. Any pattern with either source, like `numericStringMatcher` from `@ark/util`, is checked the same way, as are `@ark/util`'s `isNumericString` and `isWellFormedInteger`, which now read only strings. A pattern node holds such a function as `test`.
 
+### Match a repeated character from the start of a string
+
+A pattern of one character, escape or class repeated without bound, like `/^[ab]+$/`, `string.alpha` or `string.hex`, matches a string of 16 or more characters with a sticky copy of itself, which accepts the string if as many characters as it can match from the start reach its end. A string failing near its end is no longer matched again from each position before it, so checking a 10,000-character one runs about half the instructions. A pattern with the `m`, `v`, `g` or `y` flag or a lazy quantifier is tested as before, as is any string shorter than 16.
+
 ### Call narrows and morphs without a receiver when jitless
 
 A narrow's predicate was called with its node as `this` when jitless, and a Type whose morphs need no `ctx` called them with its morphs array as `this`. Both are now called as compiled code calls them, with `this` undefined.

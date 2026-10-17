@@ -601,6 +601,25 @@ export const rejects = (
 	return true
 }
 
+// a string this long can cost more to match where it fails, backtracking
+// through each position its repeated atom reached, than a sticky RegExp
+const minStickyLength = 16
+
+const stickyCopies = /* @__PURE__ */ new WeakMap<RegExp, RegExp>()
+
+// a pattern repeating one atom to the end of a string, e.g. /^[ab]+$/,
+// whose sticky copy matches the atom as often as it can from the start
+export const matchesRepeated = (pattern: RegExp, data: string): boolean => {
+	if (data.length < minStickyLength) return pattern.test(data)
+	let sticky = stickyCopies.get(pattern)
+	if (!sticky) {
+		sticky = new RegExp(pattern.source.slice(1, -1), `${pattern.flags}y`)
+		stickyCopies.set(pattern, sticky)
+	}
+	sticky.lastIndex = 0
+	return sticky.test(data) && sticky.lastIndex === data.length
+}
+
 // a morph that returns ctx.errors has already added them
 export const addErrors = (
 	ctx: InternalTraversal,

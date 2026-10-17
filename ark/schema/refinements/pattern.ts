@@ -17,7 +17,7 @@ import {
 	type nodeImplementationOf
 } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
-import type { InternalTraversal } from "../shared/traversal.ts"
+import { matchesRepeated, type InternalTraversal } from "../shared/traversal.ts"
 
 export declare namespace Pattern {
 	export interface ExpandedSchema extends BaseNodeInput {
@@ -69,18 +69,29 @@ const testsByExpression: { [expression: string]: (s: string) => boolean } = {
 	[`${wellFormedIntegerMatcher}`]: isWellFormedInteger
 }
 
+// a whole string of one atom repeated without bound, e.g. /^[ab]+$/
+const repeatedAtom =
+	/^\^(?:\[(?:[^\\\]]|\\.)*]|\\[DSWdsw]|\\[^\dA-Za-z]|[^$()*+?[\\\]^{|}])(?:[*+]|{\d+,})\$$/
+
+// m changes what ^ and $ match, v what a class holds and g or y where it
+// starts matching
+const isRepeatedAtom = (rule: string, flags: string | undefined) =>
+	(flags === undefined || /^[disu]*$/.test(flags)) && repeatedAtom.test(rule)
+
 export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
 	readonly expression: string = `${this.instance}`
 	readonly test: ((s: string) => boolean) | undefined =
 		testsByExpression[this.expression]
+	private readonly isRepeated = isRepeatedAtom(this.rule, this.flags)
 	// g and y make test start from lastIndex, which it also advances
 	private readonly resetsLastIndex =
 		this.instance.global || this.instance.sticky
 
 	traverseAllows: (string: string) => boolean =
 		this.test ??
-		(this.resetsLastIndex ?
+		(this.isRepeated ? string => matchesRepeated(this.instance, string)
+		: this.resetsLastIndex ?
 			string => {
 				this.instance.lastIndex = 0
 				return this.instance.test(string)
@@ -106,6 +117,8 @@ export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 	compileCondition(js: NodeCompiler, data: string): string {
 		if (this.test) return `${js.ref(this.test)}(${data})`
 		const instance = js.ref(this.instance)
+		if (this.isRepeated)
+			return `${js.ref(matchesRepeated)}(${instance}, ${data})`
 		return this.resetsLastIndex ?
 				`(${instance}.lastIndex = 0, ${instance}.test(${data}))`
 			:	`${instance}.test(${data})`

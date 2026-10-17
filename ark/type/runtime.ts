@@ -71,6 +71,7 @@ export {
 	holdsOnlyIndices,
 	InternalTraversal,
 	isAbsent,
+	matchesRepeated,
 	mergeTransformed,
 	pipe,
 	pipeApplied,
