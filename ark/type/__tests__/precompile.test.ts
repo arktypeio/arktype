@@ -17,11 +17,23 @@ import {
 	runtimeKeyOf
 } from "arktype/internal/standalone.ts"
 import {
+	assertMatchesCorpus,
 	corpus,
 	isPrecompiled,
 	observe,
-	precompile as precompileUnits
+	precompileUnits
 } from "./integration/precompiled.ts"
+
+const eachType = (
+	value: any,
+	visit: (t: any, path: string) => void,
+	path = "keywords"
+): void => {
+	if (typeof value === "function" && value.internal?.references)
+		visit(value, path)
+	else if (typeof value === "object" && value !== null)
+		for (const k in value) eachType(value[k], visit, `${path}.${k}`)
+}
 
 contextualize(() => {
 	const isEven = (n: number) => n % 2 === 0
@@ -39,7 +51,7 @@ contextualize(() => {
 
 	const emit = () => {
 		const types = define()
-		// a Type of a Scope holding a predicate holds it too, so a static artifact couldn't export the Scope's Types
+		// a Scope's Types share its predicate, so export only user and tree
 		const even = type(["number", ":", isEven])
 		const roots = [...Object.values(types), even].map(t => t.internal)
 		return {
@@ -67,7 +79,7 @@ contextualize(() => {
 	it("names a node the same whichever roots reach it", () => {
 		const Email = type("string.email")
 		const After = type("Date > d'2000-01-01'")
-		// as a build names them, since a required prop's context holds its value's, which can reach Date before isValidDate
+		// names as a build would, via runtimeKeyOf
 		const namesOf = (...types: type.Any[]) =>
 			Object.assign(
 				{},
@@ -137,34 +149,27 @@ contextualize(() => {
 			)
 		])
 		const unexported: string[] = []
-		const collect = (path: string, value: any): void => {
-			if (typeof value === "function" && value.internal?.references) {
-				for (const node of value.internal.references) {
-					const fns =
-						node.hasKind("morph") ? node.morphs
-						: node.hasKind("predicate") ? [node.predicate]
-						: []
-					for (const fn of fns)
-						if (!isNode(fn) && !exported.has(fn)) unexported.push(path)
-				}
-			} else if (typeof value === "object" && value !== null)
-				for (const k in value) collect(`${path}.${k}`, value[k])
-		}
-		collect("keywords", keywords)
+		eachType(keywords, (t, path) => {
+			for (const node of t.internal.references) {
+				const fns =
+					node.hasKind("morph") ? node.morphs
+					: node.hasKind("predicate") ? [node.predicate]
+					: []
+				for (const fn of fns)
+					if (!isNode(fn) && !exported.has(fn)) unexported.push(path)
+			}
+		})
 		attest(unexported).equals([])
 	})
 
 	it("names each scope holding a keyword's nodes apart from the others", () => {
 		const scopes = new Set<BaseScope>()
-		const collect = (value: any): void => {
-			if (typeof value === "function" && value.internal?.references) {
-				for (const node of [value.internal, ...value.internal.references])
-					scopes.add(node.$)
-			} else if (typeof value === "object" && value !== null)
-				for (const k in value) collect(value[k])
+		const collect = (t: any) => {
+			for (const node of [t.internal, ...t.internal.references])
+				scopes.add(node.$)
 		}
-		collect(keywords)
-		collect($ark.intrinsic)
+		eachType(keywords, collect)
+		eachType($ark.intrinsic, collect)
 		const names = [...scopes].map($ => $.isBuiltin && $.name)
 		attest(new Set(names).size).equals(scopes.size)
 		attest(names.sort()).snap([
@@ -181,14 +186,7 @@ contextualize(() => {
 
 	it("binds a precompiled unit with the JIT's results", async () => {
 		const jit = corpus.map(([def]) => scope({}).type(def as never))
-		const units = await precompileUnits(jit)
-		for (let i = 0; i < corpus.length; i++) {
-			const T = scope({}).type(corpus[i][0] as never)
-			attest(isPrecompiled(units, T.internal)).equals(true)
-			const jitInputs = corpus[i][1]()
-			for (const [j, data] of corpus[i][1]().entries())
-				attest(observe(T, data)).equals(observe(jit[i], jitInputs[j]))
-		}
+		assertMatchesCorpus(await precompileUnits(jit), jit)
 	})
 
 	it("reads descriptions from the nodes it binds", async () => {

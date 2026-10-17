@@ -5,7 +5,6 @@ import {
 	describeMissing,
 	flatProblemsByPath,
 	messageIn,
-	resolveGlobalConfig,
 	TraversalError,
 	writeInvalidLocaleMessage,
 	type ActualContext,
@@ -24,13 +23,13 @@ import {
 	match,
 	scope,
 	type,
-	type ArkConfig,
 	type Locale as ArkLocale
 } from "arktype"
 import { listPattern } from "arktype/i18n"
 import { en } from "arktype/locales/en"
 import { AsyncLocalStorage } from "node:async_hooks"
 import { matrixOf } from "./locales/matrix.ts"
+import { reconfigure, withConfig } from "./locales/withConfig.ts"
 
 // errors described by their own nodes, which union and intersection errors list
 const leavesOf = (error: ArkError): ArkError[] =>
@@ -229,29 +228,6 @@ const xx: Locale = {
 	actual: () => mark("actual"),
 	problem: xxProblem,
 	message: e => `${e.propString} ${mark("message")} ${e.problem}`
-}
-
-// configure throws once a Type exists, so this configures as if none did,
-// then resolves the global config as the first Type would
-const reconfigure = (config: ArkConfig) => {
-	delete $ark.resolvedConfig
-	configure(config)
-	$ark.resolvedConfig = resolveGlobalConfig($ark.defaultConfig)
-}
-
-// configure assigns to $ark.config in place, so restore from a copy
-const withConfig = <t>(config: ArkConfig, fn: () => t): t => {
-	const originalConfig = { ...$ark.config }
-	const originalResolvedConfig = $ark.resolvedConfig!
-	reconfigure(config)
-	try {
-		return fn()
-	} finally {
-		$ark.config = originalConfig
-		// resolving the original config restores the locale reads render in
-		reconfigure({})
-		$ark.resolvedConfig = originalResolvedConfig
-	}
 }
 
 contextualize(() => {

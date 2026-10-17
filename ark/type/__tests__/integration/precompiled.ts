@@ -6,10 +6,11 @@ import {
 	type PrecompiledUnit,
 	type Traversal
 } from "@ark/schema"
-import type { type } from "arktype"
+import { scope, type } from "arktype"
+import { deepStrictEqual, strictEqual } from "node:assert/strict"
 
 // imported as a module, so registering evaluates no string under a Content-Security-Policy
-export const precompile = async (
+export const precompileUnits = async (
 	types: readonly type.Any[]
 ): Promise<Record<string, PrecompiledUnit>> => {
 	const written = writePrecompiledUnits(types.map(t => t.internal))
@@ -121,3 +122,21 @@ export const corpus: [def: unknown, inputs: () => unknown[]][] = [
 		]
 	]
 ]
+
+// each corpus Type binds its unit and observes data as reference's does
+export const assertMatchesCorpus = (
+	units: Record<string, PrecompiledUnit>,
+	reference: type.Any[]
+): void => {
+	for (let i = 0; i < corpus.length; i++) {
+		const T = scope({}).type(corpus[i][0] as never)
+		strictEqual(isPrecompiled(units, T.internal), true)
+		const referenceInputs = corpus[i][1]()
+		for (const [j, data] of corpus[i][1]().entries()) {
+			deepStrictEqual(
+				observe(T, data),
+				observe(reference[i], referenceInputs[j])
+			)
+		}
+	}
+}
