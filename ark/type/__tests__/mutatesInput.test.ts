@@ -61,7 +61,7 @@ contextualize(() => {
 		])
 	})
 
-	it("can write a key a place doesn't declare where the input holds its object at another", () => {
+	it("writes an undeclared key through a cyclic input", () => {
 		const T = guarded.type({
 			n: "number",
 			nested: { num: "string.numeric.parse" }
@@ -119,7 +119,7 @@ contextualize(() => {
 		attest(typeof Event.internal.compiledUnit).equals("function")
 	})
 
-	it("compiles no transform it reads while checking its first data uncompiled", () => {
+	it("compiles no Type it reads uncompiled", () => {
 		const Item = always.type({ kind: "'a'", n: "string.numeric.parse" })
 		Item({ kind: "a", n: "0" })
 		const List = always.type([Item, "|", { kind: "'b'" }]).array()
@@ -135,7 +135,7 @@ contextualize(() => {
 		attest(Item.internal.compiledUnit).equals(undefined)
 	})
 
-	it("binds no compiled code to a transform it reads while checking its first data uncompiled", () => {
+	it("writes in place beside a morph calling a compiled Type", () => {
 		const Held = always.type({ x: { count: "string.numeric.parse" } })
 		Held({ x: { count: "0" } })
 		const T = always.type({
@@ -172,7 +172,7 @@ value at [2].v must be a number (was a string)`)
 		attest(input).snap({ name: " a ", inner: { v: "v" }, extra: 1 })
 	})
 
-	it("copies where a place could read an element another wrote, though it deletes undeclared keys", () => {
+	it("copies a shared array it strips", () => {
 		const Stripped = guarded
 			.type(["string.numeric.parse"])
 			.and({ "+": "delete", length: "number" })

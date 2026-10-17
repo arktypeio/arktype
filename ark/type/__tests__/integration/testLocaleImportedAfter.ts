@@ -8,7 +8,7 @@ const T = type({ a: "number" })
 const { en } = await import("arktype/locales/en")
 
 cases({
-	rendersInALocaleSpreadFromEnImportedAfterATypeIsCreated: () =>
+	localeSpreadFromLateEn: () =>
 		strictEqual(
 			T({ a: "x" }).toLocaleString({
 				...en,

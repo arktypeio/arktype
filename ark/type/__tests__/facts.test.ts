@@ -87,7 +87,7 @@ class Base {}
 class Derived extends Base {}
 
 contextualize(() => {
-	it("morphs and predicates", () => {
+	it("reads no narrow or morph", () => {
 		attest(
 			readsOf(
 				() => type("number").narrow(audited((n: number) => n > 0)),
@@ -127,7 +127,7 @@ contextualize(() => {
 		).equals([])
 	})
 
-	it("defaults", () => {
+	it("reads no default", () => {
 		attest(
 			readsOf(
 				() => type({ a: ["number", "=", audited(() => 5)] }),
@@ -152,7 +152,7 @@ contextualize(() => {
 		).equals([])
 	})
 
-	it("classes", () => {
+	it("reads no class", () => {
 		attest(
 			readsOf(
 				() => type.instanceOf(audited(Foo)),
@@ -166,7 +166,7 @@ contextualize(() => {
 		).equals([])
 	})
 
-	it("object units", () => {
+	it("reads no unit object", () => {
 		const unit = audited({ a: 1 })
 		attest(
 			readsOf(
@@ -189,7 +189,7 @@ contextualize(() => {
 		).equals([])
 	})
 
-	it("standard schemas", () => {
+	it("reads no Standard Schema", () => {
 		attest(
 			readsOf(() =>
 				type(
@@ -205,7 +205,7 @@ contextualize(() => {
 		).equals([])
 	})
 
-	it("callbacks that decide a type", () => {
+	it("reads no thunk or mapper", () => {
 		attest(
 			readsOf(
 				() => type(audited(() => type("string"))),
@@ -241,7 +241,7 @@ contextualize(() => {
 		).equals([])
 	})
 
-	it("error writers", () => {
+	it("reads no error writer", () => {
 		attest(
 			readsOf(
 				() =>
@@ -264,7 +264,7 @@ contextualize(() => {
 		).equals([])
 	})
 
-	it("narrows on literal values", () => {
+	it("reads no narrow of a literal", () => {
 		attest(
 			readsOf(
 				() =>

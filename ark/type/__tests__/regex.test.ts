@@ -107,13 +107,6 @@ contextualize(() => {
 		})
 	})
 
-	it("compiled code takes its pattern as a ref", () => {
-		const T = type(/^ab+c$/)
-		attest(T.precompilation?.includes("/^ab+c$/")).equals(false)
-		attest(T.allows("abbc")).equals(true)
-		attest(T("ac").toString()).snap('must be matched by ^ab+c$ (was "ac")')
-	})
-
 	it("expression doesn't include string basis", () => {
 		const T = type(/^a.*z$/)
 

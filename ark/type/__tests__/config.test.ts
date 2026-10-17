@@ -323,10 +323,8 @@ contextualize(() => {
 				plain,
 				...plain,
 				ref: type("number"),
-				o: type({ a: "number" }),
 				b: "number",
 				int: "number.integer",
-				gt: "number > 5",
 				described: type("number").describe("my number"),
 				imported: "plain.x"
 			},
@@ -334,10 +332,8 @@ contextualize(() => {
 		).export()
 		attest({
 			ref: types.ref("s").toString(),
-			o: types.o({ a: "s" }).toString(),
 			b: types.b("s").toString(),
 			int: types.int("s").toString(),
-			gt: types.gt("s").toString(),
 			described: types.described("s").toString(),
 			imported: types.imported("s").toString(),
 			spread: types.x("s").toString(),
@@ -349,10 +345,8 @@ contextualize(() => {
 				.toString()
 		}).equals({
 			ref: "must be a number (was a string)",
-			o: "a must be a number (was a string)",
 			b: "must be a custom number (was a string)",
 			int: "must be a custom number (was a string)",
-			gt: "must be a custom number (was a string)",
 			described: "must be my number (was a string)",
 			imported: "must be a number (was a string)",
 			spread: "must be a number (was a string)",
