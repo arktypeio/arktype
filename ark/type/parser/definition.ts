@@ -238,7 +238,7 @@ export type validateDefinition<def, $, args> =
 //    represent an optional or defaultable
 // 2. we are validating the root of a property definition
 export type validateInnerDefinition<def, $, args> =
-	[def] extends [TerminalObjectDefinition] ? def
+	def extends TerminalObjectDefinition ? def
 	: def extends string ? validateString<def, $, args>
 	: unknown extends def ?
 		// this allows the initial list of autocompletions to be populated when a user writes "type()",
