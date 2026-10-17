@@ -16,6 +16,7 @@ import {
 import {
 	cached,
 	flatMorph,
+	hasOwn,
 	isArray,
 	printable,
 	throwParseError,
@@ -85,7 +86,7 @@ const readRef = (ref: string, pointer: string, ctx: ReadContext): BaseRoot => {
 	if (ref[0] !== "#" || (ref.length > 1 && ref[1] !== "/") || ctx.nestedIds)
 		return throwParseError(writeUnsupportedRefMessage(ref, `${pointer}/$ref`))
 	if (ref in ctx.rootsByRef) return ctx.rootsByRef[ref]
-	// a ref to a schema it's within is a cycle, resolved once that schema is read
+	// a ref within its own target is a cycle, resolved once that's read
 	if (ctx.refsBeingRead.includes(ref))
 		return rootSchemaScope.lazilyResolve(() => ctx.rootsByRef[ref])
 	ctx.refsBeingRead.push(ref)
@@ -95,20 +96,21 @@ const readRef = (ref: string, pointer: string, ctx: ReadContext): BaseRoot => {
 }
 
 const resolveRef = (ref: string, ctx: ReadContext): unknown =>
-	ref
-		.slice(2)
-		.split("/")
-		.reduce((target, segment) => {
-			if (ref === "#") return target
-			const key = decodeURIComponent(segment)
-				.replace(/~1/g, "/")
-				.replace(/~0/g, "~")
-			return (
-					typeof target === "object" && target !== null && hasOwn(target, key)
-				) ?
-					(target as dict)[key]
-				:	throwParseError(writeUnresolvableRefMessage(ref))
-		}, ctx.document)
+	ref === "#" ?
+		ctx.document
+	:	ref
+			.slice(2)
+			.split("/")
+			.reduce((target, segment) => {
+				const key = decodeURIComponent(segment)
+					.replace(/~1/g, "/")
+					.replace(/~0/g, "~")
+				return (
+						typeof target === "object" && target !== null && hasOwn(target, key)
+					) ?
+						(target as dict)[key]
+					:	throwParseError(writeUnresolvableRefMessage(ref))
+			}, ctx.document)
 
 const intersectRoots = (l: BaseRoot, r: BaseRoot): BaseRoot =>
 	intersectNodesRoot(l, r, rootSchemaScope).toNeverIfDisjoint()
@@ -319,7 +321,7 @@ const readObject = (
 		undeclared: undefined as "reject" | undefined
 	}
 	for (const key of new Set([...Object.keys(properties), ...required])) {
-		// a declared key is constrained by every pattern it matches, and otherwise by additionalProperties
+		// a declared key meets every pattern it matches, else additionalProperties
 		const value = patterns
 			.filter(p => p.matcher.test(key))
 			.reduce(
@@ -463,9 +465,9 @@ const basisOf = {
 	object: { domain: "object" }
 } as const
 
-// pure, so a bundle that only installs the engine drops the reader
+// pure, so a bundle with only the engine drops the reader
 const notArray = /* @__PURE__ */ cached(() => {
-	// no node can carry the predicate before this, so arktype's bundle needn't carry the rule
+	// installs the rule only once a node can carry it
 	$ark.sets!.disjointOf = disjointFromArray
 	return node("predicate", {
 		predicate: isNonArray,
@@ -473,7 +475,7 @@ const notArray = /* @__PURE__ */ cached(() => {
 	})
 })
 
-// sound only because an Array basis checks Array.isArray, so no value it allows is also not an array
+// sound since an Array basis checks Array.isArray
 const disjointFromArray = (node: BaseNode): Disjoint | undefined => {
 	if (!node.hasKind("intersection")) return
 	const { proto, predicate } = node.inner
@@ -535,8 +537,7 @@ const constRoot = (value: unknown): BaseRoot =>
 		})
 	:	rootSchema({ unit: value })
 
-// a keyword the algebra can't decide shares its predicate with every read of the same subschemas,
-// so their relations are proven by identity
+// one predicate per keyword and subschemas, so equal reads relate
 const predicatesByKey: Record<string, Predicate> = {}
 
 const opaque = (
@@ -642,9 +643,6 @@ export const isPlainObject = (value: unknown): value is object => {
 
 const escapePointer = (key: string) =>
 	key.replace(/~/g, "~0").replace(/\//g, "~1")
-
-const hasOwn = (o: object, k: string) =>
-	Object.prototype.hasOwnProperty.call(o, k)
 
 const isSchema = (v: unknown) => typeof v === "boolean" || isPlainObject(v)
 

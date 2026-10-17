@@ -13,7 +13,7 @@ import {
 } from "@ark/schema"
 import { flatMorph, hasKey, throwInternalError, type dict } from "@ark/util"
 
-// JSON Schema's object type, which excludes exactly what an Array basis checks with Array.isArray
+// JSON Schema's object type, which excludes what an Array basis allows
 export const isNonArray = (data: object): boolean => !Array.isArray(data)
 
 interface JsonSchemaContext extends ToJsonSchema.Context {
