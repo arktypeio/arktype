@@ -372,8 +372,10 @@ $ark.inPlace = {
 		return checking
 	},
 	applied: root => {
+		const { unbound } = root.cache
+		root.cache.unbound = undefined
 		if (!writesInPlaceAsConfigured(root)) return root
-		if (!root.cache.applyInPlace) precompileInPlace(root)
+		if (!root.cache.applyInPlace) precompileInPlace(root, unbound)
 		return Object.assign(Object.create(root), {
 			traverseApply: root.cache.applyInPlace,
 			traverseTransform: root.cache.transformInPlace

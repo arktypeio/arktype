@@ -48,7 +48,7 @@ import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
-import type { BaseScope } from "./scope.ts"
+import type { BaseScope, UnboundTraversals } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
@@ -146,6 +146,7 @@ class NodeCache {
 	declare rootApply?: RootApply
 	declare applyInPlace?: TraverseApply
 	declare transformInPlace?: TraverseTransform
+	declare unbound?: UnboundTraversals | undefined
 }
 
 const throwOnFail: ArkErrors.Handler = errors => errors.throw()

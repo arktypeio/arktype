@@ -274,7 +274,7 @@ const isLeafIn = (
 const precompile = (
 	references: readonly BaseNode[],
 	owningScope?: BaseScope,
-	unbound?: ReadonlySet<BaseNode>
+	unbound?: UnboundTraversals
 ): Fn => {
 	const linkage = createLinkage()
 	for (const node of references) linkage.referencesById[node.id] = node
@@ -315,22 +315,28 @@ const precompileRoot = (
 	root: BaseNode,
 	references: readonly BaseNode[]
 ): void => {
-	const unbound = new Set<BaseNode>()
+	const unbound: UnboundTraversals = new Map()
 	for (const reference of references) {
 		if (reference === root || !reference.allowsBeforeJit) continue
 		for (const id in reference.referencesById)
-			unbound.add(reference.referencesById[id])
+			unbound.set(reference.referencesById[id], undefined)
 	}
 	// an apply checking data uncompiled to write in place reads no copy
-	for (const node of $ark.inPlace?.checking ?? []) unbound.add(node)
+	for (const node of $ark.inPlace?.checking ?? []) unbound.set(node, undefined)
 	unbound.delete(root)
 	precompile(references, undefined, unbound)
+	// what an apply writing in place reads rather than compiling again
+	if ($ark.inPlace) root.cache.unbound = unbound
 }
 
 // what a transform and Apply's transforms of the values it finds valid write
 // in place, compiled for each node once a root writing in place reaches it,
-// with the traversals of those it reaches that their own units don't compile
-export const precompileInPlace = (root: BaseRoot): void => {
+// with the traversals of those it reaches that neither their own unit nor
+// the root's (unbound) compiles
+export const precompileInPlace = (
+	root: BaseRoot,
+	unbound: UnboundTraversals | undefined
+): void => {
 	const declared: [node: BaseNode, kinds: TraversalKind[]][] = []
 	const kindsByNode = new Map<BaseNode, TraversalKind[]>()
 	// a node a morph pipes to, whose traversals pipe reads from it
@@ -351,12 +357,9 @@ export const precompileInPlace = (root: BaseRoot): void => {
 			if (linkage.referencesById[reference.id]) continue
 			linkage.referencesById[reference.id] = reference
 			const kinds: TraversalKind[] = []
-			if (!reference.compiledUnit) kinds.push("Allows")
-			if (
-				reference.transforms ?
-					!reference.cache.applyInPlace
-				:	!reference.compiledUnit
-			)
+			const isCompiled = !!reference.compiledUnit || !!unbound?.get(reference)
+			if (!isCompiled) kinds.push("Allows")
+			if (reference.transforms ? !reference.cache.applyInPlace : !isCompiled)
 				kinds.push("Apply")
 			if (
 				reference.transforms &&
@@ -413,7 +416,9 @@ export const precompileInPlace = (root: BaseRoot): void => {
 	const traversals = compiledUnit(
 		Object.values(linkage.dependencies).map(
 			([node, kind]): Fn =>
-				kind === "Allows" || !node.transforms ? node[`traverse${kind}`]!
+				kind === "Allows" || !node.transforms ?
+					(unbound?.get(node)?.[kind === "Allows" ? 0 : 1] ??
+					node[`traverse${kind}`]!)
 				: kind === "Apply" ? node.cache.applyInPlace!
 				: node.cache.transformInPlace!
 		),
@@ -439,16 +444,16 @@ const bindUnit = (
 	compiledTraversals: PrecompiledTraversals[],
 	referencesById: Record<string, BaseNode>,
 	owningScope?: BaseScope,
-	unbound?: ReadonlySet<BaseNode>
+	unbound?: UnboundTraversals
 ): void => {
 	for (let i = 0; i < declared.length; i++) {
 		const node = declared[i]
-		if (
-			unbound?.has(node) ||
-			// if node has already been bound to another scope or anonymous type, don't rebind it
-			(node.compiledUnit && (!owningScope || node.$ !== owningScope))
-		)
+		if (unbound?.has(node)) {
+			unbound.set(node, compiledTraversals[i])
 			continue
+		}
+		// if node has already been bound to another scope or anonymous type, don't rebind it
+		if (node.compiledUnit && (!owningScope || node.$ !== owningScope)) continue
 		const [traverseAllows, traverseApply, traverseTransform] =
 			compiledTraversals[i]
 		if (node.allowsBeforeJit) {
@@ -474,6 +479,10 @@ type PrecompiledTraversals = [
 	apply: TraverseApply,
 	transform?: TraverseTransform
 ]
+
+// the traversals a root's unit compiles for nodes it doesn't bind, as
+// another Type's
+export type UnboundTraversals = Map<BaseNode, PrecompiledTraversals | undefined>
 
 type CompiledUnit = (
 	dependencies: Fn[],
