@@ -79,9 +79,6 @@
 	"dependencies": {
 		"@ark/util": "workspace:*"
 	},
-	"devDependencies": {
-		"fast-check": "3.23.2"
-	},
 	"publishConfig": {
 		"access": "public"
 	}
