@@ -402,8 +402,6 @@ export class Precompiler {
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
-	// a site the mode cannot build fails a standalone build, while cache mode leaves it to runtime
-	private rejectionSeverity: Diagnostic["severity"]
 	private readsByModule = new WeakMap<SourceModule, SiteRead[]>()
 	private candidatesByModule = new WeakMap<SourceModule, SiteCandidate[]>()
 	private inertByModule = new WeakMap<SourceModule, boolean>()
@@ -459,7 +457,6 @@ export class Precompiler {
 		if (this.errors && this.errors !== "all") contract.errors = this.errors
 		this.shadowContract =
 			Object.keys(contract).length ? JSON.stringify(contract) : undefined
-		this.rejectionSeverity = this.mode === "standalone" ? "error" : "warning"
 	}
 
 	// whether a host transforms a module, which it does for a module the build follows
@@ -702,7 +699,6 @@ export class Precompiler {
 						module,
 						specifier,
 						"copies",
-						"error",
 						report.message,
 						report.reasons
 					)
@@ -1462,7 +1458,6 @@ export class Precompiler {
 						module,
 						read.id,
 						"R4",
-						"error",
 						`\`${module.textOf(read.id)}\` is arktype's, which arktype/runtime doesn't export, so a standalone build can't load this module`,
 						[],
 						runtimeImportHint
@@ -1888,48 +1883,40 @@ export class Precompiler {
 		}
 	}
 
-	private unsupported(
+	private refusal(
 		module: SourceModule,
 		site: Site,
-		reasons: string[]
+		rule: "R1" | "R2" | "unsupported",
+		reasons = site.reasons
 	): Diagnostic {
 		return this.diagnostic(
 			module,
 			site,
-			"unsupported",
-			this.rejectionSeverity,
-			`${module.snippetOf(site)} can't be precompiled yet`,
+			rule,
+			`${module.snippetOf(site)} ${rule === "unsupported" ? "can't be precompiled yet" : "cannot be precompiled"}`,
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
 			configuredHintOf(reasons)
 		)
 	}
 
-	// so the sites a build returns agree with its diagnostics, as a check reports both
+	// so the sites a build returns agree with its diagnostics
 	private refuseWritten(
 		module: SourceModule,
 		site: Site,
 		reasons: string[]
 	): Diagnostic {
-		site.status = "rejected"
-		site.reasons = reasons
-		return this.unsupported(module, site, reasons)
+		const diagnostic = this.refusal(module, site, "unsupported", reasons)
+		refuse(site, reasons)
+		return diagnostic
 	}
 
 	private refuseThrown(
 		module: SourceModule,
-		node: Node,
 		site: Site,
 		e: unknown
 	): Diagnostic {
 		refuse(site, reasonsOf(e))
-		return this.diagnostic(
-			module,
-			node,
-			"R1",
-			this.rejectionSeverity,
-			`${module.snippetOf(node)} cannot be precompiled`,
-			site.reasons
-		)
+		return this.refusal(module, site, "R1")
 	}
 
 	// a factory compares a container it receives by definition, which leaves out what a function arktype calls while defining what it creates returns
@@ -2134,9 +2121,7 @@ export class Precompiler {
 						module,
 						module.program,
 						"syntax",
-						"error",
-						`${module.path} cannot be parsed: ${message}`,
-						[]
+						`${module.path} cannot be parsed: ${message}`
 					)
 				),
 				dependencies: [module.id]
@@ -2175,16 +2160,7 @@ export class Precompiler {
 					site.start < configureStart
 				) {
 					const message = `${module.snippetOf(node)} is created while the config module loads, before configure() runs`
-					diagnostics.push(
-						this.diagnostic(
-							module,
-							node,
-							"R3",
-							this.rejectionSeverity,
-							message,
-							[]
-						)
-					)
+					diagnostics.push(this.diagnostic(module, node, "R3", message))
 					// cache mode leaves the site to arktype, which creates it as the program does
 					if (this.mode === "standalone") {
 						sites.push(refuse(site, [message]))
@@ -2208,7 +2184,6 @@ export class Precompiler {
 							module,
 							node,
 							"R3",
-							"error",
 							message,
 							refusal,
 							configuration.hint
@@ -2225,16 +2200,14 @@ export class Precompiler {
 				settledRanges.add(rangeOf(node))
 				const site = this.siteOf(candidate, module)
 				sites.push(site)
-				diagnostics.push(this.refuseThrown(module, node, site, e))
+				diagnostics.push(this.refuseThrown(module, site, e))
 			}
 		}
 		for (const [site, candidate] of candidatesBySite) {
 			try {
 				diagnostics.push(...this.diagnosticsOf(site, candidate, module))
 			} catch (e) {
-				diagnostics.push(
-					this.refuseThrown(module, candidate.state.node, site, e)
-				)
+				diagnostics.push(this.refuseThrown(module, site, e))
 			}
 		}
 		diagnostics.push(...this.checkConfiguration(module))
@@ -2507,11 +2480,11 @@ export class Precompiler {
 			else checks.add(reached)
 		}
 		const dynamic = rejectionOf(state)
-		if (dynamic) return rejectSite(site, dynamic)
+		if (dynamic) return refuseDynamic(site, dynamic)
 		if (state.error instanceof ParseError) {
 			// e.g. an island's or a declaration's, which the site's thrower would throw without checking what it depends on
 			if (this.interpreter.parseErrorSites.get(state.error) !== state) {
-				return rejectSite(
+				return refuseDynamic(
 					site,
 					new DynamicValue(
 						module,
@@ -2540,7 +2513,7 @@ export class Precompiler {
 		for (const [value, [read]] of state.readsByValue) {
 			const refused = this.refusedContainers.get(value)
 			if (!refused) continue
-			return rejectSite(
+			return refuseDynamic(
 				site,
 				new DynamicValue(
 					module,
@@ -2571,7 +2544,7 @@ export class Precompiler {
 			)
 				continue
 			const input = this.inputOf(read, candidate, module)
-			if (input instanceof DynamicValue) return rejectSite(site, input)
+			if (input instanceof DynamicValue) return refuseDynamic(site, input)
 			if (!site.inputs.some(existing => isCoveredBy(input, existing)))
 				site.inputs.push(input)
 		}
@@ -2579,7 +2552,7 @@ export class Precompiler {
 			const isCalled = !site.parseError && !isHeld(value, this.interpreter)
 			const hole = this.holeOf(value, candidate, module)
 			if (!isCalled) {
-				if (hole instanceof DynamicValue) return rejectSite(site, hole)
+				if (hole instanceof DynamicValue) return refuseDynamic(site, hole)
 				site.holes.push(hole)
 			} else if (!(hole instanceof DynamicValue) && hole.kind === "function")
 				site.called.push(hole)
@@ -2626,7 +2599,10 @@ export class Precompiler {
 			if (declaring === module) continue
 			const unchecked = this.checkReadFirst(site, binding, declaring, reader)
 			if (unchecked)
-				return rejectSite(site, new DynamicValue(module, state.node, unchecked))
+				return refuseDynamic(
+					site,
+					new DynamicValue(module, state.node, unchecked)
+				)
 		}
 		for (const [value, reads] of state.readsByValue) {
 			if (
@@ -2814,16 +2790,13 @@ export class Precompiler {
 		const node = candidate.state.node
 		if (site.status === "rejected") {
 			const rejection = rejectionOf(candidate.state)
-			if (rejection?.hasCode("unsupported"))
-				return [this.unsupported(module, site, site.reasons)]
 			return [
-				this.diagnostic(
+				this.refusal(
 					module,
-					node,
-					rejection?.hasCode("callback") ? "R2" : "R1",
-					this.rejectionSeverity,
-					`${module.snippetOf(node)} cannot be precompiled`,
-					site.reasons.map(reason => this.sourceNamed(reason, site, module))
+					site,
+					rejection?.hasCode("unsupported") ? "unsupported"
+					: rejection?.hasCode("callback") ? "R2"
+					: "R1"
 				)
 			]
 		}
@@ -2840,7 +2813,6 @@ export class Precompiler {
 					module,
 					node,
 					"parse",
-					"warning",
 					`${module.snippetOf(node)} throws a ParseError`,
 					[this.sourceNamed(site.parseError.message, site, module)]
 				)
@@ -2861,9 +2833,10 @@ export class Precompiler {
 					origin,
 					node,
 					"R4",
-					"warning",
 					`\`${origin.snippetOf(node)}\` is not static, so the site accepts it only as a Standard Schema that is not a Type`,
-					chainOf(standIn.dynamic)
+					chainOf(standIn.dynamic),
+					undefined,
+					"warning"
 				)
 			)
 		}
@@ -2970,15 +2943,7 @@ export class Precompiler {
 					))
 			if (problem) {
 				result.push(
-					this.diagnostic(
-						module,
-						calls[i],
-						"R3",
-						this.rejectionSeverity,
-						problem,
-						reasons,
-						hint
-					)
+					this.diagnostic(module, calls[i], "R3", problem, reasons, hint)
 				)
 			}
 		}
@@ -3057,7 +3022,7 @@ export class Precompiler {
 				result.length ? `${module.snippetOf(call)} is not static` : undefined,
 			reasons: result,
 			// each reason but an unknown value's says how to fix it
-			hint: dynamic || !result.length ? undefined : ""
+			hint: dynamic || !result.length ? undefined : false
 		}
 	}
 
@@ -3123,7 +3088,6 @@ export class Precompiler {
 					module,
 					write,
 					"R4",
-					"error",
 					`${module.snippetOf(write)} writes to ${isDirect ? "an arktype value" : "what an arktype value holds"}, which throws at runtime`,
 					[
 						`\`${module.snippetOf(value!)}\` is an arktype value, which the standalone runtime freezes with what it holds`
@@ -3167,9 +3131,7 @@ export class Precompiler {
 					module,
 					id,
 					"R4",
-					"error",
-					`\`${binding.name}\` is used outside a precompiled site`,
-					[]
+					`\`${binding.name}\` is used outside a precompiled site`
 				)
 			)
 		}
@@ -3235,7 +3197,6 @@ export class Precompiler {
 					module,
 					node,
 					"R4",
-					"error",
 					read === undefined ?
 						`${module.snippetOf(node)} reflects on a Type, whose properties a standalone validator doesn't share`
 					:	`${module.snippetOf(node)} reads ${read}, which a standalone validator lacks`,
@@ -3288,7 +3249,6 @@ export class Precompiler {
 								module,
 								reference.id,
 								"R4",
-								"error",
 								`\`${binding!.name}\` is @ark/schema's, not the standalone runtime's`,
 								[
 									`what a standalone validator creates isn't an instance of @ark/schema's ${name}`
@@ -3299,7 +3259,6 @@ export class Precompiler {
 								module,
 								reference.id,
 								"R4",
-								"error",
 								`\`${binding!.name}\` is used outside a runtime island`,
 								isLocale ?
 									[
@@ -3379,7 +3338,6 @@ export class Precompiler {
 					module,
 					island,
 					"R4",
-					"error",
 					`a runtime island returns arktype's errors, which aren't instances of type.errors under errors: "none"`,
 					[
 						"a build whose errors say only that data is invalid gives its validators a runtime of their own"
@@ -3415,7 +3373,6 @@ export class Precompiler {
 								origin,
 								arkRead,
 								"R4",
-								"error",
 								`\`${origin.snippetOf(arkRead)}\` is arktype/runtime's outside a runtime island`,
 								reasons,
 								islandHint
@@ -3465,7 +3422,6 @@ export class Precompiler {
 								origin,
 								read,
 								"R4",
-								"error",
 								`\`${origin.snippetOf(read)}\` is a precompiled validator, which a runtime island can only validate with`,
 								reasons,
 								islandHint
@@ -3573,10 +3529,15 @@ export class Precompiler {
 		module: SourceModule,
 		span: Span,
 		rule: Rule,
-		severity: Diagnostic["severity"],
 		message: string,
-		reasons: string[],
-		hint?: string
+		reasons: string[] = [],
+		hint?: string | false,
+		severity: Diagnostic["severity"] = (
+			rule === "parse" ||
+			(this.mode === "cache" && rule !== "syntax" && rule !== "copies")
+		) ?
+			"warning"
+		:	"error"
 	): Diagnostic {
 		const [line, column] = module.lineAndColumnOf(span.start)
 		return {
@@ -3592,7 +3553,7 @@ export class Precompiler {
 			hint:
 				rule === "syntax" ? undefined
 				: this.mode === "cache" && rule !== "copies" ? cacheHint
-				: (hint ?? hintsByRule[rule])
+				: (hint ?? hintsByRule[rule]) || undefined
 		}
 	}
 }
@@ -3670,8 +3631,8 @@ interface Configuration {
 	// why the configure() call can't be applied, reported where the config module is precompiled
 	problem: string | undefined
 	reasons: string[]
-	// "" where the reasons say how to fix them, as the rule's hint would
-	hint?: string | undefined
+	// false where the reasons say how to fix them
+	hint?: string | false | undefined
 }
 
 let threadConfiguration: Configuration | undefined
@@ -4164,7 +4125,7 @@ const refuse = (site: Site, reasons: string[]): Site => {
 	return site
 }
 
-const rejectSite = (site: Site, dynamic: DynamicValue): Site =>
+const refuseDynamic = (site: Site, dynamic: DynamicValue): Site =>
 	refuse(site, chainOf(dynamic))
 
 // e.g. `configure(...)`, `export const config = configure(...)` or `export default configure(...)`, which the program runs once as it loads

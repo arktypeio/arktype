@@ -130,6 +130,13 @@ export const schema = T.toJsonSchema()`)
 			])
 		})
 
+		it("a site refused as it's written holds no value", () => {
+			const refused = precompile(`import { type } from "arktype"
+const T = type({ a: ["number[]", "=", () => []] })
+export const schema = T.toJsonSchema()`).sites[1]
+			attest([refused.status, refused.value]).equals(["rejected", undefined])
+		})
+
 		it("folds introspection over a default a received Type checks", () => {
 			const result = precompile(
 				`import { type } from "arktype"
