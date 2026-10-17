@@ -383,6 +383,10 @@ An `@ark/schema` node's own enumerable keys no longer list what it derives from 
 
 Checking that a `Date` is valid reads its `getTime` and calls it as a method when it's `Date.prototype.getTime`, which is faster than calling that function on the `Date`. A getter or a `Proxy` trap for `getTime` on a `Date` now runs as it's checked.
 
+### Check arrays and patterns last when allowing data
+
+`allows`, and the check a call runs before it looks for errors, read a key whose value holds an array or a regex after the other keys, so data failing at a simpler key is rejected without walking an array or running a regex. Under `errors: "none"`, rejecting the benchmark's invalid product runs 47% fewer instructions. Keys never move past one whose value runs a narrow or a morph, so each runs for the same data as before, and the errors a call returns list keys in the same order. A getter or a `Proxy`'s `get` trap on the data sees its keys read in the new order.
+
 ### Capture only what `string.date.iso`'s pattern backreferences
 
 Every group of `string.date.iso`'s pattern but the two its backreferences read is non-capturing, which more than halves what testing a string costs and makes its first test, which compiles it, cheaper too. It accepts the same strings, but its source is new, and with it the `expression`, `json` and JSON Schema `pattern` of `string.date.iso` and `string.date.iso.parse`'s input.

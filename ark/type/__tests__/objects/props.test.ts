@@ -84,6 +84,23 @@ contextualize(() => {
 		attest(keys).equals(["a", "a\t", "a b", "ab", "a\uD800"])
 	})
 
+	it("allows by checking arrays and patterns last, never past a narrow", () => {
+		const T = type({
+			a: "string[]",
+			b: /x/,
+			c: "number",
+			d: type.number.narrow(() => true),
+			e: "number"
+		})
+		const reads: PropertyKey[] = []
+		const data = new Proxy(
+			{ a: [], b: "x", c: 0, d: 0, e: 0 },
+			{ get: (o, k) => (reads.push(k), Reflect.get(o, k)) }
+		)
+		attest(T.allows(data)).equals(true)
+		attest(reads).equals(["c", "a", "b", "d", "e"])
+	})
+
 	it("union", () => {
 		const T = type({ foo: "string" }).or({ bar: "number" })
 		attest(() => T.props).throws(writeLiteralUnionEntriesMessage(T.expression))

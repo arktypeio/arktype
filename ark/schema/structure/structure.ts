@@ -199,6 +199,52 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 
 const noSiblings: array<BaseConstraint> = []
 
+// whether checking a node can call a function a program supplied,
+// which a keyword's predicate isn't
+const callsUserCode = (node: BaseNode, seen = new Set<BaseNode>()): boolean => {
+	seen.add(node)
+	for (const id in node.referencesById) {
+		const reference = node.referencesById[id]
+		if (
+			reference.hasKind("morph") ||
+			(reference.hasKind("predicate") && reference.meta.keyword === undefined)
+		)
+			return true
+		if (
+			reference.hasKind("alias") &&
+			!seen.has(reference.resolution) &&
+			callsUserCode(reference.resolution, seen)
+		)
+			return true
+	}
+	return false
+}
+
+// a value checked by a loop or a regex
+const isCostly = (value: BaseNode): boolean => {
+	for (const id in value.referencesById) {
+		const { kind } = value.referencesById[id]
+		if (kind === "sequence" || kind === "pattern") return true
+	}
+	return false
+}
+
+// Allows checks costly values last, so failing data is rejected sooner,
+// though never across a prop calling user code
+const orderedForAllows = (props: array<Prop.Node>): array<Prop.Node> => {
+	const ordered: Prop.Node[] = []
+	let deferred: Prop.Node[] = []
+	for (const prop of props) {
+		if (callsUserCode(prop.value)) {
+			ordered.push(...deferred, prop)
+			deferred = []
+		} else if (isCostly(prop.value)) deferred.push(prop)
+		else ordered.push(prop)
+	}
+	ordered.push(...deferred)
+	return ordered
+}
+
 export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
@@ -239,6 +285,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return (this.cache.failureSite ??= {
 			value: { code: "undeclared", meta: this.meta } as SiteContext
 		}) as FailureSite
+	}
+
+	private _allowsProps: array<Prop.Node> | undefined
+	get allowsProps(): array<Prop.Node> {
+		return (this._allowsProps ??= orderedForAllows(this.props))
 	}
 
 	private _propsByKey: Record<Key, Prop.Node | undefined> | undefined
@@ -477,8 +528,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformsKeys = true
 	): boolean {
 		const errorCount = ctx?.currentErrorCount ?? 0
-		for (let i = 0; i < this.props.length; i++) {
-			const prop = this.props[i]
+		const props = traversalKind === "Allows" ? this.allowsProps : this.props
+		for (let i = 0; i < props.length; i++) {
+			const prop = props[i]
 			if (traversalKind === "Allows") {
 				if (!prop.traverseAllows(data, ctx)) return false
 			} else {
@@ -897,7 +949,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			js.traversalKind === "Apply" ? this.compileConjunction(js) : undefined
 		if (conjunction !== undefined) return js.return(conjunction)
 
-		for (const prop of this.props) js.check(prop)
+		const props = js.traversalKind === "Allows" ? this.allowsProps : this.props
+		for (const prop of props) js.check(prop)
 
 		if (this.sequence) js.check(this.sequence)
 
@@ -924,7 +977,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			this.undeclared === "reject"
 		)
 			return
-		const children = [...this.props, ...(this.sequence ? [this.sequence] : [])]
+		const children = [
+			...(js.traversalKind === "Allows" ? this.allowsProps : this.props),
+			...(this.sequence ? [this.sequence] : [])
+		]
 		return children.map(child => js.invoke(child)).join(" && ") || "true"
 	}
 
