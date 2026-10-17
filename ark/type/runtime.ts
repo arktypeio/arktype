@@ -213,8 +213,9 @@ export const createValidator = ((
 export const createValidatorWith = ((
 	make: (parts: readonly Fn[], onFail: FailHandler | null) => Fn,
 	parts: readonly Fn[],
-	attributes: ValidatorAttributes,
 	id: string,
+	// a validator whose meta is empty is passed none
+	attributes: ValidatorAttributes = { meta: emptyMeta },
 	holes: readonly unknown[] = []
 ): Validator => {
 	const validator: Validator = setPrototypeOf(

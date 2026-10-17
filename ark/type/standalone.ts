@@ -1713,6 +1713,10 @@ return [${returned.join(", ")}]
 			) ?
 				applied
 			:	undefined
+		const written = attributes.length ? [`{ ${attributes.join(", ")} }`] : []
+		// it takes the id first, and attributes only beyond an empty meta
+		const createsWith =
+			!isTemplate && ownsValidator && isCreatedByRuntime(members, this.baking)
 		const args = [
 			...(fused ? [fused.args]
 			: made ?
@@ -1720,18 +1724,27 @@ return [${returned.join(", ")}]
 			: ownsValidator && !isCompact ?
 				["runtime.callingRootApply", `[${allows}, ${rootApply()}]`]
 			:	[rootApply(), allows]),
-			...(attributes.length ? [`{ ${attributes.join(", ")} }`] : []),
-			...(!this.baking.checksTypes ? []
-			: held ? [writeId(id), held]
-			: onFail ? [writeId(id), "undefined"]
-			: [writeId(id)]),
+			...(createsWith ?
+				[
+					writeId(id),
+					...(held ? [...written, held]
+					: written[0] === "{ meta: runtime.emptyMeta }" ? []
+					: written)
+				]
+			:	[
+					...written,
+					...(!this.baking.checksTypes ? []
+					: held ? [writeId(id), held]
+					: onFail ? [writeId(id), "undefined"]
+					: [writeId(id)])
+				]),
 			...(onFail ? [onFail] : [])
 		]
 		const created = `${
 			isTemplate ? "["
 			: !isCreatedByRuntime(members, this.baking) ?
 				`${this.creatorOf(members, ownsValidator, fused, !!made)}(`
-			: ownsValidator ? "runtime.createValidatorWith("
+			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
 		return held && !this.baking.checksTypes ?
