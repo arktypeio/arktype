@@ -8,7 +8,11 @@ import {
 	type DeepNodeTransformContext
 } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import { compileSerializedValue, type NodeCompiler } from "../shared/compile.ts"
+import {
+	compileSerializedValue,
+	isDecidedByAllows,
+	type NodeCompiler
+} from "../shared/compile.ts"
 import type { RootKind } from "../shared/implement.ts"
 import { $ark } from "../shared/registry.ts"
 import {
@@ -152,9 +156,16 @@ export abstract class BaseProp<
 			})
 		) {
 			if (js.traversalKind === "Apply") {
-				return this.value.isBasis() ?
-						`${this.value.compileCondition(js, value)} || !${js.error(this, key)}`
+				const fails =
+					this.value.isBasis() ?
+						`!${js.error(this, key)}`
 					:	`!ctx.failsIn(${js.traversal(this.value, "Apply")}, ${value}, ${key}, ${js.site(this)}, data)`
+				// a value a condition decides is checked by it before it's applied,
+				// a union by its branches
+				const condition =
+					isDecidedByAllows(this.value) &&
+					this.value.compileCondition?.(js, value, true)
+				return condition ? `${condition} || ${fails}` : fails
 			}
 			// a value whose predicates read ctx is checked at its key's path
 			if (

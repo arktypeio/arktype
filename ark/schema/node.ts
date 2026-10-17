@@ -655,8 +655,13 @@ export abstract class BaseNode<
 
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
-	// undefined where checking data takes more than one expression
-	compileCondition?(js: NodeCompiler, data: string): string | undefined
+	// undefined where checking data takes more than one expression; byBranch
+	// asks a union for its branches' conditions rather than one of its own
+	compileCondition?(
+		js: NodeCompiler,
+		data: string,
+		byBranch?: boolean
+	): string | undefined
 	// what its traversal of data returns, where one expression computes it, so a parent writes it rather than calling it
 	compileExpression?(js: NodeCompiler): string | undefined
 

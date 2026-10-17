@@ -325,8 +325,12 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	}
 
 	// more branches are checked by a call, which keeps the body that would inline them short
-	compileCondition(js: NodeCompiler, data: string): string | undefined {
-		if (this.isBoolean) return `typeof ${data} === "boolean"`
+	compileCondition(
+		js: NodeCompiler,
+		data: string,
+		byBranch?: boolean
+	): string | undefined {
+		if (this.isBoolean && !byBranch) return `typeof ${data} === "boolean"`
 		if (this.branches.length > 4) return
 		const conditions: string[] = []
 		for (const branch of this.branches) {
