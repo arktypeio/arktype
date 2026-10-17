@@ -6,7 +6,7 @@ import {
 	type ArkError
 } from "./errors.ts"
 import { $ark } from "./registry.ts"
-import { rootApplyRuntime } from "./rootApply.ts"
+import { rootApplyRuntime, type RootApplyRuntime } from "./rootApply.ts"
 import { Traversal, type FailHandler } from "./traversal.ts"
 
 // errors "first" stops at the first issue, dropping any added after it
@@ -74,7 +74,7 @@ export const rejectUndetailed = (
 	return onFail ? onFail(errors as never) : errors
 }
 
-$ark.errorModes = {
+export const errorModes: Record<"first" | "none", RootApplyRuntime> = {
 	first: { ...rootApplyRuntime, Traversal: ArkFirstIssueTraversal },
 	none: {
 		...rootApplyRuntime,

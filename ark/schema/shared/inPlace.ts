@@ -6,6 +6,7 @@ import { arrayIndexMatcher } from "../structure/shared.ts"
 import type { StructureNode } from "../structure/structure.ts"
 import { $ark } from "./registry.ts"
 import type { RootApplyRuntime } from "./rootApply.ts"
+import type { InPlaceTransforms } from "./transform.ts"
 import { hasArkKind } from "./utils.ts"
 
 // the keys of an object a place reads or a transform writes
@@ -344,7 +345,7 @@ const transformsCalledBy = (root: BaseRoot): BaseNode[] => {
 // transforms the running uncompiled in-place applies reach
 let checking: Set<BaseNode> | undefined
 
-$ark.inPlace = {
+export const inPlaceTransforms: InPlaceTransforms = {
 	checksUncompiled: root => checking?.has(root) || !root.cache.isUsedBeforeJit,
 	checkedUncompiled: (root, apply) => {
 		if (!writesInPlaceAsConfigured(root)) return apply
