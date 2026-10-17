@@ -38,7 +38,10 @@ prototype.initRootApply = function (this: BaseRoot) {
 		}
 		return apply(data, onFail)
 	}
-	return (this.cache.rootApply = recordingApply)
+	// cached where arktype caches it, so a root checking its first data
+	// uncompiled compiles at its next call
+	if (this.cache.rootApply === apply) this.cache.rootApply = recordingApply
+	return recordingApply
 }
 
 const run = async () => {
