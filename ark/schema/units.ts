@@ -58,7 +58,7 @@ import {
 import { hasArkKind, isAbsent, isNode } from "./shared/utils.ts"
 import { arrayIndexMatcher } from "./structure/shared.ts"
 
-// leaves read no object property, so sharing them can't make an inline cache polymorphic
+// leaves read no object property
 const isLeafIn = (
 	node: BaseNode,
 	referencesById: Record<string, BaseNode>
@@ -115,7 +115,7 @@ export const precompile = (
 	return compiledUnit
 }
 
-// a deferred Type binds its own nodes, so they can't hold another Type's unit and the values it references
+// a deferred Type's nodes aren't bound to another Type's unit
 export const precompileRoot = (
 	root: BaseNode,
 	references: readonly BaseNode[]
@@ -134,10 +134,7 @@ export const precompileRoot = (
 	if ($ark.inPlace) root.cache.unbound = unbound
 }
 
-// what a transform and Apply's transforms of the values it finds valid write
-// in place, compiled for each node once a root writing in place reaches it,
-// with the traversals of those it reaches that neither their own unit nor
-// the root's (unbound) compiles
+// compiles in-place traversals for what root's writers reach
 export const precompileInPlace = (
 	root: BaseRoot,
 	unbound: UnboundTraversals | undefined
@@ -285,8 +282,7 @@ type PrecompiledTraversals = [
 	transform?: TraverseTransform
 ]
 
-// the traversals a root's unit compiles for nodes it doesn't bind, as
-// another Type's
+// traversals a root's unit compiles for another Type's nodes
 export type UnboundTraversals = Map<BaseNode, PrecompiledTraversals | undefined>
 
 type CompiledUnit = (
@@ -328,13 +324,13 @@ export type PrecompiledUnit = [
 		constants: typeof unitConstants
 	) => [declared: BaseNode[], refs: unknown[], dependencies: BaseNode[]],
 	compiledUnit: CompiledUnit,
-	// each root the unit calls, by the key of its own unit, and the index of its traversal kind
+	// root key and traversal-kind index of each unit called
 	dependencies: [key: string, kind: number][],
-	// its root's number of references, which a root reads without hashing its content
+	// reference count, compared before hashing
 	size: number
 ]
 
-// a unit writes the traversal kind it calls a root with as its index here
+// a unit writes a traversal kind as its index here
 const traversalKinds: readonly TraversalKind[] = [
 	"Allows",
 	"Apply",
@@ -343,12 +339,11 @@ const traversalKinds: readonly TraversalKind[] = [
 
 const precompiledUnits: Record<string, PrecompiledUnit> = Object.create(null)
 
-// assigned on registration, so a bundle that registers no units leaves binding them out
 export let bindPrecompiledUnits:
 	| ((roots: readonly unknown[]) => void)
 	| undefined
 
-// a root of a size no registered unit has misses without being keyed
+// sizes of registered units, so other roots skip keying
 const registeredSizes: Record<number, true> = {}
 
 export const registerPrecompiledUnits = (
@@ -359,7 +354,7 @@ export const registerPrecompiledUnits = (
 	bindPrecompiledUnits = bindRegisteredUnits
 }
 
-// a bound root binds the roots its unit calls, so the largest are bound first and need the fewest keys
+// largest roots first, so their units bind the most nodes
 const bindRegisteredUnits = (values: readonly unknown[]): void => {
 	const sized: [root: BaseRoot, size: number][] = []
 	for (const value of values) {
@@ -411,15 +406,13 @@ const forEachElement = (
 	else f(value)
 }
 
-// built when a root is first keyed, so a bundle that registers no units leaves it out
 let constantNames: Map<unknown, string> | undefined
 
 const sizeOf = (root: BaseRoot): number =>
 	Object.keys(root.referencesById).length
 
-// compiling reads each function's arity and whether the set engine is installed, neither in the hash
+// arity and the set engine affect compiling but not the hash
 const precompiledKeyOf = (root: BaseRoot): string => {
-	// a child the hash leaves out, like an empty structure, is still compiled and bound
 	let childCounts = ""
 	for (const id in root.referencesById)
 		childCounts += `${root.referencesById[id].children.length},`
@@ -428,22 +421,22 @@ const precompiledKeyOf = (root: BaseRoot): string => {
 	return hashOf(`${content}\n${childCounts}\n${$ark.sets !== undefined}`)
 }
 
-// a registered name's count depends on what was registered before, and a function's name on whether it was minified
+// registered names and minified function names vary by program
 const keyRegisteredNames = (root: BaseRoot): string => {
 	constantNames ??= new Map(
 		Object.entries(unitConstants).map(([name, value]) => [value, name])
 	)
-	// a unit binds a constant it holds as the constant, so only a root holding that constant can share it
+	// a constant is keyed as the constant
 	const kindsByName: Record<string, string> = Object.create(null)
 	for (const id in root.referencesById) {
 		const node = root.referencesById[id]
 		for (const k in node.inner) {
-			// a unit's value is the program's, and naming a function in it would shift the names later Types register
+			// a unit value's function name would shift later registrations
 			forEachElement((node.inner as Dict)[k], k === "unit" ? 0 : 2, value => {
 				const constant = constantNames!.get(value)
 				if (constant) kindsByName[nameOf(value as object)] = `$.${constant}`
 				else if (typeof value === "function" && !isNode(value)) {
-					// only a predicate's or morph's arity is compiled, and reading another's mustn't record it
+					// only predicate and morph arity is compiled
 					kindsByName[nameOf(value)] =
 						`fn:${node.hasKind("predicate") || node.hasKind("morph") ? arityOf(value) : value.length}`
 				}
@@ -483,12 +476,12 @@ const writeUnit = (
 	members: UnitMember[],
 	traversals: string[][]
 ) => {
-	// passed as arrays, as V8 can't call a function with tens of thousands of arguments
+	// passed as arrays: too many args overflow a call
 	const unit = new CompiledFunction<CompiledUnit, ["dependencies", "refs"]>(
 		"dependencies",
 		"refs"
 	)
-	// strict as a module is, so writing to a frozen input copyOf left uncopied throws
+	// strict, as a module is
 	unit.line(`"use strict"`)
 	for (let i = 0; i < dependencyNames.length; i++)
 		unit.const(dependencyNames[i], `dependencies[${i}]`)
@@ -559,7 +552,7 @@ export class TraversalCompiler extends NodeCompiler {
 		this.linkage = linkage
 	}
 
-	// a node checked by one expression is written in the body that would call it
+	// a one-expression node is written inline
 	override invoke(node: BaseNode, opts?: InvokeOptions): string {
 		this.reach(node)
 		const expression =
@@ -591,7 +584,7 @@ export class TraversalCompiler extends NodeCompiler {
 		}
 	}
 
-	// code can name a node it doesn't invoke, like the Allows passed to allowsInBranchBy, which the unit then declares or takes from the unit it reuses
+	// a node can be named without being invoked, e.g. an Allows passed by reference
 	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		const reference = this.linkage.referencesById[id]
 		if (reference && this.linkage.unreached.delete(reference))
@@ -669,12 +662,12 @@ export interface RootUnit {
 	members: UnitMember[]
 	refs: unknown[]
 	dependencies: Record<string, UnitDependency>
-	// the nodes whose names hold a value keyed by identity, which name them only within this pass
+	// nodes named by a value's identity, so unstable across passes
 	identityNamed: ReadonlySet<NodeId>
 	unitsById: Record<NodeId, RootUnit>
 }
 
-// each root's unit holds the nodes it reaches before another root, so a prop's traversal is shared only by Types sharing the root it belongs to
+// a root's unit holds what it reaches before another root
 export const precompileRootUnits = (
 	root: BaseRoot,
 	opts: UnitOptions = {}
@@ -682,7 +675,7 @@ export const precompileRootUnits = (
 
 interface UnitOptions {
 	keyOf?: ContentKeyOf
-	// a standalone build's, whose validators raise issues holding none of their nodes' error contexts
+	// standalone builds pass their own compiler
 	compiler?: typeof TraversalCompiler
 }
 
@@ -775,7 +768,7 @@ const nameReferences = (
 	return s
 }
 
-// the JIT keys a resolution by its node's id, so content-equal nodes a cycle can key are numbered apart in reach order
+// content-equal nodes a cycle keys by id are numbered apart
 const occurrencesOfResolutions = (
 	s: ContentNamingState
 ): Record<NodeId, number> | undefined => {
@@ -808,7 +801,7 @@ interface ContentReference {
 	lowLink: number
 }
 
-// Tarjan's algorithm, which completes a component only after every component it calls
+// Tarjan's algorithm
 const nameReference = (
 	s: ContentNamingState,
 	node: BaseNode
@@ -866,13 +859,13 @@ const compileContent = (
 			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
 		const key =
 			s.opts.keyOf?.(value) ??
-			// arktype's own pattern instance is keyed by its source, as no program can write it, unlike any other Date or RegExp
+			// arktype's own pattern instance is keyed by its source
 			(value instanceof RegExp && isPatternInstanceIn(node, value) ?
 				`${value}`
 			:	undefined)
 		if (key !== undefined) return key
 		const prototype = typeof value === "object" && Object.getPrototypeOf(value)
-		// a value inside itself has no finite content, so like an instance it's keyed by identity
+		// a value containing itself is keyed by identity
 		if (
 			serializing.has(value as object) ||
 			(!isArray(value) && prototype !== Object.prototype && prototype !== null)
@@ -893,7 +886,7 @@ const compileContent = (
 	const occurrence = s.occurrencesById[node.id]
 	const content = [
 		node.kind,
-		// a program's scope keeps its nodes apart from content-equal ones of another
+		// a program's nodes stay apart from another scope's
 		...(node.$.isBuiltin ? [] : [serialize(node.$)]),
 		...linkage.members.map(([name, source]) => `${name} = ${source}`),
 		[...linkage.refs.keys()].map(serialize).join(),
@@ -914,7 +907,6 @@ const compileContent = (
 	}
 }
 
-// a parent writing its patterns' checks in its own body holds their instances
 const isPatternInstanceIn = (node: BaseNode, value: RegExp): boolean => {
 	for (const id in node.referencesById) {
 		const reference = node.referencesById[id]
@@ -924,7 +916,7 @@ const isPatternInstanceIn = (node: BaseNode, value: RegExp): boolean => {
 	return false
 }
 
-// a cycle's members are ordered by content, so their names don't depend on which was reached first
+// a cycle's members are ordered by content
 const nameComponent = (
 	s: ContentNamingState,
 	members: ContentReference[]
@@ -999,14 +991,14 @@ const writePrecompiledUnit = (
 		([node, kind]) =>
 			[keyOf(node as BaseRoot), traversalKinds.indexOf(kind)] as const
 	)
-	// a unit follows those it calls, so one calling a unit that couldn't be written can't be either
+	// a unit calling an unwritable unit can't be written
 	if (dependencies.some(([key]) => !unitsByKey[key])) return
 	const nodes: BaseNode[] = [root]
 	const variablesByNode = new Map<BaseNode, string>([[root, "n0"]])
 	const variablesById: Record<string, string> = { [root.id]: "n0" }
 	// each node after the root, by the index of the node it's read from
 	const statements: [from: number, statement: string][] = []
-	// each node is read through the edges referencesById is collected from, up to the roots no parent checks inline, whose own units bind them
+	// each node is read through the edges referencesById follows
 	for (let i = 0; i < nodes.length; i++) {
 		if (
 			i !== 0 &&
@@ -1042,14 +1034,14 @@ const writePrecompiledUnit = (
 			`$.${k}`
 		)
 	}
-	// a root with the same key holds the same constant, or a value of the same kind, at each inner path
+	// keyed roots hold equal constants at each inner path
 	for (const node of nodes) {
 		forEachValue(node.inner, (value, path) => {
 			if (!accessorsByValue.has(value))
 				accessorsByValue.set(value, `${variablesByNode.get(node)}.inner${path}`)
 		})
 	}
-	// any other field holds a value derived for its own node, so one two nodes hold can't be bound
+	// a derived value two nodes share can't be bound
 	const holdersByValue = new Map<unknown, BaseNode>()
 	for (const node of nodes) {
 		forEachValue(node, (value, path) => {

@@ -92,7 +92,7 @@ export type exportedNameOf<$> = Exclude<keyof $ & string, PrivateDeclaration>
 
 export type resolvableReferenceIn<$> =
 	[keyof $] extends [never] ? never
-	: // most scopes have no key to filter, which this checks without distributing over keyof $
+	: // checked without distributing, as most scopes have no key to filter
 	[keyof $ & (PrivateDeclaration | noSuggest | "root")] extends [never] ?
 		keyof $ & string
 	:	| Exclude<
@@ -167,7 +167,7 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 // identity rather than names to support HMR and multi-bundle environments.
 let anonymousScopeCount = 0
 
-// an option whose values but the default are installed by an import of arktype's
+// options whose non-default values need an arktype import
 export type InstalledOption = "errors" | "mutatesInput"
 
 export const writeMissingImportMessage = <
@@ -222,7 +222,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	private _referencesById: { [id: string]: BaseNode } | undefined
-	// collected when first read, since a scope exports without them unless it binds precompiled units or includes an alias
+	// collected when first read
 	get referencesById(): { [id: string]: BaseNode } {
 		if (!this._referencesById && this._exportedResolutions) {
 			this._referencesById = {}
@@ -422,7 +422,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 			(isNode(reference) && reference.hasKind("alias"))
 		)
 			return reference
-		// bound once per scope, since a bound node is as immutable as the node it copies
+		// bound once per scope
 		let bound = this.boundReferences.get(reference)
 		if (!bound) {
 			bound =
@@ -559,7 +559,6 @@ export abstract class BaseScope<$ extends {} = {}> {
 	private resolveUncached(
 		name: string,
 		cached: BaseParseContext | undefined,
-		// how much was reached when resolving it began, which each member of a cycle it closes stores
 		mark: number | undefined
 	): Exclude<CachedResolution, BaseParseContext> | undefined {
 		if (hasOwn(this.aliases, name)) $ark.reached?.alias(this, name)
@@ -618,7 +617,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 						:	this.resolveContext(name, v, node)
 				})
 			} catch (e) {
-				// a check deferred until its component closed failed, and reparsing would reuse the nodes it checked
+				// a deferred check failed; reparsing would reuse checked nodes
 				for (const ctx of component) {
 					ctx.phase = "failed"
 					ctx.error = e
@@ -770,12 +769,12 @@ export abstract class BaseScope<$ extends {} = {}> {
 				let uncompiled =
 					includesAlias || bindPrecompiledUnits ? this.references : []
 				if (bindPrecompiledUnits) {
-					// a union compiles some branches inline, so no unit calls them and each binds on its own
+					// inline-compiled branches bind on their own
 					bindPrecompiledUnits(uncompiled)
 					uncompiled = uncompiled.filter(node => !node.compiledUnit)
 				}
 				if (!this.resolvedConfig.jitless) {
-					// resolving aliases can throw, so a scope including one compiles as it's exported
+					// resolving aliases can throw, so they compile on export
 					if (uncompiled.some(node => node.includesAlias))
 						this.compiledUnit = precompile(uncompiled, this)
 					else {
@@ -930,7 +929,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 		)
 			return node
 
-		// resolving aliases can throw, so a Type including one resolves and compiles them as it's defined
+		// resolving aliases can throw, so they compile on definition
 		const references =
 			node.includesAlias ? referencesThroughAliases(node.references) : undefined
 		if (node.compiledUnit || !jit) return node
