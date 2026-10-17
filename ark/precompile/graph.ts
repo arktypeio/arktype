@@ -7,7 +7,7 @@ import type { BaseRoot, GenericRoot } from "@ark/schema"
 import type { Generic } from "arktype/internal/generic.ts"
 import type {
 	IntrospectionMember,
-	unavailableMember,
+	UnavailableMember,
 	Validator
 } from "arktype/internal/runtime.ts"
 import type { Scope } from "arktype/internal/scope.ts"
@@ -430,7 +430,7 @@ const typeMemberKinds: Record<string, KindBits> = Object.setPrototypeOf(
 		internal: kinds.type | kinds.data,
 		$: anyKind,
 		precompilation: kinds.data
-	} satisfies Record<unavailableMember, KindBits>,
+	} satisfies Record<UnavailableMember, KindBits>,
 	null
 )
 

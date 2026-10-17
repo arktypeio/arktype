@@ -109,7 +109,6 @@ export * from "./keywords/functions.ts"
 
 export interface ValidatorAttributes {
 	meta: ArkEnv.meta
-	// what members bakes, which a validator otherwise lacks
 	expression?: string
 	description?: string
 	json?: JsonStructure
@@ -120,13 +119,13 @@ export interface ValidatorAttributes {
 
 export type IntrospectionMember = (typeof introspectionMembers)[number]
 
-// captured when the runtime loads, so a program replacing them later can't keep an artifact from freezing what it creates, each declared alone since a bundle keeps every name a destructuring declares
+// captured at load so a program can't replace them; each alone to tree-shake
 export const assign = Object.assign
 export const freeze = Object.freeze
 export const is = Object.is
 export const setPrototypeOf = Object.setPrototypeOf
 
-// read only by the factories of what references a validator, Module, Scope or Generic, so kept off what a program can read
+// kept off the value so a program can't read it
 const holesByValue = new WeakMap<
 	object,
 	[id: string, holes: readonly unknown[]]
@@ -145,7 +144,6 @@ export interface Validator {
 	): unknown
 }
 
-// what every validator inherits, as the prototype createValidator gives the function it creates
 export class Validator {
 	declare expression: string
 	declare description: string
@@ -170,7 +168,7 @@ export class Validator {
 	}
 }
 
-// V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
+// parenthesized (kept by `satisfies`) to compile as the module loads
 export const createValidator = ((
 	rootApply: RootApply,
 	allows: (data: unknown) => boolean,
@@ -178,7 +176,7 @@ export const createValidator = ((
 	id: string,
 	holes: readonly unknown[] = []
 ): Validator => {
-	// the configuration is fixed before any validator is created, though a Type's meta can name its own, as a matcher asserting its default does
+	// a meta's onFail (e.g. a matcher's) overrides the configured one
 	const configuredOnFail = attributes.meta.onFail ?? runtimeConfig.onFail
 	const validator: Validator = setPrototypeOf(
 		((
@@ -189,7 +187,6 @@ export const createValidator = ((
 			if (!pipedFromCtx) return rootApply(data, onFail)
 			return pipedInto(pipedFromCtx, rootApply(data, null))
 		}) satisfies Fn,
-		// shared by every validator, where arktype's are per node kind
 		freeze(Validator.prototype)
 	)
 	// an own arrow function, since it is often detached, e.g. when passing to tRPC
@@ -210,12 +207,11 @@ export const createValidator = ((
 	return holdHoles(freeze(validator), id, holes)
 }) satisfies Fn
 
-// the validator is the function make returns, so a site calling many compact validators calls each rather than one closure they share
+// make returns the validator itself, so each site calls it directly
 export const createValidatorWith = ((
 	make: (parts: readonly Fn[], onFail: FailHandler | null) => Fn,
 	parts: readonly Fn[],
 	id: string,
-	// a validator whose meta is empty is passed none
 	attributes: ValidatorAttributes = { meta: emptyMeta },
 	holes: readonly unknown[] = []
 ): Validator => {
@@ -223,7 +219,6 @@ export const createValidatorWith = ((
 		make(parts, attributes.meta.onFail ?? runtimeConfig.onFail),
 		freeze(Validator.prototype)
 	)
-	// an own arrow function, since it is often detached, e.g. when passing to tRPC
 	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
 		validator(data, pipedFromCtx, throwOnFail)
 	)
@@ -241,13 +236,12 @@ export const createValidatorWith = ((
 	return holdHoles(freeze(validator), id, holes)
 }) satisfies Fn
 
-// what a validator receives after its data
 type ValidatorArgs = [
 	pipedFromCtx?: Traversal | undefined,
 	onFail?: FailHandler | null | undefined
 ]
 
-// added where they're piped, as a Type adds them, so a morph returning them in another value still fails
+// added where piped, so a morph nesting them still fails
 export const pipedInto = (pipedFromCtx: Traversal, out: unknown): unknown => {
 	if (!(out instanceof ArkErrors)) return out
 	const errors = errorsOf(pipedFromCtx)
@@ -268,7 +262,6 @@ export const pipedInto = (pipedFromCtx: Traversal, out: unknown): unknown => {
 	return errors
 }
 
-// as pipedInto, where errors don't detail what failed, so no message moves
 export const pipedIntoUndetailed = (
 	pipedFromCtx: Traversal,
 	out: unknown
@@ -283,7 +276,7 @@ export const pipedIntoUndetailed = (
 	return errors
 }
 
-// what makes the validator of a root apply that isn't compact, declaring data alone so a call passing only data pads no parameters
+// a non-compact root apply's validator, declaring only data
 export const callingRootApply = ((
 	[, rootApply]: readonly Fn[],
 	configuredOnFail: FailHandler | null
@@ -305,7 +298,7 @@ type ValidatorParts = [
 
 const copiesByParts = /* @__PURE__ */ new WeakMap<ValidatorParts, InternTable>()
 
-// a factory whose Type's code holds nothing it receives constructs the validator written once, keyed by the functions it receives, once for each
+// a folded factory's validator, interned by the holes received
 export const rekeyed = (
 	parts: ValidatorParts,
 	holes: readonly unknown[]
@@ -315,7 +308,7 @@ export const rekeyed = (
 	return intern(copies, holes, () => createValidator(...parts, holes))
 }
 
-type typeOnlyMember =
+type TypeOnlyMember =
 	| typeof inferred
 	| "t"
 	| "infer"
@@ -325,9 +318,9 @@ type typeOnlyMember =
 	| "Symbol"
 
 // what a Type has that a validator lacks, so reading it reads undefined
-export type unavailableMember = Exclude<
+export type UnavailableMember = Exclude<
 	keyof (ArrayType & DateType & NumberType & ObjectType & StringType),
-	keyof Validator | keyof Function | typeOnlyMember | IntrospectionMember
+	keyof Validator | keyof Function | TypeOnlyMember | IntrospectionMember
 >
 
 // a target's is 0 where the validator doesn't bake its schema
@@ -401,7 +394,7 @@ export const throwJsonSchemaError = (
 export const throwUnbaked = (reason: string): never =>
 	throwError(writeUnbakedMessage(reason))
 
-// arktype's own wrapper, so its name, members and expression are those arktype gives the function the program passes
+// arktype's own wrapper, named as arktype names it
 export const typedFn = (
 	raw: Fn,
 	params: Validator,
@@ -409,12 +402,12 @@ export const typedFn = (
 ): InternalTypedFn =>
 	freeze(new InternalTypedFn(raw, params as never, returns as never))
 
-// arktype's parser, of which the runtime has only the class of the errors a validator returns
+// only type.errors exists without the parser
 export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 	errors: ArkErrors
 })
 
-// a site as its unit is created, which a call writes in fewer bytes than its literal
+// shorter at each site than a literal
 export const siteOf = ((
 	code: ArkErrorCode,
 	description?: string
@@ -426,10 +419,9 @@ export const failing =
 	(data, ctx) =>
 		!ctx.failsAt(site, data)
 
-// what every required key reports when it's missing
 export const requiredSite: FailureSite = { missing: { code: "required" } }
 
-// a root whose Apply is compact reports what fails into the errors it returns, so a program whose roots all are loads no Traversal
+// compact roots report into ArkErrors, loading no Traversal
 export const applyErrors = (
 	apply: CompactApply,
 	data: unknown,
@@ -447,7 +439,6 @@ export const applyErrors = (
 	)
 }
 
-// what a root apply reading its node calls in applyErrors' place
 export const applyNodeErrors = (
 	node: { traverseApply: CompactApply },
 	data: unknown,
@@ -456,7 +447,6 @@ export const applyNodeErrors = (
 	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
 ): unknown => applyErrors(node.traverseApply, data, config, onFail, Ctx)
 
-// what a compact validator returns where its data fails, given what else the call passes
 export const applyCallErrors = (
 	apply: CompactApply,
 	data: unknown,
@@ -477,8 +467,8 @@ export const applyCallErrors = (
 
 export type HoleKind = "function" | "class" | "symbol"
 
-// a function's parameter count, 0, 1 or 2 or more, which arktype tells functions apart by, or what describes another hole
-export type HoleFact = string | number
+// an arity (0, 1 or 2+) or a description
+type HoleFact = string | number
 
 export const factOfHole = (
 	hole: unknown,
@@ -487,13 +477,12 @@ export const factOfHole = (
 ): HoleFact => {
 	if (kind === "symbol" || typeof hole !== "function" || isValidator(hole))
 		return describeValue(hole)
-	// a builtin's count is read like any other function's
 	if (kind === "function") return Math.min(hole.length, 2)
 	const builtinName = getBuiltinNameOfConstructor(hole)
 	if (builtinName) return `the builtin ${builtinName}`
 	const { prototype } = hole
 	if (!hasDomain(prototype, "object")) return "a function without a prototype"
-	// arktype compares a class with the builtins and the other classes a definition holds
+	// compared with the builtins and other classes the definition holds
 	const ancestors: string[] = []
 	for (
 		let ancestor = prototypeOf(prototype);
@@ -543,7 +532,7 @@ export const checkFacts = (
 	}
 }
 
-export const describeFact = (fact: HoleFact): string =>
+const describeFact = (fact: HoleFact): string =>
 	typeof fact === "string" ? fact : (
 		`a function of ${
 			fact === 0 ? "no parameters"
@@ -562,8 +551,7 @@ export const checkIdentity = (
 		throwError(writeIdentityMismatchMessage(label, expectedLabel))
 }
 
-// a default's checked Type and value, keyed by their content and the functions they hold
-export type DefaultKey = [id: string, holes: readonly unknown[]]
+type DefaultKey = [id: string, holes: readonly unknown[]]
 
 const checkedDefaultOf = ([id, holes]: DefaultKey): InternTable => {
 	let table = checkedDefaults.next(id)
@@ -571,7 +559,7 @@ const checkedDefaultOf = ([id, holes]: DefaultKey): InternTable => {
 	return table
 }
 
-// arktype checks a default on a narrowed Type where it creates the node holding it, throwing its errors in en as a ParseError
+// checked once per key, thrown in en as a ParseError
 export const checkDefault = (
 	validator: Validator,
 	value: unknown,
@@ -624,7 +612,6 @@ export const checkFunction = (value: unknown, label: string): void => {
 	}
 }
 
-// e.g. a Scope's stand-in, whose holes the factory of each Type defined in it takes
 export const holdHoles = (<value extends object>(
 	value: value,
 	id: string,
@@ -642,7 +629,6 @@ export const holesOf = ((
 ): readonly unknown[] => {
 	const created = holesByValue.get(holder as object)
 	if (created?.[0] !== id) {
-		// described by its kind rather than printed, so a bundle receiving Types ships no printer; the label names the binding
 		const actual =
 			isValidator(holder) ?
 				Reflect.getOwnPropertyDescriptor(holder, "expression") ?
@@ -660,7 +646,7 @@ export const holesOf = ((
 	return created[1]
 }) satisfies Fn
 
-// a hole is held weakly, as arktype holds a Type it may return again, so a function created for one call doesn't outlive it
+// held weakly so a call's functions don't outlive it
 class InternTable {
 	value: unknown = undefined
 	private readonly tablesByObject = new WeakMap<object, InternTable>()
@@ -680,12 +666,12 @@ export const internTable = (): InternTable => new InternTable()
 
 const checkedDefaults = /* @__PURE__ */ new InternTable()
 
-// a factory returns what it created before for the same holes, since creating it at each call is many times slower
+// returns what it created before for the same holes
 export const intern = <value>(
 	table: InternTable,
 	holes: readonly unknown[],
 	create: () => value,
-	// defaults the definition reaches, which a definition creating the Type first may not have checked
+	// defaults a Type created first may not have checked
 	defaults: readonly DefaultKey[] = []
 ): value => {
 	for (const hole of holes) table = table.next(hole)
@@ -699,7 +685,7 @@ export const intern = <value>(
 
 const helpersKey = /* @__PURE__ */ Symbol.for("arktype.helpers")
 
-// a mock is another function, and a module a test runner replaced registered nothing, so either fails
+// a mock, or a module a test runner replaced, fails
 export const checkHelper = (
 	helper: unknown,
 	file: string,
@@ -724,7 +710,7 @@ export const checkHelper = (
 
 const isValidator = (value: unknown) => value instanceof Validator
 
-// an object is described by its kind, as printing it would ship a serializer, and so is a validator lacking its expression
+// described by kind, so a bundle ships no printer
 const describeValue = (value: unknown) =>
 	isValidator(value) ?
 		Reflect.getOwnPropertyDescriptor(value, "expression") ?
@@ -781,7 +767,7 @@ export type writeUnbakedMessage<reason extends string> =
 
 export const emptyMeta: ArkEnv.meta = /* @__PURE__ */ freeze({})
 
-// a node's json is shared by every node whose json prints the same, so it's frozen through
+// json is shared between nodes, so frozen deeply
 export const deepFreeze = <t>(value: t): t => {
 	if (value && typeof value === "object")
 		for (const k in freeze(value)) deepFreeze(value[k])
