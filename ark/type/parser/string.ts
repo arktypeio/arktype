@@ -240,8 +240,8 @@ type parseQuotedToken<token extends string> =
 // only number literal limits separated from their operand by single spaces
 type parseBoundedOperand<def extends string, $, args> =
 	def extends `${infer l} ${infer comparator extends Comparator} ${infer r}` ?
-		[parseOperandToken<l, $, args>] extends (
-			[InferredAst<Date | number, `${infer min extends number | DateLiteral}`>]
+		parseOperandToken<l, $, args> extends (
+			InferredAst<Date | number, `${infer min extends number | DateLiteral}`>
 		) ?
 			[comparator, r] extends (
 				[
@@ -265,8 +265,8 @@ type parseRightBound<operand extends string, limit extends string, $, args> =
 		null extends ast ? null
 		: // parseOperandToken never resolves a date literal
 		[ast] extends [InferredAst<Date | number, `${number}`>] ? null
-		: [parseOperandToken<limit, $, args>] extends (
-			[InferredAst<unknown, `${infer value extends number | DateLiteral}`>]
+		: parseOperandToken<limit, $, args> extends (
+			InferredAst<unknown, `${infer value extends number | DateLiteral}`>
 		) ?
 			[ast, value]
 		:	null
