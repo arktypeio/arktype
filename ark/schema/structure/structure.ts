@@ -918,7 +918,12 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			}
 		}
 
-		if (this.undeclared && !schema.additionalProperties)
+		// undeclared keys that would be deleted are allowed on input
+		const rejectsUndeclared =
+			this.undeclared === "reject" ||
+			(this.undeclared === "delete" && ctx.io !== "in")
+
+		if (rejectsUndeclared && !schema.additionalProperties)
 			schema.additionalProperties = false
 
 		return schema

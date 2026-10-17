@@ -191,6 +191,116 @@ contextualize(() => {
 			})
 		})
 
+		it("includes defaults in input schema", () => {
+			const T = type({
+				name: 'string = "Anon"',
+				count: "number = 0",
+				tags: ["string[]", "=", () => ["a"]]
+			})
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					count: { type: "number", default: 0 },
+					name: { type: "string", default: "Anon" },
+					tags: { type: "array", items: { type: "string" }, default: ["a"] }
+				}
+			})
+			attest(
+				standard["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					count: { type: "number" },
+					name: { type: "string" },
+					tags: { type: "array", items: { type: "string" } }
+				},
+				required: ["count", "name", "tags"]
+			})
+		})
+
+		it("includes defaults in input schema for tuples and morph inputs", () => {
+			const Tuple = type(["number", "string = 'x'"])
+			attest(
+				(Tuple as StandardJSONSchemaV1)["~standard"].jsonSchema.input({
+					target: "draft-2020-12"
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "array",
+				minItems: 1,
+				prefixItems: [{ type: "number" }, { type: "string", default: "x" }],
+				items: false
+			})
+
+			const Parsed = type({ n: "string.numeric.parse = '1'" })
+			attest(
+				(Parsed as StandardJSONSchemaV1)["~standard"].jsonSchema.input({
+					target: "draft-2020-12"
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					n: {
+						type: "string",
+						pattern:
+							"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$",
+						default: "1"
+					}
+				}
+			})
+		})
+
+		it("allows undeclared keys that would be deleted in input schema", () => {
+			const T = type({ name: 'string = "Anon"' }).onUndeclaredKey("delete")
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { name: { type: "string", default: "Anon" } }
+			})
+			attest(
+				standard["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: { name: { type: "string" } },
+				required: ["name"],
+				additionalProperties: false
+			})
+		})
+
+		it("does not use a configured morph fallback for input schema", () => {
+			const T = type({ foo: "string.numeric.parse" })
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({
+					target: "draft-2020-12",
+					libraryOptions: {
+						fallback: { morph: () => ({ type: "null" }) }
+					}
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					foo: {
+						type: "string",
+						pattern:
+							"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$"
+					}
+				},
+				required: ["foo"]
+			})
+		})
+
 		it("generates different input/output schemas for morphs", () => {
 			const T = type({ foo: "string.numeric.parse" })
 			const standard: StandardJSONSchemaV1 = T

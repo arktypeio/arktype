@@ -205,6 +205,16 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	}
 
 	protected innerToJsonSchema(ctx: ToJsonSchema.Context): JsonSchema {
+		// an input schema describes what the morph accepts, so convert its input
+		// directly (rather than rawIn, which would drop defaults it contains)
+		if (ctx.io === "in") {
+			return (
+				this.declaredIn ??
+				this.inner.in ??
+				$ark.intrinsic.unknown.internal
+			).toJsonSchemaRecurse(ctx)
+		}
+
 		return ctx.fallback.morph({
 			code: "morph",
 			base: this.rawIn.toJsonSchemaRecurse(ctx),
