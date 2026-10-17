@@ -255,16 +255,20 @@ const nodeKeyOf = (
 	inner: dict,
 	metaJson: JsonObject | undefined
 ): string => {
-	let key: string = kind
-	for (const k in inner)
-		key += `,${k}:${k === "unit" ? literalKeyOf(inner[k]) : valueKeyOf(inner[k])}`
+	const parts: string[] = [kind]
+	for (const k in inner) {
+		parts.push(
+			`${k}:${k === "unit" ? literalKeyOf(inner[k]) : valueKeyOf(inner[k])}`
+		)
+	}
 	// an alias inlines a reference that has resolved when it's written
 	if (
 		kind === "alias" &&
 		hasArkKind(nodesByRegisteredId[inner.reference as NodeId], "root")
 	)
-		key += "!"
-	return metaJson ? key + JSON.stringify(metaJson) : key
+		parts.push("!")
+	if (metaJson) parts.push(JSON.stringify(metaJson))
+	return parts.join()
 }
 
 const valueKeyOf = (v: unknown): string =>
