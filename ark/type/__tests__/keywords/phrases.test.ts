@@ -9,7 +9,6 @@ import {
 } from "@ark/schema"
 import { ark, scope, type, type KeywordConfig } from "arktype"
 import {
-	keywordError,
 	keywordPhrases,
 	type KeywordPhraseAlias
 } from "arktype/internal/keywords/phrases.ts"
@@ -53,10 +52,6 @@ contextualize(() => {
 		// @ts-expect-error
 		attest(() => regexStringNode(/^a$/, "string.emial")).type.errors(
 			"Argument of type '\"string.emial\"' is not assignable"
-		)
-		// @ts-expect-error
-		attest(() => keywordError("string.url.prase")).type.errors(
-			"Argument of type '\"string.url.prase\"' is not assignable"
 		)
 	})
 

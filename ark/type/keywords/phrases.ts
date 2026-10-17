@@ -80,12 +80,3 @@ export const keywordMeta = <alias extends KeywordPhraseAlias>(
 	description: nounOf(alias),
 	keyword: alias
 })
-
-/** the context of an error a keyword raises through ctx */
-export const keywordError = <alias extends KeywordPhraseAlias>(
-	alias: alias
-): { code: "predicate"; description: string; meta: { keyword: alias } } => ({
-	code: "predicate",
-	description: nounOf(alias),
-	meta: { keyword: alias }
-})
