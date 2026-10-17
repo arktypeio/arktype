@@ -28,13 +28,12 @@ import {
 	type Disagreement
 } from "./testPerturbation.ts"
 
-// checks the generated programs of the precompilation design (design/precompile.md §12) through the build: modules
-// defining Types where a build folds them, each run as written and precompiled in standalone and cache mode, unchanged
-// and under each perturbation of testPerturbation.ts
-// ARK_PRECOMPILE_PROGRAMS=<count>[:<seed>] checks that many programs from the seed
+// generated programs run as written and precompiled in standalone and
+// cache mode, unchanged and under each of testPerturbation's perturbations:
+// ARK_PRECOMPILE_PROGRAMS=<count>[:<seed>] pnpm testPrograms
 
 interface Fragment {
-	// what containers.ts exports, which a perturbation can mock or swap where main.ts imports it
+	// containers.ts exports, which a perturbation can mock or swap
 	containers: string[]
 	exports: string[]
 	main: string[]
@@ -42,7 +41,7 @@ interface Fragment {
 
 type FragmentOf = (id: string) => Fragment
 
-// a site main.ts observes, by what it creates and how that validates the inputs
+// a site main.ts observes: what it creates and how that validates inputs
 const observed = (
 	key: string,
 	site: string,
@@ -87,7 +86,7 @@ const holders = {
 	scope: (element: string) => `scope({ o: { a: ${element} } }).type("o")`
 }
 
-// arktype checks a default where it creates the node holding it, by a narrow reading state the program changes between sites
+// a default checked by a narrow reading state that changes between sites
 const narrowedState: fc.Arbitrary<FragmentOf> = fc
 	.array(
 		fc.record({
@@ -142,7 +141,7 @@ const scopedReads = [
 	`.export().p`
 ]
 
-// a default a narrow may reject, checked wherever a definition reaches it, through what derives from it or a Scope's caches
+// a default a narrow may reject, reached through derivations or a Scope
 const defaults: fc.Arbitrary<FragmentOf> = fc
 	.record({
 		predicate: fc.constantFrom(
@@ -207,7 +206,7 @@ const defaults: fc.Arbitrary<FragmentOf> = fc
 			}
 	)
 
-// what each alias of a Scope or Generic allows, to a bounded depth where it is a cycle
+// what each alias allows, to a bounded depth where it cycles
 const dataByAliasOf = (nodes: Record<string, Node>) =>
 	fc.letrec(tie =>
 		Object.fromEntries(
@@ -248,7 +247,7 @@ const throughThunk = fc.constantFrom<Node>(
 	}
 )
 
-// two Scopes or Modules alike but for one alias, so a factory receiving one in place of the other must tell them apart
+// two Scopes or Modules differing in one alias, which factories tell apart
 const containers: fc.Arbitrary<FragmentOf> = fc
 	.record({
 		form: fc.constantFrom("scope", "export", "module"),
@@ -258,7 +257,7 @@ const containers: fc.Arbitrary<FragmentOf> = fc
 		replacement: nodeOf(["a", "b"])
 	})
 	.chain(({ form, aliases, thunk, changed, replacement }) => {
-		// a thunk alias resolves through the Scope declaring it, which a Module doesn't name
+		// a thunk resolves through its Scope, which a Module doesn't name
 		const nodes: Record<string, Node> =
 			form !== "module" && thunk ? { ...aliases, t: thunk } : aliases
 		const names = Object.keys(nodes)
@@ -321,7 +320,7 @@ const containers: fc.Arbitrary<FragmentOf> = fc
 		)
 	})
 
-// Generics alike but for their body, or bound into Scopes alike but for what their argument means
+// Generics differing in body, or in what their bound argument means
 const generics: fc.Arbitrary<FragmentOf> = fc
 	.record({
 		body: nodeOf(["t"]),
@@ -375,7 +374,7 @@ const validatorReads = {
 	standard: (t: string) => `${t}["~standard"].validate`
 }
 
-// a validator's member read off a Type a call through a Scope, Module or Generic returns, which only the build tells from a Module's alias
+// a validator member read off a Type a Scope, Module or Generic returns
 const throughCalls: fc.Arbitrary<FragmentOf> = fc
 	.record({
 		node: nodeOf([]),
@@ -409,7 +408,7 @@ const throughCalls: fc.Arbitrary<FragmentOf> = fc
 		)
 	)
 
-// a Type containers.ts declares after a function folding it, which an import cycle calls before the declaration runs and main.ts after
+// a Type folded by a function an import cycle calls before it's declared
 const throughCycle: fc.Arbitrary<FragmentOf> = nodeOf([])
 	// a Type the module declares must be definable for the module to load
 	.filter(node => isDefinable(defOf(node)))
@@ -457,7 +456,7 @@ const introspections = {
 	toJsonSchema: (t: string) => `${t}.toJsonSchema()`
 }
 
-// Types derived from others the program defines, inline, its own or imported, and what reads their introspection
+// Types derived inline, from locals or imports, and their introspection
 const derived: fc.Arbitrary<FragmentOf> = fc
 	.record({
 		l: nodeOf([]),
@@ -527,7 +526,7 @@ const derived: fc.Arbitrary<FragmentOf> = fc
 		)
 	)
 
-// values a definition reads, an object another module can write to and a static helper, imported or the module's own
+// values a definition reads: a writable object and a static helper
 const bindings: fc.Arbitrary<FragmentOf> = fc
 	.record({
 		limit: fc.integer({ min: 0, max: 4 }),
@@ -692,7 +691,7 @@ const programs = fc
 const isObserved = (line: string | undefined) =>
 	!!line?.startsWith("$arkObserve(")
 
-// what a standalone build runs of a program, without the sites it refuses, or nothing if it refuses another statement
+// the program without refused sites, or undefined if another is refused
 const foldedProgramOf = (
 	program: Program,
 	errors: Diagnostic[]
@@ -712,7 +711,7 @@ const foldedProgramOf = (
 	}
 }
 
-// each mode's build wraps the same sites, so one world as written serves both
+// each mode wraps the same sites, so one world as written serves both
 const buildOptions: BuildOptions = {
 	mode: "standalone",
 	standalone: {
@@ -738,7 +737,6 @@ const write = (program: Program, dir: string) => {
 }
 
 interface Counts {
-	known: Record<string, number>
 	excluded: Record<string, number>
 	unbaked: number
 	programs: number
@@ -748,7 +746,7 @@ interface Counts {
 	refusals: Record<string, number>
 }
 
-// the disagreements of a program's precompiled worlds with the one as written, in cache mode and standalone mode
+// how a program's precompiled worlds disagree with the one as written
 const disagreementsOf = async (
 	program: Program,
 	dir: string,
@@ -801,12 +799,8 @@ const disagreementsOf = async (
 			if (excluded) {
 				counts.excluded[excluded.reason] =
 					(counts.excluded[excluded.reason] ?? 0) + 1
-				return false
 			}
-			const known = allowanceOf(knownFailures, run, disagreement)
-			if (known)
-				counts.known[known.reason] = (counts.known[known.reason] ?? 0) + 1
-			return !known
+			return !excluded
 		})
 	return [
 		...standalone.errors
@@ -829,13 +823,13 @@ const disagreementsOf = async (
 	]
 }
 
-// a site a program observes is an arktype value or a member of one, so a refusal of its value means the build read past a Type
+// every observed site is an arktype value, so refusing its value is a bug
 const unfoldableValue =
 	"its value is not a Type, Module, Scope, Generic or TypedFn"
 
 const introspectionKeys = ["json", "toJsonSchema", "standardJsonSchema"]
 
-// a JSON Schema the build can't bake throws where it's read (R4)
+// a JSON Schema the build can't bake throws where it's read
 const isUnbaked = ({ original, precompiled }: Disagreement) =>
 	Object.keys({ ...original, ...precompiled }).every(
 		k =>
@@ -846,7 +840,7 @@ const isUnbaked = ({ original, precompiled }: Disagreement) =>
 				))
 	)
 
-// a kind of disagreement counted rather than failing, by the line of main.ts observing the site
+// a disagreement counted, not failed, matched by the site's main.ts line
 interface Allowance {
 	reason: string
 	matches: (
@@ -856,20 +850,10 @@ interface Allowance {
 	) => boolean
 }
 
-// a finding not yet fixed, named with the lane fixing it
-const knownFailures: Allowance[] = [
-	{
-		reason:
-			"factories lane: a Generic's stand-in decides whether its default is a thunk where it's instantiated, not where arktype decides it",
-		matches: ({ perturbation }, line) =>
-			perturbation === "arity" && /\(\) => G\d+\(/.test(line)
-	}
-]
-
 // how a world observes a keyword's meta
 const keywordMetaObservations = new Set([...keywordMetas()].map(serialize))
 
-// a disagreement outside the guarantee (design/precompile.md §2)
+// a disagreement precompiling doesn't promise to avoid
 const exclusions: Allowance[] = [
 	{
 		reason:
@@ -912,7 +896,7 @@ const exclusions: Allowance[] = [
 	}
 ]
 
-// a site is labeled by its position in main.ts or by the key main.ts observes it by
+// a site is labeled by its main.ts position or by its observation key
 const allowanceOf = (
 	allowances: Allowance[],
 	program: Program,
@@ -932,7 +916,7 @@ const allowanceOf = (
 		)
 }
 
-// a site's disagreements under each perturbation, by the observations the first one changes
+// a site's disagreements under each perturbation, by what the first changes
 const reportOf = (world: World, disagreements: Disagreement[]): string[] => {
 	const disagreementsBySite: Record<string, Disagreement[]> = {}
 	for (const disagreement of disagreements)
@@ -962,7 +946,6 @@ contextualize(() => {
 	it("agree through the build", async () => {
 		rmSync(out, { recursive: true, force: true })
 		const counts: Counts = {
-			known: {},
 			excluded: {},
 			unbaked: 0,
 			programs: 0,
