@@ -10,7 +10,7 @@ import type { intrinsic } from "./intrinsic.ts"
 import type { BaseNode } from "./node.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type { BaseRoot } from "./roots/root.ts"
-import type { rootApplyRuntime } from "./shared/rootApply.ts"
+import type { RootApplyRuntime } from "./shared/rootApply.ts"
 import type { BaseScope } from "./scope.ts"
 import type { TypeMeta } from "./shared/declare.ts"
 import {
@@ -43,7 +43,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	nodesByRegisteredId: typeof nodesByRegisteredId
 	sets?: SetEngine
 	inPlace?: InPlaceTransforms
-	// a standalone build can't call some functions a default's check reaches, so it checks the default where the program creates the Type
+	// standalone builds check a default where its Type is created
 	deferDefaultCheck?:
 		| ((
 				node: BaseRoot,
@@ -54,20 +54,18 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 		| undefined
 	reached?: CacheReach | undefined
 	// installed by @ark/schema/errors
-	errorModes?: Record<"first" | "none", typeof rootApplyRuntime>
+	errorModes?: Record<"first" | "none", RootApplyRuntime>
 }
 
-// a cache returns what another definition computed, so a standalone build learns which deferred checks a definition reaches through it
+// what a definition reaches through a cache, read by standalone builds
 export interface CacheReach {
-	// a node the node cache returns, whose creation ran its own checks
+	// a node returned from the node cache
 	node: (node: BaseNode) => void
-	// an entry another cache returns, which reaches what computing it reached
+	// an entry returned from another cache
 	cached: (cache: object, key: unknown) => void
-	// a Scope's alias a definition resolves, whose definition, like a thunk or a narrow arktype tests on literals, decides what it creates
+	// a Scope alias the definition resolves
 	alias: ($: BaseScope, alias: string) => void
-	// how much the definition has reached when computing an entry begins
 	mark: () => number | undefined
-	// files what the definition reached since the mark under the entry, for each definition the cache returns it to
 	store: (mark: number | undefined, cache: object, key: unknown) => void
 }
 
@@ -246,7 +244,7 @@ const normalizeFallback = (
 ): ToJsonSchema.FallbackObject =>
 	typeof fallback === "function" ? { default: fallback } : (fallback ?? {})
 
-// a failure's issues: each, the first, or one at the root, "is invalid"
+// which issues a failure reports
 export type ErrorDetail = "all" | "first" | "none"
 
 /**
