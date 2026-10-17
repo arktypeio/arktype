@@ -28,7 +28,7 @@ export default tseslint.config(
 			"**/*scratch.ts",
 			"**/scratch/**/*",
 			"**/examples/**/*",
-			// generated programs, unlinted by design like they are untyped
+			// generated programs
 			"ark/precompile/__tests__/temp/programs/**/*"
 		]
 	},

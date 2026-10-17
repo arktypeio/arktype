@@ -125,7 +125,7 @@ for (const pkg of packages) {
 	}
 	const internalNames = exportedNamesOf(internalPath)
 	for (const module of modulesOf(pkg)) {
-		// arktype/runtime and runtimeExports export a type of their own and @ark/schema's runtime, which internal can't
+		// these also export @ark/schema's runtime, which internal can't
 		if (
 			name === "arktype" &&
 			(module === "runtime" || module === "runtimeExports")
@@ -197,7 +197,7 @@ for (const name of readdirSync(schemaOut)) {
 	}
 }
 
-// anything the chunks arktype/runtime loads can't drop ships in every artifact's bundle
+// what arktype/runtime can't drop ships in every artifact
 const runtimeBundle = buildSync({
 	stdin: {
 		contents: `export { Validator } from "arktype/runtime"`,
