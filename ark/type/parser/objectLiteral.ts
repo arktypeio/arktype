@@ -161,10 +161,15 @@ export const parseObjectLiteral = (
 
 	const structureNode = ctx.$.node("structure", structure)
 
-	return ctx.$.node("intersection", {
-		domain: ctx.$.node("domain", { domain: "object" }),
-		structure: spread?.merge(structureNode) ?? structureNode
-	})
+	// an object's structure implies no siblings, so it has nothing to reduce
+	return ctx.$.node(
+		"intersection",
+		{
+			domain: ctx.$.node("domain", { domain: "object" }),
+			structure: spread?.merge(structureNode) ?? structureNode
+		},
+		{ prereduced: true }
+	)
 }
 
 const appendNamedProp = <kind extends Prop.Kind>(

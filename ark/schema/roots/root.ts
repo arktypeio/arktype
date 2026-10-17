@@ -551,12 +551,17 @@ export abstract class BaseRoot<
 			)
 		}
 
-		const partialIntersection = this.$.node("intersection", {
-			// important this is constraint.kind instead of kind in case
-			// the node was reduced during parsing
-			[constraint.kind]:
-				constraint.impl.intersectionIsOpen ? [constraint] : constraint
-		})
+		// a constraint alone has nothing to reduce
+		const partialIntersection = this.$.node(
+			"intersection",
+			{
+				// important this is constraint.kind instead of kind in case
+				// the node was reduced during parsing
+				[constraint.kind]:
+					constraint.impl.intersectionIsOpen ? [constraint] : constraint
+			},
+			{ prereduced: true }
+		)
 
 		const result =
 			io === "out" ?
