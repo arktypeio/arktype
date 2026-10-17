@@ -13,8 +13,7 @@ import type {
 import type { FormDataValue, ParsedFormData } from "./FormData.ts"
 import type { KeywordPhraseAlias } from "./phrases.ts"
 
-// the context of an error a keyword raises through ctx, as phrases.ts's
-// keywordError writes it, which can't be imported here since it loads @ark/schema
+// takes its noun, since importing phrases.ts would load @ark/schema
 const keywordError = <alias extends KeywordPhraseAlias>(
 	alias: alias,
 	description: string
@@ -81,7 +80,7 @@ export const parseDate = (s: string, ctx: Traversal): Date | ArkError => {
 
 export const parseIsoDate = (s: string): Date => new Date(s)
 
-// parsed as a number so the string is treated as milliseconds rather than passed to the Date string parser
+// parsed as a number so the string is treated as milliseconds
 export const parseEpoch = (s: string): Date => new Date(Number.parseInt(s))
 
 /**
@@ -198,7 +197,7 @@ export const normalizationsByForm = {
 	}
 }
 
-// the default an empty collection literal parses to, a thunk so each traversal's is its own
+// a thunk so each traversal's is its own
 export const emptyCollectionDefaults = {
 	"[]": () => [],
 	"{}": () => ({})
@@ -206,10 +205,9 @@ export const emptyCollectionDefaults = {
 	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
 }
 
-const regexError = /* @__PURE__ */ keywordError(
-	"string.regex",
-	"a regex pattern"
-)
+const regexPattern = "a regex pattern"
+
+const regexError = /* @__PURE__ */ keywordError("string.regex", regexPattern)
 
 export const isRegexPattern = (s: string, ctx: Traversal): boolean => {
 	try {
@@ -229,7 +227,7 @@ export const raisedErrorPhrases = {
 		problem: jsonProblem
 	},
 	"string.regex": {
-		noun: "a regex pattern",
+		noun: regexPattern,
 		problem: (e, locale) =>
 			e.code === "predicate" && e.cause !== undefined ?
 				describeSyntaxError(e.cause as SyntaxError)
@@ -237,14 +235,11 @@ export const raisedErrorPhrases = {
 	}
 } as const satisfies Record<string, Locale.KeywordWriters>
 
-// an http(s) URL whose host labels are letters and digits joined by single hyphens, the last all letters, and port under 10000 always parses
-// whatever follows from a /, ? or #, since no path, query or fragment fails
-// cased by hand, since the i flag has V8 compute case closures at the first test, and a lowercase scheme, matched fastest, is tried first
+// http(s) with simple host labels always parses; cased without the i flag
 const plainUrl =
 	/^(?:https?|[Hh][Tt]{2}[Pp][Ss]?):\/\/(?:[\dA-Za-z]+(?:-[\dA-Za-z]+)*\.)*[A-Za-z]+(?::\d{1,4})?(?:[#/?]|$)/
 
-// V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
-// the parser fails a string without a colon, as it has no scheme
+// a string without a colon has no scheme, so fails
 export const isParsableUrl = ((s: string): boolean =>
 	plainUrl.test(s) || (s.includes(":") && URL.canParse(s))) satisfies Fn
 

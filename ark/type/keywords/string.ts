@@ -218,7 +218,7 @@ export type DateOptions = {
 // ISO 8601 date/time modernized from https://github.com/validatorjs/validator.js/blob/master/src/lib/isISO8601.js
 // Based on https://tc39.es/ecma262/#sec-date-time-string-format, the T
 // delimiter for date/time is mandatory. Regex from validator.js strict matcher:
-// only the two groups its backreferences read capture, as captures more than double the cost of each test in V8
+// only the two groups its backreferences read capture
 export const iso8601Matcher =
 	/^[+-]?\d{4}(?!\d{2}\b)(?:(-?)(?:(?:0[1-9]|1[0-2])(?:\1(?:[12]\d|0[1-9]|3[01]))?|W(?:[0-4]\d|5[0-3])(?:-?[1-7])?|(?:00[1-9]|0[1-9]\d|[12]\d{2}|3(?:[0-5]\d|6[1-6])))(?:T(?:(?:(?:[01]\d|2[0-3])(?:(:?)[0-5]\d)?|24:?00)(?:[,.]\d+(?!:))?)?(?:\2[0-5]\d(?:[,.]\d+)?)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):?(?:[0-5]\d)?)?)?)?$/
 
