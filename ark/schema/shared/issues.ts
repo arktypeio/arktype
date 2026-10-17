@@ -204,9 +204,12 @@ export const issueAt = (
 		if (site.missing && !(key in (data as object))) context = site.missing
 		else data = (data as Keyed)[key]
 	}
+	// a path two keys long is copied as a literal
 	const issue = issueOf(
 		context,
-		site.path ? [...path, ...site.path] : path.slice(),
+		site.path ? path.concat(site.path)
+		: path.length === 2 ? [path[0], path[1]]
+		: path.slice(),
 		data
 	)
 	if (key !== undefined) path.pop()
