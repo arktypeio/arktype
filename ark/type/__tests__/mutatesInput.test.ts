@@ -135,7 +135,7 @@ contextualize(() => {
 		attest(Item.internal.compiledUnit).equals(undefined)
 	})
 
-	it("writes in place beside a morph calling a compiled Type", () => {
+	it("binds compiled code to a Type a morph calls", () => {
 		const Held = always.type({ x: { count: "string.numeric.parse" } })
 		Held({ x: { count: "0" } })
 		const T = always.type({
