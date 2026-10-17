@@ -202,9 +202,12 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 			s.l[i] = result as BaseConstraint
 			matched = true
 		} else if (!s.l.includes(result as never)) {
-			return throwInternalError(
-				`Unexpectedly encountered multiple distinct intersection results for refinement ${head}`
-			)
+			// head can reduce more than one existing constraint, e.g. >= 2 with
+			// <= 2 (to == 2) and >= 1 (to >= 2), so replace this one with its
+			// result and queue that to be intersected with the rest
+			s.l.splice(i, 1)
+			i--
+			s.r.push(result as BaseConstraint)
 		}
 	}
 	if (!matched) s.l.push(head)
