@@ -107,7 +107,7 @@ import {
 	exportNameOf,
 	isTransparent,
 	isWriteTarget,
-	normalize,
+	unwrapChain,
 	operatorOf,
 	unwrapExpression,
 	walk,
@@ -3113,7 +3113,7 @@ export class Precompiler {
 			this.graph.packageNameOf(module.id) ?? ""
 		)
 		for (const [node, read, object, isUnsureRead] of unavailable) {
-			const objectRange = rangeOf(normalize(object))
+			const objectRange = rangeOf(unwrapChain(object))
 			const settledValue = settledValues.get(objectRange)
 			// a computed site is sure, so a member the options drop is read off a Type
 			const isUnsure =
@@ -3218,7 +3218,7 @@ export class Precompiler {
 
 	// e.g. `T` declared in a `// @ark-runtime` definition
 	private isDeclaredInIsland(node: Node, module: SourceModule): boolean {
-		node = normalize(node)
+		node = unwrapChain(node)
 		const binding =
 			node.type === "Identifier" ?
 				module.scopes.referencesById.get(node)?.binding

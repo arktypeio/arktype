@@ -44,7 +44,7 @@ import { SourceModule } from "./module.ts"
 import {
 	exportNameOf,
 	isTransparent,
-	normalize,
+	unwrapChain,
 	operatorOf,
 	runtimeParamsOf,
 	unwrapExpression,
@@ -787,8 +787,8 @@ export class ModuleGraph {
 
 	// the export a node reads, e.g. `type` for `type` or `ark.type`
 	arkExportNameOf(node: Node, module: SourceModule): ArkExportName | undefined {
-		node = normalize(node)
-		const id = node.type === "MemberExpression" ? normalize(node.object) : node
+		node = unwrapChain(node)
+		const id = node.type === "MemberExpression" ? unwrapChain(node.object) : node
 		const reference =
 			id.type === "Identifier" ?
 				module.scopes.referencesById.get(id)
@@ -1050,7 +1050,7 @@ export class ModuleGraph {
 			[operand, call] = operatorOf(call)
 		if (call?.type !== "CallExpression" || call.callee === operand)
 			return kinds.data
-		const callee = normalize(call.callee)
+		const callee = unwrapChain(call.callee)
 		if (callee.type !== "MemberExpression") {
 			return lostOf(
 				this.transfer(callee, module, kindOfKey) &
@@ -1381,11 +1381,11 @@ export class ModuleGraph {
 			)
 				return kinds.data
 			return annotate(
-				this.transfer(normalize(node), module, kindOfKey),
+				this.transfer(unwrapChain(node), module, kindOfKey),
 				this.annotatedKindOf(cast, module, kindOfKey)
 			)
 		}
-		node = normalize(node)
+		node = unwrapChain(node)
 		const cached =
 			this.bindingKindOfKeys.has(kindOfKey) ?
 				undefined
@@ -1436,7 +1436,7 @@ export class ModuleGraph {
 			}
 			case "CallExpression":
 			case "TaggedTemplateExpression": {
-				const callee = normalize(
+				const callee = unwrapChain(
 					node.type === "CallExpression" ? node.callee : node.tag
 				)
 				// e.g. `type({ a: "string" })`, where only a definition with parameters could make a Generic
@@ -1533,8 +1533,8 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): ArkKind {
-		let root = normalize(call.callee)
-		while (root.type === "MemberExpression") root = normalize(root.object)
+		let root = unwrapChain(call.callee)
+		while (root.type === "MemberExpression") root = unwrapChain(root.object)
 		if (
 			root.type !== "Identifier" ||
 			module.scopes.referencesById.get(root)?.binding
@@ -1571,10 +1571,10 @@ export class ModuleGraph {
 		global: string,
 		name: string
 	): boolean {
-		node = normalize(node)
+		node = unwrapChain(node)
 		if (node.type !== "MemberExpression" || memberNameOf(node) !== name)
 			return false
-		const object = normalize(node.object)
+		const object = unwrapChain(node.object)
 		return (
 			object.type === "Identifier" &&
 			object.name === global &&
@@ -1588,7 +1588,7 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): Located | undefined {
-		node = normalize(node)
+		node = unwrapChain(node)
 		if (node.type === "ThisExpression") {
 			const owner = ownerOf(node)
 			return owner && owner.type !== "ObjectExpression" ?
@@ -1640,7 +1640,7 @@ export class ModuleGraph {
 		module: SourceModule,
 		kindOfKey: KindOfKey
 	): ArkKind | undefined {
-		const object = normalize(member.object)
+		const object = unwrapChain(member.object)
 		const binding =
 			object.type === "Identifier" ?
 				module.scopes.referencesById.get(object)?.binding
@@ -1731,7 +1731,7 @@ export class ModuleGraph {
 		kindOfKey: KindOfKey,
 		seen = new Set<Node>()
 	): Located | undefined {
-		node = normalize(node)
+		node = unwrapChain(node)
 		if (seen.has(node)) return
 		seen.add(node)
 		switch (node.type) {
@@ -1920,7 +1920,7 @@ export class ModuleGraph {
 		member: MemberExpression,
 		module: SourceModule
 	): ImportTarget | undefined {
-		const object = normalize(member.object)
+		const object = unwrapChain(member.object)
 		const name = memberNameOf(member)
 		const binding =
 			object.type === "Identifier" ?
@@ -2046,7 +2046,7 @@ export class ModuleGraph {
 				:	[key, [node.right]]
 		}
 		if (node.type !== "CallExpression") return
-		const callee = normalize(node.callee)
+		const callee = unwrapChain(node.callee)
 		const args = node.arguments.filter(arg => arg.type !== "SpreadElement")
 		if (
 			callee.type === "Identifier" &&
@@ -2055,7 +2055,7 @@ export class ModuleGraph {
 		)
 			return ["toString", args.slice(0, 1)]
 		if (callee.type !== "MemberExpression") return
-		const global = normalize(callee.object)
+		const global = unwrapChain(callee.object)
 		if (
 			global.type !== "Identifier" ||
 			module.scopes.referencesById.get(global)?.binding
@@ -2088,7 +2088,7 @@ export class ModuleGraph {
 		callee: Node,
 		module: SourceModule
 	): [FunctionNode, SourceModule] | undefined {
-		callee = normalize(callee)
+		callee = unwrapChain(callee)
 		if (isFunctionNode(callee)) return [callee, module]
 		if (callee.type === "Identifier") {
 			const binding = module.scopes.referencesById.get(callee)?.binding
@@ -2110,7 +2110,7 @@ export class ModuleGraph {
 		if (callee.type !== "MemberExpression") return
 		const literal = this.literalOf(callee.object, module, kindOfKey)
 		const value = literal && this.valueIn(literal, memberNameOf(callee))
-		const fn = value && namedFunctionOf(normalize(value.node), value.module)
+		const fn = value && namedFunctionOf(unwrapChain(value.node), value.module)
 		return fn && isFunctionNode(fn) ? [fn, value.module] : undefined
 	}
 
@@ -2125,7 +2125,7 @@ export class ModuleGraph {
 			// e.g. `export default () => A`
 			const fn =
 				target.kind === "expression" &&
-				namedFunctionOf(normalize(target.node), target.module)
+				namedFunctionOf(unwrapChain(target.node), target.module)
 			return fn && isFunctionNode(fn) ? [fn, target.module] : undefined
 		}
 		const fn = functionOfBinding(binding, module)
@@ -2142,7 +2142,7 @@ export class ModuleGraph {
 			if (isArk(this.bindingKindOf(target.binding, module))) return true
 			fn = this.boundFunctionOf(target.binding, module)
 		} else {
-			const node = normalize(target.node)
+			const node = unwrapChain(target.node)
 			if (isArk(this.kindOf(node, module))) return true
 			const named = namedFunctionOf(node, module)
 			if (isFunctionNode(named)) fn = [named, module]
@@ -2462,7 +2462,7 @@ const namedFunctionOf = (node: Node, module: SourceModule): Node => {
 				compactTextOf(defineProperty, module) === "Object.defineProperty" &&
 				!module.scopes.referencesById.get(defineProperty.object)?.binding
 		) ?
-			normalize(node.arguments[0])
+			unwrapChain(node.arguments[0])
 		:	node
 }
 

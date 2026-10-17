@@ -74,7 +74,7 @@ import {
 import type { SourceModule } from "./module.ts"
 import {
 	isTransparent,
-	normalize,
+	unwrapChain,
 	operatorOf,
 	runtimeParamsOf,
 	unwrapExpression,
@@ -247,7 +247,7 @@ const isIntrospectionRead = (
 		site.node === node
 	:	(key === "toJSON" || key === "toJsonSchema") &&
 		site.node.type === "CallExpression" &&
-		normalize(site.node.callee) === node)
+		unwrapChain(site.node.callee) === node)
 
 // e.g. `in` off a Type, or any member of a Scope or Generic
 const lacksMember = (object: unknown, key: PropertyKey): boolean =>
@@ -803,7 +803,7 @@ export class Interpreter {
 	private isReadThrough(site: SiteState | undefined): boolean {
 		if (!site) return false
 		const { node, module } = site
-		const callee = node.type === "CallExpression" && normalize(node.callee)
+		const callee = node.type === "CallExpression" && unwrapChain(node.callee)
 		const [operand, parent] = operatorOf(node)
 		return (
 			(node.type === "MemberExpression" ?

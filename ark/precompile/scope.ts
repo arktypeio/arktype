@@ -31,7 +31,7 @@ export interface Binding {
 	name: string
 	kind: BindingKind
 	id: Node
-	// the declarator, function, class, import specifier, enum or member, or the function owning a param
+	// e.g. the declarator or import specifier, or a param's function
 	declaration: Node
 	scope: Scope
 	references: Reference[]
@@ -53,7 +53,7 @@ export interface Scope {
 	unresolved: Reference[]
 }
 
-export type ExportEntry =
+type ExportEntry =
 	| { kind: "binding"; binding: Binding }
 	| { kind: "reexport"; specifier: string; name: string }
 	| { kind: "namespace"; specifier: string }
@@ -98,7 +98,6 @@ export class ModuleScopes {
 			case "ClassExpression":
 				return this.visitClass(node)
 			case "BlockStatement":
-				return this.inScope(node, () => this.visitAll(node.body, node))
 			case "StaticBlock":
 				return this.inScope(node, () => this.visitAll(node.body, node))
 			case "ForStatement":
@@ -229,12 +228,7 @@ export class ModuleScopes {
 	}
 
 	private visitChildren(node: Node): void {
-		for (const k of visitorKeys[node.type]) {
-			if (k in typeKeys) continue
-			const child = (node as never)[k] as Node | (Node | null)[] | null
-			if (Array.isArray(child)) this.visitAll(child, node)
-			else this.visit(child, node)
-		}
+		forEachChild(node, child => this.visit(child, node))
 	}
 
 	private visitAll(nodes: readonly (Node | null)[], parent: Node): void {
@@ -242,17 +236,18 @@ export class ModuleScopes {
 	}
 
 	private visitFunction(node: Function | ArrowFunctionNode): void {
-		if (!node.body) return
+		const { body } = node
+		if (!body) return
 		if (node.type === "FunctionDeclaration" && node.id)
 			this.bind(node.id, "function", node, node)
 		const visitScope = () =>
 			this.inScope(node, () => {
 				for (const param of runtimeParamsOf(node))
 					this.bindPattern(param, "param", node, node)
-				if (node.body!.type === "BlockStatement") {
-					node.body!.parent = node
-					this.visitAll(node.body!.body, node.body!)
-				} else this.visit(node.body, node)
+				if (body.type === "BlockStatement") {
+					body.parent = node
+					this.visitAll(body.body, body)
+				} else this.visit(body, node)
 			})
 		if (node.type === "FunctionExpression" && node.id) {
 			this.inScope(node, () => {
@@ -286,8 +281,8 @@ export class ModuleScopes {
 		if (node.type !== "Property") this.visitAll(node.decorators, node)
 		if (node.computed) this.visit(node.key, node)
 		else node.key.parent = node
-		if (node.type === "Property") return this.visit(node.value, node)
-		if (node.type === "MethodDefinition") return this.visit(node.value, node)
+		if (node.type === "Property" || node.type === "MethodDefinition")
+			return this.visit(node.value, node)
 		if (node.value) this.inScope(node, () => this.visit(node.value, node))
 	}
 
@@ -477,7 +472,7 @@ export class ModuleScopes {
 		declaration: Node,
 		scope = this.scope
 	): void {
-		// a name declared again, like a merged enum or a second function declaration, is not static
+		// a name declared again, like a merged enum, is not static
 		const existing = scope.bindings[name]
 		if (existing) {
 			existing.writes.push(id)
@@ -569,7 +564,7 @@ const typeKeys = {
 	returnType: 1,
 	superTypeArguments: 1,
 	implements: 1
-}
+} as const satisfies KeySet
 
 const transparentKinds = {
 	TSAsExpression: 1,
@@ -579,10 +574,7 @@ const transparentKinds = {
 	TSInstantiationExpression: 1
 } as const satisfies KeySet
 
-export type TransparentNode = Extract<
-	Node,
-	{ type: keyof typeof transparentKinds }
->
+type TransparentNode = Extract<Node, { type: keyof typeof transparentKinds }>
 
 export const isTransparent = (node: Node): node is TransparentNode =>
 	node.type in transparentKinds
@@ -592,8 +584,8 @@ export const unwrapExpression = (node: Node): Node => {
 	return node
 }
 
-// e.g. `T` for `(T as Type)!` or `T?.and`, read past what only types an expression or ends its optional chain
-export const normalize = (node: Node): Node => {
+// e.g. `T` for `(T as Type)!` or `T?.and`
+export const unwrapChain = (node: Node): Node => {
 	while (isTransparent(node) || node.type === "ChainExpression")
 		node = node.expression
 	return node
@@ -646,13 +638,16 @@ export const runtimeParamsOf = (fn: {
 	:	fn.params
 
 export const walk = (node: Node, visit: (node: Node) => boolean): void => {
-	if (!visit(node)) return
+	if (visit(node)) forEachChild(node, child => walk(child, visit))
+}
+
+const forEachChild = (node: Node, f: (child: Node) => void) => {
 	for (const k of visitorKeys[node.type]) {
 		if (k in typeKeys) continue
 		const child = (node as never)[k] as Node | (Node | null)[] | null
-		if (Array.isArray(child)) {
-			for (const item of child) if (item) walk(item, visit)
-		} else if (child) walk(child, visit)
+		if (!Array.isArray(child)) {
+			if (child) f(child)
+		} else for (const item of child) if (item) f(item)
 	}
 }
 
