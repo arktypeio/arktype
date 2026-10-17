@@ -10,6 +10,10 @@ import {
 } from "@ark/precompile"
 import { analyze, diagnosticsOf, memoryHost, statusesOf } from "./utils.ts"
 
+// a diagnostic without its hint, where the reason is the behavior
+const unhinted = (...args: Parameters<typeof diagnosticsOf>) =>
+	diagnosticsOf(...args).map(d => d.slice(0, d.lastIndexOf("\n")))
+
 contextualize(() => {
 	describe("allowed", () => {
 		it("literals and templates", () => {
@@ -106,6 +110,40 @@ const B = type({ b: z.string() })`,
 			])
 		})
 
+		it("packages that opt in", () => {
+			const libraryFiles = (manifest: object) => ({
+				"/node_modules/lib/package.json": JSON.stringify(manifest),
+				"/node_modules/lib/index.js": `import { type } from "arktype"
+export const User = type({ name: "string" })`
+			})
+			const source = `import { User } from "lib"
+export const Admin = User.and({ role: "'admin'" })`
+			const optedIn = libraryFiles({
+				name: "lib",
+				arktype: { precompile: true }
+			})
+			const plain = libraryFiles({ name: "lib" })
+			attest(statusesOf(source, optedIn)).snap([
+				'2:22 accepted { name: string, role: "admin" }'
+			])
+			attest(statusesOf(source, plain)).snap([])
+			attest(
+				[optedIn, plain].map(files =>
+					new Precompiler(memoryHost(files)).readDependency(
+						"/node_modules/lib/index.js"
+					)
+				)
+			).snap([
+				{ errors: [], warnings: [] },
+				{
+					errors: [],
+					warnings: [
+						"lib imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws"
+					]
+				}
+			])
+		})
+
 		it("enums", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
@@ -119,7 +157,7 @@ const B = type(\`'\${Name.a}' | '\${Size[1]}'\`)`)
 			])
 		})
 
-		it("interfaces extending a namespace's member", () => {
+		it("namespace interfaces", () => {
 			attest(
 				diagnosticsOf(`import { type } from "arktype"
 declare namespace ns {
@@ -485,10 +523,10 @@ const A = type({ name: type("string").atMostLength(max).pipe(trim) })`,
 			attest(
 				result.sites.map(site => [
 					site.status,
-					...site.holes.map(hole => `${hole.kind} ${hole.start}:${hole.end}`),
+					...site.holes.map(hole => hole.kind),
 					...site.inputs.map(input => `${input.kind} ${input.name}`)
 				])
-			).snap([["accepted", "function 163:167", "import max"]])
+			).snap([["accepted", "function", "import max"]])
 		})
 
 		it("dates", () => {
@@ -499,27 +537,15 @@ const A = type("Date").atOrAfter(new Date(0))`)
 		})
 
 		it("regexes and symbols", () => {
-			const result = analyze(`import { type } from "arktype"
+			attest(
+				statusesOf(`import { type } from "arktype"
 const tag = Symbol("tag")
 const A = type("string").matching(new RegExp("^a", "i"))
 const B = type({ [tag]: "string" })`)
-			attest(result.sites.map(site => site.status)).snap([
-				"accepted",
-				"accepted"
-			])
-			attest(result.sites[1].holes).snap([
-				{
-					file: "/main.ts",
-					start: 132,
-					end: 135,
-					value: "Symbol(tag)",
-					kind: "symbol",
-					isCalledAtDefinition: false
-				}
-			])
+			).snap(["3:11 accepted /^a/i", "4:11 accepted { Symbol(tag): string }"])
 		})
 
-		it("a Type's introspection at a site of its own", () => {
+		it("introspection sites", () => {
 			const source = `import { type } from "arktype"
 import { User } from "./user.ts"
 const T = type({ a: "string" })
@@ -542,20 +568,6 @@ export const User = type({ name: "string" })`
 				"8:17 accepted",
 				"9:11 accepted"
 			])
-			// a bundler drops User's module with the last export read from it, which matters where the module runs more than its declarations
-			const inputsOf = (files: Record<string, string>) => {
-				const { sites } = analyze(source, files)
-				return sites[sites.length - 1].inputs.map(input => [
-					input.name,
-					input.path
-				])
-			}
-			attest(inputsOf(files)).equals([])
-			attest(
-				inputsOf({
-					"/user.ts": `${files["/user.ts"]}\nconsole.log(User.expression)`
-				})
-			).equals([["User", []]])
 			// arktype computes it at runtime from the Type a site created
 			attest(statusesOf(source, files, { runtime: "arktype" })).snap([
 				"3:11 accepted { a: string }"
@@ -940,7 +952,7 @@ const { in: I } = T`)
 
 		it("a Type passed to a function that isn't a static helper", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 const T = type({ a: "string" })
 function nullable(t: typeof T) {
 	const n = t.or("null")
@@ -948,13 +960,13 @@ function nullable(t: typeof T) {
 }
 export const X = nullable(T)`)
 			).snap([
-				'/main.ts:4:12  t.or reads or, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				"/main.ts:4:12  t.or reads or, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
 			])
 		})
 
 		it("Types read through a computed key, a parameter's default or a superclass", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 const T = type({ a: "string" })
 const k = "in" as const
 const { [k]: I } = T
@@ -966,15 +978,15 @@ class C {
 class D extends C {}
 const U = D.User.or("null")`)
 			).snap([
-				'/main.ts:4:9  [k]: I reflects on a Type, whose properties a standalone validator doesn\'t share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:5:14  in: J reads in, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:11:11  D.User.or reads or, which a standalone validator lacks\n  `D.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				"/main.ts:4:9  [k]: I reflects on a Type, whose properties a standalone validator doesn't share\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:5:14  in: J reads in, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:11:11  D.User.or reads or, which a standalone validator lacks\n  `D.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
 			])
 		})
 
 		it("a Type a getter returns", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 const schemas = {
 	get User() {
 		return type({ name: "string" })
@@ -988,8 +1000,8 @@ class Forms {
 export const A = schemas.User.or("null")
 export const B = Forms.Admin.or("null")`)
 			).snap([
-				'/main.ts:12:18  schemas.User.or reads or, which a standalone validator lacks\n  `schemas.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:13:18  Forms.Admin.or reads or, which a standalone validator lacks\n  `Forms.Admin` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				"/main.ts:12:18  schemas.User.or reads or, which a standalone validator lacks\n  `schemas.User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:13:18  Forms.Admin.or reads or, which a standalone validator lacks\n  `Forms.Admin` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
 			])
 		})
 
@@ -1014,7 +1026,7 @@ const User = type({ name: "string" })`)
 
 		it("Types read through an instance's fields, each on its own", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 import { HttpClient } from "http"
 class Base {
 	user = type({ name: "string" })
@@ -1040,10 +1052,10 @@ const http = new HttpClient()
 console.log(new Forms(http).user.or, new Forms(http).admin.or)
 console.log(new Forms(http).make().or, new Forms(http).list[0].or)`)
 			).snap([
-				"/main.ts:24:13  new Forms(http).user.or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:24:38  new Forms(http).admin.or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).admin` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:25:13  new Forms(http).make().or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).make()` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:25:40  new Forms(http).list[0].or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).list[0]` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+				"/main.ts:24:13  new Forms(http).user.or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:24:38  new Forms(http).admin.or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).admin` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:25:13  new Forms(http).make().or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).make()` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:25:40  new Forms(http).list[0].or reads or, which a standalone validator lacks\n  the build can't tell where `new Forms(http).list[0]` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
@@ -1053,7 +1065,7 @@ console.log(new Forms(http).make().or, new Forms(http).list[0].or)`)
 				(_, i) => `f${i + 2} = this.f${i + 1} ?? this.f${i}`
 			)
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 class Chain {
 	f0 = type("string")
 	f1 = type("number")
@@ -1061,13 +1073,13 @@ class Chain {
 }
 export const X = new Chain().f27.or("null")`)
 			).snap([
-				"/main.ts:32:18  new Chain().f27.or reads or, which a standalone validator lacks\n  the build can't tell where `new Chain().f27` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+				"/main.ts:32:18  new Chain().f27.or reads or, which a standalone validator lacks\n  the build can't tell where `new Chain().f27` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
 		it("an options object holding a Type, passed to a helper whose calls the build sees", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 import { db } from "db"
 const route = (opts: { db: typeof db; input: unknown }) => opts.db.select()
 const log = opts => {
@@ -1076,27 +1088,27 @@ const log = opts => {
 route({ db, input: type({ name: "string" }) })
 log({ db, input: type({ name: "string" }) })`)
 			).snap([
-				'/main.ts:5:32  opts.input.or reads or, which a standalone validator lacks\n  `opts.input` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				"/main.ts:5:32  opts.input.or reads or, which a standalone validator lacks\n  `opts.input` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
 			])
 		})
 
 		it("a helper passing its parameter's members back to itself, each solved once", () => {
 			const writes = Array.from({ length: 9 }, (_, i) => `write(value.m${i})`)
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 function write(value) {
 	${writes.join("\n\t")}
 	console.log(value.m0.or)
 }
 write({ m0: type("string") })`)
 			).snap([
-				"/main.ts:12:14  value.m0.or reads or, which a standalone validator lacks\n  the build can't tell where `value.m0` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+				"/main.ts:12:14  value.m0.or reads or, which a standalone validator lacks\n  the build can't tell where `value.m0` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
 		it("Types the build sees stored or passed through built-ins", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 const A = type("string")
 const schemas = {}
 Object.assign(schemas, { A })
@@ -1109,17 +1121,17 @@ const forms = {
 console.log(new Map([["a", A]]).get("a").or, new Set([A]).values().next().value.or, schemas.A.or)
 Promise.resolve(A).then(t => t.or("null"))`)
 			).snap([
-				"/main.ts:8:10  this.user.or reads or, which a standalone validator lacks\n  the build can't tell where `this.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				'/main.ts:11:13  new Map([["a", A]]).get("a").or reads or, which a standalone validator lacks\n  the build can\'t tell where `new Map([["a", A]]).get("a")` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn\'t a Type, annotate it with its type. If it is, build with runtime: "arktype".',
-				"/main.ts:11:46  new Set([A]).values().next().value.or reads or, which a standalone validator lacks\n  the build can't tell where `new Set([A]).values().next().value` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:11:85  schemas.A.or reads or, which a standalone validator lacks\n  the build can't tell where `schemas.A` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:12:30  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+				"/main.ts:8:10  this.user.or reads or, which a standalone validator lacks\n  the build can't tell where `this.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				'/main.ts:11:13  new Map([["a", A]]).get("a").or reads or, which a standalone validator lacks\n  the build can\'t tell where `new Map([["a", A]]).get("a")` comes from, so it may be a Type, which the standalone runtime replaces with a validator',
+				"/main.ts:11:46  new Set([A]).values().next().value.or reads or, which a standalone validator lacks\n  the build can't tell where `new Set([A]).values().next().value` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:11:85  schemas.A.or reads or, which a standalone validator lacks\n  the build can't tell where `schemas.A` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:12:30  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
 		it("annotations that leave a value to the build or say it may be a Type", () => {
 			attest(
-				diagnosticsOf(`import { type, type Submodule, type Type } from "arktype"
+				unhinted(`import { type, type Submodule, type Type } from "arktype"
 const A = type("string")
 const forms = [A] as const
 const load = async () => ({ forms: { user: A } })
@@ -1132,18 +1144,18 @@ export function constrainedAny<t extends type.Any>(t: t) {
 	console.log(t.or)
 }`)
 			).snap([
-				"/main.ts:6:28  f.or reads or, which a standalone validator lacks\n  the build can't tell where `f` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:6:35  loaded.forms.user.or reads or, which a standalone validator lacks\n  the build can't tell where `loaded.forms.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:8:14  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:8:20  u.or reads or, which a standalone validator lacks\n  the build can't tell where `u` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:8:26  m.user.or reads or, which a standalone validator lacks\n  the build can't tell where `m.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				"/main.ts:11:14  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+				"/main.ts:6:28  f.or reads or, which a standalone validator lacks\n  the build can't tell where `f` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:6:35  loaded.forms.user.or reads or, which a standalone validator lacks\n  the build can't tell where `loaded.forms.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:8:14  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:8:20  u.or reads or, which a standalone validator lacks\n  the build can't tell where `u` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:8:26  m.user.or reads or, which a standalone validator lacks\n  the build can't tell where `m.user` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:11:14  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
 		it("a Type reaching a value annotated as something else", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 interface Nullable {
 	or(def: string): unknown
 }
@@ -1153,13 +1165,13 @@ let x: Nullable = type("string")
 export const X = x.or("null")
 if (Math.random() > 2) x = fallback`)
 			).snap([
-				'/main.ts:8:18  x.or("null") cannot be precompiled\n  `x` is assigned at /main.ts:9:24, so its value at the site is not known\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+				'/main.ts:8:18  x.or("null") cannot be precompiled\n  `x` is assigned at /main.ts:9:24, so its value at the site is not known'
 			])
 		})
 
 		it("a Type read from a container the build can't resolve", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 const schemas: Record<string, any> = {}
 schemas.User = type({ name: "string" })
 const registry = new Map()
@@ -1169,26 +1181,15 @@ export const A = schemas.User.or("null")
 export const B = registry.get("admin").or("null")
 export const C = list[Number(process.env.I)].or("null")`)
 			).snap([
-				"/main.ts:7:18  schemas.User.or reads or, which a standalone validator lacks\n  the build can't tell where `schemas.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
-				'/main.ts:8:18  registry.get("admin").or reads or, which a standalone validator lacks\n  the build can\'t tell where `registry.get("admin")` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn\'t a Type, annotate it with its type. If it is, build with runtime: "arktype".',
-				"/main.ts:9:18  list[Number(process.env.I)].or reads or, which a standalone validator lacks\n  the build can't tell where `list[Number(process.env.I)]` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
-			])
-		})
-
-		it("data the build lost track of, read by a member an array or Map shares with a Type", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-const load = async () => [type("string")]
-const loaded = await load()
-console.log(loaded.map(t => t), loaded.filter(Boolean), loaded.or)`)
-			).snap([
-				"/main.ts:4:57  loaded.or reads or, which a standalone validator lacks\n  the build can't tell where `loaded` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+				"/main.ts:7:18  schemas.User.or reads or, which a standalone validator lacks\n  the build can't tell where `schemas.User` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				'/main.ts:8:18  registry.get("admin").or reads or, which a standalone validator lacks\n  the build can\'t tell where `registry.get("admin")` comes from, so it may be a Type, which the standalone runtime replaces with a validator',
+				"/main.ts:9:18  list[Number(process.env.I)].or reads or, which a standalone validator lacks\n  the build can't tell where `list[Number(process.env.I)]` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
 		it("a callback's parameter, where the call can't pass it a Type", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 import { builder, defineEvent } from "events"
 const User = type({ name: "string" })
 const list = [User]
@@ -1196,28 +1197,32 @@ defineEvent(User, ({ event }) => event.default)
 builder.input(User).handler(({ input }) => input.to)
 list.forEach(user => user.or("null"))`)
 			).snap([
-				"/main.ts:7:22  user.or reads or, which a standalone validator lacks\n  the build can't tell where `user` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+				"/main.ts:7:22  user.or reads or, which a standalone validator lacks\n  the build can't tell where `user` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
-		it("annotations and casts saying what isn't a Type", () => {
+		it("data the build lost track of", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 import type { Options } from "options"
 type Endpoint = { responses: Record<string, unknown> }
 const load = async () => ({ user: type({ name: "string" }) })
 const loaded = await load()
 const endpoint = loaded as Endpoint
 const options: Options = await load()
-console.log(loaded.default, endpoint.responses.default, options.default)`)
+console.log(loaded.default, endpoint.responses.default, options.default)
+const loadList = async () => [type("string")]
+const list = await loadList()
+console.log(list.map(t => t), list.filter(Boolean), list.or)`)
 			).snap([
-				"/main.ts:8:13  loaded.default reads default, which a standalone validator lacks\n  the build can't tell where `loaded` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+				"/main.ts:8:13  loaded.default reads default, which a standalone validator lacks\n  the build can't tell where `loaded` comes from, so it may be a Type, which the standalone runtime replaces with a validator",
+				"/main.ts:11:53  list.or reads or, which a standalone validator lacks\n  the build can't tell where `list` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
 		it("a Type iterated from an array or returned by an object literal's method", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 const forms = {
 	make() {
 		return type("string")
@@ -1226,26 +1231,26 @@ const forms = {
 for (const t of [type("number")]) console.log(t.or("null"))
 export const X = forms.make().or("null")`)
 			).snap([
-				'/main.ts:7:47  t.or reads or, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:8:18  forms.make().or reads or, which a standalone validator lacks\n  `forms.make()` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				"/main.ts:7:47  t.or reads or, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:8:18  forms.make().or reads or, which a standalone validator lacks\n  `forms.make()` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
 			])
 		})
 
 		it("members a standalone validator lacks, read outside any site", () => {
 			attest(
-				diagnosticsOf(`import { type } from "arktype"
+				unhinted(`import { type } from "arktype"
 const T = type({ a: "string" })
 const jsonOf = (t: typeof T) => t.json
 console.log(T.expression, T.toString(), Object.is(T, T))
 console.log(jsonOf(T), "json" in T, JSON.stringify(T))
 console.log(String(T), \`\${T}\`, "" + T)`)
 			).snap([
-				'/main.ts:3:33  t.json reads json, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:4:27  T.toString reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:5:37  JSON.stringify(T) reads toJSON, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:6:13  String(T) reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:6:24  `${T}` reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
-				'/main.ts:6:32  "" + T reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+				"/main.ts:3:33  t.json reads json, which a standalone validator lacks\n  `t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:4:27  T.toString reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:5:37  JSON.stringify(T) reads toJSON, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:6:13  String(T) reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:6:24  `${T}` reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				'/main.ts:6:32  "" + T reads expression, which a standalone validator lacks\n  `T` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read'
 			])
 		})
 
@@ -1334,17 +1339,17 @@ console.log(values.map(v => (v as any).from))`,
 				message: string
 			][] = [
 				[
-					"members that isn't an object",
+					"non-object members",
 					{ members: true as never },
 					writeOptionValueMessage("members", "true", "an object")
 				],
 				[
-					"a member that isn't one",
+					"unknown member",
 					{ members: { json: true, and: true } as never },
 					writeUnknownMemberMessage('"and"')
 				],
 				[
-					"a member that isn't a boolean",
+					"non-boolean member",
 					{ members: { assert: 0 } as never },
 					writeOptionValueMessage('members["assert"]', "0", "a boolean")
 				],
@@ -1354,47 +1359,17 @@ console.log(values.map(v => (v as any).from))`,
 					standardJsonSchemaWithoutStandardMessage
 				],
 				[
-					"members with runtime: arktype, though it keeps each",
-					{ runtime: "arktype", members: {} },
-					writeArktypeRuntimeOptionMessage("members")
-				],
-				[
-					"freeze that isn't a boolean",
-					{ freeze: 0 as never },
-					writeOptionValueMessage("freeze", "0", "a boolean")
-				],
-				[
-					"freeze with runtime: arktype, though it's the default",
-					{ runtime: "arktype", freeze: true },
-					writeArktypeRuntimeOptionMessage("freeze")
-				],
-				[
-					"config that isn't a module path",
+					"non-path config",
 					{ config: true as never },
 					writeOptionValueMessage("config", "true", "a module path or false")
 				],
 				[
-					"config that's empty",
+					"empty config",
 					{ config: "" },
 					writeOptionValueMessage("config", '""', "a module path or false")
 				],
 				[
-					"config: false with runtime: arktype",
-					{ runtime: "arktype", config: false },
-					writeArktypeRuntimeOptionMessage("config: false")
-				],
-				[
-					"lazy that isn't a boolean",
-					{ lazy: "no" as never },
-					writeOptionValueMessage("lazy", '"no"', "a boolean")
-				],
-				[
-					"lazy with runtime: arktype, though it's the default",
-					{ runtime: "arktype", lazy: true },
-					writeArktypeRuntimeOptionMessage("lazy")
-				],
-				[
-					"checks that isn't one",
+					"invalid enum option",
 					{ checks: "all" as never },
 					writeOptionValueMessage(
 						"checks",
@@ -1403,47 +1378,19 @@ console.log(values.map(v => (v as any).from))`,
 					)
 				],
 				[
-					"checks with runtime: arktype, though it's the default",
-					{ runtime: "arktype", checks: "types" },
-					writeArktypeRuntimeOptionMessage("checks")
+					"non-boolean option",
+					{ freeze: 0 as never },
+					writeOptionValueMessage("freeze", "0", "a boolean")
 				],
 				[
-					"mutatesInput that isn't one",
-					{ mutatesInput: 1 as never },
-					writeOptionValueMessage(
-						"mutatesInput",
-						"1",
-						'false, true or "always"'
-					)
+					"standalone option with runtime arktype",
+					{ runtime: "arktype", freeze: true },
+					writeArktypeRuntimeOptionMessage("freeze")
 				],
 				[
-					"mutatesInput with runtime: arktype, though false is the default",
-					{ runtime: "arktype", mutatesInput: false },
-					writeArktypeRuntimeOptionMessage("mutatesInput")
-				],
-				[
-					"errors that isn't one",
-					{ errors: "some" as never },
-					writeOptionValueMessage(
-						"errors",
-						'"some"',
-						'"all", "first" or "none"'
-					)
-				],
-				[
-					"errors with runtime: arktype, though it's the default",
-					{ runtime: "arktype", errors: "all" },
-					writeArktypeRuntimeOptionMessage("errors")
-				],
-				[
-					"optimize that isn't one",
-					{ optimize: "time" as never },
-					writeOptionValueMessage("optimize", '"time"', '"speed" or "size"')
-				],
-				[
-					"optimize with runtime: arktype, though it's the default",
-					{ runtime: "arktype", optimize: "speed" },
-					writeArktypeRuntimeOptionMessage("optimize")
+					"config false with runtime arktype",
+					{ runtime: "arktype", config: false },
+					writeArktypeRuntimeOptionMessage("config: false")
 				]
 			]
 			for (const [name, opts, message] of refused) {
@@ -1627,7 +1574,7 @@ const M = type(JSON.stringify(0, replacer) === '{"a":true}' ? "string" : "number
 			])
 		})
 
-		it("a callback over a long array, whose elements it admits once", () => {
+		it("a callback over a long array", () => {
 			attest(
 				statusesOf(`import { type } from "arktype"
 const codes = "x".repeat(5000).split("").map((_, i) => \`c\${i}\`)

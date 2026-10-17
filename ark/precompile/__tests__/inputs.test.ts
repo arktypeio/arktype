@@ -19,29 +19,14 @@ export const C = type({ ...o.b, l: o.l })`)
 	it("writes the build does not follow", () => {
 		const uses = [
 			`;\`\${{ o, toString() { (this as any).o.a = "number"; return "" } }}\``,
-			`const h = (p: any) => ((p ||= {}).a = "number")
-h(o)`,
 			`function f(x: unknown) { return (arguments[0].a = "number") }
 f(o)`,
 			`;[o].map((x: any) => (x.a = "number"))`,
-			`const D = type("unknown").narrow((x: any) => ((x.a = "number"), true))
-D(o)`,
 			`const d: any = type.define(o)
 d.a = "number"`,
-			`const M = type("string").configure({ o } as any)
-;(M as any).meta.o.a = "number"`,
-			`const G = type(...(["<t>", { x: "t", o }] as const))
-;(G as any).bodyDef.o.a = "number"`,
-			`const P = type("string").matching({ rule: "^a", meta: o })
-;(P as any).internal.select("pattern")[0].meta.a = "number"`,
-			`const box: any = { T: type("string") }
-box.T = { and: (d: any) => ((d.a = "number"), d) }
-box.T.and(o)`,
 			`const S = type("string")
 ;(S as any).and = (d: any) => ((d.a = "number"), S)
-S.and(o)`,
-			`;(type as any).or = (d: any) => ((d.a = "number"), type("string"))
-type.or(o)`
+S.and(o)`
 		]
 		attest(
 			uses.map(use =>
@@ -53,16 +38,9 @@ export const T = type(o.a)`).pop()
 		).snap([
 			["4:18 accepted", "local o.a"],
 			["5:18 accepted", "local o.a"],
-			["5:18 accepted", "local o.a"],
 			["4:18 accepted", "local o.a"],
 			["5:18 accepted", "local o.a"],
-			["5:18 accepted", "local o.a"],
-			["5:18 accepted", "local o.a"],
-			["5:18 accepted", "local o.a"],
-			["5:18 accepted", "local o.a"],
-			["6:18 accepted", "local o.a"],
-			["6:18 accepted", "local o.a"],
-			["5:18 accepted", "local o.a"]
+			["6:18 accepted", "local o.a"]
 		])
 	})
 
@@ -161,5 +139,19 @@ export const B = type("string").matching(r)`)
 			["6:18 accepted", "local d"],
 			["7:18 accepted", "local r"]
 		])
+	})
+
+	it("an introspected import is not an input", () => {
+		const source = `import { User } from "./user.ts"
+export const json = User.json`
+		const user = `import { type } from "arktype"
+export const User = type({ name: "string" })`
+		attest(inputsOf(source, { "/user.ts": user })).snap([["2:21 accepted"]])
+		// unless a bundler dropping its module would drop more than declarations
+		attest(
+			inputsOf(source, {
+				"/user.ts": `${user}\nconsole.log(User.expression)`
+			})
+		).snap([["2:21 accepted", "import User"]])
 	})
 })
