@@ -265,8 +265,21 @@ const months = [
 const pad = (value: number, length: number) =>
 	String(value).padStart(length, "0")
 
-export const isDotAccessible = (keyName: string): boolean =>
-	/^[$A-Z_a-z][\w$]*$/.test(keyName)
+// the same keys are usually checked again, so the answer for each is kept
+const dotAccessibleKeys = new Map<string, boolean>()
+
+export const isDotAccessible = (keyName: string): boolean => {
+	let accessible = dotAccessibleKeys.get(keyName)
+	if (accessible === undefined) {
+		accessible = /^[$A-Z_a-z][\w$]*$/.test(keyName)
+		// keys can come from data, so only so many and so long are kept
+		if (keyName.length <= 64) {
+			if (dotAccessibleKeys.size === 1024) dotAccessibleKeys.clear()
+			dotAccessibleKeys.set(keyName, accessible)
+		}
+	}
+	return accessible
+}
 
 export const baseNameOf = (value: object | symbol): string => {
 	switch (typeof value) {
