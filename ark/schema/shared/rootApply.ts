@@ -23,6 +23,8 @@ export const rootApplyRuntime = {
 	transformResolution
 }
 
+export type RootApplyRuntime = typeof rootApplyRuntime
+
 const nodeMembers = ["allows", "traverseAllows", "traverseTransform"]
 
 export const rootApplyParams = [
@@ -31,7 +33,7 @@ export const rootApplyParams = [
 	...Object.keys(rootApplyRuntime)
 ] as const
 
-export type RootApplyParam = "config" | keyof typeof rootApplyRuntime
+export type RootApplyParam = "config" | keyof RootApplyRuntime
 
 // name keys the root's resolution, so it must be what its unit names it
 export const writeRootApply = (

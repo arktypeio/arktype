@@ -85,7 +85,8 @@ import { $ark } from "./shared/registry.ts"
 import {
 	rootApplyParams,
 	rootApplyRuntime,
-	writeRootApply
+	writeRootApply,
+	type RootApplyRuntime
 } from "./shared/rootApply.ts"
 import {
 	addErrors,
@@ -625,9 +626,7 @@ export abstract class BaseNode<
 	}
 
 	// a root whose transform doesn't require ctx has only context-free morphs
-	private createOptimisticRootApply(
-		runtime: typeof rootApplyRuntime
-	): RootApply {
+	private createOptimisticRootApply(runtime: RootApplyRuntime): RootApply {
 		const { Traversal } = runtime
 		const branches = (this as {} as BaseRoot).branches
 		return (data, onFail = this.onFail) => {
@@ -657,7 +656,7 @@ export abstract class BaseNode<
 	private rejectRoot(
 		data: unknown,
 		onFail: FailHandler | null,
-		{ Traversal, applyCyclic, applyRejected }: typeof rootApplyRuntime
+		{ Traversal, applyCyclic, applyRejected }: RootApplyRuntime
 	): unknown {
 		const config = this.$.resolvedConfig
 		return this.includesAlias ?
@@ -1714,9 +1713,7 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 ) => (Inner<kind> & BaseNodeInput) | null
 
 // what a root apply reads, by what its errors hold
-export const rootApplyRuntimeOf = (
-	config: ResolvedConfig
-): typeof rootApplyRuntime =>
+export const rootApplyRuntimeOf = (config: ResolvedConfig): RootApplyRuntime =>
 	config.errors === "all" ? rootApplyRuntime : $ark.errorModes![config.errors]
 
 // createRootApply's statements, compiled per root so V8 can inline its calls

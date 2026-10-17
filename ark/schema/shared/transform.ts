@@ -9,7 +9,7 @@ import type { BaseNode, RootApply } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import { arrayIndexMatcher } from "../structure/shared.ts"
 import type { ArkErrors } from "./issues.ts"
-import type { rootApplyRuntime } from "./rootApply.ts"
+import type { RootApplyRuntime } from "./rootApply.ts"
 
 // installed by arktype/mutatesInput, so a bundle without it only copies
 export interface InPlaceTransforms {
@@ -24,10 +24,7 @@ export interface InPlaceTransforms {
 	// the root a compiled apply reads, transforming in place where its Scope can
 	applied(root: BaseRoot): BaseRoot
 	// what a jitless apply reads, transforming in place where its Scope can
-	runtimeOf(
-		root: BaseRoot,
-		runtime: typeof rootApplyRuntime
-	): typeof rootApplyRuntime
+	runtimeOf(root: BaseRoot, runtime: RootApplyRuntime): RootApplyRuntime
 }
 
 export class TransformErrors {

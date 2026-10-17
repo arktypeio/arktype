@@ -5,7 +5,7 @@ import { precompileInPlace } from "../scope.ts"
 import { arrayIndexMatcher } from "../structure/shared.ts"
 import type { StructureNode } from "../structure/structure.ts"
 import { $ark } from "./registry.ts"
-import type { rootApplyRuntime } from "./rootApply.ts"
+import type { RootApplyRuntime } from "./rootApply.ts"
 import { hasArkKind } from "./utils.ts"
 
 // the keys of an object a place reads or a transform writes
@@ -301,14 +301,9 @@ export const writesInPlace = (
 }
 
 // the runtime a jitless apply transforming in place reads, by what it'd read
-const inPlaceRuntimes = new WeakMap<
-	typeof rootApplyRuntime,
-	typeof rootApplyRuntime
->()
+const inPlaceRuntimes = new WeakMap<RootApplyRuntime, RootApplyRuntime>()
 
-const inPlaceRuntimeOf = (
-	runtime: typeof rootApplyRuntime
-): typeof rootApplyRuntime => {
+const inPlaceRuntimeOf = (runtime: RootApplyRuntime): RootApplyRuntime => {
 	let inPlace = inPlaceRuntimes.get(runtime)
 	if (!inPlace) {
 		class InPlaceTraversal extends runtime.Traversal {}
