@@ -17,16 +17,13 @@ import { context, build as esbuild, transformSync, type Plugin } from "esbuild"
 import { spawnSync } from "node:child_process"
 import {
 	mkdirSync,
-	mkdtempSync,
 	readdirSync,
 	readFileSync,
-	realpathSync,
 	rmSync,
 	symlinkSync,
 	writeFileSync
 } from "node:fs"
-import { tmpdir } from "node:os"
-import { dirname, join } from "node:path"
+import { join } from "node:path"
 import { Worker } from "node:worker_threads"
 import {
 	createBuilder,
@@ -44,24 +41,21 @@ import {
 	writtenConfigMessage
 } from "@ark/schema/runtime"
 import { writeCreationMismatchMessage } from "arktype/runtime"
-import { undetailedOutput, writeLibrary, writeUndetailed } from "./utils.ts"
+import {
+	packageFiles,
+	runPlain,
+	undetailedOutput,
+	writeFixture,
+	writeLibrary,
+	writeUndetailed
+} from "./utils.ts"
 
 const app = fromHere("app")
-
-const library = writeLibrary()
-
-const undetailed = writeUndetailed()
-
 const configured = fromHere("configured")
-
 const firstConfigured = fromHere("firstConfigured")
 const mutatingConfigured = fromHere("mutatingConfigured")
-
-const runPlain = (root: string) =>
-	spawnSync(process.execPath, ["--conditions", "ark-ts", "main.ts"], {
-		cwd: root,
-		encoding: "utf8"
-	}).stdout
+const library = writeLibrary()
+const undetailed = writeUndetailed()
 
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts"]
@@ -82,6 +76,27 @@ const viteConfig = (
 		}
 	}
 })
+
+const runVitest = async (
+	root: string,
+	opts: PrecompileUnpluginOptions,
+	env: Record<string, string> = {}
+) => {
+	const vitest = await startVitest(
+		[],
+		{
+			root,
+			config: false,
+			watch: false,
+			reporters: [],
+			testTimeout: 60_000,
+			env
+		},
+		viteConfig(opts, root)
+	)
+	await vitest.close()
+	return vitest.state
+}
 
 const bundlers = {
 	vite: async (opts?: PrecompileUnpluginOptions, root = app) => {
@@ -121,55 +136,36 @@ const nextThreadId = () => {
 	return worker.threadId
 }
 
-const run = (js: string) =>
+const runBundle = (js: string) =>
 	spawnSync(process.execPath, ["--input-type=module"], {
 		input: js,
 		encoding: "utf8"
-	}).stdout
+	})
 
-// a minified class is printed with its error's name, as `ce [ParseError]: ` or `$ [ParseError]: `
+const run = (js: string) => runBundle(js).stdout
+
+// a minified class prints its error's name, as `ce [ParseError]: `
 const thrownBy = (js: string) =>
-	/^(?:[\w$]+ \[)?\w*Error]?: (.*)$/m.exec(
-		spawnSync(process.execPath, ["--input-type=module"], {
-			input: js,
-			encoding: "utf8"
-		}).stderr
-	)?.[1]
+	/^(?:[\w$]+ \[)?\w*Error]?: (.*)$/m.exec(runBundle(js).stderr)?.[1]
 
-const fixtures: string[] = []
-
-const fixtureDir = () => {
-	const dir = realpathSync(mkdtempSync(join(tmpdir(), "ark-precompile-")))
-	fixtures.push(dir)
-	return dir
-}
-
-const writeFixture = (
-	files: Record<string, string>,
-	root = fixtureDir()
-): string => {
-	for (const path in files) {
-		mkdirSync(dirname(join(root, path)), { recursive: true })
-		writeFileSync(join(root, path), files[path])
-	}
-	return root
-}
-
-const fakePackage = (path: string, name: string, version: string) => ({
-	[`${path}/package.json`]: JSON.stringify({
+const fakePackage = (path: string, name: string, version: string) =>
+	packageFiles(
 		name,
-		version,
-		type: "module",
-		exports: {
-			".": "./index.js",
-			"./runtime": "./index.js",
-			"./internal": "./index.js",
-			"./*": "./*"
-		}
-	}),
-	[`${path}/index.js`]:
-		"export const type = () => {}\nexport const registerPrecompiledUnits = () => {}\n"
-})
+		{
+			"index.js":
+				"export const type = () => {}\nexport const registerPrecompiledUnits = () => {}\n"
+		},
+		{
+			version,
+			exports: {
+				".": "./index.js",
+				"./runtime": "./index.js",
+				"./internal": "./index.js",
+				"./*": "./*"
+			}
+		},
+		path
+	)
 
 // a program whose packages import arktype, one of them from a copy of its own
 const dependencyFiles = {
@@ -225,13 +221,23 @@ const buildDependency = async (
 // written while parsing a definition, which a standalone build never does
 const parserMessage = "is unresolvable"
 
-contextualize(() => {
+const cycles: Record<string, PrecompileUnpluginOptions["members"]> = {
+	cycle: undefined,
+	cycleFirst: { expression: true, json: true },
+	cycleArrow: { json: true },
+	setInStep: { expression: true }
+}
+
+const filesOf = (dir: string) =>
+	Object.fromEntries(
+		readdirSync(dir).map(file => [file, readFileSync(join(dir, file), "utf8")])
+	)
+
+contextualize(function (this: Mocha.Suite) {
+	this.timeout(60_000)
+
 	before(() => {
 		dependencies = writeFixture(dependencyFiles)
-	})
-
-	after(() => {
-		for (const dir of fixtures.splice(0)) rmSync(dir, { recursive: true })
 	})
 
 	const expected = runPlain(app)
@@ -291,65 +297,38 @@ contextualize(() => {
 				withArktype.includes(parserMessage),
 				standalone.includes(parserMessage)
 			]).equals([true, false])
-		}).timeout(60000)
+		})
 
 		it(`${name} cache`, async () => {
 			attest(run(await bundle({ runtime: "arktype" }))).equals(expected)
-		}).timeout(60000)
+		})
 
-		it(`${name} import cycle`, async () => {
-			const cycle = fromHere("cycle")
-			attest(run(await bundle({ cwd: cycle }, cycle))).equals(runPlain(cycle))
-			// a fold the cycle runs before its module declares what it reads, which throws as arktype does where a bundle leaves that undefined
-			const first = fromHere("cycleFirst")
-			attest(
-				run(
-					await bundle(
-						{ cwd: first, members: { expression: true, json: true } },
-						first
-					)
+		it(`${name} import cycles`, async () => {
+			for (const [fixture, members] of Object.entries(cycles)) {
+				const root = fromHere(fixture)
+				attest(run(await bundle({ cwd: root, members }, root))).equals(
+					runPlain(root)
 				)
-			).equals(runPlain(first))
-			const arrow = fromHere("cycleArrow")
-			attest(
-				run(await bundle({ cwd: arrow, members: { json: true } }, arrow))
-			).equals(runPlain(arrow))
-			const setInStep = fromHere("setInStep")
-			attest(
-				run(
-					await bundle(
-						{ cwd: setInStep, members: { expression: true } },
-						setInStep
-					)
-				)
-			).equals(runPlain(setInStep))
-			// `verbatimModuleSyntax` keeps an import only a type reads, which closes the cycle
-			const erased = fromHere("cycleErased")
-			const verbatim = writeFixture(
+			}
+		})
+
+		// `verbatimModuleSyntax` keeps an import only a type reads
+		it(`${name} import cycle closed by a type import`, async () => {
+			const root = writeFixture(
 				{
-					...Object.fromEntries(
-						readdirSync(erased).map(file => [
-							file,
-							readFileSync(join(erased, file), "utf8")
-						])
-					),
+					...filesOf(fromHere("cycleErased")),
 					"tsconfig.json": JSON.stringify({
 						compilerOptions: { verbatimModuleSyntax: true }
 					})
 				},
 				fromHere("temp", `${name}CycleErased`)
 			)
-			attest(run(await bundle({ cwd: verbatim }, verbatim))).equals(
-				runPlain(verbatim)
-			)
-			// a json module the cycle reaches before it runs
-			const files = Object.fromEntries(
-				readdirSync(cycle).map(file => [
-					file,
-					readFileSync(join(cycle, file), "utf8")
-				])
-			)
-			const introspected = writeFixture(
+			attest(run(await bundle({ cwd: root }, root))).equals(runPlain(root))
+		})
+
+		it(`${name} import cycle reaching json`, async () => {
+			const files = filesOf(fromHere("cycle"))
+			const root = writeFixture(
 				{
 					...files,
 					"items.ts": `${files["items.ts"]}
@@ -365,14 +344,9 @@ export const checkedItem = JSON.stringify(itemJson())
 				fromHere("temp", `${name}CycleJson`)
 			)
 			attest(
-				run(
-					await bundle(
-						{ cwd: introspected, members: { json: true } },
-						introspected
-					)
-				)
-			).equals(runPlain(introspected))
-		}).timeout(60000)
+				run(await bundle({ cwd: root, members: { json: true } }, root))
+			).equals(runPlain(root))
+		})
 
 		it(`${name} configured`, async () => {
 			const opts = { cwd: configured, config: "config.ts" }
@@ -382,7 +356,7 @@ export const checkedItem = JSON.stringify(itemJson())
 			attest(
 				run(await bundle({ ...opts, runtime: "arktype" }, configured))
 			).equals(runPlain(configured))
-		}).timeout(60000)
+		})
 
 		it(`${name} configured with errors`, async () => {
 			const opts = {
@@ -400,7 +374,7 @@ export const checkedItem = JSON.stringify(itemJson())
 					)
 				)
 			).equals(plain)
-		}).timeout(60000)
+		})
 
 		it(`${name} configured to mutate its input`, async () => {
 			const opts = {
@@ -425,7 +399,7 @@ export const checkedItem = JSON.stringify(itemJson())
 					)
 				)
 			).equals(plain)
-		}).timeout(60000)
+		})
 
 		it(`${name} resolves arktype/errors and arktype/mutatesInput to the runtime`, async () => {
 			const bundles = await Promise.all([
@@ -442,7 +416,7 @@ export const checkedItem = JSON.stringify(itemJson())
 				false,
 				false
 			])
-		}).timeout(60000)
+		})
 	}
 
 	it("esbuild runtime islands", async () => {
@@ -453,9 +427,9 @@ export const checkedItem = JSON.stringify(itemJson())
 		)
 		attest(run(standalone)).equals(runPlain(islands))
 		attest(standalone.includes(parserMessage)).equals(true)
-	}).timeout(60000)
+	})
 
-	it("esbuild a runtime island piping into a validator without methods", async () => {
+	it("esbuild an island piping into a validator", async () => {
 		const root = writeFixture(
 			{
 				"main.ts": `import { type } from "arktype"
@@ -483,13 +457,13 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 				await bundlers.esbuild({ cwd: root, members: { methods: false } }, root)
 			)
 		).equals(plain)
-	}).timeout(60000)
+	})
 
 	it("esbuild packages that opt in", async () => {
 		const standalone = await bundlers.esbuild({ cwd: library }, library)
 		attest(run(standalone)).equals(runPlain(library))
 		attest(standalone.includes(parserMessage)).equals(false)
-	}).timeout(60000)
+	})
 
 	it("esbuild static introspection", async () => {
 		const introspected = fromHere("introspected")
@@ -498,9 +472,9 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 			introspected
 		)
 		attest(run(standalone)).equals(runPlain(introspected))
-	}).timeout(60000)
+	})
 
-	it("esbuild unminified import cycle reaching a fold first", async () => {
+	it("esbuild unminified import cycles", async () => {
 		for (const fixture of ["cycleFirst", "cycleArrow", "setInStep"]) {
 			const root = fromHere(fixture)
 			attest(
@@ -513,9 +487,9 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 				)
 			).equals(runPlain(root))
 		}
-	}).timeout(60000)
+	})
 
-	it("vite standalone for SSR, bundling Rolldown's runtime module", async () => {
+	it("vite standalone for SSR", async () => {
 		const config = viteConfig({})
 		const { output } = (await viteBuild({
 			...config,
@@ -523,9 +497,9 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 			build: { write: false, ssr: "main.ts" }
 		})) as Rolldown.RolldownOutput
 		attest(run(output[0].code)).equals(expected)
-	}).timeout(60000)
+	})
 
-	it("vite emits the tsconfig's declarations with a build", async () => {
+	it("vite emits declarations", async () => {
 		const declared = fromHere("declared")
 		const [{ output }] = (await viteBuild({
 			...viteConfig({ cwd: declared, declare: true }, declared),
@@ -556,7 +530,7 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 				join(declared, "out", "~arktype.d.ts")
 			]
 		)
-	}).timeout(60000)
+	})
 
 	// TypeScript's diagnostics for this tsconfig are warned wherever declarations are emitted
 	const warnedDeclaring = async (
@@ -584,9 +558,9 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 				(await createServer(config)).close()
 			)
 		).equals([])
-	}).timeout(60000)
+	})
 
-	it("vite emits no declarations from a build that watches", async () => {
+	it("vite emits no declarations watching", async () => {
 		attest(
 			await warnedDeclaring(async config => {
 				const watcher = (await viteBuild({
@@ -605,7 +579,7 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 				await watcher.close()
 			})
 		).equals([])
-	}).timeout(60000)
+	})
 
 	it("vite declares once for an app's environments", async () => {
 		const warnings = await warnedDeclaring(async config => {
@@ -622,9 +596,9 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 			await builder.buildApp()
 		})
 		attest(warnings.length).equals(1)
-	}).timeout(60000)
+	})
 
-	it("vite refuses declarations it can't place in the bundle", async () => {
+	it("vite refuses declarations outside the bundle", async () => {
 		const layouts = fromHere("declaredLayouts")
 		const message = await viteBuild({
 			...viteConfig(
@@ -644,15 +618,15 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 				)
 			)
 		).equals(true)
-	}).timeout(60000)
+	})
 
-	it("esbuild refuses declare, since it can't say whether it's watching", () => {
+	it("esbuild refuses declare", () => {
 		attest(() => precompile.esbuild({ declare: true })).throws(
 			writeDeclareFrameworkMessage("esbuild")
 		)
 	})
 
-	it("vite configured, with a plugin ahead of arktype's transpiling the config module", async () => {
+	it("vite configured behind a transpiling plugin", async () => {
 		const config = viteConfig(
 			{ cwd: configured, config: "config.ts" },
 			configured
@@ -674,7 +648,7 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 			}
 		})) as Rolldown.RolldownOutput[]
 		attest(run(output[0].code)).equals(runPlain(configured))
-	}).timeout(60000)
+	})
 
 	it("keeps its worker across esbuild's rebuilds", async () => {
 		const first = nextThreadId()
@@ -691,9 +665,9 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 		await build.rebuild()
 		await build.dispose()
 		attest(nextThreadId() - first - 1).equals(1)
-	}).timeout(60000)
+	})
 
-	it("keeps a configured build's worker until its configuration changes", async () => {
+	it("keeps a configured worker until its config changes", async () => {
 		const root = fromHere("temp", "watched")
 		const write = (file: string, text: string) =>
 			writeFixture({ [file]: text }, root)
@@ -736,9 +710,9 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 		attest([unchanged - first - 1, nextThreadId() - unchanged - 1]).equals([
 			1, 1
 		])
-	}).timeout(60000)
+	})
 
-	it("gives each module's ParseError a thrower naming it", async () => {
+	it("names each module's ParseError thrower", async () => {
 		const definesInvalid = (name: string) =>
 			`import { type } from "arktype"\n\nexport const ${name} = (() => {\n\ttry {\n\t\treturn type({ x: "strng" } as never).expression\n\t} catch (e) {\n\t\treturn (e as Error).message\n\t}\n})()\n`
 		const root = writeFixture(
@@ -760,9 +734,9 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 			writeCreatedBeforeConfigureMessage("a.ts"),
 			writeCreatedBeforeConfigureMessage("b.ts")
 		])
-	}).timeout(60000)
+	})
 
-	it("reads a module that defines a Type from an imported one", async () => {
+	it("a Type defined from an imported one", async () => {
 		const { outputFiles } = await esbuild({
 			stdin: {
 				contents: `import { Admin } from "./admin.ts"
@@ -779,16 +753,16 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		})
 		attest(run(outputFiles[0].text)).equals('role must be "admin"\n')
 		attest(outputFiles[0].text.includes(parserMessage)).equals(false)
-	}).timeout(60000)
+	})
 
-	it("warns once for each dependency importing arktype in standalone mode", async () => {
+	it("warns once per dependency importing arktype", async () => {
 		attest(await buildDependency("shared.ts")).equals([
 			writeStandaloneDependencyMessage("shared")
 		])
 		attest(await buildDependency("shared.ts", { runtime: "arktype" })).equals(
 			[]
 		)
-	}).timeout(60000)
+	})
 
 	it("fails for a second copy of arktype", async () => {
 		const vite = (runtime?: "arktype") =>
@@ -810,7 +784,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 			attest(errors.some(text => text.includes(report))).equals(true)
 			attest((await vite(runtime)).includes(report)).equals(true)
 		}
-	}).timeout(60000)
+	})
 
 	it("fails for a second copy of a package arktype runs on", async () => {
 		attest(
@@ -820,9 +794,9 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		).snap([
 			"schema.ts:2:22  @ark/schema resolves to more than one copy\n  0.1.0 at node_modules/@ark/schema, reached from schema.ts\n  0.2.0 at node_modules/arktype/node_modules/@ark/schema, reached from node_modules/arktype/index.js\n  Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
 		])
-	}).timeout(60000)
+	})
 
-	it("precompiles a definition that runs again, whether arktype keeps its values the same each run or shares them with another site", async () => {
+	it("definitions that run again", async () => {
 		const root = writeFixture(
 			{
 				"main.ts": `import { scope } from "arktype"
@@ -854,7 +828,7 @@ x
 `
 		attest(runPlain(root)).equals(expected)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
-	}).timeout(60000)
+	})
 
 	it("creates only the Types a bundle imports", async () => {
 		const root = writeFixture(
@@ -877,9 +851,9 @@ console.log(JSON.stringify((A({ a: 1 }) as any).issues.map((issue: any) => [issu
 		const bundle = await bundlers.esbuild({ cwd: root }, root)
 		attest(run(bundle)).equals(expected)
 		attest(bundle.includes("unimported")).equals(false)
-	}).timeout(60000)
+	})
 
-	it("returns errors that are instances of arktype's ArkErrors", async () => {
+	it("returns ArkErrors instances", async () => {
 		const root = writeFixture(
 			{
 				"main.ts": `import { ArkErrors, type } from "arktype"
@@ -894,9 +868,9 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
 			"true true\n"
 		)
-	}).timeout(60000)
+	})
 
-	it("bundles a program without error detail with a runtime of its own, which no other entry of @ark/schema loads beside", async () => {
+	it("undetailed bundles", async () => {
 		const reads = join(undetailed, "reads")
 		const message = writeUndetailedImportMessage(
 			join(undetailed, "node_modules", "reads", "index.js"),
@@ -937,9 +911,9 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 				path.includes("schema/runtime")
 			)
 		).snap(["ark/schema/runtime.ts", "ark/schema/runtimeNone.ts"])
-	}).timeout(60000)
+	})
 
-	it("reports a module it refuses to webpack rather than throw, as webpack awaits its resolution unguarded", async () => {
+	it("reports a refused webpack import", async () => {
 		const importer = join(undetailed, "node_modules", "reads", "index.js")
 		const { resolveId } = precompile.raw(
 			{ cwd: join(undetailed, "reads"), errors: "none" },
@@ -957,7 +931,7 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		])
 	})
 
-	it("precompiles a structure whose predicate reads ctx, which an intersection's Apply checks before its own predicate", async () => {
+	it("a predicate reading ctx in an intersection", async () => {
 		const root = writeFixture(
 			{
 				"main.ts": `import { type } from "arktype"
@@ -984,9 +958,9 @@ a,bb
 `
 		attest(runPlain(root)).equals(expected)
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(expected)
-	}).timeout(60000)
+	})
 
-	it("drops the validator of a Type its own module reads only for its introspection", async () => {
+	it("drops validators read only for introspection", async () => {
 		const files = {
 			"user.ts": `import { type } from "arktype"
 
@@ -1023,9 +997,9 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		attest(run(await bundlers.esbuild({ cwd: imported }, imported))).equals(
 			runPlain(imported)
 		)
-	}).timeout(60000)
+	})
 
-	it("keeps the module of an import a fold reads beside a local of its name", async () => {
+	it("an import a local shadows", async () => {
 		const root = writeFixture(
 			{
 				"user.ts": `import { type } from "arktype"
@@ -1052,9 +1026,9 @@ export const relabel = (o: { label: string }) => {
 		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
 			runPlain(root)
 		)
-	}).timeout(60000)
+	})
 
-	it("creates a Type read only for its introspection where its creation compares what the program holds", async () => {
+	it("compares an introspected Type's inputs at creation", async () => {
 		const files = {
 			"data.ts": `export const settings = { label: "a user" }
 `,
@@ -1118,10 +1092,9 @@ console.log(Admin.description)
 				)
 			)
 		}
-	}).timeout(60000)
+	})
 
-	it("checks a default where arktype creates its Type, though nothing reads the Type, a site reads only its introspection or another Type's in a package with no side effects", async () => {
-		const definition = `type({ a: type(["number", ":", n => n > limits.min]).default(5) })`
+	it("checks a default where its Type is created", async () => {
 		const files = {
 			// a schema the build can write without the predicate's name
 			"config.ts": `import { configure } from "arktype/config"
@@ -1137,142 +1110,91 @@ limits.min = 10
 			"t.ts": `import { type } from "arktype"
 import { limits } from "./limits.ts"
 
-export const T = ${definition}
+export const T = type({ a: type(["number", ":", n => n > limits.min]).default(5) })
 `
 		}
-		const mains = {
-			imported: `import "./config.ts"
+		// a bundler drops a module of such a package whose exports nothing reads
+		const sideEffectFree = {
+			...files,
+			"config.ts": `${files["config.ts"]}export const configured = true\n`,
+			"raise.ts": `${files["raise.ts"]}export const raised = true\n`,
+			"package.json": `{ "type": "module", "sideEffects": false }`
+		}
+		const reading = (
+			name: string,
+			specifier: string
+		) => `import { configured } from "./config.ts"
+import { raised } from "./raise.ts"
+import { ${name} } from "${specifier}"
+
+console.log(configured, raised, JSON.stringify(${name}.toJsonSchema()))
+`
+		// a site reading any of a module's Types runs its other creations
+		const siblings = `${files["t.ts"]}export const U = type({ b: "string" })\n`
+		const programs: Record<string, Record<string, string>> = {
+			imported: {
+				...files,
+				"main.ts": `import "./config.ts"
 import "./raise.ts"
 import { T } from "./t.ts"
 
 console.log(JSON.stringify(T.toJsonSchema()))
-`,
-			local: `import "./config.ts"
+`
+			},
+			unread: {
+				...files,
+				"main.ts": `import "./config.ts"
 import "./raise.ts"
 import { type } from "arktype"
 import { limits } from "./limits.ts"
 
-const T = ${definition}
-console.log(JSON.stringify(T.toJsonSchema()))
-`,
-			unread: `import "./config.ts"
-import "./raise.ts"
-import { type } from "arktype"
-import { limits } from "./limits.ts"
-
-const T = ${definition}
+const T = type({ a: type(["number", ":", n => n > limits.min]).default(5) })
 console.log("unread")
 `
-		}
-		const results: Record<string, unknown> = {}
-		for (const [name, main] of Object.entries(mains)) {
-			const root = writeFixture(
-				{ ...files, "main.ts": main },
-				fromHere("temp", `defaultChecked${name}`)
-			)
-			results[name] = thrownBy(
-				await bundlers.esbuild({ cwd: root, config: "config.ts" }, root)
-			)
-		}
-		// a bundler drops each module of such a package whose exports nothing reads, whatever its statements do
-		const sideEffectFree = writeFixture(
-			{
-				...files,
-				"config.ts": `${files["config.ts"]}export const configured = true\n`,
-				"raise.ts": `${files["raise.ts"]}export const raised = true\n`,
-				"main.ts": `import { configured } from "./config.ts"
-import { raised } from "./raise.ts"
-import { T } from "./t.ts"
-
-console.log(configured, raised, JSON.stringify(T.toJsonSchema()))
-`,
-				"package.json": `{ "type": "module", "sideEffects": false }`
 			},
-			fromHere("temp", "defaultCheckedSideEffectFree")
-		)
-		results.sideEffectFree = thrownBy(
-			await bundlers.esbuild(
-				{ cwd: sideEffectFree, config: "config.ts" },
-				sideEffectFree
-			)
-		)
-		// the module's other creations run where a site reads any of its Types, in the package or one a workspace links
-		const siblings = `${files["t.ts"]}export const U = type({ b: "string" })\n`
-		const siblingFree = writeFixture(
-			{
-				...files,
-				"config.ts": `${files["config.ts"]}export const configured = true\n`,
-				"raise.ts": `${files["raise.ts"]}export const raised = true\n`,
+			sideEffectFree: { ...sideEffectFree, "main.ts": reading("T", "./t.ts") },
+			sibling: {
+				...sideEffectFree,
 				"t.ts": siblings,
-				"main.ts": `import { configured } from "./config.ts"
-import { raised } from "./raise.ts"
-import { U } from "./t.ts"
-
-console.log(configured, raised, JSON.stringify(U.toJsonSchema()))
-`,
-				"package.json": `{ "type": "module", "sideEffects": false }`
+				"main.ts": reading("U", "./t.ts")
 			},
-			fromHere("temp", "defaultCheckedSiblingSideEffectFree")
-		)
-		results.sibling = thrownBy(
-			await bundlers.esbuild(
-				{ cwd: siblingFree, config: "config.ts" },
-				siblingFree
-			)
-		)
-		const workspace = writeFixture(
-			{
-				"config.ts": `${files["config.ts"]}export const configured = true\n`,
+			workspace: {
+				"config.ts": sideEffectFree["config.ts"],
 				"raise.ts": `import { limits } from "pkg/limits"
 
 limits.min = 10
 export const raised = true
 `,
-				"main.ts": `import { configured } from "./config.ts"
-import { raised } from "./raise.ts"
-import { U } from "pkg/t"
-
-console.log(configured, raised, JSON.stringify(U.toJsonSchema()))
-`,
+				"main.ts": reading("U", "pkg/t"),
 				"package.json": `{ "type": "module" }`,
 				"packages/pkg/limits.ts": files["limits.ts"],
 				"packages/pkg/t.ts": siblings,
 				"packages/pkg/package.json": `{ "name": "pkg", "type": "module", "sideEffects": false, "exports": { "./t": "./t.ts", "./limits": "./limits.ts" } }`
 			},
-			fromHere("temp", "defaultCheckedWorkspace")
-		)
-		rmSync(join(workspace, "node_modules"), { recursive: true, force: true })
-		mkdirSync(join(workspace, "node_modules"))
-		symlinkSync("../packages/pkg", join(workspace, "node_modules", "pkg"))
-		results.workspace = thrownBy(
-			await bundlers.esbuild({ cwd: workspace, config: "config.ts" }, workspace)
-		)
-		const helped = writeFixture(
-			{
-				...files,
-				"config.ts": `${files["config.ts"]}export const configured = true\n`,
-				"raise.ts": `${files["raise.ts"]}export const raised = true\n`,
+			helped: {
+				...sideEffectFree,
 				"t.ts": `${files["t.ts"]}export const make = () => type({ b: "string" })\n`,
 				"u.ts": `import { make } from "./t.ts"
 
 export const U = make()
 `,
-				"main.ts": `import { configured } from "./config.ts"
-import { raised } from "./raise.ts"
-import { U } from "./u.ts"
-
-console.log(configured, raised, JSON.stringify(U.toJsonSchema()))
-`,
-				"package.json": `{ "type": "module", "sideEffects": false }`
-			},
-			fromHere("temp", "defaultCheckedHelped")
-		)
-		results.helped = thrownBy(
-			await bundlers.esbuild({ cwd: helped, config: "config.ts" }, helped)
-		)
+				"main.ts": reading("U", "./u.ts")
+			}
+		}
+		const results: Record<string, unknown> = {}
+		for (const [name, program] of Object.entries(programs)) {
+			const root = writeFixture(program, fromHere("temp", `defaulted${name}`))
+			if (name === "workspace") {
+				rmSync(join(root, "node_modules"), { recursive: true, force: true })
+				mkdirSync(join(root, "node_modules"))
+				symlinkSync("../packages/pkg", join(root, "node_modules", "pkg"))
+			}
+			results[name] = thrownBy(
+				await bundlers.esbuild({ cwd: root, config: "config.ts" }, root)
+			)
+		}
 		attest(results).snap({
 			imported: "Default must be valid according to an anonymous predicate",
-			local: "Default must be valid according to an anonymous predicate",
 			unread: "Default must be valid according to an anonymous predicate",
 			sideEffectFree:
 				"Default must be valid according to an anonymous predicate",
@@ -1280,9 +1202,9 @@ console.log(configured, raised, JSON.stringify(U.toJsonSchema()))
 			workspace: "Default must be valid according to an anonymous predicate",
 			helped: "Default must be valid according to an anonymous predicate"
 		})
-	}).timeout(60000)
+	})
 
-	it("keeps a module validating as it loads where a fold reads another of its Types in a package with no side effects", async () => {
+	it("keeps load-time validation in side-effect-free packages", async () => {
 		const root = writeFixture(
 			{
 				"a.ts": `import { type } from "arktype"
@@ -1306,7 +1228,7 @@ console.log(JSON.stringify(U.json))
 		).snap("PORT must be a well-formed numeric string")
 	})
 
-	it("checks each function a definition reads where arktype would, though its Type drops it or a site reads only its introspection", async () => {
+	it("checks functions where arktype would", async () => {
 		const definitions = {
 			thrown: `type(["'a'", "=>", double]).or(type({})).toJsonSchema()`,
 			called: `type([["null", ":", isPositive], "[]"])`,
@@ -1368,9 +1290,9 @@ ${definition}
 				"`isPositive` (main.js:4:33) is Symbol(isPositive), but was precompiled as a function of 2 or more parameters"
 			]
 		})
-	}).timeout(60000)
+	})
 
-	it("fixes the configuration where a Type a bundle drops was created", async () => {
+	it("fixes the configuration of dropped Types", async () => {
 		const unread = {
 			validator: 'const Unread = type({ dropped: "string" })',
 			introspection: 'const schema = type({ dropped: "string" }).toJsonSchema()'
@@ -1407,18 +1329,18 @@ ${definition}
 				)
 			).equals(true)
 		}
-	}).timeout(60000)
+	})
 
-	it("leaves the configuration's check out of a bundle that never configures", async () => {
+	it("no configuration check without configure", async () => {
 		const bundle = await bundlers.esbuild({ cwd: app })
 		attest(
 			[writtenConfigMessage, "[object Date]"].filter(text =>
 				bundle.includes(text)
 			)
 		).equals([])
-	}).timeout(60000)
+	})
 
-	it("throws writing to a frozen input from a CommonJS bundle", async () => {
+	it("throws writing a frozen input from CommonJS", async () => {
 		const root = writeFixture(
 			{
 				"main.ts": `import { type } from "arktype"
@@ -1453,9 +1375,9 @@ try {
 				}).stdout
 			).equals("TypeError\n")
 		}
-	}).timeout(60000)
+	})
 
-	it("reports what the standalone runtime's frozen values reject", async () => {
+	it("reports writes to frozen values", async () => {
 		const root = writeFixture({
 			"write.ts":
 				'import { type } from "arktype"\nexport const T = type("string")\n;(T as any).note = 1\n'
@@ -1475,63 +1397,35 @@ try {
 		attest(await errorsOf("write.ts")).snap([
 			'write.ts:3:2  (T as any).note = 1 writes to an arktype value, which throws at runtime\n  `T` is an arktype value, which the standalone runtime freezes with what it holds\n  Keep what you attach in an object of your own, or build with runtime: "arktype".'
 		])
-	}).timeout(60000)
+	})
 
 	it("vitest", async () => {
 		for (const runtime of [undefined, "arktype"] as const) {
-			const vitest = await startVitest(
-				[],
-				{
-					root: app,
-					config: false,
-					watch: false,
-					reporters: [],
-					testTimeout: 60000,
-					env: { ARKTYPE_RUNTIME: runtime ?? "" }
-				},
-				viteConfig({ runtime })
+			const state = await runVitest(
+				app,
+				{ runtime },
+				{ ARKTYPE_RUNTIME: runtime ?? "" }
 			)
-			await vitest.close()
-			attest(vitest.state.getCountOfFailedTests()).equals(0)
+			attest(state.getCountOfFailedTests()).equals(0)
 		}
-	}).timeout(60000)
+	})
 
 	it("vitest configured", async () => {
-		const vitest = await startVitest(
-			[],
-			{
-				root: configured,
-				config: false,
-				watch: false,
-				reporters: [],
-				testTimeout: 60000,
-				env: { EXPECTED: runPlain(configured) }
-			},
-			viteConfig({ cwd: configured, config: "config.ts" }, configured)
+		const state = await runVitest(
+			configured,
+			{ cwd: configured, config: "config.ts" },
+			{ EXPECTED: runPlain(configured) }
 		)
-		await vitest.close()
-		attest([
-			vitest.state.getCountOfFailedTests(),
-			vitest.state.getFiles().length
-		]).equals([0, 1])
-	}).timeout(60000)
+		attest([state.getCountOfFailedTests(), state.getFiles().length]).equals([
+			0, 1
+		])
+	})
 
-	it("vitest checks what each factory was built with at creation", async () => {
+	it("vitest checks factories at creation", async () => {
 		const checks = fromHere("checks")
-		const vitest = await startVitest(
-			[],
-			{
-				root: checks,
-				config: false,
-				watch: false,
-				reporters: [],
-				testTimeout: 60000
-			},
-			viteConfig({ cwd: checks }, checks)
-		)
-		await vitest.close()
+		const state = await runVitest(checks, { cwd: checks })
 		attest(
-			vitest.state
+			state
 				.getFiles()
 				.flatMap(file => file.tasks)
 				.map(task => `${task.result?.state} ${task.name}`)
@@ -1548,27 +1442,18 @@ try {
 			"pass a hole with another prototype",
 			"pass a polyfilled builtin"
 		])
-	}).timeout(60000)
+	})
 
 	it("vitest with a package that opts in", async () => {
 		for (const runtime of [undefined, "arktype"] as const) {
-			const vitest = await startVitest(
-				[],
-				{
-					root: library,
-					config: false,
-					watch: false,
-					reporters: [],
-					testTimeout: 60000,
-					env: { ARKTYPE_RUNTIME: runtime ?? "" }
-				},
-				viteConfig({ runtime, cwd: library }, library)
+			const state = await runVitest(
+				library,
+				{ runtime, cwd: library },
+				{ ARKTYPE_RUNTIME: runtime ?? "" }
 			)
-			await vitest.close()
-			attest([
-				vitest.state.getCountOfFailedTests(),
-				vitest.state.getFiles().length
-			]).equals([0, 1])
+			attest([state.getCountOfFailedTests(), state.getFiles().length]).equals([
+				0, 1
+			])
 		}
-	}).timeout(60000)
+	})
 })
