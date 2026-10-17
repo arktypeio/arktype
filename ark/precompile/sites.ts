@@ -25,9 +25,9 @@ export interface SiteCandidate {
 	// the nearest enclosing function, which runs the site each time it is called
 	fn: FunctionNode | undefined
 	state: SiteState
-	// the calls the site climbed through, innermost first, as the callee or argument the site can shrink back to
+	// the callees or arguments the site can shrink back to, innermost first
 	fallbacks: Node[]
-	// what the site read a validator's member of, innermost first, where it ends if that's a Type rather than a Module
+	// what it reads a validator member of, innermost first, ending at a Type
 	ends: Node[]
 	isSite?: boolean
 }
@@ -42,7 +42,7 @@ export interface SiteRead {
 export const findSites = (
 	module: SourceModule,
 	graph: ModuleGraph,
-	// whether a Type's json or toJSON() at a site of its own folds to what arktype returns, as a standalone build bakes it
+	// fold json and toJSON() at their own site, as standalone bakes them
 	foldsIntrospection: boolean
 ): SiteRead[] => {
 	const reads: SiteRead[] = []
@@ -76,7 +76,7 @@ export const findSites = (
 	return reads
 }
 
-// each reference is read before any site settles, so a site's holes are judged after what the module's bindings ran, like a Scope's thunks its export calls
+// sites are judged once every reference is read
 export const filterSites = (
 	reads: SiteRead[],
 	module: SourceModule,
@@ -89,7 +89,7 @@ export const filterSites = (
 			: root === reference.id ?
 				interpreter.valueOfBinding(reference.binding!, module)
 			:	interpreter.evaluateSite(createSiteState(root, module)).value
-		// a binding the build could not compute is reported where it is defined, and validated data or a RegExp is read at runtime
+		// reported where it's defined, or data or a RegExp read at runtime
 		if (
 			kind === "reference" &&
 			(value === undefined || isDynamic(value) || value instanceof RegExp)
@@ -120,7 +120,7 @@ const rootOf = (
 	if (member) return ["reference", member]
 }
 
-// e.g. `schemas.users.User`, with `schemas` a namespace import or an object literal holding Types
+// e.g. `schemas.users.User` with `schemas` a namespace or object literal
 const arkMemberOf = (
 	node: Node,
 	module: SourceModule,
@@ -134,7 +134,7 @@ const arkMemberOf = (
 	}
 }
 
-// e.g. `T.json`, `T.expression` or `T.toJsonSchema()`, or `$.json`, which the build refuses rather than read nothing at runtime
+// e.g. `T.json`, `T.expression`, `T.toJsonSchema()` or `$.json`
 const introspectionReadOf = (
 	node: Node,
 	module: SourceModule,

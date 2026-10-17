@@ -14,7 +14,7 @@ export class DynamicValue {
 	node: Node
 	message: string
 	cause: DynamicValue | undefined
-	// nothing is known of a parameter or opaque value, so in a definition it may be a Standard Schema held as a hole
+	// may be a Standard Schema held as a hole
 	isOpaque: boolean
 	code: DynamicCode | undefined
 
@@ -23,15 +23,15 @@ export class DynamicValue {
 		node: Node,
 		message: string,
 		cause?: DynamicValue,
-		code?: DynamicCode
+		code?: DynamicCode,
+		isOpaque = code === "parameter" || code === "opaque" || !!cause?.isOpaque
 	) {
 		this.module = module
 		this.node = node
 		this.message = message
 		this.cause = cause
 		this.code = code
-		this.isOpaque =
-			code === "parameter" || code === "opaque" || (cause?.isOpaque ?? false)
+		this.isOpaque = isOpaque
 	}
 
 	hasCode(code: DynamicCode): boolean {
@@ -40,17 +40,17 @@ export class DynamicValue {
 		return false
 	}
 
-	// the site needs the value to compute something else, so it cannot be held as a hole
+	// a value the site computes with can't be held as a hole
 	asOperand(): DynamicValue {
-		if (!this.isOpaque) return this
-		const result = new DynamicValue(
-			this.module,
-			this.node,
-			this.message,
-			this.cause,
-			this.code
-		)
-		result.isOpaque = false
-		return result
+		return this.isOpaque ?
+				new DynamicValue(
+					this.module,
+					this.node,
+					this.message,
+					this.cause,
+					this.code,
+					false
+				)
+			:	this
 	}
 }

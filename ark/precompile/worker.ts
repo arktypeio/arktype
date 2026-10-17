@@ -21,7 +21,7 @@ const driverUrl = new URL(
 	import.meta.url
 )
 
-// a precompiler in the program's thread would share arktype's modules and globals with it
+// isolates arktype's modules and globals from the program's
 export const createSyncPrecompiler = (
 	data: Omit<PrecompilerWorkerData, "port" | "answered">
 ): ((...request: PrecompileRequest) => unknown) => {

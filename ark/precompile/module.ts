@@ -15,7 +15,7 @@ export class SourceModule {
 	program: Program
 	scopes: ModuleScopes
 	parseErrors: string[]
-	// each node a `// @ark-runtime` comment leads, whose sites a standalone build leaves to arktype
+	// nodes a `// @ark-runtime` comment leads, whose sites run on arktype
 	islands: Node[]
 	private lineStarts: number[] | undefined
 
@@ -90,12 +90,10 @@ const islandsOf = (
 	const result: Node[] = []
 	const whitespace = /\s*/y
 	for (let i = 0; i < comments.length; i++) {
-		if (
-			comments[i].type !== "Line" ||
-			comments[i].value.trim() !== islandMarker
-		)
+		const comment = comments[i]
+		if (comment.type !== "Line" || comment.value.trim() !== islandMarker)
 			continue
-		let start = comments[i].end
+		let start = comment.end
 		for (let j = i + 1; ; j++) {
 			whitespace.lastIndex = start
 			start += whitespace.exec(source)![0].length

@@ -8,7 +8,7 @@ export interface KeptIssue {
 	data: unknown
 }
 
-// what a standalone validator's errors keep of arktype's: each failed check's code, path and data, which arktype groups by path and orders as each path first failed
+// the code, path and data of each issue a validator keeps
 export const keptIssuesOf = (
 	errors: ArkErrors,
 	// false reads every issue added, which a first-issue validator keeps one of
@@ -20,23 +20,22 @@ export const keptIssuesOf = (
 			(issue as ArkError<"intersection">).errors
 		:	[issue]
 	)
-	// grouping, arktype keeps only a path's first issue for a value constrained to never
+	// arktype keeps one never issue per path
 	const neverByPath = new Map<string, ArkIssue>()
 	for (const issue of issues) {
-		const key = issue.path.map(String).join("\0")
+		const key = pathKeyOf(issue.path)
 		if (isNever(issue) && !neverByPath.has(key)) neverByPath.set(key, issue)
 	}
 	return issues
 		.filter(
 			issue =>
-				!grouped ||
-				(neverByPath.get(issue.path.map(String).join("\0")) ?? issue) === issue
+				!grouped || (neverByPath.get(pathKeyOf(issue.path)) ?? issue) === issue
 		)
 		.map(({ code, path, data }) => ({ code, path: [...path], data }))
 		.sort((l, r) => (sortKeyOf(l) < sortKeyOf(r) ? -1 : 1))
 }
 
-// arktype's error for never is a union of no branches, which a validator's issue describes as never, or not at all where a callback raised it
+// a union of no branches
 const isNever = (issue: ArkIssue) =>
 	issue.code === "union" &&
 	("errors" in issue ?
@@ -47,9 +46,8 @@ const isNever = (issue: ArkIssue) =>
 export const thrownErrorsOf = (thrown: unknown): ArkErrors | undefined =>
 	!(thrown instanceof Error) ? undefined
 	: "arkErrors" in thrown ? (thrown.arkErrors as ArkErrors)
-	: hasArkKind((thrown as { cause?: unknown }).cause, "errors") ?
-		((thrown as { cause?: unknown }).cause as ArkErrors)
-	:	undefined
+	: "cause" in thrown && hasArkKind(thrown.cause, "errors") ? thrown.cause
+	: undefined
 
 export const thrownIssuesOf = (
 	thrown: unknown,
@@ -59,10 +57,13 @@ export const thrownIssuesOf = (
 	return errors && keptIssuesOf(errors, grouped)
 }
 
+export const pathKeyOf = (path: readonly PropertyKey[]): string =>
+	path.map(String).join("\0")
+
 const sortKeyOf = (issue: KeptIssue) =>
 	[...issue.path.map(String), issue.code].join("\0")
 
-// a default's ParseError is written from the errors of its value, whose text a standalone validator writes without what the value was
+// a default's ParseError, minus what its value was
 export const keptParseMessageOf = (message: string): string =>
 	message.startsWith("Default") ?
 		message.replace(/ \(was .*\)$/gm, "")

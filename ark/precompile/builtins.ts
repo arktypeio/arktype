@@ -1,11 +1,11 @@
 import { arkKind, hasArkKind } from "@ark/schema"
 import { builtinConstructors, hasDomain } from "@ark/util"
 
-export type ObjectArg = "object" | "callback" | "RegExp"
+type ObjectArg = "object" | "callback" | "RegExp"
 
 export interface PureBuiltin {
 	name: string
-	// each argument's ObjectArg, the last also covering those after it, since a builtin converts an object anywhere else, running its methods
+	// each argument's kind, the last covering the rest
 	objects?: readonly (ObjectArg | undefined)[]
 	// the receiver's elements may be objects, as the method doesn't convert them
 	objectElements?: true
@@ -71,7 +71,7 @@ const plainDataOnly = (args: unknown[]): string | undefined => {
 	}
 }
 
-// an arktype value's own properties are its implementation, which holds registry names and node ids
+// an arktype value's own properties hold registry names and node ids
 const withoutArkInternals = (args: unknown[]) =>
 	(
 		args.some(
@@ -85,12 +85,10 @@ const withoutArkInternals = (args: unknown[]) =>
 	:	undefined
 
 // case mapping and whitespace follow each engine's Unicode version outside ASCII
-const asciiOnly = (_: unknown[], self: unknown) => {
-	for (const c of self as string) {
-		if (c.charCodeAt(0) > 127)
-			return "maps characters by the engine's Unicode version, which varies outside ASCII"
-	}
-}
+const asciiOnly = (_: unknown[], self: unknown) =>
+	/[^\x00-\x7f]/.test(self as string) ?
+		"maps characters by the engine's Unicode version, which varies outside ASCII"
+	:	undefined
 
 export const pureBuiltins = new Map<Function, PureBuiltin>()
 
@@ -108,8 +106,17 @@ const definePure = (
 	}
 }
 
-definePure(globalThis, "", ["String", "Number", "Boolean", "BigInt", "Symbol"])
-definePure(globalThis, "", ["parseInt", "parseFloat", "isNaN", "isFinite"])
+definePure(globalThis, "", [
+	"String",
+	"Number",
+	"Boolean",
+	"BigInt",
+	"Symbol",
+	"parseInt",
+	"parseFloat",
+	"isNaN",
+	"isFinite"
+])
 definePure(Object, "Object", ["values", "entries", "keys"], {
 	objects: ["object"],
 	check: withoutArkInternals
@@ -119,7 +126,7 @@ definePure(Object, "Object", ["fromEntries"], {
 	check: withPrimitiveKeys
 })
 definePure(Object, "Object", ["freeze"], { objects: ["object"], writes: true })
-// the interpreter evaluates the call naming a function its module created, as esbuild's keepNames emits
+// the interpreter evaluates esbuild's keepNames calls itself
 definePure(Object, "Object", ["defineProperty"], {
 	check: () =>
 		"defines a property other than the name of a function its module created"
@@ -143,6 +150,7 @@ definePure(JSON, "JSON", ["stringify"], {
 })
 definePure(Symbol, "Symbol", ["for"])
 definePure(Math, "Math", ["abs", "ceil", "floor", "round", "max", "min"])
+
 export const pureConstructors = new Map<Function, PureBuiltin>([
 	[RegExp, { name: "RegExp", objects: ["RegExp", undefined] }],
 	[
@@ -156,6 +164,7 @@ export const pureConstructors = new Map<Function, PureBuiltin>([
 		}
 	]
 ])
+
 export type MethodReceiverKind = "string" | "number" | "array" | "date"
 
 export const methodsByReceiverKind: Record<
