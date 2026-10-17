@@ -351,7 +351,7 @@ A validator differs from the Type it replaces:
 - An artifact freezes what it creates, except a Date or RegExp it holds.
 - The build refuses what the runtime can't reproduce, like an instance of a class other than Date or RegExp, naming it.
 - Nothing checks that an artifact runs on the version of `arktype/runtime` it was built with, so rebuild after upgrading.
-- Its errors' `issues` are plain objects holding `code`, `path`, `data` and `expected`, the failing node's description, with a plain message like `name must be a string` or `name is invalid` that doesn't say what the value was. `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
+- Its errors' `issues` are plain objects holding `code`, `path`, `data` and `expected`, the failing node's description, with a plain message like `name must be a string` or `name is invalid` that doesn't say what the value was. Errors at one path stay apart, and a union no branch allows is one issue. A validator a morph calls with its `ctx` adds its issues to that validation. `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - The build refuses a configured locale or error writer for a code the Type can raise.
 - The `ctx.config` a narrow or morph receives holds only `jitless` and `onFail`.
 - A program's `configure()` call configures `arktype/runtime`, which fixes its configuration at the first validator it creates and throws if `configure()` comes later or differs from the build's.
@@ -361,8 +361,6 @@ Build with `errors: "first"` to stop each validation at its first issue:
 ```ts
 precompile.vite({ errors: "first" })
 ```
-
-See `@ark/precompile`'s README for the details of each.
 
 ### Compile and discriminate a Type when it's first used
 
