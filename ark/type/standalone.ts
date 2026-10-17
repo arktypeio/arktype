@@ -1422,11 +1422,12 @@ ${writeFunction(
 				),
 				...this.declarations.statements,
 				...refs,
-				...this.declareMembers(
-					unit,
-					[...this.declarations.statements, ...refs, ...links, ...returned],
-					isStrict(unit)
-				),
+				...this.declareMembers(unit, [
+					...this.declarations.statements,
+					...refs,
+					...links,
+					...returned
+				]),
 				...links,
 				`const ${unit.name} = [${returned.join(", ")}]`
 			)
@@ -1443,20 +1444,13 @@ ${writeFunction(
 				returned
 			)
 			const built = `(${unitFunction})(${[...dependencyArgs, ...writing.args].join(", ")})`
-			// a function a parameter destructures can't declare "use strict"
-			const build =
-				isStrict(unit) ?
-					`(function () {\n"use strict"\nreturn ${built}\n})`
-				:	`(() => ${built})`
 			moduleDeclarations.push(
 				...(this.baking.hoisted ?
 					[
 						`var ${unit.name}Unit`,
-						`function ${unit.name}() {\n${isStrict(unit) ? `\t"use strict"\n` : ""}\treturn (${unit.name}Unit ??= ${built})\n}`
+						`function ${unit.name}() {\n\treturn (${unit.name}Unit ??= ${built})\n}`
 					]
-				:	[
-						`const ${unit.name} = /* @__PURE__ */ ${isStrict(unit) ? `${build}()` : built}`
-					])
+				:	[`const ${unit.name} = /* @__PURE__ */ ${built}`])
 			)
 		}
 		for (const root of unit.roots) {
@@ -1504,24 +1498,19 @@ ${writeFunction(
 		epilogue: string[],
 		returned: string[]
 	): string {
-		const directive = declaresStrict(unit) ? `"use strict"\n` : ""
 		const declarations = this.declareMembers(unit, [
 			...prologue,
 			...epilogue,
 			...returned
 		])
 		return `(${params.join(", ")}) => {
-${directive}${[...prologue, ...declarations, ...epilogue].join("\n")}
+${[...prologue, ...declarations, ...epilogue].join("\n")}
 return [${returned.join(", ")}]
 }`
 	}
 
 	// no traversal reads `this` or `arguments`; only Apply and Copy run rarely
-	declareMembers(
-		unit: RootUnit,
-		readers: string[],
-		isStrict = false
-	): string[] {
+	declareMembers(unit: RootUnit, readers: string[]): string[] {
 		const called = calledMembersOf(unit.members, readers)
 		const forwarded = forwardedOf(called)
 		const declarations = called.flatMap(([name, source]) => {
@@ -1532,7 +1521,7 @@ return [${returned.join(", ")}]
 				(signature, params: string) =>
 					`(${this.baking.shortest && !/\bctx\b/.test(source.slice(signature.length)) ? params.replace(/, ctx$/, "") : params}) => {${
 						// a writing traversal is strict even where a bundle's format isn't
-						isStrict && !name.endsWith("Allows") ? `\n"use strict"\n` : ""
+						isWriting(name) ? `\n"use strict"\n` : ""
 					}`
 			)
 			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? arrow : this.compiledOnLoad(arrow)}`
@@ -1587,10 +1576,8 @@ return [${returned.join(", ")}]
 				isShared ?
 					this.readValue(dependency.name)
 				:	this.localNamesByUnit.get(dependency)!
-			if (declaresStrict(unit)) {
-				params.push(name)
-				args.push(`${source}[${index}]`)
-			} else (namesBySource[source] ??= [])[index] = name
+			namesBySource[source] ??= []
+			namesBySource[source][index] = name
 		}
 		// V8 compiles an array pattern, whose holes are the traversals a unit doesn't read, to the iterator protocol, slower to build than reading by index
 		for (const source in namesBySource) {
@@ -3007,13 +2994,9 @@ export const keywordMetas = (): Set<object> => {
 	return (collectedKeywordMetas = metas)
 }
 
-// a Transform member writes to its input, which a bundle's CommonJS or IIFE output leaves sloppy, where writing to a frozen input is ignored rather than throwing
-const isStrict = (unit: RootUnit): boolean =>
-	unit.declared.some(node => node.transforms)
-
-// a shared unit's function is strict as the function declaring the unit is, so only a local unit's declares it, and can't destructure its parameters
-const declaresStrict = (unit: RootUnit): boolean =>
-	isStrict(unit) && !isSharedUnit(unit)
+// a Transform or Copy member writes to its input, which a bundle's CommonJS or IIFE output leaves sloppy, where writing to a frozen input is ignored rather than throwing
+const isWriting = (member: string): boolean =>
+	member.endsWith("Transform") || member.endsWith("Copy")
 
 // the units a unit reads as it's built: those whose traversals it calls, and those whose roots it refers to, as shapes rather than validators
 const readUnitsOf = (unit: RootUnit): RootUnit[] =>
