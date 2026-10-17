@@ -18,20 +18,20 @@ export * from "./shared/traversal.ts"
 export { isAbsent } from "./shared/utils.ts"
 export { arrayIndexMatcher } from "./structure/shared.ts"
 
-// frozen when the first validator is created, as arktype fixes its config when the first Type is
+// frozen when the first validator is created
 export const runtimeConfig: ResolvedConfig = {
 	// validation never generates code, so it never needs eval
 	jitless: true,
 	onFail: null
 } as never
 
-// a node shape's $, which traversal reads only for its config
+// the $ a node shape reads its config from
 export const runtimeScope: { resolvedConfig: ResolvedConfig } =
 	/* @__PURE__ */ Object.freeze({
 		resolvedConfig: runtimeConfig
 	})
 
-// installed by configure(), so a program that never calls it ships no comparison
+// set by configure()
 let checkConfigured: ((built?: string) => void) | undefined
 let programConfig: ArkSchemaConfig | undefined
 let configureIslands: ((config: ArkSchemaConfig) => unknown) | undefined
@@ -40,11 +40,11 @@ export const configure = (
 	config: ArkSchemaConfig,
 	fingerprint?: string
 ): ArkSchemaConfig => {
-	// arktype fixes its configuration at its first Type, and a module the build didn't transform, like a dependency's, can configure it too, which merges what the runtime keeps apart
+	// arktype's config is fixed at its first Type
 	if (Object.isFrozen(runtimeConfig) || checkConfigured)
 		return throwParseError(reconfiguredMessage)
 	const received = fingerprintOf(config)
-	// a loader or plugin can change a module the configuration reads after the build read it
+	// a loader can rewrite the config module after the build read it
 	if (fingerprint !== undefined && fingerprint !== received)
 		return throwParseError(configuredUnlikeBuildMessage)
 	configureIslands?.(config)
@@ -52,16 +52,16 @@ export const configure = (
 		(runtimeConfig as { onFail: unknown }).onFail = config.onFail
 	let isRechecked = false
 	checkConfigured = built => {
-		// the program can write what configure() received before arktype would read it, as a keyword's meta when the keyword is created
+		// configure()'s argument may be written after the call
 		if (!isRechecked && fingerprintOf(config) !== received)
 			throwParseError(writtenConfigMessage)
 		// only once it passes, so a validator after a caught throw checks again
 		isRechecked = true
-		// a call the build didn't transform, like a dependency's, can hold other functions under the same values
+		// an untransformed call, e.g. a dependency's, has no fingerprint
 		if (fingerprint === undefined || built !== fingerprint)
 			throwParseError(configMismatchMessage)
 	}
-	// arktype copies what configure() receives when it's called, so an island's arktype configured later receives that copy
+	// copied, as arktype copies configure()'s argument
 	const held: Record<string, unknown> = {}
 	for (const k in config) {
 		const v = (config as Record<string, unknown>)[k]
@@ -71,10 +71,9 @@ export const configure = (
 	return config
 }
 
-// the configuration's values apart from its functions, which the runtime can't compare with the build's
+// hashes the config's static values; functions can't be compared
 export const fingerprintOf = (config: object): string => {
 	const text = staticTextOf(config, [])
-	// two 32-bit lanes, since a check for equality needs texts apart in the state but not its bits spread
 	let a = 1
 	let b = 2
 	for (let i = 0; i < text.length; i++) {
@@ -96,13 +95,12 @@ const staticTextOf = (value: unknown, seen: unknown[]): string => {
 			: String(value)
 		)
 	}
-	// an object reached again is named by its first visit, so shared and copied objects hash apart
+	// a repeated object is named by its first visit
 	const index = seen.indexOf(value)
 	if (index !== -1) return `#${index}`
 	seen.push(value)
 	if (typeof value === "function") return "function"
 	const tag = Object.prototype.toString.call(value)
-	// listed here, since a bundler keeps a module-level read of a prototype even where nothing configures
 	const builtins = [
 		null,
 		Object.prototype,
@@ -110,17 +108,17 @@ const staticTextOf = (value: unknown, seen: unknown[]): string => {
 		Date.prototype,
 		RegExp.prototype
 	]
-	// arktype keeps what a keyword's meta holds by reference, so the program can read any key of it, inherited or not
+	// inherited enumerable keys count too
 	const enumerable: PropertyKey[] = []
 	for (const k in value) enumerable.push(k)
 	let entries = ""
 	for (const k of new Set([...enumerable, ...Reflect.ownKeys(value)])) {
 		entries += `${enumerable.includes(k) ? "" : "~"}${JSON.stringify(
-			// a symbol prints as its registered name in an array, or `[null]`, which the build refuses to stamp
+			// a symbol key prints as its registered name
 			typeof k === "symbol" ? [Symbol.keyFor(k)] : k
 		)}:${staticTextOf((value as Record<PropertyKey, unknown>)[k], seen)},`
 	}
-	// the prototype, since an own Symbol.toStringTag can give any object a builtin's tag
+	// the prototype, since Symbol.toStringTag can fake the tag
 	return `${tag}${builtins.indexOf(Object.getPrototypeOf(value))}${
 		tag === "[object Date]" ? Number(value)
 		: tag === "[object RegExp]" ? `${value}`
@@ -128,7 +126,7 @@ const staticTextOf = (value: unknown, seen: unknown[]): string => {
 	}{${entries}}`
 }
 
-// V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
+// satisfies keeps the parens prettier would drop
 export const fixConfig = ((): void => {
 	Object.freeze(runtimeConfig)
 	checkConfigured?.()
@@ -141,7 +139,7 @@ export const fixConfigured = (fingerprint: string, path: string): void => {
 	checkConfigured(fingerprint)
 }
 
-// a runtime island's arktype takes the configuration whether its config module runs before or after the island loads
+// an island takes the config whichever loads first
 export const shareConfig = (
 	configureArktype: (config: ArkSchemaConfig) => unknown
 ): void => {
