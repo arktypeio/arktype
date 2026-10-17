@@ -71,8 +71,10 @@ export const platformConstructors =
 	/* @__PURE__ */ ((): platformConstructors => ({
 		ArrayBuffer,
 		Blob: globalThis.Blob,
-		File: FileConstructor,
-		// Node loads undici on the first read of any of these
+		// Node loads a module for File, and undici for the rest, on first read
+		get File() {
+			return globalThis.File ?? globalThis.Blob
+		},
 		get FormData() {
 			return globalThis.FormData
 		},
