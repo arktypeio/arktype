@@ -2,6 +2,26 @@
 
 ## Unreleased
 
+### Return only the first error, or one saying data is invalid, with `errors`
+
+`errors: "first"` stops each validation at its first error, which it returns alone. `errors: "none"` returns one error at the root, whose message is `is invalid`, found by checking the data alone, so nothing a Type holds runs again to find what failed. Either can be configured globally or for a Scope:
+
+```ts
+import { configure } from "arktype/config"
+import "arktype/errors"
+
+configure({ errors: "none" })
+
+// ArkErrors: is invalid
+type({ name: "string" })({ name: 5 })
+```
+
+`import "arktype/errors"` installs both modes, so a program choosing neither ships neither, and creating a Type configured with either throws without it.
+
+The error `"none"` returns holds the code `"predicate"`, an empty path and the data. It's an instance of `type.errors`, so `.assert()` throws a `TraversalError` saying `is invalid`, and a default the Type rejects fails its definition with `Default for name is invalid`. Its message isn't written in a configured locale.
+
+A Type validates as the Scope it's bound to is configured, so a Type another Scope references validates as that Scope's Types do.
+
 ### Export `Default` and `To` as types
 
 `arktype` exports the `Default` and `To` types an inferred Type holds, so a declaration can name them as `import("arktype").Default`, like `Out` and `Brand`.

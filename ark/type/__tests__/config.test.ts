@@ -1,6 +1,12 @@
 import { attest, contextualize } from "@ark/attest"
-import { configureAfterTypeMessage, rootSchema } from "@ark/schema"
+import {
+	$ark,
+	configureAfterTypeMessage,
+	missingErrorModesMessage,
+	rootSchema
+} from "@ark/schema"
 import { configure, scope, type } from "arktype"
+import "arktype/errors"
 
 contextualize(() => {
 	it("tuple expression", () => {
@@ -159,6 +165,90 @@ contextualize(() => {
 
 		attest(types.fast.precompilation).equals(undefined)
 		attest($.type.Record("string", "boolean").precompilation).equals(undefined)
+	})
+
+	describe("errors", () => {
+		const none = scope({}, { errors: "none" })
+		const first = scope({}, { errors: "first" })
+
+		it("none fails with one issue at the root", () => {
+			const out = none.type({ a: "string", b: "number" })({ a: 1, b: "2" })
+			attest(out instanceof type.errors).equals(true)
+			attest(out.toString()).snap("is invalid")
+			attest(JSON.stringify(out)).snap(
+				'[{"code":"predicate","path":[],"data":{"a":1,"b":"2"},"message":"is invalid"}]'
+			)
+		})
+
+		it("none runs no Apply to find what failed", () => {
+			let calls = 0
+			const T = none.type(["number", ":", n => (calls++, n > 0)])
+			T(-1)
+			attest(calls).equals(1)
+		})
+
+		it("none fails a morph's error at the root", () => {
+			const T = none.type("string").pipe((s, ctx) => ctx.error("short"))
+			attest(JSON.stringify(T("x"))).snap(
+				'[{"code":"predicate","path":[],"data":"x","message":"is invalid"}]'
+			)
+		})
+
+		it("none assert and ~standard", () => {
+			const T = none.type("string")
+			attest(() => T.assert(5)).throws.snap("TraversalError: is invalid")
+			const result = T["~standard"].validate(5)
+			const issues: unknown = "issues" in result && result.issues
+			attest(issues).snap([
+				{ code: "predicate", path: [], data: 5, message: "is invalid" }
+			])
+		})
+
+		it("none checks a default", () => {
+			attest(() => none.type({ a: ["number", "=", "5" as never] })).throws(
+				"Default for a is invalid"
+			)
+		})
+
+		it("first stops at the first issue", () => {
+			let calls = 0
+			const T = first.type({
+				a: "string",
+				b: ["number", ":", n => (calls++, n > 0)]
+			})
+			attest(T({ a: 1, b: -1 }).toString()).snap(
+				"a must be a string (was a number)"
+			)
+			attest(calls).equals(0)
+		})
+
+		it("first keeps one issue a callback adds after another", () => {
+			const T = first.type([
+				"string",
+				":",
+				(s, ctx) => !!ctx.reject("long") && !!ctx.reject("short")
+			])
+			attest(T("x").toString()).snap('must be long (was "x")')
+		})
+
+		it("first and none require arktype/errors", () => {
+			const modes = $ark.errorModes!
+			delete $ark.errorModes
+			try {
+				attest(() =>
+					scope({ a: "string" }, { errors: "none" }).export()
+				).throws(missingErrorModesMessage)
+			} finally {
+				$ark.errorModes = modes
+			}
+		})
+
+		it("a Type validates as the scope it's bound to configures", () => {
+			const X = none.type({ n: "number" })
+			attest(type({ x: X })({ x: { n: "x" } }).toString()).snap(
+				"x.n must be a number (was a string)"
+			)
+		})
 	})
 
 	it("prereducedAliases", () => {

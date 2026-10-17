@@ -25,6 +25,10 @@
 			"ark-ts": "./config.ts",
 			"default": "./out/config.js"
 		},
+		"./errors": {
+			"ark-ts": "./errors.ts",
+			"default": "./out/errors.js"
+		},
 		"./i18n": {
 			"ark-ts": "./i18n.ts",
 			"default": "./out/i18n.js"

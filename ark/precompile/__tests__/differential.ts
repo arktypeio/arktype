@@ -1,5 +1,10 @@
 import { fromHere } from "@ark/fs"
-import { hasArkKind, ToJsonSchema, type BaseRoot } from "@ark/schema"
+import {
+	hasArkKind,
+	schemaScope,
+	ToJsonSchema,
+	type BaseRoot
+} from "@ark/schema"
 import { hasDomain, ParseError } from "@ark/util"
 import {
 	holeNameMarker,
@@ -12,6 +17,7 @@ import {
 	type StandaloneExport,
 	type ValidatorMembers
 } from "arktype/internal/standalone.ts"
+import "arktype/errors"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	bakedJsonSchemaOptionsMessage,
@@ -567,54 +573,18 @@ const hasIssues = (observation: unknown): boolean =>
 const fails = (observation: unknown): boolean =>
 	hasIssues(observation) && !("threw" in (observation as object))
 
-// what errors "none" returns for arktype's issues where its root fails
-const undetailedOf = (
-	call: ReturnType<typeof observeCall>,
-	input: unknown
-): ReturnType<typeof observeCall> => {
-	if (!fails(call.traverse)) return call
-	const result = { ...call }
-	for (const k of ["traverse", "assert", "standard"] as const) {
-		if (hasIssues(result[k])) {
-			result[k] = {
-				...(result[k] as object),
-				issues: comparedIssuesOf([{ code: "predicate", path: [], data: input }])
-			}
-		}
-	}
-	return result
-}
+// arktype validating as the build's errors option says, in a scope configured with it
+const erroringScope =
+	testedOptions.errors && testedOptions.errors !== "all" ?
+		schemaScope({}, { errors: testedOptions.errors })
+	:	undefined
 
-// arktype's call, failing with the one issue a first-issue build found
-const firstIssueOf = (
-	expected: ReturnType<typeof observeCall>,
-	actual: ReturnType<typeof observeCall>
-): ReturnType<typeof observeCall> => {
-	const result = { ...expected }
-	for (const k of ["traverse", "assert", "standard"] as const) {
-		const found = (actual[k] as { issues?: KeptIssue[] } | undefined)?.issues
-		if (hasIssues(result[k]) && found && isOneOf(found, issuesOf(result[k])))
-			result[k] = { ...(result[k] as object), issues: found }
-	}
-	return result
-}
-
-const issuesOf = (observation: unknown) =>
-	(observation as { issues: KeptIssue[] }).issues
-
-// one issue, whose checks at its path are each one arktype found failing
-const isOneOf = (found: KeptIssue[], issues: KeptIssue[]): boolean => {
-	const unmatched = [...issues]
-	const pathOf = (issue: KeptIssue) => issue.path.map(String).join("\0")
-	return (
-		found.length !== 0 &&
-		found.every(issue => {
-			const i = unmatched.findIndex(candidate => isEqual(candidate, issue))
-			if (i === -1 || pathOf(issue) !== pathOf(found[0])) return false
-			unmatched.splice(i, 1)
-			return true
-		})
-	)
+// an alias stays in the scope resolving it, so its resolution is bound
+const validatedOf = (node: BaseRoot): BaseRoot => {
+	if (!erroringScope) return node
+	let resolved = node
+	while (resolved.hasKind("alias")) resolved = resolved.resolution
+	return erroringScope.bindReference(resolved)
 }
 
 // a hole returning arktype's own errors or nodes, which a validator's runtime doesn't recognize
@@ -661,9 +631,10 @@ export const observeArktype = (
 	},
 	introspection: observeStably(() => observeIntrospection(node as never)),
 	calls: inputs.map(input => {
-		const call = observeCall(node as never, input)
-		if (!isEqual(call, observeCall(node as never, input))) return
-		return detailsErrors ? call : undetailedOf(call, input)
+		const validated = validatedOf(node)
+		const call = observeCall(validated as never, input)
+		if (!isEqual(call, observeCall(validated as never, input))) return
+		return call
 	})
 })
 
@@ -691,6 +662,10 @@ export const compare = async (
 		isFolded: false,
 		disagreements: []
 	}
+	// as the build refuses a Type whose configured errors aren't its own
+	const configured = node.$.config.errors
+	if (configured && configured !== (testedOptions.errors ?? "all"))
+		return { ...result, refusal: "configured errors" }
 	const holes = keyOf(node)[1]
 	for (const layout of layouts) {
 		const disagree = (observation: string, details: object) =>
@@ -762,9 +737,7 @@ export const compare = async (
 		for (const [i, input] of inputs.entries()) {
 			const expected = arktype.calls[i]
 			const actual = observeCall(validator, input)
-			const compared =
-				expected && firstIssue ? firstIssueOf(expected, actual) : expected
-			if (compared && isEqual(compared, actual)) continue
+			if (expected && isEqual(expected, actual)) continue
 			if (
 				!expected ||
 				holdsArkValue(actual) ||

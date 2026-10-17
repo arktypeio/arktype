@@ -33,6 +33,7 @@ import {
 	type mutable,
 	type requireKeys
 } from "@ark/util"
+import type { ResolvedConfig } from "./config.ts"
 import type { BaseConstraint } from "./constraint.ts"
 import type {
 	Inner,
@@ -56,7 +57,7 @@ import type {
 	attachmentsOf
 } from "./shared/declare.ts"
 import { Disjoint } from "./shared/disjoint.ts"
-import { ArkTraversal, type ArkErrors } from "./shared/errors.ts"
+import type { ArkErrors } from "./shared/errors.ts"
 import {
 	ArkErrors as BaseArkErrors,
 	type FailureSite,
@@ -91,7 +92,6 @@ import {
 	allowsAcyclic,
 	allowsInContext,
 	allowsUntracked,
-	applyCyclic,
 	pipe,
 	transform,
 	transformResolution,
@@ -542,14 +542,14 @@ export abstract class BaseNode<
 				return (data, onFail) => {
 					if (this.allows(data)) return data
 
-					return this.applyRoot(data).finalize(onFail)
+					return this.rejectRoot(data, onFail)
 				}
 
 			case "contextual":
 				return (data, onFail) => {
 					if (allowsInContext(this, data, this.$.resolvedConfig)) return data
 
-					return this.applyRoot(data).finalize(onFail)
+					return this.rejectRoot(data, onFail)
 				}
 
 			case "transform":
@@ -559,8 +559,8 @@ export abstract class BaseNode<
 						const untracked = allowsAcyclic(this, data)
 						const allowed =
 							untracked ?? allowsInContext(this, data, this.$.resolvedConfig)
-						if (!allowed) return this.applyRoot(data).finalize(onFail)
-						const ctx = new ArkTraversal(data, this.$.resolvedConfig)
+						if (!allowed) return this.rejectRoot(data, onFail)
+						const ctx = this.rootTraversal(data)
 						ctx.tracksTransforms = untracked === undefined
 						const result = transformResolution(
 							ctx,
@@ -584,16 +584,16 @@ export abstract class BaseNode<
 						return this.createOptimisticRootApply()
 					if (this.hasKind("union") && !this.compiledDiscriminant) {
 						return (data, onFail) => {
-							const ctx = new ArkTraversal(data, this.$.resolvedConfig)
+							const ctx = this.rootTraversal(data)
 							const result = transform(ctx, this, data)
-							if (result === unset) return this.applyRoot(data).finalize(onFail)
+							if (result === unset) return this.rejectRoot(data, onFail)
 							return ctx.hasError() ? ctx.finalize(onFail) : result
 						}
 					}
 				}
 				return (data, onFail) => {
-					if (!this.allows(data)) return this.applyRoot(data).finalize(onFail)
-					const ctx = new ArkTraversal(data, this.$.resolvedConfig)
+					if (!this.allows(data)) return this.rejectRoot(data, onFail)
+					const ctx = this.rootTraversal(data)
 					const result = transform(ctx, this, data)
 					return ctx.hasError() ? ctx.finalize(onFail) : result
 				}
@@ -619,7 +619,7 @@ export abstract class BaseNode<
 					const morph = branch.morphs[j] as Morph.ContextFree
 					const morphed = morph(result as never)
 					if (morphed instanceof BaseArkErrors) {
-						const ctx = new ArkTraversal(data, this.$.resolvedConfig)
+						const ctx = this.rootTraversal(data)
 						addErrors(ctx, morphed)
 						return ctx.finalize(onFail)
 					}
@@ -627,15 +627,22 @@ export abstract class BaseNode<
 				}
 				return result
 			}
-			return this.applyRoot(data).finalize(onFail)
+			return this.rejectRoot(data, onFail)
 		}
 	}
 
-	private applyRoot(data: unknown): Traversal {
-		const ctx = new ArkTraversal(data, this.$.resolvedConfig)
-		if (this.includesAlias) return applyCyclic(this, data, ctx)
-		this.traverseApply(data, ctx)
-		return ctx
+	private rootTraversal(data: unknown): InternalTraversal {
+		const config = this.$.resolvedConfig
+		return new (rootApplyRuntimeOf(config).Traversal)(data, config)
+	}
+
+	// as a compiled root apply's fallback, by what its errors hold
+	private rejectRoot(data: unknown, onFail: FailHandler | null): unknown {
+		const config = this.$.resolvedConfig
+		const { Traversal, applyCyclic, applyRejected } = rootApplyRuntimeOf(config)
+		return this.includesAlias ?
+				applyCyclic(this, data, new Traversal(data, config)).finalize(onFail)
+			:	applyRejected(this, data, config, onFail, Traversal)
 	}
 
 	abstract traverseAllows(
@@ -1675,12 +1682,22 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 	ctx: DeepNodeTransformContext
 ) => (Inner<kind> & BaseNodeInput) | null
 
+// what a root apply reads, by what its errors hold
+export const rootApplyRuntimeOf = (
+	config: ResolvedConfig
+): typeof rootApplyRuntime =>
+	config.errors === "all" ? rootApplyRuntime : $ark.errorModes![config.errors]
+
 // createRootApply's statements, compiled per root so V8 can inline its calls
 const compileRootApply = (node: BaseRoot): RootApply =>
 	new DynamicFunction<(...args: unknown[]) => RootApply>(
 		...rootApplyParams,
 		writeRootApply(node, node.id)
-	)(node, node.$.resolvedConfig, ...Object.values(rootApplyRuntime))
+	)(
+		node,
+		node.$.resolvedConfig,
+		...Object.values(rootApplyRuntimeOf(node.$.resolvedConfig))
+	)
 
 export const writeInnerJson = (node: BaseNode): JsonObject => {
 	const json: JsonObject = {}

@@ -52,7 +52,11 @@ import {
 	type SchemaModule,
 	type instantiateRoot
 } from "./module.ts"
-import { referencesThroughAliases, type BaseNode } from "./node.ts"
+import {
+	referencesThroughAliases,
+	rootApplyRuntimeOf,
+	type BaseNode
+} from "./node.ts"
 import {
 	nodesByRegisteredId,
 	parseNode,
@@ -81,7 +85,7 @@ import {
 	type InvokeOptions,
 	type ReferenceOptions
 } from "./shared/compile.ts"
-import { ArkTraversal, errorFromUnion } from "./shared/errors.ts"
+import { errorFromUnion } from "./shared/errors.ts"
 import { ArkErrors } from "./shared/issues.ts"
 import { nodeKinds, type NodeKind } from "./shared/implement.ts"
 import type { Locale } from "./shared/locale.ts"
@@ -206,6 +210,11 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 // Fallback counter for anonymous scopes; scopes are identified by instance
 // identity rather than names to support HMR and multi-bundle environments.
 let anonymousScopeCount = 0
+
+export const missingErrorModesMessage =
+	'errors: "first" or "none" requires import "arktype/errors"'
+
+export type missingErrorModesMessage = typeof missingErrorModesMessage
 
 export type GlobalOnlyConfigOptionName = satisfy<
 	keyof ArkSchemaConfig,
@@ -1264,6 +1273,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 			$ark.defaultConfig
 		))
 		const resolvedConfig = mergeConfigs(globalConfig, this.scopeConfig)
+		if (resolvedConfig.errors !== "all" && !$ark.errorModes)
+			throwParseError(missingErrorModesMessage)
 		// locale is global-only, though an untyped config can pass one
 		if (resolvedConfig.locale !== globalConfig.locale)
 			(resolvedConfig as { locale: Locale }).locale = globalConfig.locale
@@ -1644,7 +1655,10 @@ export abstract class BaseScope<$ extends {} = {}> {
 	}
 
 	traversal(root: unknown): Traversal {
-		return new ArkTraversal(root, this.resolvedConfig)
+		return new (rootApplyRuntimeOf(this.resolvedConfig).Traversal)(
+			root,
+			this.resolvedConfig
+		)
 	}
 
 	import(): SchemaModule<{

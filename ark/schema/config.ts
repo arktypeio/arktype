@@ -10,6 +10,7 @@ import type { intrinsic } from "./intrinsic.ts"
 import type { BaseNode } from "./node.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
 import type { BaseRoot } from "./roots/root.ts"
+import type { rootApplyRuntime } from "./shared/rootApply.ts"
 import type { BaseScope } from "./scope.ts"
 import type { TypeMeta } from "./shared/declare.ts"
 import {
@@ -50,6 +51,8 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 		  ) => boolean)
 		| undefined
 	reached?: CacheReach | undefined
+	// installed by @ark/schema/errors
+	errorModes?: Record<"first" | "none", typeof rootApplyRuntime>
 }
 
 // a cache returns what another definition computed, so a standalone build learns which deferred checks a definition reaches through it
@@ -241,6 +244,9 @@ const normalizeFallback = (
 ): ToJsonSchema.FallbackObject =>
 	typeof fallback === "function" ? { default: fallback } : (fallback ?? {})
 
+// a failure's issues: each, the first, or one at the root, "is invalid"
+export type ErrorDetail = "all" | "first" | "none"
+
 export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly undeclared?: Readonly<ErrorConfig<"undeclared">>
 	readonly discriminant?: Readonly<ErrorConfig<"discriminant">>
@@ -251,6 +257,7 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly dateAllowsInvalid?: boolean
 	readonly exactOptionalPropertyTypes?: boolean
 	readonly onFail?: ArkErrors.Handler | null
+	readonly errors?: ErrorDetail
 	readonly keywords?: Record<string, TypeMeta.Collapsible | undefined>
 	readonly toJsonSchema?: ToJsonSchema.Options
 	readonly locale?: Locale | (() => Locale | undefined)

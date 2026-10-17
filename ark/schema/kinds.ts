@@ -185,6 +185,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			numberAllowsInfinity: false,
 			dateAllowsInvalid: false,
 			onFail: null,
+			errors: "all",
 			keywords: {},
 			toJsonSchema: ToJsonSchema.defaultConfig,
 			locale: en

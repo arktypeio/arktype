@@ -494,6 +494,38 @@ const data = type.string("foo")
 const bad = type.string(5)
 ```
 
+### errors
+
+By default, a failed validation returns an error for each check that failed. `errors` can return less:
+
+- `"all"` (default): every error, at each path that failed
+- `"first"`: the first error, where validation stops
+- `"none"`: one error at the root, whose message is `is invalid`
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import "arktype/errors"
+
+configure({ errors: "none" })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const User = type({ name: "string", age: "number" })
+
+// ArkErrors: is invalid
+const out = User({ name: 5, age: "5" })
+```
+
+`"first"` and `"none"` are installed by `import "arktype/errors"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
+
+With `"none"`, a failure is found by checking the data alone, so nothing runs again to find what failed, and its one error holds the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't written in a configured [locale](#locale).
+
+`errors` can also be set for a Scope, whose Types then validate as it says, as can those another Scope references.
+
 ### metadata
 
 Additional arbitrary metadata can also be associated with a Type.

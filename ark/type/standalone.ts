@@ -15,6 +15,7 @@ import {
 	type BaseRoot,
 	type BaseScope,
 	type DefaultedNode,
+	type ErrorDetail,
 	type GenericRoot,
 	type InvokeOptions,
 	type MorphNode,
@@ -205,8 +206,7 @@ export type Configured = ConfiguredModule | false | undefined
 // what a factory checks is as built: what it receives, helpers too, or none
 export type Checks = "types" | "helpers" | "none"
 
-// a failure's issues: each, the first, or one at the root, "is invalid"
-export type ErrorDetail = "all" | "first" | "none"
+export type { ErrorDetail }
 
 export type Optimization = "speed" | "size"
 

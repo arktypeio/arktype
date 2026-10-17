@@ -29,6 +29,7 @@ import {
 	messageOf,
 	problemOf,
 	type FailureInput,
+	type ArkIssue,
 	type FailureSite,
 	type CompactApply,
 	type UnionSite
@@ -124,30 +125,8 @@ export class ArkErrors extends BaseArkErrors {
 	/** @internal */
 	override _merge(merged: BaseArkErrors, prefix: array<PropertyKey>): void {
 		if (merged instanceof ArkErrors) return mergeErrors(this, merged, prefix)
-		// a standalone validator's issues keep the text it wrote, in any locale
-		for (const issue of merged.issues) {
-			const problem = problemOf(issue)
-			const meta: ArkEnv.meta = {
-				expected: issue.expected ?? problem,
-				actual: "",
-				problem,
-				message:
-					issue.message === messageOf(issue) ? writeMessage : issue.message
-			}
-			this._.push(
-				stampError(
-					{
-						code: issue.code,
-						path: [...prefix, ...issue.path],
-						data: issue.data,
-						meta,
-						// a union's issue names what the union describes, without its branches' errors
-						...(issue.code === "union" && { errors: [] })
-					} as never,
-					this.config
-				)
-			)
-		}
+		for (const issue of merged.issues)
+			this._.push(errorOfIssue(issue, prefix, this.config))
 	}
 
 	/** @internal the config its errors are written with */
@@ -231,6 +210,32 @@ const pathEquals = (l: array<PropertyKey>, r: array<PropertyKey>) => {
 	if (l.length !== r.length) return false
 	for (let i = l.length - 1; i >= 0; i--) if (l[i] !== r[i]) return false
 	return true
+}
+
+// a standalone validator's issues keep the text it wrote, in any locale
+export const errorOfIssue = (
+	issue: ArkIssue & { message: string },
+	prefix: array<PropertyKey>,
+	config: ResolvedConfig
+): ArkError => {
+	const problem = problemOf(issue)
+	const meta: ArkEnv.meta = {
+		expected: issue.expected ?? problem,
+		actual: "",
+		problem,
+		message: issue.message === messageOf(issue) ? writeMessage : issue.message
+	}
+	return stampError(
+		{
+			code: issue.code,
+			path: [...prefix, ...issue.path],
+			data: issue.data,
+			meta,
+			// a union's issue names what the union describes, without its branches' errors
+			...(issue.code === "union" && { errors: [] })
+		} as never,
+		config
+	)
 }
 
 export const mergeErrors = (
