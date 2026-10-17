@@ -1,14 +1,13 @@
-// counts the instructions each validate.ts arm runs per call, which load on the machine doesn't change
-// `pnpm benchCount` on Linux with perf, filtered like benchValidate by BENCH_LIBRARIES and BENCH_CASES
+// counts the instructions each validate.ts arm runs per call, unlike time
+// steady under load; Linux with perf, filtered like benchValidate
 import { spawn, spawnSync } from "node:child_process"
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
 import { availableParallelism, tmpdir } from "node:os"
 import { join } from "node:path"
-import { libraries } from "./libraries.ts"
+import { benchedLibraries, isBenchedCase } from "./libraries.ts"
 import { median } from "./stats.ts"
 
-// no background thread or timer-driven collection runs while perf counts, and an old space that starts
-// large keeps major collections, whose timing shifts with as little as the length of a path, out of the count
+// no background GC or timers, and a big old space, so counts are stable
 const nodeArgs = [
 	"--single-threaded",
 	"--no-memory-reducer",
@@ -24,28 +23,21 @@ const envOf = (vars: Record<string, string>) => ({
 	...vars
 })
 
-// without BENCH_LIBRARY, listing the cases also rebuilds the standalone validators every count loads
+// listing the cases also rebuilds the standalone validators counts load
 const listed = spawnSync(process.execPath, nodeArgs, {
 	env: envOf({ BENCH_COUNT: "1" }),
 	encoding: "utf8"
 })
 if (listed.status !== 0) throw new Error(listed.stderr)
 
-const prefixes = (process.env.BENCH_CASES ?? "").split(",")
-
-const cases = (JSON.parse(listed.stdout) as string[]).filter(name =>
-	prefixes.some(prefix => name.startsWith(prefix))
-)
-
-const benchedLibraries =
-	process.env.BENCH_LIBRARIES?.split(",") ?? (libraries as readonly string[])
+const cases = (JSON.parse(listed.stdout) as string[]).filter(isBenchedCase)
 
 const repeats = Number(process.env.BENCH_REPEATS ?? 3)
 
 const fifos = mkdtempSync(join(tmpdir(), "bench-count-"))
 let fifoCount = 0
 
-// perf's count of the instructions in k * n calls, and n, which is 0 for an arm the case lacks
+// instructions in k * n calls, and n, which is 0 for an arm the case lacks
 const count = (name: string, library: string, k: number) =>
 	new Promise<{ instructions: number; n: number }>((resolve, reject) => {
 		const ctl = join(fifos, `ctl${fifoCount}`)

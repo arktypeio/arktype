@@ -1,4 +1,6 @@
-// run `pnpm benchTypia` first; `pnpm benchCount` counts these arms' instructions instead of timing them
+// run `pnpm benchTypia` first; `pnpm benchCount` counts these arms' instructions
+// BENCH_LIBRARIES and BENCH_CASES filter the arms, BENCH_ROUNDS sets the samples,
+// BENCH_ARKTYPE_CONFIG and BENCH_STANDALONE_OPTIONS configure arktype's arms
 import { arktypeConfigJson } from "./arktypeConfig.ts"
 import { noSuggest } from "@ark/util"
 import {
@@ -22,7 +24,13 @@ import { Settings } from "typebox/system"
 import * as v from "valibot"
 import { z } from "zod"
 import * as zm from "zod/mini"
-import { ajvOf, libraries, type Library } from "./libraries.ts"
+import {
+	ajvOf,
+	benchedLibraries,
+	isBenchedCase,
+	libraries,
+	type Library
+} from "./libraries.ts"
 import * as s from "./scenarios.ts"
 import { median, pinned, standingOf, summarize } from "./stats.ts"
 import type * as typiaScenarios from "./typiaScenarios.ts"
@@ -66,15 +74,12 @@ const standaloneExports = {
 	...Object.fromEntries(s.Rotating.map((t, i) => [`Rotating${i}`, t.arktype]))
 }
 
-// e.g. BENCH_STANDALONE_OPTIONS='{"errors":"none"}' builds the standalone arm with those options, into artifacts of
-// their own, so runs with other options can share out/. arktype's configuration changes the Types they're built from
+// e.g. '{"errors":"none"}', built into artifacts of their own
 const optionsJson = process.env.BENCH_STANDALONE_OPTIONS
 const standaloneOptions: StandaloneOptions = {
-	// the standalone arm writes in place only as its options say
 	mutatesInput: false,
 	...JSON.parse(optionsJson ?? "{}")
 }
-// the JIT stops at the first error only as BENCH_ARKTYPE_CONFIG configures it to
 const arktypeErrors = JSON.parse(arktypeConfigJson ?? "{}").errors
 
 const artifactSuffix =
@@ -89,9 +94,7 @@ const copiedPackageUrls = ["type", "schema"].map(
 	name => `${pathToFileURL(join(import.meta.dirname, "..", "..", name)).href}/`
 )
 
-// the plugin resolves @ark/schema/runtime to @ark/schema/runtime/none for an errors "none" build, which is
-// published with issuesNone.ts in place of issues.ts, so that build's artifact gets copies of arktype/runtime and
-// @ark/schema's runtime written that way, and every other arm keeps the runtime it shares with arktype
+// an errors "none" artifact loads its own copy of the runtime, as published
 const loadUndetailedRuntime = () =>
 	registerHooks({
 		resolve: (specifier, context, nextResolve) => {
@@ -121,7 +124,7 @@ const standaloneOf = async (errors: "all" | "first") => {
 	const path = join(out, `scoreboard.standalone.${errors}${artifactSuffix}.js`)
 	if (!process.env.BENCH_LIBRARY)
 		writeFileSync(path, precompileStandalone(standaloneExports, opts).code)
-	// standalone validators refuse to load beside arktype unless its claim is cleared
+	// standalone validators load beside arktype only once its claim is cleared
 	delete (globalThis as Record<string, unknown>)[
 		noSuggest("loadedArktypeEntry")
 	]
@@ -160,7 +163,7 @@ interface ArmSpec {
 	$?: unknown
 	config?: unknown
 	before?: () => void
-	// the library has no API for this mode, or can't compile the schema, so the arm uses its closest path
+	// no API for this mode, or the schema can't compile: its closest path
 	nearest?: boolean
 }
 
@@ -216,7 +219,7 @@ const zodArm = (mode: Mode, validator: unknown): ArmSpec =>
 		}
 	:	{ validator, body: f => `r = ${f}.safeParse(data)` }
 
-// z.compile hands back a schema it can't compile, like a recursive one, on zod's runtime parser
+// z.compile leaves what it can't compile, like recursion, on zod's runtime
 const zodCompiledOf = (schema: unknown): unknown =>
 	Array.isArray(schema) ?
 		schema.map(zodCompiledOf)
@@ -340,89 +343,61 @@ const caseOf = (
 	}
 })
 
-const moltar = (typiaValidator: unknown): Validators => ({
-	...s.Moltar,
-	...arkOf("Moltar"),
-	typia: typiaValidator
-})
+const validatorsOf = (
+	name: keyof typeof standaloneExports & keyof typeof s,
+	typiaValidator?: unknown
+): Validators => ({ ...s[name], ...arkOf(name), typia: typiaValidator })
 
-const moltarStrict = (typiaValidator: unknown): Validators => ({
-	...s.MoltarStrict,
-	...arkOf("MoltarStrict"),
-	typia: typiaValidator
-})
-
-const product = (typiaValidator: unknown): Validators => ({
-	...s.Product,
-	...arkOf("Product"),
-	typia: typiaValidator
-})
-
-const items = (typiaValidator: unknown): Validators => ({
-	...s.Items,
-	...arkOf("Items"),
-	typia: typiaValidator
-})
-
-const patterns = (typiaValidator: unknown): Validators => ({
-	...s.Patterns,
-	...arkOf("Patterns"),
-	typia: typiaValidator
-})
-
-const invalidCases = (mode: "issues" | "errors" | "first"): Case[] => [
-	caseOf(
-		"moltar",
-		mode,
-		[s.moltarInvalidData],
-		moltar(mode === "first" ? typia.MoltarAssert : typia.Moltar)
-	),
-	caseOf(
-		"moltar strict",
-		mode,
-		[s.moltarExtraKeysData],
-		moltarStrict(
-			mode === "first" ? typia.MoltarStrictAssert : typia.MoltarStrict
+const invalidCases = (mode: "issues" | "errors" | "first"): Case[] =>
+	(
+		[
+			["moltar", "Moltar", s.moltarInvalidData],
+			["moltar strict", "MoltarStrict", s.moltarExtraKeysData],
+			["product", "Product", s.productInvalidData],
+			["items", "Items", s.itemsInvalidData],
+			["patterns", "Patterns", s.patternsInvalidData]
+		] as const
+	).map(([caseName, name, data]) =>
+		caseOf(
+			caseName,
+			mode,
+			[data],
+			validatorsOf(
+				name,
+				typia[mode === "first" ? (`${name}Assert` as const) : name]
+			)
 		)
-	),
-	caseOf(
-		"product",
-		mode,
-		[s.productInvalidData],
-		product(mode === "first" ? typia.ProductAssert : typia.Product)
-	),
-	caseOf(
-		"items",
-		mode,
-		[s.itemsInvalidData],
-		items(mode === "first" ? typia.ItemsAssert : typia.Items)
-	),
-	caseOf(
-		"patterns",
-		mode,
-		[s.patternsInvalidData],
-		patterns(mode === "first" ? typia.PatternsAssert : typia.Patterns)
 	)
-]
 
 const byLibrary = (entries: readonly object[], library: Library) =>
 	entries.map(entry => entry[library as never] as unknown)
 
 const cases: Case[] = [
-	caseOf("moltar", "parse", [s.moltarData], moltar(typia.Moltar)),
+	caseOf(
+		"moltar",
+		"parse",
+		[s.moltarData],
+		validatorsOf("Moltar", typia.Moltar)
+	),
 	caseOf(
 		"moltar strict",
 		"parse",
 		[s.moltarData],
-		moltarStrict(typia.MoltarStrict)
+		validatorsOf("MoltarStrict", typia.MoltarStrict)
 	),
-	caseOf("product", "parse", [s.productData], product(typia.Product)),
-	caseOf("items", "parse", [s.itemsData], items(typia.Items)),
-	caseOf("discriminated", "parse", s.discriminatedData, {
-		...s.Discriminated,
-		...arkOf("Discriminated"),
-		typia: typia.Discriminated
-	}),
+	caseOf(
+		"product",
+		"parse",
+		[s.productData],
+		validatorsOf("Product", typia.Product)
+	),
+	caseOf("items", "parse", [s.itemsData], validatorsOf("Items", typia.Items)),
+	caseOf(
+		"discriminated",
+		"parse",
+		s.discriminatedData,
+		validatorsOf("Discriminated", typia.Discriminated)
+	),
 	caseOf(
 		"rotating",
 		"parse",
@@ -442,72 +417,67 @@ const cases: Case[] = [
 		},
 		{ rotating: true }
 	),
-	caseOf("constraints", "parse", [s.constraintsData], {
-		...s.Constraints,
-		...arkOf("Constraints"),
-		typia: typia.Constraints
+	caseOf(
+		"constraints",
+		"parse",
+		[s.constraintsData],
+		validatorsOf("Constraints", typia.Constraints)
+	),
+	caseOf("morph", "parse", [s.morphData], validatorsOf("Morph"), {
+		typeboxMethod: "Decode"
 	}),
-	caseOf(
-		"morph",
-		"parse",
-		[s.morphData],
-		{ ...s.Morph, ...arkOf("Morph") },
-		{ typeboxMethod: "Decode" }
-	),
-	caseOf(
-		"defaults",
-		"parse",
-		[s.defaultsData],
-		{ ...s.Defaults, ...arkOf("Defaults") },
-		{ typeboxMethod: "Default" }
-	),
+	caseOf("defaults", "parse", [s.defaultsData], validatorsOf("Defaults"), {
+		typeboxMethod: "Default"
+	}),
 	caseOf(
 		"items morph",
 		"parse",
 		[s.itemsMorphData],
-		{ ...s.ItemsMorph, ...arkOf("ItemsMorph") },
+		validatorsOf("ItemsMorph"),
 		{ typeboxMethod: "Decode" }
 	),
 	caseOf(
 		"items defaults",
 		"parse",
 		[s.itemsDefaultsData],
-		{ ...s.ItemsDefaults, ...arkOf("ItemsDefaults") },
+		validatorsOf("ItemsDefaults"),
 		{ typeboxMethod: "Default" }
 	),
 	caseOf(
 		"moltar morph",
 		"parse",
 		[s.moltarMorphData],
-		{ ...s.MoltarMorph, ...arkOf("MoltarMorph") },
+		validatorsOf("MoltarMorph"),
 		{ typeboxMethod: "Decode" }
 	),
-	caseOf("tree", "parse", [s.treeData], {
-		...s.Tree,
-		...arkOf("Tree"),
-		typia: typia.Tree
-	}),
-	caseOf("moltar", "strip", [s.moltarExtraKeysData], {
-		...s.MoltarStrip,
-		...arkOf("MoltarStrip"),
-		typia: typia.MoltarStrip
-	}),
-	caseOf("product", "strip", [s.productExtraKeysData], {
-		...s.ProductStrip,
-		...arkOf("ProductStrip"),
-		typia: typia.ProductStrip
-	}),
+	caseOf("tree", "parse", [s.treeData], validatorsOf("Tree", typia.Tree)),
+	caseOf(
+		"moltar",
+		"strip",
+		[s.moltarExtraKeysData],
+		validatorsOf("MoltarStrip", typia.MoltarStrip)
+	),
+	caseOf(
+		"product",
+		"strip",
+		[s.productExtraKeysData],
+		validatorsOf("ProductStrip", typia.ProductStrip)
+	),
 	...invalidCases("issues"),
 	...invalidCases("errors"),
 	...invalidCases("first"),
-	caseOf("moltar", "allows", [s.moltarData], moltar(typia.MoltarIs), {
-		allows: true
-	}),
+	caseOf(
+		"moltar",
+		"allows",
+		[s.moltarData],
+		validatorsOf("Moltar", typia.MoltarIs),
+		{ allows: true }
+	),
 	caseOf(
 		"moltar invalid",
 		"allows",
 		[s.moltarInvalidData],
-		moltar(typia.MoltarIs),
+		validatorsOf("Moltar", typia.MoltarIs),
 		{ allows: false }
 	)
 ]
@@ -528,10 +498,6 @@ interface Arm extends ArmSpec {
 	batchSize: number
 }
 
-// e.g. BENCH_LIBRARIES=zod,standalone
-const benchedLibraries =
-	process.env.BENCH_LIBRARIES?.split(",") ?? (libraries as readonly string[])
-
 const armsOf = (c: Case): Arm[] =>
 	libraries.flatMap(library => {
 		const spec = c.arms[library]
@@ -550,7 +516,7 @@ const armsOf = (c: Case): Arm[] =>
 		return [{ ...spec, library, loop, batchSize: 0 }]
 	})
 
-// copies objects with their source's shape and shares strings, which structuredClone doesn't
+// keeps its source's shapes and shares strings, unlike structuredClone
 const copy = (value: unknown): unknown => {
 	if (Array.isArray(value)) return value.map(copy)
 	if (value instanceof Date) return new Date(value)
@@ -632,7 +598,7 @@ const verify = (c: Case, arms: Arm[]) => {
 // marked on a parse context when compiled zod hands its input to zod's runtime
 const zodFallback = Symbol.for("zod.compile.fallback")
 
-// compiled zod must return what zod does, output or issues, and valid data must stay on its compiled path
+// compiled zod returns what zod does, and valid data stays compiled
 const verifyZodCompiled = (c: Case, arms: Arm[]) => {
 	const zod = arms.find(arm => arm.library === "zod")!
 	const compiled = arms.find(arm => arm.library === "zodCompiled")!
@@ -695,9 +661,8 @@ const rounds = Number(process.env.BENCH_ROUNDS ?? 30)
 
 const benchedLibrary = process.env.BENCH_LIBRARY as Library | undefined
 
-// for count.ts: BENCH_COUNT=k warms the arm of BENCH_LIBRARY for BENCH_CASE ("<mode> <name>"), then copies
-// its inputs for 2n calls and calls it on k * n of them, printing n, while
-// `perf stat -D -1 --control fifo:$PERF_CTL,$PERF_ACK` counts only the copies and calls
+// for count.ts: BENCH_COUNT=k warms BENCH_LIBRARY's arm for BENCH_CASE, then
+// copies inputs for 2n calls and calls it on k * n, printing n, as perf counts
 if (process.env.BENCH_COUNT) {
 	if (!process.env.BENCH_CASE) {
 		console.log(JSON.stringify(cases.map(c => `${c.mode} ${c.name}`)))
@@ -712,7 +677,7 @@ if (process.env.BENCH_COUNT) {
 	const size = JSON.stringify(c.inputs).length
 	// enough calls that one-off work, like a stray collection, washes out
 	const n = Math.min(8_000_000, Math.max(20_000, Math.round(1.6e9 / size)))
-	// a second of CPU, rather than of the wall clock, optimizes the arm however loaded the machine is
+	// a second of CPU, not wall clock, however loaded the machine is
 	arm.batchSize = maxPoolSize
 	const warmFrom = process.cpuUsage().user
 	while (process.cpuUsage().user - warmFrom < 1e6) timeBatch(c, arm)
@@ -723,11 +688,8 @@ if (process.env.BENCH_COUNT) {
 		readSync(ack, Buffer.alloc(5))
 	}
 	const calls = Number(process.env.BENCH_COUNT) * n
-	// calls run as timeBatch times them, in pools of fresh copies with no forced collection: a gc() before
-	// each pool, or more copies live at once, multiplied the count of paths that allocate (errors moltar's
-	// standalone build: 1.46k instructions here, 4.8k in pools of 65,536 copies with a gc() before each).
-	// Both counts make the copies for 2n calls, so the count over n calls, subtracted from the one over 2n,
-	// leaves n calls with the collections they cause, and counting needn't switch off around each pool's copies
+	// pools of fresh copies, no forced gc, as timeBatch runs; copies for 2n
+	// calls either way, so 2n less n counts n calls with their collections
 	perf("enable")
 	for (let done = 0; done < 2 * n; done += maxPoolSize) {
 		const inputs = inputsOf(c, Math.min(maxPoolSize, 2 * n - done))
@@ -746,7 +708,7 @@ if (process.env.BENCH_COUNT) {
 	process.exit()
 }
 
-// each library runs in its own process, so no library's JIT feedback or garbage reaches another's
+// a process per library, so none shares another's JIT feedback or garbage
 if (benchedLibrary) {
 	const armsByCase = new Map<Case, Arm>()
 	process.on("message", (caseIndex: number) => {
@@ -769,12 +731,8 @@ const children = new Map(
 	benchedLibraries.map(library => [
 		library,
 		fork(import.meta.filename, {
-			// GC on the main thread charges each library its own collection, which helper threads would spread across the shared core
-			execArgv: [
-				...process.execArgv,
-				"--single-threaded-gc",
-				...(process.env.XF ?? "").split(" ").filter(Boolean)
-			],
+			// charges each library its own collections
+			execArgv: [...process.execArgv, "--single-threaded-gc"],
 			env: { ...process.env, BENCH_LIBRARY: library }
 		})
 	])
@@ -797,10 +755,7 @@ const sample = (library: Library, caseIndex: number) => {
 const results: Record<string, Record<string, number[]>> = {}
 
 for (const [caseIndex, c] of cases.entries()) {
-	// e.g. BENCH_CASES="parse moltar", or "issues ,errors " for the cases starting with either
-	const prefixes = (process.env.BENCH_CASES ?? "").split(",")
-	if (!prefixes.some(prefix => `${c.mode} ${c.name}`.startsWith(prefix)))
-		continue
+	if (!isBenchedCase(`${c.mode} ${c.name}`)) continue
 	const allArms = armsOf(c)
 	verify(c, allArms)
 	const arms = allArms.filter(arm => benchedLibraries.includes(arm.library))

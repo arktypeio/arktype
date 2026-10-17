@@ -17,6 +17,16 @@ export const libraries = [
 
 export type Library = (typeof libraries)[number]
 
+// e.g. BENCH_LIBRARIES=zod,standalone
+export const benchedLibraries: readonly string[] =
+	process.env.BENCH_LIBRARIES?.split(",") ?? libraries
+
+// e.g. BENCH_CASES="parse moltar", or "issues ,errors " for cases starting with either
+const casePrefixes = (process.env.BENCH_CASES ?? "").split(",")
+
+export const isBenchedCase = (name: string): boolean =>
+	casePrefixes.some(prefix => name.startsWith(prefix))
+
 export const ajvOf = (opts?: Options): Ajv => {
 	const ajv = new Ajv({
 		discriminator: true,

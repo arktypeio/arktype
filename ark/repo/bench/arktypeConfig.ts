@@ -1,5 +1,4 @@
-// e.g. BENCH_ARKTYPE_CONFIG='{"mutatesInput":"always"}' configures arktype, so the
-// arktype arm runs under it, before any module defines a Type
+// e.g. BENCH_ARKTYPE_CONFIG='{"mutatesInput":"always"}', before any Type exists
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { configure } from "arktype/config"
 import "arktype/errors"

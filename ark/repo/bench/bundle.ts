@@ -14,7 +14,7 @@ export type Scenario = (typeof scenarios)[number]
 
 const apps = join(import.meta.dirname, "apps")
 
-// e.g. BENCH_STANDALONE_OPTIONS='{"errors":"none"}' builds the standalone bundles with those options
+// e.g. BENCH_STANDALONE_OPTIONS='{"errors":"none"}' configures standalone bundles
 const standaloneOptions: PrecompileUnpluginOptions = JSON.parse(
 	process.env.BENCH_STANDALONE_OPTIONS ?? "{}"
 )

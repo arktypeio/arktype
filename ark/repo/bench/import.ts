@@ -119,7 +119,7 @@ const zodResultOf = (result: any) => [
 	result.error?.issues
 ]
 
-// compiled zod must answer as zod does, and compile rather than fall back to zod's runtime
+// compiled zod answers as zod does, rather than falling back to its runtime
 for (const scenario of scenarios) {
 	const [name, data] = parsed[scenario]
 	const zod = await import(join(out, `${scenario}.zod.js`))
@@ -142,7 +142,7 @@ const cold = { ...process.env }
 delete cold.NODE_OPTIONS
 delete cold.NODE_COMPILE_CACHE
 
-// a warm process reads the code its bundle compiled to in an earlier process, as a returning visit or a primed server does
+// a warm process reuses an earlier one's compiled code, as a primed server does
 const compileCache = join(out, "compile-cache")
 rmSync(compileCache, { recursive: true, force: true })
 const warm = { ...cold, NODE_COMPILE_CACHE: compileCache }
