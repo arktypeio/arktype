@@ -290,11 +290,15 @@ export const mergeIssues = (
 	}
 }
 
+// "[i]" for each index below 256 a message has written
+const indexSegments: string[] = []
+
 export const messageOf = (issue: ArkIssue): string => {
 	let path = ""
 	// a key and its separator are appended apart, as joining them first writes one more string
 	for (const k of issue.path) {
-		if (typeof k === "number") path += `[${k}]`
+		if (typeof k === "number")
+			path += k < 256 ? (indexSegments[k] ??= `[${k}]`) : `[${k}]`
 		else {
 			if (path) path += "."
 			path += typeof k === "string" ? k : String(k)
