@@ -150,29 +150,21 @@ export const shareConfig = (
 }
 
 export const configuredUnlikeBuildMessage =
-	"configure() receives other values than its build precompiled under, as when a loader or plugin changes a module the configuration reads: precompile after it"
-
-export type configuredUnlikeBuildMessage = typeof configuredUnlikeBuildMessage
+	"configure() received values other than its build's"
 
 export const reconfiguredMessage =
-	"a standalone program calls configure() once, in its config module, before any Type is created"
-
-export type reconfiguredMessage = typeof reconfiguredMessage
+	"configure() must be called once, before any Type is created"
 
 export const writtenConfigMessage =
-	"what configure() received was written after the call, so the build precompiled other values: finish writing it before calling configure()"
-
-export type writtenConfigMessage = typeof writtenConfigMessage
+	"configure()'s argument was modified after it was called"
 
 export const configMismatchMessage =
-	"an artifact runs only under its build's configuration, from the configure() call the build transformed"
-
-export type configMismatchMessage = typeof configMismatchMessage
+	"an artifact must run under the configuration it was built with"
 
 export const writeCreatedBeforeConfigureMessage = <path extends string>(
 	path: path
 ): writeCreatedBeforeConfigureMessage<path> =>
-	`a Type precompiled in ${path} under the program's configuration is created before configure() runs: import the config module first, and create no Type while it loads`
+	`${path} creates a Type before configure() runs`
 
 export type writeCreatedBeforeConfigureMessage<path extends string> =
-	`a Type precompiled in ${path} under the program's configuration is created before configure() runs: import the config module first, and create no Type while it loads`
+	`${path} creates a Type before configure() runs`

@@ -868,16 +868,10 @@ export type ActualWriter<code extends ArkErrorCode = ArkErrorCode> = (
 ) => string
 
 export const configureAfterTypeMessage =
-	"configure must be called before any Type is created, e.g. from a module imported first"
-
-export type configureAfterTypeMessage = typeof configureAfterTypeMessage
+	"configure() must be called before any Type is created"
 
 export const unrenderedLocaleMessage =
-	'errors can be written in a locale other than en only by arktype, after import "arktype/i18n"'
-
-export type unrenderedLocaleMessage = typeof unrenderedLocaleMessage
+	'import "arktype/i18n" to write errors in locales other than en'
 
 export const copiedErrorMessage =
-	"an error can only be written again as validation returned it, not as a copy"
-
-export type copiedErrorMessage = typeof copiedErrorMessage
+	"only errors validation returned can be written again, not copies"

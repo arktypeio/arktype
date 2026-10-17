@@ -657,7 +657,7 @@ configure({ numberAllowsNaN: true })
 // previously false, now true
 type.number.allows(Number.NaN)
 
-// previously ignored by type, now throws: configure must be called before any Type is created, e.g. from a module imported first
+// previously ignored by type, now throws: configure() must be called before any Type is created
 configure({ onUndeclaredKey: "delete" })
 ```
 
