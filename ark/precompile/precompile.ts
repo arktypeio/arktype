@@ -286,16 +286,16 @@ export interface Diagnostic {
 	hint: string | undefined
 }
 
-// a package arktype runs on, whose classes and registry a program must load once
-export type ArkPackage = "arktype" | "@ark/schema" | "@ark/util"
+// a package arktype runs on, which must load once
+type ArkPackage = "arktype" | "@ark/schema" | "@ark/util"
 
-export interface PackageCopy {
+interface PackageCopy {
 	version: string
 	// the file it was first resolved from
 	importer: string
 }
 
-export interface CopiesReport {
+interface CopiesReport {
 	message: string
 	reasons: string[]
 }
@@ -308,11 +308,11 @@ export const precompileModule = (
 ): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
 
 // the CLI checks options before it reads a module, as the constructor does
-export const assertPrecompileOptions = (opts?: PrecompileOptions): void => {
-	const members = opts?.members ?? {}
-	const cache = opts?.runtime === "arktype"
+export const assertPrecompileOptions = (opts: PrecompileOptions = {}): void => {
+	const members = opts.members ?? {}
+	const cache = opts.runtime === "arktype"
 	if (
-		opts?.members !== undefined &&
+		opts.members !== undefined &&
 		objectKindOrDomainOf(opts.members) !== "object"
 	) {
 		throwError(
@@ -337,7 +337,7 @@ export const assertPrecompileOptions = (opts?: PrecompileOptions): void => {
 		}
 	}
 	if (
-		opts?.config !== undefined &&
+		opts.config !== undefined &&
 		opts.config !== false &&
 		(typeof opts.config !== "string" || !opts.config)
 	) {
@@ -350,7 +350,7 @@ export const assertPrecompileOptions = (opts?: PrecompileOptions): void => {
 		)
 	}
 	for (const [option, values] of entriesOf(enumOptions)) {
-		const value = opts?.[option]
+		const value = opts[option]
 		if (value !== undefined && !includes(values, value)) {
 			throwError(
 				writeOptionValueMessage(
@@ -362,7 +362,7 @@ export const assertPrecompileOptions = (opts?: PrecompileOptions): void => {
 		}
 	}
 	for (const option of booleanOptions) {
-		if (opts?.[option] !== undefined && typeof opts[option] !== "boolean") {
+		if (opts[option] !== undefined && typeof opts[option] !== "boolean") {
 			throwError(
 				writeOptionValueMessage(option, printable(opts[option]), "a boolean")
 			)
@@ -371,34 +371,31 @@ export const assertPrecompileOptions = (opts?: PrecompileOptions): void => {
 	if (members["~standard.jsonSchema"] && members["~standard"] === false)
 		throwError(standardJsonSchemaWithoutStandardMessage)
 	const standaloneOption =
-		cache && standaloneOptions.find(option => opts?.[option] !== undefined)
+		cache && standaloneOptions.find(option => opts[option] !== undefined)
 	if (standaloneOption)
 		throwError(writeArktypeRuntimeOptionMessage(standaloneOption))
-	if (cache && opts?.config === false)
+	if (cache && opts.config === false)
 		throwError(writeArktypeRuntimeOptionMessage("config: false"))
 }
 
 export class Precompiler {
 	graph: ModuleGraph
 	interpreter: Interpreter
-	mode: PrecompileMode
 	config: string | undefined
-	// false where `config` is, so a configure() call fails the build
-	configures: boolean
 	inline: boolean
-	checks: Checks
 	checkHelpers: boolean
-	shadow: boolean
+	private mode: PrecompileMode
+	// false where `config` is, so a configure() call fails the build
+	private configures: boolean
+	private shadow: boolean
 	// e.g. `{"members":{"meta":false}}`, so shadow mode skips the meta
-	shadowContract: string | undefined
-	members: ValidatorMembers
+	private shadowContract: string | undefined
+	private members: ValidatorMembers
 	// e.g. traverse, from and toString where members.methods is false
-	lackedMembers: ReadonlySet<string>
-	errors: ErrorDetail | undefined
-	freeze: boolean
-	lazy: boolean
-	mutatesInput: MutatesInput | undefined
-	optimize: Optimization
+	private lackedMembers: ReadonlySet<string>
+	private errors: ErrorDetail | undefined
+	private mutatesInput: MutatesInput | undefined
+	private standalone: StandaloneOptions
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
 	private configureCallsByModule = new WeakMap<SourceModule, CallExpression[]>()
@@ -425,25 +422,31 @@ export class Precompiler {
 	private warnedDependencies: Record<string, true> = Object.create(null)
 	private intrinsicUnits: Record<string, string> | undefined
 
-	constructor(host: PrecompileHost, opts?: PrecompileOptions) {
-		this.graph = new ModuleGraph(host, opts?.cwd)
+	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
+		assertPrecompileOptions(opts)
+		this.graph = new ModuleGraph(host, opts.cwd)
 		this.interpreter = new Interpreter(this.graph, opts, module =>
 			this.readsOf(module)
 		)
-		this.mode = opts?.runtime === "arktype" ? "cache" : "standalone"
-		this.config = opts?.config || undefined
-		this.configures = opts?.config !== false
-		this.inline = !!opts?.inline
-		this.checks = opts?.checks ?? "types"
-		this.checkHelpers = this.mode === "standalone" && this.checks === "helpers"
-		this.shadow = this.mode === "standalone" && !!opts?.shadow
-		this.members = opts?.members ?? {}
-		this.errors = opts?.errors
-		this.freeze = opts?.freeze !== false
-		this.lazy = opts?.lazy !== false
-		this.mutatesInput = opts?.mutatesInput
-		this.optimize = opts?.optimize ?? "speed"
-		assertPrecompileOptions(opts)
+		this.mode = opts.runtime === "arktype" ? "cache" : "standalone"
+		this.config = opts.config || undefined
+		this.configures = opts.config !== false
+		this.inline = !!opts.inline
+		const checks = opts.checks ?? "types"
+		this.checkHelpers = this.mode === "standalone" && checks === "helpers"
+		this.shadow = this.mode === "standalone" && !!opts.shadow
+		this.members = opts.members ?? {}
+		this.errors = opts.errors
+		this.mutatesInput = opts.mutatesInput
+		this.standalone = {
+			members: this.members,
+			errors: this.errors,
+			freeze: opts.freeze !== false,
+			lazy: opts.lazy !== false,
+			checks,
+			mutatesInput: this.mutatesInput,
+			optimize: opts.optimize ?? "speed"
+		}
 		this.lackedMembers = new Set(
 			defaultMembers.flatMap(member =>
 				this.members[member] !== false ? []
@@ -610,7 +613,7 @@ export class Precompiler {
 	}
 
 	// each package arktype runs on that importer reaches in a copy other than one reached before
-	readCopies(name: ArkPackage, importer: string): CopiesReport[] {
+	private readCopies(name: ArkPackage, importer: string): CopiesReport[] {
 		const entry = this.graph.host.resolve(name, importer)
 		if (!entry) return []
 		const [root, version] = (this.packagesByEntry[entry] ??= this.packageOf(
@@ -1270,14 +1273,8 @@ export class Precompiler {
 				writeValidators(
 					exportsByName,
 					{
+						...this.standalone,
 						configured,
-						members: this.members,
-						errors: this.errors,
-						freeze: this.freeze,
-						lazy: this.lazy,
-						checks: this.checks,
-						mutatesInput: this.mutatesInput,
-						optimize: this.optimize,
 						bake: write => this.bake(write),
 						hoisted: this.isReachedEarly(module)
 					},
@@ -2598,11 +2595,12 @@ export class Precompiler {
 		for (const [binding, declaring, reader] of state.trace.readFirst) {
 			if (declaring === module) continue
 			const unchecked = this.checkReadFirst(site, binding, declaring, reader)
-			if (unchecked)
+			if (unchecked) {
 				return refuseDynamic(
 					site,
 					new DynamicValue(module, state.node, unchecked)
 				)
+			}
 		}
 		for (const [value, reads] of state.readsByValue) {
 			if (
@@ -3644,12 +3642,7 @@ const holdsOtherConfiguration = (files: string | undefined): boolean =>
 	:	Object.keys($ark.config).length > 0 ||
 		(files !== undefined && $ark.resolvedConfig !== undefined)
 
-export const writeUnreadableConfigMessage = <path extends string>(
-	path: path
-): writeUnreadableConfigMessage<path> =>
-	`the config module ${path} can't be read`
-
-export type writeUnreadableConfigMessage<path extends string> =
+const writeUnreadableConfigMessage = (path: string) =>
 	`the config module ${path} can't be read`
 
 export const configuredThreadMessage =
@@ -3657,10 +3650,8 @@ export const configuredThreadMessage =
 
 export type configuredThreadMessage = typeof configuredThreadMessage
 
-export const configurationConflictMessage =
+const configurationConflictMessage =
 	"configure() is given other values than arktype in this thread already applied"
-
-export type configurationConflictMessage = typeof configurationConflictMessage
 
 const configurationConflictReason =
 	"a module the configuration reads was given anew, as when a plugin ahead of arktype's transforms it, and arktype can't change its configuration once set"
@@ -3673,7 +3664,7 @@ export const writeStandaloneDependencyMessage = <name extends string>(
 export type writeStandaloneDependencyMessage<name extends string> =
 	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`
 
-export const copiesHint =
+const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
 
 const writeUnsureHint = (fix: string) =>
@@ -3755,21 +3746,13 @@ export const specifierOf = (importer: string, file: string): string => {
 const covers = (span: Span, site: Site) =>
 	span.start <= site.start && site.end <= span.end
 
-export const writeErrorsMismatchMessage = <
-	configured extends ErrorDetail,
-	built extends ErrorDetail
->(
-	configured: configured,
-	built: built
-): writeErrorsMismatchMessage<configured, built> =>
+const writeErrorsMismatchMessage = (
+	configured: ErrorDetail,
+	built: ErrorDetail
+): string =>
 	`arktype is configured with errors: "${configured}", where the build's errors are "${built}"`
 
-export type writeErrorsMismatchMessage<
-	configured extends ErrorDetail,
-	built extends ErrorDetail
-> = `arktype is configured with errors: "${configured}", where the build's errors are "${built}"`
-
-export const writeMutatesInputMismatchMessage = (
+const writeMutatesInputMismatchMessage = (
 	configured: MutatesInput,
 	built: MutatesInput
 ): string =>
