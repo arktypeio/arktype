@@ -23,6 +23,8 @@ import {
 	throwParseError
 } from "@ark/util"
 import { ark, configure } from "arktype"
+// the program's configuration can choose errors "first" or "none"
+import "arktype/errors"
 import type { HoleKind } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
@@ -1914,6 +1916,10 @@ export class Precompiler {
 					reasons.includes(inPlacePipeMessage)
 			) ?
 				inPlaceHint
+			: (
+				reasons.some(reason => reason.startsWith("arktype is configured with"))
+			) ?
+				errorsHint
 			:	undefined
 		)
 	}
@@ -2025,6 +2031,22 @@ export class Precompiler {
 		)
 	}
 
+	// a validator returns what its build's errors option says, which must be what arktype returns where the program configures errors
+	private errorsReasonsOf(site: Site): string[] {
+		const value = createdBy(site)
+		if (this.mode !== "standalone" || !value) return []
+		const built = this.errors ?? "all"
+		const roots =
+			hasArkKind(value, "scope") ?
+				exportedRootsOf(value)
+			:	[...arkObjectsIn(value)].filter(member => hasArkKind(member, "root"))
+		// where the program configures none, the build's own option decides
+		const configured = roots
+			.map(root => root.$.config.errors)
+			.find(errors => errors !== undefined && errors !== built)
+		return configured ? [writeErrorsMismatchMessage(configured, built)] : []
+	}
+
 	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
 		const result =
 			site.parseError || isFoldable(site.value) || site.introspection ?
@@ -2045,6 +2067,7 @@ export class Precompiler {
 			)
 		}
 		result.push(...this.incomparableReasonsOf(site, module))
+		result.push(...this.errorsReasonsOf(site))
 		if (site.parseError) {
 			const holes = this.interpreter.holesIn(site.arktypeArguments)
 			for (const hole of site.holes) holes.delete(hole.value)
@@ -3794,6 +3817,24 @@ export const specifierOf = (importer: string, file: string): string => {
 
 const covers = (span: Span, site: Site) =>
 	span.start <= site.start && site.end <= span.end
+
+export const writeErrorsMismatchMessage = <
+	configured extends ErrorDetail,
+	built extends ErrorDetail
+>(
+	configured: configured,
+	built: built
+): writeErrorsMismatchMessage<configured, built> =>
+	`arktype is configured with errors: "${configured}", where the build's errors are "${built}"`
+
+export type writeErrorsMismatchMessage<
+	configured extends ErrorDetail,
+	built extends ErrorDetail
+> = `arktype is configured with errors: "${configured}", where the build's errors are "${built}"`
+
+// a standalone validator can't return what arktype configured otherwise does
+const errorsHint =
+	"A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with."
 
 const isFoldable = (value: unknown): value is Foldable =>
 	hasArkKind(value, "root") ||

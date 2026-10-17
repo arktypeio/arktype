@@ -54,6 +54,8 @@ const undetailed = writeUndetailed()
 
 const configured = fromHere("configured")
 
+const firstConfigured = fromHere("firstConfigured")
+
 const runPlain = (root: string) =>
 	spawnSync(process.execPath, ["--conditions", "ark-ts", "main.ts"], {
 		cwd: root,
@@ -379,6 +381,24 @@ export const checkedItem = JSON.stringify(itemJson())
 			attest(
 				run(await bundle({ ...opts, runtime: "arktype" }, configured))
 			).equals(runPlain(configured))
+		}).timeout(60000)
+
+		it(`${name} configured with errors`, async () => {
+			const opts = {
+				cwd: firstConfigured,
+				config: "config.ts",
+				errors: "first" as const
+			}
+			const plain = runPlain(firstConfigured)
+			attest(run(await bundle(opts, firstConfigured))).equals(plain)
+			attest(
+				run(
+					await bundle(
+						{ cwd: firstConfigured, config: "config.ts", runtime: "arktype" },
+						firstConfigured
+					)
+				)
+			).equals(plain)
 		}).timeout(60000)
 	}
 

@@ -158,6 +158,8 @@ precompile.vite({ config: "./config.ts" })
 
 The build evaluates the argument, which must be static, and precompiles every definition under it, so a `description` writer must be a static helper. A locale, or an `expected`, `problem` or `message` for a code a precompiled Type can raise, fails the build, since a standalone validator writes its own messages, and an `actual` writer is unused, since they never say what the value was. `onFail` can be any function: the call stays in the program, where it configures `arktype/runtime` and the arktype runtime islands run on. The runtime fixes its configuration when it creates its first validator and throws if `configure()` runs after that or a second time, or receives other values than a validator was built under. The build stamps a hash of the argument's values into the call and each validator, counting a function only as a function, so a `description` writer a loader or plugin changes after the build read it isn't caught. In standalone mode, `configure()` returns its argument rather than arktype's configuration with the argument merged in.
 
+arktype takes the `errors` option too, so a program that configures it, for arktype or for a Scope, builds with the same `errors`, and its validators return what arktype does: a site whose Types are configured with other errors fails the build. The build can't take it from the configuration, since the plugin chooses the runtime an `errors: "none"` build resolves to before it evaluates the config module. Where the program configures no `errors`, the build's option decides.
+
 The precompiler applies the configuration to arktype in its own thread, so each driver runs it in a worker. The Turbopack loader applies it where Turbopack runs the loader, so a change to the configuration applies once the dev server restarts.
 
 ## Libraries
@@ -269,7 +271,8 @@ export default {
 		// standalone mode only
 		resolveAlias: {
 			arktype: "arktype/runtime",
-			"arktype/config": "arktype/runtime"
+			"arktype/config": "arktype/runtime",
+			"arktype/errors": "arktype/runtime"
 		}
 	}
 }

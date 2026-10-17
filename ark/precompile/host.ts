@@ -145,14 +145,15 @@ export const appendSourceMap = (
 		`${code}\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(JSON.stringify(map)).toString("base64")}`
 	:	code
 
-export const runtimeSpecifiers = ["arktype", "arktype/config"]
+export const runtimeSpecifiers = ["arktype", "arktype/config", "arktype/errors"]
 
 // in shadow mode arktype creates each site beside its validator, so only its configuration resolves to the runtime
 export const resolvesToRuntime = (
 	specifier: string,
 	opts: PrecompileOptions | undefined
 ): boolean =>
-	opts?.runtime !== "arktype" && !(opts?.shadow && specifier === "arktype")
+	opts?.runtime !== "arktype" &&
+	!(opts?.shadow && specifier !== "arktype/config")
 
 // errors "none" runs on a runtime of its own, but not in shadow mode
 export const resolvesUndetailed = (

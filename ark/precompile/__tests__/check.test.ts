@@ -75,6 +75,30 @@ contextualize(() => {
 		])
 	})
 
+	it("rejects each site arktype is configured to give other errors than the build", () => {
+		attest(
+			check([], { cwd: fromHere("erroring"), config: "config.ts" }).lines
+		).snap([
+			'main.ts:4:18  type({ a: "string" }) can\'t be precompiled yet\n  arktype is configured with errors: "first", where the build\'s errors are "all"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
+			'main.ts:6:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "all"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
+			"2 sites in 2 files: 0 accepted (0.0%)"
+		])
+	})
+
+	it("accepts a site whose configured errors are the build's", () => {
+		attest(
+			check([], {
+				cwd: fromHere("erroring"),
+				config: "config.ts",
+				errors: "first"
+			}).lines
+		).snap([
+			"main.ts:4:18  accepted",
+			'main.ts:6:18  scope({ U: { b: "number" } }, { errors: "none" }) can\'t be precompiled yet\n  arktype is configured with errors: "none", where the build\'s errors are "first"\n  A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with.',
+			"2 sites in 2 files: 1 accepted (50.0%)"
+		])
+	})
+
 	it("fails under a rate", () => {
 		attest(cli("--check", "--fail-under", "50").status).equals(0)
 		attest(cli("--check", "--fail-under", "60").status).equals(1)
