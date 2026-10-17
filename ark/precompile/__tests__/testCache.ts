@@ -13,9 +13,9 @@ import {
 // first written under its key, so the suites' assertions run on units written for other roots, and a key names one unit:
 // pnpm testCache [mocha option...]
 
-// a member's name holds its scope's content, which the key leaves out, as compiling does
+// a member's name, and that of a structure's copy, holds its scope's content, which the key leaves out, as compiling does
 const memberName = new RegExp(
-	`\\b(?:${nodeKinds.join("|")})[0-9a-z]+(?:_\\d+)?(?=Allows|Apply|Transform)`,
+	`\\b(?:${nodeKinds.join("|")})[0-9a-z]+(?:_\\d+)?(?=Allows|Apply|Transform|Copy)`,
 	"g"
 )
 
