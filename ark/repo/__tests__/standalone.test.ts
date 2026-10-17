@@ -2147,14 +2147,14 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(() => create(validators.Text)).throws(
 				writeCreationMismatchMessage(
 					"`Name`",
-					"another Type<string>",
+					"another Type",
 					"the Type it was at build"
 				)
 			)
 			attest(() => create(validators.Described(trim))).throws(
 				writeCreationMismatchMessage(
 					"`Name`",
-					"another Type<(In: string) => Out<unknown>>",
+					"another Type",
 					"the Type it was at build"
 				)
 			)
@@ -2216,7 +2216,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(() => checked.Tagged(checked.Other)).throws(
 				writeCreationMismatchMessage(
 					"`Text`",
-					"another Type<number>",
+					"another Type",
 					"the Type it was at build"
 				)
 			)
@@ -2230,7 +2230,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(() => trusting.User(trusting.Other)).throws(
 				writeCreationMismatchMessage(
 					"`Name`",
-					"another Type<number>",
+					"Type<number>",
 					"the Type it was at build"
 				)
 			)
@@ -2443,7 +2443,7 @@ export const Island = type(["unknown", "unknown"]).pipe(([d, validate]) => valid
 			attest(() => created.Narrowed(Dog, created.DogT(Dog))).throws(
 				writeCreationMismatchMessage(
 					"`AnimalT`",
-					"another Type<Dog>",
+					"another Type",
 					"the Type it was at build"
 				)
 			)

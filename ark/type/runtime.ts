@@ -629,18 +629,12 @@ export const holesOf = ((
 ): readonly unknown[] => {
 	const created = holesByValue.get(holder as object)
 	if (created?.[0] !== id) {
-		const actual =
-			isValidator(holder) ?
-				Reflect.getOwnPropertyDescriptor(holder, "expression") ?
-					`another ${holder}`
-				:	"another Type"
-			: created ? `another ${kind}`
-			: holder === null ? "null"
-			: typeof holder === "object" ? "an object"
-			: holder === undefined ? "undefined"
-			: `a ${typeof holder}`
 		return throwError(
-			writeCreationMismatchMessage(label, actual, `the ${kind} it was at build`)
+			writeCreationMismatchMessage(
+				label,
+				created ? `another ${kind}` : describeValue(holder),
+				`the ${kind} it was at build`
+			)
 		)
 	}
 	return created[1]
