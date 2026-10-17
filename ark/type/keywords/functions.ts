@@ -244,8 +244,9 @@ const plainUrl =
 	/^(?:https?|[Hh][Tt]{2}[Pp][Ss]?):\/\/(?:[\dA-Za-z]+(?:-[\dA-Za-z]+)*\.)*[A-Za-z]+(?::\d{1,4})?(?:[#/?]|$)/
 
 // V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
+// the parser fails a string without a colon, as it has no scheme
 export const isParsableUrl = ((s: string): boolean =>
-	plainUrl.test(s) || URL.canParse(s)) satisfies Fn
+	plainUrl.test(s) || (s.includes(":") && URL.canParse(s))) satisfies Fn
 
 const urlParseError = /* @__PURE__ */ keywordError(
 	"string.url.parse",

@@ -22,6 +22,12 @@ contextualize(() => {
 		attest(Url.allows("HTTP://my-site.example.com:3000/a?b#c")).equals(true)
 	})
 
+	it("accepts other URLs the parser accepts", () => {
+		const Url = type("string.url")
+		attest(Url.allows("mailto:ada@example.com")).equals(true)
+		attest(Url.allows(" https://127.0.0.1:8080")).equals(true)
+	})
+
 	it("accepts whatever follows a plain host, as the parser does", () => {
 		const Url = type("string.url")
 		const urls = [
