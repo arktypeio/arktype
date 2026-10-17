@@ -1323,6 +1323,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}
 
 		if (this.undeclared === "reject" && keyDomain === "string") {
+			// for...in also reaches inherited keys, which aren't undeclared
+			const isOwn = "Object.prototype.hasOwnProperty.call(data, k)"
+			const skipsInherited =
+				!this.index && !this.sequence && js.traversalKind === "Allows"
+			if (skipsInherited) js.line(`if (!${isOwn}) continue`)
 			const props = this.props.filter(prop => typeof prop.key === keyDomain)
 			if (props.length) compileDeclaredKeySwitch(js, props)
 			const reject = () =>
@@ -1333,9 +1338,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					)
 			const declaresKey = this._compileDeclaresKey(js)
 			const conditions = declaresKey === "false" ? [] : [`!(${declaresKey})`]
-			// for...in also reaches inherited keys, which aren't undeclared
-			if (!this.index)
-				conditions.push("Object.prototype.hasOwnProperty.call(data, k)")
+			if (!this.index && !skipsInherited) conditions.push(isOwn)
 			if (conditions.length) js.if(conditions.join(" && "), reject)
 			else reject()
 		}

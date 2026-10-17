@@ -230,6 +230,34 @@ c must be removed`)
 			).snap("{ [symbol]: string, a: string, + (undeclared): reject }")
 		})
 
+		it("reject reads only own enumerable keys", () => {
+			const T = type({ "+": "reject", a: "string" })
+			// the first data is checked uncompiled
+			attest(T.allows({ a: "x" })).equals(true)
+			const inheritsB = Object.assign(Object.create({ b: 1 }), { a: "x" })
+			attest(T.allows(inheritsB)).equals(true)
+			const inheritsA = Object.assign(Object.create({ a: "x" }), { b: 1 })
+			attest(T.allows(inheritsA)).equals(false)
+			attest(T(inheritsA).toString()).snap("b must be removed")
+			const hidesB = Object.defineProperty({ a: "x" }, "b", { value: 1 })
+			attest(T.allows(hidesB)).equals(true)
+			const hidesA = Object.defineProperty({ b: 1 }, "a", { value: "x" })
+			attest(T(hidesA).toString()).snap("b must be removed")
+			const unprototyped = Object.assign(Object.create(null), { a: "x", b: 1 })
+			attest(T(unprototyped).toString()).snap("b must be removed")
+			const listsB = new Proxy(
+				{ a: "x" },
+				{
+					ownKeys: target => [...Reflect.ownKeys(target), "b"],
+					getOwnPropertyDescriptor: (target, k) =>
+						k === "b" ?
+							{ value: 1, enumerable: true, configurable: true }
+						:	Reflect.getOwnPropertyDescriptor(target, k)
+				}
+			)
+			attest(T.allows(listsB)).equals(false)
+		})
+
 		it("reject array key", () => {
 			const O = type({ "+": "reject", a: "string[]" })
 			attest(O({ a: ["shawn"] })).snap({ a: ["shawn"] })

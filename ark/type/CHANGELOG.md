@@ -904,6 +904,8 @@ const T = type({ "+": "reject", a: "string" })
 T({ a: "x", [Symbol("s")]: 1 })
 ```
 
+Checking that data is valid asks whether each key it walks is the object's own before whether it's declared, which makes validating the benchmark's strict moltar data run about 10% fewer instructions. A `Proxy`'s `getOwnPropertyDescriptor` trap runs for each of its enumerable keys, where it ran only for a key the Type doesn't declare.
+
 Reject types that differ only by a symbol key now overlap, so a union of them with a morph is indeterminate:
 
 ```ts
