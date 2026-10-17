@@ -44,6 +44,9 @@ export class ArkErrors {
 
 export { ArkErrors as FirstIssues }
 
+// as issues.ts's, though these errors hold no path
+export const releasePath = (errors: ArkErrors): ArkErrors => errors
+
 // exported as issues.ts's is, though nothing throws it
 export class TraversalError extends Error {
 	readonly name = "TraversalError"

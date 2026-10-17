@@ -64,6 +64,15 @@ export interface FailureContext {
 // named apart from arktype's subclass, which keeps the runtime name ArkErrors
 export { ArkIssues as ArkErrors }
 
+// the path stack a validation left empty, which the next one takes
+let releasedPath: PropertyKey[] | undefined
+
+/** @internal once their Apply returns, errors pass their path on */
+export const releasePath = (errors: ArkIssues): ArkIssues => (
+	(releasedPath = errors._path),
+	errors
+)
+
 declare namespace ArkIssues {
 	export type Handler<returns = unknown> = (errors: ArkIssues) => returns
 }
@@ -80,7 +89,8 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	// fields are assigned by the constructor, since V8 creates a subclass's instances more slowly from initializers
 	constructor() {
 		this._ = []
-		this._path = []
+		this._path = releasedPath ?? []
+		releasedPath = undefined
 	}
 
 	get [arkKind](): "errors" {

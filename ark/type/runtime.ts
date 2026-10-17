@@ -10,6 +10,7 @@ import {
 	errorsOf,
 	mergeIssues,
 	messageOf,
+	releasePath,
 	runtimeConfig,
 	supportedJsonSchemaTargets,
 	validateStandardJsonSchemaTarget,
@@ -432,7 +433,7 @@ export const applyErrors = (
 ): unknown => {
 	const ctx = new Ctx(data, config)
 	apply(data, ctx)
-	const errors = ctx instanceof ArkErrors ? ctx : ctx._errors
+	const errors = ctx instanceof ArkErrors ? releasePath(ctx) : ctx._errors
 	return (
 		!errors?.count ? data
 		: onFail ? onFail(errors)
@@ -459,7 +460,7 @@ export const applyCallErrors = (
 ): unknown => {
 	const ctx = new Ctx(data, runtimeConfig)
 	apply(data, ctx)
-	const errors = ctx instanceof ArkErrors ? ctx : ctx._errors
+	const errors = ctx instanceof ArkErrors ? releasePath(ctx) : ctx._errors
 	if (!errors?.count) return data
 	if (args.length) {
 		if (args[0]) return pipedInto(args[0], errors)
