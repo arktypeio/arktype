@@ -48,7 +48,7 @@ import type { Intersection } from "./roots/intersection.ts"
 import type { Morph } from "./roots/morph.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Unit } from "./roots/unit.ts"
-import type { BaseScope, UnboundTraversals } from "./scope.ts"
+import type { BaseScope } from "./scope.ts"
 import type { NodeCompiler } from "./shared/compile.ts"
 import type {
 	BaseNodeDeclaration,
@@ -113,6 +113,7 @@ import {
 } from "./shared/utils.ts"
 import type { Sequence } from "./structure/sequence.ts"
 import type { UndeclaredKeyHandling } from "./structure/structure.ts"
+import type { UnboundTraversals } from "./units.ts"
 
 const noReferences: readonly BaseNode[] = []
 

@@ -1,7 +1,7 @@
 import type { MutatesInput } from "../config.ts"
 import type { BaseNode } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
-import { precompileInPlace } from "../scope.ts"
+import { precompileInPlace } from "../units.ts"
 import { arrayIndexMatcher } from "../structure/shared.ts"
 import type { StructureNode } from "../structure/structure.ts"
 import { $ark } from "./registry.ts"

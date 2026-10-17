@@ -48,5 +48,16 @@ export * from "./structure/prop.ts"
 export * from "./structure/required.ts"
 export * from "./structure/sequence.ts"
 export * from "./structure/structure.ts"
+export {
+	precompileInPlace,
+	precompileRootUnits,
+	registerPrecompiledUnits,
+	TraversalCompiler,
+	writePrecompiledUnits,
+	type PrecompiledUnit,
+	type RootUnit,
+	type UnboundTraversals,
+	type UnitMember
+} from "./units.ts"
 
 export { arkKind, ParseError } from "@ark/util"
