@@ -306,7 +306,9 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			js.return(js.invoke(structure!))
 			return
 		}
-		js.initializeErrorCount()
+		// read only where a later check follows one that can add issues
+		if ((structure && !structure.transforms) || predicates.length > 1)
+			js.initializeErrorCount()
 		if (structure) {
 			// Apply transforms what it finds valid, which a predicate could still reject
 			if (structure.transforms)
