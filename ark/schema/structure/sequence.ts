@@ -106,6 +106,16 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					if (schema.length === 0) return undefined
 
 					return schema.map(element => ctx.$.parseSchema(element))
+				},
+				reduceIo: (ioKind, inner, prefix) => {
+					// defaultables become prefix elements on output, so ensure we
+					// don't overwrite them and that they follow these elements
+					inner.prefix = [
+						...prefix!.map(node =>
+							ioKind === "in" ? node.rawIn : node.rawOut
+						),
+						...(inner.prefix ?? [])
+					]
 				}
 			},
 			optionals: {
@@ -114,6 +124,16 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					if (schema.length === 0) return undefined
 
 					return schema.map(element => ctx.$.parseSchema(element))
+				},
+				reduceIo: (ioKind, inner, optionals) => {
+					// defaultables become optionals on input, so ensure we
+					// don't overwrite them and that they precede these elements
+					inner.optionals = [
+						...(inner.optionals ?? []),
+						...optionals!.map(node =>
+							ioKind === "in" ? node.rawIn : node.rawOut
+						)
+					]
 				}
 			},
 			defaultables: {
@@ -134,11 +154,19 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					]),
 				reduceIo: (ioKind, inner, defaultables) => {
 					if (ioKind === "in") {
-						inner.optionals = defaultables!.map(d => d[0].rawIn)
+						// defaultables are optional on input, preceding other optionals
+						inner.optionals = [
+							...defaultables!.map(d => d[0].rawIn),
+							...(inner.optionals ?? [])
+						]
 						return
 					}
 
-					inner.prefix = defaultables!.map(d => d[0].rawOut)
+					// defaultables are required on output, following other prefix elements
+					inner.prefix = [
+						...(inner.prefix ?? []),
+						...defaultables!.map(d => d[0].rawOut)
+					]
 					return
 				}
 			},
