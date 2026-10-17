@@ -12,6 +12,10 @@ import { arrayIndexSource } from "./structure/shared.ts"
 const builtinScope: SchemaScopeParser = (aliases, config) =>
 	new SchemaScope(aliases, config, true)
 
+const jsonIntrinsicNames = ["jsonPrimitive", "jsonObject", "jsonData"] as const
+
+type IntrinsicJson = Record<(typeof jsonIntrinsicNames)[number], BaseRoot>
+
 const bootstrapIntrinsic = () => {
 	const intrinsicBases = builtinScope(
 		{
@@ -89,10 +93,6 @@ const bootstrapIntrinsic = () => {
 
 	return result
 }
-
-const jsonIntrinsicNames = ["jsonPrimitive", "jsonObject", "jsonData"] as const
-
-type IntrinsicJson = Record<(typeof jsonIntrinsicNames)[number], BaseRoot>
 
 let bootstrapped = false
 let bootstrappedWithEngine = false

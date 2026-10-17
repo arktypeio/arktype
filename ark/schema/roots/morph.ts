@@ -17,9 +17,9 @@ import {
 	pipe,
 	pipeOf,
 	transform,
-	type Traversal,
+	type AliasDepth,
 	type InternalTraversal,
-	type AliasDepth
+	type Traversal
 } from "../shared/traversal.ts"
 import { hasArkKind } from "../shared/utils.ts"
 import { BaseRoot } from "./root.ts"

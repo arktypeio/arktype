@@ -4,9 +4,9 @@ import {
 	intrinsic,
 	rootSchema,
 	schemaScope,
+	writeMissingImportMessage,
 	type ArkErrors,
-	type NodeId,
-	writeMissingImportMessage
+	type NodeId
 } from "@ark/schema"
 import { arrayIndexMatcher } from "@ark/schema/internal/structure/shared.ts"
 import { jsTypeOfDescriptions, printable } from "@ark/util"

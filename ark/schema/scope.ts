@@ -71,9 +71,9 @@ import {
 } from "./parse.ts"
 import { parseSchema, type RootSchema } from "./parseSchema.ts"
 import {
-	type Alias,
 	isResolvable,
-	resolveShallowAliases
+	resolveShallowAliases,
+	type Alias
 } from "./roots/alias.ts"
 import type { BaseRoot } from "./roots/root.ts"
 import type { Union } from "./roots/union.ts"

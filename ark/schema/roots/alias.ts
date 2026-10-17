@@ -22,8 +22,8 @@ import {
 	maxAliasDepth,
 	maxAliasVisits,
 	transformResolution,
-	type InternalTraversal,
-	type AliasDepth
+	type AliasDepth,
+	type InternalTraversal
 } from "../shared/traversal.ts"
 import { $ark } from "../shared/registry.ts"
 import {

@@ -24,9 +24,9 @@ import {
 	allowsInBranch,
 	applyValue,
 	traverseKey,
+	type AliasDepth,
 	type InternalTraversal,
-	type TraverseAllows,
-	type AliasDepth
+	type TraverseAllows
 } from "../shared/traversal.ts"
 
 export declare namespace Index {

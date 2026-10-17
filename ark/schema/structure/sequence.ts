@@ -39,8 +39,8 @@ import {
 	computeDefaultValueMorph,
 	transform,
 	traverseKey,
-	type InternalTraversal,
-	type AliasDepth
+	type AliasDepth,
+	type InternalTraversal
 } from "../shared/traversal.ts"
 import { assertDefaultValueAssignability } from "./optional.ts"
 

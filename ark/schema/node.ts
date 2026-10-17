@@ -96,12 +96,12 @@ import {
 	pipe,
 	transform,
 	transformResolution,
-	type Traversal,
+	type AliasDepth,
 	type FailHandler,
 	type InternalTraversal,
+	type Traversal,
 	type TraverseApply,
-	type TraverseTransform,
-	type AliasDepth
+	type TraverseTransform
 } from "./shared/traversal.ts"
 import {
 	composing,

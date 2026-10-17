@@ -10,9 +10,9 @@ import type {
 import { describePredicate } from "./shared/errorWriters.ts"
 import { implementNode, type nodeImplementationOf } from "./shared/implement.ts"
 import type {
-	Traversal,
+	AliasDepth,
 	InternalTraversal,
-	AliasDepth
+	Traversal
 } from "./shared/traversal.ts"
 
 export declare namespace Predicate {
@@ -65,8 +65,8 @@ export class PredicateNode extends BaseConstraint<Predicate.Declaration> {
 	impliedBasis = null
 
 	expression: string = baseNameOf(this.predicate)
-	// called detached, as compiled code calls it
 	traverseAllows(data: unknown, ctx: InternalTraversal | AliasDepth): boolean {
+		// called detached, as compiled code calls it
 		const predicate = this.predicate
 		return predicate(data, ctx as never)
 	}

@@ -49,9 +49,9 @@ import {
 	transformedInApply,
 	transformsValid,
 	traverseKey,
+	type AliasDepth,
 	type InternalTraversal,
-	type TraversalKind,
-	type AliasDepth
+	type TraversalKind
 } from "../shared/traversal.ts"
 import {
 	hasArkKind,

@@ -1,6 +1,6 @@
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 export * from "./index.ts"
-// arktype's errors, whose base a standalone validator returns
+// shadows issues.ts's ArkErrors, which ./runtime.ts re-exports
 export { ArkErrors } from "./shared/errors.ts"
 export * from "./roots/basis.ts"
 export * from "./shared/render.ts"

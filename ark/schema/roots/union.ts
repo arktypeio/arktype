@@ -48,9 +48,9 @@ import {
 	transform,
 	transformed,
 	transformResolution,
-	type Traversal,
+	type AliasDepth,
 	type InternalTraversal,
-	type AliasDepth
+	type Traversal
 } from "../shared/traversal.ts"
 import {
 	describeBranches,

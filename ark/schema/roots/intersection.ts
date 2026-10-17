@@ -16,8 +16,8 @@ import {
 import {
 	allowsInBranch,
 	transform,
-	type InternalTraversal,
-	type AliasDepth
+	type AliasDepth,
+	type InternalTraversal
 } from "../shared/traversal.ts"
 import type { makeRootAndArrayPropertiesMutable } from "../shared/utils.ts"
 import type { Structure } from "../structure/structure.ts"

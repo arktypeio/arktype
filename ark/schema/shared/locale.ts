@@ -1,11 +1,11 @@
 import {
 	appendUnique,
 	hasOwn,
+	printable,
 	type BuiltinObjectKind,
 	type Domain,
 	type ListType,
-	type omit,
-	printable
+	type omit
 } from "@ark/util"
 import type { MissingBasis, MissingValue } from "../structure/required.ts"
 import {

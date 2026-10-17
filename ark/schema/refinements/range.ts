@@ -1,9 +1,9 @@
 import {
-	type array,
 	isKeyOf,
+	throwParseError,
+	type array,
 	type propValueOf,
-	type satisfy,
-	throwParseError
+	type satisfy
 } from "@ark/util"
 import { InternalPrimitiveConstraint } from "../constraint.ts"
 import type { nodeOfKind } from "../kinds.ts"

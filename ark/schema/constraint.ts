@@ -31,7 +31,7 @@ import {
 	type kindLeftOf
 } from "./shared/implement.ts"
 import { sets } from "./shared/sets.ts"
-import type { InternalTraversal, AliasDepth } from "./shared/traversal.ts"
+import type { AliasDepth, InternalTraversal } from "./shared/traversal.ts"
 
 export declare namespace Constraint {
 	export interface Declaration extends BaseNodeDeclaration {

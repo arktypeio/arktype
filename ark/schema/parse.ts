@@ -24,8 +24,8 @@ import type { BaseRoot } from "./roots/root.ts"
 import type { BaseScope } from "./scope.ts"
 import { Disjoint } from "./shared/disjoint.ts"
 import {
-	metaJsonOf,
 	isNodeKind,
+	metaJsonOf,
 	precedenceOfKind,
 	prestructuralKinds,
 	type NodeKind,
@@ -41,7 +41,7 @@ export type BaseParseOptions<prereduced extends boolean = boolean> = {
 	prereduced?: prereduced
 	args?: ContextualArgs
 	id?: NodeId
-	// the content name an anonymous cycle's references print where `this` would mean another Type
+	// printed for an anonymous cycle's references in place of this
 	name?: string
 }
 

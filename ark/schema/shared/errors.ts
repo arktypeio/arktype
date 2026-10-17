@@ -28,10 +28,10 @@ import {
 	ArkErrors as BaseArkErrors,
 	messageOf,
 	problemOf,
-	type FailureInput,
 	type ArkIssue,
-	type FailureSite,
 	type CompactApply,
+	type FailureInput,
+	type FailureSite,
 	type UnionSite
 } from "./issues.ts"
 import { Traversal, type InternalTraversal } from "./traversal.ts"

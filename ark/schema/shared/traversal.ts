@@ -1,11 +1,11 @@
 import {
 	hasDomain,
-	type array,
 	isArray,
 	isThunk,
 	noSuggest,
 	objectKindOf,
-	stringifyPath
+	stringifyPath,
+	type array
 } from "@ark/util"
 import type { ResolvedConfig } from "../config.ts"
 import type { BaseNode } from "../node.ts"
@@ -25,10 +25,10 @@ import {
 	mergeIssues,
 	unionIssue,
 	type ArkIssue,
+	type CompactApply,
+	type FailureContext,
 	type FailureInput,
 	type FailureSite,
-	type FailureContext,
-	type CompactApply,
 	type UnionSite
 } from "./issues.ts"
 import { TransformErrors } from "./transform.ts"

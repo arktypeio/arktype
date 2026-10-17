@@ -18,8 +18,8 @@ import { $ark } from "../shared/registry.ts"
 import {
 	applyValue,
 	traverseKey,
-	type InternalTraversal,
-	type AliasDepth
+	type AliasDepth,
+	type InternalTraversal
 } from "../shared/traversal.ts"
 import type { Optional } from "./optional.ts"
 import type { Required } from "./required.ts"
