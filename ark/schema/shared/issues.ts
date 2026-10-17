@@ -304,7 +304,11 @@ export const messageOf = (issue: ArkIssue): string => {
 			path += typeof k === "string" ? k : String(k)
 		}
 	}
-	return path ? path + " " + problemOf(issue) : problemOf(issue)
+	if (!path) return problemOf(issue)
+	// " must be " is appended as one string
+	return issue.problem === undefined && issue.expected !== undefined ?
+			path + " must be " + issue.expected
+		:	path + " " + problemOf(issue)
 }
 
 export const problemOf = (issue: ArkIssue): string =>
