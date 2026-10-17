@@ -22,8 +22,8 @@ import {
 	traverse
 } from "./contract.ts"
 
-// runs each file of a perturbation manifest once per perturbation, as written (P) or precompiled (P') in standalone
-// or cache mode, recording what each folded site creates
+// runs each file of a manifest once per perturbation, as written or
+// precompiled, recording what each folded site creates
 
 export const perturbations = [
 	"none",
@@ -89,7 +89,6 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			if (world === "standalone" && specifier === "arktype")
 				return { url: "perturbation:arktype", shortCircuit: true }
 			const resolved = next(specifier, context)
-			// issuesNone.ts for issues.ts, as @ark/schema/runtime/none bundles them
 			if (
 				world === "standalone" &&
 				!detailsErrors &&
@@ -109,7 +108,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 				!isPerturbable(fileURLToPath(resolved.url))
 			)
 				return resolved
-			// each run imports a graph of its own, so a module evaluates once per run as in a test runner, and an import cycle reaches the run's file as it was imported
+			// each run imports a graph of its own, as a test runner would
 			const isRoot =
 				filesByPath[fileURLToPath(resolved.url)] ===
 				manifest.files[Number.parseInt(runId)]
@@ -234,7 +233,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 		return true
 	}
 
-	// a write a program could make before the site runs, which the build didn't see
+	// a write the program could make before the site runs, unseen by the build
 	const perturb = (value: unknown): boolean => {
 		if (!hasDomain(value, "object") || isArk(value) || perturbed.has(value))
 			return false
@@ -335,7 +334,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 		after: () => {},
 		afterEach: () => {},
 		$arkMock: mock,
-		// a generated program's record of what one of its sites creates, and how that validates data generated for it
+		// a generated program's record of what a site creates and validates
 		$arkObserve: (
 			key: string,
 			create: () => unknown,
@@ -350,12 +349,12 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 		$arkSite: (
 			id: number,
 			readsOf: () => (() => unknown)[],
-			// the reads an arktype value the site reads already holds, whose name and length arktype keeps as it read them
+			// reads an arktype value already holds, whose name and length it keeps
 			passed: number[],
 			create: () => unknown
 		) => {
 			let isPerturbed = false
-			// a binding read before its declaration throws as the site would, so it isn't perturbed
+			// a binding read before its declaration throws, as the site would
 			const values = readsOf().map(valueOrError)
 			const kept =
 				perturbation === "arity" || perturbation === "name" ?
@@ -364,7 +363,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			for (const value of values) {
 				if (!hasDomain(value, "object")) continue
 				if (!firstRunOf.has(value)) firstRunOf.set(value, run)
-				// a value an earlier run read is shared by runs, so a write to it would leak into later ones and meet what arktype cached in earlier ones
+				// a value an earlier run read is shared, so writing it would leak
 				if (
 					firstRunOf.get(value) === run &&
 					!kept.has(value) &&
@@ -403,7 +402,7 @@ const run = async (world: World, manifest: Manifest, outPath: string) => {
 			occurrencesBySite = {}
 			tests = []
 			beforeEachHooks = []
-			// a test's own failures are its suite's to report, so a world records only what each site creates
+			// a test's own failures are its suite's to report
 			await import(
 				`${pathToFileURL(file.path).href}?run=${index}.${kind}&root`
 			).catch(e => e)
@@ -553,7 +552,7 @@ const samples = (): unknown[] => [
 	new Date(0)
 ]
 
-// a Type a morph returns is compared by its expression, since a precompiled program's is a validator
+// a Type a morph returns is compared by expression, as a validator has one
 export const serialize = (out: unknown): unknown =>
 	(
 		hasDomain(out, "object") &&
@@ -568,7 +567,7 @@ export const serialize = (out: unknown): unknown =>
 			maxArrayLength: 10
 		})
 
-// a precompiled Module is a frozen object of validators, as json is of data, so a Module is told and compared by its members
+// a precompiled Module is a frozen object of validators, compared by member
 const isModule = (value: unknown): value is Record<string, unknown> =>
 	hasDomain(value, "object") &&
 	((value as { " arkKind"?: unknown })[" arkKind"] === "module" ||
@@ -578,13 +577,13 @@ const isModule = (value: unknown): value is Record<string, unknown> =>
 				member => typeof member === "function" || isModule(member)
 			)))
 
-// a precompiled Scope or Generic is an empty object, so either is compared as one
+// a precompiled Scope or Generic is an empty object
 const isStandIn = (value: unknown): boolean =>
 	hasDomain(value, "object") &&
 	((value as { " arkKind"?: unknown })[" arkKind"] === "scope" ||
 		(value as { " arkKind"?: unknown })[" arkKind"] === "generic")
 
-// a TypedFn holds its parameters' and return's Types, as validators in a precompiled program
+// a TypedFn holds its parameters' and return's Types
 const isTypedFn = (
 	value: unknown
 ): value is ((...args: unknown[]) => unknown) & {
@@ -602,7 +601,7 @@ const sample = (validate: (data: unknown) => unknown) =>
 		}
 	})
 
-// the result of a call, as design/precompile.md §2 observes it: its output, what a standalone validator keeps of each error, or what it throws
+// a call's output, the issues a validator keeps, or what it throws
 const outcomeOf = (call: () => unknown, input?: unknown): Observation => {
 	try {
 		const out: any = call()
@@ -620,7 +619,7 @@ const outcomeOf = (call: () => unknown, input?: unknown): Observation => {
 	}
 }
 
-// each call gets its own copy of an input, so what one mutates the next doesn't see
+// each call gets its own input copy, so one's writes don't reach the next
 const observeValidation = (
 	value: unknown,
 	inputsOf: () => unknown[],
@@ -721,7 +720,7 @@ const observe = (value: unknown): Observation => {
 	}
 }
 
-// a path to this file through a symlink differs from its URL, which resolves the link
+// import.meta.main, as a symlinked path differs from this file's URL
 if (import.meta.main) {
 	const [world, manifestPath, outPath] = process.argv.slice(2)
 	// arktype writes in place where the build's validators do

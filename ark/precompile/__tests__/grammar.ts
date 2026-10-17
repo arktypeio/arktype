@@ -1,7 +1,7 @@
 import type { Traversal } from "@ark/schema"
 import fc from "fast-check"
 
-// arktype's grammar, the data near each definition's boundary, and the source of either
+// arktype's grammar, data near each definition's boundary, and their source
 
 export type Node =
 	| { kind: "keyword"; name: Keyword }
@@ -75,7 +75,7 @@ const keywordData = {
 
 const keywords = Object.keys(keywordData) as Keyword[]
 
-// a pattern with flags is a RegExp, since a string definition can't hold them
+// a pattern with flags is a RegExp, as a string definition can't hold them
 const patterns: [pattern: RegExp, strings: string[]][] = [
 	[/^a+$/, ["a", "aa", "", "ab", "A"]],
 	[/\d/, ["1", "a1", "", "a"]],

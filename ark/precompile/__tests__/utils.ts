@@ -20,7 +20,7 @@ import {
 import { tmpdir } from "node:os"
 import { dirname, join, posix } from "node:path"
 
-// a bare specifier resolves to a package in node_modules, which the build does not read
+// a bare specifier resolves to node_modules, which the build doesn't read
 export const memoryHost = (files: Record<string, string>): PrecompileHost => ({
 	resolve: (specifier, importer) =>
 		specifier.startsWith(".") ?

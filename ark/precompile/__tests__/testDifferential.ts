@@ -9,9 +9,8 @@ import {
 	outDir
 } from "./differential.ts"
 
-// checks the differential of the precompilation design (design/precompile.md §12): every root arktype's
-// suites call, precompiled in each layout, agrees with arktype on each input the suites passed it:
-// pnpm testDifferential [mocha option...]
+// every root arktype's suites call, precompiled in each layout, agrees with
+// arktype on each input the suites passed it: pnpm testDifferential
 
 const maxInputsPerRoot = 32
 
@@ -47,7 +46,7 @@ prototype.initRootApply = function (this: BaseRoot) {
 const run = async () => {
 	isRecording = false
 	const roots = [...inputsByRoot]
-	// every root is observed before any is built, since a build renames the functions they hold
+	// every root is observed first, as a build renames the functions they hold
 	const observations = roots.map(([node, inputs]) =>
 		observeArktype(node, inputs)
 	)

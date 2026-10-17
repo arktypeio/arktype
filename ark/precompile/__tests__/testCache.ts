@@ -9,17 +9,18 @@ import {
 	type PrecompiledUnit
 } from "@ark/schema"
 
-// checks cache mode (design/precompile.md §9) on arktype's suites: each acyclic root a suite finalizes binds the unit
-// first written under its key, so the suites' assertions run on units written for other roots, and a key names one unit:
-// pnpm testCache [mocha option...]
+// each acyclic root arktype's suites finalize binds the unit first written
+// under its key, so the suites run on units written for other roots, and a
+// key names one unit: pnpm testCache [mocha option...]
 
-// a member's name, and that of a structure's copy, holds its scope's content, which the key leaves out, as compiling does
+// a member's name holds its scope's content, which the key leaves out
 const memberName = new RegExp(
 	`\\b(?:${nodeKinds.join("|")})[0-9a-z]+(?:_\\d+)?(?=Allows|Apply|Transform|Copy)`,
 	"g"
 )
 
-// a bind may read a node through either of two references to it, so the unit's code is compared as text and its bind by what it binds
+// a bind may reach a node through either of two references, so a unit's
+// code is compared as text and its bind by what it binds
 const codeOf = (unit: string) => {
 	const indicesByName: Record<string, number> = {}
 	let names = 0
@@ -36,7 +37,7 @@ const collisions: string[] = []
 const unbound: string[] = []
 let finalized = 0
 let inlined = 0
-// the units a finalized root was written, which it compares its binds with rather than writing them again
+// each finalized root's units, which its binds are compared with
 const finalizedUnits = new WeakMap<object, Record<string, string>>()
 
 // a root binding a unit written for another binds what its own unit would
@@ -106,9 +107,10 @@ BaseScope.prototype.finalize = function <node extends BaseRoot>(
 	return node
 }
 
-// a build writes units for a scope's exported roots and those their units call, so a root only a union inlines compiles at export()
+// a build writes units for a scope's exports and what they call, so a root
+// only a union inlines compiles at export()
 const { export: exportScope } = BaseScope.prototype
-// a scope binding precompiled units reads its references as it exports, which registers its roots' units
+// a scope binding precompiled units reads its references as it exports
 registerPrecompiledUnits({})
 BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 	if (this.resolved || this.resolvedConfig.jitless)
@@ -120,7 +122,7 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 		BaseScope.prototype,
 		"references"
 	)!.get!
-	// export() reads its references once it has resolved its exports and before it binds them
+	// export() reads its references between resolving and binding its exports
 	Object.defineProperty(this, "references", {
 		configurable: true,
 		get: () => {
@@ -172,7 +174,8 @@ BaseScope.prototype.export = function (this: BaseScope, ...names: string[]) {
 	}
 } as never
 
-// a union discriminated by a symbol key or an object unit compiles a value it derives, which a bind can't reach
+// a union discriminated by a symbol key or object unit derives a value a
+// bind can't reach
 const expectedMisses = [
 	"{ Symbol(tag): 0 } | { Symbol(tag): 1 }",
 	"{ a: { Symbol(tag): 0 } | { Symbol(tag): 1 } }",

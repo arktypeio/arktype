@@ -19,12 +19,10 @@ import { execFile, spawnSync } from "node:child_process"
 import {
 	existsSync,
 	globSync,
-	mkdtempSync,
 	readFileSync,
 	rmSync,
 	writeFileSync
 } from "node:fs"
-import { tmpdir } from "node:os"
 import { join, relative } from "node:path"
 import { promisify } from "node:util"
 import {
@@ -37,9 +35,10 @@ import {
 	type World,
 	type WorldResults
 } from "./perturbationWorker.ts"
+import { tempDir } from "./utils.ts"
 
-// checks invariant I of the precompilation design (design/precompile.md §12): a value a folded site
-// reads, changed before the site runs, makes the precompiled program throw at creation or agree with the original:
+// a value a folded site reads, changed before the site runs, makes the
+// precompiled program throw at creation or agree with arktype:
 // pnpm testPerturbation [file...]
 
 const root = fromHere("..", "..", "..")
@@ -48,11 +47,11 @@ export interface BuildOptions {
 	mode: PrecompileMode
 	// a standalone build's options, which cache mode doesn't take
 	standalone?: PrecompileOptions
-	// run a file where no site folds, as for a program that records its own observations
+	// run a file where no site folds, as a program recording its own does
 	runsUnfolded?: boolean
 }
 
-const createPrecompiler = (opts: BuildOptions) =>
+const perturbingPrecompiler = (opts: BuildOptions) =>
 	new Precompiler(
 		createNodeHost({ conditions: ["ark-ts", "import", "default"] }),
 		{
@@ -64,14 +63,14 @@ const createPrecompiler = (opts: BuildOptions) =>
 		}
 	)
 
-export interface PerturbedBuild {
+interface PerturbedBuild {
 	manifest: Manifest
 	sitesById: Record<number, string>
 	// what fails a standalone build, which then has no program to run
 	errors: Diagnostic[]
 }
 
-// sites are wrapped where a standalone build folds them, so each mode's program wraps the same expressions
+// sites are wrapped where standalone folds them, so each mode wraps alike
 export const buildPerturbed = (
 	corpus: string[],
 	opts: BuildOptions
@@ -94,7 +93,7 @@ export const buildPerturbed = (
 
 	for (const path of corpus) {
 		const source = readFileSync(path, "utf8")
-		const precompiler = createPrecompiler({ ...opts, mode: "standalone" })
+		const precompiler = perturbingPrecompiler({ ...opts, mode: "standalone" })
 		const { sites } = precompiler.analyze(source, path)
 		const unsupported = new Set(
 			precompiler
@@ -110,7 +109,7 @@ export const buildPerturbed = (
 		)
 		if (!folded.length && !opts.runsUnfolded) continue
 		const module = precompiler.graph.moduleOf(path) as SourceModule
-		// what the arktype values of the modules it imports hold, and what any of their definitions passed arktype though its Type no longer holds it, was passed before any of its own sites runs
+		// what its imports hold or passed arktype, passed before its sites run
 		const loaded = [
 			...Object.values(module.scopes.root.bindings).flatMap(binding => {
 				if (binding.kind !== "import") return []
@@ -138,14 +137,14 @@ export const buildPerturbed = (
 				return undefined
 			}
 		}
-		// a comment beside a site survives its transform, so each world wraps the same expression
+		// a comment beside a site survives its transform, so worlds wrap alike
 		const marked = new MagicString(source)
 		const wrappers: [start: string, end: string, replacement: string][] = []
 		const heldImports: string[] = []
 		for (const site of folded) {
 			const id = Object.keys(sitesById).length
 			sitesById[id] = `${relative(root, path)}:${site.line}:${site.column}`
-			// arktype keeps the name and length it read of a function it already holds, and redefining those of one its module creates is outside the guarantee
+			// arktype keeps the name and length it read of a function it holds
 			const passed = new Set([
 				...loaded,
 				...site.references.flatMap(({ value, isOwnHole }) =>
@@ -172,7 +171,7 @@ export const buildPerturbed = (
 				// a function the site reads, whose Type may no longer hold it
 				if (passed.has(valueOrUndefined(binding))) passedNames.add(binding.name)
 			}
-			// what a Type the site reads holds can change too, through the binding declaring it, imported if another module exports it
+			// what a Type the site reads holds can change too, through its binding
 			const held = new Set(
 				[site.value, ...site.references.map(reference => reference.value)]
 					.filter(value => hasArkKind(value, "root"))
@@ -205,7 +204,7 @@ export const buildPerturbed = (
 					.join(", ")}], () => (`
 			])
 		}
-		// the last of each marker, since a factory's labels quote the source of what it receives, and none for a site dropped with one it was written in
+		// the last of each marker, since a factory's labels quote what it receives
 		const wrap = (code: string) => {
 			for (const [start, end, replacement] of wrappers) {
 				for (const [marker, text] of [
@@ -220,7 +219,7 @@ export const buildPerturbed = (
 			return code
 		}
 		marked.append(heldImports.map(statement => `\n${statement}`).join(""))
-		const precompiled = createPrecompiler(opts).precompile(
+		const precompiled = perturbingPrecompiler(opts).precompile(
 			marked.toString(),
 			path
 		)
@@ -240,7 +239,7 @@ export const buildPerturbed = (
 				if (!isPerturbable(target) || reached.includes(target)) continue
 				reached.push(target)
 				if (target in precompiledByPath) continue
-				const targetPrecompiler = createPrecompiler(opts)
+				const targetPrecompiler = perturbingPrecompiler(opts)
 				const targetPrecompiled = targetPrecompiler.precompile(
 					readFileSync(target, "utf8"),
 					target
@@ -297,7 +296,7 @@ const isHolder = (value: unknown): value is Foldable =>
 const errorsOf = (precompiled: PrecompiledModule) =>
 	precompiled.diagnostics.filter(diagnostic => diagnostic.severity === "error")
 
-// a mock can export another Type, Scope, Module, Generic or TypedFn in place of one, so each is swapped for the next of its kind
+// a mock can export another value of a kind, so each swaps for the next
 function swapsOf(
 	precompiler: Precompiler,
 	module: SourceModule
@@ -357,7 +356,7 @@ const runtimeOf = () => {
 
 const execFileAsync = promisify(execFile)
 
-// each world runs in a process of its own, reading its manifest from and writing its results to `out`
+// each world runs in a process of its own, reading and writing in `out`
 export const runWorld = async (
 	world: World,
 	manifest: Manifest,
@@ -393,18 +392,18 @@ export const runWorld = async (
 	return JSON.parse(readFileSync(resultPath, "utf8"))
 }
 
-// a name arktype registers a value or node by follows the history of the process, as a name when first registered and a counter
+// the names arktype registers values and nodes by depend on process history
 export const comparable = (observation: unknown): string =>
 	(JSON.stringify(observation) ?? "undefined")
 		.replace(/\btype\d+\b/g, "type")
 		.replace(/\$ark\.[\w$&|]+/g, "$ark")
 
-// what a factory's checks throw, a mismatch with what the build read or two values where it read one
+// what a factory's checks throw for a value unlike what the build read
 const isCreationCheck = (observation: Observation | undefined) =>
 	typeof observation?.threw === "string" &&
 	/ but was precompiled as |, which it was at build$/.test(observation.threw)
 
-// a disagreement outside the guarantee, counted by why
+// a disagreement precompiling doesn't promise to avoid, counted by why
 const exclusions: [
 	reason: string,
 	matches: (original: string, precompiled: string) => boolean
@@ -430,13 +429,13 @@ export interface Disagreement {
 	precompiled: Observation
 }
 
-export interface WorldComparison {
+interface WorldComparison {
 	counts: Record<string, number>
 	disagreements: Disagreement[]
 	observedSites: Set<string>
 }
 
-// an observation a program records itself is labeled by its key, and a site's by where it is
+// a program's own observation is labeled by its key, and a site's by position
 export const compareWorlds = (
 	build: PerturbedBuild,
 	original: WorldResults,
@@ -504,12 +503,7 @@ if (import.meta.main) {
 		mode: "standalone",
 		standalone: { members: { expression: true, description: true } }
 	})
-	const out = mkdtempSync(join(tmpdir(), "ark-perturbation-"))
-	// a run that fails keeps its worlds for inspection
-	process.once("exit", code => {
-		if (code) console.error(`results: ${out}`)
-		else rmSync(out, { recursive: true, force: true })
-	})
+	const out = tempDir("ark-perturbation-")
 	const { counts, disagreements, observedSites } = compareWorlds(
 		build,
 		await runWorld("original", build.manifest, out),

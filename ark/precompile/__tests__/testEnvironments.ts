@@ -2,22 +2,15 @@ import { fromHere } from "@ark/fs"
 import { precompile } from "@ark/precompile/unplugin"
 import { build } from "esbuild"
 import { spawnSync } from "node:child_process"
-import {
-	mkdirSync,
-	mkdtempSync,
-	readFileSync,
-	rmSync,
-	writeFileSync
-} from "node:fs"
-import { tmpdir } from "node:os"
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
+import { tempDir } from "./utils.ts"
 
-// checks the environment matrix of the precompilation design (design/precompile.md §12):
-// a program built under UTC and en-US prints what it prints as written, in other time zones and
-// locales, without evaluating strings, and on Bun, Deno, Chromium and Firefox where they're installed
-// (CHROME_BIN and FIREFOX_BIN name a browser off the PATH):
-// pnpm testEnvironments
+// a program built under UTC and en-US prints what it prints as written in
+// other time zones and locales, without evaluating strings, and on Bun,
+// Deno, Chromium and Firefox where installed (CHROME_BIN and FIREFOX_BIN
+// name a browser off the PATH): pnpm testEnvironments
 
 const program = fromHere("environments")
 
@@ -29,7 +22,7 @@ const modes: Mode[] = ["standalone", "cache"]
 
 const buildEnv = { TZ: "UTC", LANG: "en_US.UTF-8", LC_ALL: "" }
 
-// a runtime that can't read the program's TypeScript runs it as written from a bundle built without the plugin
+// a runtime that can't read TypeScript runs a bundle built without the plugin
 if (process.argv[2] === "--build") {
 	const { outputFiles } = await build({
 		entryPoints: [join(program, "main.ts")],
@@ -65,13 +58,7 @@ const spawn = (command: string, args: string[], env: object) => {
 	return result.stdout
 }
 
-const out = mkdtempSync(join(tmpdir(), "ark-environments-"))
-
-// a run that fails keeps its bundles for inspection
-process.once("exit", code => {
-	if (code) console.error(`results: ${out}`)
-	else rmSync(out, { recursive: true, force: true })
-})
+const out = tempDir("ark-environments-")
 
 const buildIn = (mode: Mode | "written", env: object, name: string) => {
 	const path = join(out, `${name}.js`)
@@ -114,7 +101,7 @@ interface Output {
 }
 
 interface Runtime {
-	// main.ts where the runtime reads TypeScript, else the bundle built without the plugin
+	// main.ts where the runtime reads TypeScript, else the plain bundle
 	asWritten: string
 	run: (entry: string, env: Record<string, string>) => Output
 }
@@ -155,7 +142,7 @@ if (isInstalled("deno", /^deno /))
 	runtimes.deno = { asWritten: written, run: command("deno", "run", "--quiet") }
 else console.log("⚠️  deno is not installed")
 
-// a page runs a bundle as a module script and reports what it printed, base64 encoded since a browser escapes what it prints
+// a page runs a bundle as a module, reporting what it printed in base64
 const writePage = (entry: string) => {
 	const path = `${entry}.html`
 	writeFileSync(
@@ -231,7 +218,7 @@ const firefoxArgs = (page: string) => [
 	page
 ]
 
-// a snap's Firefox can't read a profile outside the home directory, so it's tried on a blank page
+// a snap's Firefox can't read a profile outside home, so try a blank page
 const firefox = [process.env.FIREFOX_BIN, "firefox"].find(
 	command =>
 		command && spawnSync(command, firefoxArgs("about:blank")).status === 0

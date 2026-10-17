@@ -21,10 +21,8 @@ export const hasMember = (validator: object, member: string): boolean =>
 export const traverse = (t: any, data: unknown): unknown =>
 	lacks("methods") ? t(data, undefined, null) : t.traverse(data)
 
-// whether a validator is frozen, which arktype's Types aren't
 export const freezes: boolean = testedOptions.freeze !== false
 
-// a build writing its input, compared with arktype configured alike
 export const mutatesInput: MutatesInput = testedOptions.mutatesInput ?? false
 
 // errors "none" fails with one root issue and runs no Apply's morphs

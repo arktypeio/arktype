@@ -32,8 +32,7 @@ import {
 	type KeptIssue
 } from "@ark/precompile/internal/issues.ts"
 import { build, type Plugin } from "esbuild"
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs"
-import { tmpdir } from "node:os"
+import { writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { inspect } from "node:util"
@@ -48,26 +47,20 @@ import {
 	testedOptions,
 	traverse
 } from "./contract.ts"
+import { tempDir } from "./utils.ts"
 
-// compares a Type with the validators it precompiles to on what design/precompile.md §2 observes of a call
+// compares a Type with its precompiled validators on each call's outcome
 
-export type Layout = "inline" | "modules"
+type Layout = "inline" | "modules"
 
 export const layouts: Layout[] = ["inline", "modules"]
 
 let out: string | undefined
 
-// a run that fails keeps its artifacts for inspection
-process.once("exit", code => {
-	if (!out) return
-	if (code) console.error(`precompiled artifacts: ${out}`)
-	else rmSync(out, { recursive: true, force: true })
-})
-
 const importFile = (path: string): Promise<any> =>
 	import(pathToFileURL(path).href)
 
-// a function the runtime exports for arktype's nodes to hold, like a matcher's onFail or a keyword's predicate, is its copy's in what an artifact creates
+// a runtime export an artifact holds, paired with arktype's
 const counterparts = new Map<unknown, unknown>()
 const pairCopies = (copy: unknown, original: unknown): void => {
 	if (typeof copy === "function" && typeof original === "function")
@@ -95,10 +88,10 @@ const undetailedIssues: Plugin = {
 		)
 }
 
-// the directory of the artifacts, created when the first is written with their own copy of the runtime, so they share no state with arktype
+// artifacts get their own runtime, sharing no state with arktype
 export const outDir = async (): Promise<string> => {
 	if (out) return out
-	const dir = (out = mkdtempSync(join(tmpdir(), "ark-differential-")))
+	const dir = (out = tempDir("ark-differential-"))
 	await build({
 		stdin: {
 			contents: `export * from "arktype/runtime"`,
@@ -136,7 +129,7 @@ const returnsForeignErrors = (
 	}
 }
 
-// what a copying call returns that one writing in place returns too, without what the input holds afterward
+// what copying and writing in place both return, without the input after
 const writtenLike = (call: ReturnType<typeof observeCall>) =>
 	Object.fromEntries(
 		Object.entries(call)
@@ -159,7 +152,7 @@ const writtenLike = (call: ReturnType<typeof observeCall>) =>
 			})
 	)
 
-// in place, an unwritable input throws, and one holding an object twice can show another place's write at a key a place doesn't declare
+// an unwritable or aliased input can't be written in place
 const writesUnlikeCopy = (
 	input: unknown,
 	copied: ReturnType<typeof observeCall>,
@@ -197,7 +190,7 @@ const link = (code: string) =>
 		.replace(/from "arktype\/runtime"/g, `from "./runtime.js"`)
 		.replace(/"~arktype\/([^"]+)"/g, `"./$1.js"`)
 
-// every artifact's modules are files of one directory, as a bundle shares them
+// every artifact's modules share one directory, as a bundle shares them
 const modulesBySpecifier: Record<string, string> = {}
 
 let artifactCount = 0
@@ -240,7 +233,7 @@ const loadArtifact = async (
 	return importFile(path)
 }
 
-// a precompiled Type holding functions or symbols is a factory, passed them as a build passes what its site holds
+// a Type holding functions or symbols precompiles to a factory passed them
 const exportOf = (node: BaseRoot, holes: unknown[]): StandaloneExport => {
 	if (!holes.length) return node as never
 	const classes = new Set(
@@ -261,7 +254,7 @@ const exportOf = (node: BaseRoot, holes: unknown[]): StandaloneExport => {
 
 const placeholdersByHole = new Map<unknown, string>()
 
-// a build names each function it holds by a placeholder, which its factory completes with the name of the function it receives
+// a build names held functions by placeholders, which factories complete
 const loadNamingHoles = async (
 	node: BaseRoot,
 	holes: unknown[],
@@ -296,8 +289,8 @@ const loadNamingHoles = async (
 	}
 }
 
-// copies data with its prototypes, descriptors, cycles and frozenness, so each call gets its own input;
-// functions and builtins other than arrays, Dates, RegExps, Maps and Sets are shared
+// copies data with its prototypes, descriptors, cycles and frozenness;
+// sharing functions and builtins but arrays, Dates, RegExps, Maps and Sets
 export const cloneInput = (
 	value: unknown,
 	seen = new Map<object, unknown>()
@@ -329,7 +322,7 @@ export const cloneInput = (
 			descriptor.value = cloneInput(descriptor.value, seen)
 		Object.defineProperty(copy, k, descriptor)
 	}
-	// a Proxy can list an index past its array's length, which lengthens a copy to it, so it's read as is, like a value the harness can't copy
+	// a Proxy can list an index past its length, so it's passed as is
 	if (
 		tag === "[object Array]" &&
 		(copy as unknown[]).length !== (value as unknown[]).length
@@ -345,8 +338,8 @@ export const cloneInput = (
 
 const { toString } = Object.prototype
 
-// a pair already being compared is assumed equal, so a graph sharing subgraphs is walked once per pair
-// read, an object is compared by the values its enumerable keys read, as a copy keeps neither accessors nor inherited keys
+// a pair being compared is assumed equal, so shared subgraphs walk once;
+// `read` compares what enumerable keys read, as a copy drops accessors
 const isEqual = (l: unknown, r: unknown, read = false): boolean => {
 	const seen = new Map<object, Set<object>>()
 	const equals = (l: any, r: any): boolean => {
@@ -458,7 +451,7 @@ type Introspection = ReturnType<typeof observeIntrospection>
 const observeIntrospection = (t: Validator) => ({
 	json: observe(() => t.json, undefined),
 	jsonSchema: observe(() => t.toJsonSchema(), undefined),
-	// options naming nothing, and each target, whose schema a validator writes only where it bakes it
+	// no options, and each target, which a validator writes only if baked
 	jsonSchemaByOptions: [
 		{},
 		{ target: "draft-2020-12" },
@@ -487,7 +480,7 @@ const threwOptions = (observation: unknown): boolean =>
 		bakedJsonSchemaOptionsMessage
 	) ?? false
 
-// a schema the build can't bake throws why where it's read, as one for a target it doesn't bake does, so arktype's is left uncompared
+// a schema the build can't bake throws why where read, so it's not compared
 const maskUnbaked = (
 	arktype: Introspection,
 	baked: Introspection
@@ -533,7 +526,7 @@ const readFolded = (node: BaseRoot, member: FoldedMember): unknown =>
 		node[member]()
 	:	node[member]
 
-// what a site reading the Type's expression, description, json, toJSON() or toJsonSchema() folds to, which a build refuses where it prints a function's name
+// what sites reading introspection fold to, unless it prints a hole
 const foldedIntrospectionOf = (
 	node: BaseRoot
 ): Record<string, StandaloneExport> => {
@@ -588,13 +581,13 @@ const hasIssues = (observation: unknown): boolean =>
 const fails = (observation: unknown): boolean =>
 	hasIssues(observation) && !("threw" in (observation as object))
 
-// arktype validating as the build's errors option says, in a scope configured with it
+// a scope validating as the build's errors option says
 const erroringScope =
 	testedOptions.errors && testedOptions.errors !== "all" ?
 		schemaScope({}, { errors: testedOptions.errors })
 	:	undefined
 
-// arktype writing in place as the build does, failing as the Type's own Scope does
+// scopes writing in place as the build does, failing as the Type's does
 const inPlaceScopesByOnFail = new Map<unknown, BaseScope>()
 
 const inPlaceScopeOf = (node: BaseRoot): BaseScope => {
@@ -621,7 +614,7 @@ const validatedOf = (node: BaseRoot, inPlace = false): BaseRoot => {
 	return inPlace ? $.finalize(bound) : bound
 }
 
-// a hole returning arktype's own errors or nodes, which a validator's runtime doesn't recognize
+// a hole returning arktype's errors or nodes, foreign to the runtime
 const holdsArkValue = (value: unknown, seen = new Set<unknown>()): boolean => {
 	if (
 		(typeof value !== "object" && typeof value !== "function") ||
@@ -638,13 +631,13 @@ const holdsArkValue = (value: unknown, seen = new Set<unknown>()): boolean => {
 	})
 }
 
-export interface Observations {
+interface Observations {
 	attributes: ReturnType<typeof observeAttributes>
 	// undefined where a hole arktype calls writing it makes two reads disagree
 	introspection: ReturnType<typeof observeIntrospection> | undefined
 	// undefined where a hole holding state makes two calls disagree
 	calls: (ReturnType<typeof observeCall> | undefined)[]
-	// configured to write in place as the build does, which a build writing in place is compared with
+	// writing in place as the build does, compared with a build that does
 	inPlaceCalls?: (ReturnType<typeof observeCall> | undefined)[]
 }
 
@@ -679,14 +672,14 @@ const observeCalls = (node: BaseRoot, inputs: unknown[]) =>
 		return call
 	})
 
-export interface Comparison {
+interface Comparison {
 	refusal?: string
 	harnessLimited: number
-	// whether its introspection was compared, which a refused bake or arktype disagreeing with itself prevents
+	// false where a bake was refused or arktype disagreed with itself
 	isIntrospected: boolean
 	// whether a schema it bakes throws why the build can't write it
 	isUnbaked: boolean
-	// whether a site reading its introspection was compared, which data printing a function's name prevents
+	// false where its data prints a function's name
 	isFolded: boolean
 	disagreements: string[]
 }
@@ -703,7 +696,7 @@ export const compare = async (
 		isFolded: false,
 		disagreements: []
 	}
-	// as the build refuses a Type whose configured errors or mutatesInput aren't its own
+	// as the build refuses a Type configured with other errors or mutatesInput
 	const configured = node.$.config
 	if (
 		configured.errors &&
@@ -716,7 +709,7 @@ export const compare = async (
 	)
 		return { ...result, refusal: "configured mutatesInput" }
 	const holes = keyOf(node)[1]
-	// writing in place returns what copying does, unless an input breaks what always assumes
+	// writing in place returns what copying does, unless the input breaks it
 	for (const [i, input] of inputs.entries()) {
 		const copied = arktype.calls[i]
 		const written = arktype.inPlaceCalls?.[i]
@@ -840,7 +833,7 @@ const compareFolded = async (
 	let artifact: any
 	try {
 		artifact = await loadArtifact(folded, layout, {}).catch(e => {
-			// e.g. a schema calling a default's thunk, which arktype calls each time it writes one
+			// e.g. a schema calling a default's thunk, which arktype calls each time
 			if (!(e instanceof ParseError) || !folded.toJsonSchema) throw e
 			delete folded.toJsonSchema
 			return loadArtifact(folded, layout, {})
