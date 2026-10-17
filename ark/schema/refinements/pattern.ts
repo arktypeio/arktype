@@ -79,6 +79,13 @@ const isRepeatedAtom = (rule: string, flags: string | undefined) =>
 	(flags === undefined || /^[disu]*$/.test(flags)) && repeatedAtom.test(rule)
 
 export class PatternNode extends InternalPrimitiveConstraint<Pattern.Declaration> {
+	constructor(
+		...args: ConstructorParameters<typeof InternalPrimitiveConstraint>
+	) {
+		super(...args)
+		this.includesCostly = true
+	}
+
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
 	readonly expression: string = `${this.instance}`
 	readonly test: ((s: string) => boolean) | undefined =

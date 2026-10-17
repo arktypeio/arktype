@@ -178,6 +178,10 @@ export abstract class BaseNode<
 	declare includesContextualMorph: boolean
 	// keeps the description it had in its original scope
 	declare includesKeptDescription: boolean
+	// a morph or a predicate other than a keyword's
+	declare includesUserCode: boolean
+	// a sequence or a pattern, which loops or runs a regex
+	declare includesCostly: boolean
 	declare readonly cache: NodeCache
 
 	allows: (data: d["prerequisite"]) => boolean
@@ -242,7 +246,10 @@ export abstract class BaseNode<
 
 		let bits = 0
 		if (this.hasKind("morph")) {
-			bits = flagBits.includesMorph | flagBits.includesTransform
+			bits =
+				flagBits.includesMorph |
+				flagBits.includesTransform |
+				flagBits.includesUserCode
 			if (
 				this.inner.morphs.some(morph => isNode(morph) || arityOf(morph) !== 1)
 			)
@@ -251,11 +258,12 @@ export abstract class BaseNode<
 			if (this.inner.defaultables !== undefined)
 				bits = flagBits.includesTransform
 		} else if (this.hasKind("predicate")) {
+			if (this.meta.keyword === undefined) bits = flagBits.includesUserCode
 			// if a predicate accepts exactly one arg, we can safely skip passing context
 			// technically, a predicate could be written like `(data, ...[ctx]) => ctx.mustBe("malicious")`
 			// that would break here, but it feels like a pathological case and is better to let people optimize
 			if (arityOf(this.inner.predicate) !== 1)
-				bits = flagBits.includesContextualPredicate
+				bits |= flagBits.includesContextualPredicate
 		} else if (this.hasKind("alias")) {
 			bits =
 				flagBits.isCyclic |
@@ -1205,7 +1213,9 @@ const flagBits = {
 	includesShallowAlias: 32,
 	allowsRequiresContext: 64,
 	includesContextualMorph: 128,
-	includesKeptDescription: 256
+	includesKeptDescription: 256,
+	includesUserCode: 512,
+	includesCostly: 1024
 }
 
 for (const name in flagBits) {

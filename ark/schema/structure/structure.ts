@@ -16,7 +16,12 @@ import {
 } from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
 import { intrinsic } from "../intrinsic.ts"
-import type { BaseNode, GettableKeyOrNode, KeyOrKeyNode } from "../node.ts"
+import {
+	referencesThroughAliases,
+	type BaseNode,
+	type GettableKeyOrNode,
+	type KeyOrKeyNode
+} from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import { typeOrTermExtends, type BaseRoot } from "../roots/root.ts"
 import type { BaseScope } from "../scope.ts"
@@ -201,33 +206,12 @@ const noSiblings: array<BaseConstraint> = []
 
 // whether checking a node can call a function a program supplied,
 // which a keyword's predicate isn't
-const callsUserCode = (node: BaseNode, seen = new Set<BaseNode>()): boolean => {
-	seen.add(node)
-	for (const id in node.referencesById) {
-		const reference = node.referencesById[id]
-		if (
-			reference.hasKind("morph") ||
-			(reference.hasKind("predicate") && reference.meta.keyword === undefined)
-		)
-			return true
-		if (
-			reference.hasKind("alias") &&
-			!seen.has(reference.resolution) &&
-			callsUserCode(reference.resolution, seen)
-		)
-			return true
-	}
-	return false
-}
-
-// a value checked by a loop or a regex
-const isCostly = (value: BaseNode): boolean => {
-	for (const id in value.referencesById) {
-		const { kind } = value.referencesById[id]
-		if (kind === "sequence" || kind === "pattern") return true
-	}
-	return false
-}
+const callsUserCode = (node: BaseNode): boolean =>
+	node.includesUserCode ||
+	(node.includesAlias &&
+		referencesThroughAliases(node.references).some(
+			reference => reference.includesUserCode
+		))
 
 // Allows checks costly values last, so failing data is rejected sooner,
 // though never across a prop calling user code
@@ -238,7 +222,7 @@ const orderedForAllows = (props: array<Prop.Node>): array<Prop.Node> => {
 		if (callsUserCode(prop.value)) {
 			ordered.push(...deferred, prop)
 			deferred = []
-		} else if (isCostly(prop.value)) deferred.push(prop)
+		} else if (prop.value.includesCostly) deferred.push(prop)
 		else ordered.push(prop)
 	}
 	ordered.push(...deferred)

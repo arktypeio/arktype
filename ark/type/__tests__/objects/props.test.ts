@@ -101,6 +101,30 @@ contextualize(() => {
 		attest(reads).equals(["c", "a", "b", "d", "e"])
 	})
 
+	it("allows by checking arrays last, never past an alias reaching a narrow", () => {
+		const $ = scope({
+			narrowed: { a: "string[]", inner: "narrowedInner | null", c: "number" },
+			narrowedInner: { outer: "narrowed", d: ["number", ":", () => true] },
+			unnarrowed: {
+				a: "string[]",
+				inner: "unnarrowedInner | null",
+				c: "number"
+			},
+			unnarrowedInner: { outer: "unnarrowed", d: "number" }
+		}).export()
+		const readsOf = (T: type.Any) => {
+			const reads: PropertyKey[] = []
+			const data = new Proxy(
+				{ a: [], inner: null, c: 0 },
+				{ get: (o, k) => (reads.push(k), Reflect.get(o, k)) }
+			)
+			attest(T.allows(data)).equals(true)
+			return reads
+		}
+		attest(readsOf($.narrowed)).equals(["c", "a", "inner"])
+		attest(readsOf($.unnarrowed)).equals(["c", "inner", "a"])
+	})
+
 	it("union", () => {
 		const T = type({ foo: "string" }).or({ bar: "number" })
 		attest(() => T.props).throws(writeLiteralUnionEntriesMessage(T.expression))

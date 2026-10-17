@@ -137,6 +137,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
+		this.includesCostly = true
 		if (this.inner.postfix) {
 			if (!this.inner.variadic) throwParseError(postfixWithoutVariadicMessage)
 			if (this.inner.optionals || this.inner.defaultables)
