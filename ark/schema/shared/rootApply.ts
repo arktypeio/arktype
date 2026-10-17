@@ -39,14 +39,14 @@ export type RootApplyParam = "config" | keyof RootApplyRuntime
 export const writeRootApply = (
 	node: BaseRoot,
 	name: string,
-	// an artifact writing the apply into its own code names what it reads as its module does
+	// names runtime values as the artifact's module does
 	refOf?: (param: RootApplyParam) => string
 ): string => {
 	const ref = refOf ?? ((param: RootApplyParam) => param)
 	const js = new CompiledFunction("data", "onFail").indent()
 	const applyFailed = new CompiledFunction("data", "onFail").indent()
 	const newCtx = `new ${ref("Traversal")}(data, ${ref("config")})`
-	// a node called without a handler fails with its own, which a validator passes itself
+	// a validator passes its own handler
 	const handler =
 		refOf ? "onFail" : "onFail === undefined ? node.onFail : onFail"
 	const fallback = (body: typeof js) =>
@@ -57,7 +57,6 @@ export const writeRootApply = (
 		:	body.return(
 				`${ref("applyRejected")}(node, data, ${ref("config")}, ${handler}, ${ref("Traversal")})`
 			)
-	// a valid result is often data itself, which is cheaper to compare than instanceof
 	const returnResult = () =>
 		node.includesMorph ?
 			js
@@ -71,9 +70,8 @@ export const writeRootApply = (
 				)
 				.return("result")
 		:	js.return("result")
-	// a valid result is returned last, as V8 weighs a return by its offset when optimizing
 	if (node.rootApplyStrategy === "contextual") {
-		// failing in its own function lets V8 inline Allows and remove the ctx it allocates
+		// failure path is its own function
 		fallback(applyFailed)
 		js.const("ctx", newCtx)
 			.if("!traverseAllows(data, ctx) || ctx.hasError()", () =>
@@ -119,7 +117,7 @@ export const writeRootApply = (
 	const read = nodeMembers.filter(member =>
 		new RegExp(`\\b${member}\\b`).test(rootApply)
 	)
-	// a Function's body is sloppy unless it says otherwise, where an artifact's module decides for the code in it
+	// an artifact's module is already strict
 	return `${refOf ? "" : `"use strict"\n`}const ${read.map(member => `${member} = node.${member}`).join(", ")}
 ${rootApply}`
 }

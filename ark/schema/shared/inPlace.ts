@@ -18,7 +18,7 @@ interface Keys {
 
 interface Reads {
 	values: Keys
-	// whether a key is present, read where an undeclared key is rejected or deleted
+	// whether a key is present, read where undeclared keys are checked
 	everyPresence: boolean
 }
 
@@ -128,8 +128,7 @@ const everyRead = (): Reads => ({
 	everyPresence: true
 })
 
-// each node a valid input's transform reaches, by the places that hold it,
-// keyed by id, as a Type bound to another Scope is a copy its cycles don't reach
+// the places holding each node a valid input's transform reaches, by id
 const placesOf = (root: BaseRoot): Map<string, Place> => {
 	const places = new Map<string, Place>()
 	let positions = 0
@@ -228,7 +227,7 @@ const holdsWriter = (places: Map<string, Place>): boolean => {
 	return false
 }
 
-// whether writing in place returns what copying would, where every place's input is its own
+// whether writing in place returns what copying would
 const writesSoundly = (places: Map<string, Place>): boolean => {
 	for (const { node } of places.values()) {
 		const structure = node.hasKind("intersection") ? node.structure : undefined
@@ -237,7 +236,7 @@ const writesSoundly = (places: Map<string, Place>): boolean => {
 	return true
 }
 
-// whether no place can read what another wrote, whatever objects the input shares
+// whether no place can read what another wrote
 const writesUnread = (places: Map<string, Place>): boolean => {
 	const readers: [Place, Reads][] = []
 	for (const place of places.values()) {
@@ -281,7 +280,7 @@ const writesInPlaceByMode = {
 	always: new WeakMap<BaseRoot, boolean>()
 }
 
-/** whether a valid input's transforms write into it, given how the input may be mutated */
+/** whether a valid input's transforms write into it */
 export const writesInPlace = (
 	root: BaseRoot,
 	mutatesInput: MutatesInput | undefined
@@ -300,7 +299,7 @@ export const writesInPlace = (
 	return writes
 }
 
-// the runtime a jitless apply transforming in place reads, by what it'd read
+// in-place runtimes, by the runtime they extend
 const inPlaceRuntimes = new WeakMap<RootApplyRuntime, RootApplyRuntime>()
 
 const inPlaceRuntimeOf = (runtime: RootApplyRuntime): RootApplyRuntime => {
@@ -326,8 +325,7 @@ const copiesCompiled = (node: BaseNode): boolean =>
 	node.compiledUnit !== undefined &&
 	(node.includesAlias || isWriter(node) || node.references.some(isWriter))
 
-// the transforms a root's traversal can call, read without discriminating
-// a union, as its references would
+// the transforms a root's traversal can call, ignoring discrimination
 const transformsCalledBy = (root: BaseRoot): BaseNode[] => {
 	const called: BaseNode[] = []
 	const call = (node: BaseNode) => {
@@ -343,8 +341,7 @@ const transformsCalledBy = (root: BaseRoot): BaseNode[] => {
 	return called
 }
 
-// the transforms applies writing in place reach as they check data
-// uncompiled, of which none compiles until they return
+// transforms the running uncompiled in-place applies reach
 let checking: Set<BaseNode> | undefined
 
 $ark.inPlace = {

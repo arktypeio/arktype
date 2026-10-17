@@ -13,17 +13,14 @@ import type { RootApplyRuntime } from "./rootApply.ts"
 
 // installed by arktype/mutatesInput, so a bundle without it only copies
 export interface InPlaceTransforms {
-	// whether a root checks data uncompiled, as every transform does while
-	// an apply writing in place that reaches it checks its own uncompiled
+	// whether root checks its first data uncompiled
 	checksUncompiled(root: BaseRoot): boolean
-	// a root's apply checking data uncompiled, unless it writes in place
-	// and reaches a transform compiled to copy
+	// root's uncompiled apply, or undefined to compile it
 	checkedUncompiled(root: BaseRoot, apply: RootApply): RootApply | undefined
-	// what those applies reach, which no root compiling meanwhile binds
+	// nodes the running uncompiled applies reach
 	readonly checking: ReadonlySet<BaseNode> | undefined
-	// the root a compiled apply reads, transforming in place where its Scope can
+	// root/runtime, writing in place where configured
 	applied(root: BaseRoot): BaseRoot
-	// what a jitless apply reads, transforming in place where its Scope can
 	runtimeOf(root: BaseRoot, runtime: RootApplyRuntime): RootApplyRuntime
 }
 
@@ -54,7 +51,7 @@ export declare namespace TransformErrors {
 	}
 }
 
-// an array's own keys list its indices first, so it holds no others if its last is the index before its length
+// an array's own keys list its indices first
 export const holdsOnlyIndices = (data: unknown[]): boolean => {
 	const keys = Object.keys(data)
 	return (
@@ -88,7 +85,7 @@ export const copyOf = (data: object): object => {
 	}
 	const prototype = Object.getPrototypeOf(data)
 	if (prototype === Object.prototype) return { ...data }
-	// a builtin's state is in internal slots a copy can't take, so it's transformed in place
+	// a builtin keeps state in internal slots, so it's written in place
 	return objectKindOf(data) === undefined ?
 			Object.setPrototypeOf({ ...data }, prototype)
 		:	data
