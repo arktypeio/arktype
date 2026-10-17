@@ -4,6 +4,7 @@ import {
 	hasArkKind,
 	writePrecompiledUnits,
 	type BaseRoot,
+	type ErrorDetail,
 	type MutatesInput
 } from "@ark/schema"
 import * as arkSchema from "@ark/schema"
@@ -44,7 +45,6 @@ import {
 	writeUnprecompilableMessage,
 	type Checks,
 	type Configured,
-	type ErrorDetail,
 	type Optimization,
 	type ValidatorMember,
 	type ValidatorMembers,

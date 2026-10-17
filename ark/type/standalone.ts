@@ -165,7 +165,7 @@ export type DefaultCheck = [
 	key: PropertyKey | null
 ]
 
-export interface HoleParam {
+interface HoleParam {
 	kind: HoleKind
 	label: string
 	value: unknown
@@ -173,20 +173,20 @@ export interface HoleParam {
 	isOwn?: boolean
 }
 
-export interface InputParam {
+interface InputParam {
 	kind: "input"
 	label: string
 	reads: [path: PropertyKey[], value: unknown][]
 }
 
-export interface HelperParam {
+interface HelperParam {
 	kind: "helper"
 	label: string
 	file: string
 	name: string
 }
 
-export interface ProgressParam {
+interface ProgressParam {
 	kind: "progress"
 	label: string
 	at: number
@@ -196,11 +196,9 @@ export type Configured = ConfiguredModule | false | undefined
 
 export type Checks = "types" | "helpers" | "none"
 
-export type { ErrorDetail }
-
 export type Optimization = "speed" | "size"
 
-export interface ConfiguredModule {
+interface ConfiguredModule {
 	fingerprint: string
 	path: string
 }
@@ -666,15 +664,15 @@ interface SharedUnit {
 	shapesByName: Record<string, string>
 }
 
-export class StandaloneArtifact {
+class StandaloneArtifact {
 	exports: Record<string, ExportedValue>
 	sharedModules: Record<string, SharedModule>
 	imports: Record<string, string[]>
 	holeExpressions = new Map<unknown, string>()
-	labelsByHole = new Map<unknown, string>()
+	holeLabels = new Map<unknown, string>()
 	classes = new Set<unknown>()
 	checks: string[] = []
-	validatorNamesByRoot = new Map<BaseRoot, string>()
+	validatorNames = new Map<BaseRoot, string>()
 	defaultValues = new Set<BaseRoot>()
 	readRoots = new Set<BaseRoot>()
 	runtimeReadRoots = new Set<BaseRoot>()
@@ -688,15 +686,15 @@ export class StandaloneArtifact {
 	keyLookups = new Set<object>()
 	patternInstances = new Set<RegExp>()
 	defaultsByMorph = new Map<unknown, Default>()
-	defaultNamesByMorph = new Map<unknown, string>()
+	defaultNames = new Map<unknown, string>()
 	objectUnits = new Set<unknown>()
 	metas = new Set<object>()
 	declarations = createDeclarations()
 	sharedWriters = new Map<string, string>()
 	emitting = new Set<object>()
-	moduleNamesByModule = new Map<object, string>()
-	namesByTypedFn = new Map<InternalTypedFn, string>()
-	stringModuleNamesByRoot: Record<ComposedString, Map<BaseRoot, string>> = {
+	moduleNames = new Map<object, string>()
+	typedFnNames = new Map<InternalTypedFn, string>()
+	stringModules: Record<ComposedString, Map<BaseRoot, string>> = {
 		expression: new Map(),
 		description: new Map()
 	}
@@ -822,7 +820,7 @@ export class StandaloneArtifact {
 		const classesOf = <v>(valueOf: (hole: unknown) => v) =>
 			Object.fromEntries(
 				[...this.classes].map(hole => [
-					this.labelsByHole.get(hole)!,
+					this.holeLabels.get(hole)!,
 					valueOf(hole)
 				])
 			)
@@ -838,7 +836,7 @@ export class StandaloneArtifact {
 				classesOf(hole => hole)
 			)
 			this.checks.push(
-				`runtime.checkFacts(runtime.factOfHole(${expression}${kind === "function" ? "" : `, "${kind}"`}${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}, ${JSON.stringify(this.labelsByHole.get(hole))})`
+				`runtime.checkFacts(runtime.factOfHole(${expression}${kind === "function" ? "" : `, "${kind}"`}${kind === "class" ? classesArg : ""}), ${JSON.stringify(expected)}, ${JSON.stringify(this.holeLabels.get(hole))})`
 			)
 		}
 	}
@@ -853,7 +851,7 @@ export class StandaloneArtifact {
 			const name = functionNameOf(hole)
 			if (!name.includes(holeNameMarker)) {
 				throwInternalError(
-					`Unexpected function ${this.labelsByHole.get(hole)} not named by a placeholder`
+					`Unexpected function ${this.holeLabels.get(hole)} not named by a placeholder`
 				)
 			}
 			// one placeholder can name several functions; check they match
@@ -863,7 +861,7 @@ export class StandaloneArtifact {
 				this.holeExpressions.get(hole) !== this.holeExpressions.get(first)
 			) {
 				this.checks.push(
-					`runtime.checkFacts(${printedNameOf(hole)}, ${printedNameOf(first)}, ${JSON.stringify(this.labelsByHole.get(hole))})`
+					`runtime.checkFacts(${printedNameOf(hole)}, ${printedNameOf(first)}, ${JSON.stringify(this.holeLabels.get(hole))})`
 				)
 			}
 		}
@@ -874,7 +872,7 @@ export class StandaloneArtifact {
 		if (printed) {
 			throwParseError(
 				writeUnprecompilableMessage(
-					`compiled code printing the name of ${this.labelsByHole.get(this.holeNamed(printed[0])) ?? printed[0]}`
+					`compiled code printing the name of ${this.holeLabels.get(this.holeNamed(printed[0])) ?? printed[0]}`
 				)
 			)
 		}
@@ -905,12 +903,12 @@ export class StandaloneArtifact {
 		const received = this.holeExpressions.get(hole)
 		if (received) {
 			this.checks.push(
-				`runtime.checkIdentity(${expression}, ${received}, ${JSON.stringify(label)}, ${JSON.stringify(this.labelsByHole.get(hole))})`
+				`runtime.checkIdentity(${expression}, ${received}, ${JSON.stringify(label)}, ${JSON.stringify(this.holeLabels.get(hole))})`
 			)
 			return false
 		}
 		this.holeExpressions.set(hole, expression)
-		this.labelsByHole.set(hole, label)
+		this.holeLabels.set(hole, label)
 		return true
 	}
 
@@ -1023,13 +1021,13 @@ export class StandaloneArtifact {
 		const hole = this.holeNamed(name, nameOf) ?? name
 		throwParseError(
 			writeUnprecompilableMessage(
-				`an order that depends on the name of ${this.labelsByHole.get(hole) ?? hole}`
+				`an order that depends on the name of ${this.holeLabels.get(hole) ?? hole}`
 			)
 		)
 	}
 
 	get roots(): BaseRoot[] {
-		return [...this.validatorNamesByRoot.keys()]
+		return [...this.validatorNames.keys()]
 	}
 
 	inPlace(root: BaseRoot): boolean {
@@ -1057,8 +1055,8 @@ export class StandaloneArtifact {
 	get comparedValues(): unknown[] {
 		return [
 			...this.comparedRoots,
-			...this.moduleNamesByModule.keys(),
-			...this.namesByTypedFn.keys(),
+			...this.moduleNames.keys(),
+			...this.typedFnNames.keys(),
 			...this.declarations.valuesByRole.literal,
 			...this.declarations.valuesByRole.standIn
 		]
@@ -1078,14 +1076,14 @@ export class StandaloneArtifact {
 	}
 
 	collectType(root: BaseRoot): void {
-		if (this.validatorNamesByRoot.has(root)) return
-		const name = `validator${this.validatorNamesByRoot.size}`
-		this.validatorNamesByRoot.set(root, name)
+		if (this.validatorNames.has(root)) return
+		const name = `validator${this.validatorNames.size}`
+		this.validatorNames.set(root, name)
 		this.lateNames.add(name)
 	}
 
 	collectMetaTypes(): boolean {
-		const typeCount = this.validatorNamesByRoot.size
+		const typeCount = this.validatorNames.size
 		const visited = new Set<object>()
 		const collect = (value: unknown): void => {
 			if (!hasDomain(value, "object") || visited.has(value)) return
@@ -1099,14 +1097,14 @@ export class StandaloneArtifact {
 			for (const node of writtenNodesOf(unit))
 				for (const v of Object.values(node.meta)) collect(v)
 		}
-		return this.validatorNamesByRoot.size > typeCount
+		return this.validatorNames.size > typeCount
 	}
 
 	// a default inlined by its parent still needs a validator
 	collectDefaultTypes(): boolean {
-		const typeCount = this.validatorNamesByRoot.size
+		const typeCount = this.validatorNames.size
 		const collect = (value: BaseRoot) => {
-			if (!this.validatorNamesByRoot.has(value)) this.defaultValues.add(value)
+			if (!this.validatorNames.has(value)) this.defaultValues.add(value)
 			this.collectType(value)
 		}
 		for (const unit of this.units) {
@@ -1117,7 +1115,7 @@ export class StandaloneArtifact {
 					for (const [value] of node.defaultables ?? []) collect(value)
 			}
 		}
-		return this.validatorNamesByRoot.size > typeCount
+		return this.validatorNames.size > typeCount
 	}
 
 	writeCreateBody(configured: Configured): string {
@@ -1139,8 +1137,7 @@ export class StandaloneArtifact {
 	writeFactory(name: string, index: number, configured: Configured): string {
 		const { type, params, internedBy } = this.factory!
 		this.writeSharedUnits()
-		const value =
-			this.validatorNamesByRoot.get(type as never) ?? this.exportOf(type)
+		const value = this.validatorNames.get(type as never) ?? this.exportOf(type)
 		const defaults = this.writeDefaultChecks(this.defaultChecks)
 		const holes =
 			internedBy === undefined ? undefined : (
@@ -1539,7 +1536,7 @@ return [${returned.join(", ")}]
 			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
 		})
 		// written before filtering, as a meta can read a later one
-		const validators = [...this.validatorNamesByRoot].map(
+		const validators = [...this.validatorNames].map(
 			([root, name]) =>
 				[root, `const ${name} = ${this.writeValidator(root)}`] as const
 		)
@@ -1915,9 +1912,9 @@ return [${returned.join(", ")}]
 		)
 			return printablePrimitive(value)
 		const prototype = hasDomain(value, "object") && prototypeOf(value)
-		const isArray = prototype === Array.prototype && Array.isArray(value)
+		const isPlainArray = prototype === Array.prototype && Array.isArray(value)
 		if (
-			(!isArray && prototype !== Object.prototype && prototype !== null) ||
+			(!isPlainArray && prototype !== Object.prototype && prototype !== null) ||
 			Object.getOwnPropertySymbols(value).length
 		) {
 			return throwParseError(
@@ -1930,7 +1927,7 @@ return [${returned.join(", ")}]
 				)
 			)
 		}
-		if (isArray)
+		if (isPlainArray)
 			return `[${(value as unknown[]).map(v => this.writeData(v, opts)).join(", ")}]`
 		const entries = Object.entries(value as object).map(
 			// a __proto__ key would set an object literal's prototype
@@ -2225,7 +2222,7 @@ return [${returned.join(", ")}]
 
 	stringModuleOf(root: BaseRoot, kind: ComposedString): string {
 		return (
-			this.stringModuleNamesByRoot[kind].get(root) ??
+			this.stringModules[kind].get(root) ??
 			this.writeStringModule(root, kind, partsOf(root, kind))
 		)
 	}
@@ -2251,7 +2248,7 @@ return [${returned.join(", ")}]
 			imports,
 			false
 		)
-		this.stringModuleNamesByRoot[kind].set(root, name)
+		this.stringModules[kind].set(root, name)
 		return name
 	}
 
@@ -2296,10 +2293,10 @@ return [${returned.join(", ")}]
 			)
 		}
 		if (isTypedFn(value)) {
-			let name = this.namesByTypedFn.get(value)
+			let name = this.typedFnNames.get(value)
 			if (name) return name
-			name = `typedFn${this.namesByTypedFn.size}`
-			this.namesByTypedFn.set(value, name)
+			name = `typedFn${this.typedFnNames.size}`
+			this.typedFnNames.set(value, name)
 			this.modules.push(
 				`const ${name} = runtime.typedFn(${this.emit(value.raw)}, ${this.readByRuntime(value.params)}, ${this.readByRuntime(value.returns)})`
 			)
@@ -2307,13 +2304,13 @@ return [${returned.join(", ")}]
 		}
 		if (!hasArkKind(value, "module"))
 			return throwInternalError(`Unexpected export ${printable(value)}`)
-		const declared = this.moduleNamesByModule.get(value)
+		const declared = this.moduleNames.get(value)
 		if (declared) return declared
 		const entries = Object.entries(value).map(
 			([k, entry]) => `[${JSON.stringify(k)}]: ${this.exportOf(entry)}`
 		)
-		const name = `module${this.moduleNamesByModule.size}`
-		this.moduleNamesByModule.set(value, name)
+		const name = `module${this.moduleNames.size}`
+		this.moduleNames.set(value, name)
 		this.modules.push(
 			`const ${name} = ${this.withHoles(value, `runtime.freeze({ ${entries.join(", ")} })`)}`
 		)
@@ -2328,7 +2325,7 @@ return [${returned.join(", ")}]
 
 	readValidator(root: BaseRoot): string | undefined {
 		this.readRoots.add(root)
-		return this.validatorNamesByRoot.get(root)
+		return this.validatorNames.get(root)
 	}
 
 	readByRuntime(root: BaseRoot): string | undefined {
@@ -2537,11 +2534,11 @@ return [${returned.join(", ")}]
 		defaultValue: unknown
 	): string {
 		// one morph per default, whose guard prevents double defaulting
-		let name = this.defaultNamesByMorph.get(morph)
+		let name = this.defaultNames.get(morph)
 		if (name) return `(data, ctx) => ${name}(data, ctx)`
 		this.collectType(value)
 		name = `default${this.defaults.length}`
-		this.defaultNamesByMorph.set(morph, name)
+		this.defaultNames.set(morph, name)
 		const flags = defaultedNodeKeys.filter(k => value[k]).map(k => `${k}: true`)
 		const isThunkInput =
 			typeof defaultValue === "function" && isThunk(defaultValue)
@@ -2605,8 +2602,8 @@ return [${returned.join(", ")}]
 		emitElement = (element: unknown) => this.emitElement(element)
 	): [literal: string, elements: string[]] {
 		const prototype = prototypeOf(value)
-		const isArray = prototype === Array.prototype && Array.isArray(value)
-		if (!isArray && prototype !== Object.prototype && prototype !== null) {
+		const isPlainArray = prototype === Array.prototype && Array.isArray(value)
+		if (!isPlainArray && prototype !== Object.prototype && prototype !== null) {
 			return throwParseError(
 				writeUnprecompilableMessage(
 					`an instance of ${constructorNameOf(value) || "an anonymous class"}`
@@ -2621,11 +2618,11 @@ return [${returned.join(", ")}]
 		}
 		const descriptors = Object.getOwnPropertyDescriptors(value)
 		const keys = Object.getOwnPropertyNames(value).filter(
-			k => !isArray || k !== "length"
+			k => !isPlainArray || k !== "length"
 		)
 		// an array is copied by index, so holes or extra keys would be lost
 		if (
-			isArray &&
+			isPlainArray &&
 			(keys.length !== descriptors.length.value ||
 				keys.some((k, i) => k !== `${i}`))
 		) {
@@ -2653,7 +2650,7 @@ return [${returned.join(", ")}]
 		const entries = keys.map((k, i) => `[${JSON.stringify(k)}]: ${elements[i]}`)
 		if (prototype === null) entries.unshift("__proto__: null")
 		const literal =
-			isArray ? `[${elements.join(", ")}]`
+			isPlainArray ? `[${elements.join(", ")}]`
 			: entries.length ? `{ ${entries.join(", ")} }`
 			: "{}"
 		return [literal, elements]
