@@ -90,7 +90,7 @@ export const inputsOf = (
 
 // $ark-prefixed hashes, quoted 8-char ids and configuration fingerprints
 const hashPattern =
-	/(?<![\da-z])(\$ark\$*)?((?=[\da-z]*\d)(?:[\da-z]{12,}|(?<=")[\da-z]{8}(?="))|(?<=")(?=[\da-z_]*\d)[\da-z]+_[\da-z]+(?="))(?![\da-z])/g
+	/(?<![\da-z])(\$ark\$*)?((?=[\da-z]*\d)(?:[\da-z]{12,}|(?<=")[\da-z]{8}(?="))|(?<=")(?=[\d_a-z]*\d)[\da-z]+_[\da-z]+(?="))(?![\da-z])/g
 
 // hashes change with the runtime's source, so they're numbered in order
 export const normalized = <code extends string | string[]>(

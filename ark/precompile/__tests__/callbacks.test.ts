@@ -125,9 +125,10 @@ const format = (s: string) => {
 	return trimmed
 }
 const A = type("string").pipe(format).narrow((s, ctx) => s.length > 0 || ctx.reject("non-empty"))`)
-		attest(
-			result.sites[0].holes.map(hole => hole.kind)
-		).snap(["function", "function"])
+		attest(result.sites[0].holes.map(hole => hole.kind)).snap([
+			"function",
+			"function"
+		])
 	})
 
 	it("placeholder hole names", () => {
