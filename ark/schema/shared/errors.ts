@@ -68,7 +68,7 @@ const maxScannedLength = 8
  * intersection error.
  */
 export class ArkErrors extends BaseArkErrors {
-	// errors are grouped by path when read, which a program that only checks for failure never does
+	// grouped by path only when read
 	declare _: ArkError[]
 	private grouped: ArkError[] = []
 	private groupedCount = 0
@@ -117,7 +117,7 @@ export class ArkErrors extends BaseArkErrors {
 	 * The summary in `locale`, or as configured without one.
 	 */
 	toLocaleString(locale?: Locale): string {
-		// Array.prototype.toLocaleString passes each element its own arguments, a tag
+		// Array.prototype.toLocaleString passes each element a tag
 		if (!isLocale(locale)) return this.summary
 		return summarize(this._issues.map(error => writtenIn(error, locale)))
 	}
@@ -206,14 +206,14 @@ const indexByPath = (issues: ArkError[]): Record<string, ArkError> => {
 	return byPath
 }
 
-// paths that differ usually share a prefix, so their last keys are compared first
+// compared from the end, where paths usually differ
 const pathEquals = (l: array<PropertyKey>, r: array<PropertyKey>) => {
 	if (l.length !== r.length) return false
 	for (let i = l.length - 1; i >= 0; i--) if (l[i] !== r[i]) return false
 	return true
 }
 
-// a standalone validator's issues keep the text it wrote, in any locale
+// keeps the text a standalone validator wrote
 export const errorOfIssue = (
 	issue: ArkIssue & { message: string },
 	prefix: array<PropertyKey>,
@@ -232,26 +232,26 @@ export const errorOfIssue = (
 			path: [...prefix, ...issue.path],
 			data: issue.data,
 			meta,
-			// a union's issue names what the union describes, without its branches' errors
+			// a union's issue carries no branch errors
 			...(issue.code === "union" && { errors: [] })
 		} as never,
 		config
 	)
 }
 
-export const mergeErrors = (
+const mergeErrors = (
 	errors: ArkErrors,
 	merged: ArkErrors,
 	prefix: array<PropertyKey>
 ): void => {
-	// a copy is written with the config of the errors holding it, as their summary is
+	// copies are written with the receiving errors' config
 	for (const error of merged._issues)
 		errors._.push(unwrittenError(error, prefix, errors._config))
 }
 
 type Keyed = Record<PropertyKey, unknown>
 
-// errors whose text arktype writes from their node's context, in the locale it selects
+// arktype's traversal, writing errors from node contexts
 export class ArkTraversal extends Traversal {
 	override createErrors(): ArkErrors {
 		return new ArkErrors(this.config)
@@ -270,7 +270,7 @@ export class ArkTraversal extends Traversal {
 		)
 	}
 
-	// a site holds its node's full error context, from which an error is built as a compiled one is
+	// builds a site's error as compiled code does
 	override failsAt(
 		site: FailureSite,
 		data: unknown,
@@ -323,13 +323,13 @@ export class ArkTraversal extends Traversal {
 	}
 }
 
-/** adds an error a union, a structure or a callback describes, at ctx's path */
+/** adds an error from a context at ctx's path */
 export const errorFromContext = (
 	ctx: InternalTraversal,
 	input: ArkErrorContextInput
 ): ArkError => ctx.addError(errorOfContext(input, ctx.path, ctx.config))
 
-/** adds the error of data no branch of a union allowed, from the error each branch stopped at */
+/** adds a union's error from each branch's first */
 export const errorFromUnion = (
 	ctx: InternalTraversal,
 	errors: readonly ArkError[],
@@ -364,7 +364,7 @@ export const messageAt = (error: ArkError, path: PropertyKey[]): string => {
 	return copy.message
 }
 
-export const errorOfContext = (
+const errorOfContext = (
 	input: ArkErrorContextInput,
 	basePath: array<PropertyKey>,
 	config: ResolvedConfig
@@ -436,7 +436,7 @@ export type ErrorBuilder = (
 	data: unknown
 ) => ArkError
 
-export const errorOfNodeContext = (
+const errorOfNodeContext = (
 	context: ArkErrorContextInput,
 	path: PropertyKey[],
 	data: unknown,
@@ -451,29 +451,21 @@ export const errorOfNodeContext = (
 	)
 }
 
-// a node's errors share its context, so a function written once for its keys builds them
+// builders by context, shared by a node's errors
 const buildersByContext = new WeakMap<object, ErrorBuilder>()
 
 let compileBuilder:
 	| ((context: ArkErrorContextInput) => ErrorBuilder)
 	| undefined
 
-// registered beside arktype's compiler, so the runtime, which never generates code, ships without it
+// set by arktype's compiler; the runtime never generates code
 export const registerBuilderCompiler = (
 	compile: (context: ArkErrorContextInput) => ErrorBuilder
 ): void => {
 	compileBuilder = compile
 }
 
-// a standalone artifact writes its contexts' builders, since its runtime can't compile them
-export const registerErrorBuilder = (
-	build: ErrorBuilder,
-	contexts: readonly object[]
-): void => {
-	for (const context of contexts) buildersByContext.set(context, build)
-}
-
-// returns the object it's passed, so that a subclass adds its fields to that object
+// returns o, so a subclass adds its fields to it
 class Identity {
 	constructor(o: object) {
 		return o as never
@@ -529,7 +521,7 @@ export const suppliedText = (
 	slot: "expected" | "actual" | "problem" | "message"
 ): string | undefined => SuppliedSource.inputOf(error)?.[slot]
 
-export const writeError = (
+const writeError = (
 	error: ArkError,
 	config: ResolvedConfig,
 	locale: Locale
@@ -537,7 +529,7 @@ export const writeError = (
 	error.propString ??= stringifyPath(error.path)
 	if (error.code === "union" || error.code === "intersection") {
 		for (const e of error.errors) {
-			// its errors usually fail at its own path, whose string is then written once
+			// usually at its own path, whose string is then written once
 			if (pathEquals(e.path, error.path)) e.propString ??= error.propString
 			writeError(e, config, locale)
 		}
@@ -553,7 +545,6 @@ export const writeText = (
 ): void => {
 	const writers = config[error.code]
 	const meta = error.meta
-	// each slot calls its writer from its own site, which usually sees one
 	const expected = meta?.expected ?? writers.expected
 	error.expected ??=
 		typeof expected === "function" ? expected(error as never, locale) : expected
@@ -570,8 +561,8 @@ export const writeText = (
 		typeof message === "function" ? message(error as never, locale) : message
 }
 
-// registered by arktype/i18n, so arktype's errors are written only in en unless it's imported
-export interface LocaleRenderer {
+// registered by arktype/i18n
+interface LocaleRenderer {
 	/** the locale errors.ts writes itself */
 	readonly en: Locale
 	/** the locale a configured locale resolves to, en if it's a function */
@@ -587,7 +578,7 @@ export const registerLocaleRenderer = (registered: LocaleRenderer): void => {
 	renderer = registered
 }
 
-/** the config of every node kind and error code, once a config has resolved */
+/** the default config, once one has resolved */
 export let defaultConfig: ResolvedConfig
 
 export const configureLocale = (
