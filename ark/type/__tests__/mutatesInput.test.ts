@@ -103,16 +103,15 @@ contextualize(() => {
 		const Item = always.type({ id: "string.numeric.parse" })
 		const Pair = always.type({ kind: "'pair'", items: [Item, Item] })
 		const Event = Pair.or({ kind: "'item'", item: Item })
+		// a precompiled unit binds as a Type is created
+		const units = () => [Event, Pair, Item].map(T => T.internal.compiledUnit)
+		const created = units()
 		const items = [{ id: "1" }, { id: "2" }]
 		attest(Event({ kind: "pair", items }) as object).snap({
 			kind: "pair",
 			items: [{ id: 1 }, { id: 2 }]
 		})
-		attest([Event, Pair, Item].map(T => T.internal.compiledUnit)).equals([
-			undefined,
-			undefined,
-			undefined
-		])
+		attest(units()).equals(created)
 		const item = { id: "3" }
 		Event({ kind: "item", item })
 		attest(item as object).snap({ id: 3 })
@@ -122,6 +121,7 @@ contextualize(() => {
 	it("compiles no Type it reads uncompiled", () => {
 		const Item = always.type({ kind: "'a'", n: "string.numeric.parse" })
 		Item({ kind: "a", n: "0" })
+		const { compiledUnit } = Item.internal
 		const List = always.type([Item, "|", { kind: "'b'" }]).array()
 		const input = [
 			{ kind: "a", n: "1" },
@@ -132,7 +132,7 @@ contextualize(() => {
 			{ kind: "a", n: 1 },
 			{ kind: "a", n: 2 }
 		])
-		attest(Item.internal.compiledUnit).equals(undefined)
+		attest(Item.internal.compiledUnit).equals(compiledUnit)
 	})
 
 	it("binds compiled code to a Type a morph calls", () => {
