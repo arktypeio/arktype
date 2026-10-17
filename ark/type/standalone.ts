@@ -40,7 +40,9 @@ import { writesInPlace } from "@ark/schema/mutatesInput"
 import {
 	appendStringifiedKey,
 	arkKindOf,
+	cached,
 	constructorNameOf,
+	dateGetTime,
 	functionNameOf,
 	hashOf,
 	hasDomain,
@@ -53,7 +55,6 @@ import {
 	ParseError,
 	printable,
 	prototypeOf,
-	serializePrimitive,
 	throwInternalError,
 	throwParseError,
 	unset
@@ -324,16 +325,9 @@ export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const shared: Record<string, SharedModule> = {}
-	const folds: StandaloneModules["folds"] = {}
-	const checking: string[] = []
-	const sections = writeArtifact(
+	const { sections, shared, folds, checking } = writeArtifact(
 		exports,
 		opts,
-		shared,
-		{},
-		folds,
-		checking,
 		false
 	)
 	return {
@@ -352,17 +346,9 @@ export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const shared: Record<string, SharedModule> = {}
-	const imports: Record<string, string[]> = {}
-	const folds: StandaloneModules["folds"] = {}
-	const checking: string[] = []
-	const sections = writeArtifact(
+	const { sections, shared, imports, folds, checking } = writeArtifact(
 		exports,
 		opts,
-		shared,
-		imports,
-		folds,
-		checking,
 		true
 	)
 	const modules: Record<string, string> = {}
@@ -390,12 +376,12 @@ export const precompileStandaloneModules = (
 const writeArtifact = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions,
-	shared: Record<string, SharedModule>,
-	imports: Record<string, string[]>,
-	folds: StandaloneModules["folds"],
-	checking: string[],
 	isModular: boolean
-): string[] => {
+) => {
+	const shared: Record<string, SharedModule> = {}
+	const imports: Record<string, string[]> = {}
+	const folds: StandaloneModules["folds"] = {}
+	const checking: string[] = []
 	const { configured } = opts
 	const members = opts.members ?? {}
 	const baking: Baking = {
@@ -538,7 +524,7 @@ ${writeExport(name, index)}`
 	]
 	for (const [name, artifact] of artifactsByName)
 		if (artifact.checksAtCreation) checking.push(name)
-	return sections
+	return { sections, shared, imports, folds, checking }
 }
 
 interface Creation {
@@ -932,16 +918,13 @@ export class StandaloneArtifact {
 		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
 		const body = `runtime.holesOf(holder, ${writeId(id)}, ${JSON.stringify(label)}${kind})`
 		const name = `receive${hashOf(body)}`
-		const specifier = this.specifierOf(name)
-		this.sharedModules[specifier] ??= {
-			readsRuntime: true,
-			imports: {},
-			declarations: [
+		this.importName(
+			this.share(
+				name,
 				writeFunction(this.baking, name, "holder", `\treturn ${body}`)
-			],
-			exports: [name]
-		}
-		this.importName(specifier, name)
+			),
+			name
+		)
 		return name
 	}
 
@@ -1167,16 +1150,16 @@ export class StandaloneArtifact {
 		body.push(...defaults.map(({ check }) => check), `return ${value}`)
 		const defaultKeys =
 			defaults.length ? `, [${defaults.map(({ key }) => key).join(", ")}]` : ""
-		const statements = [
-			writeFixConfig(configured),
-			...this.checks,
-			...(holes ?
+		return this.writeFactoryFunction(
+			index,
+			params,
+			configured,
+			holes ?
 				[
 					`return runtime.intern((interned${internedBy} ??= runtime.internTable()), [${holes.join(", ")}], () => {\n${body.filter(statement => statement).join("\n\n")}\n}${defaultKeys})`
 				]
-			:	body)
-		]
-		return this.writeFactoryFunction(index, params, statements)
+			:	body
+		)
 	}
 
 	writeRekeying(read: string): string[] {
@@ -1219,9 +1202,7 @@ export class StandaloneArtifact {
 			: member === "description" ? this.emitDescription(type)
 			: this.readJson(type)
 		const defaults = this.writeDefaultChecks(this.defaultChecks)
-		return this.writeFactoryFunction(index, params, [
-			writeFixConfig(configured),
-			...this.checks,
+		return this.writeFactoryFunction(index, params, configured, [
 			...(defaults.length ?
 				[...this.writeCalledBody(index), ...defaults.map(({ check }) => check)]
 			:	this.declarations.statements),
@@ -1232,7 +1213,8 @@ export class StandaloneArtifact {
 	writeFactoryFunction(
 		index: number,
 		params: FactoryParam[],
-		statements: (string | undefined)[]
+		configured: Configured,
+		statements: string[]
 	): string {
 		const units = this.localUnits.map((_, i) => `var unit${index}_${i}`)
 		return `${units.join("\n")}
@@ -1241,7 +1223,9 @@ ${writeFunction(
 	this.baking,
 	`factory${index}`,
 	params.map((_, i) => `p${i}`).join(", "),
-	statements.filter(statement => statement).join("\n\n")
+	[writeFixConfig(configured), ...this.checks, ...statements]
+		.filter(statement => statement)
+		.join("\n\n")
 )}`
 	}
 
@@ -1476,7 +1460,7 @@ return [${returned.join(", ")}]
 		]
 	}
 
-	read(specifier: string, name: string, param: string, arg: string): string {
+	read(specifier: string, name: string, param = name, arg = param): string {
 		this.importName(specifier, name)
 		if (!this.writing || param === arg) return arg
 		if (!this.writing.params.includes(param)) {
@@ -1728,17 +1712,14 @@ return [${returned.join(", ")}]
 			:	["configuredOnFail"])
 		]
 		const name = `create${hashOf(`${params.join(", ")}\n${body}`)}`
-		const specifier = this.specifierOf(name)
-		this.sharedModules[specifier] ??= {
-			readsRuntime: true,
-			imports:
-				applier?.failure ?
-					{ [this.declareFailure(applier.failure)]: [applier.failure] }
-				:	{},
-			declarations: [writeFunction(this.baking, name, params.join(", "), body)],
-			exports: [name]
-		}
-		this.importName(specifier, name)
+		this.importName(
+			this.share(
+				name,
+				writeFunction(this.baking, name, params.join(", "), body),
+				this.failureImports(applier?.failure)
+			),
+			name
+		)
 		return name
 	}
 
@@ -1801,31 +1782,49 @@ return [${returned.join(", ")}]
 		return this.readConstant(`json${hashOf(value)}`, value)
 	}
 
-	readConstant(name: string, value: string): string {
+	share(
+		name: string,
+		declaration: string,
+		imports: Record<string, string[]> = {},
+		readsRuntime = true
+	): string {
 		const specifier = this.specifierOf(name)
 		this.sharedModules[specifier] ??= {
-			readsRuntime: true,
-			imports: {},
-			declarations: [writeValue(this.baking.hoisted, name, value)],
-			exports: [name]
-		}
-		return this.read(specifier, name, name, this.readValue(name))
-	}
-
-	readFailure(name: keyof typeof failureSources): string {
-		return this.read(this.declareFailure(name), name, name, name)
-	}
-
-	declareFailure(name: keyof typeof failureSources): string {
-		const specifier = this.specifierOf(name)
-		const [params, body] = failureSources[name]
-		this.sharedModules[specifier] ??= {
-			readsRuntime: name === "invalid" || name === "invalidCall",
-			imports: {},
-			declarations: [writeFunction(this.baking, name, params, body)],
+			readsRuntime,
+			imports,
+			declarations: [declaration],
 			exports: [name]
 		}
 		return specifier
+	}
+
+	readConstant(name: string, value: string): string {
+		return this.read(
+			this.share(name, writeValue(this.baking.hoisted, name, value)),
+			name,
+			name,
+			this.readValue(name)
+		)
+	}
+
+	readFailure(name: keyof typeof failureSources): string {
+		return this.read(this.declareFailure(name), name)
+	}
+
+	declareFailure(name: keyof typeof failureSources): string {
+		const [params, body] = failureSources[name]
+		return this.share(
+			name,
+			writeFunction(this.baking, name, params, body),
+			{},
+			name === "invalid" || name === "invalidCall"
+		)
+	}
+
+	failureImports(
+		failure: keyof typeof failureSources | undefined
+	): Record<string, string[]> {
+		return failure ? { [this.declareFailure(failure)]: [failure] } : {}
 	}
 
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
@@ -1914,7 +1913,7 @@ return [${returned.join(", ")}]
 			typeof value === "number" ||
 			typeof value === "boolean"
 		)
-			return Object.is(value, -0) ? "-0" : String(value)
+			return printablePrimitive(value)
 		const prototype = hasDomain(value, "object") && prototypeOf(value)
 		const isArray = prototype === Array.prototype && Array.isArray(value)
 		if (
@@ -1998,15 +1997,10 @@ return [${returned.join(", ")}]
 					!root.includesMorph &&
 					!(root.hasKind("union") && !root.compiledDiscriminant)))
 		const transforms = strategy === "transform"
-		const isCompact = isArrow && appliesErrors && !root.allowsRequiresContext
-		const flat =
-			isCompact && !asValidator ?
-				this.flatTraversalsOf(root, transforms ? [0, 1, 2] : [0, 1])
-			:	undefined
-		const traversals =
-			flat ? flat[0]
-			: isCompact ? this.compactTraversalsOf(root)
-			: undefined
+		const [flat, traversals] =
+			isArrow && appliesErrors && !root.allowsRequiresContext ?
+				this.compactPartsOf(root, transforms ? [0, 1, 2] : [0, 1], asValidator)
+			:	[]
 		if (traversals) {
 			const pattern =
 				flat ? `allows, apply${transforms ? ", transform" : ""}`
@@ -2079,15 +2073,10 @@ return [${returned.join(", ")}]
 		const captures = strategy === "transform" && root.includesMorph
 		// a transform through a cycle, resolved from the root's shape
 		const resolves = strategy === "contextualTransform" && root.includesAlias
-		const isCompact = !root.allowsRequiresContext && !resolves
-		const flat =
-			isCompact && !asValidator ?
-				this.flatTraversalsOf(root, transforms ? [0, 2] : [0])
-			:	undefined
-		const traversals =
-			flat ? flat[0]
-			: isCompact ? this.compactTraversalsOf(root)
-			: undefined
+		const [flat, traversals] =
+			!root.allowsRequiresContext && !resolves ?
+				this.compactPartsOf(root, transforms ? [0, 2] : [0], asValidator)
+			:	[]
 		const shape = traversals ? undefined : this.shapeOf(root)
 		const allows = traversals ? "allows" : "node.allows"
 		const transform = traversals ? "transform" : "node.traverseTransform"
@@ -2175,14 +2164,23 @@ return [${returned.join(", ")}]
 			return `((${params}) => ${this.compiledOnLoad(apply)})`
 		const body = `\treturn ${apply}`
 		const name = `apply${hashOf(`${params}\n${body}`)}`
-		const specifier = this.specifierOf(name)
-		this.sharedModules[specifier] ??= {
-			readsRuntime: true,
-			imports: failure ? { [this.declareFailure(failure)]: [failure] } : {},
-			declarations: [writeFunction(this.baking, name, params, body)],
-			exports: [name]
-		}
-		return this.read(specifier, name, name, name)
+		return this.read(
+			this.share(
+				name,
+				writeFunction(this.baking, name, params, body),
+				this.failureImports(failure)
+			),
+			name
+		)
+	}
+
+	compactPartsOf(
+		root: BaseRoot,
+		indices: number[],
+		asValidator: boolean
+	): [flat?: string[] | undefined, traversals?: string | undefined] {
+		const flat = asValidator ? undefined : this.flatTraversalsOf(root, indices)
+		return [flat, flat ? flat[0] : this.compactTraversalsOf(root)]
 	}
 
 	flatTraversalsOf(root: BaseRoot, indices: number[]): string[] | undefined {
@@ -2190,9 +2188,7 @@ return [${returned.join(", ")}]
 		if (!this.baking.flattens || !isSharedUnit(unit)) return
 		const specifier = this.specifierOf(unit.name)
 		const traversals = this.traversalsOf(root, unit)
-		return indices.map(i =>
-			this.read(specifier, traversals[i], traversals[i], traversals[i])
-		)
+		return indices.map(i => this.read(specifier, traversals[i]))
 	}
 
 	compactTraversalsOf(root: BaseRoot): string | undefined {
@@ -2213,7 +2209,7 @@ return [${returned.join(", ")}]
 		if (root.expression.includes(holeNameMarker))
 			return this.emitString(root.expression)
 		const name = this.stringModuleOf(root, "expression")
-		return `${this.read(this.specifierOf(name), name, name, name)}()`
+		return `${this.read(this.specifierOf(name), name)}()`
 	}
 
 	// composed from referenced roots' modules where possible
@@ -2224,7 +2220,7 @@ return [${returned.join(", ")}]
 		if (parts.every(part => typeof part === "string"))
 			return this.emitString(root.description)
 		const name = this.writeStringModule(root, "description", parts)
-		return `${this.read(this.specifierOf(name), name, name, name)}()`
+		return `${this.read(this.specifierOf(name), name)}()`
 	}
 
 	stringModuleOf(root: BaseRoot, kind: ComposedString): string {
@@ -2249,12 +2245,12 @@ return [${returned.join(", ")}]
 			})
 			.join(" + ")
 		const name = `${kind}${hashOf(body)}`
-		this.sharedModules[this.specifierOf(name)] ??= {
-			readsRuntime: false,
+		this.share(
+			name,
+			writeFunction(this.baking, name, "", `\treturn ${body}`),
 			imports,
-			declarations: [writeFunction(this.baking, name, "", `\treturn ${body}`)],
-			exports: [name]
-		}
+			false
+		)
 		this.stringModuleNamesByRoot[kind].set(root, name)
 		return name
 	}
@@ -2432,8 +2428,7 @@ return [${returned.join(", ")}]
 		if (typeof value === "string") return this.emitString(value)
 		if (typeof value === "symbol")
 			return throwParseError(writeUnprecompilableMessage(printable(value)))
-		if (!hasDomain(value, "object"))
-			return Object.is(value, -0) ? "-0" : serializePrimitive(value as never)
+		if (!hasDomain(value, "object")) return printablePrimitive(value)
 		const runtimePath = runtimePathsByValue.get(value)
 		if (runtimePath) return runtimePath
 		const declared = this.declarations.namesByValue.get(value)
@@ -2515,13 +2510,8 @@ return [${returned.join(", ")}]
 	writeSharedLiteral(value: unknown): string | undefined {
 		if (typeof value === "string")
 			return value.includes(holeNameMarker) ? undefined : JSON.stringify(value)
-		if (!hasDomain(value, "object")) {
-			return (
-				typeof value === "symbol" ? undefined
-				: Object.is(value, -0) ? "-0"
-				: serializePrimitive(value as never)
-			)
-		}
+		if (!hasDomain(value, "object"))
+			return typeof value === "symbol" ? undefined : printablePrimitive(value)
 		if (
 			typeof value === "function" ||
 			isNode(value) ||
@@ -2738,8 +2728,6 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 	return codes
 }
 
-const { getTime } = Date.prototype
-
 // arktype calls a default's thunk each time it writes the schema
 const assertBakeableJsonSchema = (root: BaseRoot): void => {
 	if (root.references.some(callsDefaultThunk)) {
@@ -2875,13 +2863,8 @@ const namesReadBy = (unit: RootUnit, returned: string[]): Set<string> =>
 		)
 	)
 
-const sharedByUnit = new WeakMap<RootUnit, boolean>()
-
-let collectedKeywordMetas: Set<object> | undefined
-
 // a keyword Type's validator bakes none of the keyword's meta
-export const keywordMetas = (): Set<object> => {
-	if (collectedKeywordMetas) return collectedKeywordMetas
+export const keywordMetas: () => Set<object> = cached(() => {
 	const metas = new Set<object>()
 	const collect = (module: object): void => {
 		for (const value of Object.values(module)) {
@@ -2890,8 +2873,8 @@ export const keywordMetas = (): Set<object> => {
 		}
 	}
 	collect(keywords)
-	return (collectedKeywordMetas = metas)
-}
+	return metas
+})
 
 // strict even where a bundle's CJS or IIFE output isn't
 const isWriting = (member: string): boolean =>
@@ -2903,6 +2886,8 @@ const readUnitsOf = (unit: RootUnit): RootUnit[] =>
 		...Object.values(unit.dependencies).map(([node]) => node),
 		...unit.refs.filter(ref => isNode(ref) && ref.isRoot())
 	].map(node => unitOf(node as BaseNode, unit))
+
+const sharedByUnit = new WeakMap<RootUnit, boolean>()
 
 const isSharedUnit = (unit: RootUnit): boolean => {
 	let shared = sharedByUnit.get(unit)
@@ -3218,7 +3203,7 @@ const encodeKey = (
 			)
 		} else if (isHole(value)) values.push(`hole ${holeIndexOf(value)}`)
 		else if (!hasDomain(value, "object")) values.push(printablePrimitive(value))
-		else if (isDateObject(value)) values.push(`Date ${getTime.call(value)}`)
+		else if (isDateObject(value)) values.push(`Date ${dateGetTime.call(value)}`)
 		else if (isRegExpObject(value)) values.push(`${value} ${value.lastIndex}`)
 		else if (isArray(value)) {
 			values.push(`[${value.length}`)
