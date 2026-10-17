@@ -813,15 +813,19 @@ export class Precompiler {
 		}
 		// imported where the module imports arktype, so they're evaluated where arktype is, in an import cycle too
 		const arktypeImport = this.arktypeImportOf(module)
-		if (inserted && !arktypeImport) s.append(inserted)
-		else if (inserted && arktypeImport) {
-			const lineEnd = source.indexOf("\n", arktypeImport.end)
-			const rest = source.slice(
-				arktypeImport.end,
-				lineEnd === -1 ? undefined : lineEnd
-			)
-			// minified code can continue the import's line with a site or the configuration's fixer, which the imports precede
-			s.prependLeft(arktypeImport.end, rest.trim() ? `${inserted}\n` : inserted)
+		if (inserted) {
+			if (arktypeImport) {
+				const lineEnd = source.indexOf("\n", arktypeImport.end)
+				const rest = source.slice(
+					arktypeImport.end,
+					lineEnd === -1 ? undefined : lineEnd
+				)
+				// minified code can continue the import's line with a site or the configuration's fixer, which the imports precede
+				s.prependLeft(
+					arktypeImport.end,
+					rest.trim() ? `${inserted}\n` : inserted
+				)
+			} else s.append(inserted)
 		}
 		return {
 			code: s.toString(),
@@ -1368,22 +1372,23 @@ export class Precompiler {
 			imports[fixerSpecifier] = { default: `${prefix}fixConfig` }
 			s.appendLeft(fixedAt, `${prefix}fixConfig()\n`)
 		}
-		// in shadow mode arktype creates each site too, reading what the site's text reads
-		if (!this.shadow) {
+		if (this.shadow) {
+			// before arktype, so it loads beside the runtime whichever a module imports first
+			if (folded.length) {
+				s.prependLeft(
+					firstStatementOf(module.program).start,
+					this.shadowContract ?
+						`import { shadowUnder as ${prefix}shadowUnder } from "@ark/precompile/shadow"\nfunction ${prefix}shadow(...args) { return ${prefix}shadowUnder(${this.shadowContract}, ...args) }\n`
+					:	`import { shadow as ${prefix}shadow } from "@ark/precompile/shadow"\n`
+				)
+			}
+		} else {
 			// linkIslands leaves configure() to the runtime, which still reads its import
 			const linked = module.islands.filter(
 				island =>
 					!this.configureCallsOf(module).some(call => contains(island, call))
 			)
 			pruneArktypeImports(module, [...folded, ...linked], s)
-		} else if (folded.length) {
-			// before arktype, so it loads beside the runtime whichever a module imports first
-			s.prependLeft(
-				firstStatementOf(module.program).start,
-				this.shadowContract ?
-					`import { shadowUnder as ${prefix}shadowUnder } from "@ark/precompile/shadow"\nfunction ${prefix}shadow(...args) { return ${prefix}shadowUnder(${this.shadowContract}, ...args) }\n`
-				:	`import { shadow as ${prefix}shadow } from "@ark/precompile/shadow"\n`
-			)
 		}
 		keepImportedModules(module, folded, kept, passed, s)
 		diagnostics.push(...this.checkRuntimeImports(module, sites))
@@ -2042,22 +2047,20 @@ export class Precompiler {
 					"its ParseError prints the name of a function the build knows only by a placeholder"
 				)
 			}
-		}
-		for (const input of site.parseError ? site.inputs : []) {
-			result.push(
-				`\`${textOfInput(input)}\` is ${
-					input.kind === "import" ?
-						`imported from ${this.graph.pathOf(input.file!)}`
-					:	"declared in a function around the site"
-				}`
-			)
-		}
-		for (const helper of site.parseError && this.checkHelpers ?
-			site.helpers
-		:	[]) {
-			result.push(
-				`it calls the static helper \`${helper.name}\` (${(this.graph.moduleOf(helper.file) as SourceModule).positionOf(helper)})`
-			)
+			for (const input of site.inputs) {
+				result.push(
+					`\`${textOfInput(input)}\` is ${
+						input.kind === "import" ?
+							`imported from ${this.graph.pathOf(input.file!)}`
+						:	"declared in a function around the site"
+					}`
+				)
+			}
+			for (const helper of this.checkHelpers ? site.helpers : []) {
+				result.push(
+					`it calls the static helper \`${helper.name}\` (${(this.graph.moduleOf(helper.file) as SourceModule).positionOf(helper)})`
+				)
+			}
 		}
 		return result
 	}
@@ -2195,12 +2198,10 @@ export class Precompiler {
 
 	// a module's sites are registered before anything in it is evaluated, so each runs once however it is first reached
 	private readsOf(module: SourceModule): SiteRead[] {
-		let reads = this.readsByModule.get(module)
-		if (reads) return reads
-		this.readsByModule.set(
-			module,
-			(reads = findSites(module, this.graph, this.mode === "standalone"))
-		)
+		const cached = this.readsByModule.get(module)
+		if (cached) return cached
+		const reads = findSites(module, this.graph, this.mode === "standalone")
+		this.readsByModule.set(module, reads)
 		for (const { candidate } of reads) {
 			if (candidate)
 				this.interpreter.sitesByNode.set(candidate.state.node, candidate.state)
@@ -2209,11 +2210,14 @@ export class Precompiler {
 	}
 
 	private candidatesOf(module: SourceModule): SiteCandidate[] {
-		let candidates = this.candidatesByModule.get(module)
-		if (!candidates) {
-			candidates = filterSites(this.readsOf(module), module, this.interpreter)
-			this.candidatesByModule.set(module, candidates)
-		}
+		const cached = this.candidatesByModule.get(module)
+		if (cached) return cached
+		const candidates = filterSites(
+			this.readsOf(module),
+			module,
+			this.interpreter
+		)
+		this.candidatesByModule.set(module, candidates)
 		return candidates
 	}
 
@@ -2226,7 +2230,7 @@ export class Precompiler {
 			)
 			this.interpreter.sitesByNode.set(type.node, type)
 		}
-		for (;;) {
+		while (true) {
 			const state = this.interpreter.evaluateSite(candidate.state)
 			// reading a member a standalone value has, like a Module's alias, makes no request, so it is not a site of its own
 			if (
@@ -2286,12 +2290,12 @@ export class Precompiler {
 
 	// e.g. one exporting only Types: it imports nothing an import cycle can come back through, and its top level runs only creations that neither check nor throw
 	private isInert(module: SourceModule): boolean {
-		let result = this.inertByModule.get(module)
-		if (result !== undefined) return result
-		this.inertByModule.set(module, (result = false))
-		if (importsValues(module)) return result
+		const cached = this.inertByModule.get(module)
+		if (cached !== undefined) return cached
+		this.inertByModule.set(module, false)
+		if (importsValues(module)) return false
 		const sitesByRange = rangesOf(this.analysisOf(module).sites)
-		result = module.program.body.every(statement =>
+		const result = module.program.body.every(statement =>
 			this.isInertStep(statement, sitesByRange)
 		)
 		this.inertByModule.set(module, result)
@@ -3243,8 +3247,8 @@ export class Precompiler {
 	): [write: Node, value: Node, isDirect: boolean] | undefined {
 		// the reads since the last call, each of which may be an arktype value
 		const objects: Node[] = [id]
-		let node = id
-		for (let parent = node.parent!; ; node = parent, parent = node.parent!) {
+		for (let node = id; ; node = node.parent!) {
+			const parent = node.parent!
 			if (isTransparent(parent)) continue
 			let write: Node | undefined
 			if (parent.type === "MemberExpression" && parent.object === node) {
@@ -4082,7 +4086,8 @@ const reasonsOf = (e: unknown): string[] =>
 	: [String(e)]
 
 const isMemberRead = (node: Node, root: Node): boolean => {
-	for (node = unwrapExpression(node); node !== root; ) {
+	node = unwrapExpression(node)
+	while (node !== root) {
 		if (node.type !== "MemberExpression") return false
 		node = unwrapExpression(node.object)
 	}
