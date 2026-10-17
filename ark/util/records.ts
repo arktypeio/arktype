@@ -294,7 +294,6 @@ export const stringAndSymbolicEntriesOf = (o: object): Entry<Key>[] => [
 ]
 
 /** Like Object.assign, but it will preserve getters instead of evaluating them. */
-// V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
 export const defineProperties: <base extends object, merged extends object>(
 	base: base,
 	merged: merged

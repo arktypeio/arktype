@@ -18,7 +18,7 @@ const fileName = (): string => {
 
 type ArkKnownEnvVar = "ARK_DEBUG"
 
-// read in a function annotated pure, so a bundler can drop it where nothing reads env
+// PURE, so bundles that never read env drop it
 const env: Record<
 	autocomplete<ArkKnownEnvVar>,
 	string | undefined

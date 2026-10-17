@@ -29,7 +29,7 @@ export type NonNegativeIntegerLiteral<n extends bigint = bigint> =
  *    4. The value may not be "-0"
  */
 export const wellFormedNumberMatcher: RegExp =
-	// their sources reach users through keyword patterns and JSON Schema, so they keep their groups
+	// sources are public (keywords, JSON Schema), so keep their groups
 	// eslint-disable-next-line unicorn/better-regex
 	/^(?:(?!^-0\.?0*$)(?:-?(?:(?:0|[1-9]\d*)(?:\.\d*[1-9])?)))$/
 

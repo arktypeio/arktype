@@ -65,7 +65,7 @@ const unregisteredNameOf = (value: object | symbol) =>
 		namesByUnregisteredSymbol.get(value)
 	:	namesByUnregisteredObject.get(value)
 
-// "$" sorts before other identifier characters, so hashes order names by base name first
+// "$" sorts first, so names order by base name
 const nextName = (value: object | symbol) => {
 	const baseName = baseNameOf(value)
 	let name = baseName

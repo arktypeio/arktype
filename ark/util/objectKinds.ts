@@ -47,7 +47,7 @@ export type EcmascriptObjects = satisfy<
 	}
 >
 
-// reads of globals run in functions annotated pure, so a bundler can drop those nothing uses
+// globals are read in PURE IIFEs so unused ones tree-shake
 /** Node18 */
 export const FileConstructor = /* @__PURE__ */ (() =>
 	globalThis.File ?? globalThis.Blob)()
@@ -217,12 +217,11 @@ export const hasObjectKind = <kind extends keyof builtinConstructors>(
 ): data is InstanceType<builtinConstructors[kind]> =>
 	objectKindOf(data) === (kind as never)
 
-// reads of builtins run in functions annotated pure, so a bundler can drop those nothing uses
 export const isArray: (data: unknown) => data is readonly unknown[] =
 	/* @__PURE__ */ (() => Array.isArray)()
 export const dateGetTime = /* @__PURE__ */ (() => Date.prototype.getTime)()
 
-// called as a method when it is Date's own, which V8 compiles to a read of the time value
+// a method call inlines where getTime is Date's own
 export const isValidDate = (date: Date): boolean =>
 	!Number.isNaN(
 		date.getTime === dateGetTime ? date.getTime() : dateGetTime.call(date)

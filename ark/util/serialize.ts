@@ -19,7 +19,7 @@ export type SerializationOptions = {
 	onFunction?: (value: Function) => string
 	onUndefined?: string
 	onBigInt?: (value: bigint) => string
-	// describes an accessor instead of calling it, and then only a Date's toJSON is called
+	// describes accessors instead of calling them; also skips toJSON but a Date's
 	onAccessor?: (descriptor: PropertyDescriptor) => string
 }
 
@@ -151,7 +151,6 @@ const stringifyUnquoted = (
 	return expressionOf(value) ?? ctorName
 }
 
-/** a symbol as printable prints it */
 export const printSymbol = (symbol: symbol): string =>
 	`Symbol(${baseNameOfSymbol(symbol)})`
 
@@ -265,14 +264,14 @@ const months = [
 const pad = (value: number, length: number) =>
 	String(value).padStart(length, "0")
 
-// the same keys are usually checked again, so the answer for each is kept
+// cached, since the same keys recur
 const dotAccessibleKeys = new Map<string, boolean>()
 
 export const isDotAccessible = (keyName: string): boolean => {
 	let accessible = dotAccessibleKeys.get(keyName)
 	if (accessible === undefined) {
 		accessible = /^[$A-Z_a-z][\w$]*$/.test(keyName)
-		// keys can come from data, so only so many and so long are kept
+		// bounded, since keys can come from data
 		if (keyName.length <= 64) {
 			if (dotAccessibleKeys.size === 1024) dotAccessibleKeys.clear()
 			dotAccessibleKeys.set(keyName, accessible)
@@ -291,9 +290,8 @@ export const baseNameOf = (value: object | symbol): string => {
 			return prefix[0].toLowerCase() + prefix.slice(1)
 		}
 		case "function":
-			return isDotAccessible(functionNameOf(value)) ?
-					functionNameOf(value)
-				:	"fn"
+			const name = functionNameOf(value)
+			return isDotAccessible(name) ? name : "fn"
 		case "symbol":
 			return baseNameOfSymbol(value)
 	}

@@ -25,7 +25,7 @@ export const throwParseError: (message: string) => never = message =>
  *  TypeScript won't suggest strings beginning with a space as properties.
  *  Useful for symbol-like string properties.
  */
-// V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
+// parenthesized (kept by `satisfies`) so it compiles eagerly
 export const noSuggest = (<s extends string>(s: s): noSuggest<s> =>
 	` ${s}`) satisfies Fn
 

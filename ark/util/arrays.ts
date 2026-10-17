@@ -129,8 +129,7 @@ export declare namespace array {
 		i["length"] extends count ? result
 		:	_multiply<base, [...result, ...base], count, [...i, 1]>
 
-	// inferring the segments keeps checking this declaration from relating
-	// them to 1[][], which would build every power of two
+	// inferred so checking this declaration doesn't build every power of two
 	export type repeat<element, count extends number> =
 		powersOfTwo<seedOf<count>> extends infer segments extends 1[][] ?
 			buildFromSegments<element, [], dropLongerThan<count, segments>, count>
@@ -450,15 +449,12 @@ type _setIndex<
 		_setIndex<tail, i, to, [...result, result["length"] extends i ? to : head]>
 	:	result
 
-// the powers of two up to 2^13, largest first, since a 2^14 element tuple
-// is too large to represent. Declaring them instead would build each one
-// whenever the declaration is checked.
+// powers of two to 2^13, largest first; 2^14 is too large to represent
 type powersOfTwo<segments extends 1[][]> =
 	segments["length"] extends 15 ? segments
 	:	powersOfTwo<[[...segments[0], ...segments[0]], ...segments]>
 
-// depending on count defers powersOfTwo until count is known, while every
-// count still shares the one list it builds
+// defers powersOfTwo until count is known, sharing one list across counts
 type seedOf<count> = count extends unknown ? [[1], []] : never
 
 type dropLongerThan<n extends number, segments extends 1[][]> =

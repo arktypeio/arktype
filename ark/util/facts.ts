@@ -4,9 +4,9 @@ import type { Constructor } from "./objectKinds.ts"
 import type { Entry } from "./records.ts"
 import type { SerializationOptions } from "./serialize.ts"
 
-// arktype reads a value a user passes it only through these, since a precompiled build answers them for values it cannot evaluate
+// arktype reads user values only through these, so a build can answer them
 
-// noSuggest("arkKind") written out, so a bundle holds no call to evaluate
+// a literal, so bundles needn't keep noSuggest
 export const arkKind: noSuggest<"arkKind"> = " arkKind"
 
 export type arkKind = typeof arkKind
@@ -21,9 +21,8 @@ export const isDate = (value: unknown): value is Date => value instanceof Date
 export const prototypeOf = (o: object): object | null =>
 	Object.getPrototypeOf(o)
 
-// a standalone validator declares only its data yet reads the traversal a Type pipes to it, as the traverse its prototype owns does
+// Types and validators read ctx, though they declare only data
 export const arityOf = (fn: Function): number => {
-	// builtins, as the arities a scope reads would otherwise change how V8 compiles the prototypeOf and hasOwn that validation calls
 	const proto = Object.getPrototypeOf(fn)
 	return proto && Object.prototype.hasOwnProperty.call(proto, "traverse") ?
 			2

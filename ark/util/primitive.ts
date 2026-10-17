@@ -17,7 +17,7 @@ export type SerializedPrimitive =
 
 export type SerializablePrimitive = inferDomain<keyof SerializedPrimitives>
 
-// a union's errors print the same data, so the last string serialized is kept
+// a union's errors print the same data, so cache the last string
 let lastString: string | undefined
 let lastSerialized: string
 
