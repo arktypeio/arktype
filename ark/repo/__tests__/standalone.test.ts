@@ -427,6 +427,41 @@ contextualize(() => {
 		attest(errors.toJSON()).is(errors.issues)
 	})
 
+	it("writes each validation's paths from its own data, though it runs in another's or after one threw", async () => {
+		const { Inner, Outer } = await load({
+			Inner: type({ x: { y: "string" } }),
+			Outer: type({ a: "string", b: { c: "string" } })
+		})
+		const pathsOf = (result: any) =>
+			result.issues.map((issue: { path: unknown }) => issue.path)
+		const invalid = { a: 1, b: {} }
+		attest(pathsOf(Outer(invalid))).equals([["a"], ["b", "c"]])
+		let innerResult: unknown
+		// read by Outer's Apply at b, then as it writes the issue at b.c
+		const reentering = {
+			a: 1,
+			b: {
+				get c() {
+					innerResult = Inner({ x: { y: 1 } })
+					return 1
+				}
+			}
+		}
+		attest(pathsOf(Outer(reentering))).equals([["a"], ["b", "c"]])
+		attest(pathsOf(innerResult)).equals([["x", "y"]])
+		const throwing = {
+			a: 1,
+			b: {
+				get c() {
+					return Inner.assert({ x: 1 })
+				}
+			}
+		}
+		attest(() => Outer(throwing)).throws("x must be an object")
+		attest(pathsOf(Outer(invalid))).equals([["a"], ["b", "c"]])
+		attest(pathsOf(Inner({ x: 1 }))).equals([["x"]])
+	})
+
 	it("keeps apart the issues at one path, which arktype groups", async () => {
 		const T = type({ "[/^a/]": "string[] >= 2", "[/a$/]": "unknown[] <= 0" })
 		const { T: validator } = await load({ T })
