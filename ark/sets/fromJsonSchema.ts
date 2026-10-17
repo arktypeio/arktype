@@ -479,7 +479,7 @@ const disjointFromArray = (node: BaseNode): Disjoint | undefined => {
 	const { proto, predicate } = node.inner
 	const nonArray = predicate?.find(node => node.predicate === isNonArray)
 	return proto?.proto === Array && nonArray ?
-			Disjoint.init("assignability", proto, nonArray)
+			Disjoint.init("assignability", proto, nonArray.description)
 		:	undefined
 }
 

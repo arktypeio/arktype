@@ -22,7 +22,7 @@ type OperandsByDisjointKind = {
 	proto: nodeOfKind<"proto">
 	presence: BaseRoot
 	range: nodeOfKind<BoundKind>
-	assignability: BaseNode
+	assignability: BaseNode | string
 	union: readonly BaseRoot[]
 }
 

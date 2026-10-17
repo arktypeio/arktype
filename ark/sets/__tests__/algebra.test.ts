@@ -103,7 +103,7 @@ contextualize(() => {
 		attest(JsonObject.overlaps(rootSchema({ proto: Array }))).equals(false)
 		attest(JsonObject.overlaps(rootSchema({ proto: Date }))).equals(true)
 		attest(() => JsonObject.and(rootSchema({ proto: Array }))).throws.snap(
-			"ParseError: Intersection of Array and isNonArray results in an unsatisfiable type"
+			"ParseError: Intersection of Array and not an array results in an unsatisfiable type"
 		)
 	})
 
