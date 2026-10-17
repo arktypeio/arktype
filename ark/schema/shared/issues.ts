@@ -187,20 +187,21 @@ export const issueAt = (
 	site: FailureSite,
 	data: unknown,
 	key: PropertyKey | undefined
-): ArkIssue =>
-	key === undefined ?
-		issueOf(
-			site.value ?? (site as SiteContext),
-			site.path ? [...path, ...site.path] : path.slice(),
-			data
-		)
-	: site.missing && !(key in (data as object)) ?
-		issueOf(site.missing, [...path, key], data)
-	:	issueOf(
-			site.value ?? (site as SiteContext),
-			[...path, key],
-			(data as Keyed)[key]
-		)
+): ArkIssue => {
+	let context = site.value ?? (site as SiteContext)
+	if (key !== undefined) {
+		path.push(key)
+		if (site.missing && !(key in (data as object))) context = site.missing
+		else data = (data as Keyed)[key]
+	}
+	const issue = issueOf(
+		context,
+		site.path ? [...path, ...site.path] : path.slice(),
+		data
+	)
+	if (key !== undefined) path.pop()
+	return issue
+}
 
 const issueOf = (
 	context: SiteContext,
