@@ -1907,9 +1907,7 @@ export class Precompiler {
 			this.rejectionSeverity,
 			`${module.snippetOf(site)} can't be precompiled yet`,
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
-			reasons.some(reason => reason.startsWith("arktype is configured with")) ?
-				errorsHint
-			:	undefined
+			configuredHintOf(reasons)
 		)
 	}
 
@@ -2020,20 +2018,32 @@ export class Precompiler {
 		)
 	}
 
-	// a validator returns what its build's errors option says, which must be what arktype returns where the program configures errors
-	private errorsReasonsOf(site: Site): string[] {
+	// a validator returns what its build's errors and mutatesInput options say, which must be what arktype returns where the program configures them
+	private configuredReasonsOf(site: Site): string[] {
 		const value = createdBy(site)
 		if (this.mode !== "standalone" || !value) return []
-		const built = this.errors ?? "all"
 		const roots =
 			hasArkKind(value, "scope") ?
 				exportedRootsOf(value)
 			:	[...arkObjectsIn(value)].filter(member => hasArkKind(member, "root"))
-		// where the program configures none, the build's own option decides
-		const configured = roots
+		// where the program configures neither, the build's own options decide
+		const builtErrors = this.errors ?? "all"
+		const errors = roots
 			.map(root => root.$.config.errors)
-			.find(errors => errors !== undefined && errors !== built)
-		return configured ? [writeErrorsMismatchMessage(configured, built)] : []
+			.find(errors => errors !== undefined && errors !== builtErrors)
+		const builtMutatesInput = this.mutatesInput ?? false
+		const mutatesInput = roots
+			.map(root => root.$.config.mutatesInput)
+			.find(
+				mutatesInput =>
+					mutatesInput !== undefined && mutatesInput !== builtMutatesInput
+			)
+		return [
+			...(errors ? [writeErrorsMismatchMessage(errors, builtErrors)] : []),
+			...(mutatesInput === undefined ?
+				[]
+			:	[writeMutatesInputMismatchMessage(mutatesInput, builtMutatesInput)])
+		]
 	}
 
 	private unsupportedReasonsOf(site: Site, module: SourceModule): string[] {
@@ -2056,7 +2066,7 @@ export class Precompiler {
 			)
 		}
 		result.push(...this.incomparableReasonsOf(site, module))
-		result.push(...this.errorsReasonsOf(site))
+		result.push(...this.configuredReasonsOf(site))
 		if (site.parseError) {
 			const holes = this.interpreter.holesIn(site.arktypeArguments)
 			for (const hole of site.holes) holes.delete(hole.value)
@@ -3819,9 +3829,21 @@ export type writeErrorsMismatchMessage<
 	built extends ErrorDetail
 > = `arktype is configured with errors: "${configured}", where the build's errors are "${built}"`
 
+export const writeMutatesInputMismatchMessage = (
+	configured: MutatesInput,
+	built: MutatesInput
+): string =>
+	`arktype is configured with mutatesInput: ${printable(configured)}, where the build's mutatesInput is ${printable(built)}`
+
 // a standalone validator can't return what arktype configured otherwise does
-const errorsHint =
-	"A standalone validator returns what arktype does as the program configures it. Build with the errors arktype is configured with."
+const configuredHintOf = (reasons: string[]): string | undefined => {
+	const option = reasons
+		.map(reason => /^arktype is configured with (\w+)/.exec(reason)?.[1])
+		.find(option => option !== undefined)
+	return option === undefined ? undefined : (
+			`A standalone validator returns what arktype does as the program configures it. Build with the ${option} arktype is configured with.`
+		)
+}
 
 const isFoldable = (value: unknown): value is Foldable =>
 	hasArkKind(value, "root") ||

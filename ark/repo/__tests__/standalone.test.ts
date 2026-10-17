@@ -1407,7 +1407,7 @@ name is missing`)
 		attest(list).equals([{ v: " x ", extra: 1 }])
 	})
 
-	it("returns what arktype returns and writes its input alike, as each Type's Scope configures mutatesInput", async () => {
+	it("returns what arktype returns and writes its input alike, built with the mutatesInput each Type's Scope configures", async () => {
 		const defs = {
 			item: { n: "string.numeric.parse" },
 			Items: "item[]",
@@ -1438,7 +1438,9 @@ name is missing`)
 				Strip: $.Strip,
 				Node: $.node
 			}
-			const validators = await load(exports)
+			const validators = await load(exports, undefined, undefined, printed, {
+				mutatesInput
+			})
 			for (const [name, T] of Object.entries(exports)) {
 				for (const input of inputs[name]) {
 					const expected = structuredClone(input)
@@ -1479,18 +1481,12 @@ name is missing`)
 		const input = { n: "1" }
 		attest(written(input)).is(input)
 		attest(input as object).equals({ n: 1 })
-		const { T: copied } = await load(
-			{
-				T: scope(
-					{ T: { n: "string.numeric.parse" } },
-					{ mutatesInput: true }
-				).export().T
-			},
-			undefined,
-			undefined,
-			printed,
-			{ mutatesInput: false }
-		)
+		const { T: copied } = await load({
+			T: scope(
+				{ T: { n: "string.numeric.parse" } },
+				{ mutatesInput: true }
+			).export().T
+		})
 		const kept = { n: "1" }
 		attest(copied(kept)).equals({ n: 1 })
 		attest(kept).equals({ n: "1" })

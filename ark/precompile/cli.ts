@@ -10,7 +10,7 @@ import {
 } from "./precompile.ts"
 
 const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"
+	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -28,6 +28,7 @@ const { values, positionals } = parseArgs({
 		"no-config": { type: "boolean" },
 		members: { type: "string" },
 		checks: { type: "string" },
+		"mutates-input": { type: "string" },
 		errors: { type: "string" },
 		conditions: { type: "string" },
 		tsconfig: { type: "string" }
@@ -78,11 +79,16 @@ if (values.members !== undefined) {
 	}
 }
 
+const mutatesInput = values["mutates-input"]
+
 const opts: CheckOptions = {
 	runtime: runtime as "arktype" | undefined,
 	config: values["no-config"] ? false : values.config,
 	members,
 	checks: values.checks as PrecompileOptions["checks"],
+	mutatesInput: (mutatesInput === "true" || mutatesInput === "false" ?
+		mutatesInput === "true"
+	:	mutatesInput) as PrecompileOptions["mutatesInput"],
 	errors: values.errors as PrecompileOptions["errors"],
 	conditions: values.conditions?.split(","),
 	tsconfig: values.tsconfig

@@ -703,10 +703,18 @@ export const compare = async (
 		isFolded: false,
 		disagreements: []
 	}
-	// as the build refuses a Type whose configured errors aren't its own
-	const configured = node.$.config.errors
-	if (configured && configured !== (testedOptions.errors ?? "all"))
+	// as the build refuses a Type whose configured errors or mutatesInput aren't its own
+	const configured = node.$.config
+	if (
+		configured.errors &&
+		configured.errors !== (testedOptions.errors ?? "all")
+	)
 		return { ...result, refusal: "configured errors" }
+	if (
+		configured.mutatesInput !== undefined &&
+		configured.mutatesInput !== mutatesInput
+	)
+		return { ...result, refusal: "configured mutatesInput" }
 	const holes = keyOf(node)[1]
 	// writing in place returns what copying does, unless an input breaks what always assumes
 	for (const [i, input] of inputs.entries()) {

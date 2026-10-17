@@ -99,6 +99,34 @@ contextualize(() => {
 		])
 	})
 
+	it("rejects each site arktype is configured to mutate other than the build", () => {
+		attest(
+			check([], { cwd: fromHere("mutating"), config: "config.ts" }).lines
+		).snap([
+			"main.ts:4:18  type({ a: \"string.trim\" }) can't be precompiled yet\n  arktype is configured with mutatesInput: true, where the build's mutatesInput is false\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.",
+			'main.ts:6:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can\'t be precompiled yet\n  arktype is configured with mutatesInput: "always", where the build\'s mutatesInput is false\n  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.',
+			"2 sites in 2 files: 0 accepted (0.0%)"
+		])
+	})
+
+	it("accepts a site whose configured mutatesInput is the build's", () => {
+		attest(
+			cliIn(
+				fromHere("mutating"),
+				"--check",
+				"--config",
+				"config.ts",
+				"--mutates-input",
+				"true"
+			).stdout
+		).snap(`main.ts:4:18  accepted
+main.ts:6:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can't be precompiled yet
+  arktype is configured with mutatesInput: "always", where the build's mutatesInput is true
+  A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.
+2 sites in 2 files: 1 accepted (50.0%)
+`)
+	})
+
 	it("fails under a rate", () => {
 		attest(cli("--check", "--fail-under", "50").status).equals(0)
 		attest(cli("--check", "--fail-under", "60").status).equals(1)
@@ -214,7 +242,8 @@ forms.ts:16:16  island
 			[
 				["--members", "[1]"],
 				["--checks", "bogus"],
-				["--errors", "bogus"]
+				["--errors", "bogus"],
+				["--mutates-input", "yes"]
 			].map(args => {
 				const result = cli("--check", ...args)
 				return `${result.status} ${result.stderr.split("\n")[0]}`
@@ -222,7 +251,8 @@ forms.ts:16:16  island
 		).snap([
 			"2 members is [1], which isn't an object",
 			'2 checks is "bogus", which isn\'t "types", "helpers" or "none"',
-			'2 errors is "bogus", which isn\'t "all", "first" or "none"'
+			'2 errors is "bogus", which isn\'t "all", "first" or "none"',
+			'2 mutatesInput is "yes", which isn\'t false, true or "always"'
 		])
 	})
 })

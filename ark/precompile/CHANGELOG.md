@@ -38,7 +38,7 @@ precompile.vite({ errors: "none" })
 
 ### Write what a standalone validator transforms into its input with `mutatesInput`
 
-A standalone validator transforms a copy of its input, as arktype does. `mutatesInput: true` or `"always"` writes its defaults and morphed values into the input, which it returns, as arktype configured with the same option does, so its validators return what arktype's do. Without the option, each Type writes in place as its Scope is configured. In standalone mode, `arktype/mutatesInput`, which installs the option in arktype, resolves to the runtime, as `arktype/config` does, and a runtime island installs it itself.
+A standalone validator transforms a copy of its input, as arktype does. `mutatesInput: true` or `"always"` writes its defaults and morphed values into the input, which it returns, as arktype configured with the same option does, so its validators return what arktype's do. A site whose Types are configured, globally or by their Scope, with another `mutatesInput` than the build's fails it, naming both, and `--check` takes `--mutates-input`. A program that configures none builds with any. In standalone mode, `arktype/mutatesInput`, which installs the option in arktype, resolves to the runtime, as `arktype/config` does, and a runtime island installs it itself.
 
 `"always"` saves the benchmarked shop app 3626 bytes minified and 1217 gzipped, where `true` adds 1430 and 250, as a Type writing in place and one copying each have their own units for a transforming Type they share. Login and moltar transform nothing, so neither changes them.
 

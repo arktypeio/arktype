@@ -1104,12 +1104,8 @@ export class StandaloneArtifact {
 		return [...this.validatorNamesByRoot.keys()]
 	}
 
-	// as the build says, else as the Scope of the root configures
 	inPlace(root: BaseRoot): boolean {
-		return writesInPlace(
-			root,
-			this.baking.mutatesInput ?? root.$.resolvedConfig.mutatesInput
-		)
+		return writesInPlace(root, this.baking.mutatesInput)
 	}
 
 	headUnitOf(root: BaseRoot): RootUnit {
