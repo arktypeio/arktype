@@ -240,7 +240,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 				: alias === "root" ? this.name
 				: `${this.name}.${alias}`
 
-			// a thunk looks up its config when called, so constructing ark on import doesn't fix the global config
+			// a thunk reads its config when called, so ark doesn't fix it
 			if (isThunk(def)) {
 				const thunk = def
 				return [
@@ -278,15 +278,13 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 			// use a thunk definition for the generic so that we can parse
 			// constraints within the current scope
 			new LazyGenericRoot(
-				() => {
-					const params = this.parseGenericParams(paramString, {
-						alias: genericName
-					})
-
-					const generic = parseGeneric(params, def, this as never, genericName)
-
-					return generic
-				},
+				() =>
+					parseGeneric(
+						this.parseGenericParams(paramString, { alias: genericName }),
+						def,
+						this as never,
+						genericName
+					),
 				{ attach: { paramsDef: paramString, bodyDef: def } }
 			)
 		]
@@ -397,7 +395,7 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		InternalScope.scope(def as never, config).export()) as never
 }
 
-// a precompiled program keys a builtin scope by its name, so each has its own
+// builtin scopes are named so a precompiled program can key them
 export const keywordModule = (
 	def: Dict,
 	config: ArkScopeConfig & { name: string }

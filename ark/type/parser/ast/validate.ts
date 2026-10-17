@@ -88,8 +88,7 @@ type validateInferredAst<inferred, def extends string> =
 	: def extends PrivateDeclaration<infer name> ?
 		ErrorMessage<writePrefixedPrivateReferenceMessage<name>>
 	: // these problems would've been caught during a fullStringParse, but it's most
-	// efficient to check for them here in case the string was naively parsed.
-	// checking the brand first avoids resolving Generic's members
+	// efficient to check for them here in case the string was naively parsed
 	inferred extends { [arkKind]: "generic" } ?
 		inferred extends Generic ?
 			ErrorMessage<

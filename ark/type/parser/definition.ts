@@ -172,7 +172,6 @@ export type inferDefinition<def, $, args> =
 		// {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
 		// Unlike in TS however, ArkType object literals are constrained to object
 		// so we use that as the base type inferred when parsing {}.
-		// {} infers t as unknown, so any other t can skip that check.
 		unknown extends t ?
 			ifEmptyObjectLiteral<def, object, t>
 		:	t
@@ -184,8 +183,7 @@ export type inferDefinition<def, $, args> =
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
 
-// an object literal without a spread always infers an object, so its Type
-// is known without inferring it, which is deferred until something needs it
+// a literal without a spread is an object, so inference can be deferred
 export type instantiateDefinition<def, $, args> =
 	[def] extends [anyOrNever | string | NonLiteralObjectDefinition] ?
 		instantiateType<inferDefinition<def, $, args>, $>

@@ -95,7 +95,7 @@ export const parseObjectLiteral = (
 					ctx
 				)
 			} else {
-				// string syntax creates its own default functions, which run no user code
+				// string defaults run no user code
 				if (typeof v === "string" && typeof parsedValue[2] === "function")
 					checkDefault(parsedValue[0], parsedValue[2](), parsedKey.normalized)
 				appendNamedProp(
@@ -208,13 +208,13 @@ type optionalKeyOf<def> = {
 	:	never
 }[keyof def]
 
-// a single mapped type needs no show, which keeps the result cheap to instantiate
+// one mapped type needs no show
 type inferUnparsedKeys<def, optionalKey, $, args> =
 	[optionalKey] extends [never] ?
 		{ -readonly [k in keyof def]: inferDefinition<def[k], $, args> }
 	:	show<inferUnparsedProps<def, optionalKey, $, args>>
 
-// naming optional keys through optionalKeyFromEntry keeps show's properties in definition order
+// keeps definition order through show
 type inferUnparsedProps<def, optionalKey, $, args> = {
 	-readonly [k in keyof def as k extends optionalKey ? never
 	:	k]: inferDefinition<def[k], $, args>

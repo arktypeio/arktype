@@ -74,8 +74,7 @@ type distilledSidesOf<t> =
 		: { [k in keyof t]-?: distilledSidesOf<t[k]> }
 	:	never
 
-// TypeScript relates a string or symbol index signature to the target's
-// without checking the keys it covers, so those are mapped to a named key
+// map index signatures to "" so their value types are related
 type indexedSidesOf<t> = {
 	[k in keyof t as string extends k ? ""
 	: symbol extends k ? ""
@@ -93,9 +92,7 @@ type _distill<t, side extends distill.Side> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: unknown extends t ? unknown
-	: // inferring base from the brand alone avoids inferring t into Brand's
-	// intersection, which every object being distilled would pay
-	t extends { readonly [brand]: [infer base, unknown] } ?
+	: t extends { readonly [brand]: [infer base, unknown] } ?
 		side extends "in" ?
 			base
 		:	t
@@ -217,7 +214,6 @@ type distillArrayFromPostfix<
 /** Objects we don't want to expand during inference like Date or Promise */
 type TerminallyInferredObject = BuiltinTerminalObject | ArkEnv.prototypes
 
-// one pass over the prototypes rather than filtering their names, then indexing them
 type BuiltinTerminalObject = {
 	[k in keyof arkPrototypes.instances]: k extends "Array" | "Function" ? never
 	: {} extends arkPrototypes.instances[k] ? never
@@ -299,8 +295,7 @@ export type inferMorphOut<morph extends Morph> = excludeErrors<
 	ReturnType<morph>
 >
 
-// every error has a path and ArkErrors its kind, so checking for those first
-// keeps other outputs from resolving the context of every error code
+// check path or arkKind first; most outputs match neither
 type excludeErrors<out> =
 	out extends { path: unknown } | { [arkKind]: "errors" } ?
 		out extends ArkError | ArkErrors ?

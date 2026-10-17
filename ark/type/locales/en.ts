@@ -3,6 +3,5 @@ import "../i18n.ts"
 import "../keywords/phrases.ts"
 import type { Locale } from "../locale.ts"
 
-// phrases.ts gives schema's en arktype's keyword phrases, and i18n.ts installs
-// the renderer of the locales spread from it
+// phrases.ts adds keyword phrases; i18n.ts the renderer
 export const en = schemaEn as Locale.Complete

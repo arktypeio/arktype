@@ -105,8 +105,7 @@ type parseExpression<def extends string, $, args> =
 	: def extends `${string}|${string}` ? parseOperandUnion<def, def, $, args>
 	: parseBoundedOperand<def, $, args>
 
-// the first " = " starts the default value only if what precedes it parses
-// to an expression, rather than being cut from a literal or group
+// " = " starts a default only if what precedes it parses
 type parseDefaultExpression<def extends string, $, args> =
 	def extends `${infer base} = ${infer value}` ?
 		parseString<base, $, args> extends (
@@ -118,7 +117,7 @@ type parseDefaultExpression<def extends string, $, args> =
 		:	parseDefault<parseString<base, $, args>, ` ${value}`>
 	:	never
 
-// wrapping the lookup keeps a generic def from being narrowed to each keyword
+// wrapped so a generic def isn't distributed over keywords
 type resolveAmbient<reference, $> =
 	[reference] extends [keyof ArkAmbient.$] ? [ArkAmbient.$[reference]]
 	: reference extends `${string}.${string}` ?
@@ -179,7 +178,6 @@ type parseOperandUnion<
 		:	[union, "|", ast]
 	:	never
 
-// like parseOperandUnion, but splitting on " | " leaves no spaces to trim
 type parseSpacedUnion<
 	def extends string,
 	unscanned extends string,

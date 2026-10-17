@@ -149,7 +149,7 @@ export class InternalTypedFn extends Callable<(...args: unknown[]) => unknown> {
 		this.returns = returns
 	}
 
-	// read where it's read, since a standalone validator has an expression only where its build lists it
+	// a standalone validator may lack an expression
 	get expression(): string {
 		let argsExpression = this.params.expression
 		if (argsExpression === undefined) return argsExpression
