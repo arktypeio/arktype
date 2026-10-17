@@ -34,7 +34,7 @@ if (out instanceof type.errors) {
 
 Unlike other [global config](/docs/configuration#levels), a locale also applies to Types parsed before it is configured.
 
-ArkType writes errors only in `en` unless its renderer of other locales is installed, so a bundle that doesn't need it leaves it out. Importing a shipped locale like `arktype/locales/de` installs it. A locale you write yourself, or a [function](#switching-locales), needs `import "arktype/i18n"` alongside it, unless a shipped locale is imported too. Without it, creating a Type with that locale configured throws, as does `toLocaleString` or `messageIn` with that locale.
+Shipped locales like `arktype/locales/de` work when imported. A locale you write, or a locale [function](#switching-locales), also needs `import "arktype/i18n"` unless a shipped locale is imported. Without it, creating a Type, `toLocaleString` or `messageIn` with that locale throws. This keeps other locales out of bundles that only use `en`.
 
 Only an error's message and its parts, `expected`, `actual` and `problem`, are localized. A Type's `description` and `expression`, JSON Schema, an error's `description` and `ParseError`s stay in English.
 
@@ -53,7 +53,7 @@ const out = Signup({ name: "A" })
 
 ### Switching locales
 
-`locale` can also be a function, which is called when an `ArkErrors`' messages are first read. Messages are written then, not when validation fails, so errors are written in your app's language at the time they're read, even when it changed after they were created:
+`locale` can also be a function, called when an `ArkErrors`' messages are first read rather than when validation fails, so errors follow your app's language even if it changed after they were created:
 
 ```ts title="config.ts"
 import type { Locale } from "arktype"

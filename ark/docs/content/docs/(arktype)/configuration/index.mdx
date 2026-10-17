@@ -522,16 +522,16 @@ const out = User({ name: 5, age: "5" })
 
 `"first"` and `"none"` are installed by `import "arktype/errors"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
 
-With `"none"`, a failure is found by checking the data alone, so nothing runs again to find what failed, and its one error holds the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't written in a configured [locale](#locale).
+With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale).
 
-`errors` can also be set for a Scope, whose Types then validate as it says, as can those another Scope references.
+`errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
 
 ### mutatesInput
 
 By default, a transform copies each object it changes, so the data you pass is never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the data, which it returns:
 
 - `false` (default): copies each object it changes
-- `true`: writes in place where no place the Type checks can read what another wrote, whatever objects the data holds at several, and otherwise copies
+- `true`: writes in place wherever that's safe even if the data holds one object at several places, and otherwise copies
 - `"always"`: writes every transform in place
 
 ```ts title="config.ts"
@@ -556,7 +556,9 @@ const isData = User(data) === data
 
 `true` and `"always"` are installed by `import "arktype/mutatesInput"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
 
-`true` returns what copying would. `"always"` requires that the data hold no object at two places a transform reaches, and that a function a Type holds read or return the data's objects only through its parameters. The object returned is the data, so it keeps its key order, accessors and inherited keys, and a key the Type doesn't declare holds what another place wrote where the data holds one object at both. An object a Type deletes undeclared keys from is still copied. A failed validation can leave writes in the objects of its data it found valid.
+`true` always returns what copying would. `"always"` requires that the data hold no object at two places a transform reaches, and that a Type's functions read or return the data's objects only through their parameters.
+
+The object returned is the data, so it keeps its key order, accessors and inherited keys. Where the data holds one object at two places, a key the Type doesn't declare can hold what the other place wrote. An object a Type deletes undeclared keys from is still copied. A failed validation can leave writes in the objects of its data it found valid.
 
 `mutatesInput` can also be set for a Scope, whose Types then transform as it says.
 

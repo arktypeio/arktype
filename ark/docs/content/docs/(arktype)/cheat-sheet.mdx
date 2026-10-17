@@ -147,7 +147,7 @@ const User = type({
 const out = User({ name: "Alan", age: "not a number" })
 
 if (out instanceof type.errors) {
-	// ArkErrors: .summary, and .issues, plain objects with a code, path and message
+	// ArkErrors: .summary, and .issues (plain objects with code, path, message)
 	console.error(out.summary)
 } else {
 	// out is typed as { name: string; age?: number }
