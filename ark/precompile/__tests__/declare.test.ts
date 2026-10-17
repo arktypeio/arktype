@@ -13,16 +13,10 @@ import {
 	writeFileSync
 } from "node:fs"
 import { join, relative } from "node:path"
+import { runCli } from "./utils.ts"
 
 const declared = fromHere("declared")
 const layouts = fromHere("declaredLayouts")
-
-const runCli = (cwd: string, ...args: string[]) =>
-	spawnSync(
-		process.execPath,
-		["--conditions", "ark-ts", fromHere("..", "cli.ts"), ...args],
-		{ cwd, encoding: "utf8" }
-	)
 
 const specifiersByLayout = (tsconfig: string) => {
 	const declarations = emitDeclarations({ cwd: layouts, tsconfig })
@@ -114,7 +108,7 @@ contextualize(() => {
 			.filter(shape => names.includes(shape.split(" ")[2]))
 			.join("\n")
 
-	it("declares each Type through its shape in one file for the build", () => {
+	it("declares Types through shared shapes", () => {
 		attest(errors).equals(0)
 		attest(declaredFile("users.d.ts"))
 			.snap(`export declare const Role: import("arktype").Type<import("./~arktype.js").Role>;
@@ -141,13 +135,13 @@ export type Team = {
 };`)
 	})
 
-	it("names a shape for the const that defines it, not one that aliases it", () => {
+	it("names a shape by its defining const", () => {
 		attest(declaredFile("aliases.d.ts"))
 			.snap(`export declare const Cash: import("arktype").Type<import("./~arktype.js").Money>;
 `)
 	})
 
-	it("names a cycle for the key that reached it, as no keyword or global could read it", () => {
+	it("names a cycle by its key", () => {
 		attest(
 			shapesOf(
 				"Dashed",
@@ -189,7 +183,7 @@ export type node = {
 `)
 	})
 
-	it("declares a submodule, an enum's members and arktype's own aliases by name", () => {
+	it("submodules, enum members and aliases", () => {
 		attest(
 			shapesOf(
 				"Nested",
@@ -235,7 +229,7 @@ export type Owned = {
 };`)
 	})
 
-	it("leaves TypeScript's declaration where a shape would name a module's local", () => {
+	it("keeps TypeScript's declaration for a local", () => {
 		attest(declarationsOf("shapes.d.ts", "Held", "Sessions"))
 			.snap(`export declare const Held: import("arktype/internal/variants/object.ts").ObjectType<{
     session: Session;
@@ -253,7 +247,7 @@ export declare const Sessions: import("arktype/internal/variants/object.ts").Obj
 }>;`)
 	})
 
-	it("leaves TypeScript's declaration where a shape expands as it's printed", () => {
+	it("keeps TypeScript's declaration for an expanding shape", () => {
 		attest(declarationsOf("shapes.d.ts", "Expanded")).snap(
 			'export declare const Expanded: import("arktype/internal/variants/object.ts").ObjectType<Expanding<string>, {}>;'
 		)
@@ -266,7 +260,7 @@ export declare const Sessions: import("arktype/internal/variants/object.ts").Obj
 }>;`)
 	})
 
-	it("names a type where a consumer resolves it: a global, a Node module's or one a module augments", () => {
+	it("names globals, Node and augmented types", () => {
 		attest(shapesOf("Emitting", "Streaming", "Buffered", "Augmented"))
 			.snap(`export type Augmented = {
     extra: import("./nested/base.js").Extra;
@@ -282,7 +276,7 @@ export type Buffered = {
 };`)
 	})
 
-	it("declares with the TypeScript 5.5 to 6 it finds first, skipping one it can't read", () => {
+	it("skips an unreadable TypeScript", () => {
 		const loader = fromHere("temp", "loader")
 		const stub = join(loader, "node_modules", "typescript")
 		try {
@@ -312,7 +306,7 @@ export type Buffered = {
 		}
 	}).timeout(60000)
 
-	it("leaves out the undefined exactOptionalPropertyTypes adds to an optional key or element", () => {
+	it("omits exactOptionalPropertyTypes' undefined", () => {
 		const exact = fromHere("declaredExact")
 		attest(
 			emitDeclarations({ cwd: exact }).files[
@@ -341,7 +335,7 @@ export type Elements = [string, number?];
 		})
 	})
 
-	it("lays declarations out in outDir as TypeScript 6 does without rootDir, with its error", () => {
+	it("lays declarations out in outDir without rootDir", () => {
 		attest(specifiersByLayout("tsconfig.outDir.json")).snap({
 			errors: 1,
 			specifiersByFile: {
@@ -419,7 +413,7 @@ export type Elements = [string, number?];
 		})
 	})
 
-	it("writes declarations from the CLI that a consumer reads as the source's types", () => {
+	it("CLI declarations read as their sources", () => {
 		// an enum's declaration is a different enum than its source, and a cycle TypeScript declares is elided to any
 		attest(
 			inexactExportsOf(declared, {
@@ -431,7 +425,7 @@ export type Elements = [string, number?];
 		).snap(["enums.Colors", "enums.Reds", "shapes.Sessions"])
 	}).timeout(120000)
 
-	it("writes declarations under exactOptionalPropertyTypes that a consumer reads as the source's types", () => {
+	it("CLI declarations under exactOptionalPropertyTypes", () => {
 		attest(inexactExportsOf(fromHere("declaredExact"), {})).snap([])
 	}).timeout(120000)
 })

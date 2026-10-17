@@ -1,12 +1,16 @@
 import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { spawnSync } from "node:child_process"
-import { mkdirSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { startVitest } from "vitest/node"
 import { lacks, testedOptions } from "./contract.ts"
-import { normalized, precompile } from "./utils.ts"
+import {
+	hasBun,
+	normalized,
+	packageFiles,
+	precompile,
+	writeFixture
+} from "./utils.ts"
 
 const shadowed = fromHere("shadowed")
 
@@ -61,7 +65,7 @@ const diverged = (): Record<string, string> & { reported: string[] } =>
 	)
 
 contextualize(() => {
-	it("passes each hole once to arktype, and to its factory with what it checks", () => {
+	it("passes each hole once", () => {
 		attest(
 			normalized(
 				precompile(
@@ -101,29 +105,23 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 		before(function () {
 			this.timeout(60000)
 			// a library, which no driver precompiles
-			mkdirSync(join(shadowed, "node_modules", "listing"), { recursive: true })
-			writeFileSync(
-				join(shadowed, "node_modules", "listing", "package.json"),
-				JSON.stringify({
-					name: "listing",
-					type: "module",
-					exports: "./index.js"
-				})
-			)
-			writeFileSync(
-				join(shadowed, "node_modules", "listing", "index.js"),
-				'export const listOf = t => t.array()\nexport const jsonOf = t => t.json\nexport const metaOf = t => t.meta\nexport const assertOf = (t, data) => t.assert(data)\nexport const standardOf = (t, data) => t["~standard"].validate(data)\n'
+			writeFixture(
+				packageFiles("listing", {
+					"index.js":
+						'export const listOf = t => t.array()\nexport const jsonOf = t => t.json\nexport const metaOf = t => t.meta\nexport const assertOf = (t, data) => t.assert(data)\nexport const standardOf = (t, data) => t["~standard"].validate(data)\n'
+				}),
+				shadowed
 			)
 			plain = JSON.parse(run())
 			printed = run({ ...testedOptions, shadow: true })
 			shadow = JSON.parse(printed)
 		})
 
-		it("returns what arktype returns, calling the program's functions as often, where each validator agrees", () => {
+		it("returns what arktype returns", () => {
 			attest(agreed(shadow)).equals(agreed(plain))
 		})
 
-		it("throws naming a site whose validator throws at creation", () => {
+		it("throws naming a site that throws at creation", () => {
 			// what arktype creates is compared by meta, unless the validator lacks it
 			attest(shadow.created).equals(
 				`Error: created.ts:5:21  type("string").narrow(isLong) diverges from arktype at creation: arktype gives ${lacks("meta") ? "{}" : '{"meta":{}}'}, its validator {"threw":"Error: \`isLong\` (created.ts:5:43) is a function of 2 or more parameters, but was precompiled as a function of 1 parameter"}`
@@ -134,7 +132,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			attest(shadow.reported).equals(divergent.map(k => shadow[k]))
 		})
 
-		it("compares a first-issue validator by the one issue it returns", () => {
+		it("compares a first-issue validator", () => {
 			const first = JSON.parse(
 				run({ ...testedOptions, errors: "first", shadow: true })
 			)
@@ -142,21 +140,21 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			attest(first.reported).equals(divergent.map(k => first[k]))
 		}).timeout(60000)
 
-		it("throws where a library reads a member its validator lacks", () => {
+		it("throws reading a member a validator lacks", () => {
 			attest([shadow.listed, shadow.unbaked]).snap([
 				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at reading array, since its validator lacks it: arktype gives "function", its validator undefined',
 				'Error: types.ts:15:23  type({ name: "string" }) diverges from arktype at json, since its validator doesn\'t bake it: arktype gives {"out":{"required":[{"key":"name","value":"string"}],"domain":"object"}}, its validator {"out":"undefined"}'
 			])
 		})
 
-		it("throws where a library reads a keyword Type's meta, which its validator doesn't bake", function () {
+		it("throws reading a keyword's meta", function () {
 			if (lacks("meta")) this.skip()
 			attest(shadow.keywordMeta).snap(
 				'Error: types.ts:5:22  type("string.email") diverges from arktype at meta, since its validator doesn\'t bake a keyword\'s: arktype gives {"format":"email"}, its validator {}'
 			)
 		})
 
-		it("throws where a library reads a member the build's options drop", () => {
+		it("throws reading members the tested options drop", () => {
 			for (const [k, member] of Object.entries(libraryReads)) {
 				attest(
 					String(shadow[k]).includes(
@@ -188,8 +186,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 		}).timeout(60000)
 
 		it("Bun", function () {
-			// Bun is optional, so this runs where it is installed
-			if (spawnSync("bun", ["--version"]).status !== 0) this.skip()
+			if (!hasBun()) this.skip()
 			const { stdout } = spawnSync(
 				"bun",
 				["--conditions", "ark-ts", "--preload", "./preload.ts", "main.ts"],
@@ -213,19 +210,19 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			)
 		})
 
-		it("calling a function the program passed otherwise", () => {
+		it("calling a function otherwise", () => {
 			attest(outcomes.called).snap(
 				'Error: called diverges from arktype at call("abc"): arktype gives calls isA("abc"), its validator calls isA("abc!")'
 			)
 		})
 
-		it("calling a function the program passed with another ctx", () => {
+		it("calling a function with another ctx", () => {
 			attest(outcomes.checked).snap(
 				'Error: checked diverges from arktype at call("abc"): arktype gives calls isFirst("abc", ctx {"path":[],"errorCount":0,"errors":[],"data":"abc"}), its validator calls isFirst("abc", ctx {"path":[],"errorCount":1,"errors":[["predicate"]],"data":"abc"})'
 			)
 		})
 
-		it("caught by the program, and raised again where it can't be", () => {
+		it("caught and raised again", () => {
 			const { reported, swallowed, ...thrown } = outcomes
 			attest(swallowed).equals("fallback")
 			attest(reported.slice(0, -1)).equals(Object.values(thrown))
@@ -246,19 +243,19 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			)
 		})
 
-		it("passing a function the program passed one object where arktype passes two", () => {
+		it("passing one object where arktype passes two", () => {
 			attest(outcomes.aliased).snap(
 				'Error: aliased diverges from arktype at call({}), the input as arktype\'s morphs left it, though each prints alike: arktype gives calls isSame({"a":{},"b":{}}), its validator calls isSame({"a":{},"b":{}})'
 			)
 		})
 
-		it("calling a function the program passed with another ctx.root", () => {
+		it("calling a function with another ctx.root", () => {
 			attest(outcomes.rooted).snap(
 				'Error: rooted diverges from arktype at call({"a":"x"}): arktype gives calls isFlagged("x", ctx {"path":["a"],"errorCount":0,"errors":[],"data":"x"}), its validator calls isFlagged("x", ctx {"path":["a"],"errorCount":0,"errors":[],"data":"x"}) with another ctx.root'
 			)
 		})
 
-		it("after arktype's morph wrote an input it can't copy", () => {
+		it("after a morph wrote an uncopyable input", () => {
 			attest(outcomes.bumped).snap(
 				'Error: bumped diverges from arktype at call(Counter), the input as arktype\'s morphs left it, which its validator received too, since it can\'t be copied: arktype gives {"out":2}, its validator {"out":4}'
 			)

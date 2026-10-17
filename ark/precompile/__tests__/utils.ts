@@ -9,8 +9,16 @@ import {
 } from "@ark/precompile"
 import { fromHere } from "@ark/fs"
 import { hasArkKind } from "@ark/schema"
-import { mkdirSync, writeFileSync } from "node:fs"
-import { join, posix } from "node:path"
+import { spawnSync } from "node:child_process"
+import {
+	mkdirSync,
+	mkdtempSync,
+	realpathSync,
+	rmSync,
+	writeFileSync
+} from "node:fs"
+import { tmpdir } from "node:os"
+import { dirname, join, posix } from "node:path"
 
 // a bare specifier resolves to a package in node_modules, which the build does not read
 export const memoryHost = (files: Record<string, string>): PrecompileHost => ({
@@ -43,7 +51,7 @@ export const precompile = (
 		opts
 	)
 
-// each site's status, with the expression of the value it folds to or the reasons it is rejected
+// each site's status, with its value's expression or why it is rejected
 export const statusesOf = (
 	source: string,
 	files?: Record<string, string>,
@@ -66,7 +74,7 @@ export const diagnosticsOf = (
 	opts?: PrecompileOptions
 ): string[] => analyze(source, files, opts).diagnostics.map(renderDiagnostic)
 
-// each site's status, with the inputs a factory compares at creation or the reasons it is rejected
+// each site's status, with the inputs it compares or why it is rejected
 export const inputsOf = (
 	source: string,
 	files?: Record<string, string>
@@ -80,11 +88,11 @@ export const inputsOf = (
 			))
 	])
 
-// a hash may follow `$ark`, the prefix of each name the precompiler imports, and an id is a quoted hash's first 8 characters
+// $ark-prefixed hashes, quoted 8-char ids and configuration fingerprints
 const hashPattern =
-	/(?<![\da-z])(\$ark\$*)?(?=[\da-z]*\d)([\da-z]{12,}|(?<=")[\da-z]{8}(?="))(?![\da-z])/g
+	/(?<![\da-z])(\$ark\$*)?((?=[\da-z]*\d)(?:[\da-z]{12,}|(?<=")[\da-z]{8}(?="))|(?<=")(?=[\da-z_]*\d)[\da-z]+_[\da-z]+(?="))(?![\da-z])/g
 
-// content hashes change with the runtime's source, so snapshots number them by first appearance
+// hashes change with the runtime's source, so they're numbered in order
 export const normalized = <code extends string | string[]>(
 	code: code
 ): code => {
@@ -101,37 +109,44 @@ export const normalized = <code extends string | string[]>(
 		:	code.map(normalize)) as never
 }
 
-// a program importing a package that opts in, which the tests write since git ignores node_modules
-export const writeLibrary = (): string => {
-	const root = fromHere("library")
-	const tagged = join(root, "node_modules", "tagged")
-	mkdirSync(tagged, { recursive: true })
-	writeFileSync(
-		join(tagged, "package.json"),
-		JSON.stringify({
-			name: "tagged",
-			version: "1.0.0",
-			type: "module",
-			exports: "./index.js",
-			arktype: { precompile: true }
-		})
+// a package under node_modules, which git ignores, so tests write it
+export const packageFiles = (
+	name: string,
+	files: Record<string, string>,
+	manifest: object = {},
+	dir = `node_modules/${name}`
+): Record<string, string> => ({
+	[`${dir}/package.json`]: JSON.stringify({
+		name,
+		version: "1.0.0",
+		type: "module",
+		exports: "./index.js",
+		...manifest
+	}),
+	...Object.fromEntries(
+		Object.entries(files).map(([path, text]) => [`${dir}/${path}`, text])
 	)
-	writeFileSync(
-		join(tagged, "index.js"),
-		'import { type } from "arktype"\n\nexport const Tagged = type({ tag: "string" })\n'
+})
+
+// a program importing a package that opts in
+export const writeLibrary = (): string =>
+	writeFixture(
+		packageFiles(
+			"tagged",
+			{
+				"index.js":
+					'import { type } from "arktype"\n\nexport const Tagged = type({ tag: "string" })\n'
+			},
+			{ arktype: { precompile: true } }
+		),
+		fromHere("library")
 	)
-	return root
-}
 
 // errors "none" programs, reads/ importing a package importing @ark/schema
-export const writeUndetailed = (): string => {
-	const root = fromHere("temp", "undetailed")
-	const reads = join(root, "node_modules", "reads")
-	mkdirSync(reads, { recursive: true })
-	mkdirSync(join(root, "reads"), { recursive: true })
-	writeFileSync(
-		join(root, "main.ts"),
-		`import { type } from "arktype"
+export const writeUndetailed = (): string =>
+	writeFixture(
+		{
+			"main.ts": `import { type } from "arktype"
 
 const T = type({ a: "string", b: "string.json.parse" })
 const errors = T({ a: 1, b: "[" })
@@ -142,34 +157,84 @@ try {
 } catch (e) {
 	console.log(String(e), (e as { cause?: unknown }).cause instanceof type.errors)
 }
-`
+`,
+			"reads/main.ts": 'import { reads } from "reads"\n\nconsole.log(reads)\n',
+			...packageFiles("reads", {
+				"index.js":
+					'import { hasArkKind } from "@ark/schema"\n\nexport const reads = typeof hasArkKind\n',
+				"index.d.ts": "export declare const reads: string\n"
+			})
+		},
+		fromHere("temp", "undetailed")
 	)
-	writeFileSync(
-		join(root, "reads", "main.ts"),
-		'import { reads } from "reads"\n\nconsole.log(reads)\n'
-	)
-	writeFileSync(
-		join(reads, "package.json"),
-		JSON.stringify({
-			name: "reads",
-			version: "1.0.0",
-			type: "module",
-			exports: "./index.js"
-		})
-	)
-	writeFileSync(
-		join(reads, "index.js"),
-		'import { hasArkKind } from "@ark/schema"\n\nexport const reads = typeof hasArkKind\n'
-	)
-	writeFileSync(
-		join(reads, "index.d.ts"),
-		"export declare const reads: string\n"
-	)
-	return root
-}
 
 // what that program logs, its errors saying only that data is invalid
 export const undetailedOutput = `true is invalid
 {"a":"a","b":[1]}
 Error: is invalid true
 `
+
+const tempDirs: string[] = []
+
+// a run that fails keeps what it wrote, printing where
+process.once("exit", code => {
+	if (code && tempDirs.length) console.error(`kept ${tempDirs.join(", ")}`)
+	else for (const dir of tempDirs) rmSync(dir, { recursive: true, force: true })
+})
+
+export const tempDir = (prefix = "ark-precompile-"): string => {
+	const dir = realpathSync(mkdtempSync(join(tmpdir(), prefix)))
+	tempDirs.push(dir)
+	return dir
+}
+
+export const writeFixture = (
+	files: Record<string, string>,
+	root = tempDir()
+): string => {
+	for (const path in files) {
+		mkdirSync(dirname(join(root, path)), { recursive: true })
+		writeFileSync(join(root, path), files[path])
+	}
+	return root
+}
+
+export const runPlain = (cwd: string, ...args: string[]): string =>
+	spawnSync(
+		process.execPath,
+		["--conditions", "ark-ts", ...(args.length ? args : ["main.ts"])],
+		{ cwd, encoding: "utf8" }
+	).stdout
+
+export const runCli = (cwd: string, ...args: string[]) =>
+	spawnSync(
+		process.execPath,
+		["--conditions", "ark-ts", fromHere("..", "cli.ts"), ...args],
+		{ cwd, encoding: "utf8" }
+	)
+
+// Bun is optional, so its tests run where it is installed
+export const hasBun = (): boolean =>
+	spawnSync("bun", ["--version"]).status === 0
+
+// runs fn in a process whose arktype has neither a configuration nor a Type
+export const inFreshProcess = <args extends unknown[], result>(
+	fn: (...args: args) => result,
+	args = [] as unknown[] as args,
+	cwd = fromHere()
+): Awaited<result> => {
+	const passed = args.map(arg =>
+		typeof arg === "function" ? String(arg) : JSON.stringify(arg)
+	)
+	const { status, stdout, stderr } = spawnSync(
+		process.execPath,
+		["--conditions", "ark-ts", "--input-type=module"],
+		{
+			cwd,
+			encoding: "utf8",
+			input: `console.log(JSON.stringify(await (${fn})(${passed.join(", ")})))`
+		}
+	)
+	if (status) throw new Error(stderr)
+	return JSON.parse(stdout)
+}

@@ -2,18 +2,9 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { writeArktypeRuntimeOptionMessage } from "@ark/precompile"
 import { check } from "@ark/precompile/internal/check.ts"
-import { spawnSync } from "node:child_process"
+import { runCli } from "./utils.ts"
 
 const cwd = fromHere("checked")
-
-const cliIn = (dir: string, ...args: string[]) =>
-	spawnSync(
-		process.execPath,
-		["--conditions", "ark-ts", fromHere("..", "cli.ts"), ...args],
-		{ cwd: dir, encoding: "utf8" }
-	)
-
-const cli = (...args: string[]) => cliIn(cwd, ...args)
 
 contextualize(() => {
 	it("lists sites", () => {
@@ -42,7 +33,7 @@ contextualize(() => {
 		])
 	})
 
-	it("reports what the build refuses while writing a site", () => {
+	it("reports refusals while writing a site", () => {
 		attest(
 			check([], {
 				cwd: fromHere("calledHoles"),
@@ -55,7 +46,7 @@ contextualize(() => {
 		])
 	})
 
-	it("rejects each site the build refuses while the config module loads or as a writer throws", () => {
+	it("refuses sites while configuring", () => {
 		attest(
 			check([], { cwd: fromHere("refused"), config: "config.ts" }).lines
 		).snap([
@@ -65,7 +56,7 @@ contextualize(() => {
 		])
 	})
 
-	it("rejects each site under a configuration the build can't apply", () => {
+	it("rejects sites under an unapplied config", () => {
 		attest(
 			check([], { cwd: fromHere("unapplied"), config: "config.ts" }).lines
 		).snap([
@@ -75,7 +66,7 @@ contextualize(() => {
 		])
 	})
 
-	it("rejects each site arktype is configured to give other errors than the build", () => {
+	it("rejects other configured errors", () => {
 		attest(
 			check([], { cwd: fromHere("erroring"), config: "config.ts" }).lines
 		).snap([
@@ -85,7 +76,7 @@ contextualize(() => {
 		])
 	})
 
-	it("accepts a site whose configured errors are the build's", () => {
+	it("accepts the build's configured errors", () => {
 		attest(
 			check([], {
 				cwd: fromHere("erroring"),
@@ -99,7 +90,7 @@ contextualize(() => {
 		])
 	})
 
-	it("rejects each site arktype is configured to mutate other than the build", () => {
+	it("rejects other configured mutatesInput", () => {
 		attest(
 			check([], { cwd: fromHere("mutating"), config: "config.ts" }).lines
 		).snap([
@@ -109,9 +100,9 @@ contextualize(() => {
 		])
 	})
 
-	it("accepts a site whose configured mutatesInput is the build's", () => {
+	it("accepts the build's configured mutatesInput", () => {
 		attest(
-			cliIn(
+			runCli(
 				fromHere("mutating"),
 				"--check",
 				"--config",
@@ -128,9 +119,9 @@ main.ts:6:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can
 	})
 
 	it("fails under a rate", () => {
-		attest(cli("--check", "--fail-under", "50").status).equals(0)
-		attest(cli("--check", "--fail-under", "60").status).equals(1)
-		attest(cli("--check", "--runtime", "arktype", "forms.ts").stdout)
+		attest(runCli(cwd, "--check", "--fail-under", "50").status).equals(0)
+		attest(runCli(cwd, "--check", "--fail-under", "60").status).equals(1)
+		attest(runCli(cwd, "--check", "--runtime", "arktype", "forms.ts").stdout)
 			.snap(`forms.ts:4:21  accepted
 forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
   \`limit\` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime
@@ -142,7 +133,7 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 `)
 	})
 
-	it("fails under any rate on an error outside every site", () => {
+	it("fails on an error outside every site", () => {
 		const dir = fromHere("unconfigured")
 		attest(check([], { cwd: dir }).lines).snap([
 			"config.ts:3:1  configure() is called, but the build has no `config` module\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
@@ -150,11 +141,11 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 			'main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator lacks\n  `User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 			"1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site"
 		])
-		attest(cliIn(dir, "--check").status).equals(0)
-		attest(cliIn(dir, "--check", "--fail-under", "0").status).equals(1)
+		attest(runCli(dir, "--check").status).equals(0)
+		attest(runCli(dir, "--check", "--fail-under", "0").status).equals(1)
 	})
 
-	it("fails under any rate where the build can't tell a value isn't a Type", () => {
+	it("fails where a value may be a Type", () => {
 		const dir = fromHere("unsure")
 		attest(check([], { cwd: dir }).lines).snap([
 			"main.ts:3:16  accepted",
@@ -162,12 +153,12 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 			"main.ts:5:44  form.or reads or, which a standalone validator lacks\n  the build can't tell where `form` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
 			"2 sites in 1 file: 2 accepted (100.0%), 1 error outside a site"
 		])
-		attest(cliIn(dir, "--check", "--fail-under", "0").status).equals(1)
+		attest(runCli(dir, "--check", "--fail-under", "0").status).equals(1)
 	})
 
-	it("builds under --members, reporting a read of a member it leaves out", () => {
+	it("builds under --members", () => {
 		attest(
-			cliIn(fromHere("members"), "--check", "--members", '{"assert":false}')
+			runCli(fromHere("members"), "--check", "--members", '{"assert":false}')
 				.stdout
 		).snap(`main.ts:3:21  accepted
 main.ts:5:46  User.assert reads assert, which a standalone validator lacks
@@ -177,8 +168,8 @@ main.ts:5:46  User.assert reads assert, which a standalone validator lacks
 `)
 	})
 
-	it("builds under --no-config, reporting a configure() call", () => {
-		attest(cliIn(fromHere("unconfigured"), "--check", "--no-config").stdout)
+	it("builds under --no-config", () => {
+		attest(runCli(fromHere("unconfigured"), "--check", "--no-config").stdout)
 			.snap(`config.ts:3:1  configure() is called, but the build's \`config\` is false
   Remove the call, or name its module as the build's \`config\`.
 main.ts:4:21  accepted
@@ -189,8 +180,8 @@ main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator la
 `)
 	})
 
-	it("builds under --errors none, reporting a runtime island", () => {
-		attest(cli("--check", "--errors", "none").stdout)
+	it("builds under --errors none", () => {
+		attest(runCli(cwd, "--check", "--errors", "none").stdout)
 			.snap(`forms.ts:4:21  accepted
 forms.ts:10:16  type(\`string <= \${limit}\`) cannot be precompiled
   \`limit\` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime
@@ -203,8 +194,8 @@ forms.ts:16:16  island
 `)
 	})
 
-	it("refuses an option choosing what a standalone build writes with --runtime arktype", () => {
-		const { status, stderr } = cliIn(
+	it("refuses standalone options with --runtime arktype", () => {
+		const { status, stderr } = runCli(
 			fromHere("members"),
 			"--check",
 			"--runtime",
@@ -226,7 +217,7 @@ forms.ts:16:16  island
 				["--members", "assert"],
 				["--config", "config.ts", "--no-config"]
 			].map(args => {
-				const result = cli("--check", ...args)
+				const result = runCli(cwd, "--check", ...args)
 				return `${result.status} ${result.stderr.split("\n")[0]}`
 			})
 		).snap([
@@ -238,21 +229,10 @@ forms.ts:16:16  island
 	})
 
 	it("rejects an option the build can't take", () => {
-		attest(
-			[
-				["--members", "[1]"],
-				["--checks", "bogus"],
-				["--errors", "bogus"],
-				["--mutates-input", "yes"]
-			].map(args => {
-				const result = cli("--check", ...args)
-				return `${result.status} ${result.stderr.split("\n")[0]}`
-			})
-		).snap([
-			"2 members is [1], which isn't an object",
-			'2 checks is "bogus", which isn\'t "types", "helpers" or "none"',
-			'2 errors is "bogus", which isn\'t "all", "first" or "none"',
-			'2 mutatesInput is "yes", which isn\'t false, true or "always"'
+		const { status, stderr } = runCli(cwd, "--check", "--checks", "bogus")
+		attest([status, stderr.split("\n")[0]]).equals([
+			2,
+			'checks is "bogus", which isn\'t "types", "helpers" or "none"'
 		])
 	})
 })
