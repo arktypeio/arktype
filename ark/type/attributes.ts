@@ -4,6 +4,7 @@ import {
 	type anyOrNever,
 	type array,
 	type Brand,
+	type brand,
 	type Hkt,
 	type intersectArrays,
 	type isSafelyMappable,
@@ -92,7 +93,9 @@ type _distill<t, side extends distill.Side> =
 	t extends undefined ? t
 	: [t] extends [anyOrNever] ? t
 	: unknown extends t ? unknown
-	: t extends Brand<infer base> ?
+	: // inferring base from the brand alone avoids inferring t into Brand's
+	// intersection, which every object being distilled would pay
+	t extends { readonly [brand]: [infer base, unknown] } ?
 		side extends "in" ?
 			base
 		:	t
