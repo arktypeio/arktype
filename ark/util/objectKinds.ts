@@ -88,9 +88,17 @@ export const platformConstructors =
 		URL: globalThis.URL
 	}))()
 
-export type PlatformObjects = instantiateConstructors<
-	keyof platformConstructors
->
+// a platform constructor's prototype is its instance type, and unlike
+// InstanceType, reading it doesn't resolve its signatures' parameters
+export type PlatformObjects = {
+	// unavailable constructors are never as in instantiateConstructors
+	[k in keyof platformConstructors]: [platformConstructors[k]] extends (
+		[anyOrNever]
+	) ?
+		never
+	: platformConstructors[k] extends { prototype: infer instance } ? instance
+	: never
+}
 
 export const typedArrayConstructors = /* @__PURE__ */ (() => ({
 	Int8Array,
