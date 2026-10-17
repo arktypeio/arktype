@@ -297,14 +297,14 @@ export const messageOf = (issue: ArkIssue): string => {
 			path += typeof k === "string" ? k : String(k)
 		}
 	}
-	return path ? `${path} ${problemOf(issue)}` : problemOf(issue)
+	return path ? path + " " + problemOf(issue) : problemOf(issue)
 }
 
 export const problemOf = (issue: ArkIssue): string =>
 	issue.problem ??
 	(issue.expected === undefined ?
 		(problems[issue.code] ?? "is invalid")
-	:	`must be ${issue.expected}`)
+	:	"must be " + issue.expected)
 
 const problems: { [code in ArkErrorCode]?: string } = {
 	required: "is missing",
