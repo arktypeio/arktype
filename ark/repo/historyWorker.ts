@@ -116,7 +116,7 @@ const callSites = (): NodeJS.CallSite[] => {
 }
 
 // test infrastructure, getters that run once per cache, and default checks,
-// whose count §2 of the precompilation design leaves outside H
+// whose call counts vary by cache state
 const isExcludedFrame = (url: string, site: NodeJS.CallSite) =>
 	url.includes("/ark/attest/") ||
 	url.endsWith("/util/lazily.ts") ||
@@ -142,8 +142,8 @@ const calledByUser = (callers: Caller[]) => callers[0] === "user"
 const reachedFromUser = (callers: Caller[]) =>
 	callers[callers.length - 1] === "user" && !callers.includes("excluded")
 
-// how often arktype reads a Proxy is outside H, so calls a test's traps make
-// aren't counted, from a frame outside any file, which audits of reads skip
+// a test's Proxy traps aren't counted: they run from a frame outside any
+// file, which audits of reads skip
 const NativeProxy = Proxy
 const uncounted: (trap: Function, handler: object) => Function =
 	runInThisContext(
@@ -275,7 +275,7 @@ const read = (get: () => unknown) => {
 	}
 }
 
-// registry names and node ids are outside H, but a counter suffix reaches json
+// counters in registry names and ids vary by history
 const normalizeJson = (json: string) =>
 	json.replace(
 		/\$ark\d*\.[^"]*/g,

@@ -5,9 +5,8 @@ import { availableParallelism } from "node:os"
 import { parseArgs } from "node:util"
 import type { Observation, Plan, RunResult, Step } from "./historyWorker.ts"
 
-// checks invariant H of the precompilation design (design/precompile.md §6, §12):
-// each unit of arktype's suites must observe the same thing in a fresh process,
-// twice in a row in one process, and after a random sample of other units:
+// checks each unit of arktype's suites observes the same thing fresh, twice
+// in one process, and after a random sample of other units:
 // pnpm testHistory [file...] [--grep text] [--seed n] [--jobs n] [--chain n]
 
 const { values: opts, positionals } = parseArgs({
@@ -160,14 +159,14 @@ const show = (log: Observation[] | undefined, path: string[]) => {
 	return json.length > 300 ? `${json.slice(0, 300)}…` : json
 }
 
-// units whose differences §2 of the design leaves outside H, by why
+// units whose differences are allowed to depend on history, by why
 const skippedUnits: Record<string, string> = {
 	"ark/type/__tests__/facts.test.ts › facts › object units":
-		"its union of object units is ordered by their registration counters, as values with the same name are",
+		"object units are ordered by registration counter",
 	"ark/type/__tests__/gc.test.ts › gc › values captured by functions":
-		"whether a value is collected depends on what was compiled before, and memory retention is outside H",
+		"collection depends on what was compiled before",
 	"ark/type/__tests__/references.test.ts › references › collected references match copied references":
-		"it calls each node object it reaches, and whether equal nodes are one object is identity, which is unspecified"
+		"whether equal nodes are one object is unspecified"
 }
 
 let violations = 0
