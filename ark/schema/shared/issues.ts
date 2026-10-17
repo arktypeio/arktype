@@ -221,7 +221,8 @@ const issueOf = (
 	code: context.code,
 	path,
 	data,
-	expected: context.description
+	expected: context.description,
+	message: undefined
 })
 
 export const issueWith = (
