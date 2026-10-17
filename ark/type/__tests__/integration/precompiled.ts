@@ -6,7 +6,7 @@ import {
 	type PrecompiledUnit,
 	type Traversal
 } from "@ark/schema"
-import { scope, type } from "arktype"
+import { scope, type type } from "arktype"
 import { deepStrictEqual, strictEqual } from "node:assert/strict"
 
 // imported as a module, so registering evaluates no string under a Content-Security-Policy
