@@ -32,6 +32,8 @@ import {
 import type { Out } from "../attributes.ts"
 import type { type } from "../keywords/keywords.ts"
 import type { InnerParseResult } from "../scope.ts"
+import type { instantiateType } from "../variants/instantiate.ts"
+import type { ObjectType } from "../variants/object.ts"
 import type {
 	shallowDefaultableMessage,
 	shallowOptionalMessage,
@@ -178,6 +180,32 @@ export type inferDefinition<def, $, args> =
 	: def extends StandardSchemaV1 ? inferStandardSchema<def>
 	: def extends object ? inferObjectLiteral<def, $, args>
 	: never
+
+// an object literal without a spread always infers an object, so its Type
+// is known without inferring it, which is deferred until something needs it
+export type instantiateDefinition<def, $, args> =
+	[def] extends [anyOrNever | string | NonLiteralObjectDefinition] ?
+		instantiateType<inferDefinition<def, $, args>, $>
+	: [def] extends [object] ?
+		"..." extends keyof def ? instantiateType<inferDefinition<def, $, args>, $>
+		: isSingleDefinition<def> extends true ?
+			ObjectType<inferObjectLiteral<def, $, args>, $>
+		:	instantiateType<inferDefinition<def, $, args>, $>
+	:	instantiateType<inferDefinition<def, $, args>, $>
+
+type NonLiteralObjectDefinition =
+	| type.cast<unknown>
+	| ThunkCast
+	| array
+	| RegExp
+	| StandardSchemaV1
+
+type isSingleDefinition<def, original = def> =
+	def extends unknown ?
+		[original] extends [def] ?
+			true
+		:	false
+	:	never
 
 type inferStandardSchema<
 	schema extends StandardSchemaV1,

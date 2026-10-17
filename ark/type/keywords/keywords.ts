@@ -18,6 +18,7 @@ import type { MatchParser } from "../match.ts"
 import type { BoundModule, Module } from "../module.ts"
 import type {
 	inferDefinition,
+	instantiateDefinition,
 	validateDefinition
 } from "../parser/definition.ts"
 import {
@@ -33,7 +34,6 @@ import type {
 	TypeParser
 } from "../type.ts"
 import type { BaseType } from "../variants/base.ts"
-import type { instantiateType } from "../variants/instantiate.ts"
 import { builtinDefinitions, type arkBuiltins } from "./builtins.ts"
 import { prototypeDefinitions, type arkPrototypes } from "./constructors.ts"
 import { number } from "./number.ts"
@@ -149,10 +149,11 @@ export declare namespace type {
 		args
 	>
 
-	export type instantiate<def, $ = {}, args = bindThis<def>> = instantiateType<
-		inferDefinition<def, $, args>,
-		$
-	>
+	export type instantiate<
+		def,
+		$ = {},
+		args = bindThis<def>
+	> = instantiateDefinition<def, $, args>
 
 	export type infer<def, $ = {}, args = bindThis<def>> = inferDefinition<
 		def,
