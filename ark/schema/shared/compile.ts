@@ -256,6 +256,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// a standalone build's compiler writes what a union returns failing and what fails an undeclared key, as its validators raise issues holding none of their nodes' error contexts
 	unionFails?(node: UnionNode, value?: string, path?: PropertyKey[]): string
 	undeclaredFails?(): string
+	// what a key's value whose condition failed is applied by, if not its Apply
+	failingApplyOf?(value: BaseNode): string | undefined
 
 	isObject(data: string): string {
 		return `(typeof ${data} === "object" && ${data} !== null) || typeof ${data} === "function"`

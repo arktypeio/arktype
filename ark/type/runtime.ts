@@ -420,6 +420,12 @@ export const siteOf = ((
 	description?: string
 ): SiteContext => ({ code, description })) satisfies Fn
 
+// the Apply of a union whose key's condition rejected its value
+export const failing =
+	(site: FailureSite): CompactApply =>
+	(data, ctx) =>
+		!ctx.failsAt(site, data)
+
 // what every required key reports when it's missing
 export const requiredSite: FailureSite = { missing: { code: "required" } }
 

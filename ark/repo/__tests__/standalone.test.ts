@@ -2018,6 +2018,15 @@ config.onUndeclaredKey = "reject"`
 		]).equals([5, "must be a string", true])
 	})
 
+	it("refuses a configured union writer for a key whose condition reports its union", () => {
+		const T = scope({}, { union: { message: () => "configured" } }).type({
+			a: "boolean"
+		})
+		attest(() => precompileStandalone({ T })).throws(
+			writeUnprecompilableMessage("a configured union message")
+		)
+	})
+
 	it("precompiles a Type under a configured intersection writer, as its issues at a path are kept apart", async () => {
 		const T = scope({}, { intersection: { message: () => "configured" } }).type(
 			"string >= 5 & /^a/"

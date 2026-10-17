@@ -156,15 +156,15 @@ export abstract class BaseProp<
 			})
 		) {
 			if (js.traversalKind === "Apply") {
-				const fails =
-					this.value.isBasis() ?
-						`!${js.error(this, key)}`
-					:	`!ctx.failsIn(${js.traversal(this.value, "Apply")}, ${value}, ${key}, ${js.site(this)}, data)`
 				// a value a condition decides is checked by it before it's applied,
 				// a union by its branches
 				const condition =
 					isDecidedByAllows(this.value) &&
 					this.value.compileCondition?.(js, value, true)
+				const fails =
+					this.value.isBasis() ?
+						`!${js.error(this, key)}`
+					:	`!ctx.failsIn(${(condition && js.failingApplyOf?.(this.value)) || js.traversal(this.value, "Apply")}, ${value}, ${key}, ${js.site(this)}, data)`
 				return condition ? `${condition} || ${fails}` : fails
 			}
 			// a value whose predicates read ctx is checked at its key's path

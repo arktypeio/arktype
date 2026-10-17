@@ -2672,6 +2672,8 @@ return [${returned.join(", ")}]
 			const { code, description } = site as SiteContext
 			return `runtime.siteOf(${this.emit(code)}${description === undefined ? "" : `, ${this.emit(description)}`})`
 		}
+		if ("fails" in site)
+			return `runtime.failing(${this.emitSite(site.fails as object)})`
 		return `{ ${Object.entries(site)
 			.map(
 				([k, v]) =>
@@ -2824,6 +2826,7 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 			if (site.code) codes.add(site.code)
 			if (site.value) codes.add(site.value.code)
 			if (site.missing) codes.add(site.missing.code)
+			if ("fails" in site) codes.add("union")
 		}
 		for (const node of unit.declared) {
 			if (node.hasKind("union") && node.compiledDiscriminant)
@@ -3120,7 +3123,25 @@ class StandaloneCompiler extends TraversalCompiler {
 	override isObject(data: string): string {
 		return `(typeof ${data} === "object" ? ${data} !== null : typeof ${data} === "function")`
 	}
+
+	// a union no discriminant switches over reports only its own issue, which
+	// a key whose condition rejected its value reports without its Apply
+	override failingApplyOf(value: BaseNode): string | undefined {
+		if (
+			!value.hasKind("union") ||
+			value.compiledDiscriminant ||
+			value.includesAlias
+		)
+			return
+		const site = issueSiteOf(value.failureSite)
+		let failing = failingBySite.get(site)
+		if (!failing)
+			failingBySite.set(site, (failing = issueSite({ fails: site })))
+		return this.ref(failing)
+	}
 }
+
+const failingBySite = new WeakMap<object, object>()
 
 class InPlaceCompiler extends StandaloneCompiler {
 	override readonly inPlace = true
