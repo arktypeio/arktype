@@ -21,10 +21,6 @@ import { arkKindOf, flatMorph } from "@ark/util"
 import { ark, generic, match, scope, type, type Scope } from "arktype"
 import { de } from "arktype/locales/de"
 import {
-	inPlaceCheckMessage,
-	inPlaceKeyMessage,
-	inPlacePipeMessage,
-	inPlaceReadMessage,
 	precompileStandalone,
 	precompileStandaloneModules,
 	writeUnprecompilableMessage,
@@ -36,7 +32,6 @@ import {
 } from "arktype/internal/standalone.ts"
 import {
 	bakedJsonSchemaOptionsMessage,
-	transformedInPlaceTwiceMessage,
 	type as runtimeType,
 	writeCreationMismatchMessage,
 	writeIdentityMismatchMessage,
@@ -46,6 +41,7 @@ import {
 import { keptIssuesOf } from "@ark/precompile/internal/issues.ts"
 import { build, buildSync, type BuildOptions } from "esbuild"
 import { join } from "node:path"
+import { isDeepStrictEqual } from "node:util"
 
 const optionsOf = (source: string) =>
 	({
@@ -1409,350 +1405,98 @@ name is missing`)
 		const list = [{ v: " x ", extra: 1 }]
 		attest(List(list)).equals([{ v: "x" }])
 		attest(list).equals([{ v: " x ", extra: 1 }])
-		// nothing a strip writes can reach another place, so no call tracks it
-		const { Pair: P, List: L } = exports
-		attest(
-			/inPlace|Once\(/.test(
-				precompileStandalone({ P, L }, { mutatesInput: true }).code
-			)
-		).equals(false)
 	})
 
-	it("throws where its input holds an object at two places it transforms, or a check reads after a transform wrote it, where its build mutates input", async () => {
-		const J = type({ j: "string.json.parse" })
-		const $ = scope({
-			trimmed: { value: "string.trim", "next?": "trimmed" },
-			parsed: { value: "string.json.parse", "next?": "parsed" }
-		}).export()
-		const { Pair, List, Mixed, Reversed, Crossed, Parsed, Checked } =
-			await loadMutating({
-				Pair: type({ a: J, b: J }),
-				List: J.array(),
-				Mixed: type({ a: { value: "string.trim" }, b: $.trimmed }),
-				Reversed: type({ a: $.trimmed, b: { value: "string.trim" } }),
-				Crossed: type({ a: $.trimmed, b: $.parsed }),
-				Parsed: type({
-					a: { n: "string.numeric.parse" },
-					b: { n: "string.json.parse" }
-				}),
-				Checked: type({ a: { n: "string.numeric.parse" }, b: { n: "number" } })
-			})
-		const shared = { j: '{"x":1}' }
-		attest(() => Pair({ a: shared, b: shared })).throws(
-			transformedInPlaceTwiceMessage
-		)
-		const element = { j: "[1]" }
-		attest(() => List([element, element])).throws(
-			transformedInPlaceTwiceMessage
-		)
-		// a place a cycle can reach finds what any other place transformed
-		const mixed = { value: " 1 " }
-		attest(() => Mixed({ a: mixed, b: mixed })).throws(
-			transformedInPlaceTwiceMessage
-		)
-		const reversed = { value: " 1 " }
-		attest(() => Reversed({ a: reversed, b: reversed })).throws(
-			transformedInPlaceTwiceMessage
-		)
-		const crossed = { value: " 1 " }
-		attest(() => Crossed({ a: crossed, b: crossed })).throws(
-			transformedInPlaceTwiceMessage
-		)
-		const parsed = { n: "1" }
-		attest(() => Parsed({ a: parsed, b: parsed })).throws(
-			transformedInPlaceTwiceMessage
-		)
-		// arktype rejects it, as b.n is a string before a's transform writes it
-		const checked = { n: "1" }
-		attest(() => Checked({ a: checked, b: checked })).throws(
-			transformedInPlaceTwiceMessage
-		)
-	})
-
-	it("transforms an object its input holds inside itself or at two places only through a cyclic Scope, where its build mutates input", async () => {
-		const $ = scope({
-			node: { value: "string.trim", "next?": "node | null" }
-		}).export()
-		const { Node, Unrolled, Wrapped, Twice } = await loadMutating({
-			Node: $.node,
-			Unrolled: type({ value: "string.trim", next: { value: "string.trim" } }),
-			Wrapped: type({ value: "string.trim", next: $.node }),
-			Twice: type({ a: $.node, b: $.node })
-		})
+	it("returns what arktype returns and writes its input alike, as each Type's Scope configures mutatesInput", async () => {
+		const defs = {
+			item: { n: "string.numeric.parse" },
+			Items: "item[]",
+			Shared: { a: "item", b: { n: "string" } },
+			Strip: { "+": "delete", a: "item" },
+			node: { value: "string.trim", "next?": "node" }
+		} as const
+		const shared = { n: "1" }
 		const cyclic: Record<string, unknown> = { value: " c " }
 		cyclic.next = cyclic
-		const out = Node(cyclic)
-		attest(out.value).equals("c")
-		attest(out.next).is(out)
-		attest(cyclic.next).is(out)
-		const inner: Record<string, unknown> = { value: " i " }
-		inner.next = inner
-		const outer = Node({ value: " o ", next: inner })
-		attest(outer.next.next).is(outer.next)
-		const unrolled: Record<string, unknown> = { value: " u " }
-		unrolled.next = unrolled
-		attest(() => Unrolled(unrolled)).throws(transformedInPlaceTwiceMessage)
-		const wrapped: Record<string, unknown> = { value: " w " }
-		wrapped.next = wrapped
-		attest(() => Wrapped(wrapped)).throws(transformedInPlaceTwiceMessage)
-		const shared = { value: " s " }
-		const twice = Twice({ a: shared, b: shared })
-		attest(twice.a).equals({ value: "s" })
-		attest(twice.b).is(twice.a)
+		const inputs: Record<string, unknown[]> = {
+			Items: [
+				[{ n: "1" }, { n: "2" }],
+				[shared, shared]
+			],
+			Shared: [
+				{ a: { n: "1" }, b: { n: "2" } },
+				{ a: shared, b: shared }
+			],
+			Strip: [{ a: { n: "1" }, extra: 1 }],
+			Node: [{ value: " a ", next: { value: " b " } }, cyclic]
+		}
+		for (const mutatesInput of [true, "always"] as const) {
+			const $ = scope(defs, { mutatesInput }).export()
+			const exports = {
+				Items: $.Items,
+				Shared: $.Shared,
+				Strip: $.Strip,
+				Node: $.node
+			}
+			const validators = await load(exports)
+			for (const [name, T] of Object.entries(exports)) {
+				for (const input of inputs[name]) {
+					const expected = structuredClone(input)
+					const actual = structuredClone(input)
+					const expectedOut: unknown = T(expected)
+					const actualOut: unknown = validators[name](actual)
+					attest([
+						name,
+						mutatesInput,
+						isDeepStrictEqual(actualOut, expectedOut),
+						isDeepStrictEqual(actual, expected),
+						actualOut === actual
+					]).equals([name, mutatesInput, true, true, expectedOut === expected])
+				}
+			}
+		}
 	})
 
-	it("transforms through a morph or union reading nothing a transform before it may have written, where its build mutates input", async () => {
-		const wrap = standIn((o: object) => ({ inner: o }), "wrap")
-		const J = type({ j: "string.json.parse" })
-		const $ = scope({
-			node: { j: "string.json.parse", "next?": "node" }
-		}).export()
-		const { Wrapping, Cyclic, First, Parsed, Picked } = await load(
+	it("writes in place where its build mutates input, as a Type another copying Type holds", async () => {
+		const Item = type({ n: "string.numeric.parse" })
+		const { Held, Items } = await loadMutating({
+			Held: type({ item: Item }),
+			Items: Item.array()
+		})
+		const item = { n: "1" }
+		const held = { item }
+		attest(Held(held)).is(held)
+		attest(item as object).equals({ n: 1 })
+		const shared = { n: "2" }
+		attest(Items([shared, shared])).equals([{ n: 2 }, { n: 2 }])
+		attest(shared).equals({ n: "2" })
+	})
+
+	it("writes in place as its build says, whatever a Type's Scope configures", async () => {
+		const { T: written } = await loadMutating({
+			T: type({ n: "string.numeric.parse" })
+		})
+		const input = { n: "1" }
+		attest(written(input)).is(input)
+		attest(input as object).equals({ n: 1 })
+		const { T: copied } = await load(
 			{
-				Wrapping: {
-					type: type({ n: "string" })
-						.pipe(wrap)
-						.to({ inner: { n: "string.trim" } }),
-					params: [{ kind: "function", label: "`wrap`", value: wrap }]
-				},
-				First: {
-					type: type({ a: type({ n: "string" }).pipe(wrap), b: J }),
-					params: [{ kind: "function", label: "`wrap`", value: wrap }]
-				},
-				Cyclic: {
-					type: type({ j: "string" })
-						.pipe(wrap)
-						.to({ inner: J, "next?": $.node }),
-					params: [{ kind: "function", label: "`wrap`", value: wrap }]
-				},
-				Parsed: type({ a: J, b: type("string.json.parse").to(J), c: J }),
-				Picked: type({
-					a: J,
-					b: type({ k: "'x'", j: "string.json.parse" }).or({
-						k: "'y'",
-						j: "string"
-					})
-				})
+				T: scope(
+					{ T: { n: "string.numeric.parse" } },
+					{ mutatesInput: true }
+				).export().T
 			},
 			undefined,
 			undefined,
 			printed,
-			{ mutatesInput: true }
+			{ mutatesInput: false }
 		)
-		const wrapped = { n: " a " }
-		attest(Wrapping(wrap)(wrapped)).equals({ inner: { n: "a" } })
-		attest(wrapped).equals({ n: "a" })
-		attest(First(wrap)({ a: { n: "x" }, b: { j: "1" } })).equals({
-			a: { inner: { n: "x" } },
-			b: { j: 1 }
-		})
-		const held = { j: '{ "x": 1 }' }
-		const cyclic = Cyclic(wrap)(held)
-		attest(cyclic).equals({ inner: { j: { x: 1 } } })
-		attest(cyclic.inner).is(held)
-		attest(Parsed({ a: { j: "1" }, b: '{ "j": "2" }', c: { j: "3" } })).equals({
-			a: { j: 1 },
-			b: { j: 2 },
-			c: { j: 3 }
-		})
-		// what a transformed before the stage it pipes b through is still written
-		const shared = { j: "1" }
-		attest(() => Parsed({ a: shared, b: '{ "j": "2" }', c: shared })).throws(
-			transformedInPlaceTwiceMessage
-		)
-		attest(Picked({ a: { j: "1" }, b: { k: "x", j: "2" } })).equals({
-			a: { j: 1 },
-			b: { k: "x", j: 2 }
-		})
+		const kept = { n: "1" }
+		attest(copied(kept)).equals({ n: 1 })
+		attest(kept).equals({ n: "1" })
 	})
 
-	it("rejects a morph or union that would read an object a transform before it may have written, where its build mutates input", () => {
-		const N = type({ n: "string.numeric.parse" })
-		const inner = standIn((o: { inner: { n: unknown } }) => o.inner.n, "inner")
-		const read = standIn((o: { j: unknown }) => o.j, "read")
-		const build = (T: StandaloneExport) => () =>
-			precompileStandalone({ T }, { mutatesInput: true })
-		// arktype rejects { a: s, b: { inner: s } }: b reads s before a parses it
-		attest(
-			build({
-				type: type({
-					a: N,
-					b: type({ inner: "object" }).pipe(inner).to("number")
-				}),
-				params: [{ kind: "function", label: "`inner`", value: inner }]
-			})
-		).throws(inPlaceReadMessage)
-		attest(
-			build(
-				type({ inner: { n: "string.trim" } }).to({
-					inner: { n: "string", m: "string = 'x'" }
-				})
-			)
-		).throws(inPlaceReadMessage)
-		attest(
-			build({
-				type: type("string.json.parse")
-					.to({ j: "string.json.parse" })
-					.pipe(read),
-				params: [{ kind: "function", label: "`read`", value: read }]
-			})
-		).throws(inPlaceReadMessage)
-		attest(
-			build(
-				type({
-					a: N,
-					b: type({ inner: { n: "number < 5" }, j: "string.json.parse" }).or({
-						inner: { n: "number >= 5" },
-						j: "string"
-					})
-				})
-			)
-		).throws(inPlaceReadMessage)
-		attest(
-			build(
-				type({
-					a: N,
-					b: type({ inner: { k: "'x'" }, j: "string.json.parse" }).or({
-						inner: { k: "'y'" },
-						j: "string"
-					})
-				})
-			)
-		).throws(inPlaceReadMessage)
-	})
-
-	it("rejects a morph or union reading what a function of the program's returned after a transform, where its build mutates input", async () => {
-		const N = type({ n: "string.numeric.parse" })
-		const held = { n: "1" }
-		const closure = standIn(() => held, "closure")
-		const read = standIn((o: { n: unknown }) => o.n, "read")
-		const paramsOf = (...fns: Function[]) =>
-			fns.map(
-				(value, i): FactoryParam => ({
-					kind: "function",
-					label: `\`f${i}\``,
-					value
-				})
-			)
-		const build =
-			(T: type.Any, ...fns: Function[]) =>
-			() =>
-				precompileStandalone(
-					{ T: { type: T, params: paramsOf(...fns) } },
-					{ mutatesInput: true }
-				)
-		const Read = type("string").pipe(closure).pipe(read)
-		// arktype reads "1" from { a: held, b: "x" }, as a parsed a copy
-		attest(build(type({ a: N, b: Read }), closure, read)).throws(
-			inPlaceReadMessage
-		)
-		// an element's closure can return what one before it wrote
-		attest(build(type("string").pipe(closure).to(N).array(), closure)).throws(
-			inPlaceReadMessage
-		)
-		const isNumber = standIn(() => "number", "isNumber")
-		const isString = standIn(() => "string", "isString")
-		// arktype picks b's string branch
-		attest(
-			build(
-				type({
-					a: N,
-					b: type("string")
-						.pipe(closure)
-						.to(
-							type({ n: "number" })
-								.pipe(isNumber)
-								.or(type({ n: "string" }).pipe(isString))
-						)
-				}),
-				closure,
-				isNumber,
-				isString
-			)
-		).throws(inPlaceReadMessage)
-		// nothing is written before a
-		const { First } = await loadMutating({
-			First: { type: type({ a: Read, b: N }), params: paramsOf(closure, read) }
-		})
-		attest(First(closure, read)({ a: "x", b: held })).equals({
-			a: "1",
-			b: { n: 1 }
-		})
-	})
-
-	it("rejects a check or copy of an object a transform at another place may write, where its build mutates input", async () => {
-		const N = type({ n: "string.numeric.parse" })
-		const build = (T: StandaloneExport) => () =>
-			precompileStandalone({ T }, { mutatesInput: true })
-		// arktype returns { a: s, b: s }'s b as s was, before a's transform
-		attest(build(type({ a: N, b: { n: "string" } }))).throws(
-			inPlaceCheckMessage
-		)
-		attest(build(type([N, { n: "string" }]))).throws(inPlaceCheckMessage)
-		attest(
-			build(type({ a: { y: "string = 'w'" }, b: { "y?": "undefined" } }))
-		).throws(inPlaceCheckMessage)
-		// a strip reads what it copies
-		attest(build(type({ a: N, b: { "+": "delete", n: "string" } }))).throws(
-			inPlaceCheckMessage
-		)
-		// the input can hold itself, as s = { n: "1", self: s }
-		attest(
-			build(type({ n: "string.numeric.parse", self: { n: "string" } }))
-		).throws(inPlaceCheckMessage)
-		// b can't hold what a writes, or reads no key a writes
-		const { Disjoint, Unread } = await loadMutating({
-			Disjoint: type({
-				a: { kind: "'a'", n: "string.numeric.parse" },
-				b: { kind: "'b'", n: "string" }
-			}),
-			Unread: type({ a: N, b: { m: "string" } })
-		})
-		attest(
-			Disjoint({ a: { kind: "a", n: "1" }, b: { kind: "b", n: "2" } })
-		).equals({ a: { kind: "a", n: 1 }, b: { kind: "b", n: "2" } })
-		const shared = { n: "1", m: "x" }
-		attest(Unread({ a: shared, b: shared })).equals({
-			a: { n: 1, m: "x" },
-			b: { n: 1, m: "x" }
-		})
-	})
-
-	it("rejects a Type piped after a function that transforms an object beside another transform, where its build mutates input", async () => {
-		const L = type({ n: "string.numeric.parse" })
-		const inner = standIn((o: { inner: object }) => o.inner, "inner")
-		const boxed = standIn((s: string) => ({ n: s }), "boxed")
-		const paramsOf = (fn: Function): FactoryParam[] => [
-			{ kind: "function", label: "`fn`", value: fn }
-		]
-		const build = (T: type.Any, fn: Function) => () =>
-			precompileStandalone(
-				{ T: { type: T, params: paramsOf(fn) } },
-				{ mutatesInput: true }
-			)
-		const Held = type({ inner: "object" })
-		// arktype parses s at both places of { a: { inner: s }, b: s }
-		attest(build(type({ a: Held.pipe(inner).to(L), b: L }), inner)).throws(
-			inPlacePipeMessage
-		)
-		attest(
-			build(type({ a: Held.pipe(inner).to({ n: "string.trim" }), b: L }), inner)
-		).throws(inPlacePipeMessage)
-		// each call can return what one before it wrote, as a closure can
-		const Cyclic = scope({
-			c: [["string", "=>", boxed], "|>", { "next?": "c" }]
-		}).export().c
-		attest(build(Cyclic, boxed)).throws(inPlacePipeMessage)
-		// a Type piped at the root writes alone
-		const { Root } = await loadMutating({
-			Root: { type: Held.pipe(inner).to({ m: L }), params: paramsOf(inner) }
-		})
-		const held: { m: { n: unknown } } = { m: { n: "1" } }
-		attest(Root(inner)({ inner: held })).is(held)
-		attest(held).equals({ m: { n: 1 } })
-	})
-
-	it("transforms anew each call where its build mutates input, though its errors say only that data is invalid", async () => {
+	it("writes in place where its build mutates input, though its errors say only that data is invalid", async () => {
 		const { List, Node } = await load(
 			{
 				List: type({ j: "string.json.parse" }).array(),
@@ -1763,26 +1507,15 @@ name is missing`)
 			undefined,
 			undefined,
 			printed,
-			{ mutatesInput: true, errors: "none" }
+			{ mutatesInput: "always", errors: "none" }
 		)
-		const element = { j: "1" }
-		attest(List([element])).equals([{ j: 1 }])
-		element.j = "2"
-		attest(List([element])).equals([{ j: 2 }])
-		const next = { value: " b " }
-		attest(Node({ value: " a ", next }).next.value).equals("b")
-		next.value = " c "
-		attest(Node({ value: " a ", next }).next.value).equals("c")
-	})
-
-	it("rejects a key it transforms in place before another constraint transforms it where its build mutates input", () => {
-		const T = type({
-			"p?": ["object", ["string", "=", "d"]],
-			"[string]": { "[string]": { x: ["string", "=", "y"] } }
-		})
-		attest(() => precompileStandalone({ T }, { mutatesInput: true })).throws(
-			inPlaceKeyMessage
-		)
+		const list = [{ j: "1" }]
+		attest(List(list)).is(list)
+		attest(list as object).equals([{ j: 1 }])
+		const node = { value: " a ", next: { value: " b " } }
+		attest(Node(node)).is(node)
+		attest(node).equals({ value: "a", next: { value: "b" } })
+		attest(List([{ j: 1 }]).summary).equals("is invalid")
 	})
 
 	it("neither checks nor reads the configuration where its build says the program never configures it", async () => {

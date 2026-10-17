@@ -145,7 +145,12 @@ export const appendSourceMap = (
 		`${code}\n//# sourceMappingURL=data:application/json;base64,${Buffer.from(JSON.stringify(map)).toString("base64")}`
 	:	code
 
-export const runtimeSpecifiers = ["arktype", "arktype/config", "arktype/errors"]
+export const runtimeSpecifiers = [
+	"arktype",
+	"arktype/config",
+	"arktype/errors",
+	"arktype/mutatesInput"
+]
 
 // in shadow mode arktype creates each site beside its validator, so only its configuration resolves to the runtime
 export const resolvesToRuntime = (

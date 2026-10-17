@@ -15,7 +15,6 @@ import {
 	freezes,
 	hasMember,
 	lackedMembers,
-	comparedDataOf,
 	detailsErrors,
 	firstIssue,
 	lacks,
@@ -521,7 +520,7 @@ const serializeIssues = (issues: KeptIssue[]) =>
 	issues.map(({ code, path, data }) => ({
 		code,
 		path: path.map(String),
-		...(detailsErrors && { data: serialize(comparedDataOf(data)) })
+		...(detailsErrors && { data: serialize(data) })
 	}))
 
 const samples = (): unknown[] => [
@@ -566,8 +565,7 @@ export const serialize = (out: unknown): unknown =>
 	:	inspect(out, {
 			depth: 4,
 			breakLength: Infinity,
-			maxArrayLength: 10,
-			sorted: mutatesInput
+			maxArrayLength: 10
 		})
 
 // a precompiled Module is a frozen object of validators, as json is of data, so a Module is told and compared by its members
@@ -609,14 +607,11 @@ const outcomeOf = (call: () => unknown, input?: unknown): Observation => {
 	try {
 		const out: any = call()
 		return (
-			(
 				hasDomain(out, "object") &&
 					(out as { " arkKind"?: string })[" arkKind"] === "errors"
 			) ?
 				{ errors: serializeIssues(keptOf(out)) }
-			: mutatesInput ? { out: serialize(out) }
-			: { out: serialize(out), isInput: out === input }
-		)
+			:	{ out: serialize(out), isInput: out === input }
 	} catch (e) {
 		const issues = thrownKeptOf(e)
 		return issues ?
@@ -674,10 +669,9 @@ const observeValidation = (
 			const outcome = outcomeOf(() => traverse(t, input), input)
 			return {
 				...outcome,
-				...(!mutatesInput &&
-					((detailsErrors && !firstIssue) || !outcome.errors) && {
-						mutated: serialize(input)
-					})
+				...(((detailsErrors && !firstIssue) || !outcome.errors) && {
+					mutated: serialize(input)
+				})
 			}
 		}),
 		allows: calls((fn, input) => fn.allows(input)),
@@ -730,6 +724,12 @@ const observe = (value: unknown): Observation => {
 // a path to this file through a symlink differs from its URL, which resolves the link
 if (import.meta.main) {
 	const [world, manifestPath, outPath] = process.argv.slice(2)
+	// arktype writes in place where the build's validators do
+	if (mutatesInput && world !== "standalone") {
+		const { configure } = await import("arktype/config")
+		configure({ mutatesInput })
+		await import("arktype/mutatesInput")
+	}
 	await run(
 		world as World,
 		JSON.parse(readFileSync(manifestPath, "utf8")),

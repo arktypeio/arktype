@@ -17,20 +17,16 @@ import {
 	type DefaultedNode,
 	type ErrorDetail,
 	type GenericRoot,
-	type InvokeOptions,
-	type MorphNode,
+	type MutatesInput,
 	type NodeId,
 	type Optional,
 	type RootUnit,
-	type TransformKeyOptions,
-	type TransformStep,
 	type UnionNode,
 	type UnitMember,
 	type Sequence
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
-	arrayIndexMatcher,
 	errorWritersByCode,
 	rootApplyRuntime,
 	writeRootApply,
@@ -39,6 +35,8 @@ import {
 	type SiteContext,
 	type UnionSite
 } from "@ark/schema/internal"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { writesInPlace } from "@ark/schema/mutatesInput"
 import {
 	appendStringifiedKey,
 	arkKindOf,
@@ -236,8 +234,8 @@ export interface StandaloneOptions {
 	lazy?: boolean | undefined
 	// "none" has a factory trust the Types it receives are those built
 	checks?: Checks | undefined
-	// true writes what a validation transforms into its input, which it returns
-	mutatesInput?: boolean | undefined
+	// whether a valid input is transformed in place, else as each root's Scope configures
+	mutatesInput?: MutatesInput | undefined
 	// "size" writes the shortest forms and shares root applies written alike
 	optimize?: Optimization | undefined
 	// declares what a site calls as functions, for a module an import cycle can reach before its artifact is evaluated
@@ -256,7 +254,7 @@ interface Baking {
 	createsLazily: boolean
 	// else held by id only where a factory takes functions from it
 	checksTypes: boolean
-	mutatesInput: boolean
+	mutatesInput: MutatesInput | undefined
 	hoisted: boolean
 	// writes the shortest forms rather than those V8 compiles and runs fastest as the artifact loads
 	shortest: boolean
@@ -443,7 +441,7 @@ const writeArtifact = (
 		readsConfig: configured !== false,
 		createsLazily: opts.lazy !== false || opts.hoisted === true,
 		checksTypes: opts.checks !== "none",
-		mutatesInput: opts.mutatesInput === true,
+		mutatesInput: opts.mutatesInput,
 		hoisted: opts.hoisted === true,
 		shortest: opts.optimize === "size",
 		flattens: opts.optimize === "size" && opts.hoisted !== true && isModular
@@ -737,7 +735,7 @@ export class StandaloneArtifact {
 	// e.g. a default's value its morph checks, or a typed function's parameters
 	runtimeReadRoots = new Set<BaseRoot>()
 	unitRoots = new Set<BaseRoot>()
-	// the unit holding each root in the first Type reaching it, by id, as two nodes of one id like `unknown` and `unknown.any` are one root
+	// the unit holding each root in the first Type reaching it, by id, as two nodes of one id like `unknown` and `unknown.any` are one root, and whether it transforms in place
 	unitsByHead = new Map<string, RootUnit>()
 	localNamesByUnit = new Map<RootUnit, string>()
 	// the unit whose values are being emitted, which names the nodes they hold
@@ -817,10 +815,11 @@ export class StandaloneArtifact {
 			for (const root of this.roots) {
 				if (this.unitRoots.has(root)) continue
 				this.unitRoots.add(root)
-				for (const unit of rootUnitsOf(root, this.baking.mutatesInput)) {
+				const inPlace = this.inPlace(root)
+				for (const unit of rootUnitsOf(root, inPlace)) {
 					for (const head of unit.roots) {
-						if (!this.unitsByHead.has(head.id))
-							this.unitsByHead.set(head.id, unit)
+						const key = `${+inPlace}${head.id}`
+						if (!this.unitsByHead.has(key)) this.unitsByHead.set(key, unit)
 					}
 				}
 			}
@@ -1105,6 +1104,18 @@ export class StandaloneArtifact {
 		return [...this.validatorNamesByRoot.keys()]
 	}
 
+	// as the build says, else as the Scope of the root configures
+	inPlace(root: BaseRoot): boolean {
+		return writesInPlace(
+			root,
+			this.baking.mutatesInput ?? root.$.resolvedConfig.mutatesInput
+		)
+	}
+
+	headUnitOf(root: BaseRoot): RootUnit {
+		return this.unitsByHead.get(`${+this.inPlace(root)}${root.id}`)!
+	}
+
 	get declared(): BaseNode[] {
 		return this.units.flatMap(unit => unit.declared)
 	}
@@ -1114,7 +1125,7 @@ export class StandaloneArtifact {
 		return [
 			...new Set(
 				[...this.unitRoots].flatMap(root =>
-					rootUnitsOf(root, this.baking.mutatesInput)
+					rootUnitsOf(root, this.inPlace(root))
 				)
 			)
 		]
@@ -1706,9 +1717,7 @@ return [${returned.join(", ")}]
 				!ownsValidator &&
 				!isTemplate &&
 				typeof applied === "object" &&
-				// a unit wrapped to write in place still leads with its Allows
-				allows ===
-					`${applied.args.replace(/^runtime\.inPlace(?:Parts|Transforms)\((.+)\)$/, "$1")}[0]` &&
+				allows === `${applied.args}[0]` &&
 				!isCreatedByRuntime(members, this.baking)
 			) ?
 				applied
@@ -2080,9 +2089,6 @@ return [${returned.join(", ")}]
 			: param === "TransformErrors" ? param
 			: param === "applyRejected" && appliesErrors ? "runtime.applyNodeErrors"
 			: this.emit(rootApplyRuntime[param])
-		// in place, a call transforms an object once, failing where a check does
-		const inPlace =
-			this.baking.mutatesInput && root.transforms && tracksWrites(root)
 		const strategy = root.rootApplyStrategy
 		// most root applies are one arrow, half the length of the function writeRootApply names for the JIT
 		const isArrow =
@@ -2108,18 +2114,7 @@ return [${returned.join(", ")}]
 					`[allows, apply${transforms ? ", transform" : ""}]`
 				:	`{ 0: allows, 1: apply${transforms ? ", 2: transform" : ""} }`
 			const valid = transforms ? "transform(data)" : "data"
-			const parts =
-				flat ?
-					(inPlace ?
-						[
-							flat[0],
-							`runtime.appliesInPlace(${flat[1]})`,
-							`runtime.transformsInPlace(${flat[2]})`
-						]
-					:	flat
-					).join(", ")
-				: inPlace ? `runtime.inPlaceParts(${traversals})`
-				: traversals
+			const parts = flat ? flat.join(", ") : traversals
 			// the validator itself, declaring data alone so a call passing only data pads no parameters
 			if (asValidator) {
 				return [
@@ -2139,13 +2134,12 @@ return [${returned.join(", ")}]
 			]
 		}
 		const shape = this.shapeOf(root)
-		const node = inPlace ? `runtime.inPlaceNode(${shape})` : shape
 		if (isArrow) {
 			return [
 				{
 					params: "node",
 					apply: `(data, onFail) => node.allows(data) ? ${transforms ? "node.traverseTransform(data)" : "data"} : ${refOf("applyRejected")}(node, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`,
-					args: node
+					args: shape
 				},
 				`${shape}.allows`,
 				false
@@ -2153,7 +2147,7 @@ return [${returned.join(", ")}]
 		}
 		const body = writeRootApply(
 			root,
-			this.unitsByHead.get(root.id)!.names[root.id],
+			this.headUnitOf(root).names[root.id],
 			refOf
 		)
 		// the class a valid result is checked against is captured, as V8 folds what a closure captures but not what it reads from the runtime's module
@@ -2164,7 +2158,7 @@ return [${returned.join(", ")}]
 		return [
 			`(function (node) {
 		${captured}${body}
-	})(${node})`,
+	})(${shape})`,
 			`${shape}.allows`,
 			false
 		]
@@ -2216,7 +2210,7 @@ return [${returned.join(", ")}]
 							`if (!(untracked ?? runtime.allowsInContext(node, data, runtime.runtimeConfig))) return ${invalid()}`,
 							`const ctx = new runtime.${ctx}(data, runtime.runtimeConfig)`,
 							"ctx.tracksTransforms = untracked === undefined",
-							`const result = runtime.transformResolution(ctx, ${JSON.stringify(this.unitsByHead.get(root.id)!.names[root.id])}, data, node.traverseTransform)`
+							`const result = runtime.transformResolution(ctx, ${JSON.stringify(this.headUnitOf(root).names[root.id])}, data, node.traverseTransform)`
 						]
 					:	[
 							`if (!${allows}(data)) return ${invalid()}`,
@@ -2243,19 +2237,13 @@ return [${returned.join(", ")}]
 				`[${selects ? "" : "allows"}${transforms ? ", , transform" : ""}]`
 			:	`{ ${[...(selects ? [] : ["0: allows"]), ...(transforms ? ["2: transform"] : [])].join(", ")} }`
 		const valid = transforms ? `${transform}(data)` : "data"
-		// as in a detailed build, a call writing in place transforms an object once
-		const inPlace = this.baking.mutatesInput && transforms && tracksWrites(root)
 		const parts =
 			!traversals ? undefined
 			: flat ?
-				[
-					...(selects ? [] : [flat[0]]),
-					...(transforms ?
-						[inPlace ? `runtime.transformsInPlace(${flat[1]})` : flat[1]]
-					:	[])
-				].join(", ")
-			: inPlace ? `runtime.inPlaceTransforms(${traversals})`
-			: traversals
+				[...(selects ? [] : [flat[0]]), ...(transforms ? [flat[1]] : [])].join(
+					", "
+				)
+			:	traversals
 		// the validator itself, as a detailed build's compact root apply is
 		if (asValidator && parts && !body) {
 			return [
@@ -2268,8 +2256,7 @@ return [${returned.join(", ")}]
 			body ?
 				`(data, onFail) => {\n\t\t${body.join("\n\t\t")}\n\t}`
 			:	`(data, onFail) => ${allows}(data) ? ${valid} : ${invalid()}`
-		const node =
-			parts ?? (inPlace ? `runtime.inPlaceTransformNode(${shape})` : shape)
+		const node = parts ?? shape
 		return [
 			{
 				params: `${params}${captures ? ", TransformErrors" : ""}`,
@@ -2306,7 +2293,7 @@ return [${returned.join(", ")}]
 
 	// a flat build passes a root apply the traversals its unit exports
 	flatTraversalsOf(root: BaseRoot, indices: number[]): string[] | undefined {
-		const unit = this.unitsByHead.get(root.id)!
+		const unit = this.headUnitOf(root)
 		if (!this.baking.flattens || !isSharedUnit(unit)) return
 		const specifier = this.specifierOf(unit.name)
 		const traversals = this.traversalsOf(root, unit)
@@ -2317,7 +2304,7 @@ return [${returned.join(", ")}]
 
 	// a root apply that is one arrow reads its root's traversals from its unit, where they come first, so its validator needs no shape
 	compactTraversalsOf(root: BaseRoot): string | undefined {
-		const unit = this.unitsByHead.get(root.id)!
+		const unit = this.headUnitOf(root)
 		if (unit.traversals.flat()[0] !== this.traversalsOf(root, unit)[0]) return
 		return isSharedUnit(unit) ?
 				this.read(
@@ -2478,8 +2465,7 @@ return [${returned.join(", ")}]
 	}
 
 	shapeOf(node: BaseRoot): string {
-		const unit =
-			this.unit ? unitOf(node, this.unit) : this.unitsByHead.get(node.id)!
+		const unit = this.unit ? unitOf(node, this.unit) : this.headUnitOf(node)
 		const name = unit.names[node.id]
 		const own = this.writing?.shapesByName[name]
 		if (own) return own
@@ -3152,415 +3138,30 @@ class StandaloneCompiler extends TraversalCompiler {
 	}
 }
 
-// the node each unit last wrote a traversal of
-const lastWritten = new WeakMap<object, NodeId>()
-
-// writing in place, a place reaching a written object reuses or throws
-class MutatingCompiler extends StandaloneCompiler {
-	// whether the next transform invoked is of a value data holds
-	private entersValue = false
-	private referenced: NodeId | undefined
-	// a Transform's node, whose Apply its unit wrote just before
-	private readonly node: BaseNode | undefined
-	// a strip copies what it writes, as a build without mutatesInput does
-	private readonly copies: boolean
-
-	constructor(...args: ConstructorParameters<typeof StandaloneCompiler>) {
-		super(...args)
-		const id =
-			this.traversalKind === "Transform" ?
-				lastWritten.get(this.linkage)
-			:	undefined
-		this.node = id === undefined ? undefined : this.linkage.referencesById[id]
-		this.copies = !!this.node && copiesWrites(this.node)
-	}
-
-	override referenceToId(id: NodeId, opts?: InvokeOptions): string {
-		this.referenced = id
-		return super.referenceToId(id, opts)
-	}
-
-	// a unit names the node it declares last, just before writing it
-	override write(name?: string, indent?: number): string {
-		if (this.node && this.node.id !== this.referenced)
-			throwInternalError(`Unexpected traversal of ${this.referenced}`)
-		lastWritten.set(this.linkage, this.referenced!)
-		return super.write(name, indent)
-	}
-
-	// the output is the input, neither copied nor given what a copy dropped
-	override if(condition: string, then: (self: this) => this): this {
-		return (
-				!this.copies &&
-					(condition === "out === data" || condition === "out !== data")
-			) ?
-				this
-			:	super.if(condition, then)
-	}
-
-	override ref(value: object | symbol): string {
-		// a sequence names its copy before it writes, which never happens in place
-		if (value === runtime.copyOf && !this.copies) return "copyOf"
-		// a Type piped a morph's output transforms what it holds anew
-		if (value === runtime.pipe) return super.ref(runtime.pipeInPlace)
-		if (value === runtime.pipeTransformed)
-			return super.ref(runtime.pipeTransformedInPlace)
-		return super.ref(value)
-	}
-
-	override invoke(node: BaseNode, opts?: InvokeOptions): string {
-		if ((opts?.kind ?? this.traversalKind) !== "Transform")
-			return super.invoke(node, opts)
-		// a value that can't be an object, or one a strip copies, isn't written
-		const isValue =
-			this.entersValue &&
-			(node.includesAlias ||
-				((node.rawIn as BaseRoot).overlaps($ark.intrinsic.object.internal) &&
-					!copiesWrites(node)))
-		this.entersValue = false
-		// a structure a cycle can reach again throws where it does
-		const isWritten = node.hasKind("structure") && node.includesAlias
-		if (!isValue && !isWritten) return super.invoke(node, opts)
-		this.reach(node)
-		const arg = opts?.arg ?? this.data
-		const reference = this.referenceToId(node.id, opts)
-		const ctx =
-			this.requiresContextFor(node, "Transform") ? `, ${this.ctx}` : ""
-		if (isWritten)
-			return `${this.ref(runtime.writesInPlace)}(${reference}, ${arg}${ctx})`
-		if (node.isTransformedById)
-			return `${this.ref(runtime.transformResolutionOnce)}(${this.ctx}, "${this.nameOf(node.id)}", ${arg}, ${reference})`
-		return `${this.ref(node.includesAlias ? runtime.transformCyclicOnce : runtime.transformOnce)}(${reference}, ${arg}${ctx})`
-	}
-
-	// a step rejecting the last output reads the value, which a write changed
-	override transformKey(
-		name: string,
-		input: string,
-		steps: readonly TransformStep[],
-		opts?: TransformKeyOptions
-	): this {
-		if (
-			steps
-				.slice(0, -1)
-				.some(({ node }) =>
-					node.references.some(
-						reference =>
-							(reference.hasKind("structure") ||
-								reference.hasKind("sequence") ||
-								reference.hasKind("alias")) &&
-							reference.transforms
-					)
-				)
-		)
-			throwParseError(inPlaceKeyMessage)
-		// its first step enters the value, each next the last output or the value
-		this.entersValue = input !== this.data
-		super.transformKey(name, input, steps, opts)
-		this.entersValue = false
-		return this
-	}
+class InPlaceCompiler extends StandaloneCompiler {
+	override readonly inPlace = true
 }
 
-// a strip copies an object it writes, but for elements its sequence writes
-const copiesWrites = (node: BaseNode): boolean => {
-	const structure =
-		node.hasKind("intersection") ? node.structure
-		: node.hasKind("structure") ? node
-		: undefined
-	return (
-		structure?.undeclared === "delete" &&
-		!(structure.sequence?.transforms && !structure.slicesSequence)
-	)
-}
-
-const canBeObject = (node: BaseRoot): boolean =>
-	node.overlaps($ark.intrinsic.object.internal)
-
-// whether checking a value reads into an object it holds
-const readsHeld = (branch: BaseRoot): boolean => {
-	const checked = branch.rawIn
-	return (
-		checked.includesAlias ||
-		(checked.hasKind("intersection") &&
-			checked.inner.predicate !== undefined) ||
-		checked.flatRefs.some(
-			({ path, node }) =>
-				path.length > 1 ||
-				(canBeObject(node) && !node.branches.every(b => b.isBasis()))
-		)
-	)
-}
-
-// whether a union picks the branch it transforms by reading into an object
-const selectsByHeld = (node: UnionNode): boolean => {
-	const discriminant = node.compiledDiscriminant
-	if (!discriminant) return node.branches.some(readsHeld)
-	return (
-		discriminant.path.length > 1 ||
-		Object.values(discriminant.cases).some(
-			v => v !== true && v.transforms && v.hasKind("union") && selectsByHeld(v)
-		)
-	)
-}
-
-// no morph or union may read into an object a place before it can write
-const assertReadsUnwritten = (root: BaseRoot): void => {
-	const scanned = new Map<BaseNode, number>()
-	// clean where nothing in the call can have been written yet
-	const scan = (node: BaseNode, unwritten: boolean, clean: boolean): void => {
-		const state =
-			clean ? 2
-			: unwritten ? 1
-			: 0
-		const previous = scanned.get(node)
-		if (!node.transforms || (previous !== undefined && previous <= state))
-			return
-		scanned.set(node, state)
-		if (node.hasKind("alias")) return scan(node.resolution, unwritten, clean)
-		if (node.hasKind("union")) {
-			if (!unwritten && selectsByHeld(node)) throwParseError(inPlaceReadMessage)
-			for (const branch of node.branches) scan(branch, unwritten, clean)
-			return
-		}
-		if (node.hasKind("structure")) {
-			// a structure writes nothing before the first prop it transforms
-			const first =
-				node.index?.some(index => index.value.transforms) ?
-					undefined
-				:	node.props.find(prop => prop.value.transforms)
-			for (const child of node.children) {
-				if (child === first) scan(first.value, unwritten, clean)
-				else scan(child, false, false)
-			}
-			return
-		}
-		if (!node.hasKind("morph")) {
-			const isIntersection = node.hasKind("intersection")
-			for (const child of node.children)
-				scan(child, unwritten && isIntersection, clean && isIntersection)
-			return
-		}
-		const input = node.inner.in
-		if (input) scan(input, unwritten, clean)
-		let received =
-			(unwritten && !input?.transforms) ||
-			!canBeObject(input ? input.rawOut : node.rawIn)
-		clean &&= !input?.transforms
-		for (const morph of node.morphs) {
-			const isType = hasArkKind(morph, "root")
-			if (!received && (!isType || canBeObject(morph.rawIn)))
-				throwParseError(inPlaceReadMessage)
-			if (!isType) {
-				// a program's function can return any object its closure holds
-				if (!runtimePathsByValue.has(morph)) received = clean
-				continue
-			}
-			scan(morph, received, clean)
-			received = (received && !morph.transforms) || !canBeObject(morph.rawOut)
-			clean &&= !morph.transforms
-		}
-	}
-	scan(root, true, true)
-}
-
-const everyKey = Symbol("every key")
-const everyIndex = Symbol("every index")
-
-// the keys of the object at a place that a node there writes or checks
-const keysAt = (
-	node: BaseNode,
-	writes: boolean,
-	keys = new Set<PropertyKey>(),
-	seen = new Set<BaseNode>()
-): Set<PropertyKey> => {
-	if (seen.has(node)) return keys
-	seen.add(node)
-	if (node.hasKind("alias")) return keysAt(node.resolution, writes, keys, seen)
-	if (node.hasKind("union")) {
-		for (const branch of node.branches) keysAt(branch, writes, keys, seen)
-		return keys
-	}
-	if (node.hasKind("morph")) {
-		if (node.inner.in) keysAt(node.inner.in, writes, keys, seen)
-		// a Type piped before any function receives the same object
-		for (const morph of node.inner.morphs) {
-			if (!hasArkKind(morph, "root")) break
-			keysAt(morph, writes, keys, seen)
-		}
-		return keys
-	}
-	if (!node.hasKind("intersection")) return keys
-	// a predicate can read any key
-	if (!writes && node.inner.predicate) keys.add(everyKey)
-	const structure = node.structure
-	// a strip writes only a copy
-	if (!structure || (writes && copiesWrites(node))) return keys
-	for (const prop of structure.props) {
-		if (!writes || prop.value.transforms || prop.hasDefault())
-			keys.add(prop.key)
-	}
-	if (structure.index?.some(index => !writes || index.value.transforms))
-		keys.add(everyKey)
-	if (structure.sequence && (!writes || structure.sequence.transforms))
-		keys.add(everyIndex)
-	if (structure.undeclared === (writes ? "delete" : "reject"))
-		keys.add(everyKey)
-	return keys
-}
-
-const isIndex = (key: PropertyKey): boolean =>
-	key === "length" || (typeof key === "string" && arrayIndexMatcher.test(key))
-
-const writesRead = (
-	written: Set<PropertyKey>,
-	read: Set<PropertyKey>
-): boolean =>
-	written.has(everyKey) ||
-	read.has(everyKey) ||
-	(written.has(everyIndex) &&
-		(read.has(everyIndex) || [...read].some(isIndex))) ||
-	(read.has(everyIndex) && [...written].some(isIndex)) ||
-	[...written].some(key => read.has(key))
-
-// each node checking a place the input can hold an object at
-const placesOf = (
-	root: BaseRoot,
-	pipes: [morph: MorphNode, piped: BaseRoot][] = []
-): Set<BaseRoot> => {
-	const places = new Set<BaseRoot>()
-	const visited = new Set<BaseNode>()
-	const enter = (node: BaseRoot): void => {
-		if (places.has(node)) return
-		places.add(node)
-		visit(node)
-	}
-	const visit = (node: BaseNode): void => {
-		if (visited.has(node)) return
-		visited.add(node)
-		if (node.hasKind("alias")) return visit(node.resolution)
-		if (node.hasKind("union")) {
-			for (const branch of node.branches) visit(branch)
-			return
-		}
-		if (node.hasKind("morph")) {
-			if (node.inner.in) visit(node.inner.in)
-			let received = node.inner.in
-			let returned = false
-			let created = false
-			for (const morph of node.inner.morphs) {
-				if (!hasArkKind(morph, "root")) {
-					// arktype's function receiving no object returns a new one
-					created =
-						runtimePathsByValue.has(morph) &&
-						(created || (!!received && !canBeObject(received.rawOut)))
-					returned = true
-					received = undefined
-					continue
-				}
-				received = morph
-				// a function can return any object the input holds
-				if (!returned) visit(morph)
-				else {
-					if (!created) pipes.push([node, morph])
-					enter(morph)
-				}
-			}
-			return
-		}
-		if (!node.hasKind("intersection") || !node.structure) return
-		const { props, index, sequence } = node.structure
-		for (const prop of props) enter(prop.value)
-		for (const signature of index ?? []) enter(signature.value)
-		for (const element of sequence?.prevariadic ?? []) enter(element.node)
-		for (const element of sequence?.variadicOrPostfix ?? []) enter(element)
-	}
-	enter(root)
-	return places
-}
-
-type PlaceKeys = [place: BaseRoot, input: BaseRoot, keys: Set<PropertyKey>]
-
-// no place only checking or copying an object may hold one another writes
-const assertChecksUnwritten = (root: BaseRoot): void => {
-	const reads: PlaceKeys[] = []
-	const writes: PlaceKeys[] = []
-	const pipes: [MorphNode, BaseRoot][] = []
-	for (const place of placesOf(root, pipes)) {
-		if (!place.transforms) {
-			if (canBeObject(place)) reads.push([place, place, keysAt(place, false)])
-			continue
-		}
-		const resolved = place.hasKind("alias") ? place.resolution : place
-		for (const branch of resolved.branches) {
-			if (copiesWrites(branch))
-				reads.push([place, branch.rawIn, keysAt(branch, false)])
-			else writes.push([place, branch.rawIn, keysAt(branch, true)])
-		}
-	}
-	// a place transforms what it receives by one branch
-	for (const [writer, written, writtenKeys] of writes) {
-		if (!writtenKeys.size) continue
-		for (const [reader, read, readKeys] of reads) {
-			if (
-				reader !== writer &&
-				readKeys.size &&
-				writesRead(writtenKeys, readKeys) &&
-				written.overlaps(read)
-			)
-				throwParseError(inPlaceCheckMessage)
-		}
-	}
-	// a Type piped after a function records anew, so writes once, at the root
-	for (const [morph, piped] of pipes) {
-		const nested: [MorphNode, BaseRoot][] = []
-		const inner = placesOf(piped, nested)
-		if (
-			writes.some(([place, , keys]) => keys.size && inner.has(place)) &&
-			(!root.branches.includes(morph) || nested.some(([m]) => m === morph))
-		)
-			throwParseError(inPlacePipeMessage)
-	}
-}
-
-// a build writing in place has units of its own, differing only in code
+// a root transforming in place has units of its own, differing only in code
 const unitsByRoot = [
 	new WeakMap<BaseRoot, RootUnit[]>(),
 	new WeakMap<BaseRoot, RootUnit[]>()
 ]
 
-const rootUnitsOf = (root: BaseRoot, mutatesInput = false): RootUnit[] => {
-	const cached = unitsByRoot[+mutatesInput]
+const rootUnitsOf = (root: BaseRoot, inPlace = false): RootUnit[] => {
+	const cached = unitsByRoot[+inPlace]
 	let units = cached.get(root)
 	if (!units) {
-		if (mutatesInput) {
-			assertReadsUnwritten(root)
-			assertChecksUnwritten(root)
-		}
 		cached.set(
 			root,
 			(units = precompileRootUnits(root, {
-				compiler: mutatesInput ? MutatingCompiler : StandaloneCompiler,
+				compiler: inPlace ? InPlaceCompiler : StandaloneCompiler,
 				keyOf: runtimeKeyOf
 			}))
 		)
 	}
 	return units
 }
-
-// what a call records of its writes, which each call starts anew
-const recordsWrites: readonly unknown[] = [
-	runtime.transformOnce,
-	runtime.transformCyclicOnce,
-	runtime.transformResolutionOnce,
-	runtime.writesInPlace
-]
-
-// a call records its writes where a place can reach what another wrote
-const tracksWrites = (root: BaseRoot): boolean =>
-	rootUnitsOf(root, true).some(unit =>
-		unit.refs.some(ref => recordsWrites.includes(ref))
-	)
 
 // a pass can reach content-equal roots, which share a name but not a unit
 const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
@@ -3865,19 +3466,3 @@ export const writeUnprecompilableMessage = <value extends string>(
 
 export type writeUnprecompilableMessage<value extends string> =
 	`${value} can't be precompiled to a standalone validator`
-
-export const inPlaceKeyMessage = writeUnprecompilableMessage(
-	"with mutatesInput, a key transformed in place before another constraint transforms it"
-)
-
-export const inPlaceReadMessage = writeUnprecompilableMessage(
-	"with mutatesInput, a morph or union reading an object a transform before it may have written"
-)
-
-export const inPlaceCheckMessage = writeUnprecompilableMessage(
-	"with mutatesInput, a check or copy of an object a transform at another place may write"
-)
-
-export const inPlacePipeMessage = writeUnprecompilableMessage(
-	"with mutatesInput, a Type piped after a function transforming an object beside another transform"
-)

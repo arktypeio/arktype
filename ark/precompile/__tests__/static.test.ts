@@ -1411,9 +1411,13 @@ console.log(values.map(v => (v as any).from))`,
 					writeArktypeRuntimeOptionMessage("checks")
 				],
 				[
-					"mutatesInput that isn't a boolean",
+					"mutatesInput that isn't one",
 					{ mutatesInput: 1 as never },
-					writeOptionValueMessage("mutatesInput", "1", "a boolean")
+					writeOptionValueMessage(
+						"mutatesInput",
+						"1",
+						'false, true or "always"'
+					)
 				],
 				[
 					"mutatesInput with runtime: arktype, though false is the default",

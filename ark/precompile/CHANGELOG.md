@@ -36,9 +36,11 @@ A failed standalone validation returns errors holding one issue at the root, who
 precompile.vite({ errors: "none" })
 ```
 
-### Write what a standalone validator transforms into its input with `mutatesInput: true`
+### Write what a standalone validator transforms into its input with `mutatesInput`
 
-A standalone validator transforms a copy of its input, as arktype does. `mutatesInput: true` writes its defaults and morphed values into the input, which it returns, so it copies no object but one it deletes undeclared keys from or one holding itself through a cyclic Scope. Writing an input that can't be written, like a frozen object, then throws, a validation that fails can leave some of its writes, and a key one constraint transforms in place before another transforms it fails the build. An object the input holds at two places it transforms in place is transformed once where one cyclic Type transforms it at both, and the validation throws anywhere else rather than read what another place wrote, which it records only where a place can reach an object another writes. A morph, piped Type or union that would read into an object after a transform may have written it fails the build, as do a place only checking or copying an object a transform at another place may write a key of that it reads and a Type transforming an object after a function anywhere but at the root, unless the function is arktype's and receives no object. A validation that fails can still read what another place wrote, as can a function of the program's own reading an object its closure holds.
+A standalone validator transforms a copy of its input, as arktype does. `mutatesInput: true` or `"always"` writes its defaults and morphed values into the input, which it returns, as arktype configured with the same option does, so its validators return what arktype's do. Without the option, each Type writes in place as its Scope is configured. In standalone mode, `arktype/mutatesInput`, which installs the option in arktype, resolves to the runtime, as `arktype/config` does, and a runtime island installs it itself.
+
+`"always"` saves the benchmarked shop app 3626 bytes minified and 1217 gzipped, where `true` adds 1430 and 250, as a Type writing in place and one copying each have their own units for a transforming Type they share. Login and moltar transform nothing, so neither changes them.
 
 ```ts
 precompile.vite({ mutatesInput: true })

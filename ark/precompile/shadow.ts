@@ -83,7 +83,7 @@ const swappedOf = (
 // e.g. members.meta false, so a validator's meta isn't compared
 export interface ShadowContract {
 	members?: { meta?: boolean }
-	mutatesInput?: boolean
+	mutatesInput?: true | "always"
 	errors?: "first" | "none"
 }
 
@@ -743,7 +743,7 @@ const validateBoth = (
 			"which its validator received too, since it can't be copied"
 		:	undefined
 	if (current.mismatch) fail(pair, observation(), ...current.mismatch, reason)
-	const writesInput = pair.contract.mutatesInput === true
+	const writesInput = !!pair.contract.mutatesInput
 	const arktypeObserved = inArktype(() => observe(arktype, writesInput))
 	const precompiledObserved = observe(precompiled, writesInput)
 	// errors "none" fails with one root issue, compared without its data

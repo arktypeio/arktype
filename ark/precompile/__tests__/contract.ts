@@ -1,4 +1,5 @@
 import type { PrecompileOptions } from "@ark/precompile"
+import type { MutatesInput } from "@ark/schema"
 
 // what the differential, generated programs and shadow mode build with
 export const testedOptions: PrecompileOptions = JSON.parse(
@@ -23,12 +24,8 @@ export const traverse = (t: any, data: unknown): unknown =>
 // whether a validator is frozen, which arktype's Types aren't
 export const freezes: boolean = testedOptions.freeze !== false
 
-// the output is the input, so its identity, keys and input aren't compared
-export const mutatesInput: boolean = testedOptions.mutatesInput === true
-
-// an issue's object, which writing in place can change before it fails
-export const comparedDataOf = (data: unknown): unknown =>
-	mutatesInput && typeof data === "object" && data !== null ? "object" : data
+// a build writing its input, compared with arktype configured alike
+export const mutatesInput: MutatesInput = testedOptions.mutatesInput ?? false
 
 // errors "none" fails with one root issue and runs no Apply's morphs
 export const detailsErrors: boolean = testedOptions.errors !== "none"

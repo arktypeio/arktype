@@ -3,7 +3,8 @@ import {
 	hasArkKind,
 	schemaScope,
 	ToJsonSchema,
-	type BaseRoot
+	type BaseRoot,
+	type BaseScope
 } from "@ark/schema"
 import { hasDomain, ParseError } from "@ark/util"
 import {
@@ -19,9 +20,9 @@ import {
 } from "arktype/internal/standalone.ts"
 import "arktype/errors"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
+import "arktype/mutatesInput"
 import {
 	bakedJsonSchemaOptionsMessage,
-	transformedInPlaceTwiceMessage,
 	writeUnbakedMessage
 } from "arktype/runtime"
 import { DynamicValue } from "@ark/precompile/internal/dynamic.ts"
@@ -37,7 +38,6 @@ import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 import { inspect } from "node:util"
 import {
-	comparedDataOf,
 	detailsErrors,
 	firstIssue,
 	freezes,
@@ -136,13 +136,36 @@ const returnsForeignErrors = (
 	}
 }
 
-// in place, an unwritable input throws, and an aliased one can differ
+// what a copying call returns that one writing in place returns too, without what the input holds afterward
+const writtenLike = (call: ReturnType<typeof observeCall>) =>
+	Object.fromEntries(
+		Object.entries(call)
+			.filter(([k]) => k !== "mutated")
+			.map(([k, observed]) => {
+				const { isInput, ...rest } = observed as Record<string, unknown>
+				// an issue's object, which writing in place can change before it fails
+				return [
+					k,
+					rest.issues ?
+						{
+							...rest,
+							issues: (rest.issues as KeptIssue[]).map(issue => ({
+								...issue,
+								data: hasDomain(issue.data, "object") ? "object" : issue.data
+							}))
+						}
+					:	rest
+				]
+			})
+	)
+
+// in place, an unwritable input throws, and one holding an object twice can show another place's write at a key a place doesn't declare
 const writesUnlikeCopy = (
 	input: unknown,
-	expected: { traverse: unknown },
-	observed: { traverse: unknown }
+	copied: ReturnType<typeof observeCall>,
+	written: ReturnType<typeof observeCall>
 ): boolean => {
-	const threw = (observed.traverse as { threw?: string }).threw
+	const threw = (written.traverse as { threw?: string }).threw
 	if (
 		threw &&
 		/^TypeError: Cannot (assign to read only|add|delete) property|object is not extensible/.test(
@@ -150,12 +173,13 @@ const writesUnlikeCopy = (
 		)
 	)
 		return true
-	if (!holdsTwice(input)) return false
-	return threw === undefined ?
-			!("threw" in (expected.traverse as object)) &&
-				"out" in (expected.traverse as object) ===
-					"out" in (observed.traverse as object)
-		:	threw === `Error: ${transformedInPlaceTwiceMessage}`
+	return (
+		holdsTwice(input) &&
+		threw === undefined &&
+		!("threw" in (copied.traverse as object)) &&
+		"out" in (copied.traverse as object) ===
+			"out" in (written.traverse as object)
+	)
 }
 
 const holdsTwice = (value: unknown, seen = new Set<object>()): boolean => {
@@ -167,11 +191,6 @@ const holdsTwice = (value: unknown, seen = new Set<object>()): boolean => {
 		return "value" in descriptor && holdsTwice(descriptor.value, seen)
 	})
 }
-
-const enumerableKeysOf = (o: object): PropertyKey[] =>
-	Reflect.ownKeys(o).filter(k =>
-		Object.prototype.propertyIsEnumerable.call(o, k)
-	)
 
 const link = (code: string) =>
 	code
@@ -327,7 +346,8 @@ export const cloneInput = (
 const { toString } = Object.prototype
 
 // a pair already being compared is assumed equal, so a graph sharing subgraphs is walked once per pair
-const isEqual = (l: unknown, r: unknown): boolean => {
+// read, an object is compared by the values its enumerable keys read, as a copy keeps neither accessors nor inherited keys
+const isEqual = (l: unknown, r: unknown, read = false): boolean => {
 	const seen = new Map<object, Set<object>>()
 	const equals = (l: any, r: any): boolean => {
 		if (Object.is(l, r) || counterparts.get(r) === l) return true
@@ -358,8 +378,10 @@ const isEqual = (l: unknown, r: unknown): boolean => {
 				return false
 		}
 		if (tag === "[object Error]" && String(l) !== String(r)) return false
-		if (mutatesInput) {
-			const keys = new Set([...enumerableKeysOf(l), ...enumerableKeysOf(r)])
+		if (read) {
+			const keys = new Set<string>()
+			for (const k in l) keys.add(k)
+			for (const k in r) keys.add(k)
 			return [...keys].every(k => equals(l[k], r[k]))
 		}
 		const lKeys = Reflect.ownKeys(l)
@@ -388,22 +410,16 @@ const isEqual = (l: unknown, r: unknown): boolean => {
 	}
 }
 
-const comparedIssuesOf = (issues: KeptIssue[]) =>
-	issues.map(issue => ({ ...issue, data: comparedDataOf(issue.data) }))
-
 const observe = (run: () => unknown, input: unknown): unknown => {
 	try {
 		const result: any = run()
-		return (
-			hasArkKind(result, "errors") ?
-				{ issues: comparedIssuesOf(keptIssuesOf(result, !firstIssue)) }
-			: mutatesInput ? { out: result }
-			: { out: result, isInput: result === input }
-		)
+		return hasArkKind(result, "errors") ?
+				{ issues: keptIssuesOf(result, !firstIssue) }
+			:	{ out: result, isInput: result === input }
 	} catch (e) {
 		const issues = thrownIssuesOf(e, !firstIssue)
 		return issues ?
-				{ threw: "TraversalError", issues: comparedIssuesOf(issues) }
+				{ threw: "TraversalError", issues }
 			:	{
 					threw: String(e),
 					context: (e as { context?: unknown } | undefined)?.context
@@ -549,10 +565,9 @@ const observeCall = (t: Validator, input: unknown) => {
 	const traversal = observe(() => traverse(t, traversed), traversed)
 	return {
 		traverse: traversal,
-		...(!mutatesInput &&
-			((detailsErrors && !firstIssue) || !fails(traversal)) && {
-				mutated: traversed
-			}),
+		...(((detailsErrors && !firstIssue) || !fails(traversal)) && {
+			mutated: traversed
+		}),
 		allows: observe(() => t.allows(cloneInput(input)), undefined),
 		...(!lacks("assert") && {
 			assert: observe(() => t.assert(cloneInput(input)), undefined)
@@ -579,12 +594,31 @@ const erroringScope =
 		schemaScope({}, { errors: testedOptions.errors })
 	:	undefined
 
-// an alias stays in the scope resolving it, so its resolution is bound
-const validatedOf = (node: BaseRoot): BaseRoot => {
-	if (!erroringScope) return node
+// arktype writing in place as the build does, failing as the Type's own Scope does
+const inPlaceScopesByOnFail = new Map<unknown, BaseScope>()
+
+const inPlaceScopeOf = (node: BaseRoot): BaseScope => {
+	const { onFail } = node.$.resolvedConfig
+	let $ = inPlaceScopesByOnFail.get(onFail)
+	if (!$) {
+		$ = schemaScope(
+			{},
+			{ errors: testedOptions.errors ?? "all", mutatesInput, onFail }
+		)
+		inPlaceScopesByOnFail.set(onFail, $)
+	}
+	return $
+}
+
+// an alias stays in the scope resolving it, so its resolution is bound, and
+// one writing in place is compiled as its Scope would compile it
+const validatedOf = (node: BaseRoot, inPlace = false): BaseRoot => {
+	const $ = inPlace ? inPlaceScopeOf(node) : erroringScope
+	if (!$) return node
 	let resolved = node
 	while (resolved.hasKind("alias")) resolved = resolved.resolution
-	return erroringScope.bindReference(resolved)
+	const bound = $.bindReference(resolved)
+	return inPlace ? $.finalize(bound) : bound
 }
 
 // a hole returning arktype's own errors or nodes, which a validator's runtime doesn't recognize
@@ -610,6 +644,8 @@ export interface Observations {
 	introspection: ReturnType<typeof observeIntrospection> | undefined
 	// undefined where a hole holding state makes two calls disagree
 	calls: (ReturnType<typeof observeCall> | undefined)[]
+	// configured to write in place as the build does, which a build writing in place is compared with
+	inPlaceCalls?: (ReturnType<typeof observeCall> | undefined)[]
 }
 
 // what arktype observes, before a build renames the functions a Type holds
@@ -630,13 +666,18 @@ export const observeArktype = (
 		})
 	},
 	introspection: observeStably(() => observeIntrospection(node as never)),
-	calls: inputs.map(input => {
-		const validated = validatedOf(node)
-		const call = observeCall(validated as never, input)
-		if (!isEqual(call, observeCall(validated as never, input))) return
-		return call
+	calls: observeCalls(validatedOf(node), inputs),
+	...(mutatesInput && {
+		inPlaceCalls: observeCalls(validatedOf(node, true), inputs)
 	})
 })
+
+const observeCalls = (node: BaseRoot, inputs: unknown[]) =>
+	inputs.map(input => {
+		const call = observeCall(node as never, input)
+		if (!isEqual(call, observeCall(node as never, input))) return
+		return call
+	})
 
 export interface Comparison {
 	refusal?: string
@@ -667,6 +708,36 @@ export const compare = async (
 	if (configured && configured !== (testedOptions.errors ?? "all"))
 		return { ...result, refusal: "configured errors" }
 	const holes = keyOf(node)[1]
+	// writing in place returns what copying does, unless an input breaks what always assumes
+	for (const [i, input] of inputs.entries()) {
+		const copied = arktype.calls[i]
+		const written = arktype.inPlaceCalls?.[i]
+		if (
+			!copied ||
+			!written ||
+			isEqual(writtenLike(copied), writtenLike(written), true)
+		)
+			continue
+		if (
+			writesUnlikeCopy(input, copied, written) ||
+			(mutatesInput === "always" && holdsTwice(input))
+		)
+			result.harnessLimited++
+		else {
+			result.disagreements.push(
+				inspect(
+					{
+						expression: node.expression,
+						observation: "in place",
+						input,
+						copied,
+						written
+					},
+					{ depth: 5, breakLength: 120 }
+				).slice(0, 4000)
+			)
+		}
+	}
 	for (const layout of layouts) {
 		const disagree = (observation: string, details: object) =>
 			result.disagreements.push(
@@ -735,14 +806,13 @@ export const compare = async (
 			}
 		}
 		for (const [i, input] of inputs.entries()) {
-			const expected = arktype.calls[i]
+			const expected = (arktype.inPlaceCalls ?? arktype.calls)[i]
 			const actual = observeCall(validator, input)
 			if (expected && isEqual(expected, actual)) continue
 			if (
 				!expected ||
 				holdsArkValue(actual) ||
-				returnsForeignErrors(validator, input) ||
-				(mutatesInput && writesUnlikeCopy(input, expected, actual))
+				returnsForeignErrors(validator, input)
 			) {
 				if (layout === layouts[0]) result.harnessLimited++
 			} else disagree("call", { input, arktype: expected, precompiled: actual })

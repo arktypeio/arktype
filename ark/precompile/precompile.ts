@@ -3,7 +3,8 @@ import {
 	describeBranches,
 	hasArkKind,
 	writePrecompiledUnits,
-	type BaseRoot
+	type BaseRoot,
+	type MutatesInput
 } from "@ark/schema"
 import * as arkSchema from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
@@ -23,18 +24,15 @@ import {
 	throwParseError
 } from "@ark/util"
 import { ark, configure } from "arktype"
-// the program's configuration can choose errors "first" or "none"
+// the program's configuration can choose errors "first" or "none" and mutatesInput
 import "arktype/errors"
+import "arktype/mutatesInput"
 import type { HoleKind } from "arktype/internal/runtime.ts"
 import * as arktypeRuntime from "arktype/internal/runtimeExports.ts"
 import {
 	appendPath,
 	defaultMembers,
 	holeNamePattern,
-	inPlaceCheckMessage,
-	inPlaceKeyMessage,
-	inPlacePipeMessage,
-	inPlaceReadMessage,
 	introspectionMembers,
 	isTypedFn,
 	keyOf,
@@ -143,8 +141,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	freeze?: boolean | undefined
 	// false creates standalone validators as their modules load
 	lazy?: boolean | undefined
-	// true writes what a validation transforms into its input and returns it
-	mutatesInput?: boolean | undefined
+	// true or "always" writes what a validation transforms into its input and returns it
+	mutatesInput?: MutatesInput | undefined
 	// "size" writes each validator in its shortest form
 	optimize?: Optimization | undefined
 	// create each site with arktype too, from the same holes, and throw where its validator observes anything else
@@ -406,7 +404,7 @@ export class Precompiler {
 	errors: ErrorDetail | undefined
 	freeze: boolean
 	lazy: boolean
-	mutatesInput: boolean
+	mutatesInput: MutatesInput | undefined
 	optimize: Optimization
 	private configuration: Configuration | undefined
 	private loadedBeforeConfigure: string[] | undefined
@@ -452,7 +450,7 @@ export class Precompiler {
 		this.errors = opts?.errors
 		this.freeze = opts?.freeze !== false
 		this.lazy = opts?.lazy !== false
-		this.mutatesInput = opts?.mutatesInput === true
+		this.mutatesInput = opts?.mutatesInput
 		this.optimize = opts?.optimize ?? "speed"
 		assertPrecompileOptions(opts)
 		this.lackedMembers = new Set(
@@ -464,7 +462,7 @@ export class Precompiler {
 		)
 		const contract: ShadowContract = {}
 		if (this.members.meta === false) contract.members = { meta: false }
-		if (this.mutatesInput) contract.mutatesInput = true
+		if (this.mutatesInput) contract.mutatesInput = this.mutatesInput
 		if (this.errors && this.errors !== "all") contract.errors = this.errors
 		this.shadowContract =
 			Object.keys(contract).length ? JSON.stringify(contract) : undefined
@@ -1909,16 +1907,7 @@ export class Precompiler {
 			this.rejectionSeverity,
 			`${module.snippetOf(site)} can't be precompiled yet`,
 			reasons.map(reason => this.sourceNamed(reason, site, module)),
-			(
-				reasons.includes(inPlaceKeyMessage) ||
-					reasons.includes(inPlaceReadMessage) ||
-					reasons.includes(inPlaceCheckMessage) ||
-					reasons.includes(inPlacePipeMessage)
-			) ?
-				inPlaceHint
-			: (
-				reasons.some(reason => reason.startsWith("arktype is configured with"))
-			) ?
+			reasons.some(reason => reason.startsWith("arktype is configured with")) ?
 				errorsHint
 			:	undefined
 		)
@@ -3627,11 +3616,12 @@ export const writeUnknownMemberMessage = <member extends string>(
 export type writeUnknownMemberMessage<member extends string> =
 	`members has ${member}, which isn't one of ${string}`
 
-const booleanOptions = ["freeze", "lazy", "mutatesInput"] as const
+const booleanOptions = ["freeze", "lazy"] as const
 
 const enumOptions = {
 	checks: ["types", "helpers", "none"],
 	errors: ["all", "first", "none"],
+	mutatesInput: [false, true, "always"],
 	optimize: ["speed", "size"]
 } as const
 
@@ -3735,9 +3725,6 @@ export type writeStandaloneDependencyMessage<name extends string> =
 
 export const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
-
-// runtime: "arktype" takes no mutatesInput
-const inPlaceHint = "Build without mutatesInput to precompile it."
 
 const writeUnsureHint = (fix: string) =>
 	`If it isn't a Type, annotate it with its type. If it is, ${fix}.`

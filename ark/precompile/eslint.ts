@@ -71,7 +71,7 @@ const precompilable: Rule.RuleModule = {
 					tsconfig: { type: "string" },
 					freeze: { type: "boolean" },
 					lazy: { type: "boolean" },
-					mutatesInput: { type: "boolean" },
+					mutatesInput: { enum: [false, true, "always"] },
 					optimize: { enum: ["speed", "size"] }
 				},
 				additionalProperties: false

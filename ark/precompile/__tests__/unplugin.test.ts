@@ -55,6 +55,7 @@ const undetailed = writeUndetailed()
 const configured = fromHere("configured")
 
 const firstConfigured = fromHere("firstConfigured")
+const mutatingConfigured = fromHere("mutatingConfigured")
 
 const runPlain = (root: string) =>
 	spawnSync(process.execPath, ["--conditions", "ark-ts", "main.ts"], {
@@ -396,6 +397,31 @@ export const checkedItem = JSON.stringify(itemJson())
 					await bundle(
 						{ cwd: firstConfigured, config: "config.ts", runtime: "arktype" },
 						firstConfigured
+					)
+				)
+			).equals(plain)
+		}).timeout(60000)
+
+		it(`${name} configured to mutate its input`, async () => {
+			const opts = {
+				cwd: mutatingConfigured,
+				config: "config.ts",
+				mutatesInput: true as const
+			}
+			const plain = runPlain(mutatingConfigured)
+			attest(plain).equals(
+				'[{"name":"a","role":"user"},true,{"name":"a","role":"user"}]\n'
+			)
+			attest(run(await bundle(opts, mutatingConfigured))).equals(plain)
+			attest(
+				run(
+					await bundle(
+						{
+							cwd: mutatingConfigured,
+							config: "config.ts",
+							runtime: "arktype"
+						},
+						mutatingConfigured
 					)
 				)
 			).equals(plain)
