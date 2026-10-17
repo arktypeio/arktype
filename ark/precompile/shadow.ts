@@ -6,10 +6,15 @@ import {
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { shareConfig } from "@ark/schema/runtime"
-import { hasDomain, printable } from "@ark/util"
+import { hasDomain, includes, printable } from "@ark/util"
 import { configure } from "arktype/internal/config.js"
 import { keywordMetas } from "arktype/internal/standalone.ts"
-import { keptIssuesOf, thrownIssuesOf, type KeptIssue } from "./issues.ts"
+import {
+	keptIssuesOf,
+	pathKeyOf,
+	thrownIssuesOf,
+	type KeptIssue
+} from "./issues.ts"
 
 shareConfig(configure)
 
@@ -35,7 +40,7 @@ const originalByShadowed = new WeakMap<object, unknown>()
 // two sites returning one Type and one validator return one value, as arktype's do
 const shadowedByPair = new WeakMap<object, WeakMap<object, object>>()
 
-// arktype reads what it holds, like a Type a static helper composes by name, as itself
+// arktype reads what it holds as itself, like a Type a helper composes
 let arktypeDepth = 0
 
 const inArktype = <t>(run: () => t): t => {
@@ -47,14 +52,17 @@ const inArktype = <t>(run: () => t): t => {
 	}
 }
 
-// e.g. `type(fields)` with `fields = { name: Name }`, whose factory reads `fields.name`
+// e.g. `type(fields)` with `fields = { name: Name }`
 const swappedOf = (
 	value: unknown,
 	byShadowed: WeakMap<object, unknown>,
 	seen: Map<object, unknown>
 ): unknown => {
-	if (typeof value !== "object" && typeof value !== "function") return value
-	if (value === null) return value
+	if (
+		value === null ||
+		(typeof value !== "object" && typeof value !== "function")
+	)
+		return value
 	if (byShadowed.has(value)) return byShadowed.get(value)
 	const proto = Object.getPrototypeOf(value)
 	if (!Array.isArray(value) && proto !== Object.prototype && proto !== null)
@@ -100,7 +108,7 @@ export const shadowUnder = (
 	site: string,
 	precompile: (...args: unknown[]) => unknown,
 	define: (...args: unknown[]) => unknown,
-	// the arguments a factory calls during a validation, which arktype calls once, recording what the validator replays
+	// indices of the args a validation calls
 	callbacks: readonly number[],
 	...args: unknown[]
 ): unknown => {
@@ -134,7 +142,7 @@ const shadowOf = (
 ): unknown => {
 	const defined = outcomeOf(define)
 	const precompiled = outcomeOf(precompile)
-	// e.g. `type(User, "|", Num).exclude(Num)`, where arktype returns the Proxy it held
+	// e.g. `type(User, "|", Num).exclude(Num)` returns the Proxy arktype held
 	const original =
 		"value" in defined ?
 			(originalByShadowed.get(defined.value as never) ?? defined.value)
@@ -146,7 +154,6 @@ const shadowOf = (
 		counterpart: "value" in precompiled ? precompiled.value : undefined
 	}
 	const isType = hasArkKind(original, "root")
-	// e.g. what `User.toJsonSchema()` returns, which a build bakes
 	const isData = !isHeld(original) && typeof original !== "function"
 	const observeCreation = (outcome: Outcome) =>
 		"thrown" in outcome ? { threw: thrownOf(outcome.thrown) }
@@ -195,11 +202,17 @@ const bakedMetaOf = (t: unknown) => {
 	return meta && keywordMetas().has(meta) ? {} : meta
 }
 
-const validatedMembers = ["allows", "assert", "traverse", "from"]
+const validatedMembers = ["allows", "assert", "traverse", "from"] as const
 
-const introspectedMembers = ["toJSON", "toJsonSchema", "toString"]
+const introspectedMembers = ["toJSON", "toJsonSchema", "toString"] as const
 
-const droppableMembers = ["assert", "traverse", "from", "meta", "~standard"]
+const droppableMembers = [
+	"assert",
+	"traverse",
+	"from",
+	"meta",
+	"~standard"
+] as const
 
 const typeHandlerOf = (
 	pair: Pair & { original: BaseRoot }
@@ -223,15 +236,14 @@ const typeHandlerOf = (
 			introspect(pair, path, args)
 	const memberOf = (target: BaseRoot, k: PropertyKey): unknown => {
 		const counterpart = pair.counterpart as Record<PropertyKey, unknown>
-		// e.g. assert, which a build's members option can drop
-		if (droppableMembers.includes(k as never) && !(k in counterpart))
+		if (includes(droppableMembers, k) && !(k in counterpart))
 			return boundTo(target, checkedMember(pair, target, k))
-		if (validatedMembers.includes(k as never)) return validator(k as string)
+		if (includes(validatedMembers, k)) return validator(k)
 		if (
-			introspectedMembers.includes(k as never) &&
+			includes(introspectedMembers, k) &&
 			"value" in outcomeOf(() => counterpart[k])
 		)
-			return introspector(k as string)
+			return introspector(k)
 		if (k === "meta") {
 			if (keywordMetas().has(target.meta)) {
 				compare(
@@ -307,7 +319,7 @@ const checkedMember = (
 const hasOf =
 	(pair: Pair) =>
 	(target: object, k: PropertyKey): boolean => {
-		// e.g. `"json" in T`, which a validator answers false where its build doesn't list it
+		// e.g. `"json" in T`, false for a validator whose build drops it
 		if (
 			!arktypeDepth &&
 			!(
@@ -320,14 +332,14 @@ const hasOf =
 		return Reflect.has(target, k)
 	}
 
-// e.g. `~standard.jsonSchema.input`, called on the object holding it where args are given
+// e.g. `~standard.jsonSchema.input`, called on its holder given args
 const readAt = (t: any, path: string[], args?: unknown[]) => {
 	const holder = path.slice(0, -1).reduce((o, k) => o[k], t)
 	const k = path[path.length - 1]
 	return args ? holder[k](...args) : holder[k]
 }
 
-// a method, which arktype runs on `this` as describe() selects nodes by it, but not a class or a Type arktype holds
+// binds a method, as describe() selects nodes by `this`
 const boundTo = (target: object, value: unknown) =>
 	(
 		typeof value === "function" &&
@@ -340,7 +352,7 @@ const boundTo = (target: object, value: unknown) =>
 		})
 	:	value
 
-// e.g. a Module, a Scope or a Generic, whose members arktype's have only where its validator's do
+// e.g. a Module, Scope or Generic, whose members its validator must have
 const heldHandlerOf = (pair: Pair): ProxyHandler<any> => {
 	const membersByKey: Record<PropertyKey, unknown> = Object.create(null)
 	return {
@@ -376,7 +388,7 @@ const isHeld = (value: unknown) =>
 	hasArkKind(value, "scope") ||
 	hasArkKind(value, "generic")
 
-// a member read without args, like json, or called with them, compared without arktype's registration suffixes
+// a member read, like json, or called, compared without registry suffixes
 const introspect = (pair: Pair, path: string[], args?: unknown[]): unknown => {
 	const read = (t: unknown) => readAt(t, path, args)
 	const observed = (outcome: Outcome) =>
@@ -414,7 +426,7 @@ interface Call {
 	root: unknown
 	outcome: Outcome
 	result: unknown
-	// e.g. a call adding a ctx error or setting a Date's time, which runs again for the validator
+	// e.g. a call adding a ctx error, which runs again for the validator
 	isRepeated: boolean
 }
 
@@ -425,7 +437,7 @@ interface Validation {
 	skipsApply: boolean
 	calls: Call[]
 	replayed: number
-	// each object arktype's side holds, by the one the validator's side holds in its place
+	// each of arktype's objects by the one the validator holds in its place
 	counterparts: Map<object, unknown>
 	isCopied: boolean
 	mismatch: [arktype: string, precompiled: string] | undefined
@@ -438,7 +450,7 @@ const wrapperByCallback = new WeakMap<Function, Function>()
 
 const callbackByWrapper = new WeakMap<object, Function>()
 
-// one per function, so its facts, like `name`, `length` and identity, are the program's
+// one per function, so its `name`, `length` and identity are the program's
 const callbackOf = (value: unknown): unknown => {
 	if (typeof value !== "function") return value
 	let wrapper = wrapperByCallback.get(value)
@@ -457,7 +469,7 @@ const callbackOf = (value: unknown): unknown => {
 	return wrapper
 }
 
-// the program's code, where a Type it reads compares again and a validation it runs is recorded on its own
+// runs the program's code outside the current validation
 const outcomeOfCall = (
 	callee: Function,
 	receiver: unknown,
@@ -550,7 +562,7 @@ const isReplayable = (call: Writes & Pick<Call, "copies">) => {
 	return "value" in replayed && isAlike(states, replayed.value, new Map(), true)
 }
 
-// e.g. an in-place morph's, through its arguments or an object it detached from them and returned
+// e.g. an in-place morph's, through its arguments or what it returned
 const writeAll = (call: Writes, counterparts: Map<object, unknown>) => {
 	relate(counterparts, call.copiedAfter)
 	if (!call.written.length) return
@@ -667,7 +679,7 @@ const writeOnto = (
 	const values = state as Record<PropertyKey, unknown>
 	for (const k of Reflect.ownKeys(state))
 		writeOnto(values[k], counterparts, received, visited)
-	// e.g. an object the call created, which holds objects it wrote but stands for none of the validator's
+	// e.g. an object the call created, standing for none of the validator's
 	if (!received.has(state)) return
 	const target = counterparts.get(state) as Record<PropertyKey, unknown>
 	for (const k of Reflect.ownKeys(target))
@@ -749,7 +761,7 @@ const validateBoth = (
 	// errors "none" fails with one root issue, compared without its data
 	if (current.skipsApply) {
 		arktypeObserved.issues = [{ code: "predicate", path: [] }]
-		const { issues } = precompiledObserved as { issues?: KeptIssue[] }
+		const { issues } = precompiledObserved
 		if (issues) {
 			precompiledObserved.issues = issues.map(({ code, path }) => ({
 				code,
@@ -758,12 +770,11 @@ const validateBoth = (
 		}
 	}
 	if (stopsEarly) {
-		const { issues } = precompiledObserved as { issues?: KeptIssue[] }
+		const { issues } = precompiledObserved
 		const { issues: all } = inArktype(() =>
 			observe(arktype, writesInput, false)
 		)
-		const found =
-			issues && firstIssueOf(issues, all as KeptIssue[], counterparts)
+		const found = issues && firstIssueOf(issues, all!, counterparts)
 		if (found) arktypeObserved.issues = found
 	}
 	// a validator writing its input in place leaves it unlike arktype's
@@ -789,17 +800,16 @@ const fails = (outcome: Outcome) =>
 
 // arktype's issues alike a first-issue validator's, all at one path
 const firstIssueOf = (
-	found: KeptIssue[],
-	issues: KeptIssue[],
+	found: ObservedIssue[],
+	issues: ObservedIssue[],
 	counterparts: Map<object, unknown>
-): KeptIssue[] | undefined => {
+): ObservedIssue[] | undefined => {
 	const unmatched = [...issues]
-	const pathOf = (issue: KeptIssue) => issue.path.map(String).join("\0")
-	const matched: KeptIssue[] = []
+	const matched: ObservedIssue[] = []
 	for (const issue of found) {
 		const i = unmatched.findIndex(
 			candidate =>
-				pathOf(candidate) === pathOf(found[0]) &&
+				pathKeyOf(candidate.path) === pathKeyOf(found[0].path) &&
 				isAlike(candidate, issue, new Map(counterparts), false)
 		)
 		if (i === -1) return
@@ -808,11 +818,20 @@ const firstIssueOf = (
 	return matched.length ? matched : undefined
 }
 
+type ObservedIssue = Omit<KeptIssue, "data">
+
+interface Observation {
+	threw?: unknown
+	issues?: ObservedIssue[]
+	out?: unknown
+	input?: unknown
+}
+
 const observe = (
 	outcome: Outcome,
 	writesInput = false,
 	grouped = true
-): Record<string, unknown> => {
+): Observation => {
 	if ("thrown" in outcome) {
 		const issues = thrownIssuesOf(outcome.thrown, grouped)
 		return issues ?
@@ -863,7 +882,7 @@ const fail = (
 	const error = new Error(
 		`${pair.site} diverges from arktype at ${observation}${reason ? `, ${reason}` : ""}: arktype gives ${arktype}, its validator ${precompiled}`
 	)
-	// raised where the program can't catch it too, as a fallback or `expect(...).toThrow()` would
+	// also raised where a fallback or `expect(...).toThrow()` can't catch it
 	queueMicrotask(() => {
 		throw error
 	})
@@ -872,7 +891,7 @@ const fail = (
 
 const uncopyable = Symbol("uncopyable")
 
-// what a copy keeps, which an instance's private fields or a builtin's internal slots aren't
+// copyable prototypes, unlike an instance's private fields or slots
 const copiedProtos: unknown[] = [
 	Object.prototype,
 	null,
@@ -882,19 +901,18 @@ const copiedProtos: unknown[] = [
 	Set.prototype
 ]
 
-// e.g. an object holding a class instance or a Proxy whose trap throws, of which no copy is left half made
+// a copy of what can be copied whole, else uncopyable
 const copyOf = (value: unknown, seen: Map<object, unknown>): unknown => {
 	const size = seen.size
 	try {
-		return _copyOf(value, seen)
+		return copyOrThrow(value, seen)
 	} catch {
-		if (seen.size > size)
-			for (const k of [...seen.keys()].slice(size)) seen.delete(k)
+		for (const k of [...seen.keys()].slice(size)) seen.delete(k)
 		return uncopyable
 	}
 }
 
-const _copyOf = (value: unknown, seen: Map<object, unknown>): any => {
+const copyOrThrow = (value: unknown, seen: Map<object, unknown>): any => {
 	if (typeof value === "function") throw uncopyable
 	if (typeof value !== "object" || value === null) return value
 	if (seen.has(value)) return seen.get(value)
@@ -907,15 +925,18 @@ const _copyOf = (value: unknown, seen: Map<object, unknown>): any => {
 		: Object.create(proto)
 	seen.set(value, copy)
 	if (value instanceof Map)
-		for (const [k, v] of value) copy.set(_copyOf(k, seen), _copyOf(v, seen))
-	if (value instanceof Set) for (const v of value) copy.add(_copyOf(v, seen))
+		for (const [k, v] of value)
+			copy.set(copyOrThrow(k, seen), copyOrThrow(v, seen))
+	if (value instanceof Set)
+		for (const v of value) copy.add(copyOrThrow(v, seen))
 	if (isIndexed(value))
-		for (let i = 0; i < value.length; i++) copy.push(_copyOf(value[i], seen))
+		for (let i = 0; i < value.length; i++)
+			copy.push(copyOrThrow(value[i], seen))
 	else {
 		for (const k of Reflect.ownKeys(value)) {
 			const descriptor = Object.getOwnPropertyDescriptor(value, k)!
 			if (!("value" in descriptor)) throw uncopyable
-			const copied = _copyOf(descriptor.value, seen)
+			const copied = copyOrThrow(descriptor.value, seen)
 			if (
 				descriptor.writable &&
 				descriptor.enumerable &&
@@ -930,7 +951,7 @@ const _copyOf = (value: unknown, seen: Map<object, unknown>): any => {
 	return copy
 }
 
-// read by index, since listing an array's keys as strings costs more than copying it
+// a dense array with no other keys
 const isIndexed = (value: object): value is unknown[] => {
 	if (
 		!Array.isArray(value) ||
@@ -948,7 +969,7 @@ const comparedProtos: unknown[] = [
 	Error.prototype
 ]
 
-// a function is alike any other, since the runtime holds its own copy of each arktype holds, like a matcher's onFail
+// functions are alike, as the runtime holds its own copies
 const isAlike = (
 	l: unknown,
 	r: unknown,
