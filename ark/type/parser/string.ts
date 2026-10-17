@@ -100,9 +100,23 @@ type parseNonReference<def extends string, $, args> =
 type parseExpression<def extends string, $, args> =
 	def extends `${string}${"(" | "|>"}${string}` | `/${string}` ?
 		fullStringParse<s.initialize<def>, $, args>
+	: def extends `${string} = ${string}` ? parseDefaultExpression<def, $, args>
 	: def extends `${string} | ${string}` ? parseSpacedUnion<def, def, $, args>
 	: def extends `${string}|${string}` ? parseOperandUnion<def, def, $, args>
 	: parseBoundedOperand<def, $, args>
+
+// the first " = " starts the default value only if what precedes it parses
+// to an expression, rather than being cut from a literal or group
+type parseDefaultExpression<def extends string, $, args> =
+	def extends `${infer base} = ${infer value}` ?
+		parseString<base, $, args> extends (
+			| ErrorMessage
+			| readonly [unknown, "?" | "="]
+			| readonly [unknown, "=", unknown]
+		) ?
+			fullStringParse<s.initialize<def>, $, args>
+		:	parseDefault<parseString<base, $, args>, ` ${value}`>
+	:	never
 
 // wrapping the lookup keeps a generic def from being narrowed to each keyword
 type resolveAmbient<reference, $> =
