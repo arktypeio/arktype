@@ -150,7 +150,7 @@ export const composing = <t>(compose: () => t): t => {
 	}
 }
 
-// within another node's text, `this` would mean that node
+// prints as printedWithThis unless read while composing another node
 export const printSelfAsThis = <node extends BaseRoot>(
 	node: node,
 	printedWithThis: BaseRoot

@@ -19,7 +19,7 @@ type ErrorSlot = "expected" | "actual" | "problem" | "message"
 type SlotConfig = string | ((...args: never[]) => string)
 
 /** defaultConfig's locale */
-export let defaultLocale: Locale.Complete
+let defaultLocale: Locale.Complete
 
 // a configured function, which selects the locale errors are written in
 let selector: LocaleSelector | undefined
@@ -115,7 +115,7 @@ const configOf = (
 	config[error.code][slot] ??
 	defaultConfig[error.code][slot]
 
-// a discriminant's description lists its cases, while its meta is its union's
+// a discriminant's description lists cases; its meta is its union's
 const citesDescription = (error: ArkError): boolean =>
 	error.code !== "discriminant" &&
 	error.description !== undefined &&
@@ -181,13 +181,13 @@ const localeExpected = (
 	return inEn.expected
 }
 
-// only the slots its expected reads, so no other slot's writer is called twice
+// only the slots its expected reads, so no writer is called twice
 const writeInEn = (
 	error: ArkError,
 	config: ResolvedConfig,
 	last: "expected" | "actual"
 ): void => {
-	// a union's expected reads its children's actual, an intersection's only their expected
+	// a union's expected reads its children's actual
 	if (error.code === "union" || error.code === "intersection") {
 		for (const e of error.errors)
 			writeInEn(e, config, error.code === "union" ? "actual" : "expected")
@@ -213,8 +213,7 @@ const writeExpected = (
 ): string =>
 	typeof expected === "string" ? expected : expected(error as never, locale)
 
-// whether a description is what arktype writes for a node without authored
-// text or a keyword. Any scope's writer may have written it, so its text decides
+// whether description is arktype's default for the node
 const isDefaultDescription = (
 	error: ArkError,
 	description: string
@@ -231,7 +230,7 @@ const isDefaultDescription = (
 
 const normalizedLocales = new WeakMap<object, Locale>()
 
-/** a locale completed from en, since an untyped or older one may lack entries */
+/** a locale completed from en, which an older one may lack entries of */
 export const normalizeLocale = (locale: Locale): Locale => {
 	const en = defaultLocale
 	if (locale === en) return en
@@ -281,5 +280,5 @@ registerLocaleRenderer({
 	write
 })
 
-// arktype resolves its config when its first Type is created, which can precede this module
+// arktype may resolve its config before this module loads
 if ($ark.resolvedConfig) configureLocale($ark.config.locale, $ark.defaultConfig)

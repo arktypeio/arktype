@@ -350,7 +350,7 @@ export interface UnknownAttachments {
 	readonly children: BaseNode[]
 }
 
-// what createNode passes a node, which computes the rest when it's read
+// what createNode passes; the rest is computed when read
 export interface UnknownAttachmentsInput
 	extends Omit<UnknownAttachments, "innerEntries" | "metaJson"> {
 	readonly metaJson: object | undefined

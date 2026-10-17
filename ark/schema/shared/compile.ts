@@ -27,7 +27,7 @@ import {
 	type TraversalKind
 } from "./traversal.ts"
 
-export const writeErrorBuilder = (context: object): string => {
+const writeErrorBuilder = (context: object): string => {
 	let body = "return { data, path"
 	for (const k in context) {
 		const key = JSON.stringify(k)
@@ -218,7 +218,7 @@ export interface TransformStep {
 	signature?: BaseNode
 }
 
-// what an issue says its data must be, as en writes it where nothing else is configured
+// a node's expected, as en writes it unconfigured
 export const expectedOf = <description extends string | undefined>(
 	meta: ArkEnv.meta,
 	description: description
@@ -253,7 +253,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		this.refs = ctx.refs
 	}
 
-	// a standalone build's compiler writes what a union returns failing and what fails an undeclared key, as its validators raise issues holding none of their nodes' error contexts
+	// written by standalone builds, whose issues hold no node contexts
 	unionFails?(node: UnionNode, value?: string, path?: PropertyKey[]): string
 	undeclaredFails?(): string
 	// what a key's value whose condition failed is applied by, if not its Apply
@@ -304,7 +304,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			:	this.invoke(node)
 	}
 
-	// a cycle's member is entered as its resolution, so data reaching it again isn't applied twice
+	// a cycle member is entered as a resolution, so it is applied once
 	resolution(node: BaseNode, id: NodeId, arg: string = this.data): string {
 		const apply = this.traversal(node, "Apply")
 		return `${this.ref(enterApplied)}(ctx, "${this.nameOf(id)}", ${arg}) ?? ${this.ref(exitApplied)}(ctx, ${apply}(${arg}, ctx))`
@@ -316,7 +316,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return opts?.bind ? `${base}.bind(${opts?.bind})` : base
 	}
 
-	// overriding it renames each node everywhere emitted code names it
+	// overridden to rename nodes in emitted code
 	nameOf(id: NodeId): string {
 		return id
 	}
@@ -383,7 +383,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return this.line(`${this.ctx}.path.pop()`)
 	}
 
-	// what fails a value at a key where one expression checks it, in Apply only once ctx fails fast
+	// what fails a key's value in one expression, if one can
 	keyFails(key: string, value: string, node: BaseNode): string | undefined {
 		if (this.traversalKind !== "Apply") {
 			const condition = node.compileCondition?.(this, value)
@@ -396,7 +396,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			return `!${this.invoke(node, { arg: value })}`
 		}
 		if (node.includesMorph || node.includesAlias) return
-		// a value that transforms is checked by Allows first, as one that morphs must be, which also spares a valid one Apply's cost
+		// transforming values are checked by Allows first
 		const checksAllowsFirst =
 			node.transforms ||
 			((this.loopDepth > 0 ||
@@ -414,13 +414,13 @@ export abstract class NodeCompiler extends CompiledFunction<
 				`${this.ref(rejects)}(${this.traversal(node, "Allows")}, ${value}) && `
 			: condition === undefined ? `!${this.allows(node, value)} && `
 			: `!(${condition}) && `
-		// a refined basis Allows rejects failed its refinement unless its basis failed, so the refinement isn't checked again
+		// a refined basis Allows rejected failed its refinement unless its basis did
 		if (checksAllowsFirst && isRefinedBasis(node))
 			return `${allows}ctx.failsAt(${node.basis!.compileCondition(this, value)} ? ${this.site(node.prestructurals[0])} : ${this.site(node.basis!)}, data, ${key})`
 		return `${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${value}, ${key})`
 	}
 
-	// a cyclic value is applied in this body, as each call deeper is one more frame data nested in itself costs
+	// a cyclic value is applied inline
 	private applyKey(key: string, value: string, node: BaseNode): this {
 		const apply =
 			node.entersResolution && node.includesAlias ?
@@ -554,7 +554,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			:	this.if("failed", () => this.return("failed"))
 	}
 
-	// Apply reports a failed condition at its site, and stops once ctx fails fast
+	// Apply reports a failed condition at its site
 	check(node: BaseNode, opts?: InvokeOptions): this {
 		const arg = opts?.arg ?? this.data
 		const condition =
@@ -596,13 +596,13 @@ export const isDecidedByAllows = (node: BaseNode): boolean => {
 	return true
 }
 
-// a basis with one refinement, whose failing child Apply reports where a parent checks it inline
+// a basis with one refinement
 export const isRefinedBasis = (node: BaseNode): node is IntersectionNode =>
 	node.hasKind("intersection") &&
 	node.basis !== null &&
 	node.children.length === 2 &&
 	node.prestructurals.length === 1
 
-// a pattern's verdict on a string never changes, so a loop's Apply can reuse the one its Allows reached
+// a pattern's verdict never changes, so Apply reuses Allows'
 const isRefinedPattern = (node: BaseNode): node is IntersectionNode =>
 	isRefinedBasis(node) && node.prestructurals[0].hasKind("pattern")
