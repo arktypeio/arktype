@@ -3932,8 +3932,11 @@ const writeParseErrorThrower = (
 ) =>
 	`import * as runtime from "arktype/runtime"\n\nfunction throwParseError(${progress ? "progress" : ""}) {\n\t${progress ? `runtime.checkProgress(progress, ${progress[0]}, ${JSON.stringify(progress[1])})\n\t` : ""}${writeFixConfig(configured)}\n\tthrow new runtime.ParseError(${JSON.stringify(message)})\n}\n\nexport { throwParseError as default }\n`
 
+// the runtime's own where no configure() call was fingerprinted
 const writeConfigFixer = (configured: Configured) =>
-	`import * as runtime from "arktype/runtime"\n\nfunction fixConfig() {\n\t${writeFixConfig(configured)}\n}\n\nexport { fixConfig as default }\n`
+	configured ?
+		`import * as runtime from "arktype/runtime"\n\nfunction fixConfig() {\n\t${writeFixConfig(configured)}\n}\n\nexport { fixConfig as default }\n`
+	:	`import { fixConfig } from "arktype/runtime"\n\nexport { fixConfig as default }\n`
 
 const writeUnitTable = (units: Record<string, string>) =>
 	`import { registerPrecompiledUnits } from "arktype/internal/precompiled.js"\n\nregisterPrecompiledUnits({ ${Object.entries(
