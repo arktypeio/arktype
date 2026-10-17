@@ -38,7 +38,7 @@ import {
 	type Rolldown
 } from "vite"
 import { startVitest } from "vitest/node"
-import { configureAfterTypeMessage } from "@ark/schema"
+import { configureAfterTypeMessage, copiedErrorMessage } from "@ark/schema"
 import {
 	writeCreatedBeforeConfigureMessage,
 	writtenConfigMessage
@@ -425,6 +425,23 @@ export const checkedItem = JSON.stringify(itemJson())
 					)
 				)
 			).equals(plain)
+		}).timeout(60000)
+
+		it(`${name} resolves arktype/errors and arktype/mutatesInput to the runtime`, async () => {
+			const bundles = await Promise.all([
+				bundle(
+					{ cwd: firstConfigured, config: "config.ts", errors: "first" },
+					firstConfigured
+				),
+				bundle(
+					{ cwd: mutatingConfigured, config: "config.ts", mutatesInput: true },
+					mutatingConfigured
+				)
+			])
+			attest(bundles.map(code => code.includes(copiedErrorMessage))).equals([
+				false,
+				false
+			])
 		}).timeout(60000)
 	}
 

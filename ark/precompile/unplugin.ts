@@ -236,8 +236,12 @@ export const precompile: UnpluginInstance<
 					{
 						filter:
 							isStandalone ?
-								/^arktype(?:\/runtime|\/internal|\/config)?$/
-							:	/^arktype\/(?:runtime|internal(?:\/precompiled\.js)?)$/
+								specifiersOf(
+									...runtimeSpecifiers,
+									"arktype/runtime",
+									"arktype/internal"
+								)
+							:	specifiersOf("arktype/runtime", ...internalSpecifiers)
 					},
 					async args => {
 						if (args.pluginData === esbuildResolution) return
@@ -276,8 +280,19 @@ export const precompile: UnpluginInstance<
 
 const esbuildResolution = "arktype"
 
-const resolvedSpecifier =
-	/^arktype(?:\/runtime|\/internal(?:\/precompiled\.js)?|\/config)?$|^~arktype\//
+const internalSpecifiers = [
+	"arktype/internal",
+	"arktype/internal/precompiled.js"
+]
+
+const specifiersOf = (...specifiers: string[]) =>
+	new RegExp(
+		`^(?:${specifiers.map(s => s.replace(/[$()*+./?[\\\]^{|}]/g, "\\$&")).join("|")})$`
+	)
+
+const resolvedSpecifier = new RegExp(
+	`${specifiersOf(...runtimeSpecifiers, "arktype/runtime", ...internalSpecifiers).source}|^~arktype\\/`
+)
 
 // each says whether a build watches, which esbuild, Bun and Farm don't
 const declaringFrameworks = {
