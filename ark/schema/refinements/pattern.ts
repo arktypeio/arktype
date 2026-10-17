@@ -1,3 +1,9 @@
+import {
+	isNumericString,
+	isWellFormedInteger,
+	numericStringMatcher,
+	wellFormedIntegerMatcher
+} from "@ark/util"
 import { BaseConstraint } from "../constraint.ts"
 import type { BaseRoot } from "../roots/root.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
@@ -57,20 +63,29 @@ const implementation: nodeImplementationOf<Pattern.Declaration> =
 		}
 	})
 
+// a function testing the strings a RegExp matches, by its expression
+const testsByExpression: { [expression: string]: (s: string) => boolean } = {
+	[`${numericStringMatcher}`]: isNumericString,
+	[`${wellFormedIntegerMatcher}`]: isWellFormedInteger
+}
+
 export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 	readonly instance: RegExp = new RegExp(this.rule, this.flags)
 	readonly expression: string = `${this.instance}`
+	readonly test: ((s: string) => boolean) | undefined =
+		testsByExpression[this.expression]
 	// g and y make test start from lastIndex, which it also advances
 	private readonly resetsLastIndex =
 		this.instance.global || this.instance.sticky
 
 	traverseAllows: (string: string) => boolean =
-		this.resetsLastIndex ?
+		this.test ??
+		(this.resetsLastIndex ?
 			string => {
 				this.instance.lastIndex = 0
 				return this.instance.test(string)
 			}
-		:	this.instance.test.bind(this.instance)
+		:	this.instance.test.bind(this.instance))
 
 	traverseApply(data: string, ctx: InternalTraversal): void {
 		if (!this.traverseAllows(data))
@@ -89,6 +104,7 @@ export class PatternNode extends BaseConstraint<Pattern.Declaration> {
 
 	// a ref rather than a literal, so a pattern the engine rejects fails its own definition
 	compileCondition(js: NodeCompiler, data: string): string {
+		if (this.test) return `${js.ref(this.test)}(${data})`
 		const instance = js.ref(this.instance)
 		return this.resetsLastIndex ?
 				`(${instance}.lastIndex = 0, ${instance}.test(${data}))`

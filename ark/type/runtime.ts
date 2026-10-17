@@ -94,7 +94,9 @@ export {
 export {
 	baseNameOf,
 	functionNameOf,
+	isNumericString,
 	isValidDate,
+	isWellFormedInteger,
 	jsTypeOfDescriptions,
 	liftArray,
 	ParseError,

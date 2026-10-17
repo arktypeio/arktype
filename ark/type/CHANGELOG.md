@@ -387,6 +387,10 @@ Checking that a `Date` is valid reads its `getTime` and calls it as a method whe
 
 Every group of `string.date.iso`'s pattern but the two its backreferences read is non-capturing, which more than halves what testing a string costs and makes its first test, which compiles it, cheaper too. It accepts the same strings, but its source is new, and with it the `expression`, `json` and JSON Schema `pattern` of `string.date.iso` and `string.date.iso.parse`'s input.
 
+### Check numeric strings by their characters
+
+`string.numeric` and `string.integer`, and the inputs of their `parse` morphs, check a string by reading its characters rather than testing it against their patterns, which accepts the same strings with about a third of the instructions, so parsing the benchmark's array of 100 objects with a `string.numeric.parse` property runs 1.5x fewer instructions. Their patterns are unchanged, as are their `expression`, `json` and JSON Schema. Any pattern with either source, like `numericStringMatcher` from `@ark/util`, is checked the same way, as are `@ark/util`'s `isNumericString` and `isWellFormedInteger`, which now read only strings. A pattern node holds such a function as `test`.
+
 ### Call narrows and morphs without a receiver when jitless
 
 A narrow's predicate was called with its node as `this` when jitless, and a Type whose morphs need no `ctx` called them with its morphs array as `this`. Both are now called as compiled code calls them, with `this` undefined.

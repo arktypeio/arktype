@@ -46,7 +46,42 @@ export const numericStringMatcher: RegExp =
 	// eslint-disable-next-line unicorn/better-regex
 	/^(?:(?!^-0\.?0*$)(?:-?(?:(?:0|[1-9]\d*)(?:\.\d+)?)|\.\d+?))$/
 
-export const isNumericString: RegExp["test"] = s => numericStringMatcher.test(s)
+const isDigitCode = (code: number) => code >= 48 && code <= 57
+
+// numericStringMatcher's language, read without the RegExp
+export const isNumericString = (s: string): boolean => {
+	const length = s.length
+	if (length === 0) return false
+	let i = 0
+	let code = s.charCodeAt(0)
+	const isNegative = code === 45
+	if (isNegative) {
+		if (length === 1) return false
+		code = s.charCodeAt(++i)
+	}
+	// whether each digit so far is 0, since "-0" and "-0.0" are excluded
+	let isZero = true
+	if (code === 48) {
+		if (++i === length) return !isNegative
+		code = s.charCodeAt(i)
+	} else if (code > 48 && code <= 57) {
+		isZero = false
+		while (++i < length) {
+			code = s.charCodeAt(i)
+			if (!isDigitCode(code)) break
+		}
+		if (i === length) return true
+	} else if (isNegative || code !== 46) return false
+	if (code !== 46 || ++i === length) return false
+	for (; i < length; i++) {
+		code = s.charCodeAt(i)
+		if (code !== 48) {
+			if (!isDigitCode(code)) return false
+			isZero = false
+		}
+	}
+	return !(isNegative && isZero)
+}
 
 export const numberLikeMatcher = /^-?\d*\.?\d*$/
 const isNumberLike = (s: string) => s.length !== 0 && numberLikeMatcher.test(s)
@@ -60,8 +95,17 @@ export const wellFormedIntegerMatcher: RegExp =
 	// eslint-disable-next-line unicorn/better-regex
 	/^(?:(?!^-0$)-?(?:(?:0|[1-9]\d*)))$/
 
-export const isWellFormedInteger: RegExp["test"] = s =>
-	wellFormedIntegerMatcher.test(s)
+// wellFormedIntegerMatcher's language, read without the RegExp
+export const isWellFormedInteger = (s: string): boolean => {
+	const length = s.length
+	let i = s.charCodeAt(0) === 45 ? 1 : 0
+	const code = s.charCodeAt(i)
+	// 0 is the one integer starting with 0, and "-0" is excluded
+	if (code === 48) return length === 1
+	if (!(code > 48 && code <= 57)) return false
+	while (++i < length) if (!isDigitCode(s.charCodeAt(i))) return false
+	return true
+}
 
 export const integerLikeMatcher = /^-?\d+$/
 const isIntegerLike = (s: string) => integerLikeMatcher.test(s)

@@ -443,6 +443,10 @@ importers:
       '@ark/util':
         specifier: workspace:*
         version: link:../util
+    devDependencies:
+      fast-check:
+        specifier: 3.23.2
+        version: 3.23.2
 
   ark/sets:
     dependencies:
