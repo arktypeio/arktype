@@ -104,15 +104,15 @@ type validateInferredAst<inferred, def extends string> =
 	: undefined
 
 export type validateString<def extends string, $, args> =
-	parseString<def, $, args> extends infer ast ?
-		validateAst<ast, $, args> extends infer result extends ErrorMessage ?
-			// completions have the same suffix as error messages as a sentinel
-			// but don't want to include that in what TS suggests
-			result extends Completion<infer text> ?
-				text
-			:	result
-		:	def
-	:	never
+	validateAst<parseString<def, $, args>, $, args> extends (
+		infer result extends ErrorMessage
+	) ?
+		// completions have the same suffix as error messages as a sentinel
+		// but don't want to include that in what TS suggests
+		result extends Completion<infer text> ?
+			text
+		:	result
+	:	def
 
 type validateInfix<ast extends array, $, args> =
 	validateAst<ast[0], $, args> extends infer e extends ErrorMessage ? e
