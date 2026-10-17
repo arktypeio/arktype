@@ -399,6 +399,10 @@ Every group of `string.date.iso`'s pattern but the two its backreferences read i
 
 A pattern of one character, escape or class repeated without bound, like `/^[ab]+$/`, `string.alpha` or `string.hex`, matches a string of 16 or more characters with a sticky copy of itself, which accepts the string if as many characters as it can match from the start reach its end. A string failing near its end is no longer matched again from each position before it, so checking a 10,000-character one runs about half the instructions. A pattern with the `m`, `v`, `g` or `y` flag or a lazy quantifier is tested as before, as is any string shorter than 16.
 
+### Ask whether data has a required key before copying it
+
+A transform that copies an object asks whether the object has its first required key before reading its prototype, which lets that read run without a call into the engine after a nested transform. Parsing the benchmark's moltar data with its morphs runs about 31% fewer instructions. A `Proxy`'s `has` trap runs once more for data that's copied.
+
 ### Read `File` from `platformConstructors` when it's used
 
 `@ark/util`'s `platformConstructors.File` and `builtinConstructors.File` are getters, as `FormData`, `Headers`, `Request` and `Response` are, returning `globalThis.File`, or `Blob` where it's missing, each time they're read. Code that checks an object's kind, like a standalone validator copying an object, no longer has Node load its `File` module as it's imported, and a `File` installed after import is the one they return.

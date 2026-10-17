@@ -1093,9 +1093,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			:	js.set(
 					"out",
-					`Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
+					`${this.compileShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
 				)
 		)
+	}
+
+	// copyOf copies data alike when its first required key isn't in it
+	private compileShapeCheck(js: NodeCompiler): string {
+		return this.required ?
+				`${js.serialize(this.required[0].key)} in data && `
+			:	""
 	}
 
 	private compileCopiedDeclaredKeys(js: NodeCompiler): NodeCompiler {
