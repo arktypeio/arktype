@@ -16,8 +16,7 @@ export class ArkFirstIssueTraversal extends ArkTraversal {
 	}
 
 	override finalize(onFail?: FailHandler | null): unknown {
-		const errors = this._errors?._
-		if (errors && errors.length > 1) errors.length = 1
+		this._errors?._.splice(1)
 		return super.finalize(onFail)
 	}
 }
@@ -28,25 +27,19 @@ export class ArkFirstIssueTraversal extends ArkTraversal {
  */
 export class UndetailedErrors extends ArkErrors {
 	override get issues(): readonly ArkError[] {
-		return this._.reduce(
-			(issues, issue) => ((issue.message ??= "is invalid"), issues),
-			this._
-		)
+		for (const issue of this._) issue.message ??= "is invalid"
+		return this._
 	}
 
 	override get summary(): string {
-		return this._.reduce(
-			(summary, issue) =>
-				summary + (summary && "\n") + (issue.message ?? "is invalid"),
-			""
-		)
+		return this.issues.map(issue => issue.message).join("\n")
 	}
 
 	override toLocaleString(): string {
 		return this.summary
 	}
 
-	// merged into arktype's errors as a standalone validator's issues are
+	// arktype's grouped issues, which merging reads
 	override get _issues(): ArkError[] {
 		return this.issues.map(issue =>
 			errorOfIssue(issue, [], $ark.resolvedConfig!)
@@ -68,20 +61,19 @@ export class UndetailedTraversal extends Traversal {
 
 const undetailedPrototype = UndetailedErrors.prototype
 
-// errors "none" in place of applyRejected, which would apply node
+// errors "none" in place of applyRejected; node is unused
 export const rejectUndetailed = (
 	node: unknown,
 	data: unknown,
 	config: ResolvedConfig,
 	onFail: FailHandler | null | undefined
 ): unknown => {
-	// one issue at the root reads none of the fields a constructor sets
+	// no constructor: one root issue needs none of its fields
 	const errors: UndetailedErrors = Object.create(undetailedPrototype)
 	errors._ = [{ code: "predicate", path: [], data } as never]
 	return onFail ? onFail(errors as never) : errors
 }
 
-// what a root apply reads in place of rootApplyRuntime, by its errors
 $ark.errorModes = {
 	first: { ...rootApplyRuntime, Traversal: ArkFirstIssueTraversal },
 	none: {
