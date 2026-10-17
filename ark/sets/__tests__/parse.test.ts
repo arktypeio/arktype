@@ -1,26 +1,8 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema, type StandardJSONSchemaV1 } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import { parse, toJsonSchema } from "arksets"
 import { writeUnparsableSchemaMessage } from "arksets/internal"
-
-// stands in for a zod schema, which reads its JSON Schema the same way
-const standardSchema = (
-	input: object,
-	output: object = input
-): StandardJSONSchemaV1 & { targets: string[] } => {
-	const targets: string[] = []
-	return {
-		targets,
-		"~standard": {
-			version: 1,
-			vendor: "zod",
-			jsonSchema: {
-				input: opts => (targets.push(opts.target), input as never),
-				output: opts => (targets.push(opts.target), output as never)
-			}
-		}
-	}
-}
+import { standardSchema } from "./utils.ts"
 
 contextualize(() => {
 	it("reads a Root's input by default and its output with io", () => {

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { rootSchema, type StandardJSONSchemaV1 } from "@ark/schema"
+import { rootSchema } from "@ark/schema"
 import {
 	discriminate,
 	intersect,
@@ -9,18 +9,7 @@ import {
 	parse,
 	union
 } from "arksets"
-
-// stands in for a zod schema, which reads its JSON Schema the same way
-const standardSchema = (jsonSchema: object): StandardJSONSchemaV1 => ({
-	"~standard": {
-		version: 1,
-		vendor: "zod",
-		jsonSchema: {
-			input: () => jsonSchema as never,
-			output: () => jsonSchema as never
-		}
-	}
-})
+import { standardSchema } from "./utils.ts"
 
 // what arktype parses { name: "string", "age?": "number.integer >= 0" } to
 const User = rootSchema({

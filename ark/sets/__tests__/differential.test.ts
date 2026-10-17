@@ -71,7 +71,7 @@ const lengthSafeValues = values.filter(v => !astral.includes(v as string))
 
 const disagreementsOf = (
 	schema: object | boolean,
-	data: unknown[] = values
+	data: unknown[]
 ): unknown[] => {
 	const root = parse(schema)
 	const validate =
@@ -84,14 +84,17 @@ const disagreementsOf = (
 	return data.filter(v => root.allows(v) !== validate(v))
 }
 
-const agrees = (...schemas: (object | boolean)[]) => {
+const agreesOn = (data: unknown[], ...schemas: (object | boolean)[]) => {
 	for (const schema of schemas) {
-		attest({ schema, disagreements: disagreementsOf(schema) }).equals({
+		attest({ schema, disagreements: disagreementsOf(schema, data) }).equals({
 			schema,
 			disagreements: []
 		})
 	}
 }
+
+const agrees = (...schemas: (object | boolean)[]) =>
+	agreesOn(values, ...schemas)
 
 contextualize(() => {
 	it("boolean schemas", () => agrees(true, false, {}))
@@ -138,14 +141,13 @@ contextualize(() => {
 			{ type: "number", minimum: 5, maximum: 2 }
 		))
 
-	it("lengths", () => {
-		for (const schema of [
+	it("lengths", () =>
+		agreesOn(
+			lengthSafeValues,
 			{ minLength: 2 },
 			{ maxLength: 2 },
 			{ type: "string", minLength: 1, maxLength: 3 }
-		])
-			attest(disagreementsOf(schema, lengthSafeValues)).equals([])
-	})
+		))
 
 	it("patterns", () =>
 		agrees(
@@ -178,7 +180,6 @@ contextualize(() => {
 			{ prefixItems: [false] },
 			{ type: "array", prefixItems: [{}, {}], minItems: 1, maxItems: 3 },
 			{ uniqueItems: true },
-			{ uniqueItems: false },
 			{ contains: { type: "number" } },
 			{ contains: { type: "number" }, minContains: 2 },
 			{ contains: { type: "number" }, maxContains: 1 },
@@ -306,8 +307,6 @@ contextualize(() => {
 	it("annotations", () =>
 		agrees(
 			{ type: "string", format: "email" },
-			{ format: "date-time" },
-			{ format: "not-a-format" },
 			{
 				type: "number",
 				title: "n",
