@@ -377,7 +377,7 @@ An `@ark/schema` node's `traverseAllows`, `traverseApply` and `traverseTransform
 
 ### List fewer of a node's own keys
 
-An `@ark/schema` node's own enumerable keys no longer list what it derives from its kind and inner, nor what it memoizes as it's read, which is kept on its `cache`: the `includes*` flags, `isCyclic`, `allowsRequiresContext`, `innerEntries`, `metaJson` and `precedence`; a range's `boundOperandKind`, `comparator`, `numericLimit` and `limitKind`; a prop's `required`, `optional`, `serializedKey` and `compiledKey`; and a structure's `propsByKey`, `requiredKeys`, `optionalKeys` and `literalKeys`. Each reads as it did, by the same name, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
+An `@ark/schema` node's own enumerable keys no longer list what it derives from its kind and inner, nor what it memoizes as it's read, which is kept on its `cache`: the `includes*` flags, `isCyclic`, `allowsRequiresContext`, `innerEntries`, `metaJson` and `precedence`; a range's `boundOperandKind`, `comparator`, `numericLimit` and `limitKind`; a prop's `required`, `optional`, `serializedKey` and `compiledKey`; a structure's `propsByKey`, `requiredKeys`, `optionalKeys` and `literalKeys`; and a node's `assert` and a root's `pipe`, each created when first read and the same function from then on. Each reads as it did, by the same name, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
 
 ### Read a `Date`'s `getTime` when checking it
 

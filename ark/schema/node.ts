@@ -140,6 +140,8 @@ class NodeCache {
 	rawIn: BaseNode | undefined
 	finalizedOut: unknown
 	rawOut: BaseNode | undefined
+	assert: ((data: any, pipedFromCtx?: Traversal) => unknown) | undefined
+	pipe: BaseRoot["pipe"] | undefined
 	declare onFail: ArkErrors.Handler | null
 	declare rootApply?: RootApply
 	declare applyInPlace?: TraverseApply
@@ -711,10 +713,12 @@ export abstract class BaseNode<
 		return this.compiledUnit?.toString()
 	}
 
-	// defined as an arrow function since it is often detached, e.g. when passing to tRPC
-	// otherwise, would run into issues with this binding
-	assert = (data: d["prerequisite"], pipedFromCtx?: Traversal): unknown =>
-		this(data, pipedFromCtx, throwOnFail)
+	// an arrow function, created when first read, since it is often detached,
+	// e.g. when passing to tRPC
+	get assert(): (data: d["prerequisite"], pipedFromCtx?: Traversal) => unknown {
+		return (this.cache.assert ??= (data, pipedFromCtx) =>
+			this(data, pipedFromCtx, throwOnFail))
+	}
 
 	traverse(
 		data: d["prerequisite"],

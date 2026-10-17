@@ -457,9 +457,14 @@ export abstract class BaseRoot<
 		return this.$.finalize(result)
 	}
 
-	pipe = Object.assign(this._pipe.bind(this), {
-		try: this.tryPipe.bind(this)
-	})
+	// bound when first read, since it can be detached
+	get pipe(): ((...morphs: Morph[]) => BaseRoot) & {
+		try: (...morphs: Morph[]) => BaseRoot
+	} {
+		return (this.cache.pipe ??= Object.assign(this._pipe.bind(this), {
+			try: this.tryPipe.bind(this)
+		}))
+	}
 
 	to(def: unknown): BaseRoot {
 		return this.$.finalize(this.toNode(this.$.parseDefinition(def)))
