@@ -83,16 +83,16 @@ import {
 } from "./scope.ts"
 
 export interface InterpreterOptions {
-	// ship arktype and precompile only the code it compiles, rather than folding every arktype expression into a validator
+	// ship arktype, precompiling only the code it compiles
 	runtime?: "arktype" | undefined
 }
 
-export type InputRoot =
+type InputRoot =
 	| {
 			kind: "export"
 			file: string
 			name: string
-			// the module importing it from the module declaring it, rather than through another's re-export
+			// the module importing it from its declaring module, not a re-export
 			importer?: SourceModule | undefined
 	  }
 	| { kind: "binding"; module: SourceModule; binding: Binding }
@@ -107,25 +107,25 @@ export interface Trace {
 	reads: Read[]
 	// each function the build interprets a call to
 	helpers: [FunctionNode, SourceModule][]
-	// each function read from another module's export, which a test runner's module mock can replace
+	// each function read from another module's export, which a mock can replace
 	exportedFunctions: Read[]
-	// each binding of a module's top level the site can read before the module sets it, and the function reading it
+	// each top-level binding the site can read before it's set, and its reader
 	readFirst: [binding: Binding, module: SourceModule, reader: string][]
 }
 
-export interface Environment {
+interface Environment {
 	valuesByBinding: Map<Binding, unknown>
 	parent: Environment | undefined
 }
 
-export interface Closure {
+interface Closure {
 	node: FunctionNode
 	module: SourceModule
 	env: Environment | undefined
 	name: string
 }
 
-export interface StandIn {
+interface StandIn {
 	kind: "function" | "class" | "opaque"
 	module: SourceModule
 	node: Node
@@ -134,32 +134,50 @@ export interface StandIn {
 	// the parameter count arktype reads as `length`, if a declaration gives it
 	arity: number | undefined
 	isCalled: boolean
-	// by code arktype runs while defining a type, like a description writer, whose result the artifact can't bake from a function it receives at runtime
+	// by code arktype runs while defining a type, like a description writer
 	isCalledIndirectly: boolean
 	isDefinition: boolean
 }
 
-export type Reached = DefaultCheck | ScopeAlias
+const createStandIn = (
+	kind: StandIn["kind"],
+	module: SourceModule,
+	node: Node,
+	init?: Partial<StandIn>
+): StandIn => ({
+	kind,
+	module,
+	node,
+	closure: undefined,
+	dynamic: undefined,
+	arity: undefined,
+	isCalled: false,
+	isCalledIndirectly: false,
+	isDefinition: false,
+	...init
+})
+
+type Reached = DefaultCheck | ScopeAlias
 
 export interface SiteState {
 	node: Node
 	module: SourceModule
 	trace: Trace
-	// each outermost expression in the site's source that evaluates to a hole or a Type it reads
+	// each outermost expression evaluating to a hole or a Type the site reads
 	readsByValue: Map<unknown, Node[]>
-	// each member the site reads of a Type, Scope or Generic, which a standalone build replaces with a value without it
+	// reads of members a standalone validator lacks
 	unavailableReads: Node[]
 	holes: unknown[]
 	interpreted: Set<Node>
 	// each call into arktype's API
 	requests: [Node, SourceModule][]
-	// each receiver and argument of those calls, and each object whose getter the site runs, whose holes a ParseError can print
+	// each value passed to arktype, whose holes a ParseError can print
 	arktypeArguments: unknown[]
-	// each default check arktype deferred and Scope alias it resolved, directly or in computing what a cache returned, in the order the site reached them
+	// default checks and Scope aliases reached, in order
 	reached: Reached[]
 	// each Type a request returned
 	roots: BaseRoot[]
-	// e.g. `User` and "json" for `User.json`, which a standalone build folds to what arktype returns
+	// e.g. `User` and "json" for `User.json`, which a standalone build folds
 	introspection:
 		| Pick<StandaloneIntrospection, "member" | "type" | "thrown">
 		| undefined
@@ -194,7 +212,7 @@ export interface Context {
 	env: Environment | undefined
 	trace: Trace
 	site: SiteState | undefined
-	// the site or declaration being evaluated, which runs before bindings declared after it are initialized
+	// the site or declaration being evaluated
 	origin: { module: SourceModule; node: Node } | undefined
 	depth: number
 }
@@ -234,7 +252,7 @@ const receivedNameProblem = (label: string) =>
 const outsideContentProblem =
 	"is not a documented member its content alone decides, so it can depend on registry names or node ids"
 
-// e.g. `T.json` at a site of its own, which folds to the data arktype returns unless it prints a registry name
+// e.g. `T.json` at its own site, folded unless it prints a registry name
 const isIntrospectionRead = (
 	object: unknown,
 	key: PropertyKey,
@@ -260,29 +278,29 @@ const holdsNodeId = (node: BaseNode, key: string) =>
 	node.hasKind("alias") && (key === "reference" || key === "inner")
 
 export class Interpreter {
-	graph: ModuleGraph
-	opts: InterpreterOptions
+	private graph: ModuleGraph
+	private opts: InterpreterOptions
 	sitesByNode = new Map<Node, SiteState>()
 	standIns = new WeakMap<object, StandIn>()
-	// the site whose own call into arktype threw each ParseError, which only that site can fold to a thrower
+	// the site whose own call into arktype threw each ParseError
 	parseErrorSites = new WeakMap<ParseError, SiteState>()
-	// each default check deferred by the node whose creation ran it, which a site the node cache returns it to reaches
+	// deferred default checks by the node whose creation ran them
 	private checksByOwner = new Map<object, DefaultCheck[]>()
 	// what computing each cache entry reached, by cache and key
 	private reachedByEntry = new WeakMap<object, Map<unknown, Set<Reached>>>()
 	private aliasesByScope = new WeakMap<object, Map<string, ScopeAlias>>()
 	sourcesBySymbol = new Map<symbol, [Node, SourceModule]>()
-	// what each function, class or symbol expression or configure() call outside a call evaluated to, which every evaluation of it reuses
+	// values reused by every evaluation of the expression creating them
 	private standInsByNode = new Map<Node, object>()
 	private symbolsByNode = new Map<Node, symbol>()
 	private configurationsByNode = new Map<Node, unknown>()
 	private valuesByBinding = new Map<Binding, Evaluated | "evaluating">()
 	private valuesByNode = new Map<Node, Evaluated>()
-	// unknown values a declaration computes, which it computes at runtime however a site uses them
+	// unknown values a declaration computes at runtime however a site uses them
 	private declaredDynamics = new WeakSet<DynamicValue>()
 	// a site reading one receives it, so its declaration runs
-	comparedAtCreation = new WeakSet<object>()
-	// a site reading only the introspection of one checked at creation receives it, so its declaration runs
+	private comparedAtCreation = new WeakSet<object>()
+	// a site reading only introspection of one checked at creation receives it
 	private checksByValue = new WeakMap<object, boolean>()
 	private modulesByValue = new WeakMap<object, SourceModule[]>()
 	private opaqueByDynamic = new WeakMap<DynamicValue, object>()
@@ -291,11 +309,11 @@ export class Interpreter {
 	private opaqueStandInsByValue = new WeakMap<object, StandIn>()
 	private admitted = new WeakSet<object>()
 	standInsByName = new Map<string, StandIn>()
-	// whether arktype made the innermost native call, and whether it made any, so that it is defining a type
+	// whether arktype made the innermost native call, and whether any
 	private activeCall:
 		| { ctx: Context; isArktype: boolean; isDefining: boolean }
 		| undefined
-	// what the stand-ins arktype calls outside any site read, e.g. a configured fallback writing a validator's JSON Schema
+	// the trace of stand-ins arktype calls outside a site
 	private looseTrace: Trace | undefined
 
 	private registerSites: ((module: SourceModule) => unknown) | undefined
@@ -310,7 +328,7 @@ export class Interpreter {
 		this.registerSites = registerSites
 	}
 
-	// arktype can print what any value it is passed holds, by any route: a Type's holes, a Module's Types, a Scope's aliases, a Generic's definition
+	// each hole arktype could print from a value
 	holesIn(
 		value: unknown,
 		holes = new Set<unknown>(),
@@ -370,9 +388,9 @@ export class Interpreter {
 		return site
 	}
 
-	evaluate(node: Node, ctx: Context): unknown {
+	private evaluate(node: Node, ctx: Context): unknown {
 		const site = ctx.env ? undefined : this.sitesByNode.get(node)
-		// a definition nested in the site is part of it, so its holes and inputs are the site's
+		// a definition nested in the site is part of it
 		if (
 			site &&
 			site !== ctx.site &&
@@ -405,7 +423,7 @@ export class Interpreter {
 				typeof value === "symbol" ||
 				value instanceof DynamicValue ||
 				(hasDomain(value, "object") && this.standIns.has(value)) ||
-				// a Type, Module, Scope or Generic the site reads, which its factory receives to take the holes it holds
+				// a Type, Module, Scope or Generic the site reads, received by its factory
 				(isReference(node) &&
 					(hasArkKind(value, "root") ||
 						hasArkKind(value, "scope") ||
@@ -424,7 +442,7 @@ export class Interpreter {
 		ctx.site.readsByValue.set(value, reads)
 	}
 
-	// a factory receives a read as its text at the site, so the text must evaluate there to what the read did
+	// a factory receives a read as its text, which must evaluate alike there
 	private isPassable(node: Node, site: SiteState): boolean {
 		if (
 			site.unavailableReads.some(read => contains(node, read)) ||
@@ -631,7 +649,7 @@ export class Interpreter {
 		return result
 	}
 
-	// a site that drops an unknown value it computed would leave out the computation, perhaps a call that throws
+	// a site dropping an unknown value would drop its computation too
 	private overwriteProblem(
 		result: Record<PropertyKey, unknown>,
 		key: PropertyKey,
@@ -772,7 +790,7 @@ export class Interpreter {
 			return { value: this.evaluate(node, ctx) }
 		const base = this.evaluateReference(node.object, ctx)
 		if (base.value === shortCircuit || isDynamic(base.value)) return base
-		// a factory receives the Type, Scope or Generic itself where it can't receive the member read, as `$` in `$.type.or("a", "b")`
+		// e.g. `$` in `$.type.or("a", "b")`
 		if (
 			hasArkKind(base.value, "root") ||
 			hasArkKind(base.value, "scope") ||
@@ -787,7 +805,7 @@ export class Interpreter {
 		if (isDynamic(key)) return { value: key }
 		const value = this.readMember(base.value, key, node, ctx)
 		if (!base.read) return { value }
-		// a read stops at a Type whose validator lacks the member, so the site compares the Type, and later members see `base.read.value !== base.value`
+		// a read stops at a Type whose validator lacks the member
 		if (
 			base.read.value !== base.value ||
 			(lacksMember(base.value, key) && this.isReadThrough(ctx.site))
@@ -799,7 +817,7 @@ export class Interpreter {
 		}
 	}
 
-	// e.g. `T.in.json` or `T.internal.expression`, but not a bare `T.internal`, off which the program can read unseen what a validator lacks, so its factory checks `T.internal` and throws
+	// e.g. `T.in.json`, but not a bare `T.internal`
 	private isReadThrough(site: SiteState | undefined): boolean {
 		if (!site) return false
 		const { node, module } = site
@@ -834,7 +852,7 @@ export class Interpreter {
 	private consume(lookup: Lookup, ctx: Context): unknown {
 		const { value, read } = lookup
 		if (!read || isDynamic(value)) return value
-		// a function the program declares is read from a binding only where it may not be set yet
+		// a declared function is read from a binding only where it may be unset
 		if (
 			!(hasDomain(value, "object") && this.standIns.has(value)) ||
 			(read.root.kind === "binding" && !read.path.length)
@@ -887,7 +905,7 @@ export class Interpreter {
 			}
 		}
 		const isForeign = !!ctx.origin && ctx.origin.module !== module
-		// e.g. through a function another module calls, which runs where that module's site does
+		// e.g. through a function another module calls
 		const readAt =
 			isForeign ? node
 			: ctx.origin && contains(binding.scope.node, ctx.origin.node) ?
@@ -899,7 +917,7 @@ export class Interpreter {
 			readsFirst(readAt, binding, module)
 		const result = this.bindingValue(binding, module)
 		if (result.error !== undefined) throw result.error
-		// a `var` is `undefined` until set, which `V ?? "string"` reads past, so a Type read first is checked only where reading `undefined` throws
+		// `V ?? x` reads an unset `var` without throwing
 		if (
 			isReadFirst &&
 			binding.kind === "var" &&
@@ -942,13 +960,13 @@ export class Interpreter {
 		if (!isArkValue(result.value) || readsAgain(result.value))
 			mergeTrace(ctx.trace, result.trace)
 		else {
-			// arktype values cannot change, so one read where the binding was declared, like an import behind an alias, holds at the site
+			// arktype values are immutable, so their reads hold at the site
 			for (const read of result.trace.reads)
 				if (isArkValue(read.value)) ctx.trace.reads.push(read)
-			// unless the declaration compares what the program holds, which runs only if a bundler keeps it for the site
+			// unless the declaration compares what the program holds
 			isReceived = this.comparedAtCreation.has(result.value as object)
 		}
-		// a binding a block or function declares, or its step sets before it ends, is received, whose factory throws reading it unset as the program does
+		// a binding read before it's set is received, so its factory throws alike
 		const isChecked =
 			isReadFirst &&
 			binding.scope.node === module.program &&
@@ -1144,7 +1162,7 @@ export class Interpreter {
 			read => read.root.kind === "binding" || !isArkValue(read.value)
 		)
 		if (compares) this.comparedAtCreation.add(value as object)
-		// a default's check calls the functions it reads as the value is created, the module's own too, as its factory does
+		// a default's check calls the functions it reads at creation
 		const checks =
 			compares ||
 			!!site?.reached.some(reached => reached.length === 3) ||
@@ -1172,12 +1190,12 @@ export class Interpreter {
 		module: SourceModule
 	): boolean {
 		try {
-			// with what arktype was passed but doesn't hold, as a narrow it called on a literal, whose kind it checked too
+			// with what arktype was passed but doesn't hold
 			return [...this.holesIn(value), ...(site?.holes ?? [])].some(hole =>
 				this.checksHole(site, hole, module)
 			)
 		} catch (e) {
-			// e.g. a Scope configured by a parameter, which the build can't key, so neither can a site reading it
+			// e.g. a Scope configured by a parameter, which the build can't key
 			if (e instanceof DynamicValue) return true
 			throw e
 		}
@@ -1188,7 +1206,7 @@ export class Interpreter {
 		return this.checksByValue.get(value as object) ?? true
 	}
 
-	// unless a site reads it as its module's own or through a Type whose creation checks nothing
+	// unless a site reads it as its module's own or through an unchecked Type
 	private checksHole(
 		site: SiteState | undefined,
 		hole: unknown,
@@ -1208,7 +1226,7 @@ export class Interpreter {
 		return true
 	}
 
-	// one its module creates where the site reads it, which is the same wherever that module runs
+	// one its module creates where the site reads it
 	isOwnHole(read: Node, value: unknown, module: SourceModule): boolean {
 		const [source, origin] = this.sourceOf(value) ?? []
 		if (
@@ -1404,7 +1422,7 @@ export class Interpreter {
 		}
 	}
 
-	readMember(
+	private readMember(
 		object: unknown,
 		key: PropertyKey,
 		node: Node,
@@ -1461,7 +1479,7 @@ export class Interpreter {
 		}
 		if (object instanceof Date || object instanceof RegExp)
 			return this.notOwnData(node, ctx)
-		// a member the standalone value lacks makes the site its own, which the build then refuses if it can't serve the read
+		// a member the validator lacks makes the site its own
 		if (
 			ctx.site &&
 			ctx.module === ctx.site.module &&
@@ -1481,7 +1499,7 @@ export class Interpreter {
 				type: object as BaseRoot
 			}
 		} else if (members) {
-			// their other members, like a node's `trackedId` or a Scope's `name`, can depend on the order arktype created things
+			// other members can depend on the order arktype created things
 			if (
 				typeof key !== "string" ||
 				(isNode(object) && holdsNodeId(object, key)) ||
@@ -1498,7 +1516,7 @@ export class Interpreter {
 			!hasArkKind(object, "module")
 		)
 			return this.reject(node, ctx, unstableArkProblem)
-		// a getter is a call into arktype, which can throw a ParseError over what the object holds
+		// a getter is a call into arktype, which can throw a ParseError
 		ctx.site?.arktypeArguments.push(object)
 		let read
 		try {
@@ -1507,7 +1525,7 @@ export class Interpreter {
 			this.claimParseError(e, ctx)
 			throw e
 		}
-		// a site reading a Type's expression or description folds to a factory printing the names of the functions it receives
+		// prints the names of the functions its factory receives
 		const value =
 			isIntrospected && key !== "json" ? read : this.admit(read, node, ctx)
 		if (isDynamic(value)) return value
@@ -1649,7 +1667,7 @@ export class Interpreter {
 		return isValidator(fn) || this.validators.has(fn) ? "validator" : "arktype"
 	}
 
-	call(
+	private call(
 		fn: unknown,
 		receiver: unknown,
 		args: unknown[],
@@ -1693,7 +1711,7 @@ export class Interpreter {
 		)
 	}
 
-	// what arktype's configure() returns: its configuration, with what it receives merged in
+	// what configure() returns: its configuration merged with what it receives
 	configurationOf(call: Node, received: unknown, ctx?: Context): unknown {
 		const cached = !ctx?.env && this.configurationsByNode.get(call)
 		if (cached) return cached
@@ -1702,7 +1720,7 @@ export class Interpreter {
 		return result
 	}
 
-	// interpreted code reaches native code only here, where each builtin declares where it takes an object rather than converting it
+	// the one path from interpreted to native code
 	private callNative(
 		fn: Function,
 		args: unknown[],
@@ -1713,7 +1731,7 @@ export class Interpreter {
 	): unknown {
 		const dynamic = findDynamic([receiver, ...args])
 		if (dynamic) return dynamic
-		// as esbuild's keepNames does under tsx, while a standalone artifact receives the function's name at creation anyway
+		// esbuild's keepNames under tsx
 		if (fn === Object.defineProperty && !isNew && this.isNaming(args, ctx))
 			return args[0]
 		const builtin = (isNew ? pureConstructors : pureBuiltins).get(fn)
@@ -1747,7 +1765,6 @@ export class Interpreter {
 			:	(builtin.check?.(args, receiver) ??
 				this.conversionOf(builtin, args, receiver))
 		if (problem) return this.reject(node, ctx, problem)
-
 		let result: unknown
 		const previous = this.activeCall
 		this.activeCall = {
@@ -1863,7 +1880,7 @@ export class Interpreter {
 				this.opaqueStandInsByValue.set(result, opaque)
 			return result
 		} catch (e) {
-			// what arktype throws over a stand-in says nothing of the value it stands in for
+			// what arktype throws over a stand-in says nothing of its value
 			if (opaque && !isDynamic(e)) {
 				throw this.reject(
 					node,
@@ -1873,7 +1890,7 @@ export class Interpreter {
 				)
 			}
 			const introspection = ctx.site?.node === node && ctx.site.introspection
-			// a site of its own writing a JSON Schema arktype can't throws what arktype does at each call, unless that names a function it doesn't receive
+			// a JSON Schema arktype can't write throws at each call instead
 			if (
 				introspection &&
 				introspection.member === "toJsonSchema" &&
@@ -1930,7 +1947,7 @@ export class Interpreter {
 			this.activeCall?.ctx.site?.reached.push(reached)
 		},
 		mark: () => this.activeCall?.ctx.site?.reached.length,
-		// an entry computed again, as an alias resolved once its references are, reaches what each computation did
+		// an entry computed again reaches what each computation did
 		store: (mark, cache, key) => {
 			const reached = this.activeCall?.ctx.site?.reached
 			if (mark === undefined || !reached || reached.length === mark) return
@@ -1942,7 +1959,7 @@ export class Interpreter {
 		}
 	}
 
-	// e.g. a narrow or a writer, which checking a default would call, so the site couldn't pass it to its factory
+	// e.g. a narrow or a writer, which checking a default would call
 	private holdsStandIn(root: BaseRoot): boolean {
 		return [root, ...root.references].some(node =>
 			[
@@ -1969,7 +1986,7 @@ export class Interpreter {
 		}
 	}
 
-	toArktype(value: unknown): unknown {
+	private toArktype(value: unknown): unknown {
 		if (isDynamic(value)) {
 			if (!value.isOpaque) return value
 			let opaque = this.opaqueByDynamic.get(value)
@@ -2010,7 +2027,6 @@ export class Interpreter {
 	): unknown {
 		if (ctx.depth > maxDepth)
 			return this.reject(node, ctx, "nests static helper calls too deeply")
-
 		const callCtx: Context = {
 			...ctx,
 			module: closure.module,
@@ -2024,7 +2040,7 @@ export class Interpreter {
 				this.destructure(param.argument, args.slice(i), callCtx)
 			else this.destructure(param, args[i], callCtx)
 		}
-		pushUnique(ctx.trace.helpers, closure.node, closure.module)
+		addHelper(ctx.trace.helpers, closure.node, closure.module)
 		if (ctx.site && closure.module === ctx.site.module)
 			ctx.site.interpreted.add(closure.node)
 		return this.evaluate(staticBodyOf(closure.node)!, callCtx)
@@ -2046,7 +2062,7 @@ export class Interpreter {
 		return this.callNative(callee as Function, args, undefined, node, ctx, true)
 	}
 
-	// a standalone artifact prints a hole's name at creation, so the build names it by a placeholder it can find in what arktype prints, led by the name its declaration gives it, which arktype sorts by
+	// a placeholder led by the declared name, which arktype sorts by
 	private holeNameOf(node: Node, module: SourceModule, name?: string): string {
 		return this.opts.runtime === "arktype" ?
 				""
@@ -2058,7 +2074,7 @@ export class Interpreter {
 	}
 
 	private functionStandIn(closure: Closure, node: Node): object {
-		// the build can evaluate an expression the program runs once more than once, but it must stand in for the same value
+		// one stand-in per expression, however often it's evaluated
 		const evaluated = !closure.env && this.standInsByNode.get(closure.node)
 		if (evaluated) return evaluated
 		const arity = parameterCount(closure.node)
@@ -2067,27 +2083,15 @@ export class Interpreter {
 			closure.module,
 			declaredNameOf(closure.node)
 		)
-		const standIn: StandIn = {
-			kind: "function",
-			module: closure.module,
-			node,
+		const standIn = createStandIn("function", closure.module, node, {
 			closure,
-			dynamic: undefined,
-			arity,
-			isCalled: false,
-			isCalledIndirectly: false,
-			isDefinition: false
-		}
+			arity
+		})
 		const target =
 			closure.node.type === "ArrowFunctionExpression" ? () => {} : class {}
 		if (name) this.standInsByName.set(name, standIn)
 		const proxy = this.standInProxy(target, standIn, {
-			get: (target, k) =>
-				k === "length" ? arity
-				: k === "name" ? name
-				: answersFact(k) ? Reflect.get(target, k)
-				: this.refuse(standIn),
-			getPrototypeOf: target => Reflect.getPrototypeOf(target),
+			...this.factsOf(standIn, arity, name),
 			apply: (_, __, args: unknown[]) => this.callStandIn(standIn, args),
 			construct: () => {
 				throw this.calledAtDefinition(standIn, undefined)
@@ -2193,25 +2197,10 @@ export class Interpreter {
 		) as MethodDefinition | undefined
 		const length = constructor ? parameterCount(constructor.value) : 0
 		const name = this.holeNameOf(node, ctx.module, declaredNameOf(node))
-		const standIn: StandIn = {
-			kind: "class",
-			module: ctx.module,
-			node,
-			closure: undefined,
-			dynamic: undefined,
-			arity: undefined,
-			isCalled: false,
-			isCalledIndirectly: false,
-			isDefinition: false
-		}
+		const standIn = createStandIn("class", ctx.module, node)
 		if (name) this.standInsByName.set(name, standIn)
 		const proxy = this.standInProxy(target, standIn, {
-			get: (target, k) =>
-				k === "length" ? length
-				: k === "name" ? name
-				: answersFact(k) ? Reflect.get(target, k)
-				: this.refuse(standIn),
-			getPrototypeOf: target => Reflect.getPrototypeOf(target),
+			...this.factsOf(standIn, length, name),
 			apply: () => {
 				standIn.isCalled = true
 				throw new DynamicValue(
@@ -2238,18 +2227,10 @@ export class Interpreter {
 	}
 
 	private opaqueStandIn(dynamic: DynamicValue): object {
-		const standIn: StandIn = {
-			kind: "opaque",
-			module: dynamic.module,
-			node: dynamic.node,
-			closure: undefined,
-			dynamic,
-			arity: undefined,
-			isCalled: false,
-			isCalledIndirectly: false,
-			isDefinition: false
-		}
-		// arktype may only ask whether an opaque value is a Standard Schema, since anything else it reads decides the type
+		const standIn = createStandIn("opaque", dynamic.module, dynamic.node, {
+			dynamic
+		})
+		// arktype may only check whether it's a Standard Schema
 		return this.standInProxy(class {}, standIn, {
 			get: (_, k) => (k === arkKind ? undefined : this.refuse(standIn)),
 			has: (_, k) => {
@@ -2268,7 +2249,22 @@ export class Interpreter {
 		})
 	}
 
-	// a stand-in answers only what arktype's facts module reads, so a read arktype makes anywhere else is refused
+	private factsOf(
+		standIn: StandIn,
+		length: number | undefined,
+		name: string
+	): ProxyHandler<Function> {
+		return {
+			get: (target, k) =>
+				k === "length" ? length
+				: k === "name" ? name
+				: answersFact(k) ? Reflect.get(target, k)
+				: this.refuse(standIn),
+			getPrototypeOf: target => Reflect.getPrototypeOf(target)
+		}
+	}
+
+	// answers only what arktype's facts module reads, refusing the rest
 	private standInProxy(
 		target: Function,
 		standIn: StandIn,
@@ -2295,7 +2291,7 @@ export class Interpreter {
 		return proxy
 	}
 
-	// native code hands interpreted code arktype's printed placeholders and registry names, which the program sees as other text
+	// rejects arktype's placeholders and registry names in what it returns
 	private admit<value>(
 		value: value,
 		node: Node,
@@ -2305,7 +2301,7 @@ export class Interpreter {
 		const seen = new Set<unknown>()
 		const unstable = this.unstableIn(value, seen)
 		if (!unstable) {
-			// nothing writes to a plain container once interpreted code holds it, so a clean one stays clean
+			// nothing writes to a container interpreted code holds, so it stays clean
 			for (const container of seen) this.admitted.add(container as object)
 			return value
 		}
@@ -2343,7 +2339,7 @@ export class Interpreter {
 		}
 	}
 
-	declaredNameOf(standIn: StandIn): string | undefined {
+	nameOf(standIn: StandIn): string | undefined {
 		return (
 			standIn.closure?.name ||
 			bindingOfFunction(standIn.node, standIn.module)?.name
@@ -2351,7 +2347,7 @@ export class Interpreter {
 	}
 
 	labelOf(standIn: StandIn): string {
-		const name = this.declaredNameOf(standIn)
+		const name = this.nameOf(standIn)
 		return `${
 			name ? `\`${name}\``
 			: standIn.kind === "class" ? "a class"
@@ -2369,13 +2365,13 @@ export class Interpreter {
 	}
 }
 
-// `this` in a function other than an arrow, or in a class's members, is its own
+// `this` in a non-arrow function or a class's members is its own
 const bindsThis = (node: Node) =>
 	node.type === "FunctionExpression" ||
 	node.type === "FunctionDeclaration" ||
 	node.type === "ClassBody"
 
-// the facts arktype reads from a function or class by key, besides its name and length
+// the facts arktype reads from a function or class besides name and length
 const answersFact = (k: PropertyKey) =>
 	k === arkKind || k === "constructor" || k === "prototype" || k === "toJSON"
 
@@ -2390,15 +2386,15 @@ const isReference = (node: Node) => {
 export const isDynamic = (value: unknown): value is DynamicValue =>
 	value instanceof DynamicValue
 
-// Types, matchers and typed functions run their arguments through validation
-export const isValidator = (value: unknown): boolean =>
+// Types, matchers and typed functions validate their arguments
+const isValidator = (value: unknown): boolean =>
 	hasArkKind(value, "root") || value instanceof InternalTypedFn
 
-// objects other than arktype's, which the program can change after the build reads them, so a site compares what it read from them
+// values the program can change after the build reads them
 const isChangeable = (value: unknown): value is object =>
 	isPlainContainer(value) || value instanceof Date || value instanceof RegExp
 
-// a node holds nothing it was made from, but a Generic parses its body at each instantiation and a Scope its aliases when first resolved
+// a Generic parses its body per instantiation, a Scope its aliases lazily
 const readsAgain = (value: unknown): boolean =>
 	hasArkKind(value, "generic") ||
 	hasArkKind(value, "scope") ||
@@ -2497,12 +2493,12 @@ const rootContext = (
 const mergeTrace = (into: Trace, from: Trace) => {
 	for (const read of from.reads) into.reads.push(read)
 	for (const [node, module] of from.helpers)
-		pushUnique(into.helpers, node, module)
+		addHelper(into.helpers, node, module)
 	for (const read of from.exportedFunctions) into.exportedFunctions.push(read)
 	for (const read of from.readFirst) into.readFirst.push(read)
 }
 
-const pushUnique = (
+const addHelper = (
 	helpers: [FunctionNode, SourceModule][],
 	node: FunctionNode,
 	module: SourceModule
@@ -2510,7 +2506,7 @@ const pushUnique = (
 	if (!helpers.some(([n]) => n === node)) helpers.push([node, module])
 }
 
-// `node`'s offset, or the earliest that can call the function holding it, as an import cycle can once the function's export is set
+// the earliest offset that can run `node`, through an import cycle too
 const runPointOf = (
 	node: Node,
 	scope: Node,
@@ -2541,18 +2537,18 @@ const runPointOf = (
 	return node.start
 }
 
-// e.g. a site in an exported function declaration, which an import cycle can call before the module's imports have run
+// e.g. a site in an exported function an import cycle can call early
 export const runsBeforeBody = (node: Node, module: SourceModule): boolean =>
 	runPointOf(node, module.program, module) <= module.program.start
 
-// e.g. `Base` in `export function f() { return Base }` before `const Base = type(...)`, which an import cycle can call first
-export const readsFirst = (
+// e.g. `Base` read by an exported function declared above it
+const readsFirst = (
 	node: Node,
 	binding: Binding,
 	module: SourceModule
 ): boolean => runPointOf(node, binding.scope.node, module) < setAt(binding)
 
-// e.g. `V` in `V.and(...)` or `V()`, but not in `V ?? "string"` or `V?.and(...)`, which read `undefined` without throwing
+// e.g. `V.and()` or `V()`, but not `V ?? x` or `V?.and()`
 const throwsUnset = (node: Node): boolean => {
 	const [operand, parent] = operatorOf(node)
 	return (
@@ -2565,7 +2561,7 @@ const throwsUnset = (node: Node): boolean => {
 	)
 }
 
-// a declarator sets each binding once its element of the pattern, default included, has run; a read in the initializer, which runs first, depends on itself
+// where a declarator sets a binding, once its pattern element has run
 const setAt = (binding: Binding): number => {
 	if (binding.declaration.type !== "VariableDeclarator")
 		return binding.declaration.end
@@ -2606,7 +2602,7 @@ const isLoopVariable = (binding: Binding) => {
 	)
 }
 
-// e.g. not `V` in `if (flag) { var V = type("string") }`, which leaves `V` unset where the block doesn't run
+// e.g. not `V` in `if (flag) { var V = type("string") }`
 const isDeclaredInBody = (binding: Binding): boolean => {
 	let container = binding.declaration.parent?.parent
 	if (container?.type === "ExportNamedDeclaration") container = container.parent
@@ -2624,7 +2620,7 @@ const parameterCount = (fn: FunctionNode): number => {
 	return count
 }
 
-// the name JS gives a function or class where its position alone decides it, or none where something else might
+// the name JS infers for a function or class from its position, if any
 const declaredNameOf = (node: FunctionNode | Class): string | undefined => {
 	if (node.id) return node.id.name
 	const parent = node.parent

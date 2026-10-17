@@ -1767,7 +1767,7 @@ export class Precompiler {
 			)
 			return reference ?
 					module.snippetOf(reference)
-				:	(this.interpreter.declaredNameOf(standIn) ??
+				:	(this.interpreter.nameOf(standIn) ??
 						standIn.module.snippetOf(standIn.node))
 		})
 	}
