@@ -172,7 +172,10 @@ export type inferDefinition<def, $, args> =
 		// {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
 		// Unlike in TS however, ArkType object literals are constrained to object
 		// so we use that as the base type inferred when parsing {}.
-		ifEmptyObjectLiteral<def, object, t>
+		// {} infers t as unknown, so any other t can skip that check.
+		unknown extends t ?
+			ifEmptyObjectLiteral<def, object, t>
+		:	t
 	: def extends ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>
