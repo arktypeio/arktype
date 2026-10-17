@@ -4,7 +4,7 @@
 
 ### Return only the first error, or one saying data is invalid, with `errors`
 
-`errors: "first"` stops each validation at its first error, which it returns alone. `errors: "none"` returns one error at the root, whose message is `is invalid`, found by checking the data alone, so nothing a Type holds runs again to find what failed. Either can be configured globally or for a Scope:
+`errors: "first"` stops each validation at its first error, which it returns alone. `errors: "none"` returns one root error, `is invalid`, found by checking the data alone, so nothing a Type holds runs again. Either can be configured globally or for a Scope:
 
 ```ts
 import { configure } from "arktype/config"
@@ -20,7 +20,7 @@ type({ name: "string" })({ name: 5 })
 
 The error `"none"` returns holds the code `"predicate"`, an empty path and the data. It's an instance of `type.errors`, so `.assert()` throws a `TraversalError` saying `is invalid`, and a default the Type rejects fails its definition with `Default for name is invalid`. Its message isn't written in a configured locale.
 
-A Type validates as the Scope it's bound to is configured, so a Type another Scope references validates as that Scope's Types do.
+A Type keeps its Scope's `errors` wherever it's referenced.
 
 ### Transform a valid input in place with `mutatesInput`
 
@@ -40,9 +40,9 @@ const input = { name: " Ada " }
 User(input) === input
 ```
 
-`true` writes in place only where the Type shows that no place it checks can read what another wrote, whatever objects the input holds at several, so it returns what copying would. A Type that can't, like `{ a: { n: "string.numeric.parse" }, b: { n: "string" } }`, whose `a` and `b` could be one object, copies as it does by default. `"always"` writes every transform in place, so the input must hold no object at two places a transform reaches, and a function a Type holds must read or return the input's objects only through its parameters, not its closure.
-
-The object returned is the input, so it keeps what a copy wouldn't, like the order of its keys, its accessors and the keys it inherits, and a key the Type doesn't declare holds what another place wrote where the input holds one object at both, as writing the input means. Writing an input that can't be written, like a frozen object, throws a TypeError. Either way, an object a Type deletes undeclared keys from is copied, as deleting a key makes an object slower to read, as is a key two constraints transform, like a property an index signature transforms too.
+- `true` writes in place only where no place the Type checks can read what another wrote, so it returns what copying would, and otherwise copies, as for `{ a: { n: "string.numeric.parse" }, b: { n: "string" } }`, whose `a` and `b` could be one object.
+- `"always"` always writes in place, so the input must hold no object at two places a transform reaches, and a function a Type holds must reach the input's objects only through its parameters.
+- The result is the input, so it keeps its key order, accessors and inherited keys, and an undeclared key holds what another place wrote where the input holds one object at both. Writing an input that can't be written, like a frozen object, throws a TypeError. An object stripped of undeclared keys, and a key two constraints transform, are still copied.
 
 A validation that fails can leave writes in the objects of its input it found valid, which their transforms wrote as it checked the rest.
 
@@ -65,6 +65,23 @@ if (out instanceof type.errors) {
 	out.issues[0]
 }
 ```
+
+`ArkErrors` was an `Array` subclass. It is now a plain class whose `issues` is a plain array with one error per path, in the order each path first failed. Indexing, iteration, `length` and array methods move to `issues`:
+
+```ts
+if (out instanceof type.errors) {
+	// previously out.map(e => e.message), now
+	out.issues.map(e => e.message)
+	// previously out[0], now
+	out.issues[0]
+	// previously for (const error of out), now
+	for (const error of out.issues) console.log(error.message)
+	// previously out.length, now
+	out.issues.length
+}
+```
+
+`issues` already returned the errors, so `out.issues.map(...)` works before and after this change. `Array.isArray(out)` is now false, and `arr.concat(out)` nests the errors, so pass `out.issues`. A Standard Schema failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` from the `ArkErrors`, or pass it to `flatProblemsByPath`.
 
 An error's prototype is `Object.prototype`, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `arktype` exports `ArkError` only as a type, which comparing `code` narrows as `hasCode` did. `hasCode`, `transform`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, and `messageIn` writes one in a locale:
 
@@ -97,9 +114,8 @@ An error at a `__proto__` path is an own key of the plain objects `flatByPath` a
 
 `ArkErrors`' `message`, `transform`, `merge`, `add` and `toTraversalError` are gone: read `summary`, and call `throw()`. A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`, and a morph returning another validation's `ArkErrors` adds them at its path. A morph fails by returning an `ArkErrors` or an error `ctx.error` returned during its own call. Any other error it returns, like one an earlier morph added or another validation's, is its output, where it failed the morph before. `@ark/schema`'s `ArkErrorResult` type is gone, since a morph's failure is always an `ArkErrors`.
 
-Errors' text is written when they are first read, through `issues`, `summary`, `toString()`, `toJSON()`, `throw()` or Standard Schema's `issues`. That read writes each error's `propString`, `expected`, `actual`, `problem` and `message`, so a configured writer is called once per error, where it was called at each read. A union or intersection whose locale has no `expected` for it is described in en, which writes its errors' `expected` again in en, and a union's errors' `actual`. A locale function is called once per `ArkErrors`, at that read, and its errors keep the locale it returned. Previously each read called it, so errors read after the language changed were written in the new one.
-
-An error has no `toJSON()`, so `JSON.stringify(error)`, or of an `ArkErrors`' or Standard Schema's `issues`, serializes its own keys: a symbol key in its path is `null`, a bigint, like one in a discriminant's `cases`, throws, and `cases`, `cause`, `missing`, `valueMeta`, `predicate` and `morph`, which `toJSON()` leaves out, are included. `out.toJSON()` is the JSON it was, plus each error's `propString`, and its paths are plain arrays holding a symbol key as the string `Symbol(name)`, as a `ReadonlyPath` serialized it.
+- Errors' text is written when they are first read, through `issues`, `summary`, `toString()`, `toJSON()`, `throw()` or Standard Schema's `issues`, so a configured writer is called once per error, where it was called at each read. A union or intersection whose locale has no `expected` for it is described in en, which writes its errors' `expected`, and a union's errors' `actual`, in en too. A locale function is called once per `ArkErrors`, at that read, where each read called it, so errors read after the language changed were written in the new one.
+- An error has no `toJSON()`, so `JSON.stringify(error)`, or of an `ArkErrors`' or Standard Schema's `issues`, serializes its own keys: a symbol key in its path is `null`, a bigint, like one in a discriminant's `cases`, throws, and `cases`, `cause`, `missing`, `valueMeta`, `predicate` and `morph`, which `toJSON()` leaves out, are included. `out.toJSON()` is the JSON it was, plus each error's `propString`, and its paths are plain arrays holding a symbol key as the string `Symbol(name)`, as a `ReadonlyPath` serialized it.
 
 ### Print objects in error messages by their kind
 
@@ -328,29 +344,31 @@ export const BoxedTree = types.box("tree")
 
 A call to `define`, which returns its argument, is replaced by the argument.
 
-A validator bakes `meta`, but not a keyword's, so the validator of `type("string.uuid")` has an empty `meta`. It lacks the members that compose a Type, like `and` or `in`, so calling one is a TypeError. It has `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` only where the build's `introspection` option lists them, and reads `undefined` for one it lacks, so `JSON.stringify({ User })` drops `User` unless `toJSON` is listed, and `String(User)` is `Type<undefined>` unless `expression` is. An artifact freezes what it creates, so a write to one throws in strict mode: its validators and their shared prototype, its Modules, Scopes, Generics, configs and node shapes, and every literal it emits, such as `meta`. A Date or RegExp it holds isn't frozen, as arktype's isn't. `arktype/runtime`'s `type` is frozen too. The build refuses what the runtime can't reproduce, like an instance of a class other than Date or RegExp, naming it. Nothing checks that an artifact runs on the version of `arktype/runtime` it was built with, or that `arktype` loads only for runtime islands, so rebuild after upgrading: an artifact on another version can throw a TypeError or validate otherwise.
+A validator differs from the Type it replaces:
 
-A validator returns errors of its own, which `instanceof type.errors` recognizes. Each of their `issues` is a plain object holding the failed check's `code`, the `path` and `data` it failed at, and `expected`, what the failing node describes, like `"a string"` or `"at least length 8"`, which is `undefined` for a missing or undeclared key. Its `message` is written when the issues are first read, through `issues`, `summary`, `toString()`, `toJSON()`, `throw()` or Standard Schema's `issues`, and reads `name must be a string`, `name is missing`, `name must be removed` or `name is invalid`, its path's keys joined by `.` and its indices written as `[0]`. It doesn't say what the value was. Errors at one path stay apart, where arktype groups them, and a union no branch allows is one issue naming the union's description rather than one per branch. A `ctx.reject`, `ctx.mustBe` or `ctx.error` adds an issue with the text it received. A validator a morph calls with its `ctx` adds its issues to that validation's errors, or to arktype's as it writes them where the morph is an island's, so the validation fails even if the morph returns them inside another value. The errors have `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()`, and a `TraversalError`'s message is their summary. `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`, since locales and error writers need arktype's nodes. The build refuses a configured locale, an import of `arktype/locales`, and a configured `expected`, `problem` or `message` for a code the Type can raise, a string among them, as well as a writer in a node's meta other than an `expected` string. The `ctx.config` a narrow or morph receives holds only `jitless: true` and `onFail`, so another key a callback reads there, like `onUndeclaredKey`, is `undefined`.
+- It lacks the members that compose a Type, like `and` or `in`, so calling one is a TypeError, and bakes `meta` but not a keyword's.
+- It has `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` only where the build's `members` option sets them, and reads `undefined` for one it lacks.
+- An artifact freezes what it creates, except a Date or RegExp it holds.
+- The build refuses what the runtime can't reproduce, like an instance of a class other than Date or RegExp, naming it.
+- Nothing checks that an artifact runs on the version of `arktype/runtime` it was built with, so rebuild after upgrading.
+- Its errors' `issues` are plain objects holding `code`, `path`, `data` and `expected`, the failing node's description, with a plain message like `name must be a string` or `name is invalid` that doesn't say what the value was. `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
+- The build refuses a configured locale or error writer for a code the Type can raise.
+- The `ctx.config` a narrow or morph receives holds only `jitless` and `onFail`.
+- A program's `configure()` call configures `arktype/runtime`, which fixes its configuration at the first validator it creates and throws if `configure()` comes later or differs from the build's.
 
-Build with `errors: "first"` to stop each validation at its first issue, so invalid data costs one check's failure rather than a walk of the rest of it:
+Build with `errors: "first"` to stop each validation at its first issue:
 
 ```ts
 precompile.vite({ errors: "first" })
 ```
 
-A program's `configure()` call stays in place and configures `arktype/runtime`, which fixes its configuration at the first validator it creates, as arktype does at the first Type. It throws if `configure()` comes after that, or under a configuration other than the one the validators were built under. It returns its argument, where arktype's returns arktype's configuration with the argument merged in, so a keyword configured as a string reads as that string through it.
+See `@ark/precompile`'s README for the details of each.
 
-### Compile a Type when it's used again
+### Compile and discriminate a Type when it's first used
 
-A Type is compiled the second time it's called or its `allows` is called, or when its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled and one it checks once is checked without compiling. A Type whose narrows or morphs read `ctx` is compiled the first time instead. A scope's exports are compiled the same way, so `@ark/schema`'s scope `precompilation` is undefined unless the scope is cyclic. A Type referencing an alias is still compiled where it's defined, so an error resolving the alias is thrown there.
+A Type is compiled the second time it's called or its `allows` is called, or when its `precompilation` is read, rather than when it's defined, so Types a program defines but never calls aren't compiled and one it checks once is checked without compiling. A Type whose narrows or morphs read `ctx` is compiled the first time instead. A scope's exports are compiled the same way, so `@ark/schema`'s scope `precompilation` is undefined unless the scope is cyclic. A Type referencing an alias is still compiled where it's defined, so an error resolving the alias is thrown there. Checking a default as it's defined doesn't count as a use of the Type it's checked against.
 
-### Discriminate a union when it's first used
-
-A union finds its discriminant when it's compiled, checks data, describes a miss or has its references read, rather than when it's created, so unions a program defines but never uses don't pay for it. Where a scope has several definition errors, which is thrown first can change, and can differ between JIT and jitless, e.g. an indeterminate union of morphs before an invalid default it includes.
-
-### Check a default without compiling its Type
-
-Checking a default as it's defined no longer counts as a use of the Type it's checked against, so a Type used by several defaults isn't compiled until data is checked against it, and that first check runs uncompiled.
+A union finds its discriminant when it's compiled, checks data, describes a miss or has its references read, rather than when it's created. Where a scope has several definition errors, which is thrown first can change, and can differ between JIT and jitless, e.g. an indeterminate union of morphs before an invalid default it includes.
 
 ### Order keys by code unit
 
@@ -363,49 +381,35 @@ Keys are ordered by code unit, where they were ordered as `JSON.stringify` write
 
 Other keys that first differ at a space, `!`, `"` or a backslash keep their order. That order is the order of keys in a Type's `expression` and `json`, its JSON Schema's `properties` and `required`, the errors it reports, and the outputs it rebuilds, e.g. adding defaults or deleting undeclared keys.
 
-### Collect a scope's references when they're read
+### Simplify `@ark/schema` nodes
 
-An `@ark/schema` scope's `references` and `referencesById` are collected when first read rather than as it exports, unless it binds precompiled units or includes an alias, so `type` no longer walks every builtin node as arktype starts.
+- A scope's `references` and `referencesById` are collected when first read rather than as it exports, unless it binds precompiled units or includes an alias.
+- A node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `traverseAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
+- `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context.
+- Derived and memoized keys moved from a node's own enumerable keys to `node.cache`, like the `includes*` flags, `innerEntries`, a structure's `propsByKey` and a node's `assert`; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
 
-### Call a node's traversals as methods
+### Read data in a different order
 
-An `@ark/schema` node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, where each node created functions of its own, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`. A node holds its class's methods until the JIT compiles it, which replaces `traverseAllows` and `traverseApply` with compiled functions that run detached, and `traverseTransform` too if the node transforms; a jitless scope's nodes keep the methods. `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `traverseAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
+A getter or `Proxy` trap on the data can see these reads change:
 
-### Parse a node from a context of its own shape
-
-`@ark/schema`'s `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context with options parsing a node never read.
-
-### List fewer of a node's own keys
-
-An `@ark/schema` node's own enumerable keys no longer list what it derives from its kind and inner, nor what it memoizes as it's read, which is kept on its `cache`: the `includes*` flags, `isCyclic`, `allowsRequiresContext`, `innerEntries`, `metaJson` and `precedence`; a range's `boundOperandKind`, `comparator`, `numericLimit` and `limitKind`; a prop's `required`, `optional`, `serializedKey` and `compiledKey`; a structure's `propsByKey`, `requiredKeys`, `optionalKeys` and `literalKeys`; and a node's `assert` and a root's `pipe`, each created when first read and the same function from then on. Each reads as it did, by the same name, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
-
-### Read a `Date`'s `getTime` when checking it
-
-Checking that a `Date` is valid reads its `getTime` and calls it as a method when it's `Date.prototype.getTime`, which is faster than calling that function on the `Date`. A getter or a `Proxy` trap for `getTime` on a `Date` now runs as it's checked.
-
-### Check arrays and patterns last when allowing data
-
-`allows`, and the check a call runs before it looks for errors, read a key whose value holds an array or a regex after the other keys, so data failing at a simpler key is rejected without walking an array or running a regex. Under `errors: "none"`, rejecting the benchmark's invalid product runs 47% fewer instructions. Keys never move past one whose value runs a narrow or a morph, so each runs for the same data as before, and the errors a call returns list keys in the same order. A getter or a `Proxy`'s `get` trap on the data sees its keys read in the new order.
+- Checking that a `Date` is valid reads its `getTime` and calls it as a method when it's `Date.prototype.getTime`, so a getter or trap for `getTime` runs as it's checked.
+- `allows`, and the check a call runs before it looks for errors, read a key whose value holds an array or a regex after the other keys, though never past one whose value runs a narrow or a morph, so each runs for the same data as before and errors list keys in the same order.
+- A transform that copies an object asks whether it has its first required key first, so a `has` trap runs once more.
+- Checking that data is valid asks whether each key it walks is the object's own before whether it's declared, so a `getOwnPropertyDescriptor` trap runs for each enumerable key, where it ran only for an undeclared one.
+- `"+": "delete"` reads an array's keys once to tell whether it holds any besides its indices, and looks for undeclared keys only when it does, so a `Proxy` whose `ownKeys` trap lists a named key before an array's indices can keep that key.
+- When `"+": "delete"` transforms an array's elements and declares no keys besides its indices, it copies the array with `slice` and no longer reads its undeclared keys, so their getters and the `ownKeys` and `getOwnPropertyDescriptor` traps don't run. As a stripped object is always a new one, every array of objects is copied.
 
 ### Capture only what `string.date.iso`'s pattern backreferences
 
-Every group of `string.date.iso`'s pattern but the two its backreferences read is non-capturing, which more than halves what testing a string costs and makes its first test, which compiles it, cheaper too. It accepts the same strings, but its source is new, and with it the `expression`, `json` and JSON Schema `pattern` of `string.date.iso` and `string.date.iso.parse`'s input.
+`string.date.iso`'s pattern captures only the groups its backreferences read. It accepts the same strings, but its source changes, and with it the `expression`, `json` and JSON Schema `pattern` of `string.date.iso` and `string.date.iso.parse`'s input.
 
 ### Check numeric strings by their characters
 
-`string.numeric` and `string.integer`, and the inputs of their `parse` morphs, check a string by reading its characters rather than testing it against their patterns, which accepts the same strings with about a third of the instructions, so parsing the benchmark's array of 100 objects with a `string.numeric.parse` property runs 1.5x fewer instructions. Their patterns are unchanged, as are their `expression`, `json` and JSON Schema. Any pattern with either source, like `numericStringMatcher` from `@ark/util`, is checked the same way, as are `@ark/util`'s `isNumericString` and `isWellFormedInteger`, which now read only strings. A pattern node holds such a function as `test`.
-
-### Match a repeated character from the start of a string
-
-A pattern of one character, escape or class repeated without bound, like `/^[ab]+$/`, `string.alpha` or `string.hex`, matches a string of 16 or more characters with a sticky copy of itself, which accepts the string if as many characters as it can match from the start reach its end. A string failing near its end is no longer matched again from each position before it, so checking a 10,000-character one runs about half the instructions. A pattern with the `m`, `v`, `g` or `y` flag or a lazy quantifier is tested as before, as is any string shorter than 16.
-
-### Ask whether data has a required key before copying it
-
-A transform that copies an object asks whether the object has its first required key before reading its prototype, which lets that read run without a call into the engine after a nested transform. Parsing the benchmark's moltar data with its morphs runs about 31% fewer instructions. A `Proxy`'s `has` trap runs once more for data that's copied.
+`string.numeric` and `string.integer`, and the inputs of their `parse` morphs, check a string by reading its characters rather than testing their patterns, as do `@ark/util`'s `isNumericString` and `isWellFormedInteger`, which now read only strings. They accept the same strings, and their `expression`, `json` and JSON Schema are unchanged. A pattern node with either source, like `numericStringMatcher` from `@ark/util`, holds the check as `test`.
 
 ### Read `File` from `platformConstructors` when it's used
 
-`@ark/util`'s `platformConstructors.File` and `builtinConstructors.File` are getters, as `FormData`, `Headers`, `Request` and `Response` are, returning `globalThis.File`, or `Blob` where it's missing, each time they're read. Code that checks an object's kind, like a standalone validator copying an object, no longer has Node load its `File` module as it's imported, and a `File` installed after import is the one they return.
+`@ark/util`'s `platformConstructors.File` and `builtinConstructors.File` are getters, as `FormData`, `Headers`, `Request` and `Response` are, returning `globalThis.File`, or `Blob` where it's missing, each time they're read. A `File` installed after import is the one they return.
 
 ### Call narrows and morphs without a receiver when jitless
 
@@ -432,6 +436,17 @@ type({ d: [{ a: "string" }, "number = 2"] }).onDeepUndeclaredKey("delete")({
 	d: [{ a: "ok", b: "extra" }]
 })
 ```
+
+### Throw a `ParseError` when `Exclude` or `Extract` filters a type still being defined
+
+`Exclude` and `Extract` over a definition still being defined, like `"Extract<a | string, object>"` inside `a`, throw a `ParseError`:
+
+```ts
+// previously { n: string, c?: never }, now ParseError: Extract can't filter a type still being defined
+scope({ a: { n: "string", "c?": "Extract<a | string, object>" } }).export()
+```
+
+`Exclude` threw `'a' is unresolvable` there.
 
 ### Throw a `ParseError` when a tuple expression narrows a morph
 
@@ -613,7 +628,7 @@ const T = type({
 T({ a: "x", b: "1" }).toString()
 ```
 
-A valid nested object's function defaults are called even after an earlier error, a valid object shared under a cyclic type is transformed at each path reaching it, as when validation succeeds, and a predicate checked beside morphs or defaults can run once more. Where a prop and an index signature check the same key holding an object, a morph beneath the prop doesn't run if only the index signature rejects the object, and runs if both reject it but the index signature rejects only the morph's value. Valid calls are unchanged.
+Function defaults, cyclic transforms and predicates beside morphs can run as they're reached on a failed call. Valid calls are unchanged.
 
 ### Keep a Type's descriptions wherever it's referenced
 
@@ -635,7 +650,7 @@ types.int("x").toString()
 type({ a: lib.x })({ a: "x" }).toString()
 ```
 
-Two kinds of node take other writers: a cyclic keyword, like `object.json`, keeps arktype's in a scope that resolves it, and a node a reduction creates anew takes the reducing scope's, as `number` does in `["union", "&", "number"]` where `union` is `type("number").or("string")`.
+A cyclic keyword like `object.json` keeps arktype's writers.
 
 ### Name keyword morphs and predicates
 
@@ -648,7 +663,7 @@ type("string.trim").json.morphs
 
 ### Fix global config when the first Type is created
 
-Global config is read when the first Type is created rather than when arktype is imported, so importing `arktype` before your config file no longer matters, and `configure` can be imported from `"arktype"` as well as `"arktype/config"`. A `configure` call after a Type has been created throws instead of applying to scopes created later but not to `type` or keywords:
+Global config is read when the first Type is created rather than when arktype is imported, so `configure()` must run before any Type is created, but can follow any import of `arktype` or `@ark/schema`, including `./internal/*` deep imports. `configure` can be imported from `"arktype"` as well as `"arktype/config"`. A `configure` call after a Type has been created throws instead of applying to scopes created later but not to `type` or keywords:
 
 ```ts
 import { configure, type } from "arktype"
@@ -741,7 +756,7 @@ A morph receives the validated value itself, so a morph that mutates its argumen
 
 ### Drop `filename` from the global registry
 
-`$ark.filename`, the file arktype's registry was created in, is gone, since computing it read a stack trace each time arktype was imported. `$ark.version` still names the `@ark/util` version that created the registry.
+`$ark.filename`, the file arktype's registry was created in, is gone. `$ark.version` still names the `@ark/util` version that created the registry.
 
 ### Annotate what JSON Schema can't express
 
@@ -808,27 +823,6 @@ type("Date > d'2025-01-01T12:00-05:00'")
 ```
 
 A numeric string that isn't an ISO year like `2025` is always epoch milliseconds, so `d'12'` is 12ms after the epoch rather than December 1, 2001 in local time.
-
-### Hold `ArkErrors`' errors in `issues` instead of extending `Array`
-
-`ArkErrors` was an `Array` subclass. It is now a plain class whose `issues` is a plain array with one error per path, in the order each path first failed. Indexing, iteration, `length` and array methods move to `issues`:
-
-```ts
-const out = T(data)
-
-if (out instanceof type.errors) {
-	// previously out.map(e => e.message), now
-	out.issues.map(e => e.message)
-	// previously out[0], now
-	out.issues[0]
-	// previously for (const error of out), now
-	for (const error of out.issues) console.log(error.message)
-	// previously out.length, now
-	out.issues.length
-}
-```
-
-`issues` already returned the errors, so `out.issues.map(...)` works before and after this change. `Array.isArray(out)` is now false, and `arr.concat(out)` nests the errors, so pass `out.issues`. A Standard Schema failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` from the `ArkErrors`, or pass it to `flatProblemsByPath`.
 
 ### Throw from `.assert` when a root morph fails
 
@@ -897,13 +891,9 @@ const T = type({ s: "string" }).pipe((o, ctx) => {
 T({ s: "b" }).toString()
 ```
 
-### Configure before importing anything else
-
-`arktype` and `@ark/schema` now each load as a single module, so `configure()` must run before any import of either package, including `./internal/*` deep imports. Only `./config` and `./internal/config.*` load without the rest of the package.
-
 ### Check only string keys for `"+": "reject"`
 
-`"+": "reject"` allows undeclared symbol keys. Checking string keys only walks an object's keys in place without reading its symbols, so validating a small object that rejects undeclared keys is about 3.5x faster:
+`"+": "reject"` allows undeclared symbol keys:
 
 ```ts
 const T = type({ "+": "reject", a: "string" })
@@ -911,8 +901,6 @@ const T = type({ "+": "reject", a: "string" })
 // valid, instead of ArkErrors: value at [Symbol(s)] must be removed
 T({ a: "x", [Symbol("s")]: 1 })
 ```
-
-Checking that data is valid asks whether each key it walks is the object's own before whether it's declared, which makes validating the benchmark's strict moltar data run about 10% fewer instructions. A `Proxy`'s `getOwnPropertyDescriptor` trap runs for each of its enumerable keys, where it ran only for a key the Type doesn't declare.
 
 Reject types that differ only by a symbol key now overlap, so a union of them with a morph is indeterminate:
 
@@ -952,14 +940,6 @@ const T = type("string[]").onUndeclaredKey("reject")
 // previously valid, now ArkErrors: value at ["4294967295"] must be removed
 T(Object.assign(["a"], { 4294967295: "b" }))
 ```
-
-### Look for an array's undeclared keys only when it has keys besides its indices
-
-`"+": "delete"` reads an array's keys once to tell whether it holds any besides its indices, and looks for undeclared keys only when it does, so deleting from an array without them is about 20% faster. An array lists its indices before its other keys, so a `Proxy` whose `ownKeys` trap lists a named key before an array's indices can keep that key.
-
-### Copy an array whose elements change by `slice` when deleting its undeclared keys
-
-When `"+": "delete"` transforms an array's elements and declares no keys besides its indices, it copies the array with `slice`, which takes just those, rather than copying its other keys only to delete them. It no longer reads an undeclared key of such an array, so the key's getter doesn't run, nor does a `Proxy`'s `ownKeys` or `getOwnPropertyDescriptor` trap. As a stripped object is always a new one, every array of objects is copied, and stripping the benchmark's product data now runs 2.2x fewer instructions.
 
 ### Import internals from `arktype/internal`
 
@@ -1068,7 +1048,7 @@ const handleRequest = (request: { id: number }) =>
 handleRequest({ id: 1 })
 ```
 
-A function still stays in memory where a cyclic Type holds it, where a generic's instantiation holds it, for as long as the generic does, which for a builtin like `type.Record` is always, and where it's a default's thunk in the first Type to compile the default's keyword, like `object` in `["object", "=", () => o]`.
+A function stays in memory while a cyclic Type, a generic instantiation (always, for builtins like `type.Record`) or the first Type compiling a default's keyword holds it.
 
 The `$ark.x` names that functions get in a type's `json` or `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
 
