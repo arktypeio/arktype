@@ -40,6 +40,7 @@ import {
 	TransformErrors
 } from "../shared/transform.ts"
 import { errorFromContext } from "../shared/errors.ts"
+import type { FailureSite, SiteContext } from "../shared/issues.ts"
 import {
 	addTransformErrors,
 	allowsInBranch,
@@ -231,6 +232,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.required,
 		this.optional
 	)
+
+	// a key it doesn't declare is reported from its site
+	override get failureSite(): FailureSite {
+		return (this.cache.failureSite ??= {
+			value: { code: "undeclared", meta: this.meta } as SiteContext
+		}) as FailureSite
+	}
 
 	// on a null prototype, "__proto__" is a key and "toString" isn't
 	propsByKey: Record<Key, Prop.Node | undefined> = Object.assign(
@@ -1246,10 +1254,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			const reject = () =>
 				js.traversalKind === "Allows" ?
 					js.return(false)
-				:	js.if(
-						js.undeclaredFails?.() ??
-							`ctx.failsWith({ code: "undeclared", relativePath: [k], data: data[k], meta: ${js.ref(this.meta)} })`,
-						() => js.return(false)
+				:	js.if(js.undeclaredFails?.() ?? js.error(this, "k"), () =>
+						js.return(false)
 					)
 			const declaresKey = this._compileDeclaresKey(js)
 			const conditions = declaresKey === "false" ? [] : [`!(${declaresKey})`]

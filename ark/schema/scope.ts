@@ -1125,7 +1125,11 @@ const writePrecompiledUnit = (
 		})
 	}
 	for (const node of nodes) {
-		if ("errorContext" in node || node.hasKind("union")) {
+		if (
+			"errorContext" in node ||
+			node.hasKind("union") ||
+			node.hasKind("structure")
+		) {
 			accessorsByValue.set(
 				node.failureSite,
 				`${variablesByNode.get(node)}.failureSite`
