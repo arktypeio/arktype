@@ -347,7 +347,7 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				ctx
 			)
 			if (Object.is(transformed, element)) continue
-			if (out === data) {
+			if (out === data && (slices || !ctx.inPlace)) {
 				out =
 					slices ? Array.prototype.slice.call(data) : (copyOf(data) as never)
 			}
@@ -377,8 +377,11 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 	}
 
 	compileElementTransforms(js: NodeCompiler, slices: boolean): NodeCompiler {
+		// an array written in place is never copied
 		const copy =
-			slices ? "Array.prototype.slice.call(data)" : `${js.ref(copyOf)}(data)`
+			js.inPlace && !slices ? undefined
+			: slices ? "Array.prototype.slice.call(data)"
+			: `${js.ref(copyOf)}(data)`
 		let i = 0
 		this.compileElements(js, (keyExpression, node) => {
 			const element = `element${i}`
@@ -388,9 +391,9 @@ export class SequenceNode extends BaseConstraint<Sequence.Declaration> {
 				.transformKey(transformed, element, [{ node }], {
 					keyExpression,
 					onChange: () =>
-						js
-							.if("out === data", () => js.set("out", copy))
-							.line(`out[${keyExpression}] = ${transformed}`)
+						(copy ? js.if("out === data", () => js.set("out", copy)) : js).line(
+							`out[${keyExpression}] = ${transformed}`
+						)
 				})
 		})
 		return js

@@ -86,6 +86,8 @@ export class InternalTraversal implements FailureContext {
 	declare checksOnly: boolean
 	// a morph fails by returning any error ctx.error added during its call
 	declare returnedFrom: number | undefined
+	// a valid input's transforms write into it
+	declare inPlace: boolean
 
 	constructor(root: unknown, config: ResolvedConfig) {
 		this.path = []
@@ -230,6 +232,9 @@ export class InternalTraversal implements FailureContext {
 		this.currentBranch!.errorCount++
 	}
 }
+
+// a traversal transforming in place inherits true
+InternalTraversal.prototype.inPlace = false
 
 export class Traversal extends InternalTraversal {
 	/**

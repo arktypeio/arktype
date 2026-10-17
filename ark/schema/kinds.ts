@@ -184,6 +184,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			numberAllowsNaN: false,
 			numberAllowsInfinity: false,
 			dateAllowsInvalid: false,
+			mutatesInput: false,
 			onFail: null,
 			errors: "all",
 			keywords: {},

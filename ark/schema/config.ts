@@ -31,6 +31,7 @@ import {
 import type { Locale } from "./shared/locale.ts"
 import { $ark } from "./shared/registry.ts"
 import type { SetEngine } from "./shared/sets.ts"
+import type { InPlaceTransforms } from "./shared/transform.ts"
 import { ToJsonSchema } from "./shared/toJsonSchema.ts"
 import type { UndeclaredKeyBehavior } from "./structure/structure.ts"
 
@@ -41,6 +42,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	resolvedConfig?: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
 	sets?: SetEngine
+	inPlace?: InPlaceTransforms
 	// a standalone build can't call some functions a default's check reaches, so it checks the default where the program creates the Type
 	deferDefaultCheck?:
 		| ((
@@ -247,6 +249,15 @@ const normalizeFallback = (
 // a failure's issues: each, the first, or one at the root, "is invalid"
 export type ErrorDetail = "all" | "first" | "none"
 
+/**
+ * #### whether a valid input is transformed in place
+ *
+ * - `false`: transforms copy what they change, so the input is never written
+ * - `true`: writes where no other place can read what it wrote, else copies
+ * - `"always"`: writes every transform into the input
+ */
+export type MutatesInput = boolean | "always"
+
 export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly undeclared?: Readonly<ErrorConfig<"undeclared">>
 	readonly discriminant?: Readonly<ErrorConfig<"discriminant">>
@@ -258,6 +269,7 @@ export interface ArkSchemaConfig extends Partial<Readonly<NodeConfigsByKind>> {
 	readonly exactOptionalPropertyTypes?: boolean
 	readonly onFail?: ArkErrors.Handler | null
 	readonly errors?: ErrorDetail
+	readonly mutatesInput?: MutatesInput
 	readonly keywords?: Record<string, TypeMeta.Collapsible | undefined>
 	readonly toJsonSchema?: ToJsonSchema.Options
 	readonly locale?: Locale | (() => Locale | undefined)

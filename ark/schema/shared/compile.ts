@@ -242,6 +242,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 	traversalKind: TraversalKind
 	requiresContext: boolean
 	readonly refs: NodeCompiler.Refs | undefined
+	// whether a transform writes into the object it receives
+	declare readonly inPlace?: boolean
 	checksTransformErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {

@@ -98,6 +98,8 @@ import {
 	type Traversal,
 	type FailHandler,
 	type InternalTraversal,
+	type TraverseApply,
+	type TraverseTransform,
 	type AliasDepth
 } from "./shared/traversal.ts"
 import {
@@ -140,6 +142,8 @@ class NodeCache {
 	rawOut: BaseNode | undefined
 	declare onFail: ArkErrors.Handler | null
 	declare rootApply?: RootApply
+	declare applyInPlace?: TraverseApply
+	declare transformInPlace?: TraverseTransform
 }
 
 const throwOnFail: ArkErrors.Handler = errors => errors.throw()
@@ -497,7 +501,9 @@ export abstract class BaseNode<
 		return (
 			!this.cache.isUsedBeforeJit &&
 			!this.includesContextualPredicate &&
-			!this.includesContextualMorph
+			!this.includesContextualMorph &&
+			// a node it shares may be compiled, transforming by copying
+			!$ark.inPlace?.writes(this as never)
 		)
 	}
 
@@ -532,25 +538,29 @@ export abstract class BaseNode<
 		}
 		return (this.cache.rootApply =
 			this.compiledUnit && this.isRoot() && !this.$.resolvedConfig.jitless ?
-				compileRootApply(this)
+				compileRootApply($ark.inPlace?.applied(this as never) ?? this)
 			:	this.createRootApply())
 	}
 
 	// called without a handler, each fails with the node's own
 	protected createRootApply(): RootApply {
+		const byErrors = rootApplyRuntimeOf(this.$.resolvedConfig)
+		// a root transforming in place traverses as its own runtime does
+		const runtime = $ark.inPlace?.runtimeOf(this as never, byErrors) ?? byErrors
+		const { Traversal } = runtime
 		switch (this.rootApplyStrategy) {
 			case "allows":
 				return (data, onFail = this.onFail) => {
 					if (this.allows(data)) return data
 
-					return this.rejectRoot(data, onFail)
+					return this.rejectRoot(data, onFail, runtime)
 				}
 
 			case "contextual":
 				return (data, onFail = this.onFail) => {
 					if (allowsInContext(this, data, this.$.resolvedConfig)) return data
 
-					return this.rejectRoot(data, onFail)
+					return this.rejectRoot(data, onFail, runtime)
 				}
 
 			case "transform":
@@ -560,8 +570,8 @@ export abstract class BaseNode<
 						const untracked = allowsAcyclic(this, data)
 						const allowed =
 							untracked ?? allowsInContext(this, data, this.$.resolvedConfig)
-						if (!allowed) return this.rejectRoot(data, onFail)
-						const ctx = this.rootTraversal(data)
+						if (!allowed) return this.rejectRoot(data, onFail, runtime)
+						const ctx = new Traversal(data, this.$.resolvedConfig)
 						ctx.tracksTransforms = untracked === undefined
 						const result = transformResolution(
 							ctx,
@@ -582,19 +592,20 @@ export abstract class BaseNode<
 									!branch.introspectableIn?.transforms)
 						)
 					)
-						return this.createOptimisticRootApply()
+						return this.createOptimisticRootApply(runtime)
 					if (this.hasKind("union") && !this.compiledDiscriminant) {
 						return (data, onFail = this.onFail) => {
-							const ctx = this.rootTraversal(data)
+							const ctx = new Traversal(data, this.$.resolvedConfig)
 							const result = transform(ctx, this, data)
-							if (result === unset) return this.rejectRoot(data, onFail)
+							if (result === unset)
+								return this.rejectRoot(data, onFail, runtime)
 							return ctx.hasError() ? ctx.finalize(onFail) : result
 						}
 					}
 				}
 				return (data, onFail = this.onFail) => {
-					if (!this.allows(data)) return this.rejectRoot(data, onFail)
-					const ctx = this.rootTraversal(data)
+					if (!this.allows(data)) return this.rejectRoot(data, onFail, runtime)
+					const ctx = new Traversal(data, this.$.resolvedConfig)
 					const result = transform(ctx, this, data)
 					return ctx.hasError() ? ctx.finalize(onFail) : result
 				}
@@ -607,7 +618,10 @@ export abstract class BaseNode<
 	}
 
 	// a root whose transform doesn't require ctx has only context-free morphs
-	private createOptimisticRootApply(): RootApply {
+	private createOptimisticRootApply(
+		runtime: typeof rootApplyRuntime
+	): RootApply {
+		const { Traversal } = runtime
 		const branches = (this as {} as BaseRoot).branches
 		return (data, onFail = this.onFail) => {
 			for (let i = 0; i < branches.length; i++) {
@@ -620,7 +634,7 @@ export abstract class BaseNode<
 					const morph = branch.morphs[j] as Morph.ContextFree
 					const morphed = morph(result as never)
 					if (morphed instanceof BaseArkErrors) {
-						const ctx = this.rootTraversal(data)
+						const ctx = new Traversal(data, this.$.resolvedConfig)
 						addErrors(ctx, morphed)
 						return ctx.finalize(onFail)
 					}
@@ -628,19 +642,17 @@ export abstract class BaseNode<
 				}
 				return result
 			}
-			return this.rejectRoot(data, onFail)
+			return this.rejectRoot(data, onFail, runtime)
 		}
 	}
 
-	private rootTraversal(data: unknown): InternalTraversal {
-		const config = this.$.resolvedConfig
-		return new (rootApplyRuntimeOf(config).Traversal)(data, config)
-	}
-
 	// as a compiled root apply's fallback, by what its errors hold
-	private rejectRoot(data: unknown, onFail: FailHandler | null): unknown {
+	private rejectRoot(
+		data: unknown,
+		onFail: FailHandler | null,
+		{ Traversal, applyCyclic, applyRejected }: typeof rootApplyRuntime
+	): unknown {
 		const config = this.$.resolvedConfig
-		const { Traversal, applyCyclic, applyRejected } = rootApplyRuntimeOf(config)
 		return this.includesAlias ?
 				applyCyclic(this, data, new Traversal(data, config)).finalize(onFail)
 			:	applyRejected(this, data, config, onFail, Traversal)

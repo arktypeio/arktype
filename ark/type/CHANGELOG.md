@@ -22,6 +22,32 @@ The error `"none"` returns holds the code `"predicate"`, an empty path and the d
 
 A Type validates as the Scope it's bound to is configured, so a Type another Scope references validates as that Scope's Types do.
 
+### Transform a valid input in place with `mutatesInput`
+
+By default, a transform copies each object it changes, so the input is never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the input, which it returns. It can be configured globally or for a Scope:
+
+```ts
+import { configure } from "arktype/config"
+import "arktype/mutatesInput"
+
+configure({ mutatesInput: true })
+
+const User = type({ name: "string.trim", role: "string = 'member'" })
+
+const input = { name: " Ada " }
+
+// true, and input is now { name: "Ada", role: "member" }
+User(input) === input
+```
+
+`true` writes in place only where the Type shows that no place it checks can read what another wrote, whatever objects the input holds at several, so it returns what copying would. A Type that can't, like `{ a: { n: "string.numeric.parse" }, b: { n: "string" } }`, whose `a` and `b` could be one object, copies as it does by default. `"always"` writes every transform in place, so the input must hold no object at two places a transform reaches, and a function a Type holds must read or return the input's objects only through its parameters, not its closure.
+
+The object returned is the input, so it keeps what a copy wouldn't, like the order of its keys, its accessors and the keys it inherits, and a key the Type doesn't declare holds what another place wrote where the input holds one object at both, as writing the input means. Writing an input that can't be written, like a frozen object, throws a TypeError. Either way, an object a Type deletes undeclared keys from is copied, as deleting a key makes an object slower to read, as is a key two constraints transform, like a property an index signature transforms too.
+
+A validation that fails can leave writes in the objects of its input it found valid, which their transforms wrote as it checked the rest.
+
+`import "arktype/mutatesInput"` installs both modes, so a program choosing neither ships neither, and creating a Type configured with either throws without it, naming the import.
+
 ### Export `Default` and `To` as types
 
 `arktype` exports the `Default` and `To` types an inferred Type holds, so a declaration can name them as `import("arktype").Default`, like `Out` and `Brand`.

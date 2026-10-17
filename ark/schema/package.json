@@ -32,6 +32,10 @@
 			"ark-ts": "./i18n.ts",
 			"default": "./out/i18n.js"
 		},
+		"./mutatesInput": {
+			"ark-ts": "./mutatesInput.ts",
+			"default": "./out/mutatesInput.js"
+		},
 		"./runtime": {
 			"ark-ts": "./runtime.ts",
 			"default": "./out/runtime.js"

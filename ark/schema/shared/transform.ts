@@ -5,8 +5,23 @@ import {
 	isArray,
 	objectKindOf
 } from "@ark/util"
+import type { BaseRoot } from "../roots/root.ts"
 import { arrayIndexMatcher } from "../structure/shared.ts"
 import type { ArkErrors } from "./issues.ts"
+import type { rootApplyRuntime } from "./rootApply.ts"
+
+// installed by arktype/mutatesInput, so a bundle without it only copies
+export interface InPlaceTransforms {
+	// whether a valid input's transforms write into it, as its Scope configures
+	writes(root: BaseRoot): boolean
+	// the root a compiled apply reads, transforming in place where its Scope can
+	applied(root: BaseRoot): BaseRoot
+	// what a jitless apply reads, transforming in place where its Scope can
+	runtimeOf(
+		root: BaseRoot,
+		runtime: typeof rootApplyRuntime
+	): typeof rootApplyRuntime
+}
 
 export class TransformErrors {
 	entries: TransformErrors.Entry[]

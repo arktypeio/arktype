@@ -41,6 +41,10 @@
 			"ark-ts": "./locales/en.ts",
 			"default": "./out/locales/en.js"
 		},
+		"./mutatesInput": {
+			"ark-ts": "./mutatesInput.ts",
+			"default": "./out/mutatesInput.js"
+		},
 		"./runtime": {
 			"ark-ts": "./runtime.ts",
 			"default": "./out/runtime.js"

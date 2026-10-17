@@ -559,6 +559,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	traverseTransform(data: object, ctx: InternalTraversal): unknown {
 		const errorCount = ctx.currentErrorCount
+		const copies = !this.writesInPlace(ctx)
 		let out: any = data
 		const transformKey = (
 			k: Key,
@@ -570,7 +571,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (input !== value)
 				transformed = mergeTransformed(input, value, transformed)
 			if (Object.is(transformed, value)) return value
-			if (out === data) out = this.copy(data)
+			if (out === data && copies) out = this.copy(data)
 			return (out[k] = transformed)
 		}
 		const hasIndexedProp = this.hasIndexedProp
@@ -709,7 +710,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		let failed: TransformErrors | undefined
 		for (let i = 0; i < this.defaultable.length; i++) {
 			if (!(this.defaultable[i].key in data)) {
-				if (out === data) out = this.copy(data)
+				if (out === data && !this.writesInPlace(ctx)) out = this.copy(data)
 				const defaulted = this.defaultable[i].defaultValueMorph(
 					out as never,
 					ctx as never
@@ -724,7 +725,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			(data as array).length <
 				sequence.prefixLength + sequence.defaultablesLength
 		) {
-			if (out === data) out = this.copy(data)
+			if (out === data && !this.writesInPlace(ctx)) out = this.copy(data)
 			for (
 				let i = (data as array).length - sequence.prefixLength;
 				i < sequence.defaultables.length;
@@ -782,6 +783,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return result
 	}
 
+	// a structure deleting undeclared keys copies what it writes
+	private writesInPlace(ctx: { inPlace?: boolean } | undefined): boolean {
+		return !!ctx?.inPlace && this.undeclared !== "delete"
+	}
+
 	private copy(data: object, copy = copyOf(data)): object {
 		if (this.sequence) {
 			for (const prop of this.props)
@@ -808,7 +814,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	private _transformsByKey: Record<Key, TransformStep[]> | undefined
-	private transformsOf(prop: Prop.Node): TransformStep[] {
+	transformsOf(prop: Prop.Node): TransformStep[] {
 		const cached = this._transformsByKey?.[prop.key]
 		if (cached) return cached
 		const transforms: TransformStep[] =
@@ -1009,7 +1015,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js.returnIfTransformFailed()
 	}
 
+	// out is data where a transform writes in place
 	private compileCopy(js: NodeCompiler): NodeCompiler {
+		if (this.writesInPlace(js)) return js
 		return js.if("out === data", () =>
 			this.sequence ?
 				this.compileCopyProps(
@@ -1025,7 +1033,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	private compileCopiedDeclaredKeys(js: NodeCompiler): NodeCompiler {
-		if (this.sequence) return js
+		if (this.sequence || this.writesInPlace(js)) return js
 		return js.if("out !== data", () => {
 			for (const prop of this.props) {
 				const missing = `!(${js.serialize(prop.key)} in out)`

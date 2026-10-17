@@ -211,10 +211,22 @@ export type AliasDefEntry = [name: string, defValue: unknown]
 // identity rather than names to support HMR and multi-bundle environments.
 let anonymousScopeCount = 0
 
-export const missingErrorModesMessage =
-	'errors: "first" or "none" requires import "arktype/errors"'
+// an option whose values but the default are installed by an import of arktype's
+export type InstalledOption = "errors" | "mutatesInput"
 
-export type missingErrorModesMessage = typeof missingErrorModesMessage
+export const writeMissingImportMessage = <
+	option extends InstalledOption,
+	value extends string
+>(
+	option: option,
+	value: value
+): writeMissingImportMessage<option, value> =>
+	`${option}: ${value} requires import "arktype/${option}"`
+
+export type writeMissingImportMessage<
+	option extends InstalledOption,
+	value extends string
+> = `${option}: ${value} requires import "arktype/${option}"`
 
 export type GlobalOnlyConfigOptionName = satisfy<
 	keyof ArkSchemaConfig,
@@ -311,6 +323,110 @@ const precompileRoot = (
 	}
 	unbound.delete(root)
 	precompile(references, undefined, unbound)
+}
+
+// what a transform and Apply's transforms of the values it finds valid write
+// in place, compiled for each node once a root writing in place reaches it,
+// with the traversals of those it reaches that their own units don't compile
+export const precompileInPlace = (root: BaseRoot): void => {
+	const declared: [node: BaseNode, kinds: TraversalKind[]][] = []
+	const kindsByNode = new Map<BaseNode, TraversalKind[]>()
+	// a node a morph pipes to, whose traversals pipe reads from it
+	const shapes = new Map<
+		BaseNode,
+		{
+			traverseApply?: TraverseApply | undefined
+			traverseTransform?: TraverseTransform | undefined
+		}
+	>()
+	const include = (node: BaseNode): void => {
+		for (const reference of referencesThroughAliases([
+			node,
+			...node.references
+		])) {
+			if (linkage.referencesById[reference.id]) continue
+			linkage.referencesById[reference.id] = reference
+			const kinds: TraversalKind[] = []
+			if (!reference.compiledUnit) kinds.push("Allows")
+			if (
+				reference.transforms ?
+					!reference.cache.applyInPlace
+				:	!reference.compiledUnit
+			)
+				kinds.push("Apply")
+			if (
+				reference.transforms &&
+				includes(transformedKinds, reference.kind) &&
+				!reference.cache.applyInPlace
+			)
+				kinds.push("Transform")
+			if (!kinds.length) continue
+			declared.push([reference, kinds])
+			kindsByNode.set(reference, kinds)
+		}
+	}
+	class InPlaceCompiler extends TraversalCompiler {
+		override readonly inPlace = true
+
+		override reach(node: BaseNode): void {
+			include(node)
+		}
+
+		override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
+			const reference = this.linkage.referencesById[id]
+			const kind = opts?.kind ?? this.traversalKind
+			if (reference && !kindsByNode.get(reference)?.includes(kind)) {
+				this.linkage.dependencies[`${this.nameOf(id)}${kind}`] = [
+					reference,
+					kind
+				]
+			}
+			return super.referenceToId(id, opts)
+		}
+
+		override ref(value: object | symbol): string {
+			if (!isNode(value) || !value.isRoot() || !value.transforms)
+				return super.ref(value)
+			include(value)
+			let shape = shapes.get(value)
+			if (!shape) shapes.set(value, (shape = Object.create(value) as {}))
+			return super.ref(shape)
+		}
+	}
+	const linkage = createLinkage(undefined, { compiler: InPlaceCompiler })
+	include(root)
+	const names: string[][] = []
+	for (let i = 0; i < declared.length; i++) {
+		const [node, kinds] = declared[i]
+		names.push(kinds.map(kind => declareTraversal(linkage, node, kind)))
+	}
+	const compiledUnit = writeUnit(
+		Object.keys(linkage.dependencies),
+		[...linkage.refs.values()],
+		linkage.members,
+		names
+	).compile()
+	const traversals = compiledUnit(
+		Object.values(linkage.dependencies).map(
+			([node, kind]): Fn =>
+				kind === "Allows" || !node.transforms ? node[`traverse${kind}`]!
+				: kind === "Apply" ? node.cache.applyInPlace!
+				: node.cache.transformInPlace!
+		),
+		[...linkage.refs.keys()]
+	)
+	for (let i = 0; i < declared.length; i++) {
+		const [node, kinds] = declared[i]
+		if (!node.transforms) continue
+		node.cache.applyInPlace = traversals[i][kinds.indexOf("Apply")] as never
+		node.cache.transformInPlace = traversals[i][
+			kinds.indexOf("Transform")
+		] as never
+	}
+	for (const [node, shape] of shapes) {
+		shape.traverseApply = node.cache.applyInPlace
+		shape.traverseTransform = node.cache.transformInPlace
+	}
 }
 
 const bindUnit = (
@@ -1292,8 +1408,15 @@ export abstract class BaseScope<$ extends {} = {}> {
 			$ark.defaultConfig
 		))
 		const resolvedConfig = mergeConfigs(globalConfig, this.scopeConfig)
-		if (resolvedConfig.errors !== "all" && !$ark.errorModes)
-			throwParseError(missingErrorModesMessage)
+		const missing: InstalledOption | undefined =
+			resolvedConfig.errors !== "all" && !$ark.errorModes ? "errors"
+			: resolvedConfig.mutatesInput && !$ark.inPlace ? "mutatesInput"
+			: undefined
+		if (missing) {
+			throwParseError(
+				writeMissingImportMessage(missing, printable(resolvedConfig[missing]))
+			)
+		}
 		// locale is global-only, though an untyped config can pass one
 		if (resolvedConfig.locale !== globalConfig.locale)
 			(resolvedConfig as { locale: Locale }).locale = globalConfig.locale

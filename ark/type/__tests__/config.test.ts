@@ -2,7 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	$ark,
 	configureAfterTypeMessage,
-	missingErrorModesMessage,
+	writeMissingImportMessage,
 	rootSchema
 } from "@ark/schema"
 import { configure, scope, type } from "arktype"
@@ -237,7 +237,7 @@ contextualize(() => {
 			try {
 				attest(() =>
 					scope({ a: "string" }, { errors: "none" }).export()
-				).throws(missingErrorModesMessage)
+				).throws(writeMissingImportMessage("errors", '"none"'))
 			} finally {
 				$ark.errorModes = modes
 			}

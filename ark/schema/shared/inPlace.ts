@@ -1,0 +1,337 @@
+import type { MutatesInput } from "../config.ts"
+import type { BaseNode } from "../node.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import { precompileInPlace } from "../scope.ts"
+import { arrayIndexMatcher } from "../structure/shared.ts"
+import type { StructureNode } from "../structure/structure.ts"
+import { $ark } from "./registry.ts"
+import type { rootApplyRuntime } from "./rootApply.ts"
+import { hasArkKind } from "./utils.ts"
+
+// the keys of an object a place reads or a transform writes
+interface Keys {
+	every: boolean
+	// an array's indices and length
+	indices: boolean
+	named: Set<PropertyKey>
+}
+
+interface Reads {
+	values: Keys
+	// whether a key is present, read where an undeclared key is rejected or deleted
+	everyPresence: boolean
+}
+
+interface Writes {
+	values: Keys
+	added: Keys
+	// whether each key added is a default a later visit leaves as written
+	addsOnlyDefaults: boolean
+}
+
+interface Place {
+	node: BaseRoot
+	// how many places hold it, at most 2
+	count: number
+	// the place it was first entered at, which nodes there share
+	position: number
+	afterFunction: boolean
+}
+
+const keys = (): Keys => ({ every: false, indices: false, named: new Set() })
+
+const isEmpty = (k: Keys): boolean => !k.every && !k.indices && !k.named.size
+
+const isIndexKey = (key: PropertyKey): boolean =>
+	key === "length" || (typeof key === "string" && arrayIndexMatcher.test(key))
+
+const meet = (l: Keys, r: Keys): boolean => {
+	if ((l.every && !isEmpty(r)) || (r.every && !isEmpty(l))) return true
+	if (l.indices && (r.indices || [...r.named].some(isIndexKey))) return true
+	if (r.indices && [...l.named].some(isIndexKey)) return true
+	for (const key of l.named) if (r.named.has(key)) return true
+	return false
+}
+
+const canBeObject = (node: BaseRoot): boolean =>
+	node.overlaps($ark.intrinsic.object.internal)
+
+// a structure that writes what it transforms, as one deleting undeclared
+// keys copies all but the elements a sequence it doesn't slice transforms
+const writerOf = (node: BaseNode): StructureNode | undefined => {
+	const structure = node.hasKind("intersection") ? node.structure : undefined
+	if (!structure?.transforms) return
+	if (
+		structure.undeclared !== "delete" ||
+		(structure.sequence?.transforms && !structure.slicesSequence)
+	)
+		return structure
+}
+
+// written in place, a transform returns its input or the errors it found
+const returnsInput = (node: BaseNode, seen = new Set<BaseNode>()): boolean => {
+	if (!node.transforms || seen.has(node)) return true
+	seen.add(node)
+	if (node.hasKind("alias")) return returnsInput(node.resolution, seen)
+	if (node.hasKind("union"))
+		return node.branches.every(branch => returnsInput(branch, seen))
+	if (node.hasKind("intersection"))
+		return !!node.structure && node.structure.undeclared !== "delete"
+	return false
+}
+
+const writesOf = (structure: StructureNode): Writes => {
+	const writes: Writes = {
+		values: keys(),
+		added: keys(),
+		addsOnlyDefaults: true
+	}
+	const sequence = structure.sequence
+	if (sequence?.children.some(element => !returnsInput(element)))
+		writes.values.indices = true
+	if (structure.undeclared === "delete") return writes
+	for (const prop of structure.props) {
+		if (!returnsInput(prop.value)) writes.values.named.add(prop.key)
+		if (prop.hasDefault()) {
+			writes.added.named.add(prop.key)
+			if (prop.value.transforms) writes.addsOnlyDefaults = false
+		}
+	}
+	if (structure.index?.some(index => !returnsInput(index.value)))
+		writes.values.every = true
+	if (sequence?.defaultables) {
+		writes.added.indices = true
+		if (sequence.defaultables.some(([node]) => node.transforms))
+			writes.addsOnlyDefaults = false
+	}
+	return writes
+}
+
+const readsOf = (node: BaseRoot): Reads | undefined => {
+	// a function can read any key of what it receives
+	if (node.hasKind("morph"))
+		return canBeObject(node.rawIn) ? everyRead() : undefined
+	if (!node.hasKind("intersection")) return
+	if (node.inner.predicate) return everyRead()
+	const structure = node.structure
+	if (!structure) return
+	const reads: Reads = { values: keys(), everyPresence: false }
+	for (const prop of structure.props) reads.values.named.add(prop.key)
+	if (structure.index) reads.values.every = true
+	if (structure.sequence) reads.values.indices = true
+	if (structure.undeclared) reads.everyPresence = true
+	return reads
+}
+
+const everyRead = (): Reads => ({
+	values: { every: true, indices: true, named: new Set() },
+	everyPresence: true
+})
+
+// each node a valid input's transform reaches, by the places that hold it,
+// keyed by id, as a Type bound to another Scope is a copy its cycles don't reach
+const placesOf = (root: BaseRoot): Map<string, Place> => {
+	const places = new Map<string, Place>()
+	let positions = 0
+	const enter = (
+		node: BaseRoot,
+		count: number,
+		position: number,
+		afterFunction: boolean
+	): void => {
+		const place = places.get(node.id)
+		if (place) {
+			const entered = Math.min(2, place.count + count)
+			if (entered === place.count && (place.afterFunction || !afterFunction))
+				return
+			place.count = entered
+			place.afterFunction ||= afterFunction
+			return visit(node, place.count, place.position, place.afterFunction)
+		}
+		places.set(node.id, { node, count, position, afterFunction })
+		visit(node, count, position, afterFunction)
+	}
+	// a child at a new place is held there once per place its parent is
+	const enterNew = (
+		node: BaseRoot,
+		count: number,
+		afterFunction: boolean
+	): void => enter(node, count, ++positions, afterFunction)
+	const visit = (
+		node: BaseRoot,
+		count: number,
+		position: number,
+		afterFunction: boolean
+	): void => {
+		if (node.hasKind("alias"))
+			return enter(node.resolution, count, position, afterFunction)
+		if (node.hasKind("union")) {
+			for (const branch of node.branches)
+				enter(branch, count, position, afterFunction)
+			return
+		}
+		if (node.hasKind("morph")) {
+			if (node.inner.in) enter(node.inner.in, count, position, afterFunction)
+			let piped = false
+			for (const morph of node.morphs) {
+				if (!hasArkKind(morph, "root")) piped = true
+				else if (!piped) enter(morph, count, position, afterFunction)
+				else enterNew(morph, count, true)
+			}
+			return
+		}
+		const structure = node.hasKind("intersection") ? node.structure : undefined
+		if (!structure) return
+		for (const prop of structure.props)
+			enterNew(prop.value, count, afterFunction)
+		for (const index of structure.index ?? [])
+			enterNew(index.value, 2, afterFunction)
+		const sequence = structure.sequence
+		if (!sequence) return
+		for (const element of sequence.prevariadic)
+			enterNew(element.node, count, afterFunction)
+		if (sequence.variadic) enterNew(sequence.variadic, 2, afterFunction)
+		for (const element of sequence.postfix ?? [])
+			enterNew(element, count, afterFunction)
+	}
+	enterNew(root, 1, false)
+	return places
+}
+
+// a key two constraints transform, each reading the value as it received it
+const transformsKeyTwice = (structure: StructureNode): boolean => {
+	const writes = (node: BaseNode) =>
+		node.includesAlias ||
+		node.references.some(
+			reference => reference.hasKind("structure") && reference.transforms
+		)
+	const index = structure.index?.filter(index => index.value.transforms) ?? []
+	if (!index.length) return false
+	if (index.length > 1 && index.some(index => writes(index.value))) return true
+	return structure.props.some(prop => {
+		const steps = structure.transformsOf(prop)
+		return steps.length > 1 && steps.some(step => writes(step.node))
+	})
+}
+
+const overlaps = (l: BaseRoot, r: BaseRoot): boolean => {
+	try {
+		return l.rawIn.overlaps(r.rawIn)
+	} catch {
+		return true
+	}
+}
+
+// whether a structure could write in place, without which nothing would
+const holdsWriter = (places: Map<string, Place>): boolean => {
+	for (const { node } of places.values()) if (writerOf(node)) return true
+	return false
+}
+
+// whether writing in place returns what copying would, where every place's input is its own
+const writesSoundly = (places: Map<string, Place>): boolean => {
+	for (const { node } of places.values()) {
+		const structure = node.hasKind("intersection") ? node.structure : undefined
+		if (structure && transformsKeyTwice(structure)) return false
+	}
+	return true
+}
+
+// whether no place can read what another wrote, whatever objects the input shares
+const writesUnread = (places: Map<string, Place>): boolean => {
+	const readers: [Place, Reads][] = []
+	for (const place of places.values()) {
+		const reads = readsOf(place.node)
+		if (reads) readers.push([place, reads])
+	}
+	for (const place of places.values()) {
+		const writer = writerOf(place.node)
+		if (!writer) continue
+		// a function can return an object that outlives the call
+		if (place.afterFunction) return false
+		const writes = writesOf(writer)
+		if (
+			place.count > 1 &&
+			(!isEmpty(writes.values) ||
+				(!isEmpty(writes.added) && !writes.addsOnlyDefaults))
+		)
+			return false
+		for (const [reader, reads] of readers) {
+			if (
+				reader === place ||
+				(reader.count === 1 &&
+					place.count === 1 &&
+					reader.position === place.position)
+			)
+				continue
+			if (
+				(meet(writes.values, reads.values) ||
+					meet(writes.added, reads.values) ||
+					(reads.everyPresence && !isEmpty(writes.added))) &&
+				overlaps(place.node, reader.node)
+			)
+				return false
+		}
+	}
+	return true
+}
+
+const writesInPlaceByMode = {
+	true: new WeakMap<BaseRoot, boolean>(),
+	always: new WeakMap<BaseRoot, boolean>()
+}
+
+/** whether a valid input's transforms write into it, given how the input may be mutated */
+export const writesInPlace = (
+	root: BaseRoot,
+	mutatesInput: MutatesInput | undefined
+): boolean => {
+	if (!mutatesInput || !root.transforms) return false
+	const cache = writesInPlaceByMode[mutatesInput === true ? "true" : "always"]
+	let writes = cache.get(root)
+	if (writes === undefined) {
+		const places = placesOf(root)
+		writes =
+			holdsWriter(places) &&
+			writesSoundly(places) &&
+			(mutatesInput !== true || writesUnread(places))
+		cache.set(root, writes)
+	}
+	return writes
+}
+
+// the runtime a jitless apply transforming in place reads, by what it'd read
+const inPlaceRuntimes = new WeakMap<
+	typeof rootApplyRuntime,
+	typeof rootApplyRuntime
+>()
+
+const inPlaceRuntimeOf = (
+	runtime: typeof rootApplyRuntime
+): typeof rootApplyRuntime => {
+	let inPlace = inPlaceRuntimes.get(runtime)
+	if (!inPlace) {
+		class InPlaceTraversal extends runtime.Traversal {}
+		InPlaceTraversal.prototype.inPlace = true
+		inPlace = { ...runtime, Traversal: InPlaceTraversal }
+		inPlaceRuntimes.set(runtime, inPlace)
+	}
+	return inPlace
+}
+
+const writesInPlaceAsConfigured = (root: BaseRoot) =>
+	writesInPlace(root, root.$.resolvedConfig.mutatesInput)
+
+$ark.inPlace = {
+	writes: writesInPlaceAsConfigured,
+	applied: root => {
+		if (!writesInPlaceAsConfigured(root)) return root
+		if (!root.cache.applyInPlace) precompileInPlace(root)
+		return Object.assign(Object.create(root), {
+			traverseApply: root.cache.applyInPlace,
+			traverseTransform: root.cache.transformInPlace
+		})
+	},
+	runtimeOf: (root, runtime) =>
+		writesInPlaceAsConfigured(root) ? inPlaceRuntimeOf(runtime) : runtime
+}
