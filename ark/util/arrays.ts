@@ -129,12 +129,12 @@ export declare namespace array {
 		i["length"] extends count ? result
 		:	_multiply<base, [...result, ...base], count, [...i, 1]>
 
-	export type repeat<element, count extends number> = buildFromSegments<
-		element,
-		[],
-		exponentials.max<count>,
-		count
-	>
+	// inferring the segments keeps checking this declaration from relating
+	// them to 1[][], which would build every power of two
+	export type repeat<element, count extends number> =
+		powersOfTwo<seedOf<count>> extends infer segments extends 1[][] ?
+			buildFromSegments<element, [], dropLongerThan<count, segments>, count>
+		:	never
 
 	type buildFromSegments<
 		element,
@@ -450,60 +450,20 @@ type _setIndex<
 		_setIndex<tail, i, to, [...result, result["length"] extends i ? to : head]>
 	:	result
 
-type zero = []
+// the powers of two up to 2^13, largest first, since a 2^14 element tuple
+// is too large to represent. Declaring them instead would build each one
+// whenever the declaration is checked.
+type powersOfTwo<segments extends 1[][]> =
+	segments["length"] extends 15 ? segments
+	:	powersOfTwo<[[...segments[0], ...segments[0]], ...segments]>
 
-type one = [1]
+// depending on count defers powersOfTwo until count is known, while every
+// count still shares the one list it builds
+type seedOf<count> = count extends unknown ? [[1], []] : never
 
-type two = [1, 1]
-
-type three = [...two, ...two]
-
-type four = [...three, ...three]
-
-type five = [...four, ...four]
-
-type six = [...five, ...five]
-
-type seven = [...six, ...six]
-
-type eight = [...seven, ...seven]
-
-type nine = [...eight, ...eight]
-
-type ten = [...nine, ...nine]
-
-type eleven = [...ten, ...ten]
-
-type twelve = [...eleven, ...eleven]
-
-type thirteen = [...twelve, ...twelve]
-
-type fourteen = [...thirteen, ...thirteen]
-
-// extending this pattern further results in:
-// "Expression produces a tuple type that is too large to represnet"
-
-type exponentials = [
-	fourteen,
-	thirteen,
-	twelve,
-	eleven,
-	ten,
-	nine,
-	eight,
-	seven,
-	six,
-	five,
-	four,
-	three,
-	two,
-	one,
-	zero
-]
-
-declare namespace exponentials {
-	export type max<n extends number> = _max<n, exponentials>
-
-	type _max<n extends number, filtered extends unknown[]> =
-		`${n}` extends keyof filtered[0] ? _max<n, tailOf<filtered>> : filtered
-}
+type dropLongerThan<n extends number, segments extends 1[][]> =
+	segments extends [infer head extends 1[], ...infer tail extends 1[][]] ?
+		`${n}` extends keyof head ?
+			dropLongerThan<n, tail>
+		:	segments
+	:	segments

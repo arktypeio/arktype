@@ -1,5 +1,11 @@
 import { attest, contextualize } from "@ark/attest"
-import { getDuplicatesOf, groupBy, spliterate, type setIndex } from "@ark/util"
+import {
+	getDuplicatesOf,
+	groupBy,
+	spliterate,
+	type array,
+	type setIndex
+} from "@ark/util"
 
 type PinkLady = { group: "apple"; kind: "Pink Lady" }
 type Gala = { group: "apple"; kind: "Gala" }
@@ -71,5 +77,15 @@ contextualize(() => {
 		type T = setIndex<readonly [1, 2], 1, 1>
 
 		attest<readonly [1, 1], T>()
+	})
+
+	it("array.repeat", () => {
+		attest<[], array.repeat<"a", 0>>()
+		attest<["a", "a", "a"], array.repeat<"a", 3>>()
+	})
+
+	it("array.repeat at and past a power of two", () => {
+		attest<512, array.repeat<1, 512>["length"]>()
+		attest<513, array.repeat<1, 513>["length"]>()
 	})
 })
