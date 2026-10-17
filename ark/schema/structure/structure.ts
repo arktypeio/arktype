@@ -621,7 +621,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	traverseTransform(data: object, ctx: InternalTraversal): unknown {
 		const errorCount = ctx.currentErrorCount
-		const copies = !this.writesInPlace(ctx)
+		const copies = !this.writesInto(ctx)
 		let out: any = data
 		const transformKey = (
 			k: Key,
@@ -697,7 +697,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return this.applyStructuralMorph(data, out, ctx)
 	}
 
-	// a key several constraints check is transformed once each of them allows it, which only a transform that can fail tells apart
+	// a key several constraints transform, one of which can fail
 	get sharesTransformedKeys(): boolean {
 		return (
 			this.index !== undefined &&
@@ -772,7 +772,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		let failed: TransformErrors | undefined
 		for (let i = 0; i < this.defaultable.length; i++) {
 			if (!(this.defaultable[i].key in data)) {
-				if (out === data && !this.writesInPlace(ctx)) out = this.copy(data)
+				if (out === data && !this.writesInto(ctx)) out = this.copy(data)
 				const defaulted = this.defaultable[i].defaultValueMorph(
 					out as never,
 					ctx as never
@@ -787,7 +787,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			(data as array).length <
 				sequence.prefixLength + sequence.defaultablesLength
 		) {
-			if (out === data && !this.writesInPlace(ctx)) out = this.copy(data)
+			if (out === data && !this.writesInto(ctx)) out = this.copy(data)
 			for (
 				let i = (data as array).length - sequence.prefixLength;
 				i < sequence.defaultables.length;
@@ -846,7 +846,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	// a structure deleting undeclared keys copies what it writes
-	private writesInPlace(ctx: { inPlace?: boolean } | undefined): boolean {
+	private writesInto(ctx: { inPlace?: boolean } | undefined): boolean {
 		return !!ctx?.inPlace && this.undeclared !== "delete"
 	}
 
@@ -923,7 +923,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return parts.join(" || ") || "false"
 	}
 
-	// a stripping structure declaring only its indices copies a changed array by slice, which takes just those, unless an alias's cycle runs through its sequence
+	// copied by slice: declares only indices and no cycle runs through it
 	get slicesSequence(): boolean {
 		return (
 			this.undeclared === "delete" &&
@@ -944,7 +944,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 
-		// Allows checks each child in an if of its own, which runs fewer instructions than returning their conjunction
 		const conjunction =
 			js.traversalKind === "Apply" ? this.compileConjunction(js) : undefined
 		if (conjunction !== undefined) return js.return(conjunction)
@@ -1083,7 +1082,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	// out is data where a transform writes in place
 	private compileCopy(js: NodeCompiler): NodeCompiler {
-		if (this.writesInPlace(js)) return js
+		if (this.writesInto(js)) return js
 		return js.if("out === data", () =>
 			this.sequence ?
 				this.compileCopyProps(
@@ -1098,7 +1097,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
-	// copyOf copies data alike when its first required key isn't in it
+	// read a required key first; copyOf handles data without it
 	private compileShapeCheck(js: NodeCompiler): string {
 		return this.required ?
 				`${js.serialize(this.required[0].key)} in data && `
@@ -1106,7 +1105,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	private compileCopiedDeclaredKeys(js: NodeCompiler): NodeCompiler {
-		if (this.sequence || this.writesInPlace(js)) return js
+		if (this.sequence || this.writesInto(js)) return js
 		return js.if("out !== data", () => {
 			for (const prop of this.props) {
 				const missing = `!(${js.serialize(prop.key)} in out)`
@@ -1211,7 +1210,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			return js.return("out")
 		}
 		if (this.sequence) {
-			// an array holding keys other than its indices is the only one scanned for undeclared keys, and a slice holds none
+			// only an array with non-index keys is scanned for undeclared ones
 			js.const(
 				"indexed",
 				`${this.slicesSequence ? "out !== data || " : ""}${js.ref(holdsOnlyIndices)}(data)`

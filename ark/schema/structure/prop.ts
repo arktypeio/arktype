@@ -142,7 +142,7 @@ export abstract class BaseProp<
 	compileExpression(js: NodeCompiler): string | undefined {
 		const key = js.serialize(this.key)
 		const value = `data${js.prop(this.key)}`
-		// a missing key reads undefined, which fails a value whose every branch has a basis other than undefined, so its key is checked only to report it
+		// a value no branch of which allows undefined fails a missing key too
 		if (
 			this.hasKind("required") &&
 			(js.traversalKind === "Allows" ||

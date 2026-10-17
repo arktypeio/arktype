@@ -1,5 +1,5 @@
 import {
-	assertDefaultAssignability,
+	checkDefault,
 	intrinsic,
 	normalizeIndex,
 	type BaseParseContext,
@@ -97,11 +97,7 @@ export const parseObjectLiteral = (
 			} else {
 				// string syntax creates its own default functions, which run no user code
 				if (typeof v === "string" && typeof parsedValue[2] === "function") {
-					assertDefaultAssignability(
-						parsedValue[0],
-						parsedValue[2](),
-						parsedKey.normalized
-					)
+					checkDefault(parsedValue[0], parsedValue[2](), parsedKey.normalized)
 				}
 				appendNamedProp(
 					structure,

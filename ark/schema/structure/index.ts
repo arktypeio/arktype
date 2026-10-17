@@ -114,7 +114,7 @@ export class IndexNode extends BaseConstraint<Index.Declaration> {
 		this.cache.flatMorphs = []
 	}
 
-	// a key the signature rejects is undeclared, so an error its predicate adds isn't kept
+	// a key the signature rejects is undeclared, so its errors are dropped
 	allowsKey: TraverseAllows<PropertyKey> = (k, ctx) =>
 		this.signature.allowsRequiresTraversal ?
 			allowsInBranch(ctx as InternalTraversal, this.signature, k)

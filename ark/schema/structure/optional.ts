@@ -126,19 +126,19 @@ export const assertDefaultValueAssignability = (
 	if (hasDomain(value, "object"))
 		throwParseError(writeNonPrimitiveNonFunctionDefaultValueMessage(key))
 
-	return assertDefaultAssignability(node, value, key, owner)
+	return checkDefault(node, value, key, owner)
 }
 
-// a function default's result can be an object, so it skips the non-primitive check
-export const assertDefaultAssignability = (
+// unlike its input, a thunk's result may be an object
+export const checkDefault = (
 	node: BaseRoot,
 	value: unknown,
 	key: PropertyKey | null,
-	// the node whose creation checks it, absent where arktype checks it each time the definition runs, as for `.default()`
+	// the node whose creation checks it, if any
 	owner?: BaseNode
 ): unknown => {
 	if (!isResolutionFinal() && node.includesAlias) {
-		queueUnchecked(() => assertDefaultAssignability(node, value, key, owner))
+		queueUnchecked(() => checkDefault(node, value, key, owner))
 		return value
 	}
 
