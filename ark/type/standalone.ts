@@ -66,7 +66,7 @@ import type { HoleKind, IntrospectionMember } from "./runtime.ts"
 import * as runtime from "./runtimeExports.ts"
 import type { Scope } from "./scope.ts"
 
-// what an issue's message is written from, of which a standalone validator bakes only its node's description
+// issue text a standalone validator bakes only from description
 const describingKeys = ["expected", "problem", "message"] as const
 
 type DeclarationRole =
@@ -77,7 +77,7 @@ type DeclarationRole =
 	| "json"
 	| "jsonSchema"
 
-// constraints a node keeps sorted by hash, which holds the names of the functions they hold, unlike props, which arktype orders by key
+// constraints sorted by hash, which can include a function's name
 const sortedConstraintKeys = ["pattern", "index"] as const
 
 const runtimePathsByValue = new Map<unknown, string>()
@@ -93,11 +93,10 @@ const indexRuntime = (value: unknown, path: string): void => {
 	}
 }
 
-// an artifact reads what the runtime exports from it rather than copying it
 for (const [name, value] of Object.entries(runtime))
 	indexRuntime(value, `runtime.${name}`)
 
-// a value the runtime holds is named by its path, since its state and the order roots reach it vary between builds
+// named by path, since runtime state differs between builds
 export const runtimeKeyOf = (value: object | symbol): string | undefined =>
 	runtimePathsByValue.get(value) ??
 	((
@@ -107,7 +106,6 @@ export const runtimeKeyOf = (value: object | symbol): string | undefined =>
 		`globalThis.${functionNameOf(value)}`
 	:	undefined)
 
-// what an artifact exports as it is, rather than creating it in a factory
 type ExportedValue = type.Any | Module | Scope<any> | Generic | TypedFn
 
 export type Foldable = BaseRoot | ExportedValue | BaseScope | GenericRoot
@@ -128,7 +126,7 @@ export const introspectionMembers = [
 
 export type FoldedMember = Exclude<IntrospectionMember, "~standard.jsonSchema">
 
-// `methods` is what a validator inherits: traverse(), from() and toString()
+// traverse(), from() and toString()
 export const defaultMembers = [
 	"assert",
 	"meta",
@@ -148,22 +146,18 @@ export interface StandaloneIntrospection {
 	data: unknown
 	params: FactoryParam[]
 	defaultChecks?: readonly DefaultCheck[]
-	// what arktype threw writing the site's JSON Schema, which its factory throws at each call
 	thrown?: unknown
 }
 
 export interface StandaloneFactory {
-	// a Type, Module, Scope, Generic or TypedFn its site creates from what the factory receives
 	type: ExportedValue
 	params: FactoryParam[]
-	// the table of a factory returning what it created before for the same holes, which those returning one Type at build share
 	internedBy?: number | undefined
 	defaultChecks?: readonly DefaultCheck[]
 }
 
 export type FactoryParam = HoleParam | InputParam | HelperParam | ProgressParam
 
-// a default arktype checks against a Type where it defines it, which its factory checks where it creates it
 export type DefaultCheck = [
 	node: BaseRoot,
 	value: unknown,
@@ -174,7 +168,7 @@ export interface HoleParam {
 	kind: HoleKind
 	label: string
 	value: unknown
-	// a function or symbol its site's module creates, whose facts nothing changes, unlike another module's, which a mock can replace
+	// created by the site's module, so no mock can replace it
 	isOwn?: boolean
 }
 
@@ -191,17 +185,14 @@ export interface HelperParam {
 	name: string
 }
 
-// how far the site's module has run, which must be past the statement setting what the site reads, as a read before then throws
 export interface ProgressParam {
 	kind: "progress"
 	label: string
 	at: number
 }
 
-// false where nothing calls configure(), which validators then don't read
 export type Configured = ConfiguredModule | false | undefined
 
-// what a factory checks is as built: what it receives, helpers too, or none
 export type Checks = "types" | "helpers" | "none"
 
 export type { ErrorDetail }
@@ -222,23 +213,17 @@ interface SharedModule {
 
 export interface StandaloneOptions {
 	configured?: Configured
-	// a validator's members: the defaults unless false, introspection if true
 	members?: ValidatorMembers | undefined
-	// runs arktype writing what a validator bakes, refusing with a ParseError where the configured code it calls reads what the program can change
+	// runs arktype's writers, refusing code that reads mutable state
 	bake?: (<t>(write: () => t) => t) | undefined
-	// "first" returns only the first issue, "none" one root issue, "is invalid"
 	errors?: ErrorDetail | undefined
-	// false leaves each validator and its members unfrozen
 	freeze?: boolean | undefined
-	// false creates each validator as its module loads, not at its first read
 	lazy?: boolean | undefined
-	// "none" has a factory trust the Types it receives are those built
+	// "none" trusts received Types to be the ones built
 	checks?: Checks | undefined
-	// whether a valid input is transformed in place, else as each root's Scope configures
 	mutatesInput?: MutatesInput | undefined
-	// "size" writes the shortest forms and shares root applies written alike
 	optimize?: Optimization | undefined
-	// declares what a site calls as functions, for a module an import cycle can reach before its artifact is evaluated
+	// declare functions, so an import cycle can call them early
 	hoisted?: boolean | undefined
 }
 
@@ -246,23 +231,17 @@ interface Baking {
 	members: ReadonlySet<ValidatorMember>
 	write: <t>(write: () => t) => t
 	firstIssue: boolean
-	// else a failure is one issue at the root, so no unit returns an Apply
 	detailsErrors: boolean
 	freezes: boolean
 	readsConfig: boolean
-	// a module an import cycle reaches early creates at the first read anyway
 	createsLazily: boolean
-	// else held by id only where a factory takes functions from it
 	checksTypes: boolean
 	mutatesInput: MutatesInput | undefined
 	hoisted: boolean
-	// writes the shortest forms rather than those V8 compiles and runs fastest as the artifact loads
 	shortest: boolean
-	// declares a unit's traversals at the top level of its module
 	flattens: boolean
 }
 
-// a root apply, as a function of its unit's traversals or shape returns it
 interface RootApplier {
 	params: string
 	apply: string
@@ -270,7 +249,6 @@ interface RootApplier {
 	failure?: keyof typeof failureSources
 }
 
-// hoisted for early calls, else parenthesized unless optimized for size
 const writeFunction = (
 	baking: Baking,
 	name: string,
@@ -285,20 +263,19 @@ const isCreatedByRuntime = (
 	members: ReadonlySet<ValidatorMember>,
 	baking: Baking
 ) =>
-	// its assert calls errors.throw(), which errors "none" lacks
+	// assert needs errors.throw(), which errors "none" lacks
 	baking.detailsErrors &&
 	baking.freezes &&
 	baking.readsConfig &&
 	baking.checksTypes &&
 	defaultMembers.every(member => members.has(member))
 
-// a value built as its module is evaluated, which a bundler drops unread, else at its first read
 const writeValue = (hoisted: boolean, name: string, expression: string) =>
 	hoisted ?
 		`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${expression})\n}`
 	:	`const ${name} = /* @__PURE__ */ (() => ${expression})()`
 
-// how errors "none" fails, as each function's parameters and body
+// errors "none" failures as [params, body]
 const failureSources = {
 	invalid: [
 		"data, onFail",
@@ -306,7 +283,6 @@ const failureSources = {
 	errors._ = [{ code: "predicate", path: [], data }]
 	return onFail ? onFail(errors) : errors`
 	],
-	// a compact validator's failure, given what else its call passes
 	invalidCall: [
 		"data, args, onFail",
 		`\tconst errors = new runtime.ArkErrors()
@@ -317,12 +293,10 @@ const failureSources = {
 	}
 	return onFail ? onFail(errors) : errors`
 	],
-	// a pipe applies a node its Allows rejected, where any issue fails it
 	applyInvalid: [
 		"data, ctx",
 		`\tctx.addError({ code: "predicate", path: ctx.path.slice(), data })`
 	],
-	// whether a node reading ctx allows data, by whether Apply adds an issue
 	applyBy: [
 		"allows",
 		`\treturn (data, ctx) => {
@@ -336,19 +310,16 @@ const failureSources = {
 
 export interface StandaloneModules {
 	code: string
-	// each module code imports by a ~arktype/ specifier
 	modules: Record<string, string>
-	// each folded factory whose function others share, as the name that function is exported by and the index a call passes it
+	// [shared function's export name, this factory's index]
 	folds: Record<string, [name: string, index: number]>
-	// each export whose call checks anything as it creates its value, so a bundler mustn't drop it
+	// exports that check on creation, so a bundler must keep them
 	checking: string[]
 }
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
 
-/**
- * #### an ES module exporting a getter for each Type, Module, Scope or Generic, which creates them when one is first read, and a function creating each factory's value, which folded factories may share
- */
+/** an ES module of getters and factories for each export */
 export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
@@ -377,7 +348,6 @@ export const precompileStandalone = (
 	}
 }
 
-// the units an artifact shares with others are modules of their own, so a bundler keeps one copy of each
 export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
@@ -424,7 +394,6 @@ const writeArtifact = (
 	imports: Record<string, string[]>,
 	folds: StandaloneModules["folds"],
 	checking: string[],
-	// whether each shared unit is a module, not declared in one scope
 	isModular: boolean
 ): string[] => {
 	const { configured } = opts
@@ -448,7 +417,6 @@ const writeArtifact = (
 	}
 	const types: Record<string, ExportedValue> = {}
 	const templates = new Set<unknown>()
-	// each factory whose Type is folded, which reads it where the creations write it
 	const folded = new Map<
 		string,
 		[index: number, artifact: StandaloneArtifact]
@@ -456,10 +424,10 @@ const writeArtifact = (
 	const factories: (string | (() => string))[] = []
 	const tables = new Set<number>()
 	const artifactsByName = new Map<string, StandaloneArtifact>()
-	// a trial write, adding nothing to the artifact, tells whether a factory's Type has code holding nothing the factory receives
+	// a trial write: foldable if its code holds nothing received
 	const canFold = (name: string, factory: StandaloneFactory): boolean => {
 		if (
-			// as unknown, since narrowing an ExportedValue to BaseRoot compares the Type and node structurally, too deep for TypeScript 6
+			// as unknown: narrowing to BaseRoot is too deep for TypeScript
 			!hasArkKind(factory.type as unknown, "root") ||
 			factory.defaultChecks?.length ||
 			// runtime.rekeyed creates a template's copies with runtime.createValidator
@@ -512,7 +480,6 @@ const writeArtifact = (
 			)
 			artifactsByName.set(name, artifact)
 			artifact.receive(factory.params)
-			// a factory whose Type is written once with the creations, which each call copies with what it receives
 			if (canFold(name, factory)) {
 				const { type } = factory
 				folded.set(name, [index, artifact])
@@ -538,7 +505,7 @@ const writeArtifact = (
 		shared,
 		imports
 	)
-	// folded factories alike but for the index their creation holds their Type at share one function, which a call passes that index
+	// folds differing only by index share one function
 	const sharersByCode = new Map<string, string[]>()
 	for (const [name, [, artifact]] of folded) {
 		const [creation, position] = reads[name]
@@ -554,7 +521,6 @@ const writeArtifact = (
 		const [index, artifact] = folded.get(name)!
 		const [creation, position] = reads[name]
 		const fold = folds[name]
-		// the first factory sharing a function writes it
 		if (fold && fold[0] !== name) return ""
 		const params = artifact.factory!.params.map((_, i) => `p${i}`)
 		if (fold) params.unshift("index")
@@ -564,7 +530,7 @@ ${writeExport(name, index)}`
 	}
 	const sections = [
 		...creations,
-		// created at the first read or a factory's first call, which an import cycle can reach before the artifact's body runs
+		// an import cycle can reach a factory before this runs
 		[...tables].map(table => `var interned${table}`).join("\n"),
 		...factories.map(factory =>
 			typeof factory === "string" ? factory : factory()
@@ -586,7 +552,6 @@ const writeCreation = (baking: Baking, index: number, body: string) =>
 		`var created${index}\n\n${writeFunction(baking, `create${index}`, "", body)}`
 	:	`const created${index} = /* @__PURE__ */ (() => {\n${body}\n})()`
 
-// what a creation returns, and the index it holds a value at where it creates more than one
 type CreationRead = [creation: string, position: number | undefined]
 
 const readOf = (...[creation, position]: CreationRead) =>
@@ -598,7 +563,6 @@ const writeExport = (name: string, index: number) =>
 const writeCreations = (
 	types: Record<string, ExportedValue>,
 	templates: ReadonlySet<unknown>,
-	// a factory's Type, which only that factory reads
 	folded: ReadonlyMap<string, unknown>,
 	{ configured }: StandaloneOptions,
 	baking: Baking,
@@ -647,7 +611,6 @@ const writeCreations = (
 			isShared ?
 				artifactOf(creation.indices).writeCreateBody(configured)
 			:	creation.body
-		// a creation only its own getter or factory reads is written there
 		const isInlined = baking.createsLazily && !isShared
 		code.push(
 			isInlined ? `var created${index}` : writeCreation(baking, index, body)
@@ -661,7 +624,6 @@ const writeCreations = (
 			]
 		}
 	}
-	// declared as functions, which a site an import cycle reaches before the artifact is evaluated can call
 	const getters = names.flatMap((name, i) => {
 		if (folded.has(name)) return []
 		return `${writeFunction(baking, `get${i}`, "", `\treturn ${readOf(...reads[name])}`)}\n\nexport { get${i} as ${JSON.stringify(name)} }`
@@ -687,7 +649,7 @@ export const writeFixConfig = (configured: Configured): string =>
 	:	"runtime.fixConfig()"
 
 interface WriteDataOptions {
-	// a ToJsonSchemaError's context holds the validator's own values, like a predicate or a Date bound, beside its data, which are emitted and listed here
+	// collects the functions, Dates and bigints a schema holds
 	values?: unknown[]
 }
 
@@ -712,11 +674,9 @@ const createDeclarations = (): Declarations => ({
 
 interface SharedUnit {
 	unit: RootUnit
-	// what it reads from other modules, which it receives as parameters
 	params: string[]
 	args: string[]
 	imports: Record<string, string[]>
-	// each of its roots its own traversals read, created with them
 	shapesByName: Record<string, string>
 }
 
@@ -729,28 +689,23 @@ export class StandaloneArtifact {
 	classes = new Set<unknown>()
 	checks: string[] = []
 	validatorNamesByRoot = new Map<BaseRoot, string>()
-	// a default's value is collected for the validator its morph reads, so that validator is written only if read, as a traversal writing the default inline reads none
 	defaultValues = new Set<BaseRoot>()
 	readRoots = new Set<BaseRoot>()
-	// e.g. a default's value its morph checks, or a typed function's parameters
 	runtimeReadRoots = new Set<BaseRoot>()
 	unitRoots = new Set<BaseRoot>()
-	// the unit holding each root in the first Type reaching it, by id, as two nodes of one id like `unknown` and `unknown.any` are one root, and whether it transforms in place
+	// keyed by +inPlace and id, as nodes sharing an id share a unit
 	unitsByHead = new Map<string, RootUnit>()
 	localNamesByUnit = new Map<RootUnit, string>()
-	// the unit whose values are being emitted, which names the nodes they hold
 	unit: RootUnit | undefined
 	writing: SharedUnit | undefined
-	// each structure's propsByKey, which traversal reads only with `in`
+	// read only with `in`
 	keyLookups = new Set<object>()
-	// each pattern's own RegExp, which only traversal reads
 	patternInstances = new Set<RegExp>()
 	defaultsByMorph = new Map<unknown, Default>()
 	defaultNamesByMorph = new Map<unknown, string>()
 	objectUnits = new Set<unknown>()
 	metas = new Set<object>()
 	declarations = createDeclarations()
-	// the JSON Schema writers reading only the runtime and what the factory receives, by their text
 	sharedWriters = new Map<string, string>()
 	emitting = new Set<object>()
 	moduleNamesByModule = new Map<object, string>()
@@ -761,25 +716,17 @@ export class StandaloneArtifact {
 	}
 	links: string[] = []
 	modules: string[] = []
-	// a literal holding a validator is declared empty and filled once validators exist
 	fills: string[] = []
-	// each default's morph, created once the validator applying its value exists
 	defaults: string[] = []
 	lateNames = new Set<string>()
-	// the Types exported and those their metas hold, rather than a default's
 	comparedRoots: BaseRoot[]
-	// a Type written without its key's functions, which each call of its factory copies with those it receives
+	// written without holes; each factory call rekeys it
 	templates = new Set<unknown>()
-	// a default's node, which only its check reads, so its validator is keyed by its traversal
 	checkedRoots: ReadonlySet<BaseRoot>
-	// what a factory receives and checks, none for an artifact creating its exports once
 	factory: StandaloneFactory | undefined
-	// each default arktype checks where it defines the Type, which the factory checks once it creates the validators
 	defaultChecks: readonly DefaultCheck[]
-	// the holes of each value a factory receives, by the name holding them
 	holesByName = new Map<string, readonly unknown[]>()
 	baking: Baking
-	// the Type whose introspection the factory returns, which declares no units
 	introspected: BaseRoot | undefined
 
 	constructor(
@@ -787,7 +734,7 @@ export class StandaloneArtifact {
 		sharedModules: Record<string, SharedModule>,
 		imports: Record<string, string[]>,
 		baking: Baking,
-		// the factory a site calls, or the function returning a Type's introspection, which receives only what its default checks read
+		// the factory or introspection a site calls
 		called?: StandaloneFactory | StandaloneIntrospection
 	) {
 		this.exports = exports
@@ -810,7 +757,6 @@ export class StandaloneArtifact {
 		const locale = $ark.config.locale
 		if (locale !== undefined && locale !== $ark.defaultConfig.locale)
 			throwParseError(writeUnprecompilableMessage("a configured locale"))
-		// a Type in a meta is emitted as its validator, so it needs traversals of its own
 		do {
 			for (const root of this.roots) {
 				if (this.unitRoots.has(root)) continue
@@ -826,7 +772,7 @@ export class StandaloneArtifact {
 		} while (this.collectMetaTypes() || this.collectDefaultTypes())
 		this.comparedRoots = this.roots
 		for (const root of this.roots) {
-			// the runtime's own onFail is the one the program configures, which only a validator's meta overrides
+			// only a meta may override the configured onFail
 			if (
 				root.meta.onFail === undefined &&
 				root.onFail !== $ark.resolvedConfig!.onFail
@@ -882,7 +828,7 @@ export class StandaloneArtifact {
 	checkFacts(
 		checked: [hole: unknown, kind: HoleKind, expression: string][]
 	): void {
-		// arktype relates a class to every other the definition holds, including those of a Type it references, which that Type's factory didn't see
+		// relate classes from referenced Types this factory didn't see
 		for (const hole of this.classes) {
 			if (!checked.some(([checkedHole]) => checkedHole === hole))
 				checked.push([hole, "class", this.holeExpressions.get(hole)!])
@@ -911,7 +857,7 @@ export class StandaloneArtifact {
 		}
 	}
 
-	// a string that prints a hole's name is completed at creation, and an order depending on it is computed there, so compiled code may not depend on it
+	// a printed hole name resolves at creation; code can't depend on it
 	refuseNameDependence(): void {
 		const holesByName: Record<string, unknown> = Object.create(null)
 		const printedNameOf = (hole: unknown) =>
@@ -924,7 +870,7 @@ export class StandaloneArtifact {
 					`Unexpected function ${this.labelsByHole.get(hole)} not named by a placeholder`
 				)
 			}
-			// an expression evaluated more than once creates a function each time under one placeholder, which prints the first one's name
+			// one placeholder can name several functions; check they match
 			const first = holesByName[name]
 			if (first === undefined) holesByName[name] = hole
 			else if (
@@ -968,7 +914,7 @@ export class StandaloneArtifact {
 			if (typeof hole === "function" && read(hole) === name) return hole
 	}
 
-	// a hole received twice is the value the build read twice, so it's checked to be that value rather than for its facts
+	// a hole received twice is checked by identity
 	receiveHole(hole: unknown, expression: string, label: string): boolean {
 		const received = this.holeExpressions.get(hole)
 		if (received) {
@@ -982,7 +928,6 @@ export class StandaloneArtifact {
 		return true
 	}
 
-	// each factory receiving a binding checks it with one function, which a bundle holds once
 	receiverOf(value: Foldable, id: string, label: string): string {
 		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
 		const body = `runtime.holesOf(holder, ${writeId(id)}, ${JSON.stringify(label)}${kind})`
@@ -1033,7 +978,7 @@ export class StandaloneArtifact {
 					`${holes.length ? `const ${holesName} = ` : ""}${this.receiverOf(value, id, label)}(${expression})`
 				)
 			}
-			// a class a Module, Scope or Generic holds is related to the others this artifact's Types hold
+			// relate a Module's, Scope's or Generic's classes to ours
 			const related =
 				isType ?
 					[value, ...value.references]
@@ -1047,7 +992,7 @@ export class StandaloneArtifact {
 			}
 			return
 		}
-		// e.g. a helper the site calls, whose module the factory keeps and which an import cycle can leave unset
+		// e.g. a helper an import cycle left unset
 		if (!path.length && typeof value === "function") {
 			this.checks.push(
 				`runtime.checkFunction(${expression}, ${JSON.stringify(label)})`
@@ -1085,7 +1030,7 @@ export class StandaloneArtifact {
 		}
 	}
 
-	// arktype orders two siblings by their hashes, which may first differ inside the name of a function the factory receives
+	// sibling order by hash can depend on a hole's name
 	refuseHoleOrdering(l: BaseNode, r: BaseNode): void {
 		let i = 0
 		while (i < l.hash.length && l.hash[i] === r.hash[i]) i++
@@ -1116,7 +1061,6 @@ export class StandaloneArtifact {
 		return this.units.flatMap(unit => unit.declared)
 	}
 
-	// each Type's units, after those they call
 	get units(): RootUnit[] {
 		return [
 			...new Set(
@@ -1175,7 +1119,7 @@ export class StandaloneArtifact {
 		return this.validatorNamesByRoot.size > typeCount
 	}
 
-	// a default is checked by its value's validator, which a parent checking that value inline doesn't give traversals of its own
+	// a default inlined by its parent still needs a validator
 	collectDefaultTypes(): boolean {
 		const typeCount = this.validatorNamesByRoot.size
 		const collect = (value: BaseRoot) => {
@@ -1200,7 +1144,7 @@ export class StandaloneArtifact {
 		)
 		const statements = [
 			writeFixConfig(configured),
-			// without validators, what is left is the Scopes and Generics exported and the Modules holding them
+			// no validators: only Scopes, Generics and their Modules
 			...(this.roots.length ?
 				this.writeBody(unitFunction => `(${unitFunction})`)
 			:	[this.declarations.statements.join("\n"), this.modules.join("\n")]),
@@ -1209,14 +1153,11 @@ export class StandaloneArtifact {
 		return statements.filter(statement => statement).join("\n\n")
 	}
 
-	// each call creates its validator from the holes and inputs the artifact received, so it declares everything the validator holds
 	writeFactory(name: string, index: number, configured: Configured): string {
 		const { type, params, internedBy } = this.factory!
 		this.writeSharedUnits()
-		// a Module, Scope or Generic declares what it holds, which the body then writes
 		const value =
 			this.validatorNamesByRoot.get(type as never) ?? this.exportOf(type)
-		// written before the body, which declares what they read
 		const defaults = this.writeDefaultChecks(this.defaultChecks)
 		const holes =
 			internedBy === undefined ? undefined : (
@@ -1238,11 +1179,10 @@ export class StandaloneArtifact {
 		return this.writeFactoryFunction(index, params, statements)
 	}
 
-	// the validator its folded code creates, keyed by the functions the call receives
 	writeRekeying(read: string): string[] {
 		const { type } = this.factory!
 		const holes = keyOf(type as never)[1]
-		// a Type holding exactly the holes of a value it receives, as one of a Scope does, is keyed by that value's
+		// holes matching a received value's are keyed by that value
 		const received = [...this.holesByName].find(
 			([, received]) =>
 				received.length === holes.length &&
@@ -1265,7 +1205,6 @@ export class StandaloneArtifact {
 	): string {
 		this.receive(params)
 		this.writeSharedUnits()
-		// the program reads it here, so a schema the build can't write refuses the site
 		const value =
 			member === "toJsonSchema" ?
 				this.writeJsonSchema(
@@ -1280,7 +1219,6 @@ export class StandaloneArtifact {
 			: member === "description" ? this.emitDescription(type)
 			: this.readJson(type)
 		const defaults = this.writeDefaultChecks(this.defaultChecks)
-		// arktype checked the Type's defaults where it created it, which a site reading its introspection does at each call
 		return this.writeFactoryFunction(index, params, [
 			writeFixConfig(configured),
 			...this.checks,
@@ -1307,7 +1245,6 @@ ${writeFunction(
 )}`
 	}
 
-	// each unit is evaluated once, at the first call, which may come before the artifact's body runs
 	writeCalledBody(index: number): string[] {
 		return this.writeBody(
 			(unitFunction, i) => `(unit${index}_${i} ??= ${unitFunction})`
@@ -1319,7 +1256,7 @@ ${writeFunction(
 	): { check: string; key: string }[] {
 		return checks.map(([node, defaultValue, key]) => {
 			const input = node.in as BaseRoot
-			// a check is answered once per key, its node's traversal, value and their functions, as unchanging narrows answer equal checks alike
+			// keyed by traversal, value and their holes
 			const [inputId, inputHoles] = traversalKeyOf(input)
 			const [valueId, valueHoles] = encodeKey(defaultValue, undefined, false)
 			const defaultKey = `[${JSON.stringify(hashOf(`${inputId} ${valueId}`))}, [${[...inputHoles, ...valueHoles].map(hole => this.emit(hole)).join(", ")}]]`
@@ -1339,12 +1276,10 @@ ${writeFunction(
 			if (isSharedUnit(unit)) this.writeShared(unit)
 	}
 
-	// a hoisted artifact's modules declare what it calls as functions, so they're apart from those other artifacts build as they're evaluated
 	specifierOf(name: string): string {
 		return `~arktype/${this.baking.hoisted ? "hoisted/" : ""}${name}`
 	}
 
-	// a unit, shape or constant nothing can read before its module is evaluated is built as the module is
 	readValue(name: string): string {
 		return this.baking.hoisted ? `${name}()` : name
 	}
@@ -1365,7 +1300,7 @@ ${writeFunction(
 		const returned = returnedOf(unit, this.baking)
 		const read =
 			this.baking.detailsErrors ? undefined : namesReadBy(unit, returned)
-		// a root its own traversals read, as in a cycle, is created with them
+		// a cyclic root is created with its own traversals
 		const ownRoots = unit.roots.filter(root =>
 			unit.refs.some(
 				ref => isNode(ref) && unit.names[ref.id] === unit.names[root.id]
@@ -1409,7 +1344,6 @@ ${writeFunction(
 			return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(root, shape, unit, this.traversalsOf(root, unit))}))`
 		})
 		const moduleDeclarations: string[] = []
-		// a unit imports another's traversals by name, so no function builds them
 		if (this.baking.flattens) {
 			for (const name in unit.dependencies) {
 				if (read && !read.has(name)) continue
@@ -1509,7 +1443,7 @@ return [${returned.join(", ")}]
 }`
 	}
 
-	// no traversal reads `this` or `arguments`; only Apply and Copy run rarely
+	// traversals read neither `this` nor `arguments`
 	declareMembers(unit: RootUnit, readers: string[]): string[] {
 		const called = calledMembersOf(unit.members, readers)
 		const forwarded = forwardedOf(called)
@@ -1531,7 +1465,6 @@ return [${returned.join(", ")}]
 		return declarations
 	}
 
-	// V8 compiles a parenthesized function with its module, which Node's compile cache then holds, rather than parsing it again where it's first called
 	compiledOnLoad(fn: string): string {
 		return this.baking.shortest ? fn : `(${fn})`
 	}
@@ -1579,7 +1512,6 @@ return [${returned.join(", ")}]
 			namesBySource[source] ??= []
 			namesBySource[source][index] = name
 		}
-		// V8 compiles an array pattern, whose holes are the traversals a unit doesn't read, to the iterator protocol, slower to build than reading by index
 		for (const source in namesBySource) {
 			const names = namesBySource[source]
 			params.push(
@@ -1622,7 +1554,7 @@ return [${returned.join(", ")}]
 			const args = [...dependencyArgs, `[${refs.join(", ")}]`]
 			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
 		})
-		// each is written before any is dropped, as a meta can read one written after it
+		// written before filtering, as a meta can read a later one
 		const validators = [...this.validatorNamesByRoot].map(
 			([root, name]) =>
 				[root, `const ${name} = ${this.writeValidator(root)}`] as const
@@ -1647,18 +1579,17 @@ return [${returned.join(", ")}]
 	}
 
 	writeValidator(root: BaseRoot): string {
-		// a folded factory's Type is written as what constructs its validator, which each call constructs with the functions it receives
 		const isTemplate = this.templates.has(root)
 		const members =
 			this.runtimeReadRoots.has(root) ?
 				new Set([...this.baking.members, ...defaultMembers])
 			:	this.baking.members
 		const keepsMeta = members.has("meta")
-		// beyond the shortest forms, a validator is made from what the build writes
+		// unless shortest, the build writes the validator itself
 		const ownsValidator =
 			!isTemplate && !this.baking.shortest && members.has("methods")
 		const [applied, allows, isCompact] = this.emitRootApply(root, ownsValidator)
-		// emitted before the key encodes it, so a value the build can't emit is refused for what it is
+		// emit meta before keying so an unemittable value is named
 		const meta =
 			!keepsMeta ? undefined
 			: keywordMetas().has(root.meta) ? "runtime.emptyMeta"
@@ -1682,7 +1613,6 @@ return [${returned.join(", ")}]
 			typeof applied === "string" ? applied : (
 				`${this.emitApplier(applied.params, applied.apply, applied.failure)}(${applied.args})`
 			)
-		// for size, a creator holding the root apply takes the unit's traversals
 		const fused =
 			(
 				this.baking.shortest &&
@@ -1693,7 +1623,6 @@ return [${returned.join(", ")}]
 			) ?
 				applied
 			:	undefined
-		// else a creator the build writes makes a compact root apply itself
 		const made =
 			(
 				!fused &&
@@ -1706,7 +1635,6 @@ return [${returned.join(", ")}]
 				applied
 			:	undefined
 		const written = attributes.length ? [`{ ${attributes.join(", ")} }`] : []
-		// it takes the id first, and attributes only beyond an empty meta
 		const createsWith =
 			!isTemplate && ownsValidator && isCreatedByRuntime(members, this.baking)
 		const args = [
@@ -1744,7 +1672,6 @@ return [${returned.join(", ")}]
 			:	created
 	}
 
-	// written for what validators keep, as the runtime's grow other builds
 	creatorOf(
 		members: ReadonlySet<ValidatorMember>,
 		ownsValidator: boolean,
@@ -1754,7 +1681,6 @@ return [${returned.join(", ")}]
 		const keepsMeta = members.has("meta")
 		const hasAttributes =
 			keepsMeta || introspectionMembers.some(member => members.has(member))
-		// as runtime.createValidatorWith and runtime.createValidator make it
 		const call =
 			ownsValidator ?
 				"make(parts, configuredOnFail)"
@@ -1801,7 +1727,6 @@ return [${returned.join(", ")}]
 				["configuredOnFail = runtime.runtimeConfig.onFail"]
 			:	["configuredOnFail"])
 		]
-		// a flat build's creator takes each traversal, another's their array
 		const name = `create${hashOf(`${params.join(", ")}\n${body}`)}`
 		const specifier = this.specifierOf(name)
 		this.sharedModules[specifier] ??= {
@@ -1835,7 +1760,6 @@ return [${returned.join(", ")}]
 			if (bakes("toJSON"))
 				members.push(`toJSON: ${this.frozen(`() => ${json}`)}`)
 		}
-		// written first, so toJsonSchema can return one for the target the program passes
 		const standard =
 			bakes("~standard.jsonSchema") &&
 			(["input", "output"] as const).map(
@@ -1844,7 +1768,7 @@ return [${returned.join(", ")}]
 			)
 		if (bakes("toJsonSchema")) {
 			const written = this.emitJsonSchema(root, () => root.toJsonSchema())
-			// a target's schema is returned only where the validator bakes its text anyway, so taking one adds no writer
+			// only targets whose text is already baked
 			const byTarget = supportedJsonSchemaTargets.map(
 				target =>
 					this.jsonSchemaNameOf(
@@ -1865,7 +1789,7 @@ return [${returned.join(", ")}]
 		return members
 	}
 
-	// arktype returns one json object per node, which every validator of it and every site reading it share, unless it prints what the artifact receives
+	// nodes share json unless it prints a hole
 	readJson(root: BaseRoot): string {
 		const value = `runtime.deepFreeze(${this.writeData(root.json)})`
 		if (holdsLocal(root.json)) {
@@ -1874,7 +1798,6 @@ return [${returned.join(", ")}]
 				this.declareConst(root.json, "json", value)
 			)
 		}
-		// arktype doesn't promise Types defined apart are distinct, so a node shares json with any whose text is the same
 		return this.readConstant(`json${hashOf(value)}`, value)
 	}
 
@@ -1905,13 +1828,12 @@ return [${returned.join(", ")}]
 		return specifier
 	}
 
-	// a writer is declared by its text, so each JSON Schema a validator bakes is written once however many of its members return it
 	emitJsonSchema(root: BaseRoot, write: () => unknown): string {
 		const values: unknown[] = []
 		const writer = this.writeJsonSchemaWriter(root, write, values)
 		const declared = this.jsonSchemaNameOf(writer)
 		if (declared) return declared
-		// of its values, only a Date is declared, beside the validator, while a hole, builtin or bigint reads the same in every call
+		// only a Date needs a declaration beside the validator
 		if (values.some(value => typeof value === "object"))
 			return this.declareConst(writer, "jsonSchema", writer)
 		const written = this.declarations.valuesByRole.jsonSchema
@@ -1928,7 +1850,6 @@ return [${returned.join(", ")}]
 		)
 	}
 
-	// arktype writes its JSON Schema anew each call
 	writeJsonSchemaWriter(
 		root: BaseRoot,
 		write: () => unknown,
@@ -1937,7 +1858,7 @@ return [${returned.join(", ")}]
 		return `() => ${this.writeJsonSchema(root, write, false, values)}`
 	}
 
-	// a schema the program reads only through a validator throws why the build can't write it, where it's read
+	// a schema read only via a validator throws where it's read
 	writeJsonSchema(
 		root: BaseRoot,
 		write: () => unknown,
@@ -1947,7 +1868,6 @@ return [${returned.join(", ")}]
 		try {
 			assertBakeableJsonSchema(root)
 			let schema: unknown
-			// what writing throws, unlike the build refusing to bake what a writer read
 			let thrown: unknown
 			const writeOnce = () => {
 				try {
@@ -1961,10 +1881,9 @@ return [${returned.join(", ")}]
 			} catch (e) {
 				if (e instanceof ToJsonSchema.Error)
 					return `runtime.throwJsonSchemaError(${JSON.stringify(e.code)}, ${this.emitString(e.message)}, ${this.writeData(e.context, { values })})`
-				// e.g. arktype's, where a view of the Type intersects what the Type keeps apart, as a defaulted key's output and an index signature
+				// e.g. a defaulted key intersected with an index signature
 				if (e === thrown && e instanceof ParseError)
 					return `runtime.throwParseError(${this.emitString(e.message)})`
-				// any other error, like one a configured writer throws, makes it a schema the build can't bake
 				if (e instanceof ParseError) throw e
 				throwParseError(
 					`${writeUnprecompilableMessage("a JSON Schema whose writing throws")}: ${String(e)}`
@@ -2023,12 +1942,11 @@ return [${returned.join(", ")}]
 		return `{ ${entries.join(", ")} }`
 	}
 
-	// what a validator calls and the Allows it holds, its apply reading the runtime's exports with the least ctx its checks report to
 	emitRootApply(
 		root: BaseRoot,
 		asValidator: boolean
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
-		// a callback can read the API Traversal adds, which none of the runtime's own keywords declaring one parameter does
+		// runtime keywords with one param never read Traversal
 		const callbacks = declares(
 			root,
 			node =>
@@ -2045,7 +1963,7 @@ return [${returned.join(", ")}]
 				asValidator
 			)
 		}
-		// an Apply that calls back only into the runtime's keywords keeps no state but what fails, so it reports into the errors the root returns, unless a union applies its branches apart
+		// callbacks only into runtime keywords report into ArkErrors
 		const reportsIssues =
 			!root.includesAlias &&
 			!root.includesMorph &&
@@ -2064,7 +1982,7 @@ return [${returned.join(", ")}]
 			: reportsIssues ? "ArkErrors"
 			: callbacks ? "Traversal"
 			: "InternalTraversal"
-		// a first-issue build's traversal drops the rest as it finalizes, which applyErrors doesn't call
+		// first-issue traversals drop the rest when finalized
 		const appliesErrors = !this.baking.firstIssue || reportsIssues
 		const refOf = (param: RootApplyParam) =>
 			param === "Traversal" ? `runtime.${ctx}`
@@ -2073,7 +1991,6 @@ return [${returned.join(", ")}]
 			: param === "applyRejected" && appliesErrors ? "runtime.applyNodeErrors"
 			: this.emit(rootApplyRuntime[param])
 		const strategy = root.rootApplyStrategy
-		// most root applies are one arrow, half the length of the function writeRootApply names for the JIT
 		const isArrow =
 			!root.includesAlias &&
 			(strategy === "allows" ||
@@ -2098,7 +2015,6 @@ return [${returned.join(", ")}]
 				:	`{ 0: allows, 1: apply${transforms ? ", 2: transform" : ""} }`
 			const valid = transforms ? "transform(data)" : "data"
 			const parts = flat ? flat.join(", ") : traversals
-			// the validator itself, declaring data alone so a call passing only data pads no parameters
 			if (asValidator) {
 				return [
 					`((${pattern}, onFail) => ${this.compiledOnLoad(`(data, ...args) => allows(data) ? ${valid} : runtime.applyCallErrors(apply, data, args, onFail, ${refOf("Traversal")})`)})`,
@@ -2133,7 +2049,6 @@ return [${returned.join(", ")}]
 			this.headUnitOf(root).names[root.id],
 			refOf
 		)
-		// the class a valid result is checked against is captured, as V8 folds what a closure captures but not what it reads from the runtime's module
 		const captured =
 			/\bTransformErrors\b/.test(body) ?
 				`const TransformErrors = ${this.emit(rootApplyRuntime.TransformErrors)}\n\t\t`
@@ -2147,14 +2062,12 @@ return [${returned.join(", ")}]
 		]
 	}
 
-	// where arktype's root apply reports what fails, this returns one issue
 	emitUndetailedApply(
 		root: BaseRoot,
 		ctx: string,
 		asValidator: boolean
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const strategy = root.rootApplyStrategy
-		// optimized for size, the module holding the apply imports it
 		const invalid = () =>
 			`${this.baking.shortest ? "invalid" : this.readFailure("invalid")}(data, onFail)`
 		const transforms = root.transforms
@@ -2227,7 +2140,6 @@ return [${returned.join(", ")}]
 					", "
 				)
 			:	traversals
-		// the validator itself, as a detailed build's compact root apply is
 		if (asValidator && parts && !body) {
 			return [
 				`((${params}, onFail) => ${this.compiledOnLoad(`(data, ...args) => ${allows}(data) ? ${valid} : ${this.readFailure("invalidCall")}(data, args, onFail)`)})`,
@@ -2254,7 +2166,6 @@ return [${returned.join(", ")}]
 		]
 	}
 
-	// a validator's own root apply, or for size one shared by those alike
 	emitApplier(
 		params: string,
 		apply: string,
@@ -2274,7 +2185,6 @@ return [${returned.join(", ")}]
 		return this.read(specifier, name, name, name)
 	}
 
-	// a flat build passes a root apply the traversals its unit exports
 	flatTraversalsOf(root: BaseRoot, indices: number[]): string[] | undefined {
 		const unit = this.headUnitOf(root)
 		if (!this.baking.flattens || !isSharedUnit(unit)) return
@@ -2285,7 +2195,6 @@ return [${returned.join(", ")}]
 		)
 	}
 
-	// a root apply that is one arrow reads its root's traversals from its unit, where they come first, so its validator needs no shape
 	compactTraversalsOf(root: BaseRoot): string | undefined {
 		const unit = this.headUnitOf(root)
 		if (unit.traversals.flat()[0] !== this.traversalsOf(root, unit)[0]) return
@@ -2299,7 +2208,7 @@ return [${returned.join(", ")}]
 			:	this.localNamesByUnit.get(unit)
 	}
 
-	// a Type's expression is a module of its own, so a factory checking that it receives the Type shares it with the Type's validator
+	// shared so a factory's check and the validator use one module
 	emitExpression(root: BaseRoot): string {
 		if (root.expression.includes(holeNameMarker))
 			return this.emitString(root.expression)
@@ -2307,7 +2216,7 @@ return [${returned.join(", ")}]
 		return `${this.read(this.specifierOf(name), name, name, name)}()`
 	}
 
-	// a description holding those of the roots it references is composed from their modules, else written where it's read
+	// composed from referenced roots' modules where possible
 	emitDescription(root: BaseRoot): string {
 		if (root.description.includes(holeNameMarker))
 			return this.emitString(root.description)
@@ -2325,7 +2234,6 @@ return [${returned.join(", ")}]
 		)
 	}
 
-	// a string is composed from those of the roots it references, so one many Types print is written once
 	writeStringModule(
 		root: BaseRoot,
 		kind: ComposedString,
@@ -2351,7 +2259,6 @@ return [${returned.join(", ")}]
 		return name
 	}
 
-	// a string printing a hole's name is completed at creation with arktype's own printing
 	emitString(s: string): string {
 		const parts: string[] = []
 		let start = 0
@@ -2380,7 +2287,7 @@ return [${returned.join(", ")}]
 		return parts.join(" + ") || '""'
 	}
 
-	// a Scope or Generic is an empty object, since resolving an alias or instantiating a Generic needs arktype
+	// resolving or instantiating needs arktype, so an empty object
 	exportOf(value: unknown): string {
 		if (hasArkKind(value, "root")) return this.readValidator(value)!
 		if (hasArkKind(value, "scope") || hasArkKind(value, "generic")) {
@@ -2417,7 +2324,6 @@ return [${returned.join(", ")}]
 		return name
 	}
 
-	// a factory reading a Module, Scope or Generic compares it with the build's and takes the holes it holds
 	withHoles(value: Foldable, expression: string): string {
 		const [id, holes] = keyOf(value)
 		if (!this.baking.checksTypes && !holes.length) return expression
@@ -2489,7 +2395,7 @@ return [${returned.join(", ")}]
 		unit: RootUnit,
 		traversals: string[]
 	): string {
-		// read only by the traversal of a node holding a cycle, as it enters the cycle's resolution
+		// read only when entering a cycle's resolution
 		const ids =
 			node.includesAlias ?
 				`\n\tid: ${JSON.stringify(unit.names[node.id])},\n\ttrackedId: ${JSON.stringify(
@@ -2499,11 +2405,10 @@ return [${returned.join(", ")}]
 						)
 				)},`
 			:	""
-		// a flag that is false, or a member nothing reads, is left out, which the runtime reads as undefined
 		const flags = shapeFlags.flatMap(flag =>
 			node[flag] ? [`\n\t${flag}: true,`] : []
 		)
-		// Allows and the scope holding config are read only past allows, by a cycle's resolution or a predicate reading ctx
+		// read past allows only by a cycle or a ctx-reading predicate
 		const traverses =
 			node.includesAlias ||
 			node.allowsRequiresContext ||
@@ -2557,7 +2462,7 @@ return [${returned.join(", ")}]
 				:	throwParseError(writeUnprecompilableMessage(printable(value)))
 		}
 		if (failureSites.has(value)) return this.emitSite(value)
-		// a structure's keys are read only with `in`, so they're emitted without their props
+		// keys read only with `in`, so emitted without their props
 		if (this.keyLookups.has(value)) {
 			const keys = Reflect.ownKeys(value).map(
 				k => `[${typeof k === "symbol" ? this.emit(k) : JSON.stringify(k)}]: 1`
@@ -2584,9 +2489,8 @@ return [${returned.join(", ")}]
 					writeUnprecompilableMessage("a RegExp with its own properties")
 				)
 			}
-			// a RegExp's source is escaped to be written as a literal, which creates one RegExp each time it's evaluated as the constructor would
 			const regex = `/${value.source}/${value.flags}`
-			// no program can reach a pattern's own, whose lastIndex arktype resets before each test
+			// a pattern's own RegExp: arktype resets its lastIndex
 			if (this.patternInstances.has(value))
 				return this.declareConst(value, "literal", regex)
 			return this.declareConst(
@@ -2602,14 +2506,12 @@ return [${returned.join(", ")}]
 		)
 	}
 
-	// content-equal metas are frozen, so they share one
 	readMeta(meta: object): string | undefined {
 		if (!Reflect.ownKeys(meta).length) return "runtime.emptyMeta"
 		const literal = this.writeSharedLiteral(meta)
 		return literal && this.readConstant(`meta${hashOf(literal)}`, literal)
 	}
 
-	// a module can't read what the artifact receives or declares
 	writeSharedLiteral(value: unknown): string | undefined {
 		if (typeof value === "string")
 			return value.includes(holeNameMarker) ? undefined : JSON.stringify(value)
@@ -2637,14 +2539,14 @@ return [${returned.join(", ")}]
 		return isShared ? `runtime.freeze(${literal})` : undefined
 	}
 
-	// the morph arktype creates for a default, called through a function since traversals are created before the validator it applies
+	// called through a function, as validators come after traversals
 	emitDefault(
 		morph: unknown,
 		key: PropertyKey,
 		value: BaseRoot,
 		defaultValue: unknown
 	): string {
-		// every traversal reaching a default shares its morph, as arktype's node holds one, whose guard keeps a value it fills in from being defaulted again
+		// one morph per default, whose guard prevents double defaulting
 		let name = this.defaultNamesByMorph.get(morph)
 		if (name) return `(data, ctx) => ${name}(data, ctx)`
 		this.collectType(value)
@@ -2731,7 +2633,7 @@ return [${returned.join(", ")}]
 		const keys = Object.getOwnPropertyNames(value).filter(
 			k => !isArray || k !== "length"
 		)
-		// an array is copied as its elements, so a hole or another property would be lost
+		// an array is copied by index, so holes or extra keys would be lost
 		if (
 			isArray &&
 			(keys.length !== descriptors.length.value ||
@@ -2741,7 +2643,6 @@ return [${returned.join(", ")}]
 				writeUnprecompilableMessage("an array with holes or other properties")
 			)
 		}
-		// a literal is copied as its enumerable data properties
 		for (const k of keys) {
 			if (!("value" in descriptors[k])) {
 				throwParseError(
@@ -2768,7 +2669,6 @@ return [${returned.join(", ")}]
 		return [literal, elements]
 	}
 
-	// a Type a literal holds is data, so it's emitted as its validator rather than its shape
 	emitElement(value: unknown): string {
 		return isNode(value) && value.isRoot() && !this.objectUnits.has(value) ?
 				(this.readValidator(value) ??
@@ -2779,7 +2679,7 @@ return [${returned.join(", ")}]
 	}
 }
 
-// a standalone validator's issues are written from what its nodes describe, so other text configured for them can't be precompiled
+// issues are written from node descriptions, so refuse other text
 const assertDescribed = (root: BaseRoot): void => {
 	const config = root.$.resolvedConfig
 	const raisable = raisableCodesOf(root)
@@ -2840,7 +2740,7 @@ const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
 
 const { getTime } = Date.prototype
 
-// arktype calls a default's thunk again each time it writes a schema holding the default
+// arktype calls a default's thunk each time it writes the schema
 const assertBakeableJsonSchema = (root: BaseRoot): void => {
 	if (root.references.some(callsDefaultThunk)) {
 		throwParseError(
@@ -2913,7 +2813,6 @@ const collectDefaults = (
 	}
 }
 
-// a unit keeps only the traversals something calls, as a parent can check a node in its own body
 const calledMembersOf = (
 	members: readonly UnitMember[],
 	readers: readonly string[]
@@ -2953,7 +2852,6 @@ const forwardedOf = (members: readonly UnitMember[]): Map<string, string> => {
 	const forwarded = new Map<string, string>()
 	for (const [name, first] of targetsByName) {
 		let target = first
-		// a chain is followed to the traversal it ends at, unless it loops
 		for (let i = 0; i < targetsByName.size && targetsByName.has(target); i++)
 			target = targetsByName.get(target)!
 		if (!targetsByName.has(target)) forwarded.set(name, target)
@@ -2961,7 +2859,6 @@ const forwardedOf = (members: readonly UnitMember[]): Map<string, string> => {
 	return forwarded
 }
 
-// each root's Allows, Apply and Transform, but no Apply for errors "none"
 const returnedOf = (unit: RootUnit, baking: Baking): string[] =>
 	baking.detailsErrors ?
 		unit.traversals.flat()
@@ -2971,7 +2868,6 @@ const returnedOf = (unit: RootUnit, baking: Baking): string[] =>
 			...transform
 		])
 
-// what a unit returning no Apply declares, as the Apply read the rest
 const namesReadBy = (unit: RootUnit, returned: string[]): Set<string> =>
 	new Set(
 		calledMembersOf(unit.members, returned).flatMap(
@@ -2997,11 +2893,11 @@ export const keywordMetas = (): Set<object> => {
 	return (collectedKeywordMetas = metas)
 }
 
-// a Transform or Copy member writes to its input, which a bundle's CommonJS or IIFE output leaves sloppy, where writing to a frozen input is ignored rather than throwing
+// strict even where a bundle's CJS or IIFE output isn't
 const isWriting = (member: string): boolean =>
 	member.endsWith("Transform") || member.endsWith("Copy")
 
-// the units a unit reads as it's built: those whose traversals it calls, and those whose roots it refers to, as shapes rather than validators
+// units this one reads: called traversals and referenced shapes
 const readUnitsOf = (unit: RootUnit): RootUnit[] =>
 	[
 		...Object.values(unit.dependencies).map(([node]) => node),
@@ -3011,7 +2907,7 @@ const readUnitsOf = (unit: RootUnit): RootUnit[] =>
 const isSharedUnit = (unit: RootUnit): boolean => {
 	let shared = sharedByUnit.get(unit)
 	if (shared === undefined) {
-		// a unit reading its own roots, as in a cycle, is decided by what else it reads
+		// a cyclic unit is decided by what else it reads
 		sharedByUnit.set(unit, true)
 		shared =
 			!unit.identityNamed.has(unit.roots[0].id) &&
@@ -3022,7 +2918,7 @@ const isSharedUnit = (unit: RootUnit): boolean => {
 	return shared
 }
 
-// a unit writes the checks of nodes it doesn't declare too, like a leaf its parent checks inline
+// includes nodes a parent checks inline
 const writtenNodesOf = (unit: RootUnit): BaseNode[] => [
 	...unit.declared,
 	...unit.roots.flatMap(root => root.references)
@@ -3048,7 +2944,7 @@ const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 	})
 }
 
-// a site only traversal reads, so a standalone build writes it as it is rather than as a value a program could reach
+// sites only traversal reads, emitted as-is
 const failureSites = new WeakSet<object>()
 
 const issueSite = <site extends object>(site: site): site => {
@@ -3065,7 +2961,7 @@ const issueSitesByContext = new WeakMap<
 
 const requiredIssue = { code: "required" } as const
 
-// a standalone issue holds only the code and description of what failed, so the sites agreeing on those share one
+// issues hold only code and description, so equal sites share
 const issueSiteOf = (site: FailureSite | UnionSite): object => {
 	const { value, missing } = site as {
 		value?: BaseErrorContext
@@ -3091,13 +2987,12 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 	))
 }
 
-// a standalone validator raises issues, which hold none of its nodes' error contexts
 class StandaloneCompiler extends TraversalCompiler {
 	override site(node: BaseNode): string {
 		return this.ref(issueSiteOf(node.failureSite))
 	}
 
-	// a union's issue reads only what the union describes, at its discriminant where it has one, so its branches aren't run again
+	// read at the discriminant so branches don't rerun
 	override unionFails(
 		node: UnionNode,
 		value?: string,
@@ -3124,8 +3019,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		return `(typeof ${data} === "object" ? ${data} !== null : typeof ${data} === "function")`
 	}
 
-	// a union no discriminant switches over reports only its own issue, which
-	// a key whose condition rejected its value reports without its Apply
+	// a rejected union value reports the union's issue, not its Apply
 	override failingApplyOf(value: BaseNode): string | undefined {
 		if (
 			!value.hasKind("union") ||
@@ -3147,7 +3041,7 @@ class InPlaceCompiler extends StandaloneCompiler {
 	override readonly inPlace = true
 }
 
-// a root transforming in place has units of its own, differing only in code
+// in-place roots have their own units
 const unitsByRoot = [
 	new WeakMap<BaseRoot, RootUnit[]>(),
 	new WeakMap<BaseRoot, RootUnit[]>()
@@ -3172,15 +3066,14 @@ const rootUnitsOf = (root: BaseRoot, inPlace = false): RootUnit[] => {
 const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
 	reader.unitsById[node.id]
 
-// a Scope's alias defined by a thunk, keyed only by where it is, so a site resolving it is refused
+// an alias defined by a thunk; a site resolving it is refused
 export type ScopeAlias = [scope: BaseScope, alias: string]
 
 export type Key = [
 	id: string,
 	holes: unknown[],
-	// the path to what can't be compared and why, e.g. "configures `domain.description` with a function, whose results decide what it creates"
+	// [path, reason] of what can't be compared
 	refusal: [path: string, reason: string] | undefined,
-	// with the path from the keyed value to the Scope holding each
 	thunks: readonly [...ScopeAlias, path: string][]
 ]
 
@@ -3197,23 +3090,22 @@ export const keyOf = (value: Foldable): Key => {
 	return key
 }
 
-// an id only tells the value a factory receives from another it could be given, for which 8 of its hash's characters, about 41 bits, are enough
+// 8 hash chars tell a received value from another
 const writeId = (id: string): string => JSON.stringify(id.slice(0, 8))
 
-// a default check reads a node's traversal, which doesn't depend on the Scope its methods parse in
+// traversal only: independent of the Scope methods parse in
 export const traversalKeyOf = (root: BaseRoot): Key => rootKeyOf(root, false)
 
 const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 	const units = rootUnitsOf(root)
 	const defaultsByMorph = new Map<unknown, Default>()
-	// a parent can check a prop in its own body, so the unit declares no node holding its default
 	for (const unit of units) {
 		for (const node of writtenNodesOf(unit)) {
 			if (node.hasKind("optional") || node.hasKind("sequence"))
 				collectDefaults(node, defaultsByMorph)
 		}
 	}
-	// a unit keys a function or object only by where it first reaches it, so the key adds what each is and where each is reached again
+	// add each function or object's kind and repeat positions
 	return encodeKey(
 		{
 			name: units[0].names[root.id],
@@ -3226,12 +3118,10 @@ const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 	)
 }
 
-// writes each value's kind and each composite's length, so values differing anywhere but in which functions they hold write different keys
+// equal keys differ only in which functions they hold
 const encodeKey = (
 	start: unknown,
-	// a root's, whose nodes its units' names key
 	defaultsByMorph?: ReadonlyMap<unknown, Default>,
-	// whether a function in it is a thunk arktype calls rather than a value it holds
 	isDefinition = !defaultsByMorph
 ): Key => {
 	const values: string[] = []
@@ -3290,7 +3180,7 @@ const encodeKey = (
 					`Scope ${JSON.stringify(value.exportedNames)} ${aliases.length}`
 				)
 				write(value.scopeConfig, "", false, true)
-				// a definition rather than what it resolves to, since resolving it here would run its default checks before the site first reading it
+				// the definition, as resolving it would run default checks early
 				for (const [k, def] of aliases) {
 					values.push(JSON.stringify(k))
 					if (isThunkAlias(def)) {
@@ -3302,7 +3192,7 @@ const encodeKey = (
 		} else if (hasArkKind(value, "generic")) {
 			values.push("Generic")
 			write(value.paramDefs, path, true)
-			// an hkt's body is a function arktype calls with a class, which nothing but identity tells apart from another
+			// an hkt body is a function only identity tells apart
 			if (value.hkt) {
 				refuse(
 					`has an hkt body${at(path)}, whose results decide what it creates`
@@ -3332,7 +3222,7 @@ const encodeKey = (
 		else if (isRegExpObject(value)) values.push(`${value} ${value.lastIndex}`)
 		else if (isArray(value)) {
 			values.push(`[${value.length}`)
-			// e.g. the narrow in `["string", ":", isLong]`, which arktype holds rather than parses
+			// e.g. the narrow in `["string", ":", isLong]`, held, not parsed
 			const definitions =
 				valueTupleHeads.includes(value[0]) ? 0
 				: valueOperators.includes(value[1]) ? 1
@@ -3370,7 +3260,7 @@ export const appendPath = (path: string, rest: string): string =>
 	: rest[0] === "[" ? path + rest
 	: `${path}.${rest}`
 
-// arktype holds a Generic alias as a function too, which it calls with arguments rather than to resolve it
+// a Generic alias is a function too, but isn't a thunk
 const isThunkAlias = (def: unknown): boolean =>
 	isThunk(def) &&
 	!hasArkKind(def, "generic") &&
@@ -3395,7 +3285,7 @@ const valueOperators: unknown[] = [":", "=>", "=", "@"]
 
 type ComposedString = "expression" | "description"
 
-// a string shorter than this is written wherever it's printed, as gzip compresses its repeats about as well as a call
+// shorter strings are written inline
 const minComposedLength = 64
 
 const partsOf = (
@@ -3445,7 +3335,7 @@ const partsOf = (
 
 export const holeNameMarker = "$hole_"
 
-// arktype writes a function in a hash as `"$ark.name"`, so the index two hashes first differ at may fall inside its name
+// two hashes can first differ inside a "$ark.name" reference
 const registeredNameAt = (hash: string, i: number): string | undefined => {
 	const start = hash.lastIndexOf('"', i - 1) + 1
 	const reference = /^\$ark\d*\.([\w$]+)"/.exec(hash.slice(start))
@@ -3454,7 +3344,6 @@ const registeredNameAt = (hash: string, i: number): string | undefined => {
 		:	undefined
 }
 
-// led by the name the build expects of its function
 const holeName = `[\\w$]*${holeNameMarker.replace("$", "\\$")}[\\da-z]+`
 
 export const holeNamePattern = new RegExp(holeName, "g")
