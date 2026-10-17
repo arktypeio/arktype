@@ -116,7 +116,7 @@ import type { UndeclaredKeyHandling } from "./structure/structure.ts"
 
 const noReferences: readonly BaseNode[] = []
 
-// memos, kept apart from the node so every cache shares a shape
+// derived values and bound traversals, stored apart from the node
 class NodeCache {
 	innerEntries: readonly Entry<string>[] | undefined
 	metaJson: object | undefined
@@ -165,7 +165,7 @@ export abstract class BaseNode<
 	attachmentsOf<d>
 > {
 	$: BaseScope
-	// a bit for each of what follows, read through flagBits' accessors
+	// flags, read through flagBits' accessors
 	bits: number
 	declare includesTransform: boolean
 	declare includesMorph: boolean
@@ -175,7 +175,7 @@ export abstract class BaseNode<
 	declare includesShallowAlias: boolean
 	declare allowsRequiresContext: boolean
 	declare includesContextualMorph: boolean
-	// described by another scope's writers, which a copy bound elsewhere keeps
+	// keeps the description it had in its original scope
 	declare includesKeptDescription: boolean
 	declare readonly cache: NodeCache
 
@@ -193,16 +193,13 @@ export abstract class BaseNode<
 		return (this.cache.metaJson ??= metaJsonOf(this.meta))
 	}
 
-	// kept on the cache, which the node's call reads through its closure
 	get onFail(): ArkErrors.Handler | null {
 		return this.cache.onFail
 	}
 
 	constructor(attachments: UnknownAttachmentsInput, $: BaseScope) {
-		// read by the node's call through its closure, as every cache shares one V8 map where each kind of node has its own
 		const cache = new NodeCache()
 		cache.metaJson = attachments.metaJson
-		// set after the slots, so a site calling one node can inline its apply
 		cache.onFail = attachments.meta.onFail ?? $.resolvedConfig.onFail
 		super(
 			(
@@ -212,7 +209,7 @@ export abstract class BaseNode<
 			) => {
 				if (pipedFromCtx) return pipe(pipedFromCtx, this, data)
 
-				// set once and called apart from its initializer, so V8 can inline it, and compared with undefined, a single check where truthiness takes several
+				// set once and called apart from its initializer, so V8 can inline it
 				const rootApply = cache.rootApply
 				return rootApply === undefined ?
 						this.initRootApply()(data, onFail)
@@ -236,7 +233,7 @@ export abstract class BaseNode<
 		self.meta = attachments.meta
 		self.children = attachments.children
 		this.$ = $
-		// own, so compiled traversals bound later replace them in place
+		// own, so jit can replace them
 		const { traverseAllows, traverseApply, traverseTransform } = this
 		this.traverseAllows = traverseAllows
 		this.traverseApply = traverseApply
@@ -500,7 +497,7 @@ export abstract class BaseNode<
 	// set while a Type defers compiling until it's used
 	allowsBeforeJit: this["allows"] | undefined
 
-	// a Type whose callbacks can't read ctx checks its first data uncompiled, so one used once is never compiled
+	// a Type without contextual callbacks checks its first data uncompiled
 	private get checksUncompiled(): boolean {
 		return (
 			!this.includesContextualPredicate &&
@@ -550,10 +547,8 @@ export abstract class BaseNode<
 			:	this.createRootApply())
 	}
 
-	// called without a handler, each fails with the node's own
 	protected createRootApply(): RootApply {
 		const byErrors = rootApplyRuntimeOf(this.$.resolvedConfig)
-		// a root transforming in place traverses as its own runtime does
 		const runtime = $ark.inPlace?.runtimeOf(this as never, byErrors) ?? byErrors
 		const { Traversal } = runtime
 		switch (this.rootApplyStrategy) {
@@ -652,7 +647,7 @@ export abstract class BaseNode<
 		}
 	}
 
-	// as a compiled root apply's fallback, by what its errors hold
+	// reports data allows rejected
 	private rejectRoot(
 		data: unknown,
 		onFail: FailHandler | null,
@@ -673,24 +668,23 @@ export abstract class BaseNode<
 
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
-	// undefined where checking data takes more than one expression; byBranch
-	// asks a union for its branches' conditions rather than one of its own
+	// one expression checking data, if any; byBranch asks a union per branch
 	compileCondition?(
 		js: NodeCompiler,
 		data: string,
 		byBranch?: boolean
 	): string | undefined
-	// what its traversal of data returns, where one expression computes it, so a parent writes it rather than calling it
+	// one expression computing the traversal's result, if any
 	compileExpression?(js: NodeCompiler): string | undefined
 
-	// what a compiled check reports when this node fails, holding the context arktype writes its error from
+	// what compiled code reports when this node fails
 	get failureSite(): FailureSite | UnionSite {
 		return (this.cache.failureSite ??= {
 			value: (this as never as { errorContext: SiteContext }).errorContext
 		})
 	}
 
-	_description: string | undefined
+	private _description: string | undefined
 	get description(): string {
 		return (this._description ??=
 			this.meta?.description ??
@@ -731,7 +725,7 @@ export abstract class BaseNode<
 		return this(data, pipedFromCtx, null)
 	}
 
-	// checks data where it's defined, e.g. a default, without the use that compiles a Type
+	// checks data without marking the Type used, e.g. a default
 	traverseUnused(data: d["prerequisite"]): ArkErrors | {} | null | undefined {
 		const isUsedBeforeJit = this.cache.isUsedBeforeJit
 		const out = this.traverse(data)
@@ -989,7 +983,7 @@ export abstract class BaseNode<
 				delete $ark.nodesByRegisteredId[ctx.synthetics[id].id]
 		}
 		if (!transformed || opts?.names) return transformed as never
-		// transformed again, since its synthetics have printed `this` or what they replaced
+		// again, now that synthetics have printed their names
 		let name: string | undefined
 		const names: Record<string, string> = {}
 		for (const id in ctx.synthetics) {
