@@ -1,4 +1,4 @@
-import type { ArkError, ArkErrors, Morph } from "@ark/schema"
+import type { ArkError, ArkErrors, arkKind, Morph } from "@ark/schema"
 import {
 	noSuggest,
 	type anyOrNever,
@@ -295,10 +295,18 @@ type _inferNaryMerge<remaining extends readonly unknown[], result> =
 		_inferNaryMerge<tail, merge<result, head>>
 	:	result
 
-export type inferMorphOut<morph extends Morph> = Exclude<
-	ReturnType<morph>,
-	ArkError | ArkErrors
+export type inferMorphOut<morph extends Morph> = excludeErrors<
+	ReturnType<morph>
 >
+
+// every error has a path and ArkErrors its kind, so checking for those first
+// keeps other outputs from resolving the context of every error code
+type excludeErrors<out> =
+	out extends { path: unknown } | { [arkKind]: "errors" } ?
+		out extends ArkError | ArkErrors ?
+			never
+		:	out
+	:	out
 
 const isMorphOutKey = noSuggest("isMorphOut")
 
