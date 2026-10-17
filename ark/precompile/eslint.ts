@@ -1,35 +1,27 @@
 import type { ESLint, Linter, Rule } from "eslint"
-import type { CheckedModule } from "./driver.ts"
-import type { NodeHostOptions } from "./host.ts"
-import type { PrecompileOptions } from "./precompile.ts"
+import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
-export interface PrecompileRuleOptions
-	extends PrecompileOptions,
-		NodeHostOptions {}
-
-// arktype in ESLint's thread can't take a configuration, and each configuration needs a thread of its own
-const precompilersByOptions = new Map<
+// each configuration needs a thread of its own, apart from ESLint's
+const precompilersByOptions: Record<
 	string,
 	ReturnType<typeof createSyncPrecompiler>
->()
+> = {}
 
 const check = (
-	opts: PrecompileRuleOptions,
+	opts: PrecompilePluginOptions,
 	source: string,
 	id: string
 ): CheckedModule => {
 	const key = JSON.stringify(opts)
-	let request = precompilersByOptions.get(key)
-	// a file read for an earlier one may have changed since, and the worker keeps the configuration it applied first
-	if (request?.("refresh")) {
-		request("close")
-		request = undefined
+	// a file read for an earlier lint may have changed the configuration
+	if (precompilersByOptions[key]?.("refresh")) {
+		precompilersByOptions[key]("close")
+		delete precompilersByOptions[key]
 	}
-	if (!request) {
-		request = createSyncPrecompiler({ precompilerOptions: opts })
-		precompilersByOptions.set(key, request)
-	}
+	const request = (precompilersByOptions[key] ??= createSyncPrecompiler({
+		precompilerOptions: opts
+	}))
 	return (
 		(request("lint", source, id) as CheckedModule | undefined) ??
 		check(opts, source, id)

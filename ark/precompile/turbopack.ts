@@ -1,10 +1,10 @@
-import { throwError } from "@ark/util"
 import {
 	createKeyedPrecompiler,
 	type KeyedModule,
 	type PrecompilePluginOptions
 } from "./driver.ts"
 import { refuseDeclare } from "./declare.ts"
+import { reportDiagnostics } from "./host.ts"
 
 export interface TurbopackLoaderContext {
 	resourcePath: string
@@ -24,14 +24,10 @@ export default function (this: TurbopackLoaderContext, source: string): string {
 	refuseDeclare(opts, "Turbopack")
 	const precompile = (precompilersByOptions[JSON.stringify(opts)] ??=
 		createKeyedPrecompiler(opts))
-	const { code, errors, warnings, files } = precompile(
-		source,
-		this.resourcePath
-	)
-	// Turbopack reruns a loader only when a file it reported changes, so they're reported before an error
-	for (const file of files)
+	const keyed = precompile(source, this.resourcePath)
+	// before any error, so a fix to one of them reruns the loader
+	for (const file of keyed.files)
 		if (file !== this.resourcePath) this.addDependency(file)
-	for (const warning of warnings) this.emitWarning(new Error(warning))
-	if (errors.length) throwError(errors.join("\n"))
-	return code ?? source
+	reportDiagnostics(keyed, warning => this.emitWarning(new Error(warning)))
+	return keyed.code ?? source
 }

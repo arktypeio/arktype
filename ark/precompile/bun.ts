@@ -1,11 +1,12 @@
-import { throwError } from "@ark/util"
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
 import {
 	appendSourceMap,
 	createNodeHost,
+	driverOptionsOf,
 	optedInPackagesOf,
+	reportDiagnostics,
 	resolvesToRuntime,
 	resolvesUndetailed,
 	runtimeSpecifiers,
@@ -37,13 +38,13 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 	return {
 		name: "arktype",
 		setup: build => {
-			const isStandalone = opts?.runtime !== "arktype"
-			if (isStandalone) {
-				// a runtime plugin isn't asked to resolve a package, so arktype is replaced for every importer
+			const cwd = opts?.cwd ?? process.cwd()
+			if (opts?.runtime !== "arktype") {
+				// a runtime plugin replaces a package for every importer
 				const host = createNodeHost(opts)
 				const runtime = host.resolve(
 					"arktype/runtime",
-					join(opts?.cwd ?? process.cwd(), "package.json")
+					join(cwd, "package.json")
 				)
 				for (const specifier of [...runtimeSpecifiers, "arktype/runtime"]) {
 					if (!resolvesToRuntime(specifier, opts)) continue
@@ -57,48 +58,36 @@ export const precompile = (opts?: PrecompilePluginOptions): BunPlugin => {
 						contents: `export * from ${JSON.stringify(host.resolve("@ark/schema/runtime/none", runtime!))}`,
 						loader: "js"
 					}))
-					// its importer links to its exports before it throws, unnamed under Bun
+					// throws once linked, as Bun names no importer
 					build.module("@ark/schema", () => ({
 						contents: `export * from ${JSON.stringify(host.resolve("@ark/schema", runtime!))}\nthrow new Error(${JSON.stringify(writeUndetailedImportMessage("a module", "@ark/schema"))})`,
 						loader: "js"
 					}))
 				}
 			}
-			const modules: Record<string, string> = {}
+			const served = new Set<string>()
 			const request = createAsyncPrecompiler({
-				precompilerOptions: {
-					...opts,
-					// a standalone module imports what it shares with others, which the plugin serves
-					inline: !isStandalone,
-					// set by `bun test`
-					checks:
-						opts?.checks ??
-						(isStandalone && process.env.NODE_ENV === "test" ?
-							"helpers"
-						:	undefined)
-				}
+				// set by `bun test`
+				precompilerOptions: driverOptionsOf(
+					opts,
+					process.env.NODE_ENV === "test"
+				)
 			})
-			const { include, exclude } = transformedFilterOf(
-				optedInPackagesOf(opts?.cwd ?? process.cwd())
-			)
-			// a runtime plugin's onLoad must return a module, so the filter excludes what isn't transformed
+			const { include, exclude } = transformedFilterOf(optedInPackagesOf(cwd))
+			// a runtime plugin's onLoad must return a module
 			const filter = new RegExp(`^(?!.*${exclude.source}).*${include.source}`)
 			build.onLoad({ filter }, async ({ path }) => {
 				const source = readFileSync(path, "utf8")
 				const transformed = (await request("transform", source, path)) as
 					| TransformedModule
 					| undefined
-				for (const warning of transformed?.warnings ?? []) console.warn(warning)
-				if (transformed?.errors.length)
-					throwError(transformed.errors.join("\n"))
+				reportDiagnostics(transformed, warning => console.warn(warning))
 				if (!transformed?.code) return { contents: source }
 				for (const specifier in transformed.modules) {
-					if (modules[specifier] !== undefined) continue
-					modules[specifier] = transformed.modules[specifier]
-					build.module(specifier, () => ({
-						contents: modules[specifier],
-						loader: "js"
-					}))
+					if (served.has(specifier)) continue
+					served.add(specifier)
+					const contents = transformed.modules[specifier]
+					build.module(specifier, () => ({ contents, loader: "js" }))
 				}
 				return { contents: appendSourceMap(transformed.code, transformed.map) }
 			})

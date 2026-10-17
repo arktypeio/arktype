@@ -11,11 +11,13 @@ import {
 import type {
 	PrecompilePluginOptions,
 	PrecompileRequest,
+	RenderedDiagnostics,
 	TransformedModule
 } from "./driver.ts"
 import {
 	createNodeHost,
 	optedInPackagesOf,
+	reportDiagnostics,
 	resolvesToRuntime,
 	resolvesUndetailed,
 	runtimeSpecifiers,
@@ -39,10 +41,10 @@ export const precompile: UnpluginInstance<
 > = createUnplugin((opts, meta) => {
 	if (!(meta.framework in declaringFrameworks))
 		refuseDeclare(opts, meta.framework)
-	let options = opts
-	// arktype in a worker of its own takes the program's configuration, and shares no state with the bundler's
+	let workerOptions = opts
+	// a worker of its own lets arktype take the program's configuration
 	const create = () =>
-		createAsyncPrecompiler({ precompilerOptions: options ?? {} })
+		createAsyncPrecompiler({ precompilerOptions: workerOptions ?? {} })
 	let precompiler = Promise.resolve(create())
 	const request = (...message: PrecompileRequest) =>
 		precompiler.then(send => send(...message))
@@ -53,18 +55,15 @@ export const precompile: UnpluginInstance<
 	const restart = () => {
 		precompiler = precompiler.then(replace)
 	}
-	// a changed file may be in the forward closure of any module analyzed so far, and a changed configuration needs a thread of its own
+	// a changed file or configuration may need a new worker
 	const reset = () => {
 		precompiler = precompiler.then(async send =>
-			// a config module the worker can't read is reported where a module is transformed
+			// a config the worker can't read is reported at the next transform
 			(await send("reset").catch(() => false)) ? replace(send) : send
 		)
 	}
 	const readDependency = (importer: string) =>
-		request("readDependency", importer) as Promise<{
-			errors: string[]
-			warnings: string[]
-		}>
+		request("readDependency", importer) as Promise<RenderedDiagnostics>
 	const host = createNodeHost(opts)
 	const isStandalone = opts?.runtime !== "arktype"
 	const isUndetailed = resolvesUndetailed(opts)
@@ -86,7 +85,7 @@ export const precompile: UnpluginInstance<
 			cwd: opts?.cwd,
 			tsconfig: opts?.tsconfig
 		})
-		// a build context can't warn here, and a bundler doesn't fail on TypeScript's errors
+		// no build context to warn with, and type errors don't fail a bundle
 		if (declarations.diagnostics) console.warn(declarations.diagnostics)
 		if (key) declarationsByApp.set(key, declarations)
 		return declarations
@@ -108,7 +107,7 @@ export const precompile: UnpluginInstance<
 				}
 				if (id.startsWith("~arktype/")) return `\0${id}`
 				if (!importer) return
-				// a virtual module has no directory of its own, so arktype resolves from the module it was written for
+				// a virtual module resolves from the module it was written for
 				if (importer.startsWith("\0~arktype/"))
 					return host.resolve(id, importersById[importer])
 				if (isUndetailed && schemaSpecifier.test(id)) {
@@ -120,7 +119,6 @@ export const precompile: UnpluginInstance<
 				if (!runtimeSpecifiers.includes(id)) return
 				const { errors, warnings } = await readDependency(importer)
 				for (const warning of warnings) this.warn(warning)
-				// thrown elsewhere, as esbuild drops an error reported unresolved
 				if (errors.length) return refuse(errors.join("\n"))
 				if (resolvesToRuntime(id, opts))
 					return host.resolve("arktype/runtime", importer)
@@ -140,12 +138,12 @@ export const precompile: UnpluginInstance<
 				for (const dependency of transformed.dependencies)
 					if (dependency !== id) this.addWatchFile(dependency)
 				for (const specifier in transformed.modules) {
-					modules[`\0${specifier}`] ??= transformed.modules[specifier]
-					importersById[`\0${specifier}`] ??= id
+					const virtualId = `\0${specifier}`
+					modules[virtualId] ??= transformed.modules[specifier]
+					importersById[virtualId] ??= id
 				}
-				for (const warning of transformed.warnings) this.warn(warning)
-				// thrown, since esbuild drops an error reported without a resolution
-				if (transformed.errors.length) throwError(transformed.errors.join("\n"))
+				// esbuild drops a reported error
+				reportDiagnostics(transformed, warning => this.warn(warning))
 				return (
 					transformed.code && { code: transformed.code, map: transformed.map }
 				)
@@ -155,7 +153,7 @@ export const precompile: UnpluginInstance<
 			buildApp: async builder => {
 				app = builder
 			},
-			// Vite and Vitest leave dependencies to Node or to their prebundling unless told otherwise
+			// Vite and Vitest otherwise leave dependencies to Node or prebundling
 			config: () =>
 				packages.length ?
 					{
@@ -164,7 +162,7 @@ export const precompile: UnpluginInstance<
 						test: { server: { deps: { inline: packages } } }
 					}
 				:	undefined,
-			// Vitest's module mocks replace what a module exports, which a factory checks its static helpers against
+			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
 				isServing = config.command === "serve"
 				if (
@@ -174,13 +172,13 @@ export const precompile: UnpluginInstance<
 					config.mode !== "test"
 				)
 					return
-				options = { ...opts, checks: "helpers" }
+				workerOptions = { ...opts, checks: "helpers" }
 				restart()
 			}
 		},
 		// loading the precompiler overlaps the bundler's own startup
 		buildStart: reset,
-		// a build that won't run again releases its worker, which Rollup, Vite, webpack and Rspack tell here and esbuild at onDispose
+		// a build that won't rerun releases its worker
 		buildEnd() {
 			const native = this.getNativeBuildContext?.()
 			const isWatching =
@@ -205,7 +203,7 @@ export const precompile: UnpluginInstance<
 		},
 		watchChange: reset,
 		esbuild: {
-			// esbuild loads anything a plugin resolves in the plugin's namespace, so arktype's files are resolved natively
+			// arktype resolves natively, outside the plugin's esbuild namespace
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
 			setup: build => {
 				build.onDispose(restart)

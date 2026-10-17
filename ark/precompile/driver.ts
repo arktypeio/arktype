@@ -36,10 +36,13 @@ export const createPrecompiler = (
 	})
 }
 
+export interface RenderedDiagnostics {
+	errors: string[]
+	warnings: string[]
+}
+
 // a host that shows one error for a module throws a module's errors together
-export const renderDiagnostics = (
-	diagnostics: Diagnostic[]
-): { errors: string[]; warnings: string[] } => {
+const renderDiagnostics = (diagnostics: Diagnostic[]): RenderedDiagnostics => {
 	const errors: string[] = []
 	const warnings: string[] = []
 	for (const diagnostic of diagnostics) {
@@ -52,7 +55,7 @@ export const renderDiagnostics = (
 
 export interface PrecompilerWorkerData {
 	precompilerOptions: PrecompilePluginOptions
-	// a port to answer on and a flag notified after each answer, for a host that waits synchronously
+	// for a host that waits synchronously
 	port?: MessagePort | undefined
 	answered?: Int32Array | undefined
 }
@@ -66,11 +69,9 @@ export type PrecompileRequest =
 	| [kind: "refresh"]
 	| [kind: "close"]
 
-export interface InlineModule {
+export interface InlineModule extends RenderedDiagnostics {
 	// undefined when the module is unchanged
 	code: string | undefined
-	errors: string[]
-	warnings: string[]
 }
 
 export interface TransformedModule extends InlineModule {
@@ -86,7 +87,7 @@ export interface CheckedModule {
 	diagnostics: Diagnostic[]
 }
 
-export const answerRequests = (
+const answerRequests = (
 	port: MessagePort,
 	data: PrecompilerWorkerData
 ): void => {
@@ -119,7 +120,7 @@ export const answerRequests = (
 		if (precompiler.conflictsWithThread) conflictsWithThread = true
 		else if (!hasAnswered || resolvesAsRecorded(tracked, request[2]))
 			return checked
-		// the rule refreshes and asks again, since a new precompiler's configuration may need a new thread
+		// the rule refreshes and asks again, as a new config may need a thread
 		tracked = undefined
 	}
 	port.on("message", (request: PrecompileRequest) => {
@@ -194,7 +195,7 @@ const createTrackedPrecompiler = (
 			return targets[specifier]
 		},
 		readFile: file => {
-			// before reading, so a file written meanwhile changes, as does one it couldn't read once it's created
+			// before reading, so a write meanwhile counts as a change
 			readTimes[file] ??= mtimeOf(file)
 			return host.readFile(file)
 		}
@@ -209,7 +210,7 @@ const createTrackedPrecompiler = (
 	}
 }
 
-// a resolver caches what it read, so a kept precompiler's imports are resolved again by a new one before its answer is used
+// a kept precompiler's imports must resolve as they did
 const resolvesAsRecorded = (
 	{ precompiler, targetsByImporter, opts }: TrackedPrecompiler,
 	id: string
@@ -228,7 +229,7 @@ const resolvesAsRecorded = (
 	return true
 }
 
-// a given module stands for its file in later imports, so one unlike its file, as unsaved in an editor, replaces the precompiler
+// a given module unlike its file, as unsaved in an editor, replaces it
 const recordGiven = (
 	{ precompiler, readTimes }: TrackedPrecompiler,
 	source: string,
@@ -241,10 +242,11 @@ const recordGiven = (
 // what the precompiler cached for any module may be read for the next one
 const isStale = (
 	{ readTimes }: TrackedPrecompiler,
-	mtimeNowOf: (file: string) => number = mtimeOf
-) => Object.keys(readTimes).some(file => readTimes[file] !== mtimeNowOf(file))
+	currentMtimeOf: (file: string) => number = mtimeOf
+) =>
+	Object.keys(readTimes).some(file => readTimes[file] !== currentMtimeOf(file))
 
-// Turbopack's loader has no worker to hold a precompiler, so it keeps one inline per option set until a file it read changes
+// Turbopack has no worker, so it keeps one precompiler per option set
 export const createKeyedPrecompiler = (
 	opts: PrecompilePluginOptions
 ): ((source: string, id: string) => KeyedModule) => {
@@ -273,12 +275,13 @@ const keyedModuleOf = (
 	const { precompiler, importsByFile } = tracked
 	const files = precompiler.textClosureOf(id, file => {
 		if (file === id) return precompiler.textImportsOf(source, id)
+		const mtime = currentMtimeOf(file)
+		if (mtime === -1) return []
 		const cached = importsByFile[file]
-		if (currentMtimeOf(file) === -1) return []
-		return cached?.[0] === currentMtimeOf(file) ?
+		return cached?.[0] === mtime ?
 				cached[1]
 			:	(importsByFile[file] = [
-					currentMtimeOf(file),
+					mtime,
 					precompiler.textImportsOf(readFileSync(file, "utf8"), file)
 				])[1]
 	})
@@ -316,7 +319,7 @@ const transformedModuleOf = (
 		return {
 			code: undefined,
 			map: undefined,
-			// a module it imports may come to export a Type, which only the bundler plugin watches for here
+			// an import may come to export a Type, which only the plugin watches
 			dependencies:
 				precompiler.inline ? [] : precompiler.textImportsOf(source, id),
 			modules: {},

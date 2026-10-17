@@ -1,10 +1,16 @@
 import { throwError } from "@ark/util"
 import { registerHooks, type LoadFnOutput } from "node:module"
 import { fileURLToPath } from "node:url"
-import type { PrecompilePluginOptions, TransformedModule } from "./driver.ts"
+import type {
+	PrecompilePluginOptions,
+	RenderedDiagnostics,
+	TransformedModule
+} from "./driver.ts"
 import {
 	appendSourceMap,
+	driverOptionsOf,
 	optedInPackagesOf,
+	reportDiagnostics,
 	resolvesToRuntime,
 	resolvesUndetailed,
 	runtimeSpecifiers,
@@ -24,21 +30,12 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	const isStandalone = opts?.runtime !== "arktype"
 	const isUndetailed = resolvesUndetailed(opts)
 	const request = createSyncPrecompiler({
-		precompilerOptions: {
-			...opts,
-			// a standalone module imports what it shares with others, which the hooks serve
-			inline: !isStandalone,
+		precompilerOptions: driverOptionsOf(
+			opts,
 			// `node --test` marks each file's process, or runs the files in its own
-			checks:
-				opts?.checks ??
-				((
-					isStandalone &&
-					(process.env.NODE_TEST_CONTEXT !== undefined ||
-						process.execArgv.includes("--test"))
-				) ?
-					"helpers"
-				:	undefined)
-		}
+			process.env.NODE_TEST_CONTEXT !== undefined ||
+				process.execArgv.includes("--test")
+		)
 	})
 	const filter = transformedFilterOf(
 		optedInPackagesOf(opts?.cwd ?? process.cwd())
@@ -47,13 +44,13 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 		filter.include.test(id) && !filter.exclude.test(id)
 	const modules: Record<string, string> = {}
 	const importersByUrl: Record<string, string> = {}
-	// a module loaded before register() ran, or by a loader that compiles it itself as tsx does a CommonJS package's, gives these hooks none of its text
+	// modules whose text these hooks were given
 	const givenUrls = new Set<string>()
 	registerHooks({
 		resolve: (specifier, context, nextResolve) => {
 			if (specifier.startsWith("~arktype/"))
 				return { url: `arktype:${specifier}`, shortCircuit: true }
-			// a precompiled module has no directory of its own, so it resolves from the module it was written for
+			// a precompiled module resolves from the module it was written for
 			if (context.parentURL?.startsWith("arktype:"))
 				context = { ...context, parentURL: importersByUrl[context.parentURL] }
 			if (isUndetailed && schemaSpecifier.test(specifier)) {
@@ -71,7 +68,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			if (!runtimeSpecifiers.includes(specifier))
 				return nextResolve(specifier, context)
 			const importer = context.parentURL
-			// a module these hooks never saw wasn't precompiled, so nothing checked what it reads of arktype/runtime, or stamped its configure() call
+			// a module these hooks never saw wasn't precompiled
 			if (
 				isStandalone &&
 				importer?.startsWith("file:") &&
@@ -79,13 +76,14 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 				isTransformed(fileURLToPath(importer))
 			)
 				throwError(writeTextlessMessage(fileURLToPath(importer)))
-			if (context.parentURL?.includes("/node_modules/")) {
-				const { errors, warnings } = request(
-					"readDependency",
-					fileURLToPath(context.parentURL)
-				) as { errors: string[]; warnings: string[] }
-				for (const warning of warnings) process.emitWarning(warning)
-				if (errors.length) throwError(errors.join("\n"))
+			if (importer?.includes("/node_modules/")) {
+				reportDiagnostics(
+					request(
+						"readDependency",
+						fileURLToPath(importer)
+					) as RenderedDiagnostics,
+					warning => process.emitWarning(warning)
+				)
 			}
 			return nextResolve(
 				resolvesToRuntime(specifier, opts) ? "arktype/runtime" : specifier,
@@ -108,9 +106,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 			const transformed = request("transform", textOf(loaded.source), id) as
 				| TransformedModule
 				| undefined
-			for (const warning of transformed?.warnings ?? [])
-				process.emitWarning(warning)
-			if (transformed?.errors.length) throwError(transformed.errors.join("\n"))
+			reportDiagnostics(transformed, warning => process.emitWarning(warning))
 			if (!transformed?.code) return loaded
 			for (const specifier in transformed.modules) {
 				modules[specifier] ??= transformed.modules[specifier]

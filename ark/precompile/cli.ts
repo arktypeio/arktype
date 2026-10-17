@@ -2,8 +2,9 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, relative } from "node:path"
 import { parseArgs } from "node:util"
-import { check, type CheckOptions } from "./check.ts"
+import { check, countOf } from "./check.ts"
 import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
+import type { PrecompilePluginOptions } from "./driver.ts"
 import {
 	assertPrecompileOptions,
 	type PrecompileOptions
@@ -48,7 +49,7 @@ if (values.declare) {
 	}
 	if (declarations.diagnostics) console.error(declarations.diagnostics)
 	console.log(
-		`${Object.keys(declarations.files).length} declaration files in ${relative(process.cwd(), declarations.root) || "."}, with ${declarations.shapes} ${declarations.shapes === 1 ? "shape" : "shapes"} in ${sharedDeclarationFile}`
+		`${Object.keys(declarations.files).length} declaration files in ${relative(process.cwd(), declarations.root) || "."}, with ${countOf(declarations.shapes, "shape")} in ${sharedDeclarationFile}`
 	)
 	process.exit(declarations.errors ? 1 : 0)
 }
@@ -81,14 +82,14 @@ if (values.members !== undefined) {
 
 const mutatesInput = values["mutates-input"]
 
-const opts: CheckOptions = {
+const opts: PrecompilePluginOptions = {
 	runtime: runtime as "arktype" | undefined,
 	config: values["no-config"] ? false : values.config,
 	members,
 	checks: values.checks as PrecompileOptions["checks"],
-	mutatesInput: (mutatesInput === "true" || mutatesInput === "false" ?
-		mutatesInput === "true"
-	:	mutatesInput) as PrecompileOptions["mutatesInput"],
+	mutatesInput: (mutatesInput === "true" ? true
+	: mutatesInput === "false" ? false
+	: mutatesInput) as PrecompileOptions["mutatesInput"],
 	errors: values.errors as PrecompileOptions["errors"],
 	conditions: values.conditions?.split(","),
 	tsconfig: values.tsconfig

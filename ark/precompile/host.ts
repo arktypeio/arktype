@@ -1,7 +1,9 @@
+import { throwError } from "@ark/util"
 import { existsSync, readFileSync, realpathSync } from "node:fs"
 import { dirname, isAbsolute, join } from "node:path"
 import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
+import type { PrecompilePluginOptions, RenderedDiagnostics } from "./driver.ts"
 import type { PrecompileOptions } from "./precompile.ts"
 
 export interface PrecompileHost {
@@ -14,7 +16,7 @@ export interface PrecompileHost {
 export interface NodeHostOptions {
 	// export conditions to resolve with, in priority order
 	conditions?: string[] | undefined
-	// a tsconfig whose `paths` the resolver follows, found from each importer when omitted
+	// whose `paths` to follow, else found from each importer
 	tsconfig?: string | undefined
 }
 
@@ -61,7 +63,7 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 			if (!isAbsolute(importer)) return
 			const result = resolver.resolveFileSync(importer, specifier)
 			if (!result.error || !/tsconfig/i.test(result.error)) return result.path
-			// a tsconfig the resolver cannot load, like one extending a file a tool generates, fails every resolution
+			// a tsconfig the resolver can't load fails every resolution
 			resolverWithoutTsconfig ??= resolver.cloneWithOptions(resolveOptions)
 			return resolverWithoutTsconfig.resolveFileSync(importer, specifier).path
 		},
@@ -75,7 +77,7 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 const readFile = (path: string) =>
 	existsSync(path) ? readFileSync(path, "utf8") : undefined
 
-// e.g. `"arktype": { "precompile": true }`, with which a package's modules are analyzed and transformed like the program's
+// e.g. `"arktype": { "precompile": true }`
 export const optsIn = (manifest: string | undefined): boolean =>
 	manifest !== undefined && JSON.parse(manifest).arktype?.precompile === true
 
@@ -83,7 +85,6 @@ export const optsIn = (manifest: string | undefined): boolean =>
 export const dependencyOf = (
 	file: string
 ): [root: string, name: string] | undefined => {
-	// most files are outside node_modules, where the pattern retries its `.*` from each character
 	const match =
 		file.includes("/node_modules/") &&
 		/.*\/node_modules\/((?:@[^/]+\/)?[^/]+)/.exec(file)
@@ -99,7 +100,7 @@ export const optedInPackagesOf = (cwd: string): string[] => {
 		project !== dirname(project)
 	)
 		project = dirname(project)
-	// the project, then each package that opts in, whose dependencies may opt in too
+	// the project, then each opted-in package, as its dependencies may opt in
 	const roots = [project]
 	for (let i = 0; i < roots.length; i++) {
 		const manifest = readFile(join(roots[i], "package.json"))
@@ -152,7 +153,7 @@ export const runtimeSpecifiers = [
 	"arktype/mutatesInput"
 ]
 
-// in shadow mode arktype creates each site beside its validator, so only its configuration resolves to the runtime
+// shadow mode keeps arktype, resolving only its config to the runtime
 export const resolvesToRuntime = (
 	specifier: string,
 	opts: PrecompileOptions | undefined
@@ -174,28 +175,20 @@ export const undetailedSpecifierOf = (specifier: string): string | undefined =>
 	: specifier === "@ark/schema/runtime/none" ? specifier
 	: undefined
 
-export const writeUndetailedImportMessage = <
-	importer extends string,
-	specifier extends string
->(
-	importer: importer,
-	specifier: specifier
-): writeUndetailedImportMessage<importer, specifier> =>
+export const writeUndetailedImportMessage = (
+	importer: string,
+	specifier: string
+): string =>
 	`${importer} imports ${specifier}, which a build with errors: "none" can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own`
 
-export type writeUndetailedImportMessage<
-	importer extends string,
-	specifier extends string
-> = `${importer} imports ${specifier}, which a build with errors: "none" can't load beside its runtime, a copy of @ark/schema's whose errors are a class of their own`
-
-// a virtual module, like Rolldown's `\0rolldown/runtime.js`, names no file to read or resolve from
+// not a virtual module like Rolldown's `\0rolldown/runtime.js`
 export const transformedId = /^[^\0].*\.(?:[cm]?[jt]s|[jt]sx)$/
 
 export const transformedFilterOf = (
 	packages: string[]
 ): { include: RegExp; exclude: RegExp } => ({
 	include: transformedId,
-	// a module in node_modules, unless the package it's in, after the last node_modules, opts in
+	// node_modules, unless the innermost package there opts in
 	exclude:
 		packages.length ?
 			new RegExp(
@@ -204,10 +197,27 @@ export const transformedFilterOf = (
 		:	/\/node_modules\//
 })
 
-export const writeTextlessMessage = <path extends string>(
-	path: path
-): writeTextlessMessage<path> =>
+export const writeTextlessMessage = (path: string): string =>
 	`${path} imports arktype but was loaded without @ark/precompile/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it`
 
-export type writeTextlessMessage<path extends string> =
-	`${path} imports arktype but was loaded without @ark/precompile/node's hooks, before register() ran or by a loader that compiles it itself, as tsx does in a CommonJS package, so a standalone build can't precompile it`
+export const driverOptionsOf = (
+	opts: PrecompilePluginOptions | undefined,
+	isTestRunner: boolean
+): PrecompilePluginOptions => {
+	const isStandalone = opts?.runtime !== "arktype"
+	return {
+		...opts,
+		// a standalone module imports what it shares, which the driver serves
+		inline: !isStandalone,
+		checks:
+			opts?.checks ?? (isStandalone && isTestRunner ? "helpers" : undefined)
+	}
+}
+
+export const reportDiagnostics = (
+	diagnostics: RenderedDiagnostics | undefined,
+	warn: (warning: string) => void
+): void => {
+	for (const warning of diagnostics?.warnings ?? []) warn(warning)
+	if (diagnostics?.errors.length) throwError(diagnostics.errors.join("\n"))
+}
