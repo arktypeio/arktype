@@ -30,16 +30,17 @@ const aroundCutoff = (matched: string, unmatched: string) =>
 	})
 
 contextualize(() => {
-	// "a" stands for any other char, which every check rejects alike
+	// length 4 reaches each branch in each sign and zero state; "a" stands
+	// for any other char, which every check rejects alike
 	it("numeric strings", () => {
-		attest(mismatches(numericStringMatcher, stringsUpTo("-.019a", 6))).equals(
+		attest(mismatches(numericStringMatcher, stringsUpTo("-.019a", 4))).equals(
 			[]
 		)
 	})
 
 	it("integer strings", () => {
 		attest(
-			mismatches(wellFormedIntegerMatcher, stringsUpTo("-.019a", 6))
+			mismatches(wellFormedIntegerMatcher, stringsUpTo("-.019a", 4))
 		).equals([])
 	})
 

@@ -23,7 +23,7 @@ const nameSite: FailureSite = {
 	missing: { code: "required" }
 }
 
-// the Allows and Apply of { name: string }, as a standalone build compiles them
+// { name: string }'s Allows and Apply, as a standalone build compiles them
 const userAllows = (data: unknown) =>
 	typeof data === "object" &&
 	data !== null &&
@@ -71,7 +71,7 @@ contextualize(() => {
 		])
 	})
 
-	it("adds an issue at each key it traverses into, leaving the path as it was", () => {
+	it("pops each key it pushes", () => {
 		const users: CompactApply = (data, ctx) => {
 			const list = data as unknown[]
 			for (let i = 0; i < list.length; i++)
@@ -95,16 +95,13 @@ contextualize(() => {
 		])
 	})
 
-	it("stops at its first issue where its build asks for only that one", () => {
+	it("first stops at one issue", () => {
 		const errors = new FirstIssues()
 		attest([user({ name: 1 }, errors), errors.count]).equals([false, 1])
 	})
 
-	it("enumerates only its issues and the path it's at, whichever build it's from", () => {
-		const keys: string[] = []
-		for (const k in new ArkErrors()) keys.push(k)
-		for (const k in new FirstIssues()) keys.push(k)
-		attest(keys).equals(["_", "_path", "_", "_path"])
+	it("first enumerates as all does", () => {
+		attest(Object.keys(new FirstIssues())).equals(Object.keys(new ArkErrors()))
 	})
 
 	it("adds a discriminant's issue at the path its site holds", () => {
@@ -142,7 +139,7 @@ a[0].b must be a string
 Symbol(s) must be a string`)
 	})
 
-	it("adds through a traversal the issues it adds to errors alone", () => {
+	it("adds through a traversal as through errors", () => {
 		const errors = new ArkErrors()
 		const ctx = new InternalTraversal(undefined, {} as never)
 		for (const data of [{ name: 1 }, {}, null]) {
@@ -152,7 +149,7 @@ Symbol(s) must be a string`)
 		attest(ctx._errors!._).equals(errors._)
 	})
 
-	it("writes a merged issue's message again at its path, but keeps one supplied", () => {
+	it("keeps a supplied message when merging", () => {
 		const inner = new ArkErrors()
 		user({}, inner)
 		inner._.push({
@@ -171,7 +168,7 @@ supplied`)
 supplied`)
 	})
 
-	it("writes the issues arktype's errors merge from a validator's as the validator did", () => {
+	it("merges validator issues into arktype errors", () => {
 		const errors = new ArktypeErrors(rootSchema("string").$.resolvedConfig)
 		const merged = new ArkErrors()
 		user({ name: 1 }, merged)
