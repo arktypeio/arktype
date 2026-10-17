@@ -9,9 +9,10 @@ import {
 import type { type } from "arktype"
 
 // imported as a module, so registering evaluates no string under a Content-Security-Policy
-export const registerUnits = async (
-	written: Record<string, string>
+export const precompile = async (
+	types: readonly type.Any[]
 ): Promise<Record<string, PrecompiledUnit>> => {
+	const written = writePrecompiledUnits(types.map(t => t.internal))
 	const source = `export default {${Object.entries(written).map(([key, unit]) => `\n${JSON.stringify(key)}: ${unit}`)}\n}`
 	const units = (
 		await import(`data:text/javascript,${encodeURIComponent(source)}`)
@@ -19,11 +20,6 @@ export const registerUnits = async (
 	registerPrecompiledUnits(units)
 	return units
 }
-
-export const precompile = (
-	types: readonly type.Any[]
-): Promise<Record<string, PrecompiledUnit>> =>
-	registerUnits(writePrecompiledUnits(types.map(t => t.internal)))
 
 export const isPrecompiled = (
 	units: Record<string, PrecompiledUnit>,
