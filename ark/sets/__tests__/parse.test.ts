@@ -169,4 +169,12 @@ contextualize(() => {
 			"ParseError: #/anyOf must be a non-empty array of schemas (was [])"
 		)
 	})
+
+	it("points into dependentSchemas", () => {
+		attest(() =>
+			parse({ dependentSchemas: { a: { minLength: -1 } } })
+		).throws.snap(
+			"ParseError: #/dependentSchemas/a/minLength must be a non-negative integer (was -1)"
+		)
+	})
 })

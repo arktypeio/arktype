@@ -387,36 +387,38 @@ const readObject = (
 			)
 		)
 	}
-	const dependencies = {
-		...(o.dependencies as dict),
-		...(o.dependentRequired as dict),
-		...(o.dependentSchemas as dict)
-	}
-	for (const key in dependencies) {
-		const dependency = dependencies[key]
-		if (isArray(dependency)) {
-			structure.predicate.push(
-				opaque(
-					["dependentRequired", key, dependency],
-					`an object with ${dependency.join(", ")} if it has ${key}`,
-					(data: dict) =>
-						!hasOwn(data, key) ||
-						dependency.every(k => hasOwn(data, k as string))
+	for (const keyword of [
+		"dependencies",
+		"dependentRequired",
+		"dependentSchemas"
+	] as const) {
+		const dependencies = o[keyword] as dict
+		for (const key in dependencies) {
+			const dependency = dependencies[key]
+			if (isArray(dependency)) {
+				structure.predicate.push(
+					opaque(
+						["dependentRequired", key, dependency],
+						`an object with ${dependency.join(", ")} if it has ${key}`,
+						(data: dict) =>
+							!hasOwn(data, key) ||
+							dependency.every(k => hasOwn(data, k as string))
+					)
 				)
-			)
-		} else {
-			const dependent = read(
-				dependency,
-				`${pointer}/dependencies/${escapePointer(key)}`,
-				ctx
-			)
-			structure.predicate.push(
-				opaque(
-					["dependentSchemas", key, dependent.id],
-					`${dependent.description} if it has ${key}`,
-					(data: dict) => !hasOwn(data, key) || dependent.allows(data)
+			} else {
+				const dependent = read(
+					dependency,
+					`${pointer}/${keyword}/${escapePointer(key)}`,
+					ctx
 				)
-			)
+				structure.predicate.push(
+					opaque(
+						["dependentSchemas", key, dependent.id],
+						`${dependent.description} if it has ${key}`,
+						(data: dict) => !hasOwn(data, key) || dependent.allows(data)
+					)
+				)
+			}
 		}
 	}
 	return (
