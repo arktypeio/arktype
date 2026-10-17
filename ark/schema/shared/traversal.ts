@@ -210,7 +210,11 @@ export class InternalTraversal implements FailureContext {
 	 */
 	addError<error extends ArkIssue>(error: error): error {
 		if (this.currentBranch) this.failBranch(error)
-		else errorsOf(this)._.push(error)
+		else {
+			const errors = errorsOf(this)
+			if (errors._.length) errors._.push(error)
+			else errors._ = [error]
+		}
 		return error
 	}
 

@@ -147,7 +147,8 @@ export class ArkErrors extends BaseArkErrors {
 	private group(error: ArkError): void {
 		const existing = this.errorAt(error)
 		if (!existing) {
-			this.grouped.push(error)
+			if (this.grouped.length) this.grouped.push(error)
+			else this.grouped = [error]
 			if (this.index) this.index[pathKeyOf(error)] = error
 			return
 		}
