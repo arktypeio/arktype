@@ -342,6 +342,8 @@ export const precompileInPlace = (root: BaseRoot): void => {
 		}
 	>()
 	const include = (node: BaseNode): void => {
+		// a node included is included with what it references
+		if (linkage.referencesById[node.id]) return
 		for (const reference of referencesThroughAliases([
 			node,
 			...node.references
