@@ -179,7 +179,7 @@ contextualize(() => {
 			}),
 			{ numRuns: 500 }
 		)
-		attest(accepted > 100).equals(true)
+		attest(accepted).satisfies("number > 100")
 	})
 
 	it("rejects overwriting what the build does not know", () => {

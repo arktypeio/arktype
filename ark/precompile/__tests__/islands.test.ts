@@ -61,7 +61,7 @@ $arkfixConfig()
 export const A = /* @__PURE__ */ $ark#0()`)
 	})
 
-	it("reports a site reading a ParseError it didn't throw itself", () => {
+	it("reports a site reading another's ParseError", () => {
 		attest(
 			diagnosticsOf(`import { generic, type } from "arktype"
 const isZero = (n: number) => n === 0
@@ -109,7 +109,7 @@ export const Imported = type("string")`
 		])
 	})
 
-	it("a Scope whose thunk returns a Type holding a function", () => {
+	it("marking a Scope leaves its thunks to arktype", () => {
 		const writeSource = (mark: string) => `import { scope } from "arktype"
 const isZero = (n: number) => n === 0
 ${mark}const $ = scope({ zero: () => $.type("number").narrow(isZero) })
@@ -129,9 +129,10 @@ export const A = type({ name: process.argv[2] })`
 		attest(statusesOf(source, {}, { runtime: "arktype" })).snap([
 			"3:18 rejected\n  `process` is a global the build does not read"
 		])
-		attest(
-			precompile(source, {}, { runtime: "arktype" }).code.includes("island")
-		).equals(false)
+		attest(precompile(source, {}, { runtime: "arktype" }).code)
+			.snap(`import { type } from "arktype"
+// @ark-runtime
+export const A = type({ name: process.argv[2] })`)
 	})
 
 	it("marks what follows it", () => {
@@ -217,7 +218,7 @@ export const Shared = type("string")`
 		])
 	})
 
-	it("fails for a precompiled Type it reads through a cast or an object literal", () => {
+	it("fails for Types read through casts or literals", () => {
 		attest(
 			diagnosticsOf(
 				`import * as b from "./b.ts"

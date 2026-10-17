@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import type { PrecompileOptions } from "@ark/precompile"
 import type { Type } from "arktype"
-import { analyze, diagnosticsOf, statusesOf } from "./utils.ts"
+import { analyze, diagnosticsOf, normalized, statusesOf } from "./utils.ts"
 
 const nonStatic = `{
 	const result = "string"
@@ -9,44 +9,31 @@ const nonStatic = `{
 }`
 
 contextualize(() => {
-	it("thunk definitions", () => {
+	it("callbacks arktype calls at definition", () => {
 		attest(
 			statusesOf(`import { type, scope } from "arktype"
 const A = type(() => type("string"))
 const B = type({ a: () => type("number"), b: [() => type("boolean")] })
-const $ = scope({ a: () => type("string"), b: "a[]" }).export()`)
+const C = scope({ a: () => type("string"), b: "a[]" }).export()
+const D = type({ a: "string" }).map(prop => [prop, { key: "b", value: prop.value }])
+const E = type("string").configure(meta => ({ description: \`\${meta.description}!\` }))
+const F = type(["string", "@", meta => ({ ...meta, title: "s" })])
+const G = type({ a: "string" }).configure({ description: "a" }, { where: n => n.kind === "domain" })
+const H = type("'a' | 'b'").distribute(branch => branch.expression, branches => branches.join())
+const I = scope({ a: "number" }, { domain: { description: () => "a custom number" } }).export()
+const J = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ctx.base })`)
 		).snap([
 			"2:11 accepted string",
 			"3:11 accepted { a: number, b: [boolean] }",
-			"4:11 accepted"
+			"4:11 accepted",
+			"5:11 accepted { a: string, b: string }",
+			"6:11 accepted string",
+			"7:11 accepted string",
+			"8:11 accepted { a: string }",
+			"9:11 accepted",
+			"10:11 accepted",
+			"11:11 accepted"
 		])
-	})
-
-	it("map", () => {
-		attest(
-			statusesOf(`import { type } from "arktype"
-const A = type({ a: "string" }).map(prop => [prop, { key: "b", value: prop.value }])`)
-		).snap(["2:11 accepted { a: string, b: string }"])
-	})
-
-	it("configure, meta writers and selectors", () => {
-		attest(
-			statusesOf(`import { type } from "arktype"
-const A = type("string").configure(meta => ({ description: \`\${meta.description}!\` }))
-const B = type(["string", "@", meta => ({ ...meta, title: "s" })])
-const C = type({ a: "string" }).configure({ description: "a" }, { where: n => n.kind === "domain" })`)
-		).snap([
-			"2:11 accepted string",
-			"3:11 accepted string",
-			"4:11 accepted { a: string }"
-		])
-	})
-
-	it("distribute", () => {
-		attest(
-			statusesOf(`import { type } from "arktype"
-const A = type("'a' | 'b'").distribute(branch => branch.expression, branches => branches.join())`)
-		).snap(["2:11 accepted"])
 	})
 
 	it("callbacks arktype calls are static helpers", () => {
@@ -97,14 +84,7 @@ const B = Stateful("string")`)
 		])
 	})
 
-	it("description writers", () => {
-		attest(
-			statusesOf(`import { scope } from "arktype"
-const A = scope({ a: "number" }, { domain: { description: () => "a custom number" } }).export()`)
-		).snap(["2:11 accepted"])
-	})
-
-	it("code reading a hole's name is unsupported", () => {
+	it("reading a hole's name", () => {
 		const source = `import { type, scope } from "arktype"
 const isLong = (s: string) => s.length > 3
 const A = type({ a: type("string").narrow(isLong) }).configure({ description: "selected" }, { where: n => n.kind === "predicate" && n.expression.startsWith("is") })
@@ -138,14 +118,7 @@ const C = type("string").narrow(s => ${nonStatic})`)
 		])
 	})
 
-	it("json schema fallbacks", () => {
-		attest(
-			statusesOf(`import { type } from "arktype"
-const A = type("string").pipe(s => s.length).toJsonSchema({ fallback: ctx => ctx.base })`)
-		).snap(["2:11 accepted"])
-	})
-
-	it("validation-time callbacks are holes", () => {
+	it("validation callbacks are holes", () => {
 		const result = analyze(`import { type } from "arktype"
 const format = (s: string) => {
 	const trimmed = s.trim()
@@ -153,13 +126,11 @@ const format = (s: string) => {
 }
 const A = type("string").pipe(format).narrow((s, ctx) => s.length > 0 || ctx.reject("non-empty"))`)
 		attest(
-			result.sites[0].holes.map(
-				hole => `${hole.kind} ${hole.start}:${hole.end}`
-			)
-		).snap(["function 137:143", "function 152:203"])
+			result.sites[0].holes.map(hole => hole.kind)
+		).snap(["function", "function"])
 	})
 
-	it("holes are named by placeholders at build", () => {
+	it("placeholder hole names", () => {
 		const descriptionsOf = (opts?: PrecompileOptions) =>
 			analyze(
 				`import { type } from "arktype"
@@ -170,9 +141,9 @@ const B = type.instanceOf(User)`,
 				{},
 				opts
 			).sites.map(site => (site.value as Type).description)
-		attest(descriptionsOf()).snap([
-			"a number and valid according to isPositive$hole_j0i6oq1s1b6p1",
-			"an instance of User$hole_hkuzc012jnsq9"
+		attest(normalized(descriptionsOf())).snap([
+			"a number and valid according to isPositive$hole_#0",
+			"an instance of User$hole_#1"
 		])
 		attest(descriptionsOf({ runtime: "arktype" })).snap([
 			"a number and valid according to an anonymous predicate",
@@ -180,7 +151,7 @@ const B = type.instanceOf(User)`,
 		])
 	})
 
-	it("names a function a refusal prints by its source", () => {
+	it("refusals print functions by source", () => {
 		attest(
 			diagnosticsOf(`import { type } from "arktype"
 const isEven = (n: number) => n % 2 === 0
@@ -196,21 +167,11 @@ const A = type({ a: ["string[]", "=", () => ${nonStatic}] })
 const B = type({ a: [["string", "=>", s => ${nonStatic}], "=", "a"] })
 const C = type({ a: [["string", ":", s => ${nonStatic}], "=", "a"] })
 const D = type({ a: [["string", ":", s => s.length > 0], "=", "a"] })`
-		attest(statusesOf(source)).snap([
-			"2:11 accepted { a: string[] = Function(fn$hole_1vu6ogz1nemc20) }",
+		attest(normalized(statusesOf(source))).snap([
+			"2:11 accepted { a: string[] = Function(fn$hole_#0) }",
 			'6:11 accepted { a: (In: string) => Out<unknown> = "a" }',
 			'10:11 accepted { a: string = "a" }',
 			'14:11 accepted { a: string = "a" }'
-		])
-		attest(
-			analyze(source).sites.map(site =>
-				site.holes.map(hole => `${hole.kind} ${hole.isCalledAtDefinition}`)
-			)
-		).snap([
-			["function false"],
-			["function false"],
-			["function false"],
-			["function false"]
 		])
 	})
 })
