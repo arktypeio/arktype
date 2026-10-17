@@ -153,7 +153,9 @@ const format = (s: string) => {
 }
 const A = type("string").pipe(format).narrow((s, ctx) => s.length > 0 || ctx.reject("non-empty"))`)
 		attest(
-			result.sites[0].holes.map(hole => `${hole.kind} ${hole.start}:${hole.end}`)
+			result.sites[0].holes.map(
+				hole => `${hole.kind} ${hole.start}:${hole.end}`
+			)
 		).snap(["function 137:143", "function 152:203"])
 	})
 
