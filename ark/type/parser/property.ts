@@ -50,7 +50,10 @@ export const parseProperty = (
 }
 
 export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
-	[def] extends [anyOrNever] ?
+	// validateInnerDefinition already returns any or never as is, so the
+	// common required case can skip the check below
+	keyKind extends "required" ? validateInnerDefinition<def, $, args>
+	: [def] extends [anyOrNever] ?
 		/** this extra [anyOrNever] check is required to ensure that nested `type` invocations
 		 * like the following are not prematurely validated by the outer call:
 		 *
@@ -61,7 +64,6 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 		 * ```
 		 */
 		def
-	: keyKind extends "required" ? validateInnerDefinition<def, $, args>
 	: keyKind extends "spread" ?
 		def extends validateInnerDefinition<def, $, args> ?
 			inferDefinition<def, $, args> extends object ?
