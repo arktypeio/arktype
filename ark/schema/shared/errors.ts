@@ -480,28 +480,37 @@ class Identity {
 	}
 }
 
-// private fields, so an error stays a plain object
+// a private field, so an error stays a plain object
 class ErrorSource extends Identity {
 	#config: ResolvedConfig
-	// a context with any text supplied for the error, which a copy keeps
-	#input: ArkErrorContextInput | undefined
 
-	constructor(
-		error: ArkError,
-		config: ResolvedConfig,
-		input: ArkErrorContextInput | undefined
-	) {
+	constructor(error: ArkError, config: ResolvedConfig) {
 		super(error)
 		this.#config = config
-		this.#input = input
 	}
 
 	static configOf(error: ArkError): ResolvedConfig {
 		return #config in error ? error.#config : throwError(copiedErrorMessage)
 	}
+}
+
+// an error given a context, whose text a copy keeps
+class SuppliedSource extends ErrorSource {
+	#input: ArkErrorContextInput
+
+	constructor(
+		error: ArkError,
+		config: ResolvedConfig,
+		input: ArkErrorContextInput
+	) {
+		super(error, config)
+		this.#input = input
+	}
 
 	static inputOf(error: ArkError): ArkErrorContextInput | undefined {
-		return #input in error ? error.#input : throwError(copiedErrorMessage)
+		if (#input in error) return error.#input
+		// a copy holds neither field, so reading its config throws
+		ErrorSource.configOf(error)
 	}
 }
 
@@ -510,14 +519,15 @@ const stampError = (
 	config: ResolvedConfig,
 	input?: ArkErrorContextInput
 ): ArkError => {
-	new ErrorSource(error, config, input)
+	if (input) new SuppliedSource(error, config, input)
+	else new ErrorSource(error, config)
 	return error
 }
 
 export const suppliedText = (
 	error: ArkError,
 	slot: "expected" | "actual" | "problem" | "message"
-): string | undefined => ErrorSource.inputOf(error)?.[slot]
+): string | undefined => SuppliedSource.inputOf(error)?.[slot]
 
 export const writeError = (
 	error: ArkError,
@@ -609,7 +619,7 @@ export const unwrittenError = (
 	prefix?: array<PropertyKey>,
 	config: ResolvedConfig = ErrorSource.configOf(error)
 ): ArkError => {
-	const input = ErrorSource.inputOf(error)
+	const input = SuppliedSource.inputOf(error)
 	const copy: Record<string, unknown> = {}
 	for (const k in error) {
 		if (!(k in writtenKeys)) copy[k] = error[k as never]
