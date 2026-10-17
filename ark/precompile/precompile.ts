@@ -223,6 +223,8 @@ export interface Reference {
 	isInert: boolean
 }
 
+type FactoryImport = [specifier: string, name: string, local: string]
+
 interface SiteFactory {
 	params: FactoryParam[]
 	spans: Span[]
@@ -253,8 +255,6 @@ const receive = (
 	if (passedAs.binding) factory.bindings.push(passedAs.binding)
 	factory.params.push(param)
 }
-
-type FactoryImport = [specifier: string, name: string, local: string]
 
 interface PassedInput {
 	expression: string
@@ -3612,6 +3612,21 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	copies: copiesHint
 }
 
+const cacheHint = 'With runtime: "arktype", arktype defines this at runtime.'
+
+const frozenHint = `Keep what you attach in an object of your own, or build with runtime: "arktype".`
+
+const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
+
+const runtimeImportHint = `Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: "arktype".`
+
+const nodePackageHint = `Read arktype's nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".`
+
+const writeSchemaExportHint = (name: string) =>
+	`Import ${name} from arktype, which a standalone build resolves to its runtime${name === "ArkErrors" ? ", or read type.errors" : ""}.`
+
+const localeHint = `Write errors in a locale in a definition marked // @ark-runtime, or build with runtime: "arktype".`
+
 const localeSpecifier = /^(?:arktype|@ark\/type)\/locales(?:\/|$)/
 
 // packages reading arktype's nodes, which validators lack
@@ -3632,10 +3647,6 @@ const arktypeSpecifier =
 	/\b(?:from|import)\s*["'](?:arktype(?:\/config)?|arkregex|@ark\/(?:type|regex))["']/
 
 const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
-
-const cacheHint = 'With runtime: "arktype", arktype defines this at runtime.'
-
-const frozenHint = `Keep what you attach in an object of your own, or build with runtime: "arktype".`
 
 const writersByGlobal: Record<string, string[]> = {
 	Object: ["assign", "defineProperty", "defineProperties", "setPrototypeOf"],
@@ -3914,17 +3925,6 @@ const declaredBindingKinds = {
 	function: 1,
 	class: 1
 } satisfies Partial<Record<BindingKind, 1>>
-
-const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
-
-const runtimeImportHint = `Read it only in a definition the build precompiles or one marked // @ark-runtime, or build with runtime: "arktype".`
-
-const nodePackageHint = `Read arktype's nodes in a definition marked // @ark-runtime, or build with runtime: "arktype".`
-
-const writeSchemaExportHint = (name: string) =>
-	`Import ${name} from arktype, which a standalone build resolves to its runtime${name === "ArkErrors" ? ", or read type.errors" : ""}.`
-
-const localeHint = `Write errors in a locale in a definition marked // @ark-runtime, or build with runtime: "arktype".`
 
 // an import only folded sites read becomes `import "arktype"`
 const pruneArktypeImports = (
