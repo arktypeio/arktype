@@ -36,7 +36,9 @@ if (process.argv[2] === "--build") {
 				[]
 			:	[
 					precompile.esbuild({
-						runtime: process.argv[3] === "cache" ? "arktype" : undefined,
+						...(process.argv[3] === "cache" ?
+							{ runtime: "arktype" }
+						:	{ members: { expression: true, description: true } }),
 						conditions,
 						cwd: program
 					})
