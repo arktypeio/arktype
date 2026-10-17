@@ -257,6 +257,10 @@ export abstract class NodeCompiler extends CompiledFunction<
 	unionFails?(node: UnionNode, value?: string, path?: PropertyKey[]): string
 	undeclaredFails?(): string
 
+	isObject(data: string): string {
+		return `(typeof ${data} === "object" && ${data} !== null) || typeof ${data} === "function"`
+	}
+
 	// returns the call of a function its unit declares for a rare path
 	abstract outline(
 		name: string,

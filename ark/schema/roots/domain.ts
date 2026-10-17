@@ -95,8 +95,7 @@ export class DomainNode extends InternalBasis<Domain.Declaration> {
 
 	compileCondition(js: NodeCompiler, data: string): string {
 		return (
-			this.domain === "object" ?
-				`(typeof ${data} === "object" && ${data} !== null) || typeof ${data} === "function"`
+			this.domain === "object" ? js.isObject(data)
 			: this.requiresNaNCheck && this.requiresInfinityCheck ?
 				`Number.isFinite(${data})`
 			:	`typeof ${data} === "${this.domain}"${

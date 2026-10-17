@@ -3115,6 +3115,11 @@ class StandaloneCompiler extends TraversalCompiler {
 	override undeclaredFails(): string {
 		return `ctx.failsAt(${this.ref(undeclaredSite)}, data, k)`
 	}
+
+	// a minifier keeps the null check of a ternary
+	override isObject(data: string): string {
+		return `(typeof ${data} === "object" ? ${data} !== null : typeof ${data} === "function")`
+	}
 }
 
 class InPlaceCompiler extends StandaloneCompiler {
