@@ -18,7 +18,7 @@ const precompilersByOptions: Record<
 	(source: string, id: string) => KeyedModule
 > = {}
 
-// a webpack loader is its module's default export, called with its context as `this`
+// a webpack loader, called with its context as `this`
 export default function (this: TurbopackLoaderContext, source: string): string {
 	const opts = this.getOptions()
 	refuseDeclare(opts, "Turbopack")

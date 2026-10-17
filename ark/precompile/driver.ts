@@ -235,7 +235,7 @@ const recordGiven = (
 	source: string,
 	id: string
 ) => {
-	// no mtime equals NaN, so the precompiler is replaced before the next module
+	// no mtime equals NaN, so the next module replaces the precompiler
 	if (precompiler.graph.host.readFile(id) !== source) readTimes[id] = NaN
 }
 

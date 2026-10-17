@@ -66,7 +66,7 @@ export const createAsyncPrecompiler = (
 				pending.shift()!(answer)
 				if (!pending.length) started.unref()
 			})
-			// a worker that dies fails what it was asked, and the next request starts another
+			// a dead worker fails what it was asked, and the next request restarts it
 			started.on("error", error => {
 				worker = undefined
 				for (const settle of pending.splice(0)) settle({ error })

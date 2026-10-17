@@ -6,7 +6,7 @@ export type DynamicCode =
 	| "opaque"
 	| "validation"
 	| "callback"
-	// a value the build can't precompile yet, as no change to the program makes it static
+	// a value no change to the program could make static
 	| "unsupported"
 
 export class DynamicValue {

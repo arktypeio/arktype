@@ -62,7 +62,8 @@
 	},
 	"scripts": {
 		"build": "ts ../repo/build.ts",
-		"test": "ts ../repo/testPackage.ts"
+		"test": "ts ../repo/testPackage.ts",
+		"tnt": "ts ../repo/testPackage.ts --skipTypes"
 	},
 	"dependencies": {
 		"@ark/schema": "workspace:*",

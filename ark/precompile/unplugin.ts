@@ -31,7 +31,7 @@ import { createAsyncPrecompiler } from "./worker.ts"
 export type { PrecompilePluginOptions } from "./driver.ts"
 
 export interface PrecompileUnpluginOptions extends PrecompilePluginOptions {
-	// emit the tsconfig's declarations with the bundle of a build that neither watches nor serves
+	// emit declarations with a build that neither watches nor serves
 	declare?: boolean | undefined
 }
 

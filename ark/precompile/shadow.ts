@@ -443,7 +443,7 @@ interface Validation {
 	mismatch: [arktype: string, precompiled: string] | undefined
 }
 
-// the validation whose callbacks are recorded or replayed, undefined while a callback runs
+// the validation recording or replaying callbacks, unset while one runs
 let validation: Validation | undefined
 
 const wrapperByCallback = new WeakMap<Function, Function>()

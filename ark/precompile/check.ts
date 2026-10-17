@@ -9,7 +9,7 @@ export interface CheckReport {
 	sites: number
 	accepted: number
 	islands: number
-	// the percentage of sites accepted, of those not left to arktype as runtime islands
+	// the percentage of sites accepted, runtime islands aside
 	rate: number
 	// what fails a build whatever the rate, like a configure() it can't place
 	errorsOutsideSites: number
