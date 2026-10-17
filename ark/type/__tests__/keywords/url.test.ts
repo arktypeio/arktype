@@ -22,6 +22,20 @@ contextualize(() => {
 		attest(Url.allows("HTTP://my-site.example.com:3000/a?b#c")).equals(true)
 	})
 
+	it("accepts whatever follows a plain host, as the parser does", () => {
+		const Url = type("string.url")
+		const urls = [
+			"https://a.com/ b",
+			"https://a.com/\u00e9?\u00fc#\u{1f600}",
+			"https://a.com/\ud800",
+			"https://a.com?%zz",
+			"http://a.com:80#\\",
+			"https://a.com/\n"
+		]
+		attest(urls.filter(url => !URL.canParse(url))).equals([])
+		attest(urls.filter(url => !Url.allows(url))).equals([])
+	})
+
 	it("parse", () => {
 		const parseUrl = type("string.url.parse")
 

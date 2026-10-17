@@ -238,9 +238,10 @@ export const raisedErrorPhrases = {
 } as const satisfies Record<string, Locale.KeywordWriters>
 
 // an http(s) URL whose host labels are letters and digits joined by single hyphens, the last all letters, and port under 10000 always parses
+// whatever follows from a /, ? or #, since no path, query or fragment fails
 // cased by hand, since the i flag has V8 compute case closures at the first test, and a lowercase scheme, matched fastest, is tried first
 const plainUrl =
-	/^(?:https?|[Hh][Tt]{2}[Pp][Ss]?):\/\/(?:[\dA-Za-z]+(?:-[\dA-Za-z]+)*\.)*[A-Za-z]+(?::\d{1,4})?(?:[#/?][!-~]*)?$/
+	/^(?:https?|[Hh][Tt]{2}[Pp][Ss]?):\/\/(?:[\dA-Za-z]+(?:-[\dA-Za-z]+)*\.)*[A-Za-z]+(?::\d{1,4})?(?:[#/?]|$)/
 
 // V8 compiles a parenthesized function as the module loads, and `satisfies` keeps the parens through prettier
 export const isParsableUrl = ((s: string): boolean =>
