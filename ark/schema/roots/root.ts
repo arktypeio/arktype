@@ -259,7 +259,7 @@ export abstract class BaseRoot<
 
 	merge(r: unknown): BaseRoot {
 		const rNode = this.$.parseDefinition(r)
-		// like a spread, a merge extends an object, so neither side can be an array or another instance
+		// like a spread, merge only extends object literals
 		for (const branch of [...this.branches, ...rNode.branches]) {
 			const basis = branch.hasKind("intersection") ? branch.basis : branch
 			if (basis?.hasKind("proto"))

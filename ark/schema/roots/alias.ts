@@ -85,7 +85,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 
 	constructor(...args: ConstructorParameters<typeof BaseRoot>) {
 		super(...args)
-		// written when created, so a definition that resolves afterward stays a reference
+		// written now, so a later resolution stays a reference
 		this.cache.uncollapsedInnerJson = writeInnerJson(this)
 		this.expression = expressionOf(this)
 		const referenced = nodesByRegisteredId[this.reference as NodeId]

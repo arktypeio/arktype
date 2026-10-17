@@ -233,7 +233,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 			if (ctx.currentErrorCount > errorCount) return
 		}
 		if (this.structure) {
-			// Apply transforms what it finds valid, which a predicate could still reject
+			// transformed only if the predicates allow it
 			if (this.inner.predicate && this.structure.transforms) {
 				if (!allowsInBranch(ctx, this.structure, data)) {
 					this.structure.traverseApply(data as never, ctx)
@@ -260,7 +260,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		return transform(ctx, this.structure!, data)
 	}
 
-	// a failed basis, or prestructural before a structure or predicate, stops Apply, though its parent continues unless ctx fails fast
+	// a failed basis or prestructural stops this node's Apply
 	compile(js: NodeCompiler): void {
 		if (js.traversalKind === "Allows") {
 			for (const child of this.children) js.check(child)
@@ -310,7 +310,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		if ((structure && !structure.transforms) || predicates.length > 1)
 			js.initializeErrorCount()
 		if (structure) {
-			// Apply transforms what it finds valid, which a predicate could still reject
+			// transformed only if the predicates allow it
 			if (structure.transforms)
 				js.if(`!${js.allows(structure)}`, () => js.return(js.invoke(structure)))
 			else {

@@ -143,7 +143,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	readonly caseNodes: BaseRoot[] = []
 
 	private _discriminant: Discriminant | null | undefined
-	// discriminated when first read, e.g. to compile, describe a miss or collect references
+	// discriminated when first read
 	get discriminant(): Discriminant | null {
 		if (this._discriminant === undefined) {
 			// null while discriminating, which can read this union's references
@@ -165,7 +165,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		))
 	}
 
-	// arktype's error lists each branch's, where a standalone issue reads only what the union describes
+	// a standalone issue reads only the union's description
 	override get failureSite(): UnionSite {
 		return (this.cache.failureSite ??= {
 			meta: this.meta,
@@ -227,7 +227,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		)
 	}
 
-	// checking data uncompiled doesn't discriminate, as a union checked once needn't be
+	// uncompiled checks don't discriminate
 	private get foundDiscriminant(): Discriminant | null {
 		return this._discriminant === undefined ? null : this.compiledDiscriminant
 	}
@@ -324,14 +324,13 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			:	this.discriminant
 	}
 
-	// more branches are checked by a call, which keeps the body that would inline them short
 	compileCondition(
 		js: NodeCompiler,
 		data: string,
 		byBranch?: boolean
 	): string | undefined {
 		if (this.isBoolean && !byBranch) return `typeof ${data} === "boolean"`
-		if (this.branches.length > 4) return
+		if (this.branches.length > maxInlinedBranches) return
 		const conditions: string[] = []
 		for (const branch of this.branches) {
 			const condition = branch.compileCondition?.(js, data)
@@ -434,8 +433,8 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 					`!ctx.failsUnion([${this.branches.map(branch => js.traversal(branch, "Apply")).join(", ")}], ${js.site(this)}, data)`
 			)
 		} else if (js.traversalKind === "Apply") {
-			// Allows would call a branch's predicates again and can't enter its resolution, so each branch is applied once
-			// a compiler writing what a union returns failing reads no branch's error
+			// each branch is applied once, as Allows can't enter its resolution
+			// a compiler writing unionFails needs no branch errors
 			const collects = !js.unionFails
 			if (collects) js.const("errors", "[]")
 			for (const branch of this.branches) {
@@ -490,8 +489,10 @@ export const Union = {
 	Node: UnionNode
 }
 
+const maxInlinedBranches = 4
+
 // an intersection binds more tightly than a union, so it never needs parens
-export const expressBranch = (branch: Union.ChildNode): string =>
+const expressBranch = (branch: Union.ChildNode): string =>
 	branch.hasKind("intersection") ? branch.expression : branch.nestableExpression
 
 const caseKeyOf = (discriminant: Discriminant, value: unknown): string => {

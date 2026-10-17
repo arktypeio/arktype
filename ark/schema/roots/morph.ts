@@ -88,7 +88,7 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	lastMorphIfNode: BaseRoot | undefined =
 		hasArkKind(this.lastMorph, "root") ? this.lastMorph : undefined
 	introspectableIn: BaseRoot | undefined = this.inner.in
-	// read with includesContextualMorph, which decides whether there's a ctx to pass, even if a length changes later
+	// fixed at creation, as includesContextualMorph is
 	contextFree: boolean[] = this.morphs.map(
 		morph => !hasArkKind(morph, "root") && arityOf(morph) === 1
 	)
