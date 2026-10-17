@@ -44,13 +44,16 @@ export const writeRootApply = (
 	const js = new CompiledFunction("data", "onFail").indent()
 	const applyFailed = new CompiledFunction("data", "onFail").indent()
 	const newCtx = `new ${ref("Traversal")}(data, ${ref("config")})`
+	// a node called without a handler fails with its own, which a validator passes itself
+	const handler =
+		refOf ? "onFail" : "onFail === undefined ? node.onFail : onFail"
 	const fallback = (body: typeof js) =>
 		node.includesAlias ?
 			body.return(
-				`${ref("applyCyclic")}(node, data, ${newCtx}).finalize(onFail)`
+				`${ref("applyCyclic")}(node, data, ${newCtx}).finalize(${handler})`
 			)
 		:	body.return(
-				`${ref("applyRejected")}(node, data, ${ref("config")}, onFail, ${ref("Traversal")})`
+				`${ref("applyRejected")}(node, data, ${ref("config")}, ${handler}, ${ref("Traversal")})`
 			)
 	// a valid result is often data itself, which is cheaper to compare than instanceof
 	const returnResult = () =>
@@ -62,7 +65,7 @@ export const writeRootApply = (
 						js
 							.const("ctx", newCtx)
 							.line(`${ref("addTransformErrors")}(ctx, result)`)
-							.return("ctx.finalize(onFail)")
+							.return(`ctx.finalize(${handler})`)
 				)
 				.return("result")
 		:	js.return("result")
@@ -95,7 +98,7 @@ export const writeRootApply = (
 				.const("ctx", newCtx)
 				.const("result", "traverseTransform(data, ctx)")
 		}
-		js.return("ctx.hasError() ? ctx.finalize(onFail) : result")
+		js.return(`ctx.hasError() ? ctx.finalize(${handler}) : result`)
 	} else if (node.hasKind("union") && !node.compiledDiscriminant) {
 		js.const("result", "traverseTransform(data)").if(
 			`result === ${JSON.stringify(unset)}`,

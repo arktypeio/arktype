@@ -200,7 +200,7 @@ export abstract class BaseNode<
 			(
 				data: any,
 				pipedFromCtx?: Traversal | undefined,
-				onFail: ArkErrors.Handler | null = cache.onFail
+				onFail?: ArkErrors.Handler | null
 			) => {
 				if (pipedFromCtx) return pipe(pipedFromCtx, this, data)
 
@@ -536,17 +536,18 @@ export abstract class BaseNode<
 			:	this.createRootApply())
 	}
 
+	// called without a handler, each fails with the node's own
 	protected createRootApply(): RootApply {
 		switch (this.rootApplyStrategy) {
 			case "allows":
-				return (data, onFail) => {
+				return (data, onFail = this.onFail) => {
 					if (this.allows(data)) return data
 
 					return this.rejectRoot(data, onFail)
 				}
 
 			case "contextual":
-				return (data, onFail) => {
+				return (data, onFail = this.onFail) => {
 					if (allowsInContext(this, data, this.$.resolvedConfig)) return data
 
 					return this.rejectRoot(data, onFail)
@@ -555,7 +556,7 @@ export abstract class BaseNode<
 			case "transform":
 			case "contextualTransform":
 				if (this.includesAlias) {
-					return (data, onFail) => {
+					return (data, onFail = this.onFail) => {
 						const untracked = allowsAcyclic(this, data)
 						const allowed =
 							untracked ?? allowsInContext(this, data, this.$.resolvedConfig)
@@ -583,7 +584,7 @@ export abstract class BaseNode<
 					)
 						return this.createOptimisticRootApply()
 					if (this.hasKind("union") && !this.compiledDiscriminant) {
-						return (data, onFail) => {
+						return (data, onFail = this.onFail) => {
 							const ctx = this.rootTraversal(data)
 							const result = transform(ctx, this, data)
 							if (result === unset) return this.rejectRoot(data, onFail)
@@ -591,7 +592,7 @@ export abstract class BaseNode<
 						}
 					}
 				}
-				return (data, onFail) => {
+				return (data, onFail = this.onFail) => {
 					if (!this.allows(data)) return this.rejectRoot(data, onFail)
 					const ctx = this.rootTraversal(data)
 					const result = transform(ctx, this, data)
@@ -608,7 +609,7 @@ export abstract class BaseNode<
 	// a root whose transform doesn't require ctx has only context-free morphs
 	private createOptimisticRootApply(): RootApply {
 		const branches = (this as {} as BaseRoot).branches
-		return (data, onFail) => {
+		return (data, onFail = this.onFail) => {
 			for (let i = 0; i < branches.length; i++) {
 				const branch = branches[i]
 				if (!branch.allows(data)) continue
@@ -1467,7 +1468,11 @@ export type KeyOrKeyNode = Key | BaseRoot
 
 export type GettableKeyOrNode = KeyOrKeyNode | number
 
-export type RootApply = (data: unknown, onFail: FailHandler | null) => unknown
+// called without a handler, a root fails with its own
+export type RootApply = (
+	data: unknown,
+	onFail: FailHandler | null | undefined
+) => unknown
 
 export type RootApplyStrategy =
 	| "allows"
