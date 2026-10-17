@@ -34,7 +34,7 @@ import { failsIn } from "./failsIn.ts"
 import { TransformErrors } from "./transform.ts"
 import { inProgress } from "./utils.ts"
 
-// arktype's handlers receive its own errors, of which a validator's are a base
+// receives arktype's errors, which extend a validator's
 export type FailHandler = (errors: never) => unknown
 
 export type BranchTraversal = {
@@ -42,8 +42,6 @@ export type BranchTraversal = {
 	errorCount: number
 }
 
-// fields are assigned by the constructor, since V8 creates a subclass's
-// instances more slowly from initializers
 export class InternalTraversal implements FailureContext {
 	/**
 	 * #### the path being validated or morphed
@@ -190,7 +188,7 @@ export class InternalTraversal implements FailureContext {
 		return failsIn(this, this.path, apply, value, key, missing, data)
 	}
 
-	// only arktype's own checks report through this and failsUnion, which a validator's traversal reaches piping into an arktype Type
+	// reached only by arktype's own checks
 	/** @internal */
 	failsWith(input: FailureInput): boolean {
 		this.addError(issueWith(this.path, input))
@@ -207,9 +205,7 @@ export class InternalTraversal implements FailureContext {
 		return this.failFast
 	}
 
-	/**
-	 * @internal
-	 */
+	/** @internal */
 	addError<error extends ArkIssue>(error: error): error {
 		if (this.currentBranch) this.failBranch(error)
 		else {
@@ -220,16 +216,15 @@ export class InternalTraversal implements FailureContext {
 		return error
 	}
 
-	/**
-	 * @internal
-	 */
+	/** @internal */
 	createErrors(): BaseArkErrors {
 		return new BaseArkErrors()
 	}
 
 	failBranch(error: ArkIssue): void {
-		this.currentBranch!.error = error
-		this.currentBranch!.errorCount++
+		const branch = this.currentBranch!
+		branch.error = error
+		branch.errorCount++
 	}
 }
 
@@ -380,7 +375,7 @@ export const callMorph = (
 	return ctx.returnedFrom === undefined ? result : returned(ctx, result)
 }
 
-// an error ctx.error added fails the morph that returns it as the errors holding it
+// a morph returning errors ctx.error added fails with them
 const returned = (ctx: InternalTraversal, result: unknown): unknown =>
 	(
 		typeof result === "object" &&
@@ -415,7 +410,7 @@ export const transformed = (
 	return data
 }
 
-// a validator or compiled morph piping to a node calls only the pipe it can use, so a bundle with no cyclic node leaves out the others
+// the one pipe a node needs
 export const pipeOf = (node: BaseNode): TraversePipe =>
 	node.includesAlias ? pipe
 	: node.transforms ? pipeTransformed
@@ -431,7 +426,7 @@ export type TraversePipe = (
 export const pipeChecked: TraversePipe = (ctx, node, data) =>
 	allowsPiped(ctx, node, data) ? data : errorsOf(ctx)
 
-// a node that transforms nothing and passes ctx to no predicate reads nothing a pipe sets on the traversal
+// a node reading no pipe state is applied as is
 export const pipeApplied: TraversePipe = (ctx, node, data) => {
 	if (node.allows(data)) return data
 	node.traverseApply(data, ctx)
@@ -450,7 +445,7 @@ export const pipe: TraversePipe = (ctx, node, data) => {
 		return errorsOf(ctx)
 	}
 	if (!node.transforms) return data
-	// a piped node transforms a morph's output, which can share objects an earlier pass cached
+	// a morph's output can share objects an earlier pass cached
 	const { transformedByResolutionId, tracksTransforms } = ctx
 	ctx.transformedByResolutionId = undefined
 	ctx.tracksTransforms = true
@@ -520,7 +515,7 @@ const applyPipedResolution = (
 	ctx.receivedDepth = receivedDepth
 }
 
-// Apply transforms each value it finds valid, unless it's checking a union's branch or a piped node
+// Apply transforms valid values outside branches and pipes
 export const transformsValid = (ctx: InternalTraversal): boolean =>
 	ctx.branches.length === 0 && !ctx.checksOnly
 
@@ -532,7 +527,7 @@ export const transformedInApply = (
 	if (result instanceof TransformErrors) addTransformErrors(ctx, result)
 }
 
-// whether data was transformed in place of being applied, which requires node to allow it
+// whether data was allowed and transformed instead of applied
 export const transformIfAllowed = (
 	ctx: InternalTraversal,
 	node: BaseNode,
@@ -543,7 +538,7 @@ export const transformIfAllowed = (
 		const untracked = allowsAcyclic(node, data)
 		if (!(untracked ?? allowsInTraversal(node, data, traversalOf(ctx, data))))
 			return false
-		// as at a root, data allowed within the bounds is a tree, so each path is transformed
+		// as at a root, allowed data is a tree
 		ctx.tracksTransforms = untracked === undefined
 		ctx.transformedByResolutionId = undefined
 	} else if (!allowsInBranch(ctx, node, data)) return false
@@ -561,7 +556,7 @@ export const allowsInBranch = (
 		allowsInBranchBy(ctx, node.traverseAllows, data, node)
 	:	node.allows(data)
 
-// compiled code passes a node's Allows rather than the node, which a precompiled validator doesn't hold
+// takes Allows, since a precompiled validator has no node
 export const allowsInBranchBy = (
 	ctx: InternalTraversal,
 	allows: TraverseAllows,
@@ -576,11 +571,10 @@ export const allowsInBranchBy = (
 	return ctx.popBranch()!.errorCount === 0 && allowed
 }
 
-// the last string a loop's Allows found its pattern rejecting, which Apply then reports without matching it again
+// the last string a loop's Allows rejected, so Apply needn't rematch it
 let rejectedBy: unknown
 let rejectedValue: unknown
 
-// only a string is remembered, since anything else fails its typeof check cheaply and an object shouldn't outlive its call
 export const rejected = (
 	allows: (data: unknown) => boolean,
 	value: unknown
@@ -601,14 +595,12 @@ export const rejects = (
 	return true
 }
 
-// a string this long can cost more to match where it fails, backtracking
-// through each position its repeated atom reached, than a sticky RegExp
+// sticky matching only pays off on longer strings
 const minStickyLength = 16
 
 const stickyCopies = /* @__PURE__ */ new WeakMap<RegExp, RegExp>()
 
-// a pattern repeating one atom to the end of a string, e.g. /^[ab]+$/,
-// whose sticky copy matches the atom as often as it can from the start
+// matches /^atom+$/ by a sticky copy of its atom
 export const matchesRepeated = (pattern: RegExp, data: string): boolean => {
 	if (data.length < minStickyLength) return pattern.test(data)
 	let sticky = stickyCopies.get(pattern)
@@ -674,7 +666,7 @@ export const transformResolution = (
 	const placeholder = transformedByData.get(data)
 	if (placeholder === transforming || !canFill(placeholder, result)) {
 		transformedByData.set(data, result)
-		// a key's later step can pass this output back, and a morph never runs on its own output
+		// a later step may pass this output back
 		if (hasDomain(result, "object")) transformedByData.set(result, result)
 		return result
 	}
@@ -688,7 +680,7 @@ export const transformResolution = (
 
 class Resolutions {
 	seen: { [id in string]?: Map<unknown, ResolutionState> } = {}
-	// a cyclic root's Apply leaves resolutions untracked until its data is deep or broad enough to be cyclic
+	// untracked until data is deep or broad enough to be cyclic
 	tracked = true
 	// reused by depth, so entering doesn't allocate
 	frames: ResolvingFrame[] | undefined = undefined
@@ -766,7 +758,7 @@ export const enterResolution = (
 	return
 }
 
-// whether data is valid, given Allows' result or, in Apply, the errors since it was entered
+// whether data is valid
 export const exitResolution = (
 	ctx: InternalTraversal,
 	allowed?: boolean
@@ -800,7 +792,7 @@ export const exitResolution = (
 			resolutions.earliestAssumed = earliestAssumed
 		return true
 	}
-	// nothing it assumed is in progress, so each result that assumed it is valid with it, or unknown without it
+	// settle each result that assumed this one
 	for (let i = frame.assumedLength; i < assumed.length; i += 2) {
 		const assumedStates = assumed[i] as Map<unknown, ResolutionState>
 		if (valid) assumedStates.set(assumed[i + 1], true)
@@ -813,7 +805,7 @@ export const exitResolution = (
 	return valid
 }
 
-// untracked, a failed object is recorded so that reaching it again doesn't report it twice
+// a failed object is recorded so it isn't reported twice
 const exitUntracked = (
 	ctx: InternalTraversal,
 	frame: ResolvingFrame
@@ -838,7 +830,7 @@ const invalidResolution = (
 	reported: !ctx.currentBranch
 })
 
-// a traversal of other data, of this one's class, so a callback sees the API it would have
+// of ctx's class, so callbacks see the same API
 const traversalOf = <ctx extends InternalTraversal>(
 	ctx: ctx,
 	data: unknown
@@ -872,7 +864,6 @@ export const aliasVisits = {
 			return false
 		}
 		aliasVisits.tracked = true
-		// an Allows reaching a predicate that reads ctx isn't run untracked, so no callback sees it
 		return (continuation ??= new InternalTraversal(data, continuationConfig))
 	}
 }
@@ -913,7 +904,7 @@ export const applyResolution = (
 	exitResolution(ctx)
 }
 
-// undefined once a compiled Apply enters the resolution, else whether traversal continues past data it already knows
+// undefined once entered, else whether traversal continues
 export const enterApplied = (
 	ctx: InternalTraversal,
 	id: string,
@@ -923,7 +914,6 @@ export const enterApplied = (
 	return entered === undefined ? undefined : entered || !ctx.failFast
 }
 
-// a compiled Apply exits the resolution it entered once its member returns whether traversal continues
 export const exitApplied = (
 	ctx: InternalTraversal,
 	continues: boolean
@@ -942,7 +932,7 @@ export const applyMember = (
 		applyResolution(member.id, node, data, ctx)
 	:	node.traverseApply(data, ctx)
 
-// a value Allows accepts isn't applied, and is transformed where that finds its morphs' errors unless its structure transforms it
+// applies data Allows rejects; transforms what it accepts
 export const applyValue = (
 	node: BaseNode,
 	data: unknown,
@@ -978,7 +968,6 @@ export const allowsUntracked = (
 	continuation = undefined
 	continuationConfig = node.$.resolvedConfig
 	let allowed: boolean
-	// restored in a catch, since a finally slows short cyclic allows
 	try {
 		allowed = node.traverseAllows(data as never, 0)
 	} catch (e) {
@@ -1060,7 +1049,7 @@ export const traverseKey = <result>(
 	return result
 }
 
-// what a default's morph applies its value through: a node, or the validator a standalone build created from one
+// a node, or the validator a standalone build created from it
 interface DefaultedValue {
 	(data: unknown, pipedFromCtx: Traversal): unknown
 	traverse: (data: unknown) => unknown
@@ -1079,9 +1068,9 @@ export const computeDefaultValueMorph = (
 	key: PropertyKey,
 	value: DefaultedValue,
 	defaultInput: unknown,
-	// a validator has no flags of its own, so a standalone build passes its node's
+	// a standalone build passes its node's flags
 	node: DefaultedNode = value as never,
-	// a standalone build passes what arktype decided as it created the node, which the function's parameters changing later doesn't change
+	// passed by standalone builds as decided at creation
 	isThunkInput = isThunk(defaultInput)
 ): Morph<any> => {
 	const thunk = isThunkInput ? (defaultInput as () => unknown) : undefined
