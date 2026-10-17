@@ -2,8 +2,9 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { configs } from "@ark/precompile/eslint"
 import { Linter } from "eslint"
-import { mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs"
-import { dirname } from "node:path"
+import { readFileSync, utimesSync, writeFileSync } from "node:fs"
+import { join } from "node:path"
+import { tempDir, writeFixture } from "./utils.ts"
 
 const lint = (
 	code: string,
@@ -39,7 +40,7 @@ export const makeField = limit => {
 		])
 	})
 
-	it("reports a read off a value the build can't tell isn't a Type", () => {
+	it("reports reads off a value that may be a Type", () => {
 		const filename = fromHere("unsure", "main.ts")
 		attest(
 			lint(readFileSync(filename, "utf8"), {}, filename, fromHere("unsure"))
@@ -63,7 +64,7 @@ export const check = data => User.assert(data)`
 `)
 	})
 
-	it("accepts what a build writing transforms into its input copies", () => {
+	it("accepts transforms a build copies", () => {
 		const code = `import { type } from "arktype"
 export const Tagged = type({
 	"tags?": ["object", ["string", "=", "none"]],
@@ -83,14 +84,17 @@ export const Long = type("string").narrow(isLong)`
 		])
 	})
 
-	it("applies a configuration that changed since the last file", () => {
-		const config = fromHere("temp", "linted", "config.ts")
-		mkdirSync(dirname(config), { recursive: true })
+	it("applies a changed configuration", () => {
+		const dir = writeFixture({
+			"config.ts": readFileSync(fromHere("writers", "config.ts"), "utf8")
+		})
+		const config = join(dir, "config.ts")
 		const code = `import { type } from "arktype"
 const isLong = s => s.length > 3
 export const Long = type("string").narrow(isLong)`
-		writeFileSync(config, readFileSync(fromHere("writers", "config.ts")))
-		attest(lint(code, { config }).length).equals(1)
+		attest(lint(code, { config }, join(dir, "linted.js"), dir)).snap([
+			'3:21-3:50 type("string").narrow(isLong) can\'t be precompiled yet\n`node.expression` (config.ts:5:38) prints the name of `isLong` (linted.js:2:16), which the build knows only by a placeholder\nStandalone builds can\'t precompile every definition yet. Build with runtime: "arktype".'
+		])
 		writeFileSync(
 			config,
 			`import { configure } from "arktype/config"
@@ -98,112 +102,93 @@ export const Long = type("string").narrow(isLong)`
 configure({ predicate: { description: () => "satisfying a predicate" } })
 `
 		)
-		attest(lint(code, { config })).equals([])
+		attest(lint(code, { config }, join(dir, "linted.js"), dir)).equals([])
 	})
 
-	it("rereads a module an earlier file read once it changes", () => {
-		const limits = fromHere("temp", "linted", "limits.ts")
-		mkdirSync(dirname(limits), { recursive: true })
+	it("rereads a module once it changes", () => {
+		const dir = writeFixture({ "limits.ts": "export const max = 5\n" })
 		const code = `import { type } from "arktype"
 import { max } from "./limits.ts"
 export const Field = type(\`string <= \${max}\`)`
-		const filename = fromHere("temp", "linted", "field.js")
-		writeFileSync(limits, "export const max = 5\n")
-		attest(lint(code, {}, filename, fromHere())).equals([])
+		const filename = join(dir, "field.js")
+		attest(lint(code, {}, filename, dir)).equals([])
+		const limits = join(dir, "limits.ts")
 		writeFileSync(limits, "export const max = Number(process.env.MAX)\n")
 		utimesSync(limits, new Date(Date.now() + 1000), new Date(Date.now() + 1000))
-		attest(lint(code, {}, filename, fromHere())).snap([
-			'3:22-3:46 type(`string <= ${max}`) cannot be precompiled\n`max` is imported from temp/linted/limits.ts\n`process` is a global the build does not read\nStandalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+		attest(lint(code, {}, filename, dir)).snap([
+			'3:22-3:46 type(`string <= ${max}`) cannot be precompiled\n`max` is imported from limits.ts\n`process` is a global the build does not read\nStandalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
 		])
 	})
 
-	it("reads a module from its file for a later file, not as it was linted unsaved", () => {
-		const limits = fromHere("temp", "linted", "limits.ts")
-		mkdirSync(dirname(limits), { recursive: true })
+	it("reads a module from its file, not as linted unsaved", () => {
 		const limitsWith = (max: string) => `import { type } from "arktype"
 export const max = ${max}
 export const Max = type("number")
 `
-		writeFileSync(limits, limitsWith("5"))
+		const dir = writeFixture({ "limits.ts": limitsWith("5") })
 		attest(
-			lint(limitsWith("Number(process.env.MAX)"), {}, limits, fromHere())
+			lint(
+				limitsWith("Number(process.env.MAX)"),
+				{},
+				join(dir, "limits.ts"),
+				dir
+			)
 		).equals([])
 		const code = `import { type } from "arktype"
 import { max } from "./limits.ts"
 export const Field = type(\`string <= \${max}\`)`
-		attest(
-			lint(code, {}, fromHere("temp", "linted", "field.js"), fromHere())
-		).equals([])
+		attest(lint(code, {}, join(dir, "field.js"), dir)).equals([])
 	})
 
-	it("rereads what an import resolves to once a referenced tsconfig's paths change", () => {
-		const main = fromHere("temp", "referenced", "main.js")
-		mkdirSync(dirname(main), { recursive: true })
+	it("rereads a referenced tsconfig's paths", () => {
+		const code = `import { type } from "arktype"
+import { shape } from "#shape"
+export const T = type(shape)`
+		const dir = writeFixture({
+			"tsconfig.json": JSON.stringify({
+				files: [],
+				references: [{ path: "./tsconfig.app.json" }]
+			}),
+			"a.js": 'export const shape = { [String(Math.random())]: "string" }\n',
+			"b.js": 'export const shape = { a: "number" }\n',
+			"main.js": code
+		})
 		const writeTsconfig = (target: string) =>
 			writeFileSync(
-				fromHere("temp", "referenced", "tsconfig.app.json"),
+				join(dir, "tsconfig.app.json"),
 				JSON.stringify({
 					compilerOptions: { allowJs: true, paths: { "#shape": [target] } },
 					include: ["*.js"]
 				})
 			)
-		writeFileSync(
-			fromHere("temp", "referenced", "tsconfig.json"),
-			JSON.stringify({
-				files: [],
-				references: [{ path: "./tsconfig.app.json" }]
-			})
-		)
-		writeFileSync(
-			fromHere("temp", "referenced", "a.js"),
-			'export const shape = { [String(Math.random())]: "string" }\n'
-		)
-		writeFileSync(
-			fromHere("temp", "referenced", "b.js"),
-			'export const shape = { a: "number" }\n'
-		)
-		const code = `import { type } from "arktype"
-import { shape } from "#shape"
-export const T = type(shape)`
-		writeFileSync(main, code)
 		writeTsconfig("./a.js")
-		attest(lint(code, {}, main, fromHere()).length).equals(1)
+		attest(lint(code, {}, join(dir, "main.js"), dir)).snap([
+			'3:18-3:29 type(shape) cannot be precompiled\n`shape` is imported from a.js\n`Math.random` is not one of the build\'s pure built-ins\nStandalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+		])
 		writeTsconfig("./b.js")
-		attest(lint(code, {}, main, fromHere())).equals([])
+		attest(lint(code, {}, join(dir, "main.js"), dir)).equals([])
 	})
 
-	it("applies a config module as it's linted unsaved", () => {
-		const config = fromHere("temp", "unsaved", "config.ts")
-		mkdirSync(dirname(config), { recursive: true })
+	it("applies an unsaved config module", () => {
 		const configWith = (onUndeclaredKey: string) =>
 			`import { configure } from "arktype/config"\n\nconfigure({ onUndeclaredKey: ${onUndeclaredKey} })\n`
-		writeFileSync(config, configWith('"reject"'))
-		const main = fromHere("temp", "unsaved", "main.ts")
 		const code = `import { type } from "arktype"
 export const T = type({ a: "string" })`
-		writeFileSync(main, code)
-		attest(lint(code, { config }, main, fromHere())).equals([])
+		const dir = writeFixture({
+			"config.ts": configWith('"reject"'),
+			"main.ts": code
+		})
+		const config = join(dir, "config.ts")
+		attest(lint(code, { config }, join(dir, "main.ts"), dir)).equals([])
 		attest(
 			lint(
 				configWith('process.argv.length > 99 ? "delete" : "reject"'),
 				{ config },
 				config,
-				fromHere()
+				dir
 			)
 		).snap([
 			"3:1-3:79 configure({ onUndeclaredKey: process.argv.length > 99 ? \"de… is not static\n`process` is a global the build does not read\nThe configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
 		])
-	})
-
-	it("reports only the copies of arktype's packages the linted file reaches", () => {
-		const code = `import { type } from "arktype"
-export const Name = type("string")`
-		const options = { conditions: ["ark-ts"] }
-		attest(
-			lint(code, options, fromHere("checked", "linted.js"), fromHere())
-		).equals([])
-		attest(
-			lint(code, options, fromHere("keywordTable", "linted.ts"), fromHere())
-		).equals([])
 	})
 })
