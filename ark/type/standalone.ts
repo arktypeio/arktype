@@ -1516,7 +1516,10 @@ return [${returned.join(", ")}]
 		readers: string[],
 		isStrict = false
 	): string[] {
-		return calledMembersOf(unit.members, readers).map(([name, source]) => {
+		const called = calledMembersOf(unit.members, readers)
+		const forwarded = forwardedOf(called)
+		const declarations = called.flatMap(([name, source]) => {
+			if (forwarded.has(name)) return []
 			// its parameters are plain names, and size drops a trailing unread ctx
 			const arrow = source.replace(
 				/^function\(([^)]*)\) {/,
@@ -1528,6 +1531,9 @@ return [${returned.join(", ")}]
 			)
 			return `const ${name} = ${/(Apply|Copy)$/.test(name) ? arrow : this.compiledOnLoad(arrow)}`
 		})
+		for (const [name, target] of forwarded)
+			declarations.push(`const ${name} = ${target}`)
+		return declarations
 	}
 
 	// V8 compiles a parenthesized function with its module, which Node's compile cache then holds, rather than parsing it again where it's first called
@@ -2939,6 +2945,36 @@ const calledMembersOf = (
 	}
 	for (const reader of readers) read(reader)
 	return members.filter(([name]) => called.has(name))
+}
+
+// a traversal only calling another of its unit is that one
+const forwardedOf = (members: readonly UnitMember[]): Map<string, string> => {
+	const sourcesByName = new Map(members)
+	const targetsByName = new Map<string, string>()
+	for (const [name, source] of members) {
+		const [, target, passesCtx] =
+			/^function\(data, ctx\) {\s*return ([\w$]+)\(data(, ctx)?\)\s*}$/.exec(
+				source
+			) ?? []
+		const targetSource = sourcesByName.get(target)
+		// a structure transforming its sequence keeps the call into it
+		if (
+			targetSource &&
+			!targetSource.includes("transformedSequence") &&
+			(passesCtx ||
+				!/\bctx\b/.test(targetSource.slice("function(data, ctx)".length)))
+		)
+			targetsByName.set(name, target)
+	}
+	const forwarded = new Map<string, string>()
+	for (const [name, first] of targetsByName) {
+		let target = first
+		// a chain is followed to the traversal it ends at, unless it loops
+		for (let i = 0; i < targetsByName.size && targetsByName.has(target); i++)
+			target = targetsByName.get(target)!
+		if (!targetsByName.has(target)) forwarded.set(name, target)
+	}
+	return forwarded
 }
 
 // each root's Allows, Apply and Transform, but no Apply for errors "none"
