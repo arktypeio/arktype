@@ -197,6 +197,8 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 		}
 	})
 
+const noSiblings: array<BaseConstraint> = []
+
 export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	constructor(...args: ConstructorParameters<typeof BaseConstraint>) {
 		super(...args)
@@ -224,9 +226,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	impliedBasis: BaseRoot = $ark.intrinsic.object.internal
-	impliedSiblings = this.children.flatMap(
-		n => (n.impliedSiblings as BaseConstraint[]) ?? []
-	)
+	impliedSiblings: array<BaseConstraint> =
+		this.inner.sequence?.impliedSiblings ?? noSiblings
 
 	props: array<Prop.Node> = conflatenate<Prop.Node>(
 		this.required,
@@ -240,19 +241,28 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		}) as FailureSite
 	}
 
-	// on a null prototype, "__proto__" is a key and "toString" isn't
-	propsByKey: Record<Key, Prop.Node | undefined> = Object.assign(
-		Object.create(null),
-		Object.fromEntries(this.props.map(node => [node.key, node]))
-	)
+	private _propsByKey: Record<Key, Prop.Node | undefined> | undefined
+	get propsByKey(): Record<Key, Prop.Node | undefined> {
+		// on a null prototype, "__proto__" is a key and "toString" isn't
+		return (this._propsByKey ??= Object.assign(
+			Object.create(null),
+			Object.fromEntries(this.props.map(node => [node.key, node]))
+		))
+	}
 
 	expression: string = structuralExpression(this)
 
-	requiredKeys: Key[] = this.required?.map(node => node.key) ?? []
+	get requiredKeys(): Key[] {
+		return this.required?.map(node => node.key) ?? []
+	}
 
-	optionalKeys: Key[] = this.optional?.map(node => node.key) ?? []
+	get optionalKeys(): Key[] {
+		return this.optional?.map(node => node.key) ?? []
+	}
 
-	literalKeys: Key[] = [...this.requiredKeys, ...this.optionalKeys]
+	get literalKeys(): Key[] {
+		return this.props.map(node => node.key)
+	}
 
 	_keyof: BaseRoot | undefined
 	keyof(): BaseRoot {

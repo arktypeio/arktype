@@ -1251,6 +1251,13 @@ const writePrecompiledUnit = (
 				`${variablesByNode.get(node)}.failureSite`
 			)
 		}
+		// a structure's undeclared keys are checked against the props it indexes
+		if (node.hasKind("structure")) {
+			accessorsByValue.set(
+				node.propsByKey,
+				`${variablesByNode.get(node)}.propsByKey`
+			)
+		}
 		// a discriminant miss reads what the union's getters derive
 		if (node.hasKind("union") && node.compiledDiscriminant) {
 			const variable = variablesByNode.get(node)
