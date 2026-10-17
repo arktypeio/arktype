@@ -28,6 +28,7 @@ import {
 	ArkErrors as BaseArkErrors,
 	messageOf,
 	problemOf,
+	TraversalError as BaseTraversalError,
 	type ArkIssue,
 	type CompactApply,
 	type FailureInput,
@@ -36,7 +37,17 @@ import {
 } from "./issues.ts"
 import { Traversal, type InternalTraversal } from "./traversal.ts"
 
-export { throwOnDefault, TraversalError } from "./issues.ts"
+export { throwOnDefault } from "./issues.ts"
+
+/**
+ * Thrown by a Type's `assert`, holding the errors it returned.
+ */
+export interface TraversalError extends BaseTraversalError {
+	arkErrors: ArkErrors
+}
+
+export const TraversalError: new (errors: ArkErrors) => TraversalError =
+	BaseTraversalError as never
 
 /**
  * A failed check: its context, the data and path it failed at, and the text
