@@ -108,7 +108,8 @@ export abstract class BaseRoot<
 				return { value: out }
 			},
 			jsonSchema: {
-				input: opts => toStandardJsonSchema(this.rawIn, opts),
+				// rawIn would drop defaults, so the input converts this type with io: "in"
+				input: opts => toStandardJsonSchema(this, opts, "in"),
 				output: opts => toStandardJsonSchema(this.rawOut, opts)
 			}
 		}
@@ -727,7 +728,8 @@ const validateStandardJsonSchemaTarget = (
 
 const toStandardJsonSchema = (
 	node: BaseRoot,
-	opts: StandardJSONSchemaV1.Options
+	opts: StandardJSONSchemaV1.Options,
+	io?: "in"
 ): Record<string, unknown> => {
 	const ctx = mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, {
 		target: validateStandardJsonSchemaTarget(opts.target),
@@ -739,7 +741,9 @@ const toStandardJsonSchema = (
 			ToJsonSchema.standardFallback[code]
 		:	handler
 	]) as ToJsonSchema.HandlerByCode
-	return node.toJsonSchema({ ...ctx, fallback }) as never
+	const standardCtx: ToJsonSchema.Context = { ...ctx, fallback }
+	if (io) standardCtx.io = io
+	return node.toJsonSchema(standardCtx) as never
 }
 
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
