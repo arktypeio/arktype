@@ -169,6 +169,11 @@ export const requiredWriters: errorWritersOf<"required"> = {
 
 export const unionWriters: errorWritersOf<"union"> = {
 	expected: ctx => {
+		const path = ctx.errors[0]?.propString
+		bracketed = path?.[0] === "["
+		// a union's branches usually fail at one path, so they needn't be grouped
+		if (ctx.errors.length && ctx.errors.every(e => e.propString === path))
+			return (written = describeAtPath(ctx.errors))
 		const errorsAtPaths: ArkError[][] = []
 		for (const error of ctx.errors) {
 			const errorsAtPath = errorsAtPaths.find(
@@ -177,36 +182,41 @@ export const unionWriters: errorWritersOf<"union"> = {
 			if (errorsAtPath) errorsAtPath.push(error)
 			else errorsAtPaths.push([error])
 		}
-		const pathDescriptions = errorsAtPaths.map(errors => {
-			const path = errors[0].propString
-			const branchesAtPath: string[] = []
-			for (const e of errors) {
-				if (!branchesAtPath.includes(e.expected))
-					branchesAtPath.push(e.expected)
-			}
-
-			const expected = describeBranches(branchesAtPath)
-			// if there are multiple actual descriptions that differ,
-			// just fall back to printing the data, which is the most specific
-			const firstActual = errors[0].actual
-			const actual =
-				errors.every(e => e.actual === firstActual) ? firstActual : (
-					printKind(errors[0].data)
-				)
-			return `${path && `${path} `}must be ${expected}${
-				actual && ` (was ${actual})`
-			}`
-		})
-		return describeBranches(pathDescriptions)
+		return (written = describeBranches(errorsAtPaths.map(describeAtPath)))
 	},
 	// its message doesn't show it, so data that may be large isn't printed
 	actual: printKind,
 	problem: ctx => ctx.expected,
 	message: ({ problem }) => {
-		if (problem[0] === "[") return `value at ${problem}`
+		// text it wrote starts as its first path does
+		if (problem === written ? bracketed : problem[0] === "[")
+			return `value at ${problem}`
 
 		return problem
 	}
+}
+
+// the expected a union last wrote, and whether it starts with a bracket
+let written: string | undefined
+let bracketed = false
+
+const describeAtPath = (errors: readonly ArkError[]): string => {
+	const path = errors[0].propString
+	const branchesAtPath: string[] = []
+	for (const e of errors)
+		if (!branchesAtPath.includes(e.expected)) branchesAtPath.push(e.expected)
+
+	const expected = describeBranches(branchesAtPath)
+	// if there are multiple actual descriptions that differ,
+	// just fall back to printing the data, which is the most specific
+	const firstActual = errors[0].actual
+	const actual =
+		errors.every(e => e.actual === firstActual) ? firstActual : (
+			printKind(errors[0].data)
+		)
+	return `${path && `${path} `}must be ${expected}${
+		actual && ` (was ${actual})`
+	}`
 }
 
 export const unitWriters: errorWritersOf<"unit"> = {
