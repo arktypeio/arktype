@@ -46,7 +46,7 @@ export interface FailureInput {
 // reports what fails to ctx, returning false only once traversal stops
 export type CompactApply = (data: unknown, ctx: FailureContext) => boolean
 
-/** where a compact Apply reports what fails, each method returning whether traversal stops */
+/** where a compact Apply reports failures; each returns whether to stop */
 export interface FailureContext {
 	failsAt(
 		site: FailureSite,
@@ -62,7 +62,7 @@ export interface FailureContext {
 	): boolean | undefined
 }
 
-// named apart from arktype's subclass, which keeps the runtime name ArkErrors
+// named apart from arktype's subclass, which keeps the name ArkErrors
 export { ArkIssues as ArkErrors }
 
 // the path stack a validation left empty, which the next one takes
@@ -183,7 +183,7 @@ interface ArkIssues {
 	_merge?(merged: ArkIssues, prefix: array<PropertyKey>): void
 	/** @internal arktype's errors, grouped by path */
 	readonly _issues?: ArkIssue[]
-	/** @internal arktype's message for a TraversalError, listing each error apart */
+	/** @internal arktype's TraversalError message, one line per error */
 	readonly _thrown?: string
 }
 
@@ -250,7 +250,7 @@ export const unionIssue = (
 // a default's onFail, read from a standalone runtime
 export const throwOnDefault: ArkIssues.Handler = errors => errors.throw()
 
-// a merged issue's message is written again at its path, unless it was supplied
+// a merged issue's message is rewritten at its path unless supplied
 export const mergeIssues = (
 	errors: ArkIssues,
 	merged: ArkIssues,

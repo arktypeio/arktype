@@ -497,7 +497,7 @@ const applyPiped = (
 	return ctx.currentErrorCount === errorCount
 }
 
-// a morph's output is new data, so a cyclic node tracks it from its own root
+// a morph's output is new data, tracked from the cyclic node's root
 const applyPipedResolution = (
 	ctx: InternalTraversal,
 	node: BaseNode,
@@ -546,7 +546,7 @@ export const transformIfAllowed = (
 	return true
 }
 
-// a predicate reading ctx sees this path, and an error it adds fails the branch
+// a predicate reading ctx sees this path; an error it adds fails the branch
 export const allowsInBranch = (
 	ctx: InternalTraversal,
 	node: BaseNode,
@@ -703,7 +703,7 @@ export const enterResolution = (
 	data: unknown
 ): boolean | undefined => {
 	const resolutions = resolutionsOf(ctx)
-	// untracked, every state is a failure, so none is looked up before the first
+	// untracked, every state is a failure, so none is looked up
 	const states =
 		resolutions.tracked || resolutions.recordedFailure ?
 			resolutions.seen[id]
@@ -773,7 +773,7 @@ export const exitResolution = (
 		(reachedInvalid === undefined && ctx.currentErrorCount === frame.errorCount)
 	const data = frame.data
 	const states = resolutions.seen[frame.id]!
-	// a primitive has no identity, so each place it's reached reports its own errors
+	// a primitive has no identity, so each place reports its own errors
 	if (typeof data === "object" ? data === null : typeof data !== "function") {
 		resolutions.earliestAssumed = frame.outerEarliestAssumed
 		states.delete(data)
@@ -883,7 +883,7 @@ export const applyCyclic = <ctx extends InternalTraversal>(
 	}
 	resolutionsOf(ctx).tracked = false
 	try {
-		// data reaching its root again is cyclic, so untracked it exceeds the bounds
+		// data reaching its root again is cyclic, exceeding the untracked bounds
 		node.traverseApply(data, ctx)
 	} catch (e) {
 		if (e !== untrackedBound) throw e

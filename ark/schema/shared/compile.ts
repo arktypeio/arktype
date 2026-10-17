@@ -414,7 +414,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 				`${this.ref(rejects)}(${this.traversal(node, "Allows")}, ${value}) && `
 			: condition === undefined ? `!${this.allows(node, value)} && `
 			: `!(${condition}) && `
-		// a refined basis Allows rejected failed its refinement unless its basis did
+		// a refined basis Allows rejected failed its basis or its refinement
 		if (checksAllowsFirst && isRefinedBasis(node))
 			return `${allows}ctx.failsAt(${node.basis!.compileCondition(this, value)} ? ${this.site(node.prestructurals[0])} : ${this.site(node.basis!)}, data, ${key})`
 		return `${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${value}, ${key})`

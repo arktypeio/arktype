@@ -534,7 +534,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (traversalKind === "Allows") {
 				if (!prop.traverseAllows(data, ctx)) return false
 			} else {
-				// a prop's Apply would transform its value before an index signature checks it
+				// a prop's Apply would transform before an index signature checks it
 				if (transformsKeys) prop.traverseApply(data as never, ctx)
 				else if (prop.key in data) {
 					traverseKey(
@@ -1426,7 +1426,7 @@ const compileDefault = (
 const serializeDefault = (js: NodeCompiler, value: unknown): string =>
 	Object.is(value, -0) ? "-0" : js.serialize(value)
 
-// a morph or a transform reading ctx can add errors, unlike a default or a deleted key
+// a morph or a transform reading ctx can add errors
 const canFailTransforming = (node: BaseNode): boolean =>
 	node.includesMorph || node.transformRequiresContext
 

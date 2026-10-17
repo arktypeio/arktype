@@ -584,7 +584,7 @@ export class TraversalCompiler extends NodeCompiler {
 		}
 	}
 
-	// a node can be named without being invoked, e.g. an Allows passed by reference
+	// a node can be named without being invoked, e.g. an Allows passed
 	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
 		const reference = this.linkage.referencesById[id]
 		if (reference && this.linkage.unreached.delete(reference))
