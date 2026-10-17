@@ -74,6 +74,9 @@ const standaloneOptions: StandaloneOptions = {
 	mutatesInput: false,
 	...JSON.parse(optionsJson ?? "{}")
 }
+// the JIT stops at the first error only as BENCH_ARKTYPE_CONFIG configures it to
+const arktypeErrors = JSON.parse(arktypeConfigJson ?? "{}").errors
+
 const artifactSuffix =
 	optionsJson || arktypeConfigJson ?
 		`.${createHash("sha1")
@@ -189,7 +192,6 @@ const isInvalidMode = (mode: Mode) =>
 	mode === "issues" || mode === "errors" || mode === "first"
 
 // ArkErrors computes its messages when summary is read
-// the JIT has no first-error mode
 const arkArm = (
 	mode: Mode,
 	validator: unknown,
@@ -328,7 +330,7 @@ const caseOf = (
 			validators.typebox === undefined ?
 				undefined
 			:	typeboxArm(mode, validators.typebox, opts?.typeboxMethod ?? "Check"),
-		arktype: arkArm(mode, validators.arktype, false),
+		arktype: arkArm(mode, validators.arktype, arktypeErrors === "first"),
 		standalone: arkArm(mode, validators.standalone, false),
 		// a first-error build can't collect every error
 		standaloneFirst:
