@@ -5,10 +5,12 @@ import {
 	rootSchema,
 	schemaScope,
 	type ArkErrors,
-	type NodeId
+	type NodeId,
+	writeMissingImportMessage
 } from "@ark/schema"
 import { arrayIndexMatcher } from "@ark/schema/internal/structure/shared.ts"
 import { jsTypeOfDescriptions, printable } from "@ark/util"
+import { spawnSync } from "node:child_process"
 
 contextualize(() => {
 	it("has jit in scope", () => {
@@ -250,5 +252,30 @@ contextualize(() => {
 		const values = Object.values($ark)
 		for (const value of [printable, jsTypeOfDescriptions, arrayIndexMatcher])
 			attest(values.includes(value)).equals(false)
+	})
+
+	it("internal installs no opt-in", () => {
+		const { stdout } = spawnSync(
+			process.execPath,
+			["--conditions", "ark-ts", "--input-type=module"],
+			{
+				cwd: import.meta.dirname,
+				encoding: "utf8",
+				input: `import "@ark/schema/internal"
+import { schemaScope } from "@ark/schema"
+for (const config of [{ errors: "first" }, { mutatesInput: true }]) {
+	try {
+		schemaScope({ a: "string" }, config).export()
+	} catch (e) {
+		console.log(e.message)
+	}
+}`
+			}
+		)
+		attest(stdout).equals(
+			`${writeMissingImportMessage("errors", '"first"')}
+${writeMissingImportMessage("mutatesInput", "true")}
+`
+		)
 	})
 })
