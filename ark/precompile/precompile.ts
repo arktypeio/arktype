@@ -213,20 +213,13 @@ export interface Hole {
 	end: number
 	value: unknown
 	kind: "function" | "class" | "symbol" | "opaque"
-	// the parameter count compiled for, undefined when no declaration gives one
-	arity: number | undefined
-	description: string | undefined
 	isCalledAtDefinition: boolean
-	// an opaque value arktype parsed as a Standard Schema
-	isDefinition: boolean
 }
 
 export interface Reference {
 	start: number
 	end: number
 	value: unknown
-	// whether another module can replace it, as a test runner's module mock does
-	isForeign: boolean
 	// whether it reads, through a binding nothing writes, what the site initializing that binding created, which nothing can replace
 	isFixed: boolean
 	// whether it reads a function or symbol its module creates, through the expression creating it or a binding of it, whose facts nothing changes
@@ -2647,15 +2640,13 @@ export class Precompiler {
 				input => input.kind === "import" && input.value === value
 			)
 			for (const node of reads) {
-				const isForeign = isImportInput || this.isImported(node, module)
 				const read = unwrapExpression(node)
 				site.references.push({
 					start: node.start,
 					end: node.end,
 					value,
-					isForeign,
 					isFixed:
-						!isForeign &&
+						!isImportInput &&
 						read.type === "Identifier" &&
 						this.isCreatedBy(
 							module.scopes.referencesById.get(read)?.binding,
@@ -2688,13 +2679,6 @@ export class Precompiler {
 			this.interpreter.sitesByNode.get(unwrapExpression(declaration.init))
 				?.value === value
 		)
-	}
-
-	private isImported(node: Node, module: SourceModule): boolean {
-		node = unwrapExpression(node)
-		while (node.type === "MemberExpression")
-			node = unwrapExpression(node.object)
-		return module.scopes.referencesById.get(node)?.binding?.kind === "import"
 	}
 
 	// e.g. `$.define({ a: "string" })`, whose argument can stay in its place only if it reads nothing arktype must define
@@ -2817,12 +2801,7 @@ export class Precompiler {
 			end: node.end,
 			value,
 			kind: standIn?.kind ?? "symbol",
-			arity: standIn?.arity,
-			description: standIn ? undefined : (value as symbol).description,
-			isCalledAtDefinition: !!(
-				standIn?.isCalled || standIn?.isCalledIndirectly
-			),
-			isDefinition: !!standIn?.isDefinition
+			isCalledAtDefinition: !!(standIn?.isCalled || standIn?.isCalledIndirectly)
 		}
 	}
 

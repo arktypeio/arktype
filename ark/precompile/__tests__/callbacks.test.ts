@@ -153,10 +153,8 @@ const format = (s: string) => {
 }
 const A = type("string").pipe(format).narrow((s, ctx) => s.length > 0 || ctx.reject("non-empty"))`)
 		attest(
-			result.sites[0].holes.map(
-				hole => `${hole.kind} ${hole.start}:${hole.end} arity ${hole.arity}`
-			)
-		).snap(["function 137:143 arity 1", "function 152:203 arity 2"])
+			result.sites[0].holes.map(hole => `${hole.kind} ${hole.start}:${hole.end}`)
+		).snap(["function 137:143", "function 152:203"])
 	})
 
 	it("holes are named by placeholders at build", () => {

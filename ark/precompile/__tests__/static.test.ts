@@ -514,10 +514,7 @@ const B = type({ [tag]: "string" })`)
 					end: 135,
 					value: "Symbol(tag)",
 					kind: "symbol",
-					arity: undefined,
-					description: "tag",
-					isCalledAtDefinition: false,
-					isDefinition: false
+					isCalledAtDefinition: false
 				}
 			])
 		})
