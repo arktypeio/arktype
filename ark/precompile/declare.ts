@@ -81,7 +81,7 @@ export const emitDeclarations = (opts?: DeclareOptions): Declarations => {
 export const writeSharedCollisionMessage = (file: string): string =>
 	`${file} would be declared at ${sharedDeclarationFile}, which holds the shapes of the build's Types`
 
-// a driver that can't tell a build from a rebuild has nowhere to emit declarations once
+// a driver that can't tell a build from a rebuild can't declare
 export const refuseDeclare = (opts: object | undefined, name: string): void => {
 	if (opts && "declare" in opts && opts.declare)
 		throwError(writeDeclareFrameworkMessage(name))
@@ -100,7 +100,7 @@ type TypeScript = typeof ts & {
 	getCheckFlags: (symbol: ts.Symbol) => number
 }
 
-// a TypeScript 7 project installs TypeScript 6, whose compiler API this reads, under an alias
+// a TypeScript 7 project installs TypeScript 6 as `typescript-6`
 const loadTypeScript = (cwd: string): TypeScript => {
 	for (const from of [join(cwd, "package.json"), import.meta.url]) {
 		const require = createRequire(from)
@@ -170,7 +170,7 @@ const emittedFilesOf = (program: ts.Program) =>
 		)
 		.sort((l, r) => (l.fileName < r.fileName ? -1 : 1))
 
-// emitting each module checks only what it reads, not every module of the program
+// emitting each module checks only what it reads, not every module
 const emitModules = (
 	program: ts.Program,
 	emitted: ts.SourceFile[],
@@ -363,7 +363,7 @@ class ShapePrinter {
 	intrinsicFlags: number
 	isExact: boolean
 	shapeNames = new Map<ts.Type, string>()
-	takenNames: Record<string, true> = {}
+	takenNames = new Set<string>()
 	refused = new Set<ts.Type>()
 	cycles = new Map<ts.Type, string>()
 	keysByPrinting = new Map<ts.Type, string>()
@@ -376,7 +376,7 @@ class ShapePrinter {
 		this.ts = ts
 		this.checker = program.getTypeChecker()
 		this.specifierOf = specifierOf
-		// a type printed in place of a shape can't hold a specifier, since each is relative to the shared file
+		// specifiers are relative to the shared file, so these can't print in place
 		this.shapeFlags =
 			ts.TypeFlags.Object |
 			ts.TypeFlags.Union |
@@ -408,8 +408,8 @@ class ShapePrinter {
 			return false
 		const base = shapeNameOf(candidate)
 		let shape = base
-		for (let i = 2; this.takenNames[shape] === true; i++) shape = `${base}$${i}`
-		this.takenNames[shape] = true
+		for (let i = 2; this.takenNames.has(shape); i++) shape = `${base}$${i}`
+		this.takenNames.add(shape)
 		this.shapeNames.set(t, shape)
 		return true
 	}
@@ -421,7 +421,7 @@ class ShapePrinter {
 		}
 	}
 
-	// each pass names the cycles it reached, then leaves a shape it can't print to TypeScript's own declaration
+	// each pass names the cycles it reached, leaving what can't print to tsc
 	settle(): string[] {
 		let shapes: string[] = []
 		let isSettled = false
@@ -469,7 +469,7 @@ class ShapePrinter {
 			if (!this.cycles.has(t)) this.cycles.set(t, this.keysByPrinting.get(t)!)
 			return
 		}
-		// a type that expands as it's printed is left to TypeScript's own declaration
+		// a type that expands as it's printed is left to TypeScript
 		if (this.keysByPrinting.size > maxNesting) return
 		this.keysByPrinting.set(t, key)
 		const printed = this.printStructure(t, depth, key)
@@ -559,7 +559,7 @@ class ShapePrinter {
 		return t.isIntersection() || !!t.getCallSignatures().length
 	}
 
-	// the undefined an optional key or element adds under exactOptionalPropertyTypes, which its declaration leaves out
+	// the undefined an optional key or element's declaration leaves out
 	isMissing(t: ts.Type): boolean {
 		return (
 			this.isExact &&
@@ -577,18 +577,16 @@ class ShapePrinter {
 		const booleans = members.filter(
 			member => member.flags & this.ts.TypeFlags.BooleanLiteral
 		)
+		const isBoolean = booleans.length === 2
 		// ordered as TypeScript prints them, with null and undefined last
 		const printed = allPrinted(
 			[
 				...members.filter(member => !(member.flags & nullish)),
 				...members.filter(member => member.flags & nullish)
 			].flatMap(member =>
-				this.isMissing(member) ? []
-				: booleans.length === 2 && booleans.includes(member) ?
-					member === booleans[0] ?
-						["boolean"]
-					:	[]
-				:	[this.printOperand(member, depth, key)]
+				this.isMissing(member) || (isBoolean && member === booleans[1]) ? []
+				: isBoolean && member === booleans[0] ? ["boolean"]
+				: [this.printOperand(member, depth, key)]
 			)
 		)
 		return printed && (printed.join(" | ") || "never")
@@ -738,7 +736,7 @@ class ShapePrinter {
 		const moduleSymbol = checker.getSymbolAtLocation(
 			ambientModule?.name ?? declaration.getSourceFile()
 		)
-		// an augmentation's relative name is relative to the module augmenting, not the shared file
+		// an augmentation's name is relative to its module, not the shared file
 		const moduleFile = moduleSymbol?.declarations?.find(ts.isSourceFile)
 		const specifier =
 			moduleName && !moduleName.startsWith(".") ? moduleName
@@ -771,7 +769,7 @@ class ShapePrinter {
 	}
 }
 
-// a mapped type's property is readonly only by TypeScript's internal check flags
+// a mapped property is readonly only by its internal check flags
 const readonlyCheckFlag = 8
 
 const maxNesting = 100
@@ -804,7 +802,7 @@ const shapeNameOf = (candidate: string) => {
 		:	`$${name}`
 }
 
-// a reference to an alias with one of these names doesn't parse, or reads as the keyword or global
+// names an alias reference can't use, being keywords or globals
 const reservedNames: KeySet = flatMorph(
 	"any as bigint boolean break case catch class const continue debugger default delete do else enum export extends false finally for function globalThis if import in infer instanceof keyof never new null number object readonly return string super switch symbol this throw true try typeof undefined unique unknown var void while with".split(
 		" "
