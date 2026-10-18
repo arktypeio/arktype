@@ -57,6 +57,9 @@
 	"files": [
 		"out"
 	],
+	"engines": {
+		"node": ">=22.12.0"
+	},
 	"bin": {
 		"arktype-precompile": "out/cli.js"
 	},
