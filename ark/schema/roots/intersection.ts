@@ -269,7 +269,7 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	// a failed basis or prestructural stops this node's Apply
 	compile(js: NodeCompiler): void {
-		// a minifier can't fold a loop's checks into a boolean V8 must build
+		// a loop keeps a minifier from joining its checks into one expression
 		if (js.traversalKind === "Allows") {
 			js.block("for (;;)", () => {
 				for (const child of this.children) js.check(child, { breaks: true })
