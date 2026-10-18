@@ -209,4 +209,4 @@ if (failing.length) {
 }
 if (staleSkips.length)
 	console.log(`❌ skipped units that don't exist:\n${staleSkips.join("\n")}`)
-if (violations || staleSkips.length) process.exitCode = 1
+if (violations || failing.length || staleSkips.length) process.exitCode = 1
