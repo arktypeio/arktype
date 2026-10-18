@@ -2212,9 +2212,9 @@ return [${returned.join(", ")}]
 		return indices.map(i => this.read(specifier, traversals[i]))
 	}
 
-	// an array root's element, whose Allows its validator loops over itself
+	// traversals of the element a root array's validator loops over
 	elementTraversalsOf(root: BaseRoot): string | undefined {
-		if (!isElementsOf(root)) return
+		if (!isVariadicArray(root)) return
 		const element = root.structure!.sequence!.variadic!
 		if (
 			isRefinedPattern(element) ||
@@ -2920,8 +2920,8 @@ const readUnitsOf = (unit: RootUnit): RootUnit[] =>
 		...unit.refs.filter(ref => isNode(ref) && ref.isRoot())
 	].map(node => unitOf(node as BaseNode, unit))
 
-// an array of one variadic element and nothing else
-const isElementsOf = (root: BaseRoot): root is IntersectionNode =>
+// an array of only a variadic element
+const isVariadicArray = (root: BaseRoot): root is IntersectionNode =>
 	root.hasKind("intersection") &&
 	root.basis?.hasKind("proto") === true &&
 	root.basis.proto === Array &&

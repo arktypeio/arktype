@@ -449,7 +449,7 @@ export const applyNodeErrors = (
 	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
 ): unknown => applyErrors(node.traverseApply, data, config, onFail, Ctx)
 
-// a root array's issues from i, the first element allows rejected
+// a root array's issues from i, the first element `allows` rejected
 export const applyElements = (
 	allows: (data: unknown) => boolean,
 	apply: CompactApply,
