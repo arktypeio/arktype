@@ -125,9 +125,31 @@ export const sortSiblings = <node extends BaseNode>(
 // writing their values
 const compareSiblings = (l: BaseNode, r: BaseNode): number =>
 	l.hasKind("required") || l.hasKind("optional") ?
-		compareKeys(l.key, (r as BaseProp).key) || (l.hash < r.hash ? -1 : 1)
-	: l.hash < r.hash ? -1
-	: 1
+		compareKeys(l.key, (r as BaseProp).key) || compareHashes(l.hash, r.hash)
+	:	compareHashes(l.hash, r.hash)
+
+// a registered name's counter compares as a number, so names order as they
+// were registered however many came before
+const compareHashes = (l: string, r: string): number => {
+	let i = 0
+	while (i < l.length && l[i] === r[i]) i++
+	if (i === l.length && i === r.length) return 1
+	let start = i
+	while (isDigitAt(l, start - 1)) start--
+	if (l[start - 1] === "$") {
+		const lEnd = digitsEnd(l, i)
+		const rEnd = digitsEnd(r, i)
+		if (lEnd > start && rEnd > start && lEnd !== rEnd) return lEnd - rEnd
+	}
+	return l[i] === undefined || l[i] < r[i] ? -1 : 1
+}
+
+const isDigitAt = (s: string, i: number) => s[i] >= "0" && s[i] <= "9"
+
+const digitsEnd = (s: string, i: number) => {
+	while (isDigitAt(s, i)) i++
+	return i
+}
 
 const compareKeys = (l: Key, r: Key): number =>
 	typeof l === "symbol" ?

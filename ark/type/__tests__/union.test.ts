@@ -298,4 +298,13 @@ contextualize(() => {
 			.or(type("number").describe("valueOf"))
 		attest(T.description).snap("valueOf or constructor")
 	})
+
+	it("orders units by when they were registered", () => {
+		const symbols = Array.from({ length: 11 }, () => Symbol("orderedUnit"))
+		for (const symbol of symbols) type.unit(symbol)
+		const T = type.enumerated(...[...symbols].reverse())
+		attest(T.internal.branches.map(branch => branch.json)).equals(
+			symbols.map(symbol => type.unit(symbol).json)
+		)
+	})
 })

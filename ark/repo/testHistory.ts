@@ -161,8 +161,6 @@ const show = (log: Observation[] | undefined, path: string[]) => {
 
 // units whose differences are allowed to depend on history, by why
 const skippedUnits: Record<string, string> = {
-	"ark/type/__tests__/facts.test.ts › facts › reads no unit object":
-		"object units are ordered by registration counter",
 	"ark/type/__tests__/gc.test.ts › gc › values captured by functions":
 		"collection depends on what was compiled before"
 }
