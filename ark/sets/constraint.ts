@@ -147,8 +147,7 @@ const compareHashes = (l: string, r: string): number => {
 	return l[i] === undefined || l[i] < r[i] ? -1 : 1
 }
 
-// a registered name in a hash up to its counter, e.g. `"$ark.fn$`, where a
-// string's own text would follow an escaped quote
+// a registered name up to its counter, like `"$ark.fn$`, its quote unescaped
 const namePrefix = /^[^\\]"\$ark\d*\.[\w$]*\$$/
 
 const isDigitAt = (s: string, i: number) => s[i] >= "0" && s[i] <= "9"
