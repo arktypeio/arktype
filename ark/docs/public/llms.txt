@@ -906,7 +906,7 @@ type("number >= 0") // inclusive min
 type("string <= 255") // max length
 
 // defaults — valid inside objects (key becomes implicitly optional)
-type({ email: "string.email = 'n/a'" })
+type({ name: "string = 'anonymous'" })
 ```
 
 ## Objects
@@ -968,7 +968,7 @@ const Guest = type({ name: "string" }).or({ token: "string" })
 
 ```ts
 // .to() — validated input → validated output
-const ParsedInt = type("string").to("number.integer")
+const ParsedInt = type("string.numeric.parse").to("number.integer")
 
 // .pipe() — validated input → transform function
 const ToUpper = type("string").pipe(s => s.toUpperCase())
@@ -1468,7 +1468,7 @@ Support for this is tracked as part of [this broader configurable defaultability
 
 ### jitless
 
-By default, when a `Type` is instantiated, ArkType will precompile optimized validation logic that will run when the type is invoked. This behavior is disabled by default in environments that don't support `new Function`, e.g. Cloudflare Workers.
+By default, when a `Type` is instantiated, ArkType will compile optimized validation logic that will run when the type is invoked. This behavior is disabled by default in environments that don't support `new Function`, e.g. Cloudflare Workers.
 
 If you'd like to opt out of it for another reason, you can set the `jitless` config option to `true`. Configuring `jitless` before importing arktype also skips the `new Function` check, which a strict Content-Security-Policy would otherwise report as a violation.
 
@@ -1483,7 +1483,7 @@ import "./config.ts"
 // import your config file before arktype
 import { type } from "arktype"
 
-// will not be precompiled
+// will not be compiled
 const MyObject = type({
 	foo: "string"
 })
@@ -1558,7 +1558,7 @@ With `"none"`, a failure returns one error with the code `"predicate"`, an empty
 
 ### mutatesInput
 
-By default, a transform copies each object it changes, so the data you pass is never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the data, which it returns:
+By default, a transform copies each object it changes other than a builtin like a `Date`, so the data you pass is otherwise never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the data, which it returns:
 
 - `false` (default): copies each object it changes
 - `true`: writes in place wherever that's safe even if the data holds one object at several places, and otherwise copies
@@ -5047,7 +5047,7 @@ const functionResult = type.merge(
 		"foo?": "1n"
 	},
 	{
-		includeThisPropAlso: "true"
+		includeThisPropAlso: "2n"
 	}
 )
 ```
