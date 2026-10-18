@@ -1,6 +1,6 @@
 /// <reference lib="es2021.weakref" />
 
-const holdsWeakly =
+export const holdsWeakly =
 	typeof WeakRef === "function" && typeof FinalizationRegistry === "function"
 
 export class WeakCache<v extends object> {

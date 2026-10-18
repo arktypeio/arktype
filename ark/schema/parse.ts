@@ -1,4 +1,7 @@
+/// <reference lib="es2021.weakref" />
+
 import {
+	holdsWeakly,
 	includes,
 	isArray,
 	isDate,
@@ -11,13 +14,15 @@ import {
 	type Brand,
 	type dict,
 	type JsonObject,
+	type Key,
 	type listable,
 	type PartialRecord
 } from "@ark/util"
 import {
 	nodeClassesByKind,
 	nodeImplementationsByKind,
-	type NodeInput
+	type NodeInput,
+	type nodeOfKind
 } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import type { BaseRoot } from "./roots/root.ts"
@@ -284,6 +289,28 @@ const nodeKeyOf = (
 		parts.push("!")
 	if (metaJson) parts.push(JSON.stringify(metaJson))
 	return parts.join()
+}
+
+// a required prop's input is already normalized unless its value holds an
+// alias, so its value holds it by key to find it before it's parsed
+export const requiredPropOf = (
+	key: Key,
+	value: BaseRoot,
+	$: BaseScope
+): nodeOfKind<"required"> => {
+	if (!holdsWeakly || value.includesShallowAlias || value.$ !== $)
+		return $.node("required", { key, value })
+	const props = (value.cache.requiredProps ??= new Map())
+	let prop = props.get(key)?.deref()
+	if (prop) $ark.reached?.node(prop)
+	else {
+		// keys whose props were collected are dropped as the map doubles
+		if (props.size > 32 && !(props.size & (props.size - 1)))
+			for (const [k, ref] of props) if (!ref.deref()) props.delete(k)
+		prop = $.node("required", { key, value })
+		props.set(key, new WeakRef(prop))
+	}
+	return prop as nodeOfKind<"required">
 }
 
 const idsOf = (nodes: readonly BaseNode[]): string => {

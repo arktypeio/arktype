@@ -3,6 +3,7 @@ import {
 	intrinsic,
 	normalizeIndex,
 	ownKeysOf,
+	requiredPropOf,
 	type BaseParseContext,
 	type BaseRoot,
 	type NodeInput,
@@ -175,7 +176,9 @@ const appendNamedProp = <kind extends Prop.Kind>(
 	structure[kind] = append(
 		// doesn't seem like this cast should be necessary
 		structure[kind] as MutableStructureSchema[Prop.Kind],
-		ctx.$.node(kind, input)
+		kind === "required" ?
+			requiredPropOf(input.key, input.value as BaseRoot, ctx.$)
+		:	ctx.$.node(kind, input)
 	) as never
 }
 

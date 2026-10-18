@@ -119,6 +119,7 @@ const noReferences: readonly BaseNode[] = []
 
 // derived values and bound traversals, stored apart from the node
 class NodeCache {
+	requiredProps: Map<Key, { deref(): BaseNode | undefined }> | undefined
 	innerEntries: readonly Entry<string>[] | undefined
 	metaJson: object | undefined
 	referencesById: Record<string, BaseNode> | undefined
