@@ -205,28 +205,20 @@ export const issueAt = (
 			context = site.missing!
 		else data = (data as Keyed)[key]
 	}
-	const issue = issueOf(
-		context,
+	const issuePath =
 		site.path ? path.concat(site.path)
 		: path.length === 2 ? [path[0], path[1]]
-		: path.slice(),
-		data
-	)
+		: path.slice()
+	const issue: ArkIssue = {
+		code: context.code,
+		path: issuePath,
+		data,
+		expected: context.description,
+		message: undefined
+	}
 	if (key !== undefined) path.pop()
 	return issue
 }
-
-const issueOf = (
-	context: SiteContext,
-	path: PropertyKey[],
-	data: unknown
-): ArkIssue => ({
-	code: context.code,
-	path,
-	data,
-	expected: context.description,
-	message: undefined
-})
 
 export const issueWith = (
 	path: PropertyKey[],
