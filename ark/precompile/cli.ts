@@ -18,23 +18,35 @@ const fail = (problem: string): never => {
 	process.exit(2)
 }
 
-const { values, positionals } = parseArgs({
-	allowPositionals: true,
-	options: {
-		check: { type: "boolean" },
-		declare: { type: "boolean" },
-		"fail-under": { type: "string" },
-		runtime: { type: "string" },
-		config: { type: "string" },
-		"no-config": { type: "boolean" },
-		members: { type: "string" },
-		checks: { type: "string" },
-		"mutates-input": { type: "string" },
-		errors: { type: "string" },
-		conditions: { type: "string" },
-		tsconfig: { type: "string" }
+const { values, positionals } = (() => {
+	try {
+		return parseArgs({
+			allowPositionals: true,
+			options: {
+				help: { type: "boolean", short: "h" },
+				check: { type: "boolean" },
+				declare: { type: "boolean" },
+				"fail-under": { type: "string" },
+				runtime: { type: "string" },
+				config: { type: "string" },
+				"no-config": { type: "boolean" },
+				members: { type: "string" },
+				checks: { type: "string" },
+				"mutates-input": { type: "string" },
+				errors: { type: "string" },
+				conditions: { type: "string" },
+				tsconfig: { type: "string" }
+			}
+		})
+	} catch (e) {
+		return fail((e as Error).message)
 	}
-})
+})()
+
+if (values.help) {
+	console.log(usage)
+	process.exit(0)
+}
 
 if (values.declare) {
 	if (values.check || positionals.length) {
