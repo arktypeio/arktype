@@ -4,7 +4,7 @@ import "./index.ts"
 import { inPlaceTransforms } from "./shared/inPlace.ts"
 import { $ark } from "./shared/registry.ts"
 
-export { writesInPlace } from "./shared/inPlace.ts"
+export { inputOnlyMorphs, writesInPlace } from "./shared/inPlace.ts"
 
 // installs in-place transforms, which mutatesInput configures
 $ark.inPlace = inPlaceTransforms

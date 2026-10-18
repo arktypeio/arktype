@@ -61,6 +61,13 @@ contextualize(() => {
 		attest(T({ a: " x ", b: "y" })).snap({ a: "x", b: "y x " })
 	})
 
+	it("writes where only a keyword's morph is passed ctx", () => {
+		const T = guarded.type({ a: "string.trim", n: "string.integer.parse" })
+		const input = { a: " x ", n: "1" }
+		attest(T(input) as object).is(input)
+		attest(input as object).snap({ a: "x", n: 1 })
+	})
+
 	it("copies the elements it transforms, which could be one object", () => {
 		const Items = guarded.type({ n: "string.numeric.parse" }).array()
 		const item = { n: "1" }

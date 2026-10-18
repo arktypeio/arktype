@@ -37,6 +37,8 @@ import {
 } from "@ark/schema/internal"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { writesInPlace } from "@ark/schema/mutatesInput"
+// a build writes in place as arktype/mutatesInput's marks say
+import "./mutatesInput.ts"
 import {
 	appendStringifiedKey,
 	arkKindOf,

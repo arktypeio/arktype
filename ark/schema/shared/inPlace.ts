@@ -281,13 +281,19 @@ const writesUnread = (places: Map<string, Place>): boolean => {
 	return true
 }
 
+/** arktype's morphs passed ctx that read only their input through it */
+export const inputOnlyMorphs: WeakSet<Function> = new WeakSet()
+
 // a morph passed ctx can read the input's writes through ctx.root
 const passesContext = (places: Map<string, Place>): boolean => {
 	for (const { node } of places.values()) {
 		if (
 			node.hasKind("morph") &&
 			node.morphs.some(
-				morph => !hasArkKind(morph, "root") && arityOf(morph) !== 1
+				morph =>
+					!hasArkKind(morph, "root") &&
+					arityOf(morph) !== 1 &&
+					!inputOnlyMorphs.has(morph)
 			)
 		)
 			return true
