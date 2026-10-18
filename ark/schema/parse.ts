@@ -249,7 +249,8 @@ export const createNode = ({
 		inner,
 		meta,
 		metaJson,
-		children
+		// a list grown by push has spare capacity, so a node holds a copy
+		children: children.slice()
 	}
 
 	const node = composing(() =>
