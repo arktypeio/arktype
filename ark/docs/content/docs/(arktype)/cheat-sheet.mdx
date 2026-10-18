@@ -50,7 +50,7 @@ type("number >= 0") // inclusive min
 type("string <= 255") // max length
 
 // defaults — valid inside objects (key becomes implicitly optional)
-type({ email: "string.email = 'n/a'" })
+type({ name: "string = 'anonymous'" })
 ```
 
 ## Objects
@@ -112,7 +112,7 @@ const Guest = type({ name: "string" }).or({ token: "string" })
 
 ```ts
 // .to() — validated input → validated output
-const ParsedInt = type("string").to("number.integer")
+const ParsedInt = type("string.numeric.parse").to("number.integer")
 
 // .pipe() — validated input → transform function
 const ToUpper = type("string").pipe(s => s.toUpperCase())

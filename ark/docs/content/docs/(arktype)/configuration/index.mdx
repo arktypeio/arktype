@@ -438,7 +438,7 @@ Support for this is tracked as part of [this broader configurable defaultability
 
 ### jitless
 
-By default, when a `Type` is instantiated, ArkType will precompile optimized validation logic that will run when the type is invoked. This behavior is disabled by default in environments that don't support `new Function`, e.g. Cloudflare Workers.
+By default, when a `Type` is instantiated, ArkType will compile optimized validation logic that will run when the type is invoked. This behavior is disabled by default in environments that don't support `new Function`, e.g. Cloudflare Workers.
 
 If you'd like to opt out of it for another reason, you can set the `jitless` config option to `true`. Configuring `jitless` before importing arktype also skips the `new Function` check, which a strict Content-Security-Policy would otherwise report as a violation.
 
@@ -453,7 +453,7 @@ import "./config.ts"
 // import your config file before arktype
 import { type } from "arktype"
 
-// will not be precompiled
+// will not be compiled
 const MyObject = type({
 	foo: "string"
 })
