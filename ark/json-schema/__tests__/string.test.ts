@@ -59,6 +59,12 @@ contextualize(() => {
 		attest(tPatternString.allows("expression")).equals(true)
 	})
 
+	it("RegExp pattern", () => {
+		const T = jsonSchemaToType({ type: "string", pattern: /^es$/i } as never)
+		attest(T.expression).snap("/^es$/i")
+		attest(T.allows("ES")).equals(true)
+	})
+
 	it("string enums", () => {
 		const enumKeys = ["keyOne", "keyTwo"]
 

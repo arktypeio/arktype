@@ -186,7 +186,11 @@ const keywordReaders: KeywordReader[] = [
 			constraints.push({ maxLength: o.maxLength as number })
 		if (o.pattern !== undefined) {
 			constraints.push({
-				pattern: [patternSchemaOf(o.pattern as string, `${pointer}/pattern`)]
+				pattern: [
+					o.pattern instanceof RegExp ?
+						o.pattern
+					:	patternSchemaOf(o.pattern as string, `${pointer}/pattern`)
+				]
 			})
 		}
 		return constrainOwnType("string", constraints)
@@ -690,6 +694,7 @@ const keywordValues = {
 		v => Number.isInteger(v) && (v as number) >= 0
 	],
 	string: ["a string", isString],
+	pattern: ["a string or RegExp", v => isString(v) || v instanceof RegExp],
 	strings: ["an array of strings", v => isEvery(v, isString)],
 	keys: [
 		"an array of unique strings",
@@ -734,7 +739,7 @@ const keywordValueKinds: Record<string, keyof typeof keywordValues> = {
 	multipleOf: "divisor",
 	minLength: "count",
 	maxLength: "count",
-	pattern: "string",
+	pattern: "pattern",
 	format: "string",
 	prefixItems: "schemas",
 	items: "items",

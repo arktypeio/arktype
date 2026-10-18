@@ -44,7 +44,7 @@ const integerSchema: JsonSchema.Numeric = {
 }
 ```
 
-Note that for string schemas exclusively, you must import the schema type from `@ark/json-schema` instead of `arktype`. This is because `@ark/json-schema` doesn't yet support the `format` keyword whilst `arktype` does.
+For string schemas, import `StringSchema` from `@ark/json-schema` instead. Its `pattern` may also be a `RegExp`, whose flags are kept.
 
 ```ts
 import type { StringSchema } from "@ark/json-schema"
