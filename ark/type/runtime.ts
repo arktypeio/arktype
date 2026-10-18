@@ -449,6 +449,28 @@ export const applyNodeErrors = (
 	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
 ): unknown => applyErrors(node.traverseApply, data, config, onFail, Ctx)
 
+// a root array's issues from i, the first element allows rejected
+export const applyElements = (
+	allows: (data: unknown) => boolean,
+	apply: CompactApply,
+	i: number,
+	data: readonly unknown[],
+	args: ValidatorArgs,
+	onFail: ArkErrors.Handler | null,
+	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
+): unknown =>
+	applyCallErrors(
+		(_, ctx) => {
+			for (; i < data.length; i++)
+				if (!allows(data[i]) && ctx.failsIn(apply, data[i], i)) return false
+			return true
+		},
+		data,
+		args,
+		onFail,
+		Ctx
+	)
+
 export const applyCallErrors = (
 	apply: CompactApply,
 	data: unknown,

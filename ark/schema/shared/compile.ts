@@ -604,5 +604,5 @@ export const isRefinedBasis = (node: BaseNode): node is IntersectionNode =>
 	node.prestructurals.length === 1
 
 // a pattern's verdict never changes, so Apply reuses Allows'
-const isRefinedPattern = (node: BaseNode): node is IntersectionNode =>
+export const isRefinedPattern = (node: BaseNode): node is IntersectionNode =>
 	isRefinedBasis(node) && node.prestructurals[0].hasKind("pattern")

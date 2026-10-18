@@ -3,6 +3,7 @@ import {
 	hasArkKind,
 	isDecidedByAllows,
 	isNode,
+	isRefinedPattern,
 	LazyGenericRoot,
 	precompileRootUnits,
 	supportedJsonSchemaTargets,
@@ -17,6 +18,7 @@ import {
 	type DefaultedNode,
 	type ErrorDetail,
 	type GenericRoot,
+	type IntersectionNode,
 	type MutatesInput,
 	type NodeId,
 	type Optional,
@@ -2008,6 +2010,25 @@ return [${returned.join(", ")}]
 				:	`{ 0: allows, 1: apply${transforms ? ", 2: transform" : ""} }`
 			const valid = transforms ? "transform(data)" : "data"
 			const parts = flat ? flat.join(", ") : traversals
+			const elements =
+				asValidator && !transforms && this.elementTraversalsOf(root)
+			if (elements) {
+				const Ctx = refOf("Traversal")
+				return [
+					`(({ 1: apply, 2: allowsElement, 3: applyElement }, onFail) => {
+	const rejectedIn = data => {
+		for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
+	}
+	return ${this.compiledOnLoad(`(data, ...args) => {
+		if (!Array.isArray(data)) return runtime.applyCallErrors(apply, data, args, onFail, ${Ctx})
+		const i = rejectedIn(data)
+		return i === undefined ? data : runtime.applyElements(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
+	}`)}
+})`,
+					`[${traversals}[0], ${traversals}[1], ${elements}[0], ${elements}[1]]`,
+					true
+				]
+			}
 			if (asValidator) {
 				return [
 					`((${pattern}, onFail) => ${this.compiledOnLoad(`(data, ...args) => allows(data) ? ${valid} : runtime.applyCallErrors(apply, data, args, onFail, ${refOf("Traversal")})`)})`,
@@ -2188,6 +2209,18 @@ return [${returned.join(", ")}]
 		const specifier = this.specifierOf(unit.name)
 		const traversals = this.traversalsOf(root, unit)
 		return indices.map(i => this.read(specifier, traversals[i]))
+	}
+
+	// an array root's element, whose Allows its validator loops over itself
+	elementTraversalsOf(root: BaseRoot): string | undefined {
+		if (!isElementsOf(root)) return
+		const element = root.structure!.sequence!.variadic!
+		if (
+			isRefinedPattern(element) ||
+			!this.unitsByHead.has(`${+this.inPlace(element)}${element.id}`)
+		)
+			return
+		return this.compactTraversalsOf(element)
 	}
 
 	compactTraversalsOf(root: BaseRoot): string | undefined {
@@ -2885,6 +2918,15 @@ const readUnitsOf = (unit: RootUnit): RootUnit[] =>
 		...Object.values(unit.dependencies).map(([node]) => node),
 		...unit.refs.filter(ref => isNode(ref) && ref.isRoot())
 	].map(node => unitOf(node as BaseNode, unit))
+
+// an array of one variadic element and nothing else
+const isElementsOf = (root: BaseRoot): root is IntersectionNode =>
+	root.hasKind("intersection") &&
+	root.basis?.hasKind("proto") === true &&
+	root.basis.proto === Array &&
+	Object.keys(root.inner).length === 2 &&
+	Object.keys(root.structure?.inner ?? {}).join() === "sequence" &&
+	Object.keys(root.structure!.sequence!.inner).join() === "variadic"
 
 const sharedByUnit = new WeakMap<RootUnit, boolean>()
 

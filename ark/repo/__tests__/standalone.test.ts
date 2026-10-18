@@ -454,6 +454,68 @@ contextualize(() => {
 a must be exactly length 0`)
 	})
 
+	it("root array issues from its first rejected element", async () => {
+		const types = {
+			Objects: type({ x: "number" }).array(),
+			Strings: type("string > 1").array()
+		}
+		const validators = await load(types)
+		const { Objects: first } = await load(
+			{ Objects: types.Objects },
+			{ errors: "first" }
+		)
+		const data = [{ x: 0 }, { x: "a" }, { x: 1 }, {}]
+		const piped = type("unknown").pipe((data, ctx) =>
+			validators.Objects(data, ctx)
+		)
+		attest([
+			validators.Objects(data).summary,
+			first(data).summary,
+			validators.Objects({}).summary,
+			String(piped(data))
+		]).snap([
+			"[1].x must be a number\n[3].x is missing",
+			"[1].x must be a number",
+			"must be an array",
+			"value at [1].x must be a number\nvalue at [3].x is missing"
+		])
+		agrees(validators, types, [data, [], [{ x: 0 }], ["ab", "a", "bc", 1], {}])
+	})
+
+	it("root array validated within its own validation", async () => {
+		const { T } = await load({ T: type({ x: "number" }).array() })
+		let inner: unknown
+		// read as the outer call checks its first element
+		const reentering = {
+			get x() {
+				inner = T([{ x: 0 }, { x: 1 }, { x: "b" }]).summary
+				return 0
+			}
+		}
+		attest(T([reentering, { x: "a" }]).summary).snap("[1].x must be a number")
+		attest(inner).snap("[2].x must be a number")
+		attest(T.allows([{ x: 0 }, { x: 0 }, { x: "a" }])).equals(false)
+		attest(T([{ x: "a" }, { x: 0 }]).summary).snap("[0].x must be a number")
+	})
+
+	it("root array reads elements before its first rejected once", async () => {
+		const types = { T: type({ x: "number" }).array() }
+		const { T } = await load(types)
+		let reads = 0
+		const counted: unknown[] = [undefined, { x: "a" }]
+		Object.defineProperty(counted, 0, { get: () => (reads++, { x: 0 }) })
+		attest(T(counted).summary).snap("[1].x must be a number")
+		attest(reads).equals(1)
+		// a getter replacing a later element before it's checked
+		const replacing: unknown[] = [undefined, { x: 0 }, { x: 1 }]
+		Object.defineProperty(replacing, 0, {
+			get: () => ((replacing[2] = { x: "c" }), { x: 0 }),
+			enumerable: true
+		})
+		agrees({ T }, types, [replacing])
+		attest(T(replacing).summary).snap("[2].x must be a number")
+	})
+
 	it("issues into a morph's traversal", async () => {
 		const { T } = await load({
 			T: type({ a: "string", flag: "boolean", n: "string | null" })
