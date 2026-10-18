@@ -1003,7 +1003,7 @@ const User = type({
 const out = User({ name: "Alan", age: "not a number" })
 
 if (out instanceof type.errors) {
-	// ArkErrors: .summary, and .issues, plain objects with a code, path and message
+	// ArkErrors: .summary, and .issues (plain objects with code, path, message)
 	console.error(out.summary)
 } else {
 	// out is typed as { name: string; age?: number }
@@ -1523,6 +1523,74 @@ const data = type.string("foo")
 // ArkErrors: must be a string (was number)
 const bad = type.string(5)
 ```
+
+### errors
+
+By default, a failed validation returns an error for each check that failed. `errors` can return less:
+
+- `"all"` (default): every error, at each path that failed
+- `"first"`: the first error, where validation stops
+- `"none"`: one error at the root, whose message is `is invalid`
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import "arktype/errors"
+
+configure({ errors: "none" })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const User = type({ name: "string", age: "number" })
+
+// ArkErrors: is invalid
+const out = User({ name: 5, age: "5" })
+```
+
+`"first"` and `"none"` are installed by `import "arktype/errors"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
+
+With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale).
+
+`errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
+
+### mutatesInput
+
+By default, a transform copies each object it changes, so the data you pass is never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the data, which it returns:
+
+- `false` (default): copies each object it changes
+- `true`: writes in place wherever that's safe even if the data holds one object at several places, and otherwise copies
+- `"always"`: writes every transform in place
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import "arktype/mutatesInput"
+
+configure({ mutatesInput: true })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+// import your config file before arktype
+import { type } from "arktype"
+
+const User = type({ name: "string.trim", role: "string = 'member'" })
+
+const data = { name: " Ada " }
+
+// true, and data is now { name: "Ada", role: "member" }
+const isData = User(data) === data
+```
+
+`true` and `"always"` are installed by `import "arktype/mutatesInput"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
+
+`true` always returns what copying would. `"always"` requires that the data hold no object at two places a transform reaches, and that a Type's functions read or return the data's objects only through their parameters.
+
+The object returned is the data, so it keeps its key order, accessors and inherited keys. Where the data holds one object at two places, a key the Type doesn't declare can hold what the other place wrote. An object a Type deletes undeclared keys from is still copied. A failed validation can leave writes in the objects of its data it found valid.
+
+`mutatesInput` can also be set for a Scope, whose Types then transform as it says.
 
 ### metadata
 
@@ -2273,7 +2341,7 @@ const trimStringStart = type("string", "=>", str => str.trimStart())
 
 </SyntaxTabs>
 
-A morph receives the validated value itself rather than a copy, so a morph that mutates its argument mutates the caller's data. ArkType writes to its input only to transform a builtin like a Date, Map or function, which it transforms in place. Any other transformed object is a new object that shares every untransformed value with the input, and input that nothing transforms is returned as is.
+A morph receives the validated value itself rather than a copy, so a morph that mutates its argument mutates the caller's data. [By default](/docs/configuration#mutatesinput), ArkType writes to its input only to transform a builtin like a Date, Map or function, which it transforms in place. Any other transformed object is a new object that shares every untransformed value with the input, and input that nothing transforms is returned as is.
 
 ```ts
 const T = type({ a: "string.trim", b: { c: "string" } })
@@ -2941,8 +3009,6 @@ const Partial = generic(["T", "object"])(
 )
 ```
 
-Recursive and cyclic generics are also currently unavailable and will be added soon.
-
 For more usage examples, check out the unit tests for generics [here](https://github.com/arktypeio/arktype/blob/main/ark/type/__tests__/generic.test.ts).
 
 ### External
@@ -3015,6 +3081,8 @@ if (out instanceof type.errors) {
 
 Unlike other [global config](/docs/configuration#levels), a locale also applies to Types parsed before it is configured.
 
+Shipped locales like `arktype/locales/de` work when imported. A locale you write, or a locale [function](#switching-locales), also needs `import "arktype/i18n"` unless a shipped locale is imported. Without it, creating a Type, `toLocaleString` or `messageIn` with that locale throws. This keeps other locales out of bundles that only use `en`.
+
 Only an error's message and its parts, `expected`, `actual` and `problem`, are localized. A Type's `description` and `expression`, JSON Schema, an error's `description` and `ParseError`s stay in English.
 
 ### Labels
@@ -3032,7 +3100,7 @@ const out = Signup({ name: "A" })
 
 ### Switching locales
 
-`locale` can also be a function, which is called when an `ArkErrors`' messages are first read. Messages are written then, not when validation fails, so errors are written in your app's language at the time they're read, even when it changed after they were created:
+`locale` can also be a function, called when an `ArkErrors`' messages are first read rather than when validation fails, so errors follow your app's language even if it changed after they were created:
 
 ```ts title="config.ts"
 import type { Locale } from "arktype"
@@ -3058,6 +3126,7 @@ On a server, the function can read the locale of the current request:
 // ---cut---
 import type { Locale } from "arktype"
 import { configure } from "arktype/config"
+import "arktype/i18n"
 import { AsyncLocalStorage } from "node:async_hooks"
 
 export const requestLocale = new AsyncLocalStorage<Locale>()
