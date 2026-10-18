@@ -53,7 +53,7 @@ contextualize(() => {
 		attest(shared).snap({ n: "1" })
 	})
 
-	it("copies where a morph is passed ctx, whose root is the input as given", () => {
+	it("copies where a morph is passed ctx", () => {
 		const T = guarded.type({
 			a: "string.trim",
 			b: ["string", "=>", (s, ctx) => s + (ctx.root as { a: string }).a]

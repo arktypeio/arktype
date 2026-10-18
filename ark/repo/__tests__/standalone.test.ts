@@ -506,7 +506,11 @@ a must be exactly length 0`)
 		Object.defineProperty(counted, 0, { get: () => (reads++, { x: 0 }) })
 		attest(T(counted).summary).snap("[1].x must be a number")
 		attest(reads).equals(1)
-		// a getter replacing a later element before it's checked
+	})
+
+	it("root array checks an element a getter replaced", async () => {
+		const types = { T: type({ x: "number" }).array() }
+		const { T } = await load(types)
 		const replacing: unknown[] = [undefined, { x: 0 }, { x: 1 }]
 		Object.defineProperty(replacing, 0, {
 			get: () => ((replacing[2] = { x: "c" }), { x: 0 }),
