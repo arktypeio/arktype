@@ -387,6 +387,10 @@ Other keys that first differ at a space, `!`, `"` or a backslash keep their orde
 - `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.
 - Derived and memoized keys moved from a node's own enumerable keys to `node.cache`, like the `includes*` flags, `innerEntries`, a structure's `propsByKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
 
+### Read an object definition's values as its keys are parsed
+
+An object definition's values are read as each key is parsed rather than all before the first, so a getter on the definition runs later, and if one throws while an earlier key is invalid, the earlier key's error is thrown instead.
+
 ### Read data in a different order
 
 A getter or `Proxy` trap on the data can see these reads change:
