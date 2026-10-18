@@ -173,7 +173,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 	reduce: (inner, $) => {
 		if (!inner.required && !inner.optional) return
 
-		const seen: Record<Key, true | undefined> = Object.create(null)
+		const seen = new Set<Key>()
 		let updated = false
 		const newOptionalProps: OptionalNode[] =
 			inner.optional ? [...inner.optional] : []
@@ -182,9 +182,9 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 		if (inner.required) {
 			for (let i = 0; i < inner.required.length; i++) {
 				const requiredProp = inner.required[i]
-				if (requiredProp.key in seen)
+				if (seen.has(requiredProp.key))
 					throwParseError(writeDuplicateKeyMessage(requiredProp.key))
-				seen[requiredProp.key] = true
+				seen.add(requiredProp.key)
 
 				if (inner.index) {
 					for (const index of inner.index) {
@@ -199,9 +199,9 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 		if (inner.optional) {
 			for (let i = 0; i < inner.optional.length; i++) {
 				const optionalProp = inner.optional[i]
-				if (optionalProp.key in seen)
+				if (seen.has(optionalProp.key))
 					throwParseError(writeDuplicateKeyMessage(optionalProp.key))
-				seen[optionalProp.key] = true
+				seen.add(optionalProp.key)
 
 				if (inner.index) {
 					for (const index of inner.index) {
