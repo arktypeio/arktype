@@ -90,7 +90,9 @@ const takeCalls = (into: Record<string, number> = {}) => {
 		if (!isUserFile(script.url)) continue
 		const file = relative(".", fileURLToPath(script.url))
 		for (const { functionName, ranges } of script.functions) {
-			if (!ranges[0].count) continue
+			// a module's body runs only when it's first imported
+			if (!ranges[0].count || (!functionName && !ranges[0].startOffset))
+				continue
 			const key = `${file}:${ranges[0].startOffset} ${functionName}`
 			into[key] = (into[key] ?? 0) + ranges[0].count
 		}
