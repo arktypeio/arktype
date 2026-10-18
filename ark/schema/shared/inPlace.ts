@@ -214,9 +214,13 @@ const transformsKeyTwice = (structure: StructureNode): boolean => {
 	})
 }
 
-const overlaps = (l: BaseRoot, r: BaseRoot): boolean => {
+// a reader checked after the writer receives what it wrote
+const overlaps = (writer: BaseRoot, reader: BaseRoot): boolean => {
 	try {
-		return l.rawIn.overlaps(r.rawIn)
+		return (
+			writer.rawIn.overlaps(reader.rawIn) ||
+			writer.rawOut.overlaps(reader.rawIn)
+		)
 	} catch {
 		return true
 	}

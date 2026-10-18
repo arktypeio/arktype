@@ -41,6 +41,18 @@ contextualize(() => {
 		attest(shared).snap({ n: "1" })
 	})
 
+	it("copies where a place could read the output another wrote", () => {
+		const T = guarded.type({
+			a: { n: "string.numeric.parse" },
+			b: { n: "number" }
+		})
+		const shared = { n: "1" }
+		attest(T({ a: shared, b: shared }).toString()).snap(
+			"b.n must be a number (was a string)"
+		)
+		attest(shared).snap({ n: "1" })
+	})
+
 	it("copies the elements it transforms, which could be one object", () => {
 		const Items = guarded.type({ n: "string.numeric.parse" }).array()
 		const item = { n: "1" }
