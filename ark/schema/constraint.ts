@@ -76,7 +76,7 @@ export abstract class BaseConstraint<
 	}
 
 	abstract readonly impliedBasis: BaseRoot | null
-	readonly impliedSiblings?: array<BaseConstraint>
+	declare readonly impliedSiblings?: array<BaseConstraint>
 
 	intersect<r extends BaseConstraint>(
 		r: r
