@@ -345,8 +345,12 @@ const serialize = (
 		return { "~function": read(() => (object as Function).name) }
 	if (depth > maxDepth) return { "~depth": true }
 	if (object instanceof ArkErrors) {
-		return {
-			"~errors": object.issues.map(e => ({
+		// errors write their text when first read, which a test may count, so
+		// they're recorded in a microtask, after the code that returned them
+		const errors: Observation = {}
+		queueMicrotask(() => {
+			recording = true
+			errors["~errors"] = object.issues.map(e => ({
 				code: e.code,
 				path: serialize(e.path, seen, depth + 1),
 				expected: read(() => e.expected),
@@ -358,7 +362,9 @@ const serialize = (
 				problem: read(() => e.problem),
 				message: read(() => e.message)
 			}))
-		}
+			recording = false
+		})
+		return errors
 	}
 	if (object instanceof Error)
 		return { "~error": object.name, message: object.message }
