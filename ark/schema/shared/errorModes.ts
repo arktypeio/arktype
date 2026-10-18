@@ -16,7 +16,8 @@ export class ArkFirstIssueTraversal extends ArkTraversal {
 	}
 
 	override finalize(onFail?: FailHandler | null): unknown {
-		this._errors?._.splice(1)
+		const errors = this._errors?._
+		if (errors && errors.length > 1) errors.length = 1
 		return super.finalize(onFail)
 	}
 }
@@ -27,12 +28,18 @@ export class ArkFirstIssueTraversal extends ArkTraversal {
  */
 export class UndetailedErrors extends ArkErrors {
 	override get issues(): readonly ArkError[] {
-		for (const issue of this._) issue.message ??= "is invalid"
-		return this._
+		return this._.reduce(
+			(issues, issue) => ((issue.message ??= "is invalid"), issues),
+			this._
+		)
 	}
 
 	override get summary(): string {
-		return this.issues.map(issue => issue.message).join("\n")
+		return this._.reduce(
+			(summary, issue) =>
+				summary + (summary && "\n") + (issue.message ?? "is invalid"),
+			""
+		)
 	}
 
 	override toLocaleString(): string {
