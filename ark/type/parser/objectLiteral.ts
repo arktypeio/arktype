@@ -6,6 +6,8 @@ import {
 	requiredPropOf,
 	type BaseParseContext,
 	type BaseRoot,
+	type BaseScope,
+	type Domain,
 	type NodeInput,
 	type Prop,
 	type Structure,
@@ -160,11 +162,22 @@ export const parseObjectLiteral = (
 	return ctx.$.node(
 		"intersection",
 		{
-			domain: ctx.$.node("domain", { domain: "object" }),
+			domain: objectDomainOf(ctx.$),
 			structure: spread?.merge(structureNode) ?? structureNode
 		},
 		{ prereduced: true }
 	)
+}
+
+const objectDomains = new WeakMap<BaseScope, Domain.Node>()
+
+const objectDomainOf = ($: BaseScope): Domain.Node => {
+	let domain = objectDomains.get($)
+	if (!domain) {
+		domain = $.node("domain", { domain: "object" })
+		objectDomains.set($, domain)
+	}
+	return domain
 }
 
 const appendNamedProp = <kind extends Prop.Kind>(
