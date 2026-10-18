@@ -41,7 +41,7 @@ User(input) === input
 ```
 
 - `true` writes in place only where no place the Type checks can read what another wrote, so it returns what copying would, and otherwise copies, as for `{ a: { n: "string.numeric.parse" }, b: { n: "string" } }`, whose `a` and `b` could be one object.
-- `"always"` always writes in place, so the input must hold no object at two places a transform reaches, and a function a Type holds must reach the input's objects only through its parameters.
+- `"always"` always writes in place, so the input must hold no object at two places a transform reaches, and a function a Type holds must reach the input's objects only through the value it's passed, not `ctx.root`.
 - The result is the input, so it keeps its key order, accessors and inherited keys, and an undeclared key holds what another place wrote where the input holds one object at both. Writing an input that can't be written, like a frozen object, throws a TypeError. An object stripped of undeclared keys, and a key two constraints transform, are still copied.
 
 A validation that fails can leave writes in the objects of its input it found valid, which their transforms wrote as it checked the rest.

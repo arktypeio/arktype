@@ -1586,7 +1586,7 @@ const isData = User(data) === data
 
 `true` and `"always"` are installed by `import "arktype/mutatesInput"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
 
-`true` always returns what copying would. `"always"` requires that the data hold no object at two places a transform reaches, and that a Type's functions read or return the data's objects only through their parameters.
+`true` always returns what copying would. `"always"` requires that the data hold no object at two places a transform reaches, and that a Type's functions read or return the data's objects only through the value each is passed, not `ctx.root`.
 
 The object returned is the data, so it keeps its key order, accessors and inherited keys. Where the data holds one object at two places, a key the Type doesn't declare can hold what the other place wrote. An object a Type deletes undeclared keys from is still copied. A failed validation can leave writes in the objects of its data it found valid.
 
