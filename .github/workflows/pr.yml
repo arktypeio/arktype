@@ -58,8 +58,6 @@ jobs:
       - name: Test
         run: pnpm testRepo
 
-  # not yet required by prChecks: it fails until the changes that establish
-  # history independence land
   history:
     needs: core
     runs-on: ubuntu-latest
@@ -191,6 +189,7 @@ jobs:
       - perturbation
       - cache
       - environments
+      - history
     timeout-minutes: 1
     runs-on: ubuntu-latest
     steps:
