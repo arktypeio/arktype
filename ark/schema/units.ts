@@ -442,7 +442,9 @@ const keyRegisteredNames = (root: BaseRoot): string => {
 				else if (typeof value === "function" && !isNode(value)) {
 					// only predicate and morph arity is compiled
 					kindsByName[nameOf(value)] =
-						`fn:${node.hasKind("predicate") || node.hasKind("morph") ? arityOf(value) : value.length}`
+						node.hasKind("predicate") || node.hasKind("morph") ?
+							`fn:${arityOf(value)}`
+						:	"fn"
 				}
 			})
 		}

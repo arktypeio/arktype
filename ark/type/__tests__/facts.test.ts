@@ -1,6 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { generic, Hkt, match, scope, type } from "arktype"
 import { fileURLToPath } from "node:url"
+import { precompileUnits } from "./integration/precompiled.ts"
 
 const testFile = fileURLToPath(import.meta.url)
 
@@ -149,6 +150,13 @@ contextualize(() => {
 						"box<t>": { value: "t", tags: ["string[]", "=", audited(() => [])] }
 					}).export().box
 			)
+		).equals([])
+	})
+
+	it("reads no default to key it for precompiled units", async () => {
+		await precompileUnits([type({ unrelated: "string" })])
+		attest(
+			readsOf(() => type({ a: ["number", "=", audited(() => 5)] }))
 		).equals([])
 	})
 
