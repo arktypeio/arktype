@@ -8,6 +8,7 @@ import {
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
+import type { PredicateNode } from "../predicate.ts"
 import type { IntersectionNode } from "../roots/intersection.ts"
 import type { UnionNode } from "../roots/union.ts"
 import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
@@ -262,6 +263,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 	undeclaredFails?(): string
 	// what a key's value whose condition failed is applied by, if not its Apply
 	failingApplyOf?(value: BaseNode): string | undefined
+	// whether a predicate is a keyword that adds no issues itself
+	addsNoIssues?(node: PredicateNode): boolean
 
 	// returns the call of a function its unit declares for a rare path
 	abstract outline(

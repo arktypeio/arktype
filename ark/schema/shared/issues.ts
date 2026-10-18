@@ -104,11 +104,6 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 		return this._.length
 	}
 
-	/** @internal alias of count, read by compiled checks */
-	get currentErrorCount(): number {
-		return this._.length
-	}
-
 	/**
 	 * Each issue, its message written when they are first read.
 	 */

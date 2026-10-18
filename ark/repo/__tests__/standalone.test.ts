@@ -447,6 +447,15 @@ contextualize(() => {
 		attest(pathsOf(Inner({ x: 1 }))).equals([["x"]])
 	})
 
+	it("stops at its first failing keyword check", async () => {
+		const T = type("string.url & string.date")
+		const { T: validator } = await load({ T })
+		attest(validator("nope").summary).snap("must be a URL string")
+		attest(validator("http://example.com").summary).snap(
+			"must be a parsable date"
+		)
+	})
+
 	it("issues at one path stay apart", async () => {
 		const T = type({ "[/^a/]": "string[] >= 2", "[/a$/]": "unknown[] <= 0" })
 		const { T: validator } = await load({ T })

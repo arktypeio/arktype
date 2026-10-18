@@ -22,6 +22,7 @@ import {
 	type MutatesInput,
 	type NodeId,
 	type Optional,
+	type PredicateNode,
 	type RootUnit,
 	type UnionNode,
 	type UnitMember,
@@ -1947,15 +1948,11 @@ return [${returned.join(", ")}]
 		root: BaseRoot,
 		asValidator: boolean
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
-		// runtime keywords with one param never read Traversal
 		const callbacks = declares(
 			root,
 			node =>
 				node.hasKind("morph") ||
-				(node.hasKind("predicate") &&
-					!(
-						runtimePathsByValue.has(node.predicate) && node.predicate.length < 2
-					))
+				(node.hasKind("predicate") && !isKeywordCheck(node))
 		)
 		if (!this.baking.detailsErrors) {
 			return this.emitUndetailedApply(
@@ -1975,6 +1972,12 @@ return [${returned.join(", ")}]
 					node.hasKind("union") &&
 					!node.compiledDiscriminant &&
 					!isDecidedByAllows(node)
+			) &&
+			// errors count their issues, not a branch's
+			!rootUnitsOf(root).some(unit =>
+				unit.members.some(([, source]) =>
+					source.includes("ctx.currentErrorCount")
+				)
 			)
 		const ctx =
 			this.baking.firstIssue ?
@@ -3014,9 +3017,17 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 	))
 }
 
+// runtime keywords with one param never read Traversal
+const isKeywordCheck = (node: PredicateNode): boolean =>
+	runtimePathsByValue.has(node.predicate) && node.predicate.length < 2
+
 class StandaloneCompiler extends TraversalCompiler {
 	override site(node: BaseNode): string {
 		return this.ref(issueSiteOf(node.failureSite))
+	}
+
+	override addsNoIssues(node: PredicateNode): boolean {
+		return isKeywordCheck(node)
 	}
 
 	// read at the discriminant so branches don't rerun
