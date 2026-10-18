@@ -587,11 +587,11 @@ const erroringScope =
 		schemaScope({}, { errors: testedOptions.errors })
 	:	undefined
 
-// scopes writing in place as the build does, failing as the Type's does
+// scopes writing in place as the build does, failing as copying does
 const inPlaceScopesByOnFail = new Map<unknown, BaseScope>()
 
 const inPlaceScopeOf = (node: BaseRoot): BaseScope => {
-	const { onFail } = node.$.resolvedConfig
+	const { onFail } = (erroringScope ?? node.$).resolvedConfig
 	let $ = inPlaceScopesByOnFail.get(onFail)
 	if (!$) {
 		$ = schemaScope(
