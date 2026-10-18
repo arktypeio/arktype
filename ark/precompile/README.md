@@ -34,7 +34,7 @@ src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
 ```
 
-`--fail-under <percent>` exits with 1 below that rate of accepted sites, or on an error outside a site. The same analysis is available as `new Precompiler(host).analyze(source, id)` and as an ESLint rule:
+`--fail-under <percent>` exits with 1 if less than that percent of definitions can be precompiled, or on an error outside a definition. The same analysis is available as `new Precompiler(host).analyze(source, id)` and as an ESLint rule:
 
 ```js
 import { configs } from "@ark/precompile/eslint"
@@ -50,7 +50,7 @@ A definition holding functions, like a narrow, a morph or a class, becomes a cal
 
 A standalone validator returns errors of its own, instances of `type.errors` and of `arktype`'s `ArkErrors`, but not of `@ark/schema`'s, so the build fails where a module imports that one. Each issue holds the failed check's `code`, `path`, `data`, `expected` and a `message` like `name must be a string`. A message doesn't say what the value was, and the errors arktype groups at one path stay apart.
 
-Nothing checks at runtime that an artifact runs on the `arktype/runtime` it was built with, or that `arktype` loads only for [runtime islands](#runtime-islands): rebuild with the installed arktype after upgrading.
+Nothing checks at runtime that a build runs on the `arktype/runtime` it was built with, or that `arktype` loads only for [runtime islands](#runtime-islands): rebuild with the installed arktype after upgrading.
 
 ### Limits
 
@@ -87,32 +87,15 @@ resolveAlias: { "@ark/schema/runtime": "@ark/schema/runtime/none" }
 
 `freeze: false` leaves validators and their members unfrozen. Otherwise, writing to one throws in strict mode code.
 
-`lazy: false` creates each validator as its module loads rather than where a site first reads it, so an error creating one throws on import.
+`lazy: false` creates each validator as its module loads rather than where it's first read, so an error creating one throws on import.
 
 `checks` decides what a factory checks of what it receives: `"types"` checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` each static helper too, as under a test runner's driver, and `"none"` only those holding functions, so a module mock replacing any other goes unnoticed.
 
 `config: false` says the program never calls `configure()`, so the build fails wherever it does.
 
-`optimize: "size"` writes validators for size rather than speed. Validators then run more instructions per call, most where a site calls several in turn, so prefer it where bundle size matters more than validation speed.
+`optimize: "size"` writes validators for size rather than speed. Validators are then slower, most where one calls several others in turn, so prefer it where bundle size matters more than validation speed.
 
 `conditions` and `tsconfig` set the export conditions and the tsconfig whose `paths` the build resolves imports with.
-
-What each option saves of the bundles arktype benchmarks, minified and gzipped, in bytes:
-
-| option                            | gives up                                   | login       | moltar      | shop         |
-| --------------------------------- | ------------------------------------------ | ----------- | ----------- | ------------ |
-| `errors: "none"`                  | what each issue says of what failed        | 1749 / 701  | 2295 / 776  | 13045 / 3030 |
-| `members: { assert: false }`      | `assert`                                   | 57 / 20     | 57 / 18     | 51 / 23      |
-| `members: { meta: false }`        | `meta`                                     | 75 / 34     | 75 / 34     | 271 / 33     |
-| `members: { "~standard": false }` | `~standard`                                | 123 / 57    | 123 / 58    | 115 / 54     |
-| `members: { methods: false }`     | `traverse()`, `from()` and `toString()`    | 227 / 91    | 229 / 91    | 208 / 31     |
-| `freeze: false`                   | validators and their members frozen        | 29 / 10     | 29 / 11     | 21 / 8       |
-| `config: false`                   | calling `configure()`                      | 98 / 40     | 98 / 40     | 195 / 57     |
-| `lazy: false`                     | creating a validator where it's first read | 16 / 10     | 16 / 7      | 292 / 99     |
-| `checks: "none"`                  | checking the Types a factory receives      | 97 / 53     | 97 / 52     | 1581 / 743   |
-| `mutatesInput: "always"`          | the input left as it was                   | 0 / 0       | 0 / 0       | 3626 / 1217  |
-| `optimize: "size"`                | validating and loading as fast             | 133 / 66    | 159 / 86    | 3349 / 988   |
-| all of the above                  |                                            | 2532 / 1118 | 3044 / 1190 | 22076 / 5950 |
 
 ## Configuration
 
@@ -134,7 +117,7 @@ precompile.vite({ config: "./config.ts" })
 
 The build evaluates the argument, which must be static, and precompiles every definition under it. A locale, or an `expected`, `problem` or `message` for a code a precompiled Type can raise, fails the build, since a standalone validator writes its own messages. `onFail` can be any function. The runtime throws if `configure()` runs after it creates its first validator, runs twice, or receives other values than the build read.
 
-A program configuring `errors` or `mutatesInput`, globally or for a Scope, builds with the same value: a site whose Types are configured otherwise fails the build, naming both.
+A program configuring `errors` or `mutatesInput`, globally or for a Scope, builds with the same value: a definition whose Types are configured otherwise fails the build, naming both.
 
 ## Shadow mode
 
@@ -160,7 +143,7 @@ A library ships its source, and the build precompiles it with the program if its
 }
 ```
 
-Its definitions then fold like the program's. The plugin and drivers find such packages through the dependencies of the nearest `package.json` to `cwd` and of each package that opts in, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
+Its definitions are then precompiled like the program's. The plugin and drivers find such packages through the dependencies of the nearest `package.json` to `cwd` and of each package that opts in, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
 
 ## Runtime islands
 
@@ -196,7 +179,7 @@ export type User = {
 };
 ```
 
-Declarations cut a consumer's type-check cost several-fold for a large app. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
+A consumer's type-check then reads each Type's shape rather than inferring its definition. A shape TypeScript can't name where a consumer resolves it, like a class its module doesn't export, is left to TypeScript's own declaration. The CLI exits with 1 where TypeScript reports an error, after writing what it emitted.
 
 The bundler plugin emits the same files with a Rollup, Rolldown, Vite, webpack, Rspack or Rsbuild build that neither watches nor serves:
 
