@@ -58,7 +58,7 @@ import type {
 	StandardSchemaV1
 } from "../shared/standardSchema.ts"
 import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
-import { hasArkKind } from "../shared/utils.ts"
+import { hasArkKind, isNode } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
 import type {
@@ -377,7 +377,9 @@ export abstract class BaseRoot<
 	}
 
 	extends(r: unknown): boolean {
-		if (this.isNever()) return true
+		// a node equal to r extends it, without intersecting them
+		if (this.isNever() || (isNode(r) && this.innerHash === r.innerHash))
+			return true
 
 		const intersection = this.intersect(r, false)
 		if (intersection instanceof Disjoint) return false
