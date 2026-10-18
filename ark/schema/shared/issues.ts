@@ -50,7 +50,8 @@ export interface FailureContext {
 	failsAt(
 		site: FailureSite,
 		data: unknown,
-		key?: PropertyKey
+		key?: PropertyKey,
+		absent?: true
 	): boolean | undefined
 	failsIn(
 		apply: CompactApply,
@@ -147,9 +148,10 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	failsAt(
 		site: FailureSite,
 		data: unknown,
-		key?: PropertyKey
+		key?: PropertyKey,
+		absent?: true
 	): true | undefined {
-		const issue = issueAt(this._path, site, data, key)
+		const issue = issueAt(this._path, site, data, key, absent)
 		if (this._.length) this._.push(issue)
 		else this._ = [issue]
 		return this.failFast
@@ -193,12 +195,14 @@ export const issueAt = (
 	path: PropertyKey[],
 	site: FailureSite,
 	data: unknown,
-	key: PropertyKey | undefined
+	key: PropertyKey | undefined,
+	absent?: true
 ): ArkIssue => {
 	let context = site.value ?? (site as SiteContext)
 	if (key !== undefined) {
 		path.push(key)
-		if (site.missing && !(key in (data as object))) context = site.missing
+		if (absent || (site.missing && !(key in (data as object))))
+			context = site.missing!
 		else data = (data as Keyed)[key]
 	}
 	const issue = issueOf(
@@ -257,7 +261,7 @@ export const failsIn = (
 ): boolean | undefined => {
 	if (key === undefined) return !apply(value, ctx)
 	if (missing && value === undefined && !(key in (data as object)))
-		return ctx.failsAt(missing, data, key)
+		return ctx.failsAt(missing, data, key, true)
 	path.push(key)
 	const continues = apply(value, ctx)
 	path.pop()

@@ -172,8 +172,13 @@ export class InternalTraversal implements FailureContext {
 	}
 
 	/** @internal */
-	failsAt(site: FailureSite, data: unknown, key?: PropertyKey): boolean {
-		this.addError(issueAt(this.path, site, data, key))
+	failsAt(
+		site: FailureSite,
+		data: unknown,
+		key?: PropertyKey,
+		absent?: true
+	): boolean {
+		this.addError(issueAt(this.path, site, data, key, absent))
 		return this.failFast
 	}
 
