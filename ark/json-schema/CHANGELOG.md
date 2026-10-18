@@ -14,6 +14,10 @@
 - `$ref` (including recursive refs), `if`/`then`/`else`, `dependentRequired` and `dependentSchemas` are read.
 - An invalid keyword, or one that can't be read exactly like `unevaluatedProperties` or a remote `$ref`, throws a `ParseError` naming its JSON Pointer, like `#/minLength must be a non-negative integer (was -1)`, where some threw a `TraversalError`.
 
+### Accept a `StringSchema` in `jsonSchemaToType`
+
+`jsonSchemaToType`'s parameter accepts a `StringSchema`, whose `pattern` may be a `RegExp`, as it already did at runtime.
+
 ## 0.0.1
 
 ### Initial Release

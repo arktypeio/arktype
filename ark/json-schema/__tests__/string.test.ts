@@ -60,7 +60,7 @@ contextualize(() => {
 	})
 
 	it("RegExp pattern", () => {
-		const T = jsonSchemaToType({ type: "string", pattern: /^es$/i } as never)
+		const T = jsonSchemaToType({ type: "string", pattern: /^es$/i })
 		attest(T.expression).snap("/^es$/i")
 		attest(T.allows("ES")).equals(true)
 	})

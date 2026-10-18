@@ -104,7 +104,7 @@ contextualize(() => {
 				propertyNames: { type: "number" }
 			})
 		).type.errors.snap(
-			`Argument of type '{ type: "object"; propertyNames: { type: "number"; }; }' is not assignable to parameter of type 'JsonSchemaOrBoolean'.` +
+			`Argument of type '{ type: "object"; propertyNames: { type: "number"; }; }' is not assignable to parameter of type 'JsonSchemaOrBoolean | StringSchema'.` +
 				`The types of 'propertyNames.type' are incompatible between these types.` +
 				`Type '"number"' is not assignable to type '"string"'.`
 		)
