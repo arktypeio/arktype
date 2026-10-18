@@ -259,10 +259,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// what a key's value whose condition failed is applied by, if not its Apply
 	failingApplyOf?(value: BaseNode): string | undefined
 
-	isObject(data: string): string {
-		return `(typeof ${data} === "object" && ${data} !== null) || typeof ${data} === "function"`
-	}
-
 	// returns the call of a function its unit declares for a rare path
 	abstract outline(
 		name: string,

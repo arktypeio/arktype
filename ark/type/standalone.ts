@@ -3040,11 +3040,6 @@ class StandaloneCompiler extends TraversalCompiler {
 		return `ctx.failsAt(${this.ref(undeclaredSite)}, data, k)`
 	}
 
-	// a minifier keeps the null check of a ternary
-	override isObject(data: string): string {
-		return `(typeof ${data} === "object" ? ${data} !== null : typeof ${data} === "function")`
-	}
-
 	// a rejected union value reports the union's issue, not its Apply
 	override failingApplyOf(value: BaseNode): string | undefined {
 		if (
