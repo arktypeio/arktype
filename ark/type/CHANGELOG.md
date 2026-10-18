@@ -24,7 +24,7 @@ A Type keeps its Scope's `errors` wherever it's referenced.
 
 ### Transform a valid input in place with `mutatesInput`
 
-By default, a transform copies each object it changes, so the input is never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the input, which it returns. It can be configured globally or for a Scope:
+By default, a transform copies each object it changes other than a builtin like a `Date`, so the input is otherwise never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the input, which it returns. It can be configured globally or for a Scope:
 
 ```ts
 import { configure } from "arktype/config"
@@ -348,9 +348,9 @@ A validator differs from the Type it replaces:
 
 - It lacks the members that compose a Type, like `and` or `in`, so calling one is a TypeError, and bakes `meta` but not a keyword's.
 - It has `expression`, `description`, `json`, `toJSON()`, `toJsonSchema()` and `~standard.jsonSchema` only where the build's `members` option sets them, and reads `undefined` for one it lacks.
-- An artifact freezes what it creates, except a Date or RegExp it holds.
+- It and its members are frozen, except a Date or RegExp it holds, unless the build sets `freeze: false`.
 - The build refuses what the runtime can't reproduce, like an instance of a class other than Date or RegExp, naming it.
-- Nothing checks that an artifact runs on the version of `arktype/runtime` it was built with, so rebuild after upgrading.
+- Nothing checks that a build runs on the version of `arktype/runtime` it was built with, so rebuild after upgrading.
 - Its errors' `issues` are plain objects holding `code`, `path`, `data` and `expected`, the failing node's description, with a plain message like `name must be a string` or `name is invalid` that doesn't say what the value was. Errors at one path stay apart, and a union no branch allows is one issue. A validator a morph calls with its `ctx` adds its issues to that validation. `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - The build refuses a configured locale or error writer for a code the Type can raise.
 - The `ctx.config` a narrow or morph receives holds only `jitless` and `onFail`.
@@ -381,7 +381,7 @@ Other keys that first differ at a space, `!`, `"` or a backslash keep their orde
 
 ### Simplify `@ark/schema` nodes
 
-- A scope's `references` and `referencesById` are collected when first read rather than as it exports, unless it binds precompiled units or includes an alias.
+- A scope's `references` and `referencesById` are collected when first read rather than as it exports, unless code `@ark/precompile` built with `runtime: "arktype"` is registered or it includes an alias.
 - A node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `traverseAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
 - `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context.
 - Derived and memoized keys moved from a node's own enumerable keys to `node.cache`, like the `includes*` flags, `innerEntries`, a structure's `propsByKey` and a node's `assert`; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
