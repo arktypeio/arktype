@@ -1436,11 +1436,12 @@ return [${returned.join(", ")}]
 		const declarations = called.flatMap(([name, written]) => {
 			if (forwarded.has(name)) return []
 			const source = this.baking.shortest ? unlooped(written) : written
-			// its parameters are plain names, and size drops a trailing unread ctx
+			// its parameters are plain names, and size drops a trailing unread ctx,
+			// as does a writing traversal
 			const arrow = source.replace(
 				/^function\(([^)]*)\) {/,
 				(signature, params: string) =>
-					`(${this.baking.shortest && !/\bctx\b/.test(source.slice(signature.length)) ? params.replace(/, ctx$/, "") : params}) => {${
+					`(${(this.baking.shortest || isWriting(name)) && !/\bctx\b/.test(source.slice(signature.length)) ? params.replace(/, ctx$/, "") : params}) => {${
 						// a writing traversal is strict even where a bundle's format isn't
 						isWriting(name) ? `\n"use strict"\n` : ""
 					}`
