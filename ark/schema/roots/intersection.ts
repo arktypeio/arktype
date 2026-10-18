@@ -19,7 +19,10 @@ import {
 	type AliasDepth,
 	type InternalTraversal
 } from "../shared/traversal.ts"
-import type { makeRootAndArrayPropertiesMutable } from "../shared/utils.ts"
+import {
+	composing,
+	type makeRootAndArrayPropertiesMutable
+} from "../shared/utils.ts"
 import type { Structure } from "../structure/structure.ts"
 import type { Domain } from "./domain.ts"
 import type { Morph } from "./morph.ts"
@@ -184,7 +187,11 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	structure: Structure.Node | undefined = this.inner.structure
 
-	expression: string = writeIntersectionExpression(this)
+	get expression(): string {
+		return (this.cache.expression ??= composing(() =>
+			writeIntersectionExpression(this)
+		))
+	}
 
 	get nestableExpression(): string {
 		// an expression written by a single child is already nestable

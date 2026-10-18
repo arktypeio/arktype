@@ -347,6 +347,9 @@ const literalKeyOf = (v: unknown): string =>
 export const resolveDescription = <node extends BaseNode>(node: node): node => {
 	if (node.isBasis() || includes(prestructuralKinds, node.kind))
 		void node.description
+	// an alias is expressed as it resolves when it's read, so a node holding
+	// one is expressed as it's created
+	else if (node.includesAlias) void node.expression
 	return node
 }
 

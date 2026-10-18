@@ -53,6 +53,7 @@ import {
 	type Traversal
 } from "../shared/traversal.ts"
 import {
+	composing,
 	describeBranches,
 	describeCases,
 	expressBranches,
@@ -182,7 +183,11 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		))
 	}
 
-	expression: string = this.distribute(expressBranch, expressBranches)
+	get expression(): string {
+		return (this.cache.expression ??= composing(() =>
+			this.distribute(expressBranch, expressBranches)
+		))
+	}
 
 	discriminate(): Discriminant | null {
 		this.caseNodes.length = 0

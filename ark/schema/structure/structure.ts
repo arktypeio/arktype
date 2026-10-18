@@ -59,6 +59,7 @@ import {
 	type TraversalKind
 } from "../shared/traversal.ts"
 import {
+	composing,
 	hasArkKind,
 	isNode,
 	isResolutionFinal,
@@ -285,7 +286,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		))
 	}
 
-	expression: string = structuralExpression(this)
+	get expression(): string {
+		return (this.cache.expression ??= composing(() =>
+			structuralExpression(this)
+		))
+	}
 
 	get requiredKeys(): Key[] {
 		return this.required?.map(node => node.key) ?? []
