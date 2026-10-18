@@ -254,10 +254,12 @@ const patch = (prototype: object, stopAt: object) => {
 			descriptor.value =
 				k === "initRootApply" ?
 					function (this: BaseRoot) {
-						return (this.cache.rootApply = observeRootApply(
-							this,
-							method.call(this)
-						))
+						const rootApply: RootApply = method.call(this)
+						const observed = observeRootApply(this, rootApply)
+						// an apply that checks uncompiled data isn't kept
+						if (this.cache.rootApply === rootApply)
+							this.cache.rootApply = observed
+						return observed
 					}
 				:	observeMethod(name, method)
 			Object.defineProperty(o, k, descriptor)
