@@ -7,7 +7,8 @@ import {
 	throwInternalError,
 	throwParseError,
 	type Fn,
-	type array
+	type array,
+	type dict
 } from "@ark/util"
 import {
 	constraintInputOf,
@@ -563,17 +564,15 @@ export abstract class BaseRoot<
 		const meetsBasis =
 			io === "root" && this.hasKindIn("domain", "proto") && kind !== "predicate"
 
-		const partialIntersection = this.$.node(
-			"intersection",
-			{
-				...(meetsBasis && { [this.kind]: this }),
-				// important this is constraint.kind instead of kind in case
-				// the node was reduced during parsing
-				[constraint.kind]:
-					constraint.impl.intersectionIsOpen ? [constraint] : constraint
-			},
-			{ prereduced: true }
-		)
+		const inner: dict = {}
+		if (meetsBasis) inner[this.kind] = this
+		// important this is constraint.kind instead of kind in case
+		// the node was reduced during parsing
+		inner[constraint.kind] =
+			constraint.impl.intersectionIsOpen ? [constraint] : constraint
+		const partialIntersection = this.$.node("intersection", inner, {
+			prereduced: true
+		})
 
 		if (meetsBasis) return partialIntersection
 
