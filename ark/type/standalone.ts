@@ -1432,8 +1432,9 @@ return [${returned.join(", ")}]
 	declareMembers(unit: RootUnit, readers: string[]): string[] {
 		const called = calledMembersOf(unit.members, readers)
 		const forwarded = forwardedOf(called)
-		const declarations = called.flatMap(([name, source]) => {
+		const declarations = called.flatMap(([name, written]) => {
 			if (forwarded.has(name)) return []
+			const source = this.baking.shortest ? unlooped(written) : written
 			// its parameters are plain names, and size drops a trailing unread ctx
 			const arrow = source.replace(
 				/^function\(([^)]*)\) {/,
@@ -3057,6 +3058,14 @@ class StandaloneCompiler extends TraversalCompiler {
 }
 
 const failingBySite = new WeakMap<object, object>()
+
+// size writes the checks an Allows loops over as the returns they stand for
+const unlooped = (source: string): string =>
+	source.replace(
+		/ {4}for \(;;\) {\n([\S\s]*)\n {8}return true\n {4}}\n {4}return false\n }$/,
+		(_, checks: string) =>
+			`${checks.replace(/^ {4}/gm, "").replace(/^( +)break$/gm, "$1return false")}\n    return true\n }`
+	)
 
 class InPlaceCompiler extends StandaloneCompiler {
 	override readonly inPlace = true

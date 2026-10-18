@@ -202,6 +202,10 @@ export interface InvokeOptions extends ReferenceOptions {
 	arg?: string
 }
 
+export interface CheckOptions extends InvokeOptions {
+	breaks?: boolean
+}
+
 export interface ReferenceOptions {
 	kind?: TraversalKind
 	bind?: string
@@ -551,19 +555,20 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	// Apply reports a failed condition at its site
-	check(node: BaseNode, opts?: InvokeOptions): this {
+	check(node: BaseNode, opts?: CheckOptions): this {
 		const arg = opts?.arg ?? this.data
 		const condition =
 			opts?.kind || (this.traversalKind === "Apply" && node.hasKind("union")) ?
 				undefined
 			:	node.compileCondition?.(this, arg)
+		const fail = () => (opts?.breaks ? this.line("break") : this.return(false))
 		if (condition === undefined)
-			return this.if(`!${this.invoke(node, opts)}`, () => this.return(false))
+			return this.if(`!${this.invoke(node, opts)}`, fail)
 		return this.if(
 			this.traversalKind === "Allows" ?
 				`!(${condition})`
 			:	`!(${condition}) && ${this.error(node, undefined, arg)}`,
-			() => this.return(false)
+			fail
 		)
 	}
 
