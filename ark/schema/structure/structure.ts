@@ -1437,7 +1437,7 @@ const compileDeclaredKeySwitch = (
 		)
 	)
 
-const ownKeysOf = (data: object): Key[] => {
+export const ownKeysOf = (data: object): Key[] => {
 	const keys: Key[] = Object.keys(data)
 	const symbols = Object.getOwnPropertySymbols(data)
 	if (symbols.length) keys.push(...symbols)

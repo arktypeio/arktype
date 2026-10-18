@@ -2,6 +2,7 @@ import {
 	checkDefault,
 	intrinsic,
 	normalizeIndex,
+	ownKeysOf,
 	type BaseParseContext,
 	type BaseRoot,
 	type NodeInput,
@@ -15,7 +16,6 @@ import {
 	isArray,
 	isEmptyObject,
 	printable,
-	stringAndSymbolicEntriesOf,
 	throwParseError,
 	type anyOrNever,
 	type Dict,
@@ -49,9 +49,8 @@ export const parseObjectLiteral = (
 	// because to match JS behavior any keys before the spread are overwritten
 	// by the values in the target object, so there'd be no useful purpose in having it
 	// anywhere except for the beginning.
-	const defEntries = stringAndSymbolicEntriesOf(def)
-
-	for (const [k, v] of defEntries) {
+	for (const k of ownKeysOf(def)) {
+		const v = def[k as string]
 		const parsedKey = preparseKey(k)
 
 		if (parsedKey.kind === "spread") {
