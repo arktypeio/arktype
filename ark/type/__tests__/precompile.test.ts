@@ -278,14 +278,17 @@ contextualize(() => {
 
 	it("keys a unit without naming the functions in its value", async () => {
 		await precompileUnits([type({ k: type.unit({}) })])
+		const last = registeredReference(named("isInUnitPrecompiled", () => true))
 		type({ k: type.unit([named("isInUnitPrecompiled", () => true)]) })
 		const T = type("string").narrow(
 			named("isInUnitPrecompiled", (s: string) => s.length > 1)
 		)
-		attest(T.json).snap({
-			domain: "string",
-			predicate: ["$ark.isInUnitPrecompiled"]
-		})
+		// the name after the last one registered
+		const next = last.replace(
+			/(?:\$(\d+))?$/,
+			(_, n) => `$${Number(n ?? 0) + 1}`
+		)
+		attest(T.json).equals({ domain: "string", predicate: [next] })
 	})
 
 	it("misses a unit holding one of arktype's own functions for any other", async () => {
