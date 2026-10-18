@@ -167,9 +167,9 @@ export abstract class BaseNode<
 	) => unknown,
 	attachmentsOf<d>
 > {
-	$: BaseScope
+	declare $: BaseScope
 	// flags, read through flagBits' accessors
-	bits: number
+	declare bits: number
 	declare includesTransform: boolean
 	declare includesMorph: boolean
 	declare includesContextualPredicate: boolean
@@ -186,7 +186,7 @@ export abstract class BaseNode<
 	declare includesCostly: boolean
 	declare readonly cache: NodeCache
 
-	allows: (data: d["prerequisite"]) => boolean
+	declare allows: (data: d["prerequisite"]) => boolean
 
 	get shallowMorphs(): array<Morph> {
 		return []
