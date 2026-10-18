@@ -155,16 +155,20 @@ contextualize(() => {
 	})
 
 	it("jitless", () => {
+		// a precompiled unit binds under jitless, so these are types no other
+		// test precompiles
 		const $ = scope(
 			{
-				fast: "false"
+				fast: "'jitless'"
 			},
 			{ jitless: true }
 		)
 		const types = $.export()
 
 		attest(types.fast.precompilation).equals(undefined)
-		attest($.type.Record("string", "boolean").precompilation).equals(undefined)
+		attest($.type.Record("string", "'jitless'").precompilation).equals(
+			undefined
+		)
 	})
 
 	describe("errors", () => {
