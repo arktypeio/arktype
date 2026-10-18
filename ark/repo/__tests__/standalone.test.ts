@@ -479,7 +479,14 @@ a must be exactly length 0`)
 			"must be an array",
 			"value at [1].x must be a number\nvalue at [3].x is missing"
 		])
-		agrees(validators, types, [data, [], [{ x: 0 }], ["ab", "a", "bc", 1], {}])
+		agrees(validators, types, [
+			data,
+			[],
+			[{ x: 0 }],
+			[{ x: "a" }, { x: 0 }],
+			["ab", "a", "bc", 1],
+			{}
+		])
 	})
 
 	it("root array validated within its own validation", async () => {
@@ -494,13 +501,10 @@ a must be exactly length 0`)
 		}
 		attest(T([reentering, { x: "a" }]).summary).snap("[1].x must be a number")
 		attest(inner).snap("[2].x must be a number")
-		attest(T.allows([{ x: 0 }, { x: 0 }, { x: "a" }])).equals(false)
-		attest(T([{ x: "a" }, { x: 0 }]).summary).snap("[0].x must be a number")
 	})
 
 	it("root array reads elements before its first rejected once", async () => {
-		const types = { T: type({ x: "number" }).array() }
-		const { T } = await load(types)
+		const { T } = await load({ T: type({ x: "number" }).array() })
 		let reads = 0
 		const counted: unknown[] = [undefined, { x: "a" }]
 		Object.defineProperty(counted, 0, { get: () => (reads++, { x: 0 }) })
