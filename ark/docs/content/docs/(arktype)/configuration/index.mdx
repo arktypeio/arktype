@@ -459,6 +459,8 @@ const MyObject = type({
 })
 ```
 
+To validate without generating code and without shipping the parser, [precompile](/docs/precompile) your Types when you build.
+
 ### onFail
 
 In some domains, you may always want to throw on failed validation or transform the result in some other way.
@@ -526,6 +528,8 @@ With `"none"`, a failure returns one error with the code `"predicate"`, an empty
 
 `errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
 
+A [precompiled](/docs/precompile#options) build takes `errors` as an option.
+
 ### mutatesInput
 
 By default, a transform copies each object it changes other than a builtin like a `Date`, so the data you pass is otherwise never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the data, which it returns:
@@ -551,7 +555,7 @@ const User = type({ name: "string.trim", role: "string = 'member'" })
 const data = { name: " Ada " }
 
 // true, and data is now { name: "Ada", role: "member" }
-const isData = User(data) === data
+const isData = Object.is(User(data), data)
 ```
 
 `true` and `"always"` are installed by `import "arktype/mutatesInput"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
@@ -561,6 +565,8 @@ const isData = User(data) === data
 The object returned is the data, so it keeps its key order, accessors and inherited keys. Where the data holds one object at two places, a key the Type doesn't declare can hold what the other place wrote. An object a Type deletes undeclared keys from is still copied. A failed validation can leave writes in the objects of its data it found valid.
 
 `mutatesInput` can also be set for a Scope, whose Types then transform as it says.
+
+A [precompiled](/docs/precompile#options) build takes `mutatesInput` as an option.
 
 ### metadata
 

@@ -138,6 +138,9 @@ importers:
       '@ark/fs':
         specifier: workspace:*
         version: link:../fs
+      '@ark/precompile':
+        specifier: workspace:*
+        version: link:../precompile
       '@ark/repo':
         specifier: workspace:*
         version: link:../repo

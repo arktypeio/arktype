@@ -12,6 +12,7 @@
 		"match",
 		"configuration",
 		"i18n",
+		"precompile",
 		"type-api",
 		"traversal-api",
 		"integrations",

@@ -1489,6 +1489,8 @@ const MyObject = type({
 })
 ```
 
+To validate without generating code and without shipping the parser, [precompile](/docs/precompile) your Types when you build.
+
 ### onFail
 
 In some domains, you may always want to throw on failed validation or transform the result in some other way.
@@ -1556,6 +1558,8 @@ With `"none"`, a failure returns one error with the code `"predicate"`, an empty
 
 `errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
 
+A [precompiled](/docs/precompile#options) build takes `errors` as an option.
+
 ### mutatesInput
 
 By default, a transform copies each object it changes other than a builtin like a `Date`, so the data you pass is otherwise never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the data, which it returns:
@@ -1581,7 +1585,7 @@ const User = type({ name: "string.trim", role: "string = 'member'" })
 const data = { name: " Ada " }
 
 // true, and data is now { name: "Ada", role: "member" }
-const isData = User(data) === data
+const isData = Object.is(User(data), data)
 ```
 
 `true` and `"always"` are installed by `import "arktype/mutatesInput"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
@@ -1591,6 +1595,8 @@ const isData = User(data) === data
 The object returned is the data, so it keeps its key order, accessors and inherited keys. Where the data holds one object at two places, a key the Type doesn't declare can hold what the other place wrote. An object a Type deletes undeclared keys from is still copied. A failed validation can leave writes in the objects of its data it found valid.
 
 `mutatesInput` can also be set for a Scope, whose Types then transform as it says.
+
+A [precompiled](/docs/precompile#options) build takes `mutatesInput` as an option.
 
 ### metadata
 
@@ -5836,6 +5842,69 @@ const Instances = type({
 ### keywords [#instanceof-keywords]
 
 A list of instanceof keywords can be found [here](/docs/keywords#instanceof) alongside the base and subtype keywords for [Array](/docs/keywords#array) and [FormData](/docs/keywords#formdata).
+
+
+---
+title: Precompile
+---
+
+`@ark/precompile` constructs your Types when you build, so arktype's parser never ships and nothing compiles at runtime. Your definitions stay as you wrote them.
+
+```sh
+npm i -D @ark/precompile
+```
+
+Add its plugin to your bundler. It works with Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun and Farm, and Vitest runs tests through it too:
+
+```ts title="vite.config.ts"
+import { precompile } from "@ark/precompile/unplugin"
+
+export default {
+	plugins: [precompile.vite()]
+}
+```
+
+### Standalone validators
+
+By default, each definition becomes a standalone validator running on `arktype/runtime`. It validates, asserts and implements Standard Schema as the Type it replaces does, so it validates under a Content-Security-Policy that blocks `eval`. It differs from a Type in a few ways:
+
+- It lacks the methods that compose a Type, like `.and` or `.in`, so the build fails where it sees one read outside a definition it precompiles.
+- Its errors say what failed but not what the value was, like `name must be a string`.
+- A definition the build can't construct, like one reading a value known only at runtime, fails the build with the reason. List them before you switch:
+
+```sh
+npx arktype-precompile --check "src/**/*.ts"
+```
+
+`runtime: "arktype"` ships arktype instead: definitions stay Types, and the build registers the code arktype would compile for each, so a Type it could precompile skips compiling at runtime.
+
+### Options
+
+A standalone build can leave out what your program doesn't need:
+
+```ts
+import { precompile } from "@ark/precompile/unplugin"
+// ---cut---
+precompile.vite({
+	errors: "none",
+	mutatesInput: "always",
+	members: { assert: false }
+})
+```
+
+- `errors` and `mutatesInput` take the values of [`errors`](/docs/configuration#errors) and [`mutatesInput`](/docs/configuration#mutatesinput). A program that also configures one must configure the same value.
+- `members` decides what a validator has besides validating, like `assert`, `~standard` or `toJsonSchema()`.
+- `optimize: "size"` writes validators for size rather than speed.
+
+A program that calls `configure()` does so once, in a module imported before any that defines a Type, and names it as the build's `config`:
+
+```ts
+import { precompile } from "@ark/precompile/unplugin"
+// ---cut---
+precompile.vite({ config: "./config.ts" })
+```
+
+The [`@ark/precompile` README](https://github.com/arktypeio/arktype/tree/main/ark/precompile#readme) is the full reference: every option, the Node, Bun and Turbopack drivers, shadow mode for tests, libraries, runtime islands and declarations.
 
 
 ---

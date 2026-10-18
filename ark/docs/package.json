@@ -15,6 +15,7 @@
 	"dependencies": {
 		"@ark/attest": "workspace:*",
 		"@ark/fs": "workspace:*",
+		"@ark/precompile": "workspace:*",
 		"@ark/repo": "workspace:*",
 		"@ark/schema": "workspace:*",
 		"@ark/util": "workspace:*",

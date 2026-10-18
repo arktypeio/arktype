@@ -37,7 +37,7 @@ const User = type({ name: "string.trim", role: "string = 'member'" })
 const input = { name: " Ada " }
 
 // true, and input is now { name: "Ada", role: "member" }
-User(input) === input
+Object.is(User(input), input)
 ```
 
 - `true` writes in place only where no place the Type checks can read what another wrote, so it returns what copying would, and otherwise copies, as for `{ a: { n: "string.numeric.parse" }, b: { n: "string" } }`, whose `a` and `b` could be one object.
