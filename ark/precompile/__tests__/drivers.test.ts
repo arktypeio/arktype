@@ -456,7 +456,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			)
 			attest(standalone.dependencies).equals(["ark.ts", tsconfig])
 			attest(load(app, "schemas.ts", { runtime: "arktype" }).out).satisfies(
-				/^;\(\({ "registerPrecompiledUnits": /
+				/^;\(\(registerPrecompiledUnits\) => {/
 			)
 		})
 

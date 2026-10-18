@@ -64,6 +64,7 @@ import type {
 	CallExpression,
 	ImportDeclaration,
 	ImportDeclarationSpecifier,
+	MemberExpression,
 	Node,
 	Program,
 	Span
@@ -3823,7 +3824,7 @@ const inlineModules = (
 	modules: Record<string, string>,
 	imports: Record<string, Record<string, string>>
 ): string => {
-	const namespacesBySource: Record<string, string> = {}
+	const importsBySource: Record<string, InlinedImport> = {}
 	let declarations = ""
 	let loaders = 0
 	for (const specifier in imports) {
@@ -3834,19 +3835,35 @@ const inlineModules = (
 		const localsByName: Record<string, string> = {}
 		for (const statement of inlined.program.body) {
 			if (statement.type === "ImportDeclaration") {
-				const namespace = (namespacesBySource[statement.source.value] ??=
-					`${prefix}$${Object.keys(namespacesBySource).length}`)
+				const imported = (importsBySource[statement.source.value] ??= {
+					namespace: `${prefix}$${Object.keys(importsBySource).length}`,
+					isPassed: false,
+					locals: {}
+				})
+				// imported by name, so a bundler can drop the exports none read
+				const localOf = (name: string) =>
+					(imported.locals[name] ??= `${imported.namespace}$${name}`)
 				for (const binding of statement.specifiers) {
-					const name =
-						binding.type === "ImportSpecifier" ?
-							exportNameOf(binding.imported)
-						:	"default"
-					params.push(
-						binding.type === "ImportNamespaceSpecifier" ?
-							binding.local.name
-						:	`{ ${JSON.stringify(name)}: ${binding.local.name} }`
-					)
-					args.push(namespace)
+					if (binding.type !== "ImportNamespaceSpecifier") {
+						params.push(binding.local.name)
+						args.push(
+							localOf(
+								binding.type === "ImportSpecifier" ?
+									exportNameOf(binding.imported)
+								:	"default"
+							)
+						)
+						continue
+					}
+					const members = membersReadOf(inlined, binding.local.name)
+					if (members) {
+						for (const { start, end, property } of members)
+							body.overwrite(start, end, localOf(property.name))
+						continue
+					}
+					imported.isPassed = true
+					params.push(binding.local.name)
+					args.push(imported.namespace)
 				}
 			} else if (statement.type === "ExportNamedDeclaration") {
 				for (const binding of statement.specifiers) {
@@ -3886,12 +3903,46 @@ const inlineModules = (
 	}
 	if (!declarations) return ""
 	s.prependLeft(firstStatementOf(module.program).start, declarations)
-	return Object.entries(namespacesBySource)
-		.map(
-			([source, namespace]) =>
-				`\nimport * as ${namespace} from ${JSON.stringify(source)}`
-		)
+	return Object.entries(importsBySource)
+		.map(([source, { namespace, isPassed, locals }]) => {
+			const from = JSON.stringify(source)
+			const named = Object.entries(locals).map(
+				([name, local]) => `${name} as ${local}`
+			)
+			let written = isPassed ? `\nimport * as ${namespace} from ${from}` : ""
+			if (named.length)
+				written += `\nimport { ${named.join(", ")} } from ${from}`
+			return written || `\nimport ${from}`
+		})
 		.join("")
+}
+
+interface InlinedImport {
+	namespace: string
+	// whether a module reads the namespace other than by its members
+	isPassed: boolean
+	locals: Record<string, string>
+}
+
+type StaticMember = Extract<MemberExpression, { computed: false }>
+
+// a namespace only read as `ns.name`, or undefined
+const membersReadOf = (
+	module: SourceModule,
+	local: string
+): StaticMember[] | undefined => {
+	const members: StaticMember[] = []
+	for (const { id } of module.scopes.root.bindings[local].references) {
+		const member = id.parent
+		if (
+			member?.type !== "MemberExpression" ||
+			member.computed ||
+			member.object !== id
+		)
+			return
+		members.push(member)
+	}
+	return members
 }
 
 const rangesOf = (sites: Site[]) =>

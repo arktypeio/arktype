@@ -1251,14 +1251,14 @@ export const E = type("strng")`,
 			const lines = result.code.split("\n")
 			attest(normalized([lines[0], ...lines.slice(-12)])).snap([
 				"var $ark$exports0;",
-				"})($ark$0))",
+				"})($ark$0$fixConfig))",
 				"}",
 				"function $arkfixConfig(...args) {",
 				'return $ark$load2()["default"](...args)',
 				"}",
 				"$ark$load2();",
 				'import "arktype"',
-				'import * as $ark$0 from "arktype/runtime"',
+				'import { siteOf as $ark$0$siteOf, freeze as $ark$0$freeze, fixConfig as $ark$0$fixConfig, createValidatorWith as $ark$0$createValidatorWith, applyCallErrors as $ark$0$applyCallErrors, ArkErrors as $ark$0$ArkErrors, ParseError as $ark$0$ParseError } from "arktype/runtime"',
 				'const Array = "shadowed"',
 				"$arkfixConfig()",
 				"export const T = /* @__PURE__ */ $ark#0()",
@@ -1296,11 +1296,11 @@ export const T = type("string[]")`,
 				{ inline: true, runtime: "arktype" }
 			).code.split("\n")
 			attest([lines[0], ...lines.slice(-5)]).snap([
-				';(({ "registerPrecompiledUnits": registerPrecompiledUnits }) => {',
-				"})($ark$0);",
+				";((registerPrecompiledUnits) => {",
+				"})($ark$0$registerPrecompiledUnits);",
 				'import "./config.ts"',
 				'import { type } from "arktype"',
-				'import * as $ark$0 from "arktype/internal/precompiled.js"',
+				'import { registerPrecompiledUnits as $ark$0$registerPrecompiledUnits } from "arktype/internal/precompiled.js"',
 				'export const T = type("string[]")'
 			])
 		})
