@@ -66,6 +66,22 @@ contextualize(() => {
 		)
 	})
 
+	it("names a cyclic ref by its target", () => {
+		const read = () =>
+			parse({
+				$defs: {
+					node: {
+						type: "object",
+						properties: { child: { $ref: "#/$defs/node" } }
+					}
+				},
+				$ref: "#/$defs/node"
+			}).expression
+		const expression = read()
+		attest(expression).snap("{ child?: synthetic1bpl2ea1nl2i12 }")
+		attest(read()).equals(expression)
+	})
+
 	it("constrains only the type a keyword is for", () => {
 		attest(parse({ minimum: 5 }).expression).snap(
 			"bigint | string | symbol | number >= 5 | object | Array | undefined | false | null | true"

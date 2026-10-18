@@ -7,6 +7,7 @@ import {
 	rootSchema,
 	rootSchemaScope,
 	type BaseNode,
+	type BaseParseContext,
 	type BaseRoot,
 	type JsonSchema,
 	type NodeSchema,
@@ -16,6 +17,7 @@ import {
 import {
 	cached,
 	flatMorph,
+	hashOf,
 	hasOwn,
 	isArray,
 	printable,
@@ -34,6 +36,8 @@ interface ReadContext {
 	ignoresRefSiblings: boolean
 	rootsByRef: Record<string, BaseRoot>
 	refsBeingRead: string[]
+	// a cyclic ref is named by its target, so it prints alike in any history
+	cyclesByRef: Record<string, BaseParseContext>
 	// a $ref within a nested $id resolves against that $id
 	nestedIds: number
 }
@@ -41,20 +45,24 @@ interface ReadContext {
 export const readJsonSchema = (
 	schema: JsonSchema.Input,
 	document: JsonSchema.Input = schema
-): BaseRoot =>
-	rootSchemaScope.finalize(
-		defining(() =>
-			read(schema, "#", {
-				document,
-				ignoresRefSiblings:
-					isPlainObject(document) &&
-					/draft-0[3-7]/.test(String((document as dict).$schema)),
-				rootsByRef: {},
-				refsBeingRead: [],
-				nestedIds: 0
-			})
-		)
-	)
+): BaseRoot => {
+	const ctx: ReadContext = {
+		document,
+		ignoresRefSiblings:
+			isPlainObject(document) &&
+			/draft-0[3-7]/.test(String((document as dict).$schema)),
+		rootsByRef: {},
+		refsBeingRead: [],
+		cyclesByRef: {},
+		nestedIds: 0
+	}
+	try {
+		return rootSchemaScope.finalize(defining(() => read(schema, "#", ctx)))
+	} finally {
+		for (const ref in ctx.cyclesByRef)
+			delete $ark.nodesByRegisteredId[ctx.cyclesByRef[ref].id]
+	}
+}
 
 const read = (schema: unknown, pointer: string, ctx: ReadContext): BaseRoot => {
 	if (typeof schema === "boolean")
@@ -87,8 +95,15 @@ const readRef = (ref: string, pointer: string, ctx: ReadContext): BaseRoot => {
 		return throwParseError(writeUnsupportedRefMessage(ref, `${pointer}/$ref`))
 	if (ref in ctx.rootsByRef) return ctx.rootsByRef[ref]
 	// a ref within its own target is a cycle, resolved once that's read
-	if (ctx.refsBeingRead.includes(ref))
-		return rootSchemaScope.lazilyResolve(() => ctx.rootsByRef[ref])
+	if (ctx.refsBeingRead.includes(ref)) {
+		ctx.cyclesByRef[ref] ??= rootSchemaScope.openSynthetic(
+			`synthetic${hashOf(`${ref}\n${printable(resolveRef(ref, ctx))}`)}`
+		)
+		return rootSchemaScope.lazilyResolve(
+			() => ctx.rootsByRef[ref],
+			ctx.cyclesByRef[ref].id
+		)
+	}
 	ctx.refsBeingRead.push(ref)
 	const root = read(resolveRef(ref, ctx), ref, ctx)
 	ctx.refsBeingRead.pop()
