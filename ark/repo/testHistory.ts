@@ -161,13 +161,16 @@ const show = (log: Observation[] | undefined, path: string[]) => {
 
 // units whose differences are allowed to depend on history, by why
 const skippedUnits: Record<string, string> = {
-	"ark/type/__tests__/facts.test.ts › facts › object units":
+	"ark/type/__tests__/facts.test.ts › facts › reads no unit object":
 		"object units are ordered by registration counter",
 	"ark/type/__tests__/gc.test.ts › gc › values captured by functions":
-		"collection depends on what was compiled before",
-	"ark/type/__tests__/references.test.ts › references › collected references match copied references":
-		"whether equal nodes are one object is unspecified"
+		"collection depends on what was compiled before"
 }
+
+const staleSkips = Object.keys(skippedUnits).filter(unit => {
+	const file = unit.slice(0, unit.indexOf(" › "))
+	return files.includes(file) && !unitsByFile[file]?.includes(unit)
+})
 
 let violations = 0
 const failing: string[] = []
@@ -204,4 +207,6 @@ if (failing.length) {
 		`⚠️  ${failing.length} fail even in a fresh process:\n${failing.join("\n")}`
 	)
 }
-if (violations) process.exitCode = 1
+if (staleSkips.length)
+	console.log(`❌ skipped units that don't exist:\n${staleSkips.join("\n")}`)
+if (violations || staleSkips.length) process.exitCode = 1
