@@ -76,6 +76,15 @@ jobs:
     needs: core
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    strategy:
+      matrix:
+        # the build's options, combining mutatesInput with each errors mode
+        options:
+          - "{}"
+          - '{"mutatesInput": true, "errors": "first"}'
+          - '{"mutatesInput": true, "errors": "none"}'
+          - '{"mutatesInput": "always", "errors": "first"}'
+          - '{"mutatesInput": "always", "errors": "none"}'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -85,6 +94,8 @@ jobs:
 
       - name: Compare the suites' roots with their precompiled validators
         run: pnpm testDifferential
+        env:
+          ARK_PRECOMPILE_OPTIONS: ${{ matrix.options }}
 
   cache:
     needs: core
