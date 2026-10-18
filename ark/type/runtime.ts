@@ -419,7 +419,9 @@ export const failing =
 	(data, ctx) =>
 		!ctx.failsAt(site, data)
 
-export const requiredSite: FailureSite = { missing: siteOf("required") }
+export const requiredSite: FailureSite = {
+	missing: /* @__PURE__ */ siteOf("required")
+}
 
 // compact roots report into ArkErrors, loading no Traversal
 export const applyErrors = (
