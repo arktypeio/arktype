@@ -29,7 +29,8 @@ import {
 	precedenceOfKind,
 	prestructuralKinds,
 	type NodeKind,
-	type UnknownAttachmentsInput
+	type UnknownAttachmentsInput,
+	type UnknownNodeImplementation
 } from "./shared/implement.ts"
 import { $ark } from "./shared/registry.ts"
 import { composing, hasArkKind, isNode } from "./shared/utils.ts"
@@ -205,10 +206,13 @@ export const createNode = ({
 }: CreateNodeInput): BaseNode => {
 	// serialized as the node is created, so meta that can't be throws here
 	const metaJson = isEmptyObject(meta) ? undefined : metaJsonOf(meta)
+	const impl = nodeImplementationsByKind[kind]
 
 	// nodes are only cached with a set engine, which reduces them first
 	const key =
-		ignoreCache || !$ark.sets ? undefined : nodeKeyOf(kind, inner, metaJson)
+		ignoreCache || !$ark.sets ?
+			undefined
+		:	nodeKeyOf(kind, impl, inner, metaJson)
 
 	if (key) {
 		const cached = $.nodesByKey.get(key)
@@ -218,7 +222,6 @@ export const createNode = ({
 		}
 	}
 
-	const impl = nodeImplementationsByKind[kind]
 	const children: BaseNode[] = []
 
 	for (const k in inner) {
@@ -252,13 +255,22 @@ export const createNode = ({
 // their content
 const nodeKeyOf = (
 	kind: NodeKind,
+	impl: UnknownNodeImplementation,
 	inner: dict,
 	metaJson: JsonObject | undefined
 ): string => {
 	const parts: string[] = [kind]
 	for (const k in inner) {
+		const v = inner[k]
 		parts.push(
-			`${k}:${k === "unit" ? literalKeyOf(inner[k]) : valueKeyOf(inner[k])}`
+			`${k}:${
+				impl.keys[k].child !== true ?
+					k === "unit" ?
+						literalKeyOf(v)
+					:	valueKeyOf(v)
+				: isArray(v) ? `[${idsOf(v as BaseNode[])}]`
+				: `#${(v as BaseNode).id}`
+			}`
 		)
 	}
 	// an alias inlines a reference that has resolved when it's written
@@ -269,6 +281,13 @@ const nodeKeyOf = (
 		parts.push("!")
 	if (metaJson) parts.push(JSON.stringify(metaJson))
 	return parts.join()
+}
+
+const idsOf = (nodes: readonly BaseNode[]): string => {
+	let ids = ""
+	for (let i = 0; i < nodes.length; i++)
+		ids += i === 0 ? `#${nodes[i].id}` : `,#${nodes[i].id}`
+	return ids
 }
 
 const valueKeyOf = (v: unknown): string =>
