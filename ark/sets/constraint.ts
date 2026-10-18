@@ -136,13 +136,20 @@ const compareHashes = (l: string, r: string): number => {
 	if (i === l.length && i === r.length) return 1
 	let start = i
 	while (isDigitAt(l, start - 1)) start--
-	if (l[start - 1] === "$") {
+	if (
+		l[start - 1] === "$" &&
+		namePrefix.test(l.slice(l.lastIndexOf('"', start - 1) - 1, start))
+	) {
 		const lEnd = digitsEnd(l, i)
 		const rEnd = digitsEnd(r, i)
 		if (lEnd > start && rEnd > start && lEnd !== rEnd) return lEnd - rEnd
 	}
 	return l[i] === undefined || l[i] < r[i] ? -1 : 1
 }
+
+// a registered name in a hash up to its counter, e.g. `"$ark.fn$`, where a
+// string's own text would follow an escaped quote
+const namePrefix = /^[^\\]"\$ark\d*\.[\w$]*\$$/
 
 const isDigitAt = (s: string, i: number) => s[i] >= "0" && s[i] <= "9"
 

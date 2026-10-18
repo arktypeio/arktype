@@ -307,4 +307,9 @@ contextualize(() => {
 			symbols.map(symbol => type.unit(symbol).json)
 		)
 	})
+
+	it("orders strings holding $ and digits by code unit", () => {
+		const T = type("'$2' | '$10' | '$ark.fn$9' | '$ark.fn$10'")
+		attest(T.expression).snap('"$10" | "$2" | "$ark.fn$10" | "$ark.fn$9"')
+	})
 })
