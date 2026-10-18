@@ -53,6 +53,14 @@ contextualize(() => {
 		attest(shared).snap({ n: "1" })
 	})
 
+	it("copies where a morph is passed ctx, whose root is the input as given", () => {
+		const T = guarded.type({
+			a: "string.trim",
+			b: ["string", "=>", (s, ctx) => s + (ctx.root as { a: string }).a]
+		})
+		attest(T({ a: " x ", b: "y" })).snap({ a: "x", b: "y x " })
+	})
+
 	it("copies the elements it transforms, which could be one object", () => {
 		const Items = guarded.type({ n: "string.numeric.parse" }).array()
 		const item = { n: "1" }

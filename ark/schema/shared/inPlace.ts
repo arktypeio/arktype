@@ -1,3 +1,4 @@
+import { arityOf } from "@ark/util"
 import type { MutatesInput } from "../config.ts"
 import type { BaseNode } from "../node.ts"
 import type { BaseRoot } from "../roots/root.ts"
@@ -280,6 +281,20 @@ const writesUnread = (places: Map<string, Place>): boolean => {
 	return true
 }
 
+// a morph passed ctx can read the input's writes through ctx.root
+const passesContext = (places: Map<string, Place>): boolean => {
+	for (const { node } of places.values()) {
+		if (
+			node.hasKind("morph") &&
+			node.morphs.some(
+				morph => !hasArkKind(morph, "root") && arityOf(morph) !== 1
+			)
+		)
+			return true
+	}
+	return false
+}
+
 const writesInPlaceByMode = {
 	true: new WeakMap<BaseRoot, boolean>(),
 	always: new WeakMap<BaseRoot, boolean>()
@@ -298,7 +313,8 @@ export const writesInPlace = (
 		writes =
 			holdsWriter(places) &&
 			writesSoundly(places) &&
-			(mutatesInput !== true || writesUnread(places))
+			(mutatesInput !== true ||
+				(!passesContext(places) && writesUnread(places)))
 		cache.set(root, writes)
 	}
 	return writes
