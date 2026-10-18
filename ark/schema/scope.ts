@@ -828,12 +828,11 @@ export abstract class BaseScope<$ extends {} = {}> {
 		input: NodeInput<kind>,
 		opts = {} as BaseParseOptions<prereduced>
 	): nodeOfKind<prereduced extends true ? kind : reducibleKindOf<kind>> => {
-		// nodes are functions, so a plain input is never one
-		const maybeNode: unknown = input
-		if (typeof maybeNode === "function" && isNode(maybeNode)) {
-			return maybeNode.kind === kind ?
-					(this.bindReference(maybeNode) as never)
-				:	throwMismatchedNodeRootError(kind, maybeNode.kind)
+		// nodes are functions, so a schema object is never one
+		if (typeof (input as unknown) === "function" && isNode(input)) {
+			return input.kind === kind ?
+					(this.bindReference(input) as never)
+				:	throwMismatchedNodeRootError(kind, input.kind)
 		}
 
 		if (kind === "union") {

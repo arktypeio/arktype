@@ -272,12 +272,11 @@ const nodeKeyOf = (
 		const v = inner[k]
 		parts.push(
 			`${k}:${
-				impl.keys[k].child !== true ?
-					k === "unit" ?
-						literalKeyOf(v)
-					:	valueKeyOf(v)
-				: isArray(v) ? `[${idsOf(v as BaseNode[])}]`
-				: `#${(v as BaseNode).id}`
+				impl.keys[k].child === true ?
+					isArray(v) ? `[${idsOf(v as BaseNode[])}]`
+					:	`#${(v as BaseNode).id}`
+				: k === "unit" ? literalKeyOf(v)
+				: valueKeyOf(v)
 			}`
 		)
 	}
@@ -289,28 +288,6 @@ const nodeKeyOf = (
 		parts.push("!")
 	if (metaJson) parts.push(JSON.stringify(metaJson))
 	return parts.join()
-}
-
-// a required prop's input is already normalized unless its value holds an
-// alias, so its value holds it by key to find it before it's parsed
-export const requiredPropOf = (
-	key: Key,
-	value: BaseRoot,
-	$: BaseScope
-): nodeOfKind<"required"> => {
-	if (!holdsWeakly || value.includesShallowAlias || value.$ !== $)
-		return $.node("required", { key, value })
-	const props = (value.cache.requiredProps ??= new Map())
-	let prop = props.get(key)?.deref()
-	if (prop) $ark.reached?.node(prop)
-	else {
-		// keys whose props were collected are dropped as the map doubles
-		if (props.size > 32 && !(props.size & (props.size - 1)))
-			for (const [k, ref] of props) if (!ref.deref()) props.delete(k)
-		prop = $.node("required", { key, value })
-		props.set(key, new WeakRef(prop))
-	}
-	return prop as nodeOfKind<"required">
 }
 
 const idsOf = (nodes: readonly BaseNode[]): string => {
@@ -342,13 +319,33 @@ const literalKeyOf = (v: unknown): string =>
 		`$${nameOf(v)}`
 	:	`${v}`
 
+// props of a value without an alias are found by key before parsing
+export const requiredPropOf = (
+	key: Key,
+	value: BaseRoot,
+	$: BaseScope
+): nodeOfKind<"required"> => {
+	if (!holdsWeakly || value.includesShallowAlias || value.$ !== $)
+		return $.node("required", { key, value })
+	const props = (value.cache.requiredProps ??= new Map())
+	let prop = props.get(key)?.deref()
+	if (prop) $ark.reached?.node(prop)
+	else {
+		// keys whose props were collected are dropped as the map doubles
+		if (props.size > 32 && !(props.size & (props.size - 1)))
+			for (const [k, ref] of props) if (!ref.deref()) props.delete(k)
+		prop = $.node("required", { key, value })
+		props.set(key, new WeakRef(prop))
+	}
+	return prop as nodeOfKind<"required">
+}
+
 // a basis or primitive constraint's error context includes its description,
 // so its writer runs on construction whether or not the node is compiled
 export const resolveDescription = <node extends BaseNode>(node: node): node => {
 	if (node.isBasis() || includes(prestructuralKinds, node.kind))
 		void node.description
-	// an alias is expressed as it resolves when it's read, so a node holding
-	// one is expressed as it's created
+	// an alias's expression changes as it resolves, so write it now
 	else if (node.includesAlias) void node.expression
 	return node
 }
