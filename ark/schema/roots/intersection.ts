@@ -1,4 +1,4 @@
-import { hasDomain, includes, type array, type JsonObject } from "@ark/util"
+import { hasDomain, type array, type JsonObject } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
 import type { PredicateNode } from "../predicate.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
@@ -6,7 +6,6 @@ import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
 import type { ArkError } from "../shared/errors.ts"
 import {
 	implementNode,
-	prestructuralKinds,
 	type nodeImplementationOf,
 	type OpenNodeKind,
 	type PrestructuralKind,
@@ -173,17 +172,17 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	basis: nodeOfKind<Intersection.BasisKind> | null =
 		this.inner.domain ?? this.inner.proto ?? null
 
-	prestructurals: array<nodeOfKind<PrestructuralKind>> = []
+	// children are ordered by kind: bases, prestructurals, structure, predicates
+	refinements: array<nodeOfKind<RefinementKind>> = this.children.slice(
+		(this.inner.domain ? 1 : 0) + (this.inner.proto ? 1 : 0)
+	) as never
 
-	refinements: array<nodeOfKind<RefinementKind>> = this.children.filter(
-		(node): node is never => {
-			if (!node.isRefinement()) return false
-			if (includes(prestructuralKinds, node.kind))
-				// mutation is fine during initialization
-				(this.prestructurals as unknown[]).push(node)
-			return true
-		}
-	)
+	prestructurals: array<nodeOfKind<PrestructuralKind>> = this.refinements.slice(
+		0,
+		this.refinements.length -
+			(this.inner.structure ? 1 : 0) -
+			(this.inner.predicate?.length ?? 0)
+	) as never
 
 	structure: Structure.Node | undefined = this.inner.structure
 
