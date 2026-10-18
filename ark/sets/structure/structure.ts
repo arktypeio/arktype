@@ -37,11 +37,13 @@ const intersectPropsAndIndex = <
 			intersectNodesRoot(l.value.rawIn, r.value.rawIn, $)
 		:	intersectNodesRoot(l.value, r.value, $)
 	if (value instanceof Disjoint) {
+		// absent, since one of the disjoint values rejects undefined
 		return kind === "optional" ?
-				($.node("optional", {
-					key: l.key,
-					value: $ark.intrinsic.never.internal
-				}) as l)
+				($.node(
+					"optional",
+					{ key: l.key, value: $ark.intrinsic.never.internal },
+					{ prereduced: true }
+				) as l)
 				// optional, since an index signature doesn't require the key
 			:	value.withPrefixKey(l.key, "optional")
 	}
@@ -94,8 +96,12 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 						const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
 						if (indexOverlap instanceof Disjoint) return []
 						const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-						for (const prop of normalized.required ?? [])
-							rDerived.push(ctx.$.node("optional", prop.inner))
+						// an index's value, which a loose scope doesn't widen
+						for (const prop of normalized.required ?? []) {
+							rDerived.push(
+								ctx.$.node("optional", prop.inner, { prereduced: true })
+							)
+						}
 						rDerived.push(...(normalized.optional ?? []))
 						return normalized.index ?? []
 					})
@@ -124,8 +130,12 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 						const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
 						if (indexOverlap instanceof Disjoint) return []
 						const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-						for (const prop of normalized.required ?? [])
-							lDerived.push(ctx.$.node("optional", prop.inner))
+						// an index's value, which a loose scope doesn't widen
+						for (const prop of normalized.required ?? []) {
+							lDerived.push(
+								ctx.$.node("optional", prop.inner, { prereduced: true })
+							)
+						}
 						lDerived.push(...(normalized.optional ?? []))
 
 						return normalized.index ?? []

@@ -429,6 +429,27 @@ type("string | number").describe("a key").extends("string | number")
 
 `.equals` still compares meta.
 
+### Intersect optional keys by whether each side allows `undefined`
+
+Intersecting a Type from a Scope configured with `exactOptionalPropertyTypes: false` with one that isn't could let an optional key allow `undefined` where the other Type rejects it. Unions and `.extends` were wrong the same way:
+
+```ts
+const loose = scope({}, { exactOptionalPropertyTypes: false })
+const Loose = loose.type({ "a?": "string" })
+const Exact = type({ "a?": "string" })
+
+// previously { a?: string | undefined }, now { a?: string }
+Loose.and(Exact)
+
+// previously { a?: string }, now { a?: string | undefined }
+Loose.or(Exact)
+
+// previously true, now false
+Loose.extends(Exact)
+```
+
+An optional key in an intersection allows `undefined` only where both sides do, and never where an index signature's value doesn't.
+
 ### Fix deep transforms through a tuple default
 
 `onDeepUndeclaredKey` and `configure` with `"references"` threw on a tuple with a default:

@@ -49,11 +49,13 @@ export const intersectProps = (
 		: r.hasDefault() ? r.default
 		: unset
 
+	// value allows undefined only if both did, whatever ctx.$ configures
 	return ctx.$.node(
 		"optional",
 		defaultIntersection === unset ?
 			{ key, value }
-		:	{ key, value, default: defaultIntersection }
+		:	{ key, value, default: defaultIntersection },
+		{ prereduced: true }
 	)
 }
 
