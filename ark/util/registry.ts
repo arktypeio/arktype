@@ -8,7 +8,10 @@ import { baseNameOf } from "./serialize.ts"
 // For now, we assert this matches the package.json version via a unit test.
 export const arkUtilVersion = "0.56.7"
 
-export const initialRegistryContents = {
+export const initialRegistryContents: {
+	version: string
+	FileConstructor: typeof File
+} = {
 	version: arkUtilVersion,
 	FileConstructor
 }

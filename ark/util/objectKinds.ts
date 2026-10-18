@@ -49,7 +49,7 @@ export type EcmascriptObjects = satisfy<
 
 // globals are read in PURE IIFEs so unused ones tree-shake
 /** Node18 */
-export const FileConstructor = /* @__PURE__ */ (() =>
+export const FileConstructor: typeof File = /* @__PURE__ */ (() =>
 	globalThis.File ?? globalThis.Blob)()
 
 // need to type these explicitly due to a resolution issue
