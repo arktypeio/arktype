@@ -435,7 +435,7 @@ export abstract class BaseScope<$ extends {} = {}> {
 							!this.describesLike(reference.$)
 						) {
 							copy.includesKeptDescription = true
-							copy._description = reference.description
+							copy.cache.description = reference.description
 						}
 						return resolveDescription(copy as BaseNode)
 					})

@@ -121,7 +121,7 @@ export class AliasNode extends BaseRoot<Alias.Declaration> {
 		try {
 			resolution = this._resolve()
 			if (resolution.hasKind("alias")) resolution = resolution.resolution
-			if (this.resolve) resolution.isAliasResolution = true
+			if (this.resolve) resolution.cache.isAliasResolution = true
 			if (this.resolve ? isFinal : this.$.resolved)
 				this._resolution = resolution
 		} finally {

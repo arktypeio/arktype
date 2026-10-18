@@ -146,6 +146,12 @@ class NodeCache {
 	rawOut: BaseNode | undefined
 	assert: ((data: any, pipedFromCtx?: Traversal) => unknown) | undefined
 	pipe: BaseRoot["pipe"] | undefined
+	description: string | undefined
+	// set by an alias resolving to it through a thunk, which references it without registering its id
+	isAliasResolution: boolean | undefined
+	// set while a Type defers compiling until it's used
+	allowsBeforeJit: BaseNode["allows"] | undefined
+	isReusableLeaf: boolean | undefined
 	declare onFail: ArkErrors.Handler | null
 	declare rootApply?: RootApply
 	declare applyInPlace?: TraverseApply
@@ -289,15 +295,12 @@ export abstract class BaseNode<
 			:	data => (this.traverseAllows as any)(data)
 	}
 
-	// set by an alias resolving to it through a thunk, which references it without registering its id
-	isAliasResolution = false
-
 	get entersResolution(): boolean {
 		if (this.cache.entersResolution !== undefined)
 			return this.cache.entersResolution
 		const entersResolution =
 			this.isCyclic &&
-			(this.isAliasResolution ||
+			(this.cache.isAliasResolution ||
 				isNode($ark.nodesByRegisteredId[this.id]) ||
 				(this.hasKind("intersection") && !!this.structure?.props.length))
 		return isResolutionFinal() ?
@@ -505,9 +508,6 @@ export abstract class BaseNode<
 		this.cache.flatMorphs = flatMorphs
 	}
 
-	// set while a Type defers compiling until it's used
-	allowsBeforeJit: this["allows"] | undefined
-
 	// a Type without contextual callbacks checks its first data uncompiled
 	private get checksUncompiled(): boolean {
 		return (
@@ -519,11 +519,11 @@ export abstract class BaseNode<
 	}
 
 	deferJit(): void {
-		if (this.allowsBeforeJit) return
-		const allows = (this.allowsBeforeJit = this.allows)
+		if (this.cache.allowsBeforeJit) return
+		const allows = (this.cache.allowsBeforeJit = this.allows)
 		// a detached reference can call this after compiling
 		this.allows = data => {
-			if (this.allowsBeforeJit) {
+			if (this.cache.allowsBeforeJit) {
 				if (this.checksUncompiled) {
 					this.cache.isUsedBeforeJit = true
 					return allows(data)
@@ -535,7 +535,7 @@ export abstract class BaseNode<
 	}
 
 	private initRootApply(): RootApply {
-		if (this.allowsBeforeJit) {
+		if (this.cache.allowsBeforeJit) {
 			if (this.checksUncompiled) {
 				const rootApply = this.createRootApply()
 				// marked used once it returns, so an allows it calls doesn't compile
@@ -695,9 +695,8 @@ export abstract class BaseNode<
 		})
 	}
 
-	private _description: string | undefined
 	get description(): string {
-		return (this._description ??=
+		return (this.cache.description ??=
 			this.meta?.description ??
 			composing(() =>
 				this.$.resolvedConfig[this.kind].description(this as never)
@@ -715,10 +714,9 @@ export abstract class BaseNode<
 	}
 
 	compiledUnit: Fn | undefined
-	isReusableLeaf = false
 
 	get precompilation(): string | undefined {
-		if (this.allowsBeforeJit) this.$.jit(this)
+		if (this.cache.allowsBeforeJit) this.$.jit(this)
 		return this.compiledUnit?.toString()
 	}
 

@@ -87,7 +87,7 @@ export const precompile = (
 	for (const node of references) linkage.referencesById[node.id] = node
 	const declared: BaseNode[] = []
 	for (const node of references) {
-		if (node.isReusableLeaf && isLeafIn(node, linkage.referencesById))
+		if (node.cache.isReusableLeaf && isLeafIn(node, linkage.referencesById))
 			linkage.reused.add(node)
 		else if (
 			node.compiledUnit &&
@@ -124,7 +124,7 @@ export const precompileRoot = (
 ): void => {
 	const unbound: UnboundTraversals = new Map()
 	for (const reference of references) {
-		if (reference === root || !reference.allowsBeforeJit) continue
+		if (reference === root || !reference.cache.allowsBeforeJit) continue
 		for (const id in reference.referencesById)
 			unbound.set(reference.referencesById[id], undefined)
 	}
@@ -260,9 +260,9 @@ const bindUnit = (
 		if (node.compiledUnit && (!owningScope || node.$ !== owningScope)) continue
 		const [traverseAllows, traverseApply, traverseTransform] =
 			compiledTraversals[i]
-		if (node.allowsBeforeJit) {
-			node.allows = node.allowsBeforeJit
-			node.allowsBeforeJit = undefined
+		if (node.cache.allowsBeforeJit) {
+			node.allows = node.cache.allowsBeforeJit
+			node.cache.allowsBeforeJit = undefined
 		}
 		node.traverseAllows = traverseAllows
 		if (node.isRoot() && !node.allowsRequiresContext) {
@@ -274,7 +274,7 @@ const bindUnit = (
 		if (traverseTransform) node.traverseTransform = traverseTransform
 		node.compiledUnit = compiledUnit
 		delete node.cache.rootApply
-		node.isReusableLeaf = isLeafIn(node, referencesById)
+		node.cache.isReusableLeaf = isLeafIn(node, referencesById)
 	}
 }
 
