@@ -174,7 +174,7 @@ export const createValidator = ((
 	allows: (data: unknown) => boolean,
 	attributes: ValidatorAttributes,
 	id: string,
-	holes: readonly unknown[] = []
+	holes?: readonly unknown[]
 ): Validator => {
 	// a meta's onFail (e.g. a matcher's) overrides the configured one
 	const configuredOnFail = attributes.meta.onFail ?? runtimeConfig.onFail
@@ -213,7 +213,7 @@ export const createValidatorWith = ((
 	parts: readonly Fn[],
 	id: string,
 	attributes: ValidatorAttributes = { meta: emptyMeta },
-	holes: readonly unknown[] = []
+	holes?: readonly unknown[]
 ): Validator => {
 	const validator: Validator = setPrototypeOf(
 		make(parts, attributes.meta.onFail ?? runtimeConfig.onFail),
