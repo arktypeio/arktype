@@ -13,6 +13,7 @@
 - Composition keywords apply together, where only the first of `allOf`, `anyOf`, `not` and `oneOf` did, and `oneOf` with disjoint branches is a union.
 - `$ref` (including recursive refs), `if`/`then`/`else`, `dependentRequired` and `dependentSchemas` are read.
 - An invalid keyword, or one that can't be read exactly like `unevaluatedProperties` or a remote `$ref`, throws a `ParseError` naming its JSON Pointer, like `#/minLength must be a non-negative integer (was -1)`, where some threw a `TraversalError`.
+- The `writeJsonSchema*Message` functions and their types, like `writeJsonSchemaInsufficientKeysMessage`, are no longer exported, since the errors they wrote are no longer thrown.
 
 ### Accept a `StringSchema` in `jsonSchemaToType`
 
