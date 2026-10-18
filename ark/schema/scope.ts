@@ -864,7 +864,8 @@ export abstract class BaseScope<$ extends {} = {}> {
 				kind,
 				def: input as NodeInput,
 				$: this,
-				id: opts.id ?? registerNodeId(opts.alias ?? kind),
+				id: opts.id,
+				alias: opts.alias,
 				prereduced: opts.prereduced
 			})
 		) as never

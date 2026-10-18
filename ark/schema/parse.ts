@@ -81,7 +81,9 @@ export interface NodeParseContext<kind extends NodeKind = NodeKind> {
 	kind: kind
 	def: NodeInput<kind>
 	$: BaseScope
-	id: NodeId
+	// registered only if a node is created
+	id: NodeId | undefined
+	alias: string | undefined
 	prereduced: boolean | undefined
 }
 
@@ -154,15 +156,14 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 		}
 	}
 
-	const node = createNode({
+	return createNode({
 		id: ctx.id,
+		alias: ctx.alias,
 		kind: ctx.kind,
 		inner,
 		meta,
 		$: ctx.$
 	})
-
-	return node
 }
 
 // keys are ordered so equal inners share a key and json, with children
@@ -188,7 +189,8 @@ const deferAliases = (v: unknown, $: BaseScope): unknown => {
 }
 
 export type CreateNodeInput = {
-	id: NodeId
+	id: NodeId | undefined
+	alias?: string | undefined
 	kind: NodeKind
 	inner: dict
 	meta: ArkEnv.meta
@@ -198,6 +200,7 @@ export type CreateNodeInput = {
 
 export const createNode = ({
 	id,
+	alias,
 	kind,
 	inner,
 	meta,
@@ -235,7 +238,7 @@ export const createNode = ({
 	}
 
 	const attachments: UnknownAttachmentsInput = {
-		id,
+		id: id ?? registerNodeId(alias ?? kind),
 		kind,
 		impl,
 		inner,
@@ -343,7 +346,8 @@ export const withMeta = <node extends BaseNode>(
 	if (id && isNode(nodesByRegisteredId[id]))
 		throwInternalError(`Unexpected attempt to overwrite node id ${id}`)
 	return createNode({
-		id: id ?? registerNodeId(meta.alias ?? node.kind),
+		id,
+		alias: meta.alias,
 		kind: node.kind,
 		inner: node.inner,
 		meta,
