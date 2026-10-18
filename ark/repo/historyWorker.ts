@@ -115,11 +115,12 @@ const callSites = (): NodeJS.CallSite[] => {
 	return sites
 }
 
-// test infrastructure, getters that run once per cache, and default checks,
-// whose call counts vary by cache state
+// test infrastructure, thunks and getters that run once per cache, and
+// default checks, whose call counts vary by cache state
 const isExcludedFrame = (url: string, site: NodeJS.CallSite) =>
 	url.includes("/ark/attest/") ||
 	url.endsWith("/util/lazily.ts") ||
+	url.endsWith("/util/functions.ts") ||
 	["get in", "get out", "assertDefaultValueAssignability"].includes(
 		site.getFunctionName() ?? ""
 	)
