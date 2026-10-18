@@ -669,6 +669,8 @@ contextualize(() => {
 	})
 
 	it("rejected prop reads", () => {
+		// its own scope, so each Type is first called here in any history
+		const $ = scope({})
 		const reads = (T: type.Any) => {
 			let count = 0
 			const v = Object.defineProperty({}, "a", {
@@ -681,8 +683,8 @@ contextualize(() => {
 			attest(T({ v }).toString()).equals("v.a must be a string (was a number)")
 			return count
 		}
-		const A = type({ a: "string" })
-		attest(reads(type({ v: A.or("null") }))).equals(reads(type({ v: A })))
+		const A = $.type({ a: "string" })
+		attest(reads($.type({ v: A.or("null") }))).equals(reads($.type({ v: A })))
 	})
 
 	it("no discriminant from index signature", () => {
