@@ -1436,8 +1436,7 @@ return [${returned.join(", ")}]
 		const declarations = called.flatMap(([name, written]) => {
 			if (forwarded.has(name)) return []
 			const source = this.baking.shortest ? unlooped(written) : written
-			// its parameters are plain names, and size drops a trailing unread ctx,
-			// as does a writing traversal
+			// plain params; size and writing traversals drop a trailing unread ctx
 			const arrow = source.replace(
 				/^function\(([^)]*)\) {/,
 				(signature, params: string) =>
