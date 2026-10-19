@@ -22,7 +22,6 @@ import {
 	type MutatesInput,
 	type NodeId,
 	type Optional,
-	type PredicateNode,
 	type RootUnit,
 	type UnionNode,
 	type UnitMember,
@@ -48,6 +47,7 @@ import {
 	cached,
 	constructorNameOf,
 	dateGetTime,
+	type Fn,
 	functionNameOf,
 	hashOf,
 	hasDomain,
@@ -1956,7 +1956,7 @@ return [${returned.join(", ")}]
 			root,
 			node =>
 				node.hasKind("morph") ||
-				(node.hasKind("predicate") && !isKeywordCheck(node))
+				(node.hasKind("predicate") && !isKeyword(node.predicate))
 		)
 		if (!this.baking.detailsErrors) {
 			return this.emitUndetailedApply(
@@ -3023,16 +3023,28 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 }
 
 // runtime keywords with one param never read Traversal
-const isKeywordCheck = (node: PredicateNode): boolean =>
-	runtimePathsByValue.has(node.predicate) && node.predicate.length < 2
+const isKeyword = (predicate: unknown): boolean =>
+	runtimePathsByValue.has(predicate) && (predicate as Fn).length < 2
+
+const countedCheck =
+	/^( +)const errorCount = ctx\.currentErrorCount\n +if \(!(r\d+)\(data, ctx\) && ctx\.currentErrorCount === errorCount\) {\n +return (!.+)\n +}\n +return !ctx\.failFast \|\| ctx\.currentErrorCount === errorCount\n$/
 
 class StandaloneCompiler extends TraversalCompiler {
 	override site(node: BaseNode): string {
 		return this.ref(issueSiteOf(node.failureSite))
 	}
 
-	override addsNoIssues(node: PredicateNode): boolean {
-		return isKeywordCheck(node)
+	// a keyword check adds no issues itself, so its Apply needn't count them
+	override get body(): string {
+		const body = super.body
+		const counted = countedCheck.exec(body)
+		if (!counted) return body
+		const [, indent, check, fail] = counted
+		for (const [value, name] of this.refs!) {
+			if (name === check && isKeyword(value))
+				return `${indent}return ${check}(data, ctx) || ${fail}\n`
+		}
+		return body
 	}
 
 	// read at the discriminant so branches don't rerun
