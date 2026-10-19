@@ -172,9 +172,9 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	basis: nodeOfKind<Intersection.BasisKind> | null =
 		this.inner.domain ?? this.inner.proto ?? null
 
-	// children are ordered by kind: bases, prestructurals, structure, predicates
+	// children are ordered by kind: basis, prestructurals, structure, predicates
 	refinements: array<nodeOfKind<RefinementKind>> = this.children.slice(
-		(this.inner.domain ? 1 : 0) + (this.inner.proto ? 1 : 0)
+		this.basis ? 1 : 0
 	) as never
 
 	prestructurals: array<nodeOfKind<PrestructuralKind>> = this.refinements.slice(
