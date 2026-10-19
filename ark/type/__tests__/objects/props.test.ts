@@ -179,6 +179,18 @@ contextualize(() => {
 		).throws(writeDuplicateKeyMessage("a"))
 	})
 
+	it("duplicate key as a number and a string", () => {
+		attest(() =>
+			type.schema({
+				domain: "object",
+				required: [
+					{ key: 1 as never, value: "string" },
+					{ key: "1", value: "number" }
+				]
+			})
+		).throws(writeDuplicateKeyMessage("1"))
+	})
+
 	it("optional key with disjoint index", () => {
 		attest(() =>
 			type({

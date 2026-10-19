@@ -51,6 +51,10 @@ const intersectPropsAndIndex = <
 	return null
 }
 
+// a number key names the same property as its string
+const propertyOf = (key: Key): Key =>
+	typeof key === "symbol" ? key : String(key)
+
 // "reject" checks string keys only, so it allows any symbol key
 const allowedKeysOf = (node: Structure.Node): BaseRoot =>
 	node.undeclared === "reject" ?
@@ -192,9 +196,10 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 		if (inner.required) {
 			for (let i = 0; i < inner.required.length; i++) {
 				const requiredProp = inner.required[i]
-				if (seen.has(requiredProp.key))
+				const requiredKey = propertyOf(requiredProp.key)
+				if (seen.has(requiredKey))
 					throwParseError(writeDuplicateKeyMessage(requiredProp.key))
-				seen.add(requiredProp.key)
+				seen.add(requiredKey)
 
 				if (inner.index) {
 					for (const index of inner.index) {
@@ -209,9 +214,10 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 		if (inner.optional) {
 			for (let i = 0; i < inner.optional.length; i++) {
 				const optionalProp = inner.optional[i]
-				if (seen.has(optionalProp.key))
+				const optionalKey = propertyOf(optionalProp.key)
+				if (seen.has(optionalKey))
 					throwParseError(writeDuplicateKeyMessage(optionalProp.key))
-				seen.add(optionalProp.key)
+				seen.add(optionalKey)
 
 				if (inner.index) {
 					for (const index of inner.index) {
