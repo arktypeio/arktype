@@ -499,6 +499,32 @@ b must be A (was "y")`)
 		)
 	})
 
+	it("function morph output", () => {
+		const F = type("string").pipe(s => () => s)
+		const T = type({ f: F }).array()
+		// a Type's first call runs uncompiled, its second compiled
+		for (let i = 0; i < 2; i++) {
+			attest(T.assert([{ f: "a" }])[0].f()).equals("a")
+			attest(F.assert("b")()).equals("b")
+		}
+	})
+
+	it("root morph returning its function input", () => {
+		let reads = 0
+		const f = new Proxy(() => {}, {
+			getPrototypeOf: target => {
+				reads++
+				return Reflect.getPrototypeOf(target)
+			}
+		})
+		const T = type("unknown").pipe(x => x)
+		for (let i = 0; i < 2; i++) {
+			reads = 0
+			attest(T(f) === f).equals(true)
+			attest(reads).equals(1)
+		}
+	})
+
 	it("morph error with other errors", () => {
 		const T = type({
 			a: ["string", "=>", (s, ctx) => ctx.error("short")],

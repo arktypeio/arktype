@@ -25,10 +25,13 @@ export interface InPlaceTransforms {
 }
 
 export class TransformErrors {
-	entries: TransformErrors.Entry[]
+	declare entries: TransformErrors.Entry[]
 
+	// a function, so a check can rule out other values by typeof
 	constructor(result: ArkErrors, data: unknown) {
-		this.entries = [{ reversedPath: [], result, data }]
+		const errors = Object.setPrototypeOf(() => {}, TransformErrors.prototype)
+		errors.entries = [{ reversedPath: [], result, data }]
+		return errors
 	}
 
 	addTo(

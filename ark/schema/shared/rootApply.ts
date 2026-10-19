@@ -61,7 +61,7 @@ export const writeRootApply = (
 		node.includesMorph ?
 			js
 				.if(
-					`result !== data && result instanceof ${ref("TransformErrors")}`,
+					`result !== data && typeof result === "function" && result instanceof ${ref("TransformErrors")}`,
 					() =>
 						js
 							.const("ctx", newCtx)

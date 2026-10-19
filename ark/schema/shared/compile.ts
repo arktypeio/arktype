@@ -482,7 +482,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 			return pushesKey ? this.line(`${this.ctx}.path.pop()`) : this
 		}
 		const isTransformErrors = () =>
-			`typeof ${name} === "object" && ${name} instanceof ${this.ref(TransformErrors)}`
+			`typeof ${name} === "function" && ${name} instanceof ${this.ref(TransformErrors)}`
 		const assignSteps = () => {
 			const errorCount = `${name}ErrorCount`
 			if (nodes.slice(0, -1).some(node => node.transformRequiresContext))

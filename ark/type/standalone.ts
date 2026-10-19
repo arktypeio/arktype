@@ -2107,7 +2107,9 @@ return [${returned.join(", ")}]
 		const fails = [
 			...(selects ? [`result === ${JSON.stringify(unset)}`] : []),
 			...(captures ?
-				["result !== data && result instanceof TransformErrors"]
+				[
+					'result !== data && typeof result === "function" && result instanceof TransformErrors'
+				]
 			:	[])
 		]
 		const body =
