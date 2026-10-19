@@ -26,6 +26,7 @@ export declare namespace Morph {
 		readonly morphs: array<Morph | BaseRoot>
 		readonly declaredIn?: BaseRoot
 		readonly declaredOut?: BaseRoot
+		readonly inverse?: Morph
 	}
 
 	export interface Declaration
@@ -66,6 +67,9 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 			declaredOut: {
 				child: false,
 				serialize: node => node.json
+			},
+			inverse: {
+				serialize: namedReference
 			}
 		},
 		defaults: {
@@ -222,13 +226,16 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 
 	/** Check if the morphs of r are equal to those of this node */
 	override hasEqualMorphs(r: MorphNode): boolean {
-		return arrayEquals(this.morphs, r.morphs, {
-			isEqual: (lMorph, rMorph) =>
-				lMorph === rMorph ||
-				(hasArkKind(lMorph, "root") &&
-					hasArkKind(rMorph, "root") &&
-					lMorph.equals(rMorph))
-		})
+		return (
+			this.inverse === r.inverse &&
+			arrayEquals(this.morphs, r.morphs, {
+				isEqual: (lMorph, rMorph) =>
+					lMorph === rMorph ||
+					(hasArkKind(lMorph, "root") &&
+						hasArkKind(rMorph, "root") &&
+						lMorph.equals(rMorph))
+			})
+		)
 	}
 }
 

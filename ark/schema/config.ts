@@ -8,6 +8,7 @@ import {
 } from "@ark/util"
 import type { intrinsic } from "./intrinsic.ts"
 import type { nodesByRegisteredId } from "./parse.ts"
+import type { BaseRoot } from "./roots/root.ts"
 import type { TypeMeta } from "./shared/declare.ts"
 import type {
 	ActualConfig,
@@ -36,6 +37,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	resolvedConfig: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
 	sets?: SetEngine
+	encode?: (node: BaseRoot) => BaseRoot
 }
 
 type nodeConfigForKind<kind extends NodeKind> = Readonly<

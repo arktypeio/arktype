@@ -301,6 +301,22 @@ export interface Inferred<out t = unknown, $ = {}> {
 	get out(): instantiateType<this["inferIntrospectableOut"], $>
 
 	/**
+	 * #### deeply invert morphs to encode output as input
+	 *
+	 * ⚠️ requires `import "arktype/codecs"`, and throws if a morph has no inverse
+	 *
+	 * @example
+	 * const EpochMs = codec("number.integer", "Date", {
+	 *     decode: n => new Date(n),
+	 *     encode: d => d.getTime()
+	 * })
+	 * const Event = type({ name: "string", at: EpochMs })
+	 * // { name: "launch", at: 0 }
+	 * const encoded = Event.encode({ name: "launch", at: new Date(0) })
+	 */
+	get encode(): instantiateType<inferEncoder<t>, $>
+
+	/**
 	 * #### add a compile-time brand to output
 	 *
 	 * @typenoop
@@ -672,6 +688,11 @@ interface Type<out t = unknown, $ = {}>
 	/** @deprecated */
 	Symbol: never
 }
+
+// a method's parameter is bivariant, so a Type stays assignable to a wider one
+type inferEncoder<t> = {
+	encode(In: distill.Out<t>): To<distill.In<t>>
+}["encode"]
 
 export interface ChainedPipeParser<$, t> extends NaryPipeParser<$, t> {
 	try: NaryPipeParser<$, t>

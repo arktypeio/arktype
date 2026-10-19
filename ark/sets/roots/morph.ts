@@ -4,7 +4,7 @@ import {
 	queueUnchecked,
 	type Morph
 } from "@ark/schema"
-import { throwParseError, type mutable } from "@ark/util"
+import { omit, throwParseError, type mutable } from "@ark/util"
 import {
 	defineRightwardIntersections,
 	type setImplementationOf
@@ -18,9 +18,9 @@ export const morph: setImplementationOf<Morph.Declaration> = {
 			const inTersection = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)
 			if (inTersection instanceof Disjoint) return inTersection
 
-			const baseInner: Omit<mutable<Morph.Inner>, "in"> = {
-				morphs: l.morphs
-			}
+			const baseInner: Omit<mutable<Morph.Inner>, "in"> = omit(l.inner, {
+				in: 1
+			})
 
 			if (l.declaredIn || r.declaredIn) {
 				const declaredIn = intersectOrPipeNodes(l.rawIn, r.rawIn, ctx)

@@ -1,6 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 export * from "./index.ts"
 export * from "./attributes.ts"
+export * from "./codecs.ts"
 export * from "./declare.ts"
 export * from "./fn.ts"
 export * from "./generic.ts"

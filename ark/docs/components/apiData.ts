@@ -998,6 +998,26 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 ]
             ],
             "example": "const join = type(\"string[]\").pipe(a => a.join(\",\"))\n\nconst T = type({\n   // all keywords have introspectable output\n   keyword: \"string.numeric.parse\",\n   // TypeScript knows this returns a string, but we can't introspect that at runtime\n   unvalidated: join,\n   // if needed, it can be made introspectable with an output validator\n   validated: join.to(\"string\")\n})\n\n// Type<{ keyword: number; unvalidated: unknown; validated: string }>\nconst Out = T.out"
+        },
+        {
+            "group": "Morphs",
+            "name": "encode",
+            "summary": [
+                {
+                    "kind": "text",
+                    "value": "deeply invert morphs to encode output as input"
+                }
+            ],
+            "notes": [
+                [
+                    {
+                        "kind": "noteStart",
+                        "value": "requires `import \"arktype/codecs\"`, and throws if a morph has no inverse",
+                        "warning": true
+                    }
+                ]
+            ],
+            "example": "const EpochMs = codec(\"number.integer\", \"Date\", {\n    decode: n => new Date(n),\n    encode: d => d.getTime()\n})\nconst Event = type({ name: \"string\", at: EpochMs })\n// { name: \"launch\", at: 0 }\nconst encoded = Event.encode({ name: \"launch\", at: new Date(0) })"
         }
     ],
     "Comparison": [

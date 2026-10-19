@@ -449,6 +449,12 @@ export abstract class BaseRoot<
 		return result as BaseRoot
 	}
 
+	get encode(): BaseRoot {
+		return (
+			$ark.encode ?? throwParseError('.encode requires import "arktype/codecs"')
+		)(this)
+	}
+
 	rawPipeOnce(morph: Morph): BaseRoot {
 		if (hasArkKind(morph, "root")) return this.toNode(morph)
 

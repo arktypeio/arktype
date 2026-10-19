@@ -1,0 +1,98 @@
+import { omit, throwParseError } from "@ark/util"
+import type { Morph } from "../roots/morph.ts"
+import type { BaseRoot } from "../roots/root.ts"
+import type { Union } from "../roots/union.ts"
+import type { BaseScope } from "../scope.ts"
+import type { Sequence } from "../structure/sequence.ts"
+import type { Structure } from "../structure/structure.ts"
+import { $ark } from "./registry.ts"
+import { hasArkKind } from "./utils.ts"
+
+// inverses of morphs whose nodes are created without one, like keywords'
+export const inverses: WeakMap<Morph, Morph> = new WeakMap()
+
+const encoders = new WeakMap<BaseRoot, BaseRoot>()
+
+export const writeMissingInverseMessage = (expression: string): string =>
+	`A morph must have an inverse to be encoded: ${expression}`
+
+export const encode = (node: BaseRoot): BaseRoot => {
+	let encoder = encoders.get(node)
+	if (!encoder) encoders.set(node, (encoder = node.$.finalize(encoderOf(node))))
+	return encoder
+}
+
+// the decoding graph with each morph inverted
+const encoderOf = (node: BaseRoot): BaseRoot =>
+	node.transform(
+		(kind, inner) =>
+			kind === "morph" ? invert(inner as never, node.$)
+			: kind === "optional" && "default" in inner ?
+				node.$.node("required", omit(inner as never, { default: 1 }))
+			: kind === "structure" ? requireDefaulted(inner as never)
+			: kind === "sequence" ? requireDefaultables(inner as never)
+			: kind === "union" ?
+				{
+					...inner,
+					// a branch without morphs encodes a value unchanged
+					branches: [...(inner as Union.Inner).branches].sort(
+						(l, r) => Number(l.transforms) - Number(r.transforms)
+					),
+					ordered: true
+				}
+			:	inner,
+		{
+			shouldTransform: n =>
+				n.transforms || (n.hasKind("optional") && n.hasDefault())
+		}
+	) as never
+
+const invert = (inner: Morph.Inner, $: BaseScope): BaseRoot => {
+	let encoder = inner.declaredOut ?? $ark.intrinsic.unknown.internal
+	// an inverse inverts the one function among its node's morphs
+	let inverse = inner.inverse
+	for (let i = inner.morphs.length - 1; i >= 0; i--) {
+		const morph = inner.morphs[i]
+		if (hasArkKind(morph, "root")) {
+			encoder = pipeEncoder(encoder, encoderOf(morph))
+			continue
+		}
+		encoder = $.node("morph", {
+			in: encoder,
+			morphs: [
+				inverse ??
+					inverses.get(morph) ??
+					throwParseError(
+						writeMissingInverseMessage($.node("morph", inner).expression)
+					)
+			],
+			inverse: morph
+		})
+		inverse = undefined
+	}
+	const decodedIn = inner.declaredIn ?? inner.in
+	return decodedIn ? pipeEncoder(encoder, decodedIn) : encoder
+}
+
+const pipeEncoder = (encoder: BaseRoot, next: BaseRoot): BaseRoot =>
+	encoder.isUnknown() ? next
+	: next.isUnknown() ? encoder
+	: encoder.rawPipeOnce(next)
+
+// a defaulted key or element is always present in what was decoded
+const requireDefaulted = (inner: Structure.Inner): Structure.Inner => {
+	const props = [...(inner.required ?? []), ...(inner.optional ?? [])]
+	return {
+		...inner,
+		required: props.filter(prop => prop.hasKind("required")),
+		optional: props.filter(prop => prop.hasKind("optional"))
+	} as never
+}
+
+const requireDefaultables = ({
+	defaultables = [],
+	...inner
+}: Sequence.Inner): Sequence.Inner => ({
+	...inner,
+	prefix: [...(inner.prefix ?? []), ...defaultables.map(([node]) => node)]
+})

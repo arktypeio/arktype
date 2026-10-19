@@ -2,6 +2,32 @@
 
 ## Unreleased
 
+### Add codecs
+
+`codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:
+
+```ts
+import { codec } from "arktype/codecs"
+
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+
+const Event = type({ name: "string", at: EpochMs })
+
+// { name: "launch", at: new Date(0) }
+const event = Event({ name: "launch", at: 0 })
+// { name: "launch", at: 0 }
+const encoded = Event.encode(event)
+```
+
+`.encode` validates its input against the Type's output and its result against the Type's input. A defaulted key is required when encoding, and a union tries its branches without morphs first. Parse keywords like `string.date.iso.parse` encode back to strings, and format keywords like `string.trim` encode a formatted string as itself. Accessing `.encode` throws a `ParseError` if a morph has no inverse, or if `arktype/codecs` isn't imported: it installs encoding, so an app that doesn't encode doesn't ship it. See [the docs](https://arktype.io/docs/codecs).
+
+A codec's inverse is part of its morph node's schema as `inverse`, so it appears in `.json`.
+
+https://github.com/arktypeio/arktype/issues/909
+
 ### Apply deep operations through defaulted tuple elements
 
 `.onDeepUndeclaredKey()` and `.configure()` on references no longer throw on a tuple with a defaulted element, like `["string", "number = 0"]`.

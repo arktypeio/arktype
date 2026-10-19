@@ -57,7 +57,7 @@ const typeApiGroups = {
 	],
 	Metadata: ["description", "expression", "meta", "configure", "describe"],
 	Composition: ["and", "or", "intersect", "array", "optional", "default"],
-	Morphs: ["narrow", "filter", "pipe", "to", "in", "out"],
+	Morphs: ["narrow", "filter", "pipe", "to", "in", "out", "encode"],
 	Comparison: [
 		"equals",
 		"ifEquals",
