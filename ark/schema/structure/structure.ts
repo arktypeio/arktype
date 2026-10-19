@@ -987,11 +987,18 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformedChildren.push(...this.defaultable)
 		js.initializeTransform(transformedChildren)
 		js.let("out", "data")
+		// the only site copies, and nothing after it can fail
+		const once =
+			transformedChildren.length === 1 &&
+			transformedProps.length === 1 &&
+			!js.requiresContext
 		for (let i = 0; i < transformedProps.length; i++) {
 			const { key, optional } = transformedProps[i]
 			const keyExpression = js.serialize(key)
-			const onChange = () =>
+			const onChange = () => {
 				this.compileCopy(js).line(`out${js.prop(key)} = transformed${i}`)
+				if (once) this.compileCopiedDeclaredKeys(js, key)
+			}
 			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
 				`transformed${i}`,
 				`value${i}`,
@@ -1056,7 +1063,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		this.compileDefaults(js)
-		this.compileCopiedDeclaredKeys(js).return("out")
+		if (!once) this.compileCopiedDeclaredKeys(js)
+		js.return("out")
 	}
 
 	private compileDefaults(js: NodeCompiler): NodeCompiler {
@@ -1093,10 +1101,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			:	""
 	}
 
-	private compileCopiedDeclaredKeys(js: NodeCompiler): NodeCompiler {
+	private compileCopiedDeclaredKeys(
+		js: NodeCompiler,
+		written?: Key
+	): NodeCompiler {
 		if (this.sequence || this.writesInto(js)) return js
-		return js.if("out !== data", () => {
+		const copyKeys = () => {
 			for (const prop of this.props) {
+				if (prop.key === written) continue
 				const missing = `!(${js.serialize(prop.key)} in out)`
 				js.if(
 					prop.required ? missing : (
@@ -1112,7 +1124,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 			return js
-		})
+		}
+		return written === undefined ? js.if("out !== data", copyKeys) : copyKeys()
 	}
 
 	// an array's copy has only the enumerable props of data

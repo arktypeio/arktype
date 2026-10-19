@@ -279,6 +279,19 @@ b must be A (was "y")`)
 		attest(inherited.toString).equals(5)
 	})
 
+	it("non-enumerable transformed key", () => {
+		const T = type({ e: "string", t: "string.trim" })
+		const hidden = { e: { value: "e" }, t: { value: " t" } }
+		// a Type's first call runs uncompiled, its second compiled
+		for (let i = 0; i < 2; i++) {
+			const out = T.assert(Object.defineProperties({}, hidden))
+			attest(Object.entries(out)).equals([
+				["t", "t"],
+				["e", "e"]
+			])
+		}
+	})
+
 	it("non-enumerable key with failing sibling", () => {
 		const T = type({
 			a: "string.trim",
