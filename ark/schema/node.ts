@@ -885,7 +885,16 @@ export abstract class BaseNode<
 				// if the value was previously explicitly set to an empty list,
 				// (e.g. branches for `never`), ensure it is not pruned
 				if (children.length === 0) return [k, v]
-				const transformed = children.flatMap(n => {
+				const transformed = (
+					children as array<BaseNode | Sequence.DefaultableElement>
+				).flatMap<BaseNode | Sequence.DefaultableElement>(n => {
+					// a defaultable element pairs its node with its default value
+					if (isArray(n)) {
+						const transformedElement = n[0]._transform(mapper, ctx)
+						return transformedElement ?
+								[[transformedElement as BaseRoot, n[1]]]
+							:	[]
+					}
 					const transformedChild = n._transform(mapper, ctx)
 					return transformedChild ?? []
 				})

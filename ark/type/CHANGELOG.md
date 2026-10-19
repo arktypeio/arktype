@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Apply deep operations through defaulted tuple elements
+
+`.onDeepUndeclaredKey()` and `.configure()` on references no longer throw on a tuple with a defaulted element, like `["string", "number = 0"]`.
+
 ### Write error messages in other languages
 
 Configure a locale to write error messages in another language. ArkType ships two: `en`, the default, and `de`.

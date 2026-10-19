@@ -112,6 +112,17 @@ contextualize(() => {
 			).equals({ a: "ok", nested: { a: "ok" } })
 		})
 
+		it("applies deeply through a defaultable element", () => {
+			const T = type([{ a: "string" }, "number = 0"]).onDeepUndeclaredKey(
+				"delete"
+			)
+
+			attest(T.expression).snap(
+				"[{ a: string, + (undeclared): delete }, number = 0]"
+			)
+			attest(T([getExtraneousB()])).equals([{ a: "ok" }, 0])
+		})
+
 		it("delete union key", () => {
 			const O = type([
 				{ a: "string" },
