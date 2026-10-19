@@ -33,7 +33,7 @@ export const parseInteger = (s: string, ctx: Traversal): number | ArkError => {
 	return Number.isSafeInteger(parsed) ? parsed : ctx.error(integerParseError)
 }
 
-export const parseNumeric = (s: string): number => Number.parseFloat(s)
+export const parseNumeric = (s: string): number => Number(s)
 
 export const capitalizeString = (s: string): string =>
 	s.charAt(0).toUpperCase() + s.slice(1)
