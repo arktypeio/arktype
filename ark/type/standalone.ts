@@ -32,7 +32,7 @@ import {
 import {
 	errorWritersByCode,
 	rootApplyRuntime,
-	writeRootApply,
+	rootApplyParts,
 	type FailureSite,
 	type RootApplyParam,
 	type SiteContext,
@@ -1356,9 +1356,12 @@ ${writeFunction(
 				unit,
 				read
 			)
+			const params = [...dependencyParams, ...writing.params]
+			// a minifier dissolves a call with no parameters into its caller
+			if (!params.length && !this.baking.shortest) params.push("...$")
 			const unitFunction = this.writeUnitFunction(
 				unit,
-				[...dependencyParams, ...writing.params],
+				params,
 				[...this.declarations.statements, ...refs],
 				links,
 				returned
@@ -1531,14 +1534,15 @@ return [${returned.join(", ")}]
 				unit,
 				read
 			)
+			// minifiers inline a call passing an array, not a rest parameter
 			const unitFunction = this.writeUnitFunction(
 				unit,
-				[...dependencyParams, "refs"],
+				[...dependencyParams, "...refs"],
 				declared.map((i, position) => `const r${i} = refs[${position}]`),
 				[],
 				returned
 			)
-			const args = [...dependencyArgs, `[${refs.join(", ")}]`]
+			const args = [...dependencyArgs, ...refs]
 			return `const traversals${i} = ${wrapUnitFunction(unitFunction, i)}(${args.join(", ")})`
 		})
 		// written before filtering, as a meta can read a later one
@@ -2019,16 +2023,14 @@ return [${returned.join(", ")}]
 			if (elements) {
 				const Ctx = refOf("Traversal")
 				return [
-					`(({ 1: apply, 2: allowsElement, 3: applyElement }, onFail) => {
-	const rejectedIn = data => {
-		for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
-	}
-	return ${this.compiledOnLoad(`(data, ...args) => {
-		if (!Array.isArray(data)) return runtime.applyCallErrors(apply, data, args, onFail, ${Ctx})
-		const i = rejectedIn(data)
-		return i === undefined ? data : runtime.applyElements(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
-	}`)}
-})`,
+					// a minifier inlines a const read once, but not a default
+					`(({ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
+	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
+}) => ${this.compiledOnLoad(`(data, ...args) => {
+	if (!Array.isArray(data)) return runtime.applyCallErrors(apply, data, args, onFail, ${Ctx})
+	const i = rejectedIn(data)
+	return i === undefined ? data : runtime.applyElements(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
+}`)})`,
 					`[${traversals}[0], ${traversals}[1], ${elements}[0], ${elements}[1]]`,
 					true
 				]
@@ -2062,7 +2064,7 @@ return [${returned.join(", ")}]
 				false
 			]
 		}
-		const body = writeRootApply(
+		const [reads, body] = rootApplyParts(
 			root,
 			this.headUnitOf(root).names[root.id],
 			refOf
@@ -2071,8 +2073,9 @@ return [${returned.join(", ")}]
 			/\bTransformErrors\b/.test(body) ?
 				`const TransformErrors = ${this.emit(rootApplyRuntime.TransformErrors)}\n\t\t`
 			:	""
+		// read as defaults, since minifiers inline a call that only takes node
 		return [
-			`(function (node) {
+			`(function (${["node", ...reads].join(", ")}) {
 		${captured}${body}
 	})(${shape})`,
 			`${shape}.allows`,

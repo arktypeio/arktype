@@ -36,12 +36,18 @@ export const rootApplyParams = [
 export type RootApplyParam = "config" | keyof RootApplyRuntime
 
 // name keys the root's resolution, so it must be what its unit names it
-export const writeRootApply = (
+export const writeRootApply = (node: BaseRoot, name: string): string => {
+	const [reads, rootApply] = rootApplyParts(node, name)
+	return `"use strict"\nconst ${reads.join(", ")}\n${rootApply}`
+}
+
+// the node members a root apply reads, as `member = node.member`, and its body
+export const rootApplyParts = (
 	node: BaseRoot,
 	name: string,
 	// names runtime values as the artifact's module does
 	refOf?: (param: RootApplyParam) => string
-): string => {
+): [reads: string[], body: string] => {
 	const ref = refOf ?? ((param: RootApplyParam) => param)
 	const js = new CompiledFunction("data", "onFail").indent()
 	const applyFailed = new CompiledFunction("data", "onFail").indent()
@@ -114,10 +120,8 @@ export const writeRootApply = (
 			`const applyFailed = function ${applyFailed.write(`${name}ApplyFailed`)}\n`
 		:	""
 	const rootApply = `${failurePath}return (function ${js.write(`${name}RootApply`)})`
-	const read = nodeMembers.filter(member =>
-		new RegExp(`\\b${member}\\b`).test(rootApply)
-	)
-	// an artifact's module is already strict
-	return `${refOf ? "" : `"use strict"\n`}const ${read.map(member => `${member} = node.${member}`).join(", ")}
-${rootApply}`
+	const reads = nodeMembers
+		.filter(member => new RegExp(`\\b${member}\\b`).test(rootApply))
+		.map(member => `${member} = node.${member}`)
+	return [reads, rootApply]
 }
