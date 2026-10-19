@@ -131,31 +131,24 @@ const compareSiblings = (l: BaseNode, r: BaseNode): number =>
 // a registered name's counter compares as a number, so names order as they
 // were registered however many came before
 const compareHashes = (l: string, r: string): number => {
-	let i = 0
-	while (i < l.length && l[i] === r[i]) i++
-	if (i === l.length && i === r.length) return 1
-	let start = i
-	while (isDigitAt(l, start - 1)) start--
-	if (
-		l[start - 1] === "$" &&
-		namePrefix.test(l.slice(l.lastIndexOf('"', start - 1) - 1, start))
-	) {
-		const lEnd = digitsEnd(l, i)
-		const rEnd = digitsEnd(r, i)
-		if (lEnd > start && rEnd > start && lEnd !== rEnd) return lEnd - rEnd
+	if (l.includes("$ark")) {
+		let i = 0
+		while (i < l.length && l[i] === r[i]) i++
+		const counted = countedName.exec(l.slice(0, i))
+		if (counted) {
+			const lDigits = counted[1].length + l.slice(i).search(nonDigit)
+			const rDigits = counted[1].length + r.slice(i).search(nonDigit)
+			if (lDigits && rDigits && lDigits !== rDigits) return lDigits - rDigits
+		}
 	}
-	return l[i] === undefined || l[i] < r[i] ? -1 : 1
+	return l < r ? -1 : 1
 }
 
-// a registered name up to its counter, like `"$ark.fn$`, its quote unescaped
-const namePrefix = /^[^\\]"\$ark\d*\.[\w$]*\$$/
+// a registered name and its counter's digits so far, like `"$ark.fn$1`, its
+// quote unescaped
+const countedName = /[^\\]"\$ark\d*\.[\w$]*\$(\d*)$/
 
-const isDigitAt = (s: string, i: number) => s[i] >= "0" && s[i] <= "9"
-
-const digitsEnd = (s: string, i: number) => {
-	while (isDigitAt(s, i)) i++
-	return i
-}
+const nonDigit = /\D|$/
 
 const compareKeys = (l: Key, r: Key): number =>
 	typeof l === "symbol" ?
