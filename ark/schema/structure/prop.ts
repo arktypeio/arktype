@@ -160,7 +160,7 @@ export abstract class BaseProp<
 				// a union by its branches
 				const condition =
 					isDecidedByAllows(this.value) &&
-					this.value.compileCondition?.(js, value, true)
+					this.value.compileCondition?.(js, value)
 				const fails =
 					this.value.isBasis() ?
 						`!${js.error(this, key)}`

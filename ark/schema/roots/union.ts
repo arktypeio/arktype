@@ -329,12 +329,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			:	this.discriminant
 	}
 
-	compileCondition(
-		js: NodeCompiler,
-		data: string,
-		byBranch?: boolean
-	): string | undefined {
-		if (this.isBoolean && !byBranch) return `typeof ${data} === "boolean"`
+	compileCondition(js: NodeCompiler, data: string): string | undefined {
 		if (this.branches.length > maxInlinedBranches) return
 		const conditions: string[] = []
 		for (const branch of this.branches) {

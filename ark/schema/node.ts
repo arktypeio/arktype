@@ -679,12 +679,8 @@ export abstract class BaseNode<
 
 	abstract expression: string
 	abstract compile(js: NodeCompiler): void
-	// one expression checking data, if any; byBranch asks a union per branch
-	compileCondition?(
-		js: NodeCompiler,
-		data: string,
-		byBranch?: boolean
-	): string | undefined
+	// one expression checking data, if any
+	compileCondition?(js: NodeCompiler, data: string): string | undefined
 	// one expression computing the traversal's result, if any
 	compileExpression?(js: NodeCompiler): string | undefined
 
