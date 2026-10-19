@@ -147,7 +147,7 @@ class NodeCache {
 	assert: ((data: any, pipedFromCtx?: Traversal) => unknown) | undefined
 	pipe: BaseRoot["pipe"] | undefined
 	description: string | undefined
-	// set by an alias resolving to it through a thunk, which references it without registering its id
+	// resolved by an alias's thunk, which doesn't register its id
 	isAliasResolution: boolean | undefined
 	// set while a Type defers compiling until it's used
 	allowsBeforeJit: BaseNode["allows"] | undefined
