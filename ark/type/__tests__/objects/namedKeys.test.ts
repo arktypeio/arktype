@@ -3,6 +3,8 @@ import { registeredReference, writeUnresolvableMessage } from "@ark/schema"
 import { scope, type, type Type } from "arktype"
 import type { Out } from "arktype/internal/attributes.ts"
 
+const loose = scope({}, { exactOptionalPropertyTypes: false })
+
 contextualize(() => {
 	it("empty", () => {
 		const O = type({})
@@ -170,8 +172,7 @@ contextualize(() => {
 		attest(T.json).equals(type({ a: "number", b: "boolean" }).json)
 	})
 
-	it("intersection with a scope allowing undefined optional values", () => {
-		const loose = scope({}, { exactOptionalPropertyTypes: false })
+	it("optional allowing undefined only on one side", () => {
 		const Loose = loose.type({ "a?": "string" })
 		const Exact = type({ "a?": "string" })
 		attest([Exact.extends(Loose), Loose.extends(Exact)]).equals([true, false])
@@ -183,16 +184,21 @@ contextualize(() => {
 			"{ a?: string | undefined }",
 			"{ a?: string | undefined }"
 		])
-		const Never = Loose.and(type({ "a?": "number" }))
-		attest(Never.expression).snap("{ a?: never }")
-		attest(Never.allows({ a: undefined })).equals(false)
+	})
+
+	it("disjoint optional allowing undefined", () => {
+		const T = loose.type({ "a?": "string" }).and(type({ "a?": "number" }))
+		attest(T.expression).snap("{ a?: never }")
+		attest(T.allows({ a: undefined })).equals(false)
+	})
+
+	it("optional allowing undefined and an index", () => {
 		const Indexed = loose
 			.type({ "+": "reject", "a?": "string" })
 			.and(type({ "[string]": "string" }))
 		attest(Indexed.expression).snap("{ a?: string, + (undeclared): reject }")
-		attest(Loose.and(type({ "[string]": "number" })).expression).snap(
-			"{ [string]: number, a?: never }"
-		)
+		const T = loose.type({ "a?": "string" }).and(type({ "[string]": "number" }))
+		attest(T.expression).snap("{ [string]: number, a?: never }")
 	})
 
 	it("escaped optional token", () => {
