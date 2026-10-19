@@ -139,14 +139,10 @@ export abstract class BaseProp<
 		js.return(true)
 	}
 
-	compileExpression(js: NodeCompiler): string | undefined {
-		const key = js.serialize(this.key)
-		const value = `data${js.prop(this.key)}`
-		// a value no branch of which allows undefined fails a missing key too
-		if (
+	// a value no branch of which allows undefined fails a missing key too
+	get failsMissing(): boolean {
+		return (
 			this.hasKind("required") &&
-			(js.traversalKind === "Allows" ||
-				(!this.value.transforms && !this.value.entersResolution)) &&
 			this.value.branches.every(branch => {
 				const basis = branch.hasKind("intersection") ? branch.basis : branch
 				return (
@@ -154,6 +150,16 @@ export abstract class BaseProp<
 					!(basis.hasKind("unit") && basis.unit === undefined)
 				)
 			})
+		)
+	}
+
+	compileExpression(js: NodeCompiler): string | undefined {
+		const key = js.serialize(this.key)
+		const value = js.read === this ? "first" : `data${js.prop(this.key)}`
+		if (
+			this.failsMissing &&
+			(js.traversalKind === "Allows" ||
+				(!this.value.transforms && !this.value.entersResolution))
 		) {
 			if (js.traversalKind === "Apply") {
 				// a value a condition decides is checked by it before it's applied,

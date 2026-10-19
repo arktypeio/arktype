@@ -353,6 +353,7 @@ A validator differs from the Type it replaces:
 - Nothing checks that a build runs on the version of `arktype/runtime` it was built with, so rebuild after upgrading.
 - Its errors' `issues` are plain objects holding `code`, `path`, `data` and `expected`, the failing node's description, with a plain message like `name must be a string` or `name is invalid` that doesn't say what the value was. Errors at one path stay apart, and a union no branch allows is one issue. A validator a morph calls with its `ctx` adds its issues to that validation. `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - When it rejects an array, it may look for errors only from the first element it rejects, so a getter or `Proxy` trap reading an element before that one runs once rather than twice, and an element that reads differently the second time is judged by its first read.
+- Where an object with a required key is expected, it checks the keys of `document.all` as an object's, so it can accept it, rather than rejecting it as the Type does.
 - The build refuses a configured locale or error writer for a code the Type can raise.
 - The `ctx.config` a narrow or morph receives holds only `jitless` and `onFail`.
 - A program's `configure()` call configures `arktype/runtime`, which fixes its configuration at the first validator it creates and throws if `configure()` comes later or differs from the build's.
@@ -395,6 +396,7 @@ An object definition's values are read as each key is parsed rather than all bef
 
 A getter or `Proxy` trap on the data can see these reads change:
 
+- `allows`, and the check a call runs before it looks for errors, read the first required key they check before checking that data is an object, so a getter for that key on a primitive's prototype, such as `String.prototype` or `Object.prototype`, runs before the primitive is rejected.
 - Checking that a `Date` is valid reads its `getTime` and calls it as a method when it's `Date.prototype.getTime`, so a getter or trap for `getTime` runs as it's checked.
 - `allows`, and the check a call runs before it looks for errors, read a key whose value holds an array or a regex after the other keys, though never past one whose value runs a narrow or a morph, so each runs for the same data as before and errors list keys in the same order.
 - A transform that copies an object asks whether it has its first required key first, so a `has` trap runs once more.

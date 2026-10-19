@@ -219,6 +219,16 @@ contextualize(() => {
 		}>(T.t)
 	})
 
+	it("rejects a primitive whose wrapper has its keys", () => {
+		const T = type({ length: "number" })
+		const Strict = type({ "+": "reject", length: "number" })
+		// the first data is checked uncompiled
+		attest(T.allows({ length: 0 })).equals(true)
+		attest(Strict.allows({ length: 0 })).equals(true)
+		attest(T.allows("abc")).equals(false)
+		attest(Strict.allows("abc")).equals(false)
+	})
+
 	describe("missing", () => {
 		const requiredError = (T: type.Any, data: object = {}) => {
 			const error = (T(data) as type.errors).issues[0]

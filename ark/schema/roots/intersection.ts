@@ -270,8 +270,20 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 	compile(js: NodeCompiler): void {
 		// a loop keeps a minifier from joining its checks into one expression
 		if (js.traversalKind === "Allows") {
+			const read =
+				this.inner.domain?.domain === "object" && !this.prestructurals.length ?
+					this.structure?.leadingRead
+				:	undefined
 			js.block("for (;;)", () => {
-				for (const child of this.children) js.check(child, { breaks: true })
+				for (const child of this.children) {
+					if (child !== this.basis || !read) js.check(child, { breaks: true })
+					else {
+						js.rejectNullish()
+						if (!this.structure!.allowsChecksObject)
+							js.readFirst(read, () => js.line("break"))
+					}
+				}
+				js.read = undefined
 				return js.return(true)
 			}).return(false)
 			return
