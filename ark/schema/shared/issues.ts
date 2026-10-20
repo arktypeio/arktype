@@ -17,10 +17,12 @@ export interface ArkIssue {
 
 type WrittenIssue = ArkIssue & { message: string }
 
-/** what a site reports: its code and description */
+/** what a site reports: its code, description and any text configured */
 export interface SiteContext {
 	code: ArkErrorCode
 	description?: string | undefined
+	message?: string | undefined
+	problem?: string | undefined
 }
 
 /** a check's site: its node's context, or a key's value and missing ones */
@@ -208,7 +210,8 @@ export const issueAt = (
 		path: issuePath,
 		data,
 		expected: context.description,
-		message: undefined
+		problem: context.problem,
+		message: context.message
 	}
 	if (key !== undefined) path.pop()
 	return issue
@@ -222,18 +225,6 @@ export const issueWith = (
 	path: input.relativePath ? path.concat(input.relativePath) : path.slice(),
 	data: input.data,
 	expected: input.description
-})
-
-// reports the union's description, not each branch
-export const unionIssue = (
-	path: PropertyKey[],
-	site: UnionSite,
-	data: unknown
-): ArkIssue => ({
-	code: "union",
-	path: path.slice(),
-	data,
-	expected: site.description
 })
 
 export const failsIn = (

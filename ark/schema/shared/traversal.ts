@@ -23,7 +23,6 @@ import {
 	issueAt,
 	issueWith,
 	mergeIssues,
-	unionIssue,
 	type ArkIssue,
 	type CompactApply,
 	type FailureContext,
@@ -206,7 +205,8 @@ export class InternalTraversal implements FailureContext {
 		site: UnionSite,
 		data: unknown
 	): boolean {
-		this.addError(unionIssue(this.path, site, data))
+		// a standalone union's site is a context like any other
+		this.addError(issueAt(this.path, site as FailureSite, data, undefined))
 		return this.failFast
 	}
 
@@ -313,10 +313,10 @@ export class Traversal extends InternalTraversal {
 			],
 			data: "data" in supplied ? supplied.data : this.data,
 			// a keyword raises its errors with the description of what it checks
-			expected: supplied.expected ?? supplied.description
+			expected: supplied.expected ?? supplied.description,
+			problem: supplied.problem,
+			message: supplied.message
 		}
-		if (supplied.problem !== undefined) issue.problem = supplied.problem
-		if (supplied.message !== undefined) issue.message = supplied.message
 		return this.addError(issue) as never
 	}
 }

@@ -357,7 +357,7 @@ A validator differs from the Type it replaces:
 - Nothing checks that a build runs on the version of `arktype/runtime` it was built with, so rebuild after upgrading.
 - Its errors' `issues` are plain objects holding `code`, `path`, `data` and `expected`, the failing node's description, with a plain message like `name must be a string` or `name is invalid` that doesn't say what the value was. Errors at one path stay apart, and a union no branch allows is one issue. A validator a morph calls with its `ctx` adds its issues to that validation. `arktype/runtime` doesn't export `byPath`, `flatByPath`, `flatProblemsByPath`, `byAncestorPath` or `messageIn`, and the errors have no `toLocaleString`.
 - When it rejects an array, it may look for errors only from the first element it rejects, so a getter or `Proxy` trap reading an element before that one runs once rather than twice, and an element that reads differently the second time is judged by its first read.
-- The build refuses a configured locale or error writer for a code the Type can raise.
+- A `message`, `problem`, `expected` or `actual` configured as a string, on a Type or for a code with `configure()`, is written as arktype writes it. The build refuses a configured locale, a function writing that text, and text a scope configures for a code the Type can raise.
 - The `ctx.config` a narrow or morph receives holds only `jitless` and `onFail`.
 - A program's `configure()` call configures `arktype/runtime`, which fixes its configuration at the first validator it creates and throws if `configure()` comes later or differs from the build's.
 

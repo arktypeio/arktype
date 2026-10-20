@@ -1,11 +1,16 @@
 import { fromHere } from "@ark/fs"
 import {
+	ArkErrors,
 	hasArkKind,
 	schemaScope,
+	suppliedText,
+	type ArkError,
 	ToJsonSchema,
 	type BaseRoot,
 	type BaseScope
 } from "@ark/schema"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { messageOf, problemOf, type ArkIssue } from "@ark/schema/runtime"
 import { hasDomain, ParseError } from "@ark/util"
 import {
 	holeNameMarker,
@@ -28,6 +33,8 @@ import {
 import { DynamicValue } from "@ark/precompile/internal/dynamic.ts"
 import {
 	keptIssuesOf,
+	pathKeyOf,
+	thrownErrorsOf,
 	thrownIssuesOf,
 	type KeptIssue
 } from "@ark/precompile/internal/issues.ts"
@@ -410,16 +417,78 @@ const isEqual = (l: unknown, r: unknown, read = false): boolean => {
 	}
 }
 
+// a copied error, e.g. a union branch's, has no source to read
+const suppliedTextOf = (error: ArkError, k: "message" | "problem") => {
+	try {
+		return suppliedText(error, k)
+	} catch {
+		return undefined
+	}
+}
+
+// text a meta or a callback supplies, which a validator writes as arktype does
+const textsOf = (errors: ArkErrors, grouped = true) => {
+	const isArktype = errors instanceof ArkErrors
+	// reading issues writes every error's text
+	const written: readonly ArkIssue[] = errors.issues
+	const added = grouped ? written : errors._
+	return added
+		.flatMap((issue): readonly ArkIssue[] =>
+			issue.code === "intersection" ?
+				(issue as ArkError<"intersection">).errors
+			:	[issue]
+		)
+		.flatMap(issue => {
+			const text: { at: string; message?: string; problem?: string } = {
+				at: `${pathKeyOf(issue.path)}\0${issue.code}`
+			}
+			if (isArktype) {
+				const error = issue as ArkError
+				const meta: Record<string, unknown> = error.meta ?? {}
+				// a validator's issue merged into arktype's errors keeps its problem
+				const isMerged =
+					meta.problem ===
+					problemOf({ ...error, expected: meta.expected as never })
+				const isSupplied = (k: "message" | "problem") =>
+					(typeof meta[k] === "string" && !(k === "problem" && isMerged)) ||
+					suppliedTextOf(error, k) !== undefined
+				if (
+					isSupplied("problem") ||
+					(!isSupplied("message") &&
+						meta.problem === undefined &&
+						typeof meta.actual === "string" &&
+						meta.actual !== "")
+				)
+					text.problem = error.problem
+				if (isSupplied("message")) text.message = error.message
+			} else {
+				if (issue.problem !== undefined) text.problem = issue.problem
+				if (issue.message !== messageOf({ ...issue, message: undefined }))
+					text.message = issue.message
+			}
+			return Object.keys(text).length > 1 ? [text] : []
+		})
+		.sort((l, r) => (l.at < r.at ? -1 : 1))
+}
+
 const observe = (run: () => unknown, input: unknown): unknown => {
 	try {
 		const result: any = run()
 		return hasArkKind(result, "errors") ?
-				{ issues: keptIssuesOf(result, !firstIssue) }
+				{
+					issues: keptIssuesOf(result, !firstIssue),
+					...(detailsErrors && { texts: textsOf(result, !firstIssue) })
+				}
 			:	{ out: result, isInput: result === input }
 	} catch (e) {
 		const issues = thrownIssuesOf(e, !firstIssue)
+		const errors = thrownErrorsOf(e)
 		return issues ?
-				{ threw: "TraversalError", issues }
+				{
+					threw: "TraversalError",
+					issues,
+					...(detailsErrors && { texts: textsOf(errors!, !firstIssue) })
+				}
 			:	{
 					threw: String(e),
 					context: (e as { context?: unknown } | undefined)?.context

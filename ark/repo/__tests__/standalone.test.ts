@@ -418,6 +418,7 @@ contextualize(() => {
 				path: ["a"],
 				data: { b: { c: 0 } },
 				expected: undefined,
+				problem: undefined,
 				message: "a is missing"
 			},
 			{
@@ -425,6 +426,7 @@ contextualize(() => {
 				path: ["b", "c"],
 				data: 0,
 				expected: "positive",
+				problem: undefined,
 				message: "b.c must be positive"
 			}
 		])
@@ -1381,11 +1383,8 @@ name is missing`)
 			params: [{ kind: "function", label: "`write`", value: write }]
 		}
 		attest(() => precompileStandalone({ T })).throws(
-			writeUnprecompilableMessage("`number`'s configured message")
+			writeUnprecompilableMessage("`number`'s configured message writer")
 		)
-		attest(() =>
-			precompileStandalone({ T: type("number").configure({ problem: "p" }) })
-		).throws(writeUnprecompilableMessage("`number`'s configured problem"))
 		const expect = standIn(() => "even", "expect")
 		attest(() =>
 			precompileStandalone({
@@ -1394,11 +1393,83 @@ name is missing`)
 					params: [{ kind: "function", label: "`expect`", value: expect }]
 				}
 			})
-		).throws(writeUnprecompilableMessage("`number`'s configured expected"))
+		).throws(
+			writeUnprecompilableMessage("`number`'s configured expected writer")
+		)
 		const { Even } = await load({
 			Even: type("number").configure({ expected: "an even number" })
 		})
 		attest(Even("x").summary).snap("must be an even number")
+	})
+
+	it("configured message", async () => {
+		const Login = type({
+			email: type("string.email").configure({ message: "Enter your email." }),
+			password: "string >= 8"
+		}).configure({ message: "Enter your login." })
+		const { Login: validator } = await load({ Login })
+		attest(validator({ email: "x", password: "" }).summary)
+			.snap(`Enter your email.
+password must be at least length 8`)
+		attest(validator(null).summary).snap("Enter your login.")
+	})
+
+	it("configured problem", async () => {
+		const { T } = await load({
+			T: type({ a: type("string").configure({ problem: "is no string" }) })
+		})
+		attest(T({ a: 1 }).issues[0]).snap({
+			code: "domain",
+			path: ["a"],
+			data: 1,
+			expected: "a string",
+			problem: "is no string",
+			message: "a is no string"
+		})
+	})
+
+	it("configured actual", async () => {
+		const { T } = await load({
+			T: type({ a: type("string").configure({ actual: "not text" }) })
+		})
+		attest(T({ a: 1 }).summary).snap("a must be a string (was not text)")
+	})
+
+	it("configured message at a missing key", async () => {
+		const { T } = await load({
+			T: type({ a: "string" }).configure({ message: "a is required" }, "required")
+		})
+		attest([T({}).summary, T({ a: 1 }).summary]).snap([
+			"a is required",
+			"a must be a string"
+		])
+	})
+
+	it("configured union message", async () => {
+		const { Indiscriminable, Discriminated, Keyed } = await load({
+			Indiscriminable: type({ a: "string" })
+				.or({ b: "number" })
+				.configure({ message: "neither" }),
+			Discriminated: type({ k: "'a'" })
+				.or({ k: "'b'" })
+				.configure({ message: "unknown kind" }),
+			Keyed: type({ a: type("string | number").configure({ message: "no a" }) })
+		})
+		attest([
+			Indiscriminable({}).summary,
+			Discriminated({ k: "c" }).summary,
+			Keyed({ a: true }).summary
+		]).snap(["neither", "unknown kind", "no a"])
+	})
+
+	it("configured undeclared message", async () => {
+		const { T } = await load({
+			T: type({ "+": "reject", a: "string" }).configure(
+				{ message: "no extra keys" },
+				"structure"
+			)
+		})
+		attest(T({ a: "", b: 1 }).summary).snap("no extra keys")
 	})
 
 	it("callback error text", async () => {
@@ -1425,13 +1496,13 @@ name is missing`)
 			{ domain: { message: "configured" } }
 		)
 		attest(() => precompileStandalone({ T: $.export().T })).throws(
-			writeUnprecompilableMessage("a configured domain message")
+			writeUnprecompilableMessage("a scope's configured domain message")
 		)
 		attest(() =>
 			precompileStandalone({
 				S: scope({}, { unit: { expected: "an a" } }).type("'a'")
 			})
-		).throws(writeUnprecompilableMessage("a configured unit expected"))
+		).throws(writeUnprecompilableMessage("a scope's configured unit expected"))
 	})
 
 	it("program configuration", async () => {
@@ -2076,7 +2147,7 @@ config.onUndeclaredKey = "reject"`
 			"string"
 		)
 		attest(() => precompileStandalone({ T })).throws(
-			writeUnprecompilableMessage("a configured domain message")
+			writeUnprecompilableMessage("a scope's configured domain message")
 		)
 		const cyclic: Record<string, unknown> = {}
 		cyclic.self = cyclic
@@ -2146,7 +2217,7 @@ config.onUndeclaredKey = "reject"`
 			a: "boolean"
 		})
 		attest(() => precompileStandalone({ T })).throws(
-			writeUnprecompilableMessage("a configured union message")
+			writeUnprecompilableMessage("a scope's configured union message")
 		)
 	})
 

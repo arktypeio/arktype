@@ -54,6 +54,7 @@ contextualize(() => {
 				path: ["name"],
 				data: {},
 				expected: undefined,
+				problem: undefined,
 				message: "name is missing"
 			}
 		])
@@ -66,6 +67,7 @@ contextualize(() => {
 				path: ["name"],
 				data: 1,
 				expected: "a string",
+				problem: undefined,
 				message: "name must be a string"
 			}
 		])
@@ -120,6 +122,7 @@ contextualize(() => {
 				path: ["item", "kind"],
 				data: "c",
 				expected: '"a" or "b"',
+				problem: undefined,
 				message: 'item.kind must be "a" or "b"'
 			}
 		])

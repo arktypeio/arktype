@@ -32,6 +32,7 @@ import {
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
+	errorWriters,
 	errorWritersByCode,
 	rootApplyRuntime,
 	rootApplyParts,
@@ -75,8 +76,8 @@ import type { HoleKind, IntrospectionMember } from "./runtime.ts"
 import * as runtime from "./runtimeExports.ts"
 import type { Scope } from "./scope.ts"
 
-// issue text a standalone validator bakes only from description
-const describingKeys = ["expected", "problem", "message"] as const
+// the text a site's issue carries in place of what the runtime writes
+const describingKeys = ["expected", "actual", "problem", "message"] as const
 
 type DeclarationRole =
 	| "shape"
@@ -3084,7 +3085,10 @@ ${writeFunction(
 			return writeSiteOf(site as SiteContext, s => this.emitString(s))
 		if ("fails" in site)
 			return `runtime.failing(${this.emitSite(site.fails as object)})`
-		if ((site as FailureSite).missing === requiredIssue) {
+		if (
+			(site as FailureSite).missing === requiredIssue &&
+			isDescribed((site as FailureSite).value!)
+		) {
 			return writeSiteOf(
 				(site as FailureSite).value!,
 				s => this.emitString(s),
@@ -3194,7 +3198,8 @@ ${writeFunction(
 	}
 }
 
-// issues are written from node descriptions, so refuse other text
+// a site's text is written from the program's config, so a scope's own
+// isn't, nor is text a callback raises through the runtime
 const assertDescribed = (root: BaseRoot): void => {
 	const config = root.$.resolvedConfig
 	const raisable = raisableCodesOf(root)
@@ -3202,23 +3207,24 @@ const assertDescribed = (root: BaseRoot): void => {
 	for (code in errorWritersByCode) {
 		if (raisable !== "any" && !raisable.has(code)) continue
 		for (const k of describingKeys) {
-			if (config[code][k] !== $ark.defaultConfig[code][k]) {
-				throwParseError(
-					writeUnprecompilableMessage(`a configured ${code} ${k}`)
-				)
-			}
+			const writer = config[code][k]
+			if (writer === $ark.defaultConfig[code][k]) continue
+			const reason =
+				writer !== $ark.resolvedConfig![code][k] ?
+					`a scope's configured ${code} ${k}`
+				: raisable === "any" ? `a configured ${code} ${k} that a narrow or morph can raise`
+				: typeof writer === "function" && k !== "actual" ? `a configured ${code} ${k} writer`
+				: undefined
+			if (reason) throwParseError(writeUnprecompilableMessage(reason))
 		}
 	}
 	for (const unit of rootUnitsOf(root)) {
 		for (const node of writtenNodesOf(unit)) {
 			for (const k of describingKeys) {
-				const writer = node.meta[k]
-				if (
-					k === "expected" ? typeof writer === "function" : writer !== undefined
-				) {
+				if (k !== "actual" && typeof node.meta[k] === "function") {
 					throwParseError(
 						writeUnprecompilableMessage(
-							`\`${node.expression}\`'s configured ${k}`
+							`\`${node.expression}\`'s configured ${k} writer`
 						)
 					)
 				}
@@ -3476,11 +3482,17 @@ const undeclaredSite = issueSite({ code: "undeclared" })
 // a site of a code and description naming nothing the validator receives
 const isInlineSite = (site: object): site is SiteContext =>
 	"code" in site &&
-	!(site as SiteContext).description?.match(printedHoleNamePattern)
+	![
+		(site as SiteContext).description,
+		(site as SiteContext).message,
+		(site as SiteContext).problem
+	].some(text => text?.match(printedHoleNamePattern))
 
 const siteWords = new Set([
 	"runtime",
+	"void",
 	"siteOf",
+	"textSiteOf",
 	"keySiteOf",
 	"failing",
 	"value",
@@ -3497,11 +3509,14 @@ const isLiteralSite = (value: unknown, emitted: string): boolean =>
 	).every(word => siteWords.has(word))
 
 const writeSiteOf = (
-	{ code, description }: SiteContext,
+	{ code, description, message, problem }: SiteContext,
 	emit: (s: string) => string,
 	writer = "siteOf"
-): string =>
-	`runtime.${writer}(${emit(code)}${description === undefined ? "" : `, ${emit(description)}`})`
+): string => {
+	const args = [code, description, message, problem]
+	while (args[args.length - 1] === undefined) args.pop()
+	return `runtime.${args.length > 2 ? "textSiteOf" : writer}(${args.map(arg => (arg === undefined ? "void 0" : emit(arg))).join(", ")})`
+}
 
 const issueSitesByContext = new WeakMap<
 	object,
@@ -3510,29 +3525,75 @@ const issueSitesByContext = new WeakMap<
 
 const requiredIssue = { code: "required" } as const
 
-// issues hold only code and description, so equal sites share
+interface TextContext {
+	code: ArkErrorCode
+	description?: string | undefined
+	meta?: ArkEnv.meta | undefined
+}
+
+// the text arktype writes from meta, then the program's config for the code
+const issueContextOf = (context: TextContext): SiteContext => {
+	const { code } = context
+	const writers: Record<string, unknown> = $ark.resolvedConfig![code]
+	const defaults: Record<string, unknown> = $ark.defaultConfig[code]
+	const meta: Record<string, unknown> = context.meta ?? {}
+	const text: Partial<Record<(typeof describingKeys)[number], string>> = {}
+	for (const k of describingKeys) {
+		const writer = meta[k] ?? writers[k]
+		// assertDescribed refuses other writers
+		if (writer !== defaults[k] && typeof writer === "string") text[k] = writer
+	}
+	const issueContext: SiteContext = {
+		code,
+		description: text.expected ?? context.description
+	}
+	if (text.message !== undefined) issueContext.message = text.message
+	if (text.problem !== undefined) issueContext.problem = text.problem
+	else if (
+		text.actual &&
+		text.message === undefined &&
+		writers.problem === errorWriters.problem &&
+		meta.problem === undefined
+	) {
+		issueContext.problem = errorWriters.problem(
+			{ expected: issueContext.description, actual: text.actual } as never,
+			$ark.resolvedConfig!.locale
+		)
+	}
+	return issueContext
+}
+
+const isDescribed = (context: SiteContext): boolean =>
+	context.message === undefined && context.problem === undefined
+
+// issues hold only code and text, so equal sites share
 const issueSiteOf = (site: FailureSite | UnionSite): object => {
 	const { value, missing } = site as {
-		value?: BaseErrorContext
-		missing?: BaseErrorContext
+		value?: TextContext
+		missing?: TextContext
 	}
-	const context = value ?? (missing ? requiredIssue : site)
+	const missingContext = missing && issueContextOf(missing)
+	// a key's own text makes its site its own
+	const context =
+		missingContext && !isDescribed(missingContext) ? missing
+		: (value ?? site)
 	const variants = issueSitesByContext.get(context) ?? {}
 	issueSitesByContext.set(context, variants)
 	const variant = missing ? "required" : "alone"
 	if (variants[variant]) return variants[variant]
-	const issueContext = value && {
-		code: value.code,
-		description: expectedOf(value.meta, value.description)
-	}
+	const valueContext =
+		value ? issueContextOf(value)
+		: missing ? undefined
+		: issueContextOf({ ...(site as UnionSite), code: "union" })
 	return (variants[variant] = issueSite(
-		missing ?
-			issueContext ? { value: issueContext, missing: requiredIssue }
-			:	runtime.requiredSite
-		:	(issueContext ?? {
-				code: "union",
-				description: (site as UnionSite).description
-			})
+		!missingContext ? valueContext!
+		: valueContext ?
+			{
+				value: valueContext,
+				missing: isDescribed(missingContext) ? requiredIssue : missingContext
+			}
+		: isDescribed(missingContext) ? runtime.requiredSite
+		: { missing: missingContext }
 	))
 }
 
@@ -3658,19 +3719,19 @@ class StandaloneCompiler extends TraversalCompiler {
 		path?: PropertyKey[]
 	): string {
 		if (!path) return `!${this.error(node)}`
-		const context: SiteContext = {
+		const context = issueContextOf({
 			code: "discriminant",
-			description: expectedOf(
-				node.discriminantMeta,
-				node.discriminantDescription
-			)
-		}
+			description: node.discriminantDescription,
+			meta: node.discriminantMeta
+		})
 		const site = issueSite(path.length ? { value: context, path } : context)
 		return `!ctx.failsAt(${this.siteRef(site)}, ${value})`
 	}
 
-	override undeclaredFails(): string {
-		return `ctx.failsAt(${this.siteRef(undeclaredSite)}, data, k)`
+	override undeclaredFails(node: StructureNode): string {
+		const context = issueContextOf({ code: "undeclared", meta: node.meta })
+		const site = isDescribed(context) ? undeclaredSite : issueSite(context)
+		return `ctx.failsAt(${this.siteRef(site)}, data, k)`
 	}
 
 	// a rejected union value reports the union's issue, not its Apply

@@ -418,6 +418,14 @@ export const siteOf = ((
 	description?: string
 ): SiteContext => ({ code, description })) satisfies Fn
 
+// a site whose text is configured
+export const textSiteOf = ((
+	code: ArkErrorCode,
+	description: string | undefined,
+	message: string | undefined,
+	problem?: string
+): SiteContext => ({ code, description, message, problem })) satisfies Fn
+
 // the Apply of a union whose key's condition rejected its value
 export const failing = ((site: FailureSite): CompactApply =>
 	(data, ctx) =>

@@ -102,7 +102,7 @@ const issueOf = (path: PropertyKey[]): ArkIssue => ({
 	expected: undefined
 })
 
-export { issueOf as issueAt, issueOf as issueWith, issueOf as unionIssue }
+export { issueOf as issueAt, issueOf as issueWith }
 
 export const failsIn = (
 	ctx: FailureContext,

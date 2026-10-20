@@ -1350,7 +1350,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			const reject = () =>
 				js.traversalKind === "Allows" ?
 					js.return(false)
-				:	js.if(js.undeclaredFails?.() ?? js.error(this, "k"), () =>
+				:	js.if(js.undeclaredFails?.(this) ?? js.error(this, "k"), () =>
 						js.return(false)
 					)
 			const declaresKey = this._compileDeclaresKey(js)
