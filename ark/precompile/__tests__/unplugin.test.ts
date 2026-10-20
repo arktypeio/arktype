@@ -51,6 +51,7 @@ import { writeCreationMismatchMessage } from "arktype/runtime"
 import {
 	packageFiles,
 	runPlain,
+	tempDir,
 	undetailedOutput,
 	writeFixture,
 	writeLibrary,
@@ -537,6 +538,28 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 			build: { write: false, ssr: "main.ts" }
 		})) as Rolldown.RolldownOutput
 		attest(run(output[0].code)).equals(expected)
+	})
+
+	it("vite merges units by what its last build read", async () => {
+		const cacheDir = tempDir()
+		const build = async () => {
+			const [{ output }] = (await viteBuild({
+				...viteConfig({}),
+				cacheDir,
+				build: {
+					write: false,
+					minify: true,
+					lib: { entry: "main.ts", formats: ["es"] }
+				}
+			})) as Rolldown.RolldownOutput[]
+			return output[0]
+		}
+		const unitModulesOf = ({ moduleIds }: Rolldown.OutputChunk) =>
+			moduleIds.filter(id => id.startsWith("\0~arktype/")).length
+		const first = await build()
+		const second = await build()
+		attest([unitModulesOf(first), unitModulesOf(second)]).snap([31, 27])
+		attest(run(second.code)).equals(expected)
 	})
 
 	it("vite emits declarations", async () => {

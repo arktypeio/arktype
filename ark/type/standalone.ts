@@ -216,6 +216,22 @@ interface SharedModule {
 	imports: Record<string, string[]>
 	declarations: string[]
 	exports: string[]
+	scope?: UnitScope | undefined
+}
+
+// a unit's function, which units reading it alone can share
+interface UnitScope {
+	name: string
+	// each array of traversals it reads, by the names read at its indices
+	dependencies: Record<string, string[]>
+	params: string[]
+	args: string[]
+	statements: string[]
+	returned: string[]
+	// each root's node, written from the scope's names
+	nodes: Record<string, string>
+	// else its names could clash with another's
+	declaresOnlyRefs: boolean
 }
 
 export interface StandaloneOptions {
@@ -234,6 +250,8 @@ export interface StandaloneOptions {
 	hoisted?: boolean | undefined
 	// export as values what a site would call a function only to read
 	values?: boolean | undefined
+	// each unit module's readers across the program, which may be stale
+	readers?: UnitReaders | undefined
 }
 
 interface Baking {
@@ -331,7 +349,12 @@ export interface StandaloneModules {
 	checking: string[]
 	// exports a site reads rather than calls
 	values: string[]
+	// the readers of each unit module that could join another's scope
+	reads: UnitReaders
 }
+
+// "" reads for the artifact's own code
+export type UnitReaders = Record<string, readonly string[]>
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
 
@@ -347,11 +370,13 @@ export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, folds, checking, values } = writeArtifact(
+	const { sections, shared, imports, folds, checking, values } = writeArtifact(
 		exports,
 		opts,
 		false
 	)
+	// nothing outside the artifact reads its units
+	mergeUnits(shared, imports, readersIn(shared, imports), opts)
 	return {
 		code: writeSections([
 			`${runtimeImport}\n${versionImport}`,
@@ -361,7 +386,8 @@ export const precompileStandalone = (
 		modules: {},
 		folds,
 		checking,
-		values
+		values,
+		reads: {}
 	}
 }
 
@@ -374,26 +400,218 @@ export const precompileStandaloneModules = (
 		opts,
 		true
 	)
+	const reads: Record<string, string[]> = {}
+	const readers = readersIn(shared, imports)
+	for (const specifier in readers) {
+		if (shared[specifier]?.scope?.declaresOnlyRefs)
+			reads[specifier] = readers[specifier]
+	}
+	const names = namesOfChanged(
+		shared,
+		opts.readers ? mergeUnits(shared, imports, opts.readers, opts) : []
+	)
 	const modules: Record<string, string> = {}
 	for (const specifier in shared) {
-		const { readsRuntime, imports, declarations, exports } = shared[specifier]
-		modules[specifier] = writeSections([
-			[readsRuntime ? runtimeImport : "", writeImports(imports)]
-				.filter(statement => statement)
-				.join("\n"),
-			...declarations,
-			`export { ${exports.join(", ")} }`
-		])
+		modules[names[specifier] ?? specifier] = writeModule(
+			shared[specifier],
+			names
+		)
 	}
 	return {
 		code: writeSections([
-			`${runtimeImport}\n${versionImport}\n${writeImports(imports)}`,
+			`${runtimeImport}\n${versionImport}\n${writeImports(imports, names)}`,
 			...sections
 		]),
 		modules,
 		folds,
 		checking,
-		values
+		values,
+		reads
+	}
+}
+
+const readersIn = (
+	shared: Record<string, SharedModule>,
+	imports: Record<string, string[]>
+): Record<string, string[]> => {
+	const readers: Record<string, string[]> = {}
+	for (const specifier in imports) (readers[specifier] ??= []).push("")
+	for (const reader in shared) {
+		for (const specifier in shared[reader].imports)
+			(readers[specifier] ??= []).push(reader)
+	}
+	return readers
+}
+
+// a unit all of whose readers share one scope is written into it
+const mergeUnits = (
+	shared: Record<string, SharedModule>,
+	imports: Record<string, string[]>,
+	readers: UnitReaders,
+	opts: StandaloneOptions
+): string[] => {
+	const read = readersIn(shared, imports)
+	const roots: Record<string, string> = {}
+	const rootOf = (specifier: string): string => {
+		if (specifier in roots) return roots[specifier]
+		roots[specifier] = specifier
+		if (
+			!shared[specifier].scope?.declaresOnlyRefs ||
+			!read[specifier] ||
+			!readers[specifier]
+		)
+			return specifier
+		let root: string | undefined
+		// a reader this artifact lacks keeps the unit a module of its own
+		for (const reader of [...read[specifier], ...readers[specifier]]) {
+			const readerRoot = shared[reader]?.scope && rootOf(reader)
+			if (!readerRoot || (root && root !== readerRoot)) return specifier
+			root = readerRoot
+		}
+		return (roots[specifier] = root!)
+	}
+	const groups: Record<string, Set<string>> = {}
+	for (const specifier in read) {
+		if (!shared[specifier]) continue
+		const root = rootOf(specifier)
+		if (root !== specifier) (groups[root] ??= new Set([root])).add(specifier)
+	}
+	const merged: string[] = []
+	for (const root in groups) {
+		const written = writeMerged(shared, root, groups[root], opts)
+		if (!written) continue
+		const { scope, ...module } = shared[root]
+		shared[root] = {
+			...module,
+			imports: written.imports,
+			declarations: [written.declaration, ...module.declarations.slice(1)]
+		}
+		for (const specifier of groups[root])
+			if (specifier !== root) delete shared[specifier]
+		merged.push(root)
+	}
+	return merged
+}
+
+// a module merged or reading one is named for its text, so a name has one text
+const namesOfChanged = (
+	shared: Record<string, SharedModule>,
+	merged: string[]
+): Record<string, string> => {
+	const names: Record<string, string> = {}
+	const moduleNameOf = (specifier: string): string => {
+		if (!shared[specifier] || specifier in names)
+			return names[specifier] ?? specifier
+		names[specifier] = specifier
+		const reads = Object.keys(shared[specifier].imports)
+		const isChanged =
+			merged.includes(specifier) ||
+			reads.some(read => moduleNameOf(read) !== read)
+		if (isChanged) {
+			names[specifier] =
+				`~arktype/${hashOf(writeModule(shared[specifier], names))}`
+		}
+		return names[specifier]
+	}
+	for (const specifier in shared) moduleNameOf(specifier)
+	return names
+}
+
+const writeModule = (
+	{ readsRuntime, imports, declarations, exports }: SharedModule,
+	names: Record<string, string>
+) =>
+	writeSections([
+		[readsRuntime ? runtimeImport : "", writeImports(imports, names)]
+			.filter(statement => statement)
+			.join("\n"),
+		...declarations,
+		`export { ${exports.join(", ")} }`
+	])
+
+const writeMerged = (
+	shared: Record<string, SharedModule>,
+	root: string,
+	group: ReadonlySet<string>,
+	opts: StandaloneOptions
+): { declaration: string; imports: Record<string, string[]> } | undefined => {
+	// read units first, as a forwarded traversal is read as it's declared
+	const ordered: string[] = []
+	const visit = (specifier: string) => {
+		if (!group.has(specifier) || ordered.includes(specifier)) return
+		for (const read in shared[specifier].imports) visit(read)
+		ordered.push(specifier)
+	}
+	visit(root)
+	const scopes = ordered.map(specifier => shared[specifier].scope!)
+	const names = new Set(scopes.map(scope => scope.name))
+	const dependencies: Record<string, string[]> = {}
+	const args = new Map<string, string>()
+	const nodesRead = new Set<string>()
+	for (const scope of scopes) {
+		for (const source in scope.dependencies) {
+			if (names.has(source)) continue
+			const read = (dependencies[source] ??= [])
+			for (const [i, name] of Object.entries(scope.dependencies[source]))
+				read[+i] = name
+		}
+		for (const [i, param] of scope.params.entries()) {
+			const arg = scope.args[i]
+			if (arg === `${param}Node` && scopes.some(({ nodes }) => param in nodes))
+				nodesRead.add(param)
+			else if ((args.get(param) ?? arg) !== arg) return
+			else args.set(param, arg)
+		}
+	}
+	const statements: string[] = []
+	const declared = new Set<string>()
+	for (const scope of scopes) {
+		for (const statement of scope.statements) {
+			const name = /^const ([\w$]+) =/.exec(statement)?.[1]
+			// a node two units reach is declared by each
+			if (name !== undefined && declared.has(name)) continue
+			if (name !== undefined) declared.add(name)
+			statements.push(statement)
+		}
+		for (const name in scope.nodes) {
+			if (nodesRead.has(name))
+				statements.push(`const ${name} = ${scope.nodes[name]}`)
+		}
+	}
+	const rootScope = shared[root].scope!
+	// a merged unit's exports are gone, though a node it shares is declared
+	const removed = scopes
+		.flatMap(scope =>
+			scope === rootScope ?
+				[]
+			:	[scope.name, ...Object.keys(scope.nodes).map(name => `${name}Node`)]
+		)
+		.filter(name => !nodesRead.has(name))
+	const removedName = new RegExp(`\\b(?:${removed.join("|")})\\b`)
+	if ([...statements, ...args.values()].some(text => removedName.test(text)))
+		return
+	const shortest = opts.optimize === "size"
+	const [dependencyParams, dependencyArgs] = writeDependencies(
+		dependencies,
+		shortest
+	)
+	const params = [...dependencyParams, ...args.keys()]
+	const imports: Record<string, string[]> = {}
+	for (const specifier of ordered) {
+		for (const read in shared[specifier].imports) {
+			if (group.has(read)) continue
+			const into = (imports[read] ??= [])
+			for (const name of shared[specifier].imports[read])
+				if (!into.includes(name)) into.push(name)
+		}
+	}
+	return {
+		declaration: `const ${rootScope.name} = /* @__PURE__ */ (${writeScope(
+			params.length || shortest ? params : ["...$"],
+			statements,
+			rootScope.returned
+		)})(${[...dependencyArgs, ...args.values()].join(", ")})`,
+		imports
 	}
 }
 
@@ -667,14 +885,46 @@ const writeCreations = (
 	return [[...code, getters.join("\n")], reads]
 }
 
+const writeDependencies = (
+	namesBySource: Record<string, string[]>,
+	shortest: boolean
+): [params: string[], args: string[]] => {
+	const params: string[] = []
+	const args: string[] = []
+	for (const source in namesBySource) {
+		const names = namesBySource[source]
+		params.push(
+			shortest ?
+				`[${names.join(", ")}]`
+			:	`{ ${Object.entries(names)
+					.map(([index, name]) => `${index}: ${name}`)
+					.join(", ")} }`
+		)
+		args.push(source)
+	}
+	return [params, args]
+}
+
+const writeScope = (
+	params: string[],
+	statements: string[],
+	returned: string[]
+) => `(${params.join(", ")}) => {
+${statements.join("\n")}
+return [${returned.join(", ")}]
+}`
+
 const writeSections = (sections: string[]) =>
 	`${sections.filter(section => section).join("\n\n")}\n`
 
-const writeImports = (imports: Record<string, string[]>) =>
+const writeImports = (
+	imports: Record<string, string[]>,
+	specifiers: Record<string, string> = {}
+) =>
 	Object.entries(imports)
 		.map(
 			([specifier, names]) =>
-				`import { ${names.join(", ")} } from ${JSON.stringify(specifier)}`
+				`import { ${names.join(", ")} } from ${JSON.stringify(specifiers[specifier] ?? specifier)}`
 		)
 		.join("\n")
 
@@ -1395,6 +1645,7 @@ ${writeFunction(
 			return `runtime.freeze(runtime.assign(${shape}, ${this.writeShape(root, shape, unit, this.traversalsOf(root, unit))}))`
 		})
 		const moduleDeclarations: string[] = []
+		let scope: UnitScope | undefined
 		if (this.baking.flattens) {
 			for (const name in unit.dependencies) {
 				if (!read.has(name)) continue
@@ -1417,30 +1668,49 @@ ${writeFunction(
 				`const ${unit.name} = [${returned.join(", ")}]`
 			)
 		} else {
-			const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(
-				unit,
-				read
+			const dependencies = this.dependenciesOf(unit, read)
+			const [dependencyParams, dependencyArgs] = writeDependencies(
+				dependencies,
+				this.baking.shortest
 			)
 			const params = [...dependencyParams, ...writing.params]
 			const prologue = [...this.declarations.statements, ...refs]
+			const statements = [
+				...prologue,
+				...this.declareMembers(unit, [...prologue, ...links, ...returned]),
+				...links
+			]
 			const array =
 				params.length || prologue.length || links.length ?
 					undefined
 				:	this.writeUnitArray(unit, returned)
+			const template =
+				!array &&
+				!params.length &&
+				!links.length &&
+				!Object.keys(writing.imports).length &&
+				this.writeTemplateCall(unit, prologue, returned)
 			const built =
 				array ??
-				((!params.length &&
-					!links.length &&
-					!Object.keys(writing.imports).length &&
-					this.writeTemplateCall(unit, prologue, returned)) ||
-					`(${this.writeUnitFunction(
-						unit,
+				(template ||
+					`(${writeScope(
 						// a minifier dissolves a call with no parameters into its caller
 						params.length || this.baking.shortest ? params : ["...$"],
-						prologue,
-						links,
+						statements,
 						returned
 					)})(${[...dependencyArgs, ...writing.args].join(", ")})`)
+			if (!this.baking.hoisted && !links.length && !template) {
+				scope = {
+					name: unit.name,
+					dependencies,
+					params: writing.params,
+					args: writing.args,
+					statements,
+					returned,
+					nodes: {},
+					declaresOnlyRefs: !this.declarations.statements.length
+				}
+			}
 			moduleDeclarations.push(
 				...(this.baking.hoisted ?
 					[
@@ -1471,6 +1741,17 @@ ${writeFunction(
 				)
 			)
 		}
+		if (scope) {
+			for (const root of unit.roots) {
+				const name = unit.names[root.id]
+				scope.nodes[name] = `runtime.freeze(${this.writeShape(
+					root,
+					name,
+					unit,
+					this.traversalsOf(root, unit)
+				)})`
+			}
+		}
 		this.declarations = declarations
 		this.unit = undefined
 		this.writing = undefined
@@ -1478,6 +1759,7 @@ ${writeFunction(
 			readsRuntime: true,
 			imports: writing.imports,
 			declarations: moduleDeclarations,
+			scope,
 			exports: [
 				unit.name,
 				...unit.roots.map(root => `${unit.names[root.id]}Node`),
@@ -1561,10 +1843,11 @@ ${writeFunction(
 			...epilogue,
 			...returned
 		])
-		return `(${params.join(", ")}) => {
-${[...prologue, ...declarations, ...epilogue].join("\n")}
-return [${returned.join(", ")}]
-}`
+		return writeScope(
+			params,
+			[...prologue, ...declarations, ...epilogue],
+			returned
+		)
 	}
 
 	// traversals reading no other name of their unit need no scope
@@ -1642,9 +1925,18 @@ return [${returned.join(", ")}]
 		unit: RootUnit,
 		read: ReadonlySet<string>
 	): [params: string[], args: string[]] {
+		return writeDependencies(
+			this.dependenciesOf(unit, read),
+			this.baking.shortest
+		)
+	}
+
+	// each array of traversals the unit reads, by the names read at its indices
+	dependenciesOf(
+		unit: RootUnit,
+		read: ReadonlySet<string>
+	): Record<string, string[]> {
 		const namesBySource: Record<string, string[]> = {}
-		const params: string[] = []
-		const args: string[] = []
 		for (const name in unit.dependencies) {
 			if (!read.has(name)) continue
 			const dependency = unitOf(unit.dependencies[name][0], unit)
@@ -1659,18 +1951,7 @@ return [${returned.join(", ")}]
 			namesBySource[source] ??= []
 			namesBySource[source][index] = name
 		}
-		for (const source in namesBySource) {
-			const names = namesBySource[source]
-			params.push(
-				this.baking.shortest ?
-					`[${names.join(", ")}]`
-				:	`{ ${Object.entries(names)
-						.map(([index, name]) => `${index}: ${name}`)
-						.join(", ")} }`
-			)
-			args.push(source)
-		}
-		return [params, args]
+		return namesBySource
 	}
 
 	writeBody(

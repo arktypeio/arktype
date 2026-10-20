@@ -3,6 +3,7 @@ import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { dirname, isAbsolute, join } from "node:path"
 import { relative } from "node:path/posix"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
+import type { UnitReaders } from "arktype/internal/standalone.ts"
 import {
 	emitDeclarations,
 	refuseDeclare,
@@ -52,9 +53,13 @@ export const precompile: UnpluginInstance<
 	if (!(meta.framework in declaringFrameworks))
 		refuseDeclare(opts, meta.framework)
 	let workerOptions = opts
+	let unitReaders: UnitReaders | undefined
 	// a worker of its own lets arktype take the program's configuration
 	const create = () =>
-		createAsyncPrecompiler({ precompilerOptions: workerOptions ?? {} })
+		createAsyncPrecompiler({
+			precompilerOptions: workerOptions ?? {},
+			unitReaders
+		})
 	let precompiler = Promise.resolve(create())
 	const request = (...message: PrecompileRequest) =>
 		precompiler.then(send => send(...message)).catch(rethrowAsBuildError)
@@ -69,7 +74,9 @@ export const precompile: UnpluginInstance<
 	const reset = () => {
 		precompiler = precompiler.then(async send =>
 			// a config the worker can't read is reported at the next transform
-			(await send("reset").catch(() => false)) ? replace(send) : send
+			(await send("reset", unitReaders).catch(() => false)) ?
+				replace(send)
+			:	send
 		)
 	}
 	const readDependency = (importer: string) =>
@@ -93,6 +100,40 @@ export const precompile: UnpluginInstance<
 	}
 	const keepCompiler = (bundler: NonNullable<typeof compiler>) => {
 		compiler = bundler
+	}
+	// Vite's, for what plugins keep between builds
+	let cacheDir: string | undefined
+	// so a later build can write a unit read by one other into its reader
+	let unitReadsById: Record<string, UnitReaders> | undefined
+	const readersFileOf = () => {
+		const dir = storeDirOf() || (cacheDir && join(cacheDir, "arktype"))
+		return dir && join(dir, "readers.json")
+	}
+	const readUnitReaders = () => {
+		const file = readersFileOf()
+		if (!file) return
+		if (!unitReadsById) {
+			try {
+				unitReadsById = JSON.parse(readFileSync(file, "utf8"))
+			} catch {
+				unitReadsById = {}
+			}
+		}
+		const readers: Record<string, string[]> = {}
+		for (const id in unitReadsById) {
+			for (const specifier in unitReadsById[id]) {
+				const into = (readers[specifier] ??= [])
+				for (const reader of unitReadsById[id][specifier])
+					if (!into.includes(reader)) into.push(reader)
+			}
+		}
+		unitReaders = readers
+	}
+	const writeUnitReaders = () => {
+		const file = readersFileOf()
+		if (!file || !unitReadsById) return
+		mkdirSync(dirname(file), { recursive: true })
+		writeFileSync(file, JSON.stringify(unitReadsById))
 	}
 	const loadModule = (id: string) => {
 		const dir = storeDirOf()
@@ -227,6 +268,7 @@ export const precompile: UnpluginInstance<
 					map?.mappings
 				)) as TransformedModule | undefined
 				if (!transformed) return
+				if (unitReadsById) unitReadsById[id] = transformed.unitReads
 				for (const dependency of transformed.dependencies)
 					if (dependency !== id) this.addWatchFile(dependency)
 				for (const specifier in transformed.modules) {
@@ -269,6 +311,7 @@ export const precompile: UnpluginInstance<
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
 				isServing = config.command === "serve"
+				cacheDir = config.cacheDir
 				if (
 					opts?.checks !== undefined ||
 					opts?.runtime === "arktype" ||
@@ -281,9 +324,13 @@ export const precompile: UnpluginInstance<
 			}
 		},
 		// loading the precompiler overlaps the bundler's own startup
-		buildStart: reset,
+		buildStart: () => {
+			readUnitReaders()
+			reset()
+		},
 		// a build that won't rerun releases its worker
 		buildEnd() {
+			writeUnitReaders()
 			const native = this.getNativeBuildContext?.()
 			const isWatching =
 				native && "compiler" in native ?

@@ -51,9 +51,10 @@ import { tempDir } from "./utils.ts"
 
 // compares a Type with its precompiled validators on each call's outcome
 
-type Layout = "inline" | "modules"
+// "merged" is a later build's modules, merging units by what the first read
+type Layout = "inline" | "modules" | "merged"
 
-export const layouts: Layout[] = ["inline", "modules"]
+export const layouts: Layout[] = ["inline", "modules", "merged"]
 
 let out: string | undefined
 
@@ -214,7 +215,13 @@ const loadArtifact = async (
 	let code: string
 	if (layout === "inline") code = precompileStandalone(exports, opts).code
 	else {
-		const artifact = precompileStandaloneModules(exports, opts)
+		let artifact = precompileStandaloneModules(exports, opts)
+		if (layout === "merged") {
+			artifact = precompileStandaloneModules(exports, {
+				...opts,
+				readers: artifact.reads
+			})
+		}
 		for (const [specifier, module] of Object.entries(artifact.modules)) {
 			const written = modulesBySpecifier[specifier]
 			if (written === undefined) {
