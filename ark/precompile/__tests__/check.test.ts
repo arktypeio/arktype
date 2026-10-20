@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import { fromHere } from "@ark/fs"
 import { writeArktypeRuntimeOptionMessage } from "@ark/precompile"
 import { check } from "@ark/precompile/internal/check.ts"
+import { spawnSync } from "node:child_process"
 import { runCli } from "./utils.ts"
 
 const cwd = fromHere("checked")
@@ -116,6 +117,25 @@ main.ts:6:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can
   A standalone validator returns what arktype does as the program configures it. Build with the mutatesInput arktype is configured with.
 2 sites in 2 files: 1 accepted (50.0%)
 `)
+	})
+
+	it("refuses a Node too old for it", () => {
+		const { status, stderr } = spawnSync(
+			process.execPath,
+			[
+				"--conditions",
+				"ark-ts",
+				"--import",
+				'data:text/javascript,Object.defineProperty(process.versions, "node", { value: "22.11.0" })',
+				fromHere("..", "cli.ts"),
+				"--check"
+			],
+			{ cwd, encoding: "utf8" }
+		)
+		attest([status, stderr]).equals([
+			1,
+			"arktype-precompile needs Node 22.12 or later (this is 22.11.0)\n"
+		])
 	})
 
 	it("fails under a rate", () => {

@@ -251,3 +251,9 @@ export const writeAliasMessage = (
 					.map(s => [s, "arktype/runtime"])
 			)
 		)}`
+
+export const writeNodeVersionMessage = (
+	name: string,
+	version: string
+): string =>
+	`${name} needs Node ${version} or later (this is ${process.versions.node})`

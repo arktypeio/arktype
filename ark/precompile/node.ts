@@ -1,5 +1,5 @@
 import { throwError } from "@ark/util"
-import { registerHooks, type LoadFnOutput } from "node:module"
+import module, { type LoadFnOutput } from "node:module"
 import { fileURLToPath } from "node:url"
 import type {
 	PrecompilePluginOptions,
@@ -17,6 +17,7 @@ import {
 	schemaSpecifier,
 	transformedFilterOf,
 	undetailedSpecifierOf,
+	writeNodeVersionMessage,
 	writeTextlessMessage,
 	writeUndetailedImportMessage
 } from "./host.ts"
@@ -24,6 +25,9 @@ import { refuseDeclare } from "./declare.ts"
 import { createSyncPrecompiler, isPrecompilerWorker } from "./worker.ts"
 
 export const register = (opts?: PrecompilePluginOptions): void => {
+	// added in Node 22.15
+	if (!module.registerHooks)
+		throwError(writeNodeVersionMessage("@ark/precompile/node", "22.15"))
 	refuseDeclare(opts, "Node")
 	// the worker inherits the flags that registered these hooks
 	if (isPrecompilerWorker) return
@@ -46,7 +50,7 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	const importersByUrl: Record<string, string> = {}
 	// modules whose text these hooks were given
 	const givenUrls = new Set<string>()
-	registerHooks({
+	module.registerHooks({
 		resolve: (specifier, context, nextResolve) => {
 			if (specifier.startsWith("~arktype/"))
 				return { url: `arktype:${specifier}`, shortCircuit: true }

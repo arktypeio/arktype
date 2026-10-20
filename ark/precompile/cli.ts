@@ -2,13 +2,22 @@
 import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, relative } from "node:path"
 import { parseArgs } from "node:util"
-import { check, countOf } from "./check.ts"
 import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
+import { writeNodeVersionMessage } from "./host.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
 import {
 	assertPrecompileOptions,
 	type PrecompileOptions
 } from "./precompile.ts"
+
+// before importing what reads fs.globSync, which older versions lack
+const [major, minor] = process.versions.node.split(".").map(Number)
+if (major < 22 || (major === 22 && minor < 12)) {
+	console.error(writeNodeVersionMessage("arktype-precompile", "22.12"))
+	process.exit(1)
+}
+
+const { check, countOf } = await import("./check.ts")
 
 const usage =
 	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"

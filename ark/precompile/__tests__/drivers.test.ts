@@ -152,6 +152,26 @@ contextualize(function (this: Mocha.Suite) {
 		)
 	})
 
+	it("refuses a Node without module.registerHooks", () => {
+		const { stderr } = spawnSync(
+			process.execPath,
+			[
+				"--conditions",
+				"ark-ts",
+				"--import",
+				`data:text/javascript,import module from "node:module"; delete module.registerHooks; Object.defineProperty(process.versions, "node", { value: "22.14.0" }); const { register } = await import("${pathToFileURL(fromHere("..", "node.ts"))}"); register()`,
+				"-e",
+				""
+			],
+			{ cwd: app, encoding: "utf8" }
+		)
+		attest(
+			stderr.includes(
+				"Error: @ark/precompile/node needs Node 22.15 or later (this is 22.14.0)"
+			)
+		).equals(true)
+	})
+
 	it("refuses a non-path config", () => {
 		attest(
 			node(["main.ts"], { config: "" }).stderr.includes(
