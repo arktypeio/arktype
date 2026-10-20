@@ -303,6 +303,15 @@ b must be A (was "y")`)
 		}
 	})
 
+	it("keeps each change after the first site copies", () => {
+		const T = type({ a: "string.trim", b: "string.trim", c: "number = 1" })
+		// a Type's first call runs uncompiled, its second compiled
+		for (let i = 0; i < 2; i++) {
+			attest(T.assert({ a: " a ", b: " b " })).equals({ a: "a", b: "b", c: 1 })
+			attest(T.assert({ a: "a", b: " b " })).equals({ a: "a", b: "b", c: 1 })
+		}
+	})
+
 	it("non-enumerable transformed key", () => {
 		const T = type({ e: "string", t: "string.trim" })
 		const hidden = { e: { value: "e" }, t: { value: " t" } }

@@ -1008,15 +1008,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformedChildren.push(...this.defaultable)
 		js.initializeTransform(transformedChildren, this)
 		js.let("out", "data")
-		// the only site copies without checking out is data
-		const single = transformedChildren.length === 1
-		// and fixes the copy's keys there if nothing after it can fail
-		const once = single && transformedProps.length === 1 && !js.requiresContext
+		// the only site fixes its copy's keys there if nothing after it can fail
+		const once =
+			transformedChildren.length === 1 &&
+			transformedProps.length === 1 &&
+			!js.requiresContext
 		for (let i = 0; i < transformedProps.length; i++) {
 			const { key, optional } = transformedProps[i]
 			const keyExpression = js.serialize(key)
 			const onChange = () => {
-				this.compileCopy(js, single).line(
+				this.compileCopy(js, i === 0).line(
 					`out${js.prop(key)} = transformed${i}`
 				)
 				if (once) this.compileCopiedDeclaredKeys(js, [key])
@@ -1084,23 +1085,27 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				this.sequence?.transforms || transformedIndex.length !== 0
 			)
 		}
-		this.compileDefaults(js, single)
+		this.compileDefaults(
+			js,
+			transformedChildren.length === this.defaultable.length
+		)
 		if (!once) this.compileCopiedDeclaredKeys(js)
 		js.return("out")
 	}
 
-	private compileDefaults(js: NodeCompiler, single?: boolean): NodeCompiler {
+	private compileDefaults(js: NodeCompiler, first?: boolean): NodeCompiler {
 		for (const node of this.defaultable) {
 			js.if(`!(${js.serialize(node.key)} in data)`, () =>
-				compileDefault(this.compileCopy(js, single), node, "out")
+				compileDefault(this.compileCopy(js, first), node, "out")
 			)
+			first = false
 		}
 		this.compileSequenceDefaults(js)
 		return js.returnIfTransformFailed()
 	}
 
-	// out is data where a transform writes in place
-	private compileCopy(js: NodeCompiler, single?: boolean): NodeCompiler {
+	// out is data where a transform writes in place, and always at the first site
+	private compileCopy(js: NodeCompiler, first?: boolean): NodeCompiler {
 		if (this.writesInto(js)) return js
 		const copy = () =>
 			this.sequence ?
@@ -1113,7 +1118,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					"out",
 					`${this.compileShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
 				)
-		return single ? copy() : js.if("out === data", copy)
+		return first ? copy() : js.if("out === data", copy)
 	}
 
 	// read a required key first; copyOf handles data without it
