@@ -1319,8 +1319,7 @@ ${writeFunction(
 		this.declarations = createDeclarations()
 		this.unit = unit
 		const returned = returnedOf(unit, this.baking)
-		const read =
-			this.baking.detailsErrors ? undefined : namesReadBy(unit, returned)
+		const read = namesReadBy(unit, returned)
 		// a cyclic root is created with its own traversals
 		const ownRoots = unit.roots.filter(root =>
 			unit.refs.some(
@@ -1335,7 +1334,7 @@ ${writeFunction(
 			)
 		}
 		const refs = unit.refs.flatMap((value, i) => {
-			if (read && !read.has(`r${i}`)) return []
+			if (!read.has(`r${i}`)) return []
 			const { statements } = this.declarations
 			const declared = statements.length
 			const emitted = this.emit(value)
@@ -1367,7 +1366,7 @@ ${writeFunction(
 		const moduleDeclarations: string[] = []
 		if (this.baking.flattens) {
 			for (const name in unit.dependencies) {
-				if (read && !read.has(name)) continue
+				if (!read.has(name)) continue
 				const dependency = unitOf(unit.dependencies[name][0], unit)
 				this.importName(this.specifierOf(dependency.name), name)
 			}
@@ -1492,13 +1491,24 @@ ${writeFunction(
 			.split(unit.name)
 			.join("template")
 		if (/\bliteral\d+\b/.test(body)) return
-		const name = `template${hashOf(`${params} ${body}`)}`
+		// a site's description is passed, so units differing by theirs share it
+		const descriptions: string[] = []
+		const shared = body.replace(
+			/(runtime\.(?:siteOf|keySiteOf)\("(?:[^"\\]|\\.)*", )("(?:[^"\\]|\\.)*")\)/g,
+			(_, call: string, description: string) => {
+				if (!descriptions.includes(description)) descriptions.push(description)
+				return `${call}d${descriptions.indexOf(description)})`
+			}
+		)
+		params.push(...descriptions.map((_, i) => `d${i}`))
+		args.push(...descriptions)
+		const name = `template${hashOf(`${params} ${shared}`)}`
 		this.importName(
 			this.share(
 				name,
-				writeFunction(this.baking, name, params.join(", "), body),
+				writeFunction(this.baking, name, params.join(", "), shared),
 				{},
-				body.includes("runtime.")
+				shared.includes("runtime.")
 			),
 			name
 		)
@@ -1591,13 +1601,13 @@ return [${returned.join(", ")}]
 
 	dependencyParamsOf(
 		unit: RootUnit,
-		read?: ReadonlySet<string>
+		read: ReadonlySet<string>
 	): [params: string[], args: string[]] {
 		const namesBySource: Record<string, string[]> = {}
 		const params: string[] = []
 		const args: string[] = []
 		for (const name in unit.dependencies) {
-			if (read && !read.has(name)) continue
+			if (!read.has(name)) continue
 			const dependency = unitOf(unit.dependencies[name][0], unit)
 			const index = dependency.traversals.flat().indexOf(name)
 			const isShared = isSharedUnit(dependency)
@@ -1630,10 +1640,9 @@ return [${returned.join(", ")}]
 		const traversals = this.localUnits.map((unit, i) => {
 			this.localNamesByUnit.set(unit, `traversals${i}`)
 			const returned = returnedOf(unit, this.baking)
-			const read =
-				this.baking.detailsErrors ? undefined : namesReadBy(unit, returned)
+			const read = namesReadBy(unit, returned)
 			const declared = unit.refs.flatMap((_, i) =>
-				read && !read.has(`r${i}`) ? [] : [i]
+				read.has(`r${i}`) ? [i] : []
 			)
 			this.unit = unit
 			const refs = declared.map(i => this.emit(unit.refs[i]))
@@ -2709,10 +2718,8 @@ return [${returned.join(", ")}]
 		// a discriminant's site holds the path it's read at
 		if (Array.isArray(site))
 			return `[${site.map(k => this.emit(k)).join(", ")}]`
-		if ("code" in site) {
-			const { code, description } = site as SiteContext
-			return `runtime.siteOf(${this.emit(code)}${description === undefined ? "" : `, ${this.emit(description)}`})`
-		}
+		if ("code" in site)
+			return writeSiteOf(site as SiteContext, s => this.emitString(s))
 		if ("fails" in site)
 			return `runtime.failing(${this.emitSite(site.fails as object)})`
 		return `{ ${Object.entries(site)
@@ -3097,6 +3104,17 @@ const issueSite = <site extends object>(site: site): site => {
 
 const undeclaredSite = issueSite({ code: "undeclared" })
 
+// a site of a code and description naming nothing the validator receives
+const isInlineSite = (site: object): site is SiteContext =>
+	"code" in site &&
+	!(site as SiteContext).description?.match(printedHoleNamePattern)
+
+const writeSiteOf = (
+	{ code, description }: SiteContext,
+	emit: (s: string) => string
+): string =>
+	`runtime.siteOf(${emit(code)}${description === undefined ? "" : `, ${emit(description)}`})`
+
 const issueSitesByContext = new WeakMap<
 	object,
 	{ alone?: object; required?: object }
@@ -3171,7 +3189,14 @@ const isLeaf = (node: BaseNode): boolean =>
 
 class StandaloneCompiler extends TraversalCompiler {
 	override site(node: BaseNode): string {
-		return this.ref(issueSiteOf(node.failureSite))
+		return this.siteRef(issueSiteOf(node.failureSite))
+	}
+
+	// a failure builds its site, so loading a unit creates none; it stays a
+	// ref, keyed with the unit and read for its code
+	siteRef(site: object): string {
+		const ref = this.ref(site)
+		return isInlineSite(site) ? writeSiteOf(site, JSON.stringify) : ref
 	}
 
 	// Allows by Apply of each leaf a prop applies
@@ -3220,11 +3245,11 @@ class StandaloneCompiler extends TraversalCompiler {
 			)
 		}
 		const site = issueSite(path.length ? { value: context, path } : context)
-		return `!ctx.failsAt(${this.ref(site)}, ${value})`
+		return `!ctx.failsAt(${this.siteRef(site)}, ${value})`
 	}
 
 	override undeclaredFails(): string {
-		return `ctx.failsAt(${this.ref(undeclaredSite)}, data, k)`
+		return `ctx.failsAt(${this.siteRef(undeclaredSite)}, data, k)`
 	}
 
 	// a rejected union value reports the union's issue, not its Apply

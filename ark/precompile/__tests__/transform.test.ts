@@ -238,9 +238,9 @@ export const A = /* @__PURE__ */ $ark#0()`)
 
 		it("builds shared units at evaluation", () => {
 			const { modules } = precompile(`import { type } from "arktype"
-export const A = type("string")`)
+export const A = type({ a: "string" })`)
 			const [, unit] = Object.entries(modules).find(([specifier]) =>
-				specifier.startsWith("~arktype/domain")
+				specifier.startsWith("~arktype/intersection")
 			)!
 			attest(normalized(unit.match(/^const \w+ = .*/m)![0])).snap(
 				"const #0 = /* @__PURE__ */ ((...$) => {"
@@ -254,7 +254,7 @@ export const A = type("string")`)
 			const early = precompile(
 				`import { made } from "./early.ts"
 import { type } from "arktype"
-export const make = () => type("string")`,
+export const make = () => type({ a: "string" })`,
 				files
 			)
 			attest(normalized(Object.keys(early.modules))).snap([
@@ -271,7 +271,7 @@ export const make = () => type("string")`,
 			const late = precompile(
 				`import { type } from "arktype"
 import { made } from "./early.ts"
-export const make = () => type("string")`,
+export const make = () => type({ a: "string" })`,
 				files
 			)
 			attest(normalized(Object.keys(late.modules))).snap([
