@@ -997,7 +997,7 @@ export const Id = type("string").narrow(s => s.length === 8)`
 					)
 				)
 			).snap([
-				'import * as runtime from "arktype/runtime"\n\nconst #0 = ((holder) => {\n\treturn runtime.holesOf(holder, "#1", "`Id`")\n})\n\nexport { #0 }\n'
+				'import * as runtime from "arktype/runtime"\n\nconst #0 = /* @__PURE__ */ runtime.receiverOf("#1", "`Id`")\n\nexport { #0 }\n'
 			])
 		})
 

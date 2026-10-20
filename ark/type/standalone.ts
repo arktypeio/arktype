@@ -957,12 +957,20 @@ class StandaloneArtifact {
 
 	receiverOf(value: Foldable, id: string, label: string): string {
 		const kind = hasArkKind(value, "root") ? "" : `, "${kindNameOf(value)}"`
-		const body = `runtime.holesOf(holder, ${writeId(id)}, ${JSON.stringify(label)}${kind})`
-		const name = `receive${hashOf(body)}`
+		const args = `${writeId(id)}, ${JSON.stringify(label)}${kind}`
+		const name = `receive${hashOf(`runtime.holesOf(holder, ${args})`)}`
 		this.importName(
 			this.share(
 				name,
-				writeFunction(this.baking, name, "holder", `\treturn ${body}`)
+				// a hoisted receiver is declared, so an import cycle can call it early
+				this.baking.hoisted ?
+					writeFunction(
+						this.baking,
+						name,
+						"holder",
+						`\treturn runtime.holesOf(holder, ${args})`
+					)
+				:	`const ${name} = /* @__PURE__ */ runtime.receiverOf(${args})`
 			),
 			name
 		)

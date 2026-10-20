@@ -673,6 +673,16 @@ export const holesOf = ((
 	return created[1]
 }) satisfies Fn
 
+// a factory's check of a value it receives, parenthesized (kept by
+// `satisfies`) to compile as the module loads
+export const receiverOf = ((
+	id: string,
+	label: string,
+	kind?: "Module" | "Scope" | "Generic"
+) =>
+	((holder: unknown): readonly unknown[] =>
+		holesOf(holder, id, label, kind)) satisfies Fn) satisfies Fn
+
 // held weakly so a call's functions don't outlive it
 class InternTable {
 	value: unknown = undefined
