@@ -1357,16 +1357,20 @@ ${writeFunction(
 				read
 			)
 			const params = [...dependencyParams, ...writing.params]
-			// a minifier dissolves a call with no parameters into its caller
-			if (!params.length && !this.baking.shortest) params.push("...$")
-			const unitFunction = this.writeUnitFunction(
-				unit,
-				params,
-				[...this.declarations.statements, ...refs],
-				links,
-				returned
-			)
-			const built = `(${unitFunction})(${[...dependencyArgs, ...writing.args].join(", ")})`
+			const prologue = [...this.declarations.statements, ...refs]
+			const built =
+				(!params.length &&
+					!links.length &&
+					!Object.keys(writing.imports).length &&
+					this.writeTemplateCall(unit, prologue, returned)) ||
+				`(${this.writeUnitFunction(
+					unit,
+					// a minifier dissolves a call with no parameters into its caller
+					params.length || this.baking.shortest ? params : ["...$"],
+					prologue,
+					links,
+					returned
+				)})(${[...dependencyArgs, ...writing.args].join(", ")})`
 			moduleDeclarations.push(
 				...(this.baking.hoisted ?
 					[
@@ -1412,6 +1416,53 @@ ${writeFunction(
 				:	[])
 			]
 		}
+	}
+
+	// units differing only by their patterns share a template they pass them to
+	writeTemplateCall(
+		unit: RootUnit,
+		prologue: string[],
+		returned: string[]
+	): string | undefined {
+		const params: string[] = []
+		const args: string[] = []
+		const statements: string[] = []
+		const declared: string[] = []
+		for (const statement of prologue) {
+			const [, name, value] = /^const (\w+) = ([^]*)$/.exec(statement) ?? []
+			if (!name) return
+			// a ref to a pattern the unit declares is passed the pattern
+			if (params.includes(value) && /^literal\d+$/.test(value))
+				params[params.indexOf(value)] = name
+			else if (declared.some(read => new RegExp(`\\b${read}\\b`).test(value)))
+				statements.push(statement)
+			else {
+				params.push(name)
+				args.push(value)
+			}
+			declared.push(name)
+		}
+		if (!args.some(arg => arg.startsWith("/"))) return
+		const body = [
+			...statements,
+			...this.declareMembers(unit, [...statements, ...returned]),
+			`return [${returned.join(", ")}]`
+		]
+			.join("\n")
+			.split(unit.name)
+			.join("template")
+		if (/\bliteral\d+\b/.test(body)) return
+		const name = `template${hashOf(`${params} ${body}`)}`
+		this.importName(
+			this.share(
+				name,
+				writeFunction(this.baking, name, params.join(", "), body),
+				{},
+				body.includes("runtime.")
+			),
+			name
+		)
+		return `${name}(${args.join(", ")})`
 	}
 
 	writeUnitFunction(
