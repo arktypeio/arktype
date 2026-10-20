@@ -324,6 +324,15 @@ contextualize(() => {
 		for (const validators of builds) agrees(validators, types, inputs)
 	})
 
+	it("size keeps a literal holding a line separator", async () => {
+		const { T } = await load(
+			{ T: type({ k: "'x     y'" }) },
+			{ optimize: "size" }
+		)
+		attest(T.allows({ k: "x     y" })).equals(true)
+		attest(T.allows({ k: "x y" })).equals(false)
+	})
+
 	it("index signature with a defaulted key", async () => {
 		const empty = standIn(() => [], "empty")
 		const types = {

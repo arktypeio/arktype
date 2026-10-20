@@ -3220,12 +3220,18 @@ class StandaloneCompiler extends TraversalCompiler {
 
 const failingBySite = new WeakMap<object, object>()
 
-// size writes the checks an Allows loops over as the returns they stand for
+// size writes the checks an Allows loops over as the returns they stand for,
+// line by line, as a literal can hold a line separator
 const unlooped = (source: string): string =>
 	source.replace(
 		/ {4}for \(;;\) {\n([\S\s]*)\n {8}return true\n {4}}\n {4}return false\n }$/,
 		(_, checks: string) =>
-			`${checks.replace(/^ {4}/gm, "").replace(/^( +)break$/gm, "$1return false")}\n    return true\n }`
+			`${checks
+				.split("\n")
+				.map(line =>
+					line.replace(/^ {4}/, "").replace(/^( +)break$/, "$1return false")
+				)
+				.join("\n")}\n    return true\n }`
 	)
 
 class InPlaceCompiler extends StandaloneCompiler {
