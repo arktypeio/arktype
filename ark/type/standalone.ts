@@ -265,7 +265,7 @@ const writeFunction = (
 	name: string,
 	params: string,
 	body: string,
-	// unless called as the module loads, a function is compiled at its first call
+	// whether the module calls it as it loads
 	isCalledOnLoad = true
 ) =>
 	baking.hoisted ? `function ${name}(${params}) {\n${body}\n}`
@@ -400,7 +400,7 @@ const writeArtifact = (
 	const folds: StandaloneModules["folds"] = {}
 	const checking: string[] = []
 	const { configured } = opts
-	// read early, a lazy or hoisted creation must be called
+	// a lazy or hoisted creation must be called, so isn't exported as a value
 	const values: string[] | undefined =
 		isModular && opts.values && opts.lazy === false && !opts.hoisted ?
 			[]
@@ -1600,8 +1600,7 @@ return [${returned.join(", ")}]
 		return this.baking.shortest ? fn : `(${fn})`
 	}
 
-	// a module's one validator compiles as it loads; of several, which a
-	// program's first parse mostly leaves uncalled, each at its first call
+	// a module's only validator compiles as it loads, others at their first call
 	validatorOnLoad(fn: string): string {
 		return this.baking.compilesValidators ? this.compiledOnLoad(fn) : fn
 	}
@@ -3230,8 +3229,7 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 const isKeyword = (predicate: unknown): boolean =>
 	runtimePathsByValue.has(predicate) && (predicate as Fn).length < 2
 
-// a case returning what the next one does falls through to it, by line so
-// no line terminator a string holds is taken for one
+// a case returning what the next one does falls through to it
 const sharedReturnCase = /^( +case [^]*): return ([^]*)$/
 
 const casesFallingThrough = (body: string): string => {
@@ -3270,8 +3268,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		return this.siteRef(issueSiteOf(node.failureSite))
 	}
 
-	// a failure builds its site, so loading a unit creates none; it stays a
-	// ref, keyed with the unit and read for its code
+	// a site of literals is built where it fails, and stays a ref the unit keys
 	siteRef(site: object): string {
 		const ref = this.ref(site)
 		return isInlineSite(site) ? writeSiteOf(site, JSON.stringify) : ref
@@ -3308,8 +3305,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		)
 	}
 
-	// several defaults, a structure's only changes, all missing from a plain
-	// object copy it once, without branching
+	// a plain object missing every default, its only changes, is copied once
 	override initializeTransform(
 		transformedChildren: readonly BaseNode[],
 		structure?: StructureNode

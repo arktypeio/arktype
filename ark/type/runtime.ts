@@ -413,8 +413,7 @@ export const siteOf = ((
 	description?: string
 ): SiteContext => ({ code, description })) satisfies Fn
 
-// the Apply of a union whose key's condition rejected its value, compiled with
-// the module since a unit makes one as it loads
+// the Apply of a union whose key's condition rejected its value
 export const failing = ((site: FailureSite): CompactApply =>
 	(data, ctx) =>
 		!ctx.failsAt(site, data)) satisfies Fn
@@ -673,8 +672,7 @@ export const holesOf = ((
 	return created[1]
 }) satisfies Fn
 
-// a factory's check of a value it receives, parenthesized (kept by
-// `satisfies`) to compile as the module loads
+// a factory's check of a value it receives
 export const receiverOf = ((
 	id: string,
 	label: string,
