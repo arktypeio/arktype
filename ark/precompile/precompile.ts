@@ -82,7 +82,9 @@ import {
 	isFunctionNode,
 	isOnlyType,
 	isRuntimeExport,
+	isTypeMemberRead,
 	isTypeOnly,
+	memberNameOf,
 	ModuleGraph,
 	progressOf,
 	runtimeExports,
@@ -3062,23 +3064,80 @@ export class Precompiler {
 	}
 
 	// the import a read's object comes from, if the build can't resolve it
+	// a Type member read off an import the build can't follow, which may be
+	// a bundler's alias to a Type or a virtual module's value, once per import
+	private unresolvedReadsOf(module: SourceModule): Diagnostic[] {
+		const result: Diagnostic[] = []
+		const warned = new Set<string>()
+		if (
+			!module.program.body.some(
+				statement =>
+					statement.type === "ImportDeclaration" &&
+					this.isUnresolved(statement.source.value, module)
+			)
+		)
+			return result
+		walk(module.program, node => {
+			if (
+				isInIsland(node, module) ||
+				(node.type.startsWith("TS") && !isTransparent(node))
+			)
+				return false
+			if (node.type !== "MemberExpression" || isWriteTarget(node)) return true
+			const read = memberNameOf(node)
+			if (
+				typeof read !== "string" ||
+				!isTypeMemberRead(read, this.lackedMembers)
+			)
+				return true
+			const specifier = this.unresolvedImportOf(node.object, module)
+			if (specifier === undefined || warned.has(specifier)) return true
+			warned.add(specifier)
+			result.push(
+				this.diagnostic(
+					module,
+					node,
+					"R4",
+					`${module.snippetOf(node)} reads ${read}, which a standalone validator lacks`,
+					[
+						`\`${module.snippetOf(node.object)}\` comes from \`${specifier}\`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator`
+					],
+					unresolvedHint,
+					"warning"
+				)
+			)
+			return true
+		})
+		return result
+	}
+
 	private unresolvedImportOf(
 		object: Node,
 		module: SourceModule
 	): string | undefined {
-		const declaration = module.scopes.referencesById.get(unwrapChain(object))
-			?.binding?.declaration
+		// e.g. `z` for `z.string().optional`
+		let root = unwrapChain(object)
+		while (root.type === "MemberExpression" || root.type === "CallExpression") {
+			root = unwrapChain(
+				root.type === "MemberExpression" ? root.object : root.callee
+			)
+		}
+		const declaration =
+			module.scopes.referencesById.get(root)?.binding?.declaration
 		const specifier =
 			declaration?.parent?.type === "ImportDeclaration" ?
 				declaration.parent.source.value
 			:	undefined
-		return (
-				specifier !== undefined &&
-					!arkPackageSpecifier.test(specifier) &&
-					this.graph.host.resolve(specifier, module.id) === undefined
-			) ?
+		return specifier !== undefined && this.isUnresolved(specifier, module) ?
 				specifier
 			:	undefined
+	}
+
+	private isUnresolved(specifier: string, module: SourceModule): boolean {
+		return (
+			!arkPackageSpecifier.test(specifier) &&
+			this.graph.host.resolve(specifier, module.id) === undefined
+		)
 	}
 
 	private checkStandalone(
@@ -3209,7 +3268,6 @@ export class Precompiler {
 				read === undefined || !this.lackedMembers.has(read) ? undefined
 				: includes(methodMembers, read) ? "methods"
 				: read
-			const unresolved = isUnsure && this.unresolvedImportOf(object, module)
 			result.push(
 				this.diagnostic(
 					module,
@@ -3219,16 +3277,13 @@ export class Precompiler {
 						`${module.snippetOf(node)} reflects on a Type, whose properties a standalone validator doesn't share`
 					:	`${module.snippetOf(node)} reads ${read}, which a standalone validator lacks`,
 					[
-						unresolved ?
-							`\`${module.snippetOf(object)}\` is imported from \`${unresolved}\`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator`
-						: isUnsure ?
+						isUnsure ?
 							`the build can't tell where \`${module.snippetOf(object)}\` comes from, so it may be a Type, which the standalone runtime replaces with a validator`
 						: dropped ?
 							`the build's \`members\` option sets ${JSON.stringify(dropped)} false, so no validator has ${read}`
 						:	`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
 					],
-					unresolved && !dropped ? unresolvedHint
-					: isUnsure ?
+					isUnsure ?
 						writeUnsureHint(
 							dropped ?
 								`leave members[${JSON.stringify(dropped)}] unset`
@@ -3240,6 +3295,7 @@ export class Precompiler {
 				)
 			)
 		}
+		result.push(...this.unresolvedReadsOf(module))
 		for (const statement of module.program.body) {
 			if (statement.type !== "ImportDeclaration" || isArkPackage) continue
 			const source = statement.source.value
@@ -3701,7 +3757,7 @@ const cacheHint = 'With runtime: "arktype", arktype defines this at runtime.'
 const frozenHint = `Keep what you attach in an object of your own, or build with runtime: "arktype".`
 
 const unresolvedHint =
-	"If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`. If it isn't a Type, annotate it with its type."
+	"If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it."
 
 const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
 

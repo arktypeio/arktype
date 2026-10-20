@@ -44,7 +44,7 @@ export default [configs.recommended]
 
 ## Standalone validators
 
-A standalone validator lacks the members that compose a Type, like `.and` or `.in`, so the build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it or imported from a module it can't resolve, like one only a bundler alias names. Annotate such a value with its own type (`s: JsonSchema`) or cast it to say it isn't a Type.
+A standalone validator lacks the members that compose a Type, like `.and` or `.in`, so the build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it. It warns, once for each import, where it sees one read off an import it can't resolve, like one only a bundler alias names. Annotate such a value with its own type (`s: JsonSchema`) or cast it to say it isn't a Type.
 
 A definition holding functions, like a narrow, a morph or a class, becomes a call to a factory passing each one where the definition was written. The factory checks at creation that each class, and each function another module supplies, is what its code was compiled for, and throws if not. A definition whose branches arktype orders by the names of the functions they hold, like `type.instanceOf(Cat).or(type.instanceOf(Dog))`, is reported, since a minifier can rename them.
 

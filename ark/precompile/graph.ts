@@ -1363,9 +1363,6 @@ export class ModuleGraph {
 				return kindOfKey(target.binding, target.module)
 			case "expression":
 				return this.transfer(target.node, target.module, kindOfKey)
-			// e.g. a bundler's alias, which may resolve to a module exporting a Type
-			case "unresolved":
-				return kinds.unknown
 			default:
 				return kinds.data
 		}
@@ -2207,6 +2204,13 @@ const isUnsureRead = (
 	(kind & kinds.type ?
 		!isOnlyType(kind)
 	:	!!(kind & kinds.unknown) && !isContainerMethod(read))
+
+// e.g. `or`, which a value the build can't see may read off a Type
+export const isTypeMemberRead = (
+	read: string,
+	lacked: ReadonlySet<string>
+): boolean =>
+	(read in typeMemberKinds || lacked.has(read)) && !isContainerMethod(read)
 
 const isContainerMethod = (name: unknown): boolean =>
 	typeof name === "string" && (name in Array.prototype || name in Map.prototype)

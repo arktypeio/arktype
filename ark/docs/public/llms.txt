@@ -5910,7 +5910,7 @@ The build fails with a message naming the file, the definition and the fix. The 
 
 - **`arktype resolves to 2.3.0, but @ark/precompile runs on 2.2.8`**: validators run only on the arktype they were built with. Install one version, e.g. with your package manager's dedupe or overrides.
 - **`arktype resolves to ... rather than arktype/runtime`** (Next with Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config.
-- **`` `User` is imported from `~/schemas`, which the build can't resolve ``**: the build resolves imports as TypeScript does, so add a bundler alias to `tsconfig.json`'s `paths` too.
+- **A warning that `` `User` comes from `~/schemas`, which the build can't resolve ``**: the build resolves imports as TypeScript does, so add a bundler alias to `tsconfig.json`'s `paths` too, or it can't check reads off that import.
 - **`configure() is called, but the build has no config module`**: name that module as the build's `config`.
 - **`precompile.esbuild() needs bundle: true`**: precompiled modules import validators the bundle includes.
 
