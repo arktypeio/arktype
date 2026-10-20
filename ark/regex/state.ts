@@ -95,7 +95,6 @@ export type Control =
 	| "}"
 	| "-"
 	| "\\"
-	| "/"
 
 export type AnchorMarker<inner extends Anchor = Anchor> =
 	`<${ZeroWidthSpace}${inner}${ZeroWidthSpace}>`

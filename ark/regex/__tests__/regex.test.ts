@@ -583,11 +583,6 @@ contextualize(() => {
 			attest<Regex<"a{b}", { flags: "u" }>>(U)
 		})
 
-		it("escaped forward slash", () => {
-			const S = regex("^a\\/c$")
-			attest<Regex<"a/c", {}>>(S)
-		})
-
 		it("unnecessary escape", () => {
 			// @ts-expect-error
 			attest(() => regex("\\a")).type.errors(writeUnnecessaryEscapeMessage("a"))
