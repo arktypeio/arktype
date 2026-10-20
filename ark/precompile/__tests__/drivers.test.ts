@@ -498,11 +498,11 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			)
 		})
 
-		it("checks arktype resolves as its mode needs", async () => {
+		it("fails where arktype resolves other than its mode needs", async () => {
 			const host = createNodeHost({ conditions })
 			const main = readFileSync(join(app, "main.ts"), "utf8")
 			// what the loader reports where Turbopack resolves arktype to `target`
-			const check = (
+			const failureOf = (
 				target: string | undefined,
 				opts: PrecompilePluginOptions = {},
 				source = main
@@ -529,19 +529,21 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 					// a module importing no runtime specifier is checked synchronously
 					if (returned !== undefined) settle(undefined)
 				})
-			attest(await check("arktype/runtime")).equals(undefined)
-			attest(await check("arktype")).equals(
+			attest(await failureOf("arktype/runtime")).equals(undefined)
+			attest(await failureOf("arktype")).equals(
 				writeAliasMessage("arktype", "../../../type/index.ts", {})
 			)
-			attest(await check("arktype/runtime", { runtime: "arktype" })).equals(
+			attest(await failureOf("arktype/runtime", { runtime: "arktype" })).equals(
 				writeAliasMessage("arktype", undefined, { runtime: "arktype" })
 			)
-			attest(await check("arktype", { runtime: "arktype" })).equals(undefined)
+			attest(await failureOf("arktype", { runtime: "arktype" })).equals(
+				undefined
+			)
 			// Turbopack reports a specifier it can't resolve
-			attest(await check(undefined)).equals(undefined)
+			attest(await failureOf(undefined)).equals(undefined)
 			// only what a module imports is checked, not a string naming it
 			attest(
-				await check(
+				await failureOf(
 					"arktype",
 					{},
 					"export const docs = \"see 'arktype/errors'\"\n"
