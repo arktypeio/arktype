@@ -358,8 +358,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 		)
 	}
 
-	// rejects data Allows can't read an object's first key from, in a switch,
-	// which minifiers don't rewrite as `data == null`
+	// rejects data Allows can't read an object's first key from
 	rejectNullish(): this {
 		return this.block("switch (data)", () =>
 			this.line("case null: case undefined: return false")

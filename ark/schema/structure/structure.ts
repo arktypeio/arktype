@@ -987,7 +987,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformedChildren.push(...this.defaultable)
 		js.initializeTransform(transformedChildren, this)
 		js.let("out", "data")
-		// the only site fixes its copy's keys there if nothing after it can fail
+		// a lone site nothing after can fail completes its copy itself
 		const once =
 			transformedChildren.length === 1 &&
 			transformedProps.length === 1 &&
@@ -1083,7 +1083,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js.returnIfTransformFailed()
 	}
 
-	// out is data where a transform writes in place, and always at the first site
+	// out is data at the first site and where a transform writes in place
 	private compileCopy(js: NodeCompiler, first?: boolean): NodeCompiler {
 		if (this.writesInto(js)) return js
 		const copy = () =>
