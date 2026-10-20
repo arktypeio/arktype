@@ -392,14 +392,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.optional
 	)
 
-	// prototype-free so keys like "toString" or an own "__proto__" are only
-	// considered declared if they are explicitly specified
-	propsByKey: Record<Key, Prop.Node | undefined> = this.props.reduce(
-		(result: Record<Key, Prop.Node | undefined>, node) => {
-			result[node.key] = node
-			return result
-		},
-		Object.create(null)
+	// a null prototype, so a key like "toString" isn't declared, and
+	// fromEntries, so a declared "__proto__" is an own key
+	propsByKey: Record<Key, Prop.Node | undefined> = Object.setPrototypeOf(
+		Object.fromEntries(this.props.map(node => [node.key, node])),
+		null
 	)
 
 	propsByKeyReference: RegisteredReference = registeredReference(
