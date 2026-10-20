@@ -3230,20 +3230,15 @@ const isKeyword = (predicate: unknown): boolean =>
 	runtimePathsByValue.has(predicate) && (predicate as Fn).length < 2
 
 // a case returning what the next one does falls through to it
-const sharedReturnCase = /^( +case [^]*): return ([^]*)$/
+const sharedReturnCase = /^( +)(case [^]*): return ([^]*)$/
 
 const casesFallingThrough = (body: string): string => {
 	const lines = body.split("\n")
 	for (let i = 0; i < lines.length - 1; i++) {
-		const [, label, returned] = sharedReturnCase.exec(lines[i]) ?? []
+		const [, indent, label, returned] = sharedReturnCase.exec(lines[i]) ?? []
 		const next = sharedReturnCase.exec(lines[i + 1])
-		if (
-			label &&
-			next &&
-			next[2] === returned &&
-			/^ */.exec(next[1])![0] === /^ */.exec(label)![0]
-		)
-			lines[i] = `${label}:`
+		if (label && next?.[1] === indent && next[3] === returned)
+			lines[i] = `${indent}${label}:`
 	}
 	return lines.join("\n")
 }
