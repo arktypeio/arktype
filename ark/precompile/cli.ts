@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from "node:fs"
 import { dirname, relative } from "node:path"
 import { parseArgs } from "node:util"
 import { emitDeclarations, sharedDeclarationFile } from "./declare.ts"
-import { writeNodeVersionMessage } from "./host.ts"
+import { isBuildError, writeNodeVersionMessage } from "./host.ts"
 import type { PrecompilePluginOptions } from "./driver.ts"
 import {
 	assertPrecompileOptions,
@@ -127,11 +127,7 @@ const report = (() => {
 		return check(positionals, opts)
 	} catch (e) {
 		// e.g. a config module that can't be read, which the message names
-		if (
-			!(e instanceof Error) ||
-			(e.name !== "Error" && e.name !== "ParseError")
-		)
-			throw e
+		if (!isBuildError(e)) throw e
 		console.error(e.message)
 		process.exit(1)
 	}

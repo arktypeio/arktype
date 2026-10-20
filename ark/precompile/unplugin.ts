@@ -25,15 +25,15 @@ import {
 	resolvesUndetailed,
 	rethrowAsBuildError,
 	runtimeSpecifiers,
-	throwBuildError,
-	unbundledMessage,
 	schemaSpecifier,
+	throwBuildError,
 	transformedFilterOf,
+	unbundledMessage,
 	undetailedSpecifierOf,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
-	writeUntransformedImportMessage,
-	writeUndetailedImportMessage
+	writeUndetailedImportMessage,
+	writeUntransformedImportMessage
 } from "./host.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
@@ -194,7 +194,7 @@ export const precompile: UnpluginInstance<
 			handler: loadModule
 		},
 		transform: {
-			filter: { id: transformedFilterOf(packages) },
+			filter: { id: transformedFilter },
 			async handler(code, id) {
 				// a plugin ahead of this one may have transpiled it, as Rollup's
 				// TypeScript plugin does, so its lines are read through their map

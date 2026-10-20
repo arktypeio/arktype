@@ -230,11 +230,13 @@ export const throwBuildError = (message: string): never => {
 	throw error
 }
 
-// what the precompiler throws to say what it can't build, not a crash,
-// whose stack would only show its frames
+// what the precompiler throws to say what it can't build, not a crash
+export const isBuildError = (e: unknown): e is Error =>
+	e instanceof Error && (e.name === "Error" || e.name === "ParseError")
+
+// a build error's stack would only show the precompiler's frames
 export const rethrowAsBuildError = (e: unknown): never => {
-	if (e instanceof Error && (e.name === "Error" || e.name === "ParseError"))
-		e.stack = ""
+	if (isBuildError(e)) e.stack = ""
 	throw e
 }
 

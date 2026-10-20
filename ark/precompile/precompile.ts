@@ -3140,7 +3140,6 @@ export class Precompiler {
 		return [...result]
 	}
 
-	// the import a read's object comes from, if the build can't resolve it
 	// a Type member read off an import the build can't follow, which may be
 	// a bundler's alias to a Type or a virtual module's value, once per import
 	private unresolvedReadsOf(module: SourceModule): Diagnostic[] {
@@ -3188,6 +3187,7 @@ export class Precompiler {
 		return result
 	}
 
+	// the import a read's object comes from, if the build can't resolve it
 	private unresolvedImportOf(
 		object: Node,
 		module: SourceModule
