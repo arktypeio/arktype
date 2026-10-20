@@ -280,8 +280,10 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	// the prop Allows reads before it checks data is an object
 	get leadingRead(): Prop.Node | undefined {
 		const prop = this.allowsProps[0]
-		if (!prop?.failsMissing || callsUserCode(prop.value)) return
+		if (!prop?.failsMissing) return
 		const { value } = prop
+		// Allows checks a morph's input, never running its morphs
+		if (callsUserCode(value.hasKind("morph") ? value.inner.in! : value)) return
 		// a value whose predicates read ctx isn't checked as an expression
 		return value.allowsRequiresContext && value.allowsRequiresTraversal ?
 				undefined

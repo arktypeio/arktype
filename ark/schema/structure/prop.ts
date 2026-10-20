@@ -144,7 +144,9 @@ export abstract class BaseProp<
 		return (
 			this.hasKind("required") &&
 			this.value.branches.every(branch => {
-				const basis = branch.hasKind("intersection") ? branch.basis : branch
+				// Allows checks a morph's input
+				const input = branch.hasKind("morph") ? branch.inner.in : branch
+				const basis = input?.hasKind("intersection") ? input.basis : input
 				return (
 					!!basis?.isBasis() &&
 					!(basis.hasKind("unit") && basis.unit === undefined)

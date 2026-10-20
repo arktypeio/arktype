@@ -396,6 +396,7 @@ An object definition's values are read as each key is parsed rather than all bef
 A getter or `Proxy` trap on the data can see these reads change:
 
 - `allows`, and the check a call runs before it looks for errors, read the first required key they check before checking that data is an object, so a getter for that key on a primitive's prototype, such as `String.prototype` or `Object.prototype`, runs before the primitive is rejected. They then look for `Object.prototype` in the object's prototype chain, so a `Proxy`'s `getPrototypeOf` trap runs.
+- `allows`, and the check a call runs before it looks for errors, read a required key whose value can't be `undefined`, a morph's input included, without first asking whether data has it, so a `has` trap doesn't run for it.
 - `allows`, and the check a call runs before it looks for errors, may read a value checked against a union, `boolean` included, once for each branch, so its getter or trap can run more than once, and a value that reads differently each time is allowed if any of those reads is.
 - Checking that a `Date` is valid reads its `getTime` and calls it as a method when it's `Date.prototype.getTime`, so a getter or trap for `getTime` runs as it's checked.
 - A call that reports errors may read a failing prop's value more than once, so its getter or trap can run again, and a value that reads differently each time is allowed if any of those reads is.

@@ -237,6 +237,22 @@ contextualize(() => {
 		attest(T.allows(unprototyped)).equals(true)
 	})
 
+	it("compiled code reads a required morph's key without asking whether data has it", () => {
+		const T = type({ count: "string.numeric.parse", id: "number" })
+		const asked: PropertyKey[] = []
+		const data = new Proxy(
+			{ count: "1", id: 1 },
+			{ has: (o, k) => asked.push(k) > 0 && k in o }
+		)
+		// the first data is checked uncompiled
+		T.allows(data)
+		asked.length = 0
+		attest(T.allows(data)).equals(true)
+		attest(asked).equals([])
+		attest(T.allows({ id: 1 })).equals(false)
+		attest(T.allows("1")).equals(false)
+	})
+
 	describe("missing", () => {
 		const requiredError = (T: type.Any, data: object = {}) => {
 			const error = (T(data) as type.errors).issues[0]
