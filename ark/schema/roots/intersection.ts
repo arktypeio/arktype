@@ -272,18 +272,20 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 		if (js.traversalKind === "Allows") {
 			const read =
 				this.inner.domain?.domain === "object" && !this.prestructurals.length ?
-					this.structure?.leadingRead
+					this.structure?.allowsProps[0]
 				:	undefined
 			js.block("for (;;)", () => {
 				for (const child of this.children) {
 					if (child !== this.basis || !read) js.check(child, { breaks: true })
 					else {
+						// a key is read before data is checked to be an object
 						js.rejectNullish()
-						if (!this.structure!.allowsChecksObject)
-							js.readFirst(read, () => js.line("break"))
+							.line(`data${js.prop(read.key)}`)
+							.if("!(data instanceof Object || Object(data) === data)", () =>
+								js.line("break")
+							)
 					}
 				}
-				js.read = undefined
 				return js.return(true)
 			}).return(false)
 			return

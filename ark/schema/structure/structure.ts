@@ -277,24 +277,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return (this._allowsProps ??= orderedForAllows(this.props))
 	}
 
-	// the prop Allows reads before it checks data is an object
-	get leadingRead(): Prop.Node | undefined {
-		const prop = this.allowsProps[0]
-		if (!prop?.failsMissing) return
-		const { value } = prop
-		// Allows checks a morph's input, never running its morphs
-		if (callsUserCode(value.hasKind("morph") ? value.inner.in! : value)) return
-		// a value whose predicates read ctx isn't checked as an expression
-		return value.allowsRequiresContext && value.allowsRequiresTraversal ?
-				undefined
-			:	prop
-	}
-
-	// Allows not written in its parent's checks data is an object itself
-	get allowsChecksObject(): boolean {
-		return (!!this.index || this.undeclared === "reject") && !!this.leadingRead
-	}
-
 	private _propsByKey: Record<Key, Prop.Node | undefined> | undefined
 	get propsByKey(): Record<Key, Prop.Node | undefined> {
 		// on a null prototype, "__proto__" is a key and "toString" isn't
@@ -956,10 +938,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		if (conjunction !== undefined) return js.return(conjunction)
 
 		const props = js.traversalKind === "Allows" ? this.allowsProps : this.props
-		if (js.traversalKind === "Allows" && this.allowsChecksObject)
-			js.readFirst(props[0], () => js.return(false))
 		for (const prop of props) js.check(prop)
-		js.read = undefined
 
 		if (this.sequence) js.check(this.sequence)
 

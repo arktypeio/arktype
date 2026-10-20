@@ -250,8 +250,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// whether a transform writes into the object it receives
 	declare readonly inPlace?: boolean
 	checksTransformErrors = false
-	// a prop whose value Allows read into `first` before checking data
-	read?: BaseNode | undefined
 
 	constructor(ctx: NodeCompiler.Context) {
 		super("data", "ctx")
@@ -365,15 +363,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 	rejectNullish(): this {
 		return this.block("switch (data)", () =>
 			this.line("case null: case undefined: return false")
-		)
-	}
-
-	// reads data's first key into `first`, then checks data is an object
-	readFirst(prop: BaseNode & { key: PropertyKey }, fail: () => unknown): this {
-		this.read = prop
-		return this.const("first", `data${this.prop(prop.key)}`).if(
-			"!(data instanceof Object || Object(data) === data)",
-			fail as never
 		)
 	}
 
