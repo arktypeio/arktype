@@ -19,6 +19,7 @@ import type {
 	Prerequisite,
 	errorContext
 } from "../kinds.ts"
+import type { BaseNode } from "../node.ts"
 import type { DiscriminantErrorContext } from "../roots/union.ts"
 import type { UndeclaredErrorContext } from "../structure/structure.ts"
 import type { NodeKind } from "./implement.ts"
@@ -35,7 +36,12 @@ import {
 	type FailureSite,
 	type UnionSite
 } from "./issues.ts"
-import { Traversal, type InternalTraversal } from "./traversal.ts"
+import {
+	applyRejected,
+	Traversal,
+	type FailHandler,
+	type InternalTraversal
+} from "./traversal.ts"
 
 export { throwOnDefault } from "./issues.ts"
 
@@ -81,16 +87,26 @@ const maxScannedLength = 8
 export class ArkErrors extends BaseArkErrors {
 	// grouped by path only when read
 	declare _: ArkError[]
-	private grouped: ArkError[] = []
-	private groupedCount = 0
+	declare private grouped: ArkError[]
+	declare private groupedCount: number
 	// errors by the string of their path, once there are enough to index
-	private index: Record<string, ArkError> | undefined
-	private written = true
-	private locale: Locale | undefined
-	private config: ResolvedConfig
+	declare private index: Record<string, ArkError> | undefined
+	declare private written: boolean
+	declare private locale: Locale | undefined
+	declare private config: ResolvedConfig
 
 	constructor(config: ResolvedConfig) {
 		super()
+		this._init(config)
+	}
+
+	/** @internal sets what reading its issues groups and writes */
+	_init(config: ResolvedConfig): void {
+		this.grouped = []
+		this.groupedCount = 0
+		this.index = undefined
+		this.written = true
+		this.locale = undefined
 		this.config = config
 	}
 
@@ -258,6 +274,69 @@ const mergeErrors = (
 	// copies are written with the receiving errors' config
 	for (const error of merged._issues)
 		errors._.push(unwrittenError(error, prefix, errors._config))
+}
+
+type UnreadErrors = new (
+	node: BaseNode,
+	data: unknown,
+	config: ResolvedConfig,
+	ctor: typeof Traversal
+) => ArkErrors
+
+// errors whose issues a root's traversal finds in data once they're read
+const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
+	class Unread {
+		declare config: ResolvedConfig
+		declare _node: BaseNode
+		declare _data: unknown
+		declare _ctor: typeof Traversal
+		declare _found?: ArkError[]
+
+		constructor(
+			node: BaseNode,
+			data: unknown,
+			config: ResolvedConfig,
+			ctor: typeof Traversal
+		) {
+			this.config = config
+			this._node = node
+			this._data = data
+			this._ctor = ctor
+		}
+
+		get _(): ArkError[] {
+			if (!this._found) {
+				const ctx = new this._ctor(this._data, this.config)
+				this._node.traverseApply(this._data, ctx)
+				// data a write or a getter has made valid since fails as a whole
+				if (!ctx.hasError())
+					ctx.reject({ expected: "valid", problem: "is invalid" })
+				const errors = this as {} as ArkErrors
+				// an ArkErrors holding what its traversal found
+				errors._init(this.config)
+				this._found = (ctx.finalize(null) as ArkErrors)._
+			}
+			return this._found
+		}
+	}
+	// an ArkErrors, built without the fields its constructor sets
+	Object.setPrototypeOf(Unread.prototype, ArkErrors.prototype)
+	return Unread as never
+})()
+
+// a root calling no user code and transforming nothing finds its issues once
+// they're read
+export const applyUnread = (
+	node: BaseNode,
+	data: unknown,
+	config: ResolvedConfig,
+	onFail: FailHandler | null,
+	ctor: typeof Traversal
+): unknown => {
+	if (node.includesUserCode || node.includesTransform)
+		return applyRejected(node, data, config, onFail, ctor)
+	const errors = new UnreadErrors(node, data, config, ctor)
+	return onFail ? onFail(errors as never) : errors
 }
 
 type Keyed = Record<PropertyKey, unknown>

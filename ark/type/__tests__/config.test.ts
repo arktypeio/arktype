@@ -226,6 +226,14 @@ contextualize(() => {
 			attest(calls).equals(0)
 		})
 
+		it("first finds its issue once read", () => {
+			const data: Record<string, unknown> = { a: 0, b: 0 }
+			const out = first.type({ a: "string", b: "number" })(data)
+			data.a = "a"
+			data.b = "b"
+			attest(out.toString()).snap("b must be a number (was a string)")
+		})
+
 		it("first keeps one issue a callback adds after another", () => {
 			const T = first.type([
 				"string",

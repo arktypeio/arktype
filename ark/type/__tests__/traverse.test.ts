@@ -545,4 +545,47 @@ d must be a number (was a string)`)
 			message: "value at [Symbol(tag)] must be a string (was a number)"
 		})
 	})
+
+	it("issues found once read", () => {
+		const data: Record<string, unknown> = { a: 0, b: 0 }
+		const out = type({ a: "string", b: "number" })(data) as ArkErrors
+		data.a = "a"
+		data.b = "b"
+		attest(out.summary).snap("b must be a number (was a string)")
+		data.b = 0
+		attest(out.summary).snap("b must be a number (was a string)")
+	})
+
+	it("issues of data made valid before they're read", () => {
+		const data: Record<string, unknown> = { a: 0 }
+		const out = type({ a: "string" })(data) as ArkErrors
+		data.a = "a"
+		attest(out.toJSON()).snap([
+			{
+				data: { a: "a" },
+				path: [],
+				expected: "valid",
+				problem: "is invalid",
+				code: "predicate",
+				propString: "",
+				actual: "an object",
+				message: "is invalid"
+			}
+		])
+	})
+
+	it("issues found as it validates where it calls a narrow", () => {
+		const T = type({ a: "string", b: "number" }).narrow(() => true)
+		const data: Record<string, unknown> = { a: 0, b: 0 }
+		const out = T(data) as ArkErrors
+		data.a = "a"
+		attest(out.summary).snap("a must be a string (was a number)")
+	})
+
+	it("issues found as it validates where it applies a default", () => {
+		const data: Record<string, unknown> = { a: 0 }
+		const out = type({ a: "string", b: "number = 0" })(data) as ArkErrors
+		data.a = "a"
+		attest(out.summary).snap("a must be a string (was a number)")
+	})
 })

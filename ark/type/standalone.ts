@@ -2465,8 +2465,10 @@ ${writeFunction(
 			param === "Traversal" ? `runtime.${ctx}`
 			: param === "config" ? "runtime.runtimeConfig"
 			: param === "TransformErrors" ? param
-			: param === "applyRejected" && appliesErrors ? "runtime.applyNodeErrors"
-			: this.emit(rootApplyRuntime[param])
+			: param === "applyRejected" ?
+				appliesErrors ? "runtime.applyNodeErrors"
+				:	"runtime.applyRejected"
+			:	this.emit(rootApplyRuntime[param])
 		const strategy = root.rootApplyStrategy
 		const isArrow =
 			!root.includesAlias &&

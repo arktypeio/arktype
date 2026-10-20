@@ -1,14 +1,13 @@
 import { unset } from "@ark/util"
 import type { BaseRoot } from "../roots/root.ts"
 import { CompiledFunction } from "./compile.ts"
-import { ArkTraversal } from "./errors.ts"
+import { applyUnread, ArkTraversal } from "./errors.ts"
 import { TransformErrors } from "./transform.ts"
 import {
 	addTransformErrors,
 	allowsAcyclic,
 	allowsInContext,
 	applyCyclic,
-	applyRejected,
 	transformResolution
 } from "./traversal.ts"
 
@@ -17,7 +16,7 @@ export const rootApplyRuntime = {
 	TransformErrors,
 	addTransformErrors,
 	applyCyclic,
-	applyRejected,
+	applyRejected: applyUnread,
 	allowsAcyclic,
 	allowsInContext,
 	transformResolution
