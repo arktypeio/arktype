@@ -673,6 +673,48 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 		attest(run(output[0].code)).equals(runPlain(configured))
 	})
 
+	it("reports the lines of a module a plugin ahead of it transpiled", async () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+
+interface Settings {
+	limit: number
+}
+
+const settings: Settings = { limit: Math.random() }
+
+export const User = type({ name: \`string <= \${settings.limit}\` })
+`
+		})
+		// loads TypeScript as JavaScript, as Rollup's TypeScript plugin does
+		const transpile = {
+			name: "transpile",
+			load: (id: string) => {
+				if (!id.endsWith(".ts")) return
+				const { code, map } = transformSync(readFileSync(id, "utf8"), {
+					loader: "ts",
+					sourcemap: "external",
+					sourcefile: id
+				})
+				return { code, map }
+			}
+		}
+		const message = await viteBuild({
+			...viteConfig({ cwd: root }, root),
+			plugins: [transpile, precompile.vite({ cwd: root, conditions })],
+			build: { write: false, lib: { entry: "main.ts", formats: ["es"] } }
+		}).then(
+			() => "",
+			(e: Error) => e.message
+		)
+		// what the plugin threw, after Vite's header naming the module
+		attest(message.split("\nError: ")[1])
+			.snap(`main.ts:9:21  type({ name: \`string <= \${settings.limit}\` }) cannot be precompiled
+  \`settings\` is \`{ limit: Math.random() }\` (main.ts:7:7)
+  \`Math.random\` is not one of the build's pure built-ins
+  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
+	})
+
 	it("keeps its worker across esbuild's rebuilds", async () => {
 		const first = nextThreadId()
 		const build = await context({

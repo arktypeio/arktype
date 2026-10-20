@@ -321,6 +321,9 @@ importers:
       '@ark/util':
         specifier: workspace:*
         version: link:../util
+      '@jridgewell/sourcemap-codec':
+        specifier: 1.5.5
+        version: 1.5.5
       arkregex:
         specifier: workspace:*
         version: link:../regex

@@ -5,6 +5,11 @@ import {
 	type Program,
 	type Span
 } from "oxc-parser"
+import {
+	decode,
+	type SourceMapMappings,
+	type SourceMapSegment
+} from "@jridgewell/sourcemap-codec"
 import { ModuleScopes, walk } from "./scope.ts"
 
 export class SourceModule {
@@ -18,11 +23,14 @@ export class SourceModule {
 	// nodes a `// @ark-runtime` comment leads, whose sites run on arktype
 	islands: Node[]
 	private lineStarts: number[] | undefined
+	// where a tool that transpiled the source before the build maps its lines
+	private mappings: SourceMapMappings | undefined
 
-	constructor(id: string, source: string, path: string) {
+	constructor(id: string, source: string, path: string, mappings?: string) {
 		this.id = id
 		this.path = path
 		this.source = source
+		this.mappings = mappings ? decode(mappings) : undefined
 		let result = parse(id, source, langOf(id))
 		// Next and other tools allow JSX in a .js module
 		if (result.errors.length && id.endsWith(".js")) {
@@ -47,7 +55,16 @@ export class SourceModule {
 			if (this.lineStarts[mid] <= offset) low = mid
 			else high = mid - 1
 		}
-		return [low + 1, offset - this.lineStarts[low] + 1]
+		const column = offset - this.lineStarts[low]
+		// the last segment starting at or before the column, sorted by column
+		let mapped: SourceMapSegment | undefined
+		for (const segment of this.mappings?.[low] ?? []) {
+			if (segment[0] > column) break
+			if (segment.length > 1) mapped = segment
+		}
+		return mapped ?
+				[mapped[2]! + 1, mapped[3]! + column - mapped[0] + 1]
+			:	[low + 1, column + 1]
 	}
 
 	positionOf(span: Span): string {

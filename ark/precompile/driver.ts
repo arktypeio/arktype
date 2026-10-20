@@ -64,7 +64,12 @@ export interface PrecompilerWorkerData {
 }
 
 export type PrecompileRequest =
-	| [kind: "transform", source: string, id: string]
+	| [
+			kind: "transform",
+			source: string,
+			id: string,
+			mappings?: string | undefined
+	  ]
 	| [kind: "check", source: string, id: string]
 	| [kind: "lint", source: string, id: string]
 	| [kind: "readDependency", importer: string]
@@ -107,8 +112,15 @@ const answerRequests = (
 		const { precompiler } = tracked
 		if (request[0] === "readDependency")
 			return precompiler.readDependency(request[1])
-		if (request[0] === "transform")
-			return transformedModuleOf(precompiler, request[1], request[2])
+		if (request[0] === "transform") {
+			return transformedModuleOf(
+				precompiler,
+				request[1],
+				request[2],
+				undefined,
+				request[3]
+			)
+		}
 		if (request[0] === "check")
 			return checkedModuleOf(precompiler, request[1], request[2])
 		precompiler.forgetCopies()
@@ -303,21 +315,23 @@ const precompiledOf = (
 	precompiler: Precompiler,
 	source: string,
 	id: string,
-	tracked: TrackedPrecompiler | undefined
+	tracked: TrackedPrecompiler | undefined,
+	mappings?: string
 ): PrecompiledModule | undefined => {
 	if (!precompiler.checkHelpers && !precompiler.importsArk(source, id)) return
 	if (tracked) recordGiven(tracked, source, id)
-	return precompiler.precompile(source, id)
+	return precompiler.precompile(source, id, mappings)
 }
 
 const transformedModuleOf = (
 	precompiler: Precompiler,
 	source: string,
 	id: string,
-	tracked?: TrackedPrecompiler
+	tracked?: TrackedPrecompiler,
+	mappings?: string
 ): TransformedModule | undefined => {
 	if (!precompiler.isTransformed(id)) return
-	const result = precompiledOf(precompiler, source, id, tracked)
+	const result = precompiledOf(precompiler, source, id, tracked, mappings)
 	if (!result) {
 		return {
 			code: undefined,

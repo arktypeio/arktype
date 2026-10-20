@@ -160,9 +160,25 @@ export const precompile: UnpluginInstance<
 		transform: {
 			filter: { id: transformedFilterOf(packages) },
 			async handler(code, id) {
-				const transformed = (await request("transform", code, id)) as
-					| TransformedModule
-					| undefined
+				// a plugin ahead of this one may have transpiled it, as Rollup's
+				// TypeScript plugin does, so its lines are read through their map
+				const map =
+					code === host.readFile(id) ?
+						undefined
+					:	((
+							this as { getCombinedSourcemap?: () => { mappings: string } }
+						).getCombinedSourcemap?.() ??
+						(
+							this.getNativeBuildContext?.() as
+								| { inputSourceMap?: { mappings: string } }
+								| undefined
+						)?.inputSourceMap)
+				const transformed = (await request(
+					"transform",
+					code,
+					id,
+					map?.mappings
+				)) as TransformedModule | undefined
 				if (!transformed) return
 				for (const dependency of transformed.dependencies)
 					if (dependency !== id) this.addWatchFile(dependency)

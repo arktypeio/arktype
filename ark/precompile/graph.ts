@@ -541,13 +541,13 @@ export class ModuleGraph {
 		return this.cwd === undefined ? id : relative(this.cwd, id)
 	}
 
-	add(id: string, source: string): SourceModule {
+	add(id: string, source: string, mappings?: string): SourceModule {
 		const existing = this.modulesById[id]
 		// a program evaluates a module once, so it stays as the graph holds it
 		if (existing instanceof SourceModule && existing.source === source)
 			return existing
 		if (existing) this.dropImportersOf(id)
-		const module = new SourceModule(id, source, this.pathOf(id))
+		const module = new SourceModule(id, source, this.pathOf(id), mappings)
 		this.modulesById[id] = module
 		return module
 	}

@@ -493,8 +493,8 @@ export class Precompiler {
 	}
 
 	// a config module given anew is read again
-	private add(id: string, source: string): SourceModule {
-		const module = this.graph.add(id, source)
+	private add(id: string, source: string, mappings?: string): SourceModule {
+		const module = this.graph.add(id, source, mappings)
 		if (this.configuration?.modules.includes(id)) this.configuration = undefined
 		return module
 	}
@@ -733,8 +733,9 @@ export class Precompiler {
 		}
 	}
 
-	precompile(source: string, id: string): PrecompiledModule {
-		const module = this.add(id, source)
+	// `mappings` maps the source to its file's, as a transpiling host's map does
+	precompile(source: string, id: string, mappings?: string): PrecompiledModule {
+		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
 		const { sites, diagnostics } = this.analysisOf(module)
 		for (const node of module.program.body) {
