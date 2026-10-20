@@ -260,11 +260,14 @@ const writeFunction = (
 	baking: Baking,
 	name: string,
 	params: string,
-	body: string
+	body: string,
+	// unless called as the module loads, a function is compiled at its first call
+	isCalledOnLoad = true
 ) =>
 	baking.hoisted ? `function ${name}(${params}) {\n${body}\n}`
-	: baking.shortest ? `const ${name} = (${params}) => {\n${body}\n}`
-	: `const ${name} = ((${params}) => {\n${body}\n})`
+	: baking.shortest || !isCalledOnLoad ?
+		`const ${name} = (${params}) => {\n${body}\n}`
+	:	`const ${name} = ((${params}) => {\n${body}\n})`
 
 const isCreatedByRuntime = (
 	members: ReadonlySet<ValidatorMember>,
@@ -1905,7 +1908,7 @@ return [${returned.join(", ")}]
 		const [params, body] = failureSources[name]
 		return this.share(
 			name,
-			writeFunction(this.baking, name, params, body),
+			writeFunction(this.baking, name, params, body, name === "applyBy"),
 			{},
 			name === "invalid" || name === "invalidCall"
 		)
