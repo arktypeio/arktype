@@ -1,5 +1,6 @@
 import {
 	$ark,
+	compileDefault,
 	hasArkKind,
 	isDecidedByAllows,
 	isNode,
@@ -23,6 +24,7 @@ import {
 	type NodeId,
 	type Optional,
 	type RootUnit,
+	type StructureNode,
 	type TraversalKind,
 	type UnionNode,
 	type UnitMember,
@@ -3302,6 +3304,35 @@ class StandaloneCompiler extends TraversalCompiler {
 			(applied, apply: string, value: string) => {
 				const allows = this.gates.get(apply)
 				return allows ? `${allows}(${value}) || ${applied}` : applied
+			}
+		)
+	}
+
+	// several defaults, a structure's only changes, all missing from a plain
+	// object copy it once, without branching
+	override initializeTransform(
+		transformedChildren: readonly BaseNode[],
+		structure?: StructureNode
+	): this {
+		super.initializeTransform(transformedChildren)
+		if (
+			!structure ||
+			transformedChildren.length < 2 ||
+			transformedChildren.length !== structure.defaultable.length ||
+			structure.includesMorph ||
+			structure.undeclared === "delete" ||
+			this.inPlace
+		)
+			return this
+		const keys = structure.defaultable.map(prop => prop.key)
+		return this.if(
+			`${keys.map(k => `!(${this.serialize(k)} in data) && `).join("")}${structure.compileShapeCheck(this)}Object.getPrototypeOf(data) === Object.prototype`,
+			() => {
+				this.const("out", "{ ...data }")
+				for (const prop of structure.defaultable)
+					compileDefault(this, prop, "out")
+				structure.compileCopiedDeclaredKeys(this, keys)
+				return this.return("out")
 			}
 		)
 	}

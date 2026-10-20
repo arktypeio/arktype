@@ -10,6 +10,7 @@ import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
 import type { IntersectionNode } from "../roots/intersection.ts"
 import type { UnionNode } from "../roots/union.ts"
+import type { StructureNode } from "../structure/structure.ts"
 import { registerBuilderCompiler, type ErrorBuilder } from "./errors.ts"
 import { registeredReference } from "./registry.ts"
 import { mergeTransformed, TransformErrors } from "./transform.ts"
@@ -467,7 +468,11 @@ export abstract class NodeCompiler extends CompiledFunction<
 		return this.line("ctx.path.pop()")
 	}
 
-	initializeTransform(transformedChildren: readonly BaseNode[]): this {
+	// a standalone build reads the structure it transforms
+	initializeTransform(
+		transformedChildren: readonly BaseNode[],
+		_structure?: StructureNode
+	): this {
 		this.checksTransformErrors = transformedChildren.some(
 			child => child.includesMorph || child.transformRequiresContext
 		)

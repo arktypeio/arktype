@@ -1004,7 +1004,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		for (const index of transformedIndex) transformedChildren.push(index.value)
 		if (this.sequence?.transforms) transformedChildren.push(this.sequence)
 		transformedChildren.push(...this.defaultable)
-		js.initializeTransform(transformedChildren)
+		js.initializeTransform(transformedChildren, this)
 		js.let("out", "data")
 		// the only site copies without checking out is data
 		const single = transformedChildren.length === 1
@@ -1017,7 +1017,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				this.compileCopy(js, single).line(
 					`out${js.prop(key)} = transformed${i}`
 				)
-				if (once) this.compileCopiedDeclaredKeys(js, key)
+				if (once) this.compileCopiedDeclaredKeys(js, [key])
 			}
 			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
 				`transformed${i}`,
@@ -1115,20 +1115,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	// read a required key first; copyOf handles data without it
-	private compileShapeCheck(js: NodeCompiler): string {
+	compileShapeCheck(js: NodeCompiler): string {
 		return this.required ?
 				`${js.serialize(this.required[0].key)} in data && `
 			:	""
 	}
 
-	private compileCopiedDeclaredKeys(
-		js: NodeCompiler,
-		written?: Key
-	): NodeCompiler {
+	compileCopiedDeclaredKeys(js: NodeCompiler, written?: Key[]): NodeCompiler {
 		if (this.sequence || this.writesInto(js)) return js
 		const copyKeys = () => {
 			for (const prop of this.props) {
-				if (prop.key === written) continue
+				if (written?.includes(prop.key)) continue
 				const missing = `!(${js.serialize(prop.key)} in out)`
 				js.if(
 					prop.required ? missing : (
@@ -1426,7 +1423,7 @@ const getPossibleMorph = (
 	return defaultableMorphsCache.set(cacheKey, $arkStructuralMorph)
 }
 
-const compileDefault = (
+export const compileDefault = (
 	js: NodeCompiler,
 	node: Optional.Node.withDefault,
 	out: string
