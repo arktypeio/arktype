@@ -794,7 +794,12 @@ const discriminantCaseToNode = (
 		caseDiscriminant === "undefined" ? $.node("unit", { unit: undefined })
 		: caseDiscriminant === "null" ? $.node("unit", { unit: null })
 		: caseDiscriminant === "boolean" ? $.units([true, false])
-		: caseDiscriminant
+		: (
+			caseDiscriminant.hasKind("domain") && caseDiscriminant.domain === "number"
+		) ?
+			// a typeof check doesn't exclude NaN
+			$.node("domain", { domain: "number", numberAllowsNaN: true })
+		:	caseDiscriminant
 	for (let i = path.length - 1; i >= 0; i--) {
 		const key = path[i]
 		node = $.node(
@@ -1083,10 +1088,15 @@ export const pruneDiscriminant = (
 				if (
 					(node.hasKind("domain") || discriminantCtx.kind === "unit") &&
 					propString === discriminantCtx.optionallyChainedPropString
-				)
+				) {
 					// if the discriminant has already checked the domain at the current path
-					// (or a unit literal, implying a domain), we don't need to recheck it
-					return true
+					// (or a unit literal, implying a domain), we don't need to recheck it,
+					// unless it is a number domain excluding NaN, which typeof doesn't
+					return (
+						discriminantCtx.kind === "unit" ||
+						!(node.hasKind("domain") && node.requiresNaNCheck)
+					)
+				}
 
 				// we don't need to recurse into index nodes as they will never
 				// have a required path therefore can't be used to discriminate
