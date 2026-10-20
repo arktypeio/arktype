@@ -86,7 +86,15 @@ export declare namespace State {
 
 export type Boundary = Anchor | "(" | ")" | "[" | "]"
 export type Anchor = "^" | "$"
-export type Control = QuantifyingChar | Boundary | "|" | "." | "{" | "-" | "\\"
+export type Control =
+	| QuantifyingChar
+	| Boundary
+	| "|"
+	| "."
+	| "{"
+	| "}"
+	| "-"
+	| "\\"
 
 export type AnchorMarker<inner extends Anchor = Anchor> =
 	`<${ZeroWidthSpace}${inner}${ZeroWidthSpace}>`
