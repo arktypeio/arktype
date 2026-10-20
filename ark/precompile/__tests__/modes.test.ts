@@ -62,7 +62,7 @@ configure({ exactOptionalPropertyTypes: false })`,
 				diagnosticsOf(`import { configure } from "arktype/config"
 configure({ exactOptionalPropertyTypes: false })`)
 			).snap([
-				"/main.ts:2:1  configure() is called, but the build has no `config` module\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module."
+				'/main.ts:2:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config: { config: "/main.ts" }'
 			])
 		})
 

@@ -2915,9 +2915,11 @@ export class Precompiler {
 						problem: misplaced,
 						reasons: [],
 						hint:
-							this.configures ? undefined : (
+							!this.configures ?
 								"Remove the call, or name its module as the build's `config`."
-							)
+							: this.config === undefined ?
+								`Name this module as the build's config: { config: ${JSON.stringify(module.path)} }`
+							:	undefined
 					}
 				:	(this.configuration ??
 					this.evaluateConfiguration(

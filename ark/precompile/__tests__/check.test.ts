@@ -156,7 +156,7 @@ forms.ts:16:16  type(\`string <= \${limit}\`) cannot be precompiled
 	it("fails on an error outside every site", () => {
 		const dir = fromHere("unconfigured")
 		attest(check([], { cwd: dir }).lines).snap([
-			"config.ts:3:1  configure() is called, but the build has no `config` module\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
+			'config.ts:3:1  configure() is called, but the build has no `config` module\n  Name this module as the build\'s config: { config: "config.ts" }',
 			"main.ts:4:21  accepted",
 			'main.ts:6:21  JSON.stringify(User) reads toJSON, which a standalone validator lacks\n  `User` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".',
 			"1 site in 2 files: 1 accepted (100.0%), 2 errors outside a site"
