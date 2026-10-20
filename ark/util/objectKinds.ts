@@ -7,7 +7,6 @@ import type { anyOrNever, satisfy, show } from "./generics.ts"
 import { tryParseNumber } from "./numbers.ts"
 import { defineProperties, isKeyOf } from "./records.ts"
 
-// built by functions, so a bundle reading only objectKindOf builds them at its first call
 // ECMAScript Objects
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 const ecmascriptConstructorsOf = () => ({
@@ -139,6 +138,7 @@ export type builtinConstructors = ecmascriptConstructors &
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
 let builtins: builtinConstructors | undefined
 
+// a bundle reading only objectKindOf builds these at its first call
 const builtinsOf = (): builtinConstructors =>
 	(builtins ??= defineProperties(
 		defineProperties(
