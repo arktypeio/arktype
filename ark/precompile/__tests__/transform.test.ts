@@ -243,7 +243,7 @@ export const A = type({ a: "string" })`)
 				specifier.startsWith("~arktype/intersection")
 			)!
 			attest(normalized(unit.match(/^const \w+ = .*/m)![0])).snap(
-				"const #0 = /* @__PURE__ */ ((...$) => {"
+				"const #0 = /* @__PURE__ */ ((r1) => {"
 			)
 		})
 
@@ -259,14 +259,15 @@ export const make = () => type({ a: "string" })`,
 			)
 			attest(normalized(Object.keys(early.modules))).snap([
 				"~arktype/#0",
-				"~arktype/hoisted/#1"
+				"~arktype/hoisted/#1",
+				"~arktype/hoisted/#2"
 			])
 			const [, unit] = Object.entries(early.modules).find(([specifier]) =>
-				specifier.startsWith("~arktype/hoisted/")
+				specifier.startsWith("~arktype/hoisted/intersection")
 			)!
 			attest(normalized(unit.match(/^function \w+\(\) {\n.*/m)![0]))
 				.snap(`function #0() {
-	return (#0Unit ??= ((...$) => {`)
+	return (#0Unit ??= ((r1) => {`)
 			// imported after arktype, the cycle reaches the module after its artifact
 			const late = precompile(
 				`import { type } from "arktype"
@@ -276,7 +277,8 @@ export const make = () => type({ a: "string" })`,
 			)
 			attest(normalized(Object.keys(late.modules))).snap([
 				"~arktype/#0",
-				"~arktype/#1"
+				"~arktype/#1",
+				"~arktype/#2"
 			])
 		})
 
@@ -1128,7 +1130,7 @@ export const Team = type({ lead: User })`
 			)
 			for (const specifier of shared)
 				attest(team.modules[specifier]).equals(user.modules[specifier])
-			attest(normalized(shared)).snap(["~arktype/#0"])
+			attest(normalized(shared)).snap(["~arktype/#0", "~arktype/#1"])
 		})
 
 		it("composes referenced Types' strings", () => {

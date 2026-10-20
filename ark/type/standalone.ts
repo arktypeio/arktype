@@ -1351,10 +1351,14 @@ ${writeFunction(
 			const emitted = this.emit(value)
 			const exported = /^runtime\.([\w$]+)$/.exec(emitted)?.[1]
 			if (!this.baking.flattens) {
-				if (!exported) return [`const r${i} = ${emitted}`]
-				// a unit's function receives what the runtime exports
+				const received =
+					exported ? emitted
+					: isLiteralSite(value, emitted) ? this.readSite(emitted)
+					: undefined
+				if (received === undefined) return [`const r${i} = ${emitted}`]
+				// a unit's function receives what the runtime and other units share
 				writing.params.push(`r${i}`)
-				writing.args.push(emitted)
+				writing.args.push(received)
 				return []
 			}
 			// a flat module reads what the runtime exports by the ref's name
@@ -1952,6 +1956,18 @@ return [${returned.join(", ")}]
 			name,
 			this.readValue(name)
 		)
+	}
+
+	// a site written once for every unit reading it
+	readSite(emitted: string): string {
+		const name = `site${hashOf(emitted)}`
+		// an object is parenthesized to be an arrow's value, not its body
+		const value = emitted[0] === "{" ? `(${emitted})` : emitted
+		this.importName(
+			this.share(name, writeValue(this.baking.hoisted, name, value)),
+			name
+		)
+		return this.readValue(name)
 	}
 
 	readFailure(name: keyof typeof failureSources): string {
@@ -3138,6 +3154,24 @@ const undeclaredSite = issueSite({ code: "undeclared" })
 const isInlineSite = (site: object): site is SiteContext =>
 	"code" in site &&
 	!(site as SiteContext).description?.match(printedHoleNamePattern)
+
+const siteWords = new Set([
+	"runtime",
+	"siteOf",
+	"keySiteOf",
+	"failing",
+	"value",
+	"path",
+	"missing"
+])
+
+// a site written from literals alone, so alike in every unit
+const isLiteralSite = (value: unknown, emitted: string): boolean =>
+	hasDomain(value, "object") &&
+	failureSites.has(value) &&
+	(
+		emitted.replace(/"(?:[^"\\]|\\.)*"/g, "").match(/[$A-Z_a-z][\w$]*/g) ?? []
+	).every(word => siteWords.has(word))
 
 const writeSiteOf = (
 	{ code, description }: SiteContext,
