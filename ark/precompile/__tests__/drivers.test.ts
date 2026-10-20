@@ -492,25 +492,35 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 
 		it("checks arktype resolves as its mode needs", async () => {
 			const host = createNodeHost({ conditions })
+			const main = readFileSync(join(app, "main.ts"), "utf8")
 			// what the loader reports where Turbopack resolves arktype to `target`
-			const check = (target: string, opts: PrecompilePluginOptions = {}) =>
-				new Promise<string | undefined>(settle =>
-					turbopack.call(
+			const check = (
+				target: string | undefined,
+				opts: PrecompilePluginOptions = {},
+				source = main
+			) =>
+				new Promise<string | undefined>(settle => {
+					const returned = turbopack.call(
 						{
 							resourcePath: join(app, "main.ts"),
 							getOptions: () => ({ ...opts, conditions, cwd: app }),
 							addDependency: () => {},
 							emitWarning: () => {},
-							getResolve: () => async (dir, request) =>
-								host.resolve(
-									request === "arktype" ? target : request,
+							getResolve: () => async (dir, request) => {
+								if (request === "arktype" && !target)
+									throw new Error(`Can't resolve '${request}'`)
+								return host.resolve(
+									request === "arktype" ? target! : request,
 									join(dir, "main.ts")
-								)!,
+								)!
+							},
 							async: () => error => settle(error?.message)
 						},
-						readFileSync(join(app, "main.ts"), "utf8")
+						source
 					)
-				)
+					// a module importing no runtime specifier is checked synchronously
+					if (returned !== undefined) settle(undefined)
+				})
 			attest(await check("arktype/runtime")).equals(undefined)
 			attest(await check("arktype")).equals(
 				writeAliasMessage("arktype", "../../../type/index.ts", {})
@@ -519,6 +529,16 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 				writeAliasMessage("arktype", undefined, { runtime: "arktype" })
 			)
 			attest(await check("arktype", { runtime: "arktype" })).equals(undefined)
+			// Turbopack reports a specifier it can't resolve
+			attest(await check(undefined)).equals(undefined)
+			// only what a module imports is checked, not a string naming it
+			attest(
+				await check(
+					"arktype",
+					{},
+					"export const docs = \"see 'arktype/errors'\"\n"
+				)
+			).equals(undefined)
 		})
 
 		it("reports dependencies before a rejected site", () => {

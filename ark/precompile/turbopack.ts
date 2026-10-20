@@ -1,5 +1,6 @@
 import { realpathSync } from "node:fs"
 import { dirname, relative } from "node:path"
+import { parseSync } from "oxc-parser"
 import {
 	createKeyedPrecompiler,
 	type KeyedModule,
@@ -49,9 +50,10 @@ export default function (
 		throwBuildError
 	)
 	const code = keyed.code ?? source
-	const specifiers = runtimeSpecifiers.filter(specifier =>
-		new RegExp(`["']${specifier}["']`).test(source)
-	)
+	const specifiers =
+		source.includes("arktype") ?
+			runtimeImportsOf(source, this.resourcePath)
+		:	[]
 	if (!specifiers.length || !this.getResolve || !this.async) return code
 	const done = this.async()
 	checkAliases(this.getResolve(), this.resourcePath, specifiers, opts).then(
@@ -71,7 +73,11 @@ const checkAliases = async (
 	const runtime = host.resolve("arktype/runtime", importer)
 	if (!runtime) return
 	for (const specifier of specifiers) {
-		const resolved = await resolve(dirname(importer), specifier)
+		// Turbopack reports what it can't resolve itself
+		const resolved = await resolve(dirname(importer), specifier).catch(
+			() => undefined
+		)
+		if (resolved === undefined) continue
 		const isRuntime = realpathSync(resolved) === realpathSync(runtime)
 		if (isRuntime !== resolvesToRuntime(specifier, opts)) {
 			throwBuildError(
@@ -83,4 +89,16 @@ const checkAliases = async (
 			)
 		}
 	}
+}
+
+// the runtime specifiers a module imports or exports from, not those it mentions
+const runtimeImportsOf = (source: string, id: string): string[] => {
+	const { module } = parseSync(id, source)
+	const imported = new Set([
+		...module.staticImports.map(entry => entry.moduleRequest.value),
+		...module.staticExports.flatMap(entry =>
+			entry.entries.flatMap(e => e.moduleRequest?.value ?? [])
+		)
+	])
+	return runtimeSpecifiers.filter(specifier => imported.has(specifier))
 }
