@@ -11,6 +11,7 @@ import {
 } from "@ark/precompile/internal/declare.ts"
 import {
 	precompile,
+	writeUncachedModuleMessage,
 	type PrecompileUnpluginOptions
 } from "@ark/precompile/unplugin"
 import { context, build as esbuild, transformSync, type Plugin } from "esbuild"
@@ -127,6 +128,14 @@ const bundlers = {
 		})
 		return outputFiles[0].text
 	}
+}
+
+interface RawHooks {
+	webpack(compiler: { options: { cache: object } }): void
+	transform: {
+		handler(this: object, code: string, id: string): Promise<{ code: string }>
+	}
+	load: { handler(id: string): string | undefined }
 }
 
 // each thread a process starts takes the next id
@@ -929,6 +938,45 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		attest(reported).equals([
 			writeUndetailedImportMessage(importer, "@ark/schema")
 		])
+	})
+
+	it("loads the modules a webpack build's cache kept", async () => {
+		const cache = {
+			type: "filesystem",
+			cacheLocation: join(writeFixture({}), "default-production")
+		}
+		// each build of a process, the second restoring what the first cached
+		const webpackBuild = () => {
+			const plugin = precompile.raw(
+				{ cwd: app, conditions },
+				{
+					framework: "webpack",
+					webpack: { compiler: {} as never },
+					versions: {}
+				}
+			) as unknown as RawHooks
+			plugin.webpack({ options: { cache } })
+			return plugin
+		}
+		const id = join(app, "schemas.ts")
+		const transformed = await webpackBuild().transform.handler.call(
+			{ addWatchFile: () => {}, warn: () => {} },
+			readFileSync(id, "utf8"),
+			id
+		)
+		const specifiers = [...transformed.code.matchAll(/"(~arktype\/[^"]+)"/g)]
+		const cached = webpackBuild()
+		attest(
+			specifiers.every(([, specifier]) =>
+				cached.load.handler(`\0${specifier}`)?.includes("arktype/runtime")
+			)
+		).equals(true)
+		attest(() => cached.load.handler("\0~arktype/lost")).throws(
+			writeUncachedModuleMessage(
+				"~arktype/lost",
+				join(cache.cacheLocation, "arktype")
+			)
+		)
 	})
 
 	it("a predicate reading ctx in an intersection", async () => {

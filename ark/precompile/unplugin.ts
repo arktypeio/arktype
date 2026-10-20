@@ -1,5 +1,6 @@
 import { throwError, type KeySet } from "@ark/util"
-import { dirname } from "node:path"
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
+import { dirname, join } from "node:path"
 import { relative } from "node:path/posix"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
 import {
@@ -70,6 +71,32 @@ export const precompile: UnpluginInstance<
 	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
+	// a persistent cache keeps a transformed module, but not the modules it wrote
+	let compiler: { options: { cache?: unknown } } | undefined
+	let storeDir: string | undefined
+	// read once the bundler has applied its defaults
+	const storeDirOf = () => {
+		if (storeDir === undefined && compiler) {
+			storeDir = storeDirIn(compiler.options.cache)
+			if (storeDir) mkdirSync(storeDir, { recursive: true })
+		}
+		return storeDir
+	}
+	const storeIn = (bundler: NonNullable<typeof compiler>) => {
+		compiler = bundler
+	}
+	const loadModule = (id: string) => {
+		const dir = storeDirOf()
+		if (id in modules || !dir) return modules[id]
+		let stored: [importer: string, code: string]
+		try {
+			stored = JSON.parse(readFileSync(join(dir, storedNameOf(id)), "utf8"))
+		} catch {
+			return throwError(writeUncachedModuleMessage(id.slice(1), dir))
+		}
+		importersById[id] = stored[0]
+		return (modules[id] = stored[1])
+	}
 	let isServing = false
 	// a Vite app's environments share the declarations of the app's build
 	const declarationsByApp = new WeakMap<object, Declarations>()
@@ -126,7 +153,7 @@ export const precompile: UnpluginInstance<
 		},
 		load: {
 			filter: { id: /^\0~arktype\// },
-			handler: id => modules[id]
+			handler: loadModule
 		},
 		transform: {
 			filter: { id: transformedFilterOf(packages) },
@@ -139,8 +166,16 @@ export const precompile: UnpluginInstance<
 					if (dependency !== id) this.addWatchFile(dependency)
 				for (const specifier in transformed.modules) {
 					const virtualId = `\0${specifier}`
-					modules[virtualId] ??= transformed.modules[specifier]
-					importersById[virtualId] ??= id
+					if (virtualId in modules) continue
+					modules[virtualId] = transformed.modules[specifier]
+					importersById[virtualId] = id
+					const dir = storeDirOf()
+					if (dir) {
+						writeFileSync(
+							join(dir, storedNameOf(virtualId)),
+							JSON.stringify([id, modules[virtualId]])
+						)
+					}
 				}
 				// esbuild drops a reported error
 				reportDiagnostics(transformed, warning => this.warn(warning))
@@ -202,6 +237,8 @@ export const precompile: UnpluginInstance<
 			}
 		},
 		watchChange: reset,
+		webpack: storeIn,
+		rspack: storeIn,
 		esbuild: {
 			// arktype resolves natively, outside the plugin's esbuild namespace
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
@@ -277,6 +314,28 @@ export const precompile: UnpluginInstance<
 })
 
 const esbuildResolution = "arktype"
+
+// in webpack's filesystem cache or Rspack's persistent one, else ""
+const storeDirIn = (cache: unknown): string => {
+	const options = cache as
+		| { type?: string; cacheLocation?: string; storage?: { location?: string } }
+		| undefined
+	const dir =
+		options?.type === "filesystem" ? options.cacheLocation
+		: options?.type === "persistent" ? options.storage?.location
+		: undefined
+	return dir ? join(dir, "arktype") : ""
+}
+
+// a module is named for what it holds, so one an earlier build stored holds the same
+const storedNameOf = (id: string) =>
+	`${encodeURIComponent(id.slice("\0~arktype/".length))}.json`
+
+export const writeUncachedModuleMessage = (
+	specifier: string,
+	dir: string
+): string =>
+	`${specifier} was written by a build whose cache kept it in ${dir}, where it no longer is. Delete the bundler's cache to rebuild it.`
 
 const internalSpecifiers = [
 	"arktype/internal",
