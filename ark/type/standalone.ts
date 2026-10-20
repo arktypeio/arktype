@@ -242,6 +242,8 @@ interface Baking {
 	freezes: boolean
 	readsConfig: boolean
 	createsLazily: boolean
+	// whether a validator compiles as its module loads
+	compilesValidators: boolean
 	checksTypes: boolean
 	mutatesInput: MutatesInput | undefined
 	hoisted: boolean
@@ -413,6 +415,7 @@ const writeArtifact = (
 		freezes: opts.freeze !== false,
 		readsConfig: configured !== false,
 		createsLazily: opts.lazy !== false || opts.hoisted === true,
+		compilesValidators: Object.keys(exports).length === 1,
 		checksTypes: opts.checks !== "none",
 		mutatesInput: opts.mutatesInput,
 		hoisted: opts.hoisted === true,
@@ -1577,6 +1580,12 @@ return [${returned.join(", ")}]
 		return this.baking.shortest ? fn : `(${fn})`
 	}
 
+	// a module's one validator compiles as it loads; of several, which a
+	// program's first parse mostly leaves uncalled, each at its first call
+	validatorOnLoad(fn: string): string {
+		return this.baking.compilesValidators ? this.compiledOnLoad(fn) : fn
+	}
+
 	traversalsOf(root: BaseRoot, unit: RootUnit): string[] {
 		const name = unit.names[root.id]
 		return unit.traversals[
@@ -2143,7 +2152,7 @@ return [${returned.join(", ")}]
 					// a minifier inlines a const read once, but not a default
 					`(({ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
-}) => ${this.compiledOnLoad(`(data, ...args) => {
+}) => ${this.validatorOnLoad(`(data, ...args) => {
 	if (!Array.isArray(data)) return runtime.applyCallErrors(apply, data, args, onFail, ${Ctx})
 	const i = rejectedIn(data)
 	return i === undefined ? data : runtime.applyElements(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
@@ -2154,7 +2163,7 @@ return [${returned.join(", ")}]
 			}
 			if (asValidator) {
 				return [
-					`((${pattern}, onFail) => ${this.compiledOnLoad(`(data, ...args) => allows(data) ? ${valid} : runtime.applyCallErrors(apply, data, args, onFail, ${refOf("Traversal")})`)})`,
+					`((${pattern}, onFail) => ${this.validatorOnLoad(`(data, ...args) => allows(data) ? ${valid} : runtime.applyCallErrors(apply, data, args, onFail, ${refOf("Traversal")})`)})`,
 					parts,
 					true
 				]
@@ -2277,7 +2286,7 @@ return [${returned.join(", ")}]
 			:	traversals
 		if (asValidator && parts && !body) {
 			return [
-				`((${params}, onFail) => ${this.compiledOnLoad(`(data, ...args) => ${allows}(data) ? ${valid} : ${this.readFailure("invalidCall")}(data, args, onFail)`)})`,
+				`((${params}, onFail) => ${this.validatorOnLoad(`(data, ...args) => ${allows}(data) ? ${valid} : ${this.readFailure("invalidCall")}(data, args, onFail)`)})`,
 				parts,
 				true
 			]
@@ -2307,7 +2316,7 @@ return [${returned.join(", ")}]
 		failure?: keyof typeof failureSources
 	): string {
 		if (!this.baking.shortest)
-			return `((${params}) => ${this.compiledOnLoad(apply)})`
+			return `((${params}) => ${this.validatorOnLoad(apply)})`
 		const body = `\treturn ${apply}`
 		const name = `apply${hashOf(`${params}\n${body}`)}`
 		return this.read(
