@@ -23,6 +23,7 @@ import {
 	resolvesUndetailed,
 	runtimeSpecifiers,
 	throwBuildError,
+	unbundledMessage,
 	schemaSpecifier,
 	transformedFilterOf,
 	undetailedSpecifierOf,
@@ -265,6 +266,7 @@ export const precompile: UnpluginInstance<
 			// arktype resolves natively, outside the plugin's esbuild namespace
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
 			setup: build => {
+				if (!build.initialOptions.bundle) throwBuildError(unbundledMessage)
 				build.onDispose(restart)
 				if (isUndetailed) {
 					build.onResolve({ filter: schemaSpecifier }, args => {

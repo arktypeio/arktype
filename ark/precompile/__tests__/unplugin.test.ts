@@ -9,7 +9,10 @@ import {
 	writeDeclareFrameworkMessage,
 	writeDeclaredOutsideMessage
 } from "@ark/precompile/internal/declare.ts"
-import { writeUncachedModuleMessage } from "@ark/precompile/internal/host.ts"
+import {
+	unbundledMessage,
+	writeUncachedModuleMessage
+} from "@ark/precompile/internal/host.ts"
 import {
 	precompile,
 	type PrecompileUnpluginOptions
@@ -647,6 +650,19 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 		attest(() => precompile.esbuild({ declare: true })).throws(
 			writeDeclareFrameworkMessage("esbuild")
 		)
+	})
+
+	it("esbuild refuses a build that doesn't bundle", async () => {
+		const errors = await esbuild({
+			entryPoints: [join(app, "main.ts")],
+			write: false,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ cwd: app, conditions })]
+		}).then(
+			() => [],
+			(e: { errors: { text: string }[] }) => e.errors.map(error => error.text)
+		)
+		attest(errors).equals([unbundledMessage])
 	})
 
 	it("vite configured behind a transpiling plugin", async () => {

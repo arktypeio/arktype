@@ -257,3 +257,6 @@ export const writeNodeVersionMessage = (
 	version: string
 ): string =>
 	`${name} needs Node ${version} or later (this is ${process.versions.node})`
+
+export const unbundledMessage =
+	"precompile.esbuild() needs bundle: true, as a precompiled module imports the validators the bundle includes"
