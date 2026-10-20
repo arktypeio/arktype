@@ -235,3 +235,5 @@ export default {
 	}
 }
 ```
+
+The loader fails a module where Turbopack resolves `arktype` otherwise than this needs.

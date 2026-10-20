@@ -8,8 +8,9 @@ import {
 } from "@ark/precompile"
 import { precompile as bunPlugin } from "@ark/precompile/bun"
 import { writeDeclareFrameworkMessage } from "@ark/precompile/internal/declare.ts"
+import { createNodeHost } from "@ark/precompile/internal/host.ts"
 import { register } from "@ark/precompile/node"
-import turbopack from "@ark/precompile/turbopack"
+import turbopack, { writeAliasMessage } from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
 import { mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs"
@@ -431,6 +432,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 		) => {
 			const dependencies: string[] = []
 			try {
+				// synchronous without getResolve
 				const out = turbopack.call(
 					{
 						resourcePath: join(dir, file),
@@ -442,7 +444,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 						}
 					},
 					readFileSync(join(dir, file), "utf8")
-				)
+				)!
 				return { out, dependencies }
 			} catch (e) {
 				return { out: (e as Error).message, dependencies }
@@ -458,6 +460,37 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			attest(load(app, "schemas.ts", { runtime: "arktype" }).out).satisfies(
 				/^;\(\(registerPrecompiledUnits\) => {/
 			)
+		})
+
+		it("checks arktype resolves as its mode needs", async () => {
+			const host = createNodeHost({ conditions })
+			// what the loader reports where Turbopack resolves arktype to `target`
+			const check = (target: string, opts: PrecompilePluginOptions = {}) =>
+				new Promise<string | undefined>(settle =>
+					turbopack.call(
+						{
+							resourcePath: join(app, "main.ts"),
+							getOptions: () => ({ ...opts, conditions, cwd: app }),
+							addDependency: () => {},
+							emitWarning: () => {},
+							getResolve: () => async (dir, request) =>
+								host.resolve(
+									request === "arktype" ? target : request,
+									join(dir, "main.ts")
+								)!,
+							async: () => error => settle(error?.message)
+						},
+						readFileSync(join(app, "main.ts"), "utf8")
+					)
+				)
+			attest(await check("arktype/runtime")).equals(undefined)
+			attest(await check("arktype")).equals(
+				writeAliasMessage("arktype", "../../../type/index.ts", {})
+			)
+			attest(await check("arktype/runtime", { runtime: "arktype" })).equals(
+				writeAliasMessage("arktype", undefined, { runtime: "arktype" })
+			)
+			attest(await check("arktype", { runtime: "arktype" })).equals(undefined)
 		})
 
 		it("reports dependencies before a rejected site", () => {
