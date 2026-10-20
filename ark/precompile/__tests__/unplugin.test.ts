@@ -24,7 +24,7 @@ import {
 	symlinkSync,
 	writeFileSync
 } from "node:fs"
-import { join } from "node:path"
+import { join, relative } from "node:path"
 import { Worker } from "node:worker_threads"
 import {
 	createBuilder,
@@ -176,13 +176,27 @@ const fakePackage = (path: string, name: string, version: string) =>
 		path
 	)
 
+// the versions the precompiler runs on
+const versionOf = (dir: string): string =>
+	JSON.parse(readFileSync(fromHere("..", "..", dir, "package.json"), "utf8"))
+		.version
+const arktypeVersion = versionOf("type")
+const schemaVersion = versionOf("schema")
+
+// where a package the precompiler runs on is, from the program's root
+const ownPath = (dir: string) =>
+	relative(dependencies, fromHere("..", "..", dir))
+
+const versionHint =
+	"A precompiled validator is written for the arktype it was built with. Install one version of each, so @ark/precompile imports what the program does."
+
 // a program whose packages import arktype, one of them from a copy of its own
 const dependencyFiles = {
-	...fakePackage("node_modules/arktype", "arktype", "2.2.0"),
+	...fakePackage("node_modules/arktype", "arktype", arktypeVersion),
 	...fakePackage(
 		"node_modules/arktype/node_modules/@ark/schema",
 		"@ark/schema",
-		"0.2.0"
+		schemaVersion
 	),
 	...fakePackage("node_modules/@ark/schema", "@ark/schema", "0.1.0"),
 	...fakePackage("node_modules/shared", "shared", "1.0.0"),
@@ -786,7 +800,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 				(e: Error) => e.message
 			)
 		const report = `arktype resolves to more than one copy
-  2.2.0 at node_modules/arktype, reached from forked.ts
+  ${arktypeVersion} at node_modules/arktype, reached from forked.ts
   2.1.0 at node_modules/forked/node_modules/arktype, reached from node_modules/forked/index.js`
 		for (const runtime of [undefined, "arktype"] as const) {
 			const errors = await buildDependency("forked.ts", { runtime })
@@ -800,8 +814,32 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 			(await buildDependency("schema.ts")).filter(text =>
 				text.includes("more than one copy")
 			)
-		).snap([
-			"schema.ts:2:22  @ark/schema resolves to more than one copy\n  0.1.0 at node_modules/@ark/schema, reached from schema.ts\n  0.2.0 at node_modules/arktype/node_modules/@ark/schema, reached from node_modules/arktype/index.js\n  Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
+		).equals([
+			`schema.ts:1:8  @ark/schema resolves to 0.1.0, but @ark/precompile runs on ${schemaVersion}
+  0.1.0 at node_modules/@ark/schema, reached from schema.ts
+  ${schemaVersion} at ${ownPath("schema")}, which @ark/precompile imports
+  ${versionHint}
+schema.ts:2:22  @ark/schema resolves to more than one copy
+  0.1.0 at node_modules/@ark/schema, reached from schema.ts
+  ${schemaVersion} at node_modules/arktype/node_modules/@ark/schema, reached from node_modules/arktype/index.js
+  Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides.`
+		])
+	})
+
+	it("fails for a version of arktype other than its own", async () => {
+		attest(
+			(await buildDependency("forked.ts")).filter(text =>
+				text.includes("@ark/precompile runs on")
+			)
+		).equals([
+			`@ark/schema resolves to 0.1.0, but @ark/precompile runs on ${schemaVersion}
+  0.1.0 at node_modules/@ark/schema, reached from node_modules/forked/node_modules/arktype/index.js
+  ${schemaVersion} at ${ownPath("schema")}, which @ark/precompile imports
+  ${versionHint}`,
+			`arktype resolves to 2.1.0, but @ark/precompile runs on ${arktypeVersion}
+  2.1.0 at node_modules/forked/node_modules/arktype, reached from node_modules/forked/index.js
+  ${arktypeVersion} at ${ownPath("type")}, which @ark/precompile imports
+  ${versionHint}`
 		])
 	})
 

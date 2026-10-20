@@ -60,6 +60,7 @@ import {
 } from "arktype/internal/standalone.ts"
 import MagicString, { type SourceMap } from "magic-string"
 import { dirname, join, relative } from "node:path"
+import { fileURLToPath } from "node:url"
 import type {
 	CallExpression,
 	ImportDeclaration,
@@ -316,6 +317,7 @@ interface PackageCopy {
 interface CopiesReport {
 	message: string
 	reasons: string[]
+	hint: string
 }
 
 export const precompileModule = (
@@ -641,6 +643,17 @@ export class Precompiler {
 		copies[root] = { version, importer }
 		const reports =
 			Object.keys(copies).length > 1 ? [this.copiesReportOf(name)] : []
+		const own = this.ownPackageOf(name)
+		if (own[0] !== root && own[1] !== version && version !== "unknown") {
+			reports.push({
+				message: `${name} resolves to ${version}, but @ark/precompile runs on ${own[1]}`,
+				reasons: [
+					`${version} at ${this.graph.pathOf(root)}, reached from ${this.graph.pathOf(importer)}`,
+					`${own[1]} at ${this.graph.pathOf(own[0])}, which @ark/precompile imports`
+				],
+				hint: versionHint
+			})
+		}
 		// arktype's own dependencies may resolve to copies of their own
 		if (name === "arktype")
 			reports.push(...this.readCopies("@ark/schema", entry))
@@ -658,7 +671,7 @@ export class Precompiler {
 			[
 				report.message,
 				...report.reasons.map(reason => `  ${reason}`),
-				`  ${copiesHint}`
+				`  ${report.hint}`
 			].join("\n")
 		)
 		const warnings: string[] = []
@@ -689,9 +702,18 @@ export class Precompiler {
 		return [dirname(entry), "unknown"]
 	}
 
+	// the copy the precompiler builds with, which its validators are written for
+	private ownPackageOf(name: ArkPackage): [root: string, version: string] {
+		return (ownPackagesByName[name] ??= this.packageOf(
+			name,
+			fileURLToPath(import.meta.resolve(name))
+		))
+	}
+
 	private copiesReportOf(name: ArkPackage): CopiesReport {
 		const copies = this.copiesByPackage[name]
 		return {
+			hint: copiesHint,
 			message: `${name} resolves to more than one copy`,
 			reasons: Object.keys(copies).map(
 				root =>
@@ -722,7 +744,8 @@ export class Precompiler {
 						specifier,
 						"copies",
 						report.message,
-						report.reasons
+						report.reasons,
+						report.hint
 					)
 				)
 			}
@@ -3620,6 +3643,13 @@ export const writeStandaloneDependencyMessage = <name extends string>(
 
 export type writeStandaloneDependencyMessage<name extends string> =
 	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`
+
+const ownPackagesByName: Partial<
+	Record<ArkPackage, [root: string, version: string]>
+> = {}
+
+const versionHint =
+	"A precompiled validator is written for the arktype it was built with. Install one version of each, so @ark/precompile imports what the program does."
 
 const copiesHint =
 	"Types and errors from one copy aren't recognized by another. Install one version of each, e.g. with your package manager's dedupe or overrides."
