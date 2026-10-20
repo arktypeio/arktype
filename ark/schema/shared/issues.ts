@@ -117,10 +117,8 @@ class ArkIssues implements StandardSchemaV1.FailureResult, FailureContext {
 	 */
 	get summary(): string {
 		let summary = ""
-		for (const issue of this.issues) {
-			if (summary) summary += "\n"
-			summary += issue.message
-		}
+		for (const issue of this._)
+			summary += (summary && "\n") + (issue.message ??= messageOf(issue))
 		return summary
 	}
 
