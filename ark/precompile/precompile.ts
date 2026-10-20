@@ -2152,6 +2152,8 @@ export class Precompiler {
 		const candidatesBySite = new Map<Site, SiteCandidate>()
 		const diagnostics: Diagnostic[] = []
 		const configureStart = this.configureStartOf(module)
+		// where the module first reports a configuration it can't apply
+		let unappliedAt: string | undefined
 		for (const candidate of candidates) {
 			let settledRanges = settledRangesByFn.get(candidate.fn)
 			if (!settledRanges)
@@ -2196,16 +2198,20 @@ export class Precompiler {
 						`${configuration.problem} (${this.graph.pathOf(this.config!)})`,
 						...configuration.reasons
 					]
+					// the module's first such site says why, and the rest point to it
 					diagnostics.push(
 						this.diagnostic(
 							module,
 							node,
 							"R3",
 							message,
-							refusal,
-							configuration.hint
+							unappliedAt ?
+								[`for the reasons given at ${unappliedAt}`]
+							:	refusal,
+							unappliedAt ? false : configuration.hint
 						)
 					)
+					unappliedAt ??= module.positionOf(node)
 					sites.push(refuse(site, [message, ...refusal]))
 					continue
 				}

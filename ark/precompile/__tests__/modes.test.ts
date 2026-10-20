@@ -359,6 +359,30 @@ configure({ exactOptionalPropertyTypes: false })`,
 			])
 		})
 
+		it("says once in a module why it can't apply a configuration", () => {
+			attest(
+				inFreshProcess(async () => {
+					const { Precompiler, renderDiagnostic } = await import(
+						"@ark/precompile"
+					)
+					const { memoryHost } = await import("./utils.ts")
+					const config =
+						'import { configure } from "arktype/config"\nconfigure({ onUndeclaredKey: process.env.X ? "delete" : "ignore" })'
+					const main =
+						'import "./config.ts"\nimport { type } from "arktype"\nexport const A = type({ a: "string" })\nexport const B = type({ b: "number" })'
+					return new Precompiler(
+						memoryHost({ "/config.ts": config, "/main.ts": main }),
+						{ config: "/config.ts" }
+					)
+						.precompile(main, "/main.ts")
+						.diagnostics.map(renderDiagnostic)
+				})
+			).snap([
+				'/main.ts:3:18  type({ a: "string" }) is created under a configuration the build can\'t apply\n  configure({ onUndeclaredKey: process.env.X ? "delete" : "ig… is not static (/config.ts)\n  `process` is a global the build does not read\n  The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build\'s `config` module.',
+				'/main.ts:4:18  type({ b: "number" }) is created under a configuration the build can\'t apply\n  for the reasons given at /main.ts:3:18'
+			])
+		})
+
 		it("configure with an argument that creates a Type", () => {
 			attest(
 				inFreshProcess(async () => {
