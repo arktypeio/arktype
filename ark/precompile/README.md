@@ -236,4 +236,4 @@ export default {
 }
 ```
 
-The loader fails a module where Turbopack resolves `arktype` otherwise than this needs.
+The loader fails a module whose `arktype` imports Turbopack resolves other than these aliases do in standalone mode, or aliases at all with `runtime: "arktype"`.
