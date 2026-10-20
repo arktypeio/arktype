@@ -2024,11 +2024,13 @@ ${writeFunction(
 			!isTemplate && !this.baking.shortest && members.has("methods")
 		// only a config or meta sets the onFail a validator is created with
 		const unconfigured = !this.baking.readsConfig && !root.meta.onFail
+		const pipes = this.pipes(members, unconfigured)
 		const [applied, allows, isCompact, assertsItself] = this.emitRootApply(
 			root,
 			ownsValidator,
 			unconfigured,
-			ownsValidator && members.has("assert")
+			ownsValidator && members.has("assert"),
+			pipes
 		)
 		// emit meta before keying so an unemittable value is named
 		const meta =
@@ -2083,7 +2085,12 @@ ${writeFunction(
 			: made ?
 				[this.emitApplier(made.params, made.apply, made.failure), made.args]
 			: ownsValidator && !isCompact ?
-				["runtime.callingRootApply", `[${allows}, ${rootApply()}]`]
+				[
+					pipes ?
+						"runtime.callingRootApply"
+					:	"([, rootApply]) => (data, _, onFail) => rootApply(data, onFail)",
+					`[${allows}, ${rootApply()}]`
+				]
 			:	[rootApply(), allows]),
 			...(createsWith ?
 				[
@@ -2126,8 +2133,9 @@ ${writeFunction(
 		const hasAttributes =
 			keepsMeta || introspectionMembers.some(member => members.has(member))
 		const call =
-			ownsValidator ?
-				`make(parts${configured ? ", configuredOnFail" : ""})`
+			ownsValidator ? `make(parts${configured ? ", configuredOnFail" : ""})`
+			: !this.pipes(members, unconfigured) ?
+				"(data, _, onFail) => rootApply(data, onFail)"
 			:	`(data, pipedFromCtx, onFail${configured ? " = configuredOnFail" : ""}) => pipedFromCtx ? runtime.${this.baking.detailsErrors ? "pipedInto" : "pipedIntoUndetailed"}(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
 		const body = [
 			applier ? `const rootApply = ${applier.apply}`
@@ -2184,6 +2192,12 @@ ${writeFunction(
 			name
 		)
 		return name
+	}
+
+	// an undetailed validator adds its issue to a traversal it's passed only
+	// where assert or a configured onFail would otherwise end the traversal
+	pipes(members: ReadonlySet<ValidatorMember>, unconfigured: boolean): boolean {
+		return this.baking.detailsErrors || !unconfigured || members.has("assert")
 	}
 
 	frozen(expression: string): string {
@@ -2420,7 +2434,8 @@ ${writeFunction(
 		root: BaseRoot,
 		asValidator: boolean,
 		unconfigured: boolean,
-		asserts: boolean
+		asserts: boolean,
+		pipes: boolean
 	): [
 		rootApply: string | RootApplier,
 		allows: string,
@@ -2439,7 +2454,8 @@ ${writeFunction(
 				callbacks ? "Traversal" : "InternalTraversal",
 				asValidator,
 				unconfigured,
-				asserts
+				asserts,
+				pipes
 			)
 		}
 		// callbacks only into runtime keywords report into ArkErrors
@@ -2585,7 +2601,8 @@ ${writeFunction(
 		ctx: string,
 		asValidator: boolean,
 		unconfigured: boolean,
-		asserts: boolean
+		asserts: boolean,
+		pipes: boolean
 	): [
 		rootApply: string | RootApplier,
 		allows: string,
@@ -2666,12 +2683,16 @@ ${writeFunction(
 			const failsWith = (args: string) =>
 				`${this.readFailure("invalidCall")}(data, ${args}${unconfigured ? "" : ", onFail"})`
 			return [
-				this.makeValidator(
-					`${params}${unconfigured ? "" : ", onFail"}`,
-					`(data, ...args) => ${allows}(data) ? ${valid} : ${failsWith("args")}`,
-					asserts &&
-						`(data, pipedFromCtx) => ${allows}(data) ? ${valid} : ${failsWith("[pipedFromCtx, runtime.throwOnDefault]")}`
-				),
+				pipes ?
+					this.makeValidator(
+						`${params}${unconfigured ? "" : ", onFail"}`,
+						`(data, ...args) => ${allows}(data) ? ${valid} : ${failsWith("args")}`,
+						asserts &&
+							`(data, pipedFromCtx) => ${allows}(data) ? ${valid} : ${failsWith("[pipedFromCtx, runtime.throwOnDefault]")}`
+					)
+				:	`((${params}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(
+						`(data, _, onFail) => ${allows}(data) ? ${valid} : ${this.readFailure("invalid")}(data, onFail)`
+					)})`,
 				parts,
 				true,
 				asserts

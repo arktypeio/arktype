@@ -509,6 +509,41 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 		).equals(plain)
 	})
 
+	it("esbuild an undetailed validator a morph passes its traversal", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+
+const validate: (data: unknown, ctx: unknown) => unknown = User
+
+const Parsed = type("string.json.parse").pipe((data, ctx) => validate(data, ctx))
+
+const out = Parsed('{"name":5}')
+console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => [issue.code, ...issue.path]) : out))
+`
+			},
+			fromHere("temp", "pipedIntoUndetailed")
+		)
+		const outputs = await Promise.all(
+			[{}, { assert: false }].map(async members =>
+				run(
+					await bundlers.esbuild(
+						{ cwd: root, errors: "none", config: false, members },
+						root
+					)
+				)
+			)
+		)
+		attest(outputs).snap([
+			`[["predicate"]]
+`,
+			`[["predicate"]]
+`
+		])
+	})
+
 	it("esbuild packages that opt in", async () => {
 		const standalone = await bundlers.esbuild({ cwd: library }, library)
 		attest(run(standalone)).equals(runPlain(library))
