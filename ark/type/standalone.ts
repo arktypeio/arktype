@@ -3132,14 +3132,6 @@ const countedCheck =
 	/^( +)const errorCount = ctx\.currentErrorCount\n +if \(!(r\d+)\(data, ctx\) && ctx\.currentErrorCount === errorCount\) {\n +return (!.+)\n +}\n +return !ctx\.failFast \|\| ctx\.currentErrorCount === errorCount\n$/
 
 class StandaloneCompiler extends TraversalCompiler {
-	// lets document.all through as an object, which costs less to test, in a
-	// switch, which minifiers don't rewrite as `data == null`
-	override rejectNullish(): this {
-		return this.block("switch (data)", () =>
-			this.line("case null: case undefined: return false")
-		)
-	}
-
 	override site(node: BaseNode): string {
 		return this.ref(issueSiteOf(node.failureSite))
 	}
