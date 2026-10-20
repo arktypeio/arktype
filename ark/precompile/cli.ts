@@ -20,7 +20,7 @@ if (major < 22 || (major === 22 && minor < 12)) {
 const { check, countOf } = await import("./check.ts")
 
 const usage =
-	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]"
+	"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]"
 
 const fail = (problem: string): never => {
 	console.error(`${problem}\n${usage}`)
@@ -44,7 +44,8 @@ const { values, positionals } = (() => {
 				"mutates-input": { type: "string" },
 				errors: { type: "string" },
 				conditions: { type: "string" },
-				tsconfig: { type: "string" }
+				tsconfig: { type: "string" },
+				"allow-unsafe": { type: "boolean" }
 			}
 		})
 	} catch (e) {
@@ -113,7 +114,8 @@ const opts: PrecompilePluginOptions = {
 	: mutatesInput) as PrecompileOptions["mutatesInput"],
 	errors: values.errors as PrecompileOptions["errors"],
 	conditions: values.conditions?.split(","),
-	tsconfig: values.tsconfig
+	tsconfig: values.tsconfig,
+	allowUnsafe: values["allow-unsafe"]
 }
 
 try {

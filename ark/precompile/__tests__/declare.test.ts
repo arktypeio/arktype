@@ -409,7 +409,7 @@ export type Elements = [string, number?];
 		attest({ status: cli.status, stderr: cli.stderr }).snap({
 			status: 2,
 			stderr:
-				"--declare emits the tsconfig's program and takes no other mode or files\nUsage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]\n"
+				"--declare emits the tsconfig's program and takes no other mode or files\nUsage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]\n"
 		})
 	})
 
@@ -418,7 +418,7 @@ export type Elements = [string, number?];
 		attest({ status: cli.status, stderr: cli.stderr }).snap({
 			status: 2,
 			stderr:
-				"Unknown option '--watch'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- \"--watch\"\nUsage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]\n"
+				"Unknown option '--watch'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- \"--watch\"\nUsage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]\n"
 		})
 	})
 
@@ -427,7 +427,7 @@ export type Elements = [string, number?];
 		attest({ status: cli.status, stdout: cli.stdout }).snap({
 			status: 0,
 			stdout:
-				"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>]\n       arktype-precompile --declare [--tsconfig <file>]\n"
+				"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]\n"
 		})
 	})
 

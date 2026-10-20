@@ -137,10 +137,10 @@ export const Admin = User.and({ role: "'admin'" })`
 			).snap([
 				{ errors: [], warnings: [] },
 				{
-					errors: [],
-					warnings: [
-						"lib imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws"
-					]
+					errors: [
+						'lib imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it. Set allowUnsafe: true to build anyway, with a warning.'
+					],
+					warnings: []
 				}
 			])
 		})
@@ -1025,7 +1025,8 @@ const User = type({ name: "string" })`)
 			])
 		})
 
-		it("a read off an import the build can't resolve", () => {
+		// as a bundler's alias or virtual module the build doesn't know of
+		const unresolvedReadsOf = (opts?: PrecompileOptions) => {
 			const source = `import { type } from "arktype"
 import { User, port } from "~/schemas"
 import { z } from "astro:content"
@@ -1034,16 +1035,24 @@ export const Guest = User.or("null")
 export const url = port.toFixed()
 export const Tag = z.string().optional()`
 			const host = memoryHost({ "/main.ts": source })
-			// as a bundler's alias or virtual module the build doesn't know of
 			const resolve: typeof host.resolve = (specifier, importer) =>
 				specifier.startsWith("~/") || specifier.includes(":") ?
 					undefined
 				:	host.resolve(specifier, importer)
-			attest(
-				new Precompiler({ ...host, resolve })
-					.analyze(source, "/main.ts")
-					.diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
-			).snap([
+			return new Precompiler({ ...host, resolve }, opts)
+				.analyze(source, "/main.ts")
+				.diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
+		}
+
+		it("a read off an import the build can't resolve", () => {
+			attest(unresolvedReadsOf()).snap([
+				"error /main.ts:4:22  User.and reads and, which a standalone validator lacks\n  `User` comes from `~/schemas`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it. Set allowUnsafe: true to build anyway, with a warning.",
+				"error /main.ts:7:20  z.string().optional reads optional, which a standalone validator lacks\n  `z.string()` comes from `astro:content`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it. Set allowUnsafe: true to build anyway, with a warning."
+			])
+		})
+
+		it("a read off an import the build can't resolve with allowUnsafe", () => {
+			attest(unresolvedReadsOf({ allowUnsafe: true })).snap([
 				"warning /main.ts:4:22  User.and reads and, which a standalone validator lacks\n  `User` comes from `~/schemas`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it.",
 				"warning /main.ts:7:20  z.string().optional reads optional, which a standalone validator lacks\n  `z.string()` comes from `astro:content`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it."
 			])

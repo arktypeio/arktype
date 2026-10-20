@@ -16,6 +16,7 @@ import type {
 	TransformedModule
 } from "./driver.ts"
 import {
+	allowUnsafeHint,
 	arkPackageName,
 	createNodeHost,
 	dependencyOf,
@@ -105,19 +106,28 @@ export const precompile: UnpluginInstance<
 		importersById[id] = stored[0]
 		return (modules[id] = stored[1])
 	}
-	const warnedPrecompiled = new Set<string>()
+	// what may throw at runtime fails unless allowUnsafe is set
+	const reportUnsafe = (
+		problem: string | undefined,
+		diagnostics: RenderedDiagnostics
+	) => {
+		if (!problem) return
+		if (opts?.allowUnsafe) diagnostics.warnings.push(problem)
+		else diagnostics.errors.push(`${problem} ${allowUnsafeHint}`)
+	}
+	const reportedPrecompiled = new Set<string>()
 	// a dependency importing the runtime ships what another build precompiled
-	const precompiledWarningOf = (id: string, importer: string) => {
+	const precompiledProblemOf = (id: string, importer: string) => {
 		const [, name] = (id === "arktype/runtime" && dependencyOf(importer)) || []
-		if (!name || arkPackageName.test(name) || warnedPrecompiled.has(name))
+		if (!name || arkPackageName.test(name) || reportedPrecompiled.has(name))
 			return
-		warnedPrecompiled.add(name)
+		reportedPrecompiled.add(name)
 		return writePrecompiledDependencyMessage(name)
 	}
 	const transformedFilter = transformedFilterOf(packages)
-	const warnedUntransformed = new Set<string>()
+	const reportedUntransformed = new Set<string>()
 	// e.g. a Svelte component's script, whose Types the build never sees
-	const untransformedWarningOf = (id: string, importer: string) => {
+	const untransformedProblemOf = (id: string, importer: string) => {
 		const file = importer.split("?")[0]
 		if (
 			!resolvesToRuntime(id, opts) ||
@@ -125,10 +135,10 @@ export const precompile: UnpluginInstance<
 			dependencyOf(file) ||
 			transformedFilter.include.test(importer) ||
 			transformedFilter.include.test(file) ||
-			warnedUntransformed.has(file)
+			reportedUntransformed.has(file)
 		)
 			return
-		warnedUntransformed.add(file)
+		reportedUntransformed.add(file)
 		return writeUntransformedImportMessage(file, id, opts?.cwd ?? process.cwd())
 	}
 	let isServing = false
@@ -177,15 +187,16 @@ export const precompile: UnpluginInstance<
 							host.resolve(undetailed, importer)
 						:	refuse(writeUndetailedImportMessage(importer, id))
 				}
-				const precompiled = precompiledWarningOf(id, importer)
-				if (precompiled) this.warn(precompiled)
-				if (!runtimeSpecifiers.includes(id)) return
-				const untransformed = untransformedWarningOf(id, importer)
-				if (untransformed) this.warn(untransformed)
-				const { errors, warnings } = await readDependency(importer)
-				for (const warning of warnings) this.warn(warning)
-				if (errors.length) return refuse(errors.join("\n"))
-				if (resolvesToRuntime(id, opts))
+				const isRuntime = runtimeSpecifiers.includes(id)
+				const diagnostics =
+					isRuntime ? await readDependency(importer) : noDiagnostics()
+				reportUnsafe(precompiledProblemOf(id, importer), diagnostics)
+				if (isRuntime)
+					reportUnsafe(untransformedProblemOf(id, importer), diagnostics)
+				for (const warning of diagnostics.warnings) this.warn(warning)
+				if (diagnostics.errors.length)
+					return refuse(diagnostics.errors.join("\n"))
+				if (isRuntime && resolvesToRuntime(id, opts))
 					return host.resolve("arktype/runtime", importer)
 			}
 		},
@@ -362,18 +373,18 @@ export const precompile: UnpluginInstance<
 								pluginData: esbuildResolution
 							}
 						)
-						if (!isRuntime) {
-							const precompiled = precompiledWarningOf(args.path, args.importer)
-							return precompiled ?
-									{ ...result, warnings: [{ text: precompiled }] }
-								:	result
+						const { errors, warnings } =
+							isRuntime ? await readDependency(args.importer) : noDiagnostics()
+						reportUnsafe(precompiledProblemOf(args.path, args.importer), {
+							errors,
+							warnings
+						})
+						if (isRuntime) {
+							reportUnsafe(untransformedProblemOf(args.path, args.importer), {
+								errors,
+								warnings
+							})
 						}
-						const { errors, warnings } = await readDependency(args.importer)
-						const untransformed = untransformedWarningOf(
-							args.path,
-							args.importer
-						)
-						if (untransformed) warnings.push(untransformed)
 						return {
 							...result,
 							errors: [...result.errors, ...errors.map(text => ({ text }))],
@@ -390,6 +401,8 @@ export const precompile: UnpluginInstance<
 })
 
 const esbuildResolution = "arktype"
+
+const noDiagnostics = (): RenderedDiagnostics => ({ errors: [], warnings: [] })
 
 // in webpack's filesystem cache or Rspack's persistent one, else ""
 const storeDirIn = (cache: unknown): string => {

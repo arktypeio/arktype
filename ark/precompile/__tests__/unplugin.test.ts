@@ -10,6 +10,7 @@ import {
 	writeDeclaredOutsideMessage
 } from "@ark/precompile/internal/declare.ts"
 import {
+	allowUnsafeHint,
 	unbundledMessage,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
@@ -249,10 +250,12 @@ const buildDependency = async (
 		logLevel: "silent",
 		plugins: [precompile.esbuild({ ...opts, cwd: dependencies })]
 	}).catch((e: { errors: { text: string }[] }) => e)
-	return [
-		...result.errors.map(e => e.text),
-		...("warnings" in result ? result.warnings.map(w => w.text) : [])
-	].map(text => text.split(`${dependencies}/`).join(""))
+	const relativeTo = (messages: { text: string }[]) =>
+		messages.map(({ text }) => text.split(`${dependencies}/`).join(""))
+	return {
+		errors: relativeTo(result.errors),
+		warnings: "warnings" in result ? relativeTo(result.warnings) : []
+	}
 }
 
 // written while parsing a definition, which a standalone build never does
@@ -847,22 +850,40 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		attest(outputFiles[0].text.includes(parserMessage)).equals(false)
 	})
 
-	it("warns once per dependency importing arktype", async () => {
-		attest(await buildDependency("shared.ts")).equals([
-			writeStandaloneDependencyMessage("shared")
-		])
-		attest(await buildDependency("shared.ts", { runtime: "arktype" })).equals(
-			[]
-		)
+	it("fails once per dependency importing arktype", async () => {
+		attest(await buildDependency("shared.ts")).equals({
+			errors: [
+				`${writeStandaloneDependencyMessage("shared")} ${allowUnsafeHint}`
+			],
+			warnings: []
+		})
+		attest(await buildDependency("shared.ts", { runtime: "arktype" })).equals({
+			errors: [],
+			warnings: []
+		})
 	})
 
-	it("warns once per dependency shipping precompiled validators", async () => {
-		attest(await buildDependency("prebuilt.ts")).equals([
-			writePrecompiledDependencyMessage("prebuilt")
-		])
+	it("fails once per dependency shipping precompiled validators", async () => {
+		attest(await buildDependency("prebuilt.ts")).equals({
+			errors: [
+				`${writePrecompiledDependencyMessage("prebuilt")} ${allowUnsafeHint}`
+			],
+			warnings: []
+		})
 	})
 
-	it("warns where a module it can't precompile imports arktype", async () => {
+	it("warns of a dependency with allowUnsafe", async () => {
+		attest(await buildDependency("shared.ts", { allowUnsafe: true })).equals({
+			errors: [],
+			warnings: [writeStandaloneDependencyMessage("shared")]
+		})
+		attest(await buildDependency("prebuilt.ts", { allowUnsafe: true })).equals({
+			errors: [],
+			warnings: [writePrecompiledDependencyMessage("prebuilt")]
+		})
+	})
+
+	it("fails where a module it can't precompile imports arktype", async () => {
 		const root = writeFixture(
 			{
 				"Form.svelte":
@@ -882,21 +903,30 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 					loader: "js"
 				}))
 		}
-		const { warnings } = await esbuild({
-			entryPoints: [join(root, "main.js")],
-			bundle: true,
-			write: false,
-			format: "esm",
-			conditions,
-			logLevel: "silent",
-			plugins: [precompile.esbuild({ cwd: root, conditions }), svelte]
-		})
-		attest(warnings.map(warning => warning.text)).equals([
-			writeUntransformedImportMessage(
-				join(root, "Form.svelte"),
-				"arktype",
-				root
-			)
+		const build = (allowUnsafe?: true) =>
+			esbuild({
+				entryPoints: [join(root, "main.js")],
+				bundle: true,
+				write: false,
+				format: "esm",
+				conditions,
+				logLevel: "silent",
+				plugins: [
+					precompile.esbuild({ cwd: root, conditions, allowUnsafe }),
+					svelte
+				]
+			}).catch((e: { errors: { text: string }[] }) => e)
+		const message = writeUntransformedImportMessage(
+			join(root, "Form.svelte"),
+			"arktype",
+			root
+		)
+		attest((await build()).errors.map(error => error.text)).equals([
+			`${message} ${allowUnsafeHint}`
+		])
+		const unsafe = await build(true)
+		attest("warnings" in unsafe && unsafe.warnings.map(w => w.text)).equals([
+			message
 		])
 	})
 
@@ -916,7 +946,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
   ${arktypeVersion} at node_modules/arktype, reached from forked.ts
   2.1.0 at node_modules/forked/node_modules/arktype, reached from node_modules/forked/index.js`
 		for (const runtime of [undefined, "arktype"] as const) {
-			const errors = await buildDependency("forked.ts", { runtime })
+			const { errors } = await buildDependency("forked.ts", { runtime })
 			attest(errors.some(text => text.includes(report))).equals(true)
 			attest((await vite(runtime)).includes(report)).equals(true)
 		}
@@ -924,7 +954,7 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 
 	it("fails for a second copy of a package arktype runs on", async () => {
 		attest(
-			(await buildDependency("schema.ts")).filter(text =>
+			(await buildDependency("schema.ts")).errors.filter(text =>
 				text.includes("more than one copy")
 			)
 		).equals([
@@ -941,7 +971,7 @@ schema.ts:2:22  @ark/schema resolves to more than one copy
 
 	it("fails for a version of arktype other than its own", async () => {
 		attest(
-			(await buildDependency("forked.ts")).filter(text =>
+			(await buildDependency("forked.ts")).errors.filter(text =>
 				text.includes("@ark/precompile runs on")
 			)
 		).equals([

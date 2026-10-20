@@ -402,19 +402,36 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 					}
 				)
 				attest(plain.stderr.includes(configureAfterTypeMessage)).equals(true)
-				const { stderr } = node([entry], { config: "config.ts" }, configured)
+				const { stderr } = node(
+					[entry],
+					{ config: "config.ts", allowUnsafe: true },
+					configured
+				)
 				attest(
 					stderr.includes(writeCreatedBeforeConfigureMessage(path))
 				).equals(true)
 			}
-			// the build warns where it sees an import load the Type first
+			// the build fails where it sees an import load the Type first
 			attest(
 				check(["earlyFirst.ts"], { cwd: configured, config: "config.ts" }).lines
 			).snap([
-				'earlyFirst.ts:1:1  import { Email } from "./early.ts" loads schemas.ts, which creates a Type, before the config module config.ts runs configure()\n  unless the program loaded config.ts earlier, creating the Type throws\n  Import config.ts first, before any module that creates a Type.',
+				'earlyFirst.ts:1:1  import { Email } from "./early.ts" loads schemas.ts, which creates a Type, before the config module config.ts runs configure()\n  unless the program loaded config.ts earlier, creating the Type throws\n  Import config.ts first, before any module that creates a Type. Set allowUnsafe: true to build anyway, with a warning.',
 				"earlyFirst.ts:4:13  accepted",
-				"1 site in 1 file: 1 accepted (100.0%)"
+				"1 site in 1 file: 1 accepted (100.0%), 1 error outside a site"
 			])
+		})
+
+		it("fails where an import loads a Type before the config module", () => {
+			const { status, stderr } = node(
+				["earlyFirst.ts"],
+				{ config: "config.ts" },
+				configured
+			)
+			attest(status).equals(1)
+			attest(thrownMessage(stderr, configured))
+				.snap(`earlyFirst.ts:1:1  import { Email } from "./early.ts" loads schemas.ts, which creates a Type, before the config module config.ts runs configure()
+  unless the program loaded config.ts earlier, creating the Type throws
+  Import config.ts first, before any module that creates a Type. Set allowUnsafe: true to build anyway, with a warning.`)
 		})
 
 		it("refuses a configured locale", () => {

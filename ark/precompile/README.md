@@ -14,7 +14,7 @@ export default defineConfig({
 })
 ```
 
-By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A definition the build can't precompile fails the build with the reasons why. A dependency that imports arktype gets `arktype/runtime` too, where defining a Type throws, so the build warns once for each such package unless it [opts in](#libraries). It warns as well for a module it can't precompile that imports `arktype`, like a Svelte component's script.
+By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A definition the build can't precompile fails the build with the reasons why. A dependency that imports arktype gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](#libraries). It fails as well for a module it can't precompile that imports `arktype`, like a Svelte component's script.
 
 `runtime: "arktype"` ships arktype instead and leaves definitions as written, registering the code arktype would compile for each. A definition the build can't precompile is then compiled at runtime as usual.
 
@@ -44,7 +44,7 @@ export default [configs.recommended]
 
 ## Standalone validators
 
-A standalone validator lacks the members that compose a Type, like `.and` or `.in`, so the build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it. It warns, once for each import, where it sees one read off an import it can't resolve, like one only a bundler alias names. Annotate such a value with its own type (`s: JsonSchema`) or cast it to say it isn't a Type.
+A standalone validator lacks the members that compose a Type, like `.and` or `.in`, so the build fails where it sees one read outside a definition it precompiles, including off a value it lost track of after a Type reached it. It fails too, once for each import, where it sees one read off an import it can't resolve, like one only a bundler alias names. Annotate such a value with its own type (`s: JsonSchema`) or cast it to say it isn't a Type.
 
 A definition holding functions, like a narrow, a morph or a class, becomes a call to a factory passing each one where the definition was written. The factory checks at creation that each class, and each function another module supplies, is what its code was compiled for, and throws if not. A definition whose branches arktype orders by the names of the functions they hold, like `type.instanceOf(Cat).or(type.instanceOf(Dog))`, is reported, since a minifier can rename them.
 
@@ -97,6 +97,8 @@ resolveAlias: { "@ark/schema/runtime": "@ark/schema/runtime/none" }
 
 `conditions` and `tsconfig` set the export conditions and the tsconfig whose `paths` the build resolves imports with.
 
+`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, and an import that loads a Type before the config module. Each fails the build otherwise. Unlike the others, it applies with `runtime: "arktype"` too.
+
 ## Configuration
 
 A program that calls `configure()` does so once, in a module imported before any that defines a Type, and names it as the build's `config`:
@@ -115,7 +117,7 @@ configure({
 precompile.vite({ config: "./config.ts" })
 ```
 
-The build evaluates the argument, which must be static, and precompiles every definition under it. A locale, or an `expected`, `problem` or `message` for a code a precompiled Type can raise, fails the build, since a standalone validator writes its own messages. `onFail` can be any function. The build warns where a module imports one that creates a Type before the config module, and the runtime throws if `configure()` runs after it creates its first validator, runs twice, or receives other values than the build read.
+The build evaluates the argument, which must be static, and precompiles every definition under it. A locale, or an `expected`, `problem` or `message` for a code a precompiled Type can raise, fails the build, since a standalone validator writes its own messages. `onFail` can be any function. The build fails where a module imports one that creates a Type before the config module, and the runtime throws if `configure()` runs after it creates its first validator, runs twice, or receives other values than the build read.
 
 A program configuring `errors` or `mutatesInput`, globally or for a Scope, builds with the same value: a definition whose Types are configured otherwise fails the build, naming both.
 
@@ -143,7 +145,7 @@ A library ships its source, and the build precompiles it with the program if its
 }
 ```
 
-Its definitions are then precompiled like the program's. The plugin and drivers find such packages through the dependencies of the nearest `package.json` to `cwd` and of each package that opts in, and the plugin keeps Vite and Vitest from prebundling or externalizing them. A library shouldn't ship what its own build precompiled, which runs only on the arktype it was built with, so the plugin warns once for each dependency that imports `arktype/runtime`.
+Its definitions are then precompiled like the program's. The plugin and drivers find such packages through the dependencies of the nearest `package.json` to `cwd` and of each package that opts in, and the plugin keeps Vite and Vitest from prebundling or externalizing them. A library shouldn't ship what its own build precompiled, which runs only on the arktype it was built with, so the plugin fails for each dependency that imports `arktype/runtime`.
 
 ## Runtime islands
 

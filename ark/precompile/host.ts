@@ -270,6 +270,9 @@ export const unbundledMessage =
 // arktype's own packages, which read their nodes and import the runtime by design
 export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 
+export const allowUnsafeHint =
+	"Set allowUnsafe: true to build anyway, with a warning."
+
 export const writePrecompiledDependencyMessage = (name: string): string =>
 	`${name} imports arktype/runtime, so it ships validators precompiled for one version of arktype, which may not be this build's. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
 

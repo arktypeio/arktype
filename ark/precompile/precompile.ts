@@ -95,6 +95,7 @@ import {
 	type ImportTarget
 } from "./graph.ts"
 import {
+	allowUnsafeHint,
 	arkPackageName,
 	dependencyOf,
 	transformedId,
@@ -152,6 +153,8 @@ export interface PrecompileOptions extends InterpreterOptions {
 	optimize?: Optimization | undefined
 	/** also create each site with arktype and throw where they diverge */
 	shadow?: boolean | undefined
+	/** warn rather than fail where the output may throw at runtime */
+	allowUnsafe?: boolean | undefined
 }
 
 export interface ModuleAnalysis {
@@ -387,7 +390,7 @@ export const assertPrecompileOptions = (opts: PrecompileOptions = {}): void => {
 			)
 		}
 	}
-	for (const option of booleanOptions) {
+	for (const option of [...booleanOptions, "allowUnsafe"] as const) {
 		if (opts[option] !== undefined && typeof opts[option] !== "boolean") {
 			throwError(
 				writeOptionValueMessage(option, printable(opts[option]), "a boolean")
@@ -414,6 +417,7 @@ export class Precompiler {
 	// false where `config` is, so configure() fails
 	private configures: boolean
 	private shadow: boolean
+	private allowUnsafe: boolean
 	// e.g. `{"members":{"meta":false}}`, so shadow mode skips the meta
 	private shadowContract: string | undefined
 	private members: ValidatorMembers
@@ -445,7 +449,7 @@ export class Precompiler {
 		"@ark/schema": {},
 		"@ark/util": {}
 	}
-	private warnedDependencies = new Set<string>()
+	private reportedDependencies = new Set<string>()
 	private intrinsicUnits: Record<string, string> | undefined
 
 	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
@@ -461,6 +465,7 @@ export class Precompiler {
 		const checks = opts.checks ?? "types"
 		this.checkHelpers = this.mode === "standalone" && checks === "helpers"
 		this.shadow = this.mode === "standalone" && !!opts.shadow
+		this.allowUnsafe = !!opts.allowUnsafe
 		this.members = opts.members ?? {}
 		this.errors = opts.errors
 		this.mutatesInput = opts.mutatesInput
@@ -686,10 +691,12 @@ export class Precompiler {
 		const warnings: string[] = []
 		if (
 			this.mode === "standalone" &&
-			!this.warnedDependencies.has(dependency)
+			!this.reportedDependencies.has(dependency)
 		) {
-			this.warnedDependencies.add(dependency)
-			warnings.push(writeStandaloneDependencyMessage(dependency))
+			this.reportedDependencies.add(dependency)
+			const message = writeStandaloneDependencyMessage(dependency)
+			if (this.allowUnsafe) warnings.push(message)
+			else errors.push(`${message} ${allowUnsafeHint}`)
 		}
 		return { errors, warnings }
 	}
@@ -2952,9 +2959,10 @@ export class Precompiler {
 						[
 							`unless the program loaded ${this.graph.pathOf(config)} earlier, creating the Type throws`
 						],
-						`Import ${this.graph.pathOf(config)} first, before any module that creates a Type.`,
-						// a module importing the config module for a value may be loaded after it
-						"warning"
+						this.unsafeHintOf(
+							`Import ${this.graph.pathOf(config)} first, before any module that creates a Type.`
+						),
+						this.unsafeSeverity
 					)
 				]
 			}
@@ -3178,8 +3186,8 @@ export class Precompiler {
 					[
 						`\`${module.snippetOf(node.object)}\` comes from \`${specifier}\`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator`
 					],
-					unresolvedHint,
-					"warning"
+					this.unsafeHintOf(unresolvedHint),
+					this.unsafeSeverity
 				)
 			)
 			return true
@@ -3663,6 +3671,15 @@ export class Precompiler {
 		return target.kind === "arktypeNamespace" && target.specifier === "arktype"
 	}
 
+	// what may throw at runtime fails unless allowUnsafe is set
+	private get unsafeSeverity(): Diagnostic["severity"] {
+		return this.mode === "cache" || this.allowUnsafe ? "warning" : "error"
+	}
+
+	private unsafeHintOf(hint: string): string {
+		return this.unsafeSeverity === "error" ? `${hint} ${allowUnsafeHint}` : hint
+	}
+
 	private diagnostic(
 		module: SourceModule,
 		span: Span,
@@ -3801,10 +3818,10 @@ const configurationConflictReason =
 export const writeStandaloneDependencyMessage = <name extends string>(
 	name: name
 ): writeStandaloneDependencyMessage<name> =>
-	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`
+	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
 
 export type writeStandaloneDependencyMessage<name extends string> =
-	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws`
+	`${name} imports arktype, which a standalone build resolves to arktype/runtime, where defining a Type throws. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
 
 const ownPackagesByName: Partial<
 	Record<ArkPackage, [root: string, version: string]>
