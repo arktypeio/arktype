@@ -413,11 +413,11 @@ export const siteOf = ((
 	description?: string
 ): SiteContext => ({ code, description })) satisfies Fn
 
-// the Apply of a union whose key's condition rejected its value
-export const failing =
-	(site: FailureSite): CompactApply =>
+// the Apply of a union whose key's condition rejected its value, compiled with
+// the module since a unit makes one as it loads
+export const failing = ((site: FailureSite): CompactApply =>
 	(data, ctx) =>
-		!ctx.failsAt(site, data)
+		!ctx.failsAt(site, data)) satisfies Fn
 
 export const requiredSite: FailureSite = {
 	missing: /* @__PURE__ */ siteOf("required")
