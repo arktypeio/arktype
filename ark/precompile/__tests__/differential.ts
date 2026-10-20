@@ -777,14 +777,41 @@ const withReported = (observation: any, issues: unknown[]) =>
 		{ ...observation, issues }
 	:	{ ...observation, out: { ...observation.out, issues } }
 
+// errors "all"'s observation with only an alike issue, and its texts, at the
+// path of the one reported
+const withAlike = (observation: any, alike: any, reported: any) => {
+	const withIssue = withReported(observation, [reported])
+	if (!observation.texts) return withIssue
+	const from = `${pathKeyOf(alike.path)}\0`
+	const to = `${pathKeyOf(reported.path)}\0`
+	return {
+		...withIssue,
+		texts: observation.texts.flatMap((text: { at: string }) =>
+			text.at.startsWith(from) ?
+				[{ ...text, at: to + text.at.slice(from.length) }]
+			:	[]
+		)
+	}
+}
+
 const valueAt = (input: unknown, path: readonly PropertyKey[]): unknown =>
 	path.reduce((value: any, k) => value?.[k], input)
+
+// writing in place, errors "all" goes on to write data errors "first" left
+// as it was input
+const isAlikeData = (input: unknown, all: any, first: any): boolean =>
+	isEqual(all.data, first.data) ||
+	(mutatesInput !== false &&
+		[first.path, first.path.slice(0, -1)].some(path =>
+			isEqual(valueAt(input, path), first.data)
+		))
 
 // errors "all" reports an object reached at two paths at the one it reaches
 // first, so the issue at the other is alike where both paths reach that object
 const isAlikeIssue = (input: unknown, all: any, first: any): boolean => {
 	if (isEqual(all, first)) return true
-	if (all.code !== first.code || !isEqual(all.data, first.data)) return false
+	if (all.code !== first.code || !isAlikeData(input, all, first)) return false
+	if (isEqual(all.path, first.path)) return true
 	for (let n = 1; n < Math.min(all.path.length, first.path.length); n++) {
 		if (!isEqual(all.path.slice(-n), first.path.slice(-n))) return false
 		const reached = valueAt(input, all.path.slice(0, -n))
@@ -804,13 +831,11 @@ const reportsOneOf = (input: unknown, all: Call, first: Call): boolean =>
 	Object.entries(all).every(([k, observed]) => {
 		const reported = first[k as keyof Call]
 		const issues = reportedOf(reported)
-		return (
-				issues?.length === 1 &&
-					reportedOf(observed)?.some(issue =>
-						isAlikeIssue(input, issue, issues[0])
-					)
-			) ?
-				isEqual(withReported(observed, issues), reported)
+		const alike =
+			issues?.length === 1 &&
+			reportedOf(observed)?.find(issue => isAlikeIssue(input, issue, issues[0]))
+		return alike ?
+				isEqual(withAlike(observed, alike, issues[0]), reported)
 			:	isEqual(observed, reported)
 	})
 
