@@ -11,6 +11,7 @@ import {
 	reportDiagnostics,
 	resolvesToRuntime,
 	runtimeSpecifiers,
+	throwBuildError,
 	writeAliasMessage
 } from "./host.ts"
 
@@ -42,7 +43,11 @@ export default function (
 	// before any error, so a fix to one of them reruns the loader
 	for (const file of keyed.files)
 		if (file !== this.resourcePath) this.addDependency(file)
-	reportDiagnostics(keyed, warning => this.emitWarning(new Error(warning)))
+	reportDiagnostics(
+		keyed,
+		warning => this.emitWarning(new Error(warning)),
+		throwBuildError
+	)
 	const code = keyed.code ?? source
 	const specifiers = runtimeSpecifiers.filter(specifier =>
 		new RegExp(`["']${specifier}["']`).test(source)
@@ -69,7 +74,7 @@ const checkAliases = async (
 		const resolved = await resolve(dirname(importer), specifier)
 		const isRuntime = realpathSync(resolved) === realpathSync(runtime)
 		if (isRuntime !== resolvesToRuntime(specifier, opts)) {
-			throw new Error(
+			throwBuildError(
 				writeAliasMessage(
 					specifier,
 					isRuntime ? undefined : relative(opts.cwd ?? process.cwd(), resolved),

@@ -1017,6 +1017,28 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		)
 	})
 
+	it("throws a module's errors from its root, without the precompiler's stack", async () => {
+		const root = writeFixture({
+			"main.ts":
+				'import { type } from "arktype"\n\nexport const T = type(`number < ${Math.random()}`)\n'
+		})
+		const { transform } = precompile.raw(
+			{ cwd: root, conditions },
+			{ framework: "vite", versions: {} }
+		) as unknown as RawHooks
+		const thrown = await transform.handler
+			.call(
+				{ addWatchFile: () => {}, warn: () => {} },
+				readFileSync(join(root, "main.ts"), "utf8"),
+				join(root, "main.ts")
+			)
+			.catch((e: Error) => e)
+		attest([(thrown as Error).message, (thrown as Error).stack]).snap([
+			'main.ts:3:18  type(`number < ${Math.random()}`) cannot be precompiled\n  `Math.random` is not one of the build\'s pure built-ins\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+			""
+		])
+	})
+
 	it("a predicate reading ctx in an intersection", async () => {
 		const root = writeFixture(
 			{

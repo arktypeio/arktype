@@ -216,10 +216,18 @@ export const driverOptionsOf = (
 
 export const reportDiagnostics = (
 	diagnostics: RenderedDiagnostics | undefined,
-	warn: (warning: string) => void
+	warn: (warning: string) => void,
+	fail: (message: string) => never = throwError
 ): void => {
 	for (const warning of diagnostics?.warnings ?? []) warn(warning)
-	if (diagnostics?.errors.length) throwError(diagnostics.errors.join("\n"))
+	if (diagnostics?.errors.length) fail(diagnostics.errors.join("\n"))
+}
+
+// a bundler prints an error's stack, which would show the precompiler's frames
+export const throwBuildError = (message: string): never => {
+	const error = new Error(message)
+	error.stack = ""
+	throw error
 }
 
 export const writeUncachedModuleMessage = (

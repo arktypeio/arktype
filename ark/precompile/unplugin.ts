@@ -22,6 +22,7 @@ import {
 	resolvesToRuntime,
 	resolvesUndetailed,
 	runtimeSpecifiers,
+	throwBuildError,
 	schemaSpecifier,
 	transformedFilterOf,
 	undetailedSpecifierOf,
@@ -93,7 +94,7 @@ export const precompile: UnpluginInstance<
 		try {
 			stored = JSON.parse(readFileSync(join(dir, storedNameOf(id)), "utf8"))
 		} catch {
-			return throwError(writeUncachedModuleMessage(id.slice(1), dir))
+			return throwBuildError(writeUncachedModuleMessage(id.slice(1), dir))
 		}
 		importersById[id] = stored[0]
 		return (modules[id] = stored[1])
@@ -130,7 +131,7 @@ export const precompile: UnpluginInstance<
 			async handler(id, importer) {
 				// webpack awaits this unguarded, so it reports an error rather than crash
 				const refuse = (message: string): undefined => {
-					if (meta.framework !== "webpack") throwError(message)
+					if (meta.framework !== "webpack") throwBuildError(message)
 					this.error(message)
 				}
 				if (id.startsWith("~arktype/")) return `\0${id}`
@@ -179,7 +180,11 @@ export const precompile: UnpluginInstance<
 					}
 				}
 				// esbuild drops a reported error
-				reportDiagnostics(transformed, warning => this.warn(warning))
+				reportDiagnostics(
+					transformed,
+					warning => this.warn(warning),
+					throwBuildError
+				)
 				return (
 					transformed.code && { code: transformed.code, map: transformed.map }
 				)

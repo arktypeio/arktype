@@ -42,12 +42,15 @@ export interface RenderedDiagnostics {
 }
 
 // a host that shows one error for a module throws a module's errors together
-const renderDiagnostics = (diagnostics: Diagnostic[]): RenderedDiagnostics => {
+const renderDiagnostics = (
+	diagnostics: Diagnostic[],
+	pathOf: (id: string) => string
+): RenderedDiagnostics => {
 	const errors: string[] = []
 	const warnings: string[] = []
 	for (const diagnostic of diagnostics) {
 		;(diagnostic.severity === "error" ? errors : warnings).push(
-			renderDiagnostic(diagnostic)
+			renderDiagnostic({ ...diagnostic, file: pathOf(diagnostic.file) })
 		)
 	}
 	return { errors, warnings }
@@ -336,7 +339,7 @@ const transformedModuleOf = (
 		map: precompiler.inline ? undefined : result.map,
 		dependencies: [...result.dependencies, ...precompiler.ownManifests],
 		modules: result.modules,
-		...renderDiagnostics(result.diagnostics)
+		...renderDiagnostics(result.diagnostics, id => precompiler.graph.pathOf(id))
 	}
 }
 
