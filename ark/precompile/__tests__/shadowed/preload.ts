@@ -8,6 +8,8 @@ Bun.plugin(
 		...JSON.parse(process.env.ARK_PRECOMPILE_OPTIONS ?? "{}"),
 		conditions: ["ark-ts"],
 		shadow: true,
+		// observe.ts catches a ParseError it creates on purpose
+		allowUnsafe: true,
 		cwd: import.meta.dirname
 	})
 )

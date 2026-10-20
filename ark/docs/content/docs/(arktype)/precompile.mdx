@@ -70,6 +70,6 @@ The build fails with a message naming the file, the definition and the fix. The 
 - **`precompile.esbuild() needs bundle: true`**: precompiled modules import validators the bundle includes.
 - **`lib imports arktype/runtime, so it ships validators precompiled for one version of arktype`**, or **`lib imports arktype`**: a dependency is built for another setup. Have it publish its source with `"arktype": { "precompile": true }` in its `package.json`, so your build precompiles it.
 
-Where a build could still write output, as for a dependency or a read off an unresolved import, the message adds that `allowUnsafe: true` builds anyway, reporting it as a warning. What it reports may then throw at runtime.
+Where a build could still write output, as for a dependency, a read off an unresolved import or a definition that throws a ParseError, the message adds that `allowUnsafe: true` builds anyway, reporting it as a warning. What it reports may then throw at runtime, as a test expecting a ParseError means it to.
 
 The [`@ark/precompile` README](https://github.com/arktypeio/arktype/tree/main/ark/precompile#readme) is the full reference: every option, the Node, Bun and Turbopack drivers, shadow mode for tests, libraries, runtime islands and declarations.

@@ -267,6 +267,7 @@ const cycles: Record<string, PrecompileUnpluginOptions["members"]> = {
 	cycle: undefined,
 	cycleFirst: { expression: true, json: true },
 	cycleArrow: { json: true },
+	// throws a ParseError, as arktype does, so its builds allow it
 	setInStep: { expression: true }
 }
 
@@ -348,9 +349,9 @@ contextualize(function (this: Mocha.Suite) {
 		it(`${name} import cycles`, async () => {
 			for (const [fixture, members] of Object.entries(cycles)) {
 				const root = fromHere(fixture)
-				attest(run(await bundle({ cwd: root, members }, root))).equals(
-					runPlain(root)
-				)
+				attest(
+					run(await bundle({ cwd: root, members, allowUnsafe: true }, root))
+				).equals(runPlain(root))
 			}
 		})
 
@@ -565,7 +566,11 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 			attest(
 				run(
 					await bundlers.esbuild(
-						{ cwd: root, members: { expression: true, json: true } },
+						{
+							cwd: root,
+							members: { expression: true, json: true },
+							allowUnsafe: true
+						},
 						root,
 						false
 					)
@@ -890,7 +895,12 @@ export const User = type({ name: \`string <= \${settings.limit}\` })
 		)
 		attest(
 			JSON.parse(
-				run(await bundlers.esbuild({ cwd: root, config: "config.ts" }, root))
+				run(
+					await bundlers.esbuild(
+						{ cwd: root, config: "config.ts", allowUnsafe: true },
+						root
+					)
+				)
 			)
 		).equals([
 			writeCreatedBeforeConfigureMessage("a.ts"),

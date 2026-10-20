@@ -57,6 +57,8 @@ const perturbingPrecompiler = (opts: BuildOptions) =>
 		{
 			cwd: root,
 			inline: true,
+			// a ParseError's thrower is compared with arktype's
+			allowUnsafe: true,
 			...(opts.mode === "cache" ?
 				{ runtime: "arktype" }
 			:	{ checks: "helpers", ...opts.standalone })

@@ -1,7 +1,7 @@
 import { globSync, readFileSync } from "node:fs"
 import { relative, resolve } from "node:path"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
-import { renderDiagnostic } from "./precompile.ts"
+import { renderDiagnostic, type Diagnostic } from "./precompile.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
 export interface CheckReport {
@@ -59,22 +59,24 @@ export const check = (
 					file: relative(cwd, diagnostic.file)
 				})
 			])
-			const rejected = result.sites.filter(site => site.status === "rejected")
-			for (const diagnostic of result.diagnostics) {
-				if (
-					diagnostic.severity === "error" &&
-					!rejected.some(
-						site =>
-							diagnostic.file === file &&
-							diagnostic.start === site.start &&
-							diagnostic.end === site.end
-					)
-				)
-					report.errorsOutsideSites++
-			}
+			const errors = result.diagnostics.filter(
+				diagnostic => diagnostic.severity === "error"
+			)
+			const isAt = (error: Diagnostic, site: CheckedModule["sites"][number]) =>
+				error.file === file &&
+				error.start === site.start &&
+				error.end === site.end
+			// an accepted site can fail too, like one that throws a ParseError
+			const failed = result.sites.filter(
+				site =>
+					site.status === "rejected" || errors.some(error => isAt(error, site))
+			)
+			report.errorsOutsideSites += errors.filter(
+				error => !failed.some(site => isAt(error, site))
+			).length
 			for (const site of result.sites) {
 				report.sites++
-				if (site.status === "rejected") continue
+				if (failed.includes(site)) continue
 				if (site.status === "island") report.islands++
 				else report.accepted++
 				entries.push([

@@ -2846,7 +2846,9 @@ export class Precompiler {
 					node,
 					"parse",
 					`${module.snippetOf(node)} throws a ParseError`,
-					[this.sourceNamed(site.parseError.message, site, module)]
+					[this.sourceNamed(site.parseError.message, site, module)],
+					this.unsafeHintOf(hintsByRule.parse),
+					this.unsafeSeverity
 				)
 			)
 		}
@@ -3699,8 +3701,7 @@ export class Precompiler {
 		reasons: string[] = [],
 		hint?: string | false,
 		severity: Diagnostic["severity"] = (
-			rule === "parse" ||
-			(this.mode === "cache" && rule !== "syntax" && rule !== "copies")
+			this.mode === "cache" && rule !== "syntax" && rule !== "copies"
 		) ?
 			"warning"
 		:	"error"
@@ -3718,8 +3719,9 @@ export class Precompiler {
 			reasons,
 			hint:
 				rule === "syntax" ? undefined
-				: this.mode === "cache" && rule !== "copies" ? cacheHint
-				: (hint ?? hintsByRule[rule]) || undefined
+				: this.mode === "cache" && rule !== "copies" && rule !== "parse" ?
+					cacheHint
+				:	(hint ?? hintsByRule[rule]) || undefined
 		}
 	}
 }
@@ -3853,7 +3855,7 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	R3: "The configuration is fixed before the first Type is created. Call configure() once, with a static argument, in the build's `config` module.",
 	R4: `Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".`,
 	unsupported: `Standalone builds can't precompile every definition yet. Build with runtime: "arktype".`,
-	parse: "The precompiled site throws the same ParseError when it is created.",
+	parse: "Fix the definition, or it throws the same ParseError at runtime.",
 	copies: copiesHint
 }
 

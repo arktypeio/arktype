@@ -13,6 +13,8 @@ export default defineConfig({
 		precompile.vite({
 			...tested,
 			shadow: true,
+			// observe.ts catches a ParseError it creates on purpose
+			allowUnsafe: true,
 			conditions,
 			cwd: import.meta.dirname
 		})

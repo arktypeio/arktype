@@ -1789,12 +1789,29 @@ const M = parser.default("assert")`)
 	})
 
 	describe("parse errors", () => {
-		it("warns and accepts", () => {
-			attest(
-				diagnosticsOf(`import { type } from "arktype"
-const A = type({ a: "strin" })`)
-			).snap([
-				"/main.ts:2:11  type({ a: \"strin\" }) throws a ParseError\n  'strin' is unresolvable\n  The precompiled site throws the same ParseError when it is created."
+		const parseErrorsOf = (opts?: PrecompileOptions) =>
+			analyze(
+				`import { type } from "arktype"
+const A = type({ a: "1" }).and({ a: "2" })`,
+				{},
+				opts
+			).diagnostics.map(d => `${d.severity} ${renderDiagnostic(d)}`)
+
+		it("fails", () => {
+			attest(parseErrorsOf()).snap([
+				'error /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.'
+			])
+		})
+
+		it("warns with allowUnsafe", () => {
+			attest(parseErrorsOf({ allowUnsafe: true })).snap([
+				'warning /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime.'
+			])
+		})
+
+		it("warns with runtime arktype", () => {
+			attest(parseErrorsOf({ runtime: "arktype" })).snap([
+				'warning /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime.'
 			])
 		})
 

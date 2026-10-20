@@ -14,6 +14,7 @@ import {
 
 const shadowed = fromHere("shadowed")
 
+// observe.ts catches a ParseError it creates on purpose
 const run = (opts?: object) =>
 	spawnSync(
 		process.execPath,
@@ -23,7 +24,7 @@ const run = (opts?: object) =>
 			...(opts ?
 				[
 					"--import",
-					`data:text/javascript,import { register } from "${pathToFileURL(fromHere("..", "node.ts"))}"; register(${JSON.stringify({ ...opts, conditions: ["ark-ts"], cwd: shadowed })})`
+					`data:text/javascript,import { register } from "${pathToFileURL(fromHere("..", "node.ts"))}"; register(${JSON.stringify({ ...opts, allowUnsafe: true, conditions: ["ark-ts"], cwd: shadowed })})`
 				]
 			:	[]),
 			"main.ts"
@@ -164,7 +165,7 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 			}
 		})
 
-		it("Vitest, configured as the README shows", async () => {
+		it("Vitest", async () => {
 			const { exitCode } = process
 			const vitest = await startVitest([], {
 				root: shadowed,

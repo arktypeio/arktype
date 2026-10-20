@@ -3,7 +3,7 @@ import { fromHere } from "@ark/fs"
 import { writeArktypeRuntimeOptionMessage } from "@ark/precompile"
 import { check } from "@ark/precompile/internal/check.ts"
 import { spawnSync } from "node:child_process"
-import { runCli } from "./utils.ts"
+import { runCli, writeFixture } from "./utils.ts"
 
 const cwd = fromHere("checked")
 
@@ -14,6 +14,23 @@ contextualize(() => {
 			'forms.ts:10:16  type(`string <= ${limit}`) cannot be precompiled\n  `limit` is a parameter of makeField (forms.ts:9:27); its value is known only at runtime\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
 			"forms.ts:16:16  island",
 			"3 sites in 2 files: 1 accepted (50.0%), 1 runtime island"
+		])
+	})
+
+	it("fails a site that throws a ParseError", () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"\nexport const A = type("string & number")\nexport const B = type("string")\n`
+		})
+		attest(check([], { cwd: root }).lines).snap([
+			'main.ts:2:18  type("string & number") throws a ParseError\n  Intersection of string and number results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.',
+			"main.ts:3:18  accepted",
+			"2 sites in 1 file: 1 accepted (50.0%)"
+		])
+		attest(check([], { cwd: root, allowUnsafe: true }).lines).snap([
+			'main.ts:2:18  type("string & number") throws a ParseError\n  Intersection of string and number results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime.',
+			"main.ts:2:18  accepted",
+			"main.ts:3:18  accepted",
+			"2 sites in 1 file: 2 accepted (100.0%)"
 		])
 	})
 

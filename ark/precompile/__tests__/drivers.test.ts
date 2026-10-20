@@ -218,8 +218,11 @@ contextualize(function (this: Mocha.Suite) {
 				).equals(runPlain(cycleOrder))
 				// a fold run once what it reads is set, before the statement setting it ends
 				attest(
-					node(["main.ts"], { members: { expression: true }, lazy }, setInStep)
-						.stdout
+					node(
+						["main.ts"],
+						{ members: { expression: true }, lazy, allowUnsafe: true },
+						setInStep
+					).stdout
 				).equals(runPlain(setInStep))
 			}
 		}).timeout(120000)
