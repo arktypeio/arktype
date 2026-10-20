@@ -8,6 +8,7 @@ import type {
 import {
 	ArkErrors,
 	errorsOf,
+	FirstIssues,
 	mergeIssues,
 	messageOf,
 	releasePath,
@@ -15,6 +16,7 @@ import {
 	supportedJsonSchemaTargets,
 	validateStandardJsonSchemaTarget,
 	type ArkErrorCode,
+	type ArkIssue,
 	type CompactApply,
 	type FailHandler,
 	type FailureSite,
@@ -460,7 +462,20 @@ export const applyNodeErrors = (
 	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
 ): unknown => applyErrors(node.traverseApply, data, config, onFail, Ctx)
 
-// a root array's issues from i, the first element `allows` rejected
+// a root array's Apply from i, the first element `allows` rejected
+const elementsFrom =
+	(
+		allows: (data: unknown) => boolean,
+		apply: CompactApply,
+		i: number,
+		data: readonly unknown[]
+	): CompactApply =>
+	(_, ctx) => {
+		for (let j = i; j < data.length; j++)
+			if (!allows(data[j]) && ctx.failsIn(apply, data[j], j)) return false
+		return true
+	}
+
 export const applyElements = (
 	allows: (data: unknown) => boolean,
 	apply: CompactApply,
@@ -470,17 +485,7 @@ export const applyElements = (
 	onFail: ArkErrors.Handler | null,
 	Ctx: new (data: unknown, config: unknown) => ArkErrors | InternalTraversal
 ): unknown =>
-	applyCallErrors(
-		(_, ctx) => {
-			for (; i < data.length; i++)
-				if (!allows(data[i]) && ctx.failsIn(apply, data[i], i)) return false
-			return true
-		},
-		data,
-		args,
-		onFail,
-		Ctx
-	)
+	applyCallErrors(elementsFrom(allows, apply, i, data), data, args, onFail, Ctx)
 
 export const applyCallErrors = (
 	apply: CompactApply,
@@ -498,6 +503,85 @@ export const applyCallErrors = (
 		if (args[1] !== undefined) onFail = args[1] as never
 	}
 	return onFail ? onFail(errors) : errors
+}
+
+type UnreadErrors = new (apply: CompactApply, data: unknown) => ArkErrors
+
+// errors whose issues their Apply finds in data once they're read
+const unreadOf = (Ctx: new () => ArkErrors): UnreadErrors => {
+	class Unread {
+		declare _apply: CompactApply
+		declare _data: unknown
+		declare _found?: ArkIssue[]
+
+		constructor(apply: CompactApply, data: unknown) {
+			this._apply = apply
+			this._data = data
+		}
+
+		get _(): ArkIssue[] {
+			return (this._found ??= issuesOf(this._apply, this._data, new Ctx()))
+		}
+	}
+	// a Ctx, built without the fields its constructor sets
+	setPrototypeOf(Unread.prototype, Ctx.prototype)
+	return Unread as never
+}
+
+const issuesOf = (apply: CompactApply, data: unknown, ctx: ArkErrors) => {
+	apply(data, ctx)
+	// data a write or a getter has made valid since fails as a whole
+	if (!ctx._.length) ctx.failsAt({ code: "predicate" }, data)
+	releasePath(ctx)
+	return ctx._
+}
+
+export const UnreadArkErrors: UnreadErrors = /* @__PURE__ */ unreadOf(ArkErrors)
+
+export const UnreadFirstIssues: UnreadErrors =
+	/* @__PURE__ */ unreadOf(FirstIssues)
+
+// an Apply reporting into ArkErrors calls no user code, so its issues can wait
+export const unreadErrors = (
+	apply: CompactApply,
+	data: unknown,
+	onFail: ArkErrors.Handler | null,
+	Ctx: UnreadErrors
+): unknown => {
+	const errors = new Ctx(apply, data)
+	return typeof onFail === "function" ? onFail(errors) : errors
+}
+
+export const unreadElements = (
+	allows: (data: unknown) => boolean,
+	apply: CompactApply,
+	i: number,
+	data: readonly unknown[],
+	args: ValidatorArgs,
+	onFail: ArkErrors.Handler | null,
+	Ctx: UnreadErrors
+): unknown =>
+	unreadCallErrors(
+		elementsFrom(allows, apply, i, data),
+		data,
+		args,
+		onFail,
+		Ctx
+	)
+
+export const unreadCallErrors = (
+	apply: CompactApply,
+	data: unknown,
+	args: ValidatorArgs,
+	onFail: ArkErrors.Handler | null,
+	Ctx: UnreadErrors
+): unknown => {
+	const errors = new Ctx(apply, data)
+	if (args.length) {
+		if (args[0]) return pipedInto(args[0], errors)
+		if (args[1] !== undefined) onFail = args[1] as never
+	}
+	return typeof onFail === "function" ? onFail(errors) : errors
 }
 
 export type HoleKind = "function" | "class" | "symbol"

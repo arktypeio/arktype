@@ -431,6 +431,57 @@ contextualize(() => {
 		attest(errors.toJSON()).is(errors.issues)
 	})
 
+	it("issues found once read", async () => {
+		const { T } = await load({ T: type({ a: "string", b: "number" }) })
+		const data: Record<string, unknown> = { a: 0, b: 0 }
+		const errors = T(data)
+		data.a = "a"
+		data.b = "b"
+		attest(errors.summary).snap("b must be a number")
+		data.b = 0
+		attest(errors.summary).snap("b must be a number")
+	})
+
+	it("issues found as it validates for size", async () => {
+		const { T } = await load(
+			{ T: type({ a: "string", b: "number" }) },
+			{ optimize: "size" }
+		)
+		const data: Record<string, unknown> = { a: 0, b: 0 }
+		const errors = T(data)
+		data.a = "a"
+		attest(errors.summary).snap("a must be a string")
+	})
+
+	it("issues of data made valid before they're read", async () => {
+		const { T } = await load({ T: type({ a: "string" }) })
+		const data: Record<string, unknown> = { a: 0 }
+		const errors = T(data)
+		data.a = "a"
+		attest(errors.issues).snap([
+			{
+				code: "predicate",
+				path: [],
+				data: { a: "a" },
+				expected: undefined,
+				message: "is invalid"
+			}
+		])
+	})
+
+	it("issues found as it validates where it calls a narrow", async () => {
+		const always = standIn(() => true, "always")
+		const T = (
+			await loadFactory(type({ a: "string", b: "number" }).narrow(always), [
+				["function", "always", always]
+			])
+		)(always)
+		const data: Record<string, unknown> = { a: 0, b: 0 }
+		const errors = T(data)
+		data.a = "a"
+		attest(errors.summary).snap("a must be a string")
+	})
+
 	it("paths of reentrant validations", async () => {
 		const { Inner, Outer } = await load({
 			Inner: type({ x: { y: "string" } }),
@@ -461,7 +512,7 @@ contextualize(() => {
 				}
 			}
 		}
-		attest(() => Outer(throwing)).throws("x must be an object")
+		attest(() => Outer(throwing).issues).throws("x must be an object")
 		attest(pathsOf(Outer(invalid))).equals([["a"], ["b", "c"]])
 		attest(pathsOf(Inner({ x: 1 }))).equals([["x"]])
 	})

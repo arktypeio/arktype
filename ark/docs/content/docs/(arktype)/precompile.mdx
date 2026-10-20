@@ -24,6 +24,7 @@ By default, each definition becomes a standalone validator running on `arktype/r
 
 - It lacks the methods that compose a Type, like `.and` or `.in`, so the build fails where it sees one read outside a definition it precompiles.
 - Its errors say what failed but not what the value was, like `name must be a string`.
+- Its errors may find their issues only when they're first read, from the data as it is then.
 - A definition the build can't construct, like one reading a value known only at runtime, fails the build with the reason. List them before you switch:
 
 ```sh

@@ -2458,6 +2458,9 @@ ${writeFunction(
 			: "InternalTraversal"
 		// first-issue traversals drop the rest when finalized
 		const appliesErrors = !this.baking.firstIssue || reportsIssues
+		// for speed, issues reported into ArkErrors are found once read
+		const unreads = reportsIssues && !this.baking.shortest
+		const errorsOf = unreads ? "runtime.unread" : "runtime.apply"
 		const refOf = (param: RootApplyParam) =>
 			param === "Traversal" ? `runtime.${ctx}`
 			: param === "config" ? "runtime.runtimeConfig"
@@ -2477,6 +2480,10 @@ ${writeFunction(
 				this.compactPartsOf(root, transforms ? [0, 1, 2] : [0, 1], asValidator)
 			:	[]
 		if (traversals) {
+			const Ctx =
+				!unreads ? refOf("Traversal")
+				: this.baking.firstIssue ? "runtime.UnreadFirstIssues"
+				: "runtime.UnreadArkErrors"
 			const pattern =
 				flat ? `allows, apply${transforms ? ", transform" : ""}`
 				: this.baking.shortest ?
@@ -2487,15 +2494,14 @@ ${writeFunction(
 			const elements =
 				asValidator && !transforms && this.elementTraversalsOf(root)
 			if (elements) {
-				const Ctx = refOf("Traversal")
 				return [
 					// a minifier inlines a const read once, but not a default
 					`(({ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
 }) => ${this.validatorOnLoad(`(data, ...args) => {
-	if (!Array.isArray(data)) return runtime.applyCallErrors(apply, data, args, onFail, ${Ctx})
+	if (!Array.isArray(data)) return ${errorsOf}CallErrors(apply, data, args, onFail, ${Ctx})
 	const i = rejectedIn(data)
-	return i === undefined ? data : runtime.applyElements(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
+	return i === undefined ? data : ${errorsOf}Elements(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
 }`)})`,
 					`[${traversals}[0], ${traversals}[1], ${elements}[0], ${elements}[1]]`,
 					true
@@ -2503,7 +2509,7 @@ ${writeFunction(
 			}
 			if (asValidator) {
 				return [
-					`((${pattern}, onFail) => ${this.validatorOnLoad(`(data, ...args) => allows(data) ? ${valid} : runtime.applyCallErrors(apply, data, args, onFail, ${refOf("Traversal")})`)})`,
+					`((${pattern}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(`(data, ...args) => allows(data) ? ${valid} : ${errorsOf}CallErrors(apply, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`)})`,
 					parts,
 					true
 				]
@@ -2511,7 +2517,11 @@ ${writeFunction(
 			return [
 				{
 					params: pattern,
-					apply: `(data, onFail) => allows(data) ? ${valid} : runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${refOf("Traversal")})`,
+					apply: `(data, onFail) => allows(data) ? ${valid} : ${
+						unreads ?
+							`runtime.unreadErrors(apply, data, onFail, ${Ctx})`
+						:	`runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${Ctx})`
+					}`,
 					args: parts
 				},
 				flat ? flat[0] : `${traversals}[0]`,
