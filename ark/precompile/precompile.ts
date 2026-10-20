@@ -496,7 +496,9 @@ export class Precompiler {
 		const module = this.add(id, source)
 		// analyzed under the thread's configuration
 		if (threadConfiguration) this.configuration ??= this.applyConfiguration()
-		return this.analysisOf(module)
+		const analysis = this.analysisOf(module)
+		analysis.diagnostics.push(...this.checkConfigOrder(module))
+		return analysis
 	}
 
 	// a config module given anew is read again
@@ -745,6 +747,7 @@ export class Precompiler {
 		const module = this.add(id, source, mappings)
 		this.configuration ??= this.applyConfiguration()
 		const { sites, diagnostics } = this.analysisOf(module)
+		diagnostics.push(...this.checkConfigOrder(module))
 		for (const node of module.program.body) {
 			const specifier =
 				(
@@ -2897,6 +2900,74 @@ export class Precompiler {
 		if (config === module) return call.start
 		this.loadedBeforeConfigure ??= this.loadedBefore(config.id)
 		return this.loadedBeforeConfigure.includes(module.id) ? Infinity : -Infinity
+	}
+
+	// an import loading a module that creates a Type before the config module
+	private checkConfigOrder(module: SourceModule): Diagnostic[] {
+		const config = this.config
+		if (
+			config === undefined ||
+			module.id === config ||
+			!this.importClosureOf(module.id).includes(config)
+		)
+			return []
+		const loaded = new Set([module.id])
+		// each module an import loads, in the order the program runs them
+		const load = (id: string, order: string[]) => {
+			if (loaded.has(id)) return
+			loaded.add(id)
+			for (const [target, isErased] of this.importsOf(id))
+				if (!isErased) load(target, order)
+			order.push(id)
+		}
+		for (const statement of module.program.body) {
+			const specifier = "source" in statement && statement.source?.value
+			if (!specifier || isTypeOnly(statement)) continue
+			const target = this.graph.host.resolve(specifier, module.id)
+			if (!target || !this.graph.isFollowed(target)) continue
+			const order: string[] = []
+			load(target, order)
+			const configured = order.indexOf(config)
+			// what the config module loads itself is reported there
+			const creating = order
+				.slice(0, configured === -1 ? undefined : configured)
+				.find(
+					id =>
+						!this.importClosureOf(config).includes(id) &&
+						this.createsTypeAtLoad(id)
+				)
+			if (creating) {
+				return [
+					this.diagnostic(
+						module,
+						statement,
+						"R3",
+						`${module.snippetOf(statement)} loads ${this.graph.pathOf(creating)}, which creates a Type, before the config module ${this.graph.pathOf(config)} runs configure()`,
+						[
+							`unless the program loaded ${this.graph.pathOf(config)} earlier, creating the Type throws`
+						],
+						`Import ${this.graph.pathOf(config)} first, before any module that creates a Type.`,
+						// a module importing the config module for a value may be loaded after it
+						"warning"
+					)
+				]
+			}
+			if (configured !== -1) return []
+		}
+		return []
+	}
+
+	private createsTypeAtLoad(id: string): boolean {
+		const module = this.graph.moduleOf(id)
+		return (
+			module instanceof SourceModule &&
+			this.isTransformed(id) &&
+			this.importsArk(module.source, id) &&
+			this.analysisOf(module).sites.some(
+				site =>
+					site.status === "accepted" && site.declarationStart !== undefined
+			)
+		)
 	}
 
 	// a module importing this one back may run before or after it

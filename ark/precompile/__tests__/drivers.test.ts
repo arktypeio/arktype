@@ -7,6 +7,7 @@ import {
 	writeUndetailedImportMessage
 } from "@ark/precompile"
 import { precompile as bunPlugin } from "@ark/precompile/bun"
+import { check } from "@ark/precompile/internal/check.ts"
 import { writeDeclareFrameworkMessage } from "@ark/precompile/internal/declare.ts"
 import {
 	createNodeHost,
@@ -401,12 +402,19 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 					}
 				)
 				attest(plain.stderr.includes(configureAfterTypeMessage)).equals(true)
+				const { stderr } = node([entry], { config: "config.ts" }, configured)
 				attest(
-					node([entry], { config: "config.ts" }, configured).stderr.includes(
-						writeCreatedBeforeConfigureMessage(path)
-					)
+					stderr.includes(writeCreatedBeforeConfigureMessage(path))
 				).equals(true)
 			}
+			// the build warns where it sees an import load the Type first
+			attest(
+				check(["earlyFirst.ts"], { cwd: configured, config: "config.ts" }).lines
+			).snap([
+				'earlyFirst.ts:1:1  import { Email } from "./early.ts" loads schemas.ts, which creates a Type, before the config module config.ts runs configure()\n  unless the program loaded config.ts earlier, creating the Type throws\n  Import config.ts first, before any module that creates a Type.',
+				"earlyFirst.ts:4:13  accepted",
+				"1 site in 1 file: 1 accepted (100.0%)"
+			])
 		})
 
 		it("refuses a configured locale", () => {

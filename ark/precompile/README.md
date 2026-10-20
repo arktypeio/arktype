@@ -115,7 +115,7 @@ configure({
 precompile.vite({ config: "./config.ts" })
 ```
 
-The build evaluates the argument, which must be static, and precompiles every definition under it. A locale, or an `expected`, `problem` or `message` for a code a precompiled Type can raise, fails the build, since a standalone validator writes its own messages. `onFail` can be any function. The runtime throws if `configure()` runs after it creates its first validator, runs twice, or receives other values than the build read.
+The build evaluates the argument, which must be static, and precompiles every definition under it. A locale, or an `expected`, `problem` or `message` for a code a precompiled Type can raise, fails the build, since a standalone validator writes its own messages. `onFail` can be any function. The build warns where a module imports one that creates a Type before the config module, and the runtime throws if `configure()` runs after it creates its first validator, runs twice, or receives other values than the build read.
 
 A program configuring `errors` or `mutatesInput`, globally or for a Scope, builds with the same value: a definition whose Types are configured otherwise fails the build, naming both.
 
