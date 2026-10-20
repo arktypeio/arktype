@@ -333,6 +333,15 @@ contextualize(() => {
 		attest(T.allows({ k: "x y" })).equals(false)
 	})
 
+	it("size reads a key holding a line separator", async () => {
+		const key = "a\u2028    b"
+		const { T } = await load(
+			{ T: type({ [key]: "string", c: "number" }) },
+			{ optimize: "size" }
+		)
+		attest(T.allows({ [key]: "x", c: 1 })).equals(true)
+	})
+
 	it("index signature with a defaulted key", async () => {
 		const empty = standIn(() => [], "empty")
 		const types = {
