@@ -90,7 +90,7 @@ export const precompile: UnpluginInstance<
 		}
 		return storeDir
 	}
-	const storeIn = (bundler: NonNullable<typeof compiler>) => {
+	const keepCompiler = (bundler: NonNullable<typeof compiler>) => {
 		compiler = bundler
 	}
 	const loadModule = (id: string) => {
@@ -295,8 +295,8 @@ export const precompile: UnpluginInstance<
 			}
 		},
 		watchChange: reset,
-		webpack: storeIn,
-		rspack: storeIn,
+		webpack: keepCompiler,
+		rspack: keepCompiler,
 		esbuild: {
 			// arktype resolves natively, outside the plugin's esbuild namespace
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
