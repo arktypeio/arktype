@@ -194,7 +194,8 @@ const abortEarly = { abortEarly: true }
 const isInvalidMode = (mode: Mode) =>
 	mode === "issues" || mode === "errors" || mode === "first"
 
-// ArkErrors computes its messages when summary is read
+// ArkErrors computes its messages when summary is read, and may find its
+// issues when count is
 const arkArm = (
 	mode: Mode,
 	validator: unknown,
@@ -207,7 +208,8 @@ const arkArm = (
 			body: f => `r = ${f}(data).summary`,
 			nearest: mode === "first" && !hasFirstMode
 		}
-	:	{ validator, body: f => `r = ${f}(data)` }
+	: mode === "issues" ? { validator, body: f => `r = ${f}(data).count` }
+	: { validator, body: f => `r = ${f}(data)` }
 
 const zodArm = (mode: Mode, validator: unknown): ArmSpec =>
 	mode === "allows" ? { validator, body: f => `r = ${f}.validate(data)` }
