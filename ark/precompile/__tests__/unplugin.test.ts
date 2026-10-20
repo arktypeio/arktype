@@ -11,6 +11,7 @@ import {
 } from "@ark/precompile/internal/declare.ts"
 import {
 	unbundledMessage,
+	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage
 } from "@ark/precompile/internal/host.ts"
 import {
@@ -215,6 +216,13 @@ const dependencyFiles = {
 	),
 	"node_modules/forked/index.js":
 		'import { type } from "arktype"\nexport const forked = typeof type\n',
+	...fakePackage("node_modules/prebuilt", "prebuilt", "1.0.0"),
+	"node_modules/prebuilt/index.js":
+		'import { registerPrecompiledUnits } from "arktype/runtime"\nexport const prebuilt = typeof registerPrecompiledUnits\n',
+	"node_modules/prebuilt/other.js":
+		'import { registerPrecompiledUnits } from "arktype/runtime"\nexport const other = typeof registerPrecompiledUnits\n',
+	"prebuilt.ts":
+		'import { prebuilt } from "prebuilt"\nimport { other } from "prebuilt/other.js"\nconsole.log(prebuilt, other)\n',
 	"shared.ts":
 		'import { shared } from "shared"\nimport { other } from "shared/other.js"\nconsole.log(shared, other)\n',
 	"forked.ts":
@@ -843,6 +851,12 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 		attest(await buildDependency("shared.ts", { runtime: "arktype" })).equals(
 			[]
 		)
+	})
+
+	it("warns once per dependency shipping precompiled validators", async () => {
+		attest(await buildDependency("prebuilt.ts")).equals([
+			writePrecompiledDependencyMessage("prebuilt")
+		])
 	})
 
 	it("fails for a second copy of arktype", async () => {

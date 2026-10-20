@@ -92,7 +92,12 @@ import {
 	type FunctionNode,
 	type ImportTarget
 } from "./graph.ts"
-import { dependencyOf, transformedId, type PrecompileHost } from "./host.ts"
+import {
+	arkPackageName,
+	dependencyOf,
+	transformedId,
+	type PrecompileHost
+} from "./host.ts"
 import {
 	createSiteState,
 	findDynamic,
@@ -3711,9 +3716,6 @@ const sharedSchemaExports = Object.keys(runtimeExports).filter(
 		(arkSchema as Record<string, unknown>)[name] ===
 		(arktypeRuntime as Record<string, unknown>)[name]
 )
-
-// arktype's own packages, which read their nodes by design
-const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 
 const arktypeSpecifier =
 	/\b(?:from|import)\s*["'](?:arktype(?:\/config)?|arkregex|@ark\/(?:type|regex))["']/

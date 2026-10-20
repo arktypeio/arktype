@@ -16,7 +16,9 @@ import type {
 	TransformedModule
 } from "./driver.ts"
 import {
+	arkPackageName,
 	createNodeHost,
+	dependencyOf,
 	optedInPackagesOf,
 	reportDiagnostics,
 	resolvesToRuntime,
@@ -27,6 +29,7 @@ import {
 	schemaSpecifier,
 	transformedFilterOf,
 	undetailedSpecifierOf,
+	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
 	writeUndetailedImportMessage
 } from "./host.ts"
@@ -100,6 +103,15 @@ export const precompile: UnpluginInstance<
 		importersById[id] = stored[0]
 		return (modules[id] = stored[1])
 	}
+	const warnedPrecompiled = new Set<string>()
+	// a dependency importing the runtime ships what another build precompiled
+	const precompiledWarningOf = (id: string, importer: string) => {
+		const [, name] = (id === "arktype/runtime" && dependencyOf(importer)) || []
+		if (!name || arkPackageName.test(name) || warnedPrecompiled.has(name))
+			return
+		warnedPrecompiled.add(name)
+		return writePrecompiledDependencyMessage(name)
+	}
 	let isServing = false
 	// a Vite app's environments share the declarations of the app's build
 	const declarationsByApp = new WeakMap<object, Declarations>()
@@ -146,6 +158,8 @@ export const precompile: UnpluginInstance<
 							host.resolve(undetailed, importer)
 						:	refuse(writeUndetailedImportMessage(importer, id))
 				}
+				const precompiled = precompiledWarningOf(id, importer)
+				if (precompiled) this.warn(precompiled)
 				if (!runtimeSpecifiers.includes(id)) return
 				const { errors, warnings } = await readDependency(importer)
 				for (const warning of warnings) this.warn(warning)
@@ -320,7 +334,12 @@ export const precompile: UnpluginInstance<
 								pluginData: esbuildResolution
 							}
 						)
-						if (!isRuntime) return result
+						if (!isRuntime) {
+							const precompiled = precompiledWarningOf(args.path, args.importer)
+							return precompiled ?
+									{ ...result, warnings: [{ text: precompiled }] }
+								:	result
+						}
 						const { errors, warnings } = await readDependency(args.importer)
 						return {
 							...result,
