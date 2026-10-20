@@ -3026,6 +3026,26 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 const isKeyword = (predicate: unknown): boolean =>
 	runtimePathsByValue.has(predicate) && (predicate as Fn).length < 2
 
+// a case returning what the next one does falls through to it, by line so
+// no line terminator a string holds is taken for one
+const sharedReturnCase = /^( +case [^]*): return ([^]*)$/
+
+const casesFallingThrough = (body: string): string => {
+	const lines = body.split("\n")
+	for (let i = 0; i < lines.length - 1; i++) {
+		const [, label, returned] = sharedReturnCase.exec(lines[i]) ?? []
+		const next = sharedReturnCase.exec(lines[i + 1])
+		if (
+			label &&
+			next &&
+			next[2] === returned &&
+			/^ */.exec(next[1])![0] === /^ */.exec(label)![0]
+		)
+			lines[i] = `${label}:`
+	}
+	return lines.join("\n")
+}
+
 const countedCheck =
 	/^( +)const errorCount = ctx\.currentErrorCount\n +if \(!(r\d+)\(data, ctx\) && ctx\.currentErrorCount === errorCount\) {\n +return (!.+)\n +}\n +return !ctx\.failFast \|\| ctx\.currentErrorCount === errorCount\n$/
 
@@ -3044,7 +3064,7 @@ class StandaloneCompiler extends TraversalCompiler {
 
 	// a keyword check adds no issues itself, so its Apply needn't count them
 	override get body(): string {
-		const body = super.body
+		const body = casesFallingThrough(super.body)
 		const counted = countedCheck.exec(body)
 		if (!counted) return body
 		const [, indent, check, fail] = counted
