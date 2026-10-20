@@ -5904,6 +5904,16 @@ import { precompile } from "@ark/precompile/unplugin"
 precompile.vite({ config: "./config.ts" })
 ```
 
+### Troubleshooting
+
+The build fails with a message naming the file, the definition and the fix. The ones a setup, rather than a definition, causes:
+
+- **`arktype resolves to 2.3.0, but @ark/precompile runs on 2.2.8`**: validators run only on the arktype they were built with. Install one version, e.g. with your package manager's dedupe or overrides.
+- **`arktype resolves to ... rather than arktype/runtime`** (Next with Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config.
+- **`` `User` is imported from `~/schemas`, which the build can't resolve ``**: the build resolves imports as TypeScript does, so add a bundler alias to `tsconfig.json`'s `paths` too.
+- **`configure() is called, but the build has no config module`**: name that module as the build's `config`.
+- **`precompile.esbuild() needs bundle: true`**: precompiled modules import validators the bundle includes.
+
 The [`@ark/precompile` README](https://github.com/arktypeio/arktype/tree/main/ark/precompile#readme) is the full reference: every option, the Node, Bun and Turbopack drivers, shadow mode for tests, libraries, runtime islands and declarations.
 
 
