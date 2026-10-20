@@ -7,9 +7,10 @@ import type { anyOrNever, satisfy, show } from "./generics.ts"
 import { tryParseNumber } from "./numbers.ts"
 import { defineProperties, isKeyOf } from "./records.ts"
 
+// built by functions, so a bundle reading only objectKindOf builds them at its first call
 // ECMAScript Objects
 // See https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const ecmascriptConstructors = {
+const ecmascriptConstructorsOf = () => ({
 	Array,
 	Boolean,
 	Date,
@@ -23,9 +24,12 @@ export const ecmascriptConstructors = {
 	String,
 	WeakMap,
 	WeakSet
-}
+})
 
-export type ecmascriptConstructors = typeof ecmascriptConstructors
+export const ecmascriptConstructors: ecmascriptConstructors =
+	/* @__PURE__ */ ecmascriptConstructorsOf()
+
+export type ecmascriptConstructors = ReturnType<typeof ecmascriptConstructorsOf>
 
 // we have to narrow instantiateConstructors here since a lot of the builtin defaults use `any`
 export type EcmascriptObjects = satisfy<
@@ -67,28 +71,30 @@ export type platformConstructors = {
 // Platform APIs
 // See https://developer.mozilla.org/en-US/docs/Web/API
 // Must be implemented in Node etc. as well as the browser to include here
-export const platformConstructors =
-	/* @__PURE__ */ ((): platformConstructors => ({
-		ArrayBuffer,
-		Blob: globalThis.Blob,
-		// Node loads a module for File, and undici for the rest, on first read
-		get File() {
-			return globalThis.File ?? globalThis.Blob
-		},
-		get FormData() {
-			return globalThis.FormData
-		},
-		get Headers() {
-			return globalThis.Headers
-		},
-		get Request() {
-			return globalThis.Request
-		},
-		get Response() {
-			return globalThis.Response
-		},
-		URL: globalThis.URL
-	}))()
+const platformConstructorsOf = (): platformConstructors => ({
+	ArrayBuffer,
+	Blob: globalThis.Blob,
+	// Node loads a module for File, and undici for the rest, on first read
+	get File() {
+		return globalThis.File ?? globalThis.Blob
+	},
+	get FormData() {
+		return globalThis.FormData
+	},
+	get Headers() {
+		return globalThis.Headers
+	},
+	get Request() {
+		return globalThis.Request
+	},
+	get Response() {
+		return globalThis.Response
+	},
+	URL: globalThis.URL
+})
+
+export const platformConstructors: platformConstructors =
+	/* @__PURE__ */ platformConstructorsOf()
 
 // a platform constructor's prototype is its instance type, and unlike
 // InstanceType, reading it doesn't resolve its signatures' parameters
@@ -102,7 +108,7 @@ export type PlatformObjects = {
 	: never
 }
 
-export const typedArrayConstructors = /* @__PURE__ */ (() => ({
+const typedArrayConstructorsOf = () => ({
 	Int8Array,
 	Uint8Array,
 	Uint8ClampedArray,
@@ -114,9 +120,12 @@ export const typedArrayConstructors = /* @__PURE__ */ (() => ({
 	Float64Array,
 	BigInt64Array,
 	BigUint64Array
-}))()
+})
 
-export type typedArrayConstructors = typeof typedArrayConstructors
+export const typedArrayConstructors: typedArrayConstructors =
+	/* @__PURE__ */ typedArrayConstructorsOf()
+
+export type typedArrayConstructors = ReturnType<typeof typedArrayConstructorsOf>
 
 export type TypedArrayObjects = instantiateConstructors<
 	keyof typedArrayConstructors
@@ -128,14 +137,19 @@ export type builtinConstructors = ecmascriptConstructors &
 
 // Built-in object constructors based on a subset of:
 // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects
-export const builtinConstructors: builtinConstructors =
-	/* @__PURE__ */ defineProperties(
-		/* @__PURE__ */ defineProperties(
-			/* @__PURE__ */ Object.assign({}, ecmascriptConstructors),
-			platformConstructors
+let builtins: builtinConstructors | undefined
+
+const builtinsOf = (): builtinConstructors =>
+	(builtins ??= defineProperties(
+		defineProperties(
+			Object.assign({}, ecmascriptConstructorsOf()),
+			platformConstructorsOf()
 		),
-		typedArrayConstructors
-	)
+		typedArrayConstructorsOf()
+	))
+
+export const builtinConstructors: builtinConstructors =
+	/* @__PURE__ */ builtinsOf()
 
 export type BuiltinObjectKind = keyof builtinConstructors
 
@@ -183,11 +197,12 @@ export const objectKindOf = <data extends object>(
 	// Array.isArray (https://github.com/arktypeio/arktype/issues/1597).
 	if (Array.isArray(data)) return "Array" as never
 
+	const constructors = builtinsOf()
 	let prototype: Partial<Object> | null = prototypeOf(data)
 	while (
 		prototype?.constructor &&
-		(!isKeyOf(prototype.constructor.name, builtinConstructors) ||
-			builtinConstructors[prototype.constructor.name]?.prototype !== prototype)
+		(!isKeyOf(prototype.constructor.name, constructors) ||
+			constructors[prototype.constructor.name]?.prototype !== prototype)
 	)
 		prototype = Object.getPrototypeOf(prototype)
 

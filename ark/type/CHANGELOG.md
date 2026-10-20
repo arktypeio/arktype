@@ -415,7 +415,7 @@ A getter or `Proxy` trap on the data can see these reads change:
 
 ### Read `File` from `platformConstructors` when it's used
 
-`@ark/util`'s `platformConstructors.File` and `builtinConstructors.File` are getters, as `FormData`, `Headers`, `Request` and `Response` are, returning `globalThis.File`, or `Blob` where it's missing, each time they're read. A `File` installed after import is the one they return.
+`@ark/util`'s `platformConstructors.File` and `builtinConstructors.File` are getters, as `FormData`, `Headers`, `Request` and `Response` are, returning `globalThis.File`, or `Blob` where it's missing, each time they're read. A `File` installed after import is the one they return. In a bundle that never reads `builtinConstructors`, `objectKindOf` builds its own table at its first call, capturing `Blob`, `URL` and the other constructors then rather than at import.
 
 ### Call narrows and morphs without a receiver when jitless
 
