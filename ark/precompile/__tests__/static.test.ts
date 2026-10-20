@@ -1809,9 +1809,9 @@ const A = type({ a: "1" }).and({ a: "2" })`,
 			])
 		})
 
-		it("warns with runtime arktype", () => {
+		it("fails with runtime arktype", () => {
 			attest(parseErrorsOf({ runtime: "arktype" })).snap([
-				'warning /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime.'
+				'error /main.ts:2:11  type({ a: "1" }).and({ a: "2" }) throws a ParseError\n  Intersection at a of 1 and 2 results in an unsatisfiable type\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning.'
 			])
 		})
 

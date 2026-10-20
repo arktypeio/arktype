@@ -1531,7 +1531,7 @@ const bad = type.string(5)
 By default, a failed validation returns an error for each check that failed. `errors` can return less:
 
 - `"all"` (default): every error, at each path that failed
-- `"first"`: the first error validation finds, where it stops
+- `"first"`: the first error, where validation stops
 - `"none"`: one error at the root, whose message is `is invalid`
 
 ```ts title="config.ts"
@@ -1553,8 +1553,6 @@ const out = User({ name: 5, age: "5" })
 ```
 
 `"first"` and `"none"` are installed by `import "arktype/errors"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
-
-With `"first"`, which of the data's errors is returned isn't promised, and can differ between a Type and its precompiled validator.
 
 With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale).
 
@@ -5918,7 +5916,7 @@ The build fails with a message naming the file, the definition and the fix. The 
 - **`precompile.esbuild() needs bundle: true`**: precompiled modules import validators the bundle includes.
 - **`lib imports arktype/runtime, so it ships validators precompiled for one version of arktype`**, or **`lib imports arktype`**: a dependency is built for another setup. Have it publish its source with `"arktype": { "precompile": true }` in its `package.json`, so your build precompiles it.
 
-Where a build could still write output, as for a dependency or a read off an unresolved import, the message adds that `allowUnsafe: true` builds anyway, reporting it as a warning. What it reports may then throw at runtime.
+Where a build could still write output, as for a dependency, a read off an unresolved import or a definition that throws a ParseError, the message adds that `allowUnsafe: true` builds anyway, reporting it as a warning. What it reports may then throw at runtime, as a test expecting a ParseError means it to.
 
 The [`@ark/precompile` README](https://github.com/arktypeio/arktype/tree/main/ark/precompile#readme) is the full reference: every option, the Node, Bun and Turbopack drivers, shadow mode for tests, libraries, runtime islands and declarations.
 

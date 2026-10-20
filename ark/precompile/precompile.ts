@@ -2847,8 +2847,11 @@ export class Precompiler {
 					"parse",
 					`${module.snippetOf(node)} throws a ParseError`,
 					[this.sourceNamed(site.parseError.message, site, module)],
-					this.unsafeHintOf(hintsByRule.parse),
-					this.unsafeSeverity
+					// arktype throws it too, so it fails with runtime: "arktype" as well
+					this.allowUnsafe ?
+						hintsByRule.parse
+					:	`${hintsByRule.parse} ${allowUnsafeHint}`,
+					this.allowUnsafe ? "warning" : "error"
 				)
 			)
 		}
