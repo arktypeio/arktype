@@ -243,7 +243,7 @@ export const A = type({ a: "string" })`)
 				specifier.startsWith("~arktype/intersection")
 			)!
 			attest(normalized(unit.match(/^const \w+ = .*/m)![0])).snap(
-				"const #0 = /* @__PURE__ */ ((r1) => {"
+				"const #0 = /* @__PURE__ */ ((#0R1) => {"
 			)
 		})
 
@@ -267,7 +267,7 @@ export const make = () => type({ a: "string" })`,
 			)!
 			attest(normalized(unit.match(/^function \w+\(\) {\n.*/m)![0]))
 				.snap(`function #0() {
-	return (#0Unit ??= ((r1) => {`)
+	return (#0Unit ??= ((#0R1) => {`)
 			// imported after arktype, the cycle reaches the module after its artifact
 			const late = precompile(
 				`import { type } from "arktype"

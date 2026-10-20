@@ -525,11 +525,14 @@ interface UnitLinkage {
 	members: UnitMember[]
 	nameOf: ((id: NodeId) => string) | undefined
 	opts: UnitOptions
+	// the unit's name, once its content is named
+	unit?: string | undefined
 }
 
 const createLinkage = (
 	nameOf?: (id: NodeId) => string,
-	opts: UnitOptions = {}
+	opts: UnitOptions = {},
+	unit?: string
 ): UnitLinkage => ({
 	referencesById: {},
 	reused: new Set(),
@@ -539,7 +542,8 @@ const createLinkage = (
 	refs: new Map(),
 	members: [],
 	nameOf,
-	opts
+	opts,
+	unit
 })
 
 export class TraversalCompiler extends NodeCompiler {
@@ -701,7 +705,7 @@ const unitsOf = (s: ContentNamingState, opts: UnitOptions): RootUnit[] => {
 			for (const callee of s.referencesById[node.id].callees)
 				if (!callee.isRoot() || roots.includes(callee)) reached.push(callee)
 		}
-		const linkage = createLinkage(id => s.names[id], opts)
+		const linkage = createLinkage(id => s.names[id], opts, s.names[roots[0].id])
 		for (const node of s.reached) {
 			linkage.referencesById[node.id] = node
 			if (node.isRoot() && !declaredByName[s.names[node.id]])

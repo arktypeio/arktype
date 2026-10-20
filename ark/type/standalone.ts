@@ -1354,7 +1354,8 @@ ${writeFunction(
 			)
 		}
 		const refs = unit.refs.flatMap((value, i) => {
-			if (!read.has(`r${i}`)) return []
+			const name = refNameOf(unit.name, i)
+			if (!read.has(name)) return []
 			const { statements } = this.declarations
 			const declared = statements.length
 			const emitted = this.emit(value)
@@ -1364,15 +1365,15 @@ ${writeFunction(
 					exported ? emitted
 					: isLiteralSite(value, emitted) ? this.readSite(emitted)
 					: undefined
-				if (received === undefined) return [`const r${i} = ${emitted}`]
+				if (received === undefined) return [`const ${name} = ${emitted}`]
 				// a unit's function receives what the runtime and other units share
-				writing.params.push(`r${i}`)
+				writing.params.push(name)
 				writing.args.push(received)
 				return []
 			}
 			// a flat module reads what the runtime exports by the ref's name
 			if (exported) {
-				this.importName("arktype/runtime", `${exported} as r${i}`)
+				this.importName("arktype/runtime", `${exported} as ${name}`)
 				return []
 			}
 			// as it does a pattern the ref declares
@@ -1382,11 +1383,11 @@ ${writeFunction(
 				statements.length === declared + 1
 			) {
 				statements[declared] =
-					`const r${i}${statements[declared].slice(`const ${emitted}`.length)}`
-				this.declarations.namesByValue.set(value, `r${i}`)
+					`const ${name}${statements[declared].slice(`const ${emitted}`.length)}`
+				this.declarations.namesByValue.set(value, name)
 				return []
 			}
-			return [`const r${i} = ${emitted}`]
+			return [`const ${name} = ${emitted}`]
 		})
 		const links = ownRoots.map(root => {
 			const shape = writing.shapesByName[unit.names[root.id]]
@@ -1530,13 +1531,16 @@ ${writeFunction(
 				return `${call}d${descriptions.indexOf(description)})`
 			}
 		)
-		params.push(...descriptions.map((_, i) => `d${i}`))
+		const named = [
+			...params.map(param => param.split(unit.name).join("template")),
+			...descriptions.map((_, i) => `d${i}`)
+		]
 		args.push(...descriptions)
-		const name = `template${hashOf(`${params} ${shared}`)}`
+		const name = `template${hashOf(`${named} ${shared}`)}`
 		this.importName(
 			this.share(
 				name,
-				writeFunction(this.baking, name, params.join(", "), shared),
+				writeFunction(this.baking, name, named.join(", "), shared),
 				{},
 				shared.includes("runtime.")
 			),
@@ -1677,7 +1681,7 @@ return [${returned.join(", ")}]
 			const returned = returnedOf(unit, this.baking)
 			const read = namesReadBy(unit, returned)
 			const declared = unit.refs.flatMap((_, i) =>
-				read.has(`r${i}`) ? [i] : []
+				read.has(refNameOf(unit.name, i)) ? [i] : []
 			)
 			this.unit = unit
 			const refs = declared.map(i => this.emit(unit.refs[i]))
@@ -1690,7 +1694,10 @@ return [${returned.join(", ")}]
 			const unitFunction = this.writeUnitFunction(
 				unit,
 				[...dependencyParams, "...refs"],
-				declared.map((i, position) => `const r${i} = refs[${position}]`),
+				declared.map(
+					(i, position) =>
+						`const ${refNameOf(unit.name, i)} = refs[${position}]`
+				),
 				[],
 				returned
 			)
@@ -3251,11 +3258,11 @@ const casesFallingThrough = (body: string): string => {
 }
 
 const countedCheck =
-	/^( +)const errorCount = ctx\.currentErrorCount\n +if \(!(r\d+)\(data, ctx\) && ctx\.currentErrorCount === errorCount\) {\n +return (!.+)\n +}\n +return !ctx\.failFast \|\| ctx\.currentErrorCount === errorCount\n$/
+	/^( +)const errorCount = ctx\.currentErrorCount\n +if \(!((?:[\da-z]+R|r)\d+)\(data, ctx\) && ctx\.currentErrorCount === errorCount\) {\n +return (!.+)\n +}\n +return !ctx\.failFast \|\| ctx\.currentErrorCount === errorCount\n$/
 
 // a required prop's Apply: `!ctx.failsIn(apply, value, key, site, data)`
 const appliedProp =
-	/!ctx\.failsIn\((\w+), (data(?:\.[\w$]+|\["(?:[^"\\]|\\.)*"])), "(?:[^"\\]|\\.)*", r\d+, data\)/g
+	/!ctx\.failsIn\((\w+), (data(?:\.[\w$]+|\["(?:[^"\\]|\\.)*"])), "(?:[^"\\]|\\.)*", (?:[\da-z]+R|r)\d+, data\)/g
 
 // a value holding no object, pattern, alias, predicate or morph, whose
 // Allows is a few checks
@@ -3266,6 +3273,16 @@ const isLeaf = (node: BaseNode): boolean =>
 	!Object.values(node.referencesById).some(ref => ref.hasKind("structure"))
 
 class StandaloneCompiler extends TraversalCompiler {
+	// named for its unit, so units can share a scope
+	override ref(value: object | symbol): string {
+		const { unit } = this.linkage
+		if (unit === undefined) return super.ref(value)
+		let name = this.refs!.get(value)
+		if (name === undefined)
+			this.refs!.set(value, (name = refNameOf(unit, this.refs!.size)))
+		return name
+	}
+
 	override site(node: BaseNode): string {
 		return this.siteRef(issueSiteOf(node.failureSite))
 	}
@@ -3374,6 +3391,8 @@ class StandaloneCompiler extends TraversalCompiler {
 }
 
 const failingBySite = new WeakMap<object, object>()
+
+const refNameOf = (unit: string, i: number) => `${unit}R${i}`
 
 // size writes the checks an Allows loops over as the returns they stand for,
 // line by line, as a literal can hold a line separator
