@@ -368,7 +368,7 @@ export abstract class NodeCompiler extends CompiledFunction<
 	readFirst(prop: BaseNode & { key: PropertyKey }, fail: () => unknown): this {
 		this.read = prop
 		return this.const("first", `data${this.prop(prop.key)}`).if(
-			"!Object.is(Object(data), data)",
+			"!(data instanceof Object || Object(data) === data)",
 			fail as never
 		)
 	}

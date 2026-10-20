@@ -229,6 +229,14 @@ contextualize(() => {
 		attest(Strict.allows("abc")).equals(false)
 	})
 
+	it("accepts an object without Object.prototype in its chain", () => {
+		const T = type({ length: "number" })
+		const unprototyped = Object.assign(Object.create(null), { length: 0 })
+		// the first data is checked uncompiled
+		attest(T.allows(unprototyped)).equals(true)
+		attest(T.allows(unprototyped)).equals(true)
+	})
+
 	describe("missing", () => {
 		const requiredError = (T: type.Any, data: object = {}) => {
 			const error = (T(data) as type.errors).issues[0]
