@@ -1393,26 +1393,31 @@ ${writeFunction(
 			)
 			const params = [...dependencyParams, ...writing.params]
 			const prologue = [...this.declarations.statements, ...refs]
+			const array =
+				params.length || prologue.length || links.length ?
+					undefined
+				:	this.writeUnitArray(unit, returned)
 			const built =
-				(!params.length &&
+				array ??
+				((!params.length &&
 					!links.length &&
 					!Object.keys(writing.imports).length &&
 					this.writeTemplateCall(unit, prologue, returned)) ||
-				`(${this.writeUnitFunction(
-					unit,
-					// a minifier dissolves a call with no parameters into its caller
-					params.length || this.baking.shortest ? params : ["...$"],
-					prologue,
-					links,
-					returned
-				)})(${[...dependencyArgs, ...writing.args].join(", ")})`
+					`(${this.writeUnitFunction(
+						unit,
+						// a minifier dissolves a call with no parameters into its caller
+						params.length || this.baking.shortest ? params : ["...$"],
+						prologue,
+						links,
+						returned
+					)})(${[...dependencyArgs, ...writing.args].join(", ")})`)
 			moduleDeclarations.push(
 				...(this.baking.hoisted ?
 					[
 						`var ${unit.name}Unit`,
 						`function ${unit.name}() {\n\treturn (${unit.name}Unit ??= ${built})\n}`
 					]
-				:	[`const ${unit.name} = /* @__PURE__ */ ${built}`])
+				:	[`const ${unit.name} = ${array ? "" : "/* @__PURE__ */ "}${built}`])
 			)
 		}
 		for (const root of unit.roots) {
@@ -1516,6 +1521,23 @@ ${writeFunction(
 ${[...prologue, ...declarations, ...epilogue].join("\n")}
 return [${returned.join(", ")}]
 }`
+	}
+
+	// traversals reading no other name of their unit need no scope
+	writeUnitArray(unit: RootUnit, returned: string[]): string | undefined {
+		const sourcesByName = new Map(
+			this.declareMembers(unit, returned).map(declaration => {
+				const [, name, source] = /^const ([\w$]+) = ([\S\s]*)$/.exec(
+					declaration
+				)!
+				return [name, source]
+			})
+		)
+		for (const source of sourcesByName.values())
+			if (source.match(/[\w$]+/g)!.some(name => sourcesByName.has(name))) return
+		const sources = returned.map(name => (name ? sourcesByName.get(name) : ""))
+		if (sources.includes(undefined)) return
+		return `[${sources.join(", ")}]`
 	}
 
 	// traversals read neither `this` nor `arguments`
