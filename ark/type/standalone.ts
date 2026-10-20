@@ -1612,7 +1612,7 @@ ${writeFunction(
 			if (!read.has(name)) return []
 			const { statements } = this.declarations
 			const declared = statements.length
-			const emitted = this.emit(value)
+			const emitted = this.emitRef(value)
 			const exported = /^runtime\.([\w$]+)$/.exec(emitted)?.[1]
 			if (!this.baking.flattens) {
 				const received =
@@ -1969,7 +1969,7 @@ ${writeFunction(
 				read.has(refNameOf(unit.name, i)) ? [i] : []
 			)
 			this.unit = unit
-			const refs = declared.map(i => this.emit(unit.refs[i]))
+			const refs = declared.map(i => this.emitRef(unit.refs[i]))
 			this.unit = undefined
 			const [dependencyParams, dependencyArgs] = this.dependencyParamsOf(
 				unit,
@@ -2982,6 +2982,13 @@ ${writeFunction(
 }`
 	}
 
+	// what a traversal reads, where size checks a URL by the parser alone
+	emitRef(value: unknown): string {
+		return this.baking.shortest && value === runtime.isParsableUrl ?
+				"runtime.canParseUrl"
+			:	this.emit(value)
+	}
+
 	emit(value: unknown): string {
 		const hole = this.holeExpressions.get(value)
 		if (hole) return hole
@@ -2990,11 +2997,7 @@ ${writeFunction(
 			return throwParseError(writeUnprecompilableMessage(printable(value)))
 		if (!hasDomain(value, "object")) return printablePrimitive(value)
 		const runtimePath = runtimePathsByValue.get(value)
-		if (runtimePath) {
-			return this.baking.shortest && value === runtime.isParsableUrl ?
-					"runtime.canParseUrl"
-				:	runtimePath
-		}
+		if (runtimePath) return runtimePath
 		const declared = this.declarations.namesByValue.get(value)
 		if (declared) return declared
 		const defaulted = this.defaultsByMorph.get(value)
