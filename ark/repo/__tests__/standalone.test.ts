@@ -346,6 +346,19 @@ contextualize(() => {
 		attest(T.allows({ [key]: "x", c: 1 })).equals(true)
 	})
 
+	it("size allows as a filter callback", async () => {
+		const { T } = await load(
+			{ T: type({ id: "number", tags: "string[]", "note?": "'a' | 'b'" }) },
+			{ optimize: "size" }
+		)
+		const valid = { id: 1, tags: ["x"], note: "a" }
+		attest(
+			[valid, { id: 1, tags: [0] }, { id: 1, tags: [], note: "c" }].filter(
+				T.allows
+			)
+		).equals([valid])
+	})
+
 	it("index signature with a defaulted key", async () => {
 		const empty = standIn(() => [], "empty")
 		const types = {

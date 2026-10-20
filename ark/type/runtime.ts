@@ -20,6 +20,7 @@ import {
 	type ArkIssue,
 	type CompactApply,
 	type FailHandler,
+	type FailureContext,
 	type FailureSite,
 	type InternalTraversal,
 	type SiteContext,
@@ -483,6 +484,29 @@ export const writtenSiteOf = ((
 export const failing = ((site: FailureSite): CompactApply =>
 	(data, ctx) =>
 		!ctx.failsAt(site, data)) satisfies Fn
+
+// a unified traversal reports to a ctx it's passed, and passed none (or
+// filter's index), stops at its first failure
+export const failsAt = ((
+	ctx: FailureContext | undefined,
+	site: FailureSite,
+	data: unknown,
+	key?: PropertyKey,
+	absent?: true
+): boolean | undefined =>
+	!ctx?.failsAt || ctx.failsAt(site, data, key, absent)) satisfies Fn
+
+export const failsIn = ((
+	ctx: FailureContext | undefined,
+	apply: CompactApply,
+	value: unknown,
+	key?: PropertyKey,
+	missing?: FailureSite,
+	data?: unknown
+): boolean | undefined =>
+	ctx?.failsAt ?
+		ctx.failsIn(apply, value, key, missing, data)
+	:	!(apply as Fn)(value)) satisfies Fn
 
 export const requiredSite: FailureSite = {
 	missing: /* @__PURE__ */ siteOf("required")

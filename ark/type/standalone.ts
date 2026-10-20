@@ -21,6 +21,7 @@ import {
 	type MutatesInput,
 	type NodeId,
 	type Optional,
+	type ReferenceOptions,
 	type RootUnit,
 	type StructureNode,
 	type TraversalKind,
@@ -1047,7 +1048,7 @@ class StandaloneArtifact {
 				if (this.unitRoots.has(root)) continue
 				this.unitRoots.add(root)
 				const variant = this.variantOf(root)
-				for (const unit of rootUnitsOf(root, variant)) {
+				for (const unit of this.unitsOf(root)) {
 					for (const head of unit.roots) {
 						const key = `${variant}${head.id}`
 						if (!this.unitsByHead.has(key)) this.unitsByHead.set(key, unit)
@@ -1342,9 +1343,15 @@ class StandaloneArtifact {
 	// indexes the compilers writing a root's units
 	variantOf(root: BaseRoot): number {
 		return (
-			+writesInPlace(root, this.baking.mutatesInput) +
-			2 * +this.baking.firstIssue
+			(writesInPlace(root, this.baking.mutatesInput) ? 1
+			: this.baking.detailsErrors && this.baking.shortest ? 2
+			: 0) +
+			3 * +this.baking.firstIssue
 		)
+	}
+
+	unitsOf(root: BaseRoot): RootUnit[] {
+		return rootUnitsOf(root, this.variantOf(root))
 	}
 
 	headUnitOf(root: BaseRoot): RootUnit {
@@ -1356,13 +1363,7 @@ class StandaloneArtifact {
 	}
 
 	get units(): RootUnit[] {
-		return [
-			...new Set(
-				[...this.unitRoots].flatMap(root =>
-					rootUnitsOf(root, this.variantOf(root))
-				)
-			)
-		]
+		return [...new Set([...this.unitRoots].flatMap(root => this.unitsOf(root)))]
 	}
 
 	get comparedValues(): unknown[] {
@@ -2471,7 +2472,7 @@ ${writeFunction(
 					!isDecidedByAllows(node)
 			) &&
 			// errors count their issues, not a branch's
-			!rootUnitsOf(root).some(unit =>
+			!this.unitsOf(root).some(unit =>
 				unit.members.some(([, source]) =>
 					source.includes("ctx.currentErrorCount")
 				)
@@ -2513,13 +2514,22 @@ ${writeFunction(
 				!unreads ? refOf("Traversal")
 				: this.baking.firstIssue ? "runtime.UnreadFirstIssues"
 				: "runtime.UnreadArkErrors"
+			// a unified root applies by its Allows
+			const apply = this.appliedIndexOf(root) ? "apply" : "allows"
 			const pattern =
-				flat ? `allows, apply${transforms ? ", transform" : ""}`
+				flat ?
+					[
+						...new Set(flat.map((_, i) => ["allows", apply, "transform"][i]))
+					].join(", ")
 				: this.baking.shortest ?
-					`[allows, apply${transforms ? ", transform" : ""}]`
-				:	`{ 0: allows, 1: apply${transforms ? ", 2: transform" : ""} }`
+					`[allows${
+						apply === "apply" ? ", apply"
+						: transforms ? ","
+						: ""
+					}${transforms ? ", transform" : ""}]`
+				:	`{ 0: allows${apply === "apply" ? ", 1: apply" : ""}${transforms ? ", 2: transform" : ""} }`
 			const valid = transforms ? "transform(data)" : "data"
-			const parts = flat ? flat.join(", ") : traversals
+			const parts = flat ? [...new Set(flat)].join(", ") : traversals
 			const elements =
 				asValidator && !transforms && this.elementTraversalsOf(root)
 			if (elements) {
@@ -2532,13 +2542,13 @@ ${writeFunction(
 	const i = rejectedIn(data)
 	return i === undefined ? data : ${errorsOf}Elements(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
 }`)})`,
-					`[${traversals}[0], ${traversals}[1], ${elements}[0], ${elements}[1]]`,
+					`[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`,
 					true
 				]
 			}
 			if (asValidator) {
 				const failsWith = (args: string) =>
-					`${errorsOf}CallErrors(apply, data, ${args}, ${unconfigured ? "null" : "onFail"}, ${Ctx})`
+					`${errorsOf}CallErrors(${apply}, data, ${args}, ${unconfigured ? "null" : "onFail"}, ${Ctx})`
 				return [
 					this.makeValidator(
 						`${pattern}${unconfigured ? "" : ", onFail"}`,
@@ -2556,8 +2566,8 @@ ${writeFunction(
 					params: pattern,
 					apply: `(data, onFail) => allows(data) ? ${valid} : ${
 						unreads ?
-							`runtime.unreadErrors(apply, data, onFail, ${Ctx})`
-						:	`runtime.applyErrors(apply, data, ${refOf("config")}, onFail, ${Ctx})`
+							`runtime.unreadErrors(${apply}, data, onFail, ${Ctx})`
+						:	`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
 					}`,
 					args: parts
 				},
@@ -2752,6 +2762,12 @@ ${writeFunction(
 		)
 	}
 
+	// where a root's unit array holds its Apply: with its Allows, if unified
+	appliedIndexOf(root: BaseRoot): number {
+		const [allows, apply] = this.traversalsOf(root, this.headUnitOf(root))
+		return allows === apply ? 0 : 1
+	}
+
 	compactPartsOf(
 		root: BaseRoot,
 		indices: number[],
@@ -2778,7 +2794,11 @@ ${writeFunction(
 			!this.unitsByHead.has(`${this.variantOf(element)}${element.id}`)
 		)
 			return
-		return this.compactTraversalsOf(element)
+		const traversals = this.compactTraversalsOf(element)
+		return (
+			traversals &&
+			`${traversals}[0], ${traversals}[${this.appliedIndexOf(element)}]`
+		)
 	}
 
 	compactTraversalsOf(root: BaseRoot): string | undefined {
@@ -3465,14 +3485,13 @@ const forwardedOf = (members: readonly UnitMember[]): Map<string, string> => {
 	return forwarded
 }
 
+// a unified traversal is returned once, as its Allows
 const returnedOf = (unit: RootUnit, baking: Baking): string[] =>
-	baking.detailsErrors ?
-		unit.traversals.flat()
-	:	unit.traversals.flatMap(([allows, , ...transform]) => [
-			allows,
-			"",
-			...transform
-		])
+	unit.traversals.flatMap(([allows, apply, ...transform]) => [
+		allows,
+		baking.detailsErrors && apply !== allows ? apply : "",
+		...transform
+	])
 
 const namesReadBy = (unit: RootUnit, returned: string[]): Set<string> =>
 	new Set(
@@ -3818,13 +3837,18 @@ class StandaloneCompiler extends TraversalCompiler {
 	}
 
 	// Allows by Apply of each leaf a prop applies
-	private readonly gates = new Map<string, string>()
+	private readonly gated = new Map<string, string>()
 
 	override traversal(node: BaseNode, kind: TraversalKind): string {
 		const name = super.traversal(node, kind)
-		if (kind === "Apply" && this.traversalKind === "Apply" && isLeaf(node))
-			this.gates.set(name, super.traversal(node, "Allows"))
+		if (kind === "Apply" && this.traversalKind === "Apply" && this.gates(node))
+			this.gated.set(name, super.traversal(node, "Allows"))
 		return name
+	}
+
+	// whether a prop checks its value by Allows before applying it
+	gates(node: BaseNode): boolean {
+		return isLeaf(node)
 	}
 
 	override get body(): string {
@@ -3842,7 +3866,7 @@ class StandaloneCompiler extends TraversalCompiler {
 		return body.replace(
 			appliedProp,
 			(applied, apply: string, value: string) => {
-				const allows = this.gates.get(apply)
+				const allows = this.gated.get(apply)
 				return allows ? `${allows}(${value}) || ${applied}` : applied
 			}
 		)
@@ -3944,12 +3968,88 @@ class InPlaceFirstIssueCompiler extends InPlaceCompiler {
 	override readonly reportsFirst = true
 }
 
-// by variant: +inPlace, plus 2 for errors "first"
+const unifiedByNode = new WeakMap<BaseNode, boolean>()
+
+// a node whose Apply reads ctx only to report, so passed none, it allows
+const unifies = (node: BaseNode): boolean => {
+	let unified = unifiedByNode.get(node)
+	if (unified === undefined) {
+		unified =
+			!node.includesTransform &&
+			!node.includesAlias &&
+			!node.allowsRequiresContext &&
+			Object.values(node.referencesById).every(reference =>
+				reference.hasKind("predicate") ? isKeyword(reference.predicate)
+				: reference.hasKind("union") ?
+					!!reference.compiledDiscriminant || isDecidedByAllows(reference)
+				: reference.hasKind("intersection") ?
+					// Apply counts issues between its structure and predicates
+					(reference.inner.predicate?.length ?? 0) + +!!reference.structure < 2
+				:	!reference.hasKind("morph")
+			)
+		unifiedByNode.set(node, unified)
+	}
+	return unified
+}
+
+// a detailed size build's traversals: a node that unifies has one, its
+// Apply named as its Allows, reporting a failure only to a ctx it's passed
+class UnifiedCompiler extends StandaloneCompiler {
+	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
+		const node = this.linkage.referencesById[id]
+		return super.referenceToId(
+			id,
+			node && unifies(node) ? { ...opts, kind: "Allows" } : opts
+		)
+	}
+
+	override requiresContextFor(
+		node: BaseNode,
+		kind: TraversalKind = this.traversalKind
+	): boolean {
+		return (
+			(kind !== "Allows" || !unifies(node)) &&
+			super.requiresContextFor(node, kind)
+		)
+	}
+
+	// a key's union value is applied by its own traversal, which allows unpassed
+	override failingApplyOf(): undefined {}
+
+	// unpassed a ctx, failsIn allows a value itself
+	override gates(): boolean {
+		return false
+	}
+
+	// read where it fails, as a site is, so a unit needn't receive it
+	override get body(): string {
+		return super.body.replace(/\bctx\.(failsAt|failsIn)\(/g, "runtime.$1(ctx, ")
+	}
+}
+
+// a unified node's Apply, declared after its Allows, replaces it
+const unifyMembers = (unit: RootUnit): void => {
+	const sourcesByName = new Map(unit.members)
+	unit.members = [...sourcesByName]
+	for (const [i, node] of unit.declared.entries()) {
+		const source = sourcesByName.get(unit.declaredTraversals[i][0])!
+		if (unifies(node) && /\bctx\./.test(source))
+			throwInternalError(`Unified traversal reads ctx: ${source}`)
+	}
+}
+
+class UnifiedFirstIssueCompiler extends UnifiedCompiler {
+	override readonly reportsFirst = true
+}
+
+// by variant: standalone, in place or unified, plus 3 for errors "first"
 const compilers = [
 	StandaloneCompiler,
 	InPlaceCompiler,
+	UnifiedCompiler,
 	FirstIssueCompiler,
-	InPlaceFirstIssueCompiler
+	InPlaceFirstIssueCompiler,
+	UnifiedFirstIssueCompiler
 ]
 
 // each variant's roots have their own units
@@ -3966,6 +4066,7 @@ const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
 				keyOf: runtimeKeyOf
 			}))
 		)
+		if (variant % 3 === 2) for (const unit of units) unifyMembers(unit)
 	}
 	return units
 }
