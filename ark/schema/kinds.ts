@@ -94,6 +94,7 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			onUndeclaredKey: "ignore",
 			exactOptionalPropertyTypes: true,
 			numberAllowsNaN: false,
+			numberAllowsInfinity: false,
 			dateAllowsInvalid: false,
 			onFail: null,
 			keywords: {},

@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { Domain, rootSchema } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
@@ -45,12 +46,8 @@ contextualize(() => {
 		attest(Safe(Number.MIN_SAFE_INTEGER - 1).toString()).snap(
 			"must be at least -9007199254740991 (was -9007199254740992)"
 		)
-		attest(Safe(Infinity).toString()).snap(
-			"must be at most 9007199254740991 (was Infinity)"
-		)
-		attest(Safe(-Infinity).toString()).snap(
-			"must be at least -9007199254740991 (was -Infinity)"
-		)
+		attest(Safe(Infinity).toString()).snap("must be a number (was Infinity)")
+		attest(Safe(-Infinity).toString()).snap("must be a number (was -Infinity)")
 		attest(Safe(NaN).toString()).snap("must be a number (was NaN)")
 	})
 
@@ -59,6 +56,117 @@ contextualize(() => {
 		attest(type.number(Number.NaN).toString()).snap(
 			"must be a number (was NaN)"
 		)
+	})
+
+	it("doesn't allow Infinity by default", () => {
+		attest(type.number.allows(Number.POSITIVE_INFINITY)).equals(false)
+		attest(type.number.allows(Number.NEGATIVE_INFINITY)).equals(false)
+		attest(type.number(Number.POSITIVE_INFINITY).toString()).snap(
+			"must be a number (was Infinity)"
+		)
+		attest(type.number(Number.NEGATIVE_INFINITY).toString()).snap(
+			"must be a number (was -Infinity)"
+		)
+
+		attest(type("number > 0")(Number.POSITIVE_INFINITY).toString()).snap(
+			"must be a number (was Infinity)"
+		)
+		attest(type("number < 0")(Number.NEGATIVE_INFINITY).toString()).snap(
+			"must be a number (was -Infinity)"
+		)
+		attest(type("number.integer")(Number.POSITIVE_INFINITY).toString()).snap(
+			"must be a number (was Infinity)"
+		)
+	})
+
+	it("doesn't allow Infinity in discriminated unions", () => {
+		const NumberOrNull = type("number | null")
+		attest(NumberOrNull(5)).equals(5)
+		attest(NumberOrNull(null)).equals(null)
+		attest(NumberOrNull.allows(Number.POSITIVE_INFINITY)).equals(false)
+		attest(NumberOrNull(Number.NEGATIVE_INFINITY)?.toString()).snap(
+			"must be a number (was -Infinity)"
+		)
+		// the NaN check is kept along with the Infinity check
+		attest(NumberOrNull(Number.NaN)?.toString()).snap(
+			"must be a number (was NaN)"
+		)
+
+		const Prop = type({ a: "number" }).or({ a: "string" })
+		attest(Prop({ a: 5 })).equals({ a: 5 })
+		attest(Prop.allows({ a: Number.POSITIVE_INFINITY })).equals(false)
+		attest(Prop({ a: Number.POSITIVE_INFINITY }).toString()).snap(
+			"a must be a number (was Infinity)"
+		)
+	})
+
+	it("doesn't allow Infinity jitless", () => {
+		const types = type.module(
+			{
+				Number: "number",
+				NumberOrNull: "number | null",
+				Prop: [{ a: "number" }, "|", { a: "string" }]
+			},
+			{ jitless: true }
+		)
+		attest(types.Number.precompilation).equals(undefined)
+		attest(types.Number.allows(Number.POSITIVE_INFINITY)).equals(false)
+		attest(types.Number(Number.NEGATIVE_INFINITY).toString()).snap(
+			"must be a number (was -Infinity)"
+		)
+		attest(types.NumberOrNull.allows(Number.POSITIVE_INFINITY)).equals(false)
+		attest(types.NumberOrNull(Number.NEGATIVE_INFINITY)?.toString()).snap(
+			"must be a number or null (was -Infinity)"
+		)
+		attest(types.Prop.allows({ a: Number.POSITIVE_INFINITY })).equals(false)
+		attest(types.Prop({ a: Number.POSITIVE_INFINITY }).toString()).snap(
+			"a must be a number or a string (was Infinity)"
+		)
+	})
+
+	it("numberAllowsInfinity", () => {
+		const Infinitable = rootSchema({
+			domain: "number",
+			numberAllowsInfinity: true
+		})
+		attest(Infinitable.expression).snap("number | Infinity | -Infinity")
+		attest(Infinitable.allows(Number.POSITIVE_INFINITY)).equals(true)
+		attest(Infinitable.allows(Number.NEGATIVE_INFINITY)).equals(true)
+		attest(Infinitable.allows(Number.NaN)).equals(false)
+		attest(Infinitable.toJsonSchema()).equals(type.number.toJsonSchema())
+
+		const InfinitableOrNull = Infinitable.or(rootSchema({ unit: null }))
+		attest(InfinitableOrNull.allows(Number.POSITIVE_INFINITY)).equals(true)
+		attest(InfinitableOrNull.allows(Number.NaN)).equals(false)
+
+		const Unrestricted = rootSchema({
+			domain: "number",
+			numberAllowsNaN: true,
+			numberAllowsInfinity: true
+		})
+		attest(Unrestricted.expression).snap("number | NaN | Infinity | -Infinity")
+		attest(Unrestricted.allows(Number.POSITIVE_INFINITY)).equals(true)
+		attest(Unrestricted.allows(Number.NaN)).equals(true)
+
+		const Nanable = rootSchema({ domain: "number", numberAllowsNaN: true })
+		attest(Nanable.allows(Number.POSITIVE_INFINITY)).equals(false)
+		attest(Nanable.allows(Number.NaN)).equals(true)
+
+		// the intersection only allows what both sides allow
+		attest(Infinitable.and(Unrestricted).expression).snap(
+			"number | Infinity | -Infinity"
+		)
+		attest(Infinitable.and(Nanable).expression).snap("number")
+		attest(Infinitable.and(Nanable).allows(Number.POSITIVE_INFINITY)).equals(
+			false
+		)
+		attest(Infinitable.and(Nanable).allows(Number.NaN)).equals(false)
+	})
+
+	it("numberAllowsInfinity requires domain number", () => {
+		attest(() =>
+			rootSchema({ domain: "string", numberAllowsInfinity: true } as never)
+		).throws(Domain.writeBadAllowInfinityMessage("string"))
 	})
 
 	it("NaN", () => {
@@ -84,5 +192,20 @@ contextualize(() => {
 		attest(NegInf(Number.POSITIVE_INFINITY).toString()).snap(
 			"must be -Infinity (was Infinity)"
 		)
+	})
+
+	it("Infinity keywords can be unioned with number", () => {
+		const NumberOrInfinity = type("number | number.Infinity")
+		attest(NumberOrInfinity.expression).snap("number | Infinity")
+		attest(NumberOrInfinity.allows(5)).equals(true)
+		attest(NumberOrInfinity.allows(Number.POSITIVE_INFINITY)).equals(true)
+		attest(NumberOrInfinity.allows(Number.NEGATIVE_INFINITY)).equals(false)
+
+		const NumberOrInfinityOrNull = type(
+			"number | number.Infinity | number.NegativeInfinity | null"
+		)
+		attest(NumberOrInfinityOrNull.allows(Number.POSITIVE_INFINITY)).equals(true)
+		attest(NumberOrInfinityOrNull.allows(Number.NEGATIVE_INFINITY)).equals(true)
+		attest(NumberOrInfinityOrNull.allows(Number.NaN)).equals(false)
 	})
 })

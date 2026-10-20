@@ -676,6 +676,8 @@ const Range = type({
 
 ## number
 
+`number` excludes `NaN`, `Infinity` and `-Infinity` by default. To accept them, reference `number.NaN`, `number.Infinity` or `number.NegativeInfinity` (e.g. `"number | number.Infinity"`), or [configure](https://arktype.io/docs/configuration) `numberAllowsNaN` or `numberAllowsInfinity` globally.
+
 ### keywords
 
 The following keywords can be referenced in any definition, e.g.:
@@ -3040,7 +3042,7 @@ However, it's equally important that when you need different behavior, you can e
 ```ts title="config.ts"
 import { configure } from "arktype/config"
 // use the "arktype/config" entrypoint
-configure({ numberAllowsNaN: true })
+configure({ numberAllowsNaN: true, numberAllowsInfinity: true })
 ```
 
 ```ts title="app.ts"
@@ -3049,6 +3051,7 @@ import "./config.ts"
 import { type } from "arktype"
 
 type.number.allows(Number.NaN) // true
+type.number.allows(Number.POSITIVE_INFINITY) // true
 ```
 
      </td>
@@ -3109,9 +3112,9 @@ Some options only apply at specific levels, as reflected in the corresponding in
 > **true**
 >
 > If you need your config to apply to built-in keywords (important for options
-> like `jitless`, `numberAllowsNaN`, `dateAllowsInvalid`), you should import and
-> `configure` from `"arktype/config"` before importing anything from
-> `"arktype"`.
+> like `jitless`, `numberAllowsNaN`, `numberAllowsInfinity`,
+> `dateAllowsInvalid`), you should import and `configure` from
+> `"arktype/config"` before importing anything from `"arktype"`.
 >
 > Otherwise, keywords will have already been parsed by the time your config applies!
 

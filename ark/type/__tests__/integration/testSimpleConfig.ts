@@ -8,6 +8,10 @@ cases({
 	NaN: () => {
 		strictEqual(type("number").allows(Number.NaN), true)
 	},
+	Infinity: () => {
+		strictEqual(type("number").allows(Number.POSITIVE_INFINITY), true)
+		strictEqual(type("number").allows(Number.NEGATIVE_INFINITY), true)
+	},
 	onUndeclaredKey: () => {
 		const O = type({ a: "number" })
 		const out = O.assert({ a: 1, b: 2 })

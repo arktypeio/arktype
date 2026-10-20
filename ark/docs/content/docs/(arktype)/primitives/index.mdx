@@ -134,6 +134,8 @@ const Range = type({
 
 ## number
 
+`number` excludes `NaN`, `Infinity` and `-Infinity` by default. To accept them, reference `number.NaN`, `number.Infinity` or `number.NegativeInfinity` (e.g. `"number | number.Infinity"`), or [configure](/docs/configuration) `numberAllowsNaN` or `numberAllowsInfinity` globally.
+
 ### keywords [#number-keywords]
 
 The following keywords can be referenced in any definition, e.g.:

@@ -199,6 +199,23 @@ contextualize(() => {
 		})
 	})
 
+	it("numberAllowsInfinity", () => {
+		withConfig({ numberAllowsInfinity: true }, () => {
+			const { infinitable } = schemaScope({
+				infinitable: "number"
+			}).export()
+
+			attest(infinitable.allows(Number.POSITIVE_INFINITY)).equals(true)
+			attest(infinitable.allows(Number.NEGATIVE_INFINITY)).equals(true)
+
+			const { nonInfinitable } = type.module({
+				nonInfinitable: "number"
+			})
+
+			attest(nonInfinitable.allows(Number.POSITIVE_INFINITY)).equals(false)
+		})
+	})
+
 	it("dateAllowsInvalid", () => {
 		withConfig({ dateAllowsInvalid: true }, () => {
 			const { invalidable } = schemaScope({
