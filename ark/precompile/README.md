@@ -18,7 +18,7 @@ By default, each definition becomes a standalone validator and `arktype` resolve
 
 `runtime: "arktype"` ships arktype instead and leaves definitions as written, registering the code arktype would compile for each. A definition the build can't precompile is then compiled at runtime as usual.
 
-In either mode, the build fails if `arktype`, `@ark/schema` or `@ark/util` resolves to more than one copy, naming each copy and the file that reached it, since one copy doesn't recognize another's Types and errors. It fails too where one resolves to a version other than the one `@ark/precompile` imports, which its validators are written for.
+In either mode, the build fails if `arktype`, `@ark/schema` or `@ark/util` resolves to more than one copy, naming each copy and the file that reached it, since one copy doesn't recognize another's Types and errors. It fails too where one resolves to a version other than the one `@ark/precompile` imports, which its validators are written for. Each module of validators also imports an export of `arktype/runtime` named for that version, like `precompiledForArktype_2_2_8`, so a bundle or Node fails to link it to another version's runtime, e.g. one a stale cache kept. The import is otherwise unused, so a bundle includes nothing for it.
 
 ## Checking
 
@@ -50,7 +50,7 @@ A definition holding functions, like a narrow, a morph or a class, becomes a cal
 
 A standalone validator returns errors of its own, instances of `type.errors` and of `arktype`'s `ArkErrors`, but not of `@ark/schema`'s, so the build fails where a module imports that one. Each issue holds the failed check's `code`, `path`, `data`, `expected` and a `message` like `name must be a string`. A message doesn't say what the value was, and the errors arktype groups at one path stay apart.
 
-Nothing checks at runtime that a build runs on the `arktype/runtime` it was built with, or that `arktype` loads only for [runtime islands](#runtime-islands): rebuild with the installed arktype after upgrading.
+A module of validators fails to link to an `arktype/runtime` of another version, but nothing checks at runtime that `arktype` loads only for [runtime islands](#runtime-islands).
 
 ### Limits
 

@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { fromHere } from "@ark/fs"
+import { fromHere, readPackageJson } from "@ark/fs"
 import {
 	$ark,
 	hasArkKind,
@@ -1949,12 +1949,36 @@ config.onUndeclaredKey = "reject"`
 		attest(validator({ a: "x" })).equals({ a: "x" })
 	})
 
+	it("fails to link with another version's runtime", async () => {
+		const { version } = readPackageJson(fromHere("..", "..", "type"))
+		const failure = await build({
+			...optionsOf(precompileStandalone({ T: type("string") }).code),
+			plugins: [
+				{
+					name: "otherRuntime",
+					setup: pluginBuild => {
+						pluginBuild.onResolve({ filter: /^arktype\/runtime$/ }, () => ({
+							path: "runtime",
+							namespace: "other"
+						}))
+						pluginBuild.onLoad({ filter: /.*/, namespace: "other" }, () => ({
+							contents: "export const precompiledForArktype_0_0_0 = true"
+						}))
+					}
+				}
+			]
+		}).catch((e: { errors: { text: string }[] }) => e)
+		attest("errors" in failure && failure.errors.map(e => e.text)).equals([
+			`No matching export in "other:runtime" for import "precompiledForArktype_${version.replace(/\W/g, "_")}"`
+		])
+	})
+
 	it("freezes with original builtins", async () => {
 		const runtimeUrl = urlOf(bundle(`export * from "arktype/runtime"`).js)
 		await import(runtimeUrl)
 		const source = precompileStandalone({
 			M: scope({ a: "string" }).export()
-		}).code.replace(`"arktype/runtime"`, JSON.stringify(runtimeUrl))
+		}).code.replace(/"arktype\/runtime"/g, JSON.stringify(runtimeUrl))
 		const { freeze, assign, setPrototypeOf } = Object
 		Object.assign(Object, {
 			freeze: (o: object) => o,

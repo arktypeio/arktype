@@ -335,6 +335,13 @@ export interface StandaloneModules {
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
 
+// read for nothing but its name, so a runtime from another version fails to link
+const versionExport = Object.keys(runtime).find(name =>
+	name.startsWith("precompiledForArktype_")
+)!
+
+const versionImport = `import { ${versionExport} } from "arktype/runtime"\n() => ${versionExport};`
+
 /** an ES module of getters and factories for each export */
 export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
@@ -347,7 +354,7 @@ export const precompileStandalone = (
 	)
 	return {
 		code: writeSections([
-			runtimeImport,
+			`${runtimeImport}\n${versionImport}`,
 			...Object.values(shared).map(module => module.declarations.join("\n\n")),
 			...sections
 		]),
@@ -380,7 +387,7 @@ export const precompileStandaloneModules = (
 	}
 	return {
 		code: writeSections([
-			`${runtimeImport}\n${writeImports(imports)}`,
+			`${runtimeImport}\n${versionImport}\n${writeImports(imports)}`,
 			...sections
 		]),
 		modules,

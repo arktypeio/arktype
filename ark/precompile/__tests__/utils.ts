@@ -98,11 +98,14 @@ export const normalized = <code extends string | string[]>(
 ): code => {
 	const indexByHash: Record<string, number> = {}
 	const normalize = (s: string) =>
-		s.replace(
-			hashPattern,
-			(_, prefix: string | undefined, hash: string) =>
-				`${prefix ?? ""}#${(indexByHash[hash] ??= Object.keys(indexByHash).length)}`
-		)
+		s
+			.replace(
+				hashPattern,
+				(_, prefix: string | undefined, hash: string) =>
+					`${prefix ?? ""}#${(indexByHash[hash] ??= Object.keys(indexByHash).length)}`
+			)
+			// named by the version, which a release changes
+			.replace(/precompiledForArktype_\w+/g, "precompiledForArktype_$version")
 	return (
 		typeof code === "string" ?
 			normalize(code)

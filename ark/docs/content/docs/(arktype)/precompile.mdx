@@ -63,6 +63,7 @@ precompile.vite({ config: "./config.ts" })
 The build fails with a message naming the file, the definition and the fix. The ones a setup, rather than a definition, causes:
 
 - **`arktype resolves to 2.3.0, but @ark/precompile runs on 2.2.8`**: validators run only on the arktype they were built with. Install one version, e.g. with your package manager's dedupe or overrides.
+- **`precompiledForArktype_2_2_8` is not exported by `arktype/runtime`** (each bundler words it its own way): a module precompiled for one version of arktype is linked to another's runtime, e.g. by a bundler cache from before an upgrade. Install one version and clear the bundler's cache.
 - **`arktype resolves to ... rather than arktype/runtime`** (Next with Turbopack): add the `turbopack.resolveAlias` entries the message lists to your Next config.
 - **A warning that `` `User` comes from `~/schemas`, which the build can't resolve ``**: the build resolves imports as TypeScript does, so add a bundler alias to `tsconfig.json`'s `paths` too, or it can't check reads off that import.
 - **`configure() is called, but the build has no config module`**: name that module as the build's `config`.

@@ -295,7 +295,14 @@ export const precompile: UnpluginInstance<
 			}
 		},
 		watchChange: reset,
-		webpack: keepCompiler,
+		webpack: compiler => {
+			keepCompiler(compiler)
+			// as Rspack does, so a runtime from another version fails the build
+			compiler.options.module.rules.push({
+				test: /~arktype/,
+				parser: { exportsPresence: "error" }
+			})
+		},
 		rspack: keepCompiler,
 		esbuild: {
 			// arktype resolves natively, outside the plugin's esbuild namespace

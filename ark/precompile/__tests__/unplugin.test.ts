@@ -136,7 +136,9 @@ const bundlers = {
 }
 
 interface RawHooks {
-	webpack(compiler: { options: { cache: object } }): void
+	webpack(compiler: {
+		options: { cache: object; module: { rules: object[] } }
+	}): void
 	transform: {
 		handler(this: object, code: string, id: string): Promise<{ code: string }>
 	}
@@ -1104,7 +1106,7 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 					versions: {}
 				}
 			) as unknown as RawHooks
-			plugin.webpack({ options: { cache } })
+			plugin.webpack({ options: { cache, module: { rules: [] } } })
 			return plugin
 		}
 		const id = join(app, "schemas.ts")
