@@ -936,6 +936,21 @@ name is missing`)
 		])
 	})
 
+	it("errors: first reports one of the issues", async () => {
+		const exports = { T: type({ a: "string[]", b: "number" }) }
+		const [all, first] = await Promise.all(
+			(["all", "first"] as const).map(async errors =>
+				(await load(exports, { errors })).T({ a: [1], b: "2" })
+			)
+		)
+		attest(all.summary.split("\n")).snap([
+			"a[0] must be a string",
+			"b must be a number"
+		])
+		attest(first.issues.length).equals(1)
+		attest(all.summary.split("\n").includes(first.summary)).equals(true)
+	})
+
 	it("errors: none", async () => {
 		const exports = {
 			Object: type({ a: "string", b: { c: "number[]" } }),

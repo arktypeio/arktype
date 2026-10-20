@@ -223,12 +223,16 @@ Object.assign((globalThis[Symbol.for("arktype.helpers")] ??= { __proto__: null }
 		})
 
 		it("caught and raised again", () => {
-			const { reported, swallowed, ...thrown } = outcomes
+			const { reported, swallowed, reordered, ...thrown } = outcomes
 			attest(swallowed).equals("fallback")
 			attest(reported.slice(0, -1)).equals(Object.values(thrown))
 			attest(reported[reported.length - 1]).snap(
 				'Error: validated diverges from arktype at assert(2): arktype gives {"out":2}, its validator {"threw":"TraversalError","issues":[{"code":"predicate","path":[],"data":2}]}'
 			)
+		})
+
+		it("not where a first-issue validator finds another issue", () => {
+			attest(outcomes.reordered).snap("a[0] must be a string (was a number)")
 		})
 
 		it("sharing an object arktype's output doesn't", () => {

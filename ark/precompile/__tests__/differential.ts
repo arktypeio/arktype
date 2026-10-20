@@ -588,32 +588,41 @@ const hasIssues = (observation: unknown): boolean =>
 const fails = (observation: unknown): boolean =>
 	hasIssues(observation) && !("threw" in (observation as object))
 
-// a scope validating as the build's errors option says
-const erroringScope =
-	testedOptions.errors && testedOptions.errors !== "all" ?
-		schemaScope({}, { errors: testedOptions.errors })
-	:	undefined
+type Errors = "all" | "first" | "none"
+
+const testedErrors: Errors = testedOptions.errors ?? "all"
+
+const erroringScopes = new Map<Errors, BaseScope>()
+
+// a scope validating with errors, unless a Type's own already does
+const erroringScopeOf = (errors: Errors): BaseScope | undefined => {
+	if (errors === "all" && testedErrors === "all") return
+	let $ = erroringScopes.get(errors)
+	if (!$) erroringScopes.set(errors, ($ = schemaScope({}, { errors })))
+	return $
+}
 
 // scopes writing in place as the build does, failing as copying does
-const inPlaceScopesByOnFail = new Map<unknown, BaseScope>()
+const inPlaceScopesByOnFail = new Map<unknown, Map<Errors, BaseScope>>()
 
-const inPlaceScopeOf = (node: BaseRoot): BaseScope => {
-	const { onFail } = (erroringScope ?? node.$).resolvedConfig
-	let $ = inPlaceScopesByOnFail.get(onFail)
-	if (!$) {
-		$ = schemaScope(
-			{},
-			{ errors: testedOptions.errors ?? "all", mutatesInput, onFail }
-		)
-		inPlaceScopesByOnFail.set(onFail, $)
-	}
+const inPlaceScopeOf = (node: BaseRoot, errors: Errors): BaseScope => {
+	const { onFail } = (erroringScopeOf(testedErrors) ?? node.$).resolvedConfig
+	let scopes = inPlaceScopesByOnFail.get(onFail)
+	if (!scopes) inPlaceScopesByOnFail.set(onFail, (scopes = new Map()))
+	let $ = scopes.get(errors)
+	if (!$)
+		scopes.set(errors, ($ = schemaScope({}, { errors, mutatesInput, onFail })))
 	return $
 }
 
 // an alias stays in the scope resolving it, so its resolution is bound, and
 // one writing in place is compiled as its Scope would compile it
-const validatedOf = (node: BaseRoot, inPlace = false): BaseRoot => {
-	const $ = inPlace ? inPlaceScopeOf(node) : erroringScope
+const validatedOf = (
+	node: BaseRoot,
+	inPlace = false,
+	errors = testedErrors
+): BaseRoot => {
+	const $ = inPlace ? inPlaceScopeOf(node, errors) : erroringScopeOf(errors)
 	if (!$) return node
 	let resolved = node
 	while (resolved.hasKind("alias")) resolved = resolved.resolution
@@ -646,6 +655,9 @@ interface Observations {
 	calls: (ReturnType<typeof observeCall> | undefined)[]
 	// writing in place as the build does, compared with a build that does
 	inPlaceCalls?: (ReturnType<typeof observeCall> | undefined)[]
+	// with errors "all", one of whose issues errors "first" reports
+	allCalls?: (ReturnType<typeof observeCall> | undefined)[]
+	inPlaceAllCalls?: (ReturnType<typeof observeCall> | undefined)[]
 }
 
 // what arktype observes, before a build renames the functions a Type holds
@@ -669,8 +681,72 @@ export const observeArktype = (
 	calls: observeCalls(validatedOf(node), inputs),
 	...(mutatesInput && {
 		inPlaceCalls: observeCalls(validatedOf(node, true), inputs)
+	}),
+	...(firstIssue && {
+		allCalls: observeCalls(validatedOf(node, false, "all"), inputs),
+		...(mutatesInput && {
+			inPlaceAllCalls: observeCalls(validatedOf(node, true, "all"), inputs)
+		})
 	})
 })
+
+type Call = ReturnType<typeof observeCall>
+
+// arktype's issues, or those of a Standard Schema result
+const reportedOf = (observation: any): unknown[] | undefined =>
+	observation?.issues ?? observation?.out?.issues
+
+const withReported = (observation: any, issues: unknown[]) =>
+	"issues" in observation ?
+		{ ...observation, issues }
+	:	{ ...observation, out: { ...observation.out, issues } }
+
+const valueAt = (input: unknown, path: readonly PropertyKey[]): unknown =>
+	path.reduce((value: any, k) => value?.[k], input)
+
+// errors "all" reports an object reached at two paths at the one it reaches
+// first, so the issue at the other is alike where both paths reach that object
+const isAlikeIssue = (input: unknown, all: any, first: any): boolean => {
+	if (isEqual(all, first)) return true
+	if (all.code !== first.code || !isEqual(all.data, first.data)) return false
+	for (let n = 1; n < Math.min(all.path.length, first.path.length); n++) {
+		if (!isEqual(all.path.slice(-n), first.path.slice(-n))) return false
+		const reached = valueAt(input, all.path.slice(0, -n))
+		if (
+			typeof reached === "object" &&
+			reached !== null &&
+			reached === valueAt(input, first.path.slice(0, -n))
+		)
+			return true
+	}
+	return false
+}
+
+// a first-issue call reports exactly one of the issues errors "all" does
+const reportsOneOf = (input: unknown, all: Call, first: Call): boolean =>
+	isEqual(Object.keys(all), Object.keys(first)) &&
+	Object.entries(all).every(([k, observed]) => {
+		const reported = first[k as keyof Call]
+		const issues = reportedOf(reported)
+		return (
+				issues?.length === 1 &&
+					reportedOf(observed)?.some(issue =>
+						isAlikeIssue(input, issue, issues[0])
+					)
+			) ?
+				isEqual(withReported(observed, issues), reported)
+			:	isEqual(observed, reported)
+	})
+
+// what a precompiled call is compared with: under errors "first", arktype's
+// call with errors "all"
+const expectedOf = (arktype: Observations, i: number): Call | undefined =>
+	firstIssue ?
+		(arktype.inPlaceAllCalls ?? arktype.allCalls!)[i]
+	:	(arktype.inPlaceCalls ?? arktype.calls)[i]
+
+const agrees = (input: unknown, expected: Call, call: Call): boolean =>
+	firstIssue ? reportsOneOf(input, expected, call) : isEqual(expected, call)
 
 const observeCalls = (node: BaseRoot, inputs: unknown[]) =>
 	inputs.map(input => {
@@ -746,6 +822,25 @@ export const compare = async (
 			)
 		}
 	}
+	// arktype's first issue is one errors "all" reports too
+	for (const [i, input] of inputs.entries()) {
+		const all = expectedOf(arktype, i)
+		const first = (arktype.inPlaceCalls ?? arktype.calls)[i]
+		if (firstIssue && all && first && !agrees(input, all, first)) {
+			result.disagreements.push(
+				inspect(
+					{
+						expression: node.expression,
+						observation: "first",
+						input,
+						all,
+						first
+					},
+					{ depth: 5, breakLength: 120 }
+				).slice(0, 4000)
+			)
+		}
+	}
 	for (const layout of layouts) {
 		const disagree = (observation: string, details: object) =>
 			result.disagreements.push(
@@ -814,9 +909,9 @@ export const compare = async (
 			}
 		}
 		for (const [i, input] of inputs.entries()) {
-			const expected = (arktype.inPlaceCalls ?? arktype.calls)[i]
+			const expected = expectedOf(arktype, i)
 			const actual = observeCall(validator, input)
-			if (expected && isEqual(expected, actual)) continue
+			if (expected && agrees(input, expected, actual)) continue
 			if (
 				!expected ||
 				holdsArkValue(actual) ||

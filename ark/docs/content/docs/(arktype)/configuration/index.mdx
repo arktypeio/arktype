@@ -501,7 +501,7 @@ const bad = type.string(5)
 By default, a failed validation returns an error for each check that failed. `errors` can return less:
 
 - `"all"` (default): every error, at each path that failed
-- `"first"`: the first error, where validation stops
+- `"first"`: the first error validation finds, where it stops
 - `"none"`: one error at the root, whose message is `is invalid`
 
 ```ts title="config.ts"
@@ -523,6 +523,8 @@ const out = User({ name: 5, age: "5" })
 ```
 
 `"first"` and `"none"` are installed by `import "arktype/errors"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
+
+With `"first"`, which of the data's errors is returned isn't promised, and can differ between a Type and its precompiled validator.
 
 With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale).
 

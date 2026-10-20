@@ -979,7 +979,7 @@ class StandaloneArtifact {
 	readRoots = new Set<BaseRoot>()
 	runtimeReadRoots = new Set<BaseRoot>()
 	unitRoots = new Set<BaseRoot>()
-	// keyed by +inPlace and id, as nodes sharing an id share a unit
+	// keyed by variant and id, as nodes sharing an id share a unit
 	unitsByHead = new Map<string, RootUnit>()
 	localNamesByUnit = new Map<RootUnit, string>()
 	unit: RootUnit | undefined
@@ -1047,10 +1047,10 @@ class StandaloneArtifact {
 			for (const root of this.roots) {
 				if (this.unitRoots.has(root)) continue
 				this.unitRoots.add(root)
-				const inPlace = this.inPlace(root)
-				for (const unit of rootUnitsOf(root, inPlace)) {
+				const variant = this.variantOf(root)
+				for (const unit of rootUnitsOf(root, variant)) {
 					for (const head of unit.roots) {
-						const key = `${+inPlace}${head.id}`
+						const key = `${variant}${head.id}`
 						if (!this.unitsByHead.has(key)) this.unitsByHead.set(key, unit)
 					}
 				}
@@ -1340,12 +1340,16 @@ class StandaloneArtifact {
 		return [...this.validatorNames.keys()]
 	}
 
-	inPlace(root: BaseRoot): boolean {
-		return writesInPlace(root, this.baking.mutatesInput)
+	// indexes the compilers writing a root's units
+	variantOf(root: BaseRoot): number {
+		return (
+			+writesInPlace(root, this.baking.mutatesInput) +
+			2 * +this.baking.firstIssue
+		)
 	}
 
 	headUnitOf(root: BaseRoot): RootUnit {
-		return this.unitsByHead.get(`${+this.inPlace(root)}${root.id}`)!
+		return this.unitsByHead.get(`${this.variantOf(root)}${root.id}`)!
 	}
 
 	get declared(): BaseNode[] {
@@ -1356,7 +1360,7 @@ class StandaloneArtifact {
 		return [
 			...new Set(
 				[...this.unitRoots].flatMap(root =>
-					rootUnitsOf(root, this.inPlace(root))
+					rootUnitsOf(root, this.variantOf(root))
 				)
 			)
 		]
@@ -2689,7 +2693,7 @@ ${writeFunction(
 		const element = root.structure!.sequence!.variadic!
 		if (
 			isRefinedPattern(element) ||
-			!this.unitsByHead.has(`${+this.inPlace(element)}${element.id}`)
+			!this.unitsByHead.has(`${this.variantOf(element)}${element.id}`)
 		)
 			return
 		return this.compactTraversalsOf(element)
@@ -3554,6 +3558,8 @@ const isLeaf = (node: BaseNode): boolean =>
 	!Object.values(node.referencesById).some(ref => ref.hasKind("structure"))
 
 class StandaloneCompiler extends TraversalCompiler {
+	override readonly reportsFirst: boolean = false
+
 	// named for its unit, so units can share a scope
 	override ref(value: object | symbol): string {
 		const { unit } = this.linkage
@@ -3693,20 +3699,33 @@ class InPlaceCompiler extends StandaloneCompiler {
 	override readonly inPlace = true
 }
 
-// in-place roots have their own units
-const unitsByRoot = [
-	new WeakMap<BaseRoot, RootUnit[]>(),
-	new WeakMap<BaseRoot, RootUnit[]>()
+class FirstIssueCompiler extends StandaloneCompiler {
+	override readonly reportsFirst = true
+}
+
+class InPlaceFirstIssueCompiler extends InPlaceCompiler {
+	override readonly reportsFirst = true
+}
+
+// by variant: +inPlace, plus 2 for errors "first"
+const compilers = [
+	StandaloneCompiler,
+	InPlaceCompiler,
+	FirstIssueCompiler,
+	InPlaceFirstIssueCompiler
 ]
 
-const rootUnitsOf = (root: BaseRoot, inPlace = false): RootUnit[] => {
-	const cached = unitsByRoot[+inPlace]
+// each variant's roots have their own units
+const unitsByRoot = compilers.map(() => new WeakMap<BaseRoot, RootUnit[]>())
+
+const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
+	const cached = unitsByRoot[variant]
 	let units = cached.get(root)
 	if (!units) {
 		cached.set(
 			root,
 			(units = precompileRootUnits(root, {
-				compiler: inPlace ? InPlaceCompiler : StandaloneCompiler,
+				compiler: compilers[variant],
 				keyOf: runtimeKeyOf
 			}))
 		)

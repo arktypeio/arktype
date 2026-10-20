@@ -4,7 +4,7 @@
 
 ### Return only the first error, or one saying data is invalid, with `errors`
 
-`errors: "first"` stops each validation at its first error, which it returns alone. `errors: "none"` returns one root error, `is invalid`, found by checking the data alone, so nothing a Type holds runs again. Either can be configured globally or for a Scope:
+`errors: "first"` stops each validation at the first error it finds and returns it alone, with no promise of which of the data's errors that is. `errors: "none"` returns one root error, `is invalid`, found by checking the data alone, so nothing a Type holds runs again. Either can be configured globally or for a Scope:
 
 ```ts
 import { configure } from "arktype/config"

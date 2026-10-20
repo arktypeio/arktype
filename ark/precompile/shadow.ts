@@ -1,4 +1,6 @@
 import {
+	applyCyclic,
+	ArkTraversal,
 	hasArkKind,
 	InternalTraversal,
 	type BaseRoot,
@@ -741,7 +743,7 @@ const validateBoth = (
 	} finally {
 		validation = outer
 	}
-	// errors "first" stops at an issue, before calls arktype makes after it
+	// errors "first" stops at any one issue, before calls arktype makes after it
 	const stopsEarly = pair.contract.errors === "first" && fails(arktype)
 	const unreplayed =
 		current.skipsApply || stopsEarly ?
@@ -774,7 +776,16 @@ const validateBoth = (
 		const { issues: all } = inArktype(() =>
 			observe(arktype, writesInput, false)
 		)
-		const found = issues && firstIssueOf(issues, all!, counterparts)
+		const found =
+			issues &&
+			(firstIssueOf(issues, all!, counterparts) ??
+				(hasArkKind(pair.original, "root") ?
+					firstIssueOf(
+						issues,
+						comparedOf(allIssuesOf(pair.original, data), writesInput),
+						counterparts
+					)
+				:	undefined))
 		if (found) arktypeObserved.issues = found
 	}
 	// a validator writing its input in place leaves it unlike arktype's
@@ -797,6 +808,15 @@ const fails = (outcome: Outcome) =>
 	"thrown" in outcome ?
 		thrownIssuesOf(outcome.thrown) !== undefined
 	:	hasArkKind(outcome.value, "errors")
+
+// the issues errors "all" finds, any of which errors "first" can return
+const allIssuesOf = (original: BaseRoot, data: unknown): KeptIssue[] =>
+	inArktype(() => {
+		const ctx = new ArkTraversal(data, original.$.resolvedConfig)
+		if (original.includesAlias) applyCyclic(original, data, ctx)
+		else original.traverseApply(data, ctx)
+		return ctx._errors ? keptIssuesOf(ctx._errors as never, false) : []
+	})
 
 // arktype's issues alike a first-issue validator's, all at one path
 const firstIssueOf = (

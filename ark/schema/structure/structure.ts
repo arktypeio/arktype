@@ -937,8 +937,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			js.traversalKind === "Apply" ? this.compileConjunction(js) : undefined
 		if (conjunction !== undefined) return js.return(conjunction)
 
-		const props = js.traversalKind === "Allows" ? this.allowsProps : this.props
-		for (const prop of props) js.check(prop)
+		for (const prop of this.propsOf(js)) js.check(prop)
 
 		if (this.sequence) js.check(this.sequence)
 
@@ -957,6 +956,13 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js.return(true)
 	}
 
+	// an Apply reporting one issue checks props as Allows does, stopping where it did
+	private propsOf(js: NodeCompiler): array<Prop.Node> {
+		return js.traversalKind === "Allows" || js.reportsFirst ?
+				this.allowsProps
+			:	this.props
+	}
+
 	// a structure with nothing to loop over holds only while each child does
 	compileConjunction(js: NodeCompiler): string | undefined {
 		if (
@@ -966,7 +972,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 			return
 		const children = [
-			...(js.traversalKind === "Allows" ? this.allowsProps : this.props),
+			...this.propsOf(js),
 			...(this.sequence ? [this.sequence] : [])
 		]
 		return children.map(child => js.invoke(child)).join(" && ") || "true"

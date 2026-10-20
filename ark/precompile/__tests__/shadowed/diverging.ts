@@ -1,6 +1,7 @@
 // run without a driver, pairing each Type with a diverging stand-in
-import { shadow } from "@ark/precompile/shadow"
-import { type, type Traversal } from "arktype"
+import { shadow, shadowUnder } from "@ark/precompile/shadow"
+import { scope, type, type Traversal } from "arktype"
+import "arktype/errors"
 
 // each mismatch, which shadow mode raises again where it can't be caught
 const reported: string[] = []
@@ -114,6 +115,17 @@ const rooted = shadow(
 	isFlagged
 ) as type.Any
 
+const first = scope({}, { errors: "first" })
+
+// a first-issue validator returning another of the issues arktype finds
+const reordered = shadowUnder(
+	{ errors: "first" },
+	"reordered",
+	() => first.type({ b: "number" }),
+	() => first.type({ a: "string[]", b: "number" }),
+	[]
+) as type.Any
+
 const caught = {
 	validated: outcomeOf(() => validated(2)),
 	called: outcomeOf(() => called("abc")),
@@ -123,6 +135,7 @@ const caught = {
 	bumped: outcomeOf(() => bumped(new Counter())),
 	aliased: outcomeOf(() => aliased({})),
 	rooted: outcomeOf(() => rooted({ a: "x" })),
+	reordered: outcomeOf(() => String(reordered({ a: [1], b: "2" }))),
 	// as a fallback or `expect(...).toThrow()` would
 	swallowed: (() => {
 		try {
