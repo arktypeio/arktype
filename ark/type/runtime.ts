@@ -7,6 +7,7 @@ import type {
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
 	ArkErrors,
+	enInfo,
 	errorsOf,
 	FirstIssues,
 	mergeIssues,
@@ -29,6 +30,7 @@ import {
 	getBuiltinNameOfConstructor,
 	hasDomain,
 	prototypeOf,
+	stringifyPath,
 	throwError,
 	throwParseError,
 	type Fn,
@@ -61,8 +63,11 @@ export {
 	callMorph,
 	computeDefaultValueMorph,
 	configure,
+	configuredWriterOf,
 	copyOf,
+	describeCollapsibleDate,
 	describePredicate,
+	enInfo,
 	enterApplied,
 	enterResolution,
 	exitResolution,
@@ -80,6 +85,7 @@ export {
 	pipeApplied,
 	pipeChecked,
 	pipeTransformed,
+	printKind,
 	rejected,
 	rejects,
 	runtimeConfig,
@@ -93,6 +99,12 @@ export {
 	transformsValid,
 	Traversal,
 	TraversalError,
+	writeDomainActual,
+	writeLengthActual,
+	writeMinLengthActual,
+	writeProblem,
+	writeProtoActual,
+	writeUnitProblem,
 	type ArkError
 } from "@ark/schema/runtime"
 export {
@@ -424,7 +436,45 @@ export const textSiteOf = ((
 	description: string | undefined,
 	message: string | undefined,
 	problem?: string
-): SiteContext => ({ code, description, message, problem })) satisfies Fn
+): SiteContext => ({
+	code,
+	description,
+	text: issue => {
+		issue.problem = problem
+		issue.message = message
+	}
+})) satisfies Fn
+
+type Writer = string | Fn | undefined
+
+// a site whose text a function writes, as arktype writes its error from the
+// node's context; keeps is 1 if its issue takes expected, 2 if problem
+export const writtenSiteOf = ((
+	code: ArkErrorCode,
+	description: string | undefined,
+	context: object,
+	[expected, actual, problem, message]: readonly Writer[],
+	keeps = 0
+): SiteContext => ({
+	code,
+	description,
+	text: issue => {
+		const error: Record<string, unknown> = {
+			data: issue.data,
+			path: issue.path,
+			...context,
+			propString: stringifyPath(issue.path)
+		}
+		const write = (writer: Writer, ...args: unknown[]): unknown =>
+			typeof writer === "function" ? writer(...args, enInfo) : writer
+		error.expected = write(expected, error)
+		error.actual = write(actual, issue.data, error)
+		error.problem = write(problem, error)
+		if (keeps & 1) issue.expected = error.expected as string
+		if (keeps & 2) issue.problem = error.problem as string
+		if (message !== undefined) issue.message = write(message, error) as string
+	}
+})) satisfies Fn
 
 // the Apply of a union whose key's condition rejected its value
 export const failing = ((site: FailureSite): CompactApply =>

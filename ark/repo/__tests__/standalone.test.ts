@@ -4,6 +4,9 @@ import {
 	$ark,
 	hasArkKind,
 	type ArkSchemaConfig,
+	type ExpectedContext,
+	type MessageContext,
+	type ProblemContext,
 	writeInvalidJsonSchemaTargetMessage,
 	type Locale,
 	type ToJsonSchema,
@@ -418,7 +421,6 @@ contextualize(() => {
 				path: ["a"],
 				data: { b: { c: 0 } },
 				expected: undefined,
-				problem: undefined,
 				message: "a is missing"
 			},
 			{
@@ -426,7 +428,6 @@ contextualize(() => {
 				path: ["b", "c"],
 				data: 0,
 				expected: "positive",
-				problem: undefined,
 				message: "b.c must be positive"
 			}
 		])
@@ -1376,30 +1377,83 @@ name is missing`)
 		attest(Reflect.ownKeys(runtimeType)).equals(["errors"])
 	})
 
-	it("refuses configured meta writers", async () => {
-		const write = standIn(() => "written", "write")
-		const T: StandaloneExport = {
-			type: type("number").configure({ message: write }),
-			params: [{ kind: "function", label: "`write`", value: write }]
-		}
-		attest(() => precompileStandalone({ T })).throws(
-			writeUnprecompilableMessage("`number`'s configured message writer")
+	it("configured message writer", async () => {
+		const write = standIn(
+			(ctx: MessageContext) =>
+				`${ctx.propString}: ${ctx.actual} isn't ${ctx.expected}`,
+			"write"
 		)
-		const expect = standIn(() => "even", "expect")
+		const T = type({ a: type("string > 1").configure({ message: write }) })
+		const create = await loadFactory(T, [["function", "`write`", write]])
+		const summary = create(write)({ a: "x" }).summary
+		attest(summary).equals(T({ a: "x" }).toString())
+		attest(summary).snap("a: 1 isn't at least length 2")
+	})
+
+	it("configured problem and actual writers", async () => {
+		const problem = standIn(
+			(ctx: ProblemContext) => `is ${ctx.actual}, not ${ctx.expected}`,
+			"problem"
+		)
+		const actual = standIn((data: unknown) => typeof data, "actual")
+		const T = type({ a: type("number").configure({ problem }) }).and({
+			b: type("number").configure({ actual })
+		})
+		const create = await loadFactory(T, [
+			["function", "`problem`", problem],
+			["function", "`actual`", actual]
+		])
+		attest(create(problem, actual)({ a: "x", b: "y" }).issues).snap([
+			{
+				code: "domain",
+				path: ["a"],
+				data: "x",
+				expected: "a number",
+				message: "a is a string, not a number",
+				problem: "is a string, not a number"
+			},
+			{
+				code: "domain",
+				path: ["b"],
+				data: "y",
+				expected: "a number",
+				message: "b must be a number (was string)",
+				problem: "must be a number (was string)"
+			}
+		])
+	})
+
+	it("configured expected writer", async () => {
+		const expected = standIn(
+			(ctx: ExpectedContext) => `${ctx.description}, as written`,
+			"expected"
+		)
+		const create = await loadFactory(type("number").configure({ expected }), [
+			["function", "`expected`", expected]
+		])
+		attest(create(expected)("x").issues[0]).snap({
+			code: "domain",
+			path: [],
+			data: "x",
+			expected: "a number, as written",
+			message: "must be a number, as written"
+		})
+	})
+
+	it("refuses a union's writer", () => {
+		const write = standIn(() => "written", "write")
 		attest(() =>
 			precompileStandalone({
 				T: {
-					type: type("number").configure({ expected: expect }),
-					params: [{ kind: "function", label: "`expect`", value: expect }]
+					type: type("string | number").configure({ message: write }),
+					params: [{ kind: "function", label: "`write`", value: write }]
 				}
 			})
 		).throws(
-			writeUnprecompilableMessage("`number`'s configured expected writer")
+			writeUnprecompilableMessage(
+				"`number | string`'s message writer, which reads each branch's errors"
+			)
 		)
-		const { Even } = await load({
-			Even: type("number").configure({ expected: "an even number" })
-		})
-		attest(Even("x").summary).snap("must be an even number")
 	})
 
 	it("configured message", async () => {
@@ -1423,8 +1477,8 @@ password must be at least length 8`)
 			path: ["a"],
 			data: 1,
 			expected: "a string",
-			problem: "is no string",
-			message: "a is no string"
+			message: "a is no string",
+			problem: "is no string"
 		})
 	})
 
@@ -1437,7 +1491,10 @@ password must be at least length 8`)
 
 	it("configured message at a missing key", async () => {
 		const { T } = await load({
-			T: type({ a: "string" }).configure({ message: "a is required" }, "required")
+			T: type({ a: "string" }).configure(
+				{ message: "a is required" },
+				"required"
+			)
 		})
 		attest([T({}).summary, T({ a: 1 }).summary]).snap([
 			"a is required",
@@ -3229,6 +3286,7 @@ export default shared`).js
 		const runtimeModules = new Set([
 			"<stdin>",
 			"schema/runtime.ts",
+			"schema/shared/enWriters.ts",
 			"schema/shared/errorWriters.ts",
 			"schema/shared/issues.ts",
 			"schema/shared/errors.ts",

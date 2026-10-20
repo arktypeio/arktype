@@ -17,12 +17,12 @@ export interface ArkIssue {
 
 type WrittenIssue = ArkIssue & { message: string }
 
-/** what a site reports: its code, description and any text configured */
+/** what a site reports: its code and description */
 export interface SiteContext {
 	code: ArkErrorCode
 	description?: string | undefined
-	message?: string | undefined
-	problem?: string | undefined
+	/** writes text configured for the site onto its issue */
+	text?: (issue: ArkIssue) => void
 }
 
 /** a check's site: its node's context, or a key's value and missing ones */
@@ -210,9 +210,9 @@ export const issueAt = (
 		path: issuePath,
 		data,
 		expected: context.description,
-		problem: context.problem,
-		message: context.message
+		message: undefined
 	}
+	context.text?.(issue)
 	if (key !== undefined) path.pop()
 	return issue
 }

@@ -3942,13 +3942,31 @@ const writeMutatesInputMismatchMessage = (
 ): string =>
 	`arktype is configured with mutatesInput: ${printable(configured)}, where the build's mutatesInput is ${printable(built)}`
 
+// text a standalone validator can't write as arktype does
+const textHints: [pattern: RegExp, hint: string][] = [
+	[
+		/^a scope's configured/,
+		`A standalone validator writes text configured for a code only from configure(). Configure it there, or on each Type with .configure(), or build with runtime: "arktype".`
+	],
+	[
+		/^a configured predicate \w+ that a narrow or morph raises/,
+		`A standalone validator writes what a narrow or morph raises from what it passes to ctx.reject(). Pass the text there, or build with runtime: "arktype".`
+	],
+	[
+		/writer, which reads each branch's errors/,
+		`A standalone validator keeps no union branch's errors. Configure the text as a string, or build with runtime: "arktype".`
+	]
+]
+
 const configuredHintOf = (reasons: string[]): string | undefined => {
 	const option = reasons
 		.map(reason => /^arktype is configured with (\w+)/.exec(reason)?.[1])
 		.find(option => option !== undefined)
-	return option === undefined ? undefined : (
-			`A standalone validator returns what arktype does as the program configures it. Build with the ${option} arktype is configured with.`
-		)
+	if (option !== undefined)
+		return `A standalone validator returns what arktype does as the program configures it. Build with the ${option} arktype is configured with.`
+	return textHints.find(([pattern]) =>
+		reasons.some(reason => pattern.test(reason))
+	)?.[1]
 }
 
 const isFoldable = (value: unknown): value is Foldable =>

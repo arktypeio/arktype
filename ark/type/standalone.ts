@@ -9,10 +9,8 @@ import {
 	precompileRootUnits,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
-	expectedOf,
 	TraversalCompiler,
 	type ArkErrorCode,
-	type BaseErrorContext,
 	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
@@ -3081,13 +3079,23 @@ ${writeFunction(
 		// a discriminant's site holds the path it's read at
 		if (Array.isArray(site))
 			return `[${site.map(k => this.emit(k)).join(", ")}]`
-		if ("code" in site)
-			return writeSiteOf(site as SiteContext, s => this.emitString(s))
+		if ("code" in site) {
+			const { code, description, written } = site as IssueContext
+			if (!written)
+				return writeSiteOf(site as IssueContext, s => this.emitString(s))
+			const writers = written.writers.map(writer =>
+				writer instanceof ConfiguredWriter ?
+					`runtime.configuredWriterOf(${JSON.stringify(writer.code)}, ${JSON.stringify(writer.k)})`
+				: writer === undefined ? "void 0"
+				: this.emit(writer)
+			)
+			return `runtime.writtenSiteOf(${this.emit(code)}, ${description === undefined ? "void 0" : this.emitString(description)}, ${this.emit(written.context)}, [${writers.join(", ")}]${written.keeps ? `, ${written.keeps}` : ""})`
+		}
 		if ("fails" in site)
 			return `runtime.failing(${this.emitSite(site.fails as object)})`
 		if (
 			(site as FailureSite).missing === requiredIssue &&
-			isDescribed((site as FailureSite).value!)
+			isDescribed((site as FailureSite).value as IssueContext)
 		) {
 			return writeSiteOf(
 				(site as FailureSite).value!,
@@ -3212,19 +3220,27 @@ const assertDescribed = (root: BaseRoot): void => {
 			const reason =
 				writer !== $ark.resolvedConfig![code][k] ?
 					`a scope's configured ${code} ${k}`
-				: raisable === "any" ? `a configured ${code} ${k} that a narrow or morph can raise`
-				: typeof writer === "function" && k !== "actual" ? `a configured ${code} ${k} writer`
-				: undefined
+					// a callback raises with code predicate unless it names another
+				: raisable === "any" && code === "predicate" ?
+					`a configured ${code} ${k} that a narrow or morph raises`
+				: (
+					typeof writer === "function" &&
+					k !== "actual" &&
+					unwritableCodes.has(code)
+				) ?
+					`a configured ${code} ${k} writer, which reads each branch's errors`
+				:	undefined
 			if (reason) throwParseError(writeUnprecompilableMessage(reason))
 		}
 	}
 	for (const unit of rootUnitsOf(root)) {
 		for (const node of writtenNodesOf(unit)) {
+			if (!node.hasKind("union")) continue
 			for (const k of describingKeys) {
 				if (k !== "actual" && typeof node.meta[k] === "function") {
 					throwParseError(
 						writeUnprecompilableMessage(
-							`\`${node.expression}\`'s configured ${k} writer`
+							`\`${node.expression}\`'s ${k} writer, which reads each branch's errors`
 						)
 					)
 				}
@@ -3480,12 +3496,13 @@ const issueSite = <site extends object>(site: site): site => {
 const undeclaredSite = issueSite({ code: "undeclared" })
 
 // a site of a code and description naming nothing the validator receives
-const isInlineSite = (site: object): site is SiteContext =>
+const isInlineSite = (site: object): site is IssueContext =>
 	"code" in site &&
+	!(site as IssueContext).written &&
 	![
-		(site as SiteContext).description,
-		(site as SiteContext).message,
-		(site as SiteContext).problem
+		(site as IssueContext).description,
+		(site as IssueContext).message,
+		(site as IssueContext).problem
 	].some(text => text?.match(printedHoleNamePattern))
 
 const siteWords = new Set([
@@ -3509,7 +3526,7 @@ const isLiteralSite = (value: unknown, emitted: string): boolean =>
 	).every(word => siteWords.has(word))
 
 const writeSiteOf = (
-	{ code, description, message, problem }: SiteContext,
+	{ code, description, message, problem }: IssueContext,
 	emit: (s: string) => string,
 	writer = "siteOf"
 ): string => {
@@ -3531,40 +3548,117 @@ interface TextContext {
 	meta?: ArkEnv.meta | undefined
 }
 
+type DescribingKey = (typeof describingKeys)[number]
+
+// a program's configure() writer, which the runtime receives when it runs
+class ConfiguredWriter {
+	code: ArkErrorCode
+	k: DescribingKey
+
+	constructor(code: ArkErrorCode, k: DescribingKey) {
+		this.code = code
+		this.k = k
+	}
+}
+
+type Writer = string | Fn | ConfiguredWriter | undefined
+
+// what a site's issue reads, with text configured as strings or functions
+interface IssueContext extends SiteContext {
+	message?: string
+	problem?: string
+	written?: {
+		context: object
+		writers: Writer[]
+		// 1 if the issue takes expected, 2 if problem
+		keeps: number
+	}
+}
+
+// arktype writes these from each branch's errors, which issues don't keep
+const unwritableCodes = new Set<ArkErrorCode>([
+	"union",
+	"discriminant",
+	"intersection"
+])
+
 // the text arktype writes from meta, then the program's config for the code
-const issueContextOf = (context: TextContext): SiteContext => {
+const issueContextOf = (context: TextContext): IssueContext => {
 	const { code } = context
-	const writers: Record<string, unknown> = $ark.resolvedConfig![code]
+	const configured: Record<string, unknown> = $ark.resolvedConfig![code]
 	const defaults: Record<string, unknown> = $ark.defaultConfig[code]
 	const meta: Record<string, unknown> = context.meta ?? {}
-	const text: Partial<Record<(typeof describingKeys)[number], string>> = {}
+	const custom: Partial<Record<DescribingKey, unknown>> = {}
 	for (const k of describingKeys) {
-		const writer = meta[k] ?? writers[k]
-		// assertDescribed refuses other writers
-		if (writer !== defaults[k] && typeof writer === "string") text[k] = writer
+		const writer = meta[k] ?? configured[k]
+		if (writer !== defaults[k]) custom[k] = writer
 	}
-	const issueContext: SiteContext = {
+	const locale = $ark.resolvedConfig!.locale
+	const issueContext: IssueContext = {
 		code,
-		description: text.expected ?? context.description
+		description:
+			typeof custom.expected === "string" ?
+				custom.expected
+			:	context.description
 	}
-	if (text.message !== undefined) issueContext.message = text.message
-	if (text.problem !== undefined) issueContext.problem = text.problem
+	if (
+		!unwritableCodes.has(code) &&
+		Object.values(custom).some(writer => typeof writer === "function")
+	) {
+		const writerOf = (k: DescribingKey): Writer => {
+			const writer = custom[k] ?? defaults[k]
+			if (typeof writer !== "function") return writer as Writer
+			if (writer === custom[k]) {
+				return meta[k] === undefined ?
+						new ConfiguredWriter(code, k)
+					:	(writer as Fn)
+			}
+			// static, so written as arktype would write it
+			if (k === "expected") return (writer as Fn)(context, locale) as string
+			if (runtimeKeyOf(writer)) return writer as Fn
+			if (k === "problem") return runtime.writeProblem
+			// e.g. a missing key's
+			return (writer as Fn)(undefined, context, locale) as string
+		}
+		issueContext.written = {
+			context,
+			writers: [
+				writerOf("expected"),
+				writerOf("actual"),
+				writerOf("problem"),
+				custom.message === undefined ? undefined : writerOf("message")
+			],
+			keeps:
+				+(custom.expected !== undefined) |
+				(+(
+					custom.problem !== undefined ||
+					(custom.actual !== undefined && custom.message === undefined)
+				) <<
+					1)
+		}
+		return issueContext
+	}
+	if (typeof custom.message === "string") issueContext.message = custom.message
+	if (typeof custom.problem === "string") issueContext.problem = custom.problem
 	else if (
-		text.actual &&
-		text.message === undefined &&
-		writers.problem === errorWriters.problem &&
-		meta.problem === undefined
+		typeof custom.actual === "string" &&
+		custom.actual &&
+		custom.message === undefined &&
+		custom.problem === undefined &&
+		configured.problem === errorWriters.problem
 	) {
 		issueContext.problem = errorWriters.problem(
-			{ expected: issueContext.description, actual: text.actual } as never,
-			$ark.resolvedConfig!.locale
+			{ expected: issueContext.description, actual: custom.actual } as never,
+			locale
 		)
 	}
 	return issueContext
 }
 
-const isDescribed = (context: SiteContext): boolean =>
-	context.message === undefined && context.problem === undefined
+const isDescribed = (context: IssueContext): boolean =>
+	context.message === undefined &&
+	context.problem === undefined &&
+	!context.written
 
 // issues hold only code and text, so equal sites share
 const issueSiteOf = (site: FailureSite | UnionSite): object => {
@@ -3575,8 +3669,7 @@ const issueSiteOf = (site: FailureSite | UnionSite): object => {
 	const missingContext = missing && issueContextOf(missing)
 	// a key's own text makes its site its own
 	const context =
-		missingContext && !isDescribed(missingContext) ? missing
-		: (value ?? site)
+		missingContext && !isDescribed(missingContext) ? missing : (value ?? site)
 	const variants = issueSitesByContext.get(context) ?? {}
 	issueSitesByContext.set(context, variants)
 	const variant = missing ? "required" : "alone"

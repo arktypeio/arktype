@@ -313,10 +313,10 @@ export class Traversal extends InternalTraversal {
 			],
 			data: "data" in supplied ? supplied.data : this.data,
 			// a keyword raises its errors with the description of what it checks
-			expected: supplied.expected ?? supplied.description,
-			problem: supplied.problem,
-			message: supplied.message
+			expected: supplied.expected ?? supplied.description
 		}
+		if (supplied.problem !== undefined) issue.problem = supplied.problem
+		if (supplied.message !== undefined) issue.message = supplied.message
 		return this.addError(issue) as never
 	}
 }

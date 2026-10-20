@@ -7,6 +7,7 @@ export type {
 	ArkErrorInput,
 	ErrorContextsByCode
 } from "./shared/errors.ts"
+export * from "./shared/enWriters.ts"
 export { describePredicate } from "./shared/errorWriters.ts"
 export * from "./shared/issues.ts"
 export {
@@ -70,6 +71,12 @@ export const configure = (
 	programConfig = held
 	return config
 }
+
+// a writer the program configured for a code, read once configure() runs
+export const configuredWriterOf =
+	(code: string, k: string) =>
+	(...args: unknown[]): unknown =>
+		(programConfig as Record<string, Record<string, Fn>>)[code][k](...args)
 
 // hashes the config's static values; functions can't be compared
 export const fingerprintOf = (config: object): string => {

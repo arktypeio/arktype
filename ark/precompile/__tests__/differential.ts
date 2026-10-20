@@ -9,7 +9,7 @@ import {
 	type BaseRoot,
 	type BaseScope
 } from "@ark/schema"
-// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { writeMessage } from "@ark/schema/internal"
 import { messageOf, problemOf, type ArkIssue } from "@ark/schema/runtime"
 import { hasDomain, ParseError } from "@ark/util"
 import {
@@ -426,7 +426,7 @@ const suppliedTextOf = (error: ArkError, k: "message" | "problem") => {
 	}
 }
 
-// text a meta or a callback supplies, which a validator writes as arktype does
+// text a meta or a callback writes, which a validator writes as arktype does
 const textsOf = (errors: ArkErrors, grouped = true) => {
 	const isArktype = errors instanceof ArkErrors
 	// reading issues writes every error's text
@@ -448,23 +448,29 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 				// a validator's issue merged into arktype's errors keeps its problem
 				const isMerged =
 					meta.problem ===
-					problemOf({ ...error, expected: meta.expected as never })
-				const isSupplied = (k: "message" | "problem") =>
-					(typeof meta[k] === "string" && !(k === "problem" && isMerged)) ||
-					suppliedTextOf(error, k) !== undefined
+					problemOf({
+						code: error.code,
+						path: error.path,
+						data: error.data,
+						expected: meta.expected as never
+					})
+				const isMessaged =
+					(meta.message !== undefined && meta.message !== writeMessage) ||
+					suppliedTextOf(error, "message") !== undefined
 				if (
-					isSupplied("problem") ||
-					(!isSupplied("message") &&
+					(meta.problem !== undefined && !isMerged) ||
+					suppliedTextOf(error, "problem") !== undefined ||
+					(!isMessaged &&
 						meta.problem === undefined &&
-						typeof meta.actual === "string" &&
-						meta.actual !== "")
+						(typeof meta.actual === "function" ||
+							(typeof meta.actual === "string" && meta.actual !== "")))
 				)
 					text.problem = error.problem
-				if (isSupplied("message")) text.message = error.message
+				if (isMessaged) text.message = error.message
 			} else {
 				if (issue.problem !== undefined) text.problem = issue.problem
 				if (issue.message !== messageOf({ ...issue, message: undefined }))
-					text.message = issue.message
+					text.message = issue.message!
 			}
 			return Object.keys(text).length > 1 ? [text] : []
 		})

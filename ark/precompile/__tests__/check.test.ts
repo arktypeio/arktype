@@ -67,6 +67,17 @@ contextualize(() => {
 		])
 	})
 
+	it("refuses text a standalone validator can't write", () => {
+		attest(
+			check([], { cwd: fromHere("unwritten"), config: "config.ts" }).lines
+		).snap([
+			'main.ts:5:23  scope( { T: "string" }, { domain: { message: "no" } } ).exp… can\'t be precompiled yet\n  a scope\'s configured domain message can\'t be precompiled to a standalone validator\n  A standalone validator writes text configured for a code only from configure(). Configure it there, or on each Type with .configure(), or build with runtime: "arktype".',
+			'main.ts:9:25  type("string").narrow(isLong) can\'t be precompiled yet\n  a configured predicate message that a narrow or morph raises can\'t be precompiled to a standalone validator\n  A standalone validator writes what a narrow or morph raises from what it passes to ctx.reject(). Pass the text there, or build with runtime: "arktype".',
+			"main.ts:10:22  type(\"string | number\").configure({ message: ctx => `${ctx.… can't be precompiled yet\n  `number | string`'s message writer, which reads each branch's errors can't be precompiled to a standalone validator\n  A standalone validator keeps no union branch's errors. Configure the text as a string, or build with runtime: \"arktype\".",
+			"3 sites in 2 files: 0 accepted (0.0%)"
+		])
+	})
+
 	it("rejects other configured errors", () => {
 		attest(
 			check([], { cwd: fromHere("erroring"), config: "config.ts" }).lines

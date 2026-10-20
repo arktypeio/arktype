@@ -3,9 +3,6 @@ import {
 	domainDescriptions,
 	domainOf,
 	functionNameOf,
-	isValidDate,
-	listPattern,
-	objectKindOrDomainOf,
 	printKind,
 	type requireKeys
 } from "@ark/util"
@@ -21,12 +18,17 @@ import type {
 	MessageWriter,
 	ProblemWriter
 } from "./errors.ts"
+import {
+	writeDomainActual,
+	writeLengthActual,
+	writeMinLengthActual,
+	writeProblem,
+	writeProtoActual,
+	writeUnitProblem
+} from "./enWriters.ts"
 import type { NodeKind } from "./implement.ts"
 import { describeCause, keywordWriterOf, type Locale } from "./locale.ts"
 import { describeBranches, describeCases } from "./utils.ts"
-
-const writeProblem: ProblemWriter = ({ expected, actual }) =>
-	`must be ${expected}${actual ? ` (was ${actual})` : ""}`
 
 export const writeMessage: MessageWriter = ctx => {
 	const propString = ctx.propString
@@ -49,18 +51,7 @@ export const errorWriters: {
 	message: writeMessage
 }
 
-// en's info, which configured writers receive
-export const enInfo: Locale.Info = /* @__PURE__ */ Object.freeze<Locale.Info>({
-	tag: "en",
-	list: /* @__PURE__ */ listPattern(
-		{ two: " or ", middle: ", ", end: " or " },
-		{ two: " and ", middle: ", ", end: " and " }
-	),
-	plural: n => (n === 1 ? "one" : "other"),
-	number: String,
-	date: describeCollapsibleDate,
-	verbatim: text => text
-})
+export { enInfo } from "./enWriters.ts"
 
 export const errorWritersByCode: {
 	[code in ArkErrorCode]: errorWritersOf<code>
@@ -68,25 +59,17 @@ export const errorWritersByCode: {
 	after: { actual: describeCollapsibleDate },
 	before: { actual: describeCollapsibleDate },
 	divisor: {},
-	domain: {
-		actual: data =>
-			typeof data === "number" && !Number.isFinite(data) ?
-				String(data)
-			:	domainDescriptions[domainOf(data)]
-	},
-	exactLength: { actual: data => `${data.length}` },
+	domain: { actual: writeDomainActual },
+	exactLength: { actual: writeLengthActual },
 	intersection: {
 		expected: source =>
 			`  ◦ ${source.errors.map(e => e.expected).join("\n  ◦ ")}`,
 		problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
 	},
 	max: {},
-	maxLength: { actual: data => `${data.length}` },
+	maxLength: { actual: writeLengthActual },
 	min: {},
-	minLength: {
-		// avoid default message like "must be non-empty (was 0)"
-		actual: data => (data.length === 0 ? "" : `${data.length}`)
-	},
+	minLength: { actual: writeMinLengthActual },
 	pattern: {},
 	// a keyword's nodes describe their errors through meta, so its phrase writes
 	// only errors it raises through ctx: their actual, and the problem of one that
@@ -122,12 +105,7 @@ export const errorWritersByCode: {
 			)
 		}
 	},
-	proto: {
-		actual: data =>
-			data instanceof Date && !isValidDate(data) ?
-				"an invalid Date"
-			:	objectKindOrDomainOf(data)
-	},
+	proto: { actual: writeProtoActual },
 	required: {
 		expected: ctx => ctx.missingValueDescription,
 		actual: () => "missing"
@@ -162,8 +140,7 @@ export const errorWritersByCode: {
 	},
 	unit: {
 		actual: printKind,
-		problem: ({ expected, actual }) =>
-			`${expected === actual ? `must be reference equal to ${expected} (serialized to the same value)` : `must be ${expected} (was ${actual})`}`
+		problem: writeUnitProblem
 	},
 	undeclared: {
 		expected: "removed",

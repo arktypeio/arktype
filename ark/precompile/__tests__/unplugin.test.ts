@@ -61,6 +61,7 @@ import {
 const app = fromHere("app")
 const configured = fromHere("configured")
 const firstConfigured = fromHere("firstConfigured")
+const messaged = fromHere("messaged")
 const mutatingConfigured = fromHere("mutatingConfigured")
 const library = writeLibrary()
 const undetailed = writeUndetailed()
@@ -397,6 +398,14 @@ export const checkedItem = JSON.stringify(itemJson())
 			attest(
 				run(await bundle({ ...opts, runtime: "arktype" }, configured))
 			).equals(runPlain(configured))
+		})
+
+		it(`${name} configured messages`, async () => {
+			const standalone = await bundle(
+				{ cwd: messaged, config: "config.ts" },
+				messaged
+			)
+			attest(run(standalone)).equals(runPlain(messaged))
 		})
 
 		it(`${name} configured with errors`, async () => {
