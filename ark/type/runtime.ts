@@ -423,6 +423,15 @@ export const requiredSite: FailureSite = {
 	missing: /* @__PURE__ */ siteOf("required")
 }
 
+// a key's site, reporting "required" where the key is missing
+export const keySiteOf = ((
+	code: ArkErrorCode,
+	description?: string
+): FailureSite => ({
+	value: siteOf(code, description),
+	missing: requiredSite.missing!
+})) satisfies Fn
+
 // compact roots report into ArkErrors, loading no Traversal
 export const applyErrors = (
 	apply: CompactApply,

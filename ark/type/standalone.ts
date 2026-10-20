@@ -2722,6 +2722,13 @@ return [${returned.join(", ")}]
 			return writeSiteOf(site as SiteContext, s => this.emitString(s))
 		if ("fails" in site)
 			return `runtime.failing(${this.emitSite(site.fails as object)})`
+		if ((site as FailureSite).missing === requiredIssue) {
+			return writeSiteOf(
+				(site as FailureSite).value!,
+				s => this.emitString(s),
+				"keySiteOf"
+			)
+		}
 		return `{ ${Object.entries(site)
 			.map(
 				([k, v]) =>
@@ -3111,9 +3118,10 @@ const isInlineSite = (site: object): site is SiteContext =>
 
 const writeSiteOf = (
 	{ code, description }: SiteContext,
-	emit: (s: string) => string
+	emit: (s: string) => string,
+	writer = "siteOf"
 ): string =>
-	`runtime.siteOf(${emit(code)}${description === undefined ? "" : `, ${emit(description)}`})`
+	`runtime.${writer}(${emit(code)}${description === undefined ? "" : `, ${emit(description)}`})`
 
 const issueSitesByContext = new WeakMap<
 	object,
