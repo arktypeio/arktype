@@ -2,6 +2,7 @@ import { attest, contextualize } from "@ark/attest"
 import {
 	precompileModule,
 	Precompiler,
+	renderDiagnostic,
 	standardJsonSchemaWithoutStandardMessage,
 	writeArktypeRuntimeOptionMessage,
 	writeOptionValueMessage,
@@ -1021,6 +1022,26 @@ const User = type({ name: "string" })`)
 			).snap([
 				"/main.ts:3:12  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\".",
 				"/main.ts:8:10  t.or reads or, which a standalone validator lacks\n  the build can't tell where `t` comes from, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn't a Type, annotate it with its type. If it is, build with runtime: \"arktype\"."
+			])
+		})
+
+		it("a read off an import the build can't resolve", () => {
+			const source = `import { type } from "arktype"
+import { User, port } from "~/schemas"
+export const Admin = User.and({ role: "'admin'" })
+export const url = port.toFixed()`
+			const host = memoryHost({ "/main.ts": source })
+			// as a bundler's alias the build doesn't know of
+			const resolve: typeof host.resolve = (specifier, importer) =>
+				specifier.startsWith("~/") ? undefined : (
+					host.resolve(specifier, importer)
+				)
+			attest(
+				new Precompiler({ ...host, resolve })
+					.analyze(source, "/main.ts")
+					.diagnostics.map(renderDiagnostic)
+			).snap([
+				"/main.ts:3:22  User.and reads and, which a standalone validator lacks\n  `User` is imported from `~/schemas`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator\n  If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`. If it isn't a Type, annotate it with its type."
 			])
 		})
 

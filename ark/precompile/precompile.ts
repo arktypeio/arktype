@@ -3009,6 +3009,26 @@ export class Precompiler {
 		return [...result]
 	}
 
+	// the import a read's object comes from, if the build can't resolve it
+	private unresolvedImportOf(
+		object: Node,
+		module: SourceModule
+	): string | undefined {
+		const declaration = module.scopes.referencesById.get(unwrapChain(object))
+			?.binding?.declaration
+		const specifier =
+			declaration?.parent?.type === "ImportDeclaration" ?
+				declaration.parent.source.value
+			:	undefined
+		return (
+				specifier !== undefined &&
+					!arkPackageSpecifier.test(specifier) &&
+					this.graph.host.resolve(specifier, module.id) === undefined
+			) ?
+				specifier
+			:	undefined
+	}
+
 	private checkStandalone(
 		module: SourceModule,
 		candidates: SiteCandidate[],
@@ -3137,6 +3157,7 @@ export class Precompiler {
 				read === undefined || !this.lackedMembers.has(read) ? undefined
 				: includes(methodMembers, read) ? "methods"
 				: read
+			const unresolved = isUnsure && this.unresolvedImportOf(object, module)
 			result.push(
 				this.diagnostic(
 					module,
@@ -3146,13 +3167,16 @@ export class Precompiler {
 						`${module.snippetOf(node)} reflects on a Type, whose properties a standalone validator doesn't share`
 					:	`${module.snippetOf(node)} reads ${read}, which a standalone validator lacks`,
 					[
-						isUnsure ?
+						unresolved ?
+							`\`${module.snippetOf(object)}\` is imported from \`${unresolved}\`, which the build can't resolve, so it may be a Type, which the standalone runtime replaces with a validator`
+						: isUnsure ?
 							`the build can't tell where \`${module.snippetOf(object)}\` comes from, so it may be a Type, which the standalone runtime replaces with a validator`
 						: dropped ?
 							`the build's \`members\` option sets ${JSON.stringify(dropped)} false, so no validator has ${read}`
 						:	`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
 					],
-					isUnsure ?
+					unresolved && !dropped ? unresolvedHint
+					: isUnsure ?
 						writeUnsureHint(
 							dropped ?
 								`leave members[${JSON.stringify(dropped)}] unset`
@@ -3616,6 +3640,9 @@ const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 const cacheHint = 'With runtime: "arktype", arktype defines this at runtime.'
 
 const frozenHint = `Keep what you attach in an object of your own, or build with runtime: "arktype".`
+
+const unresolvedHint =
+	"If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`. If it isn't a Type, annotate it with its type."
 
 const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
 

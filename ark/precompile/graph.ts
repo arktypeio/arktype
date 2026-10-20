@@ -1363,6 +1363,9 @@ export class ModuleGraph {
 				return kindOfKey(target.binding, target.module)
 			case "expression":
 				return this.transfer(target.node, target.module, kindOfKey)
+			// e.g. a bundler's alias, which may resolve to a module exporting a Type
+			case "unresolved":
+				return kinds.unknown
 			default:
 				return kinds.data
 		}
