@@ -686,7 +686,7 @@ export class Precompiler {
 	}
 
 	private packageOf(
-		name: ArkPackage,
+		name: string,
 		entry: string
 	): [root: string, version: string] {
 		for (
@@ -700,6 +700,17 @@ export class Precompiler {
 			if (packageName === name) return [root, version ?? "unknown"]
 		}
 		return [dirname(entry), "unknown"]
+	}
+
+	// each package.json naming a version the output depends on, so a cache keyed
+	// by what a module read drops it after an upgrade
+	get ownManifests(): string[] {
+		return [
+			...(["arktype", "@ark/schema", "@ark/util"] as const).map(
+				name => this.ownPackageOf(name)[0]
+			),
+			this.packageOf("@ark/precompile", fileURLToPath(import.meta.url))[0]
+		].map(root => join(root, "package.json"))
 	}
 
 	// the copy the precompiler builds with, which its validators are written for

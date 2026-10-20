@@ -334,7 +334,7 @@ const transformedModuleOf = (
 				appendSourceMap(result.code, result.map)
 			:	result.code),
 		map: precompiler.inline ? undefined : result.map,
-		dependencies: result.dependencies,
+		dependencies: [...result.dependencies, ...precompiler.ownManifests],
 		modules: result.modules,
 		...renderDiagnostics(result.diagnostics)
 	}

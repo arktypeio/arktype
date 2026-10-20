@@ -38,6 +38,11 @@ import {
 const app = fromHere("app")
 const tsconfig = fromHere("..", "..", "..", "tsconfig.json")
 
+// the versions a precompiled module depends on, which a cache must key it by
+const manifests = ["type", "schema", "util", "precompile"].map(dir =>
+	fromHere("..", "..", dir, "package.json")
+)
+
 // arktype's packages resolve to their source in this repo
 const conditions = ["ark-ts"]
 
@@ -459,7 +464,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			attest(standalone.out).satisfies(
 				/^var \$ark\$exports0;\nfunction \$ark\$load0\(\) {/
 			)
-			attest(standalone.dependencies).equals(["ark.ts", tsconfig])
+			attest(standalone.dependencies).equals(["ark.ts", tsconfig, ...manifests])
 			attest(load(app, "schemas.ts", { runtime: "arktype" }).out).satisfies(
 				/^;\(\(registerPrecompiledUnits\) => {/
 			)
@@ -502,7 +507,12 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 				.snap(`roles.ts:4:22  scope({ user: User, admin: ["user", "&", { role: \`'\${proces… cannot be precompiled
   \`process\` is a global the build does not read
   Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`)
-			attest(roles.dependencies).equals(["schemas.ts", "ark.ts", tsconfig])
+			attest(roles.dependencies).equals([
+				"schemas.ts",
+				"ark.ts",
+				tsconfig,
+				...manifests
+			])
 		})
 
 		type Change = (fs: typeof import("node:fs"), dir: string) => unknown
