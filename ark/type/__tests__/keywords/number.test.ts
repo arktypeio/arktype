@@ -1,4 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
+import { rootSchema } from "@ark/schema"
 import { type } from "arktype"
 
 contextualize(() => {
@@ -59,6 +60,57 @@ contextualize(() => {
 		attest(type.number(Number.NaN).toString()).snap(
 			"must be a number (was NaN)"
 		)
+	})
+
+	it("doesn't allow NaN in discriminated unions", () => {
+		const NumberOrNull = type("number | null")
+		attest(NumberOrNull(5)).equals(5)
+		attest(NumberOrNull(null)).equals(null)
+		attest(NumberOrNull.allows(Number.NaN)).equals(false)
+		attest(NumberOrNull(Number.NaN)?.toString()).snap(
+			"must be a number (was NaN)"
+		)
+
+		attest(type("number | string")(Number.NaN).toString()).snap(
+			"must be a number (was NaN)"
+		)
+		attest(type("number > 0 | null")(Number.NaN)?.toString()).snap(
+			"must be a number (was NaN)"
+		)
+
+		const Prop = type({ a: "number" }).or({ a: "string" })
+		attest(Prop({ a: 5 })).equals({ a: 5 })
+		attest(Prop.allows({ a: Number.NaN })).equals(false)
+		attest(Prop({ a: Number.NaN }).toString()).snap(
+			"a must be a number (was NaN)"
+		)
+	})
+
+	it("doesn't allow NaN in discriminated unions jitless", () => {
+		const types = type.module(
+			{
+				NumberOrNull: "number | null",
+				Prop: [{ a: "number" }, "|", { a: "string" }]
+			},
+			{ jitless: true }
+		)
+		attest(types.NumberOrNull.precompilation).equals(undefined)
+		attest(types.NumberOrNull.allows(Number.NaN)).equals(false)
+		attest(types.NumberOrNull(Number.NaN)?.toString()).snap(
+			"must be a number or null (was NaN)"
+		)
+		attest(types.Prop.allows({ a: Number.NaN })).equals(false)
+		attest(types.Prop({ a: Number.NaN }).toString()).snap(
+			"a must be a number or a string (was NaN)"
+		)
+	})
+
+	it("allows NaN in discriminated unions with numberAllowsNaN", () => {
+		const T = rootSchema([
+			{ domain: "number", numberAllowsNaN: true },
+			{ unit: null }
+		])
+		attest(T.allows(Number.NaN)).equals(true)
 	})
 
 	it("NaN", () => {

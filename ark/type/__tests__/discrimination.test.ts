@@ -37,7 +37,11 @@ contextualize(() => {
 		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "domain",
 			path: [],
-			cases: { '"bigint"': true, '"number"': true, '"string"': true }
+			cases: {
+				'"bigint"': true,
+				'"number"': { domain: "number" },
+				'"string"': true
+			}
 		})
 		attest(T.allows("foo")).equals(true)
 		attest(T.allows(5n)).equals(true)

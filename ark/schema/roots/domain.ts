@@ -96,7 +96,7 @@ const implementation: nodeImplementationOf<Domain.Declaration> =
 	})
 
 export class DomainNode extends InternalBasis<Domain.Declaration> {
-	private readonly requiresNaNCheck =
+	readonly requiresNaNCheck: boolean =
 		this.domain === "number" && !this.numberAllowsNaN
 
 	readonly traverseAllows: TraverseAllows =
