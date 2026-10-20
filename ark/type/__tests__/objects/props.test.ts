@@ -98,7 +98,7 @@ contextualize(() => {
 			{ get: (o, k) => (reads.push(k), Reflect.get(o, k)) }
 		)
 		attest(T.allows(data)).equals(true)
-		attest(reads).equals(["c", "a", "b", "d", "e"])
+		attest([...new Set(reads)]).equals(["c", "a", "b", "d", "e"])
 	})
 
 	it("allows by checking arrays last, never past an alias reaching a narrow", () => {
@@ -119,7 +119,7 @@ contextualize(() => {
 				{ get: (o, k) => (reads.push(k), Reflect.get(o, k)) }
 			)
 			attest(T.allows(data)).equals(true)
-			return reads
+			return [...new Set(reads)]
 		}
 		attest(readsOf($.narrowed)).equals(["c", "a", "inner"])
 		attest(readsOf($.unnarrowed)).equals(["c", "inner", "a"])
@@ -217,6 +217,19 @@ contextualize(() => {
 			hasOwnProperty: number
 			toString: boolean
 		}>(T.t)
+	})
+
+	it("compiled code reads the first key before checking data is an object", () => {
+		const T = type({ a: "string", b: "number" })
+		// the first data is checked uncompiled
+		T.allows({ a: "", b: 0 })
+		const reads: PropertyKey[] = []
+		const data = new Proxy(
+			{ a: "", b: 0 },
+			{ get: (o, k) => (reads.push(k), Reflect.get(o, k)) }
+		)
+		attest(T.allows(data)).equals(true)
+		attest(reads).equals(["a", "a", "b"])
 	})
 
 	it("rejects a primitive whose wrapper has its keys", () => {
