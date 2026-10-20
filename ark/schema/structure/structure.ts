@@ -1082,15 +1082,15 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				this.sequence?.transforms || transformedIndex.length !== 0
 			)
 		}
-		this.compileDefaults(js)
+		this.compileDefaults(js, single)
 		if (!once) this.compileCopiedDeclaredKeys(js)
 		js.return("out")
 	}
 
-	private compileDefaults(js: NodeCompiler): NodeCompiler {
+	private compileDefaults(js: NodeCompiler, single?: boolean): NodeCompiler {
 		for (const node of this.defaultable) {
 			js.if(`!(${js.serialize(node.key)} in data)`, () =>
-				compileDefault(this.compileCopy(js), node, "out")
+				compileDefault(this.compileCopy(js, single), node, "out")
 			)
 		}
 		this.compileSequenceDefaults(js)

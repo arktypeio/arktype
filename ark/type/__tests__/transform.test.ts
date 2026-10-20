@@ -279,6 +279,30 @@ b must be A (was "y")`)
 		attest(inherited.toString).equals(5)
 	})
 
+	it("non-enumerable declared key with defaults", () => {
+		const $ = scope({})
+		const One = $.type({ e: "string", d: "string = 'd'" })
+		const Two = $.type({ e: "string", d: "string = 'd'", f: "number = 1" })
+		const hidden = (o: object) => Object.defineProperty(o, "e", { value: "e" })
+		// a Type's first call runs uncompiled, its second compiled
+		for (let i = 0; i < 2; i++) {
+			attest(Object.entries(One.assert(hidden({})))).equals([
+				["d", "d"],
+				["e", "e"]
+			])
+			attest(Object.entries(Two.assert(hidden({})))).equals([
+				["d", "d"],
+				["f", 1],
+				["e", "e"]
+			])
+			attest(Object.entries(Two.assert(hidden({ f: 2 })))).equals([
+				["f", 2],
+				["d", "d"],
+				["e", "e"]
+			])
+		}
+	})
+
 	it("non-enumerable transformed key", () => {
 		const T = type({ e: "string", t: "string.trim" })
 		const hidden = { e: { value: "e" }, t: { value: " t" } }
