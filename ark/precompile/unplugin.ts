@@ -25,6 +25,7 @@ import {
 	schemaSpecifier,
 	transformedFilterOf,
 	undetailedSpecifierOf,
+	writeUncachedModuleMessage,
 	writeUndetailedImportMessage
 } from "./host.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
@@ -330,12 +331,6 @@ const storeDirIn = (cache: unknown): string => {
 // a module is named for what it holds, so one an earlier build stored holds the same
 const storedNameOf = (id: string) =>
 	`${encodeURIComponent(id.slice("\0~arktype/".length))}.json`
-
-export const writeUncachedModuleMessage = (
-	specifier: string,
-	dir: string
-): string =>
-	`${specifier} was written by a build whose cache kept it in ${dir}, where it no longer is. Delete the bundler's cache to rebuild it.`
 
 const internalSpecifiers = [
 	"arktype/internal",

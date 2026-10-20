@@ -221,3 +221,25 @@ export const reportDiagnostics = (
 	for (const warning of diagnostics?.warnings ?? []) warn(warning)
 	if (diagnostics?.errors.length) throwError(diagnostics.errors.join("\n"))
 }
+
+export const writeUncachedModuleMessage = (
+	specifier: string,
+	dir: string
+): string =>
+	`${specifier} was written by a build whose cache kept it in ${dir}, where it no longer is. Delete the bundler's cache to rebuild it.`
+
+// `resolved` is where it resolves other than to arktype/runtime
+export const writeAliasMessage = (
+	specifier: string,
+	resolved: string | undefined,
+	opts: PrecompilePluginOptions | undefined
+): string =>
+	resolved === undefined ?
+		`${specifier} resolves to arktype/runtime, where defining a Type throws. Remove its turbopack.resolveAlias, which ${opts?.shadow ? "shadow mode" : 'runtime: "arktype"'} doesn't use.`
+	:	`${specifier} resolves to ${resolved} rather than arktype/runtime, where a standalone build's validators run. Add to turbopack.resolveAlias: ${JSON.stringify(
+			Object.fromEntries(
+				runtimeSpecifiers
+					.filter(s => resolvesToRuntime(s, opts))
+					.map(s => [s, "arktype/runtime"])
+			)
+		)}`

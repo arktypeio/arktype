@@ -10,7 +10,8 @@ import {
 	createNodeHost,
 	reportDiagnostics,
 	resolvesToRuntime,
-	runtimeSpecifiers
+	runtimeSpecifiers,
+	writeAliasMessage
 } from "./host.ts"
 
 export interface TurbopackLoaderContext {
@@ -78,19 +79,3 @@ const checkAliases = async (
 		}
 	}
 }
-
-// `resolved` is where it resolves other than to arktype/runtime
-export const writeAliasMessage = (
-	specifier: string,
-	resolved: string | undefined,
-	opts: PrecompilePluginOptions | undefined
-): string =>
-	resolved === undefined ?
-		`${specifier} resolves to arktype/runtime, where defining a Type throws. Remove its turbopack.resolveAlias, which ${opts?.shadow ? "shadow mode" : 'runtime: "arktype"'} doesn't use.`
-	:	`${specifier} resolves to ${resolved} rather than arktype/runtime, where a standalone build's validators run. Add to turbopack.resolveAlias: ${JSON.stringify(
-			Object.fromEntries(
-				runtimeSpecifiers
-					.filter(s => resolvesToRuntime(s, opts))
-					.map(s => [s, "arktype/runtime"])
-			)
-		)}`

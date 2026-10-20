@@ -9,9 +9,9 @@ import {
 	writeDeclareFrameworkMessage,
 	writeDeclaredOutsideMessage
 } from "@ark/precompile/internal/declare.ts"
+import { writeUncachedModuleMessage } from "@ark/precompile/internal/host.ts"
 import {
 	precompile,
-	writeUncachedModuleMessage,
 	type PrecompileUnpluginOptions
 } from "@ark/precompile/unplugin"
 import { context, build as esbuild, transformSync, type Plugin } from "esbuild"

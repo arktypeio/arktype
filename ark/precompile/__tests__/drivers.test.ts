@@ -8,9 +8,12 @@ import {
 } from "@ark/precompile"
 import { precompile as bunPlugin } from "@ark/precompile/bun"
 import { writeDeclareFrameworkMessage } from "@ark/precompile/internal/declare.ts"
-import { createNodeHost } from "@ark/precompile/internal/host.ts"
+import {
+	createNodeHost,
+	writeAliasMessage
+} from "@ark/precompile/internal/host.ts"
 import { register } from "@ark/precompile/node"
-import turbopack, { writeAliasMessage } from "@ark/precompile/turbopack"
+import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
 import { mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs"
