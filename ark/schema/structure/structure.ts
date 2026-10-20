@@ -1006,16 +1006,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		transformedChildren.push(...this.defaultable)
 		js.initializeTransform(transformedChildren)
 		js.let("out", "data")
-		// the only site copies, and nothing after it can fail
-		const once =
-			transformedChildren.length === 1 &&
-			transformedProps.length === 1 &&
-			!js.requiresContext
+		// the only site copies without checking out is data
+		const single = transformedChildren.length === 1
+		// and fixes the copy's keys there if nothing after it can fail
+		const once = single && transformedProps.length === 1 && !js.requiresContext
 		for (let i = 0; i < transformedProps.length; i++) {
 			const { key, optional } = transformedProps[i]
 			const keyExpression = js.serialize(key)
 			const onChange = () => {
-				this.compileCopy(js).line(`out${js.prop(key)} = transformed${i}`)
+				this.compileCopy(js, single).line(
+					`out${js.prop(key)} = transformed${i}`
+				)
 				if (once) this.compileCopiedDeclaredKeys(js, key)
 			}
 			js.const(`value${i}`, `data${js.prop(key)}`).transformKey(
@@ -1097,9 +1098,9 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	// out is data where a transform writes in place
-	private compileCopy(js: NodeCompiler): NodeCompiler {
+	private compileCopy(js: NodeCompiler, single?: boolean): NodeCompiler {
 		if (this.writesInto(js)) return js
-		return js.if("out === data", () =>
+		const copy = () =>
 			this.sequence ?
 				this.compileCopyProps(
 					js.set("out", `${js.ref(copyOf)}(data)`),
@@ -1110,7 +1111,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 					"out",
 					`${this.compileShapeCheck(js)}Object.getPrototypeOf(data) === Object.prototype ? { ...data } : ${js.ref(copyOf)}(data)`
 				)
-		)
+		return single ? copy() : js.if("out === data", copy)
 	}
 
 	// read a required key first; copyOf handles data without it
