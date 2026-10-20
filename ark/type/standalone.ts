@@ -1349,9 +1349,15 @@ ${writeFunction(
 			const { statements } = this.declarations
 			const declared = statements.length
 			const emitted = this.emit(value)
-			if (!this.baking.flattens) return [`const r${i} = ${emitted}`]
-			// a flat module reads what the runtime exports by the ref's name
 			const exported = /^runtime\.([\w$]+)$/.exec(emitted)?.[1]
+			if (!this.baking.flattens) {
+				if (!exported) return [`const r${i} = ${emitted}`]
+				// a unit's function receives what the runtime exports
+				writing.params.push(`r${i}`)
+				writing.args.push(emitted)
+				return []
+			}
+			// a flat module reads what the runtime exports by the ref's name
 			if (exported) {
 				this.importName("arktype/runtime", `${exported} as r${i}`)
 				return []
