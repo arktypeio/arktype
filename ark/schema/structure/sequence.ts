@@ -106,6 +106,15 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					if (schema.length === 0) return undefined
 
 					return schema.map(element => ctx.$.parseSchema(element))
+				},
+				reduceIo: (ioKind, inner, prefix) => {
+					// before defaultables, which reduce first and are required on output
+					inner.prefix = [
+						...prefix!.map(node =>
+							ioKind === "in" ? node.rawIn : node.rawOut
+						),
+						...(inner.prefix ?? [])
+					]
 				}
 			},
 			optionals: {
@@ -114,6 +123,13 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					if (schema.length === 0) return undefined
 
 					return schema.map(element => ctx.$.parseSchema(element))
+				},
+				reduceIo: (ioKind, inner, optionals) => {
+					// after defaultables, which reduce first and are optional on input
+					inner.optionals = append(
+						inner.optionals,
+						optionals!.map(node => (ioKind === "in" ? node.rawIn : node.rawOut))
+					)
 				}
 			},
 			defaultables: {
