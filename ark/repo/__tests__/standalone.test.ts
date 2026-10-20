@@ -1592,7 +1592,7 @@ name is missing`)
 		)
 	})
 
-	it("fails as only a meta says without config or meta", async () => {
+	it("configured: false without meta fails as a Type's own onFail says", async () => {
 		const { Thrown, Returned } = await load(
 			{
 				Thrown: type("string").configure({
