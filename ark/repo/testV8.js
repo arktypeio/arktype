@@ -151,7 +151,9 @@ console.log(
 	`🏎️  ${Object.keys(nodesByKind).length} node kinds each have one map!`
 )
 
-console.log("\n⏱️  Checking that every ArkErrors has one V8 map...\n")
+console.log(
+	"\n⏱️  Checking that ArkErrors have one V8 map per kind: eager, unread and read...\n"
+)
 
 let emptyErrors
 type("unknown").narrow((data, ctx) => {
@@ -159,25 +161,38 @@ type("unknown").narrow((data, ctx) => {
 	return true
 })(0)
 
-const writtenErrors = type("string")(0)
-writtenErrors.summary
+const readEagerErrors = type("string").pipe(s => s)(0)
+readEagerErrors.summary
 
-const errorResults = [
-	emptyErrors,
-	type("string")(0),
-	type({ a: "string", b: "string", c: "string" })({}),
-	type("number[]")(Array.from({ length: 20 }, String)),
-	writtenErrors
-]
+const readErrors = [type("string")(0), type({ a: "string" })({})]
+for (const errors of readErrors) errors.summary
 
-for (const errors of errorResults) {
-	if (!eval("%HaveSameMap(errorResults[0], errors)"))
-		throw new Error(
-			`⚠️  ArkErrors with ${errors.count} errors has a different map.`
-		)
+// a Type calling no user code finds its errors' issues when they're first read
+const errorsByKind = {
+	eager: [
+		emptyErrors,
+		type("string").pipe(s => s)(0),
+		type({ a: "string" }).narrow(() => true)({}),
+		readEagerErrors
+	],
+	unread: [
+		type("string")(0),
+		type({ a: "string", b: "string", c: "string" })({}),
+		type("number[]")(Array.from({ length: 20 }, String))
+	],
+	read: readErrors
 }
 
-console.log("🏎️  ArkErrors have one map!")
+for (const [kind, errors] of Object.entries(errorsByKind)) {
+	for (const e of errors) {
+		if (!eval("%HaveSameMap(errors[0], e)"))
+			throw new Error(
+				`⚠️  ${kind} ArkErrors with ${e.count} errors has a different map.`
+			)
+	}
+}
+
+console.log("🏎️  ArkErrors have one map per kind!")
 
 console.log(
 	"\n⏱️  Checking that resolved scope configs have fast properties...\n"
