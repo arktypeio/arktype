@@ -359,6 +359,21 @@ contextualize(() => {
 		).equals([valid])
 	})
 
+	it("size checks a URL by the URL parser alone", async () => {
+		const Url = type("string.url")
+		const { T } = await load({ T: Url }, { optimize: "size" })
+		const inputs = [
+			"https://arktype.io/docs?q=1#a",
+			"HTTP://a-b.c:80",
+			"http://[::1]:8080",
+			"mailto:a@b.c",
+			"http://a b",
+			"arktype.io",
+			""
+		]
+		attest(inputs.filter(T.allows)).equals(inputs.filter(Url.allows))
+	})
+
 	it("index signature with a defaulted key", async () => {
 		const empty = standIn(() => [], "empty")
 		const types = {

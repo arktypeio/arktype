@@ -428,6 +428,10 @@ export const type: { errors: typeof ArkErrors } = /* @__PURE__ */ freeze({
 	errors: ArkErrors
 })
 
+// string.url's predicate in a size build, without isParsableUrl's fast path
+export const canParseUrl = ((s: string): boolean =>
+	URL.canParse(s)) satisfies Fn
+
 // shorter at each site than a literal
 export const siteOf = ((
 	code: ArkErrorCode,

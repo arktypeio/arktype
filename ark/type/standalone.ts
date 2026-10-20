@@ -3040,7 +3040,11 @@ ${writeFunction(
 			return throwParseError(writeUnprecompilableMessage(printable(value)))
 		if (!hasDomain(value, "object")) return printablePrimitive(value)
 		const runtimePath = runtimePathsByValue.get(value)
-		if (runtimePath) return runtimePath
+		if (runtimePath) {
+			return this.baking.shortest && value === runtime.isParsableUrl ?
+					"runtime.canParseUrl"
+				:	runtimePath
+		}
 		const declared = this.declarations.namesByValue.get(value)
 		if (declared) return declared
 		const defaulted = this.defaultsByMorph.get(value)
