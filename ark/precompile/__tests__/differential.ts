@@ -447,13 +447,14 @@ const textsOf = (errors: ArkErrors, grouped = true) => {
 				const meta: Record<string, unknown> = error.meta ?? {}
 				// a validator's issue merged into arktype's errors keeps its problem
 				const isMerged =
+					meta.problem === meta.expected ||
 					meta.problem ===
-					problemOf({
-						code: error.code,
-						path: error.path,
-						data: error.data,
-						expected: meta.expected as never
-					})
+						problemOf({
+							code: error.code,
+							path: error.path,
+							data: error.data,
+							expected: meta.expected as never
+						})
 				const isMessaged =
 					(meta.message !== undefined && meta.message !== writeMessage) ||
 					suppliedTextOf(error, "message") !== undefined
