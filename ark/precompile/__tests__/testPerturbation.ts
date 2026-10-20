@@ -400,6 +400,29 @@ export const comparable = (observation: unknown): string =>
 		.replace(/\btype\d+\b/g, "type")
 		.replace(/\$ark\.[\w$&|]+/g, "$ark")
 
+// under errors "first", the original world lists the issues errors "all"
+// finds, any one of which a precompiled validator agrees reporting
+const reportedOf = (expected: unknown, actual: unknown): unknown => {
+	if (Array.isArray(expected))
+		return expected.map((v, i) => reportedOf(v, (actual as any)?.[i]))
+	if (typeof expected !== "object" || expected === null) return expected
+	const { anyOf, ...rest } = expected as Record<string, unknown>
+	const errors = (actual as { errors?: unknown } | undefined)?.errors
+	if (
+		Array.isArray(anyOf) &&
+		Array.isArray(errors) &&
+		errors.length === 1 &&
+		anyOf.some(issue => comparable(issue) === comparable(errors[0]))
+	)
+		rest.errors = errors
+	return Object.fromEntries(
+		Object.entries(rest).map(([k, v]) => [
+			k,
+			reportedOf(v, (actual as any)?.[k])
+		])
+	)
+}
+
 // what a factory's checks throw for a value unlike what the build read
 const isCreationCheck = (observation: Observation | undefined) =>
 	typeof observation?.threw === "string" &&
@@ -450,8 +473,9 @@ export const compareWorlds = (
 		for (const kind of perturbations) {
 			const originals = original[file.path][kind]
 			if (!originals) continue
-			for (const [key, expected] of Object.entries(originals)) {
+			for (const [key, observed] of Object.entries(originals)) {
 				const actual = precompiled[file.path][kind]?.[key]
+				const expected = reportedOf(observed, actual) as Observation
 				const [id, occurrence] = key.split(":")
 				const site = occurrence ? build.sitesById[Number(id)] : key
 				const outcome =
@@ -459,7 +483,7 @@ export const compareWorlds = (
 					: comparable(actual) === comparable(expected) ?
 						(
 							comparable(expected) ===
-							comparable(original[file.path].none?.[key])
+							comparable(reportedOf(original[file.path].none?.[key], actual))
 						) ?
 							"agrees"
 						:	"agrees with the change"

@@ -1,4 +1,5 @@
 import type { PrecompileMode } from "@ark/precompile"
+import { applyCyclic, ArkTraversal, type BaseRoot } from "@ark/schema"
 import type { ArkErrors } from "@ark/schema/runtime"
 import { hasDomain } from "@ark/util"
 import { readFileSync, writeFileSync } from "node:fs"
@@ -492,6 +493,14 @@ const firstKeptOf = (errors: ArkErrors): KeptIssue[] => {
 	return [{ code, path: [...path], data }]
 }
 
+// the issues errors "all" finds, any one of which a first-issue validator returns
+const allKeptOf = (t: BaseRoot, input: unknown): KeptIssue[] => {
+	const ctx = new ArkTraversal(input, t.$.resolvedConfig)
+	if (t.includesAlias) applyCyclic(t, input, ctx)
+	else t.traverseApply(input, ctx)
+	return ctx._errors ? keptIssuesOf(ctx._errors as never, false) : []
+}
+
 const thrownKeptOf = (e: unknown): KeptIssue[] | undefined => {
 	const errors = thrownErrorsOf(e)
 	return errors && keptOf(errors)
@@ -601,20 +610,32 @@ const sample = (validate: (data: unknown) => unknown) =>
 		}
 	})
 
-// a call's output, the issues a validator keeps, or what it throws
-const outcomeOf = (call: () => unknown, input?: unknown): Observation => {
+// a call's output, the issues a validator keeps, or what it throws; anyOf
+// lists those errors "all" finds, of which a first-issue validator keeps one
+const outcomeOf = (
+	call: () => unknown,
+	input?: unknown,
+	anyOf?: () => KeptIssue[]
+): Observation => {
 	try {
 		const out: any = call()
 		return (
 				hasDomain(out, "object") &&
 					(out as { " arkKind"?: string })[" arkKind"] === "errors"
 			) ?
-				{ errors: serializeIssues(keptOf(out)) }
+				{
+					errors: serializeIssues(keptOf(out)),
+					...(anyOf && { anyOf: serializeIssues(anyOf()) })
+				}
 			:	{ out: serialize(out), isInput: out === input }
 	} catch (e) {
 		const issues = thrownKeptOf(e)
 		return issues ?
-				{ threw: "TraversalError", errors: serializeIssues(issues) }
+				{
+					threw: "TraversalError",
+					errors: serializeIssues(issues),
+					...(anyOf && { anyOf: serializeIssues(anyOf()) })
+				}
 			:	{ threw: String(e) }
 	}
 }
@@ -637,10 +658,15 @@ const observeValidation = (
 		}
 	}
 	if (typeof value !== "function") return { value: serialize(value) }
+	// arktype's first issue is matched with any errors "all" finds
+	const anyOf = (i: number) =>
+		world === "original" && firstIssue && isArk(value) && !isTypedFn(value) ?
+			() => allKeptOf(value as never, inputsOf()[i])
+		:	undefined
 	const calls = (method: (fn: any, input: unknown) => unknown) =>
 		inputsOf().map((_, i) => {
 			const input = inputsOf()[i]
-			return outcomeOf(() => method(value, input), input)
+			return outcomeOf(() => method(value, input), input, anyOf(i))
 		})
 	if (!isArk(value) || isTypedFn(value)) {
 		return {
@@ -665,7 +691,7 @@ const observeValidation = (
 		}),
 		traverse: inputsOf().map((_, i) => {
 			const input = inputsOf()[i]
-			const outcome = outcomeOf(() => traverse(t, input), input)
+			const outcome = outcomeOf(() => traverse(t, input), input, anyOf(i))
 			return {
 				...outcome,
 				...(((detailsErrors && !firstIssue) || !outcome.errors) && {
