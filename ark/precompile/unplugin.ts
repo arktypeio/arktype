@@ -1,6 +1,6 @@
 import { throwError, type KeySet } from "@ark/util"
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs"
-import { dirname, join } from "node:path"
+import { dirname, isAbsolute, join } from "node:path"
 import { relative } from "node:path/posix"
 import { createUnplugin, type UnpluginInstance } from "unplugin"
 import {
@@ -32,6 +32,7 @@ import {
 	undetailedSpecifierOf,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
+	writeUntransformedImportMessage,
 	writeUndetailedImportMessage
 } from "./host.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
@@ -113,6 +114,23 @@ export const precompile: UnpluginInstance<
 		warnedPrecompiled.add(name)
 		return writePrecompiledDependencyMessage(name)
 	}
+	const transformedFilter = transformedFilterOf(packages)
+	const warnedUntransformed = new Set<string>()
+	// e.g. a Svelte component's script, whose Types the build never sees
+	const untransformedWarningOf = (id: string, importer: string) => {
+		const file = importer.split("?")[0]
+		if (
+			!resolvesToRuntime(id, opts) ||
+			!isAbsolute(file) ||
+			dependencyOf(file) ||
+			transformedFilter.include.test(importer) ||
+			transformedFilter.include.test(file) ||
+			warnedUntransformed.has(file)
+		)
+			return
+		warnedUntransformed.add(file)
+		return writeUntransformedImportMessage(file, id, opts?.cwd ?? process.cwd())
+	}
 	let isServing = false
 	// a Vite app's environments share the declarations of the app's build
 	const declarationsByApp = new WeakMap<object, Declarations>()
@@ -162,6 +180,8 @@ export const precompile: UnpluginInstance<
 				const precompiled = precompiledWarningOf(id, importer)
 				if (precompiled) this.warn(precompiled)
 				if (!runtimeSpecifiers.includes(id)) return
+				const untransformed = untransformedWarningOf(id, importer)
+				if (untransformed) this.warn(untransformed)
 				const { errors, warnings } = await readDependency(importer)
 				for (const warning of warnings) this.warn(warning)
 				if (errors.length) return refuse(errors.join("\n"))
@@ -342,6 +362,11 @@ export const precompile: UnpluginInstance<
 								:	result
 						}
 						const { errors, warnings } = await readDependency(args.importer)
+						const untransformed = untransformedWarningOf(
+							args.path,
+							args.importer
+						)
+						if (untransformed) warnings.push(untransformed)
 						return {
 							...result,
 							errors: [...result.errors, ...errors.map(text => ({ text }))],

@@ -1,6 +1,6 @@
 import { throwError } from "@ark/util"
 import { existsSync, readFileSync, realpathSync } from "node:fs"
-import { dirname, isAbsolute, join } from "node:path"
+import { dirname, isAbsolute, join, relative } from "node:path"
 import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 import type { PrecompilePluginOptions, RenderedDiagnostics } from "./driver.ts"
@@ -274,3 +274,10 @@ export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 
 export const writePrecompiledDependencyMessage = (name: string): string =>
 	`${name} imports arktype/runtime, so it ships validators precompiled for one version of arktype, which may not be this build's. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
+
+export const writeUntransformedImportMessage = (
+	file: string,
+	specifier: string,
+	cwd: string
+): string =>
+	`${relative(cwd, file)} imports ${specifier}, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile what isn't a JavaScript or TypeScript module. Define the Types it uses in a module that is.`

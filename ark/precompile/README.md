@@ -14,7 +14,7 @@ export default defineConfig({
 })
 ```
 
-By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A definition the build can't precompile fails the build with the reasons why. A dependency that imports arktype gets `arktype/runtime` too, where defining a Type throws, so the build warns once for each such package unless it [opts in](#libraries).
+By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A definition the build can't precompile fails the build with the reasons why. A dependency that imports arktype gets `arktype/runtime` too, where defining a Type throws, so the build warns once for each such package unless it [opts in](#libraries). It warns as well for a module it can't precompile that imports `arktype`, like a Svelte component's script.
 
 `runtime: "arktype"` ships arktype instead and leaves definitions as written, registering the code arktype would compile for each. A definition the build can't precompile is then compiled at runtime as usual.
 

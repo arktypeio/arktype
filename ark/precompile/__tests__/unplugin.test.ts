@@ -12,7 +12,8 @@ import {
 import {
 	unbundledMessage,
 	writePrecompiledDependencyMessage,
-	writeUncachedModuleMessage
+	writeUncachedModuleMessage,
+	writeUntransformedImportMessage
 } from "@ark/precompile/internal/host.ts"
 import {
 	precompile,
@@ -856,6 +857,44 @@ console.log(String(Admin({ name: "Ada", email: "ada@example.com", age: 36, tags:
 	it("warns once per dependency shipping precompiled validators", async () => {
 		attest(await buildDependency("prebuilt.ts")).equals([
 			writePrecompiledDependencyMessage("prebuilt")
+		])
+	})
+
+	it("warns where a module it can't precompile imports arktype", async () => {
+		const root = writeFixture(
+			{
+				"Form.svelte":
+					'<script>\nimport { type } from "arktype"\nexport const Login = type({ user: "string" })\n</script>\n',
+				"main.js": 'import { Login } from "./Form.svelte"\nconsole.log(Login)\n'
+			},
+			fromHere("temp", "untransformed")
+		)
+		// loads a component's script, as Svelte's plugin compiles it
+		const svelte: Plugin = {
+			name: "svelte",
+			setup: build =>
+				build.onLoad({ filter: /\.svelte$/ }, args => ({
+					contents: /<script>([\S\s]*)<\/script>/.exec(
+						readFileSync(args.path, "utf8")
+					)![1],
+					loader: "js"
+				}))
+		}
+		const { warnings } = await esbuild({
+			entryPoints: [join(root, "main.js")],
+			bundle: true,
+			write: false,
+			format: "esm",
+			conditions,
+			logLevel: "silent",
+			plugins: [precompile.esbuild({ cwd: root, conditions }), svelte]
+		})
+		attest(warnings.map(warning => warning.text)).equals([
+			writeUntransformedImportMessage(
+				join(root, "Form.svelte"),
+				"arktype",
+				root
+			)
 		])
 	})
 
