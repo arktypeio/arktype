@@ -230,6 +230,14 @@ export const throwBuildError = (message: string): never => {
 	throw error
 }
 
+// what the precompiler throws to say what it can't build, not a crash,
+// whose stack would only show its frames
+export const rethrowAsBuildError = (e: unknown): never => {
+	if (e instanceof Error && (e.name === "Error" || e.name === "ParseError"))
+		e.stack = ""
+	throw e
+}
+
 export const writeUncachedModuleMessage = (
 	specifier: string,
 	dir: string

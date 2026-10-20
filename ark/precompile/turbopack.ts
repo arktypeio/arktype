@@ -11,6 +11,7 @@ import {
 	createNodeHost,
 	reportDiagnostics,
 	resolvesToRuntime,
+	rethrowAsBuildError,
 	runtimeSpecifiers,
 	throwBuildError,
 	writeAliasMessage
@@ -40,7 +41,12 @@ export default function (
 	refuseDeclare(opts, "Turbopack")
 	const precompile = (precompilersByOptions[JSON.stringify(opts)] ??=
 		createKeyedPrecompiler(opts))
-	const keyed = precompile(source, this.resourcePath)
+	let keyed: KeyedModule
+	try {
+		keyed = precompile(source, this.resourcePath)
+	} catch (e) {
+		return rethrowAsBuildError(e)
+	}
 	// before any error, so a fix to one of them reruns the loader
 	for (const file of keyed.files)
 		if (file !== this.resourcePath) this.addDependency(file)

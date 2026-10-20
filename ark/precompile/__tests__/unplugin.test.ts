@@ -1094,19 +1094,27 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 			"main.ts":
 				'import { type } from "arktype"\n\nexport const T = type(`number < ${Math.random()}`)\n'
 		})
-		const { transform } = precompile.raw(
-			{ cwd: root, conditions },
-			{ framework: "vite", versions: {} }
-		) as unknown as RawHooks
-		const thrown = await transform.handler
-			.call(
-				{ addWatchFile: () => {}, warn: () => {} },
-				readFileSync(join(root, "main.ts"), "utf8"),
-				join(root, "main.ts")
-			)
-			.catch((e: Error) => e)
-		attest([(thrown as Error).message, (thrown as Error).stack]).snap([
+		const thrownBy = async (opts: PrecompileUnpluginOptions) => {
+			const { transform } = precompile.raw(
+				{ ...opts, cwd: root, conditions },
+				{ framework: "vite", versions: {} }
+			) as unknown as RawHooks
+			const thrown = (await transform.handler
+				.call(
+					{ addWatchFile: () => {}, warn: () => {} },
+					readFileSync(join(root, "main.ts"), "utf8"),
+					join(root, "main.ts")
+				)
+				.catch((e: Error) => e)) as Error
+			return [thrown.message, thrown.stack]
+		}
+		attest(await thrownBy({})).snap([
 			'main.ts:3:18  type(`number < ${Math.random()}`) cannot be precompiled\n  `Math.random` is not one of the build\'s pure built-ins\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".',
+			""
+		])
+		// thrown by the precompiler's worker rather than reported for a module
+		attest(await thrownBy({ config: "missing.ts" })).snap([
+			"the config module missing.ts can't be read",
 			""
 		])
 	})

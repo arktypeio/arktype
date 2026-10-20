@@ -138,6 +138,20 @@ main.ts:6:18  scope({ U: { b: "string.trim" } }, { mutatesInput: "always"… can
 		])
 	})
 
+	it("reports a config module it can't read", () => {
+		const { status, stdout, stderr } = runCli(
+			cwd,
+			"--check",
+			"--config",
+			"missing.ts"
+		)
+		attest([status, stdout, stderr]).equals([
+			1,
+			"",
+			"the config module missing.ts can't be read\n"
+		])
+	})
+
 	it("fails under a rate", () => {
 		attest(runCli(cwd, "--check", "--fail-under", "50").status).equals(0)
 		attest(runCli(cwd, "--check", "--fail-under", "60").status).equals(1)

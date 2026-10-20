@@ -122,7 +122,20 @@ try {
 	fail((e as Error).message)
 }
 
-const report = check(positionals, opts)
+const report = (() => {
+	try {
+		return check(positionals, opts)
+	} catch (e) {
+		// e.g. a config module that can't be read, which the message names
+		if (
+			!(e instanceof Error) ||
+			(e.name !== "Error" && e.name !== "ParseError")
+		)
+			throw e
+		console.error(e.message)
+		process.exit(1)
+	}
+})()
 
 for (const line of report.lines) console.log(line)
 

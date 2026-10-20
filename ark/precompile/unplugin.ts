@@ -23,6 +23,7 @@ import {
 	reportDiagnostics,
 	resolvesToRuntime,
 	resolvesUndetailed,
+	rethrowAsBuildError,
 	runtimeSpecifiers,
 	throwBuildError,
 	unbundledMessage,
@@ -54,7 +55,7 @@ export const precompile: UnpluginInstance<
 		createAsyncPrecompiler({ precompilerOptions: workerOptions ?? {} })
 	let precompiler = Promise.resolve(create())
 	const request = (...message: PrecompileRequest) =>
-		precompiler.then(send => send(...message))
+		precompiler.then(send => send(...message)).catch(rethrowAsBuildError)
 	const replace = (send: ReturnType<typeof create>) => {
 		void send("close")
 		return create()
