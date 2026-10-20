@@ -40,6 +40,15 @@ contextualize(() => {
 		])
 	})
 
+	it("default only where a prop has one", () => {
+		const T = type({ "a?": "string", b: "number = 5" })
+
+		attest(T.props.map(p => [p.key, "default" in p])).snap([
+			["a", false],
+			["b", true]
+		])
+	})
+
 	it("mixed keys", () => {
 		const s = Symbol()
 		const s2 = Symbol()

@@ -232,7 +232,12 @@ export abstract class BaseNode<
 		)
 		if (attachments.kind !== "intersection") {
 			for (const k in attachments.impl.keys) {
-				if (k !== "in" && k !== "out")
+				// a prop lacks a default it doesn't have, as its type does
+				if (
+					k !== "in" &&
+					k !== "out" &&
+					(k !== "default" || "default" in attachments.inner)
+				)
 					(this as {} as dict)[k] = attachments.inner[k]
 			}
 		}

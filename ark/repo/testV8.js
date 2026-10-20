@@ -30,7 +30,7 @@ console.log("⏱️  Checking that every node of a kind has one V8 map...\n")
 // each checked kind occurs with and without some inner key, e.g. a pattern's flags
 const definitions = [
 	T,
-	{ name: "string", "nickname?": "string", "+": "reject" },
+	{ name: "string", "nickname?": "string", rank: "number = 1", "+": "reject" },
 	{ id: "string", count: ["number", "=", 0], "flags?": "string[]" },
 	{ "[string]": "number" },
 	{ "[string]": "string", "[symbol]": "number" },
@@ -54,6 +54,7 @@ const checkedKinds = [
 	"structure",
 	"required",
 	"optional",
+	"defaulted optional",
 	"index",
 	"sequence",
 	"union",
@@ -69,10 +70,16 @@ const checkedKinds = [
 	"pattern"
 ]
 
+// a default is a key only of the optional nodes that have one
+const groupOf = node =>
+	node.hasKind("optional") && node.hasDefault() ?
+		"defaulted optional"
+	:	node.kind
+
 const nodesByKind = {}
 for (const def of definitions) {
 	for (const node of type(def).internal.references)
-		(nodesByKind[node.kind] ??= new Set()).add(node)
+		(nodesByKind[groupOf(node)] ??= new Set()).add(node)
 }
 
 for (const kind of checkedKinds) {
