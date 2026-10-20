@@ -569,4 +569,16 @@ contextualize(() => {
 			}).toString()
 		).snap("layout must be an array (was string)")
 	})
+
+	it("number case includes NaN", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ a: "number.NaN | 'x'" })
+				.or({ a: "object" })
+				.or({ a: "3" })
+
+			attest(T.allows({ a: Number.NaN })).equals(true)
+			attest(T.allows({ a: 4 })).equals(false)
+		}
+	})
 })

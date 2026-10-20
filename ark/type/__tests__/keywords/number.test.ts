@@ -105,6 +105,18 @@ contextualize(() => {
 		)
 	})
 
+	it("allows number.NaN in discriminated unions", () => {
+		for (const jitless of [false, true]) {
+			const $ = type.scope({}, { jitless })
+			attest($.type("number.NaN | number | null").allows(Number.NaN)).equals(
+				true
+			)
+			attest(
+				$.type("number | number.NaN | undefined").allows(Number.NaN)
+			).equals(true)
+		}
+	})
+
 	it("allows NaN in discriminated unions with numberAllowsNaN", () => {
 		const T = rootSchema([
 			{ domain: "number", numberAllowsNaN: true },
