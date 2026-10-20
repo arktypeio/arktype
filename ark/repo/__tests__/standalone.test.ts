@@ -32,6 +32,7 @@ import {
 } from "arktype/internal/standalone.ts"
 import {
 	bakedJsonSchemaOptionsMessage,
+	throwOnDefault as runtimeThrowOnDefault,
 	type as runtimeType,
 	writeCreationMismatchMessage,
 	writeIdentityMismatchMessage,
@@ -1589,6 +1590,25 @@ name is missing`)
 		attest(await messageOf("runtime.configure({})")).equals(
 			configMismatchMessage
 		)
+	})
+
+	it("fails as only a meta says without config or meta", async () => {
+		const { Thrown, Returned } = await load(
+			{
+				Thrown: type("string").configure({
+					onFail: runtimeThrowOnDefault
+				} as never),
+				Returned: type("string")
+			},
+			{
+				configured: false,
+				errors: "none",
+				members: { assert: false, meta: false, "~standard": false }
+			}
+		)
+		attest(() => Thrown(1)).throws("is invalid")
+		attest(Returned(1).summary).equals("is invalid")
+		attest(Returned(1, null, () => "called")).equals("called")
 	})
 
 	it("throws for another configuration", async () => {

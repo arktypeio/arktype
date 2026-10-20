@@ -1723,7 +1723,13 @@ return [${returned.join(", ")}]
 		// unless shortest, the build writes the validator itself
 		const ownsValidator =
 			!isTemplate && !this.baking.shortest && members.has("methods")
-		const [applied, allows, isCompact] = this.emitRootApply(root, ownsValidator)
+		// only a config or meta sets the onFail a validator is created with
+		const unconfigured = !this.baking.readsConfig && !root.meta.onFail
+		const [applied, allows, isCompact] = this.emitRootApply(
+			root,
+			ownsValidator,
+			unconfigured
+		)
 		// emit meta before keying so an unemittable value is named
 		const meta =
 			!keepsMeta ? undefined
@@ -1798,7 +1804,7 @@ return [${returned.join(", ")}]
 		const created = `${
 			isTemplate ? "["
 			: !isCreatedByRuntime(members, this.baking) ?
-				`${this.creatorOf(members, ownsValidator, fused, !!made)}(`
+				`${this.creatorOf(members, ownsValidator, fused, !!made, unconfigured)}(`
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
@@ -1811,15 +1817,17 @@ return [${returned.join(", ")}]
 		members: ReadonlySet<ValidatorMember>,
 		ownsValidator: boolean,
 		applier?: RootApplier,
-		makes = false
+		makes = false,
+		unconfigured = false
 	): string {
 		const keepsMeta = members.has("meta")
+		const configured = keepsMeta || !unconfigured
 		const hasAttributes =
 			keepsMeta || introspectionMembers.some(member => members.has(member))
 		const call =
 			ownsValidator ?
-				"make(parts, configuredOnFail)"
-			:	`(data, pipedFromCtx, onFail = configuredOnFail) => pipedFromCtx ? runtime.${this.baking.detailsErrors ? "pipedInto" : "pipedIntoUndetailed"}(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
+				`make(parts${configured ? ", configuredOnFail" : ""})`
+			:	`(data, pipedFromCtx, onFail${configured ? " = configuredOnFail" : ""}) => pipedFromCtx ? runtime.${this.baking.detailsErrors ? "pipedInto" : "pipedIntoUndetailed"}(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
 		const body = [
 			applier ? `const rootApply = ${applier.apply}`
 			: makes ? "const rootApply = make(parts)"
@@ -1857,7 +1865,7 @@ return [${returned.join(", ")}]
 			: ["rootApply", "allows"]),
 			...(hasAttributes ? ["attributes"] : []),
 			...(this.baking.checksTypes ? ["id", "holes = []"] : []),
-			...(keepsMeta ? []
+			...(!configured || keepsMeta ? []
 			: this.baking.readsConfig ?
 				["configuredOnFail = runtime.runtimeConfig.onFail"]
 			:	["configuredOnFail"])
@@ -2106,7 +2114,8 @@ return [${returned.join(", ")}]
 
 	emitRootApply(
 		root: BaseRoot,
-		asValidator: boolean
+		asValidator: boolean,
+		unconfigured: boolean
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const callbacks = declares(
 			root,
@@ -2118,7 +2127,8 @@ return [${returned.join(", ")}]
 			return this.emitUndetailedApply(
 				root,
 				callbacks ? "Traversal" : "InternalTraversal",
-				asValidator
+				asValidator,
+				unconfigured
 			)
 		}
 		// callbacks only into runtime keywords report into ArkErrors
@@ -2242,7 +2252,8 @@ return [${returned.join(", ")}]
 	emitUndetailedApply(
 		root: BaseRoot,
 		ctx: string,
-		asValidator: boolean
+		asValidator: boolean,
+		unconfigured: boolean
 	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const strategy = root.rootApplyStrategy
 		const invalid = () =>
@@ -2316,7 +2327,7 @@ return [${returned.join(", ")}]
 			:	traversals
 		if (asValidator && parts && !body) {
 			return [
-				`((${params}, onFail) => ${this.validatorOnLoad(`(data, ...args) => ${allows}(data) ? ${valid} : ${this.readFailure("invalidCall")}(data, args, onFail)`)})`,
+				`((${params}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(`(data, ...args) => ${allows}(data) ? ${valid} : ${this.readFailure("invalidCall")}(data, args${unconfigured ? "" : ", onFail"})`)})`,
 				parts,
 				true
 			]
