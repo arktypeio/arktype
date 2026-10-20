@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { type } from "arktype"
+import { scope, type } from "arktype"
 import { writeInvalidUndeclaredBehaviorMessage } from "arktype/internal/parser/objectLiteral.ts"
 
 contextualize(() => {
@@ -146,5 +146,81 @@ b must be removed`)
 				"a must be a string or removed (was 2)"
 			)
 		})
+	})
+
+	describe("keys named after Object.prototype members", () => {
+		const getPrototypeNamedKeys = () => ({
+			a: "ok",
+			toString: 1,
+			valueOf: 1,
+			constructor: 1,
+			hasOwnProperty: 1
+		})
+
+		// JSON.parse creates an own "__proto__" key rather than setting the prototype
+		const getOwnProtoKey = () => JSON.parse(`{ "a": "ok", "__proto__": 1 }`)
+
+		const testUndeclared = (jitless: boolean) => {
+			const types = scope(
+				{
+					Deleted: { "+": "delete", a: "string" },
+					Rejected: { "+": "reject", a: "string" }
+				},
+				{ jitless }
+			).export()
+
+			attest(types.Deleted.precompilation === undefined).equals(jitless)
+
+			attest(types.Deleted(getPrototypeNamedKeys())).equals({ a: "ok" })
+			attest(Object.keys(types.Deleted(getOwnProtoKey()))).equals(["a"])
+
+			attest(types.Rejected(getPrototypeNamedKeys()).toString())
+				.snap(`toString must be removed
+valueOf must be removed
+constructor must be removed
+hasOwnProperty must be removed`)
+			attest(types.Rejected(getOwnProtoKey()).toString()).snap(
+				"__proto__ must be removed"
+			)
+		}
+
+		it("are undeclared", () => testUndeclared(false))
+
+		it("are undeclared jitless", () => testUndeclared(true))
+
+		const testDeclared = (jitless: boolean) => {
+			const types = scope(
+				{
+					Deleted: {
+						"+": "delete",
+						a: "string",
+						toString: "number",
+						["__proto__"]: "number"
+					},
+					Rejected: {
+						"+": "reject",
+						a: "string",
+						toString: "number",
+						["__proto__"]: "number"
+					}
+				},
+				{ jitless }
+			).export()
+
+			const getDeclared = () =>
+				JSON.parse(`{ "a": "ok", "toString": 1, "__proto__": 1, "b": 1 }`)
+
+			attest(Object.keys(types.Deleted(getDeclared()))).equals([
+				"a",
+				"toString",
+				"__proto__"
+			])
+			// toString is declared as a number, so stringify the errors directly
+			attest(String(types.Rejected(getDeclared()))).snap("b must be removed")
+		}
+
+		it("can be declared", () => testDeclared(false))
+
+		it("can be declared jitless", () => testDeclared(true))
 	})
 })

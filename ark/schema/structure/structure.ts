@@ -392,9 +392,14 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.optional
 	)
 
-	propsByKey: Record<Key, Prop.Node | undefined> = flatMorph(
-		this.props,
-		(i, node) => [node.key, node] as const
+	// prototype-free so keys like "toString" or an own "__proto__" are only
+	// considered declared if they are explicitly specified
+	propsByKey: Record<Key, Prop.Node | undefined> = this.props.reduce(
+		(result: Record<Key, Prop.Node | undefined>, node) => {
+			result[node.key] = node
+			return result
+		},
+		Object.create(null)
 	)
 
 	propsByKeyReference: RegisteredReference = registeredReference(
