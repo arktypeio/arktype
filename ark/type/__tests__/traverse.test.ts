@@ -556,6 +556,11 @@ d must be a number (was a string)`)
 		attest(out.summary).snap("b must be a number (was a string)")
 	})
 
+	it("issues found once read are ArkErrors", () => {
+		const out = type("string")(0)
+		attest(out.constructor).equals(type.errors)
+	})
+
 	it("issues of data made valid before they're read", () => {
 		const data: Record<string, unknown> = { a: 0 }
 		const out = type({ a: "string" })(data) as ArkErrors

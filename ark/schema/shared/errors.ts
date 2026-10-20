@@ -321,6 +321,7 @@ const UnreadErrors: UnreadErrors = /* @__PURE__ */ (() => {
 	}
 	// an ArkErrors, built without the fields its constructor sets
 	Object.setPrototypeOf(Unread.prototype, ArkErrors.prototype)
+	Object.defineProperty(Unread.prototype, "constructor", { value: ArkErrors })
 	return Unread as never
 })()
 
