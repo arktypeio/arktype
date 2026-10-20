@@ -23,6 +23,7 @@ import {
 	type NodeId,
 	type Optional,
 	type RootUnit,
+	type TraversalKind,
 	type UnionNode,
 	type UnitMember,
 	type Sequence
@@ -3131,22 +3132,52 @@ const casesFallingThrough = (body: string): string => {
 const countedCheck =
 	/^( +)const errorCount = ctx\.currentErrorCount\n +if \(!(r\d+)\(data, ctx\) && ctx\.currentErrorCount === errorCount\) {\n +return (!.+)\n +}\n +return !ctx\.failFast \|\| ctx\.currentErrorCount === errorCount\n$/
 
+// a required prop's Apply: `!ctx.failsIn(apply, value, key, site, data)`
+const appliedProp =
+	/!ctx\.failsIn\((\w+), (data(?:\.[\w$]+|\["(?:[^"\\]|\\.)*"])), "(?:[^"\\]|\\.)*", r\d+, data\)/g
+
+// a value holding no object, pattern, alias, predicate or morph, whose
+// Allows is a few checks
+const isLeaf = (node: BaseNode): boolean =>
+	isDecidedByAllows(node) &&
+	!node.includesCostly &&
+	!node.includesAlias &&
+	!Object.values(node.referencesById).some(ref => ref.hasKind("structure"))
+
 class StandaloneCompiler extends TraversalCompiler {
 	override site(node: BaseNode): string {
 		return this.ref(issueSiteOf(node.failureSite))
 	}
 
-	// a keyword check adds no issues itself, so its Apply needn't count them
+	// Allows by Apply of each leaf a prop applies
+	private readonly gates = new Map<string, string>()
+
+	override traversal(node: BaseNode, kind: TraversalKind): string {
+		const name = super.traversal(node, kind)
+		if (kind === "Apply" && this.traversalKind === "Apply" && isLeaf(node))
+			this.gates.set(name, super.traversal(node, "Allows"))
+		return name
+	}
+
 	override get body(): string {
 		const body = casesFallingThrough(super.body)
+		// a keyword check adds no issues itself, so its Apply needn't count them
 		const counted = countedCheck.exec(body)
-		if (!counted) return body
-		const [, indent, check, fail] = counted
-		for (const [value, name] of this.refs!) {
-			if (name === check && isKeyword(value))
-				return `${indent}return ${check}(data, ctx) || ${fail}\n`
+		if (counted) {
+			const [, indent, check, fail] = counted
+			for (const [value, name] of this.refs!) {
+				if (name === check && isKeyword(value))
+					return `${indent}return ${check}(data, ctx) || ${fail}\n`
+			}
 		}
-		return body
+		// a leaf its Allows passes skips the path bookkeeping of applying it
+		return body.replace(
+			appliedProp,
+			(applied, apply: string, value: string) => {
+				const allows = this.gates.get(apply)
+				return allows ? `${allows}(${value}) || ${applied}` : applied
+			}
+		)
 	}
 
 	// read at the discriminant so branches don't rerun
