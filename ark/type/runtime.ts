@@ -237,11 +237,8 @@ export const createValidatorWith = ((
 		make(parts, attributes.meta.onFail ?? runtimeConfig.onFail),
 		freeze(Validator.prototype)
 	)
-	// make writes the assert of a validator that calls its parts directly
-	validator.assert = freeze(
-		validator.assert ??
-			((data: unknown, pipedFromCtx?: Traversal) =>
-				validator(data, pipedFromCtx, throwOnFail))
+	validator.assert = freeze((data: unknown, pipedFromCtx?: Traversal) =>
+		validator(data, pipedFromCtx, throwOnFail)
 	)
 	assign(validator, attributes)
 	validator.allows = freeze(parts[0] as never)

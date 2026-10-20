@@ -2026,11 +2026,10 @@ ${writeFunction(
 		// only a config or meta sets the onFail a validator is created with
 		const unconfigured = !this.baking.readsConfig && !root.meta.onFail
 		const pipes = this.pipes(members, unconfigured)
-		const [applied, allows, isCompact, assertsItself] = this.emitRootApply(
+		const [applied, allows, isCompact] = this.emitRootApply(
 			root,
 			ownsValidator,
 			unconfigured,
-			ownsValidator && members.has("assert"),
 			pipes
 		)
 		// emit meta before keying so an unemittable value is named
@@ -2112,7 +2111,7 @@ ${writeFunction(
 		const created = `${
 			isTemplate ? "["
 			: !isCreatedByRuntime(members, this.baking) ?
-				`${this.creatorOf(members, ownsValidator, fused, !!made, unconfigured, assertsItself)}(`
+				`${this.creatorOf(members, ownsValidator, fused, !!made, unconfigured)}(`
 			: createsWith ? "runtime.createValidatorWith("
 			: "runtime.createValidator("
 		}\n\t${args.join(",\n\t")}\n${isTemplate ? "]" : ")"}`
@@ -2126,8 +2125,7 @@ ${writeFunction(
 		ownsValidator: boolean,
 		applier?: RootApplier,
 		makes = false,
-		unconfigured = false,
-		assertsItself = false
+		unconfigured = false
 	): string {
 		const keepsMeta = members.has("meta")
 		const configured = keepsMeta || !unconfigured
@@ -2147,12 +2145,9 @@ ${writeFunction(
 				"const configuredOnFail = attributes.meta.onFail ?? runtime.runtimeConfig.onFail"
 			:	"const configuredOnFail = attributes.meta.onFail",
 			`const validator = ${members.has("methods") ? `runtime.setPrototypeOf(${call}, runtime.freeze(runtime.Validator.prototype))` : call}`,
-			!members.has("assert") ? ""
-			: assertsItself ?
-				this.baking.freezes ?
-					"runtime.freeze(validator.assert)"
-				:	""
-			:	`validator.assert = ${this.frozen("(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)")}`,
+			members.has("assert") ?
+				`validator.assert = ${this.frozen("(data, pipedFromCtx) => validator(data, pipedFromCtx, runtime.throwOnDefault)")}`
+			:	"",
 			hasAttributes ? "runtime.assign(validator, attributes)" : "",
 			`validator.allows = ${this.frozen(ownsValidator || makes ? "parts[0]" : "allows")}`,
 			members.has("~standard") ?
@@ -2435,14 +2430,8 @@ ${writeFunction(
 		root: BaseRoot,
 		asValidator: boolean,
 		unconfigured: boolean,
-		asserts: boolean,
 		pipes: boolean
-	): [
-		rootApply: string | RootApplier,
-		allows: string,
-		isCompact: boolean,
-		assertsItself?: boolean
-	] {
+	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const callbacks = declares(
 			root,
 			node =>
@@ -2455,7 +2444,6 @@ ${writeFunction(
 				callbacks ? "Traversal" : "InternalTraversal",
 				asValidator,
 				unconfigured,
-				asserts,
 				pipes
 			)
 		}
@@ -2547,18 +2535,10 @@ ${writeFunction(
 				]
 			}
 			if (asValidator) {
-				const failsWith = (args: string) =>
-					`${errorsOf}CallErrors(${apply}, data, ${args}, ${unconfigured ? "null" : "onFail"}, ${Ctx})`
 				return [
-					this.makeValidator(
-						`${pattern}${unconfigured ? "" : ", onFail"}`,
-						`(data, ...args) => allows(data) ? ${valid} : ${failsWith("args")}`,
-						asserts &&
-							`(data, pipedFromCtx) => allows(data) ? ${valid} : ${failsWith("[pipedFromCtx, runtime.throwOnDefault]")}`
-					),
+					`((${pattern}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(`(data, ...args) => allows(data) ? ${valid} : ${errorsOf}CallErrors(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`)})`,
 					parts,
-					true,
-					asserts
+					true
 				]
 			}
 			return [
@@ -2611,14 +2591,8 @@ ${writeFunction(
 		ctx: string,
 		asValidator: boolean,
 		unconfigured: boolean,
-		asserts: boolean,
 		pipes: boolean
-	): [
-		rootApply: string | RootApplier,
-		allows: string,
-		isCompact: boolean,
-		assertsItself?: boolean
-	] {
+	): [rootApply: string | RootApplier, allows: string, isCompact: boolean] {
 		const strategy = root.rootApplyStrategy
 		const invalid = () =>
 			`${this.baking.shortest ? "invalid" : this.readFailure("invalid")}(data, onFail)`
@@ -2690,22 +2664,14 @@ ${writeFunction(
 				)
 			:	traversals
 		if (asValidator && parts && !body) {
-			const failsWith = (args: string) =>
-				`${this.readFailure("invalidCall")}(data, ${args}${unconfigured ? "" : ", onFail"})`
 			return [
-				pipes ?
-					this.makeValidator(
-						`${params}${unconfigured ? "" : ", onFail"}`,
-						`(data, ...args) => ${allows}(data) ? ${valid} : ${failsWith("args")}`,
-						asserts &&
-							`(data, pipedFromCtx) => ${allows}(data) ? ${valid} : ${failsWith("[pipedFromCtx, runtime.throwOnDefault]")}`
-					)
-				:	`((${params}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(
-						`(data, _, onFail) => ${allows}(data) ? ${valid} : ${this.readFailure("invalid")}(data, onFail)`
-					)})`,
+				`((${params}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(
+					pipes ?
+						`(data, ...args) => ${allows}(data) ? ${valid} : ${this.readFailure("invalidCall")}(data, args${unconfigured ? "" : ", onFail"})`
+					:	`(data, _, onFail) => ${allows}(data) ? ${valid} : ${this.readFailure("invalid")}(data, onFail)`
+				)})`,
 				parts,
-				true,
-				asserts
+				true
 			]
 		}
 		const apply =
@@ -2725,22 +2691,6 @@ ${writeFunction(
 			: `${shape}.allows`,
 			false
 		]
-	}
-
-	// an assert of its own skips the validator's arguments, and is called from each Type's site
-	makeValidator(
-		params: string,
-		validator: string,
-		assert: string | false
-	): string {
-		const validates = this.validatorOnLoad(validator)
-		return assert ?
-				`((${params}) => {
-	const validator = ${validates}
-	validator.assert = ${assert}
-	return validator
-})`
-			:	`((${params}) => ${validates})`
 	}
 
 	emitApplier(
