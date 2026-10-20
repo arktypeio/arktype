@@ -57,6 +57,29 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
+		it("reads validators created eagerly and checking nothing", () => {
+			const result = precompile(
+				`import { type } from "arktype"
+import { User } from "./user.ts"
+export const Name = type("string")
+export const Team = type({ lead: User })`,
+				{
+					"/user.ts": `import { type } from "arktype"
+export const User = type({ name: "string" })`
+				},
+				{ lazy: false, checks: "none" }
+			)
+			// the factory's parameter still evaluates
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#3"
+import { User } from "./user.ts"
+$arkfixConfig()
+export const Name = $ark#0
+export const Team = (User, $ark#2)`)
+		})
+
 		it("folds introspection", () => {
 			const result = precompile(
 				`import { type } from "arktype"

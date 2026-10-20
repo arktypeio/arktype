@@ -1317,7 +1317,9 @@ export class Precompiler {
 						...this.standalone,
 						configured,
 						bake: write => this.bake(write),
-						hoisted: this.isReachedEarly(module)
+						hoisted: this.isReachedEarly(module),
+						// shadow mode calls what it compares
+						values: !this.shadow
 					},
 					refusalsByName,
 					this.inline
@@ -1370,21 +1372,25 @@ export class Precompiler {
 				!site.introspection?.thrown &&
 				!checking.has(name)
 			if (isPure) fixedAt = Math.min(fixedAt, site.declarationStart!)
+			const isValue = validators.values.includes(name)
 			const call = `${isPure ? "/* @__PURE__ */ " : ""}${
 				this.shadow ?
 					this.shadowCallOf(site, module, factory, local, index, prefix)
 				:	`${local}(${index ?? ""}`
 			}`
 			if (!factory?.spans.length && !factory?.inputs.length)
-				s.overwrite(site.start, site.end, `${call})`)
+				s.overwrite(site.start, site.end, isValue ? local : `${call})`)
 			else {
-				// parameters stay in place, so they evaluate in order
+				// parameters stay in place, so they evaluate in order, even for a value
 				const replace = (start: number, end: number, text: string) =>
 					start === end ?
 						s.appendLeft(start, text)
 					:	s.overwrite(start, end, text)
 				let start = site.start
-				let separator = index === undefined && !this.shadow ? call : `${call}, `
+				let separator =
+					isValue ? "("
+					: index === undefined && !this.shadow ? call
+					: `${call}, `
 				for (const span of factory.spans) {
 					replace(start, span.start, separator)
 					start = span.end
@@ -1393,7 +1399,11 @@ export class Precompiler {
 				const inputs = factory.inputs.map(
 					(input, i) => (i ? ", " : separator) + input
 				)
-				replace(start, site.end, `${inputs.join("")})`)
+				replace(
+					start,
+					site.end,
+					`${inputs.join("")}${isValue ? `, ${local}` : ""})`
+				)
 			}
 			folded.push(site)
 		}
@@ -3832,7 +3842,8 @@ const noValidators: StandaloneModules = {
 	code: "",
 	modules: {},
 	folds: {},
-	checking: []
+	checking: [],
+	values: []
 }
 
 // one bad export refuses a whole artifact, so retry each alone

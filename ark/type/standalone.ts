@@ -229,6 +229,8 @@ export interface StandaloneOptions {
 	optimize?: Optimization | undefined
 	// declare functions, so an import cycle can call them early
 	hoisted?: boolean | undefined
+	// export as values what a site would call a function only to read
+	values?: boolean | undefined
 }
 
 interface Baking {
@@ -319,6 +321,8 @@ export interface StandaloneModules {
 	folds: Record<string, [name: string, index: number]>
 	// exports that check on creation, so a bundler must keep them
 	checking: string[]
+	// exports a site reads rather than calls
+	values: string[]
 }
 
 const runtimeImport = `import * as runtime from "arktype/runtime"`
@@ -328,7 +332,7 @@ export const precompileStandalone = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, folds, checking } = writeArtifact(
+	const { sections, shared, folds, checking, values } = writeArtifact(
 		exports,
 		opts,
 		false
@@ -341,7 +345,8 @@ export const precompileStandalone = (
 		]),
 		modules: {},
 		folds,
-		checking
+		checking,
+		values
 	}
 }
 
@@ -349,7 +354,7 @@ export const precompileStandaloneModules = (
 	exports: Record<string, StandaloneExport>,
 	opts: StandaloneOptions = {}
 ): StandaloneModules => {
-	const { sections, shared, imports, folds, checking } = writeArtifact(
+	const { sections, shared, imports, folds, checking, values } = writeArtifact(
 		exports,
 		opts,
 		true
@@ -372,7 +377,8 @@ export const precompileStandaloneModules = (
 		]),
 		modules,
 		folds,
-		checking
+		checking,
+		values
 	}
 }
 
@@ -386,6 +392,11 @@ const writeArtifact = (
 	const folds: StandaloneModules["folds"] = {}
 	const checking: string[] = []
 	const { configured } = opts
+	// read early, a lazy or hoisted creation must be called
+	const values: string[] | undefined =
+		isModular && opts.values && opts.lazy === false && !opts.hoisted ?
+			[]
+		:	undefined
 	const members = opts.members ?? {}
 	const baking: Baking = {
 		members: new Set([
@@ -492,13 +503,21 @@ const writeArtifact = (
 		opts,
 		baking,
 		shared,
-		imports
+		imports,
+		values
 	)
+	// a factory checking nothing it's passed is read as what it returns
+	const valueOf = (name: string): string | undefined => {
+		if (!values) return
+		const read = readOf(...reads[name])
+		const [returned, ...checks] = folded.get(name)![1].writeRekeying(read)
+		return !checks.length && returned === `return ${read}` ? read : undefined
+	}
 	// folds differing only by index share one function
 	const sharersByCode = new Map<string, string[]>()
 	for (const [name, [, artifact]] of folded) {
 		const [creation, position] = reads[name]
-		if (position === undefined) continue
+		if (position === undefined || valueOf(name) !== undefined) continue
 		const code = artifact.writeRekeying(`${creation}[index]`).join("\n")
 		sharersByCode.set(code, [...(sharersByCode.get(code) ?? []), name])
 	}
@@ -511,6 +530,13 @@ const writeArtifact = (
 		const [creation, position] = reads[name]
 		const fold = folds[name]
 		if (fold && fold[0] !== name) return ""
+		const value = valueOf(name)
+		if (value !== undefined) {
+			values!.push(name)
+			return /^[\w$]+$/.test(value) ?
+					`export { ${value} as ${JSON.stringify(name)} }`
+				:	`const factory${index} = ${value}\n\n${writeExport(name, index)}`
+		}
 		const params = artifact.factory!.params.map((_, i) => `p${i}`)
 		if (fold) params.unshift("index")
 		return `${writeFunction(baking, `factory${index}`, params.join(", "), artifact.writeRekeying(fold ? `${creation}[index]` : readOf(creation, position)).join("\n\n"))}
@@ -527,7 +553,7 @@ ${writeExport(name, index)}`
 	]
 	for (const [name, artifact] of artifactsByName)
 		if (artifact.checksAtCreation) checking.push(name)
-	return { sections, shared, imports, folds, checking }
+	return { sections, shared, imports, folds, checking, values: values ?? [] }
 }
 
 interface Creation {
@@ -556,7 +582,8 @@ const writeCreations = (
 	{ configured }: StandaloneOptions,
 	baking: Baking,
 	shared: Record<string, SharedModule>,
-	imports: Record<string, string[]>
+	imports: Record<string, string[]>,
+	values: string[] | undefined
 ): [code: string[], reads: Record<string, CreationRead>] => {
 	const names = Object.keys(types)
 	const artifactOf = (indices: number[]) => {
@@ -615,7 +642,11 @@ const writeCreations = (
 	}
 	const getters = names.flatMap((name, i) => {
 		if (folded.has(name)) return []
-		return `${writeFunction(baking, `get${i}`, "", `\treturn ${readOf(...reads[name])}`)}\n\nexport { get${i} as ${JSON.stringify(name)} }`
+		const read = readOf(...reads[name])
+		values?.push(name)
+		return values && /^[\w$]+$/.test(read) ?
+				`export { ${read} as ${JSON.stringify(name)} }`
+			:	`${values ? `const get${i} = ${read}` : writeFunction(baking, `get${i}`, "", `\treturn ${read}`)}\n\nexport { get${i} as ${JSON.stringify(name)} }`
 	})
 	return [[...code, getters.join("\n")], reads]
 }
