@@ -5,9 +5,9 @@ import { createRequire } from "node:module"
 import { dirname, join, resolve } from "node:path"
 import { threadId } from "node:worker_threads"
 import ts from "typescript"
-import type * as tsgoAst from "typescript/unstable/ast"
-import type * as tsgoFs from "typescript/unstable/fs"
-import type * as tsgoApi from "typescript/unstable/sync"
+import type * as tsgoAst from "typescript/ast"
+import type * as tsgoFs from "typescript/fs"
+import type * as tsgoApi from "typescript/sync"
 import type { LinePositionRange } from "../cache/getCachedAssertions.ts"
 import { getConfig } from "../config.ts"
 import { isTs7, narrowToNamedTestFiles } from "../utils.ts"
@@ -17,13 +17,13 @@ const requireTypeScript = createRequire(import.meta.url)
 
 // only loaded for TS 7+ so this module can be imported unconditionally
 export const ast: typeof tsgoAst =
-	isTs7 ? requireTypeScript("typescript/unstable/ast") : (undefined as never)
+	isTs7 ? requireTypeScript("typescript/ast") : (undefined as never)
 
 const { API, TypeFormatFlags }: typeof tsgoApi =
-	isTs7 ? requireTypeScript("typescript/unstable/sync") : ({} as never)
+	isTs7 ? requireTypeScript("typescript/sync") : ({} as never)
 
 const { createFileSystemLayer }: typeof tsgoFs =
-	isTs7 ? requireTypeScript("typescript/unstable/fs") : ({} as never)
+	isTs7 ? requireTypeScript("typescript/fs") : ({} as never)
 
 export const noTruncation: number = isTs7 ? TypeFormatFlags.NoTruncation : 0
 

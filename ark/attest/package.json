@@ -1,6 +1,6 @@
 {
 	"name": "@ark/attest",
-	"version": "0.57.0",
+	"version": "0.57.1",
 	"license": "MIT",
 	"author": {
 		"name": "David Blass",
@@ -52,7 +52,7 @@
 	"devDependencies": {
 		"typescript": "catalog:",
 		"typescript-6": "npm:typescript@6.0.3",
-		"typescript-7": "npm:typescript@7.1.0-dev.20261006.1"
+		"typescript-7": "npm:typescript@7.1.0-beta"
 	},
 	"peerDependencies": {
 		"typescript": "*"
