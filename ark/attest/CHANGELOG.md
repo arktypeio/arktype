@@ -2,6 +2,20 @@
 
 NOTE: This changelog is incomplete, but will include notable attest-specific changes (many updates consist almost entirely of bumped `arktype` versions for assertions).
 
+## 0.57.1
+
+### Support TypeScript 7.1 beta
+
+TypeScript 7.1 moved its native API from `typescript/unstable/*` to `typescript/*`, starting with `7.1.0-dev.20261009.1`. Attest now imports the new paths, so it works with `typescript@7.1.0-beta` and later rather than failing with `Package subpath './unstable/ast' is not defined by "exports"`. 7.1 nightlies from before `20261009` are no longer supported.
+
+### Add `onlyNamedTestFiles`
+
+With `onlyNamedTestFiles`, attest only analyzes the `*.test.*` files named on the command line rather than every file in your project, so type checking a single file takes seconds instead of minutes. Pair it with a runner invocation that only runs those files, like mocha's `--no-package`. Otherwise, the tests from files that weren't analyzed fail with "Found no assertion data".
+
+```sh
+mocha --onlyNamedTestFiles --no-package ./src/__tests__/user.test.ts
+```
+
 ## 0.57.0
 
 ### Breaking changes

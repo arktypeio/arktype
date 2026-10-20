@@ -5,7 +5,7 @@ packages:
 pnpmfile: pnpmfile.ts
 
 catalog:
-  typescript: 7.1.0-dev.20261006.1
+  typescript: 7.1.0-beta
 
 catalogs:
   # for packages that need TypeScript's JS API (keep in sync with pnpmfile.ts
