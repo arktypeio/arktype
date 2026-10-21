@@ -415,11 +415,14 @@ let constantNames: Map<unknown, string> | undefined
 const sizeOf = (root: BaseRoot): number =>
 	Object.keys(root.referencesById).length
 
-// arity and the set engine affect compiling but not the hash
+// arity, the set engine and a scope's exactOptionalPropertyTypes affect
+// compiling but not the hash
 const precompiledKeyOf = (root: BaseRoot): string => {
 	let childCounts = ""
-	for (const id in root.referencesById)
-		childCounts += `${root.referencesById[id].children.length},`
+	for (const id in root.referencesById) {
+		const node = root.referencesById[id]
+		childCounts += `${node.children.length}${node.hasKind("optional") && node.defaultsUndefined ? "u" : ""},`
+	}
 	const content =
 		root.hash.includes(`"$ark.`) ? keyRegisteredNames(root) : root.hash
 	return hashOf(`${content}\n${childCounts}\n${$ark.sets !== undefined}`)

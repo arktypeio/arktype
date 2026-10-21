@@ -390,6 +390,16 @@ contextualize(() => {
 		})
 	})
 
+	it("replaces an explicit undefined without exactOptionalPropertyTypes", () => {
+		const $ = scope({}, { exactOptionalPropertyTypes: false })
+		const T = $.type({ a: "number = 5", b: "string = 'x'" })
+		attest<{ a: number; b: string }>(T.infer)
+		attest(T({ a: undefined, b: undefined })).equals({ a: 5, b: "x" })
+		attest(T({ a: 1 })).equals({ a: 1, b: "x" })
+		const Deleted = $.type({ a: ["number", "=", () => 5], "+": "delete" })
+		attest(Deleted({ a: undefined, z: 1 })).equals({ a: 5 })
+	})
+
 	describe("string parsing", () => {
 		it("number", () => {
 			const T = type({ key: "number = 42" })
