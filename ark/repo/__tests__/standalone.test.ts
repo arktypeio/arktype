@@ -1224,7 +1224,9 @@ name is missing`)
 		const validator = create(length)
 		attest(json).snap({ in: "string", morphs: ["$ark.$hole_length"] })
 		attest(validator.json).snap({ in: "string", morphs: ["$ark.introspected"] })
-		attest(message).snap(`ToJsonSchemaError: {
+		attest(message)
+			.snap(`ToJsonSchemaError: Can't convert "morph" to JSON Schema. Configure fallback.morph to write it:
+{
     code: "morph",
     base: {
         type: "string"

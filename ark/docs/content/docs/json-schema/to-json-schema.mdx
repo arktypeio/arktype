@@ -129,7 +129,7 @@ A key that isn't `string` or a single regex, like `[string <= 3]`, needs `proper
 
 ## Fallbacks
 
-Some things a Type checks have no JSON Schema equivalent: a `Date`, a `bigint`, a morph, a `narrow`. By default, `toJsonSchema()` throws a `ToJsonSchemaError` for them:
+Some things a Type checks have no JSON Schema equivalent: a `Date`, a `bigint`, a morph, a `narrow`. By default, `toJsonSchema()` throws a `ToJsonSchemaError` for them, naming where it is and which fallback to configure:
 
 ```ts
 type({ at: "Date" }).toJsonSchema() // throws ToJsonSchemaError (code "date")

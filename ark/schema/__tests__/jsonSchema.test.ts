@@ -483,7 +483,9 @@ contextualize(() => {
 				required: [{ key: "extra", value: "string" }]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "arrayObject" to JSON Schema. Configure fallback.arrayObject to write it:
+{
     code: "arrayObject",
     base: {
         type: "array",
@@ -514,7 +516,9 @@ contextualize(() => {
 				}
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "arrayPostfix" to JSON Schema. Configure fallback.arrayPostfix to write it:
+{
     code: "arrayPostfix",
     base: {
         type: "array",
@@ -543,7 +547,9 @@ contextualize(() => {
 				]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "defaultValue" at foo to JSON Schema. Configure fallback.defaultValue to write it:
+{
     code: "defaultValue",
     base: {},
     value: 0n
@@ -556,7 +562,9 @@ contextualize(() => {
 				meta: { default: { a: 0n } }
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "defaultValue" to JSON Schema. Configure fallback.defaultValue to write it:
+{
     code: "defaultValue",
     base: {
         type: "object"
@@ -588,7 +596,9 @@ contextualize(() => {
 				]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "defaultValue" at foo to JSON Schema. Configure fallback.defaultValue to write it:
+{
     code: "defaultValue",
     base: {},
     value: 0n
@@ -598,7 +608,9 @@ contextualize(() => {
 		it("domain", () => {
 			const T = rootSchema("bigint")
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "domain" to JSON Schema. Configure fallback.domain to write it:
+{
     code: "domain",
     base: {},
     domain: "bigint"
@@ -611,7 +623,9 @@ contextualize(() => {
 				morphs: [(s: string) => Number.parseInt(s)]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "morph" to JSON Schema. Configure fallback.morph to write it:
+{
     code: "morph",
     base: {
         type: "string"
@@ -631,7 +645,9 @@ contextualize(() => {
 				undeclared: "reject"
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "indexKey" to JSON Schema. Configure fallback.indexKey to write it:
+{
     code: "indexKey",
     base: {
         type: "object",
@@ -661,7 +677,9 @@ contextualize(() => {
 				pattern: ["^a", "z$"]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "patternIntersection" to JSON Schema. Configure fallback.patternIntersection to write it:
+{
     code: "patternIntersection",
     base: {
         type: "string",
@@ -677,7 +695,9 @@ contextualize(() => {
 				pattern: [{ rule: "^a", flags: "i" }]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "patternFlags" to JSON Schema. Configure fallback.patternFlags to write it:
+{
     code: "patternFlags",
     base: {
         type: "string"
@@ -694,7 +714,8 @@ contextualize(() => {
 			})
 
 			attest(() => T.toJsonSchema({ target: "draft-07" })).throws
-				.snap(`ToJsonSchemaError: {
+				.snap(`ToJsonSchemaError: Can't convert "patternFlags" to JSON Schema. Configure fallback.patternFlags to write it:
+{
     code: "patternFlags",
     base: {
         type: "string"
@@ -712,7 +733,9 @@ contextualize(() => {
 				}
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "predicate" to JSON Schema. Configure fallback.predicate to write it:
+{
     code: "predicate",
     base: {
         type: "string"
@@ -726,7 +749,9 @@ contextualize(() => {
 				proto: Map
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "proto" to JSON Schema. Configure fallback.proto to write it:
+{
     code: "proto",
     base: {},
     proto: Function(Map)
@@ -747,7 +772,9 @@ contextualize(() => {
 		it("unit", () => {
 			const T = rootSchema({ unit: undefined })
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "unit" to JSON Schema. Configure fallback.unit to write it:
+{
     code: "unit",
     base: {},
     unit: undefined
@@ -766,7 +793,9 @@ contextualize(() => {
 						proto: () => ({ type: "object" })
 					}
 				})
-			).throws.snap(`ToJsonSchemaError: {
+			).throws
+				.snap(`ToJsonSchemaError: Can't convert "date" to JSON Schema. Configure fallback.date to write it:
+{
     code: "date",
     base: {}
 }`)
@@ -784,7 +813,9 @@ contextualize(() => {
 						proto: () => ({ type: "object" })
 					}
 				})
-			).throws.snap(`ToJsonSchemaError: {
+			).throws
+				.snap(`ToJsonSchemaError: Can't convert "date" to JSON Schema. Configure fallback.date to write it:
+{
     code: "date",
     base: {}
 }`)

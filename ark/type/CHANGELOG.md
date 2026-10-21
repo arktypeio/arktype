@@ -301,6 +301,17 @@ A `string.regex` error's problem was the bare `SyntaxError` the pattern threw. I
 type("string.regex")("(")
 ```
 
+### Name the code, path and fallback in a `ToJsonSchemaError`
+
+A `ToJsonSchemaError`'s message was only its printed context. It now starts with a sentence naming its code, where in the Type the part it couldn't convert is, and the `fallback` to configure:
+
+```ts
+// was: ToJsonSchemaError: { code: "date", base: {} }
+// now: ToJsonSchemaError: Can't convert "date" at user.createdAt to JSON Schema. Configure fallback.date to write it:
+//      { code: "date", base: {} }
+type({ user: { createdAt: "Date" } }).toJsonSchema()
+```
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:
