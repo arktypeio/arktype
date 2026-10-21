@@ -1410,6 +1410,103 @@ const T = type({ age: z.number() })
 T({ age: "x" }).toString()
 ```
 
+## 2.2.9
+
+### Keep tuple elements around defaults in `.in` and `.out`
+
+Combining a tuple's defaultable elements with its other elements dropped some of them, depending on key order:
+
+```ts
+const T = type(["string", "number = 5", "boolean?"])
+
+// was: [string, boolean?]
+// now: [string, number?, boolean?]
+T.in.expression
+
+// was: number[]
+// now: [number, string, ...number[]]
+type(["number", "string = 'foo'", "...", "number[]"]).out.expression
+```
+
+A bound that narrows two existing length constraints at once also no longer throws "multiple distinct intersection results":
+
+```ts
+// was: throws
+// now: string == 2
+type("1 <= string <= 2").and("string >= 2")
+```
+
+Thanks to @ybai08 (#1696).
+
+### Reject `NaN` in unions discriminated by `typeof`
+
+`number` rejects `NaN`, but compiled unions like `number | null` dropped that check when they discriminated by `typeof`, so `NaN` was only rejected with `jitless` (#1702).
+
+```ts
+const T = type("number | null")
+
+// was: NaN
+// now: ArkErrors: must be a number (was NaN)
+T(NaN)
+```
+
+Thanks to @thecotne.
+
+### Don't treat `Object.prototype` keys as declared
+
+Inherited names like `toString` or `constructor`, and an own `__proto__` key like the one `JSON.parse` creates, were treated as declared keys, so `"+": "delete"` kept them and `"+": "reject"` accepted them (#1701).
+
+```ts
+const T = type({ a: "string", "+": "reject" })
+
+// was: { a: "x", constructor: 1 }
+// now: ArkErrors: constructor must be removed
+T({ a: "x", constructor: 1 })
+```
+
+Thanks to @thecotne.
+
+### Only emit referenced `$defs` in `toJsonSchema`
+
+With `useRefs`, or for a cyclic type, every node a type referenced was written to `$defs`, including discriminated union cases that never appear in the output. Some of those couldn't be converted, so `toJsonSchema()` threw `Unexpected JSON Schema input for structure: {}` (#1689, fixes #1612, #1511 and #1546).
+
+```ts
+const T = type.or(
+	{ a: type.enumerated("a", "b", "c"), b: "1" },
+	{ a: type.enumerated("a", "e", "f"), b: "2" }
+)
+
+// was: throws
+// now: only the $defs that a $ref points to
+T.toJsonSchema({ useRefs: true })
+```
+
+Thanks to @giaBaoJS.
+
+### Convert unrepresentable types in `~standard.jsonSchema` instead of throwing
+
+`~standard.jsonSchema.input` and `.output` now throw only for an unsupported `target`, i.e. one other than `draft-2020-12` or `draft-07`. Parts of a type that JSON Schema can't represent are converted instead (#1694):
+
+- a predicate, a second pattern, a `Date` bound or an array's non-index props is dropped from the schema it constrains
+- `bigint`, `symbol`, a non-JSON unit like `undefined` and any prototype other than `Array` become `{}`
+- a variadic tuple with postfix elements keeps its prefix and `minItems`, but not its `items`
+- a default that isn't JSON is omitted
+
+```ts
+const T = type({
+	big: "bigint",
+	even: type("number").narrow(n => n % 2 === 0)
+})
+
+// was: throws
+// now: { type: "object", properties: { big: {}, even: { type: "number" } }, ... }
+T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+```
+
+Fallbacks from a scope's `toJsonSchema` config or from `libraryOptions` still take precedence, and `toJsonSchema()` itself still throws by default.
+
+A `defaultValue` fallback can now return `undefined` to omit the default rather than writing `default: undefined`.
+
 ## 2.2.8
 
 ### Add `string.base58`

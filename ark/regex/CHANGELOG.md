@@ -14,6 +14,20 @@ regex("^(?:(?<a>1)|(?<b>2)|(?<c>3))$").inferCaptures
 
 https://github.com/arktypeio/arktype/issues/1530
 
+## 0.0.14
+
+### allow `}` to be escaped
+
+`\}` was a type error as an unnecessary escape, though the `u` and `v` flags require it to match `}` literally (#1691).
+
+```ts
+// was: type error
+// now: Regex<"a{b}", { flags: "u" }>
+regex("^a\\{b\\}$", "u")
+```
+
+Thanks to @cpruijsen.
+
 ## 0.0.6
 
 ### include the empty string when a zero-min quantifier applies to a number pattern
