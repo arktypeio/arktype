@@ -4,7 +4,8 @@ import {
 	node,
 	type Intersection,
 	type JsonSchema,
-	type NodeInput
+	type NodeInput,
+	type Predicate
 } from "@ark/schema"
 import {
 	cached,
@@ -62,6 +63,18 @@ export const regexStringNode = (
 
 	return node("intersection", input) as never
 }
+
+// a string its keyword's predicate checks
+const predicateStringNode = (
+	predicate: Predicate,
+	alias: KeywordPhraseAlias,
+	meta?: ArkEnv.meta
+): Intersection.Node =>
+	node("intersection", {
+		domain: node("domain", { domain: "string" }),
+		predicate: [node("predicate", { meta: keywordMeta(alias), predicate })],
+		...(meta && { meta })
+	}) as never
 
 const stringIntegerRoot = cached(() =>
 	regexStringNode(wellFormedIntegerMatcher, "string.integer")
@@ -274,15 +287,7 @@ export const tryParseDatePattern = (
 }
 
 const parsableDate = cached(() =>
-	node("intersection", {
-		domain: node("domain", { domain: "string" }),
-		predicate: [
-			node("predicate", {
-				meta: keywordMeta("string.date"),
-				predicate: isParsableDate
-			})
-		]
-	}).assertHasKind("intersection")
+	predicateStringNode(isParsableDate, "string.date")
 )
 
 const epochRoot = cached(() =>
@@ -432,16 +437,7 @@ export declare namespace ip {
 }
 
 const jsonRoot = () =>
-	node("intersection", {
-		meta: keywordMeta("string.json"),
-		domain: node("domain", { domain: "string" }),
-		predicate: [
-			node("predicate", {
-				meta: keywordMeta("string.json"),
-				predicate: isJsonString
-			})
-		]
-	})
+	predicateStringNode(isJsonString, "string.json", keywordMeta("string.json"))
 
 export const json: stringJson.module = keywordModule(
 	{
@@ -671,16 +667,7 @@ export declare namespace stringNumeric {
 }
 
 const regex = () =>
-	node("intersection", {
-		domain: node("domain", { domain: "string" }),
-		predicate: [
-			node("predicate", {
-				meta: keywordMeta("string.regex"),
-				predicate: isRegexPattern
-			})
-		],
-		meta: { format: "regex" }
-	})
+	predicateStringNode(isRegexPattern, "string.regex", { format: "regex" })
 
 const semverMatcher =
 	/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-((?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*)(?:\.(?:0|[1-9]\d*|\d*[A-Za-z-][\dA-Za-z-]*))*))?(?:\+([\dA-Za-z-]+(?:\.[\dA-Za-z-]+)*))?$/
@@ -752,18 +739,9 @@ declare namespace upper {
 }
 
 const urlRoot = cached(() =>
-	node("intersection", {
-		domain: node("domain", { domain: "string" }),
-		predicate: [
-			node("predicate", {
-				meta: keywordMeta("string.url"),
-				predicate: isParsableUrl
-			})
-		],
-		// URL.canParse allows a subset of the RFC-3986 URI spec
-		// since there is no other serializable validation, best include a format
-		meta: { format: "uri" }
-	})
+	// URL.canParse allows a subset of the RFC-3986 URI spec
+	// since there is no other serializable validation, best include a format
+	predicateStringNode(isParsableUrl, "string.url", { format: "uri" })
 )
 
 export const url: url.module = keywordModule(
