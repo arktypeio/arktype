@@ -383,7 +383,7 @@ importers:
         specifier: workspace:*
         version: link:../type
       fast-check:
-        specifier: '3'
+        specifier: 3 || 4
         version: 3.23.2
 
   ark/fs: {}

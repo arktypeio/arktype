@@ -1,7 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { arkToArbitrary } from "@ark/fast-check/internal/arktypeFastCheck.ts"
 import { scope, type } from "arktype"
-import { type Arbitrary, assert, property } from "fast-check"
+import { type Arbitrary, assert, property, sample } from "fast-check"
 import { describe } from "mocha"
 
 contextualize(() => {
@@ -147,6 +147,15 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("unsupported class", () => {
+			class Foo {}
+			attest(() => arkToArbitrary(type.instanceOf(Foo))).throws(
+				"Foo instances can't be generated"
+			)
+			attest(() => arkToArbitrary(type({ m: "Map" }))).throws(
+				"Map instances can't be generated"
+			)
+		})
 	})
 
 	describe("array", () => {
@@ -172,6 +181,11 @@ contextualize(() => {
 		})
 		it("bounded array", () => {
 			const T = type("3<number[]<=5")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("exact length", () => {
+			const T = type("string[] == 2")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
@@ -330,6 +344,10 @@ contextualize(() => {
 			const T = type("Date")
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
+		})
+		it("no invalid Date", () => {
+			const dates = sample(arkToArbitrary(type("Date")), 10_000) as Date[]
+			attest(dates.filter(d => Number.isNaN(d.getTime()))).equals([])
 		})
 		it("bounded date", () => {
 			const T = type("d'2001-10-10'<Date<=d'2005-10-10'")

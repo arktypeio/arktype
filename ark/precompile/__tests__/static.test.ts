@@ -317,7 +317,7 @@ const T = type({ a: "string.trim" })
 const I = T.in
 const label = () => T.out.expression`)
 			).snap([
-				"2:11 accepted { a: (In: string) => Out</^\\S.*\\S$|^\\S?$/> }",
+				"2:11 accepted { a: (In: string) => Out</^\\S[\\S\\s]*\\S$|^\\S?$/> }",
 				"3:11 accepted { a: string }",
 				"4:21 accepted"
 			])

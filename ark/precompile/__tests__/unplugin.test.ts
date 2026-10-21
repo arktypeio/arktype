@@ -754,7 +754,7 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 			moduleIds.filter(id => id.startsWith("\0~arktype/")).length
 		const first = await build()
 		const second = await build()
-		attest([unitModulesOf(first), unitModulesOf(second)]).snap([31, 27])
+		attest([unitModulesOf(first), unitModulesOf(second)]).snap([30, 27])
 		attest(run(second.code)).equals(expected)
 	})
 

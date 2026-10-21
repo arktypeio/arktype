@@ -21,14 +21,10 @@ const abc = regex("^[abc]$")
 
 An inferred type is meant to include every string the expression matches. These currently don't:
 
-- `\d` next to an unanchored start or end of a pattern, or followed by `.` or `\w` at the end of a group, infers only `` `${number}` ``. `regex("\\d+")` and ArkType's `type("/\\d+/")` both infer `` `${number}` ``, but match `"abc1"`.
-- `\s` infers `" " | "\n" | "\t"`, but also matches `"\r"`, `"\f"`, `"\v"` and Unicode spaces.
+- `\d` next to an unanchored start or end of a pattern, or followed by `.` or `\w` at the end of a group, infers only `` `${number}` ``. `regex("\\d")` and ArkType's `type("/\\d/")` both infer `` `${number}` ``, but match `"abc1"`.
+- A bounded run of more than 308 digits, like `\d{309}`, infers `` `${number}` ``, which can't hold a number that large. An unbounded run like `\d+` infers `string`.
 - The `i` flag isn't applied to character sets, and a backreference repeats its group's exact case: `regex("^[ab]$", "i")` infers `"a" | "b"` but matches `"A"`, and `regex("^(a)\\1$", "i")` infers `"aa" | "AA"` but matches `"aA"`.
-- The `m` flag doesn't affect `^` and `$`: `regex("^abc$", "m")` infers `"abc"`, but matches `"x\nabc"`.
-- `"[\\b]"` infers `""`, but matches a backspace character.
-- A capture inside a lookaround isn't counted, so later captures get the wrong index.
 - The `v` flag's nested classes and set operations, like `[[a-z]--[aeiou]]`, aren't parsed.
-- A character set containing an escape that's an error elsewhere, like `"[\\/]"` or `"[\\n]"`, infers the error message as its pattern instead of reporting it.
 
 `.test()` narrows its input in both branches, so the `false` branch removes strings that didn't match whenever the inferred type was widened:
 

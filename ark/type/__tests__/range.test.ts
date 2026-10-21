@@ -17,6 +17,7 @@ import {
 	writeOpenRangeMessage,
 	writeUnpairableComparatorMessage
 } from "arktype/internal/parser/reduce/shared.ts"
+import { writeMissingRightOperandMessage } from "arktype/internal/parser/shift/operand/unenclosed.ts"
 import { writeInvalidLimitMessage } from "arktype/internal/parser/shift/operator/bounds.ts"
 
 contextualize(() => {
@@ -194,6 +195,19 @@ contextualize(() => {
 			const Expected = type("string")
 
 			attest(T.expression).equals(Expected.expression)
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1213
+		it("missing right operand", () => {
+			// @ts-expect-error
+			attest(() => type("number >=")).throwsAndHasTypeError(
+				writeMissingRightOperandMessage(">=")
+			)
+		})
+
+		it("missing operand after a left bound", () => {
+			// @ts-expect-error
+			attest(() => type("5 <")).throws(writeMissingRightOperandMessage("<"))
 		})
 
 		it("invalid left comparator", () => {

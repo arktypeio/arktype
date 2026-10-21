@@ -45,6 +45,6 @@
 		"access": "public"
 	},
 	"peerDependencies": {
-		"fast-check": "3"
+		"fast-check": "3 || 4"
 	}
 }

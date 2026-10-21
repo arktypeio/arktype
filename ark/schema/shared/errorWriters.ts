@@ -39,6 +39,12 @@ export const writeMessage: MessageWriter = ctx => {
 		:	`${propString} ${ctx.problem}`
 }
 
+// constraints described alike, like those under one configured message,
+// are written once
+const distinctExpectedOf = (errors: readonly ArkError[]): string[] => [
+	...new Set(errors.map(e => e.expected))
+]
+
 // one writer per slot for each kind that doesn't write its own, so en can tell
 // which are its kind's
 export const errorWriters: {
@@ -60,9 +66,16 @@ export const errorWritersByCode: {
 	domain: { actual: writeDomainActual },
 	exactLength: { actual: writeLengthActual },
 	intersection: {
-		expected: source =>
-			`  ◦ ${source.errors.map(e => e.expected).join("\n  ◦ ")}`,
-		problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
+		expected: source => {
+			const expected = distinctExpectedOf(source.errors)
+			return expected.length === 1 ?
+					expected[0]
+				:	`  ◦ ${expected.join("\n  ◦ ")}`
+		},
+		problem: (ctx, info) =>
+			distinctExpectedOf(ctx.errors).length === 1 ?
+				writeProblem(ctx, info)
+			:	`(${ctx.actual}) must be...\n${ctx.expected}`
 	},
 	max: {},
 	maxLength: { actual: writeLengthActual },
@@ -127,8 +140,12 @@ export const errorWritersByCode: {
 		},
 		// its message doesn't show it, so data that may be large isn't printed
 		actual: printKind,
-		problem: ctx => ctx.expected,
-		message: ({ problem }) => {
+		// a union without branches, like never, has no errors to read paths from
+		problem: (ctx, info) =>
+			ctx.errors.length ? ctx.expected : writeProblem(ctx, info),
+		message: (ctx, info) => {
+			if (!ctx.errors.length) return writeMessage(ctx, info)
+			const problem = ctx.problem
 			// text it wrote starts as its first path does
 			if (problem === written ? bracketed : problem[0] === "[")
 				return `value at ${problem}`

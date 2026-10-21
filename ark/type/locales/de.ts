@@ -271,7 +271,7 @@ const keywordPhrases = {
 		actual: (data, e, locale) => (data === "" ? "leer" : print(data, locale)),
 		problem: jsonProblem
 	},
-	"string.lower.preformatted": "eine Folge von Kleinbuchstaben (a-z)",
+	"string.lower.preformatted": "kleingeschrieben",
 	"string.normalize.NFC.preformatted": "NFC-normalisiert",
 	"string.normalize.NFD.preformatted": "NFD-normalisiert",
 	"string.normalize.NFKC.preformatted": "NFKC-normalisiert",
@@ -286,7 +286,7 @@ const keywordPhrases = {
 	},
 	"string.semver": "eine semantische Version (siehe https://semver.org/)",
 	"string.trim.preformatted": "ohne Leerraum am Anfang und Ende",
-	"string.upper.preformatted": "eine Folge von Großbuchstaben (A-Z)",
+	"string.upper.preformatted": "durchgehend großgeschrieben",
 	"string.url": "eine URL",
 	"string.url.parse": "eine URL",
 	"string.uuid": "eine UUID",

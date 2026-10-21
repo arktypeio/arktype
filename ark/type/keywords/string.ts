@@ -138,7 +138,7 @@ declare namespace base64 {
 }
 
 const preformattedCapitalize = cached(() =>
-	regexStringNode(/^[A-Z].*$/, "string.capitalize.preformatted")
+	regexStringNode(/^(?:[^a-z][\S\s]*)?$/, "string.capitalize.preformatted")
 )
 
 export const capitalize: capitalize.module = keywordModule(
@@ -467,7 +467,7 @@ export declare namespace stringJson {
 }
 
 const preformattedLower = cached(() =>
-	regexStringNode(/^[a-z]*$/, "string.lower.preformatted")
+	regexStringNode(/^[^A-Z]*$/, "string.lower.preformatted")
 )
 
 const lower: lower.module = keywordModule(
@@ -510,6 +510,7 @@ const preformattedNodes = flatMorph(
 					domain: node("domain", { domain: "string" }),
 					predicate: [
 						node("predicate", {
+							meta: keywordMeta(`string.normalize.${form}.preformatted`),
 							predicate: normalizationsByForm[form].predicate
 						})
 					],
@@ -677,7 +678,7 @@ const semver = () => regexStringNode(semverMatcher, "string.semver")
 const preformattedTrim = cached(() =>
 	regexStringNode(
 		// no leading or trailing whitespace
-		/^\S.*\S$|^\S?$/,
+		/^\S[\S\s]*\S$|^\S?$/,
 		"string.trim.preformatted"
 	)
 )
@@ -709,7 +710,7 @@ export declare namespace trim {
 }
 
 const preformattedUpper = cached(() =>
-	regexStringNode(/^[A-Z]*$/, "string.upper.preformatted")
+	regexStringNode(/^[^a-z]*$/, "string.upper.preformatted")
 )
 
 const upper: upper.module = keywordModule(
@@ -776,17 +777,13 @@ const uuidVersions = [1, 2, 3, 4, 5, 6, 7, 8] as const
 // based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 export const uuid: uuid.module = keywordModule(
 	{
-		// the meta tuple expression ensures the error message does not delegate
-		// to the individual branches, which are too detailed
 		root: [
-			"versioned | nil | max",
+			// one pattern rather than a union with the nil and max literals, which
+			// as an index signature's key would make them required keys
+			/^(?:[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$/,
 			"@",
 			{ ...keywordMeta("string.uuid"), format: "uuid" }
 		],
-		"#nil": "'00000000-0000-0000-0000-000000000000'",
-		"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
-		"#versioned":
-			/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
 		...flatMorph(uuidVersions, (i, version) => [
 			`v${version}`,
 			() =>
@@ -794,7 +791,8 @@ export const uuid: uuid.module = keywordModule(
 					new RegExp(
 						`^[\\dA-Fa-f]{8}-[\\dA-Fa-f]{4}-${version}[\\dA-Fa-f]{3}-[89ABab][\\dA-Fa-f]{3}-[\\dA-Fa-f]{12}$`
 					),
-					`string.uuid.v${version}`
+					`string.uuid.v${version}`,
+					"uuid"
 				)
 		])
 	},

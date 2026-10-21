@@ -3,7 +3,7 @@
 Generate [fast-check](https://fast-check.dev) arbitraries from ArkType Types, so property-based tests generate data from the definition you validate with.
 
 ```sh
-npm i -D @ark/fast-check fast-check@3
+npm i -D @ark/fast-check fast-check
 ```
 
 ```ts

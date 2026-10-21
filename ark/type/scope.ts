@@ -55,6 +55,7 @@ import type { DeclarationParser } from "./declare.ts"
 import { InternalFnParser, type FnParser } from "./fn.ts"
 import {
 	parseGenericParamName,
+	type Generic,
 	type GenericDeclaration,
 	type GenericParser,
 	type ParameterString,
@@ -270,6 +271,8 @@ export class InternalScope<$ extends {} = {}> extends BaseScope<$> {
 		}
 
 		const name = alias.slice(0, firstParamIndex)
+		if (hasArkKind(def, "generic"))
+			throwParseError(writeParameterizedGenericKeyMessage(name))
 		const paramString = alias.slice(firstParamIndex + 1, -1)
 		const genericName = name[0] === "#" ? name.slice(1) : name
 
@@ -411,6 +414,14 @@ export const keywordModule = (
 	return module
 }
 
+export const writeParameterizedGenericKeyMessage = <name extends string>(
+	name: name
+): writeParameterizedGenericKeyMessage<name> =>
+	`${name} is defined by a generic, so its key must not declare parameters`
+
+export type writeParameterizedGenericKeyMessage<name extends string> =
+	`${name} is defined by a generic, so its key must not declare parameters`
+
 export const scope: ScopeParser = Object.assign(InternalScope.scope, {
 	define: (def: unknown) => def as never
 } satisfies ScopeParserAttachments)
@@ -433,6 +444,12 @@ export declare namespace scope {
 						ErrorType<writeDuplicateAliasError<name>>
 					:	// inferring def through the shallow cycle check would expand it for every key
 						NoInfer<validateAlias<k, def[k], bootstrapAliases<def>>>
+				: def[k] extends Generic ?
+					ErrorType<
+						writeParameterizedGenericKeyMessage<
+							parseScopeKey<k, def>["name"] & string
+						>
+					>
 				:	type.validate<
 						def[k],
 						bootstrapAliases<def>,

@@ -947,6 +947,19 @@ contextualize(() => {
 		).type.errors("d must be a possible string value")
 	})
 
+	it("string keys are values, not definitions", () => {
+		const kindOf = match.in("string").strings({
+			number: s => s,
+			"string[]": s => s,
+			default: "reject"
+		})
+		attest<"number" | ArkErrors>(kindOf("number")).equals("number")
+		attest(kindOf("string[]")).equals("string[]")
+		attest(kindOf("5").toString()).snap(
+			'must be "number" or "string[]" (was "5")'
+		)
+	})
+
 	it("string cases no default", () => {
 		const check = match
 			.at("foo")

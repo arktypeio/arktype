@@ -55,7 +55,7 @@ const T = jsonSchemaToType({
 })
 
 T.allows("a") // true
-// ArkErrors: must be not 0 (was 0)
+// ArkErrors: must be anything but 0 (was 0)
 T(0)
 ```
 

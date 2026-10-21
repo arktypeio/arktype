@@ -161,9 +161,15 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 
 	private _discriminantDescription: string | undefined
 	get discriminantDescription(): string {
-		return (this._discriminantDescription ??= describeCases(
-			this.discriminantCases
-		))
+		return (this._discriminantDescription ??=
+			// a description written for the union describes its own value
+			(
+				this.discriminant!.path.length === 0 &&
+				this.meta.description !== undefined &&
+				this.meta.keyword === undefined
+			) ?
+				this.meta.description
+			:	describeCases(this.discriminantCases))
 	}
 
 	// a standalone issue reads only the union's description

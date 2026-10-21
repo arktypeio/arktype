@@ -31,6 +31,13 @@ contextualize(() => {
 		attest(tMinProperties.allows({ foo: 1, bar: 2, baz: 3 })).equals(true)
 	})
 
+	it("minProperties of 1 message", () => {
+		const T = jsonSchemaToType({ type: "object", minProperties: 1 })
+		attest(() => T.assert({})).throws.snap(
+			"TraversalError: must be an object with at least 1 property (was an object)"
+		)
+	})
+
 	it("properties & required", () => {
 		const tRequired = jsonSchemaToType({
 			type: "object",

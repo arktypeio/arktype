@@ -22,6 +22,7 @@ import {
 import type { s, StaticState } from "../../reduce/static.ts"
 import { extractDateLiteralSource, isDateLiteral } from "../operand/date.ts"
 import type { parseOperand } from "../operand/operand.ts"
+import { writeMissingRightOperandMessage } from "../operand/unenclosed.ts"
 
 export const parseBound = (
 	s: RootedRuntimeState,
@@ -157,6 +158,8 @@ export const parseRightBound = (
 	s: RootedRuntimeState,
 	comparator: Comparator
 ): void => {
+	if (s.scanner.unscanned.trimStart() === "")
+		return s.error(writeMissingRightOperandMessage(comparator))
 	// store the node that will be bounded
 	const previousRoot = s.unsetRoot()
 	const previousScannerIndex = s.scanner.location
@@ -215,7 +218,9 @@ export type parseRightBound<
 	$,
 	args
 > =
-	parseOperand<s, $, args> extends infer nextState extends StaticState ?
+	Scanner.skipWhitespace<s["unscanned"]> extends "" ?
+		s.error<writeMissingRightOperandMessage<comparator>>
+	: parseOperand<s, $, args> extends infer nextState extends StaticState ?
 		nextState["root"] extends (
 			InferredAst<unknown, `${infer limit extends number | DateLiteral}`>
 		) ?

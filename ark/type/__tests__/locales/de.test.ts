@@ -155,9 +155,9 @@ contextualize(() => {
 				"a fehlt (muss ein Wert gemäß der Beschreibung „ein x“ sein)",
 			"required instanceOf ← {}": "a fehlt (muss eine Instanz von Foo sein)",
 			"required string.uuid | number ← {}":
-				"a fehlt (muss eine Zahl, eine Zeichenkette oder eine UUID sein)",
+				"a fehlt (muss eine Zahl oder eine Zeichenkette sein)",
 			"required string.email | string.uuid ← {}":
-				"a fehlt (muss eine Zeichenkette oder eine UUID sein)",
+				"a fehlt (muss eine Zeichenkette sein)",
 			"required string.date.epoch.parse ← {}":
 				"a fehlt (muss ein gültiger Unix-Zeitstempel als ganzzahlige Zeichenkette sein)",
 			"required number.epoch ← {}": "a fehlt (muss eine Zahl sein)",
@@ -280,8 +280,8 @@ contextualize(() => {
 			'string.json ← "x"': "muss eine JSON-Zeichenkette sein (⟨SyntaxError⟩)",
 			'string.json.parse ← "x"':
 				"muss eine JSON-Zeichenkette sein (⟨SyntaxError⟩)",
-			'string.lower.preformatted ← " x"':
-				'muss eine Folge von Kleinbuchstaben (a-z) sein, ist aber " x"',
+			'string.lower.preformatted ← "X"':
+				'muss kleingeschrieben sein, ist aber "X"',
 			'string.numeric ← "x"':
 				'muss eine wohlgeformte numerische Zeichenkette sein, ist aber "x"',
 			'string.regex ← "("':
@@ -291,7 +291,7 @@ contextualize(() => {
 			'string.trim.preformatted ← " x"':
 				'muss ohne Leerraum am Anfang und Ende sein, ist aber " x"',
 			'string.upper.preformatted ← "x"':
-				'muss eine Folge von Großbuchstaben (A-Z) sein, ist aber "x"',
+				'muss durchgehend großgeschrieben sein, ist aber "x"',
 			'string.url ← "x"': 'muss eine URL sein, ist aber "x"',
 			'string.url.parse ← "x"': 'muss eine URL sein, ist aber "x"',
 			'string.uuid ← "x"': 'muss eine UUID sein, ist aber "x"',

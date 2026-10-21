@@ -27,7 +27,7 @@ contextualize(() => {
 		attest(tNot.allows(123)).equals(true)
 		attest(tNot.allows("1234")).equals(true)
 		attest(() => tNot.assert("123")).throws.snap(
-			'TraversalError: must be not a string and at most length 3 (was "123")'
+			'TraversalError: must be anything but a string and at most length 3 (was "123")'
 		)
 	})
 

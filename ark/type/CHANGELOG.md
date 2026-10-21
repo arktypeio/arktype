@@ -1482,6 +1482,169 @@ const T = type({ age: z.number() })
 T({ age: "x" }).toString()
 ```
 
+### Accept multi-line strings in `string.trim.preformatted`
+
+`string.trim.preformatted` rejected any string with a line break, so a multi-line string `string.trim` had trimmed failed to encode:
+
+```ts
+const T = type({ bio: "string.trim" })
+
+// was: ArkErrors: bio must be trimmed (was "a\nb")
+// now: { bio: "a\nb" }
+T.encode(T.assert({ bio: " a\nb " }))
+```
+
+### Accept what `string.lower`, `string.upper` and `string.capitalize` output
+
+Their `.preformatted` keywords, which are also their outputs, accepted only ASCII letters, so most strings the morphs returned failed to encode. `string.lower.preformatted` now accepts any string without an uppercase ASCII letter, `string.upper.preformatted` any string without a lowercase one, and `string.capitalize.preformatted` the empty string and any string not starting with a lowercase one:
+
+```ts
+const T = type({ tag: "string.lower" })
+
+// was: ArkErrors: tag must be only lowercase letters (was "foo bar")
+// now: { tag: "foo bar" }
+T.encode(T.assert({ tag: "Foo Bar" }))
+```
+
+Their descriptions are now "lowercase" and "uppercase".
+
+### Make `.strings` on a matcher stable
+
+`.strings` on a matcher with an input, from `.in(...)` or `.at(key)`, matches each key as a string value rather than a definition, so a key needs no quotes and `number` matches the string `"number"`. Its types are much cheaper to check than `.match` with quoted literals (#1334):
+
+```ts
+const area = match
+	.in<{ kind: "circle"; r: number } | { kind: "square"; side: number }>()
+	.at("kind")
+	.strings({
+		circle: c => Math.PI * c.r ** 2,
+		square: s => s.side ** 2,
+		default: "assert"
+	})
+
+// 4
+area({ kind: "square", side: 2 })
+```
+
+### Write a path and a problem for a value that must be `never`
+
+The message of an error from `never` was only `never`:
+
+```ts
+const T = type({ "files?": "never" })
+
+// was: never
+// now: files must be never (was 1)
+T({ files: 1 }).toString()
+```
+
+### Describe keywords checked by a predicate by their phrase alone
+
+The descriptions of keywords like `string.url`, `string.date` and `string.creditCard` repeated their basis or their phrase (#1300), and `string.normalize`'s `.preformatted` keywords rejected data as "valid according to predicate":
+
+```ts
+// was: a string and a URL string
+// now: a URL string
+type("string.url").description
+
+// was: a credit card number and a credit card number
+// now: a credit card number
+type("string.creditCard").description
+
+// was: must be valid according to predicate (was "é")
+// now: must be NFC-normalized unicode (was "é")
+type("string.normalize.NFC.preformatted")("é").toString()
+```
+
+### Throw a `ToJsonSchemaError` for a named symbol key
+
+Converting a Type with a named symbol key threw a `TypeError` while writing the `ToJsonSchemaError` meant to report it:
+
+```ts
+// was: TypeError: Cannot convert a Symbol value to a string
+// now: ToJsonSchemaError: { code: "symbolKey", ..., key: Symbol(s), ... }
+type({ [Symbol("s")]: "string" }).toJsonSchema()
+```
+
+### Emit `format: "uuid"` for versioned UUIDs
+
+`string.uuid.v1` through `string.uuid.v8` now emit `format: "uuid"` in JSON Schema, as `string.uuid` does:
+
+```ts
+// was: { type: "string", pattern: "^[\\dA-Fa-f]{8}-..." }
+// now: { type: "string", pattern: "^[\\dA-Fa-f]{8}-...", format: "uuid" }
+type("string.uuid.v4").toJsonSchema()
+```
+
+### Don't require the nil and max UUIDs as keys of a `string.uuid` index signature
+
+`string.uuid` was a union of a pattern and the nil and max UUIDs, which as an index signature's key made those two required keys (#1481). It's now one pattern accepting the same strings, so its JSON Schema is a `pattern` rather than an `anyOf`:
+
+```ts
+// was: ArkErrors: value at ["00000000-0000-0000-0000-000000000000"] must be a number (was missing)
+// value at ["ffffffff-ffff-ffff-ffff-ffffffffffff"] must be a number (was missing)
+// now: {}
+type({ "[string.uuid]": "number" })({})
+```
+
+### Use a union's description when data misses its discriminated cases
+
+A described union discriminated by the value itself, like `string | number`, listed its cases instead (#963):
+
+```ts
+const Primitive = type("string | number").describe("a primitive")
+
+// was: must be a number or a string (was an object)
+// now: must be a primitive (was an object)
+Primitive({}).toString()
+```
+
+A union discriminated at a key still lists the key's cases, like `kind must be "a" or "b" (was "c")`.
+
+### Name the comparator missing its right operand
+
+A comparator at the end of a definition threw `Expected an expression`, and after a left bound named the comparator inverted (#1213):
+
+```ts
+// was: ParseError: Expected an expression
+// now: ParseError: Token '>=' requires a right operand
+type("number >=")
+
+// was: ParseError: Token '>' requires a right operand
+// now: ParseError: Token '<' requires a right operand
+type("5 <")
+```
+
+The type error for `"number >="` is the same message, where it was a union of keyword completions.
+
+### Write constraints described alike once
+
+An intersection error listed each failed constraint's description, so constraints under one configured description repeated it (#1412). Each description is now listed once, and a single one is written as a plain `must be`:
+
+```ts
+const Email = type("string.email > 0", "@", "Email is not valid")
+
+// was: ("") must be...
+//   ◦ Email is not valid
+//   ◦ Email is not valid
+// now: must be Email is not valid (was "")
+Email("").toString()
+```
+
+### Reject a generic definition at a parameterized scope key
+
+A scope key declaring parameters, like `"Box<s extends string>"`, whose definition was already a `generic(...)` type-checked but threw `'generic' is unresolvable` (#1343). It's now a type error and throws a `ParseError` naming the alias:
+
+```ts
+// was: ParseError: 'generic' is unresolvable
+// now: ParseError: Box is defined by a generic, so its key must not declare parameters
+scope({ "Box<s extends string>": generic(["s", "string"])({ box: "s" }) })
+```
+
+### Export `TerminallyInferredObject` as a type
+
+`arktype` exports `TerminallyInferredObject`, the objects inference keeps whole rather than mapping over, like `Date`, `Promise` and any class declared in `ArkEnv.prototypes`, so a utility type built on inferred types can stop at the same objects (#1490).
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

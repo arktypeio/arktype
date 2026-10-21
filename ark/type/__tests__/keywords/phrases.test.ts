@@ -118,6 +118,22 @@ contextualize(() => {
 		attest(type("string.email").equals(type("string.email"))).equals(true)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1300
+	it("a keyword's description names its basis once", () => {
+		attest(type("string.url").description).snap("a URL string")
+		attest(type("string.creditCard").description).snap("a credit card number")
+		attest(type("string.date.parse").description).snap(
+			"a morph from a parsable date to a Date"
+		)
+	})
+
+	it("a normalized keyword's error uses its phrase", () => {
+		const T = type("string.normalize.NFC.preformatted")
+		attest(T("é").toString()).snap(
+			'must be NFC-normalized unicode (was "e\u0301")'
+		)
+	})
+
 	it("a keyword error's phrase is its description in en", () => {
 		const inputs = ["", "x", "(", "{", "1.5", "9007199254740993", -1, 1.5, 9e15]
 		const $ = scope({})
