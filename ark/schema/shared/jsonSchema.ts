@@ -120,6 +120,7 @@ export declare namespace JsonSchema {
 		pattern?: string
 		format?: string
 		not?: JsonSchema
+		contentMediaType?: string
 	}
 
 	// NB: Technically 'exclusiveMaximum' and 'exclusiveMinimum' are mutually exclusive with 'maximum' and 'minimum', respectively,

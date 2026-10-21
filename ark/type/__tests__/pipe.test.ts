@@ -1024,6 +1024,22 @@ contextualize(() => {
 		)
 	})
 
+	it("indiscriminable union past a redundant branch", () => {
+		attest(() =>
+			type.or(
+				{ "kind?": "'b'" },
+				{ a: "number", kind: "1" },
+				{ kind: "'b'" },
+				{ kind: "number", "+": "delete" }
+			)
+		).throws(
+			writeIndiscriminableMorphMessage(
+				"{ a: number, kind: 1 }",
+				"{ kind: number, + (undeclared): delete }"
+			)
+		)
+	})
+
 	it("undiscriminated morph at path", () => {
 		attest(() => {
 			scope({
@@ -1136,7 +1152,7 @@ contextualize(() => {
 >`)
 
 		attest(T.expression).snap(
-			"{ l: 1, n: (In: /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$/) => Out<number> } | { n: (In: /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$/) => Out<number>, r: 1 }"
+			"{ l: 1, n: (In: /^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$/) => Out<number> } | { n: (In: /^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$/) => Out<number>, r: 1 }"
 		)
 		attest(T({ l: 1, n: "234" })).snap({ l: 1, n: 234 })
 		attest(T({ r: 1, n: "234" })).snap({ r: 1, n: 234 })

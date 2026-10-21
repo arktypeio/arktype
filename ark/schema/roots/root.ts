@@ -115,7 +115,8 @@ export abstract class BaseRoot<
 				return { value: out }
 			},
 			jsonSchema: {
-				input: opts => toStandardJsonSchema(this.rawIn, opts),
+				// rawIn has no defaults, so the input is this Type as it's accepted
+				input: opts => toStandardJsonSchema(this, opts, "in"),
 				output: opts => toStandardJsonSchema(this.rawOut, opts)
 			}
 		})
@@ -150,10 +151,6 @@ export abstract class BaseRoot<
 	}
 
 	abstract get defaultShortDescription(): string
-
-	get shortDescription(): string {
-		return this.meta.description ?? this.defaultShortDescription
-	}
 
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
 		return sets().toJsonSchema(this, opts)
@@ -698,7 +695,8 @@ export type emptyBrandNameMessage = typeof emptyBrandNameMessage
 
 const toStandardJsonSchema = (
 	node: BaseRoot,
-	opts: StandardJSONSchemaV1.Options
+	opts: StandardJSONSchemaV1.Options,
+	io?: "in"
 ): Record<string, unknown> => {
 	const ctx = mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, {
 		target: validateStandardJsonSchemaTarget(opts.target),
@@ -710,7 +708,9 @@ const toStandardJsonSchema = (
 			ToJsonSchema.standardFallback[code]
 		:	handler
 	]) as ToJsonSchema.HandlerByCode
-	return node.toJsonSchema({ ...ctx, fallback }) as never
+	const standardCtx: ToJsonSchema.Context = { ...ctx, fallback }
+	if (io) standardCtx.io = io
+	return node.toJsonSchema(standardCtx) as never
 }
 
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(

@@ -388,6 +388,12 @@ export const ancestorsOf = (o: object): Function[] => {
 	return result
 }
 
+/** whether an object is an array, or has the prototype of a literal or none */
+export const isPlainObjectOrArray = (o: object): boolean => {
+	const proto = Object.getPrototypeOf(o)
+	return proto === Object.prototype || proto === null || Array.isArray(o)
+}
+
 export type normalizedKeyOf<t> =
 	keyof t extends infer k ?
 		k extends number ?

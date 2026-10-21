@@ -23,7 +23,7 @@ export type TerminatingChar = keyof typeof terminatingChars
 export const shiftUntilTerminator = (scanner: Scanner): string => {
 	const token = scanner.shiftUntilLookahead(terminatingChars)
 	if (!token.endsWith("!") || scanner.lookahead !== "=") return token
-	scanner.jumpToIndex(scanner.location - 1)
+	scanner.i--
 	return token.slice(0, -1)
 }
 

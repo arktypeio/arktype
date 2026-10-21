@@ -2,6 +2,7 @@ import {
 	describeCollapsibleDate,
 	domainDescriptions,
 	domainOf,
+	isKeyOf,
 	isValidDate,
 	listPattern,
 	objectKindOrDomainOf,
@@ -40,10 +41,12 @@ export const writeLengthActual: ActualWriter<
 export const writeMinLengthActual: ActualWriter<"minLength"> = data =>
 	data.length === 0 ? "" : `${data.length}`
 
-export const writeProtoActual: ActualWriter<"proto"> = data =>
-	data instanceof Date && !isValidDate(data) ?
-		"an invalid Date"
-	:	objectKindOrDomainOf(data)
+export const writeProtoActual: ActualWriter<"proto"> = data => {
+	if (data instanceof Date && !isValidDate(data)) return "an invalid Date"
+	const kind = objectKindOrDomainOf(data)
+	// a class's name is printed as is, since its article would be a guess
+	return isKeyOf(kind, domainDescriptions) ? domainDescriptions[kind] : kind
+}
 
 // en's info, which configured writers receive
 export const enInfo: Locale.Info = /* @__PURE__ */ Object.freeze<Locale.Info>({

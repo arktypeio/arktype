@@ -6,6 +6,7 @@ import { parentPort, workerData, type MessagePort } from "node:worker_threads"
 import {
 	appendSourceMap,
 	createNodeHost,
+	realPathOf,
 	type NodeHostOptions
 } from "./host.ts"
 import {
@@ -25,7 +26,7 @@ export interface PrecompilePluginOptions
 export const createPrecompiler = (
 	opts?: PrecompilePluginOptions
 ): Precompiler => {
-	const cwd = opts?.cwd ?? process.cwd()
+	const cwd = realPathOf(opts?.cwd ?? process.cwd())
 	return new Precompiler(createNodeHost(opts), {
 		...opts,
 		cwd,

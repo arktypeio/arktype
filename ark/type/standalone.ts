@@ -86,13 +86,7 @@ import {
 	type IssueContext,
 	type Writer
 } from "./standalone/sites.ts"
-import {
-	refNameOf,
-	rootUnitsOf,
-	undispatched,
-	unitOf,
-	unlooped
-} from "./standalone/compilers.ts"
+import { refNameOf, rootUnitsOf, unitOf } from "./standalone/compilers.ts"
 import {
 	encodeKey,
 	holeNameMarker,
@@ -607,7 +601,7 @@ const writeArtifact = (
 		if (value !== undefined) {
 			values!.push(name)
 			return /^[\w$]+$/.test(value) ?
-					`export { ${value} as ${JSON.stringify(name)} }`
+					`export { ${value} as ${exportNameOf(name)} }`
 				:	`const factory${index} = ${value}\n\n${writeExport(name, index)}`
 		}
 		const params = artifact.factory!.params.map((_, i) => `p${i}`)
@@ -645,8 +639,12 @@ type CreationRead = [creation: string, position: number | undefined]
 const readOf = (...[creation, position]: CreationRead) =>
 	position === undefined ? creation : `${creation}[${position}]`
 
+// bare where it can be, as some bundlers, like Farm, take no string export name
+const exportNameOf = (name: string) =>
+	/^[$A-Z_a-z][\w$]*$/.test(name) ? name : JSON.stringify(name)
+
 const writeExport = (name: string, index: number) =>
-	`export { factory${index} as ${JSON.stringify(name)} }`
+	`export { factory${index} as ${exportNameOf(name)} }`
 
 const writeCreations = (
 	types: Record<string, ExportedValue>,
@@ -718,8 +716,8 @@ const writeCreations = (
 		const read = readOf(...reads[name])
 		values?.push(name)
 		return values && /^[\w$]+$/.test(read) ?
-				`export { ${read} as ${JSON.stringify(name)} }`
-			:	`${values ? `const get${i} = ${read}` : writeFunction(baking, `get${i}`, "", `\treturn ${read}`)}\n\nexport { get${i} as ${JSON.stringify(name)} }`
+				`export { ${read} as ${exportNameOf(name)} }`
+			:	`${values ? `const get${i} = ${read}` : writeFunction(baking, `get${i}`, "", `\treturn ${read}`)}\n\nexport { get${i} as ${exportNameOf(name)} }`
 	})
 	return [[...code, getters.join("\n")], reads]
 }
@@ -1144,7 +1142,8 @@ class StandaloneArtifact {
 			: this.baking.detailsErrors && this.baking.shortest ? 2
 			: 0) +
 			3 * +this.baking.firstIssue +
-			6 * +this.baking.countsKeys
+			6 * +this.baking.countsKeys +
+			12 * +this.baking.shortest
 		)
 	}
 
@@ -1673,10 +1672,8 @@ ${writeFunction(
 	declareMembers(unit: RootUnit, readers: string[]): string[] {
 		const called = calledMembersOf(unit.members, readers)
 		const forwarded = forwardedOf(called)
-		const declarations = called.flatMap(([name, written]) => {
+		const declarations = called.flatMap(([name, source]) => {
 			if (forwarded.has(name)) return []
-			const source =
-				this.baking.shortest ? undispatched(unlooped(written)) : written
 			// plain params; size and writing traversals drop a trailing unread ctx
 			const arrow = source.replace(
 				/^function\(([^)]*)\) {/,

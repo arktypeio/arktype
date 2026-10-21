@@ -10,13 +10,14 @@ import {
 	type ActualContext,
 	type ArkError,
 	type ArkErrors,
+	type DomainCase,
 	type ExpectedContext,
 	type Locale,
 	type MessageContext,
 	type MessageWriter,
 	type ProblemContext
 } from "@ark/schema"
-import { flatMorph, omit, type Domain } from "@ark/util"
+import { flatMorph, omit } from "@ark/util"
 import {
 	ark,
 	configure,
@@ -475,7 +476,7 @@ contextualize(() => {
 		it("a locale writer narrows discriminant cases", () => {
 			const expected: Locale.ExpectedWriter<"discriminant"> = (e, locale) => {
 				if (e.discriminantKind === "domain") {
-					attest<readonly Domain[]>(e.cases)
+					attest<readonly DomainCase[]>(e.cases)
 					return locale.list(
 						e.cases.map(domain => locale.nouns[domain]),
 						"or"

@@ -1,6 +1,6 @@
 import { throwError } from "@ark/util"
 import { existsSync, readFileSync, realpathSync } from "node:fs"
-import { dirname, isAbsolute, join, relative } from "node:path"
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 import type { PrecompilePluginOptions, RenderedDiagnostics } from "./driver.ts"
@@ -20,9 +20,11 @@ export interface NodeHostOptions {
 	tsconfig?: string | undefined
 }
 
+const nodeConditions = ["import", "node", "default"]
+
 export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 	const resolveOptions: NapiResolveOptions = {
-		conditionNames: opts?.conditions ?? ["import", "node", "default"],
+		conditionNames: opts?.conditions ?? nodeConditions,
 		extensions: [
 			".ts",
 			".tsx",
@@ -61,11 +63,14 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 	return {
 		resolve: (specifier, importer) => {
 			if (!isAbsolute(importer)) return
-			const result = resolver.resolveFileSync(importer, specifier)
-			if (!result.error || !/tsconfig/i.test(result.error)) return result.path
+			let result = resolver.resolveFileSync(importer, specifier)
 			// a tsconfig the resolver can't load fails every resolution
-			resolverWithoutTsconfig ??= resolver.cloneWithOptions(resolveOptions)
-			return resolverWithoutTsconfig.resolveFileSync(importer, specifier).path
+			if (result.error && /tsconfig/i.test(result.error)) {
+				resolverWithoutTsconfig ??= resolver.cloneWithOptions(resolveOptions)
+				result = resolverWithoutTsconfig.resolveFileSync(importer, specifier)
+			}
+			// it keeps an importer's 8.3 names, which another importer may not have
+			return result.path && realPathOf(result.path)
 		},
 		readFile,
 		tsconfigOf: importer =>
@@ -73,6 +78,13 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 			(isAbsolute(importer) ? tsconfigIn(dirname(importer)) : undefined)
 	}
 }
+
+// a development build's, whose arktype/runtime has Node print errors as issues
+export const createDevelopmentHost = (opts?: NodeHostOptions): PrecompileHost =>
+	createNodeHost({
+		...opts,
+		conditions: [...(opts?.conditions ?? nodeConditions), "development"]
+	})
 
 const readFile = (path: string) =>
 	existsSync(path) ? readFileSync(path, "utf8") : undefined
@@ -85,11 +97,28 @@ export const optsIn = (manifest: string | undefined): boolean =>
 export const dependencyOf = (
 	file: string
 ): [root: string, name: string] | undefined => {
-	const match =
-		file.includes("/node_modules/") &&
-		/.*\/node_modules\/((?:@[^/]+\/)?[^/]+)/.exec(file)
-	return match ? [match[0], match[1]] : undefined
+	const match = /.*[/\\]node_modules[/\\]((?:@[^/\\]+[/\\])?[^/\\]+)/.exec(file)
+	return match ? [match[0], match[1].replace("\\", "/")] : undefined
 }
+
+// a module's file as the resolver writes it. Vite writes / on Windows, and
+// an entry under a root given through a symlink or an 8.3 name like RUNNER~1
+// keeps that form, where the modules it imports don't
+export const fileOf = (id: string): string =>
+	isAbsolute(id) ? realPathOf(id) : id
+
+// a path as the resolver writes it, through symlinks and 8.3 names
+export const realPathOf = (path: string): string => {
+	try {
+		return realpathSync.native(path)
+	} catch {
+		return resolve(path)
+	}
+}
+
+// a path as messages print it, with / on every platform
+export const printablePathOf = (from: string, to: string): string =>
+	relative(from, to).split(sep).join("/")
 
 // for a host that must be told before the build which packages it transforms
 export const optedInPackagesOf = (cwd: string): string[] => {
@@ -153,6 +182,9 @@ export const runtimeSpecifiers = [
 	"arktype/errors",
 	"arktype/mutatesInput"
 ]
+
+// what arktype/runtime loads
+export const runtimePackages = ["arktype", "@ark/schema", "@ark/util"]
 
 // shadow mode keeps arktype, resolving only its config to the runtime
 export const resolvesToRuntime = (
@@ -219,9 +251,9 @@ export const transformedFilterOf = (
 	exclude:
 		packages.length ?
 			new RegExp(
-				`/node_modules/(?!(?:${packages.map(name => name.replace(/\./g, "\\.")).join("|")})/)(?!.*/node_modules/)`
+				`[/\\\\]node_modules[/\\\\](?!(?:${packages.map(name => name.replace(/\./g, "\\.").replace("/", "[/\\\\]")).join("|")})[/\\\\])(?!.*[/\\\\]node_modules[/\\\\])`
 			)
-		:	/\/node_modules\//
+		:	/[/\\]node_modules[/\\]/
 })
 
 export const writeTextlessMessage = (path: string): string =>
@@ -269,6 +301,19 @@ export const writeUncachedModuleMessage = (
 ): string =>
 	`${specifier} was written by a build whose cache kept it in ${dir}, where it no longer is. Delete the bundler's cache to rebuild it.`
 
+// e.g. "@ark/schema" for "@ark/schema/runtime"
+export const packageNameOf = (specifier: string): string =>
+	specifier.split("/", specifier.startsWith("@") ? 2 : 1).join("/")
+
+export const writeExternalizedMessage = (
+	specifier: string,
+	option: string
+): string =>
+	`The build's \`${option}\` option leaves ${specifier} to be loaded at runtime rather than bundled with the runtime the program's precompiled validators use, so the program can load a copy of arktype that isn't theirs, e.g. one whose \`type.errors\` isn't the class of their errors. Remove ${packageNameOf(specifier)} from \`${option}\`.`
+
+export const writeUnwrittenModuleMessage = (specifier: string): string =>
+	`${specifier} is imported by a module this build didn't precompile, as one a cache kept from an earlier build is. Keep that cache from storing the modules @ark/precompile transforms, or delete it.`
+
 // `resolved` is where it resolves other than to arktype/runtime
 export const writeAliasMessage = (
 	specifier: string,
@@ -300,6 +345,16 @@ export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 export const allowUnsafeHint =
 	"Set allowUnsafe: true to build anyway, with a warning."
 
+// a dependency importing the runtime ships what another build precompiled
+export const precompiledDependencyOf = (
+	specifier: string,
+	importer: string
+): string | undefined => {
+	const [, name] =
+		(specifier === "arktype/runtime" && dependencyOf(importer)) || []
+	return name && !arkPackageName.test(name) ? name : undefined
+}
+
 export const writePrecompiledDependencyMessage = (name: string): string =>
 	`${name} imports arktype/runtime, so it ships validators precompiled for one version of arktype, which may not be this build's. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
 
@@ -308,4 +363,4 @@ export const writeUntransformedImportMessage = (
 	specifier: string,
 	cwd: string
 ): string =>
-	`${relative(cwd, file)} imports ${specifier}, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile what isn't a JavaScript or TypeScript module. Define the Types it uses in a module that is.`
+	`${printablePathOf(cwd, file)} imports ${specifier}, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile what isn't a JavaScript or TypeScript module. Define the Types it uses in a module that is.`

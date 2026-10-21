@@ -1508,13 +1508,13 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "`\"reject\"` - disallow extra properties"
+                        "value": "`\"reject\"` - disallow extra string keys"
                     }
                 ],
                 [
                     {
                         "kind": "noteStart",
-                        "value": "`\"delete\"` - remove extra properties from output"
+                        "value": "`\"delete\"` - output only declared keys"
                     }
                 ]
             ],
@@ -1541,13 +1541,13 @@ export const apiDocsByGroup: ApiDocsByGroup = {
                 [
                     {
                         "kind": "noteStart",
-                        "value": "`\"reject\"` - disallow extra properties"
+                        "value": "`\"reject\"` - disallow extra string keys"
                     }
                 ],
                 [
                     {
                         "kind": "noteStart",
-                        "value": "`\"delete\"` - remove extra properties from output"
+                        "value": "`\"delete\"` - output only declared keys"
                     }
                 ]
             ],

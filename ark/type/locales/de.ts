@@ -249,6 +249,7 @@ const keywordPhrases = {
 			: e.code === "max" ? `ein Unix-Zeitstempel bis ${locale.number(e.rule)}`
 			: epoch
 	},
+	"object.json": "ein einfaches Objekt oder Array",
 	"string.alpha": "rein alphabetisch",
 	"string.alphanumeric": "rein alphanumerisch",
 	"string.base58": "Base58-kodiert",

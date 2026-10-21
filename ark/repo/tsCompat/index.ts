@@ -65,6 +65,17 @@ assertEquals<
 	{ blob: Blob; file: File; headers: Headers; url: URL }
 >()
 
+const Age = type("number | undefined")
+
+// keeps undefined where TS drops it from an optional key, as it does without
+// exactOptionalPropertyTypes
+export const Aged = type({ age: Age, ages: [Age] })
+
+assertEquals<
+	typeof Aged.infer,
+	{ age: number | undefined; ages: [number | undefined] }
+>()
+
 const boxOf = type("<t>", { box: "t" })
 export const StringBox = boxOf("string")
 

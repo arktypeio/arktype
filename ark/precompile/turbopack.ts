@@ -1,5 +1,5 @@
 import { realpathSync } from "node:fs"
-import { dirname, relative } from "node:path"
+import { dirname } from "node:path"
 import { parseSync } from "oxc-parser"
 import {
 	createKeyedPrecompiler,
@@ -9,6 +9,8 @@ import {
 import { refuseDeclare } from "./declare.ts"
 import {
 	createNodeHost,
+	createDevelopmentHost,
+	printablePathOf,
 	reportDiagnostics,
 	resolvesToRuntime,
 	rethrowAsBuildError,
@@ -78,18 +80,27 @@ const checkAliases = async (
 	const host = createNodeHost(opts)
 	const runtime = host.resolve("arktype/runtime", importer)
 	if (!runtime) return
+	const development = createDevelopmentHost(opts).resolve(
+		"arktype/runtime",
+		importer
+	)
 	for (const specifier of specifiers) {
 		// Turbopack reports what it can't resolve itself
 		const resolved = await resolve(dirname(importer), specifier).catch(
 			() => undefined
 		)
 		if (resolved === undefined) continue
-		const isRuntime = realpathSync(resolved) === realpathSync(runtime)
+		// next dev resolves the runtime that has Node print errors as issues
+		const isRuntime = [runtime, development].some(
+			path => path && realpathSync(resolved) === realpathSync(path)
+		)
 		if (isRuntime !== resolvesToRuntime(specifier, opts)) {
 			throwBuildError(
 				writeAliasMessage(
 					specifier,
-					isRuntime ? undefined : relative(opts.cwd ?? process.cwd(), resolved),
+					isRuntime ? undefined : (
+						printablePathOf(opts.cwd ?? process.cwd(), resolved)
+					),
 					opts
 				)
 			)

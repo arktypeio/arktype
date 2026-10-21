@@ -75,13 +75,83 @@ Branches alike but for their range are one range when the ranges overlap or meet
 
 Objects with the same keys, alike but for one key's value, are one object whose value is the union of theirs, as [#751](https://github.com/arktypeio/arktype/issues/751) asked: `type({ a: "string" }).or({ a: "number" })` is `{ a: string | number }`, and `{ kind: "a", x: string } | { kind: "b", x: string }` is `{ kind: "a" | "b", x: string }`. The key is optional if it's optional in either, and the merged values reduce like any union, so nested objects merge as well. Objects differing in their undeclared key handling or index signatures stay a union, as do ordered unions and a key with a default, whose default applies only to its own branch.
 
-A key whose value is a union of literals, like the merged `kind: "a" | "b"`, now discriminates like a single literal, so `{ kind: "a" | "b", x: string } | { kind: "c", y: number }` checks `kind` once to pick a branch.
+A merged `kind: "a" | "b"` still discriminates, since each value of a literal union is now a case of its own.
 
 Data invalid for a merged object is reported as for any other object rather than by the union: `{ x: 5 }` is `kind must be "a" or "b" (was missing)` and `x must be a string (was a number)`, where it was `kind must be "a" or "b" (was undefined)`. A message configured on the union describes the object, so it no longer replaces the error on `kind`.
 
 ### Export `Default` and `To` as types
 
 `arktype` exports the `Default` and `To` types an inferred Type holds, so a declaration can name them as `import("arktype").Default`, like `Out` and `Brand`.
+
+### Describe an object with its `"@"` key
+
+An object definition's `"@"` key holds the object's own metadata, as `"@"` does in a tuple expression:
+
+```ts
+const User = type({
+	"@": "a user",
+	name: "string"
+})
+
+// ArkErrors: must be a user (was a number)
+User(5)
+```
+
+Its value is a description or a meta object. Escape a key named `@` as `"\\@"`, as with `+` and `...`. In 2.2.9, `"@"` was an ordinary key.
+
+### Write a Type's JSON Schema with `jsonSchema` meta
+
+`jsonSchema` meta replaces the JSON Schema a Type's constraints imply, so `toJsonSchema()` writes it rather than throwing for a narrow:
+
+```ts
+const Even = type("number")
+	.narrow(n => n % 2 === 0)
+	.configure({ jsonSchema: { type: "integer", multipleOf: 2 } })
+
+// { $schema: "...", type: "integer", multipleOf: 2 }
+Even.toJsonSchema()
+```
+
+The Type's other meta, like a description, is still written beside it. Unlike other meta, `jsonSchema` is configured on the Type alone, not on the Types it references. In 2.2.9, `toJsonSchema()` wrote `meta.jsonSchema` as an ordinary key.
+
+### Write `string.url`, `string.regex` and `string.json` in JSON Schema
+
+`toJsonSchema()` threw a `predicate` error for them. They're now written as `format: "uri"`, `format: "regex"` and `contentMediaType: "application/json"`, wherever they're constrained further, as in `"string.url < 100"`:
+
+```ts
+// { $schema: "...", type: "string", maxLength: 99, format: "uri" }
+type("string.url < 100").toJsonSchema()
+```
+
+A JSON Schema validator checks neither keyword unless it's configured to. `string.url` checks `URL.canParse`, which differs from the `uri` format's RFC 3986 at the edges: it accepts a space in a path and rejects a port past 65535. `string.date` still throws, since it accepts whatever `Date` parses, which no format describes.
+
+### Infer `.map()` on a union per branch
+
+`.map()` already mapped each branch of a union at runtime, but its inferred type merged the branches, and its callback's argument held only the keys every branch shares (#1524). The argument now holds each branch's props, and the result is a union of the branches it builds:
+
+```ts
+const T = type({ kind: "'a'", a: "string" })
+	.or({ kind: "'b'", b: "number" })
+	.map(prop => prop)
+
+// was: Type<{ kind: "a" | "b" }>
+// now: Type<{ kind: "a"; a: string } | { kind: "b"; b: number }>
+```
+
+A prop the callback returns unchanged stays in its own branch, and any other goes to each branch with its key, or to every branch if no branch has its key. A changed value can't be traced to the branch it came from, so it's merged across them:
+
+```ts
+const T = type({ name: "'number'", type: "number" })
+	.or({ name: "'string'", type: "string" })
+	.map(prop =>
+		prop.key === "type" ? { ...prop, value: prop.value.array() } : prop
+	)
+
+// Type<
+// 	| { name: "number"; type: number[] | string[] }
+// 	| { name: "string"; type: number[] | string[] }
+// >
+```
 
 ### Return errors as plain objects
 
@@ -174,6 +244,175 @@ type("===", {})({})
 
 `de` prints them as `ein Objekt`, `ein Array` and `eine Funktion`.
 
+### Accept only plain objects and arrays in `object.json`
+
+`object.json` accepted any object, so a `Map`, `Set`, `Date`, function or class instance passed though `JSON.stringify` doesn't write it as itself. It now accepts only arrays and objects whose prototype is `Object.prototype` or `null`, at every depth (#1337):
+
+```ts
+// was: { at: Date }
+// now: ArkErrors: at must be a plain object or array (was an object)
+type("object.json")({ at: new Date() })
+```
+
+JSON Schema can't require a plain object, so `toJsonSchema()` now throws for `object.json`, and for Types that include it like `string.json.parse`'s output, with the `predicate` code. Return `ctx.base` from that fallback to write the schema it wrote before:
+
+```ts
+type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
+```
+
+`~standard.jsonSchema` leaves the check out, as it does every predicate.
+
+### Throw for an optional index signature
+
+A key like `"[k]?"` parsed as the literal key `"[k]"`, made optional, which is rarely what it means, as in a generic like `type("<k extends string>", { "[k]?": "number" })`. It now throws a `ParseError` and is a type error (#1525):
+
+```ts
+// was: Type<{ "[k]"?: string }>
+// now: ParseError: Index signature [k] can't be optional. Escape its '[' with a backslash for an optional key named '[k]'
+type({ "[k]?": "string" })
+```
+
+To keep the literal key, escape its `[`, which now works for an optional key as it already did for a required one:
+
+```ts
+// was: Type<{ "\\[k]"?: string }>
+// now: Type<{ "[k]"?: string }>
+type({ "\\[k]?": "string" })
+```
+
+### Accept exponents in `string.numeric`
+
+`string.numeric` and `string.numeric.parse` accept an exponent like `"5.7e-10"` or `"1E+21"`, as `Number()` does, so a number `String()` writes with one, like `1e21`, now encodes through `string.numeric.parse` (#1448):
+
+```ts
+// was: ArkErrors: must be a well-formed numeric string (was "5.7e-10")
+// now: 5.7e-10
+type("string.numeric.parse")("5.7e-10")
+```
+
+Their JSON Schema `pattern` accepts an exponent too. `string.integer` still doesn't, since `string.integer.parse` reads only digits.
+
+### Discriminate by each value of a literal union
+
+A union of objects discriminated by a key checked only branches whose value there was a single literal. A branch whose value was a union of literals became the default, so data matching no branch was reported as failing that one (#1435, #1491):
+
+```ts
+const T = type.or(
+	{ type: "'a'", val1: "number" },
+	{ type: "'b'", val2: "number" },
+	{ type: "'c' | 'd'", val3: "number" }
+)
+
+// was: ArkErrors: type must be "c" or "d" (was "e")
+//      val3 must be a number (was missing)
+// now: ArkErrors: type must be "c", "d", "a" or "b" (was "e")
+T({ type: "e" })
+```
+
+Each of those literals is now a case of its own, so such data fails at the key with every value it allows, and data matching one of them is checked only against the branches that allow it.
+
+### Apply a pipe's configured `message` to its output's errors
+
+`.configure({ message })` on a pipe set the message of errors its input raised, but not of those raised validating its output (#1479):
+
+```ts
+const Port = type("string.numeric.parse | number")
+	.to("0 < number <= 65535")
+	.configure({ message: "Enter a port number." })
+
+// was: ArkErrors: must be at most 65535 (was 99999)
+// now: ArkErrors: Enter a port number.
+Port("99999")
+```
+
+The output's own Type, `Port.out`, keeps its errors, description and JSON Schema.
+
+### Surface a message every failing branch or constraint was configured with
+
+A union or intersection error was written from what its errors expected, even when each was configured with the same `message`. It now surfaces that message (#1492, #1412):
+
+```ts
+const Email = type("string.email > 0").configure({
+	message: "Email is not valid"
+})
+
+// was: ArkErrors: ("") must be...
+//        ◦ an email address
+//        ◦ non-empty
+// now: ArkErrors: Email is not valid
+Email("")
+```
+
+Errors whose messages differ, or that weren't all configured with one, are still written from what they expected, as is a union or intersection configured with a message of its own. A message `ctx.reject` supplied counts as configured.
+
+### Keep defaults in `~standard.jsonSchema.input`
+
+`~standard.jsonSchema.input` wrote the schema of a Type's `in`, which has no defaults, so a key's `default` was dropped. It now writes the Type as it's accepted (#1575):
+
+```ts
+const T = type({ name: 'string = "Anon"' })
+
+// was: { type: "object", properties: { name: { type: "string" } } }
+// now: { type: "object", properties: { name: { type: "string", default: "Anon" } } }
+T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+```
+
+`input` writes each morph's input rather than calling a configured `morph` fallback, and no longer writes `additionalProperties: false` for `"+": "delete"`, whose input may have the keys it removes. `output` and `toJsonSchema()` are unchanged.
+
+Thanks to @ybai08 for #1695.
+
+### Describe what an `instanceof` check rejected as a domain check does
+
+A proto error's `actual` was a bare domain or class name, while a domain error's names the domain with an article. It now names a primitive or plain object as a domain error does. A builtin's instance is still named by its class, without an article that would be a guess:
+
+```ts
+// was: ArkErrors: must be a Date (was number)
+// now: ArkErrors: must be a Date (was a number)
+type("Date")(5)
+
+// was: ArkErrors: must be an array (was object)
+// now: ArkErrors: must be an array (was an object)
+type("string[]")({})
+
+// ArkErrors: must be a Date (was Map), as before
+type("Date")(new Map())
+```
+
+`de` already wrote these with its nouns.
+
+### Say "an array" where a union's object branches are arrays
+
+A union discriminated by domain described its object case as `an object`, even when every branch it reached was an array. It now says `an array`, and its error's `cases` holds `"Array"` in place of `"object"`:
+
+```ts
+// was: ArkErrors: must be a string or an object (was a number)
+// now: ArkErrors: must be a string or an array (was a number)
+type("string | string[]")(5)
+```
+
+A `switch` over a `discriminant` error's `cases` must handle `"Array"`.
+
+### Write `string.regex` errors as `string.json` writes its own
+
+A `string.regex` error's problem was the bare `SyntaxError` the pattern threw. It now says what was expected, as `string.json`'s does and `de` already did:
+
+```ts
+// was: ArkErrors: SyntaxError: Invalid regular expression: /(/: Unterminated group
+// now: ArkErrors: must be a regex pattern (SyntaxError: Invalid regular expression: /(/: Unterminated group)
+type("string.regex")("(")
+```
+
+### Name the code, path and fallback in a `ToJsonSchemaError`
+
+A `ToJsonSchemaError`'s message was only its printed context. It now starts with a sentence naming its code, where in the Type the part it couldn't convert is, and the `fallback` to configure:
+
+```ts
+// was: ToJsonSchemaError: { code: "date", base: {} }
+// now: ToJsonSchemaError: Can't convert "date" at user.createdAt to JSON Schema. Configure fallback.date to write it:
+//      { code: "date", base: {} }
+type({ user: { createdAt: "Date" } }).toJsonSchema()
+```
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse (#909). Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:
@@ -194,7 +433,7 @@ const event = Event({ name: "launch", at: 0 })
 const encoded = Event.encode(event)
 ```
 
-`.encode` validates its input against the Type's output and its result against the Type's input. A defaulted key is required when encoding, and a union tries its branches without morphs first. Parse keywords like `string.date.iso.parse` encode back to strings, and format keywords like `string.trim` encode a formatted string as itself. Accessing `.encode` throws a `ParseError` if a morph has no inverse, or if `arktype/codecs` isn't imported: it installs encoding, so an app that doesn't encode doesn't ship it. See [the docs](https://arktype.io/docs/codecs).
+`.encode` validates its input against the Type's output and its result against the Type's input. A defaulted key is required when encoding, and a union tries its branches without morphs first. Parse keywords like `string.date.iso.parse` encode back to strings, and format keywords like `string.trim` encode a formatted string as itself. Accessing `.encode` throws a `ParseError` if a morph has no inverse, or if `arktype/codecs` isn't imported: it installs encoding, so an app that doesn't encode doesn't ship it. A precompiled standalone build encodes wherever it folds `.encode`, since it installs encoding itself. See [the docs](https://arktype.io/docs/codecs).
 
 A codec's inverse is part of its morph node's schema as `inverse`, so it appears in `.json`.
 
@@ -442,6 +681,7 @@ Other keys that first differ at a space, `!`, `"` or a backslash keep their orde
 - A node's `traverseAllows`, `traverseApply` and `traverseTransform` are methods of its class, so call them on the node, as in `node.traverseAllows(data, ctx)`, rather than detached, as in `[x].every(node.traverseAllows)`, until the JIT compiles it, which replaces them with compiled functions that run detached. A jitless scope's nodes keep the methods, and `domain`, `unit`, `proto`, `pattern`, `min` and `max` nodes still create a `traverseAllows` of their own. `applyResolution` takes the node whose Apply it calls where it took that Apply, and `allowsInBranchBy` and `transformResolution` take the node to call the traversal they're passed with as an optional last argument.
 - `$.node(kind, input)` takes a node's inner, with children already nodes, rather than the schema format, so `$.node("min", 5)` is now `$.node("min", { rule: 5 })`. Parse the schema format with `rootSchema` or `$.schema`.
 - `NodeParseContext`, what `parseNode` takes, is `{ kind, def, $, id, alias, prereduced }`, where it extended `NodeParseContextInput` and a definition's attached parse context. A node's id is registered as it's created, from its `alias` or kind unless `id` is passed, so a schema that resolves to a node the scope already holds registers none.
+- Members nothing used are gone: an alias's `resolutionId` (read `resolution.id`), a node's `assertHasKindIn`, `isConstraint` and `isRefinement`, a root's `shortDescription`, a morph's `declareIn` and `serializedMorphs`, a structure's `optionalKeys`, and `Scanner`'s `jumpToIndex` in `@ark/util`.
 - Derived and memoized keys moved from a node's own enumerable keys to `node.cache`, like the `includes*` flags, `innerEntries`, a structure's `propsByKey`, a node's `assert` and the `expression` of a union, intersection, structure, required prop or index signature; each reads as before, and none that's now computed when read can throw. A node's flags are bits of its own `bits`.
 
 ### Read an object definition's values as its keys are parsed
@@ -1081,18 +1321,21 @@ const T = type({ s: "string" }).pipe((o, ctx) => {
 T({ s: "b" }).toString()
 ```
 
-### Check only string keys for `"+": "reject"`
+### Handle only string keys as undeclared
 
-`"+": "reject"` allows undeclared symbol keys:
+`"+": "reject"` checks only an object's string keys, and `"+": "delete"` outputs only its declared keys. So an undeclared symbol key passes `"reject"`, where it failed, and is dropped by `"delete"`, which kept it:
 
 ```ts
-const T = type({ "+": "reject", a: "string" })
+const s = Symbol("s")
 
 // valid, instead of ArkErrors: value at [Symbol(s)] must be removed
-T({ a: "x", [Symbol("s")]: 1 })
+type({ "+": "reject", a: "string" })({ a: "x", [s]: 1 })
+
+// { a: "x" }, instead of { a: "x", [s]: 1 }
+type({ "+": "delete", a: "string" })({ a: "x", [s]: 1 })
 ```
 
-Looking for them read each object's symbols, which was most of what rejecting undeclared keys cost. Unlike `"reject"`, `"+": "delete"` now removes them.
+Looking for symbol keys read each object's symbols, which cost about four times the rest of a strict object's check.
 
 Reject types that differ only by a symbol key now overlap, so a union of them with a morph is indeterminate:
 
@@ -1106,10 +1349,6 @@ type({ "+": "reject", a: "string.trim" }).or({
 	[s]: "1"
 })
 ```
-
-### Delete undeclared symbol keys
-
-`"+": "delete"` removes undeclared symbol keys, which it previously kept.
 
 ### Return deleting types' keys in the order of their expression
 
@@ -1616,7 +1855,7 @@ type({ "[string.uuid]": "number" })({})
 
 ### Use a union's description when data misses its discriminated cases
 
-A described union discriminated by the value itself, like `string | number`, listed its cases instead (#963):
+A described union listed its cases instead (#963). Discriminated at a key, its miss is now reported at the union's own path:
 
 ```ts
 const Primitive = type("string | number").describe("a primitive")
@@ -1624,9 +1863,27 @@ const Primitive = type("string | number").describe("a primitive")
 // was: must be a number or a string (was an object)
 // now: must be a primitive (was an object)
 Primitive({}).toString()
+
+const Shape = type({ kind: "'circle'", r: "number" })
+	.or({ kind: "'square'", s: "number" })
+	.describe("a shape")
+
+// was: kind must be "circle" or "square" (was "triangle")
+// now: must be a shape (was an object)
+Shape({ kind: "triangle" }).toString()
 ```
 
-A union discriminated at a key still lists the key's cases, like `kind must be "a" or "b" (was "c")`.
+When a union isn't described but one of its branches is, a miss of the value itself lists the branches as an undiscriminated union's does:
+
+```ts
+const Count = type("string").or(type("number").describe("a count"))
+
+// was: must be a number or a string (was an object)
+// now: must be a count or a string (was an object)
+Count({}).toString()
+```
+
+A miss at a key of a union whose branches alone are described still lists the key's cases, like `kind must be "circle" or "square" (was "triangle")`, as an undiscriminated union lists its branches' errors at the key.
 
 ### Name the comparator missing its right operand
 

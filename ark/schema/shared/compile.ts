@@ -4,10 +4,12 @@ import {
 	hasDomain,
 	isDotAccessible,
 	serializePrimitive,
+	type array,
 	type Fn
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
+import type { Predicate } from "../predicate.ts"
 import type { IntersectionNode } from "../roots/intersection.ts"
 import type { UnionNode } from "../roots/union.ts"
 import type { StructureNode } from "../structure/structure.ts"
@@ -218,6 +220,8 @@ export interface TransformKeyOptions {
 	onChange?: () => unknown
 }
 
+export type SwitchCase = readonly [label: string, returned: string]
+
 export interface TransformStep {
 	node: BaseNode
 	signature?: BaseNode
@@ -251,6 +255,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 	declare readonly inPlace?: boolean
 	// whether Apply reports only the first issue it finds, as a build can
 	declare readonly reportsFirst?: boolean
+	// whether a build writes for size, so Allows returns where it fails
+	declare readonly shortest?: boolean
 	checksTransformErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {
@@ -261,10 +267,18 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	// written by standalone builds, whose issues hold no node contexts
-	unionFails?(node: UnionNode, value?: string, path?: PropertyKey[]): string
+	unionFails?(
+		node: UnionNode,
+		value?: string,
+		path?: array<PropertyKey>
+	): string
 	undeclaredFails?(node: StructureNode): string
 	// what a key's value whose condition failed is applied by, if not its Apply
 	failingApplyOf?(value: BaseNode): string | undefined
+	// what a required key's value is allowed by before it's applied, if anything
+	gate?(value: BaseNode, arg: string): string | undefined
+	// whether a predicate can't add issues itself, so Apply needn't count them
+	addsNoIssues?(predicate: Predicate): boolean
 
 	// returns the call of a function its unit declares for a rare path
 	abstract outline(
@@ -348,7 +362,24 @@ export abstract class NodeCompiler extends CompiledFunction<
 	}
 
 	error(node: BaseNode, key?: string, data = "data"): string {
-		return `ctx.failsAt(${this.site(node)}, ${data}${key === undefined ? "" : `, ${key}`})`
+		return this.fails(
+			"failsAt",
+			`${this.site(node)}, ${data}${key === undefined ? "" : `, ${key}`}`
+		)
+	}
+
+	// a call reporting a failure into ctx
+	fails(method: "failsAt" | "failsIn", args: string): string {
+		return `ctx.${method}(${args})`
+	}
+
+	// returns what the case on matches returns, or otherwise
+	switch(on: string, cases: readonly SwitchCase[], otherwise: string): this {
+		return this.block(`switch(${on})`, () => {
+			for (const [label, returned] of cases)
+				this.line(`${label}: return ${returned}`)
+			return this
+		}).return(otherwise)
 	}
 
 	requiresContextFor(node: BaseNode, kind = this.traversalKind): boolean {
@@ -426,8 +457,8 @@ export abstract class NodeCompiler extends CompiledFunction<
 			: `!(${condition}) && `
 		// a refined basis Allows rejected failed its basis or its refinement
 		if (checksAllowsFirst && isRefinedBasis(node))
-			return `${allows}ctx.failsAt(${node.basis!.compileCondition(this, value)} ? ${this.site(node.prestructurals[0])} : ${this.site(node.basis!)}, data, ${key})`
-		return `${allows}ctx.failsIn(${this.traversal(node, "Apply")}, ${value}, ${key})`
+			return `${allows}${this.fails("failsAt", `${node.basis!.compileCondition(this, value)} ? ${this.site(node.prestructurals[0])} : ${this.site(node.basis!)}, data, ${key}`)}`
+		return `${allows}${this.fails("failsIn", `${this.traversal(node, "Apply")}, ${value}, ${key}`)}`
 	}
 
 	// a cyclic value is applied inline

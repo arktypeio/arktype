@@ -22,8 +22,14 @@ class ToJsonSchemaError<
 	readonly code: code
 	readonly context: ToJsonSchema.ContextByCode[code]
 
-	constructor(code: code, context: ToJsonSchema.ContextByCode[code]) {
-		super(printable(context, { quoteKeys: false, indent: 4 }))
+	constructor(
+		code: code,
+		context: ToJsonSchema.ContextByCode[code],
+		path = ""
+	) {
+		super(
+			`Can't convert "${code}"${path && ` at ${path}`} to JSON Schema. Configure fallback.${code} to write it:\n${printable(context, { quoteKeys: false, indent: 4 })}`
+		)
 		this.code = code
 		this.context = context
 	}
@@ -363,5 +369,7 @@ export declare namespace ToJsonSchema {
 
 	export interface Context extends Required<Options> {
 		fallback: HandlerByCode
+		/** set by ~standard.jsonSchema.input to write a Type as it's accepted */
+		io?: "in"
 	}
 }

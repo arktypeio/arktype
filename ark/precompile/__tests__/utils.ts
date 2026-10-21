@@ -35,12 +35,13 @@ export const issuesFrom = (file: string): Plugin => ({
 })
 
 // a bare specifier resolves to node_modules, which the build doesn't read
+// its paths are POSIX's, though the precompiler joins them with \ on Windows
 export const memoryHost = (files: Record<string, string>): PrecompileHost => ({
 	resolve: (specifier, importer) =>
 		specifier.startsWith(".") ?
 			posix.join(posix.dirname(importer), specifier)
 		:	`/node_modules/${specifier}/index.js`,
-	readFile: path => files[path]
+	readFile: path => files[path.split("\\").join("/")]
 })
 
 export const analyze = (
@@ -200,7 +201,8 @@ process.once("exit", code => {
 })
 
 export const tempDir = (prefix = "ark-precompile-"): string => {
-	const dir = realpathSync(mkdtempSync(join(tmpdir(), prefix)))
+	// as bundlers write it: through macOS's /var symlink and Windows' 8.3 names
+	const dir = realpathSync.native(mkdtempSync(join(tmpdir(), prefix)))
 	tempDirs.push(dir)
 	return dir
 }
@@ -230,9 +232,12 @@ export const runCli = (cwd: string, ...args: string[]) =>
 		{ cwd, encoding: "utf8" }
 	)
 
-// Bun is optional, so its tests run where it is installed
-export const hasBun = (): boolean =>
-	spawnSync("bun", ["--version"]).status === 0
+// Bun is optional, so its tests run where it is installed, as CI requires
+export const hasBun = (): boolean => {
+	if (spawnSync("bun", ["--version"]).status === 0) return true
+	if (process.env.CI) throw new Error("CI must install Bun to run its tests")
+	return false
+}
 
 // runs fn in a process whose arktype has neither a configuration nor a Type
 export const inFreshProcess = <args extends unknown[], result>(

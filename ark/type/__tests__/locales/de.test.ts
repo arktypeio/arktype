@@ -182,6 +182,10 @@ contextualize(() => {
 				'kind fehlt (muss "circle" oder "square" sein)',
 			'discriminant titled ← {"kind":"triangle"}':
 				'kind muss "circle" oder "square" sein, ist aber "triangle"',
+			'discriminant described ← {"kind":"triangle"}':
+				"muss ein Wert gemäß der Beschreibung „eine Form“ sein, ist aber ein Objekt",
+			"discriminant described branches ← true":
+				"muss ein Wert gemäß der Beschreibung „eine Anzahl“ oder eine Zeichenkette sein, ist aber ein Wahrheitswert",
 			'discriminant numbers ← {"k":3.5}':
 				"k muss 1,5 oder 2,5 sein, ist aber 3,5",
 			'discriminant bigints ← {"k":"3n"}':
@@ -261,6 +265,8 @@ contextualize(() => {
 				"muss more than 5 (!) sein, ist aber 3",
 			'number.epoch ← "x"':
 				"muss ein Unix-Zeitstempel als Zahl sein, ist aber eine Zeichenkette",
+			"object.json ← Map":
+				"muss ein einfaches Objekt oder Array sein, ist aber ein Objekt",
 			'string.alpha ← " x"': 'muss rein alphabetisch sein, ist aber " x"',
 			'string.alphanumeric ← " x"':
 				'muss rein alphanumerisch sein, ist aber " x"',

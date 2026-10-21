@@ -77,6 +77,29 @@ export const isError = (data: unknown) => data instanceof ArkErrors`)
 			attest(result.map?.sources).equals(["/main.ts"])
 		})
 
+		it("exports validators by bare names", () => {
+			const { modules } = precompile(`import { type } from "arktype"
+const max = 64
+export const User = type({ name: \`string <= \${max}\` })
+export const Users = User.array()
+export const Long = type("string").narrow(s => s.length > max)`)
+			attest(
+				normalized(
+					Object.values(modules).flatMap(module =>
+						module.split("\n").filter(line => line.startsWith("export {"))
+					)
+				)
+			).snap([
+				"export { get0 as #0 }",
+				"export { get1 as #1 }",
+				"export { factory0 as #2 }",
+				"export { #3, #3Node }",
+				"export { #4, #4Node }",
+				"export { #5, #5Node }",
+				"export { fixConfig as default }"
+			])
+		})
+
 		it("reads validators created eagerly and checking nothing", () => {
 			const result = precompile(
 				`import { type } from "arktype"
@@ -383,6 +406,21 @@ $arkfixConfig()
 const EpochMs = /* @__PURE__ */ $ark#0(n => new Date(n), d => d.getTime())
 export const Event = $ark#2(EpochMs)
 export const encode = (event: unknown) => $ark#3(Event)(event)`)
+		})
+
+		it("refuses .encode of a morph without an inverse", () => {
+			const result = precompile(`import { type } from "arktype"
+import "arktype/codecs"
+const T = type("string").pipe(s => s.length)
+export const encode = (v: unknown) => T.encode(v)`)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				"/main.ts:4:39  T.encode throws a ParseError\n  A morph must have an inverse to be encoded: (In: string) => Out<unknown>\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning."
+			])
+			attest(
+				normalized(
+					result.code.split("\n").filter(line => line.startsWith("const T"))
+				)
+			).snap(["const T = /* @__PURE__ */ $ark#0(s => s.length)"])
 		})
 
 		it("folds Modules", () => {

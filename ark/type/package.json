@@ -50,7 +50,11 @@
 			"default": "./out/mutatesInput.js"
 		},
 		"./runtime": {
-			"ark-ts": "./runtime.ts",
+			"ark-ts": {
+				"development": "./runtimeDevelopment.ts",
+				"default": "./runtime.ts"
+			},
+			"development": "./out/runtimeDevelopment.js",
 			"default": "./out/runtime.js"
 		},
 		"./internal": {

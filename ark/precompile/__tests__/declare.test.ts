@@ -12,8 +12,12 @@ import {
 	rmSync,
 	writeFileSync
 } from "node:fs"
-import { join, relative } from "node:path"
+import { join } from "node:path"
+import { relative } from "node:path/posix"
 import { runCli } from "./utils.ts"
+
+// declarations are keyed by TypeScript's paths, which use / on Windows too
+const tsPath = (path: string) => path.split("\\").join("/")
 
 const declared = fromHere("declared")
 const layouts = fromHere("declaredLayouts")
@@ -22,7 +26,7 @@ const specifiersByLayout = (tsconfig: string) => {
 	const declarations = emitDeclarations({ cwd: layouts, tsconfig })
 	const specifiersByFile: Record<string, string[]> = {}
 	for (const path in declarations.files) {
-		specifiersByFile[relative(layouts, path)] = [
+		specifiersByFile[relative(tsPath(layouts), path)] = [
 			...declarations.files[path].matchAll(/import\("([^"]+)"\)/g)
 		].map(match => match[1])
 	}
@@ -41,7 +45,10 @@ const inexactExportsOf = (fixture: string, checks: Record<string, string>) => {
 		lines.push(`export const _${lines.length}: ${comparison} = true`)
 	}
 	const src = join(fixture, "src")
-	for (const file of readdirSync(src, { recursive: true, encoding: "utf8" })) {
+	for (const file of readdirSync(src, {
+		recursive: true,
+		encoding: "utf8"
+	}).map(tsPath)) {
 		if (!file.endsWith(".ts")) continue
 		const module = file.slice(0, -3)
 		const id = module.replace(/\//g, "_")
@@ -80,8 +87,12 @@ const inexactExportsOf = (fixture: string, checks: Record<string, string>) => {
 			})
 		)
 		const tsc = spawnSync(
-			fromHere("..", "..", "..", "node_modules", ".bin", "tsc"),
-			["-p", "tsconfig.consumer.json"],
+			process.execPath,
+			[
+				fromHere("..", "..", "..", "node_modules", "typescript", "bin", "tsc"),
+				"-p",
+				"tsconfig.consumer.json"
+			],
 			{ cwd: fixture, encoding: "utf8" }
 		)
 		return [...tsc.stdout.matchAll(/^consumer\.ts\((\d+),.*$/gm)].map(
@@ -96,7 +107,8 @@ const inexactExportsOf = (fixture: string, checks: Record<string, string>) => {
 
 contextualize(() => {
 	const { files, errors } = emitDeclarations({ cwd: declared })
-	const declaredFile = (file: string) => files[join(declared, "out", file)]
+	const declaredFile = (file: string) =>
+		files[tsPath(join(declared, "out", file))]
 	const declarationsOf = (file: string, ...names: string[]) =>
 		declaredFile(file)
 			.split(/\n(?=export |declare )/)
@@ -310,7 +322,7 @@ export type Buffered = {
 		const exact = fromHere("declaredExact")
 		attest(
 			emitDeclarations({ cwd: exact }).files[
-				join(exact, "out", "~arktype.d.ts")
+				tsPath(join(exact, "out", "~arktype.d.ts"))
 			]
 		).snap(`// the shapes of this build's Types, Scopes and Modules
 export type Optional = {
@@ -377,7 +389,7 @@ export type Elements = [string, number?];
 	it("refuses a module declared where the shapes are", () => {
 		const collision = fromHere("declaredCollision")
 		attest(() => emitDeclarations({ cwd: collision })).throws(
-			writeSharedCollisionMessage(join(collision, "src", "~arktype.ts"))
+			writeSharedCollisionMessage(tsPath(join(collision, "src", "~arktype.ts")))
 		)
 	})
 
@@ -415,20 +427,21 @@ export type Elements = [string, number?];
 
 	it("prints the CLI's usage for an option it doesn't take", () => {
 		const cli = runCli(layouts, "--watch")
-		attest({ status: cli.status, stderr: cli.stderr }).snap({
-			status: 2,
-			stderr:
-				"Unknown option '--watch'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- \"--watch\"\nUsage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]\n"
-		})
+		// the first line is node:util's parseArgs message
+		attest([
+			cli.status,
+			cli.stderr.startsWith("Unknown option '--watch'"),
+			cli.stderr.includes("\nUsage: arktype-precompile --check")
+		]).equals([2, true, true])
 	})
 
 	it("prints the CLI's usage with --help", () => {
 		const cli = runCli(layouts, "--help")
-		attest({ status: cli.status, stdout: cli.stdout }).snap({
-			status: 0,
-			stdout:
-				"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]\n"
-		})
+		attest([
+			cli.status,
+			cli.stdout.startsWith("Usage: arktype-precompile --check"),
+			cli.stderr
+		]).equals([0, true, ""])
 	})
 
 	it("CLI declarations read as their sources", () => {

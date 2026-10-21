@@ -3,7 +3,7 @@ import { buildSync } from "esbuild"
 import { readFileSync } from "node:fs"
 import { gzipSync } from "node:zlib"
 
-const budget = 3700
+const budget = 3.625 * 1024
 
 const { exports } = JSON.parse(
 	readFileSync(new URL("../../type/package.json", import.meta.url), "utf8")

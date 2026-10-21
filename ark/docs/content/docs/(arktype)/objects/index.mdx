@@ -278,9 +278,9 @@ const MyClosedObject = type({
 MyClosedObject({ onlyAllowedKey: "ok", extraKey: 1 })
 ```
 
-`"reject"` checks string keys only, so an undeclared symbol key passes, while `"delete"` removes undeclared symbol keys too. Reject types that differ only by a symbol key therefore overlap, and a union of them with a morph is indeterminate.
+Both act on string keys: `"reject"` checks only an object's string keys, and `"delete"` builds a new object holding only its declared keys. So an undeclared symbol key passes `"reject"` and is dropped by `"delete"`, and reject types that differ only by a symbol key overlap, so a union of them with a morph is indeterminate.
 
-`"delete"` builds a new object with the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
+`"delete"`'s output has the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
 
 `.onDeepUndeclaredKey()` applies the same behavior to every nested object:
 
@@ -372,18 +372,21 @@ const Merged = type.merge({ a: "string" }, { b: "number" }, { "a?": "1" })
 
 ### escapes [#properties-escapes]
 
-Escape a key's `?`, or a key that is exactly `+` or `...`, with a backslash to use it literally:
+Escape a key's `?`, the `[` of a key in brackets, or a key that is exactly `+`, `...` or `@`, with a backslash to use it literally:
 
 ```ts
-// Type<{ "isAdmin?": boolean; "+": string }>
+// Type<{ "isAdmin?": boolean; "+": string; "[id]"?: string }>
 const Escaped = type({
 	"isAdmin\\?": "boolean",
-	"\\+": "string"
+	"\\+": "string",
+	"\\[id]?": "string"
 })
 
 // ArkErrors: value at ["isAdmin?"] must be boolean (was missing)
 Escaped({ "+": "x" })
 ```
+
+An index signature can't be optional, so a key like `"[id]?"` throws a `ParseError` unless its `[` is escaped.
 
 ### keyof [#properties-keyof]
 

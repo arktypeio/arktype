@@ -92,7 +92,7 @@ const buildArbitrary = (node: nodeOfKind<NodeKind>, ctx: Ctx) => {
 
 			const tie = ctx.tieStack[ctx.tieStack.length - 1]
 
-			const id = node.resolutionId
+			const id = node.resolution.id
 
 			/**
 			 * Synthetic aliases cause the original structure to not contain the resolved alias node when

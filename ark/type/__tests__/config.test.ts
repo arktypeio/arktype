@@ -132,6 +132,50 @@ contextualize(() => {
 		)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1479
+	it("message config on a pipe applies to its output's errors", () => {
+		const Port = type("string.numeric.parse | number")
+			.to("0 < number <= 65535")
+			.configure({ message: ctx => `invalid port (${ctx.problem})` })
+		attest(Port("abc").toString()).snap(
+			'invalid port (must be a well-formed numeric string (was "abc"))'
+		)
+		attest(Port("99999").toString()).snap(
+			"invalid port (must be at most 65535 (was 99999))"
+		)
+		attest(type({ port: Port })({ port: 99999 }).toString()).snap(
+			"invalid port (must be at most 65535 (was 99999))"
+		)
+		// its output keeps its own description and JSON Schema
+		attest(Port.out.description).snap("positive and at most 65535")
+		attest(Port.out.json).equals(type("0 < number <= 65535").json)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1492
+	it("union errors with one configured message surface it", () => {
+		const Dates = type("string[] > 0").configure({
+			message: "Dates are required"
+		})
+		const T = type({ "kind?": "'a'", dates: Dates }).or({
+			"kind?": "'b'",
+			dates: Dates
+		})
+		attest(T({ dates: [] }).toString()).snap("Dates are required")
+		const Differing = type({ "kind?": "'a'", dates: Dates }).or({
+			"kind?": "'b'",
+			dates: type("string[] > 0").configure({ message: "Add a date" })
+		})
+		attest(Differing({ dates: [] }).toString()).snap("dates must be non-empty")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1412
+	it("intersection errors with one configured message surface it", () => {
+		const Email = type("string.email > 0").configure({
+			message: "Email is not valid"
+		})
+		attest(Email("").toString()).snap("Email is not valid")
+	})
+
 	it("node writer config on undeclared key", () => {
 		const T = type({ "+": "reject", a: "string" }).configure(
 			{ message: ctx => `custom message ${ctx.problem}` },

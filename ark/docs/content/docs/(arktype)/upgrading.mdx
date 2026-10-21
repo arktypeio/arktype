@@ -72,6 +72,16 @@ An error's `actual` prints an object as `an object`, an array as `an array` and 
 type("'a' | 'b'")({ x: 1 })
 ```
 
+A value an `instanceof` check rejects is described as a domain error describes it, or by its class's name if it's a builtin's instance:
+
+```ts
+// ArkErrors: must be a Date (was a number), before: (was number)
+type("Date")(5)
+
+// ArkErrors: must be a Date (was Map), as before
+type("Date")(new Map())
+```
+
 ### Undeclared keys have the undeclared code
 
 A key that `"+": "reject"` disallows was a `predicate` error. Its code is now `undeclared`, and its `data` is the key's value rather than the object:
@@ -100,6 +110,8 @@ if (out instanceof type.errors) {
 	out.issues[0].code // "discriminant", before: "predicate"
 }
 ```
+
+A described union's miss is at the union's own path, with the union's value as its `data`. A miss of a union discriminated by its value whose branch is described has the `union` code instead, as an undiscriminated union's does.
 
 Configure its text under `discriminant` instead of `predicate`. An exhaustive `switch` over `ArkErrorCode` must handle `undeclared` and `discriminant`.
 
@@ -185,6 +197,29 @@ Allow them everywhere with `configure({ numberAllowsInfinity: true })`, or in on
 const T = type("number | number.Infinity | number.NegativeInfinity")
 ```
 
+### object.json accepts only plain objects and arrays
+
+`object.json` rejects an object whose prototype isn't `Object.prototype` or `null`, unless it's an array, so a `Map`, `Set`, `Date`, function or class instance, which `JSON.stringify` doesn't write as itself, fails anywhere in the data:
+
+```ts
+// ArkErrors: at must be a plain object or array (was an object)
+// before: { at: Date }
+type("object.json")({ at: new Date() })
+```
+
+### Optional index signatures throw
+
+A key like `"[k]?"` was the literal key `"[k]"`, made optional. It now throws a `ParseError`, since it reads as an optional index signature. Escape its `[` to keep the literal key:
+
+```ts
+// @errors: 2322
+// throws ParseError: Index signature [k] can't be optional. Escape its '[' with a backslash for an optional key named '[k]'
+type({ "[k]?": "string" })
+
+// Type<{ "[k]"?: string }>
+type({ "\\[k]?": "string" })
+```
+
 ### The clone option is removed
 
 Transforming no longer clones the input first. Output shares every value nothing transformed with the input, and a morph receives the validated value itself, so a morph that mutates its argument mutates your data. Remove `clone` from your config.
@@ -256,6 +291,7 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - A string index signature beside declared keys becomes `patternProperties: { "": ... }` instead of `additionalProperties`.
 - `toJsonSchema()` throws for a regex flag JSON Schema can't express, instead of leaving it out: `type(/^a/i).toJsonSchema()` throws (code `patternFlags`), before: `{ type: "string", pattern: "^a" }`, which rejects `"A"`.
 - `toJsonSchema()` throws for an index signature key it can't express, instead of leaving out the index signature: `type({ "[string <= 3]": "number" }).toJsonSchema()` throws (code `indexKey`), before: `{ type: "object" }`. See [JSON Schema](/docs/json-schema/to-json-schema#how-types-map) for the keys it can write.
+- `toJsonSchema()` throws for `object.json` and the Types it's part of, like `string.json.parse`'s output, since its check that an object is plain is a `predicate`. [Handle that code](/docs/json-schema/to-json-schema#fallback-codes) to write it as before.
 - Expressions keep length bounds and protos beside a structure: `type("number[] > 1").expression` is `number[] >= 2`, before: `number[]`.
 - Optional keys are listed by name, whether or not they have a default: `{ bar?: number, foo: string = "foo" }`, before: `{ foo: string = "foo", bar?: number }`.
 - The `$ark.x` names that functions get in `.json` and `.expression` are names only and no longer resolve through `$ark`.

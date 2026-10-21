@@ -10,15 +10,17 @@ import { precompile as bunPlugin } from "@ark/precompile/bun"
 import { check } from "@ark/precompile/internal/check.ts"
 import { writeDeclareFrameworkMessage } from "@ark/precompile/internal/declare.ts"
 import {
+	allowUnsafeHint,
 	createNodeHost,
-	writeAliasMessage
+	writeAliasMessage,
+	writePrecompiledDependencyMessage
 } from "@ark/precompile/internal/host.ts"
 import { register } from "@ark/precompile/node"
 import turbopack from "@ark/precompile/turbopack"
 import type { PrecompilePluginOptions } from "@ark/precompile/unplugin"
 import { spawnSync } from "node:child_process"
 import { mkdirSync, readFileSync, utimesSync, writeFileSync } from "node:fs"
-import { join } from "node:path"
+import { join, relative, sep } from "node:path"
 import { pathToFileURL } from "node:url"
 import { configureAfterTypeMessage } from "@ark/schema"
 import {
@@ -28,6 +30,7 @@ import {
 import {
 	hasBun,
 	inFreshProcess,
+	packageFiles,
 	runPlain,
 	tempDir,
 	undetailedOutput,
@@ -63,6 +66,9 @@ const node = (args: string[], opts: PrecompilePluginOptions, cwd = app) =>
 		{ cwd, encoding: "utf8", timeout }
 	)
 
+// Node 22 reports a test run that isn't to a terminal as TAP
+const spec = "--test-reporter=spec"
+
 // options reach the plugin in app/preload.ts through the environment
 const bun = (
 	args: string[],
@@ -89,11 +95,16 @@ const bun = (
 }
 
 // the message of the error a process printed, without its stack
-const thrownMessage = (output: string, root: string, prefix = "Error: ") =>
-	output
-		.slice(output.indexOf(prefix) + prefix.length, output.search(/\n +at /))
+// Node on Windows writes stderr's lines with \r\n, and paths with \
+const thrownMessage = (output: string, root: string, prefix = "Error: ") => {
+	const lines = output.split("\r\n").join("\n")
+	return lines
+		.slice(lines.indexOf(prefix) + prefix.length, lines.search(/\n +at /))
+		.split(`${root}${sep}`)
+		.join("")
 		.split(`${root}/`)
 		.join("")
+}
 
 const islands = fromHere("islands")
 const configured = fromHere("configured")
@@ -255,7 +266,10 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 		})
 
 		it("fails a test file with a rejected site", () => {
-			const { status, stdout } = node(["--test", "roles.ts", "main.ts"], {})
+			const { status, stdout } = node(
+				["--test", spec, "roles.ts", "main.ts"],
+				{}
+			)
 			attest(status).equals(1)
 			attest(
 				stdout
@@ -277,7 +291,7 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 
 		it("checks static helpers under node --test", () => {
 			const { status, stdout } = node(
-				["--experimental-test-module-mocks", "--test", "node.check.ts"],
+				["--experimental-test-module-mocks", "--test", spec, "node.check.ts"],
 				{},
 				checks
 			)
@@ -317,6 +331,34 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 					)
 				)
 			).equals(true)
+		})
+
+		it("fails on a dependency shipping precompiled validators", () => {
+			const root = writeFixture(
+				{
+					...packageFiles("prebuilt", {
+						"index.js":
+							'import { type } from "arktype/runtime"\nexport const prebuilt = typeof type\n'
+					}),
+					// not type-checked, as the package declares no types
+					"main.js":
+						'import { prebuilt } from "prebuilt"\nconsole.log(prebuilt)\n'
+				},
+				fromHere("temp", "prebuilt")
+			)
+			const failed = node(["main.js"], {}, root)
+			const warned = node(["main.js"], { allowUnsafe: true }, root)
+			attest([
+				failed.status,
+				thrownMessage(failed.stderr, root),
+				warned.stdout,
+				warned.stderr.includes(writePrecompiledDependencyMessage("prebuilt"))
+			]).equals([
+				1,
+				`${writePrecompiledDependencyMessage("prebuilt")} ${allowUnsafeHint}`,
+				"object\n",
+				true
+			])
 		})
 
 		it("configured", () => {
@@ -359,8 +401,12 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 				transpiled
 			)
 			attest(status).equals(1)
+			// the loader hides both, and Node 22 resolves main.ts's imports
+			// before it loads config.ts, where later versions load config.ts first
 			attest(
-				stderr.includes(writeTextlessMessage(join(transpiled, "config.ts")))
+				["config.ts", "main.ts"].some(file =>
+					stderr.includes(writeTextlessMessage(join(transpiled, file)))
+				)
 			).equals(true)
 			attest(
 				node(
@@ -495,7 +541,11 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 						resourcePath: join(dir, file),
 						getOptions: () => ({ ...opts, conditions, cwd: dir }),
 						addDependency: dependency =>
-							dependencies.push(dependency.replace(`${dir}/`, "")),
+							dependencies.push(
+								dependency.startsWith(`${dir}${sep}`) ?
+									relative(dir, dependency).split(sep).join("/")
+								:	dependency
+							),
 						emitWarning: warning => {
 							throw warning
 						}
@@ -551,6 +601,10 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 					if (returned !== undefined) settle(undefined)
 				})
 			attest(await failureOf("arktype/runtime")).equals(undefined)
+			// as resolved under the "development" condition
+			attest(
+				await failureOf(fromHere("..", "..", "type", "runtimeDevelopment.ts"))
+			).equals(undefined)
 			attest(await failureOf("arktype")).equals(
 				writeAliasMessage("arktype", "../../../type/index.ts", {})
 			)
@@ -598,6 +652,8 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			inFreshProcess(
 				async (dir: string, files: string[], change: Change) => {
 					const fs = await import("node:fs")
+					// as Turbopack passes it, in the platform's form
+					const { join } = await import("node:path")
 					const { default: turbopack } = await import(
 						"@ark/precompile/turbopack"
 					)
@@ -605,7 +661,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 						try {
 							return turbopack.call(
 								{
-									resourcePath: `${dir}/${file}`,
+									resourcePath: join(dir, file),
 									getOptions: () => ({
 										config: "config.ts",
 										conditions: ["ark-ts"],
@@ -616,7 +672,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 										throw warning
 									}
 								},
-								fs.readFileSync(`${dir}/${file}`, "utf8")
+								fs.readFileSync(join(dir, file), "utf8")
 							)
 						} catch (e) {
 							return (e as Error).message
@@ -781,9 +837,11 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 		})
 	})
 
-	if (!hasBun()) return
+	describe("bun", function () {
+		before(function () {
+			if (!hasBun()) this.skip()
+		})
 
-	describe("bun", () => {
 		const preload = [
 			"--conditions",
 			"ark-ts",

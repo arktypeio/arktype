@@ -626,9 +626,33 @@ const writeError = (
 			if (pathEquals(e.path, error.path)) e.propString ??= error.propString
 			writeError(e, config, locale)
 		}
+		const shared =
+			(error.meta?.message ?? config[error.code].message) ===
+				defaultConfig[error.code].message && sharedMessageOf(error.errors)
+		if (shared) error.message ??= shared
 	}
 	if (renderer && locale !== renderer.en) renderer.write(error, config, locale)
 	else writeText(error, config, locale)
+}
+
+// the message each error was configured or supplied with, if they agree
+const sharedMessageOf = (errors: readonly ArkError[]): string | undefined => {
+	let shared: string | undefined
+	for (const e of errors) {
+		const message =
+			(
+				e.meta?.message !== undefined ||
+				suppliedText(e, "message") !== undefined
+			) ?
+				e.message
+			: e.code === "union" || e.code === "intersection" ?
+				sharedMessageOf(e.errors)
+			:	undefined
+		if (message === undefined || (shared !== undefined && message !== shared))
+			return
+		shared = message
+	}
+	return shared
 }
 
 export const writeText = (

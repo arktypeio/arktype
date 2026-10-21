@@ -51,7 +51,8 @@ export const bundle = (): void => {
 				.outputFiles
 		)
 	}
-	for (const path of modulePaths) rmRf(path)
+	const kept = developmentEntryPoints(process.cwd())
+	for (const path of modulePaths) if (!kept.includes(path)) rmRf(path)
 	for (const file of outputFiles)
 		writeFile(file.path, nameSelfReferencingClasses(file.text))
 }
@@ -69,6 +70,16 @@ export const publicEntryPoints = (dir: string): string[] => [
 		})
 	)
 ]
+
+// each imports the entry it wraps, so it ships as tsc wrote it
+const developmentEntryPoints = (dir: string): string[] =>
+	Object.values<string | { development?: string }>(
+		readPackageJson(dir).exports
+	).flatMap(target =>
+		typeof target === "object" && target.development ?
+			[join(dir, target.development)]
+		:	[]
+	)
 
 type Edit = [start: number, end: number, replacement: string]
 

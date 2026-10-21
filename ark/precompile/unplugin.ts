@@ -18,14 +18,19 @@ import type {
 } from "./driver.ts"
 import {
 	allowUnsafeHint,
-	arkPackageName,
+	createDevelopmentHost,
 	createNodeHost,
 	dependencyOf,
+	fileOf,
 	optedInPackagesOf,
+	precompiledDependencyOf,
+	packageNameOf,
+	realPathOf,
 	reportDiagnostics,
 	resolvesToRuntime,
 	resolvedVariantOf,
 	rethrowAsBuildError,
+	runtimePackages,
 	runtimeSpecifiers,
 	schemaSpecifier,
 	throwBuildError,
@@ -33,9 +38,12 @@ import {
 	unbundledMessage,
 	variantSpecifierOf,
 	writePrecompiledDependencyMessage,
+	writeExternalizedMessage,
 	writeUncachedModuleMessage,
+	writeUnwrittenModuleMessage,
 	writeVariantImportMessage,
-	writeUntransformedImportMessage
+	writeUntransformedImportMessage,
+	type PrecompileHost
 } from "./host.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
@@ -80,15 +88,26 @@ export const precompile: UnpluginInstance<
 		)
 	}
 	const readDependency = (importer: string) =>
-		request("readDependency", importer) as Promise<RenderedDiagnostics>
-	const host = createNodeHost(opts)
+		request("readDependency", fileOf(importer)) as Promise<RenderedDiagnostics>
+	const productionHost = createNodeHost(opts)
+	let developmentHost: PrecompileHost | undefined
+	// resolves as the bundler's mode would, e.g. arktype/runtime in development
+	let host = productionHost
+	const resolveIn = (isDevelopment: boolean) => {
+		host =
+			isDevelopment ?
+				(developmentHost ??= createDevelopmentHost(opts))
+			:	productionHost
+	}
 	const isStandalone = opts?.runtime !== "arktype"
 	const variant = resolvedVariantOf(opts)
 	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
+	// arktype left to Node loads as itself, not as the runtime validators use
+	const inlined = isStandalone ? [...runtimePackages, ...packages] : packages
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
 	// a persistent cache keeps a transformed module, but not the modules it wrote
-	let compiler: { options: { cache?: unknown } } | undefined
+	let compiler: BundlerCompiler | undefined
 	let storeDir: string | undefined
 	// read once the bundler has applied its defaults
 	const storeDirOf = () => {
@@ -98,8 +117,56 @@ export const precompile: UnpluginInstance<
 		}
 		return storeDir
 	}
-	const keepCompiler = (bundler: NonNullable<typeof compiler>) => {
+	// an external arktype loads apart from the runtime its validators use
+	const checkExternal = (
+		isExternal: (specifier: string) => boolean,
+		option: string,
+		warn: (message: string) => void
+	) => {
+		if (!isStandalone || opts?.shadow) return
+		const specifier = externalizableSpecifiers.find(isExternal)
+		if (!specifier) return
+		const problem = writeExternalizedMessage(specifier, option)
+		if (opts?.allowUnsafe) warn(problem)
+		else throwBuildError(`${problem} ${allowUnsafeHint}`)
+	}
+	const checkInputExternal = function (
+		this: { warn: (message: string) => void },
+		options: { external?: unknown }
+	) {
+		checkExternal(
+			specifier => isExternalIn(options.external, specifier),
+			"external",
+			message => this.warn(message)
+		)
+	}
+	const keepCompiler = (bundler: BundlerCompiler) => {
 		compiler = bundler
+		resolveIn(bundler.options.mode === "development")
+		// webpack and Rspack decide externals, e.g. Next's, before resolving
+		bundler.hooks.compilation.tap("arktype", compilation =>
+			compilation.hooks.finishModules.tap("arktype", modules => {
+				const requests = new Set<string>()
+				for (const module of modules) {
+					if (module instanceof bundler.webpack.ExternalModule)
+						requests.add(module.userRequest)
+				}
+				try {
+					checkExternal(
+						specifier => requests.has(specifier),
+						"externals",
+						message =>
+							compilation.warnings.push(
+								new bundler.webpack.WebpackError(message)
+							)
+					)
+				} catch (e) {
+					compilation.errors.push(
+						new bundler.webpack.WebpackError((e as Error).message)
+					)
+				}
+			})
+		)
 	}
 	// Vite's, for what plugins keep between builds
 	let cacheDir: string | undefined
@@ -136,8 +203,9 @@ export const precompile: UnpluginInstance<
 		writeFileSync(file, JSON.stringify(unitReadersById))
 	}
 	const loadModule = (id: string) => {
+		if (id in modules) return modules[id]
 		const dir = storeDirOf()
-		if (id in modules || !dir) return modules[id]
+		if (!dir) return throwBuildError(writeUnwrittenModuleMessage(id.slice(1)))
 		let stored: [importer: string, code: string]
 		try {
 			stored = JSON.parse(readFileSync(join(dir, storedNameOf(id)), "utf8"))
@@ -157,11 +225,9 @@ export const precompile: UnpluginInstance<
 		else diagnostics.errors.push(`${problem} ${allowUnsafeHint}`)
 	}
 	const reportedPrecompiled = new Set<string>()
-	// a dependency importing the runtime ships what another build precompiled
 	const precompiledProblemOf = (id: string, importer: string) => {
-		const [, name] = (id === "arktype/runtime" && dependencyOf(importer)) || []
-		if (!name || arkPackageName.test(name) || reportedPrecompiled.has(name))
-			return
+		const name = precompiledDependencyOf(id, importer)
+		if (!name || reportedPrecompiled.has(name)) return
 		reportedPrecompiled.add(name)
 		return writePrecompiledDependencyMessage(name)
 	}
@@ -180,7 +246,11 @@ export const precompile: UnpluginInstance<
 		)
 			return
 		reportedUntransformed.add(file)
-		return writeUntransformedImportMessage(file, id, opts?.cwd ?? process.cwd())
+		return writeUntransformedImportMessage(
+			file,
+			id,
+			realPathOf(opts?.cwd ?? process.cwd())
+		)
 	}
 	let isServing = false
 	// a Vite app's environments share the declarations of the app's build
@@ -226,7 +296,7 @@ export const precompile: UnpluginInstance<
 					const specifier = variantSpecifierOf(id, variant)
 					return specifier ?
 							host.resolve(specifier, importer)
-						:	refuse(writeVariantImportMessage(importer, id, variant))
+						:	refuse(writeVariantImportMessage(fileOf(importer), id, variant))
 				}
 				const isRuntime = runtimeSpecifiers.includes(id)
 				const diagnostics =
@@ -248,10 +318,11 @@ export const precompile: UnpluginInstance<
 		transform: {
 			filter: { id: transformedFilter },
 			async handler(code, id) {
+				const file = fileOf(id)
 				// a plugin ahead of this one may have transpiled it, as Rollup's
 				// TypeScript plugin does, so its lines are read through their map
 				const map =
-					code === host.readFile(id) ?
+					code === host.readFile(file) ?
 						undefined
 					:	((
 							this as { getCombinedSourcemap?: () => { mappings: string } }
@@ -264,13 +335,13 @@ export const precompile: UnpluginInstance<
 				const transformed = (await request(
 					"transform",
 					code,
-					id,
+					file,
 					map?.mappings
 				)) as TransformedModule | undefined
 				if (!transformed) return
 				if (unitReadersById) unitReadersById[id] = transformed.unitReaders
 				for (const dependency of transformed.dependencies)
-					if (dependency !== id) this.addWatchFile(dependency)
+					if (dependency !== file) this.addWatchFile(dependency)
 				for (const specifier in transformed.modules) {
 					const virtualId = `\0${specifier}`
 					if (virtualId in modules) continue
@@ -301,17 +372,50 @@ export const precompile: UnpluginInstance<
 			},
 			// Vite and Vitest otherwise leave dependencies to Node or prebundling
 			config: () =>
-				packages.length ?
+				inlined.length ?
 					{
 						optimizeDeps: { exclude: packages },
-						ssr: { noExternal: packages },
-						test: { server: { deps: { inline: packages } } }
+						ssr: { noExternal: inlined },
+						test: { server: { deps: { inline: inlined } } }
 					}
 				:	undefined,
+			// e.g. Astro's prerender, a server environment other than ssr
+			configEnvironment: () =>
+				inlined.length ? { resolve: { noExternal: inlined } } : undefined,
+			// a module's precompiled code depends on files other than its own,
+			// and the modules it imports are written only as it is transformed
+			configureVitest: (context: VitestPluginContext) =>
+				(
+					context.defineCacheKeyGenerator ??
+					context.experimental_defineCacheKeyGenerator
+				)?.(({ id }) =>
+					(
+						transformedFilter.include.test(id) &&
+						!transformedFilter.exclude.test(id)
+					) ?
+						false
+					:	undefined
+				),
+			options: checkInputExternal,
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
 				isServing = config.command === "serve"
+				resolveIn(!config.isProduction)
 				cacheDir = config.cacheDir
+				for (const [name, environment] of Object.entries(
+					config.environments ?? { ssr: { resolve: config.ssr } }
+				)) {
+					const external = environment.resolve?.external
+					checkExternal(
+						specifier =>
+							Array.isArray(external) &&
+							external.includes(packageNameOf(specifier)),
+						name === "ssr" ? "ssr.external" : (
+							`environments.${name}.resolve.external`
+						),
+						message => config.logger.warn(message)
+					)
+				}
 				if (
 					opts?.checks !== undefined ||
 					opts?.runtime === "arktype" ||
@@ -362,6 +466,8 @@ export const precompile: UnpluginInstance<
 			})
 		},
 		rspack: keepCompiler,
+		rollup: { options: checkInputExternal },
+		rolldown: { options: checkInputExternal },
 		esbuild: {
 			// arktype resolves natively, outside the plugin's esbuild namespace
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
@@ -383,7 +489,7 @@ export const precompile: UnpluginInstance<
 									errors: [
 										{
 											text: writeVariantImportMessage(
-												args.importer,
+												fileOf(args.importer),
 												args.path,
 												variant
 											)
@@ -449,6 +555,54 @@ export const precompile: UnpluginInstance<
 })
 
 const esbuildResolution = "arktype"
+
+// what the plugin reads of a webpack or Rspack compiler
+interface BundlerCompiler {
+	options: { cache?: unknown; mode?: string }
+	hooks: { compilation: Tap<BundlerCompilation> }
+	webpack: {
+		ExternalModule: abstract new (...args: never[]) => { userRequest: string }
+		WebpackError: new (message: string) => Error
+	}
+}
+
+interface BundlerCompilation {
+	hooks: { finishModules: Tap<Iterable<unknown>> }
+	errors: Error[]
+	warnings: Error[]
+}
+
+interface Tap<arg> {
+	tap(name: string, fn: (arg: arg) => void): void
+}
+
+// what a program or the runtime imports of arktype's packages
+const externalizableSpecifiers = [
+	...runtimeSpecifiers,
+	"arktype/runtime",
+	"@ark/schema",
+	"@ark/schema/runtime",
+	"@ark/util"
+]
+
+// whether Rollup's or Rolldown's `external` option matches a specifier
+const isExternalIn = (external: unknown, specifier: string): boolean =>
+	typeof external === "function" ? !!external(specifier, undefined, false)
+	: Array.isArray(external) ?
+		external.some(option => isExternalIn(option, specifier))
+	: external instanceof RegExp ? external.test(specifier)
+	: external === specifier
+
+// what Vitest passes configureVitest, its generator experimental before Vitest 5
+interface VitestPluginContext {
+	defineCacheKeyGenerator?: CacheKeyGenerator
+	experimental_defineCacheKeyGenerator?: CacheKeyGenerator
+}
+
+// a generator returning false keeps a module out of Vitest's module cache
+type CacheKeyGenerator = (
+	generate: (context: { id: string }) => false | undefined
+) => void
 
 const noDiagnostics = (): RenderedDiagnostics => ({ errors: [], warnings: [] })
 

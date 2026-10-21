@@ -27,6 +27,7 @@ import {
 	type ErrorMessage,
 	type Fn,
 	type ifEmptyObjectLiteral,
+	type inferred,
 	type objectKindOrDomainOf,
 	type Primitive
 } from "@ark/util"
@@ -166,12 +167,14 @@ export const writeAsyncStandardSchemaMessage = (vendor: string): string =>
 export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def
 	: def extends type.cast<infer t> ?
-		// {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
+		// a Type's [inferred] is required, but type.cast's is optional, and
+		// inferring through it drops undefined without exactOptionalPropertyTypes
+		def extends { [inferred]: infer t } ? t
+		: // {} as a def is handled here since according to TS it extends { " arkInferred"?: t  }.
 		// Unlike in TS however, ArkType object literals are constrained to object
 		// so we use that as the base type inferred when parsing {}.
-		unknown extends t ?
-			ifEmptyObjectLiteral<def, object, t>
-		:	t
+		unknown extends t ? ifEmptyObjectLiteral<def, object, t>
+		: t
 	: def extends ThunkCast<infer t> ? t
 	: def extends string ? inferString<def, $, args>
 	: def extends array ? inferTuple<def, $, args>

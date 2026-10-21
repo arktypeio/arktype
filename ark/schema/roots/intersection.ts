@@ -281,26 +281,30 @@ export class IntersectionNode extends BaseRoot<Intersection.Declaration> {
 
 	// a failed basis or prestructural stops this node's Apply
 	compile(js: NodeCompiler): void {
-		// a loop keeps a minifier from joining its checks into one expression
+		// a loop keeps a minifier from joining its checks into one expression,
+		// which a build for size lets it do
 		if (js.traversalKind === "Allows") {
 			const read =
 				this.inner.domain?.domain === "object" && !this.prestructurals.length ?
 					this.structure?.allowsProps[0]
 				:	undefined
-			js.block("for (;;)", () => {
+			const checks = () => {
 				for (const child of this.children) {
-					if (child !== this.basis || !read) js.check(child, { breaks: true })
+					if (child !== this.basis || !read)
+						js.check(child, { breaks: !js.shortest })
 					else {
 						// a key is read before data is checked to be an object
 						js.rejectNullish()
 							.line(`data${js.prop(read.key)}`)
 							.if("!(data instanceof Object || Object(data) === data)", () =>
-								js.line("break")
+								js.shortest ? js.return(false) : js.line("break")
 							)
 					}
 				}
 				return js.return(true)
-			}).return(false)
+			}
+			if (js.shortest) checks()
+			else js.block("for (;;)", checks).return(false)
 			return
 		}
 		// only a structure can transform an intersection's data

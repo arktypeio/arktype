@@ -19,6 +19,7 @@ import {
 	type DiscriminantKind,
 	type DiscriminantLocation,
 	type DiscriminatedCases,
+	type DisjointEntry,
 	type Domain,
 	type FlatRef,
 	type Intersection,
@@ -35,7 +36,6 @@ import {
 	flatMorph,
 	type dict,
 	integerLikeMatcher,
-	isArray,
 	isDate,
 	range,
 	throwParseError,
@@ -150,41 +150,47 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 			for (const entry of result) {
 				if (!entry.kind || entry.optional) continue
 
-				let lCases: CaseEntry[] | undefined
-				let rCases: CaseEntry[] | undefined
+				if (entry.kind === "union") {
+					addUnitCases(
+						candidates,
+						entry as DisjointEntry<"union">,
+						lIndex,
+						rIndex
+					)
+					continue
+				}
+
+				let lSerialized: string
+				let rSerialized: string
 
 				if (entry.kind === "domain") {
 					const lValue = entry.l as Domain.Node | Domain.Enumerable
 					const rValue = entry.r as Domain.Node | Domain.Enumerable
-					lCases = [
-						[`"${typeof lValue === "string" ? lValue : lValue.domain}"`, lValue]
-					]
-					rCases = [
-						[`"${typeof rValue === "string" ? rValue : rValue.domain}"`, rValue]
-					]
-				} else if (entry.kind === "unit" || entry.kind === "union") {
-					lCases = unitCasesOf(entry.l as Unit.Node | readonly BaseRoot[])
-					rCases = unitCasesOf(entry.r as Unit.Node | readonly BaseRoot[])
-					if (!lCases || !rCases) continue
+					lSerialized = `"${typeof lValue === "string" ? lValue : lValue.domain}"`
+					rSerialized = `"${typeof rValue === "string" ? rValue : rValue.domain}"`
+				} else if (entry.kind === "unit") {
+					const lUnit = entry.l as Unit.Node
+					const rUnit = entry.r as Unit.Node
+					if (!isCaseUnit(lUnit) || !isCaseUnit(rUnit)) continue
+					lSerialized = lUnit.serializedValue
+					rSerialized = rUnit.serializedValue
 				} else continue
 
 				// an optional chain reads undefined at a missing key or below a non-object
 				if (
 					entry.path.length &&
-					[...lCases, ...rCases!].some(([k]) => isUndefinedCase(k))
+					(isUndefinedCase(lSerialized) || isUndefinedCase(rSerialized))
 				)
 					continue
 
-				const kind = entry.kind === "domain" ? "domain" : "unit"
 				const matching = candidates.find(
-					d => arrayEquals(d.path, entry.path) && d.kind === kind
+					d => arrayEquals(d.path, entry.path) && d.kind === entry.kind
 				)
 				const cases = matching?.cases ?? {}
-				for (const [k, condition] of lCases)
-					addCase(cases, k, lIndex, condition)
-				for (const [k, condition] of rCases!)
-					addCase(cases, k, rIndex, condition)
-				if (!matching) candidates.push({ kind, cases, path: entry.path })
+				addCase(cases, lSerialized, lIndex, entry.l)
+				addCase(cases, rSerialized, rIndex, entry.r)
+				if (!matching)
+					candidates.push({ kind: entry.kind, cases, path: entry.path })
 			}
 		}
 	}
@@ -246,17 +252,30 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 	return Object.assign(ctx.location, members ? { cases, members } : { cases })
 }
 
-type CaseEntry = [k: string, condition: unknown]
-
-// a unit or a union of them, like a merged { kind: "a" | "b" }, is a case
-// for each unit
-const unitCasesOf = (
-	operand: Unit.Node | readonly BaseRoot[]
-): CaseEntry[] | undefined => {
-	const units = isArray(operand) ? operand : [operand]
-	return units.every(unit => unit.hasKind("unit") && isCaseUnit(unit)) ?
-			units.map(unit => [(unit as Unit.Node).serializedValue, unit])
-		:	undefined
+// each unit of literal unions disjoint at a path is its own case, so data
+// matching none of them misses every branch rather than defaulting to one
+const addUnitCases = (
+	candidates: DiscriminantCandidate[],
+	entry: DisjointEntry<"union">,
+	lIndex: number,
+	rIndex: number
+) => {
+	const isCase = (branch: BaseRoot): branch is Unit.Node =>
+		branch.hasKind("unit") &&
+		isCaseUnit(branch) &&
+		!(entry.path.length && isUndefinedCase(branch.serializedValue))
+	if (!entry.l.every(isCase) || !entry.r.every(isCase)) return
+	let candidate = candidates.find(
+		d => arrayEquals(d.path, entry.path) && d.kind === "unit"
+	)
+	if (!candidate) {
+		candidate = { kind: "unit", cases: {}, path: entry.path }
+		candidates.push(candidate)
+	}
+	for (const unit of entry.l)
+		addCase(candidate.cases, unit.serializedValue, lIndex, unit)
+	for (const unit of entry.r)
+		addCase(candidate.cases, unit.serializedValue, rIndex, unit)
 }
 
 const addCase = (
@@ -334,21 +353,24 @@ const resolveCase = (
 	let resolvedEntries: BranchEntry[] | null = []
 	const nextDefaults: BranchEntry[] = []
 
-	// a branch with several of the cases, like { kind: "a" | "b" }, is in each
-	for (let i = 0, d = 0; i < ctx.node.branches.length; i++) {
-		const entry =
-			ctx.defaultEntries[d]?.originalIndex === i ?
-				ctx.defaultEntries[d++]
-			:	undefined
-		if (caseCtx.branchIndices.includes(i)) {
-			const pruned = pruneDiscriminant(ctx.node.branches[i], ctx.location)
-			if (pruned === null) {
-				// if any branch of the union has no constraints (i.e. is
-				// unknown), the others won't affect the resolution type, but could still
-				// remove additional cases from defaultEntries
-				resolvedEntries = null
-			} else resolvedEntries?.push({ originalIndex: i, branch: pruned })
-		} else if (entry) {
+	// read from every branch, since one with several units at the path, like
+	// "'a' | 'b'", is a case of each
+	for (const originalIndex of caseCtx.branchIndices) {
+		const pruned = pruneDiscriminant(
+			ctx.node.branches[originalIndex],
+			ctx.location
+		)
+		if (pruned === null) {
+			// if any branch of the union has no constraints (i.e. is
+			// unknown), the others won't affect the resolution type, but could still
+			// remove additional cases from defaultEntries
+			resolvedEntries = null
+		} else resolvedEntries?.push({ originalIndex, branch: pruned })
+	}
+
+	for (let i = 0; i < ctx.defaultEntries.length; i++) {
+		const entry = ctx.defaultEntries[i]
+		if (!caseCtx.branchIndices.includes(entry.originalIndex)) {
 			const intersection = intersectNodesRoot(
 				entry.branch.rawIn,
 				discriminantNode,
@@ -619,11 +641,8 @@ export const reduceBranches = ({
 
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
 	for (let i = 0; i < branches.length; i++) {
-		for (
-			let j = i + 1;
-			j < branches.length && uniquenessByIndex[i] && uniquenessByIndex[j];
-			j++
-		) {
+		for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
+			if (!uniquenessByIndex[j]) continue
 			if (branches[i].equals(branches[j])) {
 				// if the two branches are equal, only "j" is marked as
 				// redundant so at least one copy could still be included in

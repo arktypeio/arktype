@@ -595,7 +595,7 @@ const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 len("foo") // 3
 len([1, 2]) // 2
 
-// TraversalError: value at [0] must be a string or an object (was boolean)
+// TraversalError: value at [0] must be a string or an array (was boolean)
 len(true)
 ```
 
@@ -681,6 +681,18 @@ SpecialNumber("five")
     </SyntaxTab>
 
 </SyntaxTabs>
+
+An object definition can hold its own metadata under an `"@"` key:
+
+```ts
+const User = type({
+	"@": "a user",
+	name: "string"
+})
+
+// ArkErrors: must be a user (was a number)
+User(5)
+```
 
 A configured description, like any message you configure, takes precedence over the [locale](/docs/i18n#your-own-messages), so it isn't translated.
 

@@ -36,6 +36,60 @@ contextualize(() => {
 		attest(R.and(L).expression).equals(L.and(R).expression)
 	})
 
+	it("an intersection that leaves no props keeps undeclared keys", () => {
+		const Rejected = type({ "a?": "1", "+": "reject" }).and({
+			"b?": "2",
+			"+": "reject"
+		})
+		attest(Rejected.json).snap({ undeclared: "reject", domain: "object" })
+		attest(Rejected({ z: 1 }).toString()).snap("z must be removed")
+		const Deleted = type({ "+": "delete" }).and({})
+		attest(Deleted({ k: 0 })).equals({})
+	})
+
+	it("an array meeting a closed object has elements only at keys it declares", () => {
+		const T = type({ "0?": "number", "+": "reject" }).and("number[]")
+		attest(T.json).snap({
+			undeclared: "reject",
+			optional: [{ key: "0", value: "number" }],
+			sequence: "number",
+			proto: "Array",
+			maxLength: 1
+		})
+		attest(T([0])).equals([0])
+		attest(T([0, 1]).toString()).snap("must be at most length 1 (was 2)")
+		const Empty = type({ "+": "reject" }).and("number[]")
+		attest(Empty.json).snap({
+			undeclared: "reject",
+			sequence: [],
+			proto: "Array"
+		})
+		attest(Empty([])).equals([])
+		attest(Empty.allows([0])).equals(false)
+		attest(() => type({ "+": "reject" }).and(["number"])).throws.snap(
+			"ParseError: Intersection at [0] of never and number results in an unsatisfiable type"
+		)
+	})
+
+	it("a closed array declares its indices to an intersection", () => {
+		const Closed = type("string[]").onUndeclaredKey("reject")
+		attest(Closed.and({ "0?": "number" }).allows(["x"])).equals(false)
+		attest(Closed.and({ "[string]": "number" }).allows(["x"])).equals(false)
+		attest(Closed.and({ "0": "string" }).json).snap({
+			undeclared: "reject",
+			required: [{ key: "0", value: "string" }],
+			sequence: "string",
+			proto: "Array"
+		})
+	})
+
+	it("an open object isn't a subtype of a closed one", () => {
+		const Closed = type({ "+": "reject" })
+		attest(type({}).extends(Closed)).equals(false)
+		attest(Closed.extends({})).equals(true)
+		attest(Closed.or({}).json).snap({ domain: "object" })
+	})
+
 	describe("traversal", () => {
 		const getExtraneousB = () => ({ a: "ok", b: "why?" })
 
@@ -228,6 +282,14 @@ c must be removed`)
 				type({ "+": "reject", a: "string" }).and({ "[symbol]": "string" })
 					.expression
 			).snap("{ [symbol]: string, a: string, + (undeclared): reject }")
+		})
+
+		it("delete drops undeclared symbol keys", () => {
+			const declared = Symbol("declared")
+			const undeclared = Symbol("undeclared")
+			const T = type({ "+": "delete", a: "string", [declared]: "number" })
+			const out = T({ a: "ok", [declared]: 1, [undeclared]: 2 }) as object
+			attest(Object.getOwnPropertySymbols(out)).equals([declared])
 		})
 
 		it("reject reads only own enumerable keys", () => {

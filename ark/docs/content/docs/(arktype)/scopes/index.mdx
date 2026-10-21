@@ -273,6 +273,22 @@ const types = $.export()
 types.TrimmedId("  42 ") // "42"
 ```
 
+A thunk can't pass a callback that receives the data, like `.narrow`'s, to a Type that references the alias the thunk defines. TypeScript would read the callback's parameter from that alias, which is still being inferred from the thunk, and reports the thunk as implicitly `any`. Write the narrow as a tuple expression instead:
+
+```ts
+const $ = scope({
+	File: { name: "string" },
+	Directory: {
+		name: "string",
+		children: [
+			"(File | Directory)[]",
+			":",
+			children => new Set(children.map(c => c.name)).size === children.length
+		]
+	}
+})
+```
+
 ## Configuration
 
 `scope` takes a config as its second argument. It applies to every `Type` parsed in the scope:

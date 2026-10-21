@@ -8,6 +8,7 @@ import {
 import type { BaseNode } from "../node.ts"
 import type { Morph } from "../roots/morph.ts"
 import type { BaseRoot } from "../roots/root.ts"
+import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
 import { ArkErrors } from "../shared/errors.ts"
 import {
@@ -107,6 +108,25 @@ export class OptionalNode extends BaseProp<"optional"> {
 		this.hasDefault() ?
 			computeDefaultValueMorph(this.key, this.value, this.default)
 		:	undefined
+
+	// without exactOptionalPropertyTypes, undefined is as absent as a missing
+	// key, so a default replaces it too
+	readonly defaultsUndefined: boolean =
+		this.hasDefault() &&
+		this.$.resolvedConfig.exactOptionalPropertyTypes === false
+
+	// whether data has a value at this key, which a default leaves alone
+	holdsValue(data: object): boolean {
+		return this.defaultsUndefined ?
+				(data as Record<PropertyKey, unknown>)[this.key] !== undefined
+			:	this.key in data
+	}
+
+	compileHoldsValue(js: NodeCompiler, data: string): string {
+		return this.defaultsUndefined ?
+				`${data}${js.prop(this.key)} !== undefined`
+			:	`${js.serialize(this.key)} in ${data}`
+	}
 }
 
 export const Optional = {

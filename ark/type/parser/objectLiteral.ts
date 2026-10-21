@@ -11,6 +11,7 @@ import {
 	type NodeInput,
 	type Prop,
 	type Structure,
+	type TypeMeta,
 	type writeInvalidPropertyKeyMessage
 } from "@ark/schema"
 import {
@@ -47,6 +48,7 @@ export const parseObjectLiteral = (
 	ctx: BaseParseContext
 ): BaseRoot => {
 	let spread: Structure.Node | undefined
+	let meta: TypeMeta.Collapsible | undefined
 	const structure: MutableStructureSchema = {}
 	// We only allow a spread operator to be used as the first key in an object
 	// because to match JS behavior any keys before the spread are overwritten
@@ -79,6 +81,11 @@ export const parseObjectLiteral = (
 			if (v !== "reject" && v !== "delete" && v !== "ignore")
 				throwParseError(writeInvalidUndeclaredBehaviorMessage(v))
 			structure.undeclared = v
+			continue
+		}
+
+		if (parsedKey.kind === "meta") {
+			meta = v as TypeMeta.Collapsible
 			continue
 		}
 
@@ -159,7 +166,7 @@ export const parseObjectLiteral = (
 	const structureNode = ctx.$.node("structure", structure)
 
 	// an object's structure implies no siblings, so it has nothing to reduce
-	return ctx.$.node(
+	const node = ctx.$.node(
 		"intersection",
 		{
 			domain: objectDomainOf(ctx.$),
@@ -167,6 +174,8 @@ export const parseObjectLiteral = (
 		},
 		{ prereduced: true }
 	)
+
+	return meta === undefined ? node : node.configure(meta)
 }
 
 const objectDomains = new WeakMap<BaseScope, Domain.Node>()
@@ -263,6 +272,8 @@ type inferKeyedObjectLiteral<def extends object, $, args> = {
 export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends PreparsedKeyPattern ?
 		validatePreparsedEntry<k, def[k], $, args>
+	: k extends `${infer indexKey extends IndexKey}?` ?
+		ErrorMessage<writeOptionalIndexKeyMessage<indexKey>>
 	:	validateProperty<
 			def[k],
 			k extends OptionalPropertyString ? "optional" : "required",
@@ -310,14 +321,25 @@ type optionalKeyFromEntry<k extends PropertyKey, v> =
 	// help TS preserve homomorphic mapping for value-optional keys
 	preparseKey<k> extends infer parsedKey ?
 		parsedKey extends PreparsedEntryKey<"optional"> ? parsedKey["normalized"]
-		: v extends OptionalPropertyDefinition ? k
-		: never
+		: parsedKey extends PreparsedEntryKey<"required"> ?
+			v extends OptionalPropertyDefinition ?
+				parsedKey["normalized"]
+			:	never
+		:	never
 	:	never
 
 export const writeInvalidUndeclaredBehaviorMessage = (
 	actual: unknown
 ): string =>
 	`Value of '+' key must be 'reject', 'delete', or 'ignore' (was ${printable(actual)})`
+
+export const writeOptionalIndexKeyMessage = <key extends IndexKey>(
+	key: key
+): writeOptionalIndexKeyMessage<key> =>
+	`Index signature ${key} can't be optional. Escape its '[' with a backslash for an optional key named '${key}'`
+
+export type writeOptionalIndexKeyMessage<key extends IndexKey> =
+	`Index signature ${key} can't be optional. Escape its '[' with a backslash for an optional key named '${key}'`
 
 export const nonLeadingSpreadError =
 	"Spread operator may only be used as the first key in an object"
@@ -348,9 +370,9 @@ export type ParsedKeyKind = EntryKeyKind | SpecialKeyKind
 
 export type EntryKeyKind = "required" | "optional" | "index"
 
-export type SpecialKeyKind = "spread" | "undeclared"
+export type SpecialKeyKind = "spread" | "undeclared" | "meta"
 
-export type MetaKey = "..." | "+"
+export type MetaKey = "..." | "+" | "@"
 
 export type IndexKey<def extends string = string> = `[${def}]`
 
@@ -359,21 +381,26 @@ export const preparseKey = (key: Key): PreparsedKey =>
 	: key[key.length - 1] === "?" ?
 		key[key.length - 2] === Backslash ?
 			{ kind: "required", normalized: `${key.slice(0, -2)}?` }
-		:	{
-				kind: "optional",
-				normalized: key.slice(0, -1)
-			}
+		: key[0] === "[" && key[key.length - 2] === "]" ?
+			throwParseError(
+				writeOptionalIndexKeyMessage(key.slice(0, -1) as IndexKey)
+			)
+		: key[0] === Backslash && key[1] === "[" && key[key.length - 2] === "]" ?
+			{ kind: "optional", normalized: key.slice(1, -1) }
+		:	{ kind: "optional", normalized: key.slice(0, -1) }
 	: key[0] === "[" && key[key.length - 1] === "]" ?
 		{ kind: "index", normalized: key.slice(1, -1) }
 	: key[0] === Backslash && key[1] === "[" && key[key.length - 1] === "]" ?
 		{ kind: "required", normalized: key.slice(1) }
 	: key === "..." ? { kind: "spread" }
 	: key === "+" ? { kind: "undeclared" }
+	: key === "@" ? { kind: "meta" }
 	: {
 			kind: "required",
 			normalized:
 				key === "\\..." ? "..."
 				: key === "\\+" ? "+"
+				: key === "\\@" ? "@"
 				: key
 		}
 
@@ -391,10 +418,15 @@ export type preparseKey<k> =
 			}>
 		:	PreparsedKey.from<{
 				kind: "optional"
-				normalized: inner
+				normalized: inner extends (
+					`${Backslash}${infer escapedIndexKey extends IndexKey}`
+				) ?
+					escapedIndexKey
+				:	inner
 			}>
-	: k extends `${"+" | "." | Backslash | "["}${string}` ? preparseSpecialKey<k>
-	: PreparsedKey.from<{
+	: k extends `${"+" | "." | "@" | Backslash | "["}${string}` ?
+		preparseSpecialKey<k>
+	:	PreparsedKey.from<{
 			kind: "required"
 			normalized: k extends Key ? k : `${k & number}`
 		}>
@@ -402,6 +434,7 @@ export type preparseKey<k> =
 type preparseSpecialKey<k> =
 	k extends "+" ? { kind: "undeclared" }
 	: k extends "..." ? { kind: "spread" }
+	: k extends "@" ? { kind: "meta" }
 	: k extends `${Backslash}${infer escapedMeta extends MetaKey}` ?
 		PreparsedKey.from<{ kind: "required"; normalized: escapedMeta }>
 	: k extends IndexKey<infer def> ?
