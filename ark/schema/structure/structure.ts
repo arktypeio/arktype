@@ -971,7 +971,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return js.return(true)
 	}
 
-	// an Apply reporting one issue checks props as Allows does, stopping where it did
+	// an Apply reporting one issue checks props as Allows does, stopping where
+	// it did
 	private propsOf(js: NodeCompiler): array<Prop.Node> {
 		return js.traversalKind === "Allows" || js.reportsFirst ?
 				this.allowsProps
@@ -1275,7 +1276,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			this.declaresKey("__proto__") ?
 				`Object.getPrototypeOf(data) !== Object.prototype || Object.prototype.hasOwnProperty.call(data, "__proto__")`
 			:	"Object.getPrototypeOf(data) !== Object.prototype"
-		// checked after the literal's reads, from which V8 can infer data's prototype
+		// checked after the literal's reads
 		js.if(copies, () =>
 			js.outline(
 				`${js.nameOf(this.id)}Copy`,
