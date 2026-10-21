@@ -14,7 +14,8 @@ import {
 	unbundledMessage,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
-	writeUntransformedImportMessage
+	writeUntransformedImportMessage,
+	writeUnwrittenModuleMessage
 } from "@ark/precompile/internal/host.ts"
 import {
 	precompile,
@@ -108,6 +109,15 @@ const runVitest = async (
 	await vitest.close()
 	return vitest.state
 }
+
+// how many of a run's tests failed and passed
+const outcomesOf = (state: Awaited<ReturnType<typeof runVitest>>) => ({
+	failed: state.getCountOfFailedTests(),
+	passed: state
+		.getFiles()
+		.flatMap(file => file.tasks)
+		.filter(task => task.result?.state === "pass").length
+})
 
 const bundlers = {
 	vite: async (opts?: PrecompileUnpluginOptions, root = app) => {
@@ -1428,6 +1438,16 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		)
 	})
 
+	it("names a module no build wrote, where nothing caches it", () => {
+		const { load } = precompile.raw(
+			{ cwd: app, conditions },
+			{ framework: "vite", versions: {} }
+		) as unknown as RawHooks
+		attest(() => load.handler("\0~arktype/lost")).throws(
+			writeUnwrittenModuleMessage("~arktype/lost")
+		)
+	})
+
 	it("throws a module's errors from its root, without the precompiler's stack", async () => {
 		const root = writeFixture({
 			"main.ts":
@@ -1935,6 +1955,31 @@ try {
 			)
 			attest(state.getCountOfFailedTests()).equals(0)
 		}
+	})
+
+	it("vitest reruns with its module cache", async () => {
+		const fsModuleCachePath = tempDir()
+		const runs: object[] = []
+		for (let run = 0; run < 2; run++) {
+			const vitest = await startVitest(
+				[],
+				{
+					root: app,
+					config: false,
+					watch: false,
+					reporters: [],
+					fsModuleCache: true,
+					fsModuleCachePath
+				},
+				viteConfig({}, app)
+			)
+			await vitest.close()
+			runs.push(outcomesOf(vitest.state))
+		}
+		attest(runs).equals([
+			{ failed: 0, passed: 2 },
+			{ failed: 0, passed: 2 }
+		])
 	})
 
 	it("vitest configured", async () => {

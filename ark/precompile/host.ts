@@ -269,6 +269,9 @@ export const writeUncachedModuleMessage = (
 ): string =>
 	`${specifier} was written by a build whose cache kept it in ${dir}, where it no longer is. Delete the bundler's cache to rebuild it.`
 
+export const writeUnwrittenModuleMessage = (specifier: string): string =>
+	`${specifier} is imported by a module this build didn't precompile, as one a cache kept from an earlier build is. Keep that cache from storing the modules @ark/precompile transforms, or delete it.`
+
 // `resolved` is where it resolves other than to arktype/runtime
 export const writeAliasMessage = (
 	specifier: string,

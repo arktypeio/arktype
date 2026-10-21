@@ -34,6 +34,7 @@ import {
 	variantSpecifierOf,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
+	writeUnwrittenModuleMessage,
 	writeVariantImportMessage,
 	writeUntransformedImportMessage
 } from "./host.ts"
@@ -138,8 +139,9 @@ export const precompile: UnpluginInstance<
 		writeFileSync(file, JSON.stringify(unitReadersById))
 	}
 	const loadModule = (id: string) => {
+		if (id in modules) return modules[id]
 		const dir = storeDirOf()
-		if (id in modules || !dir) return modules[id]
+		if (!dir) return throwBuildError(writeUnwrittenModuleMessage(id.slice(1)))
 		let stored: [importer: string, code: string]
 		try {
 			stored = JSON.parse(readFileSync(join(dir, storedNameOf(id)), "utf8"))
@@ -313,6 +315,20 @@ export const precompile: UnpluginInstance<
 			// e.g. Astro's prerender, a server environment other than ssr
 			configEnvironment: () =>
 				inlined.length ? { resolve: { noExternal: inlined } } : undefined,
+			// a module's precompiled code depends on files other than its own,
+			// and the modules it imports are written only as it is transformed
+			configureVitest: (context: VitestPluginContext) =>
+				(
+					context.defineCacheKeyGenerator ??
+					context.experimental_defineCacheKeyGenerator
+				)?.(({ id }) =>
+					(
+						transformedFilter.include.test(id) &&
+						!transformedFilter.exclude.test(id)
+					) ?
+						false
+					:	undefined
+				),
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
 				isServing = config.command === "serve"
@@ -454,6 +470,17 @@ export const precompile: UnpluginInstance<
 })
 
 const esbuildResolution = "arktype"
+
+// what Vitest passes configureVitest, its generator experimental before Vitest 5
+interface VitestPluginContext {
+	defineCacheKeyGenerator?: CacheKeyGenerator
+	experimental_defineCacheKeyGenerator?: CacheKeyGenerator
+}
+
+// a generator returning false keeps a module out of Vitest's module cache
+type CacheKeyGenerator = (
+	generate: (context: { id: string }) => false | undefined
+) => void
 
 // what arktype/runtime loads
 const runtimePackages = ["arktype", "@ark/schema", "@ark/util"]
