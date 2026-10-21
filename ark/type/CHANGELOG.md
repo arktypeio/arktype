@@ -1631,7 +1631,7 @@ type({ "[string.uuid]": "number" })({})
 
 ### Use a union's description when data misses its discriminated cases
 
-A described union discriminated by the value itself, like `string | number`, listed its cases instead (#963):
+A described union listed its cases instead (#963). Discriminated at a key, its miss is now reported at the union's own path:
 
 ```ts
 const Primitive = type("string | number").describe("a primitive")
@@ -1639,9 +1639,27 @@ const Primitive = type("string | number").describe("a primitive")
 // was: must be a number or a string (was an object)
 // now: must be a primitive (was an object)
 Primitive({}).toString()
+
+const Shape = type({ kind: "'circle'", r: "number" })
+	.or({ kind: "'square'", s: "number" })
+	.describe("a shape")
+
+// was: kind must be "circle" or "square" (was "triangle")
+// now: must be a shape (was an object)
+Shape({ kind: "triangle" }).toString()
 ```
 
-A union discriminated at a key still lists the key's cases, like `kind must be "a" or "b" (was "c")`.
+When a union isn't described but one of its branches is, a miss of the value itself lists the branches as an undiscriminated union's does:
+
+```ts
+const Count = type("string").or(type("number").describe("a count"))
+
+// was: must be a number or a string (was an object)
+// now: must be a count or a string (was an object)
+Count({}).toString()
+```
+
+A miss at a key of a union whose branches alone are described still lists the key's cases, like `kind must be "circle" or "square" (was "triangle")`, as an undiscriminated union lists its branches' errors at the key.
 
 ### Name the comparator missing its right operand
 

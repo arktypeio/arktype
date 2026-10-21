@@ -101,6 +101,8 @@ if (out instanceof type.errors) {
 }
 ```
 
+A described union's miss is at the union's own path, with the union's value as its `data`. A miss of a union discriminated by its value whose branch is described has the `union` code instead, as an undiscriminated union's does.
+
 Configure its text under `discriminant` instead of `predicate`. An exhaustive `switch` over `ArkErrorCode` must handle `undeclared` and `discriminant`.
 
 ### Error writers receive the error and the locale
