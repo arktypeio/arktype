@@ -2484,7 +2484,10 @@ ${writeFunction(
 		const appliesErrors = !this.baking.firstIssue || reportsIssues
 		// for speed, issues reported into ArkErrors are found once read
 		const unreads = reportsIssues && !this.baking.shortest
-		const errorsOf = unreads ? "runtime.unread" : "runtime.apply"
+		const [callErrors, elementErrors] =
+			unreads ?
+				["runtime.unreadCallErrors", "runtime.unreadElements"]
+			:	["runtime.applyCallErrors", "runtime.applyElements"]
 		const refOf = (param: RootApplyParam) =>
 			param === "Traversal" ?
 				ctx === "Traversal" || ctx === "FirstIssueTraversal" ?
@@ -2537,9 +2540,9 @@ ${writeFunction(
 					`(({ 1: apply, 2: allowsElement, 3: applyElement }, onFail, rejectedIn = data => {
 	for (let i = 0; i < data.length; i++) if (!allowsElement(data[i])) return i
 }) => ${this.validatorOnLoad(`(data, ...args) => {
-	if (!Array.isArray(data)) return ${errorsOf}CallErrors(apply, data, args, onFail, ${Ctx})
+	if (!Array.isArray(data)) return ${callErrors}(apply, data, args, onFail, ${Ctx})
 	const i = rejectedIn(data)
-	return i === undefined ? data : ${errorsOf}Elements(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
+	return i === undefined ? data : ${elementErrors}(allowsElement, applyElement, i, data, args, onFail, ${Ctx})
 }`)})`,
 					`[${traversals}[0], ${traversals}[${this.appliedIndexOf(root)}], ${elements}]`,
 					true
@@ -2547,7 +2550,7 @@ ${writeFunction(
 			}
 			if (asValidator) {
 				return [
-					`((${pattern}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(`(data, ...args) => allows(data) ? ${valid} : ${errorsOf}CallErrors(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`)})`,
+					`((${pattern}${unconfigured ? "" : ", onFail"}) => ${this.validatorOnLoad(`(data, ...args) => allows(data) ? ${valid} : ${callErrors}(${apply}, data, args, ${unconfigured ? "null" : "onFail"}, ${Ctx})`)})`,
 					parts,
 					true
 				]
