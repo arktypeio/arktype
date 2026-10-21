@@ -2,7 +2,7 @@
 
 > TypeScript's 1:1 validator, optimized from editor to runtime
 
-ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. ArkRegex, Attest and @ark/json-schema are its companion packages.
+ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.
 
 Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/llms-full.txt) has every ArkType page in one file.
 
@@ -86,7 +86,13 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [Overview](https://arktype.io/docs/json-schema.md): Generate JSON Schema from a Type with arktype, or build a Type from JSON Schema with @ark/json-schema.
 - [To JSON Schema](https://arktype.io/docs/json-schema/to-json-schema.md): Generate a JSON Schema from any Type, pick a draft, and decide what to write for what JSON Schema can't express.
 - [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema.md): Parse a JSON Schema into a Type with @ark/json-schema and give the result a static type.
-- [Keyword support](https://arktype.io/docs/json-schema/support.md): Which JSON Schema keywords @ark/json-schema converts, which throw, and which it ignores.
+- [Keyword support](https://arktype.io/docs/json-schema/support.md): How @ark/json-schema and arksets read each JSON Schema keyword, which ones throw, and which are only annotations.
+
+## ArkSets
+
+- [Overview](https://arktype.io/docs/sets.md): Read arktype Types, Standard JSON Schemas and JSON Schemas as sets of values, relate and combine them, and write them back out as JSON Schema.
+- [Relations](https://arktype.io/docs/sets/relations.md): Check whether schemas in any format are subsets of each other, equal or disjoint, and intersect, union or convert them.
+- [Discriminate](https://arktype.io/docs/sets/discriminate.md): Find the path and values that tell a union's branches apart, in a schema from any format.
 
 ## Internals
 
@@ -101,4 +107,5 @@ Each link below is a docs page as Markdown. [llms-full.txt](https://arktype.io/l
 - [ArkRegex, every page](https://arktype.io/docs/regex/llms.txt): Regular expressions with inferred types
 - [Attest, every page](https://arktype.io/docs/attest/llms.txt): Type assertions and benchmarks
 - [JSON Schema, every page](https://arktype.io/docs/json-schema/llms.txt): Convert Types to JSON Schema and back
+- [ArkSets, every page](https://arktype.io/docs/sets/llms.txt): Set algebra for schemas in any format
 - [Internals, every page](https://arktype.io/docs/internals/llms.txt): The schema layer under ArkType

@@ -541,7 +541,7 @@ const out = User({ name: "Alan", age: "not a number" })
 if (out instanceof type.errors) {
 	// ArkErrors: age must be a number (was a string)
 	console.error(out.summary)
-	// each error, with its path, code and message
+	// plain objects, each with its path, code and message
 	out.issues[0].path
 } else {
 	// out is typed as { name: string; age?: number }
@@ -669,6 +669,8 @@ Install [ArkType](https://marketplace.visualstudio.com/items?itemName=arktypeio.
 - syntax highlighting for strings in ArkType definitions, in `.ts`, `.tsx`, `.js`, `.jsx`, `.mdx`, `.svelte`, `.vue`, `.astro` and Markdown files
 - one-line summaries of ArkType's type errors at the end of the line, through [ErrorLens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens), which it installs as a dependency
 - the setting `"editor.quickSuggestions": { "strings": "on" }`, so you get completions while typing an expression like `"string | num"`
+
+It also sets ErrorLens to show the message of the problem closest to your cursor, with no delay and without the hover buttons, and to show only the part of an ArkType error that names the fix, like `"number | string"` for `"number | strin"`. Each is an ordinary default, so a value in your own settings for `errorLens.followCursor`, `errorLens.delay`, `errorLens.editorHoverPartsEnabled` or `errorLens.replace` overrides it.
 
 To have auto-import pick ArkType's `type` instead of the `type` function from Node's `os` module, add this to `.vscode/settings.json`:
 
@@ -1978,7 +1980,7 @@ To reject or delete undeclared keys, set `"+"` in the object, or [configure](htt
 **string**
 
 ```ts
-// fail if any key other than "onlyAllowedKey" is present
+// fail if any string key other than "onlyAllowedKey" is present
 const MyClosedObject = type({
 	"+": "reject",
 	onlyAllowedKey: "string"
@@ -2000,7 +2002,7 @@ const MyOpenObject = type({
 **fluent**
 
 ```ts
-// fail if any key other than "onlyAllowedKey" is present
+// fail if any string key other than "onlyAllowedKey" is present
 const MyClosedObject = type({
 	onlyAllowedKey: "string"
 }).onUndeclaredKey("reject")
@@ -2030,7 +2032,7 @@ const MyClosedObject = type({
 MyClosedObject({ onlyAllowedKey: "ok", extraKey: 1 })
 ```
 
-`"reject"` and `"delete"` apply to symbol keys too. To let `"reject"` skip them, which is faster, configure [`rejectAllowsSymbolKeys`](https://arktype.io/docs/configuration#rejectallowssymbolkeys).
+`"reject"` checks string keys only, so an undeclared symbol key passes, while `"delete"` removes undeclared symbol keys too. Reject types that differ only by a symbol key therefore overlap, and a union of them with a morph is indeterminate.
 
 `"delete"` builds a new object with the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
 
@@ -2650,7 +2652,7 @@ const Literals = type({
 })
 ```
 
-The literal is parsed by the `Date` constructor, so `d'2000-01-01'` is midnight UTC. A literal it can't parse, like `d'notadate'`, is a `ParseError`.
+A literal, like a string passed as a date limit, must be the same instant on every machine, so it can be an ISO date like `2025-01-01` (which is UTC), an ISO date-time with `Z` or an offset like `2025-01-01T12:00+01:00`, or a number of epoch milliseconds. Any other literal, like `d'notadate'` or `d'2025-01-01T12:00'`, is a `ParseError`.
 
 ### ranges
 
@@ -2696,7 +2698,7 @@ const tenYearsAgo = new Date().setFullYear(new Date().getFullYear() - 10)
 const Recent = type.Date.atOrAfter(tenYearsAgo).earlierThan(Date.now())
 ```
 
-Descriptions and error messages write dates in UTC. A date at midnight, UTC or local, is written as its calendar date, or just its year on January 1:
+Descriptions and error messages write dates in UTC. A date at UTC midnight is written as its calendar date, or just its year on January 1:
 
 ```ts
 // "a Date and 2023 or later"
@@ -3298,7 +3300,7 @@ const TrimStart = type(["string", "=>", str => str.trimStart()])
 const TrimStart = type("string", "=>", str => str.trimStart())
 ```
 
-A morph receives the validated value itself rather than a copy, so a morph that mutates its argument mutates the caller's data. ArkType itself never writes to its input: a transformed object is a new object that shares every untransformed value with the input, and input that nothing transforms is returned as is.
+A morph receives the validated value itself rather than a copy, so a morph that mutates its argument mutates the caller's data. [By default](https://arktype.io/docs/configuration#mutatesinput), ArkType writes to its input only to transform a builtin like a Date, Map or function, which it transforms in place. Any other transformed object is a new object that shares every untransformed value with the input, and input that nothing transforms is returned as is.
 
 ```ts
 const T = type({ a: "string.trim", b: { c: "string" } })
@@ -4159,7 +4161,7 @@ const $ = scope({ Even: "number % 2" }, { divisor: { expected: "even" } })
 $.export().Even(3)
 ```
 
-It accepts the same options as [global configuration](https://arktype.io/docs/configuration), except these, which can only be configured globally: `onUndeclaredKey`, `rejectAllowsSymbolKeys`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale`.
+It accepts the same options as [global configuration](https://arktype.io/docs/configuration), except these, which can only be configured globally: `onUndeclaredKey`, `numberAllowsNaN`, `numberAllowsInfinity`, `dateAllowsInvalid`, `keywords` and `locale`.
 
 # Generics
 
@@ -4500,9 +4502,11 @@ To add your own check, use [`.narrow`](https://arktype.io/docs/expressions#narro
 
 ## ArkErrors
 
-A Type called with invalid data returns `ArkErrors`, which holds one `ArkError` for each path that failed:
+A Type called with invalid data returns `ArkErrors`, which holds one error for each path that failed:
 
 ```ts
+import { flatProblemsByPath, type } from "arktype"
+
 const User = type({
 	name: "string",
 	age: "number >= 0"
@@ -4521,29 +4525,36 @@ if (out instanceof type.errors) {
 
 	// { age: ["must be non-negative (was -1)"],
 	//   name: ["must be a string (was a number)"] }
-	out.flatProblemsByPath
+	flatProblemsByPath(out)
 }
 ```
 
-`ArkErrors` is iterable and has a `length`, but it isn't an array. Index it or call array methods through `issues`.
+`ArkErrors` isn't an array. Its errors are in `issues`, so index them, iterate them or call array methods there.
 
 | member | what it is |
 | - | - |
-| `summary`, `message`, `toString()` | every error's message, one per line |
-| `issues` | an array with one `ArkError` per path, in the order each path first failed |
-| `byPath` | an object mapping each path's `propString` to its `ArkError` |
-| `flatByPath` | like `byPath`, but each value is an array, with an `intersection` split into its errors |
-| `flatProblemsByPath` | like `flatByPath`, but with each error's `problem` |
-| `byAncestorPath` | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
-| `count` | how many errors were added, more than `length` when several failed at one path |
-| `toJSON()` | an array of each error's `toJSON()` |
+| `issues` | an array with one error per path, in the order each path first failed |
+| `summary`, `toString()` | every error's message, one per line |
+| `count` | how many errors were added, more than `issues.length` when several failed at one path |
+| `toJSON()` | an array of each error's JSON, with its `propString` |
 | `toLocaleString(locale?)` | the summary in a [locale](https://arktype.io/docs/i18n#rendering-in-a-locale) |
 | `throw()` | throws a [`TraversalError`](#traversalerror) |
-| `toTraversalError()` | returns that `TraversalError` instead of throwing it |
+
+`arktype` exports functions that group an `ArkErrors` by path:
+
+| function | what it returns |
+| - | - |
+| `byPath(out)` | an object mapping each path's `propString` to its error |
+| `flatByPath(out)` | like `byPath`, but each value is an array, with an `intersection` split into its errors |
+| `flatProblemsByPath(out)` | like `flatByPath`, but with each error's `problem` |
+| `byAncestorPath(out)` | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
+| `messageIn(error, locale)` | one error's message in a [locale](https://arktype.io/docs/i18n#rendering-in-a-locale) |
+
+A Type that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
 
 ## ArkError
 
-Each `ArkError` describes what failed at one path:
+Each error in `issues` is a plain object, typed as `ArkError`, describing what failed at one path:
 
 ```ts
 const out = type({ age: "number >= 0" })({ age: -1 })
@@ -4561,17 +4572,19 @@ if (out instanceof type.errors) {
 	error.message // "age must be non-negative (was -1)"
 
 	// narrow by code to read its own fields
-	if (error.hasCode("min")) error.rule // 0
+	if (error.code === "min") error.rule // 0
 }
 ```
 
-Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected` (was `actual`)". You can [configure each part](https://arktype.io/docs/configuration#errors).
+Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected` (was `actual`)". You can [configure each part](https://arktype.io/docs/configuration#error-messages).
 
-An error also has `meta`, the metadata of the Type that failed, and usually a `description`. Like `ArkErrors`, it has `toJSON()` and `toLocaleString(locale?)`.
+An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, and `messageIn(error, locale)` writes its message in another locale.
 
-When several checks fail at one path, they are merged into one error with the code `intersection`. Its `flat` getter, and `flatByPath`, split it back up:
+When several checks fail at one path, they are merged into one error with the code `intersection`. `flatByPath` splits it back up:
 
 ```ts
+import { flatProblemsByPath, type } from "arktype"
+
 const out = type({ n: "number % 2 >= 2" })({ n: 1 })
 
 if (out instanceof type.errors) {
@@ -4581,7 +4594,7 @@ if (out instanceof type.errors) {
 	console.error(out.summary)
 
 	// { n: ["must be even (was 1)", "must be at least 2 (was 1)"] }
-	out.flatProblemsByPath
+	flatProblemsByPath(out)
 }
 ```
 
@@ -4625,16 +4638,16 @@ if (out instanceof type.errors) {
 	error.message
 
 	// ["circle", "square"]
-	if (error.hasCode("discriminant")) error.cases
+	if (error.code === "discriminant") error.cases
 }
 ```
 
 ## TraversalError
 
-`.assert`, `.from` and `ArkErrors.throw()` throw a `TraversalError`, which extends `Error`. A single error's message is its summary. Several are listed on their own lines after a leading newline:
+`.assert`, `.from` and `ArkErrors`' `throw()` throw a `TraversalError`, which extends `Error`. A single error's message is its summary. Several are listed on their own lines after a leading newline:
 
 ```ts
-import { type, TraversalError } from "arktype"
+import { flatProblemsByPath, type, TraversalError } from "arktype"
 
 try {
 	type({ a: "string", b: "number" }).assert({ a: 1, b: "x" })
@@ -4644,7 +4657,7 @@ try {
 		e.message
 
 		// the ArkErrors, for structured access
-		e.arkErrors.flatProblemsByPath
+		flatProblemsByPath(e.arkErrors)
 	}
 }
 ```
@@ -4803,7 +4816,7 @@ Config can be set at three levels. A more specific level overrides a broader one
 
 ### Global
 
-Call `configure` from `"arktype/config"` in its own file, and import that file before anything else:
+Call `configure` in its own file, and import that file before anything creates a Type:
 
 ```ts
 import { configure } from "arktype/config"
@@ -4813,20 +4826,18 @@ configure({ numberAllowsNaN: true })
 
 ```ts
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 // true
 type.number.allows(Number.NaN)
 ```
 
-> **Configure before importing arktype**
+> **Configure before any Type is created**
 >
-> ArkType reads global config when it is first imported. Import your config file
-> before any import of `"arktype"` or `"@ark/schema"`, including deep imports
-> like `"arktype/internal/*"`. Config applied later reaches only scopes created
-> after it, never `type` or built-in keywords. `locale` is the exception: it
-> applies whenever it is configured.
+> Global config is fixed when the first Type is created, whether by a definition
+> or by referencing a keyword like `type.number`, and calling `configure` after
+> that throws. Importing `"arktype"` first is fine, and `configure` can be
+> imported from either `"arktype"` or `"arktype/config"`.
 
 ### Scope
 
@@ -4847,7 +4858,7 @@ $.type({ age: "number <= 100" })({ age: 101 })
 
 ### Type
 
-`.configure` adds [metadata](https://arktype.io/docs/expressions#meta), like a `description` or [error parts](#errors), to a Type. It applies wherever that Type is referenced, but not to the Types inside it:
+`.configure` adds [metadata](https://arktype.io/docs/expressions#meta), like a `description` or [error parts](#error-messages), to a Type. It applies wherever that Type is referenced, but not to the Types inside it:
 
 ```ts
 // don't print the password
@@ -4867,21 +4878,22 @@ User({ email: "david@arktype.io", password: "ez123" })
 | option | default | levels |
 | - | - | - |
 | [`onUndeclaredKey`](#onundeclaredkey) | `"ignore"` | global, type (`"+"`) |
-| [`rejectAllowsSymbolKeys`](#rejectallowssymbolkeys) | `false` | global |
 | [`exactOptionalPropertyTypes`](#exactoptionalpropertytypes) | `true` | global, scope |
 | [`numberAllowsNaN`](#numberallowsnan) | `false` | global |
 | [`numberAllowsInfinity`](#numberallowsinfinity) | `false` | global |
 | [`dateAllowsInvalid`](#dateallowsinvalid) | `false` | global |
 | [`jitless`](#jitless) | `false`, or `true` where `new Function` is blocked | global, scope |
 | [`onFail`](#onfail) | `null`, which returns `ArkErrors` | global, scope |
+| [`errors`](#errors) | `"all"` | global, scope |
+| [`mutatesInput`](#mutatesinput) | `false` | global, scope |
 | [`keywords`](#keywords) | `{}` | global |
 | [`locale`](#locale) | `en` | global |
 | [an error code](#by-code), like `divisor` | ArkType's messages | global, scope |
 | [`toJsonSchema`](#tojsonschema) | draft 2020-12, throwing for what it can't express | global, scope |
 
-A Type's own options are its [metadata](https://arktype.io/docs/expressions#meta), including the [parts of its errors](#errors).
+A Type's own options are its [metadata](https://arktype.io/docs/expressions#meta), including the [parts of its errors](#error-messages).
 
-## Errors
+## Error messages
 
 Each error message is built from parts. Configure the part you want to change, and ArkType keeps composing the rest, including messages for unions and intersections. `expected`, `actual`, `problem` and `message` each take a string or a function. See [Errors](https://arktype.io/docs/errors) for what an error contains.
 
@@ -5004,7 +5016,6 @@ configure({ locale: de })
 
 ```ts
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 // ArkErrors: muss eine Zeichenkette sein, ist aber eine Zahl
@@ -5032,7 +5043,6 @@ configure({
 
 ```ts
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 const User = type({
@@ -5063,7 +5073,6 @@ configure({ onUndeclaredKey: "delete" })
 
 ```ts
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 const UserForm = type({
@@ -5073,32 +5082,6 @@ const UserForm = type({
 // { name: "Alice" }
 UserForm({ name: "Alice", age: "42" })
 ```
-
-## rejectAllowsSymbolKeys
-
-`"reject"` checks symbol keys too, which costs an extra read per object. If you don't need undeclared symbol keys rejected, allow them:
-
-```ts
-import { configure } from "arktype/config"
-
-configure({ rejectAllowsSymbolKeys: true })
-```
-
-```ts
-import "./config.ts"
-// import your config file before arktype
-import { type } from "arktype"
-
-const User = type({
-	"+": "reject",
-	name: "string"
-})
-
-// valid, since undeclared symbol keys are allowed
-User({ name: "Alice", [Symbol("id")]: 1 })
-```
-
-With it, two `"+": "reject"` objects that differ only by a symbol key accept the same values, so a union of them that includes a morph throws a `ParseError`.
 
 ## exactOptionalPropertyTypes
 
@@ -5126,7 +5109,6 @@ configure({ exactOptionalPropertyTypes: false })
 
 ```ts
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 const MyObj = type({
@@ -5177,7 +5159,6 @@ configure({ dateAllowsInvalid: true })
 
 ```ts
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 // Invalid Date
@@ -5196,7 +5177,6 @@ configure({ jitless: true })
 
 ```ts
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 // will not be compiled
@@ -5205,7 +5185,79 @@ const MyObject = type({
 })
 ```
 
-Configuring `jitless` globally also skips the check for `new Function`, which a strict Content-Security-Policy would report as a violation.
+Configuring `jitless` globally also skips the check for `new Function`, which a strict Content-Security-Policy would report as a violation. To validate without generating code and without shipping the parser, [precompile](https://arktype.io/docs/precompile) your Types when you build.
+
+## errors
+
+By default, a failed validation returns an error for each check that failed. `errors` can return less:
+
+- `"all"` (default): every error, at each path that failed
+- `"first"`: the first error validation finds, where it stops
+- `"none"`: one error at the root, whose message is `is invalid`
+
+```ts
+import { configure } from "arktype/config"
+import "arktype/errors"
+
+configure({ errors: "none" })
+```
+
+```ts
+import "./config.ts"
+import { type } from "arktype"
+
+const User = type({ name: "string", age: "number" })
+
+// ArkErrors: is invalid
+const out = User({ name: 5, age: "5" })
+```
+
+`"first"` and `"none"` are installed by `import "arktype/errors"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
+
+With `"first"`, which of the data's errors is returned isn't promised, and can differ between a Type and its precompiled validator.
+
+With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale).
+
+`errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
+
+A [precompiled](https://arktype.io/docs/precompile/options#errors) build takes `errors` as an option.
+
+## mutatesInput
+
+By default, a transform copies each object it changes other than a builtin like a `Date`, so the data you pass is otherwise never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the data, which it returns:
+
+- `false` (default): copies each object it changes
+- `true`: writes in place wherever that's safe even if the data holds one object at several places, and otherwise copies
+- `"always"`: writes every transform in place
+
+```ts
+import { configure } from "arktype/config"
+import "arktype/mutatesInput"
+
+configure({ mutatesInput: true })
+```
+
+```ts
+import "./config.ts"
+import { type } from "arktype"
+
+const User = type({ name: "string.trim", role: "string = 'member'" })
+
+const data = { name: " Ada " }
+
+// true, and data is now { name: "Ada", role: "member" }
+const isData = Object.is(User(data), data)
+```
+
+`true` and `"always"` are installed by `import "arktype/mutatesInput"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
+
+`true` always returns what copying would. `"always"` requires that the data hold no object at two places a transform reaches, and that a Type's functions read or return the data's objects only through the value each is passed, not `ctx.root`.
+
+The object returned is the data, so it keeps its key order, accessors and inherited keys. Where the data holds one object at two places, a key the Type doesn't declare can hold what the other place wrote. An object a Type deletes undeclared keys from is still copied. A failed validation can leave writes in the objects of its data it found valid.
+
+`mutatesInput` can also be set for a Scope, whose Types then transform as it says.
+
+A [precompiled](https://arktype.io/docs/precompile/options#mutatesinput) build takes `mutatesInput` as an option.
 
 ## onFail
 
@@ -5227,7 +5279,6 @@ declare global {
 
 ```ts
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 // string, since a failure throws instead of returning ArkErrors
@@ -5316,7 +5367,9 @@ if (out instanceof type.errors) {
 }
 ```
 
-Unlike other [global config](https://arktype.io/docs/configuration#global), a locale applies to Types parsed before it is configured. It can't be set for a scope or a Type. To choose one per request, configure a [function](#switching-locales).
+Like other [global config](https://arktype.io/docs/configuration#global), a locale is configured before any Type is created. It can't be set for a scope or a Type. To choose one per request, configure a [function](#switching-locales).
+
+Shipped locales like `arktype/locales/de` work when imported. A locale you write, or a locale function, also needs `import "arktype/i18n"` unless a shipped locale is imported. Without it, creating a Type, `toLocaleString` or `messageIn` with that locale throws. This keeps other locales out of bundles that only use `en`.
 
 Only an error's message and its parts, `expected`, `actual` and `problem`, are localized. A Type's `description` and `expression`, JSON Schema, an error's `description` and `ParseError`s stay in English.
 
@@ -5335,7 +5388,7 @@ const out = Signup({ name: "A" })
 
 ## Switching locales
 
-`locale` can also be a function, which is called whenever a message is read. Messages are written when they are read, not when validation fails, so errors follow your app's language even when it changes after they were created:
+`locale` can also be a function, called when an `ArkErrors`' messages are first read rather than when validation fails, so errors follow your app's language even if it changed after they were created:
 
 ```ts
 import type { Locale } from "arktype"
@@ -5359,6 +5412,7 @@ On a server, the function can read the locale of the current request:
 ```ts
 import type { Locale } from "arktype"
 import { configure } from "arktype/config"
+import "arktype/i18n"
 import { AsyncLocalStorage } from "node:async_hooks"
 
 export const requestLocale = new AsyncLocalStorage<Locale>()
@@ -5382,16 +5436,16 @@ const handle = (body: unknown) =>
 	})
 ```
 
-A message reads the locale once, so it never mixes languages. If the function returns `undefined` or throws, the message is written in English.
+The function is called once for an `ArkErrors`, whose messages keep the locale it returned, so they never mix languages. If it returns `undefined` or throws, they're written in English.
 
-Since messages are written when they are read, read `summary` or `message` inside the request. Errors returned from `requestLocale.run` and read later, like by a framework's error handler, are written in English. There, call [`toLocaleString`](#rendering-in-a-locale) instead.
+Since messages are written when they're first read, read `summary` or `issues` inside the request. Errors returned from `requestLocale.run` and read later, like by a framework's error handler, are written in English. There, call [`toLocaleString`](#rendering-in-a-locale) instead.
 
 ## Rendering in a locale
 
-`toLocaleString` writes an `ArkErrors`' summary or an `ArkError`'s message in a locale of your choice, whatever locale is configured:
+An `ArkErrors`' `toLocaleString` writes its summary in a locale of your choice, whatever locale is configured, and `messageIn` writes one error's message:
 
 ```ts
-import { type } from "arktype"
+import { messageIn, type } from "arktype"
 import { de } from "arktype/locales/de"
 
 const out = type({ name: "string" })({ name: 5 })
@@ -5399,12 +5453,13 @@ const out = type({ name: "string" })({ name: 5 })
 if (out instanceof type.errors) {
 	// name muss eine Zeichenkette sein, ist aber eine Zahl
 	out.toLocaleString(de)
+	messageIn(out.issues[0], de)
 	// name must be a string (was a number)
 	out.issues[0].message
 }
 ```
 
-Called without a locale, it returns the summary or message as configured.
+Called without a locale, `toLocaleString` returns the summary as configured.
 
 ## Your own messages
 
@@ -6945,12 +7000,13 @@ To define and validate Types, install `arktype`. It brings `arkregex`, `@ark/sch
 | Package | Install it to | Docs |
 | - | - | - |
 | `arktype` | define Types and validate data | [Setup](https://arktype.io/docs/intro/setup) |
+| `@ark/precompile` | construct your Types when you build | [Precompile](https://arktype.io/docs/precompile) |
 | `arkregex` | write regular expressions with inferred types | [ArkRegex](https://arktype.io/docs/regex) |
 | `@ark/attest` | assert types and benchmark them in your tests | [Attest](https://arktype.io/docs/attest) |
 | `@ark/json-schema` | build a Type from a JSON Schema | [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema) |
 | `@ark/fast-check` | generate test data from a Type with fast-check | [fast-check](https://arktype.io/docs/fast-check) |
 | `@ark/schema` | build Types from nodes instead of syntax (not semver-stable) | [Internals](https://arktype.io/docs/internals) |
-| `arksets` | use `@ark/schema` without `arktype` (not semver-stable) | [Set algebra](https://arktype.io/docs/internals/sets) |
+| `arksets` | relate, combine and convert schemas from any format | [ArkSets](https://arktype.io/docs/sets) |
 | `@ark/util` | nothing: it's shared by the other packages | |
 | `@ark/fs` | nothing: it's the filesystem layer `@ark/attest` uses | |
 
@@ -6961,6 +7017,10 @@ The VS Code extensions, "ArkType" and "ArkThemes", are on the [Editor](https://a
 | Entrypoint | Import it for |
 | - | - |
 | `arktype` | everything you use day to day (below) |
+| `arktype/codecs` | `codec`, and the `.encode` every Type has once it's imported ([Codecs](https://arktype.io/docs/codecs)) |
+| `arktype/errors` | installs `errors: "first"` and `"none"` ([errors](https://arktype.io/docs/configuration#errors)) |
+| `arktype/mutatesInput` | installs `mutatesInput: true` and `"always"` ([mutatesInput](https://arktype.io/docs/configuration#mutatesinput)) |
+| `arktype/runtime` | what [precompiled](https://arktype.io/docs/precompile) validators run on. A build resolves `arktype` to it; you don't import it yourself |
 | `arktype/config` | `configure`, before anything else from `arktype` is imported |
 | `arktype/locales/en`, `arktype/locales/de` | the `en` and `de` [locales](https://arktype.io/docs/i18n) |
 | `arktype/i18n` | helpers for [writing a locale](https://arktype.io/docs/i18n#writing-a-locale): `listPattern`, `isolate`, `labelOf`, `groupByPath`, `describeCause`, `describeMissing`, `writeKeywordExpected` |
@@ -6990,14 +7050,15 @@ import { type } from "arktype"
 
 ## Other packages
 
+- **`@ark/precompile`** has an entrypoint for each way to run it: `@ark/precompile/unplugin` (`precompile.vite()`, `.rollup()`, `.webpack()` and the other bundlers), `@ark/precompile/node` (`register()`), `@ark/precompile/bun` (`precompile()`), `@ark/precompile/turbopack` (a loader) and `@ark/precompile/eslint` (`configs.recommended`). It installs an `arktype-precompile` CLI for `--check` and `--declare`, and `@ark/precompile` itself exports `Precompiler`, whose `analyze()` the CLI and ESLint rule run. It needs Node 22.12 or later, and `typescript` 5.5 to 6 for declarations. See [Setup](https://arktype.io/docs/precompile/setup).
 - **`arkregex`** exports `regex`, which is also exported from `arktype`, and the `Regex` type.
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/json-schema`** exports `jsonSchemaToType` and `JsonSchemaScope`.
 - **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 installed beside it.
-- **`@ark/schema`** exports nodes, `rootSchema`, `schemaScope` and the classes behind `ArkErrors`, with `@ark/schema/config` and `@ark/schema/i18n` entrypoints like `arktype`'s.
-- **`arksets`** installs set algebra into `@ark/schema` when imported. `arktype` imports it for you.
+- **`@ark/schema`** exports nodes, `rootSchema`, `schemaScope` and the classes behind `ArkErrors`, with `config`, `i18n`, `codecs`, `errors`, `mutatesInput` and `runtime` entrypoints like `arktype`'s.
+- **`arksets`** exports `parse`, `isSubset`, `isEqual`, `isDisjoint`, `intersect`, `union`, `discriminate` and `toJsonSchema`, and installs set algebra into `@ark/schema` when imported. `arktype` imports only that engine, from `arksets/internal`.
 
-`@ark/json-schema`, `@ark/fast-check` and `@ark/attest` each depend on an exact version of `arktype`. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
+`@ark/json-schema`, `@ark/fast-check` and `@ark/attest` each depend on an exact version of `arktype`, and `@ark/precompile` precompiles with the `arktype` it imports. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
 
 `arkregex`, `@ark/schema`, `arksets` and `@ark/util` have an `./internal` entrypoint like `arktype`'s, and every package above has `./internal/*.ts` deep imports. None of them are semver-stable.
 
@@ -7011,24 +7072,68 @@ Each section is one change, with code that behaves differently before and after 
 
 ### ArkErrors is no longer an array
 
-`ArkErrors` holds its errors in `issues`, a plain array. Iterating, `length`, `summary` and its other members work as before, but indexing and array methods move to `issues`:
+`ArkErrors` was an `Array` subclass. It's now a plain class whose `issues` is a plain array with one error per path. Indexing, iteration, `length` and array methods move to `issues`:
 
 ```ts
 const out = type({ name: "string" })({ name: 5 })
 
 if (out instanceof type.errors) {
-	// before: out[0], out.map(e => e.message)
+	// before: out[0], out.map(e => e.message), for (const e of out), out.length
 	out.issues[0]
 	out.issues.map(e => e.message)
-
-	// unchanged
-	for (const error of out) console.log(error.message)
+	for (const error of out.issues) console.log(error.message)
+	out.issues.length
 }
 ```
 
-`Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`.
+`Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](https://arktype.io/docs/standard-schema) failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` from the `ArkErrors`.
 
-A [Standard Schema](https://arktype.io/docs/standard-schema) failure result is the `ArkErrors` itself. Its `issues` was that same `ArkErrors` and is now a plain array, so read `summary` from the result rather than from `issues`.
+`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()`, `toString()` and `toLocaleString(locale)`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`. `byPath`, `flatByPath`, `flatProblemsByPath` and `byAncestorPath` are functions `arktype` exports:
+
+```ts
+import { flatProblemsByPath, type } from "arktype"
+
+const out = type({ name: "string" })({ name: 5 })
+
+if (out instanceof type.errors) {
+	// before: out.flatProblemsByPath
+	flatProblemsByPath(out)
+}
+```
+
+A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`.
+
+### Errors are plain objects
+
+The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one in a locale:
+
+```ts
+import { messageIn, type } from "arktype"
+import { de } from "arktype/locales/de"
+
+const out = type({ n: "number % 2" })({ n: 1 })
+
+if (out instanceof type.errors) {
+	for (const error of out.issues) {
+		// before: error.hasCode("divisor")
+		if (error.code === "divisor") console.log(error.rule)
+		// before: error.toLocaleString(de)
+		messageIn(error, de)
+	}
+}
+```
+
+`hasCode`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error.
+
+### Objects print by their kind
+
+An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it:
+
+```ts
+// ArkErrors: must be "a" or "b" (was an object)
+// before: (was {"x":1})
+type("'a' | 'b'")({ x: 1 })
+```
 
 ### Undeclared keys have the undeclared code
 
@@ -7078,10 +7183,6 @@ configure({
 
 A writer's argument no longer has `toJSON`, `toString` or the text getters that could read the text it writes.
 
-### Text you supply is no longer an error's own property
-
-Text passed to `ctx.reject` or `ctx.mustBe` stays in the error's input, where its getters read it. Reading `error.expected` and `toJSON()` give what they did, but `Object.keys(error)` and `{ ...error }` no longer include it, and assigning `error.expected` throws. Configure a writer instead of assigning text.
-
 ### pipe.try errors reference the morph
 
 An error from a `pipe.try` morph that threw has the function as `morph` and what it threw as `cause`. Before, it had them as `predicate` and its own `actual`. Its `code` is still `predicate`, and its message is unchanged.
@@ -7116,6 +7217,20 @@ T(new Date("2001-06-01"))
 ```
 
 ## Validation
+
+### Date literals need a time zone
+
+A date literal, or a string passed as a date limit, must be the same instant on every machine: an ISO date (UTC) like `2025-01-01`, an ISO date-time with `Z` or an offset, or epoch milliseconds. A date-time without an offset or a non-ISO string was read in the local time zone, and now throws a `ParseError`:
+
+```ts
+// unchanged
+type("Date > d'2025-01-01'")
+type("Date > d'2025-01-01T12:00Z'")
+```
+
+### Merging an array throws
+
+`.merge`, `type.merge` and `Merge` extend an object, so an array, a tuple or another class's instance on either side throws a `ParseError`, where merging an array gave an object.
 
 ### number rejects Infinity
 
@@ -7154,6 +7269,17 @@ const T = type({ "+": "delete", b: "string", a: "string" })
 T({ b: "2", z: 0, a: "1" }) // { a: "1", b: "2" }, before: { b: "2", a: "1" }
 ```
 
+### "+": "reject" checks string keys only
+
+`"+": "reject"` allows undeclared symbol keys, so `rejectAllowsSymbolKeys` is gone. Reject types that differ only by a symbol key now overlap, so a union of them with a morph is indeterminate:
+
+```ts
+const T = type({ "+": "reject", a: "string" })
+
+// valid, before: ArkErrors: value at [Symbol(s)] must be removed
+T({ a: "x", [Symbol("s")]: 1 })
+```
+
 ### Shallow cycles throw
 
 An alias that resolves to itself without passing through an object, array or morph accepted every value. It now throws a `ParseError`:
@@ -7166,9 +7292,9 @@ scope({ a: "a" }).export()
 
 ## Configuration
 
-### Configure before importing anything else
+### Configure before any Type is created
 
-`arktype` and `@ark/schema` each load as a single module, so `configure` must run before any import of either, including `arktype/internal/*` deep imports. Import it from `arktype/config` in a file of its own, and import that file first:
+Global config is fixed when the first Type is created, whether by a definition or by referencing a keyword like `type.number`, and `configure` throws after that, where it used to apply to scopes created later but not to `type` or keywords. Call it in a file of its own, and import that file before anything creates a Type:
 
 ```ts
 import { configure } from "arktype/config"
@@ -7190,12 +7316,20 @@ Built-in keywords set `meta.keyword` to their name. Rename your own meta named `
 These change what `toJsonSchema()`, `.expression` and `.json` return, which matters if you store or snapshot them.
 
 - A union of literals with configured meta becomes `enum`: `type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()` is `{ enum: ["a", "b"], title: "Letter" }` instead of an `anyOf` of `const`s.
+
 - A string index signature beside declared keys becomes `patternProperties: { "": ... }` instead of `additionalProperties`.
+
 - `toJsonSchema()` throws for a regex flag JSON Schema can't express, instead of leaving it out: `type(/^a/i).toJsonSchema()` throws (code `patternFlags`), before: `{ type: "string", pattern: "^a" }`, which rejects `"A"`.
+
 - `toJsonSchema()` throws for an index signature key it can't express, instead of leaving out the index signature: `type({ "[string <= 3]": "number" }).toJsonSchema()` throws (code `indexKey`), before: `{ type: "object" }`. See [JSON Schema](https://arktype.io/docs/json-schema/to-json-schema#how-types-map) for the keys it can write.
+
 - Expressions keep length bounds and protos beside a structure: `type("number[] > 1").expression` is `number[] >= 2`, before: `number[]`.
+
 - Optional keys are listed by name, whether or not they have a default: `{ bar?: number, foo: string = "foo" }`, before: `{ foo: string = "foo", bar?: number }`.
+
 - The `$ark.x` names that functions get in `.json` and `.expression` are names only and no longer resolve through `$ark`.
+
+- Keys are ordered by code unit, where they were ordered as `JSON.stringify` writes them, which moves only keys that first differ at a character JSON escapes or where one ends: `"a"` now precedes `"a b"`.
 
 ## Inference
 
@@ -7256,8 +7390,7 @@ if (out instanceof type.errors) {
 	// ArkError: name must be a string (was missing)
 	out.issues[0]
 	out.issues.map(e => e.message)
-	// iterating and length work on ArkErrors itself
-	for (const error of out) console.log(error.path)
+	for (const error of out.issues) console.log(error.path)
 }
 ```
 
