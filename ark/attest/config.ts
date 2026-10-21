@@ -18,8 +18,9 @@ type BaseAttestConfig = {
 	skipTypes: boolean
 	skipInlineInstantiations: boolean
 	/**
-	 * the type checker to analyze assertions with, defaulting to tsrs if it is
-	 * installed alongside TypeScript 7, else tsgo for TypeScript 7, else tsjs
+	 * the type checker to analyze assertions with, defaulting to tsrs if its
+	 * binary is installed alongside TypeScript 7, else tsgo for TypeScript 7,
+	 * else tsjs
 	 */
 	checker: Checker | undefined
 	attestAliases: string[]
