@@ -1526,6 +1526,16 @@ Converting a Type with a named symbol key threw a `TypeError` while writing the 
 type({ [Symbol("s")]: "string" }).toJsonSchema()
 ```
 
+### Emit `format: "uuid"` for versioned UUIDs
+
+`string.uuid.v1` through `string.uuid.v8` now emit `format: "uuid"` in JSON Schema, as `string.uuid` does:
+
+```ts
+// was: { type: "string", pattern: "^[\\dA-Fa-f]{8}-..." }
+// now: { type: "string", pattern: "^[\\dA-Fa-f]{8}-...", format: "uuid" }
+type("string.uuid.v4").toJsonSchema()
+```
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

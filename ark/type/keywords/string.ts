@@ -795,7 +795,8 @@ export const uuid: uuid.module = keywordModule(
 					new RegExp(
 						`^[\\dA-Fa-f]{8}-[\\dA-Fa-f]{4}-${version}[\\dA-Fa-f]{3}-[89ABab][\\dA-Fa-f]{3}-[\\dA-Fa-f]{12}$`
 					),
-					`string.uuid.v${version}`
+					`string.uuid.v${version}`,
+					"uuid"
 				)
 		])
 	},

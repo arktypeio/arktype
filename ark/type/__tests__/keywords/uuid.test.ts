@@ -42,6 +42,16 @@ contextualize(() => {
 		attest(new RegExp(v4Pattern, "u").test(upper)).equals(true)
 	})
 
+	it("version subtype JSON Schema format", () => {
+		attest(type("string.uuid.v4").toJsonSchema()).snap({
+			$schema: "https://json-schema.org/draft/2020-12/schema",
+			type: "string",
+			pattern:
+				"^[\\dA-Fa-f]{8}-[\\dA-Fa-f]{4}-4[\\dA-Fa-f]{3}-[89ABab][\\dA-Fa-f]{3}-[\\dA-Fa-f]{12}$",
+			format: "uuid"
+		})
+	})
+
 	it("rejects partial matches", () => {
 		const Uuid = type("string.uuid")
 		attest(Uuid("dbb1e8e0-40fc-4c14-87eb-61b25d166a1b extra").toString()).snap(
