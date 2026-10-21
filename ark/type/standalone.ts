@@ -319,6 +319,8 @@ const invalidErrorsOf = (shortest: boolean) =>
 	errors._ = [{ code: "predicate", path: [], data }]`
 	:	"const errors = new runtime.InvalidErrors(data)"
 
+const appliedSignature = "(data, onFail) => "
+
 // errors "none" failures as [params, body]
 const failureSources = {
 	invalid: [
@@ -2145,15 +2147,36 @@ ${writeFunction(
 		const configured = keepsMeta || !unconfigured
 		const hasAttributes =
 			keepsMeta || introspectionMembers.some(member => members.has(member))
+		const pipes = this.pipes(members, unconfigured)
+		const signature =
+			pipes ?
+				`(data, pipedFromCtx, onFail${configured ? " = configuredOnFail" : ""})`
+			:	"(data, _, onFail)"
+		// what the root apply is passed to fail with
+		const failing =
+			!pipes ? "onFail"
+			: this.baking.detailsErrors ?
+				"(pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail)"
+			:	undefined
+		// a root apply failing by its one onFail is written into the validator
+		const inlined =
+			(
+				failing &&
+				applier?.apply.startsWith(appliedSignature) &&
+				applier.apply.split(/\bonFail\b/).length === 3
+			) ?
+				applier.apply
+					.slice(appliedSignature.length)
+					.replace(/\bonFail\b/, failing)
+			:	undefined
 		const call =
 			ownsValidator ? `make(parts${configured ? ", configuredOnFail" : ""})`
-			: !this.pipes(members, unconfigured) ?
-				"(data, _, onFail) => rootApply(data, onFail)"
-			: this.baking.detailsErrors ?
-				`(data, pipedFromCtx, onFail${configured ? " = configuredOnFail" : ""}) => rootApply(data, pipedFromCtx ? errors => pipedFromCtx.piped(errors) : onFail)`
-			:	`(data, pipedFromCtx, onFail${configured ? " = configuredOnFail" : ""}) => pipedFromCtx ? runtime.pipedIntoUndetailed(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
+			: inlined ? `${signature} => ${inlined}`
+			: failing ? `${signature} => rootApply(data, ${failing})`
+			: `${signature} => pipedFromCtx ? runtime.pipedIntoUndetailed(pipedFromCtx, rootApply(data, null)) : rootApply(data, onFail)`
 		const body = [
-			applier ? `const rootApply = ${applier.apply}`
+			inlined ? ""
+			: applier ? `const rootApply = ${applier.apply}`
 			: makes ? "const rootApply = make(parts)"
 			: "",
 			!keepsMeta ? ""
