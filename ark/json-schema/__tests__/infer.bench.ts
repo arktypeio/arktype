@@ -286,10 +286,10 @@ bench("jsonSchema", () =>
 		properties: { a: { type: "string" }, b: { type: "number" } },
 		required: ["a"]
 	})
-).types([254, "instantiations"])
+).types([258, "instantiations"])
 
 bench("jsonSchema properties(50)", () => jsonSchema(properties50)).types([
-	1835,
+	1839,
 	"instantiations"
 ])
 

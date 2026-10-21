@@ -3388,8 +3388,8 @@ contextualize(() => {
 				infer: 5
 			})
 			attest<{ a: string }>({} as jsonSchema.infer<typeof s>)
-			// limitation: the keyword intersects into the `.infer` getter it shares a name with
-			attest(s.infer).type.toString.snap("5 & { a: string }")
+			// the keyword is left out of the branded type, so it doesn't intersect into the getter
+			attest(s.infer).type.toString.snap("{ a: string }")
 		})
 
 		it("a nested infer keyword is an annotation", () => {

@@ -3564,11 +3564,10 @@ contextualize(() => {
 			attest(() => type({ a: S })).type.errors(/not assignable/)
 		})
 
-		it("a custom infer keyword intersects into .infer", () => {
+		it("a custom infer keyword doesn't narrow .infer", () => {
 			const S = jsonSchema({ type: "string", infer: "a" })
 			attest(jsonSchemaToType(S).infer).type.toString.snap("string")
-			// limitation: the keyword intersects into the `.infer` getter it shares a name with, though the schema accepts any string
-			attest(S.infer).type.toString.snap('"a"')
+			attest(S.infer).type.toString.snap("string")
 		})
 	})
 

@@ -23,8 +23,13 @@ export const jsonSchema: JsonSchemaParser = (schema =>
 
 Object.assign(jsonSchema, { as: jsonSchema })
 
-export type jsonSchema<t = unknown, schema = unknown> = schema &
+export type jsonSchema<t = unknown, schema = unknown> = omitInfer<schema> &
 	InferredJsonSchema<t>
+
+// a schema's own `infer` keyword would intersect into the getter, which is
+// all a published declaration's brand infers from
+export type omitInfer<schema> =
+	schema extends { infer: unknown } ? Omit<schema, "infer"> : schema
 
 export declare namespace jsonSchema {
 	// as a wrapper's return type, a contextual type is otherwise inferred
