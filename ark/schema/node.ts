@@ -223,7 +223,6 @@ export abstract class BaseNode<
 			) => {
 				if (pipedFromCtx) return pipe(pipedFromCtx, this, data)
 
-				// set once and called apart from its initializer, so V8 can inline it
 				const rootApply = cache.rootApply
 				return rootApply === undefined ?
 						this.initRootApply()(data, onFail)
@@ -233,7 +232,7 @@ export abstract class BaseNode<
 		)
 		if (attachments.kind !== "intersection") {
 			for (const k in attachments.impl.keys) {
-				// a prop lacks a default it doesn't have, as its type does
+				// only a prop with a default has the key
 				if (
 					k !== "in" &&
 					k !== "out" &&
@@ -243,7 +242,6 @@ export abstract class BaseNode<
 			}
 		}
 		this.cache = cache
-		// assigned one at a time, so every node of a kind shares a V8 map
 		const self: mutable<UnknownAttachments> = this
 		self.id = attachments.id
 		self.kind = attachments.kind
@@ -314,7 +312,8 @@ export abstract class BaseNode<
 			:	entersResolution
 	}
 
-	// a root no alias references is tracked under an equal resolution its aliases reach, so an object reached again through them isn't traversed twice
+	// a root no alias references is tracked under an equal resolution, so an
+	// object reached again through its aliases isn't traversed twice
 	get trackedId(): string {
 		if (this.cache.trackedId) return this.cache.trackedId
 		if (!isResolutionFinal()) return this.id
@@ -329,7 +328,8 @@ export abstract class BaseNode<
 		return (this.cache.trackedId = alias ? alias.resolution.id : this.id)
 	}
 
-	// includesTransform doesn't see an alias's resolution, final once nothing but inputs and outputs is open
+	// includesTransform doesn't see an alias's resolution, final once nothing
+	// but inputs and outputs is open
 	get transforms(): boolean {
 		if (this.cache.transforms !== undefined) return this.cache.transforms
 		const transforms = this.reaches("includesTransform")
@@ -361,7 +361,8 @@ export abstract class BaseNode<
 				// an intersection can drop what its operands reach, so only resolving it decides
 				if (reference[flag]) return !reachesOperands || this.reaches(flag, true)
 				if (!reference.hasKind("alias")) continue
-				// an intersection reaches nothing its operands don't, and resolving one can create others or reenter an operand still resolving
+				// an intersection reaches nothing its operands don't, and resolving one can
+				// create others or reenter an operand still resolving
 				if (
 					reference.operator === "&" &&
 					!(resolvesIntersections && reference.hasResolvableOperands)
@@ -427,7 +428,6 @@ export abstract class BaseNode<
 	}
 
 	private collectReferences(): Record<string, BaseNode> {
-		// adding each new id to an object is slower than to a Map
 		const collected = new Map<string, BaseNode>()
 		let replaced = false
 		const include = (node: BaseNode): void => {
@@ -798,7 +798,8 @@ export abstract class BaseNode<
 			} else ioInner[k] = v
 		}
 
-		// an alias read while definitions are open stands for its input and output alike, so a union of them is reduced once final
+		// an alias read while definitions are open stands for its input and output
+		// alike, so a union of them is reduced once final
 		return this.$.node(this.kind, ioInner as never, {
 			prereduced: this.hasKind("union") && this.includesAlias && !isIoFinal()
 		})
@@ -982,7 +983,8 @@ export abstract class BaseNode<
 		| Extract<ReturnType<mapper>, null> {
 		const ctx = this._createTransformContext(opts)
 		if (!ctx.throughAliases) return this._transform(mapper, ctx) as never
-		// an alias to a resolution still being transformed can't be resolved until the transform returns
+		// an alias to a resolution still being transformed resolves once the
+		// transform returns
 		inProgress.resolutions++
 		let transformed: BaseNode | null
 		try {
@@ -1248,7 +1250,8 @@ interface SimulatedPair {
 	assumedBy: Record<string, true>
 }
 
-// a cyclic node is within another if its unfolding is, so a pair of aliases is assumed related until its unfoldings are compared
+// a cyclic node is within another if its unfolding is, so a pair of aliases
+// is assumed related until its unfoldings are compared
 const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 	if (l.innerHash === r.innerHash) return true
 	if (l.hasKind("alias") || r.hasKind("alias")) {
@@ -1260,7 +1263,8 @@ const isSimulated = (l: BaseNode, r: BaseNode, s: SimulationState): boolean => {
 		}
 		return isAssumed(l, r, s, false)
 	}
-	// branches of an unreduced union may subsume each other, so each need only be within one on the other side or another branch that is
+	// branches of an unreduced union may subsume each other, so each need only be
+	// within one on the other side or another branch that is
 	if (l.hasKind("union") && !l.inner.ordered) {
 		return l.branches.every(
 			branch =>
@@ -1436,7 +1440,8 @@ const _isMutuallySimulated = (
 	}
 	const simulates = () => isSimulated(l, r, s) && isSimulated(r, l, s)
 	if (!simulates()) return false
-	// a pair whose unfoldings aren't related fails each comparison that assumed it, so each is compared again
+	// a pair whose unfoldings aren't related fails each comparison that assumed
+	// it, so each is compared again
 	while (s.pending.length) {
 		const pair = s.pending.pop()!
 		if (s.failed[pair]) continue
@@ -1478,7 +1483,8 @@ const withoutReplacedKeyword = (
 	return rest
 }
 
-// a traversal reads whether an alias resolves to it, so every alias a node reaches resolves before it's compiled
+// a traversal reads whether an alias resolves to it, so every alias a node
+// reaches resolves before it's compiled
 export const referencesThroughAliases = (
 	references: readonly BaseNode[]
 ): BaseNode[] => {
@@ -1735,7 +1741,7 @@ export type DeepNodeTransformation = <kind extends NodeKind>(
 export const rootApplyRuntimeOf = (config: ResolvedConfig): RootApplyRuntime =>
 	config.errors === "all" ? rootApplyRuntime : $ark.errorModes![config.errors]
 
-// createRootApply's statements, compiled per root so V8 can inline its calls
+// createRootApply's statements, compiled per root
 const compileRootApply = (node: BaseRoot): RootApply =>
 	new DynamicFunction<(...args: unknown[]) => RootApply>(
 		...rootApplyParams,

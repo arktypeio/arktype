@@ -75,7 +75,7 @@ export declare namespace ArkErrors {
 	export type Handler<returns = unknown> = (errors: ArkErrors) => returns
 }
 
-// below this many paths, comparing paths is faster than indexing them
+// paths are scanned rather than indexed below this many
 const maxScannedLength = 8
 
 /**
@@ -100,7 +100,7 @@ export class ArkErrors extends BaseArkErrors {
 		this._init(config)
 	}
 
-	/** @internal sets what reading its issues groups and writes */
+	/** @internal resets the fields its constructor sets */
 	_init(config: ResolvedConfig): void {
 		this.grouped = []
 		this.groupedCount = 0

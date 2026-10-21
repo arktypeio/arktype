@@ -236,7 +236,6 @@ export const isArray: (data: unknown) => data is readonly unknown[] =
 	/* @__PURE__ */ (() => Array.isArray)()
 export const dateGetTime = /* @__PURE__ */ (() => Date.prototype.getTime)()
 
-// a method call inlines where getTime is Date's own
 export const isValidDate = (date: Date): boolean =>
 	!Number.isNaN(
 		date.getTime === dateGetTime ? date.getTime() : dateGetTime.call(date)

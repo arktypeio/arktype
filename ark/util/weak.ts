@@ -4,7 +4,6 @@ export const holdsWeakly =
 	typeof WeakRef === "function" && typeof FinalizationRegistry === "function"
 
 export class WeakCache<v extends object> {
-	// a Map is faster here than a null-prototype record
 	private readonly refs = new Map<string, { deref(): v | undefined }>()
 	private readonly cleanup =
 		holdsWeakly ?

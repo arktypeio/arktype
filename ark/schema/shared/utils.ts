@@ -88,7 +88,8 @@ const uncheckedAssertions: (() => void)[] = []
 
 let uncheckedKeys: Record<string, true> = {}
 
-// a check can resolve the alias whose union queued it, so a keyed check is queued once until the queue drains
+// a check can resolve the alias whose union queued it, so a keyed check is
+// queued once until the queue drains
 export const queueUnchecked = (assert: () => void, key?: string): void => {
 	if (key !== undefined) {
 		if (uncheckedKeys[key]) return
@@ -100,7 +101,8 @@ export const queueUnchecked = (assert: () => void, key?: string): void => {
 let assertingUnchecked = false
 
 export const assertUnchecked = (): void => {
-	// an assertion can resolve an alias, which asserts again, so what it queues runs in the outer loop
+	// an assertion can resolve an alias, which asserts again, so what it queues
+	// runs in the outer loop
 	if (!isResolutionFinal() || assertingUnchecked) return
 	assertingUnchecked = true
 	try {

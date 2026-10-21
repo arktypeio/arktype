@@ -860,9 +860,11 @@ let continuationConfig: ResolvedConfig
 export const aliasVisits = {
 	count: 0,
 	tracked: false,
-	// data past the depth bound may be cyclic, so every path past it continues one tracked traversal
+	// data past the depth bound may be cyclic, so every path past it continues
+	// one tracked traversal
 	exceed: (data: unknown): InternalTraversal | false => {
-		// a path past the bound costs the visits it took to reach it, so cyclic data reruns tracked from its root
+		// a path past the bound costs the visits it took to reach it, so cyclic
+		// data reruns tracked from its root
 		aliasVisits.count += maxAliasDepth
 		if (aliasVisits.count > maxAliasVisits) {
 			aliasVisits.count = Number.POSITIVE_INFINITY
@@ -875,7 +877,8 @@ export const aliasVisits = {
 
 const untrackedBound = /* @__PURE__ */ noSuggest("untrackedBound")
 
-// once tracked, a cyclic root is entered as its own resolution, so data reaching it again isn't traversed twice
+// once tracked, a cyclic root is entered as its own resolution, so data
+// reaching it again isn't traversed twice
 export const applyCyclic = <ctx extends InternalTraversal>(
 	node: BaseNode,
 	data: unknown,
@@ -955,7 +958,8 @@ export const applyValue = (
 	else node.traverseApply(data, ctx)
 }
 
-// within the bounds, data is traversed as a tree; past the visit bound it may be cyclic, so only a tracked traversal can tell
+// within the bounds, data is traversed as a tree; past the visit bound it may
+// be cyclic, so only a tracked traversal can tell
 export const allowsUntracked = (
 	node: BaseNode,
 	data: unknown
@@ -988,7 +992,8 @@ export const allowsUntracked = (
 	return exceeded ? undefined : allowed
 }
 
-// a transform relies on data being acyclic, which data tracked past the depth bound isn't shown to be
+// a transform relies on data being acyclic, which data tracked past the
+// depth bound isn't shown to be
 export const allowsAcyclic = (
 	node: BaseNode,
 	data: unknown
