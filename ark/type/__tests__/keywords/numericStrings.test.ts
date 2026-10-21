@@ -20,6 +20,21 @@ contextualize(() => {
 		)
 	})
 
+	it("string.numeric exponent", () => {
+		attest(type("string.numeric")("5.7e-10")).equals("5.7e-10")
+		attest(type("string.numeric.parse")("-1E+3")).equals(-1000)
+		attest(type("string.numeric")("1e").toString()).snap(
+			'must be a well-formed numeric string (was "1e")'
+		)
+	})
+
+	// string.integer.parse reads digits, so an exponent isn't an integer string
+	it("string.integer rejects exponents", () => {
+		attest(type("string.integer")("1e3").toString()).snap(
+			'must be a well-formed integer string (was "1e3")'
+		)
+	})
+
 	it("string.integer", () => {
 		const IntegerString = type("string.integer")
 		attest(IntegerString("5")).equals("5")

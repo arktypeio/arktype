@@ -179,6 +179,18 @@ To keep the literal key, escape its `[`, which now works for an optional key as 
 type({ "\\[k]?": "string" })
 ```
 
+### Accept exponents in `string.numeric`
+
+`string.numeric` and `string.numeric.parse` accept an exponent like `"5.7e-10"` or `"1E+21"`, as `Number()` does, so a number `String()` writes with one, like `1e21`, now encodes through `string.numeric.parse` (#1448):
+
+```ts
+// was: ArkErrors: must be a well-formed numeric string (was "5.7e-10")
+// now: 5.7e-10
+type("string.numeric.parse")("5.7e-10")
+```
+
+Their JSON Schema `pattern` accepts an exponent too. `string.integer` still doesn't, since `string.integer.parse` reads only digits.
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:

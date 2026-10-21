@@ -165,6 +165,12 @@ contextualize(() => {
 		attest(T(encoded)).equals(decoded)
 	})
 
+	it("string.numeric.parse encodes a number String writes with an exponent", () => {
+		const T = type("string.numeric.parse")
+		attest(T.encode(1e21)).equals("1e+21")
+		attest(T(T.encode(5.7e-10))).equals(5.7e-10)
+	})
+
 	it("format keywords encode formatted strings", () => {
 		const T = type("string.trim")
 		attest(T.encode("a")).equals("a")
