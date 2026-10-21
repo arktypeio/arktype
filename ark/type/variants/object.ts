@@ -105,7 +105,7 @@ interface Type<out t extends object = object, in out $ = {}>
 	 * narrow, filter or metadata on this `Type` is not carried over
 	 * ({@link https://arktype.io/docs/objects#properties-structural | docs})
 	 *
-	 * @example type({ a: "1", b: "2" }).merge({ b: "3", c: "4" }) // Type<{ a: 1, b: 3, c: 4 }>
+	 * @example type({ a: "1", b: "2" }).merge({ b: "3", c: "4" }) // Type<{ a: 1; b: 3; c: 4 }>
 	 */
 	merge<
 		const def,
@@ -143,7 +143,7 @@ interface Type<out t extends object = object, in out $ = {}>
 	 * 🔗 like TS's `Partial`, an array or tuple base is preserved and
 	 * applied to its elements, e.g. `type(["string", "number"]).partial()`
 	 *
-	 * @example: const T = type({ foo: "string" }).optional() // Type<{ foo?: string }>
+	 * @example const T = type({ foo: "string" }).partial() // Type<{ foo?: string }>
 	 */
 	partial(): Type<{ [k in keyof t]?: t[k] }, $>
 
@@ -167,7 +167,7 @@ interface Type<out t extends object = object, in out $ = {}>
 
 	/**
 	 * List of property info of this `Type<object>`.
-	 * @example type({ foo: "string = "" }).props // [{ kind: "required", key: "foo", value: Type<string>, default: "" }]
+	 * @example type({ foo: "string = 'x'" }).props // [{ kind: "optional", key: "foo", value: Type<string>, default: "x" }]
 	 */
 	props: array<typePropOf<t, $>>
 }
