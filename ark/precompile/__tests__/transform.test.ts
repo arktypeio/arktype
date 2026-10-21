@@ -38,9 +38,9 @@ const precompileInOrder = (
 		const earlier = new Precompiler(memoryHost(recorded))
 		const readers: Record<string, string[]> = {}
 		for (const id in recorded) {
-			const { unitReads } = earlier.precompile(recorded[id], id)
-			for (const specifier in unitReads)
-				(readers[specifier] ??= []).push(...unitReads[specifier])
+			const { unitReaders } = earlier.precompile(recorded[id], id)
+			for (const specifier in unitReaders)
+				(readers[specifier] ??= []).push(...unitReaders[specifier])
 		}
 		precompiler.unitReaders = readers
 	}

@@ -173,7 +173,7 @@ export interface PrecompiledModule extends ModuleAnalysis {
 	// virtual module sources by specifier
 	modules: Record<string, string>
 	// readers of each unit module that could join another's scope, for a later build
-	unitReads: UnitReaders
+	unitReaders: UnitReaders
 }
 
 // an arktype export, or "reference" for the program's own Type
@@ -456,7 +456,7 @@ export class Precompiler {
 	}
 	private reportedDependencies = new Set<string>()
 	private intrinsicUnits: Record<string, string> | undefined
-	// what earlier builds' unitReads recorded across the program
+	// what earlier builds' unitReaders recorded across the program
 	unitReaders: UnitReaders | undefined
 
 	constructor(host: PrecompileHost, opts: PrecompileOptions = {}) {
@@ -791,7 +791,7 @@ export class Precompiler {
 		let prefix = "$ark"
 		while (source.includes(prefix)) prefix += "$"
 		const modules: Record<string, string> = {}
-		const unitReads: UnitReaders = {}
+		const readers: UnitReaders = {}
 		// locals for virtual modules' exports, by specifier
 		const imports: Record<string, Record<string, string>> = {}
 		if (this.mode === "standalone") {
@@ -801,7 +801,7 @@ export class Precompiler {
 				s,
 				prefix,
 				modules,
-				unitReads,
+				readers,
 				imports,
 				diagnostics
 			)
@@ -895,7 +895,7 @@ export class Precompiler {
 			dependencies: this.dependenciesOfArtifact(module),
 			diagnostics,
 			modules: this.inline ? {} : modules,
-			unitReads
+			unitReaders: readers
 		}
 	}
 
@@ -1241,7 +1241,7 @@ export class Precompiler {
 		s: MagicString,
 		prefix: string,
 		modules: Record<string, string>,
-		unitReads: UnitReaders,
+		readers: UnitReaders,
 		imports: Record<string, Record<string, string>>,
 		diagnostics: Diagnostic[]
 	): Record<string, Record<string, string>> {
@@ -1344,7 +1344,7 @@ export class Precompiler {
 						hoisted: this.isReachedEarly(module),
 						// shadow mode calls what it compares
 						values: !this.shadow,
-						readers: this.unitReaders
+						unitReaders: this.unitReaders
 					},
 					refusalsByName,
 					this.inline
@@ -1381,7 +1381,7 @@ export class Precompiler {
 					if (!(specifier in modules)) {
 						modules[specifier] = validators.code
 						Object.assign(modules, validators.modules)
-						Object.assign(unitReads, validators.reads)
+						Object.assign(readers, validators.unitReaders)
 					}
 					;(imports[specifier] ??= {})[exported] = local
 				}
@@ -4091,7 +4091,7 @@ const noValidators: StandaloneModules = {
 	folds: {},
 	checking: [],
 	values: [],
-	reads: {}
+	unitReaders: {}
 }
 
 // one bad export refuses a whole artifact, so retry each alone

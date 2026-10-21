@@ -88,7 +88,7 @@ export interface TransformedModule extends InlineModule {
 	map: SourceMap | undefined
 	dependencies: string[]
 	modules: Record<string, string>
-	unitReads: UnitReaders
+	unitReaders: UnitReaders
 }
 
 export type PrecompileAnswer = { result: unknown } | { error: unknown }
@@ -350,7 +350,7 @@ const transformedModuleOf = (
 			dependencies:
 				precompiler.inline ? [] : precompiler.textImportsOf(source, id),
 			modules: {},
-			unitReads: {},
+			unitReaders: {},
 			errors: [],
 			warnings: []
 		}
@@ -364,7 +364,7 @@ const transformedModuleOf = (
 		map: precompiler.inline ? undefined : result.map,
 		dependencies: [...result.dependencies, ...precompiler.ownManifests],
 		modules: result.modules,
-		unitReads: result.unitReads,
+		unitReaders: result.unitReaders,
 		...renderDiagnostics(result.diagnostics, id => precompiler.graph.pathOf(id))
 	}
 }

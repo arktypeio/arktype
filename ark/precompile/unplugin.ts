@@ -104,36 +104,36 @@ export const precompile: UnpluginInstance<
 	// Vite's, for what plugins keep between builds
 	let cacheDir: string | undefined
 	// so a later build can write a unit read by one other into its reader
-	let unitReadsById: Record<string, UnitReaders> | undefined
+	let unitReadersById: Record<string, UnitReaders> | undefined
 	const readersFileOf = () => {
 		const dir = storeDirOf() || (cacheDir && join(cacheDir, "arktype"))
 		return dir && join(dir, "readers.json")
 	}
-	const readUnitReaders = () => {
+	const loadUnitReaders = () => {
 		const file = readersFileOf()
 		if (!file) return
-		if (!unitReadsById) {
+		if (!unitReadersById) {
 			try {
-				unitReadsById = JSON.parse(readFileSync(file, "utf8"))
+				unitReadersById = JSON.parse(readFileSync(file, "utf8"))
 			} catch {
-				unitReadsById = {}
+				unitReadersById = {}
 			}
 		}
 		const readers: Record<string, string[]> = {}
-		for (const id in unitReadsById) {
-			for (const specifier in unitReadsById[id]) {
+		for (const id in unitReadersById) {
+			for (const specifier in unitReadersById[id]) {
 				const into = (readers[specifier] ??= [])
-				for (const reader of unitReadsById[id][specifier])
+				for (const reader of unitReadersById[id][specifier])
 					if (!into.includes(reader)) into.push(reader)
 			}
 		}
 		unitReaders = readers
 	}
-	const writeUnitReaders = () => {
+	const saveUnitReaders = () => {
 		const file = readersFileOf()
-		if (!file || !unitReadsById) return
+		if (!file || !unitReadersById) return
 		mkdirSync(dirname(file), { recursive: true })
-		writeFileSync(file, JSON.stringify(unitReadsById))
+		writeFileSync(file, JSON.stringify(unitReadersById))
 	}
 	const loadModule = (id: string) => {
 		const dir = storeDirOf()
@@ -268,7 +268,7 @@ export const precompile: UnpluginInstance<
 					map?.mappings
 				)) as TransformedModule | undefined
 				if (!transformed) return
-				if (unitReadsById) unitReadsById[id] = transformed.unitReads
+				if (unitReadersById) unitReadersById[id] = transformed.unitReaders
 				for (const dependency of transformed.dependencies)
 					if (dependency !== id) this.addWatchFile(dependency)
 				for (const specifier in transformed.modules) {
@@ -325,12 +325,12 @@ export const precompile: UnpluginInstance<
 		},
 		// loading the precompiler overlaps the bundler's own startup
 		buildStart: () => {
-			readUnitReaders()
+			loadUnitReaders()
 			reset()
 		},
 		// a build that won't rerun releases its worker
 		buildEnd() {
-			writeUnitReaders()
+			saveUnitReaders()
 			const native = this.getNativeBuildContext?.()
 			const isWatching =
 				native && "compiler" in native ?

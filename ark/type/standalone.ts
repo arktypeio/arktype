@@ -255,7 +255,7 @@ export interface StandaloneOptions {
 	// export as values what a site would call a function only to read
 	values?: boolean | undefined
 	// each unit module's readers across the program, which may be stale
-	readers?: UnitReaders | undefined
+	unitReaders?: UnitReaders | undefined
 }
 
 interface Baking {
@@ -355,7 +355,7 @@ export interface StandaloneModules {
 	// exports a site reads rather than calls
 	values: string[]
 	// the readers of each unit module that could join another's scope
-	reads: UnitReaders
+	unitReaders: UnitReaders
 }
 
 // "" reads for the artifact's own code
@@ -392,7 +392,7 @@ export const precompileStandalone = (
 		folds,
 		checking,
 		values,
-		reads: {}
+		unitReaders: {}
 	}
 }
 
@@ -405,15 +405,15 @@ export const precompileStandaloneModules = (
 		opts,
 		true
 	)
-	const reads: Record<string, string[]> = {}
+	const unitReaders: Record<string, string[]> = {}
 	const readers = readersIn(shared, imports)
 	for (const specifier in readers) {
 		if (shared[specifier]?.scope?.declaresOnlyRefs)
-			reads[specifier] = readers[specifier]
+			unitReaders[specifier] = readers[specifier]
 	}
 	const names = namesOfChanged(
 		shared,
-		opts.readers ? mergeUnits(shared, imports, opts.readers, opts) : []
+		opts.unitReaders ? mergeUnits(shared, imports, opts.unitReaders, opts) : []
 	)
 	const modules: Record<string, string> = {}
 	for (const specifier in shared) {
@@ -431,7 +431,7 @@ export const precompileStandaloneModules = (
 		folds,
 		checking,
 		values,
-		reads
+		unitReaders
 	}
 }
 
@@ -455,20 +455,20 @@ const mergeUnits = (
 	readers: UnitReaders,
 	opts: StandaloneOptions
 ): string[] => {
-	const read = readersIn(shared, imports)
+	const ownReaders = readersIn(shared, imports)
 	const roots: Record<string, string> = {}
 	const rootOf = (specifier: string): string => {
 		if (specifier in roots) return roots[specifier]
 		roots[specifier] = specifier
 		if (
 			!shared[specifier].scope?.declaresOnlyRefs ||
-			!read[specifier] ||
+			!ownReaders[specifier] ||
 			!readers[specifier]
 		)
 			return specifier
 		let root: string | undefined
 		// a reader this artifact lacks keeps the unit a module of its own
-		for (const reader of [...read[specifier], ...readers[specifier]]) {
+		for (const reader of [...ownReaders[specifier], ...readers[specifier]]) {
 			const readerRoot = shared[reader]?.scope && rootOf(reader)
 			if (!readerRoot || (root && root !== readerRoot)) return specifier
 			root = readerRoot
@@ -476,7 +476,7 @@ const mergeUnits = (
 		return (roots[specifier] = root!)
 	}
 	const groups: Record<string, Set<string>> = {}
-	for (const specifier in read) {
+	for (const specifier in ownReaders) {
 		if (!shared[specifier]) continue
 		const root = rootOf(specifier)
 		if (root !== specifier) (groups[root] ??= new Set([root])).add(specifier)

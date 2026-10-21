@@ -254,7 +254,7 @@ const loadArtifact = async (
 		if (layout === "merged") {
 			artifact = precompileStandaloneModules(exports, {
 				...opts,
-				readers: artifact.reads
+				unitReaders: artifact.unitReaders
 			})
 		}
 		for (const [specifier, module] of Object.entries(artifact.modules)) {
