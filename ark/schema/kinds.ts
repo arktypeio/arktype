@@ -30,7 +30,11 @@ import type { BaseScope } from "./scope.ts"
 import type { BaseNodeInput } from "./shared/declare.ts"
 import { enInfo } from "./shared/enWriters.ts"
 import { errorWriters, errorWritersByCode } from "./shared/errorWriters.ts"
-import type { ArkErrorCode, ErrorContextsByCode } from "./shared/errors.ts"
+import {
+	ArkErrors,
+	type ArkErrorCode,
+	type ErrorContextsByCode
+} from "./shared/errors.ts"
 import type {
 	ConstraintKind,
 	NodeKind,
@@ -188,6 +192,17 @@ $ark.defaultConfig = withAlphabetizedKeys(
 			locale: en
 		} satisfies Omit<ResolvedConfig, NodeKind>
 	) as never
+)
+
+// Node prints errors as their issues, set where runtime bundles never load
+Object.defineProperty(
+	ArkErrors.prototype,
+	Symbol.for("nodejs.util.inspect.custom"),
+	{
+		value(this: ArkErrors) {
+			return this.issues
+		}
+	}
 )
 
 export const nodeClassesByKind: Record<

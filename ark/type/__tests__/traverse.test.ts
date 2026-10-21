@@ -11,6 +11,7 @@ import {
 	type ArkErrorCode,
 	type Type
 } from "arktype"
+import { inspect } from "node:util"
 
 contextualize(() => {
 	it("divisible", () => {
@@ -559,6 +560,25 @@ d must be a number (was a string)`)
 	it("issues found once read are ArkErrors", () => {
 		const out = type("string")(0)
 		attest(out.constructor).equals(type.errors)
+	})
+
+	it("inspected errors print their issues", () => {
+		const out = type({ a: "string" })({ a: 1 })
+		attest(inspect(out)).snap(`[
+  {
+    data: 1,
+    path: [ 'a' ],
+    code: 'domain',
+    description: 'a string',
+    meta: {},
+    domain: 'string',
+    propString: 'a',
+    expected: 'a string',
+    actual: 'a number',
+    problem: 'must be a string (was a number)',
+    message: 'a must be a string (was a number)'
+  }
+]`)
 	})
 
 	it("issues of data made valid before they're read", () => {
