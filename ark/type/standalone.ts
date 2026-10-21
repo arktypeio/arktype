@@ -111,6 +111,7 @@ import {
 export * from "./standalone/keys.ts"
 export * from "./standalone/compilers.ts"
 export * from "./standalone/modules.ts"
+export * from "./standalone/sites.ts"
 
 type DeclarationRole =
 	| "shape"
