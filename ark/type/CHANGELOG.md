@@ -1591,6 +1591,16 @@ const Email = type("string.email > 0", "@", "Email is not valid")
 Email("").toString()
 ```
 
+### Reject a generic definition at a parameterized scope key
+
+A scope key declaring parameters, like `"Box<s extends string>"`, whose definition was already a `generic(...)` type-checked but threw `'generic' is unresolvable` (#1343). It's now a type error and throws a `ParseError` naming the alias:
+
+```ts
+// was: ParseError: 'generic' is unresolvable
+// now: ParseError: Box is defined by a generic, so its key must not declare parameters
+scope({ "Box<s extends string>": generic(["s", "string"])({ box: "s" }) })
+```
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

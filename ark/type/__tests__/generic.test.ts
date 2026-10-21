@@ -10,6 +10,7 @@ import {
 import { Hkt, writeUnclosedGroupMessage } from "@ark/util"
 import { generic, scope, type, type Generic, type GenericAst } from "arktype"
 import { emptyGenericParameterMessage } from "arktype/internal/generic.ts"
+import { writeParameterizedGenericKeyMessage } from "arktype/internal/scope.ts"
 import { writeInvalidGenericArgCountMessage } from "arktype/internal/parser/shift/operand/genericArgs.ts"
 import { writeInvalidDivisorMessage } from "arktype/internal/parser/shift/operator/divisor.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
@@ -249,6 +250,16 @@ contextualize(() => {
 			attest(() => type("<arr>", "arr > 0")).throwsAndHasTypeError(
 				writeUnboundableMessage("unknown")
 			)
+		})
+
+		// https://github.com/arktypeio/arktype/issues/1343
+		it("generic definition at a parameterized scope key", () => {
+			attest(() =>
+				scope({
+					// @ts-expect-error
+					"Box<s extends string>": generic(["s", "string"])({ box: "s" })
+				})
+			).throwsAndHasTypeError(writeParameterizedGenericKeyMessage("Box"))
 		})
 	})
 
