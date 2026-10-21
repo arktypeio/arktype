@@ -697,6 +697,37 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 		attest(standalone.includes(parserMessage)).equals(false)
 	})
 
+	it("esbuild a package that opts in through one that doesn't", async () => {
+		const root = writeFixture(
+			{
+				"package.json": JSON.stringify({
+					type: "module",
+					dependencies: { wrapper: "1.0.0" }
+				}),
+				"main.ts":
+					'import { Tagged } from "wrapper"\n\nconsole.log(String(Tagged({ tag: 5 })))\n',
+				...packageFiles(
+					"wrapper",
+					{ "index.js": 'export { Tagged } from "tagged"\n' },
+					{ dependencies: { tagged: "1.0.0" } }
+				),
+				...packageFiles(
+					"tagged",
+					{
+						"index.js":
+							'import { type } from "arktype"\n\nexport const Tagged = type({ tag: "string" })\n'
+					},
+					{ arktype: { precompile: true } },
+					"node_modules/wrapper/node_modules/tagged"
+				)
+			},
+			fromHere("temp", "optedInThrough")
+		)
+		const standalone = await bundlers.esbuild({ cwd: root }, root)
+		attest(run(standalone)).snap("tag must be a string\n")
+		attest(standalone.includes(parserMessage)).equals(false)
+	})
+
 	it("esbuild static introspection", async () => {
 		const introspected = fromHere("introspected")
 		const standalone = await bundlers.esbuild(

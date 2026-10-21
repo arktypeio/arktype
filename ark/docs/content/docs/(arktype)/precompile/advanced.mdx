@@ -30,7 +30,7 @@ A library ships its source, and the build precompiles it with the program if its
 }
 ```
 
-Its definitions are then precompiled like the program's. The plugin and drivers find such packages through the dependencies of the nearest `package.json` to `cwd` and of each package that opts in, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
+Its definitions are then precompiled like the program's. The plugin and drivers find such packages among those the nearest `package.json` to `cwd` depends on, directly or through other packages, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
 
 A library shouldn't ship what its own build precompiled, which runs only on the arktype it was built with, so the build fails for each dependency that imports `arktype/runtime`.
 
