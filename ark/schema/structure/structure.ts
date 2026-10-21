@@ -1232,20 +1232,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (outMayBeCopied || transformedProps.length || this.defaultable.length)
 				this.compileCopiedDeclaredKeys(js)
 			const deletes = () =>
-				js
-					.const("dataKeys", "Object.keys(data)")
-					.const("dataSymbols", "Object.getOwnPropertySymbols(data)")
-					.if("dataSymbols.length", () =>
-						js.line("dataKeys.push(...dataSymbols)")
-					)
-					.for("i < dataKeys.length", () =>
+				this.compileOwnKeys(js, "data", "dataKeys", "dataSymbols", true).for(
+					"i < dataKeys.length",
+					() =>
 						js
 							.const("k", "dataKeys[i]")
 							.if(
 								`!(k in ${js.ref(this.propsByKey)}) && !(${this._compileDeclaresKey(js)})`,
 								() => this.compileCopy(js).line("delete out[k]")
 							)
-					)
+				)
 			if (this.sequence) js.if("!indexed", deletes)
 			else deletes()
 			return js.return("out")
@@ -1348,10 +1344,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		js: NodeCompiler,
 		object: string,
 		keys = "keys",
-		symbols = "symbols"
+		symbols = "symbols",
+		withSymbols = this.indexMatchesSymbols
 	): NodeCompiler {
 		js.const(keys, `Object.keys(${object})`)
-		if (!this.indexMatchesSymbols) return js
+		if (!withSymbols) return js
 		return js
 			.const(symbols, `Object.getOwnPropertySymbols(${object})`)
 			.if(`${symbols}.length`, () => js.line(`${keys}.push(...${symbols})`))
