@@ -43,6 +43,7 @@ export declare namespace State {
 	enum UnnamedCaptureKind {
 		indexed,
 		lookaround,
+		negativeLookaround,
 		noncapturing
 	}
 
@@ -221,10 +222,17 @@ export declare namespace s {
 				groups: init
 				capture: last["capture"]
 				branches: last["branches"]
-				sequence: pushQuantifiable<last["sequence"], last["root"]>
+				sequence: s["capture"] extends LookaroundKind ?
+					// pushed directly so a quantifier can't follow it, but its
+					// captures are still counted
+					pushQuantifiable<
+						pushQuantifiable<last["sequence"], last["root"]>,
+						GroupTree<State.Group.finalize<s>, s["capture"]>
+					>
+				:	pushQuantifiable<last["sequence"], last["root"]>
 				root: s["capture"] extends CapturedGroupKind ?
 					GroupTree<State.Group.finalize<s>, s["capture"]>
-				: s["capture"] extends State.UnnamedCaptureKind.lookaround ? ""
+				: s["capture"] extends LookaroundKind ? ""
 				: // non-capturing
 					State.Group.finalize<s>
 				caseInsensitive: last["caseInsensitive"]
@@ -492,6 +500,10 @@ export declare namespace UnionTree {
 
 export type CapturedGroupKind = string | State.UnnamedCaptureKind.indexed
 
+export type LookaroundKind =
+	| State.UnnamedCaptureKind.lookaround
+	| State.UnnamedCaptureKind.negativeLookaround
+
 export type IncompleteCaptureGroup = noSuggest<"incompleteCaptureGroup">
 
 export type IndexedCaptureOffset = noSuggest<"indexedCaptureOffset">
@@ -504,7 +516,9 @@ export type EmptyCaptures = [IndexedCaptureOffset]
 
 export interface GroupTree<
 	ast extends RegexAst = RegexAst,
-	capture extends CapturedGroupKind = CapturedGroupKind
+	capture extends CapturedGroupKind | LookaroundKind =
+		| CapturedGroupKind
+		| LookaroundKind
 > {
 	kind: "group"
 	capture: capture
@@ -555,7 +569,8 @@ export declare namespace GroupTree {
 		ctx extends FinalizationContext,
 		r extends FinalizationResult
 	> = FinalizationResult.from<{
-		pattern: r["pattern"]
+		// a lookaround consumes nothing
+		pattern: self["capture"] extends LookaroundKind ? "" : r["pattern"]
 		ctx: self["capture"] extends string ?
 			finalizeNamedCapture<
 				self["capture"],
@@ -565,7 +580,32 @@ export declare namespace GroupTree {
 			>
 		: self["capture"] extends State.UnnamedCaptureKind.indexed ?
 			finalizeUnnamedCapture<ctx["captures"]["length"], r["pattern"], r["ctx"]>
+		: self["capture"] extends State.UnnamedCaptureKind.negativeLookaround ?
+			finalizeNegativeLookaround<ctx, r["ctx"]>
 		:	r["ctx"]
+	}>
+
+	// a negative lookaround matches only when its groups don't, so they
+	// capture undefined
+	type finalizeNegativeLookaround<
+		base extends FinalizationContext,
+		result extends FinalizationContext,
+		lookaroundCaptures extends IndexedCaptures = extractNewCaptures<
+			base["captures"],
+			result["captures"]
+		>
+	> = FinalizationContext.from<{
+		captures: [
+			...base["captures"],
+			...{ [i in keyof lookaroundCaptures]: undefined }
+		]
+		names: {
+			[k in keyof result["names"]]: k extends keyof base["names"] ?
+				result["names"][k]
+			:	undefined
+		}
+		flags: result["flags"]
+		errors: result["errors"]
 	}>
 
 	type finalizeNamedCapture<

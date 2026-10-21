@@ -62,6 +62,16 @@ regex("^\\d+$")
 regex("^(?:a|\\d){2}$")
 ```
 
+### count captures inside lookarounds
+
+A capture inside a lookaround wasn't counted, so later captures were inferred at the wrong index (#1532). A capture inside a negative lookaround is `undefined`:
+
+```ts
+// was: Regex<"ab", { captures: ["b"] }>
+// now: Regex<"ab", { captures: ["a", "b"] }>
+regex("^(?=(a))a(b)$")
+```
+
 ## 0.0.14
 
 ### allow `}` to be escaped

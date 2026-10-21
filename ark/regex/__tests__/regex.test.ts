@@ -1303,6 +1303,19 @@ contextualize(() => {
 			attest<Regex<"abc", {}>>(S)
 		})
 
+		// https://github.com/arktypeio/arktype/issues/1532
+		it("captures in a lookahead are counted", () => {
+			const S = regex("^(?=(a))a(b)$")
+			attest<Regex<"ab", { captures: ["a", "b"] }>>(S)
+		})
+
+		it("captures in a negative lookaround are undefined", () => {
+			const S = regex("^(?<!(?<x>c))a(b)$")
+			attest<
+				Regex<"ab", { captures: [undefined, "b"]; names: { x: undefined } }>
+			>(S)
+		})
+
 		it("quantified lookahead", () => {
 			// @ts-expect-error
 			attest(() => regex("^a(?=b)?b$")).type.errors(
