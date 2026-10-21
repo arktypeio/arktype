@@ -1508,6 +1508,15 @@ password must be at least length 8`)
 		attest(validator(null).summary).snap("Enter your login.")
 	})
 
+	it("configured pipe message", async () => {
+		const T = type("string.numeric.parse")
+			.to("number < 3")
+			.configure({ message: "Enter a number below 3." })
+		const { T: validator } = await load({ T })
+		attest(validator("5").summary).equals(T("5").toString())
+		attest(validator("5").summary).snap("Enter a number below 3.")
+	})
+
 	it("configured problem", async () => {
 		const { T } = await load({
 			T: type({ a: type("string").configure({ problem: "is no string" }) })

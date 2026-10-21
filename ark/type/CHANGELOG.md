@@ -210,6 +210,22 @@ T({ type: "e" })
 
 Each of those literals is now a case of its own, so such data fails at the key with every value it allows, and data matching one of them is checked only against the branches that allow it.
 
+### Apply a pipe's configured `message` to its output's errors
+
+`.configure({ message })` on a pipe set the message of errors its input raised, but not of those raised validating its output (#1479):
+
+```ts
+const Port = type("string.numeric.parse | number")
+	.to("0 < number <= 65535")
+	.configure({ message: "Enter a port number." })
+
+// was: ArkErrors: must be at most 65535 (was 99999)
+// now: ArkErrors: Enter a port number.
+Port("99999")
+```
+
+The output's own Type, `Port.out`, keeps its errors, description and JSON Schema.
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:
