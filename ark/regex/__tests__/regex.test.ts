@@ -1332,6 +1332,16 @@ contextualize(() => {
 			const S = regex("^aB$", "i")
 			attest<Regex<"aB" | "ab" | "Ab" | "AB", { flags: "i" }>>(S)
 		})
+
+		it("m", () => {
+			const S = regex("^abc$", "m")
+			attest<Regex<`${string}abc${string}`, { flags: "m" }>>(S)
+		})
+
+		it("m allows anchors mid-pattern", () => {
+			const S = regex("a$\n^b", "m")
+			attest<Regex<`${string}a\nb${string}`, { flags: "m" }>>(S)
+		})
 	})
 
 	describe("modifiers", () => {

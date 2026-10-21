@@ -38,6 +38,16 @@ regex("^[\\/]$")
 regex("^a\\sc$")
 ```
 
+### don't anchor a pattern at `^` or `$` with the `m` flag
+
+With `m`, `^` and `$` also match at line breaks, so they no longer anchor the inferred pattern, and they're allowed mid-pattern:
+
+```ts
+// was: Regex<"abc", { flags: "m" }>
+// now: Regex<`${string}abc${string}`, { flags: "m" }>
+regex("^abc$", "m")
+```
+
 ## 0.0.14
 
 ### allow `}` to be escaped
