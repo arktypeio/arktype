@@ -53,6 +53,16 @@ contextualize(() => {
 		attest(shared).snap({ n: "1" })
 	})
 
+	it("copies where a length bound could read the elements another place adds", () => {
+		const T = guarded.type({
+			a: ["string", ["string", "=", "d"]],
+			b: "unknown[] <= 1"
+		})
+		const shared = ["x"]
+		attest(T({ a: shared, b: shared })).snap({ a: ["x", "d"], b: ["x"] })
+		attest(shared).snap(["x"])
+	})
+
 	it("copies where a morph is passed ctx", () => {
 		const T = guarded.type({
 			a: "string.trim",
