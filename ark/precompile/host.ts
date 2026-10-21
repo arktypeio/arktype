@@ -1,6 +1,6 @@
 import { throwError } from "@ark/util"
 import { existsSync, readFileSync, realpathSync } from "node:fs"
-import { dirname, isAbsolute, join, relative } from "node:path"
+import { dirname, isAbsolute, join, normalize, relative, sep } from "node:path"
 import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 import type { PrecompilePluginOptions, RenderedDiagnostics } from "./driver.ts"
@@ -85,11 +85,17 @@ export const optsIn = (manifest: string | undefined): boolean =>
 export const dependencyOf = (
 	file: string
 ): [root: string, name: string] | undefined => {
-	const match =
-		file.includes("/node_modules/") &&
-		/.*\/node_modules\/((?:@[^/]+\/)?[^/]+)/.exec(file)
-	return match ? [match[0], match[1]] : undefined
+	const match = /.*[/\\]node_modules[/\\]((?:@[^/\\]+[/\\])?[^/\\]+)/.exec(file)
+	return match ? [match[0], match[1].replace("\\", "/")] : undefined
 }
+
+// a file as Node's path module writes it, since Vite writes / on Windows
+export const fileOf = (id: string): string =>
+	isAbsolute(id) ? normalize(id) : id
+
+// a path as messages print it, with / on every platform
+export const printablePathOf = (from: string, to: string): string =>
+	relative(from, to).split(sep).join("/")
 
 // for a host that must be told before the build which packages it transforms
 export const optedInPackagesOf = (cwd: string): string[] => {
@@ -219,9 +225,9 @@ export const transformedFilterOf = (
 	exclude:
 		packages.length ?
 			new RegExp(
-				`/node_modules/(?!(?:${packages.map(name => name.replace(/\./g, "\\.")).join("|")})/)(?!.*/node_modules/)`
+				`[/\\\\]node_modules[/\\\\](?!(?:${packages.map(name => name.replace(/\./g, "\\.").replace("/", "[/\\\\]")).join("|")})[/\\\\])(?!.*[/\\\\]node_modules[/\\\\])`
 			)
-		:	/\/node_modules\//
+		:	/[/\\]node_modules[/\\]/
 })
 
 export const writeTextlessMessage = (path: string): string =>
@@ -308,4 +314,4 @@ export const writeUntransformedImportMessage = (
 	specifier: string,
 	cwd: string
 ): string =>
-	`${relative(cwd, file)} imports ${specifier}, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile what isn't a JavaScript or TypeScript module. Define the Types it uses in a module that is.`
+	`${printablePathOf(cwd, file)} imports ${specifier}, which a standalone build resolves to arktype/runtime, where defining a Type throws, as it can't precompile what isn't a JavaScript or TypeScript module. Define the Types it uses in a module that is.`

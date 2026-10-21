@@ -20,7 +20,7 @@ contextualize(() => {
 		nested(data)
 		attest(data).equals([[1], [2]])
 		attest(nested([[{}]]).toString()).snap(
-			"value at [0][0] must be an array (was object)"
+			"value at [0][0] must be an array (was an object)"
 		)
 	})
 

@@ -311,11 +311,11 @@ const MyObj = type({
 	withDefault: "number = 5"
 })
 
-// { key: undefined, withDefault: undefined }
+// { key: undefined, withDefault: 5 }
 MyObj({ key: undefined, withDefault: undefined })
 ```
 
-With `false`, an explicit `undefined` also passes for a key with a default, and is kept rather than replaced by the default. Configurable defaults are tracked in [#1390](https://github.com/arktypeio/arktype/issues/1390).
+With `false`, an explicit `undefined` at a key with a default is replaced by the default, as a missing key is. Treating `null` as missing is tracked in [#1283](https://github.com/arktypeio/arktype/issues/1283).
 
 ## numberAllowsNaN
 

@@ -158,7 +158,7 @@ const B = type.instanceOf(User)`,
 const isEven = (n: number) => n % 2 === 0
 export const schema = type("number").narrow(isEven).toJsonSchema()`)
 		).snap([
-			'/main.ts:3:23  type("number").narrow(isEven).toJsonSchema() cannot be precompiled\n  `type("number").narrow(isEven).toJsonSchema()` throws ToJsonSchemaError: {\n    code: "predicate",\n    base: {\n        type: "number"\n    },\n    predicate: Function(isEven)\n} at build\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
+			'/main.ts:3:23  type("number").narrow(isEven).toJsonSchema() cannot be precompiled\n  `type("number").narrow(isEven).toJsonSchema()` throws ToJsonSchemaError: Can\'t convert "predicate" to JSON Schema. Configure fallback.predicate to write it:\n{\n    code: "predicate",\n    base: {\n        type: "number"\n    },\n    predicate: Function(isEven)\n} at build\n  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".'
 		])
 	})
 

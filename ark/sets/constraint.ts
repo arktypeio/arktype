@@ -42,8 +42,9 @@ export const intersectConstraints = <kind extends ConstraintGroupKind>(
 ): nodeOfKind<RootKind | Extract<kind, "structure">> | Disjoint => {
 	const head = s.r.shift()
 	if (!head) {
+		// a structure with no constraints still checks its undeclared keys
 		let result: BaseNode | Disjoint =
-			s.l.length === 0 && s.kind === "structure" ?
+			s.l.length === 0 && s.kind === "structure" && !s.baseInner.undeclared ?
 				$ark.intrinsic.unknown.internal
 			:	s.ctx.$.node(
 					s.kind,

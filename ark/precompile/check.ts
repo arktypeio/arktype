@@ -1,6 +1,7 @@
 import { globSync, readFileSync } from "node:fs"
-import { relative, resolve } from "node:path"
+import { resolve } from "node:path"
 import type { CheckedModule, PrecompilePluginOptions } from "./driver.ts"
+import { printablePathOf } from "./host.ts"
 import { renderDiagnostic, type Diagnostic } from "./precompile.ts"
 import { createSyncPrecompiler } from "./worker.ts"
 
@@ -18,7 +19,7 @@ export interface CheckReport {
 
 const defaultSources = ["**/*.{ts,tsx,mts,cts,js,jsx,mjs,cjs}"]
 
-const ignoredDirs = /(^|\/)(node_modules|out|dist|build)\//
+const ignoredDirs = /(^|[/\\])(node_modules|out|dist|build)[/\\]/
 
 export const check = (
 	patterns: string[],
@@ -51,12 +52,12 @@ export const check = (
 				readFileSync(file, "utf8"),
 				file
 			) as CheckedModule
-			const path = relative(cwd, file)
+			const path = printablePathOf(cwd, file)
 			const entries: [number, string][] = result.diagnostics.map(diagnostic => [
 				diagnostic.start,
 				renderDiagnostic({
 					...diagnostic,
-					file: relative(cwd, diagnostic.file)
+					file: printablePathOf(cwd, diagnostic.file)
 				})
 			])
 			const errors = result.diagnostics.filter(

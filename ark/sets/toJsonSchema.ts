@@ -11,7 +11,7 @@ import {
 	type Union,
 	type nodeOfKind
 } from "@ark/schema"
-import { flatMorph, hasKey, type dict } from "@ark/util"
+import { appendStringifiedKey, flatMorph, hasKey, type dict } from "@ark/util"
 
 // JSON Schema's object type, which excludes what an Array basis allows
 export const isNonArray = (data: object): boolean => !Array.isArray(data)
@@ -20,6 +20,9 @@ interface JsonSchemaContext extends ToJsonSchema.Context {
 	refs: BaseRoot[]
 	refNamesById: Record<string, string>
 	refCountsByPrefix: Record<string, number>
+	/** where in the Type the node being converted is, for its errors */
+	path: string
+	refPathsById: Record<string, string>
 }
 
 export const rootToJsonSchema = (
@@ -28,8 +31,21 @@ export const rootToJsonSchema = (
 ): JsonSchema => {
 	const ctx: JsonSchemaContext = Object.assign(
 		mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, opts),
-		{ refs: [], refNamesById: {}, refCountsByPrefix: {} }
+		{
+			refs: [],
+			refNamesById: {},
+			refCountsByPrefix: {},
+			path: "",
+			refPathsById: {}
+		}
 	)
+	// a default handler throws naming where the part it can't convert is
+	ctx.fallback = flatMorph(ctx.fallback, (code, handler) => [
+		code,
+		handler === ToJsonSchema.defaultConfig.fallback[code] ?
+			(fallbackCtx: never) => ToJsonSchema.throw(code, fallbackCtx, ctx.path)
+		:	handler
+	]) as ToJsonSchema.HandlerByCode
 
 	ctx.useRefs ||= node.includesAlias
 
@@ -48,10 +64,9 @@ export const rootToJsonSchema = (
 	if (ctx.useRefs) {
 		const schemasByName: Record<string, JsonSchema> = {}
 		for (let i = 0; i < ctx.refs.length; i++) {
-			schemasByName[ctx.refNamesById[ctx.refs[i].id]] ??= toResolvedJsonSchema(
-				ctx.refs[i],
-				ctx
-			)
+			const ref = ctx.refs[i]
+			ctx.path = ctx.refPathsById[ref.id]
+			schemasByName[ctx.refNamesById[ref.id]] ??= toResolvedJsonSchema(ref, ctx)
 		}
 		// only nodes a $ref reaches are defined, not e.g. a discriminant's cases
 		const defs = flatMorph(node.references, (i, ref) => {
@@ -74,6 +89,7 @@ export const toJsonSchemaRecurse = (
 ): JsonSchema => {
 	if (ctx.useRefs && !node.alwaysExpandJsonSchema) {
 		ctx.refs.push(node)
+		ctx.refPathsById[node.id] ??= ctx.path
 		// draft-2020-12 uses $defs, draft-07 uses definitions
 		const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
 		return { $ref: `#/${defsKey}/${refNameOf(node, ctx)}` } as JsonSchema.Ref
@@ -186,14 +202,20 @@ const innerToJsonSchemaByKind: {
 		}
 	},
 	morph: (node, ctx) =>
-		ctx.fallback.morph({
-			code: "morph",
-			base: toJsonSchemaRecurse(node.rawIn, ctx),
-			out:
-				node.introspectableOut ?
-					toJsonSchemaRecurse(node.introspectableOut, ctx)
-				:	null
-		}),
+		ctx.io === "in" ?
+			// its input as written, since rawIn drops the defaults it holds
+			toJsonSchemaRecurse(
+				node.declaredIn ?? node.inner.in ?? $ark.intrinsic.unknown.internal,
+				ctx
+			)
+		:	ctx.fallback.morph({
+				code: "morph",
+				base: toJsonSchemaRecurse(node.rawIn, ctx),
+				out:
+					node.introspectableOut ?
+						toJsonSchemaRecurse(node.introspectableOut, ctx)
+					:	null
+			}),
 	unit: (node, ctx) =>
 		// this is the more standard JSON schema representation, especially for Open API
 		node.unit === null ? { type: "null" }
@@ -250,9 +272,11 @@ const reduceObjectJsonSchema = (
 	schema: JsonSchema.Object,
 	ctx: JsonSchemaContext
 ): JsonSchema.Object => {
+	const path = ctx.path
 	if (node.props.length) {
 		schema.properties = {}
 		for (const prop of node.props) {
+			ctx.path = appendStringifiedKey(path, prop.key)
 			const valueSchema = toJsonSchemaRecurse(prop.value, ctx)
 
 			if (typeof prop.key === "symbol") {
@@ -270,6 +294,7 @@ const reduceObjectJsonSchema = (
 
 			schema.properties![prop.key] = valueSchema
 		}
+		ctx.path = path
 		if (node.requiredKeys.length && schema.properties) {
 			schema.required = node.requiredKeys.filter(
 				(k): k is string => typeof k === "string" && k in schema.properties!
@@ -281,7 +306,9 @@ const reduceObjectJsonSchema = (
 
 	if (node.index) {
 		for (const index of node.index) {
+			ctx.path = `${path}[${index.signature.expression}]`
 			const valueJsonSchema = toJsonSchemaRecurse(index.value, ctx)
+			ctx.path = path
 
 			for (const keyBranch of index.signature.branches) {
 				if (!keyBranch.extends($ark.intrinsic.string)) {
@@ -301,14 +328,16 @@ const reduceObjectJsonSchema = (
 				if (keyBranch.hasKind("morph")) {
 					keyIn = keyBranch.rawIn
 					// a key's schema can't be a $ref
-					keySchema = ctx.fallback.morph({
-						code: "morph",
-						base: toResolvedJsonSchema(keyBranch.rawIn, ctx),
-						out:
-							keyBranch.introspectableOut ?
-								toResolvedJsonSchema(keyBranch.introspectableOut, ctx)
-							:	null
-					}) as never
+					if (ctx.io !== "in") {
+						keySchema = ctx.fallback.morph({
+							code: "morph",
+							base: toResolvedJsonSchema(keyBranch.rawIn, ctx),
+							out:
+								keyBranch.introspectableOut ?
+									toResolvedJsonSchema(keyBranch.introspectableOut, ctx)
+								:	null
+						}) as never
+					}
 				}
 
 				const pattern = keyPatternOf(keyIn, ctx)
@@ -326,9 +355,14 @@ const reduceObjectJsonSchema = (
 		}
 	}
 
+	// an input may have the keys "delete" would remove
+	const rejectsUndeclared =
+		node.undeclared === "reject" ||
+		(node.undeclared === "delete" && ctx.io !== "in")
+
 	if (
 		indexKeys.length === 1 &&
-		node.undeclared &&
+		rejectsUndeclared &&
 		!schema.patternProperties &&
 		node.props.every(
 			prop => typeof prop.key === "symbol" || indexKeys[0].node.allows(prop.key)
@@ -351,7 +385,7 @@ const reduceObjectJsonSchema = (
 		delete schema.patternProperties
 	}
 
-	if (node.undeclared && !schema.additionalProperties)
+	if (rejectsUndeclared && !schema.additionalProperties)
 		schema.additionalProperties = false
 
 	for (const { key, value } of indexKeys) {
@@ -427,12 +461,15 @@ const reduceSequenceJsonSchema = (
 ): JsonSchema.Array => {
 	const isDraft07 = ctx.target === "draft-07"
 
+	const path = ctx.path
 	if (node.prevariadic.length) {
-		const prefixSchemas = node.prevariadic.map(el => {
+		const prefixSchemas = node.prevariadic.map((el, i) => {
+			ctx.path = appendStringifiedKey(path, i)
 			const valueSchema = toJsonSchemaRecurse(el.node, ctx)
 			if (el.kind === "defaultables") writeDefault(valueSchema, el.default, ctx)
 			return valueSchema
 		})
+		ctx.path = path
 
 		// draft-07 uses items as array, draft-2020-12 uses prefixItems
 		if (isDraft07) schema.items = prefixSchemas as JsonSchema.Branch[]
@@ -444,7 +481,11 @@ const reduceSequenceJsonSchema = (
 	if (node.minLength) schema.minItems = node.minLength
 
 	if (node.variadic) {
+		// a later element's index varies, so it's written as TS indexes it
+		ctx.path = `${path}[number]`
 		const variadicItemSchema = toJsonSchemaRecurse(node.variadic, ctx)
+		const postfixSchemas = node.postfix?.map(el => toJsonSchemaRecurse(el, ctx))
+		ctx.path = path
 
 		// draft-07 uses additionalItems when items is an array (tuple),
 		// draft-2020-12 uses items
@@ -457,12 +498,11 @@ const reduceSequenceJsonSchema = (
 		if (node.maxLength) schema.maxItems = node.maxLength
 
 		// postfix can only be present if variadic is present so nesting this is fine
-		if (node.postfix) {
-			const elements = node.postfix.map(el => toJsonSchemaRecurse(el, ctx))
+		if (postfixSchemas) {
 			schema = ctx.fallback.arrayPostfix({
 				code: "arrayPostfix",
 				base: schema as ToJsonSchema.VariadicArraySchema,
-				elements
+				elements: postfixSchemas
 			})
 		}
 	} else {

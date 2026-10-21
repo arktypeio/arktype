@@ -16,6 +16,7 @@ import {
 	type DiscriminantKind,
 	type DiscriminantLocation,
 	type DiscriminatedCases,
+	type DisjointEntry,
 	type Domain,
 	type FlatRef,
 	type IntersectionContext,
@@ -142,6 +143,16 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 			for (const entry of result) {
 				if (!entry.kind || entry.optional) continue
 
+				if (entry.kind === "union") {
+					addUnitCases(
+						candidates,
+						entry as DisjointEntry<"union">,
+						lIndex,
+						rIndex
+					)
+					continue
+				}
+
 				let lSerialized: string
 				let rSerialized: string
 
@@ -234,6 +245,32 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 	return Object.assign(ctx.location, members ? { cases, members } : { cases })
 }
 
+// each unit of literal unions disjoint at a path is its own case, so data
+// matching none of them misses every branch rather than defaulting to one
+const addUnitCases = (
+	candidates: DiscriminantCandidate[],
+	entry: DisjointEntry<"union">,
+	lIndex: number,
+	rIndex: number
+) => {
+	const isCase = (branch: BaseRoot): branch is Unit.Node =>
+		branch.hasKind("unit") &&
+		isCaseUnit(branch) &&
+		!(entry.path.length && isUndefinedCase(branch.serializedValue))
+	if (!entry.l.every(isCase) || !entry.r.every(isCase)) return
+	let candidate = candidates.find(
+		d => arrayEquals(d.path, entry.path) && d.kind === "unit"
+	)
+	if (!candidate) {
+		candidate = { kind: "unit", cases: {}, path: entry.path }
+		candidates.push(candidate)
+	}
+	for (const unit of entry.l)
+		addCase(candidate.cases, unit.serializedValue, lIndex, unit)
+	for (const unit of entry.r)
+		addCase(candidate.cases, unit.serializedValue, rIndex, unit)
+}
+
 const addCase = (
 	cases: CandidateCases,
 	k: string,
@@ -309,25 +346,24 @@ const resolveCase = (
 	let resolvedEntries: BranchEntry[] | null = []
 	const nextDefaults: BranchEntry[] = []
 
+	// read from every branch, since one with several units at the path, like
+	// "'a' | 'b'", is a case of each
+	for (const originalIndex of caseCtx.branchIndices) {
+		const pruned = pruneDiscriminant(
+			ctx.node.branches[originalIndex],
+			ctx.location
+		)
+		if (pruned === null) {
+			// if any branch of the union has no constraints (i.e. is
+			// unknown), the others won't affect the resolution type, but could still
+			// remove additional cases from defaultEntries
+			resolvedEntries = null
+		} else resolvedEntries?.push({ originalIndex, branch: pruned })
+	}
+
 	for (let i = 0; i < ctx.defaultEntries.length; i++) {
 		const entry = ctx.defaultEntries[i]
-		if (caseCtx.branchIndices.includes(entry.originalIndex)) {
-			const pruned = pruneDiscriminant(
-				ctx.node.branches[entry.originalIndex],
-				ctx.location
-			)
-			if (pruned === null) {
-				// if any branch of the union has no constraints (i.e. is
-				// unknown), the others won't affect the resolution type, but could still
-				// remove additional cases from defaultEntries
-				resolvedEntries = null
-			} else {
-				resolvedEntries?.push({
-					originalIndex: entry.originalIndex,
-					branch: pruned
-				})
-			}
-		} else {
+		if (!caseCtx.branchIndices.includes(entry.originalIndex)) {
 			const intersection = intersectNodesRoot(
 				entry.branch.rawIn,
 				discriminantNode,
@@ -598,11 +634,8 @@ export const reduceBranches = ({
 
 	const uniquenessByIndex: Record<number, boolean> = branches.map(() => true)
 	for (let i = 0; i < branches.length; i++) {
-		for (
-			let j = i + 1;
-			j < branches.length && uniquenessByIndex[i] && uniquenessByIndex[j];
-			j++
-		) {
+		for (let j = i + 1; j < branches.length && uniquenessByIndex[i]; j++) {
+			if (!uniquenessByIndex[j]) continue
 			if (branches[i].equals(branches[j])) {
 				// if the two branches are equal, only "j" is marked as
 				// redundant so at least one copy could still be included in

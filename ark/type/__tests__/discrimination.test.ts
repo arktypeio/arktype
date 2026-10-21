@@ -276,6 +276,27 @@ contextualize(() => {
 		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).equals(null)
 	})
 
+	it("won't discriminate at an index a variadic element shifts", () => {
+		// null is at [0] only in [null]
+		const Postfixed = type(["...", "number[]", "false"]).or([
+			"...",
+			"string[]",
+			"null"
+		])
+		attest(
+			discriminantJsonOf(Postfixed.internal.assertHasKind("union"))
+		).equals(null)
+		// null is at [1] only in [string, null]
+		const Prefixed = type(["...", "string[]", "null"]).or([
+			"number",
+			"...",
+			"false[]"
+		])
+		attest(discriminantJsonOf(Prefixed.internal.assertHasKind("union"))).equals(
+			null
+		)
+	})
+
 	it("discriminant path including symbol", () => {
 		const s = Symbol("lobmyS")
 		const sRef = registeredReference(s)
@@ -547,6 +568,111 @@ contextualize(() => {
 		attest(T({ a: "x", b: 1 })).equals({ a: "x", b: 1 })
 	})
 
+	it("describes an object case only arrays reach as an array", () => {
+		attest(type("string | string[]")(5).toString()).snap(
+			"must be a string or an array (was a number)"
+		)
+		attest(type("string | string[] | Date")(5).toString()).snap(
+			"must be a string or an object (was a number)"
+		)
+		attest(type({ a: "string | number[]" })({ a: true }).toString()).snap(
+			"a must be a string or an array (was boolean)"
+		)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1435
+	it("splits a literal union at the discriminant into cases", () => {
+		const T = type.or(
+			{ type: "'a'", val1: "number" },
+			{ type: "'b'", val2: "number" },
+			{ type: "'c' | 'd'", val3: "number" }
+		)
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
+			kind: "unit",
+			path: ["type"],
+			cases: {
+				'"c"': {
+					required: [
+						{ key: "type", value: [{ unit: "c" }, { unit: "d" }] },
+						{ key: "val3", value: "number" }
+					]
+				},
+				'"d"': {
+					required: [
+						{ key: "type", value: [{ unit: "c" }, { unit: "d" }] },
+						{ key: "val3", value: "number" }
+					]
+				},
+				'"a"': { required: [{ key: "val1", value: "number" }] },
+				'"b"': { required: [{ key: "val2", value: "number" }] }
+			}
+		})
+		attest(T({ type: "e" }).toString()).snap(
+			'type must be "c", "d", "a" or "b" (was "e")'
+		)
+		attest(T({ type: "d" }).toString()).snap(
+			"val3 must be a number (was missing)"
+		)
+		attest(T({ type: "d", val3: 1 })).equals({ type: "d", val3: 1 })
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1491
+	it("splits literal unions on either side into cases", () => {
+		const T = type({ tag: "'a'", a: "number" }).or({
+			tag: "'b' | 'c'",
+			bc: "string"
+		})
+		attest(T({}).toString()).snap('tag must be "a", "b" or "c" (was undefined)')
+		attest(T({ tag: "c" }).toString()).snap("bc must be a string (was missing)")
+	})
+
+	it("a unit in two branches' literal unions is a case of both", () => {
+		const T = type.or(
+			{ k: "'a' | 'b'", n: "number" },
+			{ k: "'c'" },
+			{ k: "'b' | 'd'", n: "string" }
+		)
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
+			kind: "unit",
+			path: ["k"],
+			cases: {
+				'"a"': {
+					required: [
+						{ key: "k", value: [{ unit: "a" }, { unit: "b" }] },
+						{ key: "n", value: "number" }
+					]
+				},
+				'"b"': {
+					kind: "domain",
+					path: ["n"],
+					cases: {
+						'"number"': {
+							required: [
+								{ key: "k", value: [{ unit: "a" }, { unit: "b" }] },
+								{ key: "n", value: "number" }
+							]
+						},
+						'"string"': {
+							required: [{ key: "k", value: [{ unit: "b" }, { unit: "d" }] }]
+						}
+					}
+				},
+				'"c"': true,
+				'"d"': {
+					required: [
+						{ key: "k", value: [{ unit: "b" }, { unit: "d" }] },
+						{ key: "n", value: "string" }
+					]
+				}
+			}
+		})
+		attest(T({ k: "b", n: 1 })).equals({ k: "b", n: 1 })
+		attest(T({ k: "b", n: "x" })).equals({ k: "b", n: "x" })
+		attest(T({ k: "b" }).toString()).snap(
+			"n must be a number or a string (was undefined)"
+		)
+	})
+
 	it("dimscrinate literal undefined value", () => {
 		const T = type(["number[]", "|", ["undefined"]])
 
@@ -612,7 +738,7 @@ contextualize(() => {
 				layout: "",
 				children: [{ type: "BChild", children: [] }]
 			}).toString()
-		).snap("layout must be an array (was string)")
+		).snap("layout must be an array (was a string)")
 	})
 
 	it("discriminates neither a date nor NaN", () => {
@@ -923,7 +1049,7 @@ contextualize(() => {
 			"must be a string or an object (was a number)"
 		)
 		attest(StringOrFile({}).toString()).snap(
-			"must be a File instance (was object)"
+			"must be a File instance (was an object)"
 		)
 		attest($.type("'b' | 1 | 'a'")(2).toString()).snap(
 			'must be 1, "a" or "b" (was 2)'

@@ -771,7 +771,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		const sliced = out !== data && this.slicesSequence
 		let failed: TransformErrors | undefined
 		for (let i = 0; i < this.defaultable.length; i++) {
-			if (!(this.defaultable[i].key in data)) {
+			if (!this.defaultable[i].holdsValue(data)) {
 				if (out === data && !this.writesInto(ctx)) out = this.copy(data)
 				const defaulted = this.defaultable[i].defaultValueMorph(
 					out as never,
@@ -1091,7 +1091,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	private compileDefaults(js: NodeCompiler, first?: boolean): NodeCompiler {
 		for (const node of this.defaultable) {
-			js.if(`!(${js.serialize(node.key)} in data)`, () =>
+			js.if(`!(${node.compileHoldsValue(js, "data")})`, () =>
 				compileDefault(this.compileCopy(js, first), node, "out")
 			)
 			first = false
@@ -1248,7 +1248,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				)
 			}
 			for (const node of this.defaultable)
-				unchanged.push(`${js.serialize(node.key)} in data`)
+				unchanged.push(node.compileHoldsValue(js, "data"))
 			if (this.sequence.defaultables) {
 				unchanged.push(
 					`data.length >= ${this.sequence.prefixLength + this.sequence.defaultablesLength}`
@@ -1288,7 +1288,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 		if (this.optional) {
 			for (const prop of this.optional) {
-				js.if(`${js.serialize(prop.key)} in data`, () =>
+				js.if(prop.compileHoldsValue(js, "data"), () =>
 					js.line(`result${js.prop(prop.key)} = ${outputOf(prop)}`)
 				)
 				if (prop.hasDefault()) js.else(() => compileDefault(js, prop, "result"))

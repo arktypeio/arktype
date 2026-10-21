@@ -40,7 +40,7 @@ contextualize(() => {
 		attest<() => never>(getBad)
 		// ideally would also include number | bigint, discriminated out
 		attest(getBad).throws.snap(
-			"TraversalError: must be a string or an object (was boolean)"
+			"TraversalError: must be a string or an array (was boolean)"
 		)
 	})
 

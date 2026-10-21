@@ -21,6 +21,7 @@ import {
 	arkPackageName,
 	createNodeHost,
 	dependencyOf,
+	fileOf,
 	optedInPackagesOf,
 	reportDiagnostics,
 	resolvesToRuntime,
@@ -226,11 +227,11 @@ export const precompile: UnpluginInstance<
 					const specifier = variantSpecifierOf(id, variant)
 					return specifier ?
 							host.resolve(specifier, importer)
-						:	refuse(writeVariantImportMessage(importer, id, variant))
+						:	refuse(writeVariantImportMessage(fileOf(importer), id, variant))
 				}
 				const isRuntime = runtimeSpecifiers.includes(id)
 				const diagnostics =
-					isRuntime ? await readDependency(importer) : noDiagnostics()
+					isRuntime ? await readDependency(fileOf(importer)) : noDiagnostics()
 				reportUnsafe(precompiledProblemOf(id, importer), diagnostics)
 				if (isRuntime)
 					reportUnsafe(untransformedProblemOf(id, importer), diagnostics)
@@ -248,10 +249,11 @@ export const precompile: UnpluginInstance<
 		transform: {
 			filter: { id: transformedFilter },
 			async handler(code, id) {
+				const file = fileOf(id)
 				// a plugin ahead of this one may have transpiled it, as Rollup's
 				// TypeScript plugin does, so its lines are read through their map
 				const map =
-					code === host.readFile(id) ?
+					code === host.readFile(file) ?
 						undefined
 					:	((
 							this as { getCombinedSourcemap?: () => { mappings: string } }
@@ -264,13 +266,13 @@ export const precompile: UnpluginInstance<
 				const transformed = (await request(
 					"transform",
 					code,
-					id,
+					file,
 					map?.mappings
 				)) as TransformedModule | undefined
 				if (!transformed) return
 				if (unitReadersById) unitReadersById[id] = transformed.unitReaders
 				for (const dependency of transformed.dependencies)
-					if (dependency !== id) this.addWatchFile(dependency)
+					if (dependency !== file) this.addWatchFile(dependency)
 				for (const specifier in transformed.modules) {
 					const virtualId = `\0${specifier}`
 					if (virtualId in modules) continue

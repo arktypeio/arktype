@@ -217,6 +217,175 @@ type("===", {})({})
 
 `de` prints them as `ein Objekt`, `ein Array` and `eine Funktion`.
 
+### Accept only plain objects and arrays in `object.json`
+
+`object.json` accepted any object, so a `Map`, `Set`, `Date`, function or class instance passed though `JSON.stringify` doesn't write it as itself. It now accepts only arrays and objects whose prototype is `Object.prototype` or `null`, at every depth (#1337):
+
+```ts
+// was: { at: Date }
+// now: ArkErrors: at must be a plain object or array (was an object)
+type("object.json")({ at: new Date() })
+```
+
+JSON Schema can't require a plain object, so `toJsonSchema()` now throws for `object.json`, and for Types that include it like `string.json.parse`'s output, with the `predicate` code. Return `ctx.base` from that fallback to write the schema it wrote before:
+
+```ts
+type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
+```
+
+`~standard.jsonSchema` leaves the check out, as it does every predicate.
+
+### Throw for an optional index signature
+
+A key like `"[k]?"` parsed as the literal key `"[k]"`, made optional, which is rarely what it means, as in a generic like `type("<k extends string>", { "[k]?": "number" })`. It now throws a `ParseError` and is a type error (#1525):
+
+```ts
+// was: Type<{ "[k]"?: string }>
+// now: ParseError: Index signature [k] can't be optional. Escape its '[' with a backslash for an optional key named '[k]'
+type({ "[k]?": "string" })
+```
+
+To keep the literal key, escape its `[`, which now works for an optional key as it already did for a required one:
+
+```ts
+// was: Type<{ "\\[k]"?: string }>
+// now: Type<{ "[k]"?: string }>
+type({ "\\[k]?": "string" })
+```
+
+### Accept exponents in `string.numeric`
+
+`string.numeric` and `string.numeric.parse` accept an exponent like `"5.7e-10"` or `"1E+21"`, as `Number()` does, so a number `String()` writes with one, like `1e21`, now encodes through `string.numeric.parse` (#1448):
+
+```ts
+// was: ArkErrors: must be a well-formed numeric string (was "5.7e-10")
+// now: 5.7e-10
+type("string.numeric.parse")("5.7e-10")
+```
+
+Their JSON Schema `pattern` accepts an exponent too. `string.integer` still doesn't, since `string.integer.parse` reads only digits.
+
+### Discriminate by each value of a literal union
+
+A union of objects discriminated by a key checked only branches whose value there was a single literal. A branch whose value was a union of literals became the default, so data matching no branch was reported as failing that one (#1435, #1491):
+
+```ts
+const T = type.or(
+	{ type: "'a'", val1: "number" },
+	{ type: "'b'", val2: "number" },
+	{ type: "'c' | 'd'", val3: "number" }
+)
+
+// was: ArkErrors: type must be "c" or "d" (was "e")
+//      val3 must be a number (was missing)
+// now: ArkErrors: type must be "c", "d", "a" or "b" (was "e")
+T({ type: "e" })
+```
+
+Each of those literals is now a case of its own, so such data fails at the key with every value it allows, and data matching one of them is checked only against the branches that allow it.
+
+### Apply a pipe's configured `message` to its output's errors
+
+`.configure({ message })` on a pipe set the message of errors its input raised, but not of those raised validating its output (#1479):
+
+```ts
+const Port = type("string.numeric.parse | number")
+	.to("0 < number <= 65535")
+	.configure({ message: "Enter a port number." })
+
+// was: ArkErrors: must be at most 65535 (was 99999)
+// now: ArkErrors: Enter a port number.
+Port("99999")
+```
+
+The output's own Type, `Port.out`, keeps its errors, description and JSON Schema.
+
+### Surface a message every failing branch or constraint was configured with
+
+A union or intersection error was written from what its errors expected, even when each was configured with the same `message`. It now surfaces that message (#1492, #1412):
+
+```ts
+const Email = type("string.email > 0").configure({
+	message: "Email is not valid"
+})
+
+// was: ArkErrors: ("") must be...
+//        ◦ an email address
+//        ◦ non-empty
+// now: ArkErrors: Email is not valid
+Email("")
+```
+
+Errors whose messages differ, or that weren't all configured with one, are still written from what they expected, as is a union or intersection configured with a message of its own. A message `ctx.reject` supplied counts as configured.
+
+### Keep defaults in `~standard.jsonSchema.input`
+
+`~standard.jsonSchema.input` wrote the schema of a Type's `in`, which has no defaults, so a key's `default` was dropped. It now writes the Type as it's accepted (#1575):
+
+```ts
+const T = type({ name: 'string = "Anon"' })
+
+// was: { type: "object", properties: { name: { type: "string" } } }
+// now: { type: "object", properties: { name: { type: "string", default: "Anon" } } }
+T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+```
+
+`input` writes each morph's input rather than calling a configured `morph` fallback, and no longer writes `additionalProperties: false` for `"+": "delete"`, whose input may have the keys it removes. `output` and `toJsonSchema()` are unchanged.
+
+Thanks to @ybai08 for #1695.
+
+### Describe what an `instanceof` check rejected as a domain check does
+
+A proto error's `actual` was a bare domain or class name, while a domain error's names the domain with an article. It now names a primitive or plain object as a domain error does. A builtin's instance is still named by its class, without an article that would be a guess:
+
+```ts
+// was: ArkErrors: must be a Date (was number)
+// now: ArkErrors: must be a Date (was a number)
+type("Date")(5)
+
+// was: ArkErrors: must be an array (was object)
+// now: ArkErrors: must be an array (was an object)
+type("string[]")({})
+
+// ArkErrors: must be a Date (was Map), as before
+type("Date")(new Map())
+```
+
+`de` already wrote these with its nouns.
+
+### Say "an array" where a union's object branches are arrays
+
+A union discriminated by domain described its object case as `an object`, even when every branch it reached was an array. It now says `an array`, and its error's `cases` holds `"Array"` in place of `"object"`:
+
+```ts
+// was: ArkErrors: must be a string or an object (was a number)
+// now: ArkErrors: must be a string or an array (was a number)
+type("string | string[]")(5)
+```
+
+A `switch` over a `discriminant` error's `cases` must handle `"Array"`.
+
+### Write `string.regex` errors as `string.json` writes its own
+
+A `string.regex` error's problem was the bare `SyntaxError` the pattern threw. It now says what was expected, as `string.json`'s does and `de` already did:
+
+```ts
+// was: ArkErrors: SyntaxError: Invalid regular expression: /(/: Unterminated group
+// now: ArkErrors: must be a regex pattern (SyntaxError: Invalid regular expression: /(/: Unterminated group)
+type("string.regex")("(")
+```
+
+### Name the code, path and fallback in a `ToJsonSchemaError`
+
+A `ToJsonSchemaError`'s message was only its printed context. It now starts with a sentence naming its code, where in the Type the part it couldn't convert is, and the `fallback` to configure:
+
+```ts
+// was: ToJsonSchemaError: { code: "date", base: {} }
+// now: ToJsonSchemaError: Can't convert "date" at user.createdAt to JSON Schema. Configure fallback.date to write it:
+//      { code: "date", base: {} }
+type({ user: { createdAt: "Date" } }).toJsonSchema()
+```
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse (#909). Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:

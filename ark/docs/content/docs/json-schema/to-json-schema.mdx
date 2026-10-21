@@ -147,7 +147,7 @@ The Type's other meta, like a description, is still written beside it. Unlike ot
 
 ## Fallbacks
 
-Some things a Type checks have no JSON Schema equivalent: a `Date`, a `bigint`, a morph, a `narrow`. By default, `toJsonSchema()` throws a `ToJsonSchemaError` for them:
+Some things a Type checks have no JSON Schema equivalent: a `Date`, a `bigint`, a morph, a `narrow`. By default, `toJsonSchema()` throws a `ToJsonSchemaError` for them, naming where it is and which fallback to configure:
 
 ```ts
 type({ at: "Date" }).toJsonSchema() // throws ToJsonSchemaError (code "date")
@@ -245,12 +245,19 @@ Every reason `toJsonSchema()` can throw, with the fields its handler receives be
 | `morph`               | a morph                                                     | `type("string.trim")`                        | `out`, the output schema or `null`               |
 | `patternFlags`        | a regex flag other than `d`, `g` or, for draft 2020-12, `u` | `type(/^a/i)`                                | `pattern`, `flags`                               |
 | `patternIntersection` | a second regex on the same string                           | `type(/^a/).and(/b$/)`                       | `pattern`                                        |
-| `predicate`           | a `narrow`                                                  | `type("number").narrow(n => n > 0)`          | `predicate`                                      |
+| `predicate`           | a `narrow`, or `object.json`'s plain-object check           | `type("number").narrow(n => n > 0)`          | `predicate`                                      |
 | `proto`               | an `instanceof` other than `Array` or `Date`                | `type("Map")`                                | `proto`                                          |
 | `symbolKey`           | a symbol key or index signature                             | `type({ "[symbol]": "string" })`             | `key` (`null` for an index), `value`, `optional` |
 | `unit`                | a literal that isn't JSON                                   | `type("undefined")`                          | `unit`                                           |
 
 A `Date` is reported as `date`, never `proto`.
+
+`object.json` accepts only arrays and objects whose prototype is `Object.prototype` or `null`, which JSON Schema can't require, so its check is reported as `predicate`. Return `ctx.base` to accept any JSON object in its place:
+
+```ts
+// { $ref: "#/$defs/jsonObject1", $defs: { jsonObject1: { type: "object", ... }, ... } }
+type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
+```
 
 ## Configuration
 
@@ -304,3 +311,4 @@ Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express.
 - `target` must be `"draft-2020-12"` or `"draft-07"`. Anything else throws.
 - `libraryOptions` are passed to `toJsonSchema()` as options, e.g. `{ dialect: null }`.
 - Fallback handlers you configure or pass in `libraryOptions` still apply. Only the default throwing handlers are replaced.
+- `input` writes each morph's input, so it never calls a `morph` handler. It keeps defaults, and allows keys `"+": "delete"` would remove.

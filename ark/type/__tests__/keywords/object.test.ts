@@ -43,6 +43,52 @@ contextualize(() => {
 			)
 		})
 
+		it("plain objects and arrays only", () => {
+			const Json = type("object.json")
+			const empty = Object.create(null)
+
+			attest(Json(empty)).equals(empty)
+			attest(Json(new Map())?.toString()).snap(
+				"must be a plain object or array (was an object)"
+			)
+			attest(Json(new (class Point {})())?.toString()).snap(
+				"must be a plain object or array (was an object)"
+			)
+			attest(Json({ at: new Date() })?.toString()).snap(
+				"at must be a plain object or array (was an object)"
+			)
+			attest(Json([() => {}])?.toString()).snap(
+				'value at ["0"] must be a plain object or array (was a function)'
+			)
+		})
+
+		it("JSON Schema needs a predicate fallback", () => {
+			const Json = type("object.json")
+
+			attest(() => Json.toJsonSchema()).throws("predicate")
+			attest(
+				Json.toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				$ref: "#/$defs/jsonObject1",
+				$defs: {
+					jsonObject1: {
+						type: "object",
+						additionalProperties: { $ref: "#/$defs/jsonData1" }
+					},
+					jsonData1: {
+						anyOf: [
+							{ type: "number" },
+							{ type: "string" },
+							{ $ref: "#/$defs/jsonObject1" },
+							{ type: "boolean" },
+							{ type: "null" }
+						]
+					}
+				}
+			})
+		})
+
 		it("stringify", () => {
 			const stringify = type("object.json.stringify")
 
@@ -70,7 +116,7 @@ contextualize(() => {
 			attest(liftNumberArray(5)).equals([5])
 			attest(liftNumberArray([5])).equals([5])
 			attest(liftNumberArray("five").toString()).snap(
-				"must be a number or an object (was a string)"
+				"must be a number or an array (was a string)"
 			)
 			attest(liftNumberArray(["five"]).toString()).snap(
 				"value at [0] must be a number (was a string)"

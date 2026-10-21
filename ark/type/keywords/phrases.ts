@@ -16,6 +16,7 @@ export const keywordPhrases = {
 			: e.code === "max" ? `a Unix timestamp before ${e.rule}`
 			: epoch
 	},
+	"object.json": "a plain object or array",
 	"string.alpha": "only letters",
 	"string.alphanumeric": "only letters and digits 0-9",
 	"string.base58": "base58-encoded",

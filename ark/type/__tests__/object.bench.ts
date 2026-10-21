@@ -58,14 +58,14 @@ bench("referenced type", () => {
 	return type({
 		A
 	})
-}).types([402, "instantiations"])
+}).types([406, "instantiations"])
 
 // https://github.com/arktypeio/arktype/issues/787
 bench("inline reference", () =>
 	type({
 		a: type("string")
 	})
-).types([409, "instantiations"])
+).types([413, "instantiations"])
 
 bench("nested type invocations", () =>
 	type({
@@ -87,4 +87,4 @@ bench("nested type invocations", () =>
 			})
 			.array()
 	})
-).types([4822, "instantiations"])
+).types([4946, "instantiations"])

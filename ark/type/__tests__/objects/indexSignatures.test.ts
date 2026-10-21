@@ -6,6 +6,7 @@ import {
 } from "@ark/schema"
 import { printable } from "@ark/util"
 import { scope, type } from "arktype"
+import { writeOptionalIndexKeyMessage } from "arktype/internal/parser/objectLiteral.ts"
 import { writeUnexpectedCharacterMessage } from "arktype/internal/parser/shift/operator/operator.ts"
 
 contextualize(() => {
@@ -358,6 +359,26 @@ other must be a string (was a bigint)`)
 			domain: "object",
 			required: [{ key: "[string]", value: "string" }]
 		})
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1525
+	it("optional index", () => {
+		attest(() =>
+			type({
+				// @ts-expect-error
+				"[string]?": "number"
+			})
+		).throwsAndHasTypeError(writeOptionalIndexKeyMessage("[string]"))
+	})
+
+	it("escaped optional index", () => {
+		const O = type({ "\\[string]?": "string" })
+		attest<{ "[string]"?: string }>(O.infer)
+		attest(O.json).snap({
+			optional: [{ key: "[string]", value: "string" }],
+			domain: "object"
+		})
+		attest(O({})).equals({})
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1040

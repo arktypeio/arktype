@@ -272,6 +272,8 @@ type inferKeyedObjectLiteral<def extends object, $, args> = {
 export type validateObjectLiteral<def, $, args> = {
 	[k in keyof def]: k extends PreparsedKeyPattern ?
 		validatePreparsedEntry<k, def[k], $, args>
+	: k extends `${infer indexKey extends IndexKey}?` ?
+		ErrorMessage<writeOptionalIndexKeyMessage<indexKey>>
 	:	validateProperty<
 			def[k],
 			k extends OptionalPropertyString ? "optional" : "required",
@@ -331,6 +333,14 @@ export const writeInvalidUndeclaredBehaviorMessage = (
 ): string =>
 	`Value of '+' key must be 'reject', 'delete', or 'ignore' (was ${printable(actual)})`
 
+export const writeOptionalIndexKeyMessage = <key extends IndexKey>(
+	key: key
+): writeOptionalIndexKeyMessage<key> =>
+	`Index signature ${key} can't be optional. Escape its '[' with a backslash for an optional key named '${key}'`
+
+export type writeOptionalIndexKeyMessage<key extends IndexKey> =
+	`Index signature ${key} can't be optional. Escape its '[' with a backslash for an optional key named '${key}'`
+
 export const nonLeadingSpreadError =
 	"Spread operator may only be used as the first key in an object"
 
@@ -371,10 +381,13 @@ export const preparseKey = (key: Key): PreparsedKey =>
 	: key[key.length - 1] === "?" ?
 		key[key.length - 2] === Backslash ?
 			{ kind: "required", normalized: `${key.slice(0, -2)}?` }
-		:	{
-				kind: "optional",
-				normalized: key.slice(0, -1)
-			}
+		: key[0] === "[" && key[key.length - 2] === "]" ?
+			throwParseError(
+				writeOptionalIndexKeyMessage(key.slice(0, -1) as IndexKey)
+			)
+		: key[0] === Backslash && key[1] === "[" && key[key.length - 2] === "]" ?
+			{ kind: "optional", normalized: key.slice(1, -1) }
+		:	{ kind: "optional", normalized: key.slice(0, -1) }
 	: key[0] === "[" && key[key.length - 1] === "]" ?
 		{ kind: "index", normalized: key.slice(1, -1) }
 	: key[0] === Backslash && key[1] === "[" && key[key.length - 1] === "]" ?
@@ -405,7 +418,11 @@ export type preparseKey<k> =
 			}>
 		:	PreparsedKey.from<{
 				kind: "optional"
-				normalized: inner
+				normalized: inner extends (
+					`${Backslash}${infer escapedIndexKey extends IndexKey}`
+				) ?
+					escapedIndexKey
+				:	inner
 			}>
 	: k extends `${"+" | "." | "@" | Backslash | "["}${string}` ?
 		preparseSpecialKey<k>

@@ -41,46 +41,45 @@ export const isWellFormedNumber: RegExp["test"] = s =>
  *
  *  - Allows numbers without an integer portion like ".5" (well-formed equivalent is "0.5")
  *  - Allows decimals with trailing zeroes like "0.10" (well-formed equivalent is "0.1")
+ *  - Allows an exponent like "5.7e-10", as Number() does
  */
 export const numericStringMatcher: RegExp =
 	// eslint-disable-next-line unicorn/better-regex
-	/^(?:(?!^-0\.?0*$)(?:-?(?:(?:0|[1-9]\d*)(?:\.\d+)?)|\.\d+?))$/
+	/^(?:(?!^-0\.?0*(?:[Ee][+-]?\d+)?$)(?:-?(?:(?:0|[1-9]\d*)(?:\.\d+)?)|\.\d+?)(?:[Ee][+-]?\d+)?)$/
 
 const isDigitCode = (code: number) => code >= 48 && code <= 57
 
 // numericStringMatcher's language, read without the RegExp
 export const isNumericString = (s: string): boolean => {
-	const length = s.length
-	if (length === 0) return false
 	let i = 0
+	// past the end, charCodeAt is NaN, which is no character's code
 	let code = s.charCodeAt(0)
 	const isNegative = code === 45
-	if (isNegative) {
-		if (length === 1) return false
-		code = s.charCodeAt(++i)
-	}
-	// whether each digit so far is 0, since "-0" and "-0.0" are excluded
+	if (isNegative) code = s.charCodeAt(++i)
+	// whether each digit before the exponent is 0, since "-0" is excluded
 	let isZero = true
-	if (code === 48) {
-		if (++i === length) return !isNegative
-		code = s.charCodeAt(i)
-	} else if (code > 48 && code <= 57) {
+	if (code === 48) code = s.charCodeAt(++i)
+	else if (code > 48 && code <= 57) {
 		isZero = false
-		while (++i < length) {
-			code = s.charCodeAt(i)
-			if (!isDigitCode(code)) break
-		}
-		if (i === length) return true
+		do code = s.charCodeAt(++i)
+		while (isDigitCode(code))
 	} else if (isNegative || code !== 46) return false
-	if (code !== 46 || ++i === length) return false
-	for (; i < length; i++) {
-		code = s.charCodeAt(i)
-		if (code !== 48) {
-			if (!isDigitCode(code)) return false
-			isZero = false
-		}
+	if (code === 46) {
+		code = s.charCodeAt(++i)
+		if (!isDigitCode(code)) return false
+		do {
+			if (code !== 48) isZero = false
+			code = s.charCodeAt(++i)
+		} while (isDigitCode(code))
 	}
-	return !(isNegative && isZero)
+	if (code === 69 || code === 101) {
+		code = s.charCodeAt(++i)
+		if (code === 43 || code === 45) code = s.charCodeAt(++i)
+		if (!isDigitCode(code)) return false
+		do code = s.charCodeAt(++i)
+		while (isDigitCode(code))
+	}
+	return i === s.length && !(isNegative && isZero)
 }
 
 export const numberLikeMatcher = /^-?\d*\.?\d*$/

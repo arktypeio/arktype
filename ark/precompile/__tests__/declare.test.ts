@@ -12,8 +12,12 @@ import {
 	rmSync,
 	writeFileSync
 } from "node:fs"
-import { join, relative } from "node:path"
+import { join } from "node:path"
+import { relative } from "node:path/posix"
 import { runCli } from "./utils.ts"
+
+// declarations are keyed by TypeScript's paths, which use / on Windows too
+const tsPath = (path: string) => path.split("\\").join("/")
 
 const declared = fromHere("declared")
 const layouts = fromHere("declaredLayouts")
@@ -22,7 +26,7 @@ const specifiersByLayout = (tsconfig: string) => {
 	const declarations = emitDeclarations({ cwd: layouts, tsconfig })
 	const specifiersByFile: Record<string, string[]> = {}
 	for (const path in declarations.files) {
-		specifiersByFile[relative(layouts, path)] = [
+		specifiersByFile[relative(tsPath(layouts), path)] = [
 			...declarations.files[path].matchAll(/import\("([^"]+)"\)/g)
 		].map(match => match[1])
 	}
@@ -41,7 +45,10 @@ const inexactExportsOf = (fixture: string, checks: Record<string, string>) => {
 		lines.push(`export const _${lines.length}: ${comparison} = true`)
 	}
 	const src = join(fixture, "src")
-	for (const file of readdirSync(src, { recursive: true, encoding: "utf8" })) {
+	for (const file of readdirSync(src, {
+		recursive: true,
+		encoding: "utf8"
+	}).map(tsPath)) {
 		if (!file.endsWith(".ts")) continue
 		const module = file.slice(0, -3)
 		const id = module.replace(/\//g, "_")
@@ -80,8 +87,12 @@ const inexactExportsOf = (fixture: string, checks: Record<string, string>) => {
 			})
 		)
 		const tsc = spawnSync(
-			fromHere("..", "..", "..", "node_modules", ".bin", "tsc"),
-			["-p", "tsconfig.consumer.json"],
+			process.execPath,
+			[
+				fromHere("..", "..", "..", "node_modules", "typescript", "bin", "tsc"),
+				"-p",
+				"tsconfig.consumer.json"
+			],
 			{ cwd: fixture, encoding: "utf8" }
 		)
 		return [...tsc.stdout.matchAll(/^consumer\.ts\((\d+),.*$/gm)].map(
@@ -96,7 +107,8 @@ const inexactExportsOf = (fixture: string, checks: Record<string, string>) => {
 
 contextualize(() => {
 	const { files, errors } = emitDeclarations({ cwd: declared })
-	const declaredFile = (file: string) => files[join(declared, "out", file)]
+	const declaredFile = (file: string) =>
+		files[tsPath(join(declared, "out", file))]
 	const declarationsOf = (file: string, ...names: string[]) =>
 		declaredFile(file)
 			.split(/\n(?=export |declare )/)
@@ -310,7 +322,7 @@ export type Buffered = {
 		const exact = fromHere("declaredExact")
 		attest(
 			emitDeclarations({ cwd: exact }).files[
-				join(exact, "out", "~arktype.d.ts")
+				tsPath(join(exact, "out", "~arktype.d.ts"))
 			]
 		).snap(`// the shapes of this build's Types, Scopes and Modules
 export type Optional = {
@@ -377,7 +389,7 @@ export type Elements = [string, number?];
 	it("refuses a module declared where the shapes are", () => {
 		const collision = fromHere("declaredCollision")
 		attest(() => emitDeclarations({ cwd: collision })).throws(
-			writeSharedCollisionMessage(join(collision, "src", "~arktype.ts"))
+			writeSharedCollisionMessage(tsPath(join(collision, "src", "~arktype.ts")))
 		)
 	})
 

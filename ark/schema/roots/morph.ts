@@ -95,6 +95,20 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 	introspectableOut: BaseRoot | undefined =
 		this.lastMorphIfNode && this.includePiped(this.lastMorphIfNode).rawOut
 
+	private _traversedMorphs: array<Morph | BaseRoot> | undefined
+
+	// a configured message is its output's errors' too, though the output's
+	// description and JSON Schema stay its own
+	get traversedMorphs(): array<Morph | BaseRoot> {
+		const { message } = this.meta
+		return (this._traversedMorphs ??=
+			message === undefined ?
+				this.morphs
+			:	this.morphs.map(morph =>
+					hasArkKind(morph, "root") ? morph.configure({ message }) : morph
+				))
+	}
+
 	// the node a morph pipes to isn't a child, so its aliases are included here
 	private includePiped(node: BaseRoot): BaseRoot {
 		this.includesAlias ||= node.includesAlias
@@ -160,8 +174,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				.returnIfTransformFailed()
 			result = "transformedIn"
 		}
-		for (let i = 0; i < this.morphs.length; i++) {
-			const morph = this.morphs[i]
+		const morphs = this.traversedMorphs
+		for (let i = 0; i < morphs.length; i++) {
+			const morph = morphs[i]
 			const morphed = `morphed${i}`
 			if (hasArkKind(morph, "root")) {
 				js.const(
@@ -205,8 +220,9 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 				transform(ctx, this.introspectableIn, data)
 			:	data
 		if (ctx.currentErrorCount > errorCount) return data
-		for (let i = 0; i < this.morphs.length; i++) {
-			const morph = this.morphs[i]
+		const morphs = this.traversedMorphs
+		for (let i = 0; i < morphs.length; i++) {
+			const morph = morphs[i]
 			if (hasArkKind(morph, "root")) {
 				result = pipe(ctx, morph, result)
 				if (ctx._errors !== undefined && result === ctx._errors) return data

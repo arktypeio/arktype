@@ -595,7 +595,7 @@ const len = type.fn("string | unknown[]", ":", "number")(s => s.length)
 len("foo") // 3
 len([1, 2]) // 2
 
-// TraversalError: value at [0] must be a string or an object (was boolean)
+// TraversalError: value at [0] must be a string or an array (was boolean)
 len(true)
 ```
 

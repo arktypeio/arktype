@@ -55,28 +55,102 @@ const intersectPropsAndIndex = <
 const propertyOf = (key: Key): Key =>
 	typeof key === "symbol" ? key : String(key)
 
-// "reject" checks string keys only, so it allows any symbol key
-const allowedKeysOf = (node: Structure.Node): BaseRoot =>
-	node.undeclared === "reject" ?
-		node.keyof().rawOr($ark.intrinsic.symbol.internal)
-	:	node.keyof()
+// a sequence declares its indices, and "reject" checks string keys only, so
+// it allows any symbol key
+const allowedKeysOf = (node: Structure.Node): BaseRoot => {
+	let keys = node.keyof()
+	if (node.sequence)
+		keys = keys.rawOr($ark.intrinsic.nonNegativeIntegerString.internal)
+	return node.undeclared === "reject" ?
+			keys.rawOr($ark.intrinsic.symbol.internal)
+		:	keys
+}
 
-// narrows other's optional props and index signatures to the keys a
+// a structure allowing more leading indices bounds an array here, narrower
+// than it is, rather than counting on
+const maxCountedIndices = 1024
+
+// how many leading indices keys allow, or null if every index a sequence can
+// have
+const allowedIndexCountOf = (
+	keys: BaseRoot,
+	sequence: nodeOfKind<"sequence">
+): number | null => {
+	if ($ark.intrinsic.nonNegativeIntegerString.internal.extends(keys))
+		return null
+	const max = Math.min(
+		sequence.maxLength ?? maxCountedIndices,
+		maxCountedIndices
+	)
+	let count = 0
+	while (count < max && keys.allows(`${count}`)) count++
+	return count === sequence.maxLength ? null : count
+}
+
+// the element at an index below a sequence's minLength
+const requiredElementAt = (
+	sequence: nodeOfKind<"sequence">,
+	i: number
+): BaseRoot => {
+	const variadicEnd = sequence.prefixLength + sequence.minVariadicLength
+	return (
+		i < sequence.prefixLength ? sequence.prefix![i]
+		: i < variadicEnd ? sequence.variadic!
+		: sequence.postfix![i - variadicEnd]
+	)
+}
+
+// narrows other's optional props, index signatures and sequence to the keys a
 // structure with undeclared keys allows, adding a disjoint for each required
-// key it doesn't
+// key or element it doesn't
 const narrowToKeysOf = (
 	node: Structure.Node,
 	other: Structure.Node,
 	otherInner: {
 		optional?: readonly OptionalNode[]
 		index?: readonly nodeOfKind<"index">[]
+		sequence?: nodeOfKind<"sequence">
 	},
 	derived: OptionalNode[],
+	roots: BaseRoot[],
 	disjoint: Disjoint,
 	$: BaseScope,
 	isLeft: boolean
 ): void => {
 	const keys = allowedKeysOf(node)
+	const count =
+		node.undeclared === "reject" && other.sequence ?
+			allowedIndexCountOf(keys, other.sequence)
+		:	null
+	if (count !== null) {
+		const sequence = other.sequence!
+		if (sequence.minLength > count) {
+			const value = requiredElementAt(sequence, count)
+			const never = $ark.intrinsic.never.internal
+			disjoint.push(
+				...Disjoint.init(
+					"presence",
+					isLeft ? never : value,
+					isLeft ? value : never
+				).withPrefixKey(count, "required")
+			)
+		}
+		// as a length bound, 0 would be an exact length, which a union could
+		// mistake for a discriminant of node, which needn't be an array
+		else if (count === 0) {
+			otherInner.sequence = $.node("sequence", {
+				variadic: $ark.intrinsic.never.internal
+			})
+		} else {
+			roots.push(
+				$.node("intersection", {
+					proto: $.node("proto", { proto: Array }),
+					// at least 1, so it doesn't reduce to an exact length
+					maxLength: $.node("maxLength", { rule: count }) as never
+				})
+			)
+		}
+	}
 	for (const k of other.requiredKeys) {
 		if (keys.allows(k)) continue
 		const value = other.propsByKey[k]!.value
@@ -118,10 +192,32 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			// a prop with the same key would never be merged with them
 			const lDerived: OptionalNode[] = []
 			const rDerived: OptionalNode[] = []
-			if (l.undeclared)
-				narrowToKeysOf(l, r, rInner, rDerived, disjointResult, ctx.$, true)
-			if (r.undeclared)
-				narrowToKeysOf(r, l, lInner, lDerived, disjointResult, ctx.$, false)
+			// length bounds on an array a closed structure narrows
+			const roots: BaseRoot[] = []
+			if (l.undeclared) {
+				narrowToKeysOf(
+					l,
+					r,
+					rInner,
+					rDerived,
+					roots,
+					disjointResult,
+					ctx.$,
+					true
+				)
+			}
+			if (r.undeclared) {
+				narrowToKeysOf(
+					r,
+					l,
+					lInner,
+					lDerived,
+					roots,
+					disjointResult,
+					ctx.$,
+					false
+				)
+			}
 
 			const baseInner: Structure.Inner.mutable = {}
 
@@ -138,7 +234,7 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 				l: flattenConstraints(lInner),
 				// l's derived props precede r's constraints to meet them as l operands
 				r: [...lDerived, ...flattenConstraints(rInner), ...rDerived],
-				roots: [],
+				roots,
 				ctx
 			})
 

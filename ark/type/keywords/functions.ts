@@ -78,7 +78,72 @@ export const parseDate = (s: string, ctx: Traversal): Date | ArkError => {
 	return date
 }
 
-export const parseIsoDate = (s: string): Date => new Date(s)
+// a date that doesn't exist, like 2025-02-29, isn't an ISO 8601 date either
+const isoDateParseError = /* @__PURE__ */ keywordError(
+	"string.date.iso",
+	"an ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ) date"
+)
+
+// the parts of a string.date.iso: a calendar, week or ordinal date, then a time
+// whose last unit can have a fraction, then an offset
+const isoDateParts =
+	/^([+-]?\d{4})(?:-?(?:(\d{2})(?:-?(\d{2}))?|W(\d{2})(?:-?([1-7]))?|(\d{3})))?(?:T(\d{2})(?::?(\d{2})(?::?(\d{2}))?)?(?:[,.](\d+))?(?:[Zz]|([+-])(\d{2}):?(\d{2})?)?)?$/
+
+// read in UTC unless it has an offset, so it's one instant on every machine
+const isoDateOf = (parts: RegExpExecArray): Date | undefined => {
+	const [
+		,
+		yearPart,
+		month,
+		day,
+		week,
+		weekday = "1",
+		ordinal,
+		hour = "0",
+		minute,
+		second,
+		fraction,
+		offsetSign,
+		offsetHours,
+		offsetMinutes = "0"
+	] = parts
+	const year = +yearPart
+	const date = new Date(0)
+	if (week) {
+		// January 4th is in week 1, and a week is in the year of its Thursday
+		date.setUTCFullYear(year, 0, 4)
+		date.setUTCDate(7 * +week - ((date.getUTCDay() + 6) % 7))
+		if (date.getUTCFullYear() !== year) return
+		date.setUTCDate(date.getUTCDate() + +weekday - 4)
+	} else if (ordinal) {
+		date.setUTCFullYear(year, 0, +ordinal)
+		if (date.getUTCFullYear() !== year) return
+	} else {
+		date.setUTCFullYear(year, +(month ?? 1) - 1, +(day ?? 1))
+		if (date.getUTCDate() !== +(day ?? 1)) return
+	}
+	// a fraction is of the last unit given, read to the millisecond
+	const unit =
+		second ? 1000
+		: minute ? 60_000
+		: 3_600_000
+	const ms =
+		fraction ?
+			Math.floor((+fraction.slice(0, 9).padEnd(9, "0") * unit) / 1e9)
+		:	0
+	if (hour === "24" && (+(minute ?? 0) || +(second ?? 0) || ms)) return
+	date.setUTCHours(+hour, +(minute ?? 0), +(second ?? 0), ms)
+	if (offsetSign) {
+		const offset = (+offsetHours * 60 + +offsetMinutes) * 60_000
+		date.setTime(date.getTime() + (offsetSign === "+" ? -offset : offset))
+	}
+	return Number.isNaN(date.getTime()) ? undefined : date
+}
+
+export const parseIsoDate = (s: string, ctx: Traversal): Date | ArkError => {
+	const parts = isoDateParts.exec(s)
+	return (parts && isoDateOf(parts)) ?? ctx.error(isoDateParseError)
+}
 
 // parsed as a number so the string is treated as milliseconds
 export const parseEpoch = (s: string): Date => new Date(Number.parseInt(s))
@@ -215,10 +280,9 @@ export const emptyCollectionDefaults = {
 	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
 }
 
-const regexError = /* @__PURE__ */ keywordError(
-	"string.regex",
-	"a regex pattern"
-)
+const regexPattern = "a regex pattern"
+
+const regexError = /* @__PURE__ */ keywordError("string.regex", regexPattern)
 
 export const isRegexPattern = (s: string, ctx: Traversal): boolean => {
 	try {
@@ -238,10 +302,10 @@ export const raisedErrorPhrases = {
 		problem: jsonProblem
 	},
 	"string.regex": {
-		noun: "a regex pattern",
+		noun: regexPattern,
 		problem: (e, locale) =>
 			e.code === "predicate" && e.cause !== undefined ?
-				describeSyntaxError(e.cause as SyntaxError)
+				`must be ${regexPattern} (${describeSyntaxError(e.cause as SyntaxError)})`
 			:	locale.problem(e, locale)
 	}
 } as const satisfies Record<string, Locale.KeywordWriters>

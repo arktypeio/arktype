@@ -17,7 +17,8 @@ import {
 	expectedOf,
 	isDecidedByAllows,
 	returnsTransformErrors,
-	type NodeCompiler
+	type NodeCompiler,
+	type SwitchCase
 } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
@@ -104,8 +105,11 @@ export type DiscriminantErrorContext = {
 interface DiscriminantErrorContextOf<kind extends DiscriminantKind>
 	extends BaseErrorContext<"discriminant"> {
 	readonly discriminantKind: kind
-	/** the domains or unit values the discriminant expected */
-	readonly cases: readonly (kind extends "domain" ? Domain : unknown)[]
+	/**
+	 * the domains or unit values the discriminant expected, with Array for
+	 * an object case only arrays reach
+	 */
+	readonly cases: readonly (kind extends "domain" ? DomainCase : unknown)[]
 	/** the discriminant is at a key, so meta describes the value around it */
 	readonly onKey: boolean
 	/** the discriminant key is not in its parent; false unless onKey */
@@ -383,67 +387,49 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		const value = `data${discriminant.path.map(k => js.prop(k, true)).join("")}`
 		let condition = value
 
-		if (discriminant.kind === "domain")
-			condition = `typeof ${condition} === "object" ? ${condition} === null ? "null" : "object" : typeof ${condition} === "function" ? "object" : typeof ${condition}`
+		if (discriminant.kind === "domain") condition = compileDomainOf(condition)
 
 		const cases = discriminant.cases
-
-		js.block(`switch(${condition})`, () => {
-			for (const k in cases) {
-				const v = cases[k]
-				// a case transforming nothing returns data as the switch's end does
-				if (
-					js.traversalKind === "Transform" &&
-					(v === true || !v.transforms) &&
-					!("default" in cases)
-				)
-					continue
-				const caseCondition =
-					k === "default" ? k
-					: k.startsWith(registeredPrefix) ?
-						`case ${js.ref($ark[k.slice(registeredPrefix.length)] as never)}`
-					:	`case ${k}`
-				const member = discriminant.members?.[k]
-				const caseResult =
-					js.traversalKind === "Transform" ?
-						v !== true && v.transforms ?
-							invokeTransform(js, v, member)
-						:	"data"
-					: v === true ? "true"
-					: member && js.traversalKind === "Apply" ? js.applyMember(v, member)
-					: js.invoke(v)
-				js.line(`${caseCondition}: return ${caseResult}`)
-			}
-			return js
-		})
-
-		if (js.traversalKind === "Allows") {
-			js.return(false)
-			return
-		}
-		if (js.traversalKind === "Transform") {
-			js.return("data")
-			return
-		}
-
-		const fails = js.unionFails?.(this, value, discriminant.path)
-		if (fails) {
-			js.return(fails)
-			return
-		}
-		if (this.missListsBranches) {
-			js.line(`${js.ref(this)}.applyBranches(data, ctx)`).return(
-				"!ctx.failFast"
+		const written: SwitchCase[] = []
+		for (const k in cases) {
+			const v = cases[k]
+			// a case transforming nothing returns data as the switch's end does
+			if (
+				js.traversalKind === "Transform" &&
+				(v === true || !v.transforms) &&
+				!("default" in cases)
 			)
-			return
+				continue
+			const caseCondition =
+				k === "default" ? k
+				: k.startsWith(registeredPrefix) ?
+					`case ${js.ref($ark[k.slice(registeredPrefix.length)] as never)}`
+				:	`case ${k}`
+			const member = discriminant.members?.[k]
+			const caseResult =
+				js.traversalKind === "Transform" ?
+					v !== true && v.transforms ?
+						invokeTransform(js, v, member)
+					:	"data"
+				: v === true ? "true"
+				: member && js.traversalKind === "Apply" ? js.applyMember(v, member)
+				: js.invoke(v)
+			written.push([caseCondition, caseResult])
 		}
-		const path = this.missPath
-		const serializedPathSegments = path.map(k => js.serialize(k))
-		const absent = () =>
-			path.length ?
-				`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(path)}, data)`
-			:	"false"
-		const input = `{
+		let otherwise =
+			js.traversalKind === "Allows" ? "false"
+			: js.traversalKind === "Transform" ? "data"
+			: js.unionFails?.(this, value, discriminant.path)
+		if (otherwise === undefined && this.missListsBranches)
+			otherwise = `(${js.ref(this)}.applyBranches(data, ctx), !ctx.failFast)`
+		if (otherwise === undefined) {
+			const path = this.missPath
+			const serializedPathSegments = path.map(k => js.serialize(k))
+			const absent = () =>
+				path.length ?
+					`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(path)}, data)`
+				:	"false"
+			otherwise = `!ctx.failsWith({
 	code: "discriminant",
 	discriminantKind: "${discriminant.kind}",
 	cases: ${js.ref(this.discriminantCases.cases)},
@@ -453,8 +439,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	relativePath: [${serializedPathSegments}],
 	data: ${path.length ? value : "data"},
 	meta: ${js.ref(this.discriminantMeta)}
-}`
-		js.return(`!ctx.failsWith(${input})`)
+})`
+		}
+		js.switch(condition, written, otherwise)
 	}
 
 	private compileIndiscriminable(
@@ -536,6 +523,10 @@ export const Union = {
 
 const maxInlinedBranches = 4
 
+// the name of a value's domain, a function's being "object"
+export const compileDomainOf = (value: string): string =>
+	`typeof ${value} === "object" ? ${value} === null ? "null" : "object" : typeof ${value} === "function" ? "object" : typeof ${value}`
+
 // an intersection binds more tightly than a union, so it never needs parens
 const expressBranch = (branch: Union.ChildNode): string =>
 	branch.hasKind("intersection") ? branch.expression : branch.nestableExpression
@@ -563,12 +554,20 @@ export type DiscriminantCases = {
 	>
 }[DiscriminantKind]
 
+export type DomainCase = Domain | "Array"
+
 const casesOf = (discriminant: Discriminant): DiscriminantCases => {
 	const keys = Object.keys(discriminant.cases).filter(k => k !== "default")
 	return discriminant.kind === "domain" ?
 			{
 				discriminantKind: "domain",
-				cases: Object.freeze(keys.map(k => k.slice(1, -1) as Domain))
+				cases: Object.freeze(
+					keys.map(k =>
+						k === '"object"' && isArrayCase(discriminant.cases[k]) ?
+							"Array"
+						:	(k.slice(1, -1) as Domain)
+					)
+				)
 			}
 		:	{ discriminantKind: "unit", cases: Object.freeze(keys.map(unitOf)) }
 }
@@ -576,6 +575,9 @@ const casesOf = (discriminant: Discriminant): DiscriminantCases => {
 // a description someone wrote, not a keyword's phrase or a default
 const isAuthored = (node: { meta: ArkEnv.meta }): boolean =>
 	node.meta.description !== undefined && node.meta.keyword === undefined
+
+const isArrayCase = (caseNode: BaseRoot | true): boolean =>
+	caseNode !== true && caseNode.rawIn.extends($ark.intrinsic.Array.internal)
 
 const metaAtDiscriminant = (
 	meta: ArkEnv.meta,

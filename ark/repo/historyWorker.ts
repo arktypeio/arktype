@@ -6,7 +6,7 @@ import type {
 } from "@ark/schema"
 import { createHash } from "node:crypto"
 import { Session } from "node:inspector"
-import { relative } from "node:path"
+import { relative, sep } from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { types } from "node:util"
 import { runInThisContext } from "node:vm"
@@ -88,7 +88,7 @@ post("Profiler.startPreciseCoverage", { callCount: true, detailed: false })
 const takeCalls = (into: Record<string, number> = {}) => {
 	for (const script of post("Profiler.takePreciseCoverage").result) {
 		if (!isUserFile(script.url)) continue
-		const file = relative(".", fileURLToPath(script.url))
+		const file = relative(".", fileURLToPath(script.url)).split(sep).join("/")
 		for (const { functionName, ranges } of script.functions) {
 			// a module's body runs only when it's first imported
 			if (!ranges[0].count || (!functionName && !ranges[0].startOffset))

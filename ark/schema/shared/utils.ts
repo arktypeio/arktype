@@ -3,6 +3,7 @@ import {
 	domainDescriptions,
 	flatMorph,
 	isArray,
+	objectKindDescriptions,
 	printable,
 	type array,
 	type mutable,
@@ -240,6 +241,10 @@ export const describeCases = ({
 }: DiscriminantCases): string =>
 	describeBranches(
 		discriminantKind === "domain" ?
-			cases.map(domain => domainDescriptions[domain])
+			cases.map(domain =>
+				domain === "Array" ?
+					objectKindDescriptions.Array
+				:	domainDescriptions[domain]
+			)
 		:	cases.map(unit => printable(unit, { ownDataOnly: true }))
 	)
