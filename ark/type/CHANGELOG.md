@@ -582,7 +582,7 @@ const T = type({ v: "number", "next?": "this" })
 
 // previously { v: number, next?: type1 }, now { v: number, next?: this }
 T.expression
-// previously { a: { v: number, next?: type1 } }, now { a: { v: number, next?: type1b8zgbj0qm5 } }
+// previously { a: { v: number, next?: type1 } }, now { a: { v: number, next?: typegszdr00kec5od } }
 type({ a: T }).expression
 ```
 
@@ -963,7 +963,7 @@ const T = type({ a: "string" }).pipe((o, ctx) => {
 })
 
 // previously ({"a":"s"}) must be... ◦ p ◦ q ◦ q
-// now a ({"a":"s"}) must be... ◦ p ◦ q
+// now a (an object) must be... ◦ p ◦ q
 T({ a: "s" }).toString()
 ```
 
@@ -989,8 +989,8 @@ const T = type({ s: "string" }).pipe((o, ctx) => {
 	return Inner(o)
 })
 
-// previously s ({"s":"b"}) must be... ◦ own ◦ ◦ matched by ^a ◦ at least length 5
-// now s ({"s":"b"}) must be... ◦ own ◦ matched by ^a ◦ at least length 5
+// previously ({"s":"b"}) must be... ◦ own ◦ ◦ matched by ^a ◦ at least length 5
+// now s (an object) must be... ◦ own ◦ matched by ^a ◦ at least length 5
 T({ s: "b" }).toString()
 ```
 
