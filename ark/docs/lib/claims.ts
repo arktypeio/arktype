@@ -41,50 +41,44 @@ export interface BenchmarkChart {
 }
 
 /**
- * Shaped by the claims lane's claims.md (precompile 61c3fe807, Node 24.14.1),
- * whose harnesses and raw results are in that thread's lane-claims directory.
- * Each claim is scoped as claims.md scopes it: precompiled or dynamic, valid
- * or invalid data, with or without errors. Every number stays null and every
- * sentence pending until a re-measure at the release commit backs it. The
- * comments give 61c3fe807's numbers.
+ * Backed by claims-final.md (precompile 5628c3752, Node 24.14.1), whose
+ * harnesses and raw results are in that thread's lane-claims2 directory.
+ * Each claim is scoped as claims-final.md scopes it: precompiled or dynamic,
+ * valid or invalid data, with or without errors. "Smallest, fastest" holds for
+ * precompiled ArkType benchmark by benchmark, from different builds: the
+ * smallest builds optimize for size and are slower, so no claim says one build
+ * is both.
  */
 
 // moltar's typescript-runtime-type-benchmarks, perf instruction counts in
-// benny's call shape. They rank libraries as moltar's published node-24 wall
-// clock does, but a 10% lead projects to 3-5% in wall: say "fastest", never
-// "x times faster". Precompiled leads parseSafe and assertLoose; it's #5 on
-// the strict cases, and dynamic is #8-#10 everywhere.
-// 61c3fe807: 189, 209, 213, 220, 262.
+// benny's call shape, backed by paired wall clock (0.95x @ts-runtypes, 17 of
+// 20, p 0.0026). A 10% lead is 3-10% of wall time: say "fastest", never "x
+// times faster". The strict cases lead only with countsKeys.
 export const speedChart: BenchmarkChart = {
 	title: "Runtime",
-	detail: {
-		pending:
-			"moltar's parseSafe benchmark (validate, removing undeclared keys), Node 24"
-	},
+	detail:
+		"moltar's parseSafe benchmark (validate, removing undeclared keys), instructions per call, Node 24",
 	unit: "instructions per call",
 	source: {
 		label: "moltar/typescript-runtime-type-benchmarks",
 		href: "https://moltar.github.io/typescript-runtime-type-benchmarks/"
 	},
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: null },
-		{ name: "@ts-runtypes", kind: "other", value: null },
-		{ name: "Typia", kind: "other", value: null },
-		{ name: "ata-validator (AOT)", kind: "other", value: null },
-		{ name: "ArkType (dynamic)", kind: "dynamic", value: null }
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 189 },
+		{ name: "@ts-runtypes", kind: "other", value: 209 },
+		{ name: "Typia", kind: "other", value: 213 },
+		{ name: "ata-validator (AOT)", kind: "other", value: 220 },
+		{ name: "ArkType (dynamic)", kind: "dynamic", value: 262 }
 	]
 }
 
 // bundlejs-style esbuild of valibot.dev's login form, every entry reporting
-// every error with its message. Precompiled beats Valibot only with its
-// validator's members and methods off ("default+lean"); with every member
-// kept it's larger. 61c3fe807: 1341, 1475, 5127, 25058, 74726.
+// every error with its message. Precompiled with the lean errors set; keeping
+// its errors' methods (default+lean) is 1149, still under Valibot.
 export const sizeChart: BenchmarkChart = {
 	title: "Bundle size",
-	detail: {
-		pending:
-			"valibot.dev's login form, each reporting every error with a message; precompiled with its validator's methods and members off"
-	},
+	detail:
+		"valibot.dev's login form, each reporting every error with a message; precompiled with its validator's members and methods, and its errors' methods, off",
 	unit: "B gzipped",
 	source: {
 		label: "valibot.dev's comparison",
@@ -92,70 +86,50 @@ export const sizeChart: BenchmarkChart = {
 	},
 	axisMax: 26_000,
 	bars: [
-		{ name: "ArkType (precompiled)", kind: "precompiled", value: null },
-		{ name: "Valibot", kind: "other", value: null },
-		{ name: "Zod Mini", kind: "other", value: null },
-		{ name: "Zod", kind: "other", value: null },
-		{ name: "ArkType (dynamic)", kind: "dynamic", value: null }
+		{ name: "ArkType (precompiled)", kind: "precompiled", value: 912 },
+		{ name: "Valibot", kind: "other", value: 1475 },
+		{ name: "Zod Mini", kind: "other", value: 5127 },
+		{ name: "Zod", kind: "other", value: 25058 },
+		{ name: "ArkType (dynamic)", kind: "dynamic", value: 75520 }
 	]
 }
 
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
-	// David's draft; claims.md: true only with qualifiers at 61c3fe807
-	headline: { pending: "The smallest, fastest validation" },
-	// the speed and size charts together: precompiled leads both only as
-	// each chart scopes it
-	noCompromise: { pending: "no compromise between speed and size" },
+	// holds only for precompiled ArkType, beside the per-benchmark claims
+	headline: "The smallest, fastest validation, precompiled",
+	// the fastest and the smallest builds differ: optimize "size" makes the
+	// product schema's valid data 2.2x slower
+	buildChoice:
+		"Pick the build: the fastest validator or the smallest, from the same definitions.",
 	// the homepage's spec rows, each a fragment of a claim below
-	dynamicSpec: {
-		pending: "as fast as precompiled on valid data at schemabenchmarks.dev"
-	},
-	sizeSpec: {
-		pending:
-			"precompiled, smaller than Valibot on its own login form, with every error message"
-	},
+	dynamicSpec: "as fast as precompiled on valid data at schemabenchmarks.dev",
+	sizeSpec:
+		"precompiled, smaller than Valibot on its own login form, with every error message",
 	// the sentence under the docs' charts
-	chartsSummary: {
-		pending:
-			"Precompiled ArkType is the fastest on moltar's parseSafe and assertLoose benchmarks, and on Valibot's own login form it reports every error, with its message, in a smaller bundle than Valibot."
-	},
-	// claims.md §3: valid data, validation, parsing and Standard Schema, both
-	// modes. 61c3fe807: 5-9% fewer instructions than ata-validator, 0.75-0.82x
-	// its time in paired wall runs, faster in 47 of 60.
-	validData: {
-		pending:
-			"On schemabenchmarks.dev, precompiled and dynamic ArkType both validate valid data faster than ata-validator, its current #1."
-	},
-	// claims.md §3 MAKE: the product schema, valid data, both modes run the
-	// same checks. 61c3fe807: 5989 vs 5982 instructions, wall
-	// precompiled/dynamic 0.98x (p 0.39, a tie).
-	dynamicSpeed: {
-		pending:
-			"On schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType."
-	},
-	// claims.md §1: precompiled, -11% instructions, faster than every rival in
-	// 9-11 of 12 paired wall runs.
-	assertLoose: {
-		pending:
-			"Precompiled ArkType is the fastest on moltar's assertLoose benchmark."
-	},
-	// claims.md §2a. 61c3fe807: 1.34 vs 1.48 kB gz, members and methods off.
-	loginSize: {
-		pending:
-			"On Valibot's own login form, precompiled ArkType reports every error, with its message, in a smaller bundle than Valibot: N kB gzipped against N kB."
-	},
-	// claims.md §1: moltar strict, dynamic. 61c3fe807: 4067 -> 355 instructions.
-	strictSpeedup: {
-		pending:
-			"Dynamic ArkType validates moltar's strict cases about N times faster than 2.2."
-	},
-	// claims.md §3 MAKE: 26 instructions, the harness floor; typia createIs 224.
-	// Honest only with "the Type is built at build time".
-	noInit: {
-		pending:
-			"A precompiled Type costs nothing to create: it was built when you built."
-	}
+	chartsSummary:
+		"Precompiled ArkType is the fastest on moltar's parseSafe and assertLoose benchmarks, and on Valibot's own login form it reports every error, with its message, in a smaller bundle than Valibot.",
+	// valid data, validation, parsing and Standard Schema, both modes:
+	// 0.74-0.84x ata-validator's wall time, p <= 0.0063
+	validData:
+		"On schemabenchmarks.dev, precompiled and dynamic ArkType both validate valid data faster than ata-validator, its current #1.",
+	// the product schema, valid data: 6003 vs 6002 instructions, wall a tie
+	// (1.11, 3 of 12, p 0.15)
+	dynamicSpeed:
+		"On schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType.",
+	// 66 vs 74 instructions; wall 0.94x ts-runtime-checks, 17 of 20, p 0.0026
+	assertLoose:
+		"Precompiled ArkType is the fastest on moltar's assertLoose benchmark.",
+	// lean errors 912 vs 1475 B gz; default+lean 1.15 kB
+	loginSize:
+		"On Valibot's own login form, precompiled ArkType reports every error, with its message, in a smaller bundle than Valibot: 0.91 kB gzipped against 1.48 kB.",
+	// moltar strict, dynamic, 2.2.3 to now: assertStrict 4067 -> 348,
+	// parseStrict 3798 -> 392 instructions
+	strictSpeedup:
+		"Dynamic ArkType validates moltar's strict cases about 10 times faster than 2.2.",
+	// 18 instructions, the harness floor; typia createIs 221
+	noInit:
+		"A precompiled Type costs nothing to create: it was built when you built."
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims
@@ -165,27 +139,20 @@ export interface Stat {
 	label: Claim<string>
 }
 
-// drafted from claims.md's MAKE claims; N marks a number its refresh fills
 export const heroStats: Stat[] = [
 	{
-		value: { pending: "Fastest" },
-		label: {
-			pending:
-				"on moltar's parseSafe and assertLoose benchmarks, precompiled: N% fewer instructions per call than the next library"
-		}
+		value: "Fastest",
+		label:
+			"on moltar's parseSafe and assertLoose benchmarks, precompiled: 9% fewer instructions per call than the next library"
 	},
 	{
-		value: { pending: "N% less time" },
-		label: {
-			pending:
-				"validating valid data than ata-validator, schemabenchmarks.dev's current #1, precompiled or not"
-		}
+		value: "16% less time",
+		label:
+			"validating valid data than ata-validator, schemabenchmarks.dev's current #1, precompiled or not"
 	},
 	{
-		value: { pending: "N kB" },
-		label: {
-			pending:
-				"for Valibot's own login form with every error message, precompiled: smaller than Valibot's N kB gzipped"
-		}
+		value: "0.91 kB",
+		label:
+			"for Valibot's own login form with every error message, precompiled: smaller than Valibot's 1.48 kB gzipped"
 	}
 ]

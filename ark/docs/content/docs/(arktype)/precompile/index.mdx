@@ -18,9 +18,9 @@ export default {
 
 Your definitions stay as you wrote them. [Setup](/docs/precompile/setup) covers every bundler, test runner and Next.
 
-## No compromises
+## Speed and size
 
-A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors.
+A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. <Claim id="buildChoice" /> The [options](/docs/precompile/options) decide which: [`optimize: "size"`](/docs/precompile/options#optimize) and dropping [`members`](/docs/precompile/options#members) make a build smaller and its validators slower.
 
 <ClaimCharts />
 

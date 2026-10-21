@@ -38,7 +38,7 @@ See [Errors](/docs/errors) for everything an error carries.
 
 ## Why isn't my configuration applied?
 
-`configure` from `arktype/config` has to run before anything imports `arktype` or `@ark/schema`, including deep imports like `arktype/internal/*`. Put it in its own file and import that file first. Configuring after `arktype` has loaded doesn't throw, but `type` and built-in keywords like `number` ignore it. Only scopes created afterward, and `locale`, pick it up. See [Configuration](/docs/configuration).
+Global config is fixed when the first Type is created, by a definition or by reading a keyword like `type.number`. Calling `configure` after that throws a `ParseError`: `configure() must be called before any Type is created`. Put it in its own file and import that file before anything creates a Type. See [Configuration](/docs/configuration).
 
 ## Does a morph change my input?
 
@@ -71,7 +71,7 @@ const User = type({
 })
 ```
 
-That means ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. If bundle size matters most, Valibot is built to minimize it.
+That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](/docs/precompile), it ships no parser. <Claim id="loginSize" />
 
 Coming from Zod, most APIs have a direct equivalent:
 

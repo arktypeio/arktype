@@ -180,7 +180,11 @@ const BenchSource = ({ facts }: { facts: BenchFacts }) => (
 				{facts.ties && ` and tied ${facts.ties}`}. Median ns per call over{" "}
 				{provenance.rounds} interleaved rounds against typia, TypeBox, ajv, Zod
 				4 (compiled or not), zod/mini and Valibot; faster means a sign test at p{" "}
-				{"<"} .05. Reporting errors on invalid data, ajv is faster.
+				{"<"} .05. Reporting errors on invalid data, ajv is faster in{" "}
+				{facts.ajvFasterCount === facts.errorCount ?
+					"every row"
+				:	`${facts.ajvFasterCount} of ${facts.errorCount} rows`}
+				.
 				<br />
 				<span className="qi-see">@see</span>{" "}
 				<a className="link" href="#run">
@@ -250,14 +254,14 @@ export default function HomePage() {
 						</div>
 						<h1 id="hero-title" className="rise-fade is-long">
 							<ClaimText claim={claims.headline} />{" "}
-							<span className="one">optimized for agentic dev</span>
+							<span className="one">and optimized for agentic dev</span>
 						</h1>
 						<p className="lede rise" style={rise(1)}>
 							Write the <span className="decl c-sky">type</span> you'd write
-							anyway. Precompile it into a validator with{" "}
-							<ClaimText claim={claims.noCompromise} />, or run it with no build
-							at all. Your <span className="decl c-teal">agent</span> already
-							knows the syntax.
+							anyway and precompile it. <ClaimText claim={claims.buildChoice} />{" "}
+							Or run it with no build at all. Your{" "}
+							<span className="decl c-teal">agent</span> already knows the
+							syntax.
 						</p>
 						<dl className="spec rise" style={rise(2)}>
 							<dt>syntax</dt>
@@ -314,7 +318,7 @@ export default function HomePage() {
 						<span className="n">
 							03 // run <NextTag />
 						</span>
-						<b>Speed and size: pick both</b>
+						<b>Speed or size: pick the build</b>
 						<span>
 							{facts.mostFaster ?
 								`no library faster in more than ${facts.mostFaster} of ${facts.validCount}`
