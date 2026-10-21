@@ -711,7 +711,7 @@ export const unreadErrors = (
 	Ctx: UnreadErrors
 ): unknown => {
 	const errors = new Ctx(apply, data)
-	return typeof onFail === "function" ? onFail(errors) : errors
+	return onFail ? onFail(errors) : errors
 }
 
 export const unreadElements = (
@@ -743,7 +743,7 @@ export const unreadCallErrors = (
 		if (args[0]) return args[0].piped(errors as never)
 		if (args[1] !== undefined) onFail = args[1] as never
 	}
-	return typeof onFail === "function" ? onFail(errors) : errors
+	return onFail ? onFail(errors) : errors
 }
 
 export type HoleKind = "function" | "class" | "symbol"
