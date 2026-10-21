@@ -18,6 +18,7 @@ import { constraintInputOf, type Constraint } from "./constraint.ts"
 import type { nodeOfKind, Prerequisite, reducibleKindOf } from "./kinds.ts"
 import type { BaseNode } from "./node.ts"
 import {
+	compareInnerKeys,
 	nodesByRegisteredId,
 	writeInvalidSchemaMessage,
 	type BaseParseOptions,
@@ -32,8 +33,6 @@ import type { BaseScope } from "./scope.ts"
 import type { TypeMeta } from "./shared/declare.ts"
 import {
 	constraintKeys,
-	isNodeKind,
-	precedenceOfKind,
 	structureKeys,
 	type ConstraintKind,
 	type NodeKind,
@@ -426,14 +425,7 @@ const isExpandedSequenceSchema = (
 
 // children are parsed after other keys, in order of precedence
 const keysInParseOrder = (schema: dict): string[] =>
-	Object.keys(schema).sort((l, r) =>
-		isNodeKind(l) ?
-			isNodeKind(r) ? precedenceOfKind(l) - precedenceOfKind(r)
-			:	1
-		: isNodeKind(r) ? -1
-		: l < r ? -1
-		: 1
-	)
+	Object.keys(schema).sort(compareInnerKeys)
 
 // meta. prefixed keys are moved to meta, overwriting a nested key of the same
 // name

@@ -436,9 +436,9 @@ export abstract class BaseRoot<
 	}
 
 	protected tryPipe(...morphs: Morph[]): BaseRoot {
-		const result = morphs.reduce<BaseRoot>(
-			(acc, morph) =>
-				acc.rawPipeOnce(
+		return this._pipe(
+			...morphs.map(
+				(morph): Morph =>
 					hasArkKind(morph, "root") ? morph : (
 						(In, ctx) => {
 							try {
@@ -448,10 +448,8 @@ export abstract class BaseRoot<
 							}
 						}
 					)
-				),
-			this
+			)
 		)
-		return this.$.finalize(result)
 	}
 
 	// bound when first read, since it can be detached

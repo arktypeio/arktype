@@ -173,7 +173,7 @@ export const parseNode = (ctx: NodeParseContext): BaseNode => {
 
 // keys are ordered so equal inners share a key and json, with children
 // after other values in order of precedence
-const compareInnerKeys = (l: string, r: string) =>
+export const compareInnerKeys = (l: string, r: string): number =>
 	isNodeKind(l) ?
 		isNodeKind(r) ? precedenceOfKind(l) - precedenceOfKind(r)
 		:	1
