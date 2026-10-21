@@ -25,6 +25,21 @@ export const Claim = ({ id }: { id: ClaimId }) => (
 	<ClaimText claim={claims[id]} />
 )
 
+/** the headline's detail, its asterisk linking the notes that qualify it */
+export const HeadlineDetail = () => (
+	<>
+		<ClaimText claim={claims.headlineDetail} />
+		<a href="#headline-note">*</a>
+	</>
+)
+
+/** what the headline's numbers measure */
+export const HeadlineNote = ({ className }: { className?: string }) => (
+	<p id="headline-note" className={className}>
+		<ClaimText claim={claims.headlineNote} />
+	</p>
+)
+
 const ClaimChart = ({ chart }: { chart: BenchmarkChart }) => {
 	const max =
 		chart.axisMax ?? Math.max(...chart.bars.map(bar => bar.value ?? 0))

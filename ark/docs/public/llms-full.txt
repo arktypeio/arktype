@@ -715,7 +715,7 @@ Your definitions stay as you wrote them. [Setup](https://arktype.io/docs/precomp
 
 ## Speed and size
 
-A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. Pick the build: the fastest validator or the smallest, from the same definitions. The [options](https://arktype.io/docs/precompile/options) decide which: [`optimize: "size"`](https://arktype.io/docs/precompile/options#optimize) and dropping [`members`](https://arktype.io/docs/precompile/options#members) make a build smaller and its validators slower.
+A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. Build the fastest validator or the smallest from the same definitions. The [options](https://arktype.io/docs/precompile/options) decide which: [`optimize: "size"`](https://arktype.io/docs/precompile/options#optimize) and dropping [`members`](https://arktype.io/docs/precompile/options#members) make a build smaller and its validators slower.
 
 - Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24: instructions per call. Precompiled ArkType isn't in moltar's published results yet.. Source: moltar/typescript-runtime-type-benchmarks, https\://github.com/moltar/typescript-runtime-type-benchmarks
 - ArkType (precompiled): 189

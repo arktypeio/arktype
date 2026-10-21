@@ -1,12 +1,18 @@
 ---
 title: Announcing ArkType 3.0
-description: Dynamic or precompiled, optimized for agentic dev
+description: Faster than Typia, smaller than Valibot and optimized for agentic dev
 date: 2026-10-21
 ---
 
-ArkType 3.0 is here: **<Claim id="headline" /> and optimized for agentic dev.**
+As of today, ArkType 3.0 is generally available🎉
 
-You write the same TypeScript-shaped definitions as always. What's new is where they run. **ArkType (dynamic)** parses them at runtime, with no build step, as ArkType always has. **ArkType (precompiled)** constructs each one when you build, so your bundle carries a validator with only the checks your types need: no parser and no code generated at runtime. <Claim id="buildChoice" />
+**<Claim id="headline" />** It's also optimized for agentic dev. Whether you write the code or your agent does, every error along the way names its fix.
+
+<HeadlineDetail />
+
+<HeadlineNote />
+
+Your definitions don't change- just where they run. **ArkType (dynamic)** parses them at runtime with no build step, like always. **ArkType (precompiled)** builds each one when you build, so your bundle gets a validator with only the checks your types need. No parser, and no code generated at runtime. <Claim id="buildChoice" />
 
 ```ts
 // ---cut-start---
@@ -24,7 +30,7 @@ const out = User(data)
 if (out instanceof type.errors) console.error(out.summary)
 ```
 
-Below are the highlights. The full list, including what can break, is in [Upgrading](/docs/upgrading) and the [changelog](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md).
+Below are the highlights. If you're upgrading, [Upgrading](/docs/upgrading) and the [changelog](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md) have the full list, including what breaks. We can't wait to hear what you think! 🚀
 
 ## Dynamic and precompiled
 
@@ -36,7 +42,7 @@ What precompiling removes is everything around a Type's checks: the parser, the 
 
 [Dynamic vs Precompiled](/docs/dynamic-vs-precompiled) compares the two modes side by side.
 
-## Precompile
+## `@ark/precompile`
 
 [`@ark/precompile`](/docs/precompile) is a plugin for the bundler you already run: Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun or Farm, and Vitest runs tests through it. Drivers cover Node, Bun's runtime and Next's Turbopack.
 
@@ -98,11 +104,11 @@ data => {
 }
 ```
 
-Other validators compile too: typia, for one, generates checks from your TypeScript types at build time and specializes some unions. What ArkType brings to the build is a type system of its own, which reduces, intersects and discriminates your definitions before any code is written.
+ArkType isn't the first validator to compile. typia also generates checks from your TypeScript types at build time, and it specializes some unions. The difference is that ArkType brings a type system of its own to the build, so your definitions are reduced, intersected and discriminated before any code is written.
 
 ## Optimized for agentic dev
 
-A build step used to cost your attention. When an agent runs your local dev, it costs a loop it's already good at: build, read the error, fix, rebuild. Every message along that loop names the fix:
+Build steps used to cost you attention. If an agent runs your local dev, a build step is just one more loop it's already good at- build, read the error, fix, rebuild. So we made sure every message along the way names the fix:
 
 - **Definitions** are checked by `tsc` as you write them, and a typo's error is the type the string was checked against, like `"number | strin"` against `"number | string"`.
 - **The build** reports what it can't precompile with the file, line, reason and fix. [Troubleshooting](/docs/precompile/troubleshooting) quotes each message, and [shadow mode](/docs/precompile/advanced#shadow-mode) fails a test wherever a precompiled validator would behave otherwise than arktype.
@@ -116,7 +122,7 @@ npx skills add arktypeio/arktype
 
 The [skill](/docs/agents#skill) teaches an agent current syntax, how it maps to TypeScript, the mistakes to avoid and how to work in a precompiled project. Every docs page is also Markdown at its URL plus `.md`, and [/llms.txt](https://arktype.io/llms.txt) indexes them. See [Agents](/docs/agents).
 
-## Codecs
+## `codec` and `.encode`
 
 `codec` pairs a morph with its inverse, so output can be encoded back into input. Every Type has `.encode`, which inverts each of its morphs, so a codec encodes wherever it's nested:
 
@@ -174,6 +180,18 @@ An `ArkErrors`' `issues` are plain objects, discriminated by `code`, with the ke
 
 ## A new home
 
-These docs are new as well: every page reads as Markdown for your agent, code samples show the types TypeScript infers, and the [playground](/playground) runs the real parser in your browser.
+The docs are new too. Every page reads as Markdown for your agent, every code sample shows the types TypeScript infers, and the [playground](/playground) runs the real parser right in your browser.
 
-We can't wait to see what you build with 3.0. Come say hi on [Discord](https://arktype.io/discord) 🚀
+We can't wait to see what you build with it!
+
+⚡ [Start coding](/docs/intro/setup)
+
+⭐ [Check out the project on GitHub](https://github.com/arktypeio/arktype)
+
+👋 [Join our Discord to lurk or ask questions](https://arktype.io/discord)
+
+- Follow any of these accounts for updates:
+  - [@arktype.io](https://bsky.app/profile/arktype.io), [@ssalbdivad.dev](https://bsky.app/profile/ssalbdivad.dev) on BlueSky
+  - [@arktypeio](https://x.com/arktypeio), [@ssalbdivad](https://x.com/ssalbdivad) on X/Twitter
+
+- Consider supporting my full-time work on ArkType via [GitHub Sponsors](https://github.com/sponsors/arktypeio)

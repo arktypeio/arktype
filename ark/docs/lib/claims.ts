@@ -45,7 +45,7 @@ export interface BenchmarkChart {
  * typescript-runtime-type-benchmarks at 499f3fb and schema-benchmarks at
  * f1e6e8e, by instruction counts and paired wall-clock runs.
  * Each claim is scoped as claims-final.md scopes it: precompiled or dynamic,
- * valid or invalid data, with or without errors. "Smallest, fastest" holds for
+ * valid or invalid data, with or without errors. The headline holds for
  * precompiled ArkType benchmark by benchmark, from different builds: the
  * smallest builds optimize for size and are slower, so no claim says one build
  * is both.
@@ -98,12 +98,18 @@ export const sizeChart: BenchmarkChart = {
 
 /** sentences, each rendered by `<Claim id="..." />` */
 export const claims = {
-	// holds only for precompiled ArkType, beside the per-benchmark claims
-	headline: "The smallest, fastest validation, precompiled",
+	// precompiled ArkType: moltar's parseSafe, 189 instructions vs Typia 213,
+	// wall clock 30 of 44 passes against Typia (p 0.023); valibot.dev's login
+	// form as written, 1028 vs Valibot 1547 B gz
+	headline: "Faster than Typia. Smaller than Valibot.",
+	headlineDetail:
+		"Precompiled from the same definitions: fastest on moltar's parseSafe benchmark, and every error with its message on valibot.dev's login form in 1.03 kB.",
+	headlineNote:
+		"*Speed: moltar's parseSafe benchmark on valid data, run by us on Node 24: 189 instructions per call, Typia 213. ajv is faster on some invalid-data rows. Size: valibot.dev's login form as written, with its messages, bundled with bundlejs's esbuild settings and precompiled for size: 1.03 kB gzipped, Valibot 1.55 kB.",
 	// the fastest and the smallest builds differ: optimize "size" makes the
 	// product schema's valid data 2.2x slower
 	buildChoice:
-		"Pick the build: the fastest validator or the smallest, from the same definitions.",
+		"Build the fastest validator or the smallest from the same definitions.",
 	// the homepage's spec rows, each a fragment of a claim below
 	dynamicSpec:
 		"as fast as precompiled on valid data in our runs of schemabenchmarks.dev's benchmark",
