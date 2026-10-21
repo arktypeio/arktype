@@ -1,6 +1,7 @@
 import { Callable, includes } from "@ark/util"
 import * as arkregex from "arkregex"
 import * as arktype from "arktype"
+import * as arktypeCodecs from "arktype/codecs"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import * as arktypeConfig from "arktype/config"
 import type { BaseRoot, GenericRoot } from "@ark/schema"
@@ -57,6 +58,7 @@ export type FunctionNode = Function | ArrowFunctionExpression
 
 export type ArkExportName =
 	| keyof typeof arktype
+	| keyof typeof arktypeCodecs
 	| keyof typeof arktypeConfig
 	| keyof typeof arkregex
 
@@ -64,6 +66,7 @@ const arktypeNamespacesBySpecifier: Record<string, object> =
 	Object.setPrototypeOf(
 		{
 			arktype,
+			"arktype/codecs": arktypeCodecs,
 			"arktype/config": arktypeConfig,
 			"@ark/type": arktype,
 			arkregex,
@@ -156,6 +159,7 @@ export const nodeMembers: Record<string, 1> = Object.setPrototypeOf(
 		onDeepUndeclaredKey: 1,
 		in: 1,
 		out: 1,
+		encode: 1,
 		brand: 1,
 		array: 1,
 		optional: 1,

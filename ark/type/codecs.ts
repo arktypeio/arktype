@@ -5,6 +5,7 @@ import { inverses } from "@ark/schema/codecs"
 import type { distill, inferPipe, Out } from "./attributes.ts"
 import {
 	capitalizeString,
+	keepFormatted,
 	lowercaseString,
 	normalizationsByForm,
 	parseDate,
@@ -16,7 +17,10 @@ import {
 	parseUrl,
 	stringifyJson,
 	trimString,
-	uppercaseString
+	uppercaseString,
+	writeEpoch,
+	writeIsoDate,
+	writeUrl
 } from "./keywords/functions.ts"
 import { type } from "./keywords/keywords.ts"
 import type { instantiateType } from "./variants/instantiate.ts"
@@ -66,23 +70,18 @@ export const codec = <
 	) as never
 }
 
-const formatDate = (date: Date) => date.toISOString()
-
-// a string already in a format keyword's output format is its own encoding
-const formatted = (s: string) => s
-
 // keyed by the keywords' morphs, so reading them creates no Type
-inverses.set(parseDate, formatDate)
-inverses.set(parseIsoDate, formatDate)
-inverses.set(parseEpoch, (date: Date) => `${date.getTime()}`)
+inverses.set(parseDate, writeIsoDate)
+inverses.set(parseIsoDate, writeIsoDate)
+inverses.set(parseEpoch, writeEpoch)
 inverses.set(parseInteger, String)
 inverses.set(parseNumeric, String)
 inverses.set(parseJson, stringifyJson)
 inverses.set(stringifyJson, parseJson)
-inverses.set(parseUrl, (url: URL) => url.href)
-inverses.set(trimString, formatted)
-inverses.set(lowercaseString, formatted)
-inverses.set(uppercaseString, formatted)
-inverses.set(capitalizeString, formatted)
+inverses.set(parseUrl, writeUrl)
+inverses.set(trimString, keepFormatted)
+inverses.set(lowercaseString, keepFormatted)
+inverses.set(uppercaseString, keepFormatted)
+inverses.set(capitalizeString, keepFormatted)
 for (const { morphs } of Object.values(normalizationsByForm))
-	inverses.set(morphs, formatted)
+	inverses.set(morphs, keepFormatted)

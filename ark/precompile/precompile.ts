@@ -4306,7 +4306,10 @@ const declaredBindingKinds = {
 	class: 1
 } satisfies Partial<Record<BindingKind, 1>>
 
-// an import only folded sites read becomes `import "arktype"`
+// entries whose exports only sites read, so a standalone build drops them
+const prunedSpecifiers: unknown[] = ["arktype", "arktype/codecs"]
+
+// an import only folded sites read becomes e.g. `import "arktype"`
 const pruneArktypeImports = (
 	module: SourceModule,
 	folded: Span[],
@@ -4315,7 +4318,7 @@ const pruneArktypeImports = (
 	for (const statement of module.program.body) {
 		if (
 			statement.type !== "ImportDeclaration" ||
-			statement.source.value !== "arktype" ||
+			!prunedSpecifiers.includes(statement.source.value) ||
 			statement.importKind === "type"
 		)
 			continue
@@ -4326,7 +4329,7 @@ const pruneArktypeImports = (
 			s.overwrite(
 				statement.start,
 				statement.source.end,
-				writeImport(kept, module)
+				writeImport(kept, statement.source.value, module)
 			)
 		}
 	}
@@ -4343,7 +4346,7 @@ const keepImportedModules = (
 	for (const statement of module.program.body) {
 		if (
 			statement.type !== "ImportDeclaration" ||
-			statement.source.value === "arktype" ||
+			prunedSpecifiers.includes(statement.source.value) ||
 			statement.importKind === "type"
 		)
 			continue
@@ -4383,6 +4386,7 @@ const isReadOutside = (
 
 const writeImport = (
 	specifiers: ImportDeclarationSpecifier[],
+	source: string,
 	module: SourceModule
 ) => {
 	const clauses: string[] = []
@@ -4394,8 +4398,8 @@ const writeImport = (
 	}
 	if (named.length) clauses.push(`{ ${named.join(", ")} }`)
 	return clauses.length ?
-			`import ${clauses.join(", ")} from "arktype"`
-		:	`import "arktype"`
+			`import ${clauses.join(", ")} from "${source}"`
+		:	`import "${source}"`
 }
 
 const refuse = (site: Site, reasons: string[]): Site => {

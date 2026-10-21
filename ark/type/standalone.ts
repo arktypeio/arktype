@@ -4142,10 +4142,14 @@ export const traversalKeyOf = (root: BaseRoot): Key => rootKeyOf(root, false)
 const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 	const units = rootUnitsOf(root)
 	const defaultsByMorph = new Map<unknown, Default>()
+	// held so a codec's validator can be encoded where it's received
+	const inverses: unknown[] = []
 	for (const unit of units) {
 		for (const node of writtenNodesOf(unit)) {
 			if (node.hasKind("optional") || node.hasKind("sequence"))
 				collectDefaults(node, defaultsByMorph)
+			else if (node.hasKind("morph") && node.inverse)
+				inverses.push(node.inverse)
 		}
 	}
 	// add each function or object's kind and repeat positions
@@ -4153,6 +4157,7 @@ const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
 		{
 			name: units[0].names[root.id],
 			refs: units.map(unit => unit.refs),
+			...(inverses.length && { inverses }),
 			meta: root.meta,
 			// where its methods, like `and` and `or`, parse their arguments
 			...(isScoped && { $: root.$ })

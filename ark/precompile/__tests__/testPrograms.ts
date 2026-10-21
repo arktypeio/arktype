@@ -629,6 +629,62 @@ const matchers: fc.Arbitrary<FragmentOf> = fc
 			})
 	)
 
+// what each codec decodes, wrapped as its holder holds it
+const codecData = {
+	ms: fc.constantFrom<unknown>(0, 1, -1, 1.5, "1"),
+	numeric: fc.constantFrom<unknown>("1", "-0.5", "", "a", 1),
+	iso: fc.constantFrom<unknown>("1970-01-01T00:00:00.000Z", "1970", "", 0),
+	trim: fc.constantFrom<unknown>(" a ", "a", "", 0)
+}
+
+const codecDefs: Record<keyof typeof codecData, (id: string) => string> = {
+	ms: id => `ms${id}`,
+	numeric: () => `"string.numeric.parse"`,
+	iso: () => `"string.date.iso.parse"`,
+	trim: () => `"string.trim"`
+}
+
+const wrappedBy: Record<keyof typeof holders, (data: unknown) => unknown> = {
+	object: data => ({ a: data }),
+	tuple: data => [data],
+	prefixed: data => ["", data],
+	scope: data => ({ a: data })
+}
+
+// a codec or parse keyword a Type holds, decoded and encoded
+const codecs: fc.Arbitrary<FragmentOf> = fc
+	.record({
+		codec: fc.constantFrom(
+			...(Object.keys(codecData) as (keyof typeof codecData)[])
+		),
+		holder: fc.constantFrom(
+			...(Object.keys(holders) as (keyof typeof holders)[])
+		),
+		encoded: fc.constantFrom<unknown>(new Date(0), new Date(7), 3, "a", " a")
+	})
+	.chain(({ codec, holder, encoded }) =>
+		fc
+			.tuple(
+				inputsOf(codecData[codec].map(wrappedBy[holder])),
+				inputsOf(fc.constant(wrappedBy[holder](encoded)))
+			)
+			.map(
+				([decodedInputs, encodedInputs]): FragmentOf =>
+					id => {
+						const held = holders[holder](codecDefs[codec](id))
+						return {
+							containers: [],
+							exports: [],
+							main: [
+								`const ms${id} = codec("number.integer", "Date", { decode: n => new Date(n), encode: d => d.getTime() })`,
+								observed(`${id}.decode`, held, decodedInputs),
+								observed(`${id}.encode`, `${held}.encode`, encodedInputs)
+							]
+						}
+					}
+			)
+	)
+
 const holes: Record<string, Function> = { ...morphs, ...predicates, emptyArray }
 
 interface Program {
@@ -653,6 +709,7 @@ const programOf = (fragmentsOf: FragmentOf[]): Program => {
 		].join("\n"),
 		main: [
 			`import { generic, match, scope, type } from "arktype"`,
+			`import { codec } from "arktype/codecs"`,
 			`import { ${exported.join(", ")} } from "./containers.ts"`,
 			...main
 		]
@@ -674,7 +731,8 @@ const programs = fc
 			bindings,
 			matchers,
 			throughCalls,
-			throughCycle
+			throughCycle,
+			codecs
 		),
 		{
 			minLength: 1,

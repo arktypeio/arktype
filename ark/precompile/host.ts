@@ -148,6 +148,7 @@ export const appendSourceMap = (
 
 export const runtimeSpecifiers = [
 	"arktype",
+	"arktype/codecs",
 	"arktype/config",
 	"arktype/errors",
 	"arktype/mutatesInput"

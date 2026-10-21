@@ -363,6 +363,28 @@ export const J = type({ a: "string" }).in.extends("object")
 export const K = type("string").extends(type("string").in)`)
 		})
 
+		it("folds codecs and their encoders", () => {
+			const result = precompile(`import { type } from "arktype"
+import { codec } from "arktype/codecs"
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+export const Event = type({ at: EpochMs, n: "string.numeric.parse" })
+export const encode = (event: unknown) => Event.encode(event)`)
+			attest(result.diagnostics).equals([])
+			attest(normalized(result.code)).snap(`import "arktype"
+import { #0 as $ark#0 } from "~arktype/#1"
+import { #2 as $ark#2 } from "~arktype/#1"
+import { #3 as $ark#3 } from "~arktype/#1"
+import $arkfixConfig from "~arktype/#4"
+import "arktype/codecs"
+$arkfixConfig()
+const EpochMs = /* @__PURE__ */ $ark#0(n => new Date(n), d => d.getTime())
+export const Event = $ark#2(EpochMs)
+export const encode = (event: unknown) => $ark#3(Event)(event)`)
+		})
+
 		it("folds Modules", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 export const types = scope({ tree: { value: "number", "children?": "tree[]" } }).export()

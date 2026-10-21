@@ -177,6 +177,16 @@ export const parseJson = (s: string, ctx: Traversal): Json | ArkError => {
 
 export const stringifyJson = (data: Json): string => JSON.stringify(data)
 
+// inverses of parse keywords, which arktype/codecs encodes with
+export const writeIsoDate = (date: Date): string => date.toISOString()
+
+export const writeEpoch = (date: Date): string => `${date.getTime()}`
+
+export const writeUrl = (url: URL): string => url.href
+
+// a string already in a format keyword's output format is its own encoding
+export const keepFormatted = (s: string): string => s
+
 // keyed by form, since a predicate's name is printed in its description
 export const normalizationsByForm = {
 	NFC: {
