@@ -209,7 +209,7 @@ const _intersectSequences = (
 				// if there were any optional elements, there will be no postfix elements
 				// so this mapping will never occur (which would be illegal otherwise)
 				l: asPrefix(lTail),
-				r: asPrefix(lTail)
+				r: asPrefix(rTail)
 			})
 		}
 	} else if (kind === "defaultables") {

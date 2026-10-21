@@ -484,6 +484,17 @@ Loose.extends(Exact)
 
 An optional key in an intersection allows `undefined` only where both sides do, and never where an index signature's value doesn't.
 
+### Fix intersecting tuples whose variadic elements are disjoint
+
+Where two tuples' variadic elements couldn't overlap, their intersection checked the first tuple's postfix elements on both sides, dropping the second's:
+
+```ts
+const T = type(["...", "number[]", "string"]).and(["...", "boolean[]", "'a'"])
+
+// previously [string], now ["a"]
+T.expression
+```
+
 ### Fix deep transforms through a tuple default
 
 `onDeepUndeclaredKey` and `configure` with `"references"` threw on a tuple with a default:

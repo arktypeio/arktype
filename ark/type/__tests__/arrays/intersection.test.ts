@@ -160,6 +160,16 @@ contextualize(() => {
 		attest(T.allows([1])).equals(false)
 	})
 
+	it("disjoint variadics keep both postfixes", () => {
+		const T = type(["...", "number[]", "string"]).and([
+			"...",
+			"boolean[]",
+			"'a'"
+		])
+		attest(T.expression).snap('["a"]')
+		attest(T.allows(["b"])).equals(false)
+	})
+
 	it("disjoint arrays with props", () => {
 		const WithProp = type("string[]").and({ "p0?": "string" })
 		const T = type("number[]").and(WithProp)
