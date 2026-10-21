@@ -510,6 +510,7 @@ const preformattedNodes = flatMorph(
 					domain: node("domain", { domain: "string" }),
 					predicate: [
 						node("predicate", {
+							meta: keywordMeta(`string.normalize.${form}.preformatted`),
 							predicate: normalizationsByForm[form].predicate
 						})
 					],

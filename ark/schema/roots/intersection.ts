@@ -134,7 +134,12 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 
 				if (
 					basis &&
-					!node.prestructurals.some(r => r.impl.obviatesBasisDescription)
+					!node.prestructurals.some(r => r.impl.obviatesBasisDescription) &&
+					// a keyword's predicate, like string.url's, names its basis
+					!(
+						!node.structure &&
+						node.inner.predicate?.some(p => p.meta.keyword !== undefined)
+					)
 				)
 					childDescriptions.push(basis.description)
 
@@ -163,7 +168,9 @@ const implementation: nodeImplementationOf<Intersection.Declaration> =
 					)
 				}
 
-				return childDescriptions.join(" and ")
+				// a keyword can constrain its basis twice with one phrase, like
+				// string.creditCard's pattern and predicate
+				return [...new Set(childDescriptions)].join(" and ")
 			}
 		}
 	})

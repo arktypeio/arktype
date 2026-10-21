@@ -1498,6 +1498,24 @@ const T = type({ "files?": "never" })
 T({ files: 1 }).toString()
 ```
 
+### Describe keywords checked by a predicate by their phrase alone
+
+The descriptions of keywords like `string.url`, `string.date` and `string.creditCard` repeated their basis or their phrase (#1300), and `string.normalize`'s `.preformatted` keywords rejected data as "valid according to predicate":
+
+```ts
+// was: a string and a URL string
+// now: a URL string
+type("string.url").description
+
+// was: a credit card number and a credit card number
+// now: a credit card number
+type("string.creditCard").description
+
+// was: must be valid according to predicate (was "é")
+// now: must be NFC-normalized unicode (was "é")
+type("string.normalize.NFC.preformatted")("é").toString()
+```
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`
