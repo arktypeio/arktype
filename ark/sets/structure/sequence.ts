@@ -163,23 +163,17 @@ const _intersectSequences = (
 			"defaultables"
 		:	"optionals"
 
-	if (lHead.kind === "prefix" && rHead.kind === "variadic" && rHasPostfix) {
+	// a prefix meeting a variadic followed by postfix elements may also meet
+	// those elements directly, in a fixed length variant
+	const postfixSide =
+		lHead.kind === "prefix" && rHead.kind === "variadic" && rHasPostfix ? "r"
+		: rHead.kind === "prefix" && lHead.kind === "variadic" && lHasPostfix ? "l"
+		: undefined
+	if (postfixSide) {
 		const postfixBranchResult = _intersectSequences({
 			...s,
 			fixedVariants: [],
-			r: rTail.map(element => ({ ...element, kind: "prefix" }))
-		})
-		if (postfixBranchResult.disjoint.length === 0)
-			s.fixedVariants.push(postfixBranchResult)
-	} else if (
-		rHead.kind === "prefix" &&
-		lHead.kind === "variadic" &&
-		lHasPostfix
-	) {
-		const postfixBranchResult = _intersectSequences({
-			...s,
-			fixedVariants: [],
-			l: lTail.map(element => ({ ...element, kind: "prefix" }))
+			[postfixSide]: asPrefix(postfixSide === "l" ? lTail : rTail)
 		})
 		if (postfixBranchResult.disjoint.length === 0)
 			s.fixedVariants.push(postfixBranchResult)
@@ -214,8 +208,8 @@ const _intersectSequences = (
 				fixedVariants: [],
 				// if there were any optional elements, there will be no postfix elements
 				// so this mapping will never occur (which would be illegal otherwise)
-				l: lTail.map(element => ({ ...element, kind: "prefix" })),
-				r: lTail.map(element => ({ ...element, kind: "prefix" }))
+				l: asPrefix(lTail),
+				r: asPrefix(lTail)
 			})
 		}
 	} else if (kind === "defaultables") {
@@ -263,6 +257,9 @@ const _intersectSequences = (
 
 	return _intersectSequences(s)
 }
+
+const asPrefix = (elements: SequenceTuple): SequenceTuple =>
+	elements.map(element => ({ ...element, kind: "prefix" }))
 
 const elementIsRequired = (el: SequenceElement) =>
 	el.kind === "prefix" || el.kind === "postfix"
