@@ -1250,11 +1250,11 @@ export const User = type({ name: { first: "string" } })`
 			)
 			for (const specifier of shared)
 				attest(name.modules[specifier]).equals(main.modules[specifier])
-			attest([
-				Object.keys(main.modules).length,
-				Object.keys(name.modules).length,
-				shared.length
-			]).snap([4, 5, 2])
+			attest({
+				main: Object.keys(main.modules).length,
+				name: Object.keys(name.modules).length,
+				shared: shared.length
+			}).snap({ main: 4, name: 5, shared: 2 })
 		})
 
 		it("declares a merged unit's node in its reader's scope", () => {
