@@ -85,6 +85,7 @@ type DeclarationRole =
 	| "standIn"
 	| "json"
 	| "jsonSchema"
+	| "traversal"
 
 // constraints sorted by hash, which can include a function's name
 const sortedConstraintKeys = ["pattern", "index"] as const
@@ -954,7 +955,8 @@ const createDeclarations = (): Declarations => ({
 		literal: [],
 		standIn: [],
 		json: [],
-		jsonSchema: []
+		jsonSchema: [],
+		traversal: []
 	}
 })
 
@@ -2478,7 +2480,10 @@ ${writeFunction(
 		const unreads = reportsIssues && !this.baking.shortest
 		const errorsOf = unreads ? "runtime.unread" : "runtime.apply"
 		const refOf = (param: RootApplyParam) =>
-			param === "Traversal" ? `runtime.${ctx}`
+			param === "Traversal" ?
+				ctx === "Traversal" || ctx === "FirstIssueTraversal" ?
+					this.emitRaisingTraversal(ctx)
+				:	`runtime.${ctx}`
 			: param === "config" ? "runtime.runtimeConfig"
 			: param === "TransformErrors" ? param
 			: param === "applyRejected" ?
@@ -3123,6 +3128,37 @@ ${writeFunction(
 		return `(data, ctx) => ${name}(data, ctx)`
 	}
 
+	emitWriters(writers: readonly Writer[]): string {
+		return `[${writers
+			.map(writer =>
+				writer instanceof ConfiguredWriter ?
+					`runtime.configuredWriterOf(${JSON.stringify(writer.code)}, ${JSON.stringify(writer.k)})`
+				: writer === undefined ? "void 0"
+				: this.emit(writer)
+			)
+			.join(", ")}]`
+	}
+
+	// a callback's traversal, writing the program's text for codes it raises
+	emitRaisingTraversal(ctx: "Traversal" | "FirstIssueTraversal"): string {
+		const written = raisedWritersByCode()
+		if (!written.length) return `runtime.${ctx}`
+		const key = raisingKeys[ctx]
+		return (
+			this.declarations.namesByValue.get(key) ??
+			this.declareConst(
+				key,
+				"traversal",
+				`/* @__PURE__ */ runtime.raisingTraversalOf(runtime.${ctx}, { ${written
+					.map(
+						([code, writers, keeps]) =>
+							`${code}: [${this.emitWriters(writers)}, ${keeps}]`
+					)
+					.join(", ")} })`
+			)
+		)
+	}
+
 	emitSite(site: object): string {
 		// a discriminant's site holds the path it's read at
 		if (Array.isArray(site))
@@ -3131,13 +3167,7 @@ ${writeFunction(
 			const { code, description, written } = site as IssueContext
 			if (!written)
 				return writeSiteOf(site as IssueContext, s => this.emitString(s))
-			const writers = written.writers.map(writer =>
-				writer instanceof ConfiguredWriter ?
-					`runtime.configuredWriterOf(${JSON.stringify(writer.code)}, ${JSON.stringify(writer.k)})`
-				: writer === undefined ? "void 0"
-				: this.emit(writer)
-			)
-			return `runtime.writtenSiteOf(${this.emit(code)}, ${description === undefined ? "void 0" : this.emitString(description)}, ${this.emit(written.context)}, [${writers.join(", ")}]${written.keeps ? `, ${written.keeps}` : ""})`
+			return `runtime.writtenSiteOf(${this.emit(code)}, ${description === undefined ? "void 0" : this.emitString(description)}, ${this.emit(written.context)}, ${this.emitWriters(written.writers)}${written.keeps ? `, ${written.keeps}` : ""})`
 		}
 		if ("fails" in site)
 			return `runtime.failing(${this.emitSite(site.fails as object)})`
@@ -3255,7 +3285,7 @@ ${writeFunction(
 }
 
 // a site's text is written from the program's config, so a scope's own
-// isn't, nor is text a callback raises through the runtime
+// isn't, nor is predicate text a callback raises
 const assertDescribed = (root: BaseRoot): void => {
 	const config = root.$.resolvedConfig
 	const raisable = raisableCodesOf(root)
@@ -3700,6 +3730,53 @@ const issueContextOf = (context: TextContext): IssueContext => {
 		)
 	}
 	return issueContext
+}
+
+const raisingKeys = { Traversal: {}, FirstIssueTraversal: {} }
+
+// the writers of text configure() sets for each code a callback can raise but
+// predicate, whose text a callback raising it can't take
+const raisedWritersByCode = (): [
+	code: ArkErrorCode,
+	writers: Writer[],
+	keeps: number
+][] => {
+	const locale = $ark.resolvedConfig!.locale
+	const written: [ArkErrorCode, Writer[], number][] = []
+	let code: ArkErrorCode
+	for (code in errorWritersByCode) {
+		if (code === "predicate" || unwritableCodes.has(code)) continue
+		const configured: Record<string, unknown> = $ark.resolvedConfig![code]
+		const defaults: Record<string, unknown> = $ark.defaultConfig[code]
+		const isCustom = (k: DescribingKey) => configured[k] !== defaults[k]
+		if (!describingKeys.some(isCustom)) continue
+		const writerOf = (k: DescribingKey): Writer => {
+			const writer = configured[k]
+			if (isCustom(k)) {
+				return typeof writer === "function" ?
+						new ConfiguredWriter(code, k)
+					:	(writer as string)
+			}
+			// the raised issue's own expected, and its message as written without text
+			if (k === "expected" || k === "message") return
+			if (typeof writer !== "function" || runtimeKeyOf(writer))
+				return writer as Writer
+			if (k === "problem") return runtime.writeProblem
+			// e.g. a missing key's
+			return (writer as Fn)(undefined, { code }, locale) as string
+		}
+		written.push([
+			code,
+			describingKeys.map(writerOf),
+			+isCustom("expected") |
+				(+(
+					isCustom("problem") ||
+					(isCustom("actual") && !isCustom("message"))
+				) <<
+					1)
+		])
+	}
+	return written
 }
 
 const isDescribed = (context: IssueContext): boolean =>

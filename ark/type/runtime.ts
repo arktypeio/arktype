@@ -16,7 +16,9 @@ import {
 	runtimeConfig,
 	supportedJsonSchemaTargets,
 	validateStandardJsonSchemaTarget,
+	type ArkError,
 	type ArkErrorCode,
+	type ArkErrorInput,
 	type ArkIssue,
 	type CompactApply,
 	type FailHandler,
@@ -454,57 +456,82 @@ type Writer = string | Fn | undefined
 
 const defineProperty = Object.defineProperty
 
-// a site whose text a function writes, as arktype writes its error from the
-// node's context when its text is first read; keeps is 1 if its issue takes
-// expected, 2 if problem
-export const writtenSiteOf = ((
-	code: ArkErrorCode,
-	description: string | undefined,
-	context: object,
+// writes an issue's text from writers once it's first read, as arktype writes
+// an error from its context; keeps is 1 if the issue takes expected, 2 if
+// problem, and text the context supplies is kept as arktype keeps it
+const writeIssue = (
+	issue: ArkIssue,
+	context: Record<string, unknown>,
 	[expected, actual, problem, message]: readonly Writer[],
-	keeps = 0
-): SiteContext => ({
-	code,
-	description,
-	text: issue => {
-		const text: Record<string, unknown> = {
-			expected: issue.expected,
-			message: undefined
+	keeps: number
+): void => {
+	const text: Record<string, unknown> = {
+		expected: issue.expected,
+		message: issue.message
+	}
+	if (keeps & 2) text.problem = issue.problem
+	const writeText = () => {
+		const error: Record<string, unknown> = {
+			data: issue.data,
+			path: issue.path,
+			...context,
+			propString: stringifyPath(issue.path)
 		}
-		if (keeps & 2) text.problem = undefined
-		const writeText = () => {
-			const error: Record<string, unknown> = {
-				data: issue.data,
-				path: issue.path,
-				...context,
-				propString: stringifyPath(issue.path)
-			}
-			const write = (writer: Writer, ...args: unknown[]): unknown =>
-				typeof writer === "function" ? writer(...args, enInfo) : writer
-			error.expected = write(expected, error)
-			error.actual = write(actual, issue.data, error)
-			error.problem = write(problem, error)
-			if (keeps & 1) text.expected = error.expected
-			if (keeps & 2) text.problem = error.problem
-			if (message !== undefined) text.message = write(message, error)
-			for (const k in text) {
-				defineProperty(issue, k, {
-					value: text[k],
-					writable: true,
-					enumerable: true,
-					configurable: true
-				})
-			}
-		}
+		const write = (writer: Writer, ...args: unknown[]): unknown =>
+			typeof writer === "function" ? writer(...args, enInfo) : writer
+		error.expected = context.expected ?? write(expected, error) ?? text.expected
+		error.actual = context.actual ?? write(actual, issue.data, error)
+		error.problem = context.problem ?? write(problem, error)
+		if (keeps & 1) text.expected = error.expected
+		if (keeps & 2) text.problem = error.problem
+		text.message ??= write(message, error)
 		for (const k in text) {
 			defineProperty(issue, k, {
-				get: () => (writeText(), issue[k as never]),
+				value: text[k],
+				writable: true,
 				enumerable: true,
 				configurable: true
 			})
 		}
 	}
+	for (const k in text) {
+		defineProperty(issue, k, {
+			get: () => (writeText(), issue[k as never]),
+			enumerable: true,
+			configurable: true
+		})
+	}
+}
+
+// a site whose text a function writes
+export const writtenSiteOf = ((
+	code: ArkErrorCode,
+	description: string | undefined,
+	context: Record<string, unknown>,
+	writers: readonly Writer[],
+	keeps = 0
+): SiteContext => ({
+	code,
+	description,
+	text: issue => writeIssue(issue, context, writers, keeps)
 })) satisfies Fn
+
+// a traversal writing the text configure() sets for a code a callback raises
+export const raisingTraversalOf = (
+	Base: typeof Traversal,
+	writtenByCode: Record<string, [writers: readonly Writer[], keeps: number]>
+): typeof Traversal =>
+	class extends Base {
+		protected override raise(input: ArkErrorInput): ArkError {
+			const issue = super.raise(input)
+			const written = writtenByCode[issue.code]
+			if (written) {
+				const context = { ...(input as object), path: issue.path }
+				writeIssue(issue, context, ...written)
+			}
+			return issue
+		}
+	}
 
 // the Apply of a union whose key's condition rejected its value
 export const failing = ((site: FailureSite): CompactApply =>
