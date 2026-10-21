@@ -36,6 +36,19 @@ contextualize(() => {
 		attest(T.json).equals(Expected.json)
 	})
 
+	it("compiled allows checks each of two domains", () => {
+		const T = type("number | null")
+		// the first data is checked uncompiled
+		T.allows(null)
+		attest([null, 0, NaN, undefined, "0"].map(v => T.allows(v))).equals([
+			true,
+			true,
+			false,
+			false,
+			false
+		])
+	})
+
 	it("boolean is a union of true | false", () => {
 		const T = type("true|false")
 		attest(T.infer).type.toString("boolean")

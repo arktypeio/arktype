@@ -343,6 +343,19 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	compile(js: NodeCompiler): void {
 		const discriminant = this.compiledDiscriminant
 		if (!discriminant) return this.compileIndiscriminable(js)
+		// two branches of different domains are checked in turn, a unit first,
+		// which is cheaper than finding data's domain
+		if (
+			js.traversalKind === "Allows" &&
+			discriminant.kind === "domain" &&
+			this.branches.length === 2
+		) {
+			const [a, b] = this.branches
+			return this.compileIndiscriminable(
+				js,
+				b.hasKind("unit") ? [b, a] : [a, b]
+			)
+		}
 
 		// we need to access the path as optional so we don't throw if it isn't present
 		const value = `data${discriminant.path.map(k => js.prop(k, true)).join("")}`
@@ -415,7 +428,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		js.return(`!ctx.failsWith(${input})`)
 	}
 
-	private compileIndiscriminable(js: NodeCompiler): void {
+	private compileIndiscriminable(
+		js: NodeCompiler,
+		branches = this.branches
+	): void {
 		if (
 			js.traversalKind === "Apply" &&
 			!this.includesAlias &&
@@ -451,7 +467,7 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				).return("!ctx.failFast")
 			} else js.return(js.unionFails!(this))
 		} else if (js.traversalKind === "Allows") {
-			for (const branch of this.branches) {
+			for (const branch of branches) {
 				// an error a branch's predicate adds through ctx fails only that branch
 				js.if(
 					branch.allowsRequiresTraversal ?
