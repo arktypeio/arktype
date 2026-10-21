@@ -104,10 +104,20 @@ export const buildStructureArbitrary = (
 		if (structure === undefined)
 			throwInternalError("Expected a structure node.")
 
-		if (hasKey(structure, "index") && structure.index)
-			return buildIndexSignatureArbitrary(structure.index, ctx)
+		if (!hasKey(structure, "index") || !structure.index)
+			return buildObjectArbitrary(structure, ctx)
 
-		return buildObjectArbitrary(structure, ctx)
+		const indexArbitrary = buildIndexSignatureArbitrary(structure.index, ctx)
+		if (!structure.props.length) return indexArbitrary
+
+		// declared props win over index keys that happen to share their name
+		return fc
+			.tuple(indexArbitrary, buildObjectArbitrary(structure, ctx))
+			.map(([indexed, declared]) => {
+				const result: Record<PropertyKey, unknown> = indexed
+				for (const prop of structure.props) delete result[prop.key]
+				return Object.assign(result, declared)
+			})
 	}
 
 	if (node.inner.exactLength?.rule === 0) return fc.tuple()

@@ -279,6 +279,26 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("index signature with required key", () => {
+			const T = type({ "[string]": "number", a: "number" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("index signature with optional key", () => {
+			const T = type({ "[/^x/]": "number", y: "string", "z?": "boolean" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("index signature matching an optional key", () => {
+			const T = type({ "[/^b$/]": "number", "b?": "number < 0" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
+		it("symbol index signature with string key", () => {
+			const T = type({ "[symbol]": "number", a: "string" })
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("contains alias", () => {
 			const example = {
 				user: {
