@@ -147,6 +147,17 @@ contextualize(() => {
 		)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1511
+	it("refs in a partially overlapping discriminated union", () => {
+		const T = type.or(
+			{ a: type.enumerated("a", "b", "c"), b: "1" },
+			{ a: type.enumerated("a", "e", "f"), b: "2" }
+		)
+		const out = T.toJsonSchema({ useRefs: true })
+
+		attest(referencedDefs(out)).equals(Object.keys(out.$defs!).sort())
+	})
+
 	it("regex flags", () => {
 		attest(() => type(/^a/i).toJsonSchema()).throws.snap(`ToJsonSchemaError: {
     code: "patternFlags",
