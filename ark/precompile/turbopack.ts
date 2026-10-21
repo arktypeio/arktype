@@ -1,5 +1,5 @@
 import { realpathSync } from "node:fs"
-import { dirname, relative } from "node:path"
+import { dirname } from "node:path"
 import { parseSync } from "oxc-parser"
 import {
 	createKeyedPrecompiler,
@@ -9,6 +9,7 @@ import {
 import { refuseDeclare } from "./declare.ts"
 import {
 	createNodeHost,
+	printablePathOf,
 	reportDiagnostics,
 	resolvesToRuntime,
 	rethrowAsBuildError,
@@ -89,7 +90,9 @@ const checkAliases = async (
 			throwBuildError(
 				writeAliasMessage(
 					specifier,
-					isRuntime ? undefined : relative(opts.cwd ?? process.cwd(), resolved),
+					isRuntime ? undefined : (
+						printablePathOf(opts.cwd ?? process.cwd(), resolved)
+					),
 					opts
 				)
 			)
