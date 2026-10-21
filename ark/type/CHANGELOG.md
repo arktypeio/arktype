@@ -486,17 +486,6 @@ Loose.extends(Exact)
 
 An optional key in an intersection allows `undefined` only where both sides do, and never where an index signature's value doesn't.
 
-### Fix intersecting tuples whose variadic elements are disjoint
-
-Where two tuples' variadic elements couldn't overlap, their intersection checked the first tuple's postfix elements on both sides, dropping the second's:
-
-```ts
-const T = type(["...", "number[]", "string"]).and(["...", "boolean[]", "'a'"])
-
-// previously [string], now ["a"]
-T.expression
-```
-
 ### Fix intersecting tuples with elements after a variadic element
 
 Intersecting tuples where either has elements after a variadic element now allows exactly the arrays both allow. It could throw for a satisfiable intersection, allow arrays either side rejects, or drop the lengths where a prefix or optional element meets the other side's postfix:
@@ -514,9 +503,18 @@ T.expression
 
 // previously [number, number], now [number, 1]
 type(["number", "number"]).and(["...", "number[]", "1"]).expression
+
+// previously [string], now ["a"]
+type(["...", "number[]", "string"]).and(["...", "boolean[]", "'a'"]).expression
 ```
 
-An unsatisfiable intersection like this now names only the elements that conflict at the lengths both tuples allow.
+An unsatisfiable intersection now names only the elements that conflict at the lengths both tuples allow:
+
+```ts
+// previously ParseError listing [0], [1] and [2] as number and string
+// now ParseError: Intersection at [2] of number and string results in an unsatisfiable type
+type(["number", "number", "number"]).and(["...", "number[]", "'a'"])
+```
 
 ### Fix deep transforms through a tuple default
 
