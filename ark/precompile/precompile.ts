@@ -3895,7 +3895,7 @@ const sharedSchemaExports = Object.keys(runtimeExports).filter(
 )
 
 const arktypeSpecifier =
-	/\b(?:from|import)\s*["'](?:arktype(?:\/config)?|arkregex|@ark\/(?:type|regex))["']/
+	/\b(?:from|import)\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
 
 const importSpecifier = /\b(?:from|import)\s*["']([^"']+)["']/g
 
