@@ -5,12 +5,12 @@ import { createRequire } from "node:module"
 import { dirname, join, resolve } from "node:path"
 import { threadId } from "node:worker_threads"
 import ts from "typescript"
-import type * as tsgoAst from "typescript/unstable/ast"
-import type * as tsgoFs from "typescript/unstable/fs"
-import type * as tsgoApi from "typescript/unstable/sync"
+import type * as tsgoAst from "typescript/ast"
+import type * as tsgoFs from "typescript/fs"
+import type * as tsgoApi from "typescript/sync"
 import type { LinePositionRange } from "../cache/getCachedAssertions.ts"
 import { getConfig, type Checker } from "../config.ts"
-import { isTs7 } from "../utils.ts"
+import { isTs7, narrowToNamedTestFiles } from "../utils.ts"
 
 // resolved relative to attest so the API matches the installed typescript
 const requireTypeScript = createRequire(import.meta.url)
@@ -68,10 +68,12 @@ export const ast = {} as typeof tsgoAst
 const loadCompiler = (): Compiler => {
 	if (compiler) return compiler
 	const name = getChecker() === "tsrs" ? "tsrs" : "typescript"
-	Object.assign(ast, requireTypeScript(`${name}/unstable/ast`))
+	// tsrs still exports the API from tsgo's previous unstable/ subpaths
+	const entry = name === "tsrs" ? "tsrs/unstable" : "typescript"
+	Object.assign(ast, requireTypeScript(`${entry}/ast`))
 	return (compiler = {
-		...requireTypeScript(`${name}/unstable/sync`),
-		...requireTypeScript(`${name}/unstable/fs`),
+		...requireTypeScript(`${entry}/sync`),
+		...requireTypeScript(`${entry}/fs`),
 		tscPath: join(
 			dirname(requireTypeScript.resolve(`${name}/package.json`)),
 			"bin",
@@ -129,8 +131,10 @@ export class TsgoServer {
 			throwError(configErrors.map(error => error.text).join("\n"))
 
 		const normalizedCwd = fromCwd().replace(/\\/g, "/")
-		this.rootFiles = this.project.parsedCommandLine.fileNames.filter(path =>
-			path.startsWith(normalizedCwd)
+		this.rootFiles = narrowToNamedTestFiles(
+			this.project.parsedCommandLine.fileNames.filter(path =>
+				path.startsWith(normalizedCwd)
+			)
 		)
 	}
 

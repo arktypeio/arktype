@@ -13,8 +13,12 @@ ArkType is TypeScript's 1:1 validator, optimized from editor to runtime. It pars
 ```bash
 pnpm i && pnpm build # install and build all packages
 pnpm test # run tests without type checking
+pnpm testFiles ark/type/__tests__/brand.test.ts # run and type check only the named test files
+pnpm typecheckRepo # incremental typecheck of the whole repo
 pnpm prChecks # lint, build, typecheck and test (run before PRs)
 ```
+
+Tests and typechecking read each package's source through the `ark-ts` condition, so neither needs `pnpm build`. Pass test files to `pnpm testFiles` before any flags, e.g. `pnpm testFiles a.test.ts --skipTypes`. `pnpm testTyped a.test.ts` runs every test, because mocha adds named files to the configured spec.
 
 ## Monorepo Structure
 

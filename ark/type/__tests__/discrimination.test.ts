@@ -37,7 +37,11 @@ contextualize(() => {
 		attest(T.internal.assertHasKind("union").discriminantJson).snap({
 			kind: "domain",
 			path: [],
-			cases: { '"bigint"': true, '"number"': true, '"string"': true }
+			cases: {
+				'"bigint"': true,
+				'"number"': { domain: "number" },
+				'"string"': true
+			}
 		})
 		attest(T.allows("foo")).equals(true)
 		attest(T.allows(5n)).equals(true)
@@ -564,5 +568,17 @@ contextualize(() => {
 				children: [{ type: "BChild", children: [] }]
 			}).toString()
 		).snap("layout must be an array (was string)")
+	})
+
+	it("number case includes NaN", () => {
+		for (const jitless of [false, true]) {
+			const $ = scope({}, { jitless })
+			const T = $.type({ a: "number.NaN | 'x'" })
+				.or({ a: "object" })
+				.or({ a: "3" })
+
+			attest(T.allows({ a: Number.NaN })).equals(true)
+			attest(T.allows({ a: 4 })).equals(false)
+		}
 	})
 })

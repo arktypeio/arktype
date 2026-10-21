@@ -117,6 +117,27 @@ contextualize(() => {
 		attest(T.out.expression).snap("[number]")
 	})
 
+	it("input and output keep surrounding elements", () => {
+		const T = type(["string", "number = 5", "boolean?"])
+
+		attest<[string, number?, boolean?]>(T.in.t)
+		attest(T.in.expression).snap("[string, number?, boolean?]")
+		attest(T.in.allows(["", 5, true])).equals(true)
+		attest(T.in.allows(["", true])).equals(false)
+
+		attest<[string, number, boolean?]>(T.out.t)
+		attest(T.out.expression).snap("[string, number, boolean?]")
+		attest(T.out.allows(["", 5])).equals(true)
+		attest(T.out.allows([""])).equals(false)
+	})
+
+	it("output keeps prefix preceding variadic", () => {
+		const T = type(["number", "string = 'foo'", "...", "number[]"])
+
+		attest(T.in.expression).snap("[number, string?, ...number[]]")
+		attest(T.out.expression).snap("[number, string, ...number[]]")
+	})
+
 	it("compiled defaults use correct values", () => {
 		const T = type(["string = 'foo'"])
 		const internal = T.internal

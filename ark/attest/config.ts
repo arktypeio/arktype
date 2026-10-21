@@ -23,6 +23,8 @@ type BaseAttestConfig = {
 	 * else tsjs
 	 */
 	checker: Checker | undefined
+	/** analyze only the test files named on the command line */
+	onlyNamedTestFiles: boolean
 	attestAliases: string[]
 	benchPercentThreshold: number
 	benchErrorOnThresholdExceeded: BenchErrorConfig
@@ -55,6 +57,7 @@ export const getDefaultAttestConfig = (): BaseAttestConfig => ({
 	skipTypes: false,
 	skipInlineInstantiations: false,
 	checker: undefined,
+	onlyNamedTestFiles: false,
 	benchPercentThreshold: 20,
 	benchErrorOnThresholdExceeded: true,
 	filter: undefined,

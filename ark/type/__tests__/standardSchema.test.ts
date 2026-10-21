@@ -127,6 +127,70 @@ contextualize(() => {
 			).throws(writeInvalidJsonSchemaTargetMessage("openapi-3.0"))
 		})
 
+		it("converts what JSON Schema can't represent to {}", () => {
+			const T = type({
+				big: "bigint",
+				date: "Date",
+				maybe: "string | undefined",
+				even: type("number").narrow(n => n % 2 === 0),
+				ends: ["...", "string[]", "number"],
+				count: ["bigint", "=", () => 0n]
+			})
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "object",
+				properties: {
+					big: {},
+					date: {},
+					ends: { type: "array", minItems: 1 },
+					even: { type: "number" },
+					maybe: { anyOf: [{ type: "string" }, {}] },
+					count: {}
+				},
+				required: ["big", "date", "ends", "even", "maybe"]
+			})
+		})
+
+		it("converts the output of a transform to {}", () => {
+			const T = type("string").pipe(s => s.length)
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.output({ target: "draft-2020-12" })
+			).snap({ $schema: "https://json-schema.org/draft/2020-12/schema" })
+		})
+
+		it("keeps a postfix tuple's draft-07 prefix", () => {
+			const T = type(["string", "...", "number[]", "boolean"])
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({ target: "draft-07" })
+			).snap({
+				$schema: "http://json-schema.org/draft-07/schema#",
+				type: "array",
+				minItems: 2,
+				items: [{ type: "string" }]
+			})
+		})
+
+		it("uses configured fallbacks", () => {
+			const T = type("bigint")
+			const standard: StandardJSONSchemaV1 = T
+			attest(
+				standard["~standard"].jsonSchema.input({
+					target: "draft-2020-12",
+					libraryOptions: {
+						fallback: { domain: () => ({ type: "integer" }) }
+					}
+				})
+			).snap({
+				$schema: "https://json-schema.org/draft/2020-12/schema",
+				type: "integer"
+			})
+		})
+
 		it("generates different input/output schemas for morphs", () => {
 			const T = type({ foo: "string.numeric.parse" })
 			const standard: StandardJSONSchemaV1 = T

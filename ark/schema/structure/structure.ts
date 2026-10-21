@@ -392,9 +392,11 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		this.optional
 	)
 
-	propsByKey: Record<Key, Prop.Node | undefined> = flatMorph(
-		this.props,
-		(i, node) => [node.key, node] as const
+	// a null prototype, so a key like "toString" isn't declared, and
+	// fromEntries, so a declared "__proto__" is an own key
+	propsByKey: Record<Key, Prop.Node | undefined> = Object.setPrototypeOf(
+		Object.fromEntries(this.props.map(node => [node.key, node])),
+		null
 	)
 
 	propsByKeyReference: RegisteredReference = registeredReference(
@@ -839,7 +841,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 				if (prop.hasDefault()) {
 					const value =
 						typeof prop.default === "function" ? prop.default() : prop.default
-					valueSchema.default =
+					const jsonDefault =
 						$ark.intrinsic.jsonData.allows(value) ?
 							value
 						:	ctx.fallback.defaultValue({
@@ -847,6 +849,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 								base: valueSchema,
 								value
 							})
+					if (jsonDefault !== undefined) valueSchema.default = jsonDefault
 				}
 
 				schema.properties![prop.key] = valueSchema

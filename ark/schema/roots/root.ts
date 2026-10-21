@@ -52,7 +52,7 @@ import type {
 	StandardJSONSchemaV1,
 	StandardSchemaV1
 } from "../shared/standardSchema.ts"
-import type { ToJsonSchema } from "../shared/toJsonSchema.ts"
+import { ToJsonSchema } from "../shared/toJsonSchema.ts"
 import { arkKind, hasArkKind } from "../shared/utils.ts"
 import { assertDefaultValueAssignability } from "../structure/optional.ts"
 import type { Prop } from "../structure/prop.ts"
@@ -108,16 +108,8 @@ export abstract class BaseRoot<
 				return { value: out }
 			},
 			jsonSchema: {
-				input: opts =>
-					this.rawIn.toJsonSchema({
-						target: validateStandardJsonSchemaTarget(opts.target),
-						...opts.libraryOptions
-					}) as never,
-				output: opts =>
-					this.rawOut.toJsonSchema({
-						target: validateStandardJsonSchemaTarget(opts.target),
-						...opts.libraryOptions
-					}) as never
+				input: opts => toStandardJsonSchema(this.rawIn, opts),
+				output: opts => toStandardJsonSchema(this.rawOut, opts)
 			}
 		}
 	}
@@ -163,6 +155,7 @@ export abstract class BaseRoot<
 		)
 
 		ctx.useRefs ||= this.isCyclic
+		if (ctx.useRefs) ctx.refs = new Map()
 
 		// ensure $schema is the first key if present
 		const schema: JsonSchema =
@@ -170,12 +163,12 @@ export abstract class BaseRoot<
 
 		Object.assign(schema, this.toJsonSchemaRecurse(ctx))
 
-		if (ctx.useRefs) {
-			const defs = flatMorph(this.references, (i, ref) =>
-				ref.isRoot() && !ref.alwaysExpandJsonSchema ?
-					[ref.id, ref.toResolvedJsonSchema(ctx)]
-				:	[]
-			)
+		if (ctx.refs) {
+			// only resolve referenced roots, since this.references also includes
+			// discriminated union cases that may not be valid on their own
+			const defs: Record<string, JsonSchema> = {}
+			// refs added while resolving a definition are visited by this loop
+			for (const [id, ref] of ctx.refs) defs[id] = ref.toResolvedJsonSchema(ctx)
 			// draft-2020-12 uses $defs, draft-07 uses definitions
 			if (ctx.target === "draft-07")
 				Object.assign(schema, { definitions: defs })
@@ -189,6 +182,7 @@ export abstract class BaseRoot<
 		if (ctx.useRefs && !this.alwaysExpandJsonSchema) {
 			// draft-2020-12 uses $defs, draft-07 uses definitions
 			const defsKey = ctx.target === "draft-07" ? "definitions" : "$defs"
+			ctx.refs?.set(this.id, this)
 			return { $ref: `#/${defsKey}/${this.id}` } as JsonSchema.Ref
 		}
 
@@ -211,7 +205,7 @@ export abstract class BaseRoot<
 			// metaJson serializes non-primitives like [5] to references like
 			// "$ark.array1", so prefer the original value when it is valid JSON
 			// (jsonData's object domain also allows functions, so exclude them)
-			result[k] =
+			const jsonValue =
 				typeof v !== "function" && $ark.intrinsic.jsonData.allows(v) ? v
 				: k === "default" ?
 					ctx.fallback.defaultValue({
@@ -220,6 +214,7 @@ export abstract class BaseRoot<
 						value: v as never
 					})
 				:	(this.metaJson as dict)[k]
+			if (jsonValue !== undefined) result[k] = jsonValue
 		}
 
 		return result
@@ -730,6 +725,23 @@ const validateStandardJsonSchemaTarget = (
 		throwParseError(writeInvalidJsonSchemaTargetMessage(target))
 
 	return target
+}
+
+const toStandardJsonSchema = (
+	node: BaseRoot,
+	opts: StandardJSONSchemaV1.Options
+): Record<string, unknown> => {
+	const ctx = mergeToJsonSchemaConfigs(node.$.resolvedConfig.toJsonSchema, {
+		target: validateStandardJsonSchemaTarget(opts.target),
+		...opts.libraryOptions
+	})
+	const fallback = flatMorph(ctx.fallback, (code, handler) => [
+		code,
+		handler === ToJsonSchema.defaultConfig.fallback[code] ?
+			ToJsonSchema.standardFallback[code]
+		:	handler
+	]) as ToJsonSchema.HandlerByCode
+	return node.toJsonSchema({ ...ctx, fallback }) as never
 }
 
 export const exclusivizeRangeSchema = <schema extends UnknownRangeSchema>(
