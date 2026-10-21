@@ -163,7 +163,7 @@ const event = Event({ name: "launch", at: 0 })
 const encoded = Event.encode(event)
 ```
 
-`.encode` validates its input against the Type's output and its result against the Type's input. A defaulted key is required when encoding, and a union tries its branches without morphs first. Parse keywords like `string.date.iso.parse` encode back to strings, and format keywords like `string.trim` encode a formatted string as itself. Accessing `.encode` throws a `ParseError` if a morph has no inverse, or if `arktype/codecs` isn't imported: it installs encoding, so an app that doesn't encode doesn't ship it. See [the docs](https://arktype.io/docs/codecs).
+`.encode` validates its input against the Type's output and its result against the Type's input. A defaulted key is required when encoding, and a union tries its branches without morphs first. Parse keywords like `string.date.iso.parse` encode back to strings, and format keywords like `string.trim` encode a formatted string as itself. Accessing `.encode` throws a `ParseError` if a morph has no inverse, or if `arktype/codecs` isn't imported: it installs encoding, so an app that doesn't encode doesn't ship it. A precompiled standalone build encodes wherever it folds `.encode`, since it installs encoding itself. See [the docs](https://arktype.io/docs/codecs).
 
 A codec's inverse is part of its morph node's schema as `inverse`, so it appears in `.json`.
 
