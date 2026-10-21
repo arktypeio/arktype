@@ -1601,6 +1601,10 @@ A scope key declaring parameters, like `"Box<s extends string>"`, whose definiti
 scope({ "Box<s extends string>": generic(["s", "string"])({ box: "s" }) })
 ```
 
+### Export `TerminallyInferredObject` as a type
+
+`arktype` exports `TerminallyInferredObject`, the objects inference keeps whole rather than mapping over, like `Date`, `Promise` and any class declared in `ArkEnv.prototypes`, so a utility type built on inferred types can stop at the same objects (#1490).
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

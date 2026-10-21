@@ -212,7 +212,7 @@ type distillArrayFromPostfix<
 	:	[...{ [i in keyof t]: _distill<t[i], side> }, ...postfix]
 
 /** Objects we don't want to expand during inference like Date or Promise */
-type TerminallyInferredObject = BuiltinTerminalObject | ArkEnv.prototypes
+export type TerminallyInferredObject = BuiltinTerminalObject | ArkEnv.prototypes
 
 type BuiltinTerminalObject = {
 	[k in keyof arkPrototypes.instances]: k extends "Array" | "Function" ? never

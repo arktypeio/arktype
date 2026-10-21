@@ -17,7 +17,13 @@ export {
 } from "@ark/schema"
 export { Hkt, inferred, ParseError, type Brand, type Json } from "@ark/util"
 export { regex, type Regex } from "arkregex"
-export type { Default, distill, Out, To } from "./attributes.ts"
+export type {
+	Default,
+	distill,
+	Out,
+	TerminallyInferredObject,
+	To
+} from "./attributes.ts"
 export * from "./config.ts"
 export { Generic } from "./generic.ts"
 export type { Locale } from "./locale.ts"
