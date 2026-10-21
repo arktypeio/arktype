@@ -1,20 +1,14 @@
 import {
 	$ark,
-	compileDefault,
 	hasArkKind,
 	isDecidedByAllows,
 	isNode,
 	isRefinedPattern,
-	LazyGenericRoot,
-	precompileRootUnits,
 	supportedJsonSchemaTargets,
 	ToJsonSchema,
-	TraversalCompiler,
-	type ArkErrorCode,
 	type BaseNode,
 	type BaseRoot,
 	type BaseScope,
-	type CheckOptions,
 	type DefaultedNode,
 	type ErrorDetail,
 	type GenericRoot,
@@ -22,24 +16,16 @@ import {
 	type MutatesInput,
 	type NodeId,
 	type Optional,
-	type ReferenceOptions,
 	type RootUnit,
-	type StructureNode,
-	type TraversalKind,
-	type UnionNode,
 	type UnitMember,
 	type Sequence
 } from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import {
-	errorWriters,
-	errorWritersByCode,
 	rootApplyRuntime,
 	rootApplyParts,
 	type FailureSite,
-	type RootApplyParam,
-	type SiteContext,
-	type UnionSite
+	type RootApplyParam
 } from "@ark/schema/internal"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { writesInPlace } from "@ark/schema/mutatesInput"
@@ -50,8 +36,6 @@ import {
 	arkKindOf,
 	cached,
 	constructorNameOf,
-	dateGetTime,
-	type Fn,
 	functionNameOf,
 	hashOf,
 	hasDomain,
@@ -68,16 +52,65 @@ import {
 	throwParseError,
 	unset
 } from "@ark/util"
-import { InternalTypedFn, type TypedFn } from "./fn.ts"
+import type { InternalTypedFn, TypedFn } from "./fn.ts"
 import type { Generic } from "./generic.ts"
 import { keywords, type type } from "./keywords/keywords.ts"
 import type { Module } from "./module.ts"
 import type { HoleKind, IntrospectionMember } from "./runtime.ts"
 import * as runtime from "./runtimeExports.ts"
 import type { Scope } from "./scope.ts"
-
-// the text a site's issue carries in place of what the runtime writes
-const describingKeys = ["expected", "actual", "problem", "message"] as const
+import {
+	mergeUnits,
+	namesOfChanged,
+	readersIn,
+	writeDependencies,
+	writeImports,
+	writeModule,
+	writeScope,
+	writeSections,
+	type SharedModule,
+	type UnitReaders,
+	type UnitScope
+} from "./standalone/modules.ts"
+import {
+	assertDescribed,
+	ConfiguredWriter,
+	failureSites,
+	isDescribed,
+	isKeyword,
+	isLiteralSite,
+	raisedWritersByCode,
+	raisingKeys,
+	requiredIssue,
+	writeSiteOf,
+	type IssueContext,
+	type Writer
+} from "./standalone/sites.ts"
+import {
+	refNameOf,
+	rootUnitsOf,
+	undispatched,
+	unitOf,
+	unlooped
+} from "./standalone/compilers.ts"
+import {
+	encodeKey,
+	holeNameMarker,
+	holeNamePattern,
+	isTypedFn,
+	keyOf,
+	kindNameOf,
+	partsOf,
+	printablePrimitive,
+	printedHoleNamePattern,
+	registeredNameAt,
+	traversalKeyOf,
+	writeId,
+	type ComposedString
+} from "./standalone/keys.ts"
+export * from "./standalone/keys.ts"
+export * from "./standalone/compilers.ts"
+export * from "./standalone/modules.ts"
 
 type DeclarationRole =
 	| "shape"
@@ -91,7 +124,7 @@ type DeclarationRole =
 // constraints sorted by hash, which can include a function's name
 const sortedConstraintKeys = ["pattern", "index"] as const
 
-const runtimePathsByValue = new Map<unknown, string>()
+export const runtimePathsByValue = new Map<unknown, string>()
 
 const indexRuntime = (value: unknown, path: string): void => {
 	if (typeof value === "function") runtimePathsByValue.set(value, path)
@@ -214,29 +247,6 @@ export type Optimization = "speed" | "size"
 interface ConfiguredModule {
 	fingerprint: string
 	path: string
-}
-
-interface SharedModule {
-	readsRuntime: boolean
-	imports: Record<string, string[]>
-	declarations: string[]
-	exports: string[]
-	scope?: UnitScope | undefined
-}
-
-// a unit's function, which units reading it alone can share
-interface UnitScope {
-	name: string
-	// each array of traversals it reads, by the names read at its indices
-	dependencies: Record<string, string[]>
-	params: string[]
-	args: string[]
-	statements: string[]
-	returned: string[]
-	// each root's node, written from the scope's names
-	nodes: Record<string, string>
-	// else its names could clash with another's
-	declaresOnlyRefs: boolean
 }
 
 export interface StandaloneOptions {
@@ -368,10 +378,7 @@ export interface StandaloneModules {
 	unitReaders: UnitReaders
 }
 
-// "" reads for the artifact's own code
-export type UnitReaders = Record<string, readonly string[]>
-
-const runtimeImport = `import * as runtime from "arktype/runtime"`
+export const runtimeImport = `import * as runtime from "arktype/runtime"`
 
 // read for nothing but its name, so a runtime from another version fails to link
 const versionExport = Object.keys(runtime).find(name =>
@@ -442,191 +449,6 @@ export const precompileStandaloneModules = (
 		checking,
 		values,
 		unitReaders
-	}
-}
-
-const readersIn = (
-	shared: Record<string, SharedModule>,
-	imports: Record<string, string[]>
-): Record<string, string[]> => {
-	const readers: Record<string, string[]> = {}
-	for (const specifier in imports) (readers[specifier] ??= []).push("")
-	for (const reader in shared) {
-		for (const specifier in shared[reader].imports)
-			(readers[specifier] ??= []).push(reader)
-	}
-	return readers
-}
-
-// a unit all of whose readers share one scope is written into it
-const mergeUnits = (
-	shared: Record<string, SharedModule>,
-	imports: Record<string, string[]>,
-	readers: UnitReaders,
-	opts: StandaloneOptions
-): string[] => {
-	const ownReaders = readersIn(shared, imports)
-	const roots: Record<string, string> = {}
-	const rootOf = (specifier: string): string => {
-		if (specifier in roots) return roots[specifier]
-		roots[specifier] = specifier
-		if (
-			!shared[specifier].scope?.declaresOnlyRefs ||
-			!ownReaders[specifier] ||
-			!readers[specifier]
-		)
-			return specifier
-		let root: string | undefined
-		// a reader this artifact lacks keeps the unit a module of its own
-		for (const reader of [...ownReaders[specifier], ...readers[specifier]]) {
-			const readerRoot = shared[reader]?.scope && rootOf(reader)
-			if (!readerRoot || (root && root !== readerRoot)) return specifier
-			root = readerRoot
-		}
-		return (roots[specifier] = root!)
-	}
-	const groups: Record<string, Set<string>> = {}
-	for (const specifier in ownReaders) {
-		if (!shared[specifier]) continue
-		const root = rootOf(specifier)
-		if (root !== specifier) (groups[root] ??= new Set([root])).add(specifier)
-	}
-	const merged: string[] = []
-	for (const root in groups) {
-		const written = writeMerged(shared, root, groups[root], opts)
-		if (!written) continue
-		const { scope, ...module } = shared[root]
-		shared[root] = {
-			...module,
-			imports: written.imports,
-			declarations: [written.declaration, ...module.declarations.slice(1)]
-		}
-		for (const specifier of groups[root])
-			if (specifier !== root) delete shared[specifier]
-		merged.push(root)
-	}
-	return merged
-}
-
-// a module merged or reading one is named for its text, so a name has one text
-const namesOfChanged = (
-	shared: Record<string, SharedModule>,
-	merged: string[]
-): Record<string, string> => {
-	const names: Record<string, string> = {}
-	const moduleNameOf = (specifier: string): string => {
-		if (!shared[specifier] || specifier in names)
-			return names[specifier] ?? specifier
-		names[specifier] = specifier
-		const reads = Object.keys(shared[specifier].imports)
-		const isChanged =
-			merged.includes(specifier) ||
-			reads.some(read => moduleNameOf(read) !== read)
-		if (isChanged) {
-			names[specifier] =
-				`~arktype/${hashOf(writeModule(shared[specifier], names))}`
-		}
-		return names[specifier]
-	}
-	for (const specifier in shared) moduleNameOf(specifier)
-	return names
-}
-
-const writeModule = (
-	{ readsRuntime, imports, declarations, exports }: SharedModule,
-	names: Record<string, string>
-) =>
-	writeSections([
-		[readsRuntime ? runtimeImport : "", writeImports(imports, names)]
-			.filter(statement => statement)
-			.join("\n"),
-		...declarations,
-		`export { ${exports.join(", ")} }`
-	])
-
-const writeMerged = (
-	shared: Record<string, SharedModule>,
-	root: string,
-	group: ReadonlySet<string>,
-	opts: StandaloneOptions
-): { declaration: string; imports: Record<string, string[]> } | undefined => {
-	// read units first, as a forwarded traversal is read as it's declared
-	const ordered: string[] = []
-	const visit = (specifier: string) => {
-		if (!group.has(specifier) || ordered.includes(specifier)) return
-		for (const read in shared[specifier].imports) visit(read)
-		ordered.push(specifier)
-	}
-	visit(root)
-	const scopes = ordered.map(specifier => shared[specifier].scope!)
-	const names = new Set(scopes.map(scope => scope.name))
-	const dependencies: Record<string, string[]> = {}
-	const args = new Map<string, string>()
-	const nodesRead = new Set<string>()
-	for (const scope of scopes) {
-		for (const source in scope.dependencies) {
-			if (names.has(source)) continue
-			const read = (dependencies[source] ??= [])
-			for (const [i, name] of Object.entries(scope.dependencies[source]))
-				read[+i] = name
-		}
-		for (const [i, param] of scope.params.entries()) {
-			const arg = scope.args[i]
-			if (arg === `${param}Node` && scopes.some(({ nodes }) => param in nodes))
-				nodesRead.add(param)
-			else if ((args.get(param) ?? arg) !== arg) return
-			else args.set(param, arg)
-		}
-	}
-	const statements: string[] = []
-	const declared = new Set<string>()
-	for (const scope of scopes) {
-		for (const statement of scope.statements) {
-			const name = /^const ([\w$]+) =/.exec(statement)?.[1]
-			// a node two units reach is declared by each
-			if (name !== undefined && declared.has(name)) continue
-			if (name !== undefined) declared.add(name)
-			statements.push(statement)
-		}
-		for (const name in scope.nodes) {
-			if (nodesRead.has(name))
-				statements.push(`const ${name} = ${scope.nodes[name]}`)
-		}
-	}
-	const rootScope = shared[root].scope!
-	// a merged unit's exports are gone, though a node it shares is declared
-	const removed = scopes
-		.flatMap(scope =>
-			scope === rootScope ?
-				[]
-			:	[scope.name, ...Object.keys(scope.nodes).map(name => `${name}Node`)]
-		)
-		.filter(name => !nodesRead.has(name))
-	const removedName = new RegExp(`\\b(?:${removed.join("|")})\\b`)
-	if ([...statements, ...args.values()].some(text => removedName.test(text)))
-		return
-	const shortest = opts.optimize === "size"
-	const [dependencyParams, dependencyArgs] = writeDependencies(
-		dependencies,
-		shortest
-	)
-	const params = [...dependencyParams, ...args.keys()]
-	const imports: Record<string, string[]> = {}
-	for (const specifier of ordered) {
-		for (const read in shared[specifier].imports) {
-			if (group.has(read)) continue
-			const into = (imports[read] ??= [])
-			for (const name of shared[specifier].imports[read])
-				if (!into.includes(name)) into.push(name)
-		}
-	}
-	return {
-		declaration: `const ${rootScope.name} = /* @__PURE__ */ (${writeScope(
-			params.length || shortest ? params : ["...$"],
-			statements,
-			rootScope.returned
-		)})(${[...dependencyArgs, ...args.values()].join(", ")})`,
-		imports
 	}
 }
 
@@ -901,49 +723,6 @@ const writeCreations = (
 	return [[...code, getters.join("\n")], reads]
 }
 
-const writeDependencies = (
-	namesBySource: Record<string, string[]>,
-	shortest: boolean
-): [params: string[], args: string[]] => {
-	const params: string[] = []
-	const args: string[] = []
-	for (const source in namesBySource) {
-		const names = namesBySource[source]
-		params.push(
-			shortest ?
-				`[${names.join(", ")}]`
-			:	`{ ${Object.entries(names)
-					.map(([index, name]) => `${index}: ${name}`)
-					.join(", ")} }`
-		)
-		args.push(source)
-	}
-	return [params, args]
-}
-
-const writeScope = (
-	params: string[],
-	statements: string[],
-	returned: string[]
-) => `(${params.join(", ")}) => {
-${statements.join("\n")}
-return [${returned.join(", ")}]
-}`
-
-const writeSections = (sections: string[]) =>
-	`${sections.filter(section => section).join("\n\n")}\n`
-
-const writeImports = (
-	imports: Record<string, string[]>,
-	specifiers: Record<string, string> = {}
-) =>
-	Object.entries(imports)
-		.map(
-			([specifier, names]) =>
-				`import { ${names.join(", ")} } from ${JSON.stringify(specifiers[specifier] ?? specifier)}`
-		)
-		.join("\n")
-
 export const writeFixConfig = (configured: Configured): string =>
 	configured === false ? ""
 	: configured ?
@@ -1004,7 +783,7 @@ class StandaloneArtifact {
 	// read only with `in`
 	keyLookups = new Set<object>()
 	patternInstances = new Set<RegExp>()
-	defaultsByMorph = new Map<unknown, Default>()
+	defaultsByMorph = new Map<unknown, CollectedDefault>()
 	defaultNames = new Map<unknown, string>()
 	objectUnits = new Set<unknown>()
 	metas = new Set<object>()
@@ -3336,75 +3115,6 @@ ${writeFunction(
 	}
 }
 
-// a site's text is written from the program's config, so a scope's own
-// isn't, nor is predicate text a callback raises
-const assertDescribed = (root: BaseRoot): void => {
-	const config = root.$.resolvedConfig
-	const raisable = raisableCodesOf(root)
-	let code: ArkErrorCode
-	for (code in errorWritersByCode) {
-		if (raisable !== "any" && !raisable.has(code)) continue
-		for (const k of describingKeys) {
-			const writer = config[code][k]
-			if (writer === $ark.defaultConfig[code][k]) continue
-			const reason =
-				writer !== $ark.resolvedConfig![code][k] ?
-					`a scope's configured ${code} ${k}`
-					// a callback raises with code predicate unless it names another
-				: raisable === "any" && code === "predicate" ?
-					`a configured ${code} ${k} that a narrow or morph raises`
-				: (
-					typeof writer === "function" &&
-					k !== "actual" &&
-					unwritableCodes.has(code)
-				) ?
-					`a configured ${code} ${k} writer, which reads each branch's errors`
-				:	undefined
-			if (reason) throwParseError(writeUnprecompilableMessage(reason))
-		}
-	}
-	for (const unit of rootUnitsOf(root)) {
-		for (const node of writtenNodesOf(unit)) {
-			if (!node.hasKind("union")) continue
-			for (const k of describingKeys) {
-				if (k !== "actual" && typeof node.meta[k] === "function") {
-					throwParseError(
-						writeUnprecompilableMessage(
-							`\`${node.expression}\`'s ${k} writer, which reads each branch's errors`
-						)
-					)
-				}
-			}
-		}
-	}
-}
-
-// a callback can raise any code
-const raisableCodesOf = (root: BaseRoot): "any" | Set<ArkErrorCode> => {
-	if (
-		declares(root, node => node.hasKind("predicate") || node.hasKind("morph"))
-	)
-		return "any"
-	const codes = new Set<ArkErrorCode>()
-	for (const unit of rootUnitsOf(root)) {
-		for (const ref of unit.refs) {
-			if (!failureSites.has(ref as object)) continue
-			const site = ref as FailureSite
-			if (site.code) codes.add(site.code)
-			if (site.value) codes.add(site.value.code)
-			if (site.missing) codes.add(site.missing.code)
-			if ("fails" in site) codes.add("union")
-		}
-		for (const node of unit.declared) {
-			if (node.hasKind("union") && node.compiledDiscriminant)
-				codes.add("discriminant")
-			else if (node.hasKind("structure") && node.undeclared === "reject")
-				codes.add("undeclared")
-		}
-	}
-	return codes
-}
-
 // arktype calls a default's thunk each time it writes the schema
 const assertBakeableJsonSchema = (root: BaseRoot): void => {
 	if (root.references.some(callsDefaultThunk)) {
@@ -3428,7 +3138,7 @@ const callsDefaultThunk = (node: BaseNode): boolean =>
 		!!node.defaultables?.some(([, value]) => typeof value === "function")
 	:	false
 
-const isPlainLiteral = (value: object): boolean => {
+export const isPlainLiteral = (value: object): boolean => {
 	const prototype = prototypeOf(value)
 	return (
 		prototype === Object.prototype ||
@@ -3437,14 +3147,18 @@ const isPlainLiteral = (value: object): boolean => {
 	)
 }
 
-const isHole = (value: unknown): boolean =>
+export const isHole = (value: unknown): boolean =>
 	typeof value === "symbol" ||
 	(typeof value === "function" &&
 		!isNode(value) &&
 		!runtimePathsByValue.has(value) &&
 		Reflect.get(globalThis, functionNameOf(value)) !== value)
 
-type Default = [key: PropertyKey, value: BaseRoot, defaultValue: unknown]
+export type CollectedDefault = [
+	key: PropertyKey,
+	value: BaseRoot,
+	defaultValue: unknown
+]
 
 const defaultedNodeKeys = [
 	"includesTransform",
@@ -3454,9 +3168,9 @@ const defaultedNodeKeys = [
 	"transforms"
 ] as const satisfies (keyof DefaultedNode)[]
 
-const collectDefaults = (
+export const collectDefaults = (
 	node: Optional.Node | Sequence.Node,
-	defaultsByMorph: Map<unknown, Default>
+	defaultsByMorph: Map<unknown, CollectedDefault>
 ): void => {
 	if (node.hasKind("optional")) {
 		if (node.defaultValueMorph) {
@@ -3589,12 +3303,12 @@ const isSharedUnit = (unit: RootUnit): boolean => {
 }
 
 // includes nodes a parent checks inline
-const writtenNodesOf = (unit: RootUnit): BaseNode[] => [
+export const writtenNodesOf = (unit: RootUnit): BaseNode[] => [
 	...unit.declared,
 	...unit.roots.flatMap(root => root.references)
 ]
 
-const declares = (
+export const declares = (
 	root: BaseRoot,
 	predicate: (node: BaseNode) => boolean
 ): boolean => rootUnitsOf(root).some(unit => unit.declared.some(predicate))
@@ -3613,924 +3327,6 @@ const holdsLocal = (value: unknown, seen = new Set<unknown>()): boolean => {
 		)
 	})
 }
-
-// sites only traversal reads, emitted as-is
-const failureSites = new WeakSet<object>()
-
-const issueSite = <site extends object>(site: site): site => {
-	failureSites.add(site)
-	return site
-}
-
-const undeclaredSite = issueSite({ code: "undeclared" })
-
-// a site of a code and description naming nothing the validator receives
-const isInlineSite = (site: object): site is IssueContext =>
-	"code" in site &&
-	!(site as IssueContext).written &&
-	![
-		(site as IssueContext).description,
-		(site as IssueContext).message,
-		(site as IssueContext).problem
-	].some(text => text?.match(printedHoleNamePattern))
-
-const siteWords = new Set([
-	"runtime",
-	"void",
-	"siteOf",
-	"textSiteOf",
-	"keySiteOf",
-	"failing",
-	"value",
-	"path",
-	"missing"
-])
-
-// a site written from literals alone, so alike in every unit
-const isLiteralSite = (value: unknown, emitted: string): boolean =>
-	hasDomain(value, "object") &&
-	failureSites.has(value) &&
-	(
-		emitted.replace(/"(?:[^"\\]|\\.)*"/g, "").match(/[$A-Z_a-z][\w$]*/g) ?? []
-	).every(word => siteWords.has(word))
-
-const writeSiteOf = (
-	{ code, description, message, problem }: IssueContext,
-	emit: (s: string) => string,
-	writer = "siteOf"
-): string => {
-	const args = [code, description, message, problem]
-	while (args[args.length - 1] === undefined) args.pop()
-	return `runtime.${args.length > 2 ? "textSiteOf" : writer}(${args.map(arg => (arg === undefined ? "void 0" : emit(arg))).join(", ")})`
-}
-
-const issueSitesByContext = new WeakMap<
-	object,
-	{ alone?: object; required?: object }
->()
-
-const requiredIssue = { code: "required" } as const
-
-interface TextContext {
-	code: ArkErrorCode
-	description?: string | undefined
-	meta?: ArkEnv.meta | undefined
-}
-
-type DescribingKey = (typeof describingKeys)[number]
-
-// a program's configure() writer, which the runtime receives when it runs
-class ConfiguredWriter {
-	code: ArkErrorCode
-	k: DescribingKey
-
-	constructor(code: ArkErrorCode, k: DescribingKey) {
-		this.code = code
-		this.k = k
-	}
-}
-
-type Writer = string | Fn | ConfiguredWriter | undefined
-
-// what a site's issue reads, with text configured as strings or functions
-interface IssueContext extends SiteContext {
-	message?: string
-	problem?: string
-	written?: {
-		context: object
-		writers: Writer[]
-		// 1 if the issue takes expected, 2 if problem
-		keeps: number
-	}
-}
-
-// arktype writes these from each branch's errors, which issues don't keep
-const unwritableCodes = new Set<ArkErrorCode>([
-	"union",
-	"discriminant",
-	"intersection"
-])
-
-// the text arktype writes from meta, then the program's config for the code
-const issueContextOf = (context: TextContext): IssueContext => {
-	const { code } = context
-	const configured: Record<string, unknown> = $ark.resolvedConfig![code]
-	const defaults: Record<string, unknown> = $ark.defaultConfig[code]
-	const meta: Record<string, unknown> = context.meta ?? {}
-	const custom: Partial<Record<DescribingKey, unknown>> = {}
-	for (const k of describingKeys) {
-		const writer = meta[k] ?? configured[k]
-		if (writer !== defaults[k]) custom[k] = writer
-	}
-	const locale = $ark.resolvedConfig!.locale
-	const issueContext: IssueContext = {
-		code,
-		description:
-			typeof custom.expected === "string" ?
-				custom.expected
-			:	context.description
-	}
-	if (
-		!unwritableCodes.has(code) &&
-		Object.values(custom).some(writer => typeof writer === "function")
-	) {
-		const writerOf = (k: DescribingKey): Writer => {
-			const writer = custom[k] ?? defaults[k]
-			if (typeof writer !== "function") return writer as Writer
-			if (writer === custom[k]) {
-				return meta[k] === undefined ?
-						new ConfiguredWriter(code, k)
-					:	(writer as Fn)
-			}
-			// static, so written as arktype would write it
-			if (k === "expected") return (writer as Fn)(context, locale) as string
-			if (runtimeKeyOf(writer)) return writer as Fn
-			if (k === "problem") return runtime.writeProblem
-			// e.g. a missing key's
-			return (writer as Fn)(undefined, context, locale) as string
-		}
-		issueContext.written = {
-			context,
-			writers: [
-				writerOf("expected"),
-				writerOf("actual"),
-				writerOf("problem"),
-				custom.message === undefined ? undefined : writerOf("message")
-			],
-			keeps:
-				+(custom.expected !== undefined) |
-				(+(
-					custom.problem !== undefined ||
-					(custom.actual !== undefined && custom.message === undefined)
-				) <<
-					1)
-		}
-		return issueContext
-	}
-	if (typeof custom.message === "string") issueContext.message = custom.message
-	if (typeof custom.problem === "string") issueContext.problem = custom.problem
-	else if (
-		typeof custom.actual === "string" &&
-		custom.actual &&
-		custom.message === undefined &&
-		custom.problem === undefined &&
-		configured.problem === errorWriters.problem
-	) {
-		issueContext.problem = errorWriters.problem(
-			{ expected: issueContext.description, actual: custom.actual } as never,
-			locale
-		)
-	}
-	return issueContext
-}
-
-const raisingKeys = { Traversal: {}, FirstIssueTraversal: {} }
-
-// the writers of text configure() sets for each code a callback can raise but
-// predicate, whose text a callback raising it can't take
-const raisedWritersByCode = (): [
-	code: ArkErrorCode,
-	writers: Writer[],
-	keeps: number
-][] => {
-	const locale = $ark.resolvedConfig!.locale
-	const written: [ArkErrorCode, Writer[], number][] = []
-	let code: ArkErrorCode
-	for (code in errorWritersByCode) {
-		if (code === "predicate" || unwritableCodes.has(code)) continue
-		const configured: Record<string, unknown> = $ark.resolvedConfig![code]
-		const defaults: Record<string, unknown> = $ark.defaultConfig[code]
-		const isCustom = (k: DescribingKey) => configured[k] !== defaults[k]
-		if (!describingKeys.some(isCustom)) continue
-		const writerOf = (k: DescribingKey): Writer => {
-			const writer = configured[k]
-			if (isCustom(k)) {
-				return typeof writer === "function" ?
-						new ConfiguredWriter(code, k)
-					:	(writer as string)
-			}
-			// the raised issue's own expected, and its message as written without text
-			if (k === "expected" || k === "message") return
-			if (typeof writer !== "function" || runtimeKeyOf(writer))
-				return writer as Writer
-			if (k === "problem") return runtime.writeProblem
-			// e.g. a missing key's
-			return (writer as Fn)(undefined, { code }, locale) as string
-		}
-		written.push([
-			code,
-			describingKeys.map(writerOf),
-			+isCustom("expected") |
-				(+(
-					isCustom("problem") ||
-					(isCustom("actual") && !isCustom("message"))
-				) <<
-					1)
-		])
-	}
-	return written
-}
-
-const isDescribed = (context: IssueContext): boolean =>
-	context.message === undefined &&
-	context.problem === undefined &&
-	!context.written
-
-// issues hold only code and text, so equal sites share
-const issueSiteOf = (site: FailureSite | UnionSite): object => {
-	const { value, missing } = site as {
-		value?: TextContext
-		missing?: TextContext
-	}
-	const missingContext = missing && issueContextOf(missing)
-	// a key's own text makes its site its own
-	const context =
-		missingContext && !isDescribed(missingContext) ? missing : (value ?? site)
-	const variants = issueSitesByContext.get(context) ?? {}
-	issueSitesByContext.set(context, variants)
-	const variant = missing ? "required" : "alone"
-	if (variants[variant]) return variants[variant]
-	const valueContext =
-		value ? issueContextOf(value)
-		: missing ? undefined
-		: issueContextOf({ ...(site as UnionSite), code: "union" })
-	return (variants[variant] = issueSite(
-		!missingContext ? valueContext!
-		: valueContext ?
-			{
-				value: valueContext,
-				missing: isDescribed(missingContext) ? requiredIssue : missingContext
-			}
-		: isDescribed(missingContext) ? runtime.requiredSite
-		: { missing: missingContext }
-	))
-}
-
-// runtime keywords with one param never read Traversal
-const isKeyword = (predicate: unknown): boolean =>
-	runtimePathsByValue.has(predicate) && (predicate as Fn).length < 2
-
-// a case returning what the next one does falls through to it
-const sharedReturnCase = /^( +)(case [^]*): return ([^]*)$/
-
-const casesFallingThrough = (body: string): string => {
-	const lines = body.split("\n")
-	for (let i = 0; i < lines.length - 1; i++) {
-		const [, indent, label, returned] = sharedReturnCase.exec(lines[i]) ?? []
-		const next = sharedReturnCase.exec(lines[i + 1])
-		if (label && next?.[1] === indent && next[3] === returned)
-			lines[i] = `${indent}${label}:`
-	}
-	return lines.join("\n")
-}
-
-const countedCheck =
-	/^( +)const errorCount = ctx\.currentErrorCount\n +if \(!((?:[\da-z]+R|r)\d+)\(data, ctx\) && ctx\.currentErrorCount === errorCount\) {\n +return (!.+)\n +}\n +return !ctx\.failFast \|\| ctx\.currentErrorCount === errorCount\n$/
-
-// a required prop's Apply: `!ctx.failsIn(apply, value, key, site, data)`
-const appliedProp =
-	/!ctx\.failsIn\((\w+), (data(?:\.[\w$]+|\["(?:[^"\\]|\\.)*"])), "(?:[^"\\]|\\.)*", (?:[\da-z]+R|r)\d+, data\)/g
-
-// a value holding no object, pattern, alias, predicate or morph, whose
-// Allows is a few checks
-const isLeaf = (node: BaseNode): boolean =>
-	isDecidedByAllows(node) &&
-	!node.includesCostly &&
-	!node.includesAlias &&
-	!Object.values(node.referencesById).some(ref => ref.hasKind("structure"))
-
-class StandaloneCompiler extends TraversalCompiler {
-	override readonly reportsFirst: boolean = false
-
-	// named for its unit, so units can share a scope
-	override ref(value: object | symbol): string {
-		const { unit } = this.linkage
-		if (unit === undefined) return super.ref(value)
-		let name = this.refs!.get(value)
-		if (name === undefined)
-			this.refs!.set(value, (name = refNameOf(unit, this.refs!.size)))
-		return name
-	}
-
-	override site(node: BaseNode): string {
-		return this.siteRef(issueSiteOf(node.failureSite))
-	}
-
-	// a site of literals is built where it fails, and stays a ref the unit keys
-	siteRef(site: object): string {
-		const ref = this.ref(site)
-		return isInlineSite(site) ? writeSiteOf(site, JSON.stringify) : ref
-	}
-
-	// Allows by Apply of each leaf a prop applies
-	private readonly gated = new Map<string, string>()
-
-	override traversal(node: BaseNode, kind: TraversalKind): string {
-		const name = super.traversal(node, kind)
-		if (kind === "Apply" && this.traversalKind === "Apply" && this.gates(node))
-			this.gated.set(name, super.traversal(node, "Allows"))
-		return name
-	}
-
-	// whether a prop checks its value by Allows before applying it
-	gates(node: BaseNode): boolean {
-		return isLeaf(node)
-	}
-
-	override get body(): string {
-		const body = casesFallingThrough(super.body)
-		// a keyword check adds no issues itself, so its Apply needn't count them
-		const counted = countedCheck.exec(body)
-		if (counted) {
-			const [, indent, check, fail] = counted
-			for (const [value, name] of this.refs!) {
-				if (name === check && isKeyword(value))
-					return `${indent}return ${check}(data, ctx) || ${fail}\n`
-			}
-		}
-		// a leaf its Allows passes skips the path bookkeeping of applying it
-		return body.replace(
-			appliedProp,
-			(applied, apply: string, value: string) => {
-				const allows = this.gated.get(apply)
-				return allows ? `${allows}(${value}) || ${applied}` : applied
-			}
-		)
-	}
-
-	// a plain object missing every default, its only changes, is copied once
-	override initializeTransform(
-		transformedChildren: readonly BaseNode[],
-		structure?: StructureNode
-	): this {
-		super.initializeTransform(transformedChildren)
-		if (
-			!structure ||
-			transformedChildren.length < 2 ||
-			transformedChildren.length !== structure.defaultable.length ||
-			structure.includesMorph ||
-			structure.undeclared === "delete" ||
-			this.inPlace
-		)
-			return this
-		const keys = structure.defaultable.map(prop => prop.key)
-		return this.if(
-			`${keys.map(k => `!(${this.serialize(k)} in data) && `).join("")}${structure.compileShapeCheck(this)}Object.getPrototypeOf(data) === Object.prototype`,
-			() => {
-				this.const("out", "{ ...data }")
-				for (const prop of structure.defaultable)
-					compileDefault(this, prop, "out")
-				structure.compileCopiedDeclaredKeys(this, keys)
-				return this.return("out")
-			}
-		)
-	}
-
-	// read at the discriminant so branches don't rerun
-	override unionFails(
-		node: UnionNode,
-		value?: string,
-		path?: PropertyKey[]
-	): string {
-		if (!path) return `!${this.error(node)}`
-		const context = issueContextOf({
-			code: "discriminant",
-			description: node.discriminantDescription,
-			meta: node.discriminantMeta
-		})
-		const site = issueSite(path.length ? { value: context, path } : context)
-		return `!ctx.failsAt(${this.siteRef(site)}, ${value})`
-	}
-
-	override undeclaredFails(node: StructureNode): string {
-		const context = issueContextOf({ code: "undeclared", meta: node.meta })
-		const site = isDescribed(context) ? undeclaredSite : issueSite(context)
-		return `ctx.failsAt(${this.siteRef(site)}, data, k)`
-	}
-
-	// a rejected union value reports the union's issue, not its Apply
-	override failingApplyOf(value: BaseNode): string | undefined {
-		if (
-			!value.hasKind("union") ||
-			value.compiledDiscriminant ||
-			value.includesAlias
-		)
-			return
-		const site = issueSiteOf(value.failureSite)
-		let failing = failingBySite.get(site)
-		if (!failing)
-			failingBySite.set(site, (failing = issueSite({ fails: site })))
-		return this.ref(failing)
-	}
-}
-
-const failingBySite = new WeakMap<object, object>()
-
-const refNameOf = (unit: string, i: number) => `${unit}R${i}`
-
-// size writes the checks an Allows loops over as the returns they stand for,
-// line by line, as a literal can hold a line separator
-const unlooped = (source: string): string =>
-	source.replace(
-		/ {4}for \(;;\) {\n([\S\s]*)\n {8}return true\n {4}}\n {4}return false\n }$/,
-		(_, checks: string) =>
-			`${checks
-				.split("\n")
-				.map(line =>
-					line.replace(/^ {4}/, "").replace(/^( +)break$/, "$1return false")
-				)
-				.join("\n")}\n    return true\n }`
-	)
-
-// size writes a switch over data's domain as the checks each case stands for
-const undispatched = (source: string): string =>
-	source.replace(
-		/( +)switch\(typeof data === "object" \? data === null \? "null" : "object" : typeof data === "function" \? "object" : typeof data\) {\n((?: +case "\w+":(?: return .+)?\n)+) +}\n +return (.+)$/m,
-		(_, indent: string, cases: string, otherwise: string) => {
-			let checks = ""
-			let matched: string[] = []
-			for (const [, domain, returned] of cases.matchAll(
-				/case "(\w+)":(?: return (.+))?/g
-			)) {
-				matched.push(
-					domain === "null" ? "data === null"
-					: domain === "object" ?
-						'(typeof data === "object" ? data !== null : typeof data === "function")'
-					:	`typeof data === "${domain}"`
-				)
-				if (returned === undefined) continue
-				checks += `${matched.join(" || ")} ? ${returned} : `
-				matched = []
-			}
-			return `${indent}return ${checks}${otherwise}`
-		}
-	)
-
-class InPlaceCompiler extends StandaloneCompiler {
-	override readonly inPlace = true
-}
-
-class FirstIssueCompiler extends StandaloneCompiler {
-	override readonly reportsFirst = true
-}
-
-class InPlaceFirstIssueCompiler extends InPlaceCompiler {
-	override readonly reportsFirst = true
-}
-
-const unifiedByNode = new WeakMap<BaseNode, boolean>()
-
-// a node whose Apply reads ctx only to report, so passed none, it allows
-const unifies = (node: BaseNode): boolean => {
-	let unified = unifiedByNode.get(node)
-	if (unified === undefined) {
-		unified =
-			!node.includesTransform &&
-			!node.includesAlias &&
-			!node.allowsRequiresContext &&
-			Object.values(node.referencesById).every(reference =>
-				reference.hasKind("predicate") ? isKeyword(reference.predicate)
-				: reference.hasKind("union") ?
-					!!reference.compiledDiscriminant || isDecidedByAllows(reference)
-				: reference.hasKind("intersection") ?
-					// Apply counts issues between its structure and predicates
-					(reference.inner.predicate?.length ?? 0) + +!!reference.structure < 2
-				:	!reference.hasKind("morph")
-			)
-		unifiedByNode.set(node, unified)
-	}
-	return unified
-}
-
-// a detailed size build's traversals: a node that unifies has one, its
-// Apply named as its Allows, reporting a failure only to a ctx it's passed
-class UnifiedCompiler extends StandaloneCompiler {
-	override referenceToId(id: NodeId, opts?: ReferenceOptions): string {
-		const node = this.linkage.referencesById[id]
-		return super.referenceToId(
-			id,
-			node && unifies(node) ? { ...opts, kind: "Allows" } : opts
-		)
-	}
-
-	override requiresContextFor(
-		node: BaseNode,
-		kind: TraversalKind = this.traversalKind
-	): boolean {
-		return (
-			(kind !== "Allows" || !unifies(node)) &&
-			super.requiresContextFor(node, kind)
-		)
-	}
-
-	// a key's union value is applied by its own traversal, which allows unpassed
-	override failingApplyOf(): undefined {}
-
-	// unpassed a ctx, failsIn allows a value itself
-	override gates(): boolean {
-		return false
-	}
-
-	// read where it fails, as a site is, so a unit needn't receive it
-	override get body(): string {
-		return super.body.replace(/\bctx\.(failsAt|failsIn)\(/g, "runtime.$1(ctx, ")
-	}
-}
-
-// a unified node's Apply, declared after its Allows, replaces it
-const unifyMembers = (unit: RootUnit): void => {
-	const sourcesByName = new Map(unit.members)
-	unit.members = [...sourcesByName]
-	for (const [i, node] of unit.declared.entries()) {
-		const source = sourcesByName.get(unit.declaredTraversals[i][0])!
-		if (unifies(node) && /\bctx\./.test(source))
-			throwInternalError(`Unified traversal reads ctx: ${source}`)
-	}
-}
-
-class UnifiedFirstIssueCompiler extends UnifiedCompiler {
-	override readonly reportsFirst = true
-}
-
-// a structure's Allows passes a plain object with as many own enumerable keys
-// as the declared ones it holds, though one may stand in for a declared key it
-// holds otherwise, and scans the keys of any other in a function of its own
-const countingKeys = (compiler: typeof StandaloneCompiler) =>
-	class extends compiler {
-		// what the structure checks before scanning its keys
-		private required = 0
-		private optional: string[] = []
-		private checksSequence = false
-		// the scan's lines, written into its function instead
-		private scan: string[] | undefined
-
-		override check(node: BaseNode, opts?: CheckOptions): this {
-			if (node.hasKind("sequence")) this.checksSequence = true
-			else if (node.hasKind("required") && typeof node.key === "string")
-				this.required++
-			else if (node.hasKind("optional") && typeof node.key === "string")
-				this.optional.push(`+(${this.serialize(node.key)} in data)`)
-			return super.check(node, opts)
-		}
-
-		override line(statement: string): this {
-			if (!this.scan) return super.line(statement)
-			this.scan.push(`${" ".repeat(this.indentation)}${statement}\n`)
-			return this
-		}
-
-		override forIn(object: string, body: (self: this) => this): this {
-			if (this.traversalKind !== "Allows" || this.checksSequence)
-				return super.forIn(object, body)
-			this.if("Object.getPrototypeOf(data) === Object.prototype", () =>
-				this.let("n", 0)
-					.loop(`for (const k in ${object})`, () =>
-						this.if("Object.prototype.hasOwnProperty.call(data, k)", () =>
-							this.line("n++")
-						)
-					)
-					.if(`n === ${[this.required, ...this.optional].join(" + ")}`, () =>
-						this.return(true)
-					)
-			)
-			const scan: string[] = (this.scan = [])
-			super.forIn(object, body)
-			this.scan = undefined
-			const source = `function(data, ctx) { ${scan.join("")}    return true\n }`
-			const name = `undeclared${hashOf(source)}`
-			if (!this.linkage.members.some(([written]) => written === name))
-				this.linkage.members.push([name, source])
-			return this.if(`!${name}(data, ctx)`, () => this.return(false))
-		}
-	}
-
-// by variant: standalone, in place or unified, plus 3 for errors "first" and
-// 6 for countsKeys
-const compilers = [false, true].flatMap(countsKeys =>
-	[
-		StandaloneCompiler,
-		InPlaceCompiler,
-		UnifiedCompiler,
-		FirstIssueCompiler,
-		InPlaceFirstIssueCompiler,
-		UnifiedFirstIssueCompiler
-	].map(compiler => (countsKeys ? countingKeys(compiler) : compiler))
-)
-
-// each variant's roots have their own units
-const unitsByRoot = compilers.map(() => new WeakMap<BaseRoot, RootUnit[]>())
-
-const rootUnitsOf = (root: BaseRoot, variant = 0): RootUnit[] => {
-	const cached = unitsByRoot[variant]
-	let units = cached.get(root)
-	if (!units) {
-		cached.set(
-			root,
-			(units = precompileRootUnits(root, {
-				compiler: compilers[variant],
-				keyOf: runtimeKeyOf
-			}))
-		)
-		if (variant % 3 === 2) for (const unit of units) unifyMembers(unit)
-	}
-	return units
-}
-
-// a pass can reach content-equal roots, which share a name but not a unit
-const unitOf = (node: BaseNode, reader: RootUnit): RootUnit =>
-	reader.unitsById[node.id]
-
-// an alias defined by a thunk; a site resolving it is refused
-export type ScopeAlias = [scope: BaseScope, alias: string]
-
-export type Key = [
-	id: string,
-	holes: unknown[],
-	// [path, reason] of what can't be compared
-	refusal: [path: string, reason: string] | undefined,
-	thunks: readonly [...ScopeAlias, path: string][]
-]
-
-const keysByValue = new WeakMap<object, Key>()
-
-export const keyOf = (value: Foldable): Key => {
-	let key = keysByValue.get(value)
-	if (!key) {
-		keysByValue.set(
-			value,
-			(key = hasArkKind(value, "root") ? rootKeyOf(value) : encodeKey(value))
-		)
-	}
-	return key
-}
-
-// 8 hash chars tell a received value from another
-const writeId = (id: string): string => JSON.stringify(id.slice(0, 8))
-
-// traversal only: independent of the Scope methods parse in
-export const traversalKeyOf = (root: BaseRoot): Key => rootKeyOf(root, false)
-
-const rootKeyOf = (root: BaseRoot, isScoped = true): Key => {
-	const units = rootUnitsOf(root)
-	const defaultsByMorph = new Map<unknown, Default>()
-	// held so a codec's validator can be encoded where it's received
-	const inverses: unknown[] = []
-	for (const unit of units) {
-		for (const node of writtenNodesOf(unit)) {
-			if (node.hasKind("optional") || node.hasKind("sequence"))
-				collectDefaults(node, defaultsByMorph)
-			else if (node.hasKind("morph") && node.inverse)
-				inverses.push(node.inverse)
-		}
-	}
-	// add each function or object's kind and repeat positions
-	return encodeKey(
-		{
-			name: units[0].names[root.id],
-			refs: units.map(unit => unit.refs),
-			...(inverses.length && { inverses }),
-			meta: root.meta,
-			// where its methods, like `and` and `or`, parse their arguments
-			...(isScoped && { $: root.$ })
-		},
-		defaultsByMorph
-	)
-}
-
-// equal keys differ only in which functions they hold
-const encodeKey = (
-	start: unknown,
-	defaultsByMorph?: ReadonlyMap<unknown, Default>,
-	isDefinition = !defaultsByMorph
-): Key => {
-	const values: string[] = []
-	const holes: unknown[] = []
-	const seen = new Map<unknown, number>()
-	const thunks: [...ScopeAlias, path: string][] = []
-	let refusal: Key[2]
-	const refuse = (reason: string) => void (refusal ??= ["", reason])
-	const holeIndexOf = (hole: unknown) => {
-		const index = holes.indexOf(hole)
-		return index === -1 ? holes.push(hole) - 1 : index
-	}
-	const writeKeyOf = (kind: string, value: Foldable, path: string) => {
-		const [id, held, nested, nestedThunks] = keyOf(value)
-		values.push(`${kind} ${id} ${held.map(holeIndexOf)}`)
-		if (nested) refusal ??= [appendPath(path, nested[0]), nested[1]]
-		for (const [scope, alias, at] of nestedThunks)
-			thunks.push([scope, alias, appendPath(path, at)])
-	}
-	const at = (path: string) => (path ? ` at \`${path}\`` : "")
-	const write = (
-		value: unknown,
-		path: string,
-		isDefinition: boolean,
-		isConfig = false
-	): void => {
-		if (hasDomain(value, "object")) {
-			const index = seen.get(value)
-			if (index !== undefined) return void values.push(`seen ${index}`)
-			seen.set(value, seen.size)
-		}
-		const defaulted = defaultsByMorph?.get(value)
-		const runtimeKey = hasDomain(value, "object") && runtimeKeyOf(value)
-		if (defaulted) {
-			values.push("default")
-			write(defaulted[2], path, false)
-		} else if (runtimeKey) values.push(`runtime ${runtimeKey}`)
-		else if (isNode(value)) {
-			if (defaultsByMorph || !value.isRoot()) values.push("node")
-			else writeKeyOf("Type", value, path)
-		} else if (hasArkKind(value, "module")) {
-			const entries = Object.entries(value)
-			values.push(`Module ${entries.length}`)
-			for (const [k, entry] of entries) {
-				values.push(JSON.stringify(k))
-				write(entry, appendStringifiedKey(path, k), true)
-			}
-		} else if (hasArkKind(value, "scope")) {
-			// a builtin scope holds only arktype's own functions, named stably
-			if (value.isBuiltin) values.push(`Scope ${value.name}`)
-			// e.g. a Type's, which each Type of the Scope shares
-			else if (value !== start) writeKeyOf("Scope", value, path)
-			else {
-				const aliases = Object.entries(value.aliases)
-				values.push(
-					`Scope ${JSON.stringify(value.exportedNames)} ${aliases.length}`
-				)
-				write(value.scopeConfig, "", false, true)
-				// the definition, as resolving it would run default checks early
-				for (const [k, def] of aliases) {
-					values.push(JSON.stringify(k))
-					if (isThunkAlias(def)) {
-						values.push("thunk")
-						thunks.push([value, k, ""])
-					} else write(def, appendStringifiedKey(path, k), true)
-				}
-			}
-		} else if (hasArkKind(value, "generic")) {
-			values.push("Generic")
-			write(value.paramDefs, path, true)
-			// an hkt body is a function only identity tells apart
-			if (value.hkt) {
-				refuse(
-					`has an hkt body${at(path)}, whose results decide what it creates`
-				)
-			} else write(value.bodyDef, path, true)
-			write(value.$, appendStringifiedKey(path, "$"), true)
-			// a Generic bound into another Scope parses its arguments there
-			write(value.arg$, appendStringifiedKey(path, "arg$"), true)
-		} else if (isTypedFn(value)) {
-			values.push("TypedFn")
-			write(value.params, path, false)
-			write(value.returns, path, false)
-			write(value.raw, path, false)
-		} else if (value instanceof LazyGenericRoot) {
-			values.push(`Generic ${JSON.stringify(value.paramsDef)}`)
-			write(value.bodyDef, path, true)
-		} else if (isDefinition && isThunk(value))
-			refuse(`holds a thunk${at(path)}, whose result decides what it creates`)
-		// e.g. a description writer, which arktype calls as it creates each Type
-		else if (isConfig && isHole(value)) {
-			refuse(
-				`configures \`${path}\` with a function, whose results decide what it creates`
-			)
-		} else if (isHole(value)) values.push(`hole ${holeIndexOf(value)}`)
-		else if (!hasDomain(value, "object")) values.push(printablePrimitive(value))
-		else if (isDateObject(value)) values.push(`Date ${dateGetTime.call(value)}`)
-		else if (isRegExpObject(value)) values.push(`${value} ${value.lastIndex}`)
-		else if (isArray(value)) {
-			values.push(`[${value.length}`)
-			// e.g. the narrow in `["string", ":", isLong]`, held, not parsed
-			const definitions =
-				valueTupleHeads.includes(value[0]) ? 0
-				: valueOperators.includes(value[1]) ? 1
-				: value.length
-			for (let i = 0; i < value.length; i++) {
-				write(
-					value[i],
-					appendStringifiedKey(path, i),
-					isDefinition && i < definitions,
-					isConfig
-				)
-			}
-		} else if (isPlainLiteral(value)) {
-			const keys = Reflect.ownKeys(value)
-			values.push(`{${keys.length}`)
-			for (const k of keys) {
-				write(k, path, false)
-				write(
-					Reflect.get(value, k),
-					typeof k === "symbol" ? path : appendStringifiedKey(path, k),
-					isDefinition,
-					isConfig
-				)
-			}
-		} else
-			refuse(`holds ${printable(value)}${at(path)}, which its key can't encode`)
-	}
-	write(start, "", isDefinition)
-	return [hashOf(values.join("\n")), holes, refusal, thunks]
-}
-
-export const appendPath = (path: string, rest: string): string =>
-	!path ? rest
-	: !rest ? path
-	: rest[0] === "[" ? path + rest
-	: `${path}.${rest}`
-
-// a Generic alias is a function too, but isn't a thunk
-const isThunkAlias = (def: unknown): boolean =>
-	isThunk(def) &&
-	!hasArkKind(def, "generic") &&
-	!(def instanceof LazyGenericRoot)
-
-export const isTypedFn = (value: unknown): value is InternalTypedFn =>
-	value instanceof InternalTypedFn
-
-export const kindNameOf = (value: unknown): string =>
-	hasArkKind(value, "root") ? "Type"
-	: hasArkKind(value, "module") ? "Module"
-	: hasArkKind(value, "scope") ? "Scope"
-	: hasArkKind(value, "generic") ? "Generic"
-	: "TypedFn"
-
-const printablePrimitive = (value: unknown): string =>
-	Object.is(value, -0) ? "-0" : printable(value)
-
-const valueTupleHeads: unknown[] = ["instanceof", "==="]
-
-const valueOperators: unknown[] = [":", "=>", "=", "@"]
-
-type ComposedString = "expression" | "description"
-
-// shorter strings are written inline
-const minComposedLength = 64
-
-const partsOf = (
-	root: BaseRoot,
-	kind: ComposedString
-): (string | BaseRoot)[] => {
-	const s = root[kind]
-	const candidates: Record<string, BaseRoot> = Object.create(null)
-	for (const node of root.references) {
-		if (!node.isRoot()) continue
-		const part = node[kind]
-		if (
-			part.length >= minComposedLength &&
-			part !== s &&
-			!part.includes(holeNameMarker)
-		)
-			candidates[part] = node
-	}
-	const taken: [start: number, end: number, root: BaseRoot][] = []
-	for (const part of Object.keys(candidates).sort(
-		(l, r) => r.length - l.length
-	)) {
-		for (
-			let start = s.indexOf(part);
-			start !== -1;
-			start = s.indexOf(part, start + 1)
-		) {
-			const end = start + part.length
-			if (
-				taken.every(
-					([takenStart, takenEnd]) => end <= takenStart || takenEnd <= start
-				)
-			)
-				taken.push([start, end, candidates[part]])
-		}
-	}
-	const parts: (string | BaseRoot)[] = []
-	let at = 0
-	for (const [start, end, part] of taken.sort(([l], [r]) => l - r)) {
-		if (start > at) parts.push(s.slice(at, start))
-		parts.push(part)
-		at = end
-	}
-	if (at < s.length) parts.push(s.slice(at))
-	return parts
-}
-
-export const holeNameMarker = "$hole_"
-
-// two hashes can first differ inside a "$ark.name" reference
-const registeredNameAt = (hash: string, i: number): string | undefined => {
-	const start = hash.lastIndexOf('"', i - 1) + 1
-	const reference = /^\$ark\d*\.([\w$]+)"/.exec(hash.slice(start))
-	return reference && i > start + reference[0].indexOf(".") ?
-			reference[1]
-		:	undefined
-}
-
-const holeName = `[\\w$]*${holeNameMarker.replace("$", "\\$")}[\\da-z]+`
-
-export const holeNamePattern = new RegExp(holeName, "g")
-
-const printedHoleNamePattern = new RegExp(
-	`\\$ark\\.(${holeName})|valid according to (${holeName})|Function\\((${holeName})\\)|(${holeName})`,
-	"g"
-)
 
 export const writeUnprecompilableMessage = <value extends string>(
 	value: value
