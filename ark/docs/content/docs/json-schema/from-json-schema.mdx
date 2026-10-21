@@ -77,6 +77,18 @@ const Age = {
 } satisfies JsonSchema.Numeric
 ```
 
+For a string schema, `StringSchema` from `@ark/json-schema` matches what `jsonSchemaToType` reads more closely than `JsonSchema.String`: it leaves out `format`, which is ignored, and its `pattern` can be a `RegExp`:
+
+```ts
+import type { StringSchema } from "@ark/json-schema"
+
+const Slug = {
+	type: "string",
+	pattern: /^[a-z-]+$/,
+	maxLength: 64
+} satisfies StringSchema
+```
+
 ## JsonSchemaScope
 
 `JsonSchemaScope` is the [module](/docs/scopes) `jsonSchemaToType` validates its input with. Its `ArraySchema`, `NumberSchema`, `ObjectSchema` and `StringSchema` Types check a schema of that kind without converting it:

@@ -75,3 +75,5 @@ A Root read from a JSON Schema accepts exactly what a 2020-12 validator accepts,
 Importing `arksets` also installs the algebra `@ark/schema` uses to reduce nodes and discriminate unions as they're parsed, and to implement `.toJsonSchema()` and relational methods like `.and()`, `.extends()` and `.keyof()`. arktype installs it from `arksets/internal`, so arksets' public API stays out of arktype's bundle.
 
 Without it, `@ark/schema` parses and validates unreduced nodes and undiscriminated unions, and relational methods and `.toJsonSchema()` throw. Parsing a schema whose validation depends on reduction throws as well: a tuple that bounds its length, an unordered union with a transforming branch, an optional prop under `exactOptionalPropertyTypes: false`, or an index signature keyed by anything other than `string`, `symbol` or `string | symbol`.
+
+See [arktype.io/docs/internals/sets](https://arktype.io/docs/internals/sets) for what works without it.

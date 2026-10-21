@@ -164,9 +164,9 @@ configure({ errors: "first" })
 
 A precompiled build takes both as options, alongside [`members`](/docs/precompile/options#members), which drops what a validator has besides validating, and [`optimize: "size"`](/docs/precompile/options#optimize). See [Configuration](/docs/configuration#errors).
 
-## Faster dynamic Types
+## Dynamic Types do less work
 
-Dynamic ArkType got faster too. A Type compiles when it's first used rather than when it's defined, so a Type a program never calls costs nothing to compile. A Type that calls no narrow or morph finds its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. <Claim id="strictSpeedup" />
+Dynamic ArkType does less work too. A Type compiles when it's first used rather than when it's defined, so a Type a program never calls costs nothing to compile. A Type that calls no narrow or morph finds its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. <Claim id="strictSpeedup" />
 
 ## Errors as data
 

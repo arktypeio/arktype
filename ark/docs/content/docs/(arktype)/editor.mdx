@@ -13,6 +13,8 @@ Install [ArkType](https://marketplace.visualstudio.com/items?itemName=arktypeio.
 - one-line summaries of ArkType's type errors at the end of the line, through [ErrorLens](https://marketplace.visualstudio.com/items?itemName=usernamehw.errorlens), which it installs as a dependency
 - the setting `"editor.quickSuggestions": { "strings": "on" }`, so you get completions while typing an expression like `"string | num"`
 
+It also sets ErrorLens to show the message of the problem closest to your cursor, with no delay and without the hover buttons, and to show only the part of an ArkType error that names the fix, like `"number | string"` for `"number | strin"`. Each is an ordinary default, so a value in your own settings for `errorLens.followCursor`, `errorLens.delay`, `errorLens.editorHoverPartsEnabled` or `errorLens.replace` overrides it.
+
 To have auto-import pick ArkType's `type` instead of the `type` function from Node's `os` module, add this to `.vscode/settings.json`:
 
 ```json title=".vscode/settings.json"

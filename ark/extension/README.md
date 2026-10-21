@@ -22,6 +22,8 @@ We're building a 1:1 validator for TypeScript! Check out our core project [on Gi
 
 ![errorLens](https://raw.githubusercontent.com/arktypeio/arktype/refs/heads/main/ark/extension/errorLens.png)
 
+See [arktype.io/docs/editor](https://arktype.io/docs/editor) for the settings it changes and the JetBrains and Neovim alternatives.
+
 ## Contributing
 
 **Run > Debugger** (`F5` by default) will launch the extension in another window, allowing you to see the effects of your changes on whatever code you open in it.
