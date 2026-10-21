@@ -145,7 +145,7 @@ type("===", {})({})
 
 ### Add codecs
 
-`codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:
+`codec` from `arktype/codecs` pairs a morph with its inverse (#909). Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:
 
 ```ts
 import { codec } from "arktype/codecs"
@@ -167,11 +167,9 @@ const encoded = Event.encode(event)
 
 A codec's inverse is part of its morph node's schema as `inverse`, so it appears in `.json`.
 
-https://github.com/arktypeio/arktype/issues/909
-
 ### Write error messages in other languages
 
-Configure a locale to write error messages in another language. ArkType ships two: `en`, the default, and `de`.
+Configure a locale to write error messages in another language (#1498). ArkType ships two: `en`, the default, and `de`.
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -217,11 +215,9 @@ configure({ locale: fr })
 
 Without it, creating a Type with that locale configured throws, as does `toLocaleString` or `messageIn` with that locale.
 
-https://github.com/arktypeio/arktype/issues/1498
-
 ### Give undeclared keys the `undeclared` code
 
-A key that `"+": "reject"` disallows was a `predicate` error. It now has the code `undeclared`, and its `data` is the key's value rather than the object around it, as every other error's `data` is the value at its path:
+A key that `"+": "reject"` disallows was a `predicate` error (#1403). It now has the code `undeclared`, and its `data` is the key's value rather than the object around it, as every other error's `data` is the value at its path:
 
 ```ts
 const T = type({ "+": "reject", a: "string" })
@@ -259,8 +255,6 @@ m({ a: "x", b: "y" })
 ```
 
 An exhaustive `switch` over `ArkErrorCode` must now handle `undeclared` and `discriminant`.
-
-https://github.com/arktypeio/arktype/issues/1403
 
 ### Give misses of `number | null` and discriminated unions the `discriminant` code
 
@@ -340,7 +334,7 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 
 Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
 
-### Standalone validators on `arktype/runtime`
+### Run precompiled validators on `arktype/runtime`
 
 `@ark/precompile` can replace each Type a program defines with a validator that runs on the new `arktype/runtime` entry, without arktype's parser or nodes and without generating code, so it validates under a Content-Security-Policy that blocks `eval`:
 
@@ -425,7 +419,7 @@ An object definition's values are read as each key is parsed rather than all bef
 
 ### Read data in a different order
 
-A getter or `Proxy` trap on the data can see these reads change:
+A getter or `Proxy` trap on validated data can run a different number of times, and in a different order, than before, and a value that reads differently each time can be allowed if any read is. In detail:
 
 - `allows`, and the check a call runs before it looks for errors, read the first key they check before checking that data is an object, and again as they check its value, so a getter or `get` trap for that key can run twice, and one on a primitive's prototype, such as `String.prototype` or `Object.prototype`, runs before the primitive is rejected. They then look for `Object.prototype` in the object's prototype chain, so the `getPrototypeOf` trap of any `Proxy` on it runs, and an error from that trap propagates, as one from a getter does.
 - `allows`, and the check a call runs before it looks for errors, read a required key whose value can't be `undefined`, a morph's input included, without first asking whether data has it, so a `has` trap doesn't run for it.
@@ -1114,7 +1108,7 @@ T(Object.assign(["a"], { 4294967295: "b" }))
 
 ### Resolve names that match `Object.prototype` members
 
-Aliases, generic parameters, keyword lookups and `FormData` fields named like an `Object.prototype` member (e.g. `toString`, `constructor`, `valueOf`) no longer resolve to the inherited member:
+Aliases, generic parameters, keyword lookups and `FormData` fields named like an `Object.prototype` member (e.g. `toString`, `constructor`, `valueOf`) no longer resolve to the inherited member (#1121):
 
 ```ts
 // previously threw: #toString duplicates public alias toString
@@ -1124,15 +1118,13 @@ scope({ toString: "string" }).export()
 type("toString")
 ```
 
-https://github.com/arktypeio/arktype/issues/1121
-
 ### Skip the CSP probe when `jitless` is configured
 
-Configuring `jitless` through `arktype/config` before importing arktype no longer runs the `new Function` check for JIT support, so a page with a strict Content-Security-Policy no longer logs an eval violation.
-
-https://github.com/arktypeio/arktype/issues/1473
+Configuring `jitless` through `arktype/config` before importing arktype no longer runs the `new Function` check for JIT support, so a page with a strict Content-Security-Policy no longer logs an eval violation (#1473).
 
 ### Emit `enum` for a configured union of literals
+
+A union of literals with meta of its own, like a `title` or a description, was written as an `anyOf` of `const`s, each repeating the meta (#1470):
 
 ```ts
 // previously { anyOf: [{ const: "a", title: "Letter" }, { const: "b", title: "Letter" }], title: "Letter" }
@@ -1140,19 +1132,13 @@ https://github.com/arktypeio/arktype/issues/1473
 type("'a' | 'b'").configure({ title: "Letter" }).toJsonSchema()
 ```
 
-https://github.com/arktypeio/arktype/issues/1470
-
 ### Import in runtimes without web platform globals
 
-Importing arktype no longer throws in runtimes that lack `Blob`, `URL`, `FormData`, `Headers`, `Request` or `Response`, such as WeChat mini programs, AudioWorklets or an embedded V8 or QuickJS. A keyword whose global is missing throws when used, e.g. `'Blob' is unresolvable`.
-
-https://github.com/arktypeio/arktype/issues/1555
+Importing arktype no longer throws in runtimes that lack `Blob`, `URL`, `FormData`, `Headers`, `Request` or `Response`, such as WeChat mini programs, AudioWorklets or an embedded V8 or QuickJS (#1555). A keyword whose global is missing throws when used, e.g. `'Blob' is unresolvable`.
 
 ### Infer platform keywords whose globals are declared as classes
 
-With declarations like `@cloudflare/workers-types`, which declare `Blob`, `File`, `Headers` and `URL` as classes, those keywords infer their instance types instead of `never`.
-
-https://github.com/arktypeio/arktype/issues/1548
+With declarations like `@cloudflare/workers-types`, which declare `Blob`, `File`, `Headers` and `URL` as classes, those keywords infer their instance types instead of `never` (#1548).
 
 ### Throw a scope alias's parse error on every reference
 
@@ -1160,7 +1146,7 @@ After an alias failed to parse, later references to it returned a type that cras
 
 ### Export the types that inferred types reference
 
-`arktype` exports `Brand`, `Json`, `GenericAst`, `ArkErrorCode` and `Regex` as types. Under pnpm, exporting a type that references one of them (a brand, `string.json.parse`, a scope with a generic, a `regex()` value or `byPath(errors)`) failed declaration emit with TS2883, since the packages they lived in usually can't be resolved from your project:
+`arktype` exports `Brand`, `Json`, `GenericAst`, `ArkErrorCode` and `Regex` as types (#1577). Under pnpm, exporting a type that references one of them (a brand, `string.json.parse`, a scope with a generic, a `regex()` value or `byPath(errors)`) failed declaration emit with TS2883, since the packages they lived in usually can't be resolved from your project:
 
 ```ts
 // previously TS2883: The inferred type of 'Gid' cannot be named without a reference to '.pnpm/@ark+util@.../node_modules/@ark/util'
@@ -1168,11 +1154,9 @@ After an alias failed to parse, later references to it returned a type that cras
 export const Gid = type("string#GID")
 ```
 
-https://github.com/arktypeio/arktype/issues/1577
-
 ### Write length bounds and protos alongside a structure
 
-An expression or description with props or an array element dropped the length bounds and the proto beside it, so distinct types printed the same:
+An expression or description with props or an array element dropped the length bounds and the proto beside it, so distinct types printed the same (#1430):
 
 ```ts
 // previously number[], now number[] >= 2
@@ -1185,11 +1169,9 @@ type("Date").and({ foo: "string" }).expression
 type("(string > 1)[]").expression
 ```
 
-https://github.com/arktypeio/arktype/issues/1430
-
 ### Parse an invoked builtin generic in the invoking scope
 
-A type created by calling a builtin generic directly, like `type.Record(...)`, belonged to an internal schema scope, so methods that take a definition (`.to`, `.or`, `.and`, ...) parsed it as a schema:
+A type created by calling a builtin generic directly, like `type.Record(...)`, belonged to an internal schema scope, so methods that take a definition (`.to`, `.or`, `.and`, ...) parsed it as a schema (#1600):
 
 ```ts
 // previously threw ParseError: instanceOf operand must be a function (was undefined)
@@ -1201,11 +1183,9 @@ type
 
 It now belongs to the scope it was invoked from and follows its config, so `$.type.Record(...)` invoked from a `jitless` scope is no longer compiled, and the scope's `onFail` applies to it.
 
-https://github.com/arktypeio/arktype/issues/1600
-
 ### Release functions passed to `narrow`, `pipe`, `match` and defaults
 
-A type built from a new function, such as one created per request, kept that function and everything it captured in memory forever. Such functions are now released along with the type, and so is a `scope()` whose aliases are never resolved:
+A type built from a new function, such as one created per request, kept that function and everything it captured in memory forever (#1676). Such functions are now released along with the type, and so is a `scope()` whose aliases are never resolved:
 
 ```ts
 const handleRequest = (request: { id: number }) =>
@@ -1219,11 +1199,9 @@ A function stays in memory while a cyclic Type, a generic instantiation (always,
 
 The `$ark.x` names that functions get in a type's `json` or `expression` are unique names only and no longer resolve through `$ark`. `ctx.meta` in a compiled union or undeclared-key error is the type's own meta, as in jitless mode, so a value like `NaN` is no longer stringified. In `@ark/schema`, `BaseNode.compiledMeta` is removed, and `BaseScope.resolutions` holds an unresolved alias's parse context instead of its id.
 
-https://github.com/arktypeio/arktype/issues/1676
-
 ### Define a matcher whose cases a reordering would separate
 
-A matcher whose cases get grouped out of order, like tuples discriminated by an element, threw at definition even though no input could reach two of the cases:
+A matcher whose cases get grouped out of order, like tuples discriminated by an element, threw at definition even though no input could reach two of the cases (#1445):
 
 ```ts
 const Dir = type({ "[string]": "unknown" })
@@ -1235,8 +1213,6 @@ match
 	.case(["string", "string"], ([a, b]) => a.localeCompare(b))
 	.default(() => 0)
 ```
-
-https://github.com/arktypeio/arktype/issues/1445
 
 ### Check every case that accepts a discriminated tuple element
 
@@ -1288,7 +1264,7 @@ match
 
 ### Infer required keys from `.required()` on defaulted properties
 
-`.required()` and the `Required` generic made a defaulted key required at runtime, but its inferred type kept the default, so `inferIn` still treated the key as optional. This also applied to defaulted morphs and tuple elements:
+`.required()` and the `Required` generic made a defaulted key required at runtime, but its inferred type kept the default, so `inferIn` still treated the key as optional (#1160). This also applied to defaulted morphs and tuple elements:
 
 ```ts
 const T = type({ foo: "string = 'bar'" }).required()
@@ -1297,11 +1273,9 @@ const T = type({ foo: "string = 'bar'" }).required()
 type In = typeof T.inferIn
 ```
 
-https://github.com/arktypeio/arktype/issues/1160
-
 ### Infer the output of morphs that return `any`
 
-A morph whose output was `any`, or a function returning `any`, was left in the inferred type as the morph itself:
+A morph whose output was `any`, or a function returning `any`, was left in the inferred type as the morph itself (#1023):
 
 ```ts
 const T = type({ a: ["string", "=>", s => JSON.parse(s)] })
@@ -1311,8 +1285,6 @@ type Out = typeof T.infer
 ```
 
 Inferred types that contain no morphs, defaults or brands still keep their names, like interfaces passed to `.as`.
-
-https://github.com/arktypeio/arktype/issues/1023
 
 ### Name the narrow in an unsatisfiable intersection error
 
