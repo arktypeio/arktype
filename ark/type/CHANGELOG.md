@@ -291,6 +291,16 @@ type("string | string[]")(5)
 
 A `switch` over a `discriminant` error's `cases` must handle `"Array"`.
 
+### Write `string.regex` errors as `string.json` writes its own
+
+A `string.regex` error's problem was the bare `SyntaxError` the pattern threw. It now says what was expected, as `string.json`'s does and `de` already did:
+
+```ts
+// was: ArkErrors: SyntaxError: Invalid regular expression: /(/: Unterminated group
+// now: ArkErrors: must be a regex pattern (SyntaxError: Invalid regular expression: /(/: Unterminated group)
+type("string.regex")("(")
+```
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:

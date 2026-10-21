@@ -262,8 +262,8 @@ contextualize(() => {
 			attest(error.meta).snap({ keyword: "string.regex" })
 			attest(error.cause).instanceOf(SyntaxError)
 			attest(error.expected).snap("a regex pattern")
-			attest(error.problem).equals(String(error.cause))
-			attest(error.message).equals(`r ${error.cause}`)
+			attest(error.problem).equals(`must be a regex pattern (${error.cause})`)
+			attest(error.message).equals(`r ${error.problem}`)
 		})
 
 		it("per-code config outranks the phrase", () => {

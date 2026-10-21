@@ -215,10 +215,9 @@ export const emptyCollectionDefaults = {
 	[literal in EmptyCollectionLiteral]: () => inferDefaultLiteral<literal>
 }
 
-const regexError = /* @__PURE__ */ keywordError(
-	"string.regex",
-	"a regex pattern"
-)
+const regexPattern = "a regex pattern"
+
+const regexError = /* @__PURE__ */ keywordError("string.regex", regexPattern)
 
 export const isRegexPattern = (s: string, ctx: Traversal): boolean => {
 	try {
@@ -238,10 +237,10 @@ export const raisedErrorPhrases = {
 		problem: jsonProblem
 	},
 	"string.regex": {
-		noun: "a regex pattern",
+		noun: regexPattern,
 		problem: (e, locale) =>
 			e.code === "predicate" && e.cause !== undefined ?
-				describeSyntaxError(e.cause as SyntaxError)
+				`must be ${regexPattern} (${describeSyntaxError(e.cause as SyntaxError)})`
 			:	locale.problem(e, locale)
 	}
 } as const satisfies Record<string, Locale.KeywordWriters>
