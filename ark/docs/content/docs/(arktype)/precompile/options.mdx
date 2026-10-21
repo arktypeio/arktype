@@ -57,7 +57,7 @@ precompile.vite({
 
 ### countsKeys
 
-`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key.
+`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key. Index signatures and tuples are still checked key by key, and an `optimize: "size"` build counts nothing.
 
 What it gives up: an undeclared key can pass in place of a declared key that a plain object holds as a non-enumerable property or inherits from `Object.prototype`. For example, `{ "+": "reject", toString: "Function" }` passes `{ extra: 1 }`.
 
