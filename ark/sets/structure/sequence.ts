@@ -82,13 +82,19 @@ export const sequence: setImplementationOf<Sequence.Declaration> = {
 				ctx
 			})
 
-			const viableBranches =
-				rootState.disjoint.length === 0 ?
-					[rootState, ...rootState.fixedVariants]
-				:	rootState.fixedVariants
+			const branches = [rootState, ...rootState.fixedVariants]
+			const viableBranches = branches.filter(
+				state => state.disjoint.length === 0 && fitsLength(state)
+			)
 
 			return (
-				viableBranches.length === 0 ? rootState.disjoint!
+				viableBranches.length === 0 ?
+					// variants share the entries found before they branched
+					new Disjoint(
+						...new Set(
+							branches.filter(fitsLength).flatMap(state => state.disjoint)
+						)
+					)
 				: viableBranches.length === 1 && viableBranches[0].result.length ?
 					ctx.$.node("sequence", sequenceTupleToInner(viableBranches[0].result))
 				:	ctx.$.node("union", {
@@ -163,20 +169,21 @@ const _intersectSequences = (
 			"defaultables"
 		:	"optionals"
 
-	// a prefix meeting a variadic followed by postfix elements may also meet
+	// an element before a variadic followed by postfix elements may also meet
 	// those elements directly, in a fixed length variant
 	const postfixSide =
-		lHead.kind === "prefix" && rHead.kind === "variadic" && rHasPostfix ? "r"
-		: rHead.kind === "prefix" && lHead.kind === "variadic" && lHasPostfix ? "l"
+		kind !== "prefix" ? undefined
+		: rHead.kind === "variadic" && rHasPostfix ? "r"
+		: lHead.kind === "variadic" && lHasPostfix ? "l"
 		: undefined
 	if (postfixSide) {
-		const postfixBranchResult = _intersectSequences({
-			...s,
-			fixedVariants: [],
-			[postfixSide]: asPrefix(postfixSide === "l" ? lTail : rTail)
-		})
-		if (postfixBranchResult.disjoint.length === 0)
-			s.fixedVariants.push(postfixBranchResult)
+		s.fixedVariants.push(
+			_intersectSequences({
+				...s,
+				disjoint: new Disjoint(...s.disjoint),
+				[postfixSide]: asPrefix(postfixSide === "l" ? lTail : rTail)
+			})
+		)
 	}
 
 	const result = intersectOrPipeNodes(lHead.node, rHead.node, s.ctx)
@@ -200,16 +207,13 @@ const _intersectSequences = (
 			// ends before the disjoint element would occur
 			return s
 		} else {
-			// if the element is variadic and unsatisfiable, the intersection
-			// can be satisfied with a fixed length variant including zero
-			// variadic elements
+			// if the element is variadic and unsatisfiable, the variadic elements
+			// can't overlap, so the shorter postfix is preceded by its own
+			// variadic elements to align with the longer one
 			return _intersectSequences({
 				...s,
-				fixedVariants: [],
-				// if there were any optional elements, there will be no postfix elements
-				// so this mapping will never occur (which would be illegal otherwise)
-				l: asPrefix(lTail),
-				r: asPrefix(rTail)
+				l: alignPostfix(lHead, lTail, rTail.length),
+				r: alignPostfix(rHead, rTail, lTail.length)
 			})
 		}
 	} else if (kind === "defaultables") {
@@ -244,14 +248,18 @@ const _intersectSequences = (
 	if (
 		lHead.kind !== "variadic" ||
 		(lRemaining >= rRemaining &&
-			(rHead.kind === "variadic" || rRemaining === 1))
+			(rHead.kind === "variadic" ||
+				rHead.kind === "postfix" ||
+				rRemaining === 1))
 	)
 		s.l = lTail
 
 	if (
 		rHead.kind !== "variadic" ||
 		(rRemaining >= lRemaining &&
-			(lHead.kind === "variadic" || lRemaining === 1))
+			(lHead.kind === "variadic" ||
+				lHead.kind === "postfix" ||
+				lRemaining === 1))
 	)
 		s.r = rTail
 
@@ -261,5 +269,19 @@ const _intersectSequences = (
 const asPrefix = (elements: SequenceTuple): SequenceTuple =>
 	elements.map(element => ({ ...element, kind: "prefix" }))
 
+const alignPostfix = (
+	variadic: SequenceElement,
+	postfix: SequenceTuple,
+	length: number
+): SequenceTuple =>
+	asPrefix([
+		...Array.from({ length: length - postfix.length }, () => variadic),
+		...postfix
+	])
+
 const elementIsRequired = (el: SequenceElement) =>
 	el.kind === "prefix" || el.kind === "postfix"
+
+// a branch with required elements left on either side has no length both allow
+const fitsLength = (s: SequenceIntersectionState) =>
+	!s.l.some(elementIsRequired) && !s.r.some(elementIsRequired)

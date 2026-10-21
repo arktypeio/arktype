@@ -495,6 +495,27 @@ const T = type(["...", "number[]", "string"]).and(["...", "boolean[]", "'a'"])
 T.expression
 ```
 
+### Fix intersecting tuples with elements after a variadic element
+
+Intersecting tuples where either has elements after a variadic element now allows exactly the arrays both allow. It could throw for a satisfiable intersection, allow arrays either side rejects, or drop the lengths where a prefix or optional element meets the other side's postfix:
+
+```ts
+const T = type(["number", "...", "number[]", "string"]).and([
+	"number",
+	"...",
+	"string[]",
+	"string"
+])
+
+// previously threw "Intersection at [0] of string and number", now [number, string]
+T.expression
+
+// previously [number, number], now [number, 1]
+type(["number", "number"]).and(["...", "number[]", "1"]).expression
+```
+
+An unsatisfiable intersection like this now names only the elements that conflict at the lengths both tuples allow.
+
 ### Fix deep transforms through a tuple default
 
 `onDeepUndeclaredKey` and `configure` with `"references"` threw on a tuple with a default:
