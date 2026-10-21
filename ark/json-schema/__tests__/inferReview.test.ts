@@ -1830,7 +1830,7 @@ contextualize(() => {
 			attest(() =>
 				// @ts-expect-error
 				inferred({ type: "array", maxItems: -1e3 })
-			).type.errors("maxItems must be a non-negative integer (was -1e3)")
+			).type.errors("maxItems must be a non-negative integer (was -1000)")
 		})
 
 		it("property and contains counts", () => {
