@@ -1522,6 +1522,13 @@ password must be at least length 8`)
 		})
 	})
 
+	it("configured problem at an index", async () => {
+		const { T } = await load({
+			T: type(type("string").configure({ problem: "is no string" }), "[]")
+		})
+		attest(T([1]).summary).snap("[0] is no string")
+	})
+
 	it("configured actual", async () => {
 		const { T } = await load({
 			T: type({ a: type("string").configure({ actual: "not text" }) })
