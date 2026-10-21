@@ -15,7 +15,7 @@ precompile.vite({
 })
 ```
 
-`errors`, `mutatesInput`, `members`, `optimize`, `freeze`, `lazy`, `checks` and `countsKeys` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+`errors`, `mutatesInput`, `members`, `optimize`, `freeze`, `lazy`, `checks`, `countsKeys` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
 
 ### errors
 
@@ -51,7 +51,7 @@ precompile.vite({
 })
 ```
 
-`members: { errorMethods: false }` gives errors only their `count`, `issues` and `summary`. They lack `throw()`, `toJSON()` and `toString()`, so `JSON.stringify` writes their internals, though `instanceof type.errors` still recognizes them. `.assert()` still throws a `TraversalError`. They're the smallest errors a build can return, and reading their issues is slower.
+`members: { errorMethods: false }` gives errors only their `count`, `issues` and `summary`. They lack `throw()`, `toJSON()` and `toString()`, so `JSON.stringify` writes their internals, though `instanceof type.errors` still recognizes them. `.assert()` still throws what it would otherwise: a `TraversalError`, or with `errors: "none"` a plain `Error`. They're the smallest errors a build can return, and reading their issues is slower.
 
 The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for it, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
 
@@ -61,7 +61,7 @@ The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for
 
 ### countsKeys
 
-`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key. Index signatures and tuples are still checked key by key, and an `optimize: "size"` build counts nothing.
+`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key. Index signatures and tuples are still checked key by key. An `optimize: "size"` build with `errors: "none"` counts as any build does; with other `errors`, it counts only in some Types, such as one holding a narrow or morph.
 
 What it gives up: an undeclared key can pass in place of a declared key that a plain object holds as a non-enumerable property or inherits from `Object.prototype`. For example, `{ "+": "reject", toString: "Function" }` passes `{ extra: 1 }`.
 
@@ -75,7 +75,7 @@ What it gives up: an undeclared key can pass in place of a declared key that a p
 
 ### checks
 
-`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default where Vitest runs tests) each static helper too, and `"none"` only those holding functions, so a module mock replacing any other goes unnoticed.
+`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default under Vitest, `node --test` and `bun test`) each static helper too, and `"none"` only those holding functions, so a module mock replacing any other goes unnoticed.
 
 ### allowUnsafe
 

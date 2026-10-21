@@ -26,9 +26,11 @@ Tests and typechecking read each package's source through the `ark-ts` condition
 
 - `ark/type` — main validation library (`arktype` on npm)
 - `ark/schema` — schema layer (constraint nodes, refinements, scopes)
+- `ark/sets` — set algebra over schemas: relate, combine and convert Types and JSON Schemas (`arksets` on npm)
 - `ark/util` — shared utilities
 - `ark/docs` — documentation site (Next.js)
 - `ark/json-schema` — JSON Schema conversion
+- `ark/precompile` — build-time precompilation of Types to standalone validators (`@ark/precompile` on npm)
 - `ark/regex` — ArkRegex type-safe regex
 - `ark/attest` — assertion/test library
 - `ark/fast-check` — property testing integration
