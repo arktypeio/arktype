@@ -2020,7 +2020,7 @@ try {
 				{ runtime },
 				{ ARKTYPE_RUNTIME: runtime ?? "" }
 			)
-			attest(state.getCountOfFailedTests()).equals(0)
+			attest(outcomesOf(state)).equals({ failed: 0, passed: 2 })
 		}
 	})
 
