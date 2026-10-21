@@ -2255,7 +2255,7 @@ export class Precompiler {
 		if (this.mode === "standalone") {
 			diagnostics.push(
 				...this.checkStandalone(module, candidates, settled),
-				...this.checkIslands(module)
+				...this.checkIslands(module, sites)
 			)
 		}
 		return {
@@ -3498,23 +3498,37 @@ export class Precompiler {
 	}
 
 	// what a runtime island reaches must run on arktype too
-	private checkIslands(module: SourceModule): Diagnostic[] {
+	private checkIslands(module: SourceModule, sites: Site[]): Diagnostic[] {
+		const result = module.strayMarkers.map(marker =>
+			this.diagnostic(
+				module,
+				marker,
+				"R4",
+				"`// @ark-runtime` marks nothing",
+				[],
+				markerHint
+			)
+		)
 		if (this.errors === "none") {
-			return module.islands.map(island =>
-				this.diagnostic(
-					module,
-					island,
-					"R4",
-					`a runtime island returns arktype's errors, which aren't instances of type.errors under errors: "none"`,
-					[
-						"a build whose errors say only that data is invalid gives its validators a runtime of their own"
-					],
-					`Precompile the definition, or build without errors: "none".`
+			result.push(
+				...module.islands.map(island =>
+					this.diagnostic(
+						module,
+						island,
+						"R4",
+						`a runtime island returns arktype's errors, which aren't instances of type.errors under errors: "none"`,
+						[
+							"a build whose errors say only that data is invalid gives its validators a runtime of their own"
+						],
+						`Precompile the definition, or build without errors: "none".`
+					)
 				)
 			)
+			return result
 		}
-		const result: Diagnostic[] = []
 		const visited = new Set<Node>()
+		// whether the island being visited reaches arktype
+		let reaches = false
 		const visit = (node: Node, origin: SourceModule, reasons: string[]) =>
 			walk(node, child => {
 				const reference =
@@ -3530,6 +3544,7 @@ export class Precompiler {
 					return true
 				const [name, arkRead] = this.graph.arkExportOf(reference, origin) ?? []
 				if (arkRead) {
+					reaches = true
 					if (
 						!isInIsland(arkRead, origin) &&
 						!isRuntimeExport(name!) &&
@@ -3564,11 +3579,16 @@ export class Precompiler {
 					read = member
 					target = exported
 				}
-				if (target.kind !== "binding" && target.kind !== "expression")
+				if (target.kind !== "binding" && target.kind !== "expression") {
+					if (target.kind !== "json") reaches = true
 					return true
+				}
 				const declaration =
 					target.kind === "binding" ? target.binding.declaration : target.node
-				if (isInIsland(declaration, target.module)) return true
+				if (isInIsland(declaration, target.module)) {
+					reaches = true
+					return true
+				}
 				if (
 					isArk(
 						target.kind === "binding" ?
@@ -3576,6 +3596,7 @@ export class Precompiler {
 						:	this.graph.kindOf(target.node, target.module)
 					)
 				) {
+					reaches = true
 					// e.g. `User(data)` or `User.assert(data)`, which a validator runs
 					if (
 						!(
@@ -3598,11 +3619,15 @@ export class Precompiler {
 					return true
 				}
 				if (
-					(target.kind === "binding" &&
-						!(target.binding.kind in declaredBindingKinds)) ||
-					visited.has(declaration)
+					target.kind === "binding" &&
+					!(target.binding.kind in declaredBindingKinds)
 				)
 					return true
+				// what an earlier island visited reported what it reaches
+				if (visited.has(declaration)) {
+					reaches = true
+					return true
+				}
 				visited.add(declaration)
 				const step = `\`${origin.snippetOf(read)}\` (${target.module.positionOf(target.kind === "binding" ? target.binding.id : declaration)})`
 				visit(
@@ -3616,7 +3641,39 @@ export class Precompiler {
 				)
 				return true
 			})
-		for (const island of module.islands) visit(island, module, [])
+		for (const island of module.islands) {
+			if (
+				sites.some(site => site.status === "accepted" && contains(site, island))
+			) {
+				result.push(
+					this.diagnostic(
+						module,
+						island,
+						"R4",
+						`\`${module.snippetOf(island)}\` is marked // @ark-runtime inside a definition the build precompiles`,
+						[],
+						markerHint
+					)
+				)
+				continue
+			}
+			reaches = sites.some(
+				site => site.status === "island" && contains(island, site)
+			)
+			visit(island, module, [])
+			if (!reaches) {
+				result.push(
+					this.diagnostic(
+						module,
+						island,
+						"R4",
+						`\`${module.snippetOf(island)}\` is marked // @ark-runtime but doesn't use arktype`,
+						[],
+						markerHint
+					)
+				)
+			}
+		}
 		return result
 	}
 
@@ -3868,6 +3925,9 @@ const frozenHint = `Keep what you attach in an object of your own, or build with
 
 const unresolvedHint =
 	"If a bundler alias resolves it, add the alias to tsconfig.json's `paths` or name that tsconfig as the build's `tsconfig`, so the build can check it."
+
+const markerHint =
+	"Put // @ark-runtime right before a definition arktype should run, or remove it."
 
 const islandHint = `A runtime island runs on arktype, as must what it reads. Mark that definition // @ark-runtime too, or build with runtime: "arktype".`
 

@@ -155,6 +155,24 @@ export const D = type("boolean")`)
 		])
 	})
 
+	it("fails for a marker that leaves nothing to arktype", () => {
+		attest(
+			diagnosticsOf(`import { type } from "arktype"
+// @ark-runtime
+const x = 1
+export const A = type({
+	// @ark-runtime
+	a: type("string")
+})
+export const B = type("number")
+// @ark-runtime`)
+		).snap([
+			"/main.ts:3:1  `const x = 1` is marked // @ark-runtime but doesn't use arktype\n  Put // @ark-runtime right before a definition arktype should run, or remove it.",
+			'/main.ts:6:2  `a: type("string")` is marked // @ark-runtime inside a definition the build precompiles\n  Put // @ark-runtime right before a definition arktype should run, or remove it.',
+			"/main.ts:9:1  `// @ark-runtime` marks nothing\n  Put // @ark-runtime right before a definition arktype should run, or remove it."
+		])
+	})
+
 	it("lets code outside it read what its Type has", () => {
 		attest(
 			diagnosticsOf(`import { type } from "arktype"

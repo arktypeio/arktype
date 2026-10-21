@@ -22,6 +22,8 @@ export class SourceModule {
 	parseErrors: string[]
 	// nodes a `// @ark-runtime` comment leads, whose sites run on arktype
 	islands: Node[]
+	// markers no node follows
+	strayMarkers: Comment[] = []
 	private lineStarts: number[] | undefined
 	// where a tool that transpiled the source before the build maps its lines
 	private mappings: SourceMapMappings | undefined
@@ -42,7 +44,7 @@ export class SourceModule {
 		this.scopes = new ModuleScopes(this.program)
 		this.islands =
 			source.includes(islandMarker) ?
-				islandsOf(this.program, source, result.comments)
+				islandsOf(this.program, source, result.comments, this.strayMarkers)
 			:	[]
 	}
 
@@ -102,7 +104,8 @@ const islandMarker = "@ark-runtime"
 const islandsOf = (
 	program: Program,
 	source: string,
-	comments: Comment[]
+	comments: Comment[],
+	strays: Comment[]
 ): Node[] => {
 	const result: Node[] = []
 	const whitespace = /\s*/y
@@ -125,6 +128,7 @@ const islandsOf = (
 			return !island && node.start <= start && start < node.end
 		})
 		if (island) result.push(island)
+		else strays.push(comment)
 	}
 	return result
 }
