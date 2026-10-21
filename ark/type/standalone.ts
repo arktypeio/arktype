@@ -2575,8 +2575,9 @@ ${writeFunction(
 				{
 					params: pattern,
 					apply: `(data, onFail) => allows(data) ? ${valid} : ${
-						unreads ?
-							`runtime.unreadErrors(${apply}, data, onFail, ${Ctx})`
+						unreads ? `runtime.unreadErrors(${apply}, data, onFail, ${Ctx})`
+						: reportsIssues ?
+							`runtime.applyIssues(${apply}, data, onFail${this.baking.firstIssue ? `, ${Ctx}` : ""})`
 						:	`runtime.applyErrors(${apply}, data, ${refOf("config")}, onFail, ${Ctx})`
 					}`,
 					args: parts

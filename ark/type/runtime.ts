@@ -576,6 +576,22 @@ export const applyErrors = (
 	)
 }
 
+// a root reporting into ArkErrors, as a size build applies it
+export const applyIssues = (
+	apply: CompactApply,
+	data: unknown,
+	onFail: ArkErrors.Handler | null,
+	Ctx: new () => ArkErrors = ArkErrors
+): unknown => {
+	const errors = new Ctx()
+	apply(data, errors)
+	return (
+		!releasePath(errors).count ? data
+		: onFail ? onFail(errors)
+		: errors
+	)
+}
+
 export const applyNodeErrors = (
 	node: { traverseApply: CompactApply },
 	data: unknown,
