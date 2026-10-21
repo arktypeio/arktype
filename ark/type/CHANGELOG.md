@@ -1536,6 +1536,17 @@ type({ [Symbol("s")]: "string" }).toJsonSchema()
 type("string.uuid.v4").toJsonSchema()
 ```
 
+### Don't require the nil and max UUIDs as keys of a `string.uuid` index signature
+
+`string.uuid` was a union of a pattern and the nil and max UUIDs, which as an index signature's key made those two required keys (#1481). It's now one pattern accepting the same strings, so its JSON Schema is a `pattern` rather than an `anyOf`:
+
+```ts
+// was: ArkErrors: value at ["00000000-0000-0000-0000-000000000000"] must be a number (was missing)
+// value at ["ffffffff-ffff-ffff-ffff-ffffffffffff"] must be a number (was missing)
+// now: {}
+type({ "[string.uuid]": "number" })({})
+```
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

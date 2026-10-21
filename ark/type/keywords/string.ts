@@ -777,17 +777,13 @@ const uuidVersions = [1, 2, 3, 4, 5, 6, 7, 8] as const
 // based on https://github.com/validatorjs/validator.js/blob/master/src/lib/isUUID.js
 export const uuid: uuid.module = keywordModule(
 	{
-		// the meta tuple expression ensures the error message does not delegate
-		// to the individual branches, which are too detailed
 		root: [
-			"versioned | nil | max",
+			// one pattern rather than a union with the nil and max literals, which
+			// as an index signature's key would make them required keys
+			/^(?:[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$/,
 			"@",
 			{ ...keywordMeta("string.uuid"), format: "uuid" }
 		],
-		"#nil": "'00000000-0000-0000-0000-000000000000'",
-		"#max": "'ffffffff-ffff-ffff-ffff-ffffffffffff'",
-		"#versioned":
-			/^[\dA-Fa-f]{8}-[\dA-Fa-f]{4}-[1-8][\dA-Fa-f]{3}-[89ABab][\dA-Fa-f]{3}-[\dA-Fa-f]{12}$/,
 		...flatMorph(uuidVersions, (i, version) => [
 			`v${version}`,
 			() =>

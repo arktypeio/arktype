@@ -30,16 +30,18 @@ contextualize(() => {
 
 		const Uuid = type("string.uuid")
 		attest(Uuid(upper)).equals(upper)
-		const uuidSchema = Uuid.toJsonSchema() as {
-			anyOf: { pattern?: string }[]
-		}
-		const versionedPattern = uuidSchema.anyOf[0].pattern!
-		attest(new RegExp(versionedPattern, "u").test(upper)).equals(true)
+		const uuidPattern = (Uuid.toJsonSchema() as { pattern: string }).pattern
+		attest(new RegExp(uuidPattern, "u").test(upper)).equals(true)
 
 		const Uuidv4 = type("string.uuid.v4")
 		attest(Uuidv4(upper)).equals(upper)
 		const v4Pattern = (Uuidv4.toJsonSchema() as { pattern: string }).pattern
 		attest(new RegExp(v4Pattern, "u").test(upper)).equals(true)
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1481
+	it("index signature keys are all optional", () => {
+		attest(type({ "[string.uuid]": "number" })({})).snap({})
 	})
 
 	it("version subtype JSON Schema format", () => {

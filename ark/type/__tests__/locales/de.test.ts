@@ -155,9 +155,9 @@ contextualize(() => {
 				"a fehlt (muss ein Wert gemäß der Beschreibung „ein x“ sein)",
 			"required instanceOf ← {}": "a fehlt (muss eine Instanz von Foo sein)",
 			"required string.uuid | number ← {}":
-				"a fehlt (muss eine Zahl, eine Zeichenkette oder eine UUID sein)",
+				"a fehlt (muss eine Zahl oder eine Zeichenkette sein)",
 			"required string.email | string.uuid ← {}":
-				"a fehlt (muss eine Zeichenkette oder eine UUID sein)",
+				"a fehlt (muss eine Zeichenkette sein)",
 			"required string.date.epoch.parse ← {}":
 				"a fehlt (muss ein gültiger Unix-Zeitstempel als ganzzahlige Zeichenkette sein)",
 			"required number.epoch ← {}": "a fehlt (muss eine Zahl sein)",
