@@ -113,6 +113,10 @@ export const buildStructureArbitrary = (
 	if (node.inner.exactLength?.rule === 0) return fc.tuple()
 
 	const fcArrayConstraints: fc.ArrayConstraints = {}
+	if (node.inner.exactLength) {
+		fcArrayConstraints.minLength = node.inner.exactLength.rule
+		fcArrayConstraints.maxLength = node.inner.exactLength.rule
+	}
 	if (node.inner.minLength)
 		fcArrayConstraints.minLength = node.inner.minLength.rule
 	if (node.inner.maxLength)

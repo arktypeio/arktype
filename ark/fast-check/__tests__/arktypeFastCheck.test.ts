@@ -175,6 +175,11 @@ contextualize(() => {
 			const arbitrary = arkToArbitrary(T)
 			assertProperty(arbitrary, T)
 		})
+		it("exact length", () => {
+			const T = type("string[] == 2")
+			const arbitrary = arkToArbitrary(T)
+			assertProperty(arbitrary, T)
+		})
 		it("union array", () => {
 			const T = type("(string|number)[]")
 			const arbitrary = arkToArbitrary(T)
