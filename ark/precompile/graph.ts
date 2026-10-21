@@ -482,6 +482,10 @@ const functionKindOf = (returned: KindBits): KindBits =>
 export const isArk = (kind: KindBits): boolean =>
 	(kind & (kinds.type | kinds.otherArk)) !== 0
 
+// e.g. what a call off a Module returns, as it may be any arktype value
+export const mayBeOtherArk = (kind: KindBits): boolean =>
+	(kind & kinds.otherArk) !== 0
+
 export const isOnlyType = (kind: KindBits): boolean =>
 	(kind & (kinds.type | kinds.otherArk | kinds.data)) === kinds.type
 
@@ -995,6 +999,26 @@ export class ModuleGraph {
 		)
 			return kinds.data
 		const iterated = this.literalOf(loop.right, module, kindOfKey)
+		// each element, so a pattern destructures what it holds
+		if (
+			iterated?.node.type === "ArrayExpression" &&
+			iterated.node.elements.every(element => element?.type !== "SpreadElement")
+		) {
+			let result = 0
+			for (const element of iterated.node.elements) {
+				if (!element) continue
+				const source = { ...iterated, node: element }
+				result |= this.patternKindOf(
+					binding.id,
+					declarator.id,
+					this.transfer(element, iterated.module, iterated.kindOfKey),
+					module,
+					kindOfKey,
+					source
+				)
+			}
+			return result
+		}
 		const element =
 			iterated?.node.type === "ArrayExpression" ?
 				this.heldKindOf(iterated)
@@ -1279,6 +1303,16 @@ export class ModuleGraph {
 						(value === null ? 0 : this.heldKindOf(literal)) |
 						unsureOf(kind)
 		}
+		const alias =
+			held && parent.type === "Property" ?
+				this.aliasKindOf(
+					held.node,
+					keyNameOf(parent),
+					held.module,
+					held.kindOfKey
+				)
+			:	undefined
+		if (alias !== undefined) return alias
 		switch (parent.type) {
 			case "Property":
 				return memberKindOf(
@@ -1414,6 +1448,8 @@ export class ModuleGraph {
 				const exported = this.namespaceMemberOf(node, module)
 				if (exported) return this.targetKindOf(exported, kindOfKey)
 				const name = memberNameOf(node)
+				const alias = this.aliasKindOf(node.object, name, module, kindOfKey)
+				if (alias !== undefined) return alias
 				const literal = this.literalOf(node.object, module, kindOfKey)
 				if (literal) {
 					// e.g. `o.a` in `const o = { a: o.a }`
@@ -1462,6 +1498,16 @@ export class ModuleGraph {
 					callee.type === "MemberExpression" &&
 					(memberNameOf(callee) as never) in typeParserTypes &&
 					this.arkExportNameOf(callee.object, module) === "type"
+				)
+					return kinds.type
+				// e.g. `$.type("User")`, with `$` a Scope
+				if (
+					node.type === "CallExpression" &&
+					node.arguments.length === 1 &&
+					node.arguments[0].type !== "SpreadElement" &&
+					callee.type === "MemberExpression" &&
+					memberNameOf(callee) === "type" &&
+					this.scopeCallOf(callee.object, module, kindOfKey)
 				)
 					return kinds.type
 				const fn =
@@ -1799,6 +1845,191 @@ export class ModuleGraph {
 					:	undefined
 			}
 		}
+	}
+
+	// e.g. a Type for `M.User` with `M = scope({ User: { ... } }).export()`
+	private aliasKindOf(
+		object: Node,
+		name: unknown,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): KindBits | undefined {
+		const definition = this.moduleDefinitionOf(object, module, kindOfKey)
+		const alias = definition && this.aliasIn(definition, name)
+		// a name it lacks may still be a member written in or inherited
+		if (!alias) return
+		if (alias.isGeneric) return kinds.otherArk | kinds.returnsType
+		const { node, module: valueModule, kindOfKey: valueKindOfKey } = alias.value
+		if (this.moduleDefinitionOf(node, valueModule, valueKindOfKey))
+			return kinds.otherArk
+		const value = unwrapChain(node)
+		// a definition, which a Scope resolves to a Type
+		if (
+			value.type === "Literal" ||
+			value.type === "TemplateLiteral" ||
+			value.type === "ObjectExpression" ||
+			value.type === "ArrayExpression"
+		)
+			return kinds.type
+		// e.g. a Type, but not a Module, Generic or thunk the build can't see into
+		return isOnlyType(this.transfer(value, valueModule, valueKindOfKey)) ?
+				kinds.type
+			:	undefined
+	}
+
+	// the aliases of a Module whose definition the build can read whole
+	private moduleDefinitionOf(
+		node: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		seen = new Set<Node>()
+	): Located | undefined {
+		node = unwrapChain(node)
+		if (seen.has(node)) return
+		seen.add(node)
+		if (node.type === "Identifier") {
+			const init = this.constInitOf(node, module, kindOfKey)
+			return (
+				init &&
+				this.moduleDefinitionOf(init.node, init.module, init.kindOfKey, seen)
+			)
+		}
+		if (node.type === "MemberExpression") {
+			// e.g. `M.sub` with `sub: type.module({ ... })`
+			const parent = this.moduleDefinitionOf(
+				node.object,
+				module,
+				kindOfKey,
+				seen
+			)
+			const alias = parent && this.aliasIn(parent, memberNameOf(node))
+			return alias && !alias.isGeneric ?
+					this.moduleDefinitionOf(
+						alias.value.node,
+						alias.value.module,
+						alias.value.kindOfKey,
+						seen
+					)
+				:	undefined
+		}
+		if (node.type !== "CallExpression") return
+		const callee = unwrapChain(node.callee)
+		if (callee.type !== "MemberExpression") return
+		const method = memberNameOf(callee)
+		// `scope({ ... }).export()` or `type.module({ ... })`
+		const call =
+			(
+				method === "module" &&
+				this.arkExportNameOf(callee.object, module) === "type"
+			) ?
+				{ node, module, kindOfKey }
+			: method === "export" ? this.scopeCallOf(callee.object, module, kindOfKey)
+			: undefined
+		const arg = (call?.node as CallExpression | undefined)?.arguments[0]
+		const definition =
+			arg &&
+			arg.type !== "SpreadElement" &&
+			this.literalOf(arg, call!.module, call!.kindOfKey)
+		return definition && definition.node.type === "ObjectExpression" ?
+				definition
+			:	undefined
+	}
+
+	// e.g. `scope({ ... })` for `$` with `const $ = scope({ ... })`
+	private scopeCallOf(
+		node: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey,
+		seen = new Set<Node>()
+	): Located | undefined {
+		node = unwrapChain(node)
+		if (seen.has(node)) return
+		seen.add(node)
+		if (node.type === "Identifier") {
+			const init = this.constInitOf(node, module, kindOfKey)
+			return (
+				init && this.scopeCallOf(init.node, init.module, init.kindOfKey, seen)
+			)
+		}
+		return (
+				node.type === "CallExpression" &&
+					this.arkExportNameOf(node.callee, module) === "scope"
+			) ?
+				{ node, module, kindOfKey }
+			:	undefined
+	}
+
+	// what a const binding is declared as, as one never written holds it
+	private constInitOf(
+		id: Node,
+		module: SourceModule,
+		kindOfKey: KindOfKey
+	): Located | undefined {
+		const binding = module.scopes.referencesById.get(id)?.binding
+		if (!binding || binding.writes.length) return
+		if (binding.kind === "import") {
+			const target = this.importOf(binding, module)
+			return (
+				target.kind === "binding" ?
+					this.constInitOf(target.binding.id, target.module, kindOfKey)
+				: target.kind === "expression" ?
+					{ node: target.node, module: target.module, kindOfKey }
+				:	undefined
+			)
+		}
+		const declaration = binding.declaration
+		return (
+				binding.kind === "const" &&
+					declaration.type === "VariableDeclarator" &&
+					declaration.id === binding.id &&
+					declaration.init
+			) ?
+				{ node: declaration.init, module, kindOfKey }
+			:	undefined
+	}
+
+	// null where the definition has no alias by the name, undefined if unknown
+	private aliasIn(
+		definition: Located,
+		name: unknown
+	): { value: Located; isGeneric: boolean } | null | undefined {
+		if (typeof name !== "string") return
+		const properties = membersOf(definition.node)
+		for (let i = properties.length - 1; i >= 0; i--) {
+			const property = properties[i]
+			if (property.type === "SpreadElement") {
+				const { module, kindOfKey } = definition
+				const spread =
+					this.literalOf(property.argument, module, kindOfKey) ??
+					this.moduleDefinitionOf(property.argument, module, kindOfKey)
+				const alias =
+					spread?.node.type === "ObjectExpression" ?
+						this.aliasIn(spread, name)
+					:	undefined
+				if (alias !== null) return alias
+				continue
+			}
+			const key = "key" in property ? keyNameOf(property) : undefined
+			if (
+				key === undefined ||
+				accessorKindOf(property) ||
+				property.type !== "Property"
+			)
+				return
+			const alias = String(key)
+			const paramsStart = alias.indexOf("<")
+			if (
+				alias[0] === "#" ||
+				(paramsStart === -1 ? alias : alias.slice(0, paramsStart)) !== name
+			)
+				continue
+			if (property.method) return
+			return {
+				value: { ...definition, node: property.value },
+				isGeneric: paramsStart !== -1
+			}
+		}
+		return null
 	}
 
 	private bindingLiteralOf(

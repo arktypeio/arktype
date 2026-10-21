@@ -1,5 +1,7 @@
 import { hasDomain, type array, type JsonObject } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
+import type { RangeKind } from "../refinements/kinds.ts"
+import type { LimitKind } from "../refinements/range.ts"
 import type { PredicateNode } from "../predicate.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
@@ -372,29 +374,51 @@ export const Intersection = {
 
 const writeIntersectionExpression = (node: Intersection.Node) => {
 	const basis = writtenBasisOf(node)
+	const prestructurals = writtenPrestructuralsOf(node)
 
 	const basisExpression =
 		basis && !node.prestructurals.some(n => n.impl.obviatesBasisExpression) ?
 			basis.nestableExpression
 		:	""
 
-	const refinementsExpression = writtenPrestructuralsOf(node)
-		.map(n => n.expression)
-		.join(" & ")
+	// a range is written as it's parsed, e.g. `1 <= number <= 5`
+	const upper = prestructurals.find(n => isLimit(n, "upper"))
+	const lower = upper && prestructurals.find(n => isLimit(n, "lower"))
+
+	// a pattern is an operand of its own, and other refinements follow theirs
+	const refinementsExpression = prestructurals
+		.filter(n => !lower || (n !== lower && n !== upper))
+		.map(
+			(n, i) =>
+				(i === 0 ? ""
+				: n.kind === "pattern" ? " & "
+				: " ") + n.expression
+		)
+		.join("")
 
 	const fullExpression =
 		basisExpression === "Array" && refinementsExpression === "== 0" ?
 			"[]"
 		:	`${basisExpression}${basisExpression && refinementsExpression ? " " : ""}${refinementsExpression}`
 
-	if (node.structure) {
-		return fullExpression ?
+	const expression =
+		node.structure ?
+			fullExpression ?
 				`${node.structure.expression}${basis ? " & " : " "}${fullExpression}`
 			:	node.structure.expression
-	}
+		:	fullExpression || "unknown"
 
-	return fullExpression || "unknown"
+	if (!lower) return expression
+	const limit = lower.expression.slice(lower.comparator.length + 1)
+	const operand = expression.includes(" & ") ? `(${expression})` : expression
+	return `${limit} ${lower.comparator === ">" ? "<" : "<="} ${operand} ${upper.expression}`
 }
+
+const isLimit = (
+	node: nodeOfKind<PrestructuralKind>,
+	limitKind: LimitKind
+): node is nodeOfKind<RangeKind> =>
+	"limitKind" in node && node.limitKind === limitKind
 
 const writtenBasisOf = (node: Intersection.Node) =>
 	(

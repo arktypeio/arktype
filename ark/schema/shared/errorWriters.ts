@@ -164,9 +164,9 @@ export const errorWritersByCode: {
 	discriminant: {
 		expected: e => e.description ?? describeCases(e),
 		actual: (data, e) =>
-			e.discriminantKind === "domain" ?
-				domainDescriptions[domainOf(data)]
-			:	printKind(data)
+			e.absent ? "missing"
+			: e.discriminantKind === "domain" ? domainDescriptions[domainOf(data)]
+			: printKind(data)
 	}
 }
 

@@ -113,63 +113,6 @@ const typeApiGroupByMember: Record<string, TypeApiGroup> = flatMorph(
 	(group, names) => names.map(name => [name, group] as const)
 )
 
-/**
- * Corrections to JSDoc examples that are wrong in source. Each `[find,
- * replace]` throws once `find` is gone, so a fix is removed when the source is.
- */
-const exampleFixes: Record<string, [find: string, replace: string][]> = {
-	inferOut: [["typeof parseNumber.infer ", "typeof parseNumber.inferOut "]],
-	configure: [['(was "two")', "(was a string)"]],
-	from: [
-		[
-			"// TypeScript: foo must be a string (was 5)",
-			"// TypeScript: Type 'number' is not assignable to type 'string'"
-		]
-	],
-	out: [["const baseOut = base.out", "const Out = T.out"]],
-	narrow: [
-		["PalindromicEmail", "ThisYear"],
-		["=== 2025", "=== new Date().getFullYear()"],
-		["=> /\\.tsx?$/.test(s)", '=> s.endsWith(".tsx")']
-	],
-	pipe: [
-		[
-			'// parse a string and validate that the result as a user\nconst parseUser = type("string").pipe(s => JSON.parse(s), user)',
-			'// parse a string and validate the result as a User\nconst parseUser = type("string").pipe(s => JSON.parse(s), User)'
-		]
-	],
-	to: [
-		[
-			"// parse a string and validate that the result as a user",
-			"// parse a string and validate the result as a user"
-		]
-	],
-	intersect: [
-		[
-			'// Type<{ foo: number; bar: string }>\nconst T = type({ foo: "number" }).intersect',
-			'import { Type } from "arktype"\n\n// Type<{ foo: number; bar: string }> | Disjoint\nconst T = type({ foo: "number" }).intersect'
-		],
-		[
-			"if (Bad instanceof Disjoint) console.log(`${bad.summary}`)",
-			"if (!(Bad instanceof Type)) console.log(Bad.summary)"
-		]
-	],
-	ifExtends: [["// Type<true> | undefined", "// Type<boolean> | undefined"]],
-	partial: [
-		[
-			': const T = type({ foo: "string" }).optional()',
-			'const T = type({ foo: "string" }).partial()'
-		]
-	],
-	merge: [["// Type<{ a: 1, b: 3, c: 4 }>", "// Type<{ a: 1; b: 3; c: 4 }>"]],
-	props: [
-		[
-			'type({ foo: "string = "" }).props // [{ kind: "required", key: "foo", value: Type<string>, default: "" }]',
-			'type({ foo: "string = \'x\'" }).props // [{ kind: "optional", key: "foo", value: Type<string>, default: "x" }]'
-		]
-	]
-}
-
 /** links for {@link} references to names that have no row on their page */
 const referenceUrls: Record<string, string> = {
 	Scope: "https://arktype.io/docs/scopes",
@@ -206,14 +149,6 @@ export const jsDocGen = () => {
 	const blocks = docs.flatMap(doc => parseBlock(doc) ?? [])
 
 	assertTypeMembersCovered(project, blocks)
-
-	for (const name of Object.keys(exampleFixes)) {
-		if (!blocks.some(block => block.name === name && block.example)) {
-			throw new Error(
-				`jsDocGen has an example fix for ${name}, which has no example`
-			)
-		}
-	}
 
 	const traversalNames = blocks
 		.filter(block => block.group === "Traversal")
@@ -494,7 +429,7 @@ const parseBlock = (doc: JSDoc): ParsedJsDocBlock | undefined => {
 	if (params) result.params = params
 
 	const example = tags.find(t => t.getTagName() === "example")?.getCommentText()
-	if (example) result.example = fixExample(name, example)
+	if (example) result.example = example
 
 	const experimentalTag = tags.find(t => t.getTagName() === "experimental")
 	if (experimentalTag) {
@@ -531,16 +466,6 @@ const resolveReference = (
 	if (url) return { kind: "link", url, value: part.value }
 	return { kind: "text", value: `\`${part.value}\`` }
 }
-
-const fixExample = (name: string, example: string) =>
-	(exampleFixes[name] ?? []).reduce((fixed, [find, replace]) => {
-		if (!fixed.includes(find)) {
-			throw new Error(
-				`jsDocGen's example fix for ${name} no longer matches its JSDoc. If the source example was fixed, remove the fix.\nExpected to find: ${find}`
-			)
-		}
-		return fixed.replace(find, replace)
-	}, example)
 
 const parseJsDocPart = (part: RawJsDocPart): ParsedJsDocPart[] => {
 	switch (part.getKindName()) {

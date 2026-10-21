@@ -15,13 +15,13 @@ precompile.vite({
 })
 ```
 
-`errors`, `mutatesInput`, `members`, `optimize`, `freeze`, `lazy`, `checks` and `countsKeys` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+`errors`, `mutatesInput`, `members`, `optimize`, `freeze`, `lazy`, `checks`, `countsKeys` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
 
 ### errors
 
 `errors: "first"` stops each validation at the first issue it finds and returns it alone. Which of the data's issues that is isn't promised: the validator looks for whichever is cheapest to find, which may not be the one arktype finds first. `errors: "none"` returns errors holding one root issue with the code `"predicate"` and the message `is invalid`, so no check's description or message ships. Those errors have no `throw()`, and `assert` throws a plain `Error` whose `cause` is the errors.
 
-The plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to `@ark/schema/runtime/none` under `errors: "none"`, and a module importing any other `@ark/schema` entry, or a runtime island, fails the build. Turbopack needs an alias beside [the ones a standalone build needs](/docs/precompile/setup#next):
+The plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to `@ark/schema/runtime/none` under `errors: "none"`, and a module importing any other `@ark/schema` entry, or a runtime island, fails the build. Turbopack needs an alias beside [the ones a standalone build needs](/docs/precompile/setup#next), and its loader fails the build without it:
 
 ```js title="next.config.js"
 export default {
@@ -30,6 +30,8 @@ export default {
 	}
 }
 ```
+
+Turbopack resolves the alias from the project, so with a package manager that doesn't hoist dependencies, like pnpm, install `@ark/schema` beside arktype.
 
 The values are [arktype's `errors`](/docs/configuration#errors) option's, and a program that also configures it must configure the same value.
 
@@ -51,7 +53,7 @@ precompile.vite({
 })
 ```
 
-`members: { errorMethods: false }` gives errors only their `count`, `issues` and `summary`. They lack `throw()`, `toJSON()` and `toString()`, so `JSON.stringify` writes their internals, though `instanceof type.errors` still recognizes them. `.assert()` still throws a `TraversalError`. They're the smallest errors a build can return, and reading their issues is slower.
+`members: { errorMethods: false }` gives errors only their `count`, `issues` and `summary`. They lack `throw()`, `toJSON()` and `toString()`, so `JSON.stringify` writes their internals, though `instanceof type.errors` still recognizes them. `.assert()` still throws what it would otherwise: a `TraversalError`, or with `errors: "none"` a plain `Error`. They're the smallest errors a build can return, and reading their issues is slower.
 
 The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for it, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
 
@@ -61,7 +63,7 @@ The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for
 
 ### countsKeys
 
-`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key. Index signatures and tuples are still checked key by key, and an `optimize: "size"` build counts nothing.
+`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key. Index signatures and tuples are still checked key by key. An `optimize: "size"` build with `errors: "none"` counts as any build does; with other `errors`, it counts only in some Types, such as one holding a narrow or morph.
 
 What it gives up: an undeclared key can pass in place of a declared key that a plain object holds as a non-enumerable property or inherits from `Object.prototype`. For example, `{ "+": "reject", toString: "Function" }` passes `{ extra: 1 }`.
 
@@ -75,11 +77,11 @@ What it gives up: an undeclared key can pass in place of a declared key that a p
 
 ### checks
 
-`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default where Vitest runs tests) each static helper too, and `"none"` only those holding functions, so a module mock replacing any other goes unnoticed.
+`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default under Vitest, `node --test` and `bun test`) each static helper too, and `"none"` only those holding functions, so a module mock replacing any other goes unnoticed.
 
 ### allowUnsafe
 
-`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
+`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `members`, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
 
 ### conditions and tsconfig
 

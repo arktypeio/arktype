@@ -310,6 +310,12 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 					[{ type: "text", value: text }]
 				:	[paragraph(text)]
 		}
+		case "HeadlineDetail":
+			return [
+				{ type: "text", value: `${claimMarkdown(claims.headlineDetail)}*` }
+			]
+		case "HeadlineNote":
+			return [paragraph(claimMarkdown(claims.headlineNote))]
 		case "ClaimCharts":
 			return [
 				...[speedChart, sizeChart].map(claimChartMarkdown),

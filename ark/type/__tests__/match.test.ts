@@ -329,8 +329,7 @@ contextualize(() => {
 
 			// @ts-expect-error
 			attest(() => m({}))
-				// (was missing) would be better here, undefined is a result of discrimination
-				.throws.snap("TraversalError: n must be 0 or 1 (was undefined)")
+				.throws.snap("TraversalError: n must be 0 or 1 (was missing)")
 				.type.errors.snap(
 					"Argument of type '{}' is not assignable to parameter of type '{ n: 0; } | { n: 1; }'."
 				)
@@ -783,7 +782,7 @@ contextualize(() => {
 		attest(b).equals(3)
 		// @ts-expect-error
 		attest(() => discriminateValue({ oneValue: 3 }))
-			.throws.snap("TraversalError: id must be 1 or 2 (was undefined)")
+			.throws.snap("TraversalError: id must be 1 or 2 (was missing)")
 			.type.errors("Property 'id' is missing in type '{ oneValue: number; }'")
 	})
 

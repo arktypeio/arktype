@@ -626,6 +626,54 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			).equals(undefined)
 		})
 
+		it("fails where @ark/schema/runtime resolves other than its errors need", async () => {
+			const host = createNodeHost({ conditions })
+			const main = readFileSync(join(app, "main.ts"), "utf8")
+			// what the loader reports and warns where Turbopack resolves the schema runtime to `target`
+			const outcomeOf = (target: string, opts: PrecompilePluginOptions = {}) =>
+				new Promise<string[]>(settle => {
+					const warnings: string[] = []
+					turbopack.call(
+						{
+							resourcePath: join(app, "main.ts"),
+							getOptions: () => ({ ...opts, conditions, cwd: app }),
+							addDependency: () => {},
+							emitWarning: warning => warnings.push(warning.message),
+							getResolve: () => async (dir, request) =>
+								host.resolve(
+									request === "arktype" ?
+										opts.shadow ?
+											"arktype"
+										:	"arktype/runtime"
+									: request === "@ark/schema/runtime" ? target
+									: request,
+									join(dir, "main.ts")
+								)!,
+							async: () => error => settle(error ? [error.message] : warnings)
+						},
+						main
+					)
+				})
+			const none = { errors: "none" } as const
+			attest(await outcomeOf("@ark/schema/runtime/none", none)).equals([])
+			attest(await outcomeOf("@ark/schema/runtime", none)).snap([
+				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/schema/runtime/none, which a build with errors: "none" loads in its place. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/schema/runtime/none"}, and install @ark/schema if your package manager doesn\'t hoist it, as pnpm doesn\'t. Set allowUnsafe: true to build anyway, with a warning.'
+			])
+			attest(
+				await outcomeOf("@ark/schema/runtime", { ...none, allowUnsafe: true })
+			).snap([
+				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/schema/runtime/none, which a build with errors: "none" loads in its place. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/schema/runtime/none"}, and install @ark/schema if your package manager doesn\'t hoist it, as pnpm doesn\'t.'
+			])
+			attest(await outcomeOf("@ark/schema/runtime")).equals([])
+			attest(await outcomeOf("@ark/schema/runtime/none")).snap([
+				'@ark/schema/runtime resolves to ../../../schema/runtimeNone.ts, a copy for a build with errors: "none" or members: { errorMethods: false }. Remove its turbopack.resolveAlias. Set allowUnsafe: true to build anyway, with a warning.'
+			])
+			// shadow mode loads arktype, so leaves @ark/schema/runtime unchecked
+			attest(
+				await outcomeOf("@ark/schema/runtime", { ...none, shadow: true })
+			).equals([])
+		})
+
 		it("reports dependencies before a rejected site", () => {
 			const roles = load(app, "roles.ts")
 			attest(roles.out.replace(`${app}/`, ""))

@@ -41,7 +41,7 @@ import { intersect } from "arksets"
 
 const Percent = intersect(type("number.integer"), { minimum: 0, maximum: 100 })
 
-Percent.expression // "number % 1 & <= 100 & >= 0"
+Percent.expression // "0 <= number % 1 <= 100"
 
 intersect({ type: "string" }, type("number")).expression // "never"
 ```

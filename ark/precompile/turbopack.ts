@@ -8,15 +8,18 @@ import {
 } from "./driver.ts"
 import { refuseDeclare } from "./declare.ts"
 import {
+	allowUnsafeHint,
 	createNodeHost,
 	createDevelopmentHost,
 	printablePathOf,
 	reportDiagnostics,
+	resolvedVariantOf,
 	resolvesToRuntime,
 	rethrowAsBuildError,
 	runtimeSpecifiers,
 	throwBuildError,
-	writeAliasMessage
+	writeAliasMessage,
+	writeRuntimeAliasMessage
 } from "./host.ts"
 
 export interface TurbopackLoaderContext {
@@ -64,10 +67,13 @@ export default function (
 		:	[]
 	if (!specifiers.length || !this.getResolve || !this.async) return code
 	const done = this.async()
-	checkAliases(this.getResolve(), this.resourcePath, specifiers, opts).then(
-		() => done(null, code),
-		done
-	)
+	checkAliases(
+		this.getResolve(),
+		this.resourcePath,
+		specifiers,
+		opts,
+		warning => this.emitWarning(new Error(warning))
+	).then(() => done(null, code), done)
 }
 
 // Turbopack resolves arktype as `resolveAlias` says, which the loader can't change
@@ -75,7 +81,8 @@ const checkAliases = async (
 	resolve: (context: string, request: string) => Promise<string>,
 	importer: string,
 	specifiers: string[],
-	opts: PrecompilePluginOptions
+	opts: PrecompilePluginOptions,
+	warn: (warning: string) => void
 ) => {
 	const host = createNodeHost(opts)
 	const runtime = host.resolve("arktype/runtime", importer)
@@ -106,6 +113,28 @@ const checkAliases = async (
 			)
 		}
 	}
+	if (opts.runtime === "arktype" || opts.shadow) return
+	// the runtime loads @ark/schema's, which the build may replace with a copy
+	const variant = resolvedVariantOf(opts)
+	const expected = host.resolve(
+		variant ? `@ark/schema/runtime/${variant}` : "@ark/schema/runtime",
+		runtime
+	)
+	const resolved = await resolve(dirname(runtime), "@ark/schema/runtime").catch(
+		() => undefined
+	)
+	if (
+		expected === undefined ||
+		resolved === undefined ||
+		realpathSync(resolved) === realpathSync(expected)
+	)
+		return
+	const problem = writeRuntimeAliasMessage(
+		printablePathOf(opts.cwd ?? process.cwd(), resolved),
+		variant
+	)
+	if (opts.allowUnsafe) warn(problem)
+	else throwBuildError(`${problem} ${allowUnsafeHint}`)
 }
 
 // the runtime specifiers a module imports or exports from, not those it mentions

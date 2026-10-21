@@ -11,6 +11,7 @@ import {
 	type ArkErrorCode,
 	type Type
 } from "arktype"
+import { inspect } from "node:util"
 
 contextualize(() => {
 	it("divisible", () => {
@@ -123,7 +124,7 @@ contextualize(() => {
 		attest(T({ a: 5 })).snap({ a: 5 })
 		// value isn't present
 		attest(T({}).toString()).snap(
-			"a must be a number, a string or null (was undefined)"
+			"a must be a number, a string or null (was missing)"
 		)
 		// unsatisfying value
 		attest(T({ a: false }).toString()).snap(
@@ -141,7 +142,7 @@ contextualize(() => {
 			d: "a|b|c"
 		}).export()
 		attest(types.d({}).toString()).snap(
-			"foo must be an object, a number or a string (was undefined)"
+			"foo must be an object, a number or a string (was missing)"
 		)
 		attest(types.d({ foo: null }).toString()).snap(
 			"foo must be an object, a number or a string (was null)"
@@ -565,6 +566,25 @@ d must be a number (was a string)`)
 	it("issues found once read are ArkErrors", () => {
 		const out = type("string")(0)
 		attest(out.constructor).equals(type.errors)
+	})
+
+	it("inspected errors print their issues", () => {
+		const out = type({ a: "string" })({ a: 1 })
+		attest(inspect(out)).snap(`[
+  {
+    data: 1,
+    path: [ 'a' ],
+    code: 'domain',
+    description: 'a string',
+    meta: {},
+    domain: 'string',
+    propString: 'a',
+    expected: 'a string',
+    actual: 'a number',
+    problem: 'must be a string (was a number)',
+    message: 'a must be a string (was a number)'
+  }
+]`)
 	})
 
 	it("issues of data made valid before they're read", () => {

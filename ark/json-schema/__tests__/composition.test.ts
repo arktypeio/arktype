@@ -9,7 +9,7 @@ contextualize(() => {
 				{ type: "string", maxLength: 10 }
 			]
 		})
-		attest(tAllOf.expression).snap("string <= 10 & >= 1")
+		attest(tAllOf.expression).snap("1 <= string <= 10")
 	})
 
 	it("anyOf", () => {
@@ -27,7 +27,7 @@ contextualize(() => {
 		attest(tNot.allows(123)).equals(true)
 		attest(tNot.allows("1234")).equals(true)
 		attest(() => tNot.assert("123")).throws.snap(
-			'TraversalError: must be anything but a string and at most length 3 (was "123")'
+			'TraversalError: must be other than a string and at most length 3 (was "123")'
 		)
 	})
 

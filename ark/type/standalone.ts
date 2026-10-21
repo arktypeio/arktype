@@ -308,7 +308,7 @@ const isCreatedByRuntime = (
 	members: ReadonlySet<ValidatorMember>,
 	baking: Baking
 ) =>
-	// assert needs errors.throw(), which errors "none" lacks
+	// an undetailed build's own create is smaller where it has few validators
 	baking.detailsErrors &&
 	baking.freezes &&
 	baking.readsConfig &&

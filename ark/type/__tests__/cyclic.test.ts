@@ -24,6 +24,31 @@ contextualize(() => {
 		)
 	})
 
+	it("rejects an object a failed union branch reached", () => {
+		const types = scope({
+			x: { v: "string", "self?": "x" },
+			a: { x: "x", z: "string" },
+			b: { x: "x", b: "string" },
+			union: "a | b"
+		}).export()
+		const data = { x: { v: "a", self: { v: 1 } }, z: "z", b: "b" }
+
+		attest(types.union.allows(data)).equals(false)
+		attest(types.union(data).toString()).snap(
+			"x.self.v must be a string (was a number)"
+		)
+	})
+
+	it("checks each primitive where it's reached", () => {
+		const node = scope({ node: { a: "node | number", "b?": "node" } }).export()
+			.node
+
+		attest(node.allows({ a: 5, b: 5 })).equals(false)
+		attest(node({ a: 5, b: 5 }).toString()).snap(
+			"b must be an object (was a number)"
+		)
+	})
+
 	it("object shared by undiscriminated union", () => {
 		const types = scope({
 			a: { kids: "union[]", "a?": "string" },
@@ -1519,6 +1544,17 @@ swap.swap.order[1] must be "on" (was "off")`)
 		attest(deleted.b({ m: { x: 1 }, p: {} })).equals({ m: {}, p: {} })
 		attest(crossScope.b({ p: { m: "2" } })).equals({ p: { m: 2 } })
 		attest(nested.c([["1", ["2"]], "3"])).equals([[1, [2]], 3])
+	})
+
+	it("morph union disjoint cyclic prop", () => {
+		const types = scope({
+			d: { p0: "boolean" },
+			e: { x: "string.numeric.parse", "p0?": "e" },
+			c: "e | d"
+		}).export()
+
+		attest(types.c({ x: "1", p0: { x: "2" } })).equals({ x: 1, p0: { x: 2 } })
+		attest(types.c({ p0: true })).equals({ p0: true })
 	})
 
 	// https://github.com/arktypeio/arktype/issues/1476

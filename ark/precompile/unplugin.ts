@@ -60,6 +60,8 @@ export const precompile: UnpluginInstance<
 > = createUnplugin((opts, meta) => {
 	if (!(meta.framework in declaringFrameworks))
 		refuseDeclare(opts, meta.framework)
+	// Rollup's mark of a virtual module, which esbuild prints as a NUL
+	const virtual = meta.framework === "esbuild" ? "" : "\0"
 	let workerOptions = opts
 	let unitReaders: UnitReaders | undefined
 	// a worker of its own lets arktype take the program's configuration
@@ -287,10 +289,10 @@ export const precompile: UnpluginInstance<
 					if (meta.framework !== "webpack") throwBuildError(message)
 					this.error(message)
 				}
-				if (id.startsWith("~arktype/")) return `\0${id}`
+				if (id.startsWith("~arktype/")) return virtual + id
 				if (!importer) return
 				// a virtual module resolves from the module it was written for
-				if (importer.startsWith("\0~arktype/"))
+				if (importer.startsWith(`${virtual}~arktype/`))
 					return host.resolve(id, importersById[importer])
 				if (variant && schemaSpecifier.test(id)) {
 					const specifier = variantSpecifierOf(id, variant)
@@ -312,7 +314,7 @@ export const precompile: UnpluginInstance<
 			}
 		},
 		load: {
-			filter: { id: /^\0~arktype\// },
+			filter: { id: virtual ? /^\0~arktype\// : /^~arktype\// },
 			handler: loadModule
 		},
 		transform: {
@@ -343,7 +345,7 @@ export const precompile: UnpluginInstance<
 				for (const dependency of transformed.dependencies)
 					if (dependency !== file) this.addWatchFile(dependency)
 				for (const specifier in transformed.modules) {
-					const virtualId = `\0${specifier}`
+					const virtualId = virtual + specifier
 					if (virtualId in modules) continue
 					modules[virtualId] = transformed.modules[specifier]
 					importersById[virtualId] = id

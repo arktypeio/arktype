@@ -78,13 +78,19 @@ jobs:
     timeout-minutes: 30
     strategy:
       matrix:
-        # the build's options, combining mutatesInput with each errors mode
+        # the build's options: mutatesInput with each errors mode, size builds,
+        # and errors lacking methods
         options:
           - "{}"
           - '{"mutatesInput": true, "errors": "first"}'
           - '{"mutatesInput": true, "errors": "none"}'
           - '{"mutatesInput": "always", "errors": "first"}'
           - '{"mutatesInput": "always", "errors": "none", "countsKeys": true}'
+          - '{"optimize": "size"}'
+          - '{"optimize": "size", "errors": "first"}'
+          - '{"members": {"errorMethods": false}}'
+          - '{"members": {"errorMethods": false}, "optimize": "size"}'
+          - '{"members": {"errorMethods": false}, "errors": "none"}'
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4

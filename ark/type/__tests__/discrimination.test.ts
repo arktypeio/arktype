@@ -93,7 +93,7 @@ contextualize(() => {
 		})
 
 		attest(twoMissingKeys.toString()).snap(
-			'climate must be "dry" or "wet" (was undefined)'
+			'climate must be "dry" or "wet" (was missing)'
 		)
 
 		attest(discriminantJsonOf(climate.internal.assertHasKind("union"))).snap({
@@ -371,9 +371,7 @@ contextualize(() => {
 		attest(Union({ innerA: { id: 2 } })).equals({ innerA: { id: 2 } })
 		attest(Union({ innerB: { id: 2 } })).equals({ innerB: { id: 2 } })
 
-		attest(Union({})?.toString()).snap(
-			"innerB.id must be 1 or 2 (was undefined)"
-		)
+		attest(Union({})?.toString()).snap("innerB.id must be 1 or 2 (was missing)")
 	})
 
 	it("allows strict discriminated keys", () => {
@@ -941,6 +939,16 @@ contextualize(() => {
 			attest(error.cases[1]).is(o)
 		})
 
+		it("an absent key of literal branches", () => {
+			// #1491's repro
+			const Thing = type({ tag: '"a"', a: "number" })
+				.or({ tag: '"b"', bc: "string" })
+				.or({ tag: '"c"', bc: "string" })
+			attest(Thing({}).toString()).snap(
+				'tag must be "a", "b" or "c" (was missing)'
+			)
+		})
+
 		it("an absent key", () => {
 			const $ = scope({})
 			const T = $.type({ k: "'a'", x: "string" }).or({
@@ -952,7 +960,7 @@ contextualize(() => {
 				if (error.code !== "discriminant") throw new Error()
 				return [error.absent, error.message]
 			}
-			attest(absent({})).snap([true, 'k must be "a" or "b" (was undefined)'])
+			attest(absent({})).snap([true, 'k must be "a" or "b" (was missing)'])
 			attest(absent({ k: undefined })).snap([
 				false,
 				'k must be "a" or "b" (was undefined)'
@@ -1061,7 +1069,7 @@ contextualize(() => {
 		attest(Tagged({ kind: "a", a: 5 }).toString()).snap(
 			"a must be a string (was a number)"
 		)
-		attest(Tagged(5).toString()).snap('kind must be "a" or "b" (was undefined)')
+		attest(Tagged(5).toString()).snap('kind must be "a" or "b" (was missing)')
 	})
 
 	it("describes a unit case once", () => {

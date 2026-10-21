@@ -10,7 +10,12 @@ import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { LiveType } from "../../components/home/LiveType.tsx"
 import { BenchmarkChart } from "../../components/mdx/BenchmarkChart.tsx"
-import { ClaimCharts, ClaimText } from "../../components/mdx/Claim.tsx"
+import {
+	ClaimCharts,
+	ClaimText,
+	HeadlineDetail,
+	HeadlineNote
+} from "../../components/mdx/Claim.tsx"
 import { BoatLane } from "../../components/shell/BoatLane.tsx"
 import { SiteFooter } from "../../components/shell/SiteFooter.tsx"
 import {
@@ -117,7 +122,7 @@ Port("80000")`,
 	kind: "'square'",
 	side: "number > 0"
 })`,
-	discriminated: `// Shape, precompiled: one switch, each branch checks what's left
+	discriminated: `// Shape, precompiled, helpers inlined: one switch, each branch checks what's left
 data => {
 	switch (data?.kind) {
 		case "circle":
@@ -254,12 +259,11 @@ export default function HomePage() {
 						</div>
 						<h1 id="hero-title" className="rise-fade is-long">
 							<ClaimText claim={claims.headline} />{" "}
-							<span className="one">and optimized for agentic dev</span>
+							<span className="one">Optimized for agentic dev.</span>
 						</h1>
 						<p className="lede rise" style={rise(1)}>
 							Write the <span className="decl c-sky">type</span> you'd write
-							anyway and precompile it. <ClaimText claim={claims.buildChoice} />{" "}
-							Or run it with no build at all. Your{" "}
+							anyway. <HeadlineDetail /> Or skip the build entirely. Your{" "}
 							<span className="decl c-teal">agent</span> already knows the
 							syntax.
 						</p>
@@ -299,6 +303,7 @@ export default function HomePage() {
 								With your agent
 							</a>
 						</div>
+						<HeadlineNote className="note" />
 					</div>
 					<LiveType ghost={ghostStates} arg={liveArg} />
 				</section>
@@ -318,7 +323,7 @@ export default function HomePage() {
 						<span className="n">
 							03 // run <NextTag />
 						</span>
-						<b>Speed or size: pick the build</b>
+						<b>Pick speed or size</b>
 						<span>
 							{facts.mostFaster ?
 								`no library faster in more than ${facts.mostFaster} of ${facts.validCount}`
@@ -473,7 +478,7 @@ export default function HomePage() {
 						<b>03</b>
 						{"// run"} <NextTag />
 					</div>
-					<h2>The rest compiles away. What runs is the validator.</h2>
+					<h2>No parser. Just your validator.</h2>
 					<p className="deck">
 						Run ArkType two ways. <b>Dynamic</b>, <code>type()</code> parses
 						each definition at runtime, with no build step. <b>Precompiled</b>
@@ -596,7 +601,7 @@ export default function HomePage() {
 						<b>04</b>
 						{"// agents"}
 					</div>
-					<h2>The loop your agent runs.</h2>
+					<h2>Your agent's loop, set up once.</h2>
 					<p className="deck">
 						It writes a definition, runs <code>tsc</code>, reads the error,
 						fixes it, then validates real input. A precompiled build adds one

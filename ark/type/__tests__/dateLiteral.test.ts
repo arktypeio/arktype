@@ -81,7 +81,7 @@ contextualize(() => {
 	it("prints ISO instants", () => {
 		const T = type("d'2000-01-01' <= Date <= d'2000-01-01T12:00-05:00'")
 		attest(T.expression).snap(
-			"Date <= d'2000-01-01T17:00:00.000Z' & >= d'2000-01-01T00:00:00.000Z'"
+			"d'2000-01-01T00:00:00.000Z' <= Date <= d'2000-01-01T17:00:00.000Z'"
 		)
 		attest(T.description).snap(
 			"a Date and January 1, 2000, 5:00 PM UTC or earlier and 2000 or later"

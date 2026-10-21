@@ -1,6 +1,14 @@
 import { throwError } from "@ark/util"
 import { existsSync, readFileSync, realpathSync } from "node:fs"
-import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
+import {
+	basename,
+	dirname,
+	isAbsolute,
+	join,
+	relative,
+	resolve,
+	sep
+} from "node:path"
 import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 import type { PrecompilePluginOptions, RenderedDiagnostics } from "./driver.ts"
@@ -129,28 +137,31 @@ export const optedInPackagesOf = (cwd: string): string[] => {
 		project !== dirname(project)
 	)
 		project = dirname(project)
-	// the project, then each opted-in package, as its dependencies may opt in
-	const roots = [project]
-	for (let i = 0; i < roots.length; i++) {
-		const manifest = readFile(join(roots[i], "package.json"))
+	// every package the project reaches, as one that doesn't opt in may depend on one that does
+	const packages: [root: string, name: string][] = [[project, ""]]
+	const visited = new Set([realPathOf(project)])
+	for (let i = 0; i < packages.length; i++) {
+		const [root, name] = packages[i]
+		const manifest = readFile(join(root, "package.json"))
 		if (manifest === undefined) continue
+		if (i && optsIn(manifest) && !result.includes(name)) result.push(name)
 		const {
 			dependencies,
 			devDependencies,
 			optionalDependencies,
 			peerDependencies
 		} = JSON.parse(manifest)
-		for (const name in {
+		for (const dependency in {
 			...dependencies,
-			...devDependencies,
+			// a dependency's devDependencies aren't installed
+			...(!i && devDependencies),
 			...optionalDependencies,
 			...peerDependencies
 		}) {
-			if (result.includes(name)) continue
-			const root = packageRootOf(name, roots[i])
-			if (root && optsIn(readFile(join(root, "package.json")))) {
-				result.push(name)
-				roots.push(root)
+			const dependencyRoot = packageRootOf(dependency, root)
+			if (dependencyRoot && !visited.has(dependencyRoot)) {
+				visited.add(dependencyRoot)
+				packages.push([dependencyRoot, dependency])
 			}
 		}
 	}
@@ -161,7 +172,11 @@ export const optedInPackagesOf = (cwd: string): string[] => {
 const packageRootOf = (name: string, from: string): string | undefined => {
 	for (let dir = from; ; dir = dirname(dir)) {
 		const root = join(dir, "node_modules", name)
-		if (existsSync(join(root, "package.json"))) return realpathSync(root)
+		if (
+			basename(dir) !== "node_modules" &&
+			existsSync(join(root, "package.json"))
+		)
+			return realPathOf(root)
 		if (dir === dirname(dir)) return
 	}
 }
@@ -329,6 +344,15 @@ export const writeAliasMessage = (
 					.map(s => [s, "arktype/runtime"])
 			)
 		)}`
+
+// `resolved` is where @ark/schema/runtime resolves other than to the build's copy
+export const writeRuntimeAliasMessage = (
+	resolved: string,
+	variant: RuntimeVariant | undefined
+): string =>
+	variant ?
+		`@ark/schema/runtime resolves to ${resolved} rather than @ark/schema/runtime/${variant}, which a build with ${writeVariantOption(variant)} loads in its place. Add to turbopack.resolveAlias: ${JSON.stringify({ "@ark/schema/runtime": `@ark/schema/runtime/${variant}` })}, and install @ark/schema if your package manager doesn't hoist it, as pnpm doesn't.`
+	:	`@ark/schema/runtime resolves to ${resolved}, a copy for a build with errors: "none" or members: { errorMethods: false }. Remove its turbopack.resolveAlias.`
 
 export const writeNodeVersionMessage = (
 	name: string,

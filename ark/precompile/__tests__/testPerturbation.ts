@@ -35,6 +35,7 @@ import {
 	type World,
 	type WorldResults
 } from "./perturbationWorker.ts"
+import { testedOptions } from "./contract.ts"
 import { tempDir } from "./utils.ts"
 
 // a value a folded site reads, changed before the site runs, makes the
@@ -70,6 +71,8 @@ interface PerturbedBuild {
 	sitesById: Record<number, string>
 	// what fails a standalone build, which then has no program to run
 	errors: Diagnostic[]
+	// those a corpus file's program meets, its own or a module's it imports
+	errorsByPath: Record<string, Diagnostic[]>
 }
 
 // sites are wrapped where standalone folds them, so each mode wraps alike
@@ -83,6 +86,9 @@ export const buildPerturbed = (
 	const exportNamesByPath: Record<string, string[]> = {}
 	const swapsByPath: Record<string, Record<string, string>> = {}
 	const errors: Diagnostic[] = []
+	const errorsByPath: Record<string, Diagnostic[]> = {}
+	const importedErrorsByPath: Record<string, Diagnostic[]> = {}
+	const reachedByPath: Record<string, string[]> = {}
 	// nothing swaps what a factory doesn't check, as it's what the build read
 	const checks = opts.standalone?.checks ?? "helpers"
 	const helpers = new Set<string>()
@@ -226,6 +232,7 @@ export const buildPerturbed = (
 			path
 		)
 		errors.push(...errorsOf(precompiled))
+		errorsByPath[path] = errorsOf(precompiled)
 		collectHelpers(precompiled)
 		files.push({
 			path,
@@ -233,6 +240,7 @@ export const buildPerturbed = (
 			precompiled: wrap(precompiled.code)
 		})
 		const reached = [path]
+		reachedByPath[path] = reached
 		for (const importer of reached) {
 			for (const target of precompiler.textImportsOf(
 				importer === path ? marked.toString() : readFileSync(importer, "utf8"),
@@ -247,6 +255,7 @@ export const buildPerturbed = (
 					target
 				)
 				errors.push(...errorsOf(targetPrecompiled))
+				importedErrorsByPath[target] = errorsOf(targetPrecompiled)
 				collectHelpers(targetPrecompiled)
 				precompiledByPath[target] = targetPrecompiled.code
 				const graph = targetPrecompiler.graph
@@ -269,6 +278,10 @@ export const buildPerturbed = (
 			}
 		}
 	}
+	for (const [path, reached] of Object.entries(reachedByPath)) {
+		for (const target of reached.slice(1))
+			errorsByPath[path].push(...(importedErrorsByPath[target] ?? []))
+	}
 	if (checks !== "helpers") {
 		for (const path in exportNamesByPath) {
 			exportNamesByPath[path] = exportNamesByPath[path].filter(
@@ -285,7 +298,8 @@ export const buildPerturbed = (
 			...runtimeOf()
 		},
 		sitesById,
-		errors
+		errors,
+		errorsByPath
 	}
 }
 
@@ -413,8 +427,11 @@ const reportedOf = (expected: unknown, actual: unknown): unknown => {
 		Array.isArray(errors) &&
 		errors.length === 1 &&
 		anyOf.some(issue => comparable(issue) === comparable(errors[0]))
-	)
+	) {
 		rest.errors = errors
+		// a check errors "all" throws at, run after the issue it reports
+		if (!("threw" in (actual as object))) delete rest.threw
+	}
 	return Object.fromEntries(
 		Object.entries(rest).map(([k, v]) => [
 			k,
@@ -461,8 +478,16 @@ export interface Disagreement {
 interface WorldComparison {
 	counts: Record<string, number>
 	disagreements: Disagreement[]
+	// what the precompiled program never observed, though nothing it met threw
+	unobserved: string[]
 	observedSites: Set<string>
 }
+
+// a site key's id and occurrence, ordered as the program runs them
+const orderOf = (key: string) => key.split(":").map(Number)
+
+const isBefore = (l: number[], r: number[]) =>
+	l[0] < r[0] || (l[0] === r[0] && l[1] < r[1])
 
 // a program's own observation is labeled by its key, and a site's by position
 export const compareWorlds = (
@@ -472,18 +497,43 @@ export const compareWorlds = (
 ): WorldComparison => {
 	const counts: Record<string, number> = {}
 	const disagreements: Disagreement[] = []
+	const unobserved: string[] = []
 	const observedSites = new Set<string>()
 	for (const file of build.manifest.files) {
+		const buildErrors = build.errorsByPath[file.path] ?? []
 		for (const kind of perturbations) {
 			const originals = original[file.path][kind]
 			if (!originals) continue
+			const actuals = precompiled[file.path][kind] ?? {}
+			// sites that threw, after which the rest of their test or module doesn't run
+			const thrown = Object.entries(actuals).flatMap(([key, observation]) =>
+				key.includes(":") && observation.threw !== undefined ?
+					[orderOf(key)]
+				:	[]
+			)
 			for (const [key, observed] of Object.entries(originals)) {
-				const actual = precompiled[file.path][kind]?.[key]
+				const actual = actuals[key]
 				const expected = reportedOf(observed, actual) as Observation
 				const [id, occurrence] = key.split(":")
-				const site = occurrence ? build.sitesById[Number(id)] : key
+				const site =
+					occurrence ? build.sitesById[Number(id)]
+					: key === "import" ? `${relative(root, file.path)} as it loads`
+					: key
+				const line =
+					occurrence ? Number(site.split(":").slice(-2)[0]) : Infinity
 				const outcome =
-					!actual ? "unobserved precompiled"
+					!actual ?
+						(
+							buildErrors.some(
+								error => error.file !== file.path || error.line <= line
+							)
+						) ?
+							"unobserved precompiled after a build error"
+						: occurrence && thrown.some(l => isBefore(l, orderOf(key))) ?
+							"unobserved precompiled after a site threw"
+						: isCreationCheck(actuals.import) ?
+							"unobserved precompiled after an import threw at creation"
+						:	"unobserved precompiled"
 					: comparable(actual) === comparable(expected) ?
 						(
 							comparable(expected) ===
@@ -492,11 +542,15 @@ export const compareWorlds = (
 							"agrees"
 						:	"agrees with the change"
 					: isCreationCheck(actual) ? "throws at creation"
-					: (exclusions.find(([, matches]) =>
+					: key === "import" && buildErrors.length ?
+						"throws as it loads after a build error"
+					:	(exclusions.find(([, matches]) =>
 							matches(comparable(expected), comparable(actual))
 						)?.[0] ?? "disagrees")
 				counts[`${kind}: ${outcome}`] = (counts[`${kind}: ${outcome}`] ?? 0) + 1
 				if (actual) observedSites.add(site)
+				if (outcome === "unobserved precompiled")
+					unobserved.push(`${kind} ${site}`)
 				if (outcome === "disagrees") {
 					disagreements.push({
 						perturbation: kind,
@@ -508,7 +562,7 @@ export const compareWorlds = (
 			}
 		}
 	}
-	return { counts, disagreements, observedSites }
+	return { counts, disagreements, unobserved, observedSites }
 }
 
 if (import.meta.main) {
@@ -531,10 +585,17 @@ if (import.meta.main) {
 	// each world observes a validator's expression and description
 	const build = buildPerturbed(corpus, {
 		mode: "standalone",
-		standalone: { members: { expression: true, description: true } }
+		standalone: {
+			...testedOptions,
+			members: {
+				expression: true,
+				description: true,
+				...testedOptions.members
+			}
+		}
 	})
 	const out = tempDir("ark-perturbation-")
-	const { counts, disagreements, observedSites } = compareWorlds(
+	const { counts, disagreements, unobserved, observedSites } = compareWorlds(
 		build,
 		await runWorld("original", build.manifest, out),
 		await runWorld("standalone", build.manifest, out)
@@ -545,20 +606,24 @@ if (import.meta.main) {
 				files: build.manifest.files.length,
 				foldedSites: Object.keys(build.sitesById).length,
 				observedSites: observedSites.size,
+				unobserved: unobserved.length,
 				counts
 			},
 			null,
 			2
 		)
 	)
-	if (disagreements.length) {
+	if (disagreements.length || unobserved.length) {
 		console.error(
-			disagreements
-				.map(
+			[
+				...disagreements.map(
 					({ perturbation, site, original, precompiled }) =>
 						`${perturbation} ${site}\n  original: ${JSON.stringify(original).slice(0, 400)}\n  precompiled: ${JSON.stringify(precompiled).slice(0, 400)}`
+				),
+				...unobserved.map(
+					observation => `${observation}: never observed precompiled`
 				)
-				.join("\n\n")
+			].join("\n\n")
 		)
 		process.exit(1)
 	}

@@ -116,8 +116,16 @@ const readsOf = (node: BaseRoot): Reads | undefined => {
 	if (!node.hasKind("intersection")) return
 	if (node.inner.predicate) return everyRead()
 	const structure = node.structure
-	if (!structure) return
+	// a length bound reads the elements a tuple's defaults add
+	const readsLength = !!(
+		node.inner.exactLength ||
+		node.inner.minLength ||
+		node.inner.maxLength
+	)
+	if (!structure && !readsLength) return
 	const reads: Reads = { values: keys(), everyPresence: false }
+	if (readsLength) reads.values.indices = true
+	if (!structure) return reads
 	for (const prop of structure.props) reads.values.named.add(prop.key)
 	if (structure.index) reads.values.every = true
 	if (structure.sequence) reads.values.indices = true

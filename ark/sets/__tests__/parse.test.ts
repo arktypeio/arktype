@@ -25,6 +25,11 @@ contextualize(() => {
 		attest(Zod.targets).snap(["draft-2020-12", "draft-2020-12"])
 	})
 
+	it("reads a Standard JSON Schema whole, though a root is passed", () => {
+		const Valibot = standardSchema({ type: "string" })
+		attest(parse(Valibot, { root: {} }).expression).snap("string")
+	})
+
 	it("caches a read per schema and io", () => {
 		const Zod = standardSchema({ type: "string" })
 		attest(parse(Zod) === parse(Zod)).equals(true)

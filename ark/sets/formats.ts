@@ -34,10 +34,12 @@ export const parse = (schema: Schema, options?: ParseOptions): Root => {
 	const io = options?.io ?? "in"
 	if (schema instanceof BaseRoot)
 		return io === "in" ? schema.rawIn : schema.rawOut
-	if (typeof schema === "boolean" || options?.root)
-		return readJsonSchema(schema, options?.root)
+	if (typeof schema === "boolean") return readJsonSchema(schema, options?.root)
 	if (!hasDomain(schema, "object"))
 		return throwParseError(writeUnparsableSchemaMessage(printable(schema)))
+	// root resolves a JSON Schema's refs, which a Standard Schema's converter writes whole
+	if (options?.root && !("~standard" in schema))
+		return readJsonSchema(schema, options.root)
 	let root = rootsByIo[io].get(schema)
 	if (!root) rootsByIo[io].set(schema, (root = parseObject(schema, io)))
 	return root

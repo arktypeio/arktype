@@ -171,6 +171,9 @@ contextualize(() => {
 				d: [{ a: "string" }, "number = 2"]
 			}).onDeepUndeclaredKey("delete")
 
+			attest(T.expression).snap(
+				"{ d: [{ a: string, + (undeclared): delete }, number = 2], + (undeclared): delete }"
+			)
 			attest(T({ ...getExtraneousB(), d: [getExtraneousB()] })).equals({
 				d: [{ a: "ok" }, 2]
 			})
@@ -404,7 +407,7 @@ b must be removed`)
 
 	describe("keys named after Object.prototype members", () => {
 		const getPrototypeNamedKeys = () => ({
-			a: "ok",
+			kept: "ok",
 			toString: 1,
 			valueOf: 1,
 			constructor: 1,
@@ -412,21 +415,21 @@ b must be removed`)
 		})
 
 		// JSON.parse creates an own "__proto__" key rather than setting the prototype
-		const getOwnProtoKey = () => JSON.parse(`{ "a": "ok", "__proto__": 1 }`)
+		const getOwnProtoKey = () => JSON.parse(`{ "kept": "ok", "__proto__": 1 }`)
 
 		const testUndeclared = (jitless: boolean) => {
 			const types = scope(
 				{
-					Deleted: { "+": "delete", a: "string" },
-					Rejected: { "+": "reject", a: "string" }
+					Deleted: { "+": "delete", kept: "string" },
+					Rejected: { "+": "reject", kept: "string" }
 				},
 				{ jitless }
 			).export()
 
 			attest(types.Deleted.precompilation === undefined).equals(jitless)
 
-			attest(types.Deleted(getPrototypeNamedKeys())).equals({ a: "ok" })
-			attest(Object.keys(types.Deleted(getOwnProtoKey()))).equals(["a"])
+			attest(types.Deleted(getPrototypeNamedKeys())).equals({ kept: "ok" })
+			attest(Object.keys(types.Deleted(getOwnProtoKey()))).equals(["kept"])
 
 			attest(types.Rejected(getPrototypeNamedKeys()).toString())
 				.snap(`toString must be removed

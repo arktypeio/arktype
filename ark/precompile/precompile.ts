@@ -74,6 +74,7 @@ import {
 	isRuntimeExport,
 	isTypeMemberRead,
 	isTypeOnly,
+	mayBeOtherArk,
 	memberNameOf,
 	ModuleGraph,
 	progressOf,
@@ -131,6 +132,7 @@ import {
 	configuredHintOf,
 	configuredThreadMessage,
 	copiesHint,
+	derivedHint,
 	frozenHint,
 	hintsByRule,
 	opaqueSchemaHint,
@@ -377,6 +379,11 @@ export const precompileModule = (
 ): PrecompiledModule => new Precompiler(host, opts).precompile(source, id)
 
 export const assertPrecompileOptions = (opts: PrecompileOptions = {}): void => {
+	if (opts.runtime !== undefined && opts.runtime !== "arktype") {
+		throwError(
+			writeOptionValueMessage("runtime", printable(opts.runtime), '"arktype"')
+		)
+	}
 	const members = opts.members ?? {}
 	const cache = opts.runtime === "arktype"
 	if (
@@ -3412,6 +3419,9 @@ export class Precompiler {
 				read === undefined || !this.lackedMembers.has(read) ? undefined
 				: includes(methodMembers, read) ? "methods"
 				: read
+			// derived from a Scope, Module or Generic, which an annotation doesn't narrow
+			const isDerived =
+				isUnsure && !dropped && mayBeOtherArk(this.graph.kindOf(object, module))
 			result.push(
 				this.diagnostic(
 					module,
@@ -3421,13 +3431,16 @@ export class Precompiler {
 						`${module.snippetOf(node)} reflects on a Type, whose properties a standalone validator doesn't share`
 					:	`${module.snippetOf(node)} reads ${read}, which a standalone validator lacks`,
 					[
-						isUnsure ?
+						isDerived ?
+							`\`${module.snippetOf(object)}\` is read off what may be an arktype value, so it may be a Type, which the standalone runtime replaces with a validator`
+						: isUnsure ?
 							`the build can't tell where \`${module.snippetOf(object)}\` comes from, so it may be a Type, which the standalone runtime replaces with a validator`
 						: dropped ?
 							`the build's \`members\` option sets ${JSON.stringify(dropped)} false, so no validator has ${read}`
 						:	`\`${module.snippetOf(object)}\` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read`
 					],
-					isUnsure ?
+					isDerived ? derivedHint
+					: isUnsure ?
 						writeUnsureHint(
 							dropped ?
 								`leave members[${JSON.stringify(dropped)}] unset`
@@ -3840,7 +3853,7 @@ export const memberOptions = [
 	"errorMethods"
 ] as const
 
-const booleanOptions = ["freeze", "lazy", "countsKeys"] as const
+const booleanOptions = ["freeze", "lazy", "countsKeys", "shadow"] as const
 
 const enumOptions = {
 	checks: ["types", "helpers", "none"],

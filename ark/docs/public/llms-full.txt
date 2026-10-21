@@ -715,23 +715,23 @@ Your definitions stay as you wrote them. [Setup](https://arktype.io/docs/precomp
 
 ## Speed and size
 
-A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. Pick the build: the fastest validator or the smallest, from the same definitions. The [options](https://arktype.io/docs/precompile/options) decide which: [`optimize: "size"`](https://arktype.io/docs/precompile/options#optimize) and dropping [`members`](https://arktype.io/docs/precompile/options#members) make a build smaller and its validators slower.
+A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. Build the fastest validator or the smallest from the same definitions. The [options](https://arktype.io/docs/precompile/options) decide which: [`optimize: "size"`](https://arktype.io/docs/precompile/options#optimize) and dropping [`members`](https://arktype.io/docs/precompile/options#members) make a build smaller and its validators slower.
 
-- Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), instructions per call, Node 24. Source: moltar/typescript-runtime-type-benchmarks, https\://moltar.github.io/typescript-runtime-type-benchmarks/
+- Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24: instructions per call. Precompiled ArkType isn't in moltar's published results yet.. Source: moltar/typescript-runtime-type-benchmarks, https\://github.com/moltar/typescript-runtime-type-benchmarks
 - ArkType (precompiled): 189
 - @ts-runtypes: 209
 - Typia: 213
 - ata-validator (AOT): 220
 - ArkType (dynamic): 262
 
-* Bundle size (B gzipped, lower is better): valibot.dev's login form, each reporting every error with a message; precompiled with its validator's members and methods, and its errors' methods, off. Source: valibot.dev's comparison, https\://valibot.dev/guides/comparison/
-* ArkType (precompiled): 912
-* Valibot: 1,475
+* Bundle size (B gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled for size: optimize "size", with its validators' members and methods and its errors' methods off. Source: the form from valibot.dev's comparison, https\://valibot.dev/guides/comparison/
+* ArkType (precompiled): 1,028
+* Valibot: 1,547
 * Zod Mini: 5,127
 * Zod: 25,058
-* ArkType (dynamic): 75,520
+* ArkType (dynamic): 75,602
 
-Precompiled ArkType is the fastest on moltar's parseSafe and assertLoose benchmarks, and on Valibot's own login form it reports every error, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
+In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
 
 Because every Type is built when you build, a precompiled validator has no initialization cost, and because nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
 
@@ -895,7 +895,7 @@ await build({
 
 **Others**
 
-Rsbuild takes `precompile.rsbuild()`, Bun's bundler `precompile.bun()` and Farm `precompile.farm()`.
+Rsbuild takes `precompile.rsbuild()`, Bun's bundler `precompile.bun()` (Bun 1.2.22 or later) and Farm `precompile.farm()`.
 
 By default, each definition becomes a standalone validator and `arktype` resolves to `arktype/runtime`. A dependency that imports `arktype` gets `arktype/runtime` too, where defining a Type throws, so the build fails for each such package unless it [opts in](https://arktype.io/docs/precompile/advanced#libraries).
 
@@ -1032,6 +1032,8 @@ A validator and its members are frozen, except a Date or RegExp it holds, unless
 A validator returns errors of its own, instances of `type.errors` and of `arktype`'s `ArkErrors`. Each issue holds the failed check's `code`, `path`, `data` and `expected`, with a message like `name must be a string`:
 
 - A message doesn't say what the value was unless text configured for it does, and the errors arktype groups at one path stay apart. A union no branch allows is one issue.
+- A missing key's message is `name is missing`, without what was expected.
+- `assert` throws a `TraversalError` whose message is the errors' `summary`, one line per issue, rather than arktype's bulleted list.
 - A path starting with an index reads `[0] must be a string`, without arktype's `value at`, even where a problem is configured.
 - Text a narrow or morph puts in `ctx.reject({ meta })` isn't written, so pass it as `expected`, `problem` or `message` instead.
 - A validator a morph calls with its `ctx` adds its issues to that validation.
@@ -1077,13 +1079,13 @@ precompile.vite({
 })
 ```
 
-`errors`, `mutatesInput`, `members`, `optimize`, `freeze`, `lazy`, `checks` and `countsKeys` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
+`errors`, `mutatesInput`, `members`, `optimize`, `freeze`, `lazy`, `checks`, `countsKeys` and `shadow` take effect in standalone mode alone, so setting one with `runtime: "arktype"` fails the build.
 
 ### errors
 
 `errors: "first"` stops each validation at the first issue it finds and returns it alone. Which of the data's issues that is isn't promised: the validator looks for whichever is cheapest to find, which may not be the one arktype finds first. `errors: "none"` returns errors holding one root issue with the code `"predicate"` and the message `is invalid`, so no check's description or message ships. Those errors have no `throw()`, and `assert` throws a plain `Error` whose `cause` is the errors.
 
-The plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to `@ark/schema/runtime/none` under `errors: "none"`, and a module importing any other `@ark/schema` entry, or a runtime island, fails the build. Turbopack needs an alias beside [the ones a standalone build needs](https://arktype.io/docs/precompile/setup#next):
+The plugin and the Node and Bun drivers resolve `@ark/schema/runtime` to `@ark/schema/runtime/none` under `errors: "none"`, and a module importing any other `@ark/schema` entry, or a runtime island, fails the build. Turbopack needs an alias beside [the ones a standalone build needs](https://arktype.io/docs/precompile/setup#next), and its loader fails the build without it:
 
 ```js
 export default {
@@ -1092,6 +1094,8 @@ export default {
 	}
 }
 ```
+
+Turbopack resolves the alias from the project, so with a package manager that doesn't hoist dependencies, like pnpm, install `@ark/schema` beside arktype.
 
 The values are [arktype's `errors`](https://arktype.io/docs/configuration#errors) option's, and a program that also configures it must configure the same value.
 
@@ -1111,7 +1115,7 @@ precompile.vite({
 })
 ```
 
-`members: { errorMethods: false }` gives errors only their `count`, `issues` and `summary`. They lack `throw()`, `toJSON()` and `toString()`, so `JSON.stringify` writes their internals, though `instanceof type.errors` still recognizes them. `.assert()` still throws a `TraversalError`. They're the smallest errors a build can return, and reading their issues is slower.
+`members: { errorMethods: false }` gives errors only their `count`, `issues` and `summary`. They lack `throw()`, `toJSON()` and `toString()`, so `JSON.stringify` writes their internals, though `instanceof type.errors` still recognizes them. `.assert()` still throws what it would otherwise: a `TraversalError`, or with `errors: "none"` a plain `Error`. They're the smallest errors a build can return, and reading their issues is slower.
 
 The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for it, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
 
@@ -1121,7 +1125,7 @@ The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for
 
 ### countsKeys
 
-`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key. Index signatures and tuples are still checked key by key, and an `optimize: "size"` build counts nothing.
+`countsKeys: true` checks a Type that rejects undeclared keys by counting an object's own enumerable keys, as most validators do, instead of checking each key against the declared ones. It counts only on a plain object, meaning one whose prototype is `Object.prototype`. If the count differs from the number of declared keys the object holds, or the object isn't plain, the validator checks each key as before. Errors are unaffected: a validation that fails reports each undeclared key. Index signatures and tuples are still checked key by key. An `optimize: "size"` build with `errors: "none"` counts as any build does; with other `errors`, it counts only in some Types, such as one holding a narrow or morph.
 
 What it gives up: an undeclared key can pass in place of a declared key that a plain object holds as a non-enumerable property or inherits from `Object.prototype`. For example, `{ "+": "reject", toString: "Function" }` passes `{ extra: 1 }`.
 
@@ -1135,11 +1139,11 @@ What it gives up: an undeclared key can pass in place of a declared key that a p
 
 ### checks
 
-`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default where Vitest runs tests) each static helper too, and `"none"` only those holding functions, so a module mock replacing any other goes unnoticed.
+`checks` decides what a factory checks of what it receives: `"types"` (the default) checks each Type, Module, Scope and Generic is the one the build read, `"helpers"` (the default under Vitest, `node --test` and `bun test`) each static helper too, and `"none"` only those holding functions, so a module mock replacing any other goes unnoticed.
 
 ### allowUnsafe
 
-`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
+`allowUnsafe: true` (`--allow-unsafe` for `--check`) reports as warnings the problems that may throw at runtime but that a build can still write output for: a dependency that imports arktype or ships precompiled validators, a module the build can't precompile importing arktype, a read off an import it can't resolve, an import that loads a Type before the config module, a Turbopack alias for `@ark/schema/runtime` that doesn't match `errors` and `members`, and a definition that throws a ParseError. Each fails the build otherwise. It applies with `runtime: "arktype"` too, where a ParseError and a dependency shipping precompiled validators fail the build and the rest are warnings anyway.
 
 ### conditions and tsconfig
 
@@ -1215,6 +1219,8 @@ Where the fix is clear and the problem could throw at runtime, the build fails. 
 
 **`` `User` comes from `~/schemas`, which the build can't resolve ``**: the build resolves imports as TypeScript does, so it can't check reads off an import only a bundler alias resolves. Add the alias to `tsconfig.json`'s `paths`, or name that tsconfig as the build's `tsconfig`. If the value isn't a Type, annotate it with its type.
 
+**`` `out.items` is read off what may be an arktype value ``**: the build lost track of what a value is somewhere between it and an arktype value, like a Module it can't read, so it may be a Type, which a validator replaces. An annotation doesn't change that. Define a Scope or Module in a const, as `scope({ ... })` or `scope({ ... }).export()`, which the build reads alias by alias, or build with `runtime: "arktype"`.
+
 ## Setup
 
 **`arktype resolves to 2.3.0, but @ark/precompile runs on 2.2.9`**: validators run only on the arktype they were built with. Install one version, e.g. with your package manager's dedupe or overrides.
@@ -1269,7 +1275,7 @@ A library ships its source, and the build precompiles it with the program if its
 }
 ```
 
-Its definitions are then precompiled like the program's. The plugin and drivers find such packages through the dependencies of the nearest `package.json` to `cwd` and of each package that opts in, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
+Its definitions are then precompiled like the program's. The plugin and drivers find such packages among those the nearest `package.json` to `cwd` depends on, directly or through other packages, and the plugin keeps Vite and Vitest from prebundling or externalizing them.
 
 A library shouldn't ship what its own build precompiled, which runs only on the arktype it was built with, so the build fails for each dependency that imports `arktype/runtime`.
 
@@ -1328,23 +1334,23 @@ npm i -D typescript-6@npm:typescript@6
 
 Every ArkType definition can run dynamically, created by `type()` at runtime, or [precompiled](https://arktype.io/docs/precompile), constructed when you build. Your definitions and their inferred types are identical either way, so you can switch at any time.
 
-- Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), instructions per call, Node 24. Source: moltar/typescript-runtime-type-benchmarks, https\://moltar.github.io/typescript-runtime-type-benchmarks/
+- Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24: instructions per call. Precompiled ArkType isn't in moltar's published results yet.. Source: moltar/typescript-runtime-type-benchmarks, https\://github.com/moltar/typescript-runtime-type-benchmarks
 - ArkType (precompiled): 189
 - @ts-runtypes: 209
 - Typia: 213
 - ata-validator (AOT): 220
 - ArkType (dynamic): 262
 
-* Bundle size (B gzipped, lower is better): valibot.dev's login form, each reporting every error with a message; precompiled with its validator's members and methods, and its errors' methods, off. Source: valibot.dev's comparison, https\://valibot.dev/guides/comparison/
-* ArkType (precompiled): 912
-* Valibot: 1,475
+* Bundle size (B gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled for size: optimize "size", with its validators' members and methods and its errors' methods off. Source: the form from valibot.dev's comparison, https\://valibot.dev/guides/comparison/
+* ArkType (precompiled): 1,028
+* Valibot: 1,547
 * Zod Mini: 5,127
 * Zod: 25,058
-* ArkType (dynamic): 75,520
+* ArkType (dynamic): 75,602
 
-Precompiled ArkType is the fastest on moltar's parseSafe and assertLoose benchmarks, and on Valibot's own login form it reports every error, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
+In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
 
-Validating valid data, the two modes run the same checks. On schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around those checks: the parser, the time it takes to create each Type, and the code it generates.
+In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around a Type's checks: the parser, the time it takes to create each Type, and the code it generates.
 
 | | Dynamic | Precompiled | Precompiled with `runtime: "arktype"` |
 | - | - | - | - |
@@ -1353,7 +1359,7 @@ Validating valid data, the two modes run the same checks. On schemabenchmarks.de
 | Generates code at runtime | yes, unless [`jitless`](https://arktype.io/docs/configuration#jitless) | never | only for Types the build couldn't precompile |
 | Composing at runtime | the whole Type API | inside definitions, which the build evaluates | the whole Type API |
 | Introspection members | all | those the [`members`](https://arktype.io/docs/precompile/options#members) option bakes | all |
-| Error messages | say what was expected and what the value was | say what was expected, and any text configured for them | say what was expected and what the value was |
+| Error messages | say what was expected and what the value was | say what was expected or that a key is missing, and any text configured for them | say what was expected and what the value was |
 | [Locales](https://arktype.io/docs/i18n) | yes | no | yes |
 
 ## Which to use
@@ -3809,7 +3815,7 @@ const describe = match
 
 describe({ id: 1, count: 3 }) // "3 items"
 describe({ id: 2, label: "two" }) // "two"
-// TraversalError: id must be 1 or 2 (was undefined)
+// TraversalError: id must be 1 or 2 (was missing)
 describe({ count: 3 })
 // TypeScript: Property 'id' is missing in type '{ count: number; }' but required in type '{ id: 1; count: number; }'.
 ```
@@ -7462,7 +7468,7 @@ const User = type({
 })
 ```
 
-That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, precompiled ArkType reports every error, with its message, in a smaller bundle than Valibot: 0.91 kB gzipped against 1.48 kB.
+That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.03 kB gzipped against 1.55 kB.
 
 Coming from Zod, most APIs have a direct equivalent:
 

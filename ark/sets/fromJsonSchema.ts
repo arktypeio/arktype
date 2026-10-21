@@ -22,6 +22,7 @@ import {
 	isArray,
 	printable,
 	throwParseError,
+	WeakCache,
 	type array,
 	type dict
 } from "@ark/util"
@@ -381,7 +382,7 @@ const keywordReaders: KeywordReader[] = [
 		const negated = read(o.not, `${pointer}/not`, ctx)
 		return opaqueRoot(
 			["not", negated.id],
-			`anything but ${negated.description}`,
+			`other than ${negated.description}`,
 			data => !negated.allows(data)
 		)
 	},
@@ -711,17 +712,22 @@ const constRoot = (value: unknown): BaseRoot =>
 		})
 	:	rootSchema({ unit: value })
 
-// one predicate per keyword and subschemas, so equal reads relate
-const predicatesByKey: Record<string, Predicate> = {}
+// one predicate per keyword and subschemas, so equal reads relate, kept only
+// while a node holds it
+const predicatesByKey = new WeakCache<Predicate>()
 
 const opaque = (
 	key: unknown[],
 	description: string,
 	predicate: Predicate<any>
-): NodeSchema<"predicate"> => ({
-	predicate: (predicatesByKey[JSON.stringify(key)] ??= predicate),
-	meta: { description }
-})
+): NodeSchema<"predicate"> => {
+	const cacheKey = JSON.stringify(key)
+	return {
+		predicate:
+			predicatesByKey.get(cacheKey) ?? predicatesByKey.set(cacheKey, predicate),
+		meta: { description }
+	}
+}
 
 const opaqueRoot = (
 	key: unknown[],

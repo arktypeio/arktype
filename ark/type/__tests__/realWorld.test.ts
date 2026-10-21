@@ -708,7 +708,7 @@ nospace must be matched by ^\\S*$ (was "One space")`)
 		})
 
 		attest(T.expression).snap(
-			"{ first_name?: (In: string) => To<string <= 3 & >= 1> }"
+			"{ first_name?: (In: string) => To<1 <= string <= 3> }"
 		)
 		attest(T.t).type.toString.snap(
 			"{ first_name?: (In: string) => To<string> }"
@@ -1355,7 +1355,7 @@ Right: { x: number, y: number, + (undeclared): delete }`)
 
 		const Skinish = MasterSkinItem.or(SkinItem)
 		attest(Skinish.expression).snap(
-			'{ masterItem: true, minPrice: number % 1 & >= 0, qualities: (1 | 2 | 3 | 4 | 5)[] | [null], short: string, skin: string, type: "skin", souvenirAvailable: boolean = false, stattrakAvailable: boolean = false, + (undeclared): reject } | { short: string, skin: string, type: "skin", quality?: 1 | 2 | 3 | 4 | 5, souvenir: boolean = false, stattrak: boolean = false, weight?: number, + (undeclared): reject }'
+			'{ masterItem: true, minPrice: number % 1 >= 0, qualities: (1 | 2 | 3 | 4 | 5)[] | [null], short: string, skin: string, type: "skin", souvenirAvailable: boolean = false, stattrakAvailable: boolean = false, + (undeclared): reject } | { short: string, skin: string, type: "skin", quality?: 1 | 2 | 3 | 4 | 5, souvenir: boolean = false, stattrak: boolean = false, weight?: number, + (undeclared): reject }'
 		)
 	})
 
