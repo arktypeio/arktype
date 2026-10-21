@@ -127,8 +127,12 @@ export const errorWritersByCode: {
 		},
 		// its message doesn't show it, so data that may be large isn't printed
 		actual: printKind,
-		problem: ctx => ctx.expected,
-		message: ({ problem }) => {
+		// a union without branches, like never, has no errors to read paths from
+		problem: (ctx, info) =>
+			ctx.errors.length ? ctx.expected : writeProblem(ctx, info),
+		message: (ctx, info) => {
+			if (!ctx.errors.length) return writeMessage(ctx, info)
+			const problem = ctx.problem
 			// text it wrote starts as its first path does
 			if (problem === written ? bracketed : problem[0] === "[")
 				return `value at ${problem}`

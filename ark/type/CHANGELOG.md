@@ -1486,6 +1486,18 @@ const area = match
 area({ kind: "square", side: 2 })
 ```
 
+### Write a path and a problem for a value that must be `never`
+
+The message of an error from `never` was only `never`:
+
+```ts
+const T = type({ "files?": "never" })
+
+// was: never
+// now: files must be never (was 1)
+T({ files: 1 }).toString()
+```
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`
