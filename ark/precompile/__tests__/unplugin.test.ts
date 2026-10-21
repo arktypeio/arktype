@@ -545,6 +545,39 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 		])
 	})
 
+	it("esbuild an undetailed failure, read later", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const User = type({ name: "string" })
+
+const data = { name: 5 }
+const out = User(data)
+if (!(out instanceof type.errors)) throw new Error("valid")
+console.log(out.constructor === type.errors, out.count, out.issues[0].data === data, JSON.stringify(out), out.summary)
+`
+			},
+			fromHere("temp", "undetailedFailure")
+		)
+		const outputs = await Promise.all(
+			(["speed", "size"] as const).map(async optimize =>
+				run(
+					await bundlers.esbuild(
+						{ cwd: root, errors: "none", config: false, optimize },
+						root
+					)
+				)
+			)
+		)
+		attest(outputs).snap([
+			`true 1 true [{"code":"predicate","path":[],"data":{"name":5},"message":"is invalid"}] is invalid
+`,
+			`true 1 true [{"code":"predicate","path":[],"data":{"name":5},"message":"is invalid"}] is invalid
+`
+		])
+	})
+
 	it("esbuild packages that opt in", async () => {
 		const standalone = await bundlers.esbuild({ cwd: library }, library)
 		attest(run(standalone)).equals(runPlain(library))

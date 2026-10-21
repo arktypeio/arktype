@@ -312,18 +312,23 @@ const writeValue = (hoisted: boolean, name: string, expression: string) =>
 		`var ${name}Value\nfunction ${name}() {\n\treturn (${name}Value ??= ${expression})\n}`
 	:	`const ${name} = /* @__PURE__ */ (() => ${expression})()`
 
+// errors "none"'s root issue, found once read unless written for size
+const invalidErrorsOf = (shortest: boolean) =>
+	shortest ?
+		`const errors = new runtime.ArkErrors()
+	errors._ = [{ code: "predicate", path: [], data }]`
+	:	"const errors = new runtime.InvalidErrors(data)"
+
 // errors "none" failures as [params, body]
 const failureSources = {
 	invalid: [
 		"data, onFail",
-		`\tconst errors = new runtime.ArkErrors()
-	errors._ = [{ code: "predicate", path: [], data }]
+		(created: string) => `\t${created}
 	return onFail ? onFail(errors) : errors`
 	],
 	invalidCall: [
 		"data, args, onFail",
-		`\tconst errors = new runtime.ArkErrors()
-	errors._ = [{ code: "predicate", path: [], data }]
+		(created: string) => `\t${created}
 	if (args.length) {
 		if (args[0]) return runtime.pipedIntoUndetailed(args[0], errors)
 		if (args[1] !== undefined) onFail = args[1]
@@ -2310,7 +2315,15 @@ ${writeFunction(
 		const [params, body] = failureSources[name]
 		return this.share(
 			name,
-			writeFunction(this.baking, name, params, body, name === "applyBy"),
+			writeFunction(
+				this.baking,
+				name,
+				params,
+				typeof body === "string" ? body : (
+					body(invalidErrorsOf(this.baking.shortest))
+				),
+				name === "applyBy"
+			),
 			{},
 			name === "invalid" || name === "invalidCall"
 		)

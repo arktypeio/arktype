@@ -663,6 +663,29 @@ export const UnreadArkErrors: UnreadErrors = /* @__PURE__ */ unreadOf(ArkErrors)
 export const UnreadFirstIssues: UnreadErrors =
 	/* @__PURE__ */ unreadOf(FirstIssues)
 
+// errors "none"'s failure, its one issue built once read
+export const InvalidErrors: new (data: unknown) => ArkErrors =
+	/* @__PURE__ */ (() => {
+		class Invalid {
+			declare _data: unknown
+			declare _found?: ArkIssue[]
+
+			constructor(data: unknown) {
+				this._data = data
+			}
+
+			get _(): ArkIssue[] {
+				return (this._found ??= [
+					{ code: "predicate", path: [], data: this._data } as never
+				])
+			}
+		}
+		setPrototypeOf(Invalid.prototype, ArkErrors.prototype)
+		// keeps the prototype's own constructor, still not enumerable
+		Invalid.prototype.constructor = ArkErrors
+		return Invalid as never
+	})()
+
 // an Apply reporting into ArkErrors calls no user code, so its issues can wait
 export const unreadErrors = (
 	apply: CompactApply,
