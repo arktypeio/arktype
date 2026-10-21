@@ -13,6 +13,7 @@ const fullFiles: Record<string, string> = {
 	regex: "docs/regex/llms.txt",
 	attest: "docs/attest/llms.txt",
 	"json-schema": "docs/json-schema/llms.txt",
+	sets: "docs/sets/llms.txt",
 	internals: "docs/internals/llms.txt"
 }
 
@@ -106,7 +107,7 @@ const llmsIndex = (sections: Section[]) => {
 		[
 			"# ArkType",
 			"> TypeScript's 1:1 validator, optimized from editor to runtime",
-			"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. ArkRegex, Attest and @ark/json-schema are its companion packages.",
+			"ArkType parses definitions written in TypeScript's own syntax, validates data against them at runtime and infers their types. ArkRegex, Attest, @ark/json-schema and ArkSets are its companion packages.",
 			`Each link below is a docs page as Markdown. [llms-full.txt](${siteUrl}/llms-full.txt) has every ArkType page in one file.`,
 			...sections.flatMap(sectionLists),
 			[

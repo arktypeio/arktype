@@ -11,6 +11,7 @@ const blurbs: Record<string, string> = {
 	regex: "regex with types",
 	attest: "type-level testing",
 	"json-schema": "both directions",
+	sets: "set algebra, any format",
 	internals: "nodes and schemas"
 }
 

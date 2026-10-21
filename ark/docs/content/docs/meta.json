@@ -1,3 +1,11 @@
 {
-	"pages": ["(arktype)", "regex", "attest", "json-schema", "internals", "blog"]
+	"pages": [
+		"(arktype)",
+		"regex",
+		"attest",
+		"json-schema",
+		"sets",
+		"internals",
+		"blog"
+	]
 }

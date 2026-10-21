@@ -3,7 +3,7 @@ title: Set algebra
 description: What importing arksets installs into @ark/schema, and what @ark/schema does without it.
 ---
 
-`arktype` imports `arksets`, so if you use `arktype`, set algebra is always installed. This page is for using `@ark/schema` on its own.
+`arktype` imports the engine from `arksets/internal`, so if you use `arktype`, set algebra is always installed. This page is for using `@ark/schema` on its own.
 
 ```ts
 import "arksets"
@@ -18,7 +18,7 @@ Importing `arksets` installs the engine `@ark/schema` uses to:
 
 Import it before you parse anything: nodes are reduced when they're created, so a node parsed earlier stays unreduced. `arksets` installs into the copy of `@ark/schema` it resolves, so keep one copy of each package.
 
-`arksets` also exports the functions the engine is built from. They're internal and change with `@ark/schema`, so they aren't documented.
+`arksets/internal` exports the functions the engine is built from. They change with `@ark/schema`, so they aren't documented. The functions `arksets` itself exports, like `isSubset` and `intersect`, are in [ArkSets](/docs/sets).
 
 ## Without arksets
 

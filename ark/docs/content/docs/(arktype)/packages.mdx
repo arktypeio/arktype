@@ -14,7 +14,7 @@ To define and validate Types, install `arktype`. It brings `arkregex`, `@ark/sch
 | `@ark/json-schema` | build a Type from a JSON Schema                              | [From JSON Schema](/docs/json-schema/from-json-schema) |
 | `@ark/fast-check`  | generate test data from a Type with fast-check               | [fast-check](/docs/fast-check)                         |
 | `@ark/schema`      | build Types from nodes instead of syntax (not semver-stable) | [Internals](/docs/internals)                           |
-| `arksets`          | use `@ark/schema` without `arktype` (not semver-stable)      | [Set algebra](/docs/internals/sets)                    |
+| `arksets`          | relate, combine and convert schemas from any format          | [ArkSets](/docs/sets)                                  |
 | `@ark/util`        | nothing: it's shared by the other packages                   |                                                        |
 | `@ark/fs`          | nothing: it's the filesystem layer `@ark/attest` uses        |                                                        |
 
@@ -63,8 +63,8 @@ import { type } from "arktype"
 - **`@ark/attest`** exports `attest`, `bench`, `setup` and `teardown`, and installs an `attest` CLI. Install it as a dev dependency.
 - **`@ark/json-schema`** exports `jsonSchemaToType` and `JsonSchemaScope`.
 - **`@ark/fast-check`** exports `arkToArbitrary`. It needs `fast-check` 3 installed beside it.
-- **`@ark/schema`** exports nodes, `rootSchema`, `schemaScope` and the classes behind `ArkErrors`, with `@ark/schema/config` and `@ark/schema/i18n` entrypoints like `arktype`'s.
-- **`arksets`** installs set algebra into `@ark/schema` when imported. `arktype` imports it for you.
+- **`@ark/schema`** exports nodes, `rootSchema`, `schemaScope` and the classes behind `ArkErrors`, with `config`, `i18n`, `codecs`, `errors`, `mutatesInput` and `runtime` entrypoints like `arktype`'s.
+- **`arksets`** exports `parse`, `isSubset`, `isEqual`, `isDisjoint`, `intersect`, `union`, `discriminate` and `toJsonSchema`, and installs set algebra into `@ark/schema` when imported. `arktype` imports only that engine, from `arksets/internal`.
 
 `@ark/json-schema`, `@ark/fast-check` and `@ark/attest` each depend on an exact version of `arktype`, and `@ark/precompile` precompiles with the `arktype` it imports. Install the versions released alongside your `arktype` so your project doesn't load two copies of it.
 

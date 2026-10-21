@@ -40,7 +40,8 @@ export const generateStaticParams = () => [
 /** sections that are products of their own get their name in the title */
 const productTitles: Record<string, string> = {
 	attest: "Attest",
-	regex: "ArkRegex"
+	regex: "ArkRegex",
+	sets: "ArkSets"
 }
 
 /** sections of ArkType's docs whose name tells their pages apart, e.g. "Overview" */
