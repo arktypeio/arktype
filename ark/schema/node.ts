@@ -746,31 +746,33 @@ export abstract class BaseNode<
 	/** rawIn should be used internally instead */
 	get in(): unknown {
 		// ensure the node has been finalized if in is being used externally
-		return (this.cache.finalizedIn ??=
-			this.rawIn.isRoot() ? this.$.finalize(this.rawIn) : this.rawIn)
+		return (this.cache.finalizedIn ??= this.finalized(this.rawIn))
 	}
 
 	get rawIn(): BaseNode {
-		if (this.cache.rawIn) return this.cache.rawIn
-		const rawIn = this.getIo("in")
-		return this.includesAlias && !isIoFinal() ?
-				rawIn
-			:	(this.cache.rawIn = rawIn)
+		return this.cache.rawIn ?? this.cachedIo("in")
 	}
 
 	/** rawOut should be used internally instead */
 	get out(): unknown {
 		// ensure the node has been finalized if out is being used externally
-		return (this.cache.finalizedOut ??=
-			this.rawOut.isRoot() ? this.$.finalize(this.rawOut) : this.rawOut)
+		return (this.cache.finalizedOut ??= this.finalized(this.rawOut))
 	}
 
 	get rawOut(): BaseNode {
-		if (this.cache.rawOut) return this.cache.rawOut
-		const rawOut = this.getIo("out")
-		return this.includesAlias && !isIoFinal() ?
-				rawOut
-			:	(this.cache.rawOut = rawOut)
+		return this.cache.rawOut ?? this.cachedIo("out")
+	}
+
+	private finalized(io: BaseNode): BaseNode {
+		return io.isRoot() ? this.$.finalize(io) : io
+	}
+
+	// an open alias's io isn't final, so it isn't cached
+	private cachedIo(ioKind: "in" | "out"): BaseNode {
+		const io = this.getIo(ioKind)
+		if (!this.includesAlias || isIoFinal())
+			this.cache[ioKind === "in" ? "rawIn" : "rawOut"] = io
+		return io
 	}
 
 	// Should be refactored to use transform
