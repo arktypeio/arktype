@@ -129,28 +129,30 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 	})
 }
 
+const keepBase = (ctx: { base: JsonSchema }): never => ctx.base as never
+
 // Standard JSON Schema converters only throw for unsupported options, so
 // these keep the part of a type JSON Schema can represent, or {} if none
 const standardFallback: ToJsonSchema.HandlerByCode = {
-	arrayObject: ctx => ctx.base,
+	arrayObject: keepBase,
 	// draft-07 tuples keep their prefix in items
 	arrayPostfix: ({ base: { items, additionalItems, ...base } }) =>
 		(Array.isArray(items) ? { ...base, items } : base) as never,
 	defaultValue: () => undefined,
-	domain: ctx => ctx.base,
+	domain: keepBase,
 	// rejecting undeclared keys would reject those the index allows
 	indexKey: ({ base }) => {
 		const { additionalProperties, ...rest } = base
 		return additionalProperties === false ? rest : base
 	},
-	morph: ctx => ctx.base,
-	patternFlags: ctx => ctx.base,
-	patternIntersection: ctx => ctx.base,
-	predicate: ctx => ctx.base,
-	proto: ctx => ctx.base,
-	symbolKey: ctx => ctx.base,
-	unit: ctx => ctx.base,
-	date: ctx => ctx.base
+	morph: keepBase,
+	patternFlags: keepBase,
+	patternIntersection: keepBase,
+	predicate: keepBase,
+	proto: keepBase,
+	symbolKey: keepBase,
+	unit: keepBase,
+	date: keepBase
 }
 
 export const ToJsonSchema = {
