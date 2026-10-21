@@ -304,8 +304,12 @@ const jsxToMarkdown = (node: Jsx): RootContent[] => {
 				} satisfies Paragraph
 			]
 		}
-		case "Claim":
-			return [paragraph(claimMarkdown(claims[attr(node, "id") as ClaimId]))]
+		case "Claim": {
+			const text = claimMarkdown(claims[attr(node, "id") as ClaimId])
+			return node.type === "mdxJsxTextElement" ?
+					[{ type: "text", value: text }]
+				:	[paragraph(text)]
+		}
 		case "ClaimCharts":
 			return [
 				...[speedChart, sizeChart].map(claimChartMarkdown),

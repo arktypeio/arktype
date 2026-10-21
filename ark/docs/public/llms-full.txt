@@ -1331,9 +1331,7 @@ Every ArkType definition can run dynamically, created by `type()` at runtime, or
 
 Precompiled ArkType is the fastest on moltar's parseSafe and assertLoose benchmarks, and on Valibot's own login form it reports every error, with its message, in a smaller bundle than Valibot. (pending) Each chart names its benchmark and the options it was built with.
 
-Validating valid data, the two modes run the same checks. What precompiling removes is everything around those checks: the parser, the time it takes to create each Type, and the code it generates.
-
-On schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. (pending)
+Validating valid data, the two modes run the same checks. On schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. (pending) What precompiling removes is everything around those checks: the parser, the time it takes to create each Type, and the code it generates.
 
 | | Dynamic | Precompiled | Precompiled with `runtime: "arktype"` |
 | - | - | - | - |

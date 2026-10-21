@@ -321,6 +321,14 @@
 			display: inline-block;
 			color: var(--gold);
 		}
+		h1.is-long {
+			font-size: clamp(2.4rem, 1.5rem + 2.3vw, 3.75rem);
+			line-height: 1.02;
+			.one {
+				display: block;
+				margin-top: 0.12em;
+			}
+		}
 	}
 	.eyebrow {
 		display: flex;
@@ -1374,6 +1382,18 @@
 	}
 
 	/* 05: a few more */
+	.claims-home {
+		margin: 28px 0 36px;
+		> p {
+			color: var(--ink-2);
+			max-width: 70ch;
+		}
+	}
+	.ex-pair {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+		gap: 16px;
+	}
 	.examples {
 		display: grid;
 		margin-top: 44px;
@@ -1619,6 +1639,9 @@
 		.spec {
 			font-size: 14.5px;
 			gap: 8px 12px;
+		}
+		.ex-pair {
+			grid-template-columns: minmax(0, 1fr);
 		}
 		.live-body {
 			--fs: 13.5;

@@ -20,11 +20,9 @@ export const ClaimText = ({ claim }: { claim: ClaimValue<string> }) =>
 		</span>
 	:	<>{claim}</>
 
-/** a sentence from lib/claims.ts, marked while it's pending */
+/** a claim from lib/claims.ts, inline in a paragraph, marked while it's pending */
 export const Claim = ({ id }: { id: ClaimId }) => (
-	<p>
-		<ClaimText claim={claims[id]} />
-	</p>
+	<ClaimText claim={claims[id]} />
 )
 
 const ClaimChart = ({ chart }: { chart: BenchmarkChart }) => {

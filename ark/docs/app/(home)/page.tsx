@@ -10,6 +10,7 @@ import { HomeCode, PlainCode } from "../../components/home/HomeCode.tsx"
 import { HomeEffects } from "../../components/home/HomeEffects.tsx"
 import { LiveType } from "../../components/home/LiveType.tsx"
 import { BenchmarkChart } from "../../components/mdx/BenchmarkChart.tsx"
+import { ClaimCharts, ClaimText } from "../../components/mdx/Claim.tsx"
 import { BoatLane } from "../../components/shell/BoatLane.tsx"
 import { SiteFooter } from "../../components/shell/SiteFooter.tsx"
 import {
@@ -18,10 +19,11 @@ import {
 	provenance,
 	type BenchFacts
 } from "../../lib/bench/bench.ts"
+import { claims } from "../../lib/claims.ts"
 import { defineMetadata } from "../metadata.ts"
 
 const lede =
-	"Write the type you'd write anyway. ArkType checks it at runtime, and your agent already knows the syntax."
+	"Write the type you'd write anyway. Precompile it into a validator with no parser, or run it with no build at all. Your agent already knows the syntax."
 
 const title = "ArkType · TypeScript's 1:1 validator"
 
@@ -108,6 +110,23 @@ Six.expression // "number % 6"`,
 Port("8080") // 8080
 // ArkErrors: must be at most 65535 (was 80000)
 Port("80000")`,
+	discriminate: `const Shape = type({
+	kind: "'circle'",
+	radius: "number > 0"
+}).or({
+	kind: "'square'",
+	side: "number > 0"
+})`,
+	discriminated: `// Shape, precompiled: one switch, each branch checks what's left
+data => {
+	switch (data?.kind) {
+		case "circle":
+			return Number.isFinite(data.radius) && data.radius > 0
+		case "square":
+			return Number.isFinite(data.side) && data.side > 0
+	}
+	return false
+}`,
 	extends: `const Email = type("string.email")
 
 Email.extends("string") // true
@@ -227,32 +246,41 @@ export default function HomePage() {
 				<section className="hero" aria-labelledby="hero-title">
 					<div>
 						<div className="eyebrow rise" style={rise(0)}>
-							<b>arktype</b> {"//"} runtime validation for TypeScript
+							<b>arktype</b> {"//"} TypeScript's 1:1 validator
 						</div>
-						<h1 id="hero-title" className="rise-fade">
-							TypeScript's <span className="one">1:1</span> validator
+						<h1 id="hero-title" className="rise-fade is-long">
+							<ClaimText claim={claims.headline} />{" "}
+							<span className="one">optimized for agentic dev</span>
 						</h1>
 						<p className="lede rise" style={rise(1)}>
 							Write the <span className="decl c-sky">type</span> you'd write
-							anyway. ArkType checks it at runtime, and your{" "}
-							<span className="decl c-teal">agent</span> already knows the
-							syntax.
+							anyway. Precompile it into a validator with{" "}
+							<ClaimText claim={claims.noCompromise} />, or run it with no build
+							at all. Your <span className="decl c-teal">agent</span> already
+							knows the syntax.
 						</p>
 						<dl className="spec rise" style={rise(2)}>
 							<dt>syntax</dt>
 							<dd>
 								<b>TypeScript's own</b>, checked by <code>tsc</code> as you type
 							</dd>
-							<dt>runtime</dt>
+							<dt>precompiled</dt>
 							<dd>
-								<b>precompiled</b> <NextTag /> · {validRuntime}{" "}
+								<b>no parser shipped</b> <NextTag /> · {validRuntime}{" "}
 								<BenchSource facts={facts} />
 							</dd>
-							<dt>errors</dt>
-							<dd>what was expected, what arrived, and where</dd>
-							<dt>interop</dt>
+							<dt>dynamic</dt>
 							<dd>
-								<b>Standard Schema</b> · tRPC, Hono, Drizzle, the MCP SDK
+								<b>no build step</b> · <ClaimText claim={claims.dynamicSpec} />
+							</dd>
+							<dt>size</dt>
+							<dd>
+								<ClaimText claim={claims.sizeSpec} />
+							</dd>
+							<dt>agents</dt>
+							<dd>
+								<b>errors that name the fix</b>, from <code>tsc</code>, the
+								build and at runtime
 							</dd>
 						</dl>
 						<div className="ctas rise" style={rise(3)}>
@@ -286,7 +314,7 @@ export default function HomePage() {
 						<span className="n">
 							03 // run <NextTag />
 						</span>
-						<b>Compiled before it ships</b>
+						<b>Speed and size: pick both</b>
 						<span>
 							{facts.mostFaster ?
 								`no library faster in more than ${facts.mostFaster} of ${facts.validCount}`
@@ -443,11 +471,20 @@ export default function HomePage() {
 					</div>
 					<h2>The rest compiles away. What runs is the validator.</h2>
 					<p className="deck">
-						{preview ? "In the next release, ArkType" : "ArkType"} precompiles
-						your definitions at build time, so no parser ships. We raced what's
-						left against the ahead-of-time compilers (typia, TypeBox, ajv) and
-						the libraries you'd otherwise write schemas with (Zod 4, compiled or
-						not, and Valibot), each in its own process, on the same inputs.
+						Run ArkType two ways. <b>Dynamic</b>, <code>type()</code> parses
+						each definition at runtime, with no build step. <b>Precompiled</b>
+						{preview ? ", in the next release," : ""} your bundler constructs
+						each Type when you build, so no parser ships and nothing compiles at
+						runtime. Your definitions are the same either way.
+					</p>
+					<div className="claims-home">
+						<ClaimCharts />
+					</div>
+					<p className="deck">
+						We also raced the precompiled build against the ahead-of-time
+						compilers (typia, TypeBox, ajv) and the libraries you'd otherwise
+						write schemas with (Zod 4, compiled or not, and Valibot), each in
+						its own process, on the same inputs.
 					</p>
 					<div className="figs">
 						<div className="fig">
@@ -558,8 +595,10 @@ export default function HomePage() {
 					<h2>The loop your agent runs.</h2>
 					<p className="deck">
 						It writes a definition, runs <code>tsc</code>, reads the error,
-						fixes it, then validates real input. Every message in this
-						transcript is real ArkType and TypeScript output.
+						fixes it, then validates real input. A precompiled build adds one
+						more step of the same kind, its errors naming the file, line, reason
+						and fix, so precompiling costs your agent little. Every message in
+						this transcript is real ArkType and TypeScript output.
 					</p>
 					<div className="agents">
 						<figure
@@ -701,15 +740,36 @@ export default function HomePage() {
 				<section className="block" data-reveal aria-labelledby="more-title">
 					<div className="sec-label">
 						<b>05</b>
-						{"// a few more"}
+						{"// sets"}
 					</div>
-					<h2 id="more-title">Types as sets you can query.</h2>
+					<h2 id="more-title">Types as sets, reduced before they ship.</h2>
 					<p className="deck">
-						ArkType reduces every definition to its simplest form before it
-						validates anything, which is also why it can answer questions about
-						types at runtime.
+						ArkType reduces every definition to a normalized set of constraints,
+						so it knows which Types overlap, which are subtypes of others and
+						which can never be satisfied. Precompiled, it applies all of that in
+						your build: a contradiction like <code>{"{ id: string }"}</code> and{" "}
+						<code>{"{ id: number }"}</code> fails the build instead of shipping
+						a validator that rejects everything.
 					</p>
 					<div className="examples">
+						<div className="ex">
+							<div>
+								<h3>Unions discriminate themselves</h3>
+								<p>
+									ArkType finds the key that tells a union's branches apart and
+									switches on it, and a branch never rechecks the key it was
+									chosen by. You never declare a discriminator.
+								</p>
+							</div>
+							<div className="ex-pair">
+								<figure className="code-card">
+									<HomeCode code={snippets.discriminate} />
+								</figure>
+								<figure className="code-card">
+									<PlainCode code={snippets.discriminated} />
+								</figure>
+							</div>
+						</div>
 						<div className="ex">
 							<div>
 								<h3>Reduced before it runs</h3>

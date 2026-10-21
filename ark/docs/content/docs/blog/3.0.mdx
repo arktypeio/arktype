@@ -1,0 +1,179 @@
+---
+title: Announcing ArkType 3.0
+description: Dynamic or precompiled, optimized for agentic dev
+date: 2026-10-21
+---
+
+ArkType 3.0 is here: **<Claim id="headline" />, optimized for agentic dev.**
+
+You write the same TypeScript-shaped definitions as always. What's new is where they run. **ArkType (dynamic)** parses them at runtime, with no build step, as ArkType always has. **ArkType (precompiled)** constructs each one when you build, so your bundle carries a validator with only the checks your types need: no parser, no code generated at runtime, and <Claim id="noCompromise" />.
+
+```ts
+// ---cut-start---
+declare const data: unknown
+// ---cut-end---
+// the same definition, run either way
+export const User = type({
+	name: "string > 0",
+	email: "string.email",
+	"age?": "number.integer >= 0"
+})
+
+const out = User(data)
+
+if (out instanceof type.errors) console.error(out.summary)
+```
+
+Below are the highlights. The full list, including what can break, is in [Upgrading](/docs/upgrading) and the [changelog](https://github.com/arktypeio/arktype/blob/main/ark/type/CHANGELOG.md).
+
+## Dynamic and precompiled
+
+<ClaimCharts />
+
+Both modes run the same checks on valid data. <Claim id="dynamicSpeed" />
+
+What precompiling removes is everything around those checks: the parser, the work of creating each Type, and the code a JIT writes. <Claim id="noInit" />
+
+[Dynamic vs Precompiled](/docs/dynamic-vs-precompiled) compares the two modes side by side.
+
+## Precompile
+
+[`@ark/precompile`](/docs/precompile) is a plugin for the bundler you already run: Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun or Farm, with drivers for Node, Bun, Turbopack and Vitest.
+
+```ts title="vite.config.ts"
+import { precompile } from "@ark/precompile/unplugin"
+// ---cut---
+export default {
+	plugins: [precompile.vite()]
+}
+```
+
+Your definitions don't change. Each Type your program defines becomes a validator on `arktype/runtime` that validates, asserts and implements Standard Schema as the Type did, so code that calls it doesn't change either. Scopes, Modules, Generics, cyclic Types, `match` and `type.fn` precompile too.
+
+A definition the build can't precompile, like one built from a value known only at runtime, fails the build with its file, line, reason and fix:
+
+```
+src/forms.ts:14:19  type(`string <= ${limit}`) cannot be precompiled
+  `limit` is a parameter of makeField (src/forms.ts:12:22); its value is known only at runtime
+  Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".
+```
+
+`npx arktype-precompile --check "src/**/*.ts"` lists every such definition before you switch, and `runtime: "arktype"` precompiles what it can while shipping arktype for the rest, so you can migrate a program at your own pace. [Setup](/docs/precompile/setup) has a config for each bundler.
+
+### Set theory at build time
+
+ArkType reduces every definition to a normalized set of constraints, so it knows which Types overlap, which are subtypes of others and which can never both be satisfied. Precompiled, all of that happens in your build:
+
+- **Unions discriminate themselves.** ArkType finds the key that tells a union's branches apart and switches on it, so data is checked against one branch rather than each in turn, and a branch never rechecks the key it was chosen by. You never declare a discriminator.
+- **Redundant checks disappear.** `number > 0` intersected with `number >= 10` is one check, `number >= 10`. Divisible by 2 and by 3 is divisible by 6.
+- **Contradictions never ship.** `{ id: string }` intersected with `{ id: number }` throws a ParseError, which fails the build rather than shipping a validator that rejects everything.
+
+```ts
+const Shape = type({
+	kind: "'circle'",
+	radius: "number > 0"
+}).or({
+	kind: "'square'",
+	side: "number > 0"
+})
+
+const Six = type("number % 2 & number % 3")
+
+Six.expression // "number % 6"
+```
+
+Precompiled, `Shape` ships as one `switch` on `kind`, each case checking only the key that's left:
+
+```js
+// @noErrors
+// ---cut---
+data => {
+	switch (data?.kind) {
+		case "circle":
+			return Number.isFinite(data.radius) && data.radius > 0
+		case "square":
+			return Number.isFinite(data.side) && data.side > 0
+	}
+	return false
+}
+```
+
+Other validators compile too: typia, for one, generates checks from your TypeScript types at build time and specializes some unions. What ArkType brings to the build is a type system of its own, which reduces, intersects and discriminates your definitions before any code is written.
+
+## Optimized for agentic dev
+
+A build step used to cost your attention. When an agent runs your local dev, it costs a loop it's already good at: build, read the error, fix, rebuild. Every message along that loop names the fix:
+
+- **Definitions** are checked by `tsc` as you write them, and a typo's error is the type the string was checked against, like `"number | strin"` against `"number | string"`.
+- **The build** reports what it can't precompile with the file, line, reason and fix. [Troubleshooting](/docs/precompile/troubleshooting) quotes each message, and [shadow mode](/docs/precompile/advanced#shadow-mode) fails a test wherever a precompiled validator would behave otherwise than arktype.
+- **Validation** returns errors that say where, what was expected and, for a dynamic Type, what arrived, ready to hand back to a model as a tool result.
+
+Set it up once:
+
+```bash
+npx skills add arktypeio/arktype
+```
+
+The [skill](/docs/agents#skill) teaches an agent current syntax, how it maps to TypeScript, the mistakes to avoid and how to work in a precompiled project. Every docs page is also Markdown at its URL plus `.md`, and [/llms.txt](https://arktype.io/llms.txt) indexes them. See [Agents](/docs/agents).
+
+## Codecs
+
+`codec` pairs a morph with its inverse, so output can be encoded back into input. Every Type has `.encode`, which inverts each of its morphs, so a codec encodes wherever it's nested:
+
+```ts
+import { codec } from "arktype/codecs"
+
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+
+const Event = type({ name: "string", at: EpochMs })
+
+// { name: "launch", at: new Date(0) }
+const event = Event({ name: "launch", at: 0 })
+// { name: "launch", at: 0 }
+const encoded = Event.encode(event)
+```
+
+Parse keywords like `string.date.iso.parse` encode back to strings. `arktype/codecs` installs encoding when imported, so an app that doesn't encode doesn't ship it. See [Codecs](/docs/codecs).
+
+## Error messages in other languages
+
+Configure a locale to write error messages in another language. ArkType ships `en` and `de`, and a locale is an object you can spread, extend or write from scratch, including one that calls an i18n library:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import { de } from "arktype/locales/de"
+
+configure({ locale: de })
+```
+
+`locale` can also be a function, called when an `ArkErrors`' messages are first read, so errors follow the language of the request that reads them. See [i18n](/docs/i18n).
+
+## Fewer errors, and transforms in place
+
+`errors` returns less when you need less: `"first"` stops at the first error validation finds, and `"none"` returns one error saying the data is invalid. `mutatesInput` writes what a Type transforms into its input instead of copying it. Each is installed by its own import, so a program that doesn't choose one doesn't ship it:
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import "arktype/errors"
+
+configure({ errors: "first" })
+```
+
+A precompiled build takes both as options, alongside [`members`](/docs/precompile/options#members), which drops what a validator has besides validating, and [`optimize: "size"`](/docs/precompile/options#optimize). See [Configuration](/docs/configuration#errors).
+
+## Faster dynamic Types
+
+Dynamic ArkType got faster too. A Type compiles when it's first used rather than when it's defined, so a Type a program never calls costs nothing to compile. A Type that calls no narrow or morph finds its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. <Claim id="strictSpeedup" />
+
+## Errors as data
+
+An `ArkErrors`' `issues` are plain objects, discriminated by `code`, with the keys their JSON has. `flatByPath` and `flatProblemsByPath` are functions `arktype` exports. Errors print an object by its kind, like `(was an object)`, so a message never grows with the data or leaks what it holds into a log, and undeclared keys and union misses have codes of their own, `undeclared` and `discriminant`. [Upgrading](/docs/upgrading) lists each change with what to write instead.
+
+## A new home
+
+These docs are new as well: every page reads as Markdown for your agent, code samples show the types TypeScript infers, and the [playground](/playground) runs the real parser in your browser.
+
+We can't wait to see what you build with 3.0. Come say hi on [Discord](https://arktype.io/discord) 🚀

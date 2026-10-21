@@ -104,6 +104,17 @@ export const sizeChart: BenchmarkChart = {
 export const claims = {
 	// David's draft; claims.md: true only with qualifiers at 61c3fe807
 	headline: { pending: "The smallest, fastest validation" },
+	// the speed and size charts together: precompiled leads both only as
+	// each chart scopes it
+	noCompromise: { pending: "no compromise between speed and size" },
+	// the homepage's spec rows, each a fragment of a claim below
+	dynamicSpec: {
+		pending: "as fast as precompiled on valid data at schemabenchmarks.dev"
+	},
+	sizeSpec: {
+		pending:
+			"precompiled, smaller than Valibot on its own login form, with every error message"
+	},
 	// the sentence under the docs' charts
 	chartsSummary: {
 		pending:

@@ -637,7 +637,8 @@
 	font-size: 0.85rem;
 }
 
-.claim-chart ol {
+.claim-chart ol,
+.prose .claim-chart ol {
 	display: grid;
 	gap: 0.5rem;
 	margin: 0;
@@ -645,7 +646,8 @@
 	list-style: none;
 }
 
-.cc-row {
+.cc-row,
+.prose .cc-row + .cc-row {
 	display: grid;
 	grid-template-columns: 10.5rem 1fr;
 	align-items: center;
