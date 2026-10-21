@@ -6,7 +6,7 @@ import {
 	type array,
 	type join
 } from "@ark/util"
-import { writeInnerJson, type BaseNode } from "../node.ts"
+import { ioOf, writeInnerJson, type BaseNode } from "../node.ts"
 import { nodesByRegisteredId, type NodeId } from "../parse.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { declareNode } from "../shared/declare.ts"
@@ -205,15 +205,13 @@ Resolution: ${printable(resolution)}`)
 		const operator = ioKind === "in" ? "In" : "Out"
 		return this.$.lazilyResolve(
 			() => {
-				const ioOf = (alias: AliasNode) =>
-					ioKind === "in" ? alias.resolution.rawIn : alias.resolution.rawOut
 				const aliases: AliasNode[] = [this]
-				let io = ioOf(this)
+				let io = ioOf(this.resolution, ioKind)
 				while (io.hasKind("alias") && io.operator === operator) {
 					const aliased = io.operands![0] as AliasNode
 					if (aliases.includes(aliased)) return $ark.intrinsic.never.internal
 					aliases.push(aliased)
-					io = ioOf(aliased)
+					io = ioOf(aliased.resolution, ioKind)
 				}
 				return io
 			},

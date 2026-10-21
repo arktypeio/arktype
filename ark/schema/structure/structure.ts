@@ -17,6 +17,7 @@ import {
 import { BaseConstraint } from "../constraint.ts"
 import { intrinsic } from "../intrinsic.ts"
 import {
+	ioOf,
 	referencesThroughAliases,
 	type BaseNode,
 	type GettableKeyOrNode,
@@ -68,7 +69,7 @@ import {
 import type { Index } from "./index.ts"
 import { Optional, type OptionalNode } from "./optional.ts"
 import type { Prop } from "./prop.ts"
-import type { Required, RequiredNode } from "./required.ts"
+import type { Required } from "./required.ts"
 import type { Sequence } from "./sequence.ts"
 import { arrayIndexMatcher, maxArrayLength } from "./shared.ts"
 
@@ -153,10 +154,7 @@ const implementation: nodeImplementationOf<Structure.Declaration> =
 					// ensure we don't overwrite nodes added by optional
 					inner.required = append(
 						inner.required,
-						nodes!.map(
-							node =>
-								(ioKind === "in" ? node.rawIn : node.rawOut) as RequiredNode
-						)
+						nodes!.map(node => ioOf(node, ioKind))
 					)
 					return
 				}

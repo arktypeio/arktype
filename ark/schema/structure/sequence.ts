@@ -13,6 +13,7 @@ import { BaseConstraint } from "../constraint.ts"
 import {
 	appendUniqueFlatRefs,
 	flatRefsAt,
+	ioOf,
 	type BaseNode,
 	type DeepNodeTransformContext,
 	type DeepNodeTransformation,
@@ -85,9 +86,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 				reduceIo: (ioKind, inner, prefix) => {
 					// before defaultables, which reduce first and are required on output
 					inner.prefix = [
-						...prefix!.map(node =>
-							ioKind === "in" ? node.rawIn : node.rawOut
-						),
+						...prefix!.map(node => ioOf(node, ioKind)),
 						...(inner.prefix ?? [])
 					]
 				}
@@ -99,7 +98,7 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 					// after defaultables, which reduce first and are optional on input
 					inner.optionals = append(
 						inner.optionals,
-						optionals!.map(node => (ioKind === "in" ? node.rawIn : node.rawOut))
+						optionals!.map(node => ioOf(node, ioKind))
 					)
 				}
 			},

@@ -793,11 +793,8 @@ export abstract class BaseNode<
 
 				ioInner[k] =
 					isArray(childValue) ?
-						childValue.map(child =>
-							ioKind === "in" ? child.rawIn : child.rawOut
-						)
-					: ioKind === "in" ? childValue.rawIn
-					: childValue.rawOut
+						childValue.map(child => ioOf(child, ioKind))
+					:	ioOf(childValue, ioKind)
 			} else ioInner[k] = v
 		}
 
@@ -1663,6 +1660,11 @@ export const flatRef = <node extends BaseRoot>(
 })
 
 // a child's refs, each reached through key
+export const ioOf = <node extends BaseNode>(
+	node: node,
+	ioKind: "in" | "out"
+): node => (ioKind === "in" ? node.rawIn : node.rawOut) as never
+
 export const flatRefsAt = (key: KeyOrKeyNode, node: BaseRoot): FlatRef[] =>
 	append(
 		node.flatRefs.map(ref => flatRef([key, ...ref.path], ref.node)),
