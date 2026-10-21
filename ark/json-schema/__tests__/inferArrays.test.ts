@@ -314,15 +314,19 @@ contextualize(() => {
 			).type.toString.snap("[string, ...unknown[]]")
 		})
 
-		it("draft-07 items array next to prefixItems is not a rest", () => {
-			attest<[string, ...unknown[]]>(
-				inferred({
-					type: "array",
-					prefixItems: [{ type: "string" }],
-					minItems: 1,
-					items: [{ type: "number" }]
-				})
-			).type.toString.snap("[string, ...unknown[]]")
+		it("draft-07 items array next to prefixItems replaces it", () => {
+			// as the runtime reads it
+			const T = jsonSchemaToType({
+				type: "array",
+				prefixItems: [{ type: "string" }],
+				minItems: 1,
+				items: [{ type: "number" }]
+			})
+			attest<[number, ...unknown[]]>(T.infer).type.toString.snap(
+				"[number, ...unknown[]]"
+			)
+			attest(T.allows([1, "x"])).equals(true)
+			attest(T.allows(["a"])).equals(false)
 		})
 	})
 
@@ -2543,6 +2547,17 @@ contextualize(() => {
 			})
 			attest(T.infer).type.toString.snap("[string?]")
 			attest(T.expression).snap("[string?]")
+		})
+
+		it("prefixItems beside items that may be an array", () => {
+			// either reading may apply
+			attest(
+				{} as jsonSchema.infer<{
+					type: "array"
+					prefixItems: [{ type: "string" }]
+					items: { type: "boolean" } | [{ type: "number" }]
+				}>
+			).type.toString.snap("unknown[]")
 		})
 
 		it("non-array items and additionalItems", () => {

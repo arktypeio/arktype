@@ -1526,14 +1526,19 @@ export type inferValues<schemas, root> =
  * tuple's elements so they don't cost a union's level of instantiation depth */
 export type inferArray<schema, root, seen, domains = never> =
 	schema extends PrefixItemsSchema ?
-		inferTuple<
-			schema["prefixItems"],
-			minItemsOf<schema>,
-			schema extends RestItemsSchema ? schema["items"] : true,
-			root,
-			seen,
-			domains
-		>
+		// a draft-07 items array is read in place of prefixItems
+		schema extends ItemsListSchema ?
+			inferArray<Omit<schema, "prefixItems">, root, seen, domains>
+		: [Extract<schema["items" & keyof schema], array>] extends [never] ?
+			inferTuple<
+				schema["prefixItems"],
+				minItemsOf<schema>,
+				schema extends RestItemsSchema ? schema["items"] : true,
+				root,
+				seen,
+				domains
+			>
+		:	unknown[] | domains
 	: schema extends UnprefixedItemsSchema ?
 		{} extends schema["items"] ? inferWidened<schema["items"]>[] | domains
 		: schema["items"] extends array ?
@@ -1553,6 +1558,10 @@ export type inferArray<schema, root, seen, domains = never> =
 
 export interface PrefixItemsSchema {
 	prefixItems: array
+}
+
+export interface ItemsListSchema {
+	items: array
 }
 
 /** an undefined `prefixItems` is absent */

@@ -1471,14 +1471,14 @@ contextualize(() => {
 			).type.toString.snap("[string?, ...unknown[]]")
 		})
 
-		it("prefixItems with draft-07 items array is open", () => {
-			attest<[string?, ...unknown[]]>(
+		it("prefixItems with draft-07 items array reads the items array", () => {
+			attest<[number?, ...unknown[]]>(
 				inferred({
 					type: "array",
 					prefixItems: [{ type: "string" }],
 					items: [{ type: "number" }]
 				})
-			).type.toString.snap("[string?, ...unknown[]]")
+			).type.toString.snap("[number?, ...unknown[]]")
 		})
 
 		it("draft-07 items with additionalItems true", () => {
