@@ -1890,7 +1890,8 @@ ${writeFunction(
 		const forwarded = forwardedOf(called)
 		const declarations = called.flatMap(([name, written]) => {
 			if (forwarded.has(name)) return []
-			const source = this.baking.shortest ? unlooped(written) : written
+			const source =
+				this.baking.shortest ? undispatched(unlooped(written)) : written
 			// plain params; size and writing traversals drop a trailing unread ctx
 			const arrow = source.replace(
 				/^function\(([^)]*)\) {/,
@@ -4012,6 +4013,30 @@ const unlooped = (source: string): string =>
 					line.replace(/^ {4}/, "").replace(/^( +)break$/, "$1return false")
 				)
 				.join("\n")}\n    return true\n }`
+	)
+
+// size writes a switch over data's domain as the checks each case stands for
+const undispatched = (source: string): string =>
+	source.replace(
+		/( +)switch\(typeof data === "object" \? data === null \? "null" : "object" : typeof data === "function" \? "object" : typeof data\) {\n((?: +case "\w+":(?: return .+)?\n)+) +}\n +return (.+)$/m,
+		(_, indent: string, cases: string, otherwise: string) => {
+			let checks = ""
+			let matched: string[] = []
+			for (const [, domain, returned] of cases.matchAll(
+				/case "(\w+)":(?: return (.+))?/g
+			)) {
+				matched.push(
+					domain === "null" ? "data === null"
+					: domain === "object" ?
+						'(typeof data === "object" ? data !== null : typeof data === "function")'
+					:	`typeof data === "${domain}"`
+				)
+				if (returned === undefined) continue
+				checks += `${matched.join(" || ")} ? ${returned} : `
+				matched = []
+			}
+			return `${indent}return ${checks}${otherwise}`
+		}
 	)
 
 class InPlaceCompiler extends StandaloneCompiler {

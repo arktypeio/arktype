@@ -545,6 +545,39 @@ console.log(JSON.stringify(out instanceof type.errors ? out.issues.map(issue => 
 		])
 	})
 
+	it("esbuild a size build's union of domains", async () => {
+		const root = writeFixture(
+			{
+				"main.ts": `import { type } from "arktype"
+
+const T = type("string | number > 0 | null | bigint | undefined").or({ a: "string" })
+
+for (const data of ["", 1, 0, null, 1n, { a: "" }, {}, () => {}, undefined, true, Symbol()])
+	console.log(String(T(data)))
+`
+			},
+			fromHere("temp", "domainUnion")
+		)
+		const [speed, size] = await Promise.all(
+			(["speed", "size"] as const).map(async optimize =>
+				run(await bundlers.esbuild({ cwd: root, optimize }, root))
+			)
+		)
+		attest(size).equals(speed)
+		attest(size).snap(`
+1
+must be positive
+null
+1
+[object Object]
+a is missing
+a is missing
+undefined
+must be a bigint, a string, a number, an object, undefined or null
+must be a bigint, a string, a number, an object, undefined or null
+`)
+	})
+
 	it("esbuild errors found once read", async () => {
 		const root = writeFixture(
 			{
