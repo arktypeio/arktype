@@ -195,9 +195,9 @@ contextualize(() => {
 				"a muss eine Zeichenkette sein (ist nicht vorhanden) oder b muss eine Zahl sein (ist nicht vorhanden)",
 			"union boolean | null ← 1": "muss false, null oder true sein, ist aber 1",
 			'union of lengths ← "a"':
-				"muss leer oder mindestens 2 Zeichen lang sein, ist aber 1 Zeichen lang",
+				"muss leer oder mindestens 3 Zeichen lang sein, ist aber 1 Zeichen lang",
 			"union of array lengths ← [0]":
-				"muss ein leeres Array oder ein Array mit mindestens 2 Elementen sein, ist aber ein Array mit 1 Element",
+				"muss ein leeres Array oder ein Array mit mindestens 3 Elementen sein, ist aber ein Array mit 1 Element",
 			"union of signs ← -1":
 				"muss kleiner als -10 oder mindestens 0 sein, ist aber -1",
 			"union of decimals ← 4": "muss 1,5; 2,5 oder 3,5 sein, ist aber 4",

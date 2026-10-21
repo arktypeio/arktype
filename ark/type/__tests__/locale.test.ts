@@ -116,7 +116,7 @@ const corpusOf = (): [type.Any, unknown][] => {
 		[$.type("string | number[]"), [true]],
 		[$.type({ a: "string", b: "number > 0" }), { a: 1, b: 0 }],
 		[$.type("(number % 2) & (number > 3)"), 1],
-		[$.type("(string >= 2) | (string <= 0)"), "a"],
+		[$.type("(string >= 3) | (string <= 0)"), "a"],
 		[$.type({ a: "string" }), {}],
 		[$.type({ a: "string | number" }), {}],
 		[$.type({ a: "never" }), {}],
@@ -658,7 +658,7 @@ b isn't allowed`)
 		})
 
 		it("toLocaleString reaches union and intersection children", () => {
-			const union = type("(string >= 2) | (string <= 0)")("a") as ArkErrors
+			const union = type("(string >= 3) | (string <= 0)")("a") as ArkErrors
 			attest(union.toLocaleString(xx)).snap(
 				" ⟦message⟧ ⟦problem⟧  ⟦exactLength⟧ ⟦actual⟧⟦or⟧ ⟦minLength⟧ ⟦actual⟧ ⟦actual⟧"
 			)
@@ -696,16 +696,16 @@ b isn't allowed`)
 				() => {
 					attest($ark.resolvedConfig!.locale).is(en)
 					const errorsOf = () =>
-						type("(string >= 2) | (string <= 0)")("a") as ArkErrors
+						type("(string >= 3) | (string <= 0)")("a") as ArkErrors
 					const errors = errorsOf()
 					attest(errors.toString()).snap(
-						"must be exactly length 0 or at least length 2 (was 1)"
+						"must be exactly length 0 or at least length 3 (was 1)"
 					)
 					locale = xx
 					calls = 0
 					// errors keep the locale their first read selected
 					attest(errors.toString()).snap(
-						"must be exactly length 0 or at least length 2 (was 1)"
+						"must be exactly length 0 or at least length 3 (was 1)"
 					)
 					attest(calls).equals(0)
 					const localized = errorsOf()
@@ -715,7 +715,7 @@ b isn't allowed`)
 					// once for the errors, which their children share
 					attest(calls).equals(1)
 					attest(localized.toLocaleString(en)).snap(
-						"must be exactly length 0 or at least length 2 (was 1)"
+						"must be exactly length 0 or at least length 3 (was 1)"
 					)
 					attest(calls).equals(1)
 				}
@@ -1128,7 +1128,7 @@ m must be a bigint (was 5)`)
 				[$.type("number").narrow(() => false), 1],
 				[$.type("number").narrow((n, ctx) => ctx.reject({})), 1],
 				[$.type("string").pipe.try(s => JSON.parse(s)), "{"],
-				[$.type("(string >= 2) | (string <= 0)"), "a"],
+				[$.type("(string >= 3) | (string <= 0)"), "a"],
 				[$.type("(number % 2) & (number > 3)"), 1],
 				[$.type({ k: "string" }), {}],
 				[$.type({ k: "boolean" }), {}],

@@ -250,8 +250,8 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 
 	add("union of paths", $.type({ a: "string" }).or({ b: "number" }), {})
 	add("union boolean | null", $.type("boolean | null"), 1)
-	add("union of lengths", $.type("(string >= 2) | (string <= 0)"), "a")
-	add("union of array lengths", $.type("(unknown[] >= 2) | (unknown[] <= 0)"), [
+	add("union of lengths", $.type("(string >= 3) | (string <= 0)"), "a")
+	add("union of array lengths", $.type("(unknown[] >= 3) | (unknown[] <= 0)"), [
 		0
 	])
 	add("union of signs", $.type("(number < -10) | (number >= 0)"), -1)

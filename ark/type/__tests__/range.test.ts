@@ -473,11 +473,6 @@ contextualize(() => {
 			)
 		})
 
-		it("union of overlapping ranges", () => {
-			const T = type("0 < number < 10 | 5 < number < 20")
-			attest(T.expression).snap("number < 10 & > 0 | number < 20 & > 5")
-		})
-
 		it("union of length bounds at a length", () => {
 			const T = type("string < 3 | string > 3")
 			attest(T.json).equals(type("string != 3").json)
@@ -657,6 +652,100 @@ contextualize(() => {
 			attest(() => type("number!=string")).throwsAndHasTypeError(
 				writeInvalidLimitMessage("!=", "string", "right")
 			)
+		})
+	})
+
+	describe("range unions", () => {
+		it("adjacent", () => {
+			attest(type("1 < number < 10 | 10 <= number < 100").json).equals(
+				type("1 < number < 100").json
+			)
+		})
+
+		it("overlapping", () => {
+			attest(type("0 < number < 10 | 5 < number < 20").json).equals(
+				type("0 < number < 20").json
+			)
+		})
+
+		it("wider gap", () => {
+			const T = type("0 < number < 5 | 6 < number < 10")
+			attest(T.expression).snap("number < 10 & > 6 | number < 5 & > 0")
+		})
+
+		it("excluded value the other includes", () => {
+			attest(
+				type("0 <= number < 10 & number != 5 | 4 < number < 6").json
+			).equals(type("0 <= number < 10").json)
+		})
+
+		it("excluded values neither includes", () => {
+			attest(
+				type("0 <= number < 10 & number != 5 | 6 < number < 20 & number != 15")
+					.json
+			).equals(type("0 <= number < 20 & number != 5 & number != 15").json)
+		})
+
+		it("half-line excluding a value", () => {
+			attest(type("number < 0 | number >= 0 & number != 3").json).equals(
+				type("number != 3").json
+			)
+		})
+
+		it("adjacent lengths", () => {
+			attest(type("2 <= string <= 4 | 5 <= string <= 8").json).equals(
+				type("2 <= string <= 8").json
+			)
+		})
+
+		it("exact lengths one apart", () => {
+			attest(type("string == 3 | string == 4").json).equals(
+				type("3 <= string <= 4").json
+			)
+		})
+
+		it("exact lengths further apart", () => {
+			const T = type("string == 3 | string == 6")
+			attest(T.expression).snap("string == 3 | string == 6")
+		})
+
+		it("overlapping Dates", () => {
+			attest(
+				type(
+					"d'2000-01-01' <= Date <= d'2000-02-01' | d'2000-01-15' <= Date <= d'2000-03-01'"
+				).json
+			).equals(type("d'2000-01-01' <= Date <= d'2000-03-01'").json)
+		})
+
+		it("unit at a bound", () => {
+			attest(type("number < 5 | number == 5").json).equals(
+				type("number <= 5").json
+			)
+		})
+
+		it("unit at an excluded value", () => {
+			attest(type("number != 5 | number == 5").json).equals(type("number").json)
+		})
+
+		it("Date unit at a bound", () => {
+			attest(type("Date < d'2000-01-01' | Date == d'2000-01-01'").json).equals(
+				type("Date <= d'2000-01-01'").json
+			)
+		})
+
+		it("unit the rest excludes", () => {
+			const T = type("number.integer < 5 | 5.5")
+			attest(T.expression).snap("number % 1 & < 5 | 5.5")
+		})
+
+		it("ranges allowing NaN", () => {
+			const nanable = { domain: "number", numberAllowsNaN: true } as const
+			const T = rootSchema([
+				{ domain: nanable, min: { rule: 0, exclusive: true }, max: 5 },
+				{ domain: nanable, min: 3, max: 10 }
+			])
+			attest(T.branches.length).equals(2)
+			attest(T.allows(Number.NaN)).equals(false)
 		})
 	})
 
