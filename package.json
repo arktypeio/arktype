@@ -36,6 +36,7 @@
 		"testEnvironments": "node --conditions ark-ts ./ark/precompile/__tests__/testEnvironments.ts",
 		"testPrograms": "pnpm testFiles ark/precompile/__tests__/testPrograms.ts --skipTypes",
 		"testPerturbation": "node --conditions ark-ts ./ark/precompile/__tests__/testPerturbation.ts",
+		"testAlgebra": "node --conditions ark-ts ./ark/type/__tests__/algebra/testAlgebra.ts",
 		"testDifferential": "pnpm test --exclude ark/type/__tests__/gc.test.ts --require ./ark/precompile/__tests__/testDifferential.ts",
 		"testJitless": "pnpm test --exclude \"ark/precompile/**\" --grep \"jit by default|has jit|compiled code|deep invalid data through an undiscriminated union\" --invert --require ./ark/repo/testJitless.ts",
 		"testCache": "pnpm test --exclude ark/type/__tests__/gc.test.ts --exclude ark/type/__tests__/facts.test.ts --exclude ark/type/__tests__/precompile.test.ts --grep \"^config jitless$|NaN in discriminated unions jitless$|Object.prototype members are undeclared jitless$\" --invert --require ./ark/precompile/__tests__/testCache.ts",
