@@ -218,7 +218,7 @@ const CustomOne = type("1", "@", {
 CustomOne(2)
 ```
 
-Keep in mind, [as mentioned in the docs](https://arktype.io/docs/configuration#errors), error configs like `message` can clobber more granular config options like `expected` and `actual` and cannot be included in composite errors e.g. for a union.
+Keep in mind, [as mentioned in the docs](https://arktype.io/docs/configuration#error-messages), error configs like `message` can clobber more granular config options like `expected` and `actual` and cannot be included in composite errors e.g. for a union.
 
 Though generally, returning a string based on context is the best option, in situations where you always want the same static message, it's now easier to get that!
 

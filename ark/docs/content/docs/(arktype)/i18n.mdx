@@ -34,7 +34,9 @@ if (out instanceof type.errors) {
 }
 ```
 
-Unlike other [global config](/docs/configuration#global), a locale applies to Types parsed before it is configured. It can't be set for a scope or a Type. To choose one per request, configure a [function](#switching-locales).
+Like other [global config](/docs/configuration#global), a locale is configured before any Type is created. It can't be set for a scope or a Type. To choose one per request, configure a [function](#switching-locales).
+
+Shipped locales like `arktype/locales/de` work when imported. A locale you write, or a locale function, also needs `import "arktype/i18n"` unless a shipped locale is imported. Without it, creating a Type, `toLocaleString` or `messageIn` with that locale throws. This keeps other locales out of bundles that only use `en`.
 
 Only an error's message and its parts, `expected`, `actual` and `problem`, are localized. A Type's `description` and `expression`, JSON Schema, an error's `description` and `ParseError`s stay in English.
 
@@ -53,7 +55,7 @@ const out = Signup({ name: "A" })
 
 ## Switching locales
 
-`locale` can also be a function, which is called whenever a message is read. Messages are written when they are read, not when validation fails, so errors follow your app's language even when it changes after they were created:
+`locale` can also be a function, called when an `ArkErrors`' messages are first read rather than when validation fails, so errors follow your app's language even if it changed after they were created:
 
 ```ts title="config.ts"
 import type { Locale } from "arktype"
@@ -79,6 +81,7 @@ On a server, the function can read the locale of the current request:
 // ---cut---
 import type { Locale } from "arktype"
 import { configure } from "arktype/config"
+import "arktype/i18n"
 import { AsyncLocalStorage } from "node:async_hooks"
 
 export const requestLocale = new AsyncLocalStorage<Locale>()
@@ -111,16 +114,16 @@ const handle = (body: unknown) =>
 	})
 ```
 
-A message reads the locale once, so it never mixes languages. If the function returns `undefined` or throws, the message is written in English.
+The function is called once for an `ArkErrors`, whose messages keep the locale it returned, so they never mix languages. If it returns `undefined` or throws, they're written in English.
 
-Since messages are written when they are read, read `summary` or `message` inside the request. Errors returned from `requestLocale.run` and read later, like by a framework's error handler, are written in English. There, call [`toLocaleString`](#rendering-in-a-locale) instead.
+Since messages are written when they're first read, read `summary` or `issues` inside the request. Errors returned from `requestLocale.run` and read later, like by a framework's error handler, are written in English. There, call [`toLocaleString`](#rendering-in-a-locale) instead.
 
 ## Rendering in a locale
 
-`toLocaleString` writes an `ArkErrors`' summary or an `ArkError`'s message in a locale of your choice, whatever locale is configured:
+An `ArkErrors`' `toLocaleString` writes its summary in a locale of your choice, whatever locale is configured, and `messageIn` writes one error's message:
 
 ```ts
-import { type } from "arktype"
+import { messageIn, type } from "arktype"
 import { de } from "arktype/locales/de"
 
 const out = type({ name: "string" })({ name: 5 })
@@ -128,12 +131,13 @@ const out = type({ name: "string" })({ name: 5 })
 if (out instanceof type.errors) {
 	// name muss eine Zeichenkette sein, ist aber eine Zahl
 	out.toLocaleString(de)
+	messageIn(out.issues[0], de)
 	// name must be a string (was a number)
 	out.issues[0].message
 }
 ```
 
-Called without a locale, it returns the summary or message as configured.
+Called without a locale, `toLocaleString` returns the summary as configured.
 
 ## Your own messages
 

@@ -5,9 +5,11 @@ description: Read, serialize and throw the errors a Type returns for invalid dat
 
 ## ArkErrors
 
-A Type called with invalid data returns `ArkErrors`, which holds one `ArkError` for each path that failed:
+A Type called with invalid data returns `ArkErrors`, which holds one error for each path that failed:
 
 ```ts
+import { flatProblemsByPath, type } from "arktype"
+
 const User = type({
 	name: "string",
 	age: "number >= 0"
@@ -26,29 +28,36 @@ if (out instanceof type.errors) {
 
 	// { age: ["must be non-negative (was -1)"],
 	//   name: ["must be a string (was a number)"] }
-	out.flatProblemsByPath
+	flatProblemsByPath(out)
 }
 ```
 
-`ArkErrors` is iterable and has a `length`, but it isn't an array. Index it or call array methods through `issues`.
+`ArkErrors` isn't an array. Its errors are in `issues`, so index them, iterate them or call array methods there.
 
-| member                             | what it is                                                                                       |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `summary`, `message`, `toString()` | every error's message, one per line                                                              |
-| `issues`                           | an array with one `ArkError` per path, in the order each path first failed                       |
-| `byPath`                           | an object mapping each path's `propString` to its `ArkError`                                     |
-| `flatByPath`                       | like `byPath`, but each value is an array, with an `intersection` split into its errors          |
-| `flatProblemsByPath`               | like `flatByPath`, but with each error's `problem`                                               |
-| `byAncestorPath`                   | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
-| `count`                            | how many errors were added, more than `length` when several failed at one path                   |
-| `toJSON()`                         | an array of each error's `toJSON()`                                                              |
-| `toLocaleString(locale?)`          | the summary in a [locale](/docs/i18n#rendering-in-a-locale)                                      |
-| `throw()`                          | throws a [`TraversalError`](#traversalerror)                                                     |
-| `toTraversalError()`               | returns that `TraversalError` instead of throwing it                                             |
+| member                    | what it is                                                                            |
+| ------------------------- | ------------------------------------------------------------------------------------- |
+| `issues`                  | an array with one error per path, in the order each path first failed                 |
+| `summary`, `toString()`   | every error's message, one per line                                                   |
+| `count`                   | how many errors were added, more than `issues.length` when several failed at one path |
+| `toJSON()`                | an array of each error's JSON, with its `propString`                                  |
+| `toLocaleString(locale?)` | the summary in a [locale](/docs/i18n#rendering-in-a-locale)                           |
+| `throw()`                 | throws a [`TraversalError`](#traversalerror)                                          |
+
+`arktype` exports functions that group an `ArkErrors` by path:
+
+| function                   | what it returns                                                                                  |
+| -------------------------- | ------------------------------------------------------------------------------------------------ |
+| `byPath(out)`              | an object mapping each path's `propString` to its error                                          |
+| `flatByPath(out)`          | like `byPath`, but each value is an array, with an `intersection` split into its errors          |
+| `flatProblemsByPath(out)`  | like `flatByPath`, but with each error's `problem`                                               |
+| `byAncestorPath(out)`      | each failed path and its ancestors, with `""` for the root, mapped to every error at or below it |
+| `messageIn(error, locale)` | one error's message in a [locale](/docs/i18n#rendering-in-a-locale)                              |
+
+A Type that calls no narrow or morph may find its errors' issues only when they're first read, so rejecting data costs little more than the check that rejected it. The issues describe the data as it is at that read: a write to it in between can change them, and data that no longer fails holds one root issue, `is invalid`. A getter or `Proxy` trap the check reads runs again at that read, and what it throws is thrown there. Each error's text is written at that first read too.
 
 ## ArkError
 
-Each `ArkError` describes what failed at one path:
+Each error in `issues` is a plain object, typed as `ArkError`, describing what failed at one path:
 
 ```ts
 const out = type({ age: "number >= 0" })({ age: -1 })
@@ -66,17 +75,19 @@ if (out instanceof type.errors) {
 	error.message // "age must be non-negative (was -1)"
 
 	// narrow by code to read its own fields
-	if (error.hasCode("min")) error.rule // 0
+	if (error.code === "min") error.rule // 0
 }
 ```
 
-Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected` (was `actual`)". You can [configure each part](/docs/configuration#errors).
+Its message is built from parts: `message` puts the path before `problem`, which reads "must be `expected` (was `actual`)". You can [configure each part](/docs/configuration#error-messages).
 
-An error also has `meta`, the metadata of the Type that failed, and usually a `description`. Like `ArkErrors`, it has `toJSON()` and `toLocaleString(locale?)`.
+An error also has `meta`, the metadata of the Type that failed, and usually a `description`. It has no methods, so `JSON.stringify(error)` serializes its own keys, and `messageIn(error, locale)` writes its message in another locale.
 
-When several checks fail at one path, they are merged into one error with the code `intersection`. Its `flat` getter, and `flatByPath`, split it back up:
+When several checks fail at one path, they are merged into one error with the code `intersection`. `flatByPath` splits it back up:
 
 ```ts
+import { flatProblemsByPath, type } from "arktype"
+
 const out = type({ n: "number % 2 >= 2" })({ n: 1 })
 
 if (out instanceof type.errors) {
@@ -86,7 +97,7 @@ if (out instanceof type.errors) {
 	console.error(out.summary)
 
 	// { n: ["must be even (was 1)", "must be at least 2 (was 1)"] }
-	out.flatProblemsByPath
+	flatProblemsByPath(out)
 }
 ```
 
@@ -130,16 +141,16 @@ if (out instanceof type.errors) {
 	error.message
 
 	// ["circle", "square"]
-	if (error.hasCode("discriminant")) error.cases
+	if (error.code === "discriminant") error.cases
 }
 ```
 
 ## TraversalError
 
-`.assert`, `.from` and `ArkErrors.throw()` throw a `TraversalError`, which extends `Error`. A single error's message is its summary. Several are listed on their own lines after a leading newline:
+`.assert`, `.from` and `ArkErrors`' `throw()` throw a `TraversalError`, which extends `Error`. A single error's message is its summary. Several are listed on their own lines after a leading newline:
 
 ```ts
-import { type, TraversalError } from "arktype"
+import { flatProblemsByPath, type, TraversalError } from "arktype"
 
 try {
 	type({ a: "string", b: "number" }).assert({ a: 1, b: "x" })
@@ -149,7 +160,7 @@ try {
 		e.message
 
 		// the ArkErrors, for structured access
-		e.arkErrors.flatProblemsByPath
+		flatProblemsByPath(e.arkErrors)
 	}
 }
 ```

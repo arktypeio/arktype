@@ -9,24 +9,68 @@ Each section is one change, with code that behaves differently before and after 
 
 ### ArkErrors is no longer an array
 
-`ArkErrors` holds its errors in `issues`, a plain array. Iterating, `length`, `summary` and its other members work as before, but indexing and array methods move to `issues`:
+`ArkErrors` was an `Array` subclass. It's now a plain class whose `issues` is a plain array with one error per path. Indexing, iteration, `length` and array methods move to `issues`:
 
 ```ts
 const out = type({ name: "string" })({ name: 5 })
 
 if (out instanceof type.errors) {
-	// before: out[0], out.map(e => e.message)
+	// before: out[0], out.map(e => e.message), for (const e of out), out.length
 	out.issues[0]
 	out.issues.map(e => e.message)
-
-	// unchanged
-	for (const error of out) console.log(error.message)
+	for (const error of out.issues) console.log(error.message)
+	out.issues.length
 }
 ```
 
-`Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`.
+`Array.isArray(out)` is now `false`, and `[].concat(out)` nests the errors instead of spreading them, so pass `out.issues`. A [Standard Schema](/docs/standard-schema) failure's `issues` is a plain array rather than the `ArkErrors` itself, so read `summary` from the `ArkErrors`.
 
-A [Standard Schema](/docs/standard-schema) failure result is the `ArkErrors` itself. Its `issues` was that same `ArkErrors` and is now a plain array, so read `summary` from the result rather than from `issues`.
+`ArkErrors` keeps `issues`, `count`, `summary`, `throw()`, `toJSON()`, `toString()` and `toLocaleString(locale)`. `message` and `toTraversalError()` are gone: read `summary`, and call `throw()`. `byPath`, `flatByPath`, `flatProblemsByPath` and `byAncestorPath` are functions `arktype` exports:
+
+```ts
+import { flatProblemsByPath, type } from "arktype"
+
+const out = type({ name: "string" })({ name: 5 })
+
+if (out instanceof type.errors) {
+	// before: out.flatProblemsByPath
+	flatProblemsByPath(out)
+}
+```
+
+A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`.
+
+### Errors are plain objects
+
+The errors in `issues` are plain objects without getters or methods, holding the keys their JSON had. `ArkError` is exported only as a type, which comparing `code` narrows as `hasCode` did, and `messageIn` writes one in a locale:
+
+```ts
+import { messageIn, type } from "arktype"
+import { de } from "arktype/locales/de"
+
+const out = type({ n: "number % 2" })({ n: 1 })
+
+if (out instanceof type.errors) {
+	for (const error of out.issues) {
+		// before: error.hasCode("divisor")
+		if (error.code === "divisor") console.log(error.rule)
+		// before: error.toLocaleString(de)
+		messageIn(error, de)
+	}
+}
+```
+
+`hasCode`, `flat`, `throw`, `toString`, `toJSON` and `toLocaleString` are gone from errors, so `error instanceof ArkError` is false and `` `${error}` `` is `[object Object]`. `path` is a plain array. An error's text is written when its `ArkErrors`' issues are first read, so a configured writer is called once per error.
+
+### Objects print by their kind
+
+An error's `actual` prints an object as `an object`, an array as `an array` and a function as `a function`, where it printed an object or array as compact JSON, a Date as its date and another instance by its class's name. A message no longer grows with the data, and nothing an object holds reaches a log through it:
+
+```ts
+// ArkErrors: must be "a" or "b" (was an object)
+// before: (was {"x":1})
+type("'a' | 'b'")({ x: 1 })
+```
 
 ### Undeclared keys have the undeclared code
 
@@ -76,10 +120,6 @@ configure({
 
 A writer's argument no longer has `toJSON`, `toString` or the text getters that could read the text it writes.
 
-### Text you supply is no longer an error's own property
-
-Text passed to `ctx.reject` or `ctx.mustBe` stays in the error's input, where its getters read it. Reading `error.expected` and `toJSON()` give what they did, but `Object.keys(error)` and `{ ...error }` no longer include it, and assigning `error.expected` throws. Configure a writer instead of assigning text.
-
 ### pipe.try errors reference the morph
 
 An error from a `pipe.try` morph that threw has the function as `morph` and what it threw as `cause`. Before, it had them as `predicate` and its own `actual`. Its `code` is still `predicate`, and its message is unchanged.
@@ -114,6 +154,20 @@ T(new Date("2001-06-01"))
 ```
 
 ## Validation
+
+### Date literals need a time zone
+
+A date literal, or a string passed as a date limit, must be the same instant on every machine: an ISO date (UTC) like `2025-01-01`, an ISO date-time with `Z` or an offset, or epoch milliseconds. A date-time without an offset or a non-ISO string was read in the local time zone, and now throws a `ParseError`:
+
+```ts
+// unchanged
+type("Date > d'2025-01-01'")
+type("Date > d'2025-01-01T12:00Z'")
+```
+
+### Merging an array throws
+
+`.merge`, `type.merge` and `Merge` extend an object, so an array, a tuple or another class's instance on either side throws a `ParseError`, where merging an array gave an object.
 
 ### number rejects Infinity
 
@@ -152,6 +206,17 @@ const T = type({ "+": "delete", b: "string", a: "string" })
 T({ b: "2", z: 0, a: "1" }) // { a: "1", b: "2" }, before: { b: "2", a: "1" }
 ```
 
+### "+": "reject" checks string keys only
+
+`"+": "reject"` allows undeclared symbol keys, so `rejectAllowsSymbolKeys` is gone. Reject types that differ only by a symbol key now overlap, so a union of them with a morph is indeterminate:
+
+```ts
+const T = type({ "+": "reject", a: "string" })
+
+// valid, before: ArkErrors: value at [Symbol(s)] must be removed
+T({ a: "x", [Symbol("s")]: 1 })
+```
+
 ### Shallow cycles throw
 
 An alias that resolves to itself without passing through an object, array or morph accepted every value. It now throws a `ParseError`:
@@ -164,9 +229,9 @@ scope({ a: "a" }).export()
 
 ## Configuration
 
-### Configure before importing anything else
+### Configure before any Type is created
 
-`arktype` and `@ark/schema` each load as a single module, so `configure` must run before any import of either, including `arktype/internal/*` deep imports. Import it from `arktype/config` in a file of its own, and import that file first:
+Global config is fixed when the first Type is created, whether by a definition or by referencing a keyword like `type.number`, and `configure` throws after that, where it used to apply to scopes created later but not to `type` or keywords. Call it in a file of its own, and import that file before anything creates a Type:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -194,6 +259,8 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - Expressions keep length bounds and protos beside a structure: `type("number[] > 1").expression` is `number[] >= 2`, before: `number[]`.
 - Optional keys are listed by name, whether or not they have a default: `{ bar?: number, foo: string = "foo" }`, before: `{ foo: string = "foo", bar?: number }`.
 - The `$ark.x` names that functions get in `.json` and `.expression` are names only and no longer resolve through `$ark`.
+
+- Keys are ordered by code unit, where they were ordered as `JSON.stringify` writes them, which moves only keys that first differ at a character JSON escapes or where one ends: `"a"` now precedes `"a b"`.
 
 ## Inference
 

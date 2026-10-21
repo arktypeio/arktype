@@ -9,7 +9,7 @@ Config can be set at three levels. A more specific level overrides a broader one
 
 ### Global
 
-Call `configure` from `"arktype/config"` in its own file, and import that file before anything else:
+Call `configure` in its own file, and import that file before anything creates a Type:
 
 ```ts title="config.ts"
 import { configure } from "arktype/config"
@@ -19,19 +19,17 @@ configure({ numberAllowsNaN: true })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 // true
 type.number.allows(Number.NaN)
 ```
 
-<Callout type="warn" title="Configure before importing arktype">
-	ArkType reads global config when it is first imported. Import your config file
-	before any import of `"arktype"` or `"@ark/schema"`, including deep imports
-	like `"arktype/internal/*"`. Config applied later reaches only scopes created
-	after it, never `type` or built-in keywords. `locale` is the exception: it
-	applies whenever it is configured.
+<Callout type="warn" title="Configure before any Type is created">
+	Global config is fixed when the first Type is created, whether by a definition
+	or by referencing a keyword like `type.number`, and calling `configure` after
+	that throws. Importing `"arktype"` first is fine, and `configure` can be
+	imported from either `"arktype"` or `"arktype/config"`.
 </Callout>
 
 ### Scope
@@ -53,7 +51,7 @@ $.type({ age: "number <= 100" })({ age: 101 })
 
 ### Type
 
-`.configure` adds [metadata](/docs/expressions#meta), like a `description` or [error parts](#errors), to a Type. It applies wherever that Type is referenced, but not to the Types inside it:
+`.configure` adds [metadata](/docs/expressions#meta), like a `description` or [error parts](#error-messages), to a Type. It applies wherever that Type is referenced, but not to the Types inside it:
 
 ```ts
 // don't print the password
@@ -73,21 +71,22 @@ User({ email: "david@arktype.io", password: "ez123" })
 | option                                                      | default                                            | levels               |
 | ----------------------------------------------------------- | -------------------------------------------------- | -------------------- |
 | [`onUndeclaredKey`](#onundeclaredkey)                       | `"ignore"`                                         | global, type (`"+"`) |
-| [`rejectAllowsSymbolKeys`](#rejectallowssymbolkeys)         | `false`                                            | global               |
 | [`exactOptionalPropertyTypes`](#exactoptionalpropertytypes) | `true`                                             | global, scope        |
 | [`numberAllowsNaN`](#numberallowsnan)                       | `false`                                            | global               |
 | [`numberAllowsInfinity`](#numberallowsinfinity)             | `false`                                            | global               |
 | [`dateAllowsInvalid`](#dateallowsinvalid)                   | `false`                                            | global               |
 | [`jitless`](#jitless)                                       | `false`, or `true` where `new Function` is blocked | global, scope        |
 | [`onFail`](#onfail)                                         | `null`, which returns `ArkErrors`                  | global, scope        |
+| [`errors`](#errors)                                         | `"all"`                                            | global, scope        |
+| [`mutatesInput`](#mutatesinput)                             | `false`                                            | global, scope        |
 | [`keywords`](#keywords)                                     | `{}`                                               | global               |
 | [`locale`](#locale)                                         | `en`                                               | global               |
 | [an error code](#by-code), like `divisor`                   | ArkType's messages                                 | global, scope        |
 | [`toJsonSchema`](#tojsonschema)                             | draft 2020-12, throwing for what it can't express  | global, scope        |
 
-A Type's own options are its [metadata](/docs/expressions#meta), including the [parts of its errors](#errors).
+A Type's own options are its [metadata](/docs/expressions#meta), including the [parts of its errors](#error-messages).
 
-## Errors
+## Error messages
 
 Each error message is built from parts. Configure the part you want to change, and ArkType keeps composing the rest, including messages for unions and intersections. `expected`, `actual`, `problem` and `message` each take a string or a function. See [Errors](/docs/errors) for what an error contains.
 
@@ -210,7 +209,6 @@ configure({ locale: de })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 // ArkErrors: muss eine Zeichenkette sein, ist aber eine Zahl
@@ -238,7 +236,6 @@ configure({
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 const User = type({
@@ -269,7 +266,6 @@ configure({ onUndeclaredKey: "delete" })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 const UserForm = type({
@@ -279,32 +275,6 @@ const UserForm = type({
 // { name: "Alice" }
 UserForm({ name: "Alice", age: "42" })
 ```
-
-## rejectAllowsSymbolKeys
-
-`"reject"` checks symbol keys too, which costs an extra read per object. If you don't need undeclared symbol keys rejected, allow them:
-
-```ts title="config.ts"
-import { configure } from "arktype/config"
-
-configure({ rejectAllowsSymbolKeys: true })
-```
-
-```ts title="app.ts"
-import "./config.ts"
-// import your config file before arktype
-import { type } from "arktype"
-
-const User = type({
-	"+": "reject",
-	name: "string"
-})
-
-// valid, since undeclared symbol keys are allowed
-User({ name: "Alice", [Symbol("id")]: 1 })
-```
-
-With it, two `"+": "reject"` objects that differ only by a symbol key accept the same values, so a union of them that includes a morph throws a `ParseError`.
 
 ## exactOptionalPropertyTypes
 
@@ -332,7 +302,6 @@ configure({ exactOptionalPropertyTypes: false })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 const MyObj = type({
@@ -383,7 +352,6 @@ configure({ dateAllowsInvalid: true })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 // Invalid Date
@@ -402,7 +370,6 @@ configure({ jitless: true })
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 // will not be compiled
@@ -411,7 +378,79 @@ const MyObject = type({
 })
 ```
 
-Configuring `jitless` globally also skips the check for `new Function`, which a strict Content-Security-Policy would report as a violation.
+Configuring `jitless` globally also skips the check for `new Function`, which a strict Content-Security-Policy would report as a violation. To validate without generating code and without shipping the parser, [precompile](/docs/precompile) your Types when you build.
+
+## errors
+
+By default, a failed validation returns an error for each check that failed. `errors` can return less:
+
+- `"all"` (default): every error, at each path that failed
+- `"first"`: the first error validation finds, where it stops
+- `"none"`: one error at the root, whose message is `is invalid`
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import "arktype/errors"
+
+configure({ errors: "none" })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+
+const User = type({ name: "string", age: "number" })
+
+// ArkErrors: is invalid
+const out = User({ name: 5, age: "5" })
+```
+
+`"first"` and `"none"` are installed by `import "arktype/errors"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
+
+With `"first"`, which of the data's errors is returned isn't promised, and can differ between a Type and its precompiled validator.
+
+With `"none"`, a failure returns one error with the code `"predicate"`, an empty path and the data. It's still an instance of `type.errors`, `.assert()` throws a `TraversalError` saying `is invalid`, and its message isn't [localized](#locale).
+
+`errors` can also be set per Scope. It applies to that Scope's Types, including where another Scope references them.
+
+A [precompiled](/docs/precompile/options#errors) build takes `errors` as an option.
+
+## mutatesInput
+
+By default, a transform copies each object it changes other than a builtin like a `Date`, so the data you pass is otherwise never written. `mutatesInput` writes what a Type transforms, its defaults and its morphed values, into the data, which it returns:
+
+- `false` (default): copies each object it changes
+- `true`: writes in place wherever that's safe even if the data holds one object at several places, and otherwise copies
+- `"always"`: writes every transform in place
+
+```ts title="config.ts"
+import { configure } from "arktype/config"
+import "arktype/mutatesInput"
+
+configure({ mutatesInput: true })
+```
+
+```ts title="app.ts"
+import "./config.ts"
+import { type } from "arktype"
+
+const User = type({ name: "string.trim", role: "string = 'member'" })
+
+const data = { name: " Ada " }
+
+// true, and data is now { name: "Ada", role: "member" }
+const isData = Object.is(User(data), data)
+```
+
+`true` and `"always"` are installed by `import "arktype/mutatesInput"`, so a program choosing neither ships neither. Without it, creating a Type configured with either throws.
+
+`true` always returns what copying would. `"always"` requires that the data hold no object at two places a transform reaches, and that a Type's functions read or return the data's objects only through the value each is passed, not `ctx.root`.
+
+The object returned is the data, so it keeps its key order, accessors and inherited keys. Where the data holds one object at two places, a key the Type doesn't declare can hold what the other place wrote. An object a Type deletes undeclared keys from is still copied. A failed validation can leave writes in the objects of its data it found valid.
+
+`mutatesInput` can also be set for a Scope, whose Types then transform as it says.
+
+A [precompiled](/docs/precompile/options#mutatesinput) build takes `mutatesInput` as an option.
 
 ## onFail
 
@@ -433,7 +472,6 @@ declare global {
 
 ```ts title="app.ts"
 import "./config.ts"
-// import your config file before arktype
 import { type } from "arktype"
 
 // string, since a failure throws instead of returning ArkErrors

@@ -30,8 +30,7 @@ if (out instanceof type.errors) {
 	// ArkError: name must be a string (was missing)
 	out.issues[0]
 	out.issues.map(e => e.message)
-	// iterating and length work on ArkErrors itself
-	for (const error of out) console.log(error.path)
+	for (const error of out.issues) console.log(error.path)
 }
 ```
 

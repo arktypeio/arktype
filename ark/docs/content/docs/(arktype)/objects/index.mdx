@@ -278,7 +278,7 @@ const MyClosedObject = type({
 MyClosedObject({ onlyAllowedKey: "ok", extraKey: 1 })
 ```
 
-`"reject"` and `"delete"` apply to symbol keys too. To let `"reject"` skip them, which is faster, configure [`rejectAllowsSymbolKeys`](/docs/configuration#rejectallowssymbolkeys).
+`"reject"` checks string keys only, so an undeclared symbol key passes, while `"delete"` removes undeclared symbol keys too. Reject types that differ only by a symbol key therefore overlap, and a union of them with a morph is indeterminate.
 
 `"delete"` builds a new object with the declared keys in the order of the type's expression: required keys, then optional keys, each sorted by name.
 
@@ -997,7 +997,7 @@ const Literals = type({
 })
 ```
 
-The literal is parsed by the `Date` constructor, so `d'2000-01-01'` is midnight UTC. A literal it can't parse, like `d'notadate'`, is a `ParseError`.
+A literal, like a string passed as a date limit, must be the same instant on every machine, so it can be an ISO date like `2025-01-01` (which is UTC), an ISO date-time with `Z` or an offset like `2025-01-01T12:00+01:00`, or a number of epoch milliseconds. Any other literal, like `d'notadate'` or `d'2025-01-01T12:00'`, is a `ParseError`.
 
 ### ranges [#dates-ranges]
 

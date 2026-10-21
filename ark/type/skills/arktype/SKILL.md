@@ -40,7 +40,7 @@ if (out instanceof type.errors) {
 ```
 
 - Calling a type returns the validated data or an `ArkErrors` instance. It does not throw, so check with `instanceof type.errors` rather than wrapping it in `try`/`catch`.
-- `ArkErrors` is not an array. Read individual errors from `out.issues`, e.g. `out.issues[0]` or `out.issues.map(e => e.message)`, each with a `path`, `code` and `message`. Iterating `out` and `out.length` also work.
+- `ArkErrors` is not an array. Read individual errors from `out.issues`, e.g. `out.issues[0]` or `out.issues.map(e => e.message)`, each with a `path`, `code` and `message`.
 - `User.assert(data)` throws instead, for places where invalid data is a bug.
 - Name types in PascalCase (`User`). Name types that transform their input in camelCase (`parseUser`), since they behave like functions.
 - `typeof User.infer` is the output type. `typeof User.inferIn` is the input type, which differs once a type transforms its input or has defaults.
