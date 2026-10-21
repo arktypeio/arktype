@@ -1468,6 +1468,18 @@ name is missing`)
 		})
 	})
 
+	it("writes text when its errors are first read", async () => {
+		let calls = 0
+		const write = standIn(() => `${++calls}`, "write")
+		const T = type({ a: type("string").configure({ message: write }) })
+		const create = await loadFactory(T, [["function", "`write`", write]])
+		const errors = create(write)({ a: 1 })
+		attest([errors.count, calls]).equals([1, 0])
+		attest(errors.summary).equals("1")
+		attest(errors.issues[0].message).equals("1")
+		attest(calls).equals(1)
+	})
+
 	it("refuses a union's writer", () => {
 		const write = standIn(() => "written", "write")
 		attest(() =>

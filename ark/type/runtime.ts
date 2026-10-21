@@ -452,8 +452,11 @@ export const textSiteOf = ((
 
 type Writer = string | Fn | undefined
 
+const defineProperty = Object.defineProperty
+
 // a site whose text a function writes, as arktype writes its error from the
-// node's context; keeps is 1 if its issue takes expected, 2 if problem
+// node's context when its text is first read; keeps is 1 if its issue takes
+// expected, 2 if problem
 export const writtenSiteOf = ((
 	code: ArkErrorCode,
 	description: string | undefined,
@@ -464,20 +467,42 @@ export const writtenSiteOf = ((
 	code,
 	description,
 	text: issue => {
-		const error: Record<string, unknown> = {
-			data: issue.data,
-			path: issue.path,
-			...context,
-			propString: stringifyPath(issue.path)
+		const text: Record<string, unknown> = {
+			expected: issue.expected,
+			message: undefined
 		}
-		const write = (writer: Writer, ...args: unknown[]): unknown =>
-			typeof writer === "function" ? writer(...args, enInfo) : writer
-		error.expected = write(expected, error)
-		error.actual = write(actual, issue.data, error)
-		error.problem = write(problem, error)
-		if (keeps & 1) issue.expected = error.expected as string
-		if (keeps & 2) issue.problem = error.problem as string
-		if (message !== undefined) issue.message = write(message, error) as string
+		if (keeps & 2) text.problem = undefined
+		const writeText = () => {
+			const error: Record<string, unknown> = {
+				data: issue.data,
+				path: issue.path,
+				...context,
+				propString: stringifyPath(issue.path)
+			}
+			const write = (writer: Writer, ...args: unknown[]): unknown =>
+				typeof writer === "function" ? writer(...args, enInfo) : writer
+			error.expected = write(expected, error)
+			error.actual = write(actual, issue.data, error)
+			error.problem = write(problem, error)
+			if (keeps & 1) text.expected = error.expected
+			if (keeps & 2) text.problem = error.problem
+			if (message !== undefined) text.message = write(message, error)
+			for (const k in text) {
+				defineProperty(issue, k, {
+					value: text[k],
+					writable: true,
+					enumerable: true,
+					configurable: true
+				})
+			}
+		}
+		for (const k in text) {
+			defineProperty(issue, k, {
+				get: () => (writeText(), issue[k as never]),
+				enumerable: true,
+				configurable: true
+			})
+		}
 	}
 })) satisfies Fn
 
