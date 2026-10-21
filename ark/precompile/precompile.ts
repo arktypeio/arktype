@@ -3563,7 +3563,7 @@ export class Precompiler {
 						`a runtime island returns arktype's errors, which aren't instances of type.errors under ${option}`,
 						[
 							this.variant === "lean" ?
-								"a build whose errors lack methods gives its validators a runtime of their own"
+								"a build writing its errors for size gives its validators a runtime of their own"
 							:	"a build whose errors say only that data is invalid gives its validators a runtime of their own"
 						],
 						`Precompile the definition, or build without ${option}.`

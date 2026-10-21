@@ -168,7 +168,7 @@ export const resolvesToRuntime = (
 // a copy of @ark/schema's runtime with errors of its own
 export type RuntimeVariant = "none" | "lean" | "none-lean"
 
-// errors "none", or errors lacking methods
+// errors "none", or errors written for size
 export const runtimeVariantOf = (
 	opts: PrecompileOptions | undefined
 ): RuntimeVariant | undefined =>

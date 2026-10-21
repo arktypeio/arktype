@@ -1513,7 +1513,7 @@ const T = type("string")`,
 			])
 		})
 
-		it("islands where errors lack methods", () => {
+		it("islands where errors are written for size", () => {
 			attest(
 				diagnosticsOf(
 					`import { type } from "arktype"
@@ -1523,7 +1523,7 @@ const T = type("string")`,
 					{ members: { errorMethods: false } }
 				)
 			).snap([
-				"/main.ts:3:1  a runtime island returns arktype's errors, which aren't instances of type.errors under members: { errorMethods: false }\n  a build whose errors lack methods gives its validators a runtime of their own\n  Precompile the definition, or build without members: { errorMethods: false }."
+				"/main.ts:3:1  a runtime island returns arktype's errors, which aren't instances of type.errors under members: { errorMethods: false }\n  a build writing its errors for size gives its validators a runtime of their own\n  Precompile the definition, or build without members: { errorMethods: false }."
 			])
 		})
 

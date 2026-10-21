@@ -13,7 +13,7 @@ type WrittenIssue = ArkIssue & { message: string }
 
 type Keyed = Record<PropertyKey, unknown>
 
-// in place of issues.ts where errors lack methods, written for size
+// in place of issues.ts, written for size
 export class ArkErrors implements FailureContext {
 	/** @internal each issue in the order it was added */
 	_: ArkIssue[] = []
@@ -40,6 +40,21 @@ export class ArkErrors implements FailureContext {
 	 */
 	get summary(): string {
 		return this.issues.map(issue => issue.message).join("\n")
+	}
+
+	/**
+	 * Throw a TraversalError based on these errors.
+	 */
+	throw(): never {
+		throw new TraversalError(this)
+	}
+
+	toJSON(): readonly unknown[] {
+		return this.issues
+	}
+
+	toString(): string {
+		return this.summary
 	}
 
 	/** @internal */

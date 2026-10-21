@@ -51,7 +51,7 @@ precompile.vite({
 })
 ```
 
-`members: { errorMethods: false }` gives errors only their `count`, `issues` and `summary`. They lack `throw()`, `toJSON()` and `toString()`, so `JSON.stringify` writes their internals, though `instanceof type.errors` still recognizes them. `.assert()` still throws a `TraversalError`. They're the smallest errors a build can return, and reading their issues is slower.
+`members: { errorMethods: false }` returns errors written for size. They're the smallest errors a build can return, and reading their issues is slower, but they have the same `count`, `issues`, `summary`, `throw()`, `toJSON()` and `toString()` as other errors, and `instanceof type.errors` recognizes them.
 
 The build loads `@ark/schema/runtime/lean` in place of `@ark/schema/runtime` for it, or `@ark/schema/runtime/none-lean` with `errors: "none"`, and a runtime island fails the build, as under [`errors: "none"`](#errors). With Turbopack, alias `@ark/schema/runtime` to that entry as `errors: "none"` does.
 
