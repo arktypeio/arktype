@@ -1427,6 +1427,16 @@ console.log(values.map(v => (v as any).from))`,
 					writeArktypeRuntimeOptionMessage("countsKeys")
 				],
 				[
+					"non-boolean shadow",
+					{ shadow: "true" as never },
+					writeOptionValueMessage("shadow", '"true"', "a boolean")
+				],
+				[
+					"shadow with runtime arktype",
+					{ runtime: "arktype", shadow: true },
+					writeArktypeRuntimeOptionMessage("shadow")
+				],
+				[
 					"config false with runtime arktype",
 					{ runtime: "arktype", config: false },
 					writeArktypeRuntimeOptionMessage("config: false")

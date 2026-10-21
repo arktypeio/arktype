@@ -53,7 +53,8 @@ const precompilable: Rule.RuleModule = {
 							json: { type: "boolean" },
 							toJSON: { type: "boolean" },
 							toJsonSchema: { type: "boolean" },
-							"~standard.jsonSchema": { type: "boolean" }
+							"~standard.jsonSchema": { type: "boolean" },
+							errorMethods: { type: "boolean" }
 						},
 						additionalProperties: false
 					},
@@ -65,7 +66,9 @@ const precompilable: Rule.RuleModule = {
 					lazy: { type: "boolean" },
 					mutatesInput: { enum: [false, true, "always"] },
 					optimize: { enum: ["speed", "size"] },
-					countsKeys: { type: "boolean" }
+					countsKeys: { type: "boolean" },
+					shadow: { type: "boolean" },
+					allowUnsafe: { type: "boolean" }
 				},
 				additionalProperties: false
 			}

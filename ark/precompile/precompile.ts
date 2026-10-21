@@ -3830,7 +3830,7 @@ export const memberOptions = [
 	"errorMethods"
 ] as const
 
-const booleanOptions = ["freeze", "lazy", "countsKeys"] as const
+const booleanOptions = ["freeze", "lazy", "countsKeys", "shadow"] as const
 
 const enumOptions = {
 	checks: ["types", "helpers", "none"],
