@@ -48,8 +48,7 @@ contextualize(() => {
 				maxProperties: 2,
 				propertyNames: { pattern: "^[a-z]$" },
 				dependentRequired: { a: ["b"] },
-				dependentSchemas: { b: { required: ["a"] } },
-				unevaluatedProperties: false
+				dependentSchemas: { b: { required: ["a"] } }
 			})
 			attest<{ a: string; b?: number }>(T).type.toString.snap(
 				"{ a: string; b?: number }"
@@ -100,8 +99,7 @@ contextualize(() => {
 				uniqueItems: false,
 				contains: { const: "a" },
 				minContains: 0,
-				maxContains: 2,
-				unevaluatedItems: false
+				maxContains: 2
 			})
 			attest<string[]>(T).type.toString.snap("string[]")
 		})
@@ -179,8 +177,7 @@ contextualize(() => {
 					anyOf: [
 						{ $ref: "https://example.com/schema.json" },
 						{ $ref: "other.json#/$defs/a" },
-						{ $ref: "#node" },
-						{ $dynamicRef: "#meta" }
+						{ $ref: "#node" }
 					]
 				})
 			).type.errors.is("")
@@ -337,8 +334,7 @@ contextualize(() => {
 					type: "object",
 					additionalProperties: {},
 					patternProperties: { "^a": true, "^b": {} },
-					propertyNames: true,
-					unevaluatedProperties: {}
+					propertyNames: true
 				})
 			).type.errors.is("")
 			attest(() =>
@@ -346,8 +342,7 @@ contextualize(() => {
 					type: "array",
 					prefixItems: [{}],
 					items: {},
-					contains: true,
-					unevaluatedItems: {}
+					contains: true
 				})
 			).type.errors.is("")
 		})
@@ -405,9 +400,10 @@ contextualize(() => {
 				inferred({
 					$recursiveAnchor: true,
 					type: "object",
+					// @ts-expect-error
 					properties: { child: { $recursiveRef: "#" } }
 				})
-			).type.errors.is("")
+			).type.errors("$recursiveRef isn't supported by jsonSchemaToType")
 		})
 	})
 
@@ -1859,22 +1855,6 @@ contextualize(() => {
 			>()
 			attest<
 				true,
-				isValid<{ properties: { a: {} }; required: ["b"]; $dynamicRef: "#x" }>
-			>()
-			attest<
-				true,
-				isValid<{ properties: { a: {} }; required: ["b"]; $recursiveRef: "#" }>
-			>()
-			attest<
-				true,
-				isValid<{
-					properties: { a: {} }
-					required: ["b"]
-					unevaluatedProperties: false
-				}>
-			>()
-			attest<
-				true,
 				isValid<{
 					properties: { a: {} }
 					required: ["b"]
@@ -1921,8 +1901,6 @@ contextualize(() => {
 			attest<true, isValid<{ contains: Typo }>>()
 			attest<true, isValid<{ patternProperties: { "^a": Typo } }>>()
 			attest<true, isValid<{ items: [{}]; additionalItems: Typo }>>()
-			attest<true, isValid<{ unevaluatedItems: Typo }>>()
-			attest<true, isValid<{ unevaluatedProperties: Typo }>>()
 			attest<true, isValid<{ contentSchema: Typo }>>()
 			attest<true, isValid<{ propertyNames: Typo }>>()
 		})
@@ -1980,7 +1958,6 @@ contextualize(() => {
 				isValid<{ properties: { x: {} }; additionalProperties: Typo }>
 			>()
 			attest<false, isValid<{ prefixItems: [{}]; items: Typo }>>()
-			attest<false, isValid<{ items: Typo; unevaluatedItems: {} }>>()
 			attest<false, isValid<{ properties: { x: Typo }; propertyNames: {} }>>()
 			attest<false, isValid<{ properties: { x: Typo }; $defs: { d: {} } }>>()
 			attest<
@@ -2526,15 +2503,11 @@ Type 'number' is not assignable to type '"maxContains must be a non-negative int
 			attest(() =>
 				// @ts-expect-error
 				inferred({ type: "number", exclusiveMaximum: "5" })
-			).type.errors.snap(
-				"Type 'string' is not assignable to type 'number | boolean'."
-			)
+			).type.errors.snap("Type 'string' is not assignable to type 'number'.")
 			attest(() =>
 				// @ts-expect-error
 				inferred({ type: "number", exclusiveMinimum: [0] })
-			).type.errors.snap(
-				"Type 'number[]' is not assignable to type 'number | boolean'."
-			)
+			).type.errors.snap("Type 'number[]' is not assignable to type 'number'.")
 		})
 
 		it("fractional and widened multipleOf", () => {
@@ -2766,10 +2739,6 @@ Type 'number' is not assignable to type '"maxContains must be a non-negative int
 					// @ts-expect-error
 					additionalProperties: "string",
 					// @ts-expect-error
-					unevaluatedProperties: 0,
-					// @ts-expect-error
-					unevaluatedItems: "no",
-					// @ts-expect-error
 					propertyNames: 1,
 					// @ts-expect-error
 					items: "string"
@@ -2781,8 +2750,6 @@ Type 'null' is not assignable to type '"JSON Schema must be an object or a boole
 Type 'true[]' is not assignable to type '"JSON Schema must be an object or a boolean (was array)\u200b"'.
 Type '"x"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.
 Type '"string"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.
-Type 'number' is not assignable to type '"JSON Schema must be an object or a boolean (was number)\u200b"'.
-Type '"no"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.
 Type 'number' is not assignable to type '"JSON Schema must be an object or a boolean (was number)\u200b"'.
 Type '"string"' is not assignable to type '"JSON Schema must be an object or a boolean (was string)\u200b"'.`)
 		})
@@ -2899,16 +2866,19 @@ Type '"b"' is not assignable to type '"JSON Schema must be an object or a boolea
 		})
 
 		it("OpenAPI 3.0 boolean exclusive bounds", () => {
-			// valid in OpenAPI 3.0 (draft-04 semantics), which `nullable` already targets
 			attest(() =>
 				inferred({
 					type: "number",
 					minimum: 0,
+					// @ts-expect-error
 					exclusiveMinimum: true,
 					maximum: 10,
+					// @ts-expect-error
 					exclusiveMaximum: false
 				})
-			).type.errors.is("")
+			).type.errors
+				.snap(`Type 'true' is not assignable to type '"boolean exclusiveMinimum isn't supported by jsonSchemaToType\u200b"'.
+Type 'false' is not assignable to type '"boolean exclusiveMaximum isn't supported by jsonSchemaToType\u200b"'.`)
 		})
 
 		it("non-array items and additionalItems", () => {
@@ -3028,9 +2998,7 @@ Type '"b"' is not assignable to type '"JSON Schema must be an object or a boolea
 						a: { exclusiveMinimum: "1" }
 					}
 				})
-			).type.errors(
-				"Type 'string' is not assignable to type 'number | boolean'"
-			)
+			).type.errors("Type 'string' is not assignable to type 'number'")
 			attest(() =>
 				inferred({
 					type: "object",
@@ -3070,15 +3038,11 @@ Type '"b"' is not assignable to type '"JSON Schema must be an object or a boolea
 					// @ts-expect-error
 					additionalProperties: { type: "strin" },
 					// @ts-expect-error
-					unevaluatedProperties: { type: "strin" },
-					// @ts-expect-error
 					items: { type: "strin" },
 					// @ts-expect-error
 					prefixItems: [true, { type: "strin" }],
 					// @ts-expect-error
 					contains: { type: "strin" },
-					// @ts-expect-error
-					unevaluatedItems: { type: "strin" },
 					// @ts-expect-error
 					allOf: [{ type: "strin" }],
 					// @ts-expect-error
@@ -3102,9 +3066,7 @@ Type '"strin"' is not assignable to type 'TypeName'. Did you mean '"string"'?
 Type '"strin"' is not assignable to type 'TypeName'. Did you mean '"string"'?
 Type '"strin"' is not assignable to type 'TypeName | undefined'. Did you mean '"string"'?
 Type '"strin"' is not assignable to type 'TypeName | undefined'. Did you mean '"string"'?
-Type '"strin"' is not assignable to type 'TypeName | undefined'. Did you mean '"string"'?
 Type '"strin"' is not assignable to type 'TypeName'. Did you mean '"string"'?
-Type '"strin"' is not assignable to type 'TypeName | undefined'. Did you mean '"string"'?
 Type '"strin"' is not assignable to type 'TypeName | undefined'. Did you mean '"string"'?
 Type '"strin"' is not assignable to type 'TypeName'. Did you mean '"string"'?
 Type '"strin"' is not assignable to type 'TypeName'. Did you mean '"string"'?
@@ -4076,8 +4038,7 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 					position: { $ref: "#/$defs/point" },
 					children: { type: "array", items: { $ref: "#" } }
 				},
-				required: ["position"],
-				unevaluatedProperties: false
+				required: ["position"]
 			})
 			attest<[number, number]>(T.position)
 			attest<unknown>(T.data)
@@ -4319,7 +4280,8 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 		})
 
 		it("draft-04 meta-schema", () => {
-			// draft-04 `id` with a draft-04 `$schema`, boolean exclusiveMinimum and string-array dependencies
+			// draft-04 `id` with a draft-04 `$schema` and string-array dependencies.
+			// Its boolean exclusiveMinimum is unsupported.
 			attest(() =>
 				inferred({
 					id: "http://json-schema.org/draft-04/schema#",
@@ -4356,6 +4318,7 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 						title: { type: "string" },
 						description: { type: "string" },
 						default: {},
+						// @ts-expect-error
 						multipleOf: { type: "number", minimum: 0, exclusiveMinimum: true },
 						maximum: { type: "number" },
 						exclusiveMaximum: { type: "boolean", default: false },
@@ -4427,7 +4390,9 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 					},
 					default: {}
 				})
-			).type.errors.is("")
+			).type.errors(
+				"boolean exclusiveMinimum isn't supported by jsonSchemaToType"
+			)
 		})
 
 		it("draft-07 meta-schema", () => {
@@ -4658,43 +4623,55 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 					type: ["object", "boolean"],
 					properties: {
 						prefixItems: { $ref: "#/$defs/schemaArray" },
+						// @ts-expect-error
 						items: { $dynamicRef: "#meta" },
+						// @ts-expect-error
 						contains: { $dynamicRef: "#meta" },
+						// @ts-expect-error
 						additionalProperties: { $dynamicRef: "#meta" },
 						properties: {
 							type: "object",
+							// @ts-expect-error
 							additionalProperties: { $dynamicRef: "#meta" },
 							default: {}
 						},
 						patternProperties: {
 							type: "object",
+							// @ts-expect-error
 							additionalProperties: { $dynamicRef: "#meta" },
 							propertyNames: { format: "regex" },
 							default: {}
 						},
 						dependentSchemas: {
 							type: "object",
+							// @ts-expect-error
 							additionalProperties: { $dynamicRef: "#meta" },
 							default: {}
 						},
+						// @ts-expect-error
 						propertyNames: { $dynamicRef: "#meta" },
+						// @ts-expect-error
 						if: { $dynamicRef: "#meta" },
+						// @ts-expect-error
 						then: { $dynamicRef: "#meta" },
+						// @ts-expect-error
 						else: { $dynamicRef: "#meta" },
 						allOf: { $ref: "#/$defs/schemaArray" },
 						anyOf: { $ref: "#/$defs/schemaArray" },
 						oneOf: { $ref: "#/$defs/schemaArray" },
+						// @ts-expect-error
 						not: { $dynamicRef: "#meta" }
 					},
 					$defs: {
 						schemaArray: {
 							type: "array",
 							minItems: 1,
+							// @ts-expect-error
 							items: { $dynamicRef: "#meta" }
 						}
 					}
 				})
-			).type.errors.is("")
+			).type.errors("$dynamicRef isn't supported by jsonSchemaToType")
 		})
 
 		it("2020-12 top-level meta-schema", () => {
@@ -4721,6 +4698,7 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 						definitions: {
 							$comment: '"definitions" has been replaced by "$defs".',
 							type: "object",
+							// @ts-expect-error
 							additionalProperties: { $dynamicRef: "#meta" },
 							deprecated: true,
 							default: {}
@@ -4729,6 +4707,7 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 							type: "object",
 							additionalProperties: {
 								anyOf: [
+									// @ts-expect-error
 									{ $dynamicRef: "#meta" },
 									{ $ref: "meta/validation#/$defs/stringArray" }
 								]
@@ -4738,7 +4717,7 @@ Type '"#/$defs/x"' is not assignable to type '"#"'.`)
 						}
 					}
 				})
-			).type.errors.is("")
+			).type.errors("$dynamicRef isn't supported by jsonSchemaToType")
 		})
 	})
 

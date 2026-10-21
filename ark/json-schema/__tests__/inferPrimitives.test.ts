@@ -707,9 +707,12 @@ contextualize(() => {
 		})
 
 		it("draft-04 boolean exclusiveMinimum", () => {
-			attest<number>(
+			attest(() =>
+				// @ts-expect-error
 				inferred({ type: "number", exclusiveMinimum: true })
-			).type.toString.snap("number")
+			).type.errors(
+				"boolean exclusiveMinimum isn't supported by jsonSchemaToType"
+			)
 		})
 
 		it("multipleOf must be positive", () => {

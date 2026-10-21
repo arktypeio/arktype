@@ -1354,7 +1354,6 @@ contextualize(() => {
 					maxProperties: 3,
 					dependentRequired: { a: ["b"] },
 					dependentSchemas: { a: { required: ["b"] } },
-					unevaluatedProperties: false,
 					required: ["a"]
 				})
 			).type.toString.snap("{ a: string }")
@@ -2028,13 +2027,6 @@ contextualize(() => {
 				inferred({
 					type: "object",
 					// @ts-expect-error
-					unevaluatedProperties: { type: "strin" }
-				})
-			).type.errors(`Did you mean '"string"'?`)
-			attest(() =>
-				inferred({
-					type: "object",
-					// @ts-expect-error
 					patternProperties: { "^a": { type: "strin" } }
 				})
 			).type.errors(`Did you mean '"string"'?`)
@@ -2063,13 +2055,6 @@ contextualize(() => {
 		})
 
 		it("type errors in array subschema keywords", () => {
-			attest(() =>
-				inferred({
-					type: "array",
-					// @ts-expect-error
-					unevaluatedItems: { type: "strin" }
-				})
-			).type.errors(`Did you mean '"string"'?`)
 			attest(() =>
 				inferred({
 					type: "array",

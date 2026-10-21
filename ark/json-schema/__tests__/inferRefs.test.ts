@@ -2826,17 +2826,20 @@ contextualize(() => {
 			attest<string>(T).type.toString.snap("string")
 		})
 
-		it("$dynamicRef and $recursiveRef are annotations", () => {
-			const T = inferred({
-				type: "object",
-				properties: {
-					a: { $dynamicRef: "#meta" },
-					b: { $recursiveRef: "#" }
-				}
-			})
-			attest<{ a?: unknown; b?: unknown }>(T).type.toString.snap(
-				"{ a?: unknown; b?: unknown }"
-			)
+		it("$dynamicRef and $recursiveRef", () => {
+			attest(() =>
+				inferred({
+					type: "object",
+					properties: {
+						// @ts-expect-error
+						a: { $dynamicRef: "#meta" },
+						// @ts-expect-error
+						b: { $recursiveRef: "#" }
+					}
+				})
+			).type.errors
+				.snap(`Type '"#meta"' is not assignable to type '"$dynamicRef isn't supported by jsonSchemaToType\u200b"'.
+Type '"#"' is not assignable to type '"$recursiveRef isn't supported by jsonSchemaToType\u200b"'.`)
 		})
 
 		it("an empty $ref is the current document and infers unknown", () => {

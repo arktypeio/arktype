@@ -1134,7 +1134,7 @@ contextualize(() => {
 			attest<{ name: string }>(T).type.toString.snap("{ name: string }")
 		})
 
-		it("propertyNames, counts, dependencies and unevaluatedProperties", () => {
+		it("propertyNames, counts and dependencies", () => {
 			const T = inferred({
 				type: "object",
 				properties: { a: { type: "string" } },
@@ -1142,7 +1142,6 @@ contextualize(() => {
 				propertyNames: { maxLength: 3 },
 				dependentRequired: { a: ["b"] },
 				dependentSchemas: { a: { required: ["c"] } },
-				unevaluatedProperties: false,
 				minProperties: 1
 			})
 			attest<{ a: string }>(T).type.toString.snap("{ a: string }")
@@ -1583,40 +1582,14 @@ contextualize(() => {
 		})
 	})
 
-	describe("unevaluatedProperties", () => {
-		it("doesn't add to the index", () => {
-			const T = inferred({
+	it("unevaluatedProperties", () => {
+		attest(() =>
+			inferred({
 				type: "object",
-				properties: { a: { type: "string" } },
-				additionalProperties: { type: "number" },
+				// @ts-expect-error
 				unevaluatedProperties: { type: "boolean" }
 			})
-			attest<{ [k: string]: string | number; a?: string }>(
-				T
-			).type.toString.snap("{ [x: string]: string | number; a?: string }")
-		})
-
-		it("non-schema", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					// @ts-expect-error
-					unevaluatedProperties: "no"
-				})
-			).type.errors("JSON Schema must be an object or a boolean (was string)")
-		})
-
-		it("nested error", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					unevaluatedProperties: {
-						// @ts-expect-error
-						type: "nul"
-					}
-				})
-			).type.errors(`Did you mean '"null"'?`)
-		})
+		).type.errors("unevaluatedProperties isn't supported by jsonSchemaToType")
 	})
 
 	describe("implied objects", () => {
@@ -1733,7 +1706,6 @@ contextualize(() => {
 				inferred({ dependentSchemas: { a: { required: ["b"] } } })
 			)
 			attest<unknown>(inferred({ dependencies: { a: ["b"] } }))
-			attest<unknown>(inferred({ unevaluatedProperties: false }))
 		})
 	})
 
@@ -2798,17 +2770,6 @@ contextualize(() => {
 					properties: { a: { type: "string" } },
 					required: ["a", "b"],
 					dependentSchemas: { a: { properties: { b: { type: "string" } } } }
-				})
-			).type.errors.is("")
-		})
-
-		it("unevaluatedProperties turns off the required check", () => {
-			attest(() =>
-				inferred({
-					type: "object",
-					properties: { a: { type: "string" } },
-					required: ["b"],
-					unevaluatedProperties: false
 				})
 			).type.errors.is("")
 		})

@@ -558,17 +558,6 @@ contextualize(() => {
 			).type.toString.snap("unknown[]")
 		})
 
-		it("unevaluatedItems false", () => {
-			attest<[string, ...unknown[]]>(
-				inferred({
-					type: "array",
-					prefixItems: [{ type: "string" }],
-					minItems: 1,
-					unevaluatedItems: false
-				})
-			).type.toString.snap("[string, ...unknown[]]")
-		})
-
 		it("all together on a tuple", () => {
 			attest<[string, number?, ...boolean[]]>(
 				inferred({
@@ -580,8 +569,7 @@ contextualize(() => {
 					contains: { type: "boolean" },
 					minContains: 1,
 					maxContains: 3,
-					uniqueItems: true,
-					unevaluatedItems: false
+					uniqueItems: true
 				})
 			).type.toString.snap("[string, number?, ...boolean[]]")
 		})
@@ -2363,7 +2351,6 @@ contextualize(() => {
 				minContains: 1
 				maxContains: 2
 				uniqueItems: true
-				unevaluatedItems: false
 			}
 			attest<true, s extends jsonSchema.validate<s> ? true : false>()
 		})
@@ -2491,14 +2478,14 @@ contextualize(() => {
 			).type.errors("JSON Schema must be an object or a boolean (was string)")
 		})
 
-		it("non-schema unevaluatedItems", () => {
+		it("unevaluatedItems", () => {
 			attest(() =>
 				inferred({
 					type: "array",
 					// @ts-expect-error
-					unevaluatedItems: 0
+					unevaluatedItems: false
 				})
-			).type.errors("JSON Schema must be an object or a boolean (was number)")
+			).type.errors("unevaluatedItems isn't supported by jsonSchemaToType")
 		})
 
 		it("non-boolean uniqueItems", () => {
@@ -2781,9 +2768,7 @@ contextualize(() => {
 			attest<true>(
 				{} as isValid<{
 					type: "array"
-					items:
-						| { exclusiveMinimum: 1 }
-						| { minimum: 1; exclusiveMinimum: true }
+					items: { exclusiveMinimum: 1 } | { minimum: 1; exclusiveMinimum: 2 }
 				}>
 			)
 		})

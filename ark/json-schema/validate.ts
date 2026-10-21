@@ -138,6 +138,16 @@ export type validateKeywords<schema, root, position extends SchemaPosition> = {
 			  : k extends "dependentRequired" ? validateDependentRequired<schema[k]>
 			  : k extends "additionalItems" ?
 					validateSchema<schema[k], root, "branch">
+			  : k extends UnsupportedKeyword ?
+					// a widened schema type may omit it
+					undefined extends schema[k] ?
+						schema[k]
+					:	ErrorMessage<writeUnsupportedKeywordMessage<k>>
+			  : k extends ExclusiveBoundKeyword ?
+					schema[k] extends boolean ?
+						ErrorMessage<writeUnsupportedKeywordMessage<`boolean ${k}`>>
+					: schema[k] extends number | boolean | undefined ? schema[k]
+					: number
 			  : k extends "propertyNames" ? validatePropertyNames<schema[k], root>
 			  : schema[k])
 			| (undefined extends schema[k] ? undefined : never)
@@ -373,9 +383,17 @@ export interface IsolatedSchema extends KeywordObject {
 export type SchemaKeyword =
 	| "additionalProperties"
 	| "contains"
-	| "unevaluatedProperties"
-	| "unevaluatedItems"
 	| "contentSchema"
+
+/** keywords jsonSchemaToType throws on, since it can't read them exactly */
+export type UnsupportedKeyword =
+	| "$dynamicRef"
+	| "$recursiveRef"
+	| "unevaluatedItems"
+	| "unevaluatedProperties"
+
+/** a draft-04 boolean exclusive bound is unsupported */
+export type ExclusiveBoundKeyword = "exclusiveMinimum" | "exclusiveMaximum"
 
 export type BranchKeyword = "not" | "if" | "then" | "else"
 
@@ -402,8 +420,6 @@ export type CountKeyword =
 export type KeywordValueTypes = {
 	minimum: number
 	maximum: number
-	exclusiveMinimum: number | boolean
-	exclusiveMaximum: number | boolean
 	enum: readonly unknown[]
 	pattern: string | RegExp
 	format: string
@@ -427,6 +443,8 @@ export type ValidatedKeyword =
 	| "dependencies"
 	| "dependentRequired"
 	| "additionalItems"
+	| UnsupportedKeyword
+	| ExclusiveBoundKeyword
 	| "propertyNames"
 
 export type KeywordName =
@@ -443,7 +461,6 @@ export type KeywordName =
 	| "$schema"
 	| "$id"
 	| "$anchor"
-	| "$dynamicRef"
 	| "$dynamicAnchor"
 	| "$vocabulary"
 	| "contentEncoding"
@@ -483,9 +500,11 @@ export interface StaticallyValidSchemaObject extends ContextFreeKeywords {
 	else?: StaticallyValidSchema
 	contains?: StaticallyValidSchema
 	additionalProperties?: StaticallyValidSchema
-	unevaluatedProperties?: StaticallyValidSchema
-	unevaluatedItems?: StaticallyValidSchema
 	contentSchema?: StaticallyValidSchema
+	unevaluatedProperties?: never
+	unevaluatedItems?: never
+	$dynamicRef?: never
+	$recursiveRef?: never
 }
 
 /** keywords whose values are valid whatever else the schema contains */
@@ -496,8 +515,8 @@ export interface ContextFreeKeywords {
 	dependentRequired?: DependentRequired
 	minimum?: number
 	maximum?: number
-	exclusiveMinimum?: number | boolean
-	exclusiveMaximum?: number | boolean
+	exclusiveMinimum?: number
+	exclusiveMaximum?: number
 	enum?: readonly unknown[]
 	pattern?: string | RegExp
 	format?: string
@@ -515,7 +534,6 @@ export interface ContextFreeKeywords {
 	$schema?: unknown
 	$id?: unknown
 	$anchor?: unknown
-	$dynamicRef?: unknown
 	$dynamicAnchor?: unknown
 	$vocabulary?: unknown
 	contentEncoding?: unknown
@@ -588,8 +606,10 @@ export interface ValidSchemaObject<schema extends KeywordObject, root>
 	else?: checkSchema<schema["else"], root>
 	contains?: checkSchema<schema["contains"], root>
 	additionalProperties?: checkSchema<schema["additionalProperties"], root>
-	unevaluatedProperties?: checkSchema<schema["unevaluatedProperties"], root>
-	unevaluatedItems?: checkSchema<schema["unevaluatedItems"], root>
+	unevaluatedProperties?: never
+	unevaluatedItems?: never
+	$dynamicRef?: never
+	$recursiveRef?: never
 	contentSchema?: checkSchema<schema["contentSchema"], root>
 	additionalItems?: checkSchema<schema["additionalItems"], root>
 	propertyNames?: checkPropertyNames<schema["propertyNames"], root>
@@ -733,8 +753,6 @@ export interface SubschemaCompletions extends KeywordObject {
 	contains?: SchemaCompletions
 	additionalProperties?: SchemaCompletions
 	additionalItems?: SchemaCompletions
-	unevaluatedProperties?: SchemaCompletions
-	unevaluatedItems?: SchemaCompletions
 	propertyNames?: SchemaCompletions
 	contentSchema?: SchemaCompletions
 	/** without `schemas`, an unknown keyword */
@@ -783,3 +801,6 @@ export type writeInvalidCountMessage<
 
 export type writeInvalidMultipleOfMessage<value extends number> =
 	`multipleOf must be a positive number (was ${value})`
+
+export type writeUnsupportedKeywordMessage<keyword extends string> =
+	`${keyword} isn't supported by jsonSchemaToType`
