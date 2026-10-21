@@ -1,5 +1,7 @@
 import { hasDomain, type array, type JsonObject } from "@ark/util"
 import type { nodeOfKind } from "../kinds.ts"
+import type { RangeKind } from "../refinements/kinds.ts"
+import type { LimitKind } from "../refinements/range.ts"
 import type { PredicateNode } from "../predicate.ts"
 import type { NodeCompiler } from "../shared/compile.ts"
 import type { BaseErrorContext, declareNode } from "../shared/declare.ts"
@@ -369,8 +371,8 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 		:	""
 
 	// a range is written as it's parsed, e.g. `1 <= number <= 5`
-	const upper = prestructurals.find(n => limitKindOf(n) === "upper")
-	const lower = upper && prestructurals.find(n => limitKindOf(n) === "lower")
+	const upper = prestructurals.find(n => isLimit(n, "upper"))
+	const lower = upper && prestructurals.find(n => isLimit(n, "lower"))
 
 	// a pattern is an operand of its own, and other refinements follow theirs
 	const refinementsExpression = prestructurals
@@ -401,8 +403,11 @@ const writeIntersectionExpression = (node: Intersection.Node) => {
 	return `${limit} ${lower.comparator === ">" ? "<" : "<="} ${operand} ${upper.expression}`
 }
 
-const limitKindOf = (node: nodeOfKind<PrestructuralKind>) =>
-	"limitKind" in node ? node.limitKind : undefined
+const isLimit = (
+	node: nodeOfKind<PrestructuralKind>,
+	limitKind: LimitKind
+): node is nodeOfKind<RangeKind> =>
+	"limitKind" in node && node.limitKind === limitKind
 
 const writtenBasisOf = (node: Intersection.Node) =>
 	(

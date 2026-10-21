@@ -287,7 +287,7 @@ value at [1] must be a number (was boolean)`)
 			const T = type("0 < number[] <= 5")
 			attest(T.expression).snap("1 <= number[] <= 5")
 			attest(T.description).snap("number[] at most length 5 and non-empty")
-			attest(type(T.expression).json).equals(T.json)
+			attest(type.raw(T.expression).json).equals(T.json)
 		})
 
 		it("exact", () => {
