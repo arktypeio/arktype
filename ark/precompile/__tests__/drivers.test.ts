@@ -603,12 +603,12 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 			const none = { errors: "none" } as const
 			attest(await outcomeOf("@ark/schema/runtime/none", none)).equals([])
 			attest(await outcomeOf("@ark/schema/runtime", none)).snap([
-				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/schema/runtime/none, which a build with errors: "none" loads in its place. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/schema/runtime/none"} Set allowUnsafe: true to build anyway, with a warning.'
+				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/schema/runtime/none, which a build with errors: "none" loads in its place. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/schema/runtime/none"}, and install @ark/schema if your package manager doesn\'t hoist it, as pnpm doesn\'t. Set allowUnsafe: true to build anyway, with a warning.'
 			])
 			attest(
 				await outcomeOf("@ark/schema/runtime", { ...none, allowUnsafe: true })
 			).snap([
-				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/schema/runtime/none, which a build with errors: "none" loads in its place. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/schema/runtime/none"}'
+				'@ark/schema/runtime resolves to ../../../schema/runtime.ts rather than @ark/schema/runtime/none, which a build with errors: "none" loads in its place. Add to turbopack.resolveAlias: {"@ark/schema/runtime":"@ark/schema/runtime/none"}, and install @ark/schema if your package manager doesn\'t hoist it, as pnpm doesn\'t.'
 			])
 			attest(await outcomeOf("@ark/schema/runtime")).equals([])
 			attest(await outcomeOf("@ark/schema/runtime/none")).snap([

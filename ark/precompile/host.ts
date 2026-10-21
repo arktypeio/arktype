@@ -298,7 +298,7 @@ export const writeRuntimeAliasMessage = (
 	variant: RuntimeVariant | undefined
 ): string =>
 	variant ?
-		`@ark/schema/runtime resolves to ${resolved} rather than @ark/schema/runtime/${variant}, which a build with ${writeVariantOption(variant)} loads in its place. Add to turbopack.resolveAlias: ${JSON.stringify({ "@ark/schema/runtime": `@ark/schema/runtime/${variant}` })}`
+		`@ark/schema/runtime resolves to ${resolved} rather than @ark/schema/runtime/${variant}, which a build with ${writeVariantOption(variant)} loads in its place. Add to turbopack.resolveAlias: ${JSON.stringify({ "@ark/schema/runtime": `@ark/schema/runtime/${variant}` })}, and install @ark/schema if your package manager doesn't hoist it, as pnpm doesn't.`
 	:	`@ark/schema/runtime resolves to ${resolved}, a copy for a build with errors: "none" or members: { errorMethods: false }. Remove its turbopack.resolveAlias.`
 
 export const writeNodeVersionMessage = (
