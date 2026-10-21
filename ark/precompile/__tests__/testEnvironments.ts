@@ -238,6 +238,13 @@ if (firefox) {
 	}
 } else console.log("⚠️  firefox is not installed or can't run headless")
 
+// a runtime CI stops installing would otherwise be skipped silently
+const missing = ["bun", "deno", "chromium", "firefox"].filter(
+	name => !(name in runtimes)
+)
+if (process.env.CI && missing.length)
+	throw new Error(`CI must run every runtime, missing ${missing.join(", ")}`)
+
 let runs = 0
 let failures = 0
 
