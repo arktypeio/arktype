@@ -226,6 +226,24 @@ Port("99999")
 
 The output's own Type, `Port.out`, keeps its errors, description and JSON Schema.
 
+### Surface a message every failing branch or constraint was configured with
+
+A union or intersection error was written from what its errors expected, even when each was configured with the same `message`. It now surfaces that message (#1492, #1412):
+
+```ts
+const Email = type("string.email > 0").configure({
+	message: "Email is not valid"
+})
+
+// was: ArkErrors: ("") must be...
+//        ◦ an email address
+//        ◦ non-empty
+// now: ArkErrors: Email is not valid
+Email("")
+```
+
+Errors whose messages differ, or that weren't all configured with one, are still written from what they expected, as is a union or intersection configured with a message of its own. A message `ctx.reject` supplied counts as configured.
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:

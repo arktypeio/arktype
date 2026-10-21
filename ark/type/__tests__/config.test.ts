@@ -147,6 +147,31 @@ contextualize(() => {
 		attest(Port.out.json).equals(type("0 < number <= 65535").json)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1492
+	it("union errors with one configured message surface it", () => {
+		const Dates = type("string[] > 0").configure({
+			message: "Dates are required"
+		})
+		const T = type({ "kind?": "'a'", dates: Dates }).or({
+			"kind?": "'b'",
+			dates: Dates
+		})
+		attest(T({ dates: [] }).toString()).snap("Dates are required")
+		const Differing = type({ "kind?": "'a'", dates: Dates }).or({
+			"kind?": "'b'",
+			dates: type("string[] > 0").configure({ message: "Add a date" })
+		})
+		attest(Differing({ dates: [] }).toString()).snap("dates must be non-empty")
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1412
+	it("intersection errors with one configured message surface it", () => {
+		const Email = type("string.email > 0").configure({
+			message: "Email is not valid"
+		})
+		attest(Email("").toString()).snap("Email is not valid")
+	})
+
 	it("node writer config on undeclared key", () => {
 		const T = type({ "+": "reject", a: "string" }).configure(
 			{ message: ctx => `custom message ${ctx.problem}` },
