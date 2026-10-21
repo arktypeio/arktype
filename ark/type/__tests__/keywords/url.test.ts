@@ -15,7 +15,10 @@ contextualize(() => {
 
 	it("rejects what the parser rejects, even shaped like a plain URL", () => {
 		const Url = type("string.url")
-		attest(Url.allows("https://xn--a.com")).equals(false)
+		// whether a punycode label must decode differs between Node versions
+		attest(Url.allows("https://xn--a.com")).equals(
+			URL.canParse("https://xn--a.com")
+		)
 		attest(Url.allows("https://a.123")).equals(false)
 		attest(Url.allows("https://a.0x1f")).equals(false)
 		attest(Url.allows("http://localhost:65536")).equals(false)
