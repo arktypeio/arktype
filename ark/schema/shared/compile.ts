@@ -251,8 +251,6 @@ export abstract class NodeCompiler extends CompiledFunction<
 	declare readonly inPlace?: boolean
 	// whether Apply reports only the first issue it finds, as a build can
 	declare readonly reportsFirst?: boolean
-	// whether Allows rejects a plain object's undeclared keys by counting them
-	declare readonly countsKeys?: boolean
 	checksTransformErrors = false
 
 	constructor(ctx: NodeCompiler.Context) {
