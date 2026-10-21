@@ -22,10 +22,12 @@ import {
 	createNodeHost,
 	dependencyOf,
 	optedInPackagesOf,
+	packageNameOf,
 	reportDiagnostics,
 	resolvesToRuntime,
 	resolvedVariantOf,
 	rethrowAsBuildError,
+	runtimePackages,
 	runtimeSpecifiers,
 	schemaSpecifier,
 	throwBuildError,
@@ -33,6 +35,7 @@ import {
 	unbundledMessage,
 	variantSpecifierOf,
 	writePrecompiledDependencyMessage,
+	writeExternalizedMessage,
 	writeUncachedModuleMessage,
 	writeUnwrittenModuleMessage,
 	writeVariantImportMessage,
@@ -91,7 +94,7 @@ export const precompile: UnpluginInstance<
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
 	// a persistent cache keeps a transformed module, but not the modules it wrote
-	let compiler: { options: { cache?: unknown } } | undefined
+	let compiler: BundlerCompiler | undefined
 	let storeDir: string | undefined
 	// read once the bundler has applied its defaults
 	const storeDirOf = () => {
@@ -101,8 +104,55 @@ export const precompile: UnpluginInstance<
 		}
 		return storeDir
 	}
-	const keepCompiler = (bundler: NonNullable<typeof compiler>) => {
+	// an external arktype loads apart from the runtime its validators use
+	const checkExternal = (
+		isExternal: (specifier: string) => boolean,
+		option: string,
+		warn: (message: string) => void
+	) => {
+		if (!isStandalone || opts?.shadow) return
+		const specifier = externalizableSpecifiers.find(isExternal)
+		if (!specifier) return
+		const problem = writeExternalizedMessage(specifier, option)
+		if (opts?.allowUnsafe) warn(problem)
+		else throwBuildError(`${problem} ${allowUnsafeHint}`)
+	}
+	const checkInputExternal = function (
+		this: { warn: (message: string) => void },
+		options: { external?: unknown }
+	) {
+		checkExternal(
+			specifier => isExternalIn(options.external, specifier),
+			"external",
+			message => this.warn(message)
+		)
+	}
+	const keepCompiler = (bundler: BundlerCompiler) => {
 		compiler = bundler
+		// webpack and Rspack decide externals, e.g. Next's, before resolving
+		bundler.hooks.compilation.tap("arktype", compilation =>
+			compilation.hooks.finishModules.tap("arktype", modules => {
+				const requests = new Set<string>()
+				for (const module of modules) {
+					if (module instanceof bundler.webpack.ExternalModule)
+						requests.add(module.userRequest)
+				}
+				try {
+					checkExternal(
+						specifier => requests.has(specifier),
+						"externals",
+						message =>
+							compilation.warnings.push(
+								new bundler.webpack.WebpackError(message)
+							)
+					)
+				} catch (e) {
+					compilation.errors.push(
+						new bundler.webpack.WebpackError((e as Error).message)
+					)
+				}
+			})
+		)
 	}
 	// Vite's, for what plugins keep between builds
 	let cacheDir: string | undefined
@@ -329,10 +379,25 @@ export const precompile: UnpluginInstance<
 						false
 					:	undefined
 				),
+			options: checkInputExternal,
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
 				isServing = config.command === "serve"
 				cacheDir = config.cacheDir
+				for (const [name, environment] of Object.entries(
+					config.environments ?? { ssr: { resolve: config.ssr } }
+				)) {
+					const external = environment.resolve?.external
+					checkExternal(
+						specifier =>
+							Array.isArray(external) &&
+							external.includes(packageNameOf(specifier)),
+						name === "ssr" ? "ssr.external" : (
+							`environments.${name}.resolve.external`
+						),
+						message => config.logger.warn(message)
+					)
+				}
 				if (
 					opts?.checks !== undefined ||
 					opts?.runtime === "arktype" ||
@@ -383,6 +448,8 @@ export const precompile: UnpluginInstance<
 			})
 		},
 		rspack: keepCompiler,
+		rollup: { options: checkInputExternal },
+		rolldown: { options: checkInputExternal },
 		esbuild: {
 			// arktype resolves natively, outside the plugin's esbuild namespace
 			onResolveFilter: isStandalone ? /^~arktype\// : /^arktype$|^~arktype\//,
@@ -471,6 +538,43 @@ export const precompile: UnpluginInstance<
 
 const esbuildResolution = "arktype"
 
+// what the plugin reads of a webpack or Rspack compiler
+interface BundlerCompiler {
+	options: { cache?: unknown }
+	hooks: { compilation: Tap<BundlerCompilation> }
+	webpack: {
+		ExternalModule: abstract new (...args: never[]) => { userRequest: string }
+		WebpackError: new (message: string) => Error
+	}
+}
+
+interface BundlerCompilation {
+	hooks: { finishModules: Tap<Iterable<unknown>> }
+	errors: Error[]
+	warnings: Error[]
+}
+
+interface Tap<arg> {
+	tap(name: string, fn: (arg: arg) => void): void
+}
+
+// what a program or the runtime imports of arktype's packages
+const externalizableSpecifiers = [
+	...runtimeSpecifiers,
+	"arktype/runtime",
+	"@ark/schema",
+	"@ark/schema/runtime",
+	"@ark/util"
+]
+
+// whether Rollup's or Rolldown's `external` option matches a specifier
+const isExternalIn = (external: unknown, specifier: string): boolean =>
+	typeof external === "function" ? !!external(specifier, undefined, false)
+	: Array.isArray(external) ?
+		external.some(option => isExternalIn(option, specifier))
+	: external instanceof RegExp ? external.test(specifier)
+	: external === specifier
+
 // what Vitest passes configureVitest, its generator experimental before Vitest 5
 interface VitestPluginContext {
 	defineCacheKeyGenerator?: CacheKeyGenerator
@@ -481,9 +585,6 @@ interface VitestPluginContext {
 type CacheKeyGenerator = (
 	generate: (context: { id: string }) => false | undefined
 ) => void
-
-// what arktype/runtime loads
-const runtimePackages = ["arktype", "@ark/schema", "@ark/util"]
 
 const noDiagnostics = (): RenderedDiagnostics => ({ errors: [], warnings: [] })
 

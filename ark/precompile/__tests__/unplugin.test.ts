@@ -12,6 +12,7 @@ import {
 import {
 	allowUnsafeHint,
 	unbundledMessage,
+	writeExternalizedMessage,
 	writePrecompiledDependencyMessage,
 	writeUncachedModuleMessage,
 	writeUntransformedImportMessage,
@@ -153,6 +154,7 @@ const bundlers = {
 interface RawHooks {
 	webpack(compiler: {
 		options: { cache: object; module: { rules: object[] } }
+		hooks: { compilation: { tap(): void } }
 	}): void
 	transform: {
 		handler(this: object, code: string, id: string): Promise<{ code: string }>
@@ -789,6 +791,38 @@ try {
 		])
 	})
 
+	it("fails a build whose external option takes arktype from the bundle", async () => {
+		const thrownBy = (build: () => Promise<unknown>) =>
+			build().then(
+				() => "built",
+				(e: Error) => e.message
+			)
+		const config = viteConfig({})
+		attest([
+			await thrownBy(() =>
+				viteBuild({
+					...config,
+					build: {
+						write: false,
+						lib: { entry: "main.ts", formats: ["es"] },
+						rolldownOptions: { external: id => id === "arktype" }
+					}
+				})
+			),
+			await thrownBy(async () =>
+				(
+					await createServer({
+						...config,
+						ssr: { ...config.ssr, external: ["@ark/schema"] }
+					})
+				).close()
+			)
+		]).equals([
+			`${writeExternalizedMessage("arktype", "external")} ${allowUnsafeHint}`,
+			`${writeExternalizedMessage("@ark/schema", "ssr.external")} ${allowUnsafeHint}`
+		])
+	})
+
 	it("vite merges units by what its last build read", async () => {
 		const cacheDir = tempDir()
 		const build = async () => {
@@ -1414,7 +1448,10 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 					versions: {}
 				}
 			) as unknown as RawHooks
-			plugin.webpack({ options: { cache, module: { rules: [] } } })
+			plugin.webpack({
+				options: { cache, module: { rules: [] } },
+				hooks: { compilation: { tap: () => {} } }
+			})
 			return plugin
 		}
 		const id = join(app, "schemas.ts")
