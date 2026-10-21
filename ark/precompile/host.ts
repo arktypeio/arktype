@@ -20,9 +20,11 @@ export interface NodeHostOptions {
 	tsconfig?: string | undefined
 }
 
+const nodeConditions = ["import", "node", "default"]
+
 export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 	const resolveOptions: NapiResolveOptions = {
-		conditionNames: opts?.conditions ?? ["import", "node", "default"],
+		conditionNames: opts?.conditions ?? nodeConditions,
 		extensions: [
 			".ts",
 			".tsx",
@@ -73,6 +75,13 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 			(isAbsolute(importer) ? tsconfigIn(dirname(importer)) : undefined)
 	}
 }
+
+// a development build's, whose arktype/runtime has Node print errors as issues
+export const createDevelopmentHost = (opts?: NodeHostOptions): PrecompileHost =>
+	createNodeHost({
+		...opts,
+		conditions: [...(opts?.conditions ?? nodeConditions), "development"]
+	})
 
 const readFile = (path: string) =>
 	existsSync(path) ? readFileSync(path, "utf8") : undefined

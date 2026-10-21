@@ -582,6 +582,10 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
 					if (returned !== undefined) settle(undefined)
 				})
 			attest(await failureOf("arktype/runtime")).equals(undefined)
+			// as resolved under the "development" condition
+			attest(
+				await failureOf(fromHere("..", "..", "type", "runtimeDevelopment.ts"))
+			).equals(undefined)
 			attest(await failureOf("arktype")).equals(
 				writeAliasMessage("arktype", "../../../type/index.ts", {})
 			)

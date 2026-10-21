@@ -90,6 +90,18 @@ const viteConfig = (
 	}
 })
 
+// Vite reads its mode from NODE_ENV, which its first run in a process sets
+const withNodeEnv = async <t>(env: string, run: () => Promise<t>) => {
+	const { NODE_ENV } = process.env
+	process.env.NODE_ENV = env
+	try {
+		return await run()
+	} finally {
+		if (NODE_ENV === undefined) delete process.env.NODE_ENV
+		else process.env.NODE_ENV = NODE_ENV
+	}
+}
+
 const runVitest = async (
 	root: string,
 	opts: PrecompileUnpluginOptions,
@@ -153,9 +165,20 @@ const bundlers = {
 
 interface RawHooks {
 	webpack(compiler: {
-		options: { cache: object; module: { rules: object[] } }
+		options: {
+			cache: object | false
+			mode?: string
+			module: { rules: object[] }
+		}
 		hooks: { compilation: { tap(): void } }
 	}): void
+	resolveId: {
+		handler(
+			this: object,
+			id: string,
+			importer: string
+		): Promise<string | undefined>
+	}
 	transform: {
 		handler(this: object, code: string, id: string): Promise<{ code: string }>
 	}
@@ -791,6 +814,34 @@ try {
 		])
 	})
 
+	it("vite's development server prints errors as their issues", async () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+import { inspect } from "node:util"
+
+export const inspected = inspect(type({ a: "string" })({ a: 1 }))
+`
+		})
+		const server = await withNodeEnv("development", () =>
+			createServer(viteConfig({}, root))
+		)
+		const runner = createServerModuleRunner(server.environments.ssr)
+		try {
+			attest((await runner.import("/main.ts")).inspected).snap(`[
+  {
+    code: 'domain',
+    path: [ 'a' ],
+    data: 1,
+    expected: 'a string',
+    message: 'a must be a string'
+  }
+]`)
+		} finally {
+			await runner.close()
+			await server.close()
+		}
+	})
+
 	it("fails a build whose external option takes arktype from the bundle", async () => {
 		const thrownBy = (build: () => Promise<unknown>) =>
 			build().then(
@@ -825,16 +876,19 @@ try {
 
 	it("vite merges units by what its last build read", async () => {
 		const cacheDir = tempDir()
+		// a development build's runtime keeps a unit that renders nothing
 		const build = async () => {
-			const [{ output }] = (await viteBuild({
-				...viteConfig({}),
-				cacheDir,
-				build: {
-					write: false,
-					minify: true,
-					lib: { entry: "main.ts", formats: ["es"] }
-				}
-			})) as Rolldown.RolldownOutput[]
+			const [{ output }] = (await withNodeEnv("production", () =>
+				viteBuild({
+					...viteConfig({}),
+					cacheDir,
+					build: {
+						write: false,
+						minify: true,
+						lib: { entry: "main.ts", formats: ["es"] }
+					}
+				})
+			)) as Rolldown.RolldownOutput[]
 			return output[0]
 		}
 		const unitModulesOf = ({ moduleIds }: Rolldown.OutputChunk) =>
@@ -1431,6 +1485,33 @@ console.log(T(5) instanceof ArkErrors, T(5) instanceof type.errors)
 		attest(reported).equals([
 			writeVariantImportMessage(importer, "@ark/schema", "none")
 		])
+	})
+
+	it("resolves the runtime of webpack's mode", async () => {
+		const resolvedIn = async (mode: string) => {
+			const plugin = precompile.raw(
+				{ cwd: app, conditions },
+				{
+					framework: "webpack",
+					webpack: { compiler: {} as never },
+					versions: {}
+				}
+			) as unknown as RawHooks
+			plugin.webpack({
+				options: { cache: false, mode, module: { rules: [] } },
+				hooks: { compilation: { tap: () => {} } }
+			})
+			const resolved = await plugin.resolveId.handler.call(
+				{ warn: () => {} },
+				"arktype",
+				join(app, "main.ts")
+			)
+			return relative(fromHere("..", ".."), resolved!)
+		}
+		attest([
+			await resolvedIn("development"),
+			await resolvedIn("production")
+		]).snap(["type/runtimeDevelopment.ts", "type/runtime.ts"])
 	})
 
 	it("loads the modules a webpack build's cache kept", async () => {

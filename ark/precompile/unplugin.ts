@@ -18,6 +18,7 @@ import type {
 } from "./driver.ts"
 import {
 	allowUnsafeHint,
+	createDevelopmentHost,
 	createNodeHost,
 	dependencyOf,
 	optedInPackagesOf,
@@ -39,7 +40,8 @@ import {
 	writeUncachedModuleMessage,
 	writeUnwrittenModuleMessage,
 	writeVariantImportMessage,
-	writeUntransformedImportMessage
+	writeUntransformedImportMessage,
+	type PrecompileHost
 } from "./host.ts"
 import { createAsyncPrecompiler } from "./worker.ts"
 
@@ -85,7 +87,16 @@ export const precompile: UnpluginInstance<
 	}
 	const readDependency = (importer: string) =>
 		request("readDependency", importer) as Promise<RenderedDiagnostics>
-	const host = createNodeHost(opts)
+	const productionHost = createNodeHost(opts)
+	let developmentHost: PrecompileHost | undefined
+	// resolves as the bundler's mode would, e.g. arktype/runtime in development
+	let host = productionHost
+	const resolveIn = (isDevelopment: boolean) => {
+		host =
+			isDevelopment ?
+				(developmentHost ??= createDevelopmentHost(opts))
+			:	productionHost
+	}
 	const isStandalone = opts?.runtime !== "arktype"
 	const variant = resolvedVariantOf(opts)
 	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
@@ -129,6 +140,7 @@ export const precompile: UnpluginInstance<
 	}
 	const keepCompiler = (bundler: BundlerCompiler) => {
 		compiler = bundler
+		resolveIn(bundler.options.mode === "development")
 		// webpack and Rspack decide externals, e.g. Next's, before resolving
 		bundler.hooks.compilation.tap("arktype", compilation =>
 			compilation.hooks.finishModules.tap("arktype", modules => {
@@ -381,6 +393,7 @@ export const precompile: UnpluginInstance<
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
 				isServing = config.command === "serve"
+				resolveIn(!config.isProduction)
 				cacheDir = config.cacheDir
 				for (const [name, environment] of Object.entries(
 					config.environments ?? { ssr: { resolve: config.ssr } }
@@ -538,7 +551,7 @@ const esbuildResolution = "arktype"
 
 // what the plugin reads of a webpack or Rspack compiler
 interface BundlerCompiler {
-	options: { cache?: unknown }
+	options: { cache?: unknown; mode?: string }
 	hooks: { compilation: Tap<BundlerCompilation> }
 	webpack: {
 		ExternalModule: abstract new (...args: never[]) => { userRequest: string }
