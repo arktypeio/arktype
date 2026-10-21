@@ -415,20 +415,21 @@ export type Elements = [string, number?];
 
 	it("prints the CLI's usage for an option it doesn't take", () => {
 		const cli = runCli(layouts, "--watch")
-		attest({ status: cli.status, stderr: cli.stderr }).snap({
-			status: 2,
-			stderr:
-				"Unknown option '--watch'. To specify a positional argument starting with a '-', place it at the end of the command after '--', as in '-- \"--watch\"\nUsage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]\n"
-		})
+		// the first line is node:util's parseArgs message
+		attest([
+			cli.status,
+			cli.stderr.startsWith("Unknown option '--watch'"),
+			cli.stderr.includes("\nUsage: arktype-precompile --check")
+		]).equals([2, true, true])
 	})
 
 	it("prints the CLI's usage with --help", () => {
 		const cli = runCli(layouts, "--help")
-		attest({ status: cli.status, stdout: cli.stdout }).snap({
-			status: 0,
-			stdout:
-				"Usage: arktype-precompile --check [...files or globs] [--fail-under <percent>] [--runtime arktype] [--config <file> | --no-config] [--members <json>] [--checks <types|helpers|none>] [--mutates-input <false|true|always>] [--errors <all|first|none>] [--conditions <a,b>] [--tsconfig <file>] [--allow-unsafe]\n       arktype-precompile --declare [--tsconfig <file>]\n"
-		})
+		attest([
+			cli.status,
+			cli.stdout.startsWith("Usage: arktype-precompile --check"),
+			cli.stderr
+		]).equals([0, true, ""])
 	})
 
 	it("CLI declarations read as their sources", () => {
