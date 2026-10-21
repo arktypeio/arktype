@@ -61,6 +61,47 @@ const allowedKeysOf = (node: Structure.Node): BaseRoot =>
 		node.keyof().rawOr($ark.intrinsic.symbol.internal)
 	:	node.keyof()
 
+// narrows other's optional props and index signatures to the keys a
+// structure with undeclared keys allows, adding a disjoint for each required
+// key it doesn't
+const narrowToKeysOf = (
+	node: Structure.Node,
+	other: Structure.Node,
+	otherInner: {
+		optional?: readonly OptionalNode[]
+		index?: readonly nodeOfKind<"index">[]
+	},
+	derived: OptionalNode[],
+	disjoint: Disjoint,
+	$: BaseScope,
+	isLeft: boolean
+): void => {
+	const keys = allowedKeysOf(node)
+	for (const k of other.requiredKeys) {
+		if (keys.allows(k)) continue
+		const value = other.propsByKey[k]!.value
+		const never = $ark.intrinsic.never.internal
+		disjoint.add("presence", isLeft ? never : value, isLeft ? value : never, {
+			path: [k]
+		})
+	}
+	if (otherInner.optional)
+		otherInner.optional = otherInner.optional.filter(n => keys.allows(n.key))
+	if (otherInner.index) {
+		otherInner.index = otherInner.index.flatMap(n => {
+			if (n.signature.extends(keys)) return n
+			const overlap = intersectNodesRoot(keys, n.signature, $)
+			if (overlap instanceof Disjoint) return []
+			const normalized = normalizeIndex(overlap, n.value, $)
+			// an index's value, which a loose scope doesn't widen
+			for (const prop of normalized.required ?? [])
+				derived.push($.node("optional", prop.inner, { prereduced: true }))
+			derived.push(...(normalized.optional ?? []))
+			return normalized.index ?? []
+		})
+	}
+}
+
 export const structure: setImplementationOf<Structure.Declaration> = {
 	sort: inner => {
 		if (inner.required) inner.required = sortSiblings(inner.required)
@@ -77,75 +118,10 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 			// a prop with the same key would never be merged with them
 			const lDerived: OptionalNode[] = []
 			const rDerived: OptionalNode[] = []
-			if (l.undeclared) {
-				const lKey = allowedKeysOf(l)
-				for (const k of r.requiredKeys) {
-					if (!lKey.allows(k)) {
-						disjointResult.add(
-							"presence",
-							$ark.intrinsic.never.internal,
-							r.propsByKey[k]!.value,
-							{
-								path: [k]
-							}
-						)
-					}
-				}
-
-				if (rInner.optional)
-					rInner.optional = rInner.optional.filter(n => lKey.allows(n.key))
-				if (rInner.index) {
-					rInner.index = rInner.index.flatMap(n => {
-						if (n.signature.extends(lKey)) return n
-						const indexOverlap = intersectNodesRoot(lKey, n.signature, ctx.$)
-						if (indexOverlap instanceof Disjoint) return []
-						const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-						// an index's value, which a loose scope doesn't widen
-						for (const prop of normalized.required ?? []) {
-							rDerived.push(
-								ctx.$.node("optional", prop.inner, { prereduced: true })
-							)
-						}
-						rDerived.push(...(normalized.optional ?? []))
-						return normalized.index ?? []
-					})
-				}
-			}
-			if (r.undeclared) {
-				const rKey = allowedKeysOf(r)
-				for (const k of l.requiredKeys) {
-					if (!rKey.allows(k)) {
-						disjointResult.add(
-							"presence",
-							l.propsByKey[k]!.value,
-							$ark.intrinsic.never.internal,
-							{
-								path: [k]
-							}
-						)
-					}
-				}
-
-				if (lInner.optional)
-					lInner.optional = lInner.optional.filter(n => rKey.allows(n.key))
-				if (lInner.index) {
-					lInner.index = lInner.index.flatMap(n => {
-						if (n.signature.extends(rKey)) return n
-						const indexOverlap = intersectNodesRoot(rKey, n.signature, ctx.$)
-						if (indexOverlap instanceof Disjoint) return []
-						const normalized = normalizeIndex(indexOverlap, n.value, ctx.$)
-						// an index's value, which a loose scope doesn't widen
-						for (const prop of normalized.required ?? []) {
-							lDerived.push(
-								ctx.$.node("optional", prop.inner, { prereduced: true })
-							)
-						}
-						lDerived.push(...(normalized.optional ?? []))
-
-						return normalized.index ?? []
-					})
-				}
-			}
+			if (l.undeclared)
+				narrowToKeysOf(l, r, rInner, rDerived, disjointResult, ctx.$, true)
+			if (r.undeclared)
+				narrowToKeysOf(r, l, lInner, lDerived, disjointResult, ctx.$, false)
 
 			const baseInner: Structure.Inner.mutable = {}
 
@@ -192,42 +168,23 @@ export const structure: setImplementationOf<Structure.Declaration> = {
 		const newOptionalProps: OptionalNode[] =
 			inner.optional ? [...inner.optional] : []
 
-		// check required keys for duplicates and handle index intersections
-		if (inner.required) {
-			for (let i = 0; i < inner.required.length; i++) {
-				const requiredProp = inner.required[i]
-				const requiredKey = propertyOf(requiredProp.key)
-				if (seen.has(requiredKey))
-					throwParseError(writeDuplicateKeyMessage(requiredProp.key))
-				seen.add(requiredKey)
-
-				if (inner.index) {
-					for (const index of inner.index) {
-						const intersection = intersectPropsAndIndex(requiredProp, index, $)
-						if (intersection instanceof Disjoint) return intersection
-					}
-				}
-			}
-		}
-
-		// check optional keys for duplicates and handle index intersections
-		if (inner.optional) {
-			for (let i = 0; i < inner.optional.length; i++) {
-				const optionalProp = inner.optional[i]
-				const optionalKey = propertyOf(optionalProp.key)
-				if (seen.has(optionalKey))
-					throwParseError(writeDuplicateKeyMessage(optionalProp.key))
-				seen.add(optionalKey)
-
-				if (inner.index) {
-					for (const index of inner.index) {
-						const intersection = intersectPropsAndIndex(optionalProp, index, $)
-						if (intersection instanceof Disjoint) return intersection
-						if (intersection !== null) {
-							newOptionalProps[i] = intersection
-							updated = true
-						}
-					}
+		// required keys precede optional ones, each checked for duplicates
+		// and against index signatures
+		const required = inner.required ?? []
+		const props = inner.optional ? [...required, ...inner.optional] : required
+		for (let i = 0; i < props.length; i++) {
+			const prop = props[i]
+			const key = propertyOf(prop.key)
+			if (seen.has(key)) throwParseError(writeDuplicateKeyMessage(prop.key))
+			seen.add(key)
+			if (!inner.index) continue
+			for (const index of inner.index) {
+				const intersection = intersectPropsAndIndex(prop, index, $)
+				if (intersection instanceof Disjoint) return intersection
+				// only an optional prop narrows to a new node
+				if (intersection !== null) {
+					newOptionalProps[i - required.length] = intersection as OptionalNode
+					updated = true
 				}
 			}
 		}
