@@ -38,7 +38,7 @@ What precompiling removes is everything around those checks: the parser, the wor
 
 ## Precompile
 
-[`@ark/precompile`](/docs/precompile) is a plugin for the bundler you already run: Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun or Farm, with drivers for Node, Bun, Turbopack and Vitest.
+[`@ark/precompile`](/docs/precompile) is a plugin for the bundler you already run: Vite, Rollup, Rolldown, webpack, Rspack, esbuild, Bun or Farm, and Vitest runs tests through it. Drivers cover Node, Bun's runtime and Next's Turbopack.
 
 ```ts title="vite.config.ts"
 import { precompile } from "@ark/precompile/unplugin"
