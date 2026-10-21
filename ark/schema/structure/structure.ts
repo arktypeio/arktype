@@ -311,10 +311,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		return this.required?.map(node => node.key) ?? []
 	}
 
-	get optionalKeys(): Key[] {
-		return this.optional?.map(node => node.key) ?? []
-	}
-
 	get literalKeys(): Key[] {
 		return this.props.map(node => node.key)
 	}

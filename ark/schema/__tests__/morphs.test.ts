@@ -1,5 +1,5 @@
 import { attest, contextualize } from "@ark/attest"
-import { intrinsic, rootSchema } from "@ark/schema"
+import { intrinsic, namedReference, rootSchema } from "@ark/schema"
 import { throwError, wellFormedNumberMatcher } from "@ark/util"
 
 contextualize(() => {
@@ -65,7 +65,9 @@ contextualize(() => {
 				declared
 			}) => {
 				attest(declaredMorph.json).equals({
-					morphs: declaredMorph.assertHasKind("morph").serializedMorphs,
+					morphs: declaredMorph
+						.assertHasKind("morph")
+						.morphs.map(namedReference),
 					declaredIn: declared.json,
 					declaredOut: declared.json
 				})

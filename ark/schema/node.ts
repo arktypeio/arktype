@@ -35,7 +35,6 @@ import {
 	type requireKeys
 } from "@ark/util"
 import type { ResolvedConfig } from "./config.ts"
-import type { BaseConstraint } from "./constraint.ts"
 import type {
 	Inner,
 	childKindOf,
@@ -67,17 +66,14 @@ import {
 } from "./shared/issues.ts"
 import {
 	basisKinds,
-	constraintKinds,
 	defaultValueSerializer,
 	metaJsonOf,
 	precedenceOfKind,
-	refinementKinds,
 	rootKinds,
 	structuralKinds,
 	type BasisKind,
 	type NodeKind,
 	type OpenNodeKind,
-	type RefinementKind,
 	type StructuralKind,
 	type UnknownAttachments,
 	type UnknownAttachmentsInput
@@ -895,28 +891,12 @@ export abstract class BaseNode<
 		return kinds.includes(this.kind)
 	}
 
-	assertHasKindIn<kinds extends NodeKind[]>(
-		...kinds: kinds
-	): nodeOfKind<kinds[number]> {
-		if (!includes(kinds, this.kind))
-			throwError(`${this.kind} node was not one of asserted kinds ${kinds}`)
-		return this as never
-	}
-
 	isBasis(): this is nodeOfKind<BasisKind> {
 		return includes(basisKinds, this.kind)
 	}
 
-	isConstraint(): this is BaseConstraint {
-		return includes(constraintKinds, this.kind)
-	}
-
 	isStructural(): this is nodeOfKind<StructuralKind> {
 		return includes(structuralKinds, this.kind)
-	}
-
-	isRefinement(): this is nodeOfKind<RefinementKind> {
-		return includes(refinementKinds, this.kind)
 	}
 
 	isRoot(): this is BaseRoot {

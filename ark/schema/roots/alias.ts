@@ -182,19 +182,6 @@ Resolution: ${printable(resolution)}`)
 		return others.length < this.operands!.length ? others : undefined
 	}
 
-	get resolutionId(): NodeId {
-		if (this.resolve) return this.resolution.id
-		if (this.reference[0] !== "$") return this.reference as NodeId
-		const alias = this.reference.slice(1)
-		const resolution = this.$.resolutions[alias]
-		if (hasArkKind(resolution, "context") || hasArkKind(resolution, "root"))
-			return resolution.id
-
-		return throwInternalError(
-			`Unexpected resolution for reference ${this.reference}: ${printable(resolution)}`
-		)
-	}
-
 	get defaultShortDescription(): string {
 		return isResolutionFinal() ?
 				this.resolution.defaultShortDescription
