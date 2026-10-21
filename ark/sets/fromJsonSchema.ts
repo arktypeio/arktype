@@ -224,7 +224,7 @@ const keywordReaders: KeywordReader[] = [
 		const negated = read(o.not, `${pointer}/not`, ctx)
 		return opaqueRoot(
 			["not", negated.id],
-			`not ${negated.description}`,
+			`anything but ${negated.description}`,
 			data => !negated.allows(data)
 		)
 	},
@@ -293,7 +293,9 @@ const readArray = (
 			predicate: [
 				opaque(
 					["contains", contained.id, min, max],
-					`an array containing ${contained.description}`,
+					min === 1 && max === Number.POSITIVE_INFINITY ?
+						`an array containing ${contained.description}`
+					:	`an array with ${describeCount(min, max, "item that is", "items that are")} ${contained.description}`,
 					(data: array) => {
 						const count = data.filter(item => contained.allows(item)).length
 						return count >= min && count <= max
@@ -396,11 +398,7 @@ const readObject = (
 		structure.predicate.push(
 			opaque(
 				["properties", min, max],
-				o.maxProperties === undefined ?
-					`an object with at least ${min} properties`
-				: o.minProperties === undefined ?
-					`an object with at most ${max} properties`
-				:	`an object with ${min} to ${max} properties`,
+				`an object with ${describeCount(min, max, "property", "properties")}`,
 				(data: dict) => {
 					const count = Object.keys(data).length
 					return count >= min && count <= max
@@ -575,6 +573,22 @@ const opaqueRoot = (
 ): BaseRoot => rootSchema({ predicate: [opaque(key, description, predicate)] })
 
 const idsOf = (roots: readonly BaseRoot[]) => roots.map(root => root.id)
+
+// e.g. "at least 1 property" or "exactly 2 items that are"
+const describeCount = (
+	min: number,
+	max: number,
+	one: string,
+	many: string
+): string => {
+	const range =
+		max === Number.POSITIVE_INFINITY ? `at least ${min}`
+		: min === max ? `exactly ${min}`
+		: min === 0 ? `at most ${max}`
+		: `${min} to ${max}`
+	const count = max === Number.POSITIVE_INFINITY ? min : max
+	return `${range} ${count === 1 ? one : many}`
+}
 
 const readEach = (schemas: array, pointer: string, ctx: ReadContext) =>
 	schemas.map((schema, i) => read(schema, `${pointer}/${i}`, ctx))

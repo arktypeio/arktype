@@ -104,6 +104,18 @@ contextualize(() => {
 		attest(tContains.allows(["foo", 2, "baz"])).equals(true)
 	})
 
+	it("maxContains message", () => {
+		// JsonSchema.Array doesn't declare maxContains, though it's read
+		const T = jsonSchemaToType({
+			type: "array",
+			contains: { type: "number" },
+			maxContains: 1
+		} as never)
+		attest(() => T.assert([1, 2])).throws.snap(
+			"TraversalError: must be an array with exactly 1 item that is a number (was an array)"
+		)
+	})
+
 	it("maxItems (positive)", () => {
 		const tMaxItems = jsonSchemaToType({
 			type: "array",
