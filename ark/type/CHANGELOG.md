@@ -191,6 +191,25 @@ type("string.numeric.parse")("5.7e-10")
 
 Their JSON Schema `pattern` accepts an exponent too. `string.integer` still doesn't, since `string.integer.parse` reads only digits.
 
+### Discriminate by each value of a literal union
+
+A union of objects discriminated by a key checked only branches whose value there was a single literal. A branch whose value was a union of literals became the default, so data matching no branch was reported as failing that one (#1435, #1491):
+
+```ts
+const T = type.or(
+	{ type: "'a'", val1: "number" },
+	{ type: "'b'", val2: "number" },
+	{ type: "'c' | 'd'", val3: "number" }
+)
+
+// was: ArkErrors: type must be "c" or "d" (was "e")
+//      val3 must be a number (was missing)
+// now: ArkErrors: type must be "c", "d", "a" or "b" (was "e")
+T({ type: "e" })
+```
+
+Each of those literals is now a case of its own, so such data fails at the key with every value it allows, and data matching one of them is checked only against the branches that allow it.
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:

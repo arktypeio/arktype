@@ -511,6 +511,99 @@ contextualize(() => {
 		attest(T({ a: "x", b: 1 })).equals({ a: "x", b: 1 })
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1435
+	it("splits a literal union at the discriminant into cases", () => {
+		const T = type.or(
+			{ type: "'a'", val1: "number" },
+			{ type: "'b'", val2: "number" },
+			{ type: "'c' | 'd'", val3: "number" }
+		)
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
+			kind: "unit",
+			path: ["type"],
+			cases: {
+				'"c"': {
+					required: [
+						{ key: "type", value: [{ unit: "c" }, { unit: "d" }] },
+						{ key: "val3", value: "number" }
+					]
+				},
+				'"d"': {
+					required: [
+						{ key: "type", value: [{ unit: "c" }, { unit: "d" }] },
+						{ key: "val3", value: "number" }
+					]
+				},
+				'"a"': { required: [{ key: "val1", value: "number" }] },
+				'"b"': { required: [{ key: "val2", value: "number" }] }
+			}
+		})
+		attest(T({ type: "e" }).toString()).snap(
+			'type must be "c", "d", "a" or "b" (was "e")'
+		)
+		attest(T({ type: "d" }).toString()).snap(
+			"val3 must be a number (was missing)"
+		)
+		attest(T({ type: "d", val3: 1 })).equals({ type: "d", val3: 1 })
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1491
+	it("splits literal unions on either side into cases", () => {
+		const T = type({ tag: "'a'", a: "number" }).or({
+			tag: "'b' | 'c'",
+			bc: "string"
+		})
+		attest(T({}).toString()).snap('tag must be "a", "b" or "c" (was undefined)')
+		attest(T({ tag: "c" }).toString()).snap("bc must be a string (was missing)")
+	})
+
+	it("a unit in two branches' literal unions is a case of both", () => {
+		const T = type.or(
+			{ k: "'a' | 'b'", n: "number" },
+			{ k: "'c'" },
+			{ k: "'b' | 'd'", n: "string" }
+		)
+		attest(discriminantJsonOf(T.internal.assertHasKind("union"))).snap({
+			kind: "unit",
+			path: ["k"],
+			cases: {
+				'"a"': {
+					required: [
+						{ key: "k", value: [{ unit: "a" }, { unit: "b" }] },
+						{ key: "n", value: "number" }
+					]
+				},
+				'"b"': {
+					kind: "domain",
+					path: ["n"],
+					cases: {
+						'"number"': {
+							required: [
+								{ key: "k", value: [{ unit: "a" }, { unit: "b" }] },
+								{ key: "n", value: "number" }
+							]
+						},
+						'"string"': {
+							required: [{ key: "k", value: [{ unit: "b" }, { unit: "d" }] }]
+						}
+					}
+				},
+				'"c"': true,
+				'"d"': {
+					required: [
+						{ key: "k", value: [{ unit: "b" }, { unit: "d" }] },
+						{ key: "n", value: "string" }
+					]
+				}
+			}
+		})
+		attest(T({ k: "b", n: 1 })).equals({ k: "b", n: 1 })
+		attest(T({ k: "b", n: "x" })).equals({ k: "b", n: "x" })
+		attest(T({ k: "b" }).toString()).snap(
+			"n must be a number or a string (was undefined)"
+		)
+	})
+
 	it("dimscrinate literal undefined value", () => {
 		const T = type(["number[]", "|", ["undefined"]])
 
