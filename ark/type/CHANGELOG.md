@@ -244,6 +244,22 @@ Email("")
 
 Errors whose messages differ, or that weren't all configured with one, are still written from what they expected, as is a union or intersection configured with a message of its own. A message `ctx.reject` supplied counts as configured.
 
+### Keep defaults in `~standard.jsonSchema.input`
+
+`~standard.jsonSchema.input` wrote the schema of a Type's `in`, which has no defaults, so a key's `default` was dropped. It now writes the Type as it's accepted (#1575):
+
+```ts
+const T = type({ name: 'string = "Anon"' })
+
+// was: { type: "object", properties: { name: { type: "string" } } }
+// now: { type: "object", properties: { name: { type: "string", default: "Anon" } } }
+T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
+```
+
+`input` writes each morph's input rather than calling a configured `morph` fallback, and no longer writes `additionalProperties: false` for `"+": "delete"`, whose input may have the keys it removes. `output` and `toJsonSchema()` are unchanged.
+
+Thanks to @ybai08 for #1695.
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:

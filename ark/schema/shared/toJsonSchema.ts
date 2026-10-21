@@ -357,5 +357,7 @@ export declare namespace ToJsonSchema {
 
 	export interface Context extends Required<Options> {
 		fallback: HandlerByCode
+		/** set by ~standard.jsonSchema.input to write a Type as it's accepted */
+		io?: "in"
 	}
 }

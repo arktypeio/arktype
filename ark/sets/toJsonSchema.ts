@@ -185,14 +185,20 @@ const innerToJsonSchemaByKind: {
 		}
 	},
 	morph: (node, ctx) =>
-		ctx.fallback.morph({
-			code: "morph",
-			base: toJsonSchemaRecurse(node.rawIn, ctx),
-			out:
-				node.introspectableOut ?
-					toJsonSchemaRecurse(node.introspectableOut, ctx)
-				:	null
-		}),
+		ctx.io === "in" ?
+			// its input as written, since rawIn drops the defaults it holds
+			toJsonSchemaRecurse(
+				node.declaredIn ?? node.inner.in ?? $ark.intrinsic.unknown.internal,
+				ctx
+			)
+		:	ctx.fallback.morph({
+				code: "morph",
+				base: toJsonSchemaRecurse(node.rawIn, ctx),
+				out:
+					node.introspectableOut ?
+						toJsonSchemaRecurse(node.introspectableOut, ctx)
+					:	null
+			}),
 	unit: (node, ctx) =>
 		// this is the more standard JSON schema representation, especially for Open API
 		node.unit === null ? { type: "null" }
@@ -300,14 +306,16 @@ const reduceObjectJsonSchema = (
 				if (keyBranch.hasKind("morph")) {
 					keyIn = keyBranch.rawIn
 					// a key's schema can't be a $ref
-					keySchema = ctx.fallback.morph({
-						code: "morph",
-						base: toResolvedJsonSchema(keyBranch.rawIn, ctx),
-						out:
-							keyBranch.introspectableOut ?
-								toResolvedJsonSchema(keyBranch.introspectableOut, ctx)
-							:	null
-					}) as never
+					if (ctx.io !== "in") {
+						keySchema = ctx.fallback.morph({
+							code: "morph",
+							base: toResolvedJsonSchema(keyBranch.rawIn, ctx),
+							out:
+								keyBranch.introspectableOut ?
+									toResolvedJsonSchema(keyBranch.introspectableOut, ctx)
+								:	null
+						}) as never
+					}
 				}
 
 				const pattern = keyPatternOf(keyIn, ctx)
@@ -325,9 +333,14 @@ const reduceObjectJsonSchema = (
 		}
 	}
 
+	// an input may have the keys "delete" would remove
+	const rejectsUndeclared =
+		node.undeclared === "reject" ||
+		(node.undeclared === "delete" && ctx.io !== "in")
+
 	if (
 		indexKeys.length === 1 &&
-		node.undeclared &&
+		rejectsUndeclared &&
 		!schema.patternProperties &&
 		node.props.every(
 			prop => typeof prop.key === "symbol" || indexKeys[0].node.allows(prop.key)
@@ -350,7 +363,7 @@ const reduceObjectJsonSchema = (
 		delete schema.patternProperties
 	}
 
-	if (node.undeclared && !schema.additionalProperties)
+	if (rejectsUndeclared && !schema.additionalProperties)
 		schema.additionalProperties = false
 
 	for (const { key, value } of indexKeys) {

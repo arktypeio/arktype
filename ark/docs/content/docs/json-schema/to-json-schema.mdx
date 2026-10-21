@@ -293,3 +293,4 @@ Unlike `toJsonSchema()`, these never throw for a part JSON Schema can't express.
 - `target` must be `"draft-2020-12"` or `"draft-07"`. Anything else throws.
 - `libraryOptions` are passed to `toJsonSchema()` as options, e.g. `{ dialect: null }`.
 - Fallback handlers you configure or pass in `libraryOptions` still apply. Only the default throwing handlers are replaced.
+- `input` writes each morph's input, so it never calls a `morph` handler. It keeps defaults, and allows keys `"+": "delete"` would remove.
