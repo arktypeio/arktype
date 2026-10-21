@@ -4,7 +4,7 @@ import {
 	type StandardJSONSchemaV1,
 	type ToJsonSchema
 } from "@ark/schema"
-import { printable, throwParseError } from "@ark/util"
+import { hasDomain, printable, throwParseError } from "@ark/util"
 import {
 	isPlainObject,
 	readJsonSchema,
@@ -36,6 +36,8 @@ export const parse = (schema: Schema, options?: ParseOptions): Root => {
 		return io === "in" ? schema.rawIn : schema.rawOut
 	if (typeof schema === "boolean" || options?.root)
 		return readJsonSchema(schema, options?.root)
+	if (!hasDomain(schema, "object"))
+		return throwParseError(writeUnparsableSchemaMessage(printable(schema)))
 	let root = rootsByIo[io].get(schema)
 	if (!root) rootsByIo[io].set(schema, (root = parseObject(schema, io)))
 	return root
@@ -49,7 +51,8 @@ export const toJsonSchema = (
 
 const parseObject = (schema: object, io: "in" | "out"): BaseRoot => {
 	if ("~standard" in schema) {
-		const converter = (schema as StandardJSONSchemaV1)["~standard"].jsonSchema
+		const standard = (schema as StandardJSONSchemaV1)["~standard"]
+		const converter = standard.jsonSchema
 		return converter ?
 				readJsonSchema(
 					converter[io === "in" ? "input" : "output"]({
@@ -57,7 +60,9 @@ const parseObject = (schema: object, io: "in" | "out"): BaseRoot => {
 					})
 				)
 			:	throwParseError(
-					writeUnparsableSchemaMessage("a Standard Schema without jsonSchema")
+					writeUnparsableSchemaMessage(
+						`a ${standard.vendor} Standard Schema without ~standard.jsonSchema`
+					)
 				)
 	}
 	return isPlainObject(schema) ?

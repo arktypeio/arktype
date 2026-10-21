@@ -1,6 +1,6 @@
 # arksets
 
-Set algebra for schemas in any format. arksets reads an arktype Type, a Standard JSON Schema (zod, valibot, ...) or a JSON Schema as the set of values it accepts, relates and combines those sets with arktype's algebra, and writes them back out as JSON Schema.
+Set algebra for schemas in any format. arksets reads an arktype Type, a Standard JSON Schema (e.g. zod) or a JSON Schema as the set of values it accepts, relates and combines those sets with arktype's algebra, and writes them back out as JSON Schema.
 
 ```ts
 import { discriminate, intersect, isSubset, toJsonSchema } from "arksets"
@@ -28,6 +28,8 @@ Relations are sound: `true` is a proof, and `false` means it couldn't be proven,
 ## API
 
 Every argument is a `Schema`: a Root (an `@ark/schema` node, which every arktype Type is), a Standard JSON Schema, or a JSON Schema object or boolean.
+
+A Standard JSON Schema is a schema whose `~standard` has `jsonSchema`, e.g. from zod 4.2.0 or later. Pass any other library's schema as its JSON Schema, e.g. `z.toJSONSchema(schema)` before zod 4.2.0. Anything else throws a `ParseError`.
 
 | function                      | returns                                                           |
 | ----------------------------- | ----------------------------------------------------------------- |

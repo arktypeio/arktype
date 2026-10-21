@@ -136,7 +136,29 @@ contextualize(() => {
 		attest(() =>
 			parse({ "~standard": { version: 1, vendor: "valibot" } } as never)
 		).throws(
-			writeUnparsableSchemaMessage("a Standard Schema without jsonSchema")
+			writeUnparsableSchemaMessage(
+				"a valibot Standard Schema without ~standard.jsonSchema"
+			)
+		)
+	})
+
+	it("throws a ParseError on a primitive", () => {
+		attest(() => parse(5 as never)).throws.snap(
+			"ParseError: Schema must be a Root, a Standard JSON Schema or a JSON Schema (was 5)"
+		)
+		attest(() => parse(null as never)).throws(
+			writeUnparsableSchemaMessage("null")
+		)
+		attest(() => parse(Symbol("foo") as never)).throws(
+			writeUnparsableSchemaMessage("Symbol(foo)")
+		)
+	})
+
+	it("reads a callable Standard JSON Schema", () => {
+		const Callable = Object.assign(() => {}, standardSchema({ type: "string" }))
+		attest(parse(Callable).expression).snap("string")
+		attest(() => parse((() => {}) as never)).throws(
+			writeUnparsableSchemaMessage("Function(fn)")
 		)
 	})
 
