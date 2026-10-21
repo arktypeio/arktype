@@ -265,19 +265,7 @@ const reduceObjectJsonSchema = (
 				continue
 			}
 
-			if (prop.hasDefault()) {
-				const value =
-					typeof prop.default === "function" ? prop.default() : prop.default
-				const jsonDefault =
-					$ark.intrinsic.jsonData.allows(value) ?
-						value
-					:	ctx.fallback.defaultValue({
-							code: "defaultValue",
-							base: valueSchema,
-							value
-						})
-				if (jsonDefault !== undefined) valueSchema.default = jsonDefault
-			}
+			if (prop.hasDefault()) writeDefault(valueSchema, prop.default, ctx)
 
 			schema.properties![prop.key] = valueSchema
 		}
@@ -412,6 +400,25 @@ const isJsonSchemaPattern = (
 			(flag === "u" && ctx.target === "draft-2020-12")
 	)
 
+// a thunk's default is the value it returns
+const writeDefault = (
+	schema: JsonSchema,
+	defaultInput: unknown,
+	ctx: JsonSchemaContext
+): void => {
+	const value =
+		typeof defaultInput === "function" ? defaultInput() : defaultInput
+	const jsonDefault =
+		$ark.intrinsic.jsonData.allows(value) ?
+			value
+		:	ctx.fallback.defaultValue({
+				code: "defaultValue",
+				base: schema,
+				value
+			})
+	if (jsonDefault !== undefined) schema.default = jsonDefault
+}
+
 const reduceSequenceJsonSchema = (
 	node: Sequence.Node,
 	schema: JsonSchema.Array,
@@ -422,19 +429,7 @@ const reduceSequenceJsonSchema = (
 	if (node.prevariadic.length) {
 		const prefixSchemas = node.prevariadic.map(el => {
 			const valueSchema = toJsonSchemaRecurse(el.node, ctx)
-			if (el.kind === "defaultables") {
-				const value =
-					typeof el.default === "function" ? el.default() : el.default
-				const jsonDefault =
-					$ark.intrinsic.jsonData.allows(value) ?
-						value
-					:	ctx.fallback.defaultValue({
-							code: "defaultValue",
-							base: valueSchema,
-							value
-						})
-				if (jsonDefault !== undefined) valueSchema.default = jsonDefault
-			}
+			if (el.kind === "defaultables") writeDefault(valueSchema, el.default, ctx)
 			return valueSchema
 		})
 

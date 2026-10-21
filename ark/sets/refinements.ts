@@ -2,6 +2,7 @@ import {
 	$ark,
 	Disjoint,
 	type After,
+	type BaseRange,
 	type Before,
 	type Divisor,
 	type ExactLength,
@@ -14,6 +15,10 @@ import {
 	type Predicate
 } from "@ark/schema"
 import type { setImplementationOf } from "./implement.ts"
+
+// of two bounds of a kind, the one that rules out more
+const stricter = (l: BaseRange<any>, r: BaseRange<any>): never =>
+	(l.isStricterThan(r as never) ? l : r) as never
 
 export const pattern: setImplementationOf<Pattern.Declaration> = {
 	intersections: {
@@ -69,7 +74,7 @@ export const exactLength: setImplementationOf<ExactLength.Declaration> = {
 
 export const max: setImplementationOf<Max.Declaration> = {
 	intersections: {
-		max: (l, r) => (l.isStricterThan(r) ? l : r),
+		max: stricter,
 		min: (max, min, ctx) =>
 			max.overlapsRange(min) ?
 				max.overlapIsUnit(min) ?
@@ -81,7 +86,7 @@ export const max: setImplementationOf<Max.Declaration> = {
 
 export const min: setImplementationOf<Min.Declaration> = {
 	intersections: {
-		min: (l, r) => (l.isStricterThan(r) ? l : r)
+		min: stricter
 	}
 }
 
@@ -89,7 +94,7 @@ export const maxLength: setImplementationOf<MaxLength.Declaration> = {
 	reduce: (inner, $) =>
 		inner.rule === 0 ? $.node("exactLength", inner) : undefined,
 	intersections: {
-		maxLength: (l, r) => (l.isStricterThan(r) ? l : r),
+		maxLength: stricter,
 		minLength: (max, min, ctx) =>
 			max.overlapsRange(min) ?
 				max.overlapIsUnit(min) ?
@@ -106,13 +111,13 @@ export const minLength: setImplementationOf<MinLength.Declaration> = {
 			($ark.intrinsic.unknown as IntersectionNode)
 		:	undefined,
 	intersections: {
-		minLength: (l, r) => (l.isStricterThan(r) ? l : r)
+		minLength: stricter
 	}
 }
 
 export const before: setImplementationOf<Before.Declaration> = {
 	intersections: {
-		before: (l, r) => (l.isStricterThan(r) ? l : r),
+		before: stricter,
 		after: (before, after, ctx) =>
 			before.overlapsRange(after) ?
 				before.overlapIsUnit(after) ?
@@ -124,7 +129,7 @@ export const before: setImplementationOf<Before.Declaration> = {
 
 export const after: setImplementationOf<After.Declaration> = {
 	intersections: {
-		after: (l, r) => (l.isStricterThan(r) ? l : r)
+		after: stricter
 	}
 }
 
