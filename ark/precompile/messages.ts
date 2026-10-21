@@ -72,6 +72,8 @@ export const copiesHint =
 export const writeUnsureHint = (fix: string): string =>
 	`If it isn't a Type, annotate it with its type. If it is, ${fix}.`
 
+export const derivedHint = `If it isn't a Type, read it off a value the build can tell from a Type, like a Module defined in a const as \`scope({ ... }).export()\`. If it is, build with runtime: "arktype".`
+
 export const hintsByRule: Record<Exclude<Rule, "syntax">, string> = {
 	R1: `Standalone builds construct every Type at build time. Make it static, or build with runtime: "arktype".`,
 	R2: "arktype runs this callback while defining the type, so the build computes its result. Make it a static helper: one expression or one `return` in the static subset.",

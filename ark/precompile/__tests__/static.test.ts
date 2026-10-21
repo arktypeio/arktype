@@ -403,6 +403,54 @@ const F = users.User.or(list[1])`,
 			])
 		})
 
+		it("data validated by a Module's Type", () => {
+			attest(
+				diagnosticsOf(`import { scope, type } from "arktype"
+const shop = scope({ Id: "string", Cart: { owner: "Id", items: "string[]" } }).export()
+const { Cart } = shop
+export const upper = (data: unknown) =>
+	shop.Cart.assert(data).items.map(i => i.toUpperCase())
+export const messages = (data: unknown) => {
+	const out = Cart(data)
+	return out instanceof type.errors ? out.issues.map(i => i.message) : out.items.filter(Boolean)
+}`)
+			).equals([])
+		})
+
+		it("data validated by a submodule's Type", () => {
+			attest(
+				diagnosticsOf(`import { scope, type } from "arktype"
+const nested = type.module({ Line: { sku: "string" } })
+const shop = scope({ nested, "Box<t>": { of: "t" } }).export()
+export const skus = (data: unknown[]) =>
+	shop.nested.Line.array().assert(data).map(line => line.sku)`)
+			).equals([])
+		})
+
+		it("a Module's Generic called at runtime", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+const shop = scope({ "Box<t>": { of: "t" } }).export()
+export const box = (t: string) => shop.Box(t).array()`)
+			).snap([
+				'/main.ts:3:44  `t` is not static, so the site accepts it only as a Standard Schema that is not a Type\n  `t` is a parameter of box (/main.ts:3:21); its value is known only at runtime\n  Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".'
+			])
+		})
+
+		it("a Type destructured in a for-of", () => {
+			attest(
+				diagnosticsOf(`import { type } from "arktype"
+const User = type({ name: "string" })
+const cases = [["u", User]] as const
+export const check = (data: unknown) => {
+	for (const [, t] of cases) {
+		const out = t(data)
+		if (out instanceof type.errors) return out.issues.map(i => i.message)
+	}
+}`)
+			).equals([])
+		})
+
 		it("a Type passed to an opaque helper", () => {
 			attest(
 				statusesOf(`import { scope, type } from "arktype"
@@ -1136,7 +1184,7 @@ function write(value) {
 }
 write({ m0: type("string") })`)
 			).snap([
-				"/main.ts:12:14  value.m0.or reads or, which a standalone validator lacks\n  the build can't tell where `value.m0` comes from, so it may be a Type, which the standalone runtime replaces with a validator"
+				"/main.ts:12:14  value.m0.or reads or, which a standalone validator lacks\n  `value.m0` is read off what may be an arktype value, so it may be a Type, which the standalone runtime replaces with a validator"
 			])
 		})
 
@@ -1447,6 +1495,16 @@ console.log(values.map(v => (v as any).from))`,
 					attest(() => new Precompiler(memoryHost({}), opts)).throws(message)
 				})
 			}
+		})
+
+		it("a container method read off a Module the build can't read", () => {
+			attest(
+				diagnosticsOf(`import { scope } from "arktype"
+const M = (Math.random() > 0.5 ? scope({ Cart: { items: "string[]" } }) : scope({ Cart: { items: "number[]" } })).export()
+export const items = (data: unknown) => M.Cart.assert(data).items.map(i => i)`)
+			).snap([
+				'/main.ts:3:41  M.Cart.assert(data).items.map reads map, which a standalone validator lacks\n  `M.Cart.assert(data).items` is read off what may be an arktype value, so it may be a Type, which the standalone runtime replaces with a validator\n  If it isn\'t a Type, read it off a value the build can tell from a Type, like a Module defined in a const as `scope({ ... }).export()`. If it is, build with runtime: "arktype".'
+			])
 		})
 
 		it("reflection on a Type outside any site", () => {
