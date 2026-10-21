@@ -23,29 +23,27 @@ const collectTarget = async (ref: WeakRef<object>) => {
 
 contextualize(() => {
 	it("collects unreferenced types, scopes and schemas", async () => {
-		const refs = [
-			new WeakRef(type({ collected: "string", n: "number > 5" })),
-			new WeakRef(
+		// created outside this async function, whose suspended frame can hold
+		// the last value it created
+		const create = (): Record<string, WeakRef<object>> => ({
+			type: new WeakRef(type({ collected: "string", n: "number > 5" })),
+			exported: new WeakRef(
 				scope({
 					a: { collectedDefault: "string = 'gc'" },
 					b: ["string", "number = 1234"]
 				}).export().a
 			),
-			new WeakRef(scope({ a: { collected: "string" } })),
-			new WeakRef(
+			scope: new WeakRef(scope({ a: { collected: "string" } })),
+			schema: new WeakRef(
 				rootSchema({
 					domain: "object",
 					required: [{ key: "collectedSchema", value: "string" }]
 				})
 			)
-		]
-		for (const ref of refs) await collectTarget(ref)
-		attest(refs.map(ref => ref.deref())).equals([
-			undefined,
-			undefined,
-			undefined,
-			undefined
-		])
+		})
+		const refs = create()
+		for (const ref of Object.values(refs)) await collectTarget(ref)
+		attest(Object.keys(refs).filter(k => refs[k].deref())).equals([])
 		const T = type({ collected: "string", n: "number > 5" })
 		attest(T({ collected: "a", n: 6 })).equals({ collected: "a", n: 6 })
 		attest(T({ collected: "a", n: 5 }).toString()).snap(
