@@ -64,15 +64,24 @@ export const regexStringNode = (
 	return node("intersection", input) as never
 }
 
-// a string its keyword's predicate checks
+// a string its keyword's predicate checks, written in JSON Schema as jsonSchema
 const predicateStringNode = (
 	predicate: Predicate,
 	alias: KeywordPhraseAlias,
+	jsonSchema?: JsonSchema,
 	meta?: ArkEnv.meta
 ): Intersection.Node =>
 	node("intersection", {
 		domain: node("domain", { domain: "string" }),
-		predicate: [node("predicate", { meta: keywordMeta(alias), predicate })],
+		predicate: [
+			node("predicate", {
+				meta:
+					jsonSchema ?
+						{ ...keywordMeta(alias), jsonSchema }
+					:	keywordMeta(alias),
+				predicate
+			})
+		],
 		...(meta && { meta })
 	}) as never
 
@@ -437,7 +446,12 @@ export declare namespace ip {
 }
 
 const jsonRoot = () =>
-	predicateStringNode(isJsonString, "string.json", keywordMeta("string.json"))
+	predicateStringNode(
+		isJsonString,
+		"string.json",
+		{ type: "string", contentMediaType: "application/json" },
+		keywordMeta("string.json")
+	)
 
 export const json: stringJson.module = keywordModule(
 	{
@@ -740,8 +754,7 @@ declare namespace upper {
 }
 
 const urlRoot = cached(() =>
-	// URL.canParse allows a subset of the RFC-3986 URI spec
-	// since there is no other serializable validation, best include a format
+	// URL.canParse and RFC 3986 differ only at the edges, e.g. a space in a path
 	predicateStringNode(isParsableUrl, "string.url", { format: "uri" })
 )
 

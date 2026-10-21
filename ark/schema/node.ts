@@ -1164,6 +1164,21 @@ export abstract class BaseNode<
 	): this {
 		const normalized = NodeSelector.normalize(selector)
 
+		// a JSON Schema describes the node it's configured on, not its references
+		if (
+			typeof meta === "object" &&
+			meta.jsonSchema &&
+			normalized.boundary !== "self" &&
+			!normalized.kind &&
+			!normalized.where
+		) {
+			const { jsonSchema, ...rest } = meta
+			return this.configureReferences(rest, selector).configureReferences(
+				{ jsonSchema },
+				"self"
+			)
+		}
+
 		const mapper = (
 			typeof meta === "string" ?
 				(kind, inner) => ({

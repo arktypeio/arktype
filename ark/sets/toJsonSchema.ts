@@ -95,14 +95,15 @@ const toResolvedJsonSchema = (
 	node: BaseRoot,
 	ctx: JsonSchemaContext
 ): JsonSchema => {
-	const result = innerToJsonSchemaByKind[node.kind](
-		node as never,
-		ctx
-	) as JsonSchema & dict
+	const { jsonSchema } = node.meta
+	const result: JsonSchema & dict =
+		jsonSchema ?
+			{}
+		:	(innerToJsonSchemaByKind[node.kind](node as never, ctx) as never)
 
 	for (const k in node.meta) {
 		// keyword identifies arktype's own phrase, which JSON Schema has no key for
-		if (k === "keyword") continue
+		if (k === "keyword" || k === "jsonSchema") continue
 		const v = (node.meta as dict)[k]
 		// JSON can't represent a function like a message writer
 		if (typeof v === "function" && k !== "default") continue
@@ -121,7 +122,7 @@ const toResolvedJsonSchema = (
 		if (jsonValue !== undefined) result[k] = jsonValue
 	}
 
-	return result
+	return jsonSchema ? Object.assign(result, jsonSchema) : result
 }
 
 // a union's true and false branches are written as one boolean
@@ -202,9 +203,9 @@ const innerToJsonSchemaByKind: {
 		node.children.reduce<JsonSchema>(
 			// cast is required since TS doesn't know children have compatible schema prerequisites
 			(schema, child) =>
-				child.isBasis() ?
-					toJsonSchemaRecurse(child, ctx)
-				:	reduceJsonSchemaByKind[child.kind](
+				child.isBasis() ? toJsonSchemaRecurse(child, ctx)
+				: child.meta.jsonSchema ? Object.assign(schema, child.meta.jsonSchema)
+				: reduceJsonSchemaByKind[child.kind](
 						child as never,
 						schema as never,
 						ctx

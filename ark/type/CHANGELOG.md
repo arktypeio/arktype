@@ -72,6 +72,32 @@ User(5)
 
 Its value is a description or a meta object. Escape a key named `@` as `"\\@"`, as with `+` and `...`. In 2.2.9, `"@"` was an ordinary key.
 
+### Write a Type's JSON Schema with `jsonSchema` meta
+
+`jsonSchema` meta replaces the JSON Schema a Type's constraints imply, so `toJsonSchema()` writes it rather than throwing for a narrow:
+
+```ts
+const Even = type("number")
+	.narrow(n => n % 2 === 0)
+	.configure({ jsonSchema: { type: "integer", multipleOf: 2 } })
+
+// { $schema: "...", type: "integer", multipleOf: 2 }
+Even.toJsonSchema()
+```
+
+The Type's other meta, like a description, is still written beside it. Unlike other meta, `jsonSchema` is configured on the Type alone, not on the Types it references. In 2.2.9, `toJsonSchema()` wrote `meta.jsonSchema` as an ordinary key.
+
+### Write `string.url`, `string.regex` and `string.json` in JSON Schema
+
+`toJsonSchema()` threw a `predicate` error for them. They're now written as `format: "uri"`, `format: "regex"` and `contentMediaType: "application/json"`, wherever they're constrained further, as in `"string.url < 100"`:
+
+```ts
+// { $schema: "...", type: "string", maxLength: 99, format: "uri" }
+type("string.url < 100").toJsonSchema()
+```
+
+A JSON Schema validator checks neither keyword unless it's configured to. `string.url` checks `URL.canParse`, which differs from the `uri` format's RFC 3986 at the edges: it accepts a space in a path and rejects a port past 65535. `string.date` still throws, since it accepts whatever `Date` parses, which no format describes.
+
 ### Return errors as plain objects
 
 The errors in an `ArkErrors`' `issues` are plain objects without getters or methods. Each has the keys its JSON had, in the same order, with `propString` before `expected`:

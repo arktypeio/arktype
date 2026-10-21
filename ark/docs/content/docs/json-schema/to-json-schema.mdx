@@ -110,6 +110,8 @@ const schema = types.Node.toJsonSchema()
 | `["string", "number?"]`                               | `prefixItems`, `minItems: 1`, `items: false`        |
 | `/^a/`                                                | `pattern: "^a"`                                     |
 | `"string.email"`                                      | `pattern`, `format: "email"`                        |
+| `"string.url"`, `"string.regex"`                      | `format: "uri"`, `format: "regex"`                  |
+| `"string.json"`                                       | `contentMediaType: "application/json"`              |
 | `"'a' \| 'b'"`                                        | `enum: ["a", "b"]`                                  |
 | `"string \| null"`                                    | `anyOf`                                             |
 | `{ "name?": "string" }`                               | `properties`, with only required keys in `required` |
@@ -125,7 +127,23 @@ JSON Schema's `pattern` has no flags. `d` and `g` don't change what a regex matc
 
 An index signature applies to every key, including declared ones. JSON Schema skips declared keys in `additionalProperties`, so an index signature next to declared keys is written as `patternProperties` with a pattern every key matches.
 
+A JSON Schema validator doesn't check `format` or `contentMediaType` unless it's configured to. `string.url` checks `URL.canParse`, which differs from the `uri` format's RFC 3986 at the edges: it accepts a space in a path and rejects a port past 65535. `string.date` accepts whatever `Date` parses, which no format describes, so it goes to the [`predicate`](#fallback-codes) fallback.
+
 A key that isn't `string` or a single regex, like `[string <= 3]`, needs `propertyNames`, which checks every key of the object. That's only the same thing when every key must match it: undeclared keys are rejected, it's the only index signature, and every declared key matches it. Any other such key goes to the [`indexKey`](#fallback-codes) fallback.
+
+## Your own schema
+
+Configure `jsonSchema` meta to write a Type's schema yourself. It replaces the schema the Type's constraints imply, so a `narrow` it covers needs no fallback:
+
+```ts
+const Even = type("number")
+	.narrow(n => n % 2 === 0)
+	.configure({ jsonSchema: { type: "integer", multipleOf: 2 } })
+
+Even.toJsonSchema() // { $schema: "...", type: "integer", multipleOf: 2 }
+```
+
+The Type's other meta, like a description, is still written beside it. Unlike other meta, `jsonSchema` is configured on the Type alone, not on the Types it references, since it describes the whole Type.
 
 ## Fallbacks
 
