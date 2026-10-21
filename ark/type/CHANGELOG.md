@@ -1468,6 +1468,24 @@ T.encode(T.assert({ tag: "Foo Bar" }))
 
 Their descriptions are now "lowercase" and "uppercase".
 
+### Make `.strings` on a matcher stable
+
+`.strings` on a matcher with an input, from `.in(...)` or `.at(key)`, matches each key as a string value rather than a definition, so a key needs no quotes and `number` matches the string `"number"`. Its types are much cheaper to check than `.match` with quoted literals (#1334):
+
+```ts
+const area = match
+	.in<{ kind: "circle"; r: number } | { kind: "square"; side: number }>()
+	.at("kind")
+	.strings({
+		circle: c => Math.PI * c.r ** 2,
+		square: s => s.side ** 2,
+		default: "assert"
+	})
+
+// 4
+area({ kind: "square", side: 2 })
+```
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

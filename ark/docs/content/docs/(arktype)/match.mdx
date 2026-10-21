@@ -119,6 +119,27 @@ describe({ count: 3 })
 
 `match.at(key, cases)` does the same in one call.
 
+## String values with `strings`
+
+`.strings(cases)` treats each key as a string value rather than a definition, so a key needs no quotes and `number` matches the string `"number"`. It follows `.in(...)` or `.at(key)`, and a key that isn't a possible value of the input is a type error. Its types are much cheaper to check than `.match` with quoted string literals:
+
+```ts
+import { match } from "arktype"
+
+type Shape = { kind: "circle"; r: number } | { kind: "square"; side: number }
+
+const area = match
+	.in<Shape>()
+	.at("kind")
+	.strings({
+		circle: c => Math.PI * c.r ** 2,
+		square: s => s.side ** 2,
+		default: "assert"
+	})
+
+area({ kind: "square", side: 2 }) // 4
+```
+
 ## Scoped aliases
 
 `match` resolves the same keywords as `type`. To match on your own aliases, use the `match` method of your [scope](/docs/scopes):
