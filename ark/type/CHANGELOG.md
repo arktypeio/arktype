@@ -112,7 +112,7 @@ flatProblemsByPath(out)
 
 An error at a `__proto__` path is an own key of the plain objects `flatByPath` and `flatProblemsByPath` return, where previously it set their prototype.
 
-`ArkErrors`' `message`, `transform`, `merge`, `add` and `toTraversalError` are gone: read `summary`, and call `throw()`. A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`, and a morph returning another validation's `ArkErrors` adds them at its path. A morph fails by returning an `ArkErrors` or an error `ctx.error` returned during its own call. Any other error it returns, like one an earlier morph added or another validation's, is its output, where it failed the morph before. `@ark/schema`'s `ArkErrorResult` type is gone, since a morph's failure is always an `ArkErrors`.
+`ArkErrors.message`, added in 2.2.6, is gone: read `summary`. `transform`, `merge`, `add` and `toTraversalError` are gone too: call `throw()`. A callback adds an error with `ctx.error` or `ctx.reject` rather than `ctx.errors.add`, and a morph returning another validation's `ArkErrors` adds them at its path. A morph fails by returning an `ArkErrors` or an error `ctx.error` returned during its own call. Any other error it returns, like one an earlier morph added or another validation's, is its output, where it failed the morph before. `@ark/schema`'s `ArkErrorResult` type is gone, since a morph's failure is always an `ArkErrors`.
 
 - Errors' text is written when they are first read, through `issues`, `summary`, `toString()`, `toJSON()`, `throw()` or Standard Schema's `issues`, so a configured writer is called once per error, where it was called at each read. A union or intersection whose locale has no `expected` for it is described in en, which writes its errors' `expected`, and a union's errors' `actual`, in en too. A locale function is called once per `ArkErrors`, at that read, where each read called it, so errors read after the language changed were written in the new one.
 - An error has no `toJSON()`, so `JSON.stringify(error)`, or of an `ArkErrors`' or Standard Schema's `issues`, serializes its own keys: a symbol key in its path is `null`, a bigint, like one in a discriminant's `cases`, throws, and `cases`, `cause`, `missing`, `valueMeta`, `predicate` and `morph`, which `toJSON()` leaves out, are included. `out.toJSON()` is the JSON it was, plus each error's `propString`, and its paths are plain arrays holding a symbol key as the string `Symbol(name)`, as a `ReadonlyPath` serialized it.
@@ -753,7 +753,7 @@ type("string.trim").json.morphs
 
 ### Fix global config when the first Type is created
 
-Global config is read when the first Type is created rather than when arktype is imported, so `configure()` must run before any Type is created, but can follow any import of `arktype` or `@ark/schema`, including `./internal/*` deep imports. `configure` can be imported from `"arktype"` as well as `"arktype/config"`. A `configure` call after a Type has been created throws instead of applying to scopes created later but not to `type` or keywords:
+Global config is read when the first Type is created rather than when arktype is imported, so `configure()` must run before any Type is created, but can follow any import of `arktype` or `@ark/schema`, including `./internal/*` deep imports. A `configure` imported from `"arktype"` now applies to `type` and keywords too. A `configure` call after a Type has been created throws instead of applying to scopes created later but not to `type` or keywords:
 
 ```ts
 import { configure, type } from "arktype"
@@ -1004,6 +1004,8 @@ const T = type({ "+": "reject", a: "string" })
 // valid, instead of ArkErrors: value at [Symbol(s)] must be removed
 T({ a: "x", [Symbol("s")]: 1 })
 ```
+
+Looking for them read each object's symbols, which was most of what rejecting undeclared keys cost. Unlike `"reject"`, `"+": "delete"` now removes them.
 
 Reject types that differ only by a symbol key now overlap, so a union of them with a morph is indeterminate:
 
