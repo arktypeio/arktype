@@ -10,13 +10,13 @@
 			"typescript": [
 				"./ark/attest/node_modules/typescript-6/lib/typescript.d.ts"
 			],
-			"typescript/unstable/ast": [
+			"typescript/ast": [
 				"./ark/attest/node_modules/typescript-7/dist/ast/index.d.ts"
 			],
-			"typescript/unstable/fs": [
+			"typescript/fs": [
 				"./ark/attest/node_modules/typescript-7/dist/api/fs.d.ts"
 			],
-			"typescript/unstable/sync": [
+			"typescript/sync": [
 				"./ark/attest/node_modules/typescript-7/dist/api/sync/api.d.ts"
 			]
 		},

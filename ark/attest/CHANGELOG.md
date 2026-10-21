@@ -16,6 +16,20 @@ Runtime benches now run in a loop compiled for each bench, after a warmup of 500
 - `.snap.toFile` creates its snapshot file if it doesn't exist. It threw ENOENT unless the file was already there.
 - `attest trace` and `attest stats` check projects with `composite: true`. They passed tsc `--incremental false`, which such a project rejects (TS6379), so since TypeScript 5.6 they skipped type checking and reported 0 instantiations ([#1306](https://github.com/arktypeio/arktype/issues/1306)).
 
+## 0.57.1
+
+### Support TypeScript 7.1 beta
+
+TypeScript 7.1 moved its native API from `typescript/unstable/*` to `typescript/*`, starting with `7.1.0-dev.20261009.1`. Attest now imports the new paths, so it works with `typescript@7.1.0-beta` and later rather than failing with `Package subpath './unstable/ast' is not defined by "exports"`. 7.1 nightlies from before `20261009` are no longer supported.
+
+### Add `onlyNamedTestFiles`
+
+With `onlyNamedTestFiles`, attest only analyzes the `*.test.*` files named on the command line rather than every file in your project, so type checking a single file takes seconds instead of minutes. Pair it with a runner invocation that only runs those files, like mocha's `--no-package`. Otherwise, the tests from files that weren't analyzed fail with "Found no assertion data".
+
+```sh
+mocha --onlyNamedTestFiles --no-package ./src/__tests__/user.test.ts
+```
+
 ## 0.57.0
 
 ### Breaking changes
