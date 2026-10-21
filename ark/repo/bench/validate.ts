@@ -564,6 +564,8 @@ const isArkErrors = (result: any) =>
 const hasIssues = (result: any) =>
 	result instanceof Error ||
 	(isArkErrors(result) && result.count > 0) ||
+	// arktype's issues arm reads count
+	(typeof result === "number" && result > 0) ||
 	((typeof result === "string" || Array.isArray(result)) && result.length > 0)
 
 // every arm must agree with arktype before it is timed
