@@ -171,6 +171,12 @@ contextualize(() => {
   ◦ positive`)
 	})
 
+	// https://github.com/arktypeio/arktype/issues/1412
+	it("multi described alike", () => {
+		const Email = type("string.email > 0", "@", "Email is not valid")
+		attest(Email("").toString()).snap('must be Email is not valid (was "")')
+	})
+
 	it("multi indented", () => {
 		const NaturalSchema = type({
 			natural: "number.integer>0",

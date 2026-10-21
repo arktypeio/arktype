@@ -1577,6 +1577,20 @@ type("5 <")
 
 The type error for `"number >="` is the same message, where it was a union of keyword completions.
 
+### Write constraints described alike once
+
+An intersection error listed each failed constraint's description, so constraints under one configured description repeated it (#1412). Each description is now listed once, and a single one is written as a plain `must be`:
+
+```ts
+const Email = type("string.email > 0", "@", "Email is not valid")
+
+// was: ("") must be...
+//   ◦ Email is not valid
+//   ◦ Email is not valid
+// now: must be Email is not valid (was "")
+Email("").toString()
+```
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

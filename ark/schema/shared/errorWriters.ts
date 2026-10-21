@@ -39,6 +39,12 @@ export const writeMessage: MessageWriter = ctx => {
 		:	`${propString} ${ctx.problem}`
 }
 
+// constraints described alike, like those under one configured message,
+// are written once
+const distinctExpectedOf = (errors: readonly ArkError[]): string[] => [
+	...new Set(errors.map(e => e.expected))
+]
+
 // one writer per slot for each kind that doesn't write its own, so en can tell
 // which are its kind's
 export const errorWriters: {
@@ -60,9 +66,16 @@ export const errorWritersByCode: {
 	domain: { actual: writeDomainActual },
 	exactLength: { actual: writeLengthActual },
 	intersection: {
-		expected: source =>
-			`  ◦ ${source.errors.map(e => e.expected).join("\n  ◦ ")}`,
-		problem: ctx => `(${ctx.actual}) must be...\n${ctx.expected}`
+		expected: source => {
+			const expected = distinctExpectedOf(source.errors)
+			return expected.length === 1 ?
+					expected[0]
+				:	`  ◦ ${expected.join("\n  ◦ ")}`
+		},
+		problem: (ctx, info) =>
+			distinctExpectedOf(ctx.errors).length === 1 ?
+				writeProblem(ctx, info)
+			:	`(${ctx.actual}) must be...\n${ctx.expected}`
 	},
 	max: {},
 	maxLength: { actual: writeLengthActual },
