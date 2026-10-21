@@ -1049,7 +1049,7 @@ export const Id = type("string").narrow(s => s.length === 8)`
 			const result = precompile(
 				`import { type } from "arktype"
 const tag = Symbol("tag")
-const T = type({ [tag]: "0" }).or({ [tag]: "1" })
+const T = type({ [tag]: "0", "a?": "1" }).or({ [tag]: "1" })
 export const Union = T.internal.assertHasKind("union")
 export const In = type({ a: T.in })`
 			)

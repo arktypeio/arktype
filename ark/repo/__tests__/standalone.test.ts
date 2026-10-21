@@ -1554,8 +1554,8 @@ password must be at least length 8`)
 			Indiscriminable: type({ a: "string" })
 				.or({ b: "number" })
 				.configure({ message: "neither" }),
-			Discriminated: type({ k: "'a'" })
-				.or({ k: "'b'" })
+			Discriminated: type({ k: "'a'", a: "string" })
+				.or({ k: "'b'", b: "number" })
 				.configure({ message: "unknown kind" }),
 			Keyed: type({ a: type("string | number").configure({ message: "no a" }) })
 		})

@@ -325,4 +325,93 @@ contextualize(() => {
 		const T = type("'$2' | '$10' | '$ark.fn$9' | '$ark.fn$10'")
 		attest(T.expression).snap('"$10" | "$2" | "$ark.fn$10" | "$ark.fn$9"')
 	})
+
+	describe("objects alike but for one key", () => {
+		it("merge into the union of its values", () => {
+			const T = type({ a: "string" }).or({ a: "number" })
+			attest<{ a: string } | { a: number }>(T.infer)
+			attest(T.json).equals(type({ a: "string | number" }).json)
+		})
+
+		it("merge a discriminant", () => {
+			const T = type({ kind: "'a'", x: "string" }).or({
+				kind: "'b'",
+				x: "string"
+			})
+			attest(T.expression).snap('{ kind: "a" | "b", x: string }')
+			attest(T({ x: 5 }).toString()).snap(`kind must be "a" or "b" (was missing)
+x must be a string (was a number)`)
+		})
+
+		it("keep branches differing in two keys", () => {
+			const T = type({ kind: "'a'", x: "string" }).or({
+				kind: "'b'",
+				x: "number"
+			})
+			attest(T.expression).snap(
+				'{ kind: "a", x: string } | { kind: "b", x: number }'
+			)
+		})
+
+		it("keep a key only one has", () => {
+			const T = type({ a: "string" }).or({ a: "number", b: "string" })
+			attest(T.expression).snap("{ a: number, b: string } | { a: string }")
+		})
+
+		it("merge required and optional to optional", () => {
+			const T = type({ a: "string" }).or({ "a?": "number" })
+			attest(T.expression).snap("{ a?: number | string }")
+			attest(T({})).equals({})
+		})
+
+		it("keep a default to its branch", () => {
+			const T = type({ a: "string" }).or({ a: "number = 5" })
+			attest(T.expression).snap("{ a: number = 5 } | { a: string }")
+			attest(T({})).equals({ a: 5 })
+		})
+
+		it("merge morphs", () => {
+			const T = type({ a: "string.numeric.parse" }).or({ a: "number" })
+			attest(T.json).equals(type({ a: "string.numeric.parse | number" }).json)
+			attest(T({ a: "5" })).equals({ a: 5 })
+		})
+
+		it("merge nested", () => {
+			const T = type({ a: { b: "string" } }).or({ a: { b: "number" } })
+			attest(T.expression).snap("{ a: { b: number | string } }")
+		})
+
+		it("reduce merged values", () => {
+			const T = type({ a: "0 < number < 5" }).or({ a: "5 <= number < 10" })
+			attest(T.expression).snap("{ a: number < 10 & > 0 }")
+		})
+
+		it("merge alike undeclared keys", () => {
+			const T = type({ "+": "reject", a: "string" }).or({
+				"+": "reject",
+				a: "number"
+			})
+			attest(T.expression).snap(
+				"{ a: number | string, + (undeclared): reject }"
+			)
+		})
+
+		it("keep differing undeclared keys", () => {
+			const T = type({ "+": "reject", a: "string" }).or({ a: "number" })
+			attest(T.expression).snap(
+				"{ a: number } | { a: string, + (undeclared): reject }"
+			)
+		})
+
+		it("keep ordered unions", () => {
+			const T = rootSchema({
+				branches: [
+					{ domain: "object", required: { key: "a", value: "string" } },
+					{ domain: "object", required: { key: "a", value: "number" } }
+				],
+				ordered: true
+			})
+			attest(T.expression).snap("{ a: string } | { a: number }")
+		})
+	})
 })

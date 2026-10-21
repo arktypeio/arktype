@@ -8,6 +8,7 @@ import {
 	flatRefsAreEqual,
 	isResolutionFinal,
 	queueUnchecked,
+	type BaseNode,
 	type BaseRange,
 	type BaseRoot,
 	type BaseScope,
@@ -24,6 +25,7 @@ import {
 	type IntersectionContext,
 	type Morph,
 	type NodeKind,
+	type Prop,
 	type Union,
 	type Unit
 } from "@ark/schema"
@@ -33,6 +35,7 @@ import {
 	flatMorph,
 	type dict,
 	integerLikeMatcher,
+	isArray,
 	isDate,
 	range,
 	throwParseError,
@@ -147,37 +150,41 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 			for (const entry of result) {
 				if (!entry.kind || entry.optional) continue
 
-				let lSerialized: string
-				let rSerialized: string
+				let lCases: CaseEntry[] | undefined
+				let rCases: CaseEntry[] | undefined
 
 				if (entry.kind === "domain") {
 					const lValue = entry.l as Domain.Node | Domain.Enumerable
 					const rValue = entry.r as Domain.Node | Domain.Enumerable
-					lSerialized = `"${typeof lValue === "string" ? lValue : lValue.domain}"`
-					rSerialized = `"${typeof rValue === "string" ? rValue : rValue.domain}"`
-				} else if (entry.kind === "unit") {
-					const lUnit = entry.l as Unit.Node
-					const rUnit = entry.r as Unit.Node
-					if (!isCaseUnit(lUnit) || !isCaseUnit(rUnit)) continue
-					lSerialized = lUnit.serializedValue
-					rSerialized = rUnit.serializedValue
+					lCases = [
+						[`"${typeof lValue === "string" ? lValue : lValue.domain}"`, lValue]
+					]
+					rCases = [
+						[`"${typeof rValue === "string" ? rValue : rValue.domain}"`, rValue]
+					]
+				} else if (entry.kind === "unit" || entry.kind === "union") {
+					lCases = unitCasesOf(entry.l as Unit.Node | readonly BaseRoot[])
+					rCases = unitCasesOf(entry.r as Unit.Node | readonly BaseRoot[])
+					if (!lCases || !rCases) continue
 				} else continue
 
 				// an optional chain reads undefined at a missing key or below a non-object
 				if (
 					entry.path.length &&
-					(isUndefinedCase(lSerialized) || isUndefinedCase(rSerialized))
+					[...lCases, ...rCases!].some(([k]) => isUndefinedCase(k))
 				)
 					continue
 
+				const kind = entry.kind === "domain" ? "domain" : "unit"
 				const matching = candidates.find(
-					d => arrayEquals(d.path, entry.path) && d.kind === entry.kind
+					d => arrayEquals(d.path, entry.path) && d.kind === kind
 				)
 				const cases = matching?.cases ?? {}
-				addCase(cases, lSerialized, lIndex, entry.l)
-				addCase(cases, rSerialized, rIndex, entry.r)
-				if (!matching)
-					candidates.push({ kind: entry.kind, cases, path: entry.path })
+				for (const [k, condition] of lCases)
+					addCase(cases, k, lIndex, condition)
+				for (const [k, condition] of rCases!)
+					addCase(cases, k, rIndex, condition)
+				if (!matching) candidates.push({ kind, cases, path: entry.path })
 			}
 		}
 	}
@@ -237,6 +244,19 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 	}
 
 	return Object.assign(ctx.location, members ? { cases, members } : { cases })
+}
+
+type CaseEntry = [k: string, condition: unknown]
+
+// a unit or a union of them, like a merged { kind: "a" | "b" }, is a case
+// for each unit
+const unitCasesOf = (
+	operand: Unit.Node | readonly BaseRoot[]
+): CaseEntry[] | undefined => {
+	const units = isArray(operand) ? operand : [operand]
+	return units.every(unit => unit.hasKind("unit") && isCaseUnit(unit)) ?
+			units.map(unit => [(unit as Unit.Node).serializedValue, unit])
+		:	undefined
 }
 
 const addCase = (
@@ -314,25 +334,21 @@ const resolveCase = (
 	let resolvedEntries: BranchEntry[] | null = []
 	const nextDefaults: BranchEntry[] = []
 
-	for (let i = 0; i < ctx.defaultEntries.length; i++) {
-		const entry = ctx.defaultEntries[i]
-		if (caseCtx.branchIndices.includes(entry.originalIndex)) {
-			const pruned = pruneDiscriminant(
-				ctx.node.branches[entry.originalIndex],
-				ctx.location
-			)
+	// a branch with several of the cases, like { kind: "a" | "b" }, is in each
+	for (let i = 0, d = 0; i < ctx.node.branches.length; i++) {
+		const entry =
+			ctx.defaultEntries[d]?.originalIndex === i ?
+				ctx.defaultEntries[d++]
+			:	undefined
+		if (caseCtx.branchIndices.includes(i)) {
+			const pruned = pruneDiscriminant(ctx.node.branches[i], ctx.location)
 			if (pruned === null) {
 				// if any branch of the union has no constraints (i.e. is
 				// unknown), the others won't affect the resolution type, but could still
 				// remove additional cases from defaultEntries
 				resolvedEntries = null
-			} else {
-				resolvedEntries?.push({
-					originalIndex: entry.originalIndex,
-					branch: pruned
-				})
-			}
-		} else {
+			} else resolvedEntries?.push({ originalIndex: i, branch: pruned })
+		} else if (entry) {
 			const intersection = intersectNodesRoot(
 				entry.branch.rawIn,
 				discriminantNode,
@@ -635,18 +651,18 @@ export const reduceBranches = ({
 		}
 	}
 	const uniqueBranches = branches.filter((_, i) => uniquenessByIndex[i])
-	return ordered ? uniqueBranches : mergeRanges(uniqueBranches)
+	return ordered ? uniqueBranches : mergeAlike(uniqueBranches)
 }
 
-// branches alike but for their range, like 0 < number < 5 and 3 <= number
-// < 10, are one if their ranges are connected, or meet at a value neither
-// includes, which the one excludes. a unit is a range of one value
-const mergeRanges = (
+// branches differing in one way union to one branch
+const mergeAlike = (
 	branches: readonly Union.ChildNode[]
 ): readonly Union.ChildNode[] => {
 	for (let i = 0; i < branches.length; i++) {
 		for (let j = i + 1; j < branches.length; j++) {
-			const merged = mergeRangeBranches(branches[i], branches[j])
+			const merged =
+				mergeRangeBranches(branches[i], branches[j]) ??
+				mergePropBranches(branches[i], branches[j])
 			if (!merged) continue
 			return reduceBranches({
 				branches: branches.flatMap((branch, k) =>
@@ -660,6 +676,9 @@ const mergeRanges = (
 	return branches
 }
 
+// branches alike but for their range, like 0 < number < 5 and 3 <= number
+// < 10, are one if their ranges are connected, or meet at a value neither
+// includes, which the one excludes. a unit is a range of one value
 const mergeRangeBranches = (
 	a: Union.ChildNode,
 	b: Union.ChildNode
@@ -681,9 +700,7 @@ const mergeRangeBranches = (
 	const rest = childrenExcept(l, family.kinds)
 	const rRange =
 		r.hasKind("intersection") ?
-			arrayEquals(rest, childrenExcept(r, family.kinds), {
-				isEqual: (l, r) => l.equals(r)
-			}) && rangeOf(r, family)
+			nodesEqual(rest, childrenExcept(r, family.kinds)) && rangeOf(r, family)
 		: (
 			r.hasKind("unit") &&
 			(family.lower === "after" ?
@@ -859,6 +876,69 @@ const rangeInner = (
 		})
 	}
 }
+
+// branches alike but for one key's value, like { a: string } and
+// { a: number }, are one whose value is either. the key is optional if
+// either has it optional, and a default is kept to its own branch
+const mergePropBranches = (
+	l: Union.ChildNode,
+	r: Union.ChildNode
+): Union.ChildNode | undefined => {
+	if (
+		!l.hasKind("intersection") ||
+		!r.hasKind("intersection") ||
+		!l.structure ||
+		!r.structure ||
+		l.structure.props.length !== r.structure.props.length ||
+		l.structure.undeclared !== r.structure.undeclared ||
+		!nodesEqual(l.structure.index ?? [], r.structure.index ?? []) ||
+		(l.structure.sequence !== r.structure.sequence &&
+			!l.structure.sequence?.equals(r.structure.sequence)) ||
+		!nodesEqual(
+			childrenExcept(l, ["structure"]),
+			childrenExcept(r, ["structure"])
+		)
+	)
+		return
+	let lProp: Prop.Node | undefined
+	let rProp: Prop.Node | undefined
+	for (const prop of l.structure.props) {
+		const match = r.structure.propsByKey[prop.key]
+		if (!match) return
+		if (prop.equals(match)) continue
+		if (lProp) return
+		lProp = prop
+		rProp = match
+	}
+	// an aliased value could reach the union it would be merged into
+	if (
+		!lProp ||
+		lProp.value.includesAlias ||
+		rProp!.value.includesAlias ||
+		(lProp.hasKind("optional") && lProp.hasDefault()) ||
+		(rProp!.hasKind("optional") && rProp!.hasDefault())
+	)
+		return
+	const kind = lProp.required && rProp!.required ? "required" : "optional"
+	const structure: dict = { ...l.structure.inner }
+	structure[lProp.kind] = l.structure[lProp.kind]!.filter(
+		prop => prop !== lProp
+	)
+	structure[kind] = [
+		...((structure[kind] as Prop.Node[] | undefined) ?? []),
+		l.$.node(kind, {
+			key: lProp.key,
+			value: lProp.value.rawOr(rProp!.value)
+		})
+	]
+	return l.$.node("intersection", {
+		...l.inner,
+		structure: l.$.node("structure", structure as never)
+	}) as Union.ChildNode
+}
+
+const nodesEqual = (l: readonly BaseNode[], r: readonly BaseNode[]) =>
+	arrayEquals(l, r, { isEqual: (l, r) => l.equals(r) })
 
 const childrenExcept = (node: Intersection.Node, kinds: readonly NodeKind[]) =>
 	node.children.filter(child => !kinds.includes(child.kind))

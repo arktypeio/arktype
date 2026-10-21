@@ -244,7 +244,8 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 	)
 	add(
 		"discriminant in an outer union",
-		$.type({ a: shapes }).or({ a: "string" }),
+		// its own key keeps the string branch from merging into a
+		$.type({ a: shapes }).or({ a: "string", "b?": "1" }),
 		{ a: { kind: "triangle" } }
 	)
 

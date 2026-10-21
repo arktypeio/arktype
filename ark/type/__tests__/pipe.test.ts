@@ -748,21 +748,21 @@ contextualize(() => {
 			  }
 		>(types.c.t)
 
-		attest(types.c.json).snap([
-			{ required: [{ key: "a", value: "Function" }], domain: "object" },
-			{
-				required: [
-					{
-						key: "a",
-						value: {
+		attest(types.c.json).snap({
+			required: [
+				{
+					key: "a",
+					value: [
+						{
 							in: { domain: "number", min: { exclusive: true, rule: 0 } },
 							morphs: [registeredReference(_stringifyNumberUnionPipeDeep)]
-						}
-					}
-				],
-				domain: "object"
-			}
-		])
+						},
+						"Function"
+					]
+				}
+			],
+			domain: "object"
+		})
 	})
 
 	it("chained reference", () => {

@@ -111,9 +111,13 @@ contextualize(() => {
 
 	it("node writer config on union", () => {
 		const $ = scope({})
-		const Discriminated = $.type([{ k: "'a'" }, "|", { k: "'b'" }], "@", {
-			message: ctx => `custom message ${ctx.problem}`
-		})
+		const Discriminated = $.type(
+			[{ k: "'a'", a: "string" }, "|", { k: "'b'", b: "number" }],
+			"@",
+			{
+				message: ctx => `custom message ${ctx.problem}`
+			}
+		)
 		attest(Discriminated({ k: "c" }).toString()).snap(
 			'custom message must be "a" or "b" (was "c")'
 		)
