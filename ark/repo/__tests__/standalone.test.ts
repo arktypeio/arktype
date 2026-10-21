@@ -1003,7 +1003,7 @@ name is missing`)
 			Narrowed({ a: 1, b: "b" }).summary,
 			Narrowed({ a: "a", b: "b" }).summary
 		]).snap([
-			"a must be a string",
+			"b must be a number",
 			"a must be a string",
 			"b must be valid according to isLong"
 		])

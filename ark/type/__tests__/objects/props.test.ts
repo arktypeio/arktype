@@ -110,6 +110,23 @@ contextualize(() => {
 		attest([...new Set(reads)]).equals(["c", "a", "b", "d", "e"])
 	})
 
+	it("allows by checking numbers and units, then other primitives, then objects", () => {
+		const T = type({
+			a: "object",
+			b: "'x'",
+			c: "number",
+			d: "boolean | null",
+			e: "string"
+		})
+		const reads: PropertyKey[] = []
+		const data = new Proxy(
+			{ a: {}, b: "x", c: 0, d: null, e: "" },
+			{ get: (o, k) => (reads.push(k), Reflect.get(o, k)) }
+		)
+		attest(T.allows(data)).equals(true)
+		attest([...new Set(reads)]).equals(["c", "d", "b", "e", "a"])
+	})
+
 	it("allows by checking arrays last, never past an alias reaching a narrow", () => {
 		const $ = scope({
 			narrowed: { a: "string[]", inner: "narrowedInner | null", c: "number" },
@@ -229,12 +246,12 @@ contextualize(() => {
 	})
 
 	it("compiled code reads the first key before checking data is an object", () => {
-		const T = type({ a: "string", b: "number" })
+		const T = type({ a: "number", b: "string" })
 		// the first data is checked uncompiled
-		T.allows({ a: "", b: 0 })
+		T.allows({ a: 0, b: "" })
 		const reads: PropertyKey[] = []
 		const data = new Proxy(
-			{ a: "", b: 0 },
+			{ a: 0, b: "" },
 			{ get: (o, k) => (reads.push(k), Reflect.get(o, k)) }
 		)
 		attest(T.allows(data)).equals(true)

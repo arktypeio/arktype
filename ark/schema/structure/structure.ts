@@ -212,19 +212,36 @@ const callsUserCode = (node: BaseNode): boolean =>
 			reference => reference.includesUserCode
 		))
 
-// Allows checks costly values last, so failing data is rejected sooner,
+// what checking a branch costs: 0 compares data itself, 1 reads a
+// primitive it points to and 2 walks an object
+const branchCost = (branch: BaseRoot): number => {
+	const basis = branch.hasKind("intersection") ? branch.basis : branch
+	if (basis?.hasKind("unit"))
+		return basis.domain === "string" || basis.domain === "bigint" ? 1 : 0
+	if (!basis?.hasKind("domain") || basis.domain === "object") return 2
+	return basis.domain === "number" ? 0 : 1
+}
+
+const allowsRank = (prop: Prop.Node): number =>
+	prop.value.includesCostly ?
+		3
+	:	Math.max(...prop.value.branches.map(branchCost))
+
+// Allows checks cheaper values first, so failing data is rejected sooner,
 // though never across a prop calling user code
 const orderedForAllows = (props: array<Prop.Node>): array<Prop.Node> => {
 	const ordered: Prop.Node[] = []
-	let deferred: Prop.Node[] = []
+	let run: Prop.Node[] = []
+	const flush = () =>
+		ordered.push(...run.sort((l, r) => allowsRank(l) - allowsRank(r)))
 	for (const prop of props) {
 		if (callsUserCode(prop.value)) {
-			ordered.push(...deferred, prop)
-			deferred = []
-		} else if (prop.value.includesCostly) deferred.push(prop)
-		else ordered.push(prop)
+			flush()
+			ordered.push(prop)
+			run = []
+		} else run.push(prop)
 	}
-	ordered.push(...deferred)
+	flush()
 	return ordered
 }
 
