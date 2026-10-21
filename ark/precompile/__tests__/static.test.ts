@@ -1006,6 +1006,28 @@ export const B = Forms.Admin.or("null")`)
 			])
 		})
 
+		it("a Type read through this in a static member", () => {
+			attest(
+				unhinted(`import { type } from "arktype"
+class Holder {
+	static t = type({ a: "string" })
+	static u = this.t.or("null")
+	static and(def: object) {
+		return this.t.and(def)
+	}
+	static {
+		this.t.array()
+	}
+}
+class Sub extends Holder {}
+export const anded = Sub.and({ b: "string" })`)
+			).snap([
+				"/main.ts:4:13  this.t.or reads or, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:6:10  this.t.and reads and, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read",
+				"/main.ts:9:3  this.t.array reads array, which a standalone validator lacks\n  `this.t` is a Type, which the standalone runtime replaces with a validator, and no precompiled site covers the read"
+			])
+		})
+
 		it("a parameter the build can't see called", () => {
 			attest(
 				diagnosticsOf(`import { type, type Type } from "arktype"
