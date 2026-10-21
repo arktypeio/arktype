@@ -47,6 +47,42 @@ contextualize(() => {
 		attest(Deleted({ k: 0 })).equals({})
 	})
 
+	it("an array meeting a closed object has elements only at keys it declares", () => {
+		const T = type({ "0?": "number", "+": "reject" }).and("number[]")
+		attest(T.json).snap({
+			undeclared: "reject",
+			optional: [{ key: "0", value: "number" }],
+			sequence: "number",
+			proto: "Array",
+			maxLength: 1
+		})
+		attest(T([0])).equals([0])
+		attest(T([0, 1]).toString()).snap("must be at most length 1 (was 2)")
+		const Empty = type({ "+": "reject" }).and("number[]")
+		attest(Empty.json).snap({
+			undeclared: "reject",
+			sequence: [],
+			proto: "Array"
+		})
+		attest(Empty([])).equals([])
+		attest(Empty.allows([0])).equals(false)
+		attest(() => type({ "+": "reject" }).and(["number"])).throws.snap(
+			"ParseError: Intersection at [0] of never and number results in an unsatisfiable type"
+		)
+	})
+
+	it("a closed array declares its indices to an intersection", () => {
+		const Closed = type("string[]").onUndeclaredKey("reject")
+		attest(Closed.and({ "0?": "number" }).allows(["x"])).equals(false)
+		attest(Closed.and({ "[string]": "number" }).allows(["x"])).equals(false)
+		attest(Closed.and({ "0": "string" }).json).snap({
+			undeclared: "reject",
+			required: [{ key: "0", value: "string" }],
+			sequence: "string",
+			proto: "Array"
+		})
+	})
+
 	it("an open object isn't a subtype of a closed one", () => {
 		const Closed = type({ "+": "reject" })
 		attest(type({}).extends(Closed)).equals(false)
