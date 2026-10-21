@@ -274,27 +274,11 @@ contextualize(() => {
 		it("string.uuid", () => {
 			const T = type("string.uuid")
 			const S = inferred({
-				anyOf: [
-					{
-						type: "string",
-						description: "a UUID",
-						format: "uuid",
-						pattern:
-							"^[\\dA-Fa-f]{8}-[\\dA-Fa-f]{4}-[1-8][\\dA-Fa-f]{3}-[89ABab][\\dA-Fa-f]{3}-[\\dA-Fa-f]{12}$"
-					},
-					{
-						const: "00000000-0000-0000-0000-000000000000",
-						description: "a UUID",
-						format: "uuid"
-					},
-					{
-						const: "ffffffff-ffff-ffff-ffff-ffffffffffff",
-						description: "a UUID",
-						format: "uuid"
-					}
-				],
+				type: "string",
 				description: "a UUID",
-				format: "uuid"
+				format: "uuid",
+				pattern:
+					"^(?:[\\dA-Fa-f]{8}-[\\dA-Fa-f]{4}-[1-8][\\dA-Fa-f]{3}-[89ABab][\\dA-Fa-f]{3}-[\\dA-Fa-f]{12}|0{8}-(?:0{4}-){3}0{12}|f{8}-(?:f{4}-){3}f{12})$"
 			})
 			assertEmits(T, S)
 			attest<typeof T.infer>(S).type.toString.snap("string")
@@ -1120,7 +1104,7 @@ contextualize(() => {
 					n: {
 						type: "string",
 						pattern:
-							"^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$"
+							"^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$"
 					}
 				},
 				required: ["n"]
@@ -1129,7 +1113,7 @@ contextualize(() => {
 				T,
 				S,
 				{ fallback: { morph: ctx => ctx.base } },
-				`{ n: /^(?:(?!^-0\\.?0*$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?))$/ }`
+				`{ n: /^(?:(?!^-0\\.?0*(?:[Ee][+-]?\\d+)?$)(?:-?(?:(?:0|[1-9]\\d*)(?:\\.\\d+)?)|\\.\\d+?)(?:[Ee][+-]?\\d+)?)$/ }`
 			)
 			attest<typeof T.inferIn>(S).type.toString.snap("{ n: string }")
 		})
