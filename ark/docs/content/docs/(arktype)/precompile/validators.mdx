@@ -18,7 +18,7 @@ const out = User(data)
 if (out instanceof type.errors) console.error(out.summary)
 ```
 
-Scopes, Modules, Generics, cyclic Types, `match` and `type.fn` are precompiled too. A Module becomes a plain object of its validators, and a Scope or Generic an empty object, since resolving an alias or instantiating a Generic needs arktype. A call to `define`, which returns its argument, is replaced by the argument.
+Scopes, Modules, Generics, cyclic Types, `match`, `type.fn` and [codecs](/docs/codecs) are precompiled too. A Module becomes a plain object of its validators, and a Scope or Generic an empty object, since resolving an alias or instantiating a Generic needs arktype. A call to `define`, which returns its argument, is replaced by the argument.
 
 A definition holding functions, like a narrow, a morph or a class, becomes a call to a factory passing each one where the definition was written. The factory checks at creation that each class, and each function another module supplies, is what its code was compiled for, and throws if not.
 
@@ -34,7 +34,7 @@ main.ts:8:29  Long.description reads description, which a standalone validator l
   Standalone builds do not ship arktype. Use it inside a precompiled definition, or build with runtime: "arktype".
 ```
 
-Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own.
+Composing inside a definition is fine, since the build evaluates it: `export const Admin = User.and({ role: "'admin'" })` is precompiled to a validator of its own. So is [`.encode`](/docs/codecs) wherever the build sees it read, like `const encode = (event: unknown) => Event.encode(event)`: the encoder is precompiled like any other Type, and receives each codec's `encode` function from the validator holding it.
 
 A validator and its members are frozen, except a Date or RegExp it holds, unless the build sets [`freeze: false`](/docs/precompile/options#freeze).
 

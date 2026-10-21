@@ -103,6 +103,26 @@ const encoded = Event.encode({ at: new Date(0), count: 5 })
 
 `string.trim`, `string.lower`, `string.upper`, `string.capitalize` and `string.normalize` encode a string already in their format as itself, and `object.json.stringify` encodes by parsing.
 
+## Precompiling
+
+[Precompiled](/docs/precompile) Types encode too. The build precompiles each `codec` like any other Type, passing its `decode` and `encode` functions where you wrote them, and each `.encode` it sees read becomes an encoder of its own:
+
+```ts
+import { codec } from "arktype/codecs"
+
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+
+export const Event = type({ at: EpochMs })
+
+// precompiled to an encoder
+export const encode = (event: unknown) => Event.encode(event)
+```
+
+A standalone build installs encoding itself, so `.encode` works there even if the program never imports `arktype/codecs`. A Type with a morph that has no inverse fails the build where its `.encode` is read, since arktype would throw there.
+
 ## Morphs without an inverse
 
 Encoding is only possible if every morph has an inverse. Otherwise, accessing `.encode` throws a `ParseError`:

@@ -136,7 +136,7 @@ const event = Event({ name: "launch", at: 0 })
 const encoded = Event.encode(event)
 ```
 
-Parse keywords like `string.date.iso.parse` encode back to strings. `arktype/codecs` installs encoding when imported, so an app that doesn't encode doesn't ship it. See [Codecs](/docs/codecs).
+Parse keywords like `string.date.iso.parse` encode back to strings. `arktype/codecs` installs encoding when imported, so an app that doesn't encode doesn't ship it. Codecs and `.encode` [precompile](/docs/codecs#precompiling) like any other definition. See [Codecs](/docs/codecs).
 
 ## Error messages in other languages
 
