@@ -385,6 +385,21 @@ export const Event = $ark#2(EpochMs)
 export const encode = (event: unknown) => $ark#3(Event)(event)`)
 		})
 
+		it("refuses .encode of a morph without an inverse", () => {
+			const result = precompile(`import { type } from "arktype"
+import "arktype/codecs"
+const T = type("string").pipe(s => s.length)
+export const encode = (v: unknown) => T.encode(v)`)
+			attest(result.diagnostics.map(renderDiagnostic)).snap([
+				"/main.ts:4:39  T.encode throws a ParseError\n  A morph must have an inverse to be encoded: (In: string) => Out<unknown>\n  Fix the definition, or it throws the same ParseError at runtime. Set allowUnsafe: true to build anyway, with a warning."
+			])
+			attest(
+				normalized(
+					result.code.split("\n").filter(line => line.startsWith("const T"))
+				)
+			).snap(["const T = /* @__PURE__ */ $ark#0(s => s.length)"])
+		})
+
 		it("folds Modules", () => {
 			const result = precompile(`import { scope, type } from "arktype"
 export const types = scope({ tree: { value: "number", "children?": "tree[]" } }).export()

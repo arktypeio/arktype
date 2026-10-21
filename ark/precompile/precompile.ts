@@ -10,6 +10,8 @@ import {
 import * as arkSchema from "@ark/schema"
 // eslint-disable-next-line @typescript-eslint/no-restricted-imports
 import { fingerprintOf } from "@ark/schema/runtime"
+// eslint-disable-next-line @typescript-eslint/no-restricted-imports
+import { writeMissingInverseMessage } from "@ark/schema/codecs"
 import {
 	appendStringifiedKey,
 	entriesOf,
@@ -1311,7 +1313,13 @@ export class Precompiler {
 				reasons = reasonsOf(e)
 			}
 			if (reasons.length) {
-				diagnostics.push(this.refuseWritten(module, site, reasons))
+				// its ParseError fails the build already, unless allowUnsafe
+				if (
+					this.allowUnsafe ||
+					!site.parseError ||
+					!isEncodingError(site.parseError)
+				)
+					diagnostics.push(this.refuseWritten(module, site, reasons))
 				continue
 			}
 			// checked at each call, as a factory is
@@ -2871,6 +2879,7 @@ export class Precompiler {
 			site.parseError &&
 			!(
 				this.mode === "standalone" &&
+				!isEncodingError(site.parseError) &&
 				this.unsupportedReasonsOf(site, module).length
 			)
 		) {
@@ -3894,6 +3903,10 @@ const sharedSchemaExports = Object.keys(runtimeExports).filter(
 		(arkSchema as Record<string, unknown>)[name] ===
 		(arktypeRuntime as Record<string, unknown>)[name]
 )
+
+// a missing inverse, which a Type's definition alone decides, whatever the build reads
+const isEncodingError = (e: Error) =>
+	e.message.startsWith(writeMissingInverseMessage(""))
 
 const arktypeSpecifier =
 	/\b(?:from|import)\s*["'](?:(?:arktype|@ark\/type)(?:\/(?:config|codecs))?|arkregex|@ark\/regex)["']/
