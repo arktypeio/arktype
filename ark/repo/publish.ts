@@ -1,5 +1,5 @@
 import { getShellOutput, rewriteJson, shell } from "@ark/fs"
-import { packages, type ArkPackage } from "./shared.ts"
+import { packages, type ArkPackage, type PackageScope } from "./shared.ts"
 
 const releasesToCreate: string[] = []
 
@@ -29,6 +29,20 @@ const rewritePackageJsonName = (path: string, alias: string) =>
 const distTagOf = (version: string) =>
 	/-([a-z]+)/.exec(version)?.[1] ?? "latest"
 
+// whether a package also ships as the @arktype/ name it had before @ark/
+const hasLegacyAlias = {
+	attest: true,
+	"fast-check": true,
+	fs: true,
+	"json-schema": true,
+	precompile: false,
+	regex: true,
+	schema: true,
+	sets: false,
+	type: true,
+	util: true
+} satisfies Record<PackageScope, boolean>
+
 for (const pkg of packages) {
 	// primary name (either arktype, arkregex, arksets or @ark/*)
 	publishPackage(pkg)
@@ -38,8 +52,7 @@ for (const pkg of packages) {
 	if (pkg.scope === "regex") publishPackage(pkg, "@ark/regex")
 	if (pkg.scope === "sets") publishPackage(pkg, "@ark/sets")
 
-	// alias for original @arktype/ scope
-	publishPackage(pkg, `@arktype/${pkg.scope}`)
+	if (hasLegacyAlias[pkg.scope]) publishPackage(pkg, `@arktype/${pkg.scope}`)
 }
 
 shell("git push --tags")
