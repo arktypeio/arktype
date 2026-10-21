@@ -17,7 +17,8 @@ import {
 	expectedOf,
 	isDecidedByAllows,
 	returnsTransformErrors,
-	type NodeCompiler
+	type NodeCompiler,
+	type SwitchCase
 } from "../shared/compile.ts"
 import type {
 	BaseErrorContext,
@@ -365,56 +366,43 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			condition = `typeof ${condition} === "object" ? ${condition} === null ? "null" : "object" : typeof ${condition} === "function" ? "object" : typeof ${condition}`
 
 		const cases = discriminant.cases
-
-		js.block(`switch(${condition})`, () => {
-			for (const k in cases) {
-				const v = cases[k]
-				// a case transforming nothing returns data as the switch's end does
-				if (
-					js.traversalKind === "Transform" &&
-					(v === true || !v.transforms) &&
-					!("default" in cases)
-				)
-					continue
-				const caseCondition =
-					k === "default" ? k
-					: k.startsWith(registeredPrefix) ?
-						`case ${js.ref($ark[k.slice(registeredPrefix.length)] as never)}`
-					:	`case ${k}`
-				const member = discriminant.members?.[k]
-				const caseResult =
-					js.traversalKind === "Transform" ?
-						v !== true && v.transforms ?
-							invokeTransform(js, v, member)
-						:	"data"
-					: v === true ? "true"
-					: member && js.traversalKind === "Apply" ? js.applyMember(v, member)
-					: js.invoke(v)
-				js.line(`${caseCondition}: return ${caseResult}`)
-			}
-			return js
-		})
-
-		if (js.traversalKind === "Allows") {
-			js.return(false)
-			return
+		const written: SwitchCase[] = []
+		for (const k in cases) {
+			const v = cases[k]
+			// a case transforming nothing returns data as the switch's end does
+			if (
+				js.traversalKind === "Transform" &&
+				(v === true || !v.transforms) &&
+				!("default" in cases)
+			)
+				continue
+			const caseCondition =
+				k === "default" ? k
+				: k.startsWith(registeredPrefix) ?
+					`case ${js.ref($ark[k.slice(registeredPrefix.length)] as never)}`
+				:	`case ${k}`
+			const member = discriminant.members?.[k]
+			const caseResult =
+				js.traversalKind === "Transform" ?
+					v !== true && v.transforms ?
+						invokeTransform(js, v, member)
+					:	"data"
+				: v === true ? "true"
+				: member && js.traversalKind === "Apply" ? js.applyMember(v, member)
+				: js.invoke(v)
+			written.push([caseCondition, caseResult])
 		}
-		if (js.traversalKind === "Transform") {
-			js.return("data")
-			return
-		}
-
-		const fails = js.unionFails?.(this, value, discriminant.path)
-		if (fails) {
-			js.return(fails)
-			return
-		}
-		const serializedPathSegments = discriminant.path.map(k => js.serialize(k))
-		const absent = () =>
-			discriminant.path.length ?
-				`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(discriminant.path)}, data)`
-			:	"false"
-		const input = `{
+		let otherwise =
+			js.traversalKind === "Allows" ? "false"
+			: js.traversalKind === "Transform" ? "data"
+			: js.unionFails?.(this, value, discriminant.path)
+		if (otherwise === undefined) {
+			const serializedPathSegments = discriminant.path.map(k => js.serialize(k))
+			const absent = () =>
+				discriminant.path.length ?
+					`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(discriminant.path)}, data)`
+				:	"false"
+			otherwise = `!ctx.failsWith({
 	code: "discriminant",
 	discriminantKind: "${discriminant.kind}",
 	cases: ${js.ref(this.discriminantCases.cases)},
@@ -424,8 +412,9 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 	relativePath: [${serializedPathSegments}],
 	data: ${value},
 	meta: ${js.ref(this.discriminantMeta)}
-}`
-		js.return(`!ctx.failsWith(${input})`)
+})`
+		}
+		js.switch(condition, written, otherwise)
 	}
 
 	private compileIndiscriminable(

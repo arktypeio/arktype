@@ -407,6 +407,84 @@ contextualize(() => {
 				["ctx.x", "ctx.y", { "ctx.": "ctx." }, { "ctx.": "ctx" }]
 			)
 		})
+
+		it("applies a key that reads as the gate of the prop beside it", async () => {
+			const Gated = type({ b: "string > 3" })
+			// a leaf's Apply is named for its content, so a key can name it
+			const apply = /failsIn\((\w+Apply), data\.b/.exec(
+				precompileStandalone({ Gated }).code
+			)![1]
+			const key = `, xR1, data)!ctx.failsIn(${apply}, data.b, `
+			await agreesInEachBuild({ T: Gated.and({ [`${key}?`]: "number" }) }, [
+				{ b: "abcd", [key]: 0 },
+				{ b: "abcd", [key]: "0" },
+				{ b: "abc", [key]: 0 }
+			])
+		})
+
+		it("switches on cases whose literals read as cases", async () => {
+			await agreesInEachBuild(
+				{
+					Cases: type.enumerated('case "a": return true', "a: return b", "\\"),
+					// the cases of a switch over data's domain, but as strings
+					Domains: type("'string' | 'number' | 'object'"),
+					Dispatched: type({ k: "'case \"string\":'" })
+						.or({ k: "'b: return true\u2028'" })
+						.or("string")
+				},
+				[
+					'case "a": return true',
+					"a: return b",
+					"\\",
+					"string",
+					"object",
+					null,
+					{ k: 'case "string":' },
+					{ k: "b: return true\u2028" },
+					{ k: "case" },
+					0
+				]
+			)
+		})
+
+		it("loops over checks whose literals read as a loop's", async () => {
+			await agreesInEachBuild(
+				{
+					Looped: type({
+						"for (;;) {": type.enumerated("${", "`", '"', "\\\\"),
+						"\u2028        break": "string.url",
+						"const errorCount = ctx.currentErrorCount\n": "number",
+						"    return false\u2028 }": "string"
+					})
+				},
+				[
+					{
+						"for (;;) {": "${",
+						"\u2028        break": "https://arktype.io",
+						"const errorCount = ctx.currentErrorCount\n": 0,
+						"    return false\u2028 }": ""
+					},
+					{
+						"for (;;) {": "\\",
+						"\u2028        break": "https://arktype.io",
+						"const errorCount = ctx.currentErrorCount\n": 0,
+						"    return false\u2028 }": ""
+					},
+					{
+						"for (;;) {": "`",
+						"\u2028        break": "arktype",
+						"const errorCount = ctx.currentErrorCount\n": 0,
+						"    return false\u2028 }": ""
+					},
+					{
+						"for (;;) {": '"',
+						"\u2028        return false": "https://arktype.io",
+						"const errorCount = ctx.currentErrorCount\n": 0,
+						"    return false\u2028 }": ""
+					}
+				]
+			)
+		})
 	})
 
 	it("size allows as a filter callback", async () => {

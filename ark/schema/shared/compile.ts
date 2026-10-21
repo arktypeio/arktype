@@ -8,6 +8,7 @@ import {
 } from "@ark/util"
 import type { BaseNode } from "../node.ts"
 import type { NodeId } from "../parse.ts"
+import type { Predicate } from "../predicate.ts"
 import type { IntersectionNode } from "../roots/intersection.ts"
 import type { UnionNode } from "../roots/union.ts"
 import type { StructureNode } from "../structure/structure.ts"
@@ -218,6 +219,8 @@ export interface TransformKeyOptions {
 	onChange?: () => unknown
 }
 
+export type SwitchCase = readonly [label: string, returned: string]
+
 export interface TransformStep {
 	node: BaseNode
 	signature?: BaseNode
@@ -265,6 +268,10 @@ export abstract class NodeCompiler extends CompiledFunction<
 	undeclaredFails?(node: StructureNode): string
 	// what a key's value whose condition failed is applied by, if not its Apply
 	failingApplyOf?(value: BaseNode): string | undefined
+	// what a required key's value is allowed by before it's applied, if anything
+	gate?(value: BaseNode, arg: string): string | undefined
+	// whether a predicate can't add issues itself, so Apply needn't count them
+	addsNoIssues?(predicate: Predicate): boolean
 
 	// returns the call of a function its unit declares for a rare path
 	abstract outline(
@@ -357,6 +364,15 @@ export abstract class NodeCompiler extends CompiledFunction<
 	// a call reporting a failure into ctx
 	fails(method: "failsAt" | "failsIn", args: string): string {
 		return `ctx.${method}(${args})`
+	}
+
+	// returns what the case on matches returns, or otherwise
+	switch(on: string, cases: readonly SwitchCase[], otherwise: string): this {
+		return this.block(`switch(${on})`, () => {
+			for (const [label, returned] of cases)
+				this.line(`${label}: return ${returned}`)
+			return this
+		}).return(otherwise)
 	}
 
 	requiresContextFor(node: BaseNode, kind = this.traversalKind): boolean {

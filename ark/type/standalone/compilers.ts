@@ -7,9 +7,11 @@ import {
 	type BaseRoot,
 	type CheckOptions,
 	type NodeId,
+	type Predicate,
 	type ReferenceOptions,
 	type RootUnit,
 	type StructureNode,
+	type SwitchCase,
 	type TraversalKind,
 	type UnionNode
 } from "@ark/schema"
@@ -27,27 +29,6 @@ import {
 	writeSiteOf
 } from "./sites.ts"
 
-// a case returning what the next one does falls through to it
-const sharedReturnCase = /^( +)(case [^]*): return ([^]*)$/
-
-const casesFallingThrough = (body: string): string => {
-	const lines = body.split("\n")
-	for (let i = 0; i < lines.length - 1; i++) {
-		const [, indent, label, returned] = sharedReturnCase.exec(lines[i]) ?? []
-		const next = sharedReturnCase.exec(lines[i + 1])
-		if (label && next?.[1] === indent && next[3] === returned)
-			lines[i] = `${indent}${label}:`
-	}
-	return lines.join("\n")
-}
-
-const countedCheck =
-	/^( +)const errorCount = ctx\.currentErrorCount\n +if \(!((?:[\da-z]+R|r)\d+)\(data, ctx\) && ctx\.currentErrorCount === errorCount\) {\n +return (!.+)\n +}\n +return !ctx\.failFast \|\| ctx\.currentErrorCount === errorCount\n$/
-
-// a required prop's Apply: `!ctx.failsIn(apply, value, key, site, data)`
-const appliedProp =
-	/!ctx\.failsIn\((\w+), (data(?:\.[\w$]+|\["(?:[^"\\]|\\.)*"])), "(?:[^"\\]|\\.)*", (?:[\da-z]+R|r)\d+, data\)/g
-
 // a value holding no object, pattern, alias, predicate or morph, whose
 // Allows is a few checks
 const isLeaf = (node: BaseNode): boolean =>
@@ -58,6 +39,9 @@ const isLeaf = (node: BaseNode): boolean =>
 
 class StandaloneCompiler extends TraversalCompiler {
 	override readonly reportsFirst: boolean = false
+	// a unit is named for its content as compiled without the gates that
+	// follow from it
+	readonly naming: boolean = this.linkage.unit === undefined
 
 	// named for its unit, so units can share a scope
 	override ref(value: object | symbol): string {
@@ -79,40 +63,34 @@ class StandaloneCompiler extends TraversalCompiler {
 		return isInlineSite(site) ? writeSiteOf(site, JSON.stringify) : ref
 	}
 
-	// Allows by Apply of each leaf a prop applies
-	private readonly gated = new Map<string, string>()
-
-	override traversal(node: BaseNode, kind: TraversalKind): string {
-		const name = super.traversal(node, kind)
-		if (kind === "Apply" && this.traversalKind === "Apply" && this.gates(node))
-			this.gated.set(name, super.traversal(node, "Allows"))
-		return name
+	// a leaf its Allows passes skips the path bookkeeping of applying it
+	override gate(value: BaseNode, arg: string): string | undefined {
+		if (!this.naming && isLeaf(value))
+			return `${this.traversal(value, "Allows")}(${arg})`
 	}
 
-	// whether a prop checks its value by Allows before applying it
-	gates(node: BaseNode): boolean {
-		return isLeaf(node)
+	// a keyword check adds no issues itself, so its Apply needn't count them
+	override addsNoIssues(predicate: Predicate): boolean {
+		return isKeyword(predicate)
 	}
 
-	override get body(): string {
-		const body = casesFallingThrough(super.body)
-		// a keyword check adds no issues itself, so its Apply needn't count them
-		const counted = countedCheck.exec(body)
-		if (counted) {
-			const [, indent, check, fail] = counted
-			for (const [value, name] of this.refs!) {
-				if (name === check && isKeyword(value))
-					return `${indent}return ${check}(data, ctx) || ${fail}\n`
+	// a case returning what the next one does falls through to it
+	override switch(
+		on: string,
+		cases: readonly SwitchCase[],
+		otherwise: string
+	): this {
+		return this.block(`switch(${on})`, () => {
+			for (const [i, [label, returned]] of cases.entries()) {
+				const next = cases[i + 1]
+				const fallsThrough =
+					label !== "default" &&
+					next?.[0] !== "default" &&
+					next?.[1] === returned
+				this.line(fallsThrough ? `${label}:` : `${label}: return ${returned}`)
 			}
-		}
-		// a leaf its Allows passes skips the path bookkeeping of applying it
-		return body.replace(
-			appliedProp,
-			(applied, apply: string, value: string) => {
-				const allows = this.gated.get(apply)
-				return allows ? `${allows}(${value}) || ${applied}` : applied
-			}
-		)
+			return this
+		}).return(otherwise)
 	}
 
 	// a plain object missing every default, its only changes, is copied once
@@ -284,9 +262,7 @@ class UnifiedCompiler extends StandaloneCompiler {
 	override failingApplyOf(): undefined {}
 
 	// unpassed a ctx, failsIn allows a value itself
-	override gates(): boolean {
-		return false
-	}
+	override gate(): undefined {}
 
 	// read where it fails, as a site is, so a unit needn't receive it
 	override fails(method: "failsAt" | "failsIn", args: string): string {

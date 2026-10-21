@@ -162,7 +162,8 @@ export abstract class BaseProp<
 					this.value.isBasis() ?
 						`!${js.error(this, key)}`
 					:	`!${js.fails("failsIn", `${(condition && js.failingApplyOf?.(this.value)) || js.traversal(this.value, "Apply")}, ${value}, ${key}, ${js.site(this)}, data`)}`
-				return condition ? `${condition} || ${fails}` : fails
+				const allows = condition || js.gate?.(this.value, value)
+				return allows ? `${allows} || ${fails}` : fails
 			}
 			// a value whose predicates read ctx is checked at its key's path
 			if (
