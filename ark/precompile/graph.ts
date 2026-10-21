@@ -442,6 +442,7 @@ const typeMemberKinds: Record<string, KindBits> = Object.setPrototypeOf(
 const exportKindOf = (name: ArkExportName): KindBits =>
 	isRuntimeExport(name) ? kinds.data
 	: name === "type" ? kinds.otherArk | kinds.returnsType | kinds.returnsArk
+	: name === "codec" ? typeMethod
 	: kinds.otherArk | kinds.returnsArk
 
 // e.g. a Type for `T.in`, a method for `T.and`, data for `T.expression`
@@ -2209,6 +2210,10 @@ const isUnsureRead = (
 	(kind & kinds.type ?
 		!isOnlyType(kind)
 	:	!!(kind & kinds.unknown) && !isContainerMethod(read))
+
+// e.g. `in`, which reads a Type off any Type
+export const isTypeOnlyMember = (name: PropertyKey): boolean =>
+	typeof name === "string" && typeMemberKinds[name] === kinds.type
 
 // e.g. `or`, which a value the build can't see may read off a Type
 export const isTypeMemberRead = (

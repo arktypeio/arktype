@@ -1546,6 +1546,36 @@ console.log(JSON.stringify(User.toJsonSchema()))
 		)
 	})
 
+	it("encodes with a codec another module defines", async () => {
+		const root = writeFixture(
+			{
+				"defs.ts": `import { scope } from "arktype"
+import { codec } from "arktype/codecs"
+
+export const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+export const shop = scope({ Order: { at: EpochMs } }).export()
+`,
+				"main.ts": `import { EpochMs, shop } from "./defs.ts"
+
+console.log(
+	JSON.stringify([
+		EpochMs.encode(new Date(7)),
+		shop.Order.encode({ at: new Date(8) }),
+		shop.Order.in({ at: 9 })
+	])
+)
+`
+			},
+			fromHere("temp", "encodedImport")
+		)
+		attest(run(await bundlers.esbuild({ cwd: root }, root))).equals(
+			runPlain(root)
+		)
+	})
+
 	it("an import a local shadows", async () => {
 		const root = writeFixture(
 			{
