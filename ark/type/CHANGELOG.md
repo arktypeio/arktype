@@ -720,6 +720,68 @@ T({ a: "x", b: "1" }).toString()
 
 Function defaults, cyclic transforms and predicates beside morphs can run as they're reached on a failed call. Valid calls are unchanged.
 
+### Fix validating and transforming cyclic data
+
+A cyclic Type skipped every object an alias had already reached, even on another path or in a union branch that failed, so it accepted some invalid data, reported an object's errors once per path reaching it (#924) and, with `jitless`, wrote into input arrays and rejected valid data (#1367):
+
+```ts
+const types = scope({
+	x: { v: "string", "self?": "x" },
+	a: { x: "x", z: "string" },
+	b: { x: "x", b: "string" },
+	union: "a | b",
+	node: { a: "node | number", "b?": "node" }
+}).export()
+
+// previously true, now false
+types.union.allows({ x: { v: "a", self: { v: 1 } }, z: "z", b: "b" })
+
+// previously valid, now b must be an object (was a number)
+types.node({ a: 5, b: 5 }).toString()
+
+const { nested } = scope(
+	{ nested: "(nested | number)[]" },
+	{ jitless: true }
+).export()
+const input = [[1], [2]]
+
+// previously left input as [[1, 2], [2]], now leaves it as [[1], [2]]
+nested(input)
+```
+
+A transforming cyclic Type transforms each path separately, like an acyclic Type, so an object reached by two paths gives two outputs:
+
+```ts
+const { tree } = scope({
+	tree: { v: "string.numeric.parse", "left?": "tree", "right?": "tree" }
+}).export()
+const leaf = { v: "1" }
+const out = tree.assert({ v: "0", left: leaf, right: leaf })
+
+// previously true, now false
+out.left === out.right
+```
+
+Past about 64 nested aliases, or about 1,000 aliases reached in one call, data is still transformed once per object, so a cycle in the data closes in the output. A morph returning a class instance from cyclic data now returns one whose cycle closes.
+
+### Instantiate recursive generics
+
+A generic that referenced itself overflowed the stack, and a generic argument referencing the definition it's in failed the generic's constraint (#1082, #1237):
+
+```ts
+// previously RangeError: Maximum call stack size exceeded
+// now { v: string, next?: list<string> }
+scope({
+	"list<t>": { v: "t", "next?": "list<t>" },
+	strings: "list<string>"
+}).export().strings.expression
+
+// previously ParseError: T must be assignable to object (was $node)
+scope({ node: { n: "string", "kids?": "Partial<node>" } }).export()
+```
+
+A generic whose instantiations keep growing, like `"g<p>": { "n?": "g<g<p>>" }`, throws `ParseError: Instantiating g recursed with new arguments more than 100 times` where it overflowed the stack.
+
 ### Keep a Type's descriptions wherever it's referenced
 
 A Type keeps the `description` writers of the scope that defined it wherever it's referenced or imported, and a name a scope resolves, such as a keyword, uses that scope's writers all the way down, whether compiled or `jitless`:
