@@ -115,6 +115,8 @@ An error's `code` tells you its other fields:
 | `divisor`                               | `rule`                                                                                                                                                     |
 | `pattern`                               | `rule` (the regex source) and `flags`                                                                                                                      |
 | `before`, `after`                       | `rule`, a `Date`                                                                                                                                           |
+| `notEqual`                              | `rule`, a number or `Date`                                                                                                                                 |
+| `notEqualLength`                        | `rule`                                                                                                                                                     |
 | `predicate`                             | `predicate` when a narrow returns `false`; `morph` and what it threw as `cause` for `pipe.try`; `meta.keyword` and sometimes `cause` for a keyword's parse |
 | `required`                              | `missing`, the missing value's type; `valueMeta`, its meta; and `missingValueDescription`, its English description                                         |
 | `undeclared`                            | none; its `data` is the value of a key `"+": "reject"` disallows                                                                                           |

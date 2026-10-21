@@ -52,6 +52,21 @@ A validation that fails can leave writes in the objects of its input it found va
 
 `import "arktype/mutatesInput"` installs both modes, so a program choosing neither ships neither, and creating a Type configured with either throws without it, naming the import.
 
+### Exclude a value with `!=`
+
+`!=` constrains what `==` does, a number, a string or array's length or a `Date`, to anything but its limit:
+
+```ts
+const NonZero = type("number != 0")
+
+// ArkErrors: must be other than 0 (was 0)
+NonZero(0)
+```
+
+It reduces like the other comparators: `number < 0 | number > 0` is `number != 0`, `number >= 0 & number != 0` is `number > 0`, and `string != 0` is `string > 0`. Its JSON Schema is `not`, like `{ type: "number", not: { const: 0 } }`.
+
+Its errors have the codes `notEqual`, whose `rule` is a number or a `Date`, and `notEqualLength`. A lone `!` still doesn't end a name, so an alias or brand like `a!b` parses as before.
+
 ### Export `Default` and `To` as types
 
 `arktype` exports the `Default` and `To` types an inferred Type holds, so a declaration can name them as `import("arktype").Default`, like `Out` and `Brand`.
