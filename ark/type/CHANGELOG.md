@@ -1454,6 +1454,20 @@ const T = type({ bio: "string.trim" })
 T.encode(T.assert({ bio: " a\nb " }))
 ```
 
+### Accept what `string.lower`, `string.upper` and `string.capitalize` output
+
+Their `.preformatted` keywords, which are also their outputs, accepted only ASCII letters, so most strings the morphs returned failed to encode. `string.lower.preformatted` now accepts any string without an uppercase ASCII letter, `string.upper.preformatted` any string without a lowercase one, and `string.capitalize.preformatted` the empty string and any string not starting with a lowercase one:
+
+```ts
+const T = type({ tag: "string.lower" })
+
+// was: ArkErrors: tag must be only lowercase letters (was "foo bar")
+// now: { tag: "foo bar" }
+T.encode(T.assert({ tag: "Foo Bar" }))
+```
+
+Their descriptions are now "lowercase" and "uppercase".
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

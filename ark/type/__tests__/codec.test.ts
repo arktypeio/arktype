@@ -177,6 +177,29 @@ contextualize(() => {
 		attest(T.encode(decoded)).snap({ bio: "a\nb" })
 	})
 
+	it("case keywords encode what they decode to", () => {
+		const Cased = type({
+			lower: "string.lower",
+			upper: "string.upper",
+			capitalized: "string.capitalize"
+		})
+		const inputs = ["", "élan Vital", "1st place, 2nd: Ünder!", "a\nB c"]
+		attest(
+			inputs.map(s =>
+				Cased.encode(Cased.assert({ lower: s, upper: s, capitalized: s }))
+			)
+		).snap([
+			{ lower: "", upper: "", capitalized: "" },
+			{ lower: "élan vital", upper: "ÉLAN VITAL", capitalized: "Élan Vital" },
+			{
+				lower: "1st place, 2nd: ünder!",
+				upper: "1ST PLACE, 2ND: ÜNDER!",
+				capitalized: "1st place, 2nd: Ünder!"
+			},
+			{ lower: "a\nb c", upper: "A\nB C", capitalized: "A\nB c" }
+		])
+	})
+
 	it("missing inverse", () => {
 		const T = type({ length: type("string").pipe(s => s.length) })
 		attest(() => T.encode).throws(

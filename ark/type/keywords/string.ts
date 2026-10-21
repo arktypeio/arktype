@@ -138,7 +138,7 @@ declare namespace base64 {
 }
 
 const preformattedCapitalize = cached(() =>
-	regexStringNode(/^[A-Z].*$/, "string.capitalize.preformatted")
+	regexStringNode(/^(?:[^a-z][\S\s]*)?$/, "string.capitalize.preformatted")
 )
 
 export const capitalize: capitalize.module = keywordModule(
@@ -467,7 +467,7 @@ export declare namespace stringJson {
 }
 
 const preformattedLower = cached(() =>
-	regexStringNode(/^[a-z]*$/, "string.lower.preformatted")
+	regexStringNode(/^[^A-Z]*$/, "string.lower.preformatted")
 )
 
 const lower: lower.module = keywordModule(
@@ -709,7 +709,7 @@ export declare namespace trim {
 }
 
 const preformattedUpper = cached(() =>
-	regexStringNode(/^[A-Z]*$/, "string.upper.preformatted")
+	regexStringNode(/^[^a-z]*$/, "string.upper.preformatted")
 )
 
 const upper: upper.module = keywordModule(
