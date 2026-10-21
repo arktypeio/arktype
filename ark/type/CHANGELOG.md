@@ -279,6 +279,18 @@ type("Date")(new Map())
 
 `de` already wrote these with its nouns.
 
+### Say "an array" where a union's object branches are arrays
+
+A union discriminated by domain described its object case as `an object`, even when every branch it reached was an array. It now says `an array`, and its error's `cases` holds `"Array"` in place of `"object"`:
+
+```ts
+// was: ArkErrors: must be a string or an object (was a number)
+// now: ArkErrors: must be a string or an array (was a number)
+type("string | string[]")(5)
+```
+
+A `switch` over a `discriminant` error's `cases` must handle `"Array"`.
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:

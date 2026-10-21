@@ -511,6 +511,18 @@ contextualize(() => {
 		attest(T({ a: "x", b: 1 })).equals({ a: "x", b: 1 })
 	})
 
+	it("describes an object case only arrays reach as an array", () => {
+		attest(type("string | string[]")(5).toString()).snap(
+			"must be a string or an array (was a number)"
+		)
+		attest(type("string | string[] | Date")(5).toString()).snap(
+			"must be a string or an object (was a number)"
+		)
+		attest(type({ a: "string | number[]" })({ a: true }).toString()).snap(
+			"a must be a string or an array (was boolean)"
+		)
+	})
+
 	// https://github.com/arktypeio/arktype/issues/1435
 	it("splits a literal union at the discriminant into cases", () => {
 		const T = type.or(

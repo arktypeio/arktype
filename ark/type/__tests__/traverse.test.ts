@@ -71,7 +71,7 @@ contextualize(() => {
 		const T = type("string|number[]")
 		attest(T([1])).snap([1])
 		attest(T("hello")).snap("hello")
-		attest(T(2).toString()).snap("must be a string or an object (was a number)")
+		attest(T(2).toString()).snap("must be a string or an array (was a number)")
 		attest(T({}).toString()).snap("must be an array (was an object)")
 	})
 

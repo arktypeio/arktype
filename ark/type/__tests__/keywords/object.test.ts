@@ -116,7 +116,7 @@ contextualize(() => {
 			attest(liftNumberArray(5)).equals([5])
 			attest(liftNumberArray([5])).equals([5])
 			attest(liftNumberArray("five").toString()).snap(
-				"must be a number or an object (was a string)"
+				"must be a number or an array (was a string)"
 			)
 			attest(liftNumberArray(["five"]).toString()).snap(
 				"value at [0] must be a number (was a string)"
