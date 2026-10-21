@@ -292,6 +292,15 @@ export const writeAliasMessage = (
 			)
 		)}`
 
+// `resolved` is where @ark/schema/runtime resolves other than to the build's copy
+export const writeRuntimeAliasMessage = (
+	resolved: string,
+	variant: RuntimeVariant | undefined
+): string =>
+	variant ?
+		`@ark/schema/runtime resolves to ${resolved} rather than @ark/schema/runtime/${variant}, which a build with ${writeVariantOption(variant)} loads in its place. Add to turbopack.resolveAlias: ${JSON.stringify({ "@ark/schema/runtime": `@ark/schema/runtime/${variant}` })}`
+	:	`@ark/schema/runtime resolves to ${resolved}, a copy for a build with errors: "none" or members: { errorMethods: false }. Remove its turbopack.resolveAlias.`
+
 export const writeNodeVersionMessage = (
 	name: string,
 	version: string
