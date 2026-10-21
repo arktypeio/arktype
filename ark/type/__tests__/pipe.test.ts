@@ -1033,6 +1033,22 @@ contextualize(() => {
 		)
 	})
 
+	it("indiscriminable union past a redundant branch", () => {
+		attest(() =>
+			type.or(
+				{ "kind?": "'b'" },
+				{ a: "number", kind: "1" },
+				{ kind: "'b'" },
+				{ kind: "number", "+": "delete" }
+			)
+		).throws(
+			writeIndiscriminableMorphMessage(
+				"{ a: number, kind: 1 }",
+				"{ kind: number, + (undeclared): delete }"
+			)
+		)
+	})
+
 	it("undiscriminated morph at path", () => {
 		attest(() => {
 			scope({
