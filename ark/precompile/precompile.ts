@@ -131,6 +131,7 @@ import {
 	copiesHint,
 	frozenHint,
 	hintsByRule,
+	opaqueSchemaHint,
 	islandHint,
 	islandValueMessage,
 	localeHint,
@@ -2902,7 +2903,7 @@ export class Precompiler {
 					"R4",
 					`\`${origin.snippetOf(node)}\` is not static, so the site accepts it only as a Standard Schema that is not a Type`,
 					chainOf(standIn.dynamic),
-					undefined,
+					opaqueSchemaHint,
 					"warning"
 				)
 			)
