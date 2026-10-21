@@ -129,7 +129,13 @@ export const claims = {
 		"Dynamic ArkType validates moltar's strict cases about 10 times faster than 2.2.",
 	// 18 instructions, the harness floor; typia createIs 221
 	noInit:
-		"A precompiled Type costs nothing to create: it was built when you built."
+		"A precompiled Type costs nothing to create: it was built when you built.",
+	// `import { type } from "arktype"` by ark/repo/bench/bundle.ts's method
+	// (esbuild bundle + minify, esm, neutral, gzip) at 9f7e401c3: 75629 vs
+	// 2.2.9's 47808 B gz (240335 vs 156123 min); sizeChart's dynamic bar,
+	// a different entry, is 75520
+	dynamicSize:
+		"Dynamic ArkType is 75.6 kB gzipped, minified with esbuild, up from 47.8 kB in 2.2.9, so precompile to ship less."
 } satisfies Record<string, Claim<string>>
 
 export type ClaimId = keyof typeof claims
