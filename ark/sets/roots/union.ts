@@ -87,9 +87,7 @@ export const unionImplementation: setImplementationOf<Union.Declaration> = {
 
 			return ctx.$.node(
 				"union",
-				l.ordered || r.ordered ?
-					{ branches: resultBranches, ordered: true }
-				:	{ branches: resultBranches }
+				unionInner(resultBranches, l.ordered || r.ordered)
 			)
 		},
 		...defineRightwardIntersections("union", (l, r, ctx) => {
@@ -98,13 +96,16 @@ export const unionImplementation: setImplementationOf<Union.Declaration> = {
 
 			if (branches.length === 1) return branches[0]
 
-			return ctx.$.node(
-				"union",
-				l.ordered ? { branches, ordered: true } : { branches }
-			)
+			return ctx.$.node("union", unionInner(branches, l.ordered))
 		})
 	}
 }
+
+// an ordered union's branches stay in the order given
+const unionInner = (
+	branches: readonly BaseRoot[],
+	ordered: boolean | undefined
+): Union.Input => (ordered ? { branches, ordered: true } : { branches })
 
 // a switch compares by ===, which never matches NaN and compares a Date by reference
 const isCaseUnit = (node: Unit.Node): boolean =>
@@ -167,47 +168,11 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 				const matching = candidates.find(
 					d => arrayEquals(d.path, entry.path) && d.kind === entry.kind
 				)
-
-				if (!matching) {
-					candidates.push({
-						kind: entry.kind,
-						cases: {
-							[lSerialized]: {
-								branchIndices: [lIndex],
-								condition: entry.l as never
-							},
-							[rSerialized]: {
-								branchIndices: [rIndex],
-								condition: entry.r as never
-							}
-						},
-						path: entry.path
-					})
-				} else {
-					if (matching.cases[lSerialized]) {
-						matching.cases[lSerialized].branchIndices = appendUnique(
-							matching.cases[lSerialized].branchIndices,
-							lIndex
-						)
-					} else {
-						matching.cases[lSerialized] ??= {
-							branchIndices: [lIndex],
-							condition: entry.l as never
-						}
-					}
-
-					if (matching.cases[rSerialized]) {
-						matching.cases[rSerialized].branchIndices = appendUnique(
-							matching.cases[rSerialized].branchIndices,
-							rIndex
-						)
-					} else {
-						matching.cases[rSerialized] ??= {
-							branchIndices: [rIndex],
-							condition: entry.r as never
-						}
-					}
-				}
+				const cases = matching?.cases ?? {}
+				addCase(cases, lSerialized, lIndex, entry.l)
+				addCase(cases, rSerialized, rIndex, entry.r)
+				if (!matching)
+					candidates.push({ kind: entry.kind, cases, path: entry.path })
 			}
 		}
 	}
@@ -246,10 +211,7 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 		const caseNode =
 			branches.length === 1 ?
 				branches[0]
-			:	node.$.node(
-					"union",
-					node.ordered ? { branches, ordered: true } : { branches }
-				)
+			:	node.$.node("union", unionInner(branches, node.ordered))
 
 		node.caseNodes.push(caseNode)
 		cases[k] = caseNode
@@ -262,18 +224,26 @@ export const discriminateUnion = (node: Union.Node): Discriminant | null => {
 		// we don't have to worry about order here as it is always preserved
 		// within defaultEntries
 		const branches = ctx.defaultEntries.map(entry => entry.branch)
-		cases.default = node.$.node(
-			"union",
-			node.ordered ? { branches, ordered: true } : { branches },
-			{
-				prereduced: true
-			}
-		)
+		cases.default = node.$.node("union", unionInner(branches, node.ordered), {
+			prereduced: true
+		})
 
 		node.caseNodes.push(cases.default)
 	}
 
 	return Object.assign(ctx.location, members ? { cases, members } : { cases })
+}
+
+const addCase = (
+	cases: CandidateCases,
+	k: string,
+	branchIndex: number,
+	condition: unknown
+) => {
+	if (cases[k])
+		cases[k].branchIndices = appendUnique(cases[k].branchIndices, branchIndex)
+	else
+		cases[k] = { branchIndices: [branchIndex], condition: condition as never }
 }
 
 // New context object to carry discrimination state between functions.
