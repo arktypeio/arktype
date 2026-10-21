@@ -15,6 +15,8 @@ interface NodeMeta extends JsonSchema.UniversalMeta, UnknownErrorConfigs {
 	alias?: string
 	/** the flat alias of the builtin keyword whose phrase describes this node */
 	keyword?: string
+	/** the JSON Schema to write for this node in place of the one its constraints imply */
+	jsonSchema?: JsonSchema
 	onFail?: ArkErrors.Handler
 }
 

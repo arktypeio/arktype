@@ -83,10 +83,6 @@ const implementation: nodeImplementationOf<Morph.Declaration> =
 	})
 
 export class MorphNode extends BaseRoot<Morph.Declaration> {
-	get serializedMorphs(): string[] {
-		return this.morphs.map(namedReference)
-	}
-
 	lastMorph: Morph | BaseRoot | undefined =
 		this.inner.morphs[this.inner.morphs.length - 1]
 	lastMorphIfNode: BaseRoot | undefined =
@@ -142,13 +138,6 @@ export class MorphNode extends BaseRoot<Morph.Declaration> {
 			this.lastMorphIfNode?.rawOut ??
 			$ark.intrinsic.unknown.internal
 		)
-	}
-
-	declareIn(declaredIn: BaseRoot): MorphNode {
-		return this.$.node("morph", {
-			...this.inner,
-			declaredIn
-		})
 	}
 
 	declareOut(declaredOut: BaseRoot): MorphNode {

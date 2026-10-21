@@ -119,6 +119,7 @@ export declare namespace JsonSchema {
 		maxLength?: number
 		pattern?: string
 		format?: string
+		contentMediaType?: string
 	}
 
 	// NB: Technically 'exclusiveMaximum' and 'exclusiveMinimum' are mutually exclusive with 'maximum' and 'minimum', respectively,

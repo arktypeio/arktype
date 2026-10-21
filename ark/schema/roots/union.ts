@@ -163,16 +163,21 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		return (this._discriminantCases ??= casesOf(this.discriminant!))
 	}
 
+	// a miss of the union's own value lists its branches if one is described,
+	// as an indiscriminable union's does
+	get missListsBranches(): boolean {
+		return (
+			!isAuthored(this) &&
+			this.discriminant!.path.length === 0 &&
+			this.branches.some(isAuthored)
+		)
+	}
+
 	private _discriminantDescription: string | undefined
 	get discriminantDescription(): string {
 		return (this._discriminantDescription ??=
-			// a description written for the union describes its own value
-			(
-				this.discriminant!.path.length === 0 &&
-				this.meta.description !== undefined &&
-				this.meta.keyword === undefined
-			) ?
-				this.meta.description
+			isAuthored(this) ?
+				this.meta.description!
 			:	describeCases(this.discriminantCases))
 	}
 
@@ -184,12 +189,17 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 		}) as UnionSite
 	}
 
+	// a described union's miss is reported at its own path
+	get missPath(): array<PropertyKey> {
+		return isAuthored(this) ? [] : this.discriminant!.path
+	}
+
 	private _discriminantMeta: ArkEnv.meta | undefined
 	// at a key, the union's expected and actual describe the object around it
 	get discriminantMeta(): ArkEnv.meta {
 		return (this._discriminantMeta ??= metaAtDiscriminant(
 			this.meta,
-			this.discriminant!
+			this.missPath
 		))
 	}
 
@@ -271,14 +281,16 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			const caseNode = discriminant.cases[k]
 			if (caseNode === true) return
 			if (caseNode === undefined) {
+				if (this.missListsBranches) return this.applyBranches(data, ctx)
+				const path = this.missPath
 				errorFromContext(ctx, {
 					code: "discriminant",
 					...this.discriminantCases,
-					onKey: discriminant.path.length !== 0,
-					absent: value === undefined && isAbsent(discriminant.path, data),
+					onKey: path.length !== 0,
+					absent: value === undefined && isAbsent(path, data),
 					description: this.discriminantDescription,
-					relativePath: discriminant.path,
-					data: value,
+					relativePath: path,
+					data: path.length ? value : data,
 					meta: this.discriminantMeta
 				})
 				return
@@ -288,6 +300,10 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 			else caseNode.traverseApply(data, ctx)
 			return
 		}
+		this.applyBranches(data, ctx)
+	}
+
+	applyBranches(data: unknown, ctx: InternalTraversal): void {
 		const errors: ArkError[] = []
 		for (let i = 0; i < this.branches.length; i++) {
 			const branch = this.branches[i]
@@ -400,25 +416,29 @@ export class UnionNode extends BaseRoot<Union.Declaration> {
 				: js.invoke(v)
 			written.push([caseCondition, caseResult])
 		}
+		const path = this.missPath
 		let otherwise =
 			js.traversalKind === "Allows" ? "false"
 			: js.traversalKind === "Transform" ? "data"
-			: js.unionFails?.(this, value, discriminant.path)
+			: this.missListsBranches ?
+				(js.unionFails?.(this) ??
+				`(${js.ref(this)}.applyBranches(data, ctx), !ctx.failFast)`)
+			:	js.unionFails?.(this, path.length ? value : "data", path)
 		if (otherwise === undefined) {
-			const serializedPathSegments = discriminant.path.map(k => js.serialize(k))
+			const serializedPathSegments = path.map(k => js.serialize(k))
 			const absent = () =>
-				discriminant.path.length ?
-					`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(discriminant.path)}, data)`
+				path.length ?
+					`${value} === undefined && ${js.ref(isAbsent)}(${js.ref(path)}, data)`
 				:	"false"
 			otherwise = `!ctx.failsWith({
 	code: "discriminant",
 	discriminantKind: "${discriminant.kind}",
 	cases: ${js.ref(this.discriminantCases.cases)},
-	onKey: ${discriminant.path.length !== 0},
+	onKey: ${path.length !== 0},
 	absent: ${absent()},
 	description: ${js.ref(this)}.discriminantDescription,
 	relativePath: [${serializedPathSegments}],
-	data: ${value},
+	data: ${path.length ? value : "data"},
 	meta: ${js.ref(this.discriminantMeta)}
 })`
 		}
@@ -553,14 +573,18 @@ const casesOf = (discriminant: Discriminant): DiscriminantCases => {
 		:	{ discriminantKind: "unit", cases: Object.freeze(keys.map(unitOf)) }
 }
 
+// a description someone wrote, not a keyword's phrase or a default
+const isAuthored = (node: { meta: ArkEnv.meta }): boolean =>
+	node.meta.description !== undefined && node.meta.keyword === undefined
+
 const isArrayCase = (caseNode: BaseRoot | true): boolean =>
 	caseNode !== true && caseNode.rawIn.extends($ark.intrinsic.Array.internal)
 
 const metaAtDiscriminant = (
 	meta: ArkEnv.meta,
-	discriminant: Discriminant
+	path: array<PropertyKey>
 ): ArkEnv.meta => {
-	if (discriminant.path.length === 0) return meta
+	if (path.length === 0) return meta
 	const { expected, actual, ...rest } = meta
 	return rest
 }

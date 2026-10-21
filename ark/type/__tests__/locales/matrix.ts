@@ -222,6 +222,14 @@ export const fixturesOf = (jitless: boolean): [string, type.Any, unknown][] => {
 	add("discriminant titled", shapes.configure({ title: "Form" }), {
 		kind: "triangle"
 	})
+	add("discriminant described", shapes.describe("eine Form"), {
+		kind: "triangle"
+	})
+	add(
+		"discriminant described branches",
+		$.type("string").or($.type("number").describe("eine Anzahl")),
+		true
+	)
 	add(
 		"discriminant numbers",
 		$.type({ k: "1.5", a: "string" }).or({ k: "2.5", b: "number" }),

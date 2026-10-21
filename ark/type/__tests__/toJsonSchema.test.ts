@@ -279,4 +279,52 @@ contextualize(() => {
 			title: "Letter"
 		})
 	})
+
+	// https://github.com/arktypeio/arktype/issues/1571
+	it("jsonSchema meta replaces what a node's constraints imply", () => {
+		const Even = type("number")
+			.narrow(n => n % 2 === 0)
+			.configure({
+				description: "even",
+				jsonSchema: { type: "integer", multipleOf: 2 }
+			})
+		attest(type({ n: Even }).toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				n: { description: "even", type: "integer", multipleOf: 2 }
+			},
+			required: ["n"]
+		})
+	})
+
+	it("jsonSchema meta isn't configured on references", () => {
+		const T = type("string | number").configure({
+			jsonSchema: { type: ["string", "number"] }
+		})
+		attest(T.exclude("number").toJsonSchema({ dialect: null })).snap({
+			type: "string"
+		})
+	})
+
+	// https://github.com/arktypeio/arktype/issues/1475
+	it("keywords checked by a predicate", () => {
+		const T = type({
+			url: "string.url < 100",
+			"pattern?": "string.regex",
+			"json?": "string.json"
+		})
+		attest(T.toJsonSchema({ dialect: null })).snap({
+			type: "object",
+			properties: {
+				url: { type: "string", maxLength: 99, format: "uri" },
+				pattern: { type: "string", format: "regex" },
+				json: {
+					type: "string",
+					contentMediaType: "application/json",
+					description: "a JSON string"
+				}
+			},
+			required: ["url"]
+		})
+	})
 })

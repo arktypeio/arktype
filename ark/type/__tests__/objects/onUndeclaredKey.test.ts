@@ -284,6 +284,14 @@ c must be removed`)
 			).snap("{ [symbol]: string, a: string, + (undeclared): reject }")
 		})
 
+		it("delete drops undeclared symbol keys", () => {
+			const declared = Symbol("declared")
+			const undeclared = Symbol("undeclared")
+			const T = type({ "+": "delete", a: "string", [declared]: "number" })
+			const out = T({ a: "ok", [declared]: 1, [undeclared]: 2 }) as object
+			attest(Object.getOwnPropertySymbols(out)).equals([declared])
+		})
+
 		it("reject reads only own enumerable keys", () => {
 			const T = type({ "+": "reject", a: "string" })
 			// the first data is checked uncompiled

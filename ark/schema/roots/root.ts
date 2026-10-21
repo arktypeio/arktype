@@ -152,10 +152,6 @@ export abstract class BaseRoot<
 
 	abstract get defaultShortDescription(): string
 
-	get shortDescription(): string {
-		return this.meta.description ?? this.defaultShortDescription
-	}
-
 	toJsonSchema(opts: ToJsonSchema.Options = {}): JsonSchema {
 		return sets().toJsonSchema(this, opts)
 	}

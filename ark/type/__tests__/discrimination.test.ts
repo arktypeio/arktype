@@ -132,6 +132,34 @@ contextualize(() => {
 		attest(Letter("d").toString()).snap('must be a letter (was "d")')
 	})
 
+	it("described branches discriminated by their value", () => {
+		const T = type("string < 2")
+			.describe("short")
+			.or(type("number").describe("a count"))
+		attest(T({}).toString()).snap("must be a count or short (was an object)")
+	})
+
+	it("described union discriminated at a key", () => {
+		const Shape = type({ kind: "'circle'", r: "number" })
+			.or({ kind: "'square'", s: "number" })
+			.describe("a shape")
+		attest(Shape({ kind: "triangle" }).toString()).snap(
+			"must be a shape (was an object)"
+		)
+		attest(type({ shape: Shape })({ shape: {} }).toString()).snap(
+			"shape must be a shape (was an object)"
+		)
+	})
+
+	it("described branches discriminated at a key", () => {
+		const Shape = type({ kind: "'circle'", r: "number" })
+			.describe("a circle")
+			.or(type({ kind: "'square'", s: "number" }).describe("a square"))
+		attest(Shape({ kind: "triangle" }).toString()).snap(
+			'kind must be "circle" or "square" (was "triangle")'
+		)
+	})
+
 	it("indiscriminable", () => {
 		const T = getPlaces().type([
 			"ocean",

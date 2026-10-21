@@ -764,7 +764,9 @@ contextualize(() => {
 				required: [{ key: Symbol("zildjian"), value: "string" }]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+			attest(() => T.toJsonSchema()).throws
+				.snap(`ToJsonSchemaError: Can't convert "symbolKey" at [Symbol(zildjian)] to JSON Schema. Configure fallback.symbolKey to write it:
+{
     code: "symbolKey",
     base: {
         type: "object",

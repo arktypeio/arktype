@@ -75,8 +75,8 @@ import { arrayIndexMatcher, maxArrayLength } from "./shared.ts"
 
 /**
  * - `"ignore"` (default) - allow and preserve extra properties
- * - `"reject"` - disallow extra properties
- * - `"delete"` - remove extra properties from output
+ * - `"reject"` - disallow extra string keys
+ * - `"delete"` - output only declared keys
  */
 export type UndeclaredKeyBehavior = "ignore" | UndeclaredKeyHandling
 
@@ -309,10 +309,6 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 
 	get requiredKeys(): Key[] {
 		return this.required?.map(node => node.key) ?? []
-	}
-
-	get optionalKeys(): Key[] {
-		return this.optional?.map(node => node.key) ?? []
 	}
 
 	get literalKeys(): Key[] {
