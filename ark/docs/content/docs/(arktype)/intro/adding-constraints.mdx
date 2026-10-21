@@ -1,16 +1,15 @@
 ---
-title: Adding Constraints
+title: Adding constraints
+description: Narrow types beyond what TypeScript can express, with keywords, ranges, divisors and custom predicates.
 ---
 
-TypeScript is extremely versatile for representing types like `string` or `number`, but what about `email` or `integer less than 100`?
+TypeScript can represent types like `string` or `number`, but what about `email` or `integer less than 100`?
 
-In ArkType, conditions that narrow a type beyond its **basis** are called **constraints**.
-
-Constraints are a first-class citizen of ArkType. They are fully composable with TypeScript's built-in operators and governed by the same underlying principles of set-theory.
+In ArkType, conditions that narrow a type beyond its **basis** are called **constraints**. They compose with TypeScript's operators like any other part of a definition.
 
 ## Define
 
-Let's create a new `contact` Type that enforces our example constraints.
+Let's create a new `Contact` Type that enforces our example constraints.
 
 ```ts
 const Contact = type({
@@ -20,47 +19,41 @@ const Contact = type({
 	score: "number.integer < 100"
 })
 
-// if you need the TS type, just infer it out as normal
+// infer the TypeScript type as usual
 type Contact = typeof Contact.infer
 ```
+
+<Callout type="info" title="number excludes NaN and Infinity">
+	`number` rejects `NaN`, `Infinity` and `-Infinity` by default. To allow them,
+	see `number.NaN`, `number.Infinity` and `number.NegativeInfinity` in
+	[Keywords](/docs/keywords), or the `numberAllowsNaN` and
+	`numberAllowsInfinity` options in [Configuration](/docs/configuration).
+</Callout>
 
 ## Compose
 
 Imagine we want to define a new Type representing a non-empty list of `Contact`.
 
-While the expression syntax we've been using is ideal for creating new types, chaining is a great way to refine or transform existing ones.
+Definitions create new types. Chained methods refine or transform types you already have.
 
 ```ts
-const _Contact = type({
+const Contact = type({
 	email: "string.email",
 	score: "number.integer < 100"
 })
-
-type _Contact = typeof _Contact.t
-
-interface Contact extends _Contact {}
-
-export const Contact: type<Contact> = _Contact
-// ---cut-start---
+// ---cut---
 // a non-empty list of Contact
-// ---cut-end---
 const Contacts = Contact.array().atLeastLength(1)
+
+// ArkErrors: must be non-empty
+const out = Contacts([])
 ```
 
 ## Narrow
 
-Structured constraints like divisors and ranges will only take us so far. Luckily, they integrate seamlessly with whatever custom validation logic you need.
+Structured constraints like divisors and ranges will only take us so far. For anything else, add your own logic with `.narrow`.
 
 ```ts
-interface RuntimeErrors extends type.errors {
-	/**even must be even (was 7)
-odd must be odd (was 8)*/
-	summary: string
-}
-
-const narrowMessage = (e: type.errors): e is RuntimeErrors => true
-// ---cut---
-
 // there's no "not divisible" expression - need to narrow
 const Odd = type("number").narrow((n, ctx) =>
 	// if even, add a customizable error and return false
@@ -78,10 +71,8 @@ const out = FavoriteNumbers({
 })
 
 if (out instanceof type.errors) {
-	// ---cut-start---
-	if (!narrowMessage(out)) throw new Error()
-	// ---cut-end---
-	// hover summary to see validation errors
+	// ArkErrors: even must be even (was 7)
+	//            odd must be odd (was 8)
 	console.error(out.summary)
 } else {
 	console.log(out.odd)
@@ -92,4 +83,4 @@ You now know how to refine your types to enforce additional constraints at runti
 
 But what if once your input is fully validated, you still need to make some adjustments before it's ready to use?
 
-The final section of intro will cover **morphs**, an extremely powerful tool for composing and transforming Types.
+The final section of the intro covers **morphs**, which transform data as part of a Type.

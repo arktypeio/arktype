@@ -1,0 +1,97 @@
+---
+title: Keyword support
+description: Which JSON Schema keywords @ark/json-schema converts, which throw, and which it ignores.
+---
+
+`jsonSchemaToType` handles each keyword in one of three ways:
+
+- **supported**: the Type checks it.
+- **throws**: `jsonSchemaToType` throws a `ParseError` or `TraversalError`.
+- **ignored**: the keyword has no effect, so the Type accepts values the schema rejects.
+
+Some ignored keywords, like `if`, `dependentRequired` and `minContains`, are type errors in a schema written inline, since arktype's `JsonSchema` type doesn't include them. A schema loaded at runtime gets no such check.
+
+## Core
+
+| keyword                                                                              | support     | notes                                                                                                  |
+| ------------------------------------------------------------------------------------ | ----------- | ------------------------------------------------------------------------------------------------------ |
+| `true`, `false`                                                                      | supported   | `unknown` and `never`                                                                                  |
+| `type`                                                                               | supported   | a single name or an array of names                                                                     |
+| `const`, `enum`                                                                      | supported   | together, they throw. An object or array value is compared by reference, so no parsed value matches it |
+| `$ref`, `$dynamicRef`                                                                | **throws**  | not resolved. Alone, the schema throws. Next to `type`, they are ignored                               |
+| `$defs`, `definitions`                                                               | **ignored** | nothing can refer to them                                                                              |
+| `title`, `description`, `default`, `examples`, `deprecated`, `readOnly`, `writeOnly` | **ignored** | not validation keywords. `default` is not applied either                                               |
+| `$schema`, `$id`, `$anchor`, `$comment`                                              | **ignored** |                                                                                                        |
+| `contentEncoding`, `contentMediaType`                                                | **ignored** |                                                                                                        |
+| `nullable` (OpenAPI)                                                                 | **ignored** | write `type: ["string", "null"]` instead                                                               |
+
+Every schema needs at least one of `type`, `const`, `enum`, `allOf`, `anyOf`, `oneOf` or `not`. Without one it throws, which includes `{}` and subschemas like `{ minimum: 0 }` inside `allOf`.
+
+With an array of names in `type`, keywords for a single type are ignored. `{ type: ["string", "number"], minLength: 2 }` accepts `"a"`. `integer` is the exception: `{ type: ["integer", "null"] }` rejects `1.5`.
+
+## Composition
+
+| keyword              | support     | notes                   |
+| -------------------- | ----------- | ----------------------- |
+| `allOf`, `anyOf`     | supported   |                         |
+| `oneOf`, `not`       | supported   | checked with a `narrow` |
+| `if`, `then`, `else` | **ignored** |                         |
+
+Only one composition keyword per schema is used. If a schema has more than one, the first in the order `allOf`, `anyOf`, `not`, `oneOf` is used and the rest are ignored. Nest them in `allOf` to combine them:
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const T = jsonSchemaToType({
+	allOf: [
+		{ anyOf: [{ type: "string" }, { type: "number" }] },
+		{ not: { const: 0 } }
+	]
+})
+
+// ArkErrors: must be not: 0 (was 0)
+T(0)
+```
+
+## Strings
+
+| keyword                  | support     | notes |
+| ------------------------ | ----------- | ----- |
+| `minLength`, `maxLength` | supported   |       |
+| `pattern`                | supported   |       |
+| `format`                 | **ignored** |       |
+
+## Numbers
+
+| keyword                                | support   | notes                                                                  |
+| -------------------------------------- | --------- | ---------------------------------------------------------------------- |
+| `minimum`, `maximum`                   | supported | with `exclusiveMinimum` or `exclusiveMaximum` on the same side, throws |
+| `exclusiveMinimum`, `exclusiveMaximum` | supported | a number. Draft 4's boolean form throws                                |
+| `multipleOf`                           | supported | integers only. `0.5` throws                                            |
+
+## Arrays
+
+| keyword                      | support     | notes                                                                                                                                  |
+| ---------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `items`                      | supported   | a schema, a boolean, or an array of schemas (draft 7 tuples)                                                                           |
+| `prefixItems`                | supported   | with `items`, `items` is the rest. With `items` and `additionalItems`, throws                                                          |
+| `additionalItems`            | supported   | after an array of `items`. After a single `items` schema, throws. Alone, it applies to every item, though JSON Schema ignores it there |
+| `minItems`, `maxItems`       | supported   |                                                                                                                                        |
+| `uniqueItems`                | supported   | checked with a `narrow`                                                                                                                |
+| `contains`                   | supported   | checked with a `narrow`                                                                                                                |
+| `minContains`, `maxContains` | **ignored** |                                                                                                                                        |
+| `unevaluatedItems`           | **ignored** |                                                                                                                                        |
+
+## Objects
+
+| keyword                                                 | support     | notes                                                                          |
+| ------------------------------------------------------- | ----------- | ------------------------------------------------------------------------------ |
+| `properties`, `required`                                | supported   | `required` without `properties`, or naming a key not in it, throws             |
+| `additionalProperties`                                  | supported   | `false` rejects other keys. A schema is checked with a `narrow`                |
+| `patternProperties`                                     | supported   |                                                                                |
+| `propertyNames`                                         | supported   | keys that don't match are rejected. A `required` key that doesn't match throws |
+| `minProperties`, `maxProperties`                        | supported   | checked with a `narrow`                                                        |
+| `dependentRequired`, `dependentSchemas`, `dependencies` | **ignored** |                                                                                |
+| `unevaluatedProperties`                                 | **ignored** |                                                                                |
+
+Keywords checked with a `narrow` don't appear in the Type's `expression` and can't be [converted back](/docs/json-schema/from-json-schema#back-to-json-schema) without a fallback.

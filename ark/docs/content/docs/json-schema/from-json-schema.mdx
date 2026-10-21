@@ -1,0 +1,93 @@
+---
+title: From JSON Schema
+description: Parse a JSON Schema into a Type with @ark/json-schema and give the result a static type.
+---
+
+<InstallationTabs pkg="@ark/json-schema" />
+
+`@ark/json-schema` depends on a fixed `arktype` version, not a peer range. If your `arktype` version differs, your package manager installs a second copy.
+
+`jsonSchemaToType` parses a JSON Schema into a Type:
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const User = jsonSchemaToType({
+	type: "object",
+	properties: {
+		name: { type: "string" },
+		age: { type: "integer", minimum: 0 }
+	},
+	required: ["name"]
+})
+
+User.expression // "{ name: string, age?: number % 1 & >= 0 }"
+User({ name: "Ada" }) // { name: "Ada" }
+// ArkErrors: age must be an integer (was 1.5)
+User({ name: "Ada", age: 1.5 })
+```
+
+`true` parses to `unknown` and `false` to `never`.
+
+## Giving it a type
+
+The schema is a value, so its shape isn't inferred. `jsonSchemaToType` returns a `Type<unknown>`. If you know the shape, cast it with `.as`:
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+
+const User = jsonSchemaToType({
+	type: "object",
+	properties: { name: { type: "string" } },
+	required: ["name"]
+}).as<{ name: string }>()
+
+// { name: string }
+const user = User.assert({ name: "Ada" })
+```
+
+`.as` is not checked against the schema, so keep the two in sync yourself.
+
+## Invalid schemas
+
+`jsonSchemaToType` throws if the schema is malformed or uses a keyword it can't convert:
+
+```ts
+import { jsonSchemaToType } from "@ark/json-schema"
+// ---cut---
+// TraversalError: minLength must be non-negative (was -1)
+jsonSchemaToType({ type: "string", minLength: -1 })
+
+// ParseError: divisor must be an integer (was 0.5)
+jsonSchemaToType({ type: "number", multipleOf: 0.5 })
+```
+
+[Keyword support](/docs/json-schema/support) lists what throws and what is ignored.
+
+## Typing a schema
+
+A schema written inline in the call is checked against the `JsonSchema` type. To check one you declare separately, use `JsonSchema` from `arktype`:
+
+```ts
+import type { JsonSchema } from "arktype"
+
+const Age = {
+	type: "integer",
+	minimum: 0
+} satisfies JsonSchema.Numeric
+```
+
+## JsonSchemaScope
+
+`JsonSchemaScope` is the [module](/docs/scopes) `jsonSchemaToType` validates its input with. Its `ArraySchema`, `NumberSchema`, `ObjectSchema` and `StringSchema` Types check a schema of that kind without converting it:
+
+```ts
+import { JsonSchemaScope } from "@ark/json-schema"
+
+// ArkErrors: minimum must be a number (was a string)
+JsonSchemaScope.NumberSchema({ type: "number", minimum: "0" })
+```
+
+## Back to JSON Schema
+
+A Type from `jsonSchemaToType` has [`toJsonSchema()`](/docs/json-schema/to-json-schema) like any other. Keywords it checks with a `narrow`, like `uniqueItems`, `contains`, `oneOf` and `not`, come back as [`predicate` fallbacks](/docs/json-schema/to-json-schema#fallback-codes), so `toJsonSchema()` throws for them unless you handle that code.

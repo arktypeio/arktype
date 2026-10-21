@@ -1,0 +1,6 @@
+{
+	"title": "JSON Schema",
+	"description": "Convert Types to JSON Schema and back",
+	"root": true,
+	"pages": ["index", "to-json-schema", "from-json-schema", "support"]
+}

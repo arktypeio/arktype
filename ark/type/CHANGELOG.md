@@ -143,6 +143,32 @@ type("===", {})({})
 
 `de` prints them as `ein Objekt`, `ein Array` and `eine Funktion`.
 
+### Add codecs
+
+`codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:
+
+```ts
+import { codec } from "arktype/codecs"
+
+const EpochMs = codec("number.integer", "Date", {
+	decode: n => new Date(n),
+	encode: d => d.getTime()
+})
+
+const Event = type({ name: "string", at: EpochMs })
+
+// { name: "launch", at: new Date(0) }
+const event = Event({ name: "launch", at: 0 })
+// { name: "launch", at: 0 }
+const encoded = Event.encode(event)
+```
+
+`.encode` validates its input against the Type's output and its result against the Type's input. A defaulted key is required when encoding, and a union tries its branches without morphs first. Parse keywords like `string.date.iso.parse` encode back to strings, and format keywords like `string.trim` encode a formatted string as itself. Accessing `.encode` throws a `ParseError` if a morph has no inverse, or if `arktype/codecs` isn't imported: it installs encoding, so an app that doesn't encode doesn't ship it. See [the docs](https://arktype.io/docs/codecs).
+
+A codec's inverse is part of its morph node's schema as `inverse`, so it appears in `.json`.
+
+https://github.com/arktypeio/arktype/issues/909
+
 ### Write error messages in other languages
 
 Configure a locale to write error messages in another language. ArkType ships two: `en`, the default, and `de`.
@@ -805,6 +831,19 @@ A function, class or symbol is written as its `$ark` name, as in the type's `.js
 
 A `symbolKey` fallback's result for a symbol-keyed property is now used instead of discarded.
 
+### Fall back for regex flags and constrained keys in JSON Schema
+
+JSON Schema's `pattern` has no flags, so `toJsonSchema()` wrote `/^a/i` as `"^a"`, which rejects `"A"`. A flag that changes what a pattern matches now goes to the new `patternFlags` fallback. `d` and `g` are ignored, as is `u` for draft-2020-12, whose patterns are built with it.
+
+An index signature whose key is constrained beyond one pattern, like `[string <= 3]`, was left out. It now goes to the new `indexKey` fallback, or, if undeclared keys are rejected and every declared key matches it, is written with `propertyNames`:
+
+```ts
+// { type: "object", propertyNames: { type: "string", maxLength: 3 }, additionalProperties: { type: "number" } }
+type({ "[string <= 3]": "number", "+": "reject" }).toJsonSchema()
+```
+
+`~standard.jsonSchema` leaves out either one, along with an `additionalProperties: false` that would reject keys the index allows.
+
 ### Reject shallow cycles
 
 An alias that resolved to itself without passing through an object, array or morph accepted every value. It now throws a ParseError:
@@ -1346,6 +1385,30 @@ T({}).at
 ```
 
 A morph that fails on the default returns its errors from validation instead of throwing a TraversalError when the type is defined. The default is still checked against the morph's input when defined.
+
+### Throw when an embedded Standard Schema validates asynchronously
+
+A Standard Schema whose `validate` returned a Promise, like a Zod schema with an async refinement, gave `undefined` for any input. ArkType validates synchronously, so it now throws:
+
+```ts
+const T = type({ name: z.string().refine(async s => s.length > 1) })
+
+// previously { name: undefined }
+// now throws: Standard Schema definitions must validate synchronously (zod returned a Promise)
+T({ name: "x" })
+```
+
+### Keep the path of an embedded Standard Schema's issues
+
+An issue with an empty or missing path, as for any non-object Zod or Valibot schema, lost the path it was found at:
+
+```ts
+const T = type({ age: z.number() })
+
+// previously "Invalid input: expected number, received string"
+// now "age invalid input: expected number, received string"
+T({ age: "x" }).toString()
+```
 
 ## 2.2.8
 

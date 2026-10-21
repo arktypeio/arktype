@@ -11,7 +11,7 @@ import {
 	type Union,
 	type nodeOfKind
 } from "@ark/schema"
-import { flatMorph, hasKey, throwInternalError, type dict } from "@ark/util"
+import { flatMorph, hasKey, type dict } from "@ark/util"
 
 // JSON Schema's object type, which excludes what an Array basis allows
 export const isNonArray = (data: object): boolean => !Array.isArray(data)
@@ -109,7 +109,7 @@ const toResolvedJsonSchema = (
 		// metaJson serializes non-primitives like [5] to references like
 		// "$ark.array1", so prefer the original value when it is valid JSON
 		// (jsonData's object domain also allows functions, so exclude them)
-		result[k] =
+		const jsonValue =
 			typeof v !== "function" && $ark.intrinsic.jsonData.allows(v) ? v
 			: k === "default" ?
 				ctx.fallback.defaultValue({
@@ -118,6 +118,7 @@ const toResolvedJsonSchema = (
 					value: v as never
 				})
 			:	(node.metaJson as dict)[k]
+		if (jsonValue !== undefined) result[k] = jsonValue
 	}
 
 	return result
@@ -267,7 +268,7 @@ const reduceObjectJsonSchema = (
 			if (prop.hasDefault()) {
 				const value =
 					typeof prop.default === "function" ? prop.default() : prop.default
-				valueSchema.default =
+				const jsonDefault =
 					$ark.intrinsic.jsonData.allows(value) ?
 						value
 					:	ctx.fallback.defaultValue({
@@ -275,6 +276,7 @@ const reduceObjectJsonSchema = (
 							base: valueSchema,
 							value
 						})
+				if (jsonDefault !== undefined) valueSchema.default = jsonDefault
 			}
 
 			schema.properties![prop.key] = valueSchema
@@ -286,16 +288,11 @@ const reduceObjectJsonSchema = (
 		}
 	}
 
+	const indexKeys: IndexKey[] = []
+
 	if (node.index) {
 		for (const index of node.index) {
 			const valueJsonSchema = toJsonSchemaRecurse(index.value, ctx)
-
-			// declared keys are checked against an index signature too, which
-			// additionalProperties would skip
-			if (index.signature.equals($ark.intrinsic.string)) {
-				;(schema.patternProperties ??= {})[""] = valueJsonSchema
-				continue
-			}
 
 			for (const keyBranch of index.signature.branches) {
 				if (!keyBranch.extends($ark.intrinsic.string)) {
@@ -310,13 +307,10 @@ const reduceObjectJsonSchema = (
 					continue
 				}
 
-				if (keyBranch.hasKind("domain")) {
-					;(schema.patternProperties ??= {})[""] = valueJsonSchema
-					continue
-				}
-
-				let keySchema: JsonSchema.String = { type: "string" }
+				let keyIn: BaseRoot = keyBranch
+				let keySchema: JsonSchema.String | undefined
 				if (keyBranch.hasKind("morph")) {
+					keyIn = keyBranch.rawIn
 					// a key's schema can't be a $ref
 					keySchema = ctx.fallback.morph({
 						code: "morph",
@@ -326,40 +320,36 @@ const reduceObjectJsonSchema = (
 								toResolvedJsonSchema(keyBranch.introspectableOut, ctx)
 							:	null
 					}) as never
-					if (keySchema.pattern) {
-						schema.patternProperties ??= {}
-						schema.patternProperties[keySchema.pattern] = valueJsonSchema
-					} else if (keyBranch.rawIn.equals($ark.intrinsic.string))
-						(schema.patternProperties ??= {})[""] = valueJsonSchema
+				}
+
+				const pattern = keyPatternOf(keyIn, ctx)
+				if (pattern !== undefined) {
+					;(schema.patternProperties ??= {})[pattern] = valueJsonSchema
 					continue
 				}
-				if (!keyBranch.hasKind("intersection")) {
-					return throwInternalError(
-						`Unexpected index branch kind ${keyBranch.kind}.`
-					)
-				}
 
-				const { pattern } = keyBranch.inner
-
-				if (pattern) {
-					const keySchemaWithPattern = Object.assign(keySchema, {
-						pattern: pattern[0].rule
-					})
-
-					for (let i = 1; i < pattern.length; i++) {
-						keySchema = ctx.fallback.patternIntersection({
-							code: "patternIntersection",
-							base: keySchemaWithPattern,
-							pattern: pattern[i].rule
-						})
-					}
-
-					schema.patternProperties ??= {}
-					schema.patternProperties[keySchemaWithPattern.pattern] =
-						valueJsonSchema
-				}
+				indexKeys.push({
+					node: keyIn,
+					key: keySchema ?? (toResolvedJsonSchema(keyIn, ctx) as never),
+					value: valueJsonSchema
+				})
 			}
 		}
+	}
+
+	if (
+		indexKeys.length === 1 &&
+		node.undeclared &&
+		!schema.patternProperties &&
+		node.props.every(
+			prop => typeof prop.key === "symbol" || indexKeys[0].node.allows(prop.key)
+		)
+	) {
+		// every key must match the index, so its value applies to each one
+		// that isn't declared
+		schema.propertyNames = indexKeys[0].key
+		schema.additionalProperties = indexKeys[0].value
+		return schema
 	}
 
 	if (
@@ -375,8 +365,52 @@ const reduceObjectJsonSchema = (
 	if (node.undeclared && !schema.additionalProperties)
 		schema.additionalProperties = false
 
+	for (const { key, value } of indexKeys) {
+		schema = ctx.fallback.indexKey({
+			code: "indexKey",
+			base: schema,
+			key,
+			value
+		})
+	}
+
 	return schema
 }
+
+interface IndexKey {
+	node: BaseRoot
+	key: JsonSchema.String
+	value: JsonSchema
+}
+
+// the pattern matching exactly the keys an index signature's key allows
+const keyPatternOf = (
+	key: BaseRoot,
+	ctx: JsonSchemaContext
+): string | undefined => {
+	// declared keys are checked against an index signature too, which
+	// additionalProperties would skip
+	if (key.hasKind("domain")) return ""
+	if (!key.hasKind("intersection") || key.refinements.length !== 1) return
+	const [refinement] = key.refinements
+	return refinement.hasKind("pattern") && isJsonSchemaPattern(refinement, ctx) ?
+			refinement.rule
+		:	undefined
+}
+
+// d and g don't change what a pattern matches, and draft-2020-12 patterns
+// should be built with u
+const isJsonSchemaPattern = (
+	node: nodeOfKind<"pattern">,
+	ctx: JsonSchemaContext
+): boolean =>
+	!node.flags ||
+	[...node.flags].every(
+		flag =>
+			flag === "d" ||
+			flag === "g" ||
+			(flag === "u" && ctx.target === "draft-2020-12")
+	)
 
 const reduceSequenceJsonSchema = (
 	node: Sequence.Node,
@@ -391,7 +425,7 @@ const reduceSequenceJsonSchema = (
 			if (el.kind === "defaultables") {
 				const value =
 					typeof el.default === "function" ? el.default() : el.default
-				valueSchema.default =
+				const jsonDefault =
 					$ark.intrinsic.jsonData.allows(value) ?
 						value
 					:	ctx.fallback.defaultValue({
@@ -399,6 +433,7 @@ const reduceSequenceJsonSchema = (
 							base: valueSchema,
 							value
 						})
+				if (jsonDefault !== undefined) valueSchema.default = jsonDefault
 			}
 			return valueSchema
 		})
@@ -469,6 +504,14 @@ const reduceJsonSchemaByKind: {
 	) => JsonSchema
 } = {
 	pattern: (node, base, ctx) => {
+		if (!isJsonSchemaPattern(node, ctx)) {
+			return ctx.fallback.patternFlags({
+				code: "patternFlags",
+				base,
+				pattern: node.rule,
+				flags: node.flags!
+			})
+		}
 		if (base.pattern) {
 			return ctx.fallback.patternIntersection({
 				code: "patternIntersection",

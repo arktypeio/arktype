@@ -21,6 +21,10 @@
 			"ark-ts": "./index.ts",
 			"default": "./out/index.js"
 		},
+		"./codecs": {
+			"ark-ts": "./codecs.ts",
+			"default": "./out/codecs.js"
+		},
 		"./config": {
 			"ark-ts": "./config.ts",
 			"default": "./out/config.js"
@@ -93,7 +97,8 @@
 		}
 	},
 	"files": [
-		"out"
+		"out",
+		"skills"
 	],
 	"scripts": {
 		"build": "ts ../repo/build.ts",

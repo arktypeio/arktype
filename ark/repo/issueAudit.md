@@ -1982,7 +1982,7 @@ The open part is whether this should produce an `ArkErrors` result instead of th
 
 ### <a id="note-896"></a>[#896](https://github.com/arktypeio/arktype/issues/896) docs: Add comparison page
 
-Related: #1301 (migrating-from-Zod section). A stub exists at `ark/docs/content/docs/(arktype)/comparisons.mdx` with only its frontmatter (`title: Comparisons`); it's not in the sidebar but renders as an empty page at https://arktype.io/docs/comparisons.
+Related: #1301 (migrating-from-Zod section). A stub exists at `ark/docs/content/docs/(arktype)/comparisons.mdx` with only its frontmatter (`title: Comparisons`); it's not in the sidebar but renders as an empty page at https://arktype.io/docs/comparisons. The docs overhaul deletes it and redirects the URL to the [FAQ](https://arktype.io/docs/faq).
 
 ### <a id="note-908"></a>[#908](https://github.com/arktypeio/arktype/issues/908) [Request] Utility for creating unions from object keys
 
@@ -2147,7 +2147,7 @@ Drizzle now maintains an official integration: `drizzle-arktype` on npm, also av
 
 ### <a id="note-989"></a>[#989](https://github.com/arktypeio/arktype/issues/989) ArkDark Neovim Plugin
 
-JetBrains IDEs are covered by the [ArkType plugin](https://plugins.jetbrains.com/plugin/27099-arktype), listed in the [setup docs](https://arktype.io/docs/intro/setup#jetbrains-ides). Zed is tracked separately in #1599.
+JetBrains IDEs are covered by the [ArkType plugin](https://plugins.jetbrains.com/plugin/27099-arktype), listed in the [editor docs](https://arktype.io/docs/editor#jetbrains-ides). Zed is tracked separately in #1599.
 
 ### <a id="note-1014"></a>[#1014](https://github.com/arktypeio/arktype/issues/1014) Add custom Date keywords like `now`
 

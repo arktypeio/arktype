@@ -81,11 +81,27 @@ const implementation: nodeImplementationOf<Sequence.Declaration> =
 		keys: {
 			prefix: {
 				child: true,
-				structural: true
+				structural: true,
+				reduceIo: (ioKind, inner, prefix) => {
+					// before defaultables, which reduce first and are required on output
+					inner.prefix = [
+						...prefix!.map(node =>
+							ioKind === "in" ? node.rawIn : node.rawOut
+						),
+						...(inner.prefix ?? [])
+					]
+				}
 			},
 			optionals: {
 				child: true,
-				structural: true
+				structural: true,
+				reduceIo: (ioKind, inner, optionals) => {
+					// after defaultables, which reduce first and are optional on input
+					inner.optionals = append(
+						inner.optionals,
+						optionals!.map(node => (ioKind === "in" ? node.rawIn : node.rawOut))
+					)
+				}
 			},
 			defaultables: {
 				child: defaultables => defaultables.map(element => element[0]),

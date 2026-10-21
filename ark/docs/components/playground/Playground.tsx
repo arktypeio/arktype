@@ -77,6 +77,10 @@ const stripTypes = async (): Promise<string | undefined> => {
 
 type LoadingState = "unloaded" | "loading" | "loaded"
 
+// below 900px the results stack under the editor
+const resultsGrid =
+	"grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,3fr)_minmax(0,2fr)] min-[900px]:grid-cols-[minmax(0,1fr)_min(600px,45%)] min-[900px]:grid-rows-1"
+
 export interface PlaygroundProps {
 	initialValue?: string
 	style?: React.CSSProperties
@@ -175,16 +179,8 @@ export const Playground = ({
 
 	return (
 		<div
-			className={className}
-			style={{
-				display: "grid",
-				gridTemplateColumns: withResults ? "minmax(400px, 1fr) 600px" : "1fr",
-				gap: "1rem",
-				width: "100%",
-				height: "100%",
-				alignItems: "stretch",
-				...style
-			}}
+			className={`grid h-full w-full items-stretch gap-4 ${withResults ? resultsGrid : ""} ${className ?? ""}`}
+			style={style}
 		>
 			{loadingState === "loaded" && monaco ?
 				<>
@@ -278,7 +274,8 @@ const PlaygroundEditor = React.memo(
 						automaticLayout: true,
 						cursorBlinking: "smooth",
 						cursorSmoothCaretAnimation: "on",
-						fontFamily: "'Cascadia Code',Consolas,'Courier New',monospace",
+						// next/font hashes the family name, so read it from the page
+						fontFamily: `${getComputedStyle(document.documentElement).getPropertyValue("--font-cascadia")}, monospace`,
 						padding: {
 							top: 16
 						}

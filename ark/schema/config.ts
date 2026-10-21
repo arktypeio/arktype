@@ -42,6 +42,7 @@ export interface ArkSchemaRegistry extends ArkRegistry {
 	resolvedConfig?: ResolvedConfig
 	nodesByRegisteredId: typeof nodesByRegisteredId
 	sets?: SetEngine
+	encode?: (node: BaseRoot) => BaseRoot
 	inPlace?: InPlaceTransforms
 	// standalone builds check a default where its Type is created
 	deferDefaultCheck?:

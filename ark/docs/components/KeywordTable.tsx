@@ -1,111 +1,67 @@
-import { hasArkKind } from "@ark/schema"
 import {
-	append,
-	ecmascriptConstructors,
-	entriesOf,
-	flatMorph,
-	platformConstructors
-} from "@ark/util"
-import { ark, Generic } from "arktype"
-import type { JSX } from "react"
+	keywordRowsByTable,
+	keywordTableNames,
+	type KeywordTableName
+} from "../lib/keywords.ts"
+import { Table } from "./mdx/Table.tsx"
 
-const tableNames = [
-	"string",
-	"number",
-	"other",
-	"object",
-	"array",
-	"FormData",
-	"TypedArray",
-	"instanceof",
-	"generic"
-] as const
+const withInlineCode = (text: string) =>
+	text
+		.split(/`([^`]+)`/)
+		.map((part, i) => (i % 2 ? <code key={i}>{part}</code> : part))
 
-const tableRowsByName = flatMorph(tableNames, (i, name) => [
-	name,
-	[] as JSX.Element[]
-])
-
-// keywords resolve on first reference, so resolve them all
-ark.export()
-
-const formatDescription = (description: string): JSX.Element => {
-	if (!description.includes("`")) return <>{description}</>
-
-	const segments = description.split(/(`[^`]+`)/)
+/** `string.email` as ArkDark shows it: the subtype path in teal */
+const KeywordName = ({ alias }: { alias: string }) => {
+	const dot = alias.indexOf(".")
 	return (
-		<>
-			{segments.map((segment, i) => {
-				if (segment.startsWith("`") && segment.endsWith("`")) {
-					const code = segment.substring(1, segment.length - 1)
-					return <code key={i}>{code}</code>
-				}
-				return <span key={i}>{segment}</span>
-			})}
-		</>
+		<code className="kw-name">
+			{dot === -1 ?
+				alias
+			:	<>
+					{alias.slice(0, dot)}
+					<span className="kw-path">{alias.slice(dot)}</span>
+				</>
+			}
+		</code>
 	)
 }
 
-for (const [alias, v] of entriesOf(ark.internal.resolutions)
-	.map(
-		([alias, v]) =>
-			[alias.endsWith(".root") ? alias.slice(0, -5) : alias, v] as const
-	)
-	.sort((l, r) => (l[0] < r[0] ? -1 : 1))) {
-	// should not occur, only for temporary resolutions of cyclic definition
-	if (hasArkKind(v, "context")) continue
-
-	const name =
-		alias.startsWith("string") ? "string"
-		: alias.startsWith("number") ? "number"
-		: alias.startsWith("FormData") ? "FormData"
-		: alias.startsWith("Array") ? "array"
-		: alias.startsWith("object") ? "object"
-		: alias.startsWith("TypedArray") ? "TypedArray"
-		: v instanceof Generic ? "generic"
-		: alias in ecmascriptConstructors || alias in platformConstructors ?
-			"instanceof"
-		:	"other"
-
-	tableRowsByName[name] = append(
-		tableRowsByName[name],
-		<tr key={alias}>
-			<td>{alias}</td>
-			<td>{formatDescription(v.description)}</td>
-		</tr>
-	)
-}
-
-type KeywordTableProps = {
-	rows: JSX.Element[]
-}
-
-const KeywordTable = ({ rows }: KeywordTableProps) => (
-	<table>
+/**
+ * A group's keywords. Each row's id is its alias, so `#string.email` links
+ * to it, except a group's own root, whose id belongs to the group's heading.
+ */
+export const KeywordTable = ({ name }: { name: KeywordTableName }) => (
+	<Table className="keyword-table">
 		<thead>
 			<tr>
-				<th className="font-bold">Alias</th>
-				<th className="font-bold">Description</th>
+				<th scope="col">keyword</th>
+				<th scope="col">description</th>
 			</tr>
 		</thead>
-		<tbody>{...rows}</tbody>
-	</table>
+		<tbody>
+			{keywordRowsByTable[name].map(({ alias, description }) => (
+				<tr key={alias} id={alias === name ? undefined : alias}>
+					<td>
+						<KeywordName alias={alias} />
+					</td>
+					<td>{withInlineCode(description)}</td>
+				</tr>
+			))}
+		</tbody>
+	</Table>
 )
 
-const KeywordTables = flatMorph(tableNames, (i, name) => [
-	name,
-	() => <KeywordTable rows={tableRowsByName[name]} />
-])
+export const StringKeywordTable = () => <KeywordTable name="string" />
 
-export const StringKeywordTable = KeywordTables.string
+export const NumberKeywordTable = () => <KeywordTable name="number" />
 
-export const NumberKeywordTable = KeywordTables.number
+export const GenericKeywordTable = () => <KeywordTable name="generic" />
 
-export const GenericKeywordTable = KeywordTables.generic
-
+/** only reached outside docs content, which expands it into headings and tables */
 export const AllKeywordTables = () =>
-	tableNames.map(name => (
-		<>
-			<h2>{name}</h2> <KeywordTable rows={tableRowsByName[name]} />
-		</>
+	keywordTableNames.map(name => (
+		<section key={name}>
+			<h3 id={name.toLowerCase()}>{name}</h3>
+			<KeywordTable name={name} />
+		</section>
 	))

@@ -4,6 +4,7 @@
 	"pages": [
 		"[keywords](/docs/generics#keywords)",
 		"[syntax](/docs/generics#syntax)",
+		"[recursive](/docs/generics#recursive)",
 		"[hkt](/docs/generics#hkt)",
 		"[external](/docs/generics#external)"
 	]

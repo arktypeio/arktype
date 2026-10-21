@@ -18,6 +18,7 @@ import {
 	isThunk,
 	objectKindOf,
 	printable,
+	throwError,
 	throwParseError,
 	uncapitalize,
 	type anyOrNever,
@@ -134,37 +135,33 @@ const parseStandardSchema = (
 	ctx: BaseParseContext
 ): BaseRoot =>
 	ctx.$.intrinsic.unknown.pipe((v, ctx) => {
-		const result = def["~standard"].validate(
-			v
-		) as StandardSchemaV1.Result<unknown>
+		const result = def["~standard"].validate(v)
+
+		if (result instanceof Promise) {
+			return throwError(
+				writeAsyncStandardSchemaMessage(def["~standard"].vendor)
+			)
+		}
 
 		if (!result.issues) return result.value
 
 		for (const issue of result.issues) {
-			const path = issue.path
 			// an ArkError's message starts with its path, which relativePath adds
 			const message =
 				result instanceof ArkErrors ?
 					messageAt(issue as never, [])
 				:	issue.message
-			if (path) {
-				if (path.length) {
-					ctx.error({
-						problem: uncapitalize(message),
-						relativePath: path.map(k => (typeof k === "object" ? k.key : k))
-					})
-				} else {
-					ctx.error({
-						message
-					})
-				}
-			} else {
-				ctx.error({
-					message
-				})
-			}
+			ctx.error({
+				problem: uncapitalize(message),
+				relativePath: (issue.path ?? []).map(k =>
+					typeof k === "object" ? k.key : k
+				)
+			})
 		}
 	})
+
+export const writeAsyncStandardSchemaMessage = (vendor: string): string =>
+	`Standard Schema definitions must validate synchronously (${vendor} returned a Promise)`
 
 export type inferDefinition<def, $, args> =
 	[def] extends [anyOrNever] ? def

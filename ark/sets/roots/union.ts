@@ -681,6 +681,7 @@ const assertDeterminateOverlap = (l: Union.ChildNode, r: Union.ChildNode) => {
 
 	if (
 		!arrayEquals(l.shallowMorphs as Morph[], r.shallowMorphs as Morph[]) ||
+		(l as Morph.Node).inverse !== (r as Morph.Node).inverse ||
 		!arrayEquals(l.flatMorphs, r.flatMorphs, { isEqual: flatMorphsAreEqual }) ||
 		!arrayEquals(transformingAliasRefsOf(l), transformingAliasRefsOf(r), {
 			isEqual: flatRefsAreEqual

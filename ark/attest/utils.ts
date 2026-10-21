@@ -3,6 +3,7 @@ import { throwError } from "@ark/util"
 import { existsSync } from "node:fs"
 import { basename, relative, resolve } from "node:path"
 import ts from "typescript"
+import { getConfig } from "./config.ts"
 
 /** TypeScript 7+ is native and only exposes its API via tsgo's IPC client */
 export const isTs7: boolean = Number.parseInt(ts.version) >= 7
@@ -18,10 +19,15 @@ const testFilePattern = /\.test\.[cm]?[jt]sx?$/
  * files analyzed, so one file takes seconds where the whole project takes
  * minutes. With no test file named, every root file is analyzed as before.
  *
+ * Only applies with `--onlyNamedTestFiles`, which `testFiles` passes along with
+ * mocha's `--no-package`. Otherwise, mocha adds named files to the configured
+ * spec, so every test still runs.
+ *
  * A test that runs without having been analyzed fails with "Found no assertion
  * data", so a narrowing that missed a file can never pass silently.
  */
 export const narrowToNamedTestFiles = (rootFiles: string[]): string[] => {
+	if (!getConfig().onlyNamedTestFiles) return rootFiles
 	const named = new Set(
 		process.argv
 			.slice(2)

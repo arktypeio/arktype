@@ -3,6 +3,7 @@ export * from "./index.ts"
 // shadows issues.ts's ArkErrors and TraversalError, which ./runtime.ts re-exports
 export { ArkErrors, TraversalError } from "./shared/errors.ts"
 export * from "./roots/basis.ts"
+export * from "./shared/codecs.ts"
 export * from "./shared/render.ts"
 export * from "./runtime.ts"
 export * from "./shared/errorModes.ts"

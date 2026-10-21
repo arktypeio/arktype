@@ -57,3 +57,11 @@ const stringSchema: StringSchema = {
 ## How it reads JSON Schema
 
 `jsonSchemaToType` reads a schema with [`arksets`](https://github.com/arktypeio/arktype/tree/main/ark/sets)' `parse`, so the Type accepts exactly what a JSON Schema 2020-12 validator accepts (draft-07 forms are read too). `format` is an annotation, as the spec defaults to. Keywords that can't be read exactly, like a remote `$ref` or `unevaluatedProperties`, throw with their JSON Pointer.
+
+## Docs
+
+See [arktype.io/docs/json-schema](https://arktype.io/docs/json-schema) for:
+
+- [From JSON Schema](https://arktype.io/docs/json-schema/from-json-schema): `jsonSchemaToType`, typing its result and `JsonSchemaScope`
+- [Keyword support](https://arktype.io/docs/json-schema/support): which keywords are checked, which throw and which are ignored
+- [To JSON Schema](https://arktype.io/docs/json-schema/to-json-schema): `toJsonSchema()` and its options

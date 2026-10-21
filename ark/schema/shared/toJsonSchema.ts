@@ -48,7 +48,9 @@ const defaultConfig: ToJsonSchema.Context = {
 		arrayPostfix: throwFallback,
 		defaultValue: throwFallback,
 		domain: throwFallback,
+		indexKey: throwFallback,
 		morph: throwFallback,
+		patternFlags: throwFallback,
 		patternIntersection: throwFallback,
 		predicate: throwFallback,
 		proto: throwFallback,
@@ -84,7 +86,14 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 	// written as the default itself
 	defaultValue: ctx => defaultValueSerializer(ctx.value) as never,
 	domain: ctx => annotate(ctx.base, "domain", ctx.domain),
+	indexKey: ctx =>
+		appendAnnotation(ctx.base, "index", { key: ctx.key, value: ctx.value }),
 	morph: ctx => annotate(ctx.base, "out", ctx.out),
+	patternFlags: ctx =>
+		appendAnnotation(ctx.base, "patterns", {
+			rule: ctx.pattern,
+			flags: ctx.flags
+		}),
 	patternIntersection: ctx => {
 		const { allOf = [] } = ctx.base as { allOf?: readonly JsonSchema[] }
 		return { ...ctx.base, allOf: [...allOf, { pattern: ctx.pattern }] } as never
@@ -120,6 +129,30 @@ export const annotatingFallback: ToJsonSchema.HandlerByCode = {
 	})
 }
 
+// Standard JSON Schema converters only throw for unsupported options, so
+// these keep the part of a type JSON Schema can represent, or {} if none
+const standardFallback: ToJsonSchema.HandlerByCode = {
+	arrayObject: ctx => ctx.base,
+	// draft-07 tuples keep their prefix in items
+	arrayPostfix: ({ base: { items, additionalItems, ...base } }) =>
+		(Array.isArray(items) ? { ...base, items } : base) as never,
+	defaultValue: () => undefined,
+	domain: ctx => ctx.base,
+	// rejecting undeclared keys would reject those the index allows
+	indexKey: ({ base }) => {
+		const { additionalProperties, ...rest } = base
+		return additionalProperties === false ? rest : base
+	},
+	morph: ctx => ctx.base,
+	patternFlags: ctx => ctx.base,
+	patternIntersection: ctx => ctx.base,
+	predicate: ctx => ctx.base,
+	proto: ctx => ctx.base,
+	symbolKey: ctx => ctx.base,
+	unit: ctx => ctx.base,
+	date: ctx => ctx.base
+}
+
 export const ToJsonSchema = {
 	Error: ToJsonSchemaError,
 	throw: (...args: ConstructorParameters<typeof ToJsonSchemaError>): never => {
@@ -132,7 +165,8 @@ export const ToJsonSchema = {
 		throwInternalError(
 			`Unexpected JSON Schema input for ${kind}: ${printable(schema)}`
 		),
-	defaultConfig
+	defaultConfig,
+	standardFallback
 }
 
 export declare namespace ToJsonSchema {
@@ -167,8 +201,20 @@ export declare namespace ToJsonSchema {
 		domain: satisfy<Domain, "symbol" | "bigint" | "undefined">
 	}
 
+	export interface IndexKeyContext
+		extends BaseContext<"indexKey", JsonSchema.Object> {
+		key: JsonSchema.String
+		value: JsonSchema
+	}
+
 	export interface MorphContext extends BaseContext<"morph", JsonSchema> {
 		out: JsonSchema | null
+	}
+
+	export interface PatternFlagsContext
+		extends BaseContext<"patternFlags", JsonSchema.String> {
+		pattern: string
+		flags: string
 	}
 
 	export interface PatternIntersectionContext
@@ -226,7 +272,9 @@ export declare namespace ToJsonSchema {
 		arrayPostfix: ArrayPostfixContext
 		defaultValue: DefaultValueContext
 		domain: DomainContext
+		indexKey: IndexKeyContext
 		morph: MorphContext
+		patternFlags: PatternFlagsContext
 		patternIntersection: PatternIntersectionContext
 		predicate: PredicateContext
 		proto: ProtoContext
@@ -244,9 +292,12 @@ export declare namespace ToJsonSchema {
 		{
 			arrayObject: (ctx: ArrayObjectContext) => JsonSchema.Structure
 			arrayPostfix: (ctx: ArrayPostfixContext) => VariadicArraySchema
-			defaultValue: (ctx: DefaultValueContext) => JsonSchema
+			// undefined omits the default
+			defaultValue: (ctx: DefaultValueContext) => JsonSchema | undefined
 			domain: (ctx: DomainContext) => JsonSchema
+			indexKey: (ctx: IndexKeyContext) => JsonSchema.Object
 			morph: (ctx: MorphContext) => JsonSchema
+			patternFlags: (ctx: PatternFlagsContext) => JsonSchema.String
 			patternIntersection: (
 				ctx: PatternIntersectionContext
 			) => JsonSchema.String

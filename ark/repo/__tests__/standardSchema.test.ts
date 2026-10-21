@@ -1,5 +1,7 @@
 import { attest, contextualize } from "@ark/attest"
 import { type, type Out, type Type } from "arktype"
+import { writeAsyncStandardSchemaMessage } from "arktype/internal/parser/definition.ts"
+import * as v from "valibot"
 import z from "zod"
 
 contextualize(() => {
@@ -155,5 +157,29 @@ isActive invalid input: expected boolean, received string`)
 		attest(invalid.toString())
 			.snap(`name invalid input: expected string, received number
 category invalid option: expected one of "electronics"|"books"|"clothing"`)
+	})
+
+	it("prefixes issues without a path with the path of the schema", () => {
+		const T = type({ age: z.number(), nickname: v.string() })
+
+		attest(T({ age: "5", nickname: 5 }).toString())
+			.snap(`age invalid input: expected number, received string
+nickname invalid type: Expected string but received 5`)
+	})
+
+	it("prefixes issues without a path with an array index", () => {
+		const T = type(z.string()).array()
+
+		attest(T(["a", 1]).toString()).snap(
+			"value at [1] invalid input: expected string, received number"
+		)
+	})
+
+	it("throws if validation is async", () => {
+		const T = type({ name: z.string().refine(async s => s.length > 1) })
+
+		attest(() => T({ name: "x" })).throws(
+			writeAsyncStandardSchemaMessage("zod")
+		)
 	})
 })

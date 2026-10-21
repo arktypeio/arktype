@@ -7,7 +7,6 @@ import {
 	writeInvalidOperandMessage,
 	type ArkErrors
 } from "@ark/schema"
-import type { exactEquals } from "@ark/util"
 import {
 	discriminantJsonOf,
 	writeIndiscriminableMorphMessage,
@@ -454,8 +453,7 @@ contextualize(() => {
 
 	it("JSON.parse as out", () => {
 		const T = type({ parse: type("string").pipe(() => JSON.parse) })
-		// the lib a run checks with decides JSON.parse's overloads, so the output is compared exactly with what that lib declares
-		attest<true, exactEquals<typeof T.infer, { parse: typeof JSON.parse }>>()
+		attest<{ parse: typeof JSON.parse }>(T.infer)
 	})
 
 	it("never as out", () => {

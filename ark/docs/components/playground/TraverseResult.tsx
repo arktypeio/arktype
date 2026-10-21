@@ -24,7 +24,7 @@ export const TraverseResult = ({ traversed }: TraverseResult.Props) => {
 			}}
 			className="glass-container h-full p-4 rounded-2xl overflow-auto"
 		>
-			<h3 className="text-3xl text-fd-foreground font-semibold mb-2">
+			<h3 className="text-3xl text-ink font-semibold mb-2">
 				{resultKind === "failure" ? "ArkErrors" : "Out"}
 			</h3>
 			{

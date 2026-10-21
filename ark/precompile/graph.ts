@@ -376,6 +376,7 @@ const typeMemberKinds: Record<string, KindBits> = Object.setPrototypeOf(
 	{
 		in: kinds.type,
 		out: kinds.type,
+		encode: kinds.type,
 		and: typeMethod,
 		or: typeMethod,
 		intersect: anyKind,
