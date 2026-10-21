@@ -90,7 +90,8 @@ export class UnitNode extends InternalBasis<Unit.Declaration> {
 
 	traverseAllows: TraverseAllows =
 		isDate(this.unit) ?
-			data => data instanceof Date && data.getTime() === (this.unit as Date).getTime()
+			data =>
+				data instanceof Date && data.getTime() === (this.unit as Date).getTime()
 		: Number.isNaN(this.unit) ? data => Number.isNaN(data)
 		: data => data === this.unit
 }
