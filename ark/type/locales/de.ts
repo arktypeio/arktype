@@ -17,6 +17,11 @@ import {
 } from "@ark/util"
 import type { Locale } from "../locale.ts"
 
+// constraints described alike are written once
+const distinctExpectedOf = (e: { errors: readonly { expected: string }[] }) => [
+	...new Set(e.errors.map(error => error.expected))
+]
+
 const listSeparatedBy = (middle: string) =>
 	listPattern(
 		{ two: " oder ", middle, end: " oder " },
@@ -421,8 +426,13 @@ export const de: Locale.Complete = {
 	},
 	intersection: {
 		expected: e =>
-			`  ◦ ${e.errors.map(error => error.expected).join("\n  ◦ ")}`,
-		problem: e => `(${e.actual}) muss alles Folgende sein:\n${e.expected}`
+			distinctExpectedOf(e).length > 1 ?
+				`  ◦ ${distinctExpectedOf(e).join("\n  ◦ ")}`
+			:	e.errors[0].expected,
+		problem: e =>
+			distinctExpectedOf(e).length > 1 ?
+				`(${e.actual}) muss alles Folgende sein:\n${e.expected}`
+			:	mustBe(e.expected, e.actual)
 	},
 	min: { expected: bound, problem: boundProblem },
 	max: { expected: bound, problem: boundProblem },
