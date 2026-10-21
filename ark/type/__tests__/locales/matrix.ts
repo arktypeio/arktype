@@ -29,7 +29,8 @@ const keywordInputs: unknown[] = [
 	"9007199254740993",
 	1.5,
 	9e20,
-	5
+	5,
+	new Map()
 ]
 
 const keywordAliases = Object.keys(

@@ -143,6 +143,24 @@ type("===", {})({})
 
 `de` prints them as `ein Objekt`, `ein Array` and `eine Funktion`.
 
+### Accept only plain objects and arrays in `object.json`
+
+`object.json` accepted any object, so a `Map`, `Set`, `Date`, function or class instance passed though `JSON.stringify` doesn't write it as itself. It now accepts only arrays and objects whose prototype is `Object.prototype` or `null`, at every depth (#1337):
+
+```ts
+// was: { at: Date }
+// now: ArkErrors: at must be a plain object or array (was an object)
+type("object.json")({ at: new Date() })
+```
+
+JSON Schema can't require a plain object, so `toJsonSchema()` now throws for `object.json`, and for Types that include it like `string.json.parse`'s output, with the `predicate` code. Return `ctx.base` from that fallback to write the schema it wrote before:
+
+```ts
+type("object.json").toJsonSchema({ fallback: { predicate: ctx => ctx.base } })
+```
+
+`~standard.jsonSchema` leaves the check out, as it does every predicate.
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:

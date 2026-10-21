@@ -253,6 +253,8 @@ contextualize(() => {
 				"muss more than 5 (!) sein, ist aber 3",
 			'number.epoch ← "x"':
 				"muss ein Unix-Zeitstempel als Zahl sein, ist aber eine Zeichenkette",
+			"object.json ← Map":
+				"muss ein einfaches Objekt oder Array sein, ist aber ein Objekt",
 			'string.alpha ← " x"': 'muss rein alphabetisch sein, ist aber " x"',
 			'string.alphanumeric ← " x"':
 				'muss rein alphanumerisch sein, ist aber " x"',

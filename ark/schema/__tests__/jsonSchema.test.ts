@@ -269,7 +269,10 @@ contextualize(() => {
 	})
 
 	it("cyclic", () => {
-		const schema = toJsonSchema($ark.intrinsic.jsonObject)
+		// JSON Schema can't require a plain object
+		const schema = toJsonSchema($ark.intrinsic.jsonObject, {
+			fallback: { predicate: ctx => ctx.base }
+		})
 
 		attest(schema).snap({
 			$ref: "#/$defs/jsonObject1",

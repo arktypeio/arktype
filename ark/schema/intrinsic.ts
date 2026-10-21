@@ -1,4 +1,9 @@
-import { cached, defineLazily, defineValue } from "@ark/util"
+import {
+	cached,
+	defineLazily,
+	defineValue,
+	isPlainObjectOrArray
+} from "@ark/util"
 import {
 	bootstrapRootScope,
 	node,
@@ -71,6 +76,16 @@ const bootstrapIntrinsic = () => {
 				],
 				jsonObject: {
 					domain: "object",
+					// the only objects JSON.parse returns
+					predicate: [
+						{
+							predicate: isPlainObjectOrArray,
+							meta: {
+								description: "a plain object or array",
+								keyword: "object.json"
+							}
+						}
+					],
 					index: {
 						signature: "string",
 						value: "$jsonData"

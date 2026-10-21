@@ -185,6 +185,16 @@ Allow them everywhere with `configure({ numberAllowsInfinity: true })`, or in on
 const T = type("number | number.Infinity | number.NegativeInfinity")
 ```
 
+### object.json accepts only plain objects and arrays
+
+`object.json` rejects an object whose prototype isn't `Object.prototype` or `null`, unless it's an array, so a `Map`, `Set`, `Date`, function or class instance, which `JSON.stringify` doesn't write as itself, fails anywhere in the data:
+
+```ts
+// ArkErrors: at must be a plain object or array (was an object)
+// before: { at: Date }
+type("object.json")({ at: new Date() })
+```
+
 ### The clone option is removed
 
 Transforming no longer clones the input first. Output shares every value nothing transformed with the input, and a morph receives the validated value itself, so a morph that mutates its argument mutates your data. Remove `clone` from your config.
@@ -256,6 +266,7 @@ These change what `toJsonSchema()`, `.expression` and `.json` return, which matt
 - A string index signature beside declared keys becomes `patternProperties: { "": ... }` instead of `additionalProperties`.
 - `toJsonSchema()` throws for a regex flag JSON Schema can't express, instead of leaving it out: `type(/^a/i).toJsonSchema()` throws (code `patternFlags`), before: `{ type: "string", pattern: "^a" }`, which rejects `"A"`.
 - `toJsonSchema()` throws for an index signature key it can't express, instead of leaving out the index signature: `type({ "[string <= 3]": "number" }).toJsonSchema()` throws (code `indexKey`), before: `{ type: "object" }`. See [JSON Schema](/docs/json-schema/to-json-schema#how-types-map) for the keys it can write.
+- `toJsonSchema()` throws for `object.json` and the Types it's part of, like `string.json.parse`'s output, since its check that an object is plain is a `predicate`. [Handle that code](/docs/json-schema/to-json-schema#fallback-codes) to write it as before.
 - Expressions keep length bounds and protos beside a structure: `type("number[] > 1").expression` is `number[] >= 2`, before: `number[]`.
 - Optional keys are listed by name, whether or not they have a default: `{ bar?: number, foo: string = "foo" }`, before: `{ foo: string = "foo", bar?: number }`.
 - The `$ark.x` names that functions get in `.json` and `.expression` are names only and no longer resolve through `$ark`.
