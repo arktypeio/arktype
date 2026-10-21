@@ -1094,6 +1094,8 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 	}
 
 	private compileDefaults(js: NodeCompiler, first?: boolean): NodeCompiler {
+		// a default can fail, but where none is written, the check before stands
+		if (!this.defaultable.length && !this.sequence?.defaultables) return js
 		for (const node of this.defaultable) {
 			js.if(`!(${js.serialize(node.key)} in data)`, () =>
 				compileDefault(this.compileCopy(js, first), node, "out")
