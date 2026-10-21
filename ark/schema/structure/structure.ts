@@ -1064,8 +1064,7 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		if (transformedIndex.length) {
-			this.compileOwnKeys(js, "data").for("i < keys.length", () => {
-				js.const("k", "keys[i]")
+			this.compileForOwnKeys(js, "data", () => {
 				if (this.hasIndexedProp)
 					js.if(`k in ${js.ref(this.propsByKey)}`, () => js.line("continue"))
 				const transformKey = (steps: TransformStep[]) =>
@@ -1232,15 +1231,17 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			if (outMayBeCopied || transformedProps.length || this.defaultable.length)
 				this.compileCopiedDeclaredKeys(js)
 			const deletes = () =>
-				this.compileOwnKeys(js, "data", "dataKeys", "dataSymbols", true).for(
-					"i < dataKeys.length",
+				this.compileForOwnKeys(
+					js,
+					"data",
 					() =>
-						js
-							.const("k", "dataKeys[i]")
-							.if(
-								`!(k in ${js.ref(this.propsByKey)}) && !(${this._compileDeclaresKey(js)})`,
-								() => this.compileCopy(js).line("delete out[k]")
-							)
+						js.if(
+							`!(k in ${js.ref(this.propsByKey)}) && !(${this._compileDeclaresKey(js)})`,
+							() => this.compileCopy(js).line("delete out[k]")
+						),
+					"dataKeys",
+					"dataSymbols",
+					true
 				)
 			if (this.sequence) js.if("!indexed", deletes)
 			else deletes()
@@ -1319,15 +1320,16 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 			)
 		}
 		if (this.index) {
-			this.compileOwnKeys(js, "out", "outKeys", "outSymbols").for(
-				"i < outKeys.length",
+			this.compileForOwnKeys(
+				js,
+				"out",
 				() =>
-					js
-						.const("k", "outKeys[i]")
-						.if(
-							`!(k in ${js.ref(this.propsByKey)}) && (${this._compileDeclaresKey(js)})`,
-							() => js.line("result[k] = out[k]")
-						)
+					js.if(
+						`!(k in ${js.ref(this.propsByKey)}) && (${this._compileDeclaresKey(js)})`,
+						() => js.line("result[k] = out[k]")
+					),
+				"outKeys",
+				"outSymbols"
 			)
 		}
 		js.returnIfTransformFailed().return("result")
@@ -1340,18 +1342,26 @@ export class StructureNode extends BaseConstraint<Structure.Declaration> {
 		)
 	}
 
-	private compileOwnKeys(
+	// loops k over the own keys of object
+	private compileForOwnKeys(
 		js: NodeCompiler,
 		object: string,
+		body: () => NodeCompiler,
 		keys = "keys",
 		symbols = "symbols",
 		withSymbols = this.indexMatchesSymbols
 	): NodeCompiler {
 		js.const(keys, `Object.keys(${object})`)
-		if (!withSymbols) return js
-		return js
-			.const(symbols, `Object.getOwnPropertySymbols(${object})`)
-			.if(`${symbols}.length`, () => js.line(`${keys}.push(...${symbols})`))
+		if (withSymbols) {
+			js.const(symbols, `Object.getOwnPropertySymbols(${object})`).if(
+				`${symbols}.length`,
+				() => js.line(`${keys}.push(...${symbols})`)
+			)
+		}
+		return js.for(`i < ${keys}.length`, () => {
+			js.const("k", `${keys}[i]`)
+			return body()
+		})
 	}
 
 	protected compileExhaustiveEntry(
