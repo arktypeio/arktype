@@ -129,9 +129,9 @@ const describeDiscriminant: Locale.ActualWriter<"discriminant"> = (
 	e,
 	locale
 ) =>
-	e.discriminantKind === "domain" ?
-		locale.nouns[domainOf(data)]
-	:	printKind(data)
+	e.absent ? "missing"
+	: e.discriminantKind === "domain" ? locale.nouns[domainOf(data)]
+	: printKind(data)
 
 export const en: Locale.Complete = {
 	...(flatMorph(

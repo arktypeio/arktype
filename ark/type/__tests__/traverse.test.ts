@@ -124,7 +124,7 @@ contextualize(() => {
 		attest(T({ a: 5 })).snap({ a: 5 })
 		// value isn't present
 		attest(T({}).toString()).snap(
-			"a must be a number, a string or null (was undefined)"
+			"a must be a number, a string or null (was missing)"
 		)
 		// unsatisfying value
 		attest(T({ a: false }).toString()).snap(
@@ -142,7 +142,7 @@ contextualize(() => {
 			d: "a|b|c"
 		}).export()
 		attest(types.d({}).toString()).snap(
-			"foo must be an object, a number or a string (was undefined)"
+			"foo must be an object, a number or a string (was missing)"
 		)
 		attest(types.d({ foo: null }).toString()).snap(
 			"foo must be an object, a number or a string (was null)"
