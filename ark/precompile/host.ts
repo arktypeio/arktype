@@ -316,6 +316,16 @@ export const arkPackageName = /^(?:arktype|arkregex|arksets|@ark\/.+)$/
 export const allowUnsafeHint =
 	"Set allowUnsafe: true to build anyway, with a warning."
 
+// a dependency importing the runtime ships what another build precompiled
+export const precompiledDependencyOf = (
+	specifier: string,
+	importer: string
+): string | undefined => {
+	const [, name] =
+		(specifier === "arktype/runtime" && dependencyOf(importer)) || []
+	return name && !arkPackageName.test(name) ? name : undefined
+}
+
 export const writePrecompiledDependencyMessage = (name: string): string =>
 	`${name} imports arktype/runtime, so it ships validators precompiled for one version of arktype, which may not be this build's. Have it publish its source with "arktype": { "precompile": true } in its package.json, so this build precompiles it.`
 

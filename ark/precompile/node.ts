@@ -7,9 +7,11 @@ import type {
 	TransformedModule
 } from "./driver.ts"
 import {
+	allowUnsafeHint,
 	appendSourceMap,
 	driverOptionsOf,
 	optedInPackagesOf,
+	precompiledDependencyOf,
 	reportDiagnostics,
 	resolvesToRuntime,
 	resolvedVariantOf,
@@ -18,6 +20,7 @@ import {
 	transformedFilterOf,
 	variantSpecifierOf,
 	writeNodeVersionMessage,
+	writePrecompiledDependencyMessage,
 	writeTextlessMessage,
 	writeVariantImportMessage
 } from "./host.ts"
@@ -50,10 +53,24 @@ export const register = (opts?: PrecompilePluginOptions): void => {
 	const importersByUrl: Record<string, string> = {}
 	// modules whose text these hooks were given
 	const givenUrls = new Set<string>()
+	const reportedPrecompiled = new Set<string>()
+	const checkPrecompiled = (specifier: string, importer: string) => {
+		const name = precompiledDependencyOf(specifier, importer)
+		if (!name || reportedPrecompiled.has(name)) return
+		reportedPrecompiled.add(name)
+		const problem = writePrecompiledDependencyMessage(name)
+		if (opts?.allowUnsafe) process.emitWarning(problem)
+		else throwError(`${problem} ${allowUnsafeHint}`)
+	}
 	module.registerHooks({
 		resolve: (specifier, context, nextResolve) => {
 			if (specifier.startsWith("~arktype/"))
 				return { url: `arktype:${specifier}`, shortCircuit: true }
+			if (
+				specifier === "arktype/runtime" &&
+				context.parentURL?.startsWith("file:")
+			)
+				checkPrecompiled(specifier, fileURLToPath(context.parentURL))
 			// a precompiled module resolves from the module it was written for
 			if (context.parentURL?.startsWith("arktype:"))
 				context = { ...context, parentURL: importersByUrl[context.parentURL] }

@@ -10,8 +10,10 @@ import { precompile as bunPlugin } from "@ark/precompile/bun"
 import { check } from "@ark/precompile/internal/check.ts"
 import { writeDeclareFrameworkMessage } from "@ark/precompile/internal/declare.ts"
 import {
+	allowUnsafeHint,
 	createNodeHost,
-	writeAliasMessage
+	writeAliasMessage,
+	writePrecompiledDependencyMessage
 } from "@ark/precompile/internal/host.ts"
 import { register } from "@ark/precompile/node"
 import turbopack from "@ark/precompile/turbopack"
@@ -28,6 +30,7 @@ import {
 import {
 	hasBun,
 	inFreshProcess,
+	packageFiles,
 	runPlain,
 	tempDir,
 	undetailedOutput,
@@ -317,6 +320,34 @@ process.on("exit", () => console.log(JSON.stringify([...kinds].sort())))`
 					)
 				)
 			).equals(true)
+		})
+
+		it("fails on a dependency shipping precompiled validators", () => {
+			const root = writeFixture(
+				{
+					...packageFiles("prebuilt", {
+						"index.js":
+							'import { type } from "arktype/runtime"\nexport const prebuilt = typeof type\n'
+					}),
+					// not type-checked, as the package declares no types
+					"main.js":
+						'import { prebuilt } from "prebuilt"\nconsole.log(prebuilt)\n'
+				},
+				fromHere("temp", "prebuilt")
+			)
+			const failed = node(["main.js"], {}, root)
+			const warned = node(["main.js"], { allowUnsafe: true }, root)
+			attest([
+				failed.status,
+				thrownMessage(failed.stderr, root),
+				warned.stdout,
+				warned.stderr.includes(writePrecompiledDependencyMessage("prebuilt"))
+			]).equals([
+				1,
+				`${writePrecompiledDependencyMessage("prebuilt")} ${allowUnsafeHint}`,
+				"object\n",
+				true
+			])
 		})
 
 		it("configured", () => {

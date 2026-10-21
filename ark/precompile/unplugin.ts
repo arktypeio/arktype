@@ -18,10 +18,10 @@ import type {
 } from "./driver.ts"
 import {
 	allowUnsafeHint,
-	arkPackageName,
 	createNodeHost,
 	dependencyOf,
 	optedInPackagesOf,
+	precompiledDependencyOf,
 	packageNameOf,
 	reportDiagnostics,
 	resolvesToRuntime,
@@ -211,11 +211,9 @@ export const precompile: UnpluginInstance<
 		else diagnostics.errors.push(`${problem} ${allowUnsafeHint}`)
 	}
 	const reportedPrecompiled = new Set<string>()
-	// a dependency importing the runtime ships what another build precompiled
 	const precompiledProblemOf = (id: string, importer: string) => {
-		const [, name] = (id === "arktype/runtime" && dependencyOf(importer)) || []
-		if (!name || arkPackageName.test(name) || reportedPrecompiled.has(name))
-			return
+		const name = precompiledDependencyOf(id, importer)
+		if (!name || reportedPrecompiled.has(name)) return
 		reportedPrecompiled.add(name)
 		return writePrecompiledDependencyMessage(name)
 	}
