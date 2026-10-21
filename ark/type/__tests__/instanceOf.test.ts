@@ -4,6 +4,13 @@ import { type } from "arktype"
 import { writeInvalidConstructorMessage } from "arktype/internal/parser/tupleExpressions.ts"
 
 contextualize(() => {
+	it("describes what data was by its domain, or a class by its name", () => {
+		const T = type("Date")
+		attest(T(5).toString()).snap("must be a Date (was a number)")
+		attest(T({}).toString()).snap("must be a Date (was an object)")
+		attest(T(new Map()).toString()).snap("must be a Date (was Map)")
+	})
+
 	describe("tuple expression", () => {
 		it("base", () => {
 			const T = type(["instanceof", Error])
@@ -13,7 +20,7 @@ contextualize(() => {
 			const e = new Error()
 			attest(T(e)).equals(e)
 			attest(T(e)).equals(e)
-			attest(T({}).toString()).snap("must be an Error (was object)")
+			attest(T({}).toString()).snap("must be an Error (was an object)")
 			attest(T(undefined).toString()).snap("must be an Error (was undefined)")
 		})
 
@@ -73,7 +80,7 @@ contextualize(() => {
 			const a = new ArkClass()
 			attest(Ark(a)).equals(a)
 			attest(Ark({}).toString()).snap(
-				"must be an instance of ArkClass (was object)"
+				"must be an instance of ArkClass (was an object)"
 			)
 		})
 		it("bidirectional checks doesn't break pipe inference", () => {

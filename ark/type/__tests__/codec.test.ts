@@ -40,7 +40,7 @@ contextualize(() => {
 		})
 		attest(
 			Event.encode({ name: "launch", at: new Date(1), end: 2 }).toString()
-		).snap("end must be a Date (was number)")
+		).snap("end must be a Date (was a number)")
 	})
 
 	it("array", () => {

@@ -669,7 +669,7 @@ contextualize(() => {
 				layout: "",
 				children: [{ type: "BChild", children: [] }]
 			}).toString()
-		).snap("layout must be an array (was string)")
+		).snap("layout must be an array (was a string)")
 	})
 
 	it("discriminates neither a date nor NaN", () => {
@@ -980,7 +980,7 @@ contextualize(() => {
 			"must be a string or an object (was a number)"
 		)
 		attest(StringOrFile({}).toString()).snap(
-			"must be a File instance (was object)"
+			"must be a File instance (was an object)"
 		)
 		attest($.type("'b' | 1 | 'a'")(2).toString()).snap(
 			'must be 1, "a" or "b" (was 2)'

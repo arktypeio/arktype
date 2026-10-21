@@ -35,7 +35,7 @@ contextualize(() => {
 			attest(T([["foo"]])).snap([["foo"]])
 			attest(T.allows(["foo"])).equals(false)
 			attest(T(["foo"]).toString()).snap(
-				"value at [0] must be an array (was string)"
+				"value at [0] must be an array (was a string)"
 			)
 			attest(T.allows([["foo", 5]])).equals(false)
 			attest(T([["foo", 5]]).toString()).snap(
@@ -112,7 +112,7 @@ value at [1] must be a number (was boolean)`)
 					0: "",
 					1: 0
 				}).toString()
-			).snap("must be an array (was object)")
+			).snap("must be an array (was an object)")
 		})
 
 		it("nested", () => {

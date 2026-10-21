@@ -719,7 +719,7 @@ contextualize(() => {
 			// @ts-expect-error
 			attest(() => type({ foo: "string[] = {}" }))
 				.throws.snap(
-					"ParseError: Default for foo must be an array (was object)"
+					"ParseError: Default for foo must be an array (was an object)"
 				)
 				.type.errors("Default value {} must be assignable to string[]")
 		})
@@ -1004,7 +1004,7 @@ contextualize(() => {
 
 			// @ts-expect-error
 			attest(type({ foo: ["number[]", "=", () => "bar"] })({}).toString())
-				.snap("foo must be an array (was string)")
+				.snap("foo must be an array (was a string)")
 				.type.errors.snap("Type 'string' is not assignable to type 'number[]'.")
 
 			attest(

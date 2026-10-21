@@ -260,6 +260,25 @@ T["~standard"].jsonSchema.input({ target: "draft-2020-12" })
 
 Thanks to @ybai08 for #1695.
 
+### Describe what an `instanceof` check rejected as a domain check does
+
+A proto error's `actual` was a bare domain or class name, while a domain error's names the domain with an article. It now names a primitive or plain object as a domain error does. A builtin's instance is still named by its class, without an article that would be a guess:
+
+```ts
+// was: ArkErrors: must be a Date (was number)
+// now: ArkErrors: must be a Date (was a number)
+type("Date")(5)
+
+// was: ArkErrors: must be an array (was object)
+// now: ArkErrors: must be an array (was an object)
+type("string[]")({})
+
+// ArkErrors: must be a Date (was Map), as before
+type("Date")(new Map())
+```
+
+`de` already wrote these with its nouns.
+
 ### Add codecs
 
 `codec` from `arktype/codecs` pairs a morph with its inverse. Every Type has `.encode`, a Type that inverts each of its morphs to turn output back into input, so a codec encodes wherever it is nested:
