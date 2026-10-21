@@ -56,6 +56,22 @@ A validation that fails can leave writes in the objects of its input it found va
 
 `arktype` exports the `Default` and `To` types an inferred Type holds, so a declaration can name them as `import("arktype").Default`, like `Out` and `Brand`.
 
+### Describe an object with its `"@"` key
+
+An object definition's `"@"` key holds the object's own metadata, as `"@"` does in a tuple expression:
+
+```ts
+const User = type({
+	"@": "a user",
+	name: "string"
+})
+
+// ArkErrors: must be a user (was a number)
+User(5)
+```
+
+Its value is a description or a meta object. Escape a key named `@` as `"\\@"`, as with `+` and `...`. In 2.2.9, `"@"` was an ordinary key.
+
 ### Return errors as plain objects
 
 The errors in an `ArkErrors`' `issues` are plain objects without getters or methods. Each has the keys its JSON had, in the same order, with `propString` before `expected`:

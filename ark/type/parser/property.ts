@@ -1,6 +1,7 @@
 import type {
 	BaseParseContext,
 	BaseRoot,
+	TypeMeta,
 	UndeclaredKeyBehavior
 } from "@ark/schema"
 import {
@@ -74,6 +75,7 @@ export type validateProperty<def, keyKind extends ParsedKeyKind, $, args> =
 				>
 		:	validateInnerDefinition<def, $, args>
 	: keyKind extends "undeclared" ? UndeclaredKeyBehavior
+	: keyKind extends "meta" ? TypeMeta.Collapsible
 	: // check to ensure we don't have an optional or defaultable value on
 	// an already optional or index key
 	def extends OptionalPropertyDefinition ?

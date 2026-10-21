@@ -682,6 +682,18 @@ SpecialNumber("five")
 
 </SyntaxTabs>
 
+An object definition can hold its own metadata under an `"@"` key:
+
+```ts
+const User = type({
+	"@": "a user",
+	name: "string"
+})
+
+// ArkErrors: must be a user (was a number)
+User(5)
+```
+
 A configured description, like any message you configure, takes precedence over the [locale](/docs/i18n#your-own-messages), so it isn't translated.
 
 The `keyword` key is reserved: built-in keywords set `meta.keyword` to their name so a locale can find their phrase, and configuring a description removes it. Name your own metadata something else.
