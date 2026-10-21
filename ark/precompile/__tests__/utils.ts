@@ -201,7 +201,8 @@ process.once("exit", code => {
 })
 
 export const tempDir = (prefix = "ark-precompile-"): string => {
-	const dir = realpathSync(mkdtempSync(join(tmpdir(), prefix)))
+	// as bundlers write it: through macOS's /var symlink and Windows' 8.3 names
+	const dir = realpathSync.native(mkdtempSync(join(tmpdir(), prefix)))
 	tempDirs.push(dir)
 	return dir
 }

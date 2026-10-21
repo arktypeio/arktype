@@ -23,6 +23,7 @@ import {
 	dependencyOf,
 	fileOf,
 	optedInPackagesOf,
+	realPathOf,
 	reportDiagnostics,
 	resolvesToRuntime,
 	resolvedVariantOf,
@@ -81,7 +82,7 @@ export const precompile: UnpluginInstance<
 		)
 	}
 	const readDependency = (importer: string) =>
-		request("readDependency", importer) as Promise<RenderedDiagnostics>
+		request("readDependency", fileOf(importer)) as Promise<RenderedDiagnostics>
 	const host = createNodeHost(opts)
 	const isStandalone = opts?.runtime !== "arktype"
 	const variant = resolvedVariantOf(opts)
@@ -181,7 +182,11 @@ export const precompile: UnpluginInstance<
 		)
 			return
 		reportedUntransformed.add(file)
-		return writeUntransformedImportMessage(file, id, opts?.cwd ?? process.cwd())
+		return writeUntransformedImportMessage(
+			file,
+			id,
+			realPathOf(opts?.cwd ?? process.cwd())
+		)
 	}
 	let isServing = false
 	// a Vite app's environments share the declarations of the app's build
@@ -231,7 +236,7 @@ export const precompile: UnpluginInstance<
 				}
 				const isRuntime = runtimeSpecifiers.includes(id)
 				const diagnostics =
-					isRuntime ? await readDependency(fileOf(importer)) : noDiagnostics()
+					isRuntime ? await readDependency(importer) : noDiagnostics()
 				reportUnsafe(precompiledProblemOf(id, importer), diagnostics)
 				if (isRuntime)
 					reportUnsafe(untransformedProblemOf(id, importer), diagnostics)
@@ -385,7 +390,7 @@ export const precompile: UnpluginInstance<
 									errors: [
 										{
 											text: writeVariantImportMessage(
-												args.importer,
+												fileOf(args.importer),
 												args.path,
 												variant
 											)

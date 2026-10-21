@@ -1,6 +1,6 @@
 import { throwError } from "@ark/util"
 import { existsSync, readFileSync, realpathSync } from "node:fs"
-import { dirname, isAbsolute, join, normalize, relative, sep } from "node:path"
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path"
 import type { SourceMap } from "magic-string"
 import { ResolverFactory, type NapiResolveOptions } from "oxc-resolver"
 import type { PrecompilePluginOptions, RenderedDiagnostics } from "./driver.ts"
@@ -61,11 +61,14 @@ export const createNodeHost = (opts?: NodeHostOptions): PrecompileHost => {
 	return {
 		resolve: (specifier, importer) => {
 			if (!isAbsolute(importer)) return
-			const result = resolver.resolveFileSync(importer, specifier)
-			if (!result.error || !/tsconfig/i.test(result.error)) return result.path
+			let result = resolver.resolveFileSync(importer, specifier)
 			// a tsconfig the resolver can't load fails every resolution
-			resolverWithoutTsconfig ??= resolver.cloneWithOptions(resolveOptions)
-			return resolverWithoutTsconfig.resolveFileSync(importer, specifier).path
+			if (result.error && /tsconfig/i.test(result.error)) {
+				resolverWithoutTsconfig ??= resolver.cloneWithOptions(resolveOptions)
+				result = resolverWithoutTsconfig.resolveFileSync(importer, specifier)
+			}
+			// it keeps an importer's 8.3 names, which another importer may not have
+			return result.path && realPathOf(result.path)
 		},
 		readFile,
 		tsconfigOf: importer =>
@@ -89,9 +92,20 @@ export const dependencyOf = (
 	return match ? [match[0], match[1].replace("\\", "/")] : undefined
 }
 
-// a file as Node's path module writes it, since Vite writes / on Windows
+// a module's file as the resolver writes it. Vite writes / on Windows, and
+// an entry under a root given through a symlink or an 8.3 name like RUNNER~1
+// keeps that form, where the modules it imports don't
 export const fileOf = (id: string): string =>
-	isAbsolute(id) ? normalize(id) : id
+	isAbsolute(id) ? realPathOf(id) : id
+
+// a path as the resolver writes it, through symlinks and 8.3 names
+export const realPathOf = (path: string): string => {
+	try {
+		return realpathSync.native(path)
+	} catch {
+		return resolve(path)
+	}
+}
 
 // a path as messages print it, with / on every platform
 export const printablePathOf = (from: string, to: string): string =>
