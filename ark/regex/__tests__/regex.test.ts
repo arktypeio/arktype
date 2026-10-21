@@ -475,6 +475,29 @@ contextualize(() => {
 			)
 		})
 
+		it("escaped backspace", () => {
+			const S = regex("^[\\b]$")
+			attest<Regex<"\b", {}>>(S).type.toString.snap('Regex<"\\b", {}>')
+		})
+
+		it("escapes unnecessary outside a set", () => {
+			const S = regex("^[\\/\\n.]$")
+			attest<Regex<"/" | "\n" | ".", {}>>(S)
+		})
+
+		it("legacy octal escape", () => {
+			const S = regex("^[\\1]$")
+			attest<Regex<string, {}>>(S)
+		})
+
+		it("identity escape with the u flag", () => {
+			attest<Regex<"a", {}>>(regex("^[\\a]$"))
+			// @ts-expect-error
+			attest(() => regex("^[\\a]$", "u")).type.errors(
+				writeUnnecessaryEscapeMessage("a")
+			)
+		})
+
 		it("shorthand", () => {
 			const S = regex("^a[\\d]$")
 			attest<Regex<`a${number}`, {}>>(S).type.toString.snap(

@@ -14,6 +14,20 @@ regex("^(?:(?<a>1)|(?<b>2)|(?<c>3))$").inferCaptures
 
 https://github.com/arktypeio/arktype/issues/1530
 
+### infer escapes in a character set as what they match
+
+In a character set, `\b` is a backspace and an escape that's unnecessary elsewhere matches its character, so they're inferred as those characters rather than as a boundary or an error message. An escape the `u` or `v` flag makes a `SyntaxError`, like `[\a]`, is a type error with those flags:
+
+```ts
+// was: Regex<"", {}>
+// now: Regex<"\b", {}>
+regex("^[\\b]$")
+
+// was: Regex<"Escape preceding / is unnecessary and should be removed.", {}>
+// now: Regex<"/", {}>
+regex("^[\\/]$")
+```
+
 ## 0.0.14
 
 ### allow `}` to be escaped
