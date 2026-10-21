@@ -717,21 +717,21 @@ Your definitions stay as you wrote them. [Setup](https://arktype.io/docs/precomp
 
 A validator that compiles at runtime ships its compiler, and one that interprets ships its interpreter. A precompiled build ships neither: only the checks your Types need, and the runtime that reports their errors. Pick the build: the fastest validator or the smallest, from the same definitions. The [options](https://arktype.io/docs/precompile/options) decide which: [`optimize: "size"`](https://arktype.io/docs/precompile/options#optimize) and dropping [`members`](https://arktype.io/docs/precompile/options#members) make a build smaller and its validators slower.
 
-- Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), instructions per call, Node 24. Source: moltar/typescript-runtime-type-benchmarks, https\://moltar.github.io/typescript-runtime-type-benchmarks/
+- Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24: instructions per call. Precompiled ArkType isn't in moltar's published results yet.. Source: moltar/typescript-runtime-type-benchmarks, https\://github.com/moltar/typescript-runtime-type-benchmarks
 - ArkType (precompiled): 189
 - @ts-runtypes: 209
 - Typia: 213
 - ata-validator (AOT): 220
 - ArkType (dynamic): 262
 
-* Bundle size (B gzipped, lower is better): valibot.dev's login form, each reporting every error with a message; precompiled with its validator's members and methods, and its errors' methods, off. Source: valibot.dev's comparison, https\://valibot.dev/guides/comparison/
-* ArkType (precompiled): 912
-* Valibot: 1,475
+* Bundle size (B gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled for size: optimize "size", with its validators' members and methods and its errors' methods off. Source: the form from valibot.dev's comparison, https\://valibot.dev/guides/comparison/
+* ArkType (precompiled): 1,028
+* Valibot: 1,547
 * Zod Mini: 5,127
 * Zod: 25,058
-* ArkType (dynamic): 75,520
+* ArkType (dynamic): 75,602
 
-Precompiled ArkType is the fastest on moltar's parseSafe and assertLoose benchmarks, and on Valibot's own login form it reports every error, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
+In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
 
 Because every Type is built when you build, a precompiled validator has no initialization cost, and because nothing is generated at runtime, it runs under a Content-Security-Policy that blocks `eval`.
 
@@ -1334,23 +1334,23 @@ npm i -D typescript-6@npm:typescript@6
 
 Every ArkType definition can run dynamically, created by `type()` at runtime, or [precompiled](https://arktype.io/docs/precompile), constructed when you build. Your definitions and their inferred types are identical either way, so you can switch at any time.
 
-- Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), instructions per call, Node 24. Source: moltar/typescript-runtime-type-benchmarks, https\://moltar.github.io/typescript-runtime-type-benchmarks/
+- Runtime (instructions per call, lower is better): moltar's parseSafe benchmark (validate, removing undeclared keys), run by us on Node 24: instructions per call. Precompiled ArkType isn't in moltar's published results yet.. Source: moltar/typescript-runtime-type-benchmarks, https\://github.com/moltar/typescript-runtime-type-benchmarks
 - ArkType (precompiled): 189
 - @ts-runtypes: 209
 - Typia: 213
 - ata-validator (AOT): 220
 - ArkType (dynamic): 262
 
-* Bundle size (B gzipped, lower is better): valibot.dev's login form, each reporting every error with a message; precompiled with its validator's members and methods, and its errors' methods, off. Source: valibot.dev's comparison, https\://valibot.dev/guides/comparison/
-* ArkType (precompiled): 912
-* Valibot: 1,475
+* Bundle size (B gzipped, lower is better): the login form as valibot.dev writes it, with its messages, bundled by us with bundlejs's esbuild settings; each reports every error. ArkType is precompiled for size: optimize "size", with its validators' members and methods and its errors' methods off. Source: the form from valibot.dev's comparison, https\://valibot.dev/guides/comparison/
+* ArkType (precompiled): 1,028
+* Valibot: 1,547
 * Zod Mini: 5,127
 * Zod: 25,058
-* ArkType (dynamic): 75,520
+* ArkType (dynamic): 75,602
 
-Precompiled ArkType is the fastest on moltar's parseSafe and assertLoose benchmarks, and on Valibot's own login form it reports every error, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
+In our runs of moltar's benchmark, precompiled ArkType is the fastest on parseSafe and assertLoose. Precompiled for size, it reports every error on Valibot's own login form, with its message, in a smaller bundle than Valibot. The charts come from different builds: each names its benchmark and the options it was built with.
 
-Validating valid data, the two modes run the same checks. On schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around those checks: the parser, the time it takes to create each Type, and the code it generates.
+In our runs of schemabenchmarks.dev's product schema, dynamic ArkType validates valid data as fast as precompiled ArkType. What precompiling removes is everything around a Type's checks: the parser, the time it takes to create each Type, and the code it generates.
 
 | | Dynamic | Precompiled | Precompiled with `runtime: "arktype"` |
 | - | - | - | - |
@@ -7468,7 +7468,7 @@ const User = type({
 })
 ```
 
-That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, precompiled ArkType reports every error, with its message, in a smaller bundle than Valibot: 0.91 kB gzipped against 1.48 kB.
+That means dynamic ArkType parses your definitions at runtime, so it ships a parser, and its bundle is larger than Zod's or Valibot's. [Precompiled](https://arktype.io/docs/precompile), it ships no parser. On Valibot's own login form, ArkType precompiled for size reports every error, with its message, in a smaller bundle than Valibot: 1.03 kB gzipped against 1.55 kB.
 
 Coming from Zod, most APIs have a direct equivalent:
 
