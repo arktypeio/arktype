@@ -55,7 +55,7 @@ const B = type(["string", ...rest])`)
 let max = 5
 var min = 1
 const A = type(\`\${min} < number < \${max}\`)`)
-			).snap(["4:11 accepted number < 5 & > 1"])
+			).snap(["4:11 accepted 1 < number < 5"])
 		})
 
 		it("reads after a declaration", () => {
@@ -153,7 +153,7 @@ const enum Name { a = "alpha" }
 const A = type(\`\${Size.small} < number < \${Size.large}\`)
 const B = type(\`'\${Name.a}' | '\${Size[1]}'\`)`)
 			).snap([
-				"4:11 accepted number < 10 & > 1",
+				"4:11 accepted 1 < number < 10",
 				'5:11 accepted "alpha" | "small"'
 			])
 		})

@@ -106,6 +106,24 @@ contextualize(() => {
 			attest(T.json).equals(Expected.json)
 		})
 
+		it("range expression parses back", () => {
+			const T = type("-5<number<=5")
+			attest(T.expression).snap("-5 < number <= 5")
+			attest(type(T.expression).json).equals(T.json)
+		})
+
+		it("range around another refinement parses back", () => {
+			const T = type("(1 <= number <= 5) % 2")
+			attest(T.expression).snap("1 <= number % 2 <= 5")
+			attest(type(T.expression).json).equals(T.json)
+		})
+
+		it("range around intersected patterns parses back", () => {
+			const T = type("1 <= (/a/ & /b/) <= 5")
+			attest(T.expression).snap("1 <= (/a/ & /b/) <= 5")
+			attest(type(T.expression).json).equals(T.json)
+		})
+
 		it("whitespace following comparator", () => {
 			const T = type("number > 3")
 			attest(T).type.toString.snap("Type<number, {}>")
