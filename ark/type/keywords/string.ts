@@ -677,7 +677,7 @@ const semver = () => regexStringNode(semverMatcher, "string.semver")
 const preformattedTrim = cached(() =>
 	regexStringNode(
 		// no leading or trailing whitespace
-		/^\S.*\S$|^\S?$/,
+		/^\S[\S\s]*\S$|^\S?$/,
 		"string.trim.preformatted"
 	)
 )

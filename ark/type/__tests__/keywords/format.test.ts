@@ -8,6 +8,12 @@ contextualize(() => {
 		attest(trim(5).toString()).snap("must be a string (was a number)")
 	})
 
+	it("trim.preformatted", () => {
+		const Trimmed = type("string.trim.preformatted")
+		attest(Trimmed("a\nb")).snap("a\nb")
+		attest(Trimmed("a\n").toString()).snap('must be trimmed (was "a\\n")')
+	})
+
 	it("lower", () => {
 		const lower = type("string.lower")
 		attest(lower("FOO")).equals("foo")

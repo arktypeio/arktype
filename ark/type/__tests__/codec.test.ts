@@ -171,6 +171,12 @@ contextualize(() => {
 		attest(T.encode(" a ").toString()).snap('must be trimmed (was " a ")')
 	})
 
+	it("trimmed multi-line strings round-trip", () => {
+		const T = type({ bio: "string.trim" })
+		const decoded = T.assert({ bio: " a\nb " })
+		attest(T.encode(decoded)).snap({ bio: "a\nb" })
+	})
+
 	it("missing inverse", () => {
 		const T = type({ length: type("string").pipe(s => s.length) })
 		attest(() => T.encode).throws(

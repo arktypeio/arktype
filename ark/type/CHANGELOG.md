@@ -1442,6 +1442,18 @@ const T = type({ age: z.number() })
 T({ age: "x" }).toString()
 ```
 
+### Accept multi-line strings in `string.trim.preformatted`
+
+`string.trim.preformatted` rejected any string with a line break, so a multi-line string `string.trim` had trimmed failed to encode:
+
+```ts
+const T = type({ bio: "string.trim" })
+
+// was: ArkErrors: bio must be trimmed (was "a\nb")
+// now: { bio: "a\nb" }
+T.encode(T.assert({ bio: " a\nb " }))
+```
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`
