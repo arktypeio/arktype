@@ -86,13 +86,7 @@ import {
 	type IssueContext,
 	type Writer
 } from "./standalone/sites.ts"
-import {
-	refNameOf,
-	rootUnitsOf,
-	undispatched,
-	unitOf,
-	unlooped
-} from "./standalone/compilers.ts"
+import { refNameOf, rootUnitsOf, unitOf } from "./standalone/compilers.ts"
 import {
 	encodeKey,
 	holeNameMarker,
@@ -1144,7 +1138,8 @@ class StandaloneArtifact {
 			: this.baking.detailsErrors && this.baking.shortest ? 2
 			: 0) +
 			3 * +this.baking.firstIssue +
-			6 * +this.baking.countsKeys
+			6 * +this.baking.countsKeys +
+			12 * +this.baking.shortest
 		)
 	}
 
@@ -1673,10 +1668,8 @@ ${writeFunction(
 	declareMembers(unit: RootUnit, readers: string[]): string[] {
 		const called = calledMembersOf(unit.members, readers)
 		const forwarded = forwardedOf(called)
-		const declarations = called.flatMap(([name, written]) => {
+		const declarations = called.flatMap(([name, source]) => {
 			if (forwarded.has(name)) return []
-			const source =
-				this.baking.shortest ? undispatched(unlooped(written)) : written
 			// plain params; size and writing traversals drop a trailing unread ctx
 			const arrow = source.replace(
 				/^function\(([^)]*)\) {/,

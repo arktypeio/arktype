@@ -346,6 +346,147 @@ contextualize(() => {
 		attest(T.allows({ [key]: "x", c: 1 })).equals(true)
 	})
 
+	describe("literals reading as the code around them", () => {
+		const builds: StandaloneOptions[] = [
+			{},
+			{ optimize: "size" },
+			{ errors: "first" },
+			{ errors: "none" },
+			{ mutatesInput: true }
+		]
+
+		// each input fails with at most one issue, so a first-issue build keeps
+		// arktype's, and an errors "none" build only fails where it does
+		const agreesInEachBuild = async (
+			types: Record<string, type.Any>,
+			inputs: unknown[]
+		) => {
+			for (const opts of builds) {
+				const validators = await load(types, opts)
+				for (const [name, t] of Object.entries(types)) {
+					for (const input of inputs) {
+						const outcomeOf = (validator: (data: unknown) => unknown) => {
+							const observed = observe(validator(input), input)
+							return opts.errors === "none" ? "issues" in observed : observed
+						}
+						attest([
+							opts,
+							name,
+							input,
+							validators[name].allows(input),
+							outcomeOf(validators[name])
+						]).equals([opts, name, input, t.allows(input), outcomeOf(t)])
+					}
+				}
+			}
+		}
+
+		it("reports into ctx however a key or unit reads", async () => {
+			await agreesInEachBuild(
+				{
+					Keyed: type({
+						"ctx.failsAt(": "string",
+						"ctx.failsIn(": "string > 1"
+					}),
+					Units: type("'ctx.failsIn(' | 'ctx.failsAt(' | number")
+				},
+				[
+					{ "ctx.failsAt(": "a", "ctx.failsIn(": "ab" },
+					{ "runtime.failsAt(ctx, ": "a", "ctx.failsIn(": "ab" },
+					{ "ctx.failsAt(": "a", "runtime.failsIn(ctx, ": "ab" },
+					"ctx.failsIn(",
+					"runtime.failsIn(ctx, ",
+					0
+				]
+			)
+		})
+
+		it("unifies a Type whose literals read ctx", async () => {
+			await agreesInEachBuild(
+				{ Unit: type("'ctx.x'"), Keyed: type({ "ctx.": "'ctx.'" }) },
+				["ctx.x", "ctx.y", { "ctx.": "ctx." }, { "ctx.": "ctx" }]
+			)
+		})
+
+		it("applies a key that reads as the gate of the prop beside it", async () => {
+			const Gated = type({ b: "string > 3" })
+			// a leaf's Apply is named for its content, so a key can name it
+			const apply = /failsIn\((\w+Apply), data\.b/.exec(
+				precompileStandalone({ Gated }).code
+			)![1]
+			const key = `, xR1, data)!ctx.failsIn(${apply}, data.b, `
+			await agreesInEachBuild({ T: Gated.and({ [`${key}?`]: "number" }) }, [
+				{ b: "abcd", [key]: 0 },
+				{ b: "abcd", [key]: "0" },
+				{ b: "abc", [key]: 0 }
+			])
+		})
+
+		it("switches on cases whose literals read as cases", async () => {
+			await agreesInEachBuild(
+				{
+					Cases: type.enumerated('case "a": return true', "a: return b", "\\"),
+					// the cases of a switch over data's domain, but as strings
+					Domains: type("'string' | 'number' | 'object'"),
+					Dispatched: type({ k: "'case \"string\":'" })
+						.or({ k: "'b: return true\u2028'" })
+						.or("string")
+				},
+				[
+					'case "a": return true',
+					"a: return b",
+					"\\",
+					"string",
+					"object",
+					null,
+					{ k: 'case "string":' },
+					{ k: "b: return true\u2028" },
+					{ k: "case" },
+					0
+				]
+			)
+		})
+
+		it("loops over checks whose literals read as a loop's", async () => {
+			await agreesInEachBuild(
+				{
+					Looped: type({
+						"for (;;) {": type.enumerated("${", "`", '"', "\\\\"),
+						"\u2028        break": "string.url",
+						"const errorCount = ctx.currentErrorCount\n": "number",
+						"    return false\u2028 }": "string"
+					})
+				},
+				[
+					{
+						"for (;;) {": "${",
+						"\u2028        break": "https://arktype.io",
+						"const errorCount = ctx.currentErrorCount\n": 0,
+						"    return false\u2028 }": ""
+					},
+					{
+						"for (;;) {": "\\",
+						"\u2028        break": "https://arktype.io",
+						"const errorCount = ctx.currentErrorCount\n": 0,
+						"    return false\u2028 }": ""
+					},
+					{
+						"for (;;) {": "`",
+						"\u2028        break": "arktype",
+						"const errorCount = ctx.currentErrorCount\n": 0,
+						"    return false\u2028 }": ""
+					},
+					{
+						"for (;;) {": '"',
+						"\u2028        return false": "https://arktype.io",
+						"const errorCount = ctx.currentErrorCount\n": 0,
+						"    return false\u2028 }": ""
+					}
+				]
+			)
+		})
+	})
+
 	it("size allows as a filter callback", async () => {
 		const { T } = await load(
 			{ T: type({ id: "number", tags: "string[]", "note?": "'a' | 'b'" }) },

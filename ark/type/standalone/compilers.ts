@@ -1,5 +1,6 @@
 import {
 	compileDefault,
+	compileDomainOf,
 	isDecidedByAllows,
 	precompileRootUnits,
 	TraversalCompiler,
@@ -7,9 +8,11 @@ import {
 	type BaseRoot,
 	type CheckOptions,
 	type NodeId,
+	type Predicate,
 	type ReferenceOptions,
 	type RootUnit,
 	type StructureNode,
+	type SwitchCase,
 	type TraversalKind,
 	type UnionNode
 } from "@ark/schema"
@@ -23,29 +26,9 @@ import {
 	issueSite,
 	issueSiteOf,
 	undeclaredSite,
+	withoutStrings,
 	writeSiteOf
 } from "./sites.ts"
-
-// a case returning what the next one does falls through to it
-const sharedReturnCase = /^( +)(case [^]*): return ([^]*)$/
-
-const casesFallingThrough = (body: string): string => {
-	const lines = body.split("\n")
-	for (let i = 0; i < lines.length - 1; i++) {
-		const [, indent, label, returned] = sharedReturnCase.exec(lines[i]) ?? []
-		const next = sharedReturnCase.exec(lines[i + 1])
-		if (label && next?.[1] === indent && next[3] === returned)
-			lines[i] = `${indent}${label}:`
-	}
-	return lines.join("\n")
-}
-
-const countedCheck =
-	/^( +)const errorCount = ctx\.currentErrorCount\n +if \(!((?:[\da-z]+R|r)\d+)\(data, ctx\) && ctx\.currentErrorCount === errorCount\) {\n +return (!.+)\n +}\n +return !ctx\.failFast \|\| ctx\.currentErrorCount === errorCount\n$/
-
-// a required prop's Apply: `!ctx.failsIn(apply, value, key, site, data)`
-const appliedProp =
-	/!ctx\.failsIn\((\w+), (data(?:\.[\w$]+|\["(?:[^"\\]|\\.)*"])), "(?:[^"\\]|\\.)*", (?:[\da-z]+R|r)\d+, data\)/g
 
 // a value holding no object, pattern, alias, predicate or morph, whose
 // Allows is a few checks
@@ -57,6 +40,9 @@ const isLeaf = (node: BaseNode): boolean =>
 
 class StandaloneCompiler extends TraversalCompiler {
 	override readonly reportsFirst: boolean = false
+	// a unit is named for its content as compiled without the gates and size
+	// forms that follow from it
+	readonly naming: boolean = this.linkage.unit === undefined
 
 	// named for its unit, so units can share a scope
 	override ref(value: object | symbol): string {
@@ -78,40 +64,34 @@ class StandaloneCompiler extends TraversalCompiler {
 		return isInlineSite(site) ? writeSiteOf(site, JSON.stringify) : ref
 	}
 
-	// Allows by Apply of each leaf a prop applies
-	private readonly gated = new Map<string, string>()
-
-	override traversal(node: BaseNode, kind: TraversalKind): string {
-		const name = super.traversal(node, kind)
-		if (kind === "Apply" && this.traversalKind === "Apply" && this.gates(node))
-			this.gated.set(name, super.traversal(node, "Allows"))
-		return name
+	// a leaf its Allows passes skips the path bookkeeping of applying it
+	override gate(value: BaseNode, arg: string): string | undefined {
+		if (!this.naming && isLeaf(value))
+			return `${this.traversal(value, "Allows")}(${arg})`
 	}
 
-	// whether a prop checks its value by Allows before applying it
-	gates(node: BaseNode): boolean {
-		return isLeaf(node)
+	// a keyword check adds no issues itself, so its Apply needn't count them
+	override addsNoIssues(predicate: Predicate): boolean {
+		return isKeyword(predicate)
 	}
 
-	override get body(): string {
-		const body = casesFallingThrough(super.body)
-		// a keyword check adds no issues itself, so its Apply needn't count them
-		const counted = countedCheck.exec(body)
-		if (counted) {
-			const [, indent, check, fail] = counted
-			for (const [value, name] of this.refs!) {
-				if (name === check && isKeyword(value))
-					return `${indent}return ${check}(data, ctx) || ${fail}\n`
+	// a case returning what the next one does falls through to it
+	override switch(
+		on: string,
+		cases: readonly SwitchCase[],
+		otherwise: string
+	): this {
+		return this.block(`switch(${on})`, () => {
+			for (const [i, [label, returned]] of cases.entries()) {
+				const next = cases[i + 1]
+				const fallsThrough =
+					label !== "default" &&
+					next?.[0] !== "default" &&
+					next?.[1] === returned
+				this.line(fallsThrough ? `${label}:` : `${label}: return ${returned}`)
 			}
-		}
-		// a leaf its Allows passes skips the path bookkeeping of applying it
-		return body.replace(
-			appliedProp,
-			(applied, apply: string, value: string) => {
-				const allows = this.gated.get(apply)
-				return allows ? `${allows}(${value}) || ${applied}` : applied
-			}
-		)
+			return this
+		}).return(otherwise)
 	}
 
 	// a plain object missing every default, its only changes, is copied once
@@ -155,13 +135,13 @@ class StandaloneCompiler extends TraversalCompiler {
 			meta: node.discriminantMeta
 		})
 		const site = issueSite(path.length ? { value: context, path } : context)
-		return `!ctx.failsAt(${this.siteRef(site)}, ${value})`
+		return `!${this.fails("failsAt", `${this.siteRef(site)}, ${value}`)}`
 	}
 
 	override undeclaredFails(node: StructureNode): string {
 		const context = issueContextOf({ code: "undeclared", meta: node.meta })
 		const site = isDescribed(context) ? undeclaredSite : issueSite(context)
-		return `ctx.failsAt(${this.siteRef(site)}, data, k)`
+		return this.fails("failsAt", `${this.siteRef(site)}, data, k`)
 	}
 
 	// a rejected union value reports the union's issue, not its Apply
@@ -183,44 +163,6 @@ class StandaloneCompiler extends TraversalCompiler {
 const failingBySite = new WeakMap<object, object>()
 
 export const refNameOf = (unit: string, i: number): string => `${unit}R${i}`
-
-// size writes the checks an Allows loops over as the returns they stand for,
-// line by line, as a literal can hold a line separator
-export const unlooped = (source: string): string =>
-	source.replace(
-		/ {4}for \(;;\) {\n([\S\s]*)\n {8}return true\n {4}}\n {4}return false\n }$/,
-		(_, checks: string) =>
-			`${checks
-				.split("\n")
-				.map(line =>
-					line.replace(/^ {4}/, "").replace(/^( +)break$/, "$1return false")
-				)
-				.join("\n")}\n    return true\n }`
-	)
-
-// size writes a switch over data's domain as the checks each case stands for
-export const undispatched = (source: string): string =>
-	source.replace(
-		/( +)switch\(typeof data === "object" \? data === null \? "null" : "object" : typeof data === "function" \? "object" : typeof data\) {\n((?: +case "\w+":(?: return .+)?\n)+) +}\n +return (.+)$/m,
-		(_, indent: string, cases: string, otherwise: string) => {
-			let checks = ""
-			let matched: string[] = []
-			for (const [, domain, returned] of cases.matchAll(
-				/case "(\w+)":(?: return (.+))?/g
-			)) {
-				matched.push(
-					domain === "null" ? "data === null"
-					: domain === "object" ?
-						'(typeof data === "object" ? data !== null : typeof data === "function")'
-					:	`typeof data === "${domain}"`
-				)
-				if (returned === undefined) continue
-				checks += `${matched.join(" || ")} ? ${returned} : `
-				matched = []
-			}
-			return `${indent}return ${checks}${otherwise}`
-		}
-	)
 
 class InPlaceCompiler extends StandaloneCompiler {
 	override readonly inPlace = true
@@ -283,13 +225,11 @@ class UnifiedCompiler extends StandaloneCompiler {
 	override failingApplyOf(): undefined {}
 
 	// unpassed a ctx, failsIn allows a value itself
-	override gates(): boolean {
-		return false
-	}
+	override gate(): undefined {}
 
 	// read where it fails, as a site is, so a unit needn't receive it
-	override get body(): string {
-		return super.body.replace(/\bctx\.(failsAt|failsIn)\(/g, "runtime.$1(ctx, ")
+	override fails(method: "failsAt" | "failsIn", args: string): string {
+		return `runtime.${method}(ctx, ${args})`
 	}
 }
 
@@ -299,7 +239,7 @@ const unifyMembers = (unit: RootUnit): void => {
 	unit.members = [...sourcesByName]
 	for (const [i, node] of unit.declared.entries()) {
 		const source = sourcesByName.get(unit.declaredTraversals[i][0])!
-		if (unifies(node) && /\bctx\./.test(source))
+		if (unifies(node) && /(?<![\w$.])ctx\./.test(withoutStrings(source)))
 			throwInternalError(`Unified traversal reads ctx: ${source}`)
 	}
 }
@@ -307,6 +247,53 @@ const unifyMembers = (unit: RootUnit): void => {
 class UnifiedFirstIssueCompiler extends UnifiedCompiler {
 	override readonly reportsFirst = true
 }
+
+// what each case of a switch over data's domain stands for
+const domainChecks = new Map<string, string>([
+	...["bigint", "boolean", "number", "string", "symbol", "undefined"].map(
+		(domain): [string, string] => [
+			`case "${domain}"`,
+			`typeof data === "${domain}"`
+		]
+	),
+	['case "null"', "data === null"],
+	[
+		'case "object"',
+		'(typeof data === "object" ? data !== null : typeof data === "function")'
+	]
+])
+
+const dataDomain = compileDomainOf("data")
+
+// a build for size writes Allows' checks as the returns they stand for, and a
+// switch over data's domain as the checks its cases do
+const forSize = (compiler: typeof StandaloneCompiler) =>
+	class extends compiler {
+		override readonly shortest: boolean = !this.naming
+
+		override switch(
+			on: string,
+			cases: readonly SwitchCase[],
+			otherwise: string
+		): this {
+			if (
+				!this.shortest ||
+				on !== dataDomain ||
+				cases.some(([label]) => !domainChecks.has(label))
+			)
+				return super.switch(on, cases, otherwise)
+			let checks = ""
+			let matched: string[] = []
+			for (const [i, [label, returned]] of cases.entries()) {
+				matched.push(domainChecks.get(label)!)
+				// a case returning what the next one does is checked with it
+				if (cases[i + 1]?.[1] === returned) continue
+				checks += `${matched.join(" || ")} ? ${returned} : `
+				matched = []
+			}
+			return this.return(`${checks}${otherwise}`)
+		}
+	}
 
 // a structure's Allows passes a plain object with as many own enumerable keys
 // as the declared ones it holds, though one may stand in for a declared key it
@@ -360,17 +347,22 @@ const countingKeys = (compiler: typeof StandaloneCompiler) =>
 		}
 	}
 
-// by variant: standalone, in place or unified, plus 3 for errors "first" and
-// 6 for countsKeys
-const compilers = [false, true].flatMap(countsKeys =>
-	[
-		StandaloneCompiler,
-		InPlaceCompiler,
-		UnifiedCompiler,
-		FirstIssueCompiler,
-		InPlaceFirstIssueCompiler,
-		UnifiedFirstIssueCompiler
-	].map(compiler => (countsKeys ? countingKeys(compiler) : compiler))
+// by variant: standalone, in place or unified, plus 3 for errors "first", 6
+// for countsKeys and 12 for size
+const compilers = [false, true].flatMap(shortest =>
+	[false, true].flatMap(countsKeys =>
+		[
+			StandaloneCompiler,
+			InPlaceCompiler,
+			UnifiedCompiler,
+			FirstIssueCompiler,
+			InPlaceFirstIssueCompiler,
+			UnifiedFirstIssueCompiler
+		].map(compiler => {
+			const counting = countsKeys ? countingKeys(compiler) : compiler
+			return shortest ? forSize(counting) : counting
+		})
+	)
 )
 
 // each variant's roots have their own units

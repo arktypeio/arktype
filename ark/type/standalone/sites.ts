@@ -127,9 +127,14 @@ const siteWords = new Set([
 export const isLiteralSite = (value: unknown, emitted: string): boolean =>
 	hasDomain(value, "object") &&
 	failureSites.has(value) &&
-	(
-		emitted.replace(/"(?:[^"\\]|\\.)*"/g, "").match(/[$A-Z_a-z][\w$]*/g) ?? []
-	).every(word => siteWords.has(word))
+	(withoutStrings(emitted).match(/[$A-Z_a-z][\w$]*/g) ?? []).every(word =>
+		siteWords.has(word)
+	)
+
+// emitted code with each string's contents dropped, as every string it holds
+// is JSON, and it holds no other literal that could contain a quote
+export const withoutStrings = (code: string): string =>
+	code.replace(/"(?:[^"\\]|\\.)*"/g, '""')
 
 export const writeSiteOf = (
 	{ code, description, message, problem }: IssueContext,
