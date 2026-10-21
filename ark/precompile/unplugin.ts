@@ -85,6 +85,8 @@ export const precompile: UnpluginInstance<
 	const isStandalone = opts?.runtime !== "arktype"
 	const variant = resolvedVariantOf(opts)
 	const packages = optedInPackagesOf(opts?.cwd ?? process.cwd())
+	// arktype left to Node loads as itself, not as the runtime validators use
+	const inlined = isStandalone ? [...runtimePackages, ...packages] : packages
 	const modules: Record<string, string> = {}
 	const importersById: Record<string, string> = {}
 	// a persistent cache keeps a transformed module, but not the modules it wrote
@@ -301,13 +303,16 @@ export const precompile: UnpluginInstance<
 			},
 			// Vite and Vitest otherwise leave dependencies to Node or prebundling
 			config: () =>
-				packages.length ?
+				inlined.length ?
 					{
 						optimizeDeps: { exclude: packages },
-						ssr: { noExternal: packages },
-						test: { server: { deps: { inline: packages } } }
+						ssr: { noExternal: inlined },
+						test: { server: { deps: { inline: inlined } } }
 					}
 				:	undefined,
+			// e.g. Astro's prerender, a server environment other than ssr
+			configEnvironment: () =>
+				inlined.length ? { resolve: { noExternal: inlined } } : undefined,
 			// a factory checks its helpers against what Vitest's mocks replace
 			configResolved: config => {
 				isServing = config.command === "serve"
@@ -449,6 +454,9 @@ export const precompile: UnpluginInstance<
 })
 
 const esbuildResolution = "arktype"
+
+// what arktype/runtime loads
+const runtimePackages = ["arktype", "@ark/schema", "@ark/util"]
 
 const noDiagnostics = (): RenderedDiagnostics => ({ errors: [], warnings: [] })
 

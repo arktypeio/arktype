@@ -35,6 +35,7 @@ import { Worker } from "node:worker_threads"
 import {
 	createBuilder,
 	createServer,
+	createServerModuleRunner,
 	build as viteBuild,
 	defaultClientConditions,
 	defaultServerConditions,
@@ -733,6 +734,49 @@ console.log(out.constructor === type.errors, out.count, out.issues[0].data === d
 			build: { write: false, ssr: "main.ts" }
 		})) as Rolldown.RolldownOutput
 		attest(run(output[0].code)).equals(expected)
+	})
+
+	it("vite's module runner loads the runtime its validators use", async () => {
+		const root = writeFixture({
+			"main.ts": `import { type } from "arktype"
+
+const T = type({ a: "string" })
+export const isErrors = T({ a: 1 }) instanceof type.errors
+export let thrown = ""
+try {
+	T.assert({ a: 1 })
+} catch (e) {
+	thrown = String(e)
+}
+`
+		})
+		// a dependency Vite would otherwise leave to Node, as an installed one is
+		mkdirSync(join(root, "node_modules"))
+		symlinkSync(
+			fromHere("..", "..", "type"),
+			join(root, "node_modules/arktype")
+		)
+		const results: unknown[] = []
+		for (const opts of [{}, { errors: "none" }] as const) {
+			const config = viteConfig(opts, root)
+			const server = await createServer({
+				...config,
+				resolve: { ...config.resolve, preserveSymlinks: true },
+				ssr: { resolve: { ...config.ssr!.resolve, externalConditions: [] } }
+			})
+			const runner = createServerModuleRunner(server.environments.ssr)
+			try {
+				const { isErrors, thrown } = await runner.import("/main.ts")
+				results.push([isErrors, thrown])
+			} finally {
+				await runner.close()
+				await server.close()
+			}
+		}
+		attest(results).snap([
+			[true, "TraversalError: a must be a string"],
+			[true, "Error: is invalid"]
+		])
 	})
 
 	it("vite merges units by what its last build read", async () => {
