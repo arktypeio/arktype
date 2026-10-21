@@ -20,7 +20,7 @@ type({ name: "string" })({ name: 5 })
 
 The error `"none"` returns holds the code `"predicate"`, an empty path and the data. It's an instance of `type.errors`, so `.assert()` throws a `TraversalError` saying `is invalid`, and a default the Type rejects fails its definition with `Default for name is invalid`. Its message isn't written in a configured locale.
 
-A Type keeps its Scope's `errors` wherever it's referenced.
+A Type another Scope references validates as that Scope is configured, so `type({ x: X })` reports `X`'s errors in full even where `X`'s own Scope configures `errors: "none"`.
 
 ### Transform a valid input in place with `mutatesInput`
 
@@ -338,7 +338,7 @@ The errors that `string.integer.parse`, `string.date.parse`, `string.url.parse`,
 
 ### Reserve `meta.keyword`
 
-Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. Rename meta of your own named `keyword`.
+Built-in keywords set `meta.keyword` to their name, so a locale can find their phrase. Configuring a description, e.g. with `.describe()`, removes it, and JSON Schema omits it. A keyword's meta in `.json` is therefore `{ description, keyword }` where it was the description string. Rename meta of your own named `keyword`.
 
 ### Standalone validators on `arktype/runtime`
 
