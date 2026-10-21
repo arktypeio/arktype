@@ -1516,6 +1516,16 @@ type("string.creditCard").description
 type("string.normalize.NFC.preformatted")("é").toString()
 ```
 
+### Throw a `ToJsonSchemaError` for a named symbol key
+
+Converting a Type with a named symbol key threw a `TypeError` while writing the `ToJsonSchemaError` meant to report it:
+
+```ts
+// was: TypeError: Cannot convert a Symbol value to a string
+// now: ToJsonSchemaError: { code: "symbolKey", ..., key: Symbol(s), ... }
+type({ [Symbol("s")]: "string" }).toJsonSchema()
+```
+
 ## 2.2.9
 
 ### Keep tuple elements around defaults in `.in` and `.out`

@@ -114,6 +114,7 @@ const stringifyUnquoted = (
 	opts: SerializationOptions
 ): string => {
 	if (typeof value === "function") return printableOpts.onFunction(value)
+	if (typeof value === "symbol") return printableOpts.onSymbol(value)
 	if (typeof value !== "object" || value === null)
 		return serializePrimitive(value as never)
 

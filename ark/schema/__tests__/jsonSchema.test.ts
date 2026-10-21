@@ -736,9 +736,18 @@ contextualize(() => {
 				required: [{ key: Symbol("zildjian"), value: "string" }]
 			})
 
-			attest(() => T.toJsonSchema()).throws.snap(
-				"TypeError: Cannot convert a Symbol value to a string"
-			)
+			attest(() => T.toJsonSchema()).throws.snap(`ToJsonSchemaError: {
+    code: "symbolKey",
+    base: {
+        type: "object",
+        properties: {}
+    },
+    key: Symbol(zildjian),
+    value: {
+        type: "string"
+    },
+    optional: false
+}`)
 		})
 
 		it("unit", () => {
